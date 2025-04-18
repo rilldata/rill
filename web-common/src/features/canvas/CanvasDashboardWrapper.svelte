@@ -1,31 +1,50 @@
 <script lang="ts">
-  import * as defaults from "./constants";
-  export let height: number;
-  export let contentRect = new DOMRectReadOnly(0, 0, 0, 0);
-  export let bgColor = "bg-white";
+  import CanvasFilters from "./filters/CanvasFilters.svelte";
+
+  export let maxWidth: number;
+  export let clientWidth = 0;
+  export let showGrabCursor = false;
+  export let filtersEnabled: boolean | undefined;
+  export let canvasName: string;
+  export let onClick: () => void = () => {};
+
+  let contentRect = new DOMRectReadOnly(0, 0, 0, 0);
+
+  $: ({ width: clientWidth } = contentRect);
 </script>
 
-<div
-  class="dashboard-theme-boundary size-full bg-gray-100 flex justify-center overflow-y-auto"
-  on:scroll
->
-  <div
-    bind:contentRect
-    class="canvas {bgColor} min-h-full"
-    style:height="{height}px"
-    style:max-width="{defaults.DEFAULT_DASHBOARD_WIDTH}px"
-  >
-    <slot />
-  </div>
-</div>
+<main class="size-full flex flex-col dashboard-theme-boundary overflow-hidden">
+  {#if filtersEnabled}
+    <header
+      role="presentation"
+      class="bg-background border-b py-4 px-2 w-full h-fit select-none z-50 flex items-center justify-center"
+      on:click|self={onClick}
+    >
+      <CanvasFilters {canvasName} {maxWidth} />
+    </header>
+  {/if}
 
-<style lang="postcss">
-  .canvas {
-    width: 100%;
-    height: 100%;
-    position: relative;
-    user-select: none;
-    margin: 0;
-    pointer-events: auto;
+  <div
+    role="presentation"
+    id="canvas-scroll-container"
+    class="size-full p-2 pb-48 flex flex-col items-center bg-white select-none overflow-y-auto overflow-x-hidden"
+    class:!cursor-grabbing={showGrabCursor}
+    on:click|self={onClick}
+  >
+    <div
+      class="w-full h-fit flex flex-col items-center row-container relative"
+      style:max-width="{maxWidth}px"
+      style:min-width="420px"
+      bind:contentRect
+    >
+      <slot />
+    </div>
+  </div>
+</main>
+
+<style>
+  div {
+    container-type: inline-size;
+    container-name: canvas-container;
   }
 </style>

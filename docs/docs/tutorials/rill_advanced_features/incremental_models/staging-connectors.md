@@ -5,7 +5,7 @@ sidebar_label: "Staging Connectors"
 sidebar_position: 13
 ---
 
-There are some connections that are not natively supported such as Snowflake to Clickhouse. In order to successfully ingest data from these types of sources, there are times where a staging table is required. 
+There are some connections that are not natively supported such as Snowflake to ClickHouse. In order to successfully ingest data from these types of sources, there are times where a staging table is required. 
 
 
 :::tip requirements

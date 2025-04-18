@@ -2,23 +2,25 @@
   import Column from "@rilldata/web-common/components/icons/Column.svelte";
   import Row from "@rilldata/web-common/components/icons/Row.svelte";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
+  import { slide } from "svelte/transition";
   import { metricsExplorerStore } from "../stores/dashboard-stores";
   import DragList from "./DragList.svelte";
+  import { lastNestState } from "./PivotToolbar.svelte";
   import { PivotChipType, type PivotChipData } from "./types";
-  import { slide } from "svelte/transition";
 
   const stateManagers = getStateManagers();
   const {
     selectors: {
-      pivot: { rows, columns },
+      pivot: { rows, columns, isFlat, originalColumns },
     },
     exploreName,
   } = stateManagers;
 
   $: ({ dimension: columnsDimensions, measure: columnsMeasures } = $columns);
-  $: ({ dimension: rowsDimensions } = $rows);
 
   function updateColumn(e: CustomEvent<PivotChipData[]>) {
+    // Reset lastNestState when columns are updated
+    lastNestState.set(null);
     metricsExplorerStore.setPivotColumns($exploreName, e.detail);
   }
 
@@ -31,22 +33,36 @@
 </script>
 
 <div class="header" transition:slide>
+  {#if !$isFlat}
+    <div
+      class="header-row"
+      transition:slide={{
+        duration: 200,
+        axis: "y",
+      }}
+    >
+      <span class="row-label">
+        <Row size="16px" /> Rows
+      </span>
+      <DragList
+        zone="rows"
+        placeholder="Drag dimensions here"
+        items={$rows}
+        on:update={updateRows}
+      />
+    </div>
+  {/if}
   <div class="header-row">
-    <span class="row-label">
-      <Row size="16px" /> Rows
-    </span>
-    <DragList
-      zone="rows"
-      placeholder="Drag dimensions here"
-      items={rowsDimensions}
-      on:update={updateRows}
-    />
-  </div>
-  <div class="header-row">
-    <span class="row-label"> <Column size="16px" /> Columns</span>
+    <div class="row-label">
+      <Column size="16px" /> Columns
+    </div>
+
     <DragList
       zone="columns"
-      items={columnsDimensions.concat(columnsMeasures)}
+      tableMode={$isFlat ? "flat" : "nest"}
+      items={$isFlat
+        ? $originalColumns
+        : columnsDimensions.concat(columnsMeasures)}
       placeholder="Drag dimensions or measures here"
       on:update={updateColumn}
     />
@@ -68,6 +84,6 @@
     @apply flex items-center gap-x-2 px-2;
   }
   .row-label {
-    @apply flex items-center gap-x-1 w-20 flex-shrink-0;
+    @apply w-20 flex items-center gap-x-1 flex-shrink-0;
   }
 </style>

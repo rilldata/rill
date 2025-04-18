@@ -185,6 +185,10 @@ func (s *Server) IssueRepresentativeAuthToken(ctx context.Context, req *adminv1.
 		return nil, err
 	}
 
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.user_id", u.ID),
+	)
+
 	ttl := time.Duration(req.TtlMinutes) * time.Minute
 	displayName := fmt.Sprintf("Support for %s", u.Email)
 
@@ -284,6 +288,30 @@ func (s *Server) GetUser(ctx context.Context, req *adminv1.GetUserRequest) (*adm
 	return &adminv1.GetUserResponse{User: userToPB(user)}, nil
 }
 
+func (s *Server) DeleteUser(ctx context.Context, req *adminv1.DeleteUserRequest) (*adminv1.DeleteUserResponse, error) {
+	observability.AddRequestAttributes(ctx, attribute.String("args.email", req.Email))
+
+	user, err := s.admin.DB.FindUserByEmail(ctx, req.Email)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to find user by email: %v", err)
+	}
+
+	claims := auth.GetClaims(ctx)
+	isCurrentUser := claims.OwnerType() == auth.OwnerTypeUser && claims.OwnerID() == user.ID
+	isSuperuser := claims.Superuser(ctx)
+
+	if !isCurrentUser && !isSuperuser {
+		return nil, status.Error(codes.PermissionDenied, "you can only delete your own user unless you are a superuser")
+	}
+
+	err = s.admin.DB.DeleteUser(ctx, user.ID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to delete user: %v", err)
+	}
+
+	return &adminv1.DeleteUserResponse{}, nil
+}
+
 func (s *Server) SudoUpdateUserQuotas(ctx context.Context, req *adminv1.SudoUpdateUserQuotasRequest) (*adminv1.SudoUpdateUserQuotasResponse, error) {
 	observability.AddRequestAttributes(ctx, attribute.String("args.email", req.Email))
 	if req.SingleuserOrgs != nil {
@@ -381,13 +409,38 @@ func userToPB(u *database.User) *adminv1.User {
 	}
 }
 
-func memberUserToPB(m *database.MemberUser) *adminv1.MemberUser {
-	return &adminv1.MemberUser{
+func orgMemberUserToPB(m *database.OrganizationMemberUser) *adminv1.OrganizationMemberUser {
+	return &adminv1.OrganizationMemberUser{
+		UserId:          m.ID,
+		UserEmail:       m.Email,
+		UserName:        m.DisplayName,
+		UserPhotoUrl:    m.PhotoURL,
+		RoleName:        m.RoleName,
+		ProjectsCount:   uint32(m.ProjectsCount),
+		UsergroupsCount: uint32(m.UsergroupsCount),
+		CreatedOn:       timestamppb.New(m.CreatedOn),
+		UpdatedOn:       timestamppb.New(m.UpdatedOn),
+	}
+}
+
+func projMemberUserToPB(m *database.ProjectMemberUser) *adminv1.ProjectMemberUser {
+	return &adminv1.ProjectMemberUser{
 		UserId:       m.ID,
 		UserEmail:    m.Email,
 		UserName:     m.DisplayName,
 		UserPhotoUrl: m.PhotoURL,
 		RoleName:     m.RoleName,
+		CreatedOn:    timestamppb.New(m.CreatedOn),
+		UpdatedOn:    timestamppb.New(m.UpdatedOn),
+	}
+}
+
+func usergroupMemberUserToPB(m *database.UsergroupMemberUser) *adminv1.UsergroupMemberUser {
+	return &adminv1.UsergroupMemberUser{
+		UserId:       m.ID,
+		UserEmail:    m.Email,
+		UserName:     m.DisplayName,
+		UserPhotoUrl: m.PhotoURL,
 		CreatedOn:    timestamppb.New(m.CreatedOn),
 		UpdatedOn:    timestamppb.New(m.UpdatedOn),
 	}

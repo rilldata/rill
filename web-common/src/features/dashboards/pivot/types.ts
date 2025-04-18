@@ -1,7 +1,7 @@
 import { type TimeRangeString } from "@rilldata/web-common/lib/time/types";
 import type {
-  MetricsViewSpecDimensionV2,
-  MetricsViewSpecMeasureV2,
+  MetricsViewSpecDimension,
+  MetricsViewSpecMeasure,
   V1Expression,
   V1MetricsViewAggregationResponseDataItem,
   V1TimeGrain,
@@ -44,28 +44,18 @@ export interface PivotDashboardContext {
 }
 
 export interface PivotState {
-  active: boolean;
-  columns: PivotColumns;
-  rows: PivotRows;
+  columns: PivotChipData[];
+  rows: PivotChipData[];
   expanded: ExpandedState;
   sorting: SortingState;
   columnPage: number;
   rowPage: number;
   enableComparison: boolean;
-  rowJoinType: PivotRowJoinType;
+  tableMode: PivotTableMode;
   activeCell: PivotCell | null;
 }
 
-export type PivotRowJoinType = "flat" | "nest";
-
-export type PivotColumns = {
-  measure: PivotChipData[];
-  dimension: PivotChipData[];
-};
-
-export type PivotRows = {
-  dimension: PivotChipData[];
-};
+export type PivotTableMode = "flat" | "nest";
 
 export interface PivotDataRow {
   subRows?: PivotDataRow[];
@@ -99,14 +89,15 @@ export interface PivotDataStoreConfig {
   measureNames: string[];
   rowDimensionNames: string[];
   colDimensionNames: string[];
-  allMeasures: MetricsViewSpecMeasureV2[];
-  allDimensions: MetricsViewSpecDimensionV2[];
+  allMeasures: MetricsViewSpecMeasure[];
+  allDimensions: MetricsViewSpecDimension[];
   whereFilter: V1Expression;
   pivot: PivotState;
   time: PivotTimeConfig;
   enableComparison: boolean;
   comparisonTime: TimeRangeString | undefined;
   searchText: string | undefined;
+  isFlat: boolean;
 }
 
 export interface PivotAxesData {
@@ -144,7 +135,6 @@ export type PivotColumnSet = {
 export type PivotConfig = {
   rowDims: PivotDimension[];
   colSets: PivotColumnSet[];
-  rowJoinType: "flat" | "nest";
   sort: any; // TBD
   expanded: any[];
 };

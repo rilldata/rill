@@ -1,17 +1,24 @@
+<script context="module" lang="ts">
+  export const lastNestState = writable<PivotChipData[] | null>(null);
+</script>
+
 <script lang="ts">
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import PivotPanel from "@rilldata/web-common/components/icons/PivotPanel.svelte";
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
+  import { writable } from "svelte/store";
+  import Collapse from "../../../components/icons/Collapse.svelte";
+  import Pivot from "../../../components/icons/Pivot.svelte";
+  import Tooltip from "../../../components/tooltip/Tooltip.svelte";
+  import TooltipContent from "../../../components/tooltip/TooltipContent.svelte";
+  import TableIcon from "../../canvas/icons/TableIcon.svelte";
+  import ExportMenu from "../../exports/ExportMenu.svelte";
   import { featureFlags } from "../../feature-flags";
   import { getStateManagers } from "../state-managers/state-managers";
-  import ExportMenu from "../../exports/ExportMenu.svelte";
-  import {
-    V1ExportFormat,
-    createQueryServiceExport,
-  } from "../../../runtime-client";
-  import exportPivot, { getPivotExportArgs } from "./pivot-export";
+  import { getPivotExportQuery } from "./pivot-export";
+  import type { PivotChipData, PivotTableMode } from "./types";
 
   export let showPanels = true;
   export let isFetching = false;
@@ -19,10 +26,45 @@
   const { adminServer, exports } = featureFlags;
 
   const stateManagers = getStateManagers();
-  const { exploreName, dashboardStore, validSpecStore } = stateManagers;
+  const {
+    exploreName,
+    dashboardStore,
+    timeRangeSummaryStore,
+    selectors: {
+      pivot: { rows, columns, isFlat },
+    },
+  } = stateManagers;
 
   $: expanded = $dashboardStore?.pivot?.expanded ?? {};
-  $: metricsViewProto = $dashboardStore.proto;
+  $: exploreHasTimeDimension = !!$timeRangeSummaryStore.data;
+
+  /**
+   * This method stores the previous nest state and passes it to
+   * dashboard store when toggling back from `flat` to `nest`
+   */
+  function togglePivotType(newJoinState: PivotTableMode) {
+    if (newJoinState === "flat") {
+      lastNestState.set($rows);
+      metricsExplorerStore.setPivotTableMode(
+        $exploreName,
+        "flat",
+        [],
+        [...$columns.dimension, ...$rows, ...$columns.measure],
+      );
+      return;
+    }
+
+    // Handle nest state
+    const updatedRows = $lastNestState ?? $columns.dimension;
+    const rowDimensionIds = new Set(updatedRows.map((d) => d.id));
+
+    metricsExplorerStore.setPivotTableMode($exploreName, "nest", updatedRows, [
+      ...($lastNestState
+        ? $columns.dimension.filter((d) => !rowDimensionIds.has(d.id))
+        : []),
+      ...$columns.measure,
+    ]);
+  }
 
   // function expandVisible() {
   //   // const lowestVisibleRow = 0;
@@ -52,19 +94,6 @@
 
   //   metricsExplorerStore.setPivotExpanded($exploreName, expanded);
   // }
-
-  const scheduledReportsQueryArgs = getPivotExportArgs(stateManagers);
-
-  const exportDash = createQueryServiceExport();
-
-  async function handleExportPivot(format: V1ExportFormat) {
-    await exportPivot({
-      ctx: stateManagers,
-      query: exportDash,
-      format,
-      timeDimension: $validSpecStore.data?.metricsView?.timeDimension,
-    });
-  }
 </script>
 
 <div class="flex items-center gap-x-4 select-none pointer-events-none">
@@ -80,7 +109,25 @@
     <PivotPanel size="18px" open={showPanels} />
   </Button>
 
-  <!-- <Button
+  <div class="flex items-center gap-x-1">
+    <Tooltip location="bottom" alignment="start" distance={8}>
+      <Button
+        type="toolbar"
+        on:click={() => togglePivotType($isFlat ? "nest" : "flat")}
+      >
+        {#if $isFlat}
+          <TableIcon size="16px" />
+        {:else}
+          <Pivot size="16px" />
+        {/if}
+        <span>{$isFlat ? "Flat table" : "Pivot table"}</span>
+      </Button>
+      <TooltipContent slot="tooltip-content">
+        {$isFlat ? "Switch to a pivot table" : "Switch to a flat table"}
+      </TooltipContent>
+    </Tooltip>
+
+    <!-- <Button
     compact
     type="text"
     on:click={() => {
@@ -89,30 +136,29 @@
   >
     Expand Visible
   </Button> -->
-  {#if Object.keys(expanded).length > 0}
     <Button
-      compact
-      type="text"
+      type="toolbar"
       on:click={() => {
         metricsExplorerStore.setPivotExpanded($exploreName, {});
       }}
+      disabled={Object.keys(expanded).length === 0}
     >
+      <Collapse size="16px" />
       Collapse All
     </Button>
-  {/if}
 
-  {#if isFetching}
-    <Spinner size="18px" status={EntityStatus.Running} />
-  {/if}
-  <div class="grow" />
-  {#if $exports}
-    <ExportMenu
-      label="Export pivot data"
-      onExport={handleExportPivot}
-      includeScheduledReport={$adminServer}
-      queryArgs={$scheduledReportsQueryArgs}
-      exploreName={$exploreName}
-      {metricsViewProto}
-    />
-  {/if}
+    {#if $exports}
+      <ExportMenu
+        label="Export pivot data"
+        includeScheduledReport={$adminServer && exploreHasTimeDimension}
+        getQuery={(isScheduled) =>
+          getPivotExportQuery(stateManagers, isScheduled)}
+        exploreName={$exploreName}
+      />
+    {/if}
+
+    {#if isFetching}
+      <Spinner size="18px" status={EntityStatus.Running} />
+    {/if}
+  </div>
 </div>

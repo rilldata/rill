@@ -39,6 +39,7 @@ func (e *Executor) rewritePercentOfTotals(ctx context.Context, qry *Query) error
 		Offset:              nil,
 		TimeZone:            qry.TimeZone,
 		UseDisplayNames:     false,
+		Rows:                false,
 	} //exhaustruct:enforce
 
 	// Build an AST for the totals query.
@@ -59,7 +60,7 @@ func (e *Executor) rewritePercentOfTotals(ctx context.Context, qry *Query) error
 	if err != nil {
 		return err
 	}
-	res, err := e.olap.Execute(ctx, &drivers.Statement{
+	res, err := e.olap.Query(ctx, &drivers.Statement{
 		Query:            sql,
 		Args:             args,
 		Priority:         e.priority,

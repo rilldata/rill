@@ -1,4 +1,4 @@
-package clickhouse_test
+package clickhouse
 
 import (
 	"context"
@@ -43,6 +43,11 @@ func TestInformationSchema(t *testing.T) {
 	prepareConn(t, conn)
 	t.Run("testInformationSchemaAll", func(t *testing.T) { testInformationSchemaAll(t, conn) })
 	t.Run("testInformationSchemaAllLike", func(t *testing.T) { testInformationSchemaAllLike(t, conn) })
+	t.Run("testInformationSchemaSystemAllLike", func(t *testing.T) {
+		conn, err := drivers.Open("clickhouse", "default", map[string]any{"dsn": fmt.Sprintf("clickhouse://clickhouse:clickhouse@%v:%v/system", host, port.Port())}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+		require.NoError(t, err)
+		testInformationSchemaSystemAllLike(t, conn)
+	})
 	t.Run("testInformationSchemaLookup", func(t *testing.T) { testInformationSchemaLookup(t, conn) })
 }
 
@@ -56,6 +61,9 @@ func testInformationSchemaAll(t *testing.T, conn drivers.Handle) {
 	tables, err := olap.InformationSchema().All(context.Background(), "")
 	require.NoError(t, err)
 	require.Equal(t, 5, len(tables))
+
+	err = olap.InformationSchema().LoadPhysicalSize(context.Background(), tables)
+	require.NoError(t, err)
 
 	require.Equal(t, "bar", tables[0].Name)
 	require.Equal(t, "foo", tables[1].Name)
@@ -78,6 +86,9 @@ func testInformationSchemaAll(t *testing.T, conn drivers.Handle) {
 	require.Equal(t, runtimev1.Type_CODE_INT32, tables[1].Schema.Fields[1].Type.Code)
 
 	require.Equal(t, true, tables[2].View)
+	require.Equal(t, int64(0), tables[2].PhysicalSizeBytes)
+	require.Greater(t, tables[0].PhysicalSizeBytes, int64(0))
+	require.Greater(t, tables[1].PhysicalSizeBytes, int64(0))
 }
 
 func testInformationSchemaAllLike(t *testing.T, conn drivers.Handle) {
@@ -91,6 +102,20 @@ func testInformationSchemaAllLike(t *testing.T, conn drivers.Handle) {
 	require.NoError(t, err)
 	require.Equal(t, 1, len(tables))
 	require.Equal(t, "model", tables[0].Name)
+
+	tables, err = olap.InformationSchema().All(context.Background(), "other.%ar")
+	require.NoError(t, err)
+	require.Equal(t, 1, len(tables))
+	require.Equal(t, "bar", tables[0].Name)
+}
+
+func testInformationSchemaSystemAllLike(t *testing.T, conn drivers.Handle) {
+	olap, _ := conn.AsOLAP("")
+
+	tables, err := olap.InformationSchema().All(context.Background(), "query_log")
+	require.NoError(t, err)
+	require.Equal(t, 1, len(tables))
+	require.Equal(t, "query_log", tables[0].Name)
 
 	tables, err = olap.InformationSchema().All(context.Background(), "other.%ar")
 	require.NoError(t, err)
@@ -128,7 +153,6 @@ func testInformationSchemaLookup(t *testing.T, conn drivers.Handle) {
 }
 
 func prepareConn(t *testing.T, conn drivers.Handle) {
-
 	olap, ok := conn.AsOLAP("")
 	require.True(t, ok)
 

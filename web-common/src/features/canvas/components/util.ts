@@ -4,56 +4,66 @@ import type {
   FilterInputParam,
   FilterInputTypes,
 } from "@rilldata/web-common/features/canvas/inspector/types";
-import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
-import type { V1ComponentSpecRendererProperties } from "@rilldata/web-common/runtime-client";
+import type { CanvasResponse } from "@rilldata/web-common/features/canvas/selector";
+import type {
+  RpcStatus,
+  V1MetricsViewSpec,
+  V1Resource,
+} from "@rilldata/web-common/runtime-client";
+import type { QueryObserverResult } from "@tanstack/svelte-query";
+import type { CanvasEntity, ComponentPath } from "../stores/canvas-entity";
+import type { BaseCanvasComponent } from "./BaseCanvasComponent";
 import { ChartComponent } from "./charts";
 import { ImageComponent } from "./image";
-import { KPIComponent } from "./kpi";
+import { LeaderboardComponent } from "./leaderboard";
 import { MarkdownCanvasComponent } from "./markdown";
-import { TableCanvasComponent } from "./table";
+import { PivotCanvasComponent } from "./pivot";
 import type {
   CanvasComponentType,
   ComponentCommonProperties,
-  ComponentFilterProperties,
+  ComponentSpec,
 } from "./types";
 
 export const commonOptions: Record<
   keyof ComponentCommonProperties,
   ComponentInputParam
 > = {
-  title: { type: "text", optional: true, showInUI: true, label: "Title" },
+  title: {
+    type: "text",
+    optional: true,
+    showInUI: true,
+    label: "Title",
+    meta: { placeholder: "Add a title to describe this component" },
+  },
   description: {
     type: "text",
     optional: true,
     showInUI: true,
-    label: "Caption",
+    label: "Description",
+    meta: {
+      placeholder: "Add additional context for this component",
+    },
   },
 };
 
 export function getFilterOptions(
-  includeComparisonRange = true,
+  hasComparison = true,
+  hasGrain = true,
 ): Partial<Record<FilterInputTypes, FilterInputParam>> {
   return {
-    time_range: { type: "time_range", label: "Time Range" },
-    ...(includeComparisonRange
-      ? {
-          comparison_range: {
-            type: "comparison_range",
-            label: "Comparison Range",
-          },
-        }
-      : {}),
+    time_filters: { type: "time_filters", meta: { hasComparison, hasGrain } },
     dimension_filters: {
       type: "dimension_filters",
-      label: "Filters",
     },
   };
 }
 
+const TABLE_TYPES = ["table", "pivot"] as const;
 const CHART_TYPES = [
   "line_chart",
   "bar_chart",
   "stacked_bar",
+  "stacked_bar_normalized",
   "area_chart",
 ] as const;
 const NON_CHART_TYPES = [
@@ -62,48 +72,75 @@ const NON_CHART_TYPES = [
   "kpi_grid",
   "image",
   "table",
+  "pivot",
+  "leaderboard",
 ] as const;
 const ALL_COMPONENT_TYPES = [...CHART_TYPES, ...NON_CHART_TYPES] as const;
 
 type ChartType = (typeof CHART_TYPES)[number];
+type TableType = (typeof TABLE_TYPES)[number];
+
+interface BaseCanvasComponentConstructor<
+  T extends ComponentSpec = ComponentSpec,
+> {
+  new (
+    resource: V1Resource,
+    parent: CanvasEntity,
+    path: ComponentPath,
+  ): BaseCanvasComponent<T>;
+
+  newComponentSpec(
+    metricsViewName: string,
+    metricsViewSpec?: V1MetricsViewSpec,
+  ): T;
+}
 
 // Component type to class mapping
-const COMPONENT_CLASS_MAP = {
+export const COMPONENT_CLASS_MAP: Record<
+  CanvasComponentType,
+  BaseCanvasComponentConstructor
+> = {
   markdown: MarkdownCanvasComponent,
-  kpi: KPIComponent,
   kpi_grid: KPIGridComponent,
   image: ImageComponent,
-  table: TableCanvasComponent,
+  leaderboard: LeaderboardComponent,
+  table: PivotCanvasComponent,
+  pivot: PivotCanvasComponent,
+  bar_chart: ChartComponent,
+  line_chart: ChartComponent,
+  stacked_bar: ChartComponent,
+  stacked_bar_normalized: ChartComponent,
+  area_chart: ChartComponent,
 } as const;
 
 // Component display names mapping
 const DISPLAY_MAP: Record<CanvasComponentType, string> = {
-  kpi: "KPI",
   kpi_grid: "KPI Grid",
   markdown: "Markdown",
   table: "Table",
+  pivot: "Pivot",
   image: "Image",
+  leaderboard: "Leaderboard",
   bar_chart: "Chart",
   line_chart: "Chart",
   stacked_bar: "Chart",
+  stacked_bar_normalized: "Chart",
   area_chart: "Chart",
 } as const;
 
-export const getComponentObj = (
-  fileArtifact: FileArtifact,
-  path: (string | number)[],
-  type: CanvasComponentType,
-  params: Record<string, unknown>,
-) => {
+export function createComponent(
+  resource: V1Resource,
+  parent: CanvasEntity,
+  path: ComponentPath,
+) {
+  const type = resource.component?.spec?.renderer as CanvasComponentType;
   const ComponentClass =
     COMPONENT_CLASS_MAP[type as keyof typeof COMPONENT_CLASS_MAP];
   if (ComponentClass) {
-    return new ComponentClass(fileArtifact, path, params);
+    return new ComponentClass(resource, parent, path);
   }
-  return new ChartComponent(fileArtifact, path, params);
-};
-
-export type CanvasComponentObj = ReturnType<typeof getComponentObj>;
+  return new ChartComponent(resource, parent, path);
+}
 
 export function isCanvasComponentType(
   value: string | undefined,
@@ -119,31 +156,11 @@ export function isChartComponentType(
   return CHART_TYPES.includes(value as ChartType);
 }
 
-export function getComponentFilterProperties(
-  rendererProperties: V1ComponentSpecRendererProperties | undefined,
-): ComponentFilterProperties {
-  return {
-    dimension_filters: rendererProperties?.dimension_filters as
-      | string
-      | undefined,
-    time_range: rendererProperties?.time_range as string | undefined,
-    comparison_range: rendererProperties?.comparison_range as
-      | string
-      | undefined,
-  };
-}
-
-export function getComponentRegistry(): Record<
-  CanvasComponentType,
-  CanvasComponentObj
-> {
-  return Object.fromEntries([
-    ...Object.entries(COMPONENT_CLASS_MAP).map(([type, Class]) => [
-      type,
-      new Class(),
-    ]),
-    ...CHART_TYPES.map((type) => [type, new ChartComponent()]),
-  ]) as Record<CanvasComponentType, CanvasComponentObj>;
+export function isTableComponentType(
+  value: string | undefined,
+): value is TableType {
+  if (!value) return false;
+  return TABLE_TYPES.includes(value as TableType);
 }
 
 export function getHeaderForComponent(
@@ -151,4 +168,19 @@ export function getHeaderForComponent(
 ) {
   if (!componentType) return "Component";
   return DISPLAY_MAP[componentType] || "Component";
+}
+
+export function getComponentMetricsViewFromSpec(
+  componentName: string | undefined,
+  spec: QueryObserverResult<CanvasResponse, RpcStatus>,
+): string | undefined {
+  if (!componentName) return undefined;
+  const resource = spec.data?.components?.[componentName]?.component;
+
+  if (resource) {
+    return resource?.state?.validSpec?.rendererProperties?.metrics_view as
+      | string
+      | undefined;
+  }
+  return undefined;
 }

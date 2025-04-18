@@ -2,6 +2,7 @@ import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-for
 import { FormatPreset } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
 import { activeMeasure } from "./active-measure";
 import type { DashboardDataSources } from "./types";
+import { visibleMeasures } from "./measures";
 
 export const formattingSelectors = {
   /**
@@ -23,5 +24,18 @@ export const formattingSelectors = {
     }
 
     return createMeasureValueFormatter(measure);
+  },
+
+  /**
+   * A map of measure names to their formatters
+   */
+  measureFormatters: (args: DashboardDataSources) => {
+    const measures = visibleMeasures(args);
+    return Object.fromEntries(
+      measures.map((measure) => [
+        measure.name,
+        createMeasureValueFormatter(measure),
+      ]),
+    );
   },
 };

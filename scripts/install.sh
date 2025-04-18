@@ -33,6 +33,18 @@ checkDependency() {
     fi
 }
 
+# Ensure that either 'shasum' or 'sha256sum' is installed and executable, exit and print help message if not
+resolveShasumDependency() {
+    if [ -x "$(command -v shasum)" ]; then
+        sha256_verify="shasum --algorithm 256 --ignore-missing --check"
+    elif [ -x "$(command -v sha256sum)" ]; then
+        sha256_verify="sha256sum --ignore-missing --check"
+    else
+        printf "neither 'shasum' or 'sha256sum' could be found, this script depends on one of them, please install one of them and try again.\n"
+        exit 1
+    fi
+}
+
 # Download the binary and check the integrity using the SHA256 checksum
 downloadBinary() {
     CDN="cdn.rilldata.com"
@@ -51,7 +63,7 @@ downloadBinary() {
     curl --location --progress-bar "${CHECKSUM_URL}" --output checksums.txt
 
     printf "\nVerifying the SHA256 checksum of the downloaded binary:\n"
-    shasum --algorithm 256 --ignore-missing --check checksums.txt
+    ${sha256_verify} checksums.txt
 
     printf "\nUnpacking rill_%s.zip\n" "$PLATFORM"
     unzip -q rill_${PLATFORM}.zip
@@ -80,7 +92,7 @@ promtInstallChoice() {
             INSTALL_DIR=$(pwd)
             ;;
         *)
-            printf "\nInvalid option '$ans'\n\n"
+            printf "\nInvalid option '%s'\n\n" "$ans"
             promtInstallChoice
             ;;
     esac
@@ -154,7 +166,7 @@ publishSyftEvent() {
     SYFT_URL=https://event.syftdata.com/log
     SYFT_ID=clp76quhs0006l908bux79l4v
     if [ -z "$RILL_INSTALL_DISABLE_TELEMETRY" ]; then
-        curl --silent --header "Authorization: ${SYFT_ID}" --header "Content-Type: application/json" --data "{\"event_name\":\"$1\"}" $SYFT_URL > /dev/null 2>&1
+        curl --silent --show-error --header "Authorization: ${SYFT_ID}" --header "Content-Type: application/json" --data "{\"event_name\":\"$1\"}" $SYFT_URL > /dev/null || true >&2
     fi
 }
 
@@ -198,8 +210,8 @@ removePathConfigEntries() {
 installRill() {
     publishSyftEvent install
     checkDependency curl
-    checkDependency shasum
     checkDependency unzip
+    resolveShasumDependency
     initPlatform
     detectPreviousInstallation
     if [ -z "${INSTALL_DIR}" ]; then

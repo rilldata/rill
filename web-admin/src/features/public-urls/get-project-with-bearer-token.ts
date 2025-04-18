@@ -67,10 +67,12 @@ export const createAdminServiceGetProjectWithBearerToken = <
   token: string,
   params?: AdminServiceGetProjectParams,
   options?: {
-    query?: CreateQueryOptions<
-      Awaited<ReturnType<typeof adminServiceGetProjectWithBearerToken>>,
-      TError,
-      TData
+    query?: Partial<
+      CreateQueryOptions<
+        Awaited<ReturnType<typeof adminServiceGetProjectWithBearerToken>>,
+        TError,
+        TData
+      >
     >;
   },
 ): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {

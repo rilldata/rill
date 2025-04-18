@@ -10,23 +10,10 @@ import {
   isExpressionUnsupported,
   isJoinerExpression,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
-import type {
-  DimensionThresholdFilter,
-  MetricsExplorerEntity,
-} from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import type { DimensionThresholdFilter } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import type { V1Expression } from "@rilldata/web-common/runtime-client";
 
-export function mergeMeasureFilters(
-  dashboard: MetricsExplorerEntity,
-  whereFilter = dashboard.whereFilter,
-) {
-  return mergeDimensionAndMeasureFilter(
-    whereFilter,
-    dashboard.dimensionThresholdFilters,
-  );
-}
-
-export function mergeDimensionAndMeasureFilter(
+export function mergeDimensionAndMeasureFilters(
   whereFilter: V1Expression | undefined,
   dimensionThresholdFilters: DimensionThresholdFilter[],
 ) {

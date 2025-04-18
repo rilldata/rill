@@ -10,18 +10,21 @@ import (
 )
 
 func TestInformationSchemaAll(t *testing.T) {
-	conn := prepareConn(t)
+	conn := prepareConn(t).(*connection)
 	olap, _ := conn.AsOLAP("")
 
-	opts := &drivers.CreateTableOptions{
-		View: true,
+	opts := &createTableOptions{
+		view: true,
 	}
-	err := olap.CreateTableAsSelect(context.Background(), "model", "select 1, 2, 3", opts)
+	_, err := conn.createTableAsSelect(context.Background(), "model", "select 1, 2, 3", opts)
+	require.NoError(t, err)
+
+	_, err = conn.createTableAsSelect(context.Background(), "source", "select 4, 5, 6", &createTableOptions{})
 	require.NoError(t, err)
 
 	tables, err := olap.InformationSchema().All(context.Background(), "")
 	require.NoError(t, err)
-	require.Equal(t, 3, len(tables))
+	require.Equal(t, 4, len(tables))
 
 	require.Equal(t, "bar", tables[0].Name)
 	require.Equal(t, "foo", tables[1].Name)
@@ -34,14 +37,17 @@ func TestInformationSchemaAll(t *testing.T) {
 	require.Equal(t, runtimev1.Type_CODE_INT32, tables[1].Schema.Fields[1].Type.Code)
 
 	require.Equal(t, true, tables[2].View)
+	require.Equal(t, false, tables[3].View)
+	require.Equal(t, int64(0), tables[2].PhysicalSizeBytes)
+	require.Greater(t, tables[3].PhysicalSizeBytes, int64(0))
 }
 
 func TestInformationSchemaAllLike(t *testing.T) {
-	conn := prepareConn(t)
+	conn := prepareConn(t).(*connection)
 	olap, _ := conn.AsOLAP("")
 
-	opts := &drivers.CreateTableOptions{View: true}
-	err := olap.CreateTableAsSelect(context.Background(), "model", "select 1, 2, 3", opts)
+	opts := &createTableOptions{view: true}
+	_, err := conn.createTableAsSelect(context.Background(), "model", "select 1, 2, 3", opts)
 	require.NoError(t, err)
 
 	tables, err := olap.InformationSchema().All(context.Background(), "%odel")
@@ -56,12 +62,12 @@ func TestInformationSchemaAllLike(t *testing.T) {
 }
 
 func TestInformationSchemaLookup(t *testing.T) {
-	conn := prepareConn(t)
+	conn := prepareConn(t).(*connection)
 	olap, _ := conn.AsOLAP("")
 	ctx := context.Background()
 
-	opts := &drivers.CreateTableOptions{View: true}
-	err := olap.CreateTableAsSelect(context.Background(), "model", "select 1, 2, 3", opts)
+	opts := &createTableOptions{view: true}
+	_, err := conn.createTableAsSelect(context.Background(), "model", "select 1, 2, 3", opts)
 	require.NoError(t, err)
 
 	table, err := olap.InformationSchema().Lookup(ctx, "", "", "foo")

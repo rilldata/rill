@@ -37,7 +37,7 @@ func (e *Executor) resolveDuckDBClickHouseAndPinot(ctx context.Context) (Timesta
 		filter,
 	)
 
-	rows, err := e.olap.Execute(ctx, &drivers.Statement{
+	rows, err := e.olap.Query(ctx, &drivers.Statement{
 		Query:            rangeSQL,
 		Priority:         e.priority,
 		ExecutionTimeout: defaultExecutionTimeout,
@@ -79,6 +79,10 @@ func (e *Executor) resolveDruid(ctx context.Context) (TimestampsResult, error) {
 	var ts TimestampsResult
 	group, ctx := errgroup.WithContext(ctx)
 
+	// don't populate the cache, but use it if it's there as druid timeboundary query will create a cache entry for each segment
+	useCache := true
+	populateCache := false
+
 	group.Go(func() error {
 		minSQL := fmt.Sprintf(
 			"SELECT min(%[1]s) as \"min\" FROM %[2]s %[3]s",
@@ -87,10 +91,12 @@ func (e *Executor) resolveDruid(ctx context.Context) (TimestampsResult, error) {
 			filter,
 		)
 
-		rows, err := e.olap.Execute(ctx, &drivers.Statement{
+		rows, err := e.olap.Query(ctx, &drivers.Statement{
 			Query:            minSQL,
 			Priority:         e.priority,
 			ExecutionTimeout: defaultExecutionTimeout,
+			UseCache:         &useCache,
+			PopulateCache:    &populateCache,
 		})
 		if err != nil {
 			return err
@@ -121,10 +127,12 @@ func (e *Executor) resolveDruid(ctx context.Context) (TimestampsResult, error) {
 			filter,
 		)
 
-		rows, err := e.olap.Execute(ctx, &drivers.Statement{
+		rows, err := e.olap.Query(ctx, &drivers.Statement{
 			Query:            maxSQL,
 			Priority:         e.priority,
 			ExecutionTimeout: defaultExecutionTimeout,
+			UseCache:         &useCache,
+			PopulateCache:    &populateCache,
 		})
 		if err != nil {
 			return err
@@ -155,10 +163,12 @@ func (e *Executor) resolveDruid(ctx context.Context) (TimestampsResult, error) {
 				filter,
 			)
 
-			rows, err := e.olap.Execute(ctx, &drivers.Statement{
+			rows, err := e.olap.Query(ctx, &drivers.Statement{
 				Query:            maxSQL,
 				Priority:         e.priority,
 				ExecutionTimeout: defaultExecutionTimeout,
+				UseCache:         &useCache,
+				PopulateCache:    &populateCache,
 			})
 			if err != nil {
 				return err

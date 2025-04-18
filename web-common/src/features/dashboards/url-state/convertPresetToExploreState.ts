@@ -2,11 +2,11 @@ import { splitWhereFilter } from "@rilldata/web-common/features/dashboards/filte
 import {
   type PivotChipData,
   PivotChipType,
+  type PivotTableMode,
 } from "@rilldata/web-common/features/dashboards/pivot/types";
 import { SortDirection } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
-import { convertURLToExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/convertURLToExplorePreset";
 import {
   getMultiFieldError,
   getSingleFieldError,
@@ -32,8 +32,8 @@ import {
   DashboardState_LeaderboardSortType,
 } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import {
-  type MetricsViewSpecDimensionV2,
-  type MetricsViewSpecMeasureV2,
+  type MetricsViewSpecDimension,
+  type MetricsViewSpecMeasure,
   V1ExploreComparisonMode,
   type V1ExplorePreset,
   V1ExploreSortType,
@@ -45,30 +45,8 @@ import {
 import type { SortingState } from "@tanstack/svelte-table";
 import { findTimeRange } from "../time-controls/time-control-store";
 
-export function convertURLToExploreState(
-  searchParams: URLSearchParams,
-  metricsView: V1MetricsViewSpec,
-  exploreSpec: V1ExploreSpec,
-  defaultExplorePreset: V1ExplorePreset,
-  timeRanges: V1TimeRange[],
-) {
-  const errors: Error[] = [];
-  const { preset, errors: errorsFromPreset } = convertURLToExplorePreset(
-    searchParams,
-    metricsView,
-    exploreSpec,
-    defaultExplorePreset,
-  );
-  errors.push(...errorsFromPreset);
-  const { partialExploreState, errors: errorsFromEntity } =
-    convertPresetToExploreState(metricsView, exploreSpec, preset, timeRanges);
-  errors.push(...errorsFromEntity);
-  return { partialExploreState, errors };
-}
-
 /**
  * Converts a V1ExplorePreset to our internal metrics explore state.
- * V1ExplorePreset could come from url state, bookmark, alert or report.
  */
 export function convertPresetToExploreState(
   metricsView: V1MetricsViewSpec,
@@ -104,6 +82,10 @@ export function convertPresetToExploreState(
     partialExploreState.whereFilter = dimensionFilters;
     partialExploreState.dimensionThresholdFilters = dimensionThresholdFilters;
   }
+  if (preset.dimensionsWithInlistFilter) {
+    partialExploreState.dimensionsWithInlistFilter =
+      preset.dimensionsWithInlistFilter;
+  }
 
   const { partialExploreState: trPartialState, errors: trErrors } =
     fromTimeRangesParams(preset, dimensions, timeRanges);
@@ -130,7 +112,7 @@ export function convertPresetToExploreState(
 
 function fromTimeRangesParams(
   preset: V1ExplorePreset,
-  dimensions: Map<string, MetricsViewSpecDimensionV2>,
+  dimensions: Map<string, MetricsViewSpecDimension>,
   timeRanges: V1TimeRange[],
 ) {
   const partialExploreState: Partial<MetricsExplorerEntity> = {};
@@ -171,6 +153,7 @@ function fromTimeRangesParams(
     preset.comparisonMode ===
     V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_TIME
   ) {
+    partialExploreState.selectedComparisonTimeRange = undefined;
     partialExploreState.showTimeComparison = true;
   }
 
@@ -193,6 +176,11 @@ function fromTimeRangesParams(
         getSingleFieldError("compare dimension", preset.comparisonDimension),
       );
     }
+  } else if (
+    preset.comparisonMode !==
+    V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_DIMENSION
+  ) {
+    partialExploreState.selectedComparisonDimension = "";
   }
 
   if (preset.selectTimeRange) {
@@ -220,7 +208,7 @@ function fromTimeRangesParams(
 
 export const CustomTimeRangeRegex =
   /(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z),(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z)/;
-function fromTimeRangeUrlParam(tr: string, timeRanges: V1TimeRange[]) {
+export function fromTimeRangeUrlParam(tr: string, timeRanges: V1TimeRange[]) {
   const customTimeRangeMatch = CustomTimeRangeRegex.exec(tr);
   if (customTimeRangeMatch?.length) {
     const [, start, end] = customTimeRangeMatch;
@@ -240,8 +228,8 @@ function fromTimeRangeUrlParam(tr: string, timeRanges: V1TimeRange[]) {
 }
 
 function fromExploreUrlParams(
-  measures: Map<string, MetricsViewSpecMeasureV2>,
-  dimensions: Map<string, MetricsViewSpecDimensionV2>,
+  measures: Map<string, MetricsViewSpecMeasure>,
+  dimensions: Map<string, MetricsViewSpecDimension>,
   explore: V1ExploreSpec,
   preset: V1ExplorePreset,
 ) {
@@ -257,7 +245,7 @@ function fromExploreUrlParams(
 
     partialExploreState.allMeasuresVisible =
       selectedMeasures.length === explore.measures?.length;
-    partialExploreState.visibleMeasureKeys = new Set(selectedMeasures);
+    partialExploreState.visibleMeasures = [...selectedMeasures];
   }
 
   if (preset.dimensions?.length) {
@@ -274,12 +262,12 @@ function fromExploreUrlParams(
 
     partialExploreState.allDimensionsVisible =
       selectedDimensions.length === explore.dimensions?.length;
-    partialExploreState.visibleDimensionKeys = new Set(selectedDimensions);
+    partialExploreState.visibleDimensions = [...selectedDimensions];
   }
 
   if (preset.exploreSortBy) {
     if (measures.has(preset.exploreSortBy)) {
-      partialExploreState.leaderboardMeasureName = preset.exploreSortBy;
+      partialExploreState.leaderboardSortByMeasureName = preset.exploreSortBy;
     } else {
       errors.push(getSingleFieldError("sort by measure", preset.exploreSortBy));
     }
@@ -295,9 +283,15 @@ function fromExploreUrlParams(
     preset.exploreSortType !== undefined &&
     preset.exploreSortType !== V1ExploreSortType.EXPLORE_SORT_TYPE_UNSPECIFIED
   ) {
-    partialExploreState.dashboardSortType =
-      Number(ToLegacySortTypeMap[preset.exploreSortType]) ??
-      DashboardState_LeaderboardSortType.UNSPECIFIED;
+    partialExploreState.dashboardSortType = Number(
+      ToLegacySortTypeMap[preset.exploreSortType] ??
+        DashboardState_LeaderboardSortType.UNSPECIFIED,
+    );
+  }
+
+  if (preset.exploreLeaderboardMeasures !== undefined) {
+    partialExploreState.leaderboardMeasureNames =
+      preset.exploreLeaderboardMeasures;
   }
 
   if (preset.exploreExpandedDimension !== undefined) {
@@ -335,7 +329,7 @@ function fromExploreUrlParams(
 }
 
 function fromTimeDimensionUrlParams(
-  measures: Map<string, MetricsViewSpecMeasureV2>,
+  measures: Map<string, MetricsViewSpecMeasure>,
   preset: V1ExplorePreset,
 ): {
   partialExploreState: Partial<MetricsExplorerEntity>;
@@ -379,8 +373,8 @@ function fromTimeDimensionUrlParams(
 }
 
 function fromPivotUrlParams(
-  measures: Map<string, MetricsViewSpecMeasureV2>,
-  dimensions: Map<string, MetricsViewSpecDimensionV2>,
+  measures: Map<string, MetricsViewSpecMeasure>,
+  dimensions: Map<string, MetricsViewSpecDimension>,
   preset: V1ExplorePreset,
 ): {
   partialExploreState: Partial<MetricsExplorerEntity>;
@@ -433,42 +427,31 @@ function fromPivotUrlParams(
     hasSomePivotFields = true;
   }
 
-  const colMeasures: PivotChipData[] = [];
-  const colDimensions: PivotChipData[] = [];
+  const colChips: PivotChipData[] = [];
   if (preset.pivotCols) {
     preset.pivotCols.forEach((pivotRow) => {
       const chip = mapPivotEntry(pivotRow);
       if (!chip) return;
-      if (chip.type === PivotChipType.Measure) {
-        colMeasures.push(chip);
-      } else {
-        colDimensions.push(chip);
-      }
+      colChips.push(chip);
     });
     hasSomePivotFields = true;
   }
 
-  const pivotIsActive = preset.view === V1ExploreWebView.EXPLORE_WEB_VIEW_PIVOT;
+  const showPivot = preset.view === V1ExploreWebView.EXPLORE_WEB_VIEW_PIVOT;
 
-  if (!hasSomePivotFields && !pivotIsActive) {
+  if (!hasSomePivotFields && !showPivot) {
     return {
       partialExploreState: {
         pivot: {
-          active: false,
-          rows: {
-            dimension: [],
-          },
-          columns: {
-            measure: [],
-            dimension: [],
-          },
+          rows: [],
+          columns: [],
           sorting: [],
           expanded: {},
           columnPage: 1,
           rowPage: 1,
           enableComparison: true,
           activeCell: null,
-          rowJoinType: "nest",
+          tableMode: "nest",
         },
       },
       errors,
@@ -487,17 +470,23 @@ function fromPivotUrlParams(
     });
   }
 
+  let tableMode: PivotTableMode = "nest";
+
+  if (preset.pivotTableMode) {
+    if (preset.pivotTableMode === "nest" || preset.pivotTableMode === "flat") {
+      tableMode = preset.pivotTableMode;
+    } else {
+      errors.push(
+        getSingleFieldError("pivot table mode", preset.pivotTableMode),
+      );
+    }
+  }
+
   return {
     partialExploreState: {
       pivot: {
-        active: pivotIsActive,
-        rows: {
-          dimension: rowDimensions,
-        },
-        columns: {
-          measure: colMeasures,
-          dimension: colDimensions,
-        },
+        rows: rowDimensions,
+        columns: colChips,
         sorting,
         // TODO: other fields are not supported right now
         expanded: {},
@@ -505,7 +494,7 @@ function fromPivotUrlParams(
         rowPage: 1,
         enableComparison: true,
         activeCell: null,
-        rowJoinType: "nest",
+        tableMode,
       },
     },
     errors,

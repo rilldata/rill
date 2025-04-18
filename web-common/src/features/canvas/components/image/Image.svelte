@@ -1,43 +1,30 @@
 <script lang="ts">
   import ComponentError from "@rilldata/web-common/features/canvas/components/ComponentError.svelte";
-  import type { ImageProperties } from "@rilldata/web-common/features/templates/types";
-  import type { V1ComponentSpecRendererProperties } from "@rilldata/web-common/runtime-client";
   import httpClient from "@rilldata/web-common/runtime-client/http-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import type { ImageComponent } from "./";
+  import { getImagePosition } from "./util";
+  import ComponentHeader from "../../ComponentHeader.svelte";
 
-  export let rendererProperties: V1ComponentSpecRendererProperties;
+  export let component: ImageComponent;
 
-  const instanceId = $runtime.instanceId;
-  const DEFAULT_IMAGE_PROPERTIES: ImageProperties = {
-    url: "",
-    css: {
-      "object-fit": "contain",
-      opacity: "1",
-      filter: "blur(0px) saturate(1)",
-    },
-  };
+  $: ({ specStore } = component);
 
-  $: imageProperties = {
-    ...DEFAULT_IMAGE_PROPERTIES,
-    ...rendererProperties,
-    css: {
-      ...DEFAULT_IMAGE_PROPERTIES.css,
-      ...rendererProperties.css,
-    },
-  } as ImageProperties;
+  $: ({ instanceId } = $runtime);
+  $: imageProperties = $specStore;
 
-  $: styleString = Object.entries(imageProperties.css || {})
-    .map(([k, v]) => `${k}:${v}`)
-    .join(";");
+  $: ({ title, description, alignment, url } = imageProperties);
+
+  $: objectPosition = getImagePosition(alignment);
 
   let imageSrc: string | null = null;
   let errorMessage: string | null = null;
   $: {
-    if (imageProperties.url) {
-      fetchImage(imageProperties.url);
+    if (url) {
+      fetchImage(url);
     } else {
       imageSrc = null;
-      errorMessage = null;
+      errorMessage = "No image URL provided";
     }
   }
 
@@ -80,10 +67,12 @@
 {#if errorMessage}
   <ComponentError error={errorMessage} />
 {:else}
+  <ComponentHeader {title} {description} />
   <img
     src={imageSrc || ""}
-    alt={"Dashboard Image"}
+    alt={"Canvas Image"}
     draggable="false"
-    style={styleString}
+    class="h-full w-full overflow-hidden object-contain"
+    style:object-position={objectPosition}
   />
 {/if}

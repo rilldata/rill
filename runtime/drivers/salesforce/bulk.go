@@ -15,6 +15,7 @@ import (
 
 	force "github.com/ForceCLI/force/lib"
 	"github.com/ForceCLI/force/lib/record_reader"
+	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.uber.org/zap"
 )
 
@@ -106,7 +107,7 @@ func (c *connection) startJob(ctx context.Context, j *bulkJob) error {
 			if batchInfo.State == "Failed" {
 				return errors.New("bulk query failed: " + batchInfo.StateMessage)
 			}
-			c.logger.Info("Waiting for pk chunking to complete")
+			c.logger.Info("Waiting for pk chunking to complete", observability.ZapCtx(ctx))
 			select {
 			case <-time.After(2 * time.Second):
 			case <-ctx.Done():
@@ -129,7 +130,7 @@ func (c *connection) startJob(ctx context.Context, j *bulkJob) error {
 		if status.NumberBatchesCompleted+status.NumberBatchesFailed == status.NumberBatchesTotal {
 			break
 		}
-		c.logger.Info("Waiting for bulk export to complete")
+		c.logger.Info("Waiting for bulk export to complete", observability.ZapCtx(ctx))
 		select {
 		case <-time.After(2 * time.Second):
 		case <-ctx.Done():
@@ -208,14 +209,12 @@ func (j *bulkJob) retrieveJobResult(ctx context.Context, result int) (string, er
 }
 
 func fetchBatchResult(ctx context.Context, j *bulkJob, resultInfo batchResult, logger *zap.Logger) io.Reader {
-	errorMessage := "Could not fetch job result. Reason: "
-
 	if resultInfo.batch.State == "Failed" {
-		logger.Error(errorMessage + "batch failed with " + resultInfo.batch.StateMessage)
+		logger.Error("Could not fetch job result", zap.String("reason", "batch failed with "+resultInfo.batch.StateMessage), observability.ZapCtx(ctx))
 		return bytes.NewReader(nil)
 	}
 	if resultInfo.batch.NumberRecordsProcessed == 0 {
-		logger.Debug("No records found for query")
+		logger.Debug("No records found for query", observability.ZapCtx(ctx))
 		return bytes.NewReader(nil)
 	}
 	var result io.Reader
@@ -224,7 +223,7 @@ func fetchBatchResult(ctx context.Context, j *bulkJob, resultInfo batchResult, l
 		return nil
 	})
 	if err != nil {
-		logger.Error(errorMessage + "batch failed with " + err.Error())
+		logger.Error("Could not fetch job result", zap.String("reason", "batch failed with "+resultInfo.batch.StateMessage), observability.ZapCtx(ctx))
 		return bytes.NewReader(nil)
 	}
 	return result

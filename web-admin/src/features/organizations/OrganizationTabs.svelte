@@ -13,7 +13,7 @@
   $: tabs = [
     {
       route: `/${organization}`,
-      label: "Overview",
+      label: "Projects",
       hasPermission: true,
     },
     {
@@ -49,12 +49,13 @@
         {/if}
       {/each}
     </nav>
-  {/if}
-  {#if $width && $position}
-    <span
-      style:width="{$width}px"
-      style:transform="translateX({$position}px) "
-    />
+
+    {#if $width && $position}
+      <span
+        style:width="{$width}px"
+        style:transform="translateX({$position}px) "
+      />
+    {/if}
   {/if}
 </div>
 

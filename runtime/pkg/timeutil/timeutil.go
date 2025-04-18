@@ -3,6 +3,8 @@ package timeutil
 import (
 	"time"
 
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+
 	// Load IANA time zone data
 	_ "time/tzdata"
 )
@@ -127,4 +129,130 @@ func CeilTime(start time.Time, tg TimeGrain, tz *time.Location, firstDay, firstM
 	}
 
 	return TruncateTime(start, tg, tz, firstDay, firstMonth)
+}
+
+func ApproximateBins(start, end time.Time, tg TimeGrain) int {
+	switch tg {
+	case TimeGrainUnspecified:
+		return -1
+	case TimeGrainMillisecond:
+		return int(end.Sub(start) / time.Millisecond)
+	case TimeGrainSecond:
+		return int(end.Sub(start) / time.Second)
+	case TimeGrainMinute:
+		return int(end.Sub(start) / time.Minute)
+	case TimeGrainHour:
+		return int(end.Sub(start) / time.Hour)
+	case TimeGrainDay:
+		return int(end.Sub(start) / (24 * time.Hour))
+	case TimeGrainWeek:
+		return int(end.Sub(start) / (7 * 24 * time.Hour))
+	case TimeGrainMonth:
+		return int(end.Sub(start) / (30 * 24 * time.Hour))
+	case TimeGrainQuarter:
+		return int(end.Sub(start) / (90 * 24 * time.Hour))
+	case TimeGrainYear:
+		return int(end.Sub(start) / (365 * 24 * time.Hour))
+	}
+
+	return -1
+}
+
+func AddTimeProto(to time.Time, tg runtimev1.TimeGrain, count int) time.Time {
+	switch tg {
+	case runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED:
+		return to
+	case runtimev1.TimeGrain_TIME_GRAIN_MILLISECOND:
+		return to.Add(time.Duration(count) * time.Millisecond)
+	case runtimev1.TimeGrain_TIME_GRAIN_SECOND:
+		return to.Add(time.Duration(count) * time.Second)
+	case runtimev1.TimeGrain_TIME_GRAIN_MINUTE:
+		return to.Add(time.Duration(count) * time.Minute)
+	case runtimev1.TimeGrain_TIME_GRAIN_HOUR:
+		return to.Add(time.Duration(count) * time.Hour)
+	case runtimev1.TimeGrain_TIME_GRAIN_DAY:
+		return to.AddDate(0, 0, count)
+	case runtimev1.TimeGrain_TIME_GRAIN_WEEK:
+		return to.AddDate(0, 0, count*7)
+	case runtimev1.TimeGrain_TIME_GRAIN_MONTH:
+		return to.AddDate(0, count, 0)
+	case runtimev1.TimeGrain_TIME_GRAIN_QUARTER:
+		return to.AddDate(0, count*3, 0)
+	case runtimev1.TimeGrain_TIME_GRAIN_YEAR:
+		return to.AddDate(count, 0, 0)
+	}
+
+	return to
+}
+
+func OffsetTime(tm time.Time, tg TimeGrain, n int) time.Time {
+	switch tg {
+	case TimeGrainUnspecified:
+		return tm
+	case TimeGrainMillisecond:
+		return tm.Add(time.Duration(n) * time.Millisecond)
+	case TimeGrainSecond:
+		return tm.Add(time.Duration(n) * time.Second)
+	case TimeGrainMinute:
+		return tm.Add(time.Duration(n) * time.Minute)
+	case TimeGrainHour:
+		return tm.Add(time.Duration(n) * time.Hour)
+	case TimeGrainDay:
+		return tm.AddDate(0, 0, n)
+	case TimeGrainWeek:
+		return tm.AddDate(0, 0, n*7)
+	case TimeGrainMonth:
+		return tm.AddDate(0, n, 0)
+	case TimeGrainQuarter:
+		return tm.AddDate(0, n*3, 0)
+	case TimeGrainYear:
+		return tm.AddDate(n, 0, 0)
+	}
+
+	return tm
+}
+
+// CopyTimeComponentsUntil Copies components of `src` into `tar` starting from year and going down all the way to `until` (inclusive).
+func CopyTimeComponentsUntil(src, tar time.Time, until TimeGrain) time.Time {
+	tz := src.Location()
+	if tar.Location() != tz {
+		tar = tar.In(tz)
+	}
+
+	year := tar.Year()
+	month := tar.Month()
+	day := tar.Day()
+	hour := tar.Hour()
+	minute := tar.Minute()
+	second := tar.Second()
+
+	g := TimeGrainYear
+	for g >= until {
+		switch g {
+		case TimeGrainUnspecified:
+		case TimeGrainMillisecond:
+		case TimeGrainSecond:
+			second = src.Second()
+		case TimeGrainMinute:
+			minute = src.Minute()
+		case TimeGrainHour:
+			hour = src.Hour()
+		case TimeGrainDay:
+			day = src.Day()
+		case TimeGrainWeek:
+			toWeekday := tar.Weekday()
+			if toWeekday == 0 {
+				toWeekday = 7
+			}
+			day = src.Day() - int(src.Weekday()-toWeekday)
+		case TimeGrainMonth, TimeGrainQuarter:
+			month = src.Month()
+		case TimeGrainYear:
+			year = src.Year()
+		}
+
+		g--
+	}
+
+	return time.Date(year, month, day, hour, minute, second, 0, tz)
 }

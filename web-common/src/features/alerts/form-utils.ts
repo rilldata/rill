@@ -6,7 +6,7 @@ import {
   type MeasureFilterEntry,
 } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
 import { MeasureFilterType } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-options";
-import { mergeDimensionAndMeasureFilter } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
+import { mergeDimensionAndMeasureFilters } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
 import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type { DimensionThresholdFilter } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import type {
@@ -35,6 +35,7 @@ export type AlertFormValues = {
   metricsViewName: string;
   exploreName: string;
   whereFilter: V1Expression;
+  dimensionsWithInlistFilter: string[];
   dimensionThresholdFilters: Array<DimensionThresholdFilter>;
   timeRange: V1TimeRange;
   comparisonTimeRange: V1TimeRange | undefined;
@@ -76,7 +77,7 @@ export function getAlertQueryArgsFromFormValues(
       ? [{ name: formValues.splitByDimension }]
       : [],
     where: sanitiseExpression(
-      mergeDimensionAndMeasureFilter(
+      mergeDimensionAndMeasureFilters(
         formValues.whereFilter,
         formValues.dimensionThresholdFilters,
       ),

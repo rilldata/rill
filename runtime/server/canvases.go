@@ -6,8 +6,8 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
-	"github.com/rilldata/rill/runtime/compilers/rillv1"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/parser"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/server/auth"
 	"go.opentelemetry.io/otel/attribute"
@@ -53,7 +53,7 @@ func (s *Server) ResolveCanvas(ctx context.Context, req *runtimev1.ResolveCanvas
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
-	td := rillv1.TemplateData{
+	td := parser.TemplateData{
 		Environment: inst.Environment,
 		User:        auth.GetClaims(ctx).SecurityClaims().UserAttributes,
 		Variables:   inst.ResolveVariables(false),
@@ -64,45 +64,47 @@ func (s *Server) ResolveCanvas(ctx context.Context, req *runtimev1.ResolveCanvas
 
 	// Build map of referenced components.
 	components := make(map[string]*runtimev1.Resource)
-	for _, item := range spec.Items {
-		// Skip if already resolved.
-		if _, ok := components[item.Component]; ok {
-			continue
-		}
-
-		// Get component resource.
-		// NOTE: By passing true, we get a cloned object that is safe to modify in-place.
-		cmp, err := ctrl.Get(ctx, &runtimev1.ResourceName{Kind: runtime.ResourceKindComponent, Name: item.Component}, true)
-		if err != nil {
-			if errors.Is(err, drivers.ErrResourceNotFound) {
-				return nil, status.Errorf(codes.Internal, "component %q in valid spec not found", item.Component)
+	for _, row := range spec.Rows {
+		for _, item := range row.Items {
+			// Skip if already resolved.
+			if _, ok := components[item.Component]; ok {
+				continue
 			}
-			return nil, err
-		}
 
-		// Resolve the renderer properties in the valid_spec.
-		validSpec := cmp.GetComponent().State.ValidSpec
-		if validSpec != nil && validSpec.RendererProperties != nil {
-			v, err := rillv1.ResolveTemplateRecursively(validSpec.RendererProperties.AsMap(), td)
+			// Get component resource.
+			// NOTE: By passing true, we get a cloned object that is safe to modify in-place.
+			cmp, err := ctrl.Get(ctx, &runtimev1.ResourceName{Kind: runtime.ResourceKindComponent, Name: item.Component}, true)
 			if err != nil {
-				return nil, status.Errorf(codes.InvalidArgument, "component %q: failed to resolve templating: %s", item.Component, err.Error())
+				if errors.Is(err, drivers.ErrResourceNotFound) {
+					return nil, status.Errorf(codes.Internal, "component %q in valid spec not found", item.Component)
+				}
+				return nil, err
 			}
 
-			props, ok := v.(map[string]any)
-			if !ok {
-				return nil, status.Errorf(codes.Internal, "component %q: failed to convert resolved renderer properties to map: %v", item.Component, v)
+			// Resolve the renderer properties in the valid_spec.
+			validSpec := cmp.GetComponent().State.ValidSpec
+			if validSpec != nil && validSpec.RendererProperties != nil {
+				v, err := parser.ResolveTemplateRecursively(validSpec.RendererProperties.AsMap(), td, false)
+				if err != nil {
+					return nil, status.Errorf(codes.InvalidArgument, "component %q: failed to resolve templating: %s", item.Component, err.Error())
+				}
+
+				props, ok := v.(map[string]any)
+				if !ok {
+					return nil, status.Errorf(codes.Internal, "component %q: failed to convert resolved renderer properties to map: %v", item.Component, v)
+				}
+
+				propsPB, err := structpb.NewStruct(props)
+				if err != nil {
+					return nil, status.Errorf(codes.Internal, "component %q: failed to convert renderer properties to struct: %s", item.Component, err.Error())
+				}
+
+				validSpec.RendererProperties = propsPB
 			}
 
-			propsPB, err := structpb.NewStruct(props)
-			if err != nil {
-				return nil, status.Errorf(codes.Internal, "component %q: failed to convert renderer properties to struct: %s", item.Component, err.Error())
-			}
-
-			validSpec.RendererProperties = propsPB
+			// Add to map.
+			components[item.Component] = cmp
 		}
-
-		// Add to map.
-		components[item.Component] = cmp
 	}
 
 	// Build map of referenced metrics views.
@@ -189,7 +191,7 @@ func (s *Server) ResolveComponent(ctx context.Context, req *runtimev1.ResolveCom
 	args := req.Args.AsMap()
 
 	// Setup templating data
-	td := rillv1.TemplateData{
+	td := parser.TemplateData{
 		Environment: inst.Environment,
 		User:        auth.GetClaims(ctx).SecurityClaims().UserAttributes,
 		Variables:   inst.ResolveVariables(false),
@@ -201,7 +203,7 @@ func (s *Server) ResolveComponent(ctx context.Context, req *runtimev1.ResolveCom
 	// Resolve templating in the renderer properties
 	var rendererProps *structpb.Struct
 	if spec.RendererProperties != nil {
-		v, err := rillv1.ResolveTemplateRecursively(spec.RendererProperties.AsMap(), td)
+		v, err := parser.ResolveTemplateRecursively(spec.RendererProperties.AsMap(), td, false)
 		if err != nil {
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}

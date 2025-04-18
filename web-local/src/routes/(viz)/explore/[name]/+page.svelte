@@ -1,10 +1,15 @@
 <script lang="ts">
+  import { onNavigate } from "$app/navigation";
+  import {
+    DashboardBannerID,
+    DashboardBannerPriority,
+  } from "@rilldata/web-common/components/banner/constants";
   import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
   import { Dashboard } from "@rilldata/web-common/features/dashboards";
   import DashboardThemeProvider from "@rilldata/web-common/features/dashboards/DashboardThemeProvider.svelte";
   import { resetSelectedMockUserAfterNavigate } from "@rilldata/web-common/features/dashboards/granular-access-policies/resetSelectedMockUserAfterNavigate";
   import { selectedMockUserStore } from "@rilldata/web-common/features/dashboards/granular-access-policies/stores";
-  import DashboardURLStateSync from "@rilldata/web-common/features/dashboards/url-state/DashboardURLStateSync.svelte";
+  import DashboardStateManager from "@rilldata/web-common/features/dashboards/state-managers/loaders/DashboardStateManager.svelte";
   import StateManagersProvider from "@rilldata/web-common/features/dashboards/state-managers/StateManagersProvider.svelte";
   import { useProjectParser } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
@@ -14,28 +19,7 @@
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 
   export let data: PageData;
-  $: ({
-    metricsView,
-    explore,
-    defaultExplorePreset,
-    exploreStateFromYAMLConfig,
-    partialExploreStateFromUrl,
-    exploreStateFromSessionStorage,
-    errors,
-    exploreName,
-  } = data);
-  $: if (errors?.length) {
-    const _errs = errors;
-    setTimeout(() => {
-      eventBus.emit("notification", {
-        type: "error",
-        message: _errs[0].message,
-        options: {
-          persisted: true,
-        },
-      });
-    }, 100);
-  }
+  $: ({ metricsView, explore, exploreName } = data);
 
   resetSelectedMockUserAfterNavigate(queryClient);
 
@@ -53,12 +37,32 @@
     enabled: $selectedMockUserStore?.admin,
   });
 
+  $: hasBanner = !!$exploreQuery.data?.explore?.banner;
+
+  $: if (hasBanner) {
+    eventBus.emit("add-banner", {
+      id: DashboardBannerID,
+      priority: DashboardBannerPriority,
+      message: {
+        type: "default",
+        message: $exploreQuery.data?.explore?.banner ?? "",
+        iconType: "alert",
+      },
+    });
+  }
+
   $: dashboardFileHasParseError =
     $projectParserQuery.data?.projectParser?.state?.parseErrors?.filter(
       (error) => filePaths.includes(error.filePath as string),
     );
   $: mockUserHasNoAccess =
     $selectedMockUserStore && $exploreQuery.error?.response?.status === 404;
+
+  onNavigate(() => {
+    if (hasBanner) {
+      eventBus.emit("remove-banner", DashboardBannerID);
+    }
+  });
 </script>
 
 <svelte:head>
@@ -86,18 +90,11 @@
 {:else}
   {#key exploreName}
     <StateManagersProvider {metricsViewName} {exploreName}>
-      <DashboardURLStateSync
-        {metricsViewName}
-        {exploreName}
-        {defaultExplorePreset}
-        {exploreStateFromYAMLConfig}
-        {partialExploreStateFromUrl}
-        {exploreStateFromSessionStorage}
-      >
+      <DashboardStateManager {exploreName}>
         <DashboardThemeProvider>
           <Dashboard {metricsViewName} {exploreName} />
         </DashboardThemeProvider>
-      </DashboardURLStateSync>
+      </DashboardStateManager>
     </StateManagersProvider>
   {/key}
 {/if}

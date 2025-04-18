@@ -7,26 +7,29 @@ import (
 	"fmt"
 	"strings"
 
-	"gocloud.dev/gcp"
 	"golang.org/x/oauth2/google"
 )
 
 var ErrNoCredentials = errors.New("empty credentials: set `google_application_credentials` env variable")
 
-func Credentials(ctx context.Context, jsonData string, allowHostAccess bool) (*google.Credentials, error) {
+func Credentials(ctx context.Context, jsonData string, allowHostAccess bool, scopes ...string) (*google.Credentials, error) {
+	if len(scopes) == 0 {
+		scopes = []string{
+			"https://www.googleapis.com/auth/cloud-platform",
+		}
+	}
 	if jsonData != "" {
 		// google_application_credentials is set, use credentials from json string provided by user
-		return google.CredentialsFromJSON(ctx, []byte(jsonData), "https://www.googleapis.com/auth/cloud-platform")
+		return google.CredentialsFromJSON(ctx, []byte(jsonData), scopes...)
 	}
 	// google_application_credentials is not set
 	if allowHostAccess {
 		// use host credentials
-		creds, err := gcp.DefaultCredentials(ctx)
+		creds, err := google.FindDefaultCredentials(ctx, scopes...)
 		if err != nil {
 			if strings.Contains(err.Error(), "google: could not find default credentials") {
-				return nil, ErrNoCredentials
+				return nil, fmt.Errorf("%w: %w", ErrNoCredentials, err)
 			}
-
 			return nil, err
 		}
 		return creds, nil

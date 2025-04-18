@@ -1,3 +1,4 @@
+<!-- WARNING: There are links to this page in source code. If you move it, find and replace the links and consider adding a redirect in docusaurus.config.js. -->
 ---
 title: Environmental Variables and Credentials in Rill Cloud
 sidebar_label: Variables and Credentials 
@@ -9,12 +10,16 @@ The credentials in a deployed Rill Cloud projects can be managed on the Settings
 ## Modifying Variables and Credentials via the Settings Page
 Upon deployment via Rill Developer, if you have populated your .env file, the contents will be visible as seen below. If there are no environmantal variables defined, please run `rill env configure` from your local CLI and Rill will automatically detect the sources that are used in your project and request the credentials. Once completed, the variables should be visible and editable from Rill Cloud. If you'd like to manually add the credentals, please see [our naming convention](#credentials-naming-schema) to get started. 
 
-![img](/img/tutorials/admin/env-var-ui.png)
+<img src = '/img/tutorials/admin/env-var-ui.png' class='rounded-gif' />
+<br />
+
 
 ### Adding and Editing Environmental Variables / Importing a `.env` file
 Once your environmantal variables are added to Rill Cloud, they can be modfied as needed.
 
-![img](/img/manage/var-and-creds/add-variable.png)
+
+<img src = '/img/manage/var-and-creds/add-variable.png' class='rounded-gif' />
+<br />
 
 :::tip Can't find the .env file?
 By default, the hidden files will not be visible in the finder window. In order to view hidden files, you will need to enable "show hidden files".  
@@ -75,25 +80,25 @@ Connector credentials are essentially a form of project variable, prefixed using
     alignItems: 'center'
     }}
 >
-|           **Source Name**   |        Property             |      Example         |
-| :-----------------------: | :-------------------------:  | :------------------- |
-|       **GCS**                |`GOOGLE_APPLICATION_CREDENTIALS`| `connector.gcs.google_application_credentials` |
-|                          |`GCS_BUCKET_NAME`| `connector.gcs.gcs_bucket_name` |
-| **AWS S3**                  | `AWS_ACCESS_KEY_ID`         | `connector.s3.aws_access_key_id` |
-|                          | `AWS_SECRET_ACCESS_KEY`     |`connector.s3.aws_secret_access_key` |
-|       **Azure**              |`AZURE_STORAGE_ACCOUNT`|`connector.azure.azure_storage_account`|
-|                          |`AZURE_STORAGE_KEY`|`connector.azure.azure_storage_key`|
-|                          |`AZURE_CLIENT_ID`|`connector.azure.azure_client_id`|
-|                          |`AZURE_CLIENT_SECRET`|`connector.azure.azure_client_secret`|
-|                          |`AZURE_TENANT_ID`|`connector.azure.azure_tenant_id`|
-| **Big Query**               | `GOOGLE_APPLICATION_CREDENTIALS` |`connector.bigquery.google_application_credentials` |
-|     **Snowflake**            |`DSN`|`connector.snowflake.dsn`|
-|     **ClickHouse**           |`HOST`|`connector.clickhouse.host `|
-|                          |`PORT`|`connector.clickhouse.port `|
-|                          |`USERNAME`|`connector.clickhouse.username `|
-|                          |`PASSWORD`|`connector.clickhouse.password `|
-|                          |`SSL`|`connector.clickhouse.ssl `|
-|                          |`DATABASE`|`connector.clickhouse.database `|
+| **Source Name** |             Property             | Example                                             |
+| :-------------: | :------------------------------: | :-------------------------------------------------- |
+|     **GCS**     | `GOOGLE_APPLICATION_CREDENTIALS` | `connector.gcs.google_application_credentials`      |
+|                 |        `GCS_BUCKET_NAME`         | `connector.gcs.gcs_bucket_name`                     |
+|   **AWS S3**    |       `AWS_ACCESS_KEY_ID`        | `connector.s3.aws_access_key_id`                    |
+|                 |     `AWS_SECRET_ACCESS_KEY`      | `connector.s3.aws_secret_access_key`                |
+|    **Azure**    |     `AZURE_STORAGE_ACCOUNT`      | `connector.azure.azure_storage_account`             |
+|                 |       `AZURE_STORAGE_KEY`        | `connector.azure.azure_storage_key`                 |
+|                 |        `AZURE_CLIENT_ID`         | `connector.azure.azure_client_id`                   |
+|                 |      `AZURE_CLIENT_SECRET`       | `connector.azure.azure_client_secret`               |
+|                 |        `AZURE_TENANT_ID`         | `connector.azure.azure_tenant_id`                   |
+|  **Big Query**  | `GOOGLE_APPLICATION_CREDENTIALS` | `connector.bigquery.google_application_credentials` |
+|  **Snowflake**  |              `DSN`               | `connector.snowflake.dsn`                           |
+| **ClickHouse**  |              `HOST`              | `connector.clickhouse.host `                        |
+|                 |              `PORT`              | `connector.clickhouse.port `                        |
+|                 |            `USERNAME`            | `connector.clickhouse.username `                    |
+|                 |            `PASSWORD`            | `connector.clickhouse.password `                    |
+|                 |              `SSL`               | `connector.clickhouse.ssl `                         |
+|                 |            `DATABASE`            | `connector.clickhouse.database `                    |
 ...
 
 </div>

@@ -2,8 +2,10 @@ package metricsview
 
 import (
 	"fmt"
+	"reflect"
 	"time"
 
+	"github.com/mitchellh/mapstructure"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/pkg/timeutil"
 )
@@ -23,6 +25,7 @@ type Query struct {
 	Offset              *int64      `mapstructure:"offset"`
 	TimeZone            string      `mapstructure:"time_zone"`
 	UseDisplayNames     bool        `mapstructure:"use_display_names"`
+	Rows                bool        `mapstructure:"rows"`
 }
 
 type Dimension struct {
@@ -52,6 +55,57 @@ type MeasureCompute struct {
 	ComparisonRatio *MeasureComputeComparisonRatio `mapstructure:"comparison_ratio"`
 	PercentOfTotal  *MeasureComputePercentOfTotal  `mapstructure:"percent_of_total"`
 	URI             *MeasureComputeURI             `mapstructure:"uri"`
+}
+
+func (q *Query) AsMap() (map[string]any, error) {
+	queryMap := make(map[string]any)
+	decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
+		Result: &queryMap,
+		DecodeHook: func(from reflect.Type, to reflect.Type, data any) (any, error) {
+			if from == reflect.TypeOf(&time.Time{}) {
+				t, ok := data.(*time.Time)
+				if !ok {
+					return nil, fmt.Errorf("expected *time.Time, got %T", data)
+				}
+				return map[string]any{
+					"t": t.Format(time.RFC3339Nano),
+				}, nil
+			}
+			return data, nil
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+	err = decoder.Decode(q)
+	if err != nil {
+		return nil, err
+	}
+	return queryMap, nil
+}
+
+func (q *Query) Validate() error {
+	if q.Rows {
+		if len(q.Dimensions) > 0 {
+			return fmt.Errorf("dimensions not supported when rows is set, all model columns will be returned")
+		}
+		if len(q.Measures) > 0 {
+			return fmt.Errorf("measures not supported when rows is set, all model columns will be returned")
+		}
+		if len(q.Sort) > 0 {
+			return fmt.Errorf("sort not supported when rows is set")
+		}
+		if q.ComparisonTimeRange != nil {
+			return fmt.Errorf("comparison_time_range not supported when rows is set")
+		}
+		if q.Having != nil {
+			return fmt.Errorf("having not supported when rows is set")
+		}
+		if len(q.PivotOn) > 0 {
+			return fmt.Errorf("pivot_on not supported when rows is set")
+		}
+	}
+	return nil
 }
 
 func (m *MeasureCompute) Validate() error {

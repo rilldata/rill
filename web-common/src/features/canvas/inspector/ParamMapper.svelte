@@ -2,52 +2,58 @@
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
   import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
-  import {
-    isChartComponentType,
-    type CanvasComponentObj,
-  } from "@rilldata/web-common/features/canvas/components/util";
-  import AlignmentInput from "@rilldata/web-common/features/canvas/inspector/AlignmentInput.svelte";
-  import ChartTypeSelector from "@rilldata/web-common/features/canvas/inspector/ChartTypeSelector.svelte";
-  import ComparisonInput from "@rilldata/web-common/features/canvas/inspector/ComparisonInput.svelte";
-  import MarkSelector from "@rilldata/web-common/features/canvas/inspector/MarkSelector.svelte";
-  import MetricSelectorDropdown from "@rilldata/web-common/features/canvas/inspector/MetricSelectorDropdown.svelte";
-  import MultiFieldInput from "@rilldata/web-common/features/canvas/inspector/MultiFieldInput.svelte";
-  import SingleFieldInput from "@rilldata/web-common/features/canvas/inspector/SingleFieldInput.svelte";
-  import SparklineInput from "@rilldata/web-common/features/canvas/inspector/SparklineInput.svelte";
-  import { type V1ComponentSpecRendererProperties } from "@rilldata/web-common/runtime-client";
-  import { onMount } from "svelte";
-  import type { CanvasComponentType } from "../components/types";
-  import PositionalFieldConfig from "./PositionalFieldConfig.svelte";
+  import type { ComponentSpec } from "../components/types";
+  import AlignmentInput from "./AlignmentInput.svelte";
+  import ChartTypeSelector from "./chart/ChartTypeSelector.svelte";
+  import MarkSelector from "./chart/MarkSelector.svelte";
+  import PositionalFieldConfig from "./chart/PositionalFieldConfig.svelte";
+  import ComparisonInput from "./ComparisonInput.svelte";
+  import MetricSelectorDropdown from "./MetricSelectorDropdown.svelte";
+  import MultiFieldInput from "./MultiFieldInput.svelte";
+  import SingleFieldInput from "./SingleFieldInput.svelte";
+  import SparklineInput from "./SparklineInput.svelte";
+  import TableTypeSelector from "./TableTypeSelector.svelte";
+  import type { BaseCanvasComponent } from "../components/BaseCanvasComponent";
+  import { ChartComponent } from "../components/charts";
+  import { PivotCanvasComponent } from "../components/pivot";
+  import type { AllKeys, ComponentInputParam } from "./types";
 
-  export let component: CanvasComponentObj;
-  export let componentType: CanvasComponentType;
-  export let paramValues: V1ComponentSpecRendererProperties;
+  export let component: BaseCanvasComponent;
 
-  $: localParamValues = localParamValues || {};
-  let oldParamValuesRef: V1ComponentSpecRendererProperties = {};
+  $: ({
+    specStore,
+    parent: { name: canvasName },
+  } = component);
 
-  // TODO: Make this robust possibly a store.
-  $: if (JSON.stringify(paramValues) !== JSON.stringify(oldParamValuesRef)) {
-    localParamValues = structuredClone(paramValues) || {};
-    oldParamValuesRef = paramValues;
-  }
+  $: localParamValues = $specStore;
 
-  $: inputParams = component.inputParams().options;
+  $: inputParams = component.inputParams(
+    component instanceof PivotCanvasComponent
+      ? "columns" in $specStore
+        ? "table"
+        : "pivot"
+      : undefined,
+  ).options;
 
   $: metricsView =
-    "metrics_view" in paramValues ? paramValues.metrics_view : null;
+    "metrics_view" in localParamValues ? localParamValues.metrics_view : null;
 
-  onMount(() => {
-    localParamValues = structuredClone(paramValues) || {};
-  });
+  $: entries = Object.entries(inputParams) as [
+    AllKeys<ComponentSpec>,
+    ComponentInputParam,
+  ][];
 </script>
 
-{#if isChartComponentType(componentType)}
-  <ChartTypeSelector {component} {componentType} />
+{#if component instanceof ChartComponent}
+  <ChartTypeSelector {component} />
+{/if}
+
+{#if metricsView && component instanceof PivotCanvasComponent}
+  <TableTypeSelector {component} />
 {/if}
 
 <div>
-  {#each Object.entries(inputParams) as [key, config]}
+  {#each entries as [key, config] (key)}
     {#if config.showInUI !== false}
       <div class="component-param">
         <!-- TEXT, NUMBER, RILL_TIME -->
@@ -57,13 +63,14 @@
             capitalizeLabel={false}
             textClass="text-sm"
             size="sm"
+            placeholder={config?.meta?.placeholder ?? ""}
             labelGap={2}
             label={config.label ?? key}
-            bind:value={localParamValues[key]}
-            onBlur={async () => {
+            bind:value={$specStore[key]}
+            onBlur={() => {
               component.updateProperty(key, localParamValues[key]);
             }}
-            onEnter={async () => {
+            onEnter={() => {
               component.updateProperty(key, localParamValues[key]);
             }}
           />
@@ -75,25 +82,27 @@
           <!-- MEASURE / DIMENSION -->
         {:else if metricsView && (config.type === "measure" || config.type === "dimension")}
           <SingleFieldInput
+            {canvasName}
             label={config.label ?? key}
             metricName={metricsView}
             id={key}
             type={config.type}
             selectedItem={localParamValues[key]}
-            onSelect={async (field) => {
+            onSelect={(field) => {
               component.updateProperty(key, field);
             }}
           />
 
-          <!-- MULTIPLE MEASURE / MULTIPLE DIMENSION -->
-        {:else if metricsView && (config.type === "multi_measures" || config.type === "multi_dimensions")}
+          <!-- MULTIPLE MEASURE / MULTIPLE DIMENSION / MULTIPLE FIELDS -->
+        {:else if metricsView && config.type === "multi_fields"}
           <MultiFieldInput
+            {canvasName}
             label={config.label ?? key}
             metricName={metricsView}
             id={key}
-            type={config.type === "multi_measures" ? "measure" : "dimension"}
+            types={config.meta?.allowedTypes ?? ["measure", "dimension"]}
             selectedItems={localParamValues[key]}
-            onMultiSelect={async (field) => {
+            onMultiSelect={(field) => {
               component.updateProperty(key, field);
             }}
           />
@@ -107,13 +116,7 @@
               id={key}
               faint={!localParamValues[key]}
             />
-            <Switch
-              bind:checked={localParamValues[key]}
-              on:click={async () => {
-                component.updateProperty(key, !paramValues[key]);
-              }}
-              small
-            />
+            <Switch bind:checked={$specStore[key]} small />
           </div>
 
           <!-- TEXT AREA -->
@@ -128,8 +131,8 @@
             <textarea
               class="w-full p-2 border border-gray-300 rounded-sm"
               rows="8"
-              bind:value={localParamValues[key]}
-              on:blur={async () => {
+              bind:value={$specStore[key]}
+              on:blur={() => {
                 component.updateProperty(key, localParamValues[key]);
               }}
               placeholder={config.label ?? key}
@@ -148,7 +151,7 @@
             }}
           />
 
-          <!-- KPI SPARKLINE INPUT -->
+          <!-- COMPARISON OPTIONS INPUT -->
         {:else if config.type === "comparison_options"}
           <ComparisonInput
             {key}
@@ -166,6 +169,7 @@
             {key}
             label={config.label ?? key}
             position={localParamValues[key]}
+            defaultAlignment={config.meta?.defaultAlignment}
             onChange={(updatedPosition) => {
               localParamValues[key] = updatedPosition;
               component.updateProperty(key, updatedPosition);
@@ -174,6 +178,7 @@
           <!-- POSITIONAL CONFIG -->
         {:else if metricsView && config.type === "positional"}
           <PositionalFieldConfig
+            {canvasName}
             {key}
             {config}
             {metricsView}
@@ -186,6 +191,7 @@
           <!-- COLOR CONFIG -->
         {:else if metricsView && config.type === "mark"}
           <MarkSelector
+            {canvasName}
             label={config.label ?? key}
             {key}
             {metricsView}

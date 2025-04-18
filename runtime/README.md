@@ -9,13 +9,16 @@ It's designed as a modular component that can be embedded in local applications 
 The base directory contains a `Runtime` type that represents the lifecycle of the runtime. It ties together the sub-directories:
 
 - `client` contains a Go client library for connecting to a runtime server.
-- `compilers` contains logic for parsing Rill projects (incomplete, currently mostly implemented in `services` instead).
-- `connectors` contains connector implementations.
 - `drivers` contains interfaces and drivers for external data infrastructure that the runtime interfaces with (like DuckDB and Druid).
+- `metricsview` contains the metrics layer that converts metrics definitions and queries to raw SQL queries.
+- `parser` contains logic for parsing Rill projects.
 - `pkg` contains utility libraries.
-- `queries` contains pre-defined analytical queries that the runtime can serve (used for profiling and dashboards).
+- `queries` contains the underlying implementation of the analytical APIs used for profiling and dashboards (note: gradually being replaced by `resolvers/`)
+- `reconcilers` contains logic that for each project resource reconciles the desired state expressed in code with the actual state observed in external data systems.
+- `resolvers` contains implementations of a unified interface for resolving data queries, which is used in the metrics APIs, alerts, reports, and more.
 - `server` contains a server that implements the runtime's APIs.
-- `testruntime` contains helper functions for initializing a test runtime with test data.
+- `storage` contains logic that wraps a project's persistent file storage (on disk and in an object store).
+- `testruntime` contains helper functions for initializing a test runtime with test data and test connectors.
 
 ## Development
 

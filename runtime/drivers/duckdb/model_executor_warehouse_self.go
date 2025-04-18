@@ -29,11 +29,6 @@ func (e *warehouseToSelfExecutor) Concurrency(desired int) (int, bool) {
 }
 
 func (e *warehouseToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExecuteOptions) (*drivers.ModelResult, error) {
-	olap, ok := e.c.AsOLAP(e.c.instanceID)
-	if !ok {
-		return nil, fmt.Errorf("output connector is not OLAP")
-	}
-
 	outputProps := &ModelOutputProperties{}
 	if err := mapstructure.WeakDecode(opts.OutputProperties, outputProps); err != nil {
 		return nil, fmt.Errorf("failed to parse output properties: %w", err)
@@ -56,20 +51,20 @@ func (e *warehouseToSelfExecutor) Execute(ctx context.Context, opts *drivers.Mod
 		}
 
 		// NOTE: This intentionally drops the end table if not staging changes.
-		_ = olap.DropTable(ctx, stagingTableName)
+		_ = e.c.dropTable(ctx, stagingTableName)
 	}
 
-	err := e.queryAndInsert(ctx, opts, olap, stagingTableName, outputProps)
+	err := e.queryAndInsert(ctx, opts, stagingTableName, outputProps)
 	if err != nil {
 		if !opts.IncrementalRun {
-			_ = olap.DropTable(ctx, stagingTableName)
+			_ = e.c.dropTable(ctx, stagingTableName)
 		}
 		return nil, err
 	}
 
 	if !opts.IncrementalRun {
 		if stagingTableName != tableName {
-			err = olapForceRenameTable(ctx, olap, stagingTableName, false, tableName)
+			err = e.c.forceRenameTable(ctx, stagingTableName, false, tableName)
 			if err != nil {
 				return nil, fmt.Errorf("failed to rename staged model: %w", err)
 			}
@@ -94,7 +89,7 @@ func (e *warehouseToSelfExecutor) Execute(ctx context.Context, opts *drivers.Mod
 	}, nil
 }
 
-func (e *warehouseToSelfExecutor) queryAndInsert(ctx context.Context, opts *drivers.ModelExecuteOptions, olap drivers.OLAPStore, outputTable string, outputProps *ModelOutputProperties) (err error) {
+func (e *warehouseToSelfExecutor) queryAndInsert(ctx context.Context, opts *drivers.ModelExecuteOptions, outputTable string, outputProps *ModelOutputProperties) (err error) {
 	start := time.Now()
 	e.c.logger.Debug("duckdb: warehouse transfer started", zap.String("model", opts.ModelName), observability.ZapCtx(ctx))
 	defer func() {
@@ -108,6 +103,7 @@ func (e *warehouseToSelfExecutor) queryAndInsert(ctx context.Context, opts *driv
 	defer iter.Close()
 
 	create := !opts.IncrementalRun
+	var execDuration time.Duration
 	for {
 		files, err := iter.Next()
 		if err != nil {
@@ -129,36 +125,37 @@ func (e *warehouseToSelfExecutor) queryAndInsert(ctx context.Context, opts *driv
 		qry := fmt.Sprintf("SELECT * FROM %s", from)
 
 		if !create && opts.IncrementalRun {
-			insertOpts := &drivers.InsertTableOptions{
+			insertOpts := &InsertTableOptions{
 				ByName:    false,
-				InPlace:   true,
 				Strategy:  outputProps.IncrementalStrategy,
 				UniqueKey: outputProps.UniqueKey,
 			}
-			err := olap.InsertTableAsSelect(ctx, outputTable, qry, insertOpts)
+			metrics, err := e.c.insertTableAsSelect(ctx, outputTable, qry, insertOpts)
 			if err != nil {
 				return fmt.Errorf("failed to incrementally insert into table: %w", err)
 			}
+			execDuration += metrics.duration
 			continue
 		}
 
 		if !create {
-			insertOpts := &drivers.InsertTableOptions{
+			insertOpts := &InsertTableOptions{
 				ByName:   false,
-				InPlace:  true,
 				Strategy: drivers.IncrementalStrategyAppend,
 			}
-			err := olap.InsertTableAsSelect(ctx, outputTable, qry, insertOpts)
+			metrics, err := e.c.insertTableAsSelect(ctx, outputTable, qry, insertOpts)
 			if err != nil {
 				return fmt.Errorf("failed to insert into table: %w", err)
 			}
+			execDuration += metrics.duration
 			continue
 		}
 
-		err = olap.CreateTableAsSelect(ctx, outputTable, qry, &drivers.CreateTableOptions{})
+		metrics, err := e.c.createTableAsSelect(ctx, outputTable, qry, &createTableOptions{})
 		if err != nil {
 			return fmt.Errorf("failed to create table: %w", err)
 		}
+		execDuration += metrics.duration
 
 		create = false
 	}

@@ -13,14 +13,12 @@ import {
 } from "@rilldata/web-common/lib/time/config";
 import { getChildTimeRanges } from "@rilldata/web-common/lib/time/ranges";
 import { isoDurationToTimeRangeMeta } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
-import type {
-  DashboardTimeControls,
-  TimeRangeMeta,
-  TimeRangeOption,
-} from "@rilldata/web-common/lib/time/types";
 import {
+  type DashboardTimeControls,
   TimeComparisonOption,
   type TimeRange,
+  type TimeRangeMeta,
+  type TimeRangeOption,
   TimeRangePreset,
 } from "@rilldata/web-common/lib/time/types";
 import {
@@ -31,11 +29,6 @@ import {
   V1TimeGrain,
 } from "@rilldata/web-common/runtime-client";
 import type { QueryObserverResult } from "@tanstack/svelte-query";
-import {
-  RILL_LATEST,
-  RILL_PERIOD_TO_DATE,
-  RILL_PREVIOUS_PERIOD,
-} from "./new-time-controls";
 
 export type TimeRangeControlsState = {
   latestWindowTimeRanges: Array<TimeRangeOption>;
@@ -224,25 +217,31 @@ export function timeComparisonOptionsSelector([
 }
 
 export function getValidComparisonOption(
-  explore: V1ExploreSpec,
+  timeRanges: V1ExploreTimeRange[] | undefined,
   selectedTimeRange: TimeRange,
   prevComparisonOption: TimeComparisonOption | undefined,
   allTimeRange: TimeRange,
-) {
-  if (!explore.timeRanges?.length) {
-    return DEFAULT_TIME_RANGES[selectedTimeRange.name as TimeRangePreset]
-      ?.defaultComparison as TimeComparisonOption;
+): TimeComparisonOption {
+  if (!timeRanges?.length) {
+    return (
+      (DEFAULT_TIME_RANGES[selectedTimeRange.name as TimeRangePreset]
+        ?.defaultComparison as TimeComparisonOption) ??
+      TimeComparisonOption.CONTIGUOUS
+    );
   }
 
-  const timeRange = explore.timeRanges.find(
+  const timeRange = timeRanges.find(
     (tr) => tr.range === selectedTimeRange.name,
   );
-  if (!timeRange) return undefined;
 
   // If comparisonOffsets are not defined get default from presets.
-  if (!timeRange.comparisonTimeRanges?.length) {
-    return DEFAULT_TIME_RANGES[selectedTimeRange.name as TimeRangePreset]
-      ?.defaultComparison as TimeComparisonOption;
+  // This does not handle time ranges like P7M that are not in our defaults
+  if (!timeRange?.comparisonTimeRanges?.length) {
+    return (
+      DEFAULT_TIME_RANGES[selectedTimeRange.name as TimeRangePreset]
+        ?.defaultComparison ??
+      (TimeComparisonOption.CONTIGUOUS as TimeComparisonOption)
+    );
   }
 
   const existing = timeRange.comparisonTimeRanges?.find(
@@ -258,7 +257,7 @@ export function getValidComparisonOption(
   );
   // if currently selected comparison option is in allowed list and is valid select it
   if (existing && existingComparison.isComparisonRangeAvailable) {
-    return prevComparisonOption;
+    return prevComparisonOption ?? TimeComparisonOption.CONTIGUOUS;
   }
 
   return timeRange.comparisonTimeRanges[0].offset as TimeComparisonOption;
@@ -292,7 +291,6 @@ export function bucketTimeRanges(
       if (range.range in LATEST_WINDOW_TIME_RANGES) {
         const meta = LATEST_WINDOW_TIME_RANGES[range.range] as TimeRangeMeta;
 
-        console.log({ meta });
         latestWindowTimeRanges.push({
           ...range,
           meta,

@@ -7,6 +7,8 @@
   export let date: DateTime<true> = DateTime.now();
   export let zone: string;
   export let showDate = true;
+  export let suppress = false;
+  export let italic = false;
 
   $: zonedDate = date.setZone(zone);
   $: isoString = zonedDate.toISO();
@@ -27,9 +29,10 @@
   });
 </script>
 
-<Tooltip>
+<Tooltip {suppress}>
   <button
-    class="text-gray-500 text-xs"
+    class:italic
+    class="text-xs text-inherit"
     on:click={() => {
       if (isoString) copyToClipboard(isoString);
     }}
@@ -37,7 +40,7 @@
     {#if showDate}
       {formattedString}
     {:else}
-      {humanReadableTimeOffset} ago
+      ({humanReadableTimeOffset} ago)
     {/if}
   </button>
 

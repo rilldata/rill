@@ -12,11 +12,13 @@
     getAlertQueryArgsFromFormValues,
   } from "@rilldata/web-common/features/alerts/form-utils";
   import { getEmptyMeasureFilterEntry } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
+  import { getProtoFromDashboardState } from "@rilldata/web-common/features/dashboards/proto-state/toProto";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import {
-    mapComparisonTimeRange,
-    mapTimeRange,
+    mapSelectedComparisonTimeRangeToV1TimeRange,
+    mapSelectedTimeRangeToV1TimeRange,
   } from "@rilldata/web-common/features/dashboards/time-controls/time-range-mappers";
+  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import {
     V1Operation,
     getRuntimeServiceListResourcesQueryKey,
@@ -25,7 +27,6 @@
   import { createEventDispatcher } from "svelte";
   import { createForm } from "svelte-forms-lib";
   import { get } from "svelte/store";
-  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { runtime } from "../../runtime-client/runtime-store";
   import BaseAlertForm from "./BaseAlertForm.svelte";
 
@@ -43,6 +44,7 @@
     selectors: {
       timeRangeSelectors: { timeControlsState },
     },
+    validSpecStore,
   } = getStateManagers();
   const timeControls = get(timeControlsState);
 
@@ -59,26 +61,31 @@
   }
 
   // TODO: get metrics view spec
-  const timeRange = mapTimeRange(
+  const timeRange = mapSelectedTimeRangeToV1TimeRange(
     timeControls,
     $dashboardStore.selectedTimezone,
     {},
   );
-  const comparisonTimeRange = mapComparisonTimeRange(timeControls, timeRange);
+  const comparisonTimeRange = mapSelectedComparisonTimeRangeToV1TimeRange(
+    timeControls,
+    timeRange,
+  );
+
+  $: exploreSpec = $validSpecStore.data?.explore ?? {};
 
   const formState = createForm<AlertFormValues>({
     initialValues: {
       name: "",
       measure:
         $dashboardStore.tdd.expandedMeasureName ??
-        $dashboardStore.leaderboardMeasureName ??
+        $dashboardStore.leaderboardSortByMeasureName ??
         "",
       splitByDimension: dimension,
       evaluationInterval: "",
       criteria: [
         {
           ...getEmptyMeasureFilterEntry(),
-          measure: $dashboardStore.leaderboardMeasureName ?? "",
+          measure: $dashboardStore.leaderboardSortByMeasureName ?? "",
         },
       ],
       criteriaOperation: V1Operation.OPERATION_AND,
@@ -103,6 +110,7 @@
       metricsViewName: $metricsViewName,
       exploreName: $exploreName,
       whereFilter: $dashboardStore.whereFilter,
+      dimensionsWithInlistFilter: $dashboardStore.dimensionsWithInlistFilter,
       dimensionThresholdFilters: $dashboardStore.dimensionThresholdFilters,
       timeRange: timeRange
         ? {
@@ -143,12 +151,16 @@
               renotify: !!values.snooze,
               renotifyAfterSeconds: values.snooze ? Number(values.snooze) : 0,
               webOpenPath: `/explore/${$exploreName}`,
+              webOpenState: getProtoFromDashboardState(
+                $dashboardStore,
+                exploreSpec,
+              ),
             },
           },
         });
-        await queryClient.invalidateQueries(
-          getRuntimeServiceListResourcesQueryKey(instanceId),
-        );
+        await queryClient.invalidateQueries({
+          queryKey: getRuntimeServiceListResourcesQueryKey(instanceId),
+        });
         dispatch("close");
         eventBus.emit("notification", {
           message: "Alert created",

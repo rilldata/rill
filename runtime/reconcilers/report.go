@@ -2,10 +2,12 @@ package reconcilers
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/url"
 	"strconv"
+	"strings"
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -13,6 +15,7 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/duration"
 	"github.com/rilldata/rill/runtime/pkg/email"
+	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/pkg/pbutil"
 	"github.com/rilldata/rill/runtime/queries"
 	"go.opentelemetry.io/otel/attribute"
@@ -307,15 +310,15 @@ func (r *ReportReconciler) executeAllWrapped(ctx context.Context, self *runtimev
 	if err != nil {
 		skipErr := &skipError{}
 		if errors.As(err, skipErr) {
-			r.C.Logger.Info("Skipped report", zap.String("name", self.Meta.Name.Name), zap.String("reason", skipErr.reason), zap.Time("current_watermark", watermark), zap.Time("previous_watermark", previousWatermark), zap.String("interval", rep.Spec.IntervalsIsoDuration))
+			r.C.Logger.Info("Skipped report", zap.String("name", self.Meta.Name.Name), zap.String("reason", skipErr.reason), zap.Time("current_watermark", watermark), zap.Time("previous_watermark", previousWatermark), zap.String("interval", rep.Spec.IntervalsIsoDuration), observability.ZapCtx(ctx))
 			return false, nil
 		}
-		r.C.Logger.Error("Internal: failed to calculate execution times", zap.String("name", self.Meta.Name.Name), zap.Error(err))
+		r.C.Logger.Error("Internal: failed to calculate execution times", zap.String("name", self.Meta.Name.Name), zap.Error(err), observability.ZapCtx(ctx))
 		return false, err
 	}
 	if len(ts) == 0 {
 		// This should never happen
-		r.C.Logger.Error("Internal: no execution times found", zap.String("name", self.Meta.Name.Name), zap.Error(err))
+		r.C.Logger.Error("Internal: no execution times found", zap.String("name", self.Meta.Name.Name), zap.Error(err), observability.ZapCtx(ctx))
 		return false, nil
 	}
 
@@ -365,7 +368,7 @@ func (r *ReportReconciler) executeSingle(ctx context.Context, self *runtimev1.Re
 
 	// Log it
 	if reportErr != nil {
-		r.C.Logger.Error("Report run failed", zap.Any("report", self.Meta.Name), zap.Any("error", reportErr.Error()))
+		r.C.Logger.Error("Report run failed", zap.Any("report", self.Meta.Name), zap.Any("error", reportErr.Error()), observability.ZapCtx(ctx))
 	}
 
 	// Commit CurrentExecution to history
@@ -381,38 +384,77 @@ func (r *ReportReconciler) executeSingle(ctx context.Context, self *runtimev1.Re
 // sendReport composes and sends the actual report to the configured recipients.
 // It returns true if an error occurred after some or all notifications were sent.
 func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resource, rep *runtimev1.Report, t time.Time) (bool, error) {
-	r.C.Logger.Info("Sending report", zap.String("report", self.Meta.Name.Name), zap.Time("report_time", t))
+	r.C.Logger.Info("Sending report", zap.String("report", self.Meta.Name.Name), zap.Time("report_time", t), observability.ZapCtx(ctx))
 
 	admin, release, err := r.C.Runtime.Admin(ctx, r.C.InstanceID)
 	if err != nil {
 		if errors.Is(err, runtime.ErrAdminNotConfigured) {
-			r.C.Logger.Info("Skipped sending report because an admin service is not configured", zap.String("report", self.Meta.Name.Name))
+			r.C.Logger.Info("Skipped sending report because an admin service is not configured", zap.String("report", self.Meta.Name.Name), observability.ZapCtx(ctx))
 			return false, nil
 		}
 		return false, fmt.Errorf("failed to get admin client: %w", err)
 	}
 	defer release()
 
-	var ownerID string
+	var ownerID, explore, canvas, webOpenMode string
 	if id, ok := rep.Spec.Annotations["admin_owner_user_id"]; ok {
 		ownerID = id
 	}
+	if e, ok := rep.Spec.Annotations["explore"]; ok {
+		explore = e
+	}
+	if c, ok := rep.Spec.Annotations["canvas"]; ok {
+		canvas = c
+	}
+	if w, ok := rep.Spec.Annotations["web_open_mode"]; ok {
+		webOpenMode = w
+		if webOpenMode == "" { // backwards compatibility
+			webOpenMode = "recipient"
+		}
+	}
 
+	if webOpenMode != "none" && explore == "" { // backwards compatibility, try to find explore
+		if path, ok := rep.Spec.Annotations["web_open_path"]; ok {
+			// parse path, extract explore name, it will be like /explore/{explore}
+			if strings.HasPrefix(path, "/explore/") {
+				explore = path[9:]
+				if explore[len(explore)-1] == '/' {
+					explore = explore[:len(explore)-1]
+				}
+			}
+		}
+		// still not found, try to extract mv from query args
+		if explore == "" && rep.Spec.QueryArgsJson != "" {
+			m := make(map[string]interface{})
+			err := json.Unmarshal([]byte(rep.Spec.QueryArgsJson), &m)
+			if err == nil {
+				if v, ok := m["metricsView"]; ok {
+					explore = v.(string)
+				} else if v, ok = m["metrics_view_name"]; ok {
+					explore = v.(string)
+				} else if v, ok = m["metrics_view"]; ok {
+					explore = v.(string)
+				}
+			}
+		}
+		if explore == "" { // still not found
+			webOpenMode = "none"
+		}
+	}
+
+	anonRecipients := false
 	var emailRecipients []string
 	for _, notifier := range rep.Spec.Notifiers {
 		if notifier.Connector == "email" {
 			emailRecipients = pbutil.ToSliceString(notifier.Properties.AsMap()["recipients"])
+		} else {
+			anonRecipients = true
 		}
 	}
 
-	meta, err := admin.GetReportMetadata(ctx, self.Meta.Name.Name, ownerID, emailRecipients, t)
+	meta, err := admin.GetReportMetadata(ctx, self.Meta.Name.Name, ownerID, explore, canvas, webOpenMode, emailRecipients, anonRecipients, t)
 	if err != nil {
 		return false, fmt.Errorf("failed to get report metadata: %w", err)
-	}
-
-	internalUsersExportURL, err := createExportURL(meta.BaseURLs.ExportURL, rep.Spec.ExportFormat.String(), t, int(rep.Spec.ExportLimit))
-	if err != nil {
-		return false, err
 	}
 
 	sent := false
@@ -428,23 +470,19 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 					ReportTime:     t,
 					DownloadFormat: formatExportFormat(rep.Spec.ExportFormat),
 				}
-				openURL := meta.BaseURLs.OpenURL
-				exportURL := internalUsersExportURL.String()
-				editURL := meta.BaseURLs.EditURL
-				if urls, ok := meta.RecipientURLs[recipient]; ok {
-					openURL = urls.OpenURL
-					editURL = urls.EditURL
-					u, err := createExportURL(urls.ExportURL, rep.Spec.ExportFormat.String(), t, int(rep.Spec.ExportLimit))
-					if err != nil {
-						return false, err
-					}
-					exportURL = u.String()
-					opts.External = true
+				urls, ok := meta.RecipientURLs[recipient]
+				if !ok {
+					return false, fmt.Errorf("failed to get recipient URLs for %q", recipient)
 				}
-				opts.OpenLink = openURL
-				opts.DownloadLink = exportURL
-				opts.EditLink = editURL
-				err := r.C.Runtime.Email.SendScheduledReport(opts)
+				opts.OpenLink = urls.OpenURL
+				u, err := createExportURL(urls.ExportURL, rep.Spec.ExportFormat.String(), t, int(rep.Spec.ExportLimit))
+				if err != nil {
+					return false, err
+				}
+				opts.DownloadLink = u.String()
+				opts.EditLink = urls.EditURL
+				opts.UnsubscribeLink = urls.UnsubscribeURL
+				err = r.C.Runtime.Email.SendScheduledReport(opts)
 				sent = true
 				if err != nil {
 					return true, fmt.Errorf("failed to generate report for %q: %w", recipient, err)
@@ -461,13 +499,21 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 				if err != nil {
 					return err
 				}
+				urls, ok := meta.RecipientURLs[""]
+				if !ok {
+					return fmt.Errorf("failed to get recipient URLs for anon user")
+				}
+				u, err := createExportURL(urls.ExportURL, rep.Spec.ExportFormat.String(), t, int(rep.Spec.ExportLimit))
+				if err != nil {
+					return err
+				}
 				msg := &drivers.ScheduledReport{
-					DisplayName:    rep.Spec.DisplayName,
-					ReportTime:     t,
-					DownloadFormat: formatExportFormat(rep.Spec.ExportFormat),
-					OpenLink:       meta.BaseURLs.OpenURL,
-					DownloadLink:   internalUsersExportURL.String(),
-					EditLink:       meta.BaseURLs.EditURL,
+					DisplayName:     rep.Spec.DisplayName,
+					ReportTime:      t,
+					DownloadFormat:  formatExportFormat(rep.Spec.ExportFormat),
+					OpenLink:        urls.OpenURL,
+					DownloadLink:    u.String(),
+					UnsubscribeLink: urls.UnsubscribeURL,
 				}
 				start := time.Now()
 				defer func() {

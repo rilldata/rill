@@ -3,119 +3,113 @@
   import TooltipShortcutContainer from "@rilldata/web-common/components/tooltip/TooltipShortcutContainer.svelte";
   import CollapsibleSectionTitle from "@rilldata/web-common/layout/CollapsibleSectionTitle.svelte";
   import { LIST_SLIDE_DURATION } from "@rilldata/web-common/layout/config";
-  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { formatCompactInteger } from "@rilldata/web-common/lib/formatters";
   import {
-    type V1Resource,
+    type V1ResourceName,
     createQueryServiceTableCardinality,
+    createRuntimeServiceGetResource,
   } from "@rilldata/web-common/runtime-client";
-  import { derived, writable } from "svelte/store";
+  import { derived } from "svelte/store";
   import { slide } from "svelte/transition";
   import { runtime } from "../../../runtime-client/runtime-store";
-  import type { Reference } from "../utils/get-table-references";
+  import { removeLeadingSlash } from "../../entity-management/entity-mappers";
   import WithModelResultTooltip from "./WithModelResultTooltip.svelte";
 
-  export let referencedThings: [V1Resource, Reference][];
+  export let refs: V1ResourceName[];
   export let modelHasError: boolean;
 
   $: ({ instanceId } = $runtime);
 
-  let showSourceTables = true;
+  let showReferences = true;
 
-  /** classes for elements that trigger the highlight in a model query */
-  export const query_reference_trigger =
-    "hover:bg-yellow-200 hover:cursor-pointer";
+  $: referencedResourcesStore = derived(
+    refs.map((ref) => {
+      return createRuntimeServiceGetResource(instanceId, {
+        "name.name": ref.name as string,
+        "name.kind": ref.kind as string,
+      });
+    }),
+    (refs) => refs.map((ref) => ref.data),
+  );
+  $: referencedResources = $referencedResourcesStore;
 
-  $: referencedWithMetadata = derived(
-    referencedThings.map(([resource, ref]) => {
-      return derived(
-        [
-          writable(resource),
-          writable(ref),
-          createQueryServiceTableCardinality(
-            instanceId,
-            resource?.meta?.name?.name ?? "",
-          ),
-        ],
-        ([resource, ref, cardinality]) => ({
-          resource,
-          reference: ref,
-          totalRows: +(cardinality?.data?.cardinality ?? 0),
-        }),
+  $: referencedResourceCardinalitiesStore = derived(
+    refs.map((ref) => {
+      return createQueryServiceTableCardinality(
+        instanceId,
+        ref.name as string,
+        {},
+        {
+          query: {
+            select: (data) => +(data.cardinality ?? 0),
+          },
+        },
       );
     }),
-    (referencedThings) => referencedThings,
+    (refs) => refs.map((ref) => ref.data),
   );
-
-  $: references = $referencedWithMetadata.filter((ref) => ref.reference);
-
-  function blur() {
-    eventBus.emit("highlightSelection", []);
-  }
+  $: referencedResourcesCardinalities = $referencedResourceCardinalitiesStore;
 </script>
 
-{#if references.length}
+{#if refs.length}
   <div>
     <div class=" pl-4 pr-4">
       <CollapsibleSectionTitle
         tooltipText="References"
-        bind:active={showSourceTables}
+        bind:active={showReferences}
       >
         Referenced in this model
       </CollapsibleSectionTitle>
     </div>
 
-    {#if showSourceTables}
+    {#if showReferences}
       <div transition:slide={{ duration: LIST_SLIDE_DURATION }} class="mt-2">
-        {#each references as reference (reference.reference.reference)}
-          <div>
-            <WithModelResultTooltip {modelHasError}>
-              <a
-                href="/files{reference?.resource?.meta?.filePaths?.[0]}"
-                class="ui-copy-muted grid justify-between gap-x-2 {query_reference_trigger} pl-4 pr-4"
-                style:grid-template-columns="auto max-content"
-                on:focus={() => {
-                  eventBus.emit("highlightSelection", [reference.reference]);
-                }}
-                on:mouseover={() => {
-                  eventBus.emit("highlightSelection", [reference.reference]);
-                }}
-                on:mouseleave={blur}
-                on:blur={blur}
-                class:text-gray-500={modelHasError}
-              >
-                <div class="truncate flex items-center gap-x-2">
-                  <div class="truncate">
-                    {reference?.resource?.meta?.name?.name}
+        {#each refs as reference, index (reference.name)}
+          {@const resource = referencedResources[index]}
+          {@const cardinality = referencedResourcesCardinalities[index]}
+          {@const filePath = resource?.resource?.meta?.filePaths?.[0]}
+          {#if filePath}
+            <div>
+              <WithModelResultTooltip {modelHasError}>
+                <a
+                  href="/files/{removeLeadingSlash(filePath)}"
+                  class="ui-copy-muted grid justify-between gap-x-2 pl-4 pr-4 hover:bg-yellow-200 hover:cursor-pointer"
+                  style:grid-template-columns="auto max-content"
+                  class:text-gray-500={modelHasError}
+                >
+                  <div class="truncate flex items-center gap-x-2">
+                    <div class="truncate">
+                      {reference.name}
+                    </div>
                   </div>
-                </div>
 
-                <div class="text-gray-500">
-                  {#if reference?.totalRows}
-                    {`${formatCompactInteger(reference.totalRows)} rows` || ""}
+                  {#if cardinality}
+                    <div class="text-gray-500">
+                      {`${formatCompactInteger(cardinality)} rows`}
+                    </div>
                   {/if}
-                </div>
-              </a>
+                </a>
 
-              <svelte:fragment slot="tooltip-title">
-                <div class="break-all">
-                  {reference?.resource?.meta?.name?.name}
-                </div>
-              </svelte:fragment>
-              <svelte:fragment slot="tooltip-right">
-                {#if reference?.resource?.source}
-                  {reference?.resource?.source?.state?.connector}
-                {/if}
-              </svelte:fragment>
+                <svelte:fragment slot="tooltip-title">
+                  <div class="break-all">
+                    {reference.name}
+                  </div>
+                </svelte:fragment>
+                <svelte:fragment slot="tooltip-right">
+                  {#if resource?.resource?.source}
+                    {resource?.resource?.source?.state?.connector}
+                  {/if}
+                </svelte:fragment>
 
-              <svelte:fragment slot="tooltip-description">
-                <TooltipShortcutContainer>
-                  <div>Open in workspace</div>
-                  <Shortcut>Click</Shortcut>
-                </TooltipShortcutContainer>
-              </svelte:fragment>
-            </WithModelResultTooltip>
-          </div>
+                <svelte:fragment slot="tooltip-description">
+                  <TooltipShortcutContainer>
+                    <div>Open in workspace</div>
+                    <Shortcut>Click</Shortcut>
+                  </TooltipShortcutContainer>
+                </svelte:fragment>
+              </WithModelResultTooltip>
+            </div>
+          {/if}
         {/each}
       </div>
     {/if}

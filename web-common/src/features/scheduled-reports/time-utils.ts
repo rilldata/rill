@@ -119,13 +119,15 @@ export function getTimeOfDayFromCronExpression(cronExpr: string): string {
 
 export function getDayOfMonthFromCronExpression(cronExpr: string): number {
   const [, , dayOfMonth] = cronExpr.split(" ");
-  return Number(dayOfMonth);
+  const dayOfMonthAsNum = Number(dayOfMonth);
+  if (Number.isNaN(dayOfMonthAsNum)) return 1;
+  return dayOfMonthAsNum;
 }
 
 export function makeTimeZoneOptions(availableTimeZones: string[] | undefined) {
   const userLocalIANA = getLocalIANA();
   const UTCIana = getUTCIANA();
-  const currentDate = new Date();
+  const currentDate = DateTime.now();
 
   if (!availableTimeZones) {
     return [

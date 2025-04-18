@@ -18,11 +18,13 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
-	"github.com/rilldata/rill/runtime/compilers/rillv1"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/parser"
 	"github.com/rilldata/rill/runtime/pkg/globutil"
 	"github.com/rilldata/rill/runtime/pkg/mapstructureutil"
 	"github.com/rilldata/rill/runtime/pkg/typepb"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"golang.org/x/exp/maps"
 )
@@ -99,7 +101,7 @@ func newGlob(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolv
 		return nil, err
 	}
 
-	propsMap, err := rillv1.ResolveTemplateRecursively(opts.Properties, rillv1.TemplateData{
+	propsMap, err := parser.ResolveTemplateRecursively(opts.Properties, parser.TemplateData{
 		Environment: inst.Environment,
 		User:        map[string]any{},
 		Variables:   inst.ResolveVariables(false),
@@ -107,7 +109,7 @@ func newGlob(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolv
 		ExtraProps: map[string]any{
 			"table": tmpTableName,
 		},
-	})
+	}, false)
 	if err != nil {
 		return nil, fmt.Errorf("glob resolver: failed to resolve templating: %w", err)
 	}
@@ -115,6 +117,18 @@ func newGlob(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolv
 	props := &globProps{}
 	if err := mapstructureutil.WeakDecode(propsMap, props); err != nil {
 		return nil, err
+	}
+
+	// set props to span attributes
+	span := trace.SpanFromContext(ctx)
+	if span.SpanContext().IsValid() {
+		span.SetAttributes(
+			attribute.String("connector", props.Connector),
+			attribute.String("path", props.Path),
+			attribute.String("partition", string(props.Partition)),
+			attribute.Bool("rollup_files", props.RollupFiles),
+			attribute.String("transform_sql", props.TransformSQL),
+		)
 	}
 
 	// Parse the bucket URI without the path (e.g. for "s3://bucket/path", it is "s3://bucket")
@@ -126,6 +140,9 @@ func newGlob(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolv
 
 	// If connector is not specified outright, infer it from the path (e.g. for "s3://bucket/path", the connector becomes "s3").
 	if props.Connector == "" {
+		if bucketURI.Scheme == "gs" {
+			bucketURI.Scheme = "gcs"
+		}
 		props.Connector = bucketURI.Scheme
 	}
 
@@ -311,7 +328,8 @@ func (r *globResolver) transformResult(ctx context.Context, rows []map[string]an
 	}
 	defer os.Remove(jsonFile)
 
-	err = olap.WithConnection(ctx, 0, false, func(wrappedCtx context.Context, ensuredCtx context.Context, _ *databasesql.Conn) error {
+	var result []map[string]any
+	err = olap.WithConnection(ctx, 0, func(wrappedCtx context.Context, ensuredCtx context.Context, _ *databasesql.Conn) error {
 		// Load the JSON file into a temporary table
 		err = olap.Exec(wrappedCtx, &drivers.Statement{
 			Query: fmt.Sprintf("CREATE TEMPORARY TABLE %s AS (SELECT * FROM read_ndjson_auto(%s))", olap.Dialect().EscapeIdentifier(r.tmpTableName), olap.Dialect().EscapeStringValue(jsonFile)),
@@ -334,11 +352,18 @@ func (r *globResolver) transformResult(ctx context.Context, rows []map[string]an
 		}()
 
 		// Execute the transform SQL
-		err = olap.Exec(wrappedCtx, &drivers.Statement{
-			Query: fmt.Sprintf("COPY (%s\n) TO %s (FORMAT JSON)", sql, olap.Dialect().EscapeStringValue(jsonFile)),
+		rows, err := olap.Query(wrappedCtx, &drivers.Statement{
+			Query: sql,
 		})
 		if err != nil {
 			return fmt.Errorf("failed to execute transform SQL for glob: %w", err)
+		}
+		for rows.Next() {
+			row := make(map[string]any)
+			if err := rows.MapScan(row); err != nil {
+				return err
+			}
+			result = append(result, row)
 		}
 
 		return nil
@@ -347,7 +372,7 @@ func (r *globResolver) transformResult(ctx context.Context, rows []map[string]an
 		return nil, err
 	}
 
-	return readNDJSONFile(jsonFile)
+	return result, nil
 }
 
 func (r *globResolver) writeTempNDJSONFile(rows []map[string]any) (string, error) {
@@ -369,29 +394,6 @@ func (r *globResolver) writeTempNDJSONFile(rows []map[string]any) (string, error
 	}
 
 	return f.Name(), nil
-}
-
-func readNDJSONFile(filePath string) ([]map[string]any, error) {
-	f, err := os.Open(filePath)
-	if err != nil {
-		return nil, err
-	}
-	defer f.Close()
-
-	dec := json.NewDecoder(f)
-	var rows []map[string]any
-	for {
-		var row map[string]any
-		if err := dec.Decode(&row); err != nil {
-			if errors.Is(err, io.EOF) {
-				break
-			}
-			return nil, err
-		}
-		rows = append(rows, row)
-	}
-
-	return rows, nil
 }
 
 func randomString(prefix string, n int) (string, error) {

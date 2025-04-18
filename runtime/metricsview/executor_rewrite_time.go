@@ -36,6 +36,24 @@ func (e *Executor) rewriteQueryTimeRanges(ctx context.Context, qry *Query, execu
 		return fmt.Errorf("failed to resolve comparison time range: %w", err)
 	}
 
+	// If time range is specified in the spine, resolve it.
+	if qry.Spine != nil && qry.Spine.TimeRange != nil {
+		var computedTimeDims []*Dimension
+		for _, d := range qry.Dimensions {
+			if d.Compute != nil && d.Compute.TimeFloor != nil {
+				computedTimeDims = append(computedTimeDims, &d)
+			}
+		}
+
+		if len(computedTimeDims) != 1 {
+			return errors.New("spine time range is only supported with a single time dimension")
+		}
+
+		qry.Spine.TimeRange.Start = timeutil.TruncateTime(qry.TimeRange.Start, computedTimeDims[0].Compute.TimeFloor.Grain.ToTimeutil(), tz, 1, 1)
+		qry.Spine.TimeRange.End = qry.TimeRange.End
+		qry.Spine.TimeRange.Grain = computedTimeDims[0].Compute.TimeFloor.Grain
+	}
+
 	return nil
 }
 
@@ -69,7 +87,8 @@ func (e *Executor) resolveTimeRange(ctx context.Context, tr *TimeRange, tz *time
 		return err
 	}
 
-	tr.Start, tr.End, err = rillTime.Eval(rilltime.EvalOptions{
+	// TODO: use grain when we have timeseries from metrics_view_aggregation
+	tr.Start, tr.End, _ = rillTime.Eval(rilltime.EvalOptions{
 		Now:        ts.Now,
 		MinTime:    ts.Min,
 		MaxTime:    ts.Max,
@@ -77,9 +96,6 @@ func (e *Executor) resolveTimeRange(ctx context.Context, tr *TimeRange, tz *time
 		FirstDay:   int(e.metricsView.FirstDayOfWeek),
 		FirstMonth: int(e.metricsView.FirstMonthOfYear),
 	})
-	if err != nil {
-		return err
-	}
 
 	// Clear all other fields than Start and End
 	tr.Expression = ""

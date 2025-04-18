@@ -190,10 +190,13 @@
   });
 </script>
 
-<div class="h-full w-full flex flex-col">
+<div
+  class="h-full w-full flex flex-col"
+  aria-label={`${expandedMeasureName} Time Dimension Display`}
+>
   <TDDHeader
     {areAllTableRowsSelected}
-    {comparing}
+    comparing={comparisonCopy}
     {expandedMeasureName}
     {dimensionName}
     isFetching={!$timeDimensionDataStore?.data?.columnHeaderData}

@@ -415,47 +415,6 @@ func (m *Resource) validate(all bool) error {
 			}
 		}
 
-	case *Resource_PullTrigger:
-		if v == nil {
-			err := ResourceValidationError{
-				field:  "Resource",
-				reason: "oneof value cannot be a typed-nil",
-			}
-			if !all {
-				return err
-			}
-			errors = append(errors, err)
-		}
-
-		if all {
-			switch v := interface{}(m.GetPullTrigger()).(type) {
-			case interface{ ValidateAll() error }:
-				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, ResourceValidationError{
-						field:  "PullTrigger",
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			case interface{ Validate() error }:
-				if err := v.Validate(); err != nil {
-					errors = append(errors, ResourceValidationError{
-						field:  "PullTrigger",
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			}
-		} else if v, ok := interface{}(m.GetPullTrigger()).(interface{ Validate() error }); ok {
-			if err := v.Validate(); err != nil {
-				return ResourceValidationError{
-					field:  "PullTrigger",
-					reason: "embedded message failed validation",
-					cause:  err,
-				}
-			}
-		}
-
 	case *Resource_RefreshTrigger:
 		if v == nil {
 			err := ResourceValidationError{
@@ -491,47 +450,6 @@ func (m *Resource) validate(all bool) error {
 			if err := v.Validate(); err != nil {
 				return ResourceValidationError{
 					field:  "RefreshTrigger",
-					reason: "embedded message failed validation",
-					cause:  err,
-				}
-			}
-		}
-
-	case *Resource_BucketPlanner:
-		if v == nil {
-			err := ResourceValidationError{
-				field:  "Resource",
-				reason: "oneof value cannot be a typed-nil",
-			}
-			if !all {
-				return err
-			}
-			errors = append(errors, err)
-		}
-
-		if all {
-			switch v := interface{}(m.GetBucketPlanner()).(type) {
-			case interface{ ValidateAll() error }:
-				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, ResourceValidationError{
-						field:  "BucketPlanner",
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			case interface{ Validate() error }:
-				if err := v.Validate(); err != nil {
-					errors = append(errors, ResourceValidationError{
-						field:  "BucketPlanner",
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			}
-		} else if v, ok := interface{}(m.GetBucketPlanner()).(interface{ Validate() error }); ok {
-			if err := v.Validate(); err != nil {
-				return ResourceValidationError{
-					field:  "BucketPlanner",
 					reason: "embedded message failed validation",
 					cause:  err,
 				}
@@ -1745,22 +1663,21 @@ var _ interface {
 	ErrorName() string
 } = ProjectParserStateValidationError{}
 
-// Validate checks the field values on SourceV2 with the rules defined in the
+// Validate checks the field values on Source with the rules defined in the
 // proto definition for this message. If any rules are violated, the first
 // error encountered is returned, or nil if there are no violations.
-func (m *SourceV2) Validate() error {
+func (m *Source) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on SourceV2 with the rules defined in
-// the proto definition for this message. If any rules are violated, the
-// result is a list of violation errors wrapped in SourceV2MultiError, or nil
-// if none found.
-func (m *SourceV2) ValidateAll() error {
+// ValidateAll checks the field values on Source with the rules defined in the
+// proto definition for this message. If any rules are violated, the result is
+// a list of violation errors wrapped in SourceMultiError, or nil if none found.
+func (m *Source) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *SourceV2) validate(all bool) error {
+func (m *Source) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -1771,7 +1688,7 @@ func (m *SourceV2) validate(all bool) error {
 		switch v := interface{}(m.GetSpec()).(type) {
 		case interface{ ValidateAll() error }:
 			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, SourceV2ValidationError{
+				errors = append(errors, SourceValidationError{
 					field:  "Spec",
 					reason: "embedded message failed validation",
 					cause:  err,
@@ -1779,7 +1696,7 @@ func (m *SourceV2) validate(all bool) error {
 			}
 		case interface{ Validate() error }:
 			if err := v.Validate(); err != nil {
-				errors = append(errors, SourceV2ValidationError{
+				errors = append(errors, SourceValidationError{
 					field:  "Spec",
 					reason: "embedded message failed validation",
 					cause:  err,
@@ -1788,7 +1705,7 @@ func (m *SourceV2) validate(all bool) error {
 		}
 	} else if v, ok := interface{}(m.GetSpec()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
-			return SourceV2ValidationError{
+			return SourceValidationError{
 				field:  "Spec",
 				reason: "embedded message failed validation",
 				cause:  err,
@@ -1800,7 +1717,7 @@ func (m *SourceV2) validate(all bool) error {
 		switch v := interface{}(m.GetState()).(type) {
 		case interface{ ValidateAll() error }:
 			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, SourceV2ValidationError{
+				errors = append(errors, SourceValidationError{
 					field:  "State",
 					reason: "embedded message failed validation",
 					cause:  err,
@@ -1808,7 +1725,7 @@ func (m *SourceV2) validate(all bool) error {
 			}
 		case interface{ Validate() error }:
 			if err := v.Validate(); err != nil {
-				errors = append(errors, SourceV2ValidationError{
+				errors = append(errors, SourceValidationError{
 					field:  "State",
 					reason: "embedded message failed validation",
 					cause:  err,
@@ -1817,7 +1734,7 @@ func (m *SourceV2) validate(all bool) error {
 		}
 	} else if v, ok := interface{}(m.GetState()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
-			return SourceV2ValidationError{
+			return SourceValidationError{
 				field:  "State",
 				reason: "embedded message failed validation",
 				cause:  err,
@@ -1826,18 +1743,18 @@ func (m *SourceV2) validate(all bool) error {
 	}
 
 	if len(errors) > 0 {
-		return SourceV2MultiError(errors)
+		return SourceMultiError(errors)
 	}
 
 	return nil
 }
 
-// SourceV2MultiError is an error wrapping multiple validation errors returned
-// by SourceV2.ValidateAll() if the designated constraints aren't met.
-type SourceV2MultiError []error
+// SourceMultiError is an error wrapping multiple validation errors returned by
+// Source.ValidateAll() if the designated constraints aren't met.
+type SourceMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m SourceV2MultiError) Error() string {
+func (m SourceMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -1846,11 +1763,11 @@ func (m SourceV2MultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m SourceV2MultiError) AllErrors() []error { return m }
+func (m SourceMultiError) AllErrors() []error { return m }
 
-// SourceV2ValidationError is the validation error returned by
-// SourceV2.Validate if the designated constraints aren't met.
-type SourceV2ValidationError struct {
+// SourceValidationError is the validation error returned by Source.Validate if
+// the designated constraints aren't met.
+type SourceValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -1858,22 +1775,22 @@ type SourceV2ValidationError struct {
 }
 
 // Field function returns field value.
-func (e SourceV2ValidationError) Field() string { return e.field }
+func (e SourceValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e SourceV2ValidationError) Reason() string { return e.reason }
+func (e SourceValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e SourceV2ValidationError) Cause() error { return e.cause }
+func (e SourceValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e SourceV2ValidationError) Key() bool { return e.key }
+func (e SourceValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e SourceV2ValidationError) ErrorName() string { return "SourceV2ValidationError" }
+func (e SourceValidationError) ErrorName() string { return "SourceValidationError" }
 
 // Error satisfies the builtin error interface
-func (e SourceV2ValidationError) Error() string {
+func (e SourceValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -1885,14 +1802,14 @@ func (e SourceV2ValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sSourceV2.%s: %s%s",
+		"invalid %sSource.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = SourceV2ValidationError{}
+var _ error = SourceValidationError{}
 
 var _ interface {
 	Field() string
@@ -1900,7 +1817,7 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = SourceV2ValidationError{}
+} = SourceValidationError{}
 
 // Validate checks the field values on SourceSpec with the rules defined in the
 // proto definition for this message. If any rules are violated, the first
@@ -2205,21 +2122,21 @@ var _ interface {
 	ErrorName() string
 } = SourceStateValidationError{}
 
-// Validate checks the field values on ModelV2 with the rules defined in the
+// Validate checks the field values on Model with the rules defined in the
 // proto definition for this message. If any rules are violated, the first
 // error encountered is returned, or nil if there are no violations.
-func (m *ModelV2) Validate() error {
+func (m *Model) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on ModelV2 with the rules defined in the
+// ValidateAll checks the field values on Model with the rules defined in the
 // proto definition for this message. If any rules are violated, the result is
-// a list of violation errors wrapped in ModelV2MultiError, or nil if none found.
-func (m *ModelV2) ValidateAll() error {
+// a list of violation errors wrapped in ModelMultiError, or nil if none found.
+func (m *Model) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *ModelV2) validate(all bool) error {
+func (m *Model) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -2230,7 +2147,7 @@ func (m *ModelV2) validate(all bool) error {
 		switch v := interface{}(m.GetSpec()).(type) {
 		case interface{ ValidateAll() error }:
 			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, ModelV2ValidationError{
+				errors = append(errors, ModelValidationError{
 					field:  "Spec",
 					reason: "embedded message failed validation",
 					cause:  err,
@@ -2238,7 +2155,7 @@ func (m *ModelV2) validate(all bool) error {
 			}
 		case interface{ Validate() error }:
 			if err := v.Validate(); err != nil {
-				errors = append(errors, ModelV2ValidationError{
+				errors = append(errors, ModelValidationError{
 					field:  "Spec",
 					reason: "embedded message failed validation",
 					cause:  err,
@@ -2247,7 +2164,7 @@ func (m *ModelV2) validate(all bool) error {
 		}
 	} else if v, ok := interface{}(m.GetSpec()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
-			return ModelV2ValidationError{
+			return ModelValidationError{
 				field:  "Spec",
 				reason: "embedded message failed validation",
 				cause:  err,
@@ -2259,7 +2176,7 @@ func (m *ModelV2) validate(all bool) error {
 		switch v := interface{}(m.GetState()).(type) {
 		case interface{ ValidateAll() error }:
 			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, ModelV2ValidationError{
+				errors = append(errors, ModelValidationError{
 					field:  "State",
 					reason: "embedded message failed validation",
 					cause:  err,
@@ -2267,7 +2184,7 @@ func (m *ModelV2) validate(all bool) error {
 			}
 		case interface{ Validate() error }:
 			if err := v.Validate(); err != nil {
-				errors = append(errors, ModelV2ValidationError{
+				errors = append(errors, ModelValidationError{
 					field:  "State",
 					reason: "embedded message failed validation",
 					cause:  err,
@@ -2276,7 +2193,7 @@ func (m *ModelV2) validate(all bool) error {
 		}
 	} else if v, ok := interface{}(m.GetState()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
-			return ModelV2ValidationError{
+			return ModelValidationError{
 				field:  "State",
 				reason: "embedded message failed validation",
 				cause:  err,
@@ -2285,18 +2202,18 @@ func (m *ModelV2) validate(all bool) error {
 	}
 
 	if len(errors) > 0 {
-		return ModelV2MultiError(errors)
+		return ModelMultiError(errors)
 	}
 
 	return nil
 }
 
-// ModelV2MultiError is an error wrapping multiple validation errors returned
-// by ModelV2.ValidateAll() if the designated constraints aren't met.
-type ModelV2MultiError []error
+// ModelMultiError is an error wrapping multiple validation errors returned by
+// Model.ValidateAll() if the designated constraints aren't met.
+type ModelMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m ModelV2MultiError) Error() string {
+func (m ModelMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -2305,11 +2222,11 @@ func (m ModelV2MultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m ModelV2MultiError) AllErrors() []error { return m }
+func (m ModelMultiError) AllErrors() []error { return m }
 
-// ModelV2ValidationError is the validation error returned by ModelV2.Validate
-// if the designated constraints aren't met.
-type ModelV2ValidationError struct {
+// ModelValidationError is the validation error returned by Model.Validate if
+// the designated constraints aren't met.
+type ModelValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -2317,22 +2234,22 @@ type ModelV2ValidationError struct {
 }
 
 // Field function returns field value.
-func (e ModelV2ValidationError) Field() string { return e.field }
+func (e ModelValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e ModelV2ValidationError) Reason() string { return e.reason }
+func (e ModelValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e ModelV2ValidationError) Cause() error { return e.cause }
+func (e ModelValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e ModelV2ValidationError) Key() bool { return e.key }
+func (e ModelValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e ModelV2ValidationError) ErrorName() string { return "ModelV2ValidationError" }
+func (e ModelValidationError) ErrorName() string { return "ModelValidationError" }
 
 // Error satisfies the builtin error interface
-func (e ModelV2ValidationError) Error() string {
+func (e ModelValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -2344,14 +2261,14 @@ func (e ModelV2ValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sModelV2.%s: %s%s",
+		"invalid %sModel.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = ModelV2ValidationError{}
+var _ error = ModelValidationError{}
 
 var _ interface {
 	Field() string
@@ -2359,7 +2276,7 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = ModelV2ValidationError{}
+} = ModelValidationError{}
 
 // Validate checks the field values on ModelSpec with the rules defined in the
 // proto definition for this message. If any rules are violated, the first
@@ -2578,6 +2495,8 @@ func (m *ModelSpec) validate(all bool) error {
 	// no validation rules for Trigger
 
 	// no validation rules for TriggerFull
+
+	// no validation rules for DefinedAsSource
 
 	if len(errors) > 0 {
 		return ModelSpecMultiError(errors)
@@ -2808,6 +2727,10 @@ func (m *ModelState) validate(all bool) error {
 
 	// no validation rules for PartitionsHaveErrors
 
+	// no validation rules for TotalExecutionDurationMs
+
+	// no validation rules for LatestExecutionDurationMs
+
 	if len(errors) > 0 {
 		return ModelStateMultiError(errors)
 	}
@@ -2885,22 +2808,22 @@ var _ interface {
 	ErrorName() string
 } = ModelStateValidationError{}
 
-// Validate checks the field values on MetricsViewV2 with the rules defined in
+// Validate checks the field values on MetricsView with the rules defined in
 // the proto definition for this message. If any rules are violated, the first
 // error encountered is returned, or nil if there are no violations.
-func (m *MetricsViewV2) Validate() error {
+func (m *MetricsView) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on MetricsViewV2 with the rules defined
-// in the proto definition for this message. If any rules are violated, the
-// result is a list of violation errors wrapped in MetricsViewV2MultiError, or
+// ValidateAll checks the field values on MetricsView with the rules defined in
+// the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in MetricsViewMultiError, or
 // nil if none found.
-func (m *MetricsViewV2) ValidateAll() error {
+func (m *MetricsView) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *MetricsViewV2) validate(all bool) error {
+func (m *MetricsView) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -2911,7 +2834,7 @@ func (m *MetricsViewV2) validate(all bool) error {
 		switch v := interface{}(m.GetSpec()).(type) {
 		case interface{ ValidateAll() error }:
 			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, MetricsViewV2ValidationError{
+				errors = append(errors, MetricsViewValidationError{
 					field:  "Spec",
 					reason: "embedded message failed validation",
 					cause:  err,
@@ -2919,7 +2842,7 @@ func (m *MetricsViewV2) validate(all bool) error {
 			}
 		case interface{ Validate() error }:
 			if err := v.Validate(); err != nil {
-				errors = append(errors, MetricsViewV2ValidationError{
+				errors = append(errors, MetricsViewValidationError{
 					field:  "Spec",
 					reason: "embedded message failed validation",
 					cause:  err,
@@ -2928,7 +2851,7 @@ func (m *MetricsViewV2) validate(all bool) error {
 		}
 	} else if v, ok := interface{}(m.GetSpec()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
-			return MetricsViewV2ValidationError{
+			return MetricsViewValidationError{
 				field:  "Spec",
 				reason: "embedded message failed validation",
 				cause:  err,
@@ -2940,7 +2863,7 @@ func (m *MetricsViewV2) validate(all bool) error {
 		switch v := interface{}(m.GetState()).(type) {
 		case interface{ ValidateAll() error }:
 			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, MetricsViewV2ValidationError{
+				errors = append(errors, MetricsViewValidationError{
 					field:  "State",
 					reason: "embedded message failed validation",
 					cause:  err,
@@ -2948,7 +2871,7 @@ func (m *MetricsViewV2) validate(all bool) error {
 			}
 		case interface{ Validate() error }:
 			if err := v.Validate(); err != nil {
-				errors = append(errors, MetricsViewV2ValidationError{
+				errors = append(errors, MetricsViewValidationError{
 					field:  "State",
 					reason: "embedded message failed validation",
 					cause:  err,
@@ -2957,7 +2880,7 @@ func (m *MetricsViewV2) validate(all bool) error {
 		}
 	} else if v, ok := interface{}(m.GetState()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
-			return MetricsViewV2ValidationError{
+			return MetricsViewValidationError{
 				field:  "State",
 				reason: "embedded message failed validation",
 				cause:  err,
@@ -2966,19 +2889,18 @@ func (m *MetricsViewV2) validate(all bool) error {
 	}
 
 	if len(errors) > 0 {
-		return MetricsViewV2MultiError(errors)
+		return MetricsViewMultiError(errors)
 	}
 
 	return nil
 }
 
-// MetricsViewV2MultiError is an error wrapping multiple validation errors
-// returned by MetricsViewV2.ValidateAll() if the designated constraints
-// aren't met.
-type MetricsViewV2MultiError []error
+// MetricsViewMultiError is an error wrapping multiple validation errors
+// returned by MetricsView.ValidateAll() if the designated constraints aren't met.
+type MetricsViewMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m MetricsViewV2MultiError) Error() string {
+func (m MetricsViewMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -2987,11 +2909,11 @@ func (m MetricsViewV2MultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m MetricsViewV2MultiError) AllErrors() []error { return m }
+func (m MetricsViewMultiError) AllErrors() []error { return m }
 
-// MetricsViewV2ValidationError is the validation error returned by
-// MetricsViewV2.Validate if the designated constraints aren't met.
-type MetricsViewV2ValidationError struct {
+// MetricsViewValidationError is the validation error returned by
+// MetricsView.Validate if the designated constraints aren't met.
+type MetricsViewValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -2999,22 +2921,22 @@ type MetricsViewV2ValidationError struct {
 }
 
 // Field function returns field value.
-func (e MetricsViewV2ValidationError) Field() string { return e.field }
+func (e MetricsViewValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e MetricsViewV2ValidationError) Reason() string { return e.reason }
+func (e MetricsViewValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e MetricsViewV2ValidationError) Cause() error { return e.cause }
+func (e MetricsViewValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e MetricsViewV2ValidationError) Key() bool { return e.key }
+func (e MetricsViewValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e MetricsViewV2ValidationError) ErrorName() string { return "MetricsViewV2ValidationError" }
+func (e MetricsViewValidationError) ErrorName() string { return "MetricsViewValidationError" }
 
 // Error satisfies the builtin error interface
-func (e MetricsViewV2ValidationError) Error() string {
+func (e MetricsViewValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -3026,14 +2948,14 @@ func (e MetricsViewV2ValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sMetricsViewV2.%s: %s%s",
+		"invalid %sMetricsView.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = MetricsViewV2ValidationError{}
+var _ error = MetricsViewValidationError{}
 
 var _ interface {
 	Field() string
@@ -3041,7 +2963,7 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = MetricsViewV2ValidationError{}
+} = MetricsViewValidationError{}
 
 // Validate checks the field values on MetricsViewSpec with the rules defined
 // in the proto definition for this message. If any rules are violated, the
@@ -3190,48 +3112,6 @@ func (m *MetricsViewSpec) validate(all bool) error {
 	// no validation rules for FirstDayOfWeek
 
 	// no validation rules for FirstMonthOfYear
-
-	// no validation rules for DefaultTimeRange
-
-	// no validation rules for DefaultComparisonMode
-
-	// no validation rules for DefaultComparisonDimension
-
-	// no validation rules for DefaultTheme
-
-	for idx, item := range m.GetAvailableTimeRanges() {
-		_, _ = idx, item
-
-		if all {
-			switch v := interface{}(item).(type) {
-			case interface{ ValidateAll() error }:
-				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, MetricsViewSpecValidationError{
-						field:  fmt.Sprintf("AvailableTimeRanges[%v]", idx),
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			case interface{ Validate() error }:
-				if err := v.Validate(); err != nil {
-					errors = append(errors, MetricsViewSpecValidationError{
-						field:  fmt.Sprintf("AvailableTimeRanges[%v]", idx),
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			}
-		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
-			if err := v.Validate(); err != nil {
-				return MetricsViewSpecValidationError{
-					field:  fmt.Sprintf("AvailableTimeRanges[%v]", idx),
-					reason: "embedded message failed validation",
-					cause:  err,
-				}
-			}
-		}
-
-	}
 
 	// no validation rules for CacheKeySql
 
@@ -3948,6 +3828,35 @@ func (m *MetricsViewState) validate(all bool) error {
 
 	// no validation rules for Streaming
 
+	if all {
+		switch v := interface{}(m.GetModelRefreshedOn()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, MetricsViewStateValidationError{
+					field:  "ModelRefreshedOn",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, MetricsViewStateValidationError{
+					field:  "ModelRefreshedOn",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetModelRefreshedOn()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return MetricsViewStateValidationError{
+				field:  "ModelRefreshedOn",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
 	if len(errors) > 0 {
 		return MetricsViewStateMultiError(errors)
 	}
@@ -4399,6 +4308,10 @@ func (m *ExploreSpec) validate(all bool) error {
 	}
 
 	// no validation rules for Banner
+
+	// no validation rules for LockTimeZone
+
+	// no validation rules for AllowCustomTimeRange
 
 	if len(errors) > 0 {
 		return ExploreSpecMultiError(errors)
@@ -5006,6 +4919,14 @@ func (m *ExplorePreset) validate(all bool) error {
 		// no validation rules for ExploreExpandedDimension
 	}
 
+	if m.ExploreLeaderboardMeasureCount != nil {
+		// no validation rules for ExploreLeaderboardMeasureCount
+	}
+
+	if m.ExploreLeaderboardShowContextForAllMeasures != nil {
+		// no validation rules for ExploreLeaderboardShowContextForAllMeasures
+	}
+
 	if m.TimeDimensionMeasure != nil {
 		// no validation rules for TimeDimensionMeasure
 	}
@@ -5024,6 +4945,10 @@ func (m *ExplorePreset) validate(all bool) error {
 
 	if m.PivotSortAsc != nil {
 		// no validation rules for PivotSortAsc
+	}
+
+	if m.PivotTableMode != nil {
+		// no validation rules for PivotTableMode
 	}
 
 	if len(errors) > 0 {
@@ -7637,363 +7562,6 @@ var _ interface {
 	ErrorName() string
 } = AssertionResultValidationError{}
 
-// Validate checks the field values on PullTrigger with the rules defined in
-// the proto definition for this message. If any rules are violated, the first
-// error encountered is returned, or nil if there are no violations.
-func (m *PullTrigger) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on PullTrigger with the rules defined in
-// the proto definition for this message. If any rules are violated, the
-// result is a list of violation errors wrapped in PullTriggerMultiError, or
-// nil if none found.
-func (m *PullTrigger) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *PullTrigger) validate(all bool) error {
-	if m == nil {
-		return nil
-	}
-
-	var errors []error
-
-	if all {
-		switch v := interface{}(m.GetSpec()).(type) {
-		case interface{ ValidateAll() error }:
-			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, PullTriggerValidationError{
-					field:  "Spec",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		case interface{ Validate() error }:
-			if err := v.Validate(); err != nil {
-				errors = append(errors, PullTriggerValidationError{
-					field:  "Spec",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		}
-	} else if v, ok := interface{}(m.GetSpec()).(interface{ Validate() error }); ok {
-		if err := v.Validate(); err != nil {
-			return PullTriggerValidationError{
-				field:  "Spec",
-				reason: "embedded message failed validation",
-				cause:  err,
-			}
-		}
-	}
-
-	if all {
-		switch v := interface{}(m.GetState()).(type) {
-		case interface{ ValidateAll() error }:
-			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, PullTriggerValidationError{
-					field:  "State",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		case interface{ Validate() error }:
-			if err := v.Validate(); err != nil {
-				errors = append(errors, PullTriggerValidationError{
-					field:  "State",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		}
-	} else if v, ok := interface{}(m.GetState()).(interface{ Validate() error }); ok {
-		if err := v.Validate(); err != nil {
-			return PullTriggerValidationError{
-				field:  "State",
-				reason: "embedded message failed validation",
-				cause:  err,
-			}
-		}
-	}
-
-	if len(errors) > 0 {
-		return PullTriggerMultiError(errors)
-	}
-
-	return nil
-}
-
-// PullTriggerMultiError is an error wrapping multiple validation errors
-// returned by PullTrigger.ValidateAll() if the designated constraints aren't met.
-type PullTriggerMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m PullTriggerMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m PullTriggerMultiError) AllErrors() []error { return m }
-
-// PullTriggerValidationError is the validation error returned by
-// PullTrigger.Validate if the designated constraints aren't met.
-type PullTriggerValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e PullTriggerValidationError) Field() string { return e.field }
-
-// Reason function returns reason value.
-func (e PullTriggerValidationError) Reason() string { return e.reason }
-
-// Cause function returns cause value.
-func (e PullTriggerValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e PullTriggerValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e PullTriggerValidationError) ErrorName() string { return "PullTriggerValidationError" }
-
-// Error satisfies the builtin error interface
-func (e PullTriggerValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sPullTrigger.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = PullTriggerValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = PullTriggerValidationError{}
-
-// Validate checks the field values on PullTriggerSpec with the rules defined
-// in the proto definition for this message. If any rules are violated, the
-// first error encountered is returned, or nil if there are no violations.
-func (m *PullTriggerSpec) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on PullTriggerSpec with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the result is a list of violation errors wrapped in
-// PullTriggerSpecMultiError, or nil if none found.
-func (m *PullTriggerSpec) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *PullTriggerSpec) validate(all bool) error {
-	if m == nil {
-		return nil
-	}
-
-	var errors []error
-
-	if len(errors) > 0 {
-		return PullTriggerSpecMultiError(errors)
-	}
-
-	return nil
-}
-
-// PullTriggerSpecMultiError is an error wrapping multiple validation errors
-// returned by PullTriggerSpec.ValidateAll() if the designated constraints
-// aren't met.
-type PullTriggerSpecMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m PullTriggerSpecMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m PullTriggerSpecMultiError) AllErrors() []error { return m }
-
-// PullTriggerSpecValidationError is the validation error returned by
-// PullTriggerSpec.Validate if the designated constraints aren't met.
-type PullTriggerSpecValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e PullTriggerSpecValidationError) Field() string { return e.field }
-
-// Reason function returns reason value.
-func (e PullTriggerSpecValidationError) Reason() string { return e.reason }
-
-// Cause function returns cause value.
-func (e PullTriggerSpecValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e PullTriggerSpecValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e PullTriggerSpecValidationError) ErrorName() string { return "PullTriggerSpecValidationError" }
-
-// Error satisfies the builtin error interface
-func (e PullTriggerSpecValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sPullTriggerSpec.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = PullTriggerSpecValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = PullTriggerSpecValidationError{}
-
-// Validate checks the field values on PullTriggerState with the rules defined
-// in the proto definition for this message. If any rules are violated, the
-// first error encountered is returned, or nil if there are no violations.
-func (m *PullTriggerState) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on PullTriggerState with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the result is a list of violation errors wrapped in
-// PullTriggerStateMultiError, or nil if none found.
-func (m *PullTriggerState) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *PullTriggerState) validate(all bool) error {
-	if m == nil {
-		return nil
-	}
-
-	var errors []error
-
-	if len(errors) > 0 {
-		return PullTriggerStateMultiError(errors)
-	}
-
-	return nil
-}
-
-// PullTriggerStateMultiError is an error wrapping multiple validation errors
-// returned by PullTriggerState.ValidateAll() if the designated constraints
-// aren't met.
-type PullTriggerStateMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m PullTriggerStateMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m PullTriggerStateMultiError) AllErrors() []error { return m }
-
-// PullTriggerStateValidationError is the validation error returned by
-// PullTriggerState.Validate if the designated constraints aren't met.
-type PullTriggerStateValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e PullTriggerStateValidationError) Field() string { return e.field }
-
-// Reason function returns reason value.
-func (e PullTriggerStateValidationError) Reason() string { return e.reason }
-
-// Cause function returns cause value.
-func (e PullTriggerStateValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e PullTriggerStateValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e PullTriggerStateValidationError) ErrorName() string { return "PullTriggerStateValidationError" }
-
-// Error satisfies the builtin error interface
-func (e PullTriggerStateValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sPullTriggerState.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = PullTriggerStateValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = PullTriggerStateValidationError{}
-
 // Validate checks the field values on RefreshTrigger with the rules defined in
 // the proto definition for this message. If any rules are violated, the first
 // error encountered is returned, or nil if there are no violations.
@@ -8531,509 +8099,6 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = RefreshModelTriggerValidationError{}
-
-// Validate checks the field values on BucketPlanner with the rules defined in
-// the proto definition for this message. If any rules are violated, the first
-// error encountered is returned, or nil if there are no violations.
-func (m *BucketPlanner) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on BucketPlanner with the rules defined
-// in the proto definition for this message. If any rules are violated, the
-// result is a list of violation errors wrapped in BucketPlannerMultiError, or
-// nil if none found.
-func (m *BucketPlanner) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *BucketPlanner) validate(all bool) error {
-	if m == nil {
-		return nil
-	}
-
-	var errors []error
-
-	if all {
-		switch v := interface{}(m.GetSpec()).(type) {
-		case interface{ ValidateAll() error }:
-			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, BucketPlannerValidationError{
-					field:  "Spec",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		case interface{ Validate() error }:
-			if err := v.Validate(); err != nil {
-				errors = append(errors, BucketPlannerValidationError{
-					field:  "Spec",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		}
-	} else if v, ok := interface{}(m.GetSpec()).(interface{ Validate() error }); ok {
-		if err := v.Validate(); err != nil {
-			return BucketPlannerValidationError{
-				field:  "Spec",
-				reason: "embedded message failed validation",
-				cause:  err,
-			}
-		}
-	}
-
-	if all {
-		switch v := interface{}(m.GetState()).(type) {
-		case interface{ ValidateAll() error }:
-			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, BucketPlannerValidationError{
-					field:  "State",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		case interface{ Validate() error }:
-			if err := v.Validate(); err != nil {
-				errors = append(errors, BucketPlannerValidationError{
-					field:  "State",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		}
-	} else if v, ok := interface{}(m.GetState()).(interface{ Validate() error }); ok {
-		if err := v.Validate(); err != nil {
-			return BucketPlannerValidationError{
-				field:  "State",
-				reason: "embedded message failed validation",
-				cause:  err,
-			}
-		}
-	}
-
-	if len(errors) > 0 {
-		return BucketPlannerMultiError(errors)
-	}
-
-	return nil
-}
-
-// BucketPlannerMultiError is an error wrapping multiple validation errors
-// returned by BucketPlanner.ValidateAll() if the designated constraints
-// aren't met.
-type BucketPlannerMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m BucketPlannerMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m BucketPlannerMultiError) AllErrors() []error { return m }
-
-// BucketPlannerValidationError is the validation error returned by
-// BucketPlanner.Validate if the designated constraints aren't met.
-type BucketPlannerValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e BucketPlannerValidationError) Field() string { return e.field }
-
-// Reason function returns reason value.
-func (e BucketPlannerValidationError) Reason() string { return e.reason }
-
-// Cause function returns cause value.
-func (e BucketPlannerValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e BucketPlannerValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e BucketPlannerValidationError) ErrorName() string { return "BucketPlannerValidationError" }
-
-// Error satisfies the builtin error interface
-func (e BucketPlannerValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sBucketPlanner.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = BucketPlannerValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = BucketPlannerValidationError{}
-
-// Validate checks the field values on BucketPlannerSpec with the rules defined
-// in the proto definition for this message. If any rules are violated, the
-// first error encountered is returned, or nil if there are no violations.
-func (m *BucketPlannerSpec) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on BucketPlannerSpec with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the result is a list of violation errors wrapped in
-// BucketPlannerSpecMultiError, or nil if none found.
-func (m *BucketPlannerSpec) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *BucketPlannerSpec) validate(all bool) error {
-	if m == nil {
-		return nil
-	}
-
-	var errors []error
-
-	if all {
-		switch v := interface{}(m.GetExtractPolicy()).(type) {
-		case interface{ ValidateAll() error }:
-			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, BucketPlannerSpecValidationError{
-					field:  "ExtractPolicy",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		case interface{ Validate() error }:
-			if err := v.Validate(); err != nil {
-				errors = append(errors, BucketPlannerSpecValidationError{
-					field:  "ExtractPolicy",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		}
-	} else if v, ok := interface{}(m.GetExtractPolicy()).(interface{ Validate() error }); ok {
-		if err := v.Validate(); err != nil {
-			return BucketPlannerSpecValidationError{
-				field:  "ExtractPolicy",
-				reason: "embedded message failed validation",
-				cause:  err,
-			}
-		}
-	}
-
-	if len(errors) > 0 {
-		return BucketPlannerSpecMultiError(errors)
-	}
-
-	return nil
-}
-
-// BucketPlannerSpecMultiError is an error wrapping multiple validation errors
-// returned by BucketPlannerSpec.ValidateAll() if the designated constraints
-// aren't met.
-type BucketPlannerSpecMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m BucketPlannerSpecMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m BucketPlannerSpecMultiError) AllErrors() []error { return m }
-
-// BucketPlannerSpecValidationError is the validation error returned by
-// BucketPlannerSpec.Validate if the designated constraints aren't met.
-type BucketPlannerSpecValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e BucketPlannerSpecValidationError) Field() string { return e.field }
-
-// Reason function returns reason value.
-func (e BucketPlannerSpecValidationError) Reason() string { return e.reason }
-
-// Cause function returns cause value.
-func (e BucketPlannerSpecValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e BucketPlannerSpecValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e BucketPlannerSpecValidationError) ErrorName() string {
-	return "BucketPlannerSpecValidationError"
-}
-
-// Error satisfies the builtin error interface
-func (e BucketPlannerSpecValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sBucketPlannerSpec.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = BucketPlannerSpecValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = BucketPlannerSpecValidationError{}
-
-// Validate checks the field values on BucketPlannerState with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
-func (m *BucketPlannerState) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on BucketPlannerState with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the result is a list of violation errors wrapped in
-// BucketPlannerStateMultiError, or nil if none found.
-func (m *BucketPlannerState) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *BucketPlannerState) validate(all bool) error {
-	if m == nil {
-		return nil
-	}
-
-	var errors []error
-
-	// no validation rules for Region
-
-	if len(errors) > 0 {
-		return BucketPlannerStateMultiError(errors)
-	}
-
-	return nil
-}
-
-// BucketPlannerStateMultiError is an error wrapping multiple validation errors
-// returned by BucketPlannerState.ValidateAll() if the designated constraints
-// aren't met.
-type BucketPlannerStateMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m BucketPlannerStateMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m BucketPlannerStateMultiError) AllErrors() []error { return m }
-
-// BucketPlannerStateValidationError is the validation error returned by
-// BucketPlannerState.Validate if the designated constraints aren't met.
-type BucketPlannerStateValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e BucketPlannerStateValidationError) Field() string { return e.field }
-
-// Reason function returns reason value.
-func (e BucketPlannerStateValidationError) Reason() string { return e.reason }
-
-// Cause function returns cause value.
-func (e BucketPlannerStateValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e BucketPlannerStateValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e BucketPlannerStateValidationError) ErrorName() string {
-	return "BucketPlannerStateValidationError"
-}
-
-// Error satisfies the builtin error interface
-func (e BucketPlannerStateValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sBucketPlannerState.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = BucketPlannerStateValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = BucketPlannerStateValidationError{}
-
-// Validate checks the field values on BucketExtractPolicy with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
-func (m *BucketExtractPolicy) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on BucketExtractPolicy with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the result is a list of violation errors wrapped in
-// BucketExtractPolicyMultiError, or nil if none found.
-func (m *BucketExtractPolicy) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *BucketExtractPolicy) validate(all bool) error {
-	if m == nil {
-		return nil
-	}
-
-	var errors []error
-
-	// no validation rules for RowsStrategy
-
-	// no validation rules for RowsLimitBytes
-
-	// no validation rules for FilesStrategy
-
-	// no validation rules for FilesLimit
-
-	if len(errors) > 0 {
-		return BucketExtractPolicyMultiError(errors)
-	}
-
-	return nil
-}
-
-// BucketExtractPolicyMultiError is an error wrapping multiple validation
-// errors returned by BucketExtractPolicy.ValidateAll() if the designated
-// constraints aren't met.
-type BucketExtractPolicyMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m BucketExtractPolicyMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m BucketExtractPolicyMultiError) AllErrors() []error { return m }
-
-// BucketExtractPolicyValidationError is the validation error returned by
-// BucketExtractPolicy.Validate if the designated constraints aren't met.
-type BucketExtractPolicyValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e BucketExtractPolicyValidationError) Field() string { return e.field }
-
-// Reason function returns reason value.
-func (e BucketExtractPolicyValidationError) Reason() string { return e.reason }
-
-// Cause function returns cause value.
-func (e BucketExtractPolicyValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e BucketExtractPolicyValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e BucketExtractPolicyValidationError) ErrorName() string {
-	return "BucketExtractPolicyValidationError"
-}
-
-// Error satisfies the builtin error interface
-func (e BucketExtractPolicyValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sBucketExtractPolicy.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = BucketExtractPolicyValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = BucketExtractPolicyValidationError{}
 
 // Validate checks the field values on Theme with the rules defined in the
 // proto definition for this message. If any rules are violated, the first
@@ -10260,6 +9325,8 @@ func (m *CanvasSpec) validate(all bool) error {
 
 	// no validation rules for DisplayName
 
+	// no validation rules for Banner
+
 	// no validation rules for MaxWidth
 
 	// no validation rules for GapX
@@ -10331,6 +9398,8 @@ func (m *CanvasSpec) validate(all bool) error {
 
 	}
 
+	// no validation rules for AllowCustomTimeRange
+
 	// no validation rules for FiltersEnabled
 
 	if all {
@@ -10396,7 +9465,7 @@ func (m *CanvasSpec) validate(all bool) error {
 
 	}
 
-	for idx, item := range m.GetItems() {
+	for idx, item := range m.GetRows() {
 		_, _ = idx, item
 
 		if all {
@@ -10404,7 +9473,7 @@ func (m *CanvasSpec) validate(all bool) error {
 			case interface{ ValidateAll() error }:
 				if err := v.ValidateAll(); err != nil {
 					errors = append(errors, CanvasSpecValidationError{
-						field:  fmt.Sprintf("Items[%v]", idx),
+						field:  fmt.Sprintf("Rows[%v]", idx),
 						reason: "embedded message failed validation",
 						cause:  err,
 					})
@@ -10412,7 +9481,7 @@ func (m *CanvasSpec) validate(all bool) error {
 			case interface{ Validate() error }:
 				if err := v.Validate(); err != nil {
 					errors = append(errors, CanvasSpecValidationError{
-						field:  fmt.Sprintf("Items[%v]", idx),
+						field:  fmt.Sprintf("Rows[%v]", idx),
 						reason: "embedded message failed validation",
 						cause:  err,
 					})
@@ -10421,42 +9490,13 @@ func (m *CanvasSpec) validate(all bool) error {
 		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
 			if err := v.Validate(); err != nil {
 				return CanvasSpecValidationError{
-					field:  fmt.Sprintf("Items[%v]", idx),
+					field:  fmt.Sprintf("Rows[%v]", idx),
 					reason: "embedded message failed validation",
 					cause:  err,
 				}
 			}
 		}
 
-	}
-
-	if all {
-		switch v := interface{}(m.GetLayout()).(type) {
-		case interface{ ValidateAll() error }:
-			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, CanvasSpecValidationError{
-					field:  "Layout",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		case interface{ Validate() error }:
-			if err := v.Validate(); err != nil {
-				errors = append(errors, CanvasSpecValidationError{
-					field:  "Layout",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		}
-	} else if v, ok := interface{}(m.GetLayout()).(interface{ Validate() error }); ok {
-		if err := v.Validate(); err != nil {
-			return CanvasSpecValidationError{
-				field:  "Layout",
-				reason: "embedded message failed validation",
-				cause:  err,
-			}
-		}
 	}
 
 	for idx, item := range m.GetSecurityRules() {
@@ -10492,8 +9532,6 @@ func (m *CanvasSpec) validate(all bool) error {
 		}
 
 	}
-
-	// no validation rules for Banner
 
 	if len(errors) > 0 {
 		return CanvasSpecMultiError(errors)
@@ -10700,6 +9738,145 @@ var _ interface {
 	ErrorName() string
 } = CanvasStateValidationError{}
 
+// Validate checks the field values on CanvasRow with the rules defined in the
+// proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *CanvasRow) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on CanvasRow with the rules defined in
+// the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in CanvasRowMultiError, or nil
+// if none found.
+func (m *CanvasRow) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *CanvasRow) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for HeightUnit
+
+	for idx, item := range m.GetItems() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, CanvasRowValidationError{
+						field:  fmt.Sprintf("Items[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, CanvasRowValidationError{
+						field:  fmt.Sprintf("Items[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return CanvasRowValidationError{
+					field:  fmt.Sprintf("Items[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	if m.Height != nil {
+		// no validation rules for Height
+	}
+
+	if len(errors) > 0 {
+		return CanvasRowMultiError(errors)
+	}
+
+	return nil
+}
+
+// CanvasRowMultiError is an error wrapping multiple validation errors returned
+// by CanvasRow.ValidateAll() if the designated constraints aren't met.
+type CanvasRowMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m CanvasRowMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m CanvasRowMultiError) AllErrors() []error { return m }
+
+// CanvasRowValidationError is the validation error returned by
+// CanvasRow.Validate if the designated constraints aren't met.
+type CanvasRowValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e CanvasRowValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e CanvasRowValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e CanvasRowValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e CanvasRowValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e CanvasRowValidationError) ErrorName() string { return "CanvasRowValidationError" }
+
+// Error satisfies the builtin error interface
+func (e CanvasRowValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sCanvasRow.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = CanvasRowValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = CanvasRowValidationError{}
+
 // Validate checks the field values on CanvasItem with the rules defined in the
 // proto definition for this message. If any rules are violated, the first
 // error encountered is returned, or nil if there are no violations.
@@ -10726,20 +9903,10 @@ func (m *CanvasItem) validate(all bool) error {
 
 	// no validation rules for DefinedInCanvas
 
-	if m.X != nil {
-		// no validation rules for X
-	}
-
-	if m.Y != nil {
-		// no validation rules for Y
-	}
+	// no validation rules for WidthUnit
 
 	if m.Width != nil {
 		// no validation rules for Width
-	}
-
-	if m.Height != nil {
-		// no validation rules for Height
 	}
 
 	if len(errors) > 0 {
@@ -12279,8 +11446,6 @@ func (m *ConnectorSpec) validate(all bool) error {
 		}
 	}
 
-	// no validation rules for PropertiesFromVariables
-
 	if len(errors) > 0 {
 		return ConnectorSpecMultiError(errors)
 	}
@@ -12461,22 +11626,22 @@ var _ interface {
 	ErrorName() string
 } = ConnectorStateValidationError{}
 
-// Validate checks the field values on MetricsViewSpec_DimensionV2 with the
-// rules defined in the proto definition for this message. If any rules are
+// Validate checks the field values on MetricsViewSpec_Dimension with the rules
+// defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
-func (m *MetricsViewSpec_DimensionV2) Validate() error {
+func (m *MetricsViewSpec_Dimension) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on MetricsViewSpec_DimensionV2 with the
+// ValidateAll checks the field values on MetricsViewSpec_Dimension with the
 // rules defined in the proto definition for this message. If any rules are
 // violated, the result is a list of violation errors wrapped in
-// MetricsViewSpec_DimensionV2MultiError, or nil if none found.
-func (m *MetricsViewSpec_DimensionV2) ValidateAll() error {
+// MetricsViewSpec_DimensionMultiError, or nil if none found.
+func (m *MetricsViewSpec_Dimension) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *MetricsViewSpec_DimensionV2) validate(all bool) error {
+func (m *MetricsViewSpec_Dimension) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -12498,19 +11663,19 @@ func (m *MetricsViewSpec_DimensionV2) validate(all bool) error {
 	// no validation rules for Uri
 
 	if len(errors) > 0 {
-		return MetricsViewSpec_DimensionV2MultiError(errors)
+		return MetricsViewSpec_DimensionMultiError(errors)
 	}
 
 	return nil
 }
 
-// MetricsViewSpec_DimensionV2MultiError is an error wrapping multiple
-// validation errors returned by MetricsViewSpec_DimensionV2.ValidateAll() if
-// the designated constraints aren't met.
-type MetricsViewSpec_DimensionV2MultiError []error
+// MetricsViewSpec_DimensionMultiError is an error wrapping multiple validation
+// errors returned by MetricsViewSpec_Dimension.ValidateAll() if the
+// designated constraints aren't met.
+type MetricsViewSpec_DimensionMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m MetricsViewSpec_DimensionV2MultiError) Error() string {
+func (m MetricsViewSpec_DimensionMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -12519,12 +11684,11 @@ func (m MetricsViewSpec_DimensionV2MultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m MetricsViewSpec_DimensionV2MultiError) AllErrors() []error { return m }
+func (m MetricsViewSpec_DimensionMultiError) AllErrors() []error { return m }
 
-// MetricsViewSpec_DimensionV2ValidationError is the validation error returned
-// by MetricsViewSpec_DimensionV2.Validate if the designated constraints
-// aren't met.
-type MetricsViewSpec_DimensionV2ValidationError struct {
+// MetricsViewSpec_DimensionValidationError is the validation error returned by
+// MetricsViewSpec_Dimension.Validate if the designated constraints aren't met.
+type MetricsViewSpec_DimensionValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -12532,24 +11696,24 @@ type MetricsViewSpec_DimensionV2ValidationError struct {
 }
 
 // Field function returns field value.
-func (e MetricsViewSpec_DimensionV2ValidationError) Field() string { return e.field }
+func (e MetricsViewSpec_DimensionValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e MetricsViewSpec_DimensionV2ValidationError) Reason() string { return e.reason }
+func (e MetricsViewSpec_DimensionValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e MetricsViewSpec_DimensionV2ValidationError) Cause() error { return e.cause }
+func (e MetricsViewSpec_DimensionValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e MetricsViewSpec_DimensionV2ValidationError) Key() bool { return e.key }
+func (e MetricsViewSpec_DimensionValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e MetricsViewSpec_DimensionV2ValidationError) ErrorName() string {
-	return "MetricsViewSpec_DimensionV2ValidationError"
+func (e MetricsViewSpec_DimensionValidationError) ErrorName() string {
+	return "MetricsViewSpec_DimensionValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e MetricsViewSpec_DimensionV2ValidationError) Error() string {
+func (e MetricsViewSpec_DimensionValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -12561,14 +11725,14 @@ func (e MetricsViewSpec_DimensionV2ValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sMetricsViewSpec_DimensionV2.%s: %s%s",
+		"invalid %sMetricsViewSpec_Dimension.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = MetricsViewSpec_DimensionV2ValidationError{}
+var _ error = MetricsViewSpec_DimensionValidationError{}
 
 var _ interface {
 	Field() string
@@ -12576,7 +11740,7 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = MetricsViewSpec_DimensionV2ValidationError{}
+} = MetricsViewSpec_DimensionValidationError{}
 
 // Validate checks the field values on MetricsViewSpec_DimensionSelector with
 // the rules defined in the proto definition for this message. If any rules
@@ -12830,22 +11994,22 @@ var _ interface {
 	ErrorName() string
 } = MetricsViewSpec_MeasureWindowValidationError{}
 
-// Validate checks the field values on MetricsViewSpec_MeasureV2 with the rules
+// Validate checks the field values on MetricsViewSpec_Measure with the rules
 // defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
-func (m *MetricsViewSpec_MeasureV2) Validate() error {
+func (m *MetricsViewSpec_Measure) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on MetricsViewSpec_MeasureV2 with the
+// ValidateAll checks the field values on MetricsViewSpec_Measure with the
 // rules defined in the proto definition for this message. If any rules are
 // violated, the result is a list of violation errors wrapped in
-// MetricsViewSpec_MeasureV2MultiError, or nil if none found.
-func (m *MetricsViewSpec_MeasureV2) ValidateAll() error {
+// MetricsViewSpec_MeasureMultiError, or nil if none found.
+func (m *MetricsViewSpec_Measure) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *MetricsViewSpec_MeasureV2) validate(all bool) error {
+func (m *MetricsViewSpec_Measure) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -12866,7 +12030,7 @@ func (m *MetricsViewSpec_MeasureV2) validate(all bool) error {
 		switch v := interface{}(m.GetWindow()).(type) {
 		case interface{ ValidateAll() error }:
 			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, MetricsViewSpec_MeasureV2ValidationError{
+				errors = append(errors, MetricsViewSpec_MeasureValidationError{
 					field:  "Window",
 					reason: "embedded message failed validation",
 					cause:  err,
@@ -12874,7 +12038,7 @@ func (m *MetricsViewSpec_MeasureV2) validate(all bool) error {
 			}
 		case interface{ Validate() error }:
 			if err := v.Validate(); err != nil {
-				errors = append(errors, MetricsViewSpec_MeasureV2ValidationError{
+				errors = append(errors, MetricsViewSpec_MeasureValidationError{
 					field:  "Window",
 					reason: "embedded message failed validation",
 					cause:  err,
@@ -12883,7 +12047,7 @@ func (m *MetricsViewSpec_MeasureV2) validate(all bool) error {
 		}
 	} else if v, ok := interface{}(m.GetWindow()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
-			return MetricsViewSpec_MeasureV2ValidationError{
+			return MetricsViewSpec_MeasureValidationError{
 				field:  "Window",
 				reason: "embedded message failed validation",
 				cause:  err,
@@ -12898,7 +12062,7 @@ func (m *MetricsViewSpec_MeasureV2) validate(all bool) error {
 			switch v := interface{}(item).(type) {
 			case interface{ ValidateAll() error }:
 				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, MetricsViewSpec_MeasureV2ValidationError{
+					errors = append(errors, MetricsViewSpec_MeasureValidationError{
 						field:  fmt.Sprintf("PerDimensions[%v]", idx),
 						reason: "embedded message failed validation",
 						cause:  err,
@@ -12906,7 +12070,7 @@ func (m *MetricsViewSpec_MeasureV2) validate(all bool) error {
 				}
 			case interface{ Validate() error }:
 				if err := v.Validate(); err != nil {
-					errors = append(errors, MetricsViewSpec_MeasureV2ValidationError{
+					errors = append(errors, MetricsViewSpec_MeasureValidationError{
 						field:  fmt.Sprintf("PerDimensions[%v]", idx),
 						reason: "embedded message failed validation",
 						cause:  err,
@@ -12915,7 +12079,7 @@ func (m *MetricsViewSpec_MeasureV2) validate(all bool) error {
 			}
 		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
 			if err := v.Validate(); err != nil {
-				return MetricsViewSpec_MeasureV2ValidationError{
+				return MetricsViewSpec_MeasureValidationError{
 					field:  fmt.Sprintf("PerDimensions[%v]", idx),
 					reason: "embedded message failed validation",
 					cause:  err,
@@ -12932,7 +12096,7 @@ func (m *MetricsViewSpec_MeasureV2) validate(all bool) error {
 			switch v := interface{}(item).(type) {
 			case interface{ ValidateAll() error }:
 				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, MetricsViewSpec_MeasureV2ValidationError{
+					errors = append(errors, MetricsViewSpec_MeasureValidationError{
 						field:  fmt.Sprintf("RequiredDimensions[%v]", idx),
 						reason: "embedded message failed validation",
 						cause:  err,
@@ -12940,7 +12104,7 @@ func (m *MetricsViewSpec_MeasureV2) validate(all bool) error {
 				}
 			case interface{ Validate() error }:
 				if err := v.Validate(); err != nil {
-					errors = append(errors, MetricsViewSpec_MeasureV2ValidationError{
+					errors = append(errors, MetricsViewSpec_MeasureValidationError{
 						field:  fmt.Sprintf("RequiredDimensions[%v]", idx),
 						reason: "embedded message failed validation",
 						cause:  err,
@@ -12949,7 +12113,7 @@ func (m *MetricsViewSpec_MeasureV2) validate(all bool) error {
 			}
 		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
 			if err := v.Validate(); err != nil {
-				return MetricsViewSpec_MeasureV2ValidationError{
+				return MetricsViewSpec_MeasureValidationError{
 					field:  fmt.Sprintf("RequiredDimensions[%v]", idx),
 					reason: "embedded message failed validation",
 					cause:  err,
@@ -12967,7 +12131,7 @@ func (m *MetricsViewSpec_MeasureV2) validate(all bool) error {
 		switch v := interface{}(m.GetFormatD3Locale()).(type) {
 		case interface{ ValidateAll() error }:
 			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, MetricsViewSpec_MeasureV2ValidationError{
+				errors = append(errors, MetricsViewSpec_MeasureValidationError{
 					field:  "FormatD3Locale",
 					reason: "embedded message failed validation",
 					cause:  err,
@@ -12975,7 +12139,7 @@ func (m *MetricsViewSpec_MeasureV2) validate(all bool) error {
 			}
 		case interface{ Validate() error }:
 			if err := v.Validate(); err != nil {
-				errors = append(errors, MetricsViewSpec_MeasureV2ValidationError{
+				errors = append(errors, MetricsViewSpec_MeasureValidationError{
 					field:  "FormatD3Locale",
 					reason: "embedded message failed validation",
 					cause:  err,
@@ -12984,7 +12148,7 @@ func (m *MetricsViewSpec_MeasureV2) validate(all bool) error {
 		}
 	} else if v, ok := interface{}(m.GetFormatD3Locale()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
-			return MetricsViewSpec_MeasureV2ValidationError{
+			return MetricsViewSpec_MeasureValidationError{
 				field:  "FormatD3Locale",
 				reason: "embedded message failed validation",
 				cause:  err,
@@ -12994,20 +12158,22 @@ func (m *MetricsViewSpec_MeasureV2) validate(all bool) error {
 
 	// no validation rules for ValidPercentOfTotal
 
+	// no validation rules for TreatNullsAs
+
 	if len(errors) > 0 {
-		return MetricsViewSpec_MeasureV2MultiError(errors)
+		return MetricsViewSpec_MeasureMultiError(errors)
 	}
 
 	return nil
 }
 
-// MetricsViewSpec_MeasureV2MultiError is an error wrapping multiple validation
-// errors returned by MetricsViewSpec_MeasureV2.ValidateAll() if the
-// designated constraints aren't met.
-type MetricsViewSpec_MeasureV2MultiError []error
+// MetricsViewSpec_MeasureMultiError is an error wrapping multiple validation
+// errors returned by MetricsViewSpec_Measure.ValidateAll() if the designated
+// constraints aren't met.
+type MetricsViewSpec_MeasureMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m MetricsViewSpec_MeasureV2MultiError) Error() string {
+func (m MetricsViewSpec_MeasureMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -13016,11 +12182,11 @@ func (m MetricsViewSpec_MeasureV2MultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m MetricsViewSpec_MeasureV2MultiError) AllErrors() []error { return m }
+func (m MetricsViewSpec_MeasureMultiError) AllErrors() []error { return m }
 
-// MetricsViewSpec_MeasureV2ValidationError is the validation error returned by
-// MetricsViewSpec_MeasureV2.Validate if the designated constraints aren't met.
-type MetricsViewSpec_MeasureV2ValidationError struct {
+// MetricsViewSpec_MeasureValidationError is the validation error returned by
+// MetricsViewSpec_Measure.Validate if the designated constraints aren't met.
+type MetricsViewSpec_MeasureValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -13028,24 +12194,24 @@ type MetricsViewSpec_MeasureV2ValidationError struct {
 }
 
 // Field function returns field value.
-func (e MetricsViewSpec_MeasureV2ValidationError) Field() string { return e.field }
+func (e MetricsViewSpec_MeasureValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e MetricsViewSpec_MeasureV2ValidationError) Reason() string { return e.reason }
+func (e MetricsViewSpec_MeasureValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e MetricsViewSpec_MeasureV2ValidationError) Cause() error { return e.cause }
+func (e MetricsViewSpec_MeasureValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e MetricsViewSpec_MeasureV2ValidationError) Key() bool { return e.key }
+func (e MetricsViewSpec_MeasureValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e MetricsViewSpec_MeasureV2ValidationError) ErrorName() string {
-	return "MetricsViewSpec_MeasureV2ValidationError"
+func (e MetricsViewSpec_MeasureValidationError) ErrorName() string {
+	return "MetricsViewSpec_MeasureValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e MetricsViewSpec_MeasureV2ValidationError) Error() string {
+func (e MetricsViewSpec_MeasureValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -13057,14 +12223,14 @@ func (e MetricsViewSpec_MeasureV2ValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sMetricsViewSpec_MeasureV2.%s: %s%s",
+		"invalid %sMetricsViewSpec_Measure.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = MetricsViewSpec_MeasureV2ValidationError{}
+var _ error = MetricsViewSpec_MeasureValidationError{}
 
 var _ interface {
 	Field() string
@@ -13072,255 +12238,4 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = MetricsViewSpec_MeasureV2ValidationError{}
-
-// Validate checks the field values on
-// MetricsViewSpec_AvailableComparisonOffset with the rules defined in the
-// proto definition for this message. If any rules are violated, the first
-// error encountered is returned, or nil if there are no violations.
-func (m *MetricsViewSpec_AvailableComparisonOffset) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on
-// MetricsViewSpec_AvailableComparisonOffset with the rules defined in the
-// proto definition for this message. If any rules are violated, the result is
-// a list of violation errors wrapped in
-// MetricsViewSpec_AvailableComparisonOffsetMultiError, or nil if none found.
-func (m *MetricsViewSpec_AvailableComparisonOffset) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *MetricsViewSpec_AvailableComparisonOffset) validate(all bool) error {
-	if m == nil {
-		return nil
-	}
-
-	var errors []error
-
-	// no validation rules for Offset
-
-	// no validation rules for Range
-
-	if len(errors) > 0 {
-		return MetricsViewSpec_AvailableComparisonOffsetMultiError(errors)
-	}
-
-	return nil
-}
-
-// MetricsViewSpec_AvailableComparisonOffsetMultiError is an error wrapping
-// multiple validation errors returned by
-// MetricsViewSpec_AvailableComparisonOffset.ValidateAll() if the designated
-// constraints aren't met.
-type MetricsViewSpec_AvailableComparisonOffsetMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m MetricsViewSpec_AvailableComparisonOffsetMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m MetricsViewSpec_AvailableComparisonOffsetMultiError) AllErrors() []error { return m }
-
-// MetricsViewSpec_AvailableComparisonOffsetValidationError is the validation
-// error returned by MetricsViewSpec_AvailableComparisonOffset.Validate if the
-// designated constraints aren't met.
-type MetricsViewSpec_AvailableComparisonOffsetValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e MetricsViewSpec_AvailableComparisonOffsetValidationError) Field() string { return e.field }
-
-// Reason function returns reason value.
-func (e MetricsViewSpec_AvailableComparisonOffsetValidationError) Reason() string { return e.reason }
-
-// Cause function returns cause value.
-func (e MetricsViewSpec_AvailableComparisonOffsetValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e MetricsViewSpec_AvailableComparisonOffsetValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e MetricsViewSpec_AvailableComparisonOffsetValidationError) ErrorName() string {
-	return "MetricsViewSpec_AvailableComparisonOffsetValidationError"
-}
-
-// Error satisfies the builtin error interface
-func (e MetricsViewSpec_AvailableComparisonOffsetValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sMetricsViewSpec_AvailableComparisonOffset.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = MetricsViewSpec_AvailableComparisonOffsetValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = MetricsViewSpec_AvailableComparisonOffsetValidationError{}
-
-// Validate checks the field values on MetricsViewSpec_AvailableTimeRange with
-// the rules defined in the proto definition for this message. If any rules
-// are violated, the first error encountered is returned, or nil if there are
-// no violations.
-func (m *MetricsViewSpec_AvailableTimeRange) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on MetricsViewSpec_AvailableTimeRange
-// with the rules defined in the proto definition for this message. If any
-// rules are violated, the result is a list of violation errors wrapped in
-// MetricsViewSpec_AvailableTimeRangeMultiError, or nil if none found.
-func (m *MetricsViewSpec_AvailableTimeRange) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *MetricsViewSpec_AvailableTimeRange) validate(all bool) error {
-	if m == nil {
-		return nil
-	}
-
-	var errors []error
-
-	// no validation rules for Range
-
-	for idx, item := range m.GetComparisonOffsets() {
-		_, _ = idx, item
-
-		if all {
-			switch v := interface{}(item).(type) {
-			case interface{ ValidateAll() error }:
-				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, MetricsViewSpec_AvailableTimeRangeValidationError{
-						field:  fmt.Sprintf("ComparisonOffsets[%v]", idx),
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			case interface{ Validate() error }:
-				if err := v.Validate(); err != nil {
-					errors = append(errors, MetricsViewSpec_AvailableTimeRangeValidationError{
-						field:  fmt.Sprintf("ComparisonOffsets[%v]", idx),
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			}
-		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
-			if err := v.Validate(); err != nil {
-				return MetricsViewSpec_AvailableTimeRangeValidationError{
-					field:  fmt.Sprintf("ComparisonOffsets[%v]", idx),
-					reason: "embedded message failed validation",
-					cause:  err,
-				}
-			}
-		}
-
-	}
-
-	if len(errors) > 0 {
-		return MetricsViewSpec_AvailableTimeRangeMultiError(errors)
-	}
-
-	return nil
-}
-
-// MetricsViewSpec_AvailableTimeRangeMultiError is an error wrapping multiple
-// validation errors returned by
-// MetricsViewSpec_AvailableTimeRange.ValidateAll() if the designated
-// constraints aren't met.
-type MetricsViewSpec_AvailableTimeRangeMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m MetricsViewSpec_AvailableTimeRangeMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m MetricsViewSpec_AvailableTimeRangeMultiError) AllErrors() []error { return m }
-
-// MetricsViewSpec_AvailableTimeRangeValidationError is the validation error
-// returned by MetricsViewSpec_AvailableTimeRange.Validate if the designated
-// constraints aren't met.
-type MetricsViewSpec_AvailableTimeRangeValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e MetricsViewSpec_AvailableTimeRangeValidationError) Field() string { return e.field }
-
-// Reason function returns reason value.
-func (e MetricsViewSpec_AvailableTimeRangeValidationError) Reason() string { return e.reason }
-
-// Cause function returns cause value.
-func (e MetricsViewSpec_AvailableTimeRangeValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e MetricsViewSpec_AvailableTimeRangeValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e MetricsViewSpec_AvailableTimeRangeValidationError) ErrorName() string {
-	return "MetricsViewSpec_AvailableTimeRangeValidationError"
-}
-
-// Error satisfies the builtin error interface
-func (e MetricsViewSpec_AvailableTimeRangeValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sMetricsViewSpec_AvailableTimeRange.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = MetricsViewSpec_AvailableTimeRangeValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = MetricsViewSpec_AvailableTimeRangeValidationError{}
+} = MetricsViewSpec_MeasureValidationError{}

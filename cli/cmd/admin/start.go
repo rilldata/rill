@@ -52,6 +52,7 @@ type Config struct {
 	RiverDatabaseURL          string                 `split_words:"true"`
 	RedisURL                  string                 `default:"" split_words:"true"`
 	ProvisionerSetJSON        string                 `split_words:"true"`
+	ProvisionerMaxConcurrency int                    `default:"30" split_words:"true"`
 	DefaultProvisioner        string                 `split_words:"true"`
 	Jobs                      []string               `split_words:"true"`
 	LogLevel                  zapcore.Level          `default:"info" split_words:"true"`
@@ -122,6 +123,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 			// Init logger
 			cfg := zap.NewProductionConfig()
 			cfg.Level.SetLevel(conf.LogLevel)
+			cfg.EncoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
 			logger, err := cfg.Build()
 			if err != nil {
 				fmt.Printf("error: failed to create logger: %s\n", err.Error())
@@ -288,6 +290,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				ExternalURL:               conf.ExternalGRPCURL, // NOTE: using gRPC url
 				FrontendURL:               conf.FrontendURL,
 				ProvisionerSetJSON:        conf.ProvisionerSetJSON,
+				ProvisionerMaxConcurrency: conf.ProvisionerMaxConcurrency,
 				DefaultProvisioner:        conf.DefaultProvisioner,
 				VersionNumber:             ch.Version.Number,
 				VersionCommit:             ch.Version.Commit,

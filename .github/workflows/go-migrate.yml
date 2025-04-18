@@ -1,0 +1,72 @@
+# This workflow is for validating Rill migration files.
+
+name: Validate Migrations
+on:
+  create:
+  push:
+    branches:
+      - "main"
+      - "release**"
+  workflow_dispatch:
+
+jobs:
+  validate-sequential:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Check Admin Migrations
+      run: |
+        ./scripts/check_migrations.sh admin/database/postgres/migrations
+
+    - name: Check Runtime Migrations
+      run: |
+        ./scripts/check_migrations.sh runtime/drivers/sqlite/migrations
+
+  validate-apply:
+    runs-on: ubuntu-latest
+    needs: validate-sequential
+    services:
+      postgres:
+        image: postgres:14
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: 1.23
+
+    - name: Apply Migrations
+      env:
+        RILL_ADMIN_DATABASE_DRIVER: postgres
+        RILL_ADMIN_DATABASE_URL: postgres://postgres:postgres@localhost:5432/postgres
+        RILL_ADMIN_RIVER_DATABASE_URL: postgres://postgres:postgres@localhost:5432/postgres
+      run: |
+        go run ./cli admin migrate
+
+    - name: Notify Slack
+      uses: ravsamhq/notify-slack-action@v2
+      if: always()
+      with:
+        status: ${{ job.status }}
+        notification_title: "{workflow} has {status_message}"
+        message_format: "{emoji} *{workflow}* {status_message} in <{repo_url}|{repo}>"
+        footer: "Linked Repo <{repo_url}|{repo}>"
+        notify_when: "failure"
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_ANNOUNCE_DD }}

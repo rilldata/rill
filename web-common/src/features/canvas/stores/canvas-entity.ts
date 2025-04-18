@@ -1,31 +1,44 @@
-import { useCanvas } from "@rilldata/web-common/features/canvas/selector";
+import {
+  useCanvas,
+  type CanvasResponse,
+} from "@rilldata/web-common/features/canvas/selector";
 import type { CanvasSpecResponseStore } from "@rilldata/web-common/features/canvas/types";
-import { mergeFilters } from "@rilldata/web-common/features/dashboards/pivot/pivot-merge-filters";
-import {
-  buildValidMetricsViewFilter,
-  createAndExpression,
-} from "@rilldata/web-common/features/dashboards/stores/filter-utils";
-import { convertFilterParamToExpression } from "@rilldata/web-common/features/dashboards/url-state/filters/converters";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
-import type { DashboardTimeControls } from "@rilldata/web-common/lib/time/types";
 import {
-  V1Operation,
-  type V1Expression,
-  type V1TimeRange,
+  type V1ComponentSpecRendererProperties,
+  type V1MetricsViewSpec,
+  type V1Resource,
 } from "@rilldata/web-common/runtime-client";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-import type { GridStack } from "gridstack";
-import { derived, writable, type Writable } from "svelte/store";
-import { CanvasComponentState } from "./canvas-component";
+import {
+  derived,
+  get,
+  writable,
+  type Readable,
+  type Unsubscriber,
+} from "svelte/store";
 import { Filters } from "./filters";
 import { CanvasResolvedSpec } from "./spec";
 import { TimeControls } from "./time-control";
+import type { BaseCanvasComponent } from "../components/BaseCanvasComponent";
+import {
+  COMPONENT_CLASS_MAP,
+  createComponent,
+  isChartComponentType,
+  isTableComponentType,
+} from "../components/util";
+import type { FileArtifact } from "../../entity-management/file-artifact";
+import { parseDocument } from "yaml";
+import { fileArtifacts } from "../../entity-management/file-artifacts";
+import type { CanvasComponentType } from "../components/types";
+import { ResourceKind } from "../../entity-management/resource-selectors";
+import { Grid } from "./grid";
 
 export class CanvasEntity {
   name: string;
+  components = new Map<string, BaseCanvasComponent>();
 
-  /** Local state store for canvas components */
-  components: Map<string, CanvasComponentState>;
+  _rows: Grid = new Grid(this);
 
   /**
    * Time controls for the canvas entity containing various
@@ -42,130 +55,240 @@ export class CanvasEntity {
    * Spec store containing selectors derived from ResolveCanvas query
    */
   spec: CanvasResolvedSpec;
-
-  gridstack?: GridStack | null;
-
-  /**
-   * Index of the component higlighted or selected in the canvas
-   */
-  selectedComponentIndex: Writable<number | null>;
+  selectedComponent = writable<string | null>(null);
+  fileArtifact: FileArtifact | undefined;
+  parsedContent: Readable<ReturnType<typeof parseDocument>>;
+  specStore: CanvasSpecResponseStore;
+  // Tracks whether the canvas been loaded (and rows processed) for the first time
+  firstLoad = true;
+  unsubscriber: Unsubscriber;
 
   constructor(name: string) {
-    const specStore: CanvasSpecResponseStore = derived(runtime, (r, set) =>
-      useCanvas(r.instanceId, name, { queryClient }).subscribe(set),
+    const instanceId = get(runtime).instanceId;
+    this.specStore = useCanvas(
+      instanceId,
+      name,
+      {
+        retry: 3,
+        retryDelay: (attemptIndex) =>
+          Math.min(1000 + 1000 * attemptIndex, 5000),
+      },
+      queryClient,
     );
 
     this.name = name;
 
-    this.components = new Map();
-    this.selectedComponentIndex = writable(null);
-    this.spec = new CanvasResolvedSpec(specStore);
-    this.timeControls = new TimeControls(specStore);
+    this.spec = new CanvasResolvedSpec(this.specStore);
+    this.timeControls = new TimeControls(this.specStore);
     this.filters = new Filters(this.spec);
+
+    this.unsubscriber = this.specStore.subscribe((spec) => {
+      const filePath = spec.data?.filePath;
+
+      if (!filePath) {
+        return;
+      }
+
+      if (!this.fileArtifact) {
+        const fileArtifact = fileArtifacts.getFileArtifact(filePath);
+
+        if (!fileArtifact) {
+          return;
+        }
+
+        this.fileArtifact = fileArtifact;
+
+        if (!this.parsedContent) {
+          this.parsedContent = derived(
+            fileArtifact.editorContent,
+            (editorContent) => {
+              const parsed = parseDocument(editorContent ?? "");
+              return parsed;
+            },
+          );
+        }
+      }
+
+      if (spec.data) {
+        this.processRows(spec.data);
+      }
+    });
   }
 
-  setSelectedComponentIndex = (index: number | null) => {
-    this.selectedComponentIndex.set(index);
+  // Not currently being used
+  unsubscribe = () => {
+    // this.unsubscriber();
   };
 
-  useComponent = (componentName: string) => {
-    let componentEntity = this.components.get(componentName);
+  duplicateItem = (id: string) => {
+    const component = this.components.get(id);
+    if (!component) return;
+    const { pathInYAML, type, resource } = component;
+    const [, rowIndex, , columnIndex] = pathInYAML;
+    const path = constructPath(rowIndex, columnIndex, type);
 
-    if (!componentEntity) {
-      componentEntity = new CanvasComponentState(componentName, this.spec);
-      this.components.set(componentName, componentEntity);
+    const existingResource = get(resource);
+
+    const metricsViewName = existingResource?.component?.state?.validSpec
+      ?.rendererProperties?.metrics_view as string | undefined;
+
+    if (!metricsViewName) {
+      throw new Error("No metrics view name found");
     }
-    return componentEntity;
+
+    const metricsViewSpec = get(
+      this.spec.getMetricsViewFromName(metricsViewName),
+    ).metricsView;
+
+    if (!metricsViewSpec) {
+      throw new Error("No metrics view spec found");
+    }
+
+    const newResource = this.createOptimisticResource({
+      type,
+      row: rowIndex + 1,
+      column: columnIndex,
+      metricsViewName,
+      metricsViewSpec,
+    });
+
+    const newComponent = createComponent(newResource, this, path);
+    return newComponent.id;
   };
 
-  setGridstack(gridstack: GridStack | null) {
-    this.gridstack = gridstack;
-  }
+  // Once we have stable IDs, this can be simplified
+  processRows = (canvasData: Partial<CanvasResponse>) => {
+    const newComponents = canvasData.components;
+    const existingKeys = new Set(this.components.keys());
+    const rows = canvasData.canvas?.rows ?? [];
 
-  /**
-   * Helper method to get the time range and where clause for a given metrics view
-   * with the ability to override the time range and filter
-   */
-  createTimeAndFilterStore = (
-    metricsViewName: string,
-    {
-      componentTimeRange,
-      componentComparisonRange,
-      componentFilter,
-    }: {
-      timeRangeStore?: Writable<DashboardTimeControls | undefined>;
-      componentTimeRange?: string;
-      componentComparisonRange?: string;
-      componentFilter?: string;
-    },
-  ) => {
-    const { timeControls, filters, spec } = this;
+    const set = new Set<string>();
 
-    const dimensionsStore = spec.getDimensionsForMetricView(metricsViewName);
-    const measuresStore = spec.getMeasuresForMetricView(metricsViewName);
+    let createdNewComponent = false;
 
-    return derived(
-      [
-        timeControls.timeRangeStateStore,
-        timeControls.comparisonRangeStateStore,
-        timeControls.selectedTimezone,
-        filters.whereFilter,
-        filters.dimensionThresholdFilters,
-        dimensionsStore,
-        measuresStore,
-      ],
-      ([
-        globalTimeRangeState,
-        globalComparisonRangeState,
-        timeZone,
-        whereFilter,
-        dtf,
-        dimensions,
-        measures,
-      ]) => {
-        // Time Range
-        let timeRange: V1TimeRange = {
-          start: globalTimeRangeState?.timeStart,
-          end: globalTimeRangeState?.timeEnd,
-          timeZone,
-        };
-        if (componentTimeRange) {
-          // TODO: update logic
-          timeRange = { isoDuration: componentTimeRange, timeZone };
-        }
-        const timeGrain = globalTimeRangeState?.selectedTimeRange?.interval;
+    rows.forEach((row, rowIndex) => {
+      const items = row.items ?? [];
 
-        // Comparison Range
-        let comparisonRange: V1TimeRange = {
-          start: globalComparisonRangeState?.comparisonTimeStart,
-          end: globalComparisonRangeState?.comparisonTimeEnd,
-          timeZone,
-        };
-        if (componentComparisonRange) {
-          // TODO: update logic
-          comparisonRange = { isoDuration: componentComparisonRange, timeZone };
+      items.forEach((item, columnIndex) => {
+        const componentName = item.component;
+
+        if (!componentName) return;
+
+        set.add(componentName ?? "");
+
+        const newResource = newComponents?.[componentName];
+        if (!newResource) {
+          throw new Error("No component found: " + componentName);
         }
 
-        // Dimension Filters
-        const globalWhere =
-          buildValidMetricsViewFilter(whereFilter, dtf, dimensions, measures) ??
-          createAndExpression([]);
+        const newType = newResource.component?.state?.validSpec
+          ?.renderer as CanvasComponentType;
+        const existingClass = this.components.get(componentName);
+        const path = constructPath(rowIndex, columnIndex, newType);
 
-        let where: V1Expression | undefined = globalWhere;
-
-        if (componentFilter) {
-          let expr = convertFilterParamToExpression(componentFilter);
-          if (
-            expr?.cond?.op !== V1Operation.OPERATION_AND &&
-            expr?.cond?.op !== V1Operation.OPERATION_OR
-          ) {
-            expr = createAndExpression([expr]);
-          }
-          where = mergeFilters(globalWhere, expr);
+        if (existingClass && areSameType(newType, existingClass.type)) {
+          existingClass.update(newResource, path);
+        } else {
+          createdNewComponent = true;
+          this.components.set(
+            componentName,
+            createComponent(newResource, this, path),
+          );
         }
+      });
+    });
 
-        return { timeRange, comparisonRange, where, timeGrain };
-      },
+    const didUpdateRowCount = this._rows.updateFromCanvasRows(rows);
+
+    existingKeys.difference(set).forEach((componentName) => {
+      const component = this.components.get(componentName);
+      if (component) {
+        this.components.delete(componentName);
+      }
+    });
+
+    // Calling this function triggers the rows to rerender, ensuring they're up to date
+    // with the components Map, which is not reactive
+    if ((!didUpdateRowCount && createdNewComponent) || this.firstLoad) {
+      this._rows.refresh();
+    }
+    this.firstLoad = false;
+  };
+
+  generateId = (row: number | undefined, column: number | undefined) => {
+    return `${this.name}--component-${row ?? 0}-${column ?? 0}`;
+  };
+
+  createOptimisticResource = (options: {
+    type: CanvasComponentType;
+    row: number;
+    column: number;
+    metricsViewName: string;
+    metricsViewSpec: V1MetricsViewSpec | undefined;
+  }): V1Resource => {
+    const { type, row, column, metricsViewName, metricsViewSpec } = options;
+
+    const spec = COMPONENT_CLASS_MAP[type].newComponentSpec(
+      metricsViewName,
+      metricsViewSpec,
     );
+
+    return {
+      meta: {
+        name: {
+          name: this.generateId(row, column),
+          kind: ResourceKind.Component,
+        },
+      },
+      component: {
+        state: {
+          validSpec: {
+            renderer: type,
+            rendererProperties:
+              spec as unknown as V1ComponentSpecRendererProperties,
+          },
+        },
+        spec: {
+          renderer: type,
+          rendererProperties:
+            spec as unknown as V1ComponentSpecRendererProperties,
+        },
+      },
+    };
   };
+
+  setSelectedComponent = (id: string | null) => {
+    this.selectedComponent.set(id);
+  };
+
+  removeComponent = (componentName: string) => {
+    this.components.delete(componentName);
+  };
+}
+
+export type ComponentPath = [
+  "rows",
+  number,
+  "items",
+  number,
+  CanvasComponentType,
+];
+
+function constructPath(
+  row: number,
+  column: number,
+  type: CanvasComponentType,
+): ComponentPath {
+  return ["rows", row, "items", column, type];
+}
+
+function areSameType(
+  newType: CanvasComponentType,
+  existingType: CanvasComponentType,
+) {
+  return (
+    newType === existingType ||
+    (isTableComponentType(existingType) && isTableComponentType(newType)) ||
+    (isChartComponentType(existingType) && isChartComponentType(newType))
+  );
 }

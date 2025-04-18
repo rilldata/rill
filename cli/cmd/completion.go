@@ -3,14 +3,16 @@ package cmd
 import (
 	"os"
 
+	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/spf13/cobra"
 )
 
 // See: https://github.com/spf13/cobra/blob/main/shell_completions.md
-var completionCmd = &cobra.Command{
-	Use:   "completion [bash|zsh|fish|powershell]",
-	Short: "Generate completion script for your shell",
-	Long: `To load completions:
+func completionCmd(ch *cmdutil.Helper) *cobra.Command {
+	return &cobra.Command{
+		Use:   "completion [bash|zsh|fish|powershell]",
+		Short: "Generate completion script for your shell",
+		Long: `To load completions:
 Bash:
   $ source <(rill completion bash)
   # To load completions for each session, execute once:
@@ -35,24 +37,25 @@ PowerShell:
   PS> rill completion powershell > rill.ps1
   # and source this file from your PowerShell profile.
 `,
-	DisableFlagsInUseLine: true,
-	Hidden:                true,
-	ValidArgs:             []string{"bash", "zsh", "fish", "powershell"},
-	Args:                  cobra.MatchAll(cobra.ExactArgs(1), cobra.OnlyValidArgs),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		var err error
+		DisableFlagsInUseLine: true,
+		Hidden:                !ch.IsDev(),
+		ValidArgs:             []string{"bash", "zsh", "fish", "powershell"},
+		Args:                  cobra.MatchAll(cobra.ExactArgs(1), cobra.OnlyValidArgs),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			var err error
 
-		switch args[0] {
-		case "bash":
-			err = cmd.Root().GenBashCompletion(os.Stdout)
-		case "zsh":
-			err = cmd.Root().GenZshCompletion(os.Stdout)
-		case "fish":
-			err = cmd.Root().GenFishCompletion(os.Stdout, true)
-		case "powershell":
-			err = cmd.Root().GenPowerShellCompletionWithDesc(os.Stdout)
-		}
+			switch args[0] {
+			case "bash":
+				err = cmd.Root().GenBashCompletion(os.Stdout)
+			case "zsh":
+				err = cmd.Root().GenZshCompletion(os.Stdout)
+			case "fish":
+				err = cmd.Root().GenFishCompletion(os.Stdout, true)
+			case "powershell":
+				err = cmd.Root().GenPowerShellCompletionWithDesc(os.Stdout)
+			}
 
-		return err
-	},
+			return err
+		},
+	}
 }

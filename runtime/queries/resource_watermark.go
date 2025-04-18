@@ -96,7 +96,7 @@ func (q *ResourceWatermark) resolveMetricsView(ctx context.Context, rt *runtime.
 	}
 	defer release()
 
-	res, err := olap.Execute(ctx, &drivers.Statement{
+	res, err := olap.Query(ctx, &drivers.Statement{
 		Query:            sql,
 		Priority:         priority,
 		ExecutionTimeout: defaultExecutionTimeout,
@@ -111,6 +111,10 @@ func (q *ResourceWatermark) resolveMetricsView(ctx context.Context, rt *runtime.
 		if err := res.Scan(&t); err != nil {
 			return err
 		}
+	}
+	err = res.Err()
+	if err != nil {
+		return err
 	}
 
 	if !t.IsZero() {

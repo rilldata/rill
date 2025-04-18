@@ -1,5 +1,6 @@
 <script lang="ts">
   import { page } from "$app/stores";
+  import ContentContainer from "@rilldata/web-admin/components/layout/ContentContainer.svelte";
   import OrganizationHibernating from "@rilldata/web-admin/features/organizations/hibernating/OrganizationHibernating.svelte";
   import { areAllProjectsHibernating } from "@rilldata/web-admin/features/organizations/selectors";
   import {
@@ -28,10 +29,8 @@
   <title>{title} overview - Rill</title>
 </svelte:head>
 
-{#if $org.data && $org.data.organization && $projs.data}
-  <section
-    class="mx-8 my-8 sm:my-16 sm:mx-16 lg:mx-32 lg:my-24 2xl:mx-64 mx-auto flex flex-col gap-y-4"
-  >
+<ContentContainer showTitle={false} maxWidth={1300}>
+  {#if $org.data && $org.data.organization && $projs.data}
     {#if $projs.data.projects?.length === 0}
       <OrganizationHero {title} />
       <span>
@@ -52,5 +51,5 @@
         <ProjectCards organization={orgName} />
       </div>
     {/if}
-  </section>
-{/if}
+  {/if}
+</ContentContainer>

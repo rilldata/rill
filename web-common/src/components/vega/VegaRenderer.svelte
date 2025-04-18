@@ -1,18 +1,16 @@
 <script lang="ts">
   import CancelCircle from "@rilldata/web-common/components/icons/CancelCircle.svelte";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { onDestroy } from "svelte";
   import {
-    type EmbedOptions,
     type SignalListeners,
     Vega,
     type View,
     type VisualizationSpec,
   } from "svelte-vega";
-  import { get } from "svelte/store";
   import type { ExpressionFunction, VLTooltipFormatter } from "./types";
-  import { getRillTheme } from "./vega-config";
+  import { createEmbedOptions } from "./vega-embed-options";
   import { VegaLiteTooltipHandler } from "./vega-tooltip";
+  import "./vega.css";
 
   export let data: Record<string, unknown> = {};
   export let spec: VisualizationSpec;
@@ -20,13 +18,12 @@
   export let expressionFunctions: ExpressionFunction = {};
   export let error: string | null = null;
   export let canvasDashboard = false;
-  export let chartView = false;
+  export let renderer: "canvas" | "svg" = "canvas";
   export let tooltipFormatter: VLTooltipFormatter | undefined = undefined;
   export let view: View;
   export let isScrubbing: boolean;
 
   let contentRect = new DOMRect(0, 0, 0, 0);
-  let jwt = get(runtime).jwt;
 
   $: width = contentRect.width;
   $: height = contentRect.height * 0.95 - 80;
@@ -62,26 +59,14 @@
     void view.runAsync();
   }
 
-  $: options = <EmbedOptions>{
-    config: getRillTheme(canvasDashboard),
-    renderer: "svg",
-    actions: false,
-    logLevel: 0, // only show errors
-    width: canvasDashboard ? width : undefined,
+  $: options = createEmbedOptions({
+    canvasDashboard,
+    width,
+    height,
+    renderer,
     expressionFunctions,
-    height: chartView || !canvasDashboard ? undefined : height,
-    loader: {
-      baseURL: `${get(runtime).host}/v1/instances/${get(runtime).instanceId}/assets/`,
-      ...(jwt &&
-        jwt.token && {
-          http: {
-            headers: {
-              Authorization: `Bearer ${jwt.token}`,
-            },
-          },
-        }),
-    },
-  };
+    useExpressionInterpreter: false,
+  });
 
   const onError = (e: CustomEvent<{ error: Error }>) => {
     error = e.detail.error.message;
@@ -119,35 +104,3 @@
     />
   {/if}
 </div>
-
-<style lang="postcss">
-  :global(.vega-embed) {
-    width: 100%;
-  }
-
-  :global(#vg-tooltip-element, #rill-vg-tooltip) {
-    @apply absolute border border-slate-300 p-3 rounded-lg pointer-events-none;
-    background: rgba(255, 255, 255, 0.9);
-    & h2 {
-      @apply text-slate-500 text-sm font-semibold mb-2;
-    }
-
-    & table {
-      @apply border-spacing-0;
-    }
-
-    & td {
-      @apply truncate py-0.5;
-    }
-
-    & td.key {
-      @apply text-left px-1 font-normal truncate;
-      max-width: 250px;
-    }
-
-    & td.value {
-      @apply text-left truncate font-semibold ui-copy-number;
-      max-width: 250px;
-    }
-  }
-</style>

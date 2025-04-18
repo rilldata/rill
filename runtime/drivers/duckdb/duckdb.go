@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log/slog"
+	"maps"
 	"net/url"
 	"strings"
 	"sync"
@@ -24,7 +24,6 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
-	"go.uber.org/zap/exp/zapslog"
 	"gocloud.dev/blob"
 	"golang.org/x/sync/semaphore"
 )
@@ -147,7 +146,7 @@ func (d Driver) Open(instanceID string, cfgMap map[string]any, st *storage.Clien
 	}
 
 	// See note in connection struct
-	olapSemSize := cfg.PoolSize - 1
+	olapSemSize := cfg.ReadPoolSize - 1
 	if olapSemSize < 1 {
 		olapSemSize = 1
 	}
@@ -323,7 +322,7 @@ func (c *connection) Driver() string {
 
 // Config used to open the Connection
 func (c *connection) Config() map[string]any {
-	return c.driverConfig
+	return maps.Clone(c.driverConfig)
 }
 
 // Close implements drivers.Connection.
@@ -391,6 +390,8 @@ func (c *connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecu
 			return &sqlStoreToSelfExecutor{c}, true
 		case "https":
 			return &httpsToSelfExecutor{c}, true
+		case "motherduck":
+			return &mdToSelfExecutor{c}, true
 		}
 		if _, ok := opts.InputHandle.AsObjectStore(); ok {
 			return &objectStoreToSelfExecutor{c}, true
@@ -413,34 +414,6 @@ func (c *connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecu
 // AsModelManager implements drivers.Handle.
 func (c *connection) AsModelManager(instanceID string) (drivers.ModelManager, bool) {
 	return c, true
-}
-
-// AsTransporter implements drivers.Connection.
-func (c *connection) AsTransporter(from, to drivers.Handle) (drivers.Transporter, bool) {
-	olap, _ := to.(*connection)
-	if c == to {
-		if from == to {
-			return newDuckDBToDuckDB(from, c, c.logger), true
-		}
-		switch from.Driver() {
-		case "motherduck":
-			return newMotherduckToDuckDB(from, c, c.logger), true
-		case "postgres":
-			return newDuckDBToDuckDB(from, c, c.logger), true
-		case "mysql":
-			return newDuckDBToDuckDB(from, c, c.logger), true
-		}
-		if store, ok := from.AsWarehouse(); ok {
-			return NewWarehouseToDuckDB(store, olap, c.logger), true
-		}
-		if store, ok := from.AsObjectStore(); ok { // objectstore to duckdb transfer
-			return NewObjectStoreToDuckDB(store, olap, c.logger), true
-		}
-		if store, ok := from.AsFileStore(); ok {
-			return NewFileStoreToDuckDB(store, olap, c.logger), true
-		}
-	}
-	return nil, false
 }
 
 func (c *connection) AsFileStore() (drivers.FileStore, bool) {
@@ -468,30 +441,31 @@ func (c *connection) reopenDB(ctx context.Context) error {
 		c.db = nil
 	}
 
-	// Queries to run when a new DuckDB connection is opened.
-	var bootQueries []string
+	var (
+		dbInitQueries   []string
+		connInitQueries []string
+	)
 
 	// Add custom boot queries before any other (e.g. to override the extensions repository)
 	if c.config.BootQueries != "" {
-		bootQueries = append(bootQueries, c.config.BootQueries)
+		dbInitQueries = append(dbInitQueries, c.config.BootQueries)
 	}
-
-	// Add required boot queries
-	bootQueries = append(bootQueries,
+	dbInitQueries = append(dbInitQueries,
 		"INSTALL 'json'",
-		"LOAD 'json'",
-		"INSTALL 'icu'",
-		"LOAD 'icu'",
-		"INSTALL 'parquet'",
-		"LOAD 'parquet'",
-		"INSTALL 'httpfs'",
-		"LOAD 'httpfs'",
 		"INSTALL 'sqlite'",
+		"INSTALL 'icu'",
+		"INSTALL 'parquet'",
+		"INSTALL 'httpfs'",
+		"INSTALL 'aws'",
+		"LOAD 'json'",
 		"LOAD 'sqlite'",
-		"SET max_expression_depth TO 250",
-		"SET timezone='UTC'",
-		"SET old_implicit_casting = true",        // Implicit Cast to VARCHAR
-		"SET allow_community_extensions = false", // This locks the configuration, so it can't later be enabled.
+		"LOAD 'icu'",
+		"LOAD 'parquet'",
+		"LOAD 'httpfs'",
+		"LOAD 'aws'",
+		"SET GLOBAL timezone='UTC'",
+		"SET GLOBAL old_implicit_casting = true", // Implicit Cast to VARCHAR
+		"SET GLOBAL allow_community_extensions = false", // This locks the configuration, so it can't later be enabled.
 	)
 
 	dataDir, err := c.storage.DataDir()
@@ -502,29 +476,32 @@ func (c *connection) reopenDB(ctx context.Context) error {
 	// We want to set preserve_insertion_order=false in hosted environments only (where source data is never viewed directly). Setting it reduces batch data ingestion time by ~40%.
 	// Hack: Using AllowHostAccess as a proxy indicator for a hosted environment.
 	if !c.config.AllowHostAccess {
-		bootQueries = append(bootQueries, "SET preserve_insertion_order TO false")
+		dbInitQueries = append(dbInitQueries,
+			"SET GLOBAL preserve_insertion_order TO false",
+		)
 	}
 
 	// Add init SQL if provided
 	if c.config.InitSQL != "" {
-		bootQueries = append(bootQueries, c.config.InitSQL)
+		connInitQueries = append(connInitQueries, c.config.InitSQL)
 	}
+	connInitQueries = append(connInitQueries, "SET max_expression_depth TO 250")
 
 	// Create new DB
-	logger := slog.New(zapslog.NewHandler(c.logger.Core(), &zapslog.HandlerOptions{
-		AddSource: true,
-	}))
 	c.db, err = rduckdb.NewDB(ctx, &rduckdb.DBOptions{
-		LocalPath:      dataDir,
-		Remote:         c.remote,
-		CPU:            c.config.CPU,
-		MemoryLimitGB:  c.config.MemoryLimitGB,
-		ReadWriteRatio: c.config.ReadWriteRatio,
-		ReadSettings:   c.config.readSettings(),
-		WriteSettings:  c.config.writeSettings(),
-		InitQueries:    bootQueries,
-		Logger:         logger,
-		OtelAttributes: []attribute.KeyValue{attribute.String("instance_id", c.instanceID)},
+		LocalPath:       dataDir,
+		Remote:          c.remote,
+		CPU:             c.config.CPU,
+		MemoryLimitGB:   c.config.MemoryLimitGB,
+		ReadWriteRatio:  c.config.ReadWriteRatio,
+		ReadSettings:    c.config.readSettings(),
+		WriteSettings:   c.config.writeSettings(),
+		WritePoolSize:   c.config.WritePoolSize,
+		DBInitQueries:   dbInitQueries,
+		ConnInitQueries: connInitQueries,
+		LogQueries:      c.config.LogQueries,
+		Logger:          c.logger,
+		OtelAttributes:  []attribute.KeyValue{attribute.String("instance_id", c.instanceID)},
 	})
 	return err
 }

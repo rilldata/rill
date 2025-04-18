@@ -26,7 +26,6 @@
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { parseRillTime } from "../../../url-state/time-ranges/parser";
-  import RillTheme from "@rilldata/web-common/layout/RillTheme.svelte";
   import type { RillTime } from "../../../url-state/time-ranges/RillTime";
 
   export let timeRanges: V1ExploreTimeRange[];

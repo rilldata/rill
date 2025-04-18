@@ -4,12 +4,10 @@ import type {
   QueryMapperArgs,
   QueryRequests,
 } from "@rilldata/web-admin/features/dashboards/query-mappers/types";
-import type { CompoundQueryResult } from "@rilldata/web-common/features/compound-query-result";
 import { getFullInitExploreState } from "@rilldata/web-common/features/dashboards/stores/dashboard-store-defaults";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import { convertPresetToExploreState } from "@rilldata/web-common/features/dashboards/url-state/convertPresetToExploreState";
 import { getDefaultExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/getDefaultExplorePreset";
-import { initLocalUserPreferenceStore } from "@rilldata/web-common/features/dashboards/user-preferences";
 import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import {
@@ -18,12 +16,7 @@ import {
   type V1MetricsViewComparisonRequest,
 } from "@rilldata/web-common/runtime-client";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-import { derived, get, readable } from "svelte/store";
-
-type DashboardStateForQuery = {
-  exploreState?: MetricsExplorerEntity;
-  exploreName?: string;
-};
+import { derived, get, readable, type Readable } from "svelte/store";
 
 /**
  * Builds the dashboard url from query name and args.
@@ -35,11 +28,17 @@ export function mapQueryToDashboard(
   queryArgsJson: string | undefined,
   executionTime: string | undefined,
   annotations: Record<string, string>,
-): CompoundQueryResult<DashboardStateForQuery> {
+): Readable<{
+  isFetching: boolean;
+  isLoading: boolean;
+  error: Error;
+  data?: { exploreState: MetricsExplorerEntity; exploreName: string };
+}> {
   if (!queryName || !queryArgsJson || !executionTime)
     return readable({
       isFetching: false,
-      error: "Required parameters are missing.",
+      isLoading: false,
+      error: new Error("Required parameters are missing."),
     });
 
   let metricsViewName: string = "";
@@ -74,8 +73,10 @@ export function mapQueryToDashboard(
     // error state
     return readable({
       isFetching: false,
-      error:
+      isLoading: false,
+      error: new Error(
         "Failed to find metrics view name. Please check the format of the report.",
+      ),
     });
   }
   // backwards compatibility for older alerts created on metrics explore directly
@@ -94,34 +95,57 @@ export function mapQueryToDashboard(
       ),
     ],
     ([validSpecResp, timeRangeSummary], set) => {
-      if (
-        !validSpecResp.data?.metricsView ||
-        !validSpecResp.data?.explore ||
-        !timeRangeSummary.data
-      ) {
+      if (validSpecResp.isLoading || timeRangeSummary.isLoading) {
         set({
           isFetching: true,
-          error: "",
+          isLoading: true,
+          error: new Error(""),
         });
         return;
       }
 
       if (validSpecResp.error || timeRangeSummary.error) {
-        // error state
         set({
           isFetching: false,
-          error:
-            validSpecResp.error?.message ?? timeRangeSummary.error?.message,
+          isLoading: false,
+          error: new Error(
+            validSpecResp.error?.response?.data?.message ??
+              timeRangeSummary.error?.response?.data?.message,
+          ),
+        });
+        return;
+      }
+
+      // Type guard
+      if (
+        !validSpecResp.data ||
+        !validSpecResp.data.explore ||
+        !validSpecResp.data.metricsView
+      ) {
+        set({
+          isFetching: false,
+          isLoading: false,
+          error: new Error("Failed to fetch explore."),
+        });
+        return;
+      }
+
+      // Type guard
+      if (!timeRangeSummary.data) {
+        set({
+          isFetching: false,
+          isLoading: false,
+          error: new Error("Failed to fetch time range summary."),
         });
         return;
       }
 
       const { metricsView, explore } = validSpecResp.data;
 
-      initLocalUserPreferenceStore(metricsViewName);
       const defaultExplorePreset = getDefaultExplorePreset(
         validSpecResp.data.explore,
-        timeRangeSummary.data,
+        validSpecResp.data.metricsView,
+        timeRangeSummary.data?.timeRangeSummary,
       );
       const { partialExploreState } = convertPresetToExploreState(
         validSpecResp.data.metricsView,
@@ -147,7 +171,8 @@ export function mapQueryToDashboard(
         .then((newExploreState) => {
           set({
             isFetching: false,
-            error: "",
+            isLoading: false,
+            error: new Error(),
             data: {
               exploreState: newExploreState,
               exploreName,
@@ -157,6 +182,7 @@ export function mapQueryToDashboard(
         .catch((err) => {
           set({
             isFetching: false,
+            isLoading: false,
             error: err.message,
           });
         });

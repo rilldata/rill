@@ -1,6 +1,9 @@
 package drivers
 
-import "context"
+import (
+	"context"
+	"time"
+)
 
 // ModelExecutor executes models.
 // A ModelExecutor may either be the a model's input or output connector.
@@ -87,11 +90,23 @@ type ModelEnv struct {
 
 // ModelResult contains metadata about the result of a model execution.
 type ModelResult struct {
-	Connector  string
-	Properties map[string]any
-	Table      string
+	Connector    string
+	Properties   map[string]any
+	Table        string
+	ExecDuration time.Duration
 }
 
+// IncrementalStrategy is a strategy to use for incrementally inserting data into a SQL table.
+type IncrementalStrategy string
+
+const (
+	IncrementalStrategyUnspecified        IncrementalStrategy = ""
+	IncrementalStrategyAppend             IncrementalStrategy = "append"
+	IncrementalStrategyMerge              IncrementalStrategy = "merge"
+	IncrementalStrategyPartitionOverwrite IncrementalStrategy = "partition_overwrite"
+)
+
+// FileFormat is a file format for importing or exporting data.
 type FileFormat string
 
 const (

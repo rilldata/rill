@@ -1,5 +1,8 @@
 import type { MeasureFilterEntry } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
-import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
+import {
+  LeaderboardContextColumn,
+  type ContextColWidths,
+} from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
 import type { PivotState } from "@rilldata/web-common/features/dashboards/pivot/types";
 import type {
   SortDirection,
@@ -27,7 +30,7 @@ export interface MetricsExplorerEntity {
    * updated to include all measure keys upon initialization
    * or else all measure will be hidden
    */
-  visibleMeasureKeys: Set<string>;
+  visibleMeasures: string[];
 
   /**
    * While the `visibleMeasureKeys` has the list of visible measures,
@@ -43,7 +46,7 @@ export interface MetricsExplorerEntity {
    * when there are not existing keys in the URL or saved on the
    * server)
    */
-  visibleDimensionKeys: Set<string>;
+  visibleDimensions: string[];
 
   /**
    * While the `visibleDimensionKeys` has the list of all visible dimensions,
@@ -52,14 +55,22 @@ export interface MetricsExplorerEntity {
    */
   allDimensionsVisible: boolean;
 
+  // Question: is this still used by the dimension table?
   /**
-   * This is the name of the primary active measure in the dashboard.
-   * This is the measure that will be shown in leaderboards, and
-   * will be used for sorting the leaderboard and dimension detail table.
-   * This "name" is the internal name of the measure from the YAML,
-   * not the human readable name.
+   * This is the name of the currently-sorted measure in the leaderboards.
+   * Leaderboards can have one or more measures, so we need to know which one is currently sorted.
    */
-  leaderboardMeasureName: string;
+  leaderboardSortByMeasureName: string;
+
+  /**
+   * This is the list of measure names to show in the leaderboard.
+   */
+  leaderboardMeasureNames: string[];
+
+  /**
+   * Whether to show context for all measures in the leaderboard.
+   */
+  leaderboardShowContextForAllMeasures: boolean;
 
   /**
    * This is the sort type that will be used for the leaderboard
@@ -74,6 +85,7 @@ export interface MetricsExplorerEntity {
   sortDirection: SortDirection;
 
   whereFilter: V1Expression;
+  dimensionsWithInlistFilter: string[];
   dimensionThresholdFilters: Array<DimensionThresholdFilter>;
 
   /**
@@ -124,6 +136,7 @@ export interface MetricsExplorerEntity {
   /**
    * state of context column in the leaderboard
    */
+  // @deprecated
   leaderboardContextColumn: LeaderboardContextColumn;
 
   /**
@@ -149,15 +162,3 @@ export interface MetricsExplorerEntity {
 
   proto?: string;
 }
-
-export type ContextColWidths = {
-  [LeaderboardContextColumn.DELTA_ABSOLUTE]: number;
-  [LeaderboardContextColumn.DELTA_PERCENT]: number;
-  [LeaderboardContextColumn.PERCENT]: number;
-};
-
-export const contextColWidthDefaults: ContextColWidths = {
-  [LeaderboardContextColumn.DELTA_ABSOLUTE]: 56,
-  [LeaderboardContextColumn.DELTA_PERCENT]: 44,
-  [LeaderboardContextColumn.PERCENT]: 44,
-};

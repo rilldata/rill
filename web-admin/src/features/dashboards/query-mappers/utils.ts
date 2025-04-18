@@ -2,8 +2,7 @@ import { createInExpression } from "@rilldata/web-common/features/dashboards/sto
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import { getTimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import { PreviousCompleteRangeMap } from "@rilldata/web-common/features/dashboards/time-controls/time-range-mappers";
-import { convertExploreStateToURLSearchParams } from "@rilldata/web-common/features/dashboards/url-state/convertExploreStateToURLSearchParams";
-import { getDefaultExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/getDefaultExplorePreset";
+import { convertPartialExploreStateToUrlParams } from "@rilldata/web-common/features/dashboards/url-state/convert-partial-explore-state-to-url-params";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import { isoDurationToFullTimeRange } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
 import {
@@ -155,13 +154,10 @@ export async function convertQueryFilterToToplistQuery(
   );
 }
 
-export async function getExplorePageUrl(
-  curPageUrl: URL,
-  organization: string,
-  project: string,
+export async function getExplorePageUrlSearchParams(
   exploreName: string,
   exploreState: MetricsExplorerEntity,
-) {
+): Promise<URLSearchParams> {
   const instanceId = get(runtime).instanceId;
   const { explore, metricsView } = await queryClient.fetchQuery({
     queryFn: ({ signal }) =>
@@ -179,9 +175,6 @@ export async function getExplorePageUrl(
     // so to avoid re-fetching explore everytime we set this so that it hits cache.
     staleTime: Infinity,
   });
-
-  const url = new URL(`${curPageUrl.protocol}//${curPageUrl.host}`);
-  url.pathname = `/${organization}/${project}/explore/${exploreName}`;
 
   const metricsViewSpec = metricsView?.metricsView?.state?.validSpec ?? {};
   const exploreSpec = explore?.explore?.state?.validSpec ?? {};
@@ -201,20 +194,23 @@ export async function getExplorePageUrl(
         {},
       ),
       staleTime: Infinity,
-      cacheTime: Infinity,
+      gcTime: Infinity,
     });
   }
 
-  url.search = convertExploreStateToURLSearchParams(
-    exploreState,
+  // This is just for an initial redirect.
+  // DashboardStateDataLoader will handle compression etc. during init
+  // So no need to use getCleanedUrlParamsForGoto
+  const searchParams = convertPartialExploreStateToUrlParams(
     exploreSpec,
+    exploreState,
     getTimeControlState(
       metricsViewSpec,
       exploreSpec,
       fullTimeRange?.timeRangeSummary,
       exploreState,
     ),
-    getDefaultExplorePreset(exploreSpec, fullTimeRange),
   );
-  return url.toString();
+
+  return searchParams;
 }

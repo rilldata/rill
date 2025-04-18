@@ -1,12 +1,15 @@
 <script lang="ts">
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
-  import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
-  import { isGrainBigger } from "@rilldata/web-common/lib/time/grains";
+  import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import type { AvailableTimeGrain } from "@rilldata/web-common/lib/time/types";
   import type { V1TimeGrain } from "../../../runtime-client";
-  import { getAllowedTimeGrains } from "@rilldata/web-common/lib/time/grains";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import Switch from "@rilldata/web-common/components/button/Switch.svelte";
+  import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
+  import {
+    getAllowedTimeGrains,
+    isGrainBigger,
+  } from "@rilldata/web-common/lib/time/grains";
 
   export let tdd = false;
   export let activeTimeGrain: V1TimeGrain | undefined;
@@ -18,6 +21,8 @@
   export let toggleComplete: () => void;
 
   let open = false;
+
+  const { rillTime } = featureFlags;
 
   $: timeGrainOptions =
     timeStart && timeEnd
@@ -43,16 +48,13 @@
           };
         })
     : [];
-
-  import { featureFlags } from "../../feature-flags";
-
-  const { rillTime } = featureFlags;
 </script>
 
 {#if activeTimeGrain && timeGrainOptions.length && minTimeGrain}
   <DropdownMenu.Root bind:open>
     <DropdownMenu.Trigger asChild let:builder>
       <button
+        class:tdd
         use:builder.action
         {...builder}
         aria-label="Select a time grain"
@@ -81,6 +83,7 @@
     <DropdownMenu.Content class="min-w-52" align="start">
       {#each timeGrains as option (option.key)}
         <DropdownMenu.CheckboxItem
+          checkRight
           role="menuitem"
           checked={option.key === activeTimeGrain}
           class="text-xs cursor-pointer capitalize"
@@ -102,3 +105,17 @@
     </DropdownMenu.Content>
   </DropdownMenu.Root>
 {/if}
+
+<style lang="postcss">
+  .tdd {
+    @apply border h-7 rounded-full px-2 pl-2.5;
+  }
+
+  .tdd:hover {
+    @apply bg-gray-50;
+  }
+
+  .tdd[data-state="open"] {
+    @apply bg-gray-50 border-gray-400;
+  }
+</style>

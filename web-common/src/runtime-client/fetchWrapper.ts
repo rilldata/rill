@@ -16,6 +16,16 @@ export interface HTTPError {
     };
   };
   message: string;
+  name: string;
+}
+
+export function isHTTPError(error: unknown): error is HTTPError {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    typeof (error as any).response?.status === "number" &&
+    typeof (error as any).response?.data?.message === "string"
+  );
 }
 
 export async function fetchWrapper({

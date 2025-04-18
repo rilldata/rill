@@ -22,7 +22,7 @@ func TestQuery(t *testing.T) {
 	conn := prepareConn(t)
 	olap, _ := conn.AsOLAP("")
 
-	rows, err := olap.Execute(context.Background(), &drivers.Statement{Query: "SELECT COUNT(*) FROM foo"})
+	rows, err := olap.Query(context.Background(), &drivers.Statement{Query: "SELECT COUNT(*) FROM foo"})
 	require.NoError(t, err)
 
 	var count int
@@ -51,7 +51,7 @@ func TestPriorityQueue(t *testing.T) {
 	for i := n; i > 0; i-- {
 		priority := i
 		g.Go(func() error {
-			rows, err := olap.Execute(context.Background(), &drivers.Statement{
+			rows, err := olap.Query(context.Background(), &drivers.Statement{
 				Query:    "SELECT ?",
 				Args:     []any{priority},
 				Priority: priority,
@@ -121,7 +121,7 @@ func TestCancel(t *testing.T) {
 				<-cancelCh
 			}
 
-			rows, err := olap.Execute(ctx, &drivers.Statement{
+			rows, err := olap.Query(ctx, &drivers.Statement{
 				Query:    "SELECT ?",
 				Args:     []any{priority},
 				Priority: priority,
@@ -176,7 +176,7 @@ func TestClose(t *testing.T) {
 	for i := n; i > 0; i-- {
 		priority := i
 		g.Go(func() error {
-			rows, err := olap.Execute(context.Background(), &drivers.Statement{
+			rows, err := olap.Query(context.Background(), &drivers.Statement{
 				Query:    "SELECT ?",
 				Args:     []any{priority},
 				Priority: priority,
@@ -218,10 +218,10 @@ func prepareConn(t *testing.T) drivers.Handle {
 	olap, ok := conn.AsOLAP("")
 	require.True(t, ok)
 
-	err = olap.CreateTableAsSelect(context.Background(), "foo", "SELECT * FROM (VALUES ('a', 1), ('a', 2), ('b', 3), ('c', 4)) AS t(bar, baz)", &drivers.CreateTableOptions{})
+	_, err = olap.(*connection).createTableAsSelect(context.Background(), "foo", "SELECT * FROM (VALUES ('a', 1), ('a', 2), ('b', 3), ('c', 4)) AS t(bar, baz)", &createTableOptions{})
 	require.NoError(t, err)
 
-	err = olap.CreateTableAsSelect(context.Background(), "bar", "SELECT * FROM (VALUES ('a', 1), ('a', 2), ('b', 3), ('c', 4)) AS t(bar, baz)", &drivers.CreateTableOptions{})
+	_, err = olap.(*connection).createTableAsSelect(context.Background(), "bar", "SELECT * FROM (VALUES ('a', 1), ('a', 2), ('b', 3), ('c', 4)) AS t(bar, baz)", &createTableOptions{})
 	require.NoError(t, err)
 
 	return conn

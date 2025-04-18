@@ -4,12 +4,13 @@ import {
   includesCurrencySymbol,
   isValidD3Locale,
 } from "@rilldata/web-common/lib/number-formatting/utils/d3-format-utils";
-import type { MetricsViewSpecMeasureV2 } from "@rilldata/web-common/runtime-client";
+import type { MetricsViewSpecMeasure } from "@rilldata/web-common/runtime-client";
 import {
   format as d3format,
   formatLocale as d3FormatLocale,
   type FormatLocaleDefinition,
 } from "d3-format";
+import memoize from "memoizee";
 import {
   FormatPreset,
   NumberKind,
@@ -22,6 +23,11 @@ import {
   formatMsToDuckDbIntervalString,
 } from "./strategies/intervals";
 import { PerRangeFormatter } from "./strategies/per-range";
+import {
+  axisCurrencyOptions,
+  axisDefaultFormattingOptions,
+  axisPercentOptions,
+} from "./strategies/per-range-axis-options";
 import {
   bigNumCurrencyOptions,
   bigNumDefaultFormattingOptions,
@@ -71,6 +77,13 @@ function humanizeDataType(
       currencyEur: bigNumCurrencyOptions(NumberKind.EURO),
       percent: bigNumPercentOptions,
       humanize: bigNumDefaultFormattingOptions,
+    },
+    axis: {
+      none: axisDefaultFormattingOptions,
+      currencyUsd: axisCurrencyOptions(NumberKind.DOLLAR),
+      currencyEur: axisCurrencyOptions(NumberKind.EURO),
+      percent: axisPercentOptions,
+      humanize: axisDefaultFormattingOptions,
     },
     table: {
       none: defaultNoFormattingOptions,
@@ -136,6 +149,11 @@ function humanizeDataTypeUnabridged(value: number, type: FormatPreset): string {
   return value.toString();
 }
 
+const memoizedHumanizeDataType = memoize(humanizeDataType, { primitive: true });
+const memoizedHumanizeDataTypeUnabridged = memoize(humanizeDataTypeUnabridged, {
+  primitive: true,
+});
+
 /**
  * This higher-order function takes a measure spec and returns
  * a function appropriate for formatting values from that measure.
@@ -151,18 +169,20 @@ function humanizeDataTypeUnabridged(value: number, type: FormatPreset): string {
  * as we switch to always using `null` to represent missing values.
  */
 export function createMeasureValueFormatter<T extends null | undefined = never>(
-  measureSpec: MetricsViewSpecMeasureV2,
+  measureSpec: MetricsViewSpecMeasure,
   type: FormatterContext = "table",
 ): (value: number | string | T) => string | T {
   const useUnabridged = type === "unabridged";
   const isBigNumber = type === "big-number";
+  const isAxis = type === "axis";
   const isTooltip = type === "tooltip";
 
   let humanizer: (value: number, type: FormatPreset) => string;
   if (useUnabridged) {
-    humanizer = humanizeDataTypeUnabridged;
+    humanizer = memoizedHumanizeDataTypeUnabridged;
   } else {
-    humanizer = (value, preset) => humanizeDataType(value, preset, type);
+    humanizer = (value, preset) =>
+      memoizedHumanizeDataType(value, preset, type);
   }
 
   // Return and empty string if measureSpec is not provided.
@@ -183,7 +203,7 @@ export function createMeasureValueFormatter<T extends null | undefined = never>(
       const isValidLocale = isValidD3Locale(measureSpec.formatD3Locale);
       if (isValidLocale) {
         const locale = getLocaleFromConfig(
-          measureSpec.formatD3Locale as FormatLocaleDefinition,
+          measureSpec.formatD3Locale as unknown as FormatLocaleDefinition,
         );
         d3formatter = d3FormatLocale(locale).format(measureSpec.formatD3);
       } else {
@@ -195,8 +215,8 @@ export function createMeasureValueFormatter<T extends null | undefined = never>(
       return (value: number | string | T) => {
         if (typeof value !== "number") return value;
 
-        // For the Big Number and Tooltips, override the d3formatter
-        if (isBigNumber || isTooltip) {
+        // For the Big Number, Axis and Tooltips, override the d3formatter
+        if (isBigNumber || isTooltip || isAxis) {
           if (hasCurrencySymbol) {
             if (isValidLocale && measureSpec?.formatD3Locale?.currency) {
               const currency = measureSpec.formatD3Locale.currency as [
@@ -232,7 +252,7 @@ export function createMeasureValueFormatter<T extends null | undefined = never>(
       ? (measureSpec.formatPreset as FormatPreset)
       : FormatPreset.NONE;
 
-  if (isBigNumber && formatPreset === FormatPreset.NONE) {
+  if ((isAxis || isBigNumber) && formatPreset === FormatPreset.NONE) {
     formatPreset = FormatPreset.HUMANIZE;
   }
 

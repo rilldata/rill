@@ -17,21 +17,21 @@ rill start my-rill-project
 
 ## Tutorials
 
-If you're looking for a in-depth tutorial that walks you through our available features, click [here](../tutorials/index.md)! 
+If you're looking for an in-depth tutorial that walks you through our available features, click [here](../tutorials/index.md)! 
 
-Some of the Tutorials include:
+Some Tutorials include:
 
-- [From Source to Deployment in 5 steps!](../tutorials/rill_basics/launch) : Data Import, Transformation, Dashboard, to Deployment!
+- [From Source to Deployment in 6 steps!](../tutorials/rill_basics/launch) : Data Import, Transformation, Dashboard, to Deployment!
 - [How to Administrate Rill](../tutorials/administration/) : Administrative tasks from the CLI and UI that an administrator would need to know to be a Rill Administrator
-- [Rill and ClickHouse](../tutorials/rill_clickhouse/r_ch_launch) : For our friends coming from ClickHouse, get started in **4 steps**.
-- Rill's Advanced Features : Coming soon!
+- [Rill and ClickHouse](../tutorials/rill_clickhouse/r_ch_launch) : For our friends coming from ClickHouse, get started in **5 steps**.
+- [Rill's Advanced Features](../tutorials/rill_advanced_features/overview) : Customize your Rill Experience with our advanced features! 
 
 The final project is available on our [example repository](https://github.com/rilldata/rill-examples/tree/main/my-rill-tutorial). 
 
 
 ## Quick Starts & Examples
 
-Explore our [example repository](https://github.com/rilldata/rill-examples/) to kickstart your project.
+Explore our [example repository](https://github.com/rilldata/rill-examples/) to kick start your project.
 
 Some of the included projects are:
 
@@ -39,7 +39,6 @@ Some of the included projects are:
 - [Cost Monitoring](https://github.com/rilldata/rill-examples/tree/main/rill-cost-monitoring): based off of Rill's own internal dashboards, cloud infrastructure data (compute, storage, pipeline statistics, etc.) merged with customer data to analyze bottlenecks and look for efficiencies
 - [GitHub Analytics](https://github.com/rilldata/rill-examples/tree/main/rill-github-analytics): analyze GitHub activity to understand what parts of your codebase are most active, analyze contributor productivity, and evaluate the intersections between commits and files
 - [Programmatic Ads/OpenRTB](https://github.com/rilldata/rill-examples/tree/main/rill-openrtb-prog-ads): bidstream data for programmtic advertisers to optimize pricing strategies, look for inventory opportunities, and improve campaign performance
-- [311 Operations](https://github.com/rilldata/rill-examples/tree/main/rill-311-ops): a live datastream of 311 call centers from various locations in the US for example operational analytics 
 - [Final Tutorial Project](https://github.com/rilldata/rill-examples/tree/main/my-rill-tutorial): A finalized version of the tutorial project with many working examples, a good place to reference any newer features, updated regularly.
 
 

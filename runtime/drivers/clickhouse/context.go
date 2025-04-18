@@ -7,6 +7,7 @@ import (
 	"github.com/ClickHouse/clickhouse-go/v2"
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
+	"github.com/rilldata/rill/runtime/pkg/observability"
 )
 
 // connCtxKey is used as the key when saving a connection in a context
@@ -29,7 +30,7 @@ func connFromContext(ctx context.Context) *sqlx.Conn {
 
 // sessionAwareContext sets a session_id in context which is used to tie queries to a certain session.
 // This is used to use certain session aware features like temporary tables.
-func (c *connection) sessionAwareContext(ctx context.Context) context.Context {
+func (c *Connection) sessionAwareContext(ctx context.Context) context.Context {
 	if c.opts.Protocol == clickhouse.HTTP {
 		var settings map[string]any
 		if len(c.opts.Settings) == 0 {
@@ -42,4 +43,12 @@ func (c *connection) sessionAwareContext(ctx context.Context) context.Context {
 	}
 	// native protocol already has session context
 	return ctx
+}
+
+func contextWithQueryID(ctx context.Context) context.Context {
+	traceID := observability.TraceID(ctx)
+	if traceID == "" {
+		return ctx
+	}
+	return clickhouse.Context(ctx, clickhouse.WithQueryID(traceID))
 }

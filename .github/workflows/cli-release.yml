@@ -23,9 +23,24 @@ env:
   PUBLISH_RELEASE: ${{ startsWith(github.ref, 'refs/tags/v') }}
 
 jobs:
+  validate-sequential:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Check Admin Migrations
+      run: |
+        ./scripts/check_migrations.sh admin/database/postgres/migrations
+
+    - name: Check Runtime Migrations
+      run: |
+        ./scripts/check_migrations.sh runtime/drivers/sqlite/migrations
+
   release:
     name: Release rill
     runs-on: large-hosted
+    needs: validate-sequential
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -47,7 +62,7 @@ jobs:
       - name: Set up NodeJS
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version-file: '.nvmrc'
 
       - name: Build and embed static UI
         run: make cli.prepare

@@ -2,19 +2,18 @@
 
 import { parseRillTime } from "@rilldata/web-common/features/dashboards/url-state/time-ranges/parser";
 import { humaniseISODuration } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
-import { writable, type Writable, get } from "svelte/store";
+import type { V1ExploreTimeRange } from "@rilldata/web-common/runtime-client";
 import {
-  Interval,
   DateTime,
-  type DurationObjectUnits,
   type DateTimeUnit,
   Duration,
+  type DurationObjectUnits,
   IANAZone,
+  Interval,
+  type WeekdayNumbers,
 } from "luxon";
-import {
-  queryServiceMetricsViewTimeRanges,
-  type MetricsViewSpecAvailableTimeRange,
-} from "@rilldata/web-common/runtime-client";
+import { queryServiceMetricsViewTimeRanges } from "@rilldata/web-common/runtime-client";
+import { get, writable, type Writable } from "svelte/store";
 
 // CONSTANTS -> time-control-constants.ts
 
@@ -73,7 +72,7 @@ export const RILL_LATEST = [
   "PT24H",
   "P7D",
   "P14D",
-  "P3M",
+  "P4W",
   "P12M",
 ] as const;
 
@@ -333,10 +332,23 @@ export async function deriveInterval(
 }
 
 export function getPeriodToDate(date: DateTime, period: DateTimeUnit) {
-  const periodStart = date.startOf(period);
+  const periodStart = date.startOf(period, { useLocaleWeeks: true });
   const exclusiveEnd = date.endOf("day").plus({ millisecond: 1 });
 
   return Interval.fromDateTimes(periodStart, exclusiveEnd);
+}
+
+export function normalizeWeekday(
+  possibleWeekday: number | undefined,
+): WeekdayNumbers {
+  if (
+    possibleWeekday === undefined ||
+    possibleWeekday <= 0 ||
+    possibleWeekday >= 8
+  )
+    return 1;
+
+  return possibleWeekday as WeekdayNumbers;
 }
 
 export function getPreviousPeriodComplete(
@@ -344,9 +356,11 @@ export function getPreviousPeriodComplete(
   period: DateTimeUnit,
   steps = 0,
 ) {
-  const startOfCurrentPeriod = anchor.startOf(period);
+  const startOfCurrentPeriod = anchor.startOf(period, { useLocaleWeeks: true });
   const shiftedStart = startOfCurrentPeriod.minus({ [period + "s"]: steps });
-  const exclusiveEnd = shiftedStart.endOf(period).plus({ millisecond: 1 });
+  const exclusiveEnd = shiftedStart
+    .endOf(period, { useLocaleWeeks: true })
+    .plus({ millisecond: 1 });
 
   return Interval.fromDateTimes(shiftedStart, exclusiveEnd);
 }
@@ -361,7 +375,9 @@ export function getInterval(
 
   const end =
     smallestUnit && full
-      ? endDate.endOf(smallestUnit).plus({ millisecond: 1 })
+      ? endDate
+          .endOf(smallestUnit, { useLocaleWeeks: true })
+          .plus({ millisecond: 1 })
       : endDate;
 
   return Interval.before(end, durationUnits);
@@ -433,6 +449,7 @@ export type RangeBuckets = {
   latest: { label: string; range: ISODurationString }[];
   previous: { range: RillPreviousPeriod; label: string }[];
   periodToDate: { range: RillPeriodToDate; label: string }[];
+  allTime: boolean;
 };
 
 const defaultBuckets = {
@@ -448,10 +465,11 @@ const defaultBuckets = {
     range,
     label: RILL_TO_LABEL[range],
   })),
+  allTime: false,
 };
 
 export function bucketYamlRanges(
-  availableRanges: MetricsViewSpecAvailableTimeRange[],
+  availableRanges: V1ExploreTimeRange[],
 ): RangeBuckets {
   const showDefaults = !availableRanges.length;
 
@@ -467,8 +485,10 @@ export function bucketYamlRanges(
         record.periodToDate.push({ range, label: RILL_TO_LABEL[range] });
       } else if (isRillPreviousPeriod(range)) {
         record.previous.push({ range, label: RILL_TO_LABEL[range] });
-      } else {
+      } else if (isValidISODuration(range)) {
         record.latest.push({ range, label: getDurationLabel(range) });
+      } else if (range === ALL_TIME_RANGE_ALIAS) {
+        record.allTime = true;
       }
 
       return record;
@@ -477,6 +497,7 @@ export function bucketYamlRanges(
       previous: [],
       latest: [],
       periodToDate: [],
+      allTime: false,
     },
   );
 }

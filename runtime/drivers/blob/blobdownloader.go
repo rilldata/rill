@@ -237,12 +237,12 @@ func (it *blobIterator) plan() ([]*objectWithPlan, error) {
 
 	listOpts, ok := listOptions(it.opts.GlobPattern)
 	if !ok {
-		it.logger.Debug("glob pattern corresponds to single object", zap.String("glob", it.opts.GlobPattern))
+		it.logger.Debug("glob pattern corresponds to single object", zap.String("glob", it.opts.GlobPattern), observability.ZapCtx(it.ctx))
 		// required to fetch size to enforce disk limits
 		attr, err := it.bucket.Attributes(it.ctx, it.opts.GlobPattern)
 		if err != nil {
 			// can fail due to permission not available
-			it.logger.Debug("failed to fetch attributes of the object", zap.Error(err))
+			it.logger.Debug("failed to fetch attributes of the object", zap.Error(err), observability.ZapCtx(it.ctx))
 		} else {
 			size = attr.Size
 		}

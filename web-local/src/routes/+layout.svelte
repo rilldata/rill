@@ -10,7 +10,6 @@
   import { RillTheme } from "@rilldata/web-common/layout";
   import ApplicationHeader from "@rilldata/web-common/layout/ApplicationHeader.svelte";
   import BlockingOverlayContainer from "@rilldata/web-common/layout/BlockingOverlayContainer.svelte";
-  import type { ApplicationBuildMetadata } from "@rilldata/web-common/layout/build-metadata";
   import { overlay } from "@rilldata/web-common/layout/overlay-store";
   import {
     initPosthog,
@@ -23,22 +22,15 @@
   } from "@rilldata/web-common/metrics/initMetrics";
   import { localServiceGetMetadata } from "@rilldata/web-common/runtime-client/local-service";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { initializeNodeStoreContexts } from "@rilldata/web-local/lib/application-state-stores/initialize-node-store-contexts";
   import type { Query } from "@tanstack/query-core";
   import { QueryClientProvider } from "@tanstack/svelte-query";
   import type { AxiosError } from "axios";
-  import { getContext, onMount } from "svelte";
-  import type { Writable } from "svelte/store";
+  import { onMount } from "svelte";
   import type { LayoutData } from "./$types";
 
   export let data: LayoutData;
-  /** This function will initialize the existing node stores and will connect them
-   * to the Node server.
-   */
-  initializeNodeStoreContexts();
 
-  const appBuildMetaStore: Writable<ApplicationBuildMetadata> =
-    getContext("rill:app:metadata");
+  const { rillDevCloudFeatures } = featureFlags;
 
   queryClient.getQueryCache().config.onError = (
     error: AxiosError,
@@ -66,12 +58,6 @@
 
     featureFlags.set(false, "adminServer");
     featureFlags.set(config.readonly, "readOnly");
-
-    // TODO: use TanStack Query, not this handmade store
-    appBuildMetaStore.set({
-      version: config.version,
-      commitHash: config.buildCommit,
-    });
   });
 
   /**
@@ -97,7 +83,9 @@
       >
         {#if data.initialized}
           <BannerCenter />
-          <RepresentingUserBanner />
+          {#if $rillDevCloudFeatures}
+            <RepresentingUserBanner />
+          {/if}
           <ApplicationHeader {mode} />
         {/if}
 

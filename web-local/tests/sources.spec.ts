@@ -10,10 +10,12 @@ import {
   uploadFile,
   waitForSource,
 } from "./utils/sourceHelpers";
-import { test } from "./utils/test";
+import { test } from "./setup/base";
 import { fileNotPresent, waitForFileNavEntry } from "./utils/waitHelpers";
 
 test.describe("sources", () => {
+  test.use({ project: "Blank" });
+
   test("Import sources", async ({ page }) => {
     await Promise.all([
       waitForSource(page, "/sources/AdBids.yaml", [

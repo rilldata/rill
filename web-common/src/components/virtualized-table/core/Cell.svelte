@@ -47,6 +47,7 @@
   }
 
   function onSelectItem(e: MouseEvent) {
+    if (e.shiftKey) return;
     dispatch("select-item", { index: row.index, meta: e.ctrlKey || e.metaKey });
   }
 
@@ -62,11 +63,13 @@
   let activityStatus;
   $: {
     if (cellActive) {
-      activityStatus = "bg-gray-200 ";
+      // Specific cell active color, used to be bg-gray-200
+      // bg-gray-100 to match the hover color, and not too hard on the eyes
+      activityStatus = "bg-gray-100 ";
     } else if (rowActive && !cellActive) {
       activityStatus = "bg-gray-100 ";
     } else if (colSelected) {
-      activityStatus = "bg-gray-50";
+      activityStatus = "surface";
     } else {
       activityStatus = "surface";
     }
@@ -138,13 +141,14 @@
       justify="left"
       showBackground={false}
       value={barValue}
+      compact={true}
     >
       <button
         aria-label={label}
         class="
           {isTextColumn ? 'text-left' : 'text-right'}
           {isDimensionTable ? '' : 'px-4'}
-          w-full text-ellipsis overflow-x-hidden whitespace-nowrap
+          w-full truncate
           "
         on:click={modified({
           shift: shiftClick,
@@ -157,6 +161,7 @@
           isNull={value === null || value === undefined}
           {type}
           value={formattedValue || value}
+          color="text-gray-500"
         />
       </button>
     </BarAndLabel>

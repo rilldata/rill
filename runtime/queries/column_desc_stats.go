@@ -86,7 +86,7 @@ func (q *ColumnDescriptiveStatistics) Resolve(ctx context.Context, rt *runtime.R
 		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
 	}
 
-	rows, err := olap.Execute(ctx, &drivers.Statement{
+	rows, err := olap.Query(ctx, &drivers.Statement{
 		Query:            descriptiveStatisticsSQL,
 		Priority:         priority,
 		ExecutionTimeout: defaultExecutionTimeout,

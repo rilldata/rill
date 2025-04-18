@@ -15,13 +15,14 @@ export const sortingSelectors = {
     dashboard.sortDirection === SortDirection.ASCENDING,
 
   /**
+   * @deprecated use leaderboardSortByMeasureName instead
    * Returns the measure name that the dashboard is sorted by,
    * or null if the dashboard is sorted by dimension value.
    */
-  sortMeasure: ({ dashboard }: DashboardDataSources) =>
+  sortByMeasure: ({ dashboard }: DashboardDataSources) =>
     dashboard.dashboardSortType !== SortType.DIMENSION &&
     dashboard.dashboardSortType !== SortType.UNSPECIFIED
-      ? dashboard.leaderboardMeasureName
+      ? dashboard.leaderboardSortByMeasureName
       : null,
 
   /**

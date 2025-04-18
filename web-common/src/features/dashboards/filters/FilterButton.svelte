@@ -7,13 +7,13 @@
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { getDimensionDisplayName } from "@rilldata/web-common/features/dashboards/filters/getDisplayName";
   import type {
-    MetricsViewSpecDimensionV2,
-    MetricsViewSpecMeasureV2,
+    MetricsViewSpecDimension,
+    MetricsViewSpecMeasure,
   } from "@rilldata/web-common/runtime-client";
   import { getMeasureDisplayName } from "./getDisplayName";
 
-  export let allDimensions: MetricsViewSpecDimensionV2[];
-  export let filteredSimpleMeasures: MetricsViewSpecMeasureV2[];
+  export let allDimensions: MetricsViewSpecDimension[];
+  export let filteredSimpleMeasures: MetricsViewSpecMeasure[];
   export let dimensionHasFilter: (dimensionName: string) => boolean;
   export let measureHasFilter: (measureName: string) => boolean;
   export let setTemporaryFilterName: (name: string) => void;
@@ -23,16 +23,6 @@
 
   $: selectableGroups = [
     <SearchableFilterSelectableGroup>{
-      name: "MEASURES",
-      items:
-        filteredSimpleMeasures
-          ?.map((m) => ({
-            name: m.name as string,
-            label: getMeasureDisplayName(m),
-          }))
-          .filter((m) => !measureHasFilter(m.name)) ?? [],
-    },
-    <SearchableFilterSelectableGroup>{
       name: "DIMENSIONS",
       items:
         allDimensions
@@ -41,6 +31,16 @@
             label: getDimensionDisplayName(d),
           }))
           .filter((d) => !dimensionHasFilter(d.name)) ?? [],
+    },
+    <SearchableFilterSelectableGroup>{
+      name: "MEASURES",
+      items:
+        filteredSimpleMeasures
+          ?.map((m) => ({
+            name: m.name as string,
+            label: getMeasureDisplayName(m),
+          }))
+          .filter((m) => !measureHasFilter(m.name)) ?? [],
     },
   ];
 </script>
@@ -53,6 +53,7 @@
         class:active={open}
         use:builder.action
         {...builder}
+        aria-label="Add filter button"
       >
         <Add size="17px" />
       </button>

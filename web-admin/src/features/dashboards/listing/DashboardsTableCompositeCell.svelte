@@ -18,14 +18,13 @@
   $: organization = $page.params.organization;
   $: project = $page.params.project;
 
-  $: lastRefreshedDate = new Date(lastRefreshed);
-  $: isValidLastRefreshedDate = !isNaN(lastRefreshedDate.getTime());
+  $: lastRefreshedDate = lastRefreshed ? new Date(lastRefreshed) : null;
 
   $: href = isEmbedded
     ? undefined
     : isMetricsExplorer
       ? `/${organization}/${project}/explore/${name}`
-      : `/${organization}/${project}/-/dashboards/${name}`;
+      : `/${organization}/${project}/canvas/${name}`;
 </script>
 
 <svelte:element
@@ -51,7 +50,7 @@
   </div>
   <div class="pl-[22px] flex gap-x-1 text-gray-500 text-xs font-normal">
     <span class="truncate">{name}</span>
-    {#if isValidLastRefreshedDate}
+    {#if lastRefreshedDate}
       <span>•</span>
       <Tooltip distance={8}>
         <span class="shrink-0">Last refreshed {timeAgo(lastRefreshedDate)}</span

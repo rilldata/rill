@@ -1,18 +1,29 @@
 import { BaseCanvasComponent } from "@rilldata/web-common/features/canvas/components/BaseCanvasComponent";
-import { defaultComparisonOptions } from "@rilldata/web-common/features/canvas/components/kpi";
 import {
   commonOptions,
   getFilterOptions,
 } from "@rilldata/web-common/features/canvas/components/util";
 import type { InputParams } from "@rilldata/web-common/features/canvas/inspector/types";
-import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
+
 import type {
+  V1MetricsViewSpec,
+  V1Resource,
+} from "@rilldata/web-common/runtime-client";
+import type {
+  CanvasComponentType,
   ComponentCommonProperties,
   ComponentComparisonOptions,
   ComponentFilterProperties,
 } from "../types";
+import type { CanvasEntity, ComponentPath } from "../../stores/canvas-entity";
+import KPIGrid from "./KPIGrid.svelte";
 
 export { default as KPIGrid } from "./KPIGrid.svelte";
+
+export const defaultComparisonOptions: ComponentComparisonOptions[] = [
+  "delta",
+  "percent_change",
+];
 
 export interface KPIGridSpec
   extends ComponentCommonProperties,
@@ -28,18 +39,17 @@ export interface KPIGridSpec
 export class KPIGridComponent extends BaseCanvasComponent<KPIGridSpec> {
   minSize = { width: 2, height: 2 };
   defaultSize = { width: 6, height: 4 };
+  resetParams = ["measures"];
+  type: CanvasComponentType = "kpi_grid";
+  component = KPIGrid;
 
-  constructor(
-    fileArtifact: FileArtifact | undefined = undefined,
-    path: (string | number)[] = [],
-    initialSpec: Partial<KPIGridSpec> = {},
-  ) {
+  constructor(resource: V1Resource, parent: CanvasEntity, path: ComponentPath) {
     const defaultSpec: KPIGridSpec = {
       metrics_view: "",
       measures: [],
       comparison: defaultComparisonOptions,
     };
-    super(fileArtifact, path, defaultSpec, initialSpec);
+    super(resource, parent, path, defaultSpec);
   }
 
   isValid(spec: KPIGridSpec): boolean {
@@ -50,7 +60,11 @@ export class KPIGridComponent extends BaseCanvasComponent<KPIGridSpec> {
     return {
       options: {
         metrics_view: { type: "metrics", label: "Metrics view" },
-        measures: { type: "multi_measures", label: "Measures" },
+        measures: {
+          type: "multi_fields",
+          meta: { allowedTypes: ["measure"] },
+          label: "Measures",
+        },
         sparkline: { type: "sparkline", optional: true, label: "Sparkline" },
         comparison: { type: "comparison_options", label: "Comparison values" },
         ...commonOptions,
@@ -59,10 +73,15 @@ export class KPIGridComponent extends BaseCanvasComponent<KPIGridSpec> {
     };
   }
 
-  newComponentSpec(metrics_view: string, measure: string): KPIGridSpec {
+  static newComponentSpec(
+    metricsViewName: string,
+    metricsViewSpec: V1MetricsViewSpec | undefined,
+  ): KPIGridSpec {
+    const measures = metricsViewSpec?.measures || [];
+    const measureNames = measures.map((m) => m.name as string).slice(0, 4);
     return {
-      metrics_view,
-      measures: [measure],
+      metrics_view: metricsViewName,
+      measures: measureNames,
       comparison: defaultComparisonOptions,
     };
   }

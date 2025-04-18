@@ -13,12 +13,11 @@ import (
 	"github.com/c2h5oh/datasize"
 	"github.com/rilldata/rill/cli/pkg/browser"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
-	"github.com/rilldata/rill/cli/pkg/dotrill"
 	"github.com/rilldata/rill/cli/pkg/pkce"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
-	"github.com/rilldata/rill/runtime/compilers/rillv1"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/parser"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/debugserver"
 	"github.com/rilldata/rill/runtime/pkg/email"
@@ -29,18 +28,7 @@ import (
 	"github.com/rilldata/rill/runtime/storage"
 	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
-	"go.uber.org/zap/buffer"
-	"go.uber.org/zap/zapcore"
 	"golang.org/x/sync/errgroup"
-	"gopkg.in/natefinch/lumberjack.v2"
-)
-
-type LogFormat string
-
-// Default log formats for logger
-const (
-	LogFormatConsole = "console"
-	LogFormatJSON    = "json"
 )
 
 // Default instance config on local.
@@ -89,13 +77,23 @@ type AppOptions struct {
 
 func NewApp(ctx context.Context, opts *AppOptions) (*App, error) {
 	// Setup logger
-	logger, cleanupFn := initLogger(opts.Verbose, opts.LogFormat)
+	logPath, err := opts.Ch.DotRill.ResolveFilename("rill.log", true)
+	if err != nil {
+		return nil, err
+	}
+	logger, cleanupFn := initLogger(opts.Verbose, opts.LogFormat, logPath)
 	sugarLogger := logger.Sugar()
 
+	var tracesExporter observability.Exporter
+	if opts.Debug {
+		tracesExporter = observability.FileBasedExporter
+	} else {
+		tracesExporter = observability.NoopExporter
+	}
 	// Init Prometheus telemetry
 	shutdown, err := observability.Start(ctx, logger, &observability.Options{
 		MetricsExporter: observability.PrometheusExporter,
-		TracesExporter:  observability.NoopExporter,
+		TracesExporter:  tracesExporter,
 		ServiceName:     "rill-local",
 		ServiceVersion:  opts.Ch.Version.String(),
 	})
@@ -203,6 +201,9 @@ func NewApp(ctx context.Context, opts *AppOptions) (*App, error) {
 		}
 		// Set default DuckDB pool size to 4
 		olapCfg["pool_size"] = "4"
+	}
+	if opts.Debug {
+		olapCfg["log_queries"] = "true"
 	}
 
 	// Add OLAP connector
@@ -315,7 +316,7 @@ func (a *App) Close() error {
 
 func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly bool, userID, tlsCertPath, tlsKeyPath string) error {
 	// Get analytics info
-	installID, enabled, err := dotrill.AnalyticsInfo()
+	installID, enabled, err := a.ch.DotRill.AnalyticsInfo()
 	if err != nil {
 		a.Logger.Warnf("error finding install ID: %v", err)
 	}
@@ -460,12 +461,12 @@ func (a *App) emitStartEvent(ctx context.Context) error {
 		return err
 	}
 
-	parser, err := rillv1.Parse(ctx, repo, instanceID, a.Instance.Environment, a.Instance.OLAPConnector)
+	p, err := parser.Parse(ctx, repo, instanceID, a.Instance.Environment, a.Instance.OLAPConnector)
 	if err != nil {
 		return err
 	}
 
-	connectors := parser.AnalyzeConnectors(ctx)
+	connectors := p.AnalyzeConnectors(ctx)
 	for _, c := range connectors {
 		if c.Err != nil {
 			return err
@@ -490,118 +491,4 @@ func IsProjectInit(projectPath string) bool {
 		return false
 	}
 	return true
-}
-
-func ParseLogFormat(format string) (LogFormat, bool) {
-	switch format {
-	case "json":
-		return LogFormatJSON, true
-	case "console":
-		return LogFormatConsole, true
-	default:
-		return "", false
-	}
-}
-
-func initLogger(isVerbose bool, logFormat LogFormat) (logger *zap.Logger, cleanupFn func()) {
-	logLevel := zapcore.InfoLevel
-	if isVerbose {
-		logLevel = zapcore.DebugLevel
-	}
-
-	logPath, err := dotrill.ResolveFilename("rill.log", true)
-	if err != nil {
-		panic(err)
-	}
-	// lumberjack.Logger is already safe for concurrent use, so we don't need to
-	// lock it.
-	luLogger := &lumberjack.Logger{
-		Filename:   logPath,
-		MaxSize:    100, // megabytes
-		MaxBackups: 3,
-		MaxAge:     30, // days
-		Compress:   true,
-	}
-	cfg := zap.NewProductionEncoderConfig()
-	// hide logger name like `console`
-	cfg.NameKey = zapcore.OmitKey
-	fileCore := zapcore.NewCore(zapcore.NewJSONEncoder(cfg), zapcore.AddSync(luLogger), logLevel)
-
-	var consoleEncoder zapcore.Encoder
-	opts := make([]zap.Option, 0)
-	switch logFormat {
-	case LogFormatJSON:
-		cfg := zap.NewProductionEncoderConfig()
-		cfg.NameKey = zapcore.OmitKey
-		// never
-		opts = append(opts, zap.AddStacktrace(zapcore.InvalidLevel))
-		consoleEncoder = zapcore.NewJSONEncoder(cfg)
-	case LogFormatConsole:
-		encCfg := zap.NewDevelopmentEncoderConfig()
-		encCfg.NameKey = zapcore.OmitKey
-		encCfg.EncodeLevel = zapcore.CapitalColorLevelEncoder
-		encCfg.EncodeTime = zapcore.TimeEncoderOfLayout("2006-01-02T15:04:05.000")
-		consoleEncoder = zapcore.NewConsoleEncoder(encCfg)
-	}
-
-	// if it's not verbose, skip instance_id field
-	if !isVerbose {
-		consoleEncoder = skipFieldZapEncoder{
-			Encoder: consoleEncoder,
-			fields:  []string{"instance_id"},
-		}
-	}
-
-	core := zapcore.NewTee(
-		fileCore,
-		zapcore.NewCore(consoleEncoder, zapcore.Lock(os.Stdout), logLevel),
-	)
-
-	return zap.New(core, opts...), func() {
-		_ = logger.Sync()
-		luLogger.Close()
-	}
-}
-
-// skipFieldZapEncoder skips fields with the given keys. only string fields are supported.
-type skipFieldZapEncoder struct {
-	zapcore.Encoder
-	fields []string
-}
-
-func (s skipFieldZapEncoder) EncodeEntry(entry zapcore.Entry, fields []zapcore.Field) (*buffer.Buffer, error) {
-	res := make([]zapcore.Field, 0, len(fields))
-	for _, field := range fields {
-		skip := false
-		for _, skipField := range s.fields {
-			if field.Key == skipField {
-				skip = true
-				break
-			}
-		}
-		if !skip {
-			res = append(res, field)
-		}
-	}
-	return s.Encoder.EncodeEntry(entry, res)
-}
-
-func (s skipFieldZapEncoder) Clone() zapcore.Encoder {
-	return skipFieldZapEncoder{
-		Encoder: s.Encoder.Clone(),
-		fields:  s.fields,
-	}
-}
-
-func (s skipFieldZapEncoder) AddString(key, val string) {
-	skip := false
-	for _, skipField := range s.fields {
-		if key == skipField {
-			skip = true
-			break
-		}
-	}
-	if !skip {
-		s.Encoder.AddString(key, val)
-	}
 }

@@ -1,4 +1,4 @@
-import { QueryClient } from "@rilldata/svelte-query";
+import { QueryClient } from "@tanstack/svelte-query";
 import { createStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
 import { createAndExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
@@ -12,7 +12,6 @@ import {
   AD_BIDS_MIRROR_NAME,
   AD_BIDS_NAME,
   AD_BIDS_SCHEMA,
-  AD_BIDS_TIME_RANGE_SUMMARY,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/data";
 import { convertPresetToExploreState } from "@rilldata/web-common/features/dashboards/url-state/convertPresetToExploreState";
 import { getDefaultExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/getDefaultExplorePreset";
@@ -38,22 +37,24 @@ export function resetDashboardStore() {
 export function initAdBidsInStore() {
   metricsExplorerStore.init(
     AD_BIDS_EXPLORE_NAME,
-    getInitExploreStateForTest(
-      AD_BIDS_METRICS_INIT,
-      AD_BIDS_EXPLORE_INIT,
-      AD_BIDS_TIME_RANGE_SUMMARY,
-    ),
+    getInitExploreStateForTest(AD_BIDS_METRICS_INIT, AD_BIDS_EXPLORE_INIT, {
+      timeRangeSummary: {
+        min: "2022-01-01",
+        max: "2022-03-31",
+      },
+    }),
   );
 }
 
 export function initAdBidsMirrorInStore() {
   metricsExplorerStore.init(
     AD_BIDS_MIRROR_NAME,
-    getInitExploreStateForTest(
-      AD_BIDS_METRICS_INIT,
-      AD_BIDS_EXPLORE_INIT,
-      AD_BIDS_TIME_RANGE_SUMMARY,
-    ),
+    getInitExploreStateForTest(AD_BIDS_METRICS_INIT, AD_BIDS_EXPLORE_INIT, {
+      timeRangeSummary: {
+        min: "2022-01-01",
+        max: "2022-03-31",
+      },
+    }),
   );
 }
 
@@ -64,7 +65,8 @@ export function getInitExploreStateForTest(
 ) {
   const defaultExplorePreset = getDefaultExplorePreset(
     exploreSpec,
-    timeRangeSummary,
+    metricsViewSpec,
+    timeRangeSummary?.timeRangeSummary,
   );
   const { partialExploreState } = convertPresetToExploreState(
     metricsViewSpec,
@@ -116,13 +118,14 @@ export function assertMetricsViewRaw(
   const metricsView = get(metricsExplorerStore).entities[name];
   expect(metricsView.whereFilter).toEqual(filters);
   expect(metricsView.selectedTimeRange).toEqual(timeRange);
-  expect(metricsView.leaderboardMeasureName).toEqual(selectedMeasure);
+  expect(metricsView.leaderboardSortByMeasureName).toEqual(selectedMeasure);
 }
 
 export function initStateManagers(metricsViewName?: string) {
   metricsViewName ??= AD_BIDS_NAME;
   const exploreName = metricsViewName + "_explore";
 
+  metricsExplorerStore.remove(AD_BIDS_EXPLORE_NAME);
   initAdBidsInStore();
 
   const queryClient = new QueryClient({

@@ -91,6 +91,7 @@
         toggleSort(SortType.VALUE);
       }
     }}
+    aria-label="Toggle time comparison"
   >
     <div class="pointer-events-none flex items-center gap-x-1.5">
       <Switch
@@ -115,6 +116,7 @@
       currentInterval={interval}
       grain={activeTimeGrain}
       zone={activeTimeZone}
+      showFullRange={true}
       {onSelectComparisonRange}
       disabled={disabled ?? false}
     />

@@ -47,6 +47,7 @@ linters:
     - unused
     - usestdlibvars
     - whitespace
+    - rowserrcheck
 
 linters-settings:
   depguard:
@@ -104,7 +105,6 @@ linters-settings:
       - lostcancel
       - nilfunc
       - nilness
-      - nlreturn
       - printf
       - reflectvaluecompare
       - shift

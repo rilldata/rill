@@ -1,6 +1,6 @@
 swagger: "2.0"
 info:
-  title: rill/runtime/v1/colors.proto
+  title: rill/runtime/v1/schema.proto
   version: version not set
 tags:
   - name: RuntimeService
@@ -1376,6 +1376,11 @@ paths:
                 title: Optional
               exact:
                 type: boolean
+              fillMissing:
+                type: boolean
+              rows:
+                type: boolean
+                title: Optional. Defaults to false. Used to fetch rows from underlying model
       tags:
         - QueryService
   /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/compare-toplist:
@@ -1719,6 +1724,9 @@ paths:
               priority:
                 type: integer
                 format: int32
+              timeZone:
+                type: string
+                title: Optional timezone param to easily override time-range expressions
       tags:
         - QueryService
   /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/timeseries:
@@ -2478,6 +2486,41 @@ paths:
                   $ref: '#/definitions/v1Query'
       tags:
         - QueryService
+  /v1/instances/{instanceId}/query/resolver:
+    post:
+      summary: QueryResolver queries a resolver with the given properties and arguments
+      operationId: RuntimeService_QueryResolver
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1QueryResolverResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              resolver:
+                type: string
+              resolverProperties:
+                type: object
+              resolverArgs:
+                type: object
+              limit:
+                type: integer
+                format: int32
+      tags:
+        - RuntimeService
   /v1/instances/{instanceId}/reports/{report}/export:
     post:
       summary: ExportReport builds a URL to download the results of a query as a file.
@@ -2907,13 +2950,6 @@ paths:
       tags:
         - ConnectorService
 definitions:
-  BucketExtractPolicyStrategy:
-    type: string
-    enum:
-      - STRATEGY_UNSPECIFIED
-      - STRATEGY_HEAD
-      - STRATEGY_TAIL
-    default: STRATEGY_UNSPECIFIED
   ColumnTimeSeriesRequestBasicMeasure:
     type: object
     properties:
@@ -2992,51 +3028,7 @@ definitions:
       dimension:
         type: string
       value: {}
-  MetricsViewSpecAvailableComparisonOffset:
-    type: object
-    properties:
-      offset:
-        type: string
-      range:
-        type: string
-        description: Used to override the range for the comparison with something other than the selected range.
-    description: 'Deprecated: Now defined in the Explore resource.'
-  MetricsViewSpecAvailableTimeRange:
-    type: object
-    properties:
-      range:
-        type: string
-      comparisonOffsets:
-        type: array
-        items:
-          type: object
-          $ref: '#/definitions/MetricsViewSpecAvailableComparisonOffset'
-        description: Available comparison offsets for this time range.
-    description: 'Deprecated: Now defined in the Explore resource.'
-  MetricsViewSpecComparisonMode:
-    type: string
-    enum:
-      - COMPARISON_MODE_UNSPECIFIED
-      - COMPARISON_MODE_NONE
-      - COMPARISON_MODE_TIME
-      - COMPARISON_MODE_DIMENSION
-    default: COMPARISON_MODE_UNSPECIFIED
-    description: |-
-      DEPRECATED FIELDS
-      Deprecated: Now defined in the Explore resource.
-  MetricsViewSpecDimensionSelector:
-    type: object
-    properties:
-      name:
-        type: string
-      timeGrain:
-        $ref: '#/definitions/v1TimeGrain'
-        title: Only for time dimensions (optional)
-      desc:
-        type: boolean
-        title: Only for when ordering (optional)
-    title: Selector for a dimension
-  MetricsViewSpecDimensionV2:
+  MetricsViewSpecDimension:
     type: object
     properties:
       name:
@@ -3054,16 +3046,19 @@ definitions:
       uri:
         type: string
     title: Dimensions are columns to filter and group by
-  MetricsViewSpecMeasureType:
-    type: string
-    enum:
-      - MEASURE_TYPE_UNSPECIFIED
-      - MEASURE_TYPE_SIMPLE
-      - MEASURE_TYPE_DERIVED
-      - MEASURE_TYPE_TIME_COMPARISON
-    default: MEASURE_TYPE_UNSPECIFIED
-    title: Type of measure query to generate
-  MetricsViewSpecMeasureV2:
+  MetricsViewSpecDimensionSelector:
+    type: object
+    properties:
+      name:
+        type: string
+      timeGrain:
+        $ref: '#/definitions/v1TimeGrain'
+        title: Only for time dimensions (optional)
+      desc:
+        type: boolean
+        title: Only for when ordering (optional)
+    title: Selector for a dimension
+  MetricsViewSpecMeasure:
     type: object
     properties:
       name:
@@ -3100,7 +3095,18 @@ definitions:
         type: object
       validPercentOfTotal:
         type: boolean
+      treatNullsAs:
+        type: string
     title: Measures are aggregated computed values
+  MetricsViewSpecMeasureType:
+    type: string
+    enum:
+      - MEASURE_TYPE_UNSPECIFIED
+      - MEASURE_TYPE_SIMPLE
+      - MEASURE_TYPE_DERIVED
+      - MEASURE_TYPE_TIME_COMPARISON
+    default: MEASURE_TYPE_UNSPECIFIED
+    title: Type of measure query to generate
   MetricsViewSpecMeasureWindow:
     type: object
     properties:
@@ -3505,36 +3511,6 @@ definitions:
         type: array
         items:
           type: string
-  v1BucketExtractPolicy:
-    type: object
-    properties:
-      rowsStrategy:
-        $ref: '#/definitions/BucketExtractPolicyStrategy'
-      rowsLimitBytes:
-        type: string
-        format: uint64
-      filesStrategy:
-        $ref: '#/definitions/BucketExtractPolicyStrategy'
-      filesLimit:
-        type: string
-        format: uint64
-  v1BucketPlanner:
-    type: object
-    properties:
-      spec:
-        $ref: '#/definitions/v1BucketPlannerSpec'
-      state:
-        $ref: '#/definitions/v1BucketPlannerState'
-  v1BucketPlannerSpec:
-    type: object
-    properties:
-      extractPolicy:
-        $ref: '#/definitions/v1BucketExtractPolicy'
-  v1BucketPlannerState:
-    type: object
-    properties:
-      region:
-        type: string
   v1BuiltinMeasure:
     type: string
     enum:
@@ -3554,20 +3530,17 @@ definitions:
     properties:
       component:
         type: string
+        description: Name of the component to render.
       definedInCanvas:
         type: boolean
-      x:
-        type: integer
-        format: int64
-      "y":
-        type: integer
-        format: int64
+        description: Indicates if the component was defined inline as part of the canvas YAML.
       width:
         type: integer
         format: int64
-      height:
-        type: integer
-        format: int64
+        description: Width of the item. The unit is given in width_unit.
+      widthUnit:
+        type: string
+        description: 'Unit of the width. Current possible values: empty string.'
   v1CanvasPreset:
     type: object
     properties:
@@ -3585,12 +3558,31 @@ definitions:
       comparisonDimension:
         type: string
         description: If comparison_mode is EXPLORE_COMPARISON_MODE_DIMENSION, this indicates the dimension to use.
+  v1CanvasRow:
+    type: object
+    properties:
+      height:
+        type: integer
+        format: int64
+        description: Height of the row. The unit is given in height_unit.
+      heightUnit:
+        type: string
+        description: 'Unit of the height. Current possible values: "px", empty string.'
+      items:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1CanvasItem'
+        description: Items to render in the row.
   v1CanvasSpec:
     type: object
     properties:
       displayName:
         type: string
         description: Display name for the canvas.
+      banner:
+        type: string
+        description: Banner text that can be displayed in Rill Cloud.
       maxWidth:
         type: integer
         format: int64
@@ -3618,6 +3610,9 @@ definitions:
           List of selectable time ranges with comparison time ranges.
           If the list is empty, a default list should be shown.
           TODO: Once the canvas APIs have stabilized, rename ExploreTimeRange to a non-explore-specific name.
+      allowCustomTimeRange:
+        type: boolean
+        title: Toggle custom time range
       timeZones:
         type: array
         items:
@@ -3638,23 +3633,18 @@ definitions:
           type: object
           $ref: '#/definitions/v1ComponentVariable'
         description: Variables that can be used in the canvas.
-      items:
+      rows:
         type: array
         items:
           type: object
-          $ref: '#/definitions/v1CanvasItem'
-        title: Items to render on the canvas
-      layout:
-        description: Layout is an untyped object pending a formal definition.
+          $ref: '#/definitions/v1CanvasRow'
+        title: Rows to render on the canvas
       securityRules:
         type: array
         items:
           type: object
           $ref: '#/definitions/v1SecurityRule'
         description: Security rules to apply for access to the canvas.
-      banner:
-        type: string
-        description: Banner text that can be displayed in Rill Cloud.
   v1CanvasState:
     type: object
     properties:
@@ -4049,11 +4039,6 @@ definitions:
         title: Provision settings if its a managed connector
       provisionArgs:
         type: object
-      configFromVariables:
-        type: object
-        additionalProperties:
-          type: string
-        title: 'DEPRECATED: config_from_variables stores configs whose value is a variable. This is only set for configs obtained from `connector.yaml`'
   v1ConnectorDriver:
     type: object
     properties:
@@ -4119,13 +4104,6 @@ definitions:
         type: boolean
       provisionArgs:
         type: object
-      propertiesFromVariables:
-        type: object
-        additionalProperties:
-          type: string
-        description: |-
-          DEPRECATED: properties_from_variables stores properties whose value is a variable.
-          NOTE : properties_from_variables and properties both should be used to get all properties.
   v1ConnectorState:
     type: object
     properties:
@@ -4260,6 +4238,11 @@ definitions:
         description: Dynamic selector for `measures`. Will be processed during validation, so it will always be empty in `state.valid_spec`.
       where:
         $ref: '#/definitions/v1Expression'
+      dimensionsWithInlistFilter:
+        type: array
+        items:
+          type: string
+        description: Temporary to differentiate between "select" and "in list" modes. Expression will be replaced with UI specific state in the future.
       timeRange:
         type: string
         description: |-
@@ -4290,6 +4273,16 @@ definitions:
         $ref: '#/definitions/v1ExploreSortType'
       exploreExpandedDimension:
         type: string
+      exploreLeaderboardMeasureCount:
+        type: integer
+        format: int64
+        title: Deprecated
+      exploreLeaderboardMeasures:
+        type: array
+        items:
+          type: string
+      exploreLeaderboardShowContextForAllMeasures:
+        type: boolean
       timeDimensionMeasure:
         type: string
       timeDimensionChartType:
@@ -4308,6 +4301,8 @@ definitions:
         type: string
       pivotSortAsc:
         type: boolean
+      pivotTableMode:
+        type: string
   v1ExploreSortType:
     type: string
     enum:
@@ -4384,6 +4379,12 @@ definitions:
       banner:
         type: string
         description: Banner text that can be displayed in Rill Cloud.
+      lockTimeZone:
+        type: boolean
+        title: When set to true, dashboard will be locked to the first time zone in the time_zones key (or UTC)
+      allowCustomTimeRange:
+        type: boolean
+        title: Allow custom time range
   v1ExploreState:
     type: object
     properties:
@@ -4787,6 +4788,13 @@ definitions:
       valueType:
         $ref: '#/definitions/runtimev1Type'
     title: MapType is a complex type for mapping keys to values
+  v1MetricsView:
+    type: object
+    properties:
+      spec:
+        $ref: '#/definitions/v1MetricsViewSpec'
+      state:
+        $ref: '#/definitions/v1MetricsViewState'
   v1MetricsViewAggregationDimension:
     type: object
     properties:
@@ -4943,6 +4951,11 @@ definitions:
         title: Optional
       exact:
         type: boolean
+      fillMissing:
+        type: boolean
+      rows:
+        type: boolean
+        title: Optional. Defaults to false. Used to fetch rows from underlying model
   v1MetricsViewAggregationResponse:
     type: object
     properties:
@@ -5257,13 +5270,13 @@ definitions:
         type: array
         items:
           type: object
-          $ref: '#/definitions/MetricsViewSpecDimensionV2'
+          $ref: '#/definitions/MetricsViewSpecDimension'
         title: Dimensions in the metrics view
       measures:
         type: array
         items:
           type: object
-          $ref: '#/definitions/MetricsViewSpecMeasureV2'
+          $ref: '#/definitions/MetricsViewSpecMeasure'
         title: Measures in the metrics view
       securityRules:
         type: array
@@ -5279,55 +5292,6 @@ definitions:
         type: integer
         format: int64
         description: Month number to use as the base for time aggregations by year. Defaults to 1 (January).
-      defaultDimensions:
-        type: array
-        items:
-          type: string
-        description: |-
-          List of selected dimensions by defaults.
-          Deprecated: Now defined in the Explore resource.
-      defaultMeasures:
-        type: array
-        items:
-          type: string
-        description: |-
-          List of selected measures by defaults.
-          Deprecated: Now defined in the Explore resource.
-      defaultTimeRange:
-        type: string
-        description: |-
-          Default time range for the dashboard. It should be a valid ISO 8601 duration string.
-          Deprecated: Now defined in the Explore resource.
-      defaultComparisonMode:
-        $ref: '#/definitions/MetricsViewSpecComparisonMode'
-        description: |-
-          Selected default comparison mode.
-          Deprecated: Now defined in the Explore resource.
-      defaultComparisonDimension:
-        type: string
-        description: |-
-          If comparison mode is dimension then this determines which is the default dimension.
-          Deprecated: Now defined in the Explore resource.
-      defaultTheme:
-        type: string
-        description: |-
-          Default theme to apply.
-          Deprecated: Now defined in the Explore resource.
-      availableTimeRanges:
-        type: array
-        items:
-          type: object
-          $ref: '#/definitions/MetricsViewSpecAvailableTimeRange'
-        description: |-
-          List of available time ranges with comparison ranges that would replace the default list.
-          Deprecated: Now defined in the Explore resource.
-      availableTimeZones:
-        type: array
-        items:
-          type: string
-        description: |-
-          Available time zones list preferred time zones using IANA location identifiers.
-          Deprecated: Now defined in the Explore resource.
       cacheEnabled:
         type: boolean
         description: Cache controls for the metrics view.
@@ -5347,6 +5311,12 @@ definitions:
         description: |-
           Streaming is true if the underlying data may change without the metrics view's spec/state version changing.
           It's set to true if the metrics view is based on an externally managed table.
+      modelRefreshedOn:
+        type: string
+        format: date-time
+        description: |-
+          The last time the metrics view's underlying model was refreshed.
+          This may be empty if the metrics view is based on an externally managed table.
   v1MetricsViewTimeRangeResponse:
     type: object
     properties:
@@ -5521,13 +5491,6 @@ definitions:
       data:
         type: object
         title: Not optional, not null
-  v1MetricsViewV2:
-    type: object
-    properties:
-      spec:
-        $ref: '#/definitions/v1MetricsViewSpec'
-      state:
-        $ref: '#/definitions/v1MetricsViewState'
   v1Migration:
     type: object
     properties:
@@ -5551,6 +5514,13 @@ definitions:
       version:
         type: integer
         format: int64
+  v1Model:
+    type: object
+    properties:
+      spec:
+        $ref: '#/definitions/v1ModelSpec'
+      state:
+        $ref: '#/definitions/v1ModelState'
   v1ModelPartition:
     type: object
     properties:
@@ -5609,6 +5579,9 @@ definitions:
         type: boolean
       triggerFull:
         type: boolean
+      definedAsSource:
+        type: boolean
+        description: defined_as_source is true if it was defined by user as a source but converted internally to a model.
   v1ModelState:
     type: object
     properties:
@@ -5646,13 +5619,17 @@ definitions:
       partitionsHaveErrors:
         type: boolean
         description: partitions_have_errors is true if one or more partitions failed to execute.
-  v1ModelV2:
-    type: object
-    properties:
-      spec:
-        $ref: '#/definitions/v1ModelSpec'
-      state:
-        $ref: '#/definitions/v1ModelState'
+      totalExecutionDurationMs:
+        type: string
+        format: int64
+        description: |-
+          total_execution_duration_ms is the time user queries took to execute while refreshing the model.
+          In case of incremental models it is the sum of all successful executions so far.
+          This is not the time it took to refresh the model which also includes other stuff like taking a write lock.
+      latestExecutionDurationMs:
+        type: string
+        format: int64
+        description: latest_execution_duration_ms is the time user queries took to execute in the last successful refresh.
   v1Notifier:
     type: object
     properties:
@@ -5724,6 +5701,10 @@ definitions:
         title: unsupported_columns are columns having datatypes which are not supported by Rill
       view:
         type: boolean
+      physicalSizeBytes:
+        type: string
+        format: int64
+        description: physical_size_bytes is the physical size of the table. Set to -1 if the size cannot be determined.
   v1OLAPListTablesResponse:
     type: object
     properties:
@@ -5808,18 +5789,6 @@ definitions:
         format: date-time
       watching:
         type: boolean
-  v1PullTrigger:
-    type: object
-    properties:
-      spec:
-        $ref: '#/definitions/v1PullTriggerSpec'
-      state:
-        $ref: '#/definitions/v1PullTriggerState'
-    description: 'DEPRECATED (2024-08-28): Use a RefreshTrigger that targets the project parser instead.'
-  v1PullTriggerSpec:
-    type: object
-  v1PullTriggerState:
-    type: object
   v1PutFileResponse:
     type: object
     properties:
@@ -5878,6 +5847,15 @@ definitions:
         $ref: '#/definitions/v1QueryResult'
       error:
         type: string
+  v1QueryResolverResponse:
+    type: object
+    properties:
+      schema:
+        $ref: '#/definitions/v1StructType'
+      data:
+        type: array
+        items:
+          type: object
   v1QueryResponse:
     type: object
     properties:
@@ -6097,11 +6075,11 @@ definitions:
         $ref: '#/definitions/v1ProjectParser'
         description: Well-known types only, for now. If required, we can add support for a google.protobuf.Any later.
       source:
-        $ref: '#/definitions/v1SourceV2'
+        $ref: '#/definitions/v1Source'
       model:
-        $ref: '#/definitions/v1ModelV2'
+        $ref: '#/definitions/v1Model'
       metricsView:
-        $ref: '#/definitions/v1MetricsViewV2'
+        $ref: '#/definitions/v1MetricsView'
       explore:
         $ref: '#/definitions/v1Explore'
       migration:
@@ -6110,12 +6088,8 @@ definitions:
         $ref: '#/definitions/v1Report'
       alert:
         $ref: '#/definitions/v1Alert'
-      pullTrigger:
-        $ref: '#/definitions/v1PullTrigger'
       refreshTrigger:
         $ref: '#/definitions/v1RefreshTrigger'
-      bucketPlanner:
-        $ref: '#/definitions/v1BucketPlanner'
       theme:
         $ref: '#/definitions/v1Theme'
       component:
@@ -6286,6 +6260,13 @@ definitions:
       expression:
         $ref: '#/definitions/v1Expression'
         title: Regular query expression referencing dimension names
+  v1Source:
+    type: object
+    properties:
+      spec:
+        $ref: '#/definitions/v1SourceSpec'
+      state:
+        $ref: '#/definitions/v1SourceState'
   v1SourceSpec:
     type: object
     properties:
@@ -6319,13 +6300,6 @@ definitions:
       refreshedOn:
         type: string
         format: date-time
-  v1SourceV2:
-    type: object
-    properties:
-      spec:
-        $ref: '#/definitions/v1SourceSpec'
-      state:
-        $ref: '#/definitions/v1SourceState'
   v1StringListValue:
     type: object
     properties:
@@ -6423,6 +6397,10 @@ definitions:
       hasUnsupportedDataTypes:
         type: boolean
         title: has_unsupported_data_types indicates if the underlying table has any column with an unsupported OLAP engine datatype
+      physicalSizeBytes:
+        type: string
+        format: int64
+        description: physical_size_bytes is the physical size of the table. Set to -1 if the size cannot be determined.
   v1TableRowsRequest:
     type: object
     properties:

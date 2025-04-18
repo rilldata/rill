@@ -9,17 +9,17 @@ import type { Config } from "vega-lite";
 const BarFill = "var(--color-primary-400)";
 
 const defaultMarkColor = MainLineColor;
-const gridColor = "#d1d5db"; // gray-300
+const gridColor = "#e5e7eb"; // gray-200
 const axisLabelColor = "#4b5563"; // gray-600
 
-export const getRillTheme: (isCustomDashboard: boolean) => Config = (
-  isCustomDashboard,
+export const getRillTheme: (isCanvasDashboard: boolean) => Config = (
+  isCanvasDashboard,
 ) => ({
   autosize: {
     type: "fit-x",
   },
   mark: {
-    tooltip: isCustomDashboard ? true : false,
+    tooltip: isCanvasDashboard,
   },
   arc: { fill: defaultMarkColor },
   area: {
@@ -44,7 +44,7 @@ export const getRillTheme: (isCustomDashboard: boolean) => Config = (
       ],
     },
   },
-  bar: { fill: BarFill, opacity: 0.8 },
+  bar: { fill: BarFill, ...(!isCanvasDashboard && { opacity: 0.8 }) },
   line: { stroke: defaultMarkColor, strokeWidth: 1.5, strokeOpacity: 1 },
   path: { stroke: defaultMarkColor },
   rect: { fill: defaultMarkColor },
@@ -61,9 +61,11 @@ export const getRillTheme: (isCustomDashboard: boolean) => Config = (
     titleFontSize: 12,
   },
   axisY: {
-    orient: "right",
+    orient: "left",
     gridColor: gridColor,
-    gridDash: [2],
+    ...(!isCanvasDashboard && {
+      gridDash: [2],
+    }),
     tickColor: gridColor,
     domain: false,
     tickSize: 0,
@@ -80,6 +82,9 @@ export const getRillTheme: (isCustomDashboard: boolean) => Config = (
     labelOverlap: false,
   },
   axisX: {
+    ...(isCanvasDashboard && {
+      grid: false,
+    }),
     gridColor: gridColor,
     gridDash: [2],
     tickColor: gridColor,

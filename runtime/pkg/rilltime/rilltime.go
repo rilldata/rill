@@ -1,8 +1,10 @@
 package rilltime
 
 import (
+	"errors"
 	"fmt"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -15,6 +17,8 @@ import (
 var (
 	infPattern      = regexp.MustCompile("^(?i)inf$")
 	durationPattern = regexp.MustCompile(`^P((?P<year>\d+)Y)?((?P<month>\d+)M)?((?P<week>\d+)W)?((?P<day>\d+)D)?(T((?P<hour>\d+)H)?((?P<minute>\d+)M)?((?P<second>\d+)S)?)?$`)
+	isoTimePattern  = `(?P<year>\d{4})(-(?P<month>\d{2})(-(?P<day>\d{2})(T(?P<hour>\d{2})(:(?P<minute>\d{2})(:(?P<second>\d{2})Z)?)?)?)?)?`
+	isoTimeRegex    = regexp.MustCompile(isoTimePattern)
 	// nolint:govet // This is suggested usage by the docs.
 	rillTimeLexer = lexer.MustSimple([]lexer.SimpleRule{
 		{"Earliest", "earliest"},
@@ -22,38 +26,40 @@ var (
 		{"Latest", "latest"},
 		{"Watermark", "watermark"},
 		// this needs to be after Now and Latest to match to them
+		{"PeriodToGrain", `[sSmhHdDwWqQMyY]T[sSmhHdDwWqQMyY]`},
 		{"Grain", `[sSmhHdDwWqQMyY]`},
 		// this has to be at the end
 		{"TimeZone", `{.+?}`},
-		{"AbsoluteTime", `\d{4}-\d{2}-\d{2} \d{2}:\d{2}`},
-		{"AbsoluteDate", `\d{4}-\d{2}-\d{2}`},
-		{"Sign", `[+-]`},
+		{"ISOTime", isoTimePattern},
+		{"AnchorPrefix", `[+\-<>]`},
+		{"Current", "[~]"},
 		{"Number", `\d+`},
+		{"To", `(?i)to`},
+		{"By", `(?i)by`},
+		{"Of", `(?i)of`},
 		// needed for misc. direct character references used
-		{"Punct", `[-[!@#$%^&*()+_={}\|:;"'<,>.?/]|]`},
-		{"To", `[tT][oO]`},
-		{"By", `[bB][yY]`},
-		{"Whitespace", `[ \t\n\r]+`},
+		{"Punct", `[-[!@#$%^&*()+_={}\|:;"'<,>.?/]]`},
+		{"Whitespace", `[ \t]+`},
 	})
 	daxNotations = map[string]string{
 		// Mapping for our old rill-<DAX> syntax
-		"TD":  "0d to latest",
-		"WTD": "0W to latest",
-		"MTD": "0M to latest",
-		"QTD": "0Q to latest",
-		"YTD": "0Y to latest",
-		"PDC": "-1d to 0d",
-		"PWC": "-1W to 0W",
-		"PMC": "-1M to 0M",
-		"PQC": "-1Q to 0Q",
-		"PYC": "-1Y to 0Y",
+		"TD":  "D~",
+		"WTD": "WTD",
+		"MTD": "MTD",
+		"QTD": "QTD",
+		"YTD": "YTD",
+		"PDC": "D",
+		"PWC": "W",
+		"PMC": "M",
+		"PQC": "Q",
+		"PYC": "Y",
 		// TODO: previous period is contextual. should be handled in UI
 		"PP": "",
-		"PD": "-1d to 0d",
-		"PW": "-1W to 0W",
-		"PM": "-1M to 0M",
-		"PQ": "-1Q to 0Q",
-		"PY": "-1Y to 0Y",
+		"PD": "-1D to D~",
+		"PW": "-1W to W~",
+		"PM": "-1M to M~",
+		"PQ": "-1Q to Q~",
+		"PY": "-1Y to Y~",
 	}
 	rillTimeParser = participle.MustBuild[Expression](
 		participle.Lexer(rillTimeLexer),
@@ -75,52 +81,107 @@ var (
 		"y": timeutil.TimeGrainYear,
 		"Y": timeutil.TimeGrainYear,
 	}
+	higherOrderMap = map[timeutil.TimeGrain]timeutil.TimeGrain{
+		timeutil.TimeGrainSecond:  timeutil.TimeGrainMinute,
+		timeutil.TimeGrainMinute:  timeutil.TimeGrainHour,
+		timeutil.TimeGrainHour:    timeutil.TimeGrainDay,
+		timeutil.TimeGrainDay:     timeutil.TimeGrainWeek,
+		timeutil.TimeGrainWeek:    timeutil.TimeGrainMonth,
+		timeutil.TimeGrainMonth:   timeutil.TimeGrainYear,
+		timeutil.TimeGrainQuarter: timeutil.TimeGrainYear,
+	}
+	lowerOrderMap = map[timeutil.TimeGrain]timeutil.TimeGrain{
+		timeutil.TimeGrainSecond:  timeutil.TimeGrainMillisecond,
+		timeutil.TimeGrainMinute:  timeutil.TimeGrainSecond,
+		timeutil.TimeGrainHour:    timeutil.TimeGrainMinute,
+		timeutil.TimeGrainDay:     timeutil.TimeGrainHour,
+		timeutil.TimeGrainWeek:    timeutil.TimeGrainDay,
+		timeutil.TimeGrainMonth:   timeutil.TimeGrainWeek,
+		timeutil.TimeGrainQuarter: timeutil.TimeGrainMonth,
+		timeutil.TimeGrainYear:    timeutil.TimeGrainMonth,
+	}
 )
 
 type Expression struct {
-	Start         *TimeAnchor  `parser:"  @@"`
-	End           *TimeAnchor  `parser:"(To @@)?"`
-	Modifiers     *Modifiers   `parser:"(By @@)?"`
-	AtModifiers   *AtModifiers `parser:"('@' @@)?"`
-	isNewFormat   bool
-	grain         *Grain
-	truncateGrain timeutil.TimeGrain
-	isComplete    bool
-	timeZone      *time.Location
-}
+	From           *Link          `parser:"@@"`
+	To             *Link          `parser:"(To @@)?"`
+	Grain          *string        `parser:"(By @Grain)?"`
+	AnchorOverride *LabeledAnchor `parser:"('@' @@)?"`
+	TimeZone       *string        `parser:"('@' @TimeZone)?"`
 
-type TimeAnchor struct {
-	Grain       *Grain  `parser:"( @@"`
-	AbsDate     *string `parser:"| @AbsoluteDate"`
-	AbsTime     *string `parser:"| @AbsoluteTime"`
-	Earliest    bool    `parser:"| @Earliest"`
-	Now         bool    `parser:"| @Now"`
-	Latest      bool    `parser:"| @Latest"`
-	Watermark   bool    `parser:"| @Watermark)"`
-	Trunc       *string `parser:"  ('/' @Grain)?"`
-	Offset      *Grain  `parser:"@@?"`
+	isNewFormat bool
+	timeZone    *time.Location
 	isoDuration *duration.StandardDuration
 }
 
-type Modifiers struct {
-	Grain         *Grain `parser:"( @@"`
-	CompleteGrain *Grain `parser:"| '|' @@ '|')?"`
+// Link represents a link of grains specifying the customisable anchors.
+// EG: 7d of -1M : The 7day period of last month. 7day is relative to watermark unless something else is specified.
+type Link struct {
+	Parts       []*LinkPart `parser:"@@ (Of @@)*"`
+	anchorParts []linkPartAnchor
 }
 
-type Grain struct {
-	Sign  *string `parser:"@Sign?"`
-	Num   *int    `parser:"@Number?"`
-	Grain string  `parser:"@Grain"`
+type LinkPart struct {
+	Ordinal       *Ordinal       `parser:"( @@"`
+	Anchor        *TimeAnchor    `parser:"| @@"`
+	AbsoluteTime  *AbsoluteTime  `parser:"| @@"`
+	LabeledAnchor *LabeledAnchor `parser:"| @@)"`
 }
 
-type AtModifiers struct {
-	AnchorOverride *TimeAnchor `parser:"@@?"`
-	TimeZone       *string     `parser:"@TimeZone?"`
+type linkPartAnchor interface {
+	parse() error
+	eval(evalOpts EvalOptions, start, cur, end time.Time, tz *time.Location) (time.Time, time.Time, time.Time)
+	// Returns the grain for the part assuming it is first part in the link.
+	grain() timeutil.TimeGrain
+}
+
+type LabeledAnchor struct {
+	Earliest  bool `parser:"( @Earliest"`
+	Now       bool `parser:"| @Now"`
+	Latest    bool `parser:"| @Latest"`
+	Watermark bool `parser:"| @Watermark)"`
+}
+
+// Ordinal represent a particular sequence of a grain in the next order grain.
+// EG: W2 - week 2 of the month.
+// EG: M5 - month 5 of the year.
+type Ordinal struct {
+	Grain string `parser:"@Grain"`
+	Num   int    `parser:"@Number"`
+
+	offset int
+	tg     timeutil.TimeGrain
+}
+
+type TimeAnchor struct {
+	Prefix         *string `parser:"@AnchorPrefix?"`
+	Num            *int    `parser:"@Number?"`
+	Grain          *string `parser:"( @Grain"`
+	PeriodToGrain  *string `parser:"| @PeriodToGrain)"`
+	IncludeCurrent bool    `parser:"@Current?"`
+
+	offset   int
+	from, tg timeutil.TimeGrain
+}
+
+type AbsoluteTime struct {
+	ISO string `parser:"@ISOTime"`
+
+	year   int
+	month  int
+	week   int
+	day    int
+	hour   int
+	minute int
+	second int
+
+	tg timeutil.TimeGrain
 }
 
 // ParseOptions allows for additional options that could probably not be added to the time range itself
 type ParseOptions struct {
-	DefaultTimeZone *time.Location
+	DefaultTimeZone  *time.Location
+	TimeZoneOverride *time.Location
 }
 
 type EvalOptions struct {
@@ -149,28 +210,32 @@ func Parse(from string, parseOpts ParseOptions) (*Expression, error) {
 		rt.isNewFormat = true
 	}
 
-	rt.timeZone = time.UTC
-	if parseOpts.DefaultTimeZone != nil {
-		rt.timeZone = parseOpts.DefaultTimeZone
-	}
-	if rt.Modifiers != nil {
-		if rt.Modifiers.Grain != nil {
-			rt.truncateGrain = grainMap[rt.Modifiers.Grain.Grain]
-			rt.grain = rt.Modifiers.Grain
-			// TODO: non-1 grains
-		} else if rt.Modifiers.CompleteGrain != nil {
-			rt.truncateGrain = grainMap[rt.Modifiers.CompleteGrain.Grain]
-			rt.grain = rt.Modifiers.CompleteGrain
-			// TODO: non-1 grains
-			rt.isComplete = true
-		}
-	}
-	if rt.AtModifiers != nil && rt.AtModifiers.TimeZone != nil {
-		var err error
-		rt.timeZone, err = time.LoadLocation(strings.Trim(*rt.AtModifiers.TimeZone, "{}"))
+	if rt.From != nil {
+		err = rt.From.parse()
 		if err != nil {
-			return nil, fmt.Errorf("invalid time zone %q: %w", *rt.AtModifiers.TimeZone, err)
+			return nil, err
 		}
+	} else if rt.isoDuration == nil {
+		return nil, errors.New("invalid range: missing from")
+	}
+
+	if rt.To != nil {
+		err = rt.To.parse()
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	rt.timeZone = time.UTC
+	if parseOpts.TimeZoneOverride != nil {
+		rt.timeZone = parseOpts.TimeZoneOverride
+	} else if rt.TimeZone != nil {
+		rt.timeZone, err = time.LoadLocation(strings.Trim(*rt.TimeZone, "{}"))
+		if err != nil {
+			return nil, err
+		}
+	} else if parseOpts.DefaultTimeZone != nil {
+		rt.timeZone = parseOpts.DefaultTimeZone
 	}
 
 	return rt, nil
@@ -198,149 +263,362 @@ func ParseCompatibility(timeRange, offset string) error {
 	return nil
 }
 
-func (e *Expression) Eval(evalOpts EvalOptions) (time.Time, time.Time, error) {
-	anchor, fallbackEndAnchor := e.getAnchor(evalOpts)
-
-	start := anchor
-	if e.Start != nil {
-		start = e.modify(evalOpts, e.Start, anchor)
+func (e *Expression) Eval(evalOpts EvalOptions) (time.Time, time.Time, timeutil.TimeGrain) {
+	if evalOpts.FirstDay == 0 {
+		evalOpts.FirstDay = 1
+	}
+	if evalOpts.FirstMonth == 0 {
+		evalOpts.FirstMonth = 1
 	}
 
-	endAnchor := e.End
-	if e.End == nil {
-		endAnchor = fallbackEndAnchor
+	cur := evalOpts.Watermark
+	if e.AnchorOverride != nil {
+		cur, _, _ = e.AnchorOverride.eval(evalOpts, time.Time{}, time.Time{}, time.Time{}, e.timeZone)
 	}
-	end := e.modify(evalOpts, endAnchor, anchor)
 
-	return start, end, nil
-}
-
-func (e *Expression) modify(evalOpts EvalOptions, ta *TimeAnchor, tm time.Time) time.Time {
-	isTruncate := true
-	truncateGrain := e.truncateGrain
-	isBoundary := false
-
-	if ta.isoDuration != nil {
+	if e.isoDuration != nil {
 		// handling for old iso format
-		tm = ta.isoDuration.Sub(evalOpts.MaxTime.In(e.timeZone))
-		isTruncate = true
-		if e.grain != nil && e.grain.Grain != "" {
-			truncateGrain = grainMap[e.grain.Grain]
+		start := e.isoDuration.Sub(evalOpts.MaxTime.In(e.timeZone))
+		end := cur
+		tg := timeutil.TimeGrainUnspecified
+		if e.Grain != nil {
+			tg = grainMap[*e.Grain]
+			start = timeutil.TruncateTime(start, tg, e.timeZone, evalOpts.FirstDay, evalOpts.FirstMonth)
+			end = timeutil.TruncateTime(cur, tg, e.timeZone, evalOpts.FirstDay, evalOpts.FirstMonth)
 		}
-	} else if ta.Now {
-		tm = evalOpts.Now.In(e.timeZone)
-		isTruncate = e.isComplete
-		isBoundary = true
-	} else if ta.Earliest {
-		tm = evalOpts.MinTime.In(e.timeZone)
-		isTruncate = true
-	} else if ta.Latest {
-		tm = evalOpts.MaxTime.In(e.timeZone)
-		isTruncate = e.isComplete
-		isBoundary = true
-	} else if ta.Watermark {
-		tm = evalOpts.Watermark.In(e.timeZone)
-		isTruncate = e.isComplete
-		isBoundary = true
-	} else if ta.AbsDate != nil {
-		absTm, _ := time.Parse(time.DateOnly, *ta.AbsDate)
-		tm = absTm.In(e.timeZone)
-	} else if ta.AbsTime != nil {
-		absTm, _ := time.Parse("2006-01-02 15:04", *ta.AbsTime)
-		tm = absTm.In(e.timeZone)
-	} else if ta.Grain != nil {
-		tm = ta.Grain.offset(tm.In(e.timeZone))
 
-		truncateGrain = grainMap[ta.Grain.Grain]
-		isTruncate = true
-	} else {
-		return tm.In(e.timeZone)
+		return start, end, tg
 	}
 
-	if ta.Trunc != nil {
-		truncateGrain = grainMap[*ta.Trunc]
-		isTruncate = true
+	start, end, tg := e.From.time(evalOpts, cur, e.timeZone)
+	if e.To != nil {
+		// we take the start of right of "to" as end
+		end, _, _ = e.To.time(evalOpts, cur, e.timeZone)
 	}
 
-	modifiedTime := tm
-	if isTruncate {
-		modifiedTime = timeutil.TruncateTime(tm, truncateGrain, e.timeZone, evalOpts.FirstDay, evalOpts.FirstMonth)
-	} else {
-		modifiedTime = timeutil.CeilTime(tm, truncateGrain, e.timeZone, evalOpts.FirstDay, evalOpts.FirstMonth)
+	if e.Grain != nil {
+		tg = grainMap[*e.Grain]
 	}
 
-	// Add local offset after truncate. This allows for `0W+1D`
-	if ta.Offset != nil {
-		modifiedTime = ta.Offset.offset(modifiedTime)
-		modifiedTime = timeutil.TruncateTime(modifiedTime, grainMap[ta.Offset.Grain], e.timeZone, evalOpts.FirstDay, evalOpts.FirstMonth)
-	}
-
-	// Add global offset from AtModifiers after truncate
-	// Only grain offset is applied here. Anchor offsets like `@ now` or `@ latest` are applied to `tm` param
-	if e.AtModifiers != nil && e.AtModifiers.AnchorOverride != nil && e.AtModifiers.AnchorOverride.Grain != nil {
-		modifiedTime = e.AtModifiers.AnchorOverride.Grain.offset(modifiedTime)
-	}
-
-	if isBoundary && modifiedTime.Equal(tm) && (e.Modifiers == nil || e.Modifiers.CompleteGrain == nil) {
-		// edge case where the end time falls on a boundary. add +1grain to make sure the last data point is included
-		n := 1
-		g := &Grain{
-			Num:   &n,
-			Grain: "s",
-		}
-		if e.grain != nil {
-			g.Grain = e.grain.Grain
-		}
-		modifiedTime = g.offset(modifiedTime)
-	}
-
-	return modifiedTime
+	return start, end, tg
 }
 
-func (e *Expression) getAnchor(evalOpts EvalOptions) (time.Time, *TimeAnchor) {
-	if e.AtModifiers != nil && e.AtModifiers.AnchorOverride != nil {
-		if e.AtModifiers.AnchorOverride.Now {
-			return evalOpts.Now, e.AtModifiers.AnchorOverride
+func (l *Link) parse() error {
+	l.anchorParts = make([]linkPartAnchor, len(l.Parts))
+
+	for i, part := range l.Parts {
+		lpa, err := part.parse()
+		if err != nil {
+			return err
 		}
-		if e.AtModifiers.AnchorOverride.Latest {
-			return evalOpts.MaxTime, e.AtModifiers.AnchorOverride
+		l.anchorParts[i] = lpa
+	}
+
+	return nil
+}
+
+func (l *Link) time(evalOpts EvalOptions, cur time.Time, tz *time.Location) (time.Time, time.Time, timeutil.TimeGrain) {
+	var start time.Time
+	var end time.Time
+
+	i := len(l.anchorParts) - 1
+	for i >= 0 {
+		start, cur, end = l.anchorParts[i].eval(evalOpts, start, cur, end, tz)
+		i--
+	}
+
+	tg := timeutil.TimeGrainUnspecified
+	if len(l.anchorParts) > 0 {
+		tg = l.anchorParts[0].grain()
+	}
+
+	return start, end, tg
+}
+
+func (l *LinkPart) parse() (linkPartAnchor, error) {
+	var lpa linkPartAnchor
+	if l.Ordinal != nil {
+		lpa = l.Ordinal
+	} else if l.Anchor != nil {
+		lpa = l.Anchor
+	} else if l.AbsoluteTime != nil {
+		lpa = l.AbsoluteTime
+	} else if l.LabeledAnchor != nil {
+		lpa = l.LabeledAnchor
+	}
+
+	if lpa == nil {
+		return nil, fmt.Errorf("invalid link part: atleast one of ordinal, anchor, absolute time or labeled anchor must be specified")
+	}
+
+	err := lpa.parse()
+	if err != nil {
+		return nil, err
+	}
+
+	return lpa, nil
+}
+
+func (a *LabeledAnchor) parse() error {
+	return nil
+}
+
+func (a *LabeledAnchor) eval(evalOpts EvalOptions, start, cur, end time.Time, tz *time.Location) (time.Time, time.Time, time.Time) {
+	var tm time.Time
+	if a.Earliest {
+		tm = evalOpts.MinTime
+	} else if a.Now {
+		tm = evalOpts.Now
+	} else if a.Latest {
+		tm = evalOpts.MaxTime
+	} else if a.Watermark {
+		tm = evalOpts.Watermark
+	}
+
+	tm = tm.In(tz)
+
+	return tm, tm, tm
+}
+
+func (a *LabeledAnchor) grain() timeutil.TimeGrain {
+	return timeutil.TimeGrainUnspecified
+}
+
+func (o *Ordinal) parse() error {
+	o.offset = o.Num - 1
+
+	o.tg = grainMap[o.Grain]
+
+	return nil
+}
+
+func (o *Ordinal) eval(evalOpts EvalOptions, start, cur, end time.Time, tz *time.Location) (time.Time, time.Time, time.Time) {
+	if start.IsZero() {
+		start = timeutil.TruncateTime(cur, higherOrderMap[o.tg], tz, evalOpts.FirstDay, evalOpts.FirstMonth)
+	}
+
+	offset := o.Num - 1
+
+	start = timeutil.OffsetTime(start, o.tg, offset)
+	start = truncateWithCorrection(start, o.tg, tz, evalOpts.FirstDay, evalOpts.FirstMonth)
+
+	// update cur to match the shifted ordinal
+	cur = timeutil.CopyTimeComponentsUntil(start, cur, o.tg)
+
+	updatedEnd := timeutil.OffsetTime(start, o.tg, 1)
+
+	return start, cur, updatedEnd
+}
+
+func (o *Ordinal) grain() timeutil.TimeGrain {
+	// Return a grain less that the part's grain for ordinals
+	return lowerOrderMap[o.tg]
+}
+
+func (t *TimeAnchor) parse() error {
+	if t.Num != nil {
+		t.offset = *t.Num
+		if t.offset == 0 {
+			// if something like 0D is specified we still offset start by 1
+			t.offset = 1
 		}
-		if e.AtModifiers.AnchorOverride.Earliest {
-			return evalOpts.MinTime, e.AtModifiers.AnchorOverride
+	} else {
+		// if something like D is specified we still offset start by 1
+		t.offset = 1
+	}
+
+	if t.Grain != nil {
+		t.tg = grainMap[*t.Grain]
+	} else if t.PeriodToGrain != nil {
+		grains := strings.Split(*t.PeriodToGrain, "T")
+		if len(grains) != 2 {
+			return fmt.Errorf("invalid period grain format: %s", *t.PeriodToGrain)
 		}
-		if e.AtModifiers.AnchorOverride.AbsDate != nil {
-			absTm, _ := time.Parse(time.DateOnly, *e.AtModifiers.AnchorOverride.AbsDate)
-			return absTm, e.AtModifiers.AnchorOverride
+		t.from = grainMap[grains[0]]
+		t.tg = grainMap[grains[1]]
+	} else {
+		return fmt.Errorf("neither grain nor period-to-grain specified")
+	}
+
+	return nil
+}
+
+func (t *TimeAnchor) eval(evalOpts EvalOptions, start, cur, end time.Time, tz *time.Location) (time.Time, time.Time, time.Time) {
+	if start.IsZero() {
+		start = timeutil.TruncateTime(cur, higherOrderMap[t.tg], tz, evalOpts.FirstDay, evalOpts.FirstMonth)
+	}
+	if end.IsZero() {
+		end = timeutil.CeilTime(cur, higherOrderMap[t.tg], tz, evalOpts.FirstDay, evalOpts.FirstMonth)
+	}
+
+	if t.PeriodToGrain != nil {
+		start = timeutil.TruncateTime(cur, t.from, tz, evalOpts.FirstDay, evalOpts.FirstMonth)
+		if t.offset > 1 {
+			offset := t.offset
+			if t.Prefix == nil || *t.Prefix == "-" {
+				offset = -offset + 1
+			} else if *t.Prefix == "+" {
+				offset--
+			}
+			start = timeutil.OffsetTime(start, t.from, offset)
 		}
-		if e.AtModifiers.AnchorOverride.AbsTime != nil {
-			absTm, _ := time.Parse("2006-01-02 15:04", *e.AtModifiers.AnchorOverride.AbsTime)
-			return absTm, e.AtModifiers.AnchorOverride
+
+		// X-to-week should give buckets in week. Should also follow week rules https://en.wikipedia.org/wiki/ISO_week_date#First_week
+		start = truncateWithCorrection(start, t.tg, tz, evalOpts.FirstDay, evalOpts.FirstMonth)
+
+		end := timeutil.TruncateTime(cur, t.tg, tz, evalOpts.FirstDay, evalOpts.FirstMonth)
+		if t.IncludeCurrent {
+			end = timeutil.OffsetTime(end, t.tg, 1)
+		}
+
+		return start, cur, end
+	}
+
+	if t.Prefix == nil {
+		// Without a prefix of either +/- we actually need a time range.
+		// EG: 7D is 7 day period.
+
+		end = timeutil.TruncateTime(cur, t.tg, tz, evalOpts.FirstDay, evalOpts.FirstMonth)
+		if t.IncludeCurrent {
+			end = timeutil.OffsetTime(end, t.tg, 1)
+			cur = timeutil.OffsetTime(cur, t.tg, 1)
+		}
+
+		start = timeutil.OffsetTime(end, t.tg, -t.offset)
+
+		return start, cur, end
+	}
+
+	switch *t.Prefix {
+	case "-":
+		offset := t.offset
+		if t.IncludeCurrent {
+			offset--
+		}
+
+		start = timeutil.TruncateTime(cur, t.tg, tz, evalOpts.FirstDay, evalOpts.FirstMonth)
+		start = timeutil.OffsetTime(start, t.tg, -offset)
+
+		end = timeutil.OffsetTime(start, t.tg, 1)
+
+		cur = timeutil.OffsetTime(cur, t.tg, -offset)
+
+	case "+":
+		start = timeutil.TruncateTime(cur, t.tg, tz, evalOpts.FirstDay, evalOpts.FirstMonth)
+		start = timeutil.OffsetTime(start, t.tg, t.offset)
+
+		end = timeutil.OffsetTime(start, t.tg, 1)
+
+		cur = timeutil.OffsetTime(cur, t.tg, t.offset)
+
+	case "<":
+		// Anchor the range to the beginning of the higher order start
+		// EG: <4d of M : gives 1st 4 days of the current month regardless of current date.
+
+		// Anchoring to start should follow week rules https://en.wikipedia.org/wiki/ISO_week_date#First_week
+		start = truncateWithCorrection(start, t.tg, tz, evalOpts.FirstDay, evalOpts.FirstMonth)
+		end = timeutil.OffsetTime(start, t.tg, t.offset)
+		end = timeutil.TruncateTime(end, t.tg, tz, evalOpts.FirstDay, evalOpts.FirstMonth)
+
+		cur = start
+
+	case ">":
+		// Anchor the range to the end of the higher order end
+		// EG: >4d of M : gives last 4 days of the current month regardless of current date.
+		end = timeutil.CeilTime(end, t.tg, tz, evalOpts.FirstDay, evalOpts.FirstMonth)
+		start = timeutil.TruncateTime(end, t.tg, tz, evalOpts.FirstDay, evalOpts.FirstMonth)
+		start = timeutil.OffsetTime(start, t.tg, -t.offset)
+
+		cur = end
+	}
+
+	return start, cur, end
+}
+
+func (t *TimeAnchor) grain() timeutil.TimeGrain {
+	// If a single unit of grain is requested, return a grain less that the part's grain
+	// But only applies to grains and not period-to-grains
+	if t.offset <= 1 && t.Grain != nil {
+		return lowerOrderMap[t.tg]
+	}
+	return t.tg
+}
+
+// TODO: reuse code from duration.ParseISO8601
+func (a *AbsoluteTime) parse() error {
+	match := isoTimeRegex.FindStringSubmatch(a.ISO)
+
+	for i, name := range isoTimeRegex.SubexpNames() {
+		part := match[i]
+		if i == 0 || name == "" || part == "" {
+			continue
+		}
+
+		val, err := strconv.Atoi(part)
+		if err != nil {
+			return err
+		}
+		switch name {
+		case "year":
+			a.year = val
+			a.tg = timeutil.TimeGrainYear
+		case "month":
+			a.month = val
+			a.tg = timeutil.TimeGrainMonth
+		case "week":
+			a.week = val
+			a.tg = timeutil.TimeGrainWeek
+		case "day":
+			a.day = val
+			a.tg = timeutil.TimeGrainDay
+		case "hour":
+			a.hour = val
+			a.tg = timeutil.TimeGrainHour
+		case "minute":
+			a.minute = val
+			a.tg = timeutil.TimeGrainMinute
+		case "second":
+			a.second = val
+			a.tg = timeutil.TimeGrainSecond
+		default:
+			return fmt.Errorf("unexpected field %q in duration", name)
 		}
 	}
 
-	if e.End == nil {
-		return evalOpts.Watermark, &TimeAnchor{
-			Watermark: true,
-		}
-	}
+	return nil
+}
 
-	if e.End.Latest {
-		// if end has latest mentioned then start also should be relative to latest.
-		return evalOpts.MaxTime, e.End
-	}
-	if e.End.Now {
-		// if end has now mentioned then start also should be relative to latest.
-		return evalOpts.Now, e.End
-	}
-	return evalOpts.Watermark, e.End
+func (a *AbsoluteTime) eval(evalOpts EvalOptions, start, cur, end time.Time, tz *time.Location) (time.Time, time.Time, time.Time) {
+	// Since we use this to build a time, month and day cannot be zero, hence the max(1, xx)
+	absStart := time.Date(a.year, time.Month(max(1, a.month)), max(1, a.day), a.hour, a.minute, a.second, 0, tz)
+
+	absEnd := timeutil.OffsetTime(absStart, a.tg, 1)
+
+	// update cur to match the absolute time
+	absCur := timeutil.CopyTimeComponentsUntil(absStart, cur, a.tg)
+
+	return absStart, absCur, absEnd
+}
+
+func (a *AbsoluteTime) grain() timeutil.TimeGrain {
+	// Return a grain lower than the smallest time grain
+	return lowerOrderMap[a.tg]
 }
 
 func parseISO(from string, parseOpts ParseOptions) (*Expression, error) {
 	// Try parsing for "inf"
 	if infPattern.MatchString(from) {
 		return &Expression{
-			Start: &TimeAnchor{Earliest: true},
-			End:   &TimeAnchor{Latest: true},
+			From: &Link{
+				Parts: []*LinkPart{
+					{LabeledAnchor: &LabeledAnchor{Earliest: true}},
+				},
+			},
+			To: &Link{
+				Parts: []*LinkPart{
+					{LabeledAnchor: &LabeledAnchor{Latest: true}},
+				},
+			},
 		}, nil
 	}
 
@@ -358,12 +636,7 @@ func parseISO(from string, parseOpts ParseOptions) (*Expression, error) {
 		return nil, nil
 	}
 
-	rt := &Expression{
-		Start: &TimeAnchor{},
-		End:   &TimeAnchor{Latest: true},
-		// mirrors old UI behaviour
-		isComplete: false,
-	}
+	rt := &Expression{}
 	d, err := duration.ParseISO8601(from)
 	if err != nil {
 		return nil, nil
@@ -372,47 +645,13 @@ func parseISO(from string, parseOpts ParseOptions) (*Expression, error) {
 	if !ok {
 		return nil, nil
 	}
-	rt.Start.isoDuration = &sd
+	rt.isoDuration = &sd
 	minGrain := getMinGrain(sd)
 	if minGrain != "" {
-		rt.grain = &Grain{
-			Grain: minGrain,
-		}
+		rt.Grain = &minGrain
 	}
 
 	return rt, nil
-}
-
-func (g *Grain) offset(tm time.Time) time.Time {
-	n := 0
-	if g.Num != nil {
-		n = *g.Num
-
-		if g.Sign != nil && *g.Sign == "-" {
-			n = -n
-		}
-	}
-
-	switch g.Grain {
-	case "s", "S":
-		tm = tm.Add(time.Duration(n) * time.Second)
-	case "m":
-		tm = tm.Add(time.Duration(n) * time.Minute)
-	case "h", "H":
-		tm = tm.Add(time.Duration(n) * time.Hour)
-	case "d", "D":
-		tm = tm.AddDate(0, 0, n)
-	case "W", "w":
-		tm = tm.AddDate(0, 0, n*7)
-	case "M":
-		tm = tm.AddDate(0, n, 0)
-	case "Q", "q":
-		tm = tm.AddDate(0, n*3, 0)
-	case "Y", "y":
-		tm = tm.AddDate(n, 0, 0)
-	}
-
-	return tm
 }
 
 func getMinGrain(d duration.StandardDuration) string {
@@ -432,4 +671,23 @@ func getMinGrain(d duration.StandardDuration) string {
 		return "Y"
 	}
 	return ""
+}
+
+// truncateWithCorrection truncates time by a grain but corrects for https://en.wikipedia.org/wiki/ISO_week_date#First_week
+// TODO: will adding this directly to timeutil.TruncateTime break anything?
+func truncateWithCorrection(tm time.Time, tg timeutil.TimeGrain, tz *time.Location, firstDay, firstMonth int) time.Time {
+	weekday := int(tm.Weekday())
+	tm = timeutil.TruncateTime(tm, tg, tz, firstDay, firstMonth)
+
+	if tg == timeutil.TimeGrainWeek {
+		if weekday == 0 {
+			// time package's week starts on sunday
+			weekday = 7
+		}
+		if weekday >= 5 {
+			tm = timeutil.OffsetTime(tm, tg, 1)
+		}
+	}
+
+	return tm
 }

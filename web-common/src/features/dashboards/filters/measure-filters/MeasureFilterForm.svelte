@@ -1,7 +1,7 @@
 <script lang="ts">
   import * as Popover from "@rilldata/web-common/components/popover/";
   import type { MeasureFilterEntry } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
-  import type { MetricsViewSpecDimensionV2 } from "@rilldata/web-common/runtime-client";
+  import type { MetricsViewSpecDimension } from "@rilldata/web-common/runtime-client";
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import Select from "@rilldata/web-common/components/forms/Select.svelte";
   import { getDimensionDisplayName } from "@rilldata/web-common/features/dashboards/filters/getDisplayName";
@@ -24,7 +24,7 @@
     oldDimension: string;
     filter: MeasureFilterEntry;
   }) => void;
-  export let allDimensions: MetricsViewSpecDimensionV2[];
+  export let allDimensions: MetricsViewSpecDimension[];
 
   const initialValues = {
     dimension: dimensionName,
@@ -152,6 +152,7 @@
       errors={$errors["value1"]}
       id="value1"
       onEnter={submit}
+      alwaysShowError
       placeholder={isBetweenExpression ? "Lower Value" : "Enter a Number"}
     />
 
@@ -161,6 +162,7 @@
         errors={$errors["value2"]}
         id="value2"
         placeholder="Higher Value"
+        alwaysShowError
         onEnter={submit}
       />
     {/if}

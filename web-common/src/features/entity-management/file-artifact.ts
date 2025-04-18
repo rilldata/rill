@@ -35,6 +35,8 @@ import {
 import { inferResourceKind } from "./infer-resource-kind";
 import { debounce } from "@rilldata/web-common/lib/create-debouncer";
 import { AsyncSaveState } from "./async-save-state";
+import type { EditorSelection } from "@codemirror/state";
+import type { EditorView } from "@codemirror/view";
 
 const UNSUPPORTED_EXTENSIONS = [
   // Data formats
@@ -84,6 +86,10 @@ export class FileArtifact {
   readonly fileName: string;
   readonly disableAutoSave: boolean;
   readonly autoSave: Writable<boolean>;
+  readonly snapshot: Writable<{
+    scroll?: ReturnType<EditorView["scrollSnapshot"]>;
+    selection?: EditorSelection;
+  }> = writable({ scroll: undefined, selection: undefined });
 
   private editorCallback: (content: string) => void = () => {};
 
@@ -122,20 +128,24 @@ export class FileArtifact {
     };
     const queryKey = getRuntimeServiceGetFileQueryKey(instanceId, queryParams);
 
-    if (invalidate) await queryClient.invalidateQueries(queryKey);
+    if (invalidate) await queryClient.invalidateQueries({ queryKey });
 
     const queryFn: QueryFunction<
       Awaited<ReturnType<typeof runtimeServiceGetFile>>
     > = ({ signal }) => runtimeServiceGetFile(instanceId, queryParams, signal);
 
-    const { blob: fetchedContent } = await queryClient.fetchQuery({
-      queryKey,
-      queryFn,
-      staleTime: Infinity,
-    });
+    let fetchedContent: string | undefined = undefined;
 
-    if (fetchedContent === undefined) {
-      throw new Error("Content undefined");
+    try {
+      const response = await queryClient.fetchQuery({
+        queryKey,
+        queryFn,
+        staleTime: Infinity,
+      });
+
+      fetchedContent = response.blob;
+    } catch (e) {
+      console.log("FETCH ERROR", e);
     }
 
     const currentRemoteContent = get(this.remoteContent);
@@ -143,6 +153,7 @@ export class FileArtifact {
 
     const remoteContentHasChanged = currentRemoteContent !== fetchedContent;
     const isSaveConfirmation = editorContent === fetchedContent;
+    const fileUntouched = !get(this.hasUnsavedChanges);
 
     this.saveState.resolve();
 
@@ -155,14 +166,14 @@ export class FileArtifact {
       this.saveState.untouch(this.path);
     }
 
-    if (remoteContentHasChanged) {
+    if (remoteContentHasChanged && fetchedContent !== undefined) {
       this.remoteContent.set(fetchedContent);
 
       const inferred = inferResourceKind(this.path, fetchedContent);
 
       if (inferred) this.inferredResourceKind.set(inferred);
 
-      if (editorContent === null) {
+      if (editorContent === null || fileUntouched) {
         this.updateEditorContent(fetchedContent, false, false, true);
       } else if (!isSaveConfirmation) {
         // This is the secondary sequence wherein a file is saved in an external editor
@@ -194,7 +205,11 @@ export class FileArtifact {
     }
 
     if (autoSave) {
-      this.debounceSave(newContent);
+      if (fromEditor) {
+        this.debounceSave(newContent);
+      } else {
+        this.saveContent(newContent).catch(console.error);
+      }
     }
 
     if (fromEditor) return;
@@ -248,6 +263,13 @@ export class FileArtifact {
     this.inConflict.set(false);
   };
 
+  saveSnapshot = (editor: EditorView) => {
+    this.snapshot.set({
+      scroll: editor.scrollSnapshot(),
+      selection: editor.state.selection,
+    });
+  };
+
   revertChanges = () => {
     this.updateEditorContent(get(this.remoteContent) ?? "", false, false);
     this.saveState.untouch(this.path);
@@ -288,9 +310,8 @@ export class FileArtifact {
         instanceId,
         name?.name as string,
         name?.kind as ResourceKind,
-        {
-          queryClient,
-        },
+        undefined,
+        queryClient,
       ).subscribe(set),
     ) as ReturnType<typeof useResource<V1Resource>>;
   };

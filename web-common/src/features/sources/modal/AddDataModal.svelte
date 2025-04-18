@@ -1,4 +1,5 @@
 <script lang="ts">
+  import * as Dialog from "@rilldata/web-common/components/dialog-v2";
   import AmazonAthena from "@rilldata/web-common/components/icons/connectors/AmazonAthena.svelte";
   import AmazonRedshift from "@rilldata/web-common/components/icons/connectors/AmazonRedshift.svelte";
   import MySQL from "@rilldata/web-common/components/icons/connectors/MySQL.svelte";
@@ -29,16 +30,18 @@
     BehaviourEventMedium,
   } from "../../../metrics/service/BehaviourEventTypes";
   import { MetricsEventSpace } from "../../../metrics/service/MetricsTypes";
+  import { runtime } from "../../../runtime-client/runtime-store";
+  import { useIsModelingSupportedForDefaultOlapDriver } from "../../connectors/olap/selectors";
   import { duplicateSourceName } from "../sources-store";
   import AddDataForm from "./AddDataForm.svelte";
   import DuplicateSource from "./DuplicateSource.svelte";
   import LocalSourceUpload from "./LocalSourceUpload.svelte";
   import RequestConnectorForm from "./RequestConnectorForm.svelte";
-  import * as Dialog from "@rilldata/web-common/components/dialog-v2";
 
   let step = 0;
   let selectedConnector: null | V1ConnectorDriver = null;
   let requestConnector = false;
+  let isSubmittingForm = false;
 
   const SOURCES = [
     "gcs",
@@ -143,10 +146,15 @@
     window.history.back();
   }
 
+  function handleSubmittingChange(event: CustomEvent) {
+    isSubmittingForm = event.detail.submitting;
+  }
+
   function resetModal() {
     const state = { step: 0, selectedConnector: null, requestConnector: false };
     window.history.pushState(state, "", "");
     dispatchEvent(new PopStateEvent("popstate", { state: state }));
+    isSubmittingForm = false;
   }
 
   async function onCancelDialog() {
@@ -159,6 +167,9 @@
 
     resetModal();
   }
+
+  $: isModelingSupportedForDefaultOlapDriver =
+    useIsModelingSupportedForDefaultOlapDriver($runtime.instanceId);
 </script>
 
 {#if step >= 1 || $duplicateSourceName}
@@ -169,56 +180,32 @@
         await onCancelDialog();
       }
     }}
+    closeOnEscape={!isSubmittingForm}
+    closeOnOutsideClick={!isSubmittingForm}
   >
     <Dialog.Content noClose>
-      <section class="mb-1">
-        <Dialog.Title>
-          {#if $duplicateSourceName !== null}
-            Duplicate source
-          {:else if selectedConnector}
-            {selectedConnector?.displayName}
-          {:else if requestConnector}
-            Request a connector
-          {:else if step === 1}
-            Add a source
-          {/if}
-        </Dialog.Title>
-
-        {#if $duplicateSourceName}
-          <DuplicateSource onCancel={resetModal} onComplete={resetModal} />
-        {:else if requestConnector}
-          <RequestConnectorForm on:close={resetModal} on:back={back} />
-        {:else if step === 1}
-          <div class="connector-grid">
-            {#each connectors.filter((c) => c.name && SOURCES.includes(c.name)) as connector (connector.name)}
-              {#if connector.name}
-                <button
-                  id={connector.name}
-                  on:click={() => goToConnectorForm(connector)}
-                  class="connector-tile-button"
-                >
-                  <div class="connector-wrapper">
-                    <svelte:component this={ICONS[connector.name]} />
-                  </div>
-                </button>
-              {/if}
-            {/each}
-          </div>
-        {:else if step === 2 && selectedConnector}
-          {#if selectedConnector.name === "local_file"}
-            <LocalSourceUpload on:close={resetModal} on:back={back} />
-          {:else if selectedConnector && selectedConnector.name}
-            <AddDataForm
-              connector={selectedConnector}
-              formType={OLAP_CONNECTORS.includes(selectedConnector.name)
-                ? "connector"
-                : "source"}
-              onClose={resetModal}
-              onBack={back}
-            />
-          {/if}
+      {#if step === 1}
+        {#if $isModelingSupportedForDefaultOlapDriver}
+          <Dialog.Title>Add a source</Dialog.Title>
+          <section class="mb-1">
+            <div class="connector-grid">
+              {#each connectors.filter((c) => c.name && SOURCES.includes(c.name)) as connector (connector.name)}
+                {#if connector.name}
+                  <button
+                    id={connector.name}
+                    on:click={() => goToConnectorForm(connector)}
+                    class="connector-tile-button"
+                  >
+                    <div class="connector-wrapper">
+                      <svelte:component this={ICONS[connector.name]} />
+                    </div>
+                  </button>
+                {/if}
+              {/each}
+            </div>
+          </section>
         {/if}
-      </section>
+      {/if}
 
       {#if step === 1}
         <section>
@@ -250,6 +237,37 @@
             Request a new connector
           </button>
         </div>
+      {/if}
+
+      {#if step === 2 && selectedConnector}
+        <Dialog.Title>
+          {#if $duplicateSourceName !== null}
+            Duplicate source
+          {:else}
+            {selectedConnector.displayName}
+          {/if}
+        </Dialog.Title>
+
+        {#if $duplicateSourceName !== null}
+          <DuplicateSource onCancel={resetModal} onComplete={resetModal} />
+        {:else if selectedConnector.name === "local_file"}
+          <LocalSourceUpload on:close={resetModal} on:back={back} />
+        {:else if selectedConnector.name}
+          <AddDataForm
+            connector={selectedConnector}
+            formType={OLAP_CONNECTORS.includes(selectedConnector.name)
+              ? "connector"
+              : "source"}
+            onClose={resetModal}
+            onBack={back}
+            on:submitting={handleSubmittingChange}
+          />
+        {/if}
+      {/if}
+
+      {#if step === 2 && requestConnector}
+        <Dialog.Title>Request a connector</Dialog.Title>
+        <RequestConnectorForm on:close={resetModal} on:back={back} />
       {/if}
     </Dialog.Content>
   </Dialog.Root>

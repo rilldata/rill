@@ -1,16 +1,12 @@
-<script lang="ts" context="module">
-</script>
-
 <script lang="ts">
+  import { beforeNavigate } from "$app/navigation";
+  import { MergeView } from "@codemirror/merge";
   import type { Extension } from "@codemirror/state";
-  import { EditorState, Compartment } from "@codemirror/state";
+  import { Compartment, EditorSelection, EditorState } from "@codemirror/state";
   import { EditorView, type ViewUpdate } from "@codemirror/view";
   import { onMount } from "svelte";
   import { base as baseExtensions } from "../../components/editor/presets/base";
   import { FileArtifact } from "../entity-management/file-artifact";
-  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
-  import { underlineSelection } from "./highlight-field";
-  import { MergeView } from "@codemirror/merge";
 
   export let fileArtifact: FileArtifact;
   export let extensions: Extension[] = [];
@@ -23,8 +19,10 @@
     editorContent,
     remoteContent,
     merging,
+    snapshot,
     updateEditorContent,
     onEditorContentChange,
+    saveSnapshot,
   } = fileArtifact;
 
   let parent: HTMLElement;
@@ -45,16 +43,17 @@
   onMount(() => {
     const unsubLocal = onEditorContentChange(dispatchEditorChange);
 
-    const unsubHighlighter = eventBus.on("highlightSelection", (refs) => {
-      if (editor) underlineSelection(editor, refs);
-    });
-
-    unsubscribers.push(unsubLocal, unsubHighlighter);
+    unsubscribers.push(unsubLocal);
 
     return () => {
       editor?.destroy();
       unsubscribers.forEach((unsub) => unsub());
     };
+  });
+
+  beforeNavigate(() => {
+    if (!editor) return;
+    saveSnapshot(editor);
   });
 
   function mountMergeView() {
@@ -87,18 +86,37 @@
   function mountEditor() {
     mergeView?.destroy();
 
+    const { selection, scroll } = $snapshot;
+
     editor = new EditorView({
       state: EditorState.create({
         doc: $editorContent ?? "",
         extensions: [
           baseExtensions(),
-
           extensionCompartment.of([extensions]),
           EditorView.updateListener.of(listener),
         ],
+        selection: EditorSelection.create(
+          [
+            EditorSelection.range(
+              Math.min(
+                $editorContent?.length ?? Infinity,
+                selection?.ranges[0].anchor ?? 0,
+              ),
+              Math.min(
+                $editorContent?.length ?? Infinity,
+                selection?.ranges[0].head ?? 0,
+              ),
+            ),
+          ],
+          0,
+        ),
       }),
       parent,
+      scrollTo: scroll,
     });
+
+    if (selection) editor?.focus();
   }
 
   function updateEditorExtensions(newExtensions: Extension[]) {
@@ -144,16 +162,9 @@
 
 <div
   bind:this={parent}
-  class="size-full overflow-y-auto"
-  on:click={() => {
-    /** give the editor focus no matter where we click */
-    if (!editor?.hasFocus) editor?.focus();
-  }}
-  on:keydown={() => {
-    /** no op for now */
-  }}
+  class="size-full overflow-hidden"
   role="textbox"
-  aria-label="Code editor"
+  aria-label="codemirror editor"
   tabindex="0"
 />
 

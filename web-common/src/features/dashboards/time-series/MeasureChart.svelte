@@ -10,6 +10,7 @@
     Grid,
   } from "@rilldata/web-common/components/data-graphic/guides";
   import { ScaleType } from "@rilldata/web-common/components/data-graphic/state";
+  import type { ScaleStore } from "@rilldata/web-common/components/data-graphic/state/types";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import { tableInteractionStore } from "@rilldata/web-common/features/dashboards/time-dimension-details/time-dimension-data-store";
@@ -20,7 +21,7 @@
   import { numberKindForMeasure } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
   import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
   import type {
-    MetricsViewSpecMeasureV2,
+    MetricsViewSpecMeasure,
     V1TimeGrain,
   } from "@rilldata/web-common/runtime-client";
   import { extent } from "d3-array";
@@ -41,9 +42,8 @@
     localToTimeZoneOffset,
     niceMeasureExtents,
   } from "./utils";
-  import type { ScaleStore } from "@rilldata/web-common/components/data-graphic/state/types";
 
-  export let measure: MetricsViewSpecMeasureV2;
+  export let measure: MetricsViewSpecMeasure;
   export let exploreName: string;
   export let width: number | undefined = undefined;
   export let height: number | undefined = undefined;
@@ -56,7 +56,7 @@
   export let zone: string;
 
   export let showComparison = false;
-  export let isInTimeDimensionView: boolean;
+  export let showTimeDimensionDetail: boolean;
   export let data;
   export let dimensionData: DimensionDataItem[] = [];
   export let xAccessor = "ts";
@@ -76,6 +76,11 @@
     v.toString();
 
   $: mouseoverFormat = createMeasureValueFormatter<null | undefined>(measure);
+  $: axisFormat = createMeasureValueFormatter<null | undefined>(
+    measure,
+    "axis",
+  );
+
   $: numberKind = numberKindForMeasure(measure);
 
   const tweenProps = { duration: 400, easing: cubicOut };
@@ -252,7 +257,7 @@
     on:scrub-move={(e) => scrub?.moveScrub(e)}
     on:scrub-start={(e) => scrub?.startScrub(e)}
     overflowHidden={false}
-    right={isInTimeDimensionView ? 20 : 40}
+    right={showTimeDimensionDetail ? 20 : 40}
     shareYScale={false}
     top={4}
     {width}
@@ -265,7 +270,7 @@
     yMin={internalYMin}
     yMinTweenProps={tweenProps}
   >
-    <Axis {numberKind} side="right" />
+    <Axis measureFormatter={axisFormat} side="right" />
     <Grid />
     <MeasurePan
       on:pan={(e) => updateRange(e.detail.start, e.detail.end)}

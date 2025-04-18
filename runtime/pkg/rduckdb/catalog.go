@@ -2,8 +2,9 @@ package rduckdb
 
 import (
 	"fmt"
-	"log/slog"
 	"sync"
+
+	"go.uber.org/zap"
 )
 
 // Represents one table and its versions currently present in the local cache.
@@ -36,13 +37,13 @@ type catalog struct {
 	removeVersionFunc  func(string, string)
 	removeSnapshotFunc func(int)
 
-	logger *slog.Logger
+	logger *zap.Logger
 }
 
 // newCatalog creates a new catalog.
 // The removeSnapshotFunc func will be called exactly once for each snapshot ID when it is no longer the current snapshot and is no longer held by any readers.
 // The removeVersionFunc func will be called exactly once for each table version when it is no longer the current version and is no longer used by any active snapshots.
-func newCatalog(removeVersionFunc func(string, string), removeSnapshotFunc func(int), tables []*tableMeta, logger *slog.Logger) *catalog {
+func newCatalog(removeVersionFunc func(string, string), removeSnapshotFunc func(int), tables []*tableMeta, logger *zap.Logger) *catalog {
 	c := &catalog{
 		tables:             make(map[string]*table),
 		snapshots:          make(map[int]*snapshot),
@@ -111,7 +112,7 @@ func (c *catalog) removeTable(name string) {
 
 	t, ok := c.tables[name]
 	if !ok {
-		c.logger.Debug("table not found in rduckdb catalog", slog.String("name", name))
+		c.logger.Debug("table not found in rduckdb catalog", zap.String("name", name))
 		return
 	}
 
@@ -135,7 +136,7 @@ func (c *catalog) listTables() []*tableMeta {
 		}
 		meta, ok := t.versionMeta[t.currentVersion]
 		if !ok {
-			c.logger.Error("internal error: meta for table not found in catalog", slog.String("name", t.name), slog.String("version", t.currentVersion))
+			c.logger.Error("internal error: meta for table not found in catalog", zap.String("name", t.name), zap.String("version", t.currentVersion))
 		}
 		tables = append(tables, meta)
 	}

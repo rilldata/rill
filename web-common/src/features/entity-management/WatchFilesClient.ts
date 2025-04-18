@@ -25,7 +25,7 @@ export class WatchFilesClient {
   private invalidateAllFiles() {
     // TODO: reset project parser errors
     const instanceId = get(runtime).instanceId;
-    return queryClient.resetQueries({
+    return queryClient.refetchQueries({
       predicate: (query) =>
         query.queryHash.includes(`v1/instances/${instanceId}/files`),
     });
@@ -46,9 +46,9 @@ export class WatchFilesClient {
 
           if (res.path === "/rill.yaml") {
             // If it's a rill.yaml file, invalidate the dev JWT queries
-            void queryClient.invalidateQueries(
-              getRuntimeServiceIssueDevJWTQueryKey({}),
-            );
+            void queryClient.invalidateQueries({
+              queryKey: getRuntimeServiceIssueDevJWTQueryKey({}),
+            });
 
             await invalidate("init");
           }
@@ -56,9 +56,11 @@ export class WatchFilesClient {
           break;
 
         case V1FileEvent.FILE_EVENT_DELETE:
-          void queryClient.resetQueries(
-            getRuntimeServiceGetFileQueryKey(instanceId, { path: res.path }),
-          );
+          void queryClient.resetQueries({
+            queryKey: getRuntimeServiceGetFileQueryKey(instanceId, {
+              path: res.path,
+            }),
+          });
           fileArtifacts.removeFile(res.path);
           this.seenFiles.delete(res.path);
 
@@ -71,9 +73,9 @@ export class WatchFilesClient {
     }
     if (isNew || res.event === V1FileEvent.FILE_EVENT_DELETE) {
       // TODO: should this be throttled?
-      void queryClient.refetchQueries(
-        getRuntimeServiceListFilesQueryKey(instanceId),
-      );
+      void queryClient.refetchQueries({
+        queryKey: getRuntimeServiceListFilesQueryKey(instanceId),
+      });
     }
   }
 }

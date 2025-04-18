@@ -1,57 +1,86 @@
+<script lang="ts" context="module">
+  export type CreateReportProps = {
+    mode: "create";
+    query: V1Query;
+    exploreName: string;
+  };
+
+  export type EditReportProps = {
+    mode: "edit";
+    reportSpec: V1ReportSpec;
+  };
+</script>
+
 <script lang="ts">
   import { page } from "$app/stores";
   import {
     createAdminServiceCreateReport,
-    createAdminServiceGetCurrentUser,
     createAdminServiceEditReport,
+    createAdminServiceGetCurrentUser,
   } from "@rilldata/web-admin/client";
+  import * as Dialog from "@rilldata/web-common/components/dialog-v2";
   import {
     getDashboardNameFromReport,
-    getInitialValues,
+    getExistingReportInitialFormValues,
+    getNewReportInitialFormValues,
+    getQueryArgsJsonFromQuery,
+    getQueryNameFromQuery,
     type ReportValues,
   } from "@rilldata/web-common/features/scheduled-reports/utils";
-  import { defaults, superForm } from "sveltekit-superforms";
-  import { array, object, string } from "yup";
-  import { type ValidationAdapter, yup } from "sveltekit-superforms/adapters";
-  import { Button } from "../../components/button";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
+  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
+  import { get } from "svelte/store";
+  import { defaults, superForm } from "sveltekit-superforms";
+  import { yup, type ValidationAdapter } from "sveltekit-superforms/adapters";
+  import { array, object, string } from "yup";
+  import { Button } from "../../components/button";
   import {
-    getRuntimeServiceListResourcesQueryKey,
-    type V1ReportSpec,
     getRuntimeServiceGetResourceQueryKey,
+    getRuntimeServiceListResourcesQueryKey,
+    type V1Query,
+    type V1ReportSpec,
     type V1ReportSpecAnnotations,
   } from "../../runtime-client";
   import { runtime } from "../../runtime-client/runtime-store";
+  import { getStateManagers } from "../dashboards/state-managers/state-managers";
+  import { ResourceKind } from "../entity-management/resource-selectors";
   import BaseScheduledReportForm from "./BaseScheduledReportForm.svelte";
   import { convertFormValuesToCronExpression } from "./time-utils";
-  import * as Dialog from "@rilldata/web-common/components/dialog-v2";
-  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
-  import { ResourceKind } from "../entity-management/resource-selectors";
 
   export let open: boolean;
-  export let queryArgs: any | undefined = undefined;
-  export let metricsViewProto: string | undefined = undefined;
-  export let exploreName: string | undefined = undefined;
-  export let reportSpec: V1ReportSpec | undefined = undefined;
-
-  $: ({ instanceId } = $runtime);
-
-  $: isEdit = !!reportSpec;
+  export let props: CreateReportProps | EditReportProps;
 
   const user = createAdminServiceGetCurrentUser();
 
-  $: if (!exploreName) {
-    exploreName =
-      getDashboardNameFromReport(reportSpec) ?? queryArgs.metricsViewName;
+  $: ({ organization, project, report: reportName } = $page.params);
+  $: ({ instanceId } = $runtime);
+
+  $: mutation =
+    props.mode === "create"
+      ? createAdminServiceCreateReport()
+      : createAdminServiceEditReport();
+
+  $: queryName =
+    props.mode === "create"
+      ? getQueryNameFromQuery(props.query)
+      : props.reportSpec.queryName;
+  $: queryArgsJson =
+    props.mode === "create"
+      ? getQueryArgsJsonFromQuery(props.query)
+      : props.reportSpec.queryArgsJson;
+
+  $: exploreName =
+    props.mode === "create"
+      ? props.exploreName
+      : getDashboardNameFromReport(props.reportSpec);
+
+  let currentProtobufState: string | undefined = undefined;
+  if (open && props.mode === "create") {
+    const stateManagers = getStateManagers();
+    const { dashboardStore } = stateManagers;
+    currentProtobufState = get(dashboardStore).proto;
   }
 
-  $: ({ organization, project, report: reportName } = $page.params);
-
-  $: mutation = isEdit
-    ? createAdminServiceEditReport()
-    : createAdminServiceCreateReport();
-
-  const initialValues = getInitialValues(reportSpec, $user.data?.user?.email);
   const schema = yup(
     object({
       title: string().required("Required"),
@@ -60,6 +89,29 @@
       slackUsers: array().of(string().email("Invalid email")),
     }),
   ) as ValidationAdapter<ReportValues>;
+
+  $: initialValues =
+    props.mode === "create"
+      ? getNewReportInitialFormValues($user.data?.user?.email)
+      : getExistingReportInitialFormValues(
+          props.reportSpec,
+          $user.data?.user?.email,
+        );
+
+  $: ({ form, errors, enhance, submit, submitting } = superForm(
+    defaults(initialValues, schema),
+    {
+      SPA: true,
+      validators: schema,
+      async onUpdate({ form }) {
+        if (!form.valid) return;
+        const values = form.data;
+        return handleSubmit(values);
+      },
+      validationMethod: "oninput",
+      invalidateAll: false,
+    },
+  ));
 
   async function handleSubmit(values: ReportValues) {
     const refreshCron = convertFormValuesToCronExpression(
@@ -79,12 +131,9 @@
             displayName: values.title,
             refreshCron: refreshCron, // for testing: "* * * * *"
             refreshTimeZone: values.timeZone,
-            queryName: reportSpec?.queryName ?? "MetricsViewAggregation",
-            queryArgsJson: JSON.stringify(
-              reportSpec?.queryArgsJson
-                ? JSON.parse(reportSpec.queryArgsJson)
-                : queryArgs,
-            ),
+            explore: exploreName,
+            queryName: queryName,
+            queryArgsJson: queryArgsJson,
             exportLimit: values.exportLimit || undefined,
             exportFormat: values.exportFormat,
             emailRecipients: values.emailRecipients.filter(Boolean),
@@ -94,60 +143,52 @@
             slackUsers: values.enableSlackNotification
               ? values.slackUsers.filter(Boolean)
               : undefined,
-            webOpenState: reportSpec
-              ? (reportSpec.annotations as V1ReportSpecAnnotations)[
-                  "web_open_state"
-                ]
-              : metricsViewProto,
-            webOpenPath: exploreName ? `/explore/${exploreName}` : undefined,
+            webOpenState:
+              props.mode === "create"
+                ? currentProtobufState
+                : (props.reportSpec.annotations as V1ReportSpecAnnotations)[
+                    "web_open_state"
+                  ],
+            webOpenMode:
+              props.mode === "create"
+                ? "recipient" // To be changed to "filtered" once support is added
+                : ((props.reportSpec.annotations as V1ReportSpecAnnotations)[
+                    "web_open_mode"
+                  ] ?? "recipient"), // Backwards compatibility
           },
         },
       });
 
-      if (isEdit) {
-        await queryClient.invalidateQueries(
-          getRuntimeServiceGetResourceQueryKey(instanceId, {
+      if (props.mode === "edit") {
+        await queryClient.invalidateQueries({
+          queryKey: getRuntimeServiceGetResourceQueryKey(instanceId, {
             "name.name": reportName,
             "name.kind": ResourceKind.Report,
           }),
-        );
+        });
       }
 
-      await queryClient.invalidateQueries(
-        getRuntimeServiceListResourcesQueryKey(instanceId),
-      );
+      await queryClient.invalidateQueries({
+        queryKey: getRuntimeServiceListResourcesQueryKey(instanceId),
+      });
 
       open = false;
 
       eventBus.emit("notification", {
-        message: `Report ${isEdit ? "edited" : "created"}`,
-        link: reportSpec
-          ? undefined
-          : {
-              href: `/${organization}/${project}/-/reports`,
-              text: "Go to scheduled reports",
-            },
+        message: `Report ${props.mode === "create" ? "created" : "edited"}`,
+        link:
+          props.mode === "create"
+            ? {
+                href: `/${organization}/${project}/-/reports`,
+                text: "Go to scheduled reports",
+              }
+            : undefined,
         type: "success",
       });
     } catch {
       // showing error below
     }
   }
-
-  const { form, errors, enhance, submit, submitting } = superForm(
-    defaults(initialValues, schema),
-    {
-      SPA: true,
-      validators: schema,
-      async onUpdate({ form }) {
-        if (!form.valid) return;
-        const values = form.data;
-        return handleSubmit(values);
-      },
-      validationMethod: "oninput",
-      invalidateAll: false,
-    },
-  );
 </script>
 
 <Dialog.Root bind:open>
@@ -175,7 +216,7 @@
         submitForm
         type="primary"
       >
-        {isEdit ? "Save" : "Create"}
+        {props.mode === "create" ? "Create" : "Save"}
       </Button>
     </div>
   </Dialog.Content>

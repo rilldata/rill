@@ -1,28 +1,35 @@
-import { PivotChipType } from "./types";
 import type { Writable } from "svelte/store";
+import { PivotChipType } from "./types";
 
 type Options = {
   condition: boolean;
   ghostIndex: Writable<number | null>;
   chipType: PivotChipType | undefined;
+  canMixTypes: boolean;
 };
 
 export function swapListener(
   node: HTMLElement,
-  { condition, ghostIndex, chipType }: Options,
+  { condition, ghostIndex, chipType, canMixTypes }: Options,
 ) {
   let added = false;
   const children = node.getElementsByClassName(
     "drag-item",
   ) as HTMLCollectionOf<HTMLDivElement>;
 
-  function updateListener({ condition, chipType }: Options) {
+  function updateListener({ condition, chipType, canMixTypes }: Options) {
     if (condition && !added) {
-      const category =
-        chipType === PivotChipType.Measure ? "measure" : "dimension";
-      for (const child of children) {
-        if (category !== child.dataset.type) continue;
-        child.addEventListener("mousemove", handlePillShift);
+      if (canMixTypes !== true) {
+        const category =
+          chipType === PivotChipType.Measure ? "measure" : "dimension";
+        for (const child of children) {
+          if (category !== child.dataset.type) continue;
+          child.addEventListener("mousemove", handlePillShift);
+        }
+      } else {
+        for (const child of children) {
+          child.addEventListener("mousemove", handlePillShift);
+        }
       }
       added = true;
     } else if (!condition && added) {
@@ -46,11 +53,11 @@ export function swapListener(
     ghostIndex.set(newIndex);
   }
 
-  updateListener({ condition, ghostIndex, chipType });
+  updateListener({ condition, ghostIndex, chipType, canMixTypes });
 
   return {
-    update({ condition, chipType, ghostIndex }: Options) {
-      updateListener({ condition, ghostIndex, chipType });
+    update({ condition, chipType, ghostIndex, canMixTypes }: Options) {
+      updateListener({ condition, ghostIndex, chipType, canMixTypes });
     },
 
     destroy() {

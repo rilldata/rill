@@ -12,8 +12,8 @@
     type ISODurationString,
     type NamedRange,
   } from "../new-time-controls";
-  import * as Elements from "./components";
   import TimeGrainSelector from "../TimeGrainSelector.svelte";
+  import * as Elements from "./components";
   import RangePickerV2 from "./new-time-dropdown/RangePickerV2.svelte";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
 
@@ -30,6 +30,9 @@
   export let canPanRight: boolean;
   export let interval: Interval;
   export let showPan = false;
+  export let lockTimeZone = false;
+  export let allowCustomTimeRange = true;
+  export let showFullRange = true;
   export let complete: boolean;
   export let context: string;
   export let activeTimeZone: string;
@@ -79,7 +82,9 @@
         maxDate={DateTime.fromJSDate(allTimeRange.end)}
         {timeRanges}
         {showDefaultItem}
+        {showFullRange}
         {defaultTimeRange}
+        {allowCustomTimeRange}
         selected={selectedRangeAlias ?? ""}
         grain={activeTimeGrain}
         {onSelectRange}
@@ -98,8 +103,10 @@
 
   {#if availableTimeZones.length}
     <Elements.Zone
-      watermark={interval.end?.toJSDate() ?? new Date()}
+      {context}
+      watermark={interval.end ?? DateTime.fromJSDate(new Date())}
       {activeTimeZone}
+      {lockTimeZone}
       {availableTimeZones}
       {onSelectTimeZone}
     />
@@ -136,6 +143,10 @@
   :global(.wrapper > button) {
     @apply border;
     @apply px-2 flex items-center justify-center bg-white;
+  }
+
+  :global(.wrapper > button:focus) {
+    @apply z-50;
   }
 
   :global(.wrapper > button:first-child) {

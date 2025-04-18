@@ -10,10 +10,11 @@
     type V1Resource,
   } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { useQueryClient } from "@tanstack/svelte-query";
+  import { useQueryClient, type Query } from "@tanstack/svelte-query";
   import Button from "web-common/src/components/button/Button.svelte";
   import ProjectResourcesTable from "./ProjectResourcesTable.svelte";
   import RefreshAllSourcesAndModelsConfirmDialog from "./RefreshAllSourcesAndModelsConfirmDialog.svelte";
+  import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
 
   const queryClient = useQueryClient();
   const createTrigger = createRuntimeServiceCreateTrigger();
@@ -43,12 +44,11 @@
 
   function calculateRefetchInterval(
     currentInterval: number,
-    data: V1ListResourcesResponse | undefined,
+    data: V1ListResourcesResponse,
+    query: Query<V1ListResourcesResponse, HTTPError>,
   ): number | false {
-    if (!data?.resources) {
-      currentRefetchInterval = INITIAL_REFETCH_INTERVAL;
-      return INITIAL_REFETCH_INTERVAL;
-    }
+    if (query.state.error) return false;
+    if (!data) return INITIAL_REFETCH_INTERVAL;
 
     const hasErrors = data.resources.some(isResourceErrored);
     const hasReconcilingResources = data.resources.some(isResourceReconciling);
@@ -68,7 +68,8 @@
   $: resources = createRuntimeServiceListResources(
     instanceId,
     {
-      skipSecurityChecks: true, // Ensures admins can see all resources, regardless of the security policy
+      // Ensure admins can see all resources, regardless of the security policy
+      skipSecurityChecks: true,
     },
     {
       query: {
@@ -81,12 +82,11 @@
               resource.meta.name.kind !== ResourceKind.RefreshTrigger,
           ),
         }),
-        refetchInterval: (data) =>
+        refetchInterval: (query) =>
           calculateRefetchInterval(
-            $resources?.data
-              ? currentRefetchInterval
-              : INITIAL_REFETCH_INTERVAL,
-            data,
+            currentRefetchInterval,
+            query.state.data,
+            query,
           ),
       },
     },
@@ -110,9 +110,12 @@
       })
       .then(() => {
         currentRefetchInterval = INITIAL_REFETCH_INTERVAL;
-        void queryClient.invalidateQueries(
-          getRuntimeServiceListResourcesQueryKey(instanceId, undefined),
-        );
+        void queryClient.invalidateQueries({
+          queryKey: getRuntimeServiceListResourcesQueryKey(
+            instanceId,
+            undefined,
+          ),
+        });
       });
   }
 </script>

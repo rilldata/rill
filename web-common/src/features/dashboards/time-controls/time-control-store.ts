@@ -1,12 +1,15 @@
+import { useMetricsViewTimeRange } from "@rilldata/web-common/features/dashboards/selectors";
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
+import { useExploreState } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import { getValidComparisonOption } from "@rilldata/web-common/features/dashboards/time-controls/time-range-store";
 import { getOrderedStartEnd } from "@rilldata/web-common/features/dashboards/time-series/utils";
 import { normaliseRillTime } from "@rilldata/web-common/features/dashboards/url-state/time-ranges/parser";
+import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
 import {
   getComparionRangeForScrub,
   getComparisonRange,
   getTimeComparisonParametersForComponent,
-  inferCompareTimeRange,
 } from "@rilldata/web-common/lib/time/comparisons";
 import { DEFAULT_TIME_RANGES } from "@rilldata/web-common/lib/time/config";
 import {
@@ -40,6 +43,7 @@ import type { QueryObserverResult } from "@tanstack/svelte-query";
 import type { Readable } from "svelte/store";
 import { derived } from "svelte/store";
 import { memoizeMetricsStore } from "../state-managers/memoize-metrics-store";
+import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 
 export type TimeRangeState = {
   // Selected ranges with start and end filled based on time range type
@@ -111,6 +115,7 @@ export const timeControlStateSelector = ([
     timeRangeResponse.data?.timeRangeSummary,
     metricsExplorer,
   );
+
   if (!state) {
     return {
       ready: false,
@@ -201,6 +206,27 @@ export function getTimeControlState(
 export function createTimeControlStore(ctx: StateManagers) {
   return derived(
     [ctx.validSpecStore, ctx.timeRangeSummaryStore, ctx.dashboardStore],
+    ([validSpecResp, timeRangeSummaryResp, dashboardStore]) =>
+      timeControlStateSelector([
+        validSpecResp.data?.metricsView,
+        validSpecResp.data?.explore,
+        timeRangeSummaryResp,
+        dashboardStore,
+      ]),
+  );
+}
+
+export function createTimeControlStoreFromName(
+  instanceId: string,
+  metricsViewName: string,
+  exploreName: string,
+) {
+  return derived(
+    [
+      useExploreValidSpec(instanceId, exploreName, undefined, queryClient),
+      useMetricsViewTimeRange(instanceId, metricsViewName, {}, queryClient),
+      useExploreState(exploreName),
+    ],
     ([validSpecResp, timeRangeSummaryResp, dashboardStore]) =>
       timeControlStateSelector([
         validSpecResp.data?.metricsView,
@@ -431,7 +457,12 @@ export function getComparisonTimeRange(
   if (!timeRange || !timeRange.name || !allTimeRange) return undefined;
 
   if (!comparisonTimeRange?.name) {
-    const comparisonOption = inferCompareTimeRange(timeRanges, timeRange.name);
+    const comparisonOption = getValidComparisonOption(
+      timeRanges,
+      timeRange,
+      undefined,
+      allTimeRange,
+    );
     const range = getTimeComparisonParametersForComponent(
       comparisonOption,
       allTimeRange.start,
@@ -440,7 +471,7 @@ export function getComparisonTimeRange(
       timeRange.end,
     );
 
-    if (range.isComparisonRangeAvailable && range.start && range.end) {
+    if (range.start && range.end) {
       return {
         start: range.start,
         end: range.end,

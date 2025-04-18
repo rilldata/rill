@@ -1,10 +1,7 @@
+import type { ComponentAlignment } from "@rilldata/web-common/features/canvas/components/types";
+
 type NativeInputTypes = "text" | "number" | "boolean" | "textArea";
-type SemanticInputTypes =
-  | "metrics"
-  | "measure"
-  | "dimension"
-  | "multi_measures"
-  | "multi_dimensions";
+type SemanticInputTypes = "metrics" | "measure" | "dimension" | "multi_fields";
 type ChartInputTypes = "positional" | "mark" | "tooltip" | "config";
 type CustomInputTypes = "rill_time" | "sparkline" | "comparison_options";
 type PositionalInputTypes = "alignment";
@@ -16,11 +13,9 @@ export type InputType =
   | CustomInputTypes
   | PositionalInputTypes;
 
-export type FilterInputTypes =
-  | "time_range"
-  | "comparison_range"
-  | "grain"
-  | "dimension_filters";
+export type FilterInputTypes = "time_filters" | "dimension_filters";
+
+export type FieldType = "measure" | "dimension" | "time";
 
 export interface ComponentInputParam {
   type: InputType;
@@ -28,15 +23,21 @@ export interface ComponentInputParam {
   showInUI?: boolean; // If not specified, can assume true
   optional?: boolean;
   description?: string; // Tooltip description for the input
-  meta?: Record<string, string>; // Any additional metadata
+  meta?: {
+    allowedTypes?: FieldType[]; // Specify which field types are allowed for multi-field selection
+    defaultAlignment?: ComponentAlignment;
+    [key: string]: any;
+  };
 }
 
 export interface FilterInputParam {
   type: FilterInputTypes;
-  label: string;
+  meta?: Record<string, any>;
 }
 
+export type AllKeys<T> = T extends any ? keyof T : never;
+
 export interface InputParams<T> {
-  options: Partial<Record<keyof T, ComponentInputParam>>;
+  options: Partial<Record<AllKeys<T>, ComponentInputParam>>;
   filter: Partial<Record<FilterInputTypes, FilterInputParam>> | [];
 }

@@ -9,6 +9,7 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/timeutil"
 )
 
 // AST is the abstract syntax tree for a metrics SQL query.
@@ -48,6 +49,7 @@ type SelectNode struct {
 	FromSelect           *SelectNode      // Sub-select to select from (if set, FromTable must not be set)
 	SpineSelect          *SelectNode      // Sub-select that returns a spine of dimensions. Currently it will be right-joined onto FromSelect.
 	LeftJoinSelects      []*SelectNode    // Sub-selects to left join onto FromSelect, to enable "per-dimension" measures
+	CrossJoinSelects     []*SelectNode    // sub-selects to cross join onto FromSelect
 	JoinComparisonSelect *SelectNode      // Sub-select to join onto FromSelect for comparison measures
 	JoinComparisonType   JoinType         // Type of join to use for JoinComparisonSelect
 	Unnests              []string         // Unnest expressions to add in the FROM clause
@@ -68,6 +70,7 @@ type FieldNode struct {
 	DisplayName string
 	Expr        string
 	AutoUnnest  bool
+	TreatNullAs string // only used for measures
 }
 
 // ExprNode represents an expression for a WHERE clause.
@@ -109,6 +112,7 @@ const (
 	JoinTypeFull        JoinType = "FULL OUTER"
 	JoinTypeLeft        JoinType = "LEFT OUTER"
 	JoinTypeRight       JoinType = "RIGHT OUTER"
+	JoinTypeCross       JoinType = "CROSS"
 )
 
 // NewAST builds a new SQL AST based on a metrics query.
@@ -122,7 +126,7 @@ func NewAST(mv *runtimev1.MetricsViewSpec, sec *runtime.ResolvedSecurity, qry *Q
 	if len(qry.PivotOn) > 0 {
 		return nil, errors.New("cannot build AST for pivot queries")
 	}
-	if len(qry.Dimensions) == 0 && len(qry.Measures) == 0 {
+	if len(qry.Dimensions) == 0 && len(qry.Measures) == 0 && !qry.Rows {
 		return nil, fmt.Errorf("must specify at least one dimension or measure")
 	}
 
@@ -208,6 +212,14 @@ func NewAST(mv *runtimev1.MetricsViewSpec, sec *runtime.ResolvedSecurity, qry *Q
 		ast.comparisonDimFields = append(ast.comparisonDimFields, cf)
 	}
 
+	if qry.Rows {
+		// when Rows is set that means we want underlying rows from the model that why adding * as dim field which will also avoid using AS clause
+		ast.dimFields = append(ast.dimFields, FieldNode{
+			Name: "*",
+			Expr: "*",
+		})
+	}
+
 	// Build underlying SELECT
 	tbl := ast.dialect.EscapeTable(mv.Database, mv.DatabaseSchema, mv.Table)
 	where, err := ast.buildUnderlyingWhere()
@@ -273,7 +285,7 @@ func NewAST(mv *runtimev1.MetricsViewSpec, sec *runtime.ResolvedSecurity, qry *Q
 
 // resolveDimension returns a dimension spec for the given dimension query.
 // If the dimension query specifies a computed dimension, it constructs a dimension spec to match it.
-func (a *AST) resolveDimension(qd Dimension, visible bool) (*runtimev1.MetricsViewSpec_DimensionV2, error) {
+func (a *AST) resolveDimension(qd Dimension, visible bool) (*runtimev1.MetricsViewSpec_Dimension, error) {
 	// Handle regular dimension
 	if qd.Compute == nil {
 		return a.lookupDimension(qd.Name, visible)
@@ -316,7 +328,7 @@ func (a *AST) resolveDimension(qd Dimension, visible bool) (*runtimev1.MetricsVi
 	}
 	displayName = fmt.Sprintf("%s (%s)", displayName, qd.Compute.TimeFloor.Grain)
 
-	return &runtimev1.MetricsViewSpec_DimensionV2{
+	return &runtimev1.MetricsViewSpec_Dimension{
 		Name:        qd.Name,
 		Expression:  expr,
 		DisplayName: displayName,
@@ -326,7 +338,7 @@ func (a *AST) resolveDimension(qd Dimension, visible bool) (*runtimev1.MetricsVi
 
 // resolveMeasure returns a measure spec for the given measure query.
 // If the measure query specifies a computed measure, it constructs a measure spec to match it.
-func (a *AST) resolveMeasure(qm Measure, visible bool) (*runtimev1.MetricsViewSpec_MeasureV2, error) {
+func (a *AST) resolveMeasure(qm Measure, visible bool) (*runtimev1.MetricsViewSpec_Measure, error) {
 	if qm.Compute == nil {
 		return a.lookupMeasure(qm.Name, visible)
 	}
@@ -341,7 +353,7 @@ func (a *AST) resolveMeasure(qm Measure, visible bool) (*runtimev1.MetricsViewSp
 	}
 
 	if qm.Compute.Count {
-		return &runtimev1.MetricsViewSpec_MeasureV2{
+		return &runtimev1.MetricsViewSpec_Measure{
 			Name:        qm.Name,
 			Expression:  "COUNT(*)",
 			Type:        runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE,
@@ -360,7 +372,7 @@ func (a *AST) resolveMeasure(qm Measure, visible bool) (*runtimev1.MetricsViewSp
 			expr = a.dialect.EscapeIdentifier(dim.Column)
 		}
 
-		return &runtimev1.MetricsViewSpec_MeasureV2{
+		return &runtimev1.MetricsViewSpec_Measure{
 			Name:        qm.Name,
 			Expression:  fmt.Sprintf("COUNT(DISTINCT %s)", expr),
 			Type:        runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE,
@@ -374,7 +386,7 @@ func (a *AST) resolveMeasure(qm Measure, visible bool) (*runtimev1.MetricsViewSp
 			return nil, err
 		}
 
-		return &runtimev1.MetricsViewSpec_MeasureV2{
+		return &runtimev1.MetricsViewSpec_Measure{
 			Name:               qm.Name,
 			Expression:         fmt.Sprintf("comparison.%s", a.dialect.EscapeIdentifier(m.Name)),
 			Type:               runtimev1.MetricsViewSpec_MEASURE_TYPE_TIME_COMPARISON,
@@ -389,7 +401,7 @@ func (a *AST) resolveMeasure(qm Measure, visible bool) (*runtimev1.MetricsViewSp
 			return nil, err
 		}
 
-		return &runtimev1.MetricsViewSpec_MeasureV2{
+		return &runtimev1.MetricsViewSpec_Measure{
 			Name:               qm.Name,
 			Expression:         fmt.Sprintf("base.%s - comparison.%s", a.dialect.EscapeIdentifier(m.Name), a.dialect.EscapeIdentifier(m.Name)),
 			Type:               runtimev1.MetricsViewSpec_MEASURE_TYPE_TIME_COMPARISON,
@@ -408,7 +420,7 @@ func (a *AST) resolveMeasure(qm Measure, visible bool) (*runtimev1.MetricsViewSp
 		comp := fmt.Sprintf("comparison.%s", a.dialect.EscapeIdentifier(m.Name))
 		expr := a.dialect.SafeDivideExpression(fmt.Sprintf("%s - %s", base, comp), comp)
 
-		return &runtimev1.MetricsViewSpec_MeasureV2{
+		return &runtimev1.MetricsViewSpec_Measure{
 			Name:               qm.Name,
 			Expression:         expr,
 			Type:               runtimev1.MetricsViewSpec_MEASURE_TYPE_TIME_COMPARISON,
@@ -427,7 +439,7 @@ func (a *AST) resolveMeasure(qm Measure, visible bool) (*runtimev1.MetricsViewSp
 			return nil, err
 		}
 
-		return &runtimev1.MetricsViewSpec_MeasureV2{
+		return &runtimev1.MetricsViewSpec_Measure{
 			Name:               qm.Name,
 			Expression:         fmt.Sprintf("%s/%#f", a.dialect.EscapeIdentifier(m.Name), *qm.Compute.PercentOfTotal.Total),
 			Type:               runtimev1.MetricsViewSpec_MEASURE_TYPE_DERIVED,
@@ -447,7 +459,7 @@ func (a *AST) resolveMeasure(qm Measure, visible bool) (*runtimev1.MetricsViewSp
 			return nil, fmt.Errorf("`uri` not set for the dimension %v", qm.Compute.URI.Dimension)
 		}
 
-		return &runtimev1.MetricsViewSpec_MeasureV2{
+		return &runtimev1.MetricsViewSpec_Measure{
 			Name:        qm.Name,
 			Expression:  a.sqlForAnyInGroup(uri),
 			Type:        runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE,
@@ -460,13 +472,13 @@ func (a *AST) resolveMeasure(qm Measure, visible bool) (*runtimev1.MetricsViewSp
 
 // lookupDimension finds a dimension spec in the metrics view.
 // If visible is true, it returns an error if the security policy does not grant access to the dimension.
-func (a *AST) lookupDimension(name string, visible bool) (*runtimev1.MetricsViewSpec_DimensionV2, error) {
+func (a *AST) lookupDimension(name string, visible bool) (*runtimev1.MetricsViewSpec_Dimension, error) {
 	if name == "" {
 		return nil, errors.New("received empty dimension name")
 	}
 
 	if name == a.metricsView.TimeDimension {
-		return &runtimev1.MetricsViewSpec_DimensionV2{
+		return &runtimev1.MetricsViewSpec_Dimension{
 			Name:   name,
 			Column: name,
 		}, nil
@@ -489,7 +501,7 @@ func (a *AST) lookupDimension(name string, visible bool) (*runtimev1.MetricsView
 
 // lookupMeasure finds a measure spec in the metrics view.
 // If visible is true, it returns an error if the security policy does not grant access to the measure.
-func (a *AST) lookupMeasure(name string, visible bool) (*runtimev1.MetricsViewSpec_MeasureV2, error) {
+func (a *AST) lookupMeasure(name string, visible bool) (*runtimev1.MetricsViewSpec_Measure, error) {
 	if visible {
 		if !a.security.CanAccessField(name) {
 			return nil, runtime.ErrForbidden
@@ -535,7 +547,7 @@ func (a *AST) checkNameForComputedField(name string) error {
 // It checks against the query's dimensions because:
 //  1. This enables correctly checking against the underlying time dimension name for dimensions with time floor applied.
 //  2. The query's dimensions are projected into every sub-query, so it's not necessary to check against the current sub-query's Dimensions.
-func (a *AST) checkRequiredDimensionsPresentInQuery(m *runtimev1.MetricsViewSpec_MeasureV2) error {
+func (a *AST) checkRequiredDimensionsPresentInQuery(m *runtimev1.MetricsViewSpec_Measure) error {
 	for _, rd := range m.RequiredDimensions {
 		var found bool
 		for _, qd := range a.query.Dimensions {
@@ -633,6 +645,10 @@ func (a *AST) buildBaseSelect(alias string, comparison bool) (*SelectNode, error
 		Where:     a.underlyingWhere,
 	}
 
+	if a.query.Rows {
+		n.Group = false
+	}
+
 	tr := a.query.TimeRange
 	if comparison {
 		n.DimFields = a.comparisonDimFields
@@ -644,7 +660,7 @@ func (a *AST) buildBaseSelect(alias string, comparison bool) (*SelectNode, error
 	// If there is a spine, we wrap the base SELECT in a new SELECT that we add the spine to.
 	// We do not join the spine directly to the FromTable because the join would be evaluated before the GROUP BY,
 	// which would impact the measure aggregations (e.g. counts per group would be wrong).
-	if a.query.Spine != nil {
+	if a.query.Spine != nil && !(a.query.Spine.TimeRange != nil && comparison) { // Skip time range spines in the comparison select
 		sn, err := a.buildSpineSelect(a.generateIdentifier(), a.query.Spine, tr)
 		if err != nil {
 			return nil, err
@@ -690,7 +706,72 @@ func (a *AST) buildSpineSelect(alias string, spine *Spine, tr *TimeRange) (*Sele
 	}
 
 	if spine.TimeRange != nil {
-		return nil, errors.New("time_range not yet supported in spine")
+		// if spine generates more than 1000 values then return an error
+		bins := timeutil.ApproximateBins(spine.TimeRange.Start, spine.TimeRange.End, spine.TimeRange.Grain.ToTimeutil())
+		if bins > 1000 {
+			return nil, errors.New("failed to apply time spine: time range has more than 1000 bins")
+		}
+
+		tf, ok := a.findFieldForComputedTimeDimension(a.dimFields, a.metricsView.TimeDimension)
+		if !ok {
+			return nil, fmt.Errorf("failed to find computed time dimension %q", a.metricsView.TimeDimension)
+		}
+		timeAlias := tf.Name
+
+		var newDims []FieldNode
+		for _, f := range a.dimFields {
+			if f.Name == tf.Name {
+				continue
+			}
+			newDims = append(newDims, f)
+		}
+
+		start := spine.TimeRange.Start
+		end := spine.TimeRange.End
+		grain := spine.TimeRange.Grain
+		sel, args, err := a.dialect.SelectTimeRangeBins(start, end, grain.ToProto(), timeAlias)
+		if err != nil {
+			return nil, fmt.Errorf("failed to generate time spine: %w", err)
+		}
+
+		rangeSelect := &SelectNode{
+			Alias: alias,
+			RawSelect: &ExprNode{
+				Expr: sel,
+				Args: args,
+			},
+		}
+
+		// if there is only one dimension in the query, then we can directly join the spine time range with the dimension
+		if len(a.dimFields) == 1 {
+			return rangeSelect, nil
+		}
+
+		// give alias to the outer select as range select will be moved to cross join
+		rangeSelect.Alias = a.generateIdentifier()
+
+		dimSelect := &SelectNode{
+			Alias:     alias,
+			DimFields: newDims,
+			FromTable: a.underlyingTable,
+			Where:     a.underlyingWhere,
+			Group:     true,
+		}
+
+		a.addTimeRange(dimSelect, tr)
+
+		a.wrapSelect(dimSelect, a.generateIdentifier())
+
+		dimSelect.CrossJoinSelects = []*SelectNode{rangeSelect}
+
+		// now add cross join field to the dimension list
+		dimSelect.DimFields = append(dimSelect.DimFields, FieldNode{
+			Name:        timeAlias,
+			DisplayName: timeAlias,
+			Expr:        a.sqlForMember(rangeSelect.Alias, timeAlias),
+		})
+
+		return dimSelect, nil
 	}
 
 	return nil, errors.New("unhandled spine type")
@@ -716,7 +797,7 @@ func (a *AST) addTimeRange(n *SelectNode, tr *TimeRange) {
 
 // addMeasureField adds a measure field to the given SelectNode.
 // Depending on the measure type, it may rewrite the SelectNode to accommodate the measure.
-func (a *AST) addMeasureField(n *SelectNode, m *runtimev1.MetricsViewSpec_MeasureV2) error {
+func (a *AST) addMeasureField(n *SelectNode, m *runtimev1.MetricsViewSpec_Measure) error {
 	// Skip if the measure has already been added.
 	// This can happen if the measure was already added as a referenced measure of a derived measure.
 	if hasMeasure(n, m.Name) {
@@ -731,19 +812,25 @@ func (a *AST) addMeasureField(n *SelectNode, m *runtimev1.MetricsViewSpec_Measur
 
 	switch m.Type {
 	case runtimev1.MetricsViewSpec_MEASURE_TYPE_UNSPECIFIED, runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE:
-		return a.addSimpleMeasure(n, m)
+		err = a.addSimpleMeasure(n, m)
 	case runtimev1.MetricsViewSpec_MEASURE_TYPE_DERIVED:
-		return a.addDerivedMeasure(n, m)
+		err = a.addDerivedMeasure(n, m)
 	case runtimev1.MetricsViewSpec_MEASURE_TYPE_TIME_COMPARISON:
-		return a.addTimeComparisonMeasure(n, m)
+		err = a.addTimeComparisonMeasure(n, m)
 	default:
 		panic("unhandled measure type")
 	}
+
+	if m.TreatNullsAs != "" {
+		n.MeasureFields[len(n.MeasureFields)-1].TreatNullAs = m.TreatNullsAs
+	}
+
+	return err
 }
 
 // addSimpleMeasure adds a measure of type simple to the given SelectNode.
 // When called, we know the measure is not present in the SelectNode, but it might be present in a sub-select.
-func (a *AST) addSimpleMeasure(n *SelectNode, m *runtimev1.MetricsViewSpec_MeasureV2) error {
+func (a *AST) addSimpleMeasure(n *SelectNode, m *runtimev1.MetricsViewSpec_Measure) error {
 	// Base case: it targets the underlying table.
 	// Add the measure directly to the SELECT list.
 	if n.FromTable != nil {
@@ -787,7 +874,7 @@ func (a *AST) addSimpleMeasure(n *SelectNode, m *runtimev1.MetricsViewSpec_Measu
 
 // addDerivedMeasure adds a measure of type derived to the given SelectNode.
 // When called, we know the measure is not present in the SelectNode, but it might be present in a sub-select.
-func (a *AST) addDerivedMeasure(n *SelectNode, m *runtimev1.MetricsViewSpec_MeasureV2) error {
+func (a *AST) addDerivedMeasure(n *SelectNode, m *runtimev1.MetricsViewSpec_Measure) error {
 	// Handle derived measures with "per" dimensions separately.
 	if len(m.PerDimensions) > 0 {
 		return a.addDerivedMeasureWithPer(n, m)
@@ -855,13 +942,13 @@ func (a *AST) addDerivedMeasure(n *SelectNode, m *runtimev1.MetricsViewSpec_Meas
 
 // addDerivedMeasureWithPer adds a measure of type derived with "per" dimensions to the given SelectNode.
 // When called, we know the measure is not present in the SelectNode, but it might be present in a sub-select.
-func (a *AST) addDerivedMeasureWithPer(_ *SelectNode, _ *runtimev1.MetricsViewSpec_MeasureV2) error {
+func (a *AST) addDerivedMeasureWithPer(_ *SelectNode, _ *runtimev1.MetricsViewSpec_Measure) error {
 	return errors.New(`support for "per" not implemented`)
 }
 
 // addTimeComparisonMeasure adds a measure of type time comparison to the given SelectNode.
 // When called, we know the measure is not present in the SelectNode, but it might be present in a sub-select.
-func (a *AST) addTimeComparisonMeasure(n *SelectNode, m *runtimev1.MetricsViewSpec_MeasureV2) error {
+func (a *AST) addTimeComparisonMeasure(n *SelectNode, m *runtimev1.MetricsViewSpec_Measure) error {
 	// If the node doesn't have a comparison join, we wrap it in a new SELECT that we add the comparison join to.
 	// We use the hardcoded aliases "base" and "comparison" for the two SELECTs (which must be used in the comparison measure expression).
 	if n.JoinComparisonSelect == nil {
@@ -983,12 +1070,23 @@ func (a *AST) wrapSelect(s *SelectNode, innerAlias string) {
 		})
 	}
 
+	for _, cjs := range cpy.CrossJoinSelects {
+		for _, f := range cjs.DimFields {
+			s.DimFields = append(s.DimFields, FieldNode{
+				Name:        f.Name,
+				DisplayName: f.DisplayName,
+				Expr:        a.sqlForMember(cpy.Alias, f.Name),
+			})
+		}
+	}
+
 	s.MeasureFields = make([]FieldNode, 0, len(cpy.MeasureFields))
 	for _, f := range cpy.MeasureFields {
 		s.MeasureFields = append(s.MeasureFields, FieldNode{
 			Name:        f.Name,
 			DisplayName: f.DisplayName,
 			Expr:        a.sqlForMember(cpy.Alias, f.Name),
+			TreatNullAs: "",
 		})
 	}
 
@@ -1009,6 +1107,7 @@ func (a *AST) wrapSelect(s *SelectNode, innerAlias string) {
 
 	s.Limit = nil
 	s.Offset = nil
+	s.CrossJoinSelects = nil
 }
 
 // findFieldForDimension finds the field in the SelectNode that corresponds to the dimension selector.
@@ -1036,6 +1135,30 @@ func (a *AST) findFieldForDimension(n *SelectNode, dim *runtimev1.MetricsViewSpe
 			}
 
 			if dim.TimeGrain != runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED && dim.TimeGrain != fqd.Compute.TimeFloor.Grain.ToProto() {
+				continue
+			}
+
+			return f, true
+		}
+	}
+
+	return FieldNode{}, false
+}
+
+func (a *AST) findFieldForComputedTimeDimension(dims []FieldNode, baseTimeDim string) (FieldNode, bool) {
+	for _, f := range dims {
+		// Find original query dimension for the field
+		var fqd Dimension
+		for _, qd := range a.query.Dimensions {
+			if f.Name == qd.Name {
+				fqd = qd
+				break
+			}
+		}
+
+		// If it's a computed dimension, check against the underlying dimension name (and time grain if specified)
+		if fqd.Compute != nil && fqd.Compute.TimeFloor != nil {
+			if baseTimeDim != fqd.Compute.TimeFloor.Dimension {
 				continue
 			}
 
@@ -1075,7 +1198,7 @@ func (a *AST) sqlForTimeRange(timeCol string, start, end time.Time) (string, []a
 
 // sqlForMeasure builds a SQL expression for a measure, including its window if present.
 // It uses the provided n to resolve dimensions expressions for window partitions.
-func (a *AST) sqlForMeasure(m *runtimev1.MetricsViewSpec_MeasureV2, n *SelectNode) (string, error) {
+func (a *AST) sqlForMeasure(m *runtimev1.MetricsViewSpec_Measure, n *SelectNode) (string, error) {
 	// If not applying a window, just return the measure expression.
 	if m.Window == nil {
 		return m.Expression, nil
@@ -1203,8 +1326,11 @@ func (a *AST) sqlForExpressionAdjustedByComparisonTimeRangeOffset(expr string, g
 
 		// DATE_TRUNC('year', t - INTERVAL (DATE_DIFF(start, end)) day)
 		tc := a.dialect.EscapeIdentifier(a.metricsView.TimeDimension)
-		expr := fmt.Sprintf("(%s - INTERVAL (%s) %s)", tc, dateDiff, a.dialect.ConvertToDateTruncSpecifier(mg.ToProto()))
-		dim := &runtimev1.MetricsViewSpec_DimensionV2{
+		expr, err := a.dialect.IntervalSubtract(tc, dateDiff, mg.ToProto())
+		if err != nil {
+			return "", err
+		}
+		dim := &runtimev1.MetricsViewSpec_Dimension{
 			Expression: expr,
 		}
 		expr, err = a.dialect.DateTruncExpr(dim, g.ToProto(), a.query.TimeZone, int(a.metricsView.FirstDayOfWeek), int(a.metricsView.FirstMonthOfYear))
@@ -1214,7 +1340,7 @@ func (a *AST) sqlForExpressionAdjustedByComparisonTimeRangeOffset(expr string, g
 		return expr, nil
 	}
 
-	return fmt.Sprintf("(%s - INTERVAL (%s) %s)", expr, dateDiff, a.dialect.ConvertToDateTruncSpecifier(g.ToProto())), nil
+	return a.dialect.IntervalSubtract(expr, dateDiff, g.ToProto())
 }
 
 // convertToCTE util func that sets IsCTE and only adds to a.CTEs if IsCTE was false

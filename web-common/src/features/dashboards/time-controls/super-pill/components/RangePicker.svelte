@@ -22,9 +22,11 @@
   export let grain: string;
   export let minDate: DateTime | undefined = undefined;
   export let maxDate: DateTime | undefined = undefined;
+  export let showFullRange: boolean;
   export let defaultTimeRange: NamedRange | ISODurationString | undefined;
   export let onSelectRange: (range: NamedRange | ISODurationString) => void;
   export let applyCustomRange: (range: Interval<true>) => void;
+  export let allowCustomTimeRange = true;
 
   let firstVisibleMonth: DateTime<true> = interval.start;
   let open = false;
@@ -67,7 +69,7 @@
       aria-label="Select time range"
     >
       <b class="mr-1 line-clamp-1 flex-none">{getRangeLabel(selected)}</b>
-      {#if interval.isValid}
+      {#if interval.isValid && showFullRange}
         <RangeDisplay {interval} {grain} />
       {/if}
       <span class="flex-none transition-transform" class:-rotate-180={open}>
@@ -83,6 +85,7 @@
           {selected}
           {showDefaultItem}
           {defaultTimeRange}
+          {allowCustomTimeRange}
           onSelectRange={(selected) => {
             onSelectRange(selected);
             open = false;

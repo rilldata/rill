@@ -1,16 +1,18 @@
 <script lang="ts">
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
-  import { type CanvasComponentObj } from "@rilldata/web-common/features/canvas/components/util";
   import type { ComponentInputParam } from "@rilldata/web-common/features/canvas/inspector/types";
-  import { isString } from "@rilldata/web-common/features/canvas/util";
   import {
     ResourceKind,
     useFilteredResources,
   } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { isString } from "../../workspaces/visual-util";
+  import type { AllKeys } from "@rilldata/web-common/features/canvas/inspector/types";
+  import type { ComponentSpec } from "../components/types";
+  import type { BaseCanvasComponent } from "../components/BaseCanvasComponent";
 
-  export let component: CanvasComponentObj;
-  export let key: string;
+  export let component: BaseCanvasComponent;
+  export let key: AllKeys<ComponentSpec>;
   export let inputParam: ComponentInputParam;
 
   $: ({ instanceId } = $runtime);
@@ -33,7 +35,7 @@
 
 <Input
   hint="View documentation"
-  link="https://docs.rilldata.com/reference/project-files/metrics-view"
+  link="https://docs.rilldata.com/reference/project-files/metrics-views"
   label={inputParam.label}
   capitalizeLabel={false}
   bind:value={metricsView}

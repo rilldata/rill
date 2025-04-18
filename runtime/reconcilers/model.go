@@ -17,8 +17,9 @@ import (
 	"github.com/google/uuid"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
-	compilerv1 "github.com/rilldata/rill/runtime/compilers/rillv1"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/parser"
+	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/pkg/pbutil"
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
@@ -165,7 +166,7 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 					err = r.updateStateWithResult(ctx, self, renameRes)
 				}
 				if err != nil {
-					r.C.Logger.Warn("failed to rename model", zap.String("model", n.Name), zap.String("renamed_from", self.Meta.RenamedFrom.Name), zap.Error(err))
+					r.C.Logger.Warn("failed to rename model", zap.String("model", n.Name), zap.String("renamed_from", self.Meta.RenamedFrom.Name), zap.Error(err), observability.ZapCtx(ctx))
 				}
 			}()
 			if ctx.Err() != nil { // Handle if the error was a ctx error
@@ -194,7 +195,7 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 
 			err2 := prevManager.Delete(ctx, prevResult)
 			if err2 != nil {
-				r.C.Logger.Warn("failed to delete model output", zap.String("model", n.Name), zap.Error(err2))
+				r.C.Logger.Warn("failed to delete model output", zap.String("model", n.Name), zap.Error(err2), observability.ZapCtx(ctx))
 			}
 
 			err = r.clearPartitions(ctx, model)
@@ -204,7 +205,7 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 
 			err2 = r.updateStateClear(ctx, self)
 			if err2 != nil {
-				r.C.Logger.Warn("refs check: failed to update state", zap.Any("error", err2))
+				r.C.Logger.Warn("refs check: failed to update state", zap.Any("error", err2), observability.ZapCtx(ctx))
 			}
 		}
 
@@ -237,7 +238,7 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 	if prevManager != nil {
 		exists, err = prevManager.Exists(ctx, prevResult)
 		if err != nil {
-			r.C.Logger.Warn("failed to check if model output exists", zap.String("model", n.Name), zap.Error(err))
+			r.C.Logger.Warn("failed to check if model output exists", zap.String("model", n.Name), zap.Error(err), observability.ZapCtx(ctx))
 		}
 	}
 
@@ -275,12 +276,12 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 	if prevManager != nil && model.State.ResultConnector != model.Spec.OutputConnector {
 		err = prevManager.Delete(ctx, prevResult)
 		if err != nil {
-			r.C.Logger.Warn("failed to delete model output", zap.String("model", n.Name), zap.Error(err))
+			r.C.Logger.Warn("failed to delete model output", zap.String("model", n.Name), zap.Error(err), observability.ZapCtx(ctx))
 		}
 	}
 
 	// Build the model
-	executorConnector, execRes, execErr := r.executeAll(ctx, self, model, modelEnv, triggerReset, prevResult)
+	executorConnector, execRes, firstRunIncremental, execErr := r.executeAll(ctx, self, model, modelEnv, triggerReset, prevResult)
 
 	// After the model has executed successfully, we re-evaluate the model's incremental state (not to be confused with the resource state)
 	var newIncrementalState *structpb.Struct
@@ -313,6 +314,12 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 		model.State.IncrementalState = newIncrementalState
 		model.State.IncrementalStateSchema = newIncrementalStateSchema
 		model.State.PartitionsHaveErrors = partitionsHaveErrors
+		model.State.LatestExecutionDurationMs = execRes.ExecDuration.Milliseconds()
+		if firstRunIncremental {
+			model.State.TotalExecutionDurationMs += model.State.LatestExecutionDurationMs
+		} else {
+			model.State.TotalExecutionDurationMs = model.State.LatestExecutionDurationMs
+		}
 		err := r.updateStateWithResult(ctx, self, execRes)
 		if err != nil {
 			return runtime.ReconcileResult{Err: err}
@@ -613,7 +620,7 @@ func (r *ModelReconciler) updateTriggerFalse(ctx context.Context, n *runtimev1.R
 // Note the ambiguity around "state" in models – all resources have a "spec" and a "state",
 // but models also have a resolver for "incremental state" that enables incremental/stateful computation by persisting data from the previous execution.
 // It returns nil results if an incremental state resolver is not configured or does not return any data.
-func (r *ModelReconciler) resolveIncrementalState(ctx context.Context, mdl *runtimev1.ModelV2) (*structpb.Struct, *runtimev1.StructType, error) {
+func (r *ModelReconciler) resolveIncrementalState(ctx context.Context, mdl *runtimev1.Model) (*structpb.Struct, *runtimev1.StructType, error) {
 	if !mdl.Spec.Incremental {
 		return nil, nil, nil
 	}
@@ -651,9 +658,9 @@ func (r *ModelReconciler) resolveIncrementalState(ctx context.Context, mdl *runt
 }
 
 // resolveAndSyncPartitions resolves the model's partitions using its configured partitions resolver and inserts or updates them in the catalog.
-func (r *ModelReconciler) resolveAndSyncPartitions(ctx context.Context, self *runtimev1.Resource, mdl *runtimev1.ModelV2, incrementalState map[string]any) error {
+func (r *ModelReconciler) resolveAndSyncPartitions(ctx context.Context, self *runtimev1.Resource, mdl *runtimev1.Model, incrementalState map[string]any) error {
 	// Log
-	r.C.Logger.Debug("Resolving model partitions", zap.String("model", self.Meta.Name.Name), zap.String("resolver", mdl.Spec.PartitionsResolver))
+	r.C.Logger.Debug("Resolving model partitions", zap.String("model", self.Meta.Name.Name), zap.String("resolver", mdl.Spec.PartitionsResolver), observability.ZapCtx(ctx))
 
 	// Ensure a model ID is set. We use it to track the model's partitions in the catalog.
 	if mdl.State.PartitionsModelId == "" {
@@ -712,7 +719,7 @@ func (r *ModelReconciler) resolveAndSyncPartitions(ctx context.Context, self *ru
 
 	// Log
 	count := batchStartIdx + len(batch)
-	defer r.C.Logger.Debug("Resolved model partitions", zap.String("model", self.Meta.Name.Name), zap.Int("partitions", count))
+	defer r.C.Logger.Info("Resolved model partitions", zap.String("model", self.Meta.Name.Name), zap.Int("partitions", count), observability.ZapCtx(ctx))
 
 	// Flush the remaining rows not handled in the loop
 	return r.syncPartitions(ctx, mdl, batchStartIdx, batch)
@@ -727,7 +734,7 @@ func (r *ModelReconciler) resolveAndSyncPartitions(ctx context.Context, self *ru
 //
 // NOTE: This implementation inserts/updates partitions one-by-one in the catalog.
 // If we start using another DB than SQLite for the catalog, it may make sense to implement batched writes.
-func (r *ModelReconciler) syncPartitions(ctx context.Context, mdl *runtimev1.ModelV2, startIdx int, rows []map[string]any) error {
+func (r *ModelReconciler) syncPartitions(ctx context.Context, mdl *runtimev1.Model, startIdx int, rows []map[string]any) error {
 	if len(rows) == 0 {
 		return nil
 	}
@@ -746,12 +753,20 @@ func (r *ModelReconciler) syncPartitions(ctx context.Context, mdl *runtimev1.Mod
 		var watermark *time.Time
 		if mdl.Spec.PartitionsWatermarkField != "" {
 			if v, ok := row[mdl.Spec.PartitionsWatermarkField]; ok {
-				t, ok := v.(time.Time)
-				if !ok {
+				switch t := v.(type) {
+				case time.Time:
+					watermark = &t
+				case string:
+					var tm time.Time
+					tm, err := time.Parse(time.RFC3339, t)
+					if err != nil {
+						return fmt.Errorf("partition watermark field %q is a non-time formatted string: %w", mdl.Spec.PartitionsWatermarkField, err)
+					}
+					watermark = &tm
+				default:
 					return fmt.Errorf(`expected a timestamp for partition watermark field %q, got type %T`, mdl.Spec.PartitionsWatermarkField, v)
 				}
 
-				watermark = &t
 				delete(row, mdl.Spec.PartitionsWatermarkField)
 			}
 		}
@@ -822,7 +837,7 @@ func (r *ModelReconciler) syncPartitions(ctx context.Context, mdl *runtimev1.Mod
 }
 
 // clearPartitions drops all partitions for a model from the catalog.
-func (r *ModelReconciler) clearPartitions(ctx context.Context, mdl *runtimev1.ModelV2) error {
+func (r *ModelReconciler) clearPartitions(ctx context.Context, mdl *runtimev1.Model) error {
 	if mdl.State.PartitionsModelId == "" {
 		return nil
 	}
@@ -838,7 +853,7 @@ func (r *ModelReconciler) clearPartitions(ctx context.Context, mdl *runtimev1.Mo
 
 // executeAll executes all partitions (if any) of a model with the given execution options.
 // Note that triggerReset only denotes if a reset is required. Even if it is false, the model will still be reset if it's not an incremental model.
-func (r *ModelReconciler) executeAll(ctx context.Context, self *runtimev1.Resource, model *runtimev1.ModelV2, env *drivers.ModelEnv, triggerReset bool, prevResult *drivers.ModelResult) (string, *drivers.ModelResult, error) {
+func (r *ModelReconciler) executeAll(ctx context.Context, self *runtimev1.Resource, model *runtimev1.Model, env *drivers.ModelEnv, triggerReset bool, prevResult *drivers.ModelResult) (string, *drivers.ModelResult, bool, error) {
 	// Prepare the incremental state to pass to the executor
 	usePartitions := model.Spec.PartitionsResolver != ""
 	incrementalRun := false
@@ -853,7 +868,7 @@ func (r *ModelReconciler) executeAll(ctx context.Context, self *runtimev1.Resour
 	incrementalState["incremental"] = incrementalRun // The incremental flag is hard-coded by convention
 
 	// Build log message
-	logArgs := []zap.Field{zap.String("model", self.Meta.Name.Name)}
+	logArgs := []zap.Field{zap.String("model", self.Meta.Name.Name), observability.ZapCtx(ctx)}
 	if incrementalRun {
 		logArgs = append(logArgs, zap.String("run_type", "incremental"))
 	} else {
@@ -870,7 +885,7 @@ func (r *ModelReconciler) executeAll(ctx context.Context, self *runtimev1.Resour
 	if model.Spec.StageConnector != "" {
 		logArgs = append(logArgs, zap.String("stage_connector", model.Spec.StageConnector))
 	}
-	r.C.Logger.Debug("Building model", logArgs...)
+	r.C.Logger.Info("Executing model", logArgs...)
 
 	// Apply the timeout to the ctx
 	timeout := _modelDefaultTimeout
@@ -884,29 +899,29 @@ func (r *ModelReconciler) executeAll(ctx context.Context, self *runtimev1.Resour
 	if !incrementalRun {
 		err := r.clearPartitions(ctx, model)
 		if err != nil {
-			return "", nil, err
+			return "", nil, false, err
 		}
 	}
 
 	// Get executor(s)
 	executor, release, err := r.acquireExecutor(ctx, self, model, env)
 	if err != nil {
-		return "", nil, err
+		return "", nil, false, err
 	}
 	defer release()
 
 	// For safety, double check the ctx before executing the model (there may be some code paths where it's not checked)
 	if ctx.Err() != nil {
-		return "", nil, ctx.Err()
+		return "", nil, false, ctx.Err()
 	}
 
 	// If we're not partitionting execution, run the executor directly and return
 	if !usePartitions {
 		res, err := r.executeSingle(ctx, executor, self, model, prevResult, incrementalRun, incrementalState, nil)
 		if err != nil {
-			return "", nil, err
+			return "", nil, false, err
 		}
-		return executor.finalConnector, res, err
+		return executor.finalConnector, res, incrementalRun, err
 	}
 
 	// At this point, we know we're running with partitions configured.
@@ -914,33 +929,37 @@ func (r *ModelReconciler) executeAll(ctx context.Context, self *runtimev1.Resour
 	// Discover number of concurrent partitions to process at a time
 	concurrency, ok := executor.final.Concurrency(int(model.Spec.PartitionsConcurrencyLimit))
 	if !ok {
-		return "", nil, fmt.Errorf("invalid concurrency limit %d for model executor %q", model.Spec.PartitionsConcurrencyLimit, executor.finalConnector)
+		return "", nil, false, fmt.Errorf("invalid concurrency limit %d for model executor %q", model.Spec.PartitionsConcurrencyLimit, executor.finalConnector)
 	}
 	if executor.stage != nil {
 		stageConcurrency, ok := executor.stage.Concurrency(int(model.Spec.PartitionsConcurrencyLimit))
 		if !ok {
-			return "", nil, fmt.Errorf("invalid concurrency limit %d for model stage executor %q", model.Spec.PartitionsConcurrencyLimit, executor.stageConnector)
+			return "", nil, false, fmt.Errorf("invalid concurrency limit %d for model stage executor %q", model.Spec.PartitionsConcurrencyLimit, executor.stageConnector)
 		}
 		if stageConcurrency < concurrency {
 			concurrency = stageConcurrency
 		}
 	}
 	if concurrency < 1 {
-		return "", nil, fmt.Errorf("invalid concurrency limit %d for model executor %q", model.Spec.PartitionsConcurrencyLimit, executor.finalConnector)
+		return "", nil, false, fmt.Errorf("invalid concurrency limit %d for model executor %q", model.Spec.PartitionsConcurrencyLimit, executor.finalConnector)
 	}
 
 	// Prepare catalog which tracks partitions
 	catalog, release, err := r.C.Runtime.Catalog(ctx, r.C.InstanceID)
 	if err != nil {
-		return "", nil, err
+		return "", nil, false, err
 	}
 	defer release()
 
 	// First step is to resolve and sync the partitions.
 	err = r.resolveAndSyncPartitions(ctx, self, model, incrementalState)
 	if err != nil {
-		return "", nil, fmt.Errorf("failed to sync partitions: %w", err)
+		return "", nil, false, fmt.Errorf("failed to sync partitions: %w", err)
 	}
+
+	// Track execution metadata
+	var totalExecDuration atomic.Int64
+	firstRunIsIncremental := incrementalRun
 
 	// We run the first partition without concurrency to ensure that only incremental runs are executed concurrently.
 	// This enables the first partition to create the initial result (such as a table) that the other partitions incrementally build upon.
@@ -952,17 +971,17 @@ func (r *ModelReconciler) executeAll(ctx context.Context, self *runtimev1.Resour
 			Limit:        1,
 		})
 		if err != nil {
-			return "", nil, fmt.Errorf("failed to load first partition: %w", err)
+			return "", nil, false, fmt.Errorf("failed to load first partition: %w", err)
 		}
 		if len(partitions) == 0 {
-			return "", nil, fmt.Errorf("no partitions found")
+			return "", nil, false, fmt.Errorf("no partitions found")
 		}
 		partition := partitions[0]
 
 		// Execute the first partition (with returnErr=true because for the first partition, we do not log and skip erroring partitions)
 		res, ok, err := r.executePartition(ctx, catalog, executor, self, model, prevResult, incrementalRun, incrementalState, partition, true)
 		if err != nil {
-			return "", nil, err
+			return "", nil, false, err
 		}
 		if !ok {
 			panic("executePartition returned false despite returnErr being set to true") // Can't happen
@@ -971,6 +990,7 @@ func (r *ModelReconciler) executeAll(ctx context.Context, self *runtimev1.Resour
 		// Update the state so the next invocations will be incremental
 		prevResult = res
 		incrementalRun = true
+		totalExecDuration.Add(int64(res.ExecDuration))
 	}
 
 	// Repeatedly load a batch of pending partitions and execute it with a pool of worker goroutines.
@@ -984,7 +1004,7 @@ func (r *ModelReconciler) executeAll(ctx context.Context, self *runtimev1.Resour
 			Limit:        _modelPendingPartitionsBatchSize,
 		})
 		if err != nil {
-			return "", nil, err
+			return "", nil, false, err
 		}
 		if len(partitions) == 0 {
 			break
@@ -1030,6 +1050,7 @@ func (r *ModelReconciler) executeAll(ctx context.Context, self *runtimev1.Resour
 						return err
 					}
 					if ok {
+						totalExecDuration.Add(int64(res.ExecDuration))
 						results[workerID] = res
 					}
 				}
@@ -1039,7 +1060,7 @@ func (r *ModelReconciler) executeAll(ctx context.Context, self *runtimev1.Resour
 		// Wait for all workers to finish
 		err = grp.Wait()
 		if err != nil {
-			return "", nil, err
+			return "", nil, false, err
 		}
 
 		// Finally combine the results of each worker into the prevResult
@@ -1054,7 +1075,7 @@ func (r *ModelReconciler) executeAll(ctx context.Context, self *runtimev1.Resour
 
 			prevResult, err = executor.finalResultManager.MergePartitionResults(prevResult, r)
 			if err != nil {
-				return "", nil, fmt.Errorf("failed to merge partition task results: %w", err)
+				return "", nil, false, fmt.Errorf("failed to merge partition task results: %w", err)
 			}
 		}
 
@@ -1066,16 +1087,17 @@ func (r *ModelReconciler) executeAll(ctx context.Context, self *runtimev1.Resour
 
 	// Should not happen, could also have been a panic
 	if prevResult == nil {
-		return "", nil, fmt.Errorf("partition execution succeeded but did not produce a non-nil result")
+		return "", nil, false, fmt.Errorf("partition execution succeeded but did not produce a non-nil result")
 	}
 
-	// We have continuously updated prevResult with new partition results, so we return it here
-	return executor.finalConnector, prevResult, nil
+	// We have continuously updated prevResult with new partition results, so we complete and return it here
+	prevResult.ExecDuration = time.Duration(totalExecDuration.Load())
+	return executor.finalConnector, prevResult, firstRunIsIncremental, nil
 }
 
 // executePartition processes a drivers.ModelPartition by calling executeSingle and then updating the partition's state in the catalog.
 // The returned bool will be false if execution failed, but the error was written to the partition in the catalog instead of being returned.
-func (r *ModelReconciler) executePartition(ctx context.Context, catalog drivers.CatalogStore, executor *wrappedModelExecutor, self *runtimev1.Resource, mdl *runtimev1.ModelV2, prevResult *drivers.ModelResult, incrementalRun bool, incrementalState map[string]any, partition drivers.ModelPartition, returnErr bool) (*drivers.ModelResult, bool, error) {
+func (r *ModelReconciler) executePartition(ctx context.Context, catalog drivers.CatalogStore, executor *wrappedModelExecutor, self *runtimev1.Resource, mdl *runtimev1.Model, prevResult *drivers.ModelResult, incrementalRun bool, incrementalState map[string]any, partition drivers.ModelPartition, returnErr bool) (*drivers.ModelResult, bool, error) {
 	// Get partition data
 	data := map[string]any{}
 	err := json.Unmarshal(partition.DataJSON, &data)
@@ -1084,7 +1106,7 @@ func (r *ModelReconciler) executePartition(ctx context.Context, catalog drivers.
 	}
 
 	// Log
-	logArgs := []zap.Field{zap.String("model", self.Meta.Name.Name), zap.String("key", partition.Key)}
+	logArgs := []zap.Field{zap.String("model", self.Meta.Name.Name), zap.String("key", partition.Key), observability.ZapCtx(ctx)}
 	if len(partition.DataJSON) < 256 {
 		logArgs = append(logArgs, zap.Any("data", data))
 	}
@@ -1122,7 +1144,7 @@ func (r *ModelReconciler) executePartition(ctx context.Context, catalog drivers.
 }
 
 // executeSingle executes a single step of a model. Passing a previous result, incremental state, and/or a partition is optional.
-func (r *ModelReconciler) executeSingle(ctx context.Context, executor *wrappedModelExecutor, self *runtimev1.Resource, mdl *runtimev1.ModelV2, prevResult *drivers.ModelResult, incrementalRun bool, incrementalState, partition map[string]any) (*drivers.ModelResult, error) {
+func (r *ModelReconciler) executeSingle(ctx context.Context, executor *wrappedModelExecutor, self *runtimev1.Resource, mdl *runtimev1.Model, prevResult *drivers.ModelResult, incrementalRun bool, incrementalState, partition map[string]any) (*drivers.ModelResult, error) {
 	// Resolve templating in the input and output props
 	inputProps, err := r.resolveTemplatedProps(ctx, self, incrementalState, partition, mdl.Spec.InputConnector, mdl.Spec.InputProperties.AsMap())
 	if err != nil {
@@ -1139,6 +1161,7 @@ func (r *ModelReconciler) executeSingle(ctx context.Context, executor *wrappedMo
 	}
 
 	// Execute the stage step if configured
+	var stageDuration time.Duration
 	if executor.stage != nil {
 		// Also resolve templating in the stage props
 		stageProps, err := r.resolveTemplatedProps(ctx, self, incrementalState, partition, mdl.Spec.StageConnector, mdl.Spec.StageProperties.AsMap())
@@ -1161,6 +1184,7 @@ func (r *ModelReconciler) executeSingle(ctx context.Context, executor *wrappedMo
 		if err != nil {
 			return nil, err
 		}
+		stageDuration = stageResult.ExecDuration
 
 		// We change the inputProps to be the result properties of the stage step
 		inputProps = stageResult.Properties
@@ -1171,7 +1195,7 @@ func (r *ModelReconciler) executeSingle(ctx context.Context, executor *wrappedMo
 		defer func() {
 			err := executor.stageResultManager.Delete(ctx, stageResult)
 			if err != nil {
-				r.C.Logger.Warn("Failed to clean up staged model output", zap.String("model", self.Meta.Name.Name), zap.Error(err))
+				r.C.Logger.Warn("Failed to clean up staged model output", zap.String("model", self.Meta.Name.Name), zap.Error(err), observability.ZapCtx(ctx))
 			}
 		}()
 	}
@@ -1191,6 +1215,7 @@ func (r *ModelReconciler) executeSingle(ctx context.Context, executor *wrappedMo
 	if err != nil {
 		return nil, err
 	}
+	finalResult.ExecDuration += stageDuration
 	return finalResult, nil
 }
 
@@ -1209,7 +1234,7 @@ type wrappedModelExecutor struct {
 
 // acquireExecutor acquires the executor(s) necessary for executing the given model.
 // If the model has a stage connector, it will acquire and combine two executors: one from the input to the stage connector, and another from the stage to the output connector.
-func (r *ModelReconciler) acquireExecutor(ctx context.Context, self *runtimev1.Resource, mdl *runtimev1.ModelV2, env *drivers.ModelEnv) (*wrappedModelExecutor, func(), error) {
+func (r *ModelReconciler) acquireExecutor(ctx context.Context, self *runtimev1.Resource, mdl *runtimev1.Model, env *drivers.ModelEnv) (*wrappedModelExecutor, func(), error) {
 	// Handle the simple case where there is no stage connector
 	if mdl.Spec.StageConnector == "" {
 		opts := &drivers.ModelExecutorOptions{
@@ -1285,6 +1310,7 @@ func (r *ModelReconciler) acquireExecutor(ctx context.Context, self *runtimev1.R
 	// Acquire the final result manager
 	finalResultManager, ok := finalOpts.OutputHandle.AsModelManager(r.C.InstanceID)
 	if !ok {
+		stageRelease()
 		finalRelease()
 		return nil, nil, fmt.Errorf("output connector %q is not capable of managing model results", mdl.Spec.OutputConnector)
 	}
@@ -1321,6 +1347,7 @@ func (r *ModelReconciler) acquireExecutorInner(ctx context.Context, opts *driver
 
 		e, ok := ic.AsModelExecutor(r.C.InstanceID, opts)
 		if !ok {
+			ir()
 			return "", nil, nil, fmt.Errorf("connector %q is not capable of executing models", opts.InputConnector)
 		}
 
@@ -1409,18 +1436,18 @@ func (r *ModelReconciler) resolveTemplatedProps(ctx context.Context, self *runti
 		}
 	}
 
-	td := compilerv1.TemplateData{
+	td := parser.TemplateData{
 		Environment: inst.Environment,
 		User:        map[string]any{},
 		Variables:   inst.ResolveVariables(false),
 		State:       incrementalState,
 		ExtraProps:  extraProps,
-		Self: compilerv1.TemplateResource{
+		Self: parser.TemplateResource{
 			Meta:  self.Meta,
 			Spec:  self.GetModel().Spec,
 			State: self.GetModel().State,
 		},
-		Resolve: func(ref compilerv1.ResourceName) (string, error) {
+		Resolve: func(ref parser.ResourceName) (string, error) {
 			if dialect == drivers.DialectUnspecified {
 				return ref.Name, nil
 			}
@@ -1428,7 +1455,7 @@ func (r *ModelReconciler) resolveTemplatedProps(ctx context.Context, self *runti
 		},
 	}
 
-	val, err := compilerv1.ResolveTemplateRecursively(props, td)
+	val, err := parser.ResolveTemplateRecursively(props, td, false)
 	if err != nil {
 		return nil, fmt.Errorf("failed to resolve template: %w", err)
 	}
@@ -1439,7 +1466,7 @@ func (r *ModelReconciler) resolveTemplatedProps(ctx context.Context, self *runti
 // It returns a map of variable names referenced in the props mapped to their current value (if known).
 func (r *ModelReconciler) analyzeTemplatedVariables(ctx context.Context, props map[string]any) (map[string]string, error) {
 	res := make(map[string]string)
-	err := compilerv1.AnalyzeTemplateRecursively(props, res)
+	err := parser.AnalyzeTemplateRecursively(props, res)
 	if err != nil {
 		return nil, err
 	}

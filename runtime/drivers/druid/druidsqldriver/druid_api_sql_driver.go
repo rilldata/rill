@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"reflect"
 	"regexp"
 	"strconv"
@@ -17,7 +18,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/rilldata/rill/admin/pkg/urlutil"
-	"github.com/rilldata/rill/runtime/drivers/druid/retrier"
+	"github.com/rilldata/rill/runtime/pkg/retrier"
 )
 
 var (
@@ -50,7 +51,36 @@ type sqlConnection struct {
 	dsn    string
 }
 
-var _ driver.QueryerContext = &sqlConnection{}
+var (
+	_ driver.QueryerContext = &sqlConnection{}
+	_ driver.Pinger         = &sqlConnection{}
+)
+
+func (c *sqlConnection) Ping(ctx context.Context) error {
+	parsedURL, err := url.Parse(c.dsn)
+	if err != nil {
+		return err
+	}
+	parsedURL.Path = "/status/health"
+	healthURL := parsedURL.String()
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, healthURL, http.NoBody)
+	if err != nil {
+		return err
+	}
+
+	resp, err := c.client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("druid health check failed with status code: %d", resp.StatusCode)
+	}
+
+	return nil
+}
 
 func (c *sqlConnection) Prepare(query string) (driver.Stmt, error) {
 	return &stmt{
@@ -73,7 +103,9 @@ func (c *sqlConnection) QueryContext(ctx context.Context, query string, args []d
 		c: c,
 	})
 	return re.RunCtx(ctx, func(ctx context.Context) (driver.Rows, retrier.Action, error) {
-		dr := newDruidRequest(query, args)
+		queryCfg := queryConfigFromContext(ctx)
+
+		dr := newDruidRequest(query, args, queryCfg)
 		b, err := json.Marshal(dr)
 		if err != nil {
 			return nil, retrier.Fail, err
@@ -107,6 +139,10 @@ func (c *sqlConnection) QueryContext(ctx context.Context, query string, args []d
 		req.Header.Add("Content-Type", "application/json")
 		resp, err := c.client.Do(req)
 		if err != nil {
+			// return context error if present
+			if ctx.Err() != nil {
+				return nil, retrier.Fail, ctx.Err()
+			}
 			if strings.Contains(err.Error(), c.dsn) { // avoid returning the actual DSN with the password which will be logged
 				return nil, retrier.Fail, fmt.Errorf("%s", strings.ReplaceAll(err.Error(), c.dsn, "<masked>"))
 			}
@@ -115,7 +151,7 @@ func (c *sqlConnection) QueryContext(ctx context.Context, query string, args []d
 
 		if resp.StatusCode == http.StatusTooManyRequests {
 			resp.Body.Close()
-			return nil, retrier.Retry, fmt.Errorf("Too many requests")
+			return nil, retrier.Retry, fmt.Errorf("too many requests")
 		}
 
 		// Druid sends well-formed response for 200, 400 and 500 status codes, for others use this
@@ -362,7 +398,7 @@ var _ retrier.AdditionalTest = &coordinatorHTTPCheck{}
 // b) if the coordinator has a transient error -> not a hard-failure - the table 'A' can exist
 // c) if the coordinator returns not a transient error (ie access-denied) -> hard-failure - we shouldn't wait until the configuration is changed by someone
 func (chc *coordinatorHTTPCheck) IsHardFailure(ctx context.Context) (bool, error) {
-	dr := newDruidRequest("SELECT * FROM sys.segments LIMIT 1", nil)
+	dr := newDruidRequest("SELECT * FROM sys.segments LIMIT 1", nil, nil)
 	b, err := json.Marshal(dr)
 	if err != nil {
 		return false, err
@@ -386,7 +422,7 @@ func (chc *coordinatorHTTPCheck) IsHardFailure(ctx context.Context) (bool, error
 	case http.StatusTooManyRequests:
 		return false, nil
 	case http.StatusUnauthorized, http.StatusForbidden:
-		return true, fmt.Errorf("Unauthorized request")
+		return true, fmt.Errorf("unauthorized request")
 	}
 
 	// Druid sends well-formed response for 200, 400 and 500 status codes, for others use this
@@ -419,6 +455,8 @@ func (chc *coordinatorHTTPCheck) IsHardFailure(ctx context.Context) (bool, error
 type DruidQueryContext struct {
 	SQLQueryID                 string `json:"sqlQueryId"`
 	EnableTimeBoundaryPlanning bool   `json:"enableTimeBoundaryPlanning"`
+	UseCache                   *bool  `json:"useCache,omitempty"`
+	PopulateCache              *bool  `json:"populateCache,omitempty"`
 }
 
 type DruidParameter struct {
@@ -435,13 +473,18 @@ type DruidRequest struct {
 	Context        DruidQueryContext `json:"context"`
 }
 
-func newDruidRequest(query string, args []driver.NamedValue) *DruidRequest {
+func newDruidRequest(query string, args []driver.NamedValue, queryCfg *QueryConfig) *DruidRequest {
 	parameters := make([]DruidParameter, len(args))
 	for i, arg := range args {
 		parameters[i] = DruidParameter{
 			Type:  toType(arg.Value),
 			Value: arg.Value,
 		}
+	}
+	var useCache, populateCache *bool
+	if queryCfg != nil {
+		useCache = queryCfg.UseCache
+		populateCache = queryCfg.PopulateCache
 	}
 	return &DruidRequest{
 		Query:          query,
@@ -452,6 +495,8 @@ func newDruidRequest(query string, args []driver.NamedValue) *DruidRequest {
 		Context: DruidQueryContext{
 			SQLQueryID:                 uuid.New().String(),
 			EnableTimeBoundaryPlanning: true,
+			UseCache:                   useCache,
+			PopulateCache:              populateCache,
 		},
 	}
 }
@@ -462,6 +507,24 @@ func (s *stmt) Exec(args []driver.Value) (driver.Result, error) {
 
 func (s *stmt) Query(args []driver.Value) (driver.Rows, error) {
 	return nil, fmt.Errorf("unsupported")
+}
+
+type QueryConfig struct {
+	UseCache      *bool
+	PopulateCache *bool
+}
+
+type queryCfgCtxKey struct{}
+
+func WithQueryConfig(ctx context.Context, cfg *QueryConfig) context.Context {
+	return context.WithValue(ctx, queryCfgCtxKey{}, cfg)
+}
+
+func queryConfigFromContext(ctx context.Context) *QueryConfig {
+	if cfg, ok := ctx.Value(queryCfgCtxKey{}).(*QueryConfig); ok {
+		return cfg
+	}
+	return nil
 }
 
 func identityTransformer(v any) (any, error) {

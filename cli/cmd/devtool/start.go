@@ -28,6 +28,7 @@ import (
 )
 
 const (
+	composeFile    = "cli/cmd/devtool/data/cloud-deps.docker-compose.yml"
 	minGoVersion   = "1.23"
 	minNodeVersion = "18"
 	stateDirLocal  = "dev-project"
@@ -39,6 +40,8 @@ var (
 	logWarn = color.New(color.FgHiYellow)
 	logInfo = color.New(color.FgHiGreen)
 )
+
+var presets = []string{"cloud", "local", "e2e"}
 
 func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 	var verbose, reset, refreshDotenv bool
@@ -52,7 +55,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 			if len(args) > 0 {
 				preset = args[0]
 			} else {
-				res, err := cmdutil.SelectPrompt("Select preset", []string{"cloud", "local", "e2e"}, "cloud")
+				res, err := cmdutil.SelectPrompt("Select preset", presets, "cloud")
 				if err != nil {
 					return err
 				}
@@ -97,7 +100,7 @@ func start(ch *cmdutil.Helper, preset string, verbose, reset, refreshDotenv bool
 	case "local":
 		err = local{}.start(ctx, verbose, reset, services)
 	default:
-		err = fmt.Errorf("Unknown preset %q", preset)
+		err = fmt.Errorf("unknown preset %q", preset)
 	}
 	// If ctx.Err() != nil, we don't return the err because any graceful shutdown will cause sub-commands to return non-zero exit code errors.
 	// In these cases, ignoring the error doesn't really matter since "real" errors are probably also logged to stdout anyway.
@@ -111,7 +114,7 @@ func checkGoVersion() error {
 	v := version.Must(version.NewVersion(strings.TrimPrefix(runtime.Version(), "go")))
 	minVersion := version.Must(version.NewVersion(minGoVersion))
 	if v.LessThan(minVersion) {
-		return fmt.Errorf("Go version %s or higher is required", minGoVersion)
+		return fmt.Errorf("go version %s or higher is required", minGoVersion)
 	}
 	return nil
 }
@@ -259,13 +262,13 @@ func (s cloud) start(ctx context.Context, ch *cmdutil.Helper, verbose, reset, re
 	logInfo.Printf("State directory is %q\n", stateDirectory())
 
 	if services.deps {
-		g.Go(func() error { return s.runDeps(ctx, verbose) })
+		g.Go(func() error { return s.runDeps(ctx, verbose, preset) })
 	}
 
 	depsReadyCh := make(chan struct{})
 	g.Go(func() error {
 		if services.deps {
-			err := s.awaitPostgres(ctx)
+			err := s.awaitPostgres(ctx, preset)
 			if err != nil {
 				return err
 			}
@@ -386,12 +389,13 @@ func (s cloud) resetState(ctx context.Context) (err error) {
 
 	_ = os.RemoveAll(stateDirectory())
 
-	return newCmd(ctx, "docker", "compose", "--env-file", ".env", "-f", "cli/cmd/devtool/data/cloud-deps.docker-compose.yml", "down", "--volumes").Run()
+	// tear down all containers regardless of profile
+	return newCmd(ctx, "docker", "compose", "--env-file", ".env", "-f", composeFile, "down", "--volumes").Run()
 }
 
-func (s cloud) runDeps(ctx context.Context, verbose bool) error {
+func (s cloud) runDeps(ctx context.Context, verbose bool, profile string) error {
 	composeFile := "cli/cmd/devtool/data/cloud-deps.docker-compose.yml"
-	logInfo.Printf("Starting dependencies: docker compose --env-file .env -f %s up\n", composeFile)
+	logInfo.Printf("Starting dependencies: docker compose --env-file .env -f %s --profile %s up\n", composeFile, profile)
 	defer logInfo.Printf("Stopped dependencies\n")
 
 	err := prepareStripeConfig()
@@ -399,7 +403,7 @@ func (s cloud) runDeps(ctx context.Context, verbose bool) error {
 		return fmt.Errorf("failed to prepare stripe config: %w", err)
 	}
 
-	cmd := newCmd(ctx, "docker", "compose", "--env-file", ".env", "-f", composeFile, "up")
+	cmd := newCmd(ctx, "docker", "compose", "--env-file", ".env", "-f", composeFile, "--profile", profile, "up")
 	if verbose {
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stdout
@@ -407,8 +411,8 @@ func (s cloud) runDeps(ctx context.Context, verbose bool) error {
 	return cmd.Run()
 }
 
-func (s cloud) awaitPostgres(ctx context.Context) error {
-	logInfo.Printf("Waiting for Postgres\n")
+func (s cloud) awaitPostgres(ctx context.Context, preset string) error {
+	logInfo.Printf("Waiting for Postgres (%s)\n", preset)
 
 	dbURL := lookupDotenv("RILL_ADMIN_DATABASE_URL")
 	for {

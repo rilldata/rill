@@ -4,15 +4,18 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"strings"
 	"time"
 
 	"github.com/mitchellh/mapstructure"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
-	compilerv1 "github.com/rilldata/rill/runtime/compilers/rillv1"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/parser"
 	"github.com/rilldata/rill/runtime/pkg/duckdbsql"
 	"github.com/rilldata/rill/runtime/queries"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
@@ -32,6 +35,7 @@ type sqlResolver struct {
 type sqlProps struct {
 	Connector string `mapstructure:"connector"`
 	SQL       string `mapstructure:"sql"`
+	Limit     int64  `mapstructure:"limit"`
 }
 
 type sqlArgs struct {
@@ -47,6 +51,14 @@ func newSQL(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolve
 		return nil, err
 	}
 
+	span := trace.SpanFromContext(ctx)
+	if span.SpanContext().IsValid() {
+		span.SetAttributes(attribute.String("sql", props.SQL))
+	}
+
+	// trim semicolon
+	props.SQL = strings.TrimSuffix(strings.TrimSpace(props.SQL), ";")
+
 	args := &sqlArgs{}
 	if err := mapstructure.Decode(opts.Args, args); err != nil {
 		return nil, err
@@ -60,6 +72,11 @@ func newSQL(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolve
 	cfg, err := inst.Config()
 	if err != nil {
 		return nil, err
+	}
+
+	interactiveRowLimit := cfg.InteractiveSQLRowLimit
+	if props.Limit != 0 {
+		interactiveRowLimit = props.Limit
 	}
 
 	olap, release, err := opts.Runtime.OLAP(ctx, opts.InstanceID, props.Connector)
@@ -77,7 +94,7 @@ func newSQL(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolve
 		refs:                refs,
 		olap:                olap,
 		olapRelease:         release,
-		interactiveRowLimit: cfg.InteractiveSQLRowLimit,
+		interactiveRowLimit: interactiveRowLimit,
 		priority:            args.Priority,
 	}, nil
 }
@@ -99,7 +116,7 @@ func (r *sqlResolver) Refs() []*runtimev1.ResourceName {
 }
 
 func (r *sqlResolver) Validate(ctx context.Context) error {
-	_, err := r.olap.Execute(ctx, &drivers.Statement{
+	_, err := r.olap.Query(ctx, &drivers.Statement{
 		Query:  r.sql,
 		DryRun: true,
 	})
@@ -109,9 +126,9 @@ func (r *sqlResolver) Validate(ctx context.Context) error {
 func (r *sqlResolver) ResolveInteractive(ctx context.Context) (runtime.ResolverResult, error) {
 	// Wrap the SQL with an outer SELECT to limit the number of rows returned in interactive mode.
 	// Adding +1 to the limit so we can return a nice error message if the limit is exceeded.
-	sql := fmt.Sprintf("SELECT * FROM (%s) LIMIT %d", r.sql, r.interactiveRowLimit+1)
+	sql := fmt.Sprintf("SELECT * FROM (%s\n) LIMIT %d", r.sql, r.interactiveRowLimit+1)
 
-	res, err := r.olap.Execute(ctx, &drivers.Statement{
+	res, err := r.olap.Query(ctx, &drivers.Statement{
 		Query:    sql,
 		Priority: r.priority,
 	})
@@ -149,7 +166,7 @@ func (r *sqlResolver) ResolveExport(ctx context.Context, w io.Writer, opts *runt
 }
 
 func (r *sqlResolver) generalExport(ctx context.Context, w io.Writer, filename string, opts *runtime.ExportOptions) error {
-	res, err := r.olap.Execute(ctx, &drivers.Statement{
+	res, err := r.olap.Query(ctx, &drivers.Statement{
 		Query:    r.sql,
 		Priority: opts.Priority,
 	})
@@ -209,7 +226,7 @@ func buildSQL(sqlTemplate string, dialect drivers.Dialect, args map[string]any, 
 		return "", nil, err
 	}
 
-	// For DuckDB, we can do ref inference using the SQL AST (similar to the rillv1 compiler).
+	// For DuckDB, we can do ref inference using the SQL AST (similar to the parser).
 	if dialect == drivers.DialectDuckDB {
 		ast, err := duckdbsql.Parse(sql)
 		if err != nil {
@@ -231,7 +248,7 @@ func buildSQL(sqlTemplate string, dialect drivers.Dialect, args map[string]any, 
 
 func resolveTemplate(sqlTemplate string, args map[string]any, inst *drivers.Instance, userAttributes map[string]any, forExport bool) (string, []*runtimev1.ResourceName, error) {
 	var refs []*runtimev1.ResourceName
-	sql, err := compilerv1.ResolveTemplate(sqlTemplate, compilerv1.TemplateData{
+	sql, err := parser.ResolveTemplate(sqlTemplate, parser.TemplateData{
 		Environment: inst.Environment,
 		User:        userAttributes,
 		Variables:   inst.ResolveVariables(false),
@@ -239,23 +256,23 @@ func resolveTemplate(sqlTemplate string, args map[string]any, inst *drivers.Inst
 			"args":   args,
 			"export": forExport,
 		},
-		Resolve: func(ref compilerv1.ResourceName) (string, error) {
+		Resolve: func(ref parser.ResourceName) (string, error) {
 			// Add to the list of potential refs
-			if ref.Kind == compilerv1.ResourceKindUnspecified {
+			if ref.Kind == parser.ResourceKindUnspecified {
 				// We don't know if it's a source or model (or neither), so we add both. Refs are just approximate.
 				refs = append(refs,
 					&runtimev1.ResourceName{Kind: runtime.ResourceKindSource, Name: ref.Name},
 					&runtimev1.ResourceName{Kind: runtime.ResourceKindModel, Name: ref.Name},
 				)
 			} else {
-				refs = append(refs, runtime.ResourceNameFromCompiler(ref))
+				refs = append(refs, runtime.ResourceNameFromParser(ref))
 			}
 
 			// Return the escaped identifier
 			// TODO: As of now it is using `DialectDuckDB` in all cases since in certain cases like metrics_sql it is not possible to identify OLAP connector before template resolution.
 			return drivers.DialectDuckDB.EscapeIdentifier(ref.Name), nil
 		},
-	})
+	}, false)
 	if err != nil {
 		return "", nil, err
 	}

@@ -6,7 +6,6 @@ import {
   getNextQuarterHour,
   getTimeIn24FormatFromDateTime,
   getTimeOfDayFromCronExpression,
-  getTodaysDayOfMonth,
   getTodaysDayOfWeek,
   ReportFrequency,
 } from "@rilldata/web-common/features/scheduled-reports/time-utils";
@@ -14,68 +13,90 @@ import { getLocalIANA } from "@rilldata/web-common/lib/time/timezone";
 import {
   V1ExportFormat,
   type V1Notifier,
+  type V1Query,
   type V1ReportSpec,
 } from "@rilldata/web-common/runtime-client";
 
-export function getInitialValues(
-  reportSpec: V1ReportSpec | undefined,
-  userEmail: string | undefined,
-) {
+export type ReportValues = ReturnType<typeof getNewReportInitialFormValues>;
+
+export function getQueryNameFromQuery(query: V1Query) {
+  if (query.metricsViewAggregationRequest) {
+    return "MetricsViewAggregation";
+  } else {
+    throw new Error(
+      "Currently, only `MetricsViewAggregation` queries can be scheduled through the UI",
+    );
+  }
+}
+
+export function getQueryArgsJsonFromQuery(query: V1Query): string {
+  if (query.metricsViewAggregationRequest) {
+    return JSON.stringify(query.metricsViewAggregationRequest);
+  } else {
+    throw new Error(
+      "Currently, only `MetricsViewAggregation` queries can be scheduled through the UI",
+    );
+  }
+}
+
+export function getNewReportInitialFormValues(userEmail: string | undefined) {
   return {
-    title: reportSpec?.displayName ?? "",
-    frequency: reportSpec
-      ? getFrequencyFromCronExpression(
-          reportSpec.refreshSchedule?.cron as string,
-        )
-      : ReportFrequency.Weekly,
-    dayOfWeek: reportSpec
-      ? getDayOfWeekFromCronExpression(
-          reportSpec.refreshSchedule?.cron as string,
-        )
-      : getTodaysDayOfWeek(),
-    dayOfMonth: reportSpec
-      ? getDayOfMonthFromCronExpression(
-          reportSpec.refreshSchedule?.cron as string,
-        )
-      : getTodaysDayOfMonth(),
-    timeOfDay: reportSpec
-      ? getTimeOfDayFromCronExpression(
-          reportSpec.refreshSchedule?.cron as string,
-        )
-      : getTimeIn24FormatFromDateTime(getNextQuarterHour()),
-    timeZone: reportSpec?.refreshSchedule?.timeZone ?? getLocalIANA(),
-    exportFormat: reportSpec
-      ? (reportSpec?.exportFormat ?? V1ExportFormat.EXPORT_FORMAT_UNSPECIFIED)
-      : V1ExportFormat.EXPORT_FORMAT_CSV,
-    exportLimit: reportSpec
-      ? reportSpec.exportLimit === "0"
-        ? ""
-        : reportSpec.exportLimit
-      : "",
-    ...extractNotificationV2(reportSpec?.notifiers, userEmail, !!reportSpec),
+    title: "",
+    frequency: ReportFrequency.Weekly,
+    dayOfWeek: getTodaysDayOfWeek(),
+    dayOfMonth: 1,
+    timeOfDay: getTimeIn24FormatFromDateTime(getNextQuarterHour()),
+    timeZone: getLocalIANA(),
+    exportFormat: V1ExportFormat.EXPORT_FORMAT_CSV as V1ExportFormat,
+    exportLimit: "",
+    ...extractNotification(undefined, userEmail, false),
   };
 }
 
-export type ReportValues = ReturnType<typeof getInitialValues>;
+export function getExistingReportInitialFormValues(
+  reportSpec: V1ReportSpec,
+  userEmail: string | undefined,
+) {
+  return {
+    title: reportSpec.displayName ?? "",
+    frequency: getFrequencyFromCronExpression(
+      reportSpec.refreshSchedule?.cron as string,
+    ),
+    dayOfWeek: getDayOfWeekFromCronExpression(
+      reportSpec.refreshSchedule?.cron as string,
+    ),
+    dayOfMonth: getDayOfMonthFromCronExpression(
+      reportSpec.refreshSchedule?.cron as string,
+    ),
+    timeOfDay: getTimeOfDayFromCronExpression(
+      reportSpec.refreshSchedule?.cron as string,
+    ),
+    timeZone: reportSpec.refreshSchedule?.timeZone ?? getLocalIANA(),
+    exportFormat:
+      reportSpec?.exportFormat ?? V1ExportFormat.EXPORT_FORMAT_UNSPECIFIED,
+    exportLimit: reportSpec.exportLimit === "0" ? "" : reportSpec.exportLimit,
+    ...extractNotification(reportSpec.notifiers, userEmail, true),
+  };
+}
 
-export function getDashboardNameFromReport(
-  reportSpec: V1ReportSpec | undefined,
-): string | null {
-  if (!reportSpec?.queryArgsJson) return null;
+export function getDashboardNameFromReport(reportSpec: V1ReportSpec): string {
+  if (reportSpec.annotations?.explore) return reportSpec.annotations.explore;
+
   if (reportSpec.annotations?.web_open_path)
     return getExploreName(reportSpec.annotations.web_open_path);
 
-  const queryArgsJson = JSON.parse(reportSpec.queryArgsJson);
+  const queryArgsJson = JSON.parse(reportSpec.queryArgsJson!);
+
   return (
     queryArgsJson?.metrics_view_name ??
     queryArgsJson?.metricsViewName ??
     queryArgsJson?.metrics_view ??
     queryArgsJson?.metricsView ??
-    null
+    ""
   );
 }
 
-export function extractNotificationV2(
+function extractNotification(
   notifiers: V1Notifier[] | undefined,
   userEmail: string | undefined,
   isEdit: boolean,

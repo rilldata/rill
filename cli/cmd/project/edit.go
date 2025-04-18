@@ -11,7 +11,6 @@ import (
 func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 	var name, description, prodVersion, prodBranch, subpath, path, provisioner string
 	var public bool
-	var slots int
 	var prodTTL int64
 
 	editCmd := &cobra.Command{
@@ -20,28 +19,15 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 		Short: "Edit the project details",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
-
 			client, err := ch.Client()
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to initialize client: %w", err)
 			}
 
 			if len(args) > 0 {
 				name = args[0]
 			}
 
-			if !cmd.Flags().Changed("project") && len(args) == 0 && ch.Interactive {
-				names, err := projectNames(ctx, ch)
-				if err != nil {
-					return err
-				}
-
-				// prompt for name from user
-				name, err = cmdutil.SelectPrompt("Select project", names, "")
-				if err != nil {
-					return err
-				}
-			}
 			if name == "" {
 				return fmt.Errorf("pass project name as argument or with --project flag")
 			}
@@ -50,71 +36,44 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 				OrganizationName: ch.Org,
 				Name:             name,
 			}
-			promptFlagValues := ch.Interactive
-			if cmd.Flags().Changed("prod-slots") {
-				promptFlagValues = false
-				prodSlots := int64(slots)
-				req.ProdSlots = &prodSlots
-			}
+
+			var flagSet bool
 			if cmd.Flags().Changed("provisioner") {
-				promptFlagValues = false
+				flagSet = true
 				req.Provisioner = &provisioner
 			}
 			if cmd.Flags().Changed("description") {
-				promptFlagValues = false
+				flagSet = true
 				req.Description = &description
 			}
 			if cmd.Flags().Changed("prod-version") {
-				promptFlagValues = false
+				flagSet = true
 				req.ProdVersion = &prodVersion
 			}
 			if cmd.Flags().Changed("prod-branch") {
-				promptFlagValues = false
+				flagSet = true
 				req.ProdBranch = &prodBranch
 			}
 			if cmd.Flags().Changed("subpath") {
-				promptFlagValues = false
+				flagSet = true
 				req.Subpath = &subpath
 			}
 			if cmd.Flags().Changed("public") {
-				promptFlagValues = false
+				flagSet = true
 				req.Public = &public
 			}
-
 			if cmd.Flags().Changed("prod-ttl-seconds") {
-				promptFlagValues = false
+				flagSet = true
 				req.ProdTtlSeconds = &prodTTL
 			}
 
-			if promptFlagValues {
-				resp, err := client.GetProject(ctx, &adminv1.GetProjectRequest{OrganizationName: ch.Org, Name: name})
-				if err != nil {
-					return err
-				}
-				proj := resp.Project
-
-				description, err = cmdutil.InputPrompt("Enter the description", proj.Description)
-				if err != nil {
-					return err
-				}
-				req.Description = &description
-
-				prodBranch, err = cmdutil.InputPrompt("Enter the production branch", proj.ProdBranch)
-				if err != nil {
-					return err
-				}
-				req.ProdBranch = &prodBranch
-
-				public, err = cmdutil.ConfirmPrompt("Make project public", "", proj.Public)
-				if err != nil {
-					return err
-				}
-				req.Public = &public
+			if !flagSet {
+				return fmt.Errorf("must specify at least one update flag")
 			}
 
 			updatedProj, err := client.UpdateProject(ctx, req)
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to update project: %w", err)
 			}
 
 			ch.PrintfSuccess("Updated project\n")
@@ -132,14 +91,8 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 	editCmd.Flags().StringVar(&path, "path", ".", "Project directory")
 	editCmd.Flags().StringVar(&subpath, "subpath", "", "Relative path to project in the repository (for monorepos)")
 	editCmd.Flags().StringVar(&provisioner, "provisioner", "", "Project provisioner (default: current provisioner)")
-	editCmd.Flags().Int64Var(&prodTTL, "prod-ttl-seconds", 0, "Prod deployment TTL in seconds")
-	editCmd.Flags().StringVar(&prodVersion, "prod-version", "", "Rill version (default: current version)")
-	editCmd.Flags().IntVar(&slots, "prod-slots", 0, "Slots to allocate for production deployments (default: current slots)")
-	if !ch.IsDev() {
-		if err := editCmd.Flags().MarkHidden("prod-slots"); err != nil {
-			panic(err)
-		}
-	}
+	editCmd.Flags().Int64Var(&prodTTL, "prod-ttl-seconds", 0, "Time-to-live in seconds for production deployment (0 means no expiration)")
+	editCmd.Flags().StringVar(&prodVersion, "prod-version", "", "Specify the Rill version for production deployment (default: current version)")
 
 	return editCmd
 }

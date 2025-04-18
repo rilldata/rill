@@ -144,8 +144,6 @@
     td.setAttribute("__col", String(x));
     td.setAttribute("__row", String(y));
 
-    if (value) td.setAttribute("title", value.toString());
-
     const maybeWidth = getColumnWidth(x);
     if (maybeWidth) {
       td.style.width = `${maybeWidth}px`;
@@ -160,6 +158,7 @@
     } else if (value === undefined) {
       td.innerHTML = LOADING_CELL;
     } else if (typeof value === "number") {
+      td.setAttribute("title", value);
       td.innerHTML = formatter(value) ?? "";
     }
 

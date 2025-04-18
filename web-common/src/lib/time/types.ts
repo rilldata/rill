@@ -108,7 +108,7 @@ export interface TimeRangeMeta {
   rillSyntax?: string;
   defaultGrain?: V1TimeGrain; // Affordance for future use
   rangePreset?: RangePresetType | string;
-  defaultComparison?: TimeComparisonOption | string;
+  defaultComparison?: TimeComparisonOption;
   start?: string | RelativePointInTime;
   end?: string | RelativePointInTime;
 }
@@ -121,6 +121,7 @@ export enum TimeRangePreset {
   LAST_7_DAYS = "P7D",
   LAST_14_DAYS = "P14D",
   LAST_4_WEEKS = "P4W",
+  LAST_3_MONTHS = "P3M",
   LAST_12_MONTHS = "P12M",
   TODAY = "rill-TD",
   WEEK_TO_DATE = "rill-WTD",

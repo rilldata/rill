@@ -6,8 +6,11 @@ TableCells – the cell contents.
 <script lang="ts">
   import ColumnHeaders from "@rilldata/web-common/components/virtualized-table/sections/ColumnHeaders.svelte";
   import TableCells from "@rilldata/web-common/components/virtualized-table/sections/TableCells.svelte";
+  import type { VirtualizedTableColumns } from "@rilldata/web-common/components/virtualized-table/types";
+  import { selectedDimensionValuesV2 } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
   import { createVirtualizer } from "@tanstack/svelte-virtual";
   import { createEventDispatcher, setContext } from "svelte";
+  import { getStateManagers } from "../state-managers/state-managers";
   import type { DimensionTableRow } from "./dimension-table-types";
   import {
     estimateColumnCharacterWidths,
@@ -17,14 +20,11 @@ TableCells – the cell contents.
   import { DIMENSION_TABLE_CONFIG as config } from "./DimensionTableConfig";
   import DimensionValueHeader from "./DimensionValueHeader.svelte";
 
-  import { getStateManagers } from "../state-managers/state-managers";
-  import type { VirtualizedTableColumns } from "@rilldata/web-common/components/virtualized-table/types";
-
   const dispatch = createEventDispatcher();
 
   export let rows: DimensionTableRow[];
   export let columns: VirtualizedTableColumns[];
-  export let selectedValues: string[];
+  export let selectedValues: ReturnType<typeof selectedDimensionValuesV2>;
   export let dimensionName: string;
   export let isFetching: boolean;
 
@@ -34,7 +34,7 @@ TableCells – the cell contents.
       comparison: { toggleComparisonDimension },
     },
     selectors: {
-      sorting: { sortMeasure },
+      sorting: { sortByMeasure },
       dimensionFilters: { isFilterExcludeMode },
       comparison: { isBeingCompared: isBeingComparedReadable },
     },
@@ -59,9 +59,10 @@ TableCells – the cell contents.
   const CHARACTER_LIMIT_FOR_WRAPPING = 9;
   const FILTER_COLUMN_WIDTH = config.indexWidth;
 
-  $: selectedIndex = selectedValues.map((label) => {
-    return rows.findIndex((row) => row[dimensionName] === label);
-  });
+  $: selectedIndex =
+    $selectedValues.data?.map((label) => {
+      return rows.findIndex((row) => row[dimensionName] === label);
+    }) ?? [];
 
   let rowScrollOffset = 0;
   $: rowScrollOffset = $rowVirtualizer?.scrollOffset || 0;
@@ -160,20 +161,20 @@ TableCells – the cell contents.
 
   function onSelectItem(event) {
     // store previous scroll position before re-render
-    rowScrollOffset = $rowVirtualizer.scrollOffset;
-    colScrollOffset = $columnVirtualizer.scrollOffset;
+    rowScrollOffset = $rowVirtualizer?.scrollOffset ?? 0;
+    colScrollOffset = $columnVirtualizer?.scrollOffset ?? 0;
     dispatch("select-item", event.detail);
   }
 
   async function handleColumnHeaderClick(event) {
-    colScrollOffset = $columnVirtualizer.scrollOffset;
+    colScrollOffset = $columnVirtualizer?.scrollOffset ?? 0;
     const columnName = event.detail;
-    dimensionTable.handleMeasureColumnHeaderClick(columnName);
+    dimensionTable.handleDimensionMeasureColumnHeaderClick(columnName);
   }
 
   async function handleResizeDimensionColumn(event) {
-    rowScrollOffset = $rowVirtualizer.scrollOffset;
-    colScrollOffset = $columnVirtualizer.scrollOffset;
+    rowScrollOffset = $rowVirtualizer?.scrollOffset ?? 0;
+    colScrollOffset = $columnVirtualizer?.scrollOffset ?? 0;
 
     const { size } = event.detail;
     manualDimensionColumnWidth = Math.max(config.minColumnWidth, size);
@@ -202,7 +203,7 @@ TableCells – the cell contents.
       scrolling = true;
     }}
   >
-    {#if rowVirtualizer}
+    {#if $rowVirtualizer}
       <div
         role="grid"
         tabindex="0"
@@ -217,7 +218,7 @@ TableCells – the cell contents.
         <ColumnHeaders
           virtualColumnItems={virtualColumns}
           noPin={true}
-          selectedColumn={$sortMeasure}
+          sortByMeasure={$sortByMeasure}
           columns={measureColumns}
           on:click-column={handleColumnHeaderClick}
         />
@@ -266,7 +267,7 @@ TableCells – the cell contents.
             on:inspect={setActiveIndex}
             cellLabel="Filter dimension value"
           />
-        {:else if isFetching}
+        {:else if isFetching || $selectedValues.isFetching}
           <div class="flex text-gray-500 justify-center mt-[30vh]">
             Loading...
           </div>

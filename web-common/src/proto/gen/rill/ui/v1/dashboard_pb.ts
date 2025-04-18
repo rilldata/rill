@@ -37,6 +37,13 @@ export class DashboardState extends Message<DashboardState> {
   where?: Expression;
 
   /**
+   * Temporary to differentiate between "select" and "in list" modes. Expression will be replaced with UI specific state in the future.
+   *
+   * @generated from field: repeated string dimensions_with_inlist_filter = 37;
+   */
+  dimensionsWithInlistFilter: string[] = [];
+
+  /**
    * Expression format for measure filters
    *
    * @generated from field: repeated rill.ui.v1.DashboardDimensionFilter having = 21;
@@ -133,6 +140,23 @@ export class DashboardState extends Message<DashboardState> {
   leaderboardSortType?: DashboardState_LeaderboardSortType;
 
   /**
+   * Deprecated
+   *
+   * @generated from field: optional uint32 leaderboard_measure_count = 38;
+   */
+  leaderboardMeasureCount?: number;
+
+  /**
+   * @generated from field: repeated string leaderboard_measures = 39;
+   */
+  leaderboardMeasures: string[] = [];
+
+  /**
+   * @generated from field: optional bool leaderboard_show_context_for_all_measures = 40;
+   */
+  leaderboardShowContextForAllMeasures?: boolean;
+
+  /**
    * @generated from field: optional string comparison_dimension = 17;
    */
   comparisonDimension?: string;
@@ -157,14 +181,6 @@ export class DashboardState extends Message<DashboardState> {
    * @generated from field: optional string chart_type = 33;
    */
   chartType?: string;
-
-  /**
-   * *
-   * Pivot related fields
-   *
-   * @generated from field: optional bool pivot_is_active = 22;
-   */
-  pivotIsActive?: boolean;
 
   /**
    *
@@ -219,9 +235,9 @@ export class DashboardState extends Message<DashboardState> {
   pivotColumnPage?: number;
 
   /**
-   * @generated from field: optional rill.ui.v1.DashboardState.PivotRowJoinType pivot_row_join_type = 31;
+   * @generated from field: optional rill.ui.v1.DashboardState.PivotTableMode pivot_table_mode = 31;
    */
-  pivotRowJoinType?: DashboardState_PivotRowJoinType;
+  pivotTableMode?: DashboardState_PivotTableMode;
 
   /**
    * Enable comparison for pivot
@@ -255,6 +271,7 @@ export class DashboardState extends Message<DashboardState> {
     { no: 1, name: "time_range", kind: "message", T: DashboardTimeRange },
     { no: 2, name: "filters", kind: "message", T: MetricsViewFilter },
     { no: 20, name: "where", kind: "message", T: Expression },
+    { no: 37, name: "dimensions_with_inlist_filter", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 21, name: "having", kind: "message", T: DashboardDimensionFilter, repeated: true },
     { no: 3, name: "time_grain", kind: "enum", T: proto3.getEnumType(TimeGrain) },
     { no: 4, name: "compare_time_range", kind: "message", T: DashboardTimeRange },
@@ -271,11 +288,13 @@ export class DashboardState extends Message<DashboardState> {
     { no: 14, name: "scrub_range", kind: "message", T: DashboardTimeRange, opt: true },
     { no: 15, name: "leaderboard_sort_direction", kind: "enum", T: proto3.getEnumType(DashboardState_LeaderboardSortDirection), opt: true },
     { no: 16, name: "leaderboard_sort_type", kind: "enum", T: proto3.getEnumType(DashboardState_LeaderboardSortType), opt: true },
+    { no: 38, name: "leaderboard_measure_count", kind: "scalar", T: 13 /* ScalarType.UINT32 */, opt: true },
+    { no: 39, name: "leaderboard_measures", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 40, name: "leaderboard_show_context_for_all_measures", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
     { no: 17, name: "comparison_dimension", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 18, name: "expanded_measure", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 19, name: "pin_index", kind: "scalar", T: 5 /* ScalarType.INT32 */, opt: true },
     { no: 33, name: "chart_type", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
-    { no: 22, name: "pivot_is_active", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
     { no: 23, name: "pivot_row_time_dimensions", kind: "enum", T: proto3.getEnumType(TimeGrain), repeated: true },
     { no: 24, name: "pivot_row_dimensions", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 25, name: "pivot_column_time_dimensions", kind: "enum", T: proto3.getEnumType(TimeGrain), repeated: true },
@@ -284,7 +303,7 @@ export class DashboardState extends Message<DashboardState> {
     { no: 28, name: "pivot_expanded", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 8 /* ScalarType.BOOL */} },
     { no: 29, name: "pivot_sort", kind: "message", T: PivotColumnSort, repeated: true },
     { no: 30, name: "pivot_column_page", kind: "scalar", T: 5 /* ScalarType.INT32 */, opt: true },
-    { no: 31, name: "pivot_row_join_type", kind: "enum", T: proto3.getEnumType(DashboardState_PivotRowJoinType), opt: true },
+    { no: 31, name: "pivot_table_mode", kind: "enum", T: proto3.getEnumType(DashboardState_PivotTableMode), opt: true },
     { no: 34, name: "pivot_enable_comparison", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
     { no: 35, name: "pivot_row_all_dimensions", kind: "message", T: PivotElement, repeated: true },
     { no: 36, name: "pivot_column_all_dimensions", kind: "message", T: PivotElement, repeated: true },
@@ -438,29 +457,29 @@ proto3.util.setEnumType(DashboardState_LeaderboardSortType, "rill.ui.v1.Dashboar
 ]);
 
 /**
- * @generated from enum rill.ui.v1.DashboardState.PivotRowJoinType
+ * @generated from enum rill.ui.v1.DashboardState.PivotTableMode
  */
-export enum DashboardState_PivotRowJoinType {
+export enum DashboardState_PivotTableMode {
   /**
-   * @generated from enum value: PIVOT_ROW_JOIN_TYPE_UNSPECIFIED = 0;
+   * @generated from enum value: PIVOT_TABLE_MODE_UNSPECIFIED = 0;
    */
   UNSPECIFIED = 0,
 
   /**
-   * @generated from enum value: PIVOT_ROW_JOIN_TYPE_FLAT = 1;
+   * @generated from enum value: PIVOT_TABLE_MODE_FLAT = 1;
    */
   FLAT = 1,
 
   /**
-   * @generated from enum value: PIVOT_ROW_JOIN_TYPE_NEST = 2;
+   * @generated from enum value: PIVOT_TABLE_MODE_NEST = 2;
    */
   NEST = 2,
 }
-// Retrieve enum metadata with: proto3.getEnumType(DashboardState_PivotRowJoinType)
-proto3.util.setEnumType(DashboardState_PivotRowJoinType, "rill.ui.v1.DashboardState.PivotRowJoinType", [
-  { no: 0, name: "PIVOT_ROW_JOIN_TYPE_UNSPECIFIED" },
-  { no: 1, name: "PIVOT_ROW_JOIN_TYPE_FLAT" },
-  { no: 2, name: "PIVOT_ROW_JOIN_TYPE_NEST" },
+// Retrieve enum metadata with: proto3.getEnumType(DashboardState_PivotTableMode)
+proto3.util.setEnumType(DashboardState_PivotTableMode, "rill.ui.v1.DashboardState.PivotTableMode", [
+  { no: 0, name: "PIVOT_TABLE_MODE_UNSPECIFIED" },
+  { no: 1, name: "PIVOT_TABLE_MODE_FLAT" },
+  { no: 2, name: "PIVOT_TABLE_MODE_NEST" },
 ]);
 
 /**

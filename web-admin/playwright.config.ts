@@ -18,36 +18,18 @@ const config: PlaywrightTestConfig = {
   },
   testDir: "tests",
   projects: [
-    ...(process.env.CI
-      ? [] // skip in CI
-      : [
-          {
-            // Whenever the GitHub session expires, run this project manually to re-authenticate.
-            // This process captures the browser’s current storage state (i.e. cookies and local storage)
-            // and updates the `RILL_DEVTOOL_E2E_GITHUB_STORAGE_STATE_JSON` environment variable.
-            // Afterwards, manually deploy the updated `.env` file to GCS.
-            name: "setup-github-session",
-            testMatch: "github-session-setup.ts",
-          },
-        ]),
     {
       name: "setup",
       testMatch: "setup.ts",
-      ...(process.env.E2E_NO_TEARDOWN || process.env.CI
-        ? undefined
-        : { teardown: "teardown" }),
+      ...(process.env.E2E_NO_TEARDOWN ? undefined : { teardown: "teardown" }),
     },
-    ...(process.env.CI
-      ? [] // skip in CI, since the GitHub Action uses an ephemeral runner
-      : [
-          {
-            name: "teardown",
-            testMatch: "teardown.ts",
-            use: {
-              storageState: ADMIN_STORAGE_STATE,
-            },
-          },
-        ]),
+    {
+      name: "teardown",
+      testMatch: "teardown.ts",
+      use: {
+        storageState: ADMIN_STORAGE_STATE,
+      },
+    },
     {
       name: "e2e",
       dependencies: process.env.E2E_NO_SETUP_OR_TEARDOWN ? [] : ["setup"],

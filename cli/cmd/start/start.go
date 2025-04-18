@@ -65,6 +65,20 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 					return err
 				}
 
+				if currentDir == homeDir {
+					confirm, err := cmdutil.ConfirmPrompt(
+						"You are trying to start Rill in your home directory, which is not recommended. Are you sure you want to continue?",
+						"", false,
+					)
+					if err != nil {
+						return err
+					}
+					if !confirm {
+						ch.PrintfWarn("Aborted\n")
+						return nil
+					}
+				}
+
 				displayPath := currentDir
 				defval := true
 				if currentDir == homeDir {

@@ -3,63 +3,37 @@ package pinot
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"regexp"
 	"strings"
 
+	"github.com/c2h5oh/datasize"
 	"github.com/jmoiron/sqlx"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
 )
 
 var _ drivers.OLAPStore = &connection{}
 
-// AddTableColumn implements drivers.OLAPStore.
-func (c *connection) AddTableColumn(ctx context.Context, tableName, columnName, typ string) error {
-	return fmt.Errorf("pinot: data transformation not yet supported")
-}
-
-// AlterTableColumn implements drivers.OLAPStore.
-func (c *connection) AlterTableColumn(ctx context.Context, tableName, columnName, newType string) error {
-	return fmt.Errorf("pinot: data transformation not yet supported")
-}
-
-// CreateTableAsSelect implements drivers.OLAPStore.
-func (c *connection) CreateTableAsSelect(ctx context.Context, name, sql string, opts *drivers.CreateTableOptions) error {
-	return fmt.Errorf("pinot: data transformation not yet supported")
-}
-
-// DropTable implements drivers.OLAPStore.
-func (c *connection) DropTable(ctx context.Context, name string) error {
-	return fmt.Errorf("pinot: data transformation not yet supported")
-}
-
-// InsertTableAsSelect implements drivers.OLAPStore.
-func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, opts *drivers.InsertTableOptions) error {
-	return fmt.Errorf("pinot: data transformation not yet supported")
-}
-
-// RenameTable implements drivers.OLAPStore.
-func (c *connection) RenameTable(ctx context.Context, name, newName string) error {
-	return fmt.Errorf("pinot: data transformation not yet supported")
-}
-
 func (c *connection) Dialect() drivers.Dialect {
 	return drivers.DialectPinot
 }
 
-func (c *connection) WithConnection(ctx context.Context, priority int, longRunning bool, fn drivers.WithConnectionFunc) error {
+func (c *connection) MayBeScaledToZero(ctx context.Context) bool {
+	return false
+}
+
+func (c *connection) WithConnection(ctx context.Context, priority int, fn drivers.WithConnectionFunc) error {
 	return fmt.Errorf("pinot: WithConnection not supported")
 }
 
 func (c *connection) Exec(ctx context.Context, stmt *drivers.Statement) error {
-	if c.logQueries {
-		c.logger.Info("pinot query", zap.String("sql", stmt.Query), zap.Any("args", stmt.Args))
-	}
-	res, err := c.Execute(ctx, stmt)
+	res, err := c.Query(ctx, stmt)
 	if err != nil {
 		return err
 	}
@@ -69,9 +43,9 @@ func (c *connection) Exec(ctx context.Context, stmt *drivers.Statement) error {
 	return res.Close()
 }
 
-func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (*drivers.Result, error) {
+func (c *connection) Query(ctx context.Context, stmt *drivers.Statement) (*drivers.Result, error) {
 	if c.logQueries {
-		c.logger.Info("pinot query", zap.String("sql", stmt.Query), zap.Any("args", stmt.Args))
+		c.logger.Info("pinot query", zap.String("sql", stmt.Query), zap.Any("args", stmt.Args), observability.ZapCtx(ctx))
 	}
 	if stmt.DryRun {
 		rows, err := c.db.QueryxContext(ctx, "EXPLAIN PLAN FOR "+stmt.Query, stmt.Args...)
@@ -113,10 +87,6 @@ func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (*dri
 	})
 
 	return r, nil
-}
-
-func (c *connection) MayBeScaledToZero(ctx context.Context) bool {
-	return false
 }
 
 type informationSchema struct {
@@ -162,7 +132,7 @@ func (i informationSchema) All(ctx context.Context, like string) ([]*drivers.Tab
 	tables := make([]*drivers.Table, 0, len(tablesResp.Tables))
 	// fetch table schemas in parallel with concurrency of 5
 	g, ctx := errgroup.WithContext(ctx)
-	sem := make(chan struct{}, 5)
+	g.SetLimit(5)
 	for _, tableName := range tablesResp.Tables {
 		if likeRegexp != nil && !likeRegexp.MatchString(tableName) {
 			continue
@@ -170,9 +140,6 @@ func (i informationSchema) All(ctx context.Context, like string) ([]*drivers.Tab
 
 		tableName := tableName
 		g.Go(func() error {
-			sem <- struct{}{}
-			defer func() { <-sem }()
-
 			table, err := i.Lookup(ctx, "", "", tableName)
 			if err != nil {
 				fmt.Printf("Error fetching schema for table %s: %v\n", tableName, err)
@@ -246,15 +213,77 @@ func (i informationSchema) Lookup(ctx context.Context, db, schema, name string) 
 	}
 
 	table := &drivers.Table{
-		Database:        "",
-		DatabaseSchema:  "",
-		Name:            name,
-		View:            false,
-		Schema:          &runtimev1.StructType{Fields: schemaFields},
-		UnsupportedCols: unsupportedCols,
+		Database:          "",
+		DatabaseSchema:    "",
+		Name:              name,
+		View:              false,
+		Schema:            &runtimev1.StructType{Fields: schemaFields},
+		UnsupportedCols:   unsupportedCols,
+		PhysicalSizeBytes: -1,
 	}
 
 	return table, nil
+}
+
+// LoadPhysicalSize populates the PhysicalSizeBytes field of the tables.
+// This was not tested when implemented so should be tested when pinot becomes a fairly used connector.
+func (i informationSchema) LoadPhysicalSize(ctx context.Context, tables []*drivers.Table) error {
+	if len(tables) == 0 {
+		return nil
+	}
+	wg, ctx := errgroup.WithContext(ctx)
+	wg.SetLimit(5)
+	for _, table := range tables {
+		table := table
+		wg.Go(func() error {
+			req, _ := http.NewRequestWithContext(ctx, http.MethodGet, i.c.schemaURL+"/debug/tables/"+table.Name+"?type=OFFLINE", http.NoBody)
+			for k, v := range i.c.headers {
+				req.Header.Set(k, v)
+			}
+
+			resp, err := http.DefaultClient.Do(req)
+			if err != nil {
+				if errors.Is(err, context.Canceled) {
+					return err
+				}
+				i.c.logger.Warn("failed to fetch table size", zap.String("table", table.Name), zap.Error(err), observability.ZapCtx(ctx))
+				return nil
+			}
+			defer resp.Body.Close()
+
+			if resp.StatusCode != http.StatusOK {
+				i.c.logger.Warn("unexpected status code", zap.String("table", table.Name), zap.Int("status", resp.StatusCode), observability.ZapCtx(ctx))
+				return nil
+			}
+
+			var data []struct {
+				TableSize struct {
+					ReportedSize string `json:"reportedSize"`
+				} `json:"tableSize"`
+			}
+
+			if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
+				i.c.logger.Warn("failed to decode response", zap.String("table", table.Name), zap.Error(err), observability.ZapCtx(ctx))
+				return nil
+			}
+
+			var size int64
+			for _, d := range data {
+				if d.TableSize.ReportedSize != "" && d.TableSize.ReportedSize != "-1" {
+					// Reported size is in bytes
+					sz, err := datasize.ParseString(d.TableSize.ReportedSize)
+					if err != nil {
+						i.c.logger.Warn("failed to parse reported size", zap.String("table", table.Name), zap.String("size", d.TableSize.ReportedSize), zap.Error(err), observability.ZapCtx(ctx))
+						return nil
+					}
+					size += int64(sz.Bytes())
+				}
+			}
+			table.PhysicalSizeBytes = size
+			return nil
+		})
+	}
+	return wg.Wait()
 }
 
 func rowsToSchema(r *sqlx.Rows) (*runtimev1.StructType, error) {

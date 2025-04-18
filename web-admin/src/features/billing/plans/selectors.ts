@@ -1,4 +1,4 @@
-import { createQuery } from "@rilldata/svelte-query";
+import { createQuery } from "@tanstack/svelte-query";
 import {
   adminServiceGetPaymentsPortalURL,
   adminServiceListPublicBillingPlans,
@@ -21,7 +21,7 @@ export async function fetchTeamPlan() {
     queryFn: () => adminServiceListPublicBillingPlans(),
   });
 
-  return plansResp.plans?.find(isTeamPlan);
+  return plansResp.plans?.find((p) => isTeamPlan(p.name ?? ""));
 }
 
 /**
@@ -42,7 +42,7 @@ export async function fetchPaymentsPortalURL(
       }),
     // always refetch since the signed url will expire
     // TODO: figure out expiry time and use that instead
-    cacheTime: 0,
+    gcTime: 0,
     staleTime: 0,
   });
 
@@ -106,13 +106,15 @@ export function getUsageMetrics(
   instanceId: string,
   accessToken: string,
 ) {
-  return createQuery({
-    queryKey: [
-      `/v1/instances/${instanceId}/api/usage-meter`,
-      runtimeHost,
-      accessToken,
-    ],
-    queryFn: () => usageMetrics(runtimeHost, instanceId, accessToken),
+  return createQuery(
+    {
+      queryKey: [
+        `/v1/instances/${instanceId}/api/usage-meter`,
+        runtimeHost,
+        accessToken,
+      ],
+      queryFn: () => usageMetrics(runtimeHost, instanceId, accessToken),
+    },
     queryClient,
-  });
+  );
 }

@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/jmoiron/sqlx"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -12,10 +13,10 @@ import (
 )
 
 type informationSchema struct {
-	c *connection
+	c *Connection
 }
 
-func (c *connection) InformationSchema() drivers.InformationSchema {
+func (c *Connection) InformationSchema() drivers.InformationSchema {
 	return informationSchema{c: c}
 }
 
@@ -47,7 +48,8 @@ func (i informationSchema) All(ctx context.Context, like string) ([]*drivers.Tab
 			C.position AS ORDINAL_POSITION
 		FROM system.tables T
 		JOIN system.columns C ON T.database = C.database AND T.name = C.table
-		WHERE lower(T.database) NOT IN ('information_schema', 'system')
+		-- allow fetching tables from system or information_schema if it is current database
+		WHERE (T.database == currentDatabase() OR lower(T.database) NOT IN ('information_schema', 'system'))
 		%s
 		ORDER BY SCHEMA, NAME, TABLE_TYPE, ORDINAL_POSITION
 	`, likeClause)
@@ -62,7 +64,6 @@ func (i informationSchema) All(ctx context.Context, like string) ([]*drivers.Tab
 	if err != nil {
 		return nil, err
 	}
-
 	return tables, nil
 }
 
@@ -113,6 +114,74 @@ func (i informationSchema) Lookup(ctx context.Context, db, schema, name string) 
 	return tables[0], nil
 }
 
+func (i informationSchema) LoadPhysicalSize(ctx context.Context, tables []*drivers.Table) error {
+	if len(tables) == 0 {
+		return nil
+	}
+	conn, release, err := i.c.acquireMetaConn(ctx)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = release() }()
+
+	var queryBuilder strings.Builder
+	queryBuilder.WriteString(`
+		SELECT 
+			database, 
+			table, 
+			SUM(bytes_on_disk) AS total_size_bytes
+		FROM system.parts
+		WHERE active = 1 AND (database, table) IN (
+	`)
+	args := make([]interface{}, 0, len(tables)*2)
+	placeholders := make([]string, 0, len(tables))
+
+	for _, table := range tables {
+		placeholders = append(placeholders, "(?, ?)")
+		args = append(args, table.DatabaseSchema, table.Name)
+	}
+
+	queryBuilder.WriteString(strings.Join(placeholders, ", "))
+	queryBuilder.WriteString(") GROUP BY database, table")
+
+	rows, err := conn.QueryxContext(ctx, queryBuilder.String(), args...)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+
+	res := make(map[string]map[string]uint64, 0)
+	var (
+		name, schema string
+		size         uint64
+	)
+	for rows.Next() {
+		if err := rows.Scan(&schema, &name, &size); err != nil {
+			return err
+		}
+		schemaTables, ok := res[schema]
+		if !ok {
+			schemaTables = make(map[string]uint64)
+			res[schema] = schemaTables
+		}
+		schemaTables[name] = size
+	}
+	if err := rows.Err(); err != nil {
+		return err
+	}
+
+	for _, t := range tables {
+		schemaTables, ok := res[t.DatabaseSchema]
+		if !ok {
+			continue
+		}
+		if size, ok := schemaTables[t.Name]; ok {
+			t.PhysicalSizeBytes = int64(size)
+		}
+	}
+	return err
+}
+
 func (i informationSchema) scanTables(rows *sqlx.Rows) ([]*drivers.Table, error) {
 	var res []*drivers.Table
 
@@ -145,6 +214,9 @@ func (i informationSchema) scanTables(rows *sqlx.Rows) ([]*drivers.Table, error)
 				Name:                    name,
 				View:                    tableType == "VIEW",
 				Schema:                  &runtimev1.StructType{},
+			}
+			if !t.View {
+				t.PhysicalSizeBytes = -1
 			}
 			res = append(res, t)
 		}

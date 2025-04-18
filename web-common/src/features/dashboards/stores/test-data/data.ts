@@ -18,9 +18,10 @@ import {
 } from "@rilldata/web-common/lib/time/types";
 import { DashboardState_ActivePage } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import {
-  type MetricsViewSpecDimensionV2,
-  type MetricsViewSpecMeasureV2,
+  type MetricsViewSpecDimension,
+  type MetricsViewSpecMeasure,
   TypeCode,
+  V1ExploreComparisonMode,
   type V1ExplorePreset,
   V1ExploreSortType,
   type V1ExploreSpec,
@@ -32,6 +33,7 @@ import {
 } from "@rilldata/web-common/runtime-client";
 
 export const AD_BIDS_NAME = "AdBids";
+export const AD_BIDS_METRICS_NAME = AD_BIDS_NAME + "_metrics";
 export const AD_BIDS_EXPLORE_NAME = AD_BIDS_NAME + "_explore";
 export const AD_BIDS_SOURCE_NAME = "AdBids_Source";
 export const AD_BIDS_MIRROR_NAME = "AdBids_mirror";
@@ -48,7 +50,7 @@ export const AD_BIDS_COUNTRY_DIMENSION = "country";
 export const AD_BIDS_PUBLISHER_IS_NULL_DOMAIN = "publisher_is_null";
 export const AD_BIDS_TIMESTAMP_DIMENSION = "timestamp";
 
-export const AD_BIDS_INIT_MEASURES: MetricsViewSpecMeasureV2[] = [
+export const AD_BIDS_INIT_MEASURES: MetricsViewSpecMeasure[] = [
   {
     name: AD_BIDS_IMPRESSIONS_MEASURE,
     expression: "count(*)",
@@ -58,7 +60,7 @@ export const AD_BIDS_INIT_MEASURES: MetricsViewSpecMeasureV2[] = [
     expression: "avg(bid_price)",
   },
 ];
-export const AD_BIDS_THREE_MEASURES: MetricsViewSpecMeasureV2[] = [
+export const AD_BIDS_THREE_MEASURES: MetricsViewSpecMeasure[] = [
   {
     name: AD_BIDS_IMPRESSIONS_MEASURE,
     expression: "count(*)",
@@ -72,7 +74,7 @@ export const AD_BIDS_THREE_MEASURES: MetricsViewSpecMeasureV2[] = [
     expression: "count_distinct(publisher)",
   },
 ];
-export const AD_BIDS_ADVANCED_MEASURES: MetricsViewSpecMeasureV2[] = [
+export const AD_BIDS_ADVANCED_MEASURES: MetricsViewSpecMeasure[] = [
   {
     name: AD_BIDS_IMPRESSIONS_MEASURE,
     expression: "count(*)",
@@ -102,7 +104,7 @@ export const AD_BIDS_ADVANCED_MEASURES: MetricsViewSpecMeasureV2[] = [
     },
   },
 ];
-export const AD_BIDS_INIT_DIMENSIONS: MetricsViewSpecDimensionV2[] = [
+export const AD_BIDS_INIT_DIMENSIONS: MetricsViewSpecDimension[] = [
   {
     name: AD_BIDS_PUBLISHER_DIMENSION,
   },
@@ -110,7 +112,7 @@ export const AD_BIDS_INIT_DIMENSIONS: MetricsViewSpecDimensionV2[] = [
     name: AD_BIDS_DOMAIN_DIMENSION,
   },
 ];
-export const AD_BIDS_THREE_DIMENSIONS: MetricsViewSpecDimensionV2[] = [
+export const AD_BIDS_THREE_DIMENSIONS: MetricsViewSpecDimension[] = [
   {
     name: AD_BIDS_PUBLISHER_DIMENSION,
   },
@@ -138,8 +140,8 @@ export const TestTimeOffsetConstants = {
   LAST_DAY: getOffsetByHour(TestTimeConstants.LAST_DAY),
 };
 export const AD_BIDS_DEFAULT_TIME_RANGE = {
-  name: TimeRangePreset.ALL_TIME,
-  interval: V1TimeGrain.TIME_GRAIN_HOUR,
+  name: TimeRangePreset.QUARTER_TO_DATE,
+  interval: V1TimeGrain.TIME_GRAIN_WEEK,
   start: TestTimeConstants.LAST_DAY,
   end: new Date(TestTimeConstants.NOW.getTime() + 1),
 };
@@ -147,6 +149,7 @@ export const AD_BIDS_DEFAULT_URL_TIME_RANGE = {
   name: TimeRangePreset.ALL_TIME,
   interval: V1TimeGrain.TIME_GRAIN_HOUR,
 };
+
 export const AD_BIDS_TIME_RANGE_SUMMARY: V1MetricsViewTimeRangeResponse = {
   timeRangeSummary: {
     min: TestTimeConstants.LAST_DAY.toISOString(),
@@ -194,10 +197,15 @@ export const AD_BIDS_METRICS_3_MEASURES_DIMENSIONS: V1MetricsViewSpec = {
   dimensions: AD_BIDS_THREE_DIMENSIONS,
   timeDimension: AD_BIDS_TIMESTAMP_DIMENSION,
 };
+export const AD_BIDS_METRICS_3_MEASURES_DIMENSIONS_WITH_TIME: V1MetricsViewSpec =
+  {
+    ...AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
+    timeDimension: AD_BIDS_TIMESTAMP_DIMENSION,
+  };
 
 export const AD_BIDS_EXPLORE_INIT: V1ExploreSpec = {
   displayName: AD_BIDS_EXPLORE_NAME,
-  metricsView: AD_BIDS_NAME,
+  metricsView: AD_BIDS_METRICS_NAME,
   measures: AD_BIDS_INIT_MEASURES.map((m) => m.name!),
   dimensions: AD_BIDS_INIT_DIMENSIONS.map((d) => d.name!),
 };
@@ -234,11 +242,25 @@ export const AD_BIDS_EXPLORE_WITH_BOOL_DIMENSION: V1ExploreSpec = {
     AD_BIDS_PUBLISHER_IS_NULL_DOMAIN,
   ],
 };
+export const AD_BIDS_EXPLORE_WITH_3_MEASURES_DIMENSIONS: V1ExploreSpec = {
+  displayName: AD_BIDS_EXPLORE_NAME,
+  metricsView: AD_BIDS_METRICS_NAME,
+  measures: AD_BIDS_THREE_MEASURES.map((m) => m.name!),
+  dimensions: AD_BIDS_THREE_DIMENSIONS.map((d) => d.name!),
+};
 
 export const AD_BIDS_PRESET: V1ExplorePreset = {
   timeRange: "P7D",
   timezone: "Asia/Kathmandu",
   compareTimeRange: "rill-PP",
+  comparisonMode: V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_TIME,
+  measures: [AD_BIDS_IMPRESSIONS_MEASURE],
+  dimensions: [AD_BIDS_PUBLISHER_DIMENSION],
+  exploreSortBy: AD_BIDS_IMPRESSIONS_MEASURE,
+  exploreSortAsc: true,
+  exploreSortType: V1ExploreSortType.EXPLORE_SORT_TYPE_PERCENT,
+};
+export const AD_BIDS_PRESET_WITHOUT_TIMESTAMP: V1ExplorePreset = {
   measures: [AD_BIDS_IMPRESSIONS_MEASURE],
   dimensions: [AD_BIDS_PUBLISHER_DIMENSION],
   exploreSortBy: AD_BIDS_IMPRESSIONS_MEASURE,
@@ -258,11 +280,13 @@ export const AD_BIDS_PIVOT_PRESET: V1ExplorePreset = {
   pivotRows: ["publisher", "time.hour"],
   pivotCols: ["domain", "time.day", "impressions"],
   pivotSortBy: "time.day",
+  pivotTableMode: "nest",
   pivotSortAsc: true,
 };
 
 export const AD_BIDS_BASE_PRESET = getDefaultExplorePreset(
   AD_BIDS_EXPLORE_INIT,
+  AD_BIDS_METRICS_INIT,
   undefined,
 );
 
@@ -332,8 +356,8 @@ export const AD_BIDS_CLEARED_FILTER = createAndExpression([
 
 // parsed time controls won't have start & end
 export const ALL_TIME_PARSED_TEST_CONTROLS = {
-  name: TimeRangePreset.ALL_TIME,
-  interval: V1TimeGrain.TIME_GRAIN_HOUR,
+  name: TimeRangePreset.QUARTER_TO_DATE,
+  interval: V1TimeGrain.TIME_GRAIN_WEEK,
 } as DashboardTimeControls;
 
 export const LAST_6_HOURS_TEST_CONTROLS = {
@@ -359,48 +383,42 @@ export const CUSTOM_TEST_CONTROLS = {
 export const AD_BIDS_PIVOT_ENTITY: Partial<MetricsExplorerEntity> = {
   activePage: DashboardState_ActivePage.PIVOT,
   pivot: {
-    active: true,
-    rows: {
-      dimension: [
-        {
-          id: AD_BIDS_PUBLISHER_DIMENSION,
-          type: PivotChipType.Dimension,
-          title: AD_BIDS_PUBLISHER_DIMENSION,
-        },
-        {
-          id: V1TimeGrain.TIME_GRAIN_HOUR,
-          type: PivotChipType.Time,
-          title: "hour",
-        },
-      ],
-    },
-    columns: {
-      measure: [
-        {
-          id: AD_BIDS_IMPRESSIONS_MEASURE,
-          type: PivotChipType.Measure,
-          title: AD_BIDS_IMPRESSIONS_MEASURE,
-        },
-      ],
-      dimension: [
-        {
-          id: AD_BIDS_DOMAIN_DIMENSION,
-          type: PivotChipType.Dimension,
-          title: AD_BIDS_DOMAIN_DIMENSION,
-        },
-        {
-          id: V1TimeGrain.TIME_GRAIN_DAY,
-          type: PivotChipType.Time,
-          title: "day",
-        },
-      ],
-    },
+    rows: [
+      {
+        id: AD_BIDS_PUBLISHER_DIMENSION,
+        type: PivotChipType.Dimension,
+        title: AD_BIDS_PUBLISHER_DIMENSION,
+      },
+      {
+        id: V1TimeGrain.TIME_GRAIN_HOUR,
+        type: PivotChipType.Time,
+        title: "hour",
+      },
+    ],
+
+    columns: [
+      {
+        id: AD_BIDS_DOMAIN_DIMENSION,
+        type: PivotChipType.Dimension,
+        title: AD_BIDS_DOMAIN_DIMENSION,
+      },
+      {
+        id: V1TimeGrain.TIME_GRAIN_DAY,
+        type: PivotChipType.Time,
+        title: "day",
+      },
+      {
+        id: AD_BIDS_IMPRESSIONS_MEASURE,
+        type: PivotChipType.Measure,
+        title: AD_BIDS_IMPRESSIONS_MEASURE,
+      },
+    ],
     expanded: {},
     sorting: [],
     columnPage: 1,
     rowPage: 1,
     enableComparison: true,
     activeCell: null,
-    rowJoinType: "nest",
+    tableMode: "nest",
   },
 };

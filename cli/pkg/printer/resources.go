@@ -1,13 +1,16 @@
 package printer
 
 import (
+	"encoding/csv"
 	"encoding/json"
+	"fmt"
 	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
 	"unicode/utf8"
 
+	"github.com/lensesio/tableprinter"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/metricsview"
@@ -118,34 +121,65 @@ type user struct {
 	Email string `header:"email" json:"email"`
 }
 
-func (p *Printer) PrintMemberUsers(members []*adminv1.MemberUser) {
+func (p *Printer) PrintOrganizationMemberUsers(members []*adminv1.OrganizationMemberUser) {
 	if len(members) == 0 {
 		p.PrintfWarn("No members found\n")
 		return
 	}
 
-	p.PrintData(toMemberTable(members))
-}
-
-func toMemberTable(members []*adminv1.MemberUser) []*memberUser {
-	allMembers := make([]*memberUser, 0, len(members))
-
+	allMembers := make([]*memberUserWithRole, 0, len(members))
 	for _, m := range members {
-		allMembers = append(allMembers, toMemberRow(m))
+		allMembers = append(allMembers, &memberUserWithRole{
+			Email:    m.UserEmail,
+			Name:     m.UserName,
+			RoleName: m.RoleName,
+		})
 	}
 
-	return allMembers
+	p.PrintData(allMembers)
 }
 
-func toMemberRow(m *adminv1.MemberUser) *memberUser {
-	return &memberUser{
-		Email:    m.UserEmail,
-		Name:     m.UserName,
-		RoleName: m.RoleName,
+func (p *Printer) PrintProjectMemberUsers(members []*adminv1.ProjectMemberUser) {
+	if len(members) == 0 {
+		p.PrintfWarn("No members found\n")
+		return
 	}
+
+	allMembers := make([]*memberUserWithRole, 0, len(members))
+	for _, m := range members {
+		allMembers = append(allMembers, &memberUserWithRole{
+			Email:    m.UserEmail,
+			Name:     m.UserName,
+			RoleName: m.RoleName,
+		})
+	}
+
+	p.PrintData(allMembers)
+}
+
+func (p *Printer) PrintUsergroupMemberUsers(members []*adminv1.UsergroupMemberUser) {
+	if len(members) == 0 {
+		p.PrintfWarn("No members found\n")
+		return
+	}
+
+	allMembers := make([]*memberUser, 0, len(members))
+	for _, m := range members {
+		allMembers = append(allMembers, &memberUser{
+			Email: m.UserEmail,
+			Name:  m.UserName,
+		})
+	}
+
+	p.PrintData(allMembers)
 }
 
 type memberUser struct {
+	Email string `header:"email" json:"email"`
+	Name  string `header:"name" json:"display_name"`
+}
+
+type memberUserWithRole struct {
 	Email    string `header:"email" json:"email"`
 	Name     string `header:"name" json:"display_name"`
 	RoleName string `header:"role" json:"role_name"`
@@ -276,7 +310,6 @@ func toMagicAuthTokenRow(t *adminv1.MagicAuthToken) *magicAuthToken {
 
 	row := &magicAuthToken{
 		ID:        t.Id,
-		Resource:  t.ResourceName,
 		Filter:    filter,
 		CreatedBy: t.CreatedByUserEmail,
 		CreatedOn: t.CreatedOn.AsTime().Local().Format(time.DateTime),
@@ -427,37 +460,6 @@ type memberUsergroup struct {
 	UpdatedOn string `header:"updated_on,timestamp(ms|utc|human)" json:"updated_at"`
 }
 
-func (p *Printer) PrintUsergroupMembers(members []*adminv1.MemberUser) {
-	if len(members) == 0 {
-		p.PrintfWarn("No members found\n")
-		return
-	}
-
-	p.PrintData(toUsergroupMembersTable(members))
-}
-
-func toUsergroupMembersTable(members []*adminv1.MemberUser) []*usergroupMember {
-	allMembers := make([]*usergroupMember, 0, len(members))
-
-	for _, m := range members {
-		allMembers = append(allMembers, toUsergroupMemberRow(m))
-	}
-
-	return allMembers
-}
-
-func toUsergroupMemberRow(m *adminv1.MemberUser) *usergroupMember {
-	return &usergroupMember{
-		Name:  m.UserName,
-		Email: m.UserEmail,
-	}
-}
-
-type usergroupMember struct {
-	Name  string `header:"name" json:"name"`
-	Email string `header:"email" json:"email"`
-}
-
 func (p *Printer) PrintModelPartitions(partitions []*runtimev1.ModelPartition) {
 	if len(partitions) == 0 {
 		p.PrintfWarn("No partitions found\n")
@@ -539,4 +541,73 @@ type billingIssue struct {
 	Level        string `header:"level" json:"level"`
 	Metadata     string `header:"metadata" json:"metadata"`
 	EventTime    string `header:"event_time,timestamp(ms|utc|human)" json:"event_time"`
+}
+
+// PrintQueryResponse prints the query response in the desired format (human, json, csv)
+func (p *Printer) PrintQueryResponse(res *runtimev1.QueryResolverResponse) {
+	if len(res.Data) == 0 {
+		p.PrintfWarn("No data found\n")
+		return
+	}
+
+	switch p.Format {
+	// Interceptor for human format
+	case FormatHuman:
+		headers := extractQueryHeaders(res.Schema)
+		rows := make([][]string, len(res.Data))
+
+		for i, row := range res.Data {
+			rows[i] = make([]string, len(headers))
+			for j, field := range headers {
+				if val, ok := row.GetFields()[field]; ok {
+					rows[i][j] = fmt.Sprintf("%v", val.AsInterface())
+				} else {
+					rows[i][j] = "null"
+				}
+			}
+		}
+
+		tableprinter.New(p.dataOut()).Render(headers, rows, nil, false)
+		return
+
+	// Interceptor for CSV format
+	case FormatCSV:
+		headers := extractQueryHeaders(res.Schema)
+		w := csv.NewWriter(p.dataOut())
+
+		if err := w.Write(headers); err != nil {
+			panic(fmt.Errorf("failed to write CSV headers: %w", err))
+		}
+
+		for _, row := range res.Data {
+			record := make([]string, len(headers))
+			for i, field := range headers {
+				if val, ok := row.GetFields()[field]; ok {
+					record[i] = fmt.Sprintf("%v", val.AsInterface())
+				} else {
+					record[i] = ""
+				}
+			}
+			if err := w.Write(record); err != nil {
+				panic(fmt.Errorf("failed to write CSV row: %w", err))
+			}
+		}
+
+		w.Flush()
+		if err := w.Error(); err != nil {
+			panic(fmt.Errorf("failed to flush CSV writer: %w", err))
+		}
+
+		return
+	default:
+		p.PrintData(res.Data)
+	}
+}
+
+func extractQueryHeaders(schema *runtimev1.StructType) []string {
+	headers := make([]string, len(schema.Fields))
+	for i, field := range schema.Fields {
+		headers[i] = field.Name
+	}
+	return headers
 }
