@@ -54,7 +54,6 @@
     );
 
     height = `h-[${BaseHeight + (correctedLines - 1) * HeightPerLine}px]`;
-    console.log(lines, correctedLines, height);
   }
 
   $: if (multiline && typeof value === "string") updateHeight(value);
