@@ -31,7 +31,7 @@
   </AlertDialogTrigger>
   <AlertDialogContent>
     <AlertDialogHeader>
-      <AlertDialogTitle>Upgrade user role?</AlertDialogTitle>
+      <AlertDialogTitle>Upgrade guest to {newRole}?</AlertDialogTitle>
       <AlertDialogDescription>
         <div class="mt-1">
           Upgrading a guest to {newRole} will grant this user access to all open
