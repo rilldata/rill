@@ -184,3 +184,75 @@ func AddTimeProto(to time.Time, tg runtimev1.TimeGrain, count int) time.Time {
 
 	return to
 }
+
+func OffsetTime(tm time.Time, tg TimeGrain, n int) time.Time {
+	switch tg {
+	case TimeGrainUnspecified:
+		return tm
+	case TimeGrainMillisecond:
+		return tm.Add(time.Duration(n) * time.Millisecond)
+	case TimeGrainSecond:
+		return tm.Add(time.Duration(n) * time.Second)
+	case TimeGrainMinute:
+		return tm.Add(time.Duration(n) * time.Minute)
+	case TimeGrainHour:
+		return tm.Add(time.Duration(n) * time.Hour)
+	case TimeGrainDay:
+		return tm.AddDate(0, 0, n)
+	case TimeGrainWeek:
+		return tm.AddDate(0, 0, n*7)
+	case TimeGrainMonth:
+		return tm.AddDate(0, n, 0)
+	case TimeGrainQuarter:
+		return tm.AddDate(0, n*3, 0)
+	case TimeGrainYear:
+		return tm.AddDate(n, 0, 0)
+	}
+
+	return tm
+}
+
+// CopyTimeComponentsUntil Copies components of `src` into `tar` starting from year and going down all the way to `until` (inclusive).
+func CopyTimeComponentsUntil(src, tar time.Time, until TimeGrain) time.Time {
+	tz := src.Location()
+	if tar.Location() != tz {
+		tar = tar.In(tz)
+	}
+
+	year := tar.Year()
+	month := tar.Month()
+	day := tar.Day()
+	hour := tar.Hour()
+	minute := tar.Minute()
+	second := tar.Second()
+
+	g := TimeGrainYear
+	for g >= until {
+		switch g {
+		case TimeGrainUnspecified:
+		case TimeGrainMillisecond:
+		case TimeGrainSecond:
+			second = src.Second()
+		case TimeGrainMinute:
+			minute = src.Minute()
+		case TimeGrainHour:
+			hour = src.Hour()
+		case TimeGrainDay:
+			day = src.Day()
+		case TimeGrainWeek:
+			toWeekday := tar.Weekday()
+			if toWeekday == 0 {
+				toWeekday = 7
+			}
+			day = src.Day() - int(src.Weekday()-toWeekday)
+		case TimeGrainMonth, TimeGrainQuarter:
+			month = src.Month()
+		case TimeGrainYear:
+			year = src.Year()
+		}
+
+		g--
+	}
+
+	return time.Date(year, month, day, hour, minute, second, 0, tz)
+}

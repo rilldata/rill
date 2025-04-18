@@ -196,7 +196,7 @@
 >
   <TDDHeader
     {areAllTableRowsSelected}
-    {comparing}
+    comparing={comparisonCopy}
     {expandedMeasureName}
     {dimensionName}
     isFetching={!$timeDimensionDataStore?.data?.columnHeaderData}
