@@ -18,6 +18,7 @@
   $: ({ editorContent, updateEditorContent, saveLocalContent, path } =
     fileArtifact);
 
+  $: console.log("selectedComponent", $selectedComponent, components);
   $: parsedDocument = parseDocument($editorContent ?? "");
   $: component = components.get($selectedComponent ?? "");
 
@@ -57,10 +58,12 @@
   }
 </script>
 
-<Inspector minWidth={320} filePath={path}>
-  {#if component}
-    <ComponentsEditor {component} />
-  {:else}
-    <PageEditor {canvasName} {fileArtifact} {updateProperties} />
-  {/if}
-</Inspector>
+{#key component && $selectedComponent}
+  <Inspector minWidth={320} filePath={path}>
+    {#if component}
+      <ComponentsEditor {component} />
+    {:else}
+      <PageEditor {canvasName} {fileArtifact} {updateProperties} />
+    {/if}
+  </Inspector>
+{/key}

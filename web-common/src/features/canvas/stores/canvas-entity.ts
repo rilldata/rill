@@ -17,22 +17,22 @@ import {
   type Readable,
   type Unsubscriber,
 } from "svelte/store";
-import { Filters } from "./filters";
-import { CanvasResolvedSpec } from "./spec";
-import { TimeControls } from "./time-control";
+import { parseDocument } from "yaml";
+import type { FileArtifact } from "../../entity-management/file-artifact";
+import { fileArtifacts } from "../../entity-management/file-artifacts";
+import { ResourceKind } from "../../entity-management/resource-selectors";
 import type { BaseCanvasComponent } from "../components/BaseCanvasComponent";
+import type { CanvasComponentType, ComponentSpec } from "../components/types";
 import {
   COMPONENT_CLASS_MAP,
   createComponent,
   isChartComponentType,
   isTableComponentType,
 } from "../components/util";
-import type { FileArtifact } from "../../entity-management/file-artifact";
-import { parseDocument } from "yaml";
-import { fileArtifacts } from "../../entity-management/file-artifacts";
-import type { CanvasComponentType } from "../components/types";
-import { ResourceKind } from "../../entity-management/resource-selectors";
+import { Filters } from "./filters";
 import { Grid } from "./grid";
+import { CanvasResolvedSpec } from "./spec";
+import { TimeControls } from "./time-control";
 
 export class CanvasEntity {
   name: string;
@@ -190,6 +190,7 @@ export class CanvasEntity {
           existingClass.update(newResource, path);
         } else {
           createdNewComponent = true;
+          console.log("createdNewComponent", componentName, newType);
           this.components.set(
             componentName,
             createComponent(newResource, this, path),
@@ -210,6 +211,8 @@ export class CanvasEntity {
     // Calling this function triggers the rows to rerender, ensuring they're up to date
     // with the components Map, which is not reactive
     if ((!didUpdateRowCount && createdNewComponent) || this.firstLoad) {
+      console.log("refreshing rows");
+      this.selectedComponent.update((v) => v);
       this._rows.refresh();
     }
     this.firstLoad = false;
@@ -225,13 +228,16 @@ export class CanvasEntity {
     column: number;
     metricsViewName: string;
     metricsViewSpec: V1MetricsViewSpec | undefined;
+    spec?: ComponentSpec;
   }): V1Resource => {
     const { type, row, column, metricsViewName, metricsViewSpec } = options;
 
-    const spec = COMPONENT_CLASS_MAP[type].newComponentSpec(
-      metricsViewName,
-      metricsViewSpec,
-    );
+    const spec =
+      options.spec ??
+      COMPONENT_CLASS_MAP[type].newComponentSpec(
+        metricsViewName,
+        metricsViewSpec,
+      );
 
     return {
       meta: {
@@ -286,9 +292,28 @@ function areSameType(
   newType: CanvasComponentType,
   existingType: CanvasComponentType,
 ) {
-  return (
-    newType === existingType ||
-    (isTableComponentType(existingType) && isTableComponentType(newType)) ||
-    (isChartComponentType(existingType) && isChartComponentType(newType))
-  );
+  if (newType === existingType) return true;
+
+  // For chart types, check if they use the same component class
+  if (isChartComponentType(existingType) && isChartComponentType(newType)) {
+    const cartesian = [
+      "bar_chart",
+      "line_chart",
+      "area_chart",
+      "stacked_bar",
+      "stacked_bar_normalized",
+    ];
+
+    if (cartesian.includes(existingType) && cartesian.includes(newType)) {
+      return true;
+    }
+
+    return false;
+
+    // const newComponent = CHART_CONFIG[newType].component;
+    // const existingComponent = CHART_CONFIG[existingType].component;
+    // return newComponent.name === existingComponent.name;
+  }
+
+  return isTableComponentType(existingType) && isTableComponentType(newType);
 }

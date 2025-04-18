@@ -2,6 +2,7 @@ import { BaseCanvasComponent } from "@rilldata/web-common/features/canvas/compon
 import { CHART_CONFIG } from "@rilldata/web-common/features/canvas/components/charts";
 import {
   commonOptions,
+  createComponent,
   getFilterOptions,
 } from "@rilldata/web-common/features/canvas/components/util";
 import type {
@@ -62,6 +63,7 @@ export abstract class BaseChart<
   }
 
   inputParams(): InputParams<TConfig> {
+    console.log("inputParams", this.type, this.getChartSpecificOptions());
     return {
       options: {
         metrics_view: { type: "metrics", label: "Metrics view" },
@@ -122,18 +124,33 @@ export abstract class BaseChart<
       ...commonProps,
     };
 
-    this.chartType.set(key);
+    const newResource = this.parent.createOptimisticResource({
+      type: key,
+      row: this.pathInYAML[1],
+      column: this.pathInYAML[3],
+      metricsViewName: currentSpec.metrics_view,
+      metricsViewSpec,
+      spec: mergedSpec,
+    });
 
-    // this.parent._rows.refresh();
+    const newComponent = createComponent(
+      newResource,
+      this.parent,
+      this.pathInYAML,
+    );
+
+    this.parent.components.set(newComponent.id, newComponent);
+    this.parent.selectedComponent.set(newComponent.id);
+    this.parent._rows.refresh();
 
     // Preserve the width from the current chart
     const width = parsedDocument.getIn([...parentPath, "width"]);
 
-    // Update the chart type and spec
-    this.chartType.set(key);
     parsedDocument.setIn(parentPath, { [key]: mergedSpec, width });
 
     updateEditorContent(parsedDocument.toString(), false, true);
+
+    this.chartType.set(key);
   }
 
   private extractCommonProperties(
