@@ -1,4 +1,4 @@
-import { stripDefaultUrlParams } from "@rilldata/web-common/features/dashboards/url-state/url-params-strip-utils";
+import { stripDefaultOrEmptyUrlParams } from "@rilldata/web-common/features/dashboards/url-state/url-params-strip-utils";
 import { describe, it, expect } from "vitest";
 
 const TestCases: {
@@ -63,7 +63,7 @@ describe("url-params-strip-utils", () => {
       const defaultParams = new URLSearchParams(defaultSearch);
       const params = new URLSearchParams(search);
 
-      const stripedParams = stripDefaultUrlParams(params, defaultParams);
+      const stripedParams = stripDefaultOrEmptyUrlParams(params, defaultParams);
       expect(stripedParams.toString()).toEqual(expectedStrippedSearch);
     });
   }
