@@ -141,7 +141,7 @@
         $orgInvitesInfiniteQuery.error}
     </div>
   {:else if $orgMemberUsersInfiniteQuery.isSuccess && $orgInvitesInfiniteQuery.isSuccess}
-    <div class="flex flex-col gap-4">
+    <div class="flex flex-col">
       <div class="flex flex-row gap-x-4">
         <Search
           placeholder="Search"
@@ -160,13 +160,22 @@
           <span>Add users</span>
         </Button>
       </div>
-      <OrgUsersTable
-        data={filteredUsers}
-        usersQuery={$orgMemberUsersInfiniteQuery}
-        invitesQuery={$orgInvitesInfiniteQuery}
-        currentUserEmail={$currentUser.data?.user.email}
-        {currentUserRole}
-      />
+      <div class="mt-6">
+        <OrgUsersTable
+          data={filteredUsers}
+          usersQuery={$orgMemberUsersInfiniteQuery}
+          invitesQuery={$orgInvitesInfiniteQuery}
+          currentUserEmail={$currentUser.data?.user.email}
+          {currentUserRole}
+        />
+      </div>
+      <div class="px-2 py-3">
+        <span class="font-medium text-sm text-gray-500">
+          {filteredUsers.length} total user{filteredUsers.length === 1
+            ? ""
+            : "s"}
+        </span>
+      </div>
     </div>
   {/if}
 </div>
