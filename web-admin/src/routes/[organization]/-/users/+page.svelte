@@ -169,13 +169,15 @@
           {currentUserRole}
         />
       </div>
-      <div class="px-2 py-3">
-        <span class="font-medium text-sm text-gray-500">
-          {filteredUsers.length} total user{filteredUsers.length === 1
-            ? ""
-            : "s"}
-        </span>
-      </div>
+      {#if filteredUsers.length > 0}
+        <div class="px-2 py-3">
+          <span class="font-medium text-sm text-gray-500">
+            {filteredUsers.length} total user{filteredUsers.length === 1
+              ? ""
+              : "s"}
+          </span>
+        </div>
+      {/if}
     </div>
   {/if}
 </div>
