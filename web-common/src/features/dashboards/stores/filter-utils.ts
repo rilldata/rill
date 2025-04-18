@@ -369,7 +369,7 @@ export function isExpressionIncomplete(expression: V1Expression): boolean {
   return false;
 }
 
-export function isJoinerExpression(expression: V1Expression | undefined) {
+export function isAndOrExpression(expression: V1Expression | undefined) {
   return (
     expression?.cond?.op &&
     (expression.cond.op === V1Operation.OPERATION_AND ||
@@ -377,12 +377,12 @@ export function isJoinerExpression(expression: V1Expression | undefined) {
   );
 }
 
-export function unwrapRedundantJoinerExpression(
+export function unwrapRedundantAndOrExpression(
   expression: V1Expression | undefined,
 ) {
   if (
     !expression ||
-    !isJoinerExpression(expression) ||
+    !isAndOrExpression(expression) ||
     (expression.cond?.exprs?.length && expression.cond.exprs.length > 1)
   )
     return expression;
@@ -409,15 +409,25 @@ export function isExpressionUnsupported(expression: V1Expression) {
 
     const subqueryExpr = expr.cond?.exprs?.[1];
     if (
-      subqueryExpr?.subquery?.having?.cond?.exprs?.length &&
-      isJoinerExpression(subqueryExpr.subquery.having) &&
-      !isBetweenExpression(subqueryExpr.subquery.having)
+      subqueryExpr?.subquery &&
+      isSubqueryExpressionUnsupported(subqueryExpr.subquery)
     ) {
       return true;
     }
   }
 
   return false;
+}
+
+export function isSubqueryExpressionUnsupported(subquery: V1Subquery) {
+  // While all the types support multiple measure filters per dimension our UI doesn't allow this right now.
+  // So unwrap while trying to validate a measure filter.
+  const unwrappedHavingFilter = unwrapRedundantAndOrExpression(subquery.having);
+  return (
+    unwrappedHavingFilter &&
+    isAndOrExpression(unwrappedHavingFilter) &&
+    !isBetweenExpression(unwrappedHavingFilter)
+  );
 }
 
 export function buildValidMetricsViewFilter(
@@ -452,6 +462,6 @@ export function buildValidMetricsViewFilter(
 }
 
 export function wrapNonJoinerExpression(expr: V1Expression): V1Expression {
-  if (isJoinerExpression(expr)) return expr;
+  if (isAndOrExpression(expr)) return expr;
   return createAndExpression([expr]);
 }
