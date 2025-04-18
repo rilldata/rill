@@ -7,6 +7,7 @@ import {
 import {
   createBetweenExpression,
   createBinaryExpression,
+  isBetweenExpression,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import {
   type V1Expression,
@@ -51,6 +52,8 @@ export function mapExprToMeasureFilter(
   switch (expr.cond?.op) {
     case V1Operation.OPERATION_OR:
     case V1Operation.OPERATION_AND:
+      if (!isBetweenExpression(expr)) return undefined;
+
       // handle between and not-between
       field = expr.cond.exprs?.[0].cond?.exprs?.[0].ident ?? "";
       value1 = (expr.cond.exprs?.[0].cond?.exprs?.[1].val as number) ?? 0;
@@ -80,6 +83,9 @@ export function mapExprToMeasureFilter(
         ProtoToMeasureFilterOperations[expr.cond?.op] ??
         MeasureFilterOperation.GreaterThan;
       break;
+
+    default:
+      return undefined;
   }
 
   switch (true) {
