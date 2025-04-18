@@ -135,13 +135,21 @@
   $: measureGradients =
     leaderboardMeasureNames.length === 1
       ? `linear-gradient(to right, ${barColor} ${Math.max(0, totalBarLength - dimensionColumnWidth)}px, transparent ${Math.max(0, totalBarLength - dimensionColumnWidth)}px)`
+      : undefined;
+
+  $: measureGradientMap =
+    leaderboardMeasureNames.length === 1
+      ? undefined
       : Object.fromEntries(
-          Object.entries(measureCellBarLengths).map(([name, length]) => [
-            name,
-            length
-              ? `linear-gradient(to right, transparent 16px, ${barColor} 16px, ${barColor} ${length + 16}px, transparent ${length + 16}px)`
-              : undefined,
-          ]),
+          leaderboardMeasureNames.map((name) => {
+            const length = measureCellBarLengths[name];
+            return [
+              name,
+              length
+                ? `linear-gradient(to right, transparent 16px, ${barColor} 16px, ${barColor} ${length + 16}px, transparent ${length + 16}px)`
+                : undefined,
+            ];
+          }),
         );
 
   $: showTooltip = hovered && !suppressTooltip;
@@ -226,7 +234,9 @@
       on:click={modified({
         shift: () => shiftClickHandler(values[measureName]?.toString() || ""),
       })}
-      style:background={measureGradients}
+      style:background={leaderboardMeasureNames.length === 1
+        ? measureGradients
+        : measureGradientMap?.[measureName]}
     >
       <div class="w-fit ml-auto bg-transparent" bind:contentRect={valueRect}>
         <FormattedDataType
