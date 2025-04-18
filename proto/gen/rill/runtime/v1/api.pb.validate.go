@@ -8488,9 +8488,9 @@ func (m *CreateTriggerRequest) validate(all bool) error {
 
 	// no validation rules for Parser
 
-	// no validation rules for AllSourcesModels
+	// no validation rules for All
 
-	// no validation rules for AllSourcesModelsFull
+	// no validation rules for AllFull
 
 	if len(errors) > 0 {
 		return CreateTriggerRequestMultiError(errors)
