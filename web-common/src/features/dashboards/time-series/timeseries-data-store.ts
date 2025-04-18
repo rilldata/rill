@@ -4,8 +4,8 @@ import type { StateManagers } from "@rilldata/web-common/features/dashboards/sta
 import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import {
-  createTotalsForMeasure,
-  createUnfilteredTotalsForMeasure,
+  createTotalsForMeasures,
+  createUnfilteredTotalsForMeasures,
 } from "@rilldata/web-common/features/dashboards/time-series/totals-data-store";
 import { prepareTimeSeries } from "@rilldata/web-common/features/dashboards/time-series/utils";
 import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
@@ -169,7 +169,7 @@ export function createTimeSeriesDataStore(
 
       const primaryTotals =
         measuresForTotals.length > 0
-          ? createTotalsForMeasure(ctx, measuresForTotals, false)
+          ? createTotalsForMeasures(ctx, measuresForTotals, false)
           : writable({
               isFetching: false,
               isError: false,
@@ -182,7 +182,7 @@ export function createTimeSeriesDataStore(
         | Writable<null> = writable(null);
 
       if (dashboardStore?.selectedComparisonDimension) {
-        unfilteredTotals = createUnfilteredTotalsForMeasure(
+        unfilteredTotals = createUnfilteredTotalsForMeasures(
           ctx,
           measures,
           dashboardStore?.selectedComparisonDimension,
@@ -200,7 +200,7 @@ export function createTimeSeriesDataStore(
           measuresForTimeSeries,
           true,
         );
-        comparisonTotals = createTotalsForMeasure(ctx, measures, true);
+        comparisonTotals = createTotalsForMeasures(ctx, measures, true);
       }
 
       let dimensionTimeSeriesCharts:
