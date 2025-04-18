@@ -32,31 +32,27 @@
     }
   }
 
+  /**
+   * We cant do a bind on svelte:element. We get `'value' is not a valid binding on <svelte:element> elements` error.
+   * So we need this to still keep `<svelte:element this={multiline ? "textarea" : "input"} ...`
+   */
+  function handleInput(event) {
+    value = event.target?.value;
+    if (multiline) {
+      updateTextAreaHeight();
+    }
+  }
+
+  function updateTextAreaHeight() {
+    ref.style.height = "auto"; // Reset height
+    ref.style.height = ref.scrollHeight + "px"; // Set to scroll height
+  }
+
   onMount(() => {
     if (!retainValueOnMount) value = "";
     // Keep ref optional here. If component is unmounted before this animation frame runs, ref will be null and throw a TypeError
     if (autofocus) window.requestAnimationFrame(() => ref?.focus());
   });
-
-  const BaseHeight = 28;
-  const HeightPerLine = 16;
-  const MaxLines = 5;
-
-  // For tailwind compiler: h-[28px] h-[44px] h-[60px] h-[76px] h-[92px]
-  let height = "h-[28px]";
-  function updateHeight(value: string) {
-    const lines = value.split("\n").length;
-    const correctedLines = Math.max(
-      // Show minimum of 1 line
-      1,
-      // We expand the input only till MaxLines
-      Math.min(lines, MaxLines),
-    );
-
-    height = `h-[${BaseHeight + (correctedLines - 1) * HeightPerLine}px]`;
-  }
-
-  $: if (multiline && typeof value === "string") updateHeight(value);
 </script>
 
 <form
@@ -73,46 +69,37 @@
   >
     <Search size={large ? "18px" : "16px"} />
   </button>
-  {#if multiline}
-    <textarea
-      bind:this={ref}
-      autocomplete="off"
-      class:focus={showBorderOnFocus}
-      class:bg-slate-50={background}
-      class:border
-      class:border-gray-200={border}
-      class="outline-none rounded-[2px] block w-full pl-8 p-1 {forcedInputStyle} {height} resize-none"
-      class:h-full={large}
-      {disabled}
-      {placeholder}
-      bind:value
-      on:input
-      on:keydown={handleKeyDown}
-      aria-label={label}
-    />
-  {:else}
-    <input
-      bind:this={ref}
-      type="text"
-      autocomplete="off"
-      class:focus={showBorderOnFocus}
-      class:bg-slate-50={background}
-      class:border
-      class:border-gray-200={border}
-      class="outline-none rounded-[2px] block w-full pl-8 p-1 {forcedInputStyle}"
-      class:h-full={large}
-      {disabled}
-      {placeholder}
-      bind:value
-      on:input
-      on:keydown={handleKeyDown}
-      aria-label={label}
-    />
-  {/if}
+  <svelte:element
+    this={multiline ? "textarea" : "input"}
+    bind:this={ref}
+    type="text"
+    autocomplete="off"
+    class:focus={showBorderOnFocus}
+    class:bg-slate-50={background}
+    class:border
+    class:border-gray-200={border}
+    class="outline-none rounded-[2px] block w-full pl-8 p-1 {forcedInputStyle} resize-none"
+    class:h-full={large}
+    {disabled}
+    {placeholder}
+    on:input={handleInput}
+    on:keydown={handleKeyDown}
+    aria-label={label}
+    role="textbox"
+    tabindex="-1"
+  />
 </form>
 
 <style lang="postcss">
   .focus:focus {
     @apply border-primary-400;
+  }
+
+  textarea {
+    height: auto;
+    /* min height for 1 row */
+    min-height: 28px;
+    /* Max of 5 rows. 28 + 16 * 5 = 92 */
+    max-height: 92px;
   }
 </style>
