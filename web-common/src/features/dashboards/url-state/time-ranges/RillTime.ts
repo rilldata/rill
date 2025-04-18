@@ -1,6 +1,3 @@
-import { getMinGrain } from "@rilldata/web-common/lib/time/grains";
-import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
-
 export enum RillTimeType {
   Unknown = "Unknown",
   Latest = "Latest",
@@ -8,97 +5,56 @@ export enum RillTimeType {
   PeriodToDate = "Period To Date",
 }
 
+const absTimeRegex =
+  /(?<year>\d{4})(-(?<month>\d{2})(-(?<day>\d{2})(T(?<hour>\d{2})(:(?<minute>\d{2})(:(?<second>\d{2})Z)?)?)?)?)?/;
+
 export class RillTime {
   public timeRange: string;
   public readonly isComplete: boolean;
-  public readonly end: RillTimeAnchor;
-  public readonly type: RillTimeType;
+  public readonly type = RillTimeType.Unknown; // TODO
 
   public constructor(
-    public readonly start: RillTimeAnchor,
-    end: RillTimeAnchor,
-    public readonly timeRangeGrain: RillTimeRangeGrain | undefined,
-    public modifier: RillTimeRangeModifier | undefined,
+    public readonly start: RillTimePart[],
+    public readonly end: RillTimePart[] | undefined,
+    public readonly timeRangeGrain: string | undefined,
+    public readonly timezone: string | undefined,
   ) {
-    this.type = start.getType();
-
-    this.end = end;
-    this.isComplete =
-      this.end &&
-      (this.end.type === RillTimeAnchorType.Relative ||
-        this.end.truncate !== undefined);
+    this.isComplete = end?.[0]?.isComplete ?? start[0]?.isComplete ?? false;
   }
 
   public getLabel() {
-    if (this.type === RillTimeType.Unknown || !!this.modifier) {
-      return this.timeRange;
+    if (this.end) return this.timeRange; // TODO: what would the labels be here?
+
+    let range = this.start.map((p) => p.getLabel()).join(" of ");
+
+    if (this.timeRangeGrain) {
+      range += ` by ${this.timeRangeGrain}`;
     }
 
-    const hasNonStandardStart =
-      this.start.type === RillTimeAnchorType.Custom || !!this.start.offset;
-    const hasNonStandardEnd =
-      this.end &&
-      ((this.end.type === RillTimeAnchorType.Relative &&
-        this.end.grain &&
-        this.end.grain.count !== 0) ||
-        this.end.type === RillTimeAnchorType.Custom ||
-        !!this.end.offset);
-    if (hasNonStandardStart || hasNonStandardEnd) {
-      return this.timeRange;
+    if (this.timezone) {
+      range += ` @{${this.timezone}}`;
     }
 
-    const start = capitalizeFirstChar(this.start.getLabel());
-    if (this.isComplete) return start;
-    return `${start}, incomplete`;
-  }
-
-  public getRangeGrain() {
-    return getMinGrain(
-      this.start.getRangeGrain(),
-      this.end?.getRangeGrain() ?? V1TimeGrain.TIME_GRAIN_UNSPECIFIED,
-    );
-  }
-
-  public getBucketGrain() {
-    if (!this.timeRangeGrain) {
-      return V1TimeGrain.TIME_GRAIN_UNSPECIFIED;
-    }
-    return (
-      ToAPIGrain[this.timeRangeGrain.grain] ??
-      V1TimeGrain.TIME_GRAIN_UNSPECIFIED
-    );
-  }
-
-  public addTimezone(timezone: string) {
-    this.modifier ??= <RillTimeRangeModifier>{};
-    this.modifier.timeZone = timezone;
+    return range;
   }
 
   public toString() {
-    let rillTime = this.start.toString();
+    let range = this.start.map((p) => p.toString()).join(" of ");
+
     if (this.end) {
-      rillTime += " to " + this.end.toString();
+      range += ` to ${this.end.map((p) => p.toString()).join(" of ")}`;
     }
 
     if (this.timeRangeGrain) {
-      rillTime += " by " + rangeGrainToString(this.timeRangeGrain);
+      range += ` by ${this.timeRangeGrain}`;
     }
 
-    if (this.modifier) {
-      const modifierPart = rangeModifierToString(this.modifier);
-      if (modifierPart) rillTime += "@" + modifierPart;
+    if (this.timezone) {
+      range += ` @{${this.timezone}}`;
     }
 
-    return rillTime;
+    return range;
   }
-}
-
-export enum RillTimeAnchorType {
-  Now = "Now",
-  Earliest = "Earliest",
-  Latest = "Latest",
-  Relative = "Relative",
-  Custom = "Custom",
 }
 
 const GrainToUnit = {
@@ -117,210 +73,156 @@ const GrainToUnit = {
   y: "year",
   Y: "year",
 };
-const ToAPIGrain: Record<string, V1TimeGrain> = {
-  s: V1TimeGrain.TIME_GRAIN_SECOND,
-  S: V1TimeGrain.TIME_GRAIN_SECOND,
-  m: V1TimeGrain.TIME_GRAIN_MINUTE,
-  h: V1TimeGrain.TIME_GRAIN_HOUR,
-  H: V1TimeGrain.TIME_GRAIN_HOUR,
-  d: V1TimeGrain.TIME_GRAIN_DAY,
-  D: V1TimeGrain.TIME_GRAIN_DAY,
-  w: V1TimeGrain.TIME_GRAIN_WEEK,
-  W: V1TimeGrain.TIME_GRAIN_WEEK,
-  M: V1TimeGrain.TIME_GRAIN_MONTH,
-  q: V1TimeGrain.TIME_GRAIN_QUARTER,
-  Q: V1TimeGrain.TIME_GRAIN_QUARTER,
-  y: V1TimeGrain.TIME_GRAIN_YEAR,
-  Y: V1TimeGrain.TIME_GRAIN_YEAR,
-};
-export const InvalidTime = "Invalid";
-export class RillTimeAnchor {
-  public truncate: RillTimeGrain | undefined = undefined;
-  public absolute: string | undefined = undefined;
-  public grain: RillTimeGrain | undefined = undefined;
-  public offset: RillTimeAnchor | undefined = undefined;
 
-  public constructor(public readonly type: RillTimeAnchorType) {}
+interface RillTimePart {
+  getLabel(): string;
+  toString(): string;
+  isComplete: boolean;
+}
 
-  public static now() {
-    return new RillTimeAnchor(RillTimeAnchorType.Now);
-  }
-  public static earliest() {
-    return new RillTimeAnchor(RillTimeAnchorType.Earliest);
-  }
-  public static latest() {
-    return new RillTimeAnchor(RillTimeAnchorType.Latest);
-  }
-  public static relative(grain: RillTimeGrain) {
-    return new RillTimeAnchor(RillTimeAnchorType.Relative).withGrain(grain);
-  }
-  public static absolute(time: string) {
-    return new RillTimeAnchor(RillTimeAnchorType.Custom).withAbsolute(time);
+export class RillTimeAbsoluteTime implements RillTimePart {
+  private readonly time: Date;
+  public isComplete = true; // TODO: can this be anything else?
+
+  public constructor(timeStr: string) {
+    const absTimeMatch = absTimeRegex.exec(timeStr);
+    if (!absTimeMatch) {
+      this.time = new Date(0);
+      return;
+    }
+
+    const year = Number(absTimeMatch.groups?.year ?? "0");
+    const month = Number(absTimeMatch.groups?.month ?? "1");
+    const day = Number(absTimeMatch.groups?.day ?? "1");
+    const hour = Number(absTimeMatch.groups?.hour ?? "0");
+    const minute = Number(absTimeMatch.groups?.minute ?? "0");
+    const second = Number(absTimeMatch.groups?.second ?? "0");
+
+    this.time = new Date(year, month, day, hour, minute, second, 0);
   }
 
-  public withGrain(grain: RillTimeGrain) {
-    this.grain = grain;
-    return this;
+  public getLabel() {
+    return this.time.toLocaleTimeString();
   }
 
-  public withOffset(anchor: RillTimeAnchor) {
-    this.offset = anchor;
-    return this;
+  public toString() {
+    return this.time.toISOString();
+  }
+}
+
+export class RillTimeLabelledAnchor implements RillTimePart {
+  public isComplete = false; // TODO: can this be anything else?
+
+  public constructor(public readonly label: string) {}
+
+  public getLabel() {
+    return this.label;
   }
 
-  public withAbsolute(time: string) {
-    this.absolute = time;
-    return this;
+  public toString() {
+    return this.label;
+  }
+}
+
+export class RillTimeOrdinal implements RillTimePart {
+  public isComplete = true;
+
+  public constructor(
+    private readonly grain: string,
+    private readonly num: number,
+  ) {}
+
+  public getLabel() {
+    const grainPart = capitalizeFirstChar(GrainToUnit[this.grain]);
+    return `${grainPart} ${this.num}`;
   }
 
-  public withTruncate(truncate: RillTimeGrain) {
-    this.truncate = truncate;
+  public toString() {
+    return `${this.grain}${this.num}`;
+  }
+}
+
+export class RillTimeRelative implements RillTimePart {
+  public isComplete = true;
+
+  public constructor(
+    private readonly prefix: "+" | "-" | "<" | ">" | undefined,
+    private readonly num: number,
+    private readonly grain: string,
+  ) {}
+
+  public asIncomplete() {
+    this.isComplete = false;
     return this;
   }
 
   public getLabel() {
-    const grain = this.grain ?? this.truncate;
-    if (!grain) {
-      return RillTimeAnchorType.Earliest.toString();
+    const grainPart = GrainToUnit[this.grain];
+    const grainSuffix = this.num > 1 ? "s" : "";
+    const grainPrefix = this.num ? this.num + " " : "";
+    const grainLabel = `${grainPrefix}${grainPart}${grainSuffix}`;
+
+    switch (this.prefix) {
+      case undefined:
+        return `Previous ${grainLabel}`;
+
+      case "-":
+        if (this.num === 1) {
+          return `Previous ${grainPart}`;
+        }
+        return `${grainLabel} in the past`;
+
+      case "+":
+        if (this.num === 1) {
+          return `Next ${grainPart}`;
+        }
+        return `${grainLabel} in the future`;
+
+      case "<":
+        return `First ${grainLabel} in the future`;
+
+      case ">":
+        return `Last ${grainLabel} in the future`;
     }
-
-    const unit = GrainToUnit[grain.grain];
-    if (!unit) return InvalidTime;
-
-    if (grain.count === 0) {
-      if (unit === "day") return "today";
-      return `${unit} to date`;
-    }
-
-    if (grain.count > 0) return InvalidTime;
-
-    if (grain.count === -1) {
-      return `previous ${unit}`;
-    }
-    return `last ${-grain.count} ${unit}s`;
-  }
-
-  public getType() {
-    const grain = this.grain ?? this.truncate;
-    if (!grain || grain.count > 0) {
-      return RillTimeType.Unknown;
-    }
-
-    if (grain.count === 0) {
-      return RillTimeType.PeriodToDate;
-    }
-    if (grain.count === -1) {
-      return RillTimeType.PreviousPeriod;
-    }
-    return RillTimeType.Latest;
-  }
-
-  public getRangeGrain() {
-    return getMinGrain(
-      this.grain?.grain
-        ? ToAPIGrain[this.grain.grain]
-        : V1TimeGrain.TIME_GRAIN_UNSPECIFIED,
-      this.truncate?.grain
-        ? ToAPIGrain[this.truncate.grain]
-        : V1TimeGrain.TIME_GRAIN_UNSPECIFIED,
-      this.offset?.grain?.grain
-        ? ToAPIGrain[this.offset.grain.grain]
-        : V1TimeGrain.TIME_GRAIN_UNSPECIFIED,
-    );
   }
 
   public toString() {
-    let anchor = "";
-    switch (this.type) {
-      case RillTimeAnchorType.Now:
-        anchor = "now";
-        break;
-      case RillTimeAnchorType.Earliest:
-        anchor = "earliest";
-        break;
-      case RillTimeAnchorType.Latest:
-        anchor = "latest";
-        break;
-      case RillTimeAnchorType.Relative:
-        anchor = this.grain ? grainToString(this.grain, true) : "";
-        break;
-      case RillTimeAnchorType.Custom:
-        anchor = this.absolute ?? "";
-        break;
-    }
-
-    if (this.truncate) {
-      anchor += "/" + grainToString(this.truncate, false);
-    }
-
-    if (this.offset) {
-      anchor += this.offset.toString();
-    }
-
-    return anchor;
+    return (
+      `${this.prefix ?? ""}${this.num != 0 ? this.num : ""}` +
+      `${this.grain}${this.isComplete ? "" : "~"}`
+    );
   }
 }
 
-export type RillTimeGrain = {
-  grain: string;
-  count: number;
-};
+export class RillTimePeriodToDate implements RillTimePart {
+  private readonly from: string;
+  private readonly to: string;
+  public isComplete = true;
 
-export function newSignedRillTimeGrain(
-  grain: string,
-  sign: "+" | "-",
-  count: number,
-) {
-  if (sign === "-") {
-    count = -count;
-  }
-  return <RillTimeGrain>{
-    grain,
-    count,
-  };
-}
-
-function grainToString(grain: RillTimeGrain, includeZero: boolean) {
-  let grainPart = grain.grain;
-  if (grainPart !== "m" && grainPart !== "M") {
-    grainPart = grainPart.toLowerCase();
-  }
-  const countSign = grain.count > 0 ? "+" : "";
-  const countPart =
-    includeZero || !!grain.count ? `${countSign}${grain.count}` : "";
-  return `${countPart}${grainPart}`;
-}
-
-export type RillTimeRangeGrain = {
-  grain: string;
-  isComplete: boolean;
-};
-
-function rangeGrainToString(grain: RillTimeRangeGrain) {
-  let grainPart = grain.grain;
-  if (grainPart !== "m" && grainPart !== "M") {
-    grainPart = grainPart.toLowerCase();
-  }
-  if (!grain.isComplete) return grainPart;
-  return `|${grainPart}|`;
-}
-
-export type RillTimeRangeModifier = {
-  timeZone: string | undefined;
-  at: RillTimeAnchor | undefined;
-};
-
-function rangeModifierToString(grain: RillTimeRangeModifier) {
-  let str = "";
-  if (grain.at) {
-    str += grain.at.toString();
+  public constructor(
+    private readonly prefix: "+" | "-" | undefined,
+    private readonly num: number,
+    private readonly periodToDate: string,
+  ) {
+    [this.from, this.to] = periodToDate.split("T");
   }
 
-  if (grain.timeZone) {
-    str += `${str ? " " : ""}{${grain.timeZone}}`;
+  public asIncomplete() {
+    this.isComplete = false;
+    return this;
   }
 
-  return str;
+  public getLabel() {
+    // TODO
+    return `${this.from} to ${this.to}`;
+  }
+
+  public toString() {
+    return (
+      `${this.prefix ?? ""}${this.num != 0 ? this.num : ""}` +
+      `${this.periodToDate}${this.isComplete ? "" : "~"}`
+    );
+  }
 }
 
 function capitalizeFirstChar(str: string): string {
