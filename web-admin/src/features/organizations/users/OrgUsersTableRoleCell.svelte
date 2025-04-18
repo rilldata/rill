@@ -23,7 +23,13 @@
 
   $: organization = $page.params.organization;
   $: isAdmin = currentUserRole === "admin";
+  $: isEditor = currentUserRole === "editor";
   $: isGuest = role === "guest";
+  $: canManageUser =
+    !isCurrentUser &&
+    (isAdmin ||
+      (isEditor &&
+        (role === "editor" || role === "viewer" || role === "guest")));
 
   const queryClient = useQueryClient();
   const setOrganizationMemberUserRole =
@@ -98,7 +104,7 @@
   }
 </script>
 
-{#if !isCurrentUser && isAdmin}
+{#if canManageUser}
   <DropdownMenu.Root bind:open={isDropdownOpen}>
     <DropdownMenu.Trigger
       class="w-18 flex flex-row gap-1 items-center rounded-sm {isDropdownOpen
@@ -113,15 +119,17 @@
       {/if}
     </DropdownMenu.Trigger>
     <DropdownMenu.Content align="start">
-      <DropdownMenu.CheckboxItem
-        class="font-normal flex items-center"
-        checked={role === "admin"}
-        on:click={() => {
-          handleSetRole("admin");
-        }}
-      >
-        <span>Admin</span>
-      </DropdownMenu.CheckboxItem>
+      {#if isAdmin}
+        <DropdownMenu.CheckboxItem
+          class="font-normal flex items-center"
+          checked={role === "admin"}
+          on:click={() => {
+            handleSetRole("admin");
+          }}
+        >
+          <span>Admin</span>
+        </DropdownMenu.CheckboxItem>
+      {/if}
       <DropdownMenu.CheckboxItem
         class="font-normal flex items-center"
         checked={role === "editor"}
@@ -140,15 +148,17 @@
       >
         <span>Viewer</span>
       </DropdownMenu.CheckboxItem>
-      <DropdownMenu.CheckboxItem
-        class="font-normal flex items-center"
-        checked={role === "guest"}
-        on:click={() => {
-          handleSetRole("guest");
-        }}
-      >
-        <span>Guest</span>
-      </DropdownMenu.CheckboxItem>
+      {#if isAdmin}
+        <DropdownMenu.CheckboxItem
+          class="font-normal flex items-center"
+          checked={role === "guest"}
+          on:click={() => {
+            handleSetRole("guest");
+          }}
+        >
+          <span>Guest</span>
+        </DropdownMenu.CheckboxItem>
+      {/if}
     </DropdownMenu.Content>
   </DropdownMenu.Root>
 {:else}
