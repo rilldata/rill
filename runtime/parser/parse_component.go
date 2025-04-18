@@ -27,6 +27,27 @@ type ComponentYAML struct {
 	Other       map[string]map[string]any `yaml:",inline" mapstructure:",remain"` // Generic renderer: can only have one key
 }
 
+type ComponentVariableYAML struct {
+	Name  string `yaml:"name"`
+	Type  string `yaml:"type"`
+	Value any    `yaml:"value"`
+}
+
+func (y *ComponentVariableYAML) Proto() (*runtimev1.ComponentVariable, error) {
+	if y == nil {
+		return nil, fmt.Errorf("is empty")
+	}
+	val, err := structpb.NewValue(y.Value)
+	if err != nil {
+		panic(fmt.Errorf("invalid default value: %w", err))
+	}
+	return &runtimev1.ComponentVariable{
+		Name:         y.Name,
+		Type:         y.Type,
+		DefaultValue: val,
+	}, nil
+}
+
 func (p *Parser) parseComponent(node *Node) error {
 	// Parse YAML
 	tmp := &ComponentYAML{}
@@ -161,25 +182,4 @@ func (p *Parser) parseComponentYAML(tmp *ComponentYAML) (*runtimev1.ComponentSpe
 	}
 
 	return spec, refs, nil
-}
-
-type ComponentVariableYAML struct {
-	Name  string `yaml:"name"`
-	Type  string `yaml:"type"`
-	Value any    `yaml:"value"`
-}
-
-func (y *ComponentVariableYAML) Proto() (*runtimev1.ComponentVariable, error) {
-	if y == nil {
-		return nil, fmt.Errorf("is empty")
-	}
-	val, err := structpb.NewValue(y.Value)
-	if err != nil {
-		panic(fmt.Errorf("invalid default value: %w", err))
-	}
-	return &runtimev1.ComponentVariable{
-		Name:         y.Name,
-		Type:         y.Type,
-		DefaultValue: val,
-	}, nil
 }

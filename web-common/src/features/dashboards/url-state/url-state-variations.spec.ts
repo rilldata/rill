@@ -275,7 +275,8 @@ const TestCases: {
       AD_BIDS_TOGGLE_BID_PUBLISHER_DIMENSION_VISIBILITY,
       AD_BIDS_TOGGLE_BID_PUBLISHER_DIMENSION_VISIBILITY,
     ],
-    expectedSearch: "measures=bid_price%2Cimpressions&dims=domain%2Cpublisher",
+    expectedSearch:
+      "measures=bid_price%2Cimpressions&dims=domain%2Cpublisher&sort_by=bid_price",
   },
 
   {
