@@ -34,13 +34,14 @@
     TimeRangePreset,
     type AvailableTimeGrain,
   } from "@rilldata/web-common/lib/time/types";
+  import type { MetricsViewSpecMeasure } from "@rilldata/web-common/runtime-client";
   import { Button } from "../../../components/button";
   import Pivot from "../../../components/icons/Pivot.svelte";
-  import type { MetricsViewSpecMeasure } from "@rilldata/web-common/runtime-client";
   import { TIME_GRAIN } from "../../../lib/time/config";
   import { DashboardState_ActivePage } from "../../../proto/gen/rill/ui/v1/dashboard_pb";
   import Spinner from "../../entity-management/Spinner.svelte";
   import MeasureBigNumber from "../big-number/MeasureBigNumber.svelte";
+  import { createTotalsForVisibleMeasures } from "../big-number/big-number-queries";
   import ChartInteractions from "./ChartInteractions.svelte";
   import MeasureChart from "./MeasureChart.svelte";
   import TimeSeriesChartContainer from "./TimeSeriesChartContainer.svelte";
@@ -56,6 +57,7 @@
   export let timeSeriesWidth: number;
   export let hideStartPivotButton = false;
 
+  const ctx = getStateManagers();
   const {
     selectors: {
       measures: {
@@ -70,10 +72,10 @@
       measures: { setMeasureVisibility },
     },
     validSpecStore,
-  } = getStateManagers();
+  } = ctx;
 
-  const timeControlsStore = useTimeControlStore(getStateManagers());
-  const timeSeriesDataStore = useTimeSeriesDataStore(getStateManagers());
+  const timeControlsStore = useTimeControlStore(ctx);
+  const timeSeriesDataStore = useTimeSeriesDataStore(ctx);
 
   let scrubStart;
   let scrubEnd;
@@ -120,10 +122,15 @@
         : $visibleMeasures;
   }
 
-  $: totals = $timeSeriesDataStore.total as { [key: string]: number };
-  $: totalsComparisons = $timeSeriesDataStore.comparisonTotal as {
-    [key: string]: number;
-  };
+  // Get big numbers
+  const totalsQuery = createTotalsForVisibleMeasures(ctx, false);
+  $: totals = $totalsQuery.data?.data;
+  $: totalsError = $totalsQuery.error;
+  $: hasTotalsError = !!totalsError;
+
+  // Get comparison big numbers
+  const totalsComparisonsQuery = createTotalsForVisibleMeasures(ctx, true);
+  $: totalsComparisons = $totalsComparisonsQuery.data?.data;
 
   // When changing the timeseries query and the cache is empty, $timeSeriesQuery.data?.data is
   // temporarily undefined as results are fetched.
@@ -241,7 +248,6 @@
     return value !== undefined;
   }
 
-  $: hasTotalsError = Object.hasOwn($timeSeriesDataStore?.error, "totals");
   $: hasTimeseriesError = Object.hasOwn(
     $timeSeriesDataStore?.error,
     "timeseries",
@@ -382,10 +388,10 @@
             isMeasureExpanded={showTimeDimensionDetail}
             {showComparison}
             {comparisonValue}
-            errorMessage={$timeSeriesDataStore?.error?.totals}
+            errorMessage={totalsError?.response?.data?.message}
             status={hasTotalsError
               ? EntityStatus.Error
-              : $timeSeriesDataStore?.isFetching
+              : $totalsQuery?.isFetching
                 ? EntityStatus.Running
                 : EntityStatus.Idle}
           />

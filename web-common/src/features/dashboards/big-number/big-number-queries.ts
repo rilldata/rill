@@ -14,25 +14,45 @@ import {
 import { type HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
 import { createQuery, type CreateQueryResult } from "@tanstack/svelte-query";
 import { derived } from "svelte/store";
+import { removeSomeAdvancedMeasures } from "../state-managers/selectors/measures";
 
-export function createTotalsForMeasures(
+export function createTotalsForVisibleMeasures(
   ctx: StateManagers,
-  measures: string[],
   isComparison = false,
 ): CreateQueryResult<V1MetricsViewAggregationResponse, HTTPError> {
   const queryOptionsStore = derived(
     [
       ctx.runtime,
       ctx.metricsViewName,
+      ctx.validSpecStore,
       useTimeControlStore(ctx),
       ctx.dashboardStore,
+      ctx.selectors.measures.visibleMeasures,
     ],
-    ([runtime, metricsViewName, timeControls, dashboard]) => {
+    ([
+      runtime,
+      metricsViewName,
+      validSpec,
+      timeControls,
+      dashboard,
+      measures,
+    ]) => {
+      const { metricsView } = validSpec.data ?? {};
+
+      const measuresToQuery = removeSomeAdvancedMeasures(
+        dashboard,
+        metricsView ?? {},
+        measures.map((m) => m.name as string),
+        false,
+      );
+
       const queryOptions = getQueryServiceMetricsViewAggregationQueryOptions(
         runtime.instanceId,
         metricsViewName,
         {
-          measures: measures.map((measure) => ({ name: measure })),
+          measures: measuresToQuery.map((m) => ({
+            name: m,
+          })),
           where: sanitiseExpression(
             mergeDimensionAndMeasureFilters(
               dashboard.whereFilter,
@@ -51,7 +71,10 @@ export function createTotalsForMeasures(
         },
         {
           query: {
-            enabled: !!timeControls.ready && !!ctx.dashboardStore,
+            enabled:
+              !!timeControls.ready &&
+              !!ctx.dashboardStore &&
+              measuresToQuery.length > 0,
             refetchOnMount: false,
           },
         },
@@ -66,9 +89,8 @@ export function createTotalsForMeasures(
   return query;
 }
 
-export function createUnfilteredTotalsForMeasures(
+export function createUnfilteredTotalsForVisibleMeasures(
   ctx: StateManagers,
-  measures: string[],
   dimensionName: string,
 ): CreateQueryResult<V1MetricsViewAggregationResponse, HTTPError> {
   const queryOptionsStore = derived(
@@ -77,8 +99,9 @@ export function createUnfilteredTotalsForMeasures(
       ctx.metricsViewName,
       useTimeControlStore(ctx),
       ctx.dashboardStore,
+      ctx.selectors.measures.visibleMeasures,
     ],
-    ([runtime, metricsViewName, timeControls, dashboard]) => {
+    ([runtime, metricsViewName, timeControls, dashboard, measures]) => {
       const filter = sanitiseExpression(
         mergeDimensionAndMeasureFilters(
           dashboard.whereFilter,
@@ -96,14 +119,17 @@ export function createUnfilteredTotalsForMeasures(
         runtime.instanceId,
         metricsViewName,
         {
-          measures: measures.map((measure) => ({ name: measure })),
+          measures: measures,
           where: updatedFilter,
           timeStart: timeControls.timeStart,
           timeEnd: timeControls.timeEnd,
         },
         {
           query: {
-            enabled: !!timeControls.ready && !!ctx.dashboardStore,
+            enabled:
+              !!timeControls.ready &&
+              !!ctx.dashboardStore &&
+              measures.length > 0,
           },
         },
       );
