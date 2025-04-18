@@ -140,6 +140,23 @@ export class DashboardState extends Message<DashboardState> {
   leaderboardSortType?: DashboardState_LeaderboardSortType;
 
   /**
+   * Deprecated
+   *
+   * @generated from field: optional uint32 leaderboard_measure_count = 38;
+   */
+  leaderboardMeasureCount?: number;
+
+  /**
+   * @generated from field: repeated string leaderboard_measures = 39;
+   */
+  leaderboardMeasures: string[] = [];
+
+  /**
+   * @generated from field: optional bool leaderboard_show_context_for_all_measures = 40;
+   */
+  leaderboardShowContextForAllMeasures?: boolean;
+
+  /**
    * @generated from field: optional string comparison_dimension = 17;
    */
   comparisonDimension?: string;
@@ -164,14 +181,6 @@ export class DashboardState extends Message<DashboardState> {
    * @generated from field: optional string chart_type = 33;
    */
   chartType?: string;
-
-  /**
-   * *
-   * Pivot related fields
-   *
-   * @generated from field: optional bool pivot_is_active = 22;
-   */
-  pivotIsActive?: boolean;
 
   /**
    *
@@ -279,11 +288,13 @@ export class DashboardState extends Message<DashboardState> {
     { no: 14, name: "scrub_range", kind: "message", T: DashboardTimeRange, opt: true },
     { no: 15, name: "leaderboard_sort_direction", kind: "enum", T: proto3.getEnumType(DashboardState_LeaderboardSortDirection), opt: true },
     { no: 16, name: "leaderboard_sort_type", kind: "enum", T: proto3.getEnumType(DashboardState_LeaderboardSortType), opt: true },
+    { no: 38, name: "leaderboard_measure_count", kind: "scalar", T: 13 /* ScalarType.UINT32 */, opt: true },
+    { no: 39, name: "leaderboard_measures", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 40, name: "leaderboard_show_context_for_all_measures", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
     { no: 17, name: "comparison_dimension", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 18, name: "expanded_measure", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 19, name: "pin_index", kind: "scalar", T: 5 /* ScalarType.INT32 */, opt: true },
     { no: 33, name: "chart_type", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
-    { no: 22, name: "pivot_is_active", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
     { no: 23, name: "pivot_row_time_dimensions", kind: "enum", T: proto3.getEnumType(TimeGrain), repeated: true },
     { no: 24, name: "pivot_row_dimensions", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 25, name: "pivot_column_time_dimensions", kind: "enum", T: proto3.getEnumType(TimeGrain), repeated: true },

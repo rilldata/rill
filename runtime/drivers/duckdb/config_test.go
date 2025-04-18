@@ -18,19 +18,19 @@ import (
 func TestConfig(t *testing.T) {
 	cfg, err := newConfig(map[string]any{})
 	require.NoError(t, err)
-	require.Equal(t, 2, cfg.PoolSize)
+	require.Equal(t, 2, cfg.ReadPoolSize)
 
 	cfg, err = newConfig(map[string]any{"dsn": "", "cpu": 2})
 	require.NoError(t, err)
-	require.Equal(t, 2, cfg.PoolSize)
+	require.Equal(t, 2, cfg.ReadPoolSize)
 
 	cfg, err = newConfig(map[string]any{"pool_size": 10})
 	require.NoError(t, err)
-	require.Equal(t, 10, cfg.PoolSize)
+	require.Equal(t, 10, cfg.ReadPoolSize)
 
 	cfg, err = newConfig(map[string]any{"dsn": "duck.db", "memory_limit_gb": "8", "cpu": "2"})
 	require.NoError(t, err)
-	require.Equal(t, 2, cfg.PoolSize)
+	require.Equal(t, 2, cfg.ReadPoolSize)
 }
 
 func Test_specialCharInPath(t *testing.T) {
@@ -46,7 +46,7 @@ func Test_specialCharInPath(t *testing.T) {
 	olap, ok := conn.AsOLAP("")
 	require.True(t, ok)
 
-	res, err := olap.Execute(context.Background(), &drivers.Statement{Query: "SELECT 1"})
+	res, err := olap.Query(context.Background(), &drivers.Statement{Query: "SELECT 1"})
 	require.NoError(t, err)
 	require.NoError(t, res.Close())
 	require.NoError(t, conn.Close())

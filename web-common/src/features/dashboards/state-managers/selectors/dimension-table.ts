@@ -1,6 +1,6 @@
 import type { VirtualizedTableColumns } from "@rilldata/web-common/components/virtualized-table/types";
 import type {
-  MetricsViewSpecDimensionV2,
+  MetricsViewSpecDimension,
   RpcStatus,
   V1MetricsViewAggregationResponse,
 } from "@rilldata/web-common/runtime-client";
@@ -27,7 +27,7 @@ export const selectedDimensionValueNames = (
 
 export const primaryDimension = (
   dashData: DashboardDataSources,
-): MetricsViewSpecDimensionV2 | undefined => {
+): MetricsViewSpecDimension | undefined => {
   const dimName = dashData.dashboard.selectedDimensionName;
   return dashData.validMetricsView?.dimensions?.find(
     (dim) => dim.name === dimName,
@@ -42,8 +42,9 @@ export const virtualizedTableColumns =
       V1MetricsViewAggregationResponse,
       RpcStatus
     >,
+    activeMeasures?: string[],
   ) => VirtualizedTableColumns[]) =>
-  (totalsQuery) => {
+  (totalsQuery, activeMeasures) => {
     const dimension = primaryDimension(dashData);
 
     if (!dimension) return [];
@@ -57,7 +58,9 @@ export const virtualizedTableColumns =
     if (totalsQuery?.data?.data) {
       measures.map((m) => {
         if (m.name && isSummableMeasure(m)) {
-          measureTotals[m.name] = totalsQuery.data?.data?.[0]?.[m.name];
+          measureTotals[m.name] = totalsQuery.data?.data?.[0]?.[
+            m.name
+          ] as number;
         }
       });
     }
@@ -69,6 +72,7 @@ export const virtualizedTableColumns =
       dimension,
       isTimeComparisonActive(dashData),
       isValidPercentOfTotal(dashData),
+      activeMeasures,
     );
   };
 
@@ -80,7 +84,7 @@ export const prepareDimTableRows =
       V1MetricsViewAggregationResponse,
       RpcStatus
     >,
-    unfilteredTotal: number,
+    unfilteredTotal: number | { [key: string]: number },
   ) => DimensionTableRow[]) =>
   (sortedQuery, unfilteredTotal) => {
     const dimension = primaryDimension(dashData);
@@ -88,7 +92,7 @@ export const prepareDimTableRows =
     if (!dimension) return [];
 
     const dimensionColumn = dimension.name ?? "";
-    const leaderboardMeasureName = activeMeasureName(dashData);
+    const leaderboardSortByMeasureName = activeMeasureName(dashData);
 
     // FIXME: should this really be all measures, or just visible measures?
     const measures = allMeasures(dashData);
@@ -96,7 +100,7 @@ export const prepareDimTableRows =
     return prepareDimensionTableRows(
       sortedQuery?.data?.data ?? [],
       measures,
-      leaderboardMeasureName,
+      leaderboardSortByMeasureName,
       dimensionColumn,
       isTimeComparisonActive(dashData),
       isValidPercentOfTotal(dashData),
@@ -111,7 +115,7 @@ export const dimensionTableSelectors = {
   virtualizedTableColumns,
 
   /**
-   * gets the MetricsViewSpecDimensionV2 for the dimension table's
+   * gets the MetricsViewSpecDimension for the dimension table's
    * primary dimension.
    */
   primaryDimension,

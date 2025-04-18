@@ -13,12 +13,11 @@ import (
 	"github.com/c2h5oh/datasize"
 	"github.com/rilldata/rill/cli/pkg/browser"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
-	"github.com/rilldata/rill/cli/pkg/dotrill"
 	"github.com/rilldata/rill/cli/pkg/pkce"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
-	"github.com/rilldata/rill/runtime/compilers/rillv1"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/parser"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/debugserver"
 	"github.com/rilldata/rill/runtime/pkg/email"
@@ -78,13 +77,23 @@ type AppOptions struct {
 
 func NewApp(ctx context.Context, opts *AppOptions) (*App, error) {
 	// Setup logger
-	logger, cleanupFn := initLogger(opts.Verbose, opts.LogFormat)
+	logPath, err := opts.Ch.DotRill.ResolveFilename("rill.log", true)
+	if err != nil {
+		return nil, err
+	}
+	logger, cleanupFn := initLogger(opts.Verbose, opts.LogFormat, logPath)
 	sugarLogger := logger.Sugar()
 
+	var tracesExporter observability.Exporter
+	if opts.Debug {
+		tracesExporter = observability.FileBasedExporter
+	} else {
+		tracesExporter = observability.NoopExporter
+	}
 	// Init Prometheus telemetry
 	shutdown, err := observability.Start(ctx, logger, &observability.Options{
 		MetricsExporter: observability.PrometheusExporter,
-		TracesExporter:  observability.NoopExporter,
+		TracesExporter:  tracesExporter,
 		ServiceName:     "rill-local",
 		ServiceVersion:  opts.Ch.Version.String(),
 	})
@@ -192,6 +201,9 @@ func NewApp(ctx context.Context, opts *AppOptions) (*App, error) {
 		}
 		// Set default DuckDB pool size to 4
 		olapCfg["pool_size"] = "4"
+	}
+	if opts.Debug {
+		olapCfg["log_queries"] = "true"
 	}
 
 	// Add OLAP connector
@@ -304,7 +316,7 @@ func (a *App) Close() error {
 
 func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly bool, userID, tlsCertPath, tlsKeyPath string) error {
 	// Get analytics info
-	installID, enabled, err := dotrill.AnalyticsInfo()
+	installID, enabled, err := a.ch.DotRill.AnalyticsInfo()
 	if err != nil {
 		a.Logger.Warnf("error finding install ID: %v", err)
 	}
@@ -449,12 +461,12 @@ func (a *App) emitStartEvent(ctx context.Context) error {
 		return err
 	}
 
-	parser, err := rillv1.Parse(ctx, repo, instanceID, a.Instance.Environment, a.Instance.OLAPConnector)
+	p, err := parser.Parse(ctx, repo, instanceID, a.Instance.Environment, a.Instance.OLAPConnector)
 	if err != nil {
 		return err
 	}
 
-	connectors := parser.AnalyzeConnectors(ctx)
+	connectors := p.AnalyzeConnectors(ctx)
 	for _, c := range connectors {
 		if c.Err != nil {
 			return err

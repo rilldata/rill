@@ -12,10 +12,10 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
 	"github.com/joho/godotenv"
 	"github.com/rilldata/rill/admin/pkg/pgtestcontainer"
+	"github.com/rilldata/rill/runtime/drivers/clickhouse/testclickhouse"
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/azurite"
-	"github.com/testcontainers/testcontainers-go/modules/clickhouse"
 	"github.com/testcontainers/testcontainers-go/modules/mysql"
 )
 
@@ -47,39 +47,7 @@ type ConnectorAcquireFunc func(t TestingT) (vars map[string]string)
 var Connectors = map[string]ConnectorAcquireFunc{
 	// clickhouse starts a ClickHouse test container with no tables initialized.
 	"clickhouse": func(t TestingT) map[string]string {
-		_, currentFile, _, _ := goruntime.Caller(0)
-		testdataPath := filepath.Join(currentFile, "..", "testdata")
-
-		ctx := context.Background()
-		clickHouseContainer, err := clickhouse.Run(
-			ctx,
-			"clickhouse/clickhouse-server:24.6.2.17",
-			clickhouse.WithUsername("clickhouse"),
-			clickhouse.WithPassword("clickhouse"),
-			clickhouse.WithConfigFile(filepath.Join(testdataPath, "clickhouse-config.xml")),
-			testcontainers.CustomizeRequestOption(func(req *testcontainers.GenericContainerRequest) error {
-				cf := testcontainers.ContainerFile{
-					HostFilePath:      filepath.Join(testdataPath, "users.xml"),
-					ContainerFilePath: "/etc/clickhouse-server/users.xml",
-					FileMode:          0o755,
-				}
-				req.Files = append(req.Files, cf)
-				return nil
-			}),
-		)
-		require.NoError(t, err)
-
-		t.Cleanup(func() {
-			err := clickHouseContainer.Terminate(ctx)
-			require.NoError(t, err)
-		})
-
-		host, err := clickHouseContainer.Host(ctx)
-		require.NoError(t, err)
-		port, err := clickHouseContainer.MappedPort(ctx, "9000/tcp")
-		require.NoError(t, err)
-
-		dsn := fmt.Sprintf("clickhouse://clickhouse:clickhouse@%v:%v", host, port.Port())
+		dsn := testclickhouse.Start(t)
 		return map[string]string{"dsn": dsn}
 	},
 	// Bigquery connector connects to a real bigquery cluster using the credentials json in RILL_RUNTIME_BIGQUERY_TEST_GOOGLE_APPLICATION_CREDENTIALS_JSON.
@@ -87,8 +55,7 @@ var Connectors = map[string]ConnectorAcquireFunc{
 	// - BigQuery Data Viewer
 	// - BigQuery Job User
 	// - BigQuery Read Session User
-	// The test dataset is pre-populated with tables defined in testdata/init_data/bigquery_init_data.sql:
-
+	// The test dataset is pre-populated with tables defined in testdata/init_data/bigquery_init_data.sql.
 	"bigquery": func(t TestingT) map[string]string {
 		// Load .env file at the repo root (if any)
 		_, currentFile, _, _ := goruntime.Caller(0)
@@ -102,6 +69,22 @@ var Connectors = map[string]ConnectorAcquireFunc{
 		require.NotEmpty(t, gac, "Bigquery RILL_RUNTIME_BIGQUERY_TEST_GOOGLE_APPLICATION_CREDENTIALS_JSON not configured")
 		return map[string]string{"google_application_credentials": gac}
 	},
+	// Snowflake connector connects to a real snowflake cloud using dsn in RILL_RUNTIME_SNOWFLAKE_TEST_DSN
+	// The test dataset is pre-populated with tables defined in testdata/init_data/snowflake_init_data.sql:
+	"snowflake": func(t TestingT) map[string]string {
+		// Load .env file at the repo root (if any)
+		_, currentFile, _, _ := goruntime.Caller(0)
+		envPath := filepath.Join(currentFile, "..", "..", "..", ".env")
+		_, err := os.Stat(envPath)
+		if err == nil {
+			require.NoError(t, godotenv.Load(envPath))
+		}
+
+		dsn := os.Getenv("RILL_RUNTIME_SNOWFLAKE_TEST_DSN")
+		require.NotEmpty(t, dsn, "SNOWFLAKE test DSN not configured")
+		return map[string]string{"dsn": dsn}
+	},
+	// gcs connector uses an actual gcs bucket with data populated from testdata/init_data/azure.
 	"gcs": func(t TestingT) map[string]string {
 		// Load .env file at the repo root (if any)
 		_, currentFile, _, _ := goruntime.Caller(0)
@@ -112,9 +95,15 @@ var Connectors = map[string]ConnectorAcquireFunc{
 		}
 		gac := os.Getenv("RILL_RUNTIME_GCS_TEST_GOOGLE_APPLICATION_CREDENTIALS_JSON")
 		require.NotEmpty(t, gac, "GCS RILL_RUNTIME_GCS_TEST_GOOGLE_APPLICATION_CREDENTIALS_JSON not configured")
+		hmacKey := os.Getenv("RILL_RUNTIME_GCS_TEST_HMAC_KEY")
+		hmacSecret := os.Getenv("RILL_RUNTIME_GCS_TEST_HMAC_SECRET")
+		require.NotEmpty(t, hmacKey, "GCS RILL_RUNTIME_GCS_TEST_HMAC_KEY not configured")
+		require.NotEmpty(t, hmacSecret, "GCS RILL_RUNTIME_GCS_TEST_HMAC_SECRET not configured")
 
 		return map[string]string{
 			"google_application_credentials": gac,
+			"key_id":                         hmacKey,
+			"secret":                         hmacSecret,
 		}
 	},
 	"gcs_s3_compat": func(t TestingT) map[string]string {
@@ -135,6 +124,7 @@ var Connectors = map[string]ConnectorAcquireFunc{
 			"secret": hmacSecret,
 		}
 	},
+	// S3 connector uses an actual S3 bucket with data populated from testdata/init_data/azure.
 	"s3": func(t TestingT) map[string]string {
 		// Load .env file at the repo root (if any)
 		_, currentFile, _, _ := goruntime.Caller(0)
@@ -147,6 +137,26 @@ var Connectors = map[string]ConnectorAcquireFunc{
 		secretAccessKey := os.Getenv("RILL_RUNTIME_S3_TEST_AWS_SECRET_ACCESS_KEY")
 		require.NotEmpty(t, accessKeyID, "S3 RILL_RUNTIME_S3_TEST_AWS_ACCESS_KEY_ID not configured")
 		require.NotEmpty(t, secretAccessKey, "S3 RILL_RUNTIME_S3_TEST_AWS_SECRET_ACCESS_KEY not configured")
+		return map[string]string{
+			"aws_access_key_id":     accessKeyID,
+			"aws_secret_access_key": secretAccessKey,
+		}
+	},
+	// Athena connector connects to an actual Athena service.
+	// The test dataset is pre-populated with table definitions in testdata/init_data/athena_init_data.sql,
+	// and the actual data is stored on S3, which matches the data in testdata/init_data/azure/parquet_test.
+	"athena": func(t TestingT) map[string]string {
+		// Load .env file at the repo root (if any)
+		_, currentFile, _, _ := goruntime.Caller(0)
+		envPath := filepath.Join(currentFile, "..", "..", "..", ".env")
+		_, err := os.Stat(envPath)
+		if err == nil {
+			require.NoError(t, godotenv.Load(envPath))
+		}
+		accessKeyID := os.Getenv("RILL_RUNTIME_ATHENA_TEST_AWS_ACCESS_KEY_ID")
+		secretAccessKey := os.Getenv("RILL_RUNTIME_ATHENA_TEST_AWS_SECRET_ACCESS_KEY")
+		require.NotEmpty(t, accessKeyID, "Athena RILL_RUNTIME_ATHENA_TEST_AWS_ACCESS_KEY_ID not configured")
+		require.NotEmpty(t, secretAccessKey, "Athena RILL_RUNTIME_ATHENA_TEST_AWS_SECRET_ACCESS_KEY not configured")
 		return map[string]string{
 			"aws_access_key_id":     accessKeyID,
 			"aws_secret_access_key": secretAccessKey,

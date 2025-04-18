@@ -235,11 +235,6 @@ func (c *Connection) AsModelManager(instanceID string) (drivers.ModelManager, bo
 	return c, true
 }
 
-// AsTransporter implements drivers.Connection.
-func (c *Connection) AsTransporter(from, to drivers.Handle) (drivers.Transporter, bool) {
-	return nil, false
-}
-
 // AsFileStore implements drivers.Connection.
 func (c *Connection) AsFileStore() (drivers.FileStore, bool) {
 	return nil, false

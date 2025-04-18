@@ -63,6 +63,8 @@
     {
       query: {
         enabled: !!$user.data?.user,
+        retry: 2,
+        refetchOnMount: true,
       },
     },
   );
@@ -75,6 +77,8 @@
     {
       query: {
         enabled: !!organization,
+        retry: 2,
+        refetchOnMount: true,
       },
     },
   );
@@ -116,7 +120,7 @@
         (isMetricsExplorer
           ? resource?.explore?.spec?.displayName
           : resource?.canvas?.spec?.displayName) || name,
-      section: isMetricsExplorer ? "explore" : "-/dashboards",
+      section: isMetricsExplorer ? "explore" : "canvas",
     });
   }, new Map<string, PathOption>());
 
@@ -199,13 +203,13 @@
               <GlobalDimensionSearch />
             {/if}
             {#if $user.isSuccess && $user.data.user && !onPublicURLPage}
-              {#if $alertsFlag}
-                <CreateAlert />
-              {/if}
               <Bookmarks
                 metricsViewName={exploreSpec.metricsView}
                 exploreName={dashboard}
               />
+              {#if $alertsFlag}
+                <CreateAlert />
+              {/if}
               <ShareDashboardPopover {createMagicAuthTokens} />
             {/if}
           </StateManagersProvider>

@@ -72,7 +72,7 @@
     enableResize={true}
     position="top-left"
     borderRight={horizontalScrolling}
-    bgClass={$sortedByDimensionValue ? `bg-gray-50` : "bg-white"}
+    bgClass="bg-white"
     onClick={sortByDimensionValue}
     on:keydown={sortByDimensionValue}
     on:resize={handleResize}
@@ -103,7 +103,7 @@
       position="left"
       header={{ size: width, start: row.start }}
       borderRight={horizontalScrolling}
-      bgClass={$sortedByDimensionValue ? `bg-gray-50` : "bg-white"}
+      bgClass="bg-white"
     >
       <Cell
         positionStatic

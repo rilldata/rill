@@ -21,7 +21,7 @@
   import { numberKindForMeasure } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
   import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
   import type {
-    MetricsViewSpecMeasureV2,
+    MetricsViewSpecMeasure,
     V1TimeGrain,
   } from "@rilldata/web-common/runtime-client";
   import { extent } from "d3-array";
@@ -43,7 +43,7 @@
     niceMeasureExtents,
   } from "./utils";
 
-  export let measure: MetricsViewSpecMeasureV2;
+  export let measure: MetricsViewSpecMeasure;
   export let exploreName: string;
   export let width: number | undefined = undefined;
   export let height: number | undefined = undefined;
@@ -56,7 +56,7 @@
   export let zone: string;
 
   export let showComparison = false;
-  export let isInTimeDimensionView: boolean;
+  export let showTimeDimensionDetail: boolean;
   export let data;
   export let dimensionData: DimensionDataItem[] = [];
   export let isFetching: boolean;
@@ -258,7 +258,7 @@
     on:scrub-move={(e) => scrub?.moveScrub(e)}
     on:scrub-start={(e) => scrub?.startScrub(e)}
     overflowHidden={false}
-    right={isInTimeDimensionView ? 20 : 40}
+    right={showTimeDimensionDetail ? 20 : 40}
     shareYScale={false}
     top={4}
     {width}

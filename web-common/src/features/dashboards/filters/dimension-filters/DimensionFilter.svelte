@@ -293,14 +293,9 @@
         on:remove={onRemove}
         removable={!readOnly}
         {readOnly}
+        removeTooltipText="remove {selectedValues.length} value{selectedValues.length !==
+          1 && 's'}"
       >
-        <svelte:fragment slot="remove-tooltip">
-          <slot name="remove-tooltip-content">
-            remove {selectedValues.length}
-            value{#if selectedValues.length !== 1}s{/if} for {name}</slot
-          >
-        </svelte:fragment>
-
         <DimensionFilterChipBody
           slot="body"
           label={curExcludeMode ? `Exclude ${label}` : label}
@@ -395,9 +390,7 @@
           <LoadingSpinner />
         </div>
       {:else if error}
-        <div class="min-h-9 p-3 text-center text-red-600 text-xs">
-          {error}
-        </div>
+        <div class="min-h-9 p-3 text-center text-red-600 text-xs">error</div>
       {:else if correctedSearchResults}
         <DropdownMenu.Group class="px-1" aria-label={`${name} results`}>
           {#each correctedSearchResults as name (name)}

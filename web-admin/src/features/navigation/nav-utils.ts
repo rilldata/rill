@@ -41,8 +41,7 @@ export function isMetricsExplorerPage(page: Page): boolean {
 }
 
 export function isCanvasDashboardPage(page: Page): boolean {
-  // TODO: Change the route to canvas
-  return page.route.id === "/[organization]/[project]/-/dashboards/[dashboard]";
+  return page.route.id === "/[organization]/[project]/canvas/[dashboard]";
 }
 
 /**

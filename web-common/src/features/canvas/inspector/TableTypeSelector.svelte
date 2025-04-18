@@ -1,25 +1,13 @@
 <script lang="ts">
   import FieldSwitcher from "@rilldata/web-common/components/forms/FieldSwitcher.svelte";
   import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
-  import type { CanvasComponentType } from "@rilldata/web-common/features/canvas/components/types";
-  import type { CanvasComponentObj } from "@rilldata/web-common/features/canvas/components/util";
-  import { getCanvasStateManagers } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
+  import type { PivotCanvasComponent } from "../components/pivot";
 
-  export let component: CanvasComponentObj;
-  export let componentType: CanvasComponentType;
-  export let metricsViewName: string;
+  export let component: PivotCanvasComponent;
 
-  const ctx = getCanvasStateManagers();
-  const { getMetricsViewFromName } = ctx.canvasEntity.spec;
+  $: ({ specStore } = component);
 
-  $: selected = componentType === "table" ? 0 : 1;
-  $: metricsView = getMetricsViewFromName(metricsViewName);
-
-  async function onChange(tableType: "pivot" | "table") {
-    if (tableType !== componentType) {
-      component.updateTableType(tableType, $metricsView);
-    }
-  }
+  $: selected = "columns" in $specStore ? 0 : 1;
 </script>
 
 <div class="section">
@@ -32,10 +20,10 @@
     onClick={(_, field) => {
       if (field === "Flat") {
         selected = 0;
-        onChange("table");
+        component.updateTableType("table");
       } else if (field === "Pivot") {
         selected = 1;
-        onChange("pivot");
+        component.updateTableType("pivot");
       }
     }}
   />

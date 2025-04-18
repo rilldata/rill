@@ -52,7 +52,7 @@ class FeatureFlags {
     const updateFlags = (userFlags: V1InstanceFeatureFlags) => {
       for (const key in userFlags) {
         const flag = this[key] as FeatureFlag | undefined;
-        if (!flag || flag.internalOnly) return;
+        if (!flag || flag.internalOnly) continue;
         flag.set(userFlags[key]);
       }
     };
@@ -61,12 +61,16 @@ class FeatureFlags {
     runtime.subscribe((runtime) => {
       if (!runtime?.instanceId) return;
 
-      createRuntimeServiceGetInstance(runtime.instanceId, undefined, {
-        query: {
-          select: (data) => data?.instance?.featureFlags,
-          queryClient,
+      createRuntimeServiceGetInstance(
+        runtime.instanceId,
+        undefined,
+        {
+          query: {
+            select: (data) => data?.instance?.featureFlags,
+          },
         },
-      }).subscribe((features) => {
+        queryClient,
+      ).subscribe((features) => {
         if (features.data) updateFlags(features.data);
       });
     });

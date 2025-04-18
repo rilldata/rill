@@ -19,21 +19,22 @@ export class GithubData {
   public readonly repoSelectionOpen = writable(false);
   public readonly githubConnectionFailed = writable(false);
 
-  public readonly userStatus = createAdminServiceGetGithubUserStatus({
-    query: {
-      queryClient,
-    },
-  });
+  public readonly userStatus = createAdminServiceGetGithubUserStatus(
+    undefined,
+    queryClient,
+  );
   public readonly userRepos = derived(
     [this.userStatus, this.repoSelectionOpen],
     ([userStatus, repoSelectionOpen], set) =>
-      createAdminServiceListGithubUserRepos({
-        query: {
-          // do not run it when user gets to status page, only when repo selection is open
-          enabled: !!userStatus.data?.hasAccess && repoSelectionOpen,
-          queryClient,
+      createAdminServiceListGithubUserRepos(
+        {
+          query: {
+            // do not run it when user gets to status page, only when repo selection is open
+            enabled: !!userStatus.data?.hasAccess && repoSelectionOpen,
+          },
         },
-      }).subscribe(set),
+        queryClient,
+      ).subscribe(set),
   ) as ReturnType<
     typeof createAdminServiceListGithubUserRepos<
       Awaited<ReturnType<typeof adminServiceListGithubUserRepos>>,
@@ -102,9 +103,9 @@ export class GithubData {
     const userStatus = get(this.userStatus).data;
     if (!userStatus?.hasAccess) {
       // refetch status if had no access
-      await queryClient.refetchQueries(
-        getAdminServiceGetGithubUserStatusQueryKey(),
-      );
+      await queryClient.refetchQueries({
+        queryKey: getAdminServiceGetGithubUserStatusQueryKey(),
+      });
 
       await waitUntil(() => !get(this.userStatus).isFetching);
       if (!get(this.userStatus).data?.hasAccess) {
@@ -116,9 +117,9 @@ export class GithubData {
       this.githubConnectionFailed.set(false);
 
       // else refetch the list of repos
-      await queryClient.refetchQueries(
-        getAdminServiceListGithubUserReposQueryKey(),
-      );
+      await queryClient.refetchQueries({
+        queryKey: getAdminServiceListGithubUserReposQueryKey(),
+      });
     }
   }
 }

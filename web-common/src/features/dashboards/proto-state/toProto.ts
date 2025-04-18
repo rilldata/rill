@@ -21,6 +21,7 @@ import {
 import { createAndExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
+import { arrayOrderedEquals } from "@rilldata/web-common/lib/arrayUtils";
 import type {
   DashboardTimeControls,
   ScrubRange,
@@ -41,7 +42,10 @@ import {
   DashboardTimeRange,
   PivotElement,
 } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
-import type { V1Expression } from "@rilldata/web-common/runtime-client";
+import type {
+  V1ExploreSpec,
+  V1Expression,
+} from "@rilldata/web-common/runtime-client";
 import { V1Operation, V1TimeGrain } from "@rilldata/web-common/runtime-client";
 
 // TODO: make a follow up PR to use the one from the proto directly
@@ -68,6 +72,7 @@ const TDDChartTypeMap: Record<TDDChart, string> = {
 
 export function getProtoFromDashboardState(
   metrics: MetricsExplorerEntity,
+  exploreSpec: V1ExploreSpec,
 ): string {
   if (!metrics) return "";
 
@@ -116,8 +121,17 @@ export function getProtoFromDashboardState(
 
   state.selectedTimezone = metrics.selectedTimezone;
 
-  if (metrics.leaderboardMeasureName) {
-    state.leaderboardMeasure = metrics.leaderboardMeasureName;
+  if (metrics.leaderboardSortByMeasureName) {
+    state.leaderboardMeasure = metrics.leaderboardSortByMeasureName;
+  }
+
+  if (metrics.leaderboardShowContextForAllMeasures) {
+    state.leaderboardShowContextForAllMeasures =
+      metrics.leaderboardShowContextForAllMeasures;
+  }
+
+  if (metrics.leaderboardMeasureNames) {
+    state.leaderboardMeasures = metrics.leaderboardMeasureNames;
   }
 
   if (metrics.tdd?.pinIndex !== undefined) {
@@ -127,16 +141,24 @@ export function getProtoFromDashboardState(
     state.chartType = TDDChartTypeMap[metrics.tdd.chartType];
   }
 
-  if (metrics.allMeasuresVisible) {
+  const measuresMatchExactly =
+    exploreSpec?.measures && metrics.visibleMeasures
+      ? arrayOrderedEquals(exploreSpec.measures, metrics.visibleMeasures)
+      : metrics.allMeasuresVisible;
+  if (measuresMatchExactly) {
     state.allMeasuresVisible = true;
-  } else if (metrics.visibleMeasureKeys) {
-    state.visibleMeasures = [...metrics.visibleMeasureKeys];
+  } else if (metrics.visibleMeasures) {
+    state.visibleMeasures = [...metrics.visibleMeasures];
   }
 
-  if (metrics.allDimensionsVisible) {
+  const dimensionsMatchExactly =
+    exploreSpec?.dimensions && metrics.visibleDimensions
+      ? arrayOrderedEquals(exploreSpec.dimensions, metrics.visibleDimensions)
+      : metrics.allDimensionsVisible;
+  if (dimensionsMatchExactly) {
     state.allDimensionsVisible = true;
-  } else if (metrics.visibleDimensionKeys) {
-    state.visibleDimensions = [...metrics.visibleDimensionKeys];
+  } else if (metrics.visibleDimensions) {
+    state.visibleDimensions = [...metrics.visibleDimensions];
   }
 
   if (metrics.leaderboardContextColumn) {
@@ -296,7 +318,6 @@ const mapPivotDimensions: (
 function toPivotProto(pivotState: PivotState): PartialMessage<DashboardState> {
   const pivotColumns = splitPivotChips(pivotState.columns);
   return {
-    pivotIsActive: pivotState.active,
     pivotRowAllDimensions: pivotState.rows.map(mapPivotDimensions),
     pivotColumnAllDimensions: pivotColumns.dimension.map(mapPivotDimensions),
     pivotColumnMeasures: pivotColumns.measure.map((m) => m.id),

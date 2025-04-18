@@ -3,6 +3,7 @@ package salesforce
 import (
 	"context"
 	"errors"
+	"maps"
 
 	force "github.com/ForceCLI/force/lib"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -90,6 +91,7 @@ var spec = drivers.Spec{
 			DisplayName: "Salesforce Password",
 			Required:    false,
 			Hint:        "Either set this or pass --env connector.salesforce.password=... to rill start",
+			Secret:      true,
 		},
 		{
 			Key:         "key",
@@ -97,6 +99,7 @@ var spec = drivers.Spec{
 			DisplayName: "JWT Key for Authentication",
 			Required:    false,
 			Hint:        "Either set this or pass --env connector.salesforce.key=... to rill start",
+			Secret:      true,
 		},
 		{
 			Key:         "endpoint",
@@ -179,7 +182,7 @@ func (c *connection) Driver() string {
 
 // Config implements drivers.Connection.
 func (c *connection) Config() map[string]any {
-	return c.config
+	return maps.Clone(c.config)
 }
 
 // Close implements drivers.Connection.
@@ -229,11 +232,6 @@ func (c *connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecu
 
 // AsModelManager implements drivers.Handle.
 func (c *connection) AsModelManager(instanceID string) (drivers.ModelManager, bool) {
-	return nil, false
-}
-
-// AsTransporter implements drivers.Connection.
-func (c *connection) AsTransporter(from, to drivers.Handle) (drivers.Transporter, bool) {
 	return nil, false
 }
 

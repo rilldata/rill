@@ -234,11 +234,6 @@ func (h *Handle) AsModelManager(instanceID string) (drivers.ModelManager, bool) 
 	return nil, false
 }
 
-// AsTransporter implements drivers.Handle.
-func (h *Handle) AsTransporter(from, to drivers.Handle) (drivers.Transporter, bool) {
-	return nil, false
-}
-
 // AsNotifier implements drivers.Handle.
 func (h *Handle) AsNotifier(properties map[string]any) (drivers.Notifier, error) {
 	return nil, drivers.ErrNotNotifier
@@ -638,7 +633,7 @@ func (h *Handle) download() error {
 
 	err = archive.Download(ctx, h.archiveDownloadURL, downloadDst, h.projPath, true, false)
 	if err != nil {
-		return err
+		return fmt.Errorf("download: %w", err)
 	}
 	h.cloned = true
 	return nil

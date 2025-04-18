@@ -3,6 +3,7 @@ package local
 import (
 	"context"
 	"crypto/rand"
+	"embed"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
@@ -23,15 +24,14 @@ import (
 	"github.com/rilldata/rill/admin/pkg/urlutil"
 	"github.com/rilldata/rill/cli/cmd/auth"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
-	"github.com/rilldata/rill/cli/pkg/dotrill"
 	"github.com/rilldata/rill/cli/pkg/dotrillcloud"
 	"github.com/rilldata/rill/cli/pkg/gitutil"
 	"github.com/rilldata/rill/cli/pkg/pkce"
-	"github.com/rilldata/rill/cli/pkg/update"
 	"github.com/rilldata/rill/cli/pkg/web"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	localv1 "github.com/rilldata/rill/proto/gen/rill/local/v1"
 	"github.com/rilldata/rill/proto/gen/rill/local/v1/localv1connect"
+	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -48,6 +48,9 @@ type Server struct {
 }
 
 var _ localv1connect.LocalServiceHandler = (*Server)(nil)
+
+//go:embed embed/file-trace-viewer.html
+var traceViewerFS embed.FS
 
 // RegisterHandlers registers the server's handlers on the provided ServeMux.
 func (s *Server) RegisterHandlers(mux *http.ServeMux, httpPort int, secure, enableUI bool) {
@@ -67,6 +70,17 @@ func (s *Server) RegisterHandlers(mux *http.ServeMux, httpPort int, secure, enab
 
 	// Register telemetry proxy endpoint
 	mux.Handle("/local/track", s.trackingHandler())
+
+	// endpoints for searching and viewing trace data collected on local
+	mux.Handle("/local/debug/trace", s.traceHandler())
+	mux.Handle("/traces", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		data, err := traceViewerFS.ReadFile("embed/file-trace-viewer.html")
+		if err != nil {
+			http.Error(w, fmt.Sprintf("failed to read trace viewer file: %s", err), http.StatusInternalServerError)
+			return
+		}
+		_, _ = w.Write(data)
+	}))
 
 	// Deprecated: use proto RPCs instead
 	mux.Handle("/local/config", s.metadataHandler())
@@ -101,7 +115,7 @@ func (s *Server) GetMetadata(ctx context.Context, r *connect.Request[localv1.Get
 
 // GetVersion implements localv1connect.LocalServiceHandler.
 func (s *Server) GetVersion(ctx context.Context, r *connect.Request[localv1.GetVersionRequest]) (*connect.Response[localv1.GetVersionResponse], error) {
-	latestVersion, err := update.LatestVersion(ctx)
+	latestVersion, err := s.app.ch.LatestVersion(ctx)
 	if err != nil {
 		s.logger.Warn("error finding latest version", zap.Error(err))
 	}
@@ -508,7 +522,7 @@ func (s *Server) GetCurrentUser(ctx context.Context, r *connect.Request[localv1.
 		userOrgs = append(userOrgs, org.Name)
 	}
 
-	representingUser, err := dotrill.GetRepresentingUser()
+	representingUser, err := s.app.ch.DotRill.GetRepresentingUser()
 	if err != nil {
 		return nil, errors.New("failed to get assumed user email")
 	}
@@ -657,7 +671,7 @@ func (s *Server) authCallbackHandler() http.Handler {
 		}
 
 		// Save token and reload config
-		err = dotrill.SetAccessToken(token)
+		err = s.app.ch.DotRill.SetAccessToken(token)
 		if err != nil {
 			http.Error(w, fmt.Sprintf("failed to save access token: %s", err), http.StatusInternalServerError)
 			return
@@ -776,7 +790,7 @@ type versionResponse struct {
 func (s *Server) versionHandler() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Get the latest version available
-		latestVersion, err := update.LatestVersion(r.Context())
+		latestVersion, err := s.app.ch.LatestVersion(r.Context())
 		if err != nil {
 			s.logger.Warn("error finding latest version", zap.Error(err))
 		}
@@ -815,4 +829,39 @@ func (nameConflictRetryErrClassifier) Classify(err error) retrier.Action {
 	}
 
 	return retrier.Fail
+}
+
+// traceHandler returns trace information. Traces are stored in a file in `~/.rill/otel_traces.log` in JSON format when `--debug` flag is set.
+// It uses duckdb to search the JSON file for traces and returns the trace output as JSON.
+// The handler accepts two kind of query parameters:
+// - trace_id: search for traces for a given trace_id
+// - resource_name: search for trace for the last reconcile of the given resource name
+func (s *Server) traceHandler() http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		traceID := r.URL.Query().Get("trace_id")
+		resourceName := r.URL.Query().Get("resource_name")
+		if resourceName == "" && traceID == "" {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		if resourceName != "" && traceID != "" {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		bytes, err := observability.SearchTracesFile(r.Context(), traceID, resourceName)
+		if err != nil {
+			s.logger.Error("failed to search trace", zap.Error(err))
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		_, err = w.Write(bytes)
+		if err != nil {
+			s.logger.Error("failed to write trace", zap.Error(err))
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+	})
 }

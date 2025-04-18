@@ -8,7 +8,7 @@ import {
   type ComparisonTimeRangeState,
   type TimeRangeState,
 } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
-import { toTimeRangeParam } from "@rilldata/web-common/features/dashboards/url-state/convertExploreStateToURLSearchParams";
+import { toTimeRangeParam } from "@rilldata/web-common/features/dashboards/url-state/convert-partial-explore-state-to-url-params";
 import { fromTimeRangeUrlParam } from "@rilldata/web-common/features/dashboards/url-state/convertPresetToExploreState";
 import { fromTimeRangesParams } from "@rilldata/web-common/features/dashboards/url-state/convertURLToExplorePreset";
 import {
@@ -33,14 +33,15 @@ import {
   runtime,
   type Runtime,
 } from "@rilldata/web-common/runtime-client/runtime-store";
+import { Settings } from "luxon";
 import {
   derived,
   get,
   writable,
   type Readable,
-  type Unsubscriber,
   type Writable,
 } from "svelte/store";
+import { normalizeWeekday } from "../../dashboards/time-controls/new-time-controls";
 
 type AllTimeRange = TimeRange & { isFetching: boolean };
 
@@ -68,7 +69,6 @@ export class TimeControls {
 
   private componentName: string | undefined;
   private isInitialStateSet: boolean = false;
-  private initialStateSubscriber: Unsubscriber | undefined;
   private specStore: CanvasSpecResponseStore;
 
   constructor(specStore: CanvasSpecResponseStore, componentName?: string) {
@@ -148,6 +148,19 @@ export class TimeControls {
         if (!spec?.data || !selectedTimeRange) {
           return undefined;
         }
+
+        // TODO: figure out a better way of handling this property
+        // when it's not consistent across all metrics views - bgh
+        const firstMetricsView = Object.values(spec.data.metricsViews)?.[0];
+        const firstDayOfWeekOfFirstMetricsView =
+          firstMetricsView?.state?.validSpec?.firstDayOfWeek;
+
+        Settings.defaultWeekSettings = {
+          firstDay: normalizeWeekday(firstDayOfWeekOfFirstMetricsView),
+          weekend: [6, 7],
+          minimalDays: 4,
+        };
+
         const { defaultPreset } = spec.data?.canvas || {};
         const defaultTimeRange = isoDurationToFullTimeRange(
           defaultPreset?.timeRange,
@@ -248,6 +261,8 @@ export class TimeControls {
           return;
         }
 
+        const isLocalComponentControl = Boolean(this.componentName);
+
         const selectedTimezone = get(this.selectedTimezone);
         const comparisonTimeRange = get(this.selectedComparisonTimeRange);
 
@@ -273,21 +288,21 @@ export class TimeControls {
           V1TimeGrain.TIME_GRAIN_UNSPECIFIED,
         );
 
+        const newComparisonRange = getComparisonTimeRange(
+          timeRanges,
+          allTimeRange,
+          newTimeRange,
+          comparisonTimeRange,
+        );
+
+        this.selectedComparisonTimeRange.set(newComparisonRange);
+
         if (
           defaultPreset?.comparisonMode ===
-          V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_TIME
+            V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_TIME &&
+          !isLocalComponentControl
         ) {
-          const newComparisonRange = getComparisonTimeRange(
-            timeRanges,
-            allTimeRange,
-            newTimeRange,
-            comparisonTimeRange,
-          );
-          this.selectedComparisonTimeRange.set(newComparisonRange);
-
-          if (!this.componentName) {
-            this.showTimeComparison.set(true);
-          }
+          this.showTimeComparison.set(true);
         }
 
         this.selectedTimeRange.set(newTimeRange);
@@ -296,11 +311,7 @@ export class TimeControls {
     );
 
     // Subscribe to ensure the derived code runs
-    this.initialStateSubscriber = defaultStore.subscribe(() => {});
-  };
-
-  destroy = () => {
-    this.initialStateSubscriber?.();
+    defaultStore.subscribe(() => {});
   };
 
   combinedTimeRangeSummaryStore = (
@@ -340,11 +351,11 @@ export class TimeControls {
             query: {
               enabled:
                 !!metricsViews[metricView]?.state?.validSpec?.timeDimension,
-              queryClient: queryClient,
               staleTime: Infinity,
-              cacheTime: Infinity,
+              gcTime: Infinity,
             },
           },
+          queryClient,
         );
       });
 
@@ -475,7 +486,8 @@ export class TimeControls {
     }
 
     this.selectedTimeRange.set(selectedTimeRange);
-    this.selectedComparisonTimeRange.set(selectedComparisonTimeRange);
+    if (selectedComparisonTimeRange)
+      this.selectedComparisonTimeRange.set(selectedComparisonTimeRange);
     this.showTimeComparison.set(showTimeComparison);
 
     this.isInitialStateSet = true;

@@ -1,4 +1,3 @@
-import type { QueryObserverResult } from "@rilldata/svelte-query";
 import { KPIGridComponent } from "@rilldata/web-common/features/canvas/components/kpi-grid";
 import type {
   ComponentInputParam,
@@ -6,21 +5,23 @@ import type {
   FilterInputTypes,
 } from "@rilldata/web-common/features/canvas/inspector/types";
 import type { CanvasResponse } from "@rilldata/web-common/features/canvas/selector";
-import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
 import type {
   RpcStatus,
-  V1ComponentSpecRendererProperties,
+  V1MetricsViewSpec,
+  V1Resource,
 } from "@rilldata/web-common/runtime-client";
+import type { QueryObserverResult } from "@tanstack/svelte-query";
+import type { CanvasEntity, ComponentPath } from "../stores/canvas-entity";
+import type { BaseCanvasComponent } from "./BaseCanvasComponent";
 import { ChartComponent } from "./charts";
 import { ImageComponent } from "./image";
-import { KPIComponent } from "./kpi";
+import { LeaderboardComponent } from "./leaderboard";
 import { MarkdownCanvasComponent } from "./markdown";
 import { PivotCanvasComponent } from "./pivot";
-import { TableCanvasComponent } from "./table";
 import type {
   CanvasComponentType,
   ComponentCommonProperties,
-  ComponentFilterProperties,
+  ComponentSpec,
 } from "./types";
 
 export const commonOptions: Record<
@@ -72,30 +73,54 @@ const NON_CHART_TYPES = [
   "image",
   "table",
   "pivot",
+  "leaderboard",
 ] as const;
 const ALL_COMPONENT_TYPES = [...CHART_TYPES, ...NON_CHART_TYPES] as const;
 
 type ChartType = (typeof CHART_TYPES)[number];
 type TableType = (typeof TABLE_TYPES)[number];
 
+interface BaseCanvasComponentConstructor<
+  T extends ComponentSpec = ComponentSpec,
+> {
+  new (
+    resource: V1Resource,
+    parent: CanvasEntity,
+    path: ComponentPath,
+  ): BaseCanvasComponent<T>;
+
+  newComponentSpec(
+    metricsViewName: string,
+    metricsViewSpec?: V1MetricsViewSpec,
+  ): T;
+}
+
 // Component type to class mapping
-const COMPONENT_CLASS_MAP = {
+export const COMPONENT_CLASS_MAP: Record<
+  CanvasComponentType,
+  BaseCanvasComponentConstructor
+> = {
   markdown: MarkdownCanvasComponent,
-  kpi: KPIComponent,
   kpi_grid: KPIGridComponent,
   image: ImageComponent,
-  table: TableCanvasComponent,
+  leaderboard: LeaderboardComponent,
+  table: PivotCanvasComponent,
   pivot: PivotCanvasComponent,
+  bar_chart: ChartComponent,
+  line_chart: ChartComponent,
+  stacked_bar: ChartComponent,
+  stacked_bar_normalized: ChartComponent,
+  area_chart: ChartComponent,
 } as const;
 
 // Component display names mapping
 const DISPLAY_MAP: Record<CanvasComponentType, string> = {
-  kpi: "KPI",
   kpi_grid: "KPI Grid",
   markdown: "Markdown",
   table: "Table",
   pivot: "Pivot",
   image: "Image",
+  leaderboard: "Leaderboard",
   bar_chart: "Chart",
   line_chart: "Chart",
   stacked_bar: "Chart",
@@ -103,21 +128,19 @@ const DISPLAY_MAP: Record<CanvasComponentType, string> = {
   area_chart: "Chart",
 } as const;
 
-export const getComponentObj = (
-  fileArtifact: FileArtifact,
-  path: (string | number)[],
-  type: CanvasComponentType,
-  params: Record<string, unknown>,
-) => {
+export function createComponent(
+  resource: V1Resource,
+  parent: CanvasEntity,
+  path: ComponentPath,
+) {
+  const type = resource.component?.spec?.renderer as CanvasComponentType;
   const ComponentClass =
     COMPONENT_CLASS_MAP[type as keyof typeof COMPONENT_CLASS_MAP];
   if (ComponentClass) {
-    return new ComponentClass(fileArtifact, path, params);
+    return new ComponentClass(resource, parent, path);
   }
-  return new ChartComponent(fileArtifact, path, params);
-};
-
-export type CanvasComponentObj = ReturnType<typeof getComponentObj>;
+  return new ChartComponent(resource, parent, path);
+}
 
 export function isCanvasComponentType(
   value: string | undefined,
@@ -138,30 +161,6 @@ export function isTableComponentType(
 ): value is TableType {
   if (!value) return false;
   return TABLE_TYPES.includes(value as TableType);
-}
-
-export function getComponentFilterProperties(
-  rendererProperties: V1ComponentSpecRendererProperties | undefined,
-): ComponentFilterProperties {
-  return {
-    dimension_filters: rendererProperties?.dimension_filters as
-      | string
-      | undefined,
-    time_filters: rendererProperties?.time_filters as string | undefined,
-  };
-}
-
-export function getComponentRegistry(): Record<
-  CanvasComponentType,
-  CanvasComponentObj
-> {
-  return Object.fromEntries([
-    ...Object.entries(COMPONENT_CLASS_MAP).map(([type, Class]) => [
-      type,
-      new Class(),
-    ]),
-    ...CHART_TYPES.map((type) => [type, new ChartComponent()]),
-  ]) as Record<CanvasComponentType, CanvasComponentObj>;
 }
 
 export function getHeaderForComponent(

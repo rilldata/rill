@@ -38,34 +38,35 @@
         // },
       });
 
-      await queryClient.invalidateQueries(
-        getAdminServiceListOrganizationMemberUsersQueryKey(organization),
-      );
+      await queryClient.invalidateQueries({
+        queryKey:
+          getAdminServiceListOrganizationMemberUsersQueryKey(organization),
+      });
 
-      await queryClient.invalidateQueries(
-        getAdminServiceListOrganizationInvitesQueryKey(organization),
-      );
+      await queryClient.invalidateQueries({
+        queryKey: getAdminServiceListOrganizationInvitesQueryKey(organization),
+      });
 
-      await queryClient.invalidateQueries(
-        getAdminServiceListUsergroupMemberUsersQueryKey(
+      await queryClient.invalidateQueries({
+        queryKey: getAdminServiceListUsergroupMemberUsersQueryKey(
           organization,
           "autogroup:users",
         ),
-      );
+      });
 
-      await queryClient.invalidateQueries(
-        getAdminServiceListUsergroupMemberUsersQueryKey(
+      await queryClient.invalidateQueries({
+        queryKey: getAdminServiceListUsergroupMemberUsersQueryKey(
           organization,
           "autogroup:members",
         ),
-      );
+      });
 
-      await queryClient.invalidateQueries(
-        getAdminServiceListUsergroupMemberUsersQueryKey(
+      await queryClient.invalidateQueries({
+        queryKey: getAdminServiceListUsergroupMemberUsersQueryKey(
           organization,
           "autogroup:guests",
         ),
-      );
+      });
 
       eventBus.emit("notification", {
         message: "User removed from organization",

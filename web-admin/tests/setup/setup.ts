@@ -120,16 +120,35 @@ setup.describe("global setup", () => {
 
     // Log in with the admin account
     await page.goto("/");
-    await page.getByRole("button", { name: "Continue with Email" }).click();
-    await page.getByPlaceholder("Enter your email address").click();
+
+    // Fill in the email
+    const emailInput = page.locator('input[name="username"]');
+    await emailInput.waitFor({ state: "visible" });
+    await emailInput.click();
+    await emailInput.fill(process.env.RILL_DEVTOOL_E2E_ADMIN_ACCOUNT_EMAIL);
+
+    // Click the continue button
     await page
-      .getByPlaceholder("Enter your email address")
-      .fill(process.env.RILL_DEVTOOL_E2E_ADMIN_ACCOUNT_EMAIL);
-    await page.getByPlaceholder("Enter your email address").press("Tab");
+      .locator('button[type="submit"][data-action-button-primary="true"]', {
+        hasText: "Continue",
+      })
+      .click();
+
+    // Fill in the password
+    const passwordInput = page.locator('input[name="password"]');
+    await passwordInput.waitFor({ state: "visible" });
+    await passwordInput.click();
+    await passwordInput.fill(
+      process.env.RILL_DEVTOOL_E2E_ADMIN_ACCOUNT_PASSWORD,
+    );
+
+    // Click the continue button
     await page
-      .getByPlaceholder("Enter your password")
-      .fill(process.env.RILL_DEVTOOL_E2E_ADMIN_ACCOUNT_PASSWORD);
-    await page.getByRole("button", { name: "Continue with Email" }).click();
+      .locator('button[type="submit"][data-action-button-primary="true"]', {
+        hasText: "Continue",
+      })
+      .click();
+
     await page.waitForURL("/");
 
     // Save the admin's Rill auth cookies to file.
@@ -190,6 +209,20 @@ setup.describe("global setup", () => {
     // ).toBeVisible(); // Billing banner
     // await expect(adminPage.getByText("Free trial")).toBeVisible(); // Billing status
 
+    // There is a scenario where page loads before runtime can identify what files are present.
+    // This leads to a case where we never refresh the resources list.
+    // TODO: find a solution to refetch in the app itself
+    await expect
+      .poll(
+        async () => {
+          await adminPage.reload();
+          const title = adminPage.getByLabel("Container title");
+          return title.textContent();
+        },
+        { intervals: Array(5).fill(1_000), timeout: 5_000 },
+      )
+      .toEqual("Project dashboards");
+
     // Check that the dashboards are listed
     await expect(
       adminPage.getByRole("link", { name: "Programmatic Ads Auction" }).first(),
@@ -208,7 +241,11 @@ setup.describe("global setup", () => {
           });
           return listing.textContent();
         },
-        { intervals: Array(36).fill(5_000), timeout: 180_000 },
+        {
+          // Increased timeout for the 1st dashboard to make sure sources are reconciled.
+          intervals: [10_000, 10_000, 20_000, 20_000, 30_000, 30_000],
+          timeout: 120_000,
+        },
       )
       .toContain("Last refreshed");
 
@@ -221,7 +258,7 @@ setup.describe("global setup", () => {
           });
           return listing.textContent();
         },
-        { intervals: Array(12).fill(5_000), timeout: 60_000 },
+        { intervals: Array(6).fill(5_000), timeout: 30_000 },
       )
       .toContain("Last refreshed");
   });

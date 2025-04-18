@@ -11,7 +11,7 @@
   import { FormatPreset } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
   import { formatMeasurePercentageDifference } from "@rilldata/web-common/lib/number-formatting/percentage-formatter";
   import { numberPartsToString } from "@rilldata/web-common/lib/number-formatting/utils/number-parts-utils";
-  import { type MetricsViewSpecMeasureV2 } from "@rilldata/web-common/runtime-client";
+  import { type MetricsViewSpecMeasure } from "@rilldata/web-common/runtime-client";
   import {
     crossfade,
     fly,
@@ -20,9 +20,8 @@
   } from "svelte/transition";
   import BigNumberTooltipContent from "./BigNumberTooltipContent.svelte";
 
-  export let measure: MetricsViewSpecMeasureV2;
+  export let measure: MetricsViewSpecMeasure;
   export let value: number | null;
-
   export let comparisonValue: number | undefined = undefined;
   export let showComparison = false;
   export let status: EntityStatus;
@@ -53,10 +52,6 @@
   );
 
   $: name = measure?.displayName || measure?.expression;
-
-  $: if (value === undefined) {
-    value = null;
-  }
 
   const [send, receive] = crossfade({
     fallback: (node: Element, params: CrossfadeParams) =>

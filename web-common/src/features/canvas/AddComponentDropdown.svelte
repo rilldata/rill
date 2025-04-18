@@ -32,12 +32,15 @@
     { id: "markdown", label: "Text", icon: TextIcon },
     { id: "kpi_grid", label: "KPI", icon: BigNumberIcon },
     { id: "image", label: "Image", icon: ChartIcon },
+    { id: "leaderboard", label: "Leaderboard", icon: TableIcon },
   ];
 
   export let disabled = false;
   export let componentForm = false;
   export let floatingForm = false;
   export let open = false;
+  export let rowIndex: number | undefined = undefined;
+  export let columnIndex: number | undefined = undefined;
   export let onItemClick: (type: CanvasComponentType) => void;
   export let onMouseEnter: () => void = () => {};
   export let onOpenChange: (isOpen: boolean) => void = () => {};
@@ -46,6 +49,12 @@
   function handleChartItemClick() {
     const randomChartType = getRandomChartType();
     onItemClick(randomChartType);
+  }
+
+  function getAriaLabel(row: number | undefined, column: number | undefined) {
+    return `Insert widget${row !== undefined ? ` in row ${row + 1}` : ""}${
+      column !== undefined ? ` at column ${column + 1}` : ""
+    }`;
   }
 </script>
 
@@ -65,6 +74,7 @@
         {...builder}
         use:builder.action
         class:pr-3.5={open}
+        aria-label="Add widget"
         class="shadow-lg flex group hover:rounded-3xl w-fit gap-x-1 p-2 hover:pr-3.5 absolute bottom-3 right-3 items-center justify-center z-50 rounded-full bg-primary-600 text-white hover:bg-primary-500"
       >
         <Plus size="20px" />
@@ -81,6 +91,7 @@
         {disabled}
         use:builder.action
         {...builder}
+        aria-label={getAriaLabel(rowIndex, columnIndex)}
         title="Insert widget"
         class:bg-gray-50={open}
         class="pointer-events-auto active:bg-gray-100 disabled:pointer-events-none h-7 px-2 grid place-content-center z-50 hover:bg-gray-50 text-slate-500 disabled:opacity-50"

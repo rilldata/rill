@@ -28,11 +28,15 @@
 
   let dashboardStateForAlert: ReturnType<typeof mapQueryToDashboard>;
   $: queryName =
-    $alert.data?.resource?.alert?.spec?.resolverProperties?.query_name ??
+    ($alert.data?.resource?.alert?.spec?.resolverProperties?.query_name as
+      | string
+      | undefined) ??
     $alert.data?.resource?.alert?.spec?.queryName ??
     "";
   $: queryArgsJson =
-    $alert.data?.resource?.alert?.spec?.resolverProperties?.query_args_json ??
+    ($alert.data?.resource?.alert?.spec?.resolverProperties?.query_args_json as
+      | string
+      | undefined) ??
     $alert.data?.resource?.alert?.spec?.queryArgsJson ??
     "";
   $: dashboardStateForAlert = mapQueryToDashboard(
@@ -60,7 +64,6 @@
       await getExplorePageUrlSearchParams(
         $dashboardStateForAlert.data.exploreName,
         $dashboardStateForAlert.data.exploreState,
-        url,
       )
     ).toString();
     return goto(url.toString());

@@ -4,8 +4,9 @@ import { getAllIdentifiers } from "@rilldata/web-common/features/dashboards/stor
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import { DashboardState_ActivePage } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import type {
-  MetricsViewSpecDimensionV2,
-  MetricsViewSpecMeasureV2,
+  MetricsViewSpecDimension,
+  MetricsViewSpecMeasure,
+  V1ExploreSpec,
 } from "@rilldata/web-common/runtime-client";
 
 export function hasDashboardWhereFilter(dashboardStore: MetricsExplorerEntity) {
@@ -20,8 +21,8 @@ export function hasDashboardDimensionThresholdFilter(
 
 export function getExploreFields(
   dashboardStore: MetricsExplorerEntity,
-  visibleDimensions: MetricsViewSpecDimensionV2[],
-  visibleMeasures: MetricsViewSpecMeasureV2[],
+  visibleDimensions: MetricsViewSpecDimension[],
+  visibleMeasures: MetricsViewSpecMeasure[],
 ): string[] | undefined {
   const hasFilter = hasDashboardWhereFilter(dashboardStore);
 
@@ -61,27 +62,25 @@ export function convertDateToMinutes(date: string) {
 export function getSanitizedDashboardStateParam(
   dashboard: MetricsExplorerEntity,
   metricsViewFields: string[] | undefined,
+  exploreSpec: V1ExploreSpec,
 ): string {
   // If no metrics view fields are specified, everything is visible, and there's no need to sanitize
-  if (!metricsViewFields) return getProtoFromDashboardState(dashboard);
+  if (!metricsViewFields)
+    return getProtoFromDashboardState(dashboard, exploreSpec);
 
   // Else, explicitly add the sanitized state that we want to remember.
   const sanitizedDashboardState = {
     // Remove any measures not specified in the metrics view fields
-    visibleMeasureKeys: new Set(
-      [...dashboard.visibleMeasureKeys].filter((measure) =>
-        metricsViewFields?.includes(measure),
-      ),
+    visibleMeasures: dashboard.visibleMeasures.filter((measure) =>
+      metricsViewFields?.includes(measure),
     ),
     allMeasuresVisible: dashboard.allMeasuresVisible,
     // Remove any dimensions not specified in the metrics view fields
-    visibleDimensionKeys: new Set(
-      [...dashboard.visibleDimensionKeys].filter((dimension) =>
-        metricsViewFields?.includes(dimension),
-      ),
+    visibleDimensions: dashboard.visibleDimensions.filter((dimension) =>
+      metricsViewFields?.includes(dimension),
     ),
     allDimensionsVisible: dashboard.allDimensionsVisible,
-    leaderboardMeasureName: dashboard.leaderboardMeasureName,
+    leaderboardSortByMeasureName: dashboard.leaderboardSortByMeasureName,
     dashboardSortType: dashboard.dashboardSortType,
     sortDirection: dashboard.sortDirection,
     // Remove the where filter
@@ -126,5 +125,5 @@ export function getSanitizedDashboardStateParam(
     },
   } as MetricsExplorerEntity;
 
-  return getProtoFromDashboardState(sanitizedDashboardState);
+  return getProtoFromDashboardState(sanitizedDashboardState, exploreSpec);
 }

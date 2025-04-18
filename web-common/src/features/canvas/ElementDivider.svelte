@@ -11,7 +11,6 @@
   export let addIndex: number;
   export let rowLength: number;
   export let rowIndex: number;
-  export let resizingColumn = false;
   export let columnWidth: number | undefined = undefined;
   export let isSpreadEvenly: boolean;
   export let dragging: boolean;
@@ -19,7 +18,8 @@
     position: { row: number; column: number },
     item: CanvasComponentType[],
   ) => void;
-  export let onMouseDown: ((e: MouseEvent) => void) | undefined = undefined;
+  export let onColumnResizeStart: ((columnIndex: number) => void) | undefined =
+    undefined;
   export let spreadEvenly: (rowIndex: number) => void;
 
   let menuOpen = false;
@@ -36,7 +36,7 @@
 
   $: notActiveDivider = !isActiveDivider && !!$activeDivider;
 
-  $: forceShowDivider = menuOpen || resizingColumn || isDropZone;
+  $: forceShowDivider = menuOpen || isActiveDivider || isDropZone;
 
   $: if (isActiveDivider) {
     document.body.style.cursor = "col-resize";
@@ -64,6 +64,7 @@
 >
   {#if !addDisabled || !isSpreadEvenly || isDropZone}
     <button
+      aria-label="Resize row {rowIndex + 1} column {resizeIndex + 1}"
       disabled={resizeDisabled}
       data-width={columnWidth}
       data-row={rowIndex}
@@ -73,8 +74,8 @@
         : "auto"}
       class:!opacity-100={isDropZone}
       class="peer h-full flex items-center justify-center w-4 disabled:opacity-60 disabled:cursor-default cursor-col-resize"
-      on:mousedown={(e) => {
-        if (onMouseDown) onMouseDown(e);
+      on:mousedown={() => {
+        if (onColumnResizeStart) onColumnResizeStart(resizeIndex);
         activeDivider.set(dividerId);
         window.addEventListener(
           "mouseup",
@@ -96,6 +97,8 @@
       class="sr-only peer-hover:not-sr-only peer-active:sr-only hover:not-sr-only flex flex-col pointer-events-auto overflow-hidden shadow-sm !absolute -translate-x-1/2 left-1/2 top-1/2 w-fit z-20 bg-white -translate-y-1/2 border rounded-sm"
     >
       <AddComponentDropdown
+        {rowIndex}
+        columnIndex={addIndex}
         {onItemClick}
         onOpenChange={(isOpen) => {
           if (!isOpen) {

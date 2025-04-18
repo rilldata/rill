@@ -17,8 +17,12 @@ import {
   createQueryServiceMetricsViewTimeSeries,
 } from "@rilldata/web-common/runtime-client";
 import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
-import type { CreateQueryResult } from "@tanstack/svelte-query";
+import {
+  type CreateQueryResult,
+  keepPreviousData,
+} from "@tanstack/svelte-query";
 import { type Readable, type Writable, derived, writable } from "svelte/store";
+import { DashboardState_ActivePage } from "../../../proto/gen/rill/ui/v1/dashboard_pb";
 import { memoizeMetricsStore } from "../state-managers/memoize-metrics-store";
 import {
   type DimensionDataItem,
@@ -60,8 +64,8 @@ export function createMetricsViewTimeSeries(
       ctx.dashboardStore,
       useTimeControlStore(ctx),
     ],
-    ([runtime, metricsViewName, dashboardStore, timeControls], set) =>
-      createQueryServiceMetricsViewTimeSeries(
+    ([runtime, metricsViewName, dashboardStore, timeControls], set) => {
+      return createQueryServiceMetricsViewTimeSeries(
         runtime.instanceId,
         metricsViewName,
         {
@@ -91,13 +95,15 @@ export function createMetricsViewTimeSeries(
               !!ctx.dashboardStore &&
               // in case of comparison, we need to wait for the comparison start time to be available
               (!isComparison || !!timeControls.comparisonAdjustedStart),
-            queryClient: ctx.queryClient,
             // Note: `keepPreviousData` doesn't work here b/c every update to the derived store creates a whole new QueryObserver, which
             // instanites a new Query store. However, I'm keeping this here to remind us to use `keepPreviousData` once we have a stable QueryObserver.
-            keepPreviousData: true,
+            placeholderData: keepPreviousData,
+            refetchOnMount: false,
           },
         },
-      ).subscribe(set),
+        ctx.queryClient,
+      ).subscribe(set);
+    },
   );
 }
 
@@ -129,14 +135,18 @@ export function createTimeSeriesDataStore(
 
       const allMeasures = explore?.measures ?? [];
       let measures = allMeasures;
+      const showTimeDimensionDetail = Boolean(
+        dashboardStore?.activePage ===
+          DashboardState_ActivePage.TIME_DIMENSIONAL_DETAIL,
+      );
       const expandedMeasuerName = dashboardStore?.tdd?.expandedMeasureName;
-      if (expandedMeasuerName) {
+      if (showTimeDimensionDetail && expandedMeasuerName) {
         measures = allMeasures.filter(
           (measure) => measure === expandedMeasuerName,
         );
       } else {
-        measures = dashboardStore?.visibleMeasureKeys
-          ? [...dashboardStore.visibleMeasureKeys]
+        measures = dashboardStore?.visibleMeasures
+          ? [...dashboardStore.visibleMeasures]
           : [];
       }
 

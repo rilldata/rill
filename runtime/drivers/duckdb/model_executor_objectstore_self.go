@@ -125,7 +125,7 @@ func objectStoreSecretSQL(ctx context.Context, path, model, inputConnector strin
 			return "", fmt.Errorf("failed to parse s3 config properties: %w", err)
 		}
 		var sb strings.Builder
-		sb.WriteString("CREATE OR REPLACE TEMPORARY SECRET ")
+		sb.WriteString("CREATE TEMPORARY SECRET IF NOT EXISTS ")
 		sb.WriteString(safeSecretName)
 		sb.WriteString(" (TYPE S3")
 		if s3Config.AllowHostAccess {
@@ -146,7 +146,6 @@ func objectStoreSecretSQL(ctx context.Context, path, model, inputConnector strin
 					sb.WriteString(", USE_SSL false")
 				}
 			}
-
 			sb.WriteString(", ENDPOINT ")
 			sb.WriteString(safeSQLString(s3Config.Endpoint))
 			sb.WriteString(", URL_STYLE path")
@@ -184,7 +183,7 @@ func objectStoreSecretSQL(ctx context.Context, path, model, inputConnector strin
 			return "", errGCSUsesNativeCreds
 		}
 		var sb strings.Builder
-		sb.WriteString("CREATE OR REPLACE TEMPORARY SECRET ")
+		sb.WriteString("CREATE TEMPORARY SECRET IF NOT EXISTS ")
 		sb.WriteString(safeSecretName)
 		sb.WriteString(" (TYPE GCS")
 		if gcsConfig.AllowHostAccess {
@@ -202,7 +201,7 @@ func objectStoreSecretSQL(ctx context.Context, path, model, inputConnector strin
 			return "", fmt.Errorf("failed to parse s3 config properties: %w", err)
 		}
 		var sb strings.Builder
-		sb.WriteString("CREATE OR REPLACE TEMPORARY SECRET ")
+		sb.WriteString("CREATE TEMPORARY SECRET IF NOT EXISTS ")
 		sb.WriteString(safeSecretName)
 		sb.WriteString(" (TYPE AZURE")
 		// if connection string is set then use that and fall back to env credentials only if host access is allowed and connection string is not set

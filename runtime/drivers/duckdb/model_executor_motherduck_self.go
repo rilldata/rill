@@ -16,6 +16,11 @@ type mdToSelfInputProps struct {
 	DSN   string `mapstructure:"dsn"`
 }
 
+type mdConfigProps struct {
+	Token           string `mapstructure:"token"`
+	AllowHostAccess bool   `mapstructure:"allow_host_access"`
+}
+
 func (p *mdToSelfInputProps) resolveDSN() string {
 	if p.DSN != "" {
 		return p.DSN
@@ -76,8 +81,8 @@ func (e *mdToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExecu
 
 	clone := *opts
 	m := &ModelInputProperties{
-		SQL:         inputProps.SQL,
-		InitQueries: fmt.Sprintf("INSTALL 'motherduck'; LOAD 'motherduck'; SET motherduck_token=%s; ATTACH %s;", safeSQLString(token), safeSQLString(inputProps.resolveDSN())),
+		SQL:     inputProps.SQL,
+		PreExec: fmt.Sprintf("INSTALL 'motherduck'; LOAD 'motherduck'; SET motherduck_token=%s; ATTACH IF NOT EXISTS %s;", safeSQLString(token), safeSQLString(inputProps.resolveDSN())),
 	}
 	var props map[string]any
 	err = mapstructure.Decode(m, &props)

@@ -1378,6 +1378,9 @@ paths:
                 type: boolean
               fillMissing:
                 type: boolean
+              rows:
+                type: boolean
+                title: Optional. Defaults to false. Used to fetch rows from underlying model
       tags:
         - QueryService
   /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/compare-toplist:
@@ -1721,6 +1724,9 @@ paths:
               priority:
                 type: integer
                 format: int32
+              timeZone:
+                type: string
+                title: Optional timezone param to easily override time-range expressions
       tags:
         - QueryService
   /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/timeseries:
@@ -2944,13 +2950,6 @@ paths:
       tags:
         - ConnectorService
 definitions:
-  BucketExtractPolicyStrategy:
-    type: string
-    enum:
-      - STRATEGY_UNSPECIFIED
-      - STRATEGY_HEAD
-      - STRATEGY_TAIL
-    default: STRATEGY_UNSPECIFIED
   ColumnTimeSeriesRequestBasicMeasure:
     type: object
     properties:
@@ -3029,51 +3028,7 @@ definitions:
       dimension:
         type: string
       value: {}
-  MetricsViewSpecAvailableComparisonOffset:
-    type: object
-    properties:
-      offset:
-        type: string
-      range:
-        type: string
-        description: Used to override the range for the comparison with something other than the selected range.
-    description: 'Deprecated: Now defined in the Explore resource.'
-  MetricsViewSpecAvailableTimeRange:
-    type: object
-    properties:
-      range:
-        type: string
-      comparisonOffsets:
-        type: array
-        items:
-          type: object
-          $ref: '#/definitions/MetricsViewSpecAvailableComparisonOffset'
-        description: Available comparison offsets for this time range.
-    description: 'Deprecated: Now defined in the Explore resource.'
-  MetricsViewSpecComparisonMode:
-    type: string
-    enum:
-      - COMPARISON_MODE_UNSPECIFIED
-      - COMPARISON_MODE_NONE
-      - COMPARISON_MODE_TIME
-      - COMPARISON_MODE_DIMENSION
-    default: COMPARISON_MODE_UNSPECIFIED
-    description: |-
-      DEPRECATED FIELDS
-      Deprecated: Now defined in the Explore resource.
-  MetricsViewSpecDimensionSelector:
-    type: object
-    properties:
-      name:
-        type: string
-      timeGrain:
-        $ref: '#/definitions/v1TimeGrain'
-        title: Only for time dimensions (optional)
-      desc:
-        type: boolean
-        title: Only for when ordering (optional)
-    title: Selector for a dimension
-  MetricsViewSpecDimensionV2:
+  MetricsViewSpecDimension:
     type: object
     properties:
       name:
@@ -3091,16 +3046,19 @@ definitions:
       uri:
         type: string
     title: Dimensions are columns to filter and group by
-  MetricsViewSpecMeasureType:
-    type: string
-    enum:
-      - MEASURE_TYPE_UNSPECIFIED
-      - MEASURE_TYPE_SIMPLE
-      - MEASURE_TYPE_DERIVED
-      - MEASURE_TYPE_TIME_COMPARISON
-    default: MEASURE_TYPE_UNSPECIFIED
-    title: Type of measure query to generate
-  MetricsViewSpecMeasureV2:
+  MetricsViewSpecDimensionSelector:
+    type: object
+    properties:
+      name:
+        type: string
+      timeGrain:
+        $ref: '#/definitions/v1TimeGrain'
+        title: Only for time dimensions (optional)
+      desc:
+        type: boolean
+        title: Only for when ordering (optional)
+    title: Selector for a dimension
+  MetricsViewSpecMeasure:
     type: object
     properties:
       name:
@@ -3140,6 +3098,15 @@ definitions:
       treatNullsAs:
         type: string
     title: Measures are aggregated computed values
+  MetricsViewSpecMeasureType:
+    type: string
+    enum:
+      - MEASURE_TYPE_UNSPECIFIED
+      - MEASURE_TYPE_SIMPLE
+      - MEASURE_TYPE_DERIVED
+      - MEASURE_TYPE_TIME_COMPARISON
+    default: MEASURE_TYPE_UNSPECIFIED
+    title: Type of measure query to generate
   MetricsViewSpecMeasureWindow:
     type: object
     properties:
@@ -3544,36 +3511,6 @@ definitions:
         type: array
         items:
           type: string
-  v1BucketExtractPolicy:
-    type: object
-    properties:
-      rowsStrategy:
-        $ref: '#/definitions/BucketExtractPolicyStrategy'
-      rowsLimitBytes:
-        type: string
-        format: uint64
-      filesStrategy:
-        $ref: '#/definitions/BucketExtractPolicyStrategy'
-      filesLimit:
-        type: string
-        format: uint64
-  v1BucketPlanner:
-    type: object
-    properties:
-      spec:
-        $ref: '#/definitions/v1BucketPlannerSpec'
-      state:
-        $ref: '#/definitions/v1BucketPlannerState'
-  v1BucketPlannerSpec:
-    type: object
-    properties:
-      extractPolicy:
-        $ref: '#/definitions/v1BucketExtractPolicy'
-  v1BucketPlannerState:
-    type: object
-    properties:
-      region:
-        type: string
   v1BuiltinMeasure:
     type: string
     enum:
@@ -3673,6 +3610,9 @@ definitions:
           List of selectable time ranges with comparison time ranges.
           If the list is empty, a default list should be shown.
           TODO: Once the canvas APIs have stabilized, rename ExploreTimeRange to a non-explore-specific name.
+      allowCustomTimeRange:
+        type: boolean
+        title: Toggle custom time range
       timeZones:
         type: array
         items:
@@ -4099,11 +4039,6 @@ definitions:
         title: Provision settings if its a managed connector
       provisionArgs:
         type: object
-      configFromVariables:
-        type: object
-        additionalProperties:
-          type: string
-        title: 'DEPRECATED: config_from_variables stores configs whose value is a variable. This is only set for configs obtained from `connector.yaml`'
   v1ConnectorDriver:
     type: object
     properties:
@@ -4169,13 +4104,6 @@ definitions:
         type: boolean
       provisionArgs:
         type: object
-      propertiesFromVariables:
-        type: object
-        additionalProperties:
-          type: string
-        description: |-
-          DEPRECATED: properties_from_variables stores properties whose value is a variable.
-          NOTE : properties_from_variables and properties both should be used to get all properties.
   v1ConnectorState:
     type: object
     properties:
@@ -4345,6 +4273,16 @@ definitions:
         $ref: '#/definitions/v1ExploreSortType'
       exploreExpandedDimension:
         type: string
+      exploreLeaderboardMeasureCount:
+        type: integer
+        format: int64
+        title: Deprecated
+      exploreLeaderboardMeasures:
+        type: array
+        items:
+          type: string
+      exploreLeaderboardShowContextForAllMeasures:
+        type: boolean
       timeDimensionMeasure:
         type: string
       timeDimensionChartType:
@@ -4444,6 +4382,9 @@ definitions:
       lockTimeZone:
         type: boolean
         title: When set to true, dashboard will be locked to the first time zone in the time_zones key (or UTC)
+      allowCustomTimeRange:
+        type: boolean
+        title: Allow custom time range
   v1ExploreState:
     type: object
     properties:
@@ -4847,6 +4788,13 @@ definitions:
       valueType:
         $ref: '#/definitions/runtimev1Type'
     title: MapType is a complex type for mapping keys to values
+  v1MetricsView:
+    type: object
+    properties:
+      spec:
+        $ref: '#/definitions/v1MetricsViewSpec'
+      state:
+        $ref: '#/definitions/v1MetricsViewState'
   v1MetricsViewAggregationDimension:
     type: object
     properties:
@@ -5005,6 +4953,9 @@ definitions:
         type: boolean
       fillMissing:
         type: boolean
+      rows:
+        type: boolean
+        title: Optional. Defaults to false. Used to fetch rows from underlying model
   v1MetricsViewAggregationResponse:
     type: object
     properties:
@@ -5319,13 +5270,13 @@ definitions:
         type: array
         items:
           type: object
-          $ref: '#/definitions/MetricsViewSpecDimensionV2'
+          $ref: '#/definitions/MetricsViewSpecDimension'
         title: Dimensions in the metrics view
       measures:
         type: array
         items:
           type: object
-          $ref: '#/definitions/MetricsViewSpecMeasureV2'
+          $ref: '#/definitions/MetricsViewSpecMeasure'
         title: Measures in the metrics view
       securityRules:
         type: array
@@ -5341,55 +5292,6 @@ definitions:
         type: integer
         format: int64
         description: Month number to use as the base for time aggregations by year. Defaults to 1 (January).
-      defaultDimensions:
-        type: array
-        items:
-          type: string
-        description: |-
-          List of selected dimensions by defaults.
-          Deprecated: Now defined in the Explore resource.
-      defaultMeasures:
-        type: array
-        items:
-          type: string
-        description: |-
-          List of selected measures by defaults.
-          Deprecated: Now defined in the Explore resource.
-      defaultTimeRange:
-        type: string
-        description: |-
-          Default time range for the dashboard. It should be a valid ISO 8601 duration string.
-          Deprecated: Now defined in the Explore resource.
-      defaultComparisonMode:
-        $ref: '#/definitions/MetricsViewSpecComparisonMode'
-        description: |-
-          Selected default comparison mode.
-          Deprecated: Now defined in the Explore resource.
-      defaultComparisonDimension:
-        type: string
-        description: |-
-          If comparison mode is dimension then this determines which is the default dimension.
-          Deprecated: Now defined in the Explore resource.
-      defaultTheme:
-        type: string
-        description: |-
-          Default theme to apply.
-          Deprecated: Now defined in the Explore resource.
-      availableTimeRanges:
-        type: array
-        items:
-          type: object
-          $ref: '#/definitions/MetricsViewSpecAvailableTimeRange'
-        description: |-
-          List of available time ranges with comparison ranges that would replace the default list.
-          Deprecated: Now defined in the Explore resource.
-      availableTimeZones:
-        type: array
-        items:
-          type: string
-        description: |-
-          Available time zones list preferred time zones using IANA location identifiers.
-          Deprecated: Now defined in the Explore resource.
       cacheEnabled:
         type: boolean
         description: Cache controls for the metrics view.
@@ -5589,13 +5491,6 @@ definitions:
       data:
         type: object
         title: Not optional, not null
-  v1MetricsViewV2:
-    type: object
-    properties:
-      spec:
-        $ref: '#/definitions/v1MetricsViewSpec'
-      state:
-        $ref: '#/definitions/v1MetricsViewState'
   v1Migration:
     type: object
     properties:
@@ -5619,6 +5514,13 @@ definitions:
       version:
         type: integer
         format: int64
+  v1Model:
+    type: object
+    properties:
+      spec:
+        $ref: '#/definitions/v1ModelSpec'
+      state:
+        $ref: '#/definitions/v1ModelState'
   v1ModelPartition:
     type: object
     properties:
@@ -5728,13 +5630,6 @@ definitions:
         type: string
         format: int64
         description: latest_execution_duration_ms is the time user queries took to execute in the last successful refresh.
-  v1ModelV2:
-    type: object
-    properties:
-      spec:
-        $ref: '#/definitions/v1ModelSpec'
-      state:
-        $ref: '#/definitions/v1ModelState'
   v1Notifier:
     type: object
     properties:
@@ -5894,18 +5789,6 @@ definitions:
         format: date-time
       watching:
         type: boolean
-  v1PullTrigger:
-    type: object
-    properties:
-      spec:
-        $ref: '#/definitions/v1PullTriggerSpec'
-      state:
-        $ref: '#/definitions/v1PullTriggerState'
-    description: 'DEPRECATED (2024-08-28): Use a RefreshTrigger that targets the project parser instead.'
-  v1PullTriggerSpec:
-    type: object
-  v1PullTriggerState:
-    type: object
   v1PutFileResponse:
     type: object
     properties:
@@ -6192,11 +6075,11 @@ definitions:
         $ref: '#/definitions/v1ProjectParser'
         description: Well-known types only, for now. If required, we can add support for a google.protobuf.Any later.
       source:
-        $ref: '#/definitions/v1SourceV2'
+        $ref: '#/definitions/v1Source'
       model:
-        $ref: '#/definitions/v1ModelV2'
+        $ref: '#/definitions/v1Model'
       metricsView:
-        $ref: '#/definitions/v1MetricsViewV2'
+        $ref: '#/definitions/v1MetricsView'
       explore:
         $ref: '#/definitions/v1Explore'
       migration:
@@ -6205,12 +6088,8 @@ definitions:
         $ref: '#/definitions/v1Report'
       alert:
         $ref: '#/definitions/v1Alert'
-      pullTrigger:
-        $ref: '#/definitions/v1PullTrigger'
       refreshTrigger:
         $ref: '#/definitions/v1RefreshTrigger'
-      bucketPlanner:
-        $ref: '#/definitions/v1BucketPlanner'
       theme:
         $ref: '#/definitions/v1Theme'
       component:
@@ -6381,6 +6260,13 @@ definitions:
       expression:
         $ref: '#/definitions/v1Expression'
         title: Regular query expression referencing dimension names
+  v1Source:
+    type: object
+    properties:
+      spec:
+        $ref: '#/definitions/v1SourceSpec'
+      state:
+        $ref: '#/definitions/v1SourceState'
   v1SourceSpec:
     type: object
     properties:
@@ -6414,13 +6300,6 @@ definitions:
       refreshedOn:
         type: string
         format: date-time
-  v1SourceV2:
-    type: object
-    properties:
-      spec:
-        $ref: '#/definitions/v1SourceSpec'
-      state:
-        $ref: '#/definitions/v1SourceState'
   v1StringListValue:
     type: object
     properties:

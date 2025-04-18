@@ -1,10 +1,10 @@
-import type { MetricsViewSpecMeasureV2 } from "@rilldata/web-common/runtime-client";
-import type { DashboardDataSources } from "./types";
+import type { MetricsViewSpecMeasure } from "@rilldata/web-common/runtime-client";
 import { isSummableMeasure } from "../../dashboard-utils";
+import type { DashboardDataSources } from "./types";
 
 export const activeMeasure = (
   dashData: DashboardDataSources,
-): MetricsViewSpecMeasureV2 | undefined => {
+): MetricsViewSpecMeasure | undefined => {
   if (!dashData.validMetricsView?.measures) {
     return undefined;
   }
@@ -16,13 +16,13 @@ export const activeMeasure = (
 };
 
 export const activeMeasureName = (dashData: DashboardDataSources): string => {
-  return dashData.dashboard.leaderboardMeasureName;
+  return dashData.dashboard.leaderboardSortByMeasureName;
 };
 
 export const selectedMeasureNames = (
   dashData: DashboardDataSources,
 ): string[] => {
-  return [...dashData.dashboard.visibleMeasureKeys];
+  return dashData.dashboard.visibleMeasures;
 };
 
 export const isValidPercentOfTotal = (
@@ -33,7 +33,7 @@ export const isValidPercentOfTotal = (
 
 export const activeMeasureSelectors = {
   /**
-   * Gets the MetricsViewSpecMeasureV2 of the primary
+   * Gets the MetricsViewSpecMeasure of the primary
    * active measure for the dashboard.
    */
   activeMeasure,

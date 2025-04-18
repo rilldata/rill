@@ -1,51 +1,72 @@
 <script lang="ts">
+  import ArrowDown from "@rilldata/web-common/components/icons/ArrowDown.svelte";
+  import Spacer from "@rilldata/web-common/components/icons/Spacer.svelte";
+  import Shortcut from "@rilldata/web-common/components/tooltip/Shortcut.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import { SortType } from "../proto-state/derived-types";
-  import ArrowDown from "@rilldata/web-common/components/icons/ArrowDown.svelte";
-  import Delta from "@rilldata/web-common/components/icons/Delta.svelte";
-  import PieChart from "@rilldata/web-common/components/icons/PieChart.svelte";
-  import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
   import TooltipShortcutContainer from "@rilldata/web-common/components/tooltip/TooltipShortcutContainer.svelte";
-  import Shortcut from "@rilldata/web-common/components/tooltip/Shortcut.svelte";
+  import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
+  import { fly } from "svelte/transition";
+  import DeltaChange from "../dimension-table/DeltaChange.svelte";
+  import DeltaChangePercentage from "../dimension-table/DeltaChangePercentage.svelte";
+  import PercentOfTotal from "../dimension-table/PercentOfTotal.svelte";
+  import { SortType } from "../proto-state/derived-types";
   import DimensionCompareMenu from "./DimensionCompareMenu.svelte";
 
   export let dimensionName: string;
   export let isFetching: boolean;
+  export let isValidPercentOfTotal: (measureName: string) => boolean;
   export let isTimeComparisonActive: boolean;
-  export let isValidPercentOfTotal: boolean;
   export let dimensionDescription: string;
   export let isBeingCompared: boolean;
   export let sortedAscending: boolean;
   export let displayName: string;
   export let hovered: boolean;
   export let sortType: SortType;
-  export let toggleSort: (sortType: SortType) => void;
+  export let allowDimensionComparison: boolean;
+  export let allowExpandTable: boolean;
+  export let leaderboardMeasureNames: string[] = [];
+  export let leaderboardSortByMeasureName: string | null;
+  export let leaderboardShowContextForAllMeasures: boolean;
+  export let toggleSort: (sortType: SortType, measureName?: string) => void;
   export let setPrimaryDimension: (dimensionName: string) => void;
   export let toggleComparisonDimension: (
     dimensionName: string | undefined,
   ) => void;
+  export let measureLabel: (measureName: string) => string;
+
+  function shouldShowContextColumns(measureName: string): boolean {
+    return (
+      leaderboardShowContextForAllMeasures ||
+      measureName === leaderboardSortByMeasureName
+    );
+  }
 </script>
 
 <thead>
   <tr>
-    <th aria-label="Comparison column">
+    <th aria-label="Comparison column" class="grid place-content-center">
       {#if isFetching}
         <DelayedSpinner isLoading={isFetching} size="16px" />
-      {:else if hovered || isBeingCompared}
+      {:else if allowDimensionComparison && (hovered || isBeingCompared)}
         <DimensionCompareMenu
           {dimensionName}
           {isBeingCompared}
           {toggleComparisonDimension}
         />
+      {:else}
+        <Spacer size="14px" />
       {/if}
     </th>
 
-    <th>
+    <th data-dimension-header>
       <Tooltip distance={16} location="top">
         <button
-          class="ui-header-primary"
+          disabled={!allowExpandTable}
+          class="text-slate-600 {allowExpandTable
+            ? 'hover:text-primary-700'
+            : ''}"
           aria-label="Open dimension details"
           on:click={() => setPrimaryDimension(dimensionName)}
         >
@@ -59,7 +80,7 @@
             <svelte:fragment slot="description" />
           </TooltipTitle>
           <TooltipShortcutContainer>
-            <div>
+            <div class="line-clamp-2">
               {#if dimensionDescription}
                 {dimensionDescription}
               {:else}
@@ -67,61 +88,140 @@
               {/if}
             </div>
             <Shortcut />
-            <div>Expand leaderboard</div>
-            <Shortcut>Click</Shortcut>
+            {#if allowExpandTable}
+              <div>Expand leaderboard</div>
+              <Shortcut>Click</Shortcut>
+            {/if}
           </TooltipShortcutContainer>
         </TooltipContent>
       </Tooltip>
     </th>
 
-    <th>
-      <button
-        aria-label="Toggle sort leaderboards by value"
-        on:click={() => toggleSort(SortType.VALUE)}
-      >
-        #{#if sortType === SortType.VALUE}
-          <ArrowDown flip={sortedAscending} />
-        {/if}
-      </button>
-    </th>
-
-    {#if isTimeComparisonActive}
-      <th>
+    {#each leaderboardMeasureNames as measureName, index (index)}
+      <th data-measure-header>
         <button
-          aria-label="Toggle sort leaderboards by absolute change"
-          on:click={() => toggleSort(SortType.DELTA_ABSOLUTE)}
+          aria-label="Toggle sort leaderboards by value"
+          on:click={() => {
+            toggleSort(SortType.VALUE, measureName);
+          }}
+          class="font-normal text-right"
         >
-          <Delta />
-          {#if sortType === SortType.DELTA_ABSOLUTE}
-            <ArrowDown flip={sortedAscending} />
+          <span
+            class="measure-label line-clamp-2"
+            title={measureLabel(measureName)}
+          >
+            {#if leaderboardMeasureNames.length > 1}
+              {measureLabel(measureName)}
+            {:else}
+              #
+            {/if}
+          </span>
+          {#if measureName === leaderboardSortByMeasureName && sortType === SortType.VALUE}
+            <div class="ui-copy-icon">
+              {#if sortedAscending}
+                <div in:fly|global={{ duration: 200, y: 8 }} style:opacity={1}>
+                  <ArrowDown flip />
+                </div>
+              {:else}
+                <div in:fly|global={{ duration: 200, y: -8 }} style:opacity={1}>
+                  <ArrowDown />
+                </div>
+              {/if}
+            </div>
           {/if}
         </button>
       </th>
 
-      <th>
-        <button
-          aria-label="Toggle sort leaderboards by percent change"
-          on:click={() => toggleSort(SortType.DELTA_PERCENT)}
-        >
-          <Delta /> %
-          {#if sortType === SortType.DELTA_PERCENT}
-            <ArrowDown flip={sortedAscending} />
-          {/if}
-        </button>
-      </th>
-    {:else if isValidPercentOfTotal}
-      <th>
-        <button
-          aria-label="Toggle sort leaderboards by percent of total"
-          on:click={() => toggleSort(SortType.PERCENT)}
-        >
-          <PieChart /> %
-          {#if sortType === SortType.PERCENT}
-            <ArrowDown flip={sortedAscending} />
-          {/if}
-        </button>
-      </th>
-    {/if}
+      {#if isValidPercentOfTotal(measureName) && shouldShowContextColumns(measureName)}
+        <th data-percent-of-total-header>
+          <button
+            aria-label="Toggle sort leaderboards by percent of total"
+            on:click={() => toggleSort(SortType.PERCENT, measureName)}
+          >
+            <PercentOfTotal />
+            {#if sortType === SortType.PERCENT && measureName === leaderboardSortByMeasureName}
+              <div class="ui-copy-icon">
+                {#if sortedAscending}
+                  <div
+                    in:fly|global={{ duration: 200, y: 8 }}
+                    style:opacity={1}
+                  >
+                    <ArrowDown flip />
+                  </div>
+                {:else}
+                  <div
+                    in:fly|global={{ duration: 200, y: -8 }}
+                    style:opacity={1}
+                  >
+                    <ArrowDown />
+                  </div>
+                {/if}
+              </div>
+            {/if}
+          </button>
+        </th>
+      {/if}
+
+      {#if isTimeComparisonActive && shouldShowContextColumns(measureName)}
+        <th data-absolute-change-header>
+          <button
+            aria-label="Toggle sort leaderboards by absolute change"
+            on:click={() => toggleSort(SortType.DELTA_ABSOLUTE, measureName)}
+          >
+            <DeltaChange />
+            {#if sortType === SortType.DELTA_ABSOLUTE && measureName === leaderboardSortByMeasureName}
+              <div class="ui-copy-icon">
+                {#if sortedAscending}
+                  <div
+                    in:fly|global={{ duration: 200, y: 8 }}
+                    style:opacity={1}
+                  >
+                    <ArrowDown flip />
+                  </div>
+                {:else}
+                  <div
+                    in:fly|global={{ duration: 200, y: -8 }}
+                    style:opacity={1}
+                  >
+                    <ArrowDown />
+                  </div>
+                {/if}
+              </div>
+            {/if}
+          </button>
+        </th>
+      {/if}
+
+      {#if isTimeComparisonActive && shouldShowContextColumns(measureName)}
+        <th data-percent-change-header>
+          <button
+            aria-label="Toggle sort leaderboards by percent change"
+            on:click={() => toggleSort(SortType.DELTA_PERCENT, measureName)}
+          >
+            <DeltaChangePercentage />
+            {#if sortType === SortType.DELTA_PERCENT && measureName === leaderboardSortByMeasureName}
+              <div class="ui-copy-icon">
+                {#if sortedAscending}
+                  <div
+                    in:fly|global={{ duration: 200, y: 8 }}
+                    style:opacity={1}
+                  >
+                    <ArrowDown flip />
+                  </div>
+                {:else}
+                  <div
+                    in:fly|global={{ duration: 200, y: -8 }}
+                    style:opacity={1}
+                  >
+                    <ArrowDown />
+                  </div>
+                {/if}
+              </div>
+            {/if}
+          </button>
+        </th>
+      {/if}
+    {/each}
   </tr>
 </thead>
 
@@ -134,8 +234,8 @@
     @apply p-0 text-right h-8;
   }
 
-  th:first-of-type {
-    @apply text-left;
+  th[data-dimension-header] {
+    @apply sticky left-0 z-30 bg-surface text-left;
   }
 
   th:not(:first-of-type) {

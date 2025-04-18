@@ -8,6 +8,7 @@ import {
   type PivotChipData,
   PivotChipType,
   type PivotState,
+  type PivotTableMode,
 } from "@rilldata/web-common/features/dashboards/pivot/types";
 import {
   FromProtoOperationMap,
@@ -47,7 +48,7 @@ import {
   PivotElement,
 } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import type {
-  MetricsViewSpecDimensionV2,
+  MetricsViewSpecDimension,
   StructTypeField,
   V1ExploreSpec,
   V1Expression,
@@ -166,8 +167,9 @@ export function getDashboardStateFromProto(
   }
 
   if (dashboard.leaderboardMeasure) {
-    entity.leaderboardMeasureName = dashboard.leaderboardMeasure;
+    entity.leaderboardSortByMeasureName = dashboard.leaderboardMeasure;
   }
+
   if (dashboard.comparisonDimension) {
     entity.selectedComparisonDimension = dashboard.comparisonDimension;
   } else {
@@ -194,18 +196,18 @@ export function getDashboardStateFromProto(
 
   if (dashboard.allMeasuresVisible) {
     entity.allMeasuresVisible = true;
-    entity.visibleMeasureKeys = new Set(explore.measures);
+    entity.visibleMeasures = [...(explore.measures ?? [])];
   } else if (dashboard.visibleMeasures?.length) {
     entity.allMeasuresVisible = false;
-    entity.visibleMeasureKeys = new Set(dashboard.visibleMeasures);
+    entity.visibleMeasures = [...dashboard.visibleMeasures];
   }
 
   if (dashboard.allDimensionsVisible) {
     entity.allDimensionsVisible = true;
-    entity.visibleDimensionKeys = new Set(explore.dimensions);
+    entity.visibleDimensions = [...(explore.dimensions ?? [])];
   } else if (dashboard.visibleDimensions?.length) {
     entity.allDimensionsVisible = false;
-    entity.visibleDimensionKeys = new Set(dashboard.visibleDimensions);
+    entity.visibleDimensions = [...dashboard.visibleDimensions];
   }
 
   if (dashboard.leaderboardContextColumn !== undefined) {
@@ -219,9 +221,18 @@ export function getDashboardStateFromProto(
   if (dashboard.leaderboardSortType) {
     entity.dashboardSortType = dashboard.leaderboardSortType;
   }
+  if (dashboard.leaderboardShowContextForAllMeasures) {
+    entity.leaderboardShowContextForAllMeasures =
+      dashboard.leaderboardShowContextForAllMeasures;
+  }
+  if (dashboard.leaderboardMeasures) {
+    entity.leaderboardMeasureNames = dashboard.leaderboardMeasures;
+  }
 
-  if (dashboard.pivotIsActive !== undefined) {
+  if (dashboard.activePage === DashboardState_ActivePage.PIVOT) {
     entity.pivot = fromPivotProto(dashboard, metricsView);
+  } else if (dashboard.activePage !== DashboardState_ActivePage.UNSPECIFIED) {
+    entity.pivot = blankPivotState();
   }
 
   Object.assign(entity, fromActivePageProto(dashboard));
@@ -264,7 +275,7 @@ export function fromExpressionProto(
 
 function correctFilterValues(
   filter: V1Expression,
-  dimensions: MetricsViewSpecDimensionV2[],
+  dimensions: MetricsViewSpecDimension[],
   schema: V1StructType,
 ) {
   return filterIdentifiers(filter, (e, ident) => {
@@ -413,7 +424,6 @@ function fromPivotProto(
   }
 
   return {
-    active: dashboard.pivotIsActive ?? false,
     rows: rowDimensions,
     columns: [
       ...colDimensions,
@@ -429,6 +439,20 @@ function fromPivotProto(
       FromProtoPivotTableModeMap[
         dashboard.pivotTableMode || DashboardState_PivotTableMode.NEST
       ],
+  };
+}
+
+function blankPivotState(): PivotState {
+  return {
+    rows: [],
+    columns: [],
+    expanded: {},
+    sorting: [],
+    columnPage: 1,
+    rowPage: 1,
+    enableComparison: true,
+    activeCell: null,
+    tableMode: "nest" as PivotTableMode,
   };
 }
 

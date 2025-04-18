@@ -7,7 +7,7 @@
   import { runtime } from "../../../runtime-client/runtime-store";
   import { MEASURE_CONFIG } from "../config";
   import MeasureBigNumber from "./MeasureBigNumber.svelte";
-  import DashboardVisibilityDropdown from "@rilldata/web-common/components/menu/shadcn/DashboardVisibilityDropdown.svelte";
+  import DashboardVisibilityDropdown from "@rilldata/web-common/components/menu/DashboardVisibilityDropdown.svelte";
 
   export let metricsViewName: string;
   export let exploreContainerWidth: number;
@@ -37,7 +37,7 @@
       activeMeasure: { selectedMeasureNames },
     },
     actions: {
-      measures: { toggleMeasureVisibility },
+      measures: { toggleMeasureVisibility, toggleAllMeasuresVisibility },
     },
   } = getStateManagers();
 
@@ -46,11 +46,10 @@
   const timeControlsStore = useTimeControlStore(getStateManagers());
 
   let metricsContainerHeight: number;
-
+  let measureNodes: HTMLDivElement[] = [];
   let measuresWrapper;
   let measuresHeight: number[] = [];
   let measureGridHeights: number[] = [];
-
   let containerWidths = MEASURE_CONFIG.bigNumber.widthWithoutChart;
 
   $: visibleMeasureNames = $visibleMeasures
@@ -147,11 +146,15 @@
       },
     },
   );
-
-  let measureNodes: HTMLDivElement[] = [];
+  $: totalsQueryResult = $totalsQuery;
 
   $: if (metricsContainerHeight && measureNodes.length) {
     calculateGridColumns();
+  }
+
+  function getValue(key: string | undefined): number | null {
+    if (!key) return null;
+    return totalsQueryResult.data?.data?.[0]?.[key] as number | null;
   }
 </script>
 
@@ -178,7 +181,7 @@
         }))}
         selectedItems={visibleMeasureNames}
         onToggleSelectAll={() => {
-          toggleMeasureVisibility(allMeasureNames);
+          toggleAllMeasuresVisibility(allMeasureNames);
         }}
       />
     </div>
@@ -194,10 +197,9 @@
         <!-- FIXME: I can't select the big number by the measure id. -->
         <MeasureBigNumber
           {measure}
-          value={// catch nulls and pass only undefined to the component
-          $totalsQuery?.data?.data?.[0][measure?.name ?? ""] ?? undefined}
+          value={getValue(measure?.name)}
           withTimeseries={false}
-          status={$totalsQuery?.isFetching
+          status={totalsQueryResult.isFetching
             ? EntityStatus.Running
             : EntityStatus.Idle}
         />

@@ -9,7 +9,7 @@ import (
 )
 
 type selfToSelfExecutor struct {
-	c *connection
+	c *Connection
 }
 
 var _ drivers.ModelExecutor = &selfToSelfExecutor{}
@@ -58,7 +58,7 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 	}
 
 	var (
-		metrics *drivers.TableWriteMetrics
+		metrics *tableWriteMetrics
 		err     error
 	)
 	if !opts.IncrementalRun {
@@ -69,35 +69,27 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 
 		// Drop the staging view/table if it exists.
 		// NOTE: This intentionally drops the end table if not staging changes.
-		_ = e.c.DropTable(ctx, stagingTableName)
+		_ = e.c.dropTable(ctx, stagingTableName)
 
 		// Create the table
-		opts := &drivers.CreateTableOptions{
-			View:      asView,
-			TableOpts: mustToMap(outputProps),
-		}
-		metrics, err = e.c.CreateTableAsSelect(ctx, stagingTableName, inputProps.SQL, opts)
+		metrics, err = e.c.createTableAsSelect(ctx, stagingTableName, inputProps.SQL, mustToMap(outputProps))
 		if err != nil {
-			_ = e.c.DropTable(ctx, stagingTableName)
+			_ = e.c.dropTable(ctx, stagingTableName)
 			return nil, fmt.Errorf("failed to create model: %w", err)
 		}
 
 		// Rename the staging table to the final table name
 		if stagingTableName != tableName {
-			err = olapForceRenameTable(ctx, e.c, stagingTableName, asView, tableName)
+			err = e.c.forceRenameTable(ctx, stagingTableName, asView, tableName)
 			if err != nil {
 				return nil, fmt.Errorf("failed to rename staged model: %w", err)
 			}
 		}
 	} else {
 		// Insert into the table
-		opts := &drivers.InsertTableOptions{
-			ByName:    false,
-			InPlace:   true,
-			Strategy:  outputProps.IncrementalStrategy,
-			UniqueKey: outputProps.UniqueKey,
-		}
-		metrics, err = e.c.InsertTableAsSelect(ctx, tableName, inputProps.SQL, opts)
+		metrics, err = e.c.insertTableAsSelect(ctx, tableName, inputProps.SQL, &InsertTableOptions{
+			Strategy: outputProps.IncrementalStrategy,
+		})
 		if err != nil {
 			return nil, fmt.Errorf("failed to incrementally insert into table: %w", err)
 		}
@@ -120,7 +112,7 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 		Connector:    opts.OutputConnector,
 		Properties:   resultPropsMap,
 		Table:        tableName,
-		ExecDuration: metrics.Duration,
+		ExecDuration: metrics.duration,
 	}, nil
 }
 

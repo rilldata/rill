@@ -30,7 +30,8 @@ const retryPolicy = `{"methodConfig": [{
 type Client struct {
 	adminv1.AdminServiceClient
 	adminv1.AIServiceClient
-	conn *grpc.ClientConn
+	Token string
+	conn  *grpc.ClientConn
 }
 
 // New creates a new Client and opens a connection. You must call Close() when done with the client.
@@ -69,6 +70,7 @@ func New(adminHost, bearerToken, userAgent string) (*Client, error) {
 	return &Client{
 		AdminServiceClient: adminv1.NewAdminServiceClient(conn),
 		AIServiceClient:    adminv1.NewAIServiceClient(conn),
+		Token:              bearerToken,
 		conn:               conn,
 	}, nil
 }

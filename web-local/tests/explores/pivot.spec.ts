@@ -546,6 +546,8 @@ test.describe("pivot run through", () => {
   test.use({ project: "AdBids" });
 
   test("pivot run through", async ({ page }) => {
+    test.setTimeout(45_000); // Note: we should make this test smaller!
+
     const watcher = new ResourceWatcher(page);
 
     await page.getByLabel("/metrics").click();
@@ -600,12 +602,12 @@ test.describe("pivot run through", () => {
     await validateTableContents(page, "table", expectedTwoMeasureRowDimColDim);
 
     // Flatten the table
-    await page.getByRole("button", { name: "Flatten" }).click();
+    await page.getByRole("button", { name: "Pivot table" }).click();
     await expect(page.locator(".status.running")).toHaveCount(0);
     await validateTableContents(page, "table", expectedFlatTable);
 
     // Nest the table
-    await page.getByRole("button", { name: "Nest" }).click();
+    await page.getByRole("button", { name: "Flat table" }).click();
     await expect(page.locator(".status.running")).toHaveCount(0);
 
     // Remove the row dimension and second measure
@@ -621,10 +623,7 @@ test.describe("pivot run through", () => {
     await addRowField.click();
     await clickMenuButton(page, "Publisher");
 
-    const expandButton = page
-      .locator("td")
-      .filter({ hasText: "Jan" })
-      .getByRole("presentation");
+    const expandButton = page.locator("td").filter({ hasText: "Jan" });
 
     await expandButton.click();
     await expect(page.locator(".status.running")).toHaveCount(0);

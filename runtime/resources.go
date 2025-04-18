@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
-	compilerv1 "github.com/rilldata/rill/runtime/compilers/rillv1"
+	"github.com/rilldata/rill/runtime/parser"
 )
 
 // Built-in resource kinds
@@ -18,9 +18,7 @@ const (
 	ResourceKindMigration      string = "rill.runtime.v1.Migration"
 	ResourceKindReport         string = "rill.runtime.v1.Report"
 	ResourceKindAlert          string = "rill.runtime.v1.Alert"
-	ResourceKindPullTrigger    string = "rill.runtime.v1.PullTrigger"
 	ResourceKindRefreshTrigger string = "rill.runtime.v1.RefreshTrigger"
-	ResourceKindBucketPlanner  string = "rill.runtime.v1.BucketPlanner"
 	ResourceKindTheme          string = "rill.runtime.v1.Theme"
 	ResourceKindComponent      string = "rill.runtime.v1.Component"
 	ResourceKindCanvas         string = "rill.runtime.v1.Canvas"
@@ -48,12 +46,8 @@ func ResourceKindFromShorthand(kind string) string {
 		return ResourceKindReport
 	case "alert":
 		return ResourceKindAlert
-	case "pulltrigger", "pull_trigger":
-		return ResourceKindPullTrigger
 	case "refreshtrigger", "refresh_trigger":
 		return ResourceKindRefreshTrigger
-	case "bucketplanner", "bucket_planner":
-		return ResourceKindBucketPlanner
 	case "theme":
 		return ResourceKindTheme
 	case "component":
@@ -69,80 +63,80 @@ func ResourceKindFromShorthand(kind string) string {
 	}
 }
 
-// ResourceKindFromCompiler converts a compiler resource kind to a runtime resource kind.
-func ResourceKindFromCompiler(kind compilerv1.ResourceKind) string {
+// ResourceKindFromParser converts a parser resource kind to a runtime resource kind.
+func ResourceKindFromParser(kind parser.ResourceKind) string {
 	switch kind {
-	case compilerv1.ResourceKindSource:
+	case parser.ResourceKindSource:
 		return ResourceKindSource
-	case compilerv1.ResourceKindModel:
+	case parser.ResourceKindModel:
 		return ResourceKindModel
-	case compilerv1.ResourceKindMetricsView:
+	case parser.ResourceKindMetricsView:
 		return ResourceKindMetricsView
-	case compilerv1.ResourceKindExplore:
+	case parser.ResourceKindExplore:
 		return ResourceKindExplore
-	case compilerv1.ResourceKindMigration:
+	case parser.ResourceKindMigration:
 		return ResourceKindMigration
-	case compilerv1.ResourceKindReport:
+	case parser.ResourceKindReport:
 		return ResourceKindReport
-	case compilerv1.ResourceKindAlert:
+	case parser.ResourceKindAlert:
 		return ResourceKindAlert
-	case compilerv1.ResourceKindTheme:
+	case parser.ResourceKindTheme:
 		return ResourceKindTheme
-	case compilerv1.ResourceKindComponent:
+	case parser.ResourceKindComponent:
 		return ResourceKindComponent
-	case compilerv1.ResourceKindCanvas:
+	case parser.ResourceKindCanvas:
 		return ResourceKindCanvas
-	case compilerv1.ResourceKindAPI:
+	case parser.ResourceKindAPI:
 		return ResourceKindAPI
-	case compilerv1.ResourceKindConnector:
+	case parser.ResourceKindConnector:
 		return ResourceKindConnector
 	default:
-		panic(fmt.Errorf("unknown compiler resource type %q", kind))
+		panic(fmt.Errorf("unknown parser resource type %q", kind))
 	}
 }
 
-// ResourceKindToCompiler converts a runtime resource kind to a compiler resource kind.
-func ResourceKindToCompiler(kind string) compilerv1.ResourceKind {
+// ResourceKindToParser converts a runtime resource kind to a parser resource kind.
+func ResourceKindToParser(kind string) parser.ResourceKind {
 	switch kind {
 	case ResourceKindSource:
-		return compilerv1.ResourceKindSource
+		return parser.ResourceKindSource
 	case ResourceKindModel:
-		return compilerv1.ResourceKindModel
+		return parser.ResourceKindModel
 	case ResourceKindMetricsView:
-		return compilerv1.ResourceKindMetricsView
+		return parser.ResourceKindMetricsView
 	case ResourceKindExplore:
-		return compilerv1.ResourceKindExplore
+		return parser.ResourceKindExplore
 	case ResourceKindMigration:
-		return compilerv1.ResourceKindMigration
+		return parser.ResourceKindMigration
 	case ResourceKindReport:
-		return compilerv1.ResourceKindReport
+		return parser.ResourceKindReport
 	case ResourceKindAlert:
-		return compilerv1.ResourceKindAlert
+		return parser.ResourceKindAlert
 	case ResourceKindTheme:
-		return compilerv1.ResourceKindTheme
+		return parser.ResourceKindTheme
 	case ResourceKindComponent:
-		return compilerv1.ResourceKindComponent
+		return parser.ResourceKindComponent
 	case ResourceKindCanvas:
-		return compilerv1.ResourceKindCanvas
+		return parser.ResourceKindCanvas
 	case ResourceKindAPI:
-		return compilerv1.ResourceKindAPI
+		return parser.ResourceKindAPI
 	case ResourceKindConnector:
-		return compilerv1.ResourceKindConnector
-	case ResourceKindProjectParser, ResourceKindPullTrigger, ResourceKindRefreshTrigger, ResourceKindBucketPlanner:
+		return parser.ResourceKindConnector
+	case ResourceKindProjectParser, ResourceKindRefreshTrigger:
 		panic(fmt.Errorf("unsupported resource type %q", kind))
 	default:
 		panic(fmt.Errorf("unknown resource type %q", kind))
 	}
 }
 
-// ResourceNameFromCompiler converts a compiler resource name to a runtime resource name.
-func ResourceNameFromCompiler(name compilerv1.ResourceName) *runtimev1.ResourceName {
-	return &runtimev1.ResourceName{Kind: ResourceKindFromCompiler(name.Kind), Name: name.Name}
+// ResourceNameFromParser converts a parser resource name to a runtime resource name.
+func ResourceNameFromParser(name parser.ResourceName) *runtimev1.ResourceName {
+	return &runtimev1.ResourceName{Kind: ResourceKindFromParser(name.Kind), Name: name.Name}
 }
 
-// ResourceNameToCompiler converts a runtime resource name to a compiler resource name.
-func ResourceNameToCompiler(name *runtimev1.ResourceName) compilerv1.ResourceName {
-	return compilerv1.ResourceName{Kind: ResourceKindToCompiler(name.Kind), Name: name.Name}
+// ResourceNameToParser converts a runtime resource name to a parser resource name.
+func ResourceNameToParser(name *runtimev1.ResourceName) parser.ResourceName {
+	return parser.ResourceName{Kind: ResourceKindToParser(name.Kind), Name: name.Name}
 }
 
 // PrettifyResourceKind returns the resource kind in a user-friendly format suitable for printing.

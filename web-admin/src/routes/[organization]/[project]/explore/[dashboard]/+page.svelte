@@ -2,6 +2,7 @@
   import { invalidate, onNavigate } from "$app/navigation";
   import { page } from "$app/stores";
   import { errorStore } from "@rilldata/web-admin/components/errors/error-store";
+  import { getHomeBookmarkExploreState } from "@rilldata/web-admin/features/bookmarks/selectors";
   import DashboardBuilding from "@rilldata/web-admin/features/dashboards/DashboardBuilding.svelte";
   import DashboardErrored from "@rilldata/web-admin/features/dashboards/DashboardErrored.svelte";
   import { viewAsUserStore } from "@rilldata/web-admin/features/view-as-user/viewAsUserStore";
@@ -12,7 +13,7 @@
   import { Dashboard } from "@rilldata/web-common/features/dashboards";
   import DashboardThemeProvider from "@rilldata/web-common/features/dashboards/DashboardThemeProvider.svelte";
   import StateManagersProvider from "@rilldata/web-common/features/dashboards/state-managers/StateManagersProvider.svelte";
-  import DashboardURLStateSync from "@rilldata/web-common/features/dashboards/url-state/DashboardURLStateSync.svelte";
+  import DashboardStateManager from "@rilldata/web-common/features/dashboards/state-managers/loaders/DashboardStateManager.svelte";
   import { useExplore } from "@rilldata/web-common/features/explores/selectors";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import type { V1GetExploreResponse } from "@rilldata/web-common/runtime-client";
@@ -23,36 +24,22 @@
   const PollIntervalWhenDashboardErrored = 5000;
 
   export let data: PageData;
-  $: ({
-    defaultExplorePreset,
-    homeBookmarkExploreState,
-    exploreStateFromYAMLConfig,
-    partialExploreStateFromUrl,
-    exploreStateFromSessionStorage,
-    errors,
-    exploreName,
-  } = data);
-
-  $: if (errors?.length) {
-    const _errs = errors;
-    setTimeout(() => {
-      eventBus.emit("notification", {
-        type: "error",
-        message: _errs[0].message,
-        options: { persisted: true },
-      });
-    }, 100);
-  }
+  $: ({ project } = data);
 
   $: ({ instanceId } = $runtime);
-  $: ({ organization: orgName, project: projectName } = $page.params);
+  $: ({
+    organization: orgName,
+    project: projectName,
+    dashboard: exploreName,
+  } = $page.params);
 
   $: explore = useExplore(instanceId, exploreName, {
-    refetchInterval: (data) => {
-      if (!data) return false;
-      if (isExploreReconcilingForFirstTime(data))
+    refetchInterval: (query) => {
+      if (!query.state.data) return false;
+      if (isExploreReconcilingForFirstTime(query.state.data))
         return PollIntervalWhenDashboardFirstReconciling;
-      if (isExploreErrored(data)) return PollIntervalWhenDashboardErrored;
+      if (isExploreErrored(query.state.data))
+        return PollIntervalWhenDashboardErrored;
       return false;
     },
   });
@@ -87,6 +74,13 @@
       },
     });
   }
+
+  $: bookmarkExploreStateQuery = getHomeBookmarkExploreState(
+    project?.id,
+    instanceId,
+    metricsViewName,
+    exploreName,
+  );
 
   onNavigate(({ from, to }) => {
     viewAsUserStore.set(null);
@@ -151,20 +145,15 @@
   {:else if metricsViewName}
     {#key exploreName}
       <StateManagersProvider {metricsViewName} {exploreName}>
-        <DashboardURLStateSync
-          {metricsViewName}
+        <DashboardStateManager
           {exploreName}
-          extraKeyPrefix={`${orgName}__${projectName}__`}
-          {defaultExplorePreset}
-          initExploreState={homeBookmarkExploreState}
-          {exploreStateFromYAMLConfig}
-          {partialExploreStateFromUrl}
-          {exploreStateFromSessionStorage}
+          storageNamespacePrefix={`${orgName}__${projectName}__`}
+          bookmarkOrTokenExploreState={bookmarkExploreStateQuery}
         >
           <DashboardThemeProvider>
             <Dashboard {metricsViewName} {exploreName} />
           </DashboardThemeProvider>
-        </DashboardURLStateSync>
+        </DashboardStateManager>
       </StateManagersProvider>
     {/key}
   {/if}

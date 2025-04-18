@@ -1,11 +1,6 @@
 import { expect } from "@playwright/test";
 import { interactWithTimeRangeMenu } from "@rilldata/web-common/tests/utils/explore-interactions";
-import {
-  createExploreFromModel,
-  createExploreFromSource,
-} from "../utils/exploreHelpers";
-import { assertLeaderboards } from "../utils/metricsViewHelpers";
-import { ResourceWatcher } from "../utils/ResourceWatcher";
+import { test } from "../setup/base";
 import { updateCodeEditor, wrapRetryAssertion } from "../utils/commonHelpers";
 import {
   AD_BIDS_EXPLORE_PATH,
@@ -13,8 +8,13 @@ import {
   assertAdBidsDashboard,
   createAdBidsModel,
 } from "../utils/dataSpecifcHelpers";
+import {
+  createExploreFromModel,
+  createExploreFromSource,
+} from "../utils/exploreHelpers";
+import { assertLeaderboards } from "../utils/metricsViewHelpers";
+import { ResourceWatcher } from "../utils/ResourceWatcher";
 import { createSource } from "../utils/sourceHelpers";
-import { test } from "../setup/base";
 import { gotoNavEntry } from "../utils/waitHelpers";
 
 test.describe("explores", () => {
@@ -50,6 +50,8 @@ test.describe("explores", () => {
   });
 
   test("Dashboard runthrough", async ({ page }) => {
+    test.setTimeout(45_000); // Note: we should make this test smaller!
+
     // Enable to get logs in CI
     // page.on("console", async (msg) => {
     //   console.log(msg.text());
@@ -59,6 +61,7 @@ test.describe("explores", () => {
     //     `Uncaught exception: "${exception.message}"\n${exception.stack}`
     //   );
     // });
+
     const watcher = new ResourceWatcher(page);
 
     await createAdBidsModel(page);
@@ -425,10 +428,17 @@ dimensions:
     await expect(page.getByText("Avg Bid Price $3.01")).toBeVisible();
 
     // Change the leaderboard metric
-    await page
-      .getByRole("button", { name: "Select a measure to filter by" })
-      .click();
-    await page.getByRole("option", { name: "Avg Bid Price" }).click();
+    await page.getByTestId("leaderboard-measure-names-dropdown").click();
+
+    // Wait for the menu to be visible
+    await page.getByRole("menu").waitFor({ state: "visible" });
+
+    // Wait for and click the Avg Bid Price menu item
+    const avgBidPriceMenuItem = page
+      .getByRole("menuitem", { name: "Avg Bid Price" })
+      .filter({ has: page.getByText("Avg Bid Price") });
+    await avgBidPriceMenuItem.waitFor({ state: "visible" });
+    await avgBidPriceMenuItem.click();
 
     // Check domain and sample value in leaderboard
     await expect(page.getByText("Domain Name")).toBeVisible();
@@ -468,7 +478,10 @@ dimensions:
       page.getByLabel("publisher filter").getByText("Publisher Microsoft"),
     ).toBeVisible();
 
-    // go back to the leaderboards.
+    // Move mouse to clear the "Microsoft" tooltip that blocks the "All dimensions" button
+    await page.mouse.move(0, 0);
+
+    // Go back to the leaderboards
     await page.getByText("All dimensions").click();
     // clear all filters
     await page.getByText("Clear filters").click();

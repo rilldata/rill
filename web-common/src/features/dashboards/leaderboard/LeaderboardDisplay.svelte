@@ -9,11 +9,7 @@
   import type { DimensionThresholdFilter } from "../stores/metrics-explorer-entity";
   import Leaderboard from "./Leaderboard.svelte";
   import LeaderboardControls from "./LeaderboardControls.svelte";
-  import {
-    DEFAULT_COL_WIDTH,
-    deltaColumn,
-    valueColumn,
-  } from "./leaderboard-widths";
+  import { COMPARISON_COLUMN_WIDTH, valueColumn } from "./leaderboard-widths";
 
   export let metricsViewName: string;
   export let whereFilter: V1Expression;
@@ -21,17 +17,21 @@
   export let timeRange: V1TimeRange;
   export let comparisonTimeRange: V1TimeRange | undefined;
   export let timeControlsReady: boolean;
-  export let activeMeasureName: string;
 
   const StateManagers = getStateManagers();
   const {
     selectors: {
-      activeMeasure: { isValidPercentOfTotal, isSummableMeasure },
-      numberFormat: { activeMeasureFormatter },
+      numberFormat: { measureFormatters, activeMeasureFormatter },
       dimensionFilters: { isFilterExcludeMode },
       dimensions: { visibleDimensions },
       comparison: { isBeingCompared: isBeingComparedReadable },
       sorting: { sortedAscending, sortType },
+      measures: { measureLabel, isMeasureValidPercentOfTotal },
+      leaderboard: {
+        leaderboardShowContextForAllMeasures,
+        leaderboardMeasureNames,
+        leaderboardSortByMeasureName,
+      },
     },
     actions: {
       dimensions: { setPrimaryDimension },
@@ -49,21 +49,24 @@
   $: ({ instanceId } = $runtime);
 
   // Reset column widths when the measure changes
-  $: if (activeMeasureName) {
+  $: if ($leaderboardSortByMeasureName) {
     valueColumn.reset();
-    deltaColumn.reset();
   }
 
-  $: firstColumnWidth =
-    !comparisonTimeRange && !$isValidPercentOfTotal ? 240 : 164;
+  $: dimensionColumnWidth = 164;
+
+  $: showPercentOfTotal = $isMeasureValidPercentOfTotal(
+    $leaderboardSortByMeasureName,
+  );
+  $: showDeltaPercent = !!comparisonTimeRange;
 
   $: tableWidth =
-    firstColumnWidth +
+    dimensionColumnWidth +
     $valueColumn +
     (comparisonTimeRange
-      ? $deltaColumn + DEFAULT_COL_WIDTH
-      : $isValidPercentOfTotal
-        ? DEFAULT_COL_WIDTH
+      ? COMPARISON_COLUMN_WIDTH * (showDeltaPercent ? 2 : 1)
+      : showPercentOfTotal
+        ? COMPARISON_COLUMN_WIDTH
         : 0);
 </script>
 
@@ -86,21 +89,22 @@
         {#each $visibleDimensions as dimension (dimension.name)}
           {#if dimension.name}
             <Leaderboard
-              isValidPercentOfTotal={$isValidPercentOfTotal}
+              isValidPercentOfTotal={$isMeasureValidPercentOfTotal}
               {metricsViewName}
-              {activeMeasureName}
+              leaderboardSortByMeasureName={$leaderboardSortByMeasureName}
+              leaderboardMeasureNames={$leaderboardMeasureNames}
+              leaderboardShowContextForAllMeasures={$leaderboardShowContextForAllMeasures}
               {whereFilter}
               {dimensionThresholdFilters}
               {instanceId}
               {tableWidth}
               {timeRange}
-              {firstColumnWidth}
+              {dimensionColumnWidth}
               sortedAscending={$sortedAscending}
               sortType={$sortType}
               filterExcludeMode={$isFilterExcludeMode(dimension.name)}
               {comparisonTimeRange}
               {dimension}
-              isSummableMeasure={$isSummableMeasure}
               {parentElement}
               {suppressTooltip}
               {timeControlsReady}
@@ -113,11 +117,14 @@
                 timeRange.end,
               )}
               isBeingCompared={$isBeingComparedReadable(dimension.name)}
-              formatter={$activeMeasureFormatter}
+              formatters={$leaderboardMeasureNames.length > 1
+                ? $measureFormatters
+                : { [$leaderboardSortByMeasureName]: $activeMeasureFormatter }}
               {setPrimaryDimension}
               {toggleSort}
               {toggleDimensionValueSelection}
               {toggleComparisonDimension}
+              measureLabel={$measureLabel}
             />
           {/if}
         {/each}
@@ -128,6 +135,6 @@
 
 <style lang="postcss">
   .leaderboard-grid {
-    @apply flex flex-row flex-wrap gap-4;
+    @apply flex flex-row flex-wrap gap-4 overflow-x-auto;
   }
 </style>

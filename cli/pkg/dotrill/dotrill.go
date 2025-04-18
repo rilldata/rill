@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 	"gopkg.in/yaml.v2"
@@ -21,30 +22,39 @@ const (
 
 // Constants for YAML keys
 const (
-	DefaultOrgConfigKey            = "org"
-	DefaultAdminURLConfigKey       = "api_url"
-	AnalyticsEnabledConfigKey      = "analytics_enabled"
-	AccessTokenCredentialsKey      = "token"
-	InstallIDStateKey              = "install_id"
-	RepresentingUserCredentialsKey = "representing_user"
-	BackupTokenCredentialsKey      = "backup_token"
-	LatestVersionStateKey          = "latest_version"
-	LatestVersionCheckedAtStateKey = "latest_version_checked_at"
-	UserIDStateKey                 = "user_id"
-	UserCheckHashStateKey          = "user_check_hash"
+	DefaultOrgConfigKey                             = "org"
+	BackupDefaultOrgConfigKey                       = "backup_org"
+	DefaultAdminURLConfigKey                        = "api_url"
+	AnalyticsEnabledConfigKey                       = "analytics_enabled"
+	AccessTokenCredentialsKey                       = "token"
+	InstallIDStateKey                               = "install_id"
+	RepresentingUserCredentialsKey                  = "representing_user"
+	RepresentingUserAccessTokenExpiryCredentialsKey = "representing_user_token_expiry"
+	BackupTokenCredentialsKey                       = "backup_token"
+	LatestVersionStateKey                           = "latest_version"
+	LatestVersionCheckedAtStateKey                  = "latest_version_checked_at"
+	UserIDStateKey                                  = "user_id"
+	UserCheckHashStateKey                           = "user_check_hash"
 )
 
-// homeDir is the user's home directory. We keep this as a global to override in unit tests.
-var homeDir = ""
+// DotRill encapsulates access to .rill.
+type DotRill struct {
+	homeDir string
+}
 
-func init() {
-	homeDir, _ = os.UserHomeDir()
+// New creates a new Dotrill instance.
+// If homeDir is empty, it creates `.rill` in the user's home directory.
+func New(homeDir string) DotRill {
+	if homeDir == "" {
+		homeDir, _ = os.UserHomeDir()
+	}
+	return DotRill{homeDir: homeDir}
 }
 
 // GetAll loads all values from ~/.rill/{filename}.
 // It assumes filename identifies a YAML file.
-func GetAll(filename string) (map[string]string, error) {
-	filename, err := ResolveFilename(filename, false)
+func (d DotRill) GetAll(filename string) (map[string]string, error) {
+	filename, err := d.ResolveFilename(filename, false)
 	if err != nil {
 		return nil, err
 	}
@@ -68,8 +78,8 @@ func GetAll(filename string) (map[string]string, error) {
 
 // Get returns a single entry from ~/.rill/{filename}.
 // It assumes filename identifies a YAML file.
-func Get(filename, key string) (string, error) {
-	conf, err := GetAll(filename)
+func (d DotRill) Get(filename, key string) (string, error) {
+	conf, err := d.GetAll(filename)
 	if err != nil {
 		return "", err
 	}
@@ -79,18 +89,18 @@ func Get(filename, key string) (string, error) {
 
 // Set sets a single value in ~/.rill/{filename}.
 // It assumes filename identifies a YAML file.
-func Set(filename, key, value string) error {
+func (d DotRill) Set(filename, key, value string) error {
 	if key == "" {
 		return fmt.Errorf("cannot set empty key")
 	}
 
-	conf, err := GetAll(filename)
+	conf, err := d.GetAll(filename)
 	if err != nil {
 		return err
 	}
 	conf[key] = value
 
-	filename, err = ResolveFilename(filename, true)
+	filename, err = d.ResolveFilename(filename, true)
 	if err != nil {
 		return err
 	}
@@ -104,116 +114,151 @@ func Set(filename, key, value string) error {
 }
 
 // GetDefaultOrg loads the default org
-func GetDefaultOrg() (string, error) {
-	return Get(ConfigFilename, DefaultOrgConfigKey)
+func (d DotRill) GetDefaultOrg() (string, error) {
+	return d.Get(ConfigFilename, DefaultOrgConfigKey)
 }
 
 // SetDefaultOrg saves the default org
-func SetDefaultOrg(orgName string) error {
-	return Set(ConfigFilename, DefaultOrgConfigKey, orgName)
+func (d DotRill) SetDefaultOrg(orgName string) error {
+	return d.Set(ConfigFilename, DefaultOrgConfigKey, orgName)
+}
+
+// GetBackupDefaultOrg loads the backedup default org
+func (d DotRill) GetBackupDefaultOrg() (string, error) {
+	return d.Get(ConfigFilename, BackupDefaultOrgConfigKey)
+}
+
+// SetBackupDefaultOrg saves the backedup default org
+func (d DotRill) SetBackupDefaultOrg(orgName string) error {
+	return d.Set(ConfigFilename, BackupDefaultOrgConfigKey, orgName)
 }
 
 // SetDefaultAdminURL loads the default admin URL (if set)
-func SetDefaultAdminURL(url string) error {
-	return Set(ConfigFilename, DefaultAdminURLConfigKey, url)
+func (d DotRill) SetDefaultAdminURL(url string) error {
+	return d.Set(ConfigFilename, DefaultAdminURLConfigKey, url)
 }
 
 // GetDefaultAdminURL loads the default admin URL (if set)
-func GetDefaultAdminURL() (string, error) {
-	return Get(ConfigFilename, DefaultAdminURLConfigKey)
+func (d DotRill) GetDefaultAdminURL() (string, error) {
+	return d.Get(ConfigFilename, DefaultAdminURLConfigKey)
 }
 
 // GetToken loads the current auth token
-func GetAccessToken() (string, error) {
-	return Get(CredentialsFilename, AccessTokenCredentialsKey)
+func (d DotRill) GetAccessToken() (string, error) {
+	return d.Get(CredentialsFilename, AccessTokenCredentialsKey)
 }
 
 // SetToken saves an auth token
-func SetAccessToken(token string) error {
-	return Set(CredentialsFilename, AccessTokenCredentialsKey, token)
+func (d DotRill) SetAccessToken(token string) error {
+	return d.Set(CredentialsFilename, AccessTokenCredentialsKey, token)
 }
 
 // GetBackupToken loads the original auth token
-func GetBackupToken() (string, error) {
-	return Get(CredentialsFilename, BackupTokenCredentialsKey)
+func (d DotRill) GetBackupToken() (string, error) {
+	return d.Get(CredentialsFilename, BackupTokenCredentialsKey)
 }
 
 // SetBackupToken saves original auth token
-func SetBackupToken(token string) error {
-	return Set(CredentialsFilename, BackupTokenCredentialsKey, token)
+func (d DotRill) SetBackupToken(token string) error {
+	return d.Set(CredentialsFilename, BackupTokenCredentialsKey, token)
 }
 
 // GetRepresentingUser loads the current representing user email
-func GetRepresentingUser() (string, error) {
-	return Get(CredentialsFilename, RepresentingUserCredentialsKey)
+func (d DotRill) GetRepresentingUser() (string, error) {
+	return d.Get(CredentialsFilename, RepresentingUserCredentialsKey)
+}
+
+// GetRepresentingUserAccessTokenExpiry loads the current auth token expiry
+func (d DotRill) GetRepresentingUserAccessTokenExpiry() (time.Time, error) {
+	expiryStr, err := d.Get(CredentialsFilename, RepresentingUserAccessTokenExpiryCredentialsKey)
+	if err != nil {
+		return time.Time{}, err
+	}
+	if expiryStr == "" {
+		return time.Time{}, nil
+	}
+	expiry, err := time.Parse(time.RFC3339Nano, expiryStr)
+	if err != nil {
+		return time.Time{}, fmt.Errorf("failed to parse token expiry: %w", err)
+	}
+	return expiry, nil
+}
+
+// SetRepresentingUserAccessTokenExpiry saves an auth token expiry
+func (d DotRill) SetRepresentingUserAccessTokenExpiry(expiry time.Time) error {
+	var expiryStr string
+	if !expiry.IsZero() {
+		expiryStr = expiry.Format(time.RFC3339Nano)
+	}
+	return d.Set(CredentialsFilename, RepresentingUserAccessTokenExpiryCredentialsKey, expiryStr)
 }
 
 // SetRepresentingUser saves representing user email
-func SetRepresentingUser(email string) error {
-	return Set(CredentialsFilename, RepresentingUserCredentialsKey, email)
+func (d DotRill) SetRepresentingUser(email string) error {
+	return d.Set(CredentialsFilename, RepresentingUserCredentialsKey, email)
 }
 
-func SetVersion(version string) error {
-	return Set(StateFilename, LatestVersionStateKey, version)
+func (d DotRill) SetVersion(version string) error {
+	return d.Set(StateFilename, LatestVersionStateKey, version)
 }
 
-func GetVersion() (string, error) {
-	return Get(StateFilename, LatestVersionStateKey)
+func (d DotRill) GetVersion() (string, error) {
+	return d.Get(StateFilename, LatestVersionStateKey)
 }
 
-func SetVersionUpdatedAt(updatedAt string) error {
-	return Set(StateFilename, LatestVersionCheckedAtStateKey, updatedAt)
+func (d DotRill) SetVersionUpdatedAt(updatedAt string) error {
+	return d.Set(StateFilename, LatestVersionCheckedAtStateKey, updatedAt)
 }
 
-func GetVersionUpdatedAt() (string, error) {
-	return Get(StateFilename, LatestVersionCheckedAtStateKey)
+func (d DotRill) GetVersionUpdatedAt() (string, error) {
+	return d.Get(StateFilename, LatestVersionCheckedAtStateKey)
 }
 
 // SetEnvToken backup the token for given env
-func SetEnvToken(env, token string) error {
+func (d DotRill) SetEnvToken(env, token string) error {
 	key := fmt.Sprintf("tokens.%s", env)
-	return Set(CredentialsFilename, key, token)
+	return d.Set(CredentialsFilename, key, token)
 }
 
 // GetEnvToken loads the token for given env
-func GetEnvToken(env string) (string, error) {
+func (d DotRill) GetEnvToken(env string) (string, error) {
 	key := fmt.Sprintf("tokens.%s", env)
-	return Get(CredentialsFilename, key)
+	return d.Get(CredentialsFilename, key)
 }
 
 // GetCurrentUserID gets the current user ID
-func GetUserID() (string, error) {
-	return Get(StateFilename, UserIDStateKey)
+func (d DotRill) GetUserID() (string, error) {
+	return d.Get(StateFilename, UserIDStateKey)
 }
 
 // SetCurrentUserID saves the current user ID
-func SetUserID(userID string) error {
-	return Set(StateFilename, UserIDStateKey, userID)
+func (d DotRill) SetUserID(userID string) error {
+	return d.Set(StateFilename, UserIDStateKey, userID)
 }
 
 // GetUserCheckHash gets the hash used to determine whether to re-fetch the user ID.
-func GetUserCheckHash() (string, error) {
-	return Get(StateFilename, UserCheckHashStateKey)
+func (d DotRill) GetUserCheckHash() (string, error) {
+	return d.Get(StateFilename, UserCheckHashStateKey)
 }
 
 // SetUserCheckHash sets the hash used to determine whether to re-fetch the user ID.
-func SetUserCheckHash(hash string) error {
-	return Set(StateFilename, UserCheckHashStateKey, hash)
+func (d DotRill) SetUserCheckHash(hash string) error {
+	return d.Set(StateFilename, UserCheckHashStateKey, hash)
 }
 
 // AnalyticsInfo returns analytics info.
 // It loads a persistent install ID from ~/.rill/state.yaml (setting one if not found).
 // It gets analytics enabled/disabled info from ~/.rill/config.yaml (key "analytics_enabled").
 // It automatically migrates from the pre-v0.23 analytics config. See migrateOldAnalyticsConfig for details.
-func AnalyticsInfo() (installID string, enabled bool, err error) {
+func (d DotRill) AnalyticsInfo() (installID string, enabled bool, err error) {
 	// Migrate from earlier analytics tracking, if necessary
-	err = migrateOldAnalyticsConfig()
+	err = d.migrateOldAnalyticsConfig()
 	if err != nil {
 		fmt.Printf("state migration in ~/.rill did not succeed: %s\n", err.Error())
 	}
 
 	// Get installID
-	installID, err = Get(StateFilename, InstallIDStateKey)
+	installID, err = d.Get(StateFilename, InstallIDStateKey)
 	if err != nil {
 		return "", false, err
 	}
@@ -224,14 +269,14 @@ func AnalyticsInfo() (installID string, enabled bool, err error) {
 	// If installID was not found (or had been cleared), persist a new ID
 	if installID == "" {
 		installID = uuid.New().String()
-		err := Set(StateFilename, InstallIDStateKey, installID)
+		err := d.Set(StateFilename, InstallIDStateKey, installID)
 		if err != nil {
 			return "", false, err
 		}
 	}
 
 	// Check if analytics is enabled
-	enabledStr, err := Get(ConfigFilename, AnalyticsEnabledConfigKey)
+	enabledStr, err := d.Get(ConfigFilename, AnalyticsEnabledConfigKey)
 	if err != nil {
 		return "", false, err
 	}
@@ -254,8 +299,8 @@ type oldAnalyticsConfig struct {
 // Previously, analytics info was stored in ~/.rill/local.json. It included "installID" and "analyticsEnabled" fields.
 // We are deprecating it to centralize user-facing config in config.yaml and to prevent confusion around the local.json file.
 // It has been replaced with a config key ("analytics_enabled") and an install ID stored separately in ~/.rill/state.yaml.
-func migrateOldAnalyticsConfig() error {
-	filename, err := ResolveFilename("local.json", false)
+func (d DotRill) migrateOldAnalyticsConfig() error {
+	filename, err := d.ResolveFilename("local.json", false)
 	if err != nil {
 		return err
 	}
@@ -282,7 +327,7 @@ func migrateOldAnalyticsConfig() error {
 
 	// Set install ID if applicable
 	if conf.InstallID != "" {
-		err := Set(StateFilename, InstallIDStateKey, conf.InstallID)
+		err := d.Set(StateFilename, InstallIDStateKey, conf.InstallID)
 		if err != nil {
 			return err
 		}
@@ -290,7 +335,7 @@ func migrateOldAnalyticsConfig() error {
 
 	// Set analytics_enabled if applicable
 	if conf.AnalyticsEnabled != nil && !*conf.AnalyticsEnabled {
-		err := Set(ConfigFilename, AnalyticsEnabledConfigKey, "false")
+		err := d.Set(ConfigFilename, AnalyticsEnabledConfigKey, "false")
 		if err != nil {
 			return err
 		}
@@ -307,12 +352,12 @@ func migrateOldAnalyticsConfig() error {
 
 // ResolveFilename resolves a file name to a full path to ~/.rill.
 // If mkdir is true, it will create the .rill directory if it doesn't exist.
-func ResolveFilename(name string, mkdir bool) (string, error) {
-	if homeDir == "" {
+func (d DotRill) ResolveFilename(name string, mkdir bool) (string, error) {
+	if d.homeDir == "" {
 		return "", fmt.Errorf("home directory not found")
 	}
 
-	dotrill := filepath.Join(homeDir, ".rill")
+	dotrill := filepath.Join(d.homeDir, ".rill")
 	if mkdir {
 		err := os.MkdirAll(dotrill, os.ModePerm)
 		if err != nil {

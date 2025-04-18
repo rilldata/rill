@@ -1,20 +1,21 @@
 <script lang="ts">
-  import type { TimeAndFilterStore } from "@rilldata/web-common/features/canvas/stores/types";
-  import type { V1ComponentSpecRendererProperties } from "@rilldata/web-common/runtime-client";
-  import type { Readable } from "svelte/store";
-  import type { KPIGridSpec } from ".";
+  import type { KPIGridComponent } from ".";
   import ComponentError from "../ComponentError.svelte";
-  import type { KPISpec } from "../kpi";
-  import KPI from "../kpi/KPI.svelte";
   import { validateKPIGridSchema } from "./selector";
-  import { getMinWidth } from "../kpi";
+  import { getMinWidth, type KPISpec } from "../kpi";
+  import KPIProvider from "../kpi/KPIProvider.svelte";
+  import ComponentHeader from "../../ComponentHeader.svelte";
 
-  export let rendererProperties: V1ComponentSpecRendererProperties;
-  export let timeAndFilterStore: Readable<TimeAndFilterStore>;
+  export let component: KPIGridComponent;
 
   let kpis: KPISpec[];
 
-  $: kpiGridProperties = rendererProperties as KPIGridSpec;
+  $: ({
+    specStore,
+    timeAndFilterStore,
+    parent: { name: canvasName },
+  } = component);
+  $: kpiGridProperties = $specStore;
   $: schema = validateKPIGridSchema(kpiGridProperties);
 
   // Convert measures to KPI specs
@@ -27,10 +28,20 @@
     time_filters: kpiGridProperties.time_filters,
   }));
 
+  $: filters = {
+    time_filters: kpiGridProperties.time_filters,
+    dimension_filters: kpiGridProperties.dimension_filters,
+  };
+
   $: sparkline = kpiGridProperties.sparkline;
 
   $: minWidth = getMinWidth(sparkline);
+
+  $: title = kpiGridProperties.title;
+  $: description = kpiGridProperties.description;
 </script>
+
+<ComponentHeader {title} {description} {filters} />
 
 {#if schema.isValid}
   <div class="h-fit p-0 grow relative" class:!p-0={kpis.length === 1}>
@@ -42,7 +53,7 @@
     >
       {#each kpis as kpi, i (i)}
         <div class="min-h-32 kpi-wrapper">
-          <KPI rendererProperties={kpi} {timeAndFilterStore} />
+          <KPIProvider spec={kpi} {timeAndFilterStore} {canvasName} />
         </div>
       {/each}
     </div>
