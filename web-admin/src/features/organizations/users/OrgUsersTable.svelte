@@ -101,6 +101,7 @@
       cell: ({ row }) =>
         flexRender(OrgUsersTableActionsCell, {
           email: row.original.userEmail,
+          role: row.original.roleName,
           isCurrentUser: row.original.userEmail === currentUserEmail,
           currentUserRole: currentUserRole,
         }),
