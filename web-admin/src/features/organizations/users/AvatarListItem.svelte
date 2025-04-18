@@ -11,7 +11,7 @@
   export let pendingAcceptance: boolean = false;
   export let shape: "circle" | "square" = "circle";
   export let count: number = 0;
-  export let role: string;
+  export let role: string | null = null;
 
   function getInitials(name: string) {
     return name.charAt(0).toUpperCase();
