@@ -26,44 +26,46 @@ export type HeatmapChartSpec = BaseChartConfig & {
 };
 
 export class HeatmapChartComponent extends BaseChart<HeatmapChartSpec> {
+  static chartInputParams: Record<string, ComponentInputParam> = {
+    x: {
+      type: "positional",
+      label: "X-axis",
+      meta: {
+        chartFieldInput: {
+          type: "dimension",
+          axisTitleSelector: true,
+          nullSelector: true,
+        },
+      },
+    },
+    y: {
+      type: "positional",
+      label: "Y-axis",
+      meta: {
+        chartFieldInput: {
+          type: "dimension",
+          axisTitleSelector: true,
+          nullSelector: true,
+        },
+      },
+    },
+    color: {
+      type: "positional",
+      label: "Color",
+      meta: {
+        chartFieldInput: {
+          type: "measure",
+        },
+      },
+    },
+  };
+
   constructor(resource: V1Resource, parent: CanvasEntity, path: ComponentPath) {
     super(resource, parent, path);
   }
 
-  protected getChartSpecificOptions(): Record<string, ComponentInputParam> {
-    return {
-      x: {
-        type: "positional",
-        label: "X-axis",
-        meta: {
-          chartFieldInput: {
-            type: "dimension",
-            axisTitleSelector: true,
-            nullSelector: true,
-          },
-        },
-      },
-      y: {
-        type: "positional",
-        label: "Y-axis",
-        meta: {
-          chartFieldInput: {
-            type: "dimension",
-            axisTitleSelector: true,
-            nullSelector: true,
-          },
-        },
-      },
-      color: {
-        type: "positional",
-        label: "Color",
-        meta: {
-          chartFieldInput: {
-            type: "measure",
-          },
-        },
-      },
-    };
+  getChartSpecificOptions(): Record<string, ComponentInputParam> {
+    return HeatmapChartComponent.chartInputParams;
   }
 
   createChartDataQuery(

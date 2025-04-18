@@ -74,7 +74,7 @@ export abstract class BaseChart<
     };
   }
 
-  protected abstract getChartSpecificOptions(): Record<
+  abstract getChartSpecificOptions(): Record<
     AllKeys<TConfig>,
     ComponentInputParam
   >;
@@ -102,7 +102,6 @@ export abstract class BaseChart<
 
     const currentSpec = get(this.specStore);
     const parentPath = this.pathInYAML.slice(0, -1);
-    this.chartType.set(key);
 
     const parseDocumentStore = this.parent.parsedContent;
     const parsedDocument = get(parseDocumentStore);
@@ -113,11 +112,19 @@ export abstract class BaseChart<
       metricsViewSpec,
     );
 
-    const commonProps = this.extractCommonProperties(currentSpec);
+    const commonProps = this.extractCommonProperties(
+      currentSpec,
+      this.type,
+      key,
+    );
     const mergedSpec = {
       ...newSpecForKey,
       ...commonProps,
     };
+
+    this.chartType.set(key);
+
+    // this.parent._rows.refresh();
 
     // Preserve the width from the current chart
     const width = parsedDocument.getIn([...parentPath, "width"]);
@@ -129,7 +136,11 @@ export abstract class BaseChart<
     updateEditorContent(parsedDocument.toString(), false, true);
   }
 
-  private extractCommonProperties(spec: TConfig): Partial<BaseChartConfig> {
+  private extractCommonProperties(
+    spec: TConfig,
+    sourceType: ChartType,
+    targetType: ChartType,
+  ): Partial<BaseChartConfig> {
     const {
       metrics_view,
       title,
@@ -139,6 +150,29 @@ export abstract class BaseChart<
       dimension_filters,
     } = spec;
 
+    const sourceChartParams =
+      CHART_CONFIG[sourceType].component.chartInputParams || {};
+    const targetChartParams =
+      CHART_CONFIG[targetType].component.chartInputParams || {};
+
+    // Check for common keys and type match first
+    const commonProps = Object.keys(sourceChartParams).filter((key) => {
+      const isKeyAndTypeMatch =
+        targetChartParams?.[key]?.type === sourceChartParams[key]?.type;
+      const isFieldTypeMatch =
+        targetChartParams?.[key]?.meta?.chartFieldInput?.type ===
+        sourceChartParams[key]?.meta?.chartFieldInput?.type;
+      return isKeyAndTypeMatch && isFieldTypeMatch;
+    });
+
+    const commonPropsObject = commonProps.reduce(
+      (acc, key) => {
+        acc[key] = spec[key];
+        return acc;
+      },
+      {} as Record<string, unknown>,
+    );
+
     return {
       metrics_view,
       title,
@@ -146,6 +180,7 @@ export abstract class BaseChart<
       vl_config,
       time_filters,
       dimension_filters,
+      ...commonPropsObject,
     };
   }
 }

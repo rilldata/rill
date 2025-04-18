@@ -33,38 +33,40 @@ type CircularChartEncoding = {
 export type CircularChartSpec = BaseChartConfig & CircularChartEncoding;
 
 export class CircularChartComponent extends BaseChart<CircularChartSpec> {
+  static chartInputParams: Record<string, ComponentInputParam> = {
+    color: {
+      type: "positional",
+      label: "Color",
+      meta: {
+        chartFieldInput: {
+          type: "dimension",
+          nullSelector: true,
+          limitSelector: true,
+          hideTimeDimension: true,
+        },
+      },
+    },
+    measure: {
+      type: "positional",
+      label: "Measure",
+      meta: {
+        chartFieldInput: {
+          type: "measure",
+        },
+      },
+    },
+    innerRadius: {
+      type: "number",
+      label: "Inner Radius",
+    },
+  };
+
   constructor(resource: V1Resource, parent: CanvasEntity, path: ComponentPath) {
     super(resource, parent, path);
   }
 
-  protected getChartSpecificOptions(): Record<string, ComponentInputParam> {
-    return {
-      color: {
-        type: "positional",
-        label: "Color",
-        meta: {
-          chartFieldInput: {
-            type: "dimension",
-            nullSelector: true,
-            limitSelector: true,
-            hideTimeDimension: true,
-          },
-        },
-      },
-      measure: {
-        type: "positional",
-        label: "Measure",
-        meta: {
-          chartFieldInput: {
-            type: "measure",
-          },
-        },
-      },
-      innerRadius: {
-        type: "number",
-        label: "Inner Radius",
-      },
-    };
+  getChartSpecificOptions(): Record<string, ComponentInputParam> {
+    return CircularChartComponent.chartInputParams;
   }
 
   createChartDataQuery(

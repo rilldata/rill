@@ -92,6 +92,8 @@ export interface BaseCanvasComponentConstructor<
     path: ComponentPath,
   ): BaseCanvasComponent<T>;
 
+  chartInputParams?: Record<string, ComponentInputParam>;
+
   newComponentSpec(
     metricsViewName: string,
     metricsViewSpec?: V1MetricsViewSpec,

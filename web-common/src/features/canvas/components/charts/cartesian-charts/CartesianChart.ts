@@ -38,38 +38,40 @@ export type CartesianChartSpec = BaseChartConfig & {
 };
 
 export class CartesianChartComponent extends BaseChart<CartesianChartSpec> {
+  static chartInputParams: Record<string, ComponentInputParam> = {
+    x: {
+      type: "positional",
+      label: "X-axis",
+      meta: {
+        chartFieldInput: {
+          type: "dimension",
+          axisTitleSelector: true,
+          sortSelector: true,
+          limitSelector: true,
+          nullSelector: true,
+        },
+      },
+    },
+    y: {
+      type: "positional",
+      label: "Y-axis",
+      meta: {
+        chartFieldInput: {
+          type: "measure",
+          axisTitleSelector: true,
+          originSelector: true,
+        },
+      },
+    },
+    color: { type: "mark", label: "Color", meta: { type: "color" } },
+  };
+
   constructor(resource: V1Resource, parent: CanvasEntity, path: ComponentPath) {
     super(resource, parent, path);
   }
 
-  protected getChartSpecificOptions(): Record<string, ComponentInputParam> {
-    return {
-      x: {
-        type: "positional",
-        label: "X-axis",
-        meta: {
-          chartFieldInput: {
-            type: "dimension",
-            axisTitleSelector: true,
-            sortSelector: true,
-            limitSelector: true,
-            nullSelector: true,
-          },
-        },
-      },
-      y: {
-        type: "positional",
-        label: "Y-axis",
-        meta: {
-          chartFieldInput: {
-            type: "measure",
-            axisTitleSelector: true,
-            originSelector: true,
-          },
-        },
-      },
-      color: { type: "mark", label: "Color", meta: { type: "color" } },
-    };
+  getChartSpecificOptions(): Record<string, ComponentInputParam> {
+    return CartesianChartComponent.chartInputParams;
   }
 
   createChartDataQuery(
