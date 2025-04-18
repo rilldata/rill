@@ -7,7 +7,7 @@ import {
   createSubQueryExpression,
   filterExpressions,
   isExpressionUnsupported,
-  unwrapRedundantAndOrExpression,
+  removeWrapperAndOrExpression,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type { DimensionThresholdFilter } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import type { V1Expression } from "@rilldata/web-common/runtime-client";
@@ -41,7 +41,7 @@ export function splitWhereFilter(whereFilter: V1Expression | undefined) {
 
     // While all the types support multiple measure filters per dimension our UI doesn't allow this right now.
     // So unwrap while trying to validate a measure filter.
-    const unwrappedHavingFilter = unwrapRedundantAndOrExpression(
+    const unwrappedHavingFilter = removeWrapperAndOrExpression(
       subqueryExpr?.subquery?.having,
     );
     const mappedMeasureFilter = mapExprToMeasureFilter(unwrappedHavingFilter);

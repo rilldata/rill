@@ -377,7 +377,7 @@ export function isAndOrExpression(expression: V1Expression | undefined) {
   );
 }
 
-export function unwrapRedundantAndOrExpression(
+export function removeWrapperAndOrExpression(
   expression: V1Expression | undefined,
 ) {
   if (
@@ -422,7 +422,7 @@ export function isExpressionUnsupported(expression: V1Expression) {
 export function isSubqueryExpressionUnsupported(subquery: V1Subquery) {
   // While all the types support multiple measure filters per dimension our UI doesn't allow this right now.
   // So unwrap while trying to validate a measure filter.
-  const unwrappedHavingFilter = unwrapRedundantAndOrExpression(subquery.having);
+  const unwrappedHavingFilter = removeWrapperAndOrExpression(subquery.having);
   return (
     unwrappedHavingFilter &&
     isAndOrExpression(unwrappedHavingFilter) &&
