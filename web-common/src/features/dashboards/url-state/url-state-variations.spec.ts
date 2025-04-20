@@ -56,6 +56,8 @@ import {
   AD_BIDS_SET_PUBLISHER_COMPARE_DIMENSION,
   AD_BIDS_SET_DOMAIN_COMPARE_DIMENSION,
   AD_BIDS_MEASURE_NAMES_BID_PRICE_AND_IMPRESSIONS,
+  AD_BIDS_APPLY_IMP_COUNTRY_BETWEEN_MEASURE_FILTER,
+  AD_BIDS_APPLY_IMP_COUNTRY_NOT_BETWEEN_MEASURE_FILTER,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/store-mutations";
 import { getTimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import { getCleanedUrlParamsForGoto } from "@rilldata/web-common/features/dashboards/url-state/convert-partial-explore-state-to-url-params";
@@ -95,9 +97,16 @@ const TestCases: {
     mutations: [
       AD_BIDS_APPLY_PUBLISHER_INLIST_FILTER,
       AD_BIDS_APPLY_DOMAIN_CONTAINS_FILTER,
+      AD_BIDS_APPLY_IMP_COUNTRY_BETWEEN_MEASURE_FILTER,
     ],
     expectedSearch:
-      "f=publisher+IN+LIST+%28%27Facebook%27%2C%27Google%27%29+AND+domain+LIKE+%27%25%25oo%25%25%27",
+      "f=publisher+IN+LIST+%28%27Facebook%27%2C%27Google%27%29+AND+domain+LIKE+%27%25%25oo%25%25%27+AND+country+having+%28%28bid_price+GT+10+AND+bid_price+LT+20%29%29",
+  },
+  {
+    title: "Not-between measure filter",
+    mutations: [AD_BIDS_APPLY_IMP_COUNTRY_NOT_BETWEEN_MEASURE_FILTER],
+    expectedSearch:
+      "f=country+having+%28%28bid_price+LTE+10+OR+bid_price+GTE+20%29%29",
   },
 
   {
