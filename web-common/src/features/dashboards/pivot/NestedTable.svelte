@@ -304,7 +304,7 @@
               : cell.column.columnDef.cell}
           {@const isActive = isCellActive(cell)}
           <td
-            class="ui-copy-number cell truncate group pointer-events-auto"
+            class="ui-copy-number cell truncate group"
             class:active-cell={isActive}
             class:interactive-cell={canShowDataViewer}
             class:border-r={shouldShowRightBorder(i)}

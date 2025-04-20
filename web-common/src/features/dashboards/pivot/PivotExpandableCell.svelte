@@ -10,7 +10,6 @@
 
   $: canExpand = row.getCanExpand();
   $: expanded = row.getIsExpanded();
-
   $: assembledAndCanExpand = assembled && canExpand;
 </script>
 
