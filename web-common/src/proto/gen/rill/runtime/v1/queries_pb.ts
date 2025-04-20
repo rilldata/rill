@@ -3413,6 +3413,13 @@ export class MetricsViewTimeRangesRequest extends Message<MetricsViewTimeRangesR
    */
   priority = 0;
 
+  /**
+   * Optional timezone param to easily override time-range expressions
+   *
+   * @generated from field: string time_zone = 5;
+   */
+  timeZone = "";
+
   constructor(data?: PartialMessage<MetricsViewTimeRangesRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -3425,6 +3432,7 @@ export class MetricsViewTimeRangesRequest extends Message<MetricsViewTimeRangesR
     { no: 2, name: "metrics_view_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "expressions", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 4, name: "priority", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 5, name: "time_zone", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewTimeRangesRequest {
