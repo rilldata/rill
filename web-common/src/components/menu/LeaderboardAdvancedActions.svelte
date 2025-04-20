@@ -1,7 +1,7 @@
 <script lang="ts">
   import IconButton from "@rilldata/web-common/components/button/IconButton.svelte";
-  import ThreeDot from "@rilldata/web-common/components/icons/ThreeDot.svelte";
   import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
+  import ThreeDot from "@rilldata/web-common/components/icons/ThreeDot.svelte";
   import {
     Popover,
     PopoverContent,
@@ -15,7 +15,7 @@
 
 <Popover bind:open={isOpen}>
   <PopoverTrigger>
-    <IconButton rounded active={isOpen} compact>
+    <IconButton rounded active={isOpen}>
       <ThreeDot size="16px" />
     </IconButton>
   </PopoverTrigger>
