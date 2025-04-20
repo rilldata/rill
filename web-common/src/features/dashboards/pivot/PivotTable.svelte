@@ -183,12 +183,7 @@
   };
 
   function onCellClick(e: MouseEvent) {
-    if (
-      !canShowDataViewer ||
-      !setPivotActiveCell ||
-      !(e.target instanceof HTMLElement)
-    )
-      return;
+    if (!(e.target instanceof HTMLElement)) return;
 
     const rowId = e.target.dataset.rowid;
     const columnId = e.target.dataset.columnid;
@@ -200,7 +195,7 @@
 
     if (rowHeader) {
       if (row.getCanExpand()) row.getToggleExpandedHandler()();
-    } else {
+    } else if (setPivotActiveCell && canShowDataViewer) {
       setPivotActiveCell(rowId, columnId);
     }
   }
