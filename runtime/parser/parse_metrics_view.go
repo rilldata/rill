@@ -904,6 +904,7 @@ func (p *Parser) parseMetricsView(node *Node) error {
 	}
 	// Backwards compatibility: explore parser will default to true so also emit true on the emitted explore spec
 	e.ExploreSpec.AllowCustomTimeRange = true
+	e.ExploreSpec.DefinedInMetricsView = true
 
 	return nil
 }
