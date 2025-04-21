@@ -56,9 +56,12 @@ import {
   AD_BIDS_SET_PUBLISHER_COMPARE_DIMENSION,
   AD_BIDS_SET_DOMAIN_COMPARE_DIMENSION,
   AD_BIDS_MEASURE_NAMES_BID_PRICE_AND_IMPRESSIONS,
+  AD_BIDS_APPLY_IMP_COUNTRY_BETWEEN_MEASURE_FILTER,
+  AD_BIDS_APPLY_IMP_COUNTRY_NOT_BETWEEN_MEASURE_FILTER,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/store-mutations";
 import { getTimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import { getCleanedUrlParamsForGoto } from "@rilldata/web-common/features/dashboards/url-state/convert-partial-explore-state-to-url-params";
+import { getRillDefaultExploreUrlParams } from "@rilldata/web-common/features/dashboards/url-state/get-rill-default-explore-url-params";
 import { getDefaultExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/getDefaultExplorePreset";
 import {
   type DashboardTimeControls,
@@ -94,9 +97,16 @@ const TestCases: {
     mutations: [
       AD_BIDS_APPLY_PUBLISHER_INLIST_FILTER,
       AD_BIDS_APPLY_DOMAIN_CONTAINS_FILTER,
+      AD_BIDS_APPLY_IMP_COUNTRY_BETWEEN_MEASURE_FILTER,
     ],
     expectedSearch:
       "view=explore&tr=PT6H&tz=UTC&compare_tr=&grain=hour&compare_dim=&f=publisher+IN+LIST+%28%27Facebook%27%2C%27Google%27%29+AND+domain+LIKE+%27%25%25oo%25%25%27&measures=*&dims=*&expand_dim=&sort_by=impressions&sort_type=value&sort_dir=DESC&leaderboard_measures=impressions",
+  },
+  {
+    title: "Not-between measure filter",
+    mutations: [AD_BIDS_APPLY_IMP_COUNTRY_NOT_BETWEEN_MEASURE_FILTER],
+    expectedSearch:
+      "f=country+having+%28%28bid_price+LTE+10+OR+bid_price+GTE+20%29%29",
   },
 
   {
@@ -479,6 +489,11 @@ describe("Human readable URL state variations", () => {
           ),
         );
         const initState = getCleanMetricsExploreForAssertion();
+        const defaultExploreUrlSearch = getRillDefaultExploreUrlParams(
+          AD_BIDS_METRICS_3_MEASURES_DIMENSIONS_WITH_TIME,
+          explore,
+          AD_BIDS_TIME_RANGE_SUMMARY.timeRangeSummary,
+        );
         const defaultExplorePreset = getDefaultExplorePreset(
           explore,
           AD_BIDS_METRICS_3_MEASURES_DIMENSIONS_WITH_TIME,
@@ -497,6 +512,7 @@ describe("Human readable URL state variations", () => {
             AD_BIDS_TIME_RANGE_SUMMARY.timeRangeSummary,
             get(metricsExplorerStore).entities[AD_BIDS_EXPLORE_NAME],
           ),
+          defaultExploreUrlSearch,
         );
         expect(updateUrlParams.toString()).to.eq(expectedSearch);
 
@@ -592,6 +608,11 @@ describe("Human readable URL state variations", () => {
         AD_BIDS_TIME_RANGE_SUMMARY,
       ),
     );
+    const defaultExploreUrlSearch = getRillDefaultExploreUrlParams(
+      AD_BIDS_METRICS_3_MEASURES_DIMENSIONS_WITH_TIME,
+      AD_BIDS_EXPLORE_INIT,
+      AD_BIDS_TIME_RANGE_SUMMARY.timeRangeSummary,
+    );
     const defaultExplorePreset = getDefaultExplorePreset(
       AD_BIDS_EXPLORE_INIT,
       AD_BIDS_METRICS_INIT,
@@ -616,6 +637,7 @@ describe("Human readable URL state variations", () => {
         AD_BIDS_TIME_RANGE_SUMMARY.timeRangeSummary,
         get(metricsExplorerStore).entities[AD_BIDS_EXPLORE_NAME],
       ),
+      defaultExploreUrlSearch,
       url,
     ).toString();
 
