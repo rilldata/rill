@@ -333,10 +333,6 @@ func (s *Server) UploadMultipartFile(w http.ResponseWriter, req *http.Request) {
 
 	err = s.runtime.PutFile(ctx, instanceID, path, f, true, false)
 	if err != nil {
-		s.logger.Error("failed to write file during upload",
-			zap.String("instanceID", instanceID),
-			zap.String("path", path),
-			zap.Error(err))
 		http.Error(w, fmt.Sprintf("failed to write file: %s", err), http.StatusBadRequest)
 		return
 	}
