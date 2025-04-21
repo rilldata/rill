@@ -77,9 +77,12 @@ export class DashboardStateSync {
     const { data: validSpecData } = get(this.dataLoader.validSpecQuery);
     const exploreSpec = validSpecData?.explore ?? {};
     const { data: rillDefaultExploreURLParams } = get(
-      this.dataLoader.rillDefaultExploreURLParams,
+      this.dataLoader.rillDefaultExploreURLParamsByView,
     );
     if (!rillDefaultExploreURLParams) return;
+    console.log(rillDefaultExploreURLParams.explore.toString());
+    console.log(rillDefaultExploreURLParams.tdd.toString());
+    console.log(rillDefaultExploreURLParams.pivot.toString());
 
     const pageState = get(page);
 
@@ -91,7 +94,7 @@ export class DashboardStateSync {
       exploreSpec,
       initExploreState,
       timeControlsState,
-      rillDefaultExploreURLParams,
+      rillDefaultExploreURLParams.explore,
       pageState.url,
     );
     redirectUrl.search = exploreStateParams.toString();
@@ -137,7 +140,7 @@ export class DashboardStateSync {
     const metricsViewSpec = validSpecData?.metricsView ?? {};
     const exploreSpec = validSpecData?.explore ?? {};
     const { data: rillDefaultExploreURLParams } = get(
-      this.dataLoader.rillDefaultExploreURLParams,
+      this.dataLoader.rillDefaultExploreURLParamsByView,
     );
     if (!rillDefaultExploreURLParams) return;
 
@@ -166,7 +169,7 @@ export class DashboardStateSync {
       exploreSpec,
       partialExplore,
       timeControlsState,
-      rillDefaultExploreURLParams,
+      rillDefaultExploreURLParams.explore,
       pageState.url,
     );
     redirectUrl.search = exploreStateParams.toString();
@@ -206,7 +209,7 @@ export class DashboardStateSync {
     const exploreSpec = validSpecData?.explore ?? {};
     const timeControlsState = get(this.timeControlStore);
     const { data: rillDefaultExploreURLParams } = get(
-      this.dataLoader.rillDefaultExploreURLParams,
+      this.dataLoader.rillDefaultExploreURLParamsByView,
     );
     if (!rillDefaultExploreURLParams) return;
 
@@ -217,7 +220,7 @@ export class DashboardStateSync {
       exploreSpec,
       exploreState,
       timeControlsState,
-      rillDefaultExploreURLParams,
+      rillDefaultExploreURLParams.explore,
       newUrl,
     );
     newUrl.search = exploreStateParams.toString();

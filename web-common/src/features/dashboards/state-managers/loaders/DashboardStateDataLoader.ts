@@ -10,8 +10,9 @@ import { getExploreStateFromYAMLConfig } from "@rilldata/web-common/features/das
 import { getRillDefaultExploreState } from "@rilldata/web-common/features/dashboards/stores/get-rill-default-explore-state";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import { convertURLSearchParamsToExploreState } from "@rilldata/web-common/features/dashboards/url-state/convertURLSearchParamsToExploreState";
-import { createRillDefaultExploreUrlParams } from "@rilldata/web-common/features/dashboards/url-state/get-rill-default-explore-url-params";
+import { createRillDefaultExploreUrlParamsByView } from "@rilldata/web-common/features/dashboards/url-state/get-rill-default-explore-url-params";
 import { getDefaultExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/getDefaultExplorePreset";
+import type { ExploreUrlWebView } from "@rilldata/web-common/features/dashboards/url-state/mappers";
 import { mergeDefaultUrlParams } from "@rilldata/web-common/features/dashboards/url-state/url-params-strip-utils";
 import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
@@ -47,7 +48,9 @@ export class DashboardStateDataLoader {
   >;
 
   // Cached url params for a rill opinionated dashboard defaults. Used to remove params from url.
-  public readonly rillDefaultExploreURLParams: CompoundQueryResult<URLSearchParams>;
+  public readonly rillDefaultExploreURLParamsByView: CompoundQueryResult<
+    Record<ExploreUrlWebView, URLSearchParams>
+  >;
 
   private readonly exploreStateFromSessionStorage: CompoundQueryResult<
     Partial<MetricsExplorerEntity> | undefined
@@ -185,10 +188,11 @@ export class DashboardStateDataLoader {
       },
     );
 
-    this.rillDefaultExploreURLParams = createRillDefaultExploreUrlParams(
-      this.validSpecQuery,
-      this.fullTimeRangeQuery,
-    );
+    this.rillDefaultExploreURLParamsByView =
+      createRillDefaultExploreUrlParamsByView(
+        this.validSpecQuery,
+        this.fullTimeRangeQuery,
+      );
 
     this.exploreStateFromSessionStorage = derived(
       [this.validSpecQuery, page],
@@ -306,7 +310,7 @@ export class DashboardStateDataLoader {
       this.explorePresetFromYAMLConfig,
     );
     const { data: rillDefaultExploreURLParams } = get(
-      this.rillDefaultExploreURLParams,
+      this.rillDefaultExploreURLParamsByView,
     );
 
     if (

@@ -43,10 +43,16 @@ export function stripDefaultOrEmptyUrlParams(
 
 export function mergeDefaultUrlParams(
   searchParams: URLSearchParams,
-  defaultUrlParams: URLSearchParams,
+  defaultUrlParamsByView: Record<ExploreUrlWebView, URLSearchParams>,
 ) {
+  const currentView =
+    (searchParams.get(
+      ExploreStateURLParams.WebView,
+    ) as ExploreUrlWebView | null) ?? ExploreUrlWebView.Explore;
+  const defaultUrlParams = defaultUrlParamsByView[currentView];
+
   const finalUrlParams = new URLSearchParams(searchParams);
-  defaultUrlParams.forEach((value, key) => {
+  defaultUrlParams.forEach((value, key: ExploreStateURLParams) => {
     if (searchParams.has(key)) return;
     finalUrlParams.set(key, value);
   });
