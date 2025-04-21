@@ -169,7 +169,7 @@
 />
 
 <style lang="postcss">
-  /* :global(.cm-mergeView) {
+  :global(.cm-mergeView) {
     @apply h-full;
   }
 
@@ -187,8 +187,4 @@
   :global(.cm-mergeViewEditor:first-of-type) {
     @apply border-r;
   }
-
-  :global(.ͼ2) {
-    --indent-marker-bg-color: var(--color-gray-300);
-  } */
 </style>
