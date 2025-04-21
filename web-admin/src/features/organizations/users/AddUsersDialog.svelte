@@ -63,7 +63,6 @@
       role = "";
       isSuperUser = false;
     } catch (error) {
-      console.error("Error adding user to organization", error);
       throw error;
     }
   }
@@ -141,9 +140,10 @@
           failedInvites = failed; // Store failed emails
           eventBus.emit("notification", {
             type: "error",
-            message: `Failed to invite ${failed.length} ${
-              failed.length === 1 ? "person" : "people"
-            }`,
+            message:
+              failed.length === 1
+                ? "That user is already a member of this organization"
+                : "Those users are already members of this organization",
           });
         }
 
@@ -220,7 +220,9 @@
       </MultiInput>
       {#if failedInvites.length > 0}
         <div class="text-sm text-red-500 py-2">
-          Failed to invite {failedInvites.join(", ")}
+          {failedInvites.length === 1
+            ? `${failedInvites[0]} is already a member of this organization`
+            : `${failedInvites.join(", ")} are already members of this organization`}
         </div>
       {/if}
     </form>
