@@ -190,7 +190,6 @@ export class CanvasEntity {
           existingClass.update(newResource, path);
         } else {
           createdNewComponent = true;
-          console.log("createdNewComponent", componentName, newType);
           this.components.set(
             componentName,
             createComponent(newResource, this, path),
@@ -211,8 +210,6 @@ export class CanvasEntity {
     // Calling this function triggers the rows to rerender, ensuring they're up to date
     // with the components Map, which is not reactive
     if ((!didUpdateRowCount && createdNewComponent) || this.firstLoad) {
-      console.log("refreshing rows");
-      this.selectedComponent.update((v) => v);
       this._rows.refresh();
     }
     this.firstLoad = false;

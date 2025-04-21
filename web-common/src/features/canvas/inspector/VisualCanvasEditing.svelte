@@ -18,7 +18,6 @@
   $: ({ editorContent, updateEditorContent, saveLocalContent, path } =
     fileArtifact);
 
-  $: console.log("selectedComponent", $selectedComponent, components);
   $: parsedDocument = parseDocument($editorContent ?? "");
   $: component = components.get($selectedComponent ?? "");
 

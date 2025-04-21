@@ -63,7 +63,6 @@ export abstract class BaseChart<
   }
 
   inputParams(): InputParams<TConfig> {
-    console.log("inputParams", this.type, this.getChartSpecificOptions());
     return {
       options: {
         metrics_view: { type: "metrics", label: "Metrics view" },
