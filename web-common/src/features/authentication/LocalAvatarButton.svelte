@@ -10,6 +10,7 @@
     createLocalServiceGetMetadata,
   } from "@rilldata/web-common/runtime-client/local-service";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
+  import ThemeToggle from "@rilldata/web-common/features/themes/ThemeToggle.svelte";
 
   $: user = createLocalServiceGetCurrentUser({
     query: {
@@ -65,7 +66,10 @@
         <NoUser />
       {/if}
     </DropdownMenu.Trigger>
-    <DropdownMenu.Content>
+    <DropdownMenu.Content class="p-1">
+      <ThemeToggle />
+      <DropdownMenu.Separator />
+
       <DropdownMenu.Item
         href="https://docs.rilldata.com"
         target="_blank"
@@ -74,6 +78,8 @@
       >
         Documentation
       </DropdownMenu.Item>
+      <DropdownMenu.Separator />
+
       <DropdownMenu.Item
         href="https://discord.com/invite/ngVV4KzEGv?utm_source=rill&utm_medium=rill-cloud-avatar-menu"
         target="_blank"
@@ -82,10 +88,12 @@
       >
         Join us on Discord
       </DropdownMenu.Item>
+
       {#if loggedIn}
         <DropdownMenu.Item on:click={handlePylon}>
           Contact Rill support
         </DropdownMenu.Item>
+        <DropdownMenu.Separator />
         <DropdownMenu.Item
           href={logoutUrl}
           rel="external"
@@ -94,6 +102,7 @@
           Logout
         </DropdownMenu.Item>
       {:else}
+        <DropdownMenu.Separator />
         <DropdownMenu.Item
           href={loginUrl}
           rel="external"

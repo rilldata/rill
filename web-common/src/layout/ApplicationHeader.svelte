@@ -19,7 +19,6 @@
   import { parseDocument } from "yaml";
   import InputWithConfirm from "../components/forms/InputWithConfirm.svelte";
   import { fileArtifacts } from "../features/entity-management/file-artifacts";
-  import ThemeToggle from "@rilldata/web-common/features/themes/ThemeToggle.svelte";
 
   export let mode: string;
 
@@ -123,8 +122,6 @@
       {/if}
       <LocalAvatarButton />
     {/if}
-    <!-- <button class="size-full bg-red-400"> hello </button> -->
-    <ThemeToggle />
   </div>
 </header>
 

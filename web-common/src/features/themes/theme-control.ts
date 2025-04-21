@@ -2,7 +2,7 @@ import { get, writable } from "svelte/store";
 import { localStorageStore } from "@rilldata/web-common/lib/store-utils";
 
 class ThemeControl {
-  private preference = localStorageStore<"light" | "dark" | "system">(
+  private preferenceStore = localStorageStore<"light" | "dark" | "system">(
     "rill:theme",
     "light",
   );
@@ -10,7 +10,7 @@ class ThemeControl {
   private darkQuery = window.matchMedia("(prefers-color-scheme: dark)");
 
   constructor() {
-    const currentPreference = get(this.preference);
+    const currentPreference = get(this.preferenceStore);
 
     if (
       currentPreference === "dark" ||
@@ -20,7 +20,7 @@ class ThemeControl {
     }
 
     this.darkQuery.addEventListener("change", ({ matches }) => {
-      if (get(this.preference) !== "system") return;
+      if (get(this.preferenceStore) !== "system") return;
 
       if (matches) {
         this.setDark();
@@ -31,18 +31,19 @@ class ThemeControl {
   }
 
   public subscribe = this.current.subscribe;
+  public _preference = { subscribe: this.preferenceStore.subscribe };
 
   public set = {
     light: () => {
-      this.preference.set("light");
+      this.preferenceStore.set("light");
       this.removeDark();
     },
     dark: () => {
-      this.preference.set("dark");
+      this.preferenceStore.set("dark");
       this.setDark();
     },
     system: () => {
-      this.preference.set("system");
+      this.preferenceStore.set("system");
 
       if (this.darkQuery.matches) {
         this.setDark();

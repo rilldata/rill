@@ -18,7 +18,6 @@ const selection =
 const cursor = "var(--color-gray-800)";
 const orange = "var(--color-orange-700)";
 
-/// The editor theme styles for One Dark.
 export const editorTheme = EditorView.theme(
   {
     "&": {
@@ -165,60 +164,7 @@ export const highlightStyle = HighlightStyle.define([
   { tag: t.invalid, color: invalid },
 ]);
 
-/// Extension to enable the One Dark theme (both the editor theme and
-/// the highlight style).
 export const theme: Extension = [
   editorTheme,
   syntaxHighlighting(highlightStyle),
 ];
-
-// export const oneDarkHighlightStyle = HighlightStyle.define([
-//   { tag: t.keyword, color: "var(--color-amber-700)" },
-//   {
-//     tag: [t.deleted, t.character, t.propertyName, t.macroName],
-//     color: "var(--color-violet-700)",
-//   },
-
-//   {
-//     tag: [t.function(t.variableName), t.labelName],
-//     color: "var(--color-violet-700)",
-//   },
-//   {
-//     tag: [t.color, t.constant(t.name), t.standard(t.name)],
-//     color: "var(--color-violet-700)",
-//   },
-//   { tag: [t.definition(t.name), t.separator], color: "var(--color-emerald-700)" },
-//   {
-//     tag: [
-//       t.typeName,
-//       t.className,
-//       t.number,
-//       t.changed,
-//       t.annotation,
-//       t.modifier,
-//       t.self,
-//       t.namespace,
-//     ],
-//     color: "var(--color-blue-800)",
-//   },
-
-//   // { tag: [t.meta, t.comment], color: "var(--color-gray-700)" },
-//   // { tag: t.strong, fontWeight: "bold" },
-//   // { tag: t.emphasis, fontStyle: "italic" },
-//   // { tag: t.strikethrough, textDecoration: "line-through" },
-//   {
-//     tag: t.link,
-//     color: "var(--color-violet-700)",
-//     textDecoration: "underline",
-//   },
-//   { tag: t.heading, fontWeight: "bold", color: "var(--color-violet-700)" },
-//   {
-//     tag: [t.atom, t.bool, t.special(t.variableName)],
-//     color: "var(--color-violet-700)",
-//   },
-//   {
-//     tag: [t.processingInstruction, t.string, t.inserted],
-//     color: "var(--color-blue-800)",
-//   },
-//   { tag: t.invalid, color: "var(--color-violet-700)" },
-// ]);
