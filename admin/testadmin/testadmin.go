@@ -145,7 +145,11 @@ func New(t *testing.T) *Fixture {
 	// Serve
 	ctx, cancel := context.WithCancel(ctx)
 	t.Cleanup(cancel)
-	go srv.Serve(ctx)
+	go func() {
+		if err := srv.Serve(ctx); err != nil {
+			logger.Error("server error", zap.Error(err))
+		}
+	}()
 	require.NoError(t, srv.AwaitServing(ctx))
 
 	return &Fixture{

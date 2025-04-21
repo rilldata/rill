@@ -123,7 +123,6 @@ func (s *Server) WatchResourcesHandler(w http.ResponseWriter, r *http.Request) {
 		Kind:       kind,
 		Replay:     replay,
 	}, shim)
-
 	if err != nil {
 		s.logger.Info("watch resources ended with error", zap.Error(err))
 		http.Error(w, "internal server error", http.StatusInternalServerError)
