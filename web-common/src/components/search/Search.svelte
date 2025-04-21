@@ -10,6 +10,7 @@
   /* Aria label for input */
   export let label = "Search";
   export let placeholder = "Search";
+  export let multiline = false;
   export let border = true;
   export let background = true;
   export let large = false;
@@ -18,7 +19,7 @@
   export let forcedInputStyle = "";
 
   /* Reference of input DOM element */
-  let ref: HTMLInputElement;
+  let ref: HTMLInputElement | HTMLTextAreaElement;
 
   const dispatch = createEventDispatcher();
 
@@ -29,6 +30,22 @@
       dispatch("submit");
       return false;
     }
+  }
+
+  /**
+   * We cant do a bind on svelte:element. We get `'value' is not a valid binding on <svelte:element> elements` error.
+   * So we need this to still keep `<svelte:element this={multiline ? "textarea" : "input"} ...`
+   */
+  function handleInput(event) {
+    value = event.target?.value;
+    if (multiline) {
+      updateTextAreaHeight();
+    }
+  }
+
+  function updateTextAreaHeight() {
+    ref.style.height = "auto"; // Reset height
+    ref.style.height = ref.scrollHeight + "px"; // Set to scroll height
   }
 
   onMount(() => {
@@ -52,27 +69,36 @@
   >
     <Search size={large ? "18px" : "16px"} />
   </button>
-  <input
+  <svelte:element
+    this={multiline ? "textarea" : "input"}
     bind:this={ref}
     type="text"
     autocomplete="off"
     class:focus={showBorderOnFocus}
     class:bg-slate-50={background}
     class:border
-    class="outline-none rounded-[2px] block w-full pl-8 p-1 {forcedInputStyle}"
+    class="outline-none rounded-[2px] block w-full pl-8 p-1 {forcedInputStyle} resize-none"
     class:h-full={large}
     {disabled}
     {placeholder}
-    bind:value
-    on:input
-    on:paste
+    on:input={handleInput}
     on:keydown={handleKeyDown}
     aria-label={label}
+    role="textbox"
+    tabindex="-1"
   />
 </form>
 
 <style lang="postcss">
   .focus:focus {
     @apply border-primary-400;
+  }
+
+  textarea {
+    height: auto;
+    /* min height for 1 row */
+    min-height: 28px;
+    /* Max of 5 rows. 28 + 16 * 5 = 92 */
+    max-height: 92px;
   }
 </style>

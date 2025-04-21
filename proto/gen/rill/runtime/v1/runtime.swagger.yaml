@@ -1724,6 +1724,9 @@ paths:
               priority:
                 type: integer
                 format: int32
+              timeZone:
+                type: string
+                title: Optional timezone param to easily override time-range expressions
       tags:
         - QueryService
   /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/timeseries:
@@ -2730,14 +2733,17 @@ paths:
                 description: |-
                   Parser is a convenience flag to trigger the global project parser.
                   Triggering the project parser ensures a pull of the repository and a full parse of all files.
-              allSourcesModels:
-                type: boolean
-                description: Convenience flag to trigger all sources and models.
-              allSourcesModelsFull:
+              all:
                 type: boolean
                 description: |-
-                  Convenience flag to trigger all sources and models.
-                  Will trigger models with RefreshModelTrigger.full set to true.
+                  Convenience flag to trigger all resources.
+                  Note: Despite the name, it does not currently trigger alerts and reports.
+              allFull:
+                type: boolean
+                description: |-
+                  Convenience flag to trigger all resources with full refreshes for resources that support it.
+                  Currently, only models support full refreshes. It's equivalent to passing RefreshModelTrigger.full for those models.
+                  Note: Despite the name, it does not currently trigger alerts and reports.
       tags:
         - RuntimeService
   /v1/instances/{instanceId}/variables/analyze:
@@ -4382,6 +4388,11 @@ definitions:
       allowCustomTimeRange:
         type: boolean
         title: Allow custom time range
+      definedInMetricsView:
+        type: boolean
+        description: |-
+          When true, it indicates that the explore was defined in a metrics view.
+          This currently happens for legacy metrics views (that don't have `version: 1`), which also emits explores.
   v1ExploreState:
     type: object
     properties:

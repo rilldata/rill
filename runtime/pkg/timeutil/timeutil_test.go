@@ -106,6 +106,17 @@ func TestTruncateTime_Kathmandu_first_month(t *testing.T) {
 	require.Equal(t, parseTestTime(t, "2022-12-31T18:15:00Z"), TruncateTime(parseTestTime(t, "2023-01-02T00:20:00Z"), TimeGrainYear, tz, 2, 1))
 }
 
+func TestCopyTimeTill(t *testing.T) {
+	require.Equal(t, CopyTimeComponentsUntil(parseTestTime(t, "2022-01-10T00:00:00Z"), parseTestTime(t, "2022-01-30T23:59:43Z"), TimeGrainWeek), parseTestTime(t, "2022-01-16T23:59:43Z"))
+	require.Equal(t, CopyTimeComponentsUntil(parseTestTime(t, "2022-01-10T00:00:00Z"), parseTestTime(t, "2022-01-31T23:59:43Z"), TimeGrainWeek), parseTestTime(t, "2022-01-10T23:59:43Z"))
+	require.Equal(t, CopyTimeComponentsUntil(parseTestTime(t, "2022-01-10T00:00:00Z"), parseTestTime(t, "2022-02-01T23:59:43Z"), TimeGrainWeek), parseTestTime(t, "2022-01-11T23:59:43Z"))
+	require.Equal(t, CopyTimeComponentsUntil(parseTestTime(t, "2022-01-10T00:00:00Z"), parseTestTime(t, "2022-02-02T23:59:43Z"), TimeGrainWeek), parseTestTime(t, "2022-01-12T23:59:43Z"))
+	require.Equal(t, CopyTimeComponentsUntil(parseTestTime(t, "2022-01-10T00:00:00Z"), parseTestTime(t, "2022-02-03T23:59:43Z"), TimeGrainWeek), parseTestTime(t, "2022-01-13T23:59:43Z"))
+	require.Equal(t, CopyTimeComponentsUntil(parseTestTime(t, "2022-01-10T00:00:00Z"), parseTestTime(t, "2022-02-04T23:59:43Z"), TimeGrainWeek), parseTestTime(t, "2022-01-14T23:59:43Z"))
+	require.Equal(t, CopyTimeComponentsUntil(parseTestTime(t, "2022-01-10T00:00:00Z"), parseTestTime(t, "2022-02-05T23:59:43Z"), TimeGrainWeek), parseTestTime(t, "2022-01-15T23:59:43Z"))
+	require.Equal(t, CopyTimeComponentsUntil(parseTestTime(t, "2022-01-10T00:00:00Z"), parseTestTime(t, "2022-02-06T23:59:43Z"), TimeGrainWeek), parseTestTime(t, "2022-01-16T23:59:43Z"))
+}
+
 func parseTestTime(tst *testing.T, t string) time.Time {
 	ts, err := time.Parse(time.RFC3339, t)
 	require.NoError(tst, err)

@@ -1061,7 +1061,9 @@ func (s *Server) pushToGit(ctx context.Context, copyData func(projPath string) e
 	}
 
 	if err := ghRepo.PushContext(ctx, &git.PushOptions{Auth: gitAuth}); err != nil {
-		return fmt.Errorf("failed to push to remote %q : %w", repo, err)
+		if !errors.Is(err, git.NoErrAlreadyUpToDate) {
+			return fmt.Errorf("failed to push to remote %q : %w", repo, err)
+		}
 	}
 
 	return nil

@@ -234,9 +234,9 @@ tests:
             comparison_value:
               measure: sum
       time_range:
-        expression: '-2D,latest'
+        expression: '3D~'
       comparison_time_range:
-        expression: '-2D,latest @ -2D'
+        expression: '3D~ of -3D'
       sort:
         - name: sum
     result:
@@ -259,9 +259,9 @@ tests:
             comparison_value:
               measure: sum
       time_range:
-        expression: '-2D,latest'
+        expression: '3D~'
       comparison_time_range:
-        expression: '-2D,latest @ -2D'
+        expression: '3D~ of -3D'
       sort:
         - name: sum
     result:
