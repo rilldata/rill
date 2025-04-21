@@ -375,6 +375,7 @@ func (s *Server) CreateTrigger(ctx context.Context, req *runtimev1.CreateTrigger
 	if req.All || req.AllFull {
 		kinds := []string{
 			runtime.ResourceKindProjectParser,
+			runtime.ResourceKindConnector,
 			runtime.ResourceKindModel,
 			runtime.ResourceKindMetricsView,
 			runtime.ResourceKindExplore,
