@@ -369,28 +369,34 @@ func (s *Server) CreateTrigger(ctx context.Context, req *runtimev1.CreateTrigger
 		spec.Resources = append(spec.Resources, runtime.GlobalProjectParserName)
 	}
 
-	// Handle the convenience flags for all sources and models.
-	if req.AllSourcesModels || req.AllSourcesModelsFull {
-		// Add all sources.
-		// Note: Don't need to handle "full" here since source refreshes are always full refreshes.
-		rs, err := ctrl.List(ctx, runtime.ResourceKindSource, "", false)
-		if err != nil {
-			return nil, status.Error(codes.InvalidArgument, fmt.Errorf("failed to list sources: %w", err).Error())
+	// Handle the convenience flags for all (user-facing) resources.
+	// In practice, we only refresh the major user declared resources that impact serving.
+	// For example, we don't currently trigger alerts or reports.
+	if req.All || req.AllFull {
+		kinds := []string{
+			runtime.ResourceKindProjectParser,
+			runtime.ResourceKindConnector,
+			runtime.ResourceKindModel,
+			runtime.ResourceKindMetricsView,
+			runtime.ResourceKindExplore,
+			runtime.ResourceKindComponent,
+			runtime.ResourceKindCanvas,
 		}
-		for _, r := range rs {
-			spec.Resources = append(spec.Resources, r.Meta.Name)
-		}
-
-		// Add all models.
-		rs, err = ctrl.List(ctx, runtime.ResourceKindModel, "", false)
-		if err != nil {
-			return nil, status.Error(codes.InvalidArgument, fmt.Errorf("failed to list models: %w", err).Error())
-		}
-		for _, r := range rs {
-			spec.Models = append(spec.Models, &runtimev1.RefreshModelTrigger{
-				Model: r.Meta.Name.Name,
-				Full:  req.AllSourcesModelsFull,
-			})
+		for _, kind := range kinds {
+			rs, err := ctrl.List(ctx, kind, "", false)
+			if err != nil {
+				return nil, status.Error(codes.InvalidArgument, fmt.Errorf("failed to list resources of kind %q: %w", kind, err).Error())
+			}
+			for _, r := range rs {
+				if kind == runtime.ResourceKindModel {
+					spec.Models = append(spec.Models, &runtimev1.RefreshModelTrigger{
+						Model: r.Meta.Name.Name,
+						Full:  req.AllFull,
+					})
+					continue
+				}
+				spec.Resources = append(spec.Resources, r.Meta.Name)
+			}
 		}
 	}
 

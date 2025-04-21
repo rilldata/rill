@@ -2771,11 +2771,13 @@ export type RuntimeServiceCreateTriggerBody = {
   /** Parser is a convenience flag to trigger the global project parser.
 Triggering the project parser ensures a pull of the repository and a full parse of all files. */
   parser?: boolean;
-  /** Convenience flag to trigger all sources and models. */
-  allSourcesModels?: boolean;
-  /** Convenience flag to trigger all sources and models.
-Will trigger models with RefreshModelTrigger.full set to true. */
-  allSourcesModelsFull?: boolean;
+  /** Convenience flag to trigger all resources.
+Note: Despite the name, it does not currently trigger alerts and reports. */
+  all?: boolean;
+  /** Convenience flag to trigger all resources with full refreshes for resources that support it.
+Currently, only models support full refreshes. It's equivalent to passing RefreshModelTrigger.full for those models.
+Note: Despite the name, it does not currently trigger alerts and reports. */
+  allFull?: boolean;
 };
 
 export type ConnectorServiceOLAPListTablesParams = {
