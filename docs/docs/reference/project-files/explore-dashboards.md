@@ -81,6 +81,7 @@ dimensions:
   **Example**:
     ```yaml
     time_ranges:
+    - inf // All Time is removed by default, add this to bring it back
     - PT15M // Simplified syntax to specify only the range
     - PT1H
     - PT6H
