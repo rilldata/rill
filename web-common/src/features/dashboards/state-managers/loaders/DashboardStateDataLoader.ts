@@ -7,7 +7,6 @@ import { useMetricsViewTimeRange } from "@rilldata/web-common/features/dashboard
 import { getPartialExploreStateFromSessionStorage } from "@rilldata/web-common/features/dashboards/state-managers/loaders/explore-web-view-store";
 import { getExploreStateFromYAMLConfig } from "@rilldata/web-common/features/dashboards/stores/get-explore-state-from-yaml-config";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
-import { useTimeRanges } from "@rilldata/web-common/features/dashboards/time-controls/rill-time-ranges";
 import { convertURLSearchParamsToExploreState } from "@rilldata/web-common/features/dashboards/url-state/convertURLSearchParamsToExploreState";
 import { getDefaultExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/getDefaultExplorePreset";
 import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
@@ -32,7 +31,6 @@ export class DashboardStateDataLoader {
   public readonly fullTimeRangeQuery: ReturnType<
     typeof useMetricsViewTimeRange
   >;
-  public readonly timeRangesQuery: ReturnType<typeof useTimeRanges>;
 
   // Default explore state show when there is no data in session/local storage or a home bookmark.
   // Currently, it has config from yaml along with opinionated defaults. Will change in a follow-up.
@@ -108,11 +106,9 @@ export class DashboardStateDataLoader {
       },
     );
 
-    this.timeRangesQuery = useTimeRanges(instanceId, exploreName);
-
     this.defaultExploreState = getCompoundQuery(
-      [this.validSpecQuery, this.fullTimeRangeQuery, this.timeRangesQuery],
-      ([validSpecResp, metricsViewTimeRangeResp, timeRangesResp]) => {
+      [this.validSpecQuery, this.fullTimeRangeQuery],
+      ([validSpecResp, metricsViewTimeRangeResp]) => {
         const metricsViewSpec = validSpecResp?.metricsView ?? {};
         const exploreSpec = validSpecResp?.explore ?? {};
 
@@ -121,8 +117,7 @@ export class DashboardStateDataLoader {
           !exploreSpec ||
           // safeguard to make sure time range summary is loaded for metrics view with time dimension
           (metricsViewSpec.timeDimension &&
-            (!metricsViewTimeRangeResp?.timeRangeSummary ||
-              !timeRangesResp?.timeRanges))
+            !metricsViewTimeRangeResp?.timeRangeSummary)
         ) {
           return undefined;
         }
@@ -131,7 +126,6 @@ export class DashboardStateDataLoader {
           metricsViewSpec,
           exploreSpec,
           metricsViewTimeRangeResp?.timeRangeSummary,
-          timeRangesResp?.timeRanges ?? [],
         );
       },
     );
@@ -184,18 +178,8 @@ export class DashboardStateDataLoader {
     );
 
     this.partialExploreStateFromUrlForInitAndErrors = derived(
-      [
-        this.validSpecQuery,
-        this.explorePresetFromYAMLConfig,
-        this.timeRangesQuery,
-        page,
-      ],
-      ([
-        validSpecResp,
-        explorePresetFromYAMLConfig,
-        timeRangesResp,
-        pageState,
-      ]) => {
+      [this.validSpecQuery, this.explorePresetFromYAMLConfig, page],
+      ([validSpecResp, explorePresetFromYAMLConfig, pageState]) => {
         const metricsViewSpec = validSpecResp.data?.metricsView ?? {};
         const exploreSpec = validSpecResp.data?.explore ?? {};
 
@@ -205,7 +189,6 @@ export class DashboardStateDataLoader {
             metricsViewSpec,
             exploreSpec,
             explorePresetFromYAMLConfig.data ?? {},
-            timeRangesResp.data?.timeRanges ?? [],
           );
         const partialExploreStateFromUrlForInit =
           pageState.url.searchParams.size === 0
@@ -275,8 +258,6 @@ export class DashboardStateDataLoader {
     const metricsViewSpec = validSpecResp.data.metricsView;
     const exploreSpec = validSpecResp.data.explore;
 
-    const { data: timeRangesResp } = get(this.timeRangesQuery);
-
     const explorePresetFromYAMLConfig = get(this.explorePresetFromYAMLConfig);
     if (!explorePresetFromYAMLConfig.data) return undefined;
 
@@ -290,7 +271,6 @@ export class DashboardStateDataLoader {
         metricsViewSpec,
         exploreSpec,
         explorePresetFromYAMLConfig.data,
-        timeRangesResp?.timeRanges ?? [],
       );
     // If we are skipping using state from session storage then exit early with partialExploreStateFromUrl
     // regardless if there is exploreStateFromSessionStorage for current url params or not.

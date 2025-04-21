@@ -457,7 +457,7 @@ export class TimeControls {
     let showTimeComparison = false;
 
     if (preset.timeRange) {
-      selectedTimeRange = fromTimeRangeUrlParam(preset.timeRange, []);
+      selectedTimeRange = fromTimeRangeUrlParam(preset.timeRange);
     }
 
     if (preset.timeGrain && selectedTimeRange) {
@@ -467,7 +467,6 @@ export class TimeControls {
     if (preset.compareTimeRange) {
       selectedComparisonTimeRange = fromTimeRangeUrlParam(
         preset.compareTimeRange,
-        [],
       );
       showTimeComparison = true;
     } else if (

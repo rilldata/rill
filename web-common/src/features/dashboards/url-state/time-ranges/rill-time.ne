@@ -49,23 +49,23 @@ period_to_grain_time => period_to_grain            {% ([ptg]) => new RillTimePer
                       | num period_to_grain        {% ([num, ptg]) => new RillTimePeriodToDate(undefined, num, ptg) %}
                       | prefix num period_to_grain {% ([prefix, num, ptg]) => new RillTimePeriodToDate(prefix, num, ptg) %}
 
-labeled_anchor => "earliest"  {% id %}
-                | "latest"    {% id %}
-                | "now"       {% id %}
-                | "watermark" {% id %}
+labeled_anchor => "earliest"  {% RillTimeLabelledAnchor.postProcessor %}
+                | "latest"    {% RillTimeLabelledAnchor.postProcessor %}
+                | "now"       {% RillTimeLabelledAnchor.postProcessor %}
+                | "watermark" {% RillTimeLabelledAnchor.postProcessor %}
 
 period_to_grain => [sSmhHdDwWqQMyY] [T] [sSmhHdDwWqQMyY] {% (args) => args.join("") %}
 
-abs_time => [\d] [\d] [\d] [\d] [\-] [\d] [\d] [\-] [\d] [\d] "T" [\d] [\d] [:] [\d] [\d] [:] [\d] [\d] "Z" {% (args) => args.join("") %}
-          | [\d] [\d] [\d] [\d] [\-] [\d] [\d] [\-] [\d] [\d] "T" [\d] [\d] [:] [\d] [\d]                   {% (args) => args.join("") %}
-          | [\d] [\d] [\d] [\d] [\-] [\d] [\d] [\-] [\d] [\d] "T" [\d] [\d]                                 {% (args) => args.join("") %}
-          | [\d] [\d] [\d] [\d] [\-] [\d] [\d] [\-] [\d] [\d]                                               {% (args) => args.join("") %}
-          | [\d] [\d] [\d] [\d] [\-] [\d] [\d]                                                              {% (args) => args.join("") %}
-          | [\d] [\d] [\d] [\d]                                                                             {% (args) => args.join("") %}
+abs_time => [\d] [\d] [\d] [\d] [\-] [\d] [\d] [\-] [\d] [\d] "T" [\d] [\d] [:] [\d] [\d] [:] [\d] [\d] "Z" {% RillTimeAbsoluteTime.postProcessor %}
+          | [\d] [\d] [\d] [\d] [\-] [\d] [\d] [\-] [\d] [\d] "T" [\d] [\d] [:] [\d] [\d]                   {% RillTimeAbsoluteTime.postProcessor %}
+          | [\d] [\d] [\d] [\d] [\-] [\d] [\d] [\-] [\d] [\d] "T" [\d] [\d]                                 {% RillTimeAbsoluteTime.postProcessor %}
+          | [\d] [\d] [\d] [\d] [\-] [\d] [\d] [\-] [\d] [\d]                                               {% RillTimeAbsoluteTime.postProcessor %}
+          | [\d] [\d] [\d] [\d] [\-] [\d] [\d]                                                              {% RillTimeAbsoluteTime.postProcessor %}
+          | [\d] [\d] [\d] [\d]                                                                             {% RillTimeAbsoluteTime.postProcessor %}
 
 timezone_modifier => "{" _ [^}]:+ _ "}" {% ([, , tz]) => tz.join("") %}
 
-prefix => [+-<>] {% id %}
+prefix => [+\-<>] {% id %}
 
 num => [0-9]:+ {% ([args]) => Number(args.join("")) %}
 

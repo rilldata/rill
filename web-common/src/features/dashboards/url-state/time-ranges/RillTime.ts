@@ -1,9 +1,5 @@
-export enum RillTimeType {
-  Unknown = "Unknown",
-  Latest = "Latest",
-  PreviousPeriod = "Previous period",
-  PeriodToDate = "Period To Date",
-}
+import { DateTime } from "luxon";
+import type { DateObjectUnits } from "luxon/src/datetime";
 
 const absTimeRegex =
   /(?<year>\d{4})(-(?<month>\d{2})(-(?<day>\d{2})(T(?<hour>\d{2})(:(?<minute>\d{2})(:(?<second>\d{2})Z)?)?)?)?)?/;
@@ -11,7 +7,6 @@ const absTimeRegex =
 export class RillTime {
   public timeRange: string;
   public readonly isComplete: boolean;
-  public readonly type = RillTimeType.Unknown; // TODO
 
   public constructor(
     public readonly start: RillTimePart[],
@@ -35,7 +30,7 @@ export class RillTime {
       range += ` @{${this.timezone}}`;
     }
 
-    return range;
+    return capitalizeFirstChar(range);
   }
 
   public toString() {
@@ -81,32 +76,58 @@ interface RillTimePart {
 }
 
 export class RillTimeAbsoluteTime implements RillTimePart {
-  private readonly time: Date;
   public isComplete = true; // TODO: can this be anything else?
 
-  public constructor(timeStr: string) {
+  private readonly dateObject: DateObjectUnits = {};
+
+  public constructor(private readonly timeStr: string) {
     const absTimeMatch = absTimeRegex.exec(timeStr);
     if (!absTimeMatch) {
-      this.time = new Date(0);
       return;
     }
 
-    const year = Number(absTimeMatch.groups?.year ?? "0");
-    const month = Number(absTimeMatch.groups?.month ?? "1");
-    const day = Number(absTimeMatch.groups?.day ?? "1");
-    const hour = Number(absTimeMatch.groups?.hour ?? "0");
-    const minute = Number(absTimeMatch.groups?.minute ?? "0");
-    const second = Number(absTimeMatch.groups?.second ?? "0");
+    if (absTimeMatch.groups?.year)
+      this.dateObject.year = Number(absTimeMatch.groups.year);
+    if (absTimeMatch.groups?.month)
+      this.dateObject.month = Number(absTimeMatch.groups.month);
+    if (absTimeMatch.groups?.day)
+      this.dateObject.day = Number(absTimeMatch.groups.day);
+    if (absTimeMatch.groups?.hour)
+      this.dateObject.hour = Number(absTimeMatch.groups.hour);
+    if (absTimeMatch.groups?.minute)
+      this.dateObject.minute = Number(absTimeMatch.groups.minute);
+    if (absTimeMatch.groups?.second)
+      this.dateObject.second = Number(absTimeMatch.groups.second);
+  }
 
-    this.time = new Date(year, month, day, hour, minute, second, 0);
+  public static postProcessor(args: string[]) {
+    return new RillTimeAbsoluteTime(args.join(""));
   }
 
   public getLabel() {
-    return this.time.toLocaleTimeString();
+    const date = DateTime.fromObject(this.dateObject, { zone: "utc" });
+
+    if (
+      this.dateObject.hour ||
+      this.dateObject.minute ||
+      this.dateObject.second
+    ) {
+      return date.toLocaleString(DateTime.DATETIME_MED);
+    }
+
+    if (this.dateObject.day) {
+      return date.toLocaleString(DateTime.DATE_MED);
+    }
+
+    if (this.dateObject.month) {
+      return date.toLocaleString({ month: "short", year: "numeric" });
+    }
+
+    return this.timeStr;
   }
 
   public toString() {
-    return this.time.toISOString();
+    return this.timeStr;
   }
 }
 
@@ -114,6 +135,10 @@ export class RillTimeLabelledAnchor implements RillTimePart {
   public isComplete = false; // TODO: can this be anything else?
 
   public constructor(public readonly label: string) {}
+
+  public static postProcessor([label]: [string]) {
+    return new RillTimeLabelledAnchor(label);
+  }
 
   public getLabel() {
     return this.label;
@@ -133,7 +158,7 @@ export class RillTimeOrdinal implements RillTimePart {
   ) {}
 
   public getLabel() {
-    const grainPart = capitalizeFirstChar(GrainToUnit[this.grain]);
+    const grainPart = GrainToUnit[this.grain];
     return `${grainPart} ${this.num}`;
   }
 
@@ -164,25 +189,28 @@ export class RillTimeRelative implements RillTimePart {
 
     switch (this.prefix) {
       case undefined:
-        return `Previous ${grainLabel}`;
+        if (this.num === 1) {
+          return `${this.isComplete ? "previous" : "this"} ${grainPart}`;
+        }
+        return `last ${grainLabel}`;
 
       case "-":
         if (this.num === 1) {
-          return `Previous ${grainPart}`;
+          return `previous ${grainPart}`;
         }
         return `${grainLabel} in the past`;
 
       case "+":
         if (this.num === 1) {
-          return `Next ${grainPart}`;
+          return `next ${grainPart}`;
         }
         return `${grainLabel} in the future`;
 
       case "<":
-        return `First ${grainLabel} in the future`;
+        return `first ${grainLabel}`;
 
       case ">":
-        return `Last ${grainLabel} in the future`;
+        return `last ${grainLabel}`;
     }
   }
 
@@ -213,8 +241,10 @@ export class RillTimePeriodToDate implements RillTimePart {
   }
 
   public getLabel() {
+    const from = GrainToUnit[this.from];
+    const to = GrainToUnit[this.to];
     // TODO
-    return `${this.from} to ${this.to}`;
+    return `${from} to ${to}`;
   }
 
   public toString() {

@@ -4,7 +4,6 @@ import type {
   V1ExplorePreset,
   V1ExploreSpec,
   V1MetricsViewSpec,
-  V1TimeRange,
 } from "@rilldata/web-common/runtime-client";
 
 export function convertURLSearchParamsToExploreState(
@@ -12,7 +11,6 @@ export function convertURLSearchParamsToExploreState(
   metricsView: V1MetricsViewSpec,
   exploreSpec: V1ExploreSpec,
   defaultExplorePreset: V1ExplorePreset,
-  timeRanges: V1TimeRange[],
 ) {
   const errors: Error[] = [];
   const { preset, errors: errorsFromPreset } = convertURLToExplorePreset(
@@ -23,7 +21,7 @@ export function convertURLSearchParamsToExploreState(
   );
   errors.push(...errorsFromPreset);
   const { partialExploreState, errors: errorsFromEntity } =
-    convertPresetToExploreState(metricsView, exploreSpec, preset, timeRanges);
+    convertPresetToExploreState(metricsView, exploreSpec, preset);
   errors.push(...errorsFromEntity);
   return { partialExploreState, errors };
 }

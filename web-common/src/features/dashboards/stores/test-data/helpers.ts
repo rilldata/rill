@@ -72,7 +72,6 @@ export function getInitExploreStateForTest(
     metricsViewSpec,
     exploreSpec,
     defaultExplorePreset,
-    [],
   );
   return partialExploreState;
 }
