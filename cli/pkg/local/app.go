@@ -314,7 +314,7 @@ func (a *App) Close() error {
 	return nil
 }
 
-func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly bool, userID, tlsCertPath, tlsKeyPath string) error {
+func (a *App) Serve(port int, enableUI, openBrowser, readonly bool, userID, tlsCertPath, tlsKeyPath string) error {
 	// Get analytics info
 	installID, enabled, err := a.ch.DotRill.AnalyticsInfo()
 	if err != nil {
@@ -324,7 +324,7 @@ func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly bool
 	// Build local metadata
 	metadata := &localMetadata{
 		InstanceID:       a.Instance.ID,
-		GRPCPort:         grpcPort,
+		Port:             port,
 		InstallID:        installID,
 		ProjectPath:      a.ProjectPath,
 		UserID:           userID,
@@ -356,8 +356,7 @@ func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly bool
 
 	// Create a runtime server
 	opts := &runtimeserver.Options{
-		HTTPPort:        httpPort,
-		GRPCPort:        grpcPort,
+		Port:            port,
 		TLSCertPath:     tlsCertPath,
 		TLSKeyPath:      tlsKeyPath,
 		AllowedOrigins:  a.allowedOrigins,
@@ -375,7 +374,7 @@ func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly bool
 	group.Go(func() error {
 		return runtimeServer.ServeHTTP(ctx, func(mux *http.ServeMux) {
 			// Inject local-only endpoints on the runtime server
-			localServer.RegisterHandlers(mux, httpPort, secure, enableUI)
+			localServer.RegisterHandlers(mux, port, secure, enableUI)
 		})
 	})
 
@@ -385,7 +384,7 @@ func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly bool
 	}
 
 	// Open the browser when health check succeeds
-	go a.PollServer(ctx, httpPort, enableUI && openBrowser, secure)
+	go a.PollServer(ctx, port, enableUI && openBrowser, secure)
 
 	// Run the server
 	err = group.Wait()

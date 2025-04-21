@@ -25,7 +25,6 @@ import (
 	runtimeauth "github.com/rilldata/rill/runtime/server/auth"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
-	"golang.org/x/sync/errgroup"
 
 	// Register database driver and supported provisioners
 	_ "github.com/rilldata/rill/admin/database/postgres"
@@ -132,7 +131,7 @@ func New(t *testing.T) *Fixture {
 
 	// Server
 	srvOpts := &server.Options{
-		HTTPPort:         port,
+		Port:             port,
 		AllowedOrigins:   []string{"*"},
 		SessionKeyPairs:  [][]byte{randomBytes(16), randomBytes(16)},
 		ServePrometheus:  true,
@@ -146,8 +145,7 @@ func New(t *testing.T) *Fixture {
 	// Serve
 	ctx, cancel := context.WithCancel(ctx)
 	t.Cleanup(cancel)
-	group, ctx := errgroup.WithContext(ctx)
-	group.Go(func() error { return srv.Serve(ctx) })
+	go srv.Serve(ctx)
 	require.NoError(t, srv.AwaitServing(ctx))
 
 	return &Fixture{
@@ -200,7 +198,7 @@ func (f *Fixture) NewClient(t *testing.T, token string) *client.Client {
 
 // ExternalURL returns the localhost URL of the fixture's server.
 func (f *Fixture) ExternalURL() string {
-	return fmt.Sprintf("http://localhost:%d", f.ServerOpts.HTTPPort)
+	return fmt.Sprintf("http://localhost:%d", f.ServerOpts.Port)
 }
 
 // mockGithub provides a mock implementation of admin.Github.

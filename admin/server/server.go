@@ -45,8 +45,7 @@ var (
 )
 
 type Options struct {
-	HTTPPort               int
-	GRPCPort               int
+	Port                   int
 	AllowedOrigins         []string
 	SessionKeyPairs        [][]byte
 	ServePrometheus        bool
@@ -141,10 +140,10 @@ func (s *Server) Serve(ctx context.Context) error {
 	}
 
 	server := &http.Server{Handler: handler}
-	s.logger.Sugar().Infof("serving admin HTTP on port:%v", s.opts.HTTPPort)
+	s.logger.Sugar().Infof("serving admin HTTP on port:%v", s.opts.Port)
 
 	return graceful.ServeHTTP(ctx, server, graceful.ServeOptions{
-		Port: s.opts.HTTPPort,
+		Port: s.opts.Port,
 	})
 }
 
@@ -278,7 +277,7 @@ func (s *Server) AwaitServing(ctx context.Context) error {
 	// Since the HTTP server proxies the ping endpoint to the gRPC server,
 	// it is sufficient to check that endpoint on the HTTP server.
 	client := &http.Client{}
-	pingURL := fmt.Sprintf("http://localhost:%d/v1/ping", s.opts.HTTPPort)
+	pingURL := fmt.Sprintf("http://localhost:%d/v1/ping", s.opts.Port)
 
 	// Check every 100ms for 15s
 	ticker := time.NewTicker(100 * time.Millisecond)

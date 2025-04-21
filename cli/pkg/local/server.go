@@ -107,7 +107,7 @@ func (s *Server) GetMetadata(ctx context.Context, r *connect.Request[localv1.Get
 		IsDev:            s.metadata.IsDev,
 		AnalyticsEnabled: s.metadata.AnalyticsEnabled,
 		Readonly:         s.metadata.Readonly,
-		GrpcPort:         int32(s.metadata.GRPCPort),
+		GrpcPort:         int32(s.metadata.Port),
 		LoginUrl:         s.app.localURL + "/auth",
 		AdminUrl:         s.app.ch.AdminURL(),
 	}), nil
@@ -755,7 +755,7 @@ type localMetadata struct {
 	IsDev            bool   `json:"is_dev"`
 	AnalyticsEnabled bool   `json:"analytics_enabled"`
 	Readonly         bool   `json:"readonly"`
-	GRPCPort         int    `json:"grpc_port"`
+	Port             int    `json:"port"`
 }
 
 // metadataHandler serves the metadata of the local Rill instance.

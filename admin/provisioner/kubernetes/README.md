@@ -69,9 +69,7 @@ spec:
         command:
         - rill
         env:
-        - name: RILL_RUNTIME_GRPC_PORT
-          value: "8080"
-        - name: RILL_RUNTIME_HTTP_PORT
+        - name: RILL_RUNTIME_PORT
           value: "8080"
 
         ########################################################################

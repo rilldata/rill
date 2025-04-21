@@ -35,8 +35,7 @@ import (
 var ErrForbidden = status.Error(codes.Unauthenticated, "action not allowed")
 
 type Options struct {
-	HTTPPort        int
-	GRPCPort        int
+	Port            int
 	AllowedOrigins  []string
 	ServePrometheus bool
 	SessionKeyPairs [][]byte
@@ -126,9 +125,9 @@ func (s *Server) ServeHTTP(ctx context.Context, registerAdditionalHandlers func(
 	}
 
 	server := &http.Server{Handler: handler}
-	s.logger.Sugar().Infof("serving HTTP on port:%v", s.opts.HTTPPort)
+	s.logger.Sugar().Infof("serving HTTP on port:%v", s.opts.Port)
 	options := graceful.ServeOptions{
-		Port:     s.opts.HTTPPort,
+		Port:     s.opts.Port,
 		CertPath: s.opts.TLSCertPath,
 		KeyPath:  s.opts.TLSKeyPath,
 	}
@@ -178,7 +177,7 @@ func (s *Server) HTTPHandler(ctx context.Context, registerAdditionalHandlers fun
 
 	httpMux.Handle("/", transcoder)
 
-	// Add HTTP handler for
+	// Add HTTP handler for watching files
 	httpMux.Handle("/v1/instances/{instance_id}/files/watch", auth.HTTPMiddleware(s.aud, http.HandlerFunc(s.WatchFilesHandler)))
 
 	// Add HTTP handler for watching resources

@@ -212,7 +212,7 @@ func (s *Server) generateOpenAPISpec(ctx context.Context, instanceID string, api
 		}
 		runtimeHost = runtimeURL.Host
 	} else {
-		runtimeHost = fmt.Sprintf("localhost:%d", s.opts.HTTPPort)
+		runtimeHost = fmt.Sprintf("localhost:%d", s.opts.Port)
 	}
 
 	spec.Servers = openapi3.Servers{

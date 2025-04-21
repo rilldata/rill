@@ -48,7 +48,6 @@ type KubernetesSpec struct {
 
 type KubernetesTemplatePaths struct {
 	HTTPIngress string `json:"http_ingress"`
-	GRPCIngress string `json:"grpc_ingress"`
 	Service     string `json:"service"`
 	Deployment  string `json:"deployment"`
 	PVC         string `json:"pvc"`
@@ -77,7 +76,6 @@ type TemplateData struct {
 
 type ResourceNames struct {
 	HTTPIngress string
-	GRPCIngress string
 	Service     string
 	Deployment  string
 	PVC         string
@@ -112,7 +110,6 @@ func NewKubernetes(specJSON []byte, db database.DB, logger *zap.Logger) (provisi
 	// Define template files
 	templateFiles := []string{
 		ksp.TemplatePaths.HTTPIngress,
-		ksp.TemplatePaths.GRPCIngress,
 		ksp.TemplatePaths.Service,
 		ksp.TemplatePaths.Deployment,
 		ksp.TemplatePaths.PVC,
@@ -190,7 +187,6 @@ func (p *KubernetesProvisioner) Provision(ctx context.Context, r *provisioner.Re
 
 	// Define the structured Kubernetes API resources
 	httpIng := &netv1ac.IngressApplyConfiguration{}
-	grpcIng := &netv1ac.IngressApplyConfiguration{}
 	svc := &corev1ac.ServiceApplyConfiguration{}
 	pvc := &corev1ac.PersistentVolumeClaimApplyConfiguration{}
 	depl := &appsv1ac.DeploymentApplyConfiguration{}
@@ -198,7 +194,6 @@ func (p *KubernetesProvisioner) Provision(ctx context.Context, r *provisioner.Re
 	// Resolve the templates and decode into Kubernetes API resources
 	for k, v := range map[string]any{
 		p.Spec.TemplatePaths.HTTPIngress: httpIng,
-		p.Spec.TemplatePaths.GRPCIngress: grpcIng,
 		p.Spec.TemplatePaths.Service:     svc,
 		p.Spec.TemplatePaths.PVC:         pvc,
 		p.Spec.TemplatePaths.Deployment:  depl,
@@ -261,11 +256,6 @@ func (p *KubernetesProvisioner) Provision(ctx context.Context, r *provisioner.Re
 		return nil, err
 	}
 
-	_, err = p.clientset.NetworkingV1().Ingresses(p.Spec.Namespace).Apply(ctx, grpcIng.WithName(names.GRPCIngress).WithLabels(labels).WithAnnotations(annotations), applyOptions)
-	if err != nil {
-		return nil, err
-	}
-
 	state := &runtimeState{
 		Slots:   data.Slots,
 		Version: version,
@@ -301,20 +291,17 @@ func (p *KubernetesProvisioner) Deprovision(ctx context.Context, r *provisioner.
 	// Delete HTTP ingress
 	err1 := p.clientset.NetworkingV1().Ingresses(p.Spec.Namespace).Delete(ctx, names.HTTPIngress, delOptions)
 
-	// Delete GRPC ingress
-	err2 := p.clientset.NetworkingV1().Ingresses(p.Spec.Namespace).Delete(ctx, names.GRPCIngress, delOptions)
-
 	// Delete service
-	err3 := p.clientset.CoreV1().Services(p.Spec.Namespace).Delete(ctx, names.Service, delOptions)
+	err2 := p.clientset.CoreV1().Services(p.Spec.Namespace).Delete(ctx, names.Service, delOptions)
 
 	// Delete deployment
-	err4 := p.clientset.AppsV1().Deployments(p.Spec.Namespace).Delete(ctx, names.Deployment, delOptions)
+	err3 := p.clientset.AppsV1().Deployments(p.Spec.Namespace).Delete(ctx, names.Deployment, delOptions)
 
 	// Delete PVC
-	err5 := p.clientset.CoreV1().PersistentVolumeClaims(p.Spec.Namespace).Delete(ctx, names.PVC, delOptions)
+	err4 := p.clientset.CoreV1().PersistentVolumeClaims(p.Spec.Namespace).Delete(ctx, names.PVC, delOptions)
 
 	// We ignore not found errors for idempotency
-	errs := []error{err1, err2, err3, err4, err5}
+	errs := []error{err1, err2, err3, err4}
 	for i := 0; i < len(errs); i++ {
 		if k8serrs.IsNotFound(errs[i]) {
 			errs[i] = nil
@@ -410,7 +397,6 @@ func (p *KubernetesProvisioner) getResourceNames(provisionID string) ResourceNam
 		PVC:         fmt.Sprintf("runtime-%s", provisionID),
 		Service:     fmt.Sprintf("runtime-%s", provisionID),
 		HTTPIngress: fmt.Sprintf("http-runtime-%s", provisionID),
-		GRPCIngress: fmt.Sprintf("grpc-runtime-%s", provisionID),
 	}
 }
 
