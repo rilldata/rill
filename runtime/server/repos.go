@@ -315,13 +315,13 @@ func (s *Server) UploadMultipartFile(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
-// A shim to for "ss runtimev1.RuntimeService_WatchFilesServer"
+// A shim for runtimev1.RuntimeService_WatchFilesServer
 type watchFilesServerShim struct {
 	r *http.Request
 	s *sse.Server
 }
 
-// NewWatchFilesServerShim creates a new watchFilesServerShim.
+// Context returns the context of the request.
 func (ss *watchFilesServerShim) Context() context.Context {
 	return ss.r.Context()
 }

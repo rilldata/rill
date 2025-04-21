@@ -20,6 +20,7 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
@@ -102,12 +103,6 @@ func (s *Server) WatchResourcesHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ctrl, err := s.runtime.Controller(ctx, instanceID)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
 	eventServer := sse.New()
 	eventServer.CreateStream("resources")
 	eventServer.Headers = map[string]string{
@@ -116,72 +111,24 @@ func (s *Server) WatchResourcesHandler(w http.ResponseWriter, r *http.Request) {
 		"Connection":    "keep-alive",
 	}
 
-	if replay {
-		rs, err := ctrl.List(ctx, kind, "", false)
-		if err != nil {
-			s.logger.Info("failed to list resources for replay", zap.Error(err))
-			http.Error(w, "internal server error", http.StatusInternalServerError)
-			return
-		}
-
-		for _, r := range rs {
-			r, access, err := s.applySecurityPolicy(ctx, instanceID, r)
-			if err != nil {
-				s.logger.Info("failed to apply security policy", zap.String("name", r.Meta.Name.Name), zap.Error(err))
-				continue
-			}
-			if !access {
-				continue
-			}
-
-			e := &runtimev1.WatchResourcesResponse{
-				Event:    runtimev1.ResourceEvent_RESOURCE_EVENT_WRITE,
-				Resource: r,
-			}
-
-			data, err := protojson.Marshal(e)
-			if err != nil {
-				s.logger.Warn("failed to marshal watch event", zap.Error(err))
-				continue
-			}
-
-			eventServer.Publish("resources", &sse.Event{Data: data})
-		}
+	// Create a shim that adapts the SSE server to the WatchResources gRPC server
+	shim := &watchResourcesServerShim{
+		r:   r,
+		sse: eventServer,
 	}
 
-	// Create a context that is cancelled when the client disconnects
-	clientCtx, clientCancel := context.WithCancel(ctx)
-	defer clientCancel()
+	// Use the existing WatchResources implementation
+	err := s.WatchResources(&runtimev1.WatchResourcesRequest{
+		InstanceId: instanceID,
+		Kind:       kind,
+		Replay:     replay,
+	}, shim)
 
-	go func() {
-		defer clientCancel()
-
-		err := ctrl.Subscribe(clientCtx, func(e runtimev1.ResourceEvent, n *runtimev1.ResourceName, r *runtimev1.Resource) {
-			if r != nil { // r is nil for deletion events
-				var access bool
-				var err error
-				r, access, err = s.applySecurityPolicy(clientCtx, instanceID, r)
-				if err != nil {
-					s.logger.Info("failed to apply security policy", zap.String("name", n.Name), zap.Error(err))
-					return
-				}
-				if !access {
-					return
-				}
-			}
-
-			res := &runtimev1.WatchResourcesResponse{Event: e, Name: n, Resource: r}
-			data, err := protojson.Marshal(res)
-			if err != nil {
-				s.logger.Warn("failed to marshal watch event", zap.Error(err))
-			}
-
-			eventServer.Publish("resources", &sse.Event{Data: data})
-		})
-		if err != nil {
-			s.logger.Info("subscription ended with error", zap.Error(err))
-		}
-	}()
+	if err != nil {
+		s.logger.Info("watch resources ended with error", zap.Error(err))
+		http.Error(w, "internal server error", http.StatusInternalServerError)
+		return
+	}
 
 	eventServer.ServeHTTP(w, r)
 }
@@ -714,4 +661,51 @@ func must[T any](v T, err error) T {
 		panic(err)
 	}
 	return v
+}
+
+// A shim for runtimev1.RuntimeService_WatchResourcesServer
+type watchResourcesServerShim struct {
+	r   *http.Request
+	sse *sse.Server
+}
+
+// Context returns the context from the HTTP request
+func (s *watchResourcesServerShim) Context() context.Context {
+	return s.r.Context()
+}
+
+// Send adapts the WatchResourcesResponse to SSE events
+func (s *watchResourcesServerShim) Send(e *runtimev1.WatchResourcesResponse) error {
+	data, err := protojson.Marshal(e)
+	if err != nil {
+		return err
+	}
+
+	s.sse.Publish("resources", &sse.Event{Data: data})
+	return nil
+}
+
+// SetHeader implements the grpc.ServerStream interface
+func (s *watchResourcesServerShim) SetHeader(metadata.MD) error {
+	return nil // No-op for HTTP/SSE
+}
+
+// SendHeader implements the grpc.ServerStream interface
+func (s *watchResourcesServerShim) SendHeader(metadata.MD) error {
+	return nil // No-op for HTTP/SSE
+}
+
+// SetTrailer implements the grpc.ServerStream interface
+func (s *watchResourcesServerShim) SetTrailer(metadata.MD) {
+	// No-op for HTTP/SSE
+}
+
+// SendMsg implements the grpc.ServerStream interface
+func (s *watchResourcesServerShim) SendMsg(m any) error {
+	return errors.New("not implemented")
+}
+
+// RecvMsg implements the grpc.ServerStream interface
+func (s *watchResourcesServerShim) RecvMsg(m any) error {
+	return errors.New("not implemented")
 }
