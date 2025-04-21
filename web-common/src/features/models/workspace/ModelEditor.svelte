@@ -56,12 +56,6 @@
   $: defaultTable = getTableNameFromFromClause($remoteContent ?? "", schema);
   $: updateAutocompleteSources(schema, defaultTable);
 
-  const sqlExtensions = [
-    autocompleteCompartment.of(makeAutocompleteConfig(schema, defaultTable)),
-    sql({ dialect: DuckDBSQL }),
-  ];
-  const yamlExtensins = [yaml()];
-
   function getTableNameFromFromClause(
     sql: string,
     schema: { [table: string]: string[] },
