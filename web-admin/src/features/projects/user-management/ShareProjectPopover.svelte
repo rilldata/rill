@@ -17,6 +17,7 @@
   } from "@rilldata/web-common/components/popover";
   import UsergroupItem from "./UsergroupItem.svelte";
   import UserItem from "./UserItem.svelte";
+  import AvatarListItem from "../../organizations/users/AvatarListItem.svelte";
 
   export let organization: string;
   export let project: string;
@@ -41,26 +42,11 @@
   $: projectMemberUsersList = $listProjectMemberUsers.data?.members ?? [];
   $: projectInvitesList = $listProjectInvites.data?.invites ?? [];
 
-  function coerceInvitesToUsers(invites: V1ProjectInvite[]) {
-    return invites.map((invite) => ({
-      ...invite,
-      userName: null,
-      userEmail: invite.email,
-      userPhotoUrl: null,
-      roleName: invite.roleName,
-    }));
-  }
+  // $: console.log("projectMemberUsersList: ", projectMemberUsersList);
+  $: console.log("projectMemberUserGroupsList: ", projectMemberUserGroupsList);
+  // $: console.log("projectInvitesList: ", projectInvitesList);
 
-  $: usersWithPendingInvites = [
-    ...projectMemberUsersList,
-    ...coerceInvitesToUsers(projectInvitesList),
-  ];
-
-  $: showOrganizationSection = projectMemberUserGroupsList.some(
-    (group) => group.groupManaged,
-  );
-
-  $: showGroupsSection = projectMemberUserGroupsList.some(
+  $: hasRegularUserGroups = projectMemberUserGroupsList.some(
     (group) => !group.groupManaged,
   );
 </script>
@@ -77,43 +63,41 @@
         <CopyInviteLinkButton {copyLink} />
       </div>
       <UserInviteForm {organization} {project} />
-      {#if showOrganizationSection}
+      <!-- 52 * 8 = 416px -->
+      <div class="flex flex-col gap-y-1 overflow-y-auto max-h-[416px]">
         <div class="mt-4">
-          <div class="text-xs text-gray-500 font-semibold uppercase">
-            Org Users
-          </div>
-          <div class="flex flex-col gap-y-1 overflow-y-auto max-h-[260px]">
-            {#each projectMemberUserGroupsList as group}
-              {#if group.groupManaged}
-                <OrganizationItem {organization} {project} {group} />
-              {/if}
-            {/each}
-          </div>
-        </div>
-      {/if}
-      {#if showGroupsSection}
-        <div class="mt-2">
-          <div class="text-xs text-gray-500 font-semibold uppercase">
-            User Groups
-          </div>
-          <!-- 52 * 5 = 260px -->
-          <div class="flex flex-col gap-y-1 overflow-y-auto max-h-[260px]">
+          <!-- Project Users -->
+          {#each projectMemberUsersList as user}
+            <UserItem {organization} {project} {user} />
+          {/each}
+          <!-- Pending Invites -->
+          {#each projectInvitesList as user}
+            <UserItem {organization} {project} {user} />
+          {/each}
+          <!-- User Groups -->
+          {#if hasRegularUserGroups}
             {#each projectMemberUserGroupsList as group}
               {#if !group.groupManaged}
                 <UsergroupItem {organization} {project} {group} />
               {/if}
             {/each}
+          {/if}
+        </div>
+        <div class="mt-2">
+          <div class="text-xs text-gray-500 font-semibold uppercase">
+            General Access
           </div>
-        </div>
-      {/if}
-      <div class="mt-2">
-        <div class="text-xs text-gray-500 font-semibold uppercase">
-          Project Users
-        </div>
-        <!-- 52 * 5 = 260px -->
-        <div class="flex flex-col gap-y-1 overflow-y-auto max-h-[260px]">
-          {#each usersWithPendingInvites as user}
-            <UserItem {organization} {project} {user} />
+          <!-- NOTE: Only support "autogroup:members" -->
+          <!-- https://www.notion.so/rilldata/User-Management-Role-Based-Access-Control-RBAC-Enhancements-8d331b29d9b64d87bca066e06ef87f54?pvs=4#1acba33c8f5780f4903bf16510193dd8 -->
+          {#each projectMemberUserGroupsList as group}
+            {#if group.groupName === "autogroup:members"}
+              <OrganizationItem
+                {organization}
+                {project}
+                {group}
+                avatarName={`Everyone at ${organization}`}
+              />
+            {/if}
           {/each}
         </div>
       </div>

@@ -13,6 +13,7 @@
   export let group: V1MemberUsergroup;
   export let organization: string;
   export let project: string;
+  export let avatarName: string;
 
   let isHovered = false;
 
@@ -30,12 +31,6 @@
 
   $: userGroupMemberUsers = $listUsergroupMemberUsers.data?.members ?? [];
   $: userGroupMemberUsersCount = userGroupMemberUsers?.length ?? 0;
-
-  $: managedGroupNames = {
-    "autogroup:users": `${organization} (everyone)`,
-    "autogroup:members": `${organization} (members)`,
-    "autogroup:guests": `${organization} (guests)`,
-  };
 </script>
 
 {#if group}
@@ -52,7 +47,7 @@
     >
       <AvatarListItem
         shape="square"
-        name={managedGroupNames[group.groupName] || group.groupName}
+        name={avatarName}
         count={userGroupMemberUsersCount}
       />
       <UserManagementOrganizationSetRole {organization} {project} {group} />

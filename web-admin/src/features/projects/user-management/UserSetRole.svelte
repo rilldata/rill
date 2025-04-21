@@ -5,7 +5,10 @@
     getAdminServiceListProjectInvitesQueryKey,
     getAdminServiceListProjectMemberUsersQueryKey,
   } from "@rilldata/web-admin/client";
-  import type { V1ProjectMemberUser } from "@rilldata/web-admin/client";
+  import type {
+    V1ProjectMemberUser,
+    V1UserInvite,
+  } from "@rilldata/web-admin/client";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import { capitalize } from "@rilldata/web-common/components/table/utils";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
@@ -13,17 +16,7 @@
   import CaretUpIcon from "@rilldata/web-common/components/icons/CaretUpIcon.svelte";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
 
-  type User =
-    | V1ProjectMemberUser
-    | {
-        userName: any;
-        userEmail: string;
-        userPhotoUrl?: string;
-        roleName: string;
-        email?: string;
-        role?: string;
-        invitedBy?: string;
-      };
+  type User = V1ProjectMemberUser | V1UserInvite;
 
   export let organization: string;
   export let project: string;
@@ -37,6 +30,18 @@
 
   $: setProjectMemberUserRole = createAdminServiceSetProjectMemberUserRole();
   $: removeProjectMemberUser = createAdminServiceRemoveProjectMemberUser();
+
+  function getUserEmail(user: User): string {
+    if ("userEmail" in user) return user.userEmail;
+    if ("email" in user) return user.email;
+    return "";
+  }
+
+  function getUserRole(user: User): string {
+    if ("role" in user && user.role) return user.role;
+    if ("roleName" in user) return user.roleName;
+    return "";
+  }
 
   async function handleSetRole(email: string, role: string) {
     try {
@@ -117,7 +122,7 @@
         ? 'bg-slate-200'
         : 'hover:bg-slate-100'} px-2 py-1"
     >
-      {capitalize(user.roleName)}
+      {capitalize(getUserRole(user))}
       {#if isOpen}
         <CaretUpIcon size="12px" />
       {:else}
@@ -127,27 +132,27 @@
     <DropdownMenu.Content align="start">
       <DropdownMenu.CheckboxItem
         class="font-normal flex items-center"
-        checked={user.roleName === "admin"}
+        checked={getUserRole(user) === "admin"}
         on:click={() => {
-          handleSetRole(user.userEmail, "admin");
+          handleSetRole(getUserEmail(user), "admin");
         }}
       >
         <span>Admin</span>
       </DropdownMenu.CheckboxItem>
       <DropdownMenu.CheckboxItem
         class="font-normal flex items-center"
-        checked={user.roleName === "editor"}
+        checked={getUserRole(user) === "editor"}
         on:click={() => {
-          handleSetRole(user.userEmail, "editor");
+          handleSetRole(getUserEmail(user), "editor");
         }}
       >
         <span>Editor</span>
       </DropdownMenu.CheckboxItem>
       <DropdownMenu.CheckboxItem
         class="font-normal flex items-center"
-        checked={user.roleName === "viewer"}
+        checked={getUserRole(user) === "viewer"}
         on:click={() => {
-          handleSetRole(user.userEmail, "viewer");
+          handleSetRole(getUserEmail(user), "viewer");
         }}
       >
         <span>Viewer</span>
@@ -157,7 +162,7 @@
         <DropdownMenu.Item
           class="font-normal flex items-center"
           on:click={() => {
-            handleRemove(user.userEmail);
+            handleRemove(getUserEmail(user));
           }}
         >
           <span class="ml-6 text-red-600">Remove</span>
@@ -169,6 +174,6 @@
   <div
     class="w-18 flex flex-row gap-1 items-center rounded-sm px-2 py-1 mr-[10px]"
   >
-    <span>{capitalize(user.roleName)}</span>
+    <span>{capitalize(getUserRole(user))}</span>
   </div>
 {/if}
