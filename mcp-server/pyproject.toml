@@ -1,0 +1,16 @@
+[project]
+name = "mcp-server"
+version = "0.1.0"
+description = "RillData MCP Server"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "fastmcp>=2.2.0",
+    "mcp[cli]>=1.6.0",
+    "vl-convert-python>=1.7.0",
+    "openai>=1.6.0",
+    "pydantic>=2.11.3",
+]
+
+[tool.black]
+line-length = 88
