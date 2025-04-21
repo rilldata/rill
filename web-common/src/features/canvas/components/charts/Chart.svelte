@@ -36,14 +36,8 @@
 
   $: chartSpec = $specStore;
 
-  $: ({
-    title,
-    description,
-    metrics_view,
-    vl_config,
-    time_filters,
-    dimension_filters,
-  } = chartSpec);
+  $: ({ title, description, metrics_view, time_filters, dimension_filters } =
+    chartSpec);
 
   $: schemaStore = validateChartSchema(store, chartSpec);
 

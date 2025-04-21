@@ -304,9 +304,9 @@ function areSameType(
     if (cartesian.includes(existingType) && cartesian.includes(newType)) {
       return true;
     }
-
     return false;
 
+    // FIXME: The below causes a fatal crash through a dependency cycle
     // const newComponent = CHART_CONFIG[newType].component;
     // const existingComponent = CHART_CONFIG[existingType].component;
     // return newComponent.name === existingComponent.name;

@@ -57,12 +57,10 @@
   }
 </script>
 
-{#key component && $selectedComponent}
-  <Inspector minWidth={320} filePath={path}>
-    {#if component}
-      <ComponentsEditor {component} />
-    {:else}
-      <PageEditor {canvasName} {fileArtifact} {updateProperties} />
-    {/if}
-  </Inspector>
-{/key}
+<Inspector minWidth={320} filePath={path}>
+  {#if component}
+    <ComponentsEditor {component} />
+  {:else}
+    <PageEditor {canvasName} {fileArtifact} {updateProperties} />
+  {/if}
+</Inspector>
