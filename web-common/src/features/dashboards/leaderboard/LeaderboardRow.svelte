@@ -34,6 +34,7 @@
   export let leaderboardShowContextForAllMeasures: boolean;
   export let leaderboardSortByMeasureName: string | null;
   export let isValidPercentOfTotal: (measureName: string) => boolean;
+  export let dimensionColumnWidth: number;
   export let toggleDimensionValueSelection: (
     dimensionName: string,
     dimensionValue: string,
@@ -126,91 +127,30 @@
     ]),
   );
 
-  // $: percentOfTotalCellBarLengths = Object.fromEntries(
-  //   Object.entries(barLengths).map(([name, length]) => [
-  //     name,
-  //     isValidPercentOfTotal(name) ? clamp(0, length, DEFAULT_COLUMN_WIDTH) : 0,
-  //   ]),
-  // );
-
-  // $: deltaAbsoluteCellBarLengths = Object.fromEntries(
-  //   Object.entries(barLengths).map(([name, length]) => [
-  //     name,
-  //     isTimeComparisonActive
-  //       ? clamp(
-  //           0,
-  //           length - $valueColumn - (percentOfTotalCellBarLengths[name] || 0),
-  //           COMPARISON_COLUMN_WIDTH,
-  //         )
-  //       : 0,
-  //   ]),
-  // );
-
-  // $: deltaPercentCellBarLengths = Object.fromEntries(
-  //   Object.entries(barLengths).map(([name, length]) => [
-  //     name,
-  //     isTimeComparisonActive
-  //       ? clamp(
-  //           0,
-  //           length -
-  //             $valueColumn -
-  //             (percentOfTotalCellBarLengths[name] || 0) -
-  //             (deltaAbsoluteCellBarLengths[name] || 0),
-  //           COMPARISON_COLUMN_WIDTH,
-  //         )
-  //       : 0,
-  //   ]),
-  // );
-
   $: dimensionGradients =
     leaderboardMeasureNames.length === 1
-      ? `linear-gradient(to right, ${barColor}
-      ${totalBarLength}px, transparent ${totalBarLength}px)`
+      ? `linear-gradient(to right, ${barColor} ${Math.min(dimensionColumnWidth, totalBarLength)}px, transparent ${Math.min(dimensionColumnWidth, totalBarLength)}px)`
       : undefined;
 
   $: measureGradients =
-    leaderboardMeasureNames.length > 1
-      ? Object.fromEntries(
-          Object.entries(measureCellBarLengths).map(([name, length]) => [
-            name,
-            length
-              ? `linear-gradient(to right, transparent 16px, ${barColor} 16px, ${barColor} ${length + 16}px, transparent ${length + 16}px)`
-              : undefined,
-          ]),
-        )
+    leaderboardMeasureNames.length === 1
+      ? `linear-gradient(to right, ${barColor} ${Math.max(0, totalBarLength - dimensionColumnWidth)}px, transparent ${Math.max(0, totalBarLength - dimensionColumnWidth)}px)`
       : undefined;
 
-  // $: percentOfTotalGradients =
-  //   leaderboardMeasureNames.length > 1
-  //     ? Object.fromEntries(
-  //         Object.entries(percentOfTotalCellBarLengths).map(([name, length]) => [
-  //           name,
-  //           length
-  //             ? `linear-gradient(to right, ${barColor}
-  //   ${length}px, transparent ${length}px)`
-  //             : undefined,
-  //         ]),
-  //       )
-  //     : undefined;
-
-  // $: deltaAbsoluteGradients = Object.fromEntries(
-  //   Object.entries(deltaAbsoluteCellBarLengths).map(([name, length]) => [
-  //     name,
-  //     length
-  //       ? `linear-gradient(to right, ${barColor}
-  //   ${length}px, transparent ${length}px)`
-  //       : undefined,
-  //   ]),
-  // );
-
-  // $: deltaPercentGradients = Object.fromEntries(
-  //   Object.entries(deltaPercentCellBarLengths).map(([name, length]) => [
-  //     name,
-  //     length
-  //       ? `linear-gradient(to right, ${barColor}
-  //   ${length}px, transparent ${length}px)`  //       : undefined,
-  //   ]),
-  // );
+  $: measureGradientMap =
+    leaderboardMeasureNames.length === 1
+      ? undefined
+      : Object.fromEntries(
+          leaderboardMeasureNames.map((name) => {
+            const length = measureCellBarLengths[name];
+            return [
+              name,
+              length
+                ? `linear-gradient(to right, transparent 16px, ${barColor} 16px, ${barColor} ${length + 16}px, transparent ${length + 16}px)`
+                : undefined,
+            ];
+          }),
+        );
 
   $: showTooltip = hovered && !suppressTooltip;
 
@@ -231,6 +171,9 @@
   class:border-b={borderBottom}
   class:border-t={borderTop}
   class="relative"
+  style:background={leaderboardMeasureNames.length === 1
+    ? dimensionGradients
+    : undefined}
   on:mouseenter={() => (hovered = true)}
   on:mouseleave={() => (hovered = false)}
   on:click={(e) => {
@@ -291,7 +234,9 @@
       on:click={modified({
         shift: () => shiftClickHandler(values[measureName]?.toString() || ""),
       })}
-      style:background={measureGradients?.[measureName]}
+      style:background={leaderboardMeasureNames.length === 1
+        ? measureGradients
+        : measureGradientMap?.[measureName]}
     >
       <div class="w-fit ml-auto bg-transparent" bind:contentRect={valueRect}>
         <FormattedDataType
