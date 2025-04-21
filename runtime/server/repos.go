@@ -54,7 +54,8 @@ func (s *Server) ListFiles(ctx context.Context, req *runtimev1.ListFilesRequest)
 	return &runtimev1.ListFilesResponse{Files: entries}, nil
 }
 
-// WatchFilesHandler is a HTTP handler for watching files like WatchFiles.
+// WatchFilesHandler is a HTTP handler for watching local file changes.
+// This is required as vanguard doesn't currently map streaming RPCs to SSE, so we register this handler manually override the behavior
 func (s *Server) WatchFilesHandler(w http.ResponseWriter, req *http.Request) {
 	ctx := req.Context()
 	instanceID := req.PathValue("instance_id")
