@@ -15,6 +15,7 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -72,13 +73,6 @@ func (s *Server) WatchFilesHandler(w http.ResponseWriter, req *http.Request) {
 	replayStr := req.URL.Query().Get("replay")
 	replay := replayStr == "true"
 
-	repo, release, err := s.runtime.Repo(ctx, instanceID)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	defer release()
-
 	eventServer := sse.New()
 	eventServer.CreateStream("files")
 	eventServer.Headers = map[string]string{
@@ -87,59 +81,28 @@ func (s *Server) WatchFilesHandler(w http.ResponseWriter, req *http.Request) {
 		"Connection":    "keep-alive",
 	}
 
-	if replay {
-		files, err := repo.ListRecursive(ctx, "**", false)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		for _, f := range files {
-			event := &runtimev1.WatchFilesResponse{
-				Event: runtimev1.FileEvent_FILE_EVENT_WRITE,
-				Path:  f.Path,
-				IsDir: f.IsDir,
-			}
-
-			data, err := protojson.Marshal(event)
-			if err != nil {
-				s.logger.Warn("failed to marshal replay event", zap.Error(err))
-				continue
-			}
-
-			eventServer.Publish("files", &sse.Event{Data: data})
-		}
+	// Create the shim that implements RuntimeService_WatchFilesServer
+	shim := &watchFilesServerShim{
+		r: req,
+		s: eventServer,
 	}
 
-	clientCtx, clientCancel := context.WithCancel(ctx)
-	defer clientCancel()
-
+	// Create a goroutine to handle the streaming
 	go func() {
-		defer clientCancel()
+		// Create the request object for WatchFiles
+		watchReq := &runtimev1.WatchFilesRequest{
+			InstanceId: instanceID,
+			Replay:     replay,
+		}
 
-		err := repo.Watch(clientCtx, func(events []drivers.WatchEvent) {
-			for _, event := range events {
-				e := &runtimev1.WatchFilesResponse{
-					Event: event.Type,
-					Path:  event.Path,
-					IsDir: event.Dir,
-				}
-
-				data, err := protojson.Marshal(e)
-				if err != nil {
-					s.logger.Warn("failed to marshal watch event", zap.Error(err))
-					continue
-				}
-
-				eventServer.Publish("files", &sse.Event{Data: data})
-			}
-		})
-
+		// Call the existing WatchFiles implementation with our shim
+		err := s.WatchFiles(watchReq, shim)
 		if err != nil && !errors.Is(err, context.Canceled) {
 			s.logger.Info("watch error", zap.Error(err))
 		}
 	}()
 
+	// Serve the SSE stream
 	eventServer.ServeHTTP(w, req)
 }
 
@@ -350,4 +313,48 @@ func (s *Server) UploadMultipartFile(w http.ResponseWriter, req *http.Request) {
 		http.Error(w, fmt.Sprintf("failed to write response data: %s", err), http.StatusInternalServerError)
 		return
 	}
+}
+
+// A shim to for "ss runtimev1.RuntimeService_WatchFilesServer"
+type watchFilesServerShim struct {
+	r *http.Request
+	s *sse.Server
+}
+
+// NewWatchFilesServerShim creates a new watchFilesServerShim.
+func (ss *watchFilesServerShim) Context() context.Context {
+	return ss.r.Context()
+}
+
+// SendHeader sends a header to the client.
+func (ss *watchFilesServerShim) Send(e *runtimev1.WatchFilesResponse) error {
+	data, err := protojson.Marshal(e)
+	if err != nil {
+		return err
+	}
+
+	ss.s.Publish("files", &sse.Event{Data: data})
+	return nil
+}
+
+// SetHeader sets the header for the response.
+func (ss *watchFilesServerShim) SetHeader(metadata.MD) error {
+	return errors.New("not implemented")
+}
+
+// SendHeader sends a header to the client.
+func (ss *watchFilesServerShim) SendHeader(metadata.MD) error {
+	return errors.New("not implemented")
+}
+
+// SetTrailer sets the trailer for the response.
+func (ss *watchFilesServerShim) SetTrailer(metadata.MD) {}
+
+func (ss *watchFilesServerShim) SendMsg(m any) error {
+	return errors.New("not implemented")
+}
+
+// RecvMsg receives a message from the client.
+func (ss *watchFilesServerShim) RecvMsg(m any) error {
+	return errors.New("not implemented")
 }
