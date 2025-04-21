@@ -52,7 +52,6 @@ class FeatureFlags {
   constructor() {
     const updateFlags = (userFlags: V1InstanceFeatureFlags) => {
       for (const key in userFlags) {
-        console.log(`Setting feature flag ${key} to ${userFlags[key]}`);
         const flag = this[key] as FeatureFlag | undefined;
         if (!flag || flag.internalOnly) continue;
         flag.set(userFlags[key]);
