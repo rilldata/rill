@@ -156,25 +156,6 @@ export function getPartialExploreStateFromSessionStorage(
   }
 }
 
-function shouldSkipSessionStorage(searchParams: URLSearchParams) {
-  // Check if only one parameter is set, but it's not the 'view' parameter
-  const hasSingleNonViewParam =
-    searchParams.size === 1 && !searchParams.has(ExploreStateURLParams.WebView);
-  // Check if exactly two parameters are set, but neither is 'view' nor 'measure'
-  const hasTwoParamsWithoutViewOrMeasure =
-    searchParams.size === 2 &&
-    !searchParams.has(ExploreStateURLParams.WebView) &&
-    !searchParams.has(ExploreStateURLParams.ExpandedMeasure);
-  // Check if there are more than two parameters
-  const hasMoreThanTwoParams = searchParams.size > 2;
-
-  return (
-    hasSingleNonViewParam ||
-    hasTwoParamsWithoutViewOrMeasure ||
-    hasMoreThanTwoParams
-  );
-}
-
 export function clearExploreSessionStore(
   exploreName: string,
   storageNamespacePrefix: string | undefined,
@@ -198,5 +179,24 @@ export function setExploreStateForWebView(
   sessionStorage.setItem(
     getKeyForSessionStore(exploreName, storageNamespacePrefix, webView),
     state,
+  );
+}
+
+function shouldSkipSessionStorage(searchParams: URLSearchParams) {
+  // Check if only one parameter is set, but it's not the 'view' parameter
+  const hasSingleNonViewParam =
+    searchParams.size === 1 && !searchParams.has(ExploreStateURLParams.WebView);
+  // Check if exactly two parameters are set, but neither is 'view' nor 'measure'
+  const hasTwoParamsWithoutViewOrMeasure =
+    searchParams.size === 2 &&
+    !searchParams.has(ExploreStateURLParams.WebView) &&
+    !searchParams.has(ExploreStateURLParams.ExpandedMeasure);
+  // Check if there are more than two parameters
+  const hasMoreThanTwoParams = searchParams.size > 2;
+
+  return (
+    hasSingleNonViewParam ||
+    hasTwoParamsWithoutViewOrMeasure ||
+    hasMoreThanTwoParams
   );
 }

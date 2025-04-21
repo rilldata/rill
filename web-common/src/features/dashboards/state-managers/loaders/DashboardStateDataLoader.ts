@@ -11,15 +11,9 @@ import { getRillDefaultExploreState } from "@rilldata/web-common/features/dashbo
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import { convertURLSearchParamsToExploreState } from "@rilldata/web-common/features/dashboards/url-state/convertURLSearchParamsToExploreState";
 import { createRillDefaultExploreUrlParamsByView } from "@rilldata/web-common/features/dashboards/url-state/get-rill-default-explore-url-params";
-import { getDefaultExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/getDefaultExplorePreset";
-import type { ExploreUrlWebView } from "@rilldata/web-common/features/dashboards/url-state/mappers";
-import { mergeDefaultUrlParams } from "@rilldata/web-common/features/dashboards/url-state/url-params-strip-utils";
 import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
-import {
-  createQueryServiceMetricsViewTimeRange,
-  type V1ExplorePreset,
-} from "@rilldata/web-common/runtime-client";
+import { createQueryServiceMetricsViewTimeRange } from "@rilldata/web-common/runtime-client";
 import type { AfterNavigate } from "@sveltejs/kit";
 import { Settings } from "luxon";
 import { derived, get } from "svelte/store";
@@ -43,24 +37,13 @@ export class DashboardStateDataLoader {
   public readonly exploreStateFromYAMLConfig: CompoundQueryResult<
     Partial<MetricsExplorerEntity>
   >;
-  private readonly explorePresetFromYAMLConfig: CompoundQueryResult<
-    V1ExplorePreset | undefined
-  >;
 
   // Cached url params for a rill opinionated dashboard defaults. Used to remove params from url.
-  public readonly rillDefaultExploreURLParamsByView: CompoundQueryResult<
-    Record<ExploreUrlWebView, URLSearchParams>
-  >;
+  public readonly rillDefaultExploreURLParams: CompoundQueryResult<URLSearchParams>;
 
-  private readonly exploreStateFromSessionStorage: CompoundQueryResult<
+  private readonly partialExploreStateFromUrlForInit: CompoundQueryResult<
     Partial<MetricsExplorerEntity> | undefined
   >;
-  private readonly partialExploreStateFromUrlForInitAndErrors: CompoundQueryResult<{
-    partialExploreStateFromUrlForInit:
-      | Partial<MetricsExplorerEntity>
-      | undefined;
-    errors: Error[];
-  }>;
 
   /**
    * The explore state used to populate the store with initial explore.
@@ -164,104 +147,35 @@ export class DashboardStateDataLoader {
       },
     );
 
-    this.explorePresetFromYAMLConfig = getCompoundQuery(
-      [this.validSpecQuery, this.fullTimeRangeQuery],
-      ([validSpecResp, metricsViewTimeRangeResp]) => {
-        const metricsViewSpec = validSpecResp?.metricsView;
-        const exploreSpec = validSpecResp?.explore;
-
-        if (
-          !metricsViewSpec ||
-          !exploreSpec ||
-          // safeguard to make sure time range summary is loaded for metrics view with time dimension
-          (metricsViewSpec.timeDimension &&
-            !metricsViewTimeRangeResp?.timeRangeSummary)
-        ) {
-          return undefined;
-        }
-
-        return getDefaultExplorePreset(
-          exploreSpec,
-          metricsViewSpec,
-          metricsViewTimeRangeResp?.timeRangeSummary,
-        );
-      },
+    this.rillDefaultExploreURLParams = createRillDefaultExploreUrlParamsByView(
+      this.validSpecQuery,
+      this.fullTimeRangeQuery,
     );
 
-    this.rillDefaultExploreURLParamsByView =
-      createRillDefaultExploreUrlParamsByView(
-        this.validSpecQuery,
-        this.fullTimeRangeQuery,
-      );
-
-    this.exploreStateFromSessionStorage = derived(
+    this.partialExploreStateFromUrlForInit = derived(
       [this.validSpecQuery, page],
       ([validSpecResp, pageState]) => {
         const metricsViewSpec = validSpecResp.data?.metricsView ?? {};
         const exploreSpec = validSpecResp.data?.explore ?? {};
-        const exploreStateFromSessionStorage =
-          getPartialExploreStateFromSessionStorage(
-            exploreName,
-            storageNamespacePrefix,
-            pageState.url.searchParams,
-            metricsViewSpec,
-            exploreSpec,
-          );
+
+        let partialExploreStateFromUrlForInit:
+          | Partial<MetricsExplorerEntity>
+          | undefined = undefined;
+        if (pageState.url.searchParams.size > 0) {
+          ({ partialExploreState: partialExploreStateFromUrlForInit } =
+            convertURLSearchParamsToExploreState(
+              pageState.url.searchParams,
+              metricsViewSpec,
+              exploreSpec,
+              {},
+            ));
+        }
 
         return {
-          data: exploreStateFromSessionStorage,
+          data: partialExploreStateFromUrlForInit,
           error: validSpecResp.error,
           isLoading: validSpecResp.isLoading,
           isFetching: validSpecResp.isFetching,
-        };
-      },
-    );
-
-    this.partialExploreStateFromUrlForInitAndErrors = derived(
-      [
-        this.validSpecQuery,
-        this.explorePresetFromYAMLConfig,
-        this.rillDefaultExploreURLParamsByView,
-        page,
-      ],
-      ([
-        validSpecResp,
-        explorePresetFromYAMLConfig,
-        rillDefaultExploreURLParamsByView,
-        pageState,
-      ]) => {
-        const metricsViewSpec = validSpecResp.data?.metricsView ?? {};
-        const exploreSpec = validSpecResp.data?.explore ?? {};
-
-        const urlSearchParams =
-          pageState.url.searchParams.size > 0 &&
-          rillDefaultExploreURLParamsByView.data
-            ? mergeDefaultUrlParams(
-                pageState.url.searchParams,
-                rillDefaultExploreURLParamsByView.data,
-              )
-            : pageState.url.searchParams;
-
-        const { partialExploreState: partialExploreStateFromUrl, errors } =
-          convertURLSearchParamsToExploreState(
-            urlSearchParams,
-            metricsViewSpec,
-            exploreSpec,
-            explorePresetFromYAMLConfig.data ?? {},
-          );
-        const partialExploreStateFromUrlForInit =
-          urlSearchParams.size === 0 ? undefined : partialExploreStateFromUrl;
-
-        return {
-          data: {
-            partialExploreStateFromUrlForInit,
-            errors,
-          },
-          error: validSpecResp.error ?? explorePresetFromYAMLConfig.error,
-          isLoading:
-            validSpecResp.isLoading || explorePresetFromYAMLConfig.isLoading,
-          isFetching:
-            validSpecResp.isFetching || explorePresetFromYAMLConfig.isFetching,
         };
       },
     );
@@ -270,35 +184,52 @@ export class DashboardStateDataLoader {
       [
         this.rillDefaultExploreState,
         this.exploreStateFromYAMLConfig,
-        this.partialExploreStateFromUrlForInitAndErrors,
+        this.partialExploreStateFromUrlForInit,
         ...(bookmarkOrTokenExploreState ? [bookmarkOrTokenExploreState] : []),
       ],
       ([
         rillDefaultExploreState,
         exploreStateFromYAMLConfig,
-        partialExploreStateFromUrlForInitAndErrors,
+        partialExploreStateFromUrlForInit,
         bookmarkOrTokenExploreState,
       ]) => {
         if (!rillDefaultExploreState || !exploreStateFromYAMLConfig) {
           return undefined;
         }
 
-        const exploreStateOrder = [
-          // Next priority is the state loaded from url params. It will be undefined if there are no params.
-          partialExploreStateFromUrlForInitAndErrors?.partialExploreStateFromUrlForInit,
-          // Next priority is one of the other source defined.
-          // For cloud dashboard it would be home bookmark if present.
-          // For shared url it would be the saved state in token
-          bookmarkOrTokenExploreState,
-          // Next priority is the defaults from yaml config.
-          exploreStateFromYAMLConfig,
-          // Finally the fallback of rill default explore which will have the complete set of config.
-          rillDefaultExploreState,
-        ].filter(Boolean) as Partial<MetricsExplorerEntity>[];
+        let exploreStateOrder: (
+          | Partial<MetricsExplorerEntity>
+          | null
+          | undefined
+        )[];
+        if (partialExploreStateFromUrlForInit) {
+          // If there are some url params then we need to fill in any missing params from rill defaults. No other state will used.
+          exploreStateOrder = [
+            // 1st priority is the state loaded from url params. It will be undefined if there are no params.
+            partialExploreStateFromUrlForInit,
+            // Finally the fallback of rill default explore which will have the complete set of config.
+            rillDefaultExploreState,
+          ];
+        } else {
+          exploreStateOrder = [
+            // 1st priority is one of the other source defined.
+            // For cloud dashboard it would be home bookmark if present.
+            // For shared url it would be the saved state in token
+            bookmarkOrTokenExploreState,
+            // Next priority is the defaults from yaml config.
+            exploreStateFromYAMLConfig,
+            // Finally the fallback of rill default explore which will have the complete set of config.
+            rillDefaultExploreState,
+          ];
+        }
 
-        const initExploreState = cascadingExploreStateMerge(exploreStateOrder);
+        const nonEmptyExploreStateOrder = exploreStateOrder.filter(
+          Boolean,
+        ) as Partial<MetricsExplorerEntity>[];
+        const initExploreState = cascadingExploreStateMerge(
+          nonEmptyExploreStateOrder,
+        );
 
-        // since we use defaultExploreState further down to calculate default url params we should make a copy to avoid changes to defaultExploreState
         return initExploreState as MetricsExplorerEntity;
       },
     );
@@ -319,19 +250,8 @@ export class DashboardStateDataLoader {
     const { data: exploreStateFromYAMLConfig } = get(
       this.exploreStateFromYAMLConfig,
     );
-    const { data: explorePresetFromYAMLConfig } = get(
-      this.explorePresetFromYAMLConfig,
-    );
-    const { data: rillDefaultExploreURLParams } = get(
-      this.rillDefaultExploreURLParamsByView,
-    );
 
-    if (
-      !rillDefaultExploreState ||
-      !explorePresetFromYAMLConfig ||
-      !exploreStateFromYAMLConfig ||
-      !rillDefaultExploreURLParams
-    ) {
+    if (!rillDefaultExploreState || !exploreStateFromYAMLConfig) {
       return undefined;
     }
 
@@ -348,40 +268,49 @@ export class DashboardStateDataLoader {
         exploreSpec,
       );
 
-    // Mirrors getCleanedUrlParamsForGoto by adding missing params from defaults.
-    // This makes it so that omitted params from getCleanedUrlParamsForGoto are not filled with config other than rill opinionated defaults.
-    urlSearchParams = mergeDefaultUrlParams(
-      urlSearchParams,
-      rillDefaultExploreURLParams,
-    );
-
     const { partialExploreState: partialExploreStateFromUrl } =
       convertURLSearchParamsToExploreState(
         urlSearchParams,
         metricsViewSpec,
         exploreSpec,
-        explorePresetFromYAMLConfig,
+        {},
       );
 
-    const exploreStateOrder = [
-      // 1st priority is the state from session storage.
-      // If we are skipping using state from session storage then exit early with partialExploreStateFromUrl
-      // regardless if there is exploreStateFromSessionStorage for current url params or not.
-      skipSessionStorage ? undefined : exploreStateFromSessionStorage,
-      // Next priority is the state loaded from url params. It will be undefined if there are no params.
-      partialExploreStateFromUrl,
-      // Next priority is one of the other source defined.
-      // For cloud dashboard it would be home bookmark if present.
-      // For shared url it would be the saved state in token
-      this.bookmarkOrTokenExploreState
-        ? get(this.bookmarkOrTokenExploreState).data
-        : undefined,
-      // Next priority is the defaults from yaml config.
-      exploreStateFromYAMLConfig,
-      // Finally the fallback of rill default explore which will have the complete set of config.
-      rillDefaultExploreState,
-    ].filter(Boolean) as Partial<MetricsExplorerEntity>[];
+    let exploreStateOrder: (
+      | Partial<MetricsExplorerEntity>
+      | null
+      | undefined
+    )[];
+    if (urlSearchParams.size > 0 || skipSessionStorage) {
+      // If there are some url params then we need to fill in any missing params from rill defaults.
+      exploreStateOrder = [
+        // 1st priority is the state from session storage.
+        skipSessionStorage ? undefined : exploreStateFromSessionStorage,
+        // Next priority is the state loaded from url params. It will be undefined if there are no params.
+        partialExploreStateFromUrl,
+        // If there are some url params then the next state will be rill default explore state
+        rillDefaultExploreState,
+      ];
+    } else {
+      exploreStateOrder = [
+        // 1st priority is the state from session storage.
+        skipSessionStorage ? undefined : exploreStateFromSessionStorage,
+        // Next priority is one of the other source defined.
+        // For cloud dashboard it would be home bookmark if present.
+        // For shared url it would be the saved state in token
+        this.bookmarkOrTokenExploreState
+          ? get(this.bookmarkOrTokenExploreState).data
+          : undefined,
+        // Next priority is the defaults from yaml config.
+        exploreStateFromYAMLConfig,
+        // Finally the fallback of rill default explore which will have the complete set of config.
+        rillDefaultExploreState,
+      ];
+    }
 
-    return cascadingExploreStateMerge(exploreStateOrder);
+    const nonEmptyExploreStateOrder = exploreStateOrder.filter(
+      Boolean,
+    ) as Partial<MetricsExplorerEntity>[];
+    return cascadingExploreStateMerge(nonEmptyExploreStateOrder);
   }
 }

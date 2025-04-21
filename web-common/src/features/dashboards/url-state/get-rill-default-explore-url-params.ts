@@ -3,11 +3,6 @@ import { useMetricsViewTimeRange } from "@rilldata/web-common/features/dashboard
 import { getRillDefaultExploreState } from "@rilldata/web-common/features/dashboards/stores/get-rill-default-explore-state";
 import { getTimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import { convertPartialExploreStateToUrlParams } from "@rilldata/web-common/features/dashboards/url-state/convert-partial-explore-state-to-url-params";
-import {
-  ExploreUrlWebView,
-  FromURLParamViewMap,
-  ToActivePageViewMap,
-} from "@rilldata/web-common/features/dashboards/url-state/mappers";
 import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
 import {
   type V1ExploreSpec,
@@ -38,42 +33,6 @@ export function getRillDefaultExploreUrlParams(
   );
 }
 
-export function getRillDefaultExploreUrlParamsByView(
-  metricsViewSpec: V1MetricsViewSpec,
-  exploreSpec: V1ExploreSpec,
-  timeRangeSummary: V1TimeRangeSummary | undefined,
-) {
-  const rillDefaultExploreState = getRillDefaultExploreState(
-    metricsViewSpec,
-    exploreSpec,
-    timeRangeSummary,
-  );
-  const timeControlState = getTimeControlState(
-    metricsViewSpec,
-    exploreSpec,
-    timeRangeSummary,
-    rillDefaultExploreState,
-  );
-
-  const rillDefaultExploreURLParamsByView = {} as Record<
-    ExploreUrlWebView,
-    URLSearchParams
-  >;
-  for (const webView in FromURLParamViewMap) {
-    rillDefaultExploreState.activePage = Number(
-      ToActivePageViewMap[FromURLParamViewMap[webView]],
-    );
-    rillDefaultExploreURLParamsByView[webView] =
-      convertPartialExploreStateToUrlParams(
-        exploreSpec,
-        rillDefaultExploreState,
-        timeControlState,
-      );
-  }
-
-  return rillDefaultExploreURLParamsByView;
-}
-
 export function createRillDefaultExploreUrlParamsByView(
   validSpecQuery: ReturnType<typeof useExploreValidSpec>,
   fullTimeRangeQuery: ReturnType<typeof useMetricsViewTimeRange>,
@@ -94,7 +53,7 @@ export function createRillDefaultExploreUrlParamsByView(
         return undefined;
       }
 
-      return getRillDefaultExploreUrlParamsByView(
+      return getRillDefaultExploreUrlParams(
         metricsViewSpec,
         exploreSpec,
         metricsViewTimeRangeResp?.timeRangeSummary,
