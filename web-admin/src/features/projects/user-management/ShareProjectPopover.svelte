@@ -8,7 +8,6 @@
   import CopyInviteLinkButton from "@rilldata/web-admin/features/projects/user-management/CopyInviteLinkButton.svelte";
   import UserInviteForm from "@rilldata/web-admin/features/projects/user-management/UserInviteForm.svelte";
   import { Button } from "@rilldata/web-common/components/button";
-  import type { V1ProjectInvite } from "@rilldata/web-admin/client";
   import OrganizationItem from "./OrganizationItem.svelte";
   import {
     Popover,
@@ -17,8 +16,6 @@
   } from "@rilldata/web-common/components/popover";
   import UsergroupItem from "./UsergroupItem.svelte";
   import UserItem from "./UserItem.svelte";
-  import AvatarListItem from "../../organizations/users/AvatarListItem.svelte";
-  import { Popover as PopoverPrimitive } from "bits-ui";
 
   export let organization: string;
   export let project: string;
@@ -28,14 +25,38 @@
   $: copyLink = `${$page.url.protocol}//${$page.url.host}/${organization}/${project}`;
 
   $: listProjectMemberUsergroups =
-    createAdminServiceListProjectMemberUsergroups(organization, project);
+    createAdminServiceListProjectMemberUsergroups(
+      organization,
+      project,
+      undefined,
+      {
+        query: {
+          refetchOnMount: true,
+          refetchOnWindowFocus: true,
+        },
+      },
+    );
   $: listProjectMemberUsers = createAdminServiceListProjectMemberUsers(
     organization,
     project,
+    undefined,
+    {
+      query: {
+        refetchOnMount: true,
+        refetchOnWindowFocus: true,
+      },
+    },
   );
   $: listProjectInvites = createAdminServiceListProjectInvites(
     organization,
     project,
+    undefined,
+    {
+      query: {
+        refetchOnMount: true,
+        refetchOnWindowFocus: true,
+      },
+    },
   );
 
   $: projectMemberUserGroupsList =
