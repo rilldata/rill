@@ -82,7 +82,7 @@
     const classesToAdd = ["text-right"];
     const classesToRemove = [
       "border-b",
-      "border-gray-200",
+      " ",
       "bg-surface",
       "bg-gray-100",
       "bg-gray-200",
@@ -95,11 +95,11 @@
     ];
 
     if (pinIndex > -1 && comparing === "dimension" && data.y === pinIndex + 1) {
-      classesToAdd.push("border-b", "border-gray-200");
+      classesToAdd.push("border-b", " ");
     }
 
     if (comparing === "time" && data.y === 2) {
-      classesToAdd.push("border-b", "border-gray-200");
+      classesToAdd.push("border-b", " ");
     }
 
     const isScrubbed =
@@ -192,9 +192,9 @@
       (pinIndex > -1 && comparing === "dimension" && y === pinIndex + 1) ||
       (comparing === "time" && y === 2);
     if (showBorder) {
-      element.classList.add("border-b", "border-gray-200");
+      element.classList.add("border-b", " ");
     } else {
-      element.classList.remove("border-b", "border-gray-200");
+      element.classList.remove("border-b", " ");
     }
     const total =
       value.value !== undefined

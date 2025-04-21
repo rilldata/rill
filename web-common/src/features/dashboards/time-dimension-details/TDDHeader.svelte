@@ -270,7 +270,11 @@
 
       <Tooltip distance={16} location="left">
         <div class="ui-copy-icon" style:grid-column-gap=".4rem">
-          <Switch checked={excludeMode} on:click={() => toggleFilterMode()}>
+          <Switch
+            theme
+            checked={excludeMode}
+            on:click={() => toggleFilterMode()}
+          >
             Exclude
           </Switch>
         </div>

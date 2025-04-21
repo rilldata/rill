@@ -64,7 +64,7 @@
     "d3-format": "^3.1.0",
     "d3-interpolate-path": "^2.3.0",
     "d3-scale": "^4.0.2",
-    "d3-scale-chromatic": "^3.0.0",
+    "d3-scale-chromatic": "^3.1.0",
     "d3-shape": "^3.1.0",
     "d3-time-format": "^4.1.0",
     "deepmerge": "^4.3.1",
@@ -104,5 +104,9 @@
     "yaml": "^2.4.5",
     "yup": "^1.4.0"
   },
-  "type": "module"
+  "type": "module",
+  "dependencies": {
+    "@observablehq/plot": "^0.6.17",
+    "bezier-js": "^6.1.4"
+  }
 }

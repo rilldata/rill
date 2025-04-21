@@ -8,6 +8,7 @@ export function singleLayerBaseSpec() {
     width: "container",
     data: { name: "table" },
     mark: "point",
+    background: "transparent",
   };
 
   return baseSpec;

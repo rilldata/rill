@@ -98,6 +98,7 @@
         checked={showTimeComparison}
         id="comparing"
         small
+        theme
         disabled={disabled ?? false}
       />
 

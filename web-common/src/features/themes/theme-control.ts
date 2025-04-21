@@ -3,13 +3,22 @@ import { localStorageStore } from "@rilldata/web-common/lib/store-utils";
 
 class ThemeControl {
   private preference = localStorageStore<"light" | "dark" | "system">(
-    "theme",
+    "rill:theme",
     "light",
   );
   private current = writable<"light" | "dark" | "system">("light");
   private darkQuery = window.matchMedia("(prefers-color-scheme: dark)");
 
   constructor() {
+    const currentPreference = get(this.preference);
+
+    if (
+      currentPreference === "dark" ||
+      (currentPreference === "system" && this.darkQuery.matches)
+    ) {
+      this.setDark();
+    }
+
     this.darkQuery.addEventListener("change", ({ matches }) => {
       if (get(this.preference) !== "system") return;
 
@@ -19,10 +28,6 @@ class ThemeControl {
         this.removeDark();
       }
     });
-
-    if (get(this.preference) === "dark" || this.darkQuery.matches) {
-      this.setDark();
-    }
   }
 
   public subscribe = this.current.subscribe;

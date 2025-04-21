@@ -264,13 +264,13 @@
   }
   table th,
   table td {
-    @apply border-b border-gray-200;
+    @apply border-b;
   }
   thead {
     @apply sticky top-0 z-30 bg-surface;
   }
   thead tr th {
-    @apply border-t border-gray-200;
+    @apply border-t;
   }
   thead tr th:first-child {
     @apply border-l;

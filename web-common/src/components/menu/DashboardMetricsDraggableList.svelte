@@ -203,7 +203,7 @@
 
 <Popover.Root bind:open={active}>
   <Popover.Trigger asChild let:builder>
-    <Button builders={[builder]} type="text" label={tooltipText} on:click>
+    <Button builders={[builder]} type="text" theme label={tooltipText} on:click>
       <div
         class="flex items-center gap-x-0.5 px-1 text-gray-700 hover:text-inherit"
       >
@@ -253,7 +253,7 @@
           </h3>
           {#if selectedItems.length > 1}
             <button
-              class="text-primary-500 pointer-events-auto hover:text-primary-600 font-medium text-[11px]"
+              class="text-theme-500 pointer-events-auto hover:text-theme-600 font-medium text-[11px]"
               on:click={() => {
                 selectedItems = [selectedItems[0]];
                 onSelectedChange(selectedItems);
@@ -417,7 +417,7 @@
               Hidden {type === "measure" ? "Measures" : "Dimensions"}
             </h3>
             <button
-              class="pointer-events-auto text-primary-500 text-[11px] font-medium"
+              class="pointer-events-auto text-theme-500 text-[11px] font-medium"
               on:click={() => {
                 selectedItems = allItems.map((item) => item.name ?? "");
                 onSelectedChange(selectedItems);

@@ -8,6 +8,7 @@ import {
   type V1ComponentSpecRendererProperties,
   type V1MetricsViewSpec,
   type V1Resource,
+  type V1ThemeSpec,
 } from "@rilldata/web-common/runtime-client";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import {
@@ -33,6 +34,8 @@ import { fileArtifacts } from "../../entity-management/file-artifacts";
 import type { CanvasComponentType } from "../components/types";
 import { ResourceKind } from "../../entity-management/resource-selectors";
 import { Grid } from "./grid";
+import { TailwindColorSpacing } from "../../themes/color-config";
+import { updateThemeVariables } from "../../themes/actions";
 
 export class CanvasEntity {
   name: string;
@@ -62,6 +65,8 @@ export class CanvasEntity {
   // Tracks whether the canvas been loaded (and rows processed) for the first time
   firstLoad = true;
   unsubscriber: Unsubscriber;
+
+  theme: Record<(typeof TailwindColorSpacing)[number], string>;
 
   constructor(name: string) {
     const instanceId = get(runtime).instanceId;
@@ -118,6 +123,10 @@ export class CanvasEntity {
   // Not currently being used
   unsubscribe = () => {
     // this.unsubscriber();
+  };
+
+  setTheme = (theme: V1ThemeSpec | undefined) => {
+    updateThemeVariables(theme);
   };
 
   duplicateItem = (id: string) => {
@@ -186,9 +195,12 @@ export class CanvasEntity {
         const existingClass = this.components.get(componentName);
         const path = constructPath(rowIndex, columnIndex, newType);
 
+        console.log({ existingClass });
+
         if (existingClass && areSameType(newType, existingClass.type)) {
           existingClass.update(newResource, path);
         } else {
+          console.log("created");
           createdNewComponent = true;
           this.components.set(
             componentName,

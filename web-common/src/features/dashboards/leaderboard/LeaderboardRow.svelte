@@ -95,10 +95,10 @@
   $: deltaColumn.update(deltaElementWidth);
 
   $: barColor = excluded
-    ? "rgb(243 244 246)"
+    ? "var(--color-gray-100)"
     : selected || hovered
-      ? "var(--color-primary-200)"
-      : "var(--color-primary-100)";
+      ? "var(--color-theme-200)"
+      : "var(--color-theme-100)";
 
   $: barLengths = Object.fromEntries(
     Object.entries(pctOfTotals).map(([name, pct]) => [

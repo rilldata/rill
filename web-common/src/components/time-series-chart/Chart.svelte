@@ -104,7 +104,7 @@
     : [];
 
   function getColor(index: number) {
-    return index === 0 ? MainLineColor : "rgba(0, 0, 0, 0.22)";
+    return index === 0 ? MainLineColor : "var(--color-gray-400)";
   }
 
   function isNumber(value: unknown): value is number {
@@ -139,7 +139,7 @@
     {#if nearPoints.filter(Boolean).length && clientPosition}
       <div
         use:portal
-        class=" w-fit label text-[10px] font-semibold flex flex-col z-[1000] shadow-sm bg-surface text-gray-500 border-gray-200 -translate-y-1/2 py-0.5 border rounded-sm px-1 absolute pointer-events-none"
+        class=" w-fit label text-[10px] font-semibold flex flex-col z-[1000] shadow-sm bg-surface text-gray-500 -translate-y-1/2 py-0.5 border rounded-sm px-1 absolute pointer-events-none"
         style:top="{clientPosition.y}px"
         style:left="{clientPosition.x + 10}px"
       >

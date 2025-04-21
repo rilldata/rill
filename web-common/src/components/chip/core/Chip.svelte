@@ -23,6 +23,7 @@
   export let label: string | undefined = undefined;
   export let removeTooltipText: string | undefined = undefined;
   export let allowPointerEvents = false;
+  export let theme = false;
 
   const dispatch = createEventDispatcher();
 
@@ -41,6 +42,7 @@
 <div in:slideRight={{ duration: slideDuration }}>
   <div
     class="chip {type}"
+    class:theme
     class:active
     class:grab
     class:exclude
@@ -116,9 +118,24 @@
     @apply bg-primary-100;
   }
 
+  .dimension:hover,
   .dimension:active,
   .dimension.active {
-    @apply border-primary-400;
+    @apply bg-primary-100;
+  }
+
+  .dimension.theme {
+    @apply bg-theme-50 border-theme-200 text-theme-800;
+  }
+
+  .dimension.theme:active,
+  .dimension.theme.active {
+    @apply border-theme-400;
+  }
+
+  .dimension.theme:active,
+  .dimension.theme.active {
+    @apply border-theme-400;
   }
 
   .measure {
@@ -137,8 +154,24 @@
     @apply border-secondary-400;
   }
 
+  .measure.theme {
+    @apply rounded-sm;
+    @apply bg-theme-secondary-50 border-theme-secondary-200 text-theme-secondary-800;
+  }
+
+  .measure.theme:hover,
+  .measure.theme:active,
+  .measure.theme.active {
+    @apply bg-theme-secondary-100;
+  }
+
+  .measure.theme:active,
+  .measure.theme.active {
+    @apply border-theme-secondary-400;
+  }
+
   .exclude {
-    @apply bg-gray-50 border-gray-200 text-gray-600;
+    @apply bg-gray-50 text-gray-600;
   }
 
   .exclude:hover,

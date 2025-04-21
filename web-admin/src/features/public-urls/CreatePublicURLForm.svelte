@@ -240,7 +240,7 @@
     </div> -->
 
       {#if hasWhereFilter || hasDimensionThresholdFilter}
-        <hr class="border-gray-200 mt-4 mb-4" />
+        <hr class="  mt-4 mb-4" />
 
         <div class="flex flex-col gap-y-1">
           <p class="text-xs text-gray-800 font-normal">

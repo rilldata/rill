@@ -21,7 +21,7 @@ export const CONFIG_SELECTOR = {
   base: "overflow-hidden px-2 py-2 rounded border focus:outline-none focus:shadow-md",
   active: activeSelectorClasses,
   focus: focusSelectorClasses,
-  info: "bg-surface border-gray-200 hover:border-gray-300 hover:bg-gray-200 hover:text-gray-900",
+  info: "bg-surface   hover:border-gray-300 hover:bg-gray-200 hover:text-gray-900",
   // FIXME: we should probably redo how we're handling these styles.
   error:
     "bg-red-100 border-red-500 text-red-800 hover:bg-red-200 hover:border-red-600",

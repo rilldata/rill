@@ -186,7 +186,7 @@
       </div>
 
       {#if showTimeDimensionDetail && expandedMeasureName}
-        <hr class="border-t border-gray-200 -ml-4" />
+        <hr class="border-t -ml-4" />
         <TimeDimensionDisplay
           {exploreName}
           {expandedMeasureName}

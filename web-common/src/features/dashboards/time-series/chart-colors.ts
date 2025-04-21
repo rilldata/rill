@@ -3,15 +3,15 @@
  * including when there is no scrubbing and thus the
  * whole line is focused.
  */
-export const MainLineColor = "var(--color-primary-500)";
+export const MainLineColor = "var(--color-theme-600)";
 
 /**
  * Colors used for the focused arae in time series chart,
  * including when there is no scrubbing and thus the
  * whole chart is focused.
  */
-export const MainAreaColorGradientDark = "var(--color-primary-300)";
-export const MainAreaColorGradientLight = "var(--color-primary-50)";
+export const MainAreaColorGradientDark = "var(--color-theme-300)";
+export const MainAreaColorGradientLight = "var(--color-theme-50)";
 
 /**
  * Color used for the time series comparison
@@ -32,10 +32,10 @@ export const AreaMutedColorGradientLight = "var(--color-muted-50)";
 /**
  * Colors used for the scrub box in time series chart,
  */
-export const ScrubBoxColor = "var(--color-primary-200)";
-export const ScrubArea0Color = "var(--color-primary-200)";
-export const ScrubArea1Color = "var(--color-primary-100)";
-export const ScrubArea2Color = "var(--color-primary-50)";
+export const ScrubBoxColor = "var(--color-theme-200)";
+export const ScrubArea0Color = "var(--color-theme-200)";
+export const ScrubArea1Color = "var(--color-theme-100)";
+export const ScrubArea2Color = "var(--color-theme-50)";
 export const ScrubMutedColor = "var(--color-muted-300)";
 
-export const BarColor = "var(--color-primary-400)";
+export const BarColor = "var(--color-theme-400)";

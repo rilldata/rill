@@ -43,7 +43,7 @@
 <style lang="postcss">
   .section {
     @apply px-5 flex flex-col gap-y-2 p-2;
-    @apply border-t border-gray-200;
+    @apply border-t;
   }
 
   .chart-icons {

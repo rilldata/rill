@@ -2,7 +2,7 @@ import chroma, { type Color } from "chroma-js";
 
 export const TailwindColorSpacing = [
   50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950,
-];
+] as const;
 
 export const TailwindColors = [
   "red",
@@ -390,32 +390,6 @@ export const defaultSecondaryColors = {
 //     `lch(${(100 * (1000 - n)) / 1000}% 78 13)`,
 //   ]),
 // );
-
-/*
- * colors for greyed-out elements. For now, using tailwind's
- * standard "Gray", but using semantic color vars will
- * allow us to change this to a custom palette
- * or use e.g. tailwind's "slate", "zinc", etc if we want.
- *
- * Copied from https://github.com/shadcn-ui/ui/issues/669#issue-1771280130
- *
- * Visit that link if we want to copy/paste if
- * we switch to "slate", "zinc", etc
- *
- */
-export const mutedColors = {
-  50: "210 20% 98%",
-  100: "220 14.3% 95.9%",
-  200: "220 13% 91%",
-  300: "216 12.2% 83.9%",
-  400: "217.9 10.6% 64.9%",
-  500: "220 8.9% 46.1%",
-  600: "215 13.8% 34.1%",
-  700: "216.9 19.1% 26.7%",
-  800: "215 27.9% 16.9%",
-  900: "220.9 39.3% 11%",
-  950: "224 71.4% 4.1%;",
-};
 
 export function getRandomBgColor(name: string): string {
   const colorList = [

@@ -1,24 +1,8 @@
 import type { Config } from "tailwindcss";
 import {
-  type LightnessMap,
   TailwindColorSpacing,
-  type ThemeColorKind,
-  defaultPrimaryColors,
   TailwindColors,
-  defaultSecondaryColors,
-  mutedColors,
 } from "./src/features/themes/color-config";
-
-function addThemeColorsAsVarRefs(themeColorKind: string) {
-  return Object.fromEntries(
-    TailwindColorSpacing.map((colorNum) => {
-      return [
-        `${colorNum}`,
-        `hsl(var(--hsl-${themeColorKind}-${colorNum}) / <alpha-value>)`,
-      ];
-    }),
-  );
-}
 
 function generateTailwindVariables() {
   const colors: Record<string, Record<string, string>> = {};
@@ -41,35 +25,6 @@ function genColorObject(color: string) {
   );
 }
 
-/**
- * Takes a LightnessMap map object and a ThemeColorKind
- * ("primary" | "secondary" | "muted"),
- * and returns an object of the form e.g:
- * {
- *   "--color-primary-50": "#ecf0ff",
- *   "--color-primary-100": "#dde4ff",
- * ...
- * }
- */
-function initializeDefaultColorsVars(
-  colorMap: LightnessMap,
-  colorName: ThemeColorKind,
-) {
-  const colorVars: [string, string][] = Object.entries(colorMap).map(
-    ([colorNum, colorCssString]) => [
-      `--color-${colorName}-${colorNum}`,
-      `hsl(${colorCssString})`,
-    ],
-  );
-  const rawHSL: [string, string][] = Object.entries(colorMap).map(
-    ([colorNum, colorCssString]) => [
-      `--hsl-${colorName}-${colorNum}`,
-      colorCssString,
-    ],
-  );
-  return Object.fromEntries([...colorVars, ...rawHSL]);
-}
-
 export default {
   // need to add this for storybook
   // https://www.kantega.no/blogg/setting-up-storybook-7-with-vite-and-tailwind-css
@@ -78,41 +33,57 @@ export default {
   darkMode: "class",
   theme: {
     extend: {
+      borderColor: {
+        DEFAULT:
+          "color-mix(in oklab, var(--border) calc(<alpha-value> * 100%), transparent)",
+      },
       colors: {
-        border: "hsl(var(--border) / <alpha-value>)",
-        input: "hsl(var(--input) / <alpha-value>)",
-        ring: "hsl(var(--ring) / <alpha-value>)",
+        input:
+          "color-mix(in oklab, var(--input) calc(<alpha-value> * 100%), transparent)",
+        ring: "color-mix(in oklab, var(--ring) calc(<alpha-value> * 100%), transparent)",
         background: `var(--background)`,
-        foreground: "hsl(var(--foreground) / <alpha-value>)",
+        foreground:
+          "color-mix(in oklab, var(--foreground) calc(<alpha-value> * 100%), transparent)",
+        surface: "var(--surface)",
+        popover: "var(--popover)",
         primary: {
-          DEFAULT: "hsl(var(--primary) / <alpha-value>)",
-          foreground: "hsl(var(--primary-foreground) / <alpha-value>)",
+          DEFAULT: `color-mix(in oklab, var(--color-primary-500) calc(<alpha-value> * 100%), transparent)`,
+          foreground: `color-mix(in oklab, var(--primary-foreground) calc(<alpha-value> * 100%), transparent)`,
           ...genColorObject("primary"),
         },
-        surface: "var(--surface)",
-
+        theme: {
+          DEFAULT: `color-mix(in oklab, var(--color-theme-500) calc(<alpha-value> * 100%), transparent)`,
+          foreground: `color-mix(in oklab, var(--theme-foreground) calc(<alpha-value> * 100%), transparent)`,
+          ...genColorObject("theme"),
+        },
         ...generateTailwindVariables(),
         secondary: {
-          DEFAULT: "hsl(var(--secondary) / <alpha-value>)",
-          foreground: "hsl(var(--secondary-foreground) / <alpha-value>)",
+          DEFAULT: `color-mix(in oklab, var(--color-secondary-500) calc(<alpha-value> * 100%), transparent)`,
+          foreground: `color-mix(in oklab, var(--secondary-foreground) calc(<alpha-value> * 100%), transparent)`,
           ...genColorObject("secondary"),
         },
+        "theme-secondary": {
+          DEFAULT: `color-mix(in oklab, var(--color-theme-secondary-500) calc(<alpha-value> * 100%), transparent)`,
+          foreground: `color-mix(in oklab, var(--secondary-foreground) calc(<alpha-value> * 100%), transparent)`,
+          ...genColorObject("theme-secondary"),
+        },
         destructive: {
-          DEFAULT: "hsl(var(--destructive) / <alpha-value>)",
-          foreground: "hsl(var(--destructive-foreground) / <alpha-value>)",
+          DEFAULT: `color-mix(in oklab, var(--destructive) calc(<alpha-value> * 100%), transparent)`,
+          foreground: `color-mix(in oklab, var(--destructive-foreground) calc(<alpha-value> * 100%), transparent)`,
         },
         muted: {
           DEFAULT: `color-mix(in oklab, var(--muted) calc(<alpha-value> * 100%), transparent)`,
           foreground: `color-mix(in oklab, var(--muted-foreground) calc(<alpha-value> * 100%), transparent)`,
+          ...genColorObject("muted"),
         },
         accent: {
           DEFAULT: `color-mix(in oklab, var(--accent) calc(<alpha-value> * 100%), transparent)`,
           foreground: `color-mix(in oklab, var(--accent-foreground) calc(<alpha-value> * 100%), transparent)`,
         },
-        popover: "var(--popover)",
+
         card: {
-          DEFAULT: "hsl(var(--card) / <alpha-value>)",
-          foreground: "hsl(var(--card-foreground) / <alpha-value>)",
+          DEFAULT: `color-mix(in oklab, var(--card) calc(<alpha-value> * 100%), transparent)`,
+          foreground: `color-mix(in oklab, var(--card-foreground) calc(<alpha-value> * 100%), transparent)`,
         },
       },
       borderRadius: {
@@ -125,18 +96,7 @@ export default {
       },
     },
   },
-  plugins: [
-    function ({ addBase }) {
-      const colorVars = {
-        ...initializeDefaultColorsVars(defaultPrimaryColors, "primary"),
-        ...initializeDefaultColorsVars(defaultSecondaryColors, "secondary"),
-        ...initializeDefaultColorsVars(mutedColors, "muted"),
-      };
-      addBase({
-        ":root": colorVars,
-      });
-    },
-  ],
+
   safelist: [
     "ui-copy-code", // needed for code in measure expressions
   ],

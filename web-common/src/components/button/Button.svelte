@@ -43,6 +43,7 @@
   export let preload = true;
   export let active = false;
   export let loadingCopy = "Loading";
+  export let theme = false;
   // needed to set certain style that could be overridden by the style block in this component
   export let forcedStyle = "";
   export let dataAttributes: Record<`data-${string}`, string> = {};
@@ -71,6 +72,7 @@
   class:loading
   class:large
   class:small
+  class:theme
   class:wide
   class:compact
   class:rounded
@@ -137,6 +139,19 @@
     @apply bg-slate-400;
   }
 
+  .primary.theme {
+    @apply bg-theme-500 text-white;
+  }
+
+  .primary.theme:hover {
+    @apply bg-theme-600;
+  }
+
+  .primary.theme:active,
+  .primary.theme.selected {
+    @apply bg-theme-800;
+  }
+
   /* SECONDARY, GHOST, DASHED STYLES */
 
   .secondary,
@@ -165,6 +180,32 @@
     @apply bg-primary-100;
   }
 
+  .secondary.theme,
+  .ghost.theme,
+  .dashed.theme {
+    @apply bg-transparent text-theme-600;
+  }
+
+  .secondary.theme,
+  .dashed.theme {
+    @apply border border-theme-300;
+  }
+
+  .secondary.theme:hover,
+  .ghost.theme:hover,
+  .dashed.theme:hover {
+    @apply bg-theme-50;
+  }
+
+  .secondary.theme:active,
+  .secondary.theme.selected,
+  .ghost.theme:active,
+  .ghost.theme.elected,
+  .dashed.theme:active,
+  .dashed.theme.selected {
+    @apply bg-theme-100;
+  }
+
   .secondary.loading,
   .ghost.loading,
   .dashed.loading {
@@ -189,6 +230,15 @@
   .dashed:active:hover,
   .dashed.selected:hover {
     @apply bg-primary-200;
+  }
+
+  .secondary.theme:active:hover,
+  .secondary.theme.selected:hover,
+  .ghost.theme:active:hover,
+  .ghost.theme.selected:hover,
+  .dashed.theme:active:hover,
+  .dashed.theme.selected:hover {
+    @apply bg-theme-200;
   }
 
   /* PLAIN STYLES */
@@ -278,6 +328,15 @@
 
   .text:disabled {
     @apply text-slate-400;
+  }
+
+  .text.theme:hover {
+    @apply text-theme-700;
+  }
+
+  .text.theme:active,
+  .text.theme.selected {
+    @apply text-theme-800;
   }
 
   /* DANGER STYLES */

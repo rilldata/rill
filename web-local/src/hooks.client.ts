@@ -1,5 +1,6 @@
 import { dev } from "$app/environment";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+import { initColors } from "@rilldata/web-common/features/themes/actions";
 
 /** INITIALIZE RUNTIME STORE **/
 // When testing, we need to use the relative path to the server
@@ -12,3 +13,5 @@ const runtimeInit = {
 };
 
 runtime.set(runtimeInit);
+
+initColors();

@@ -98,7 +98,7 @@
     </Button>
   </DialogTitle>
   <DialogTabs.Root value={tabs[currentTabIndex]}>
-    <DialogTabs.List class="border-t border-gray-200">
+    <DialogTabs.List class="border-t  ">
       {#each tabs as tab, i}
         <!-- inner width is 800px. so, width = ceil(800/3) = 267 -->
         <DialogTabs.Trigger value={tab} tabIndex={i} class="w-[267px]">

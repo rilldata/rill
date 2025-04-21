@@ -260,6 +260,7 @@ const zinc = {
   900: chroma.oklch(0.21, 0.006, 285.885),
   950: chroma.oklch(0.141, 0.005, 285.823),
 };
+
 const neutral = {
   50: chroma.oklch(0.985, 0, 0),
   100: chroma.oklch(0.97, 0, 0),

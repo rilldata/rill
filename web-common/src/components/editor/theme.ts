@@ -1,133 +1,134 @@
-import { HighlightStyle } from "@codemirror/language";
 import { EditorView } from "@codemirror/view";
+import type { Extension } from "@codemirror/state";
+import { HighlightStyle, syntaxHighlighting } from "@codemirror/language";
 import { tags as t } from "@lezer/highlight";
 
-const tooltipBackground = "var(--color-gray-100)";
-const textColor = "var(--color-green-700)";
-const background = "var(--color-gray-50)";
-const cursor = "var(--color-gray-900)";
-const selection = "hsla(214, 95%, 70%, 25%)";
+const blue = "var(--color-blue-800)";
+const purple = "var(--color-purple-700)";
+const invalid = "var(--color-red-600)";
+const emerald = "var(--color-emerald-700)";
+const gray = "var(--color-gray-700)";
+const amber = "var(--color-amber-600)";
+const highlightBackground =
+  "color-mix(in oklab, var(--color-blue-50) calc(0.6 * 100%), transparent)";
+const background = "var(--surface)";
+const tooltipBackground = "var(--popover)";
+const selection =
+  "color-mix(in oklab, var(--color-blue-100) calc(0.6 * 100%), transparent)";
+const cursor = "var(--color-gray-800)";
+const orange = "var(--color-orange-700)";
 
-export const editorTheme = () =>
-  EditorView.theme(
-    {
-      "&": {
-        color: textColor,
-        backgroundColor: background,
-        fontWeight: "500",
-      },
+/// The editor theme styles for One Dark.
+export const editorTheme = EditorView.theme(
+  {
+    "&": {
+      color: emerald,
+      backgroundColor: background,
+    },
 
-      "&.cm-editor": {
-        overflowX: "hidden",
-        width: "100%",
-        height: "100%",
-        fontWeight: "500",
-        background: "var(--surface)",
-        "&.cm-focused": {
-          outline: "none",
-        },
-      },
-
-      ".cm-content": {
-        caretColor: cursor,
-      },
-
-      ".cm-scroller": {
-        fontFamily: "var(--monospace)",
-      },
-
-      ".cm-cursor, .cm-dropCursor": { borderLeftColor: cursor },
-      "&.cm-focused > .cm-scroller > .cm-selectionLayer .cm-selectionBackground, .cm-selectionBackground, .cm-content ::selection":
-        {
-          backgroundColor: selection,
-          backgroundBlendMode: "hue",
-        },
-
-      ".cm-panels": { backgroundColor: background },
-      // ".cm-panels.cm-panels-top": { borderBottom: "2px solid black" },
-      // ".cm-panels.cm-panels-bottom": { borderTop: "2px solid black" },
-
-      ".cm-searchMatch": {
-        backgroundColor: "#72a1ff59",
-        outline: "1px solid #457dff",
-      },
-      ".cm-searchMatch.cm-searchMatch-selected": {
-        backgroundColor: "#6199ff2f",
-      },
-
-      ".cm-activeLine": {
-        backgroundColor: "var(--color-blue-50)",
-      },
-      "&.cm-focused .cm-selectionBackground, .cm-selectionBackground, .cm-content ::selection":
-        {
-          backgroundColor: "hsla(214, 95%, 70%, 25%)",
-          backgroundBlendMode: "hue",
-        },
-      ".cm-selectionMatch": { backgroundColor: "var(--color-blue-100)" },
-
-      "&.cm-focused .cm-matchingBracket, &.cm-focused .cm-nonmatchingBracket": {
-        backgroundColor: "#bad0f847",
-      },
-
-      ".cm-gutters": {
-        backgroundColor: "var(--surface)",
-        color: "var(--color-gray-700)",
-        border: "none",
-      },
-
-      ".cm-activeLineGutter": {
-        backgroundColor: "var(--color-blue-50)",
-      },
-
-      ".cm-foldPlaceholder": {
-        backgroundColor: "transparent",
-        border: "none",
-        color: "#ddd",
-      },
-
-      ".cm-tooltip": {
-        border: "solid 1px var(--color-gray-400)",
-        borderRadius: "0.25rem",
-        padding: "0.5rem",
-        backgroundColor: tooltipBackground,
-        color: "var(--color-gray-800)",
-      },
-      ".cm-tooltip .cm-tooltip-arrow:before": {
-        borderTopColor: "transparent",
-        borderBottomColor: "transparent",
-        // border: "solid 6px black",
-      },
-      ".cm-tooltip .cm-tooltip-arrow:after": {
-        borderTopColor: "transparent",
-        borderBottomColor: "transparent",
-        // border: "solid 6px red",
-      },
-      ".cm-tooltip-autocomplete": {
-        "& > ul > li[aria-selected]": {
-          backgroundColor: tooltipBackground,
-          color: "textColor",
-        },
+    ".cm-content": {
+      caretColor: cursor,
+    },
+    "&.cm-editor": {
+      overflowX: "hidden",
+      width: "100%",
+      height: "100%",
+      fontWeight: "500",
+      "&.cm-focused": {
+        outline: "none",
       },
     },
-    { dark: false },
-  );
 
-export const oneDarkHighlightStyle = HighlightStyle.define([
-  { tag: t.keyword, color: "var(--color-amber-700)" },
+    ".cm-cursor, .cm-dropCursor": { borderLeftColor: cursor },
+    "&.cm-focused > .cm-scroller > .cm-selectionLayer .cm-selectionBackground, .cm-selectionBackground, .cm-content ::selection":
+      { backgroundColor: selection },
+
+    ".cm-panels": { backgroundColor: background, color: emerald },
+    ".cm-panels.cm-panels-top": { borderBottom: "2px solid black" },
+    ".cm-panels.cm-panels-bottom": { borderTop: "2px solid black" },
+
+    ".cm-searchMatch": {
+      backgroundColor: "#72a1ff59",
+      outline: "1px solid #457dff",
+    },
+    ".cm-searchMatch.cm-searchMatch-selected": {
+      backgroundColor: "#6199ff2f",
+    },
+    ".cm-scroller": {
+      fontFamily: "var(--monospace)",
+    },
+    ".cm-activeLine": {
+      backgroundColor: highlightBackground,
+      backgroundBlendMode: "hue",
+    },
+    ".cm-selectionMatch": { backgroundColor: "#aafe661a" },
+
+    "&.cm-focused .cm-matchingBracket, &.cm-focused .cm-nonmatchingBracket": {
+      backgroundColor: "#bad0f847",
+    },
+
+    ".cm-gutters": {
+      backgroundColor: background,
+      color: gray,
+      border: "none",
+    },
+
+    ".cm-indent-markers::before": {
+      backgroundImage:
+        "repeating-linear-gradient(to right, var(--color-gray-300) 0px, var(--color-gray-300) 1px, transparent 1px, transparent 2ch)",
+    },
+
+    ".cm-activeLineGutter": {
+      backgroundColor: highlightBackground,
+    },
+
+    ".cm-foldPlaceholder": {
+      backgroundColor: "transparent",
+      border: "none",
+      color: "#ddd",
+    },
+
+    // ".cm-tooltip": {
+    //   border: "var(--surface)",
+    //   color: emerald,
+    //   backgroundColor: tooltipBackground,
+    // },
+
+    ".cm-tooltip": {
+      border: "solid 1px var(--color-gray-400)",
+      borderRadius: "0.25rem",
+      padding: "0.5rem",
+      color: "var(--color-gray-800)",
+      backgroundColor: tooltipBackground,
+    },
+    ".cm-tooltip .cm-tooltip-arrow:before": {
+      borderTopColor: "transparent",
+      borderBottomColor: "transparent",
+    },
+    ".cm-tooltip .cm-tooltip-arrow:after": {
+      borderTopColor: tooltipBackground,
+      borderBottomColor: tooltipBackground,
+    },
+    ".cm-tooltip-autocomplete": {
+      "& > ul > li[aria-selected]": {
+        backgroundColor: highlightBackground,
+        color: emerald,
+      },
+    },
+  },
+  { dark: true },
+);
+
+/// The highlighting style for code in the One Dark theme.
+export const highlightStyle = HighlightStyle.define([
+  { tag: t.keyword, color: amber },
   {
     tag: [t.deleted, t.character, t.propertyName, t.macroName],
-    color: "var(--color-violet-700)",
+    color: purple,
   },
-
-  {
-    tag: [t.function(t.variableName), t.labelName],
-    color: "var(--color-violet-700)",
-  },
-  {
-    tag: [t.color, t.constant(t.name), t.standard(t.name)],
-    color: "var(--color-violet-700)",
-  },
-  { tag: [t.definition(t.name), t.separator], color: "var(--color-green-700)" },
+  { tag: [t.function(t.variableName), t.labelName], color: purple },
+  { tag: [t.color, t.constant(t.name), t.standard(t.name)], color: purple },
+  { tag: [t.definition(t.name), t.separator], color: emerald },
   {
     tag: [
       t.typeName,
@@ -139,26 +140,85 @@ export const oneDarkHighlightStyle = HighlightStyle.define([
       t.self,
       t.namespace,
     ],
-    color: "var(--color-blue-800)",
+    color: blue,
   },
-
-  { tag: [t.meta, t.comment], color: "var(--color-gray-700)" },
+  {
+    tag: [
+      // t.operator,
+      t.operatorKeyword,
+      t.url,
+      t.escape,
+      t.regexp,
+      t.link,
+      t.special(t.string),
+    ],
+    color: orange,
+  },
+  { tag: [t.meta, t.comment], color: gray },
   { tag: t.strong, fontWeight: "bold" },
   { tag: t.emphasis, fontStyle: "italic" },
   { tag: t.strikethrough, textDecoration: "line-through" },
-  {
-    tag: t.link,
-    color: "var(--color-violet-700)",
-    textDecoration: "underline",
-  },
-  { tag: t.heading, fontWeight: "bold", color: "var(--color-violet-700)" },
-  {
-    tag: [t.atom, t.bool, t.special(t.variableName)],
-    color: "var(--color-violet-700)",
-  },
-  {
-    tag: [t.processingInstruction, t.string, t.inserted],
-    color: "var(--color-blue-800)",
-  },
-  { tag: t.invalid, color: "var(--color-violet-700)" },
+  { tag: t.link, color: purple, textDecoration: "underline" },
+  { tag: t.heading, fontWeight: "bold", color: purple },
+  { tag: [t.atom, t.bool, t.special(t.variableName)], color: purple },
+  { tag: [t.processingInstruction, t.string, t.inserted], color: blue },
+  { tag: t.invalid, color: invalid },
 ]);
+
+/// Extension to enable the One Dark theme (both the editor theme and
+/// the highlight style).
+export const theme: Extension = [
+  editorTheme,
+  syntaxHighlighting(highlightStyle),
+];
+
+// export const oneDarkHighlightStyle = HighlightStyle.define([
+//   { tag: t.keyword, color: "var(--color-amber-700)" },
+//   {
+//     tag: [t.deleted, t.character, t.propertyName, t.macroName],
+//     color: "var(--color-violet-700)",
+//   },
+
+//   {
+//     tag: [t.function(t.variableName), t.labelName],
+//     color: "var(--color-violet-700)",
+//   },
+//   {
+//     tag: [t.color, t.constant(t.name), t.standard(t.name)],
+//     color: "var(--color-violet-700)",
+//   },
+//   { tag: [t.definition(t.name), t.separator], color: "var(--color-emerald-700)" },
+//   {
+//     tag: [
+//       t.typeName,
+//       t.className,
+//       t.number,
+//       t.changed,
+//       t.annotation,
+//       t.modifier,
+//       t.self,
+//       t.namespace,
+//     ],
+//     color: "var(--color-blue-800)",
+//   },
+
+//   // { tag: [t.meta, t.comment], color: "var(--color-gray-700)" },
+//   // { tag: t.strong, fontWeight: "bold" },
+//   // { tag: t.emphasis, fontStyle: "italic" },
+//   // { tag: t.strikethrough, textDecoration: "line-through" },
+//   {
+//     tag: t.link,
+//     color: "var(--color-violet-700)",
+//     textDecoration: "underline",
+//   },
+//   { tag: t.heading, fontWeight: "bold", color: "var(--color-violet-700)" },
+//   {
+//     tag: [t.atom, t.bool, t.special(t.variableName)],
+//     color: "var(--color-violet-700)",
+//   },
+//   {
+//     tag: [t.processingInstruction, t.string, t.inserted],
+//     color: "var(--color-blue-800)",
+//   },
+//   { tag: t.invalid, color: "var(--color-violet-700)" },
+// ]);

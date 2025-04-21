@@ -35,7 +35,7 @@
     </IconButton>
   </DropdownMenu.Trigger>
   <DropdownMenu.Content align="start" class="w-[280px] p-0">
-    <div class="px-3.5 py-2 border-b border-gray-200">
+    <div class="px-3.5 py-2 border-b">
       <span class="text-xs font-medium"
         >{isDimension ? "X-axis" : "Y-axis"} Configuration</span
       >

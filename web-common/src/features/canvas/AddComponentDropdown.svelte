@@ -94,7 +94,7 @@
         aria-label={getAriaLabel(rowIndex, columnIndex)}
         title="Insert widget"
         class:bg-gray-50={open}
-        class="pointer-events-auto active:bg-gray-100 disabled:pointer-events-none h-7 px-2 grid place-content-center z-50 hover:bg-gray-50 text-slate-500 disabled:opacity-50"
+        class="pointer-events-auto bg-surface active:bg-gray-100 disabled:pointer-events-none h-7 px-2 grid place-content-center z-50 hover:bg-gray-50 text-slate-500 disabled:opacity-50"
         on:mouseenter={onMouseEnter}
       >
         <PlusCircle size="15px" />
@@ -117,7 +117,7 @@
             }
           }}
         >
-          <svelte:component this={icon} />
+          <svelte:component this={icon} color="var(--color-gray-600)" />
           {label}
         </DropdownMenu.Item>
       {/each}

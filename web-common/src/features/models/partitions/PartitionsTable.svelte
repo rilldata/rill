@@ -314,10 +314,10 @@
   table th,
   table td {
     @apply px-4 py-2;
-    @apply border-b border-gray-200;
+    @apply border-b;
   }
   thead tr th {
-    @apply border-t border-gray-200;
+    @apply border-t;
     @apply text-left font-semibold text-gray-500;
     @apply sticky top-0 z-10 bg-surface;
   }
@@ -331,13 +331,13 @@
     @apply border-b;
   }
   tbody tr {
-    @apply border-t border-gray-200;
+    @apply border-t;
   }
   tbody tr:first-child {
     @apply border-t-0;
   }
   tbody td {
-    @apply border-b border-gray-200;
+    @apply border-b;
   }
   tbody td:first-child {
     @apply border-l;

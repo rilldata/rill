@@ -14,6 +14,7 @@
   import { FileArtifact } from "../../entity-management/file-artifact";
   import { useAllSourceColumns } from "../../sources/selectors";
   import { useAllModelColumns } from "../selectors";
+  import { yaml } from "@codemirror/lang-yaml";
 
   const schema: { [table: string]: string[] } = {};
 
@@ -23,7 +24,7 @@
 
   $: ({ instanceId } = $runtime);
 
-  $: ({ remoteContent } = fileArtifact);
+  $: ({ remoteContent, fileExtension } = fileArtifact);
 
   let editor: EditorView;
   let autocompleteCompartment = new Compartment();
@@ -54,6 +55,12 @@
 
   $: defaultTable = getTableNameFromFromClause($remoteContent ?? "", schema);
   $: updateAutocompleteSources(schema, defaultTable);
+
+  const sqlExtensions = [
+    autocompleteCompartment.of(makeAutocompleteConfig(schema, defaultTable)),
+    sql({ dialect: DuckDBSQL }),
+  ];
+  const yamlExtensins = [yaml()];
 
   function getTableNameFromFromClause(
     sql: string,
@@ -108,8 +115,5 @@
   bind:autoSave
   bind:editor
   {fileArtifact}
-  extensions={[
-    autocompleteCompartment.of(makeAutocompleteConfig(schema, defaultTable)),
-    sql({ dialect: DuckDBSQL }),
-  ]}
+  extensions={fileExtension === ".sql" ? sqlExtensions : yamlExtensins}
 />

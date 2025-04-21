@@ -5,6 +5,7 @@
   import { createRuntimeServiceGetInstance } from "../../runtime-client";
   import { runtime } from "../../runtime-client/runtime-store";
   import { addSourceModal } from "../sources/modal/add-source-visibility";
+  import { TailwindColors, TailwindColorSpacing } from "../themes/color-config";
 
   $: ({ instanceId } = $runtime);
 
@@ -74,13 +75,33 @@
   ];
 </script>
 
-<div class="pt-20 px-8 flex flex-col gap-y-6 items-center size-full">
+<div class="size-full overflow-y-auto">
+  <div class="flex flex-col gap-y-2">
+    {#each TailwindColors as colorName (colorName)}
+      <div class="flex gap-x-2 w-fit">
+        <div class="size-16 grid place-content-center">
+          {colorName}
+        </div>
+        {#each TailwindColorSpacing as colorNumber (colorNumber)}
+          <div
+            style:background-color="var(--color-{colorName}-{colorNumber})"
+            class="size-16 aspect-square rounded-md grid place-content-center"
+          >
+            {colorNumber}
+          </div>
+        {/each}
+      </div>
+    {/each}
+  </div>
+</div>
+
+<!-- <div class="pt-20 px-8 flex flex-col gap-y-6 items-center size-full">
   <div class="text-center">
     <div class="font-bold">Getting started</div>
     <p>Building data intuition at every step of analysis</p>
   </div>
   <ol
-    class="max-w-fit flex flex-col gap-y-4 px-9 pt-9 pb-[60px] bg-surface rounded-lg border border-gray-200"
+    class="max-w-fit flex flex-col gap-y-4 px-9 pt-9 pb-[60px] bg-surface rounded-lg border  "
   >
     {#if olapConnector}
       {#each steps as step, i (step.heading)}
@@ -102,4 +123,4 @@
       {/each}
     {/if}
   </ol>
-</div>
+</div> -->
