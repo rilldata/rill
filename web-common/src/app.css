@@ -11,11 +11,6 @@
     @apply text-gray-700;
   }
 
-  .ui-header-primary {
-    @apply text-slate-700;
-    @apply hover:text-primary-700 group-hover:text-primary-700;
-  }
-
   .ui-copy-strong {
     @apply text-gray-900 font-semibold;
   }

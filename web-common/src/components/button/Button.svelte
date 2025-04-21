@@ -308,6 +308,19 @@
     @apply text-slate-400;
   }
 
+  .link.theme {
+    @apply text-theme-600 p-0;
+  }
+
+  .link.theme:hover {
+    @apply text-theme-700;
+  }
+
+  .link.theme:active,
+  .link.theme.selected {
+    @apply text-theme-800;
+  }
+
   /* TEXT STYLES */
 
   .text {

@@ -80,7 +80,7 @@
   transition:slide={{ axis: "x" }}
 >
   <div class="input-wrapper">
-    <Search bind:value={searchText} />
+    <Search theme bind:value={searchText} />
   </div>
 
   <PivotDrag

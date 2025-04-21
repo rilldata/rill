@@ -51,7 +51,7 @@
     y: currentPointIsNull ? lastAvailableCurrentY : y,
     yOverride: currentPointIsNull,
     yOverrideLabel: "no current data",
-    yOverrideStyleClass: "fill-gray-400 italic",
+    yOverrideStyleClass: "fill-gray-500 italic",
     key: "main",
     label:
       showComparison &&
@@ -78,7 +78,7 @@
           y: comparisonPointIsNull ? lastAvailableComparisonY : comparisonY,
           yOverride: comparisonPointIsNull,
           yOverrideLabel: "no comparison data",
-          yOverrideStyleClass: "fill-gray-400 italic",
+          yOverrideStyleClass: "fill-gray-500 italic",
           label: "prev.",
           key: "comparison",
           valueStyleClass: "font-normal",

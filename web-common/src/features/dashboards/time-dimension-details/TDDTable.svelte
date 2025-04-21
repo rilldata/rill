@@ -82,7 +82,6 @@
     const classesToAdd = ["text-right"];
     const classesToRemove = [
       "border-b",
-      " ",
       "bg-surface",
       "bg-gray-100",
       "bg-gray-200",
@@ -95,11 +94,11 @@
     ];
 
     if (pinIndex > -1 && comparing === "dimension" && data.y === pinIndex + 1) {
-      classesToAdd.push("border-b", " ");
+      classesToAdd.push("border-b");
     }
 
     if (comparing === "time" && data.y === 2) {
-      classesToAdd.push("border-b", " ");
+      classesToAdd.push("border-b");
     }
 
     const isScrubbed =
@@ -162,7 +161,7 @@
 
     if (comparing === "time") {
       let icon = "";
-      if (y == 1) icon = SelectedCheckmark("var(--color-primary-500)");
+      if (y == 1) icon = SelectedCheckmark("var(--color-theme-500)");
       else if (y == 2) icon = SelectedCheckmark(SELECTED_NOT_COMPARED_COLOR);
       return { icon, muted: false };
     }
@@ -192,9 +191,9 @@
       (pinIndex > -1 && comparing === "dimension" && y === pinIndex + 1) ||
       (comparing === "time" && y === 2);
     if (showBorder) {
-      element.classList.add("border-b", " ");
+      element.classList.add("border-b");
     } else {
-      element.classList.remove("border-b", " ");
+      element.classList.remove("border-b");
     }
     const total =
       value.value !== undefined
@@ -423,8 +422,13 @@
   :global(regular-table table, regular-table div[sort]) {
     cursor: var(--cursor, default);
   }
+
   :global(regular-table table tbody tr:first-child, regular-table thead) {
     cursor: default;
+  }
+
+  :global(regular-table thead tr:last-child th) {
+    border-bottom: solid 1px var(--border);
   }
   :global(.pin) {
     cursor: pointer;

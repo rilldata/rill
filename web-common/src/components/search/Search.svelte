@@ -17,6 +17,7 @@
   export let disabled = false;
   export let retainValueOnMount = false;
   export let forcedInputStyle = "";
+  export let theme = false;
 
   /* Reference of input DOM element */
   let ref: HTMLInputElement | HTMLTextAreaElement;
@@ -56,6 +57,7 @@
 </script>
 
 <form
+  class:theme
   class="relative w-full {disabled
     ? 'pointer-events-none opacity-50 cursor-not-allowed'
     : ''}"
@@ -92,6 +94,10 @@
 <style lang="postcss">
   .focus:focus {
     @apply border-primary-400;
+  }
+
+  .theme .focus:focus {
+    @apply border-theme-400;
   }
 
   textarea {

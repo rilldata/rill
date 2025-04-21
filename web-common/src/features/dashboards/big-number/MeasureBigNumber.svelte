@@ -126,7 +126,7 @@
     href={tddHref}
   >
     <h2
-      class="line-clamp-2 ui-header-primary font-semibold whitespace-normal"
+      class="line-clamp-2 text-slate-700 hover:text-theme-700 group-hover:text-theme-700 font-semibold whitespace-normal"
       style:font-size={withTimeseries ? "" : "0.8rem"}
     >
       {name}
