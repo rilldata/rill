@@ -218,22 +218,39 @@ export class DashboardStateDataLoader {
     );
 
     this.partialExploreStateFromUrlForInitAndErrors = derived(
-      [this.validSpecQuery, this.explorePresetFromYAMLConfig, page],
-      ([validSpecResp, explorePresetFromYAMLConfig, pageState]) => {
+      [
+        this.validSpecQuery,
+        this.explorePresetFromYAMLConfig,
+        this.rillDefaultExploreURLParamsByView,
+        page,
+      ],
+      ([
+        validSpecResp,
+        explorePresetFromYAMLConfig,
+        rillDefaultExploreURLParamsByView,
+        pageState,
+      ]) => {
         const metricsViewSpec = validSpecResp.data?.metricsView ?? {};
         const exploreSpec = validSpecResp.data?.explore ?? {};
 
+        const urlSearchParams =
+          pageState.url.searchParams.size > 0 &&
+          rillDefaultExploreURLParamsByView.data
+            ? mergeDefaultUrlParams(
+                pageState.url.searchParams,
+                rillDefaultExploreURLParamsByView.data,
+              )
+            : pageState.url.searchParams;
+
         const { partialExploreState: partialExploreStateFromUrl, errors } =
           convertURLSearchParamsToExploreState(
-            pageState.url.searchParams,
+            urlSearchParams,
             metricsViewSpec,
             exploreSpec,
             explorePresetFromYAMLConfig.data ?? {},
           );
         const partialExploreStateFromUrlForInit =
-          pageState.url.searchParams.size === 0
-            ? undefined
-            : partialExploreStateFromUrl;
+          urlSearchParams.size === 0 ? undefined : partialExploreStateFromUrl;
 
         return {
           data: {
@@ -253,14 +270,12 @@ export class DashboardStateDataLoader {
       [
         this.rillDefaultExploreState,
         this.exploreStateFromYAMLConfig,
-        this.exploreStateFromSessionStorage,
         this.partialExploreStateFromUrlForInitAndErrors,
         ...(bookmarkOrTokenExploreState ? [bookmarkOrTokenExploreState] : []),
       ],
       ([
         rillDefaultExploreState,
         exploreStateFromYAMLConfig,
-        exploreStateFromSessionStorage,
         partialExploreStateFromUrlForInitAndErrors,
         bookmarkOrTokenExploreState,
       ]) => {
@@ -269,8 +284,6 @@ export class DashboardStateDataLoader {
         }
 
         const exploreStateOrder = [
-          // 1st priority is the state from session storage.
-          exploreStateFromSessionStorage,
           // Next priority is the state loaded from url params. It will be undefined if there are no params.
           partialExploreStateFromUrlForInitAndErrors?.partialExploreStateFromUrlForInit,
           // Next priority is one of the other source defined.
@@ -335,14 +348,12 @@ export class DashboardStateDataLoader {
         exploreSpec,
       );
 
-    if (!skipSessionStorage && exploreStateFromSessionStorage) {
-      // Mirrors getCleanedUrlParamsForGoto by adding missing params from defaults.
-      // This makes it so that omitted params from getCleanedUrlParamsForGoto are not filled with config other than rill opinionated defaults.
-      urlSearchParams = mergeDefaultUrlParams(
-        urlSearchParams,
-        rillDefaultExploreURLParams,
-      );
-    }
+    // Mirrors getCleanedUrlParamsForGoto by adding missing params from defaults.
+    // This makes it so that omitted params from getCleanedUrlParamsForGoto are not filled with config other than rill opinionated defaults.
+    urlSearchParams = mergeDefaultUrlParams(
+      urlSearchParams,
+      rillDefaultExploreURLParams,
+    );
 
     const { partialExploreState: partialExploreStateFromUrl } =
       convertURLSearchParamsToExploreState(

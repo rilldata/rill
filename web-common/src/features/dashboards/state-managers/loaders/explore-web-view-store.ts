@@ -110,17 +110,7 @@ export function getPartialExploreStateFromSessionStorage(
   metricsViewSpec: V1MetricsViewSpec,
   exploreSpec: V1ExploreSpec,
 ) {
-  if (
-    // exactly one param is set, but it is not `view`
-    (searchParams.size === 1 &&
-      !searchParams.has(ExploreStateURLParams.WebView)) ||
-    // exactly 2 params are set and both `view` and `measure` are not set.
-    (searchParams.size === 2 &&
-      !searchParams.has(ExploreStateURLParams.WebView) &&
-      !searchParams.has(ExploreStateURLParams.ExpandedMeasure)) ||
-    // more than 2 params are set.
-    searchParams.size > 2
-  ) {
+  if (shouldSkipSessionStorage(searchParams)) {
     return undefined;
   }
 
@@ -164,6 +154,25 @@ export function getPartialExploreStateFromSessionStorage(
   } catch {
     return undefined;
   }
+}
+
+function shouldSkipSessionStorage(searchParams: URLSearchParams) {
+  // Check if only one parameter is set, but it's not the 'view' parameter
+  const hasSingleNonViewParam =
+    searchParams.size === 1 && !searchParams.has(ExploreStateURLParams.WebView);
+  // Check if exactly two parameters are set, but neither is 'view' nor 'measure'
+  const hasTwoParamsWithoutViewOrMeasure =
+    searchParams.size === 2 &&
+    !searchParams.has(ExploreStateURLParams.WebView) &&
+    !searchParams.has(ExploreStateURLParams.ExpandedMeasure);
+  // Check if there are more than two parameters
+  const hasMoreThanTwoParams = searchParams.size > 2;
+
+  return (
+    hasSingleNonViewParam ||
+    hasTwoParamsWithoutViewOrMeasure ||
+    hasMoreThanTwoParams
+  );
 }
 
 export function clearExploreSessionStore(

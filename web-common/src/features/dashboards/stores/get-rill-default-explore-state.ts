@@ -81,7 +81,10 @@ function getRillDefaultExploreTimeState(
   timeRangeSummary: V1TimeRangeSummary | undefined,
 ): Partial<MetricsExplorerEntity> {
   if (!timeRangeSummary?.min || !timeRangeSummary?.max) {
-    return {};
+    return {
+      // for consistency with fromUrl
+      showTimeComparison: false,
+    };
   }
 
   const timeRangeName = getDefaultTimeRange(
