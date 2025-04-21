@@ -25,9 +25,9 @@
     </div>
   {:else}
     <Button
-      type="link"
+      type="secondary"
       class="flex flex-row items-center"
-      forcedStyle="min-height: 24px !important; height: 24px !important; padding-right: 0px !important;"
+      forcedStyle="min-height: 24px !important; height: 24px !important;  "
       on:click={onCopy}
       compact
     >

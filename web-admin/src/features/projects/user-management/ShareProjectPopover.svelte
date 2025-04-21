@@ -18,6 +18,7 @@
   import UsergroupItem from "./UsergroupItem.svelte";
   import UserItem from "./UserItem.svelte";
   import AvatarListItem from "../../organizations/users/AvatarListItem.svelte";
+  import { Popover as PopoverPrimitive } from "bits-ui";
 
   export let organization: string;
   export let project: string;
@@ -42,10 +43,6 @@
   $: projectMemberUsersList = $listProjectMemberUsers.data?.members ?? [];
   $: projectInvitesList = $listProjectInvites.data?.invites ?? [];
 
-  // $: console.log("projectMemberUsersList: ", projectMemberUsersList);
-  $: console.log("projectMemberUserGroupsList: ", projectMemberUserGroupsList);
-  // $: console.log("projectInvitesList: ", projectInvitesList);
-
   $: hasRegularUserGroups = projectMemberUserGroupsList.some(
     (group) => !group.groupManaged,
   );
@@ -55,12 +52,11 @@
   <PopoverTrigger asChild let:builder>
     <Button builders={[builder]} type="secondary" selected={open}>Share</Button>
   </PopoverTrigger>
-  <PopoverContent align="end" class="w-[520px] p-4">
-    <div class="flex flex-col">
+  <PopoverContent align="end" class="w-[520px]" padding="0">
+    <div class="flex flex-col p-4">
       <div class="flex flex-row items-center mb-4">
         <div class="text-sm font-medium">Share project: {project}</div>
         <div class="grow"></div>
-        <CopyInviteLinkButton {copyLink} />
       </div>
       <UserInviteForm {organization} {project} />
       <!-- 52 * 8 = 416px -->
@@ -101,6 +97,17 @@
           {/each}
         </div>
       </div>
+    </div>
+    <div
+      class="flex flex-row items-center px-3.5 py-3 border-t border-gray-200"
+    >
+      <a
+        href="https://docs.rilldata.com/manage/user-management#how-to-add-a-project-user"
+        target="_blank"
+        class="text-xs text-primary-600">Learn more about sharing</a
+      >
+      <div class="grow"></div>
+      <CopyInviteLinkButton {copyLink} />
     </div>
   </PopoverContent>
 </Popover>
