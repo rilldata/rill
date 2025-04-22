@@ -4,7 +4,6 @@
     createAdminServiceListProjectInvites,
     createAdminServiceListProjectMemberUsergroups,
     createAdminServiceListProjectMemberUsers,
-    createAdminServiceListUsergroupMemberUsers,
     createAdminServiceRemoveProjectMemberUsergroup,
     createAdminServiceAddProjectMemberUsergroup,
   } from "@rilldata/web-admin/client";
@@ -32,7 +31,6 @@
   export let project: string;
   export let manageProjectMembers: boolean;
 
-  let isHovered = false;
   let open = false;
   let accessDropdownOpen = false;
   let accessType = "everyone"; // "everyone" or "invite-only"
@@ -215,7 +213,7 @@
 
                   accessType = "invite-only";
                   accessDropdownOpen = false;
-                } catch (error) {
+                } catch (_) {
                   eventBus.emit("notification", {
                     message: "Error changing project access",
                     type: "error",
@@ -269,7 +267,7 @@
 
                   accessType = "everyone";
                   accessDropdownOpen = false;
-                } catch (error) {
+                } catch (_) {
                   eventBus.emit("notification", {
                     message: "Error changing project access",
                     type: "error",
