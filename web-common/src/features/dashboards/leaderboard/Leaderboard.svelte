@@ -369,6 +369,7 @@
             {toggleDimensionValueSelection}
             {leaderboardSortByMeasureName}
             {formatters}
+            {dimensionColumnWidth}
           />
         {/each}
       </DelayedLoadingRows>
@@ -391,6 +392,7 @@
           {toggleDimensionValueSelection}
           {leaderboardSortByMeasureName}
           {formatters}
+          {dimensionColumnWidth}
         />
       {/each}
     </tbody>

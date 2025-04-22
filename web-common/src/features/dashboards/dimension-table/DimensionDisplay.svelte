@@ -5,6 +5,7 @@
    * Create a table with the selected dimension and measures
    * to be displayed in explore
    */
+  import { selectedDimensionValuesV2 } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import {
@@ -20,13 +21,12 @@
   import { getSort } from "../leaderboard/leaderboard-utils";
   import { getFiltersForOtherDimensions } from "../selectors";
   import { getMeasuresForDimensionOrLeaderboardDisplay } from "../state-managers/selectors/dashboard-queries";
+  import { dimensionSearchText } from "../stores/dashboard-stores";
   import { sanitiseExpression } from "../stores/filter-utils";
   import type { DimensionThresholdFilter } from "../stores/metrics-explorer-entity";
   import DimensionHeader from "./DimensionHeader.svelte";
   import DimensionTable from "./DimensionTable.svelte";
   import { getDimensionFilterWithSearch } from "./dimension-table-utils";
-  import { selectedDimensionValuesV2 } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
-  import { dimensionSearchText } from "../stores/dashboard-stores";
 
   const queryLimit = 250;
 
@@ -232,16 +232,14 @@
     style:min-width="365px"
     aria-label="Dimension Display"
   >
-    <div class="flex-none" style:height="50px">
-      <DimensionHeader
-        {dimensionName}
-        {areAllTableRowsSelected}
-        isRowsEmpty={!tableRows.length}
-        {hideStartPivotButton}
-        bind:searchText={$dimensionSearchText}
-        onToggleSearchItems={toggleAllSearchItems}
-      />
-    </div>
+    <DimensionHeader
+      {dimensionName}
+      {areAllTableRowsSelected}
+      isRowsEmpty={!tableRows.length}
+      {hideStartPivotButton}
+      bind:searchText={$dimensionSearchText}
+      onToggleSearchItems={toggleAllSearchItems}
+    />
 
     {#if tableRows && columns.length && dimensionName}
       <div class="grow" style="overflow-y: hidden;">

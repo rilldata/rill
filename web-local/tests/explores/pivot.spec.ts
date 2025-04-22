@@ -602,12 +602,12 @@ test.describe("pivot run through", () => {
     await validateTableContents(page, "table", expectedTwoMeasureRowDimColDim);
 
     // Flatten the table
-    await page.getByRole("button", { name: "Flatten" }).click();
+    await page.getByRole("button", { name: "Pivot table" }).click();
     await expect(page.locator(".status.running")).toHaveCount(0);
     await validateTableContents(page, "table", expectedFlatTable);
 
     // Nest the table
-    await page.getByRole("button", { name: "Nest" }).click();
+    await page.getByRole("button", { name: "Flat table" }).click();
     await expect(page.locator(".status.running")).toHaveCount(0);
 
     // Remove the row dimension and second measure
