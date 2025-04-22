@@ -191,7 +191,8 @@
 
     if (rowId === undefined || columnId === undefined) return;
 
-    const row = rows[Number(rowId)];
+    const row = $table.getRow(rowId);
+    if (!row) return;
 
     if (rowHeader) {
       if (row.getCanExpand()) row.getToggleExpandedHandler()();
