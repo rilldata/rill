@@ -34,7 +34,7 @@
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
 
   export let createMagicAuthTokens: boolean;
-  export let manageProjectMembers: boolean;
+  export let isAdmin: boolean;
   export let organizationLogoUrl: string | undefined = undefined;
   export let planDisplayName: string | undefined;
 
@@ -189,7 +189,7 @@
       <ViewAsUserChip />
     {/if}
     {#if onProjectPage}
-      <ShareProjectPopover {organization} {project} {manageProjectMembers} />
+      <ShareProjectPopover {organization} {project} {isAdmin} />
     {/if}
     {#if onMetricsExplorerPage && isDashboardValid}
       {#if exploreSpec}

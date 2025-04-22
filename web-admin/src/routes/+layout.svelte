@@ -40,6 +40,8 @@
     url: { pathname },
   } = $page);
 
+  $: console.log("projectPermissions: ", projectPermissions);
+
   // Remember:
   // - https://tkdodo.eu/blog/breaking-react-querys-api-on-purpose#a-bad-api
   // - https://tkdodo.eu/blog/react-query-error-handling#the-global-callbacks
@@ -113,7 +115,7 @@
       {#if !isEmbed && !hideTopBar}
         <TopNavigationBar
           createMagicAuthTokens={projectPermissions?.createMagicAuthTokens}
-          manageProjectMembers={projectPermissions?.manageProjectMembers}
+          isAdmin={projectPermissions?.admin}
           {organizationLogoUrl}
           {planDisplayName}
         />

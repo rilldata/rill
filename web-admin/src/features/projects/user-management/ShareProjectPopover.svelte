@@ -30,7 +30,7 @@
 
   export let organization: string;
   export let project: string;
-  export let manageProjectMembers: boolean;
+  export let isAdmin: boolean;
 
   let open = false;
   let accessDropdownOpen = false;
@@ -156,7 +156,7 @@
     <div
       class="flex flex-row items-center px-3.5 py-3 border-t border-gray-200"
     >
-      {#if manageProjectMembers}
+      {#if isAdmin}
         <DropdownMenu.Root bind:open={accessDropdownOpen}>
           <DropdownMenu.Trigger>
             <Button
