@@ -59,7 +59,6 @@ test.describe("Embeds", () => {
     expect(
       logMessages.some((msg) =>
         msg.includes(
-          // Validation post merge is missing in this PR. A future PR will address this.
           `{"id":1337,"result":{"state":"f=advertiser_name+IN+('Instacart')"}}`,
         ),
       ),

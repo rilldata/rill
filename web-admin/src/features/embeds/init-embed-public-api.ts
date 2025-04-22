@@ -17,19 +17,18 @@ export default function initEmbedPublicAPI(): () => void {
   const { validSpecStore, dashboardStore, timeRangeSummaryStore } =
     getStateManagers();
 
-  const cachedDefaultUrlParamsStore = derived(
+  const cachedRillDefaultParamsStore = derived(
     [validSpecStore, timeRangeSummaryStore],
     ([$validSpecStore, $timeRangeSummaryStore]) => {
       const exploreSpec = $validSpecStore.data?.explore ?? {};
       const metricsViewSpec = $validSpecStore.data?.metricsView ?? {};
 
-      const defaultExploreUrlParams = getRillDefaultExploreUrlParams(
+      const rillDefaultExploreParams = getRillDefaultExploreUrlParams(
         metricsViewSpec,
         exploreSpec,
         $timeRangeSummaryStore.data?.timeRangeSummary,
       );
-
-      return defaultExploreUrlParams;
+      return rillDefaultExploreParams;
     },
   );
 
@@ -38,13 +37,13 @@ export default function initEmbedPublicAPI(): () => void {
       validSpecStore,
       dashboardStore,
       timeRangeSummaryStore,
-      cachedDefaultUrlParamsStore,
+      cachedRillDefaultParamsStore,
     ],
     ([
       $validSpecStore,
       $dashboardStore,
       $timeRangeSummaryStore,
-      $cachedDefaultUrlParamsStore,
+      $cachedRillDefaultParams,
     ]) => {
       const exploreSpec = $validSpecStore.data?.explore ?? {};
       const metricsViewSpec = $validSpecStore.data?.metricsView ?? {};
@@ -60,11 +59,12 @@ export default function initEmbedPublicAPI(): () => void {
       }
 
       return decodeURIComponent(
+        // It doesnt make sense to send default params, so clean them based on rill opinionated defaults.
         getCleanedUrlParamsForGoto(
           exploreSpec,
           $dashboardStore,
           timeControlsState,
-          $cachedDefaultUrlParamsStore,
+          $cachedRillDefaultParams,
         ).toString(),
       );
     },
@@ -78,7 +78,7 @@ export default function initEmbedPublicAPI(): () => void {
     const validSpec = get(validSpecStore);
     const dashboard = get(dashboardStore);
     const timeSummary = get(timeRangeSummaryStore).data;
-    const cachedDefaultUrlParams = get(cachedDefaultUrlParamsStore);
+    const cachedRillDefaultParams = get(cachedRillDefaultParamsStore);
 
     const exploreSpec = validSpec.data?.explore ?? {};
     const metricsViewSpec = validSpec.data?.metricsView ?? {};
@@ -97,7 +97,7 @@ export default function initEmbedPublicAPI(): () => void {
         exploreSpec,
         dashboard,
         timeControlsState,
-        cachedDefaultUrlParams,
+        cachedRillDefaultParams,
       ).toString(),
     );
     return { state: stateString };

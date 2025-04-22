@@ -12,8 +12,10 @@ import {
 } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import { updateExploreSessionStore } from "@rilldata/web-common/features/dashboards/state-managers/loaders/explore-web-view-store";
 import { getCleanedUrlParamsForGoto } from "@rilldata/web-common/features/dashboards/url-state/convert-partial-explore-state-to-url-params";
+import { createRillDefaultExploreUrlParamsByView } from "@rilldata/web-common/features/dashboards/url-state/get-rill-default-explore-url-params";
 import type { AfterNavigate } from "@sveltejs/kit";
 import { derived, get, type Readable } from "svelte/store";
+import type { CompoundQueryResult } from "@rilldata/web-common/features/compound-query-result";
 
 /**
  * Keeps explore state and url in sync.
@@ -24,6 +26,9 @@ import { derived, get, type Readable } from "svelte/store";
 export class DashboardStateSync {
   private readonly exploreStore: Readable<MetricsExplorerEntity | undefined>;
   private readonly timeControlStore: TimeControlStore;
+  // Cached url params for a rill opinionated dashboard defaults. Used to remove params from url.
+  // To avoid converting the default explore state to url evey time it is needed we maintain a cached version here.
+  public readonly rillDefaultExploreURLParams: CompoundQueryResult<URLSearchParams>;
 
   private readonly unsubInit: (() => void) | undefined;
   private readonly unsubExploreState: (() => void) | undefined;
@@ -45,6 +50,11 @@ export class DashboardStateSync {
       instanceId,
       metricsViewName,
       exploreName,
+    );
+
+    this.rillDefaultExploreURLParams = createRillDefaultExploreUrlParamsByView(
+      dataLoader.validSpecQuery,
+      dataLoader.fullTimeRangeQuery,
     );
 
     this.unsubInit = derived(
@@ -77,7 +87,7 @@ export class DashboardStateSync {
     const { data: validSpecData } = get(this.dataLoader.validSpecQuery);
     const exploreSpec = validSpecData?.explore ?? {};
     const { data: rillDefaultExploreURLParams } = get(
-      this.dataLoader.rillDefaultExploreURLParams,
+      this.rillDefaultExploreURLParams,
     );
     if (!rillDefaultExploreURLParams) return;
 
@@ -96,9 +106,6 @@ export class DashboardStateSync {
     );
     redirectUrl.search = exploreStateParams.toString();
 
-    console.log(
-      `INIT: ${pageState.url.search} =${redirectUrl.search === pageState.url.search ? "X" : "="}> ${redirectUrl.search}`,
-    );
     if (redirectUrl.search === pageState.url.search) {
       this.initialized = true;
       return;
@@ -137,7 +144,7 @@ export class DashboardStateSync {
     const metricsViewSpec = validSpecData?.metricsView ?? {};
     const exploreSpec = validSpecData?.explore ?? {};
     const { data: rillDefaultExploreURLParams } = get(
-      this.dataLoader.rillDefaultExploreURLParams,
+      this.rillDefaultExploreURLParams,
     );
     if (!rillDefaultExploreURLParams) return;
 
@@ -181,9 +188,6 @@ export class DashboardStateSync {
       timeControlsState,
     );
 
-    console.log(
-      `URL: ${pageState.url.search} =${redirectUrl.search === pageState.url.search ? "X" : "="}> ${redirectUrl.search}`,
-    );
     this.updating = false;
     // redirect loop breaker
     if (redirectUrl.search === pageState.url.search) {
@@ -206,7 +210,7 @@ export class DashboardStateSync {
     const exploreSpec = validSpecData?.explore ?? {};
     const timeControlsState = get(this.timeControlStore);
     const { data: rillDefaultExploreURLParams } = get(
-      this.dataLoader.rillDefaultExploreURLParams,
+      this.rillDefaultExploreURLParams,
     );
     if (!rillDefaultExploreURLParams) return;
 
@@ -230,9 +234,6 @@ export class DashboardStateSync {
       timeControlsState,
     );
 
-    console.log(
-      `GOTO: ${pageState.url.search} =${newUrl.search === pageState.url.search ? "X" : "="}> ${newUrl.search}`,
-    );
     this.updating = false;
     // redirect loop breaker
     if (newUrl.search === pageState.url.search) {

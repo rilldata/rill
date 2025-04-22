@@ -20,7 +20,7 @@ services:
       - ../../../../${RILL_DEVTOOL_STATE_DIRECTORY}/postgres:/var/lib/postgresql/data
   e2e-postgres:
     <<: *postgres
-#    profiles: ["e2e"]
+    profiles: ["e2e"]
     ports:
       - '6432:5432'
   redis:

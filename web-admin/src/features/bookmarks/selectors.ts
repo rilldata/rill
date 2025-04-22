@@ -261,12 +261,6 @@ function isFilterOnlyBookmark(
   timeRangeSummary: V1TimeRangeSummary | undefined,
   rillDefaultExploreURLParams: URLSearchParams,
 ): boolean {
-  // This is needed as fix for bookmarks that set selectedComparisonDimension=undefined instead of selectedComparisonDimension=""
-  // We cant update fromProto since it will break backwards compatibility
-  if (!bookmarkState.selectedComparisonDimension) {
-    delete bookmarkState.selectedComparisonDimension;
-  }
-
   // We need to remove defaults like time grain and timezone otherwise we will have extra fields here
   const searchParams = getCleanedUrlParamsForGoto(
     exploreSpec,

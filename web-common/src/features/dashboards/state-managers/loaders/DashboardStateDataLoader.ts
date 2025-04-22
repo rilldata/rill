@@ -38,9 +38,6 @@ export class DashboardStateDataLoader {
     Partial<MetricsExplorerEntity>
   >;
 
-  // Cached url params for a rill opinionated dashboard defaults. Used to remove params from url.
-  public readonly rillDefaultExploreURLParams: CompoundQueryResult<URLSearchParams>;
-
   private readonly partialExploreStateFromUrlForInit: CompoundQueryResult<
     Partial<MetricsExplorerEntity> | undefined
   >;
@@ -147,11 +144,6 @@ export class DashboardStateDataLoader {
       },
     );
 
-    this.rillDefaultExploreURLParams = createRillDefaultExploreUrlParamsByView(
-      this.validSpecQuery,
-      this.fullTimeRangeQuery,
-    );
-
     this.partialExploreStateFromUrlForInit = derived(
       [this.validSpecQuery, page],
       ([validSpecResp, pageState]) => {
@@ -161,7 +153,10 @@ export class DashboardStateDataLoader {
         let partialExploreStateFromUrlForInit:
           | Partial<MetricsExplorerEntity>
           | undefined = undefined;
-        if (pageState.url.searchParams.size > 0) {
+        const haveSomeUrlParams = pageState.url.searchParams.size > 0;
+        // Only do the conversion if there are some url params.
+        // This way with an blank url state from url will be undefined,
+        if (haveSomeUrlParams) {
           ({ partialExploreState: partialExploreStateFromUrlForInit } =
             convertURLSearchParamsToExploreState(
               pageState.url.searchParams,
@@ -203,7 +198,7 @@ export class DashboardStateDataLoader {
           | undefined
         )[];
         if (partialExploreStateFromUrlForInit) {
-          // If there are some url params then we need to fill in any missing params from rill defaults. No other state will used.
+          // If there are some url params then we need to fill in any missing params from rill defaults. No other state will be used.
           exploreStateOrder = [
             // 1st priority is the state loaded from url params. It will be undefined if there are no params.
             partialExploreStateFromUrlForInit,
@@ -211,6 +206,7 @@ export class DashboardStateDataLoader {
             rillDefaultExploreState,
           ];
         } else {
+          // Else merge other states like bookmark/token and state from yaml config
           exploreStateOrder = [
             // 1st priority is one of the other source defined.
             // For cloud dashboard it would be home bookmark if present.
@@ -292,8 +288,11 @@ export class DashboardStateDataLoader {
         rillDefaultExploreState,
       ];
     } else {
+      // Else merge other states like bookmark/token and state from yaml config
+      // We need this explicit adding of states to reset the store when going back to an empty url.
       exploreStateOrder = [
         // 1st priority is the state from session storage.
+        // We need this to make sure any state is not cleared while the user is still on the page but came back from a different dashboard.
         skipSessionStorage ? undefined : exploreStateFromSessionStorage,
         // Next priority is one of the other source defined.
         // For cloud dashboard it would be home bookmark if present.
