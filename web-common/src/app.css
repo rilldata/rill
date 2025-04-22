@@ -241,29 +241,92 @@
     /* --input: var(--color-gray-200); */
     /* --ring: var(--color-gray-950); */
 
-    --color-theme-50: var(--color-theme-dark-50);
-    --color-theme-100: var(--color-theme-dark-100);
-    --color-theme-200: var(--color-theme-dark-200);
-    --color-theme-300: var(--color-theme-dark-300);
-    --color-theme-400: var(--color-theme-dark-400);
-    --color-theme-500: var(--color-theme-dark-500);
-    --color-theme-600: var(--color-theme-dark-600);
-    --color-theme-700: var(--color-theme-dark-700);
-    --color-theme-800: var(--color-theme-dark-800);
-    --color-theme-900: var(--color-theme-dark-900);
-    --color-theme-950: var(--color-theme-dark-950);
+    --color-theme-50: var(--color-theme-dark-50, var(--color-primary-dark-50));
+    --color-theme-100: var(
+      --color-theme-dark-100,
+      var(--color-primary-dark-100)
+    );
+    --color-theme-200: var(
+      --color-theme-dark-200,
+      var(--color-primary-dark-200)
+    );
+    --color-theme-300: var(
+      --color-theme-dark-300,
+      var(--color-primary-dark-300)
+    );
+    --color-theme-400: var(
+      --color-theme-dark-400,
+      var(--color-primary-dark-400)
+    );
+    --color-theme-500: var(
+      --color-theme-dark-500,
+      var(--color-primary-dark-500)
+    );
+    --color-theme-600: var(
+      --color-theme-dark-600,
+      var(--color-primary-dark-600)
+    );
+    --color-theme-700: var(
+      --color-theme-dark-700,
+      var(--color-primary-dark-700)
+    );
+    --color-theme-800: var(
+      --color-theme-dark-800,
+      var(--color-primary-dark-800)
+    );
+    --color-theme-900: var(
+      --color-theme-dark-900,
+      var(--color-primary-dark-900)
+    );
+    --color-theme-950: var(
+      --color-theme-dark-950,
+      var(--color-primary-dark-950)
+    );
 
-    --color-theme-secondary-50: var(--color-theme-secondary-dark-50);
-    --color-theme-secondary-100: var(--color-theme-secondary-dark-100);
-    --color-theme-secondary-200: var(--color-theme-secondary-dark-200);
-    --color-theme-secondary-300: var(--color-theme-secondary-dark-300);
-    --color-theme-secondary-400: var(--color-theme-secondary-dark-400);
-    --color-theme-secondary-500: var(--color-theme-secondary-dark-500);
-    --color-theme-secondary-600: var(--color-theme-secondary-dark-600);
-    --color-theme-secondary-700: var(--color-theme-secondary-dark-700);
-    --color-theme-secondary-800: var(--color-theme-secondary-dark-800);
-    --color-theme-secondary-900: var(--color-theme-secondary-dark-900);
-    --color-theme-secondary-950: var(--color-theme-secondary-dark-950);
+    --color-theme-secondary-50: var(
+      --color-theme-secondary-dark-50,
+      var(--color-secondary-dark-50)
+    );
+    --color-theme-secondary-100: var(
+      --color-theme-secondary-dark-100,
+      var(--color-secondary-dark-100)
+    );
+    --color-theme-secondary-200: var(
+      --color-theme-secondary-dark-200,
+      var(--color-secondary-dark-200)
+    );
+    --color-theme-secondary-300: var(
+      --color-theme-secondary-dark-300,
+      var(--color-secondary-dark-300)
+    );
+    --color-theme-secondary-400: var(
+      --color-theme-secondary-dark-400,
+      var(--color-secondary-dark-400)
+    );
+    --color-theme-secondary-500: var(
+      --color-theme-secondary-dark-500,
+      var(--color-secondary-dark-500)
+    );
+    --color-theme-secondary-600: var(
+      --color-theme-secondary-dark-600,
+      var(--color-secondary-dark-600)
+    );
+    --color-theme-secondary-700: var(
+      --color-theme-secondary-dark-700,
+      var(--color-secondary-dark-700)
+    );
+    --color-theme-secondary-800: var(
+      --color-theme-secondary-dark-800,
+      var(--color-secondary-dark-800)
+    );
+    --color-theme-secondary-900: var(
+      --color-theme-secondary-dark-900,
+      var(--color-secondary-dark-900)
+    );
+    --color-theme-secondary-950: var(
+      --color-theme-secondary-dark-950,
+      var(--color-secondary-dark-950)
+    );
   }
 
   h1,

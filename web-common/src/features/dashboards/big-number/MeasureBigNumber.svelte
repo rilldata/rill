@@ -110,7 +110,7 @@
     this={useDiv ? "div" : "a"}
     role={useDiv ? "presentation" : "button"}
     tabindex={useDiv ? -1 : 0}
-    class="group big-number"
+    class="group big-number outline-gray-200 dark:outline-gray-300"
     class:shadow-grad={!useDiv}
     class:cursor-pointer={!useDiv}
     on:click={modified({
@@ -223,20 +223,11 @@
 <style lang="postcss">
   .big-number {
     @apply h-fit w-[138px] m-0.5 rounded p-2 font-normal;
-    min-height: 85px;
     @apply items-start flex flex-col text-left;
+    min-height: 85px;
   }
 
   .shadow-grad:hover {
-    /* ui-card */
-    /* background: var(
-      --gradient_white-slate50,
-      linear-gradient(180deg, #fff 0%, #f8fafc 100%)
-    ); */
-    box-shadow:
-      0px 4px 6px 0px rgba(15, 23, 42, 0.09),
-      0px 0px 0px 1px rgba(15, 23, 42, 0.06),
-      0px 1px 3px 0px rgba(15, 23, 42, 0.04),
-      0px 2px 3px 0px rgba(15, 23, 42, 0.03);
+    @apply shadow-md bg-gradient-to-b from-surface to-gray-50 outline-1 outline;
   }
 </style>
