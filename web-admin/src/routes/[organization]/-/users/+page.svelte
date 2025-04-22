@@ -12,6 +12,10 @@
   import { Search } from "@rilldata/web-common/components/search";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import { Plus } from "lucide-svelte";
+  import type { PageData } from "./$types";
+
+  export let data: PageData;
+  $: ({ organizationPermissions } = data);
 
   const PAGE_SIZE = 12;
 
@@ -126,10 +130,12 @@
         </Button>
       </div>
       <OrgUsersTable
+        {organization}
         data={filteredUsers}
         usersQuery={$orgMemberUsersInfiniteQuery}
         invitesQuery={$orgInvitesInfiniteQuery}
         currentUserEmail={$currentUser.data?.user.email}
+        userCanManageOrg={organizationPermissions.manageOrg}
       />
     </div>
   {/if}

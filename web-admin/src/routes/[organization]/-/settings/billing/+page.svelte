@@ -4,6 +4,7 @@
     createAdminServiceListOrganizationBillingIssues,
   } from "@rilldata/web-admin/client";
   import { mergedQueryStatus } from "@rilldata/web-admin/client/utils";
+  import BillingContact from "@rilldata/web-admin/features/billing/contact/BillingContact.svelte";
   import Payment from "@rilldata/web-admin/features/billing/Payment.svelte";
   import Plan from "@rilldata/web-admin/features/billing/plans/Plan.svelte";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
@@ -27,4 +28,5 @@
 {:else}
   <Plan {organization} {showUpgradeDialog} />
   <Payment {organization} {subscription} />
+  <BillingContact {organization} />
 {/if}
