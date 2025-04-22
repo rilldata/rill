@@ -123,7 +123,7 @@
         <div class="text-sm font-medium">Share project: {project}</div>
         <div class="grow"></div>
       </div>
-      {#if !isViewer}
+      {#if isAdmin || isEditor}
         <UserInviteForm {organization} {project} />
       {/if}
       <!-- 52 * 8 = 416px -->
@@ -338,7 +338,7 @@
         </DropdownMenu.Root>
       {:else}
         <a
-          href="https://docs.rilldata.com/manage/user-management#how-to-add-a-project-user"
+          href="https://docs.rilldata.com/manage/roles-permissions#project-level-permissions"
           target="_blank"
           class="text-xs text-primary-600">Learn more about sharing</a
         >

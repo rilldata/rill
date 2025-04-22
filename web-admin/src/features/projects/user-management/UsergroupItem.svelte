@@ -35,6 +35,8 @@
     on:blur={() => (isHovered = false)}
   >
     <UsergroupAvatar {organization} usergroup={group.groupName} />
+
+    <!-- TODO: support user group removal -->
     <UsergroupSetRole {organization} {project} {group} />
   </div>
 

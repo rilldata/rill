@@ -144,36 +144,45 @@
       {/if}
     </DropdownMenu.Trigger>
     <DropdownMenu.Content align="start" strategy="fixed">
+      <!-- TODO: what happens when admin removes themselves as admin? -->
+      <!-- TODO: fix checked styles -->
+      <!-- getUserRole(user) === "admin" -->
       {#if role === "admin"}
-        <DropdownMenu.CheckboxItem
-          class="font-normal flex items-center"
-          checked={getUserRole(user) === "admin"}
+        <DropdownMenu.Item
+          class="font-normal flex flex-col items-start py-2"
           on:click={() => handleSetRole(getUserEmail(user), "admin")}
         >
-          <span>Admin</span>
-        </DropdownMenu.CheckboxItem>
+          <span class="font-medium">Admin</span>
+          <span class="text-xs text-gray-600"
+            >Full control of project settings and members</span
+          >
+        </DropdownMenu.Item>
       {/if}
 
-      <DropdownMenu.CheckboxItem
-        class="font-normal flex items-center"
-        checked={getUserRole(user) === "editor"}
+      <DropdownMenu.Item
+        class="font-normal flex flex-col items-start py-2"
         on:click={() => handleSetRole(getUserEmail(user), "editor")}
       >
-        <span>Editor</span>
-      </DropdownMenu.CheckboxItem>
+        <span class="font-medium">Editor</span>
+        <span class="text-xs text-gray-600"
+          >Can create and edit dashboards; manage non-admin access</span
+        >
+      </DropdownMenu.Item>
 
-      <DropdownMenu.CheckboxItem
-        class="font-normal flex items-center"
-        checked={getUserRole(user) === "viewer"}
+      <DropdownMenu.Item
+        class="font-normal flex flex-col items-start py-2"
         on:click={() => handleSetRole(getUserEmail(user), "viewer")}
       >
-        <span>Viewer</span>
-      </DropdownMenu.CheckboxItem>
+        <span class="font-medium">Viewer</span>
+        <span class="text-xs text-gray-600"
+          >Read-only access to project dashboards</span
+        >
+      </DropdownMenu.Item>
 
       {#if !isCurrentUser}
         <DropdownMenu.Separator />
         <DropdownMenu.Item
-          class="font-normal flex items-center"
+          class="font-normal flex items-center py-2"
           on:click={() => handleRemove(getUserEmail(user))}
         >
           <span class="ml-6 text-red-600">Remove</span>
