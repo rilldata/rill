@@ -4,12 +4,13 @@
   import { updateThemeVariables } from "@rilldata/web-common/features/themes/actions";
   import { useTheme } from "@rilldata/web-common/features/themes/selectors";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { onMount } from "svelte";
 
   const { validSpecStore } = getStateManagers();
-  $: themeFromUrl = $page.url.searchParams.get("theme");
 
   let theme: ReturnType<typeof useTheme>;
+
+  $: themeFromUrl = $page.url.searchParams.get("theme");
+
   $: ({ instanceId } = $runtime);
   $: themeName = themeFromUrl ?? $validSpecStore.data?.explore?.theme;
   $: if (themeName) theme = useTheme(instanceId, themeName);
@@ -17,14 +18,6 @@
   $: updateThemeVariables(
     $theme?.data?.theme?.spec ?? $validSpecStore?.data?.explore?.embeddedTheme,
   );
-
-  // onMount(() => {
-  //   // Handle the case where we have data in cache but the dashboard is not mounted yet
-  //   updateThemeVariables(
-  //     $theme?.data?.theme?.spec ??
-  //       $validSpecStore?.data?.explore?.embeddedTheme,
-  //   );
-  // });
 </script>
 
 <slot />

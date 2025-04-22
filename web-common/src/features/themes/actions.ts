@@ -1,30 +1,15 @@
 import { TailwindColorSpacing } from "./color-config.ts";
 import type { V1ThemeSpec } from "../../../../web-common/src/runtime-client/index.ts";
 import chroma, { type Color } from "chroma-js";
-import { allColors } from "./colors.ts";
 import { clamp } from "../../../../web-common/src/lib/clamp.ts";
 
 export const BLACK = chroma("black");
 export const WHITE = chroma("white");
 export const MODE = "oklab";
 
-// export function initColors() {
-//   const root = document.documentElement;
-//   Object.entries(allColors).forEach(([colorName, colors]) => {
-//     const scale = createDarkVariation(colorName, Object.values(colors));
-
-//     scale.forEach((chromaColor, i) => {
-//       root.style.setProperty(
-//         `--color-${colorName}-dark-${TailwindColorSpacing[i]}`,
-//         chromaColor.css("oklch"),
-//       );
-//     });
-//   });
-// }
-
 export function createDarkVariation(name: string, colors: Color[]) {
   if (!["neutral", "stone", "slate", "zinc", "gray"].includes(name)) {
-    return genPal(colors[5]).dark;
+    return generatePalette(colors[5]).dark;
   } else {
     const deSat = colors.reverse().map((color) => color.desaturate(20));
 
@@ -37,48 +22,7 @@ export function createDarkVariation(name: string, colors: Color[]) {
   }
 }
 
-export function findValues(
-  colors: Color[],
-  contrastCurve: number[],
-  from: Color,
-) {
-  let i = 0;
-
-  return contrastCurve.map((c) => {
-    const color = colors[i];
-    let contrast = chroma.contrast(from, color);
-
-    while (contrast < c && i < colors.length - 1) {
-      i++;
-      contrast = chroma.contrast(from, colors[i]);
-    }
-    return colors[i];
-  });
-}
-
-export function findContrast(
-  spectrum: Color[],
-  comparedTo: Color,
-  contrast: number,
-  maxSaturation?: number,
-  minSaturation?: number,
-) {
-  const color = spectrum.find((color) => {
-    return chroma.contrast(comparedTo, color) >= contrast;
-  });
-
-  const saturation = color?.oklch()[1] ?? 0;
-
-  if (maxSaturation && saturation > maxSaturation) {
-    return color?.set("oklch.c", maxSaturation);
-  } else if (minSaturation && saturation < minSaturation) {
-    return color?.set("oklch.c", minSaturation);
-  }
-
-  return color;
-}
-
-export function genPal(
+function generatePalette(
   refColor: Color,
   stepCount: number = 11,
   gamma: number = 1.12,
@@ -193,7 +137,7 @@ export function updateThemeVariables(theme: V1ThemeSpec | undefined) {
       (theme.primaryColor.blue ?? 1) * 256,
     );
 
-    const { light, dark } = genPal(chromaColor);
+    const { light, dark } = generatePalette(chromaColor);
 
     setVariables(root, "theme", "light", light);
     setVariables(root, "theme", "dark", dark);
@@ -209,7 +153,7 @@ export function updateThemeVariables(theme: V1ThemeSpec | undefined) {
       (theme.secondaryColor.blue ?? 1) * 256,
     );
 
-    const { light, dark } = genPal(chromaColor);
+    const { light, dark } = generatePalette(chromaColor);
 
     setVariables(root, "theme-secondary", "light", light);
     setVariables(root, "theme-secondary", "dark", dark);
@@ -226,21 +170,24 @@ function findLuminance(spectrum: Color[], lumn: number) {
   });
 }
 
-export function getColors(baseColor: Color, dark: boolean): Color[] {
-  const [, c, h] = baseColor.oklch();
-  const steps = TailwindColorSpacing.length;
-
-  // We define a range of lightness values
-  const minL = 0.02;
-  const maxL = 1;
-
-  const range = Array.from({ length: steps }, (_, i) => {
-    // Invert the index if dark mode
-    const idx = dark ? steps - 1 - i : i;
-    const lightness = maxL - (idx / (steps - 1)) * (maxL - minL);
-
-    return chroma.oklch(lightness, c, h);
+function findContrast(
+  spectrum: Color[],
+  comparedTo: Color,
+  contrast: number,
+  maxSaturation?: number,
+  minSaturation?: number,
+) {
+  const color = spectrum.find((color) => {
+    return chroma.contrast(comparedTo, color) >= contrast;
   });
 
-  return range;
+  const saturation = color?.oklch()[1] ?? 0;
+
+  if (maxSaturation && saturation > maxSaturation) {
+    return color?.set("oklch.c", maxSaturation);
+  } else if (minSaturation && saturation < minSaturation) {
+    return color?.set("oklch.c", minSaturation);
+  }
+
+  return color;
 }

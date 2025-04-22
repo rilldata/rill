@@ -11,6 +11,7 @@
   $: ({
     canvasEntity: { setTheme, spec },
   } = getCanvasStore(canvasName));
+
   $: ({ canvasSpec: cs } = spec);
   $: ({ instanceId } = $runtime);
 
