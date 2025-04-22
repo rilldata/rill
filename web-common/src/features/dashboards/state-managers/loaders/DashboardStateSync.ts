@@ -12,7 +12,7 @@ import {
 } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import { updateExploreSessionStore } from "@rilldata/web-common/features/dashboards/state-managers/loaders/explore-web-view-store";
 import { getCleanedUrlParamsForGoto } from "@rilldata/web-common/features/dashboards/url-state/convert-partial-explore-state-to-url-params";
-import { createRillDefaultExploreUrlParamsByView } from "@rilldata/web-common/features/dashboards/url-state/get-rill-default-explore-url-params";
+import { createRillDefaultExploreUrlParams } from "@rilldata/web-common/features/dashboards/url-state/get-rill-default-explore-url-params";
 import type { AfterNavigate } from "@sveltejs/kit";
 import { derived, get, type Readable } from "svelte/store";
 import type { CompoundQueryResult } from "@rilldata/web-common/features/compound-query-result";
@@ -52,7 +52,7 @@ export class DashboardStateSync {
       exploreName,
     );
 
-    this.rillDefaultExploreURLParams = createRillDefaultExploreUrlParamsByView(
+    this.rillDefaultExploreURLParams = createRillDefaultExploreUrlParams(
       dataLoader.validSpecQuery,
       dataLoader.fullTimeRangeQuery,
     );
@@ -81,7 +81,12 @@ export class DashboardStateSync {
     this.unsubExploreState?.();
   }
 
+  /**
+   * Initializes the dashboard store.
+   * If the url needs to change to match the init then we replace the current url with the new url.
+   */
   private handleExploreInit(initExploreState: MetricsExplorerEntity) {
+    // If this is re-triggered any of the dependant query was refetched, then we need to make sure this is not run again.
     if (this.initialized) return;
 
     const { data: validSpecData } = get(this.dataLoader.validSpecQuery);
@@ -93,9 +98,11 @@ export class DashboardStateSync {
 
     const pageState = get(page);
 
+    // Init the store with state we got from dataLoader
     metricsExplorerStore.init(this.exploreName, initExploreState);
     // Get time controls state after explore state is initialized.
     const timeControlsState = get(this.timeControlStore);
+    // Get the updated url params. If we merged state other than the url we would need to navigate to it.
     const redirectUrl = new URL(pageState.url);
     const exploreStateParams = getCleanedUrlParamsForGoto(
       exploreSpec,
@@ -106,22 +113,23 @@ export class DashboardStateSync {
     );
     redirectUrl.search = exploreStateParams.toString();
 
+    // Update session storage with the initial state
+    updateExploreSessionStore(
+      this.exploreName,
+      this.extraPrefix,
+      initExploreState,
+      exploreSpec,
+      timeControlsState,
+    );
+
+    // If the current url same as the new url then there is no need to do anything
     if (redirectUrl.search === pageState.url.search) {
       this.initialized = true;
       return;
     }
 
-    const updatedExploreState =
-      get(metricsExplorerStore).entities[this.exploreName];
-    updateExploreSessionStore(
-      this.exploreName,
-      this.extraPrefix,
-      updatedExploreState,
-      exploreSpec,
-      timeControlsState,
-    );
-
     this.initialized = true;
+    // Else navigate to the new url.
     // using `replaceState` directly messes up the navigation entries,
     // `from` and `to` have the old url before being replaced in `afterNavigate` calls leading to incorrect handling.
     return goto(redirectUrl, {
@@ -130,14 +138,17 @@ export class DashboardStateSync {
     });
   }
 
-  // The decision to get the exploreState from url params depends on the navigation type.
-  // This will be called from an afterNavigation callback.
+  /**
+   * The decision to get the exploreState from url params depends on the navigation type.
+   * This will be called from an afterNavigation callback.
+   */
   public handleURLChange(
     urlSearchParams: URLSearchParams,
     type: AfterNavigate["type"],
   ) {
+    // Since we call this in afterNavigation, there could be a scenario where navigation completes but data for init isnt loaded yet.
+    // Init already incorporates the url into the state so we can skip this processing.
     if (this.updating || !this.initialized) return;
-
     this.updating = true;
 
     const { data: validSpecData } = get(this.dataLoader.validSpecQuery);
@@ -146,6 +157,7 @@ export class DashboardStateSync {
     const { data: rillDefaultExploreURLParams } = get(
       this.rillDefaultExploreURLParams,
     );
+    // Type-safety
     if (!rillDefaultExploreURLParams) return;
 
     const partialExplore = this.dataLoader.getExploreStateFromURLParams(
@@ -159,7 +171,7 @@ export class DashboardStateSync {
 
     const pageState = get(page);
 
-    const redirectUrl = new URL(pageState.url);
+    // Merge the partial state from url into the store
     metricsExplorerStore.mergePartialExplorerEntity(
       this.exploreName,
       partialExplore,
@@ -169,6 +181,7 @@ export class DashboardStateSync {
     const timeControlsState = get(this.timeControlStore);
     // Get the updated URL, this could be different from the page url if we added extra state.
     // The extra state could come from session storage, home bookmark or yaml defaults
+    const redirectUrl = new URL(pageState.url);
     const exploreStateParams = getCleanedUrlParamsForGoto(
       exploreSpec,
       partialExplore,
@@ -178,6 +191,7 @@ export class DashboardStateSync {
     );
     redirectUrl.search = exploreStateParams.toString();
 
+    // Get the full updated state and save to session storage
     const updatedExploreState =
       get(metricsExplorerStore).entities[this.exploreName];
     updateExploreSessionStore(
@@ -189,7 +203,7 @@ export class DashboardStateSync {
     );
 
     this.updating = false;
-    // redirect loop breaker
+    // If the url doesnt need to be changed further then we can skip the goto
     if (redirectUrl.search === pageState.url.search) {
       return;
     }
@@ -202,7 +216,15 @@ export class DashboardStateSync {
     });
   }
 
+  /**
+   * Called when the state is updated outside of this class, through an action for example.
+   *
+   * This will check if the url needs to be changed and will navigate to the new url.
+   */
   private gotoNewState(exploreState: MetricsExplorerEntity) {
+    // Updating state either in handleExploreInit or handleURLChange will synchronously update the state triggering this function.
+    // Since those methods handle redirect themselves we need to skip this logic.
+    // Those methods need to replace the current URL while this does a direct navigation.
     if (this.updating) return;
     this.updating = true;
 
@@ -212,10 +234,12 @@ export class DashboardStateSync {
     const { data: rillDefaultExploreURLParams } = get(
       this.rillDefaultExploreURLParams,
     );
+    // Type-safety
     if (!rillDefaultExploreURLParams) return;
 
     const pageState = get(page);
 
+    // Get the new url params for the updated state
     const newUrl = new URL(pageState.url);
     const exploreStateParams = getCleanedUrlParamsForGoto(
       exploreSpec,
@@ -226,6 +250,7 @@ export class DashboardStateSync {
     );
     newUrl.search = exploreStateParams.toString();
 
+    // Update the session storage with the new explore state.
     updateExploreSessionStore(
       this.exploreName,
       this.extraPrefix,
@@ -235,7 +260,8 @@ export class DashboardStateSync {
     );
 
     this.updating = false;
-    // redirect loop breaker
+    // If the state didnt result in a new url then skip goto.
+    // This avoids adding redundant urls to the history.
     if (newUrl.search === pageState.url.search) {
       return;
     }

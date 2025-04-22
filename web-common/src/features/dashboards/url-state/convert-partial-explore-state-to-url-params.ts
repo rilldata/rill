@@ -25,7 +25,7 @@ import {
   ExploreStateKeyToURLParamMap,
   ExploreStateURLParams,
 } from "@rilldata/web-common/features/dashboards/url-state/url-params";
-import { stripDefaultOrEmptyUrlParams } from "@rilldata/web-common/features/dashboards/url-state/url-params-strip-utils";
+import { cleanUrlParams } from "@rilldata/web-common/features/dashboards/url-state/clean-url-params";
 import { arrayOrderedEquals } from "@rilldata/web-common/lib/arrayUtils";
 import {
   TimeComparisonOption,
@@ -55,10 +55,7 @@ export function getCleanedUrlParamsForGoto(
   );
 
   // Clean the url params of any default or empty values.
-  const cleanedUrlParams = stripDefaultOrEmptyUrlParams(
-    stateParams,
-    defaultExploreUrlParams,
-  );
+  const cleanedUrlParams = cleanUrlParams(stateParams, defaultExploreUrlParams);
 
   if (!urlForCompressionCheck) return cleanedUrlParams;
 

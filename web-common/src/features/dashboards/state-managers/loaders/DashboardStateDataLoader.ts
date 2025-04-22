@@ -10,7 +10,6 @@ import { getExploreStateFromYAMLConfig } from "@rilldata/web-common/features/das
 import { getRillDefaultExploreState } from "@rilldata/web-common/features/dashboards/stores/get-rill-default-explore-state";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import { convertURLSearchParamsToExploreState } from "@rilldata/web-common/features/dashboards/url-state/convertURLSearchParamsToExploreState";
-import { createRillDefaultExploreUrlParamsByView } from "@rilldata/web-common/features/dashboards/url-state/get-rill-default-explore-url-params";
 import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import { createQueryServiceMetricsViewTimeRange } from "@rilldata/web-common/runtime-client";

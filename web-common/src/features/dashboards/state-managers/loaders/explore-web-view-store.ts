@@ -186,11 +186,13 @@ function shouldSkipSessionStorage(searchParams: URLSearchParams) {
   // exactly one param is set, but it is not `view`
   const hasSingleNonViewParam =
     searchParams.size === 1 && !searchParams.has(ExploreStateURLParams.WebView);
+
   // exactly 2 params are set and both `view` and `measure` are not set.
   const hasTwoParamsWithoutViewOrMeasure =
     searchParams.size === 2 &&
     !searchParams.has(ExploreStateURLParams.WebView) &&
     !searchParams.has(ExploreStateURLParams.ExpandedMeasure);
+
   // more than 2 params are set.
   const hasMoreThanTwoParams = searchParams.size > 2;
 

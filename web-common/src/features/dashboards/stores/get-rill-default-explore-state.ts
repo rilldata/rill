@@ -48,28 +48,14 @@ export function getRillDefaultExploreState(
       exploreSpec,
       timeRangeSummary,
     ),
+
     ...getRillDefaultExploreViewState(exploreSpec),
 
     selectedComparisonDimension: "",
 
-    tdd: {
-      expandedMeasureName: "",
-      chartType: TDDChart.DEFAULT,
-      pinIndex: -1,
-    },
+    ...getRillDefaultTDDViewState(),
 
-    pivot: {
-      active: false,
-      rows: [],
-      columns: [],
-      sorting: [],
-      expanded: {},
-      columnPage: 1,
-      rowPage: 1,
-      enableComparison: true,
-      activeCell: null,
-      tableMode: "nest",
-    },
+    ...getRillDefaultPivotViewState(),
 
     contextColumnWidths: { ...contextColWidthDefaults },
   };
@@ -224,4 +210,31 @@ export function getDefaultTimeZone(explore: V1ExploreSpec) {
       return getUTCIANA();
     }
   }
+}
+
+function getRillDefaultTDDViewState() {
+  return <Partial<MetricsExplorerEntity>>{
+    tdd: {
+      expandedMeasureName: "",
+      chartType: TDDChart.DEFAULT,
+      pinIndex: -1,
+    },
+  };
+}
+
+function getRillDefaultPivotViewState() {
+  return <Partial<MetricsExplorerEntity>>{
+    pivot: {
+      active: false,
+      rows: [],
+      columns: [],
+      sorting: [],
+      expanded: {},
+      columnPage: 1,
+      rowPage: 1,
+      enableComparison: true,
+      activeCell: null,
+      tableMode: "nest",
+    },
+  };
 }

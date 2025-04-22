@@ -33,7 +33,7 @@ export function getRillDefaultExploreUrlParams(
   );
 }
 
-export function createRillDefaultExploreUrlParamsByView(
+export function createRillDefaultExploreUrlParams(
   validSpecQuery: ReturnType<typeof useExploreValidSpec>,
   fullTimeRangeQuery: ReturnType<typeof useMetricsViewTimeRange>,
 ) {
