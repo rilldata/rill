@@ -15,7 +15,6 @@ import {
 } from "@codemirror/view";
 import { EditorState, Prec } from "@codemirror/state";
 import {
-  syntaxHighlighting,
   indentOnInput,
   bracketMatching,
   foldKeymap,

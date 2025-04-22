@@ -1,6 +1,4 @@
 import chroma from "chroma-js";
-import { createDarkVariation } from "./actions.ts";
-import { TailwindColorSpacing } from "./color-config.ts";
 
 const red = {
   50: chroma.oklch(0.971, 0.013, 17.38),

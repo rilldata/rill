@@ -13,8 +13,6 @@
   import { getExtensionsForFile } from "../../editor/getExtensionsForFile";
   import { FileArtifact } from "../../entity-management/file-artifact";
   import { useAllSourceColumns } from "../../sources/selectors";
-  import { useAllModelColumns } from "../selectors";
-  import { yaml } from "@codemirror/lang-yaml";
 
   const schema: { [table: string]: string[] } = {};
 
@@ -24,7 +22,7 @@
 
   $: ({ instanceId } = $runtime);
 
-  $: ({ remoteContent, fileExtension } = fileArtifact);
+  $: ({ remoteContent } = fileArtifact);
 
   let editor: EditorView;
   let autocompleteCompartment = new Compartment();
