@@ -17,12 +17,13 @@ function generateTailwindVariables() {
 function genColorObject(color: string) {
   return Object.fromEntries(
     TailwindColorSpacing.map((colorNum) => {
-      return [
-        `${colorNum}`,
-        `color-mix(in oklab, var(--color-${color}-${colorNum}) calc(<alpha-value> * 100%), transparent)`,
-      ];
+      return [`${colorNum}`, oklabString(`color-${color}-${colorNum}`)];
     }),
   );
+}
+
+function oklabString(variableName: string) {
+  return `color-mix(in oklab, var(--${variableName}) calc(<alpha-value> * 100%), transparent)`;
 }
 
 export default {
@@ -34,57 +35,56 @@ export default {
   theme: {
     extend: {
       borderColor: {
-        DEFAULT:
-          "color-mix(in oklab, var(--border) calc(<alpha-value> * 100%), transparent)",
+        DEFAULT: oklabString("border"),
       },
       colors: {
-        input:
-          "color-mix(in oklab, var(--input) calc(<alpha-value> * 100%), transparent)",
-        ring: "color-mix(in oklab, var(--ring) calc(<alpha-value> * 100%), transparent)",
-        background: `var(--background)`,
-        foreground:
-          "color-mix(in oklab, var(--foreground) calc(<alpha-value> * 100%), transparent)",
-        surface: "var(--surface)",
-        popover: "var(--popover)",
+        background: oklabString("background"),
+        foreground: oklabString("foreground"),
+        card: {
+          DEFAULT: oklabString("card"),
+          foreground: oklabString("card-foreground"),
+        },
+        popover: {
+          DEFAULT: oklabString("popover"),
+          foreground: oklabString("popover-foreground"),
+        },
         primary: {
-          DEFAULT: `color-mix(in oklab, var(--color-primary-500) calc(<alpha-value> * 100%), transparent)`,
-          foreground: `color-mix(in oklab, var(--primary-foreground) calc(<alpha-value> * 100%), transparent)`,
+          DEFAULT: oklabString("color-primary-500"),
+          foreground: oklabString("color-gray-50"),
           ...genColorObject("primary"),
         },
-        theme: {
-          DEFAULT: `color-mix(in oklab, var(--color-theme-500) calc(<alpha-value> * 100%), transparent)`,
-          foreground: `color-mix(in oklab, var(--theme-foreground) calc(<alpha-value> * 100%), transparent)`,
-          ...genColorObject("theme"),
-        },
-        ...generateTailwindVariables(),
         secondary: {
-          DEFAULT: `color-mix(in oklab, var(--color-secondary-500) calc(<alpha-value> * 100%), transparent)`,
-          foreground: `color-mix(in oklab, var(--secondary-foreground) calc(<alpha-value> * 100%), transparent)`,
+          DEFAULT: oklabString("color-secondary-500"),
+          foreground: oklabString("color-gray-50"),
           ...genColorObject("secondary"),
         },
-        "theme-secondary": {
-          DEFAULT: `color-mix(in oklab, var(--color-theme-secondary-500) calc(<alpha-value> * 100%), transparent)`,
-          foreground: `color-mix(in oklab, var(--secondary-foreground) calc(<alpha-value> * 100%), transparent)`,
-          ...genColorObject("theme-secondary"),
-        },
-        destructive: {
-          DEFAULT: `color-mix(in oklab, var(--destructive) calc(<alpha-value> * 100%), transparent)`,
-          foreground: `color-mix(in oklab, var(--destructive-foreground) calc(<alpha-value> * 100%), transparent)`,
-        },
         muted: {
-          DEFAULT: `color-mix(in oklab, var(--muted) calc(<alpha-value> * 100%), transparent)`,
-          foreground: `color-mix(in oklab, var(--muted-foreground) calc(<alpha-value> * 100%), transparent)`,
-          ...genColorObject("muted"),
+          DEFAULT: oklabString("muted"),
+          foreground: oklabString("muted-foreground"),
         },
         accent: {
-          DEFAULT: `color-mix(in oklab, var(--accent) calc(<alpha-value> * 100%), transparent)`,
-          foreground: `color-mix(in oklab, var(--accent-foreground) calc(<alpha-value> * 100%), transparent)`,
+          DEFAULT: oklabString("accent"),
+          foreground: oklabString("accent-foreground"),
         },
-
-        card: {
-          DEFAULT: `color-mix(in oklab, var(--card) calc(<alpha-value> * 100%), transparent)`,
-          foreground: `color-mix(in oklab, var(--card-foreground) calc(<alpha-value> * 100%), transparent)`,
+        destructive: {
+          DEFAULT: oklabString("destructive"),
+          foreground: oklabString("destructive-foreground"),
         },
+        border: oklabString("border"),
+        input: oklabString("input"),
+        ring: oklabString("ring"),
+        surface: oklabString("surface"),
+        theme: {
+          DEFAULT: oklabString("color-theme-500"),
+          foreground: oklabString("theme-foreground"),
+          ...genColorObject("theme"),
+        },
+        "theme-secondary": {
+          DEFAULT: oklabString("color-theme-secondary-500"),
+          foreground: oklabString("color-gray-50"),
+          ...genColorObject("theme-secondary"),
+        },
+        ...generateTailwindVariables(),
       },
       borderRadius: {
         lg: "var(--radius)",

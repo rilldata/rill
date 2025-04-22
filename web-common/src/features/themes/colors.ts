@@ -1,4 +1,6 @@
 import chroma from "chroma-js";
+import { createDarkVariation } from "./actions.ts";
+import { TailwindColorSpacing } from "./color-config.ts";
 
 const red = {
   50: chroma.oklch(0.971, 0.013, 17.38),
@@ -13,6 +15,7 @@ const red = {
   900: chroma.oklch(0.396, 0.141, 25.723),
   950: chroma.oklch(0.258, 0.092, 26.042),
 };
+
 const orange = {
   50: chroma.oklch(0.98, 0.016, 73.684),
   100: chroma.oklch(0.954, 0.038, 75.164),
@@ -26,6 +29,7 @@ const orange = {
   900: chroma.oklch(0.408, 0.123, 38.172),
   950: chroma.oklch(0.266, 0.079, 36.259),
 };
+
 const amber = {
   50: chroma.oklch(0.987, 0.022, 95.277),
   100: chroma.oklch(0.962, 0.059, 95.617),
@@ -39,6 +43,7 @@ const amber = {
   900: chroma.oklch(0.414, 0.112, 45.904),
   950: chroma.oklch(0.279, 0.077, 45.635),
 };
+
 const yellow = {
   50: chroma.oklch(0.987, 0.026, 102.212),
   100: chroma.oklch(0.973, 0.071, 103.193),
@@ -52,6 +57,7 @@ const yellow = {
   900: chroma.oklch(0.421, 0.095, 57.708),
   950: chroma.oklch(0.286, 0.066, 53.813),
 };
+
 const lime = {
   50: chroma.oklch(0.986, 0.031, 120.757),
   100: chroma.oklch(0.967, 0.067, 122.328),
@@ -65,6 +71,7 @@ const lime = {
   900: chroma.oklch(0.405, 0.101, 131.063),
   950: chroma.oklch(0.274, 0.072, 132.109),
 };
+
 const green = {
   50: chroma.oklch(0.982, 0.018, 155.826),
   100: chroma.oklch(0.962, 0.044, 156.743),
@@ -78,6 +85,7 @@ const green = {
   900: chroma.oklch(0.393, 0.095, 152.535),
   950: chroma.oklch(0.266, 0.065, 152.934),
 };
+
 const emerald = {
   50: chroma.oklch(0.979, 0.021, 166.113),
   100: chroma.oklch(0.95, 0.052, 163.051),
@@ -91,6 +99,7 @@ const emerald = {
   900: chroma.oklch(0.378, 0.077, 168.94),
   950: chroma.oklch(0.262, 0.051, 172.552),
 };
+
 const teal = {
   50: chroma.oklch(0.984, 0.014, 180.72),
   100: chroma.oklch(0.953, 0.051, 180.801),
@@ -104,6 +113,7 @@ const teal = {
   900: chroma.oklch(0.386, 0.063, 188.416),
   950: chroma.oklch(0.277, 0.046, 192.524),
 };
+
 const cyan = {
   50: chroma.oklch(0.984, 0.019, 200.873),
   100: chroma.oklch(0.956, 0.045, 203.388),
@@ -117,6 +127,7 @@ const cyan = {
   900: chroma.oklch(0.398, 0.07, 227.392),
   950: chroma.oklch(0.302, 0.056, 229.695),
 };
+
 const sky = {
   50: chroma.oklch(0.977, 0.013, 236.62),
   100: chroma.oklch(0.951, 0.026, 236.824),
@@ -130,6 +141,7 @@ const sky = {
   900: chroma.oklch(0.391, 0.09, 240.876),
   950: chroma.oklch(0.293, 0.066, 243.157),
 };
+
 const blue = {
   50: chroma.oklch(0.97, 0.014, 254.604),
   100: chroma.oklch(0.932, 0.032, 255.585),
@@ -143,6 +155,7 @@ const blue = {
   900: chroma.oklch(0.379, 0.146, 265.522),
   950: chroma.oklch(0.282, 0.091, 267.935),
 };
+
 const indigo = {
   50: chroma.oklch(0.962, 0.018, 272.314),
   100: chroma.oklch(0.93, 0.034, 272.788),
@@ -156,6 +169,7 @@ const indigo = {
   900: chroma.oklch(0.359, 0.144, 278.697),
   950: chroma.oklch(0.257, 0.09, 281.288),
 };
+
 const violet = {
   50: chroma.oklch(0.969, 0.016, 293.756),
   100: chroma.oklch(0.943, 0.029, 294.588),
@@ -169,6 +183,7 @@ const violet = {
   900: chroma.oklch(0.38, 0.189, 293.745),
   950: chroma.oklch(0.283, 0.141, 291.089),
 };
+
 const purple = {
   50: chroma.oklch(0.977, 0.014, 308.299),
   100: chroma.oklch(0.946, 0.033, 307.174),
@@ -182,6 +197,7 @@ const purple = {
   900: chroma.oklch(0.381, 0.176, 304.987),
   950: chroma.oklch(0.291, 0.149, 302.717),
 };
+
 const fuchsia = {
   50: chroma.oklch(0.977, 0.017, 320.058),
   100: chroma.oklch(0.952, 0.037, 318.852),
@@ -195,6 +211,7 @@ const fuchsia = {
   900: chroma.oklch(0.401, 0.17, 325.612),
   950: chroma.oklch(0.293, 0.136, 325.661),
 };
+
 const pink = {
   50: chroma.oklch(0.971, 0.014, 343.198),
   100: chroma.oklch(0.948, 0.028, 342.258),
@@ -208,6 +225,7 @@ const pink = {
   900: chroma.oklch(0.408, 0.153, 2.432),
   950: chroma.oklch(0.284, 0.109, 3.907),
 };
+
 const rose = {
   50: chroma.oklch(0.969, 0.015, 12.422),
   100: chroma.oklch(0.941, 0.03, 12.58),
@@ -221,6 +239,7 @@ const rose = {
   900: chroma.oklch(0.41, 0.159, 10.272),
   950: chroma.oklch(0.271, 0.105, 12.094),
 };
+
 const slate = {
   50: chroma.oklch(0.984, 0.003, 247.858),
   100: chroma.oklch(0.968, 0.007, 247.896),
@@ -234,6 +253,7 @@ const slate = {
   900: chroma.oklch(0.208, 0.042, 265.755),
   950: chroma.oklch(0.129, 0.042, 264.695),
 };
+
 const gray = {
   50: chroma.oklch(0.985, 0.002, 247.839),
   100: chroma.oklch(0.967, 0.003, 264.542),
@@ -247,6 +267,7 @@ const gray = {
   900: chroma.oklch(0.21, 0.034, 264.665),
   950: chroma.oklch(0.13, 0.028, 261.692),
 };
+
 const zinc = {
   50: chroma.oklch(0.985, 0, 0),
   100: chroma.oklch(0.967, 0.001, 286.375),

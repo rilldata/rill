@@ -1,31 +1,29 @@
-import { TailwindColorSpacing } from "./color-config";
-import type { V1ThemeSpec } from "@rilldata/web-common/runtime-client";
+import { TailwindColorSpacing } from "./color-config.ts";
+import type { V1ThemeSpec } from "../../../../web-common/src/runtime-client/index.ts";
 import chroma, { type Color } from "chroma-js";
-import { allColors } from "./colors";
-import { clamp } from "@rilldata/web-common/lib/clamp";
+import { allColors } from "./colors.ts";
+import { clamp } from "../../../../web-common/src/lib/clamp.ts";
 
-const root = document.documentElement;
-const grays = ["neutral", "stone", "slate", "zinc", "gray"];
+export const BLACK = chroma("black");
+export const WHITE = chroma("white");
+export const MODE = "oklab";
 
-export const contrasts = Object.values(allColors.purple).map((color) => {
-  return chroma.contrast(chroma("white"), color);
-});
+// export function initColors() {
+//   const root = document.documentElement;
+//   Object.entries(allColors).forEach(([colorName, colors]) => {
+//     const scale = createDarkVariation(colorName, Object.values(colors));
 
-export function initColors() {
-  Object.entries(allColors).forEach(([colorName, colors]) => {
-    const scale = createDarkVariation(colorName, Object.values(colors));
+//     scale.forEach((chromaColor, i) => {
+//       root.style.setProperty(
+//         `--color-${colorName}-dark-${TailwindColorSpacing[i]}`,
+//         chromaColor.css("oklch"),
+//       );
+//     });
+//   });
+// }
 
-    scale.forEach((chromaColor, i) => {
-      root.style.setProperty(
-        `--color-${colorName}-dark-${TailwindColorSpacing[i]}`,
-        chromaColor.css("oklch"),
-      );
-    });
-  });
-}
-
-function createDarkVariation(name: string, colors: Color[]) {
-  if (!grays.includes(name)) {
+export function createDarkVariation(name: string, colors: Color[]) {
+  if (!["neutral", "stone", "slate", "zinc", "gray"].includes(name)) {
     return genPal(colors[5]).dark;
   } else {
     const deSat = colors.reverse().map((color) => color.desaturate(20));
@@ -79,10 +77,6 @@ export function findContrast(
 
   return color;
 }
-
-const BLACK = chroma("black");
-const WHITE = chroma("white");
-const MODE = "oklab";
 
 export function genPal(
   refColor: Color,
@@ -191,6 +185,7 @@ export function setVariables(
 }
 
 export function updateThemeVariables(theme: V1ThemeSpec | undefined) {
+  const root = document.documentElement;
   if (theme?.primaryColor) {
     const chromaColor = chroma.rgb(
       (theme.primaryColor.red ?? 1) * 256,
