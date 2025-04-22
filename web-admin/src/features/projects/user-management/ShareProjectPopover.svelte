@@ -5,6 +5,8 @@
     createAdminServiceListProjectMemberUsergroups,
     createAdminServiceListProjectMemberUsers,
     createAdminServiceListUsergroupMemberUsers,
+    createAdminServiceRemoveProjectMemberUsergroup,
+    createAdminServiceAddProjectMemberUsergroup,
   } from "@rilldata/web-admin/client";
   import CopyInviteLinkButton from "@rilldata/web-admin/features/projects/user-management/CopyInviteLinkButton.svelte";
   import UserInviteForm from "@rilldata/web-admin/features/projects/user-management/UserInviteForm.svelte";
@@ -17,6 +19,9 @@
   } from "@rilldata/web-common/components/popover";
   import UsergroupItem from "./UsergroupItem.svelte";
   import UserItem from "./UserItem.svelte";
+  import { useQueryClient } from "@tanstack/svelte-query";
+  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
+  import { getAdminServiceListProjectMemberUsergroupsQueryKey } from "@rilldata/web-admin/client";
 
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import CaretUpIcon from "@rilldata/web-common/components/icons/CaretUpIcon.svelte";
@@ -31,6 +36,12 @@
   let open = false;
   let accessDropdownOpen = false;
   let accessType = "everyone"; // "everyone" or "invite-only"
+
+  const queryClient = useQueryClient();
+  const removeProjectMemberUsergroup =
+    createAdminServiceRemoveProjectMemberUsergroup();
+  const addProjectMemberUsergroup =
+    createAdminServiceAddProjectMemberUsergroup();
 
   $: copyLink = `${$page.url.protocol}//${$page.url.host}/${organization}/${project}`;
 
@@ -74,6 +85,10 @@
   $: projectMemberUsersList = $listProjectMemberUsers.data?.members ?? [];
   $: projectInvitesList = $listProjectInvites.data?.invites ?? [];
 
+  $: hasAutogroupMembers = projectMemberUserGroupsList.some(
+    (group) => group.groupName === "autogroup:members",
+  );
+
   $: hasRegularUserGroups = projectMemberUserGroupsList.some(
     (group) => !group.groupManaged,
   );
@@ -110,23 +125,25 @@
             {/each}
           {/if}
         </div>
-        <div class="mt-2">
-          <div class="text-xs text-gray-500 font-semibold uppercase">
-            General Access
+        {#if hasAutogroupMembers}
+          <div class="mt-2">
+            <div class="text-xs text-gray-500 font-semibold uppercase">
+              General Access
+            </div>
+            <!-- NOTE: Only support "autogroup:members" -->
+            <!-- https://www.notion.so/rilldata/User-Management-Role-Based-Access-Control-RBAC-Enhancements-8d331b29d9b64d87bca066e06ef87f54?pvs=4#1acba33c8f5780f4903bf16510193dd8 -->
+            {#each projectMemberUserGroupsList as group}
+              {#if group.groupName === "autogroup:members"}
+                <AutogroupMembersItem
+                  {organization}
+                  {project}
+                  {group}
+                  avatarName={`Everyone at ${organization}`}
+                />
+              {/if}
+            {/each}
           </div>
-          <!-- NOTE: Only support "autogroup:members" -->
-          <!-- https://www.notion.so/rilldata/User-Management-Role-Based-Access-Control-RBAC-Enhancements-8d331b29d9b64d87bca066e06ef87f54?pvs=4#1acba33c8f5780f4903bf16510193dd8 -->
-          {#each projectMemberUserGroupsList as group}
-            {#if group.groupName === "autogroup:members"}
-              <AutogroupMembersItem
-                {organization}
-                {project}
-                {group}
-                avatarName={`Everyone at ${organization}`}
-              />
-            {/if}
-          {/each}
-        </div>
+        {/if}
       </div>
     </div>
     <div
@@ -167,9 +184,43 @@
           </DropdownMenu.Trigger>
           <DropdownMenu.Content align="end">
             <DropdownMenu.Item
-              on:click={() => {
-                accessType = "invite-only";
-                accessDropdownOpen = false;
+              on:click={async () => {
+                try {
+                  // Find the autogroup:members user group
+                  const autogroup = projectMemberUserGroupsList.find(
+                    (group) => group.groupName === "autogroup:members",
+                  );
+
+                  if (autogroup) {
+                    // Remove the autogroup:members user group
+                    await $removeProjectMemberUsergroup.mutateAsync({
+                      organization,
+                      project,
+                      usergroup: autogroup.groupName,
+                    });
+
+                    // Invalidate the query to refresh the list
+                    await queryClient.invalidateQueries({
+                      queryKey:
+                        getAdminServiceListProjectMemberUsergroupsQueryKey(
+                          organization,
+                          project,
+                        ),
+                    });
+
+                    eventBus.emit("notification", {
+                      message: "Project access changed to invite-only",
+                    });
+                  }
+
+                  accessType = "invite-only";
+                  accessDropdownOpen = false;
+                } catch (error) {
+                  eventBus.emit("notification", {
+                    message: "Error changing project access",
+                    type: "error",
+                  });
+                }
               }}
               class="flex flex-col items-start py-2 data-[highlighted]:bg-gray-100 {accessType ===
               'invite-only'
@@ -190,9 +241,40 @@
               </div>
             </DropdownMenu.Item>
             <DropdownMenu.Item
-              on:click={() => {
-                accessType = "everyone";
-                accessDropdownOpen = false;
+              on:click={async () => {
+                try {
+                  // Add the autogroup:members user group back with the viewer role
+                  // This is the default role for autogroup:members as seen in the tests
+                  await $addProjectMemberUsergroup.mutateAsync({
+                    organization,
+                    project,
+                    usergroup: "autogroup:members",
+                    data: {
+                      role: "viewer", // Default role for autogroup:members
+                    },
+                  });
+
+                  // Invalidate the query to refresh the list
+                  await queryClient.invalidateQueries({
+                    queryKey:
+                      getAdminServiceListProjectMemberUsergroupsQueryKey(
+                        organization,
+                        project,
+                      ),
+                  });
+
+                  eventBus.emit("notification", {
+                    message: "Project access changed to everyone",
+                  });
+
+                  accessType = "everyone";
+                  accessDropdownOpen = false;
+                } catch (error) {
+                  eventBus.emit("notification", {
+                    message: "Error changing project access",
+                    type: "error",
+                  });
+                }
               }}
               class="flex flex-col items-start py-2 data-[highlighted]:bg-gray-100 {accessType ===
               'everyone'
