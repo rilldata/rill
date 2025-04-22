@@ -43,7 +43,7 @@
         {isCurrentUser ? "(You)" : ""}
       </span>
       {#if role === "guest"}
-        <Chip type="guest" label="Guest" compact readOnly>
+        <Chip type="amber" label="Guest" compact readOnly>
           <svelte:fragment slot="body">Guest</svelte:fragment>
         </Chip>
       {/if}
