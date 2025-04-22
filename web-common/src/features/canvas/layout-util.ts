@@ -161,11 +161,11 @@ export function generateArrayRearrangeFunction(transaction: Transaction) {
 
           const destinationRow = newArray[rowIndex];
 
-          if (!sourceRow || !destinationRow) return;
+          if (!sourceRow || !destinationRow) break;
 
           const item = sourceRow.items?.[source.col];
 
-          if (item === undefined) return;
+          if (item === undefined) break;
 
           if (
             sourceRow !== destinationRow &&
