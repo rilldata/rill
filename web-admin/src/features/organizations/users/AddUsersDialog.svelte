@@ -138,13 +138,6 @@
         // Show error notification if any invites failed
         if (failed.length > 0) {
           failedInvites = failed; // Store failed emails
-          eventBus.emit("notification", {
-            type: "error",
-            message:
-              failed.length === 1
-                ? "That user is already a member of this organization"
-                : "Those users are already members of this organization",
-          });
         }
 
         // Close dialog after showing notifications
