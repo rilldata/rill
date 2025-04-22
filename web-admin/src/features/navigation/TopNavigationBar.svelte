@@ -35,6 +35,8 @@
 
   export let createMagicAuthTokens: boolean;
   export let isAdmin: boolean;
+  export let isEditor: boolean;
+  export let isViewer: boolean;
   export let organizationLogoUrl: string | undefined = undefined;
   export let planDisplayName: string | undefined;
 
@@ -189,7 +191,13 @@
       <ViewAsUserChip />
     {/if}
     {#if onProjectPage}
-      <ShareProjectPopover {organization} {project} {isAdmin} />
+      <ShareProjectPopover
+        {organization}
+        {project}
+        {isAdmin}
+        {isEditor}
+        {isViewer}
+      />
     {/if}
     {#if onMetricsExplorerPage && isDashboardValid}
       {#if exploreSpec}

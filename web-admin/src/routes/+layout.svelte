@@ -45,8 +45,6 @@
     url: { pathname },
   } = $page);
 
-  $: console.log("projectPermissions: ", projectPermissions);
-
   $: isAdmin = isProjectAdmin(projectPermissions);
   $: isEditor = isProjectEditor(projectPermissions);
   $: isViewer = isProjectViewer(projectPermissions);
@@ -125,6 +123,8 @@
         <TopNavigationBar
           createMagicAuthTokens={projectPermissions?.createMagicAuthTokens}
           {isAdmin}
+          {isEditor}
+          {isViewer}
           {organizationLogoUrl}
           {planDisplayName}
         />

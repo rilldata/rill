@@ -6,12 +6,12 @@
     V1ProjectMemberUser,
     V1UserInvite,
   } from "@rilldata/web-admin/client";
-
   type User = V1ProjectMemberUser | V1UserInvite;
 
   export let organization: string;
   export let project: string;
   export let user: User;
+  export let canChangeRole: boolean;
 
   $: currentUser = createAdminServiceGetCurrentUser();
 
@@ -37,5 +37,11 @@
     {isCurrentUser}
     pendingAcceptance={isPendingInvite(user)}
   />
-  <UserSetRole {organization} {project} {user} {isCurrentUser} />
+  <UserSetRole
+    {organization}
+    {project}
+    {user}
+    {isCurrentUser}
+    {canChangeRole}
+  />
 </div>

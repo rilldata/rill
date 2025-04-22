@@ -31,6 +31,8 @@
   export let organization: string;
   export let project: string;
   export let isAdmin: boolean;
+  export let isEditor: boolean;
+  export let isViewer: boolean;
 
   let open = false;
   let accessDropdownOpen = false;
@@ -105,6 +107,10 @@
   $: hasRegularUserGroups = projectMemberUserGroupsList.some(
     (group) => !group.groupManaged,
   );
+
+  $: console.log("isAdmin: ", isAdmin);
+  $: console.log("isEditor: ", isEditor);
+  $: console.log("isViewer: ", isViewer);
 </script>
 
 <Popover bind:open>
@@ -117,17 +123,29 @@
         <div class="text-sm font-medium">Share project: {project}</div>
         <div class="grow"></div>
       </div>
-      <UserInviteForm {organization} {project} />
+      {#if !isViewer}
+        <UserInviteForm {organization} {project} />
+      {/if}
       <!-- 52 * 8 = 416px -->
       <div class="flex flex-col gap-y-1 overflow-y-auto max-h-[416px]">
-        <div class="mt-4">
+        <div class={isAdmin ? "mt-4" : ""}>
           <!-- Project Users -->
           {#each sortedProjectMemberUsersList as user}
-            <UserItem {organization} {project} {user} />
+            <UserItem
+              {organization}
+              {project}
+              {user}
+              canChangeRole={isAdmin || isViewer}
+            />
           {/each}
           <!-- Pending Invites -->
           {#each projectInvitesList as user}
-            <UserItem {organization} {project} {user} />
+            <UserItem
+              {organization}
+              {project}
+              {user}
+              canChangeRole={isAdmin || isViewer}
+            />
           {/each}
           <!-- User Groups -->
           {#if hasRegularUserGroups}
