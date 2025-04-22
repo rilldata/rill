@@ -1,8 +1,7 @@
 {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "$id": "https://rilldata.com/schemas/rill.schema.json",
-    "title": "Rill Schema",
-    "$comment": "This base rill schema",
+    "title": "Rill Project Schema",
     "type": "object",
     "if": {
         "required": [
@@ -16,6 +15,140 @@
         "$ref": "#/$defs/rillyaml"
     },
     "$defs": {
+        "rillyaml": {
+            "description": "The rill.yaml file contains metadata about your project.",
+            "type": "object",
+            "properties": {
+                "compiler": {
+                    "type": "string",
+                    "description": "Specifies the parser version to use for compiling resources"
+                },
+                "display_name": {
+                    "type": "string",
+                    "description": "The display name of the project, shown in the upper-left corner of the UI"
+                },
+                "description": {
+                    "type": "string",
+                    "description": "A brief description of the project"
+                },
+                "olap_connector": {
+                    "type": "string",
+                    "description": "Specifies the default OLAP engine for the project. Defaults to duckdb if not set"
+                },
+                "connectors": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "type": {
+                                "type": "string"
+                            },
+                            "name": {
+                                "type": "string"
+                            },
+                            "defaults": {
+                                "type": "object"
+                            }
+                        },
+                        "required": [
+                            "type",
+                            "name"
+                        ],
+                        "additionalProperties": false
+                    }
+                },
+                "env": {
+                    "type": "object",
+                    "description": "Defines key-value variables for templating"
+                },
+                "environment_overrides": {
+                    "type": "object"
+                },
+                "dev": {
+                    "type": "object"
+                },
+                "prod": {
+                    "type": "object"
+                },
+                "models": {
+                    "$ref": "#/$defs/model",
+                    "description": "Defines project-wide default settings for models. Unless overridden, individual models will inherit these defaults"
+                },
+                "metrics_views": {
+                    "$ref": "#/$defs/metrics_view",
+                    "description": "Defines project-wide default settings for metrics_views. Unless overridden, individual metrics_views will inherit these defaults"
+                },
+                "explores": {
+                    "$ref": "#/$defs/explore",
+                    "description": "Defines project-wide default settings for explores. Unless overridden, individual explores will inherit these defaults"
+                },
+                "migrations": {
+                    "$ref": "#/$defs/migration"
+                },
+                "features": {
+                    "oneOf": [
+                        {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "boolean"
+                            }
+                        },
+                        {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        }
+                    ],
+                    "description": "Enables or disables experimental or optional features using key-value pairs, where the key is the feature name and the value is a boolean"
+                },
+                "public_paths": {
+                    "type": "array",
+                    "description": "List of file or directory paths to expose over HTTP. Defaults to ['./public']",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "ignore_paths": {
+                    "type": "array",
+                    "description": "A list of file or directory paths to exclude from parsing. Useful for ignoring extraneous or non-Rill files in the project",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "mock_users": {
+                    "type": "array",
+                    "description": "A list of mock users used to test dashboard security policies within the project",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "email": {
+                                "type": "string",
+                                "description": "The email address of the mock user. This field is required"
+                            },
+                            "name": {
+                                "type": "string",
+                                "description": "The name of the mock user."
+                            },
+                            "admin": {
+                                "type": "boolean",
+                                "description": "Indicates whether the mock user has administrative privileges"
+                            },
+                            "groups": {
+                                "type": "array",
+                                "description": "An array of group names that the mock user is a member of",
+                                "items": {
+                                    "type": "string"
+                                }
+                            }
+                        },
+                        "required": [
+                            "email"
+                        ]
+                    }
+                }
+            }
+        },
         "resource": {
             "type": "object",
             "properties": {
@@ -241,154 +374,47 @@
                 }
             ]
         },
-        "rillyaml": {
-            "type": "object",
-            "properties": {
-                "compiler": {
-                    "type": "string"
-                },
-                "rill_version": {},
-                "display_name": {
-                    "type": "string"
-                },
-                "description": {
-                    "type": "string"
-                },
-                "olap_connector": {
-                    "type": "string"
-                },
-                "connectors": {
-                    "type": "array",
-                    "items": {
-                        "type": "object",
-                        "properties": {
-                            "type": {
-                                "type": "string"
-                            },
-                            "name": {
-                                "type": "string"
-                            },
-                            "defaults": {
-                                "type": "object"
-                            }
-                        },
-                        "required": [
-                            "type",
-                            "name"
-                        ],
-                        "additionalProperties": false
-                    }
-                },
-                "env": {
-                    "type": "object"
-                },
-                "environment_overrides": {
-                    "type": "object"
-                },
-                "dev": {
-                    "type": "object"
-                },
-                "prod": {
-                    "type": "object"
-                },
-                "models": {
-                    "$ref": "#/$defs/model"
-                },
-                "metrics_views": {
-                    "$ref": "#/$defs/metrics_view"
-                },
-                "explores": {
-                    "$ref": "#/$defs/explore"
-                },
-                "migrations": {
-                    "$ref": "#/$defs/migration"
-                },
-                "features": {
-                    "oneOf": [
-                        {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "boolean"
-                            }
-                        },
-                        {
-                            "type": "array",
-                            "items": {
-                                "type": "string"
-                            }
-                        }
-                    ]
-                },
-                "public_paths": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "ignore_paths": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "mock_users": {
-                    "type": "array",
-                    "items": {
-                        "type": "object",
-                        "properties": {
-                            "email": {
-                                "type": "string"
-                            },
-                            "name": {
-                                "type": "string"
-                            },
-                            "admin": {
-                                "type": "boolean"
-                            },
-                            "groups": {
-                                "type": "array",
-                                "items": {
-                                    "type": "string"
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
         "alert": {
             "type": "object",
             "properties": {
                 "display_name": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "Refers to the display name for the alert"
                 },
                 "refresh": {
-                    "$ref": "#/$defs/partial_schedule"
+                    "$ref": "#/$defs/partial_schedule",
+                    "description": "Specifies the refresh schedule that Rill should follow to re-ingest and update the underlying data",
                 },
                 "watermark": {
                     "type": "string",
                     "enum": [
                         "trigger_time",
                         "inherit"
-                    ]
+                    ],
+                    "description": "Specifies how the watermark is determined for incremental processing.\nUse 'trigger_time' to set it at runtime or 'inherit' to use the upstream model's watermark."
                 },
                 "intervals": {
                     "type": "object",
+                    "description": "define the interval of the alert to check",
                     "properties": {
                         "duration": {
-                            "type": "string"
+                            "type": "string",
+                            "description": "a valid ISO8601 duration to define the interval duration"
                         },
                         "limit": {
                             "type": "integer",
+                            "description": "maximum number of intervals to check for on invocation",
                             "minimum": 0
                         },
                         "check_unclosed": {
-                            "type": "boolean"
+                            "type": "boolean",
+                            "description": "boolean, whether unclosed intervals should be checked"
                         }
                     }
                 },
                 "timeout": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "define the timeout of the alert in seconds (optional)."
                 },
                 "data": {
                     "$ref": "#/$defs/partial_data"
@@ -434,22 +460,28 @@
                     ]
                 },
                 "on_recover": {
-                    "type": "boolean"
+                    "type": "boolean",
+                    "description": "Send an alert when a previously failing alert recovers. Defaults to false."
                 },
                 "on_fail": {
-                    "type": "boolean"
+                    "type": "boolean",
+                    "description": "Send an alert when a failure occurs. Defaults to true."
                 },
                 "on_error": {
-                    "type": "boolean"
+                    "type": "boolean",
+                    "description": "Send an alert when an error occurs during evaluation. Defaults to false."
                 },
                 "renotify": {
-                    "type": "boolean"
+                    "type": "boolean",
+                    "description": "Enable repeated notifications for unresolved alerts. Defaults to false."
                 },
                 "renotify_after": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "Defines the re-notification interval for the alert (e.g., '10m', '24h'), equivalent to snooze duration in UI, defaults to 'Off'"
                 },
                 "notify": {
-                    "$ref": "#/$defs/partial_notify"
+                    "$ref": "#/$defs/partial_notify",
+                    "description": "Defines how and where to send notifications. At least one method (email or Slack) is required."
                 },
                 "annotations": {
                     "type": "object",
@@ -513,21 +545,26 @@
             "type": "object",
             "properties": {
                 "display_name": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "Refers to the display name for the canvas"
                 },
                 "banner": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "Refers to the custom banner displayed at the header of an Canvas dashboard"
                 },
                 "max_width": {
                     "type": "integer",
+                    "description": "Max width in pixels of the canvas",
                     "minimum": 0
                 },
                 "gap_x": {
                     "type": "integer",
+                    "description": "Horizontal gap in pixels of the canvas",
                     "minimum": 0
                 },
                 "gap_y": {
                     "type": "integer",
+                    "description": "Vertical gap in pixels of the canvas",
                     "minimum": 0
                 },
                 "theme": {
@@ -539,25 +576,30 @@
                             "type": "object",
                             "additionalProperties": true
                         }
-                    ]
+                    ],
+                    "description": "Name of the theme to use. Only one of theme and embedded_theme can be set."
                 },
                 "allow_custom_time_range": {
-                    "type": "boolean"
+                    "type": "boolean",
+                    "description": "Defaults to true, when set to false it will hide the ability to set a custom time range for the user. "
                 },
                 "time_ranges": {
                     "type": "array",
+                    "description": "Overrides the list of default time range selections available in the dropdown. It can be string or an object with a 'range' and optional 'comparison_offsets'",
                     "items": {
                         "$ref": "#/$defs/partial_explore_time_range"
                     }
                 },
                 "time_zones": {
                     "type": "array",
+                    "description": "Refers to the time zones that should be pinned to the top of the time zone selector. It should be a list of [IANA time zone identifiers](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones)",
                     "items": {
                         "type": "string"
                     }
                 },
                 "filters": {
                     "type": "object",
+                    "description": "Indicates if filters should be enabled for the canvas.",
                     "properties": {
                         "enable": {
                             "type": "boolean"
@@ -567,6 +609,7 @@
                 },
                 "defaults": {
                     "type": "object",
+                    "description": "Preset UI state to show by default",
                     "properties": {
                         "time_range": {
                             "type": "string"
@@ -582,14 +625,17 @@
                 },
                 "variables": {
                     "type": "array",
+                    "description": "Variables that can be used in the canvas",
                     "items": {
                         "$ref": "#/$defs/partial_component_variable"
                     }
                 },
                 "rows": {
                     "type": "array",
+                    "description": "Refers to all of the rows displayed on the Canvas",
                     "items": {
                         "type": "object",
+                        "description": " Refers to each row of components, mulitple items can be listed in a single items",
                         "properties": {
                             "height": {
                                 "type": "string"
@@ -617,7 +663,8 @@
                     }
                 },
                 "security": {
-                    "$ref": "#/$defs/partial_security_policy"
+                    "$ref": "#/$defs/partial_security_policy",
+                    "description": "Security rules to apply for access to the canvas"
                 }
             },
             "required": [
@@ -628,7 +675,8 @@
             "type": "object",
             "properties": {
                 "display_name": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "Refers to the display name for the component"
                 },
                 "description": {
                     "type": "string"
@@ -671,21 +719,27 @@
             "type": "object",
             "properties": {
                 "display_name": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "Refers to the display name for the explore dashboard"
                 },
                 "description": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "Refers to the description of the explore dashboard"
                 },
                 "banner": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "Refers to the custom banner displayed at the header of an explore dashboard"
                 },
                 "metrics_view": {
-                    "type": "string"
+                    "type": "string",
+                    "description": " Refers to the metrics view resource"
                 },
                 "dimensions": {
+                    "description": "can be:\n1. The string '*'\n2. An array of strings\n3. An object with one of: 'regex', 'expr', or 'exclude'",
                     "$ref": "#/$defs/partial_explore_field_selector"
                 },
                 "measures": {
+                    "description": "can be:\n1. The string '*'\n2. An array of strings\n3. An object with one of: 'regex', 'expr', or 'exclude'",
                     "$ref": "#/$defs/partial_explore_field_selector"
                 },
                 "theme": {
@@ -696,42 +750,53 @@
                         {
                             "$ref": "#/$defs/theme"
                         }
-                    ]
+                    ],
+                    "description": "Name of the theme to use. Only one of theme and embedded_theme can be set."
                 },
                 "time_ranges": {
                     "type": "array",
+                    "description": "Overrides the list of default time range selections available in the dropdown. It can be string or an object with a 'range' and optional 'comparison_offsets'",
                     "items": {
                         "$ref": "#/$defs/partial_explore_time_range"
                     }
                 },
                 "time_zones": {
                     "type": "array",
+                    "description": "Refers to the time zones that should be pinned to the top of the time zone selector. It should be a list of [IANA time zone identifiers](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones)",
                     "items": {
                         "type": "string"
                     }
                 },
                 "lock_time_zone": {
-                    "type": "boolean"
+                    "type": "boolean",
+                    "description": "When true, the dashboard will be locked to the first time provided in the time_zones list. When no time_zones are provided, the dashboard will be locked to UTC"
                 },
                 "allow_custom_time_range": {
-                    "type": "boolean"
+                    "type": "boolean",
+                    "description": "Defaults to true, when set to false it will hide the ability to set a custom time range for the user."
                 },
                 "defaults": {
                     "type": "object",
+                    "description": "defines the defaults YAML struct",
                     "properties": {
                         "dimensions": {
+                            "description": "Provides the default dimensions to load on viewing the dashboard",
                             "$ref": "#/$defs/partial_explore_field_selector"
                         },
                         "measures": {
+                            "description": "Provides the default measures to load on viewing the dashboard",
                             "$ref": "#/$defs/partial_explore_field_selector"
                         },
                         "time_range": {
+                            "description": "Refers to the default time range shown when a user initially loads the dashboard. The value must be either a valid [ISO 8601 duration](https://en.wikipedia.org/wiki/ISO_8601#Durations) (for example, PT12H for 12 hours, P1M for 1 month, or P26W for 26 weeks) or one of the [Rill ISO 8601 extensions](https://docs.rilldata.com/reference/rill-iso-extensions#extensions)",
                             "type": "string"
                         },
                         "comparison_mode": {
+                            "description": "Controls how to compare current data with historical or categorical baselines. Options: 'none' (no comparison), 'time' (compares with past based on default_time_range), 'dimension' (compares based on comparison_dimension values)",
                             "type": "string"
                         },
                         "comparison_dimension": {
+                            "description": "for dimension mode, specify the comparison dimension by name",
                             "type": "string"
                         }
                     },
@@ -747,6 +812,7 @@
                     "additionalProperties": false
                 },
                 "security": {
+                    "description": "Security rules to apply for access to the explore dashboard",
                     "$ref": "#/$defs/partial_security_policy"
                 }
             }
@@ -755,66 +821,85 @@
             "type": "object",
             "properties": {
                 "display_name": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "Refers to the display name for the metrics view"
                 },
                 "description": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "Refers to the description for the metrics view"
                 },
                 "model": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "Refers to the model powering the dashboard (either model or table is required)"
                 },
                 "database": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "Refers to the database to use in the OLAP engine (to be used in conjunction with table). Otherwise, will use the default database or schema if not specified"
                 },
                 "database_schema": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "Refers to the schema to use in the OLAP engine (to be used in conjunction with table). Otherwise, will use the default database or schema if not specified"
                 },
                 "table": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "Refers to the table powering the dashboard, should be used instead of model for dashboards create from external OLAP tables (either table or model is required)"
                 },
                 "timeseries": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "Refers to the timestamp column from your model that will underlie x-axis data in the line charts. If not specified, the line charts will not appear"
                 },
                 "watermark": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "A SQL expression that tells us the max timestamp that the metrics are considered valid for. Usually does not need to be overwritten"
                 },
                 "smallest_time_grain": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "Refers to the smallest time granularity the user is allowed to view. The valid values are: millisecond, second, minute, hour, day, week, month, quarter, year"
                 },
                 "first_day_of_week": {
-                    "type": "integer"
+                    "type": "integer",
+                    "description": "Refers to the first day of the week for time grain aggregation (for example, Sunday instead of Monday). The valid values are 1 through 7 where Monday=1 and Sunday=7"
                 },
                 "first_month_of_year": {
-                    "type": "integer"
+                    "type": "integer",
+                    "description": "Refers to the first month of the year for time grain aggregation. The valid values are 1 through 12 where January=1 and December=12"
                 },
                 "dimensions": {
                     "type": "array",
+                    "description": "Relates to exploring segments or dimensions of your data and filtering the dashboard",
                     "items": {
                         "type": "object",
                         "properties": {
                             "name": {
-                                "type": "string"
+                                "type": "string",
+                                "description": "a stable identifier for the dimension"
                             },
                             "display_name": {
-                                "type": "string"
+                                "type": "string",
+                                "description": "a display name for your dimension"
                             },
                             "description": {
-                                "type": "string"
+                                "type": "string",
+                                "description": "a freeform text description of the dimension"
                             },
                             "column": {
-                                "type": "string"
+                                "type": "string",
+                                "description": "a categorical column"
                             },
                             "expression": {
-                                "type": "string"
+                                "type": "string",
+                                "description": "a non-aggregate expression such as string_split(domain, '.'). One of column and expression is required but cannot have both at the same time"
                             },
                             "unnest": {
-                                "type": "boolean"
+                                "type": "boolean",
+                                "description": "if true, allows multi-valued dimension to be unnested (such as lists) and filters will automatically switch to \"contains\" instead of exact match "
                             },
                             "uri": {
                                 "type": [
                                     "string",
                                     "boolean"
-                                ]
+                                ],
+                                "description": "enable if your dimension is a clickable URL to enable single click navigation (boolean or valid SQL expression) "
                             }
                         },
                         "anyOf": [
@@ -833,23 +918,28 @@
                 },
                 "measures": {
                     "type": "array",
+                    "description": "Used to define the numeric aggregates of columns from your data model",
                     "items": {
                         "type": "object",
                         "properties": {
                             "name": {
-                                "type": "string"
+                                "type": "string",
+                                "description": "a stable identifier for the measure"
                             },
                             "display_name": {
-                                "type": "string"
+                                "type": "string",
+                                "description": "the display name of your measure."
                             },
                             "description": {
-                                "type": "string"
+                                "type": "string",
+                                "description": "a freeform text description of the dimension"
                             },
                             "type": {
                                 "type": "string"
                             },
                             "expression": {
-                                "type": "string"
+                                "type": "string",
+                                "description": "a combination of operators and functions for aggregations"
                             },
                             "window": {
                                 "description": "A measure window can be defined as a keyword string (e.g., 'time' or 'all') or an object with detailed window configuration.",
@@ -870,10 +960,12 @@
                                                 "type": "boolean"
                                             },
                                             "order": {
-                                                "$ref": "#/$defs/partial_metrics_view_field_selectors"
+                                                "$ref": "#/$defs/partial_metrics_view_field_selectors",
+                                                "description": "to order the window"
                                             },
                                             "frame": {
-                                                "type": "string"
+                                                "type": "string",
+                                                "description": "sets the frame of your window"
                                             }
                                         },
                                         "additionalProperties": false
@@ -881,33 +973,41 @@
                                 ]
                             },
                             "per": {
-                                "$ref": "#/$defs/partial_metrics_view_field_selectors"
+                                "$ref": "#/$defs/partial_metrics_view_field_selectors",
+                                "description": "for per dimensions"
                             },
                             "requires": {
-                                "$ref": "#/$defs/partial_metrics_view_field_selectors"
+                                "$ref": "#/$defs/partial_metrics_view_field_selectors",
+                                "description": "using an available measure or dimension in your metrics view to set a required parameter, cannot be used with simple measures"
                             },
                             "format_preset": {
-                                "type": "string"
+                                "type": "string",
+                                "description": "Controls the formatting of this measure using a predefined preset. Measures cannot have both `format_preset` and `format_d3`. If neither is supplied, the measure will be formatted using the `humanize` preset by default. Available options:\n- `humanize`: Round numbers into thousands (K), millions (M), billions (B), etc.\n- `none`: Raw output.\n- `currency_usd`: Round to 2 decimal points with a dollar sign ($).\n- `currency_eur`: Round to 2 decimal points with a euro sign (€).\n- `percentage`: Convert a rate into a percentage with a % sign.\n- `interval_ms`: Convert milliseconds into human-readable durations like hours (h), days (d), years (y), etc. (optional)"
                             },
                             "format_d3": {
-                                "type": "string"
+                                "type": "string",
+                                "description": "Controls the formatting of this measure using a [d3-format](https://d3js.org/d3-format) string. If an invalid format string is supplied, the measure will fall back to `format_preset: humanize`. A measure cannot have both `format_preset` and `format_d3`. If neither is provided, the humanize preset is used by default. Example: `format_d3: \".2f\"` formats using fixed-point notation with two decimal places. Example: `format_d3: \",.2r\"` formats using grouped thousands with two significant digits. (optional)"
                             },
                             "format_d3_locale": {
                                 "type": "object",
+                                "description": "locale configuration passed through to D3, enabling changing the currency symbol among other things. For details, see the docs for D3's [formatLocale](https://d3js.org/d3-format#formatLocale)",
                                 "additionalProperties": true
                             },
                             "valid_percent_of_total": {
-                                "type": "boolean"
+                                "type": "boolean",
+                                "description": "a boolean indicating whether percent-of-total values should be rendered for this measure "
                             },
                             "treat_nulls_as": {
-                                "type": "string"
+                                "type": "string",
+                                "description": "used to configure what value to fill in for missing time buckets. This also works generally as COALESCING over non empty time buckets."
                             }
                         }
                     },
                     "minItems": 1
                 },
                 "security": {
-                    "$ref": "#/$defs/partial_security_policy"
+                    "$ref": "#/$defs/partial_security_policy",
+                    "description": "Defines a security policy for the dashboard"
                 }
             }
         },
@@ -924,44 +1024,60 @@
             "type": "object",
             "properties": {
                 "refresh": {
-                    "$ref": "#/$defs/partial_schedule"
+                    "$ref": "#/$defs/partial_schedule",
+                    "description": "Specifies the refresh schedule that Rill should follow to re-ingest and update the underlying model data "
                 },
                 "timeout": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "The maximum time to wait for model ingestion"
                 },
                 "incremental": {
-                    "type": "boolean"
+                    "type": "boolean",
+                    "description": "whether incremental modeling is required (optional)"
                 },
-                "state": {
-                    "$ref": "#/$defs/partial_data"
-                },
-                "partitions": {
-                    "$ref": "#/$defs/partial_data"
-                },
+                "anyOf": [
+                    {
+                        "state": {
+                            "$ref": "#/$defs/partial_data",
+                            "description": "Refers to the explicitly defined state of your model, cannot be used with partitions (optional)"
+                        }
+                    },
+                    {
+                        "partitions": {
+                            "$ref": "#/$defs/partial_data",
+                            "description": "Refers to the how your data is partitioned, cannot be used with state. (optional)"
+                        }
+                    }
+                ],
                 "partitions_watermark": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "Refers to a customizable timestamp that can be set to check if an object has been updated (optional)."
                 },
                 "partitions_concurrency": {
                     "type": "integer",
-                    "minimum": 0
+                    "description": "Refers to the number of concurrent partitions that can be read at the same time (optional)."
                 },
                 "stage": {
                     "type": "object",
                     "properties": {
                         "connector": {
-                            "type": "string"
+                            "type": "string",
+                            "description": "Refers to the connector type for the staging table"
                         }
                     },
                     "required": [
                         "connector"
                     ],
+                    "description": "in the case of staging models, where an input source does not support direct write to the output and a staging table is required",
                     "additionalProperties": true
                 },
                 "output": {
                     "type": "object",
+                    "description": "to define the properties of output",
                     "properties": {
                         "connector": {
-                            "type": "string"
+                            "type": "string",
+                            "description": "Refers to the connector type for the output table"
                         }
                     },
                     "required": [
@@ -970,54 +1086,55 @@
                     "additionalProperties": true
                 },
                 "materialize": {
-                    "type": "boolean"
+                    "type": "boolean",
+                    "description": "models will be materialized in olap"
                 },
                 "defined_as_source": {
                     "type": "boolean"
                 }
-            },
-            "required": [
-                "type"
-            ]
+            }
         },
         "report": {
             "type": "object",
             "properties": {
                 "display_name": {
-                    "type": "string"
+                    "type": "string",
+                    "description": " the display name of your report."
                 },
                 "refresh": {
-                    "$ref": "#/$defs/partial_schedule"
+                    "$ref": "#/$defs/partial_schedule",
+                    "description": "Specifies the refresh schedule that Rill should follow to re-ingest and update the underlying data"
                 },
                 "watermark": {
                     "type": "string",
                     "enum": [
                         "trigger_time",
                         "inherit"
-                    ]
+                    ],
+                    "description": "Specifies how the watermark is determined for incremental processing.\nUse 'trigger_time' to set it at runtime or 'inherit' to use the upstream model's watermark."
                 },
                 "intervals": {
                     "type": "object",
+                    "description": "define the interval of the alert to check",
                     "properties": {
                         "duration": {
-                            "type": "string"
+                            "type": "string",
+                            "description": "a valid ISO8601 duration to define the interval duration"
                         },
                         "limit": {
-                            "type": "integer"
+                            "type": "integer",
+                            "description": "maximum number of intervals to check for on invocation",
+                            "minimum": 0
                         },
                         "check_unclosed": {
-                            "type": "boolean"
+                            "type": "boolean",
+                            "description": "boolean, whether unclosed intervals should be checked"
                         }
-                    },
-                    "required": [
-                        "duration",
-                        "limit",
-                        "check_unclosed"
-                    ],
-                    "additionalProperties": false
+                    }
                 },
                 "timeout": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "define the timeout of the alert in seconds (optional)."
                 },
                 "query": {
                     "type": "object",
@@ -1042,6 +1159,7 @@
                 },
                 "export": {
                     "type": "object",
+                    "description": "to define the export properties",
                     "properties": {
                         "format": {
                             "type": "string",
@@ -1049,7 +1167,8 @@
                                 "csv",
                                 "xlsx",
                                 "parquet"
-                            ]
+                            ],
+                            "description": "format for exported report can be csv,xlsx or parquet"
                         },
                         "limit": {
                             "type": "integer"
@@ -1061,7 +1180,8 @@
                     ]
                 },
                 "notify": {
-                    "$ref": "#/$defs/partial_notify"
+                    "$ref": "#/$defs/partial_notify",
+                    "description": "Defines how and where to send notifications. At least one method (email or Slack) is required."
                 },
                 "annotations": {
                     "type": "object",
@@ -1136,14 +1256,17 @@
         },
         "partial_data": {
             "type": "object",
+            "description": "defines logic used to evaluate the resource using various parameters",
             "oneOf": [
                 {
                     "properties": {
                         "sql": {
-                            "type": "string"
+                            "type": "string",
+                            "description": "Raw SQL query to run against existing models in the project."
                         },
                         "connector": {
-                            "type": "string"
+                            "type": "string",
+                            "description": "specifies the connector to use when running SQL or glob queries."
                         }
                     },
                     "required": [
@@ -1154,7 +1277,8 @@
                     "properties": {
                         "metrics_sql": {
                             "type": "string"
-                        }
+                        },
+                        "description": "SQL query that targets a metrics view in the project"
                     },
                     "required": [
                         "metrics_sql"
@@ -1163,10 +1287,12 @@
                 {
                     "properties": {
                         "api": {
-                            "type": "string"
+                            "type": "string",
+                            "description": "Name of a custom API defined in the project."
                         },
                         "args": {
                             "type": "object",
+                            "description": "Arguments to pass to the custom API.",
                             "additionalProperties": true
                         }
                     },
@@ -1185,7 +1311,12 @@
                                     "type": "object",
                                     "additionalProperties": true
                                 }
-                            ]
+                            ],
+                            "description": "Defines the file path or pattern to query from the specified connector."
+                        },
+                        "connector": {
+                            "type": "string",
+                            "description": "Specifies the connector to use with the glob input."
                         }
                     },
                     "required": [
@@ -1196,6 +1327,13 @@
                     "properties": {
                         "resource_status": {
                             "type": "object",
+                            "description": "Based on resource status",
+                            "properties": {
+                                "where_error": {
+                                    "type": "boolean",
+                                    "description": "Indicates whether the condition should trigger when the resource is in an error state."
+                                }
+                            },
                             "additionalProperties": true
                         }
                     },
@@ -1206,7 +1344,6 @@
             ]
         },
         "partial_explore_field_selector": {
-            "description": "FieldSelector can be:\n1. The string '*'\n2. An array of strings\n3. An object with one of: 'regex', 'expr', or 'exclude'",
             "oneOf": [
                 {
                     "type": "string",
@@ -1225,12 +1362,14 @@
                     "description": "Advanced matching using regex, DuckDB expression, or exclusion",
                     "properties": {
                         "regex": {
-                            "type": "string"
+                            "type": "string",
+                            "description": "Select dimensions using a regular expression"
                         },
                         "expr": {
                             "type": "string"
                         },
                         "exclude": {
+                            "description": "Select all dimensions except those listed here",
                             "$ref": "#/$defs/partial_explore_field_selector"
                         }
                     },
@@ -1256,20 +1395,21 @@
             ]
         },
         "partial_explore_time_range": {
-            "description": "ExploreTimeRange can be a string or an object with a 'range' and optional 'comparison_offsets'.",
             "oneOf": [
                 {
                     "type": "string",
-                    "description": "Short form for setting just the time range."
+                    "description": "a valid [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601#Durations) duration or one of the [Rill ISO 8601 extensions](https://docs.rilldata.com/reference/rill-iso-extensions#extensions) extensions for the selection"
                 },
                 {
                     "type": "object",
                     "properties": {
                         "range": {
-                            "type": "string"
+                            "type": "string",
+                            "description": "a valid [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601#Durations) duration or one of the [Rill ISO 8601 extensions](https://docs.rilldata.com/reference/rill-iso-extensions#extensions) extensions for the selection"
                         },
                         "comparison_offsets": {
                             "type": "array",
+                            "description": "list of time comparison options for this time range selection (optional). Must be one of the [Rill ISO 8601 extensions](https://docs.rilldata.com/reference/rill-iso-extensions#extensions)",
                             "items": {
                                 "oneOf": [
                                     {
@@ -1286,10 +1426,6 @@
                                                 "type": "string"
                                             }
                                         },
-                                        "required": [
-                                            "offset",
-                                            "range"
-                                        ],
                                         "additionalProperties": false
                                     }
                                 ]
@@ -1363,9 +1499,11 @@
             "properties": {
                 "email": {
                     "type": "object",
+                    "description": "Send notifications via email.",
                     "properties": {
                         "recipients": {
                             "type": "array",
+                            "description": "An array of email addresses to notify.",
                             "items": {
                                 "type": "string"
                             },
@@ -1379,9 +1517,11 @@
                 },
                 "slack": {
                     "type": "object",
+                    "description": "Send notifications via Slack.",
                     "properties": {
                         "users": {
                             "type": "array",
+                            "description": "An array of Slack user IDs to notify.",
                             "items": {
                                 "type": "string"
                             },
@@ -1389,6 +1529,7 @@
                         },
                         "channels": {
                             "type": "array",
+                            "description": "An array of Slack channel IDs to notify.",
                             "items": {
                                 "type": "string"
                             },
@@ -1396,6 +1537,7 @@
                         },
                         "webhooks": {
                             "type": "array",
+                            "description": "An array of Slack webhook URLs to send notifications to.",
                             "items": {
                                 "type": "string"
                             },
@@ -1439,25 +1581,28 @@
             "type": "object",
             "properties": {
                 "ref_update": {
-                    "type": "boolean"
+                    "type": "boolean",
+                    "description": "If true, allows the resource to run when a dependency updates."
                 },
                 "cron": {
                     "type": "string",
-                    "description": "Cron expression to schedule the alert"
+                    "description": "A cron expression that defines the execution schedule"
                 },
                 "every": {
                     "type": "string",
-                    "description": "Interval duration (e.g. '1h', '30m')"
+                    "description": "Run at a fixed interval using a Go duration string (e.g., '1h', '30m', '24h'). See: https://pkg.go.dev/time#ParseDuration"
                 },
                 "time_zone": {
                     "type": "string",
-                    "description": "Time zone identifier, e.g. 'UTC' or 'America/Los_Angeles'"
+                    "description": "Time zone to interpret the schedule in (e.g., 'UTC', 'America/Los_Angeles')."
                 },
                 "disable": {
-                    "type": "boolean"
+                    "type": "boolean",
+                    "description": "If true, disables the resource without deleting it."
                 },
                 "run_in_dev": {
-                    "type": "boolean"
+                    "type": "boolean",
+                    "description": "If true, allows the schedule to run in development mode."
                 }
             }
         },
@@ -1473,18 +1618,21 @@
                             "type": "boolean"
                         }
                     ],
-                    "description": "Expression that controls general access. Can be a boolean or a string expression."
+                    "description": "Expression indicating if the user should be granted access to the dashboard. If not defined, it will resolve to false and the dashboard won't be accessible to anyone. Needs to be a valid SQL expression that evaluates to a boolean."
                 },
                 "row_filter": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "SQL expression to filter the underlying model by. Can leverage templated user attributes to customize the filter for the requesting user. Needs to be a valid SQL expression that can be injected into a WHERE clause"
                 },
                 "include": {
                     "type": "array",
+                    "description": " List of dimension or measure names to include in the dashboard. If include is defined all other dimensions and measures are excluded",
                     "items": {
                         "type": "object",
                         "properties": {
                             "if": {
-                                "type": "string"
+                                "type": "string",
+                                "description": "Expression to decide if the column should be included or not. It can leverage templated user attributes. Needs to be a valid SQL expression that evaluates to a boolean"
                             },
                             "names": {
                                 "anyOf": [
@@ -1500,7 +1648,8 @@
                                             "*"
                                         ]
                                     }
-                                ]
+                                ],
+                                "description": "List of fields to include. Should match the name of one of the dashboard's dimensions or measures"
                             }
                         },
                         "required": [
@@ -1511,11 +1660,13 @@
                 },
                 "exclude": {
                     "type": "array",
+                    "description": "List of dimension or measure names to exclude from the dashboard. If exclude is defined all other dimensions and measures are included",
                     "items": {
                         "type": "object",
                         "properties": {
                             "if": {
-                                "type": "string"
+                                "type": "string",
+                                "description": "Expression to decide if the column should be excluded or not. It can leverage templated user attributes. Needs to be a valid SQL expression that evaluates to a boolean"
                             },
                             "names": {
                                 "anyOf": [
@@ -1531,7 +1682,8 @@
                                             "*"
                                         ]
                                     }
-                                ]
+                                ],
+                                "description": "List of fields to exclude. Should match the name of one of the dashboard's dimensions or measures"
                             }
                         },
                         "required": [
