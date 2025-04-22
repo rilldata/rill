@@ -49,10 +49,17 @@
 
   function handleDrop() {
     if (draggedItem && $ghostIndex !== null) {
-      const temp = [...items];
-      temp.splice($ghostIndex, 0, draggedItem);
-      items = temp;
-      onUpdate(items);
+      if (!items.includes(draggedItem)) {
+        const temp = [...items];
+        temp.splice($ghostIndex, 0, draggedItem);
+        items = temp;
+        onUpdate(items);
+      } else {
+        console.warn(
+          "Prevented duplicate addition of item:",
+          displayMap[draggedItem]?.label || draggedItem,
+        );
+      }
     }
     isDragging = false;
     draggedItem = null;
