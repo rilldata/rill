@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { selectedDimensionValuesV2 } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
+  import { selectedDimensionValues } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import type {
     V1Expression,
@@ -108,7 +108,7 @@
               {parentElement}
               {suppressTooltip}
               {timeControlsReady}
-              selectedValues={selectedDimensionValuesV2(
+              selectedValues={selectedDimensionValues(
                 $runtime.instanceId,
                 [metricsViewName],
                 $dashboardStore.whereFilter,
