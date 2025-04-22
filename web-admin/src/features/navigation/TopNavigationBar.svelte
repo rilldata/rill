@@ -189,7 +189,7 @@
       <ViewAsUserChip />
     {/if}
     {#if onProjectPage && manageProjectMembers}
-      <ShareProjectPopover {organization} {project} />
+      <ShareProjectPopover {organization} {project} {manageProjectMembers} />
     {/if}
     {#if onMetricsExplorerPage && isDashboardValid}
       {#if exploreSpec}
