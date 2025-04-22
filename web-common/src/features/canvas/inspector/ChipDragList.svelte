@@ -18,6 +18,10 @@
   let draggedItemWidth = 0;
 
   function handleMouseDown(e: MouseEvent, item: string, index: number) {
+    // No-op if the target is a chip remove button
+    const target = e.target as HTMLElement;
+    if (target.closest('[aria-label="Remove"]')) return;
+
     e.preventDefault();
     const dragItem = e.currentTarget as HTMLElement;
     if (!dragItem) return;
