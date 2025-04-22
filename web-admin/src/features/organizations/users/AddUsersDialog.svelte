@@ -40,31 +40,27 @@
     newRole: string,
     isSuperUser: boolean = false,
   ) {
-    try {
-      await $addOrganizationMemberUser.mutateAsync({
-        organization: organization,
-        data: {
-          email: newEmail,
-          role: newRole,
-          superuserForceAccess: isSuperUser,
-        },
-      });
+    await $addOrganizationMemberUser.mutateAsync({
+      organization: organization,
+      data: {
+        email: newEmail,
+        role: newRole,
+        superuserForceAccess: isSuperUser,
+      },
+    });
 
-      await queryClient.invalidateQueries({
-        queryKey:
-          getAdminServiceListOrganizationMemberUsersQueryKey(organization),
-      });
+    await queryClient.invalidateQueries({
+      queryKey:
+        getAdminServiceListOrganizationMemberUsersQueryKey(organization),
+    });
 
-      await queryClient.invalidateQueries({
-        queryKey: getAdminServiceListOrganizationInvitesQueryKey(organization),
-      });
+    await queryClient.invalidateQueries({
+      queryKey: getAdminServiceListOrganizationInvitesQueryKey(organization),
+    });
 
-      email = "";
-      role = "";
-      isSuperUser = false;
-    } catch (error) {
-      throw error;
-    }
+    email = "";
+    role = "";
+    isSuperUser = false;
   }
 
   const formId = "add-user-form";
