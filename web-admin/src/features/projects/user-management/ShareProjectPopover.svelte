@@ -213,6 +213,7 @@
 
                   accessType = "invite-only";
                   accessDropdownOpen = false;
+                  // eslint-disable-next-line @typescript-eslint/no-unused-vars
                 } catch (_) {
                   eventBus.emit("notification", {
                     message: "Error changing project access",
@@ -267,6 +268,7 @@
 
                   accessType = "everyone";
                   accessDropdownOpen = false;
+                  // eslint-disable-next-line @typescript-eslint/no-unused-vars
                 } catch (_) {
                   eventBus.emit("notification", {
                     message: "Error changing project access",
