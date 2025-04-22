@@ -138,7 +138,7 @@
             <Button
               type="secondary"
               class="flex flex-row items- gap-2"
-              forcedStyle="min-height: 28px !important; height: 28px !important;"
+              forcedStyle="min-height: 28px !important; height: 28px !important; border-color: #D1D5DB !important;"
             >
               {#if accessType === "everyone"}
                 <div
@@ -149,7 +149,7 @@
                   >
                 </div>
               {:else}
-                <Lock size="12px" />
+                <Lock size="18px" />
               {/if}
               <span class="text-sm font-medium text-gray-900">
                 {#if accessType === "everyone"}
@@ -171,7 +171,10 @@
                 accessType = "invite-only";
                 accessDropdownOpen = false;
               }}
-              class="flex flex-col items-start py-2"
+              class="flex flex-col items-start py-2 data-[highlighted]:bg-gray-100 {accessType ===
+              'invite-only'
+                ? 'bg-gray-50'
+                : ''}"
             >
               <div class="flex items-start gap-2">
                 <Lock size="20px" color="#374151" />
@@ -191,7 +194,10 @@
                 accessType = "everyone";
                 accessDropdownOpen = false;
               }}
-              class="flex flex-col items-start py-2"
+              class="flex flex-col items-start py-2 data-[highlighted]:bg-gray-100 {accessType ===
+              'everyone'
+                ? 'bg-gray-50'
+                : ''}"
             >
               <div class="flex items-start gap-2">
                 <div
