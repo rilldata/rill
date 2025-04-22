@@ -4,6 +4,7 @@ import {
   createInExpression,
   createLikeExpression,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
+import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import {
   createQueryServiceMetricsViewAggregation,
   V1BuiltinMeasure,
@@ -57,6 +58,7 @@ export function useDimensionSearch(
       {
         query: { enabled },
       },
+      queryClient,
     ),
   );
 
@@ -116,6 +118,7 @@ export function useAllSearchResultsCount(
       {
         query: { enabled },
       },
+      queryClient,
     ),
   );
 

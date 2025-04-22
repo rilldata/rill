@@ -37,7 +37,7 @@
     prepareLeaderboardItemData,
   } from "./leaderboard-utils";
   import { valueColumn, COMPARISON_COLUMN_WIDTH } from "./leaderboard-widths";
-  import type { selectedDimensionValuesV2 } from "../state-managers/selectors/dimension-filters";
+  import type { selectedDimensionValues } from "../state-managers/selectors/dimension-filters";
   import { getMeasuresForDimensionOrLeaderboardDisplay } from "../state-managers/selectors/dashboard-queries";
 
   const gutterWidth = 24;
@@ -45,7 +45,7 @@
   export let dimension: MetricsViewSpecDimension;
   export let timeRange: V1TimeRange;
   export let comparisonTimeRange: V1TimeRange | undefined;
-  export let selectedValues: ReturnType<typeof selectedDimensionValuesV2>;
+  export let selectedValues: ReturnType<typeof selectedDimensionValues>;
   export let instanceId: string;
   export let whereFilter: V1Expression;
   export let dimensionThresholdFilters: DimensionThresholdFilter[];
