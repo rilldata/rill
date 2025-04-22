@@ -78,7 +78,7 @@ func (s *Server) ResolveCanvas(ctx context.Context, req *runtimev1.ResolveCanvas
 				if errors.Is(err, drivers.ErrResourceNotFound) {
 					return nil, status.Errorf(codes.Internal, "component %q in valid spec not found", item.Component)
 				}
-				return nil, err
+				return nil, status.Errorf(codes.Internal, "component %q in valid spec not found", item.Component)
 			}
 
 			// Resolve the renderer properties in the valid_spec.
@@ -141,6 +141,32 @@ func (s *Server) ResolveCanvas(ctx context.Context, req *runtimev1.ResolveCanvas
 
 		// Add to map.
 		metricsViews[mvName] = mv
+	}
+
+	// Validate all metrics views have consistent first_day_of_week or first_month_of_year
+	// This ensures that time-based aggregations across different metrics views are consistent
+	if len(metricsViews) > 0 {
+		var first bool
+		var firstDayOfWeek uint32
+		var firstMonthOfYear uint32
+		var firstViewName string
+
+		for mvName, mv := range metricsViews {
+			mvSpec := mv.GetMetricsView().State.ValidSpec
+			if mvSpec == nil {
+				return nil, status.Errorf(codes.Internal, "metrics view %q in valid spec not found", mvName)
+			}
+			if first {
+				if firstDayOfWeek != mvSpec.FirstDayOfWeek || firstMonthOfYear != mvSpec.FirstMonthOfYear {
+					return nil, status.Errorf(codes.InvalidArgument, "metrics views %q and %q have inconsistent time settings", firstViewName, mvName)
+				}
+			} else {
+				first = true
+				firstDayOfWeek = mvSpec.FirstDayOfWeek
+				firstMonthOfYear = mvSpec.FirstMonthOfYear
+				firstViewName = mvName
+			}
+		}
 	}
 
 	// Return the response

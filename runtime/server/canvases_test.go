@@ -83,6 +83,119 @@ rows:
 	require.Equal(t, "m1", res.ReferencedMetricsViews["mv1"].GetMetricsView().State.ValidSpec.Model)
 }
 
+func TestResolveCanvas_ConsistentTimeSettings(t *testing.T) {
+	// Test case 1: Metrics views with consistent time settings
+	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		Files: map[string]string{
+			"rill.yaml": "",
+			// Model
+			"m1.sql": `SELECT 'US' AS country`,
+			// Metrics views with consistent time settings
+			"mv1.yaml": `
+type: metrics_view
+version: 1
+model: m1
+dimensions:
+- column: country
+measures:
+- expression: COUNT(*)
+first_day_of_week: 2
+first_month_of_year: 4
+`,
+			"mv2.yaml": `
+type: metrics_view
+version: 1
+model: m1
+dimensions:
+- column: country
+measures:
+- expression: COUNT(*)
+first_day_of_week: 2
+first_month_of_year: 4
+`,
+			// Canvas that references both metrics views
+			"c1.yaml": `
+type: canvas
+rows:
+- items:
+  - kpi:
+      metrics_view: mv1
+- items:
+  - kpi:
+      metrics_view: mv2
+`,
+		},
+	})
+	testruntime.RequireReconcileState(t, rt, instanceID, 7, 0, 0)
+
+	server, err := server.NewServer(context.Background(), &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient())
+	require.NoError(t, err)
+
+	// Should succeed because time settings are consistent
+	res, err := server.ResolveCanvas(testCtx(), &runtimev1.ResolveCanvasRequest{
+		InstanceId: instanceID,
+		Canvas:     "c1",
+		Args:       must(structpb.NewStruct(map[string]any{})),
+	})
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	require.Len(t, res.ReferencedMetricsViews, 2)
+}
+
+func TestResolveCanvas_InconsistentTimeSettings(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		Files: map[string]string{
+			"rill.yaml": "",
+			"m1.sql":    `SELECT 'US' AS country`,
+			"mv1.yaml": `
+type: metrics_view
+version: 1
+model: m1
+dimensions:
+- column: country
+measures:
+- expression: COUNT(*)
+first_day_of_week: 2
+first_month_of_year: 4
+`,
+			"mv2.yaml": `
+type: metrics_view
+version: 1
+model: m1
+dimensions:
+- column: country
+measures:
+- expression: COUNT(*)
+first_day_of_week: 3  # Different day of week
+first_month_of_year: 4
+`,
+			"c1.yaml": `
+type: canvas
+rows:
+- items:
+  - kpi:
+      metrics_view: mv1
+- items:
+  - kpi:
+      metrics_view: mv2
+`,
+		},
+	})
+	testruntime.RequireReconcileState(t, rt, instanceID, 7, 0, 0)
+
+	server, err := server.NewServer(context.Background(), &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient())
+	require.NoError(t, err)
+
+	// Should fail because time settings are inconsistent
+	_, err = server.ResolveCanvas(testCtx(), &runtimev1.ResolveCanvasRequest{
+		InstanceId: instanceID,
+		Canvas:     "c1",
+		Args:       must(structpb.NewStruct(map[string]any{})),
+	})
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "inconsistent time settings")
+}
+
 func must[T any](v T, err error) T {
 	if err != nil {
 		panic(err)
