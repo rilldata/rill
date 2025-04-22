@@ -383,7 +383,7 @@
                 },
                 "refresh": {
                     "$ref": "#/$defs/partial_schedule",
-                    "description": "Specifies the refresh schedule that Rill should follow to re-ingest and update the underlying data",
+                    "description": "Specifies the refresh schedule that Rill should follow to re-ingest and update the underlying data"
                 },
                 "watermark": {
                     "type": "string",
@@ -635,7 +635,7 @@
                     "description": "Refers to all of the rows displayed on the Canvas",
                     "items": {
                         "type": "object",
-                        "description": " Refers to each row of components, mulitple items can be listed in a single items",
+                        "description": "Refers to each row of components, mulitple items can be listed in a single items",
                         "properties": {
                             "height": {
                                 "type": "string"
@@ -732,7 +732,7 @@
                 },
                 "metrics_view": {
                     "type": "string",
-                    "description": " Refers to the metrics view resource"
+                    "description": "Refers to the metrics view resource"
                 },
                 "dimensions": {
                     "description": "can be:\n1. The string '*'\n2. An array of strings\n3. An object with one of: 'regex', 'expr', or 'exclude'",
@@ -1099,7 +1099,7 @@
             "properties": {
                 "display_name": {
                     "type": "string",
-                    "description": " the display name of your report."
+                    "description": "the display name of your report."
                 },
                 "refresh": {
                     "$ref": "#/$defs/partial_schedule",
@@ -1626,7 +1626,7 @@
                 },
                 "include": {
                     "type": "array",
-                    "description": " List of dimension or measure names to include in the dashboard. If include is defined all other dimensions and measures are excluded",
+                    "description": "List of dimension or measure names to include in the dashboard. If include is defined all other dimensions and measures are excluded",
                     "items": {
                         "type": "object",
                         "properties": {
