@@ -4,7 +4,7 @@ import { fileURLToPath } from "url";
 import { allColors } from "./colors.ts";
 import { createDarkVariation } from "./actions.ts";
 import { TailwindColorSpacing } from "./color-config.ts";
-import { exec } from "child_process";
+import { execFile } from "child_process";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -62,13 +62,17 @@ function generateCSSBlock(): string {
 const cssContent = header + generateCSSBlock();
 fs.writeFileSync(outputPath, cssContent);
 
-exec(`npx prettier --write ${outputPath}`, (error, stdout, stderr) => {
-  if (error || stderr) {
-    console.error(`Error running Prettier: ${error?.message || stderr}`);
-    return;
-  }
+execFile(
+  "npx",
+  ["prettier", "--write", outputPath],
+  (error, stdout, stderr) => {
+    if (error || stderr) {
+      console.error(`Error running Prettier: ${error?.message || stderr}`);
+      return;
+    }
 
-  console.log(`Prettier ran successfully: ${stdout}`);
-});
+    console.log(`Prettier ran successfully: ${stdout}`);
+  },
+);
 
 console.log(`CSS file generated at ${outputPath}`);
