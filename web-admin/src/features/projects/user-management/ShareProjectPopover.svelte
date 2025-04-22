@@ -135,7 +135,7 @@
               {organization}
               {project}
               {user}
-              canChangeRole={isAdmin || isViewer}
+              canChangeRole={isAdmin || isEditor}
             />
           {/each}
           <!-- Pending Invites -->
@@ -144,7 +144,7 @@
               {organization}
               {project}
               {user}
-              canChangeRole={isAdmin || isViewer}
+              canChangeRole={isAdmin || isEditor}
             />
           {/each}
           <!-- User Groups -->

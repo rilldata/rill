@@ -4,7 +4,6 @@
     createAdminServiceSetProjectMemberUserRole,
     getAdminServiceListProjectInvitesQueryKey,
     getAdminServiceListProjectMemberUsersQueryKey,
-    createAdminServiceListProjectMemberUsers,
   } from "@rilldata/web-admin/client";
   import type {
     V1ProjectMemberUser,
@@ -22,27 +21,30 @@
   export let organization: string;
   export let project: string;
   export let user: User;
+  export let role: string;
   export let isCurrentUser = false;
   export let canChangeRole: boolean;
 
   let isOpen = false;
 
+  $: console.log("role: ", role);
+
   const queryClient = useQueryClient();
-  const listProjectMemberUsers = createAdminServiceListProjectMemberUsers(
-    organization,
-    project,
-    undefined,
-    {
-      query: {
-        refetchOnMount: true,
-        refetchOnWindowFocus: true,
-      },
-    },
-  );
+  // const listProjectMemberUsers = createAdminServiceListProjectMemberUsers(
+  //   organization,
+  //   project,
+  //   undefined,
+  //   {
+  //     query: {
+  //       refetchOnMount: true,
+  //       refetchOnWindowFocus: true,
+  //     },
+  //   },
+  // );
 
   $: setProjectMemberUserRole = createAdminServiceSetProjectMemberUserRole();
   $: removeProjectMemberUser = createAdminServiceRemoveProjectMemberUser();
-  $: projectMemberUsersList = $listProjectMemberUsers.data?.members ?? [];
+  // $: projectMemberUsersList = $listProjectMemberUsers.data?.members ?? [];
 
   function getUserEmail(user: User): string {
     if ("userEmail" in user) return user.userEmail;
@@ -85,7 +87,6 @@
         message: "User role updated",
       });
     } catch (error) {
-      console.error("Error updating user role", error);
       eventBus.emit("notification", {
         message: "Error updating user role",
         type: "error",
@@ -143,13 +144,15 @@
       {/if}
     </DropdownMenu.Trigger>
     <DropdownMenu.Content align="start" strategy="fixed">
-      <DropdownMenu.CheckboxItem
-        class="font-normal flex items-center"
-        checked={getUserRole(user) === "admin"}
-        on:click={() => handleSetRole(getUserEmail(user), "admin")}
-      >
-        <span>Admin</span>
-      </DropdownMenu.CheckboxItem>
+      {#if role === "admin"}
+        <DropdownMenu.CheckboxItem
+          class="font-normal flex items-center"
+          checked={getUserRole(user) === "admin"}
+          on:click={() => handleSetRole(getUserEmail(user), "admin")}
+        >
+          <span>Admin</span>
+        </DropdownMenu.CheckboxItem>
+      {/if}
 
       <DropdownMenu.CheckboxItem
         class="font-normal flex items-center"

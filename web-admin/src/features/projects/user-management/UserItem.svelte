@@ -26,6 +26,7 @@
   $: name = isProjectMemberUser(user) ? user.userName : user.email;
   $: email = isProjectMemberUser(user) ? user.userEmail : user.email;
   $: photoUrl = isProjectMemberUser(user) ? user.userPhotoUrl : null;
+  $: role = isProjectMemberUser(user) ? user.roleName : user.role;
   $: isCurrentUser = email === $currentUser.data?.user.email;
 </script>
 
@@ -41,6 +42,7 @@
     {organization}
     {project}
     {user}
+    {role}
     {isCurrentUser}
     {canChangeRole}
   />
