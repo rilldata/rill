@@ -219,7 +219,8 @@
         column={columnIndex}
         row={rowIndex}
         maxColumns={itemCount}
-        allowDrop={activelyDragging && itemCount < 4}
+        allowDrop={activelyDragging &&
+          (itemCount < 4 || dragComponent?.pathInYAML?.[1] === rowIndex)}
         {onDrop}
       />
 

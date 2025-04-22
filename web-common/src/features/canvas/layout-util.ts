@@ -152,30 +152,37 @@ export function generateArrayRearrangeFunction(transaction: Transaction) {
 
         case "move": {
           const { source, destination, insertRow } = op;
-
-          const rowIndex = destination.row;
           const sourceRow = newArray[source.row];
+          const rowIndex = destination.row;
+
           if (insertRow) {
             newArray.splice(rowIndex, 0, { items: [] } as unknown as R);
           }
 
           const destinationRow = newArray[rowIndex];
 
-          if (!sourceRow || !destinationRow) break;
+          if (!sourceRow || !destinationRow) return;
 
-          const itemCount = destinationRow.items?.length ?? 0;
+          const item = sourceRow.items?.[source.col];
 
-          if (itemCount >= 4) {
+          if (item === undefined) return;
+
+          if (
+            sourceRow !== destinationRow &&
+            (destinationRow.items?.length ?? 0) >= 4
+          ) {
             throw new Error("Maximum number of items reached");
           }
 
-          const item = sourceRow?.items?.[source.col];
-
-          if (item === undefined) break;
-
           sourceRow.items?.splice(source.col, 1);
 
-          destinationRow.items?.splice(destination.col, 0, item);
+          const insertIndex =
+            sourceRow === destinationRow && destination.col > source.col
+              ? destination.col - 1
+              : destination.col;
+
+          destinationRow.items?.splice(insertIndex, 0, item);
+
           touchedRows[source.row] = true;
           touchedRows[rowIndex] = true;
 
