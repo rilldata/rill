@@ -14,7 +14,7 @@ Rill supports connecting to an existing Pinot cluster and using it as an OLAP en
 ## Configuring Rill Developer with Pinot
 
 When using Rill for local development, there are a few options to configure Rill to enable Pinot as an OLAP engine:
-1. Connect to an OLAP engine via Add Data. This will automatically create the `druid.yaml` file in your `connectors` folder and populate the `.env` file with `connector.druid.password` or `connector.druid.dsn` depending on which you select in the UI. 
+1. Connect to an OLAP engine via Add Data. This will automatically create the `pinot.yaml` file in your `connectors` folder and populate the `.env` file with `connector.pinot.password` or `connector.pinot.dsn` depending on which you select in the UI. 
 
 <img src = '/img/reference/olap-engines/pinot/pinot-parameters.png' class='rounded-gif' />
 <br />
