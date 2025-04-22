@@ -18,6 +18,9 @@ export function generateVLHeatmapSpec(
   const spec = createSingleLayerBaseSpec("rect");
 
   const vegaConfig = createConfig(config, {
+    legend: {
+      orient: "bottom",
+    },
     axis: { grid: true, tickBand: "extent" },
     axisX: {
       grid: true,
