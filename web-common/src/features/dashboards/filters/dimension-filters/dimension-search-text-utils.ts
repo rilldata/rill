@@ -22,3 +22,8 @@ export function splitDimensionSearchText(searchText: string) {
   }
   return values;
 }
+
+export function mergeDimensionSearchValues(values: string[]) {
+  const someValueHasComma = values.some((value) => value.includes(","));
+  return someValueHasComma ? values.join("\n") : values.join(",");
+}
