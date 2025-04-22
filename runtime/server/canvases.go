@@ -78,7 +78,7 @@ func (s *Server) ResolveCanvas(ctx context.Context, req *runtimev1.ResolveCanvas
 				if errors.Is(err, drivers.ErrResourceNotFound) {
 					return nil, status.Errorf(codes.Internal, "component %q in valid spec not found", item.Component)
 				}
-				return nil, status.Errorf(codes.Internal, "component %q in valid spec not found", item.Component)
+				return nil, err
 			}
 
 			// Resolve the renderer properties in the valid_spec.
