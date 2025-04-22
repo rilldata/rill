@@ -18,7 +18,7 @@ import { derived, readable } from "svelte/store";
 import type { AtLeast } from "../types";
 import type { DashboardDataSources } from "./types";
 
-export const selectedDimensionValuesV2 = (
+export const selectedDimensionValues = (
   instanceId: string,
   metricsViewNames: string[],
   whereFilter: V1Expression | undefined,
@@ -83,17 +83,17 @@ export const selectedDimensionValuesV2 = (
   });
 };
 
-export const useSelectedCompareDimensionValues = (ctx: StateManagers) => {
+export const useSelectedValuesForCompareDimension = (ctx: StateManagers) => {
   return derived(
     [ctx.runtime, ctx.metricsViewName, ctx.dashboardStore],
     ([runtime, metricsViewName, exploreState], set) =>
-      selectedDimensionValuesV2(
+      selectedDimensionValues(
         runtime.instanceId,
         [metricsViewName],
         exploreState.whereFilter,
         exploreState.selectedComparisonDimension ?? "",
       ).subscribe(set),
-  ) as ReturnType<typeof selectedDimensionValuesV2>;
+  ) as ReturnType<typeof selectedDimensionValues>;
 };
 
 export const isFilterExcludeMode = (

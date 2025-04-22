@@ -5,7 +5,7 @@
    * Create a table with the selected dimension and measures
    * to be displayed in explore
    */
-  import { selectedDimensionValuesV2 } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
+  import { selectedDimensionValues } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import {
@@ -64,7 +64,7 @@
 
   $: ({ instanceId } = $runtime);
 
-  $: selectedValues = selectedDimensionValuesV2(
+  $: selectedValues = selectedDimensionValues(
     $runtime.instanceId,
     [metricsViewName],
     $dashboardStore.whereFilter,

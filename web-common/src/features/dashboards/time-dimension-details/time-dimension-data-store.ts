@@ -1,5 +1,5 @@
 import { createSparkline } from "@rilldata/web-common/components/data-graphic/marks/sparkline";
-import { useSelectedCompareDimensionValues } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
+import { useSelectedValuesForCompareDimension } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import {
@@ -369,7 +369,7 @@ export function createTimeDimensionDataStore(
       useTimeControlStore(ctx),
       useTimeSeriesDataStore(ctx),
       useDimensionTableData(ctx),
-      useSelectedCompareDimensionValues(ctx),
+      useSelectedValuesForCompareDimension(ctx),
     ],
     ([
       dashboardStore,
