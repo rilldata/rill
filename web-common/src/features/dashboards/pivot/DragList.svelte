@@ -279,6 +279,7 @@
     item={dragChip}
     position={dragStart}
     removable={isDropLocation}
+    on:release={() => dragDataStore.set(null)}
   />
 {/if}
 

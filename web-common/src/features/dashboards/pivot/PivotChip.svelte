@@ -14,6 +14,7 @@
   export let grab = false;
   export let slideDuration = 150;
   export let active = false;
+  export let fullWidth = false;
 
   const dispatch = createEventDispatcher();
 </script>
@@ -32,6 +33,7 @@
     {active}
     {slideDuration}
     {removable}
+    {fullWidth}
     supressTooltip
     on:mousedown
     on:click
