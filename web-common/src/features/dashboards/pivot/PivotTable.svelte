@@ -183,12 +183,7 @@
   };
 
   function onCellClick(e: MouseEvent) {
-    if (
-      !canShowDataViewer ||
-      !setPivotActiveCell ||
-      !(e.target instanceof HTMLElement)
-    )
-      return;
+    if (!(e.target instanceof HTMLElement)) return;
 
     const rowId = e.target.dataset.rowid;
     const columnId = e.target.dataset.columnid;
@@ -196,11 +191,12 @@
 
     if (rowId === undefined || columnId === undefined) return;
 
-    const row = rows[Number(rowId)];
+    const row = $table.getRow(rowId);
+    if (!row) return;
 
     if (rowHeader) {
       if (row.getCanExpand()) row.getToggleExpandedHandler()();
-    } else {
+    } else if (setPivotActiveCell && canShowDataViewer) {
       setPivotActiveCell(rowId, columnId);
     }
   }
