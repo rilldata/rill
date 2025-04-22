@@ -14,33 +14,30 @@
   export let organization: string;
   export let project: string;
   export let avatarName: string;
+  export let isAdmin: boolean;
 
   let isHovered = false;
 
-  // NOTE: Editor: not allowed to list user group members
+  // NOTE: Editor: "not allowed to list user group members"
   $: listUsergroupMemberUsers = createAdminServiceListUsergroupMemberUsers(
     organization,
     group.groupName,
     undefined,
     {
       query: {
+        enabled: isAdmin,
         refetchOnMount: true,
         refetchOnWindowFocus: true,
       },
     },
   );
 
-  $: userGroupMemberUsers = $listUsergroupMemberUsers.data?.members ?? [];
+  $: userGroupMemberUsers = $listUsergroupMemberUsers?.data?.members ?? [];
   $: userGroupMemberUsersCount = userGroupMemberUsers?.length ?? 0;
 </script>
 
 {#if group}
-  <Tooltip
-    location="right"
-    alignment="middle"
-    distance={8}
-    suppress={userGroupMemberUsers.length === 0}
-  >
+  <Tooltip location="right" alignment="middle" distance={8} suppress={!isAdmin}>
     <div
       role="button"
       tabindex="0"

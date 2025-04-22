@@ -146,6 +146,7 @@
                   {project}
                   {group}
                   avatarName={`Everyone at ${organization}`}
+                  {isAdmin}
                 />
               {/if}
             {/each}
