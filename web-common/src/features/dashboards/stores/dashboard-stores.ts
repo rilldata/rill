@@ -152,8 +152,9 @@ function syncDimensions(
     metricsExplorer.visibleDimensions = [...dimensionsSet];
   } else {
     // remove any visible dimensions that doesn't exist anymore
-    metricsExplorer.visibleDimensions =
-      metricsExplorer.visibleDimensions.filter((d) => dimensionsSet.has(d));
+    metricsExplorer.visibleDimensions = metricsExplorer.visibleDimensions
+      ? metricsExplorer.visibleDimensions.filter((d) => dimensionsSet.has(d))
+      : [];
   }
 }
 

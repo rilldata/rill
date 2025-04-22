@@ -2118,6 +2118,14 @@ export class ExploreSpec extends Message<ExploreSpec> {
    */
   allowCustomTimeRange = false;
 
+  /**
+   * When true, it indicates that the explore was defined in a metrics view.
+   * This currently happens for legacy metrics views (that don't have `version: 1`), which also emits explores.
+   *
+   * @generated from field: bool defined_in_metrics_view = 21;
+   */
+  definedInMetricsView = false;
+
   constructor(data?: PartialMessage<ExploreSpec>) {
     super();
     proto3.util.initPartial(data, this);
@@ -2143,6 +2151,7 @@ export class ExploreSpec extends Message<ExploreSpec> {
     { no: 18, name: "banner", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 19, name: "lock_time_zone", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 20, name: "allow_custom_time_range", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 21, name: "defined_in_metrics_view", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ExploreSpec {
