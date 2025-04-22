@@ -17,6 +17,7 @@
 
   let isHovered = false;
 
+  // NOTE: Editor: not allowed to list user group members
   $: listUsergroupMemberUsers = createAdminServiceListUsergroupMemberUsers(
     organization,
     group.groupName,
@@ -34,7 +35,12 @@
 </script>
 
 {#if group}
-  <Tooltip location="right" alignment="middle" distance={8}>
+  <Tooltip
+    location="right"
+    alignment="middle"
+    distance={8}
+    suppress={userGroupMemberUsers.length === 0}
+  >
     <div
       role="button"
       tabindex="0"

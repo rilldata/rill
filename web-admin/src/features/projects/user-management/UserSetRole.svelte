@@ -4,6 +4,8 @@
     createAdminServiceSetProjectMemberUserRole,
     getAdminServiceListProjectInvitesQueryKey,
     getAdminServiceListProjectMemberUsersQueryKey,
+    createAdminServiceGetCurrentUser,
+    createAdminServiceListProjectMemberUsers,
   } from "@rilldata/web-admin/client";
   import type {
     V1ProjectMemberUser,
@@ -22,14 +24,26 @@
   export let project: string;
   export let user: User;
   export let isCurrentUser = false;
-  export let pendingAcceptance: boolean = false;
 
   let isOpen = false;
 
   const queryClient = useQueryClient();
+  const currentUser = createAdminServiceGetCurrentUser();
+  const listProjectMemberUsers = createAdminServiceListProjectMemberUsers(
+    organization,
+    project,
+    undefined,
+    {
+      query: {
+        refetchOnMount: true,
+        refetchOnWindowFocus: true,
+      },
+    },
+  );
 
   $: setProjectMemberUserRole = createAdminServiceSetProjectMemberUserRole();
   $: removeProjectMemberUser = createAdminServiceRemoveProjectMemberUser();
+  $: projectMemberUsersList = $listProjectMemberUsers.data?.members ?? [];
 
   function getUserEmail(user: User): string {
     if ("userEmail" in user) return user.userEmail;
@@ -42,6 +56,27 @@
     if ("roleName" in user) return user.roleName;
     return "";
   }
+
+  function isPendingInvite(user: User): boolean {
+    return "invitedBy" in user && user.invitedBy !== undefined;
+  }
+
+  $: isCurrentUserEditor =
+    $currentUser.data?.user?.email &&
+    projectMemberUsersList?.find(
+      (u) => u.userEmail === $currentUser.data?.user?.email,
+    )?.roleName === "editor";
+
+  $: isCurrentUserAdmin =
+    $currentUser.data?.user?.email &&
+    projectMemberUsersList?.find(
+      (u) => u.userEmail === $currentUser.data?.user?.email,
+    )?.roleName === "admin";
+
+  $: isTargetUserAdmin = getUserRole(user) === "admin";
+
+  $: canManageUser =
+    !isCurrentUserEditor || !isTargetUserAdmin || isPendingInvite(user);
 
   async function handleSetRole(email: string, role: string) {
     try {
@@ -115,7 +150,7 @@
   }
 </script>
 
-{#if !isCurrentUser && !pendingAcceptance}
+{#if canManageUser}
   <DropdownMenu.Root bind:open={isOpen}>
     <DropdownMenu.Trigger
       class="w-18 flex flex-row gap-1 items-center rounded-sm mr-[10px] {isOpen
@@ -130,40 +165,35 @@
       {/if}
     </DropdownMenu.Trigger>
     <DropdownMenu.Content align="start">
-      <DropdownMenu.CheckboxItem
-        class="font-normal flex items-center"
-        checked={getUserRole(user) === "admin"}
-        on:click={() => {
-          handleSetRole(getUserEmail(user), "admin");
-        }}
-      >
-        <span>Admin</span>
-      </DropdownMenu.CheckboxItem>
+      {#if isCurrentUserAdmin}
+        <DropdownMenu.CheckboxItem
+          class="font-normal flex items-center"
+          checked={getUserRole(user) === "admin"}
+          on:click={() => handleSetRole(getUserEmail(user), "admin")}
+        >
+          <span>Admin</span>
+        </DropdownMenu.CheckboxItem>
+      {/if}
       <DropdownMenu.CheckboxItem
         class="font-normal flex items-center"
         checked={getUserRole(user) === "editor"}
-        on:click={() => {
-          handleSetRole(getUserEmail(user), "editor");
-        }}
+        on:click={() => handleSetRole(getUserEmail(user), "editor")}
       >
         <span>Editor</span>
       </DropdownMenu.CheckboxItem>
       <DropdownMenu.CheckboxItem
         class="font-normal flex items-center"
         checked={getUserRole(user) === "viewer"}
-        on:click={() => {
-          handleSetRole(getUserEmail(user), "viewer");
-        }}
+        on:click={() => handleSetRole(getUserEmail(user), "viewer")}
       >
         <span>Viewer</span>
       </DropdownMenu.CheckboxItem>
+
       {#if !isCurrentUser}
         <DropdownMenu.Separator />
         <DropdownMenu.Item
           class="font-normal flex items-center"
-          on:click={() => {
-            handleRemove(getUserEmail(user));
-          }}
+          on:click={() => handleRemove(getUserEmail(user))}
         >
           <span class="ml-6 text-red-600">Remove</span>
         </DropdownMenu.Item>

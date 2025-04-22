@@ -188,7 +188,7 @@
     {#if $viewAsUserStore}
       <ViewAsUserChip />
     {/if}
-    {#if onProjectPage && manageProjectMembers}
+    {#if onProjectPage}
       <ShareProjectPopover {organization} {project} {manageProjectMembers} />
     {/if}
     {#if onMetricsExplorerPage && isDashboardValid}

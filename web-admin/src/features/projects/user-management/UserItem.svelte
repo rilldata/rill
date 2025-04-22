@@ -6,7 +6,6 @@
     V1ProjectMemberUser,
     V1UserInvite,
   } from "@rilldata/web-admin/client";
-  import { capitalize } from "@rilldata/web-common/components/table/utils";
 
   type User = V1ProjectMemberUser | V1UserInvite;
 
@@ -27,7 +26,6 @@
   $: name = isProjectMemberUser(user) ? user.userName : user.email;
   $: email = isProjectMemberUser(user) ? user.userEmail : user.email;
   $: photoUrl = isProjectMemberUser(user) ? user.userPhotoUrl : null;
-  $: roleName = isProjectMemberUser(user) ? user.roleName : user.role;
   $: isCurrentUser = email === $currentUser.data?.user.email;
 </script>
 
@@ -39,19 +37,5 @@
     {isCurrentUser}
     pendingAcceptance={isPendingInvite(user)}
   />
-  {#if isProjectMemberUser(user)}
-    <UserSetRole
-      {organization}
-      {project}
-      {user}
-      {isCurrentUser}
-      pendingAcceptance={isPendingInvite(user)}
-    />
-  {:else}
-    <div
-      class="w-18 flex flex-row gap-1 items-center rounded-sm px-2 py-1 mr-[10px]"
-    >
-      <span>{capitalize(roleName)}</span>
-    </div>
-  {/if}
+  <UserSetRole {organization} {project} {user} {isCurrentUser} />
 </div>

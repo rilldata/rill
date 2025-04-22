@@ -6,6 +6,7 @@
     createAdminServiceListProjectMemberUsers,
     createAdminServiceRemoveProjectMemberUsergroup,
     createAdminServiceAddProjectMemberUsergroup,
+    createAdminServiceGetCurrentUser,
   } from "@rilldata/web-admin/client";
   import CopyInviteLinkButton from "@rilldata/web-admin/features/projects/user-management/CopyInviteLinkButton.svelte";
   import UserInviteForm from "@rilldata/web-admin/features/projects/user-management/UserInviteForm.svelte";
@@ -33,13 +34,14 @@
 
   let open = false;
   let accessDropdownOpen = false;
-  let accessType = "everyone"; // "everyone" or "invite-only"
+  let accessType: "everyone" | "invite-only" = "everyone";
 
   const queryClient = useQueryClient();
   const removeProjectMemberUsergroup =
     createAdminServiceRemoveProjectMemberUsergroup();
   const addProjectMemberUsergroup =
     createAdminServiceAddProjectMemberUsergroup();
+  const currentUser = createAdminServiceGetCurrentUser();
 
   $: copyLink = `${$page.url.protocol}//${$page.url.host}/${organization}/${project}`;
 
@@ -83,6 +85,13 @@
   $: projectMemberUsersList = $listProjectMemberUsers.data?.members ?? [];
   $: projectInvitesList = $listProjectInvites.data?.invites ?? [];
 
+  // Sort the list to prioritize the current user
+  $: sortedProjectMemberUsersList = projectMemberUsersList.sort((a, b) => {
+    if (a.userEmail === $currentUser.data?.user?.email) return -1;
+    if (b.userEmail === $currentUser.data?.user?.email) return 1;
+    return 0;
+  });
+
   $: hasAutogroupMembers = projectMemberUserGroupsList.some(
     (group) => group.groupName === "autogroup:members",
   );
@@ -107,7 +116,7 @@
       <div class="flex flex-col gap-y-1 overflow-y-auto max-h-[416px]">
         <div class="mt-4">
           <!-- Project Users -->
-          {#each projectMemberUsersList as user}
+          {#each sortedProjectMemberUsersList as user}
             <UserItem {organization} {project} {user} />
           {/each}
           <!-- Pending Invites -->
