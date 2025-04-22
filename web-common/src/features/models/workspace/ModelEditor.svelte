@@ -13,6 +13,7 @@
   import { getExtensionsForFile } from "../../editor/getExtensionsForFile";
   import { FileArtifact } from "../../entity-management/file-artifact";
   import { useAllSourceColumns } from "../../sources/selectors";
+  import { useAllModelColumns } from "../selectors";
 
   const schema: { [table: string]: string[] } = {};
 
