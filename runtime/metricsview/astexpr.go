@@ -19,19 +19,6 @@ func (ast *AST) sqlForExpression(e *Expression, n *SelectNode, pseudoHaving, vis
 		out:          &strings.Builder{},
 	}
 
-	dictMeta := make(map[string]*lookupMeta)
-	for _, dim := range ast.metricsView.Dimensions {
-		if dim.LookupTable != "" {
-			dictMeta[dim.Name] = &lookupMeta{
-				table:    dim.LookupTable,
-				keyExpr:  dim.Column,
-				keyCol:   dim.LookupKeyColumn,
-				valueCol: dim.LookupValueColumn,
-			}
-		}
-	}
-	b.lookupMeta = dictMeta
-
 	err := b.writeExpression(e)
 	if err != nil {
 		return "", nil, err
@@ -47,7 +34,6 @@ type sqlExprBuilder struct {
 	visible      bool
 	out          *strings.Builder
 	args         []any
-	lookupMeta   map[string]*lookupMeta
 }
 
 // writeExpression writes the SQL expression for the given expression.
@@ -72,7 +58,7 @@ func (b *sqlExprBuilder) writeExpression(e *Expression) error {
 }
 
 func (b *sqlExprBuilder) writeName(name string) error {
-	expr, unnest, err := b.sqlForName(name)
+	expr, unnest, _, err := b.sqlForName(name)
 	if err != nil {
 		return err
 	}
@@ -206,7 +192,7 @@ func (b *sqlExprBuilder) writeBinaryCondition(exprs []*Expression, op Operator) 
 
 	// Check there isn't an unnest on the right side
 	if right.Name != "" {
-		_, unnest, err := b.sqlForName(right.Name)
+		_, unnest, _, err := b.sqlForName(right.Name)
 		if err != nil {
 			return err
 		}
@@ -217,15 +203,15 @@ func (b *sqlExprBuilder) writeBinaryCondition(exprs []*Expression, op Operator) 
 
 	// Handle unnest on the left side
 	if left.Name != "" {
-		leftExpr, unnest, err := b.sqlForName(left.Name)
+		leftExpr, unnest, lookup, err := b.sqlForName(left.Name)
 		if err != nil {
 			return err
 		}
 
-		// If not unnested, write the expression as-is
+		// If not unnested, write the expression as-is or if its a lookup rewrite as per dialect
 		if !unnest {
-			if lm, ok := b.lookupMeta[left.Name]; ok {
-				leftExpr = fmt.Sprintf("%s IN (SELECT %s FROM dictionary(%s) WHERE %s ", b.ast.dialect.EscapeIdentifier(lm.keyExpr), b.ast.dialect.EscapeIdentifier(lm.keyCol), b.ast.dialect.EscapeIdentifier(lm.table), b.ast.dialect.EscapeIdentifier(lm.valueCol))
+			if lookup != nil {
+				leftExpr = fmt.Sprintf("%s IN (SELECT %s FROM dictionary(%s) WHERE %s ", b.ast.dialect.EscapeIdentifier(lookup.keyExpr), b.ast.dialect.EscapeIdentifier(lookup.keyCol), b.ast.dialect.EscapeIdentifier(lookup.table), b.ast.dialect.EscapeIdentifier(lookup.valueCol))
 				return b.writeBinaryConditionInner(nil, right, leftExpr, op, true)
 			}
 
@@ -616,7 +602,7 @@ func (b *sqlExprBuilder) writeParenthesizedString(s string) {
 	_ = b.out.WriteByte(')')
 }
 
-func (b *sqlExprBuilder) sqlForName(name string) (expr string, unnest bool, err error) {
+func (b *sqlExprBuilder) sqlForName(name string) (expr string, unnest bool, lookup *lookupMeta, err error) {
 	// If node is nil, we are evaluating the expression against the underlying table.
 	// In this case, we only allow filters to reference dimension names.
 	if b.node == nil {
@@ -625,18 +611,36 @@ func (b *sqlExprBuilder) sqlForName(name string) (expr string, unnest bool, err 
 			if f.Name == name {
 				// Note that we return "false" even though it may be an unnest dimension because it will already have been unnested since it's one of the dimensions included in the query.
 				// So we can filter against it as if it's a normal dimension.
-				return f.Expr, false, nil
+				return f.Expr, false, nil, nil
 			}
 		}
 
 		// Second, search for the dimension in the metrics view's dimensions (since expressions are allowed to reference dimensions not included in the query)
 		dim, err := b.ast.lookupDimension(name, b.visible)
 		if err != nil {
-			return "", false, fmt.Errorf("invalid dimension reference %q: %w", name, err)
+			return "", false, nil, fmt.Errorf("invalid dimension reference %q: %w", name, err)
 		}
 
+		ex, err := b.ast.dialect.MetricsViewDimensionExpression(dim)
+		if err != nil {
+			return "", false, nil, fmt.Errorf("invalid dimension reference %q: %w", name, err)
+		}
+
+		if dim.Unnest && dim.LookupTable != "" {
+			return "", false, nil, fmt.Errorf("dimension %q is unnested and also has a lookup. This is not supported", name)
+		}
+
+		var lm *lookupMeta
+		if dim.LookupTable != "" {
+			lm = &lookupMeta{
+				table:    dim.LookupTable,
+				keyExpr:  dim.Column,
+				keyCol:   dim.LookupKeyColumn,
+				valueCol: dim.LookupValueColumn,
+			}
+		}
 		// Note: If dim.Unnest is true, we need to unnest it inside of the generated expression (because it's not part of the dimFields and therefore not unnested with a LATERAL JOIN).
-		return b.ast.dialect.MetricsViewDimensionExpression(dim), dim.Unnest, nil
+		return ex, dim.Unnest, lm, nil
 	}
 
 	// Since node is not nil, we're in the context of a wrapped SELECT.
@@ -646,21 +650,28 @@ func (b *sqlExprBuilder) sqlForName(name string) (expr string, unnest bool, err 
 	for _, f := range b.node.DimFields {
 		if f.Name == name {
 			// NOTE: We don't need to handle Unnest here because it's always applied at the innermost query (i.e. when node==nil).
-			return f.Expr, false, nil
+			return f.Expr, false, nil, nil
 		}
 	}
 
 	// Can't have expressions against a measure field unless it's a pseudo-HAVING clause (pseudo because we currently output it as a WHERE in an outer SELECT)
 	if !b.pseudoHaving {
-		return "", false, fmt.Errorf("name %q in expression is not a dimension available in the current context", name)
+		return "", false, nil, fmt.Errorf("name %q in expression is not a dimension available in the current context", name)
 	}
 
 	// Check measure fields
 	for _, f := range b.node.MeasureFields {
 		if f.Name == name {
-			return f.Expr, false, nil
+			return f.Expr, false, nil, nil
 		}
 	}
 
-	return "", false, fmt.Errorf("name %q in expression is not a dimension or measure available in the current context", name)
+	return "", false, nil, fmt.Errorf("name %q in expression is not a dimension or measure available in the current context", name)
+}
+
+type lookupMeta struct {
+	table    string
+	keyExpr  string
+	keyCol   string
+	valueCol string
 }

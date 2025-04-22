@@ -170,10 +170,15 @@ func NewAST(mv *runtimev1.MetricsViewSpec, sec *runtime.ResolvedSecurity, qry *Q
 			return nil, fmt.Errorf("invalid dimension %q: %w", qd.Name, err)
 		}
 
+		expr, err := ast.dialect.MetricsViewDimensionExpression(dim)
+		if err != nil {
+			return nil, fmt.Errorf("failed to compile dimension %q expression: %w", dim.Name, err)
+		}
+
 		f := FieldNode{
 			Name:        dim.Name,
 			DisplayName: dim.DisplayName,
-			Expr:        ast.dialect.MetricsViewDimensionExpression(dim),
+			Expr:        expr,
 		}
 
 		if dim.Unnest {
@@ -1351,13 +1356,6 @@ func (a *AST) convertToCTE(n *SelectNode) {
 
 	n.IsCTE = true
 	a.CTEs = append(a.CTEs, n)
-}
-
-type lookupMeta struct {
-	table    string
-	keyExpr  string
-	keyCol   string
-	valueCol string
 }
 
 // hasName checks if the given name is present as either a dimension or measure field in the node.
