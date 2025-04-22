@@ -9,7 +9,7 @@ tags:
 
 ## Create the Metrics View.
 
-If you noticed in the previous screenshot, we had a table called `uk_price_paid`. This is a dataset that is used in ClickHouse's Learning portal so we thought it was fitting to go ahead and continue on this dataset.
+If you noticed in the previous screenshot, we had a table called `uk_price_paid`. This is a dataset that is used in ClickHouse's Learning portal, so we thought it was fitting to go ahead and continue on this dataset.
 
 :::note
 In the case that you have not already added this table to your local or Cloud database, please follow the step on [ClickHouse's site](https://clickhouse.com/docs/en/getting-started/example-datasets/uk-price-paid) for the steps to do so!
@@ -57,6 +57,6 @@ While we go into more details in our [Rill Basics course](/tutorials/rill_basics
 
 `connector` - this is our manually defined ClickHouse connector
 
-`dimensions` - These are our categorial columns that we can use on the dashboard to filter and slice;
+`dimensions` - These are our categorical columns that we can use on the dashboard to filter and slice;
 
 `measures` - These are our numerical aggregates defined in the metrics layer. We can see functions such as MAX(), COUNT(), and AVG() used on the underlying table.

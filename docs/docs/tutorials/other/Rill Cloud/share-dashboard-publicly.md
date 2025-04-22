@@ -16,7 +16,8 @@ Once you have deployed your project to Rill Cloud, you should be able to access 
 
 You can select your project from the list and select your dashboard.
 
-![img](/img/tutorials/201/rill-cloud-projects.png)
+<img src = '/img/tutorials/201/rill-cloud-projects.png' class='rounded-gif' />
+<br />
 
 ### Adding Filters and Creating the Public URL
 
@@ -25,8 +26,8 @@ When sharing to your end-user, it is likely that you will want to specific a spe
 
 Once your dashboard is ready, you can create the public URL via the `Share` button.
 
-![img](/img/tutorials/other/public-url/share-public-url.png)
-
+<img src = '/img/tutorials/other/public-url/share-public-url.png' class='rounded-gif' />
+<br />
 
 ### Managing Public URLS in Rill Cloud
 

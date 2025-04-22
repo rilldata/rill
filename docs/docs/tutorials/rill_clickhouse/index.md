@@ -3,7 +3,10 @@ title: Rill and ClickHouse Tutorial
 description: tutorial for ClickHouse
 sidebar_position: 3
 ---
-![img] ()
+
+<img src = '/img/tutorials/ch/clickhouse-rill.png' class='rounded-gif' />
+<br />
+
 
 In this tutorial, we will discuss how to use ClickHouse as the default OLAP database with Rill to visualize your ClickHouse tables in as little as a few clicks. 
 
