@@ -45,6 +45,7 @@
 
   $: copyLink = `${$page.url.protocol}//${$page.url.host}/${organization}/${project}`;
 
+  // viewer: "not allowed to list project user groups"
   $: listProjectMemberUsergroups =
     createAdminServiceListProjectMemberUsergroups(
       organization,
@@ -52,11 +53,13 @@
       undefined,
       {
         query: {
+          enabled: isAdmin,
           refetchOnMount: true,
           refetchOnWindowFocus: true,
         },
       },
     );
+
   $: listProjectMemberUsers = createAdminServiceListProjectMemberUsers(
     organization,
     project,
@@ -68,12 +71,15 @@
       },
     },
   );
+
+  // viewer: "not authorized to read project members"
   $: listProjectInvites = createAdminServiceListProjectInvites(
     organization,
     project,
     undefined,
     {
       query: {
+        enabled: isAdmin,
         refetchOnMount: true,
         refetchOnWindowFocus: true,
       },

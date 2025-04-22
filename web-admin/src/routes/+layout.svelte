@@ -42,6 +42,8 @@
 
   $: console.log("projectPermissions: ", projectPermissions);
 
+  $: isAdmin = projectPermissions?.admin;
+
   // Remember:
   // - https://tkdodo.eu/blog/breaking-react-querys-api-on-purpose#a-bad-api
   // - https://tkdodo.eu/blog/react-query-error-handling#the-global-callbacks
@@ -115,7 +117,7 @@
       {#if !isEmbed && !hideTopBar}
         <TopNavigationBar
           createMagicAuthTokens={projectPermissions?.createMagicAuthTokens}
-          isAdmin={projectPermissions?.admin}
+          {isAdmin}
           {organizationLogoUrl}
           {planDisplayName}
         />
