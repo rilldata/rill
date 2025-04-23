@@ -8,28 +8,25 @@ tags:
 ---
 
 ### What is a Metrics View? 
-:::note
-Starting from version 0.50, we have officially split the metrics view and dashboard and rolled out [visual metric editor](#via-the-visual-metrics-editor) What this means is that we have a separate file for the metrics layer and a dashboard built on top of this. For more reasoning behind this change, please refer to our documentation.
-:::
-A metrics view is a layer in which you can create and define your measures and dimensions. Once you have defined your measures and dimensions, you can build the dashboard.
-
+A metrics view is a layer in which you can create and define your measures and dimensions. Think of it as the layer that takes all of your raw data and makes sense of it. In this layer, you can define, for example, what Net Revenue is defined as using basic to advanced [arithmetic functions available in DuckDB](https://duckdb.org/docs/stable/sql/functions/numeric.html). You also define what dimensions to use to slice-and-dice your data in the Explore Dashboard. If using Canvas dashboards, you can view multiple metrics views in a single page! 
 
 ### Let's create a metrics view!
 
-Now that the model is created, we can create a metrics view. There are two ways to do so:
+Now that the data is ready in your model file, we can create a metrics view. There are two ways to do so:
 1. Generate metrics with AI
 2. Start Simple using the +Add, Metrics 
 
 <details>
   <summary>How does Generate metrics with AI work?</summary>
   
-    We send a set of YAML and project files to OpenAI to suggest the dimensions, measures, and various other key pairs for your dashboard. 
+    We send a set of YAML files along with some contextto OpenAI to suggest the dimensions, measures, and various other key pairs for your dashboard. 
 </details>
 
 Let's go ahead and create a simple metrics layer via the UI and build onto it. 
 
+<img src = '/img/tutorials/102/create-metrics-view-ui.png' class='rounded-gif' />
+<br />
 
-![img](/img/tutorials/102/create-metrics-view-ui.png)
 
 As you can see, the default dashboard YAML is as follows:
 
@@ -64,17 +61,16 @@ Starting from version 0.50, we have introduced the [visual-metric-editor](/build
 ## Via the Visual Metrics Editor
 In the top right of the UI, select the viz button to navigate to the visual metrics editor. The below is an example of a completed visual metrics editor. We will make some modifcations to our current file to build something similar.
 
-![img](/img/tutorials/102/new-viz-editor.png)
 
 We can go ahead and change the following components as directed in the UI:
 
-- `model`: commits___model
+- `model`: commits_model
 - `time column`: author_date
 - `measures`: sum(added_lines)
 - `dimensions`: author_name
 
-
-![img](/img/tutorials/102/basic-viz-editor.png)
+<img src = '/img/tutorials/102/basic-viz-editor.png' class='rounded-gif' />
+<br />
 
 Once finished, the red border will disappear and your explore dashboard is ready to be created. If you need further information on each component see the next section, via the YAML.
 
@@ -94,10 +90,10 @@ The type is a Rill required key pair as it indicates to Rill what type of file t
 
 ### Underlying Table ###
 ```yaml
-table: commits___model # Note that this has 3 "_"! 
+table: commits_model # Note that this has 3 "_"! 
 ```
 
-The underlying table can be defined here, let's change it to `commits___model`.
+The underlying table can be defined here, let's change it to `commits_model`.
 
 ---
 
@@ -157,7 +153,7 @@ From our dataset, we can add more dimensions to allow more filtering and explora
 
 You may need to reference the <a href='https://docs.rilldata.com/reference/project-files/explore-dashboards' target="_blank">metrics view YAML </a> reference guide to figure out the above. Your final output should look something like this! 
 
-![finished](/img/tutorials/103/Completed-100-dashboard.png)
+
 
 
 <details>
@@ -169,7 +165,7 @@ You may need to reference the <a href='https://docs.rilldata.com/reference/proje
 version: 1
 type: metrics_view
 
-table: commits___model
+table: commits_model
 
 timeseries: author_date # Select an actual timestamp column (if any) from your table
 
@@ -208,10 +204,8 @@ measures:
 
 If you decide to build out the metrics view via the UI, it should look something like below!
 
-![img](/img/tutorials/103/visual-metric-editor.png)
+
+<img src = '/img/tutorials/102/new-viz-editor.png' class='rounded-gif' />
+<br />
 
 
-import DocsRating from '@site/src/components/DocsRating';
-
----
-<DocsRating />

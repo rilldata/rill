@@ -85,7 +85,7 @@
 
                   {#if cardinality}
                     <div class="text-gray-500">
-                      {`${formatCompactInteger(cardinality)} rows` || ""}
+                      {`${formatCompactInteger(cardinality)} rows`}
                     </div>
                   {/if}
                 </a>

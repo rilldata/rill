@@ -192,7 +192,8 @@ func (p *Parser) parseRillYAML(ctx context.Context, path string) error {
 
 	// Validate resource defaults
 	if !tmp.Sources.IsZero() {
-		if err := tmp.Sources.Decode(&SourceYAML{}); err != nil {
+		// NOTE: Validating against ModelYAML since SourceYAML is deprecated.
+		if err := tmp.Sources.Decode(&ModelYAML{}); err != nil {
 			return newYAMLError(err)
 		}
 	}

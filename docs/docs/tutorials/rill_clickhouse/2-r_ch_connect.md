@@ -28,11 +28,13 @@ Depending what you choose, the contents of your connection will change and I rec
 ### Connect to ClickHouse
 We can create the clickhouse connection by selection `+Add Data` > `ClickHouse` and fill in the components on the UI.
 
-![clickhouse](/img/tutorials/ch/clickhouse-connector.png)
+<img src = '/img/tutorials/ch/clickhouse-connector.png' class='rounded-gif' />
+<br />
 :::tip
 You can obtain the credentials from your ClickHouse Cloud account by clicking the `Connect` button in the left panel.:
 
-![clickhouse](/img/tutorials/ch/clickhouse-cloud-credential.png)
+<img src = '/img/tutorials/ch/clickhouse-cloud-credential.png' class='rounded-gif' />
+<br />
 ```
 "https://<hostname>:<port>?username=<username>&password=<password>&secure=true&skip_verify=true"
 ```
@@ -118,11 +120,21 @@ connector.clickhouse.port=9000
 connector.clickhouse.username 
 connector.clickhouse.password 
 connector.clickhouse.ssl 
+
+or
+
+connector.clickhouse.dsn="..."
 ```
 
   </TabItem>
 </Tabs>
 
+:::tip Via the UI
+
+If you connect to ClickHouse via the UI, this will automatically create a template with connectors/clickhouse.yaml as well as a reference of your DSN to the .env folder. This will automatically get pushed along with your project to Rill Cloud. 
+
+:::
+
 You should now be able to see the contents of your ClickHouse database in the left panel of your UI.
 
-![my-rill-project](/img/tutorials/ch/olap-connector.png)
+<img src = '/img/tutorials/ch/olap-connector.png' class='rounded-gif' />

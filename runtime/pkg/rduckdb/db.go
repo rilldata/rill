@@ -16,11 +16,13 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/XSAM/otelsql"
 	"github.com/jmoiron/sqlx"
 	"github.com/marcboeker/go-duckdb"
+	"github.com/rilldata/rill/runtime/pkg/graceful"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
@@ -85,6 +87,9 @@ type DBOptions struct {
 	ReadSettings map[string]string
 	// WriteSettings are settings applied the write duckDB handle.
 	WriteSettings map[string]string
+	// WritePoolSize is the maximum number of concurrent connections to the write duckDB handle.
+	// If val is zero then a default value is used.
+	WritePoolSize int `mapstructure:"write_conn_limit"`
 	// DBInitQueries are run when the database is first created. These are typically global duckdb configurations.
 	DBInitQueries []string
 	// ConnInitQueries are run when a new connection is created. These are typically local duckdb configurations.
@@ -164,9 +169,6 @@ func (d *DBOptions) ValidateSettings() error {
 type CreateTableOptions struct {
 	// View specifies whether the created table is a view.
 	View bool
-	// InitQueries are queries that are run during initialisation of write handle. Applies only to the current table.
-	// For queries that should apply to all tables refer to DBOptions.ConnInitQueries
-	InitQueries []string
 	// If BeforeCreateFn is set, it will be executed before the create query is executed.
 	BeforeCreateFn func(ctx context.Context, conn *sqlx.Conn) error
 	// If AfterCreateFn is set, it will be executed after the create query is executed.
@@ -190,15 +192,17 @@ func NewDB(ctx context.Context, opts *DBOptions) (DB, error) {
 
 	bgctx, cancel := context.WithCancel(context.Background())
 	db := &db{
-		opts:       opts,
-		localPath:  opts.LocalPath,
-		remote:     opts.Remote,
-		writeSem:   semaphore.NewWeighted(1),
-		metaSem:    semaphore.NewWeighted(1),
-		localDirty: true,
-		logger:     opts.Logger,
-		ctx:        bgctx,
-		cancel:     cancel,
+		opts:               opts,
+		localPath:          opts.LocalPath,
+		remote:             opts.Remote,
+		writeMetaSem:       semaphore.NewWeighted(1),
+		readMetaSem:        semaphore.NewWeighted(1),
+		localDirty:         true,
+		writesInProgress:   make(map[string]any),
+		writesInProgressMu: sync.Mutex{},
+		logger:             opts.Logger,
+		ctx:                bgctx,
+		cancel:             cancel,
 	}
 	// create local path
 	err = os.MkdirAll(db.localPath, fs.ModePerm)
@@ -276,7 +280,7 @@ func NewDB(ctx context.Context, opts *DBOptions) (DB, error) {
 		opts.Logger,
 	)
 
-	db.dbHandle, err = db.openDBAndAttach(ctx, filepath.Join(db.localPath, "main.db"), "", nil, true)
+	db.read, err = db.openDBAndAttach(ctx, filepath.Join(db.localPath, "main.db"), "", nil, true)
 	if err != nil {
 		if strings.Contains(err.Error(), "Symbol not found") {
 			fmt.Printf("Your version of macOS is not supported. Please upgrade to the latest major release of macOS. See this link for details: https://support.apple.com/en-in/macos/upgrade")
@@ -284,6 +288,19 @@ func NewDB(ctx context.Context, opts *DBOptions) (DB, error) {
 		}
 		return nil, err
 	}
+	db.write, err = db.openDBAndAttach(ctx, "", "", nil, false)
+	if err != nil {
+		return nil, fmt.Errorf("unable to open write db: %w", err)
+	}
+	// always create new connection for write queries
+	// we switch schemas during writes and failure to switch back to default schema can lead to query failures
+	db.write.SetMaxIdleConns(0)
+	// limit the number of open connections to the write db which limits the number of concurrent ingestions
+	limit := db.opts.WritePoolSize
+	if limit <= 0 {
+		limit = 5
+	}
+	db.write.SetMaxOpenConns(limit)
 
 	go db.localDBMonitor()
 	return db, nil
@@ -295,16 +312,25 @@ type db struct {
 	localPath string
 	remote    *blob.Bucket
 
-	// dbHandle serves executes meta queries and serves read queries
-	dbHandle *sqlx.DB
-	// writeSem ensures only one write operation is allowed at a time
-	writeSem *semaphore.Weighted
-	// metaSem enures only one meta operation can run on a duckb handle.
+	// read serves executes meta queries and serves read queries
+	read *sqlx.DB
+	// write executes write queries
+	write *sqlx.DB
+	// writeMetaSem ensures only one meta operation can run on the duckb write handle.
+	// Meta operations are pulling from remote, pushing to remote, attach detach etc.
+	writeMetaSem *semaphore.Weighted
+	// readMetaSem enures only one meta operation can run on the duckb read handle.
 	// Meta operations are attach, detach, create view queries done on the db handle
-	metaSem *semaphore.Weighted
+	readMetaSem *semaphore.Weighted
 	// localDirty is set to true when a change is committed to the remote but not yet reflected in the local db
 	localDirty bool
 	catalog    *catalog
+
+	// writeInProgress tracks table names for which there is a write operation in progress.
+	// This is to prevent concurrent writes operating on the same table which can corrupt the database.
+	// Using a separate mutex and not writeMetaSem to allow calling untrackWrite without acquiring writeMetaSem.
+	writesInProgress   map[string]any
+	writesInProgressMu sync.Mutex
 
 	logger *zap.Logger
 
@@ -318,13 +344,13 @@ var _ DB = &db{}
 func (d *db) Close() error {
 	// close background operations
 	d.cancel()
-	return d.dbHandle.Close()
+	return errors.Join(d.read.Close(), d.write.Close())
 }
 
 func (d *db) AcquireReadConnection(ctx context.Context) (*sqlx.Conn, func() error, error) {
 	snapshot := d.catalog.acquireSnapshot()
 
-	conn, err := d.dbHandle.Connx(ctx)
+	conn, err := d.read.Connx(ctx)
 	if err != nil {
 		d.catalog.releaseSnapshot(snapshot)
 		return nil, nil, err
@@ -353,11 +379,25 @@ func (d *db) CreateTableAsSelect(ctx context.Context, name, query string, opts *
 	defer span.End()
 
 	d.logger.Debug("create: create table", zap.String("name", name), zap.Bool("view", opts.View), observability.ZapCtx(ctx))
-	err := d.writeSem.Acquire(ctx, 1)
+	// track write operation
+	err := d.trackWrite(name)
 	if err != nil {
 		return nil, err
 	}
-	defer d.writeSem.Release(1)
+	defer d.untrackWrite(name)
+
+	// acquire write lock
+	err = d.writeMetaSem.Acquire(ctx, 1)
+	if err != nil {
+		return nil, err
+	}
+
+	writeSemAcquired := true
+	defer func() {
+		if writeSemAcquired {
+			d.writeMetaSem.Release(1)
+		}
+	}()
 
 	// pull latest changes from remote
 	err = d.pullFromRemote(ctx, true)
@@ -378,9 +418,8 @@ func (d *db) CreateTableAsSelect(ctx context.Context, name, query string, opts *
 		Version:        newVersion,
 		CreatedVersion: newVersion,
 	}
-	var dsn string
+	var dbPath string
 	if opts.View {
-		dsn = ""
 		newMeta.SQL = query
 		err = d.initLocalTable(name, "")
 		if err != nil {
@@ -391,7 +430,7 @@ func (d *db) CreateTableAsSelect(ctx context.Context, name, query string, opts *
 		if err != nil {
 			return nil, fmt.Errorf("create: unable to create dir %q: %w", name, err)
 		}
-		dsn = d.localDBPath(name, newVersion)
+		dbPath = d.localDBPath(name, newVersion)
 		defer func() {
 			if createErr != nil {
 				_ = d.deleteLocalTableFiles(name, newVersion)
@@ -401,7 +440,7 @@ func (d *db) CreateTableAsSelect(ctx context.Context, name, query string, opts *
 
 	t := time.Now()
 	// need to attach existing table so that any views dependent on this table are correctly attached
-	conn, release, err := d.acquireWriteConn(ctx, dsn, name, opts.InitQueries, true)
+	conn, release, err := d.acquireWriteConn(ctx, dbPath, name, true)
 	if err != nil {
 		return nil, err
 	}
@@ -410,6 +449,13 @@ func (d *db) CreateTableAsSelect(ctx context.Context, name, query string, opts *
 		_ = release()
 	}()
 
+	// start running user queries
+	//
+	// given runnning user queries is the most intensive operation and assuming following constraints, we can release the lock and run user queries concurrently:
+	// 1. A table write attaches all other databases in read only mode and writes to a different database
+	// 2. Reconciler makes sure that dependent resources are not reconciled concurrently
+	d.writeMetaSem.Release(1)
+	writeSemAcquired = false
 	t = time.Now()
 	safeName := safeSQLName(name)
 	var typ string
@@ -453,6 +499,13 @@ func (d *db) CreateTableAsSelect(ctx context.Context, name, query string, opts *
 		return nil, err
 	}
 
+	// acquire the handle again
+	err = d.writeMetaSem.Acquire(ctx, 1)
+	if err != nil {
+		return nil, err
+	}
+	writeSemAcquired = true
+
 	// update remote data and metadata
 	if err := d.pushToRemote(ctx, name, oldMeta, newMeta); err != nil {
 		return nil, fmt.Errorf("create: replicate failed: %w", err)
@@ -477,11 +530,24 @@ func (d *db) MutateTable(ctx context.Context, name string, initQueries []string,
 	defer span.End()
 
 	d.logger.Debug("mutate table", zap.String("name", name), observability.ZapCtx(ctx))
-	err := d.writeSem.Acquire(ctx, 1)
+
+	// track write operation
+	err := d.trackWrite(name)
 	if err != nil {
 		return nil, err
 	}
-	defer d.writeSem.Release(1)
+	defer d.untrackWrite(name)
+
+	writeSemAcquired := true
+	err = d.writeMetaSem.Acquire(ctx, 1)
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		if writeSemAcquired {
+			d.writeMetaSem.Release(1)
+		}
+	}()
 
 	// pull latest changes from remote
 	err = d.pullFromRemote(ctx, true)
@@ -509,13 +575,16 @@ func (d *db) MutateTable(ctx context.Context, name string, initQueries []string,
 	// acquire write connection
 	// need to ignore attaching table since it is already present in the db file
 	t := time.Now()
-	conn, release, err := d.acquireWriteConn(ctx, d.localDBPath(name, newVersion), name, initQueries, false)
+	conn, release, err := d.acquireWriteConn(ctx, d.localDBPath(name, newVersion), name, false)
 	if err != nil {
 		_ = os.RemoveAll(newDir)
 		return nil, err
 	}
 	span.SetAttributes(attribute.Float64("acquire_write_conn_duration", time.Since(t).Seconds()))
 
+	// run user queries
+	d.writeMetaSem.Release(1)
+	writeSemAcquired = false
 	t = time.Now()
 	err = mutateFn(ctx, conn)
 	if err != nil {
@@ -526,6 +595,15 @@ func (d *db) MutateTable(ctx context.Context, name string, initQueries []string,
 
 	duration := time.Since(t)
 	span.SetAttributes(attribute.Float64("query_duration", duration.Seconds()))
+
+	// acquire write mutex again
+	err = d.writeMetaSem.Acquire(ctx, 1)
+	if err != nil {
+		_ = os.RemoveAll(newDir)
+		_ = release()
+		return nil, err
+	}
+	writeSemAcquired = true
 
 	// push to remote
 	err = release()
@@ -565,11 +643,19 @@ func (d *db) DropTable(ctx context.Context, name string) error {
 	defer span.End()
 
 	d.logger.Debug("drop table", zap.String("name", name), observability.ZapCtx(ctx))
-	err := d.writeSem.Acquire(ctx, 1)
+
+	// track write operation
+	err := d.trackWrite(name)
 	if err != nil {
 		return err
 	}
-	defer d.writeSem.Release(1)
+	d.untrackWrite(name)
+
+	err = d.writeMetaSem.Acquire(ctx, 1)
+	if err != nil {
+		return err
+	}
+	defer d.writeMetaSem.Release(1)
 
 	// pull latest changes from remote
 	err = d.pullFromRemote(ctx, true)
@@ -607,11 +693,24 @@ func (d *db) RenameTable(ctx context.Context, oldName, newName string) error {
 	if strings.EqualFold(oldName, newName) {
 		return fmt.Errorf("rename: Table with name %q already exists", newName)
 	}
-	err := d.writeSem.Acquire(ctx, 1)
+
+	// track write for both old and new table
+	err := d.trackWrite(oldName)
 	if err != nil {
 		return err
 	}
-	defer d.writeSem.Release(1)
+	defer d.untrackWrite(oldName)
+	err = d.trackWrite(newName)
+	if err != nil {
+		return err
+	}
+	defer d.untrackWrite(newName)
+
+	err = d.writeMetaSem.Acquire(ctx, 1)
+	if err != nil {
+		return err
+	}
+	defer d.writeMetaSem.Release(1)
 
 	// pull latest changes from remote
 	err = d.pullFromRemote(ctx, true)
@@ -708,13 +807,13 @@ func (d *db) localDBMonitor() {
 		case <-d.ctx.Done():
 			return
 		case <-ticker.C:
-			// We do not want the localDBMonitor to compete with write operations so we return early if writeSem is not available.
+			// We do not want the localDBMonitor to compete with write operations so we return early if writeMetaSem is not available.
 			// Anyways if a write operation is in progress it will sync the local db
-			if !d.writeSem.TryAcquire(1) {
+			if !d.writeMetaSem.TryAcquire(1) {
 				continue
 			}
 			if !d.localDirty {
-				d.writeSem.Release(1)
+				d.writeMetaSem.Release(1)
 				// all good
 				continue
 			}
@@ -723,7 +822,7 @@ func (d *db) localDBMonitor() {
 				d.logger.Error("localDBMonitor: error in pulling from remote", zap.Error(err))
 			}
 			d.localDirty = false
-			d.writeSem.Release(1)
+			d.writeMetaSem.Release(1)
 		}
 	}
 }
@@ -741,112 +840,78 @@ func (d *db) Size() int64 {
 	return fileSize(paths)
 }
 
-// acquireWriteConn syncs the write database, initializes the write handle and returns a write connection.
-// The release function should be called to release the connection.
-// It should be called with the writeMu locked.
-func (d *db) acquireWriteConn(ctx context.Context, dsn, table string, initQueries []string, attachExisting bool) (*sqlx.Conn, func() error, error) {
-	var ignoreTable string
-	if !attachExisting {
-		ignoreTable = table
-	}
-	db, err := d.openDBAndAttach(ctx, dsn, ignoreTable, initQueries, false)
+func (d *db) acquireWriteConn(ctx context.Context, dbPath, table string, attachExisting bool) (conn *sqlx.Conn, rel func() error, resErr error) {
+	conn, err := d.write.Connx(ctx)
 	if err != nil {
-		return nil, nil, err
-	}
-	conn, err := db.Connx(ctx)
-	if err != nil {
-		_ = db.Close()
 		return nil, nil, err
 	}
 
-	if attachExisting {
-		_, err = conn.ExecContext(ctx, "DROP VIEW IF EXISTS "+safeSQLName(table))
-		if err != nil {
+	s := d.catalog.acquireSnapshot()
+	defer func() {
+		if resErr != nil {
+			d.catalog.releaseSnapshot(s)
 			_ = conn.Close()
-			_ = db.Close()
+		}
+	}()
+
+	var attachName string
+	if dbPath != "" {
+		attachName = safeSQLName(dbName(table, newVersion()))
+		_, err = conn.ExecContext(ctx, fmt.Sprintf("ATTACH %s AS %s", safeSQLString(dbPath), attachName))
+		if err != nil {
+			return nil, nil, err
+		}
+
+		_, err = conn.ExecContext(ctx, "USE "+attachName)
+		if err != nil {
 			return nil, nil, err
 		}
 	}
 
-	// We can leave the attached databases and views in the db but we don't need them once data has been ingested in the table.
-	// This can lead to performance issues when running catalog queries across whole database.
-	// So it is better to drop all views and detach all databases before closing the write handle.
-	dropViews := func() error {
-		// remove all views created on top of attached table
-		rows, err := conn.QueryxContext(ctx, "SELECT view_name FROM duckdb_views WHERE database_name = current_database() AND internal = false")
+	var ignoreTable string
+	if !attachExisting {
+		ignoreTable = table
+	}
+	err = d.attachTables(ctx, conn, s.tables, ignoreTable)
+	if err != nil {
+		return nil, nil, err
+	}
+	if attachExisting {
+		_, err = conn.ExecContext(ctx, "DROP VIEW IF EXISTS "+safeSQLName(table))
 		if err != nil {
-			return err
+			return nil, nil, err
 		}
-
-		var names []string
-		for rows.Next() {
-			var name string
-			err = rows.Scan(&name)
-			if err != nil {
-				rows.Close()
-				return err
-			}
-			names = append(names, name)
-		}
-		rows.Close()
-		if err := rows.Err(); err != nil {
-			return err
-		}
-		for _, name := range names {
-			_, err = conn.ExecContext(ctx, "DROP VIEW "+safeSQLName(name))
-			if err != nil {
-				return err
-			}
-		}
-		return nil
 	}
 
-	detach := func() error {
-		// detach all attached databases
-		rows, err := conn.QueryxContext(ctx, "SELECT database_name FROM duckdb_databases() WHERE database_name != current_database() AND internal = false AND type NOT LIKE 'motherduck%'")
-		if err != nil {
-			return err
+	var released bool
+	releaseFn := func() error {
+		// reject duplicate calls to release
+		if released {
+			return nil
+		}
+		released = true
+
+		d.catalog.releaseSnapshot(s)
+		if attachName == "" {
+			return conn.Close()
 		}
 
-		var names []string
-		for rows.Next() {
-			var name string
-			err = rows.Scan(&name)
-			if err != nil {
-				rows.Close()
-				return err
-			}
-			names = append(names, name)
+		// revert to default database which is memory
+		_, err = conn.ExecContext(context.Background(), "USE memory")
+		if err != nil {
+			return errors.Join(err, conn.Close())
 		}
-		rows.Close()
-		if err := rows.Err(); err != nil {
-			return err
-		}
-		for _, name := range names {
-			_, err = conn.ExecContext(ctx, "DETACH DATABASE "+safeSQLName(name))
-			if err != nil {
-				return err
-			}
-		}
-		return nil
-	}
 
-	release := func() (err error) {
-		defer func() {
-			// close the connection and db handle
-			err = errors.Join(err, conn.Close(), db.Close())
-		}()
-		err = dropViews()
-		if err != nil {
-			return err
-		}
-		err = detach()
-		if err != nil {
-			return err
-		}
-		return err
+		// detach can take long time if duckdb runs compaction so we need to set a timeout to not block the caller for too long
+		ctx, cancel := graceful.WithMinimumDuration(ctx, 15*time.Second)
+		defer cancel()
+
+		// run an explicit checkpoint in the attached DB to make sure that the wal file is flushed
+		_, cpErr := conn.ExecContext(ctx, "CHECKPOINT "+attachName)
+		_, deErr := conn.ExecContext(ctx, "DETACH "+attachName)
+		return errors.Join(cpErr, deErr, conn.Close())
 	}
-	return conn, release, nil
+	return conn, releaseFn, nil
 }
 
 func (d *db) openDBAndAttach(ctx context.Context, uri, ignoreTable string, initQueries []string, read bool) (db *sqlx.DB, dbErr error) {
@@ -920,13 +985,6 @@ func (d *db) openDBAndAttach(ctx context.Context, uri, ignoreTable string, initQ
 	// Run init queries specific to this table
 	for _, qry := range initQueries {
 		_, err := db.ExecContext(ctx, qry)
-		if err != nil {
-			return nil, err
-		}
-	}
-	if !read {
-		// at the end disable any more configuration changes on the write handle via pre_exec sql
-		_, err = db.ExecContext(ctx, "SET lock_configuration TO true", nil)
 		if err != nil {
 			return nil, err
 		}
@@ -1144,13 +1202,29 @@ func (d *db) initLocalTable(name, version string) error {
 
 // removeTableVersion removes the table version from the catalog and deletes the local table files.
 func (d *db) removeTableVersion(ctx context.Context, name, version string) error {
-	err := d.metaSem.Acquire(ctx, 1)
-	if err != nil {
+	detachWrite := func() error {
+		err := d.writeMetaSem.Acquire(ctx, 1)
+		if err != nil {
+			return err
+		}
+		defer d.writeMetaSem.Release(1)
+
+		_, err = d.write.ExecContext(ctx, "DETACH DATABASE IF EXISTS "+safeSQLName(dbName(name, version)))
 		return err
 	}
-	defer d.metaSem.Release(1)
 
-	_, err = d.dbHandle.ExecContext(ctx, "DETACH DATABASE IF EXISTS "+safeSQLName(dbName(name, version)))
+	detachRead := func() error {
+		err := d.readMetaSem.Acquire(ctx, 1)
+		if err != nil {
+			return err
+		}
+		defer d.readMetaSem.Release(1)
+
+		_, err = d.read.ExecContext(ctx, "DETACH DATABASE IF EXISTS "+safeSQLName(dbName(name, version)))
+		return err
+	}
+
+	err := errors.Join(detachWrite(), detachRead())
 	if err != nil {
 		return err
 	}
@@ -1212,11 +1286,11 @@ func (d *db) iterateLocalTables(cleanup bool, fn func(name string, meta *tableMe
 }
 
 func (d *db) prepareSnapshot(ctx context.Context, conn *sqlx.Conn, s *snapshot) error {
-	err := d.metaSem.Acquire(ctx, 1)
+	err := d.readMetaSem.Acquire(ctx, 1)
 	if err != nil {
 		return err
 	}
-	defer d.metaSem.Release(1)
+	defer d.readMetaSem.Release(1)
 
 	if s.ready {
 		_, err = conn.ExecContext(ctx, "USE "+schemaName(s.id))
@@ -1242,13 +1316,13 @@ func (d *db) prepareSnapshot(ctx context.Context, conn *sqlx.Conn, s *snapshot) 
 }
 
 func (d *db) removeSnapshot(ctx context.Context, id int) error {
-	err := d.metaSem.Acquire(ctx, 1)
+	err := d.readMetaSem.Acquire(ctx, 1)
 	if err != nil {
 		return err
 	}
-	defer d.metaSem.Release(1)
+	defer d.readMetaSem.Release(1)
 
-	_, err = d.dbHandle.ExecContext(ctx, fmt.Sprintf("DROP SCHEMA IF EXISTS %s CASCADE", schemaName(id)))
+	_, err = d.read.ExecContext(ctx, fmt.Sprintf("DROP SCHEMA IF EXISTS %s CASCADE", schemaName(id)))
 	return err
 }
 
@@ -1382,6 +1456,27 @@ func (d *db) duckdbOnGCS() (bool, error) {
 		return false, err
 	}
 	return strings.TrimSpace(string(contents)) == "true", nil
+}
+
+// trackWrite tracks the write operation for the given table name.
+// It returns an error if a write operation is already in progress for the same table name.
+func (d *db) trackWrite(name string) error {
+	d.writesInProgressMu.Lock()
+	defer d.writesInProgressMu.Unlock()
+	_, ok := d.writesInProgress[name]
+	if ok {
+		return fmt.Errorf("write operation already in progress for table %q", name)
+	}
+	d.writesInProgress[name] = nil
+	return nil
+}
+
+// untrackWrite untracks the write operation for the given table name.
+// It is expected to be called after the write operation is completed and just before returning to the caller.
+func (d *db) untrackWrite(name string) {
+	d.writesInProgressMu.Lock()
+	defer d.writesInProgressMu.Unlock()
+	delete(d.writesInProgress, name)
 }
 
 type tableMeta struct {

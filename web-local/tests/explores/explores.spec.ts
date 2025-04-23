@@ -478,7 +478,10 @@ dimensions:
       page.getByLabel("publisher filter").getByText("Publisher Microsoft"),
     ).toBeVisible();
 
-    // go back to the leaderboards.
+    // Move mouse to clear the "Microsoft" tooltip that blocks the "All dimensions" button
+    await page.mouse.move(0, 0);
+
+    // Go back to the leaderboards
     await page.getByText("All dimensions").click();
     // clear all filters
     await page.getByText("Clear filters").click();

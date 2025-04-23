@@ -66,8 +66,8 @@ security:
 
 Which results in the current view:
 
-![img](/img/tutorials/other/row-policy/row-policy-view.png)
-
+<img src = '/img/tutorials/other/row-policy/row-policy-view.png' class='rounded-gif' />
+<br />
 
 ### Additional Set Up Possibilities
 
