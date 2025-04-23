@@ -2,25 +2,42 @@ import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashbo
 
 const ShallowMergeOneLevelDeepKeys = new Set<keyof MetricsExplorerEntity>([
   "selectedTimeRange",
-  "selectedComparisonTimeRange",
   "tdd",
   "pivot",
 ]);
 
+/**
+ * Performs a cascading merge of provided explore states in order.
+ * Applies a shallow merge for all keys except those in ShallowMergeOneLevelDeepKeys.
+ * Keys in ShallowMergeOneLevelDeepKeys are shallow merged at their own level.
+ *
+ * Most state values are literals, so shallow/deep merging makes no difference for them.
+ * Non-literal values like filters, visible measures/dimensions should come entirely from a single source.
+ * For example: We cannot have a publisher filter from one source and a domain filter from another source.
+ * These should come from the first source that contains filters.
+ *
+ * The exception is keys in ShallowMergeOneLevelDeepKeys which need to be shallow merged separately at their level.
+ * This is necessary because these state values contain nested properties one level deep.
+ * For example: selectedTimeRange contains both selected time range and grain.
+ * tdd and pivot have their respective values underneath those keys.
+ *
+ * This would be avoided if each subsection of the state have their own classes.
+ * Then we could offload the specific merging logic to the class methods.
+ */
 export function cascadingExploreStateMerge(
   exploreStatesInOrder: Partial<MetricsExplorerEntity>[],
 ) {
-  const finalExploreState: Partial<MetricsExplorerEntity> = {};
+  const mergedExploreState: Partial<MetricsExplorerEntity> = {};
 
-  const shallowKeyProcessed = new Set<string>();
+  const keyProcessed = new Set<string>();
   // Merge all keys not part of ShallowMergeOneLevelDeepKeys. This allows for future keys to be merged without changes.
   exploreStatesInOrder.forEach((state) => {
     Object.keys(state).forEach((key: keyof MetricsExplorerEntity) => {
       // Since the states are in order a key found 1st should only be merged once.
       // So ignore keys we have already seen
-      const isKeyAlreadyProcessed = shallowKeyProcessed.has(key);
+      const isKeyAlreadyProcessed = keyProcessed.has(key);
 
-      // Ignore shallow merges a level deep, they are merged separately
+      // Ignore keys that are shallow merged a level deep, they are merged separately
       const isKeyForShallowMergeOneLevelDeep =
         ShallowMergeOneLevelDeepKeys.has(key);
 
@@ -31,12 +48,12 @@ export function cascadingExploreStateMerge(
       // but because of certain deserializers, and it's needing to be backwards compatible we need this check.
       if (value === undefined || value === null) return;
 
-      shallowKeyProcessed.add(key);
-      finalExploreState[key] = value as any;
+      keyProcessed.add(key);
+      mergedExploreState[key] = value as any;
     });
   });
 
-  // Merge keys that are one level deep, these are merged as a shallow merge but one level deep.
+  // Merge certain keys that are one level deep, these are merged as a shallow merge but one level deep.
   ShallowMergeOneLevelDeepKeys.forEach((levelOneKey) => {
     const oneLevelDeepState = {};
 
@@ -50,7 +67,7 @@ export function cascadingExploreStateMerge(
 
     // if the first state containing the key had undefined then set undefined and return
     if (firstMatchingState[levelOneKey] === undefined) {
-      finalExploreState[levelOneKey] = undefined;
+      mergedExploreState[levelOneKey] = undefined;
       return;
     }
 
@@ -60,8 +77,8 @@ export function cascadingExploreStateMerge(
       Object.assign(oneLevelDeepState, exploreStatesInOrder[i][levelOneKey]);
     }
 
-    finalExploreState[levelOneKey] = oneLevelDeepState as any;
+    mergedExploreState[levelOneKey] = oneLevelDeepState as any;
   });
 
-  return finalExploreState;
+  return mergedExploreState;
 }
