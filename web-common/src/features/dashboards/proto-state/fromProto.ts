@@ -192,7 +192,9 @@ export function getDashboardStateFromProto(
     };
   }
 
-  entity.selectedTimezone = dashboard.selectedTimezone ?? "UTC";
+  if (dashboard.selectedTimezone !== undefined) {
+    entity.selectedTimezone = dashboard.selectedTimezone;
+  }
 
   if (dashboard.allMeasuresVisible) {
     entity.allMeasuresVisible = true;
@@ -225,7 +227,7 @@ export function getDashboardStateFromProto(
     entity.leaderboardShowContextForAllMeasures =
       dashboard.leaderboardShowContextForAllMeasures;
   }
-  if (dashboard.leaderboardMeasures) {
+  if (dashboard.leaderboardMeasures?.length) {
     entity.leaderboardMeasureNames = dashboard.leaderboardMeasures;
   }
 

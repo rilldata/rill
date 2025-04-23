@@ -58,8 +58,11 @@
   $: mockUserHasNoAccess =
     $selectedMockUserStore && $exploreQuery.error?.response?.status === 404;
 
-  onNavigate(() => {
-    if (hasBanner) {
+  onNavigate(({ from, to }) => {
+    const changedDashboard =
+      !from || !to || from?.params?.name !== to?.params?.name;
+    // Clear out any dashboard banners
+    if (hasBanner && changedDashboard) {
       eventBus.emit("remove-banner", DashboardBannerID);
     }
   });

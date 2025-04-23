@@ -8,7 +8,7 @@ import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/
  *
  * Right now the defaults are either the rill opinionated defaults or from yaml config.
  */
-export function stripDefaultOrEmptyUrlParams(
+export function cleanUrlParams(
   searchParams: URLSearchParams,
   defaultUrlParams: URLSearchParams,
 ) {
@@ -21,7 +21,7 @@ export function stripDefaultOrEmptyUrlParams(
       ExploreStateURLParams.WebView,
     ) as ExploreUrlWebView | null) ?? ExploreUrlWebView.Explore;
 
-  const strippedUrlParams = new URLSearchParams();
+  const cleanedParams = new URLSearchParams();
   searchParams.forEach((value, key: ExploreStateURLParams) => {
     const defaultValue = defaultUrlParams.get(key);
 
@@ -36,7 +36,7 @@ export function stripDefaultOrEmptyUrlParams(
       return;
     }
 
-    strippedUrlParams.set(key, value);
+    cleanedParams.set(key, value);
   });
-  return strippedUrlParams;
+  return cleanedParams;
 }

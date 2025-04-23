@@ -73,7 +73,7 @@ export function getInitExploreStateForTest(
     exploreSpec,
     defaultExplorePreset,
   );
-  return partialExploreState;
+  return partialExploreState as MetricsExplorerEntity;
 }
 
 export function createAdBidsMirrorInStore({
