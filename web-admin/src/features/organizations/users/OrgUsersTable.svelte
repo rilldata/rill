@@ -28,6 +28,7 @@
     InfiniteData,
     InfiniteQueryObserverResult,
   } from "@tanstack/svelte-query";
+  import { ExternalLinkIcon } from "lucide-svelte";
 
   interface OrgUser extends V1OrganizationMemberUser, V1UserInvite {
     invitedBy?: string;
@@ -210,6 +211,20 @@
                         header.getContext(),
                       )}
                     />
+                    {#if header.column.id === "roleName"}
+                      <a
+                        href="https://docs.rilldata.com/manage/roles-permissions#organization-level-permissions"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="hover:text-gray-700"
+                      >
+                        <ExternalLinkIcon
+                          class="text-gray-500"
+                          size="11px"
+                          strokeWidth={2}
+                        />
+                      </a>
+                    {/if}
                     {#if header.column.getIsSorted().toString() === "asc"}
                       <span>
                         <ArrowDown flip size="12px" />
