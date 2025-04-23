@@ -31,6 +31,13 @@
       (isEditor &&
         (role === "editor" || role === "viewer" || role === "guest")));
 
+  const OPTION_DESCRIPTION_MAP = {
+    admin: "Full access to org settings, members, and all projects",
+    editor: "Can create/manage projects and non-admin members",
+    viewer: "Read-only access to all org projects",
+    guest: "Access to invited projects only",
+  };
+
   const queryClient = useQueryClient();
   const setOrganizationMemberUserRole =
     createAdminServiceSetOrganizationMemberUserRole();
@@ -120,44 +127,64 @@
     </DropdownMenu.Trigger>
     <DropdownMenu.Content align="start">
       {#if isAdmin}
-        <DropdownMenu.CheckboxItem
-          class="font-normal flex items-center"
-          checked={role === "admin"}
+        <DropdownMenu.Item
+          class="font-normal flex flex-col items-start hover:bg-slate-50 {role ===
+          'admin'
+            ? 'bg-slate-100'
+            : ''}"
           on:click={() => {
             handleSetRole("admin");
           }}
         >
-          <span>Admin</span>
-        </DropdownMenu.CheckboxItem>
+          <span class="text-xs font-medium text-slate-700">Admin</span>
+          <span class="text-[10px] text-slate-500"
+            >{OPTION_DESCRIPTION_MAP.admin}</span
+          >
+        </DropdownMenu.Item>
       {/if}
-      <DropdownMenu.CheckboxItem
-        class="font-normal flex items-center"
-        checked={role === "editor"}
+      <DropdownMenu.Item
+        class="font-normal flex flex-col items-start hover:bg-slate-50 {role ===
+        'editor'
+          ? 'bg-slate-100'
+          : ''}"
         on:click={() => {
           handleSetRole("editor");
         }}
       >
-        <span>Editor</span>
-      </DropdownMenu.CheckboxItem>
-      <DropdownMenu.CheckboxItem
-        class="font-normal flex items-center"
-        checked={role === "viewer"}
+        <span class="text-xs font-medium text-slate-700">Editor</span>
+        <span class="text-[10px] text-slate-500"
+          >{OPTION_DESCRIPTION_MAP.editor}</span
+        >
+      </DropdownMenu.Item>
+      <DropdownMenu.Item
+        class="font-normal flex flex-col items-start hover:bg-slate-50 {role ===
+        'viewer'
+          ? 'bg-slate-100'
+          : ''}"
         on:click={() => {
           handleSetRole("viewer");
         }}
       >
-        <span>Viewer</span>
-      </DropdownMenu.CheckboxItem>
+        <span class="text-xs font-medium text-slate-700">Viewer</span>
+        <span class="text-[10px] text-slate-500"
+          >{OPTION_DESCRIPTION_MAP.viewer}</span
+        >
+      </DropdownMenu.Item>
       {#if isAdmin}
-        <DropdownMenu.CheckboxItem
-          class="font-normal flex items-center"
-          checked={role === "guest"}
+        <DropdownMenu.Item
+          class="font-normal flex flex-col items-start hover:bg-slate-50 {role ===
+          'guest'
+            ? 'bg-slate-100'
+            : ''}"
           on:click={() => {
             handleSetRole("guest");
           }}
         >
-          <span>Guest</span>
-        </DropdownMenu.CheckboxItem>
+          <span class="text-xs font-medium text-slate-700">Guest</span>
+          <span class="text-[10px] text-slate-500"
+            >{OPTION_DESCRIPTION_MAP.guest}</span
+          >
+        </DropdownMenu.Item>
       {/if}
     </DropdownMenu.Content>
   </DropdownMenu.Root>
