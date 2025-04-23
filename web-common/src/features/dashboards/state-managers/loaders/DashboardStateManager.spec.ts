@@ -97,24 +97,46 @@ describe("DashboardStateManager", () => {
     const ExploreStateSubsetForRillDefaultState: Partial<MetricsExplorerEntity> =
       {
         selectedTimeRange: {
-          name: "P7D",
-          interval: V1TimeGrain.TIME_GRAIN_DAY,
+          name: "rill-QTD",
+          interval: V1TimeGrain.TIME_GRAIN_WEEK,
         } as DashboardTimeControls,
         showTimeComparison: false,
         selectedComparisonTimeRange: undefined,
 
-        visibleMeasures: [AD_BIDS_IMPRESSIONS_MEASURE],
-        allMeasuresVisible: false,
-        visibleDimensions: [AD_BIDS_PUBLISHER_DIMENSION],
-        allDimensionsVisible: false,
+        visibleMeasures: [
+          AD_BIDS_IMPRESSIONS_MEASURE,
+          AD_BIDS_BID_PRICE_MEASURE,
+        ],
+        allMeasuresVisible: true,
+        visibleDimensions: [
+          AD_BIDS_PUBLISHER_DIMENSION,
+          AD_BIDS_DOMAIN_DIMENSION,
+        ],
+        allDimensionsVisible: true,
 
         leaderboardSortByMeasureName: AD_BIDS_IMPRESSIONS_MEASURE,
         leaderboardMeasureNames: [AD_BIDS_IMPRESSIONS_MEASURE],
-        dashboardSortType: DashboardState_LeaderboardSortType.PERCENT,
-        sortDirection: DashboardState_LeaderboardSortDirection.ASCENDING,
+        dashboardSortType: DashboardState_LeaderboardSortType.VALUE,
+        sortDirection: DashboardState_LeaderboardSortDirection.DESCENDING,
       };
+    const ExploreStateSubsetForYAMLState: Partial<MetricsExplorerEntity> = {
+      selectedTimeRange: {
+        name: "P7D",
+        interval: V1TimeGrain.TIME_GRAIN_DAY,
+      } as DashboardTimeControls,
+      showTimeComparison: false,
+      selectedComparisonTimeRange: undefined,
+
+      visibleMeasures: [AD_BIDS_IMPRESSIONS_MEASURE],
+      allMeasuresVisible: false,
+      visibleDimensions: [AD_BIDS_PUBLISHER_DIMENSION],
+      allDimensionsVisible: false,
+
+      sortDirection: DashboardState_LeaderboardSortDirection.ASCENDING,
+      dashboardSortType: DashboardState_LeaderboardSortType.PERCENT,
+    };
     const PageURLForRillDefaultState =
-      "view=explore&tr=P7D&tz=Asia%2FKathmandu&compare_tr=&grain=day&compare_dim=&f=&measures=impressions&dims=publisher&expand_dim=&sort_by=impressions&sort_type=percent&sort_dir=ASC&leaderboard_measures=impressions";
+      "tr=P7D&tz=Asia%2FKathmandu&grain=day&measures=impressions&dims=publisher&sort_type=percent&sort_dir=ASC";
     const BookmarkSourceQueryResult = readable({
       data: {
         selectedTimeRange: {
@@ -135,8 +157,22 @@ describe("DashboardStateManager", () => {
       renderDashboardStateManager();
       await waitFor(() => expect(screen.getByText("Dashboard loaded!")));
 
-      assertExploreStateSubset(ExploreStateSubsetForRillDefaultState);
-      expect(pageMock.urlSearchHistory).toEqual([PageURLForRillDefaultState]);
+      assertExploreStateSubset({
+        ...ExploreStateSubsetForRillDefaultState,
+        ...ExploreStateSubsetForYAMLState,
+      });
+
+      pageMock.assertSearchParams(PageURLForRillDefaultState);
+
+      pageMock.popState("");
+      await waitFor(() =>
+        assertExploreStateSubset(ExploreStateSubsetForRillDefaultState),
+      );
+      // only 2 urls should in history
+      expect(pageMock.urlSearchHistory).toEqual([
+        PageURLForRillDefaultState,
+        "",
+      ]);
     });
 
     it("Should load 'other source' of dashboard state", async () => {
@@ -145,6 +181,7 @@ describe("DashboardStateManager", () => {
 
       assertExploreStateSubset({
         ...ExploreStateSubsetForRillDefaultState,
+        ...ExploreStateSubsetForYAMLState,
 
         selectedTimeRange: {
           name: "PT24H",
@@ -156,7 +193,7 @@ describe("DashboardStateManager", () => {
         } as DashboardTimeControls,
       });
       const initUrlSearch =
-        "view=explore&tr=PT24H&tz=Asia%2FKathmandu&compare_tr=rill-PP&grain=hour&compare_dim=&f=&measures=impressions&dims=publisher&expand_dim=&sort_by=impressions&sort_type=percent&sort_dir=ASC&leaderboard_measures=impressions";
+        "tr=PT24H&tz=Asia%2FKathmandu&compare_tr=rill-PP&grain=hour&measures=impressions&dims=publisher&sort_type=percent&sort_dir=ASC";
       pageMock.assertSearchParams(initUrlSearch);
 
       pageMock.popState("");
@@ -164,10 +201,7 @@ describe("DashboardStateManager", () => {
         assertExploreStateSubset(ExploreStateSubsetForRillDefaultState),
       );
       // only 2 urls should in history
-      expect(pageMock.urlSearchHistory).toEqual([
-        initUrlSearch,
-        PageURLForRillDefaultState,
-      ]);
+      expect(pageMock.urlSearchHistory).toEqual([initUrlSearch, ""]);
     });
 
     it("Should load most recent dashboard state", async () => {
@@ -208,7 +242,7 @@ describe("DashboardStateManager", () => {
         } as DashboardTimeControls,
       });
       const initUrlSearch =
-        "view=explore&tr=PT24H&tz=Asia%2FKathmandu&compare_tr=rill-PP&grain=hour&compare_dim=&f=&measures=bid_price&dims=domain&expand_dim=&sort_by=bid_price&sort_type=value&sort_dir=ASC&leaderboard_measures=bid_price";
+        "tr=PT24H&tz=Asia%2FKathmandu&compare_tr=rill-PP&grain=hour&measures=bid_price&dims=domain&sort_by=bid_price&sort_dir=ASC&leaderboard_measures=bid_price";
       pageMock.assertSearchParams(initUrlSearch);
 
       pageMock.popState("");
@@ -216,10 +250,7 @@ describe("DashboardStateManager", () => {
         assertExploreStateSubset(ExploreStateSubsetForRillDefaultState),
       );
       // only 2 urls should in history
-      expect(pageMock.urlSearchHistory).toEqual([
-        initUrlSearch,
-        PageURLForRillDefaultState,
-      ]);
+      expect(pageMock.urlSearchHistory).toEqual([initUrlSearch, ""]);
     });
 
     it("Should load from session dashboard state", async () => {
@@ -233,27 +264,21 @@ describe("DashboardStateManager", () => {
       await waitFor(() => expect(screen.getByText("Dashboard loaded!")));
 
       assertExploreStateSubset({
+        ...ExploreStateSubsetForRillDefaultState,
+        ...ExploreStateSubsetForYAMLState,
+
+        // Session storage is not loaded during init
         selectedTimeRange: {
-          name: "P14D",
-          interval: V1TimeGrain.TIME_GRAIN_DAY,
+          name: "PT24H",
+          interval: V1TimeGrain.TIME_GRAIN_HOUR,
         } as DashboardTimeControls,
         showTimeComparison: true,
         selectedComparisonTimeRange: {
-          name: TimeComparisonOption.WEEK,
+          name: TimeComparisonOption.CONTIGUOUS,
         } as DashboardTimeControls,
-
-        visibleMeasures: [AD_BIDS_BID_PRICE_MEASURE],
-        allMeasuresVisible: false,
-        visibleDimensions: [AD_BIDS_DOMAIN_DIMENSION],
-        allDimensionsVisible: false,
-
-        leaderboardSortByMeasureName: AD_BIDS_BID_PRICE_MEASURE,
-        leaderboardMeasureNames: [AD_BIDS_BID_PRICE_MEASURE],
-        dashboardSortType: DashboardState_LeaderboardSortType.PERCENT,
-        sortDirection: DashboardState_LeaderboardSortDirection.DESCENDING,
       });
       const initUrlSearch =
-        "view=explore&tr=P14D&tz=Asia%2FKathmandu&compare_tr=rill-PW&grain=day&compare_dim=&f=&measures=bid_price&dims=domain&expand_dim=&sort_by=bid_price&sort_type=percent&sort_dir=DESC&leaderboard_measures=bid_price";
+        "tr=PT24H&tz=Asia%2FKathmandu&compare_tr=rill-PP&grain=hour&measures=impressions&dims=publisher&sort_type=percent&sort_dir=ASC";
       pageMock.assertSearchParams(initUrlSearch);
 
       pageMock.popState("");
@@ -261,10 +286,7 @@ describe("DashboardStateManager", () => {
         assertExploreStateSubset(ExploreStateSubsetForRillDefaultState),
       );
       // only 2 urls should in history
-      expect(pageMock.urlSearchHistory).toEqual([
-        initUrlSearch,
-        PageURLForRillDefaultState,
-      ]);
+      expect(pageMock.urlSearchHistory).toEqual([initUrlSearch, ""]);
     });
   });
 
@@ -275,18 +297,33 @@ describe("DashboardStateManager", () => {
         showTimeComparison: false,
         selectedComparisonTimeRange: undefined,
 
-        visibleMeasures: [AD_BIDS_IMPRESSIONS_MEASURE],
-        allMeasuresVisible: false,
-        visibleDimensions: [AD_BIDS_PUBLISHER_DIMENSION],
-        allDimensionsVisible: false,
+        visibleMeasures: [
+          AD_BIDS_IMPRESSIONS_MEASURE,
+          AD_BIDS_BID_PRICE_MEASURE,
+        ],
+        allMeasuresVisible: true,
+        visibleDimensions: [
+          AD_BIDS_PUBLISHER_DIMENSION,
+          AD_BIDS_DOMAIN_DIMENSION,
+        ],
+        allDimensionsVisible: true,
 
         leaderboardSortByMeasureName: AD_BIDS_IMPRESSIONS_MEASURE,
         leaderboardMeasureNames: [AD_BIDS_IMPRESSIONS_MEASURE],
-        dashboardSortType: DashboardState_LeaderboardSortType.PERCENT,
-        sortDirection: DashboardState_LeaderboardSortDirection.ASCENDING,
+        sortDirection: DashboardState_LeaderboardSortDirection.DESCENDING,
+        dashboardSortType: DashboardState_LeaderboardSortType.VALUE,
       };
+    const ExploreStateSubsetForYAMLState: Partial<MetricsExplorerEntity> = {
+      visibleMeasures: [AD_BIDS_IMPRESSIONS_MEASURE],
+      allMeasuresVisible: false,
+      visibleDimensions: [AD_BIDS_PUBLISHER_DIMENSION],
+      allDimensionsVisible: false,
+
+      sortDirection: DashboardState_LeaderboardSortDirection.ASCENDING,
+      dashboardSortType: DashboardState_LeaderboardSortType.PERCENT,
+    };
     const PageURLForRillDefaultState =
-      "view=explore&f=&measures=impressions&dims=publisher&expand_dim=&sort_by=impressions&sort_type=percent&sort_dir=ASC&leaderboard_measures=impressions";
+      "measures=impressions&dims=publisher&sort_type=percent&sort_dir=ASC";
 
     beforeEach(() => {
       mocks.mockMetricsView(AD_BIDS_METRICS_NAME, AD_BIDS_METRICS_INIT);
@@ -300,8 +337,20 @@ describe("DashboardStateManager", () => {
       renderDashboardStateManager();
       await waitFor(() => expect(screen.getByText("Dashboard loaded!")));
 
-      assertExploreStateSubset(ExploreStateSubsetForRillDefaultState);
-      expect(pageMock.urlSearchHistory).toEqual([PageURLForRillDefaultState]);
+      assertExploreStateSubset({
+        ...ExploreStateSubsetForRillDefaultState,
+        ...ExploreStateSubsetForYAMLState,
+      });
+
+      pageMock.popState("");
+      await waitFor(() =>
+        assertExploreStateSubset(ExploreStateSubsetForRillDefaultState),
+      );
+      // only 2 urls should in history
+      expect(pageMock.urlSearchHistory).toEqual([
+        PageURLForRillDefaultState,
+        "",
+      ]);
     });
 
     it("Should load most recent dashboard state", async () => {
@@ -333,7 +382,7 @@ describe("DashboardStateManager", () => {
         dashboardSortType: DashboardState_LeaderboardSortType.VALUE,
       });
       const initUrlSearch =
-        "view=explore&f=&measures=bid_price&dims=domain&expand_dim=&sort_by=bid_price&sort_type=value&sort_dir=ASC&leaderboard_measures=bid_price";
+        "measures=bid_price&dims=domain&sort_by=bid_price&sort_dir=ASC&leaderboard_measures=bid_price";
       pageMock.assertSearchParams(initUrlSearch);
 
       pageMock.popState("");
@@ -341,10 +390,7 @@ describe("DashboardStateManager", () => {
         assertExploreStateSubset(ExploreStateSubsetForRillDefaultState),
       );
       // only 2 urls should in history
-      expect(pageMock.urlSearchHistory).toEqual([
-        initUrlSearch,
-        PageURLForRillDefaultState,
-      ]);
+      expect(pageMock.urlSearchHistory).toEqual([initUrlSearch, ""]);
     });
 
     it("Should validate most recent dashboard state and correct invalid fields", async () => {
@@ -375,8 +421,7 @@ describe("DashboardStateManager", () => {
         sortDirection: DashboardState_LeaderboardSortDirection.ASCENDING,
         dashboardSortType: DashboardState_LeaderboardSortType.VALUE,
       });
-      const initUrlSearch =
-        "view=explore&f=&measures=impressions&dims=publisher&expand_dim=&sort_by=impressions&sort_type=value&sort_dir=ASC&leaderboard_measures=impressions";
+      const initUrlSearch = "measures=impressions&dims=publisher&sort_dir=ASC";
       pageMock.assertSearchParams(initUrlSearch);
 
       pageMock.popState("");
@@ -384,10 +429,7 @@ describe("DashboardStateManager", () => {
         assertExploreStateSubset(ExploreStateSubsetForRillDefaultState),
       );
       // only 2 urls should in history
-      expect(pageMock.urlSearchHistory).toEqual([
-        initUrlSearch,
-        PageURLForRillDefaultState,
-      ]);
+      expect(pageMock.urlSearchHistory).toEqual([initUrlSearch, ""]);
     });
 
     it("Should load from session dashboard state", async () => {
@@ -401,23 +443,9 @@ describe("DashboardStateManager", () => {
 
       await waitFor(() => expect(screen.getByText("Dashboard loaded!")));
       assertExploreStateSubset({
-        selectedTimeRange: undefined,
-        showTimeComparison: false,
-        selectedComparisonTimeRange: undefined,
-
-        visibleMeasures: [AD_BIDS_BID_PRICE_MEASURE],
-        allMeasuresVisible: false,
-        visibleDimensions: [AD_BIDS_DOMAIN_DIMENSION],
-        allDimensionsVisible: false,
-
-        leaderboardSortByMeasureName: AD_BIDS_BID_PRICE_MEASURE,
-        leaderboardMeasureNames: [AD_BIDS_BID_PRICE_MEASURE],
-        dashboardSortType: DashboardState_LeaderboardSortType.PERCENT,
-        sortDirection: DashboardState_LeaderboardSortDirection.DESCENDING,
+        ...ExploreStateSubsetForRillDefaultState,
+        ...ExploreStateSubsetForYAMLState,
       });
-      const initUrlSearch =
-        "view=explore&f=&measures=bid_price&dims=domain&expand_dim=&sort_by=bid_price&sort_type=percent&sort_dir=DESC&leaderboard_measures=bid_price";
-      pageMock.assertSearchParams(initUrlSearch);
 
       pageMock.popState("");
       await waitFor(() =>
@@ -425,8 +453,8 @@ describe("DashboardStateManager", () => {
       );
       // only 2 urls should in history
       expect(pageMock.urlSearchHistory).toEqual([
-        initUrlSearch,
         PageURLForRillDefaultState,
+        "",
       ]);
     });
   });

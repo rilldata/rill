@@ -64,7 +64,7 @@ Unexpected " ".`,
     },
   },
   {
-    title: "Invalid filter: missing dimension in measure filter",
+    title: "Invalid filter: missing measure in measure filter",
     url: "http://localhost/explore/AdBids_explore?f=publisher+IN+('ABC')+AND+publisher+having+(imp+lt+10)",
     errors: [`Selected filter field: "imp" is not valid.`],
     entity: {

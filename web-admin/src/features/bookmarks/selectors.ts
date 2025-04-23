@@ -18,6 +18,7 @@ import {
   timeControlStateSelector,
 } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import { getCleanedUrlParamsForGoto } from "@rilldata/web-common/features/dashboards/url-state/convert-partial-explore-state-to-url-params";
+import { getRillDefaultExploreUrlParams } from "@rilldata/web-common/features/dashboards/url-state/get-rill-default-explore-url-params";
 import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
@@ -86,6 +87,12 @@ export function categorizeBookmarks(
   };
   if (!exploreState) return bookmarks;
 
+  const rillDefaultExploreURLParams = getRillDefaultExploreUrlParams(
+    metricsSpec,
+    exploreSpec,
+    timeRangeSummary,
+  );
+
   bookmarkResp?.forEach((bookmarkResource) => {
     const bookmark = parseBookmark(
       bookmarkResource,
@@ -94,6 +101,7 @@ export function categorizeBookmarks(
       schema,
       exploreState,
       timeRangeSummary,
+      rillDefaultExploreURLParams,
     );
     if (isHomeBookmark(bookmarkResource)) {
       bookmarks.home = bookmark;
@@ -190,6 +198,7 @@ function parseBookmark(
   schema: V1StructType,
   exploreState: MetricsExplorerEntity,
   timeRangeSummary: V1TimeRangeSummary | undefined,
+  rillDefaultExploreURLParams: URLSearchParams,
 ): BookmarkEntry {
   const exploreStateFromBookmark = getDashboardStateFromUrl(
     bookmarkResource.data ?? "",
@@ -216,6 +225,7 @@ function parseBookmark(
       timeRangeSummary,
       finalExploreState,
     ),
+    rillDefaultExploreURLParams,
     url,
   );
 
@@ -231,6 +241,7 @@ function parseBookmark(
       metricsViewSpec,
       exploreSpec,
       timeRangeSummary,
+      rillDefaultExploreURLParams,
     ),
     url: url.toString(),
   };
@@ -248,13 +259,8 @@ function isFilterOnlyBookmark(
   metricsViewSpec: V1MetricsViewSpec,
   exploreSpec: V1ExploreSpec,
   timeRangeSummary: V1TimeRangeSummary | undefined,
+  rillDefaultExploreURLParams: URLSearchParams,
 ): boolean {
-  // This is needed as fix for bookmarks that set selectedComparisonDimension=undefined instead of selectedComparisonDimension=""
-  // We cant update fromProto since it will break backwards compatibility
-  if (!bookmarkState.selectedComparisonDimension) {
-    delete bookmarkState.selectedComparisonDimension;
-  }
-
   // We need to remove defaults like time grain and timezone otherwise we will have extra fields here
   const searchParams = getCleanedUrlParamsForGoto(
     exploreSpec,
@@ -265,6 +271,7 @@ function isFilterOnlyBookmark(
       timeRangeSummary,
       bookmarkState as MetricsExplorerEntity,
     ),
+    rillDefaultExploreURLParams,
   );
 
   // Check if all the bookmark's search params are in the allowed list

@@ -72,12 +72,13 @@ The CLI will ask if you want to create a repo, select Yes.
 
 If this is your first time, you will be prompted to log into GitHub. Once completed, you'll see this in the browser and can navigate back to the CLI.
 
-![img](/img/tutorials/203/git_okay.png)
+<img src = '/img/tutorials/203/git_okay.png' class='rounded-gif' />
+<br />
 
 Rill will automatically use the project name as the repository and project name. If there are any issues with overlapping names, it will prompt your for a different name. Once this all completes, your browser will be automatically opened.
 
-
-![img](/img/deploy/existing-project/cli-upload.png)
+<img src = '/img/deploy/existing-project/cli-upload.png' class='rounded-gif' />
+<br />
 
 That's it! You have connected your GitHub repository to your Rill project. Now navigating back to the Status page, you can see the repository listed. Now you can push any changes that you've made locally to the Git repository and Rill will automatically update. For more information on how to use GitHub with Rill, please refer to the <a href= 'http://localhost:4004/deploy/existing-project/github-101#pushing-changes' target ="blank" > GitHub Basics docs</a>!
 
@@ -89,7 +90,8 @@ While this is an unusual step and most changes and development to your project s
 
 By selecting the edit button (blue pencil) next to the GitHub Repository, the following UI will open where you can change the repository. Note that this will **push** the contents of your Rill project to the repository. You can change the branch of the repository under Advanced options.
 
-![img](/img/tutorials/admin/edit-github.png)
+<img src = '/img/tutorials/admin/edit-github.png' class='rounded-gif' />
+<br />
 
 If you want to **pull** the contents of your new repository to Rill Cloud, you will need to do the following:
 
@@ -113,7 +115,3 @@ rill project edit
 ? Make project public No
 ```
 
-import DocsRating from '@site/src/components/DocsRating';
-
----
-<DocsRating />

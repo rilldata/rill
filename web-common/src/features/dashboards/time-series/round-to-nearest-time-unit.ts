@@ -49,7 +49,7 @@ export function roundToNearestTimeUnit(date: Date, unit: DateTimeUnit): Date {
     });
   } else {
     roundedDateTime = dateTime
-      .startOf(unit as DateTimeUnit)
+      .startOf(unit as DateTimeUnit, { useLocaleWeeks: true })
       .set({ [unit]: roundedValue });
   }
 
@@ -65,5 +65,7 @@ export function roundDownToTimeUnit(
     throw new Error("Invalid Luxon DateTime object");
   }
 
-  return dateTime.startOf(unit as DateTimeUnit).toJSDate();
+  return dateTime
+    .startOf(unit as DateTimeUnit, { useLocaleWeeks: true })
+    .toJSDate();
 }

@@ -35,7 +35,10 @@ func Download(ctx context.Context, downloadURL, downloadDst, projPath string, cl
 	}
 	if resp.StatusCode != http.StatusOK {
 		// return ghinstallation.HTTPError for outer retry to not retry on 404
-		return &ghinstallation.HTTPError{Response: resp}
+		return &ghinstallation.HTTPError{
+			Message:  fmt.Sprintf("failed download with status code %d", resp.StatusCode),
+			Response: resp,
+		}
 	}
 	defer resp.Body.Close()
 

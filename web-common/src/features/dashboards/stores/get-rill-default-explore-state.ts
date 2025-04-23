@@ -1,3 +1,7 @@
+import {
+  contextColWidthDefaults,
+  LeaderboardContextColumn,
+} from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
 import { getDefaultTimeGrain } from "@rilldata/web-common/features/dashboards/time-controls/time-range-utils";
 import { DEFAULT_TIMEZONES } from "@rilldata/web-common/lib/time/config";
 import { isoDurationToFullTimeRange } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
@@ -30,40 +34,30 @@ export function getRillDefaultExploreState(
   exploreSpec: V1ExploreSpec,
   timeRangeSummary: V1TimeRangeSummary | undefined,
 ) {
-  return <Partial<MetricsExplorerEntity>>{
+  return <MetricsExplorerEntity>{
     activePage: DashboardState_ActivePage.DEFAULT,
 
     whereFilter: createAndExpression([]),
     dimensionThresholdFilters: [],
     dimensionsWithInlistFilter: [],
+    dimensionFilterExcludeMode: new Map(),
+    temporaryFilterName: null,
 
     ...getRillDefaultExploreTimeState(
       metricsViewSpec,
       exploreSpec,
       timeRangeSummary,
     ),
+
     ...getRillDefaultExploreViewState(exploreSpec),
 
     selectedComparisonDimension: "",
 
-    tdd: {
-      expandedMeasureName: "",
-      chartType: TDDChart.DEFAULT,
-      pinIndex: -1,
-    },
+    ...getRillDefaultTDDViewState(),
 
-    pivot: {
-      active: false,
-      rows: [],
-      columns: [],
-      sorting: [],
-      expanded: {},
-      columnPage: 1,
-      rowPage: 1,
-      enableComparison: true,
-      activeCell: null,
-      tableMode: "nest",
-    },
+    ...getRillDefaultPivotViewState(),
+
+    contextColumnWidths: { ...contextColWidthDefaults },
   };
 }
 
@@ -73,7 +67,10 @@ function getRillDefaultExploreTimeState(
   timeRangeSummary: V1TimeRangeSummary | undefined,
 ): Partial<MetricsExplorerEntity> {
   if (!timeRangeSummary?.min || !timeRangeSummary?.max) {
-    return {};
+    return {
+      // for consistency with fromUrl
+      showTimeComparison: false,
+    };
   }
 
   const timeRangeName = getDefaultTimeRange(
@@ -115,6 +112,8 @@ function getRillDefaultExploreViewState(
     leaderboardSortByMeasureName: defaultMeasure,
     dashboardSortType: DashboardState_LeaderboardSortType.VALUE,
     sortDirection: DashboardState_LeaderboardSortDirection.DESCENDING,
+    // Deprecated
+    leaderboardContextColumn: LeaderboardContextColumn.HIDDEN,
 
     leaderboardMeasureNames: defaultMeasure ? [defaultMeasure] : [],
     leaderboardShowContextForAllMeasures: false,
@@ -211,4 +210,31 @@ export function getDefaultTimeZone(explore: V1ExploreSpec) {
       return getUTCIANA();
     }
   }
+}
+
+function getRillDefaultTDDViewState() {
+  return <Partial<MetricsExplorerEntity>>{
+    tdd: {
+      expandedMeasureName: "",
+      chartType: TDDChart.DEFAULT,
+      pinIndex: -1,
+    },
+  };
+}
+
+function getRillDefaultPivotViewState() {
+  return <Partial<MetricsExplorerEntity>>{
+    pivot: {
+      active: false,
+      rows: [],
+      columns: [],
+      sorting: [],
+      expanded: {},
+      columnPage: 1,
+      rowPage: 1,
+      enableComparison: true,
+      activeCell: null,
+      tableMode: "nest",
+    },
+  };
 }

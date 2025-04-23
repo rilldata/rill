@@ -23,7 +23,7 @@ test.describe("Embeds", () => {
     const frame = embedPage.frameLocator("iframe");
 
     await expect(
-      frame.getByRole("button", { name: "Advertising Spend Overall $20,603" }),
+      frame.getByRole("button", { name: "Advertising Spend Overall $3,900" }),
     ).toBeVisible();
   });
 
@@ -32,7 +32,7 @@ test.describe("Embeds", () => {
     await waitForReadyMessage(embedPage, logMessages);
     const frame = embedPage.frameLocator("iframe");
 
-    await frame.getByRole("row", { name: "Instacart $2.1k" }).click();
+    await frame.getByRole("row", { name: "Instacart $1.1k" }).click();
     await embedPage.waitForTimeout(500);
 
     expect(
@@ -47,7 +47,7 @@ test.describe("Embeds", () => {
     await waitForReadyMessage(embedPage, logMessages);
     const frame = embedPage.frameLocator("iframe");
 
-    await frame.getByRole("row", { name: "Instacart $2.1k" }).click();
+    await frame.getByRole("row", { name: "Instacart $1.1k" }).click();
     await embedPage.waitForTimeout(500);
 
     await embedPage.evaluate(() => {
@@ -59,8 +59,7 @@ test.describe("Embeds", () => {
     expect(
       logMessages.some((msg) =>
         msg.includes(
-          // Validation post merge is missing in this PR. A future PR will address this.
-          `{"id":1337,"result":{"state":"view=explore&tr=P7D&tz=UTC&compare_tr=&grain=day&compare_dim=&f=advertiser_name+IN+('Instacart')&measures=*&dims=*&expand_dim=&sort_by=overall_spend&sort_type=value&sort_dir=DESC&leaderboard_measures="}}`,
+          `{"id":1337,"result":{"state":"f=advertiser_name+IN+('Instacart')"}}`,
         ),
       ),
     ).toBeTruthy();
@@ -84,7 +83,7 @@ test.describe("Embeds", () => {
     });
 
     await expect(
-      frame.getByRole("row", { name: "Instacart $2.1k" }),
+      frame.getByRole("row", { name: "Instacart $1.1k" }),
     ).toBeVisible();
     expect(
       logMessages.some((msg) => msg.includes(`{"id":1337,"result":true}`)),

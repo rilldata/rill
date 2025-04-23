@@ -1,6 +1,7 @@
 import { goto } from "$app/navigation";
 import { page } from "$app/stores";
-import { convertPartialExploreStateToUrlParams } from "@rilldata/web-common/features/dashboards/url-state/convert-partial-explore-state-to-url-params";
+import { getCleanedUrlParamsForGoto } from "@rilldata/web-common/features/dashboards/url-state/convert-partial-explore-state-to-url-params";
+import { getRillDefaultExploreUrlParams } from "@rilldata/web-common/features/dashboards/url-state/get-rill-default-explore-url-params";
 import { derived, get, type Readable } from "svelte/store";
 import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 import {
@@ -16,9 +17,34 @@ export default function initEmbedPublicAPI(): () => void {
   const { validSpecStore, dashboardStore, timeRangeSummaryStore } =
     getStateManagers();
 
+  const cachedRillDefaultParamsStore = derived(
+    [validSpecStore, timeRangeSummaryStore],
+    ([$validSpecStore, $timeRangeSummaryStore]) => {
+      const exploreSpec = $validSpecStore.data?.explore ?? {};
+      const metricsViewSpec = $validSpecStore.data?.metricsView ?? {};
+
+      const rillDefaultExploreParams = getRillDefaultExploreUrlParams(
+        metricsViewSpec,
+        exploreSpec,
+        $timeRangeSummaryStore.data?.timeRangeSummary,
+      );
+      return rillDefaultExploreParams;
+    },
+  );
+
   const derivedState: Readable<string> = derived(
-    [validSpecStore, dashboardStore, timeRangeSummaryStore],
-    ([$validSpecStore, $dashboardStore, $timeRangeSummaryStore]) => {
+    [
+      validSpecStore,
+      dashboardStore,
+      timeRangeSummaryStore,
+      cachedRillDefaultParamsStore,
+    ],
+    ([
+      $validSpecStore,
+      $dashboardStore,
+      $timeRangeSummaryStore,
+      $cachedRillDefaultParams,
+    ]) => {
       const exploreSpec = $validSpecStore.data?.explore ?? {};
       const metricsViewSpec = $validSpecStore.data?.metricsView ?? {};
 
@@ -33,10 +59,12 @@ export default function initEmbedPublicAPI(): () => void {
       }
 
       return decodeURIComponent(
-        convertPartialExploreStateToUrlParams(
+        // It doesnt make sense to send default params, so clean them based on rill opinionated defaults.
+        getCleanedUrlParamsForGoto(
           exploreSpec,
           $dashboardStore,
           timeControlsState,
+          $cachedRillDefaultParams,
         ).toString(),
       );
     },
@@ -50,6 +78,7 @@ export default function initEmbedPublicAPI(): () => void {
     const validSpec = get(validSpecStore);
     const dashboard = get(dashboardStore);
     const timeSummary = get(timeRangeSummaryStore).data;
+    const cachedRillDefaultParams = get(cachedRillDefaultParamsStore);
 
     const exploreSpec = validSpec.data?.explore ?? {};
     const metricsViewSpec = validSpec.data?.metricsView ?? {};
@@ -64,10 +93,11 @@ export default function initEmbedPublicAPI(): () => void {
       );
     }
     const stateString = decodeURIComponent(
-      convertPartialExploreStateToUrlParams(
+      getCleanedUrlParamsForGoto(
         exploreSpec,
         dashboard,
         timeControlsState,
+        cachedRillDefaultParams,
       ).toString(),
     );
     return { state: stateString };
