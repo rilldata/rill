@@ -64,7 +64,6 @@
       await getExplorePageUrlSearchParams(
         $dashboardStateForAlert.data.exploreName,
         $dashboardStateForAlert.data.exploreState,
-        url,
       )
     ).toString();
     return goto(url.toString());

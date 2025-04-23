@@ -65,6 +65,7 @@ export async function updateDotEnvWithSecrets(
   queryClient: QueryClient,
   connector: V1ConnectorDriver,
   formValues: Record<string, unknown>,
+  formType: "source" | "connector",
 ): Promise<string> {
   const instanceId = get(runtime).instanceId;
 
@@ -86,7 +87,11 @@ export async function updateDotEnvWithSecrets(
   }
 
   // Get the secret keys
-  const secretKeys = connector.configProperties
+  const properties =
+    formType === "source"
+      ? connector.sourceProperties
+      : connector.configProperties;
+  const secretKeys = properties
     ?.filter((property) => property.secret)
     .map((property) => property.key);
 
@@ -136,6 +141,20 @@ export function replaceOrAddEnvVariable(
     updatedLines.push(`${key}=${newValue}`);
   }
 
+  const newBlob = updatedLines
+    .filter((line, index) => !(line === "" && index === 0))
+    .join("\n")
+    .trim();
+
+  return newBlob;
+}
+
+export function deleteEnvVariable(
+  existingEnvBlob: string,
+  key: string,
+): string {
+  const lines = existingEnvBlob.split("\n");
+  const updatedLines = lines.filter((line) => !line.startsWith(`${key}=`));
   const newBlob = updatedLines
     .filter((line, index) => !(line === "" && index === 0))
     .join("\n")

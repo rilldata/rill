@@ -106,7 +106,7 @@ const TestCases: {
         AD_BIDS_SORT_PIVOT_BY_TIME_DAY_ASC,
       ],
       expectedSearch:
-        "view=pivot&tr=P7D&compare_tr=rill-PP&f=publisher+IN+%28%27Google%27%29&rows=publisher%2Ctime.hour&cols=domain%2Ctime.day%2Cimpressions&sort_by=time.day&sort_dir=ASC",
+        "view=pivot&tr=P7D&compare_tr=rill-PP&f=publisher+IN+%28%27Google%27%29&rows=publisher%2Ctime.hour&cols=domain%2Ctime.day%2Cimpressions&sort_by=time.day&sort_dir=ASC&table_mode=nest",
     },
   },
   {
@@ -124,7 +124,7 @@ const TestCases: {
         AD_BIDS_SORT_PIVOT_BY_TIME_DAY_ASC,
       ],
       expectedSearch:
-        "view=pivot&tr=P7D&compare_tr=rill-PP&f=publisher+IN+%28%27Google%27%29&rows=publisher%2Ctime.hour&cols=domain%2Ctime.day%2Cimpressions&sort_by=time.day&sort_dir=ASC",
+        "view=pivot&tr=P7D&compare_tr=rill-PP&f=publisher+IN+%28%27Google%27%29&rows=publisher%2Ctime.hour&cols=domain%2Ctime.day%2Cimpressions&sort_by=time.day&sort_dir=ASC&table_mode=nest",
     },
   },
   {
@@ -143,7 +143,7 @@ const TestCases: {
         AD_BIDS_SORT_PIVOT_BY_TIME_DAY_ASC,
       ],
       expectedSearch:
-        "view=pivot&tr=P7D&compare_tr=rill-PP&f=publisher+IN+%28%27Google%27%29&rows=publisher%2Ctime.hour&cols=domain%2Ctime.day%2Cimpressions&sort_by=time.day&sort_dir=ASC",
+        "view=pivot&tr=P7D&compare_tr=rill-PP&f=publisher+IN+%28%27Google%27%29&rows=publisher%2Ctime.hour&cols=domain%2Ctime.day%2Cimpressions&sort_by=time.day&sort_dir=ASC&table_mode=nest",
     },
   },
 ];

@@ -64,7 +64,7 @@ Unexpected " ".`,
     },
   },
   {
-    title: "Invalid filter: missing dimension in measure filter",
+    title: "Invalid filter: missing measure in measure filter",
     url: "http://localhost/explore/AdBids_explore?f=publisher+IN+('ABC')+AND+publisher+having+(imp+lt+10)",
     errors: [`Selected filter field: "imp" is not valid.`],
     entity: {
@@ -150,7 +150,7 @@ describe("Invalid Human readable URL State", () => {
       const defaultExplorePreset = getDefaultExplorePreset(
         AD_BIDS_EXPLORE_INIT,
         AD_BIDS_METRICS_INIT,
-        AD_BIDS_TIME_RANGE_SUMMARY,
+        AD_BIDS_TIME_RANGE_SUMMARY.timeRangeSummary,
       );
 
       const errorsFromUrl = applyURLToExploreState(

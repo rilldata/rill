@@ -10,12 +10,10 @@ import (
 )
 
 type ModelInputProperties struct {
-	SQL  string `mapstructure:"sql"`
-	Args []any  `mapstructure:"args"`
-	// InitQueries are queries that are run during initialisation of write handle before model is created of any pre_exec queries are run.
-	InitQueries string `mapstructure:"init_queries"`
-	PreExec     string `mapstructure:"pre_exec"`
-	PostExec    string `mapstructure:"post_exec"`
+	SQL      string `mapstructure:"sql"`
+	Args     []any  `mapstructure:"args"`
+	PreExec  string `mapstructure:"pre_exec"`
+	PostExec string `mapstructure:"post_exec"`
 	// Database is set if sql is to be run against an external database
 	Database string `mapstructure:"db"`
 }
@@ -77,11 +75,6 @@ type ModelResultProperties struct {
 }
 
 func (c *connection) Rename(ctx context.Context, res *drivers.ModelResult, newName string, env *drivers.ModelEnv) (*drivers.ModelResult, error) {
-	olap, ok := c.AsOLAP(c.instanceID)
-	if !ok {
-		return nil, fmt.Errorf("connector is not an OLAP")
-	}
-
 	resProps := &ModelResultProperties{}
 	if err := mapstructure.WeakDecode(res.Properties, resProps); err != nil {
 		return nil, fmt.Errorf("failed to parse previous result properties: %w", err)
@@ -91,7 +84,7 @@ func (c *connection) Rename(ctx context.Context, res *drivers.ModelResult, newNa
 		return res, nil
 	}
 
-	err := olapForceRenameTable(ctx, olap, resProps.Table, resProps.View, newName)
+	err := c.forceRenameTable(ctx, resProps.Table, resProps.View, newName)
 	if err != nil {
 		return nil, fmt.Errorf("failed to rename model: %w", err)
 	}
@@ -121,13 +114,8 @@ func (c *connection) Exists(ctx context.Context, res *drivers.ModelResult) (bool
 }
 
 func (c *connection) Delete(ctx context.Context, res *drivers.ModelResult) error {
-	olap, ok := c.AsOLAP(c.instanceID)
-	if !ok {
-		return fmt.Errorf("connector is not an OLAP")
-	}
-
-	_ = olap.DropTable(ctx, stagingTableNameFor(res.Table))
-	return olap.DropTable(ctx, res.Table)
+	_ = c.dropTable(ctx, stagingTableNameFor(res.Table))
+	return c.dropTable(ctx, res.Table)
 }
 
 func (c *connection) MergePartitionResults(a, b *drivers.ModelResult) (*drivers.ModelResult, error) {
@@ -137,15 +125,9 @@ func (c *connection) MergePartitionResults(a, b *drivers.ModelResult) (*drivers.
 	return a, nil
 }
 
-// stagingTableName returns a stable temporary table name for a destination table.
-// By using a stable temporary table name, we can ensure proper garbage collection without managing additional state.
-func stagingTableNameFor(table string) string {
-	return "__rill_tmp_model_" + table
-}
-
-// olapForceRenameTable renames a table or view from fromName to toName in the OLAP connector.
+// forceRenameTable renames a table or view from fromName to toName in the OLAP connector.
 // If a view or table already exists with toName, it is overwritten.
-func olapForceRenameTable(ctx context.Context, olap drivers.OLAPStore, fromName string, fromIsView bool, toName string) error {
+func (c *connection) forceRenameTable(ctx context.Context, fromName string, fromIsView bool, toName string) error {
 	if fromName == "" || toName == "" {
 		return fmt.Errorf("cannot rename empty table name: fromName=%q, toName=%q", fromName, toName)
 	}
@@ -165,7 +147,7 @@ func olapForceRenameTable(ctx context.Context, olap drivers.OLAPStore, fromName 
 	// Renaming a table to the same name with different casing is not supported. Workaround by renaming to a temporary name first.
 	if strings.EqualFold(fromName, toName) {
 		tmpName := fmt.Sprintf("__rill_tmp_rename_%s_%s", typ, toName)
-		err := olap.RenameTable(ctx, fromName, tmpName)
+		err := c.renameTable(ctx, fromName, tmpName)
 		if err != nil {
 			return err
 		}
@@ -173,7 +155,13 @@ func olapForceRenameTable(ctx context.Context, olap drivers.OLAPStore, fromName 
 	}
 
 	// Do the rename
-	return olap.RenameTable(ctx, fromName, toName)
+	return c.renameTable(ctx, fromName, toName)
+}
+
+// stagingTableName returns a stable temporary table name for a destination table.
+// By using a stable temporary table name, we can ensure proper garbage collection without managing additional state.
+func stagingTableNameFor(table string) string {
+	return "__rill_tmp_model_" + table
 }
 
 func boolPtr(b bool) *bool {

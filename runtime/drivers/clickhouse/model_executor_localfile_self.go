@@ -17,7 +17,7 @@ import (
 
 type localFileToSelfExecutor struct {
 	fileStore drivers.Handle
-	c         *connection
+	c         *Connection
 }
 
 var _ drivers.ModelExecutor = &selfToSelfExecutor{}
@@ -103,12 +103,12 @@ func (e *localFileToSelfExecutor) Execute(ctx context.Context, opts *drivers.Mod
 	if opts.Env.StageChanges || outputProps.Typ == "DICTIONARY" {
 		stagingTableName = stagingTableNameFor(tableName)
 	}
-	_ = e.c.DropTable(ctx, stagingTableName)
+	_ = e.c.dropTable(ctx, stagingTableName)
 
 	// create the table
 	err = e.c.createTable(ctx, stagingTableName, "", outputProps)
 	if err != nil {
-		_ = e.c.DropTable(ctx, stagingTableName)
+		_ = e.c.dropTable(ctx, stagingTableName)
 		return nil, fmt.Errorf("failed to create model: %w", err)
 	}
 
@@ -129,13 +129,13 @@ func (e *localFileToSelfExecutor) Execute(ctx context.Context, opts *drivers.Mod
 	if outputProps.Typ == "DICTIONARY" {
 		err = e.c.createDictionary(ctx, tableName, fmt.Sprintf("SELECT * FROM %s", safeSQLName(stagingTableName)), outputProps)
 		// drop the temp table
-		_ = e.c.DropTable(ctx, stagingTableName)
+		_ = e.c.dropTable(ctx, stagingTableName)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create dictionary: %w", err)
 		}
 	} else if stagingTableName != tableName {
 		// Rename the staging table to the final table name
-		err = olapForceRenameTable(ctx, e.c, stagingTableName, false, tableName)
+		err = e.c.forceRenameTable(ctx, stagingTableName, false, tableName)
 		if err != nil {
 			return nil, fmt.Errorf("failed to rename staged model: %w", err)
 		}

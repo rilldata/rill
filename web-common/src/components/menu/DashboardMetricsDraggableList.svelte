@@ -219,7 +219,6 @@
   <Popover.Content
     class="p-0 z-popover"
     align="start"
-    collisionPadding={100}
     strategy="absolute"
     fitViewport={true}
     overflowY="auto"
@@ -309,8 +308,10 @@
                   >
                     <DragHandle size="16px" className="text-gray-400" />
 
-                    {allItemsMap.get(id)?.displayName ??
-                      `Unknown ${type === "measure" ? "measure" : "dimension"}`}
+                    <span class="truncate flex-1 text-left pointer-events-none"
+                      >{allItemsMap.get(id)?.displayName ??
+                        `Unknown ${type === "measure" ? "measure" : "dimension"}`}</span
+                    >
 
                     <button
                       class="ml-auto hover:bg-slate-200 p-1 rounded-sm active:bg-slate-300"
@@ -347,7 +348,6 @@
                 </Tooltip.Content>
               </Tooltip.Root>
             {:else}
-              <!-- FIXME: hoist to DraggableListItem -->
               <div
                 role="presentation"
                 data-index={i}
@@ -380,8 +380,10 @@
               >
                 <DragHandle size="16px" className="text-gray-400" />
 
-                {allItemsMap.get(id)?.displayName ??
-                  `Unknown ${type === "measure" ? "measure" : "dimension"}`}
+                <span class="truncate flex-1 text-left pointer-events-none"
+                  >{allItemsMap.get(id)?.displayName ??
+                    `Unknown ${type === "measure" ? "measure" : "dimension"}`}</span
+                >
 
                 <button
                   class="ml-auto hover:bg-slate-200 p-1 rounded-sm active:bg-slate-300"
@@ -434,41 +436,100 @@
             {#each filteredHiddenItems as [id = "", item], i (i)}
               {@const elementId = `hidden-${type === "measure" ? "measures" : "dimensions"}-${id}`}
               {@const isDragItem = dragId === elementId}
-              <div
-                data-index={i + selectedItems.length - 1}
-                id={elementId}
-                data-item-name={id}
-                class:z-50={isDragItem}
-                class:opacity-0={isDragItem}
-                style:height="{ITEM_HEIGHT}px"
-                class="w-full flex gap-x-1 px-2 py-1 justify-between pointer-events-auto items-center p-1 rounded-sm hover:bg-slate-50 cursor-pointer"
-                on:click={() => {
-                  selectedItems = [...selectedItems, id];
-                  onSelectedChange(selectedItems);
-                }}
-                on:keydown={(e) => {
-                  if (e.key === "Enter" || e.key === " ") {
-                    e.preventDefault();
-                    selectedItems = [...selectedItems, id];
-                    onSelectedChange(selectedItems);
-                  }
-                }}
-                role="presentation"
-              >
-                {item.displayName}
+              {#if item.description}
+                <Tooltip.Root openDelay={200} portal="body">
+                  <Tooltip.Trigger>
+                    <div
+                      data-index={i + selectedItems.length - 1}
+                      id={elementId}
+                      data-item-name={id}
+                      class:z-50={isDragItem}
+                      class:opacity-0={isDragItem}
+                      style:height="{ITEM_HEIGHT}px"
+                      class="w-full flex gap-x-1 px-2 py-1 justify-between pointer-events-auto items-center p-1 rounded-sm hover:bg-slate-50 cursor-pointer"
+                      on:click={() => {
+                        selectedItems = [...selectedItems, id];
+                        onSelectedChange(selectedItems);
+                      }}
+                      on:keydown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          selectedItems = [...selectedItems, id];
+                          onSelectedChange(selectedItems);
+                        }
+                      }}
+                      role="presentation"
+                    >
+                      <span
+                        class="truncate flex-1 text-left pointer-events-none"
+                        >{item.displayName}</span
+                      >
 
-                <button
-                  class="hover:bg-slate-200 p-1 rounded-sm active:bg-slate-300"
+                      <button
+                        class="hover:bg-slate-200 p-1 rounded-sm active:bg-slate-300"
+                        on:click|stopPropagation={() => {
+                          selectedItems = [...selectedItems, id];
+                          onSelectedChange(selectedItems);
+                        }}
+                        aria-label="Toggle visibility"
+                        data-testid="toggle-visibility-button"
+                      >
+                        <EyeOffIcon size="14px" color="#9ca3af" />
+                      </button>
+                    </div>
+                  </Tooltip.Trigger>
+
+                  <Tooltip.Content
+                    side="right"
+                    sideOffset={12}
+                    class="z-popover"
+                  >
+                    <div
+                      class="bg-gray-800 text-gray-50 rounded p-2 pt-1 pb-1 shadow-md pointer-events-none z-50"
+                    >
+                      {item.description}
+                    </div>
+                  </Tooltip.Content>
+                </Tooltip.Root>
+              {:else}
+                <div
+                  data-index={i + selectedItems.length - 1}
+                  id={elementId}
+                  data-item-name={id}
+                  class:z-50={isDragItem}
+                  class:opacity-0={isDragItem}
+                  style:height="{ITEM_HEIGHT}px"
+                  class="w-full flex gap-x-1 px-2 py-1 justify-between pointer-events-auto items-center p-1 rounded-sm hover:bg-slate-50 cursor-pointer"
                   on:click={() => {
                     selectedItems = [...selectedItems, id];
                     onSelectedChange(selectedItems);
                   }}
-                  aria-label="Toggle visibility"
-                  data-testid="toggle-visibility-button"
+                  on:keydown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      selectedItems = [...selectedItems, id];
+                      onSelectedChange(selectedItems);
+                    }
+                  }}
+                  role="presentation"
                 >
-                  <EyeOffIcon size="14px" color="#9ca3af" />
-                </button>
-              </div>
+                  <span class="truncate flex-1 text-left pointer-events-none"
+                    >{item.displayName}</span
+                  >
+
+                  <button
+                    class="hover:bg-slate-200 p-1 rounded-sm active:bg-slate-300"
+                    on:click|stopPropagation={() => {
+                      selectedItems = [...selectedItems, id];
+                      onSelectedChange(selectedItems);
+                    }}
+                    aria-label="Toggle visibility"
+                    data-testid="toggle-visibility-button"
+                  >
+                    <EyeOffIcon size="14px" color="#9ca3af" />
+                  </button>
+                </div>
+              {/if}
             {/each}
           {/if}
         </div>

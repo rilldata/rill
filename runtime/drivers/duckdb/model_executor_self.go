@@ -32,11 +32,6 @@ func (e *selfToSelfExecutor) Concurrency(desired int) (int, bool) {
 }
 
 func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExecuteOptions) (*drivers.ModelResult, error) {
-	olap, ok := e.c.AsOLAP(e.c.instanceID)
-	if !ok {
-		return nil, fmt.Errorf("output connector is not OLAP")
-	}
-
 	inputProps := &ModelInputProperties{}
 	if err := mapstructure.WeakDecode(opts.InputProperties, inputProps); err != nil {
 		return nil, fmt.Errorf("failed to parse input properties: %w", err)
@@ -108,7 +103,7 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 		if opts.Env.StageChanges {
 			stagingTableName = stagingTableNameFor(tableName)
 		}
-		_ = olap.DropTable(ctx, stagingTableName)
+		_ = e.c.dropTable(ctx, stagingTableName)
 
 		// Create the table
 		if inputProps.Database != "" {
@@ -125,52 +120,45 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 			}
 			res, err := e.createFromExternalDuckDB(ctx, inputProps, stagingTableName)
 			if err != nil {
-				_ = olap.DropTable(ctx, stagingTableName)
+				_ = e.c.dropTable(ctx, stagingTableName)
 				return nil, fmt.Errorf("failed to create model: %w", err)
 			}
 			duration = res.Duration
 		} else {
-			createTableOpts := &drivers.CreateTableOptions{
-				View:         asView,
-				BeforeCreate: inputProps.PreExec,
-				AfterCreate:  inputProps.PostExec,
+			createTableOpts := &createTableOptions{
+				view:         asView,
+				beforeCreate: inputProps.PreExec,
+				afterCreate:  inputProps.PostExec,
 			}
-			if inputProps.InitQueries != "" {
-				createTableOpts.InitQueries = []string{inputProps.InitQueries}
-			}
-			res, err := olap.CreateTableAsSelect(ctx, stagingTableName, inputProps.SQL, createTableOpts)
+			res, err := e.c.createTableAsSelect(ctx, stagingTableName, inputProps.SQL, createTableOpts)
 			if err != nil {
-				_ = olap.DropTable(ctx, stagingTableName)
+				_ = e.c.dropTable(ctx, stagingTableName)
 				return nil, fmt.Errorf("failed to create model: %w", err)
 			}
-			duration = res.Duration
+			duration = res.duration
 		}
 
 		// Rename the staging table to the final table name
 		if stagingTableName != tableName {
-			err := olapForceRenameTable(ctx, olap, stagingTableName, asView, tableName)
+			err := e.c.forceRenameTable(ctx, stagingTableName, asView, tableName)
 			if err != nil {
 				return nil, fmt.Errorf("failed to rename staged model: %w", err)
 			}
 		}
 	} else {
 		// Insert into the table
-		insertTableOpts := &drivers.InsertTableOptions{
+		insertTableOpts := &InsertTableOptions{
 			BeforeInsert: inputProps.PreExec,
 			AfterInsert:  inputProps.PostExec,
 			ByName:       false,
-			InPlace:      true,
 			Strategy:     outputProps.IncrementalStrategy,
 			UniqueKey:    outputProps.UniqueKey,
 		}
-		if inputProps.InitQueries != "" {
-			insertTableOpts.InitQueries = []string{inputProps.InitQueries}
-		}
-		res, err := olap.InsertTableAsSelect(ctx, tableName, inputProps.SQL, insertTableOpts)
+		res, err := e.c.insertTableAsSelect(ctx, tableName, inputProps.SQL, insertTableOpts)
 		if err != nil {
 			return nil, fmt.Errorf("failed to incrementally insert into table: %w", err)
 		}
-		duration = res.Duration
+		duration = res.duration
 	}
 
 	// Build result props
@@ -204,9 +192,12 @@ func (e *selfToSelfExecutor) createFromExternalDuckDB(ctx context.Context, input
 			}
 		}
 
-		if _, err := conn.ExecContext(ctx, fmt.Sprintf("ATTACH %s AS %s (READ_ONLY)", safeSQLString(inputProps.Database), safeDBName)); err != nil {
+		if _, err := conn.ExecContext(ctx, fmt.Sprintf("ATTACH IF NOT EXISTS %s AS %s (READ_ONLY)", safeSQLString(inputProps.Database), safeDBName)); err != nil {
 			return err
 		}
+		defer func() {
+			_, _ = conn.ExecContext(ctx, fmt.Sprintf("DETACH %s;", safeDBName))
+		}()
 
 		var localDB, localSchema string
 		if err := conn.QueryRowxContext(ctx, "SELECT current_database(),current_schema();").Scan(&localDB, &localSchema); err != nil {
@@ -222,7 +213,7 @@ func (e *selfToSelfExecutor) createFromExternalDuckDB(ctx context.Context, input
 		query := fmt.Sprintf("CREATE OR REPLACE TABLE %s.%s.%s AS (%s\n);", safeName(localDB), safeName(localSchema), safeTempTable, userQuery)
 		_, execErr := conn.ExecContext(ctx, query)
 		// revert to localdb and schema before returning
-		_, err := conn.ExecContext(ctx, fmt.Sprintf("USE %s.%s;", safeName(localDB), safeName(localSchema)))
+		_, err := conn.ExecContext(context.Background(), fmt.Sprintf("USE %s.%s;", safeName(localDB), safeName(localSchema)))
 		return errors.Join(execErr, err)
 	}
 	afterCreateFn := func(ctx context.Context, conn *sqlx.Conn) error {

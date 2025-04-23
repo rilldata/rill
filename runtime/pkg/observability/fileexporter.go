@@ -31,7 +31,7 @@ func NewFileExporter() (*FileExporter, error) {
 	// Setup lumberjack for log rotation
 	logWriter := &lumberjack.Logger{
 		Filename:   filepath, // File path
-		MaxSize:    30,       // Max file size in MB
+		MaxSize:    100,      // Max file size in MB
 		MaxBackups: 1,        // Keep 1 backup
 		MaxAge:     7,        // Keep logs for 7 days
 		Compress:   false,    // Do not Compress old log files

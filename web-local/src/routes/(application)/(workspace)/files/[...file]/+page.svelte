@@ -12,7 +12,6 @@
   import ExploreWorkspace from "@rilldata/web-common/features/workspaces/ExploreWorkspace.svelte";
   import MetricsWorkspace from "@rilldata/web-common/features/workspaces/MetricsWorkspace.svelte";
   import ModelWorkspace from "@rilldata/web-common/features/workspaces/ModelWorkspace.svelte";
-  import SourceWorkspace from "@rilldata/web-common/features/workspaces/SourceWorkspace.svelte";
   import WorkspaceContainer from "@rilldata/web-common/layout/workspace/WorkspaceContainer.svelte";
   import WorkspaceEditorContainer from "@rilldata/web-common/layout/workspace/WorkspaceEditorContainer.svelte";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.js";
@@ -21,7 +20,7 @@
   import type { PageData } from "./$types";
 
   const workspaces = new Map([
-    [ResourceKind.Source, SourceWorkspace],
+    [ResourceKind.Source, ModelWorkspace],
     [ResourceKind.Model, ModelWorkspace],
     [ResourceKind.MetricsView, MetricsWorkspace],
     [ResourceKind.Explore, ExploreWorkspace],

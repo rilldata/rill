@@ -331,6 +331,9 @@ message ExploreSpec {
   bool lock_time_zone = 19;
   // Allow custom time range
   bool allow_custom_time_range = 20;
+  // When true, it indicates that the explore was defined in a metrics view.
+  // This currently happens for legacy metrics views (that don't have `version: 1`), which also emits explores.
+  bool defined_in_metrics_view = 21;
 }
 
 message ExploreState {
@@ -386,7 +389,11 @@ message ExplorePreset {
   optional bool explore_sort_asc = 18;
   optional ExploreSortType explore_sort_type = 19;
   optional string explore_expanded_dimension = 20;
+
+  // Deprecated
   optional uint32 explore_leaderboard_measure_count = 30;
+  repeated string explore_leaderboard_measures = 31;
+  optional bool explore_leaderboard_show_context_for_all_measures = 32;
 
   optional string time_dimension_measure = 21;
   optional string time_dimension_chart_type = 22;

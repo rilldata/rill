@@ -1,16 +1,16 @@
 import type {
-  V1CanvasRow,
   V1CanvasItem,
+  V1CanvasRow,
+  V1ComponentSpecRendererProperties,
   V1MetricsViewSpec,
   V1ResolveCanvasResponseResolvedComponents,
   V1Resource,
-  V1ComponentSpecRendererProperties,
 } from "@rilldata/web-common/runtime-client";
-import { YAMLMap, YAMLSeq } from "yaml";
-import type { CanvasComponentType } from "./components/types";
 import { writable } from "svelte/store";
-import { COMPONENT_CLASS_MAP } from "./components/util";
+import { YAMLMap, YAMLSeq } from "yaml";
 import { ResourceKind } from "../entity-management/resource-selectors";
+import type { CanvasComponentType } from "./components/types";
+import { COMPONENT_CLASS_MAP } from "./components/util";
 
 export const initialHeights: Record<CanvasComponentType, number> = {
   line_chart: 320,
@@ -23,6 +23,7 @@ export const initialHeights: Record<CanvasComponentType, number> = {
   image: 80,
   table: 300,
   pivot: 300,
+  leaderboard: 300,
 };
 
 export const MIN_HEIGHT = 40;
@@ -151,9 +152,9 @@ export function generateArrayRearrangeFunction(transaction: Transaction) {
 
         case "move": {
           const { source, destination, insertRow } = op;
-
-          const rowIndex = destination.row;
           const sourceRow = newArray[source.row];
+          const rowIndex = destination.row;
+
           if (insertRow) {
             newArray.splice(rowIndex, 0, { items: [] } as unknown as R);
           }
@@ -162,12 +163,26 @@ export function generateArrayRearrangeFunction(transaction: Transaction) {
 
           if (!sourceRow || !destinationRow) break;
 
-          const item = sourceRow?.items?.[source.col];
+          const item = sourceRow.items?.[source.col];
 
           if (item === undefined) break;
 
+          if (
+            sourceRow !== destinationRow &&
+            (destinationRow.items?.length ?? 0) >= 4
+          ) {
+            throw new Error("Maximum number of items reached");
+          }
+
           sourceRow.items?.splice(source.col, 1);
-          destinationRow.items?.splice(destination.col, 0, item);
+
+          const insertIndex =
+            sourceRow === destinationRow && destination.col > source.col
+              ? destination.col - 1
+              : destination.col;
+
+          destinationRow.items?.splice(insertIndex, 0, item);
+
           touchedRows[source.row] = true;
           touchedRows[rowIndex] = true;
 
@@ -185,6 +200,12 @@ export function generateArrayRearrangeFunction(transaction: Transaction) {
           const sourceRow = newArray[source.row];
           const destinationRow = newArray[rowIndex];
           if (!sourceRow || !destinationRow) break;
+
+          const itemCount = destinationRow.items?.length ?? 0;
+
+          if (itemCount >= 4) {
+            throw new Error("Maximum number of items reached");
+          }
 
           const item = sourceRow.items?.[source.col];
           if (item === undefined) break;
@@ -205,6 +226,12 @@ export function generateArrayRearrangeFunction(transaction: Transaction) {
 
           const row = newArray[rowIndex];
           if (!row) break;
+
+          const itemCount = row.items?.length ?? 0;
+
+          if (itemCount >= 4) {
+            throw new Error("Maximum number of items reached");
+          }
 
           const newItem = newItemGenerator(destination, componentType);
           row.items?.splice(destination.col, 0, newItem);
@@ -256,6 +283,7 @@ export function generateNewAssets(params: {
     resolvedComponents,
     transaction,
   } = params;
+
   const mover = generateArrayRearrangeFunction(transaction);
 
   const resolvedComponentsArray = specRows.map((row) => {

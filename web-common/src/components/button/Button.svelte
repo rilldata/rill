@@ -14,7 +14,8 @@
     | "dashed"
     | "link"
     | "text"
-    | "add";
+    | "add"
+    | "toolbar";
 
   export let type: ButtonType = "plain";
   export let status: "info" | "error" = "info";
@@ -41,6 +42,7 @@
   export let gray = false;
   export let danger = false;
   export let preload = true;
+  export let active = false;
   export let loadingCopy = "Loading";
   // needed to set certain style that could be overridden by the style block in this component
   export let forcedStyle = "";
@@ -73,6 +75,7 @@
   class:wide
   class:compact
   class:rounded
+  class:active
   class:!w-fit={fit}
   class:whitespace-nowrap={noWrap}
   class:danger={status === "error" || danger}
@@ -278,6 +281,27 @@
     @apply text-slate-400;
   }
 
+  /* TOOLBAR STYLES */
+
+  .toolbar {
+    @apply font-normal text-gray-700;
+    @apply h-6 px-1.5 rounded-sm;
+    @apply gap-x-1.5;
+  }
+
+  .toolbar:hover {
+    @apply bg-slate-600/15;
+  }
+
+  .toolbar:active,
+  .toolbar.selected {
+    @apply bg-slate-600/15;
+  }
+
+  .toolbar:disabled {
+    @apply text-slate-400;
+  }
+
   /* DANGER STYLES */
 
   .danger.primary {
@@ -373,6 +397,11 @@
 
   .dashed {
     @apply border border-dashed;
+  }
+
+  /* TODO: variants for types like danger */
+  .active {
+    @apply bg-primary-100;
   }
 
   /* ADD BUTTON STYLES */

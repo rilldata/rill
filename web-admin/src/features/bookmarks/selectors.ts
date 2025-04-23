@@ -1,9 +1,7 @@
 import { page } from "$app/stores";
 import {
-  adminServiceListBookmarks,
   createAdminServiceGetCurrentUser,
   createAdminServiceListBookmarks,
-  getAdminServiceListBookmarksQueryKey,
   type V1Bookmark,
   type V1ListBookmarksResponse,
 } from "@rilldata/web-admin/client";
@@ -14,12 +12,13 @@ import {
 import { getDashboardStateFromUrl } from "@rilldata/web-common/features/dashboards/proto-state/fromProto";
 import { useMetricsViewTimeRange } from "@rilldata/web-common/features/dashboards/selectors";
 import { useExploreState } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
+import { getDefaultExploreUrlParams } from "@rilldata/web-common/features/dashboards/stores/get-default-explore-url-params";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import {
   getTimeControlState,
   timeControlStateSelector,
 } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
-import { convertExploreStateToURLSearchParams } from "@rilldata/web-common/features/dashboards/url-state/convertExploreStateToURLSearchParams";
+import { getCleanedUrlParamsForGoto } from "@rilldata/web-common/features/dashboards/url-state/convert-partial-explore-state-to-url-params";
 import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
@@ -28,7 +27,6 @@ import { prettyFormatTimeRange } from "@rilldata/web-common/lib/time/ranges";
 import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
 import {
   createQueryServiceMetricsViewSchema,
-  type V1ExplorePreset,
   type V1ExploreSpec,
   type V1MetricsViewSpec,
   type V1StructType,
@@ -51,19 +49,6 @@ export type Bookmarks = {
   personal: BookmarkEntry[];
   shared: BookmarkEntry[];
 };
-
-export async function fetchBookmarks(projectId: string, exploreName: string) {
-  const params = {
-    projectId,
-    resourceKind: ResourceKind.Explore,
-    resourceName: exploreName,
-  };
-  const bookmarksResp = await queryClient.fetchQuery({
-    queryKey: getAdminServiceListBookmarksQueryKey(params),
-    queryFn: ({ signal }) => adminServiceListBookmarks(params, signal),
-  });
-  return bookmarksResp.bookmarks ?? [];
-}
 
 export function getBookmarks(projectId: string, exploreName: string) {
   return derived(createAdminServiceGetCurrentUser(), (userResp, set) =>
@@ -89,11 +74,10 @@ export function isHomeBookmark(bookmark: V1Bookmark) {
 
 export function categorizeBookmarks(
   bookmarkResp: V1Bookmark[],
-  metricsSpec: V1MetricsViewSpec | undefined,
-  exploreSpec: V1ExploreSpec | undefined,
-  schema: V1StructType | undefined,
+  metricsSpec: V1MetricsViewSpec,
+  exploreSpec: V1ExploreSpec,
+  schema: V1StructType,
   exploreState: MetricsExplorerEntity,
-  defaultExplorePreset: V1ExplorePreset,
   timeRangeSummary: V1TimeRangeSummary | undefined,
 ) {
   const bookmarks: Bookmarks = {
@@ -102,14 +86,21 @@ export function categorizeBookmarks(
     shared: [],
   };
   if (!exploreState) return bookmarks;
+
+  const defaultExploreUrlParams = getDefaultExploreUrlParams(
+    metricsSpec,
+    exploreSpec,
+    timeRangeSummary,
+  );
+
   bookmarkResp?.forEach((bookmarkResource) => {
     const bookmark = parseBookmark(
       bookmarkResource,
-      metricsSpec ?? {},
-      exploreSpec ?? {},
-      schema ?? {},
+      metricsSpec,
+      exploreSpec,
+      schema,
       exploreState,
-      defaultExplorePreset,
+      defaultExploreUrlParams,
       timeRangeSummary,
     );
     if (isHomeBookmark(bookmarkResource)) {
@@ -206,7 +197,7 @@ function parseBookmark(
   exploreSpec: V1ExploreSpec,
   schema: V1StructType,
   exploreState: MetricsExplorerEntity,
-  defaultExplorePreset: V1ExplorePreset,
+  defaultExploreUrlParams: URLSearchParams,
   timeRangeSummary: V1TimeRangeSummary | undefined,
 ): BookmarkEntry {
   const exploreStateFromBookmark = getDashboardStateFromUrl(
@@ -223,16 +214,18 @@ function parseBookmark(
 
   const url = new URL(get(page).url);
 
-  const searchParams = convertExploreStateToURLSearchParams(
-    finalExploreState,
+  // We need to check if the bookmark's url is equal to current url or not to show an "active" state.
+  // To avoid calculating it everytime we directly convert it to final url.
+  const searchParams = getCleanedUrlParamsForGoto(
     exploreSpec,
+    finalExploreState,
     getTimeControlState(
       metricsViewSpec,
       exploreSpec,
       timeRangeSummary,
       finalExploreState,
     ),
-    defaultExplorePreset,
+    defaultExploreUrlParams,
     url,
   );
 
@@ -248,43 +241,53 @@ function parseBookmark(
       metricsViewSpec,
       exploreSpec,
       timeRangeSummary,
-      defaultExplorePreset,
-      url,
+      defaultExploreUrlParams,
     ),
     url: url.toString(),
   };
 }
+
+// These are the only parameters that are stored in a filter-only bookmark
+const filterOnlyParams = new Set([
+  ExploreStateURLParams.Filters,
+  ExploreStateURLParams.TimeRange,
+  ExploreStateURLParams.TimeGrain,
+]) as Set<string>;
 
 function isFilterOnlyBookmark(
   bookmarkState: Partial<MetricsExplorerEntity>,
   metricsViewSpec: V1MetricsViewSpec,
   exploreSpec: V1ExploreSpec,
   timeRangeSummary: V1TimeRangeSummary | undefined,
-  defaultExplorePreset: V1ExplorePreset,
-  url: URL,
+  defaultExploreUrlParams: URLSearchParams,
 ): boolean {
-  // Get the bookmark's search params
-  const searchParams = convertExploreStateToURLSearchParams(
-    bookmarkState as MetricsExplorerEntity,
+  // We need to remove defaults like time grain and timezone otherwise we will have extra fields here
+  const searchParams = getCleanedUrlParamsForGoto(
     exploreSpec,
+    bookmarkState as MetricsExplorerEntity,
     getTimeControlState(
       metricsViewSpec,
       exploreSpec,
       timeRangeSummary,
       bookmarkState as MetricsExplorerEntity,
     ),
-    defaultExplorePreset,
-    url,
+    defaultExploreUrlParams,
   );
-
-  // These are the only parameters that are stored in a filter-only bookmark
-  const allowedFilterParams = new Set([
-    ExploreStateURLParams.Filters,
-    ExploreStateURLParams.TimeRange,
-    ExploreStateURLParams.TimeGrain,
-  ]) as Set<string>;
 
   // Check if all the bookmark's search params are in the allowed list
   const urlParams = Array.from(searchParams.keys());
-  return urlParams.every((param) => allowedFilterParams.has(param));
+  return urlParams.every((param) => filterOnlyParams.has(param));
+}
+
+export function isBookmarkActive(entry: BookmarkEntry, curUrl: URL) {
+  const bookmarkUrl = new URL(entry.url);
+
+  if (entry.filtersOnly) {
+    return bookmarkUrl.searchParams.entries().every(([key, value]) => {
+      const curValue = curUrl.searchParams.get(key);
+      return curValue === value;
+    });
+  }
+
+  return bookmarkUrl.search === curUrl.search;
 }

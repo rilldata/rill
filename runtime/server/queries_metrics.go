@@ -65,6 +65,7 @@ func (s *Server) MetricsViewAggregation(ctx context.Context, req *runtimev1.Metr
 		Exact:               req.Exact,
 		Aliases:             req.Aliases,
 		FillMissing:         req.FillMissing,
+		Rows:                req.Rows,
 	}
 	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {
@@ -303,6 +304,7 @@ func (s *Server) MetricsViewRows(ctx context.Context, req *runtimev1.MetricsView
 		TimeZone:           req.TimeZone,
 		MetricsView:        mv.ValidSpec,
 		ResolvedMVSecurity: security,
+		Streaming:          mv.Streaming,
 		Filter:             req.Filter,
 	}
 	err = s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
@@ -426,17 +428,27 @@ func (s *Server) MetricsViewTimeRanges(ctx context.Context, req *runtimev1.Metri
 		return nil, err
 	}
 
+	var tz *time.Location
+	if req.TimeZone != "" {
+		tz, err = time.LoadLocation(req.TimeZone)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	// to keep results consistent
 	now := time.Now()
 
 	timeRanges := make([]*runtimev1.TimeRange, len(req.Expressions))
 	for i, tr := range req.Expressions {
-		rillTime, err := rilltime.Parse(tr, rilltime.ParseOptions{})
+		rillTime, err := rilltime.Parse(tr, rilltime.ParseOptions{
+			TimeZoneOverride: tz,
+		})
 		if err != nil {
 			return nil, fmt.Errorf("error parsing time range %s: %w", tr, err)
 		}
 
-		start, end, err := rillTime.Eval(rilltime.EvalOptions{
+		start, end, grain := rillTime.Eval(rilltime.EvalOptions{
 			Now:        now,
 			MinTime:    ts.Min,
 			MaxTime:    ts.Max,
@@ -444,13 +456,11 @@ func (s *Server) MetricsViewTimeRanges(ctx context.Context, req *runtimev1.Metri
 			FirstDay:   int(mv.ValidSpec.FirstDayOfWeek),
 			FirstMonth: int(mv.ValidSpec.FirstMonthOfYear),
 		})
-		if err != nil {
-			return nil, err
-		}
 
 		timeRanges[i] = &runtimev1.TimeRange{
-			Start: timestamppb.New(start),
-			End:   timestamppb.New(end),
+			Start:        timestamppb.New(start),
+			End:          timestamppb.New(end),
+			RoundToGrain: queries.TimeGrainToAPI(grain),
 			// for a reference
 			Expression: tr,
 		}

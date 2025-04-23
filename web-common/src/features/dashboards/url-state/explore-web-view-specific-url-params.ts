@@ -13,7 +13,7 @@ export const ExploreWebViewSpecificURLParams: Record<
     ExploreStateURLParams.SortBy,
     ExploreStateURLParams.SortType,
     ExploreStateURLParams.SortDirection,
-    ExploreStateURLParams.LeaderboardMeasureCount,
+    ExploreStateURLParams.LeaderboardMeasures,
     ExploreStateURLParams.TimeGrain,
     ExploreStateURLParams.HighlightedTimeRange,
   ],
@@ -56,6 +56,30 @@ export const ExploreWebViewCommonURLParams: Partial<
   },
 };
 
+// Sparse map of keys that are common by name between some but mean different things.
+// TODO: build this automatically given ExploreWebViewSpecificURLParams and ExploreWebViewCommonURLParams
+export const ExploreWebViewCommonNameDifferentMeaningURLParams: Partial<
+  Record<
+    ExploreUrlWebView,
+    Partial<Record<ExploreUrlWebView, ExploreStateURLParams[]>>
+  >
+> = {
+  explore: {
+    pivot: [
+      ExploreStateURLParams.SortBy,
+      ExploreStateURLParams.SortType,
+      ExploreStateURLParams.SortDirection,
+    ],
+  },
+  pivot: {
+    explore: [
+      ExploreStateURLParams.SortBy,
+      ExploreStateURLParams.SortType,
+      ExploreStateURLParams.SortDirection,
+    ],
+  },
+};
+
 const ExploreURLParamsSpecificToSomeWebView = new Set(
   Object.values(ExploreWebViewSpecificURLParams).flat(),
 );
@@ -92,4 +116,14 @@ export function copyUrlSearchParamsForView(
       }
     },
   );
+}
+
+export function isParamCommonButDifferentMeaning(
+  view1: ExploreUrlWebView,
+  view2: ExploreUrlWebView,
+  param: ExploreStateURLParams,
+) {
+  return ExploreWebViewCommonNameDifferentMeaningURLParams[view1]?.[
+    view2
+  ]?.includes(param);
 }

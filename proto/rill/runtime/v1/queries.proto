@@ -406,6 +406,8 @@ message MetricsViewAggregationRequest {
   MetricsViewFilter filter = 14; // Deprecated. should be removed once UI is moved to use new filters
   bool exact = 17;
   bool fill_missing = 21;
+  // Optional. Defaults to false. Used to fetch rows from underlying model
+  bool rows = 22;
 }
 
 message MetricsViewAggregationResponse {
@@ -795,6 +797,8 @@ message MetricsViewTimeRangesRequest {
   string metrics_view_name = 2 [(validate.rules).string.min_len = 1];
   repeated string expressions = 3;
   int32 priority = 4;
+  // Optional timezone param to easily override time-range expressions
+  string time_zone = 5;
 }
 
 message MetricsViewTimeRangesResponse {
