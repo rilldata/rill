@@ -37,7 +37,7 @@ const TestCases: {
   },
 ];
 
-describe("url-params-strip-utils", () => {
+describe("clean-url-params", () => {
   for (const {
     title,
     defaultSearch,
