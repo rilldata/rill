@@ -96,34 +96,49 @@
       <CaretDownIcon size="12px" />
     {/if}
   </DropdownMenu.Trigger>
-  <DropdownMenu.Content align="start">
-    <DropdownMenu.CheckboxItem
-      class="font-normal flex items-center"
-      checked={group.roleName === "admin"}
+  <DropdownMenu.Content align="start" strategy="fixed">
+    <DropdownMenu.Item
+      class="font-normal flex flex-col items-start py-2 {group.roleName ===
+      'admin'
+        ? 'bg-slate-100'
+        : ''}"
       on:click={() => {
         handleSetRole(group.groupName, "admin");
       }}
     >
-      <span>Admin</span>
-    </DropdownMenu.CheckboxItem>
-    <DropdownMenu.CheckboxItem
-      class="font-normal flex items-center"
-      checked={group.roleName === "editor"}
+      <span class="font-medium">Admin</span>
+      <span class="text-xs text-gray-600"
+        >Full control of project settings and members</span
+      >
+    </DropdownMenu.Item>
+    <DropdownMenu.Item
+      class="font-normal flex flex-col items-start py-2 {group.roleName ===
+      'editor'
+        ? 'bg-slate-100'
+        : ''}"
       on:click={() => {
         handleSetRole(group.groupName, "editor");
       }}
     >
-      <span>Editor</span>
-    </DropdownMenu.CheckboxItem>
-    <DropdownMenu.CheckboxItem
-      class="font-normal flex items-center"
-      checked={group.roleName === "viewer"}
+      <span class="font-medium">Editor</span>
+      <span class="text-xs text-gray-600"
+        >Can create and edit dashboards; manage non-admin access</span
+      >
+    </DropdownMenu.Item>
+    <DropdownMenu.Item
+      class="font-normal flex flex-col items-start py-2 {group.roleName ===
+      'viewer'
+        ? 'bg-slate-100'
+        : ''}"
       on:click={() => {
         handleSetRole(group.groupName, "viewer");
       }}
     >
-      <span>Viewer</span>
-    </DropdownMenu.CheckboxItem>
+      <span class="font-medium">Viewer</span>
+      <span class="text-xs text-gray-600"
+        >Read-only access to project dashboards</span
+      >
+    </DropdownMenu.Item>
     {#if !group.groupManaged}
       <DropdownMenu.Separator />
       <DropdownMenu.Item
