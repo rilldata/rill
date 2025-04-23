@@ -145,11 +145,13 @@
     </DropdownMenu.Trigger>
     <DropdownMenu.Content align="start" strategy="fixed">
       <!-- TODO: what happens when admin removes themselves as admin? -->
-      <!-- TODO: fix checked styles -->
-      <!-- getUserRole(user) === "admin" -->
       {#if role === "admin"}
         <DropdownMenu.Item
-          class="font-normal flex flex-col items-start py-2"
+          class="font-normal flex flex-col items-start py-2 {getUserRole(
+            user,
+          ) === 'admin'
+            ? 'bg-slate-100'
+            : ''}"
           on:click={() => handleSetRole(getUserEmail(user), "admin")}
         >
           <span class="font-medium">Admin</span>
@@ -160,7 +162,10 @@
       {/if}
 
       <DropdownMenu.Item
-        class="font-normal flex flex-col items-start py-2"
+        class="font-normal flex flex-col items-start py-2 {getUserRole(user) ===
+        'editor'
+          ? 'bg-slate-100'
+          : ''}"
         on:click={() => handleSetRole(getUserEmail(user), "editor")}
       >
         <span class="font-medium">Editor</span>
@@ -170,7 +175,10 @@
       </DropdownMenu.Item>
 
       <DropdownMenu.Item
-        class="font-normal flex flex-col items-start py-2"
+        class="font-normal flex flex-col items-start py-2 {getUserRole(user) ===
+        'viewer'
+          ? 'bg-slate-100'
+          : ''}"
         on:click={() => handleSetRole(getUserEmail(user), "viewer")}
       >
         <span class="font-medium">Viewer</span>
@@ -185,7 +193,7 @@
           class="font-normal flex items-center py-2"
           on:click={() => handleRemove(getUserEmail(user))}
         >
-          <span class="ml-6 text-red-600">Remove</span>
+          <span class=" text-red-600">Remove</span>
         </DropdownMenu.Item>
       {/if}
     </DropdownMenu.Content>
