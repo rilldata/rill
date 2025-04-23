@@ -64,6 +64,8 @@ type InsertTableOptions struct {
 	ByName       bool
 	Strategy     drivers.IncrementalStrategy
 	UniqueKey    []string
+	// PartitionBy is a SQL expression to use for dropping/replacing partitions with the partition_overwrite incremental strategy.
+	PartitionBy string
 }
 
 func (c *connection) insertTableAsSelect(ctx context.Context, name, sql string, opts *InsertTableOptions) (*tableWriteMetrics, error) {
@@ -148,6 +150,89 @@ func (c *connection) insertTableAsSelect(ctx context.Context, name, sql string, 
 			_, err = conn.ExecContext(ctx, fmt.Sprintf("DELETE FROM %s base WHERE EXISTS (SELECT 1 FROM %s tmp WHERE %s)", safeSQLName(name), safeSQLName(tmp), where))
 			if err != nil {
 				return err
+			}
+
+			// Insert the new data into the target table
+			_, err = conn.ExecContext(ctx, fmt.Sprintf("INSERT INTO %s %s SELECT * FROM %s", safeSQLName(name), byNameClause, safeSQLName(tmp)))
+			return err
+		})
+		if err != nil {
+			return nil, c.checkErr(err)
+		}
+		return &tableWriteMetrics{
+			duration: res.Duration,
+		}, nil
+	}
+
+	if opts.Strategy == drivers.IncrementalStrategyPartitionOverwrite {
+		partitionExpr := opts.PartitionBy
+		if partitionExpr == "" {
+			return nil, fmt.Errorf("partition overwrite strategy requires a partition expression")
+		}
+
+		res, err := db.MutateTable(ctx, name, opts.InitQueries, func(ctx context.Context, conn *sqlx.Conn) (mutate error) {
+			// Execute the pre-init SQL first
+			if opts.BeforeInsert != "" {
+				_, err := conn.ExecContext(ctx, opts.BeforeInsert)
+				if err != nil {
+					return err
+				}
+			}
+			defer func() {
+				if opts.AfterInsert != "" {
+					_, err := conn.ExecContext(ctx, opts.AfterInsert)
+					mutate = errors.Join(mutate, err)
+				}
+			}()
+
+			// Create a temporary table with the new data
+			tmp := uuid.New().String()
+			_, err := conn.ExecContext(ctx, fmt.Sprintf("CREATE TEMPORARY TABLE %s AS (%s\n)", safeSQLName(tmp), sql))
+			if err != nil {
+				return err
+			}
+
+			// Check the count of the new data
+			// Skip if the count is 0
+			var empty bool
+			err = conn.QueryRowxContext(ctx, fmt.Sprintf("SELECT COUNT(*) == 0 FROM %s", safeSQLName(tmp))).Scan(&empty)
+			if err != nil {
+				return err
+			}
+			if empty {
+				return nil
+			}
+
+			// Identify partitions to drop in the target table
+			partitionQuery := fmt.Sprintf("SELECT DISTINCT %s FROM %s", partitionExpr, safeSQLName(tmp))
+			partitions, err := conn.QueryxContext(ctx, partitionQuery)
+			if err != nil {
+				return err
+			}
+			defer partitions.Close()
+
+			var partitionConditions []string
+			for partitions.Next() {
+				var partitionValue string
+				if err := partitions.Scan(&partitionValue); err != nil {
+					return err
+				}
+				partitionConditions = append(partitionConditions, fmt.Sprintf("%s IS NOT DISTINCT FROM %s", partitionExpr, safeSQLString(partitionValue)))
+			}
+			if err := partitions.Err(); err != nil {
+				return err
+			}
+
+			// Drop the partitions in the target table
+			if len(partitionConditions) > 0 {
+				whereClause := fmt.Sprintf("WHERE %s", partitionConditions[0])
+				for _, condition := range partitionConditions[1:] {
+					whereClause += fmt.Sprintf(" OR %s", condition)
+				}
+				_, err = conn.ExecContext(ctx, fmt.Sprintf("DELETE FROM %s %s", safeSQLName(name), whereClause))
+				if err != nil {
+					return err
+				}
 			}
 
 			// Insert the new data into the target table

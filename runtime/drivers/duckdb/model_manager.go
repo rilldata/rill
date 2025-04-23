@@ -30,6 +30,7 @@ type ModelOutputProperties struct {
 	Materialize         *bool                       `mapstructure:"materialize"`
 	UniqueKey           []string                    `mapstructure:"unique_key"`
 	IncrementalStrategy drivers.IncrementalStrategy `mapstructure:"incremental_strategy"`
+	PartitionBy         string                      `mapstructure:"partition_by"`
 }
 
 func (p *ModelOutputProperties) Validate(opts *drivers.ModelExecuteOptions) error {
@@ -48,13 +49,17 @@ func (p *ModelOutputProperties) Validate(opts *drivers.ModelExecuteOptions) erro
 	}
 
 	switch p.IncrementalStrategy {
-	case drivers.IncrementalStrategyUnspecified, drivers.IncrementalStrategyAppend, drivers.IncrementalStrategyMerge:
+	case drivers.IncrementalStrategyUnspecified, drivers.IncrementalStrategyAppend, drivers.IncrementalStrategyMerge, drivers.IncrementalStrategyPartitionOverwrite:
 	default:
 		return fmt.Errorf("invalid incremental strategy %q", p.IncrementalStrategy)
 	}
 
 	if p.IncrementalStrategy == drivers.IncrementalStrategyMerge && len(p.UniqueKey) == 0 {
 		return fmt.Errorf(`must specify a "unique_key" when "incremental_strategy" is %q`, p.IncrementalStrategy)
+	}
+
+	if p.IncrementalStrategy == drivers.IncrementalStrategyPartitionOverwrite && p.PartitionBy == "" {
+		return fmt.Errorf(`must specify "partition_by" when "incremental_strategy" is %q`, p.IncrementalStrategy)
 	}
 
 	if p.IncrementalStrategy == drivers.IncrementalStrategyUnspecified {
