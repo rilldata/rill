@@ -844,6 +844,7 @@ export interface V1ProjectMemberUser {
   userName?: string;
   userPhotoUrl?: string;
   roleName?: string;
+  orgRoleName?: string;
   createdOn?: string;
   updatedOn?: string;
 }

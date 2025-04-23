@@ -218,7 +218,7 @@ type DB interface {
 	CountSingleuserOrganizationsForMemberUser(ctx context.Context, userID string) (int, error)
 	FindOrganizationMembersWithManageUsersRole(ctx context.Context, orgID string) ([]*OrganizationMemberUser, error)
 
-	FindProjectMemberUsers(ctx context.Context, projectID, filterRoleID, afterEmail string, limit int) ([]*ProjectMemberUser, error)
+	FindProjectMemberUsers(ctx context.Context, orgID, projectID, filterRoleID, afterEmail string, limit int) ([]*ProjectMemberUser, error)
 	FindProjectMemberUserRole(ctx context.Context, projectID, userID string) (*ProjectRole, error)
 	InsertProjectMemberUser(ctx context.Context, projectID, userID, roleID string) error
 	DeleteProjectMemberUser(ctx context.Context, projectID, userID string) error
@@ -872,7 +872,8 @@ type ProjectMemberUser struct {
 	Email       string
 	DisplayName string    `db:"display_name"`
 	PhotoURL    string    `db:"photo_url"`
-	RoleName    string    `db:"name"`
+	RoleName    string    `db:"role_name"`
+	OrgRoleName string    `db:"org_role_name"`
 	CreatedOn   time.Time `db:"created_on"`
 	UpdatedOn   time.Time `db:"updated_on"`
 }

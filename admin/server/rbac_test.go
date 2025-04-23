@@ -84,6 +84,11 @@ func TestRBAC(t *testing.T) {
 		require.Len(t, r10.Members, 2)
 		for _, m := range r10.Members {
 			require.Equal(t, database.ProjectRoleNameAdmin, m.RoleName)
+			if m.UserId == u2.ID {
+				require.Equal(t, m.OrgRoleName == database.OrganizationRoleNameGuest)
+			} else {
+				require.Equal(t, m.OrgRoleName == database.OrganizationRoleNameAdmin)
+			}
 		}
 
 		// Check we can't add u2 to the org (since they are already in it as a guest)
