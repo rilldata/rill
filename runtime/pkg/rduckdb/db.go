@@ -906,10 +906,8 @@ func (d *db) acquireWriteConn(ctx context.Context, dbPath, table string, attachE
 		ctx, cancel := graceful.WithMinimumDuration(ctx, 15*time.Second)
 		defer cancel()
 
-		// run an explicit checkpoint in the attached DB to make sure that the wal file is flushed
-		_, cpErr := conn.ExecContext(ctx, "CHECKPOINT "+attachName)
-		_, deErr := conn.ExecContext(ctx, "DETACH "+attachName)
-		return errors.Join(cpErr, deErr, conn.Close())
+		_, err := conn.ExecContext(ctx, "DETACH "+attachName)
+		return errors.Join(err, conn.Close())
 	}
 	return conn, releaseFn, nil
 }
