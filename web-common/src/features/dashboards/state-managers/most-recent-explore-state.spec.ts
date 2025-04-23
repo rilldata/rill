@@ -71,7 +71,7 @@ const TestCases: {
     ],
 
     expectedUrlSearch:
-      "view=explore&tr=PT6H&tz=UTC&compare_tr=&grain=hour&compare_dim=&f=&measures=bid_price&dims=publisher&expand_dim=&sort_by=bid_price&sort_type=percent&sort_dir=ASC&leaderboard_measures=bid_price",
+      "measures=bid_price&dims=publisher&sort_by=bid_price&sort_type=percent&sort_dir=ASC&leaderboard_measures=bid_price",
     expectedExplore: {
       allMeasuresVisible: false,
       visibleMeasures: [AD_BIDS_BID_PRICE_MEASURE],
@@ -90,7 +90,7 @@ const TestCases: {
     mutations: [],
 
     expectedUrlSearch:
-      "view=explore&tr=PT6H&tz=UTC&compare_tr=&grain=hour&compare_dim=&f=&measures=bid_price&dims=publisher&expand_dim=&sort_by=bid_price&sort_type=percent&sort_dir=ASC&leaderboard_measures=bid_price",
+      "measures=bid_price&dims=publisher&sort_by=bid_price&sort_type=percent&sort_dir=ASC&leaderboard_measures=bid_price",
     expectedExplore: {
       allMeasuresVisible: false,
       visibleMeasures: [AD_BIDS_BID_PRICE_MEASURE],
