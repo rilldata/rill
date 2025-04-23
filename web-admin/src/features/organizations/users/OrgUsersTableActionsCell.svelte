@@ -6,7 +6,6 @@
   import RemoveUserFromOrgConfirmDialog from "./RemoveUserFromOrgConfirmDialog.svelte";
   import {
     createAdminServiceRemoveOrganizationMemberUser,
-    createAdminServiceUpdateOrganization,
     getAdminServiceListOrganizationInvitesQueryKey,
     getAdminServiceListOrganizationMemberUsersQueryKey,
     getAdminServiceListUsergroupMemberUsersQueryKey,
@@ -15,13 +14,8 @@
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { page } from "$app/stores";
 
-  export let organization: string;
-  export let name: string;
   export let email: string;
   export let isCurrentUser: boolean;
-  export let isAdminUser: boolean;
-  // Used in "Assign as billing contact". So we use manageOrg instead of manageUsers
-  export let currentUserCanManageOrg: boolean;
 
   let isDropdownOpen = false;
   let isRemoveConfirmOpen = false;
@@ -31,7 +25,6 @@
   const queryClient = useQueryClient();
   const removeOrganizationMemberUser =
     createAdminServiceRemoveOrganizationMemberUser();
-  const updateOrg = createAdminServiceUpdateOrganization();
 
   async function handleRemove(email: string) {
     try {
@@ -86,34 +79,9 @@
       });
     }
   }
-
-  async function handleAssignAsBillingContact() {
-    try {
-      await $updateOrg.mutateAsync({
-        name: organization,
-        data: {
-          billingEmail: email,
-        },
-      });
-
-      eventBus.emit("notification", {
-        message: `Successfully assigned ${name} as the billing contact`,
-      });
-    } catch (error) {
-      console.error("Error assigning user as billing contact", error);
-      eventBus.emit("notification", {
-        message:
-          "Error: Unable to assign billing contact. Please try again or contact support if the issue persists.",
-        type: "error",
-      });
-    }
-  }
-
-  $: showAssignAsBillingContact = currentUserCanManageOrg && isAdminUser;
-  $: showDropdown = !isCurrentUser || showAssignAsBillingContact;
 </script>
 
-{#if showDropdown}
+{#if !isCurrentUser}
   <DropdownMenu.Root bind:open={isDropdownOpen}>
     <DropdownMenu.Trigger class="flex-none">
       <IconButton rounded active={isDropdownOpen}>
@@ -121,26 +89,16 @@
       </IconButton>
     </DropdownMenu.Trigger>
     <DropdownMenu.Content align="start">
-      {#if !isCurrentUser}
-        <DropdownMenu.Item
-          class="font-normal flex items-center"
-          type="destructive"
-          on:click={() => {
-            isRemoveConfirmOpen = true;
-          }}
-        >
-          <Trash2Icon size="12px" />
-          <span class="ml-2">Remove</span>
-        </DropdownMenu.Item>
-      {/if}
-      {#if showAssignAsBillingContact}
-        <DropdownMenu.Item
-          class="font-normal flex items-center"
-          on:click={handleAssignAsBillingContact}
-        >
-          <span class="ml-2">Assign as billing contact</span>
-        </DropdownMenu.Item>
-      {/if}
+      <DropdownMenu.Item
+        class="font-normal flex items-center"
+        type="destructive"
+        on:click={() => {
+          isRemoveConfirmOpen = true;
+        }}
+      >
+        <Trash2Icon size="12px" />
+        <span class="ml-2">Remove</span>
+      </DropdownMenu.Item>
     </DropdownMenu.Content>
   </DropdownMenu.Root>
 {/if}

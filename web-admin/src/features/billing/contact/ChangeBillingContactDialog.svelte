@@ -2,12 +2,13 @@
   import {
     createAdminServiceListOrganizationMemberUsers,
     createAdminServiceUpdateOrganization,
+    getAdminServiceGetOrganizationQueryKey,
   } from "@rilldata/web-admin/client";
   import * as Dialog from "@rilldata/web-common/components/dialog-v2";
   import { Button } from "@rilldata/web-common/components/button";
   import Select from "@rilldata/web-common/components/forms/Select.svelte";
-  import SearchableMenuContent from "@rilldata/web-common/components/searchable-filter-menu/SearchableMenuContent.svelte";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
+  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 
   export let open: boolean;
   export let organization: string;
@@ -22,10 +23,18 @@
       label: u.userName ? `${u.userName} (${u.userEmail})` : u.userEmail,
     })) ?? [];
   $: selectedBillingContact = currentBillingContact ?? "";
+  $: selectedDifferntBillingContact =
+    currentBillingContact !== selectedBillingContact;
 
   const updateOrg = createAdminServiceUpdateOrganization();
 
   async function handleAssignAsBillingContact() {
+    const selectedBillingContactUser = $adminUsers.data?.members?.find(
+      (u) => u.userEmail === selectedBillingContact,
+    );
+    const selectedBillingContactName =
+      selectedBillingContactUser?.userName ?? selectedBillingContact;
+
     try {
       await $updateOrg.mutateAsync({
         name: organization,
@@ -35,18 +44,21 @@
       });
 
       eventBus.emit("notification", {
-        message: `Successfully assigned ${name} as the billing contact`,
+        message: `${selectedBillingContactName} has been assigned as billing contact.`,
       });
     } catch (error) {
       console.error("Error assigning user as billing contact", error);
       eventBus.emit("notification", {
         message:
-          "Error: Unable to assign billing contact. Please try again or contact support if the issue persists.",
+          "Failed to reassign billing contact. Please try again or contact support.",
         type: "error",
       });
     }
 
     open = false;
+    await queryClient.invalidateQueries({
+      queryKey: getAdminServiceGetOrganizationQueryKey(organization),
+    });
   }
 </script>
 
@@ -54,14 +66,16 @@
   <Dialog.Trigger asChild>
     <div class="hidden"></div>
   </Dialog.Trigger>
-  <Dialog.Content>
+  <Dialog.Content class="w-[520px]">
     <Dialog.Header>
-      <Dialog.Title>Update billing contact</Dialog.Title>
+      <Dialog.Title>Change billing contact</Dialog.Title>
 
       <Dialog.Description>
+        <div class="mt-2 my-1">
+          Select another org admin as billing contact.
+        </div>
         <Select
-          id="emails"
-          label="Repo"
+          id="billingContact"
           bind:value={selectedBillingContact}
           options={selectableUsers}
           on:change={({ detail: newName }) =>
@@ -71,8 +85,13 @@
     </Dialog.Header>
     <Dialog.Footer class="mt-3">
       <Button type="secondary" on:click={() => (open = false)}>Cancel</Button>
-      <Button type="primary" on:click={handleAssignAsBillingContact}>
-        Update
+      <Button
+        type="primary"
+        on:click={handleAssignAsBillingContact}
+        loading={$updateOrg.isPending}
+        disabled={!selectedDifferntBillingContact}
+      >
+        Assign as billing contact
       </Button>
     </Dialog.Footer>
   </Dialog.Content>

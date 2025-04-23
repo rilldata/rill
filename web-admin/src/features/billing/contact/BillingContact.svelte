@@ -1,26 +1,25 @@
 <script lang="ts">
-  import {
-    createAdminServiceGetOrganization,
-    type V1Subscription,
-  } from "@rilldata/web-admin/client";
-  import UpdateBillingContactDialog from "@rilldata/web-admin/features/billing/contact/UpdateBillingContactDialog.svelte";
-  import { getPaymentIssueErrorText } from "@rilldata/web-admin/features/billing/issues/getMessageForPaymentIssues";
+  import ChangeBillingContactDialog from "@rilldata/web-admin/features/billing/contact/ChangeBillingContactDialog.svelte";
+  import { getOrganizationBillingContactUser } from "@rilldata/web-admin/features/billing/contact/selectors";
   import SettingsContainer from "@rilldata/web-admin/features/organizations/settings/SettingsContainer.svelte";
+  import AvatarListItem from "@rilldata/web-admin/features/organizations/users/AvatarListItem.svelte";
   import { Button } from "@rilldata/web-common/components/button";
-  import CancelCircle from "@rilldata/web-common/components/icons/CancelCircle.svelte";
 
   export let organization: string;
 
-  $: org = createAdminServiceGetOrganization(organization);
-  $: billingContact = $org.data?.organization?.billingEmail;
+  $: billingContactUser = getOrganizationBillingContactUser(organization);
 
   let openUpdateBillingContactDialog = false;
 </script>
 
 <SettingsContainer title="Billing Contact">
   <div slot="body" class="flex flex-row items-center gap-x-1">
-    {#if billingContact}
-      Current billing contact is "{billingContact}"
+    {#if $billingContactUser}
+      <AvatarListItem
+        name={$billingContactUser.displayName}
+        email={$billingContactUser.email}
+        photoUrl={$billingContactUser.photoUrl}
+      />
     {:else}
       This org has no billing contact.
     {/if}
@@ -30,12 +29,12 @@
     type="secondary"
     on:click={() => (openUpdateBillingContactDialog = true)}
   >
-    Update
+    Change billing contact
   </Button>
 </SettingsContainer>
 
-<UpdateBillingContactDialog
+<ChangeBillingContactDialog
   bind:open={openUpdateBillingContactDialog}
   {organization}
-  currentBillingContact={billingContact}
+  currentBillingContact={$billingContactUser?.email}
 />

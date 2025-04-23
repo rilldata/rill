@@ -33,7 +33,6 @@
     invitedBy?: string;
   }
 
-  export let organization: string;
   export let data: OrgUser[];
   export let usersQuery: InfiniteQueryObserverResult<
     InfiniteData<V1ListOrganizationMemberUsersResponse, unknown>,
@@ -44,8 +43,6 @@
     RpcStatus
   >;
   export let currentUserEmail: string;
-  // Used in "Assign as billing contact". So we use manageOrg instead of manageUsers
-  export let userCanManageOrg: boolean;
 
   const ROW_HEIGHT = 69;
   const OVERSCAN = 5;
@@ -100,12 +97,8 @@
       enableSorting: false,
       cell: ({ row }) =>
         flexRender(OrgUsersTableActionsCell, {
-          organization,
-          name: row.original.userName ?? row.original.email,
           email: row.original.userEmail,
           isCurrentUser: row.original.userEmail === currentUserEmail,
-          isAdminUser: row.original.roleName === "admin",
-          currentUserCanManageOrg: userCanManageOrg,
         }),
       meta: {
         widthPercent: 0,
