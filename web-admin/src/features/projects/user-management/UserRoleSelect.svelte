@@ -53,7 +53,7 @@
       <CaretDownIcon size="12px" />
     {/if}
   </DropdownMenuTrigger>
-  <DropdownMenuContent side="bottom" align="end">
+  <DropdownMenuContent side="bottom" align="end" class="w-[240px]">
     {#each Options as { value, label, description } (value)}
       <DropdownMenuItem
         on:click={() => onSelect(value)}
