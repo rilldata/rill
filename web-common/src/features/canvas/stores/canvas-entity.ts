@@ -195,12 +195,9 @@ export class CanvasEntity {
         const existingClass = this.components.get(componentName);
         const path = constructPath(rowIndex, columnIndex, newType);
 
-        console.log({ existingClass });
-
         if (existingClass && areSameType(newType, existingClass.type)) {
           existingClass.update(newResource, path);
         } else {
-          console.log("created");
           createdNewComponent = true;
           this.components.set(
             componentName,

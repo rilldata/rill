@@ -24,7 +24,7 @@ function generateCSSBlock(): string {
 
   for (const [colorName, colorMap] of Object.entries(allColors)) {
     const colorList = Object.values(colorMap);
-    const darkVariants = createDarkVariation(colorName, [...colorList]);
+    const darkVariants = createDarkVariation([...colorList]);
 
     // Light and dark variables for each color and shade
     const lightVars = colorList

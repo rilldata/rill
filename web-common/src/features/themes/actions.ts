@@ -7,19 +7,8 @@ export const BLACK = chroma("black");
 export const WHITE = chroma("white");
 export const MODE = "oklab";
 
-export function createDarkVariation(name: string, colors: Color[]) {
-  if (!["neutral", "stone", "slate", "zinc", "gray"].includes(name)) {
-    return generatePalette(colors[5]).dark;
-  } else {
-    const deSat = colors.reverse().map((color) => color.desaturate(20));
-
-    const shadows = deSat.slice(0, 4);
-    const highs = deSat.slice(5, 10);
-    const left = chroma.scale(shadows).mode("oklch").gamma(1.6).colors(4, null);
-    const right = chroma.scale(highs).mode("oklch").gamma(0.8).colors(7, null);
-
-    return [...left, ...right];
-  }
+export function createDarkVariation(colors: Color[]) {
+  return generatePalette(colors[5]).dark;
 }
 
 function generatePalette(
@@ -33,19 +22,19 @@ function generatePalette(
 
   if (isGray) {
     const spectrum = chroma
-      .scale([chroma("black"), refColor.desaturate(0.2), chroma("white")])
+      .scale([chroma("black"), refColor.desaturate(0.15), chroma("white")])
       .mode(MODE)
       .gamma(1)
       .colors(102, null);
 
-    const darkestDark = findLuminance(spectrum, 0.194) ?? spectrum[0];
-    const lightestDark = findLuminance(spectrum, 0.92) ?? spectrum[0];
+    const darkestDark = findContrast(spectrum, BLACK, 1.018) ?? spectrum[0];
+    const lightestDark = findContrast(spectrum, darkestDark, 18) ?? spectrum[0];
 
     return {
       dark: chroma
         .scale([darkestDark, lightestDark])
         .mode(MODE)
-        .gamma(gamma)
+        .gamma(1)
         .colors(stepCount, null),
       light: chroma
         .scale([chroma("white"), chroma("black")])
