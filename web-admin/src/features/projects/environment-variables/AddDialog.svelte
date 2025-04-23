@@ -1,33 +1,32 @@
 <script lang="ts">
   import { page } from "$app/stores";
-  import { Button } from "@rilldata/web-common/components/button";
-  import {
-    Dialog,
-    DialogContent,
-    DialogHeader,
-    DialogTitle,
-    DialogTrigger,
-    DialogDescription,
-    DialogFooter,
-  } from "@rilldata/web-common/components/dialog-v2";
-  import Checkbox from "@rilldata/web-common/components/forms/Checkbox.svelte";
-  import { Plus } from "lucide-svelte";
   import {
     createAdminServiceUpdateProjectVariables,
     getAdminServiceGetProjectVariablesQueryKey,
+    type AdminServiceUpdateProjectVariablesBodyVariables,
   } from "@rilldata/web-admin/client";
-  import { type AdminServiceUpdateProjectVariablesBodyVariables } from "@rilldata/web-admin/client";
-  import { useQueryClient } from "@tanstack/svelte-query";
+  import { Button } from "@rilldata/web-common/components/button";
+  import IconButton from "@rilldata/web-common/components/button/IconButton.svelte";
+  import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+  } from "@rilldata/web-common/components/dialog";
+  import Checkbox from "@rilldata/web-common/components/forms/Checkbox.svelte";
+  import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
+  import { useQueryClient } from "@tanstack/svelte-query";
+  import { parse as parseDotenv } from "dotenv";
+  import { Plus, Trash2Icon, UploadIcon } from "lucide-svelte";
   import { defaults, superForm } from "sveltekit-superforms";
   import { yup } from "sveltekit-superforms/adapters";
-  import { object, string, array } from "yup";
+  import { array, object, string } from "yup";
   import { type VariableNames } from "./types";
-  import Input from "@rilldata/web-common/components/forms/Input.svelte";
-  import IconButton from "@rilldata/web-common/components/button/IconButton.svelte";
-  import { Trash2Icon, UploadIcon } from "lucide-svelte";
   import { getCurrentEnvironment, isDuplicateKey } from "./utils";
-  import { parse as parseDotenv } from "dotenv";
 
   export let open = false;
   export let variableNames: VariableNames = [];

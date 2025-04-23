@@ -241,17 +241,21 @@
   function performTransaction(transaction: Transaction) {
     if (!defaultMetrics) return;
 
-    const { newSpecRows, newYamlRows, newResolvedComponents } =
-      generateNewAssets({
-        yamlRows: yamlCanvasRows,
-        specRows: specCanvasRows,
-        canvasName,
-        defaultMetrics,
-        resolvedComponents,
-        transaction,
-      });
+    try {
+      const { newSpecRows, newYamlRows, newResolvedComponents } =
+        generateNewAssets({
+          yamlRows: yamlCanvasRows,
+          specRows: specCanvasRows,
+          canvasName,
+          defaultMetrics,
+          resolvedComponents,
+          transaction,
+        });
 
-    updateAssets(newSpecRows, newYamlRows, newResolvedComponents);
+      updateAssets(newSpecRows, newYamlRows, newResolvedComponents);
+    } catch {
+      // no-op
+    }
   }
 
   function addItems(

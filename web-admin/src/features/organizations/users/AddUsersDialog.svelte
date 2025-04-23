@@ -1,26 +1,26 @@
 <script lang="ts">
+  import { page } from "$app/stores";
+  import {
+    createAdminServiceAddOrganizationMemberUser,
+    getAdminServiceListOrganizationInvitesQueryKey,
+    getAdminServiceListOrganizationMemberUsersQueryKey,
+  } from "@rilldata/web-admin/client";
+  import UserRoleSelect from "@rilldata/web-admin/features/projects/user-management/UserRoleSelect.svelte";
+  import { Button } from "@rilldata/web-common/components/button/index.js";
   import {
     Dialog,
     DialogContent,
     DialogHeader,
     DialogTitle,
     DialogTrigger,
-  } from "@rilldata/web-common/components/dialog-v2";
-  import { Button } from "@rilldata/web-common/components/button/index.js";
-  import { defaults, superForm } from "sveltekit-superforms";
-  import { yup } from "sveltekit-superforms/adapters";
-  import { array, object, string } from "yup";
+  } from "@rilldata/web-common/components/dialog";
   import MultiInput from "@rilldata/web-common/components/forms/MultiInput.svelte";
-  import UserRoleSelect from "@rilldata/web-admin/features/projects/user-management/UserRoleSelect.svelte";
   import { RFC5322EmailRegex } from "@rilldata/web-common/components/forms/validation";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { useQueryClient } from "@tanstack/svelte-query";
-  import {
-    createAdminServiceAddOrganizationMemberUser,
-    getAdminServiceListOrganizationInvitesQueryKey,
-    getAdminServiceListOrganizationMemberUsersQueryKey,
-  } from "@rilldata/web-admin/client";
-  import { page } from "$app/stores";
+  import { defaults, superForm } from "sveltekit-superforms";
+  import { yup } from "sveltekit-superforms/adapters";
+  import { array, object, string } from "yup";
 
   export let open = false;
   export let email: string;
