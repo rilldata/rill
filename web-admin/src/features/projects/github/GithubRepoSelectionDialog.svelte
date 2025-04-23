@@ -4,9 +4,15 @@
     type RpcStatus,
   } from "@rilldata/web-admin/client";
   import { extractGithubConnectError } from "@rilldata/web-admin/features/projects/github/github-errors";
-  import { ProjectGithubConnectionUpdater } from "@rilldata/web-admin/features/projects/github/ProjectGithubConnectionUpdater";
   import { getGithubData } from "@rilldata/web-admin/features/projects/github/GithubData";
   import GithubOverwriteConfirmDialog from "@rilldata/web-admin/features/projects/github/GithubOverwriteConfirmDialog.svelte";
+  import { ProjectGithubConnectionUpdater } from "@rilldata/web-admin/features/projects/github/ProjectGithubConnectionUpdater";
+  import { Button } from "@rilldata/web-common/components/button";
+  import {
+    Collapsible,
+    CollapsibleContent,
+    CollapsibleTrigger,
+  } from "@rilldata/web-common/components/collapsible";
   import {
     Dialog,
     DialogContent,
@@ -15,21 +21,15 @@
     DialogHeader,
     DialogTitle,
     DialogTrigger,
-  } from "@rilldata/web-common/components/dialog-v2";
-  import {
-    Collapsible,
-    CollapsibleTrigger,
-    CollapsibleContent,
-  } from "@rilldata/web-common/components/collapsible";
-  import { Button } from "@rilldata/web-common/components/button";
+  } from "@rilldata/web-common/components/dialog";
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
-  import Github from "@rilldata/web-common/components/icons/Github.svelte";
   import Select from "@rilldata/web-common/components/forms/Select.svelte";
+  import CaretDownFilledIcon from "@rilldata/web-common/components/icons/CaretDownFilledIcon.svelte";
+  import CaretRightFilledIcon from "@rilldata/web-common/components/icons/CaretRightFilledIcon.svelte";
+  import Github from "@rilldata/web-common/components/icons/Github.svelte";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
-  import CaretDownFilledIcon from "@rilldata/web-common/components/icons/CaretDownFilledIcon.svelte";
-  import CaretRightFilledIcon from "@rilldata/web-common/components/icons/CaretRightFilledIcon.svelte";
   import type { AxiosError } from "axios";
 
   export let open = false;
