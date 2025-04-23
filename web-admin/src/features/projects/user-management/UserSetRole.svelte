@@ -86,7 +86,7 @@
       eventBus.emit("notification", {
         message: "User role updated",
       });
-      // eslint-disable-next-line @typescript-eslint/no-unused-var
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (_) {
       eventBus.emit("notification", {
         message: "Error updating user role",
