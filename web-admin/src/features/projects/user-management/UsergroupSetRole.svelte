@@ -20,9 +20,9 @@
 
   const queryClient = useQueryClient();
 
-  const setProjectMemberUserGroupRole =
+  $: setProjectMemberUserGroupRole =
     createAdminServiceSetProjectMemberUsergroupRole();
-  const removeProjectMemberUsergroup =
+  $: removeProjectMemberUsergroup =
     createAdminServiceRemoveProjectMemberUsergroup();
 
   async function handleSetRole(groupName: string, role: string) {
@@ -83,48 +83,64 @@
   }
 </script>
 
-{#if !group.groupManaged}
-  <DropdownMenu.Root bind:open={isOpen}>
-    <DropdownMenu.Trigger
-      class="w-18 flex flex-row gap-1 items-center rounded-sm mr-[10px] {isOpen
-        ? 'bg-slate-200'
-        : 'hover:bg-slate-100'} px-2 py-1"
+<DropdownMenu.Root bind:open={isOpen}>
+  <DropdownMenu.Trigger
+    class="w-18 flex flex-row gap-1 items-center rounded-sm mr-[10px] {isOpen
+      ? 'bg-slate-200'
+      : 'hover:bg-slate-100'} px-2 py-1"
+  >
+    {capitalize(group.roleName)}
+    {#if isOpen}
+      <CaretUpIcon size="12px" />
+    {:else}
+      <CaretDownIcon size="12px" />
+    {/if}
+  </DropdownMenu.Trigger>
+  <DropdownMenu.Content align="start" strategy="fixed">
+    <DropdownMenu.Item
+      class="font-normal flex flex-col items-start py-2 {group.roleName ===
+      'admin'
+        ? 'bg-slate-100'
+        : ''}"
+      on:click={() => {
+        handleSetRole(group.groupName, "admin");
+      }}
     >
-      {capitalize(group.roleName)}
-      {#if isOpen}
-        <CaretUpIcon size="12px" />
-      {:else}
-        <CaretDownIcon size="12px" />
-      {/if}
-    </DropdownMenu.Trigger>
-    <DropdownMenu.Content align="start">
-      <DropdownMenu.CheckboxItem
-        class="font-normal flex items-center"
-        checked={group.roleName === "admin"}
-        on:click={() => {
-          handleSetRole(group.groupName, "admin");
-        }}
+      <span class="font-medium">Admin</span>
+      <span class="text-xs text-gray-600"
+        >Full control of project settings and members</span
       >
-        <span>Admin</span>
-      </DropdownMenu.CheckboxItem>
-      <DropdownMenu.CheckboxItem
-        class="font-normal flex items-center"
-        checked={group.roleName === "editor"}
-        on:click={() => {
-          handleSetRole(group.groupName, "editor");
-        }}
+    </DropdownMenu.Item>
+    <DropdownMenu.Item
+      class="font-normal flex flex-col items-start py-2 {group.roleName ===
+      'editor'
+        ? 'bg-slate-100'
+        : ''}"
+      on:click={() => {
+        handleSetRole(group.groupName, "editor");
+      }}
+    >
+      <span class="font-medium">Editor</span>
+      <span class="text-xs text-gray-600"
+        >Can create and edit dashboards; manage non-admin access</span
       >
-        <span>Editor</span>
-      </DropdownMenu.CheckboxItem>
-      <DropdownMenu.CheckboxItem
-        class="font-normal flex items-center"
-        checked={group.roleName === "viewer"}
-        on:click={() => {
-          handleSetRole(group.groupName, "viewer");
-        }}
+    </DropdownMenu.Item>
+    <DropdownMenu.Item
+      class="font-normal flex flex-col items-start py-2 {group.roleName ===
+      'viewer'
+        ? 'bg-slate-100'
+        : ''}"
+      on:click={() => {
+        handleSetRole(group.groupName, "viewer");
+      }}
+    >
+      <span class="font-medium">Viewer</span>
+      <span class="text-xs text-gray-600"
+        >Read-only access to project dashboards</span
       >
-        <span>Viewer</span>
-      </DropdownMenu.CheckboxItem>
+    </DropdownMenu.Item>
+    <!-- TODO: allow admin to remove `autogroup:members`, and set to Invite only -->
+    {#if !group.groupManaged}
       <DropdownMenu.Separator />
       <DropdownMenu.Item
         class="font-normal flex items-center"
@@ -134,6 +150,6 @@
       >
         <span class="ml-6">Remove</span>
       </DropdownMenu.Item>
-    </DropdownMenu.Content>
-  </DropdownMenu.Root>
-{/if}
+    {/if}
+  </DropdownMenu.Content>
+</DropdownMenu.Root>
