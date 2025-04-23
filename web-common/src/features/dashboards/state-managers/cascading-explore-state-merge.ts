@@ -2,6 +2,7 @@ import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashbo
 
 const ShallowMergeOneLevelDeepKeys = new Set<keyof MetricsExplorerEntity>([
   "selectedTimeRange",
+  "selectedComparisonTimeRange",
   "tdd",
   "pivot",
 ]);
