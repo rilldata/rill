@@ -15,7 +15,10 @@
     DimensionFilterMode,
     DimensionFilterModeOptions,
   } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/dimension-filter-mode";
-  import { splitDimensionSearchText } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/split-dimension-search-text";
+  import {
+    mergeDimensionSearchValues,
+    splitDimensionSearchText,
+  } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/dimension-search-text-utils";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { fly } from "svelte/transition";
   import {
@@ -152,7 +155,7 @@
 
       case DimensionFilterMode.InList:
         curMode = DimensionFilterMode.InList;
-        curSearchText = selectedValues.join(",");
+        curSearchText = mergeDimensionSearchValues(selectedValues);
         break;
 
       case DimensionFilterMode.Contains:
@@ -194,7 +197,7 @@
     if (open) {
       curSearchText =
         mode === DimensionFilterMode.InList
-          ? selectedValues.join(",")
+          ? mergeDimensionSearchValues(selectedValues)
           : (sanitisedSearchText ?? "");
     } else {
       if (selectedValues.length === 0 && !inputText) {

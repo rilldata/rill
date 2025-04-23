@@ -39,13 +39,10 @@
    */
   function handleInput(event) {
     value = event.target?.value;
-    if (multiline) {
-      updateTextAreaHeight();
-    }
+    if (multiline) updateTextAreaHeight();
   }
 
   function updateTextAreaHeight() {
-    ref.style.height = "auto"; // Reset height
     ref.style.height = ref.scrollHeight + "px"; // Set to scroll height
   }
 
@@ -53,6 +50,7 @@
     if (!retainValueOnMount) value = "";
     // Keep ref optional here. If component is unmounted before this animation frame runs, ref will be null and throw a TypeError
     if (autofocus) window.requestAnimationFrame(() => ref?.focus());
+    if (multiline) updateTextAreaHeight();
   });
 </script>
 
@@ -88,6 +86,7 @@
     aria-label={label}
     role="textbox"
     tabindex="-1"
+    {value}
   />
 </form>
 
@@ -101,7 +100,7 @@
   }
 
   textarea {
-    height: auto;
+    height: 28px;
     /* min height for 1 row */
     min-height: 28px;
     /* Max of 5 rows. 28 + 16 * 5 = 92 */
