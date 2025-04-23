@@ -4,13 +4,14 @@ import type { TimeAndFilterStore } from "@rilldata/web-common/features/canvas/st
 import { mergeFilters } from "@rilldata/web-common/features/dashboards/pivot/pivot-merge-filters";
 import { createInExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import {
-  createQueryServiceMetricsViewAggregation,
+  getQueryServiceMetricsViewAggregationQueryOptions,
+  type V1Expression,
   type V1MetricsViewAggregationDimension,
   type V1MetricsViewAggregationMeasure,
   type V1MetricsViewSpec,
   type V1Resource,
 } from "@rilldata/web-common/runtime-client";
-import { keepPreviousData } from "@tanstack/svelte-query";
+import { createQuery, keepPreviousData } from "@tanstack/svelte-query";
 import { derived, get, type Readable } from "svelte/store";
 import type {
   CanvasEntity,
@@ -18,6 +19,7 @@ import type {
 } from "../../../stores/canvas-entity";
 import { BaseChart, type BaseChartConfig } from "../BaseChart";
 import type { ChartDataQuery, ChartFieldsMap, FieldConfig } from "../types";
+import { getFilterWithNullHandling } from "../util";
 
 export type HeatmapChartSpec = BaseChartConfig & {
   x?: FieldConfig;
@@ -33,6 +35,7 @@ export class HeatmapChartComponent extends BaseChart<HeatmapChartSpec> {
       meta: {
         chartFieldInput: {
           type: "dimension",
+          limitSelector: true,
           axisTitleSelector: true,
           nullSelector: true,
         },
@@ -44,6 +47,7 @@ export class HeatmapChartComponent extends BaseChart<HeatmapChartSpec> {
       meta: {
         chartFieldInput: {
           type: "dimension",
+          limitSelector: true,
           axisTitleSelector: true,
           nullSelector: true,
         },
@@ -81,53 +85,127 @@ export class HeatmapChartComponent extends BaseChart<HeatmapChartSpec> {
       measures = [{ name: config.color.field }];
     }
 
-    if (config.x?.field) {
-      dimensions = [...dimensions, { name: config.x.field }];
-    }
-
-    if (config.y?.field) {
-      dimensions = [...dimensions, { name: config.y.field }];
-    }
-
-    return derived(
+    // Create top level options store for X axis
+    const xAxisQueryOptionsStore = derived(
       [ctx.runtime, timeAndFilterStore],
-      ([runtime, $timeAndFilterStore], set) => {
+      ([runtime, $timeAndFilterStore]) => {
         const { timeRange, where } = $timeAndFilterStore;
+        const enabled =
+          !!timeRange?.start && !!timeRange?.end && !!config.x?.field;
 
-        let combinedWhere = where;
+        const xWhere = getFilterWithNullHandling(where, config.x);
 
-        // Handle null filtering for both x and y dimensions
-        if (config.x?.field && !config.x.showNull) {
-          const excludeNullFilter = createInExpression(
-            config.x.field,
-            [null],
-            true,
-          );
-          combinedWhere = mergeFilters(combinedWhere, excludeNullFilter);
+        let limit = "100";
+        if (config.x?.limit && config.x.type !== "temporal") {
+          limit = config.x.limit.toString();
         }
 
-        if (config.y?.field && !config.y.showNull) {
-          const excludeNullFilter = createInExpression(
-            config.y.field,
-            [null],
-            true,
-          );
-          combinedWhere = mergeFilters(combinedWhere, excludeNullFilter);
+        return getQueryServiceMetricsViewAggregationQueryOptions(
+          runtime.instanceId,
+          config.metrics_view,
+          {
+            measures,
+            dimensions: [{ name: config.x?.field }],
+            sort: [{ name: config.x?.field, desc: true }],
+            where: xWhere,
+            timeRange,
+            limit,
+          },
+          {
+            query: {
+              enabled,
+              placeholderData: keepPreviousData,
+            },
+          },
+        );
+      },
+    );
+
+    // Create top level options store for Y axis
+    const yAxisQueryOptionsStore = derived(
+      [ctx.runtime, timeAndFilterStore],
+      ([runtime, $timeAndFilterStore]) => {
+        const { timeRange, where } = $timeAndFilterStore;
+        const enabled =
+          !!timeRange?.start && !!timeRange?.end && !!config.y?.field;
+
+        const yWhere = getFilterWithNullHandling(where, config.y);
+
+        let limit = "100";
+        if (config.y?.limit && config.y.type !== "temporal") {
+          limit = config.y.limit.toString();
         }
 
-        const enabled = !!timeRange?.start && !!timeRange?.end;
+        return getQueryServiceMetricsViewAggregationQueryOptions(
+          runtime.instanceId,
+          config.metrics_view,
+          {
+            measures,
+            dimensions: [{ name: config.y?.field }],
+            sort: [{ name: config.y?.field, desc: true }],
+            where: yWhere,
+            timeRange,
+            limit,
+          },
+          {
+            query: {
+              enabled,
+              placeholderData: keepPreviousData,
+            },
+          },
+        );
+      },
+    );
 
-        const dataQuery = createQueryServiceMetricsViewAggregation(
+    const xAxisQuery = createQuery(xAxisQueryOptionsStore);
+    const yAxisQuery = createQuery(yAxisQueryOptionsStore);
+
+    const queryOptionsStore = derived(
+      [ctx.runtime, timeAndFilterStore, xAxisQuery, yAxisQuery],
+      ([runtime, $timeAndFilterStore, $xAxisQuery, $yAxisQuery]) => {
+        const { timeRange, where } = $timeAndFilterStore;
+        const xTopNData = $xAxisQuery?.data?.data;
+        const yTopNData = $yAxisQuery?.data?.data;
+
+        const enabled =
+          !!timeRange?.start &&
+          !!timeRange?.end &&
+          !!xTopNData?.length &&
+          !!yTopNData?.length;
+
+        let combinedWhere: V1Expression | undefined = where;
+
+        if (xTopNData?.length && config.x?.field) {
+          const xField = config.x.field;
+          const xTopValues = xTopNData.map((d) => d[xField] as string);
+          const xFilterForTopValues = createInExpression(xField, xTopValues);
+          combinedWhere = mergeFilters(combinedWhere, xFilterForTopValues);
+        }
+
+        if (yTopNData?.length && config.y?.field) {
+          const yField = config.y.field;
+          const yTopValues = yTopNData.map((d) => d[yField] as string);
+          const yFilterForTopValues = createInExpression(yField, yTopValues);
+          combinedWhere = mergeFilters(combinedWhere, yFilterForTopValues);
+        }
+
+        if (config.x?.field) {
+          dimensions = [...dimensions, { name: config.x.field }];
+        }
+
+        if (config.y?.field) {
+          dimensions = [...dimensions, { name: config.y.field }];
+        }
+
+        return getQueryServiceMetricsViewAggregationQueryOptions(
           runtime.instanceId,
           config.metrics_view,
           {
             measures,
             dimensions,
-            sort: [
-              ...(config.x?.field
-                ? [{ name: config.x.field, desc: true }]
-                : []),
-            ],
+            sort: config.x?.field
+              ? [{ name: config.x.field, desc: true }]
+              : undefined,
             where: combinedWhere,
             timeRange,
             limit: "5000", // Higher limit for heatmap to show more data points
@@ -138,18 +216,11 @@ export class HeatmapChartComponent extends BaseChart<HeatmapChartSpec> {
               placeholderData: keepPreviousData,
             },
           },
-          ctx.queryClient,
         );
-
-        return derived(dataQuery, ($dataQuery) => {
-          return {
-            isFetching: $dataQuery.isFetching,
-            error: $dataQuery.error,
-            data: $dataQuery?.data?.data,
-          };
-        }).subscribe(set);
       },
     );
+
+    return createQuery(queryOptionsStore);
   }
 
   static newComponentSpec(

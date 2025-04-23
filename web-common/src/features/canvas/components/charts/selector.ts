@@ -60,9 +60,9 @@ export function getChartData(
         >,
       );
       return {
-        data: chartData.data || [],
-        isFetching: chartData.isFetching,
-        error: chartData.error,
+        data: chartData?.data?.data || [],
+        isFetching: chartData?.isFetching ?? false,
+        error: chartData?.error,
         fields: fieldSpecMap,
       };
     },

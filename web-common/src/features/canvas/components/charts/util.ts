@@ -1,9 +1,14 @@
+import { mergeFilters } from "@rilldata/web-common/features/dashboards/pivot/pivot-merge-filters";
+import { createInExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { sanitizeValueForVega } from "@rilldata/web-common/features/templates/charts/utils";
-import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
+import {
+  V1TimeGrain,
+  type V1Expression,
+} from "@rilldata/web-common/runtime-client";
 import merge from "deepmerge";
 import type { Config } from "vega-lite";
 import { CHART_CONFIG, type ChartSpec } from "./";
-import type { ChartDataResult, ChartType } from "./types";
+import type { ChartDataResult, ChartType, FieldConfig } from "./types";
 
 export function generateSpec(
   chartType: ChartType,
@@ -118,4 +123,16 @@ export function getFieldsByType(spec: ChartSpec): FieldsByType {
     dimensions,
     timeDimensions,
   };
+}
+
+export function getFilterWithNullHandling(
+  where: V1Expression | undefined,
+  fieldConfig: FieldConfig | undefined,
+): V1Expression | undefined {
+  if (!fieldConfig || !fieldConfig.showNull || fieldConfig.type !== "nominal") {
+    return where;
+  }
+
+  const excludeNullFilter = createInExpression(fieldConfig.field, [null], true);
+  return mergeFilters(where, excludeNullFilter);
 }

@@ -2,21 +2,20 @@ import type {
   ChartFieldsMap,
   FieldConfig,
 } from "@rilldata/web-common/features/canvas/components/charts/types";
+import { getFilterWithNullHandling } from "@rilldata/web-common/features/canvas/components/charts/util";
 import type { ComponentInputParam } from "@rilldata/web-common/features/canvas/inspector/types";
 import type { CanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
 import type { TimeAndFilterStore } from "@rilldata/web-common/features/canvas/stores/types";
-import { mergeFilters } from "@rilldata/web-common/features/dashboards/pivot/pivot-merge-filters";
-import { createInExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type {
   V1MetricsViewSpec,
   V1Resource,
 } from "@rilldata/web-common/runtime-client";
 import {
-  createQueryServiceMetricsViewAggregation,
+  getQueryServiceMetricsViewAggregationQueryOptions,
   type V1MetricsViewAggregationDimension,
   type V1MetricsViewAggregationMeasure,
 } from "@rilldata/web-common/runtime-client";
-import { keepPreviousData } from "@tanstack/svelte-query";
+import { createQuery, keepPreviousData } from "@tanstack/svelte-query";
 import { derived, get, type Readable } from "svelte/store";
 import type {
   CanvasEntity,
@@ -90,29 +89,26 @@ export class CircularChartComponent extends BaseChart<CircularChartSpec> {
       showNull = !!config.color.showNull;
     }
 
-    return derived(
+    const queryOptionsStore = derived(
       [ctx.runtime, timeAndFilterStore],
-      ([runtime, $timeAndFilterStore], set) => {
+      ([runtime, $timeAndFilterStore]) => {
         const { timeRange, where } = $timeAndFilterStore;
         const enabled = !!timeRange?.start && !!timeRange?.end;
 
-        let mergedWhere = where;
-        if (!showNull && config.color?.field) {
-          const excludeNullFilter = createInExpression(
-            config.color?.field,
-            [null],
-            true,
-          );
-          mergedWhere = mergeFilters(where, excludeNullFilter);
-        }
+        const nullHandledWhere = getFilterWithNullHandling(where, config.color);
 
-        const dataQuery = createQueryServiceMetricsViewAggregation(
+        const queryOptions = getQueryServiceMetricsViewAggregationQueryOptions(
           runtime.instanceId,
           config.metrics_view,
           {
             measures,
             dimensions,
-            where: mergedWhere,
+            where: nullHandledWhere,
+            sort: [
+              ...(config.measure?.field
+                ? [{ name: config.measure.field, desc: true }]
+                : []),
+            ],
             timeRange,
             limit: limit.toString(),
           },
@@ -122,18 +118,14 @@ export class CircularChartComponent extends BaseChart<CircularChartSpec> {
               placeholderData: keepPreviousData,
             },
           },
-          ctx.queryClient,
         );
 
-        return derived(dataQuery, ($dataQuery) => {
-          return {
-            isFetching: $dataQuery.isFetching,
-            error: $dataQuery.error,
-            data: $dataQuery?.data?.data,
-          };
-        }).subscribe(set);
+        return queryOptions;
       },
     );
+
+    const query = createQuery(queryOptionsStore);
+    return query;
   }
 
   chartTitle(fields: ChartFieldsMap) {

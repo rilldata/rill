@@ -1,24 +1,20 @@
+import { getFilterWithNullHandling } from "@rilldata/web-common/features/canvas/components/charts/util";
 import type { ComponentInputParam } from "@rilldata/web-common/features/canvas/inspector/types";
 import type { CanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
 import type { TimeAndFilterStore } from "@rilldata/web-common/features/canvas/stores/types";
 import { mergeFilters } from "@rilldata/web-common/features/dashboards/pivot/pivot-merge-filters";
 import { createInExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import {
-  createQueryServiceMetricsViewAggregation,
+  getQueryServiceMetricsViewAggregationQueryOptions,
   type V1Expression,
   type V1MetricsViewAggregationDimension,
   type V1MetricsViewAggregationMeasure,
-  type V1MetricsViewAggregationResponse,
   type V1MetricsViewAggregationSort,
   type V1MetricsViewSpec,
   type V1Resource,
 } from "@rilldata/web-common/runtime-client";
-import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
-import {
-  keepPreviousData,
-  type CreateQueryResult,
-} from "@tanstack/svelte-query";
-import { derived, get, readable, type Readable } from "svelte/store";
+import { createQuery, keepPreviousData } from "@tanstack/svelte-query";
+import { derived, get, type Readable } from "svelte/store";
 import type {
   CanvasEntity,
   ComponentPath,
@@ -91,119 +87,108 @@ export class CartesianChartComponent extends BaseChart<CartesianChartSpec> {
     let limit: number | undefined;
     let hasColorDimension = false;
 
-    return derived(
+    const dimensionName = config.x?.field;
+
+    if (config.x?.type === "nominal" && dimensionName) {
+      limit = config.x.limit ?? 100;
+      sort = this.vegaSortToAggregationSort(config.x?.sort, config);
+      dimensions = [{ name: dimensionName }];
+    } else if (config.x?.type === "temporal" && dimensionName) {
+      dimensions = [{ name: dimensionName }];
+    }
+
+    if (typeof config.color === "object" && config.color?.field) {
+      dimensions = [...dimensions, { name: config.color.field }];
+      hasColorDimension = true;
+    }
+
+    // Create topN query options store
+    const topNQueryOptionsStore = derived(
       [ctx.runtime, timeAndFilterStore],
-      ([runtime, $timeAndFilterStore], set) => {
-        const { timeRange, where, timeGrain } = $timeAndFilterStore;
+      ([runtime, $timeAndFilterStore]) => {
+        const { timeRange, where } = $timeAndFilterStore;
+        const enabled =
+          !!timeRange?.start && !!timeRange?.end && hasColorDimension;
 
-        let outerWhere = where;
+        const topNWhere = getFilterWithNullHandling(where, config.x);
 
-        if (config.x?.type === "nominal" && config.x?.field) {
-          limit = config.x.limit;
-          sort = this.vegaSortToAggregationSort(config.x?.sort, config);
-          dimensions = [{ name: config.x?.field }];
-
-          const showNull = !!config.x.showNull;
-          if (!showNull) {
-            const excludeNullFilter = createInExpression(
-              config.x?.field,
-              [null],
-              true,
-            );
-            outerWhere = mergeFilters(where, excludeNullFilter);
-          }
-        } else if (config.x?.type === "temporal" && timeGrain) {
-          dimensions = [{ name: config.x?.field, timeGrain }];
-        }
-
-        if (typeof config.color === "object" && config.color?.field) {
-          dimensions = [...dimensions, { name: config.color.field }];
-          hasColorDimension = true;
-        }
-
-        let topNQuery:
-          | Readable<null>
-          | CreateQueryResult<V1MetricsViewAggregationResponse, HTTPError> =
-          readable(null);
-
-        const enabled = !!timeRange?.start && !!timeRange?.end;
-
-        if (limit && hasColorDimension) {
-          topNQuery = createQueryServiceMetricsViewAggregation(
-            runtime.instanceId,
-            config.metrics_view,
-            {
-              measures,
-              dimensions: [{ name: config.x?.field }],
-              sort: sort ? [sort] : undefined,
-              where: outerWhere,
-              timeRange,
-              limit: limit.toString(),
+        return getQueryServiceMetricsViewAggregationQueryOptions(
+          runtime.instanceId,
+          config.metrics_view,
+          {
+            measures,
+            dimensions: [{ name: dimensionName }],
+            sort: sort ? [sort] : undefined,
+            where: topNWhere,
+            timeRange,
+            limit: limit?.toString(),
+          },
+          {
+            query: {
+              enabled,
+              placeholderData: keepPreviousData,
             },
-            {
-              query: {
-                enabled,
-                placeholderData: keepPreviousData,
-              },
-            },
-            ctx.queryClient,
-          );
-        }
-
-        return derived(topNQuery, ($topNQuery, topNSet) => {
-          if ($topNQuery !== null && !$topNQuery?.data) {
-            return topNSet({
-              isFetching: $topNQuery.isFetching,
-              error: $topNQuery.error,
-              data: undefined,
-            });
-          }
-
-          const dimensionName = config.x?.field;
-
-          let combinedWhere: V1Expression | undefined = outerWhere;
-          if ($topNQuery?.data?.data?.length && dimensionName) {
-            const topValues = $topNQuery?.data?.data.map(
-              (d) => d[dimensionName] as string,
-            );
-            const filterForTopValues = createInExpression(
-              dimensionName,
-              topValues,
-            );
-
-            combinedWhere = mergeFilters(where, filterForTopValues);
-          }
-
-          const dataQuery = createQueryServiceMetricsViewAggregation(
-            runtime.instanceId,
-            config.metrics_view,
-            {
-              measures,
-              dimensions,
-              sort: sort ? [sort] : undefined,
-              where: combinedWhere,
-              timeRange,
-              limit: hasColorDimension || !limit ? "5000" : limit.toString(),
-            },
-            {
-              query: {
-                enabled,
-                placeholderData: keepPreviousData,
-              },
-            },
-            ctx.queryClient,
-          );
-
-          return derived(dataQuery, ($dataQuery) => {
-            return {
-              isFetching: $dataQuery.isFetching,
-              error: $dataQuery.error,
-              data: $dataQuery?.data?.data,
-            };
-          }).subscribe(topNSet);
-        }).subscribe(set);
+          },
+        );
       },
     );
+
+    const topNQuery = createQuery(topNQueryOptionsStore);
+
+    const queryOptionsStore = derived(
+      [ctx.runtime, timeAndFilterStore, topNQuery],
+      ([runtime, $timeAndFilterStore, $topNQuery]) => {
+        const { timeRange, where, timeGrain } = $timeAndFilterStore;
+        const topNData = $topNQuery?.data?.data;
+        const enabled =
+          !!timeRange?.start &&
+          !!timeRange?.end &&
+          (hasColorDimension ? !!topNData?.length : true);
+
+        let combinedWhere: V1Expression | undefined = getFilterWithNullHandling(
+          where,
+          config.x,
+        );
+        if (topNData?.length && dimensionName) {
+          const topValues = topNData.map((d) => d[dimensionName] as string);
+          const filterForTopValues = createInExpression(
+            dimensionName,
+            topValues,
+          );
+
+          combinedWhere = mergeFilters(where, filterForTopValues);
+        }
+
+        // Update dimensions with timeGrain if temporal
+        if (config.x?.type === "temporal" && timeGrain) {
+          dimensions = dimensions.map((d) =>
+            d.name === dimensionName ? { ...d, timeGrain } : d,
+          );
+        }
+
+        return getQueryServiceMetricsViewAggregationQueryOptions(
+          runtime.instanceId,
+          config.metrics_view,
+          {
+            measures,
+            dimensions,
+            sort: sort ? [sort] : undefined,
+            where: combinedWhere,
+            timeRange,
+            limit: hasColorDimension || !limit ? "5000" : limit?.toString(),
+          },
+          {
+            query: {
+              enabled,
+              placeholderData: keepPreviousData,
+            },
+          },
+        );
+      },
+    );
+
+    const query = createQuery(queryOptionsStore);
+    return query;
   }
 
   static newComponentSpec(

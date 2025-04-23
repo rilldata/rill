@@ -2,6 +2,7 @@ import type {
   V1Expression,
   V1MetricsViewAggregationDimension,
   V1MetricsViewAggregationMeasure,
+  V1MetricsViewAggregationResponse,
   V1MetricsViewAggregationSort,
 } from "@rilldata/web-common/runtime-client";
 import {
@@ -10,7 +11,7 @@ import {
   type V1MetricsViewAggregationResponseDataItem,
 } from "@rilldata/web-common/runtime-client";
 import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
-import { type Readable } from "svelte/store";
+import type { CreateQueryResult } from "@tanstack/svelte-query";
 
 export type ChartType =
   | "bar_chart"
@@ -21,11 +22,10 @@ export type ChartType =
   | "pie_chart"
   | "heatmap";
 
-export type ChartDataQuery = Readable<{
-  isFetching: boolean;
-  error: HTTPError | null;
-  data: V1MetricsViewAggregationResponseDataItem[] | undefined;
-}>;
+export type ChartDataQuery = CreateQueryResult<
+  V1MetricsViewAggregationResponse,
+  HTTPError
+>;
 
 export type ChartFieldsMap = Record<
   string,
