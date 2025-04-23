@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { Command as CommandPrimitive } from "cmdk-sv";
   import { cn } from "@rilldata/web-common/lib/shadcn";
+  import { Command as CommandPrimitive } from "cmdk-sv";
 
   type $$Props = CommandPrimitive.EmptyProps;
   let className: string | undefined | null = undefined;
@@ -8,7 +8,7 @@
 </script>
 
 <CommandPrimitive.Empty
-  class={cn("py-6 text-center text-sm", className)}
+  class={cn("py-6 text-center text-xs", className)}
   {...$$restProps}
 >
   <slot />

@@ -13,6 +13,7 @@
 
   const user = createAdminServiceGetCurrentUser();
 
+  let primaryMenuOpen = false;
   let subMenuOpen = false;
 
   $: if ($user.data?.user) {
@@ -30,7 +31,7 @@
   }
 </script>
 
-<DropdownMenu.Root>
+<DropdownMenu.Root bind:open={primaryMenuOpen}>
   <DropdownMenu.Trigger class="flex-none">
     <img
       src={$user.data?.user?.photoUrl}
@@ -54,11 +55,15 @@
               View as
             </DropdownMenu.SubTrigger>
             <DropdownMenu.SubContent
-              class="flex flex-col min-w-[150px] max-w-[300px] min-h-[150px] max-h-[190px]"
+              class="flex flex-col min-w-[150px] max-w-[300px]"
             >
               <ViewAsUserPopover
                 organization={params.organization}
                 project={params.project}
+                on:select={() => {
+                  subMenuOpen = false;
+                  primaryMenuOpen = false;
+                }}
               />
             </DropdownMenu.SubContent>
           </DropdownMenu.Sub>

@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { Command as CommandPrimitive } from "cmdk-sv";
-  import MagnifyingGlass from "svelte-radix/MagnifyingGlass.svelte";
   import { cn } from "@rilldata/web-common/lib/shadcn";
+  import { Command as CommandPrimitive } from "cmdk-sv";
+  import Search from "../icons/Search.svelte";
 
   type $$Props = CommandPrimitive.InputProps;
 
@@ -10,11 +10,14 @@
   export let value: string = "";
 </script>
 
-<div class="flex items-center border-b px-3" data-cmdk-input-wrapper="">
-  <MagnifyingGlass class="mr-2 h-4 w-4 shrink-0 opacity-50" />
+<div
+  class="flex items-center border border-gray-200 bg-slate-50 has-[:focus]:border-primary-400 rounded-md px-3 disabled:cursor-not-allowed disabled:opacity-50"
+  data-cmdk-input-wrapper=""
+>
+  <Search size="16" className="mr-2 shrink-0" />
   <CommandPrimitive.Input
     class={cn(
-      "placeholder:text-muted-foreground flex h-10 w-full rounded-md bg-transparent py-3 text-sm outline-none disabled:cursor-not-allowed disabled:opacity-50",
+      "bg-transparent flex w-full py-1 text-xs outline-none",
       className,
     )}
     {...$$restProps}
