@@ -288,7 +288,7 @@ func NewDB(ctx context.Context, opts *DBOptions) (DB, error) {
 		}
 		return nil, err
 	}
-	db.write, err = db.openDBAndAttach(ctx, "", "", nil, false)
+	db.write, err = db.openDBAndAttach(ctx, filepath.Join(db.localPath, "write.db"), "", nil, false)
 	if err != nil {
 		return nil, fmt.Errorf("unable to open write db: %w", err)
 	}
@@ -896,8 +896,8 @@ func (d *db) acquireWriteConn(ctx context.Context, dbPath, table string, attachE
 			return conn.Close()
 		}
 
-		// revert to default database which is memory
-		_, err = conn.ExecContext(context.Background(), "USE memory")
+		// revert to default database which is write
+		_, err = conn.ExecContext(context.Background(), "USE write")
 		if err != nil {
 			return errors.Join(err, conn.Close())
 		}
