@@ -49,8 +49,9 @@
         <svelte:fragment slot="manage-project">
           <DropdownMenu.Sub bind:open={subMenuOpen}>
             <DropdownMenu.SubTrigger
-              disabled={true}
-              on:click={() => (subMenuOpen = !subMenuOpen)}
+              on:click={() => {
+                subMenuOpen = !subMenuOpen;
+              }}
             >
               View as
             </DropdownMenu.SubTrigger>
