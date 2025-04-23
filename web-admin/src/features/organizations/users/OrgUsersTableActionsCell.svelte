@@ -1,4 +1,5 @@
 <script lang="ts">
+  import RemovingBillingContactDialog from "@rilldata/web-admin/features/organizations/users/RemovingBillingContactDialog.svelte";
   import IconButton from "@rilldata/web-common/components/button/IconButton.svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import ThreeDot from "@rilldata/web-common/components/icons/ThreeDot.svelte";
@@ -16,15 +17,29 @@
 
   export let email: string;
   export let isCurrentUser: boolean;
+  export let isBillingContact: boolean;
+  // Changing billing contact is not an action for this user. So handle it upstream
+  export let onChangeBillingContact: () => void;
 
   let isDropdownOpen = false;
   let isRemoveConfirmOpen = false;
+  let isRemovingBillingContactDialogOpen = false;
 
   $: organization = $page.params.organization;
 
   const queryClient = useQueryClient();
   const removeOrganizationMemberUser =
     createAdminServiceRemoveOrganizationMemberUser();
+
+  function onRemoveClick() {
+    if (isBillingContact) {
+      // If the user is a billing contact we cannot remove without update contact to a different user 1st.
+      isRemovingBillingContactDialogOpen = true;
+    } else {
+      // Else show the confirmation for remove
+      isRemoveConfirmOpen = true;
+    }
+  }
 
   async function handleRemove(email: string) {
     try {
@@ -92,9 +107,7 @@
       <DropdownMenu.Item
         class="font-normal flex items-center"
         type="destructive"
-        on:click={() => {
-          isRemoveConfirmOpen = true;
-        }}
+        on:click={onRemoveClick}
       >
         <Trash2Icon size="12px" />
         <span class="ml-2">Remove</span>
@@ -107,4 +120,9 @@
   bind:open={isRemoveConfirmOpen}
   {email}
   onRemove={handleRemove}
+/>
+
+<RemovingBillingContactDialog
+  bind:open={isRemovingBillingContactDialogOpen}
+  onChange={onChangeBillingContact}
 />

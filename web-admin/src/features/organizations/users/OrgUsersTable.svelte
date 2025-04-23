@@ -43,6 +43,8 @@
     RpcStatus
   >;
   export let currentUserEmail: string;
+  export let billingContact: string | undefined;
+  export let onChangeBillingContact: () => void;
 
   const ROW_HEIGHT = 69;
   const OVERSCAN = 5;
@@ -60,7 +62,7 @@
     }
   }
 
-  const columns: ColumnDef<OrgUser, any>[] = [
+  $: columns = <ColumnDef<OrgUser, any>[]>[
     {
       accessorKey: "user",
       header: "User",
@@ -99,6 +101,8 @@
         flexRender(OrgUsersTableActionsCell, {
           email: row.original.userEmail,
           isCurrentUser: row.original.userEmail === currentUserEmail,
+          isBillingContact: row.original.userEmail === billingContact,
+          onChangeBillingContact,
         }),
       meta: {
         widthPercent: 0,
@@ -122,7 +126,7 @@
     }));
   };
 
-  const options = writable<TableOptions<OrgUser>>({
+  $: options = writable<TableOptions<OrgUser>>({
     data: safeData,
     columns,
     state: {
@@ -133,7 +137,7 @@
     getSortedRowModel: getSortedRowModel(),
   });
 
-  const table = createSvelteTable(options);
+  $: table = createSvelteTable(options);
 
   $: rows = $table.getRowModel().rows;
 

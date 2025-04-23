@@ -4,6 +4,7 @@ import {
   createAdminServiceGetUser,
   type V1User,
 } from "@rilldata/web-admin/client";
+import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import { derived, type Readable } from "svelte/store";
 
 export function getOrganizationBillingContactUser(
@@ -11,8 +12,8 @@ export function getOrganizationBillingContactUser(
 ): Readable<V1User | undefined> {
   return derived(
     [
-      createAdminServiceGetOrganization(organization),
-      createAdminServiceGetCurrentUser(),
+      createAdminServiceGetOrganization(organization, undefined, queryClient),
+      createAdminServiceGetCurrentUser(undefined, queryClient),
     ],
     ([orgResp, currentUser], set) => {
       if (

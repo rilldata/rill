@@ -6,6 +6,8 @@
     createAdminServiceListOrganizationInvitesInfinite,
     createAdminServiceListOrganizationMemberUsersInfinite,
   } from "@rilldata/web-admin/client";
+  import ChangeBillingContactDialog from "@rilldata/web-admin/features/billing/contact/ChangeBillingContactDialog.svelte";
+  import { getOrganizationBillingContactUser } from "@rilldata/web-admin/features/billing/contact/selectors";
   import AddUsersDialog from "@rilldata/web-admin/features/organizations/users/AddUsersDialog.svelte";
   import OrgUsersTable from "@rilldata/web-admin/features/organizations/users/OrgUsersTable.svelte";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
@@ -19,6 +21,7 @@
   let userRole = "";
   let isSuperUser = false;
   let isAddUserDialogOpen = false;
+  let isUpdateBillingContactDialogOpen = false;
   let searchText = "";
 
   $: organization = $page.params.organization;
@@ -92,6 +95,7 @@
   });
 
   const currentUser = createAdminServiceGetCurrentUser();
+  $: billingContactUser = getOrganizationBillingContactUser(organization);
 </script>
 
 <div class="flex flex-col w-full">
@@ -130,6 +134,8 @@
         usersQuery={$orgMemberUsersInfiniteQuery}
         invitesQuery={$orgInvitesInfiniteQuery}
         currentUserEmail={$currentUser.data?.user.email}
+        billingContact={$billingContactUser?.email}
+        onChangeBillingContact={() => (isUpdateBillingContactDialogOpen = true)}
       />
     </div>
   {/if}
@@ -140,4 +146,10 @@
   email={userEmail}
   role={userRole}
   {isSuperUser}
+/>
+
+<ChangeBillingContactDialog
+  bind:open={isUpdateBillingContactDialogOpen}
+  {organization}
+  currentBillingContact={$billingContactUser?.email}
 />

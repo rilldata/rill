@@ -9,7 +9,7 @@
 
   $: billingContactUser = getOrganizationBillingContactUser(organization);
 
-  let openUpdateBillingContactDialog = false;
+  let isUpdateBillingContactDialogOpen = false;
 </script>
 
 <SettingsContainer title="Billing Contact">
@@ -27,14 +27,14 @@
   <Button
     slot="action"
     type="secondary"
-    on:click={() => (openUpdateBillingContactDialog = true)}
+    on:click={() => (isUpdateBillingContactDialogOpen = true)}
   >
     Change billing contact
   </Button>
 </SettingsContainer>
 
 <ChangeBillingContactDialog
-  bind:open={openUpdateBillingContactDialog}
+  bind:open={isUpdateBillingContactDialogOpen}
   {organization}
   currentBillingContact={$billingContactUser?.email}
 />

@@ -80,6 +80,8 @@
           options={selectableUsers}
           on:change={({ detail: newName }) =>
             (selectedBillingContact = newName)}
+          sameWidth
+          fontSize={14}
         />
       </Dialog.Description>
     </Dialog.Header>
