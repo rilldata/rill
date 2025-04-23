@@ -7,7 +7,6 @@ import { useMetricsViewTimeRange } from "@rilldata/web-common/features/dashboard
 import { cascadingExploreStateMerge } from "@rilldata/web-common/features/dashboards/state-managers/cascading-explore-state-merge";
 import { getPartialExploreStateFromSessionStorage } from "@rilldata/web-common/features/dashboards/state-managers/loaders/explore-web-view-store";
 import { getMostRecentExploreState } from "@rilldata/web-common/features/dashboards/state-managers/loaders/most-recent-explore-state";
-import { correctExploreState } from "@rilldata/web-common/features/dashboards/stores/correct-explore-state";
 import { getExploreStateFromYAMLConfig } from "@rilldata/web-common/features/dashboards/stores/get-explore-state-from-yaml-config";
 import { getRillDefaultExploreState } from "@rilldata/web-common/features/dashboards/stores/get-rill-default-explore-state";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
@@ -205,6 +204,8 @@ export class DashboardStateDataLoader {
         const mostRecentPartialExploreState = getMostRecentExploreState(
           exploreName,
           storageNamespacePrefix,
+          metricsViewSpec,
+          exploreSpec,
         );
 
         let exploreStateOrder: (
@@ -243,9 +244,7 @@ export class DashboardStateDataLoader {
           nonEmptyExploreStateOrder,
         );
 
-        const { correctedExploreState: correctedInitExploreState } =
-          correctExploreState(metricsViewSpec, exploreSpec, initExploreState);
-        return correctedInitExploreState as MetricsExplorerEntity;
+        return initExploreState as MetricsExplorerEntity;
       },
     );
   }
@@ -268,6 +267,8 @@ export class DashboardStateDataLoader {
     const mostRecentPartialExploreState = getMostRecentExploreState(
       this.exploreName,
       this.storageNamespacePrefix,
+      metricsViewSpec,
+      exploreSpec,
     );
 
     if (!rillDefaultExploreState || !exploreStateFromYAMLConfig) {
@@ -335,12 +336,6 @@ export class DashboardStateDataLoader {
     const nonEmptyExploreStateOrder = exploreStateOrder.filter(
       Boolean,
     ) as Partial<MetricsExplorerEntity>[];
-    const finalExploreState = cascadingExploreStateMerge(
-      nonEmptyExploreStateOrder,
-    );
-
-    const { correctedExploreState: correctedFinalExploreState } =
-      correctExploreState(metricsViewSpec, exploreSpec, finalExploreState);
-    return correctedFinalExploreState;
+    return cascadingExploreStateMerge(nonEmptyExploreStateOrder);
   }
 }

@@ -9,7 +9,11 @@ import {
   AD_BIDS_PUBLISHER_COUNT_MEASURE,
   AD_BIDS_PUBLISHER_DIMENSION,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/data";
-import { describe, it, expect } from "vitest";
+import {
+  DashboardState_LeaderboardSortDirection,
+  DashboardState_LeaderboardSortType,
+} from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
+import { describe, expect, it } from "vitest";
 
 const TestCases: {
   title: string;
@@ -62,16 +66,20 @@ const TestCases: {
         "invalid_dimension_3",
       ],
       allDimensionsVisible: true,
+      leaderboardSortByMeasureName: "invalid_measure_1",
+      leaderboardMeasureNames: ["invalid_measure_1", "invalid_measure_2"],
+      sortDirection: DashboardState_LeaderboardSortDirection.ASCENDING,
+      dashboardSortType: DashboardState_LeaderboardSortType.PERCENT,
     },
     expectedCorrectState: {
-      visibleMeasures: [AD_BIDS_IMPRESSIONS_MEASURE],
-      allMeasuresVisible: false,
-      visibleDimensions: [AD_BIDS_PUBLISHER_DIMENSION],
-      allDimensionsVisible: false,
+      sortDirection: DashboardState_LeaderboardSortDirection.ASCENDING,
+      dashboardSortType: DashboardState_LeaderboardSortType.PERCENT,
     },
     expectedErrorMessages: [
       `Selected measures: "invalid_measure_1,invalid_measure_2,invalid_measure_3" are not valid.`,
       `Selected dimensions: "invalid_dimension_1,invalid_dimension_2,invalid_dimension_3" are not valid.`,
+      `Selected sort by measure: "invalid_measure_1" is not valid.`,
+      `Selected leaderboard measures: "invalid_measure_1,invalid_measure_2" are not valid.`,
     ],
   },
 

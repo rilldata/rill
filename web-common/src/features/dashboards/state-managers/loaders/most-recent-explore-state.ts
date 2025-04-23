@@ -1,4 +1,9 @@
+import { correctExploreState } from "@rilldata/web-common/features/dashboards/stores/correct-explore-state";
 import { DashboardState_ActivePage } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
+import type {
+  V1ExploreSpec,
+  V1MetricsViewSpec,
+} from "@rilldata/web-common/runtime-client";
 import type { MetricsExplorerEntity } from "../../stores/metrics-explorer-entity";
 
 function getKeyForLocalStore(
@@ -11,13 +16,19 @@ function getKeyForLocalStore(
 export function getMostRecentExploreState(
   exploreName: string,
   storageNamespacePrefix: string | undefined,
+  metricsViewSpec: V1MetricsViewSpec,
+  exploreSpec: V1ExploreSpec,
 ) {
   const key = getKeyForLocalStore(exploreName, storageNamespacePrefix);
   try {
     const rawExploreState = localStorage.getItem(key);
     if (!rawExploreState) return undefined;
 
-    return JSON.parse(rawExploreState) as Partial<MetricsExplorerEntity>;
+    const stateFromLocalStorage = JSON.parse(
+      rawExploreState,
+    ) as Partial<MetricsExplorerEntity>;
+    correctExploreState(metricsViewSpec, exploreSpec, stateFromLocalStorage);
+    return stateFromLocalStorage;
   } catch {
     // no-op
   }
