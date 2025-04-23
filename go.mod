@@ -71,7 +71,7 @@ require (
 	github.com/joho/godotenv v1.5.1
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/lensesio/tableprinter v0.0.0-20201125135848-89e81fc956e7
-	github.com/marcboeker/go-duckdb/v2 v2.1.0
+	github.com/marcboeker/go-duckdb/v2 v2.2.0
 	github.com/mazznoer/csscolorparser v0.1.3
 	github.com/mitchellh/hashstructure/v2 v2.0.2
 	github.com/mitchellh/mapstructure v1.5.0
@@ -117,11 +117,11 @@ require (
 	go.uber.org/zap v1.27.0
 	go.uber.org/zap/exp v0.2.0
 	gocloud.dev v0.36.0
-	golang.org/x/exp v0.0.0-20250305212735-054e65f0b394
+	golang.org/x/exp v0.0.0-20250408133849-7e4ce0ab07d0
 	golang.org/x/oauth2 v0.27.0
-	golang.org/x/sync v0.12.0
-	golang.org/x/sys v0.31.0
-	golang.org/x/text v0.23.0
+	golang.org/x/sync v0.13.0
+	golang.org/x/sys v0.32.0
+	golang.org/x/text v0.24.0
 	google.golang.org/api v0.214.0
 	google.golang.org/genproto/googleapis/api v0.0.0-20250303144028-a0af3efb3deb
 	google.golang.org/grpc v1.71.0
@@ -230,12 +230,12 @@ require (
 	github.com/docker/go v1.5.1-1.0.20160303222718-d30aec9fd63c // indirect
 	github.com/docker/go-metrics v0.0.1 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
-	github.com/duckdb/duckdb-go-bindings v0.1.13 // indirect
-	github.com/duckdb/duckdb-go-bindings/darwin-amd64 v0.1.8 // indirect
-	github.com/duckdb/duckdb-go-bindings/darwin-arm64 v0.1.8 // indirect
-	github.com/duckdb/duckdb-go-bindings/linux-amd64 v0.1.8 // indirect
-	github.com/duckdb/duckdb-go-bindings/linux-arm64 v0.1.8 // indirect
-	github.com/duckdb/duckdb-go-bindings/windows-amd64 v0.1.8 // indirect
+	github.com/duckdb/duckdb-go-bindings v0.1.14 // indirect
+	github.com/duckdb/duckdb-go-bindings/darwin-amd64 v0.1.9 // indirect
+	github.com/duckdb/duckdb-go-bindings/darwin-arm64 v0.1.9 // indirect
+	github.com/duckdb/duckdb-go-bindings/linux-amd64 v0.1.9 // indirect
+	github.com/duckdb/duckdb-go-bindings/linux-arm64 v0.1.9 // indirect
+	github.com/duckdb/duckdb-go-bindings/windows-amd64 v0.1.9 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/eiannone/keyboard v0.0.0-20220611211555-0d226195f203 // indirect
 	github.com/emicklei/go-restful/v3 v3.11.0 // indirect
@@ -311,8 +311,8 @@ require (
 	github.com/lufia/plan9stats v0.0.0-20230326075908-cb1d2100619a // indirect
 	github.com/magiconair/properties v1.8.9 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
-	github.com/marcboeker/go-duckdb/arrowmapping v0.0.6 // indirect
-	github.com/marcboeker/go-duckdb/mapping v0.0.6 // indirect
+	github.com/marcboeker/go-duckdb/arrowmapping v0.0.7 // indirect
+	github.com/marcboeker/go-duckdb/mapping v0.0.7 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mattn/go-runewidth v0.0.16 // indirect
@@ -413,12 +413,12 @@ require (
 	go.opentelemetry.io/proto/otlp v1.3.1 // indirect
 	go.uber.org/goleak v1.3.0 // indirect
 	go.uber.org/mock v0.5.0 // indirect
-	golang.org/x/crypto v0.36.0 // indirect
+	golang.org/x/crypto v0.37.0 // indirect
 	golang.org/x/mod v0.24.0 // indirect
-	golang.org/x/net v0.37.0 // indirect
-	golang.org/x/term v0.30.0 // indirect
+	golang.org/x/net v0.39.0 // indirect
+	golang.org/x/term v0.31.0 // indirect
 	golang.org/x/time v0.8.0 // indirect
-	golang.org/x/tools v0.31.0 // indirect
+	golang.org/x/tools v0.32.0 // indirect
 	golang.org/x/xerrors v0.0.0-20240903120638-7835f813f4da // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250303144028-a0af3efb3deb // indirect
 	gopkg.in/cenkalti/backoff.v1 v1.1.0 // indirect
@@ -451,3 +451,5 @@ replace github.com/apache/arrow/go/v15 v15.0.2 => github.com/rilldata/arrow/go/v
 
 // security vulnerability in dgrijalva/jwt-go
 replace github.com/dgrijalva/jwt-go => github.com/golang-jwt/jwt v3.2.1+incompatible
+
+replace github.com/marcboeker/go-duckdb/v2 => github.com/rilldata/go-duckdb/v2 v2.0.0-20250423070158-2459b722ea3c
