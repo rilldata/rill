@@ -62,7 +62,7 @@
           : ''}"
       >
         <div class="flex flex-col">
-          <div class="font-medium">{label}</div>
+          <div class="text-xs font-medium text-slate-700">{label}</div>
           <div class="text-slate-500 text-[10px]">{description}</div>
         </div>
       </DropdownMenuItem>
