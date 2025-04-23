@@ -3,7 +3,7 @@
   import { Command as CommandPrimitive } from "cmdk-sv";
   import Search from "../icons/Search.svelte";
 
-  type $$Props = CommandPrimitive.InputProps;
+  // type $$Props = CommandPrimitive.InputProps;
 
   let className: string | undefined | null = undefined;
   export { className as class };

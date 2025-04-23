@@ -1,8 +1,8 @@
 <script lang="ts">
-  import { Command as CommandPrimitive } from "cmdk-sv";
   import { cn } from "@rilldata/web-common/lib/shadcn";
+  import { Command as CommandPrimitive } from "cmdk-sv";
 
-  type $$Props = CommandPrimitive.ItemProps;
+  // type $$Props = CommandPrimitive.ItemProps;
 
   export let asChild = false;
 

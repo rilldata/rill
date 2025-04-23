@@ -2,7 +2,8 @@
   import { cn } from "@rilldata/web-common/lib/shadcn";
   import { Command as CommandPrimitive } from "cmdk-sv";
 
-  type $$Props = CommandPrimitive.EmptyProps;
+  // type $$Props = CommandPrimitive.EmptyProps;
+
   let className: string | undefined | null = undefined;
   export { className as class };
 </script>

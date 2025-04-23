@@ -1,8 +1,9 @@
 <script lang="ts">
-  import { Command as CommandPrimitive } from "cmdk-sv";
   import { cn } from "@rilldata/web-common/lib/shadcn";
+  import { Command as CommandPrimitive } from "cmdk-sv";
 
-  type $$Props = CommandPrimitive.SeparatorProps;
+  // type $$Props = CommandPrimitive.SeparatorProps;
+
   let className: string | undefined | null = undefined;
   export { className as class };
 </script>
