@@ -24,9 +24,13 @@ export function getOrganizationBillingContactUser(
         return;
       }
 
-      return createAdminServiceGetUser({
-        email: orgResp.data?.organization?.billingEmail,
-      }).subscribe((u) => set(u.data?.user));
+      return createAdminServiceGetUser(
+        {
+          email: orgResp.data?.organization?.billingEmail,
+        },
+        undefined,
+        queryClient,
+      ).subscribe((u) => set(u.data?.user));
     },
   );
 }

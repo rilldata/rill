@@ -34,6 +34,7 @@
     );
     const selectedBillingContactName =
       selectedBillingContactUser?.userName ?? selectedBillingContact;
+    const selectedBillingContactLabel = `${selectedBillingContactName} (${selectedBillingContact})`;
 
     try {
       await $updateOrg.mutateAsync({
@@ -44,7 +45,7 @@
       });
 
       eventBus.emit("notification", {
-        message: `${selectedBillingContactName} has been assigned as billing contact.`,
+        message: `${selectedBillingContactLabel} has been assigned as billing contact.`,
       });
     } catch (error) {
       console.error("Error assigning user as billing contact", error);
