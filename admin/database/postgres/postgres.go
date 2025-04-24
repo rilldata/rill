@@ -2523,6 +2523,54 @@ func (c *connection) DeleteProvisionerResource(ctx context.Context, id string) e
 	return checkDeleteRow("provisioner resource", res, err)
 }
 
+func (c *connection) FindManagedGithubRepoMeta(ctx context.Context, htmlURL string) (*database.ManagedGithubRepoMeta, error) {
+	res := &database.ManagedGithubRepoMeta{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM managed_github_repo_meta WHERE html_url = $1", htmlURL).StructScan(res)
+	if err != nil {
+		return nil, parseErr("managed github repo meta", err)
+	}
+	return res, nil
+}
+
+func (c *connection) CountManagedGithubRepos(ctx context.Context, orgID string) (int, error) {
+	var count int
+	err := c.getDB(ctx).QueryRowxContext(ctx, `SELECT COUNT(*) FROM managed_github_repo_meta WHERE org_id = $1`, orgID).Scan(&count)
+	if err != nil {
+		return 0, parseErr("managed github repo meta count", err)
+	}
+	return count, nil
+}
+
+func (c *connection) InsertManagedGithubRepoMeta(ctx context.Context, opts *database.InsertManagedGithubRepoMetaOptions) (*database.ManagedGithubRepoMeta, error) {
+	if err := database.Validate(opts); err != nil {
+		return nil, err
+	}
+
+	res := &database.ManagedGithubRepoMeta{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, `
+		INSERT INTO managed_github_repo_meta (org_id, created_by, html_url)
+		VALUES ($1, $2, $3) RETURNING *`,
+		opts.OrgID, opts.CreatedByUserID, opts.HTMLURL,
+	).StructScan(res)
+	if err != nil {
+		return nil, parseErr("managed github repo meta", err)
+	}
+	return res, nil
+}
+
+func (c *connection) UpdateManagedGithubRepoMeta(ctx context.Context, id, projectID string) (*database.ManagedGithubRepoMeta, error) {
+	res := &database.ManagedGithubRepoMeta{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, `
+		UPDATE managed_github_repo_meta SET project_id = $1, updated_on = now()
+		WHERE id = $2 RETURNING *`,
+		projectID, id,
+	).StructScan(res)
+	if err != nil {
+		return nil, parseErr("managed github repo meta", err)
+	}
+	return res, nil
+}
+
 // projectDTO wraps database.Project, using the pgtype package to handle types that pgx can't read directly into their native Go types.
 type projectDTO struct {
 	*database.Project

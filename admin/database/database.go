@@ -308,6 +308,11 @@ type DB interface {
 	InsertProvisionerResource(ctx context.Context, opts *InsertProvisionerResourceOptions) (*ProvisionerResource, error)
 	UpdateProvisionerResource(ctx context.Context, id string, opts *UpdateProvisionerResourceOptions) (*ProvisionerResource, error)
 	DeleteProvisionerResource(ctx context.Context, id string) error
+
+	FindManagedGithubRepoMeta(ctx context.Context, htmlURL string) (*ManagedGithubRepoMeta, error)
+	CountManagedGithubRepos(ctx context.Context, orgID string) (int, error)
+	InsertManagedGithubRepoMeta(ctx context.Context, opts *InsertManagedGithubRepoMetaOptions) (*ManagedGithubRepoMeta, error)
+	UpdateManagedGithubRepoMeta(ctx context.Context, id string, projectID string) (*ManagedGithubRepoMeta, error)
 }
 
 // Tx represents a database transaction. It can only be used to commit and rollback transactions.
@@ -1260,4 +1265,21 @@ type UpdateProvisionerResourceOptions struct {
 	Args          map[string]any
 	State         map[string]any
 	Config        map[string]any
+}
+
+// ManagedGithubRepoMeta represents metadata about a Rill managed GitHub repository for projects deployed on Rill Cloud.
+type ManagedGithubRepoMeta struct {
+	ID              string    `db:"id"`
+	OrgID           string    `db:"org_id"`
+	ProjectID       string    `db:"project_id"`
+	CreatedByUserID string    `db:"created_by"`
+	HTMLURL         string    `db:"html_url"`
+	CreatedOn       time.Time `db:"created_on"`
+	UpdatedOn       time.Time `db:"updated_on"`
+}
+
+type InsertManagedGithubRepoMetaOptions struct {
+	OrgID           string `validate:"required"`
+	CreatedByUserID string `validate:"required"`
+	HTMLURL         string `validate:"required"`
 }

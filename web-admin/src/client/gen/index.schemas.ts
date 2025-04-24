@@ -273,6 +273,11 @@ export interface V1CreateBookmarkResponse {
   bookmark?: V1Bookmark;
 }
 
+export interface V1CreateManagedGithubRepoResponse {
+  repoHtmlUrl?: string;
+  token?: string;
+}
+
 export interface V1CreateOrganizationRequest {
   name?: string;
   description?: string;
@@ -1394,6 +1399,10 @@ export type AdminServiceUpdateOrganizationBody = {
 
 export type AdminServiceGetPaymentsPortalURLParams = {
   returnUrl?: string;
+};
+
+export type AdminServiceCreateManagedGithubRepoBody = {
+  project?: string;
 };
 
 export type AdminServiceListOrganizationInvitesParams = {

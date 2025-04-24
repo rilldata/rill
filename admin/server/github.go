@@ -381,6 +381,39 @@ func (s *Server) ConnectProjectToGithub(ctx context.Context, req *adminv1.Connec
 	return &adminv1.ConnectProjectToGithubResponse{}, nil
 }
 
+func (s *Server) CreateManagedGithubRepo(ctx context.Context, req *adminv1.CreateManagedGithubRepoRequest) (*adminv1.CreateManagedGithubRepoResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.organization", req.Organization),
+		attribute.String("args.project", req.Project),
+	)
+
+	// Find org
+	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Organization)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	claims := auth.GetClaims(ctx)
+	if !claims.OrganizationPermissions(ctx, org.ID).CreateProjects {
+		return nil, status.Error(codes.PermissionDenied, "does not have permission to create projects")
+	}
+
+	repo, err := s.admin.CreateManagedGithubRepo(ctx, org, claims.OwnerID(), req.Project)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	token, err := s.admin.Github.ManagedRepoInstallationToken(ctx, *repo.ID)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	return &adminv1.CreateManagedGithubRepoResponse{
+		RepoHtmlUrl: *repo.HTMLURL,
+		Token:       token,
+	}, nil
+}
+
 // registerGithubEndpoints registers the non-gRPC endpoints for the Github integration.
 func (s *Server) registerGithubEndpoints(mux *http.ServeMux) {
 	// TODO: Add helper utils to clean this up

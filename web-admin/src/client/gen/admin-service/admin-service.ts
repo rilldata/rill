@@ -30,6 +30,7 @@ import type {
   AdminServiceConnectProjectToGithubBody,
   AdminServiceCreateAlertBodyBody,
   AdminServiceCreateAssetBody,
+  AdminServiceCreateManagedGithubRepoBody,
   AdminServiceCreateProjectBody,
   AdminServiceCreateProjectWhitelistedDomainBodyBody,
   AdminServiceCreateReportBodyBody,
@@ -90,6 +91,7 @@ import type {
   V1CreateAssetResponse,
   V1CreateBookmarkRequest,
   V1CreateBookmarkResponse,
+  V1CreateManagedGithubRepoResponse,
   V1CreateOrganizationRequest,
   V1CreateOrganizationResponse,
   V1CreateProjectResponse,
@@ -2227,6 +2229,86 @@ export const createAdminServiceRenewBillingSubscription = <
 > => {
   const mutationOptions =
     getAdminServiceRenewBillingSubscriptionMutationOptions(options);
+
+  return createMutation(mutationOptions, queryClient);
+};
+export const adminServiceCreateManagedGithubRepo = (
+  organization: string,
+  adminServiceCreateManagedGithubRepoBody: AdminServiceCreateManagedGithubRepoBody,
+) => {
+  return httpClient<V1CreateManagedGithubRepoResponse>({
+    url: `/v1/organizations/${organization}/create-managed-github-repo`,
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    data: adminServiceCreateManagedGithubRepoBody,
+  });
+};
+
+export const getAdminServiceCreateManagedGithubRepoMutationOptions = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceCreateManagedGithubRepo>>,
+    TError,
+    { organization: string; data: AdminServiceCreateManagedGithubRepoBody },
+    TContext
+  >;
+}): CreateMutationOptions<
+  Awaited<ReturnType<typeof adminServiceCreateManagedGithubRepo>>,
+  TError,
+  { organization: string; data: AdminServiceCreateManagedGithubRepoBody },
+  TContext
+> => {
+  const mutationKey = ["adminServiceCreateManagedGithubRepo"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceCreateManagedGithubRepo>>,
+    { organization: string; data: AdminServiceCreateManagedGithubRepoBody }
+  > = (props) => {
+    const { organization, data } = props ?? {};
+
+    return adminServiceCreateManagedGithubRepo(organization, data);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminServiceCreateManagedGithubRepoMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceCreateManagedGithubRepo>>
+>;
+export type AdminServiceCreateManagedGithubRepoMutationBody =
+  AdminServiceCreateManagedGithubRepoBody;
+export type AdminServiceCreateManagedGithubRepoMutationError = RpcStatus;
+
+export const createAdminServiceCreateManagedGithubRepo = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof adminServiceCreateManagedGithubRepo>>,
+      TError,
+      { organization: string; data: AdminServiceCreateManagedGithubRepoBody },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
+  Awaited<ReturnType<typeof adminServiceCreateManagedGithubRepo>>,
+  TError,
+  { organization: string; data: AdminServiceCreateManagedGithubRepoBody },
+  TContext
+> => {
+  const mutationOptions =
+    getAdminServiceCreateManagedGithubRepoMutationOptions(options);
 
   return createMutation(mutationOptions, queryClient);
 };

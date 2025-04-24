@@ -264,7 +264,7 @@ func (s *Server) UploadProjectAssets(ctx context.Context, req *adminv1.UploadPro
 		return nil, err
 	}
 
-	token, err := s.admin.Github.InstallationToken(ctx, *proj.GithubInstallationID)
+	token, err := s.admin.Github.InstallationToken(ctx, *proj.GithubInstallationID, 0)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}

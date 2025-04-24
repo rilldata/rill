@@ -545,6 +545,33 @@ paths:
                 type: boolean
       tags:
         - AdminService
+  /v1/organizations/{organization}/create-managed-github-repo:
+    put:
+      operationId: AdminService_CreateManagedGithubRepo
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1CreateManagedGithubRepoResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organization
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              project:
+                type: string
+      tags:
+        - AdminService
   /v1/organizations/{organization}/invites:
     get:
       summary: ListOrganizationInvites lists all the org invites
@@ -4152,6 +4179,13 @@ definitions:
     properties:
       bookmark:
         $ref: '#/definitions/v1Bookmark'
+  v1CreateManagedGithubRepoResponse:
+    type: object
+    properties:
+      repoHtmlUrl:
+        type: string
+      token:
+        type: string
   v1CreateOrganizationRequest:
     type: object
     properties:

@@ -58,7 +58,7 @@ func (s *Server) GetRepoMeta(ctx context.Context, req *adminv1.GetRepoMetaReques
 		return nil, status.Error(codes.FailedPrecondition, "project does not have a github integration")
 	}
 
-	token, err := s.admin.Github.InstallationToken(ctx, *proj.GithubInstallationID)
+	token, err := s.admin.Github.InstallationToken(ctx, *proj.GithubInstallationID, 0)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}

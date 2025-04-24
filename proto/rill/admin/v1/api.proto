@@ -401,6 +401,13 @@ service AdminService {
     };
   }
 
+  rpc CreateManagedGithubRepo(CreateManagedGithubRepoRequest) returns (CreateManagedGithubRepoResponse) {
+    option (google.api.http) = {
+      put: "/v1/organizations/{organization}/create-managed-github-repo",
+      body: "*"
+    };
+  }
+
   // Converts a project connected to github to a rill managed project.
   // Uploads the current project to assets.
   rpc UploadProjectAssets(UploadProjectAssetsRequest) returns (UploadProjectAssetsResponse) {
@@ -1913,6 +1920,16 @@ message ConnectProjectToGithubRequest {
 }
 
 message ConnectProjectToGithubResponse {}
+
+message CreateManagedGithubRepoRequest {
+  string organization = 1;
+  string project = 2;
+}
+
+message CreateManagedGithubRepoResponse {
+  string repo_html_url = 1;
+  string token = 2;
+}
 
 message UploadProjectAssetsRequest {
   string organization = 1;
