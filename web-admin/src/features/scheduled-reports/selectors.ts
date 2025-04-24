@@ -6,7 +6,13 @@ import {
   createRuntimeServiceListResources,
 } from "@rilldata/web-common/runtime-client";
 
-export function useReports(instanceId: string, enabled = true) {
+export function useReports(
+  instanceId: string,
+  enabled = true,
+  options?: {
+    enableBackgroundRefetch?: boolean;
+  },
+) {
   return createRuntimeServiceListResources(
     instanceId,
     {
@@ -16,6 +22,7 @@ export function useReports(instanceId: string, enabled = true) {
       query: {
         enabled: enabled && !!instanceId,
         refetchOnMount: true,
+        refetchIntervalInBackground: options?.enableBackgroundRefetch,
       },
     },
   );
