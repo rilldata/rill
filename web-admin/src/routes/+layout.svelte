@@ -47,7 +47,7 @@
 
   $: isAdmin = isProjectAdmin(projectPermissions);
   $: isEditor = isProjectEditor(projectPermissions);
-  $: isViewer = isProjectViewer(projectPermissions);
+  // $: isViewer = isProjectViewer(projectPermissions);
 
   // Remember:
   // - https://tkdodo.eu/blog/breaking-react-querys-api-on-purpose#a-bad-api
@@ -124,7 +124,6 @@
           createMagicAuthTokens={projectPermissions?.createMagicAuthTokens}
           {isAdmin}
           {isEditor}
-          {isViewer}
           {organizationLogoUrl}
           {planDisplayName}
         />

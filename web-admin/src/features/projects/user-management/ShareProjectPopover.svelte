@@ -31,7 +31,6 @@
   export let project: string;
   export let isAdmin: boolean;
   export let isEditor: boolean;
-  export let isViewer: boolean;
 
   let open = false;
   let accessDropdownOpen = false;
@@ -47,56 +46,17 @@
   async function setAccessInviteOnly() {
     if (accessType === "invite-only") return;
 
-    try {
-      // Find the autogroup:members user group
-      const autogroup = projectMemberUserGroupsList.find(
-        (group) => group.groupName === "autogroup:members",
-      );
+    // Find the autogroup:members user group
+    const autogroup = projectMemberUserGroupsList.find(
+      (group) => group.groupName === "autogroup:members",
+    );
 
-      if (autogroup) {
-        // Remove the autogroup:members user group
-        await $removeProjectMemberUsergroup.mutateAsync({
-          organization,
-          project,
-          usergroup: autogroup.groupName,
-        });
-
-        // Invalidate the query to refresh the list
-        await queryClient.invalidateQueries({
-          queryKey: getAdminServiceListProjectMemberUsergroupsQueryKey(
-            organization,
-            project,
-          ),
-        });
-
-        eventBus.emit("notification", {
-          message: "Project access changed to invite-only",
-        });
-      }
-
-      accessType = "invite-only";
-      accessDropdownOpen = false;
-    } catch (_) {
-      eventBus.emit("notification", {
-        message: "Error changing project access",
-        type: "error",
-      });
-    }
-  }
-
-  async function setAccessEveryone() {
-    if (accessType === "everyone") return;
-
-    try {
-      // Add the autogroup:members user group back with the viewer role
-      // This is the default role for autogroup:members as seen in the tests
-      await $addProjectMemberUsergroup.mutateAsync({
+    if (autogroup) {
+      // Remove the autogroup:members user group
+      await $removeProjectMemberUsergroup.mutateAsync({
         organization,
         project,
-        usergroup: "autogroup:members",
-        data: {
-          role: "viewer", // Default role for autogroup:members
-        },
+        usergroup: autogroup.groupName,
       });
 
       // Invalidate the query to refresh the list
@@ -108,17 +68,42 @@
       });
 
       eventBus.emit("notification", {
-        message: "Project access changed to everyone",
-      });
-
-      accessType = "everyone";
-      accessDropdownOpen = false;
-    } catch (_) {
-      eventBus.emit("notification", {
-        message: "Error changing project access",
-        type: "error",
+        message: "Project access changed to invite-only",
       });
     }
+
+    accessType = "invite-only";
+    accessDropdownOpen = false;
+  }
+
+  async function setAccessEveryone() {
+    if (accessType === "everyone") return;
+
+    // Add the autogroup:members user group back with the viewer role
+    // This is the default role for autogroup:members as seen in the tests
+    await $addProjectMemberUsergroup.mutateAsync({
+      organization,
+      project,
+      usergroup: "autogroup:members",
+      data: {
+        role: "viewer", // Default role for autogroup:members
+      },
+    });
+
+    // Invalidate the query to refresh the list
+    await queryClient.invalidateQueries({
+      queryKey: getAdminServiceListProjectMemberUsergroupsQueryKey(
+        organization,
+        project,
+      ),
+    });
+
+    eventBus.emit("notification", {
+      message: "Project access changed to everyone",
+    });
+
+    accessType = "everyone";
+    accessDropdownOpen = false;
   }
 
   $: copyLink = `${$page.url.protocol}//${$page.url.host}/${organization}/${project}`;
