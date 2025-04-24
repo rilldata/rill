@@ -142,6 +142,8 @@ func newGlob(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolv
 	if props.Connector == "" {
 		if bucketURI.Scheme == "gs" {
 			props.Connector = "gcs"
+		} else {
+			props.Connector = bucketURI.Scheme
 		}
 	}
 
