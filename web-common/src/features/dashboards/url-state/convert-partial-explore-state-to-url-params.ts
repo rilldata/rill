@@ -25,7 +25,7 @@ import {
   ExploreStateKeyToURLParamMap,
   ExploreStateURLParams,
 } from "@rilldata/web-common/features/dashboards/url-state/url-params";
-import { stripDefaultOrEmptyUrlParams } from "@rilldata/web-common/features/dashboards/url-state/url-params-strip-utils";
+import { cleanUrlParams } from "@rilldata/web-common/features/dashboards/url-state/clean-url-params";
 import { arrayOrderedEquals } from "@rilldata/web-common/lib/arrayUtils";
 import {
   TimeComparisonOption,
@@ -55,10 +55,7 @@ export function getCleanedUrlParamsForGoto(
   );
 
   // Clean the url params of any default or empty values.
-  const cleanedUrlParams = stripDefaultOrEmptyUrlParams(
-    stateParams,
-    defaultExploreUrlParams,
-  );
+  const cleanedUrlParams = cleanUrlParams(stateParams, defaultExploreUrlParams);
 
   if (!urlForCompressionCheck) return cleanedUrlParams;
 
@@ -143,6 +140,8 @@ export function convertPartialExploreStateToUrlParams(
       // Since we do a shallow merge, we cannot remove time grain from the state for pivot as it is a deeper key.
       // So this is a patch to remove it from the final url.
       searchParams.delete(ExploreStateURLParams.TimeGrain);
+      // TODO: fix the need for this once we move out of V1ExplorePreset in converting url to explore state
+      searchParams.delete(ExploreStateURLParams.ComparisonDimension);
       break;
   }
 
