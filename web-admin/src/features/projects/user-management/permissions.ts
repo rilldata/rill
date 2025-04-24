@@ -1,7 +1,7 @@
 import type { V1ProjectPermissions } from "@rilldata/web-admin/client";
 
 /**
- * @source https://docs.rilldata.com/manage/roles-permissions#project-level-permission
+ * @source https://docs.rilldata.com/manage/roles-permissions#project-level-permissions
  *
  * Checks if a user has admin permissions for a project
  */
@@ -9,8 +9,9 @@ export function isProjectAdmin(permissions?: V1ProjectPermissions): boolean {
   return !!permissions?.admin;
 }
 
+// FIXME: when user is editor, isProjectEditor returns false
 /**
- * @source https://docs.rilldata.com/manage/roles-permissions#project-level-permission
+ * @source https://docs.rilldata.com/manage/roles-permissions#project-level-permissions
  *
  * Checks if a user has editor permissions for a project
  */
@@ -30,7 +31,7 @@ export function isProjectEditor(permissions?: V1ProjectPermissions): boolean {
 }
 
 /**
- * @source https://docs.rilldata.com/manage/roles-permissions#project-level-permission
+ * @source https://docs.rilldata.com/manage/roles-permissions#project-level-permissions
  *
  * Checks if a user has viewer permissions for a project
  */

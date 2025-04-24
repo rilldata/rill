@@ -189,9 +189,7 @@
     {#if $viewAsUserStore}
       <ViewAsUserChip />
     {/if}
-    <!-- TODO: guests cannot see the share project popover -->
-    <!-- TODO: how do i check if the current user is a guest -->
-    {#if onProjectPage}
+    {#if onProjectPage && (isAdmin || isEditor)}
       <ShareProjectPopover {organization} {project} {isAdmin} {isEditor} />
     {/if}
     {#if onMetricsExplorerPage && isDashboardValid}
