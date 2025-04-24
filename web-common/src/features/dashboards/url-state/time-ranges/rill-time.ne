@@ -13,12 +13,12 @@
   } from "./RillTime.ts"
 %}
 
-rill_time => time_range                       {% id %}
-           | time_range "@" timezone_modifier {% id %}
+rill_time => time_range                            {% id %}
+           | time_range _ "tz" _ timezone_modifier {% ([rt, , , , tz]) => rt.withTimeZone(tz) %}
 
-time_range => link _ "to"i _ link _ "by"i _ grain {% id %}
+time_range => link _ "to"i _ link _ "by"i _ grain {% ([start, , , , end, , , grain]) => new RillTime(start, end, grain) %}
             | link _ "to"i _ link                 {% ([start, , , , end]) => new RillTime(start, end, undefined) %}
-            | link _ "by"i _ grain                {% id %}
+            | link _ "by"i _ grain                {% ([start, , , , grain]) => new RillTime(start, undefined, grain) %}
             | link                                {% ([start]) => new RillTime(start, undefined, undefined) %}
 
 link => link_part non_first_link_part:* {% ([first, rest]) => [first, ...rest] %}
@@ -63,7 +63,7 @@ abs_time => [\d] [\d] [\d] [\d] [\-] [\d] [\d] [\-] [\d] [\d] "T" [\d] [\d] [:] 
           | [\d] [\d] [\d] [\d] [\-] [\d] [\d]                                                              {% RillTimeAbsoluteTime.postProcessor %}
           | [\d] [\d] [\d] [\d]                                                                             {% RillTimeAbsoluteTime.postProcessor %}
 
-timezone_modifier => "{" _ [^}]:+ _ "}" {% ([, , tz]) => tz.join("") %}
+timezone_modifier => [0-9a-zA-Z/+-_]:+ {% ([args]) => args.join("") %}
 
 prefix => [+\-<>] {% id %}
 
