@@ -8,6 +8,8 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 func init() {
@@ -72,8 +74,13 @@ func (r *CanvasReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceN
 		return runtime.ReconcileResult{Err: err}
 	}
 
-	// Validate
+	// Validate refs
 	validateErr := checkRefs(ctx, r.C, self.Meta.Refs)
+
+	//
+	if validateErr == nil {
+		validateErr = r.validateMetricsViewTimeConsistency(ctx, self.Meta.Refs)
+	}
 
 	// Capture the valid spec in the state
 	if validateErr == nil {
@@ -121,4 +128,75 @@ func (r *CanvasReconciler) checkAnyComponentHasValidSpec(ctx context.Context, re
 		}
 	}
 	return false, nil
+}
+
+func (r *CanvasReconciler) validateMetricsViewTimeConsistency(ctx context.Context, refs []*runtimev1.ResourceName) error {
+	metricsViews := make(map[string]*runtimev1.Resource)
+	for _, ref := range refs {
+		if ref.Kind != runtime.ResourceKindComponent {
+			continue
+		}
+		component, err := r.C.Get(ctx, ref, false)
+		if err != nil {
+			continue
+		}
+		var mvName string
+		validSpec := component.GetComponent().State.ValidSpec
+		if validSpec != nil && validSpec.RendererProperties != nil {
+			for k, v := range validSpec.RendererProperties.Fields {
+				if k == "metrics_view" {
+					mvName = v.GetStringValue()
+					break
+				}
+			}
+		}
+		// Skip if no metrics view reference.
+		if mvName == "" {
+			continue
+		}
+
+		// Skip if already resolved.
+		if _, ok := metricsViews[mvName]; ok {
+			continue
+		}
+
+		// Get metrics view resource.
+		mv, err := r.C.Get(ctx, &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: mvName}, false)
+		if err != nil {
+			if errors.Is(err, drivers.ErrResourceNotFound) {
+				return fmt.Errorf("component %q: metrics view %q in valid spec not found", ref.Name, mvName)
+			}
+			return err
+		}
+
+		metricsViews[mvName] = mv
+	}
+
+	// Validate all metrics views have consistent first_day_of_week or first_month_of_year
+	// This ensures that time-based aggregations across different metrics views are consistent
+	if len(metricsViews) > 0 {
+		var first bool
+		var firstDayOfWeek uint32
+		var firstMonthOfYear uint32
+		var firstViewName string
+
+		for mvName, mv := range metricsViews {
+			mvSpec := mv.GetMetricsView().State.ValidSpec
+			if mvSpec == nil {
+				return status.Errorf(codes.Internal, "metrics view %q in valid spec not found", mvName)
+			}
+			if first {
+				if firstDayOfWeek != mvSpec.FirstDayOfWeek || firstMonthOfYear != mvSpec.FirstMonthOfYear {
+					return status.Errorf(codes.InvalidArgument, "metrics views %q and %q have inconsistent time settings", firstViewName, mvName)
+				}
+			} else {
+				first = true
+				firstDayOfWeek = mvSpec.FirstDayOfWeek
+				firstMonthOfYear = mvSpec.FirstMonthOfYear
+				firstViewName = mvName
+			}
+		}
+	}
+
+	return nil
 }
