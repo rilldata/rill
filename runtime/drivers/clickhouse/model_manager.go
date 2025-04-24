@@ -58,6 +58,10 @@ type ModelOutputProperties struct {
 	DistributedSettings string `mapstructure:"distributed.settings"`
 	// DistributedShardingKey is the sharding key for distributed table.
 	DistributedShardingKey string `mapstructure:"distributed.sharding_key"`
+	// DictionarySourceUser is the user that case access the source dictionary table.
+	DictionarySourceUser string `mapstructure:"dictionary_source_user"`
+	// DictionarySourcePassword is the password for the user that can access the source dictionary table.
+	DictionarySourcePassword string `mapstructure:"dictionary_source_password"`
 }
 
 func (p *ModelOutputProperties) Validate(opts *drivers.ModelExecuteOptions) error {
