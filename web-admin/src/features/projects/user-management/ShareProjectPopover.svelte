@@ -165,9 +165,9 @@
     (group) => group.groupName === "autogroup:members",
   );
 
-  $: hasRegularUserGroups = projectMemberUserGroupsList.some(
-    (group) => !group.groupManaged,
-  );
+  // $: hasRegularUserGroups = projectMemberUserGroupsList.some(
+  //   (group) => !group.groupManaged,
+  // );
 
   $: accessType = hasAutogroupMembers ? "everyone" : "invite-only";
 </script>
@@ -207,8 +207,8 @@
             />
           {/each}
           <!-- User Groups -->
-          <!-- TODO: ask eric, should we show user groups besides autogroup:members? -->
-          {#if hasRegularUserGroups}
+          <!-- TODO: revisit when https://www.notion.so/rilldata/User-Management-Role-Based-Access-Control-RBAC-Enhancements-8d331b29d9b64d87bca066e06ef87f54?pvs=4#1acba33c8f5780f38303f01a73e82e60 -->
+          <!-- {#if hasRegularUserGroups}
             {#each projectMemberUserGroupsList as group}
               {#if !group.groupManaged}
                 <AutogroupMembersItem
@@ -220,7 +220,7 @@
                 />
               {/if}
             {/each}
-          {/if}
+          {/if} -->
         </div>
         {#if hasAutogroupMembers}
           <div class="mt-2">

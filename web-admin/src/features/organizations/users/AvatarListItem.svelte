@@ -1,6 +1,6 @@
 <script lang="ts">
   import Avatar from "@rilldata/web-common/components/avatar/Avatar.svelte";
-  import Chip from "@rilldata/web-common/components/chip/core/Chip.svelte";
+  import { Chip } from "@rilldata/web-common/components/chip";
   import { getRandomBgColor } from "@rilldata/web-common/features/themes/color-config";
   import { cn } from "@rilldata/web-common/lib/shadcn";
 
