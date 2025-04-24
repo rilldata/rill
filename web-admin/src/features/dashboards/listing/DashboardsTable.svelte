@@ -10,12 +10,18 @@
   import { useDashboardsV2, type DashboardResource } from "./selectors";
   import NoResourceCTA from "@rilldata/web-admin/features/projects/NoResourceCTA.svelte";
   import ResourceError from "@rilldata/web-admin/features/projects/ResourceError.svelte";
+  import { isDashboardPage } from "../../navigation/nav-utils";
+  import { page } from "$app/stores";
 
   export let isEmbedded = false;
 
   $: ({ instanceId } = $runtime);
 
-  $: dashboards = useDashboardsV2(instanceId);
+  $: onDashboardPage = isDashboardPage($page);
+
+  $: dashboards = useDashboardsV2(instanceId, {
+    enableBackgroundRefetch: onDashboardPage,
+  });
 
   /**
    * Table column definitions.
