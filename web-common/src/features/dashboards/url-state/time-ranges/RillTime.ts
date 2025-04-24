@@ -12,9 +12,14 @@ export class RillTime {
     public readonly start: RillTimePart[],
     public readonly end: RillTimePart[] | undefined,
     public readonly timeRangeGrain: string | undefined,
-    public readonly timezone: string | undefined,
+    public timezone: string | undefined,
   ) {
     this.isComplete = end?.[0]?.isComplete ?? start[0]?.isComplete ?? false;
+  }
+
+  public withTimeZone(timezone: string) {
+    this.timezone = timezone;
+    return this;
   }
 
   public getLabel() {
@@ -22,12 +27,8 @@ export class RillTime {
 
     let range = this.start.map((p) => p.getLabel()).join(" of ");
 
-    if (this.timeRangeGrain) {
-      range += ` by ${this.timeRangeGrain}`;
-    }
-
     if (this.timezone) {
-      range += ` @{${this.timezone}}`;
+      range += ` in ${this.timezone}`;
     }
 
     return capitalizeFirstChar(range);
@@ -45,7 +46,7 @@ export class RillTime {
     }
 
     if (this.timezone) {
-      range += ` @{${this.timezone}}`;
+      range += ` tz ${this.timezone}`;
     }
 
     return range;
@@ -198,7 +199,7 @@ export class RillTimeRelative implements RillTimePart {
         if (this.num === 1) {
           return `previous ${grainPart}`;
         }
-        return `${grainLabel} in the past`;
+        return `${grainLabel} ago`;
 
       case "+":
         if (this.num === 1) {
