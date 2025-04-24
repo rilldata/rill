@@ -56,7 +56,7 @@
       <UsergroupSetRole {organization} {project} {group} />
     </div>
 
-    <TooltipContent maxWidth="121px" slot="tooltip-content">
+    <TooltipContent slot="tooltip-content">
       <ul>
         {#each userGroupMemberUsers.slice(0, 6) as user}
           <div class="flex items-center gap-1 py-1">
