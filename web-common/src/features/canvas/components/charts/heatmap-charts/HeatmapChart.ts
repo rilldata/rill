@@ -38,6 +38,7 @@ export class HeatmapChartComponent extends BaseChart<HeatmapChartSpec> {
           limitSelector: true,
           axisTitleSelector: true,
           nullSelector: true,
+          labelAngleSelector: true,
         },
       },
     },

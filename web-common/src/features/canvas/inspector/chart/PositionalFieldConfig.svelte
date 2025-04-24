@@ -61,12 +61,14 @@
   <div class="flex justify-between items-center">
     <InputLabel small label={config.label ?? key} id={key} />
     {#if Object.keys(chartFieldInput ?? {}).length > 1}
-      <FieldConfigDropdown
-        {fieldConfig}
-        label={config.label ?? key}
-        onChange={updateFieldProperty}
-        {chartFieldInput}
-      />
+      {#key fieldConfig}
+        <FieldConfigDropdown
+          {fieldConfig}
+          label={config.label ?? key}
+          onChange={updateFieldProperty}
+          {chartFieldInput}
+        />
+      {/key}
     {/if}
   </div>
 

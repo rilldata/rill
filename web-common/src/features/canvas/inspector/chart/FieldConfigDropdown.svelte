@@ -20,6 +20,8 @@
   $: isMeasure = fieldConfig?.type === "quantitative";
 
   let limit = fieldConfig?.limit || 5000;
+  let labelAngle =
+    fieldConfig?.labelAngle ?? (fieldConfig?.type === "temporal" ? 0 : -90);
   let isDropdownOpen = false;
 
   const sortOptions: { label: string; value: ChartSortDirection }[] = [
@@ -34,6 +36,7 @@
   $: showSort = chartFieldInput?.sortSelector ?? false;
   $: showLimit = chartFieldInput?.limitSelector ?? false;
   $: showNull = chartFieldInput?.nullSelector ?? false;
+  $: showLabelAngle = chartFieldInput?.labelAngleSelector ?? false;
 </script>
 
 <DropdownMenu.Root bind:open={isDropdownOpen}>
@@ -112,6 +115,24 @@
             checked={fieldConfig?.zeroBasedOrigin}
             on:click={() => {
               onChange("zeroBasedOrigin", !fieldConfig?.zeroBasedOrigin);
+            }}
+          />
+        </div>
+      {/if}
+      {#if showLabelAngle && fieldConfig?.type !== "temporal"}
+        <div class="py-1.5 flex items-center justify-between">
+          <span class="text-xs">Label angle</span>
+          <Input
+            size="sm"
+            width="72px"
+            id="label-angle-select"
+            inputType="number"
+            bind:value={labelAngle}
+            onBlur={() => {
+              onChange("labelAngle", labelAngle);
+            }}
+            onEnter={() => {
+              onChange("labelAngle", labelAngle);
             }}
           />
         </div>
