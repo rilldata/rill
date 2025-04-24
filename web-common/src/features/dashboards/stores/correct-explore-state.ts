@@ -25,9 +25,9 @@ import type {
 export function correctExploreState(
   metricsViewSpec: V1MetricsViewSpec,
   exploreSpec: V1ExploreSpec,
-  correctedExploreViewState: Partial<MetricsExplorerEntity>,
+  exploreState: Partial<MetricsExplorerEntity>,
 ) {
-  const correctedExploreState = { ...correctedExploreViewState };
+  const correctedExploreState = { ...exploreState };
   const errors: Error[] = [];
 
   const measures = getMapFromArray(
@@ -66,6 +66,47 @@ function correctExploreViewState(
 ) {
   const errors: Error[] = [];
 
+  if (correctedExploreViewState.visibleDimensions) {
+    const selectedDimensions =
+      correctedExploreViewState.visibleDimensions.filter((d) =>
+        dimensions.has(d),
+      );
+    const missingDimensions = getMissingValues(
+      selectedDimensions,
+      correctedExploreViewState.visibleDimensions,
+    );
+    if (missingDimensions.length) {
+      errors.push(getMultiFieldError("dimension", missingDimensions));
+    }
+
+    if (selectedDimensions.length > 0) {
+      correctedExploreViewState.allDimensionsVisible =
+        selectedDimensions.length === exploreSpec.dimensions?.length;
+      correctedExploreViewState.visibleDimensions = [...selectedDimensions];
+    } else {
+      delete correctedExploreViewState.allDimensionsVisible;
+      delete correctedExploreViewState.visibleDimensions;
+    }
+  }
+
+  // TODO: more validation once we need the full suite of validation
+  return [
+    ...errors,
+    ...correctMeasureRelatedExploreViewState(
+      measures,
+      exploreSpec,
+      correctedExploreViewState,
+    ),
+  ];
+}
+
+function correctMeasureRelatedExploreViewState(
+  measures: Map<string, MetricsViewSpecMeasure>,
+  exploreSpec: V1ExploreSpec,
+  correctedExploreViewState: Partial<MetricsExplorerEntity>,
+) {
+  const errors: Error[] = [];
+
   let visibleMeasures = new Set();
 
   if (correctedExploreViewState.visibleMeasures) {
@@ -91,47 +132,31 @@ function correctExploreViewState(
     }
   }
 
-  const hasSomeVisibleMeasures = visibleMeasures.size > 0;
-
-  if (correctedExploreViewState.visibleDimensions) {
-    const selectedDimensions =
-      correctedExploreViewState.visibleDimensions.filter((d) =>
-        dimensions.has(d),
-      );
-    const missingDimensions = getMissingValues(
-      selectedDimensions,
-      correctedExploreViewState.visibleDimensions,
-    );
-    if (missingDimensions.length) {
-      errors.push(getMultiFieldError("dimension", missingDimensions));
-    }
-
-    if (selectedDimensions.length > 0) {
-      correctedExploreViewState.allDimensionsVisible =
-        selectedDimensions.length === exploreSpec.dimensions?.length;
-      correctedExploreViewState.visibleDimensions = [...selectedDimensions];
-    } else {
-      delete correctedExploreViewState.allDimensionsVisible;
-      delete correctedExploreViewState.visibleDimensions;
-    }
+  // No measure selected here was valid. So other measure setting based on these need to be unset as well.
+  if (visibleMeasures.size === 0) {
+    delete correctedExploreViewState.leaderboardSortByMeasureName;
+    delete correctedExploreViewState.leaderboardMeasureNames;
+    return errors;
   }
 
   if (
     correctedExploreViewState.leaderboardSortByMeasureName &&
     !visibleMeasures.has(correctedExploreViewState.leaderboardSortByMeasureName)
   ) {
+    const measureIsPresentInMetricsView = measures.has(
+      correctedExploreViewState.leaderboardSortByMeasureName,
+    );
     errors.push(
       getSingleFieldError(
         "sort by measure",
         correctedExploreViewState.leaderboardSortByMeasureName,
+        measureIsPresentInMetricsView ? "It is hidden." : "",
       ),
     );
-    if (hasSomeVisibleMeasures) {
-      correctedExploreViewState.leaderboardSortByMeasureName =
-        correctedExploreViewState.visibleMeasures![0];
-    } else {
-      delete correctedExploreViewState.leaderboardSortByMeasureName;
-    }
+
+    // Set the 1st valid sort measure if the selected measure is not valid
+    correctedExploreViewState.leaderboardSortByMeasureName =
+      correctedExploreViewState.visibleMeasures![0];
   }
 
   if (correctedExploreViewState.leaderboardMeasureNames?.length) {
@@ -150,18 +175,17 @@ function correctExploreViewState(
     }
 
     if (selectedLeaderboardMeasures.length > 0) {
+      // If some measures are left after removing invalid measures then set those
       correctedExploreViewState.leaderboardMeasureNames = [
         ...selectedLeaderboardMeasures,
       ];
-    } else if (hasSomeVisibleMeasures) {
+    } else {
+      // Else set the 1st visible measure
       correctedExploreViewState.leaderboardMeasureNames = [
         correctedExploreViewState.visibleMeasures![0],
       ];
-    } else {
-      delete correctedExploreViewState.leaderboardMeasureNames;
     }
   }
 
-  // TODO: more validation once we need the full suite of validation
   return errors;
 }

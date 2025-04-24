@@ -47,8 +47,8 @@ const TestCases: {
       allDimensionsVisible: false,
     },
     expectedErrorMessages: [
-      `Selected measure: "invalid_measure" is not valid.`,
       `Selected dimension: "invalid_dimension" is not valid.`,
+      `Selected measure: "invalid_measure" is not valid.`,
     ],
   },
   {
@@ -76,10 +76,8 @@ const TestCases: {
       dashboardSortType: DashboardState_LeaderboardSortType.PERCENT,
     },
     expectedErrorMessages: [
-      `Selected measures: "invalid_measure_1,invalid_measure_2,invalid_measure_3" are not valid.`,
       `Selected dimensions: "invalid_dimension_1,invalid_dimension_2,invalid_dimension_3" are not valid.`,
-      `Selected sort by measure: "invalid_measure_1" is not valid.`,
-      `Selected leaderboard measures: "invalid_measure_1,invalid_measure_2" are not valid.`,
+      `Selected measures: "invalid_measure_1,invalid_measure_2,invalid_measure_3" are not valid.`,
     ],
   },
 
@@ -101,7 +99,7 @@ const TestCases: {
       leaderboardMeasureNames: [AD_BIDS_BID_PRICE_MEASURE],
     },
     expectedErrorMessages: [
-      `Selected sort by measure: "publisher_count" is not valid.`,
+      `Selected sort by measure: "publisher_count" is not valid. It is hidden.`,
       `Selected leaderboard measure: "publisher_count" is not valid.`,
     ],
   },

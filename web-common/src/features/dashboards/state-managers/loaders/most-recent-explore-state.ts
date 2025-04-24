@@ -27,8 +27,12 @@ export function getMostRecentExploreState(
     const stateFromLocalStorage = JSON.parse(
       rawExploreState,
     ) as Partial<MetricsExplorerEntity>;
-    correctExploreState(metricsViewSpec, exploreSpec, stateFromLocalStorage);
-    return stateFromLocalStorage;
+    const { correctedExploreState } = correctExploreState(
+      metricsViewSpec,
+      exploreSpec,
+      stateFromLocalStorage,
+    );
+    return correctedExploreState;
   } catch {
     // no-op
   }
@@ -42,7 +46,7 @@ export function saveMostRecentExploreState(
 ) {
   if (
     exploreState.activePage !== DashboardState_ActivePage.DEFAULT &&
-    exploreState.activePage === DashboardState_ActivePage.DIMENSION_TABLE
+    exploreState.activePage !== DashboardState_ActivePage.DIMENSION_TABLE
   ) {
     // We are not saving any state for non-explore pages
     return;

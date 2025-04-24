@@ -212,6 +212,7 @@ describe("DashboardStateManager", () => {
         allDimensionsVisible: false,
 
         leaderboardSortByMeasureName: AD_BIDS_BID_PRICE_MEASURE,
+        leaderboardMeasureNames: [AD_BIDS_BID_PRICE_MEASURE],
         sortDirection: DashboardState_LeaderboardSortDirection.ASCENDING,
         dashboardSortType: DashboardState_LeaderboardSortType.VALUE,
       });
