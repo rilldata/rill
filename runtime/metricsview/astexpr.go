@@ -213,11 +213,12 @@ func (b *sqlExprBuilder) writeBinaryCondition(exprs []*Expression, op Operator) 
 			if lookup != nil {
 				b.writeString(fmt.Sprintf("%s IN ", b.ast.dialect.EscapeIdentifier(lookup.keyExpr)))
 				b.writeByte('(')
-				ex, err := b.ast.dialect.LookupSelectExpr(lookup.table, lookup.valueCol)
+				ex, err := b.ast.dialect.LookupSelectExpr(lookup.table, lookup.keyCol)
 				if err != nil {
 					return err
 				}
 				b.writeString(ex)
+				b.writeString(" WHERE ")
 				err = b.writeBinaryConditionInner(nil, right, lookup.valueCol, op)
 				if err != nil {
 					return err
