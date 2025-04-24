@@ -105,7 +105,7 @@ function getPivotAggregationRequest(
           name: timeDimension,
           timeGrain: d.id as V1TimeGrain,
           timeZone: dashboardState.selectedTimezone,
-          alias: `Time ${d.title}`,
+          alias: `${timeDimension}_rill_${d.id}`,
         }
       : {
           name: d.id,
