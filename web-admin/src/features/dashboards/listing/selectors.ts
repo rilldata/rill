@@ -3,7 +3,7 @@ import { useValidExplores } from "@rilldata/web-common/features/dashboards/selec
 import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
 import type { V1Resource } from "@rilldata/web-common/runtime-client";
 import { createRuntimeServiceListResources } from "@rilldata/web-common/runtime-client";
-import type { CreateQueryResult } from "@tanstack/svelte-query";
+import type { CreateQueryResult, Query } from "@tanstack/svelte-query";
 import { derived } from "svelte/store";
 
 export function useDashboardsLastUpdated(
@@ -49,6 +49,9 @@ export interface DashboardResource {
 // This iteration of `useDashboards` returns the above `DashboardResource` type, which includes `refreshedOn`
 export function useDashboardsV2(
   instanceId: string,
+  options?: {
+    enableBackgroundRefetch?: boolean;
+  },
 ): CreateQueryResult<DashboardResource[]> {
   return createRuntimeServiceListResources(instanceId, undefined, {
     query: {
@@ -79,6 +82,7 @@ export function useDashboardsV2(
         );
         return allDashboards;
       },
+      refetchIntervalInBackground: options?.enableBackgroundRefetch,
     },
   });
 }
