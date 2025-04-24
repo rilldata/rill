@@ -194,7 +194,7 @@
           class="font-normal flex items-center py-2"
           on:click={() => handleRemove(getUserEmail(user))}
         >
-          <span class=" text-red-600">Remove</span>
+          <span class="text-red-600">Remove</span>
         </DropdownMenu.Item>
       {/if}
     </DropdownMenu.Content>

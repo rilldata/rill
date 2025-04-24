@@ -140,16 +140,14 @@
       >
     </DropdownMenu.Item>
     <!-- TODO: allow admin to remove `autogroup:members`, and set to Invite only -->
-    {#if !group.groupManaged}
-      <DropdownMenu.Separator />
-      <DropdownMenu.Item
-        class="font-normal flex items-center"
-        on:click={() => {
-          handleRemove(group.groupName);
-        }}
-      >
-        <span class="ml-6">Remove</span>
-      </DropdownMenu.Item>
-    {/if}
+    <DropdownMenu.Separator />
+    <DropdownMenu.Item
+      class="font-normal flex items-center"
+      on:click={() => {
+        handleRemove(group.groupName);
+      }}
+    >
+      <span class="text-red-600">Remove</span>
+    </DropdownMenu.Item>
   </DropdownMenu.Content>
 </DropdownMenu.Root>

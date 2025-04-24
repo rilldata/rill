@@ -17,7 +17,6 @@
     PopoverContent,
     PopoverTrigger,
   } from "@rilldata/web-common/components/popover";
-  import UsergroupItem from "./UsergroupItem.svelte";
   import UserItem from "./UserItem.svelte";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
@@ -44,6 +43,79 @@
   const addProjectMemberUsergroup =
     createAdminServiceAddProjectMemberUsergroup();
   const currentUser = createAdminServiceGetCurrentUser();
+
+  async function setAccessInviteOnly() {
+    try {
+      // Find the autogroup:members user group
+      const autogroup = projectMemberUserGroupsList.find(
+        (group) => group.groupName === "autogroup:members",
+      );
+
+      if (autogroup) {
+        // Remove the autogroup:members user group
+        await $removeProjectMemberUsergroup.mutateAsync({
+          organization,
+          project,
+          usergroup: autogroup.groupName,
+        });
+
+        // Invalidate the query to refresh the list
+        await queryClient.invalidateQueries({
+          queryKey: getAdminServiceListProjectMemberUsergroupsQueryKey(
+            organization,
+            project,
+          ),
+        });
+
+        eventBus.emit("notification", {
+          message: "Project access changed to invite-only",
+        });
+      }
+
+      accessType = "invite-only";
+      accessDropdownOpen = false;
+    } catch (_) {
+      eventBus.emit("notification", {
+        message: "Error changing project access",
+        type: "error",
+      });
+    }
+  }
+
+  async function setAccessEveryone() {
+    try {
+      // Add the autogroup:members user group back with the viewer role
+      // This is the default role for autogroup:members as seen in the tests
+      await $addProjectMemberUsergroup.mutateAsync({
+        organization,
+        project,
+        usergroup: "autogroup:members",
+        data: {
+          role: "viewer", // Default role for autogroup:members
+        },
+      });
+
+      // Invalidate the query to refresh the list
+      await queryClient.invalidateQueries({
+        queryKey: getAdminServiceListProjectMemberUsergroupsQueryKey(
+          organization,
+          project,
+        ),
+      });
+
+      eventBus.emit("notification", {
+        message: "Project access changed to everyone",
+      });
+
+      accessType = "everyone";
+      accessDropdownOpen = false;
+    } catch (_) {
+      eventBus.emit("notification", {
+        message: "Error changing project access",
+        type: "error",
+      });
+    }
+  }
 
   $: copyLink = `${$page.url.protocol}//${$page.url.host}/${organization}/${project}`;
 
@@ -151,7 +223,13 @@
           {#if hasRegularUserGroups}
             {#each projectMemberUserGroupsList as group}
               {#if !group.groupManaged}
-                <UsergroupItem {organization} {project} {group} />
+                <AutogroupMembersItem
+                  {organization}
+                  {project}
+                  {group}
+                  avatarName={`Everyone at ${organization}`}
+                  {isAdmin}
+                />
               {/if}
             {/each}
           {/if}
@@ -216,45 +294,7 @@
           </DropdownMenu.Trigger>
           <DropdownMenu.Content align="end">
             <DropdownMenu.Item
-              on:click={async () => {
-                try {
-                  // Find the autogroup:members user group
-                  const autogroup = projectMemberUserGroupsList.find(
-                    (group) => group.groupName === "autogroup:members",
-                  );
-
-                  if (autogroup) {
-                    // Remove the autogroup:members user group
-                    await $removeProjectMemberUsergroup.mutateAsync({
-                      organization,
-                      project,
-                      usergroup: autogroup.groupName,
-                    });
-
-                    // Invalidate the query to refresh the list
-                    await queryClient.invalidateQueries({
-                      queryKey:
-                        getAdminServiceListProjectMemberUsergroupsQueryKey(
-                          organization,
-                          project,
-                        ),
-                    });
-
-                    eventBus.emit("notification", {
-                      message: "Project access changed to invite-only",
-                    });
-                  }
-
-                  accessType = "invite-only";
-                  accessDropdownOpen = false;
-                  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-                } catch (_) {
-                  eventBus.emit("notification", {
-                    message: "Error changing project access",
-                    type: "error",
-                  });
-                }
-              }}
+              on:click={setAccessInviteOnly}
               class="flex flex-col items-start py-2 data-[highlighted]:bg-gray-100 {accessType ===
               'invite-only'
                 ? 'bg-gray-50'
@@ -274,42 +314,7 @@
               </div>
             </DropdownMenu.Item>
             <DropdownMenu.Item
-              on:click={async () => {
-                try {
-                  // Add the autogroup:members user group back with the viewer role
-                  // This is the default role for autogroup:members as seen in the tests
-                  await $addProjectMemberUsergroup.mutateAsync({
-                    organization,
-                    project,
-                    usergroup: "autogroup:members",
-                    data: {
-                      role: "viewer", // Default role for autogroup:members
-                    },
-                  });
-
-                  // Invalidate the query to refresh the list
-                  await queryClient.invalidateQueries({
-                    queryKey:
-                      getAdminServiceListProjectMemberUsergroupsQueryKey(
-                        organization,
-                        project,
-                      ),
-                  });
-
-                  eventBus.emit("notification", {
-                    message: "Project access changed to everyone",
-                  });
-
-                  accessType = "everyone";
-                  accessDropdownOpen = false;
-                  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-                } catch (_) {
-                  eventBus.emit("notification", {
-                    message: "Error changing project access",
-                    type: "error",
-                  });
-                }
-              }}
+              on:click={setAccessEveryone}
               class="flex flex-col items-start py-2 data-[highlighted]:bg-gray-100 {accessType ===
               'everyone'
                 ? 'bg-gray-50'
