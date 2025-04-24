@@ -9,7 +9,11 @@ import {
 } from "@rilldata/web-common/runtime-client";
 import { derived, type Readable } from "svelte/store";
 import type { ChartDataResult, TimeDimensionDefinition } from "./types";
-import { getFieldsByType, timeGrainToVegaTimeUnitMap } from "./util";
+import {
+  adjustDataForTimeZone,
+  getFieldsByType,
+  timeGrainToVegaTimeUnitMap,
+} from "./util";
 
 export function getChartData(
   ctx: CanvasStore,
@@ -44,8 +48,8 @@ export function getChartData(
   });
 
   return derived(
-    [chartDataQuery, ...fieldReadableMap],
-    ([chartData, ...fieldMap]) => {
+    [chartDataQuery, timeAndFilterStore, ...fieldReadableMap],
+    ([chartData, $timeAndFilterStore, ...fieldMap]) => {
       const fieldSpecMap = allFields.reduce(
         (acc, field, index) => {
           acc[field.field] = fieldMap?.[index];
@@ -59,8 +63,19 @@ export function getChartData(
           | undefined
         >,
       );
+
+      let data = chartData?.data?.data;
+
+      if (timeDimensions?.length && $timeAndFilterStore.timeGrain) {
+        data = adjustDataForTimeZone(
+          data,
+          timeDimensions,
+          $timeAndFilterStore.timeGrain,
+          $timeAndFilterStore.timeRange.timeZone || "UTC",
+        );
+      }
       return {
-        data: chartData?.data?.data || [],
+        data: data || [],
         isFetching: chartData?.isFetching ?? false,
         error: chartData?.error,
         fields: fieldSpecMap,

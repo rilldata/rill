@@ -1,9 +1,12 @@
 import { mergeFilters } from "@rilldata/web-common/features/dashboards/pivot/pivot-merge-filters";
 import { createInExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { sanitizeValueForVega } from "@rilldata/web-common/features/templates/charts/utils";
+import { adjustOffsetForZone } from "@rilldata/web-common/lib/convertTimestampPreview";
+import { timeGrainToDuration } from "@rilldata/web-common/lib/time/grains";
 import {
   V1TimeGrain,
   type V1Expression,
+  type V1MetricsViewAggregationResponseDataItem,
 } from "@rilldata/web-common/runtime-client";
 import merge from "deepmerge";
 import type { Config } from "vega-lite";
@@ -135,4 +138,24 @@ export function getFilterWithNullHandling(
 
   const excludeNullFilter = createInExpression(fieldConfig.field, [null], true);
   return mergeFilters(where, excludeNullFilter);
+}
+
+export function adjustDataForTimeZone(
+  data: V1MetricsViewAggregationResponseDataItem[] | undefined,
+  timeFields: string[],
+  timeGrain: V1TimeGrain,
+  selectedTimezone: string,
+) {
+  if (!data) return data;
+
+  return data.map((datum) => {
+    timeFields.forEach((timeField) => {
+      datum[timeField] = adjustOffsetForZone(
+        datum[timeField] as string,
+        selectedTimezone,
+        timeGrainToDuration(timeGrain),
+      );
+    });
+    return datum;
+  });
 }
