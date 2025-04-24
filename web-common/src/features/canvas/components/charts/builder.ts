@@ -46,51 +46,31 @@ export function createSingleLayerBaseSpec(
   };
 }
 
-export function createXEncoding(
-  xField: FieldConfig | undefined,
+export function createPositionEncoding(
+  field: FieldConfig | undefined,
   data: ChartDataResult,
 ): PositionDef<Field> {
-  if (!xField) return {};
-  const metaData = data.fields[xField.field];
+  if (!field) return {};
+  const metaData = data.fields[field.field];
   return {
-    field: sanitizeValueForVega(xField.field),
-    title: metaData?.displayName || xField.field,
-    type: xField.type,
+    field: sanitizeValueForVega(field.field),
+    title: metaData?.displayName || field.field,
+    type: field.type,
     ...(metaData && "timeUnit" in metaData && { timeUnit: metaData.timeUnit }),
-    ...(xField.sort && xField.type !== "temporal" && { sort: xField.sort }),
+    ...(field.sort && field.type !== "temporal" && { sort: field.sort }),
+    ...(field.type === "quantitative" &&
+      field.zeroBasedOrigin !== true && {
+        scale: {
+          zero: false,
+        },
+      }),
     axis: {
-      ...(xField.type === "quantitative" && {
-        formatType: sanitizeFieldName(xField.field),
+      ...(field.type === "quantitative" && {
+        formatType: sanitizeFieldName(field.field),
       }),
       ...(metaData && "format" in metaData && { format: metaData.format }),
-      ...(!xField.showAxisTitle && { title: null }),
+      ...(!field.showAxisTitle && { title: null }),
     },
-  };
-}
-
-export function createYEncoding(
-  yField: FieldConfig | undefined,
-  data: ChartDataResult,
-): PositionDef<Field> {
-  if (!yField) return {};
-  const metaData = data.fields[yField.field];
-  return {
-    field: sanitizeValueForVega(yField.field),
-    title: metaData?.displayName || yField.field,
-    type: yField.type,
-    ...(yField.zeroBasedOrigin !== true && {
-      scale: {
-        zero: false,
-      },
-    }),
-    axis: {
-      ...(yField.type === "quantitative" && {
-        formatType: sanitizeFieldName(yField.field),
-      }),
-      ...(!yField.showAxisTitle && { title: null }),
-      ...(metaData && "format" in metaData && { format: metaData.format }),
-    },
-    ...(metaData && "timeUnit" in metaData && { timeUnit: metaData.timeUnit }),
   };
 }
 
@@ -181,8 +161,8 @@ export function createEncoding(
   data: ChartDataResult,
 ): Encoding<Field> {
   return {
-    x: createXEncoding(config.x, data),
-    y: createYEncoding(config.y, data),
+    x: createPositionEncoding(config.x, data),
+    y: createPositionEncoding(config.y, data),
     color: createColorEncoding(config.color, data),
     tooltip: createDefaultTooltipEncoding(
       [config.x, config.y, config.color],

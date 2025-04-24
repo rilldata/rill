@@ -7,8 +7,7 @@ import {
   createConfig,
   createDefaultTooltipEncoding,
   createMultiLayerBaseSpec,
-  createXEncoding,
-  createYEncoding,
+  createPositionEncoding,
 } from "../../builder";
 import type { ChartDataResult } from "../../types";
 import type { CartesianChartSpec } from "../CartesianChart";
@@ -47,12 +46,12 @@ export function generateVLAreaChartSpec(
     multiValueTooltipChannel = multiValueTooltipChannel.slice(0, 50);
   }
 
-  spec.encoding = { x: createXEncoding(config.x, data) };
+  spec.encoding = { x: createPositionEncoding(config.x, data) };
 
   spec.layer = [
     {
       encoding: {
-        y: { ...createYEncoding(config.y, data), stack: "zero" },
+        y: { ...createPositionEncoding(config.y, data), stack: "zero" },
         color: createColorEncoding(config.color, data),
       },
       layer: [

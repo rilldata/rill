@@ -59,6 +59,7 @@ export interface FieldConfig {
   sort?: ChartSortDirection;
   limit?: number;
   showNull?: boolean;
+  labelAngle?: number;
 }
 
 export interface CommonChartProperties {

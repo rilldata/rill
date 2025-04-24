@@ -25,6 +25,7 @@ export type ChartFieldInput = {
   sortSelector?: boolean;
   limitSelector?: boolean;
   nullSelector?: boolean;
+  labelAngleSelector?: boolean;
 };
 
 export interface ComponentInputParam {

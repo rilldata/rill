@@ -45,6 +45,7 @@ export class CartesianChartComponent extends BaseChart<CartesianChartSpec> {
           sortSelector: true,
           limitSelector: true,
           nullSelector: true,
+          labelAngleSelector: true,
         },
       },
     },

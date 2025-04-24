@@ -4,8 +4,8 @@ import {
   createColorEncoding,
   createConfig,
   createDefaultTooltipEncoding,
+  createPositionEncoding,
   createSingleLayerBaseSpec,
-  createXEncoding,
 } from "../builder";
 import type { ChartDataResult } from "../types";
 import type { CircularChartSpec } from "./CircularChart";
@@ -32,7 +32,7 @@ export function generateVLPieChartSpec(
     type: "arc",
     innerRadius: config.innerRadius || 0,
   };
-  const theta = createXEncoding(config.measure, data);
+  const theta = createPositionEncoding(config.measure, data);
   const color = createColorEncoding(config.color, data);
   const tooltip = createDefaultTooltipEncoding(
     [config.measure, config.color],

@@ -4,9 +4,8 @@ import {
   createColorEncoding,
   createConfig,
   createDefaultTooltipEncoding,
+  createPositionEncoding,
   createSingleLayerBaseSpec,
-  createXEncoding,
-  createYEncoding,
 } from "../builder";
 import type { ChartDataResult } from "../types";
 import type { HeatmapChartSpec } from "./HeatmapChart";
@@ -32,8 +31,8 @@ export function generateVLHeatmapSpec(
   return {
     ...spec,
     encoding: {
-      x: createXEncoding(config.x, data),
-      y: createYEncoding(config.y, data),
+      x: createPositionEncoding(config.x, data),
+      y: createPositionEncoding(config.y, data),
       color: createColorEncoding(config.color, data),
       tooltip: createDefaultTooltipEncoding(
         [config.x, config.y, config.color],
