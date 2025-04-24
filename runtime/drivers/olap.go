@@ -756,13 +756,22 @@ func (d Dialect) GetTimeExpr(t time.Time) (bool, string) {
 	}
 }
 
-func (d Dialect) LookupExpr(lookupTable, lookupColumn, lookupKey string) (string, error) {
+func (d Dialect) LookupExpr(lookupTable, lookupValueColumn, lookupKey string) (string, error) {
 	switch d {
 	case DialectClickHouse:
-		return fmt.Sprintf("dictGet('%s', '%s', %s)", lookupTable, lookupColumn, lookupKey), nil
+		return fmt.Sprintf("dictGet('%s', '%s', %s)", lookupTable, lookupValueColumn, lookupKey), nil
 	default:
 		// Druid already does reverse lookup inherently so defining lookup expression directly as dimension expression should be ok.
 		// For Duckdb I think we should just avoid going into this complexity as it should not matter much at that scale.
+		return "", fmt.Errorf("unsupported dialect %q", d)
+	}
+}
+
+func (d Dialect) LookupSelectExpr(lookupTable, lookupKeyColumn string) (string, error) {
+	switch d {
+	case DialectClickHouse:
+		return fmt.Sprintf("SELECT %s FROM dictionary(%s)", d.EscapeIdentifier(lookupKeyColumn), d.EscapeIdentifier(lookupTable)), nil
+	default:
 		return "", fmt.Errorf("unsupported dialect %q", d)
 	}
 }
