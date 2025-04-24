@@ -1199,7 +1199,7 @@ func (s *Server) GetCloneCredentials(ctx context.Context, req *adminv1.GetCloneC
 		return nil, status.Error(codes.FailedPrecondition, "project's repository is not managed by Rill, and it does not have a GitHub integration")
 	}
 
-	token, err := s.admin.Github.InstallationToken(ctx, *proj.GithubInstallationID)
+	token, err := s.admin.Github.InstallationToken(ctx, *proj.GithubInstallationID, 0)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
