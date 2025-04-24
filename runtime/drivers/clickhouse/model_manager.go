@@ -58,9 +58,9 @@ type ModelOutputProperties struct {
 	DistributedSettings string `mapstructure:"distributed.settings"`
 	// DistributedShardingKey is the sharding key for distributed table.
 	DistributedShardingKey string `mapstructure:"distributed.sharding_key"`
-	// DictionarySourceUser is the user that case access the source dictionary table.
+	// DictionarySourceUser is the user that case access the source dictionary table. Only used when typ is DICTIONARY.
 	DictionarySourceUser string `mapstructure:"dictionary_source_user"`
-	// DictionarySourcePassword is the password for the user that can access the source dictionary table.
+	// DictionarySourcePassword is the password for the user that can access the source dictionary table. Only used when typ is DICTIONARY.
 	DictionarySourcePassword string `mapstructure:"dictionary_source_password"`
 }
 
