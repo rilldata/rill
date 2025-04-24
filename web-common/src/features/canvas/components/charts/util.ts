@@ -129,7 +129,7 @@ export function getFilterWithNullHandling(
   where: V1Expression | undefined,
   fieldConfig: FieldConfig | undefined,
 ): V1Expression | undefined {
-  if (!fieldConfig || !fieldConfig.showNull || fieldConfig.type !== "nominal") {
+  if (!fieldConfig || fieldConfig.showNull || fieldConfig.type !== "nominal") {
     return where;
   }
 

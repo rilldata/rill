@@ -82,11 +82,9 @@ export class CircularChartComponent extends BaseChart<CircularChartSpec> {
     }
 
     let limit: number;
-    let showNull = false;
     if (config.color?.field) {
       limit = config.color.limit ?? 20;
       dimensions = [{ name: config.color.field }];
-      showNull = !!config.color.showNull;
     }
 
     const queryOptionsStore = derived(
