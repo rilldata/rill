@@ -91,6 +91,7 @@ export function getAllowedTimeGrains(start: Date, end: Date): TimeGrain[] {
     ];
   } else {
     return [
+      TIME_GRAIN.TIME_GRAIN_DAY,
       TIME_GRAIN.TIME_GRAIN_WEEK,
       TIME_GRAIN.TIME_GRAIN_MONTH,
       TIME_GRAIN.TIME_GRAIN_QUARTER,

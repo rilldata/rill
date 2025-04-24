@@ -1,3 +1,4 @@
+import type { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import { DateTime } from "luxon";
 import type { DateObjectUnits } from "luxon/src/datetime";
 
@@ -23,6 +24,7 @@ export class RillTime {
   }
 
   public getLabel() {
+    console.log("GETTING LABEL");
     if (this.end) return this.timeRange; // TODO: what would the labels be here?
 
     let range = this.start.map((p) => p.getLabel()).join(" of ");

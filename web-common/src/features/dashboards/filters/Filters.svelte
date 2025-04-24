@@ -23,6 +23,7 @@
     ALL_TIME_RANGE_ALIAS,
     CUSTOM_TIME_RANGE_ALIAS,
     deriveInterval,
+    TIME_GRAIN_TO_SHORTHAND,
   } from "../time-controls/new-time-controls";
   import {
     TimeComparisonOption,
@@ -197,12 +198,11 @@
     );
   }
 
-  async function onSelectRange(name: string) {
-    if (!allTimeRange?.end) {
-      return;
-    }
+  async function onSelectRange(alias: string) {
+    // If we don't have a valid time range, early return
+    if (!allTimeRange?.end) return;
 
-    if (name === ALL_TIME_RANGE_ALIAS) {
+    if (alias === ALL_TIME_RANGE_ALIAS) {
       makeTimeSeriesTimeRangeAndUpdateAppState(
         allTimeRange,
         "TIME_GRAIN_DAY",
@@ -211,16 +211,16 @@
       return;
     }
 
-    const includesTimeZoneOffset = name.includes("@");
+    const includesTimeZoneOffset = alias.includes("@");
 
     if (includesTimeZoneOffset) {
-      const timeZone = name.match(/@ {(.*)}/)?.[1];
+      const timeZone = alias.match(/@ {(.*)}/)?.[1];
 
       if (timeZone) metricsExplorerStore.setTimeZone($exploreName, timeZone);
     }
 
-    const interval = await deriveInterval(
-      name,
+    const { interval, grain } = await deriveInterval(
+      alias,
       DateTime.fromJSDate(allTimeRange.end),
       metricsViewName,
     );
@@ -229,12 +229,12 @@
       const validInterval = interval as Interval<true>;
       const baseTimeRange: TimeRange = {
         // Temporary fix for custom syntax
-        name: name,
+        name: alias,
         start: validInterval.start.toJSDate(),
         end: validInterval.end.toJSDate(),
       };
 
-      selectRange(baseTimeRange);
+      selectRange(baseTimeRange, grain);
     }
   }
 
@@ -256,8 +256,10 @@
     );
   }
 
-  function selectRange(range: TimeRange) {
-    const defaultTimeGrain = getDefaultTimeGrain(range.start, range.end).grain;
+  function selectRange(range: TimeRange, grain?: V1TimeGrain) {
+    const timeGrain =
+      grain ?? getDefaultTimeGrain(range.start, range.end).grain;
+    console.log({ timeGrain });
 
     // Get valid option for the new time range
     const validComparison =
@@ -271,7 +273,7 @@
         allTimeRange,
       );
 
-    makeTimeSeriesTimeRangeAndUpdateAppState(range, defaultTimeGrain, {
+    makeTimeSeriesTimeRangeAndUpdateAppState(range, timeGrain, {
       name: validComparison,
     } as DashboardTimeControls);
   }
@@ -294,8 +296,18 @@
     metricsExplorerStore.setTimeZone($exploreName, timeZone);
   }
 
+  $: usingRillTime =
+    !selectedRangeAlias?.startsWith("P") &&
+    !selectedRangeAlias?.startsWith("rill-");
+
   function onTimeGrainSelect(timeGrain: V1TimeGrain) {
-    if (baseTimeRange) {
+    if (usingRillTime && selectedRangeAlias) {
+      // Move this to method on RilltTime class after "by" bug is fixed
+      const [range] = selectedRangeAlias.split(" by");
+      const shorthandGrain = TIME_GRAIN_TO_SHORTHAND[timeGrain];
+      if (!shorthandGrain) return;
+      onSelectRange(range + ` by ${shorthandGrain}`);
+    } else if (baseTimeRange) {
       makeTimeSeriesTimeRangeAndUpdateAppState(
         baseTimeRange,
         timeGrain,
@@ -315,6 +327,7 @@
           {selectedRangeAlias}
           showPivot={$showPivot}
           {minTimeGrain}
+          {usingRillTime}
           {defaultTimeRange}
           {availableTimeZones}
           {timeRanges}

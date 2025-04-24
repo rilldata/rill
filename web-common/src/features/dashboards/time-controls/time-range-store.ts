@@ -29,6 +29,8 @@ import {
   V1TimeGrain,
 } from "@rilldata/web-common/runtime-client";
 import type { QueryObserverResult } from "@tanstack/svelte-query";
+import { RillTime } from "../url-state/time-ranges/RillTime";
+import { parseRillTime } from "../url-state/time-ranges/parser";
 
 export type TimeRangeControlsState = {
   latestWindowTimeRanges: Array<TimeRangeOption>;
@@ -265,11 +267,14 @@ export function getValidComparisonOption(
 
 export type UITimeRange = V1ExploreTimeRange & {
   meta?: TimeRangeMeta;
+  enabled?: boolean;
+  parsed?: RillTime;
 };
 
 export function bucketTimeRanges(
   ranges: V1ExploreTimeRange[],
   defaultTimeRange: string | undefined,
+  smallestTimeGrain?: V1TimeGrain | undefined,
 ) {
   let latestWindowTimeRanges: UITimeRange[] = [];
   let periodToDateRanges: UITimeRange[] = [];
@@ -322,11 +327,19 @@ export function bucketTimeRanges(
     }
   } else {
     latestWindowTimeRanges = Object.entries(LATEST_WINDOW_TIME_RANGES).map(
-      ([range, meta]) => ({
-        range,
-        meta,
-        comparisonTimeRanges: [],
-      }),
+      ([range, meta]) => {
+        if (meta.rillSyntax) {
+          const parsed = parseRillTime(meta.rillSyntax);
+
+          console.log({ parsed });
+        }
+
+        return {
+          range,
+          meta,
+          comparisonTimeRanges: [],
+        };
+      },
     );
     periodToDateRanges = Object.entries(PERIOD_TO_DATE_RANGES).map(
       ([range, meta]) => ({

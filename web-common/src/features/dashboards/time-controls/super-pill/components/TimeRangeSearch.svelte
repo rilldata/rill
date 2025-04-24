@@ -11,10 +11,11 @@
   let searchElement: HTMLInputElement;
 
   const latestNSearches = localStorageStore(`${context}-recent-searches`, [
-    "-45M",
-    "-32D",
-    "-1Y",
-    "-2Q to latest/Q",
+    "YTW",
+    "<6H of D~",
+    "D1 of M3 of -2Y",
+    "H1 to H8 of -1D",
+    "W23 of Y~",
   ]);
 
   export function updateSearch(value: string) {

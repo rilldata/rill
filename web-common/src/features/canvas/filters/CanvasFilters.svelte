@@ -281,7 +281,7 @@
   >
     <Calendar size="16px" />
     <SuperPill
-      context={$canvasName}
+      context={canvasName}
       allTimeRange={$allTimeRange}
       {selectedRangeAlias}
       showPivot={false}

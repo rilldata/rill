@@ -11,18 +11,19 @@
     isGrainBigger,
   } from "@rilldata/web-common/lib/time/grains";
 
+  const { rillTime } = featureFlags;
+
   export let tdd = false;
   export let activeTimeGrain: V1TimeGrain | undefined;
   export let timeStart: string | undefined;
   export let timeEnd: string | undefined;
   export let minTimeGrain: V1TimeGrain | undefined;
-  export let onTimeGrainSelect: (timeGrain: V1TimeGrain) => void;
+  export let usingRillTime: boolean;
   export let complete: boolean;
+  export let onTimeGrainSelect: (timeGrain: V1TimeGrain) => void;
   export let toggleComplete: () => void;
 
   let open = false;
-
-  const { rillTime } = featureFlags;
 
   $: timeGrainOptions =
     timeStart && timeEnd

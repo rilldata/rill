@@ -1,8 +1,9 @@
-// WIP as of 04/19/2024
+// WIP as of 04/22/2025
 
 import { parseRillTime } from "@rilldata/web-common/features/dashboards/url-state/time-ranges/parser";
 import { humaniseISODuration } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
 import type { V1ExploreTimeRange } from "@rilldata/web-common/runtime-client";
+import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import {
   DateTime,
   type DateTimeUnit,
@@ -75,6 +76,19 @@ export const RILL_LATEST = [
   "P4W",
   "P12M",
 ] as const;
+
+export const TIME_GRAIN_TO_SHORTHAND: Record<V1TimeGrain, string> = {
+  [V1TimeGrain.TIME_GRAIN_UNSPECIFIED]: "",
+  [V1TimeGrain.TIME_GRAIN_MILLISECOND]: "ms",
+  [V1TimeGrain.TIME_GRAIN_SECOND]: "s",
+  [V1TimeGrain.TIME_GRAIN_MINUTE]: "m",
+  [V1TimeGrain.TIME_GRAIN_HOUR]: "H",
+  [V1TimeGrain.TIME_GRAIN_DAY]: "D",
+  [V1TimeGrain.TIME_GRAIN_WEEK]: "W",
+  [V1TimeGrain.TIME_GRAIN_MONTH]: "M",
+  [V1TimeGrain.TIME_GRAIN_QUARTER]: "Q",
+  [V1TimeGrain.TIME_GRAIN_YEAR]: "Y",
+};
 
 // TYPES -> time-control-types.ts
 
@@ -292,43 +306,51 @@ export async function deriveInterval(
   name: RillPeriodToDate | RillPreviousPeriod | ISODurationString,
   anchor: DateTime,
   metricsViewName: string,
-): Promise<Interval> {
+): Promise<{ interval: Interval; grain?: V1TimeGrain | undefined }> {
   if (name === ALL_TIME_RANGE_ALIAS || name === CUSTOM_TIME_RANGE_ALIAS) {
     throw new Error("Cannot derive interval for all time or custom range");
   }
 
   if (isRillPeriodToDate(name)) {
     const period = RILL_TO_UNIT[name];
-    return getPeriodToDate(anchor, period);
+    return { interval: getPeriodToDate(anchor, period) };
   }
 
   if (isRillPreviousPeriod(name)) {
     const period = RILL_TO_UNIT[name];
-    return getPreviousPeriodComplete(anchor, period, 1);
+    return { interval: getPreviousPeriodComplete(anchor, period, 1) };
   }
 
   const duration = isValidISODuration(name);
 
   if (duration) {
-    return getInterval(duration, anchor);
-  } else {
-    const response = await queryServiceMetricsViewTimeRanges(
-      get(runtime).instanceId,
-      metricsViewName,
-      { expressions: [name] },
-    );
+    return { interval: getInterval(duration, anchor) };
+  }
 
-    const timeRange = response.timeRanges?.pop();
+  const parsed = parseRillTime(name);
 
-    if (!timeRange?.start || !timeRange?.end) {
-      return Interval.invalid("Invalid time range");
-    }
+  console.log("HERE", { parsed });
 
-    return Interval.fromDateTimes(
+  // We have a RillTime string
+  const response = await queryServiceMetricsViewTimeRanges(
+    get(runtime).instanceId,
+    metricsViewName,
+    { expressions: [name] },
+  );
+
+  const timeRange = response.timeRanges?.[0];
+
+  if (!timeRange?.start || !timeRange?.end) {
+    return { interval: Interval.invalid("Invalid time range") };
+  }
+
+  return {
+    interval: Interval.fromDateTimes(
       DateTime.fromISO(timeRange.start),
       DateTime.fromISO(timeRange.end),
-    );
-  }
+    ),
+    grain: timeRange.roundToGrain,
+  };
 }
 
 export function getPeriodToDate(date: DateTime, period: DateTimeUnit) {
@@ -429,14 +451,19 @@ export function getRangeLabel(range: string): string {
 
   try {
     const rt = parseRillTime(range);
+    console.log("Getting label in new-time-controls.ts");
 
+    console.log(rt);
     const label = rt.getLabel();
-    if (label.endsWith(", incomplete")) {
-      return label.replace(", incomplete", "");
-    } else {
+
+    console.log("what");
+    if (rt.isComplete) {
       return label + ", complete";
     }
-  } catch {
+
+    return label;
+  } catch (e) {
+    console.log("Error parsing RillTime", e);
     // no-op
   }
 

@@ -506,6 +506,8 @@ const metricsViewReducers = {
         metricsExplorer.showTimeComparison = false;
       }
 
+      console.log("Action", { timeGrain });
+
       metricsExplorer.selectedTimeRange = {
         ...timeRange,
         interval: timeGrain,

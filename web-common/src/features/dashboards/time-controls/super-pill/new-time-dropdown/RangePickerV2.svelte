@@ -10,7 +10,10 @@
   } from "../../new-time-controls";
   import CalendarPlusDateInput from "@rilldata/web-common/features/dashboards/time-controls/super-pill/components/CalendarPlusDateInput.svelte";
   import RangeDisplay from "@rilldata/web-common/features/dashboards/time-controls/super-pill/components/RangeDisplay.svelte";
-  import { type V1ExploreTimeRange } from "@rilldata/web-common/runtime-client";
+  import {
+    V1TimeGrain,
+    type V1ExploreTimeRange,
+  } from "@rilldata/web-common/runtime-client";
   import { bucketTimeRanges } from "../../time-range-store";
   import { humaniseISODuration } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
   import TimeRangeMenuItem from "@rilldata/web-common/features/dashboards/time-controls/super-pill/components/TimeRangeMenuItem.svelte";
@@ -37,9 +40,12 @@
   export let context: string;
   export let minDate: DateTime;
   export let maxDate: DateTime;
+  export let smallestTimeGrain: V1TimeGrain | undefined;
   export let defaultTimeRange: NamedRange | ISODurationString | undefined;
   export let onSelectRange: (range: string, syntax?: boolean) => void;
   export let applyCustomRange: (range: Interval<true>) => void;
+
+  $: console.log({ timeRanges });
 
   let firstVisibleMonth: DateTime<true> = interval.start;
   let open = false;
@@ -47,11 +53,11 @@
   let searchComponent: TimeRangeSearch;
   let showPanel = false;
 
-  $: rangeBuckets = bucketTimeRanges(timeRanges, "rill-TD");
-
-  $: colloquialGrain = getColloquialGrain(selected);
-
-  // $: includesCurrentPeriod = interval.end.diff(maxDate).milliseconds > 0;
+  $: rangeBuckets = bucketTimeRanges(
+    timeRanges,
+    defaultTimeRange,
+    smallestTimeGrain,
+  );
 
   let parsedTime: RillTime | undefined = undefined;
 
@@ -80,13 +86,6 @@
 
   function closeMenu() {
     open = false;
-  }
-
-  function getColloquialGrain(range: string | undefined) {
-    // find the first character that matches H M D W Q Y in upper or lower case
-    const grain = range?.match(/[HMDWQY]/i)?.[0];
-    if (range === "CUSTOM") return undefined;
-    return grain;
   }
 </script>
 
@@ -139,7 +138,7 @@
       <div
         class="flex flex-col w-60 overflow-y-auto overflow-x-hidden flex-none pt-1"
       >
-        <div class="overflow-x-hidden">
+        <div class="overflow-x-hidden px-1">
           {#if showDefaultItem && defaultTimeRange}
             <DropdownMenu.Item
               on:click={() => {
@@ -194,13 +193,15 @@
 
         <DropdownMenu.Separator />
 
-        <DropdownMenu.Item
-          on:click={() => {
-            showPanel = !showPanel;
-          }}
-        >
-          <span class:font-bold={selected === "Custom"}> Custom...</span>
-        </DropdownMenu.Item>
+        <DropdownMenu.Group class="px-1">
+          <DropdownMenu.Item
+            on:click={() => {
+              showPanel = !showPanel;
+            }}
+          >
+            <span class:font-bold={selected === "Custom"}> Custom...</span>
+          </DropdownMenu.Item>
+        </DropdownMenu.Group>
 
         {#if parsedTime}
           <DropdownMenu.Separator />
@@ -225,14 +226,14 @@
               checked={!isComplete}
               small
               on:click={() => {
-                if (!isComplete) {
+                if (isComplete) {
                   if (selectedMeta) return;
-                  const updatedString = `${selected}, latest/${colloquialGrain}`;
-                  console.log({ updatedString });
+                  const updatedString = `${selected}~`;
+
                   onSelectRange(updatedString, true);
                 } else if (selected) {
-                  console.log({ selected });
-                  onSelectRange(selected?.split(",")[0], true);
+                  const updatedString = selected.replace("~", "");
+                  onSelectRange(updatedString, true);
                 }
               }}
             />
