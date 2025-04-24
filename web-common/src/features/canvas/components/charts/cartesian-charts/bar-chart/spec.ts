@@ -1,6 +1,6 @@
 import type { VisualizationSpec } from "svelte-vega";
 import {
-  createConfig,
+  createConfigWithLegend,
   createEncoding,
   createSingleLayerBaseSpec,
 } from "../../builder";
@@ -13,7 +13,9 @@ export function generateVLBarChartSpec(
 ): VisualizationSpec {
   const spec = createSingleLayerBaseSpec("bar");
   const baseEncoding = createEncoding(config, data);
-  const vegaConfig = createConfig(config);
+  const vegaConfig = createConfigWithLegend(config, config.color);
+
+  console.log("vegaConfig", vegaConfig);
 
   if (config.color && typeof config.color === "object" && config.x) {
     baseEncoding.xOffset = {

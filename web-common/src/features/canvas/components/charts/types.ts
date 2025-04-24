@@ -50,16 +50,27 @@ export interface TimeDimensionDefinition {
 
 export type ChartSortDirection = "x" | "y" | "-x" | "-y";
 
-export interface FieldConfig {
-  field: string;
-  showAxisTitle?: boolean; // Default is false
-  zeroBasedOrigin?: boolean; // Default is false
-  type: "quantitative" | "ordinal" | "nominal" | "temporal";
-  timeUnit?: string; // For temporal fields
+export type ChartLegend = "none" | "top" | "bottom" | "left" | "right";
+
+interface NominalFieldConfig {
   sort?: ChartSortDirection;
   limit?: number;
   showNull?: boolean;
   labelAngle?: number;
+  legend?: ChartLegend;
+}
+
+interface QuantitativeFieldConfig {
+  zeroBasedOrigin?: boolean; // Default is false
+}
+
+export interface FieldConfig
+  extends NominalFieldConfig,
+    QuantitativeFieldConfig {
+  field: string;
+  type: "quantitative" | "ordinal" | "nominal" | "temporal";
+  showAxisTitle?: boolean; // Default is false
+  timeUnit?: string; // For temporal fields
 }
 
 export interface CommonChartProperties {

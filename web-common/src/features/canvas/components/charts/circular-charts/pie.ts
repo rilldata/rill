@@ -22,9 +22,6 @@ export function generateVLPieChartSpec(
   const vegaConfig = createConfig(config, {
     legend: {
       orient: "right",
-      layout: {
-        right: { anchor: "middle" },
-      },
     },
   } as unknown as Config);
 
