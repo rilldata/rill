@@ -183,6 +183,8 @@
   $: hasRegularUserGroups = projectMemberUserGroupsList.some(
     (group) => !group.groupManaged,
   );
+
+  $: accessType = hasAutogroupMembers ? "everyone" : "invite-only";
 </script>
 
 <Popover bind:open>
