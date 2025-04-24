@@ -27,8 +27,6 @@
 
   let isOpen = false;
 
-  $: console.log("role: ", role);
-
   const queryClient = useQueryClient();
   // const listProjectMemberUsers = createAdminServiceListProjectMemberUsers(
   //   organization,

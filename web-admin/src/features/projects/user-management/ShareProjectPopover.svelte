@@ -45,6 +45,8 @@
   const currentUser = createAdminServiceGetCurrentUser();
 
   async function setAccessInviteOnly() {
+    if (accessType === "invite-only") return;
+
     try {
       // Find the autogroup:members user group
       const autogroup = projectMemberUserGroupsList.find(
@@ -83,6 +85,8 @@
   }
 
   async function setAccessEveryone() {
+    if (accessType === "everyone") return;
+
     try {
       // Add the autogroup:members user group back with the viewer role
       // This is the default role for autogroup:members as seen in the tests
@@ -179,10 +183,6 @@
   $: hasRegularUserGroups = projectMemberUserGroupsList.some(
     (group) => !group.groupManaged,
   );
-
-  $: console.log("isAdmin: ", isAdmin);
-  $: console.log("isEditor: ", isEditor);
-  $: console.log("isViewer: ", isViewer);
 </script>
 
 <Popover bind:open>
@@ -220,6 +220,7 @@
             />
           {/each}
           <!-- User Groups -->
+          <!-- TODO: ask eric, should we show user groups besides autogroup:members? -->
           {#if hasRegularUserGroups}
             {#each projectMemberUserGroupsList as group}
               {#if !group.groupManaged}
