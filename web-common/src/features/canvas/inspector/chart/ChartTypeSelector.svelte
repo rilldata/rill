@@ -40,6 +40,7 @@
           square
           small
           type="secondary"
+          label={CHART_CONFIG[chart].title}
           selected={type === chart}
           on:click={() => selectChartType(chart)}
         >
