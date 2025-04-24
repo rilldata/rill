@@ -3,7 +3,7 @@ import { useValidExplores } from "@rilldata/web-common/features/dashboards/selec
 import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
 import type { V1Resource } from "@rilldata/web-common/runtime-client";
 import { createRuntimeServiceListResources } from "@rilldata/web-common/runtime-client";
-import type { CreateQueryResult, Query } from "@tanstack/svelte-query";
+import type { CreateQueryResult } from "@tanstack/svelte-query";
 import { derived } from "svelte/store";
 
 export function useDashboardsLastUpdated(
