@@ -8,10 +8,13 @@
   $: ({ instanceId } = $runtime);
 
   $: ({
-    params: { organization, project },
+    params: { organization, project, report },
   } = $page);
 
-  $: query = useReports(instanceId);
+  $: onReportsPage = !!report;
+  $: query = useReports(instanceId, true, {
+    enableBackgroundRefetch: onReportsPage,
+  });
 
   $: ({ data } = $query);
 
