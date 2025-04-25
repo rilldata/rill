@@ -10,7 +10,10 @@
     getAllowedTimeGrains,
     isGrainBigger,
   } from "@rilldata/web-common/lib/time/grains";
-
+  import {
+    getAllowedGrains,
+    getGrainOrder,
+  } from "@rilldata/web-common/lib/time/new-grains";
   const { rillTime } = featureFlags;
 
   export let tdd = false;
@@ -24,11 +27,9 @@
   export let toggleComplete: () => void;
 
   let open = false;
+  $: smallestTimeGrainOrder = getGrainOrder(minTimeGrain);
+  $: timeGrainOptions = getAllowedGrains(smallestTimeGrainOrder);
 
-  $: timeGrainOptions =
-    timeStart && timeEnd
-      ? getAllowedTimeGrains(new Date(timeStart), new Date(timeEnd))
-      : [];
   $: activeTimeGrainLabel =
     activeTimeGrain && TIME_GRAIN[activeTimeGrain as AvailableTimeGrain]?.label;
 
@@ -82,15 +83,15 @@
       </button>
     </DropdownMenu.Trigger>
     <DropdownMenu.Content class="min-w-52" align="start">
-      {#each timeGrains as option (option.key)}
+      {#each timeGrainOptions as option (option)}
         <DropdownMenu.CheckboxItem
           checkRight
           role="menuitem"
-          checked={option.key === activeTimeGrain}
+          checked={option === activeTimeGrain}
           class="text-xs cursor-pointer capitalize"
-          on:click={() => onTimeGrainSelect(option.key)}
+          on:click={() => onTimeGrainSelect(option)}
         >
-          {option.main}
+          {TIME_GRAIN[option].label}
         </DropdownMenu.CheckboxItem>
       {/each}
 

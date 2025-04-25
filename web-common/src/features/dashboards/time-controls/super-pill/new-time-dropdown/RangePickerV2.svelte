@@ -2,7 +2,11 @@
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu/";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import { DateTime, Interval } from "luxon";
-  import type { ISODurationString, NamedRange } from "../../new-time-controls";
+  import type {
+    ISODurationString,
+    NamedRange,
+    RangeBuckets,
+  } from "../../new-time-controls";
   import {
     ALL_TIME_RANGE_ALIAS,
     getRangeLabel,
@@ -23,6 +27,7 @@
     LATEST_WINDOW_TIME_RANGES,
     PERIOD_TO_DATE_RANGES,
     PREVIOUS_COMPLETE_DATE_RANGES,
+    TIME_GRAIN,
   } from "@rilldata/web-common/lib/time/config";
   import TimeRangeSearch from "@rilldata/web-common/features/dashboards/time-controls/super-pill/components/TimeRangeSearch.svelte";
   import { InfoIcon } from "lucide-svelte";
@@ -30,13 +35,19 @@
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { parseRillTime } from "../../../url-state/time-ranges/parser";
   import type { RillTime } from "../../../url-state/time-ranges/RillTime";
+  import { timeRangeDefaultsByGrain } from "@rilldata/web-common/lib/time/defaults";
+  import { parse } from "uuid";
+  import {
+    getAllowedGrains,
+    getGrainOrder,
+  } from "@rilldata/web-common/lib/time/new-grains";
 
   export let timeRanges: V1ExploreTimeRange[];
   export let selected: string | undefined;
   export let interval: Interval<true>;
   export let zone: string;
   export let showDefaultItem: boolean;
-  export let grain: string;
+  export let grain: V1TimeGrain;
   export let context: string;
   export let minDate: DateTime;
   export let maxDate: DateTime;
@@ -45,19 +56,38 @@
   export let onSelectRange: (range: string, syntax?: boolean) => void;
   export let applyCustomRange: (range: Interval<true>) => void;
 
-  $: console.log({ timeRanges });
-
   let firstVisibleMonth: DateTime<true> = interval.start;
   let open = false;
   let allTimeAllowed = true;
   let searchComponent: TimeRangeSearch;
   let showPanel = false;
 
-  $: rangeBuckets = bucketTimeRanges(
-    timeRanges,
-    defaultTimeRange,
-    smallestTimeGrain,
-  );
+  let selectedTab = smallestTimeGrain ?? V1TimeGrain.TIME_GRAIN_MINUTE;
+
+  $: defaults = timeRangeDefaultsByGrain[selectedTab];
+
+  $: rangeBuckets = {
+    ranges: Object.values(defaults).map((ranges) => {
+      return ranges.map((range) => {
+        // console.log({ range });
+        return { range, parsed: parseRillTime(range) };
+      });
+    }),
+    customTimeRanges: [],
+    showDefaultItem: false,
+  };
+
+  $: console.log({ rangeBuckets });
+
+  // $: rangeBuckets = bucketTimeRanges(
+  //   timeRanges,
+  //   defaultTimeRange,
+  //   smallestTimeGrain,
+  // );
+
+  // const what = rangeBuckets.ranges[0];
+
+  // what[0].
 
   let parsedTime: RillTime | undefined = undefined;
 
@@ -87,7 +117,19 @@
   function closeMenu() {
     open = false;
   }
+
+  $: smallestTimeGrainOrder = getGrainOrder(smallestTimeGrain);
+  $: timeGrainOptions = getAllowedGrains(smallestTimeGrainOrder);
 </script>
+
+<svelte:window
+  on:keydown={(e) => {
+    console.log(e);
+    if (e.metaKey && e.key === "k") {
+      open = !open;
+    }
+  }}
+/>
 
 <DropdownMenu.Root
   bind:open
@@ -125,7 +167,7 @@
     class="p-0 w-fit overflow-hidden flex flex-col"
   >
     <TimeRangeSearch
-      width={showPanel ? 500 : 240}
+      width={showPanel ? 540 : 280}
       bind:this={searchComponent}
       {context}
       onSelectRange={(range, syntax) => {
@@ -134,9 +176,22 @@
       }}
     />
 
+    <div class="flex gap-x-2 p-2 border-b">
+      {#each timeGrainOptions as option (option)}
+        <button
+          class:bg-gray-200={option === selectedTab}
+          class="bg-gray-100 w-full rounded-sm hover:bg-gray-200"
+          on:click={() => {
+            selectedTab = option;
+          }}
+        >
+          {TIME_GRAIN[option].label}
+        </button>
+      {/each}
+    </div>
     <div class="flex w-fit max-h-fit" style:height="600px">
       <div
-        class="flex flex-col w-60 overflow-y-auto overflow-x-hidden flex-none pt-1"
+        class="flex flex-col w-[280px] overflow-y-auto overflow-x-hidden flex-none pt-1"
       >
         <div class="overflow-x-hidden px-1">
           {#if showDefaultItem && defaultTimeRange}
@@ -158,6 +213,7 @@
               {range}
               selected={selected === range.range}
               onClick={handleRangeSelect}
+              {smallestTimeGrain}
             />
           {/each}
 
@@ -171,6 +227,7 @@
                 {range}
                 selected={selected === range.meta?.rillSyntax}
                 onClick={handleRangeSelect}
+                {smallestTimeGrain}
               />
             {/each}
             {#if ranges.length}
@@ -204,7 +261,7 @@
         </DropdownMenu.Group>
 
         {#if parsedTime}
-          <DropdownMenu.Separator />
+          <!-- <DropdownMenu.Separator />
           <div class="flex justify-between items-center py-2 px-3">
             <span class="flex gap-x-1 items-center">
               <span>Include latest partial period</span>
@@ -237,7 +294,7 @@
                 }
               }}
             />
-          </div>
+          </div> -->
         {/if}
       </div>
 

@@ -2,13 +2,16 @@
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu/";
   import { getRangeLabel } from "@rilldata/web-common/features/dashboards/time-controls/new-time-controls";
   import SyntaxElement from "./SyntaxElement.svelte";
-
   import type { UITimeRange } from "../../time-range-store";
+  import type { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 
   export let range: UITimeRange;
   export let selected: boolean;
+  export let smallestTimeGrain: V1TimeGrain | undefined;
   export let onClick: ((range: string, syntax: boolean) => void) | undefined =
     undefined;
+
+  $: disabled = range.parsed?.timeRangeGrain;
 
   $: label = getRangeLabel(range.range ?? "");
 
@@ -20,7 +23,7 @@
     if (onClick && finalRange)
       onClick(finalRange, !range.meta && !range.range?.startsWith("P"));
   }}
-  class="group h-7"
+  class="group h-7 w-full"
 >
   <div class="size-full flex justify-between items-center">
     <span class:font-bold={selected} class="truncate">

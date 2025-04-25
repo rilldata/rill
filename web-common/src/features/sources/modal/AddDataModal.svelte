@@ -197,7 +197,7 @@
                     class="connector-tile-button"
                   >
                     <div class="connector-wrapper">
-                      <svelte:component this={ICONS[connector.name]} />
+                      <!-- <svelte:component this={ICONS[connector.name]} /> -->
                     </div>
                   </button>
                 {/if}

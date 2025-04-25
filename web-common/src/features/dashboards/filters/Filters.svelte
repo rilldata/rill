@@ -211,10 +211,10 @@
       return;
     }
 
-    const includesTimeZoneOffset = alias.includes("@");
+    const includesTimeZoneOffset = alias.includes("tz");
 
     if (includesTimeZoneOffset) {
-      const timeZone = alias.match(/@ {(.*)}/)?.[1];
+      const timeZone = alias.match(/tz (.*)/)?.[1];
 
       if (timeZone) metricsExplorerStore.setTimeZone($exploreName, timeZone);
     }
