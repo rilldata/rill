@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { splitDimensionSearchText } from "./split-dimension-search-text";
+import { splitDimensionSearchText } from "web-common/src/features/dashboards/filters/dimension-filters/dimension-search-text-utils";
 
 describe("splitDimensionSearchText", () => {
   it("should split by comma and return trimmed parts", () => {
