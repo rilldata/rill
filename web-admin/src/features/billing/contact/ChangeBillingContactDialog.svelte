@@ -4,7 +4,7 @@
     createAdminServiceUpdateOrganization,
     getAdminServiceGetOrganizationQueryKey,
   } from "@rilldata/web-admin/client";
-  import * as Dialog from "@rilldata/web-common/components/dialog-v2";
+  import * as Dialog from "@rilldata/web-common/components/dialog";
   import { Button } from "@rilldata/web-common/components/button";
   import Select from "@rilldata/web-common/components/forms/Select.svelte";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";

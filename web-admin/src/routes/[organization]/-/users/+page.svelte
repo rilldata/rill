@@ -9,7 +9,9 @@
   import ChangeBillingContactDialog from "@rilldata/web-admin/features/billing/contact/ChangeBillingContactDialog.svelte";
   import { getOrganizationBillingContactUser } from "@rilldata/web-admin/features/billing/contact/selectors";
   import AddUsersDialog from "@rilldata/web-admin/features/organizations/users/AddUsersDialog.svelte";
+  import ChangingBillingContactRoleDialog from "@rilldata/web-admin/features/organizations/users/ChangingBillingContactRoleDialog.svelte";
   import OrgUsersTable from "@rilldata/web-admin/features/organizations/users/OrgUsersTable.svelte";
+  import RemovingBillingContactDialog from "@rilldata/web-admin/features/organizations/users/RemovingBillingContactDialog.svelte";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import { Search } from "@rilldata/web-common/components/search";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
@@ -20,8 +22,12 @@
   let userEmail = "";
   let userRole = "";
   let isSuperUser = false;
+
   let isAddUserDialogOpen = false;
+  let isRemovingBillingContactDialogOpen = false;
+  let isChangingBillingContactRoleDialogOpen = false;
   let isUpdateBillingContactDialogOpen = false;
+
   let searchText = "";
 
   $: organization = $page.params.organization;
@@ -135,7 +141,10 @@
         invitesQuery={$orgInvitesInfiniteQuery}
         currentUserEmail={$currentUser.data?.user.email}
         billingContact={$billingContactUser?.email}
-        onChangeBillingContact={() => (isUpdateBillingContactDialogOpen = true)}
+        onAttemptRemoveBillingContactUser={() =>
+          (isRemovingBillingContactDialogOpen = true)}
+        onAttemptChangeBillingContactUserRole={() =>
+          (isChangingBillingContactRoleDialogOpen = true)}
       />
     </div>
   {/if}
@@ -146,6 +155,16 @@
   email={userEmail}
   role={userRole}
   {isSuperUser}
+/>
+
+<RemovingBillingContactDialog
+  bind:open={isRemovingBillingContactDialogOpen}
+  onChange={() => (isUpdateBillingContactDialogOpen = true)}
+/>
+
+<ChangingBillingContactRoleDialog
+  bind:open={isChangingBillingContactRoleDialogOpen}
+  onChange={() => (isUpdateBillingContactDialogOpen = true)}
 />
 
 <ChangeBillingContactDialog

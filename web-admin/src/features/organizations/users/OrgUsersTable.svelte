@@ -44,7 +44,9 @@
   >;
   export let currentUserEmail: string;
   export let billingContact: string | undefined;
-  export let onChangeBillingContact: () => void;
+
+  export let onAttemptRemoveBillingContactUser: () => void;
+  export let onAttemptChangeBillingContactUserRole: () => void;
 
   const ROW_HEIGHT = 69;
   const OVERSCAN = 5;
@@ -88,7 +90,7 @@
           role: row.original.roleName,
           isCurrentUser: row.original.userEmail === currentUserEmail,
           isBillingContact: row.original.userEmail === billingContact,
-          onChangeBillingContact,
+          onAttemptChangeBillingContactUserRole,
         }),
       meta: {
         widthPercent: 5,
@@ -104,7 +106,7 @@
           email: row.original.userEmail,
           isCurrentUser: row.original.userEmail === currentUserEmail,
           isBillingContact: row.original.userEmail === billingContact,
-          onChangeBillingContact,
+          onAttemptRemoveBillingContactUser,
         }),
       meta: {
         widthPercent: 0,

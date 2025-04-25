@@ -1,5 +1,4 @@
 <script lang="ts">
-  import RemovingBillingContactDialog from "@rilldata/web-admin/features/organizations/users/RemovingBillingContactDialog.svelte";
   import IconButton from "@rilldata/web-common/components/button/IconButton.svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import ThreeDot from "@rilldata/web-common/components/icons/ThreeDot.svelte";
@@ -19,11 +18,11 @@
   export let isCurrentUser: boolean;
   export let isBillingContact: boolean;
   // Changing billing contact is not an action for this user. So handle it upstream
-  export let onChangeBillingContact: () => void;
+  // This also avoids rendering the modal per row.
+  export let onAttemptRemoveBillingContactUser: () => void;
 
   let isDropdownOpen = false;
   let isRemoveConfirmOpen = false;
-  let isRemovingBillingContactDialogOpen = false;
 
   $: organization = $page.params.organization;
 
@@ -34,7 +33,7 @@
   function onRemoveClick() {
     if (isBillingContact) {
       // If the user is a billing contact we cannot remove without update contact to a different user 1st.
-      isRemovingBillingContactDialogOpen = true;
+      onAttemptRemoveBillingContactUser();
     } else {
       // Else show the confirmation for remove
       isRemoveConfirmOpen = true;
@@ -120,9 +119,4 @@
   bind:open={isRemoveConfirmOpen}
   {email}
   onRemove={handleRemove}
-/>
-
-<RemovingBillingContactDialog
-  bind:open={isRemovingBillingContactDialogOpen}
-  onChange={onChangeBillingContact}
 />
