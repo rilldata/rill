@@ -78,6 +78,9 @@ func (w *Worker) Run(ctx context.Context) error {
 	group.Go(func() error {
 		return w.schedule(ctx, "deployments_health_check", w.deploymentsHealthCheck, 10*time.Minute)
 	})
+	group.Go(func() error {
+		return w.schedule(ctx, "delete_unused_github_repo", w.deleteUnusedGithubRepo, 6*time.Hour)
+	})
 
 	if w.admin.Biller.GetReportingWorkerCron() != "" {
 		group.Go(func() error {

@@ -310,9 +310,11 @@ type DB interface {
 	DeleteProvisionerResource(ctx context.Context, id string) error
 
 	FindManagedGithubRepoMeta(ctx context.Context, htmlURL string) (*ManagedGithubRepoMeta, error)
+	FindUnusedManagedGithubRepo(ctx context.Context, limit int) ([]*ManagedGithubRepoMeta, error)
 	CountManagedGithubRepos(ctx context.Context, orgID string) (int, error)
 	InsertManagedGithubRepoMeta(ctx context.Context, opts *InsertManagedGithubRepoMetaOptions) (*ManagedGithubRepoMeta, error)
 	UpdateManagedGithubRepoMeta(ctx context.Context, id string, projectID string) (*ManagedGithubRepoMeta, error)
+	DeleteManagedGithubRepoMeta(ctx context.Context, ids []string) error
 }
 
 // Tx represents a database transaction. It can only be used to commit and rollback transactions.
@@ -1272,8 +1274,8 @@ type ManagedGithubRepoMeta struct {
 	ID              string    `db:"id"`
 	OrgID           string    `db:"org_id"`
 	ProjectID       *string   `db:"project_id"`
-	CreatedByUserID string    `db:"created_by"`
 	HTMLURL         string    `db:"html_url"`
+	CreatedByUserID string    `db:"created_by"`
 	CreatedOn       time.Time `db:"created_on"`
 	UpdatedOn       time.Time `db:"updated_on"`
 }

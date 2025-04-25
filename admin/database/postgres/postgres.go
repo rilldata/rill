@@ -2532,6 +2532,24 @@ func (c *connection) FindManagedGithubRepoMeta(ctx context.Context, htmlURL stri
 	return res, nil
 }
 
+func (c *connection) FindUnusedManagedGithubRepo(ctx context.Context, pageSize int) ([]*database.ManagedGithubRepoMeta, error) {
+	// find managed github repos that are not associated with any project
+	// skip repos that are less than 7 days old to avoid deleting repos for projects
+	// that were accidentally deleted and may need to be restored
+	var res []*database.ManagedGithubRepoMeta
+	err := c.getDB(ctx).SelectContext(ctx, &res, `
+		SELECT * FROM managed_github_repo_meta
+		WHERE project_id IS NULL
+		AND updated_on < now() - INTERVAL '7 DAYS'
+		ORDER BY updated_on DESC
+		LIMIT $1
+	`, pageSize)
+	if err != nil {
+		return nil, parseErr("managed github repo meta", err)
+	}
+	return res, nil
+}
+
 func (c *connection) CountManagedGithubRepos(ctx context.Context, orgID string) (int, error) {
 	var count int
 	err := c.getDB(ctx).QueryRowxContext(ctx, `SELECT COUNT(*) FROM managed_github_repo_meta WHERE org_id = $1`, orgID).Scan(&count)
@@ -2569,6 +2587,11 @@ func (c *connection) UpdateManagedGithubRepoMeta(ctx context.Context, id, projec
 		return nil, parseErr("managed github repo meta", err)
 	}
 	return res, nil
+}
+
+func (c *connection) DeleteManagedGithubRepoMeta(ctx context.Context, ids []string) error {
+	_, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM managed_github_repo_meta WHERE id = ANY($1)", ids)
+	return parseErr("managed github repo meta", err)
 }
 
 // projectDTO wraps database.Project, using the pgtype package to handle types that pgx can't read directly into their native Go types.

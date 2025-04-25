@@ -403,7 +403,11 @@ func (s *Server) CreateManagedGithubRepo(ctx context.Context, req *adminv1.Creat
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	token, err := s.admin.Github.ManagedRepoInstallationToken(ctx, *repo.ID)
+	id, err := s.admin.Github.ManagedOrgInstallationID(ctx)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	token, err := s.admin.Github.InstallationToken(ctx, id, *repo.ID)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}

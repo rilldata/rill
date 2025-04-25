@@ -225,12 +225,8 @@ func (m *mockGithub) CreateManagedRepo(ctx context.Context, repoPrefix string) (
 	return nil, fmt.Errorf("not implemented")
 }
 
-func (m *mockGithub) ManagedOrgInstallationID() int64 {
-	return 0
-}
-
-func (m *mockGithub) ManagedRepoInstallationToken(ctx context.Context, repoID int64) (string, error) {
-	return "", fmt.Errorf("not implemented")
+func (m *mockGithub) ManagedOrgInstallationID(ctx context.Context) (int64, error) {
+	return 0, fmt.Errorf("not implemented")
 }
 
 func findPort(t *testing.T) int {
