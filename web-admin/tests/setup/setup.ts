@@ -205,6 +205,27 @@ setup.describe("global setup", () => {
     await expect(adminPage.getByText(RILL_ORG_NAME)).toBeVisible(); // Organization breadcrumb
     await expect(adminPage.getByText(RILL_PROJECT_NAME)).toBeVisible(); // Project breadcrumb
 
+    // // Trial is started in an async job after the 1st deploy. It is not worth the effort to re-fetch the issues list right now.
+    // // So disabling this for now, we could add a re-fetch to the issues list if users start facing issues.
+    // // await expect(
+    // //   adminPage.getByText("Your trial expires in 30 days"),
+    // // ).toBeVisible(); // Billing banner
+    // // await expect(adminPage.getByText("Free trial")).toBeVisible(); // Billing status
+
+    // // There is a scenario where page loads before runtime can identify what files are present.
+    // // This leads to a case where we never refresh the resources list.
+    // // TODO: find a solution to refetch in the app itself
+    // await expect
+    //   .poll(
+    //     async () => {
+    //       await adminPage.reload();
+    //       const title = adminPage.getByLabel("Container title");
+    //       return title.textContent();
+    //     },
+    //     { intervals: Array(5).fill(1_000), timeout: 5_000 },
+    //   )
+    //   .toEqual("Project dashboards");
+
     // Check that the dashboards are listed
     await expect(
       adminPage.getByRole("link", { name: "Programmatic Ads Auction" }).first(),
@@ -217,6 +238,7 @@ setup.describe("global setup", () => {
     await expect
       .poll(
         async () => {
+          await adminPage.reload();
           const listing = adminPage.getByRole("link", {
             name: "Programmatic Ads Auction auction_explore",
           });
@@ -233,6 +255,7 @@ setup.describe("global setup", () => {
     await expect
       .poll(
         async () => {
+          await adminPage.reload();
           const listing = adminPage.getByRole("link", {
             name: "Programmatic Ads Bids bids_explore",
           });
