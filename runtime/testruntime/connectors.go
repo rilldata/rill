@@ -304,7 +304,6 @@ func uploadDirectory(ctx context.Context, client *azblob.Client, containerName, 
 			return err
 		}
 
-		fmt.Printf("Uploaded: %s\n", blobName)
 		return nil
 	})
 }
