@@ -192,7 +192,7 @@ func (g *githubClient) ManagedOrgInstallationID(ctx context.Context) (int64, err
 	return g.managedOrgInstallationID, nil
 }
 
-func (s *Service) CreateManagedGithubRepo(ctx context.Context, org *database.Organization, userID, name string) (*github.Repository, error) {
+func (s *Service) CreateManagedGithubRepo(ctx context.Context, org *database.Organization, name string, userID *string) (*github.Repository, error) {
 	if org.QuotaProjects >= 0 {
 		count, err := s.DB.CountManagedGithubRepos(ctx, org.ID)
 		if err != nil {
