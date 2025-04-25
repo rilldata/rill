@@ -8,7 +8,7 @@ tags:
 
 # Understanding Resolvers in Rill
 
-Resolvers are a fundamental concept in Rill that represent logic that produces output data. They're used to evaluate [API requests](/integrate/custom-apis/), [alerts](/explore/alerts/), reports, and other data-driven features in your application. This tutorial will explain what resolvers are and how to use the three main types in Rill: SQL, metrics_sql, and API resolvers.
+Resolvers are a fundamental concept in Rill that represent logic that produces output data. They're used to evaluate [API requests](/integrate/custom-apis/), [alerts](/explore/alerts/), and other data-driven features in your application. This tutorial will explain what resolvers are and how to use the three main types in Rill: SQL, metrics_sql, and API resolvers.
 
 ## What are Resolvers?
 
@@ -87,7 +87,7 @@ args:
 
 This example creates a new API that calls an existing `user_details` API with pre-defined arguments. This is useful for creating specialized views of your data or for composing complex queries from simpler components.
 
-## Where can these resolvers be used? 
+## Alerts! 
 
 The examples shows various ways to use these resolvers in APIs but these can also be used in other components of Rill such as Alerts. Similar to how you define the resolver in an API, in alerts, you would do so under the `data` parameter.
 
@@ -98,11 +98,37 @@ data:
   #sql: select column from table
 ```
 
-
-
 ## Security Considerations
 
-There are a few ways to access these resolvers 
+It's important to understand the security implications when working with different resolver types:
+
+### Security Policy Scope
+While Rill allows you to define [security policies](/manage/security) on your metrics views to grant access to certain groups, users, or based on a mapping file, these security policies **only apply to metrics resolvers**. When using SQL or other resolver types in APIs, these security policies do not automatically extend to protect your data.
+
+### Resolver-Specific Security Implications
+
+1. **SQL Resolvers**: 
+   - Have no inherent access control beyond what you implement
+   - Can expose raw data from any table the connector has access to
+   - Should be carefully constructed to prevent SQL injection via proper parameter handling
+
+2. **Metrics SQL Resolvers**: 
+   - Benefit from metrics view security policies
+   - Still need careful management of SQL injection risks 
+   - Admin-only restriction applies to arbitrary queries via `/metrics-sql` API
+
+3. **API Resolvers**: 
+   - Inherit security characteristics of the underlying resolver they call
+   - Include protection against infinite recursion loops
+   - Do not add additional security on top of the referenced API
+
+### Best Practices
+
+- Validate and sanitize all user inputs before using them in resolvers
+- Implement authorization checks in your API handlers for non-metrics resolvers
+- Consider using API resolvers to wrap SQL resolvers with additional security checks
+- Avoid exposing sensitive data in error messages
+- Use parameterized queries rather than direct string interpolation
 
 ## Conclusion
 
