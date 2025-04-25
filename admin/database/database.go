@@ -1271,7 +1271,7 @@ type UpdateProvisionerResourceOptions struct {
 type ManagedGithubRepoMeta struct {
 	ID              string    `db:"id"`
 	OrgID           string    `db:"org_id"`
-	ProjectID       string    `db:"project_id"`
+	ProjectID       *string   `db:"project_id"`
 	CreatedByUserID string    `db:"created_by"`
 	HTMLURL         string    `db:"html_url"`
 	CreatedOn       time.Time `db:"created_on"`
