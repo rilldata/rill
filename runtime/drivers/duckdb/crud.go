@@ -2,7 +2,6 @@ package duckdb
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"time"
 
@@ -90,9 +89,8 @@ func (c *connection) insertTableAsSelect(ctx context.Context, name, sql string, 
 				}
 			}
 			_, err := conn.ExecContext(ctx, fmt.Sprintf("INSERT INTO %s %s (%s\n)", safeSQLName(name), byNameClause, sql))
-			if opts.AfterInsert != "" {
-				_, afterInsertExecErr := conn.ExecContext(ctx, opts.AfterInsert)
-				return errors.Join(err, afterInsertExecErr)
+			if err == nil && opts.AfterInsert != "" {
+				_, err = conn.ExecContext(ctx, opts.AfterInsert)
 			}
 			return err
 		})
@@ -105,7 +103,7 @@ func (c *connection) insertTableAsSelect(ctx context.Context, name, sql string, 
 	}
 
 	if opts.Strategy == drivers.IncrementalStrategyMerge {
-		res, err := db.MutateTable(ctx, name, opts.InitQueries, func(ctx context.Context, conn *sqlx.Conn) (mutate error) {
+		res, err := db.MutateTable(ctx, name, opts.InitQueries, func(ctx context.Context, conn *sqlx.Conn) (retErr error) {
 			// Execute the pre-init SQL first
 			if opts.BeforeInsert != "" {
 				_, err := conn.ExecContext(ctx, opts.BeforeInsert)
@@ -114,9 +112,9 @@ func (c *connection) insertTableAsSelect(ctx context.Context, name, sql string, 
 				}
 			}
 			defer func() {
-				if opts.AfterInsert != "" {
+				if retErr == nil && opts.AfterInsert != "" {
 					_, err := conn.ExecContext(ctx, opts.AfterInsert)
-					mutate = errors.Join(mutate, err)
+					retErr = err
 				}
 			}()
 			// Create a temporary table with the new data
@@ -165,12 +163,7 @@ func (c *connection) insertTableAsSelect(ctx context.Context, name, sql string, 
 	}
 
 	if opts.Strategy == drivers.IncrementalStrategyPartitionOverwrite {
-		partitionExpr := opts.PartitionBy
-		if partitionExpr == "" {
-			return nil, fmt.Errorf("partition overwrite strategy requires a partition expression")
-		}
-
-		res, err := db.MutateTable(ctx, name, opts.InitQueries, func(ctx context.Context, conn *sqlx.Conn) (mutate error) {
+		res, err := db.MutateTable(ctx, name, opts.InitQueries, func(ctx context.Context, conn *sqlx.Conn) (retErr error) {
 			// Execute the pre-init SQL first
 			if opts.BeforeInsert != "" {
 				_, err := conn.ExecContext(ctx, opts.BeforeInsert)
@@ -179,9 +172,9 @@ func (c *connection) insertTableAsSelect(ctx context.Context, name, sql string, 
 				}
 			}
 			defer func() {
-				if opts.AfterInsert != "" {
+				if retErr == nil && opts.AfterInsert != "" {
 					_, err := conn.ExecContext(ctx, opts.AfterInsert)
-					mutate = errors.Join(mutate, err)
+					retErr = err
 				}
 			}()
 
@@ -203,36 +196,16 @@ func (c *connection) insertTableAsSelect(ctx context.Context, name, sql string, 
 				return nil
 			}
 
-			// Identify partitions to drop in the target table
-			partitionQuery := fmt.Sprintf("SELECT DISTINCT %s FROM %s", partitionExpr, safeSQLName(tmp))
-			partitions, err := conn.QueryxContext(ctx, partitionQuery)
+			// Drop the rows from the target table where the partition expression overlaps with the temporary table
+			_, err = conn.ExecContext(ctx, fmt.Sprintf(
+				"DELETE FROM %s WHERE %s IN (SELECT DISTINCT %s FROM %s)",
+				safeSQLName(name),
+				opts.PartitionBy,
+				opts.PartitionBy,
+				safeSQLName(tmp),
+			))
 			if err != nil {
-				return err
-			}
-			defer partitions.Close()
-
-			var partitionConditions []string
-			for partitions.Next() {
-				var partitionValue string
-				if err := partitions.Scan(&partitionValue); err != nil {
-					return err
-				}
-				partitionConditions = append(partitionConditions, fmt.Sprintf("%s IS NOT DISTINCT FROM %s", partitionExpr, safeSQLString(partitionValue)))
-			}
-			if err := partitions.Err(); err != nil {
-				return err
-			}
-
-			// Drop the partitions in the target table
-			if len(partitionConditions) > 0 {
-				whereClause := fmt.Sprintf("WHERE %s", partitionConditions[0])
-				for _, condition := range partitionConditions[1:] {
-					whereClause += fmt.Sprintf(" OR %s", condition)
-				}
-				_, err = conn.ExecContext(ctx, fmt.Sprintf("DELETE FROM %s %s", safeSQLName(name), whereClause))
-				if err != nil {
-					return err
-				}
+				return fmt.Errorf("failed to delete old partitions: %w", err)
 			}
 
 			// Insert the new data into the target table
