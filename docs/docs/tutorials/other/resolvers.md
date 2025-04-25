@@ -8,7 +8,7 @@ tags:
 
 # Understanding Resolvers in Rill
 
-Resolvers are a fundamental concept in Rill that represent logic that produces output data. They're used to evaluate API requests, alerts, reports, and other data-driven features in your application. This tutorial will explain what resolvers are and how to use the three main types in Rill: SQL, metrics_sql, and API resolvers.
+Resolvers are a fundamental concept in Rill that represent logic that produces output data. They're used to evaluate [API requests](/integrate/custom-apis/), [alerts](/explore/alerts/), reports, and other data-driven features in your application. This tutorial will explain what resolvers are and how to use the three main types in Rill: SQL, metrics_sql, and API resolvers.
 
 ## What are Resolvers?
 
