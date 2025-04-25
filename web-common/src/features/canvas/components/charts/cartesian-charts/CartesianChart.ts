@@ -109,7 +109,10 @@ export class CartesianChartComponent extends BaseChart<CartesianChartSpec> {
       ([runtime, $timeAndFilterStore]) => {
         const { timeRange, where } = $timeAndFilterStore;
         const enabled =
-          !!timeRange?.start && !!timeRange?.end && hasColorDimension;
+          !!timeRange?.start &&
+          !!timeRange?.end &&
+          hasColorDimension &&
+          config.x?.type === "nominal";
 
         const topNWhere = getFilterWithNullHandling(where, config.x);
 
@@ -144,7 +147,9 @@ export class CartesianChartComponent extends BaseChart<CartesianChartSpec> {
         const enabled =
           !!timeRange?.start &&
           !!timeRange?.end &&
-          (hasColorDimension ? !!topNData?.length : true);
+          (hasColorDimension && config.x?.type === "nominal"
+            ? !!topNData?.length
+            : true);
 
         let combinedWhere: V1Expression | undefined = getFilterWithNullHandling(
           where,

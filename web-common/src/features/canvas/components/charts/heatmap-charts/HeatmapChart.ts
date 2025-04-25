@@ -107,7 +107,10 @@ export class HeatmapChartComponent extends BaseChart<HeatmapChartSpec> {
           {
             measures,
             dimensions: [{ name: config.x?.field }],
-            sort: [{ name: config.x?.field, desc: true }],
+            sort:
+              config.x?.type === "nominal"
+                ? [{ name: config.x?.field, desc: true }]
+                : [],
             where: xWhere,
             timeRange,
             limit,
@@ -143,7 +146,10 @@ export class HeatmapChartComponent extends BaseChart<HeatmapChartSpec> {
           {
             measures,
             dimensions: [{ name: config.y?.field }],
-            sort: [{ name: config.y?.field, desc: true }],
+            sort:
+              config.y?.type === "nominal"
+                ? [{ name: config.y?.field, desc: true }]
+                : [],
             where: yWhere,
             timeRange,
             limit,
@@ -204,9 +210,10 @@ export class HeatmapChartComponent extends BaseChart<HeatmapChartSpec> {
           {
             measures,
             dimensions,
-            sort: config.x?.field
-              ? [{ name: config.x.field, desc: true }]
-              : undefined,
+            sort:
+              config.x?.type === "nominal"
+                ? [{ name: config.x?.field, desc: true }]
+                : undefined,
             where: combinedWhere,
             timeRange,
             limit: "5000", // Higher limit for heatmap to show more data points
