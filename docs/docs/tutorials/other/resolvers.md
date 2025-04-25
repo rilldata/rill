@@ -89,7 +89,7 @@ This example creates a new API that calls an existing `user_details` API with pr
 
 ## Alerts! 
 
-The examples shows various ways to use these resolvers in APIs but these can also be used in other components of Rill such as Alerts. Similar to how you define the resolver in an API, in alerts, you would do so under the `data` parameter.
+The examples show various ways to use these resolvers in APIs, but these can also be used in other components of Rill such as Alerts. Similar to how you define the resolver in an API, in alerts, you would do so under the `data` parameter.
 
 ```
 data:
