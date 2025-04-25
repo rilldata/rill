@@ -24,6 +24,7 @@ func init() {
 var spec = drivers.Spec{
 	DisplayName: "https",
 	Description: "Connect to a remote file.",
+	// Important: Any edits to the below properties must be accompanied by changes to the client-side form validation schemas.
 	SourceProperties: []*drivers.PropertySpec{
 		{
 			Key:         "path",

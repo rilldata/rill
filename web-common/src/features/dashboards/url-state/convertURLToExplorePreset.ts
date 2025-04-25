@@ -125,7 +125,8 @@ export function convertURLToExplorePreset(
   // only extract params if the view is explicitly set to the relevant one
   switch (preset.view) {
     case V1ExploreWebView.EXPLORE_WEB_VIEW_EXPLORE:
-    case V1ExploreWebView.EXPLORE_WEB_VIEW_UNSPECIFIED: {
+    case V1ExploreWebView.EXPLORE_WEB_VIEW_UNSPECIFIED:
+    case undefined: {
       const { preset: ovPreset, errors: ovErrors } = fromExploreUrlParams(
         searchParams,
         measures,

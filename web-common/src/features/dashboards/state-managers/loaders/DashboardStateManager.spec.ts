@@ -40,9 +40,11 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const hoistedPage: HoistedPageForExploreTests = vi.hoisted(() => ({}) as any);
 
+vi.stubEnv("TZ", "UTC");
+
 vi.mock("$app/navigation", () => {
   return {
-    goto: (url) => hoistedPage.goto(url),
+    goto: (url, opts) => hoistedPage.goto(url, opts),
     afterNavigate: (cb) => hoistedPage.afterNavigate(cb),
   };
 });
@@ -86,7 +88,32 @@ describe("DashboardStateManager", () => {
   });
 
   describe("Dashboards with timeseries", () => {
-    const ExploreStateSubsetForBaseState: Partial<MetricsExplorerEntity> = {
+    const ExploreStateSubsetForRillDefaultState: Partial<MetricsExplorerEntity> =
+      {
+        selectedTimeRange: {
+          name: "rill-QTD",
+          interval: V1TimeGrain.TIME_GRAIN_WEEK,
+        } as DashboardTimeControls,
+        showTimeComparison: false,
+        selectedComparisonTimeRange: undefined,
+
+        visibleMeasures: [
+          AD_BIDS_IMPRESSIONS_MEASURE,
+          AD_BIDS_BID_PRICE_MEASURE,
+        ],
+        allMeasuresVisible: true,
+        visibleDimensions: [
+          AD_BIDS_PUBLISHER_DIMENSION,
+          AD_BIDS_DOMAIN_DIMENSION,
+        ],
+        allDimensionsVisible: true,
+
+        leaderboardSortByMeasureName: AD_BIDS_IMPRESSIONS_MEASURE,
+        leaderboardMeasureNames: [AD_BIDS_IMPRESSIONS_MEASURE],
+        leaderboardContextColumn: undefined,
+        sortDirection: DashboardState_LeaderboardSortDirection.DESCENDING,
+      };
+    const ExploreStateSubsetForYAMLState: Partial<MetricsExplorerEntity> = {
       selectedTimeRange: {
         name: "P7D",
         interval: V1TimeGrain.TIME_GRAIN_DAY,
@@ -99,10 +126,10 @@ describe("DashboardStateManager", () => {
       visibleDimensions: [AD_BIDS_PUBLISHER_DIMENSION],
       allDimensionsVisible: false,
 
-      leaderboardSortByMeasureName: AD_BIDS_IMPRESSIONS_MEASURE,
-      leaderboardContextColumn: undefined,
       sortDirection: DashboardState_LeaderboardSortDirection.ASCENDING,
     };
+    const PageURLForRillDefaultState =
+      "tr=P7D&tz=Asia%2FKathmandu&grain=day&measures=impressions&dims=publisher&sort_type=percent&sort_dir=ASC";
     const BookmarkSourceQueryResult = readable({
       data: {
         selectedTimeRange: {
@@ -123,9 +150,22 @@ describe("DashboardStateManager", () => {
       renderDashboardStateManager();
       await waitFor(() => expect(screen.getByText("Dashboard loaded!")));
 
-      assertExploreStateSubset(ExploreStateSubsetForBaseState);
-      // no additional goto is called
-      expect(pageMock.urlSearchHistory).toEqual([]);
+      assertExploreStateSubset({
+        ...ExploreStateSubsetForRillDefaultState,
+        ...ExploreStateSubsetForYAMLState,
+      });
+
+      pageMock.assertSearchParams(PageURLForRillDefaultState);
+
+      pageMock.popState("");
+      await waitFor(() =>
+        assertExploreStateSubset(ExploreStateSubsetForRillDefaultState),
+      );
+      // only 2 urls should in history
+      expect(pageMock.urlSearchHistory).toEqual([
+        PageURLForRillDefaultState,
+        "",
+      ]);
     });
 
     it("Should load 'other source' of dashboard state", async () => {
@@ -133,7 +173,8 @@ describe("DashboardStateManager", () => {
       await waitFor(() => expect(screen.getByText("Dashboard loaded!")));
 
       assertExploreStateSubset({
-        ...ExploreStateSubsetForBaseState,
+        ...ExploreStateSubsetForRillDefaultState,
+        ...ExploreStateSubsetForYAMLState,
 
         selectedTimeRange: {
           name: "PT24H",
@@ -144,12 +185,13 @@ describe("DashboardStateManager", () => {
           name: TimeComparisonOption.CONTIGUOUS,
         } as DashboardTimeControls,
       });
-      const initUrlSearch = "tr=PT24H&compare_tr=rill-PP&grain=hour";
+      const initUrlSearch =
+        "tr=PT24H&tz=Asia%2FKathmandu&compare_tr=rill-PP&grain=hour&measures=impressions&dims=publisher&sort_type=percent&sort_dir=ASC";
       pageMock.assertSearchParams(initUrlSearch);
 
       pageMock.popState("");
       await waitFor(() =>
-        assertExploreStateSubset(ExploreStateSubsetForBaseState),
+        assertExploreStateSubset(ExploreStateSubsetForRillDefaultState),
       );
       // only 2 urls should in history
       expect(pageMock.urlSearchHistory).toEqual([initUrlSearch, ""]);
@@ -160,37 +202,32 @@ describe("DashboardStateManager", () => {
         AD_BIDS_EXPLORE_NAME,
         undefined,
         ExploreUrlWebView.Explore,
-        "view=explore&tr=P14D&compare_tr=rill-PW&grain=day&measures=bid_price&dims=domain&sort_by=bid_price&sort_dir=DESC",
+        "view=explore&tr=P14D&compare_tr=rill-PW&grain=day&measures=bid_price&dims=domain&sort_by=bid_price&sort_dir=DESC&leaderboard_measures=bid_price",
       );
       renderDashboardStateManager(BookmarkSourceQueryResult);
       await waitFor(() => expect(screen.getByText("Dashboard loaded!")));
 
       assertExploreStateSubset({
+        ...ExploreStateSubsetForRillDefaultState,
+        ...ExploreStateSubsetForYAMLState,
+
+        // Session storage is not loaded during init
         selectedTimeRange: {
-          name: "P14D",
-          interval: V1TimeGrain.TIME_GRAIN_DAY,
+          name: "PT24H",
+          interval: V1TimeGrain.TIME_GRAIN_HOUR,
         } as DashboardTimeControls,
         showTimeComparison: true,
         selectedComparisonTimeRange: {
-          name: TimeComparisonOption.WEEK,
+          name: TimeComparisonOption.CONTIGUOUS,
         } as DashboardTimeControls,
-
-        visibleMeasures: [AD_BIDS_BID_PRICE_MEASURE],
-        allMeasuresVisible: false,
-        visibleDimensions: [AD_BIDS_DOMAIN_DIMENSION],
-        allDimensionsVisible: false,
-
-        leaderboardSortByMeasureName: AD_BIDS_BID_PRICE_MEASURE,
-        leaderboardContextColumn: undefined,
-        sortDirection: DashboardState_LeaderboardSortDirection.DESCENDING,
       });
       const initUrlSearch =
-        "tr=P14D&compare_tr=rill-PW&measures=bid_price&dims=domain&sort_by=bid_price&sort_dir=DESC";
+        "tr=PT24H&tz=Asia%2FKathmandu&compare_tr=rill-PP&grain=hour&measures=impressions&dims=publisher&sort_type=percent&sort_dir=ASC";
       pageMock.assertSearchParams(initUrlSearch);
 
       pageMock.popState("");
       await waitFor(() =>
-        assertExploreStateSubset(ExploreStateSubsetForBaseState),
+        assertExploreStateSubset(ExploreStateSubsetForRillDefaultState),
       );
       // only 2 urls should in history
       expect(pageMock.urlSearchHistory).toEqual([initUrlSearch, ""]);
@@ -198,20 +235,38 @@ describe("DashboardStateManager", () => {
   });
 
   describe("Dashboards without timeseries", () => {
-    const ExploreStateSubsetForBaseState: Partial<MetricsExplorerEntity> = {
-      selectedTimeRange: undefined,
-      showTimeComparison: false,
-      selectedComparisonTimeRange: undefined,
+    const ExploreStateSubsetForRillDefaultState: Partial<MetricsExplorerEntity> =
+      {
+        selectedTimeRange: undefined,
+        showTimeComparison: false,
+        selectedComparisonTimeRange: undefined,
 
+        visibleMeasures: [
+          AD_BIDS_IMPRESSIONS_MEASURE,
+          AD_BIDS_BID_PRICE_MEASURE,
+        ],
+        allMeasuresVisible: true,
+        visibleDimensions: [
+          AD_BIDS_PUBLISHER_DIMENSION,
+          AD_BIDS_DOMAIN_DIMENSION,
+        ],
+        allDimensionsVisible: true,
+
+        leaderboardSortByMeasureName: AD_BIDS_IMPRESSIONS_MEASURE,
+        leaderboardMeasureNames: [AD_BIDS_IMPRESSIONS_MEASURE],
+        leaderboardContextColumn: undefined,
+        sortDirection: DashboardState_LeaderboardSortDirection.DESCENDING,
+      };
+    const ExploreStateSubsetForYAMLState: Partial<MetricsExplorerEntity> = {
       visibleMeasures: [AD_BIDS_IMPRESSIONS_MEASURE],
       allMeasuresVisible: false,
       visibleDimensions: [AD_BIDS_PUBLISHER_DIMENSION],
       allDimensionsVisible: false,
 
-      leaderboardSortByMeasureName: AD_BIDS_IMPRESSIONS_MEASURE,
-      leaderboardContextColumn: undefined,
       sortDirection: DashboardState_LeaderboardSortDirection.ASCENDING,
     };
+    const PageURLForRillDefaultState =
+      "measures=impressions&dims=publisher&sort_type=percent&sort_dir=ASC";
 
     beforeEach(() => {
       mocks.mockMetricsView(AD_BIDS_METRICS_NAME, AD_BIDS_METRICS_INIT);
@@ -225,9 +280,20 @@ describe("DashboardStateManager", () => {
       renderDashboardStateManager();
       await waitFor(() => expect(screen.getByText("Dashboard loaded!")));
 
-      assertExploreStateSubset(ExploreStateSubsetForBaseState);
-      // no additional goto is called
-      expect(pageMock.urlSearchHistory).toEqual([]);
+      assertExploreStateSubset({
+        ...ExploreStateSubsetForRillDefaultState,
+        ...ExploreStateSubsetForYAMLState,
+      });
+
+      pageMock.popState("");
+      await waitFor(() =>
+        assertExploreStateSubset(ExploreStateSubsetForRillDefaultState),
+      );
+      // only 2 urls should in history
+      expect(pageMock.urlSearchHistory).toEqual([
+        PageURLForRillDefaultState,
+        "",
+      ]);
     });
 
     it("Should load from session dashboard state", async () => {
@@ -235,35 +301,26 @@ describe("DashboardStateManager", () => {
         AD_BIDS_EXPLORE_NAME,
         undefined,
         ExploreUrlWebView.Explore,
-        "view=explore&measures=bid_price&dims=domain&sort_by=bid_price&sort_dir=DESC",
+        "view=explore&measures=bid_price&dims=domain&sort_by=bid_price&sort_dir=DESC&leaderboard_measures=bid_price",
       );
       renderDashboardStateManager();
 
       await waitFor(() => expect(screen.getByText("Dashboard loaded!")));
       assertExploreStateSubset({
-        selectedTimeRange: undefined,
-        showTimeComparison: false,
-        selectedComparisonTimeRange: undefined,
-
-        visibleMeasures: [AD_BIDS_BID_PRICE_MEASURE],
-        allMeasuresVisible: false,
-        visibleDimensions: [AD_BIDS_DOMAIN_DIMENSION],
-        allDimensionsVisible: false,
-
-        leaderboardSortByMeasureName: AD_BIDS_BID_PRICE_MEASURE,
-        leaderboardContextColumn: undefined,
-        sortDirection: DashboardState_LeaderboardSortDirection.DESCENDING,
+        ...ExploreStateSubsetForRillDefaultState,
+        ...ExploreStateSubsetForYAMLState,
+        // Session storage is not loaded during init
       });
-      const initUrlSearch =
-        "measures=bid_price&dims=domain&sort_by=bid_price&sort_dir=DESC";
-      pageMock.assertSearchParams(initUrlSearch);
 
       pageMock.popState("");
       await waitFor(() =>
-        assertExploreStateSubset(ExploreStateSubsetForBaseState),
+        assertExploreStateSubset(ExploreStateSubsetForRillDefaultState),
       );
       // only 2 urls should in history
-      expect(pageMock.urlSearchHistory).toEqual([initUrlSearch, ""]);
+      expect(pageMock.urlSearchHistory).toEqual([
+        PageURLForRillDefaultState,
+        "",
+      ]);
     });
   });
 });
@@ -304,6 +361,7 @@ function assertExploreStateSubset(
     allDimensionsVisible: curExploreState.allDimensionsVisible,
 
     leaderboardSortByMeasureName: curExploreState.leaderboardSortByMeasureName,
+    leaderboardMeasureNames: curExploreState.leaderboardMeasureNames,
     leaderboardContextColumn: curExploreState.leaderboardContextColumn,
     sortDirection: curExploreState.sortDirection,
   };

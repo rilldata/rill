@@ -164,5 +164,7 @@ function cleanDashboard(dashboard: MetricsExplorerEntity) {
     delete (newDash.selectedTimeRange as any).start;
     delete (newDash.selectedTimeRange as any).end;
   }
+  delete (newDash as any).contextColumnWidths;
+  delete (newDash as any).temporaryFilterName;
   return newDash;
 }

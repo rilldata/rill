@@ -13,10 +13,8 @@ const (
 
 // config represents the DuckDB driver config
 type config struct {
-	// ReadPoolSize is the number of concurrent connections and read queries allowed
-	ReadPoolSize int `mapstructure:"pool_size"`
-	// WritePoolSize is the maximum number of concurrent write connections allowed.
-	WritePoolSize int `mapstructure:"write_pool_size"`
+	// PoolSize is the number of concurrent connections and queries allowed
+	PoolSize int `mapstructure:"pool_size"`
 	// AllowHostAccess denotes whether to limit access to the local environment and file system
 	AllowHostAccess bool `mapstructure:"allow_host_access"`
 	// CPU cores available for the DB. If no ratio is set then this is split evenly between read and write.
@@ -43,12 +41,12 @@ func newConfig(cfgMap map[string]any) (*config, error) {
 	}
 
 	// Set pool size
-	poolSize := cfg.ReadPoolSize
+	poolSize := cfg.PoolSize
 	if poolSize == 0 && cfg.CPU != 0 {
 		poolSize = min(poolSizeMax, cfg.CPU) // Only enforce max pool size when inferred from CPU
 	}
 	poolSize = max(poolSizeMin, poolSize) // Always enforce min pool size
-	cfg.ReadPoolSize = poolSize
+	cfg.PoolSize = poolSize
 	return cfg, nil
 }
 
