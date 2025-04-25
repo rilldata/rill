@@ -20,8 +20,6 @@
 
   export let component: BaseCanvasComponent;
 
-  $: console.log("YEAH", { component });
-
   $: ({
     specStore,
     parent: { name: canvasName },
@@ -70,11 +68,10 @@
             label={config.label ?? key}
             bind:value={$specStore[key]}
             onBlur={() => {
-              console.log("blur called", component, $specStore);
-              component.updateProperty(key, $specStore[key]);
+              component.updateProperty(key, localParamValues[key]);
             }}
             onEnter={() => {
-              component.updateProperty(key, $specStore[key]);
+              component.updateProperty(key, localParamValues[key]);
             }}
           />
 
