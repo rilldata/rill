@@ -406,7 +406,7 @@ func (m *GetMetadataResponse) validate(all bool) error {
 
 	// no validation rules for Readonly
 
-	// no validation rules for GrpcPort
+	// no validation rules for Port
 
 	// no validation rules for LoginUrl
 

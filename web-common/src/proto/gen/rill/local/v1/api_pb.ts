@@ -161,9 +161,9 @@ export class GetMetadataResponse extends Message<GetMetadataResponse> {
   readonly = false;
 
   /**
-   * @generated from field: int32 grpc_port = 11;
+   * @generated from field: int32 port = 11;
    */
-  grpcPort = 0;
+  port = 0;
 
   /**
    * @generated from field: string login_url = 12;
@@ -193,7 +193,7 @@ export class GetMetadataResponse extends Message<GetMetadataResponse> {
     { no: 8, name: "is_dev", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 9, name: "analytics_enabled", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 10, name: "readonly", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 11, name: "grpc_port", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 11, name: "port", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
     { no: 12, name: "login_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 13, name: "admin_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);

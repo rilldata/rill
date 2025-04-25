@@ -107,7 +107,7 @@ func (s *Server) GetMetadata(ctx context.Context, r *connect.Request[localv1.Get
 		IsDev:            s.metadata.IsDev,
 		AnalyticsEnabled: s.metadata.AnalyticsEnabled,
 		Readonly:         s.metadata.Readonly,
-		GrpcPort:         int32(s.metadata.Port),
+		Port:             int32(s.metadata.Port),
 		LoginUrl:         s.app.localURL + "/auth",
 		AdminUrl:         s.app.ch.AdminURL(),
 	}), nil

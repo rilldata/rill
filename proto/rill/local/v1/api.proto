@@ -52,7 +52,7 @@ message GetMetadataResponse {
   bool is_dev = 8;
   bool analytics_enabled = 9;
   bool readonly = 10;
-  int32 grpc_port = 11;
+  int32 port = 11;
   string login_url = 12;
   string admin_url = 13;
 }
