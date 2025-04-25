@@ -425,7 +425,9 @@ func mapGRPCError(err error) error {
 	if errors.Is(err, database.ErrValidation) {
 		return status.Error(codes.InvalidArgument, err.Error())
 	}
-	return status.Error(codes.Internal, err.Error())
+
+	// This assumes most unclassified errors are client errors like "cancellations" rather than server errors (i.e. 4xx rather than 5xx).
+	return status.Error(codes.InvalidArgument, err.Error())
 }
 
 // checkUserAgent is an interceptor that checks rejects from requests from old versions of the Rill CLI.
