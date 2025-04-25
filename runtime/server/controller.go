@@ -124,8 +124,7 @@ func (s *Server) WatchResourcesHandler(w http.ResponseWriter, r *http.Request) {
 		Replay:     replay,
 	}, shim)
 	if err != nil {
-		s.logger.Info("watch resources ended with error", zap.Error(err))
-		http.Error(w, "internal server error", http.StatusInternalServerError)
+		http.Error(w, fmt.Sprintf("watch resources ended with error: %v", err), http.StatusBadGateway)
 		return
 	}
 
