@@ -21,19 +21,19 @@ project_files:
     type: model
     connector: duckdb
     materialize: true
-    pre_exec: "CREATE SECRET IF NOT EXISTS secret1 (TYPE s3, KEY_ID '{{.env.connector.s3.aws_access_key_id}}', SECRET '{{.env.connector.s3.aws_secret_access_key}}', REGION 'us-east-1')"
+    pre_exec: "CREATE SECRET secret1 (TYPE s3, KEY_ID '{{.env.connector.s3.aws_access_key_id}}', SECRET '{{.env.connector.s3.aws_secret_access_key}}', REGION 'us-east-1')"
     sql: "select * from read_csv('s3://integration-test.rilldata.com/csv_test/all_datatypes.csv', auto_detect=true, ignore_errors=1, header=true)"
   all_datatypes_duckdb_model_glob.yaml:
     type: model
     connector: duckdb
     materialize: true
-    pre_exec: "CREATE SECRET IF NOT EXISTS secret1 (TYPE s3, KEY_ID '{{.env.connector.s3.aws_access_key_id}}', SECRET '{{.env.connector.s3.aws_secret_access_key}}', REGION 'us-east-1')"
+    pre_exec: "CREATE SECRET secret1 (TYPE s3, KEY_ID '{{.env.connector.s3.aws_access_key_id}}', SECRET '{{.env.connector.s3.aws_secret_access_key}}', REGION 'us-east-1')"
     sql: "select * from read_csv('s3://integration-test.rilldata.com/glob_test/y=202*/a*.csv', auto_detect=true, ignore_errors=1, header=true)"
   all_datatypes_duckdb_model_partitions.yaml:
     type: model
     connector: duckdb
     materialize: true
-    pre_exec: "CREATE SECRET IF NOT EXISTS secret1 (TYPE s3, KEY_ID '{{.env.connector.s3.aws_access_key_id}}', SECRET '{{.env.connector.s3.aws_secret_access_key}}', REGION 'us-east-1')"
+    pre_exec: "CREATE SECRET secret1 (TYPE s3, KEY_ID '{{.env.connector.s3.aws_access_key_id}}', SECRET '{{.env.connector.s3.aws_secret_access_key}}', REGION 'us-east-1')"
     partitions:
       glob:
         path: s3://integration-test.rilldata.com/glob_test/y=202*/a*.csv
@@ -45,7 +45,7 @@ project_files:
     type: model
     connector: duckdb
     materialize: true
-    pre_exec: "CREATE SECRET IF NOT EXISTS secret1 (TYPE s3, KEY_ID '{{.env.connector.s3.aws_access_key_id}}', SECRET '{{.env.connector.s3.aws_secret_access_key}}', REGION 'us-east-1')"
+    pre_exec: "CREATE SECRET secret1 (TYPE s3, KEY_ID '{{.env.connector.s3.aws_access_key_id}}', SECRET '{{.env.connector.s3.aws_secret_access_key}}', REGION 'us-east-1')"
     sql: "select * from read_parquet('s3://integration-test.rilldata.com/parquet_test/all_datatypes.parquet')"
   all_datatypes_duckdb_source_csv.yaml:
     type: source
