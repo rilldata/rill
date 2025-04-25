@@ -87,6 +87,8 @@
           email: row.original.userEmail,
           role: row.original.roleName,
           isCurrentUser: row.original.userEmail === currentUserEmail,
+          isBillingContact: row.original.userEmail === billingContact,
+          onChangeBillingContact,
         }),
       meta: {
         widthPercent: 5,

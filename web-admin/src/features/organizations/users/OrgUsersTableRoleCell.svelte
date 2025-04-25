@@ -1,4 +1,5 @@
 <script lang="ts">
+  import ChangeBillingContactRoleDialog from "@rilldata/web-admin/features/organizations/users/ChangeBillingContactRoleDialog.svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import CaretUpIcon from "@rilldata/web-common/components/icons/CaretUpIcon.svelte";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
@@ -14,8 +15,12 @@
   export let email: string;
   export let role: string;
   export let isCurrentUser: boolean;
+  export let isBillingContact: boolean;
+  // Changing billing contact is not an action for this user. So handle it upstream
+  export let onChangeBillingContact: () => void;
 
   let isDropdownOpen = false;
+  let isChangeBillingContactRoleDialogOpen = false;
 
   $: organization = $page.params.organization;
 
@@ -24,6 +29,12 @@
     createAdminServiceSetOrganizationMemberUserRole();
 
   async function handleSetRole(role: string) {
+    if (role !== "admin" && isBillingContact) {
+      // We cannot change a billing contact's role to a non-admin one.
+      isChangeBillingContactRoleDialogOpen = true;
+      return;
+    }
+
     try {
       await $setOrganizationMemberUserRole.mutateAsync({
         organization: organization,
@@ -113,3 +124,8 @@
     <span>Org {role}</span>
   </div>
 {/if}
+
+<ChangeBillingContactRoleDialog
+  bind:open={isChangeBillingContactRoleDialogOpen}
+  onChange={onChangeBillingContact}
+/>
