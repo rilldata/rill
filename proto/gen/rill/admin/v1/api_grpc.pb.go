@@ -290,6 +290,7 @@ type AdminServiceClient interface {
 	// Connects a rill managed project to github.
 	// Replaces the contents of the remote repo with the contents of the project.
 	ConnectProjectToGithub(ctx context.Context, in *ConnectProjectToGithubRequest, opts ...grpc.CallOption) (*ConnectProjectToGithubResponse, error)
+	// CreateManagedGithubRepo creates a new rill managed github repo for the organization.
 	CreateManagedGithubRepo(ctx context.Context, in *CreateManagedGithubRepoRequest, opts ...grpc.CallOption) (*CreateManagedGithubRepoResponse, error)
 	// Converts a project connected to github to a rill managed project.
 	// Uploads the current project to assets.
@@ -1897,6 +1898,7 @@ type AdminServiceServer interface {
 	// Connects a rill managed project to github.
 	// Replaces the contents of the remote repo with the contents of the project.
 	ConnectProjectToGithub(context.Context, *ConnectProjectToGithubRequest) (*ConnectProjectToGithubResponse, error)
+	// CreateManagedGithubRepo creates a new rill managed github repo for the organization.
 	CreateManagedGithubRepo(context.Context, *CreateManagedGithubRepoRequest) (*CreateManagedGithubRepoResponse, error)
 	// Converts a project connected to github to a rill managed project.
 	// Uploads the current project to assets.

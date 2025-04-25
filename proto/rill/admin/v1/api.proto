@@ -401,6 +401,7 @@ service AdminService {
     };
   }
 
+  // CreateManagedGithubRepo creates a new rill managed github repo for the organization.
   rpc CreateManagedGithubRepo(CreateManagedGithubRepoRequest) returns (CreateManagedGithubRepoResponse) {
     option (google.api.http) = {
       put: "/v1/organizations/{organization}/create-managed-github-repo",
@@ -1923,7 +1924,9 @@ message ConnectProjectToGithubResponse {}
 
 message CreateManagedGithubRepoRequest {
   string organization = 1;
-  string project = 2;
+  // name of the repo to create. 
+  // Note: The final name will be suffixed with a random string to ensure uniqueness.
+  string name = 2;
 }
 
 message CreateManagedGithubRepoResponse {

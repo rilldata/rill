@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/rilldata/rill/admin/pkg/gitutil"
+	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -44,7 +45,7 @@ func (w *Worker) deleteUnusedGithubRepo(ctx context.Context) error {
 			group.Go(func() error {
 				account, name, ok := gitutil.SplitGithubURL(repo.HTMLURL)
 				if !ok {
-					return fmt.Errorf("invalid github url: %s", repo.HTMLURL)
+					w.logger.Error("invalid github url", zap.String("url", repo.HTMLURL), zap.String("repo_id", repo.ID))
 				}
 				_, err := client.Repositories.Delete(cctx, account, name)
 				if err != nil {

@@ -547,6 +547,7 @@ paths:
         - AdminService
   /v1/organizations/{organization}/create-managed-github-repo:
     put:
+      summary: CreateManagedGithubRepo creates a new rill managed github repo for the organization.
       operationId: AdminService_CreateManagedGithubRepo
       responses:
         "200":
@@ -568,8 +569,9 @@ paths:
           schema:
             type: object
             properties:
-              project:
+              name:
                 type: string
+                description: "name of the repo to create. \nNote: The final name will be suffixed with a random string to ensure uniqueness."
       tags:
         - AdminService
   /v1/organizations/{organization}/invites:

@@ -1,4 +1,4 @@
-CREATE TABLE managed_github_repo_meta (
+CREATE TABLE IF NOT EXISTS managed_github_repo_meta (
     id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
     org_id UUID NOT NULL REFERENCES orgs (id) ON DELETE SET NULL,
     project_id UUID REFERENCES projects (id) ON DELETE SET NULL,

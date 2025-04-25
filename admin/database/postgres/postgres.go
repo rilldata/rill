@@ -2576,12 +2576,12 @@ func (c *connection) InsertManagedGithubRepoMeta(ctx context.Context, opts *data
 	return res, nil
 }
 
-func (c *connection) UpdateManagedGithubRepoMeta(ctx context.Context, id, projectID string) (*database.ManagedGithubRepoMeta, error) {
+func (c *connection) UpdateManagedGithubRepoMeta(ctx context.Context, htmlURL, projectID string) (*database.ManagedGithubRepoMeta, error) {
 	res := &database.ManagedGithubRepoMeta{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, `
 		UPDATE managed_github_repo_meta SET project_id = $1, updated_on = now()
-		WHERE id = $2 RETURNING *`,
-		projectID, id,
+		WHERE html_url = $2 AND project_id IS NULL RETURNING *`,
+		projectID, htmlURL,
 	).StructScan(res)
 	if err != nil {
 		return nil, parseErr("managed github repo meta", err)

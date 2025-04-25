@@ -384,7 +384,7 @@ func (s *Server) ConnectProjectToGithub(ctx context.Context, req *adminv1.Connec
 func (s *Server) CreateManagedGithubRepo(ctx context.Context, req *adminv1.CreateManagedGithubRepoRequest) (*adminv1.CreateManagedGithubRepoResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.organization", req.Organization),
-		attribute.String("args.project", req.Project),
+		attribute.String("args.name", req.Name),
 	)
 
 	// Find org
@@ -403,7 +403,7 @@ func (s *Server) CreateManagedGithubRepo(ctx context.Context, req *adminv1.Creat
 		id := claims.OwnerID()
 		createdByUserID = &id
 	}
-	repo, err := s.admin.CreateManagedGithubRepo(ctx, org, req.Project, createdByUserID)
+	repo, err := s.admin.CreateManagedGithubRepo(ctx, org, req.Name, createdByUserID)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}

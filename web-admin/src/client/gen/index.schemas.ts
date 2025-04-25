@@ -1402,7 +1402,9 @@ export type AdminServiceGetPaymentsPortalURLParams = {
 };
 
 export type AdminServiceCreateManagedGithubRepoBody = {
-  project?: string;
+  /** name of the repo to create. 
+Note: The final name will be suffixed with a random string to ensure uniqueness. */
+  name?: string;
 };
 
 export type AdminServiceListOrganizationInvitesParams = {

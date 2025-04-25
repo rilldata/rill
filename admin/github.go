@@ -32,6 +32,8 @@ var (
 type Github interface {
 	AppClient() *github.Client
 	InstallationClient(installationID int64) (*github.Client, error)
+	// InstallationToken returns a token for the installation ID.
+	// If repoID is non-zero, it will return a token with access to the repo only.
 	InstallationToken(ctx context.Context, installationID, repoID int64) (string, error)
 
 	CreateManagedRepo(ctx context.Context, repoPrefix string) (*github.Repository, error)
@@ -60,7 +62,7 @@ type githubClient struct {
 
 // NewGithub returns a new client for connecting to Github.
 func NewGithub(ctx context.Context, appID int64, appPrivateKey, managedGithubOrg string) (Github, error) {
-	atr, err := ghinstallation.NewAppsTransport(retryableHttpRoundTripper(), appID, []byte(appPrivateKey))
+	atr, err := ghinstallation.NewAppsTransport(retryableHTTPRoundTripper(), appID, []byte(appPrivateKey))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create github app transport: %w", err)
 	}
@@ -103,7 +105,7 @@ func (g *githubClient) InstallationClient(installationID int64) (*github.Client,
 		return val.(*github.Client), nil
 	}
 
-	itr, err := ghinstallation.New(retryableHttpRoundTripper(), g.appID, installationID, []byte(g.appPrivateKey))
+	itr, err := ghinstallation.New(retryableHTTPRoundTripper(), g.appID, installationID, []byte(g.appPrivateKey))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create github installation transport: %w", err)
 	}
@@ -114,7 +116,7 @@ func (g *githubClient) InstallationClient(installationID int64) (*github.Client,
 }
 
 func (g *githubClient) InstallationToken(ctx context.Context, installationID, repoID int64) (string, error) {
-	itr, err := ghinstallation.New(retryableHttpRoundTripper(), g.appID, installationID, []byte(g.appPrivateKey))
+	itr, err := ghinstallation.New(retryableHTTPRoundTripper(), g.appID, installationID, []byte(g.appPrivateKey))
 	if err != nil {
 		return "", fmt.Errorf("failed to create github installation transport: %w", err)
 	}
@@ -149,6 +151,7 @@ func (g *githubClient) CreateManagedRepo(ctx context.Context, name string) (*git
 		return nil, fmt.Errorf("failed to create github installation client: %w", err)
 	}
 
+	// create the repo
 	repo, _, err := client.Repositories.Create(ctx, g.managedOrg, &github.Repository{
 		Name:    github.String(repoName),
 		Private: github.Bool(true),
@@ -189,6 +192,7 @@ func (g *githubClient) ManagedOrgInstallationID(ctx context.Context) (int64, err
 		return 0, err
 	}
 	g.managedOrgInstallationID = *i.ID
+	g.managedOrgFetchError = nil
 	return g.managedOrgInstallationID, nil
 }
 
@@ -388,7 +392,7 @@ func quotaManagedRepos(org *database.Organization) int {
 	return math.MaxInt
 }
 
-func retryableHttpRoundTripper() http.RoundTripper {
+func retryableHTTPRoundTripper() http.RoundTripper {
 	retryClient := retryablehttp.NewClient()
 	retryClient.RetryMax = 3
 	retryClient.RetryWaitMin = 2 * time.Second

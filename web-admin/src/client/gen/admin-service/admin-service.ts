@@ -2232,6 +2232,9 @@ export const createAdminServiceRenewBillingSubscription = <
 
   return createMutation(mutationOptions, queryClient);
 };
+/**
+ * @summary CreateManagedGithubRepo creates a new rill managed github repo for the organization.
+ */
 export const adminServiceCreateManagedGithubRepo = (
   organization: string,
   adminServiceCreateManagedGithubRepoBody: AdminServiceCreateManagedGithubRepoBody,
@@ -2288,6 +2291,9 @@ export type AdminServiceCreateManagedGithubRepoMutationBody =
   AdminServiceCreateManagedGithubRepoBody;
 export type AdminServiceCreateManagedGithubRepoMutationError = RpcStatus;
 
+/**
+ * @summary CreateManagedGithubRepo creates a new rill managed github repo for the organization.
+ */
 export const createAdminServiceCreateManagedGithubRepo = <
   TError = RpcStatus,
   TContext = unknown,

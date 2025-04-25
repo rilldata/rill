@@ -8961,9 +8961,12 @@ export class CreateManagedGithubRepoRequest extends Message<CreateManagedGithubR
   organization = "";
 
   /**
-   * @generated from field: string project = 2;
+   * name of the repo to create. 
+   * Note: The final name will be suffixed with a random string to ensure uniqueness.
+   *
+   * @generated from field: string name = 2;
    */
-  project = "";
+  name = "";
 
   constructor(data?: PartialMessage<CreateManagedGithubRepoRequest>) {
     super();
@@ -8974,7 +8977,7 @@ export class CreateManagedGithubRepoRequest extends Message<CreateManagedGithubR
   static readonly typeName = "rill.admin.v1.CreateManagedGithubRepoRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "organization", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "project", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateManagedGithubRepoRequest {

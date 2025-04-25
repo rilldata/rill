@@ -24932,7 +24932,7 @@ func (m *CreateManagedGithubRepoRequest) validate(all bool) error {
 
 	// no validation rules for Organization
 
-	// no validation rules for Project
+	// no validation rules for Name
 
 	if len(errors) > 0 {
 		return CreateManagedGithubRepoRequestMultiError(errors)
