@@ -56,7 +56,6 @@ export function correctExploreState(
 
 /**
  * Looks at any invalid fields in explore view and deletes it if it is completely invalid.
- * EG: Filters out invalid visible measures. If all measures are invalid then it deletes the key for visible measures.
  */
 function correctExploreViewState(
   measures: Map<string, MetricsViewSpecMeasure>,
@@ -100,6 +99,10 @@ function correctExploreViewState(
   ];
 }
 
+/**
+ * Filters out invalid visible measures.
+ * If all measures are invalid then it deletes the key for visible measures and any other settings based on visible measures.
+ */
 function correctMeasureRelatedExploreViewState(
   measures: Map<string, MetricsViewSpecMeasure>,
   exploreSpec: V1ExploreSpec,

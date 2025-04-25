@@ -13,7 +13,7 @@ function getKeyForLocalStore(
   return `rill:app:explore:${storageNamespacePrefix ?? ""}${exploreName}`.toLowerCase();
 }
 
-export function getMostRecentExploreState(
+export function getMostRecentPartialExploreState(
   exploreName: string,
   storageNamespacePrefix: string | undefined,
   metricsViewSpec: V1MetricsViewSpec,
@@ -22,21 +22,25 @@ export function getMostRecentExploreState(
   const key = getKeyForLocalStore(exploreName, storageNamespacePrefix);
   try {
     const rawExploreState = localStorage.getItem(key);
-    if (!rawExploreState) return undefined;
+    if (!rawExploreState) {
+      // Return this so that destructuring is simple
+      return { mostRecentPartialExploreState: undefined, errors: [] };
+    }
 
     const stateFromLocalStorage = JSON.parse(
       rawExploreState,
     ) as Partial<MetricsExplorerEntity>;
-    const { correctedExploreState } = correctExploreState(
+    const { correctedExploreState, errors } = correctExploreState(
       metricsViewSpec,
       exploreSpec,
       stateFromLocalStorage,
     );
-    return correctedExploreState;
+    return { mostRecentPartialExploreState: correctedExploreState, errors };
   } catch {
     // no-op
   }
-  return undefined;
+  // Return this so that destructuring is simple
+  return { mostRecentPartialExploreState: undefined, errors: [] };
 }
 
 export function saveMostRecentExploreState(

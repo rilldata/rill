@@ -214,7 +214,7 @@ export class DashboardStateSync {
     );
 
     this.updating = false;
-    // If the url doesnt need to be changed further then we can skip the goto
+    // If the url doesn't need to be changed further then we can skip the goto
     if (redirectUrl.search === pageState.url.search) {
       return;
     }
