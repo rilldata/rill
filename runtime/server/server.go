@@ -25,7 +25,6 @@ import (
 	"github.com/rilldata/rill/runtime/server/auth"
 	"github.com/rs/cors"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
-	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -239,21 +238,8 @@ func (s *Server) HTTPHandler(ctx context.Context, registerAdditionalHandlers fun
 		MaxAge: 60 * 60,
 	}
 
-	// Wrap mux with CORS middleware
-	handler := cors.New(corsOpts).Handler(httpMux)
-
-	traceMiddleware := func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			// Get trace ID from context if available
-			if span := trace.SpanFromContext(r.Context()); span.SpanContext().IsValid() {
-				traceID := span.SpanContext().TraceID().String()
-				w.Header().Set(observability.TracingHeader, traceID)
-			}
-			next.ServeHTTP(w, r)
-		})
-	}
-
-	handler = traceMiddleware(handler)
+	// Wrap mux with CORS middleware and trace middleware
+	handler := middleware.TraceMiddleware(cors.New(corsOpts).Handler(httpMux))
 
 	return handler, nil
 }

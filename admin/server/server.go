@@ -267,7 +267,7 @@ func (s *Server) HTTPHandler(ctx context.Context) (http.Handler, error) {
 	}
 
 	// Wrap mux with CORS middleware
-	handler := cors.New(corsOpts).Handler(mux)
+	handler := middleware.TraceMiddleware(cors.New(corsOpts).Handler(mux))
 
 	return handler, nil
 }
