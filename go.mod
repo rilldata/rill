@@ -451,4 +451,4 @@ replace github.com/apache/arrow/go/v15 v15.0.2 => github.com/rilldata/arrow/go/v
 replace github.com/dgrijalva/jwt-go => github.com/golang-jwt/jwt v3.2.1+incompatible
 
 // https://github.com/googleapis/google-cloud-go/pull/12065
-replace cloud.google.com/go/bigquery => github.com/rilldata/google-cloud-go/bigquery v0.0.0-20250426042021-091fd79360f3
+replace cloud.google.com/go/bigquery v1.66.2 => github.com/rilldata/google-cloud-go/bigquery v0.0.0-20250426042021-091fd79360f3
