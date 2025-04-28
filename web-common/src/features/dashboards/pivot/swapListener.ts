@@ -83,7 +83,7 @@ export function swapListener(
 
     destroy() {
       for (const child of children) {
-        child.removeEventListener("mousemove", handlePillShift);
+        child.removeEventListener("mousemove", mousemoveHandler);
       }
     },
   };
