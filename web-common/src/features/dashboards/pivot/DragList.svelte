@@ -56,9 +56,6 @@
   $: initialIndex = dragData?.initialIndex ?? -1;
   $: canMixTypes = zone === "columns" && tableMode === "flat";
   $: zoneStartedDrag = source === zone;
-  $: lastDimensionIndex = items.findLastIndex(
-    (i) => i.type !== PivotChipType.Measure,
-  );
 
   $: isValidDropZone =
     isDropLocation &&
@@ -229,21 +226,20 @@
               >
             </Tooltip>
           {/if}
-          {#if zone === "Time" || zone === "Measures" || zone === "Dimensions"}
-            <Tooltip distance={8} location="top" alignment="start">
-              <button
-                class="icon-wrapper"
-                on:click={() => handleColumnClick(item)}
-                aria-label="Add Column"
-                type="button"
-              >
-                <Column size="16px" />
-              </button>
-              <TooltipContent slot="tooltip-content"
-                >Add to columns</TooltipContent
-              >
-            </Tooltip>
-          {/if}
+
+          <Tooltip distance={8} location="top" alignment="start">
+            <button
+              class="icon-wrapper"
+              on:click={() => handleColumnClick(item)}
+              aria-label="Add Column"
+              type="button"
+            >
+              <Column size="16px" />
+            </button>
+            <TooltipContent slot="tooltip-content"
+              >Add to columns</TooltipContent
+            >
+          </Tooltip>
         </div>
       {/if}
     </div>
