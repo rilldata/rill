@@ -28,6 +28,8 @@ export function generateVLPieChartSpec(
         layout: {
           right: { anchor: "middle" },
           left: { anchor: "middle" },
+          top: { anchor: "middle" },
+          bottom: { anchor: "middle" },
         },
       },
     } as unknown as Config<ExprRef | SignalRef>,
