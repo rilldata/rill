@@ -42,6 +42,7 @@ export class CircularChartComponent extends BaseChart<CircularChartSpec> {
           nullSelector: true,
           limitSelector: true,
           hideTimeDimension: true,
+          defaultLegendOrientation: "right",
         },
       },
     },

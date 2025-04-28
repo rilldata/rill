@@ -57,7 +57,7 @@ interface NominalFieldConfig {
   limit?: number;
   showNull?: boolean;
   labelAngle?: number;
-  legend?: ChartLegend;
+  legendOrientation?: ChartLegend;
 }
 
 interface QuantitativeFieldConfig {

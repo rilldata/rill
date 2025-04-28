@@ -21,7 +21,7 @@ import type {
 import type { Encoding } from "vega-lite/build/src/encoding";
 import type { TopLevelParameter } from "vega-lite/build/src/spec/toplevel";
 import type { TopLevelUnitSpec } from "vega-lite/build/src/spec/unit";
-import type { ExprRef, SignalRef } from "vega-typings";
+import type { ExprRef, Layout, SignalRef } from "vega-typings";
 import type { ChartDataResult } from "./types";
 
 export function createMultiLayerBaseSpec() {
@@ -155,34 +155,51 @@ export function getLegendConfig(
   orientation: ChartLegend,
 ): Config<ExprRef | SignalRef> {
   let columns: number | ExprRef = 1;
+  let layout: Layout | undefined = undefined;
   if (orientation === "top" || orientation === "bottom") {
-    columns = { expr: "Math.floor(width / 120)" };
-  } else if (orientation === "left" || orientation === "right") {
-    // columns = { expr: "Math.floor(height / 120)" };
+    columns = { expr: "floor(width / 140)" };
+  }
+  /**
+   * The layout property is not typed in the current version of Vega-Lite.
+   * This will be fixed when we upgrade to Svelte 5 and subseqent Vega-Lite versions.
+   */
+  if (orientation === "right" || orientation === "left") {
+    layout = {
+      right: { anchor: "middle" },
+      left: { anchor: "middle" },
+    } as unknown as Layout;
+  }
+  if (orientation === "none") {
+    return {
+      legend: {
+        disable: true,
+      },
+    };
   }
   return {
     legend: {
       orient: orientation,
       columns: columns,
-      // layout: {
-      //   right: { anchor: "middle" },
-      //   left: { anchor: "middle" },
-      // },
+      labelLimit: 140,
+      ...(layout && { layout }),
     },
-  };
+  } as unknown as Config<ExprRef | SignalRef>;
 }
 
 export function createConfigWithLegend(
   config: ChartSpec,
   legendField: FieldConfig | string | undefined,
-  chartVLConfig?: Config<ExprRef | SignalRef> | undefined,
+  chartVLConfig: Config<ExprRef | SignalRef> | undefined = undefined,
+  defaultLegendPosition: ChartLegend = "top",
 ): Config<ExprRef | SignalRef> | undefined {
   const vlConfig = createConfig(config, chartVLConfig);
 
   if (!legendField || typeof legendField === "string") {
     return vlConfig;
   }
-  const legendConfig = getLegendConfig(legendField.legend ?? "top");
+  const legendConfig = getLegendConfig(
+    legendField.legendOrientation ?? defaultLegendPosition,
+  );
   if (!vlConfig) return legendConfig;
   return merge(vlConfig, legendConfig);
 }

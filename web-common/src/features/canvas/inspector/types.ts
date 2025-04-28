@@ -1,3 +1,4 @@
+import type { ChartLegend } from "@rilldata/web-common/features/canvas/components/charts/types";
 import type { ComponentAlignment } from "@rilldata/web-common/features/canvas/components/types";
 
 type NativeInputTypes = "text" | "number" | "boolean" | "textArea";
@@ -26,7 +27,11 @@ export type ChartFieldInput = {
   limitSelector?: boolean;
   nullSelector?: boolean;
   labelAngleSelector?: boolean;
-  legendSelector?: boolean;
+  /**
+   * The default legend position for the chart.
+   * If this key is not specified, legend selector will not be shown.
+   */
+  defaultLegendOrientation?: ChartLegend;
 };
 
 export interface ComponentInputParam {

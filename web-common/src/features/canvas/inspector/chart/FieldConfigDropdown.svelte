@@ -6,6 +6,7 @@
   import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
   import SettingsSlider from "@rilldata/web-common/components/icons/SettingsSlider.svelte";
   import type {
+    ChartLegend,
     ChartSortDirection,
     FieldConfig,
   } from "@rilldata/web-common/features/canvas/components/charts/types";
@@ -31,12 +32,21 @@
     { label: "Y-axis descending", value: "-y" },
   ];
 
+  const legendOptions: { label: string; value: ChartLegend }[] = [
+    { label: "Top", value: "top" },
+    { label: "Right", value: "right" },
+    { label: "Bottom", value: "bottom" },
+    { label: "Left", value: "left" },
+    { label: "None", value: "none" },
+  ];
+
   $: showAxisTitle = chartFieldInput?.axisTitleSelector ?? false;
   $: showOrigin = chartFieldInput?.originSelector ?? false;
   $: showSort = chartFieldInput?.sortSelector ?? false;
   $: showLimit = chartFieldInput?.limitSelector ?? false;
   $: showNull = chartFieldInput?.nullSelector ?? false;
   $: showLabelAngle = chartFieldInput?.labelAngleSelector ?? false;
+  $: showLegend = chartFieldInput?.defaultLegendOrientation ?? false;
 </script>
 
 <DropdownMenu.Root bind:open={isDropdownOpen}>
@@ -134,6 +144,20 @@
             onEnter={() => {
               onChange("labelAngle", labelAngle);
             }}
+          />
+        </div>
+      {/if}
+      {#if showLegend}
+        <div class="py-1.5 flex items-center justify-between">
+          <span class="text-xs">Legend orientation</span>
+          <Select
+            size="sm"
+            id="legend-orientation-select"
+            width={180}
+            options={legendOptions}
+            value={fieldConfig?.legendOrientation ||
+              chartFieldInput?.defaultLegendOrientation}
+            on:change={(e) => onChange("legendOrientation", e.detail)}
           />
         </div>
       {/if}
