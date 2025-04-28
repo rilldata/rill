@@ -516,20 +516,39 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 	if req.GithubUrl != "" && req.ArchiveAssetId != "" {
 		return nil, status.Error(codes.InvalidArgument, "cannot set both github_url and archive_asset_id")
 	} else if req.GithubUrl != "" {
-		// Github projects must be configured by a user so we can ensure that they're allowed to access the repo.
-		if userID == nil {
-			return nil, status.Error(codes.Unauthenticated, "not authenticated as a user")
-		}
-
-		// Check Github app is installed and caller has access on the repo
-		installationID, err := s.getAndCheckGithubInstallationID(ctx, req.GithubUrl, *userID)
+		rillManagedRepo, err := s.admin.Github.RillManagedRepo(req.GithubUrl)
 		if err != nil {
-			return nil, err
+			return nil, status.Error(codes.InvalidArgument, "invalid github_url")
 		}
-		opts.GithubInstallationID = &installationID
-		opts.GithubURL = &req.GithubUrl
-		opts.ProdBranch = req.ProdBranch
-		opts.Subpath = req.Subpath
+		if rillManagedRepo {
+			// rill managed github repo
+			id, err := s.admin.Github.ManagedOrgInstallationID(ctx)
+			if err != nil {
+				return nil, fmt.Errorf("failed to get managed org installation id: %w", err)
+			}
+			opts.GithubInstallationID = &id
+			opts.GithubURL = &req.GithubUrl
+			if req.ProdBranch != "" && req.ProdBranch != "main" {
+				return nil, status.Error(codes.InvalidArgument, "prod_branch must be main for rill managed github repo")
+			}
+			opts.ProdBranch = "main"
+			opts.Subpath = ""
+		} else {
+			// User managed github projects must be configured by a user so we can ensure that they're allowed to access the repo.
+			if userID == nil {
+				return nil, status.Error(codes.Unauthenticated, "not authenticated as a user")
+			}
+
+			// Check Github app is installed and caller has access on the repo
+			installationID, err := s.getAndCheckGithubInstallationID(ctx, req.GithubUrl, *userID)
+			if err != nil {
+				return nil, err
+			}
+			opts.GithubInstallationID = &installationID
+			opts.GithubURL = &req.GithubUrl
+			opts.ProdBranch = req.ProdBranch
+			opts.Subpath = req.Subpath
+		}
 	} else if req.ArchiveAssetId != "" {
 		// Check access to the archive asset
 		if !s.hasAssetUsagePermission(ctx, req.ArchiveAssetId, org.ID, claims.OwnerID()) {

@@ -18,6 +18,7 @@
   import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
   import { BehaviourEventAction } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { isRillManagedGithubOrg } from "@rilldata/web-common/features/project/github-utils";
 
   export let organization: string;
   export let project: string;
@@ -66,6 +67,10 @@
   function disconnectGithubConnect() {
     disconnectConfirmOpen = true;
   }
+
+  $: rillManagedGithubOrg = $proj.data?.project?.githubUrl
+    ? isRillManagedGithubOrg($proj.data.project.githubUrl ?? "")
+    : false;
 </script>
 
 {#if $proj.data}
@@ -92,34 +97,40 @@
           >
             {repoName}
           </a>
-          <DropdownMenu.Root bind:open={editDropdownOpen}>
-            <DropdownMenu.Trigger>
-              <IconButton>
-                {#if hovered || editDropdownOpen}
-                  <ThreeDot size="16px" />
-                {/if}
-              </IconButton>
-            </DropdownMenu.Trigger>
-            <DropdownMenu.Content align="start">
-              <!-- Disabling for now, until we figure out how to do this  -->
-              <!--              <DropdownMenu.Item class="px-1 py-1">-->
-              <!--                <Button on:click={editGithubConnection} type="text" compact>-->
-              <!--                  <div class="flex flex-row items-center gap-x-2">-->
-              <!--                    <EditIcon size="14px" />-->
-              <!--                    <span class="text-xs">Edit</span>-->
-              <!--                  </div>-->
-              <!--                </Button>-->
-              <!--              </DropdownMenu.Item>-->
-              <DropdownMenu.Item class="px-1 py-1">
-                <Button on:click={disconnectGithubConnect} type="text" compact>
-                  <div class="flex flex-row items-center gap-x-2">
-                    <DisconnectIcon size="14px" />
-                    <span class="text-xs">Disconnect</span>
-                  </div>
-                </Button>
-              </DropdownMenu.Item>
-            </DropdownMenu.Content>
-          </DropdownMenu.Root>
+          {#if !rillManagedGithubOrg}
+            <DropdownMenu.Root bind:open={editDropdownOpen}>
+              <DropdownMenu.Trigger>
+                <IconButton>
+                  {#if hovered || editDropdownOpen}
+                    <ThreeDot size="16px" />
+                  {/if}
+                </IconButton>
+              </DropdownMenu.Trigger>
+              <DropdownMenu.Content align="start">
+                <!-- Disabling for now, until we figure out how to do this  -->
+                <!--              <DropdownMenu.Item class="px-1 py-1">-->
+                <!--                <Button on:click={editGithubConnection} type="text" compact>-->
+                <!--                  <div class="flex flex-row items-center gap-x-2">-->
+                <!--                    <EditIcon size="14px" />-->
+                <!--                    <span class="text-xs">Edit</span>-->
+                <!--                  </div>-->
+                <!--                </Button>-->
+                <!--              </DropdownMenu.Item>-->
+                <DropdownMenu.Item class="px-1 py-1">
+                  <Button
+                    on:click={disconnectGithubConnect}
+                    type="text"
+                    compact
+                  >
+                    <div class="flex flex-row items-center gap-x-2">
+                      <DisconnectIcon size="14px" />
+                      <span class="text-xs">Disconnect</span>
+                    </div>
+                  </Button>
+                </DropdownMenu.Item>
+              </DropdownMenu.Content>
+            </DropdownMenu.Root>
+          {/if}
         </div>
         {#if subpath}
           <div class="flex items-center">

@@ -353,7 +353,25 @@ func (s *Server) ConnectProjectToGithub(ctx context.Context, req *adminv1.Connec
 		}
 	} else if proj.GithubURL != nil {
 		err = s.pushToGit(ctx, func(projPath string) error {
-			return copyFromSrcGit(projPath, *proj.GithubURL, proj.ProdBranch, proj.Subpath, token)
+			rillManagedRepo, err := s.admin.Github.RillManagedRepo(*proj.GithubURL)
+			if err != nil {
+				return err
+			}
+			var appToken string
+			if rillManagedRepo {
+				// if the repo is managed by us, user's token will not work
+				meta, err := s.admin.DB.FindManagedGithubRepoMeta(ctx, *proj.GithubURL)
+				if err != nil {
+					return err
+				}
+				appToken, err = s.admin.Github.InstallationToken(ctx, *proj.GithubInstallationID, meta.RepositoryID)
+				if err != nil {
+					return err
+				}
+			} else {
+				appToken = token
+			}
+			return copyFromSrcGit(projPath, *proj.GithubURL, proj.ProdBranch, proj.Subpath, appToken)
 		}, req.Repo, req.Branch, req.Subpath, token, req.Force)
 		if err != nil {
 			return nil, status.Error(codes.InvalidArgument, err.Error())

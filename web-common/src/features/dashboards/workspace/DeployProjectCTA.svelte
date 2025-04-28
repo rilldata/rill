@@ -22,6 +22,7 @@
   import Rocket from "svelte-radix/Rocket.svelte";
   import { get, writable } from "svelte/store";
   import { Button } from "../../../components/button";
+  import { isRillManagedGithubOrg } from "@rilldata/web-common/features/project/github-utils";
 
   export let hasValidDashboard: boolean;
 
@@ -54,11 +55,15 @@
     deployCTAUrl = deployPageUrl;
   }
 
+  $: rillManagedGithubOrg = $currentProject.data?.project?.githubUrl
+    ? isRillManagedGithubOrg($currentProject.data.project.githubUrl ?? "")
+    : false;
+
   async function onRedeploy() {
     void behaviourEvent?.fireDeployEvent(BehaviourEventAction.DeployIntent);
 
     await waitUntil(() => !get(currentProject).isFetching);
-    if (get(currentProject).data?.project?.githubUrl) {
+    if (get(currentProject).data?.project?.githubUrl && !rillManagedGithubOrg) {
       pushThroughGitOpen = true;
       return;
     }

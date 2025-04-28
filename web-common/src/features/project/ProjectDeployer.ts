@@ -27,6 +27,7 @@ import {
 } from "@rilldata/web-common/runtime-client/local-service";
 import { derived, get, writable } from "svelte/store";
 import { addPosthogSessionIdToUrl } from "../../lib/analytics/posthog";
+import { isRillManagedGithubOrg } from "@rilldata/web-common/features/project/github-utils";
 
 export class ProjectDeployer {
   public readonly metadata = createLocalServiceGetMetadata();
@@ -136,7 +137,7 @@ export class ProjectDeployer {
 
     // Project already exists
     if (projectResp.project) {
-      if (projectResp.project.githubUrl) {
+      if (!isRillManagedGithubOrg(projectResp.project.githubUrl)) {
         // we do not support pushing to a project already connected to github
         return;
       }
