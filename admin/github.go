@@ -36,6 +36,7 @@ type Github interface {
 	// If repoID is non-zero, it will return a token with access to the repo only.
 	InstallationToken(ctx context.Context, installationID, repoID int64) (string, error)
 
+	RillManagedRepo(htmlURL string) (bool, error)
 	CreateManagedRepo(ctx context.Context, repoPrefix string) (*github.Repository, error)
 	ManagedOrgInstallationID(ctx context.Context) (int64, error)
 }
@@ -136,6 +137,14 @@ func (g *githubClient) InstallationToken(ctx context.Context, installationID, re
 	}
 
 	return token, nil
+}
+
+func (g *githubClient) RillManagedRepo(htmlURL string) (bool, error) {
+	account, _, ok := gitutil.SplitGithubURL(htmlURL)
+	if !ok {
+		return false, fmt.Errorf("invalid Github URL %q", htmlURL)
+	}
+	return account == g.managedOrg, nil
 }
 
 func (g *githubClient) CreateManagedRepo(ctx context.Context, name string) (*github.Repository, error) {

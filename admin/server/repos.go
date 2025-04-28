@@ -58,7 +58,20 @@ func (s *Server) GetRepoMeta(ctx context.Context, req *adminv1.GetRepoMetaReques
 		return nil, status.Error(codes.FailedPrecondition, "project does not have a github integration")
 	}
 
-	token, err := s.admin.Github.InstallationToken(ctx, *proj.GithubInstallationID, 0)
+	var repoID int64
+	rillManagedRepo, err := s.admin.Github.RillManagedRepo(*proj.GithubURL)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+	if rillManagedRepo {
+		meta, err := s.admin.DB.FindManagedGithubRepoMeta(ctx, *proj.GithubURL)
+		if err != nil {
+			return nil, status.Error(codes.InvalidArgument, err.Error())
+		}
+		repoID = meta.RepositoryID
+	}
+
+	token, err := s.admin.Github.InstallationToken(ctx, *proj.GithubInstallationID, repoID)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}

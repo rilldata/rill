@@ -1169,10 +1169,6 @@ func (s *Server) SetProjectMemberUserRole(ctx context.Context, req *adminv1.SetP
 }
 
 func (s *Server) GetCloneCredentials(ctx context.Context, req *adminv1.GetCloneCredentialsRequest) (*adminv1.GetCloneCredentialsResponse, error) {
-	claims := auth.GetClaims(ctx)
-	if !claims.Superuser(ctx) {
-		return nil, status.Error(codes.PermissionDenied, "superuser permission required to get clone credentials")
-	}
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.org", req.Organization),
 		attribute.String("args.project", req.Project),
@@ -1181,6 +1177,12 @@ func (s *Server) GetCloneCredentials(ctx context.Context, req *adminv1.GetCloneC
 	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	claims := auth.GetClaims(ctx)
+	if !claims.Superuser(ctx) && !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ManageProject {
+		// neither a superuser nor can manage the project
+		return nil, status.Error(codes.PermissionDenied, "does not have permission to get clone credentials")
 	}
 
 	if proj.ArchiveAssetID != nil {
@@ -1199,7 +1201,21 @@ func (s *Server) GetCloneCredentials(ctx context.Context, req *adminv1.GetCloneC
 		return nil, status.Error(codes.FailedPrecondition, "project's repository is not managed by Rill, and it does not have a GitHub integration")
 	}
 
-	token, err := s.admin.Github.InstallationToken(ctx, *proj.GithubInstallationID, 0)
+	// if the project is a rill managed github repo then only allow access to the repo
+	var repoID int64
+	rillManagedRepo, err := s.admin.Github.RillManagedRepo(*proj.GithubURL)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+	if rillManagedRepo {
+		meta, err := s.admin.DB.FindManagedGithubRepoMeta(ctx, *proj.GithubURL)
+		if err != nil {
+			return nil, status.Error(codes.InvalidArgument, err.Error())
+		}
+		repoID = meta.RepositoryID
+	}
+
+	token, err := s.admin.Github.InstallationToken(ctx, *proj.GithubInstallationID, repoID)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
