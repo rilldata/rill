@@ -10,7 +10,7 @@
   <Alert.Trigger asChild>
     <div class="hidden"></div>
   </Alert.Trigger>
-  <Alert.Content>
+  <Alert.Content noCancel>
     <Alert.Header>
       <Alert.Title>
         Assign a new billing contact first to remove this user

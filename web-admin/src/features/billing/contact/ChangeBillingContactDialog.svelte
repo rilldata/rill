@@ -67,7 +67,7 @@
   <Dialog.Trigger asChild>
     <div class="hidden"></div>
   </Dialog.Trigger>
-  <Dialog.Content class="w-[520px]">
+  <Dialog.Content class="w-[520px]" noClose>
     <Dialog.Header>
       <Dialog.Title>Change billing contact</Dialog.Title>
 
