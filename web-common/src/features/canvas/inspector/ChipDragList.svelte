@@ -2,20 +2,25 @@
   import { Chip } from "@rilldata/web-common/components/chip";
   import PivotPortalItem from "@rilldata/web-common/features/dashboards/pivot/PivotPortalItem.svelte";
   import { swapListener } from "@rilldata/web-common/features/dashboards/pivot/swapListener";
-  import { PivotChipType } from "@rilldata/web-common/features/dashboards/pivot/types";
+  import {
+    PivotChipType,
+    type PivotChipData,
+  } from "@rilldata/web-common/features/dashboards/pivot/types";
   import { writable } from "svelte/store";
   import type { FieldType } from "./types";
+
+  const _ghostIndex = writable<number | null>(null);
 
   export let items: string[] = [];
   export let displayMap: Record<string, { label: string; type: FieldType }>;
   export let onUpdate: (items: string[]) => void;
 
-  const ghostIndex = writable<number | null>(null);
-  let draggedItem: string | null = null;
-  let isDragging = false;
+  let dragData: PivotChipData | null = null;
   let dragStart = { left: 0, top: 0 };
   let offset = { x: 0, y: 0 };
   let draggedItemWidth = 0;
+
+  $: ghostIndex = $_ghostIndex;
 
   function handleMouseDown(e: MouseEvent, item: string, index: number) {
     // No-op if the target is a chip remove button
@@ -33,10 +38,18 @@
       y: e.clientY - top,
     };
 
-    isDragging = true;
-    draggedItem = item;
+    dragData = {
+      id: item,
+      title: displayMap[item]?.label || item,
+      type:
+        displayMap[item]?.type === "measure"
+          ? PivotChipType.Measure
+          : displayMap[item]?.type === "time"
+            ? PivotChipType.Time
+            : PivotChipType.Dimension,
+    };
     draggedItemWidth = width;
-    ghostIndex.set(index);
+    _ghostIndex.set(index);
 
     const temp = [...items];
     temp.splice(index, 1);
@@ -52,22 +65,18 @@
   }
 
   function handleDrop() {
-    if (draggedItem && $ghostIndex !== null) {
-      if (!items.includes(draggedItem)) {
+    if (dragData && ghostIndex !== null) {
+      if (!items.includes(dragData.id)) {
         const temp = [...items];
-        temp.splice($ghostIndex, 0, draggedItem);
+        temp.splice(ghostIndex, 0, dragData.id);
         items = temp;
         onUpdate(items);
       } else {
-        console.warn(
-          "Prevented duplicate addition of item:",
-          displayMap[draggedItem]?.label || draggedItem,
-        );
+        console.warn("Prevented duplicate addition of item:", dragData.title);
       }
     }
-    isDragging = false;
-    draggedItem = null;
-    ghostIndex.set(null);
+    dragData = null;
+    _ghostIndex.set(null);
   }
 
   function handleRemove(item: string) {
@@ -84,16 +93,20 @@
 <div
   class="flex flex-col gap-1"
   use:swapListener={{
-    condition: isDragging,
-    ghostIndex,
+    condition: !!dragData,
+    ghostIndex: _ghostIndex,
     canMixTypes: true,
     chipType: undefined,
+    orientation: "vertical",
   }}
   style:--ghost-width="{draggedItemWidth}px"
 >
   {#each items as item, i (item)}
-    {#if i === $ghostIndex}
-      <div class="ghost h-[26px] bg-gray-200 rounded-sm pointer-events-none" />
+    {#if i === ghostIndex}
+      <div
+        class="ghost h-[26px] bg-gray-100 border rounded-sm pointer-events-none"
+        class:!rounded-full={dragData?.type !== PivotChipType.Measure}
+      />
     {/if}
     <div
       class="drag-item"
@@ -115,28 +128,22 @@
       </Chip>
     </div>
   {/each}
-  {#if isDragging && $ghostIndex === items.length}
-    <div class="ghost h-[26px] bg-gray-200 rounded-sm pointer-events-none" />
+  {#if dragData && ghostIndex === items.length}
+    <div
+      class="ghost h-[26px] bg-gray-100 border rounded-sm pointer-events-none"
+      class:!rounded-full={dragData?.type !== PivotChipType.Measure}
+    />
   {/if}
 </div>
 
-{#if draggedItem && isDragging}
+{#if dragData}
   <PivotPortalItem
     {offset}
     width={draggedItemWidth}
-    item={{
-      id: draggedItem,
-      title: displayMap[draggedItem]?.label || draggedItem,
-      type:
-        displayMap[draggedItem]?.type === "measure"
-          ? PivotChipType.Measure
-          : displayMap[draggedItem]?.type === "time"
-            ? PivotChipType.Time
-            : PivotChipType.Dimension,
-    }}
+    item={dragData}
     position={dragStart}
     removable
-    on:release={() => (draggedItem = null)}
+    on:release={() => (dragData = null)}
   />
 {/if}
 

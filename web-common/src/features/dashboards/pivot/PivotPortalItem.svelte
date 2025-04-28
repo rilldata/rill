@@ -50,7 +50,7 @@
 
 <style lang="postcss">
   .portal-item {
-    @apply shadow-lg shadow-slate-300;
+    @apply shadow-lg;
     @apply z-50;
     @apply absolute pointer-events-none;
   }

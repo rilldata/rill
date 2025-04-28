@@ -18,14 +18,14 @@
 
   $: ({ dimension: columnsDimensions, measure: columnsMeasures } = $columns);
 
-  function updateColumn(e: CustomEvent<PivotChipData[]>) {
+  function updateColumn(items: PivotChipData[]) {
     // Reset lastNestState when columns are updated
     lastNestState.set(null);
-    metricsExplorerStore.setPivotColumns($exploreName, e.detail);
+    metricsExplorerStore.setPivotColumns($exploreName, items);
   }
 
-  function updateRows(e: CustomEvent<PivotChipData[]>) {
-    const filtered = e.detail.filter(
+  function updateRows(items: PivotChipData[]) {
+    const filtered = items.filter(
       (item) => item.type !== PivotChipType.Measure,
     );
     metricsExplorerStore.setPivotRows($exploreName, filtered);
@@ -48,7 +48,7 @@
         zone="rows"
         placeholder="Drag dimensions here"
         items={$rows}
-        on:update={updateRows}
+        onUpdate={updateRows}
       />
     </div>
   {/if}
@@ -64,7 +64,7 @@
         ? $originalColumns
         : columnsDimensions.concat(columnsMeasures)}
       placeholder="Drag dimensions or measures here"
-      on:update={updateColumn}
+      onUpdate={updateColumn}
     />
   </div>
 </div>
