@@ -16,12 +16,12 @@
     {
       value: "admin",
       label: "Admin",
-      description: "Full access to org settings, members, and all projects",
+      description: "Full control of project settings and members",
     },
     {
       value: "editor",
       label: "Editor",
-      description: "Can create/manage projects and non-admin members",
+      description: "Can create and edit dashboards; manage non-admin access",
     },
     {
       value: "viewer",
@@ -53,7 +53,12 @@
       <CaretDownIcon size="12px" />
     {/if}
   </DropdownMenuTrigger>
-  <DropdownMenuContent side="bottom" align="end" class="w-[240px]">
+  <DropdownMenuContent
+    side="bottom"
+    align="end"
+    class="w-[240px]"
+    strategy="fixed"
+  >
     {#each Options as { value, label, description } (value)}
       <DropdownMenuItem
         on:click={() => onSelect(value)}

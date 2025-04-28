@@ -143,7 +143,6 @@
       {/if}
     </DropdownMenu.Trigger>
     <DropdownMenu.Content align="start" strategy="fixed">
-      <!-- TODO: what happens when admin removes themselves as admin? -->
       {#if role === "admin"}
         <DropdownMenu.Item
           class="font-normal flex flex-col items-start py-2 {getUserRole(
