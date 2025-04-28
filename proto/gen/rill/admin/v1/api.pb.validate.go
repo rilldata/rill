@@ -35488,6 +35488,8 @@ func (m *Project) validate(all bool) error {
 
 	// no validation rules for GithubUrl
 
+	// no validation rules for ManagedGitId
+
 	// no validation rules for Subpath
 
 	// no validation rules for ProdBranch

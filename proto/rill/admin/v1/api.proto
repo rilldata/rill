@@ -2391,6 +2391,8 @@ message Project {
   string created_by_user_id = 22;
   string provisioner = 7;
   string github_url = 8;
+  // managed_git_id is set if the project is connected to a rill-managed git repo.
+  string managed_git_id = 24;
   string subpath = 17;
   string prod_branch = 9;
   string archive_asset_id = 23;

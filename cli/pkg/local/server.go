@@ -25,7 +25,6 @@ import (
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/pkg/urlutil"
 	"github.com/rilldata/rill/cli/cmd/auth"
-	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/dotrillcloud"
 	"github.com/rilldata/rill/cli/pkg/gitutil"
 	"github.com/rilldata/rill/cli/pkg/pkce"
@@ -312,13 +311,14 @@ func (s *Server) DeployProject(ctx context.Context, r *connect.Request[localv1.D
 
 	var projRequest *adminv1.CreateProjectRequest
 	if r.Msg.Upload { // upload repo to rill managed storage instead of github
-		repo, release, err := s.app.Runtime.Repo(ctx, s.app.Instance.ID)
+		ghRepo, err := c.CreateManagedGitRepo(ctx, &adminv1.CreateManagedGitRepoRequest{
+			Organization: r.Msg.Org,
+			Name:         r.Msg.ProjectName,
+		})
 		if err != nil {
 			return nil, err
 		}
-		defer release()
-
-		assetID, err := cmdutil.UploadRepo(ctx, repo, s.app.ch, r.Msg.Org, r.Msg.ProjectName)
+		err = gitutil.CommitAndForcePush(ctx, s.app.ProjectPath, ghRepo.Remote, ghRepo.Username, ghRepo.Password)
 		if err != nil {
 			return nil, err
 		}
@@ -334,7 +334,7 @@ func (s *Server) DeployProject(ctx context.Context, r *connect.Request[localv1.D
 			ProdOlapDsn:      "",
 			ProdSlots:        int64(DefaultProdSlots(s.app.ch)),
 			Public:           false,
-			ArchiveAssetId:   assetID,
+			GithubUrl:        ghRepo.Remote,
 		}
 	} else {
 		userStatus, err := c.GetGithubUserStatus(ctx, &adminv1.GetGithubUserStatusRequest{})
@@ -456,23 +456,45 @@ func (s *Server) RedeployProject(ctx context.Context, r *connect.Request[localv1
 	}
 
 	if r.Msg.Reupload {
-		repo, release, err := s.app.Runtime.Repo(ctx, s.app.Instance.ID)
-		if err != nil {
-			return nil, err
+		var remote, username, password string
+		if projResp.Project.ArchiveAssetId != "" {
+			// project was previously deployed using zip and ship
+			ghRepo, err := c.CreateManagedGitRepo(ctx, &adminv1.CreateManagedGitRepoRequest{
+				Organization: projResp.Project.OrgName,
+				Name:         projResp.Project.Name,
+			})
+			if err != nil {
+				return nil, err
+			}
+			remote = ghRepo.Remote
+			username = ghRepo.Username
+			password = ghRepo.Password
+		} else {
+			creds, err := c.GetCloneCredentials(ctx, &adminv1.GetCloneCredentialsRequest{
+				Organization: projResp.Project.OrgName,
+				Project:      projResp.Project.Name,
+			})
+			if err != nil {
+				return nil, err
+			}
+			remote = creds.GitRepoUrl
+			username = creds.GitUsername
+			password = creds.GitPassword
 		}
-		defer release()
 
-		assetID, err := cmdutil.UploadRepo(ctx, repo, s.app.ch, projResp.Project.OrgName, projResp.Project.Name)
+		err = gitutil.CommitAndForcePush(ctx, s.app.ProjectPath, remote, username, password)
 		if err != nil {
 			return nil, err
 		}
-		_, err = c.UpdateProject(ctx, &adminv1.UpdateProjectRequest{
-			ArchiveAssetId:   &assetID,
-			OrganizationName: projResp.Project.OrgName,
-			Name:             projResp.Project.Name,
-		})
-		if err != nil {
-			return nil, err
+		if projResp.Project.ArchiveAssetId != "" {
+			_, err = c.UpdateProject(ctx, &adminv1.UpdateProjectRequest{
+				OrganizationName: projResp.Project.OrgName,
+				Name:             projResp.Project.Name,
+				GithubUrl:        &remote,
+			})
+			if err != nil {
+				return nil, err
+			}
 		}
 	}
 

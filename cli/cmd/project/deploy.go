@@ -14,8 +14,8 @@ import (
 	"github.com/rilldata/rill/cli/pkg/browser"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/dotrillcloud"
+	"github.com/rilldata/rill/cli/pkg/gitutil"
 	"github.com/rilldata/rill/cli/pkg/local"
-	"github.com/rilldata/rill/cli/pkg/printer"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
@@ -47,12 +47,12 @@ func DeployCmd(ch *cmdutil.Helper) *cobra.Command {
 
 	deployCmd := &cobra.Command{
 		Use:   "deploy [<path>]",
-		Short: "Deploy project to Rill Cloud by uploading the project files",
+		Short: "Deploy project to Rill Cloud by using a Rill Managed GitHub repo",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if len(args) > 0 {
 				opts.GitPath = args[0]
 			}
-			return DeployWithUploadFlow(cmd.Context(), ch, opts)
+			return DeployUsingManagedGitHubFlow(cmd.Context(), ch, opts)
 		},
 	}
 
@@ -108,7 +108,7 @@ func ValidateLocalProject(ch *cmdutil.Helper, gitPath, subPath string) (string, 
 	return "", "", ErrInvalidProject
 }
 
-func DeployWithUploadFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts) error {
+func DeployUsingManagedGitHubFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts) error {
 	_, localProjectPath, err := ValidateLocalProject(ch, opts.GitPath, opts.SubPath)
 	if err != nil {
 		return err
@@ -149,12 +149,6 @@ func DeployWithUploadFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployO
 		ch.PrintfBold("Using org %q.\n\n", ch.Org)
 	}
 
-	// get repo for current project
-	repo, _, err := cmdutil.RepoForProjectPath(localProjectPath)
-	if err != nil {
-		return err
-	}
-
 	projResp, err := adminClient.GetProject(ctx, &adminv1.GetProjectRequest{OrganizationName: ch.Org, Name: opts.Name})
 	if err != nil {
 		if st, ok := status.FromError(err); !ok || st.Code() != codes.NotFound {
@@ -162,33 +156,59 @@ func DeployWithUploadFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployO
 		}
 	}
 
-	// check if the project with name already exists
-	if projResp != nil {
-		if projResp.Project.GithubUrl != "" {
-			ch.PrintfError("Found existing project. But it is connected to a github repo.\nPush any changes to %q to deploy.\n", projResp.Project.GithubUrl)
-			return nil
-		}
-
-		ch.Printer.Println("Found existing project. Starting re-upload.")
-		assetID, err := cmdutil.UploadRepo(ctx, repo, ch, ch.Org, opts.Name)
-		if err != nil {
-			return err
-		}
-		printer.ColorGreenBold.Printf("All files uploaded successfully.\n\n")
-
-		// Update the project
-		// Silently ignores other flags like description etc which are handled with project update.
-		res, err := adminClient.UpdateProject(ctx, &adminv1.UpdateProjectRequest{
-			OrganizationName: ch.Org,
-			Name:             opts.Name,
-			ArchiveAssetId:   &assetID,
+	var remote, username, password string
+	if projResp == nil || projResp.Project.ArchiveAssetId != "" {
+		ghRepo, err := adminClient.CreateManagedGitRepo(ctx, &adminv1.CreateManagedGitRepoRequest{
+			Organization: ch.Org,
+			Name:         opts.Name,
 		})
 		if err != nil {
 			if s, ok := status.FromError(err); ok && s.Code() == codes.PermissionDenied {
-				ch.PrintfError("You do not have the permissions needed to update a project in org %q. Please reach out to your Rill admin.\n", ch.Org)
+				ch.PrintfError("You do not have the permissions needed to create a project in org %q. Please reach out to your Rill admin.\n", ch.Org)
 				return nil
 			}
-			return fmt.Errorf("update project failed with error %w", err)
+			return fmt.Errorf("create managed github repo failed with error %w", err)
+		}
+		remote = ghRepo.Remote
+		username = ghRepo.Username
+		password = ghRepo.Password
+	} else {
+		// existing project backed by github handling
+		// get token for the existing project
+		creds, err := adminClient.GetCloneCredentials(ctx, &adminv1.GetCloneCredentialsRequest{
+			Organization: ch.Org,
+			Project:      opts.Name,
+		})
+		if err != nil {
+			return err
+		}
+		remote = projResp.Project.GithubUrl
+		username = creds.GitUsername
+		password = creds.GitPassword
+	}
+
+	err = gitutil.CommitAndForcePush(ctx, localProjectPath, remote, username, password)
+	if err != nil {
+		return fmt.Errorf("failed to create and push to managed github: %w", err)
+	}
+
+	ch.Print("Successfully pushed your local project\n\n")
+	if projResp != nil {
+		if projResp.Project.ArchiveAssetId != "" {
+			// Update the project
+			// Silently ignores other flags like description etc which are handled with project update.
+			_, err := adminClient.UpdateProject(ctx, &adminv1.UpdateProjectRequest{
+				OrganizationName: ch.Org,
+				Name:             opts.Name,
+				GithubUrl:        &remote,
+			})
+			if err != nil {
+				if s, ok := status.FromError(err); ok && s.Code() == codes.PermissionDenied {
+					ch.PrintfError("You do not have the permissions needed to update a project in org %q. Please reach out to your Rill admin.\n", ch.Org)
+					return nil
+				}
+				return fmt.Errorf("update project failed with error %w", err)
+			}
 		}
 		ch.Telemetry(ctx).RecordBehavioralLegacy(activity.BehavioralEventDeploySuccess)
 
@@ -208,17 +228,9 @@ func DeployWithUploadFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployO
 		}
 
 		// Success
-		ch.PrintfSuccess("Updated project \"%s/%s\".\n\n", ch.Org, res.Project.Name)
+		ch.PrintfSuccess("Updated project \"%s/%s\".\n\n", ch.Org, opts.Name)
 		return nil
 	}
-
-	// create a tar archive of the project and upload it
-	ch.Printer.Println("Starting upload.")
-	assetID, err := cmdutil.UploadRepo(ctx, repo, ch, ch.Org, opts.Name)
-	if err != nil {
-		return err
-	}
-	printer.ColorGreenBold.Printf("All files uploaded successfully.\n\n")
 
 	// Create the project
 	res, err := adminClient.CreateProject(ctx, &adminv1.CreateProjectRequest{
@@ -231,7 +243,7 @@ func DeployWithUploadFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployO
 		ProdOlapDsn:      local.DefaultOLAPDSN,
 		ProdSlots:        int64(opts.Slots),
 		Public:           opts.Public,
-		ArchiveAssetId:   assetID,
+		GithubUrl:        remote,
 	})
 	if err != nil {
 		if s, ok := status.FromError(err); ok && s.Code() == codes.PermissionDenied {

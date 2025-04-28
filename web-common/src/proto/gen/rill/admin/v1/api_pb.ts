@@ -12842,6 +12842,13 @@ export class Project extends Message<Project> {
   githubUrl = "";
 
   /**
+   * managed_git_id is set if the project is connected to a rill-managed git repo.
+   *
+   * @generated from field: string managed_git_id = 24;
+   */
+  managedGitId = "";
+
+  /**
    * @generated from field: string subpath = 17;
    */
   subpath = "";
@@ -12925,6 +12932,7 @@ export class Project extends Message<Project> {
     { no: 22, name: "created_by_user_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 7, name: "provisioner", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 8, name: "github_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 24, name: "managed_git_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 17, name: "subpath", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 9, name: "prod_branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 23, name: "archive_asset_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },

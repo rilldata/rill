@@ -58,11 +58,13 @@
     deployCTAUrl = deployPageUrl;
   }
 
+  $: managedGit = $currentProject.data?.project?.managedGitId ? true : false;
+
   async function onRedeploy() {
     void behaviourEvent?.fireDeployEvent(BehaviourEventAction.DeployIntent);
 
     await waitUntil(() => !get(currentProject).isFetching);
-    if (get(currentProject).data?.project?.githubUrl) {
+    if (get(currentProject).data?.project?.githubUrl && !managedGit) {
       pushThroughGitOpen = true;
       return;
     }

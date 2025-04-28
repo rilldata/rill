@@ -553,22 +553,50 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 	if req.GithubUrl != "" && req.ArchiveAssetId != "" {
 		return nil, status.Error(codes.InvalidArgument, "cannot set both github_url and archive_asset_id")
 	} else if req.GithubUrl != "" {
-		// Github projects must be configured by a user so we can ensure that they're allowed to access the repo.
-		if userID == nil {
-			return nil, status.Error(codes.Unauthenticated, "not authenticated as a user")
-		}
-
-		// Check Github app is installed and caller has access on the repo
-		repoID, installationID, err := s.getAndCheckGithubInstallationID(ctx, req.GithubUrl, *userID)
+		isMgdGitRepo := true
+		mgdGitRepo, err := s.admin.DB.FindManagedGitRepo(ctx, req.GithubUrl)
 		if err != nil {
-			return nil, err
+			if errors.Is(err, database.ErrNotFound) {
+				isMgdGitRepo = false
+			} else {
+				return nil, err
+			}
 		}
-		opts.GithubInstallationID = &installationID
-		opts.GithubURL = &req.GithubUrl
-		opts.GithubRepoID = &repoID
-		opts.ManagedGitRepoID = nil
-		opts.ProdBranch = req.ProdBranch
-		opts.Subpath = req.Subpath
+		if isMgdGitRepo {
+			if *mgdGitRepo.OrgID != org.ID {
+				return nil, status.Error(codes.NotFound, "github repo not found")
+			}
+			// rill managed github repo
+			id, err := s.admin.Github.ManagedOrgInstallationID()
+			if err != nil {
+				return nil, fmt.Errorf("failed to get managed org installation id: %w", err)
+			}
+			opts.GithubInstallationID = &id
+			opts.GithubURL = &req.GithubUrl
+			opts.ManagedGitRepoID = &mgdGitRepo.ID
+			opts.GithubRepoID = nil // todo fix
+			if req.ProdBranch != "" && req.ProdBranch != "main" {
+				return nil, status.Error(codes.InvalidArgument, "prod_branch must be main for rill managed github repo")
+			}
+			opts.ProdBranch = "main"
+			opts.Subpath = ""
+		} else {
+			// User managed github projects must be configured by a user so we can ensure that they're allowed to access the repo.
+			if userID == nil {
+				return nil, status.Error(codes.Unauthenticated, "not authenticated as a user")
+			}
+
+			// Check Github app is installed and caller has access on the repo
+			githubRepoID, installationID, err := s.getAndCheckGithubInstallationID(ctx, req.GithubUrl, *userID)
+			if err != nil {
+				return nil, err
+			}
+			opts.GithubInstallationID = &installationID
+			opts.GithubURL = &req.GithubUrl
+			opts.GithubRepoID = &githubRepoID
+			opts.ProdBranch = req.ProdBranch
+			opts.Subpath = req.Subpath
+		}
 	} else if req.ArchiveAssetId != "" {
 		// Check access to the archive asset
 		if !s.hasAssetUsagePermission(ctx, req.ArchiveAssetId, org.ID, claims.OwnerID()) {
@@ -1865,6 +1893,7 @@ func (s *Server) projToDTO(p *database.Project, orgName string) *adminv1.Project
 		ProdBranch:       p.ProdBranch,
 		Subpath:          p.Subpath,
 		GithubUrl:        safeStr(p.GithubURL),
+		ManagedGitId:     safeStr(p.ManagedGitRepoID),
 		ArchiveAssetId:   safeStr(p.ArchiveAssetID),
 		ProdDeploymentId: safeStr(p.ProdDeploymentID),
 		ProdTtlSeconds:   safeInt64(p.ProdTTLSeconds),

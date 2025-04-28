@@ -41,7 +41,7 @@ func DeployCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			if upload {
-				return project.DeployWithUploadFlow(cmd.Context(), ch, opts)
+				return project.DeployUsingManagedGitHubFlow(cmd.Context(), ch, opts)
 			}
 			return project.ConnectGithubFlow(cmd.Context(), ch, opts)
 		},

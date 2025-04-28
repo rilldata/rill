@@ -5041,6 +5041,9 @@ definitions:
         type: string
       githubUrl:
         type: string
+      managedGitId:
+        type: string
+        description: managed_git_id is set if the project is connected to a rill-managed git repo.
       subpath:
         type: string
       prodBranch:
