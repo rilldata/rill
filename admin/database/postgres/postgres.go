@@ -2567,7 +2567,7 @@ func (c *connection) InsertManagedGithubRepoMeta(ctx context.Context, opts *data
 	res := &database.ManagedGithubRepoMeta{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, `
 		INSERT INTO managed_github_repo_meta (org_id, created_by_user_id, html_url, repository_id)
-		VALUES ($1, $2, $3) RETURNING *`,
+		VALUES ($1, $2, $3, $4) RETURNING *`,
 		opts.OrgID, opts.CreatedByUserID, opts.HTMLURL, opts.RepositoryID,
 	).StructScan(res)
 	if err != nil {
