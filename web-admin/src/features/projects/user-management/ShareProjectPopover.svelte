@@ -251,11 +251,11 @@
             {/each}
           {/if} -->
         </div>
-        {#if hasAutogroupMembers}
-          <div class="mt-2">
-            <div class="text-xs text-gray-500 font-semibold uppercase">
-              General Access
-            </div>
+        <div class="mt-2">
+          <div class="text-xs text-gray-500 font-semibold uppercase">
+            General Access
+          </div>
+          {#if hasAutogroupMembers}
             <!-- NOTE: Only support "autogroup:members" -->
             <!-- https://www.notion.so/rilldata/User-Management-Role-Based-Access-Control-RBAC-Enhancements-8d331b29d9b64d87bca066e06ef87f54?pvs=4#1acba33c8f5780f4903bf16510193dd8 -->
             {#each projectMemberUserGroupsList as group}
@@ -296,7 +296,11 @@
                               <span
                                 class="flex flex-row items-center gap-x-1 text-sm font-medium text-gray-900"
                               >
-                                Everyone at {organization}
+                                {#if accessType === "everyone"}
+                                  Everyone at {organization}
+                                {:else}
+                                  Invite only
+                                {/if}
                                 {#if accessDropdownOpen}
                                   <CaretUpIcon
                                     size="12px"
@@ -323,30 +327,6 @@
                             </div>
                           </div>
                         </div>
-                        <!-- <Button
-                          type="secondary"
-                          class="flex flex-row items- gap-2"
-                          forcedStyle="min-height: 28px !important; height: 28px !important; border-color: #D1D5DB !important;"
-                        >
-                          {#if accessType === "everyone"}
-                            <div
-                              class="h-4 w-4 flex items-center justify-center bg-primary-600 rounded-sm"
-                            >
-                              <span class="text-[10px] text-white font-semibold"
-                                >{organization[0].toUpperCase()}</span
-                              >
-                            </div>
-                          {:else}
-                            <Lock size="18px" />
-                          {/if}
-                          <span class="text-sm font-medium text-gray-900">
-                            {#if accessType === "everyone"}
-                              Everyone at {organization}
-                            {:else}
-                              Invite only
-                            {/if}
-                          </span>
-                        </Button> -->
                       </DropdownMenu.Trigger>
                       <DropdownMenu.Content align="start" strategy="fixed">
                         <DropdownMenu.Item
@@ -422,8 +402,114 @@
                 </Tooltip>
               {/if}
             {/each}
-          </div>
-        {/if}
+          {:else}
+            <!-- TODO: 1 screen that seems to be missing is what it looks like when it's invite only -->
+            <Tooltip
+              location="right"
+              alignment="middle"
+              distance={8}
+              suppress={!isAdmin}
+            >
+              <div
+                role="button"
+                tabindex="0"
+                class="flex flex-row items-center gap-x-2 justify-between data-[hovered=true]:bg-slate-50 rounded-sm cursor-auto"
+                data-hovered={isHovered}
+                on:mouseover={() => (isHovered = true)}
+                on:mouseleave={() => (isHovered = false)}
+                on:focus={() => (isHovered = true)}
+                on:blur={() => (isHovered = false)}
+              >
+                <DropdownMenu.Root bind:open={accessDropdownOpen}>
+                  <DropdownMenu.Trigger>
+                    <div class="flex flex-row items-center gap-x-2">
+                      <div class="flex items-center gap-2 py-2 pl-2">
+                        <div
+                          class={cn(
+                            "h-7 w-7 rounded-sm flex items-center justify-center",
+                            getRandomBgColor(`Everyone at ${organization}`),
+                          )}
+                        >
+                          <span class="text-sm text-white font-semibold"
+                            >{getInitials(`Everyone at ${organization}`)}</span
+                          >
+                        </div>
+                        <div class="flex flex-col text-left">
+                          <span
+                            class="flex flex-row items-center gap-x-1 text-sm font-medium text-gray-900"
+                          >
+                            {#if accessType === "everyone"}
+                              Everyone at {organization}
+                            {:else}
+                              Invite only
+                            {/if}
+                            {#if accessDropdownOpen}
+                              <CaretUpIcon size="12px" color="text-gray-700" />
+                            {:else}
+                              <CaretDownIcon
+                                size="12px"
+                                color="text-gray-700"
+                              />
+                            {/if}
+                          </span>
+                          <div class="h-4" />
+                        </div>
+                      </div>
+                    </div>
+                  </DropdownMenu.Trigger>
+                  <DropdownMenu.Content align="start" strategy="fixed">
+                    <DropdownMenu.Item
+                      on:click={setAccessInviteOnly}
+                      class="flex flex-col items-start py-2 data-[highlighted]:bg-gray-100 {accessType ===
+                      'invite-only'
+                        ? 'bg-gray-50'
+                        : ''}"
+                    >
+                      <div class="flex items-start gap-2">
+                        <Lock size="20px" color="#374151" />
+                        <span class="text-xs font-medium text-gray-700"
+                          >Invite only</span
+                        >
+                      </div>
+                      <div class="flex flex-row items-center gap-2">
+                        <div class="w-[20px]" />
+                        <span class="text-[11px] text-gray-500"
+                          >Only admins and invited users can access</span
+                        >
+                      </div>
+                    </DropdownMenu.Item>
+                    <DropdownMenu.Item
+                      on:click={setAccessEveryone}
+                      class="flex flex-col items-start py-2 data-[highlighted]:bg-gray-100 {accessType ===
+                      'everyone'
+                        ? 'bg-gray-50'
+                        : ''}"
+                    >
+                      <div class="flex items-start gap-2">
+                        <div
+                          class="h-5 w-5 flex items-center justify-center bg-primary-600"
+                        >
+                          <span class="text-xs text-white font-semibold"
+                            >{organization[0].toUpperCase()}</span
+                          >
+                        </div>
+                        <span class="text-xs font-medium text-gray-700"
+                          >Everyone at {organization}</span
+                        >
+                      </div>
+                      <div class="flex flex-row items-center gap-2">
+                        <div class="w-[20px]" />
+                        <span class="text-[11px] text-gray-500"
+                          >Org members can access</span
+                        >
+                      </div>
+                    </DropdownMenu.Item>
+                  </DropdownMenu.Content>
+                </DropdownMenu.Root>
+              </div>
+            </Tooltip>
+          {/if}
+        </div>
       </div>
     </div>
     <div
