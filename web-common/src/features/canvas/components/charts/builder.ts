@@ -155,8 +155,11 @@ export function getLegendConfig(
   orientation: ChartLegend,
 ): Config<ExprRef | SignalRef> {
   let columns: number | ExprRef = 1;
+  let symbolLimit: number | ExprRef = 40;
   if (orientation === "top" || orientation === "bottom") {
     columns = { expr: "floor(width / 140)" };
+  } else if (orientation === "right" || orientation === "left") {
+    symbolLimit = { expr: "floor(height / 13 )" };
   }
   if (orientation === "none") {
     return {
@@ -170,6 +173,7 @@ export function getLegendConfig(
       orient: orientation,
       columns: columns,
       labelLimit: 140,
+      symbolLimit: symbolLimit,
     },
   };
 }
