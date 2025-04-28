@@ -1770,15 +1770,13 @@ paths:
         - AdminService
   /v1/organizations/{organization}/projects/{project}/upload-assets:
     post:
-      summary: |-
-        Converts a project connected to github to a rill managed project.
-        Uploads the current project to assets.
-      operationId: AdminService_UploadProjectAssets
+      summary: Converts a project connected to github to a rill managed project.
+      operationId: AdminService_DisconnectProjectFromGithub
       responses:
         "200":
           description: A successful response.
           schema:
-            $ref: '#/definitions/v1UploadProjectAssetsResponse'
+            $ref: '#/definitions/v1DisconnectProjectFromGithubResponse'
         default:
           description: An unexpected error response.
           schema:
@@ -4337,6 +4335,8 @@ definitions:
       - DEPLOYMENT_STATUS_OK
       - DEPLOYMENT_STATUS_ERROR
     default: DEPLOYMENT_STATUS_UNSPECIFIED
+  v1DisconnectProjectFromGithubResponse:
+    type: object
   v1EditAlertResponse:
     type: object
   v1EditReportResponse:
@@ -5077,6 +5077,9 @@ definitions:
         type: string
       githubUrl:
         type: string
+      managedGitId:
+        type: string
+        description: managed_git_id is set if the project is connected to a rill-managed git repo.
       subpath:
         type: string
       prodBranch:
@@ -5706,8 +5709,6 @@ definitions:
     properties:
       preferences:
         $ref: '#/definitions/v1UserPreferences'
-  v1UploadProjectAssetsResponse:
-    type: object
   v1User:
     type: object
     properties:

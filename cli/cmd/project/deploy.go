@@ -14,6 +14,7 @@ import (
 	"github.com/rilldata/rill/cli/pkg/browser"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/dotrillcloud"
+	"github.com/rilldata/rill/cli/pkg/gitutil"
 	"github.com/rilldata/rill/cli/pkg/local"
 	"github.com/rilldata/rill/cli/pkg/printer"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
@@ -47,12 +48,12 @@ func DeployCmd(ch *cmdutil.Helper) *cobra.Command {
 
 	deployCmd := &cobra.Command{
 		Use:   "deploy [<path>]",
-		Short: "Deploy project to Rill Cloud by uploading the project files",
+		Short: "Deploy project to Rill Cloud by using a Rill Managed GitHub repo",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if len(args) > 0 {
 				opts.GitPath = args[0]
 			}
-			return DeployWithUploadFlow(cmd.Context(), ch, opts)
+			return DeployUsingManagedGitFlow(cmd.Context(), ch, opts)
 		},
 	}
 
@@ -108,7 +109,194 @@ func ValidateLocalProject(ch *cmdutil.Helper, gitPath, subPath string) (string, 
 	return "", "", ErrInvalidProject
 }
 
-func DeployWithUploadFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts) error {
+func DeployUsingManagedGitFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts) error {
+	localGitPath, localProjectPath, err := ValidateLocalProject(ch, opts.GitPath, opts.SubPath)
+	if err != nil {
+		return err
+	}
+	// If no project name was provided, default to dir name
+	if opts.Name == "" {
+		opts.Name = filepath.Base(localProjectPath)
+	}
+
+	// Set a default org for the user if necessary
+	// (If user is not in an org, we'll create one based on their user name later in the flow.)
+	adminClient, err := ch.Client()
+	if err != nil {
+		return err
+	}
+	if ch.Org == "" {
+		if err := org.SetDefaultOrg(ctx, ch); err != nil {
+			return err
+		}
+	}
+
+	// If no default org is set, it means the user is not in an org yet.
+	// We create a default org based on the user name.
+	if ch.Org == "" {
+		user, err := adminClient.GetCurrentUser(ctx, &adminv1.GetCurrentUserRequest{})
+		if err != nil {
+			return err
+		}
+		// email can have other characters like . and + what to do ?
+		username, _, _ := strings.Cut(user.User.Email, "@")
+		username = nonSlugRegex.ReplaceAllString(username, "-")
+		err = createOrgFlow(ctx, ch, username)
+		if err != nil {
+			return fmt.Errorf("org creation failed with error: %w", err)
+		}
+		ch.PrintfSuccess("Created org %q. Run `rill org edit` to change name if required.\n\n", ch.Org)
+	} else {
+		ch.PrintfBold("Using org %q.\n\n", ch.Org)
+	}
+
+	projResp, err := adminClient.GetProject(ctx, &adminv1.GetProjectRequest{OrganizationName: ch.Org, Name: opts.Name})
+	if err != nil {
+		if st, ok := status.FromError(err); !ok || st.Code() != codes.NotFound {
+			return err
+		}
+	}
+
+	var remote, username, password string
+	if projResp == nil || projResp.Project.ArchiveAssetId != "" {
+		ghRepo, err := adminClient.CreateManagedGitRepo(ctx, &adminv1.CreateManagedGitRepoRequest{
+			Organization: ch.Org,
+			Name:         opts.Name,
+		})
+		if err != nil {
+			if s, ok := status.FromError(err); ok && s.Code() == codes.PermissionDenied {
+				ch.PrintfError("You do not have the permissions needed to create a project in org %q. Please reach out to your Rill admin.\n", ch.Org)
+				return nil
+			}
+			return fmt.Errorf("create managed github repo failed with error %w", err)
+		}
+		remote = ghRepo.Remote
+		username = ghRepo.Username
+		password = ghRepo.Password
+	} else {
+		// existing project backed by github handling
+		// get token for the existing project
+		creds, err := adminClient.GetCloneCredentials(ctx, &adminv1.GetCloneCredentialsRequest{
+			Organization: ch.Org,
+			Project:      opts.Name,
+		})
+		if err != nil {
+			return err
+		}
+		remote = projResp.Project.GithubUrl
+		username = creds.GitUsername
+		password = creds.GitPassword
+	}
+
+	author, err := autoCommitGitSignature(ctx, adminClient, localGitPath)
+	if err != nil {
+		return err
+	}
+	err = gitutil.CommitAndForcePush(ctx, localProjectPath, remote, username, password, author)
+	if err != nil {
+		return fmt.Errorf("failed to create and push to managed github: %w", err)
+	}
+
+	ch.Print("Successfully pushed your local project\n\n")
+	if projResp != nil {
+		if projResp.Project.ArchiveAssetId != "" {
+			// Update the project
+			// Silently ignores other flags like description etc which are handled with project update.
+			_, err := adminClient.UpdateProject(ctx, &adminv1.UpdateProjectRequest{
+				OrganizationName: ch.Org,
+				Name:             opts.Name,
+				GithubUrl:        &remote,
+			})
+			if err != nil {
+				if s, ok := status.FromError(err); ok && s.Code() == codes.PermissionDenied {
+					ch.PrintfError("You do not have the permissions needed to update a project in org %q. Please reach out to your Rill admin.\n", ch.Org)
+					return nil
+				}
+				return fmt.Errorf("update project failed with error %w", err)
+			}
+		}
+		ch.Telemetry(ctx).RecordBehavioralLegacy(activity.BehavioralEventDeploySuccess)
+
+		// Fetch vars from .env
+		vars, err := local.ParseDotenv(ctx, localProjectPath)
+		if err != nil {
+			ch.PrintfWarn("Failed to parse .env: %v\n", err)
+		} else if len(vars) > 0 {
+			_, err = adminClient.UpdateProjectVariables(ctx, &adminv1.UpdateProjectVariablesRequest{
+				Organization: ch.Org,
+				Project:      opts.Name,
+				Variables:    vars,
+			})
+			if err != nil {
+				ch.PrintfWarn("Failed to upload .env: %v\n", err)
+			}
+		}
+
+		// Success
+		ch.PrintfSuccess("Updated project \"%s/%s\".\n\n", ch.Org, opts.Name)
+		return nil
+	}
+
+	// Create the project
+	res, err := adminClient.CreateProject(ctx, &adminv1.CreateProjectRequest{
+		OrganizationName: ch.Org,
+		Name:             opts.Name,
+		Description:      opts.Description,
+		Provisioner:      opts.Provisioner,
+		ProdVersion:      opts.ProdVersion,
+		ProdOlapDriver:   local.DefaultOLAPDriver,
+		ProdOlapDsn:      local.DefaultOLAPDSN,
+		ProdSlots:        int64(opts.Slots),
+		Public:           opts.Public,
+		GithubUrl:        remote,
+	})
+	if err != nil {
+		if s, ok := status.FromError(err); ok && s.Code() == codes.PermissionDenied {
+			ch.PrintfError("You do not have the permissions needed to create a project in org %q. Please reach out to your Rill admin.\n", ch.Org)
+			return nil
+		}
+		return fmt.Errorf("create project failed with error %w", err)
+	}
+
+	err = dotrillcloud.SetAll(localProjectPath, ch.AdminURL(), &dotrillcloud.Config{
+		ProjectID: res.Project.Id,
+	})
+	if err != nil {
+		return err
+	}
+
+	// Success!
+	ch.PrintfSuccess("Created project \"%s/%s\". Use `rill project rename` to change name if required.\n\n", ch.Org, res.Project.Name)
+
+	// Upload .env
+	vars, err := local.ParseDotenv(ctx, localProjectPath)
+	if err != nil {
+		ch.PrintfWarn("Failed to parse .env: %v\n", err)
+	} else if len(vars) > 0 {
+		_, err = adminClient.UpdateProjectVariables(ctx, &adminv1.UpdateProjectVariablesRequest{
+			Organization: ch.Org,
+			Project:      opts.Name,
+			Variables:    vars,
+		})
+		if err != nil {
+			ch.PrintfWarn("Failed to upload .env: %v\n", err)
+		}
+	}
+
+	// Open browser
+	if res.Project.FrontendUrl != "" {
+		ch.PrintfSuccess("Your project can be accessed at: %s\n", res.Project.FrontendUrl)
+		if ch.Interactive {
+			ch.PrintfSuccess("Opening project in browser...\n")
+			time.Sleep(3 * time.Second)
+			_ = browser.Open(res.Project.FrontendUrl)
+		}
+	}
+	ch.Telemetry(ctx).RecordBehavioralLegacy(activity.BehavioralEventDeploySuccess)
+	return nil
+}
+
+func DeployWithZipShipFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts) error {
 	_, localProjectPath, err := ValidateLocalProject(ch, opts.GitPath, opts.SubPath)
 	if err != nil {
 		return err

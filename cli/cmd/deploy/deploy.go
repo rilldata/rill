@@ -10,7 +10,7 @@ import (
 
 // DeployCmd is the guided tour for deploying rill projects to rill cloud.
 func DeployCmd(ch *cmdutil.Helper) *cobra.Command {
-	var upload, github bool
+	var upload, github, zipship bool
 	opts := &project.DeployOpts{}
 
 	deployCmd := &cobra.Command{
@@ -28,7 +28,7 @@ func DeployCmd(ch *cmdutil.Helper) *cobra.Command {
 				opts.GitPath = args[0]
 			}
 
-			if !upload && !github {
+			if !upload && !github && !zipship {
 				confirmed, err := cmdutil.ConfirmPrompt("Enable automatic deploys to Rill Cloud from GitHub?", "", false)
 				if err != nil {
 					return err
@@ -40,8 +40,11 @@ func DeployCmd(ch *cmdutil.Helper) *cobra.Command {
 				}
 			}
 
+			if zipship {
+				return project.DeployWithZipShipFlow(cmd.Context(), ch, opts)
+			}
 			if upload {
-				return project.DeployWithUploadFlow(cmd.Context(), ch, opts)
+				return project.DeployUsingManagedGitFlow(cmd.Context(), ch, opts)
 			}
 			return project.ConnectGithubFlow(cmd.Context(), ch, opts)
 		},
@@ -66,6 +69,11 @@ func DeployCmd(ch *cmdutil.Helper) *cobra.Command {
 	}
 
 	deployCmd.Flags().BoolVar(&upload, "upload", false, "Create project using rill managed repo")
+	deployCmd.Flags().BoolVar(&zipship, "zipship", false, "Create project using the zip and ship flow(for testing only)")
+	err := deployCmd.Flags().MarkHidden("zipship")
+	if err != nil {
+		panic(err)
+	}
 	deployCmd.Flags().BoolVar(&github, "github", false, "Use github repo to create the project")
 
 	return deployCmd

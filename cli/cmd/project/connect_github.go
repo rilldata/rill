@@ -12,9 +12,7 @@ import (
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/config"
-	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/object"
-	githttp "github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/google/go-github/v52/github"
 	"github.com/rilldata/rill/cli/cmd/org"
 	"github.com/rilldata/rill/cli/pkg/browser"
@@ -399,54 +397,13 @@ func createGithubRepoFlow(ctx context.Context, ch *cmdutil.Helper, localGitPath 
 
 	printer.ColorGreenBold.Printf("\nSuccessfully created repository on %q\n\n", *githubRepository.HTMLURL)
 	ch.Print("Pushing local project to Github\n\n")
-	// init git repo
-	repo, err := git.PlainInitWithOptions(localGitPath, &git.PlainInitOptions{
-		InitOptions: git.InitOptions{
-			DefaultBranch: plumbing.NewBranchReferenceName("main"),
-		},
-		Bare: false,
-	})
-	if err != nil {
-		if !errors.Is(err, git.ErrRepositoryAlreadyExists) {
-			return fmt.Errorf("failed to init git repo: %w", err)
-		}
-		repo, err = git.PlainOpen(localGitPath)
-		if err != nil {
-			return fmt.Errorf("failed to open git repo: %w", err)
-		}
-	}
-
-	wt, err := repo.Worktree()
-	if err != nil {
-		return fmt.Errorf("failed to get worktree: %w", err)
-	}
-
-	// git add .
-	if err := wt.AddWithOptions(&git.AddOptions{All: true}); err != nil {
-		return fmt.Errorf("failed to add files to git: %w", err)
-	}
-
-	// git commit -m
-	author, err := autoCommitGitSignature(ctx, c, repo)
+	author, err := autoCommitGitSignature(ctx, c, localGitPath)
 	if err != nil {
 		return fmt.Errorf("failed to generate git commit signature: %w", err)
 	}
-	_, err = wt.Commit("Auto committed by Rill", &git.CommitOptions{All: true, Author: author})
+	err = gitutil.CommitAndForcePush(ctx, localGitPath, *githubRepository.CloneURL, "x-access-token", pollRes.AccessToken, author)
 	if err != nil {
-		if !errors.Is(err, git.ErrEmptyCommit) {
-			return fmt.Errorf("failed to commit files to git: %w", err)
-		}
-	}
-
-	// Create the remote
-	_, err = repo.CreateRemote(&config.RemoteConfig{Name: "origin", URLs: []string{*githubRepository.HTMLURL}})
-	if err != nil {
-		return fmt.Errorf("failed to create remote: %w", err)
-	}
-
-	// push the changes
-	if err := repo.PushContext(ctx, &git.PushOptions{Auth: &githttp.BasicAuth{Username: "x-access-token", Password: pollRes.AccessToken}}); err != nil {
-		return fmt.Errorf("failed to push to remote %q : %w", *githubRepository.HTMLURL, err)
+		return fmt.Errorf("failed to push local project to Github: %w", err)
 	}
 
 	ch.Print("Successfully pushed your local project to Github\n\n")
@@ -664,7 +621,11 @@ func projectNamePrompt(ctx context.Context, ch *cmdutil.Helper, orgName string) 
 	return name, nil
 }
 
-func autoCommitGitSignature(ctx context.Context, c adminv1.AdminServiceClient, repo *git.Repository) (*object.Signature, error) {
+func autoCommitGitSignature(ctx context.Context, c adminv1.AdminServiceClient, path string) (*object.Signature, error) {
+	repo, err := git.PlainOpen(path)
+	if err != nil {
+		return nil, err
+	}
 	cfg, err := repo.ConfigScoped(config.SystemScope)
 	if err == nil && cfg.User.Email != "" && cfg.User.Name != "" {
 		// user has git properly configured use that

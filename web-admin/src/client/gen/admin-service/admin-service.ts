@@ -116,6 +116,7 @@ import type {
   V1DeleteUserResponse,
   V1DeleteUsergroupResponse,
   V1DenyProjectAccessResponse,
+  V1DisconnectProjectFromGithubResponse,
   V1EditAlertResponse,
   V1EditReportResponse,
   V1EditUsergroupResponse,
@@ -235,7 +236,6 @@ import type {
   V1UpdateServiceResponse,
   V1UpdateUserPreferencesRequest,
   V1UpdateUserPreferencesResponse,
-  V1UploadProjectAssetsResponse,
 } from "../index.schemas";
 
 import { httpClient } from "../../http-client";
@@ -6352,15 +6352,14 @@ export const createAdminServiceIssueMagicAuthToken = <
 };
 /**
  * @summary Converts a project connected to github to a rill managed project.
-Uploads the current project to assets.
  */
-export const adminServiceUploadProjectAssets = (
+export const adminServiceDisconnectProjectFromGithub = (
   organization: string,
   project: string,
   adminServiceTriggerReconcileBodyBody: AdminServiceTriggerReconcileBodyBody,
   signal?: AbortSignal,
 ) => {
-  return httpClient<V1UploadProjectAssetsResponse>({
+  return httpClient<V1DisconnectProjectFromGithubResponse>({
     url: `/v1/organizations/${organization}/projects/${project}/upload-assets`,
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -6369,12 +6368,12 @@ export const adminServiceUploadProjectAssets = (
   });
 };
 
-export const getAdminServiceUploadProjectAssetsMutationOptions = <
+export const getAdminServiceDisconnectProjectFromGithubMutationOptions = <
   TError = RpcStatus,
   TContext = unknown,
 >(options?: {
   mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof adminServiceUploadProjectAssets>>,
+    Awaited<ReturnType<typeof adminServiceDisconnectProjectFromGithub>>,
     TError,
     {
       organization: string;
@@ -6384,7 +6383,7 @@ export const getAdminServiceUploadProjectAssetsMutationOptions = <
     TContext
   >;
 }): CreateMutationOptions<
-  Awaited<ReturnType<typeof adminServiceUploadProjectAssets>>,
+  Awaited<ReturnType<typeof adminServiceDisconnectProjectFromGithub>>,
   TError,
   {
     organization: string;
@@ -6393,7 +6392,7 @@ export const getAdminServiceUploadProjectAssetsMutationOptions = <
   },
   TContext
 > => {
-  const mutationKey = ["adminServiceUploadProjectAssets"];
+  const mutationKey = ["adminServiceDisconnectProjectFromGithub"];
   const { mutation: mutationOptions } = options
     ? options.mutation &&
       "mutationKey" in options.mutation &&
@@ -6403,7 +6402,7 @@ export const getAdminServiceUploadProjectAssetsMutationOptions = <
     : { mutation: { mutationKey } };
 
   const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof adminServiceUploadProjectAssets>>,
+    Awaited<ReturnType<typeof adminServiceDisconnectProjectFromGithub>>,
     {
       organization: string;
       project: string;
@@ -6412,30 +6411,29 @@ export const getAdminServiceUploadProjectAssetsMutationOptions = <
   > = (props) => {
     const { organization, project, data } = props ?? {};
 
-    return adminServiceUploadProjectAssets(organization, project, data);
+    return adminServiceDisconnectProjectFromGithub(organization, project, data);
   };
 
   return { mutationFn, ...mutationOptions };
 };
 
-export type AdminServiceUploadProjectAssetsMutationResult = NonNullable<
-  Awaited<ReturnType<typeof adminServiceUploadProjectAssets>>
+export type AdminServiceDisconnectProjectFromGithubMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceDisconnectProjectFromGithub>>
 >;
-export type AdminServiceUploadProjectAssetsMutationBody =
+export type AdminServiceDisconnectProjectFromGithubMutationBody =
   AdminServiceTriggerReconcileBodyBody;
-export type AdminServiceUploadProjectAssetsMutationError = RpcStatus;
+export type AdminServiceDisconnectProjectFromGithubMutationError = RpcStatus;
 
 /**
  * @summary Converts a project connected to github to a rill managed project.
-Uploads the current project to assets.
  */
-export const createAdminServiceUploadProjectAssets = <
+export const createAdminServiceDisconnectProjectFromGithub = <
   TError = RpcStatus,
   TContext = unknown,
 >(
   options?: {
     mutation?: CreateMutationOptions<
-      Awaited<ReturnType<typeof adminServiceUploadProjectAssets>>,
+      Awaited<ReturnType<typeof adminServiceDisconnectProjectFromGithub>>,
       TError,
       {
         organization: string;
@@ -6447,7 +6445,7 @@ export const createAdminServiceUploadProjectAssets = <
   },
   queryClient?: QueryClient,
 ): CreateMutationResult<
-  Awaited<ReturnType<typeof adminServiceUploadProjectAssets>>,
+  Awaited<ReturnType<typeof adminServiceDisconnectProjectFromGithub>>,
   TError,
   {
     organization: string;
@@ -6457,7 +6455,7 @@ export const createAdminServiceUploadProjectAssets = <
   TContext
 > => {
   const mutationOptions =
-    getAdminServiceUploadProjectAssetsMutationOptions(options);
+    getAdminServiceDisconnectProjectFromGithubMutationOptions(options);
 
   return createMutation(mutationOptions, queryClient);
 };

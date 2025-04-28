@@ -158,6 +158,7 @@ func testProjects(t *testing.T, db database.DB) {
 		OrganizationID: org.ID,
 		Name:           "bar",
 		Description:    "hello world",
+		GithubURL:      strPtr("https://github.com/rilldata/rill2.git"),
 	})
 	require.NoError(t, err)
 	require.Equal(t, org.ID, proj.OrganizationID)
@@ -171,6 +172,10 @@ func testProjects(t *testing.T, db database.DB) {
 	require.Equal(t, org.ID, proj.OrganizationID)
 	require.Equal(t, "bar", proj.Name)
 	require.Equal(t, "hello world", proj.Description)
+
+	projs, err := db.FindProjectsByGithubURL(ctx, []string{"https://github.com/rilldata/rill2.git"})
+	require.NoError(t, err)
+	require.Len(t, projs, 1)
 
 	proj.Description = ""
 	proj, err = db.UpdateProject(ctx, proj.ID, &database.UpdateProjectOptions{
@@ -606,4 +611,8 @@ func seed(t *testing.T, db database.DB) (orgID, projectID, userID string) {
 	require.NoError(t, err)
 
 	return org.ID, proj.ID, adminUser.ID
+}
+
+func strPtr(s string) *string {
+	return &s
 }

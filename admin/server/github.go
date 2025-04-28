@@ -353,7 +353,43 @@ func (s *Server) ConnectProjectToGithub(ctx context.Context, req *adminv1.Connec
 		}
 	} else if proj.GithubURL != nil {
 		err = s.pushToGit(ctx, func(projPath string) error {
-			return copyFromSrcGit(projPath, *proj.GithubURL, proj.ProdBranch, proj.Subpath, token)
+			isRillManagedRepo := true
+			_, err := s.admin.DB.FindManagedGitRepo(ctx, *proj.GithubURL)
+			if err != nil {
+				if errors.Is(err, database.ErrNotFound) {
+					isRillManagedRepo = false
+				} else {
+					return err
+				}
+			}
+			var appToken string
+			if isRillManagedRepo {
+				installationID, err := s.admin.Github.ManagedOrgInstallationID()
+				if err != nil {
+					return err
+				}
+				ghClient, err := s.admin.Github.InstallationClient(installationID)
+				if err != nil {
+					return err
+				}
+				account, repo, ok := gitutil.SplitGithubURL(*proj.GithubURL)
+				if !ok {
+					return status.Error(codes.InvalidArgument, "invalid github url")
+				}
+				ghRepo, _, err := ghClient.Repositories.Get(ctx, account, repo)
+				if err != nil {
+					return err
+				}
+
+				// user token is not valid for cloning rill managed repo
+				appToken, err = s.admin.Github.InstallationToken(ctx, *proj.GithubInstallationID, ghRepo.GetID())
+				if err != nil {
+					return err
+				}
+			} else {
+				appToken = token
+			}
+			return copyFromSrcGit(projPath, *proj.GithubURL, proj.ProdBranch, proj.Subpath, appToken)
 		}, req.Repo, req.Branch, req.Subpath, token, req.Force)
 		if err != nil {
 			return nil, status.Error(codes.InvalidArgument, err.Error())
@@ -417,6 +453,90 @@ func (s *Server) CreateManagedGitRepo(ctx context.Context, req *adminv1.CreateMa
 		Username: "x-access-token",
 		Password: token,
 	}, nil
+}
+
+// DisconnectProjectFromGithubRequest disconnects a project from Github by uploading the contents of a Github repository to a rill managed repository.
+func (s *Server) DisconnectProjectFromGithub(ctx context.Context, req *adminv1.DisconnectProjectFromGithubRequest) (*adminv1.DisconnectProjectFromGithubResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.organization", req.Organization),
+		attribute.String("args.project", req.Project),
+	)
+
+	// Check the request is made by a user
+	claims := auth.GetClaims(ctx)
+	if claims.OwnerType() != auth.OwnerTypeUser && claims.OwnerType() != auth.OwnerTypeService {
+		return nil, status.Error(codes.Unauthenticated, "not authenticated as a user")
+	}
+
+	// Find parent org
+	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	// Check permissions
+	// create asset and create project should be the same permission
+	if !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ManageProject {
+		return nil, status.Error(codes.PermissionDenied, "does not have permission to edit project")
+	}
+
+	if proj.GithubURL == nil || proj.ManagedGitRepoID != nil {
+		return nil, status.Error(codes.InvalidArgument, "project is not connected to github")
+	}
+
+	// create a managed git repo
+	org, err := s.admin.DB.FindOrganization(ctx, proj.OrganizationID)
+	if err != nil {
+		return nil, err
+	}
+
+	repo, err := s.admin.CreateManagedGitRepo(ctx, org, proj.Name, claims.OwnerID())
+	if err != nil {
+		return nil, err
+	}
+	id, err := s.admin.Github.ManagedOrgInstallationID()
+	if err != nil {
+		return nil, err
+	}
+
+	mgdRepoToken, err := s.admin.Github.InstallationToken(ctx, id, *repo.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	copyData := func(path string) error {
+		// download and copy to a tempo location
+		repoID, err := s.githubRepoIDForProject(ctx, proj)
+		if err != nil {
+			return err
+		}
+		token, err := s.admin.Github.InstallationToken(ctx, *proj.GithubInstallationID, repoID)
+		if err != nil {
+			return err
+		}
+
+		return copyFromSrcGit(path, *proj.GithubURL, proj.ProdBranch, proj.Subpath, token)
+	}
+	err = s.pushToGit(ctx, copyData, *repo.CloneURL, *repo.DefaultBranch, "", mgdRepoToken, true)
+	if err != nil {
+		return nil, err
+	}
+
+	branch := "main"
+	subpath := ""
+	_, err = s.UpdateProject(ctx, &adminv1.UpdateProjectRequest{
+		OrganizationName: req.Organization,
+		Name:             req.Project,
+		GithubUrl:        repo.CloneURL,
+		ProdBranch:       &branch,
+		Subpath:          &subpath,
+		ArchiveAssetId:   nil,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &adminv1.DisconnectProjectFromGithubResponse{}, nil
 }
 
 // registerGithubEndpoints registers the non-gRPC endpoints for the Github integration.
@@ -967,7 +1087,7 @@ func (s *Server) fetchReposForInstallation(ctx context.Context, client *github.C
 	return repos, nil
 }
 
-func (s *Server) pushToGit(ctx context.Context, copyData func(projPath string) error, repo, branch, subpath, token string, force bool) error {
+func (s *Server) pushToGit(ctx context.Context, copyData func(projPath string) error, remote, branch, subpath, token string, force bool) error {
 	ctx, cancel := context.WithTimeout(ctx, archivePullTimeout)
 	defer cancel()
 
@@ -993,7 +1113,7 @@ func (s *Server) pushToGit(ctx context.Context, copyData func(projPath string) e
 	var ghRepo *git.Repository
 	empty := false
 	ghRepo, err = git.PlainClone(gitPath, false, &git.CloneOptions{
-		URL:           repo,
+		URL:           remote,
 		Auth:          gitAuth,
 		ReferenceName: plumbing.NewBranchReferenceName(branch),
 		SingleBranch:  true,
@@ -1069,20 +1189,37 @@ func (s *Server) pushToGit(ctx context.Context, copyData func(projPath string) e
 		return fmt.Errorf("failed to add files to git: %w", err)
 	}
 
+	var sign *object.Signature
 	client := github.NewTokenClient(ctx, token)
 	user, _, err := client.Users.Get(ctx, "")
 	if err != nil {
-		return fmt.Errorf("failed to get current user: %w", err)
+		// fallback to username and email in Rill
+		claims := auth.GetClaims(ctx)
+		if claims.OwnerType() != auth.OwnerTypeUser {
+			// ideally should never reach here
+			return fmt.Errorf("failed to get current user: %w", err)
+		}
+		u, err := s.admin.DB.FindUser(ctx, claims.OwnerID())
+		if err != nil {
+			return err
+		}
+		sign = &object.Signature{
+			Name:  u.DisplayName,
+			Email: u.Email,
+			When:  time.Now(),
+		}
+	} else {
+		sign = &object.Signature{
+			Name:  safeStr(user.Name),
+			Email: safeStr(user.Email),
+			When:  time.Now(),
+		}
 	}
 
 	// git commit -m
 	_, err = wt.Commit("Auto committed by Rill", &git.CommitOptions{
-		All: true,
-		Author: &object.Signature{
-			Name:  safeStr(user.Name),
-			Email: safeStr(user.Email),
-			When:  time.Now(),
-		},
+		All:    true,
+		Author: sign,
 	})
 	if err != nil {
 		if !errors.Is(err, git.ErrEmptyCommit) {
@@ -1092,7 +1229,7 @@ func (s *Server) pushToGit(ctx context.Context, copyData func(projPath string) e
 
 	if empty {
 		// we need to add a remote as the new repo if the repo was completely empty
-		_, err = ghRepo.CreateRemote(&config.RemoteConfig{Name: "origin", URLs: []string{repo}})
+		_, err = ghRepo.CreateRemote(&config.RemoteConfig{Name: "origin", URLs: []string{remote}})
 		if err != nil {
 			return fmt.Errorf("failed to create remote: %w", err)
 		}
@@ -1100,7 +1237,7 @@ func (s *Server) pushToGit(ctx context.Context, copyData func(projPath string) e
 
 	if err := ghRepo.PushContext(ctx, &git.PushOptions{Auth: gitAuth}); err != nil {
 		if !errors.Is(err, git.NoErrAlreadyUpToDate) {
-			return fmt.Errorf("failed to push to remote %q : %w", repo, err)
+			return fmt.Errorf("failed to push to remote %q : %w", remote, err)
 		}
 	}
 
@@ -1186,7 +1323,7 @@ func readFile(f billy.File) (string, error) {
 
 // copyFromSrcGit clones a repo, branch and a subpath and copies the content to the projPath
 // used to switch a project to a new github repo connection
-func copyFromSrcGit(projPath, repo, branch, subpath, token string) error {
+func copyFromSrcGit(projPath, remote, branch, subpath, token string) error {
 	srcGitPath, err := os.MkdirTemp(os.TempDir(), "src_git_repos")
 	if err != nil {
 		return err
@@ -1204,7 +1341,7 @@ func copyFromSrcGit(projPath, repo, branch, subpath, token string) error {
 	}
 
 	_, err = git.PlainClone(srcGitPath, false, &git.CloneOptions{
-		URL:           repo,
+		URL:           remote,
 		Auth:          &githttp.BasicAuth{Username: "x-access-token", Password: token},
 		ReferenceName: plumbing.NewBranchReferenceName(branch),
 		SingleBranch:  true,
