@@ -403,7 +403,6 @@
               {/if}
             {/each}
           {:else}
-            <!-- TODO: 1 screen that seems to be missing is what it looks like when it's invite only -->
             <Tooltip
               location="right"
               alignment="middle"
@@ -423,26 +422,28 @@
                 <DropdownMenu.Root bind:open={accessDropdownOpen}>
                   <DropdownMenu.Trigger>
                     <div class="flex flex-row items-center gap-x-2">
-                      <div class="flex items-center gap-2 py-2 pl-2">
-                        <div
-                          class={cn(
-                            "h-7 w-7 rounded-sm flex items-center justify-center",
-                            getRandomBgColor(`Everyone at ${organization}`),
-                          )}
-                        >
-                          <span class="text-sm text-white font-semibold"
-                            >{getInitials(`Everyone at ${organization}`)}</span
+                      <div class="flex items-center gap-2 py-2 pl-2 align-top">
+                        {#if accessType === "everyone"}
+                          <div
+                            class={cn(
+                              "h-7 w-7 rounded-sm flex items-center justify-center",
+                              getRandomBgColor(`Everyone at ${organization}`),
+                            )}
                           >
-                        </div>
+                            <span class="text-sm text-white font-semibold"
+                              >{getInitials(
+                                `Everyone at ${organization}`,
+                              )}</span
+                            >
+                          </div>
+                        {:else}
+                          <Lock size="28px" color="#374151" />
+                        {/if}
                         <div class="flex flex-col text-left">
                           <span
                             class="flex flex-row items-center gap-x-1 text-sm font-medium text-gray-900"
                           >
-                            {#if accessType === "everyone"}
-                              Everyone at {organization}
-                            {:else}
-                              Invite only
-                            {/if}
+                            Invite only
                             {#if accessDropdownOpen}
                               <CaretUpIcon size="12px" color="text-gray-700" />
                             {:else}
@@ -452,11 +453,13 @@
                               />
                             {/if}
                           </span>
-                          <div class="h-4" />
+                          <span class="text-xs text-gray-500 h-4"
+                            >Only admins and invited users can access</span
+                          >
                         </div>
                       </div>
-                    </div>
-                  </DropdownMenu.Trigger>
+                    </div></DropdownMenu.Trigger
+                  >
                   <DropdownMenu.Content align="start" strategy="fixed">
                     <DropdownMenu.Item
                       on:click={setAccessInviteOnly}
