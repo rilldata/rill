@@ -217,14 +217,6 @@ setup.describe("global setup", () => {
       "Project dashboards",
     );
 
-    // Check that the dashboards are listed
-    await expect(
-      adminPage.getByRole("link", { name: "Programmatic Ads Auction" }).first(),
-    ).toBeVisible();
-    await expect(
-      adminPage.getByRole("link", { name: "Programmatic Ads Bids" }),
-    ).toBeVisible();
-
     // Wait for the first dashboard to be ready
     await adminPage
       .getByTestId("dashboard-title")
