@@ -36,7 +36,7 @@ measures:
     format_preset: humanize
   - display_name: "CTR"
     name: ctr
-    expression: "sum(click_reg_cnt)*1.0/sum(imp_cnt)"
+    expression: "sum(click_reg_cnt)*1.0/nullif(sum(imp_cnt),0)"
     description: "Click Through Rate"
     format_preset: percentage
   - display_name: "Video Starts"
@@ -61,7 +61,7 @@ measures:
     format_preset: currency_usd
   - display_name: "eCPM"
     name: ecpm
-    expression: "sum(media_spend_usd)*1.0/1000/sum(imp_cnt)"
+    expression: "sum(media_spend_usd)*1.0/1000/nullif(sum(imp_cnt),0)"
     description: "eCPM"
     format_preset: currency_usd
   - display_name: "Avg Bid Floor"

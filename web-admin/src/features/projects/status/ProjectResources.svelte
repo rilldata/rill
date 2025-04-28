@@ -106,7 +106,7 @@
     void $createTrigger
       .mutateAsync({
         instanceId,
-        data: { allSourcesModels: true },
+        data: { all: true },
       })
       .then(() => {
         currentRefetchInterval = INITIAL_REFETCH_INTERVAL;

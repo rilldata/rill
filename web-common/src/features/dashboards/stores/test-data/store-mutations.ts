@@ -34,6 +34,7 @@ import {
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import {
   AD_BIDS_BID_PRICE_MEASURE,
+  AD_BIDS_COUNTRY_DIMENSION,
   AD_BIDS_DOMAIN_DIMENSION,
   AD_BIDS_EXPLORE_INIT,
   AD_BIDS_EXPLORE_NAME,
@@ -93,6 +94,24 @@ export const AD_BIDS_APPLY_IMP_MEASURE_FILTER: TestDashboardMutation = (mut) =>
     value1: "10",
     value2: "",
   });
+export const AD_BIDS_APPLY_IMP_COUNTRY_BETWEEN_MEASURE_FILTER: TestDashboardMutation =
+  (mut) =>
+    setMeasureFilter(mut, AD_BIDS_COUNTRY_DIMENSION, {
+      measure: AD_BIDS_BID_PRICE_MEASURE,
+      type: MeasureFilterType.Value,
+      operation: MeasureFilterOperation.Between,
+      value1: "10",
+      value2: "20",
+    });
+export const AD_BIDS_APPLY_IMP_COUNTRY_NOT_BETWEEN_MEASURE_FILTER: TestDashboardMutation =
+  (mut) =>
+    setMeasureFilter(mut, AD_BIDS_COUNTRY_DIMENSION, {
+      measure: AD_BIDS_BID_PRICE_MEASURE,
+      type: MeasureFilterType.Value,
+      operation: MeasureFilterOperation.NotBetween,
+      value1: "10",
+      value2: "20",
+    });
 export const AD_BIDS_REMOVE_IMP_MEASURE_FILTER: TestDashboardMutation = (mut) =>
   removeMeasureFilter(
     mut,

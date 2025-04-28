@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"slices"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
@@ -75,8 +74,13 @@ func (r *RefreshTriggerReconciler) Reconcile(ctx context.Context, n *runtimev1.R
 	// This applies for resources that run a full reconcile on every invocation (i.e. doesn't cache state).
 	// We handle these resources here instead of in the loop below since calling r.C.Reconcile directly must be done outside of a catalog lock.
 	for i, rn := range trigger.Spec.Resources {
-		// Apply only to project parsers and metrics views.
-		if rn.Kind != runtime.ResourceKindProjectParser && rn.Kind != runtime.ResourceKindMetricsView {
+		// Apply to all resources except those that have a dedicated Trigger property.
+		var skip bool
+		switch rn.Kind {
+		case runtime.ResourceKindSource, runtime.ResourceKindModel, runtime.ResourceKindAlert, runtime.ResourceKindReport:
+			skip = true
+		}
+		if skip {
 			continue
 		}
 
@@ -85,8 +89,8 @@ func (r *RefreshTriggerReconciler) Reconcile(ctx context.Context, n *runtimev1.R
 			return runtime.ReconcileResult{Err: err}
 		}
 
-		trigger.Spec.Resources = slices.Delete(trigger.Spec.Resources, i, i+1)
-		break
+		// To not modify the list as we iterate over it, we just set the resource to nil and skip it in the loop below.
+		trigger.Spec.Resources[i] = nil
 	}
 
 	// Get the catalog in case we need to update model partitions
@@ -149,6 +153,10 @@ func (r *RefreshTriggerReconciler) Reconcile(ctx context.Context, n *runtimev1.R
 
 	// Handle generic resource triggers
 	for _, rn := range trigger.Spec.Resources {
+		if rn == nil { // Skip resources that were handled above
+			continue
+		}
+
 		res, err := r.C.Get(ctx, rn, true)
 		if err != nil {
 			// Skip triggers for non-existent resources
@@ -175,6 +183,8 @@ func (r *RefreshTriggerReconciler) Reconcile(ctx context.Context, n *runtimev1.R
 	return runtime.ReconcileResult{}
 }
 
+// UpdateTriggerTrue sets the Trigger spec property of the resource to true.
+// NOTE: If you edit this logic, also update the checks in newResourceIfModified in project_parser.go accordingly (they need to incorporate triggers in their modified checks).
 func (r *RefreshTriggerReconciler) UpdateTriggerTrue(ctx context.Context, res *runtimev1.Resource, full bool) error {
 	switch res.Meta.Name.Kind {
 	case runtime.ResourceKindSource:

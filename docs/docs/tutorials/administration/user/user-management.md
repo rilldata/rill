@@ -24,8 +24,8 @@ There are two ways that a user can get access to Rill Cloud.
 **Organization invites from Admin**
 From the Users page on the Organization page, you can inivte a user to the organization. Please note that organization viewers have access to view all projects. 
 
-![img](/img/tutorials/admin/org-user-management.png)
-
+<img src = '/img/tutorials/admin/org-user-management.png' class='rounded-gif' />
+<br />
 **Project level access requests**
 
   Please refer to the <a href='https://docs.rilldata.com/manage/user-management#admin-invites-user' target = "blank">documentation how a user can request access to project, or how an admin can invite a user to the project. </a>
@@ -137,7 +137,3 @@ No members found
 Next let's review user groups.
 
 
-import DocsRating from '@site/src/components/DocsRating';
-
----
-<DocsRating />

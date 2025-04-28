@@ -1,4 +1,11 @@
 <script lang="ts">
+  import { page } from "$app/stores";
+  import {
+    createAdminServiceCreateUsergroup,
+    createAdminServiceListUsergroupMemberUsers,
+    getAdminServiceListOrganizationMemberUsergroupsQueryKey,
+  } from "@rilldata/web-admin/client";
+  import { Button } from "@rilldata/web-common/components/button/index.js";
   import {
     Dialog,
     DialogContent,
@@ -6,20 +13,13 @@
     DialogHeader,
     DialogTitle,
     DialogTrigger,
-  } from "@rilldata/web-common/components/dialog-v2";
-  import { Button } from "@rilldata/web-common/components/button/index.js";
+  } from "@rilldata/web-common/components/dialog";
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
+  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
+  import { useQueryClient } from "@tanstack/svelte-query";
   import { defaults, superForm } from "sveltekit-superforms";
   import { yup } from "sveltekit-superforms/adapters";
   import { object, string } from "yup";
-  import { page } from "$app/stores";
-  import {
-    createAdminServiceCreateUsergroup,
-    createAdminServiceListUsergroupMemberUsers,
-    getAdminServiceListOrganizationMemberUsergroupsQueryKey,
-  } from "@rilldata/web-admin/client";
-  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
-  import { useQueryClient } from "@tanstack/svelte-query";
 
   export let open = false;
   export let groupName: string;

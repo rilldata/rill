@@ -55,6 +55,7 @@ docs
 *.cjs
 _redirects
 Makefile
+.nvmrc
 
 # Java SQL lib
 sql/

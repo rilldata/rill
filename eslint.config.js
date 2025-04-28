@@ -1,11 +1,11 @@
 // //@ts-check
 import js from "@eslint/js";
+import vitest from "@vitest/eslint-plugin";
 import eslintConfigPrettier from "eslint-config-prettier";
+import playwright from "eslint-plugin-playwright";
 import eslintPluginSvelte from "eslint-plugin-svelte";
 import globals from "globals";
 import tsEslint from "typescript-eslint";
-// import vitest from "eslint-plugin-vitest";
-import playwright from "eslint-plugin-playwright";
 
 export default [
   js.configs.recommended,
@@ -13,10 +13,10 @@ export default [
   ...eslintPluginSvelte.configs["flat/recommended"],
   eslintConfigPrettier,
   {
-    ...playwright.configs["flat/playwright"],
     files: ["**/tests/**"],
+    ...playwright.configs["flat/playwright"],
+    ...vitest.configs.recommended,
   },
-  //   vitest.configs.recommended,
   ...eslintPluginSvelte.configs["flat/prettier"],
   {
     languageOptions: {

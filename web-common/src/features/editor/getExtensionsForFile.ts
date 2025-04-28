@@ -1,13 +1,16 @@
 import { markdown } from "@codemirror/lang-markdown";
+import { sql } from "@codemirror/lang-sql";
 import { yaml } from "@codemirror/lang-yaml";
 import { type LanguageSupport } from "@codemirror/language";
-import { extractFileExtension } from "@rilldata/web-common/features/entity-management/file-path-utils";
+import { DuckDBSQL } from "../../components/editor/presets/duckDBDialect";
+import { extractFileExtension } from "../entity-management/file-path-utils";
 
 export const FileExtensionToEditorExtension: Record<string, LanguageSupport[]> =
   {
+    ".md": [markdown()],
+    ".sql": [sql({ dialect: DuckDBSQL })],
     ".yaml": [yaml()],
     ".yml": [yaml()],
-    ".md": [markdown()],
   };
 
 export function getExtensionsForFile(filePath: string) {

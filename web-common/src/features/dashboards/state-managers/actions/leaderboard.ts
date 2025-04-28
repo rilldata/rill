@@ -23,6 +23,9 @@ export const setLeaderboardShowContextForAllMeasures = (
   showAllMeasures: boolean,
 ) => {
   dashboard.leaderboardShowContextForAllMeasures = showAllMeasures;
+  if (showAllMeasures && !dashboard.showTimeComparison) {
+    dashboard.showTimeComparison = true;
+  }
 };
 
 export const leaderboardActions = {

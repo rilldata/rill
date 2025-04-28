@@ -219,7 +219,8 @@
         column={columnIndex}
         row={rowIndex}
         maxColumns={itemCount}
-        allowDrop={activelyDragging}
+        allowDrop={activelyDragging &&
+          (itemCount < 4 || dragComponent?.pathInYAML?.[1] === rowIndex)}
         {onDrop}
       />
 
@@ -229,7 +230,7 @@
           editable
           ghost={dragComponent === component}
           selected={$selectedComponent === id}
-          allowPointerEvents={!$activeDivider}
+          allowPointerEvents={!$activeDivider && !activelyDragging}
           onMouseDown={(event) => {
             onComponentMouseDown({
               event,

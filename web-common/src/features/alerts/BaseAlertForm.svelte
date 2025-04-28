@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { DialogTitle } from "@rilldata/web-common/components/dialog-v2";
+  import { DialogTitle } from "@rilldata/web-common/components/dialog";
   import * as DialogTabs from "@rilldata/web-common/components/dialog/tabs";
   import {
     generateAlertName,

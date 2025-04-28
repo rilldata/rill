@@ -17,6 +17,7 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/server/auth"
 	"go.uber.org/zap"
+	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -200,6 +201,43 @@ func (s *Service) createDeploymentInner(ctx context.Context, d *database.Deploym
 
 	// Deployment is ready to use
 	return nil
+}
+
+// UpdateDeploymentsForProject updates the deployments of a project.
+// In normal operation, projects only have one deployment. But during (re)deployment and in various error scenarios, there may be multiple deployments.
+// Care must be taken to avoid one broken deployment from blocking updates to other healthy deployments.
+func (s *Service) UpdateDeploymentsForProject(ctx context.Context, p *database.Project, opts *UpdateDeploymentOptions) error {
+	ds, err := s.DB.FindDeploymentsForProject(ctx, p.ID)
+	if err != nil {
+		return err
+	}
+
+	grp, ctx := errgroup.WithContext(ctx)
+	grp.SetLimit(5)
+	var prodErr error
+	for _, d := range ds {
+		d := d
+		grp.Go(func() error {
+			err := s.UpdateDeployment(ctx, d, opts)
+			if err != nil {
+				if ctx.Err() != nil {
+					return ctx.Err()
+				}
+				if p.ProdDeploymentID != nil && *p.ProdDeploymentID == d.ID {
+					prodErr = err
+				}
+				s.Logger.Warn("failed to update deployment", zap.String("deployment_id", d.ID), zap.Error(err), observability.ZapCtx(ctx))
+			}
+			return nil
+		})
+	}
+
+	err = grp.Wait()
+	if err != nil {
+		return err
+	}
+
+	return prodErr
 }
 
 type UpdateDeploymentOptions struct {

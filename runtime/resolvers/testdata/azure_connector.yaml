@@ -2,10 +2,6 @@ connectors:
   - clickhouse
   - azure
 project_files:
-  duckdb.yaml:
-    type: connector
-    connector: duckdb
-    init_sql: INSTALL AZURE; LOAD AZURE;
   all_datatypes_clickhouse_csv.yaml:
     type: model
     connector: clickhouse
@@ -25,19 +21,19 @@ project_files:
     type: model
     connector: duckdb
     materialize: true
-    pre_exec: "CREATE SECRET IF NOT EXISTS secret1 (TYPE azure, CONNECTION_STRING '{{.env.connector.azure.azure_storage_connection_string}}')"
+    pre_exec: "CREATE SECRET secret1 (TYPE azure, CONNECTION_STRING '{{.env.connector.azure.azure_storage_connection_string}}')"
     sql: "select * from read_csv('azure://integration-test/csv_test/all_datatypes.csv', auto_detect=true, ignore_errors=1, header=true)"
   all_datatypes_duckdb_model_glob.yaml:
     type: model
     connector: duckdb
     materialize: true
-    pre_exec: "CREATE SECRET IF NOT EXISTS secret1 (TYPE azure, CONNECTION_STRING '{{.env.connector.azure.azure_storage_connection_string}}')"
+    pre_exec: "CREATE SECRET secret1 (TYPE azure, CONNECTION_STRING '{{.env.connector.azure.azure_storage_connection_string}}')"
     sql: "select * from read_csv('azure://integration-test/glob_test/y=202*/a*.csv', auto_detect=true, ignore_errors=1, header=true)"
   all_datatypes_duckdb_model_parquet.yaml:
     type: model
     connector: duckdb
     materialize: true
-    pre_exec: "CREATE SECRET IF NOT EXISTS secret1 (TYPE azure, CONNECTION_STRING '{{.env.connector.azure.azure_storage_connection_string}}')"
+    pre_exec: "CREATE SECRET secret1 (TYPE azure, CONNECTION_STRING '{{.env.connector.azure.azure_storage_connection_string}}')"
     sql: "select * from read_parquet('azure://integration-test/parquet_test/all_datatypes.parquet')"
   all_datatypes_duckdb_source_csv.yaml:
     type: source

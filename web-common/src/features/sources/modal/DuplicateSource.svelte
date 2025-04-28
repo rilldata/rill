@@ -6,7 +6,7 @@
     duplicateSourceName,
   } from "../sources-store";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
-  import * as Dialog from "@rilldata/web-common/components/dialog-v2";
+  import * as Dialog from "@rilldata/web-common/components/dialog";
 
   export let onComplete: () => void;
   export let onCancel: () => void;

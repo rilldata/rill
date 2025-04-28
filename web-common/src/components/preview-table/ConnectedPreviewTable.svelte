@@ -15,7 +15,6 @@
   export let databaseSchema: string = ""; // The backend interprets an empty string as the default schema
   export let table: string;
   export let limit = 150;
-  export let loading = false;
 
   let columns: VirtualizedTableColumns[] | undefined;
   let rows: V1TableRowsResponseDataItem[] | undefined;
@@ -50,7 +49,7 @@
   $: rows = rowsData?.data ?? rows; // Retain old rows
 </script>
 
-{#if loading || rowsIsLoading || columnsIsLoading}
+{#if rowsIsLoading || columnsIsLoading}
   <ReconcilingSpinner />
 {:else if rowsError || columnsError}
   <WorkspaceError

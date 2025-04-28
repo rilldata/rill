@@ -10,6 +10,7 @@
   /* Aria label for input */
   export let label = "Search";
   export let placeholder = "Search";
+  export let multiline = false;
   export let border = true;
   export let background = true;
   export let large = false;
@@ -18,7 +19,7 @@
   export let forcedInputStyle = "";
 
   /* Reference of input DOM element */
-  let ref: HTMLInputElement;
+  let ref: HTMLInputElement | HTMLTextAreaElement;
 
   const dispatch = createEventDispatcher();
 
@@ -31,10 +32,24 @@
     }
   }
 
+  /**
+   * We cant do a bind on svelte:element. We get `'value' is not a valid binding on <svelte:element> elements` error.
+   * So we need this to still keep `<svelte:element this={multiline ? "textarea" : "input"} ...`
+   */
+  function handleInput(event) {
+    value = event.target?.value;
+    if (multiline) updateTextAreaHeight();
+  }
+
+  function updateTextAreaHeight() {
+    ref.style.height = ref.scrollHeight + "px"; // Set to scroll height
+  }
+
   onMount(() => {
     if (!retainValueOnMount) value = "";
     // Keep ref optional here. If component is unmounted before this animation frame runs, ref will be null and throw a TypeError
     if (autofocus) window.requestAnimationFrame(() => ref?.focus());
+    if (multiline) updateTextAreaHeight();
   });
 </script>
 
@@ -52,7 +67,8 @@
   >
     <Search size={large ? "18px" : "16px"} />
   </button>
-  <input
+  <svelte:element
+    this={multiline ? "textarea" : "input"}
     bind:this={ref}
     type="text"
     autocomplete="off"
@@ -60,20 +76,29 @@
     class:bg-slate-50={background}
     class:border
     class:border-gray-200={border}
-    class="outline-none rounded-[2px] block w-full pl-8 p-1 {forcedInputStyle}"
+    class="outline-none rounded-[2px] block w-full pl-8 p-1 {forcedInputStyle} resize-none"
     class:h-full={large}
     {disabled}
     {placeholder}
-    bind:value
-    on:input
-    on:paste
+    on:input={handleInput}
     on:keydown={handleKeyDown}
     aria-label={label}
+    role="textbox"
+    tabindex="-1"
+    {value}
   />
 </form>
 
 <style lang="postcss">
   .focus:focus {
     @apply border-primary-400;
+  }
+
+  textarea {
+    height: 28px;
+    /* min height for 1 row */
+    min-height: 28px;
+    /* Max of 5 rows. 28 + 16 * 5 = 92 */
+    max-height: 92px;
   }
 </style>

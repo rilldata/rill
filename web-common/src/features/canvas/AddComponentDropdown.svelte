@@ -7,9 +7,9 @@
   import type { CanvasComponentType } from "./components/types";
   import BigNumberIcon from "./icons/BigNumberIcon.svelte";
   import ChartIcon from "./icons/ChartIcon.svelte";
+  import LeaderboardIcon from "./icons/LeaderboardIcon.svelte";
   import TableIcon from "./icons/TableIcon.svelte";
   import TextIcon from "./icons/TextIcon.svelte";
-
   type MenuItem = {
     id: CanvasComponentType;
     label: string;
@@ -31,8 +31,8 @@
     { id: "table", label: "Table", icon: TableIcon },
     { id: "markdown", label: "Text", icon: TextIcon },
     { id: "kpi_grid", label: "KPI", icon: BigNumberIcon },
+    { id: "leaderboard", label: "Leaderboard", icon: LeaderboardIcon },
     { id: "image", label: "Image", icon: ChartIcon },
-    { id: "leaderboard", label: "Leaderboard", icon: TableIcon },
   ];
 
   export let disabled = false;

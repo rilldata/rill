@@ -26,7 +26,7 @@ localhost:9009
 
 You should see the folowing webpage appear. 
 
-![my-rill-project](/img/tutorials/101/new-rill-project.png)
+<img src = '/img/tutorials/101/new-rill-project.png' class='rounded-gif' />
 <br />
 
 Let's go ahead and select `Start with an empty project`.
@@ -40,7 +40,4 @@ Let's go ahead and select `Start with an empty project`.
 </details>
 
 
-import DocsRating from '@site/src/components/DocsRating';
 
----
-<DocsRating />

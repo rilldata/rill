@@ -1,17 +1,17 @@
 <script lang="ts">
   import { Button } from "@rilldata/web-common/components/button";
-  import GuardedDialog from "@rilldata/web-common/components/dialog-v2/GuardedDialog.svelte";
+  import GuardedDialog from "@rilldata/web-common/components/dialog/GuardedDialog.svelte";
   import {
     DialogContent,
     DialogTrigger,
-  } from "@rilldata/web-common/components/dialog-v2/index";
+  } from "@rilldata/web-common/components/dialog/index";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import CreateAlertForm from "@rilldata/web-common/features/alerts/CreateAlertForm.svelte";
   import { useMetricsViewValidSpec } from "@rilldata/web-common/features/dashboards/selectors";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
-  import { BellPlusIcon } from "lucide-svelte";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { BellPlusIcon } from "lucide-svelte";
 
   const {
     selectors: {

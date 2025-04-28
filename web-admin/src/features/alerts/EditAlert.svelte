@@ -2,8 +2,8 @@
   import {
     DialogContent,
     DialogTrigger,
-  } from "@rilldata/web-common/components/dialog-v2";
-  import GuardedDialog from "@rilldata/web-common/components/dialog-v2/GuardedDialog.svelte";
+  } from "@rilldata/web-common/components/dialog";
+  import GuardedDialog from "@rilldata/web-common/components/dialog/GuardedDialog.svelte";
   import EditAlertForm from "@rilldata/web-common/features/alerts/EditAlertForm.svelte";
   import type { V1AlertSpec } from "@rilldata/web-common/runtime-client";
   import Button from "web-common/src/components/button/Button.svelte";

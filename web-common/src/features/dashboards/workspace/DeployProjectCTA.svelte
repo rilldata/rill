@@ -36,10 +36,14 @@
       refetchOnWindowFocus: true,
     },
   });
+
   $: isDeployed = !!$currentProject.data?.project;
+  $: userNotLoggedIn = !$user.data?.user;
+  $: everyOrgHasNeverSubscribed = $orgsMetadata.data?.orgs?.every(
+    (o) => !!getNeverSubscribedIssue(o.issues),
+  );
   $: isFirstTimeDeploy =
-    !isDeployed &&
-    $orgsMetadata.data?.orgs?.every((o) => !!getNeverSubscribedIssue(o.issues));
+    !isDeployed && (userNotLoggedIn || everyOrgHasNeverSubscribed);
 
   $: allowPrimary.set(isDeployed || !hasValidDashboard);
 
@@ -48,7 +52,7 @@
 
   $: deployPageUrl = `${$page.url.protocol}//${$page.url.host}/deploy`;
 
-  $: if (!$user.data?.user && $metadata.data) {
+  $: if (userNotLoggedIn && $metadata.data) {
     deployCTAUrl = `${$metadata.data.loginUrl}?redirect=${deployPageUrl}`;
   } else {
     deployCTAUrl = deployPageUrl;

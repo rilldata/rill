@@ -10,7 +10,7 @@
   } from "@rilldata/web-common/features/dashboards/leaderboard/leaderboard-widths";
   import Leaderboard from "@rilldata/web-common/features/dashboards/leaderboard/Leaderboard.svelte";
   import { SortDirection } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
-  import { selectedDimensionValuesV2 } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
+  import { selectedDimensionValues } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
   import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import ComponentHeader from "../../ComponentHeader.svelte";
@@ -186,7 +186,7 @@
                 timeControlsReady={true}
                 allowExpandTable={false}
                 allowDimensionComparison={false}
-                selectedValues={selectedDimensionValuesV2(
+                selectedValues={selectedDimensionValues(
                   $runtime.instanceId,
                   [metricsViewName],
                   whereFilter,

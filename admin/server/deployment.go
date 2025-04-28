@@ -82,9 +82,9 @@ func (s *Server) TriggerRefreshSources(ctx context.Context, req *adminv1.Trigger
 	defer rt.Close()
 
 	_, err = rt.CreateTrigger(ctx, &runtimev1.CreateTriggerRequest{
-		InstanceId:       depl.RuntimeInstanceID,
-		Resources:        names,
-		AllSourcesModels: len(names) == 0, // Backwards compatibility
+		InstanceId: depl.RuntimeInstanceID,
+		Resources:  names,
+		All:        len(names) == 0, // Backwards compatibility
 	})
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())

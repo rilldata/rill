@@ -81,8 +81,8 @@ func (e *mdToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExecu
 
 	clone := *opts
 	m := &ModelInputProperties{
-		SQL:     inputProps.SQL,
-		PreExec: fmt.Sprintf("INSTALL 'motherduck'; LOAD 'motherduck'; SET motherduck_token=%s; ATTACH IF NOT EXISTS %s;", safeSQLString(token), safeSQLString(inputProps.resolveDSN())),
+		SQL:         inputProps.SQL,
+		InitQueries: fmt.Sprintf("INSTALL 'motherduck'; LOAD 'motherduck'; SET motherduck_token=%s; ATTACH %s;", safeSQLString(token), safeSQLString(inputProps.resolveDSN())),
 	}
 	var props map[string]any
 	err = mapstructure.Decode(m, &props)
