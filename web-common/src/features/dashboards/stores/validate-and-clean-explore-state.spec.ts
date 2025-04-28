@@ -1,4 +1,4 @@
-import { correctExploreState } from "@rilldata/web-common/features/dashboards/stores/correct-explore-state";
+import { validateAndCleanExploreState } from "@rilldata/web-common/features/dashboards/stores/validate-and-clean-explore-state";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import {
   AD_BIDS_BID_PRICE_MEASURE,
@@ -18,7 +18,7 @@ import { describe, expect, it } from "vitest";
 const TestCases: {
   title: string;
   exploreState: Partial<MetricsExplorerEntity>;
-  expectedCorrectState: Partial<MetricsExplorerEntity>;
+  expectedState: Partial<MetricsExplorerEntity>;
   expectedErrorMessages: string[];
 }[] = [
   {
@@ -37,7 +37,7 @@ const TestCases: {
       ],
       allDimensionsVisible: true,
     },
-    expectedCorrectState: {
+    expectedState: {
       visibleMeasures: [AD_BIDS_IMPRESSIONS_MEASURE, AD_BIDS_BID_PRICE_MEASURE],
       allMeasuresVisible: false,
       visibleDimensions: [
@@ -71,7 +71,7 @@ const TestCases: {
       sortDirection: DashboardState_LeaderboardSortDirection.ASCENDING,
       dashboardSortType: DashboardState_LeaderboardSortType.PERCENT,
     },
-    expectedCorrectState: {
+    expectedState: {
       sortDirection: DashboardState_LeaderboardSortDirection.ASCENDING,
       dashboardSortType: DashboardState_LeaderboardSortType.PERCENT,
     },
@@ -92,7 +92,7 @@ const TestCases: {
         AD_BIDS_BID_PRICE_MEASURE,
       ],
     },
-    expectedCorrectState: {
+    expectedState: {
       visibleMeasures: [AD_BIDS_IMPRESSIONS_MEASURE, AD_BIDS_BID_PRICE_MEASURE],
       allMeasuresVisible: false,
       leaderboardSortByMeasureName: AD_BIDS_IMPRESSIONS_MEASURE,
@@ -111,7 +111,7 @@ const TestCases: {
       leaderboardSortByMeasureName: "invalid_measure_1",
       leaderboardMeasureNames: ["invalid_measure_1", "invalid_measure_2"],
     },
-    expectedCorrectState: {
+    expectedState: {
       visibleMeasures: [AD_BIDS_IMPRESSIONS_MEASURE, AD_BIDS_BID_PRICE_MEASURE],
       allMeasuresVisible: false,
       leaderboardSortByMeasureName: AD_BIDS_IMPRESSIONS_MEASURE,
@@ -124,21 +124,21 @@ const TestCases: {
   },
 ];
 
-describe("correctExploreState", () => {
+describe("validateAndCleanExploreState", () => {
   for (const {
     title,
     exploreState,
-    expectedCorrectState,
+    expectedState,
     expectedErrorMessages,
   } of TestCases) {
     it(title, () => {
-      const { correctedExploreState, errors } = correctExploreState(
+      const errors = validateAndCleanExploreState(
         AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
         AD_BIDS_EXPLORE_WITH_3_MEASURES_DIMENSIONS,
         exploreState,
       );
 
-      expect(correctedExploreState).toEqual(expectedCorrectState);
+      expect(exploreState).toEqual(expectedState);
       expect(errors.map((e) => e.message)).toEqual(expectedErrorMessages);
     });
   }
