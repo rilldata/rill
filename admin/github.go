@@ -217,6 +217,7 @@ func (s *Service) CreateManagedGithubRepo(ctx context.Context, org *database.Org
 		OrgID:           org.ID,
 		CreatedByUserID: userID,
 		HTMLURL:         repo.GetHTMLURL(),
+		RepositoryID:    repo.GetID(),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to insert managed repo meta: %w", err)

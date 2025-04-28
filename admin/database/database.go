@@ -1275,6 +1275,7 @@ type ManagedGithubRepoMeta struct {
 	OrgID           string    `db:"org_id"`
 	ProjectID       *string   `db:"project_id"`
 	HTMLURL         string    `db:"html_url"`
+	RepositoryID    int64     `db:"repository_id"`
 	CreatedByUserID string    `db:"created_by_user_id"`
 	CreatedOn       time.Time `db:"created_on"`
 	UpdatedOn       time.Time `db:"updated_on"`
@@ -1284,4 +1285,5 @@ type InsertManagedGithubRepoMetaOptions struct {
 	OrgID           string  `validate:"required"`
 	CreatedByUserID *string `validate:"required"`
 	HTMLURL         string  `validate:"required"`
+	RepositoryID    int64   `validate:"gt=0"`
 }

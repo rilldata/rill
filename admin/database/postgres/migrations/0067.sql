@@ -3,6 +3,7 @@ CREATE TABLE IF NOT EXISTS managed_github_repo_meta (
     org_id UUID NOT NULL REFERENCES orgs (id) ON DELETE SET NULL,
     project_id UUID REFERENCES projects (id) ON DELETE SET NULL,
     html_url TEXT NOT NULL UNIQUE,
+    repository_id BIGINT NOT NULL UNIQUE,
     created_by_user_id UUID REFERENCES users (id) ON DELETE SET NULL,
     created_on TIMESTAMP DEFAULT NOW(),
     updated_on TIMESTAMP DEFAULT NOW()
