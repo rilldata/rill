@@ -253,15 +253,11 @@ test.describe("Bookmarks", () => {
       adminPage,
     }) => {
       await adminPage.goto("/e2e/openrtb");
-
       // Navigate to the explore
       await adminPage
-        .getByTestId("dashboard-title")
+        .getByRole("link", { name: "Programmatic Ads Auction For Bookmarks" })
         .first()
-        .waitFor({ state: "visible" });
-      await expect(adminPage.getByTestId("dashboard-title").first()).toHaveText(
-        "Programmatic Ads Auction For Bookmarks",
-      );
+        .click();
 
       // saved home bookmark is restored
       await expect(adminPage.getByText("Last 7 Days")).toBeVisible();
