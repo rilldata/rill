@@ -60,7 +60,18 @@ export class CartesianChartComponent extends BaseChart<CartesianChartSpec> {
         },
       },
     },
-    color: { type: "mark", label: "Color", meta: { type: "color" } },
+    // TODO: Refactor to use simpler primitives
+    color: {
+      type: "mark",
+      label: "Color",
+      meta: {
+        type: "color",
+        chartFieldInput: {
+          type: "dimension",
+          defaultLegendOrientation: "top",
+        },
+      },
+    },
   };
 
   constructor(resource: V1Resource, parent: CanvasEntity, path: ComponentPath) {

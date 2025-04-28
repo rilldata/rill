@@ -1,4 +1,6 @@
 import type { VisualizationSpec } from "svelte-vega";
+import type { Config } from "vega-lite";
+import type { ExprRef, SignalRef } from "vega-typings";
 import {
   createColorEncoding,
   createConfigWithLegend,
@@ -14,10 +16,21 @@ export function generateVLPieChartSpec(
   data: ChartDataResult,
 ): VisualizationSpec {
   const spec = createSingleLayerBaseSpec("arc");
+  /**
+   * The layout property is not typed in the current version of Vega-Lite.
+   * This will be fixed when we upgrade to Svelte 5 and subseqent Vega-Lite versions.
+   */
   const vegaConfig = createConfigWithLegend(
     config,
     config.color,
-    undefined,
+    {
+      legend: {
+        layout: {
+          right: { anchor: "middle" },
+          left: { anchor: "middle" },
+        },
+      },
+    } as unknown as Config<ExprRef | SignalRef>,
     "right",
   );
 

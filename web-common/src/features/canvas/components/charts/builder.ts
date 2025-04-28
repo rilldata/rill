@@ -21,7 +21,7 @@ import type {
 import type { Encoding } from "vega-lite/build/src/encoding";
 import type { TopLevelParameter } from "vega-lite/build/src/spec/toplevel";
 import type { TopLevelUnitSpec } from "vega-lite/build/src/spec/unit";
-import type { ExprRef, Layout, SignalRef } from "vega-typings";
+import type { ExprRef, SignalRef } from "vega-typings";
 import type { ChartDataResult } from "./types";
 
 export function createMultiLayerBaseSpec() {
@@ -155,19 +155,8 @@ export function getLegendConfig(
   orientation: ChartLegend,
 ): Config<ExprRef | SignalRef> {
   let columns: number | ExprRef = 1;
-  let layout: Layout | undefined = undefined;
   if (orientation === "top" || orientation === "bottom") {
     columns = { expr: "floor(width / 140)" };
-  }
-  /**
-   * The layout property is not typed in the current version of Vega-Lite.
-   * This will be fixed when we upgrade to Svelte 5 and subseqent Vega-Lite versions.
-   */
-  if (orientation === "right" || orientation === "left") {
-    layout = {
-      right: { anchor: "middle" },
-      left: { anchor: "middle" },
-    } as unknown as Layout;
   }
   if (orientation === "none") {
     return {
@@ -181,9 +170,8 @@ export function getLegendConfig(
       orient: orientation,
       columns: columns,
       labelLimit: 140,
-      ...(layout && { layout }),
     },
-  } as unknown as Config<ExprRef | SignalRef>;
+  };
 }
 
 export function createConfigWithLegend(

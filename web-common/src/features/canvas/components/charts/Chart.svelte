@@ -74,8 +74,6 @@
       [fieldName]: { fn: (val) => measureFormatters[fieldName](val) },
     };
   }, {});
-
-  $: console.log("spec", spec);
 </script>
 
 <div class="size-full flex flex-col overflow-hidden">
