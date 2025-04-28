@@ -235,34 +235,28 @@ setup.describe("global setup", () => {
     ).toBeVisible();
 
     // Wait for the first dashboard to be ready
-    await expect
-      .poll(
-        async () => {
-          await adminPage.reload();
-          const listing = adminPage.getByRole("link", {
-            name: "Programmatic Ads Auction auction_explore",
-          });
-          return listing.textContent();
-        },
-        {
-          // Increased timeout for the 1st dashboard to make sure sources are reconciled.
-          intervals: [10_000, 10_000, 20_000, 20_000, 30_000, 30_000],
-          timeout: 120_000,
-        },
-      )
-      .toContain("Last refreshed");
+    await adminPage
+      .getByRole("link", {
+        name: "Programmatic Ads Auction auction_explore",
+      })
+      .waitFor({ state: "visible", timeout: 120_000 });
 
-    await expect
-      .poll(
-        async () => {
-          await adminPage.reload();
-          const listing = adminPage.getByRole("link", {
-            name: "Programmatic Ads Bids bids_explore",
-          });
-          return listing.textContent();
-        },
-        { intervals: Array(6).fill(5_000), timeout: 30_000 },
-      )
-      .toContain("Last refreshed");
+    await expect(
+      adminPage.getByRole("link", {
+        name: "Programmatic Ads Auction auction_explore",
+      }),
+    ).toContainText("Last refreshed");
+
+    await adminPage
+      .getByRole("link", {
+        name: "Programmatic Ads Bids bids_explore",
+      })
+      .waitFor({ state: "visible", timeout: 30_000 });
+
+    await expect(
+      adminPage.getByRole("link", {
+        name: "Programmatic Ads Bids bids_explore",
+      }),
+    ).toContainText("Last refreshed");
   });
 });
