@@ -49,10 +49,10 @@
   $: isEditor = isProjectEditor(projectPermissions);
   $: isViewer = isProjectViewer(projectPermissions);
 
-  // $: console.log("projectPermissions", projectPermissions);
-  // $: console.log("isAdmin", isAdmin);
-  // $: console.log("isEditor", isEditor);
-  // $: console.log("isViewer", isViewer);
+  $: console.log("projectPermissions: ", projectPermissions);
+  $: console.log("isAdmin: ", isAdmin);
+  $: console.log("isEditor: ", isEditor);
+  $: console.log("isViewer: ", isViewer);
 
   // Remember:
   // - https://tkdodo.eu/blog/breaking-react-querys-api-on-purpose#a-bad-api
