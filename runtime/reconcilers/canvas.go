@@ -173,7 +173,7 @@ func (r *CanvasReconciler) validateMetricsViewTimeConsistency(ctx context.Contex
 
 	// Validate all metrics views have consistent first_day_of_week or first_month_of_year
 	if len(metricsViews) > 0 {
-		var first bool = false
+		first := false
 		var firstDayOfWeek uint32
 		var firstMonthOfYear uint32
 		var firstViewName string
