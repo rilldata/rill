@@ -75,11 +75,10 @@ func New(t *testing.T) *Fixture {
 	// Ports and external URLs
 	port := findPort(t)
 	externalURL := fmt.Sprintf("http://localhost:%d", port)
-	externalHTTPURL := fmt.Sprintf("http://localhost:%d", port)
 	frontendURL := "http://frontend.mock"
 
 	// JWT issuer
-	issuer, err := runtimeauth.NewEphemeralIssuer(externalHTTPURL)
+	issuer, err := runtimeauth.NewEphemeralIssuer(externalURL)
 	require.NoError(t, err)
 
 	// Runtime provisioner.
