@@ -15,6 +15,7 @@
   import { useQueryClient } from "@tanstack/svelte-query";
   import CaretUpIcon from "@rilldata/web-common/components/icons/CaretUpIcon.svelte";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
+  import { PROJECT_ROLES_DESCRIPTION_MAP } from "../constants";
 
   type User = V1ProjectMemberUser | V1UserInvite;
 
@@ -154,7 +155,7 @@
         >
           <span class="font-medium">Admin</span>
           <span class="text-xs text-gray-600"
-            >Full control of project settings and members</span
+            >{PROJECT_ROLES_DESCRIPTION_MAP.admin}</span
           >
         </DropdownMenu.Item>
       {/if}
@@ -168,7 +169,7 @@
       >
         <span class="font-medium">Editor</span>
         <span class="text-xs text-gray-600"
-          >Can create and edit dashboards; manage non-admin access</span
+          >{PROJECT_ROLES_DESCRIPTION_MAP.editor}</span
         >
       </DropdownMenu.Item>
 
@@ -181,7 +182,7 @@
       >
         <span class="font-medium">Viewer</span>
         <span class="text-xs text-gray-600"
-          >Read-only access to project dashboards</span
+          >{PROJECT_ROLES_DESCRIPTION_MAP.viewer}</span
         >
       </DropdownMenu.Item>
 
