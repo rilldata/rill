@@ -76,8 +76,6 @@ func (r *CanvasReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceN
 
 	// Validate refs
 	validateErr := checkRefs(ctx, r.C, self.Meta.Refs)
-
-	//
 	if validateErr == nil {
 		validateErr = r.validateMetricsViewTimeConsistency(ctx, self.Meta.Refs)
 	}
@@ -140,7 +138,10 @@ func (r *CanvasReconciler) validateMetricsViewTimeConsistency(ctx context.Contex
 		}
 		component, err := r.C.Get(ctx, ref, false)
 		if err != nil {
-			continue
+			if errors.Is(err, drivers.ErrResourceNotFound) {
+				continue
+			}
+			return err
 		}
 
 		// Skip non-metrics view refs
@@ -155,10 +156,7 @@ func (r *CanvasReconciler) validateMetricsViewTimeConsistency(ctx context.Contex
 			// Get the metrics view
 			mv, err := r.C.Get(ctx, ref, false)
 			if err != nil {
-				if errors.Is(err, drivers.ErrResourceNotFound) {
-					return fmt.Errorf("component %q: metrics view %q not found", ref.Name, ref.Name)
-				}
-				return err
+				continue
 			}
 
 			// Skip if the metrics view is not valid
@@ -181,7 +179,7 @@ func (r *CanvasReconciler) validateMetricsViewTimeConsistency(ctx context.Contex
 		for mvName, mv := range metricsViews {
 			mvSpec := mv.GetMetricsView().State.ValidSpec
 			if mvSpec == nil {
-				return status.Errorf(codes.Internal, "metrics view %q in valid spec not found", mvName)
+				continue
 			}
 
 			if !first {
