@@ -11,7 +11,7 @@
     params: { organization, project },
   } = $page);
 
-  $: query = useReports(instanceId, true);
+  $: query = useReports(instanceId);
 
   $: ({ data } = $query);
 
