@@ -1,6 +1,5 @@
 import { mergeFilters } from "@rilldata/web-common/features/dashboards/pivot/pivot-merge-filters";
 import { createInExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
-import { sanitizeValueForVega } from "@rilldata/web-common/features/templates/charts/utils";
 import { adjustOffsetForZone } from "@rilldata/web-common/lib/convertTimestampPreview";
 import { timeGrainToDuration } from "@rilldata/web-common/lib/time/grains";
 import {
@@ -50,31 +49,6 @@ export function mergedVlConfig(
   return merge(validSpecConfig, parsedConfig, {
     arrayMerge: replaceByClonedSource,
   });
-}
-
-export const timeGrainToVegaTimeUnitMap: Record<V1TimeGrain, string> = {
-  [V1TimeGrain.TIME_GRAIN_MILLISECOND]: "yearmonthdatehoursminutesseconds",
-  [V1TimeGrain.TIME_GRAIN_SECOND]: "yearmonthdatehoursminutesseconds",
-  [V1TimeGrain.TIME_GRAIN_MINUTE]: "yearmonthdatehoursminutes",
-  [V1TimeGrain.TIME_GRAIN_HOUR]: "yearmonthdatehours",
-  [V1TimeGrain.TIME_GRAIN_DAY]: "yearmonthdate",
-  [V1TimeGrain.TIME_GRAIN_WEEK]: "yearweek",
-  [V1TimeGrain.TIME_GRAIN_MONTH]: "yearmonth",
-  [V1TimeGrain.TIME_GRAIN_QUARTER]: "yearquarter",
-  [V1TimeGrain.TIME_GRAIN_YEAR]: "year",
-  [V1TimeGrain.TIME_GRAIN_UNSPECIFIED]: "yearmonthdate",
-};
-
-export function sanitizeFieldName(fieldName: string) {
-  const specialCharactersRemoved = sanitizeValueForVega(fieldName);
-  const sanitizedFieldName = specialCharactersRemoved.replace(" ", "__");
-
-  /**
-   * Add a prefix to the beginning of the field
-   * name to avoid variables starting with a special
-   * character or number.
-   */
-  return `rill_${sanitizedFieldName}`;
 }
 
 export interface FieldsByType {
