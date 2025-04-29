@@ -171,6 +171,7 @@ func TestResolvers(t *testing.T) {
 							SkipChecks:     tc.SkipSecurityChecks,
 						},
 					})
+					require.NoError(t, err)
 
 					// If it succeeded, get the result rows.
 					// Does a JSON roundtrip to coerce to simple types (easier to compare).

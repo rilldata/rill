@@ -81,8 +81,21 @@ var Connectors = map[string]ConnectorAcquireFunc{
 		}
 
 		dsn := os.Getenv("RILL_RUNTIME_SNOWFLAKE_TEST_DSN")
-		require.NotEmpty(t, dsn, "SNOWFLAKE test DSN not configured")
+		require.NotEmpty(t, dsn, "RILL_RUNTIME_SNOWFLAKE_TEST_DSN not configured")
 		return map[string]string{"dsn": dsn}
+	},
+	"motherduck": func(t TestingT) map[string]string {
+		// Load .env file at the repo root (if any)
+		_, currentFile, _, _ := goruntime.Caller(0)
+		envPath := filepath.Join(currentFile, "..", "..", "..", ".env")
+		_, err := os.Stat(envPath)
+		if err == nil {
+			require.NoError(t, godotenv.Load(envPath))
+		}
+
+		token := os.Getenv("RILL_RUNTIME_MOTHERDUCK_TOKEN")
+		require.NotEmpty(t, token, "RILL_RUNTIME_MOTHERDUCK_TOKEN not configured")
+		return map[string]string{"token": token}
 	},
 	// gcs connector uses an actual gcs bucket with data populated from testdata/init_data/azure.
 	"gcs": func(t TestingT) map[string]string {
