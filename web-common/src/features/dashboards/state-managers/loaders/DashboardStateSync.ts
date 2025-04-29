@@ -1,7 +1,7 @@
 import { goto } from "$app/navigation";
 import { page } from "$app/stores";
 import { DashboardStateDataLoader } from "@rilldata/web-common/features/dashboards/state-managers/loaders/DashboardStateDataLoader";
-import { saveMostRecentExploreState } from "@rilldata/web-common/features/dashboards/state-managers/loaders/most-recent-explore-state";
+import { saveMostRecentPartialExploreState } from "@rilldata/web-common/features/dashboards/state-managers/loaders/most-recent-explore-state";
 import {
   metricsExplorerStore,
   useExploreState,
@@ -122,7 +122,8 @@ export class DashboardStateSync {
       exploreSpec,
       timeControlsState,
     );
-    saveMostRecentExploreState(
+    // Update "most recent explore state" with the initial state
+    saveMostRecentPartialExploreState(
       this.exploreName,
       this.extraPrefix,
       initExploreState,
@@ -207,7 +208,8 @@ export class DashboardStateSync {
       exploreSpec,
       timeControlsState,
     );
-    saveMostRecentExploreState(
+    // Update "most recent explore state" with updated state from url
+    saveMostRecentPartialExploreState(
       this.exploreName,
       this.extraPrefix,
       updatedExploreState,
@@ -269,7 +271,9 @@ export class DashboardStateSync {
       exploreSpec,
       timeControlsState,
     );
-    saveMostRecentExploreState(
+    // Update "most recent explore state" with updated state.
+    // Since we do not update the state per action we do it here as blanket update.
+    saveMostRecentPartialExploreState(
       this.exploreName,
       this.extraPrefix,
       exploreState,

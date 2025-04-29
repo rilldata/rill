@@ -220,6 +220,10 @@ export class DashboardStateDataLoader {
     });
   }
 
+  /**
+   * Decides the order of merging of various explore state source.
+   * Returns a cascading merged state of the sources.
+   */
   private getMergedExploreState({
     metricsViewSpec,
     exploreSpec,

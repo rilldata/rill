@@ -43,7 +43,11 @@ export function getMostRecentPartialExploreState(
   return { mostRecentPartialExploreState: undefined, errors: [] };
 }
 
-export function saveMostRecentExploreState(
+/**
+ * We only want to save a subset of the most recent explore state in the long term local storage.
+ * This method selects the exact fields we want to save in the local storage.
+ */
+export function saveMostRecentPartialExploreState(
   exploreName: string,
   storageNamespacePrefix: string | undefined,
   exploreState: MetricsExplorerEntity,
@@ -57,21 +61,25 @@ export function saveMostRecentExploreState(
   }
 
   try {
-    setMostRecentExploreState(exploreName, storageNamespacePrefix, {
-      selectedTimezone: exploreState.selectedTimezone,
+    setMostRecentExploreStateInLocalStorage(
+      exploreName,
+      storageNamespacePrefix,
+      {
+        selectedTimezone: exploreState.selectedTimezone,
 
-      visibleMeasures: exploreState.visibleMeasures,
-      allMeasuresVisible: exploreState.allMeasuresVisible,
-      visibleDimensions: exploreState.visibleDimensions,
-      allDimensionsVisible: exploreState.allDimensionsVisible,
+        visibleMeasures: exploreState.visibleMeasures,
+        allMeasuresVisible: exploreState.allMeasuresVisible,
+        visibleDimensions: exploreState.visibleDimensions,
+        allDimensionsVisible: exploreState.allDimensionsVisible,
 
-      leaderboardSortByMeasureName: exploreState.leaderboardSortByMeasureName,
-      leaderboardMeasureNames: exploreState.leaderboardMeasureNames,
-      leaderboardShowContextForAllMeasures:
-        exploreState.leaderboardShowContextForAllMeasures,
-      sortDirection: exploreState.sortDirection,
-      dashboardSortType: exploreState.dashboardSortType,
-    });
+        leaderboardSortByMeasureName: exploreState.leaderboardSortByMeasureName,
+        leaderboardMeasureNames: exploreState.leaderboardMeasureNames,
+        leaderboardShowContextForAllMeasures:
+          exploreState.leaderboardShowContextForAllMeasures,
+        sortDirection: exploreState.sortDirection,
+        dashboardSortType: exploreState.dashboardSortType,
+      },
+    );
   } catch {
     // no-op
   }
@@ -85,7 +93,7 @@ export function clearMostRecentExploreState(
   localStorage.removeItem(key);
 }
 
-export function setMostRecentExploreState(
+export function setMostRecentExploreStateInLocalStorage(
   exploreName: string,
   storageNamespacePrefix: string | undefined,
   exploreState: Partial<MetricsExplorerEntity>,

@@ -1,7 +1,7 @@
 import { type CompoundQueryResult } from "@rilldata/web-common/features/compound-query-result";
 import { useDashboardFetchMocksForComponentTests } from "@rilldata/web-common/features/dashboards/filters/test/filter-test-utils";
 import { setExploreStateForWebView } from "@rilldata/web-common/features/dashboards/state-managers/loaders/explore-web-view-store";
-import { setMostRecentExploreState } from "@rilldata/web-common/features/dashboards/state-managers/loaders/most-recent-explore-state";
+import { setMostRecentExploreStateInLocalStorage } from "@rilldata/web-common/features/dashboards/state-managers/loaders/most-recent-explore-state";
 import DashboardStateManagerTest from "@rilldata/web-common/features/dashboards/state-managers/loaders/test/DashboardStateManagerTest.svelte";
 import {
   type HoistedPageForExploreTests,
@@ -205,7 +205,7 @@ describe("DashboardStateManager", () => {
     });
 
     it("Should load most recent dashboard state", async () => {
-      setMostRecentExploreState(AD_BIDS_EXPLORE_NAME, undefined, {
+      setMostRecentExploreStateInLocalStorage(AD_BIDS_EXPLORE_NAME, undefined, {
         visibleMeasures: [AD_BIDS_BID_PRICE_MEASURE],
         allMeasuresVisible: false,
         visibleDimensions: [AD_BIDS_DOMAIN_DIMENSION],
@@ -355,7 +355,7 @@ describe("DashboardStateManager", () => {
     });
 
     it("Should load most recent dashboard state", async () => {
-      setMostRecentExploreState(AD_BIDS_EXPLORE_NAME, undefined, {
+      setMostRecentExploreStateInLocalStorage(AD_BIDS_EXPLORE_NAME, undefined, {
         visibleMeasures: [AD_BIDS_BID_PRICE_MEASURE],
         allMeasuresVisible: false,
         visibleDimensions: [AD_BIDS_DOMAIN_DIMENSION],
@@ -395,7 +395,7 @@ describe("DashboardStateManager", () => {
     });
 
     it("Should validate most recent dashboard state and correct invalid fields", async () => {
-      setMostRecentExploreState(AD_BIDS_EXPLORE_NAME, undefined, {
+      setMostRecentExploreStateInLocalStorage(AD_BIDS_EXPLORE_NAME, undefined, {
         visibleMeasures: [AD_BIDS_PUBLISHER_COUNT_MEASURE],
         allMeasuresVisible: false,
         visibleDimensions: [AD_BIDS_COUNTRY_DIMENSION],
