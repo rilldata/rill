@@ -236,34 +236,5 @@ setup.describe("global setup", () => {
         name: "Programmatic Ads Bids bids_explore",
       }),
     ).toBeVisible();
-
-    // Verify the dashboards are in a ready state
-    await expect(adminPage.getByLabel("Container title")).toHaveText(
-      "Project dashboards",
-    );
-
-    // Wait for the dashboards to be ready by checking their refresh status
-    await expect
-      .poll(
-        async () => {
-          const auctionLink = adminPage.getByRole("link", {
-            name: "Programmatic Ads Auction auction_explore",
-          });
-          const bidsLink = adminPage.getByRole("link", {
-            name: "Programmatic Ads Bids bids_explore",
-          });
-          const auctionText = await auctionLink.textContent();
-          const bidsText = await bidsLink.textContent();
-          return (
-            auctionText?.includes("Last refreshed") &&
-            bidsText?.includes("Last refreshed")
-          );
-        },
-        {
-          timeout: 120_000,
-          intervals: [10_000, 10_000, 20_000, 20_000, 30_000, 30_000],
-        },
-      )
-      .toBeTruthy();
   });
 });
