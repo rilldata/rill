@@ -1,24 +1,20 @@
 <script lang="ts">
+  import { getRillTheme } from "@rilldata/web-common/components/vega/vega-config";
   import VegaLiteRenderer from "@rilldata/web-common/components/vega/VegaLiteRenderer.svelte";
   import ComponentHeader from "@rilldata/web-common/features/canvas/ComponentHeader.svelte";
-  import type { ChartComponent } from "@rilldata/web-common/features/canvas/components/charts";
   import ComponentError from "@rilldata/web-common/features/canvas/components/ComponentError.svelte";
   import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
-  import type { MetricsViewSpecMeasure } from "@rilldata/web-common/runtime-client";
   import type { View } from "vega-typings";
-  import { getChartData, validateChartSchema } from "./selector";
-  import {
-    generateSpec,
-    getChartTitle,
-    isChartLineLike,
-    mergedVlConfig,
-    sanitizeFieldName,
-  } from "./util";
+  import type { ChartSpec } from "./";
+  import type { BaseChart } from "./BaseChart";
+  import { getChartData } from "./selector";
+  import { generateSpec, isChartLineLike, sanitizeFieldName } from "./util";
+  import { validateChartSchema } from "./validate";
 
-  export let component: ChartComponent;
+  export let component: BaseChart<ChartSpec>;
 
   $: ({
     specStore,
@@ -32,49 +28,52 @@
   $: store = getCanvasStore(canvasName);
   $: ({
     canvasEntity: {
-      spec: { getMeasureForMetricView },
+      spec: { getMeasuresForMetricView },
     },
   } = store);
 
   let viewVL: View;
 
-  $: chartConfig = $specStore;
+  $: chartSpec = $specStore;
 
-  $: ({
-    title,
-    description,
-    metrics_view,
-    y,
-    vl_config,
-    time_filters,
-    dimension_filters,
-  } = chartConfig);
+  $: ({ title, description, metrics_view, time_filters, dimension_filters } =
+    chartSpec);
 
-  $: schemaStore = validateChartSchema(store, chartConfig);
+  $: schemaStore = validateChartSchema(store, chartSpec);
 
   $: schema = $schemaStore;
 
-  $: chartQuery = getChartData(store, chartConfig, timeAndFilterStore);
+  $: chartQuery = getChartData(store, component, chartSpec, timeAndFilterStore);
 
   $: ({ isFetching, data, error } = $chartQuery);
   $: hasNoData = !isFetching && data.length === 0;
 
-  $: spec = generateSpec(chartType, chartConfig, $chartQuery);
+  $: spec = generateSpec(chartType, chartSpec, $chartQuery);
 
   $: filters = {
     time_filters,
     dimension_filters,
   };
 
-  $: measure = getMeasureForMetricView(y?.field, metrics_view);
+  $: measures = getMeasuresForMetricView(metrics_view);
 
-  $: measureName = sanitizeFieldName($measure?.name || "measure");
-
-  $: measureFormatter = createMeasureValueFormatter<null | undefined>(
-    $measure as MetricsViewSpecMeasure,
+  // TODO: Move this to a central cached store
+  $: measureFormatters = $measures.reduce(
+    (acc, measure) => ({
+      ...acc,
+      [sanitizeFieldName(measure.name || "measure")]:
+        createMeasureValueFormatter<null | undefined>(measure),
+    }),
+    {},
   );
 
-  $: config = vl_config ? mergedVlConfig(vl_config) : undefined;
+  $: expressionFunctions = $measures.reduce((acc, measure) => {
+    const fieldName = sanitizeFieldName(measure.name || "measure");
+    return {
+      ...acc,
+      [fieldName]: { fn: (val) => measureFormatters[fieldName](val) },
+    };
+  }, {});
 </script>
 
 <div class="size-full flex flex-col overflow-hidden">
@@ -88,7 +87,7 @@
     {:else}
       <ComponentHeader
         faint={!title}
-        title={title || getChartTitle(chartConfig, $chartQuery)}
+        title={title || component.chartTitle($chartQuery?.fields)}
         {description}
         {filters}
       />
@@ -105,10 +104,8 @@
           data={{ "metrics-view": data }}
           {spec}
           renderer={isChartLineLike(chartType) ? "svg" : "canvas"}
-          expressionFunctions={{
-            [measureName]: { fn: (val) => measureFormatter(val) },
-          }}
-          {config}
+          {expressionFunctions}
+          config={getRillTheme(true)}
         />
       {/if}
     {/if}
