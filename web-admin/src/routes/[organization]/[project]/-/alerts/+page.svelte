@@ -11,7 +11,7 @@
     params: { organization, project },
   } = $page);
 
-  $: query = useAlerts(instanceId, true);
+  $: query = useAlerts(instanceId);
 
   $: ({ data } = $query);
 

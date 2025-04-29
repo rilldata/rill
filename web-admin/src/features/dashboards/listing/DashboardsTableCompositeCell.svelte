@@ -41,7 +41,6 @@
     {/if}
     <div
       class="text-gray-700 text-sm font-semibold group-hover:text-primary-600"
-      data-testid="dashboard-title"
     >
       {title !== "" ? title : name}
     </div>
