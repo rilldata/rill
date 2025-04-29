@@ -15,12 +15,21 @@
   import { page } from "$app/stores";
 
   export let email: string;
+  export let role: string;
   export let isCurrentUser: boolean;
+  export let currentUserRole: string;
 
   let isDropdownOpen = false;
   let isRemoveConfirmOpen = false;
 
   $: organization = $page.params.organization;
+  $: isAdmin = currentUserRole === "admin";
+  $: isEditor = currentUserRole === "editor";
+  $: canManageUser =
+    !isCurrentUser &&
+    (isAdmin ||
+      (isEditor &&
+        (role === "editor" || role === "viewer" || role === "guest")));
 
   const queryClient = useQueryClient();
   const removeOrganizationMemberUser =
@@ -81,7 +90,7 @@
   }
 </script>
 
-{#if !isCurrentUser}
+{#if canManageUser}
   <DropdownMenu.Root bind:open={isDropdownOpen}>
     <DropdownMenu.Trigger class="flex-none">
       <IconButton rounded active={isDropdownOpen}>
