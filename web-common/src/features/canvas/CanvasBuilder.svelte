@@ -211,12 +211,7 @@
     specRows: V1CanvasRow[],
     yamlRows: YAMLRow[],
     resolvedComponents?: Record<string, V1Resource>,
-    clearSelection = true,
   ) {
-    if (clearSelection) {
-      setSelectedComponent(null);
-    }
-
     specCanvasRows = specRows;
 
     if (resolvedComponents) {
@@ -238,11 +233,11 @@
     updateContents();
   }
 
-  function performTransaction(transaction: Transaction) {
+  function performTransaction(transaction: Transaction, selectedId?: string) {
     if (!defaultMetrics) return;
 
     try {
-      const { newSpecRows, newYamlRows, newResolvedComponents } =
+      const { newSpecRows, newYamlRows, newResolvedComponents, mover } =
         generateNewAssets({
           yamlRows: yamlCanvasRows,
           specRows: specCanvasRows,
@@ -251,6 +246,33 @@
           resolvedComponents,
           transaction,
         });
+
+      if (selectedId) {
+        const idsAtPositions = specCanvasRows.map((row) => {
+          return {
+            items: row.items?.map((item) => {
+              return item.component ?? "";
+            }),
+          };
+        });
+
+        const ids = mover(
+          idsAtPositions,
+          () => "new-item",
+          (r) => r,
+        );
+        const rowIndex = ids.findIndex((r) =>
+          r.items?.some((i) => i === selectedId),
+        );
+        const colIndex = ids[rowIndex]?.items?.indexOf(selectedId);
+
+        if (colIndex !== undefined && colIndex !== -1 && rowIndex !== -1) {
+          const newIdOfSelected = getId(rowIndex, colIndex);
+
+          if (selectedId && newIdOfSelected)
+            setSelectedComponent(newIdOfSelected);
+        }
+      }
 
       updateAssets(newSpecRows, newYamlRows, newResolvedComponents);
     } catch {
@@ -319,22 +341,25 @@
         return;
       }
 
-      performTransaction({
-        operations: [
-          {
-            type: "move",
-            insertRow: column === null,
-            source: {
-              row: fromRow,
-              col: fromCol,
+      performTransaction(
+        {
+          operations: [
+            {
+              type: "move",
+              insertRow: column === null,
+              source: {
+                row: fromRow,
+                col: fromCol,
+              },
+              destination: {
+                row,
+                col: column ?? 0,
+              },
             },
-            destination: {
-              row,
-              col: column ?? 0,
-            },
-          },
-        ],
-      });
+          ],
+        },
+        dragComponent.id,
+      );
     }
   }
 
@@ -347,6 +372,26 @@
     if (element) {
       element.scrollTop = element.scrollHeight;
     }
+  }
+
+  function deleteComponent(component: BaseCanvasComponent) {
+    const [, row, , col] = component.pathInYAML;
+
+    if (component.id === $selectedComponent) {
+      resetSelection();
+    }
+
+    performTransaction({
+      operations: [
+        {
+          type: "delete",
+          target: {
+            row,
+            col,
+          },
+        },
+      ],
+    });
   }
 
   onDestroy(() => {
@@ -377,19 +422,7 @@
       const component = components.get(selected);
       if (!component) return;
 
-      const [, row, , col] = component.pathInYAML;
-
-      performTransaction({
-        operations: [
-          {
-            type: "delete",
-            target: {
-              row,
-              col,
-            },
-          },
-        ],
-      });
+      deleteComponent(component);
     }
   }}
 />
@@ -418,18 +451,8 @@
       {initializeRow}
       {updateRowHeight}
       {updateComponentWidths}
-      onDelete={({ columnIndex }) => {
-        performTransaction({
-          operations: [
-            {
-              type: "delete",
-              target: {
-                row: rowIndex,
-                col: columnIndex,
-              },
-            },
-          ],
-        });
+      onDelete={({ component }) => {
+        deleteComponent(component);
       }}
       onDuplicate={({ columnIndex }) => {
         if (!defaultMetrics) return;
@@ -455,7 +478,6 @@
         if (event.button !== 0) return;
         const component = components.get(id);
         if (!component) return;
-        event.preventDefault();
 
         initialMousePosition = $mousePosition;
 

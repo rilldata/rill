@@ -28,6 +28,7 @@
     InfiniteData,
     InfiniteQueryObserverResult,
   } from "@tanstack/svelte-query";
+  import { ExternalLinkIcon } from "lucide-svelte";
 
   interface OrgUser extends V1OrganizationMemberUser, V1UserInvite {
     invitedBy?: string;
@@ -43,6 +44,7 @@
     RpcStatus
   >;
   export let currentUserEmail: string;
+  export let currentUserRole: string;
   export let billingContact: string | undefined;
 
   export let onAttemptRemoveBillingContactUser: () => void;
@@ -76,6 +78,7 @@
           pendingAcceptance: Boolean(row.original.invitedBy),
           isCurrentUser: row.original.userEmail === currentUserEmail,
           photoUrl: row.original.userPhotoUrl,
+          role: row.original.roleName,
         }),
       meta: {
         widthPercent: 5,
@@ -83,12 +86,13 @@
     },
     {
       accessorKey: "roleName",
-      header: "Role",
+      header: "Organization Role",
       cell: ({ row }) =>
         flexRender(OrgUsersTableRoleCell, {
           email: row.original.userEmail,
           role: row.original.roleName,
           isCurrentUser: row.original.userEmail === currentUserEmail,
+          currentUserRole,
           isBillingContact: row.original.userEmail === billingContact,
           onAttemptChangeBillingContactUserRole,
         }),
@@ -104,7 +108,9 @@
       cell: ({ row }) =>
         flexRender(OrgUsersTableActionsCell, {
           email: row.original.userEmail,
+          role: row.original.roleName,
           isCurrentUser: row.original.userEmail === currentUserEmail,
+          currentUserRole,
           isBillingContact: row.original.userEmail === billingContact,
           onAttemptRemoveBillingContactUser,
         }),
@@ -213,6 +219,20 @@
                         header.getContext(),
                       )}
                     />
+                    {#if header.column.id === "roleName"}
+                      <a
+                        href="https://docs.rilldata.com/manage/roles-permissions#organization-level-permissions"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="hover:text-gray-700"
+                      >
+                        <ExternalLinkIcon
+                          class="text-gray-500"
+                          size="11px"
+                          strokeWidth={2}
+                        />
+                      </a>
+                    {/if}
                     {#if header.column.getIsSorted().toString() === "asc"}
                       <span>
                         <ArrowDown flip size="12px" />

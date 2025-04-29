@@ -40,7 +40,7 @@
     event: MouseEvent;
   }) => void;
   export let onDuplicate: (params: { columnIndex: number }) => void;
-  export let onDelete: (params: { columnIndex: number }) => void;
+  export let onDelete: (params: { component: BaseCanvasComponent }) => void;
   export let onDrop: (row: number, column: number | null) => void;
   export let initializeRow: (row: number, type: CanvasComponentType) => void;
   export let updateRowHeight: (newHeight: number, index: number) => void;
@@ -241,7 +241,7 @@
             onDuplicate({ columnIndex });
           }}
           onDelete={() => {
-            onDelete({ columnIndex });
+            onDelete({ component });
           }}
         />
       {:else}
