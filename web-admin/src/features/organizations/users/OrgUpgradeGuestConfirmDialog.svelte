@@ -12,14 +12,15 @@
 
   export let open = false;
   export let email: string;
-  export let onRemove: (email: string) => void;
+  export let newRole: string;
+  export let onUpgrade: (email: string, role: string) => void;
 
-  async function handleRemove() {
+  async function handleUpgrade() {
     try {
-      onRemove(email);
+      onUpgrade(email, newRole);
       open = false;
     } catch (error) {
-      console.error("Failed to remove user from organization:", error);
+      console.error("Failed to upgrade user role:", error);
     }
   }
 </script>
@@ -28,12 +29,14 @@
   <AlertDialogTrigger asChild>
     <div class="hidden"></div>
   </AlertDialogTrigger>
-  <AlertDialogContent noCancel>
+  <AlertDialogContent>
     <AlertDialogHeader>
-      <AlertDialogTitle>Remove user from organization?</AlertDialogTitle>
+      <AlertDialogTitle>Upgrade guest to {newRole}?</AlertDialogTitle>
       <AlertDialogDescription>
         <div class="mt-1">
-          This user will no longer be able to access the organization.
+          Upgrading a guest to {newRole} will grant this user access to all open
+          projects in the organization. Would you like to upgrade this guest user
+          to {newRole}?
         </div>
       </AlertDialogDescription>
     </AlertDialogHeader>
@@ -44,9 +47,7 @@
           open = false;
         }}>Cancel</Button
       >
-      <Button type="primary" status="error" on:click={handleRemove}
-        >Yes, remove</Button
-      >
+      <Button type="primary" on:click={handleUpgrade}>Yes, upgrade</Button>
     </AlertDialogFooter>
   </AlertDialogContent>
 </AlertDialog>
