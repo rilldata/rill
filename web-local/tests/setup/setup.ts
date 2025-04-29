@@ -24,7 +24,6 @@ async function prepProject(name: string) {
   const TEST_PROJECT_SRC_DIRECTORY = join(TEST_PROJECTS, name);
   const TEST_PROJECT_DIRECTORY = join(BASE_PROJECT_DIRECTORY, name);
   const TEST_PORT = await getOpenPort();
-  const TEST_PORT_GRPC = await getOpenPort();
 
   rmSync(TEST_PROJECT_DIRECTORY, { force: true, recursive: true });
   cpSync(TEST_PROJECT_SRC_DIRECTORY, TEST_PROJECT_DIRECTORY, {
@@ -39,8 +38,6 @@ async function prepProject(name: string) {
       "--no-open",
       "--port",
       "" + TEST_PORT,
-      "--port-grpc",
-      "" + TEST_PORT_GRPC,
       TEST_PROJECT_DIRECTORY,
     ],
     new RegExp("Serving Rill on: http://localhost"),

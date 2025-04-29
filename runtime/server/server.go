@@ -175,6 +175,8 @@ func (s *Server) HTTPHandler(ctx context.Context, registerAdditionalHandlers fun
 		registerAdditionalHandlers(httpMux)
 	}
 
+	httpMux.Handle("/", transcoder)
+
 	// Add HTTP handler for watching files
 	httpMux.Handle("/v1/instances/{instance_id}/files/watch", auth.HTTPMiddleware(s.aud, http.HandlerFunc(s.WatchFilesHandler)))
 

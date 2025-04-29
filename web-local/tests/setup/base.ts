@@ -34,7 +34,7 @@ export const test = base.extend<MyFixtures>({
       });
     }
 
-    const cmd = `start --no-open --port ${TEST_PORT} --port-grpc ${TEST_PORT_GRPC} ${TEST_PROJECT_DIRECTORY}`;
+    const cmd = `start --no-open --port ${TEST_PORT} ${TEST_PROJECT_DIRECTORY}`;
 
     const childProcess = spawn("../rill", cmd.split(" "), {
       stdio: "inherit",
