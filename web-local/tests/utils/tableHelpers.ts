@@ -10,7 +10,10 @@ export async function validateTableContents(
   page: Page,
   tableSelector: string,
   expectedData: string[][],
+  _compareTillRow?: number,
 ): Promise<void> {
+  const compareTillRow = _compareTillRow ?? expectedData.length;
+
   // Select all rows within the table
   const rows = page.locator(`${tableSelector} > tbody > tr`);
 
@@ -18,7 +21,7 @@ export async function validateTableContents(
   await expect(rows).toHaveCount(expectedData.length);
 
   // Loop through each row to validate cell contents
-  for (let i = 0; i < expectedData.length; i++) {
+  for (let i = 0; i < compareTillRow; i++) {
     const cells = rows.nth(i).locator("td"); // Select cells in the current row
 
     // Validate cell count in the row

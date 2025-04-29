@@ -1,3 +1,7 @@
+import {
+  sanitizeFieldName,
+  sanitizeValueForVega,
+} from "@rilldata/web-common/components/vega/util";
 import type { ChartSpec } from "@rilldata/web-common/features/canvas/components/charts";
 import type { CartesianChartSpec } from "@rilldata/web-common/features/canvas/components/charts/cartesian-charts/CartesianChart";
 import type {
@@ -5,12 +9,7 @@ import type {
   FieldConfig,
   TooltipValue,
 } from "@rilldata/web-common/features/canvas/components/charts/types";
-import {
-  mergedVlConfig,
-  sanitizeFieldName,
-} from "@rilldata/web-common/features/canvas/components/charts/util";
-import { sanitizeValueForVega } from "@rilldata/web-common/features/templates/charts/utils";
-import merge from "deepmerge";
+import { mergedVlConfig } from "@rilldata/web-common/features/canvas/components/charts/util";
 import type { VisualizationSpec } from "svelte-vega";
 import type { Config } from "vega-lite";
 import type {

@@ -1,6 +1,8 @@
+import {
+  sanitizeFieldName,
+  sanitizeValueForVega,
+} from "@rilldata/web-common/components/vega/util";
 import type { TooltipValue } from "@rilldata/web-common/features/canvas/components/charts/types";
-import { sanitizeFieldName } from "@rilldata/web-common/features/canvas/components/charts/util";
-import { sanitizeValueForVega } from "@rilldata/web-common/features/templates/charts/utils";
 import type { VisualizationSpec } from "svelte-vega";
 import {
   createColorEncoding,

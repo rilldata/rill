@@ -1,3 +1,4 @@
+import { timeGrainToVegaTimeUnitMap } from "@rilldata/web-common/components/vega/util";
 import type { ChartSpec } from "@rilldata/web-common/features/canvas/components/charts";
 import type { BaseChart } from "@rilldata/web-common/features/canvas/components/charts/BaseChart";
 import type { CanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
@@ -9,11 +10,7 @@ import {
 } from "@rilldata/web-common/runtime-client";
 import { derived, type Readable } from "svelte/store";
 import type { ChartDataResult, TimeDimensionDefinition } from "./types";
-import {
-  adjustDataForTimeZone,
-  getFieldsByType,
-  timeGrainToVegaTimeUnitMap,
-} from "./util";
+import { adjustDataForTimeZone, getFieldsByType } from "./util";
 
 export function getChartData(
   ctx: CanvasStore,
