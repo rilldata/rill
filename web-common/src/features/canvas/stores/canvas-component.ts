@@ -1,9 +1,9 @@
 import type { CanvasSpecResponseStore } from "@rilldata/web-common/features/canvas/types";
 import { type Writable } from "svelte/store";
+import type { ComponentSpec } from "../components/types";
 import { Filters } from "./filters";
 import type { CanvasResolvedSpec } from "./spec";
 import { TimeControls } from "./time-control";
-import type { ComponentSpec } from "../components/types";
 
 export class CanvasComponentState<T = ComponentSpec> {
   localFilters: Filters;

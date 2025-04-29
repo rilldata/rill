@@ -1,6 +1,7 @@
+import { sanitizeValueForVega } from "@rilldata/web-common/components/vega/util";
 import { ScrubBoxColor } from "@rilldata/web-common/features/dashboards/time-series/chart-colors";
 import type { ChartField } from "./build-template";
-import { sanitizeValueForVega, singleLayerBaseSpec } from "./utils";
+import { singleLayerBaseSpec } from "./utils";
 
 export function buildStackedGroupedBar(
   timeFields: ChartField[],

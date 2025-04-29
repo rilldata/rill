@@ -1,21 +1,21 @@
-import type {
-  ChartConfig,
-  TooltipValue,
-} from "@rilldata/web-common/features/canvas/components/charts/types";
+import type { TooltipValue } from "@rilldata/web-common/features/canvas/components/charts/types";
 import type { VisualizationSpec } from "svelte-vega";
 import {
+  createConfig,
   createDefaultTooltipEncoding,
   createEncoding,
   createSingleLayerBaseSpec,
-} from "../builder";
-import type { ChartDataResult } from "../selector";
+} from "../../builder";
+import type { ChartDataResult } from "../../types";
+import type { CartesianChartSpec } from "../CartesianChart";
 
 export function generateVLStackedBarNormalizedSpec(
-  config: ChartConfig,
+  config: CartesianChartSpec,
   data: ChartDataResult,
 ): VisualizationSpec {
   const spec = createSingleLayerBaseSpec("bar");
   const baseEncoding = createEncoding(config, data);
+  const vegaConfig = createConfig(config);
 
   if (baseEncoding.y && config.y?.field) {
     const yField = config.y.field;
@@ -53,7 +53,10 @@ export function generateVLStackedBarNormalizedSpec(
     ];
 
     // Add percentage to tooltip
-    const tooltipValues = createDefaultTooltipEncoding(config, data);
+    const tooltipValues = createDefaultTooltipEncoding(
+      [config.x, config.y, config.color],
+      data,
+    );
     baseEncoding.tooltip = tooltipValues
       .map((t: TooltipValue) => {
         if (t.field === yField) {
@@ -76,5 +79,8 @@ export function generateVLStackedBarNormalizedSpec(
   }
 
   spec.encoding = baseEncoding;
-  return spec;
+  return {
+    ...spec,
+    ...(vegaConfig && { config: vegaConfig }),
+  };
 }

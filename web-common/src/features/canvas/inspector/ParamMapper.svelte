@@ -2,6 +2,9 @@
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
   import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
+  import { BaseChart } from "@rilldata/web-common/features/canvas/components/charts/BaseChart";
+  import type { BaseCanvasComponent } from "../components/BaseCanvasComponent";
+  import { PivotCanvasComponent } from "../components/pivot";
   import type { ComponentSpec } from "../components/types";
   import AlignmentInput from "./AlignmentInput.svelte";
   import ChartTypeSelector from "./chart/ChartTypeSelector.svelte";
@@ -13,9 +16,6 @@
   import SingleFieldInput from "./SingleFieldInput.svelte";
   import SparklineInput from "./SparklineInput.svelte";
   import TableTypeSelector from "./TableTypeSelector.svelte";
-  import type { BaseCanvasComponent } from "../components/BaseCanvasComponent";
-  import { ChartComponent } from "../components/charts";
-  import { PivotCanvasComponent } from "../components/pivot";
   import type { AllKeys, ComponentInputParam } from "./types";
 
   export let component: BaseCanvasComponent;
@@ -44,7 +44,7 @@
   ][];
 </script>
 
-{#if component instanceof ChartComponent}
+{#if component instanceof BaseChart}
   <ChartTypeSelector {component} />
 {/if}
 

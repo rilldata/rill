@@ -661,6 +661,6 @@ test.describe("pivot run through", () => {
       await page.getByRole("menuitem", { name: "Last 24 Hours" }).click();
     });
     await expect(page.locator(".status.running")).toHaveCount(0);
-    await validateTableContents(page, "table", expectSortedDeltaCol);
+    await validateTableContents(page, "table", expectSortedDeltaCol, 4);
   });
 });

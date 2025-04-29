@@ -12,19 +12,19 @@ import type {
   V1Resource,
   V1TimeRange,
 } from "@rilldata/web-common/runtime-client";
+import type { ComponentType, SvelteComponent } from "svelte";
 import { derived, get, writable, type Writable } from "svelte/store";
-import { CanvasComponentState } from "../stores/canvas-component";
-import type { CanvasEntity, ComponentPath } from "../stores/canvas-entity";
-import type {
-  ComparisonTimeRangeState,
-  TimeRangeState,
-} from "../../dashboards/time-controls/time-control-store";
+import { mergeFilters } from "../../dashboards/pivot/pivot-merge-filters";
 import {
   buildValidMetricsViewFilter,
   createAndExpression,
 } from "../../dashboards/stores/filter-utils";
-import { mergeFilters } from "../../dashboards/pivot/pivot-merge-filters";
-import type { ComponentType, SvelteComponent } from "svelte";
+import type {
+  ComparisonTimeRangeState,
+  TimeRangeState,
+} from "../../dashboards/time-controls/time-control-store";
+import { CanvasComponentState } from "../stores/canvas-component";
+import type { CanvasEntity, ComponentPath } from "../stores/canvas-entity";
 
 export abstract class BaseCanvasComponent<T = ComponentSpec> {
   id: string;

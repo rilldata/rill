@@ -23,22 +23,6 @@ export function multiLayerBaseSpec() {
   return baseSpec;
 }
 
-export function sanitizeValueForVega(value: unknown) {
-  if (typeof value === "string") {
-    // Escape all special characters including quotes, brackets, operators, etc.
-    return value.replace(
-      /[!@#$%^&*()+=\-[\]\\';,./{}|:<>?~]/g,
-      (match) => `\\${match}`,
-    );
-  } else {
-    return String(value);
-  }
-}
-
-export function sanitizeValuesForSpec(values: unknown[]) {
-  return values.map((value) => sanitizeValueForVega(value));
-}
-
 export const templateNameToChartEnumMap = {
   bar_chart: ChartType.BAR,
   grouped_bar_chart: ChartType.GROUPED_BAR,

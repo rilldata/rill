@@ -101,7 +101,7 @@ func SearchTracesFile(ctx context.Context, traceID, resourceName string) ([]byte
 		query = fmt.Sprintf(`
 			SELECT 
 				replace(traceID::VARCHAR, '-', '') AS traceID, 
-				tags::JSON AS tags, 
+				tags::JSON::BLOB AS tags, 
 				* EXCLUDE (traceID, tags)
 			FROM read_json_auto(%s)
 			WHERE traceID = (
@@ -117,7 +117,7 @@ func SearchTracesFile(ctx context.Context, traceID, resourceName string) ([]byte
 		query = fmt.Sprintf(`
 			SELECT 
 				replace(traceID::VARCHAR, '-', '') AS traceID, 
-				tags::JSON AS tags, 
+				tags::JSON::BLOB AS tags, 
 				* EXCLUDE (traceID, tags) 
 			FROM 
 				read_json_auto(%s) 

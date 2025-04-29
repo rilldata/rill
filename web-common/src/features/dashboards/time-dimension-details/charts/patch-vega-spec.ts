@@ -1,4 +1,4 @@
-import { timeGrainToVegaTimeUnitMap } from "@rilldata/web-common/features/canvas/components/charts/util";
+import { timeGrainToVegaTimeUnitMap } from "@rilldata/web-common/components/vega/util";
 import { COMPARIONS_COLORS } from "@rilldata/web-common/features/dashboards/config";
 import {
   MainAreaColorGradientDark,

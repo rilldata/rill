@@ -108,6 +108,9 @@ export const getRillTheme: (isCanvasDashboard: boolean) => Config = (
   },
   range: {
     category: COMPARIONS_COLORS,
+    heatmap: {
+      scheme: "tealblues", // TODO: Generate this from theme
+    },
   },
   numberFormat: "s",
   tooltipFormat: {

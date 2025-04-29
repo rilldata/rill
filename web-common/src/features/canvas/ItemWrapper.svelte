@@ -5,7 +5,10 @@
   export let type: string | undefined = undefined;
 
   $: expandable =
-    type === "kpi_grid" || type === "markdown" || type === "leaderboard";
+    type === "kpi_grid" ||
+    type === "markdown" ||
+    type === "leaderboard" ||
+    type === "heatmap";
   $: minHeight = getInitialHeight(type) + "px";
 </script>
 
