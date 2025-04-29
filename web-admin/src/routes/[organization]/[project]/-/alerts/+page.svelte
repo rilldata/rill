@@ -8,13 +8,10 @@
   $: ({ instanceId } = $runtime);
 
   $: ({
-    params: { organization, project, alert },
+    params: { organization, project },
   } = $page);
 
-  $: onAlertPage = !!alert;
-  $: query = useAlerts(instanceId, true, {
-    enableBackgroundRefetch: onAlertPage,
-  });
+  $: query = useAlerts(instanceId, true);
 
   $: ({ data } = $query);
 
