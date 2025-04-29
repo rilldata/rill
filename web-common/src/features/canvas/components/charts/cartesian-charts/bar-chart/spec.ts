@@ -15,8 +15,6 @@ export function generateVLBarChartSpec(
   const baseEncoding = createEncoding(config, data);
   const vegaConfig = createConfigWithLegend(config, config.color);
 
-  console.log("vegaConfig", vegaConfig);
-
   if (config.color && typeof config.color === "object" && config.x) {
     baseEncoding.xOffset = {
       field: config.color.field,
