@@ -6,8 +6,12 @@
     createAdminServiceListOrganizationInvitesInfinite,
     createAdminServiceListOrganizationMemberUsersInfinite,
   } from "@rilldata/web-admin/client";
+  import ChangeBillingContactDialog from "@rilldata/web-admin/features/billing/contact/ChangeBillingContactDialog.svelte";
+  import { getOrganizationBillingContactUser } from "@rilldata/web-admin/features/billing/contact/selectors";
   import AddUsersDialog from "@rilldata/web-admin/features/organizations/users/AddUsersDialog.svelte";
+  import ChangingBillingContactRoleDialog from "@rilldata/web-admin/features/organizations/users/ChangingBillingContactRoleDialog.svelte";
   import OrgUsersTable from "@rilldata/web-admin/features/organizations/users/OrgUsersTable.svelte";
+  import RemovingBillingContactDialog from "@rilldata/web-admin/features/organizations/users/RemovingBillingContactDialog.svelte";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import OrgUsersFilters from "@rilldata/web-admin/features/organizations/users/OrgUsersFilters.svelte";
   import { Search } from "@rilldata/web-common/components/search";
@@ -19,7 +23,12 @@
   let userEmail = "";
   let userRole = "";
   let isSuperUser = false;
+
   let isAddUserDialogOpen = false;
+  let isRemovingBillingContactDialogOpen = false;
+  let isChangingBillingContactRoleDialogOpen = false;
+  let isUpdateBillingContactDialogOpen = false;
+
   let searchText = "";
   let filterSelection: "all" | "members" | "guests" | "pending" = "all";
 
@@ -126,6 +135,7 @@
     });
 
   const currentUser = createAdminServiceGetCurrentUser();
+  $: billingContactUser = getOrganizationBillingContactUser(organization);
 </script>
 
 <div class="flex flex-col w-full">
@@ -167,6 +177,11 @@
           invitesQuery={$orgInvitesInfiniteQuery}
           currentUserEmail={$currentUser.data?.user.email}
           {currentUserRole}
+          billingContact={$billingContactUser?.email}
+          onAttemptRemoveBillingContactUser={() =>
+            (isRemovingBillingContactDialogOpen = true)}
+          onAttemptChangeBillingContactUserRole={() =>
+            (isChangingBillingContactRoleDialogOpen = true)}
         />
       </div>
       {#if filteredUsers.length > 0}
@@ -187,4 +202,20 @@
   email={userEmail}
   role={userRole}
   {isSuperUser}
+/>
+
+<RemovingBillingContactDialog
+  bind:open={isRemovingBillingContactDialogOpen}
+  onChange={() => (isUpdateBillingContactDialogOpen = true)}
+/>
+
+<ChangingBillingContactRoleDialog
+  bind:open={isChangingBillingContactRoleDialogOpen}
+  onChange={() => (isUpdateBillingContactDialogOpen = true)}
+/>
+
+<ChangeBillingContactDialog
+  bind:open={isUpdateBillingContactDialogOpen}
+  {organization}
+  currentBillingContact={$billingContactUser?.email}
 />

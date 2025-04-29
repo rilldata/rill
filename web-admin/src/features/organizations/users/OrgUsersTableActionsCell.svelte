@@ -18,6 +18,10 @@
   export let role: string;
   export let isCurrentUser: boolean;
   export let currentUserRole: string;
+  export let isBillingContact: boolean;
+  // Changing billing contact is not an action for this user. So handle it upstream
+  // This also avoids rendering the modal per row.
+  export let onAttemptRemoveBillingContactUser: () => void;
 
   let isDropdownOpen = false;
   let isRemoveConfirmOpen = false;
@@ -34,6 +38,16 @@
   const queryClient = useQueryClient();
   const removeOrganizationMemberUser =
     createAdminServiceRemoveOrganizationMemberUser();
+
+  function onRemoveClick() {
+    if (isBillingContact) {
+      // If the user is a billing contact we cannot remove without update contact to a different user 1st.
+      onAttemptRemoveBillingContactUser();
+    } else {
+      // Else show the confirmation for remove
+      isRemoveConfirmOpen = true;
+    }
+  }
 
   async function handleRemove(email: string) {
     try {
@@ -101,9 +115,7 @@
       <DropdownMenu.Item
         class="font-normal flex items-center"
         type="destructive"
-        on:click={() => {
-          isRemoveConfirmOpen = true;
-        }}
+        on:click={onRemoveClick}
       >
         <Trash2Icon size="12px" />
         <span class="ml-2">Remove</span>

@@ -45,6 +45,10 @@
   >;
   export let currentUserEmail: string;
   export let currentUserRole: string;
+  export let billingContact: string | undefined;
+
+  export let onAttemptRemoveBillingContactUser: () => void;
+  export let onAttemptChangeBillingContactUserRole: () => void;
 
   const ROW_HEIGHT = 69;
   const OVERSCAN = 5;
@@ -62,7 +66,7 @@
     }
   }
 
-  const columns: ColumnDef<OrgUser, any>[] = [
+  $: columns = <ColumnDef<OrgUser, any>[]>[
     {
       accessorKey: "user",
       header: "User",
@@ -88,7 +92,9 @@
           email: row.original.userEmail,
           role: row.original.roleName,
           isCurrentUser: row.original.userEmail === currentUserEmail,
-          currentUserRole: currentUserRole,
+          currentUserRole,
+          isBillingContact: row.original.userEmail === billingContact,
+          onAttemptChangeBillingContactUserRole,
         }),
       meta: {
         widthPercent: 5,
@@ -104,7 +110,9 @@
           email: row.original.userEmail,
           role: row.original.roleName,
           isCurrentUser: row.original.userEmail === currentUserEmail,
-          currentUserRole: currentUserRole,
+          currentUserRole,
+          isBillingContact: row.original.userEmail === billingContact,
+          onAttemptRemoveBillingContactUser,
         }),
       meta: {
         widthPercent: 0,
@@ -128,7 +136,7 @@
     }));
   };
 
-  const options = writable<TableOptions<OrgUser>>({
+  $: options = writable<TableOptions<OrgUser>>({
     data: safeData,
     columns,
     state: {
@@ -139,7 +147,7 @@
     getSortedRowModel: getSortedRowModel(),
   });
 
-  const table = createSvelteTable(options);
+  $: table = createSvelteTable(options);
 
   $: rows = $table.getRowModel().rows;
 

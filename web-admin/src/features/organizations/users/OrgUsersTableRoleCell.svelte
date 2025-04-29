@@ -16,6 +16,10 @@
   export let role: string;
   export let isCurrentUser: boolean;
   export let currentUserRole: string;
+  export let isBillingContact: boolean;
+  // Changing billing contact is not an action for this user. So handle it upstream
+  // This also avoids rendering the modal per row.
+  export let onAttemptChangeBillingContactUserRole: () => void;
 
   let isDropdownOpen = false;
   let isUpgradeConfirmOpen = false;
@@ -43,6 +47,12 @@
     createAdminServiceSetOrganizationMemberUserRole();
 
   async function handleSetRole(role: string) {
+    if (role !== "admin" && isBillingContact) {
+      // We cannot change a billing contact's role to a non-admin one.
+      onAttemptChangeBillingContactUserRole();
+      return;
+    }
+
     try {
       if (isGuest) {
         newRole = role;
