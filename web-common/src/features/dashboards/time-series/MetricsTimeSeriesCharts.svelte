@@ -492,6 +492,12 @@
                   : value.toString();
               }}
             />
+          {:else if $timeControlsStore.ready && !$timeControlsStore.selectedTimeRange}
+            <div
+              class="flex flex-col p-5 items-center justify-center text-xs ui-copy-muted"
+            >
+              <span>Unable to fetch data from the API</span>
+            </div>
           {:else}
             <div class="flex items-center justify-center w-24">
               <Spinner status={EntityStatus.Running} />

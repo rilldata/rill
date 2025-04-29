@@ -116,7 +116,7 @@ export const timeControlStateSelector = ([
 
   if (!state) {
     return {
-      ready: false,
+      ready: true,
       isFetching: false,
     };
   }

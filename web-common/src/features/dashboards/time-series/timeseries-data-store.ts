@@ -65,6 +65,20 @@ export function createMetricsViewTimeSeries(
       useTimeControlStore(ctx),
     ],
     ([runtime, metricsViewName, dashboardStore, timeControls], set) => {
+      if (timeControls.ready && !timeControls.selectedTimeRange) {
+        set({
+          isPending: false,
+          isLoading: false,
+          isError: false,
+          data: {
+            data: [],
+            meta: [],
+          },
+          error: null,
+        } as any);
+        return;
+      }
+
       return createQueryServiceMetricsViewTimeSeries(
         runtime.instanceId,
         metricsViewName,
