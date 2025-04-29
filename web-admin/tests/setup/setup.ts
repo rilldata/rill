@@ -225,35 +225,45 @@ setup.describe("global setup", () => {
       adminPage.getByRole("link", { name: "Programmatic Ads Bids" }),
     ).toBeVisible();
 
-    // Wait for the first dashboard to be ready
+    // Wait for the dashboards to be ready by checking their elements
+    await expect(
+      adminPage.getByRole("link", {
+        name: "Programmatic Ads Auction auction_explore",
+      }),
+    ).toBeVisible();
+    await expect(
+      adminPage.getByRole("link", {
+        name: "Programmatic Ads Bids bids_explore",
+      }),
+    ).toBeVisible();
+
+    // Verify the dashboards are in a ready state
+    await expect(adminPage.getByLabel("Container title")).toHaveText(
+      "Project dashboards",
+    );
+
+    // Wait for the dashboards to be ready by checking their refresh status
     await expect
       .poll(
         async () => {
-          await adminPage.reload();
-          const listing = adminPage.getByRole("link", {
+          const auctionLink = adminPage.getByRole("link", {
             name: "Programmatic Ads Auction auction_explore",
           });
-          return listing.textContent();
-        },
-        {
-          // Increased timeout for the 1st dashboard to make sure sources are reconciled.
-          intervals: [10_000, 10_000, 20_000, 20_000, 30_000, 30_000],
-          timeout: 120_000,
-        },
-      )
-      .toContain("Last refreshed");
-
-    await expect
-      .poll(
-        async () => {
-          await adminPage.reload();
-          const listing = adminPage.getByRole("link", {
+          const bidsLink = adminPage.getByRole("link", {
             name: "Programmatic Ads Bids bids_explore",
           });
-          return listing.textContent();
+          const auctionText = await auctionLink.textContent();
+          const bidsText = await bidsLink.textContent();
+          return (
+            auctionText?.includes("Last refreshed") &&
+            bidsText?.includes("Last refreshed")
+          );
         },
-        { intervals: Array(6).fill(5_000), timeout: 30_000 },
+        {
+          timeout: 120_000,
+          intervals: [10_000, 10_000, 20_000, 20_000, 30_000, 30_000],
+        },
       )
-      .toContain("Last refreshed");
+      .toBeTruthy();
   });
 });
