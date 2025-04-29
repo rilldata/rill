@@ -125,7 +125,7 @@
         <CaretDownIcon size="12px" />
       {/if}
     </DropdownMenu.Trigger>
-    <DropdownMenu.Content align="start">
+    <DropdownMenu.Content align="start" class="w-[200px]">
       {#if isAdmin}
         <DropdownMenu.Item
           class="font-normal flex flex-col items-start hover:bg-slate-50 {role ===
@@ -137,7 +137,7 @@
           }}
         >
           <span class="text-xs font-medium text-slate-700">Admin</span>
-          <span class="text-[10px] text-slate-500"
+          <span class="text-[11px] text-slate-500"
             >{OPTION_DESCRIPTION_MAP.admin}</span
           >
         </DropdownMenu.Item>
@@ -152,7 +152,7 @@
         }}
       >
         <span class="text-xs font-medium text-slate-700">Editor</span>
-        <span class="text-[10px] text-slate-500"
+        <span class="text-[11px] text-slate-500"
           >{OPTION_DESCRIPTION_MAP.editor}</span
         >
       </DropdownMenu.Item>
@@ -166,7 +166,7 @@
         }}
       >
         <span class="text-xs font-medium text-slate-700">Viewer</span>
-        <span class="text-[10px] text-slate-500"
+        <span class="text-[11px] text-slate-500"
           >{OPTION_DESCRIPTION_MAP.viewer}</span
         >
       </DropdownMenu.Item>
@@ -181,7 +181,7 @@
           }}
         >
           <span class="text-xs font-medium text-slate-700">Guest</span>
-          <span class="text-[10px] text-slate-500"
+          <span class="text-[11px] text-slate-500"
             >{OPTION_DESCRIPTION_MAP.guest}</span
           >
         </DropdownMenu.Item>
