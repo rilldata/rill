@@ -35,7 +35,7 @@
     {@const component = components.get(id)}
     <ItemWrapper type={component?.type} zIndex={4 - columnIndex}>
       {#if component}
-        <CanvasComponent {component} readOnly />
+        <CanvasComponent {component} />
       {:else}
         <ComponentError error="No valid component {id} in project" />
       {/if}
