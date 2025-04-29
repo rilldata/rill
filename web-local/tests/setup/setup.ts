@@ -33,13 +33,7 @@ async function prepProject(name: string) {
 
   const { process } = await spawnAndMatch(
     "../rill",
-    [
-      "start",
-      "--no-open",
-      "--port",
-      "" + TEST_PORT,
-      TEST_PROJECT_DIRECTORY,
-    ],
+    ["start", "--no-open", "--port", "" + TEST_PORT, TEST_PROJECT_DIRECTORY],
     new RegExp("Serving Rill on: http://localhost"),
   );
 
