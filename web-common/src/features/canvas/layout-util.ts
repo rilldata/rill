@@ -12,12 +12,15 @@ import { ResourceKind } from "../entity-management/resource-selectors";
 import type { CanvasComponentType } from "./components/types";
 import { COMPONENT_CLASS_MAP } from "./components/util";
 
+// TODO: Move this individual component class
 export const initialHeights: Record<CanvasComponentType, number> = {
   line_chart: 320,
   bar_chart: 320,
   area_chart: 320,
   stacked_bar: 320,
   stacked_bar_normalized: 320,
+  pie_chart: 320,
+  heatmap: 320,
   markdown: 40,
   kpi_grid: 128,
   image: 80,
@@ -380,6 +383,7 @@ export function generateNewAssets(params: {
     newSpecRows: updatedSpecRows,
     newYamlRows: updatedYamlRows,
     newResolvedComponents: resolvedComponentsMap,
+    mover,
   };
 }
 
