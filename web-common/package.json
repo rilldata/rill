@@ -103,9 +103,5 @@
     "yaml": "^2.4.5",
     "yup": "^1.4.0"
   },
-  "type": "module",
-  "dependencies": {
-    "prosemirror-state": "^1.4.3",
-    "uninstall": "^0.0.0"
-  }
+  "type": "module"
 }
