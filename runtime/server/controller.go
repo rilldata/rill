@@ -119,11 +119,14 @@ func (s *Server) WatchResourcesHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Use the existing WatchResources implementation in a goroutine
 	go func() {
-		s.WatchResources(&runtimev1.WatchResourcesRequest{
+		err := s.WatchResources(&runtimev1.WatchResourcesRequest{
 			InstanceId: instanceID,
 			Kind:       kind,
 			Replay:     replay,
 		}, shim)
+		if err != nil {
+			s.logger.Warn("failed to watch resources", zap.String("instance_id", instanceID), zap.String("kind", kind), zap.Error(err))
+		}
 	}()
 
 	eventServer.ServeHTTP(w, r)
