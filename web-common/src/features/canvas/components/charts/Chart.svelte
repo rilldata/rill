@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { sanitizeFieldName } from "@rilldata/web-common/components/vega/util";
   import { getRillTheme } from "@rilldata/web-common/components/vega/vega-config";
   import VegaLiteRenderer from "@rilldata/web-common/components/vega/VegaLiteRenderer.svelte";
   import ComponentHeader from "@rilldata/web-common/features/canvas/ComponentHeader.svelte";
@@ -11,7 +12,7 @@
   import type { ChartSpec } from "./";
   import type { BaseChart } from "./BaseChart";
   import { getChartData } from "./selector";
-  import { generateSpec, isChartLineLike, sanitizeFieldName } from "./util";
+  import { generateSpec, isChartLineLike } from "./util";
   import { validateChartSchema } from "./validate";
 
   export let component: BaseChart<ChartSpec>;
