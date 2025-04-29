@@ -2,7 +2,7 @@
   import { cn, flyAndScale } from "@rilldata/web-common/lib/shadcn";
   import { Dialog as DialogPrimitive } from "bits-ui";
   import Cross2 from "svelte-radix/Cross2.svelte";
-  import * as Dialog from "web-common/src/components/dialog-v2/index.js";
+  import * as Dialog from "web-common/src/components/dialog/index.js";
 
   type $$Props = DialogPrimitive.ContentProps & { noClose?: boolean };
 
