@@ -225,16 +225,17 @@ setup.describe("global setup", () => {
       adminPage.getByRole("link", { name: "Programmatic Ads Bids" }),
     ).toBeVisible();
 
-    // Wait for the dashboards to be ready by checking their elements
+    // Wait for the first dashboard to be ready
     await expect(
       adminPage.getByRole("link", {
         name: "Programmatic Ads Auction auction_explore",
       }),
-    ).toBeVisible();
+    ).toContainText("Last refreshed");
+
     await expect(
       adminPage.getByRole("link", {
         name: "Programmatic Ads Bids bids_explore",
       }),
-    ).toBeVisible();
+    ).toContainText("Last refreshed");
   });
 });
