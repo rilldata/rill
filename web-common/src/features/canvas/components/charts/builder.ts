@@ -10,6 +10,7 @@ import type {
   TooltipValue,
 } from "@rilldata/web-common/features/canvas/components/charts/types";
 import { mergedVlConfig } from "@rilldata/web-common/features/canvas/components/charts/util";
+import merge from "deepmerge";
 import type { VisualizationSpec } from "svelte-vega";
 import type { Config } from "vega-lite";
 import type {
