@@ -380,6 +380,7 @@ export function generateNewAssets(params: {
     newSpecRows: updatedSpecRows,
     newYamlRows: updatedYamlRows,
     newResolvedComponents: resolvedComponentsMap,
+    mover,
   };
 }
 
