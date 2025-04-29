@@ -1,31 +1,34 @@
-import type {
-  ChartConfig,
-  TooltipValue,
-} from "@rilldata/web-common/features/canvas/components/charts/types";
-import { sanitizeFieldName } from "@rilldata/web-common/features/canvas/components/charts/util";
-import { sanitizeValueForVega } from "@rilldata/web-common/features/templates/charts/utils";
+import {
+  sanitizeFieldName,
+  sanitizeValueForVega,
+} from "@rilldata/web-common/components/vega/util";
+import type { TooltipValue } from "@rilldata/web-common/features/canvas/components/charts/types";
 import type { VisualizationSpec } from "svelte-vega";
 import {
   createColorEncoding,
+  createConfig,
   createDefaultTooltipEncoding,
   createMultiLayerBaseSpec,
-  createXEncoding,
-  createYEncoding,
-} from "../builder";
-import type { ChartDataResult } from "../selector";
-
-export function generateVLLineChartSpec(
-  config: ChartConfig,
+  createPositionEncoding,
+} from "../../builder";
+import type { ChartDataResult } from "../../types";
+import type { CartesianChartSpec } from "../CartesianChart";
+export function generateVLAreaChartSpec(
+  config: CartesianChartSpec,
   data: ChartDataResult,
 ): VisualizationSpec {
   const spec = createMultiLayerBaseSpec();
+  const vegaConfig = createConfig(config);
 
   const colorField =
     typeof config.color === "object" ? config.color.field : undefined;
   const xField = sanitizeValueForVega(config.x?.field);
   const yField = sanitizeValueForVega(config.y?.field);
 
-  const defaultTooltipChannel = createDefaultTooltipEncoding(config, data);
+  const defaultTooltipChannel = createDefaultTooltipEncoding(
+    [config.x, config.y, config.color],
+    data,
+  );
   let multiValueTooltipChannel: TooltipValue[] | undefined;
 
   if (colorField && config.x && yField) {
@@ -45,16 +48,19 @@ export function generateVLLineChartSpec(
     multiValueTooltipChannel = multiValueTooltipChannel.slice(0, 50);
   }
 
-  spec.encoding = { x: createXEncoding(config, data) };
+  spec.encoding = { x: createPositionEncoding(config.x, data) };
 
   spec.layer = [
     {
       encoding: {
-        y: createYEncoding(config, data),
-        color: createColorEncoding(config, data),
+        y: { ...createPositionEncoding(config.y, data), stack: "zero" },
+        color: createColorEncoding(config.color, data),
       },
       layer: [
-        { mark: "line" },
+        { mark: "area" },
+        {
+          mark: { type: "line", opacity: 0.5 },
+        },
         {
           transform: [{ filter: { param: "hover", empty: false } }],
           mark: {
@@ -132,5 +138,8 @@ export function generateVLLineChartSpec(
     },
   ];
 
-  return spec;
+  return {
+    ...spec,
+    ...(vegaConfig && { config: vegaConfig }),
+  };
 }

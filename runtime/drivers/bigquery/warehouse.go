@@ -115,6 +115,7 @@ func (c *Connection) QueryAsFiles(ctx context.Context, props map[string]any) (dr
 		}
 
 		q := client.Query(srcProps.SQL)
+		q.QueryConfig.ForceStorageAPI = true
 		it, err = q.Read(ctx)
 
 		if err != nil && strings.Contains(err.Error(), "Response too large to return") {

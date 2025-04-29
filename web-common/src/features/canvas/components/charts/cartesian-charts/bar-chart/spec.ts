@@ -1,14 +1,19 @@
-import type { ChartConfig } from "@rilldata/web-common/features/canvas/components/charts/types";
 import type { VisualizationSpec } from "svelte-vega";
-import { createEncoding, createSingleLayerBaseSpec } from "../builder";
-import type { ChartDataResult } from "../selector";
+import {
+  createConfig,
+  createEncoding,
+  createSingleLayerBaseSpec,
+} from "../../builder";
+import type { ChartDataResult } from "../../types";
+import type { CartesianChartSpec } from "../CartesianChart";
 
 export function generateVLBarChartSpec(
-  config: ChartConfig,
+  config: CartesianChartSpec,
   data: ChartDataResult,
 ): VisualizationSpec {
   const spec = createSingleLayerBaseSpec("bar");
   const baseEncoding = createEncoding(config, data);
+  const vegaConfig = createConfig(config);
 
   if (config.color && typeof config.color === "object" && config.x) {
     baseEncoding.xOffset = {
@@ -18,5 +23,8 @@ export function generateVLBarChartSpec(
   }
   spec.encoding = baseEncoding;
 
-  return spec;
+  return {
+    ...spec,
+    ...(vegaConfig && { config: vegaConfig }),
+  };
 }
