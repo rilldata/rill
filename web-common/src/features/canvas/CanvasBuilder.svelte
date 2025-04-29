@@ -455,7 +455,6 @@
         if (event.button !== 0) return;
         const component = components.get(id);
         if (!component) return;
-        event.preventDefault();
 
         initialMousePosition = $mousePosition;
 
@@ -464,6 +463,14 @@
         if (dragTimeout) clearTimeout(dragTimeout);
 
         openSidebarAfterSelection = true;
+
+        if (
+          event?.target instanceof HTMLElement &&
+          component.type === "markdown" &&
+          !event.target?.classList.contains("component-body")
+        ) {
+          return;
+        }
 
         dragTimeout = setTimeout(() => {
           openSidebarAfterSelection = false;

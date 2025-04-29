@@ -1,0 +1,114 @@
+.milkdown {
+  @apply w-full min-h-5;
+}
+
+.ProseMirror {
+  @apply outline-none;
+}
+
+.ProseMirror {
+  @apply text-gray-800;
+}
+.ProseMirror h1 {
+  font-size: 24px;
+  @apply font-medium;
+}
+.ProseMirror h2 {
+  font-size: 20px;
+  @apply font-medium;
+}
+
+.ProseMirror h3 {
+  font-size: 18px;
+  @apply font-medium;
+}
+
+.ProseMirror h4 {
+  font-size: 16px;
+  @apply font-medium;
+}
+
+.ProseMirror p {
+  font-size: 14px;
+  @apply my-2;
+}
+
+.items-center .ProseMirror p {
+  @apply text-center w-full;
+}
+
+.items-end .ProseMirror p {
+  @apply text-right w-full;
+}
+
+.items-start .ProseMirror p {
+  @apply text-left w-full;
+}
+
+.ProseMirror table {
+  @apply w-full border-collapse my-4;
+}
+
+.ProseMirror th {
+  @apply bg-gray-50 border border-gray-200 px-4 py-2 text-left text-sm font-medium;
+}
+
+.ProseMirror td {
+  @apply border border-gray-200 px-4 py-2 text-sm;
+}
+
+.ProseMirror tr:nth-child(even) {
+  @apply bg-gray-50;
+}
+
+.ProseMirror tr:hover {
+  @apply bg-gray-100;
+}
+
+.ProseMirror a {
+  @apply text-blue-600;
+}
+
+.ProseMirror ul {
+  @apply list-disc pl-6 my-3;
+}
+
+.ProseMirror ol {
+  @apply list-decimal pl-6 my-3;
+}
+
+.ProseMirror li {
+  @apply text-sm my-1;
+}
+
+.ProseMirror blockquote {
+  @apply border-l-4 border-gray-300 pl-4 py-1 my-3 italic text-gray-600;
+}
+
+.ProseMirror code {
+  @apply bg-gray-100 px-1 py-0.5 rounded text-sm font-mono;
+}
+
+.ProseMirror pre {
+  @apply bg-gray-100 p-3 rounded my-3 overflow-x-auto;
+}
+
+.ProseMirror pre code {
+  @apply bg-transparent p-0 text-sm;
+}
+
+.ProseMirror hr {
+  @apply my-3 border-t border-gray-300 w-full;
+}
+
+.ProseMirror img {
+  @apply max-w-full h-auto my-3;
+}
+
+.ProseMirror[data-placeholder]::before {
+  @apply text-gray-500 font-normal flex justify-center;
+  position: absolute;
+  font-size: 14px;
+  content: attr(data-placeholder);
+  pointer-events: none;
+}

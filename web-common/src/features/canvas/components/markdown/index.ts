@@ -12,7 +12,7 @@ import Markdown from "./Markdown.svelte";
 export { default as Markdown } from "./Markdown.svelte";
 
 export const defaultMarkdownAlignment: ComponentAlignment = {
-  vertical: "middle",
+  vertical: "top",
   horizontal: "left",
 };
 
@@ -32,24 +32,24 @@ export class MarkdownCanvasComponent extends BaseCanvasComponent<MarkdownSpec> {
     const defaultSpec: MarkdownSpec = {
       title: "",
       description: "",
-      content: "Your text",
+      content: "",
       alignment: defaultMarkdownAlignment,
     };
     super(resource, parent, path, defaultSpec);
   }
 
   isValid(spec: MarkdownSpec): boolean {
-    return typeof spec.content === "string" && spec.content.trim().length > 0;
+    return !!spec;
   }
 
   inputParams(): InputParams<MarkdownSpec> {
     return {
       options: {
-        content: {
-          type: "textArea",
-          label: "Markdown",
-          description: "Write text using the markdown syntax",
-        },
+        // content: {
+        //   type: "textArea",
+        //   label: "Markdown",
+        //   description: "Write text using the markdown syntax",
+        // },
         alignment: {
           type: "alignment",
           label: "Alignment",
@@ -63,21 +63,10 @@ export class MarkdownCanvasComponent extends BaseCanvasComponent<MarkdownSpec> {
   }
 
   static newComponentSpec(): MarkdownSpec {
-    const defaultContent = `# H1 Markdown Text
-## H2 Markdown text
-### H3 Markdown text
-#### H4 markdown text
-Normal text paragraph with **bold** and _italics_
-
-| Column 1 | Column 2 | Column 3 |
-|----------|----------|----------|
-| Data 1   | Data 2   | Data 3   |
-| Data 4   | Data 5   | Data 6   |
-
-Start writing in **Markdown** and see your text beautifully formatted! 🚀`;
+    // const defaultContent = `Text`;
 
     return {
-      content: defaultContent,
+      content: "",
       alignment: defaultMarkdownAlignment,
     };
   }
