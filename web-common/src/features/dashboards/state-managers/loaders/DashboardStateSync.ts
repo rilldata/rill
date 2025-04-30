@@ -1,6 +1,7 @@
 import { goto } from "$app/navigation";
 import { page } from "$app/stores";
 import { DashboardStateDataLoader } from "@rilldata/web-common/features/dashboards/state-managers/loaders/DashboardStateDataLoader";
+import { saveMostRecentPartialExploreState } from "@rilldata/web-common/features/dashboards/state-managers/loaders/most-recent-explore-state";
 import {
   metricsExplorerStore,
   useExploreState,
@@ -121,6 +122,12 @@ export class DashboardStateSync {
       exploreSpec,
       timeControlsState,
     );
+    // Update "most recent explore state" with the initial state
+    saveMostRecentPartialExploreState(
+      this.exploreName,
+      this.extraPrefix,
+      initExploreState,
+    );
 
     // If the current url same as the new url then there is no need to do anything
     if (redirectUrl.search === pageState.url.search) {
@@ -201,9 +208,15 @@ export class DashboardStateSync {
       exploreSpec,
       timeControlsState,
     );
+    // Update "most recent explore state" with updated state from url
+    saveMostRecentPartialExploreState(
+      this.exploreName,
+      this.extraPrefix,
+      updatedExploreState,
+    );
 
     this.updating = false;
-    // If the url doesnt need to be changed further then we can skip the goto
+    // If the url doesn't need to be changed further then we can skip the goto
     if (redirectUrl.search === pageState.url.search) {
       return;
     }
@@ -257,6 +270,13 @@ export class DashboardStateSync {
       exploreState,
       exploreSpec,
       timeControlsState,
+    );
+    // Update "most recent explore state" with updated state.
+    // Since we do not update the state per action we do it here as blanket update.
+    saveMostRecentPartialExploreState(
+      this.exploreName,
+      this.extraPrefix,
+      exploreState,
     );
 
     this.updating = false;
