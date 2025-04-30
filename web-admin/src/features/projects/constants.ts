@@ -12,7 +12,7 @@ export const PROJECT_ROLES_OPTIONS = [
   {
     value: "viewer",
     label: "Viewer",
-    description: "Read-only access to all org projects",
+    description: "Read-only access to all project resources",
   },
   {
     value: "guest",
@@ -24,6 +24,6 @@ export const PROJECT_ROLES_OPTIONS = [
 export const PROJECT_ROLES_DESCRIPTION_MAP = {
   admin: "Full control of project settings and members",
   editor: "Can create and edit dashboards; manage non-admin access",
-  viewer: "Read-only access to all org projects",
+  viewer: "Read-only access to all project resources",
   guest: "Access to invited projects only",
 };
