@@ -61,7 +61,7 @@
               <ViewAsUserPopover
                 organization={params.organization}
                 project={params.project}
-                on:select={() => {
+                onSelectUser={() => {
                   subMenuOpen = false;
                   primaryMenuOpen = false;
                 }}

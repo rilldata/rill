@@ -10,6 +10,7 @@
 
   export let organization: string;
   export let project: string;
+  export let onSelectUser: (user: V1User) => void;
 
   // Note: this approach will break down if/when there are more than 1000 users in a project
   $: projectUsers = createAdminServiceSearchProjectUsers(
@@ -18,12 +19,10 @@
     { emailQuery: "%", pageSize: 1000, pageToken: undefined },
   );
 
-  const dispatch = createEventDispatcher();
-
   function handleViewAsUser(user: V1User) {
     viewAsUserStore.set(user);
     errorStore.reset();
-    dispatch("select");
+    onSelectUser(user);
   }
 
   $: clientSideUsers = $projectUsers.data?.users ?? [];

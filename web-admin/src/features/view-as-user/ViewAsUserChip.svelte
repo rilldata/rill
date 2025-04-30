@@ -33,7 +33,7 @@
     <ViewAsUserPopover
       organization={$page.params.organization}
       project={$page.params.project}
-      on:select={() => (active = false)}
+      onSelectUser={() => (active = false)}
     />
   </DropdownMenu.Content>
 </DropdownMenu.Root>
