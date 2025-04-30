@@ -20,7 +20,6 @@ import type {
 } from "@rilldata/web-common/runtime-client";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import { get } from "svelte/store";
-import { LATEST_WINDOW_TIME_RANGES } from "../../../lib/time/config";
 import { buildWhereParamForDimensionTableAndTDDExports } from "../../exports/export-filters";
 import { dimensionSearchText as dimensionSearchTextStore } from "../stores/dashboard-stores";
 
@@ -37,26 +36,33 @@ export function getDimensionTableExportQuery(
   if (!validSpecStore.data?.explore || !timeControlState.ready)
     return undefined;
 
-  const timeRange = mapSelectedTimeRangeToV1TimeRange(
-    timeControlState,
-    dashboardState.selectedTimezone,
-    validSpecStore.data.explore,
-  );
-  const comparisonTimeRange = mapSelectedComparisonTimeRangeToV1TimeRange(
-    timeControlState,
-    timeRange,
-  );
+  let timeRange: V1TimeRange | undefined;
+  if (isScheduled) {
+    timeRange = mapSelectedTimeRangeToV1TimeRange(
+      timeControlState,
+      dashboardState.selectedTimezone,
+      validSpecStore.data.explore,
+    );
+  } else {
+    timeRange = {
+      start: timeControlState.timeStart,
+      end: timeControlState.timeEnd,
+    };
+  }
   if (!timeRange) return undefined;
 
-  const isLatestTimeRange =
-    timeControlState.selectedTimeRange?.name &&
-    LATEST_WINDOW_TIME_RANGES[timeControlState.selectedTimeRange?.name];
-
-  if (!isScheduled && isLatestTimeRange) {
-    // For on-demand exports of "latest" time ranges, we must explicitly specify `timeEnd` to match the UI's time range
-    timeRange.end = timeControlState.timeEnd;
-    if (comparisonTimeRange) {
-      comparisonTimeRange.end = timeControlState.timeEnd;
+  let comparisonTimeRange: V1TimeRange | undefined;
+  if (timeControlState.showTimeComparison) {
+    if (isScheduled) {
+      comparisonTimeRange = mapSelectedComparisonTimeRangeToV1TimeRange(
+        timeControlState,
+        timeRange,
+      );
+    } else {
+      comparisonTimeRange = {
+        start: timeControlState.comparisonTimeStart,
+        end: timeControlState.comparisonTimeEnd,
+      };
     }
   }
 

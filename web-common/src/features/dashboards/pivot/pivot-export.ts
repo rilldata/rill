@@ -12,7 +12,6 @@ import {
   type V1TimeRange,
 } from "@rilldata/web-common/runtime-client";
 import { get } from "svelte/store";
-import { LATEST_WINDOW_TIME_RANGES } from "../../../lib/time/config";
 import { runtime } from "../../../runtime-client/runtime-store";
 import type { StateManagers } from "../state-managers/state-managers";
 import { getPivotConfig } from "./pivot-data-config";
@@ -45,22 +44,21 @@ export function getPivotExportQuery(ctx: StateManagers, isScheduled: boolean) {
   const metricsViewSpec = validSpecStore.data?.metricsView ?? {};
   const exploreSpec = validSpecStore.data?.explore ?? {};
 
-  const timeRange = mapSelectedTimeRangeToV1TimeRange(
-    timeControlState,
-    dashboardState.selectedTimezone,
-    exploreSpec,
-  );
+  let timeRange: V1TimeRange | undefined;
+  if (isScheduled) {
+    timeRange = mapSelectedTimeRangeToV1TimeRange(
+      timeControlState,
+      dashboardState.selectedTimezone,
+      exploreSpec,
+    );
+  } else {
+    timeRange = {
+      start: timeControlState.timeStart,
+      end: timeControlState.timeEnd,
+    };
+  }
 
   if (!timeRange) return undefined;
-
-  const isLatestTimeRange =
-    timeControlState.selectedTimeRange?.name &&
-    LATEST_WINDOW_TIME_RANGES[timeControlState.selectedTimeRange?.name];
-
-  if (!isScheduled && isLatestTimeRange) {
-    // For on-demand exports of "latest" time ranges, we must explicitly specify `timeEnd` to match the UI's time range
-    timeRange.end = timeControlState.timeEnd;
-  }
 
   const query: V1Query = {
     metricsViewAggregationRequest: getPivotAggregationRequest(

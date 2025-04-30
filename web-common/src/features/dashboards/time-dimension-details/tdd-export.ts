@@ -12,10 +12,10 @@ import type {
   V1MetricsViewAggregationRequest,
   V1MetricsViewSpec,
   V1Query,
+  V1TimeRange,
 } from "@rilldata/web-common/runtime-client";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import { get } from "svelte/store";
-import { LATEST_WINDOW_TIME_RANGES } from "../../../lib/time/config";
 import { buildWhereParamForDimensionTableAndTDDExports } from "../../exports/export-filters";
 import { dimensionSearchText as dimensionSearchTextStore } from "../stores/dashboard-stores";
 
@@ -61,21 +61,20 @@ function getTDDAggregationRequest(
   )
     return undefined;
 
-  const timeRange = mapSelectedTimeRangeToV1TimeRange(
-    timeControlState,
-    dashboardState.selectedTimezone,
-    explore,
-  );
-  if (!timeRange) return undefined;
-
-  const isLatestTimeRange =
-    timeControlState.selectedTimeRange?.name &&
-    LATEST_WINDOW_TIME_RANGES[timeControlState.selectedTimeRange?.name];
-
-  if (!isScheduled && isLatestTimeRange) {
-    // For on-demand exports of "latest" time ranges, we must explicitly specify `timeEnd` to match the UI's time range
-    timeRange.end = timeControlState.timeEnd;
+  let timeRange: V1TimeRange | undefined;
+  if (isScheduled) {
+    timeRange = mapSelectedTimeRangeToV1TimeRange(
+      timeControlState,
+      dashboardState.selectedTimezone,
+      explore,
+    );
+  } else {
+    timeRange = {
+      start: timeControlState.timeStart,
+      end: timeControlState.timeEnd,
+    };
   }
+  if (!timeRange) return undefined;
 
   const measures: V1MetricsViewAggregationMeasure[] = [
     { name: dashboardState.tdd.expandedMeasureName },
