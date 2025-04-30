@@ -1,41 +1,14 @@
 import { createAdminServiceGetProject } from "@rilldata/web-admin/client";
 import { useValidExplores } from "@rilldata/web-common/features/dashboards/selectors";
 import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
-import type {
-  V1Resource,
-  V1ListResourcesResponse,
-} from "@rilldata/web-common/runtime-client";
+import type { V1Resource } from "@rilldata/web-common/runtime-client";
 import { createRuntimeServiceListResources } from "@rilldata/web-common/runtime-client";
-import type { CreateQueryResult, Query } from "@tanstack/svelte-query";
+import type { CreateQueryResult } from "@tanstack/svelte-query";
 import { derived } from "svelte/store";
-
-const INITIAL_REFETCH_INTERVAL = 200; // Start at 200ms for immediate feedback
-const MAX_REFETCH_INTERVAL = 2_000; // Cap at 2s
-const BACKOFF_FACTOR = 1.5;
-
-function isResourceReconciling(resource: V1Resource) {
-  return (
-    resource.meta.reconcileStatus === "RECONCILE_STATUS_PENDING" ||
-    resource.meta.reconcileStatus === "RECONCILE_STATUS_RUNNING"
-  );
-}
-
-function calculateRefetchInterval(
-  currentInterval: number,
-  data: V1ListResourcesResponse | undefined,
-  query: Query,
-): number | false {
-  if (query.state.error) return false;
-  if (!data?.resources) return INITIAL_REFETCH_INTERVAL;
-
-  const hasReconcilingResources = data.resources.some(isResourceReconciling);
-
-  if (!hasReconcilingResources) {
-    return false;
-  }
-
-  return Math.min(currentInterval * BACKOFF_FACTOR, MAX_REFETCH_INTERVAL);
-}
+import {
+  INITIAL_REFETCH_INTERVAL,
+  calculateRefetchInterval,
+} from "../../shared/refetch-interval";
 
 export function useDashboardsLastUpdated(
   instanceId: string,

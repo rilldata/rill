@@ -8,39 +8,12 @@ import {
   createRuntimeServiceGetResource,
   createRuntimeServiceListResources,
   type V1AlertSpec,
-  type V1ListResourcesResponse,
-  type V1Resource,
 } from "@rilldata/web-common/runtime-client";
 import { readable } from "svelte/store";
-import type { Query } from "@tanstack/svelte-query";
-
-const INITIAL_REFETCH_INTERVAL = 200; // Start at 200ms for immediate feedback
-const MAX_REFETCH_INTERVAL = 2_000; // Cap at 2s
-const BACKOFF_FACTOR = 1.5;
-
-function isResourceReconciling(resource: V1Resource) {
-  return (
-    resource.meta.reconcileStatus === "RECONCILE_STATUS_PENDING" ||
-    resource.meta.reconcileStatus === "RECONCILE_STATUS_RUNNING"
-  );
-}
-
-function calculateRefetchInterval(
-  currentInterval: number,
-  data: V1ListResourcesResponse | undefined,
-  query: Query,
-): number | false {
-  if (query.state.error) return false;
-  if (!data?.resources) return INITIAL_REFETCH_INTERVAL;
-
-  const hasReconcilingResources = data.resources.some(isResourceReconciling);
-
-  if (!hasReconcilingResources) {
-    return false;
-  }
-
-  return Math.min(currentInterval * BACKOFF_FACTOR, MAX_REFETCH_INTERVAL);
-}
+import {
+  INITIAL_REFETCH_INTERVAL,
+  calculateRefetchInterval,
+} from "../shared/refetch-interval";
 
 export function useAlerts(instanceId: string, enabled = true) {
   let currentRefetchInterval = INITIAL_REFETCH_INTERVAL;
