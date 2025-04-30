@@ -8,7 +8,6 @@
   import { getStateManagers } from "../state-managers/state-managers";
   import { metricsExplorerStore } from "../stores/dashboard-stores";
   import AddField from "./AddField.svelte";
-  import PivotDragItem from "./PivotDragItem.svelte";
   import PivotPortalItem from "./PivotPortalItem.svelte";
   import { swapListener } from "./swapListener";
   import {
@@ -16,6 +15,7 @@
     PivotChipType,
     type PivotTableMode,
   } from "./types";
+  import PivotChip from "./PivotChip.svelte";
 
   export type Zone = "rows" | "columns" | "Time" | "Measures" | "Dimensions";
 
@@ -56,6 +56,9 @@
   $: initialIndex = dragData?.initialIndex ?? -1;
   $: canMixTypes = zone === "columns" && tableMode === "flat";
   $: zoneStartedDrag = source === zone;
+  $: lastDimensionIndex = items.findLastIndex(
+    (i) => i.type !== PivotChipType.Measure,
+  );
 
   $: isValidDropZone =
     isDropLocation &&
@@ -64,6 +67,8 @@
 
   function handleMouseDown(e: MouseEvent, item: PivotChipData) {
     e.preventDefault();
+
+    if (e.button !== 0) return;
 
     const dragItem = document.getElementById(item.id);
     if (!dragItem) return;
@@ -145,6 +150,12 @@
 
     if (!isValidDropZone) return;
 
+    const defaultIndex =
+      dragChip?.type === PivotChipType.Measure
+        ? items.length
+        : lastDimensionIndex + 1;
+
+    _ghostIndex.set(defaultIndex);
     swap = true;
   }
 
@@ -198,17 +209,27 @@
         />
       {/if}
 
-      <PivotDragItem
-        {item}
-        {index}
-        removable={isDropLocation}
-        hidden={dragChip?.id === item.id && zoneStartedDrag}
-        on:mousedown={(e) => handleMouseDown(e, item)}
-        on:remove={() => {
-          items = items.filter((i) => i.id !== item.id);
-          onUpdate(items);
-        }}
-      />
+      <div
+        id={item.id}
+        data-type={item.type === PivotChipType.Measure
+          ? "measure"
+          : "dimension"}
+        data-index={index}
+        class="drag-item"
+        class:hidden={dragChip?.id === item.id && zoneStartedDrag}
+        class:rounded-full={item.type !== PivotChipType.Measure}
+      >
+        <PivotChip
+          grab
+          removable={isDropLocation}
+          {item}
+          on:mousedown={(e) => handleMouseDown(e, item)}
+          onRemove={() => {
+            items = items.filter((i) => i.id !== item.id);
+            onUpdate(items);
+          }}
+        />
+      </div>
 
       {#if zone !== "rows" && zone !== "columns"}
         <div class="icons">
@@ -236,9 +257,9 @@
             >
               <Column size="16px" />
             </button>
-            <TooltipContent slot="tooltip-content"
-              >Add to columns</TooltipContent
-            >
+            <TooltipContent slot="tooltip-content">
+              Add to columns
+            </TooltipContent>
           </Tooltip>
         </div>
       {/if}

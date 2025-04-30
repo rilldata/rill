@@ -27,10 +27,6 @@ export function swapListener(
     e: MouseEvent & { currentTarget: HTMLDivElement },
   ) => handlePillShift(e, orientation);
 
-  if (children.length === 0) {
-    ghostIndex.set(0);
-  }
-
   function updateListener({ condition, chipType, canMixTypes }: Options) {
     if (condition && !added) {
       if (canMixTypes !== true) {
