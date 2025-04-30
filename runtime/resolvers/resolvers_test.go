@@ -171,7 +171,6 @@ func TestResolvers(t *testing.T) {
 							SkipChecks:     tc.SkipSecurityChecks,
 						},
 					})
-					require.NoError(t, err)
 
 					// If it succeeded, get the result rows.
 					// Does a JSON roundtrip to coerce to simple types (easier to compare).
@@ -188,16 +187,14 @@ func TestResolvers(t *testing.T) {
 					// If the -update flag is set, update the test case results instead of checking them.
 					// The updated test case will be written back to the test file later.
 					if update {
-						if tc.ResultCSV != "" {
+						tc.ErrorContains = ""
+						if err != nil {
+							tc.ErrorContains = err.Error()
+						} else if tc.ResultCSV != "" {
 							tc.Result = nil
 							tc.ResultCSV = resultToCSV(t, rows, res.Schema())
 						} else {
 							tc.Result = rows
-						}
-
-						tc.ErrorContains = ""
-						if err != nil {
-							tc.ErrorContains = err.Error()
 						}
 						return
 					}
