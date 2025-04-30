@@ -3,7 +3,7 @@ import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/sto
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import { mapSelectedTimeRangeToV1TimeRange } from "@rilldata/web-common/features/dashboards/time-controls/time-range-mappers";
-import type { TimeRangeString } from "@rilldata/web-common/lib/time/types";
+import { type TimeRangeString } from "@rilldata/web-common/lib/time/types";
 import {
   V1TimeGrain,
   type V1MetricsViewAggregationRequest,
@@ -12,6 +12,7 @@ import {
   type V1TimeRange,
 } from "@rilldata/web-common/runtime-client";
 import { get } from "svelte/store";
+import { LATEST_WINDOW_TIME_RANGES } from "../../../lib/time/config";
 import { runtime } from "../../../runtime-client/runtime-store";
 import type { StateManagers } from "../state-managers/state-managers";
 import { getPivotConfig } from "./pivot-data-config";
@@ -49,9 +50,15 @@ export function getPivotExportQuery(ctx: StateManagers, isScheduled: boolean) {
     dashboardState.selectedTimezone,
     exploreSpec,
   );
+
   if (!timeRange) return undefined;
-  if (!isScheduled) {
-    // To match the UI's time range, we must explicitly specify `timeEnd` for on-demand exports
+
+  const isLatestTimeRange =
+    timeControlState.selectedTimeRange?.name &&
+    LATEST_WINDOW_TIME_RANGES[timeControlState.selectedTimeRange?.name];
+
+  if (!isScheduled && isLatestTimeRange) {
+    // For on-demand exports of "latest" time ranges, we must explicitly specify `timeEnd` to match the UI's time range
     timeRange.end = timeControlState.timeEnd;
   }
 

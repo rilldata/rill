@@ -15,6 +15,7 @@ import type {
 } from "@rilldata/web-common/runtime-client";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import { get } from "svelte/store";
+import { LATEST_WINDOW_TIME_RANGES } from "../../../lib/time/config";
 import { buildWhereParamForDimensionTableAndTDDExports } from "../../exports/export-filters";
 import { dimensionSearchText as dimensionSearchTextStore } from "../stores/dashboard-stores";
 
@@ -66,8 +67,13 @@ function getTDDAggregationRequest(
     explore,
   );
   if (!timeRange) return undefined;
-  if (!isScheduled) {
-    // To match the UI's time range, we must explicitly specify `timeEnd` for on-demand exports
+
+  const isLatestTimeRange =
+    timeControlState.selectedTimeRange?.name &&
+    LATEST_WINDOW_TIME_RANGES[timeControlState.selectedTimeRange?.name];
+
+  if (!isScheduled && isLatestTimeRange) {
+    // For on-demand exports of "latest" time ranges, we must explicitly specify `timeEnd` to match the UI's time range
     timeRange.end = timeControlState.timeEnd;
   }
 
