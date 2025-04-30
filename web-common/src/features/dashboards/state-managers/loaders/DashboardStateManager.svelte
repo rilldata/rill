@@ -2,6 +2,7 @@
   import { afterNavigate } from "$app/navigation";
   import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
   import type { CompoundQueryResult } from "@rilldata/web-common/features/compound-query-result";
+  import { useMetricsViewTimeRange } from "@rilldata/web-common/features/dashboards/selectors";
   import { DashboardStateDataLoader } from "@rilldata/web-common/features/dashboards/state-managers/loaders/DashboardStateDataLoader";
   import { DashboardStateSync } from "@rilldata/web-common/features/dashboards/state-managers/loaders/DashboardStateSync";
   import { useExploreState } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
@@ -35,6 +36,9 @@
     );
   }
 
+  let fullTimeRangeQuery:
+    | ReturnType<typeof useMetricsViewTimeRange>
+    | undefined;
   let stateSync: DashboardStateSync | undefined;
   $: if (dataLoader) {
     stateSync?.teardown();
@@ -45,6 +49,7 @@
       storageNamespacePrefix,
       dataLoader,
     );
+    ({ fullTimeRangeQuery } = dataLoader);
   }
 
   let initExploreState:
@@ -70,6 +75,12 @@
   onDestroy(() => {
     stateSync?.teardown();
   });
+
+  // The timeRangeSummary is null when there are 0 rows of data
+  // Notably, this happens when a security policy fully restricts a user from reading any data
+  $: timeRangeSummaryIsNull =
+    $fullTimeRangeQuery?.data?.timeRangeSummary?.min === null &&
+    $fullTimeRangeQuery?.data?.timeRangeSummary?.max === null;
 </script>
 
 {#if isLoading}
@@ -77,8 +88,13 @@
 {:else if error}
   <ErrorPage
     statusCode={error.response?.status}
-    header={"Failed to load dashboard."}
+    header="Failed to load dashboard"
     detail={error.response?.data?.message ?? error.message}
+  />
+{:else if timeRangeSummaryIsNull}
+  <ErrorPage
+    header="Failed to load dashboard"
+    body="This dashboard currently has no data to display. This may be due to access permissions."
   />
 {:else if $exploreStore}
   <slot />
