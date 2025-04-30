@@ -5590,6 +5590,9 @@ definitions:
       definedAsSource:
         type: boolean
         description: defined_as_source is true if it was defined by user as a source but converted internally to a model.
+      changeMode:
+        type: string
+        description: change_mode is the mode of change detection to use for the model.
   v1ModelState:
     type: object
     properties:

@@ -1555,6 +1555,8 @@ export interface V1ModelSpec {
   triggerFull?: boolean;
   /** defined_as_source is true if it was defined by user as a source but converted internally to a model. */
   definedAsSource?: boolean;
+  /** change_mode is the mode of change detection to use for the model. */
+  changeMode?: string;
 }
 
 /**

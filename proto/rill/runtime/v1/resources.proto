@@ -125,6 +125,8 @@ message ModelSpec {
   bool trigger_full = 22;
   // defined_as_source is true if it was defined by user as a source but converted internally to a model.
   bool defined_as_source = 23;
+  // change_mode is the mode of change detection to use for the model.
+  string change_mode = 24;
   reserved 2, 3, 6, 7, 8;
 }
 

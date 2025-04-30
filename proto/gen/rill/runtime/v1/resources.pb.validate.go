@@ -2498,6 +2498,8 @@ func (m *ModelSpec) validate(all bool) error {
 
 	// no validation rules for DefinedAsSource
 
+	// no validation rules for ChangeMode
+
 	if len(errors) > 0 {
 		return ModelSpecMultiError(errors)
 	}

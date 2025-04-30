@@ -950,6 +950,13 @@ export class ModelSpec extends Message<ModelSpec> {
    */
   definedAsSource = false;
 
+  /**
+   * change_mode is the mode of change detection to use for the model.
+   *
+   * @generated from field: string change_mode = 24;
+   */
+  changeMode = "";
+
   constructor(data?: PartialMessage<ModelSpec>) {
     super();
     proto3.util.initPartial(data, this);
@@ -976,6 +983,7 @@ export class ModelSpec extends Message<ModelSpec> {
     { no: 9, name: "trigger", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 22, name: "trigger_full", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 23, name: "defined_as_source", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 24, name: "change_mode", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ModelSpec {
