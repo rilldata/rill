@@ -26,7 +26,7 @@ export function calculateRefetchInterval(
   query: Query<V1ListResourcesResponse, HTTPError>,
 ): number | false {
   if (query.state.error) return false;
-  if (!data) return INITIAL_REFETCH_INTERVAL;
+  if (!data || !data.resources) return INITIAL_REFETCH_INTERVAL;
 
   const hasReconcilingResources = data.resources.some(isResourceReconciling);
 
