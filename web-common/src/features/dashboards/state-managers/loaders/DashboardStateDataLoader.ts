@@ -3,7 +3,7 @@ import {
   type CompoundQueryResult,
   getCompoundQuery,
 } from "@rilldata/web-common/features/compound-query-result";
-import { useMetricsViewTimeRange } from "@rilldata/web-common/features/dashboards/selectors";
+import { useFullTimeRangeQuery } from "@rilldata/web-common/features/dashboards/selectors";
 import { cascadingExploreStateMerge } from "@rilldata/web-common/features/dashboards/state-managers/cascading-explore-state-merge";
 import { getPartialExploreStateFromSessionStorage } from "@rilldata/web-common/features/dashboards/state-managers/loaders/explore-web-view-store";
 import { getExploreStateFromYAMLConfig } from "@rilldata/web-common/features/dashboards/stores/get-explore-state-from-yaml-config";
@@ -11,12 +11,9 @@ import { getRillDefaultExploreState } from "@rilldata/web-common/features/dashbo
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import { convertURLSearchParamsToExploreState } from "@rilldata/web-common/features/dashboards/url-state/convertURLSearchParamsToExploreState";
 import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
-import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
-import { createQueryServiceMetricsViewTimeRange } from "@rilldata/web-common/runtime-client";
+import { type V1MetricsViewTimeRangeResponse } from "@rilldata/web-common/runtime-client";
 import type { AfterNavigate } from "@sveltejs/kit";
-import { Settings } from "luxon";
 import { derived, get } from "svelte/store";
-import { normalizeWeekday } from "../../time-controls/new-time-controls";
 
 /**
  * Loads data from explore and metrics view specs, along with all time range query.
@@ -26,9 +23,7 @@ import { normalizeWeekday } from "../../time-controls/new-time-controls";
 export class DashboardStateDataLoader {
   // These can be used to show a loading status
   public readonly validSpecQuery: ReturnType<typeof useExploreValidSpec>;
-  public readonly fullTimeRangeQuery: ReturnType<
-    typeof useMetricsViewTimeRange
-  >;
+  public readonly fullTimeRangeQuery: CompoundQueryResult<V1MetricsViewTimeRangeResponse>;
 
   // Default explore state show when there is no data in session/local storage or a home bookmark.
   public readonly rillDefaultExploreState: CompoundQueryResult<MetricsExplorerEntity>;
@@ -56,45 +51,12 @@ export class DashboardStateDataLoader {
 
   public constructor(
     instanceId: string,
-    metricsViewName: string,
     private readonly exploreName: string,
     private readonly storageNamespacePrefix: string | undefined,
     private readonly bookmarkOrTokenExploreState?: CompoundQueryResult<Partial<MetricsExplorerEntity> | null>,
   ) {
     this.validSpecQuery = useExploreValidSpec(instanceId, exploreName);
-    this.fullTimeRangeQuery = derived(
-      [this.validSpecQuery],
-      ([validSpecResp], set) => {
-        const firstDayOfWeek = validSpecResp.data?.metricsView?.firstDayOfWeek;
-
-        Settings.defaultWeekSettings = {
-          firstDay: normalizeWeekday(firstDayOfWeek),
-          weekend: [6, 7],
-          minimalDays: 4,
-        };
-
-        const metricsViewSpec = validSpecResp.data?.metricsView ?? {};
-        if (!metricsViewSpec.timeDimension) {
-          // We return early to avoid having isLoading=true when time dimension is not present.
-          // This allows us to check isLoading further down without any issues of it getting stuck.
-          set({
-            data: undefined,
-            error: null,
-            isLoading: false,
-            isError: false,
-          } as any);
-          return;
-        }
-
-        createQueryServiceMetricsViewTimeRange(
-          instanceId,
-          metricsViewName,
-          {},
-          {},
-          queryClient,
-        ).subscribe(set);
-      },
-    );
+    this.fullTimeRangeQuery = useFullTimeRangeQuery(instanceId, exploreName);
 
     this.rillDefaultExploreState = getCompoundQuery(
       [this.validSpecQuery, this.fullTimeRangeQuery],

@@ -1,13 +1,16 @@
+import type { CompoundQueryResult } from "@rilldata/web-common/features/compound-query-result";
 import {
   createAndExpression,
   matchExpressionByName,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
+import { normalizeWeekday } from "@rilldata/web-common/features/dashboards/time-controls/new-time-controls";
 import {
   ResourceKind,
   useClientFilteredResources,
   useFilteredResources,
   useResource,
 } from "@rilldata/web-common/features/entity-management/resource-selectors";
+import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
 import {
   type RpcStatus,
   type V1Expression,
@@ -25,6 +28,7 @@ import type {
   CreateQueryResult,
   QueryClient,
 } from "@tanstack/svelte-query";
+import { Settings } from "luxon";
 import { derived } from "svelte/store";
 import type { ErrorType } from "../../runtime-client/http-client";
 import type { DimensionThresholdFilter } from "./stores/metrics-explorer-entity";
@@ -119,6 +123,79 @@ export function useMetricsViewTimeRange(
         },
         queryClient,
       ).subscribe(set),
+  );
+}
+
+/**
+ * Wrapper function that fetches full time range.
+ * Uses useExploreValidSpec unlike the above useMetricsViewTimeRange since it is more widely used.
+ *
+ * Does an additional validation where null min and max returned throws an error instead.
+ *
+ * TODO: replace usages of useMetricsViewTimeRange with this eventually
+ */
+export function useFullTimeRangeQuery(
+  instanceId: string,
+  exploreName: string,
+  options?: {
+    query?: CreateQueryOptions<V1MetricsViewTimeRangeResponse>;
+  },
+  queryClient?: QueryClient,
+): CompoundQueryResult<V1MetricsViewTimeRangeResponse> {
+  const { query: queryOptions } = options ?? {};
+
+  return derived(
+    useExploreValidSpec(instanceId, exploreName, undefined, queryClient),
+    (validSpecResp, set) => {
+      const firstDayOfWeek = validSpecResp.data?.metricsView?.firstDayOfWeek;
+      const metricsViewName = validSpecResp.data?.explore?.metricsView ?? "";
+
+      Settings.defaultWeekSettings = {
+        firstDay: normalizeWeekday(firstDayOfWeek),
+        weekend: [6, 7],
+        minimalDays: 4,
+      };
+
+      const metricsViewSpec = validSpecResp.data?.metricsView ?? {};
+      if (!metricsViewSpec.timeDimension) {
+        // We return early to avoid having isLoading=true when time dimension is not present.
+        // This allows us to check isLoading further down without any issues of it getting stuck.
+        set({
+          data: undefined,
+          error: null,
+          isFetching: false,
+          isLoading: false,
+        });
+        return;
+      }
+
+      createQueryServiceMetricsViewTimeRange(
+        instanceId,
+        metricsViewName,
+        {},
+        { query: queryOptions },
+        queryClient,
+      ).subscribe((timeRangeResp) => {
+        // The timeRangeSummary is null when there are 0 rows of data
+        // Notably, this happens when a security policy fully restricts a user from reading any data
+        if (
+          timeRangeResp.data?.timeRangeSummary?.min === null &&
+          timeRangeResp.data?.timeRangeSummary?.max === null
+        ) {
+          set({
+            data: undefined,
+            error: new Error(
+              "This dashboard currently has no data to display. This may be due to access permissions.",
+            ),
+            isFetching: false,
+            isLoading: false,
+          });
+          return;
+        }
+
+        set(timeRangeResp);
+      });
+    },
   );
 }
 
