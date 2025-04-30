@@ -4,6 +4,7 @@ on:
     paths:
       - ".github/workflows/web-test.yml"
       - "web-admin/**"
+      - "web-auth/**"
       - "web-common/**"
       - "web-local/**"
 jobs:
@@ -21,6 +22,9 @@ jobs:
             admin:
               - ".github/workflows/web-test.yml"
               - "web-admin/**"
+            auth:
+              - ".github/workflows/web-test.yml"
+              - "web-auth/**"
             local:
               - ".github/workflows/web-test.yml"
               - "web-local/**"
@@ -65,6 +69,12 @@ jobs:
           cd ..
           npx eslint web-admin --quiet
           npx svelte-check --workspace web-admin --no-tsconfig
+
+      - name: lint and type checks for web auth
+        if: steps.filter.outputs.auth == 'true'
+        run: |-
+          npx eslint web-auth --quiet
+          npx svelte-check --workspace web-auth --no-tsconfig
 
       - name: type check non-svelte files (with temporary whitelist)
         run: |-
