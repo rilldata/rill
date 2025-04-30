@@ -1,6 +1,5 @@
 <script lang="ts">
   import * as Command from "@rilldata/web-common/components/command/index.js";
-  import { createEventDispatcher } from "svelte";
   import {
     createAdminServiceSearchProjectUsers,
     type V1User,
