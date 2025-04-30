@@ -239,6 +239,7 @@ schema: default
 				OutputProperties: must(structpb.NewStruct(map[string]any{"materialize": true})),
 				RefreshSchedule:  &runtimev1.Schedule{RefUpdate: true},
 				DefinedAsSource:  true,
+				ChangeMode:       "reset",
 			},
 		},
 		// source s2
@@ -252,6 +253,7 @@ schema: default
 				OutputProperties: must(structpb.NewStruct(map[string]any{"materialize": true})),
 				RefreshSchedule:  &runtimev1.Schedule{RefUpdate: true, Cron: "0 0 * * *"},
 				DefinedAsSource:  true,
+				ChangeMode:       "reset",
 			},
 		},
 		// model m1
@@ -263,6 +265,7 @@ schema: default
 				InputConnector:  "duckdb",
 				InputProperties: must(structpb.NewStruct(map[string]any{"sql": strings.TrimSpace(files["models/m1.sql"])})),
 				OutputConnector: "duckdb",
+				ChangeMode:      "reset",
 			},
 		},
 		// model m2
@@ -276,6 +279,7 @@ schema: default
 				InputProperties:  must(structpb.NewStruct(map[string]any{"sql": strings.TrimSpace(files["models/m2.sql"])})),
 				OutputConnector:  "duckdb",
 				OutputProperties: must(structpb.NewStruct(map[string]any{"materialize": true})),
+				ChangeMode:       "reset",
 			},
 		},
 		// dashboard d1
@@ -357,6 +361,7 @@ schema: default
 				})),
 				OutputConnector:  "duckdb",
 				OutputProperties: must(structpb.NewStruct(map[string]any{"materialize": true})),
+				ChangeMode:       "reset",
 			},
 		},
 		// postgres
@@ -457,6 +462,7 @@ path: hello
 			OutputProperties: must(structpb.NewStruct(map[string]any{"materialize": true})),
 			RefreshSchedule:  &runtimev1.Schedule{RefUpdate: true},
 			DefinedAsSource:  true,
+			ChangeMode:       "reset",
 		},
 	}
 	diff, err := p.Reparse(ctx, s1.Paths)
@@ -480,6 +486,7 @@ SELECT * FROM foo
 			InputConnector:  "duckdb",
 			InputProperties: must(structpb.NewStruct(map[string]any{"sql": "SELECT * FROM foo"})),
 			OutputConnector: "duckdb",
+			ChangeMode:      "reset",
 		},
 	}
 	diff, err = p.Reparse(ctx, m1.Paths)
@@ -589,6 +596,7 @@ SELECT 10
 			InputConnector:  "duckdb",
 			InputProperties: must(structpb.NewStruct(map[string]any{"sql": "SELECT 10"})),
 			OutputConnector: "duckdb",
+			ChangeMode:      "reset",
 		},
 	}
 	p, err := Parse(ctx, repo, "", "", "duckdb")
@@ -653,6 +661,7 @@ SELECT * FROM m1
 			InputConnector:  "duckdb",
 			InputProperties: must(structpb.NewStruct(map[string]any{"sql": "SELECT 10"})),
 			OutputConnector: "duckdb",
+			ChangeMode:      "reset",
 		},
 	}
 	m1Nested := &Resource{
@@ -663,6 +672,7 @@ SELECT * FROM m1
 			InputConnector:  "duckdb",
 			InputProperties: must(structpb.NewStruct(map[string]any{"sql": "SELECT 20"})),
 			OutputConnector: "duckdb",
+			ChangeMode:      "reset",
 		},
 	}
 	m2 := &Resource{
@@ -674,6 +684,7 @@ SELECT * FROM m1
 			InputConnector:  "duckdb",
 			InputProperties: must(structpb.NewStruct(map[string]any{"sql": "SELECT * FROM m1"})),
 			OutputConnector: "duckdb",
+			ChangeMode:      "reset",
 		},
 	}
 	p, err := Parse(ctx, repo, "", "", "duckdb")
@@ -708,6 +719,7 @@ func TestReparseRillYAML(t *testing.T) {
 			InputConnector:  "duckdb",
 			InputProperties: must(structpb.NewStruct(map[string]any{"sql": "SELECT 10"})),
 			OutputConnector: "duckdb",
+			ChangeMode:      "reset",
 		},
 	}
 	perr := &runtimev1.ParseError{
@@ -768,6 +780,7 @@ func TestRefInferrence(t *testing.T) {
 			InputConnector:  "duckdb",
 			InputProperties: must(structpb.NewStruct(map[string]any{"sql": "SELECT * FROM bar"})),
 			OutputConnector: "duckdb",
+			ChangeMode:      "reset",
 		},
 	}
 	ctx := context.Background()
@@ -791,6 +804,7 @@ func TestRefInferrence(t *testing.T) {
 			InputConnector:  "duckdb",
 			InputProperties: must(structpb.NewStruct(map[string]any{"sql": "SELECT * FROM baz"})),
 			OutputConnector: "duckdb",
+			ChangeMode:      "reset",
 		},
 	}
 	putRepo(t, repo, map[string]string{
@@ -843,6 +857,7 @@ materialize: true
 				InputConnector:  "duckdb",
 				InputProperties: must(structpb.NewStruct(map[string]any{"sql": strings.TrimSpace(files["models/m1.sql"])})),
 				OutputConnector: "duckdb",
+				ChangeMode:      "reset",
 			},
 		},
 		// m2
@@ -856,6 +871,7 @@ materialize: true
 				InputProperties:  must(structpb.NewStruct(map[string]any{"sql": strings.TrimSpace(files["models/m2.sql"])})),
 				OutputConnector:  "duckdb",
 				OutputProperties: must(structpb.NewStruct(map[string]any{"materialize": true})),
+				ChangeMode:       "reset",
 			},
 		},
 	}
@@ -904,6 +920,7 @@ SELECT * FROM t2
 				InputProperties:  must(structpb.NewStruct(map[string]any{"sql": strings.TrimSpace(files["models/m1.sql"])})),
 				OutputConnector:  "duckdb",
 				OutputProperties: must(structpb.NewStruct(map[string]any{"materialize": true})),
+				ChangeMode:       "reset",
 			},
 		},
 		// m2
@@ -916,6 +933,7 @@ SELECT * FROM t2
 				InputProperties:  must(structpb.NewStruct(map[string]any{"sql": strings.TrimSpace(files["models/m2.sql"])})),
 				OutputConnector:  "duckdb",
 				OutputProperties: must(structpb.NewStruct(map[string]any{"materialize": false})),
+				ChangeMode:       "reset",
 			},
 		},
 	}
@@ -1055,6 +1073,7 @@ dev:
 			OutputProperties: must(structpb.NewStruct(map[string]any{"materialize": true})),
 			RefreshSchedule:  &runtimev1.Schedule{RefUpdate: true},
 			DefinedAsSource:  true,
+			ChangeMode:       "reset",
 		},
 	}
 
@@ -1068,6 +1087,7 @@ dev:
 			OutputProperties: must(structpb.NewStruct(map[string]any{"materialize": true})),
 			RefreshSchedule:  &runtimev1.Schedule{RefUpdate: true, Cron: "0 0 * * *"},
 			DefinedAsSource:  true,
+			ChangeMode:       "reset",
 		},
 	}
 
@@ -1346,6 +1366,7 @@ annotations:
 				InputConnector:  "duckdb",
 				InputProperties: must(structpb.NewStruct(map[string]any{"sql": `SELECT 1`})),
 				OutputConnector: "duckdb",
+				ChangeMode:      "reset",
 			},
 		},
 		{
@@ -1764,6 +1785,7 @@ security:
 				InputConnector:  "duckdb",
 				InputProperties: must(structpb.NewStruct(map[string]any{"sql": `SELECT 1`})),
 				OutputConnector: "duckdb",
+				ChangeMode:      "reset",
 			},
 		},
 		{
@@ -1873,6 +1895,7 @@ select 3
 				OutputProperties: must(structpb.NewStruct(map[string]any{"materialize": true})),
 				RefreshSchedule:  &runtimev1.Schedule{RefUpdate: true},
 				DefinedAsSource:  true,
+				ChangeMode:       "reset",
 			},
 		},
 		// a1
@@ -2038,6 +2061,7 @@ refresh:
 			InputConnector:  "duckdb",
 			InputProperties: must(structpb.NewStruct(map[string]any{"sql": `SELECT 1`})),
 			OutputConnector: "duckdb",
+			ChangeMode:      "reset",
 		},
 	}
 
@@ -2049,6 +2073,7 @@ refresh:
 			InputConnector:  "duckdb",
 			InputProperties: must(structpb.NewStruct(map[string]any{"sql": `SELECT 1`})),
 			OutputConnector: "duckdb",
+			ChangeMode:      "reset",
 		},
 	}
 
@@ -2163,6 +2188,7 @@ metrics_view: missing
 				InputConnector:  "duckdb",
 				InputProperties: must(structpb.NewStruct(map[string]any{"sql": `SELECT 1`})),
 				OutputConnector: "duckdb",
+				ChangeMode:      "reset",
 			},
 		},
 		{
@@ -2216,6 +2242,7 @@ security:
 				InputConnector:  "duckdb",
 				InputProperties: must(structpb.NewStruct(map[string]any{"sql": "SELECT * FROM domain_mappings"})),
 				OutputConnector: "duckdb",
+				ChangeMode:      "reset",
 			},
 		},
 		{
