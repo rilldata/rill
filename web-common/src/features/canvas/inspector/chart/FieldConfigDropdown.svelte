@@ -49,7 +49,7 @@
   $: showLegend = chartFieldInput?.defaultLegendOrientation ?? false;
 </script>
 
-<DropdownMenu.Root bind:open={isDropdownOpen}>
+<DropdownMenu.Root bind:open={isDropdownOpen} closeOnItemClick={false}>
   <DropdownMenu.Trigger class="flex-none">
     <IconButton rounded active={isDropdownOpen}>
       <SettingsSlider size="14px" />
