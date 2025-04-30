@@ -4,11 +4,18 @@
   import {
     width,
     position,
-  } from "@rilldata/web-admin//components/nav/Tab.svelte";
+  } from "@rilldata/web-admin/components/nav/Tab.svelte";
+  import {
+    isOrgAdmin,
+    isOrgEditor,
+  } from "@rilldata/web-admin/features/organizations/users/permissions";
 
   export let organization: string;
   export let organizationPermissions: V1OrganizationPermissions;
   export let pathname: string;
+
+  $: isAdmin = isOrgAdmin(organizationPermissions);
+  $: isEditor = isOrgEditor(organizationPermissions);
 
   $: tabs = [
     {
@@ -19,18 +26,16 @@
     {
       route: `/${organization}/-/users`,
       label: "Users",
-      hasPermission: organizationPermissions.manageOrgMembers,
+      hasPermission: isAdmin || isEditor,
     },
     {
       route: `/${organization}/-/settings`,
       label: "Settings",
-      hasPermission: organizationPermissions.manageOrg,
+      hasPermission: isAdmin,
     },
   ];
 
-  $: showTabs =
-    organizationPermissions.manageOrg ||
-    organizationPermissions.manageOrgMembers;
+  $: showTabs = isAdmin || isEditor;
 
   $: selectedIndex = tabs?.findLastIndex((t) => pathname.startsWith(t.route));
 </script>
