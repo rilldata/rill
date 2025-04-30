@@ -5,40 +5,33 @@
     createRuntimeServiceCreateTrigger,
     createRuntimeServiceListResources,
     getRuntimeServiceListResourcesQueryKey,
-    V1ReconcileStatus,
     type V1ListResourcesResponse,
     type V1Resource,
   } from "@rilldata/web-common/runtime-client";
-  import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { useQueryClient, type Query } from "@tanstack/svelte-query";
   import Button from "web-common/src/components/button/Button.svelte";
   import ProjectResourcesTable from "./ProjectResourcesTable.svelte";
   import RefreshAllSourcesAndModelsConfirmDialog from "./RefreshAllSourcesAndModelsConfirmDialog.svelte";
+  import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
+  import {
+    INITIAL_REFETCH_INTERVAL,
+    MAX_REFETCH_INTERVAL,
+    BACKOFF_FACTOR,
+    isResourceReconciling,
+  } from "../../shared/refetch-interval";
 
   const queryClient = useQueryClient();
   const createTrigger = createRuntimeServiceCreateTrigger();
 
   let isConfirmDialogOpen = false;
 
-  const INITIAL_REFETCH_INTERVAL = 200; // Start at 200ms for immediate feedback
-  const MAX_REFETCH_INTERVAL = 2_000; // Cap at 2s
-  const BACKOFF_FACTOR = 1.5;
   let currentRefetchInterval = INITIAL_REFETCH_INTERVAL;
 
   $: ({ instanceId } = $runtime);
 
   function isResourceErrored(resource: V1Resource) {
     return !!resource.meta.reconcileError;
-  }
-
-  function isResourceReconciling(resource: V1Resource) {
-    return (
-      resource.meta.reconcileStatus ===
-        V1ReconcileStatus.RECONCILE_STATUS_PENDING ||
-      resource.meta.reconcileStatus ===
-        V1ReconcileStatus.RECONCILE_STATUS_RUNNING
-    );
   }
 
   function calculateRefetchInterval(
