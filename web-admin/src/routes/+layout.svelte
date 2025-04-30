@@ -28,7 +28,6 @@
   import {
     isProjectAdmin,
     isProjectEditor,
-    isProjectViewer,
   } from "../features/projects/user-management/permissions";
 
   export let data;
@@ -47,7 +46,6 @@
 
   $: isAdmin = isProjectAdmin(projectPermissions);
   $: isEditor = isProjectEditor(projectPermissions);
-  $: isViewer = isProjectViewer(projectPermissions);
 
   // Remember:
   // - https://tkdodo.eu/blog/breaking-react-querys-api-on-purpose#a-bad-api
