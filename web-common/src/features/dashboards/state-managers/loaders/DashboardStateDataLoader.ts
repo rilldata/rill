@@ -176,7 +176,6 @@ export class DashboardStateDataLoader {
           exploreStateFromYAMLConfig,
           rillDefaultExploreState,
           backButtonUsed: false,
-          skipSessionStorage: true,
         });
       },
     );
@@ -204,7 +203,6 @@ export class DashboardStateDataLoader {
 
     // Pressing back button and going back to empty url state should not restore from session store
     const backButtonUsed = type === "popstate";
-    const skipSessionStorage = backButtonUsed;
 
     return this.getMergedExploreState({
       metricsViewSpec,
@@ -216,7 +214,6 @@ export class DashboardStateDataLoader {
       exploreStateFromYAMLConfig,
       rillDefaultExploreState,
       backButtonUsed,
-      skipSessionStorage,
     });
   }
 
@@ -232,7 +229,6 @@ export class DashboardStateDataLoader {
     exploreStateFromYAMLConfig,
     rillDefaultExploreState,
     backButtonUsed,
-    skipSessionStorage,
   }: {
     metricsViewSpec: V1MetricsViewSpec;
     exploreSpec: V1ExploreSpec;
@@ -244,8 +240,8 @@ export class DashboardStateDataLoader {
     exploreStateFromYAMLConfig: Partial<MetricsExplorerEntity>;
     rillDefaultExploreState: MetricsExplorerEntity;
     backButtonUsed: boolean;
-    skipSessionStorage: boolean;
   }) {
+    const skipSessionStorage = backButtonUsed;
     const exploreStateFromSessionStorage = skipSessionStorage
       ? null
       : getPartialExploreStateFromSessionStorage(
@@ -280,7 +276,7 @@ export class DashboardStateDataLoader {
     const exploreStateOrder = [
       // 1st priority is the state from url params. For certain params the state is from session storage.
       // We need the state from session storage to make sure any state is not cleared while the user is still on the page but came back from a different dashboard.
-      // TODO: move all this logic to a "fromURL" method. Will replace convertURLSearchParamsToExploreState
+      // TODO: move all this logic based on url params to a "fromURL" method. Will replace convertURLSearchParamsToExploreState
       exploreStateFromSessionStorage ??
         (urlSearchParams.size > 0 ? partialExploreStateFromUrl : null),
       // Next priority is the most recent state user had visited. This is a small subset of the full state.
