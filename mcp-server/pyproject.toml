@@ -5,7 +5,7 @@ description = "RillData MCP Server"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "fastmcp>=2.2.0",
+    "fastmcp>=2.2.5",
     "mcp[cli]>=1.6.0",
     "vl-convert-python>=1.7.0",
     "openai>=1.6.0",
