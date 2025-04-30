@@ -47,7 +47,6 @@ CREATE TABLE integration_test.all_datatypes (
     -- Nested Types with basic types inside
     list_int_col INTEGER[],
     list_float_col FLOAT[],
-    list_double_col DOUBLE[],
     list_varchar_col VARCHAR[],
     list_boolean_col BOOLEAN[],
     list_timestamp_col TIMESTAMP[],
