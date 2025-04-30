@@ -19,6 +19,7 @@
     MAX_REFETCH_INTERVAL,
     BACKOFF_FACTOR,
     isResourceReconciling,
+    isResourceErrored,
   } from "../../shared/refetch-interval";
 
   const queryClient = useQueryClient();
@@ -29,10 +30,6 @@
   let currentRefetchInterval = INITIAL_REFETCH_INTERVAL;
 
   $: ({ instanceId } = $runtime);
-
-  function isResourceErrored(resource: V1Resource) {
-    return !!resource.meta.reconcileError;
-  }
 
   function calculateRefetchInterval(
     currentInterval: number,
