@@ -22,7 +22,7 @@ export function isResourceReconciling(resource: V1Resource) {
 
 export function calculateRefetchInterval(
   currentInterval: number,
-  data: V1ListResourcesResponse,
+  data: V1ListResourcesResponse | undefined,
   query: Query<V1ListResourcesResponse, HTTPError>,
 ): number | false {
   if (query.state.error) return false;
