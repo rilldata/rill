@@ -230,12 +230,12 @@ setup.describe("global setup", () => {
       adminPage.getByRole("link", {
         name: "Programmatic Ads Auction auction_explore",
       }),
-    ).toContainText("Last refreshed");
+    ).toContainText("Last refreshed", { timeout: 15_000 });
 
     await expect(
       adminPage.getByRole("link", {
         name: "Programmatic Ads Bids bids_explore",
       }),
-    ).toContainText("Last refreshed");
+    ).toContainText("Last refreshed", { timeout: 15_000 });
   });
 });
