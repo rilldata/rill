@@ -57,7 +57,10 @@ export class DashboardStateDataLoader {
     private readonly bookmarkOrTokenExploreState?: CompoundQueryResult<Partial<MetricsExplorerEntity> | null>,
   ) {
     this.validSpecQuery = useExploreValidSpec(instanceId, exploreName);
-    this.fullTimeRangeQuery = useFullTimeRangeQuery(instanceId, exploreName);
+    this.fullTimeRangeQuery = useFullTimeRangeQuery(
+      instanceId,
+      this.validSpecQuery,
+    );
 
     this.rillDefaultExploreState = getCompoundQuery(
       [this.validSpecQuery, this.fullTimeRangeQuery],

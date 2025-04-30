@@ -12,6 +12,7 @@ import {
 } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
 import {
+  getQueryServiceMetricsViewTimeRangeQueryOptions,
   type RpcStatus,
   type V1Expression,
   type V1GetResourceResponse,
@@ -23,10 +24,11 @@ import {
   createQueryServiceMetricsViewTimeRange,
   createRuntimeServiceListResources,
 } from "@rilldata/web-common/runtime-client";
-import type {
-  CreateQueryOptions,
-  CreateQueryResult,
-  QueryClient,
+import {
+  type CreateQueryOptions,
+  type CreateQueryResult,
+  createQuery,
+  type QueryClient,
 } from "@tanstack/svelte-query";
 import { Settings } from "luxon";
 import { derived } from "svelte/store";
@@ -131,24 +133,19 @@ export function useMetricsViewTimeRange(
  * Uses useExploreValidSpec unlike the above useMetricsViewTimeRange since it is more widely used.
  *
  * Does an additional validation where null min and max returned throws an error instead.
- *
- * TODO: replace usages of useMetricsViewTimeRange with this eventually
  */
 export function useFullTimeRangeQuery(
   instanceId: string,
-  exploreName: string,
-  options?: {
-    query?: CreateQueryOptions<V1MetricsViewTimeRangeResponse>;
-  },
+  validSpecQuery: ReturnType<typeof useExploreValidSpec>,
   queryClient?: QueryClient,
 ): CompoundQueryResult<V1MetricsViewTimeRangeResponse> {
-  const { query: queryOptions } = options ?? {};
-
-  return derived(
-    useExploreValidSpec(instanceId, exploreName, undefined, queryClient),
-    (validSpecResp, set) => {
-      const firstDayOfWeek = validSpecResp.data?.metricsView?.firstDayOfWeek;
-      const metricsViewName = validSpecResp.data?.explore?.metricsView ?? "";
+  const fullTimeRangeQueryOptionsStore = derived(
+    validSpecQuery,
+    (validSpecResp) => {
+      const metricsViewSpec = validSpecResp.data?.metricsView ?? {};
+      const exploreSpec = validSpecResp.data?.explore ?? {};
+      const firstDayOfWeek = metricsViewSpec.firstDayOfWeek;
+      const metricsViewName = exploreSpec.metricsView ?? "";
 
       Settings.defaultWeekSettings = {
         firstDay: normalizeWeekday(firstDayOfWeek),
@@ -156,45 +153,64 @@ export function useFullTimeRangeQuery(
         minimalDays: 4,
       };
 
-      const metricsViewSpec = validSpecResp.data?.metricsView ?? {};
-      if (!metricsViewSpec.timeDimension) {
-        // We return early to avoid having isLoading=true when time dimension is not present.
+      return getQueryServiceMetricsViewTimeRangeQueryOptions(
+        instanceId,
+        metricsViewName,
+        {},
+        {
+          query: {
+            enabled: Boolean(metricsViewSpec.timeDimension),
+          },
+        },
+      );
+    },
+  );
+  const fullTimeRangeQuery = createQuery(
+    fullTimeRangeQueryOptionsStore,
+    queryClient,
+  );
+
+  return derived(
+    [fullTimeRangeQueryOptionsStore, fullTimeRangeQuery],
+    ([fullTimeRangeQueryOptions, fullTimeRange]) => {
+      // TODO: update the fields once we move away from getCompoundQuery
+
+      console.log(fullTimeRangeQueryOptions, fullTimeRange);
+      if (!fullTimeRangeQueryOptions.enabled) {
+        // We return early to avoid having isLoading=true when the time range query is not enabled.
         // This allows us to check isLoading further down without any issues of it getting stuck.
-        set({
+        // TODO: revisit once we move away from getCompoundQuery
+        return {
           data: undefined,
           error: null,
           isFetching: false,
           isLoading: false,
-        });
-        return;
+        };
       }
 
-      createQueryServiceMetricsViewTimeRange(
-        instanceId,
-        metricsViewName,
-        {},
-        { query: queryOptions },
-        queryClient,
-      ).subscribe((timeRangeResp) => {
-        // The timeRangeSummary is null when there are 0 rows of data
-        // Notably, this happens when a security policy fully restricts a user from reading any data
-        if (
-          timeRangeResp.data?.timeRangeSummary?.min === null &&
-          timeRangeResp.data?.timeRangeSummary?.max === null
-        ) {
-          set({
-            data: undefined,
-            error: new Error(
-              "This dashboard currently has no data to display. This may be due to access permissions.",
-            ),
-            isFetching: false,
-            isLoading: false,
-          });
-          return;
-        }
+      if (
+        fullTimeRange.data?.timeRangeSummary?.min === null &&
+        fullTimeRange.data?.timeRangeSummary?.max === null
+      ) {
+        // The timeRangeSummary is null when there are 0 rows of data.
+        // Notably, this happens when a security policy fully restricts a user from reading any data.
+        // Show a different error in this case.
+        return {
+          data: undefined,
+          error: new Error(
+            "This dashboard currently has no data to display. This may be due to access permissions.",
+          ),
+          isFetching: false,
+          isLoading: false,
+        };
+      }
 
-        set(timeRangeResp);
-      });
+      return {
+        data: fullTimeRange.data,
+        error: fullTimeRange.error,
+        isFetching: fullTimeRange.isFetching,
+        isLoading: fullTimeRange.isLoading,
+      };
     },
   );
 }
