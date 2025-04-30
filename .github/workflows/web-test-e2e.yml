@@ -7,6 +7,7 @@ on:
       - "cli/**"
       - "runtime/**"
       - "web-admin/**"
+      - "web-auth/**"
       - "web-common/**"
       - "web-local/**"
   workflow_dispatch:
@@ -42,6 +43,9 @@ jobs:
               - "cli/**"
               - "runtime/**"
               - "web-admin/**"
+            auth:
+              - ".github/workflows/web-test-e2e.yml"
+              - "web-auth/**"
             local:
               - ".github/workflows/web-test-e2e.yml"
               - "cli/**"
