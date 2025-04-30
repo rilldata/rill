@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"regexp"
 	"strings"
 	"time"
 
@@ -26,7 +25,6 @@ var (
 	queueLatencyHistogram = observability.Must(meter.Int64Histogram("queue_latency", metric.WithUnit("ms")))
 	queryLatencyHistogram = observability.Must(meter.Int64Histogram("query_latency", metric.WithUnit("ms")))
 	totalLatencyHistogram = observability.Must(meter.Int64Histogram("total_latency", metric.WithUnit("ms")))
-	dictPwdRegex          = regexp.MustCompile(`PASSWORD\s+'[^']*'`)
 )
 
 var errUnsupportedType = errors.New("encountered unsupported clickhouse type")
@@ -64,12 +62,7 @@ func (c *Connection) Exec(ctx context.Context, stmt *drivers.Statement) error {
 	ctx = contextWithQueryID(ctx)
 	// Log query if enabled (usually disabled)
 	if c.config.LogQueries {
-		logQuery := stmt.Query
-		if strings.Contains(stmt.Query, "PASSWORD") {
-			// replace inline "PASSWORD 'pwd'" for dict source with "PASSWORD '***'"
-			logQuery = dictPwdRegex.ReplaceAllString(stmt.Query, "PASSWORD '***'")
-		}
-		c.logger.Info("clickhouse query", zap.String("sql", logQuery), zap.Any("args", stmt.Args), observability.ZapCtx(ctx))
+		c.logger.Info("clickhouse query", zap.String("sql", c.Dialect().SanitizeQueryForLogging(stmt.Query)), zap.Any("args", stmt.Args), observability.ZapCtx(ctx))
 	}
 
 	settings := map[string]any{
@@ -117,12 +110,7 @@ func (c *Connection) Query(ctx context.Context, stmt *drivers.Statement) (res *d
 	ctx = contextWithQueryID(ctx)
 	// Log query if enabled (usually disabled)
 	if c.config.LogQueries {
-		logQuery := stmt.Query
-		if strings.Contains(stmt.Query, "PASSWORD") {
-			// replace inline "PASSWORD 'pwd'" for dict source with "PASSWORD '***'"
-			logQuery = dictPwdRegex.ReplaceAllString(stmt.Query, "PASSWORD '***'")
-		}
-		c.logger.Info("clickhouse query", zap.String("sql", logQuery), zap.Any("args", stmt.Args))
+		c.logger.Info("clickhouse query", zap.String("sql", c.Dialect().SanitizeQueryForLogging(stmt.Query)), zap.Any("args", stmt.Args))
 	}
 
 	// We use the meta conn for dry run queries

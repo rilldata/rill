@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"regexp"
 	"strings"
 	"time"
 
@@ -23,6 +24,8 @@ var (
 	ErrUnsupportedConnector = errors.New("drivers: connector not supported")
 	// ErrOptimizationFailure is returned when an optimization fails.
 	ErrOptimizationFailure = errors.New("drivers: optimization failure")
+
+	dictPwdRegex = regexp.MustCompile(`PASSWORD\s+'[^']*'`)
 )
 
 // WithConnectionFunc is a callback function that provides a context to be used in further OLAP store calls to enforce affinity to a single connection.
@@ -339,8 +342,17 @@ func (d Dialect) AutoUnnest(expr string) string {
 
 func (d Dialect) MetricsViewDimensionExpression(dimension *runtimev1.MetricsViewSpec_Dimension) (string, error) {
 	if dimension.LookupTable != "" {
-		return d.LookupExpr(dimension.LookupTable, dimension.LookupValueColumn, dimension.Column)
+		var keyExpr string
+		if dimension.Column != "" {
+			keyExpr = d.EscapeIdentifier(dimension.Column)
+		} else if dimension.Expression != "" {
+			keyExpr = dimension.Expression
+		} else {
+			return "", fmt.Errorf("dimension %q has a lookup table but no column or expression defined", dimension.Name)
+		}
+		return d.LookupExpr(dimension.LookupTable, dimension.LookupValueColumn, keyExpr)
 	}
+
 	if dimension.Expression != "" {
 		return dimension.Expression, nil
 	}
@@ -756,14 +768,14 @@ func (d Dialect) GetTimeExpr(t time.Time) (bool, string) {
 	}
 }
 
-func (d Dialect) LookupExpr(lookupTable, lookupValueColumn, lookupKey string) (string, error) {
+func (d Dialect) LookupExpr(lookupTable, lookupValueColumn, lookupKeyExpr string) (string, error) {
 	switch d {
 	case DialectClickHouse:
-		return fmt.Sprintf("dictGet('%s', '%s', %s)", lookupTable, lookupValueColumn, lookupKey), nil
+		return fmt.Sprintf("dictGet('%s', '%s', %s)", lookupTable, lookupValueColumn, lookupKeyExpr), nil
 	default:
 		// Druid already does reverse lookup inherently so defining lookup expression directly as dimension expression should be ok.
 		// For Duckdb I think we should just avoid going into this complexity as it should not matter much at that scale.
-		return "", fmt.Errorf("unsupported dialect %q", d)
+		return "", fmt.Errorf("lookup tables are not supported for dialect %q", d)
 	}
 }
 
@@ -774,6 +786,14 @@ func (d Dialect) LookupSelectExpr(lookupTable, lookupKeyColumn string) (string, 
 	default:
 		return "", fmt.Errorf("unsupported dialect %q", d)
 	}
+}
+
+func (d Dialect) SanitizeQueryForLogging(sql string) string {
+	if d == DialectClickHouse {
+		// replace inline "PASSWORD 'pwd'" for dict source with "PASSWORD '***'"
+		sql = dictPwdRegex.ReplaceAllString(sql, "PASSWORD '***'")
+	}
+	return sql
 }
 
 func (d Dialect) checkTypeCompatibility(f *runtimev1.StructType_Field) bool {

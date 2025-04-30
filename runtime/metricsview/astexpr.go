@@ -211,7 +211,7 @@ func (b *sqlExprBuilder) writeBinaryCondition(exprs []*Expression, op Operator) 
 		// If not unnested, write the expression as-is or if its a lookup rewrite as per dialect
 		if !unnest {
 			if lookup != nil {
-				b.writeString(fmt.Sprintf("%s IN ", b.ast.dialect.EscapeIdentifier(lookup.keyExpr)))
+				b.writeString(fmt.Sprintf("%s IN ", lookup.keyExpr))
 				b.writeByte('(')
 				ex, err := b.ast.dialect.LookupSelectExpr(lookup.table, lookup.keyCol)
 				if err != nil {
@@ -604,9 +604,17 @@ func (b *sqlExprBuilder) sqlForName(name string) (expr string, unnest bool, look
 
 		var lm *lookupMeta
 		if dim.LookupTable != "" {
+			var keyExpr string
+			if dim.Column != "" {
+				keyExpr = b.ast.dialect.EscapeIdentifier(dim.Column)
+			} else if dim.Expression != "" {
+				keyExpr = dim.Expression
+			} else {
+				return "", false, nil, fmt.Errorf("dimension %q has a lookup table but no column or expression defined", name)
+			}
 			lm = &lookupMeta{
 				table:    dim.LookupTable,
-				keyExpr:  dim.Column,
+				keyExpr:  keyExpr,
 				keyCol:   dim.LookupKeyColumn,
 				valueCol: dim.LookupValueColumn,
 			}

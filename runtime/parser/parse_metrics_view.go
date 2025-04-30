@@ -573,8 +573,8 @@ func (p *Parser) parseMetricsView(node *Node) error {
 		if dim.LookupTable == "" && dim.LookKeyColumn == "" && dim.LookValueColumn == "" { // nolint:revive // avoids checking all permutations
 			// do nothing
 		} else if dim.LookupTable != "" && dim.LookKeyColumn != "" && dim.LookValueColumn != "" {
-			if dim.Column == "" {
-				return fmt.Errorf("column is required if lookup fields are defined, containing values to be looked up")
+			if dim.Expression != "" && strings.Contains(dim.Expression, "dictGet") {
+				return fmt.Errorf("dictGet expression and lookup fields cannot be used together")
 			}
 		} else {
 			return fmt.Errorf("all lookup fields - lookup_table, lookup_key_column and lookup_value_column should be defined")
