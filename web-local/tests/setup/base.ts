@@ -18,7 +18,6 @@ export const test = base.extend<MyFixtures>({
 
   page: async ({ page, project }, use) => {
     const TEST_PORT = await getOpenPort();
-    const TEST_PORT_GRPC = await getOpenPort();
     const TEST_PROJECT_DIRECTORY = join(BASE_PROJECT_DIRECTORY, "" + TEST_PORT);
 
     rmSync(TEST_PROJECT_DIRECTORY, { force: true, recursive: true });
