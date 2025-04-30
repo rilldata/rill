@@ -3,6 +3,7 @@ import type {
   V1ListResourcesResponse,
   V1Resource,
 } from "@rilldata/web-common/runtime-client";
+import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
 
 export const INITIAL_REFETCH_INTERVAL = 200; // Start at 200ms for immediate feedback
 export const MAX_REFETCH_INTERVAL = 2_000; // Cap at 2s
@@ -17,8 +18,8 @@ export function isResourceReconciling(resource: V1Resource) {
 
 export function calculateRefetchInterval(
   currentInterval: number,
-  data: V1ListResourcesResponse | undefined,
-  query: Query,
+  data: V1ListResourcesResponse,
+  query: Query<V1ListResourcesResponse, HTTPError>,
 ): number | false {
   if (query.state.error) return false;
   if (!data?.resources) return INITIAL_REFETCH_INTERVAL;
