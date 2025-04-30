@@ -212,13 +212,13 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 		return runtime.ReconcileResult{Err: err}
 	}
 
-	// Compute hashes to determine if something has changes.
-	// If the specHash changes, a full model reset is required (because the config changed).
-	// If the refsHash changes, an incremental model run is sufficient (because the refs only went through a regular refresh).
+	// Compute the spec hashes to determine if something has changed
 	specHash, err := r.executionSpecHash(ctx, self.Meta.Refs, model.Spec)
 	if err != nil {
 		return runtime.ReconcileResult{Err: fmt.Errorf("failed to compute spec hash: %w", err)}
 	}
+
+	// Compute the refs hash to check if any of the model's refs have changed.
 	refsHash, err := r.refsStateHash(ctx, self.Meta.Refs, model.Spec)
 	if err != nil {
 		return runtime.ReconcileResult{Err: fmt.Errorf("failed to compute refs hash: %w", err)}
@@ -242,14 +242,8 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 		}
 	}
 
-	// Decide if we should trigger a reset
-	triggerReset := model.Spec.TriggerFull
-	triggerReset = triggerReset || model.State.ResultConnector == "" // If its nil, ResultProperties/ResultTable will also be nil
-	triggerReset = triggerReset || model.State.RefreshedOn == nil
-	triggerReset = triggerReset || model.State.SpecHash != specHash
-	triggerReset = triggerReset || !exists
-
-	// Decide if we should trigger
+	// Check if we need to reset the model
+	triggerReset := r.shouldTriggerReset(model, specHash, exists)
 	trigger := triggerReset
 	trigger = trigger || model.Spec.Trigger
 	trigger = trigger || !refreshOn.IsZero() && time.Now().After(refreshOn)
@@ -1520,4 +1514,32 @@ func md5Hash(val []byte) (string, error) {
 		return "", err
 	}
 	return hex.EncodeToString(hash.Sum(nil)), nil
+}
+
+// shouldTriggerReset determines if a model should trigger a reset based on its change mode and the current state compared to the specified hash.
+func (r *ModelReconciler) shouldTriggerReset(model *runtimev1.Model, specHash string, exists bool) bool {
+	// These conditions trigger a reset regardless of change mode
+	if model.Spec.TriggerFull ||
+		model.State.ResultConnector == "" ||
+		model.State.RefreshedOn == nil ||
+		!exists {
+		return true
+	}
+
+	// Handle different change modes
+	switch model.Spec.ChangeMode {
+	case "manual":
+		// In manual mode, spec hash changes don't trigger automatic resets
+		// Only explicit trigger or missing output will cause a reset
+		return false
+	case "patch":
+		// In patch mode, silently update the hash but don't trigger a reset
+		if model.State.SpecHash != specHash {
+			model.State.SpecHash = specHash
+		}
+		return false
+	default: // "reset" mode (default)
+		// In reset mode, trigger a reset when the spec hash changes
+		return model.State.SpecHash != specHash
+	}
 }

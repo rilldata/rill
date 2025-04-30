@@ -23,6 +23,7 @@ type ModelYAML struct {
 	State                 *DataYAML                               `yaml:"state"`
 	Partitions            *DataYAML                               `yaml:"partitions"`
 	Splits                *DataYAML                               `yaml:"splits"` // Deprecated: use "partitions" instead
+	ChangeMode            string                                  `yaml:"change_mode"`
 	PartitionsWatermark   string                                  `yaml:"partitions_watermark"`
 	PartitionsConcurrency uint                                    `yaml:"partitions_concurrency"`
 	InputProperties       map[string]any                          `yaml:",inline" mapstructure:",remain"`
@@ -43,6 +44,12 @@ func (p *Parser) parseModel(ctx context.Context, node *Node) error {
 	// Parse YAML
 	tmp := &ModelYAML{}
 	err := p.decodeNodeYAML(node, false, tmp)
+	if err != nil {
+		return err
+	}
+
+	// Parse the change mode
+	changeMode, err := p.parseChangeModeYAML(tmp.ChangeMode)
 	if err != nil {
 		return err
 	}
@@ -177,6 +184,8 @@ func (p *Parser) parseModel(ctx context.Context, node *Node) error {
 	if timeout > 0 {
 		r.ModelSpec.TimeoutSeconds = uint32(timeout.Seconds())
 	}
+
+	r.ModelSpec.ChangeMode = changeMode
 
 	r.ModelSpec.DefinedAsSource = tmp.DefinedAsSource
 
