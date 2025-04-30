@@ -1,7 +1,9 @@
+# Tests end-to-end creation of a distributed model on a test ClickHouse cluster.
 expensive: true
 connectors:
   - clickhouse_cluster
 variables:
+  # Enable stage_changes to test that renames of distributed tables are handled correctly.
   rill.stage_changes: true
 project_files:
   clickhouse_cluster.yaml:
