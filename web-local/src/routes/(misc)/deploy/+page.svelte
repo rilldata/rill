@@ -1,8 +1,8 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
-  import { getNeverSubscribedIssue } from "@rilldata/web-common/features/billing/issues";
   import TrialDetailsDialog from "@rilldata/web-common/features/billing/TrialDetailsDialog.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
+  import { getPlanUpgradeUrl } from "@rilldata/web-common/features/organization/utils";
   import OrgSelector from "@rilldata/web-common/features/project/OrgSelector.svelte";
   import {
     ProjectDeployer,
@@ -24,35 +24,22 @@
   const metadata = deployer.metadata;
   const user = deployer.user;
   const project = deployer.project;
-  const orgsMetadata = deployer.orgsMetadata;
   const deployerStatus = deployer.getStatus();
   const stage = deployer.stage;
-
-  // This org is set by the deployer.
-  // 1. When there is no org is present it is auto created based on user's email.
-  // 2. Otherwise, it will be the based on the selection. Will be equal to 'selectedOrg' in this case.
   const org = deployer.org;
-  let isEmptyOrg = false;
-  $: {
-    const om = $orgsMetadata?.data?.orgs.find((o) => o.name === $org);
-    isEmptyOrg = !!om?.issues && !!getNeverSubscribedIssue(om.issues);
-  }
+
+  $: planUpgradeUrl = getPlanUpgradeUrl(org);
 
   // This is specifically the org selected using the OrgSelector.
   // Used to retrigger the deploy after the user confirms deploy on an empty org.
   let deployConfirmOpen = false;
 
   function onBack() {
-    if ($orgsMetadata.data?.orgs?.length) {
-      // promptOrgSelection.set(true);
+    if ($user.data?.rillUserOrgs?.length) {
+      deployer.onSelectOrg();
     } else {
       void goto("/");
     }
-  }
-
-  function onRetry() {
-    // TODO
-    return deployer.deploy();
   }
 
   onMount(() => {
@@ -91,10 +78,8 @@
     {:else if $deployerStatus.error}
       <DeployError
         error={$deployerStatus.error}
-        org={$org}
-        adminUrl={$metadata.data?.adminUrl ?? ""}
-        {isEmptyOrg}
-        {onRetry}
+        planUpgradeUrl={$planUpgradeUrl}
+        onRetry={() => deployer.deploy()}
         {onBack}
       />
     {/if}

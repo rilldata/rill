@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { page } from "$app/stores";
   import { Button } from "@rilldata/web-common/components/button";
   import CTAButton from "@rilldata/web-common/components/calls-to-action/CTAButton.svelte";
   import CTAHeader from "@rilldata/web-common/components/calls-to-action/CTAHeader.svelte";
@@ -7,16 +6,13 @@
   import CTAPylonHelp from "@rilldata/web-common/components/calls-to-action/CTAPylonHelp.svelte";
   import CancelCircleInverse from "@rilldata/web-common/components/icons/CancelCircleInverse.svelte";
   import PricingDetails from "@rilldata/web-common/features/billing/PricingDetails.svelte";
-  import { buildPlanUpgradeUrl } from "@rilldata/web-common/features/organization/utils";
   import {
     type DeployError,
     DeployErrorType,
   } from "@rilldata/web-common/features/project/deploy-errors";
 
-  export let org: string;
   export let error: DeployError;
-  export let adminUrl: string;
-  export let isEmptyOrg: boolean;
+  export let planUpgradeUrl: string;
   export let onRetry: () => void;
   export let onBack: () => void;
 
@@ -25,9 +21,6 @@
     error.type === DeployErrorType.OrgLimitHit ||
     error.type === DeployErrorType.TrialEnded ||
     error.type === DeployErrorType.SubscriptionEnded;
-
-  // TODO: move this up. doesnt make sense to be in error component
-  $: upgradeHref = buildPlanUpgradeUrl(org, adminUrl, isEmptyOrg, $page.url);
 </script>
 
 {#if isQuotaError}
@@ -35,7 +28,7 @@
   <p class="text-base text-gray-500 text-left w-[500px]">
     <PricingDetails extraText={error.message} />
   </p>
-  <Button type="primary" href={upgradeHref} wide>Upgrade</Button>
+  <Button type="primary" href={planUpgradeUrl} wide>Upgrade</Button>
   <Button type="secondary" noStroke wide on:click={onBack}>Back</Button>
 {:else}
   <CancelCircleInverse size="7rem" className="text-gray-200" />

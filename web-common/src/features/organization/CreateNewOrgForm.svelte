@@ -1,7 +1,6 @@
 <script lang="ts">
   import { Button } from "@rilldata/web-common/components/button";
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
-  import { sanitizeOrgName } from "@rilldata/web-common/features/organization/sanitizeOrgName";
   import { defaults, superForm } from "sveltekit-superforms";
   import { yup } from "sveltekit-superforms/adapters";
   import { object, string } from "yup";

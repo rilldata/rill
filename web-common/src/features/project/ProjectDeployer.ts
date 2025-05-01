@@ -29,7 +29,6 @@ export enum ProjectDeployStage {
 
   FreshDeploy,
   ReDeploy,
-  OverwriteProject,
 }
 
 export class ProjectDeployer {
@@ -52,14 +51,9 @@ export class ProjectDeployer {
   public constructor(
     // use a specific org. org could be set in url params as a callback from upgrading to team plan
     // this marks the deployer to skip prompting for org selection or auto generation
-    private readonly useOrg: string,
+    useOrg: string,
   ) {
     this.org.set(useOrg);
-  }
-
-  public get isDeployed() {
-    const projectResp = get(this.project).data as GetCurrentProjectResponse;
-    return !!projectResp?.project;
   }
 
   public getStatus() {
@@ -128,6 +122,10 @@ export class ProjectDeployer {
     this.stage.set(ProjectDeployStage.CreateNewOrg);
   }
 
+  public onSelectOrg() {
+    this.stage.set(ProjectDeployStage.SelectOrg);
+  }
+
   public async loginOrDeploy() {
     await waitUntil(
       () => !get(this.metadata).isLoading && !get(this.user).isLoading,
@@ -183,27 +181,21 @@ export class ProjectDeployer {
     }
 
     this.stage.set(ProjectDeployStage.FreshDeploy);
-    console.log("DEPLOY", {
+
+    const resp = await get(this.deployMutation).mutateAsync({
       org,
       newOrgDisplayName: get(this.orgDisplayName),
       projectName: projectResp.localProjectName,
       upload: true,
     });
+    // wait for the telemetry to finish since the page will be redirected after a deploy success
+    await behaviourEvent?.fireDeployEvent(BehaviourEventAction.DeploySuccess);
+    if (!resp.frontendUrl) return;
 
-    // const resp = await get(this.deployMutation).mutateAsync({
-    //   org,
-    //   newOrgDisplayName: get(this.orgDisplayName),
-    //   projectName: projectResp.localProjectName,
-    //   upload: true,
-    // });
-    // // wait for the telemetry to finish since the page will be redirected after a deploy success
-    // await behaviourEvent?.fireDeployEvent(BehaviourEventAction.DeploySuccess);
-    // if (!resp.frontendUrl) return;
-    //
-    // // projectUrl: https://ui.rilldata.com/<org>/<project>
-    // const projectInviteUrl = resp.frontendUrl + "/-/invite";
-    // const projectInviteUrlWithSessionId =
-    //   addPosthogSessionIdToUrl(projectInviteUrl);
-    // window.open(projectInviteUrlWithSessionId, "_self");
+    // projectUrl: https://ui.rilldata.com/<org>/<project>
+    const projectInviteUrl = resp.frontendUrl + "/-/invite";
+    const projectInviteUrlWithSessionId =
+      addPosthogSessionIdToUrl(projectInviteUrl);
+    window.open(projectInviteUrlWithSessionId, "_self");
   }
 }
