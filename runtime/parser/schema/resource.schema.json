@@ -26,9 +26,6 @@
       "$ref": "#/$defs/metrics_view"
     },
     {
-      "$ref": "#/$defs/migration"
-    },
-    {
       "$ref": "#/$defs/model"
     },
     {
@@ -2567,59 +2564,6 @@
                   "minItems": 1
                 }
               ]
-            }
-          }
-        }
-      }
-    },
-    "migration": {
-      "type": "object",
-      "title": "migration",
-      "allOf": [
-        {
-          "title": "type",
-          "type": "object",
-          "properties": {
-            "type": {
-              "const": "migration"
-            }
-          },
-          "required": [
-            "type"
-          ]
-        },
-        {
-          "title": "common_properties",
-          "$ref": "#/$defs/common_properties"
-        },
-        {
-          "title": "migration_properties",
-          "$ref": "#/$defs/migration/$defs/migration_properties"
-        },
-        {
-          "title": "environment_overrides",
-          "properties": {
-            "dev": {
-              "type": "object",
-              "description": "Overrides properties in development",
-              "$ref": "#/$defs/migration/$defs/migration_properties"
-            },
-            "prod": {
-              "type": "object",
-              "description": "Overrides properties in production",
-              "$ref": "#/$defs/migration/$defs/migration_properties"
-            }
-          }
-        }
-      ],
-      "$defs": {
-        "migration_properties": {
-          "title": "migration_properties",
-          "type": "object",
-          "properties": {
-            "max_version": {
-              "type": "integer",
-              "minimum": 0
             }
           }
         }

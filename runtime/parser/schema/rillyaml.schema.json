@@ -58,9 +58,6 @@
           "$ref": "./resource.schema.json#/$defs/explore/$defs/explore_properties",
           "description": "Defines project-wide default settings for explores. Unless overridden, individual explores will inherit these defaults"
         },
-        "migrations": {
-          "$ref": "./resource.schema.json#/$defs/migration/$defs/migration_properties"
-        },
         "features": {
           "oneOf": [
             {
