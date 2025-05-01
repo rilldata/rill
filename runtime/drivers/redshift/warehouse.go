@@ -240,8 +240,8 @@ type sourceProperties struct {
 	OutputLocation    string `mapstructure:"output_location"`
 	Workgroup         string `mapstructure:"workgroup"`
 	Database          string `mapstructure:"database"`
-	ClusterIdentifier string `mapstructure:"cluster.identifier"`
-	RoleARN           string `mapstructure:"role.arn"`
+	ClusterIdentifier string `mapstructure:"cluster_identifier"`
+	RoleARN           string `mapstructure:"role_arn"`
 	AWSRegion         string `mapstructure:"region"`
 }
 
