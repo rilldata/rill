@@ -53,6 +53,7 @@ var spec = drivers.Spec{
 			Secret: false,
 		},
 	},
+	// Important: Any edits to the below properties must be accompanied by changes to the client-side form validation schemas.
 	SourceProperties: []*drivers.PropertySpec{
 		{
 			Key:         "soql",

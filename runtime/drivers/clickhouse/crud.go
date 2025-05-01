@@ -227,7 +227,7 @@ func (c *Connection) dropTable(ctx context.Context, name string) error {
 		// then drop the local table in case of cluster
 		if onCluster && !strings.HasSuffix(name, "_local") {
 			return c.Exec(ctx, &drivers.Statement{
-				Query:    fmt.Sprintf("DROP TABLE %s %s", safelocalTableName(name), onClusterClause),
+				Query:    fmt.Sprintf("DROP TABLE %s %s", safeSQLName(localTableName(name)), onClusterClause),
 				Priority: 100,
 			})
 		}
@@ -283,7 +283,7 @@ func (c *Connection) renameEntity(ctx context.Context, oldName, newName string) 
 			return err
 		}
 		res.Close()
-		engineFull = strings.ReplaceAll(engineFull, localTableName(oldName), safelocalTableName(newName))
+		engineFull = strings.ReplaceAll(engineFull, localTableName(oldName), localTableName(newName))
 
 		// build the column type clause
 		columnClause, err := c.columnClause(ctx, oldName)
@@ -396,7 +396,7 @@ func (c *Connection) createTable(ctx context.Context, name, sql string, outputPr
 	create.WriteString("CREATE OR REPLACE TABLE ")
 	if c.config.Cluster != "" {
 		// need to create a local table on the cluster first
-		fmt.Fprintf(&create, "%s %s", safelocalTableName(name), onClusterClause)
+		fmt.Fprintf(&create, "%s %s", safeSQLName(localTableName(name)), onClusterClause)
 	} else {
 		create.WriteString(safeSQLName(name))
 	}
@@ -450,7 +450,7 @@ func (c *Connection) createTable(ctx context.Context, name, sql string, outputPr
 	if c.config.Database != "" {
 		database = safeSQLString(c.config.Database)
 	}
-	fmt.Fprintf(&distributed, "CREATE OR REPLACE TABLE %s %s AS %s", safeSQLName(name), onClusterClause, safelocalTableName(name))
+	fmt.Fprintf(&distributed, "CREATE OR REPLACE TABLE %s %s AS %s", safeSQLName(name), onClusterClause, safeSQLName(localTableName(name)))
 	fmt.Fprintf(&distributed, " ENGINE = Distributed(%s, %s, %s", safeSQLString(c.config.Cluster), database, safeSQLString(localTableName(name)))
 	if outputProps.DistributedShardingKey != "" {
 		fmt.Fprintf(&distributed, ", %s", outputProps.DistributedShardingKey)
@@ -601,10 +601,6 @@ func (c *Connection) getTablePartitions(ctx context.Context, name string) ([]str
 		return nil, err
 	}
 	return partitions, nil
-}
-
-func safelocalTableName(name string) string {
-	return safeSQLName(name + "_local")
 }
 
 func localTableName(name string) string {

@@ -9,15 +9,19 @@
     ChartSortDirection,
     FieldConfig,
   } from "@rilldata/web-common/features/canvas/components/charts/types";
+  import type { ChartFieldInput } from "@rilldata/web-common/features/canvas/inspector/types";
 
-  export let key: string;
   export let fieldConfig: FieldConfig;
   export let onChange: (property: keyof FieldConfig, value: any) => void;
+  export let chartFieldInput: ChartFieldInput | undefined = undefined;
+  export let label: string;
 
-  $: isDimension = key === "x";
-  $: isTemporal = fieldConfig?.type === "temporal";
+  $: isDimension = fieldConfig?.type === "nominal";
+  $: isMeasure = fieldConfig?.type === "quantitative";
 
   let limit = fieldConfig?.limit || 5000;
+  let labelAngle =
+    fieldConfig?.labelAngle ?? (fieldConfig?.type === "temporal" ? 0 : -90);
   let isDropdownOpen = false;
 
   const sortOptions: { label: string; value: ChartSortDirection }[] = [
@@ -26,6 +30,13 @@
     { label: "Y-axis ascending", value: "y" },
     { label: "Y-axis descending", value: "-y" },
   ];
+
+  $: showAxisTitle = chartFieldInput?.axisTitleSelector ?? false;
+  $: showOrigin = chartFieldInput?.originSelector ?? false;
+  $: showSort = chartFieldInput?.sortSelector ?? false;
+  $: showLimit = chartFieldInput?.limitSelector ?? false;
+  $: showNull = chartFieldInput?.nullSelector ?? false;
+  $: showLabelAngle = chartFieldInput?.labelAngleSelector ?? false;
 </script>
 
 <DropdownMenu.Root bind:open={isDropdownOpen}>
@@ -35,62 +46,68 @@
     </IconButton>
   </DropdownMenu.Trigger>
   <DropdownMenu.Content align="start" class="w-[280px] p-0">
-    <div class="px-3.5 py-2 border-b">
-      <span class="text-xs font-medium"
-        >{isDimension ? "X-axis" : "Y-axis"} Configuration</span
-      >
+    <div class="px-3.5 py-2 border-b border-gray-200">
+      <span class="text-xs font-medium">{label} Configuration</span>
     </div>
     <div class="px-3.5 pb-1.5">
-      <div class="py-1.5 flex items-center justify-between">
-        <span class="text-xs">Show axis title</span>
-        <Switch
-          small
-          checked={fieldConfig?.showAxisTitle}
-          on:click={() => {
-            onChange("showAxisTitle", !fieldConfig?.showAxisTitle);
-          }}
-        />
-      </div>
-      {#if isDimension && !isTemporal}
+      {#if showAxisTitle}
         <div class="py-1.5 flex items-center justify-between">
-          <span class="text-xs">Show null values</span>
+          <span class="text-xs">Show axis title</span>
           <Switch
             small
-            checked={fieldConfig?.showNull}
+            checked={fieldConfig?.showAxisTitle}
             on:click={() => {
-              onChange("showNull", !fieldConfig?.showNull);
-            }}
-          />
-        </div>
-        <div class="py-1.5 flex items-center justify-between">
-          <span class="text-xs">Sort</span>
-          <Select
-            size="sm"
-            id="sort-select"
-            width={180}
-            options={sortOptions}
-            value={fieldConfig?.sort || "x"}
-            on:change={(e) => onChange("sort", e.detail)}
-          />
-        </div>
-        <div class="py-1.5 flex items-center justify-between">
-          <span class="text-xs">Limit</span>
-          <Input
-            size="sm"
-            width="72px"
-            id="limit-select"
-            inputType="number"
-            bind:value={limit}
-            onBlur={() => {
-              onChange("limit", limit);
-            }}
-            onEnter={() => {
-              onChange("limit", limit);
+              onChange("showAxisTitle", !fieldConfig?.showAxisTitle);
             }}
           />
         </div>
       {/if}
-      {#if !isDimension}
+      {#if isDimension}
+        {#if showNull}
+          <div class="py-1.5 flex items-center justify-between">
+            <span class="text-xs">Show null values</span>
+            <Switch
+              small
+              checked={fieldConfig?.showNull}
+              on:click={() => {
+                onChange("showNull", !fieldConfig?.showNull);
+              }}
+            />
+          </div>
+        {/if}
+        {#if showSort}
+          <div class="py-1.5 flex items-center justify-between">
+            <span class="text-xs">Sort</span>
+            <Select
+              size="sm"
+              id="sort-select"
+              width={180}
+              options={sortOptions}
+              value={fieldConfig?.sort || "x"}
+              on:change={(e) => onChange("sort", e.detail)}
+            />
+          </div>
+        {/if}
+        {#if showLimit}
+          <div class="py-1.5 flex items-center justify-between">
+            <span class="text-xs">Limit</span>
+            <Input
+              size="sm"
+              width="72px"
+              id="limit-select"
+              inputType="number"
+              bind:value={limit}
+              onBlur={() => {
+                onChange("limit", limit);
+              }}
+              onEnter={() => {
+                onChange("limit", limit);
+              }}
+            />
+          </div>
+        {/if}
+      {/if}
+      {#if isMeasure && showOrigin}
         <div class="py-1.5 flex items-center justify-between">
           <span class="text-xs">Zero based origin</span>
           <Switch
@@ -98,6 +115,24 @@
             checked={fieldConfig?.zeroBasedOrigin}
             on:click={() => {
               onChange("zeroBasedOrigin", !fieldConfig?.zeroBasedOrigin);
+            }}
+          />
+        </div>
+      {/if}
+      {#if showLabelAngle && fieldConfig?.type !== "temporal"}
+        <div class="py-1.5 flex items-center justify-between">
+          <span class="text-xs">Label angle</span>
+          <Input
+            size="sm"
+            width="72px"
+            id="label-angle-select"
+            inputType="number"
+            bind:value={labelAngle}
+            onBlur={() => {
+              onChange("labelAngle", labelAngle);
+            }}
+            onEnter={() => {
+              onChange("labelAngle", labelAngle);
             }}
           />
         </div>

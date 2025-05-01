@@ -77,6 +77,7 @@ message PushToGithubResponse {
 
 message DeployProjectRequest {
   string org = 1;
+  string new_org_display_name = 4;
   string project_name = 2;
   bool upload = 3;
 }

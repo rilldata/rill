@@ -36,21 +36,33 @@ export function getDimensionTableExportQuery(
   if (!validSpecStore.data?.explore || !timeControlState.ready)
     return undefined;
 
-  const timeRange = mapSelectedTimeRangeToV1TimeRange(
-    timeControlState,
-    dashboardState.selectedTimezone,
-    validSpecStore.data.explore,
-  );
-  const comparisonTimeRange = mapSelectedComparisonTimeRangeToV1TimeRange(
-    timeControlState,
-    timeRange,
-  );
+  let timeRange: V1TimeRange | undefined;
+  if (isScheduled) {
+    timeRange = mapSelectedTimeRangeToV1TimeRange(
+      timeControlState,
+      dashboardState.selectedTimezone,
+      validSpecStore.data.explore,
+    );
+  } else {
+    timeRange = {
+      start: timeControlState.timeStart,
+      end: timeControlState.timeEnd,
+    };
+  }
   if (!timeRange) return undefined;
-  if (!isScheduled) {
-    // To match the UI's time range, we must explicitly specify `timeEnd` for on-demand exports
-    timeRange.end = timeControlState.timeEnd;
-    if (comparisonTimeRange) {
-      comparisonTimeRange.end = timeControlState.timeEnd;
+
+  let comparisonTimeRange: V1TimeRange | undefined;
+  if (timeControlState.showTimeComparison) {
+    if (isScheduled) {
+      comparisonTimeRange = mapSelectedComparisonTimeRangeToV1TimeRange(
+        timeControlState,
+        timeRange,
+      );
+    } else {
+      comparisonTimeRange = {
+        start: timeControlState.comparisonTimeStart,
+        end: timeControlState.comparisonTimeEnd,
+      };
     }
   }
 

@@ -1,6 +1,7 @@
 <script lang="ts">
   import {
     createAdminServiceAddProjectMemberUser,
+    getAdminServiceListOrganizationMemberUsersQueryKey,
     getAdminServiceListProjectInvitesQueryKey,
     getAdminServiceListProjectMemberUsersQueryKey,
   } from "@rilldata/web-admin/client";
@@ -83,6 +84,12 @@
             organization,
             project,
           ),
+        });
+
+        await queryClient.invalidateQueries({
+          queryKey:
+            getAdminServiceListOrganizationMemberUsersQueryKey(organization),
+          type: "all", // Clear regular and inactive queries
         });
 
         eventBus.emit("notification", {
