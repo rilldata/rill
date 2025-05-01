@@ -392,6 +392,8 @@
           <div animate:flip={{ duration: 200 }}>
             {#if dimensionName}
               <DimensionFilter
+                whereFilter={$dashboardStore.whereFilter}
+                dimensionThresholdFilters={[]}
                 metricsViewNames={[metricsViewName]}
                 {readOnly}
                 {name}

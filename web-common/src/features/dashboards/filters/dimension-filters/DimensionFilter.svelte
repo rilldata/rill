@@ -25,6 +25,11 @@
     useDimensionSearch,
     useAllSearchResultsCount,
   } from "web-common/src/features/dashboards/filters/dimension-filters/dimension-filter-values";
+  import { mergeDimensionAndMeasureFilters } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
+  import { getFiltersForOtherDimensions } from "@rilldata/web-common/features/dashboards/selectors";
+  import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
+  import type { V1Expression } from "@rilldata/web-common/runtime-client";
+  import type { DimensionThresholdFilter } from "../../stores/metrics-explorer-entity";
 
   export let name: string;
   export let metricsViewNames: string[];
@@ -39,6 +44,8 @@
   export let timeEnd: string | undefined;
   export let timeControlsReady: boolean | undefined;
   export let smallChip = false;
+  export let whereFilter: V1Expression;
+  export let dimensionThresholdFilters: DimensionThresholdFilter[];
   export let onRemove: () => void;
   export let onApplyInList: (values: string[]) => void;
   export let onSelect: (value: string) => void;
@@ -78,6 +85,13 @@
       timeStart,
       timeEnd,
       enabled: enableSearchQuery,
+      additionalFilter: sanitiseExpression(
+        mergeDimensionAndMeasureFilters(
+          getFiltersForOtherDimensions(whereFilter, name),
+          dimensionThresholdFilters,
+        ),
+        undefined,
+      ),
     },
   );
   $: ({
@@ -104,6 +118,13 @@
       timeStart,
       timeEnd,
       enabled: enableSearchCountQuery,
+      additionalFilter: sanitiseExpression(
+        mergeDimensionAndMeasureFilters(
+          getFiltersForOtherDimensions(whereFilter, name),
+          dimensionThresholdFilters,
+        ),
+        undefined,
+      ),
     },
   );
   $: ({
