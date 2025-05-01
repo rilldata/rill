@@ -28,9 +28,10 @@ export function pollUntilResourcesReconciled(
   if (query.state.error) return false;
   if (!data || !data.resources) return INITIAL_REFETCH_INTERVAL;
 
+  const hasErrors = data.resources.some(isResourceErrored);
   const hasReconcilingResources = data.resources.some(isResourceReconciling);
 
-  if (!hasReconcilingResources) {
+  if (hasErrors || !hasReconcilingResources) {
     return false;
   }
 
