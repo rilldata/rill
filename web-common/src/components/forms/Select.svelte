@@ -149,6 +149,7 @@
       {:else}
         <div class="px-2.5 py-1.5 text-gray-600">No results found</div>
       {/each}
+      <slot name="extra-dropdown-content" />
     </Select.Content>
   </Select.Root>
 </div>

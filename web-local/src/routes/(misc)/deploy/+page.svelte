@@ -4,7 +4,10 @@
   import TrialDetailsDialog from "@rilldata/web-common/features/billing/TrialDetailsDialog.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import OrgSelector from "@rilldata/web-common/features/project/OrgSelector.svelte";
-  import { ProjectDeployer } from "@rilldata/web-common/features/project/ProjectDeployer";
+  import {
+    ProjectDeployer,
+    ProjectDeployStage,
+  } from "@rilldata/web-common/features/project/ProjectDeployer";
   import DeployError from "@rilldata/web-common/features/project/DeployError.svelte";
   import { onMount } from "svelte";
   import CTAContentContainer from "@rilldata/web-common/components/calls-to-action/CTAContentContainer.svelte";
@@ -13,6 +16,7 @@
   import CTANeedHelp from "@rilldata/web-common/components/calls-to-action/CTANeedHelp.svelte";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import type { PageData } from "./$types";
+  import CreateNewOrgForm from "@rilldata/web-common/features/organization/CreateNewOrgForm.svelte";
 
   export let data: PageData;
 
@@ -22,7 +26,8 @@
   const project = deployer.project;
   const orgsMetadata = deployer.orgsMetadata;
   const deployerStatus = deployer.getStatus();
-  const promptOrgSelection = deployer.promptOrgSelection;
+  const stage = deployer.stage;
+
   // This org is set by the deployer.
   // 1. When there is no org is present it is auto created based on user's email.
   // 2. Otherwise, it will be the based on the selection. Will be equal to 'selectedOrg' in this case.
@@ -83,10 +88,16 @@
 
 <CTALayoutContainer>
   <CTAContentContainer>
-    {#if $promptOrgSelection}
+    {#if $stage === ProjectDeployStage.CreateNewOrg}
+      <CreateNewOrgForm
+        onUpdate={(org, displayName) =>
+          deployer.setOrgAndName(org, displayName)}
+      />
+    {:else if $stage === ProjectDeployStage.SelectOrg}
       <OrgSelector
         orgs={$user.data?.rillUserOrgs ?? []}
         onSelect={onOrgSelect}
+        onNewOrg={() => deployer.onNewOrg()}
       />
     {:else if $deployerStatus.isLoading}
       <div class="h-36">

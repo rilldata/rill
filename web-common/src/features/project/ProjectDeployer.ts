@@ -1,12 +1,7 @@
 import { page } from "$app/stores";
 import type { ConnectError } from "@connectrpc/connect";
 import { getTrialIssue } from "@rilldata/web-common/features/billing/issues";
-import { sanitizeOrgName } from "@rilldata/web-common/features/organization/sanitizeOrgName";
-import {
-  DeployErrorType,
-  getPrettyDeployError,
-} from "@rilldata/web-common/features/project/deploy-errors";
-import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
+import { getPrettyDeployError } from "@rilldata/web-common/features/project/deploy-errors";
 import { waitUntil } from "@rilldata/web-common/lib/waitUtils";
 import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
 import { BehaviourEventAction } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
@@ -22,11 +17,20 @@ import {
   createLocalServiceGetMetadata,
   createLocalServiceListOrganizationsAndBillingMetadataRequest,
   createLocalServiceRedeploy,
-  getLocalServiceGetCurrentUserQueryKey,
-  localServiceGetCurrentUser,
 } from "@rilldata/web-common/runtime-client/local-service";
 import { derived, get, writable } from "svelte/store";
 import { addPosthogSessionIdToUrl } from "../../lib/analytics/posthog";
+
+export enum ProjectDeployStage {
+  Init,
+
+  CreateNewOrg,
+  SelectOrg,
+
+  FreshDeploy,
+  ReDeploy,
+  OverwriteProject,
+}
 
 export class ProjectDeployer {
   public readonly metadata = createLocalServiceGetMetadata();
@@ -34,11 +38,13 @@ export class ProjectDeployer {
     createLocalServiceListOrganizationsAndBillingMetadataRequest();
   public readonly user = createLocalServiceGetCurrentUser();
   public readonly project = createLocalServiceGetCurrentProject();
-  public readonly promptOrgSelection = writable(false);
+
+  public stage = writable(ProjectDeployStage.Init);
 
   // exposes the exact org being used to deploy.
   // this could change based on user's selection or through auto generation based on user's email
   public readonly org = writable("");
+  public readonly orgDisplayName = writable<string | undefined>(undefined);
 
   private readonly deployMutation = createLocalServiceDeploy();
   private readonly redeployMutation = createLocalServiceRedeploy();
@@ -47,7 +53,9 @@ export class ProjectDeployer {
     // use a specific org. org could be set in url params as a callback from upgrading to team plan
     // this marks the deployer to skip prompting for org selection or auto generation
     private readonly useOrg: string,
-  ) {}
+  ) {
+    this.org.set(useOrg);
+  }
 
   public get isDeployed() {
     const projectResp = get(this.project).data as GetCurrentProjectResponse;
@@ -110,6 +118,16 @@ export class ProjectDeployer {
     );
   }
 
+  public setOrgAndName(org: string, displayName: string | undefined) {
+    this.org.set(org);
+    this.orgDisplayName.set(displayName);
+    void this.deploy();
+  }
+
+  public onNewOrg() {
+    this.stage.set(ProjectDeployStage.CreateNewOrg);
+  }
+
   public async loginOrDeploy() {
     await waitUntil(
       () => !get(this.metadata).isLoading && !get(this.user).isLoading,
@@ -129,15 +147,16 @@ export class ProjectDeployer {
     return this.deploy();
   }
 
-  public async deploy(org?: string) {
+  public async deploy() {
     await waitUntil(() => !get(this.project).isLoading);
 
     const projectResp = get(this.project).data as GetCurrentProjectResponse;
 
     // Project already exists
     if (projectResp.project) {
+      this.stage.set(ProjectDeployStage.ReDeploy);
       if (projectResp.project.githubUrl) {
-        // we do not support pushing to a project already connected to github
+        // we do not support pushing to a project already connected to github as of now
         return;
       }
 
@@ -153,89 +172,38 @@ export class ProjectDeployer {
 
     // Project does not yet exist
 
-    let checkNextOrg = false;
+    const org = get(this.org);
     if (!org) {
-      const { org: inferredOrg, checkNextOrg: inferredCheckNextOrg } =
-        await this.inferOrg(get(this.user).data?.rillUserOrgs ?? []);
-      // no org was inferred. this is because we have prompted the user for an org
-      if (!inferredOrg) return;
-      org = inferredOrg;
-      checkNextOrg = inferredCheckNextOrg;
-    }
-
-    const projectUrl = await this.tryDeployWithOrg(
-      org,
-      projectResp.localProjectName,
-      checkNextOrg,
-    );
-    if (projectUrl) {
-      // projectUrl: https://ui.rilldata.com/<org>/<project>
-      const projectInviteUrl = projectUrl + "/-/invite";
-      const projectInviteUrlWithSessionId =
-        addPosthogSessionIdToUrl(projectInviteUrl);
-      window.open(projectInviteUrlWithSessionId, "_self");
-    }
-  }
-
-  private async inferOrg(rillUserOrgs: string[]) {
-    if (this.useOrg) {
-      return {
-        org: this.useOrg,
-        checkNextOrg: false,
-      };
-    }
-
-    let org: string | undefined;
-    let checkNextOrg = false;
-    if (rillUserOrgs.length === 1) {
-      org = rillUserOrgs[0];
-    } else if (rillUserOrgs.length > 1) {
-      this.promptOrgSelection.set(true);
-    } else {
-      const userResp = await queryClient.fetchQuery({
-        queryKey: getLocalServiceGetCurrentUserQueryKey(),
-        queryFn: localServiceGetCurrentUser,
-      });
-      org = this.getOrgNameFromEmail(userResp.user?.email ?? "");
-      checkNextOrg = true;
-    }
-    return { org, checkNextOrg };
-  }
-
-  private async tryDeployWithOrg(
-    org: string,
-    projectName: string,
-    checkNextOrg: boolean,
-  ) {
-    let i = 0;
-
-    // eslint-disable-next-line no-constant-condition
-    while (true) {
-      try {
-        const tryOrgName = `${org}${i === 0 ? "" : "-" + i}`;
-        this.org.set(tryOrgName);
-        const resp = await get(this.deployMutation).mutateAsync({
-          projectName,
-          org: tryOrgName,
-          upload: true,
-        });
-        // wait for the telemetry to finish since the page will be redirected after a deploy success
-        await behaviourEvent?.fireDeployEvent(
-          BehaviourEventAction.DeploySuccess,
-        );
-        return resp.frontendUrl;
-      } catch (e) {
-        const err = getPrettyDeployError(e, false);
-        if (err.type === DeployErrorType.PermissionDenied && checkNextOrg) {
-          i++;
-        } else {
-          throw e;
-        }
+      if (get(this.user).data?.rillUserOrgs?.length) {
+        this.stage.set(ProjectDeployStage.SelectOrg);
+      } else {
+        this.stage.set(ProjectDeployStage.CreateNewOrg);
       }
+      return;
     }
-  }
 
-  private getOrgNameFromEmail(email: string): string {
-    return sanitizeOrgName(email.split("@")[0] ?? "");
+    this.stage.set(ProjectDeployStage.FreshDeploy);
+    console.log("DEPLOY", {
+      org,
+      newOrgDisplayName: get(this.orgDisplayName),
+      projectName: projectResp.localProjectName,
+      upload: true,
+    });
+
+    // const resp = await get(this.deployMutation).mutateAsync({
+    //   org,
+    //   newOrgDisplayName: get(this.orgDisplayName),
+    //   projectName: projectResp.localProjectName,
+    //   upload: true,
+    // });
+    // // wait for the telemetry to finish since the page will be redirected after a deploy success
+    // await behaviourEvent?.fireDeployEvent(BehaviourEventAction.DeploySuccess);
+    // if (!resp.frontendUrl) return;
+    //
+    // // projectUrl: https://ui.rilldata.com/<org>/<project>
+    // const projectInviteUrl = resp.frontendUrl + "/-/invite";
+    // const projectInviteUrlWithSessionId =
+    //   addPosthogSessionIdToUrl(projectInviteUrl);
+    // window.open(projectInviteUrlWithSessionId, "_self");
   }
 }
