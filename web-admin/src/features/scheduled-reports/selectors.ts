@@ -7,7 +7,7 @@ import {
 } from "@rilldata/web-common/runtime-client";
 import {
   INITIAL_REFETCH_INTERVAL,
-  calculateRefetchInterval,
+  pollUntilResourcesReconciled,
 } from "../shared/refetch-interval";
 
 export function useReports(instanceId: string, enabled = true) {
@@ -23,7 +23,7 @@ export function useReports(instanceId: string, enabled = true) {
         enabled: enabled && !!instanceId,
         refetchOnMount: true,
         refetchInterval: (query) => {
-          const newInterval = calculateRefetchInterval(
+          const newInterval = pollUntilResourcesReconciled(
             currentRefetchInterval,
             query.state.data,
             query,
