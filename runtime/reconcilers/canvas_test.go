@@ -2,6 +2,7 @@ package reconcilers_test
 
 import (
 	"testing"
+	"time"
 
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/testruntime"
@@ -191,6 +192,13 @@ first_month_of_year: 1
 
 	// Reconcile and verify that the metrics view gets updated
 	testruntime.ReconcileParserAndWait(t, rt, id)
+
+	// Add polling logic to wait for expected state
+	require.Eventually(t, func() bool {
+		mv2 = testruntime.GetResource(t, rt, id, runtime.ResourceKindMetricsView, "mv2")
+		return mv2.GetMetricsView().State.ValidSpec != nil &&
+			mv2.GetMetricsView().State.ValidSpec.FirstDayOfWeek == 1
+	}, 5*time.Second, 100*time.Millisecond, "metrics view spec not updated in time")
 
 	// Verify that mv2's valid spec got updated
 	mv2 = testruntime.GetResource(t, rt, id, runtime.ResourceKindMetricsView, "mv2")
