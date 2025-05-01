@@ -23,10 +23,10 @@ export function isResourceReconciling(resource: V1Resource) {
 export function pollUntilResourcesReconciled(
   currentInterval: number,
   data: V1ListResourcesResponse | undefined,
-  query: Query<V1ListResourcesResponse, Error | HTTPError>,
+  query: Query<V1ListResourcesResponse, HTTPError>,
 ): number | false {
   if (query.state.error) return false;
-  if (!data || !data.resources) return INITIAL_REFETCH_INTERVAL;
+  if (!data?.resources) return INITIAL_REFETCH_INTERVAL;
 
   const hasErrors = data.resources.some(isResourceErrored);
   const hasReconcilingResources = data.resources.some(isResourceReconciling);
