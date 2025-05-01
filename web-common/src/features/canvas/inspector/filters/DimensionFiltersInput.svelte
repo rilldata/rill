@@ -56,7 +56,6 @@
     getMeasureFilterItems,
     getAllMeasureFilterItems,
     measureHasFilter,
-    dimensionThresholdFilters,
   } = componentStore.localFilters);
 
   $: dimensionIdMap = getMapFromArray(
@@ -173,7 +172,7 @@
                   timeControlsReady
                   excludeMode={$isFilterExcludeMode(name)}
                   whereFilter={$whereFilter}
-                  dimensionThresholdFilters={$dimensionThresholdFilters}
+                  dimensionThresholdFilters={[]}
                   onRemove={() => removeDimensionFilter(name)}
                   onToggleFilterMode={() => toggleDimensionFilterMode(name)}
                   onSelect={(value) =>
