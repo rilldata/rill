@@ -20,7 +20,7 @@ export function isResourceReconciling(resource: V1Resource) {
   );
 }
 
-export function calculateRefetchInterval(
+export function pollUntilResourcesReconciled(
   currentInterval: number,
   data: V1ListResourcesResponse | undefined,
   query: Query<V1ListResourcesResponse, Error | HTTPError>,

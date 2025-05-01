@@ -12,7 +12,7 @@ import {
 import { readable } from "svelte/store";
 import {
   INITIAL_REFETCH_INTERVAL,
-  calculateRefetchInterval,
+  pollUntilResourcesReconciled,
 } from "../shared/refetch-interval";
 
 export function useAlerts(instanceId: string, enabled = true) {
@@ -28,7 +28,7 @@ export function useAlerts(instanceId: string, enabled = true) {
         enabled: enabled && !!instanceId,
         refetchOnMount: true,
         refetchInterval: (query) => {
-          const newInterval = calculateRefetchInterval(
+          const newInterval = pollUntilResourcesReconciled(
             currentRefetchInterval,
             query.state.data,
             query,

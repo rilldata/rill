@@ -7,7 +7,7 @@ import type { CreateQueryResult } from "@tanstack/svelte-query";
 import { derived } from "svelte/store";
 import {
   INITIAL_REFETCH_INTERVAL,
-  calculateRefetchInterval,
+  pollUntilResourcesReconciled,
 } from "../../shared/refetch-interval";
 
 export function useDashboardsLastUpdated(
@@ -86,7 +86,7 @@ export function useDashboardsV2(
         return allDashboards;
       },
       refetchInterval: (query) => {
-        const newInterval = calculateRefetchInterval(
+        const newInterval = pollUntilResourcesReconciled(
           currentRefetchInterval,
           query.state.data,
           query,

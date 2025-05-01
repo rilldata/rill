@@ -6,7 +6,7 @@ import { createRuntimeServiceListResources } from "@rilldata/web-common/runtime-
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import {
   INITIAL_REFETCH_INTERVAL,
-  calculateRefetchInterval,
+  pollUntilResourcesReconciled,
 } from "../../shared/refetch-interval";
 
 export function useProjectDeployment(orgName: string, projName: string) {
@@ -46,7 +46,7 @@ export function useResources(instanceId: string, isAdmin = false) {
           ),
         }),
         refetchInterval: (query) => {
-          const newInterval = calculateRefetchInterval(
+          const newInterval = pollUntilResourcesReconciled(
             currentRefetchInterval,
             query.state.data,
             query,
