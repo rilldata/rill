@@ -6,10 +6,7 @@ import { createRuntimeServiceListResources } from "@rilldata/web-common/runtime-
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import {
   INITIAL_REFETCH_INTERVAL,
-  MAX_REFETCH_INTERVAL,
-  BACKOFF_FACTOR,
-  isResourceReconciling,
-  isResourceErrored,
+  calculateRefetchInterval,
 } from "../../shared/refetch-interval";
 
 export function useProjectDeployment(orgName: string, projName: string) {
@@ -49,24 +46,17 @@ export function useResources(instanceId: string) {
           ),
         }),
         refetchInterval: (query) => {
-          if (query.state.error) return false;
-          if (!query.state.data) return INITIAL_REFETCH_INTERVAL;
-
-          const hasErrors = query.state.data.resources.some(isResourceErrored);
-          const hasReconcilingResources = query.state.data.resources.some(
-            isResourceReconciling,
+          const newInterval = calculateRefetchInterval(
+            currentRefetchInterval,
+            query.state.data,
+            query,
           );
-
-          if (hasErrors || !hasReconcilingResources) {
+          if (newInterval === false) {
             currentRefetchInterval = INITIAL_REFETCH_INTERVAL;
             return false;
           }
-
-          currentRefetchInterval = Math.min(
-            currentRefetchInterval * BACKOFF_FACTOR,
-            MAX_REFETCH_INTERVAL,
-          );
-          return currentRefetchInterval;
+          currentRefetchInterval = newInterval;
+          return newInterval;
         },
       },
     },
