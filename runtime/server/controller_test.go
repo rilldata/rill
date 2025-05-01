@@ -102,6 +102,47 @@ metrics_view: mv2
 	}
 }
 
+func TestTriggerWithChangeModel(t *testing.T) {
+	rt, instanceID := testruntime.NewInstance(t)
+
+	// Create a table directly in the OLAP connector for testing metrics views without any refs.
+	createTableAsSelect(t, rt, instanceID, "duckdb", "foo", "SELECT 'US' AS country")
+
+	// Create test resources
+	testruntime.PutFiles(t, rt, instanceID, map[string]string{
+		// Model m1
+		"model.yaml": `
+type: model
+name: m1
+change_mode: reset
+sql: |
+  SELECT 'US' AS country
+`,
+		// Metrics view with reference to the model
+		"mv1.yaml": `
+type: metrics_view
+version: 1
+model: m1
+dimensions:
+- column: country
+measures:
+- expression: COUNT(*)
+`,
+		// Explore on mv1
+		"e1.yaml": `
+type: explore
+metrics_view: mv1
+`,
+	})
+
+	testruntime.ReconcileParserAndWait(t, rt, instanceID)
+	testruntime.RequireReconcileState(t, rt, instanceID, 4, 0, 0)
+
+	// Create test server
+	_, err := server.NewServer(context.Background(), &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient())
+	require.NoError(t, err)
+}
+
 // createTableAsSelect is a test utility for creating a table directly in an OLAP connector.
 // It invokes a model executor directly without actually creating a model resource.
 // This is useful for testing resources against pre-existing/external tables.

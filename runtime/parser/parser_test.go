@@ -2293,6 +2293,58 @@ SELECT * FROM domain_mappings WHERE active = true
 	requireResourcesAndErrors(t, p, resources, nil)
 }
 
+func TestModelChangeModes(t *testing.T) {
+	tests := []struct {
+		name      string
+		yamlInput string
+		wantMode  string
+	}{
+		{
+			name: "default change mode",
+			yamlInput: `
+type: model
+connector: duckdb
+`,
+			wantMode: "reset",
+		},
+		{
+			name: "manual change mode",
+			yamlInput: `
+type: model
+connector: duckdb
+change_mode: manual
+`,
+			wantMode: "manual",
+		},
+		{
+			name: "patch change mode",
+			yamlInput: `
+type: model
+connector: duckdb
+change_mode: patch
+`,
+			wantMode: "patch",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(fmt.Sprintf("Test %s", tt.name), func(t *testing.T) {
+			ctx := context.Background()
+			repo := makeRepo(t, map[string]string{
+				`rill.yaml`:      ``,
+				`models/m1.yaml`: tt.yamlInput,
+			})
+
+			p, err := Parse(ctx, repo, "", "", "duckdb")
+			require.NoError(t, err)
+			require.Len(t, p.Resources, 1)
+			resource := p.Resources[ResourceName{Kind: ResourceKindModel, Name: "m1"}]
+			require.NotNil(t, resource)
+
+		})
+	}
+}
+
 func requireResourcesAndErrors(t testing.TB, p *Parser, wantResources []*Resource, wantErrors []*runtimev1.ParseError) {
 	// Check errors
 	// NOTE: Assumes there's at most one parse error per file path
