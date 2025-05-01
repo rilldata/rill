@@ -218,26 +218,26 @@
     color-scheme: dark;
     color: var(--color-gray-900);
 
-    --surface: var(--color-gray-100);
+    --surface: oklch(0.1 0.0194 248.34);
 
     /* SHADCN VARIABLES */
     --background: var(--color-gray-50);
     /* --foreground: var(--color-gray-900); */
     /* --card: var(--surface); */
     /* --card-foreground: var(--color-gray-900); */
-    --popover: var(--color-gray-200);
+    --popover: var(--color-gray-100);
     /* --popover-foreground: var(--color-gray-900); */
     /* --primary: var(--color-primary-950); */
     /* --primary-foreground: var(--color-primary-50); */
     /* --secondary: var(--color-secondary-100); */
     /* --secondary-foreground: var(--color-secondary-950); */
-    --muted: var(--color-gray-300);
+    --muted: var(--color-gray-200);
     /* --muted-foreground: var(--color-gray-500); */
-    --accent: var(--color-gray-300);
+    --accent: var(--color-gray-200);
     /* --accent-foreground: var(--color-gray-900); */
     /* --destructive: var(--color-red-600); */
     /* --destructive-foreground: var(--color-gray-50); */
-    --border: var(--color-gray-300);
+    --border: var(--color-gray-200);
     /* --input: var(--color-gray-200); */
     /* --ring: var(--color-gray-950); */
 
@@ -351,9 +351,10 @@ body {
   font-family: "Inter";
   font-size: 12px;
 
-  --system: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-    "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji",
-    "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  --system:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue",
+    Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji",
+    "Segoe UI Symbol", "Noto Color Emoji";
 
   --monospace: "Source Code Variable";
   margin: 0;

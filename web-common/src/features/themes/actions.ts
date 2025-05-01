@@ -22,19 +22,19 @@ function generatePalette(
 
   if (isGray) {
     const spectrum = chroma
-      .scale([chroma("black"), refColor.desaturate(0.15), chroma("white")])
+      .scale([chroma("black"), refColor, chroma("white")])
       .mode(MODE)
       .gamma(1)
       .colors(102, null);
 
-    const darkestDark = findContrast(spectrum, BLACK, 1.018) ?? spectrum[0];
+    const darkestDark = findContrast(spectrum, BLACK, 1.12) ?? spectrum[0];
     const lightestDark = findContrast(spectrum, darkestDark, 18) ?? spectrum[0];
 
     return {
       dark: chroma
         .scale([darkestDark, lightestDark])
         .mode(MODE)
-        .gamma(1)
+        .gamma(1.12)
         .colors(stepCount, null),
       light: chroma
         .scale([chroma("white"), chroma("black")])

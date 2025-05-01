@@ -5,6 +5,7 @@ import { allColors } from "./colors.ts";
 import { createDarkVariation } from "./actions.ts";
 import { TailwindColorSpacing } from "./color-config.ts";
 import { execFile } from "child_process";
+import type { Color } from "chroma-js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -16,6 +17,13 @@ const header = `/**
  * Source: /web-common/src/features/themes/gen-colors.ts
  * Script: npm run gen:colors
 **/\n\n`;
+
+// The standard CSS function in Chroma does not give enough precision
+function getCssString(color: Color): string {
+  const [l, c, h] = color.oklch();
+
+  return `oklch(${l.toFixed(3)} ${c.toFixed(3)} ${isNaN(h) ? "none" : h.toFixed(3)})`;
+}
 
 function generateCSSBlock(): string {
   let variables = "";
@@ -30,14 +38,14 @@ function generateCSSBlock(): string {
     const lightVars = colorList
       .map(
         (color, i) =>
-          `  --color-${colorName}-light-${TailwindColorSpacing[i]}: ${color.css("oklch")};`,
+          `  --color-${colorName}-light-${TailwindColorSpacing[i]}: ${getCssString(color)};`,
       )
       .join("\n");
 
     const darkVars = darkVariants
       .map(
         (color, i) =>
-          `  --color-${colorName}-dark-${TailwindColorSpacing[i]}: ${color.css("oklch")};`,
+          `  --color-${colorName}-dark-${TailwindColorSpacing[i]}: ${getCssString(color)};`,
       )
       .join("\n");
 
