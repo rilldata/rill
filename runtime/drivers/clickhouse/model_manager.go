@@ -66,24 +66,32 @@ func (p *ModelOutputProperties) Validate(opts *drivers.ModelExecuteOptions) erro
 			return fmt.Errorf("`engine_full ` property cannot be used with individual properties")
 		}
 	}
+
+	// Handle materialize and type properties. We want to gracefully handle the cases where either or both are set in a non-contradictory way.
+	// This gets extra tricky since materialize=true is compatible with both TABLE and DICTIONARY types (just not VIEW).
 	p.Typ = strings.ToUpper(p.Typ)
-	if p.Typ != "" && p.Materialize != nil {
-		return fmt.Errorf("cannot set both `type` and `materialize` properties")
-	}
 	if p.Materialize != nil {
 		if *p.Materialize {
-			p.Typ = "TABLE"
+			if p.Typ == "VIEW" {
+				return fmt.Errorf("the `type` and `materialize` properties contradict each other")
+			} else if p.Typ == "" {
+				p.Typ = "TABLE"
+			}
 		} else {
-			p.Typ = "VIEW"
+			if p.Typ == "" {
+				p.Typ = "VIEW"
+			} else if p.Typ != "VIEW" {
+				return fmt.Errorf("the `type` and `materialize` properties contradict each other")
+			}
 		}
 	}
-	if opts.Incremental || opts.PartitionRun {
+	if opts.Incremental || opts.PartitionRun { // Incremental or partitioned models default to TABLE.
 		if p.Typ != "" && p.Typ != "TABLE" {
-			return fmt.Errorf("incremental or partitioned models must be materialized")
+			return fmt.Errorf("incremental or partitioned models must be materialized as a table")
 		}
 		p.Typ = "TABLE"
 	}
-	if p.Typ == "" {
+	if p.Typ == "" { // Plain unannotated models default to VIEW.
 		p.Typ = "VIEW"
 	}
 
