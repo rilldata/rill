@@ -22,12 +22,12 @@ export function useProjectDeployment(orgName: string, projName: string) {
   );
 }
 
-export function useResources(instanceId: string) {
+export function useResources(instanceId: string, isAdmin = false) {
   return createRuntimeServiceListResources(
     instanceId,
     {
-      // Ensure admins can see all resources, regardless of the security policy
-      skipSecurityChecks: true,
+      // Only skip security checks for admin users
+      skipSecurityChecks: isAdmin,
     },
     {
       query: {
