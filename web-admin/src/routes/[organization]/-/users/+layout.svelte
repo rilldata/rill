@@ -19,7 +19,7 @@
   ];
 </script>
 
-<ContentContainer title="Users" maxWidth={1100}>
+<ContentContainer title="Manage users" maxWidth={1100}>
   <div class="container flex-col md:flex-row">
     <LeftNav {basePage} baseRoute="/[organization]/-/users" {navItems} />
     <slot />

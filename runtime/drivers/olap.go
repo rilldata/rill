@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"regexp"
 	"strings"
 	"time"
 
@@ -23,6 +24,8 @@ var (
 	ErrUnsupportedConnector = errors.New("drivers: connector not supported")
 	// ErrOptimizationFailure is returned when an optimization fails.
 	ErrOptimizationFailure = errors.New("drivers: optimization failure")
+
+	dictPwdRegex = regexp.MustCompile(`PASSWORD\s+'[^']*'`)
 )
 
 // WithConnectionFunc is a callback function that provides a context to be used in further OLAP store calls to enforce affinity to a single connection.
@@ -274,13 +277,21 @@ func (d Dialect) EscapeTable(db, schema, table string) string {
 	return sb.String()
 }
 
-func (d Dialect) DimensionSelect(db, dbSchema, table string, dim *runtimev1.MetricsViewSpec_Dimension) (dimSelect, unnestClause string) {
+func (d Dialect) DimensionSelect(db, dbSchema, table string, dim *runtimev1.MetricsViewSpec_Dimension) (dimSelect, unnestClause string, err error) {
 	colName := d.EscapeIdentifier(dim.Name)
 	if !dim.Unnest || d == DialectDruid {
-		return fmt.Sprintf(`(%s) as %s`, d.MetricsViewDimensionExpression(dim), colName), ""
+		expr, err := d.MetricsViewDimensionExpression(dim)
+		if err != nil {
+			return "", "", fmt.Errorf("failed to get dimension expression: %w", err)
+		}
+		return fmt.Sprintf(`(%s) as %s`, expr, colName), "", nil
 	}
 	if dim.Unnest && d == DialectClickHouse {
-		return fmt.Sprintf(`arrayJoin(%s) as %s`, d.MetricsViewDimensionExpression(dim), colName), ""
+		expr, err := d.MetricsViewDimensionExpression(dim)
+		if err != nil {
+			return "", "", fmt.Errorf("failed to get dimension expression: %w", err)
+		}
+		return fmt.Sprintf(`arrayJoin(%s) as %s`, expr, colName), "", nil
 	}
 
 	unnestColName := d.EscapeIdentifier(tempName(fmt.Sprintf("%s_%s_", "unnested", dim.Name)))
@@ -288,26 +299,30 @@ func (d Dialect) DimensionSelect(db, dbSchema, table string, dim *runtimev1.Metr
 	sel := fmt.Sprintf(`%s as %s`, unnestColName, colName)
 	if dim.Expression == "" {
 		// select "unnested_colName" as "colName" ... FROM "mv_table", LATERAL UNNEST("mv_table"."colName") tbl_name("unnested_colName") ...
-		return sel, fmt.Sprintf(`, LATERAL UNNEST(%s.%s) %s(%s)`, d.EscapeTable(db, dbSchema, table), colName, unnestTableName, unnestColName)
+		return sel, fmt.Sprintf(`, LATERAL UNNEST(%s.%s) %s(%s)`, d.EscapeTable(db, dbSchema, table), colName, unnestTableName, unnestColName), nil
 	}
 
-	return sel, fmt.Sprintf(`, LATERAL UNNEST(%s) %s(%s)`, dim.Expression, unnestTableName, unnestColName)
+	return sel, fmt.Sprintf(`, LATERAL UNNEST(%s) %s(%s)`, dim.Expression, unnestTableName, unnestColName), nil
 }
 
-func (d Dialect) DimensionSelectPair(db, dbSchema, table string, dim *runtimev1.MetricsViewSpec_Dimension) (expr, alias, unnestClause string) {
+func (d Dialect) DimensionSelectPair(db, dbSchema, table string, dim *runtimev1.MetricsViewSpec_Dimension) (expr, alias, unnestClause string, err error) {
 	colName := d.EscapeIdentifier(dim.Name)
 	if !dim.Unnest || d == DialectDruid {
-		return d.MetricsViewDimensionExpression(dim), colName, ""
+		ex, err := d.MetricsViewDimensionExpression(dim)
+		if err != nil {
+			return "", "", "", fmt.Errorf("failed to get dimension expression: %w", err)
+		}
+		return ex, colName, "", nil
 	}
 
 	unnestColName := d.EscapeIdentifier(tempName(fmt.Sprintf("%s_%s_", "unnested", dim.Name)))
 	unnestTableName := tempName("tbl")
 	if dim.Expression == "" {
 		// select "unnested_colName" as "colName" ... FROM "mv_table", LATERAL UNNEST("mv_table"."colName") tbl_name("unnested_colName") ...
-		return unnestColName, colName, fmt.Sprintf(`, LATERAL UNNEST(%s.%s) %s(%s)`, d.EscapeTable(db, dbSchema, table), colName, unnestTableName, unnestColName)
+		return unnestColName, colName, fmt.Sprintf(`, LATERAL UNNEST(%s.%s) %s(%s)`, d.EscapeTable(db, dbSchema, table), colName, unnestTableName, unnestColName), nil
 	}
 
-	return unnestColName, colName, fmt.Sprintf(`, LATERAL UNNEST(%s) %s(%s)`, dim.Expression, unnestTableName, unnestColName)
+	return unnestColName, colName, fmt.Sprintf(`, LATERAL UNNEST(%s) %s(%s)`, dim.Expression, unnestTableName, unnestColName), nil
 }
 
 func (d Dialect) LateralUnnest(expr, tableAlias, colName string) (tbl string, auto bool, err error) {
@@ -325,16 +340,28 @@ func (d Dialect) AutoUnnest(expr string) string {
 	return expr
 }
 
-func (d Dialect) MetricsViewDimensionExpression(dimension *runtimev1.MetricsViewSpec_Dimension) string {
+func (d Dialect) MetricsViewDimensionExpression(dimension *runtimev1.MetricsViewSpec_Dimension) (string, error) {
+	if dimension.LookupTable != "" {
+		var keyExpr string
+		if dimension.Column != "" {
+			keyExpr = d.EscapeIdentifier(dimension.Column)
+		} else if dimension.Expression != "" {
+			keyExpr = dimension.Expression
+		} else {
+			return "", fmt.Errorf("dimension %q has a lookup table but no column or expression defined", dimension.Name)
+		}
+		return d.LookupExpr(dimension.LookupTable, dimension.LookupValueColumn, keyExpr)
+	}
+
 	if dimension.Expression != "" {
-		return dimension.Expression
+		return dimension.Expression, nil
 	}
 	if dimension.Column != "" {
-		return d.EscapeIdentifier(dimension.Column)
+		return d.EscapeIdentifier(dimension.Column), nil
 	}
 	// Backwards compatibility for older projects that have not run reconcile on this metrics view.
 	// In that case `column` will not be present.
-	return d.EscapeIdentifier(dimension.Name)
+	return d.EscapeIdentifier(dimension.Name), nil
 }
 
 func (d Dialect) SafeDivideExpression(numExpr, denExpr string) string {
@@ -739,6 +766,34 @@ func (d Dialect) GetTimeExpr(t time.Time) (bool, string) {
 	default:
 		return false, ""
 	}
+}
+
+func (d Dialect) LookupExpr(lookupTable, lookupValueColumn, lookupKeyExpr string) (string, error) {
+	switch d {
+	case DialectClickHouse:
+		return fmt.Sprintf("dictGet('%s', '%s', %s)", lookupTable, lookupValueColumn, lookupKeyExpr), nil
+	default:
+		// Druid already does reverse lookup inherently so defining lookup expression directly as dimension expression should be ok.
+		// For Duckdb I think we should just avoid going into this complexity as it should not matter much at that scale.
+		return "", fmt.Errorf("lookup tables are not supported for dialect %q", d)
+	}
+}
+
+func (d Dialect) LookupSelectExpr(lookupTable, lookupKeyColumn string) (string, error) {
+	switch d {
+	case DialectClickHouse:
+		return fmt.Sprintf("SELECT %s FROM dictionary(%s)", d.EscapeIdentifier(lookupKeyColumn), d.EscapeIdentifier(lookupTable)), nil
+	default:
+		return "", fmt.Errorf("unsupported dialect %q", d)
+	}
+}
+
+func (d Dialect) SanitizeQueryForLogging(sql string) string {
+	if d == DialectClickHouse {
+		// replace inline "PASSWORD 'pwd'" for dict source with "PASSWORD '***'"
+		sql = dictPwdRegex.ReplaceAllString(sql, "PASSWORD '***'")
+	}
+	return sql
 }
 
 func (d Dialect) checkTypeCompatibility(f *runtimev1.StructType_Field) bool {

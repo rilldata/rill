@@ -28,7 +28,7 @@
   <AlertDialogTrigger asChild>
     <div class="hidden"></div>
   </AlertDialogTrigger>
-  <AlertDialogContent>
+  <AlertDialogContent noCancel>
     <AlertDialogHeader>
       <AlertDialogTitle>Remove user from organization?</AlertDialogTitle>
       <AlertDialogDescription>

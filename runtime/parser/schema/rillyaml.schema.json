@@ -1,0 +1,126 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://rilldata.com/schemas/rillyaml.schema.json",
+  "title": "rillyaml",
+  "type": "object",
+  "description": "The rill.yaml file contains metadata about your project.",
+  "allOf": [
+    {
+      "title": "rillyaml_properties",
+      "$ref": "#/$defs/rillyaml_properties"
+    },
+    {
+      "title": "environment_overrides",
+      "properties": {
+        "dev": {
+          "type": "object",
+          "description": "Overrides properties in development",
+          "$ref": "#/$defs/rillyaml_properties"
+        },
+        "prod": {
+          "type": "object",
+          "description": "Overrides properties in production",
+          "$ref": "#/$defs/rillyaml_properties"
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "rillyaml_properties": {
+      "title": "rillyaml_properties",
+      "type": "object",
+      "properties": {
+        "compiler": {
+          "type": "string",
+          "description": "Specifies the parser version to use for compiling resources"
+        },
+        "display_name": {
+          "type": "string",
+          "description": "The display name of the project, shown in the upper-left corner of the UI"
+        },
+        "description": {
+          "type": "string",
+          "description": "A brief description of the project"
+        },
+        "olap_connector": {
+          "type": "string",
+          "description": "Specifies the default OLAP engine for the project. Defaults to duckdb if not set"
+        },
+        "models": {
+          "$ref": "./resource.schema.json#/$defs/model/$defs/model_properties",
+          "description": "Defines project-wide default settings for models. Unless overridden, individual models will inherit these defaults"
+        },
+        "metrics_views": {
+          "$ref": "./resource.schema.json#/$defs/metrics_view/$defs/metrics_view_properties",
+          "description": "Defines project-wide default settings for metrics_views. Unless overridden, individual metrics_views will inherit these defaults"
+        },
+        "explores": {
+          "$ref": "./resource.schema.json#/$defs/explore/$defs/explore_properties",
+          "description": "Defines project-wide default settings for explores. Unless overridden, individual explores will inherit these defaults"
+        },
+        "features": {
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": {
+                "type": "boolean"
+              }
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          ],
+          "description": "Enables or disables experimental or optional features using key-value pairs, where the key is the feature name and the value is a boolean"
+        },
+        "public_paths": {
+          "type": "array",
+          "description": "List of file or directory paths to expose over HTTP. Defaults to ['./public']",
+          "items": {
+            "type": "string"
+          }
+        },
+        "ignore_paths": {
+          "type": "array",
+          "description": "A list of file or directory paths to exclude from parsing. Useful for ignoring extraneous or non-Rill files in the project",
+          "items": {
+            "type": "string"
+          }
+        },
+        "mock_users": {
+          "type": "array",
+          "description": "A list of mock users used to test dashboard security policies within the project",
+          "items": {
+            "type": "object",
+            "properties": {
+              "email": {
+                "type": "string",
+                "description": "The email address of the mock user. This field is required"
+              },
+              "name": {
+                "type": "string",
+                "description": "The name of the mock user."
+              },
+              "admin": {
+                "type": "boolean",
+                "description": "Indicates whether the mock user has administrative privileges"
+              },
+              "groups": {
+                "type": "array",
+                "description": "An array of group names that the mock user is a member of",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "required": [
+              "email"
+            ]
+          }
+        }
+      }
+    }
+  }
+}

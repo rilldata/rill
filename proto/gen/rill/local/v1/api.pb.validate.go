@@ -938,6 +938,8 @@ func (m *DeployProjectRequest) validate(all bool) error {
 
 	// no validation rules for Org
 
+	// no validation rules for NewOrgDisplayName
+
 	// no validation rules for ProjectName
 
 	// no validation rules for Upload

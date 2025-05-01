@@ -4,12 +4,10 @@
   import Row from "@rilldata/web-common/components/icons/Row.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import { createEventDispatcher } from "svelte";
   import { writable } from "svelte/store";
   import { getStateManagers } from "../state-managers/state-managers";
   import { metricsExplorerStore } from "../stores/dashboard-stores";
   import AddField from "./AddField.svelte";
-  import PivotDragItem from "./PivotDragItem.svelte";
   import PivotPortalItem from "./PivotPortalItem.svelte";
   import { swapListener } from "./swapListener";
   import {
@@ -17,6 +15,7 @@
     PivotChipType,
     type PivotTableMode,
   } from "./types";
+  import PivotChip from "./PivotChip.svelte";
 
   export type Zone = "rows" | "columns" | "Time" | "Measures" | "Dimensions";
 
@@ -36,11 +35,11 @@
   export let placeholder: string | null = null;
   export let zone: Zone;
   export let tableMode: PivotTableMode = "nest";
+  export let onUpdate: (items: PivotChipData[]) => void = () => {};
 
   const isDropLocation = zone === "columns" || zone === "rows";
 
-  const dispatch = createEventDispatcher();
-  const ghostIndex = writable<number | null>(null);
+  const _ghostIndex = writable<number | null>(null);
 
   let swap = false;
   let container: HTMLDivElement;
@@ -49,6 +48,7 @@
 
   const { exploreName } = getStateManagers();
 
+  $: ghostIndex = $_ghostIndex;
   $: dragData = $dragDataStore;
   $: source = dragData?.source;
   $: dragChip = dragData?.chip;
@@ -68,6 +68,8 @@
   function handleMouseDown(e: MouseEvent, item: PivotChipData) {
     e.preventDefault();
 
+    if (e.button !== 0) return;
+
     const dragItem = document.getElementById(item.id);
     if (!dragItem) return;
 
@@ -82,11 +84,10 @@
 
     const index = Number(dragItem.dataset.index);
     initialIndex = index;
-    ghostIndex.set(index);
+    _ghostIndex.set(index);
 
     if (isDropLocation) {
       swap = true;
-
       const temp = [...items];
       temp.splice(index, 1);
       items = temp;
@@ -100,7 +101,7 @@
       window.addEventListener(
         "mouseup",
         () => {
-          dispatch("update", temp);
+          onUpdate(temp);
         },
         {
           once: true,
@@ -108,6 +109,10 @@
         },
       );
     }
+
+    window.addEventListener("mouseup", reset, {
+      once: true,
+    });
 
     dragDataStore.set({
       chip: item,
@@ -117,32 +122,31 @@
     });
   }
 
+  function reset() {
+    dragDataStore.set(null);
+    _ghostIndex.set(null);
+  }
+
   function handleDrop() {
     if (zoneStartedDrag) $controllerStore?.abort();
 
     if (isValidDropZone) {
-      if (dragChip && $ghostIndex !== null) {
+      if (dragChip && ghostIndex !== null) {
         const temp = [...items];
 
-        temp.splice($ghostIndex, 0, dragChip);
+        temp.splice(ghostIndex, 0, dragChip);
 
         items = temp;
 
-        dispatch("update", items);
+        onUpdate(items);
       }
       swap = false;
     }
-    dragDataStore.set(null);
-    ghostIndex.set(null);
+    reset();
   }
 
   function handleDragEnter() {
     if (!dragData) return;
-
-    if (zoneStartedDrag && !isDropLocation) {
-      ghostIndex.set(initialIndex);
-      return;
-    }
 
     if (!isValidDropZone) return;
 
@@ -151,14 +155,16 @@
         ? items.length
         : lastDimensionIndex + 1;
 
-    ghostIndex.set(defaultIndex);
-
+    _ghostIndex.set(defaultIndex);
     swap = true;
   }
 
   function handleDragLeave() {
     if (!dragData) return;
-    $ghostIndex = null;
+    if (zone === "columns" || zone === "rows") {
+      _ghostIndex.set(null);
+    }
+
     swap = false;
   }
 
@@ -182,53 +188,66 @@
   on:mouseleave={handleDragLeave}
   use:swapListener={{
     condition: isDropLocation && swap,
-    ghostIndex,
+    ghostIndex: _ghostIndex,
     chipType: dragChip?.type,
     canMixTypes,
+    orientation: "horizontal",
   }}
   bind:this={container}
 >
   {#each items as item, index (item.id)}
     <div
-      class="item-wrapper"
+      class="item-wrapper gap-x-2"
       class:aligned={zone === "Time" ||
         zone === "Measures" ||
         zone === "Dimensions"}
     >
-      {#if index === $ghostIndex}
+      {#if index === ghostIndex}
         <span
           class="ghost"
           class:rounded={dragChip?.type !== PivotChipType.Measure}
         />
       {/if}
 
-      <PivotDragItem
-        {item}
-        {index}
-        removable={isDropLocation}
-        hidden={dragChip?.id === item.id && zoneStartedDrag}
-        on:mousedown={(e) => handleMouseDown(e, item)}
-        on:remove={() => {
-          items = items.filter((i) => i.id !== item.id);
-          dispatch("update", items);
-        }}
-      />
+      <div
+        id={item.id}
+        data-type={item.type === PivotChipType.Measure
+          ? "measure"
+          : "dimension"}
+        data-index={index}
+        class="drag-item"
+        class:hidden={dragChip?.id === item.id && zoneStartedDrag}
+        class:rounded-full={item.type !== PivotChipType.Measure}
+      >
+        <PivotChip
+          grab
+          removable={isDropLocation}
+          {item}
+          on:mousedown={(e) => handleMouseDown(e, item)}
+          onRemove={() => {
+            items = items.filter((i) => i.id !== item.id);
+            onUpdate(items);
+          }}
+        />
+      </div>
 
-      <div class="icons">
-        {#if (zone === "Time" || zone === "Dimensions") && tableMode === "nest"}
-          <Tooltip distance={8} location="top" alignment="start">
-            <button
-              class="icon-wrapper"
-              on:click={() => handleRowClick(item)}
-              aria-label="Add Row"
-              type="button"
-            >
-              <Row size="16px" />
-            </button>
-            <TooltipContent slot="tooltip-content">Add to rows</TooltipContent>
-          </Tooltip>
-        {/if}
-        {#if zone === "Time" || zone === "Measures" || zone === "Dimensions"}
+      {#if zone !== "rows" && zone !== "columns"}
+        <div class="icons">
+          {#if (zone === "Time" || zone === "Dimensions") && tableMode === "nest"}
+            <Tooltip distance={8} location="top" alignment="start">
+              <button
+                class="icon-wrapper"
+                on:click={() => handleRowClick(item)}
+                aria-label="Add Row"
+                type="button"
+              >
+                <Row size="16px" />
+              </button>
+              <TooltipContent slot="tooltip-content">Add to rows</TooltipContent
+              >
+            </Tooltip>
+          {/if}
+
           <Tooltip distance={8} location="top" alignment="start">
             <button
               class="icon-wrapper"
@@ -238,20 +257,20 @@
             >
               <Column size="16px" />
             </button>
-            <TooltipContent slot="tooltip-content"
-              >Add to columns</TooltipContent
-            >
+            <TooltipContent slot="tooltip-content">
+              Add to columns
+            </TooltipContent>
           </Tooltip>
-        {/if}
-      </div>
+        </div>
+      {/if}
     </div>
   {:else}
-    {#if $ghostIndex === null}
+    {#if ghostIndex === null}
       <p>{placeholder}</p>
     {/if}
   {/each}
 
-  {#if $ghostIndex === items.length}
+  {#if ghostIndex === items.length}
     <span
       class="ghost"
       class:rounded={dragChip?.type !== PivotChipType.Measure}
@@ -264,7 +283,7 @@
       <Button
         type="text"
         on:click={() => {
-          dispatch("update", []);
+          onUpdate([]);
         }}
       >
         Clear
@@ -279,12 +298,13 @@
     item={dragChip}
     position={dragStart}
     removable={isDropLocation}
+    on:release={() => dragDataStore.set(null)}
   />
 {/if}
 
 <style lang="postcss">
   .ghost {
-    @apply bg-gray-200 rounded-sm pointer-events-none;
+    @apply bg-gray-100 border rounded-sm pointer-events-none;
     height: 26px;
     width: var(--ghost-width);
   }

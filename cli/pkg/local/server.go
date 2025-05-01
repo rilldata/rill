@@ -298,6 +298,7 @@ func (s *Server) DeployProject(ctx context.Context, r *connect.Request[localv1.D
 			// create org if not exists
 			_, err = c.CreateOrganization(ctx, &adminv1.CreateOrganizationRequest{
 				Name:        r.Msg.Org,
+				DisplayName: r.Msg.NewOrgDisplayName,
 				Description: "Auto created by Rill",
 			})
 			if err != nil {

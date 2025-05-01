@@ -63,7 +63,8 @@ export const ToURLParamTimeDimensionMap = reverseMap(
 );
 
 export const FromURLParamTDDChartMap: Record<string, TDDChart> = {
-  timeseries: TDDChart.DEFAULT,
+  timeseries: TDDChart.DEFAULT, // Backwards compatibility, this was default value when we 1st did this feature
+  line: TDDChart.DEFAULT,
   bar: TDDChart.GROUPED_BAR,
   stacked_bar: TDDChart.STACKED_BAR,
   stacked_area: TDDChart.STACKED_AREA,
