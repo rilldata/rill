@@ -514,11 +514,6 @@ export class CreateOrganizationRequest extends Message<CreateOrganizationRequest
    */
   description = "";
 
-  /**
-   * @generated from field: string display_name = 4;
-   */
-  displayName = "";
-
   constructor(data?: PartialMessage<CreateOrganizationRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -529,7 +524,6 @@ export class CreateOrganizationRequest extends Message<CreateOrganizationRequest
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 2, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 4, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateOrganizationRequest {

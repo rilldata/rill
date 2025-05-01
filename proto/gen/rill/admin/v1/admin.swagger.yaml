@@ -4159,8 +4159,6 @@ definitions:
         type: string
       description:
         type: string
-      displayName:
-        type: string
   v1CreateOrganizationResponse:
     type: object
     properties:

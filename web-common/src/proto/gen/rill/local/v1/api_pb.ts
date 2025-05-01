@@ -391,11 +391,6 @@ export class DeployProjectRequest extends Message<DeployProjectRequest> {
   org = "";
 
   /**
-   * @generated from field: string new_org_display_name = 4;
-   */
-  newOrgDisplayName = "";
-
-  /**
    * @generated from field: string project_name = 2;
    */
   projectName = "";
@@ -414,7 +409,6 @@ export class DeployProjectRequest extends Message<DeployProjectRequest> {
   static readonly typeName = "rill.local.v1.DeployProjectRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "org", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 4, name: "new_org_display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "project_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "upload", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);

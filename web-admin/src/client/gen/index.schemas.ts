@@ -276,7 +276,6 @@ export interface V1CreateBookmarkResponse {
 export interface V1CreateOrganizationRequest {
   name?: string;
   description?: string;
-  displayName?: string;
 }
 
 export interface V1CreateOrganizationResponse {
