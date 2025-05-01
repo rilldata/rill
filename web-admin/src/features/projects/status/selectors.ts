@@ -2,12 +2,6 @@ import {
   createAdminServiceGetProject,
   type V1Deployment,
 } from "@rilldata/web-admin/client";
-import { createRuntimeServiceListResources } from "@rilldata/web-common/runtime-client";
-import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
-import {
-  INITIAL_REFETCH_INTERVAL,
-  pollUntilResourcesReconciled,
-} from "../../shared/refetch-interval";
 
 export function useProjectDeployment(orgName: string, projName: string) {
   return createAdminServiceGetProject<V1Deployment | undefined>(
