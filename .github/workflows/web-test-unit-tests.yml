@@ -21,9 +21,6 @@ jobs:
             admin:
               - ".github/workflows/web-test.yml"
               - "web-admin/**"
-            local:
-              - ".github/workflows/web-test.yml"
-              - "web-local/**"
             common:
               - ".github/workflows/web-test.yml"
               - "web-common/**"
