@@ -20,7 +20,7 @@ export function isResourceReconciling(resource: V1Resource) {
   );
 }
 
-export function calculateRefetchInterval(
+export function pollUntilResourcesReconciled(
   currentInterval: number,
   data: V1ListResourcesResponse | undefined,
   query: Query<V1ListResourcesResponse, Error | HTTPError>,
@@ -35,4 +35,24 @@ export function calculateRefetchInterval(
   }
 
   return Math.min(currentInterval * BACKOFF_FACTOR, MAX_REFETCH_INTERVAL);
+}
+
+export function createPollingRefetchInterval() {
+  let currentInterval = INITIAL_REFETCH_INTERVAL;
+
+  return (query: Query<V1ListResourcesResponse, Error | HTTPError>) => {
+    const newInterval = pollUntilResourcesReconciled(
+      currentInterval,
+      query.state.data,
+      query,
+    );
+
+    if (newInterval === false) {
+      currentInterval = INITIAL_REFETCH_INTERVAL;
+      return false;
+    }
+
+    currentInterval = newInterval;
+    return newInterval;
+  };
 }

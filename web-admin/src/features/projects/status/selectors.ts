@@ -4,10 +4,7 @@ import {
 } from "@rilldata/web-admin/client";
 import { createRuntimeServiceListResources } from "@rilldata/web-common/runtime-client";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
-import {
-  INITIAL_REFETCH_INTERVAL,
-  calculateRefetchInterval,
-} from "../../shared/refetch-interval";
+import { createPollingRefetchInterval } from "../../shared/refetch-interval";
 
 export function useProjectDeployment(orgName: string, projName: string) {
   return createAdminServiceGetProject<V1Deployment | undefined>(
@@ -26,8 +23,6 @@ export function useProjectDeployment(orgName: string, projName: string) {
 }
 
 export function useResources(instanceId: string) {
-  let currentRefetchInterval = INITIAL_REFETCH_INTERVAL;
-
   return createRuntimeServiceListResources(
     instanceId,
     {
@@ -45,19 +40,7 @@ export function useResources(instanceId: string) {
               resource.meta.name.kind !== ResourceKind.RefreshTrigger,
           ),
         }),
-        refetchInterval: (query) => {
-          const newInterval = calculateRefetchInterval(
-            currentRefetchInterval,
-            query.state.data,
-            query,
-          );
-          if (newInterval === false) {
-            currentRefetchInterval = INITIAL_REFETCH_INTERVAL;
-            return false;
-          }
-          currentRefetchInterval = newInterval;
-          return newInterval;
-        },
+        refetchInterval: createPollingRefetchInterval(),
       },
     },
   );
