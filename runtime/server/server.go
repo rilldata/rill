@@ -270,9 +270,6 @@ func timeoutSelector(fullMethodName string) time.Duration {
 func errorMappingUnaryServerInterceptor() grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
 		resp, err := handler(ctx, req)
-		if _, ok := status.FromError(err); ok {
-			return resp, err
-		}
 		return resp, mapGRPCError(err)
 	}
 }
@@ -281,9 +278,6 @@ func errorMappingUnaryServerInterceptor() grpc.UnaryServerInterceptor {
 func errorMappingStreamServerInterceptor() grpc.StreamServerInterceptor {
 	return func(srv interface{}, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
 		err := handler(srv, ss)
-		if _, ok := status.FromError(err); ok {
-			return err
-		}
 		return mapGRPCError(err)
 	}
 }
