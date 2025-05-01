@@ -27,7 +27,7 @@
 >
   <div
     class={cn(
-      `flex h-full w-full items-center justify-center overflow-hidden rounded-full border`,
+      `flex h-7 w-7 items-center justify-center overflow-hidden rounded-full border`,
       {
         "border-dashed bg-transparent border-slate-400": !src && !alt,
         [`border-transparent ${bgColor}`]:
