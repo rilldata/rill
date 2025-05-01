@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -142,8 +143,7 @@ func (r *ExploreReconciler) validateAndRewrite(ctx context.Context, self *runtim
 		}
 
 		// Merge access rules into a single rule
-		mv.SecurityRules = append(mv.SecurityRules, spec.SecurityRules...)
-		access := mergeAccessRules(mv.SecurityRules)
+		access := mergeAccessRules(slices.Concat(spec.SecurityRules, mv.SecurityRules))
 		if access != nil {
 			spec.SecurityRules = []*runtimev1.SecurityRule{access}
 		}
