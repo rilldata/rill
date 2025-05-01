@@ -50,6 +50,11 @@ var Connectors = map[string]ConnectorAcquireFunc{
 		dsn := testclickhouse.Start(t)
 		return map[string]string{"dsn": dsn}
 	},
+	// clickhouse_cluster starts multiple test containers and configures them as a ClickHouse cluster.
+	"clickhouse_cluster": func(t TestingT) map[string]string {
+		dsn, cluster := testclickhouse.StartCluster(t)
+		return map[string]string{"dsn": dsn, "cluster": cluster}
+	},
 	// Bigquery connector connects to a real bigquery cluster using the credentials json in RILL_RUNTIME_BIGQUERY_TEST_GOOGLE_APPLICATION_CREDENTIALS_JSON.
 	// The service account must have the following permissions:
 	// - BigQuery Data Viewer
