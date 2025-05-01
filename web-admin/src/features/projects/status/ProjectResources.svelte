@@ -19,7 +19,8 @@
 
   $: ({ instanceId } = $runtime);
 
-  $: resources = useResources(instanceId);
+  // FIXME: pass `isProjectAdmin` to be self-contained
+  $: resources = useResources(instanceId, true);
 
   $: hasReconcilingResources = $resources.data?.resources?.some(
     isResourceReconciling,
