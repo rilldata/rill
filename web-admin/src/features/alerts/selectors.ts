@@ -10,9 +10,14 @@ import {
   type V1AlertSpec,
 } from "@rilldata/web-common/runtime-client";
 import { readable } from "svelte/store";
-import { createPollingRefetchInterval } from "../shared/refetch-interval";
+import {
+  INITIAL_REFETCH_INTERVAL,
+  calculateRefetchInterval,
+} from "../shared/refetch-interval";
 
 export function useAlerts(instanceId: string, enabled = true) {
+  let currentRefetchInterval = INITIAL_REFETCH_INTERVAL;
+
   return createRuntimeServiceListResources(
     instanceId,
     {
@@ -22,7 +27,19 @@ export function useAlerts(instanceId: string, enabled = true) {
       query: {
         enabled: enabled && !!instanceId,
         refetchOnMount: true,
-        refetchInterval: createPollingRefetchInterval(),
+        refetchInterval: (query) => {
+          const newInterval = calculateRefetchInterval(
+            currentRefetchInterval,
+            query.state.data,
+            query,
+          );
+          if (newInterval === false) {
+            currentRefetchInterval = INITIAL_REFETCH_INTERVAL;
+            return false;
+          }
+          currentRefetchInterval = newInterval;
+          return newInterval;
+        },
       },
     },
   );
