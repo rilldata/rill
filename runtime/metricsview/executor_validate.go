@@ -160,10 +160,7 @@ func (e *Executor) validateAllDimensionsAndMeasures(ctx context.Context, t *driv
 	var unnestClauses []string
 	var groupIndexes []string
 	for idx, d := range mv.Dimensions {
-		dimExpr, unnestClause, err := dialect.DimensionSelect(t.Database, t.DatabaseSchema, t.Name, d)
-		if err != nil {
-			return fmt.Errorf("failed to validate dimension %q: %w", d.Name, err)
-		}
+		dimExpr, unnestClause := dialect.DimensionSelect(t.Database, t.DatabaseSchema, t.Name, d)
 		dimExprs = append(dimExprs, dimExpr)
 		if unnestClause != "" {
 			unnestClauses = append(unnestClauses, unnestClause)
@@ -286,13 +283,10 @@ func (e *Executor) validateDimension(ctx context.Context, t *drivers.Table, d *r
 	}
 
 	dialect := e.olap.Dialect()
-	expr, unnestClause, err := dialect.DimensionSelect(t.Database, t.DatabaseSchema, t.Name, d)
-	if err != nil {
-		return fmt.Errorf("failed to validate dimension %q: %w", d.Name, err)
-	}
+	expr, unnestClause := dialect.DimensionSelect(t.Database, t.DatabaseSchema, t.Name, d)
 
 	// Validate with a query if it's an expression
-	err = e.olap.Exec(ctx, &drivers.Statement{
+	err := e.olap.Exec(ctx, &drivers.Statement{
 		Query:  fmt.Sprintf("SELECT %s FROM %s %s GROUP BY 1", expr, dialect.EscapeTable(t.Database, t.DatabaseSchema, t.Name), unnestClause),
 		DryRun: true,
 	})

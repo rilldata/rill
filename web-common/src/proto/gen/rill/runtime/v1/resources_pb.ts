@@ -1422,23 +1422,6 @@ export class MetricsViewSpec_Dimension extends Message<MetricsViewSpec_Dimension
    */
   uri = "";
 
-  /**
-   * Lookup fields for the dimension
-   *
-   * @generated from field: string lookup_table = 8;
-   */
-  lookupTable = "";
-
-  /**
-   * @generated from field: string lookup_key_column = 9;
-   */
-  lookupKeyColumn = "";
-
-  /**
-   * @generated from field: string lookup_value_column = 10;
-   */
-  lookupValueColumn = "";
-
   constructor(data?: PartialMessage<MetricsViewSpec_Dimension>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1454,9 +1437,6 @@ export class MetricsViewSpec_Dimension extends Message<MetricsViewSpec_Dimension
     { no: 6, name: "expression", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "unnest", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 7, name: "uri", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 8, name: "lookup_table", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 9, name: "lookup_key_column", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 10, name: "lookup_value_column", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewSpec_Dimension {

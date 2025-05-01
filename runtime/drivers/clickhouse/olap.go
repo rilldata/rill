@@ -62,7 +62,7 @@ func (c *Connection) Exec(ctx context.Context, stmt *drivers.Statement) error {
 	ctx = contextWithQueryID(ctx)
 	// Log query if enabled (usually disabled)
 	if c.config.LogQueries {
-		c.logger.Info("clickhouse query", zap.String("sql", c.Dialect().SanitizeQueryForLogging(stmt.Query)), zap.Any("args", stmt.Args), observability.ZapCtx(ctx))
+		c.logger.Info("clickhouse query", zap.String("sql", stmt.Query), zap.Any("args", stmt.Args), observability.ZapCtx(ctx))
 	}
 
 	settings := map[string]any{
@@ -110,7 +110,7 @@ func (c *Connection) Query(ctx context.Context, stmt *drivers.Statement) (res *d
 	ctx = contextWithQueryID(ctx)
 	// Log query if enabled (usually disabled)
 	if c.config.LogQueries {
-		c.logger.Info("clickhouse query", zap.String("sql", c.Dialect().SanitizeQueryForLogging(stmt.Query)), zap.Any("args", stmt.Args))
+		c.logger.Info("clickhouse query", zap.String("sql", stmt.Query), zap.Any("args", stmt.Args))
 	}
 
 	// We use the meta conn for dry run queries

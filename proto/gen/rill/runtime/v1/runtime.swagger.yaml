@@ -3048,13 +3048,6 @@ definitions:
         type: boolean
       uri:
         type: string
-      lookupTable:
-        type: string
-        title: Lookup fields for the dimension
-      lookupKeyColumn:
-        type: string
-      lookupValueColumn:
-        type: string
     title: Dimensions are columns to filter and group by
   MetricsViewSpecDimensionSelector:
     type: object

@@ -30,19 +30,16 @@ type MetricsViewYAML struct {
 	FirstDayOfWeek    uint32           `yaml:"first_day_of_week"`
 	FirstMonthOfYear  uint32           `yaml:"first_month_of_year"`
 	Dimensions        []*struct {
-		Name            string
-		DisplayName     string `yaml:"display_name"`
-		Label           string // Deprecated: use display_name
-		Description     string
-		Column          string
-		Expression      string
-		Property        string // For backwards compatibility
-		Ignore          bool   `yaml:"ignore"` // Deprecated
-		Unnest          bool
-		URI             string
-		LookupTable     string `yaml:"lookup_table"`
-		LookKeyColumn   string `yaml:"lookup_key_column"`
-		LookValueColumn string `yaml:"lookup_value_column"`
+		Name        string
+		DisplayName string `yaml:"display_name"`
+		Label       string // Deprecated: use display_name
+		Description string
+		Column      string
+		Expression  string
+		Property    string // For backwards compatibility
+		Ignore      bool   `yaml:"ignore"` // Deprecated
+		Unnest      bool
+		URI         string
 	}
 	Measures []*struct {
 		Name                string
@@ -823,28 +820,14 @@ func (p *Parser) parseMetricsView(node *Node) error {
 			continue
 		}
 
-		// all dict fields should be defined or none
-		if dim.LookupTable == "" && dim.LookKeyColumn == "" && dim.LookValueColumn == "" { // nolint:revive // avoids checking all permutations
-			// do nothing
-		} else if dim.LookupTable != "" && dim.LookKeyColumn != "" && dim.LookValueColumn != "" {
-			if dim.Expression != "" && strings.Contains(dim.Expression, "dictGet") {
-				return fmt.Errorf("dictGet expression and lookup fields cannot be used together")
-			}
-		} else {
-			return fmt.Errorf("all lookup fields - lookup_table, lookup_key_column and lookup_value_column should be defined")
-		}
-
 		spec.Dimensions = append(spec.Dimensions, &runtimev1.MetricsViewSpec_Dimension{
-			Name:              dim.Name,
-			DisplayName:       dim.DisplayName,
-			Description:       dim.Description,
-			Column:            dim.Column,
-			Expression:        dim.Expression,
-			Unnest:            dim.Unnest,
-			Uri:               dim.URI,
-			LookupTable:       dim.LookupTable,
-			LookupKeyColumn:   dim.LookKeyColumn,
-			LookupValueColumn: dim.LookValueColumn,
+			Name:        dim.Name,
+			DisplayName: dim.DisplayName,
+			Description: dim.Description,
+			Column:      dim.Column,
+			Expression:  dim.Expression,
+			Unnest:      dim.Unnest,
+			Uri:         dim.URI,
 		})
 	}
 

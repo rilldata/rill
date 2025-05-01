@@ -170,15 +170,10 @@ func NewAST(mv *runtimev1.MetricsViewSpec, sec *runtime.ResolvedSecurity, qry *Q
 			return nil, fmt.Errorf("invalid dimension %q: %w", qd.Name, err)
 		}
 
-		expr, err := ast.dialect.MetricsViewDimensionExpression(dim)
-		if err != nil {
-			return nil, fmt.Errorf("failed to compile dimension %q expression: %w", dim.Name, err)
-		}
-
 		f := FieldNode{
 			Name:        dim.Name,
 			DisplayName: dim.DisplayName,
-			Expr:        expr,
+			Expr:        ast.dialect.MetricsViewDimensionExpression(dim),
 		}
 
 		if dim.Unnest {
