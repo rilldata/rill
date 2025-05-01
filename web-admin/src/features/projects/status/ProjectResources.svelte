@@ -5,7 +5,6 @@
     createRuntimeServiceCreateTrigger,
     createRuntimeServiceListResources,
     getRuntimeServiceListResourcesQueryKey,
-    V1ReconcileStatus,
     type V1ListResourcesResponse,
     type V1Resource,
   } from "@rilldata/web-common/runtime-client";
