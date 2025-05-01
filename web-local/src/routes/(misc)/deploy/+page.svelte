@@ -40,39 +40,19 @@
 
   // This is specifically the org selected using the OrgSelector.
   // Used to retrigger the deploy after the user confirms deploy on an empty org.
-  let selectedOrg = "";
   let deployConfirmOpen = false;
-
-  function onOrgSelect(org: string) {
-    // Disabling for now. We should get user's quota and not show if it is hit
-    // const om = orgMetadata.orgs.find((o) => o.name === org);
-    // if (om?.issues && getNeverSubscribedIssue(om.issues)) {
-    //   // if the selected org is empty, show the trial starting dialog
-    //   // We need this since we wouldn't have shown it in DeployCTA
-    //   deployConfirmOpen = true;
-    //   selectedOrg = org;
-    //   return;
-    // }
-
-    promptOrgSelection.set(false);
-    return deployer.deploy(org);
-  }
-
-  function onStartTrialConfirm() {
-    promptOrgSelection.set(false);
-    return deployer.deploy(selectedOrg);
-  }
 
   function onBack() {
     if ($orgsMetadata.data?.orgs?.length) {
-      promptOrgSelection.set(true);
+      // promptOrgSelection.set(true);
     } else {
       void goto("/");
     }
   }
 
   function onRetry() {
-    return deployer.deploy($org);
+    // TODO
+    return deployer.deploy();
   }
 
   onMount(() => {
@@ -90,13 +70,14 @@
   <CTAContentContainer>
     {#if $stage === ProjectDeployStage.CreateNewOrg}
       <CreateNewOrgForm
+        isFirstOrg={!$user.data?.rillUserOrgs?.length}
         onUpdate={(org, displayName) =>
           deployer.setOrgAndName(org, displayName)}
       />
     {:else if $stage === ProjectDeployStage.SelectOrg}
       <OrgSelector
         orgs={$user.data?.rillUserOrgs ?? []}
-        onSelect={onOrgSelect}
+        onSelect={(org) => deployer.setOrgAndName(org, undefined)}
         onNewOrg={() => deployer.onNewOrg()}
       />
     {:else if $deployerStatus.isLoading}
@@ -122,5 +103,5 @@
 
 <TrialDetailsDialog
   bind:open={deployConfirmOpen}
-  onContinue={onStartTrialConfirm}
+  onContinue={() => deployer.deploy()}
 />

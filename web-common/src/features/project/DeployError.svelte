@@ -26,6 +26,7 @@
     error.type === DeployErrorType.TrialEnded ||
     error.type === DeployErrorType.SubscriptionEnded;
 
+  // TODO: move this up. doesnt make sense to be in error component
   $: upgradeHref = buildPlanUpgradeUrl(org, adminUrl, isEmptyOrg, $page.url);
 </script>
 
