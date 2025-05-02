@@ -137,6 +137,40 @@ func (s *Server) ListProjectsForOrganizationAndUser(ctx context.Context, req *ad
 	}, nil
 }
 
+func (s *Server) ListProjectsByName(ctx context.Context, req *adminv1.ListProjectsByNameRequest) (*adminv1.ListProjectsByNameResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.project", req.Name),
+	)
+
+	claims := auth.GetClaims(ctx)
+	userId := claims.OwnerID()
+
+	projects, err := s.admin.DB.FindProjectsByNameAndUser(ctx, req.Name, userId)
+	if err != nil {
+		return nil, err
+	}
+
+	orgsById := make(map[string]*database.Organization)
+
+	dtos := make([]*adminv1.Project, len(projects))
+	for i, p := range projects {
+		org, hasOrg := orgsById[p.OrganizationID]
+		if !hasOrg {
+			org, err = s.admin.DB.FindOrganization(ctx, p.OrganizationID)
+			if err != nil {
+				return nil, err
+			}
+			orgsById[p.OrganizationID] = org
+		}
+
+		dtos[i] = s.projToDTO(p, org.Name)
+	}
+
+	return &adminv1.ListProjectsByNameResponse{
+		Projects: dtos,
+	}, nil
+}
+
 func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest) (*adminv1.GetProjectResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.org", req.OrganizationName),

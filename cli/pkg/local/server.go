@@ -33,6 +33,7 @@ import (
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	localv1 "github.com/rilldata/rill/proto/gen/rill/local/v1"
 	"github.com/rilldata/rill/proto/gen/rill/local/v1/localv1connect"
+	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
@@ -604,6 +605,76 @@ func (s *Server) ListOrganizationsAndBillingMetadata(ctx context.Context, r *con
 
 	return connect.NewResponse(&localv1.ListOrganizationsAndBillingMetadataResponse{
 		Orgs: orgsMetadata,
+	}), nil
+}
+
+func (s *Server) CreateOrganization(ctx context.Context, r *connect.Request[localv1.CreateOrganizationRequest]) (*connect.Response[localv1.CreateOrganizationResponse], error) {
+	// Get authenticated admin client
+	if !s.app.ch.IsAuthenticated() {
+		return nil, errors.New("must authenticate before performing this action")
+	}
+	c, err := s.app.ch.Client()
+	if err != nil {
+		return nil, err
+	}
+
+	orgResp, err := c.CreateOrganization(ctx, &adminv1.CreateOrganizationRequest{
+		Name:        r.Msg.Name,
+		DisplayName: r.Msg.DisplayName,
+		Description: r.Msg.Description,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return connect.NewResponse(&localv1.CreateOrganizationResponse{
+		Organization: orgResp.Organization,
+	}), nil
+}
+
+func (s *Server) ListMatchingProjects(ctx context.Context, r *connect.Request[localv1.ListMatchingProjectsRequest]) (*connect.Response[localv1.ListMatchingProjectsResponse], error) {
+	// Get authenticated admin client
+	if !s.app.ch.IsAuthenticated() {
+		return nil, errors.New("must authenticate before performing this action")
+	}
+	c, err := s.app.ch.Client()
+	if err != nil {
+		return nil, err
+	}
+
+	projectName := fileutil.Stem(s.app.ProjectPath)
+	projResp, err := c.ListProjectsByName(ctx, &adminv1.ListProjectsByNameRequest{
+		Name: projectName,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return connect.NewResponse(&localv1.ListMatchingProjectsResponse{
+		Projects: projResp.Projects,
+	}), nil
+}
+
+func (s *Server) ListProjectsForOrg(ctx context.Context, r *connect.Request[localv1.ListProjectsForOrgRequest]) (*connect.Response[localv1.ListProjectsForOrgResponse], error) {
+	// Get authenticated admin client
+	if !s.app.ch.IsAuthenticated() {
+		return nil, errors.New("must authenticate before performing this action")
+	}
+	c, err := s.app.ch.Client()
+	if err != nil {
+		return nil, err
+	}
+
+	projsResp, err := c.ListProjectsForOrganization(ctx, &adminv1.ListProjectsForOrganizationRequest{
+		OrganizationName: r.Msg.Org,
+		PageSize:         1000,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return connect.NewResponse(&localv1.ListProjectsForOrgResponse{
+		Projects: projsResp.Projects,
 	}), nil
 }
 

@@ -2981,6 +2981,26 @@ paths:
             type: object
       tags:
         - AdminService
+  /v1/projects:
+    get:
+      summary: ListProjectsByName returns projects matching a name accessible by the logged in user
+      operationId: AdminService_ListProjectsByName
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ListProjectsByNameResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: name
+          in: query
+          required: false
+          type: string
+      tags:
+        - AdminService
   /v1/projects/-/redeploy:
     post:
       summary: |-
@@ -4645,6 +4665,14 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1WhitelistedDomain'
+  v1ListProjectsByNameResponse:
+    type: object
+    properties:
+      projects:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1Project'
   v1ListProjectsForOrganizationAndUserResponse:
     type: object
     properties:

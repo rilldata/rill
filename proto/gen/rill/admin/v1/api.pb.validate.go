@@ -2662,6 +2662,255 @@ var _ interface {
 	ErrorName() string
 } = GetProjectResponseValidationError{}
 
+// Validate checks the field values on ListProjectsByNameRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *ListProjectsByNameRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ListProjectsByNameRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ListProjectsByNameRequestMultiError, or nil if none found.
+func (m *ListProjectsByNameRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ListProjectsByNameRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if utf8.RuneCountInString(m.GetName()) < 1 {
+		err := ListProjectsByNameRequestValidationError{
+			field:  "Name",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if len(errors) > 0 {
+		return ListProjectsByNameRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// ListProjectsByNameRequestMultiError is an error wrapping multiple validation
+// errors returned by ListProjectsByNameRequest.ValidateAll() if the
+// designated constraints aren't met.
+type ListProjectsByNameRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ListProjectsByNameRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ListProjectsByNameRequestMultiError) AllErrors() []error { return m }
+
+// ListProjectsByNameRequestValidationError is the validation error returned by
+// ListProjectsByNameRequest.Validate if the designated constraints aren't met.
+type ListProjectsByNameRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ListProjectsByNameRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ListProjectsByNameRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ListProjectsByNameRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ListProjectsByNameRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ListProjectsByNameRequestValidationError) ErrorName() string {
+	return "ListProjectsByNameRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ListProjectsByNameRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sListProjectsByNameRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ListProjectsByNameRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ListProjectsByNameRequestValidationError{}
+
+// Validate checks the field values on ListProjectsByNameResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *ListProjectsByNameResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ListProjectsByNameResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ListProjectsByNameResponseMultiError, or nil if none found.
+func (m *ListProjectsByNameResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ListProjectsByNameResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	for idx, item := range m.GetProjects() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, ListProjectsByNameResponseValidationError{
+						field:  fmt.Sprintf("Projects[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, ListProjectsByNameResponseValidationError{
+						field:  fmt.Sprintf("Projects[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return ListProjectsByNameResponseValidationError{
+					field:  fmt.Sprintf("Projects[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	if len(errors) > 0 {
+		return ListProjectsByNameResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// ListProjectsByNameResponseMultiError is an error wrapping multiple
+// validation errors returned by ListProjectsByNameResponse.ValidateAll() if
+// the designated constraints aren't met.
+type ListProjectsByNameResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ListProjectsByNameResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ListProjectsByNameResponseMultiError) AllErrors() []error { return m }
+
+// ListProjectsByNameResponseValidationError is the validation error returned
+// by ListProjectsByNameResponse.Validate if the designated constraints aren't met.
+type ListProjectsByNameResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ListProjectsByNameResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ListProjectsByNameResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ListProjectsByNameResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ListProjectsByNameResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ListProjectsByNameResponseValidationError) ErrorName() string {
+	return "ListProjectsByNameResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ListProjectsByNameResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sListProjectsByNameResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ListProjectsByNameResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ListProjectsByNameResponseValidationError{}
+
 // Validate checks the field values on GetProjectByIDRequest with the rules
 // defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.

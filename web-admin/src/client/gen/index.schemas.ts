@@ -651,6 +651,10 @@ export interface V1ListProjectWhitelistedDomainsResponse {
   domains?: V1WhitelistedDomain[];
 }
 
+export interface V1ListProjectsByNameResponse {
+  projects?: V1Project[];
+}
+
 export interface V1ListProjectsForOrganizationAndUserResponse {
   projects?: V1Project[];
   nextPageToken?: string;
@@ -1676,6 +1680,10 @@ export type AdminServiceCreateServiceParams = {
 
 export type AdminServiceUpdateServiceBody = {
   newName?: string;
+};
+
+export type AdminServiceListProjectsByNameParams = {
+  name?: string;
 };
 
 export type AdminServiceGetAlertMetaBodyAnnotations = { [key: string]: string };

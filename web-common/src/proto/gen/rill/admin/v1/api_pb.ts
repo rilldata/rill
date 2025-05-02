@@ -1071,6 +1071,80 @@ export class GetProjectResponse extends Message<GetProjectResponse> {
 }
 
 /**
+ * @generated from message rill.admin.v1.ListProjectsByNameRequest
+ */
+export class ListProjectsByNameRequest extends Message<ListProjectsByNameRequest> {
+  /**
+   * @generated from field: string name = 1;
+   */
+  name = "";
+
+  constructor(data?: PartialMessage<ListProjectsByNameRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.ListProjectsByNameRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListProjectsByNameRequest {
+    return new ListProjectsByNameRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListProjectsByNameRequest {
+    return new ListProjectsByNameRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListProjectsByNameRequest {
+    return new ListProjectsByNameRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ListProjectsByNameRequest | PlainMessage<ListProjectsByNameRequest> | undefined, b: ListProjectsByNameRequest | PlainMessage<ListProjectsByNameRequest> | undefined): boolean {
+    return proto3.util.equals(ListProjectsByNameRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.ListProjectsByNameResponse
+ */
+export class ListProjectsByNameResponse extends Message<ListProjectsByNameResponse> {
+  /**
+   * @generated from field: repeated rill.admin.v1.Project projects = 1;
+   */
+  projects: Project[] = [];
+
+  constructor(data?: PartialMessage<ListProjectsByNameResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.ListProjectsByNameResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "projects", kind: "message", T: Project, repeated: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListProjectsByNameResponse {
+    return new ListProjectsByNameResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListProjectsByNameResponse {
+    return new ListProjectsByNameResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListProjectsByNameResponse {
+    return new ListProjectsByNameResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ListProjectsByNameResponse | PlainMessage<ListProjectsByNameResponse> | undefined, b: ListProjectsByNameResponse | PlainMessage<ListProjectsByNameResponse> | undefined): boolean {
+    return proto3.util.equals(ListProjectsByNameResponse, a, b);
+  }
+}
+
+/**
  * @generated from message rill.admin.v1.GetProjectByIDRequest
  */
 export class GetProjectByIDRequest extends Message<GetProjectByIDRequest> {

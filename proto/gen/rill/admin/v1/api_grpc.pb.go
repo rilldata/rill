@@ -29,6 +29,7 @@ const (
 	AdminService_ListProjectsForOrganization_FullMethodName           = "/rill.admin.v1.AdminService/ListProjectsForOrganization"
 	AdminService_ListProjectsForOrganizationAndUser_FullMethodName    = "/rill.admin.v1.AdminService/ListProjectsForOrganizationAndUser"
 	AdminService_GetProject_FullMethodName                            = "/rill.admin.v1.AdminService/GetProject"
+	AdminService_ListProjectsByName_FullMethodName                    = "/rill.admin.v1.AdminService/ListProjectsByName"
 	AdminService_GetProjectByID_FullMethodName                        = "/rill.admin.v1.AdminService/GetProjectByID"
 	AdminService_SearchProjectNames_FullMethodName                    = "/rill.admin.v1.AdminService/SearchProjectNames"
 	AdminService_CreateProject_FullMethodName                         = "/rill.admin.v1.AdminService/CreateProject"
@@ -179,6 +180,8 @@ type AdminServiceClient interface {
 	ListProjectsForOrganizationAndUser(ctx context.Context, in *ListProjectsForOrganizationAndUserRequest, opts ...grpc.CallOption) (*ListProjectsForOrganizationAndUserResponse, error)
 	// GetProject returns information about a specific project
 	GetProject(ctx context.Context, in *GetProjectRequest, opts ...grpc.CallOption) (*GetProjectResponse, error)
+	// ListProjectsByName returns projects matching a name accessible by the logged in user
+	ListProjectsByName(ctx context.Context, in *ListProjectsByNameRequest, opts ...grpc.CallOption) (*ListProjectsByNameResponse, error)
 	// GetProject returns information about a specific project
 	GetProjectByID(ctx context.Context, in *GetProjectByIDRequest, opts ...grpc.CallOption) (*GetProjectByIDResponse, error)
 	// SearchProjectNames returns project names matching the pattern
@@ -532,6 +535,16 @@ func (c *adminServiceClient) GetProject(ctx context.Context, in *GetProjectReque
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GetProjectResponse)
 	err := c.cc.Invoke(ctx, AdminService_GetProject_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) ListProjectsByName(ctx context.Context, in *ListProjectsByNameRequest, opts ...grpc.CallOption) (*ListProjectsByNameResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListProjectsByNameResponse)
+	err := c.cc.Invoke(ctx, AdminService_ListProjectsByName_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1775,6 +1788,8 @@ type AdminServiceServer interface {
 	ListProjectsForOrganizationAndUser(context.Context, *ListProjectsForOrganizationAndUserRequest) (*ListProjectsForOrganizationAndUserResponse, error)
 	// GetProject returns information about a specific project
 	GetProject(context.Context, *GetProjectRequest) (*GetProjectResponse, error)
+	// ListProjectsByName returns projects matching a name accessible by the logged in user
+	ListProjectsByName(context.Context, *ListProjectsByNameRequest) (*ListProjectsByNameResponse, error)
 	// GetProject returns information about a specific project
 	GetProjectByID(context.Context, *GetProjectByIDRequest) (*GetProjectByIDResponse, error)
 	// SearchProjectNames returns project names matching the pattern
@@ -2063,6 +2078,9 @@ func (UnimplementedAdminServiceServer) ListProjectsForOrganizationAndUser(contex
 }
 func (UnimplementedAdminServiceServer) GetProject(context.Context, *GetProjectRequest) (*GetProjectResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetProject not implemented")
+}
+func (UnimplementedAdminServiceServer) ListProjectsByName(context.Context, *ListProjectsByNameRequest) (*ListProjectsByNameResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListProjectsByName not implemented")
 }
 func (UnimplementedAdminServiceServer) GetProjectByID(context.Context, *GetProjectByIDRequest) (*GetProjectByIDResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetProjectByID not implemented")
@@ -2624,6 +2642,24 @@ func _AdminService_GetProject_Handler(srv interface{}, ctx context.Context, dec 
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(AdminServiceServer).GetProject(ctx, req.(*GetProjectRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_ListProjectsByName_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListProjectsByNameRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).ListProjectsByName(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_ListProjectsByName_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).ListProjectsByName(ctx, req.(*ListProjectsByNameRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -4852,6 +4888,10 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetProject",
 			Handler:    _AdminService_GetProject_Handler,
+		},
+		{
+			MethodName: "ListProjectsByName",
+			Handler:    _AdminService_ListProjectsByName_Handler,
 		},
 		{
 			MethodName: "GetProjectByID",
