@@ -29,7 +29,7 @@
     TimeRangePreset,
     type DashboardTimeControls,
   } from "@rilldata/web-common/lib/time/types";
-  import { explorerStore, useExploreState } from "../stores/dashboard-stores";
+  import { explorerStore } from "../stores/dashboard-stores";
   import type { TimeRange } from "@rilldata/web-common/lib/time/types";
   import { DateTime, Interval } from "luxon";
 
@@ -102,7 +102,6 @@
   $: exploreSpec = $validSpecStore.data?.explore ?? {};
   $: metricsViewSpec = $validSpecStore.data?.metricsView ?? {};
 
-  $: exploreStore = useExploreState($exploreName);
   $: activeTimeZone = $exploreStore?.selectedTimezone;
 
   $: selectedRangeAlias = selectedTimeRange?.name;

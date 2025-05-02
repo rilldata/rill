@@ -7,7 +7,6 @@
   import { navigationOpen } from "@rilldata/web-common/layout/navigation/Navigation.svelte";
   import Resizer from "@rilldata/web-common/layout/Resizer.svelte";
   import { onMount, tick } from "svelte";
-  import { useExploreState } from "web-common/src/features/dashboards/stores/dashboard-stores";
   import { DashboardState_ActivePage } from "../../../proto/gen/rill/ui/v1/dashboard_pb";
   import { runtime } from "../../../runtime-client/runtime-store";
   import MeasuresContainer from "../big-number/MeasuresContainer.svelte";
@@ -48,8 +47,6 @@
   $: ({ whereFilter, dimensionThresholdFilters } = $exploreStore);
 
   $: extraLeftPadding = !$navigationOpen;
-
-  $: exploreStore = useExploreState(exploreName);
 
   $: activePage = $exploreStore?.activePage;
   $: showTimeDimensionDetail = Boolean(
