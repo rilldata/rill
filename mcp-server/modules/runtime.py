@@ -101,10 +101,10 @@ def fix_dev_runtime_host(host: str) -> str:
     return host
 
 
-mcp = FastMCP(name="RillRuntimeServer")
+runtime_mcp = FastMCP(name="RillRuntimeServer")
 
 
-@mcp.tool()
+@runtime_mcp.tool()
 async def list_resources(request: RuntimeRequest):
     host = fix_dev_runtime_host(request.host)
     response = await runtime_client.get(
@@ -114,7 +114,7 @@ async def list_resources(request: RuntimeRequest):
     return response.json()
 
 
-@mcp.tool()
+@runtime_mcp.tool()
 async def list_metrics_views(request: RuntimeRequest):
     host = fix_dev_runtime_host(request.host)
     response = await runtime_client.get(
@@ -124,7 +124,7 @@ async def list_metrics_views(request: RuntimeRequest):
     return response.json()
 
 
-@mcp.tool()
+@runtime_mcp.tool()
 async def get_metrics_view_time_range_summary(
     request: GetMetricsViewTimeRangeSummaryRequest,
 ):
@@ -136,7 +136,7 @@ async def get_metrics_view_time_range_summary(
     return response.json()
 
 
-@mcp.tool()
+@runtime_mcp.tool()
 async def get_metrics_view_aggregation(request: GetMetricsViewAggregationRequest):
     host = fix_dev_runtime_host(request.host)
 
@@ -153,7 +153,7 @@ async def get_metrics_view_aggregation(request: GetMetricsViewAggregationRequest
     return response.json()
 
 
-mcp._mcp_server.instructions = """
+runtime_mcp._mcp_server.instructions = """
 ## 🧠 Server Instructions: Rill Runtime MCP
 
 This server exposes Rill Runtime APIs for querying **metrics views**—Rill's analytical units.
@@ -194,4 +194,4 @@ Get these values from the `GetProject` tool in the **Rill Admin MCP**.
 
 
 if __name__ == "__main__":
-    mcp.run()
+    runtime_mcp.run()

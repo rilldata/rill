@@ -8,12 +8,12 @@ from openai import OpenAI
 
 openai_client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
 
-mcp = FastMCP(
+viz_mcp = FastMCP(
     name="RillVizServer",
 )
 
 
-@mcp.tool()
+@viz_mcp.tool()
 def generate_chart(data: dict, prompt: str) -> Image:
     """Calls OpenAI to generate a chart for the provided data and prompt."""
 
@@ -57,7 +57,7 @@ def generate_chart(data: dict, prompt: str) -> Image:
         raise e
 
 
-mcp._mcp_server.instructions = "This server provides access to RillData Viz APIs. "
+viz_mcp._mcp_server.instructions = "This server provides access to RillData Viz APIs. "
 
 if __name__ == "__main__":
-    mcp.run()
+    viz_mcp.run()

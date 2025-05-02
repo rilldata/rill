@@ -15,10 +15,10 @@ admin_client = httpx.AsyncClient(
     headers=headers,
 )
 
-mcp = FastMCP(name="RillAdminServer")
+admin_mcp = FastMCP(name="RillAdminServer")
 
 
-@mcp.tool()
+@admin_mcp.tool()
 async def get_organization(
     organization_name: str = RILL_ADMIN_ORGANIZATION_NAME,
 ):
@@ -26,7 +26,7 @@ async def get_organization(
     return response.json()
 
 
-@mcp.tool()
+@admin_mcp.tool()
 async def list_projects(
     organization_name: str = RILL_ADMIN_ORGANIZATION_NAME,
 ):
@@ -34,7 +34,7 @@ async def list_projects(
     return response.json()
 
 
-@mcp.tool()
+@admin_mcp.tool()
 async def get_project(
     project_name: str,
     organization_name: str = RILL_ADMIN_ORGANIZATION_NAME,
@@ -45,7 +45,7 @@ async def get_project(
     return response.json()
 
 
-mcp._mcp_server.instructions = (
+admin_mcp._mcp_server.instructions = (
     "This server provides access to RillData Admin APIs."
     "Use tools to create/update/delete organizations and projects. "
     "Use resources/templates to list/get organizations and projects."
@@ -53,4 +53,4 @@ mcp._mcp_server.instructions = (
 
 
 if __name__ == "__main__":
-    mcp.run()
+    admin_mcp.run()
