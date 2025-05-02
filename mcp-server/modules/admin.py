@@ -3,7 +3,7 @@ import os
 import httpx
 from fastmcp import FastMCP
 
-RILL_ADMIN_BASE_URL = os.getenv("RILL_ADMIN_BASE_URL")
+RILL_ADMIN_BASE_URL = os.getenv("RILL_ADMIN_BASE_URL") or "https://admin.rilldata.com"
 RILL_SERVICE_TOKEN = os.getenv("RILL_SERVICE_TOKEN")
 RILL_ORGANIZATION_NAME = os.getenv("RILL_ORGANIZATION_NAME")
 
