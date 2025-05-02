@@ -3,8 +3,6 @@
 name: Deploy to Rill Cloud
 on:
   create:
-    tags:
-      - "v*"
     branches:
       - "release**"
   push:
