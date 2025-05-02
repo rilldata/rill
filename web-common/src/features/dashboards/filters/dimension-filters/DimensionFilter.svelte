@@ -45,7 +45,6 @@
   export let timeControlsReady: boolean | undefined;
   export let smallChip = false;
   export let whereFilter: V1Expression;
-  export let dimensionThresholdFilters: DimensionThresholdFilter[];
   export let onRemove: () => void;
   export let onApplyInList: (values: string[]) => void;
   export let onSelect: (value: string) => void;
@@ -88,7 +87,7 @@
       additionalFilter: sanitiseExpression(
         mergeDimensionAndMeasureFilters(
           getFiltersForOtherDimensions(whereFilter, name),
-          dimensionThresholdFilters,
+          [],
         ),
         undefined,
       ),
@@ -121,7 +120,7 @@
       additionalFilter: sanitiseExpression(
         mergeDimensionAndMeasureFilters(
           getFiltersForOtherDimensions(whereFilter, name),
-          dimensionThresholdFilters,
+          [],
         ),
         undefined,
       ),

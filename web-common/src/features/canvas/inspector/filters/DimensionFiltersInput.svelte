@@ -172,7 +172,6 @@
                   timeControlsReady
                   excludeMode={$isFilterExcludeMode(name)}
                   whereFilter={$whereFilter}
-                  dimensionThresholdFilters={[]}
                   onRemove={() => removeDimensionFilter(name)}
                   onToggleFilterMode={() => toggleDimensionFilterMode(name)}
                   onSelect={(value) =>
