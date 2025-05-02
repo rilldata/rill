@@ -4,11 +4,11 @@ import httpx
 from fastmcp import FastMCP
 
 RILL_ADMIN_BASE_URL = os.getenv("RILL_ADMIN_BASE_URL")
-RILL_ADMIN_SERVICE_TOKEN = os.getenv("RILL_ADMIN_SERVICE_TOKEN")
-RILL_ADMIN_ORGANIZATION_NAME = os.getenv("RILL_ADMIN_ORGANIZATION_NAME")
+RILL_SERVICE_TOKEN = os.getenv("RILL_SERVICE_TOKEN")
+RILL_ORGANIZATION_NAME = os.getenv("RILL_ORGANIZATION_NAME")
 
 headers = {}
-headers["Authorization"] = f"Bearer {RILL_ADMIN_SERVICE_TOKEN}"
+headers["Authorization"] = f"Bearer {RILL_SERVICE_TOKEN}"
 
 admin_client = httpx.AsyncClient(
     base_url=RILL_ADMIN_BASE_URL,
@@ -20,7 +20,7 @@ admin_mcp = FastMCP(name="RillAdminServer")
 
 @admin_mcp.tool()
 async def get_organization(
-    organization_name: str = RILL_ADMIN_ORGANIZATION_NAME,
+    organization_name: str = RILL_ORGANIZATION_NAME,
 ):
     response = await admin_client.get(f"/v1/organizations/{organization_name}")
     return response.json()
@@ -28,7 +28,7 @@ async def get_organization(
 
 @admin_mcp.tool()
 async def list_projects(
-    organization_name: str = RILL_ADMIN_ORGANIZATION_NAME,
+    organization_name: str = RILL_ORGANIZATION_NAME,
 ):
     response = await admin_client.get(f"/v1/organizations/{organization_name}/projects")
     return response.json()
@@ -37,7 +37,7 @@ async def list_projects(
 @admin_mcp.tool()
 async def get_project(
     project_name: str,
-    organization_name: str = RILL_ADMIN_ORGANIZATION_NAME,
+    organization_name: str = RILL_ORGANIZATION_NAME,
 ):
     response = await admin_client.get(
         f"/v1/organizations/{organization_name}/projects/{project_name}"
