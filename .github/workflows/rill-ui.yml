@@ -1,6 +1,8 @@
 name: Build and Deploy Cloud UI to Netlify
 on:
   create:
+    branches:
+      - "release**"
   push:
     tags:
       - "v*"
