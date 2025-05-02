@@ -1,6 +1,7 @@
 import type { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import { DateTime } from "luxon";
 import type { DateObjectUnits } from "luxon/src/datetime";
+import { grainAliasToDateTimeUnit } from "@rilldata/web-common/lib/time/new-grains";
 
 const absTimeRegex =
   /(?<year>\d{4})(-(?<month>\d{2})(-(?<day>\d{2})(T(?<hour>\d{2})(:(?<minute>\d{2})(:(?<second>\d{2})Z)?)?)?)?)?/;
@@ -54,23 +55,6 @@ export class RillTime {
     return range;
   }
 }
-
-const GrainToUnit = {
-  s: "second",
-  S: "second",
-  m: "minute",
-  h: "hour",
-  H: "hour",
-  d: "day",
-  D: "day",
-  w: "week",
-  W: "week",
-  M: "month",
-  q: "Quarter",
-  Q: "Quarter",
-  y: "year",
-  Y: "year",
-};
 
 interface RillTimePart {
   getLabel(): string;
@@ -161,7 +145,7 @@ export class RillTimeOrdinal implements RillTimePart {
   ) {}
 
   public getLabel() {
-    const grainPart = GrainToUnit[this.grain];
+    const grainPart = grainAliasToDateTimeUnit(this.grain);
     return `${grainPart} ${this.num}`;
   }
 
@@ -185,7 +169,7 @@ export class RillTimeRelative implements RillTimePart {
   }
 
   public getLabel() {
-    const grainPart = GrainToUnit[this.grain];
+    const grainPart = grainAliasToDateTimeUnit(this.grain);
     const grainSuffix = this.num > 1 ? "s" : "";
     const grainPrefix = this.num ? this.num + " " : "";
     const grainLabel = `${grainPrefix}${grainPart}${grainSuffix}`;
@@ -244,10 +228,10 @@ export class RillTimePeriodToDate implements RillTimePart {
   }
 
   public getLabel() {
-    const from = GrainToUnit[this.from];
-    const to = GrainToUnit[this.to];
+    const from = grainAliasToDateTimeUnit(this.from);
+    const to = grainAliasToDateTimeUnit(this.to);
     // TODO
-    return `${from} to ${to}`;
+    return `${from} by ${to}`;
   }
 
   public toString() {

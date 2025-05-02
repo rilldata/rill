@@ -65,7 +65,7 @@
         {timeRanges}
         {showDefaultItem}
         {defaultTimeRange}
-        selected={selectedRangeAlias}
+        timeString={selectedRangeAlias}
         grain={activeTimeGrain}
         {onSelectRange}
         {interval}
@@ -113,7 +113,7 @@
       {onSelectTimeZone}
     />
   {/if}
-
+  <!-- 
   {#if !showPivot && minTimeGrain}
     <TimeGrainSelector
       {usingRillTime}
@@ -125,7 +125,7 @@
       {toggleComplete}
       {onTimeGrainSelect}
     />
-  {/if}
+  {/if} -->
 </div>
 
 <style lang="postcss">

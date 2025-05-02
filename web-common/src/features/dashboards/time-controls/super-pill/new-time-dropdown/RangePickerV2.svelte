@@ -2,26 +2,19 @@
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu/";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import { DateTime, Interval } from "luxon";
-  import type {
-    ISODurationString,
-    NamedRange,
-    RangeBuckets,
-  } from "../../new-time-controls";
+  import type { ISODurationString, NamedRange } from "../../new-time-controls";
   import {
     ALL_TIME_RANGE_ALIAS,
     getRangeLabel,
     RILL_TO_LABEL,
   } from "../../new-time-controls";
   import CalendarPlusDateInput from "@rilldata/web-common/features/dashboards/time-controls/super-pill/components/CalendarPlusDateInput.svelte";
-  import RangeDisplay from "@rilldata/web-common/features/dashboards/time-controls/super-pill/components/RangeDisplay.svelte";
   import {
     V1TimeGrain,
     type V1ExploreTimeRange,
   } from "@rilldata/web-common/runtime-client";
-  import { bucketTimeRanges } from "../../time-range-store";
+
   import { humaniseISODuration } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
-  import TimeRangeMenuItem from "@rilldata/web-common/features/dashboards/time-controls/super-pill/components/TimeRangeMenuItem.svelte";
-  import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
 
   import {
     LATEST_WINDOW_TIME_RANGES,
@@ -30,20 +23,20 @@
     TIME_GRAIN,
   } from "@rilldata/web-common/lib/time/config";
   import TimeRangeSearch from "@rilldata/web-common/features/dashboards/time-controls/super-pill/components/TimeRangeSearch.svelte";
-  import { InfoIcon } from "lucide-svelte";
-  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
-  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+
   import { parseRillTime } from "../../../url-state/time-ranges/parser";
   import type { RillTime } from "../../../url-state/time-ranges/RillTime";
-  import { timeRangeDefaultsByGrain } from "@rilldata/web-common/lib/time/defaults";
-  import { parse } from "uuid";
+  import { getTimeRangeOptionsByGrain } from "@rilldata/web-common/lib/time/defaults";
+
   import {
     getAllowedGrains,
-    getGrainOrder,
+    V1TimeGrainToAlias,
   } from "@rilldata/web-common/lib/time/new-grains";
+  import * as Popover from "@rilldata/web-common/components/popover";
+  import type { TimeGrainOptions } from "@rilldata/web-common/lib/time/defaults";
 
   export let timeRanges: V1ExploreTimeRange[];
-  export let selected: string | undefined;
+  export let timeString: string | undefined;
   export let interval: Interval<true>;
   export let zone: string;
   export let showDefaultItem: boolean;
@@ -61,23 +54,49 @@
   let allTimeAllowed = true;
   let searchComponent: TimeRangeSearch;
   let showPanel = false;
+  let filter = "";
 
-  let selectedTab = smallestTimeGrain ?? V1TimeGrain.TIME_GRAIN_MINUTE;
+  // let selectedTab = smallestTimeGrain ?? V1TimeGrain.TIME_GRAIN_MINUTE;
 
-  $: defaults = timeRangeDefaultsByGrain[selectedTab];
+  $: timeGrainOptions = getAllowedGrains(smallestTimeGrain);
 
-  $: rangeBuckets = {
-    ranges: Object.values(defaults).map((ranges) => {
-      return ranges.map((range) => {
-        // console.log({ range });
-        return { range, parsed: parseRillTime(range) };
-      });
-    }),
-    customTimeRanges: [],
-    showDefaultItem: false,
-  };
+  $: allOptions = timeGrainOptions.map((grain) => {
+    return getTimeRangeOptionsByGrain(grain, smallestTimeGrain);
+  });
 
-  $: console.log({ rangeBuckets });
+  $: groups = allOptions.reduce(
+    (acc, options) => {
+      acc.lastN.push(...options.lastN);
+      acc.this.push(...options.this);
+      acc.previous.push(...options.previous);
+      acc.grainBy.push(...options.grainBy);
+
+      return acc;
+    },
+    {
+      lastN: [],
+      this: [],
+      previous: [],
+      grainBy: [],
+    } as TimeGrainOptions,
+  );
+
+  //  $: filtered = allOptions.map((options) => {
+  //     return options.filter((item) => {
+  //       return item.label.toLowerCase().includes(searchComponent?.searchText);
+  //     });
+  //   });
+
+  // $: rangeBuckets = {
+  //   ranges: Object.values(groups).map((ranges) => {
+  //     return ranges.map((range) => {
+  //       // console.log({ range });
+  //       return { range, parsed: parseRillTime(range) };
+  //     });
+  //   }),
+  //   customTimeRanges: [],
+  //   showDefaultItem: false,
+  // };
 
   // $: rangeBuckets = bucketTimeRanges(
   //   timeRanges,
@@ -93,19 +112,19 @@
 
   $: isComplete = parsedTime?.isComplete ?? false;
 
-  $: if (selected) {
+  $: if (timeString) {
     try {
-      parsedTime = parseRillTime(selected);
+      parsedTime = parseRillTime(timeString);
     } catch {
       // no op
     }
   }
 
-  $: selectedMeta = selected?.startsWith("P")
-    ? LATEST_WINDOW_TIME_RANGES[selected]
-    : selected?.startsWith("rill")
-      ? (PERIOD_TO_DATE_RANGES[selected] ??
-        PREVIOUS_COMPLETE_DATE_RANGES[selected])
+  $: selectedMeta = timeString?.startsWith("P")
+    ? LATEST_WINDOW_TIME_RANGES[timeString]
+    : timeString?.startsWith("rill")
+      ? (PERIOD_TO_DATE_RANGES[timeString] ??
+        PREVIOUS_COMPLETE_DATE_RANGES[timeString])
       : undefined;
 
   function handleRangeSelect(range: string, syntax = false) {
@@ -118,8 +137,12 @@
     open = false;
   }
 
-  $: smallestTimeGrainOrder = getGrainOrder(smallestTimeGrain);
-  $: timeGrainOptions = getAllowedGrains(smallestTimeGrainOrder);
+  // $: smallestTimeGrainOrder = getGrainOrder(smallestTimeGrain);
+
+  import * as Tabs from "@rilldata/web-common/components/tabs";
+  import TimeRangeOptionGroup from "./TimeRangeOptionGroup.svelte";
+
+  import RangeDisplay from "../components/RangeDisplay.svelte";
 </script>
 
 <svelte:window
@@ -131,25 +154,23 @@
   }}
 />
 
-<DropdownMenu.Root
+<Popover.Root
   bind:open
   onOpenChange={(open) => {
     if (open) {
       firstVisibleMonth = interval.start;
     }
   }}
-  closeOnItemClick={false}
-  typeahead={false}
 >
-  <DropdownMenu.Trigger asChild let:builder>
+  <Popover.Trigger asChild let:builder>
     <button
       {...builder}
       use:builder.action
-      class="flex gap-x-1"
+      class="flex"
       aria-label="Select time range"
     >
-      {#if selected}
-        <b class="mr-1 line-clamp-1 flex-none">{getRangeLabel(selected)}</b>
+      {#if timeString}
+        <b class="mr-1 line-clamp-1 flex-none">{getRangeLabel(timeString)}</b>
       {/if}
 
       {#if interval.isValid}
@@ -160,9 +181,9 @@
         <CaretDownIcon />
       </span>
     </button>
-  </DropdownMenu.Trigger>
+  </Popover.Trigger>
 
-  <DropdownMenu.Content
+  <Popover.Content
     align="start"
     class="p-0 w-fit overflow-hidden flex flex-col"
   >
@@ -175,23 +196,47 @@
         onSelectRange(range, syntax);
       }}
     />
-
-    <div class="flex gap-x-2 p-2 border-b">
-      {#each timeGrainOptions as option (option)}
-        <button
-          class:bg-gray-200={option === selectedTab}
-          class="bg-gray-100 w-full rounded-sm hover:bg-gray-200"
+    <!-- <Popover.Label>Filter options by</Popover.Label> -->
+    <Tabs.Root value={filter}>
+      <Tabs.List class="w-full justify-evenly">
+        <Tabs.Trigger
+          value="favorites"
           on:click={() => {
-            selectedTab = option;
+            filter = "favorites";
+            // selectedTab = V1TimeGrain.TIME_GRAIN_UNSPECIFIED;
           }}
+          class="rounded-lg p-1 hover:bg-primary-50 data-[state=active]:!text-primary-700 font-semibold px-1.5 flex-none  data-[state=active]:bg-primary-50"
         >
-          {TIME_GRAIN[option].label}
-        </button>
-      {/each}
-    </div>
-    <div class="flex w-fit max-h-fit" style:height="600px">
+          favorites
+        </Tabs.Trigger>
+        <Tabs.Trigger
+          value=""
+          on:click={() => {
+            filter = "";
+          }}
+          class="rounded-lg p-1 hover:bg-primary-50 data-[state=active]:!text-primary-700 font-semibold px-1.5 flex-none  data-[state=active]:bg-primary-50"
+        >
+          all
+        </Tabs.Trigger>
+        <!-- <div class="flex gap-x-2 p-2 border-b"> -->
+        {#each timeGrainOptions as option (option)}
+          <Tabs.Trigger
+            class="rounded-lg p-1 hover:bg-primary-50 data-[state=active]:!text-primary-700 font-semibold px-1.5 flex-none  data-[state=active]:bg-primary-50"
+            value={TIME_GRAIN[option].label.toLowerCase()}
+            on:click={() => {
+              filter = TIME_GRAIN[option].label.toLowerCase();
+            }}
+            title={TIME_GRAIN[option].label}
+          >
+            {V1TimeGrainToAlias[option]}
+          </Tabs.Trigger>
+        {/each}
+      </Tabs.List>
+    </Tabs.Root>
+    <!-- </div> -->
+    <div class="flex w-[280px] max-h-fit pb-1" style:height="500px">
       <div
-        class="flex flex-col w-[280px] overflow-y-auto overflow-x-hidden flex-none pt-1"
+        class="flex flex-col w-full overflow-y-auto overflow-x-hidden flex-none pt-1"
       >
         <div class="overflow-x-hidden px-1">
           {#if showDefaultItem && defaultTimeRange}
@@ -200,68 +245,141 @@
                 handleRangeSelect(defaultTimeRange);
               }}
             >
-              <div class:font-bold={selected === defaultTimeRange}>
+              <div class:font-bold={timeString === defaultTimeRange}>
                 Last {humaniseISODuration(defaultTimeRange)}
               </div>
             </DropdownMenu.Item>
 
-            <DropdownMenu.Separator />
+            <div class="h-px w-full bg-gray-300" />
           {/if}
 
-          {#each rangeBuckets.customTimeRanges as range, i (i)}
+          {#if filter === "favorites"}
+            <TimeRangeOptionGroup
+              {filter}
+              {timeString}
+              type="last"
+              options={timeRanges.map((range) => {
+                return {
+                  string: range.range ?? "",
+                  parsed: {
+                    getLabel() {
+                      return range.range;
+                    },
+                  },
+                };
+              })}
+              onClick={handleRangeSelect}
+            />
+          {/if}
+
+          {#if filter !== "favorites"}
+            <TimeRangeOptionGroup
+              {filter}
+              {timeString}
+              type="last"
+              options={groups.lastN}
+              onClick={handleRangeSelect}
+            />
+
+            <TimeRangeOptionGroup
+              {filter}
+              {timeString}
+              type="this"
+              options={groups.this}
+              onClick={handleRangeSelect}
+            />
+
+            <TimeRangeOptionGroup
+              {filter}
+              {timeString}
+              type="ago"
+              options={groups.previous}
+              onClick={handleRangeSelect}
+            />
+
+            <TimeRangeOptionGroup
+              {filter}
+              {timeString}
+              type="by"
+              options={groups.grainBy}
+              onClick={handleRangeSelect}
+            />
+          {/if}
+
+          <!-- {#each groups.byGrain as range, i (i)}
             <TimeRangeMenuItem
               {range}
-              selected={selected === range.range}
+              type="by"
+              selected={timeString === range}
+              parsed={parseRillTime(range)}
               onClick={handleRangeSelect}
-              {smallestTimeGrain}
             />
           {/each}
 
-          {#if rangeBuckets.customTimeRanges.length}
-            <DropdownMenu.Separator />
-          {/if}
+          {#if groups.byGrain.length}
+            <div class="h-px w-full bg-gray-300" />
+          {/if} -->
 
-          {#each rangeBuckets.ranges as ranges, i (i)}
-            {#each ranges as range, i (i)}
-              <TimeRangeMenuItem
-                {range}
-                selected={selected === range.meta?.rillSyntax}
-                onClick={handleRangeSelect}
-                {smallestTimeGrain}
-              />
-            {/each}
-            {#if ranges.length}
-              <DropdownMenu.Separator />
-            {/if}
-          {/each}
+          <!-- {#each rangeBuckets.ranges as ranges, i (i)} -->
+
+          <!-- {#if i === 0}
+              <form
+                class="flex gap-x-1 items-center px-2 py-1"
+                on:submit={(e) => {
+                  // get the input value
+                  const inputValue = e.target[0].value;
+                  console.log(inputValue);
+                  const grainAlias = V1TimeGrainToAlias[selectedTab];
+                  onSelectRange(`${inputValue}${grainAlias}~`, true);
+                  open = false;
+                }}
+              >
+                Last
+                <input
+                  class="w-12 rounded-sm outline-none pl-1 border"
+                  type="number"
+                  name="integer"
+                />
+                {V1TimeGrainToDateTimeUnit[selectedTab]}s
+              </form>
+            {/if} -->
+
+          <!-- {#if ranges.length}
+            <div class="h-px w-full bg-gray-300" />
+          {/if} -->
+          <!-- {/each} -->
 
           {#if allTimeAllowed}
-            <DropdownMenu.Item
+            <button
+              class="group h-7 px-2 overflow-hidden hover:bg-gray-100 rounded-sm w-full select-none flex items-center"
               on:click={() => {
                 handleRangeSelect(ALL_TIME_RANGE_ALIAS);
               }}
             >
-              <span class:font-bold={selected === ALL_TIME_RANGE_ALIAS}>
+              <span class:font-bold={timeString === ALL_TIME_RANGE_ALIAS}>
                 {RILL_TO_LABEL[ALL_TIME_RANGE_ALIAS]}
               </span>
-            </DropdownMenu.Item>
+            </button>
           {/if}
-        </div>
 
-        <DropdownMenu.Separator />
+          <div
+            class="h-2 w-full bg-surface my-1 sticky bottom-7 flex justify-center items-center"
+          >
+            <div class="h-px w-full bg-gray-200" />
+          </div>
 
-        <DropdownMenu.Group class="px-1">
-          <DropdownMenu.Item
+          <button
+            class="group h-7 sticky bottom-0 bg-surface flex-none px-2 overflow-hidden hover:bg-gray-100 rounded-sm w-full select-none flex items-center"
             on:click={() => {
               showPanel = !showPanel;
             }}
           >
-            <span class:font-bold={selected === "Custom"}> Custom...</span>
-          </DropdownMenu.Item>
-        </DropdownMenu.Group>
+            <span class:font-bold={timeString === "Custom"}> Custom...</span>
+          </button>
+        </div>
 
         {#if parsedTime}
-          <!-- <DropdownMenu.Separator />
+          <!-- <div  class="h-px w-full bg-gray-300"/>
           <div class="flex justify-between items-center py-2 px-3">
             <span class="flex gap-x-1 items-center">
               <span>Include latest partial period</span>
@@ -316,8 +434,8 @@
         </div>
       {/if}
     </div>
-  </DropdownMenu.Content>
-</DropdownMenu.Root>
+  </Popover.Content>
+</Popover.Root>
 
 <style>
   /* The wrapper shrinks to the width of its content */

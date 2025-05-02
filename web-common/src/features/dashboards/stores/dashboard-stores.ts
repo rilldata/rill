@@ -483,6 +483,20 @@ const metricsViewReducers = {
     });
   },
 
+  setTimeGrain(name: string, timeGrain: V1TimeGrain) {
+    updateMetricsExplorerByName(name, (metricsExplorer) => {
+      console.log(timeGrain);
+      if (!metricsExplorer.selectedTimeRange) return;
+      // Reset scrub when grain changes
+      setSelectedScrubRange(metricsExplorer, undefined);
+
+      metricsExplorer.selectedTimeRange = {
+        ...metricsExplorer.selectedTimeRange,
+        interval: timeGrain,
+      };
+    });
+  },
+
   displayTimeComparison(name: string, showTimeComparison: boolean) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
       metricsExplorer.showTimeComparison = showTimeComparison;

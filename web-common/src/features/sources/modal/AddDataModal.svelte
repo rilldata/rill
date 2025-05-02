@@ -1,5 +1,5 @@
 <script lang="ts">
-  import * as Dialog from "@rilldata/web-common/components/dialog-v2";
+  import * as Dialog from "@rilldata/web-common/components/dialog";
   import AmazonAthena from "@rilldata/web-common/components/icons/connectors/AmazonAthena.svelte";
   import AmazonRedshift from "@rilldata/web-common/components/icons/connectors/AmazonRedshift.svelte";
   import MySQL from "@rilldata/web-common/components/icons/connectors/MySQL.svelte";
@@ -197,7 +197,7 @@
                     class="connector-tile-button"
                   >
                     <div class="connector-wrapper">
-                      <!-- <svelte:component this={ICONS[connector.name]} /> -->
+                      <svelte:component this={ICONS[connector.name]} />
                     </div>
                   </button>
                 {/if}

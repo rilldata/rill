@@ -5,9 +5,9 @@
 
   export let context: string;
   export let width: number;
+  export let searchValue = "";
   export let onSelectRange: (range: string, isSearch: boolean) => void;
 
-  let searchValue = "";
   let searchElement: HTMLInputElement;
 
   const latestNSearches = localStorageStore(`${context}-recent-searches`, [
@@ -25,8 +25,8 @@
 </script>
 
 <div
-  style:width="{width}px"
   class="border-b h-fit pt-2.5 py-0 flex p-3 flex-col overflow-y-auto"
+  style:width="{width}px"
 >
   <form
     class="mb-2.5"
@@ -42,7 +42,7 @@
       <Clock size={15} />
     </span>
     <input
-      placeholder="Search"
+      placeholder="Enter a time range"
       type="text"
       class="h-7 border w-full"
       bind:this={searchElement}
@@ -62,7 +62,7 @@
     @apply overflow-hidden;
     @apply flex justify-center gap-x-1 items-center pl-2 pr-0.5;
     @apply bg-background justify-center;
-    @apply border border-gray-300 rounded-[2px];
+    @apply border border-gray-300 rounded-sm;
     @apply cursor-pointer;
     @apply h-7 w-full truncate;
   }

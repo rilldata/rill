@@ -148,68 +148,6 @@
         </div>
       </Button>
 
-      <DropdownMenu.Content
-        align="start"
-        class="flex flex-col w-72 p-0"
-        strategy="absolute"
-        fitViewport={true}
-      >
-        <div class="px-3 pt-3 pb-1">
-          <Search
-            bind:value={searchText}
-            label="Search measures"
-            showBorderOnFocus={false}
-          />
-        </div>
-
-        <div class="px-1 pb-1 max-h-80 overflow-y-auto">
-          {#if filteredMeasures.length}
-            {#each filteredMeasures as measure (measure.name)}
-              <DropdownMenu.CheckboxItem
-                class="text-[12px]"
-                checked={Boolean(
-                  measure.name &&
-                    (multiSelect
-                      ? selectedMeasureNames.includes(measure.name)
-                      : leaderboardSortByMeasureName === measure.name),
-                )}
-                onCheckedChange={() => {
-                  if (measure.name) toggleMeasure(measure.name);
-                }}
-              >
-                <div class="truncate flex-1 text-left">
-                  {measure.displayName || measure.name}
-                </div>
-              </DropdownMenu.CheckboxItem>
-            {/each}
-          {:else}
-            <div class="ui-copy-disabled p-2 w-full">
-              No matching leaderboard measures shown
-            </div>
-          {/if}
-        </div>
-
-        {#if visibleMeasures.length > 1}
-          <footer>
-            <div class="flex items-center space-x-2">
-              <Switch
-                checked={multiSelect}
-                id="multi-measure-select"
-                small
-                on:click={toggleMultiSelect}
-                data-testid="multi-measure-select-switch"
-              />
-              <InputLabel
-                small
-                capitalize={false}
-                label="Multi-select"
-                id="multi-measure-select"
-              />
-            </div>
-          </footer>
-        {/if}
-      </DropdownMenu.Content>
-
       <div slot="tooltip-content" transition:fly={{ duration: 300, y: 4 }}>
         <TooltipContent maxWidth="400px">
           Choose measures to display
@@ -217,6 +155,68 @@
       </div>
     </Tooltip>
   </DropdownMenu.Trigger>
+
+  <DropdownMenu.Content
+    align="start"
+    class="flex flex-col w-72 p-0"
+    strategy="absolute"
+    fitViewport={true}
+  >
+    <div class="px-3 pt-3 pb-1">
+      <Search
+        bind:value={searchText}
+        label="Search measures"
+        showBorderOnFocus={false}
+      />
+    </div>
+
+    <div class="px-1 pb-1 max-h-80 overflow-y-auto">
+      {#if filteredMeasures.length}
+        {#each filteredMeasures as measure (measure.name)}
+          <DropdownMenu.CheckboxItem
+            class="text-[12px]"
+            checked={Boolean(
+              measure.name &&
+                (multiSelect
+                  ? selectedMeasureNames.includes(measure.name)
+                  : leaderboardSortByMeasureName === measure.name),
+            )}
+            onCheckedChange={() => {
+              if (measure.name) toggleMeasure(measure.name);
+            }}
+          >
+            <div class="truncate flex-1 text-left">
+              {measure.displayName || measure.name}
+            </div>
+          </DropdownMenu.CheckboxItem>
+        {/each}
+      {:else}
+        <div class="ui-copy-disabled p-2 w-full">
+          No matching leaderboard measures shown
+        </div>
+      {/if}
+    </div>
+
+    {#if visibleMeasures.length > 1}
+      <footer>
+        <div class="flex items-center space-x-2">
+          <Switch
+            checked={multiSelect}
+            id="multi-measure-select"
+            small
+            on:click={toggleMultiSelect}
+            data-testid="multi-measure-select-switch"
+          />
+          <InputLabel
+            small
+            capitalize={false}
+            label="Multi-select"
+            id="multi-measure-select"
+          />
+        </div>
+      </footer>
+    {/if}
+  </DropdownMenu.Content>
 </DropdownMenu.Root>
 
 <style lang="postcss">

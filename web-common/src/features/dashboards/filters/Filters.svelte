@@ -74,7 +74,6 @@
         getAllDimensionFilterItems,
         isFilterExcludeMode,
       },
-
       measures: { allMeasures, filteredSimpleMeasures },
       measureFilters: {
         getMeasureFilterItems,
@@ -363,7 +362,7 @@
         <Tooltip.Root openDelay={0}>
           <Tooltip.Trigger>
             <span class="text-gray-600 italic">
-              as of latest <Timestamp
+              as of <Timestamp
                 italic
                 suppress
                 showDate={false}

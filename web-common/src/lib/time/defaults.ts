@@ -1,74 +1,89 @@
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
+import {
+  getAllowedGrains,
+  getGrainOrder,
+  getLargerGrains,
+  V1TimeGrainToAlias,
+} from "@rilldata/web-common/lib/time/new-grains";
+import type { RillTime } from "@rilldata/web-common/features/dashboards/url-state/time-ranges/RillTime";
+import { parseRillTime } from "@rilldata/web-common/features/dashboards/url-state/time-ranges/parser";
 
-interface TimeRangeDropdownOptions {
-  lastN: string[];
-  toDate: string[];
-  previousComplete: string[];
+const lastNValues: Record<V1TimeGrain, number[]> = {
+  [V1TimeGrain.TIME_GRAIN_MILLISECOND]: [100, 200, 500, 1000, 200],
+  [V1TimeGrain.TIME_GRAIN_SECOND]: [15, 30, 60, 90, 120],
+  [V1TimeGrain.TIME_GRAIN_MINUTE]: [15, 30, 60, 90, 120],
+  [V1TimeGrain.TIME_GRAIN_HOUR]: [6, 12, 24, 48, 72],
+  [V1TimeGrain.TIME_GRAIN_DAY]: [3, 7, 14, 30, 90],
+  [V1TimeGrain.TIME_GRAIN_WEEK]: [2, 4, 6, 12, 52],
+  [V1TimeGrain.TIME_GRAIN_MONTH]: [3, 6, 12, 18, 24],
+  [V1TimeGrain.TIME_GRAIN_QUARTER]: [2, 4, 6, 8, 12],
+  [V1TimeGrain.TIME_GRAIN_YEAR]: [2, 3, 5, 7, 10],
+  [V1TimeGrain.TIME_GRAIN_UNSPECIFIED]: [],
+};
+
+export interface TimeGrainOptions {
+  lastN: TimeRangeMenuOption[];
+  previous: TimeRangeMenuOption[];
+  this: TimeRangeMenuOption[];
+  grainBy: TimeRangeMenuOption[];
 }
 
-const lastNRanges = {
-  minute: ["10m~", "15m~", "30m~", "60m~", "90m~", "120m~"],
-  hour: ["6H~", "12H~", "24H~", "36H~", "48H~", "72H~"],
-  day: ["3D~", "7D~", "14D~", "30D~", "90D~", "180D~"],
-  week: ["2W~", "4W~", "6W~", "12W~", "26W~", "52W~"],
-  month: ["3M~", "6M~", "9M~", "12M~", "24M~", "36M~"],
-  quarter: ["2Q~", "3Q~", "4Q~", "6Q~", "8Q~", "12Q~"],
-  year: ["2Y~", "3Y~", "5Y~", "7Y~", "10Y~", "15Y~"],
-  mixed: ["6H~", "24H~", "7D~", "14D~", "4W~", "3M~", "12M~"],
-};
+export function getTimeRangeOptionsByGrain(
+  grain: V1TimeGrain,
+  smallestTimeGrain: V1TimeGrain = V1TimeGrain.TIME_GRAIN_SECOND,
+): TimeGrainOptions {
+  const primaryGrainAlias = V1TimeGrainToAlias[grain];
+  const grainOrder = getGrainOrder(grain);
 
-export const timeRangeDefaultsByGrain: Record<
-  V1TimeGrain,
-  TimeRangeDropdownOptions
-> = {
-  [V1TimeGrain.TIME_GRAIN_UNSPECIFIED]: {
-    lastN: lastNRanges.mixed,
-    toDate: ["DTH~", "WTD~", "MTD~", "QTD~", "YTD~"],
-    previousComplete: ["-1D", "-1W", "-1M", "-1Q", "-1Y"],
-  },
-  [V1TimeGrain.TIME_GRAIN_MILLISECOND]: {
-    lastN: lastNRanges.minute,
-    toDate: ["DTH~", "WTD~", "MTD~", "QTD~", "YTD~"],
-    previousComplete: ["Last 7 days", "Last 30 days", "Last 90 days"],
-  },
-  [V1TimeGrain.TIME_GRAIN_SECOND]: {
-    lastN: lastNRanges.minute,
-    toDate: ["mTs~", "HTs~", "DTs~", "WTs~", "MTs~", "QTs~", "YTs~"],
-    previousComplete: ["-1D", "-1W", "-1M", "-1Q", "-1Y"],
-  },
-  [V1TimeGrain.TIME_GRAIN_MINUTE]: {
-    lastN: lastNRanges.minute,
-    toDate: ["HTm~", "DTm~", "WTm~", "MTm~", "QTm~", "YTm~"],
-    previousComplete: ["-1D", "-1W", "-1M", "-1Q", "-1Y"],
-  },
-  [V1TimeGrain.TIME_GRAIN_HOUR]: {
-    lastN: lastNRanges.hour,
-    toDate: ["DTH~", "WTH~", "MTH~", "QTH~", "YTH~"],
-    previousComplete: ["-1D", "-1W", "-1M", "-1Q", "-1Y"],
-  },
-  [V1TimeGrain.TIME_GRAIN_DAY]: {
-    lastN: lastNRanges.day,
-    toDate: ["WTD~", "MTD~", "QTD~", "YTD~"],
-    previousComplete: ["-1D", "-1W", "-1M", "-1Q", "-1Y"],
-  },
-  [V1TimeGrain.TIME_GRAIN_WEEK]: {
-    lastN: lastNRanges.week,
-    toDate: ["MTW~", "QTW~", "YTW~"],
-    previousComplete: ["-1W", "-1M", "-1Q", "-1Y"],
-  },
-  [V1TimeGrain.TIME_GRAIN_MONTH]: {
-    lastN: lastNRanges.month,
-    toDate: ["QTM~", "YTM~"],
-    previousComplete: ["-1M", "-1Q", "-1Y"],
-  },
-  [V1TimeGrain.TIME_GRAIN_QUARTER]: {
-    lastN: lastNRanges.quarter,
-    toDate: ["YTQ~"],
-    previousComplete: ["-1Q", "-1Y"],
-  },
-  [V1TimeGrain.TIME_GRAIN_YEAR]: {
-    lastN: lastNRanges.year,
-    toDate: [],
-    previousComplete: ["-1Y"],
-  },
-};
+  const allowedGrains = getAllowedGrains(smallestTimeGrain);
+  const smallerGrains = allowedGrains.filter(
+    (g) => getGrainOrder(g) < grainOrder,
+  );
+
+  const lastN = lastNValues[grain].map((v) => {
+    const timeRange = `${v}${primaryGrainAlias}~`;
+    const parsed = parseRillTime(timeRange);
+    return {
+      string: timeRange,
+      parsed,
+    };
+  });
+
+  const previous = Array.from({ length: 4 }, (_, i) => {
+    const timeRange = `-${i + 1}${primaryGrainAlias}~`;
+    const parsed = parseRillTime(timeRange);
+
+    return {
+      string: timeRange,
+      parsed,
+    };
+  });
+
+  const grainBy = smallerGrains.map((g) => {
+    const secondaryGrainAlias = V1TimeGrainToAlias[g];
+    const timeRange = `${primaryGrainAlias}T${secondaryGrainAlias}~`;
+    const parsed = parseRillTime(timeRange);
+
+    return {
+      string: timeRange,
+      parsed,
+    };
+  });
+
+  return {
+    lastN,
+    this: [
+      {
+        string: `${primaryGrainAlias}~`,
+        parsed: parseRillTime(`${primaryGrainAlias}~`),
+      },
+    ],
+    previous,
+    grainBy,
+  };
+}
+
+export interface TimeRangeMenuOption {
+  string: string;
+  parsed: RillTime;
+}
