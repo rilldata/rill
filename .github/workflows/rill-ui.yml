@@ -3,7 +3,7 @@ on:
   create:
   push:
     tags:
-      - "**"
+      - "v*"
     branches:
       - "main"
       - "release**"
