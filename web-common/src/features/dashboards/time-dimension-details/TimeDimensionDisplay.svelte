@@ -5,7 +5,7 @@
     SortType,
   } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
-  import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
+  import { explorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import { debounce } from "@rilldata/web-common/lib/create-debouncer";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
@@ -27,7 +27,7 @@
 
   const stateManagers = getStateManagers();
   const {
-    dashboardStore,
+    exploreStore,
     selectors: {
       dimensions: { allDimensions },
       dimensionFilters: { unselectedDimensionValues },
@@ -46,10 +46,10 @@
   const timeDimensionDataStore = useTimeDimensionDataStore(stateManagers);
   const timeControlStore = useTimeControlStore(stateManagers);
 
-  $: dimensionName = $dashboardStore?.selectedComparisonDimension ?? "";
+  $: dimensionName = $exploreStore?.selectedComparisonDimension ?? "";
   $: comparing = $timeDimensionDataStore?.comparing;
 
-  $: pinIndex = $dashboardStore?.tdd.pinIndex;
+  $: pinIndex = $exploreStore?.tdd.pinIndex;
 
   $: timeGrain = $timeControlStore.selectedTimeRange?.interval;
 
@@ -79,7 +79,7 @@
   }
   $: formattedData = timeDimensionDataCopy;
   $: excludeMode =
-    $dashboardStore?.dimensionFilterExcludeMode.get(dimensionName) ?? false;
+    $exploreStore?.dimensionFilterExcludeMode.get(dimensionName) ?? false;
 
   $: rowHeaderLabels =
     formattedData?.rowHeaderData?.slice(1)?.map((row) => row[0]?.value) ?? [];
@@ -168,7 +168,7 @@
     else if (pinIndex === -1) {
       newPinIndex = formattedData?.selectedValues?.length - 1;
     }
-    metricsExplorerStore.setPinIndex(exploreName, newPinIndex);
+    explorerStore.setPinIndex(exploreName, newPinIndex);
   }
 
   function handleKeyDown(e) {
@@ -231,8 +231,8 @@
       {excludeMode}
       {dimensionLabel}
       {measureLabel}
-      sortDirection={$dashboardStore.sortDirection === SortDirection.ASCENDING}
-      sortType={$dashboardStore.dashboardSortType}
+      sortDirection={$exploreStore.sortDirection === SortDirection.ASCENDING}
+      sortType={$exploreStore.dashboardSortType}
       comparing={comparisonCopy}
       {timeFormatter}
       tableData={formattedData}

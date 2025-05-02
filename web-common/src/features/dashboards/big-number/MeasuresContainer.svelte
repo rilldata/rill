@@ -31,7 +31,7 @@
     LEADERBOARD_PADDING_RIGHT;
 
   const {
-    dashboardStore,
+    exploreStore,
     selectors: {
       measures: { allMeasures, visibleMeasures },
       activeMeasure: { selectedMeasureNames },
@@ -135,14 +135,14 @@
     metricsViewName,
     {
       measures: $selectedMeasureNames.map((name) => ({ name })),
-      where: sanitiseExpression($dashboardStore?.whereFilter, undefined),
+      where: sanitiseExpression($exploreStore?.whereFilter, undefined),
     },
     {
       query: {
         enabled:
           $selectedMeasureNames?.length > 0 &&
           $timeControlsStore.ready &&
-          !!$dashboardStore?.whereFilter,
+          !!$exploreStore?.whereFilter,
       },
     },
   );

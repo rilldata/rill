@@ -1,7 +1,7 @@
 import { getProtoFromDashboardState } from "@rilldata/web-common/features/dashboards/proto-state/toProto";
 import { getFullInitExploreState } from "@rilldata/web-common/features/dashboards/stores/dashboard-store-defaults";
-import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
-import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import { explorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
+import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import {
   AD_BIDS_EXPLORE_INIT,
   AD_BIDS_EXPLORE_NAME,
@@ -39,7 +39,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 const TestCases: {
   title: string;
   mutations: TestDashboardMutation[];
-  keys: (keyof MetricsExplorerEntity)[];
+  keys: (keyof ExploreState)[];
 }[] = [
   {
     title: "filters",
@@ -105,7 +105,7 @@ describe("sparse proto", () => {
 
         applyMutationsToDashboard(AD_BIDS_EXPLORE_NAME, mutations);
 
-        metricsExplorerStore.syncFromUrl(
+        explorerStore.syncFromUrl(
           AD_BIDS_EXPLORE_NAME,
           defaultProto,
           AD_BIDS_METRICS_INIT,
@@ -135,7 +135,7 @@ describe("sparse proto", () => {
           TestCasesOppositeMutations,
         );
 
-        metricsExplorerStore.syncFromUrl(
+        explorerStore.syncFromUrl(
           AD_BIDS_EXPLORE_NAME,
           partialProto,
           AD_BIDS_METRICS_INIT,
@@ -143,7 +143,7 @@ describe("sparse proto", () => {
           AD_BIDS_SCHEMA,
         );
         assertDashboardEquals(AD_BIDS_EXPLORE_NAME, {
-          ...get(metricsExplorerStore).entities[AD_BIDS_EXPLORE_NAME],
+          ...get(explorerStore).entities[AD_BIDS_EXPLORE_NAME],
           ...partialDashboard,
         });
       });
@@ -151,13 +151,13 @@ describe("sparse proto", () => {
   });
 });
 
-function assertDashboardEquals(name: string, expected: MetricsExplorerEntity) {
-  expect(cleanDashboard(get(metricsExplorerStore).entities[name])).toEqual(
+function assertDashboardEquals(name: string, expected: ExploreState) {
+  expect(cleanDashboard(get(explorerStore).entities[name])).toEqual(
     cleanDashboard(expected),
   );
 }
 
-function cleanDashboard(dashboard: MetricsExplorerEntity) {
+function cleanDashboard(dashboard: ExploreState) {
   const newDash = deepClone(dashboard);
   delete newDash.proto;
   if (newDash.selectedTimeRange) {

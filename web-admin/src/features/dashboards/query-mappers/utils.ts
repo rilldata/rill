@@ -1,5 +1,5 @@
 import { createInExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
-import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import { getTimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import { PreviousCompleteRangeMap } from "@rilldata/web-common/features/dashboards/time-controls/time-range-mappers";
 import { convertPartialExploreStateToUrlParams } from "@rilldata/web-common/features/dashboards/url-state/convert-partial-explore-state-to-url-params";
@@ -37,7 +37,7 @@ for (const preset in PreviousCompleteRangeMap) {
 }
 
 export function fillTimeRange(
-  dashboard: MetricsExplorerEntity,
+  dashboard: ExploreState,
   reqTimeRange: V1TimeRange | undefined,
   reqComparisonTimeRange: V1TimeRange | undefined,
   timeRangeSummary: V1TimeRangeSummary,
@@ -156,7 +156,7 @@ export async function convertQueryFilterToToplistQuery(
 
 export async function getExplorePageUrlSearchParams(
   exploreName: string,
-  exploreState: MetricsExplorerEntity,
+  exploreState: ExploreState,
 ): Promise<URLSearchParams> {
   const instanceId = get(runtime).instanceId;
   const { explore, metricsView } = await queryClient.fetchQuery({

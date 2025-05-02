@@ -77,8 +77,8 @@
   let currentProtobufState: string | undefined = undefined;
   if (open && props.mode === "create") {
     const stateManagers = getStateManagers();
-    const { dashboardStore } = stateManagers;
-    currentProtobufState = get(dashboardStore).proto;
+    const { exploreStore } = stateManagers;
+    currentProtobufState = get(exploreStore).proto;
   }
 
   const schema = yup(

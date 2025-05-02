@@ -3,7 +3,7 @@
   import Row from "@rilldata/web-common/components/icons/Row.svelte";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { slide } from "svelte/transition";
-  import { metricsExplorerStore } from "../stores/dashboard-stores";
+  import { explorerStore } from "../stores/dashboard-stores";
   import DragList from "./DragList.svelte";
   import { lastNestState } from "./PivotToolbar.svelte";
   import { PivotChipType, type PivotChipData } from "./types";
@@ -21,14 +21,14 @@
   function updateColumn(items: PivotChipData[]) {
     // Reset lastNestState when columns are updated
     lastNestState.set(null);
-    metricsExplorerStore.setPivotColumns($exploreName, items);
+    explorerStore.setPivotColumns($exploreName, items);
   }
 
   function updateRows(items: PivotChipData[]) {
     const filtered = items.filter(
       (item) => item.type !== PivotChipType.Measure,
     );
-    metricsExplorerStore.setPivotRows($exploreName, filtered);
+    explorerStore.setPivotRows($exploreName, filtered);
   }
 </script>
 

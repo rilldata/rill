@@ -2,7 +2,7 @@
   import Zoom from "@rilldata/web-common/components/icons/Zoom.svelte";
   import MetaKey from "@rilldata/web-common/components/tooltip/MetaKey.svelte";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
-  import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
+  import { explorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import { getOrderedStartEnd } from "@rilldata/web-common/features/dashboards/time-series/utils";
   import {
     type DashboardTimeControls,
@@ -22,16 +22,16 @@
 
   const StateManagers = getStateManagers();
   const {
-    dashboardStore,
+    exploreStore,
     selectors: {
       charts: { canPanLeft, canPanRight, getNewPanRange },
     },
     validSpecStore,
   } = StateManagers;
 
-  $: activeTimeZone = $dashboardStore?.selectedTimezone;
+  $: activeTimeZone = $exploreStore?.selectedTimezone;
 
-  $: ({ selectedScrubRange } = $dashboardStore);
+  $: ({ selectedScrubRange } = $exploreStore);
 
   $: selectedSubRange =
     selectedScrubRange?.start && selectedScrubRange?.end
@@ -67,14 +67,14 @@
         const panRange = $getNewPanRange("right");
         if (panRange) updatePanRange(panRange.start, panRange.end);
       }
-    } else if ($dashboardStore?.selectedScrubRange?.end) {
+    } else if ($exploreStore?.selectedScrubRange?.end) {
       if (e.key === "z" && !e.metaKey && !e.ctrlKey) {
         zoomScrub();
       } else if (
-        !$dashboardStore.selectedScrubRange?.isScrubbing &&
+        !$exploreStore.selectedScrubRange?.isScrubbing &&
         e.key === "Escape"
       ) {
-        metricsExplorerStore.setSelectedScrubRange(exploreName, undefined);
+        explorerStore.setSelectedScrubRange(exploreName, undefined);
       }
     } else if (
       priorRange &&
@@ -100,7 +100,7 @@
         } as DashboardTimeControls) // FIXME wrong typecasting across application
       : undefined;
 
-    metricsExplorerStore.selectTimeRange(
+    explorerStore.selectTimeRange(
       exploreName,
       timeRange,
       timeGrain,
@@ -114,15 +114,15 @@
       selectedScrubRange?.start instanceof Date &&
       selectedScrubRange?.end instanceof Date
     ) {
-      if ($dashboardStore.selectedTimeRange) {
-        priorRange = $dashboardStore.selectedTimeRange;
+      if ($exploreStore.selectedTimeRange) {
+        priorRange = $exploreStore.selectedTimeRange;
       }
 
       const { start, end } = getOrderedStartEnd(
         selectedScrubRange.start,
         selectedScrubRange.end,
       );
-      metricsExplorerStore.setSelectedTimeRange(exploreName, {
+      explorerStore.setSelectedTimeRange(exploreName, {
         name: TimeRangePreset.CUSTOM,
         start,
         end,
@@ -138,7 +138,7 @@
 
   function undoZoom() {
     if (priorRange) {
-      metricsExplorerStore.setSelectedTimeRange(exploreName, priorRange);
+      explorerStore.setSelectedTimeRange(exploreName, priorRange);
       clearPriorRange();
     }
   }

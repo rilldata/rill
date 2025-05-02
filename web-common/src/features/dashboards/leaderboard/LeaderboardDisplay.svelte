@@ -6,7 +6,7 @@
     V1TimeRange,
   } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import type { DimensionThresholdFilter } from "../stores/metrics-explorer-entity";
+  import type { DimensionThresholdFilter } from "web-common/src/features/dashboards/stores/explore-state";
   import Leaderboard from "./Leaderboard.svelte";
   import LeaderboardControls from "./LeaderboardControls.svelte";
   import { COMPARISON_COLUMN_WIDTH, valueColumn } from "./leaderboard-widths";
@@ -40,7 +40,7 @@
       comparison: { toggleComparisonDimension },
     },
     exploreName,
-    dashboardStore,
+    exploreStore,
   } = StateManagers;
 
   let parentElement: HTMLDivElement;
@@ -111,7 +111,7 @@
               selectedValues={selectedDimensionValues(
                 $runtime.instanceId,
                 [metricsViewName],
-                $dashboardStore.whereFilter,
+                $exploreStore.whereFilter,
                 dimension.name,
                 timeRange.start,
                 timeRange.end,

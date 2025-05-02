@@ -10,7 +10,7 @@
   } from "@rilldata/web-common/lib/time/types";
   import { DateTime, Interval } from "luxon";
   import {
-    metricsExplorerStore,
+    explorerStore,
     useExploreState,
   } from "web-common/src/features/dashboards/stores/dashboard-stores";
   import { SortType } from "../../proto-state/derived-types";
@@ -54,7 +54,7 @@
     start: Date,
     end: Date,
   ) {
-    metricsExplorerStore.setSelectedComparisonRange(
+    explorerStore.setSelectedComparisonRange(
       $exploreName,
       {
         name,
@@ -77,10 +77,7 @@
     {disabled}
     class="flex gap-x-1.5 cursor-pointer"
     on:click={() => {
-      metricsExplorerStore.displayTimeComparison(
-        $exploreName,
-        !showTimeComparison,
-      );
+      explorerStore.displayTimeComparison($exploreName, !showTimeComparison);
 
       if (
         (showTimeComparison &&

@@ -29,10 +29,7 @@
     TimeRangePreset,
     type DashboardTimeControls,
   } from "@rilldata/web-common/lib/time/types";
-  import {
-    metricsExplorerStore,
-    useExploreState,
-  } from "../stores/dashboard-stores";
+  import { explorerStore, useExploreState } from "../stores/dashboard-stores";
   import type { TimeRange } from "@rilldata/web-common/lib/time/types";
   import { DateTime, Interval } from "luxon";
 
@@ -84,7 +81,7 @@
       pivot: { showPivot },
       charts: { canPanLeft, canPanRight, getNewPanRange },
     },
-    dashboardStore,
+    exploreStore,
   } = StateManagers;
 
   const timeControlsStore = useTimeControlStore(StateManagers);
@@ -105,8 +102,8 @@
   $: exploreSpec = $validSpecStore.data?.explore ?? {};
   $: metricsViewSpec = $validSpecStore.data?.metricsView ?? {};
 
-  $: exploreState = useExploreState($exploreName);
-  $: activeTimeZone = $exploreState?.selectedTimezone;
+  $: exploreStore = useExploreState($exploreName);
+  $: activeTimeZone = $exploreStore?.selectedTimezone;
 
   $: selectedRangeAlias = selectedTimeRange?.name;
   $: activeTimeGrain = selectedTimeRange?.interval;
@@ -137,7 +134,7 @@
   $: hasFilters =
     currentDimensionFilters.length > 0 || currentMeasureFilters.length > 0;
 
-  $: isComplexFilter = isExpressionUnsupported($dashboardStore.whereFilter);
+  $: isComplexFilter = isExpressionUnsupported($exploreStore.whereFilter);
 
   $: availableTimeZones = getPinnedTimeZones(exploreSpec);
 
@@ -187,7 +184,7 @@
     } as DashboardTimeControls; // FIXME wrong typecasting across application
 
     if (!activeTimeGrain) return;
-    metricsExplorerStore.selectTimeRange(
+    explorerStore.selectTimeRange(
       $exploreName,
       timeRange as TimeRange,
       activeTimeGrain,
@@ -215,7 +212,7 @@
     if (includesTimeZoneOffset) {
       const timeZone = name.match(/@ {(.*)}/)?.[1];
 
-      if (timeZone) metricsExplorerStore.setTimeZone($exploreName, timeZone);
+      if (timeZone) explorerStore.setTimeZone($exploreName, timeZone);
     }
 
     const interval = deriveInterval(
@@ -245,7 +242,7 @@
      */
     comparisonTimeRange: DashboardTimeControls | undefined,
   ) {
-    metricsExplorerStore.selectTimeRange(
+    explorerStore.selectTimeRange(
       $exploreName,
       timeRange,
       timeGrain,
@@ -263,7 +260,7 @@
       getValidComparisonOption(
         exploreSpec.timeRanges,
         range,
-        $exploreState.selectedComparisonTimeRange?.name as
+        $exploreStore.selectedComparisonTimeRange?.name as
           | TimeComparisonOption
           | undefined,
         allTimeRange,
@@ -289,7 +286,7 @@
       });
     }
 
-    metricsExplorerStore.setTimeZone($exploreName, timeZone);
+    explorerStore.setTimeZone($exploreName, timeZone);
   }
 
   function onTimeGrainSelect(timeGrain: V1TimeGrain) {
@@ -297,7 +294,7 @@
       makeTimeSeriesTimeRangeAndUpdateAppState(
         baseTimeRange,
         timeGrain,
-        $dashboardStore?.selectedComparisonTimeRange,
+        $exploreStore?.selectedComparisonTimeRange,
       );
     }
   }
@@ -374,7 +371,7 @@
     {/if}
     <div class="relative flex flex-row flex-wrap gap-x-2 gap-y-2">
       {#if isComplexFilter}
-        <AdvancedFilter advancedFilter={$dashboardStore.whereFilter} />
+        <AdvancedFilter advancedFilter={$exploreStore.whereFilter} />
       {:else if !allDimensionFilters.length && !allMeasureFilters.length}
         <div
           in:fly={{ duration: 200, x: 8 }}

@@ -4,7 +4,7 @@
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
-  import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
+  import { explorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import { NO_COMPARISON_LABEL } from "@rilldata/web-common/lib/time/config";
   import type { MetricsViewSpecDimension } from "@rilldata/web-common/runtime-client";
   import { matchSorter } from "match-sorter";
@@ -13,7 +13,7 @@
   export let exploreName: string;
 
   const {
-    dashboardStore,
+    exploreStore,
     selectors: {
       dimensions: { allDimensions },
     },
@@ -23,7 +23,7 @@
   let searchText = "";
   let open = false;
 
-  $: ({ showTimeComparison, selectedComparisonDimension } = $dashboardStore);
+  $: ({ showTimeComparison, selectedComparisonDimension } = $exploreStore);
 
   $: dimensions = $allDimensions;
 
@@ -47,16 +47,16 @@
 
   function enableComparison(type: string, name = "") {
     if (type === "time") {
-      metricsExplorerStore.displayTimeComparison(exploreName, true);
+      explorerStore.displayTimeComparison(exploreName, true);
     } else {
       // Temporary until these are not mutually exclusive
-      metricsExplorerStore.displayTimeComparison(exploreName, false);
-      metricsExplorerStore.setComparisonDimension(exploreName, name);
+      explorerStore.displayTimeComparison(exploreName, false);
+      explorerStore.setComparisonDimension(exploreName, name);
     }
   }
 
   function disableAllComparisons() {
-    metricsExplorerStore.disableAllComparisons(exploreName);
+    explorerStore.disableAllComparisons(exploreName);
   }
 </script>
 

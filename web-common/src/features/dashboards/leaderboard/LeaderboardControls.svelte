@@ -1,7 +1,7 @@
 <script lang="ts">
   import DashboardMetricsDraggableList from "@rilldata/web-common/components/menu/DashboardMetricsDraggableList.svelte";
   import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
-  import { metricsExplorerStore } from "web-common/src/features/dashboards/stores/dashboard-stores";
+  import { explorerStore } from "web-common/src/features/dashboards/stores/dashboard-stores";
   import { getStateManagers } from "../state-managers/state-managers";
   import LeaderboardMeasureNamesDropdown from "@rilldata/web-common/components/menu/LeaderboardMeasureNamesDropdown.svelte";
   import LeaderboardAdvancedActions from "@rilldata/web-common/components/menu/LeaderboardAdvancedActions.svelte";
@@ -32,7 +32,7 @@
 
   let isLeaderboardActionsOpen = false;
 
-  $: metricsExplorer = $metricsExplorerStore.entities[exploreName];
+  $: exploreState = $explorerStore.entities[exploreName];
 
   $: activeLeaderboardMeasure = $getMeasureByName(
     $leaderboardSortByMeasureName,
@@ -51,8 +51,7 @@
   // but it is not valid for this measure, then turn it off
   $: if (
     !validPercentOfTotal &&
-    metricsExplorer?.leaderboardContextColumn ===
-      LeaderboardContextColumn.PERCENT
+    exploreState?.leaderboardContextColumn === LeaderboardContextColumn.PERCENT
   ) {
     setContextColumn(LeaderboardContextColumn.HIDDEN);
   }

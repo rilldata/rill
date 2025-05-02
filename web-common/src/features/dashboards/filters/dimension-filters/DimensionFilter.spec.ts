@@ -46,7 +46,7 @@ describe("DimensionFilter", () => {
       screen.getByText("Google").click();
     });
     // Assert that filters are added immediately.
-    expect(get(stateManagers.dashboardStore).whereFilter).toEqual(
+    expect(get(stateManagers.exploreStore).whereFilter).toEqual(
       createAndExpression([
         createInExpression(AD_BIDS_PUBLISHER_DIMENSION, ["Facebook", "Google"]),
       ]),
@@ -154,7 +154,7 @@ describe("DimensionFilter", () => {
     await act(() => screen.getByRole("button", { name: "Apply" }).click());
 
     // Filter is added to the dashboard
-    expect(get(stateManagers.dashboardStore).whereFilter).toEqual(
+    expect(get(stateManagers.exploreStore).whereFilter).toEqual(
       createAndExpression([
         createLikeExpression(AD_BIDS_PUBLISHER_DIMENSION, "%oo%"),
       ]),
@@ -224,7 +224,7 @@ describe("DimensionFilter", () => {
     await act(() => screen.getByRole("button", { name: "Apply" }).click());
 
     // Filter is added to the dashboard
-    expect(get(stateManagers.dashboardStore).whereFilter).toEqual(
+    expect(get(stateManagers.exploreStore).whereFilter).toEqual(
       createAndExpression([
         createInExpression(AD_BIDS_PUBLISHER_DIMENSION, [
           "Facebook",
@@ -233,9 +233,9 @@ describe("DimensionFilter", () => {
         ]),
       ]),
     );
-    expect(
-      get(stateManagers.dashboardStore).dimensionsWithInlistFilter,
-    ).toEqual(["publisher"]);
+    expect(get(stateManagers.exploreStore).dimensionsWithInlistFilter).toEqual([
+      "publisher",
+    ]);
     // Filter pill is persisted
     expect(screen.getByLabelText("Open publisher filter")).toHaveTextContent(
       "publisher In list (2 of 3)",
@@ -274,7 +274,7 @@ describe("DimensionFilter", () => {
     await act(() => screen.getByRole("button", { name: "Apply" }).click());
 
     // Filter is added to the dashboard
-    expect(get(stateManagers.dashboardStore).whereFilter).toEqual(
+    expect(get(stateManagers.exploreStore).whereFilter).toEqual(
       createAndExpression([
         createInExpression(AD_BIDS_PUBLISHER_DIMENSION, [
           "Facebook",
@@ -283,9 +283,9 @@ describe("DimensionFilter", () => {
         ]),
       ]),
     );
-    expect(
-      get(stateManagers.dashboardStore).dimensionsWithInlistFilter,
-    ).toEqual(["publisher"]);
+    expect(get(stateManagers.exploreStore).dimensionsWithInlistFilter).toEqual([
+      "publisher",
+    ]);
     // Filter pill is persisted
     expect(screen.getByLabelText("Open publisher filter")).toHaveTextContent(
       "publisher In list (2 of 3)",

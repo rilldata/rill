@@ -24,7 +24,7 @@
   import { InfoIcon } from "lucide-svelte";
   import { Scalar, YAMLMap, YAMLSeq, parseDocument } from "yaml";
   import {
-    metricsExplorerStore,
+    explorerStore,
     useExploreState,
   } from "../dashboards/stores/dashboard-stores";
   import ZoneDisplay from "../dashboards/time-controls/super-pill/components/ZoneDisplay.svelte";
@@ -184,7 +184,7 @@
       return JSON.stringify(value) === JSON.stringify(defaults[key]);
     });
 
-  $: if (exploreSpec) metricsExplorerStore.sync(exploreName, exploreSpec);
+  $: if (exploreSpec) explorerStore.sync(exploreName, exploreSpec);
 
   function getMeasureOrDimensionState(
     node: unknown,

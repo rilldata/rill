@@ -1,9 +1,9 @@
-import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
+import { explorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
 import {
   createAndExpression,
   createInExpression,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
-import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import {
   AD_BIDS_EXPLORE_INIT,
   AD_BIDS_EXPLORE_NAME,
@@ -25,7 +25,7 @@ const TestCases: {
   title: string;
   url: string;
   errors: string[];
-  entity: Partial<MetricsExplorerEntity>;
+  entity: Partial<ExploreState>;
 }[] = [
   {
     title: "Invalid filter syntax: unknown syntax",
@@ -133,12 +133,12 @@ Unexpected " ".`,
 
 describe("Invalid Human readable URL State", () => {
   beforeEach(() => {
-    metricsExplorerStore.remove(AD_BIDS_EXPLORE_NAME);
+    explorerStore.remove(AD_BIDS_EXPLORE_NAME);
   });
 
   for (const { title, url, errors, entity } of TestCases) {
     it(title, () => {
-      metricsExplorerStore.init(
+      explorerStore.init(
         AD_BIDS_EXPLORE_NAME,
         getInitExploreStateForTest(
           AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,

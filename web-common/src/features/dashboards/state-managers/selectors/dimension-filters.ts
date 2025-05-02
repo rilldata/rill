@@ -85,7 +85,7 @@ export const selectedDimensionValues = (
 
 export const useSelectedValuesForCompareDimension = (ctx: StateManagers) => {
   return derived(
-    [ctx.runtime, ctx.metricsViewName, ctx.dashboardStore],
+    [ctx.runtime, ctx.metricsViewName, ctx.exploreStore],
     ([runtime, metricsViewName, exploreState], set) =>
       selectedDimensionValues(
         runtime.instanceId,

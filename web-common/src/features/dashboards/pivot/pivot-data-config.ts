@@ -4,7 +4,7 @@ import { allMeasures } from "@rilldata/web-common/features/dashboards/state-mana
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 import {
   dimensionSearchText,
-  metricsExplorerStore,
+  explorerStore,
 } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
 import { timeControlStateSelector } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import type { TimeRangeString } from "@rilldata/web-common/lib/time/types";
@@ -34,7 +34,7 @@ export function getPivotConfig(
     [
       ctx.validSpecStore,
       ctx.timeRangeSummaryStore,
-      ctx.dashboardStore,
+      ctx.exploreStore,
       dimensionSearchText,
     ],
     ([validSpec, timeRangeSummary, dashboardStore, searchText]) => {
@@ -162,7 +162,7 @@ export function getPivotConfig(
         // Reset rowPage when pivot config changes
         lastKey = currentKey;
         if (config.pivot.rowPage !== 1) {
-          metricsExplorerStore.setPivotRowPage(dashboardStore.name, 1);
+          explorerStore.setPivotRowPage(dashboardStore.name, 1);
           config.pivot.rowPage = 1;
         }
       }

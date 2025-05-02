@@ -9,10 +9,10 @@ import {
   type CompoundQueryResult,
   getCompoundQuery,
 } from "@rilldata/web-common/features/compound-query-result";
-import { getDashboardStateFromUrl } from "@rilldata/web-common/features/dashboards/proto-state/fromProto";
+import { getExploreStateFromUrl } from "@rilldata/web-common/features/dashboards/proto-state/fromProto";
 import { useMetricsViewTimeRange } from "@rilldata/web-common/features/dashboards/selectors";
 import { useExploreState } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
-import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import {
   getTimeControlState,
   timeControlStateSelector,
@@ -77,7 +77,7 @@ export function categorizeBookmarks(
   metricsSpec: V1MetricsViewSpec,
   exploreSpec: V1ExploreSpec,
   schema: V1StructType,
-  exploreState: MetricsExplorerEntity,
+  exploreState: ExploreState,
   timeRangeSummary: V1TimeRangeSummary | undefined,
 ) {
   const bookmarks: Bookmarks = {
@@ -120,7 +120,7 @@ export function getHomeBookmarkExploreState(
   instanceId: string,
   metricsViewName: string,
   exploreName: string,
-): CompoundQueryResult<Partial<MetricsExplorerEntity> | null> {
+): CompoundQueryResult<Partial<ExploreState> | null> {
   return getCompoundQuery(
     [
       getBookmarks(projectId, exploreName),
@@ -134,7 +134,7 @@ export function getHomeBookmarkExploreState(
       const exploreSpec = exploreSpecResp?.explore ?? {};
       const metricsViewSpec = exploreSpecResp?.metricsView ?? {};
 
-      const exploreStateFromHomeBookmark = getDashboardStateFromUrl(
+      const exploreStateFromHomeBookmark = getExploreStateFromUrl(
         homeBookmark?.data ?? "",
         metricsViewSpec,
         exploreSpec,
@@ -173,19 +173,19 @@ export function getPrettySelectedTimeRange(
       useMetricsViewTimeRange(instanceId, metricsViewName, {}, queryClient),
       useExploreState(metricsViewName),
     ],
-    ([validSpec, timeRangeSummary, metricsExplorerEntity]) => {
+    ([validSpec, timeRangeSummary, exploreState]) => {
       const timeRangeState = timeControlStateSelector([
         validSpec.data?.metricsView ?? {},
         validSpec.data?.explore ?? {},
         timeRangeSummary,
-        metricsExplorerEntity,
+        exploreState,
       ]);
       if (!timeRangeState.ready) return "";
       return prettyFormatTimeRange(
         timeRangeState.selectedTimeRange?.start,
         timeRangeState.selectedTimeRange?.end,
         timeRangeState.selectedTimeRange?.name,
-        metricsExplorerEntity?.selectedTimezone,
+        exploreState?.selectedTimezone,
       );
     },
   );
@@ -196,11 +196,11 @@ function parseBookmark(
   metricsViewSpec: V1MetricsViewSpec,
   exploreSpec: V1ExploreSpec,
   schema: V1StructType,
-  exploreState: MetricsExplorerEntity,
+  exploreState: ExploreState,
   timeRangeSummary: V1TimeRangeSummary | undefined,
   rillDefaultExploreURLParams: URLSearchParams,
 ): BookmarkEntry {
-  const exploreStateFromBookmark = getDashboardStateFromUrl(
+  const exploreStateFromBookmark = getExploreStateFromUrl(
     bookmarkResource.data ?? "",
     metricsViewSpec,
     exploreSpec,
@@ -210,7 +210,7 @@ function parseBookmark(
   const finalExploreState = {
     ...(exploreState ?? {}),
     ...exploreStateFromBookmark,
-  } as MetricsExplorerEntity;
+  } as ExploreState;
 
   const url = new URL(get(page).url);
 
@@ -255,7 +255,7 @@ const filterOnlyParams = new Set([
 ]) as Set<string>;
 
 function isFilterOnlyBookmark(
-  bookmarkState: Partial<MetricsExplorerEntity>,
+  bookmarkState: Partial<ExploreState>,
   metricsViewSpec: V1MetricsViewSpec,
   exploreSpec: V1ExploreSpec,
   timeRangeSummary: V1TimeRangeSummary | undefined,
@@ -264,12 +264,12 @@ function isFilterOnlyBookmark(
   // We need to remove defaults like time grain and timezone otherwise we will have extra fields here
   const searchParams = getCleanedUrlParamsForGoto(
     exploreSpec,
-    bookmarkState as MetricsExplorerEntity,
+    bookmarkState as ExploreState,
     getTimeControlState(
       metricsViewSpec,
       exploreSpec,
       timeRangeSummary,
-      bookmarkState as MetricsExplorerEntity,
+      bookmarkState as ExploreState,
     ),
     rillDefaultExploreURLParams,
   );

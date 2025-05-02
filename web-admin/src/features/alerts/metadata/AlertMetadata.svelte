@@ -9,7 +9,7 @@
   import {
     useAlert,
     useAlertDashboardName,
-    useAlertDashboardState,
+    useAlertExploreState,
     useIsAlertCreatedByCode,
   } from "@rilldata/web-admin/features/alerts/selectors";
   import ProjectAccessControls from "@rilldata/web-admin/features/projects/ProjectAccessControls.svelte";
@@ -41,12 +41,12 @@
   $: isAlertCreatedByCode = useIsAlertCreatedByCode(instanceId, alert);
 
   // Get dashboard
-  $: dashboardName = useAlertDashboardName(instanceId, alert);
-  $: dashboard = useExploreValidSpec(instanceId, $dashboardName.data);
-  $: metricsViewName = $dashboard.data?.explore?.metricsView;
+  $: exploreName = useAlertDashboardName(instanceId, alert);
+  $: validExploreSpec = useExploreValidSpec(instanceId, $exploreName.data);
+  $: metricsViewName = $validExploreSpec.data?.explore?.metricsView;
   $: dashboardTitle =
-    $dashboard.data?.explore?.displayName || $dashboardName.data;
-  $: dashboardDoesNotExist = $dashboard.error?.response?.status === 404;
+    $validExploreSpec.data?.explore?.displayName || $exploreName.data;
+  $: dashboardDoesNotExist = $validExploreSpec.error?.response?.status === 404;
 
   $: alertSpec = $alertQuery.data?.resource?.alert?.spec;
 
@@ -56,7 +56,7 @@
       "{}",
   ) as V1MetricsViewAggregationRequest;
 
-  $: dashboardState = useAlertDashboardState(instanceId, alertSpec);
+  $: exploreState = useAlertExploreState(instanceId, alertSpec);
 
   $: snoozeLabel = humaniseAlertSnoozeOption(alertSpec);
 
@@ -141,7 +141,7 @@
               </div>
             {:else}
               <a
-                href={`/${organization}/${project}/explore/${$dashboardName.data}`}
+                href={`/${organization}/${project}/explore/${$exploreName.data}`}
               >
                 {dashboardTitle}
               </a>
@@ -180,7 +180,7 @@
     <AlertFilters
       {metricsViewName}
       filters={metricsViewAggregationRequest?.where}
-      dimensionsWithInlistFilter={$dashboardState.data
+      dimensionsWithInlistFilter={$exploreState.data
         ?.dimensionsWithInlistFilter ?? []}
       timeRange={metricsViewAggregationRequest?.timeRange}
       comparisonTimeRange={metricsViewAggregationRequest?.comparisonTimeRange}

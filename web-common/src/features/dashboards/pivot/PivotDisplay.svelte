@@ -1,7 +1,7 @@
 <script lang="ts">
   import PivotError from "@rilldata/web-common/features/dashboards/pivot/PivotError.svelte";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
-  import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
+  import { explorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { derived } from "svelte/store";
   import { getPivotConfig } from "./pivot-data-config";
@@ -15,7 +15,7 @@
   const stateManagers = getStateManagers();
   const {
     exploreName,
-    dashboardStore,
+    exploreStore,
     selectors: {
       pivot: { columns },
     },
@@ -25,7 +25,7 @@
   $: isRillDeveloper = $readOnly === false;
   $: canShowDataViewer = Boolean($cloudDataViewer || isRillDeveloper);
 
-  const pivotExploreState = derived(dashboardStore, (dashboard) => {
+  const pivotExploreState = derived(exploreStore, (dashboard) => {
     return dashboard?.pivot;
   });
 
@@ -40,8 +40,8 @@
     $columns.dimension.length > 0 && $columns.measure.length === 0;
 
   function removeActiveCell() {
-    if (!$dashboardStore.pivot.activeCell) return;
-    metricsExplorerStore.removePivotActiveCell($exploreName);
+    if (!$exploreStore.pivot.activeCell) return;
+    explorerStore.removePivotActiveCell($exploreName);
   }
 </script>
 
@@ -71,18 +71,14 @@
           config={pivotConfig}
           pivotState={pivotExploreState}
           setPivotExpanded={(expanded) =>
-            metricsExplorerStore.setPivotExpanded($exploreName, expanded)}
+            explorerStore.setPivotExpanded($exploreName, expanded)}
           setPivotSort={(sorting) =>
-            metricsExplorerStore.setPivotSort($exploreName, sorting)}
+            explorerStore.setPivotSort($exploreName, sorting)}
           setPivotRowPage={(page) =>
-            metricsExplorerStore.setPivotRowPage($exploreName, page)}
+            explorerStore.setPivotRowPage($exploreName, page)}
           {canShowDataViewer}
           setPivotActiveCell={(rowId, columnId) =>
-            metricsExplorerStore.setPivotActiveCell(
-              $exploreName,
-              rowId,
-              columnId,
-            )}
+            explorerStore.setPivotActiveCell($exploreName, rowId, columnId)}
         />
       {/if}
     </div>

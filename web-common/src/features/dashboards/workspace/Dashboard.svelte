@@ -34,7 +34,7 @@
       dimensions: { getDimensionByName },
       pivot: { showPivot },
     },
-    dashboardStore,
+    exploreStore,
   } = StateManagers;
 
   const { cloudDataViewer, readOnly } = featureFlags;
@@ -45,13 +45,13 @@
 
   $: ({ instanceId } = $runtime);
 
-  $: ({ whereFilter, dimensionThresholdFilters } = $dashboardStore);
+  $: ({ whereFilter, dimensionThresholdFilters } = $exploreStore);
 
   $: extraLeftPadding = !$navigationOpen;
 
-  $: exploreState = useExploreState(exploreName);
+  $: exploreStore = useExploreState(exploreName);
 
-  $: activePage = $exploreState?.activePage;
+  $: activePage = $exploreStore?.activePage;
   $: showTimeDimensionDetail = Boolean(
     activePage === DashboardState_ActivePage.TIME_DIMENSIONAL_DETAIL,
   );
@@ -59,10 +59,10 @@
     activePage === DashboardState_ActivePage.DIMENSION_TABLE,
   );
 
-  $: selectedDimensionName = $exploreState?.selectedDimensionName;
+  $: selectedDimensionName = $exploreStore?.selectedDimensionName;
   $: selectedDimension =
     selectedDimensionName && $getDimensionByName(selectedDimensionName);
-  $: expandedMeasureName = $exploreState?.tdd?.expandedMeasureName;
+  $: expandedMeasureName = $exploreStore?.tdd?.expandedMeasureName;
 
   $: isRillDeveloper = $readOnly === false;
 

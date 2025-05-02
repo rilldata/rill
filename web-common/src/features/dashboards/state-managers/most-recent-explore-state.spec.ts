@@ -4,8 +4,8 @@ import {
   type HoistedPageForExploreTests,
   PageMockForExploreTests,
 } from "@rilldata/web-common/features/dashboards/state-managers/loaders/test/PageMockForExploreTests";
-import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
-import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import { explorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
+import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import {
   AD_BIDS_BID_PRICE_MEASURE,
   AD_BIDS_EXPLORE_INIT,
@@ -56,7 +56,7 @@ const TestCases: {
   mutations: TestDashboardMutation[];
 
   expectedUrlSearch: string;
-  expectedExplore: Partial<MetricsExplorerEntity>;
+  expectedExplore: Partial<ExploreState>;
 }[] = [
   {
     title: "Changes to dashboard using actions",
@@ -128,7 +128,7 @@ describe("Most recent explore state", () => {
     localStorage.clear();
     sessionStorage.clear();
     queryClient.clear();
-    metricsExplorerStore.remove(AD_BIDS_EXPLORE_NAME);
+    explorerStore.remove(AD_BIDS_EXPLORE_NAME);
   });
 
   for (const {
@@ -153,7 +153,7 @@ describe("Most recent explore state", () => {
       sessionStorage.clear();
       queryClient.clear();
       pageMock.reset();
-      metricsExplorerStore.remove(AD_BIDS_EXPLORE_NAME);
+      explorerStore.remove(AD_BIDS_EXPLORE_NAME);
 
       renderDashboardStateManager();
       await waitFor(() => expect(screen.getByText("Dashboard loaded!")));

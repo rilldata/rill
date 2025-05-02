@@ -14,7 +14,7 @@ import {
 } from "@rilldata/web-common/lib/rpc";
 
 export default function initEmbedPublicAPI(): () => void {
-  const { validSpecStore, dashboardStore, timeRangeSummaryStore } =
+  const { validSpecStore, exploreStore, timeRangeSummaryStore } =
     getStateManagers();
 
   const cachedRillDefaultParamsStore = derived(
@@ -35,13 +35,13 @@ export default function initEmbedPublicAPI(): () => void {
   const derivedState: Readable<string> = derived(
     [
       validSpecStore,
-      dashboardStore,
+      exploreStore,
       timeRangeSummaryStore,
       cachedRillDefaultParamsStore,
     ],
     ([
       $validSpecStore,
-      $dashboardStore,
+      exploreState,
       $timeRangeSummaryStore,
       $cachedRillDefaultParams,
     ]) => {
@@ -49,12 +49,12 @@ export default function initEmbedPublicAPI(): () => void {
       const metricsViewSpec = $validSpecStore.data?.metricsView ?? {};
 
       let timeControlsState: TimeControlState | undefined = undefined;
-      if (metricsViewSpec && exploreSpec && $dashboardStore) {
+      if (metricsViewSpec && exploreSpec && exploreState) {
         timeControlsState = getTimeControlState(
           metricsViewSpec,
           exploreSpec,
           $timeRangeSummaryStore.data?.timeRangeSummary,
-          $dashboardStore,
+          exploreState,
         );
       }
 
@@ -62,7 +62,7 @@ export default function initEmbedPublicAPI(): () => void {
         // It doesnt make sense to send default params, so clean them based on rill opinionated defaults.
         getCleanedUrlParamsForGoto(
           exploreSpec,
-          $dashboardStore,
+          exploreState,
           timeControlsState,
           $cachedRillDefaultParams,
         ).toString(),
@@ -76,7 +76,7 @@ export default function initEmbedPublicAPI(): () => void {
 
   registerRPCMethod("getState", () => {
     const validSpec = get(validSpecStore);
-    const dashboard = get(dashboardStore);
+    const exploreState = get(exploreStore);
     const timeSummary = get(timeRangeSummaryStore).data;
     const cachedRillDefaultParams = get(cachedRillDefaultParamsStore);
 
@@ -84,18 +84,18 @@ export default function initEmbedPublicAPI(): () => void {
     const metricsViewSpec = validSpec.data?.metricsView ?? {};
 
     let timeControlsState: TimeControlState | undefined = undefined;
-    if (metricsViewSpec && exploreSpec && dashboard) {
+    if (metricsViewSpec && exploreSpec && exploreState) {
       timeControlsState = getTimeControlState(
         metricsViewSpec,
         exploreSpec,
         timeSummary?.timeRangeSummary,
-        dashboard,
+        exploreState,
       );
     }
     const stateString = decodeURIComponent(
       getCleanedUrlParamsForGoto(
         exploreSpec,
-        dashboard,
+        exploreState,
         timeControlsState,
         cachedRillDefaultParams,
       ).toString(),

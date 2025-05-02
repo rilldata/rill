@@ -1,5 +1,5 @@
 import { mergeDimensionAndMeasureFilters } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
-import type { DimensionThresholdFilter } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import type { DimensionThresholdFilter } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import {
   V1Operation,
   type MetricsViewSpecDimension,

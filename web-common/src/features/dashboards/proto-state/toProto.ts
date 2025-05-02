@@ -19,7 +19,7 @@ import {
   ToProtoTimeGrainMap,
 } from "@rilldata/web-common/features/dashboards/proto-state/enum-maps";
 import { createAndExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
-import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
 import { arrayOrderedEquals } from "@rilldata/web-common/lib/arrayUtils";
 import type {
@@ -71,7 +71,7 @@ const TDDChartTypeMap: Record<TDDChart, string> = {
 };
 
 export function getProtoFromDashboardState(
-  metrics: MetricsExplorerEntity,
+  metrics: ExploreState,
   exploreSpec: V1ExploreSpec,
 ): string {
   if (!metrics) return "";
@@ -331,7 +331,7 @@ function toPivotProto(pivotState: PivotState): PartialMessage<DashboardState> {
 }
 
 function toActivePageProto(
-  metrics: MetricsExplorerEntity,
+  metrics: ExploreState,
 ): PartialMessage<DashboardState> {
   switch (metrics.activePage) {
     case DashboardState_ActivePage.DEFAULT:

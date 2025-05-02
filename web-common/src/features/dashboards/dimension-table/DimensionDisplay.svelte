@@ -23,7 +23,7 @@
   import { getMeasuresForDimensionOrLeaderboardDisplay } from "../state-managers/selectors/dashboard-queries";
   import { dimensionSearchText } from "../stores/dashboard-stores";
   import { sanitiseExpression } from "../stores/filter-utils";
-  import type { DimensionThresholdFilter } from "../stores/metrics-explorer-entity";
+  import type { DimensionThresholdFilter } from "web-common/src/features/dashboards/stores/explore-state";
   import DimensionHeader from "./DimensionHeader.svelte";
   import DimensionTable from "./DimensionTable.svelte";
   import { getDimensionFilterWithSearch } from "./dimension-table-utils";
@@ -57,7 +57,7 @@
         deselectItemsInFilter,
       },
     },
-    dashboardStore,
+    exploreStore,
   } = getStateManagers();
 
   $: ({ name: dimensionName = "" } = dimension);
@@ -67,7 +67,7 @@
   $: selectedValues = selectedDimensionValues(
     $runtime.instanceId,
     [metricsViewName],
-    $dashboardStore.whereFilter,
+    $exploreStore.whereFilter,
     dimensionName,
     timeRange.start,
     timeRange.end,

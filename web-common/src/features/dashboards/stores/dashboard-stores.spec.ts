@@ -1,4 +1,4 @@
-import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
+import { explorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
 import {
   createAndExpression,
   createInExpression,
@@ -122,7 +122,7 @@ describe.skip("dashboard-stores", () => {
     assertMetricsView(AD_BIDS_EXPLORE_NAME);
 
     // select a different time
-    metricsExplorerStore.setSelectedTimeRange(
+    explorerStore.setSelectedTimeRange(
       AD_BIDS_EXPLORE_NAME,
       LAST_6_HOURS_TEST_CONTROLS,
     );
@@ -142,7 +142,7 @@ describe.skip("dashboard-stores", () => {
     );
 
     // select custom time
-    metricsExplorerStore.setSelectedTimeRange(
+    explorerStore.setSelectedTimeRange(
       AD_BIDS_EXPLORE_NAME,
       CUSTOM_TEST_CONTROLS,
     );
@@ -193,7 +193,7 @@ describe.skip("dashboard-stores", () => {
       },
     } = stateManagers;
 
-    metricsExplorerStore.init(
+    explorerStore.init(
       AD_BIDS_EXPLORE_NO_TIMESTAMP_NAME,
       getInitExploreStateForTest(AD_BIDS_METRICS_INIT, {
         metricsView: AD_BIDS_NO_TIMESTAMP_NAME,
@@ -220,8 +220,8 @@ describe.skip("dashboard-stores", () => {
   });
 
   it("Should set the selected time range from the default in config", () => {
-    metricsExplorerStore.remove(AD_BIDS_EXPLORE_NAME);
-    metricsExplorerStore.init(
+    explorerStore.remove(AD_BIDS_EXPLORE_NAME);
+    explorerStore.init(
       AD_BIDS_EXPLORE_NAME,
       getInitExploreStateForTest(
         AD_BIDS_METRICS_INIT,
@@ -242,14 +242,14 @@ describe.skip("dashboard-stores", () => {
       ),
     );
 
-    let metrics = get(metricsExplorerStore).entities[AD_BIDS_EXPLORE_NAME];
+    let metrics = get(explorerStore).entities[AD_BIDS_EXPLORE_NAME];
     // unspecified mode will default to no time comparison
     expect(metrics.showTimeComparison).toBeFalsy();
     expect(metrics.selectedComparisonTimeRange).toBeUndefined();
     expect(metrics.selectedComparisonDimension).toBeUndefined();
 
-    metricsExplorerStore.remove(AD_BIDS_EXPLORE_NAME);
-    metricsExplorerStore.init(
+    explorerStore.remove(AD_BIDS_EXPLORE_NAME);
+    explorerStore.init(
       AD_BIDS_EXPLORE_NAME,
       getInitExploreStateForTest(
         AD_BIDS_METRICS_INIT,
@@ -269,15 +269,15 @@ describe.skip("dashboard-stores", () => {
         },
       ),
     );
-    metrics = get(metricsExplorerStore).entities[AD_BIDS_EXPLORE_NAME];
+    metrics = get(explorerStore).entities[AD_BIDS_EXPLORE_NAME];
     expect(metrics.showTimeComparison).toBeFalsy();
     // defaults to 1st dimension
     expect(metrics.selectedComparisonDimension).toBe(
       AD_BIDS_PUBLISHER_DIMENSION,
     );
 
-    metricsExplorerStore.remove(AD_BIDS_EXPLORE_NAME);
-    metricsExplorerStore.init(
+    explorerStore.remove(AD_BIDS_EXPLORE_NAME);
+    explorerStore.init(
       AD_BIDS_EXPLORE_NAME,
       getInitExploreStateForTest(
         AD_BIDS_METRICS_INIT,
@@ -298,7 +298,7 @@ describe.skip("dashboard-stores", () => {
         },
       ),
     );
-    metrics = get(metricsExplorerStore).entities[AD_BIDS_EXPLORE_NAME];
+    metrics = get(explorerStore).entities[AD_BIDS_EXPLORE_NAME];
     expect(metrics.selectedComparisonDimension).toBe(AD_BIDS_DOMAIN_DIMENSION);
   });
 
@@ -317,7 +317,7 @@ describe.skip("dashboard-stores", () => {
       // create a mirror from state
       createAdBidsMirrorInStore(get(mock).data!);
       // update the mirrored dashboard mimicking meta query update
-      metricsExplorerStore.sync(
+      explorerStore.sync(
         AD_BIDS_MIRROR_NAME,
         AD_BIDS_EXPLORE_WITH_DELETED_DIMENSION,
       );
@@ -344,20 +344,20 @@ describe.skip("dashboard-stores", () => {
       // create a mirror from state
       createAdBidsMirrorInStore(get(mock).data!);
       // update the mirrored dashboard mimicking meta query update
-      metricsExplorerStore.sync(AD_BIDS_MIRROR_NAME, {
+      explorerStore.sync(AD_BIDS_MIRROR_NAME, {
         measures: [AD_BIDS_IMPRESSIONS_MEASURE],
         dimensions: [AD_BIDS_PUBLISHER_DIMENSION],
       });
       // assert that the selected measure is reset to the 1st available one
       expect(
-        get(metricsExplorerStore).entities[AD_BIDS_MIRROR_NAME]
+        get(explorerStore).entities[AD_BIDS_MIRROR_NAME]
           .leaderboardSortByMeasureName,
       ).toBe(AD_BIDS_IMPRESSIONS_MEASURE);
     });
 
     it("Restore invalid selected dimension", () => {
       const mock = createValidSpecQueryMock();
-      metricsExplorerStore.setMetricDimensionName(
+      explorerStore.setMetricDimensionName(
         AD_BIDS_EXPLORE_NAME,
         AD_BIDS_DOMAIN_DIMENSION,
       );
@@ -365,14 +365,13 @@ describe.skip("dashboard-stores", () => {
       // create a mirror from state
       createAdBidsMirrorInStore(get(mock).data!);
       // update the mirrored dashboard mimicking meta query update
-      metricsExplorerStore.sync(
+      explorerStore.sync(
         AD_BIDS_MIRROR_NAME,
         AD_BIDS_EXPLORE_WITH_DELETED_DIMENSION,
       );
       // assert that the selected dimension is cleared
       expect(
-        get(metricsExplorerStore).entities[AD_BIDS_MIRROR_NAME]
-          .selectedDimensionName,
+        get(explorerStore).entities[AD_BIDS_MIRROR_NAME].selectedDimensionName,
       ).toBeUndefined();
     });
   });

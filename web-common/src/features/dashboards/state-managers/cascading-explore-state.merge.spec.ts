@@ -1,5 +1,5 @@
 import { cascadingExploreStateMerge } from "@rilldata/web-common/features/dashboards/state-managers/cascading-explore-state-merge";
-import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import {
   AD_BIDS_BID_PRICE_MEASURE,
   AD_BIDS_COUNTRY_DIMENSION,
@@ -54,7 +54,7 @@ describe("cascadingExploreStateMerge", () => {
   });
 });
 
-const StateFromURL: Partial<MetricsExplorerEntity> = {
+const StateFromURL: Partial<ExploreState> = {
   selectedTimeRange: {
     name: TimeRangePreset.LAST_SIX_HOURS,
   } as DashboardTimeControls,
@@ -67,14 +67,14 @@ const StateFromURL: Partial<MetricsExplorerEntity> = {
   allMeasuresVisible: false,
 };
 
-const MostRecentState: Partial<MetricsExplorerEntity> = {
+const MostRecentState: Partial<ExploreState> = {
   visibleMeasures: [AD_BIDS_BID_PRICE_MEASURE],
   allMeasuresVisible: false,
   visibleDimensions: [AD_BIDS_DOMAIN_DIMENSION],
   allDimensionsVisible: false,
 };
 
-const YAMLConfigState: Partial<MetricsExplorerEntity> = {
+const YAMLConfigState: Partial<ExploreState> = {
   selectedTimeRange: {
     name: TimeRangePreset.LAST_24_HOURS,
     interval: V1TimeGrain.TIME_GRAIN_HOUR,
@@ -93,7 +93,7 @@ const YAMLConfigState: Partial<MetricsExplorerEntity> = {
   leaderboardSortByMeasureName: AD_BIDS_PUBLISHER_COUNT_MEASURE,
 };
 
-const RillDefaultState: Partial<MetricsExplorerEntity> = {
+const RillDefaultState: Partial<ExploreState> = {
   selectedTimeRange: {
     name: TimeRangePreset.LAST_7_DAYS,
     interval: V1TimeGrain.TIME_GRAIN_DAY,
