@@ -29,7 +29,6 @@
   import { getFiltersForOtherDimensions } from "@rilldata/web-common/features/dashboards/selectors";
   import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
   import type { V1Expression } from "@rilldata/web-common/runtime-client";
-  import type { DimensionThresholdFilter } from "../../stores/metrics-explorer-entity";
 
   export let name: string;
   export let metricsViewNames: string[];
