@@ -15,10 +15,12 @@ x-postgres: &postgres
 services:
   postgres:
     <<: *postgres
+    profiles: ["cloud"]
     volumes:
       - ../../../../${RILL_DEVTOOL_STATE_DIRECTORY}/postgres:/var/lib/postgresql/data
   e2e-postgres:
     <<: *postgres
+    profiles: ["e2e"]
     ports:
       - '6432:5432'
   redis:
@@ -92,6 +94,7 @@ services:
       - '8123:8123' # HTTP port
   pgweb:
     <<: *service
+    profiles: ["cloud"]
     image: sosedoff/pgweb
     ports:
       - "8082:8081"
