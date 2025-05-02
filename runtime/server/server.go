@@ -287,6 +287,9 @@ func mapGRPCError(err error) error {
 	if err == nil {
 		return nil
 	}
+	if _, ok := status.FromError(err); ok {
+		return err
+	}
 	if errors.Is(err, context.DeadlineExceeded) {
 		return status.Error(codes.DeadlineExceeded, err.Error())
 	}
@@ -299,7 +302,7 @@ func mapGRPCError(err error) error {
 	if errors.Is(err, runtime.ErrForbidden) {
 		return ErrForbidden
 	}
-	return err
+	return status.Error(codes.InvalidArgument, err.Error())
 }
 
 func (s *Server) checkRateLimit(ctx context.Context) (context.Context, error) {
