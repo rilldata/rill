@@ -143,24 +143,24 @@ func (s *Server) ListProjectsByName(ctx context.Context, req *adminv1.ListProjec
 	)
 
 	claims := auth.GetClaims(ctx)
-	userId := claims.OwnerID()
+	userID := claims.OwnerID()
 
-	projects, err := s.admin.DB.FindProjectsByNameAndUser(ctx, req.Name, userId)
+	projects, err := s.admin.DB.FindProjectsByNameAndUser(ctx, req.Name, userID)
 	if err != nil {
 		return nil, err
 	}
 
-	orgsById := make(map[string]*database.Organization)
+	orgsByID := make(map[string]*database.Organization)
 
 	dtos := make([]*adminv1.Project, len(projects))
 	for i, p := range projects {
-		org, hasOrg := orgsById[p.OrganizationID]
+		org, hasOrg := orgsByID[p.OrganizationID]
 		if !hasOrg {
 			org, err = s.admin.DB.FindOrganization(ctx, p.OrganizationID)
 			if err != nil {
 				return nil, err
 			}
-			orgsById[p.OrganizationID] = org
+			orgsByID[p.OrganizationID] = org
 		}
 
 		dtos[i] = s.projToDTO(p, org.Name)
