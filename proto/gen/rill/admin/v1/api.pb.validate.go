@@ -1047,6 +1047,8 @@ func (m *CreateOrganizationRequest) validate(all bool) error {
 
 	// no validation rules for Description
 
+	// no validation rules for DisplayName
+
 	if len(errors) > 0 {
 		return CreateOrganizationRequestMultiError(errors)
 	}
@@ -25037,9 +25039,11 @@ func (m *CreateManagedGitRepoResponse) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for RepoHtmlUrl
+	// no validation rules for Remote
 
-	// no validation rules for Token
+	// no validation rules for Username
+
+	// no validation rules for Password
 
 	if len(errors) > 0 {
 		return CreateManagedGitRepoResponseMultiError(errors)

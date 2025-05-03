@@ -4184,9 +4184,11 @@ definitions:
   v1CreateManagedGitRepoResponse:
     type: object
     properties:
-      repoHtmlUrl:
+      remote:
         type: string
-      token:
+      username:
+        type: string
+      password:
         type: string
   v1CreateOrganizationRequest:
     type: object
@@ -4194,6 +4196,8 @@ definitions:
       name:
         type: string
       description:
+        type: string
+      displayName:
         type: string
   v1CreateOrganizationResponse:
     type: object

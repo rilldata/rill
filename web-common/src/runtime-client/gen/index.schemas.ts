@@ -56,6 +56,9 @@ export interface MetricsViewSpecDimension {
   expression?: string;
   unnest?: boolean;
   uri?: string;
+  lookupTable?: string;
+  lookupKeyColumn?: string;
+  lookupValueColumn?: string;
 }
 
 export interface MetricsViewSpecDimensionSelector {

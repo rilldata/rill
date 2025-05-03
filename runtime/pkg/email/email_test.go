@@ -28,6 +28,31 @@ func (m *mockSender) Send(toEmail, toName, subject, body string) error {
 	return nil
 }
 
+func TestCopyrightYear(t *testing.T) {
+	mock := &mockSender{}
+	client := New(mock)
+
+	opts := &CallToAction{
+		ToEmail:    uuid.New().String(),
+		ToName:     uuid.New().String(),
+		Subject:    uuid.New().String(),
+		ButtonText: uuid.New().String(),
+		ButtonLink: uuid.New().String(),
+		ShowFooter: true,
+	}
+	err := client.SendCallToAction(opts)
+	require.NoError(t, err)
+
+	require.Equal(t, opts.ToEmail, mock.toEmail)
+	require.Equal(t, opts.ToName, mock.toName)
+	require.Equal(t, opts.Subject, mock.subject)
+	require.Contains(t, mock.body, opts.ButtonText)
+	require.Contains(t, mock.body, opts.ButtonLink)
+
+	year := time.Now().Year()
+	require.Contains(t, mock.body, fmt.Sprintf("© %d Rill Data, Inc", year))
+}
+
 func TestOrganizationInvite(t *testing.T) {
 	mock := &mockSender{}
 	client := New(mock)

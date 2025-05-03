@@ -274,13 +274,15 @@ export interface V1CreateBookmarkResponse {
 }
 
 export interface V1CreateManagedGitRepoResponse {
-  repoHtmlUrl?: string;
-  token?: string;
+  remote?: string;
+  username?: string;
+  password?: string;
 }
 
 export interface V1CreateOrganizationRequest {
   name?: string;
   description?: string;
+  displayName?: string;
 }
 
 export interface V1CreateOrganizationResponse {

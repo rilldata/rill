@@ -1063,7 +1063,7 @@ type InsertVirtualFileOptions struct {
 	ProjectID string
 	Branch    string
 	Path      string `validate:"required"`
-	Data      []byte `validate:"max=8192"` // 8kb
+	Data      []byte `validate:"max=131072"` // 128kb
 }
 
 // Asset represents a user-uploaded file asset.

@@ -514,6 +514,11 @@ export class CreateOrganizationRequest extends Message<CreateOrganizationRequest
    */
   description = "";
 
+  /**
+   * @generated from field: string display_name = 4;
+   */
+  displayName = "";
+
   constructor(data?: PartialMessage<CreateOrganizationRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -524,6 +529,7 @@ export class CreateOrganizationRequest extends Message<CreateOrganizationRequest
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 2, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateOrganizationRequest {
@@ -9002,14 +9008,19 @@ export class CreateManagedGitRepoRequest extends Message<CreateManagedGitRepoReq
  */
 export class CreateManagedGitRepoResponse extends Message<CreateManagedGitRepoResponse> {
   /**
-   * @generated from field: string repo_html_url = 1;
+   * @generated from field: string remote = 1;
    */
-  repoHtmlUrl = "";
+  remote = "";
 
   /**
-   * @generated from field: string token = 2;
+   * @generated from field: string username = 2;
    */
-  token = "";
+  username = "";
+
+  /**
+   * @generated from field: string password = 3;
+   */
+  password = "";
 
   constructor(data?: PartialMessage<CreateManagedGitRepoResponse>) {
     super();
@@ -9019,8 +9030,9 @@ export class CreateManagedGitRepoResponse extends Message<CreateManagedGitRepoRe
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.admin.v1.CreateManagedGitRepoResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "repo_html_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 1, name: "remote", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "username", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "password", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateManagedGitRepoResponse {
