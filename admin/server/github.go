@@ -418,8 +418,9 @@ func (s *Server) CreateManagedGitRepo(ctx context.Context, req *adminv1.CreateMa
 	}
 
 	return &adminv1.CreateManagedGitRepoResponse{
-		RepoHtmlUrl: *repo.HTMLURL,
-		Token:       token,
+		Remote:   *repo.CloneURL,
+		Username: "x-access-token",
+		Password: token,
 	}, nil
 }
 
