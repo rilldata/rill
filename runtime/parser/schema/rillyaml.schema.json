@@ -1,9 +1,9 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://rilldata.com/schemas/rillyaml.schema.json",
-  "title": "rillyaml",
+  "title": "Project YAML",
   "type": "object",
-  "description": "The rill.yaml file contains metadata about your project.",
+  "description": "The `rill.yaml` file contains metadata about your project.",
   "allOf": [
     {
       "title": "rillyaml_properties",

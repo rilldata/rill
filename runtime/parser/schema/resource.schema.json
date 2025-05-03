@@ -1,7 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "resource.schema.json",
-  "title": "Rill Resource",
+  "title": "Project files",
+  "description": "When you create models and dashboards, these objects are represented as object files on the file system. You can find these files in your `models` and `dashboards` folders in your project by default. \r\n\r\n:::info Working with resources outside their native folders\r\n\r\nIt is possible to define resources (such as [models](model.md), [metrics-views](metrics-view.md), [dashboards](explore-dashboard.md), [custom APIs](api.md), or [themes](theme.md)) within <u>any</u> nested folder within your Rill project directory. However, for any YAML configuration file, it is then imperative that the `type` property is then appropriately defined within the underlying resource configuration or Rill will not able to resolve the resource type correctly!\r\n\r\n:::\r\n\r\nProjects can simply be rehydrated from Rill project files into an explorable data application as long as there is sufficient access and credentials to the source data - figuring out the dependencies, pulling down data, & validating your model queries and metrics configurations. The result is a set of functioning exploratory dashboards.\r\n\r\nYou can see a few different example projects by visiting our [example github repository](https://github.com/rilldata/rill-examples).\r\n\r\n:::tip\r\n\r\nFor more information about using Git or cloning projects locally, please see our page on [GitHub Basics](/deploy/deploy-dashboard/github-101).\r\n\r\n:::",
   "type": "object",
   "oneOf": [
     {
@@ -38,7 +39,8 @@
   "$defs": {
     "alert": {
       "type": "object",
-      "title": "alert",
+      "title": "Alert YAML",
+      "description": "Along with alertings at the dashboard level and can be created via the UI, there might be more extensive alerting that you might want to develop and can be done so the an alert.yaml. When creating an alert via a YAML file, you'll see this denoted in the UI as `Created through code`.",
       "allOf": [
         {
           "title": "type",
@@ -203,8 +205,9 @@
       }
     },
     "api": {
-      "title": "api",
       "type": "object",
+      "title": "API YAML",
+      "description":"In your Rill project directory, create a new file name `<api-name>.yaml` in the `apis` directory containing a custom API definition. See comprehensive documentation on how to define and use [custom APIs](/integrate/custom-apis/index.md)",
       "examples": [
         {
           "type": "api",
@@ -299,7 +302,8 @@
     },
     "canvas": {
       "type": "object",
-      "title": "canvas",
+      "title": "Canvas Dashboard YAML",
+      "description": "In your Rill project directory, create a explore dashboard, `<dashboard_name>.yaml`, file in the `dashboards` directory. Rill will ingest the dashboard definition next time you run `rill start`.",
       "allOf": [
         {
           "title": "type",
@@ -472,7 +476,8 @@
     },
     "component": {
       "type": "object",
-      "title": "component",
+      "title": "Component YAML",
+      "description": "",
       "allOf": [
         {
           "title": "type",
@@ -537,7 +542,7 @@
     },
     "connector": {
       "type": "object",
-      "title": "connector",
+      "title": "Connector YAML",
       "allOf": [
         {
           "title": "type",
@@ -2074,7 +2079,8 @@
     },
     "explore": {
       "type": "object",
-      "title": "explore",
+      "title": "Explore Dashboard YAML",
+      "description":"In your Rill project directory, create a explore dashboard, `<dashboard_name>.yaml`, file in the `dashboards` directory. Rill will ingest the dashboard definition next time you run `rill start`.",
       "allOf": [
         {
           "title": "type",
@@ -2276,7 +2282,8 @@
     },
     "metrics_view": {
       "type": "object",
-      "title": "metrics_view",
+      "title": "Metrics View YAML",
+      "description":"In your Rill project directory, create a metrics view, `<metrics_view>.yaml`, file in the `metrics` directory. Rill will ingest the metric view definition next time you run `rill start`.",
       "allOf": [
         {
           "title": "type",
@@ -2571,7 +2578,8 @@
     },
     "model": {
       "type": "object",
-      "title": "model",
+      "title": "Model YAML",
+      "description": "",
       "allOf": [
         {
           "title": "type",
@@ -3140,7 +3148,8 @@
     },
     "report": {
       "type": "object",
-      "title": "report",
+      "title": "Report YAML",
+      "description": "",
       "allOf": [
         {
           "title": "type",
@@ -3286,7 +3295,7 @@
     },
     "theme": {
       "type": "object",
-      "title": "theme",
+      "title": "Theme YAML",
       "allOf": [
         {
           "title": "type",
@@ -3374,7 +3383,7 @@
         },
         "namespace": {
           "type": "string",
-          "description": "Optional value to group resources by. Prepended to the resource name as <namespace>/<name>."
+          "description": "Optional value to group resources by. Prepended to the resource name as `<namespace>/<name>`."
         },
         "refs": {
           "type": "array",
