@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"strings"
 	"time"
 
 	"github.com/go-git/go-git/v5/plumbing/transport"
@@ -58,17 +59,9 @@ func (s *Server) GetRepoMeta(ctx context.Context, req *adminv1.GetRepoMetaReques
 		return nil, status.Error(codes.FailedPrecondition, "project does not have a github integration")
 	}
 
-	var repoID int64
-	rillManagedRepo, err := s.admin.Github.RillManagedRepo(*proj.GithubURL)
+	repoID, err := s.githubRepoIDForProject(ctx, proj)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
-	}
-	if rillManagedRepo {
-		meta, err := s.admin.DB.FindManagedGithubRepoMeta(ctx, *proj.GithubURL)
-		if err != nil {
-			return nil, status.Error(codes.InvalidArgument, err.Error())
-		}
-		repoID = meta.RepositoryID
+		return nil, err
 	}
 
 	token, err := s.admin.Github.InstallationToken(ctx, *proj.GithubInstallationID, repoID)
@@ -76,7 +69,13 @@ func (s *Server) GetRepoMeta(ctx context.Context, req *adminv1.GetRepoMetaReques
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	ep, err := transport.NewEndpoint(*proj.GithubURL + ".git") // TODO: Can the clone URL be different from the HTTP URL of a Github repo?
+	var cloneURL string
+	if strings.HasSuffix(*proj.GithubURL, ".git") {
+		cloneURL = *proj.GithubURL
+	} else {
+		cloneURL = *proj.GithubURL + ".git"
+	}
+	ep, err := transport.NewEndpoint(cloneURL)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "failed to create endpoint from %q: %s", *proj.GithubURL, err.Error())
 	}

@@ -2523,75 +2523,67 @@ func (c *connection) DeleteProvisionerResource(ctx context.Context, id string) e
 	return checkDeleteRow("provisioner resource", res, err)
 }
 
-func (c *connection) FindManagedGithubRepoMeta(ctx context.Context, htmlURL string) (*database.ManagedGithubRepoMeta, error) {
-	res := &database.ManagedGithubRepoMeta{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM managed_github_repo_meta WHERE html_url = $1", htmlURL).StructScan(res)
+func (c *connection) FindManagedGitRepo(ctx context.Context, remote string) (*database.ManagedGitRepo, error) {
+	res := &database.ManagedGitRepo{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM managed_git_repo WHERE remote = $1", remote).StructScan(res)
 	if err != nil {
-		return nil, parseErr("managed github repo meta", err)
+		return nil, parseErr("managed git repo", err)
 	}
 	return res, nil
 }
 
-func (c *connection) FindUnusedManagedGithubRepo(ctx context.Context, pageSize int) ([]*database.ManagedGithubRepoMeta, error) {
+func (c *connection) FindUnusedManagedGitRepos(ctx context.Context, pageSize int) ([]*database.ManagedGitRepo, error) {
 	// find managed github repos that are not associated with any project
 	// skip repos that are less than 7 days old to avoid deleting repos for projects
 	// that were accidentally deleted and may need to be restored
-	var res []*database.ManagedGithubRepoMeta
+	var res []*database.ManagedGitRepo
 	err := c.getDB(ctx).SelectContext(ctx, &res, `
-		SELECT * FROM managed_github_repo_meta
+		SELECT * FROM managed_git_repo
 		WHERE project_id IS NULL
 		AND updated_on < now() - INTERVAL '7 DAYS'
 		ORDER BY updated_on DESC
 		LIMIT $1
 	`, pageSize)
 	if err != nil {
-		return nil, parseErr("managed github repo meta", err)
+		return nil, parseErr("managed git repo", err)
 	}
 	return res, nil
 }
 
-func (c *connection) CountManagedGithubRepos(ctx context.Context, orgID string) (int, error) {
+func (c *connection) CountManagedGitRepos(ctx context.Context, orgID string) (int, error) {
 	var count int
-	err := c.getDB(ctx).QueryRowxContext(ctx, `SELECT COUNT(*) FROM managed_github_repo_meta WHERE org_id = $1`, orgID).Scan(&count)
+	err := c.getDB(ctx).QueryRowxContext(ctx, `
+		SELECT COUNT(*)
+		FROM managed_git_repo m
+		JOIN project p ON m.id = p.project_id
+		WHERE p.org_id = $1
+	`, orgID).Scan(&count)
 	if err != nil {
-		return 0, parseErr("managed github repo meta count", err)
+		return 0, parseErr("managed git repo count", err)
 	}
 	return count, nil
 }
 
-func (c *connection) InsertManagedGithubRepoMeta(ctx context.Context, opts *database.InsertManagedGithubRepoMetaOptions) (*database.ManagedGithubRepoMeta, error) {
+func (c *connection) InsertManagedGitRepo(ctx context.Context, opts *database.InsertManagedGitRepoOptions) (*database.ManagedGitRepo, error) {
 	if err := database.Validate(opts); err != nil {
 		return nil, err
 	}
 
-	res := &database.ManagedGithubRepoMeta{}
+	res := &database.ManagedGitRepo{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, `
-		INSERT INTO managed_github_repo_meta (org_id, created_by_user_id, html_url, repository_id)
-		VALUES ($1, $2, $3, $4) RETURNING *`,
-		opts.OrgID, opts.CreatedByUserID, opts.HTMLURL, opts.RepositoryID,
+		INSERT INTO managed_git_repo (created_by_user_id, remote)
+		VALUES ($1, $2) RETURNING *`,
+		opts.CreatedByUserID, opts.Remote,
 	).StructScan(res)
 	if err != nil {
-		return nil, parseErr("managed github repo meta", err)
+		return nil, parseErr("managed git repo", err)
 	}
 	return res, nil
 }
 
-func (c *connection) UpdateManagedGithubRepoMeta(ctx context.Context, htmlURL, projectID string) (*database.ManagedGithubRepoMeta, error) {
-	res := &database.ManagedGithubRepoMeta{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, `
-		UPDATE managed_github_repo_meta SET project_id = $1, updated_on = now()
-		WHERE html_url = $2 AND project_id IS NULL RETURNING *`,
-		projectID, htmlURL,
-	).StructScan(res)
-	if err != nil {
-		return nil, parseErr("managed github repo meta", err)
-	}
-	return res, nil
-}
-
-func (c *connection) DeleteManagedGithubRepoMeta(ctx context.Context, ids []string) error {
-	_, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM managed_github_repo_meta WHERE id = ANY($1)", ids)
-	return parseErr("managed github repo meta", err)
+func (c *connection) DeleteManagedGitRepos(ctx context.Context, ids []string) error {
+	_, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM managed_git_repo WHERE id = ANY($1)", ids)
+	return parseErr("managed git repo", err)
 }
 
 // projectDTO wraps database.Project, using the pgtype package to handle types that pgx can't read directly into their native Go types.

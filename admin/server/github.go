@@ -381,7 +381,7 @@ func (s *Server) ConnectProjectToGithub(ctx context.Context, req *adminv1.Connec
 	return &adminv1.ConnectProjectToGithubResponse{}, nil
 }
 
-func (s *Server) CreateManagedGithubRepo(ctx context.Context, req *adminv1.CreateManagedGithubRepoRequest) (*adminv1.CreateManagedGithubRepoResponse, error) {
+func (s *Server) CreateManagedGitRepo(ctx context.Context, req *adminv1.CreateManagedGitRepoRequest) (*adminv1.CreateManagedGitRepoResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.organization", req.Organization),
 		attribute.String("args.name", req.Name),
@@ -403,7 +403,7 @@ func (s *Server) CreateManagedGithubRepo(ctx context.Context, req *adminv1.Creat
 		id := claims.OwnerID()
 		createdByUserID = &id
 	}
-	repo, err := s.admin.CreateManagedGithubRepo(ctx, org, req.Name, createdByUserID)
+	repo, err := s.admin.CreateManagedGitRepo(ctx, org, req.Name, createdByUserID)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -417,7 +417,7 @@ func (s *Server) CreateManagedGithubRepo(ctx context.Context, req *adminv1.Creat
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	return &adminv1.CreateManagedGithubRepoResponse{
+	return &adminv1.CreateManagedGitRepoResponse{
 		RepoHtmlUrl: *repo.HTMLURL,
 		Token:       token,
 	}, nil

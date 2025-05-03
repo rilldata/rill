@@ -36,7 +36,6 @@ type Github interface {
 	// If repoID is non-zero, it will return a token with access to the repo only.
 	InstallationToken(ctx context.Context, installationID, repoID int64) (string, error)
 
-	RillManagedRepo(htmlURL string) (bool, error)
 	CreateManagedRepo(ctx context.Context, repoPrefix string) (*github.Repository, error)
 	ManagedOrgInstallationID(ctx context.Context) (int64, error)
 }
@@ -62,7 +61,7 @@ type githubClient struct {
 }
 
 // NewGithub returns a new client for connecting to Github.
-func NewGithub(ctx context.Context, appID int64, appPrivateKey, managedGithubOrg string) (Github, error) {
+func NewGithub(ctx context.Context, appID int64, appPrivateKey, managedGithubOrg string, logger *zap.Logger) (Github, error) {
 	atr, err := ghinstallation.NewAppsTransport(retryableHTTPRoundTripper(), appID, []byte(appPrivateKey))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create github app transport: %w", err)
@@ -86,6 +85,7 @@ func NewGithub(ctx context.Context, appID int64, appPrivateKey, managedGithubOrg
 	// Set the managed org installation client
 	i, _, err := appClient.Apps.FindOrganizationInstallation(ctx, managedGithubOrg)
 	if err != nil {
+		logger.Error("failed to get managed org installation ID", zap.Error(err), observability.ZapCtx(ctx))
 		g.managedOrgFetchError = err
 		return g, nil
 	}
@@ -137,14 +137,6 @@ func (g *githubClient) InstallationToken(ctx context.Context, installationID, re
 	}
 
 	return token, nil
-}
-
-func (g *githubClient) RillManagedRepo(htmlURL string) (bool, error) {
-	account, _, ok := gitutil.SplitGithubURL(htmlURL)
-	if !ok {
-		return false, fmt.Errorf("invalid Github URL %q", htmlURL)
-	}
-	return account == g.managedOrg, nil
 }
 
 func (g *githubClient) CreateManagedRepo(ctx context.Context, name string) (*github.Repository, error) {
@@ -205,9 +197,9 @@ func (g *githubClient) ManagedOrgInstallationID(ctx context.Context) (int64, err
 	return g.managedOrgInstallationID, nil
 }
 
-func (s *Service) CreateManagedGithubRepo(ctx context.Context, org *database.Organization, name string, userID *string) (*github.Repository, error) {
+func (s *Service) CreateManagedGitRepo(ctx context.Context, org *database.Organization, name string, userID *string) (*github.Repository, error) {
 	if org.QuotaProjects >= 0 {
-		count, err := s.DB.CountManagedGithubRepos(ctx, org.ID)
+		count, err := s.DB.CountManagedGitRepos(ctx, org.ID)
 		if err != nil {
 			return nil, fmt.Errorf("failed to count managed repos: %w", err)
 		}
@@ -222,11 +214,9 @@ func (s *Service) CreateManagedGithubRepo(ctx context.Context, org *database.Org
 	if err != nil {
 		return nil, fmt.Errorf("failed to create managed repo: %w", err)
 	}
-	_, err = s.DB.InsertManagedGithubRepoMeta(ctx, &database.InsertManagedGithubRepoMetaOptions{
-		OrgID:           org.ID,
+	_, err = s.DB.InsertManagedGitRepo(ctx, &database.InsertManagedGitRepoOptions{
 		CreatedByUserID: userID,
-		HTMLURL:         repo.GetHTMLURL(),
-		RepositoryID:    repo.GetID(),
+		Remote:          repo.GetCloneURL(),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to insert managed repo meta: %w", err)

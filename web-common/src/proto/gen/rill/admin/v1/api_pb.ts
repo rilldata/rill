@@ -8952,9 +8952,9 @@ export class ConnectProjectToGithubResponse extends Message<ConnectProjectToGith
 }
 
 /**
- * @generated from message rill.admin.v1.CreateManagedGithubRepoRequest
+ * @generated from message rill.admin.v1.CreateManagedGitRepoRequest
  */
-export class CreateManagedGithubRepoRequest extends Message<CreateManagedGithubRepoRequest> {
+export class CreateManagedGitRepoRequest extends Message<CreateManagedGitRepoRequest> {
   /**
    * @generated from field: string organization = 1;
    */
@@ -8968,39 +8968,39 @@ export class CreateManagedGithubRepoRequest extends Message<CreateManagedGithubR
    */
   name = "";
 
-  constructor(data?: PartialMessage<CreateManagedGithubRepoRequest>) {
+  constructor(data?: PartialMessage<CreateManagedGitRepoRequest>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.admin.v1.CreateManagedGithubRepoRequest";
+  static readonly typeName = "rill.admin.v1.CreateManagedGitRepoRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "organization", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateManagedGithubRepoRequest {
-    return new CreateManagedGithubRepoRequest().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateManagedGitRepoRequest {
+    return new CreateManagedGitRepoRequest().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): CreateManagedGithubRepoRequest {
-    return new CreateManagedGithubRepoRequest().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): CreateManagedGitRepoRequest {
+    return new CreateManagedGitRepoRequest().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): CreateManagedGithubRepoRequest {
-    return new CreateManagedGithubRepoRequest().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): CreateManagedGitRepoRequest {
+    return new CreateManagedGitRepoRequest().fromJsonString(jsonString, options);
   }
 
-  static equals(a: CreateManagedGithubRepoRequest | PlainMessage<CreateManagedGithubRepoRequest> | undefined, b: CreateManagedGithubRepoRequest | PlainMessage<CreateManagedGithubRepoRequest> | undefined): boolean {
-    return proto3.util.equals(CreateManagedGithubRepoRequest, a, b);
+  static equals(a: CreateManagedGitRepoRequest | PlainMessage<CreateManagedGitRepoRequest> | undefined, b: CreateManagedGitRepoRequest | PlainMessage<CreateManagedGitRepoRequest> | undefined): boolean {
+    return proto3.util.equals(CreateManagedGitRepoRequest, a, b);
   }
 }
 
 /**
- * @generated from message rill.admin.v1.CreateManagedGithubRepoResponse
+ * @generated from message rill.admin.v1.CreateManagedGitRepoResponse
  */
-export class CreateManagedGithubRepoResponse extends Message<CreateManagedGithubRepoResponse> {
+export class CreateManagedGitRepoResponse extends Message<CreateManagedGitRepoResponse> {
   /**
    * @generated from field: string repo_html_url = 1;
    */
@@ -9011,32 +9011,32 @@ export class CreateManagedGithubRepoResponse extends Message<CreateManagedGithub
    */
   token = "";
 
-  constructor(data?: PartialMessage<CreateManagedGithubRepoResponse>) {
+  constructor(data?: PartialMessage<CreateManagedGitRepoResponse>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.admin.v1.CreateManagedGithubRepoResponse";
+  static readonly typeName = "rill.admin.v1.CreateManagedGitRepoResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "repo_html_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateManagedGithubRepoResponse {
-    return new CreateManagedGithubRepoResponse().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateManagedGitRepoResponse {
+    return new CreateManagedGitRepoResponse().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): CreateManagedGithubRepoResponse {
-    return new CreateManagedGithubRepoResponse().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): CreateManagedGitRepoResponse {
+    return new CreateManagedGitRepoResponse().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): CreateManagedGithubRepoResponse {
-    return new CreateManagedGithubRepoResponse().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): CreateManagedGitRepoResponse {
+    return new CreateManagedGitRepoResponse().fromJsonString(jsonString, options);
   }
 
-  static equals(a: CreateManagedGithubRepoResponse | PlainMessage<CreateManagedGithubRepoResponse> | undefined, b: CreateManagedGithubRepoResponse | PlainMessage<CreateManagedGithubRepoResponse> | undefined): boolean {
-    return proto3.util.equals(CreateManagedGithubRepoResponse, a, b);
+  static equals(a: CreateManagedGitRepoResponse | PlainMessage<CreateManagedGitRepoResponse> | undefined, b: CreateManagedGitRepoResponse | PlainMessage<CreateManagedGitRepoResponse> | undefined): boolean {
+    return proto3.util.equals(CreateManagedGitRepoResponse, a, b);
   }
 }
 

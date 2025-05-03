@@ -24908,22 +24908,22 @@ var _ interface {
 	ErrorName() string
 } = ConnectProjectToGithubResponseValidationError{}
 
-// Validate checks the field values on CreateManagedGithubRepoRequest with the
+// Validate checks the field values on CreateManagedGitRepoRequest with the
 // rules defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
-func (m *CreateManagedGithubRepoRequest) Validate() error {
+func (m *CreateManagedGitRepoRequest) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on CreateManagedGithubRepoRequest with
-// the rules defined in the proto definition for this message. If any rules
-// are violated, the result is a list of violation errors wrapped in
-// CreateManagedGithubRepoRequestMultiError, or nil if none found.
-func (m *CreateManagedGithubRepoRequest) ValidateAll() error {
+// ValidateAll checks the field values on CreateManagedGitRepoRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// CreateManagedGitRepoRequestMultiError, or nil if none found.
+func (m *CreateManagedGitRepoRequest) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *CreateManagedGithubRepoRequest) validate(all bool) error {
+func (m *CreateManagedGitRepoRequest) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -24935,19 +24935,19 @@ func (m *CreateManagedGithubRepoRequest) validate(all bool) error {
 	// no validation rules for Name
 
 	if len(errors) > 0 {
-		return CreateManagedGithubRepoRequestMultiError(errors)
+		return CreateManagedGitRepoRequestMultiError(errors)
 	}
 
 	return nil
 }
 
-// CreateManagedGithubRepoRequestMultiError is an error wrapping multiple
-// validation errors returned by CreateManagedGithubRepoRequest.ValidateAll()
-// if the designated constraints aren't met.
-type CreateManagedGithubRepoRequestMultiError []error
+// CreateManagedGitRepoRequestMultiError is an error wrapping multiple
+// validation errors returned by CreateManagedGitRepoRequest.ValidateAll() if
+// the designated constraints aren't met.
+type CreateManagedGitRepoRequestMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m CreateManagedGithubRepoRequestMultiError) Error() string {
+func (m CreateManagedGitRepoRequestMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -24956,12 +24956,12 @@ func (m CreateManagedGithubRepoRequestMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m CreateManagedGithubRepoRequestMultiError) AllErrors() []error { return m }
+func (m CreateManagedGitRepoRequestMultiError) AllErrors() []error { return m }
 
-// CreateManagedGithubRepoRequestValidationError is the validation error
-// returned by CreateManagedGithubRepoRequest.Validate if the designated
-// constraints aren't met.
-type CreateManagedGithubRepoRequestValidationError struct {
+// CreateManagedGitRepoRequestValidationError is the validation error returned
+// by CreateManagedGitRepoRequest.Validate if the designated constraints
+// aren't met.
+type CreateManagedGitRepoRequestValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -24969,24 +24969,24 @@ type CreateManagedGithubRepoRequestValidationError struct {
 }
 
 // Field function returns field value.
-func (e CreateManagedGithubRepoRequestValidationError) Field() string { return e.field }
+func (e CreateManagedGitRepoRequestValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e CreateManagedGithubRepoRequestValidationError) Reason() string { return e.reason }
+func (e CreateManagedGitRepoRequestValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e CreateManagedGithubRepoRequestValidationError) Cause() error { return e.cause }
+func (e CreateManagedGitRepoRequestValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e CreateManagedGithubRepoRequestValidationError) Key() bool { return e.key }
+func (e CreateManagedGitRepoRequestValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e CreateManagedGithubRepoRequestValidationError) ErrorName() string {
-	return "CreateManagedGithubRepoRequestValidationError"
+func (e CreateManagedGitRepoRequestValidationError) ErrorName() string {
+	return "CreateManagedGitRepoRequestValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e CreateManagedGithubRepoRequestValidationError) Error() string {
+func (e CreateManagedGitRepoRequestValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -24998,14 +24998,14 @@ func (e CreateManagedGithubRepoRequestValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sCreateManagedGithubRepoRequest.%s: %s%s",
+		"invalid %sCreateManagedGitRepoRequest.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = CreateManagedGithubRepoRequestValidationError{}
+var _ error = CreateManagedGitRepoRequestValidationError{}
 
 var _ interface {
 	Field() string
@@ -25013,24 +25013,24 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = CreateManagedGithubRepoRequestValidationError{}
+} = CreateManagedGitRepoRequestValidationError{}
 
-// Validate checks the field values on CreateManagedGithubRepoResponse with the
+// Validate checks the field values on CreateManagedGitRepoResponse with the
 // rules defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
-func (m *CreateManagedGithubRepoResponse) Validate() error {
+func (m *CreateManagedGitRepoResponse) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on CreateManagedGithubRepoResponse with
-// the rules defined in the proto definition for this message. If any rules
-// are violated, the result is a list of violation errors wrapped in
-// CreateManagedGithubRepoResponseMultiError, or nil if none found.
-func (m *CreateManagedGithubRepoResponse) ValidateAll() error {
+// ValidateAll checks the field values on CreateManagedGitRepoResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// CreateManagedGitRepoResponseMultiError, or nil if none found.
+func (m *CreateManagedGitRepoResponse) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *CreateManagedGithubRepoResponse) validate(all bool) error {
+func (m *CreateManagedGitRepoResponse) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -25042,19 +25042,19 @@ func (m *CreateManagedGithubRepoResponse) validate(all bool) error {
 	// no validation rules for Token
 
 	if len(errors) > 0 {
-		return CreateManagedGithubRepoResponseMultiError(errors)
+		return CreateManagedGitRepoResponseMultiError(errors)
 	}
 
 	return nil
 }
 
-// CreateManagedGithubRepoResponseMultiError is an error wrapping multiple
-// validation errors returned by CreateManagedGithubRepoResponse.ValidateAll()
-// if the designated constraints aren't met.
-type CreateManagedGithubRepoResponseMultiError []error
+// CreateManagedGitRepoResponseMultiError is an error wrapping multiple
+// validation errors returned by CreateManagedGitRepoResponse.ValidateAll() if
+// the designated constraints aren't met.
+type CreateManagedGitRepoResponseMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m CreateManagedGithubRepoResponseMultiError) Error() string {
+func (m CreateManagedGitRepoResponseMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -25063,12 +25063,12 @@ func (m CreateManagedGithubRepoResponseMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m CreateManagedGithubRepoResponseMultiError) AllErrors() []error { return m }
+func (m CreateManagedGitRepoResponseMultiError) AllErrors() []error { return m }
 
-// CreateManagedGithubRepoResponseValidationError is the validation error
-// returned by CreateManagedGithubRepoResponse.Validate if the designated
-// constraints aren't met.
-type CreateManagedGithubRepoResponseValidationError struct {
+// CreateManagedGitRepoResponseValidationError is the validation error returned
+// by CreateManagedGitRepoResponse.Validate if the designated constraints
+// aren't met.
+type CreateManagedGitRepoResponseValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -25076,24 +25076,24 @@ type CreateManagedGithubRepoResponseValidationError struct {
 }
 
 // Field function returns field value.
-func (e CreateManagedGithubRepoResponseValidationError) Field() string { return e.field }
+func (e CreateManagedGitRepoResponseValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e CreateManagedGithubRepoResponseValidationError) Reason() string { return e.reason }
+func (e CreateManagedGitRepoResponseValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e CreateManagedGithubRepoResponseValidationError) Cause() error { return e.cause }
+func (e CreateManagedGitRepoResponseValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e CreateManagedGithubRepoResponseValidationError) Key() bool { return e.key }
+func (e CreateManagedGitRepoResponseValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e CreateManagedGithubRepoResponseValidationError) ErrorName() string {
-	return "CreateManagedGithubRepoResponseValidationError"
+func (e CreateManagedGitRepoResponseValidationError) ErrorName() string {
+	return "CreateManagedGitRepoResponseValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e CreateManagedGithubRepoResponseValidationError) Error() string {
+func (e CreateManagedGitRepoResponseValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -25105,14 +25105,14 @@ func (e CreateManagedGithubRepoResponseValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sCreateManagedGithubRepoResponse.%s: %s%s",
+		"invalid %sCreateManagedGitRepoResponse.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = CreateManagedGithubRepoResponseValidationError{}
+var _ error = CreateManagedGitRepoResponseValidationError{}
 
 var _ interface {
 	Field() string
@@ -25120,7 +25120,7 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = CreateManagedGithubRepoResponseValidationError{}
+} = CreateManagedGitRepoResponseValidationError{}
 
 // Validate checks the field values on UploadProjectAssetsRequest with the
 // rules defined in the proto definition for this message. If any rules are

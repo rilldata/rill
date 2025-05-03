@@ -221,10 +221,6 @@ func (m *mockGithub) InstallationToken(ctx context.Context, installationID, repo
 	return "", nil
 }
 
-func (m *mockGithub) RillManagedRepo(githubURL string) (bool, error) {
-	return false, nil
-}
-
 func (m *mockGithub) CreateManagedRepo(ctx context.Context, repoPrefix string) (*github.Repository, error) {
 	return nil, fmt.Errorf("not implemented")
 }

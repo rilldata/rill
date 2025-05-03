@@ -545,15 +545,15 @@ paths:
                 type: boolean
       tags:
         - AdminService
-  /v1/organizations/{organization}/create-managed-github-repo:
+  /v1/organizations/{organization}/create-managed-git-repo:
     put:
-      summary: CreateManagedGithubRepo creates a new rill managed github repo for the organization.
-      operationId: AdminService_CreateManagedGithubRepo
+      summary: CreateManagedGitRepo creates a new rill managed git repo for the organization.
+      operationId: AdminService_CreateManagedGitRepo
       responses:
         "200":
           description: A successful response.
           schema:
-            $ref: '#/definitions/v1CreateManagedGithubRepoResponse'
+            $ref: '#/definitions/v1CreateManagedGitRepoResponse'
         default:
           description: An unexpected error response.
           schema:
@@ -4181,7 +4181,7 @@ definitions:
     properties:
       bookmark:
         $ref: '#/definitions/v1Bookmark'
-  v1CreateManagedGithubRepoResponse:
+  v1CreateManagedGitRepoResponse:
     type: object
     properties:
       repoHtmlUrl:

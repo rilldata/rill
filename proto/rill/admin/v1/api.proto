@@ -401,10 +401,10 @@ service AdminService {
     };
   }
 
-  // CreateManagedGithubRepo creates a new rill managed github repo for the organization.
-  rpc CreateManagedGithubRepo(CreateManagedGithubRepoRequest) returns (CreateManagedGithubRepoResponse) {
+  // CreateManagedGitRepo creates a new rill managed git repo for the organization.
+  rpc CreateManagedGitRepo(CreateManagedGitRepoRequest) returns (CreateManagedGitRepoResponse) {
     option (google.api.http) = {
-      put: "/v1/organizations/{organization}/create-managed-github-repo",
+      put: "/v1/organizations/{organization}/create-managed-git-repo",
       body: "*"
     };
   }
@@ -1922,16 +1922,17 @@ message ConnectProjectToGithubRequest {
 
 message ConnectProjectToGithubResponse {}
 
-message CreateManagedGithubRepoRequest {
+message CreateManagedGitRepoRequest {
   string organization = 1;
   // name of the repo to create. 
   // Note: The final name will be suffixed with a random string to ensure uniqueness.
   string name = 2;
 }
 
-message CreateManagedGithubRepoResponse {
-  string repo_html_url = 1;
-  string token = 2;
+message CreateManagedGitRepoResponse {
+  string remote = 1;
+  string username = 2;
+  string password = 3;
 }
 
 message UploadProjectAssetsRequest {

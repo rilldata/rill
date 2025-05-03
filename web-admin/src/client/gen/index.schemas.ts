@@ -273,7 +273,7 @@ export interface V1CreateBookmarkResponse {
   bookmark?: V1Bookmark;
 }
 
-export interface V1CreateManagedGithubRepoResponse {
+export interface V1CreateManagedGitRepoResponse {
   repoHtmlUrl?: string;
   token?: string;
 }
@@ -1401,7 +1401,7 @@ export type AdminServiceGetPaymentsPortalURLParams = {
   returnUrl?: string;
 };
 
-export type AdminServiceCreateManagedGithubRepoBody = {
+export type AdminServiceCreateManagedGitRepoBody = {
   /** name of the repo to create. 
 Note: The final name will be suffixed with a random string to ensure uniqueness. */
   name?: string;
