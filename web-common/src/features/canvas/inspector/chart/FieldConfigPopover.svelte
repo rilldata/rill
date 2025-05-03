@@ -86,7 +86,7 @@
           </div>
         {/if}
         {#if showSort}
-          <div class="py-1.5 flex items-center justify-between">
+          <div class="py-1 flex items-center justify-between">
             <span class="text-xs">Sort</span>
             <Select
               size="sm"
@@ -99,7 +99,7 @@
           </div>
         {/if}
         {#if showLimit}
-          <div class="py-1.5 flex items-center justify-between">
+          <div class="py-1 flex items-center justify-between">
             <span class="text-xs">Limit</span>
             <Input
               size="sm"
@@ -130,7 +130,7 @@
         </div>
       {/if}
       {#if showLabelAngle && fieldConfig?.type !== "temporal"}
-        <div class="py-1.5 flex items-center justify-between">
+        <div class="py-1 flex items-center justify-between">
           <span class="text-xs">Label angle</span>
           <Input
             size="sm"
@@ -148,7 +148,7 @@
         </div>
       {/if}
       {#if showLegend}
-        <div class="py-1.5 flex items-center justify-between">
+        <div class="py-1 flex items-center justify-between">
           <span class="text-xs">Legend orientation</span>
           <Select
             size="sm"
