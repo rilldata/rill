@@ -29,6 +29,7 @@ import (
 // Each test in the file will be run in sequence against that runtime instance.
 // The available connectors are defined in runtime/testruntime/connectors.go.
 type TestFileYAML struct {
+	Expensive    bool                 `yaml:"expensive,omitempty"`
 	Connectors   []string             `yaml:"connectors,omitempty"`
 	Variables    map[string]string    `yaml:"variables,omitempty"`
 	DataFiles    map[string]string    `yaml:"data_files,omitempty"`
@@ -98,6 +99,11 @@ func TestResolvers(t *testing.T) {
 			err = yaml.Unmarshal(data, &tf)
 			require.NoError(t, err)
 
+			// Handle short
+			if testing.Short() && tf.Expensive {
+				t.Skip("skipping test in short mode")
+			}
+
 			// Create a map of project files for the runtime instance.
 			projectFiles := make(map[string]string)
 			projectFiles["rill.yaml"] = ""
@@ -119,13 +125,6 @@ func TestResolvers(t *testing.T) {
 			for k, v := range tf.Variables {
 				vars[k] = v
 			}
-
-			for _, connector := range tf.Connectors {
-				if isRestrictedConnector(connector) {
-					t.Skipf("test skipped for connector: %q remove it from RILL_RUNTIME_RESOLVERS_TEST_RESTRICTED_CONNECTORS to enable", connector)
-				}
-			}
-
 			for _, connector := range tf.Connectors {
 				acquire, ok := testruntime.Connectors[connector]
 				require.True(t, ok, "unknown connector %q", connector)
@@ -241,20 +240,6 @@ func TestResolvers(t *testing.T) {
 		})
 	}
 
-}
-
-func isRestrictedConnector(connector string) bool {
-	env := os.Getenv("RILL_RUNTIME_RESOLVERS_TEST_RESTRICTED_CONNECTORS")
-	if env == "" {
-		return false
-	}
-
-	for _, name := range strings.Split(env, ",") {
-		if strings.TrimSpace(name) == connector {
-			return true
-		}
-	}
-	return false
 }
 
 // resultToCSV serializes the rows to a CSV formatted string.

@@ -108,8 +108,8 @@
       let matchesRole = false;
 
       if (filterSelection === "all") {
-        // All org users (members + guests)
-        matchesRole = !("invitedBy" in user);
+        // All org users (members + guests + pending invites)
+        matchesRole = true;
       } else if (filterSelection === "members") {
         // Only members (org admin, editor, viewer)
         matchesRole =

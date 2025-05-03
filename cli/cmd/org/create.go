@@ -9,7 +9,7 @@ import (
 )
 
 func CreateCmd(ch *cmdutil.Helper) *cobra.Command {
-	var name, description string
+	var name, displayName, description string
 
 	createCmd := &cobra.Command{
 		Use:   "create [<org-name>]",
@@ -35,6 +35,7 @@ func CreateCmd(ch *cmdutil.Helper) *cobra.Command {
 
 			res, err := client.CreateOrganization(cmd.Context(), &adminv1.CreateOrganizationRequest{
 				Name:        name,
+				DisplayName: displayName,
 				Description: description,
 			})
 			if err != nil {
@@ -60,6 +61,7 @@ func CreateCmd(ch *cmdutil.Helper) *cobra.Command {
 	}
 	createCmd.Flags().SortFlags = false
 	createCmd.Flags().StringVar(&name, "name", "", "Organization Name")
+	createCmd.Flags().StringVar(&displayName, "display-name", "", "Display name")
 	createCmd.Flags().StringVar(&description, "description", "", "Description")
 	return createCmd
 }
