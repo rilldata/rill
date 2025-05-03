@@ -1,10 +1,10 @@
 <script lang="ts">
   import IconButton from "@rilldata/web-common/components/button/IconButton.svelte";
-  import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import Select from "@rilldata/web-common/components/forms/Select.svelte";
   import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
   import SettingsSlider from "@rilldata/web-common/components/icons/SettingsSlider.svelte";
+  import * as Popover from "@rilldata/web-common/components/popover";
   import type {
     ChartLegend,
     ChartSortDirection,
@@ -49,13 +49,13 @@
   $: showLegend = chartFieldInput?.defaultLegendOrientation ?? false;
 </script>
 
-<DropdownMenu.Root bind:open={isDropdownOpen} closeOnItemClick={false}>
-  <DropdownMenu.Trigger class="flex-none">
+<Popover.Root bind:open={isDropdownOpen}>
+  <Popover.Trigger class="flex-none">
     <IconButton rounded active={isDropdownOpen}>
       <SettingsSlider size="14px" />
     </IconButton>
-  </DropdownMenu.Trigger>
-  <DropdownMenu.Content align="start" class="w-[280px] p-0">
+  </Popover.Trigger>
+  <Popover.Content align="start" class="w-[280px] p-0 overflow-visible">
     <div class="px-3.5 py-2 border-b border-gray-200">
       <span class="text-xs font-medium">{label} Configuration</span>
     </div>
@@ -162,5 +162,5 @@
         </div>
       {/if}
     </div>
-  </DropdownMenu.Content>
-</DropdownMenu.Root>
+  </Popover.Content>
+</Popover.Root>

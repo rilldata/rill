@@ -3,9 +3,9 @@
   import FieldSwitcher from "@rilldata/web-common/components/forms/FieldSwitcher.svelte";
   import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
   import type { FieldConfig } from "@rilldata/web-common/features/canvas/components/charts/types";
-  import FieldConfigDropdown from "@rilldata/web-common/features/canvas/inspector/chart/FieldConfigDropdown.svelte";
   import SingleFieldInput from "@rilldata/web-common/features/canvas/inspector/SingleFieldInput.svelte";
   import type { ComponentInputParam } from "@rilldata/web-common/features/canvas/inspector/types";
+  import FieldConfigPopover from "./FieldConfigPopover.svelte";
 
   export let key: string;
   export let metricsView: string;
@@ -41,14 +41,12 @@
   <div class="flex justify-between items-center">
     <InputLabel small label={config.label ?? key} id={key} />
     {#if Object.keys(chartFieldInput ?? {}).length > 1 && typeof markConfig !== "string"}
-      {#key markConfig}
-        <FieldConfigDropdown
-          fieldConfig={markConfig}
-          label={config.label ?? key}
-          onChange={updateFieldConfig}
-          {chartFieldInput}
-        />
-      {/key}
+      <FieldConfigPopover
+        fieldConfig={markConfig}
+        label={config.label ?? key}
+        onChange={updateFieldConfig}
+        {chartFieldInput}
+      />
     {/if}
   </div>
 
