@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
+
 	"github.com/spf13/cobra"
 )
 
@@ -32,55 +33,72 @@ func getRequiredMap(required []string) map[string]bool {
 	return reqMap
 }
 
+func getTypeString(schema *JSONSchema) string {
+
+	if schema == nil {
+		return ""
+	}
+	if schema.Type == nil {
+		if schema.OneOf != nil {
+			return "- _[one of]_ "
+		}
+		if schema.AnyOf != nil {
+			return "- _[any of]_ "
+		}
+		if schema.AnyOf != nil {
+			return "- _[all of]_ "
+		}
+		return ""
+	}
+	t := schema.Type
+	if s, ok := t.(string); ok {
+		if s == "array" {
+			if schema.Items.Type == "string" {
+				return "- _[array of string]_ "
+			} else if schema.Items.Type == "object" {
+				return "- _[array of object]_ "
+			}
+		}
+		return fmt.Sprintf("- _[%s]_ ", s)
+	}
+	return ""
+}
+
 func generateDoc(schema *JSONSchema, indent string, requiredFields map[string]bool) string {
 	var doc strings.Builder
-
-	if schema.Title != "" {
-		doc.WriteString(fmt.Sprintf("%s## %s\n\n", indent, schema.Title))
-	}
-	if schema.Description != "" {
-		doc.WriteString(fmt.Sprintf("%s%s\n\n", indent, schema.Description))
-	}
-	if schema.Type != "" {
-		doc.WriteString(fmt.Sprintf("%sType: `%s`\n\n", indent, schema.Type))
-	}
-	if len(schema.Enum) > 0 {
-		doc.WriteString(fmt.Sprintf("%sEnum: `%v`\n\n", indent, schema.Enum))
+	var listString = "- "
+	if indent == "" {
+		listString = ""
 	}
 	if schema.Type == "object" {
-		doc.WriteString(fmt.Sprintf("%s## Properties:\n", indent))
 		for propName, propSchema := range schema.Properties {
 			required := ""
 			if requiredFields[propName] {
 				required = " _(required)_"
 			}
-			doc.WriteString(fmt.Sprintf("\n%s- **%s**%s:\n", indent, propName, required))
-			doc.WriteString(generateDoc(propSchema, indent+"  ", getRequiredMap(propSchema.Required)))
+			doc.WriteString(fmt.Sprintf("\n\n%s%s**`%s`**  %s- %s %s", indent, listString, propName, getTypeString(propSchema), propSchema.Description, required))
+			if propSchema.Type == nil || propSchema.Type == "object" || propSchema.Type == "array" {
+				doc.WriteString(generateDoc(propSchema, indent+"  ", getRequiredMap(propSchema.Required)))
+			}
 		}
 	} else if schema.Type == "array" && schema.Items != nil {
-		doc.WriteString(fmt.Sprintf("%s#### Array Items:\n", indent))
 		doc.WriteString(generateDoc(schema.Items, indent+"  ", getRequiredMap(schema.Items.Required)))
 	}
 
 	if len(schema.OneOf) > 0 {
-		doc.WriteString(fmt.Sprintf("%s#### One of the following:\n", indent))
 		for i, subSchema := range schema.OneOf {
-			doc.WriteString(fmt.Sprintf("%s- Option %d:\n", indent, i+1))
-			doc.WriteString(generateDoc(subSchema, indent+"  ", getRequiredMap(subSchema.Required)))
+			doc.WriteString(fmt.Sprintf("\n\n%s *option %d* %s- %s", indent, i+1, getTypeString(subSchema), subSchema.Description))
+			doc.WriteString(generateDoc(subSchema, indent, getRequiredMap(subSchema.Required)))
 		}
 	}
 	if len(schema.AnyOf) > 0 {
-		doc.WriteString(fmt.Sprintf("%s#### Any of the following:\n", indent))
-		for i, subSchema := range schema.AnyOf {
-			doc.WriteString(fmt.Sprintf("%s- Option %d:\n", indent, i+1))
-			doc.WriteString(generateDoc(subSchema, indent+"  ", getRequiredMap(subSchema.Required)))
+		for _, subSchema := range schema.AnyOf {
+			doc.WriteString(generateDoc(subSchema, indent, getRequiredMap(subSchema.Required)))
 		}
 	}
 	if len(schema.AllOf) > 0 {
-		doc.WriteString(fmt.Sprintf("%s#### All of the following:\n", indent))
-		for i, subSchema := range schema.AllOf {
-			doc.WriteString(fmt.Sprintf("%s- Part %d:\n", indent, i+1))
-			doc.WriteString(generateDoc(subSchema, indent+"  ", getRequiredMap(subSchema.Required)))
+		for _, subSchema := range schema.AllOf {
+			doc.WriteString(generateDoc(subSchema, indent, getRequiredMap(subSchema.Required)))
 		}
 	}
 
@@ -215,7 +233,8 @@ func GenerateProjectDocsCmd(rootCmd *cobra.Command, ch *cmdutil.Helper) *cobra.C
 				resourceFilebuf.WriteString(fmt.Sprintf("title: %s\n", resource.Title))
 				resourceFilebuf.WriteString(fmt.Sprintf("sidebar_position: %d\n", sidebar_position))
 				resourceFilebuf.WriteString("---\n")
-
+				resourceFilebuf.WriteString(fmt.Sprintf("\n%s\n\n", resource.Description))
+				resourceFilebuf.WriteString("## Properties\n")
 				resourceFilebuf.WriteString(generateDoc(resource, "", requiredMap))
 
 				if err := os.WriteFile(filePath, []byte(resourceFilebuf.String()), 0644); err != nil {

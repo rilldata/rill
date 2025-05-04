@@ -59,6 +59,7 @@
           "description": "Defines project-wide default settings for explores. Unless overridden, individual explores will inherit these defaults"
         },
         "features": {
+          "description": "Enables or disables experimental or optional features using key-value pairs, where the key is the feature name and the value is a boolean",
           "oneOf": [
             {
               "type": "object",
@@ -72,8 +73,7 @@
                 "type": "string"
               }
             }
-          ],
-          "description": "Enables or disables experimental or optional features using key-value pairs, where the key is the feature name and the value is a boolean"
+          ]
         },
         "public_paths": {
           "type": "array",

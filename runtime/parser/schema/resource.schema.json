@@ -47,7 +47,9 @@
           "type": "object",
           "properties": {
             "type": {
-              "const": "alert"
+              "type": "string",
+              "const": "alert",
+              "description": "Refers to the resource type and must be `alert`"
             }
           },
           "required": [
@@ -207,7 +209,7 @@
     "api": {
       "type": "object",
       "title": "API YAML",
-      "description":"In your Rill project directory, create a new file name `<api-name>.yaml` in the `apis` directory containing a custom API definition. See comprehensive documentation on how to define and use [custom APIs](/integrate/custom-apis/index.md)",
+      "description": "In your Rill project directory, create a new file name `<api-name>.yaml` in the `apis` directory containing a custom API definition. See comprehensive documentation on how to define and use [custom APIs](/integrate/custom-apis/index.md)",
       "examples": [
         {
           "type": "api",
@@ -221,7 +223,9 @@
           "type": "object",
           "properties": {
             "type": {
-              "const": "api"
+              "type": "string",
+              "const": "api",
+              "description": "Refers to the resource type and must be `api`"
             }
           },
           "required": [
@@ -310,7 +314,9 @@
           "type": "object",
           "properties": {
             "type": {
-              "const": "canvas"
+              "type": "string",
+              "const": "canvas",
+              "description": "Refers to the resource type and must be `canvas`"
             }
           },
           "required": [
@@ -484,7 +490,9 @@
           "type": "object",
           "properties": {
             "type": {
-              "const": "component"
+              "type": "string",
+              "const": "component",
+              "description": "Refers to the resource type and must be `component`"
             }
           },
           "required": [
@@ -549,7 +557,9 @@
           "type": "object",
           "properties": {
             "type": {
-              "const": "connector"
+              "type": "string",
+              "const": "connector",
+              "description": "Refers to the resource type and must be `connector`"
             }
           },
           "required": [
@@ -634,7 +644,8 @@
               "type": "object",
               "properties": {
                 "driver": {
-                  "const": "athena"
+                  "type": "string",
+              "const": "athena"
                 }
               },
               "required": [
@@ -719,7 +730,8 @@
               "type": "object",
               "properties": {
                 "driver": {
-                  "const": "azure"
+                  "type": "string",
+              "const": "azure"
                 }
               },
               "required": [
@@ -796,7 +808,8 @@
               "type": "object",
               "properties": {
                 "driver": {
-                  "const": "clickhouse"
+                  "type": "string",
+              "const": "clickhouse"
                 }
               },
               "required": [
@@ -921,7 +934,8 @@
               "type": "object",
               "properties": {
                 "driver": {
-                  "const": "bigquery"
+                  "type": "string",
+              "const": "bigquery"
                 }
               },
               "required": [
@@ -986,7 +1000,8 @@
               "type": "object",
               "properties": {
                 "driver": {
-                  "const": "druid"
+                  "type": "string",
+              "const": "druid"
                 }
               },
               "required": [
@@ -1079,7 +1094,8 @@
               "type": "object",
               "properties": {
                 "driver": {
-                  "const": "duckdb"
+                  "type": "string",
+              "const": "duckdb"
                 }
               },
               "required": [
@@ -1172,7 +1188,8 @@
               "type": "object",
               "properties": {
                 "driver": {
-                  "const": "gcs"
+                  "type": "string",
+              "const": "gcs"
                 }
               },
               "required": [
@@ -1245,7 +1262,8 @@
               "type": "object",
               "properties": {
                 "driver": {
-                  "const": "https"
+                  "type": "string",
+              "const": "https"
                 }
               },
               "required": [
@@ -1313,7 +1331,8 @@
               "type": "object",
               "properties": {
                 "driver": {
-                  "const": "local_file"
+                  "type": "string",
+              "const": "local_file"
                 }
               },
               "required": [
@@ -1378,7 +1397,8 @@
               "type": "object",
               "properties": {
                 "driver": {
-                  "const": "motherduck"
+                  "type": "string",
+              "const": "motherduck"
                 }
               },
               "required": [
@@ -1443,7 +1463,8 @@
               "type": "object",
               "properties": {
                 "driver": {
-                  "const": "mysql"
+                  "type": "string",
+              "const": "mysql"
                 }
               },
               "required": [
@@ -1504,7 +1525,8 @@
               "type": "object",
               "properties": {
                 "driver": {
-                  "const": "pinot"
+                  "type": "string",
+              "const": "pinot"
                 }
               },
               "required": [
@@ -1601,7 +1623,8 @@
               "type": "object",
               "properties": {
                 "driver": {
-                  "const": "postgres"
+                  "type": "string",
+              "const": "postgres"
                 }
               },
               "required": [
@@ -1662,7 +1685,8 @@
               "type": "object",
               "properties": {
                 "driver": {
-                  "const": "redshift"
+                  "type": "string",
+              "const": "redshift"
                 }
               },
               "required": [
@@ -1735,7 +1759,8 @@
               "type": "object",
               "properties": {
                 "driver": {
-                  "const": "s3"
+                  "type": "string",
+              "const": "s3"
                 }
               },
               "required": [
@@ -1820,7 +1845,8 @@
               "type": "object",
               "properties": {
                 "driver": {
-                  "const": "salesforce"
+                  "type": "string",
+              "const": "salesforce"
                 }
               },
               "required": [
@@ -1897,7 +1923,8 @@
               "type": "object",
               "properties": {
                 "driver": {
-                  "const": "slack"
+                  "type": "string",
+              "const": "slack"
                 }
               },
               "required": [
@@ -1958,7 +1985,8 @@
               "type": "object",
               "properties": {
                 "driver": {
-                  "const": "snowflake"
+                  "type": "string",
+              "const": "snowflake"
                 }
               },
               "required": [
@@ -2023,7 +2051,8 @@
               "type": "object",
               "properties": {
                 "driver": {
-                  "const": "sqlite"
+                  "type": "string",
+              "const": "sqlite"
                 }
               },
               "required": [
@@ -2080,14 +2109,16 @@
     "explore": {
       "type": "object",
       "title": "Explore Dashboard YAML",
-      "description":"In your Rill project directory, create a explore dashboard, `<dashboard_name>.yaml`, file in the `dashboards` directory. Rill will ingest the dashboard definition next time you run `rill start`.",
+      "description": "In your Rill project directory, create a explore dashboard, `<dashboard_name>.yaml`, file in the `dashboards` directory. Rill will ingest the dashboard definition next time you run `rill start`.",
       "allOf": [
         {
           "title": "type",
           "type": "object",
           "properties": {
             "type": {
-              "const": "explore"
+              "type": "string",
+              "const": "explore",
+              "description": "Refers to the resource type and must be `explore`"
             }
           },
           "required": [
@@ -2123,9 +2154,6 @@
           "title": "explore_properties",
           "type": "object",
           "properties": {
-            "type": {
-              "const": "explore"
-            },
             "display_name": {
               "type": "string",
               "description": "Refers to the display name for the explore dashboard"
@@ -2143,11 +2171,11 @@
               "description": "Refers to the metrics view resource"
             },
             "dimensions": {
-              "description": "can be:\n1. The string '*'\n2. An array of strings\n3. An object with one of: 'regex', 'expr', or 'exclude'",
+              "description": "List of dimension names. Use '*' to select all dimensions (default) ",
               "$ref": "#/$defs/explore/$defs/explore_properties/$defs/field_selector_properties"
             },
             "measures": {
-              "description": "can be:\n1. The string '*'\n2. An array of strings\n3. An object with one of: 'regex', 'expr', or 'exclude'",
+              "description": " List of measure names. Use '*' to select all measures (default)",
               "$ref": "#/$defs/explore/$defs/explore_properties/$defs/field_selector_properties"
             },
             "theme": {
@@ -2229,7 +2257,8 @@
               "oneOf": [
                 {
                   "type": "string",
-                  "const": "*",
+                  "type": "string",
+              "const": "*",
                   "description": "Matches all fields"
                 },
                 {
@@ -2283,14 +2312,16 @@
     "metrics_view": {
       "type": "object",
       "title": "Metrics View YAML",
-      "description":"In your Rill project directory, create a metrics view, `<metrics_view>.yaml`, file in the `metrics` directory. Rill will ingest the metric view definition next time you run `rill start`.",
+      "description": "In your Rill project directory, create a metrics view, `<metrics_view>.yaml`, file in the `metrics` directory. Rill will ingest the metric view definition next time you run `rill start`.",
       "allOf": [
         {
           "title": "type",
           "type": "object",
           "properties": {
             "type": {
-              "const": "metrics_view"
+              "type": "string",
+              "const": "metrics_view",
+              "description": "Refers to the resource type and must be `metrics_view`"
             }
           },
           "required": [
@@ -2586,7 +2617,9 @@
           "type": "object",
           "properties": {
             "type": {
-              "const": "model"
+              "type": "string",
+              "const": "model",
+              "description": "Refers to the resource type and must be `model`"
             }
           },
           "required": [
@@ -2757,7 +2790,8 @@
               "type": "object",
               "properties": {
                 "connector": {
-                  "const": "athena"
+                  "type": "string",
+              "const": "athena"
                 }
               },
               "required": [
@@ -2779,7 +2813,8 @@
               "type": "object",
               "properties": {
                 "connector": {
-                  "const": "azure"
+                  "type": "string",
+              "const": "azure"
                 }
               },
               "required": [
@@ -2801,7 +2836,8 @@
               "type": "object",
               "properties": {
                 "connector": {
-                  "const": "clickhouse"
+                  "type": "string",
+              "const": "clickhouse"
                 }
               },
               "required": [
@@ -2823,7 +2859,8 @@
               "type": "object",
               "properties": {
                 "connector": {
-                  "const": "bigquery"
+                  "type": "string",
+              "const": "bigquery"
                 }
               },
               "required": [
@@ -2845,7 +2882,8 @@
               "type": "object",
               "properties": {
                 "connector": {
-                  "const": "druid"
+                  "type": "string",
+              "const": "druid"
                 }
               },
               "required": [
@@ -2867,7 +2905,8 @@
               "type": "object",
               "properties": {
                 "connector": {
-                  "const": "duckdb"
+                  "type": "string",
+              "const": "duckdb"
                 }
               },
               "required": [
@@ -2889,7 +2928,8 @@
               "type": "object",
               "properties": {
                 "connector": {
-                  "const": "gcs"
+                  "type": "string",
+              "const": "gcs"
                 }
               },
               "required": [
@@ -2911,7 +2951,8 @@
               "type": "object",
               "properties": {
                 "connector": {
-                  "const": "https"
+                  "type": "string",
+              "const": "https"
                 }
               },
               "required": [
@@ -2933,7 +2974,8 @@
               "type": "object",
               "properties": {
                 "connector": {
-                  "const": "local_file"
+                  "type": "string",
+              "const": "local_file"
                 }
               },
               "required": [
@@ -2955,7 +2997,8 @@
               "type": "object",
               "properties": {
                 "connector": {
-                  "const": "motherduck"
+                  "type": "string",
+              "const": "motherduck"
                 }
               },
               "required": [
@@ -2977,7 +3020,8 @@
               "type": "object",
               "properties": {
                 "connector": {
-                  "const": "mysql"
+                  "type": "string",
+              "const": "mysql"
                 }
               },
               "required": [
@@ -2999,7 +3043,8 @@
               "type": "object",
               "properties": {
                 "connector": {
-                  "const": "pinot"
+                  "type": "string",
+              "const": "pinot"
                 }
               },
               "required": [
@@ -3021,7 +3066,8 @@
               "type": "object",
               "properties": {
                 "connector": {
-                  "const": "postgres"
+                  "type": "string",
+              "const": "postgres"
                 }
               },
               "required": [
@@ -3043,7 +3089,8 @@
               "type": "object",
               "properties": {
                 "connector": {
-                  "const": "redshift"
+                  "type": "string",
+              "const": "redshift"
                 }
               },
               "required": [
@@ -3065,7 +3112,8 @@
               "type": "object",
               "properties": {
                 "connector": {
-                  "const": "s3"
+                  "type": "string",
+              "const": "s3"
                 }
               },
               "required": [
@@ -3087,7 +3135,8 @@
               "type": "object",
               "properties": {
                 "connector": {
-                  "const": "salesforce"
+                  "type": "string",
+              "const": "salesforce"
                 }
               },
               "required": [
@@ -3109,7 +3158,8 @@
               "type": "object",
               "properties": {
                 "connector": {
-                  "const": "snowflake"
+                  "type": "string",
+              "const": "snowflake"
                 }
               },
               "required": [
@@ -3131,7 +3181,8 @@
               "type": "object",
               "properties": {
                 "connector": {
-                  "const": "sqlite"
+                  "type": "string",
+              "const": "sqlite"
                 }
               },
               "required": [
@@ -3156,7 +3207,9 @@
           "type": "object",
           "properties": {
             "type": {
-              "const": "report"
+              "type": "string",
+              "const": "report",
+              "description": "Refers to the resource type and must be `report`"
             }
           },
           "required": [
@@ -3302,7 +3355,9 @@
           "type": "object",
           "properties": {
             "type": {
-              "const": "theme"
+              "type": "string",
+              "const": "theme",
+              "description": "Refers to the resource type and must be `theme`"
             }
           },
           "required": [

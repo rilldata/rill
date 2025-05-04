@@ -3,134 +3,46 @@ note: GENERATED. DO NOT EDIT.
 title: Component YAML
 sidebar_position: 4
 ---
-## Component YAML
-
-Type: `object`
-
-## Properties:
-#### All of the following:
-- Part 1:
-  ## type
-
-  Type: `object`
-
-  ## Properties:
-
-  - **type** _(required)_:
-    Type: `%!s(<nil>)`
-
-- Part 2:
-  ## common_properties
-
-  Type: `object`
-
-  ## Properties:
-
-  - **namespace**:
-    Optional value to group resources by. Prepended to the resource name as `<namespace>/<name>`.
-
-    Type: `string`
 
 
-  - **refs**:
-    List of resource references, each as a string or map.
 
-    Type: `array`
-
-    #### Array Items:
-      Type: `%!s(<nil>)`
-
-      #### One of the following:
-      - Option 1:
-        A string reference like 'resource-name' or 'Kind/resource-name'.
-
-        Type: `string`
-
-      - Option 2:
-        An object reference with at least a 'name' and 'type'.
-
-        Type: `object`
-
-        ## Properties:
-
-        - **name** _(required)_:
-          Type: `string`
+## Properties
 
 
-        - **type**:
-          Type: `string`
+**`type`**  - _[string]_ - Refers to the resource type and must be `component`  _(required)_
 
+**`name`**  - _[string]_ - Name is usually inferred from the filename, but can be specified manually. 
 
-  - **version**:
-    Version of the parser to use for this file. Enables backwards compatibility for breaking changes.
+**`namespace`**  - _[string]_ - Optional value to group resources by. Prepended to the resource name as `<namespace>/<name>`. 
 
-    Type: `integer`
+**`refs`**  - _[array]_ - List of resource references, each as a string or map. 
 
+     *option 1* - _[string]_ - A string reference like 'resource-name' or 'Kind/resource-name'.
 
-  - **name**:
-    Name is usually inferred from the filename, but can be specified manually.
+     *option 2* - _[object]_ - An object reference with at least a 'name' and 'type'.
 
-    Type: `string`
+    - **`name`**  - _[string]_ -   _(required)_
 
-- Part 3:
-  ## component_properties
+    - **`type`**  - _[string]_ -  
 
-  Type: `object`
+**`version`**  - _[integer]_ - Version of the parser to use for this file. Enables backwards compatibility for breaking changes. 
 
-  ## Properties:
+**`description`**  - _[string]_ -  
 
-  - **description**:
-    Type: `string`
+**`display_name`**  - _[string]_ - Refers to the display name for the component 
 
+**`input`**  - _[array of object]_ -  
 
-  - **display_name**:
-    Refers to the display name for the component
+    - **`name`**  - _[string]_ -   _(required)_
 
-    Type: `string`
+    - **`type`**  - _[string]_ -   _(required)_
 
+    - **`value`**  - The value can be of any type. 
 
-  - **input**:
-    Type: `array`
+**`output`**  - _[object]_ -  
 
-    #### Array Items:
-      Type: `object`
+  - **`name`**  - _[string]_ -   _(required)_
 
-      ## Properties:
+  - **`type`**  - _[string]_ -   _(required)_
 
-      - **name** _(required)_:
-        Type: `string`
-
-
-      - **type** _(required)_:
-        Type: `string`
-
-
-      - **value**:
-        The value can be of any type.
-
-        Type: `[string number boolean object array null]`
-
-
-  - **output**:
-    Type: `object`
-
-    ## Properties:
-
-    - **name** _(required)_:
-      Type: `string`
-
-
-    - **type** _(required)_:
-      Type: `string`
-
-
-    - **value**:
-      The value can be of any type.
-
-      Type: `[string number boolean object array null]`
-
-- Part 4:
-  ## environment_overrides
-
-  Type: `%!s(<nil>)`
-
+  - **`value`**  - The value can be of any type. 

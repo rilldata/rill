@@ -3,1432 +3,372 @@ note: GENERATED. DO NOT EDIT.
 title: Model YAML
 sidebar_position: 8
 ---
-## Model YAML
 
-Type: `object`
 
-## Properties:
-#### All of the following:
-- Part 1:
-  ## type
 
-  Type: `object`
+## Properties
 
-  ## Properties:
 
-  - **type** _(required)_:
-    Type: `%!s(<nil>)`
+**`type`**  - _[string]_ - Refers to the resource type and must be `model`  _(required)_
 
-- Part 2:
-  ## common_properties
+**`version`**  - _[integer]_ - Version of the parser to use for this file. Enables backwards compatibility for breaking changes. 
 
-  Type: `object`
+**`name`**  - _[string]_ - Name is usually inferred from the filename, but can be specified manually. 
 
-  ## Properties:
+**`namespace`**  - _[string]_ - Optional value to group resources by. Prepended to the resource name as `<namespace>/<name>`. 
 
-  - **name**:
-    Name is usually inferred from the filename, but can be specified manually.
+**`refs`**  - _[array]_ - List of resource references, each as a string or map. 
 
-    Type: `string`
+     *option 1* - _[string]_ - A string reference like 'resource-name' or 'Kind/resource-name'.
 
+     *option 2* - _[object]_ - An object reference with at least a 'name' and 'type'.
 
-  - **namespace**:
-    Optional value to group resources by. Prepended to the resource name as `<namespace>/<name>`.
+    - **`name`**  - _[string]_ -   _(required)_
 
-    Type: `string`
+    - **`type`**  - _[string]_ -  
 
+ *option 1* - _[object]_ - 
 
-  - **refs**:
-    List of resource references, each as a string or map.
+**`connector`**  - _[string]_ -   _(required)_
 
-    Type: `array`
+**`aws_secret_access_key`**  - _[string]_ - AWS Secret Access Key for Athena access 
 
-    #### Array Items:
-      Type: `%!s(<nil>)`
+**`external_id`**  - _[string]_ - Optional External ID for assuming a role 
 
-      #### One of the following:
-      - Option 1:
-        A string reference like 'resource-name' or 'Kind/resource-name'.
+**`managed`**  - _[any of]_ - Boolean or map of properties 
 
-        Type: `string`
+**`role_arn`**  - _[string]_ - Optional AWS Role ARN to assume when accessing Athena 
 
-      - Option 2:
-        An object reference with at least a 'name' and 'type'.
+**`role_session_name`**  - _[string]_ - Optional Session name when assuming the role 
 
-        Type: `object`
+**`allow_host_access`**  - _[boolean]_ - Allow access to host environment configuration 
 
-        ## Properties:
+**`aws_access_key_id`**  - _[string]_ - AWS Access Key ID for Athena access 
 
-        - **name** _(required)_:
-          Type: `string`
+**`aws_access_token`**  - _[string]_ - Optional AWS session token for temporary credentials 
 
+ *option 2* - _[object]_ - 
 
-        - **type**:
-          Type: `string`
+**`connector`**  - _[string]_ -   _(required)_
 
+**`azure_storage_key`**  - _[string]_ - Azure storage access key 
 
-  - **version**:
-    Version of the parser to use for this file. Enables backwards compatibility for breaking changes.
+**`azure_storage_sas_token`**  - _[string]_ - Optional azure SAS token for authentication 
 
-    Type: `integer`
+**`managed`**  - _[any of]_ - Boolean or map of properties 
 
-- Part 3:
-  ## connector_properties
+**`allow_host_access`**  - _[boolean]_ - Allow access to host environment configuration 
 
-  Type: `object`
+**`azure_storage_account`**  - _[string]_ - Azure storage account name 
 
-  ## Properties:
-  #### One of the following:
-  - Option 1:
-    ## athena
+**`azure_storage_connection_string`**  - _[string]_ - Optional azure connection string for storage account 
 
-    Type: `object`
+ *option 3* - _[object]_ - 
 
-    ## Properties:
-    #### All of the following:
-    - Part 1:
-      Type: `object`
+**`connector`**  - _[string]_ -   _(required)_
 
-      ## Properties:
+**`managed`**  - _[any of]_ - Boolean or map of properties 
 
-      - **connector** _(required)_:
-        Type: `%!s(<nil>)`
+**`allow_host_access`**  - _[boolean]_ - Allow access to host environment configuration 
 
-    - Part 2:
-      ## athena_properties
+**`google_application_credentials`**  - _[string]_ - Path to the Google Cloud credentials JSON file 
 
-      Type: `object`
+ *option 4* - _[object]_ - 
 
-      ## Properties:
+**`connector`**  - _[string]_ -   _(required)_
 
-      - **aws_access_token**:
-        Optional AWS session token for temporary credentials
+**`conn_max_lifetime`**  - _[string]_ - Maximum time a connection may be reused 
 
-        Type: `string`
+**`dial_timeout`**  - _[string]_ - Timeout for dialing the ClickHouse server 
 
+**`max_idle_conns`**  - _[integer]_ - Maximum number of idle connections in the pool 
 
-      - **aws_secret_access_key**:
-        AWS Secret Access Key for Athena access
+**`max_open_conns`**  - _[integer]_ - Maximum number of open connections to the database 
 
-        Type: `string`
+**`port`**  - _[integer]_ - Port where the ClickHouse instance is accessible 
 
+**`read_timeout`**  - _[string]_ - Maximum time for a connection to read data 
 
-      - **external_id**:
-        Optional External ID for assuming a role
+**`settings_override`**  - _[string]_ - override the default settings used in queries. example `readonly = 1, session_timezone = 'UTC'` 
 
-        Type: `string`
+**`database`**  - _[string]_ - Name of the ClickHouse database within the cluster 
 
+**`managed`**  - _[any of]_ - Boolean or map of properties 
 
-      - **managed**:
-        Boolean or map of properties
+**`password`**  - _[string]_ - Password for authentication 
 
-        Type: `%!s(<nil>)`
+**`username`**  - _[string]_ - Username for authentication 
 
-        #### Any of the following:
-        - Option 1:
-          Type: `boolean`
+**`cluster`**  - _[string]_ - Cluster name, required for running distributed queries 
 
-        - Option 2:
-          Type: `object`
+**`host`**  - _[string]_ - Host where the ClickHouse instance is running 
 
-          ## Properties:
+**`ssl`**  - _[boolean]_ - Indicates whether a secured SSL connection is required 
 
-      - **role_arn**:
-        Optional AWS Role ARN to assume when accessing Athena
+**`can_scale_to_zero`**  - _[boolean]_ - Indicates if the database can scale to zero 
 
-        Type: `string`
+**`dsn`**  - _[string]_ - DSN(Data Source Name) for the ClickHouse connection 
 
+**`embed_port`**  - _[integer]_ - Port to run ClickHouse locally (0 for random port) 
 
-      - **role_session_name**:
-        Optional Session name when assuming the role
+**`log_queries`**  - _[boolean]_ - Controls whether to log raw SQL queries 
 
-        Type: `string`
+ *option 5* - _[object]_ - 
 
+**`connector`**  - _[string]_ -   _(required)_
 
-      - **allow_host_access**:
-        Allow access to host environment configuration
+**`dsn`**  - _[string]_ - Data Source Name (DSN) for connecting to Druid 
 
-        Type: `boolean`
+**`host`**  - _[string]_ - Hostname of the Druid coordinator or broker 
 
+**`password`**  - _[string]_ - Password for authenticating with Druid 
 
-      - **aws_access_key_id**:
-        AWS Access Key ID for Athena access
+**`ssl`**  - _[boolean]_ - Enable SSL for secure connection 
 
-        Type: `string`
+**`log_queries`**  - _[boolean]_ - Log raw SQL queries sent to Druid 
 
-  - Option 2:
-    ## azure
+**`managed`**  - _[any of]_ - Boolean or map of properties 
 
-    Type: `object`
+**`max_open_conns`**  - _[integer]_ - Maximum number of open database connections (0 = default, -1 = unlimited) 
 
-    ## Properties:
-    #### All of the following:
-    - Part 1:
-      Type: `object`
+**`port`**  - _[integer]_ - Port number of the Druid service 
 
-      ## Properties:
+**`skip_version_check`**  - _[boolean]_ - Skip checking Druid version compatibility 
 
-      - **connector** _(required)_:
-        Type: `%!s(<nil>)`
+**`username`**  - _[string]_ - Username for authenticating with Druid 
 
-    - Part 2:
-      ## azure_properties
+ *option 6* - _[object]_ - 
 
-      Type: `object`
+**`connector`**  - _[string]_ -   _(required)_
 
-      ## Properties:
+**`allow_host_access`**  - _[boolean]_ - Whether access to the local environment and file system is allowed 
 
-      - **managed**:
-        Boolean or map of properties
+**`boot_queries`**  - _[string]_ - SQL to run when initializing a new connection, before extensions and defaults 
 
-        Type: `%!s(<nil>)`
+**`cpu`**  - _[integer]_ - Number of CPU cores available to the database 
 
-        #### Any of the following:
-        - Option 1:
-          Type: `boolean`
+**`init_sql`**  - _[string]_ - SQL to run when initializing a new connection, after extensions and defaults 
 
-        - Option 2:
-          Type: `object`
+**`log_queries`**  - _[boolean]_ - Whether to log raw SQL queries executed through OLAP 
 
-          ## Properties:
+**`managed`**  - _[any of]_ - Boolean or map of properties 
 
-      - **allow_host_access**:
-        Allow access to host environment configuration
+**`memory_limit_gb`**  - _[integer]_ - Amount of memory in GB available to the database 
 
-        Type: `boolean`
+**`path`**  - _[string]_ - File path to the DuckDB database file 
 
+**`pool_size`**  - _[integer]_ - Number of concurrent connections and queries allowed 
 
-      - **azure_storage_account**:
-        Azure storage account name
+**`read_write_ratio`**  - _[number]_ - Ratio of resources allocated to the read database; used to divide CPU and memory 
 
-        Type: `string`
+ *option 7* - _[object]_ - 
 
+**`connector`**  - _[string]_ -   _(required)_
 
-      - **azure_storage_connection_string**:
-        Optional azure connection string for storage account
+**`allow_host_access`**  - _[boolean]_ - Allow access to host environment configuration 
 
-        Type: `string`
+**`google_application_credentials`**  - _[string]_ - Google Cloud credentials JSON string 
 
+**`key_id`**  - _[string]_ - Optional S3-compatible Key ID when used in compatibility mode 
 
-      - **azure_storage_key**:
-        Azure storage access key
+**`managed`**  - _[any of]_ - Boolean or map of properties 
 
-        Type: `string`
+**`secret`**  - _[string]_ - Optional S3-compatible Secret when used in compatibility mode 
 
+ *option 8* - _[object]_ - 
 
-      - **azure_storage_sas_token**:
-        Optional azure SAS token for authentication
+**`connector`**  - _[string]_ -   _(required)_
 
-        Type: `string`
+**`headers`**  - _[object]_ - HTTP headers to include in the request 
 
-  - Option 3:
-    ## bigquery
+**`managed`**  - _[any of]_ - Boolean or map of properties 
 
-    Type: `object`
+**`path`**  - _[string]_ - The full HTTPS URI to fetch data from 
 
-    ## Properties:
-    #### All of the following:
-    - Part 1:
-      Type: `object`
+ *option 9* - _[object]_ - 
 
-      ## Properties:
+**`connector`**  - _[string]_ -   _(required)_
 
-      - **connector** _(required)_:
-        Type: `%!s(<nil>)`
+**`allow_host_access`**  - _[boolean]_ - Flag to indicate if access to host-level file paths is permitted 
 
-    - Part 2:
-      ## bigquery_properties
+**`dsn`**  - _[string]_ - Data Source Name (DSN) indicating the file path or location of the local file 
 
-      Type: `object`
+**`managed`**  - _[any of]_ - Boolean or map of properties 
 
-      ## Properties:
+ *option 10* - _[object]_ - 
 
-      - **allow_host_access**:
-        Allow access to host environment configuration
+**`connector`**  - _[string]_ -   _(required)_
 
-        Type: `boolean`
+**`dsn`**  - _[string]_ - Data Source Name (DSN) specifying the MotherDuck connection endpoint 
 
+**`managed`**  - _[any of]_ - Boolean or map of properties 
 
-      - **google_application_credentials**:
-        Path to the Google Cloud credentials JSON file
+**`token`**  - _[string]_ - Authentication token for accessing MotherDuck (secret) 
 
-        Type: `string`
+ *option 11* - _[object]_ - 
 
+**`connector`**  - _[string]_ -   _(required)_
 
-      - **managed**:
-        Boolean or map of properties
+**`dsn`**  - _[string]_ - DSN(Data Source Name) for the mysql connection 
 
-        Type: `%!s(<nil>)`
+**`managed`**  - _[any of]_ - Boolean or map of properties 
 
-        #### Any of the following:
-        - Option 1:
-          Type: `boolean`
+ *option 12* - _[object]_ - 
 
-        - Option 2:
-          Type: `object`
+**`connector`**  - _[string]_ -   _(required)_
 
-          ## Properties:
-  - Option 4:
-    ## clickhouse
+**`broker_host`**  - _[string]_ - Hostname of the Pinot broker 
 
-    Type: `object`
+**`broker_port`**  - _[integer]_ - Port number for the Pinot broker 
 
-    ## Properties:
-    #### All of the following:
-    - Part 1:
-      Type: `object`
+**`controller_port`**  - _[integer]_ - Port number for the Pinot controller 
 
-      ## Properties:
+**`dsn`**  - _[string]_ - DSN(Data Source Name) for the Pinot connection 
 
-      - **connector** _(required)_:
-        Type: `%!s(<nil>)`
+**`managed`**  - _[any of]_ - Boolean or map of properties 
 
-    - Part 2:
-      ## clickhouse_properties
+**`max_open_conns`**  - _[integer]_ - Maximum number of open connections to the Pinot database 
 
-      Type: `object`
+**`password`**  - _[string]_ - Password for authenticating with Pinot 
 
-      ## Properties:
+**`ssl`**  - _[boolean]_ - Enable SSL connection to Pinot 
 
-      - **can_scale_to_zero**:
-        Indicates if the database can scale to zero
+**`controller_host`**  - _[string]_ - Hostname of the Pinot controller 
 
-        Type: `boolean`
+**`log_queries`**  - _[boolean]_ - Log raw SQL queries executed through Pinot 
 
+**`username`**  - _[string]_ - Username for authenticating with Pinot 
 
-      - **cluster**:
-        Cluster name, required for running distributed queries
+ *option 13* - _[object]_ - 
 
-        Type: `string`
+**`connector`**  - _[string]_ -   _(required)_
 
+**`dsn`**  - _[string]_ - DSN(Data Source Name) for the postgres connection 
 
-      - **dsn**:
-        DSN(Data Source Name) for the ClickHouse connection
+**`managed`**  - _[any of]_ - Boolean or map of properties 
 
-        Type: `string`
+ *option 14* - _[object]_ - 
 
+**`connector`**  - _[string]_ -   _(required)_
 
-      - **password**:
-        Password for authentication
+**`aws_access_key_id`**  - _[string]_ - AWS access key ID for authentication 
 
-        Type: `string`
+**`aws_access_token`**  - _[string]_ - AWS session token for temporary credentials (optional) 
 
+**`aws_secret_access_key`**  - _[string]_ - AWS secret access key for authentication 
 
-      - **read_timeout**:
-        Maximum time for a connection to read data
+**`managed`**  - _[any of]_ - Boolean or map of properties 
 
-        Type: `string`
+**`allow_host_access`**  - _[boolean]_ - Allow access to host environment configuration 
 
+ *option 15* - _[object]_ - 
 
-      - **settings_override**:
-        override the default settings used in queries. example `readonly = 1, session_timezone = 'UTC'`
+**`connector`**  - _[string]_ -   _(required)_
 
-        Type: `string`
+**`retain_files`**  - _[boolean]_ - Whether to retain intermediate files after processing 
 
+**`allow_host_access`**  - _[boolean]_ - Allow access to host environment configuration 
 
-      - **ssl**:
-        Indicates whether a secured SSL connection is required
+**`aws_access_key_id`**  - _[string]_ - AWS Access Key ID used for authentication 
 
-        Type: `boolean`
+**`aws_access_token`**  - _[string]_ - Optional AWS session token for temporary credentials 
 
+**`aws_secret_access_key`**  - _[string]_ - AWS Secret Access Key used for authentication 
 
-      - **dial_timeout**:
-        Timeout for dialing the ClickHouse server
+**`endpoint`**  - _[string]_ - Optional custom endpoint URL for S3-compatible storage 
 
-        Type: `string`
+**`managed`**  - _[any of]_ - Boolean or map of properties 
 
+**`region`**  - _[string]_ - AWS region of the S3 bucket 
 
-      - **host**:
-        Host where the ClickHouse instance is running
+ *option 16* - _[object]_ - 
 
-        Type: `string`
+**`connector`**  - _[string]_ -   _(required)_
 
+**`client_id`**  - _[string]_ - Client ID used for Salesforce OAuth authentication 
 
-      - **log_queries**:
-        Controls whether to log raw SQL queries
+**`endpoint`**  - _[string]_ - Salesforce API endpoint URL 
 
-        Type: `boolean`
+**`key`**  - _[string]_ - Authentication key for Salesforce (secret) 
 
+**`managed`**  - _[any of]_ - Boolean or map of properties 
 
-      - **managed**:
-        Boolean or map of properties
+**`password`**  - _[string]_ - Salesforce account password (secret) 
 
-        Type: `%!s(<nil>)`
+**`username`**  - _[string]_ - Salesforce account username 
 
-        #### Any of the following:
-        - Option 1:
-          Type: `boolean`
+ *option 17* - _[object]_ - 
 
-        - Option 2:
-          Type: `object`
+**`connector`**  - _[string]_ -   _(required)_
 
-          ## Properties:
+**`dsn`**  - _[string]_ - DSN (Data Source Name) for the Snowflake connection 
 
-      - **max_idle_conns**:
-        Maximum number of idle connections in the pool
+**`managed`**  - _[any of]_ - Boolean or map of properties 
 
-        Type: `integer`
+**`parallel_fetch_limit`**  - _[integer]_ - Maximum number of concurrent fetches during query execution 
 
+ *option 18* - _[object]_ - 
 
-      - **database**:
-        Name of the ClickHouse database within the cluster
+**`connector`**  - _[string]_ -   _(required)_
 
-        Type: `string`
+**`dsn`**  - _[string]_ - DSN(Data Source Name) for the sqlite connection 
 
+**`managed`**  - _[any of]_ - Boolean or map of properties 
 
-      - **embed_port**:
-        Port to run ClickHouse locally (0 for random port)
+**`output`**  - _[object]_ - to define the properties of output 
 
-        Type: `integer`
+  - **`connector`**  - _[string]_ - Refers to the connector type for the output table  _(required)_
 
+**`partitions_watermark`**  - _[string]_ - Refers to a customizable timestamp that can be set to check if an object has been updated (optional). 
 
-      - **port**:
-        Port where the ClickHouse instance is accessible
+**`refresh`**  - _[object]_ - Specifies the refresh schedule that Rill should follow to re-ingest and update the underlying model data  
 
-        Type: `integer`
+  - **`time_zone`**  - _[string]_ - Time zone to interpret the schedule in (e.g., 'UTC', 'America/Los_Angeles'). 
 
+  - **`cron`**  - _[string]_ - A cron expression that defines the execution schedule 
 
-      - **username**:
-        Username for authentication
+  - **`disable`**  - _[boolean]_ - If true, disables the resource without deleting it. 
 
-        Type: `string`
+  - **`every`**  - _[string]_ - Run at a fixed interval using a Go duration string (e.g., '1h', '30m', '24h'). See: https://pkg.go.dev/time#ParseDuration 
 
+  - **`ref_update`**  - _[boolean]_ - If true, allows the resource to run when a dependency updates. 
 
-      - **conn_max_lifetime**:
-        Maximum time a connection may be reused
+  - **`run_in_dev`**  - _[boolean]_ - If true, allows the schedule to run in development mode. 
 
-        Type: `string`
+**`stage`**  - _[object]_ - in the case of staging models, where an input source does not support direct write to the output and a staging table is required 
 
+  - **`connector`**  - _[string]_ - Refers to the connector type for the staging table  _(required)_
 
-      - **max_open_conns**:
-        Maximum number of open connections to the database
+**`incremental`**  - _[boolean]_ - whether incremental modeling is required (optional) 
 
-        Type: `integer`
+**`materialize`**  - _[boolean]_ - models will be materialized in olap 
 
-  - Option 5:
-    ## druid
+**`partitions`**  - _[object]_ - Refers to the how your data is partitioned, cannot be used with state. (optional) 
 
-    Type: `object`
+   *option 1* - 
 
-    ## Properties:
-    #### All of the following:
-    - Part 1:
-      Type: `object`
+   *option 2* - 
 
-      ## Properties:
+   *option 3* - 
 
-      - **connector** _(required)_:
-        Type: `%!s(<nil>)`
+   *option 4* - 
 
-    - Part 2:
-      ## druid_properties
+   *option 5* - 
 
-      Type: `object`
+**`partitions_concurrency`**  - _[integer]_ - Refers to the number of concurrent partitions that can be read at the same time (optional). 
 
-      ## Properties:
+**`sql`**  - _[string]_ - Raw SQL query to run against source 
 
-      - **managed**:
-        Boolean or map of properties
+**`state`**  - _[object]_ - Refers to the explicitly defined state of your model, cannot be used with partitions (optional) 
 
-        Type: `%!s(<nil>)`
+   *option 1* - 
 
-        #### Any of the following:
-        - Option 1:
-          Type: `boolean`
+   *option 2* - 
 
-        - Option 2:
-          Type: `object`
+   *option 3* - 
 
-          ## Properties:
+   *option 4* - 
 
-      - **max_open_conns**:
-        Maximum number of open database connections (0 = default, -1 = unlimited)
+   *option 5* - 
 
-        Type: `integer`
-
-
-      - **password**:
-        Password for authenticating with Druid
-
-        Type: `string`
-
-
-      - **port**:
-        Port number of the Druid service
-
-        Type: `integer`
-
-
-      - **dsn**:
-        Data Source Name (DSN) for connecting to Druid
-
-        Type: `string`
-
-
-      - **host**:
-        Hostname of the Druid coordinator or broker
-
-        Type: `string`
-
-
-      - **log_queries**:
-        Log raw SQL queries sent to Druid
-
-        Type: `boolean`
-
-
-      - **skip_version_check**:
-        Skip checking Druid version compatibility
-
-        Type: `boolean`
-
-
-      - **ssl**:
-        Enable SSL for secure connection
-
-        Type: `boolean`
-
-
-      - **username**:
-        Username for authenticating with Druid
-
-        Type: `string`
-
-  - Option 6:
-    ## duckdb
-
-    Type: `object`
-
-    ## Properties:
-    #### All of the following:
-    - Part 1:
-      Type: `object`
-
-      ## Properties:
-
-      - **connector** _(required)_:
-        Type: `%!s(<nil>)`
-
-    - Part 2:
-      ## duckdb_properties
-
-      Type: `object`
-
-      ## Properties:
-
-      - **init_sql**:
-        SQL to run when initializing a new connection, after extensions and defaults
-
-        Type: `string`
-
-
-      - **log_queries**:
-        Whether to log raw SQL queries executed through OLAP
-
-        Type: `boolean`
-
-
-      - **managed**:
-        Boolean or map of properties
-
-        Type: `%!s(<nil>)`
-
-        #### Any of the following:
-        - Option 1:
-          Type: `boolean`
-
-        - Option 2:
-          Type: `object`
-
-          ## Properties:
-
-      - **path**:
-        File path to the DuckDB database file
-
-        Type: `string`
-
-
-      - **pool_size**:
-        Number of concurrent connections and queries allowed
-
-        Type: `integer`
-
-
-      - **read_write_ratio**:
-        Ratio of resources allocated to the read database; used to divide CPU and memory
-
-        Type: `number`
-
-
-      - **boot_queries**:
-        SQL to run when initializing a new connection, before extensions and defaults
-
-        Type: `string`
-
-
-      - **cpu**:
-        Number of CPU cores available to the database
-
-        Type: `integer`
-
-
-      - **memory_limit_gb**:
-        Amount of memory in GB available to the database
-
-        Type: `integer`
-
-
-      - **allow_host_access**:
-        Whether access to the local environment and file system is allowed
-
-        Type: `boolean`
-
-  - Option 7:
-    ## gcs
-
-    Type: `object`
-
-    ## Properties:
-    #### All of the following:
-    - Part 1:
-      Type: `object`
-
-      ## Properties:
-
-      - **connector** _(required)_:
-        Type: `%!s(<nil>)`
-
-    - Part 2:
-      ## gcs_properties
-
-      Type: `object`
-
-      ## Properties:
-
-      - **google_application_credentials**:
-        Google Cloud credentials JSON string
-
-        Type: `string`
-
-
-      - **key_id**:
-        Optional S3-compatible Key ID when used in compatibility mode
-
-        Type: `string`
-
-
-      - **managed**:
-        Boolean or map of properties
-
-        Type: `%!s(<nil>)`
-
-        #### Any of the following:
-        - Option 1:
-          Type: `boolean`
-
-        - Option 2:
-          Type: `object`
-
-          ## Properties:
-
-      - **secret**:
-        Optional S3-compatible Secret when used in compatibility mode
-
-        Type: `string`
-
-
-      - **allow_host_access**:
-        Allow access to host environment configuration
-
-        Type: `boolean`
-
-  - Option 8:
-    ## https
-
-    Type: `object`
-
-    ## Properties:
-    #### All of the following:
-    - Part 1:
-      Type: `object`
-
-      ## Properties:
-
-      - **connector** _(required)_:
-        Type: `%!s(<nil>)`
-
-    - Part 2:
-      ## https_properties
-
-      Type: `object`
-
-      ## Properties:
-
-      - **headers**:
-        HTTP headers to include in the request
-
-        Type: `object`
-
-        ## Properties:
-
-      - **managed**:
-        Boolean or map of properties
-
-        Type: `%!s(<nil>)`
-
-        #### Any of the following:
-        - Option 1:
-          Type: `boolean`
-
-        - Option 2:
-          Type: `object`
-
-          ## Properties:
-
-      - **path**:
-        The full HTTPS URI to fetch data from
-
-        Type: `string`
-
-  - Option 9:
-    ## local_file
-
-    Type: `object`
-
-    ## Properties:
-    #### All of the following:
-    - Part 1:
-      Type: `object`
-
-      ## Properties:
-
-      - **connector** _(required)_:
-        Type: `%!s(<nil>)`
-
-    - Part 2:
-      ## local_file_properties
-
-      Type: `object`
-
-      ## Properties:
-
-      - **allow_host_access**:
-        Flag to indicate if access to host-level file paths is permitted
-
-        Type: `boolean`
-
-
-      - **dsn**:
-        Data Source Name (DSN) indicating the file path or location of the local file
-
-        Type: `string`
-
-
-      - **managed**:
-        Boolean or map of properties
-
-        Type: `%!s(<nil>)`
-
-        #### Any of the following:
-        - Option 1:
-          Type: `boolean`
-
-        - Option 2:
-          Type: `object`
-
-          ## Properties:
-  - Option 10:
-    ## motherduck
-
-    Type: `object`
-
-    ## Properties:
-    #### All of the following:
-    - Part 1:
-      Type: `object`
-
-      ## Properties:
-
-      - **connector** _(required)_:
-        Type: `%!s(<nil>)`
-
-    - Part 2:
-      ## motherduck_properties
-
-      Type: `object`
-
-      ## Properties:
-
-      - **dsn**:
-        Data Source Name (DSN) specifying the MotherDuck connection endpoint
-
-        Type: `string`
-
-
-      - **managed**:
-        Boolean or map of properties
-
-        Type: `%!s(<nil>)`
-
-        #### Any of the following:
-        - Option 1:
-          Type: `boolean`
-
-        - Option 2:
-          Type: `object`
-
-          ## Properties:
-
-      - **token**:
-        Authentication token for accessing MotherDuck (secret)
-
-        Type: `string`
-
-  - Option 11:
-    ## mysql
-
-    Type: `object`
-
-    ## Properties:
-    #### All of the following:
-    - Part 1:
-      Type: `object`
-
-      ## Properties:
-
-      - **connector** _(required)_:
-        Type: `%!s(<nil>)`
-
-    - Part 2:
-      ## mysql_properties
-
-      Type: `object`
-
-      ## Properties:
-
-      - **dsn**:
-        DSN(Data Source Name) for the mysql connection
-
-        Type: `string`
-
-
-      - **managed**:
-        Boolean or map of properties
-
-        Type: `%!s(<nil>)`
-
-        #### Any of the following:
-        - Option 1:
-          Type: `boolean`
-
-        - Option 2:
-          Type: `object`
-
-          ## Properties:
-  - Option 12:
-    ## pinot
-
-    Type: `object`
-
-    ## Properties:
-    #### All of the following:
-    - Part 1:
-      Type: `object`
-
-      ## Properties:
-
-      - **connector** _(required)_:
-        Type: `%!s(<nil>)`
-
-    - Part 2:
-      ## pinot_properties
-
-      Type: `object`
-
-      ## Properties:
-
-      - **managed**:
-        Boolean or map of properties
-
-        Type: `%!s(<nil>)`
-
-        #### Any of the following:
-        - Option 1:
-          Type: `boolean`
-
-        - Option 2:
-          Type: `object`
-
-          ## Properties:
-
-      - **max_open_conns**:
-        Maximum number of open connections to the Pinot database
-
-        Type: `integer`
-
-
-      - **ssl**:
-        Enable SSL connection to Pinot
-
-        Type: `boolean`
-
-
-      - **broker_host**:
-        Hostname of the Pinot broker
-
-        Type: `string`
-
-
-      - **password**:
-        Password for authenticating with Pinot
-
-        Type: `string`
-
-
-      - **username**:
-        Username for authenticating with Pinot
-
-        Type: `string`
-
-
-      - **broker_port**:
-        Port number for the Pinot broker
-
-        Type: `integer`
-
-
-      - **controller_host**:
-        Hostname of the Pinot controller
-
-        Type: `string`
-
-
-      - **controller_port**:
-        Port number for the Pinot controller
-
-        Type: `integer`
-
-
-      - **dsn**:
-        DSN(Data Source Name) for the Pinot connection
-
-        Type: `string`
-
-
-      - **log_queries**:
-        Log raw SQL queries executed through Pinot
-
-        Type: `boolean`
-
-  - Option 13:
-    ## postgres
-
-    Type: `object`
-
-    ## Properties:
-    #### All of the following:
-    - Part 1:
-      Type: `object`
-
-      ## Properties:
-
-      - **connector** _(required)_:
-        Type: `%!s(<nil>)`
-
-    - Part 2:
-      ## postgres_properties
-
-      Type: `object`
-
-      ## Properties:
-
-      - **managed**:
-        Boolean or map of properties
-
-        Type: `%!s(<nil>)`
-
-        #### Any of the following:
-        - Option 1:
-          Type: `boolean`
-
-        - Option 2:
-          Type: `object`
-
-          ## Properties:
-
-      - **dsn**:
-        DSN(Data Source Name) for the postgres connection
-
-        Type: `string`
-
-  - Option 14:
-    ## redshift
-
-    Type: `object`
-
-    ## Properties:
-    #### All of the following:
-    - Part 1:
-      Type: `object`
-
-      ## Properties:
-
-      - **connector** _(required)_:
-        Type: `%!s(<nil>)`
-
-    - Part 2:
-      ## redshift_properties
-
-      Type: `object`
-
-      ## Properties:
-
-      - **allow_host_access**:
-        Allow access to host environment configuration
-
-        Type: `boolean`
-
-
-      - **aws_access_key_id**:
-        AWS access key ID for authentication
-
-        Type: `string`
-
-
-      - **aws_access_token**:
-        AWS session token for temporary credentials (optional)
-
-        Type: `string`
-
-
-      - **aws_secret_access_key**:
-        AWS secret access key for authentication
-
-        Type: `string`
-
-
-      - **managed**:
-        Boolean or map of properties
-
-        Type: `%!s(<nil>)`
-
-        #### Any of the following:
-        - Option 1:
-          Type: `boolean`
-
-        - Option 2:
-          Type: `object`
-
-          ## Properties:
-  - Option 15:
-    ## s3
-
-    Type: `object`
-
-    ## Properties:
-    #### All of the following:
-    - Part 1:
-      Type: `object`
-
-      ## Properties:
-
-      - **connector** _(required)_:
-        Type: `%!s(<nil>)`
-
-    - Part 2:
-      ## s3_properties
-
-      Type: `object`
-
-      ## Properties:
-
-      - **managed**:
-        Boolean or map of properties
-
-        Type: `%!s(<nil>)`
-
-        #### Any of the following:
-        - Option 1:
-          Type: `boolean`
-
-        - Option 2:
-          Type: `object`
-
-          ## Properties:
-
-      - **region**:
-        AWS region of the S3 bucket
-
-        Type: `string`
-
-
-      - **retain_files**:
-        Whether to retain intermediate files after processing
-
-        Type: `boolean`
-
-
-      - **allow_host_access**:
-        Allow access to host environment configuration
-
-        Type: `boolean`
-
-
-      - **aws_access_key_id**:
-        AWS Access Key ID used for authentication
-
-        Type: `string`
-
-
-      - **aws_access_token**:
-        Optional AWS session token for temporary credentials
-
-        Type: `string`
-
-
-      - **aws_secret_access_key**:
-        AWS Secret Access Key used for authentication
-
-        Type: `string`
-
-
-      - **endpoint**:
-        Optional custom endpoint URL for S3-compatible storage
-
-        Type: `string`
-
-  - Option 16:
-    ## salesforce
-
-    Type: `object`
-
-    ## Properties:
-    #### All of the following:
-    - Part 1:
-      Type: `object`
-
-      ## Properties:
-
-      - **connector** _(required)_:
-        Type: `%!s(<nil>)`
-
-    - Part 2:
-      ## salesforce_properties
-
-      Type: `object`
-
-      ## Properties:
-
-      - **endpoint**:
-        Salesforce API endpoint URL
-
-        Type: `string`
-
-
-      - **key**:
-        Authentication key for Salesforce (secret)
-
-        Type: `string`
-
-
-      - **managed**:
-        Boolean or map of properties
-
-        Type: `%!s(<nil>)`
-
-        #### Any of the following:
-        - Option 1:
-          Type: `boolean`
-
-        - Option 2:
-          Type: `object`
-
-          ## Properties:
-
-      - **password**:
-        Salesforce account password (secret)
-
-        Type: `string`
-
-
-      - **username**:
-        Salesforce account username
-
-        Type: `string`
-
-
-      - **client_id**:
-        Client ID used for Salesforce OAuth authentication
-
-        Type: `string`
-
-  - Option 17:
-    ## snowflake
-
-    Type: `object`
-
-    ## Properties:
-    #### All of the following:
-    - Part 1:
-      Type: `object`
-
-      ## Properties:
-
-      - **connector** _(required)_:
-        Type: `%!s(<nil>)`
-
-    - Part 2:
-      ## snowflake_properties
-
-      Type: `object`
-
-      ## Properties:
-
-      - **managed**:
-        Boolean or map of properties
-
-        Type: `%!s(<nil>)`
-
-        #### Any of the following:
-        - Option 1:
-          Type: `boolean`
-
-        - Option 2:
-          Type: `object`
-
-          ## Properties:
-
-      - **parallel_fetch_limit**:
-        Maximum number of concurrent fetches during query execution
-
-        Type: `integer`
-
-
-      - **dsn**:
-        DSN (Data Source Name) for the Snowflake connection
-
-        Type: `string`
-
-  - Option 18:
-    ## sqlite
-
-    Type: `object`
-
-    ## Properties:
-    #### All of the following:
-    - Part 1:
-      Type: `object`
-
-      ## Properties:
-
-      - **connector** _(required)_:
-        Type: `%!s(<nil>)`
-
-    - Part 2:
-      ## sqlite_properties
-
-      Type: `object`
-
-      ## Properties:
-
-      - **dsn**:
-        DSN(Data Source Name) for the sqlite connection
-
-        Type: `string`
-
-
-      - **managed**:
-        Boolean or map of properties
-
-        Type: `%!s(<nil>)`
-
-        #### Any of the following:
-        - Option 1:
-          Type: `boolean`
-
-        - Option 2:
-          Type: `object`
-
-          ## Properties:
-- Part 4:
-  ## model_properties
-
-  Type: `object`
-
-  ## Properties:
-
-  - **incremental**:
-    whether incremental modeling is required (optional)
-
-    Type: `boolean`
-
-
-  - **materialize**:
-    models will be materialized in olap
-
-    Type: `boolean`
-
-
-  - **output**:
-    to define the properties of output
-
-    Type: `object`
-
-    ## Properties:
-
-    - **connector** _(required)_:
-      Refers to the connector type for the output table
-
-      Type: `string`
-
-
-  - **partitions_concurrency**:
-    Refers to the number of concurrent partitions that can be read at the same time (optional).
-
-    Type: `integer`
-
-
-  - **refresh**:
-    Specifies the refresh schedule that Rill should follow to re-ingest and update the underlying model data 
-
-    Type: `object`
-
-    ## Properties:
-
-    - **every**:
-      Run at a fixed interval using a Go duration string (e.g., '1h', '30m', '24h'). See: https://pkg.go.dev/time#ParseDuration
-
-      Type: `string`
-
-
-    - **ref_update**:
-      If true, allows the resource to run when a dependency updates.
-
-      Type: `boolean`
-
-
-    - **run_in_dev**:
-      If true, allows the schedule to run in development mode.
-
-      Type: `boolean`
-
-
-    - **time_zone**:
-      Time zone to interpret the schedule in (e.g., 'UTC', 'America/Los_Angeles').
-
-      Type: `string`
-
-
-    - **cron**:
-      A cron expression that defines the execution schedule
-
-      Type: `string`
-
-
-    - **disable**:
-      If true, disables the resource without deleting it.
-
-      Type: `boolean`
-
-
-  - **state**:
-    Refers to the explicitly defined state of your model, cannot be used with partitions (optional)
-
-    Type: `object`
-
-    ## Properties:
-    #### One of the following:
-    - Option 1:
-      ## sql
-
-      Type: `%!s(<nil>)`
-
-    - Option 2:
-      ## metrics_sql
-
-      Type: `%!s(<nil>)`
-
-    - Option 3:
-      ## api
-
-      Type: `%!s(<nil>)`
-
-    - Option 4:
-      ## glob
-
-      Type: `%!s(<nil>)`
-
-    - Option 5:
-      ## resource_status
-
-      Type: `%!s(<nil>)`
-
-
-  - **timeout**:
-    The maximum time to wait for model ingestion
-
-    Type: `string`
-
-
-  - **partitions**:
-    Refers to the how your data is partitioned, cannot be used with state. (optional)
-
-    Type: `object`
-
-    ## Properties:
-    #### One of the following:
-    - Option 1:
-      ## sql
-
-      Type: `%!s(<nil>)`
-
-    - Option 2:
-      ## metrics_sql
-
-      Type: `%!s(<nil>)`
-
-    - Option 3:
-      ## api
-
-      Type: `%!s(<nil>)`
-
-    - Option 4:
-      ## glob
-
-      Type: `%!s(<nil>)`
-
-    - Option 5:
-      ## resource_status
-
-      Type: `%!s(<nil>)`
-
-
-  - **partitions_watermark**:
-    Refers to a customizable timestamp that can be set to check if an object has been updated (optional).
-
-    Type: `string`
-
-
-  - **sql**:
-    Raw SQL query to run against source
-
-    Type: `string`
-
-
-  - **stage**:
-    in the case of staging models, where an input source does not support direct write to the output and a staging table is required
-
-    Type: `object`
-
-    ## Properties:
-
-    - **connector** _(required)_:
-      Refers to the connector type for the staging table
-
-      Type: `string`
-
-- Part 5:
-  ## environment_overrides
-
-  Type: `%!s(<nil>)`
-
+**`timeout`**  - _[string]_ - The maximum time to wait for model ingestion 

@@ -3,275 +3,89 @@ note: GENERATED. DO NOT EDIT.
 title: Alert YAML
 sidebar_position: 1
 ---
-## Alert YAML
 
 Along with alertings at the dashboard level and can be created via the UI, there might be more extensive alerting that you might want to develop and can be done so the an alert.yaml. When creating an alert via a YAML file, you'll see this denoted in the UI as `Created through code`.
 
-Type: `object`
+## Properties
 
-## Properties:
-#### All of the following:
-- Part 1:
-  ## type
 
-  Type: `object`
+**`type`**  - _[string]_ - Refers to the resource type and must be `alert`  _(required)_
 
-  ## Properties:
+**`name`**  - _[string]_ - Name is usually inferred from the filename, but can be specified manually. 
 
-  - **type** _(required)_:
-    Type: `%!s(<nil>)`
+**`namespace`**  - _[string]_ - Optional value to group resources by. Prepended to the resource name as `<namespace>/<name>`. 
 
-- Part 2:
-  ## common_properties
+**`refs`**  - _[array]_ - List of resource references, each as a string or map. 
 
-  Type: `object`
+     *option 1* - _[string]_ - A string reference like 'resource-name' or 'Kind/resource-name'.
 
-  ## Properties:
+     *option 2* - _[object]_ - An object reference with at least a 'name' and 'type'.
 
-  - **namespace**:
-    Optional value to group resources by. Prepended to the resource name as `<namespace>/<name>`.
+    - **`name`**  - _[string]_ -   _(required)_
 
-    Type: `string`
+    - **`type`**  - _[string]_ -  
 
+**`version`**  - _[integer]_ - Version of the parser to use for this file. Enables backwards compatibility for breaking changes. 
 
-  - **refs**:
-    List of resource references, each as a string or map.
+**`renotify_after`**  - _[string]_ - Defines the re-notification interval for the alert (e.g., '10m', '24h'), equivalent to snooze duration in UI, defaults to 'Off' 
 
-    Type: `array`
+**`watermark`**  - _[string]_ - Specifies how the watermark is determined for incremental processing.
+Use 'trigger_time' to set it at runtime or 'inherit' to use the upstream model's watermark. 
 
-    #### Array Items:
-      Type: `%!s(<nil>)`
+**`annotations`**  - _[object]_ -  
 
-      #### One of the following:
-      - Option 1:
-        A string reference like 'resource-name' or 'Kind/resource-name'.
+**`data`**  - _[object]_ -   _(required)_
 
-        Type: `string`
+   *option 1* - 
 
-      - Option 2:
-        An object reference with at least a 'name' and 'type'.
+   *option 2* - 
 
-        Type: `object`
+   *option 3* - 
 
-        ## Properties:
+   *option 4* - 
 
-        - **name** _(required)_:
-          Type: `string`
+   *option 5* - 
 
+**`for`**  - _[object]_ -  
 
-        - **type**:
-          Type: `string`
+   *option 1* - 
 
+   *option 2* - 
 
-  - **version**:
-    Version of the parser to use for this file. Enables backwards compatibility for breaking changes.
+   *option 3* - 
 
-    Type: `integer`
+**`intervals`**  - _[object]_ - define the interval of the alert to check 
 
+  - **`duration`**  - _[string]_ - a valid ISO8601 duration to define the interval duration 
 
-  - **name**:
-    Name is usually inferred from the filename, but can be specified manually.
+  - **`limit`**  - _[integer]_ - maximum number of intervals to check for on invocation 
 
-    Type: `string`
+  - **`check_unclosed`**  - _[boolean]_ - boolean, whether unclosed intervals should be checked 
 
-- Part 3:
-  ## alert_properties
+**`on_error`**  - _[boolean]_ - Send an alert when an error occurs during evaluation. Defaults to false. 
 
-  Type: `object`
+**`on_recover`**  - _[boolean]_ - Send an alert when a previously failing alert recovers. Defaults to false. 
 
-  ## Properties:
+**`timeout`**  - _[string]_ - define the timeout of the alert in seconds (optional). 
 
-  - **for**:
-    Type: `object`
+**`display_name`**  - _[string]_ - Refers to the display name for the alert 
 
-    ## Properties:
-    #### One of the following:
-    - Option 1:
-      Type: `%!s(<nil>)`
+**`notify`**  - _[object]_ - Defines how and where to send notifications. At least one method (email or Slack) is required.  _(required)_
 
-    - Option 2:
-      Type: `%!s(<nil>)`
+**`on_fail`**  - _[boolean]_ - Send an alert when a failure occurs. Defaults to true. 
 
-    - Option 3:
-      Type: `%!s(<nil>)`
+**`refresh`**  - _[object]_ - Specifies the refresh schedule that Rill should follow to re-ingest and update the underlying data  _(required)_
 
+  - **`run_in_dev`**  - _[boolean]_ - If true, allows the schedule to run in development mode. 
 
-  - **on_error**:
-    Send an alert when an error occurs during evaluation. Defaults to false.
+  - **`time_zone`**  - _[string]_ - Time zone to interpret the schedule in (e.g., 'UTC', 'America/Los_Angeles'). 
 
-    Type: `boolean`
+  - **`cron`**  - _[string]_ - A cron expression that defines the execution schedule 
 
+  - **`disable`**  - _[boolean]_ - If true, disables the resource without deleting it. 
 
-  - **on_fail**:
-    Send an alert when a failure occurs. Defaults to true.
+  - **`every`**  - _[string]_ - Run at a fixed interval using a Go duration string (e.g., '1h', '30m', '24h'). See: https://pkg.go.dev/time#ParseDuration 
 
-    Type: `boolean`
+  - **`ref_update`**  - _[boolean]_ - If true, allows the resource to run when a dependency updates. 
 
-
-  - **renotify**:
-    Enable repeated notifications for unresolved alerts. Defaults to false.
-
-    Type: `boolean`
-
-
-  - **renotify_after**:
-    Defines the re-notification interval for the alert (e.g., '10m', '24h'), equivalent to snooze duration in UI, defaults to 'Off'
-
-    Type: `string`
-
-
-  - **data** _(required)_:
-    Type: `object`
-
-    ## Properties:
-    #### One of the following:
-    - Option 1:
-      ## sql
-
-      Type: `%!s(<nil>)`
-
-    - Option 2:
-      ## metrics_sql
-
-      Type: `%!s(<nil>)`
-
-    - Option 3:
-      ## api
-
-      Type: `%!s(<nil>)`
-
-    - Option 4:
-      ## glob
-
-      Type: `%!s(<nil>)`
-
-    - Option 5:
-      ## resource_status
-
-      Type: `%!s(<nil>)`
-
-
-  - **intervals**:
-    define the interval of the alert to check
-
-    Type: `object`
-
-    ## Properties:
-
-    - **check_unclosed**:
-      boolean, whether unclosed intervals should be checked
-
-      Type: `boolean`
-
-
-    - **duration**:
-      a valid ISO8601 duration to define the interval duration
-
-      Type: `string`
-
-
-    - **limit**:
-      maximum number of intervals to check for on invocation
-
-      Type: `integer`
-
-
-  - **notify** _(required)_:
-    ## notify_properties
-
-    Defines how and where to send notifications. At least one method (email or Slack) is required.
-
-    Type: `object`
-
-    ## Properties:
-    #### Any of the following:
-    - Option 1:
-      ## email_properties
-
-      Type: `%!s(<nil>)`
-
-    - Option 2:
-      ## slack_properties
-
-      Type: `%!s(<nil>)`
-
-
-  - **on_recover**:
-    Send an alert when a previously failing alert recovers. Defaults to false.
-
-    Type: `boolean`
-
-
-  - **refresh** _(required)_:
-    Specifies the refresh schedule that Rill should follow to re-ingest and update the underlying data
-
-    Type: `object`
-
-    ## Properties:
-
-    - **cron**:
-      A cron expression that defines the execution schedule
-
-      Type: `string`
-
-
-    - **disable**:
-      If true, disables the resource without deleting it.
-
-      Type: `boolean`
-
-
-    - **every**:
-      Run at a fixed interval using a Go duration string (e.g., '1h', '30m', '24h'). See: https://pkg.go.dev/time#ParseDuration
-
-      Type: `string`
-
-
-    - **ref_update**:
-      If true, allows the resource to run when a dependency updates.
-
-      Type: `boolean`
-
-
-    - **run_in_dev**:
-      If true, allows the schedule to run in development mode.
-
-      Type: `boolean`
-
-
-    - **time_zone**:
-      Time zone to interpret the schedule in (e.g., 'UTC', 'America/Los_Angeles').
-
-      Type: `string`
-
-
-  - **timeout**:
-    define the timeout of the alert in seconds (optional).
-
-    Type: `string`
-
-
-  - **watermark**:
-    Specifies how the watermark is determined for incremental processing.
-Use 'trigger_time' to set it at runtime or 'inherit' to use the upstream model's watermark.
-
-    Type: `string`
-
-    Enum: `[trigger_time inherit]`
-
-
-  - **annotations**:
-    Type: `object`
-
-    ## Properties:
-
-  - **display_name**:
-    Refers to the display name for the alert
-
-    Type: `string`
-
-- Part 4:
-  ## environment_overrides
-
-  Type: `%!s(<nil>)`
-
+**`renotify`**  - _[boolean]_ - Enable repeated notifications for unresolved alerts. Defaults to false. 

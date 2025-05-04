@@ -3,95 +3,28 @@ note: GENERATED. DO NOT EDIT.
 title: Theme YAML
 sidebar_position: 10
 ---
-## Theme YAML
-
-Type: `object`
-
-## Properties:
-#### All of the following:
-- Part 1:
-  ## type
-
-  Type: `object`
-
-  ## Properties:
-
-  - **type** _(required)_:
-    Type: `%!s(<nil>)`
-
-- Part 2:
-  ## common_properties
-
-  Type: `object`
-
-  ## Properties:
-
-  - **refs**:
-    List of resource references, each as a string or map.
-
-    Type: `array`
-
-    #### Array Items:
-      Type: `%!s(<nil>)`
-
-      #### One of the following:
-      - Option 1:
-        A string reference like 'resource-name' or 'Kind/resource-name'.
-
-        Type: `string`
-
-      - Option 2:
-        An object reference with at least a 'name' and 'type'.
-
-        Type: `object`
-
-        ## Properties:
-
-        - **name** _(required)_:
-          Type: `string`
 
 
-        - **type**:
-          Type: `string`
+
+## Properties
 
 
-  - **version**:
-    Version of the parser to use for this file. Enables backwards compatibility for breaking changes.
+**`type`**  - _[string]_ - Refers to the resource type and must be `theme`  _(required)_
 
-    Type: `integer`
+**`name`**  - _[string]_ - Name is usually inferred from the filename, but can be specified manually. 
 
+**`namespace`**  - _[string]_ - Optional value to group resources by. Prepended to the resource name as `<namespace>/<name>`. 
 
-  - **name**:
-    Name is usually inferred from the filename, but can be specified manually.
+**`refs`**  - _[array]_ - List of resource references, each as a string or map. 
 
-    Type: `string`
+     *option 1* - _[string]_ - A string reference like 'resource-name' or 'Kind/resource-name'.
 
+     *option 2* - _[object]_ - An object reference with at least a 'name' and 'type'.
 
-  - **namespace**:
-    Optional value to group resources by. Prepended to the resource name as `<namespace>/<name>`.
+    - **`name`**  - _[string]_ -   _(required)_
 
-    Type: `string`
+    - **`type`**  - _[string]_ -  
 
-- Part 3:
-  ## theme_properties
+**`version`**  - _[integer]_ - Version of the parser to use for this file. Enables backwards compatibility for breaking changes. 
 
-  Type: `object`
-
-  ## Properties:
-
-  - **colors** _(required)_:
-    Type: `object`
-
-    ## Properties:
-    #### Any of the following:
-    - Option 1:
-      Type: `%!s(<nil>)`
-
-    - Option 2:
-      Type: `%!s(<nil>)`
-
-- Part 4:
-  ## environment_overrides
-
-  Type: `%!s(<nil>)`
-
+**`colors`**  - _[object]_ -   _(required)_

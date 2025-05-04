@@ -3,283 +3,88 @@ note: GENERATED. DO NOT EDIT.
 title: API YAML
 sidebar_position: 2
 ---
-## API YAML
 
 In your Rill project directory, create a new file name `<api-name>.yaml` in the `apis` directory containing a custom API definition. See comprehensive documentation on how to define and use [custom APIs](/integrate/custom-apis/index.md)
 
-Type: `object`
+## Properties
 
-## Properties:
-#### All of the following:
-- Part 1:
-  ## type
 
-  Type: `object`
+**`type`**  - _[string]_ - Refers to the resource type and must be `api`  _(required)_
 
-  ## Properties:
+**`name`**  - _[string]_ - Name is usually inferred from the filename, but can be specified manually. 
 
-  - **type** _(required)_:
-    Type: `%!s(<nil>)`
+**`namespace`**  - _[string]_ - Optional value to group resources by. Prepended to the resource name as `<namespace>/<name>`. 
 
-- Part 2:
-  ## common_properties
+**`refs`**  - _[array]_ - List of resource references, each as a string or map. 
 
-  Type: `object`
+     *option 1* - _[string]_ - A string reference like 'resource-name' or 'Kind/resource-name'.
 
-  ## Properties:
+     *option 2* - _[object]_ - An object reference with at least a 'name' and 'type'.
 
-  - **refs**:
-    List of resource references, each as a string or map.
+    - **`name`**  - _[string]_ -   _(required)_
 
-    Type: `array`
+    - **`type`**  - _[string]_ -  
 
-    #### Array Items:
-      Type: `%!s(<nil>)`
+**`version`**  - _[integer]_ - Version of the parser to use for this file. Enables backwards compatibility for breaking changes. 
 
-      #### One of the following:
-      - Option 1:
-        A string reference like 'resource-name' or 'Kind/resource-name'.
+**`openapi`**  - _[object]_ -  
 
-        Type: `string`
+  - **`request`**  - _[object]_ -  
 
-      - Option 2:
-        An object reference with at least a 'name' and 'type'.
+    - **`parameters`**  - _[array of object]_ -  
 
-        Type: `object`
+  - **`response`**  - _[object]_ -  
 
-        ## Properties:
+    - **`schema`**  - _[object]_ -  
 
-        - **name** _(required)_:
-          Type: `string`
+  - **`summary`**  - _[string]_ -  
 
+**`security`**  - _[object]_ -  
 
-        - **type**:
-          Type: `string`
+  - **`row_filter`**  - _[string]_ - SQL expression to filter the underlying model by. Can leverage templated user attributes to customize the filter for the requesting user. Needs to be a valid SQL expression that can be injected into a WHERE clause 
 
+  - **`rules`**  - _[array of object]_ -  
 
-  - **version**:
-    Version of the parser to use for this file. Enables backwards compatibility for breaking changes.
+      - **`action`**  - _[string]_ -  
 
-    Type: `integer`
+      - **`all`**  - _[boolean]_ -  
 
+      - **`if`**  - _[string]_ -  
 
-  - **name**:
-    Name is usually inferred from the filename, but can be specified manually.
+      - **`names`**  - _[array of string]_ -  
 
-    Type: `string`
+      - **`sql`**  - _[string]_ -  
 
+      - **`type`**  - _[string]_ -   _(required)_
 
-  - **namespace**:
-    Optional value to group resources by. Prepended to the resource name as `<namespace>/<name>`.
+  - **`access`**  - _[one of]_ - Expression indicating if the user should be granted access to the dashboard. If not defined, it will resolve to false and the dashboard won't be accessible to anyone. Needs to be a valid SQL expression that evaluates to a boolean. 
 
-    Type: `string`
+     *option 1* - _[string]_ - 
 
-- Part 3:
-  ## api_properties
+     *option 2* - _[boolean]_ - 
 
-  Type: `object`
+  - **`exclude`**  - _[array of object]_ - List of dimension or measure names to exclude from the dashboard. If exclude is defined all other dimensions and measures are included 
 
-  ## Properties:
+      - **`if`**  - _[string]_ - Expression to decide if the column should be excluded or not. It can leverage templated user attributes. Needs to be a valid SQL expression that evaluates to a boolean  _(required)_
 
-  - **openapi**:
-    Type: `object`
+      - **`names`**  - _[any of]_ - List of fields to exclude. Should match the name of one of the dashboard's dimensions or measures  _(required)_
 
-    ## Properties:
+  - **`include`**  - _[array of object]_ - List of dimension or measure names to include in the dashboard. If include is defined all other dimensions and measures are excluded 
 
-    - **request**:
-      Type: `object`
+      - **`if`**  - _[string]_ - Expression to decide if the column should be included or not. It can leverage templated user attributes. Needs to be a valid SQL expression that evaluates to a boolean  _(required)_
 
-      ## Properties:
+      - **`names`**  - _[any of]_ - List of fields to include. Should match the name of one of the dashboard's dimensions or measures  _(required)_
 
-      - **parameters**:
-        Type: `array`
+**`skip_nested_security`**  - _[boolean]_ -  
 
-        #### Array Items:
-          Type: `object`
+ *option 1* - _[object]_ - 
 
-          ## Properties:
+ *option 1* - 
 
-    - **response**:
-      Type: `object`
+ *option 2* - 
 
-      ## Properties:
+ *option 3* - 
 
-      - **schema**:
-        Type: `object`
+ *option 4* - 
 
-        ## Properties:
-
-    - **summary**:
-      Type: `string`
-
-
-  - **security**:
-    Type: `object`
-
-    ## Properties:
-
-    - **access**:
-      Expression indicating if the user should be granted access to the dashboard. If not defined, it will resolve to false and the dashboard won't be accessible to anyone. Needs to be a valid SQL expression that evaluates to a boolean.
-
-      Type: `%!s(<nil>)`
-
-      #### One of the following:
-      - Option 1:
-        Type: `string`
-
-      - Option 2:
-        Type: `boolean`
-
-
-    - **exclude**:
-      List of dimension or measure names to exclude from the dashboard. If exclude is defined all other dimensions and measures are included
-
-      Type: `array`
-
-      #### Array Items:
-        Type: `object`
-
-        ## Properties:
-
-        - **if** _(required)_:
-          Expression to decide if the column should be excluded or not. It can leverage templated user attributes. Needs to be a valid SQL expression that evaluates to a boolean
-
-          Type: `string`
-
-
-        - **names** _(required)_:
-          List of fields to exclude. Should match the name of one of the dashboard's dimensions or measures
-
-          Type: `%!s(<nil>)`
-
-          #### Any of the following:
-          - Option 1:
-            Type: `array`
-
-            #### Array Items:
-              Type: `string`
-
-          - Option 2:
-            Type: `string`
-
-            Enum: `[*]`
-
-
-    - **include**:
-      List of dimension or measure names to include in the dashboard. If include is defined all other dimensions and measures are excluded
-
-      Type: `array`
-
-      #### Array Items:
-        Type: `object`
-
-        ## Properties:
-
-        - **if** _(required)_:
-          Expression to decide if the column should be included or not. It can leverage templated user attributes. Needs to be a valid SQL expression that evaluates to a boolean
-
-          Type: `string`
-
-
-        - **names** _(required)_:
-          List of fields to include. Should match the name of one of the dashboard's dimensions or measures
-
-          Type: `%!s(<nil>)`
-
-          #### Any of the following:
-          - Option 1:
-            Type: `array`
-
-            #### Array Items:
-              Type: `string`
-
-          - Option 2:
-            Type: `string`
-
-            Enum: `[*]`
-
-
-    - **row_filter**:
-      SQL expression to filter the underlying model by. Can leverage templated user attributes to customize the filter for the requesting user. Needs to be a valid SQL expression that can be injected into a WHERE clause
-
-      Type: `string`
-
-
-    - **rules**:
-      Type: `array`
-
-      #### Array Items:
-        Type: `object`
-
-        ## Properties:
-
-        - **action**:
-          Type: `string`
-
-          Enum: `[allow deny]`
-
-
-        - **all**:
-          Type: `boolean`
-
-
-        - **if**:
-          Type: `string`
-
-
-        - **names**:
-          Type: `array`
-
-          #### Array Items:
-            Type: `string`
-
-
-        - **sql**:
-          Type: `string`
-
-
-        - **type** _(required)_:
-          Type: `string`
-
-          Enum: `[access field_access row_filter]`
-
-
-  - **skip_nested_security**:
-    Type: `boolean`
-
-  #### One of the following:
-  - Option 1:
-    Type: `object`
-
-    ## Properties:
-    #### One of the following:
-    - Option 1:
-      ## sql
-
-      Type: `%!s(<nil>)`
-
-    - Option 2:
-      ## metrics_sql
-
-      Type: `%!s(<nil>)`
-
-    - Option 3:
-      ## api
-
-      Type: `%!s(<nil>)`
-
-    - Option 4:
-      ## glob
-
-      Type: `%!s(<nil>)`
-
-    - Option 5:
-      ## resource_status
-
-      Type: `%!s(<nil>)`
-
-- Part 4:
-  ## environment_overrides
-
-  Type: `%!s(<nil>)`
-
+ *option 5* - 

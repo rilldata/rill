@@ -3,560 +3,152 @@ note: GENERATED. DO NOT EDIT.
 title: Metrics View YAML
 sidebar_position: 7
 ---
-## Metrics View YAML
 
 In your Rill project directory, create a metrics view, `<metrics_view>.yaml`, file in the `metrics` directory. Rill will ingest the metric view definition next time you run `rill start`.
 
-Type: `object`
-
-## Properties:
-#### All of the following:
-- Part 1:
-  ## type
-
-  Type: `object`
-
-  ## Properties:
-
-  - **type** _(required)_:
-    Type: `%!s(<nil>)`
-
-- Part 2:
-  ## common_properties
-
-  Type: `object`
-
-  ## Properties:
-
-  - **name**:
-    Name is usually inferred from the filename, but can be specified manually.
-
-    Type: `string`
+## Properties
 
 
-  - **namespace**:
-    Optional value to group resources by. Prepended to the resource name as `<namespace>/<name>`.
+**`type`**  - _[string]_ - Refers to the resource type and must be `metrics_view`  _(required)_
 
-    Type: `string`
+**`version`**  - _[integer]_ - Version of the parser to use for this file. Enables backwards compatibility for breaking changes. 
 
+**`name`**  - _[string]_ - Name is usually inferred from the filename, but can be specified manually. 
 
-  - **refs**:
-    List of resource references, each as a string or map.
+**`namespace`**  - _[string]_ - Optional value to group resources by. Prepended to the resource name as `<namespace>/<name>`. 
 
-    Type: `array`
+**`refs`**  - _[array]_ - List of resource references, each as a string or map. 
 
-    #### Array Items:
-      Type: `%!s(<nil>)`
+     *option 1* - _[string]_ - A string reference like 'resource-name' or 'Kind/resource-name'.
 
-      #### One of the following:
-      - Option 1:
-        A string reference like 'resource-name' or 'Kind/resource-name'.
+     *option 2* - _[object]_ - An object reference with at least a 'name' and 'type'.
 
-        Type: `string`
+    - **`name`**  - _[string]_ -   _(required)_
 
-      - Option 2:
-        An object reference with at least a 'name' and 'type'.
+    - **`type`**  - _[string]_ -  
 
-        Type: `object`
+**`display_name`**  - _[string]_ - Refers to the display name for the metrics view 
 
-        ## Properties:
+**`first_day_of_week`**  - _[integer]_ - Refers to the first day of the week for time grain aggregation (for example, Sunday instead of Monday). The valid values are 1 through 7 where Monday=1 and Sunday=7 
 
-        - **name** _(required)_:
-          Type: `string`
+**`model`**  - _[string]_ - Refers to the model powering the dashboard (either model or table is required) 
 
+**`security`**  - _[object]_ - Defines a security policy for the dashboard 
 
-        - **type**:
-          Type: `string`
+  - **`access`**  - _[one of]_ - Expression indicating if the user should be granted access to the dashboard. If not defined, it will resolve to false and the dashboard won't be accessible to anyone. Needs to be a valid SQL expression that evaluates to a boolean. 
 
+     *option 1* - _[string]_ - 
 
-  - **version**:
-    Version of the parser to use for this file. Enables backwards compatibility for breaking changes.
+     *option 2* - _[boolean]_ - 
 
-    Type: `integer`
+  - **`exclude`**  - _[array of object]_ - List of dimension or measure names to exclude from the dashboard. If exclude is defined all other dimensions and measures are included 
 
-- Part 3:
-  ## metrics_view_properties
+      - **`names`**  - _[any of]_ - List of fields to exclude. Should match the name of one of the dashboard's dimensions or measures  _(required)_
 
-  Type: `object`
+      - **`if`**  - _[string]_ - Expression to decide if the column should be excluded or not. It can leverage templated user attributes. Needs to be a valid SQL expression that evaluates to a boolean  _(required)_
 
-  ## Properties:
+  - **`include`**  - _[array of object]_ - List of dimension or measure names to include in the dashboard. If include is defined all other dimensions and measures are excluded 
 
-  - **first_day_of_week**:
-    Refers to the first day of the week for time grain aggregation (for example, Sunday instead of Monday). The valid values are 1 through 7 where Monday=1 and Sunday=7
+      - **`if`**  - _[string]_ - Expression to decide if the column should be included or not. It can leverage templated user attributes. Needs to be a valid SQL expression that evaluates to a boolean  _(required)_
 
-    Type: `integer`
+      - **`names`**  - _[any of]_ - List of fields to include. Should match the name of one of the dashboard's dimensions or measures  _(required)_
 
+  - **`row_filter`**  - _[string]_ - SQL expression to filter the underlying model by. Can leverage templated user attributes to customize the filter for the requesting user. Needs to be a valid SQL expression that can be injected into a WHERE clause 
 
-  - **first_month_of_year**:
-    Refers to the first month of the year for time grain aggregation. The valid values are 1 through 12 where January=1 and December=12
+  - **`rules`**  - _[array of object]_ -  
 
-    Type: `integer`
+      - **`action`**  - _[string]_ -  
 
+      - **`all`**  - _[boolean]_ -  
 
-  - **measures**:
-    Used to define the numeric aggregates of columns from your data model
+      - **`if`**  - _[string]_ -  
 
-    Type: `array`
+      - **`names`**  - _[array of string]_ -  
 
-    #### Array Items:
-      Type: `object`
+      - **`sql`**  - _[string]_ -  
 
-      ## Properties:
+      - **`type`**  - _[string]_ -   _(required)_
 
-      - **description**:
-        a freeform text description of the dimension
+**`first_month_of_year`**  - _[integer]_ - Refers to the first month of the year for time grain aggregation. The valid values are 1 through 12 where January=1 and December=12 
 
-        Type: `string`
+**`measures`**  - _[array of object]_ - Used to define the numeric aggregates of columns from your data model 
 
-
-      - **display_name**:
-        the display name of your measure.
-
-        Type: `string`
-
-
-      - **format_d3**:
-        Controls the formatting of this measure using a [d3-format](https://d3js.org/d3-format) string. If an invalid format string is supplied, the measure will fall back to `format_preset: humanize`. A measure cannot have both `format_preset` and `format_d3`. If neither is provided, the humanize preset is used by default. Example: `format_d3: ".2f"` formats using fixed-point notation with two decimal places. Example: `format_d3: ",.2r"` formats using grouped thousands with two significant digits. (optional)
-
-        Type: `string`
-
-
-      - **format_d3_locale**:
-        locale configuration passed through to D3, enabling changing the currency symbol among other things. For details, see the docs for D3's [formatLocale](https://d3js.org/d3-format#formatLocale)
-
-        Type: `object`
-
-        ## Properties:
-
-      - **format_preset**:
-        Controls the formatting of this measure using a predefined preset. Measures cannot have both `format_preset` and `format_d3`. If neither is supplied, the measure will be formatted using the `humanize` preset by default. Available options:
+    - **`format_preset`**  - _[string]_ - Controls the formatting of this measure using a predefined preset. Measures cannot have both `format_preset` and `format_d3`. If neither is supplied, the measure will be formatted using the `humanize` preset by default. Available options:
 - `humanize`: Round numbers into thousands (K), millions (M), billions (B), etc.
 - `none`: Raw output.
 - `currency_usd`: Round to 2 decimal points with a dollar sign ($).
 - `currency_eur`: Round to 2 decimal points with a euro sign (€).
 - `percentage`: Convert a rate into a percentage with a % sign.
-- `interval_ms`: Convert milliseconds into human-readable durations like hours (h), days (d), years (y), etc. (optional)
+- `interval_ms`: Convert milliseconds into human-readable durations like hours (h), days (d), years (y), etc. (optional) 
 
-        Type: `string`
+    - **`per`**  - _[any of]_ - for per dimensions 
 
+        - **`name`**  - _[string]_ -   _(required)_
 
-      - **requires**:
-        using an available measure or dimension in your metrics view to set a required parameter, cannot be used with simple measures
+        - **`time_grain`**  - _[string]_ - Time grain for time-based dimensions. 
 
-        Type: `%!s(<nil>)`
+    - **`requires`**  - _[any of]_ - using an available measure or dimension in your metrics view to set a required parameter, cannot be used with simple measures 
 
-        #### Any of the following:
-        - Option 1:
-          Type: `string`
+        - **`time_grain`**  - _[string]_ - Time grain for time-based dimensions. 
 
-        - Option 2:
-          Type: `array`
+        - **`name`**  - _[string]_ -   _(required)_
 
-          #### Array Items:
-            Type: `%!s(<nil>)`
+    - **`type`**  - _[string]_ -  
 
-            #### Any of the following:
-            - Option 1:
-              Shorthand field selector, interpreted as the name.
+    - **`description`**  - _[string]_ - a freeform text description of the dimension 
 
-              Type: `string`
+    - **`expression`**  - _[string]_ - a combination of operators and functions for aggregations 
 
-            - Option 2:
-              Type: `object`
+    - **`format_d3`**  - _[string]_ - Controls the formatting of this measure using a [d3-format](https://d3js.org/d3-format) string. If an invalid format string is supplied, the measure will fall back to `format_preset: humanize`. A measure cannot have both `format_preset` and `format_d3`. If neither is provided, the humanize preset is used by default. Example: `format_d3: ".2f"` formats using fixed-point notation with two decimal places. Example: `format_d3: ",.2r"` formats using grouped thousands with two significant digits. (optional) 
 
-              ## Properties:
+    - **`format_d3_locale`**  - _[object]_ - locale configuration passed through to D3, enabling changing the currency symbol among other things. For details, see the docs for D3's [formatLocale](https://d3js.org/d3-format#formatLocale) 
 
-              - **name** _(required)_:
-                Type: `string`
+    - **`name`**  - _[string]_ - a stable identifier for the measure 
 
+    - **`treat_nulls_as`**  - _[string]_ - used to configure what value to fill in for missing time buckets. This also works generally as COALESCING over non empty time buckets. 
 
-              - **time_grain**:
-                Time grain for time-based dimensions.
+    - **`valid_percent_of_total`**  - _[boolean]_ - a boolean indicating whether percent-of-total values should be rendered for this measure  
 
-                Type: `string`
+    - **`window`**  - _[any of]_ - A measure window can be defined as a keyword string (e.g., 'time' or 'all') or an object with detailed window configuration. 
 
-                Enum: `[ ms millisecond s second min minute h hour d day w week month q quarter y year]`
+      - **`frame`**  - _[string]_ - sets the frame of your window 
 
+      - **`order`**  - _[any of]_ - to order the window 
 
-      - **treat_nulls_as**:
-        used to configure what value to fill in for missing time buckets. This also works generally as COALESCING over non empty time buckets.
+          - **`name`**  - _[string]_ -   _(required)_
 
-        Type: `string`
+          - **`time_grain`**  - _[string]_ - Time grain for time-based dimensions. 
 
+      - **`partition`**  - _[boolean]_ -  
 
-      - **type**:
-        Type: `string`
+    - **`display_name`**  - _[string]_ - the display name of your measure. 
 
+**`smallest_time_grain`**  - _[string]_ - Refers to the smallest time granularity the user is allowed to view. The valid values are: millisecond, second, minute, hour, day, week, month, quarter, year 
 
-      - **expression**:
-        a combination of operators and functions for aggregations
+**`table`**  - _[string]_ - Refers to the table powering the dashboard, should be used instead of model for dashboards create from external OLAP tables (either table or model is required) 
 
-        Type: `string`
+**`timeseries`**  - _[string]_ - Refers to the timestamp column from your model that will underlie x-axis data in the line charts. If not specified, the line charts will not appear 
 
+**`watermark`**  - _[string]_ - A SQL expression that tells us the max timestamp that the metrics are considered valid for. Usually does not need to be overwritten 
 
-      - **name**:
-        a stable identifier for the measure
+**`database`**  - _[string]_ - Refers to the database to use in the OLAP engine (to be used in conjunction with table). Otherwise, will use the default database or schema if not specified 
 
-        Type: `string`
+**`database_schema`**  - _[string]_ - Refers to the schema to use in the OLAP engine (to be used in conjunction with table). Otherwise, will use the default database or schema if not specified 
 
+**`description`**  - _[string]_ - Refers to the description for the metrics view 
 
-      - **per**:
-        for per dimensions
+**`dimensions`**  - _[array of object]_ - Relates to exploring segments or dimensions of your data and filtering the dashboard 
 
-        Type: `%!s(<nil>)`
+    - **`name`**  - _[string]_ - a stable identifier for the dimension 
 
-        #### Any of the following:
-        - Option 1:
-          Type: `string`
+    - **`unnest`**  - _[boolean]_ - if true, allows multi-valued dimension to be unnested (such as lists) and filters will automatically switch to "contains" instead of exact match  
 
-        - Option 2:
-          Type: `array`
+    - **`uri`**  - enable if your dimension is a clickable URL to enable single click navigation (boolean or valid SQL expression)  
 
-          #### Array Items:
-            Type: `%!s(<nil>)`
+    - **`column`**  - _[string]_ - a categorical column 
 
-            #### Any of the following:
-            - Option 1:
-              Shorthand field selector, interpreted as the name.
+    - **`description`**  - _[string]_ - a freeform text description of the dimension 
 
-              Type: `string`
+    - **`display_name`**  - _[string]_ - a display name for your dimension 
 
-            - Option 2:
-              Type: `object`
-
-              ## Properties:
-
-              - **name** _(required)_:
-                Type: `string`
-
-
-              - **time_grain**:
-                Time grain for time-based dimensions.
-
-                Type: `string`
-
-                Enum: `[ ms millisecond s second min minute h hour d day w week month q quarter y year]`
-
-
-      - **valid_percent_of_total**:
-        a boolean indicating whether percent-of-total values should be rendered for this measure 
-
-        Type: `boolean`
-
-
-      - **window**:
-        A measure window can be defined as a keyword string (e.g., 'time' or 'all') or an object with detailed window configuration.
-
-        Type: `%!s(<nil>)`
-
-        #### Any of the following:
-        - Option 1:
-          Shorthand: 'time' or 'true' means time-partitioned, 'all' means non-partitioned.
-
-          Type: `string`
-
-          Enum: `[time true all]`
-
-        - Option 2:
-          Type: `object`
-
-          ## Properties:
-
-          - **order**:
-            to order the window
-
-            Type: `%!s(<nil>)`
-
-            #### Any of the following:
-            - Option 1:
-              Type: `string`
-
-            - Option 2:
-              Type: `array`
-
-              #### Array Items:
-                Type: `%!s(<nil>)`
-
-                #### Any of the following:
-                - Option 1:
-                  Shorthand field selector, interpreted as the name.
-
-                  Type: `string`
-
-                - Option 2:
-                  Type: `object`
-
-                  ## Properties:
-
-                  - **name** _(required)_:
-                    Type: `string`
-
-
-                  - **time_grain**:
-                    Time grain for time-based dimensions.
-
-                    Type: `string`
-
-                    Enum: `[ ms millisecond s second min minute h hour d day w week month q quarter y year]`
-
-
-          - **partition**:
-            Type: `boolean`
-
-
-          - **frame**:
-            sets the frame of your window
-
-            Type: `string`
-
-
-  - **model**:
-    Refers to the model powering the dashboard (either model or table is required)
-
-    Type: `string`
-
-
-  - **security**:
-    Defines a security policy for the dashboard
-
-    Type: `object`
-
-    ## Properties:
-
-    - **rules**:
-      Type: `array`
-
-      #### Array Items:
-        Type: `object`
-
-        ## Properties:
-
-        - **type** _(required)_:
-          Type: `string`
-
-          Enum: `[access field_access row_filter]`
-
-
-        - **action**:
-          Type: `string`
-
-          Enum: `[allow deny]`
-
-
-        - **all**:
-          Type: `boolean`
-
-
-        - **if**:
-          Type: `string`
-
-
-        - **names**:
-          Type: `array`
-
-          #### Array Items:
-            Type: `string`
-
-
-        - **sql**:
-          Type: `string`
-
-
-    - **access**:
-      Expression indicating if the user should be granted access to the dashboard. If not defined, it will resolve to false and the dashboard won't be accessible to anyone. Needs to be a valid SQL expression that evaluates to a boolean.
-
-      Type: `%!s(<nil>)`
-
-      #### One of the following:
-      - Option 1:
-        Type: `string`
-
-      - Option 2:
-        Type: `boolean`
-
-
-    - **exclude**:
-      List of dimension or measure names to exclude from the dashboard. If exclude is defined all other dimensions and measures are included
-
-      Type: `array`
-
-      #### Array Items:
-        Type: `object`
-
-        ## Properties:
-
-        - **if** _(required)_:
-          Expression to decide if the column should be excluded or not. It can leverage templated user attributes. Needs to be a valid SQL expression that evaluates to a boolean
-
-          Type: `string`
-
-
-        - **names** _(required)_:
-          List of fields to exclude. Should match the name of one of the dashboard's dimensions or measures
-
-          Type: `%!s(<nil>)`
-
-          #### Any of the following:
-          - Option 1:
-            Type: `array`
-
-            #### Array Items:
-              Type: `string`
-
-          - Option 2:
-            Type: `string`
-
-            Enum: `[*]`
-
-
-    - **include**:
-      List of dimension or measure names to include in the dashboard. If include is defined all other dimensions and measures are excluded
-
-      Type: `array`
-
-      #### Array Items:
-        Type: `object`
-
-        ## Properties:
-
-        - **if** _(required)_:
-          Expression to decide if the column should be included or not. It can leverage templated user attributes. Needs to be a valid SQL expression that evaluates to a boolean
-
-          Type: `string`
-
-
-        - **names** _(required)_:
-          List of fields to include. Should match the name of one of the dashboard's dimensions or measures
-
-          Type: `%!s(<nil>)`
-
-          #### Any of the following:
-          - Option 1:
-            Type: `array`
-
-            #### Array Items:
-              Type: `string`
-
-          - Option 2:
-            Type: `string`
-
-            Enum: `[*]`
-
-
-    - **row_filter**:
-      SQL expression to filter the underlying model by. Can leverage templated user attributes to customize the filter for the requesting user. Needs to be a valid SQL expression that can be injected into a WHERE clause
-
-      Type: `string`
-
-
-  - **database_schema**:
-    Refers to the schema to use in the OLAP engine (to be used in conjunction with table). Otherwise, will use the default database or schema if not specified
-
-    Type: `string`
-
-
-  - **dimensions**:
-    Relates to exploring segments or dimensions of your data and filtering the dashboard
-
-    Type: `array`
-
-    #### Array Items:
-      Type: `object`
-
-      ## Properties:
-
-      - **description**:
-        a freeform text description of the dimension
-
-        Type: `string`
-
-
-      - **display_name**:
-        a display name for your dimension
-
-        Type: `string`
-
-
-      - **expression**:
-        a non-aggregate expression such as string_split(domain, '.'). One of column and expression is required but cannot have both at the same time
-
-        Type: `string`
-
-
-      - **name**:
-        a stable identifier for the dimension
-
-        Type: `string`
-
-
-      - **unnest**:
-        if true, allows multi-valued dimension to be unnested (such as lists) and filters will automatically switch to "contains" instead of exact match 
-
-        Type: `boolean`
-
-
-      - **uri**:
-        enable if your dimension is a clickable URL to enable single click navigation (boolean or valid SQL expression) 
-
-        Type: `[string boolean]`
-
-
-      - **column**:
-        a categorical column
-
-        Type: `string`
-
-      #### Any of the following:
-      - Option 1:
-        Type: `%!s(<nil>)`
-
-      - Option 2:
-        Type: `%!s(<nil>)`
-
-
-  - **smallest_time_grain**:
-    Refers to the smallest time granularity the user is allowed to view. The valid values are: millisecond, second, minute, hour, day, week, month, quarter, year
-
-    Type: `string`
-
-
-  - **table**:
-    Refers to the table powering the dashboard, should be used instead of model for dashboards create from external OLAP tables (either table or model is required)
-
-    Type: `string`
-
-
-  - **timeseries**:
-    Refers to the timestamp column from your model that will underlie x-axis data in the line charts. If not specified, the line charts will not appear
-
-    Type: `string`
-
-
-  - **watermark**:
-    A SQL expression that tells us the max timestamp that the metrics are considered valid for. Usually does not need to be overwritten
-
-    Type: `string`
-
-
-  - **database**:
-    Refers to the database to use in the OLAP engine (to be used in conjunction with table). Otherwise, will use the default database or schema if not specified
-
-    Type: `string`
-
-
-  - **description**:
-    Refers to the description for the metrics view
-
-    Type: `string`
-
-
-  - **display_name**:
-    Refers to the display name for the metrics view
-
-    Type: `string`
-
-- Part 4:
-  ## environment_overrides
-
-  Type: `%!s(<nil>)`
-
+    - **`expression`**  - _[string]_ - a non-aggregate expression such as string_split(domain, '.'). One of column and expression is required but cannot have both at the same time 
