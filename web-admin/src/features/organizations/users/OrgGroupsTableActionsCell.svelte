@@ -17,37 +17,38 @@
   let isEditDialogOpen = false;
 </script>
 
+<!-- TODO: Should I display autogroup:guests, autogroup:members, autogroup:users? -->
 <!-- Managed groups cannot be deleted or edited -->
-{#if !managed}
-  <DropdownMenu.Root bind:open={isDropdownOpen}>
-    <DropdownMenu.Trigger class="flex-none">
-      <IconButton rounded active={isDropdownOpen}>
-        <ThreeDot size="16px" />
-      </IconButton>
-    </DropdownMenu.Trigger>
-    <DropdownMenu.Content align="start">
-      <DropdownMenu.Item
-        class="font-normal flex items-center"
-        on:click={() => {
-          isEditDialogOpen = true;
-        }}
-      >
-        <Pencil size="12px" />
-        <span class="ml-2">Edit</span>
-      </DropdownMenu.Item>
-      <DropdownMenu.Item
-        class="font-normal flex items-center"
-        type="destructive"
-        on:click={() => {
-          isDeleteConfirmOpen = true;
-        }}
-      >
-        <Trash2Icon size="12px" />
-        <span class="ml-2">Delete</span>
-      </DropdownMenu.Item>
-    </DropdownMenu.Content>
-  </DropdownMenu.Root>
-{/if}
+<!-- {#if !managed} -->
+<DropdownMenu.Root bind:open={isDropdownOpen}>
+  <DropdownMenu.Trigger class="flex-none">
+    <IconButton rounded active={isDropdownOpen}>
+      <ThreeDot size="16px" />
+    </IconButton>
+  </DropdownMenu.Trigger>
+  <DropdownMenu.Content align="start">
+    <DropdownMenu.Item
+      class="font-normal flex items-center"
+      on:click={() => {
+        isEditDialogOpen = true;
+      }}
+    >
+      <Pencil size="12px" />
+      <span class="ml-2">Edit</span>
+    </DropdownMenu.Item>
+    <DropdownMenu.Item
+      class="font-normal flex items-center"
+      type="destructive"
+      on:click={() => {
+        isDeleteConfirmOpen = true;
+      }}
+    >
+      <Trash2Icon size="12px" />
+      <span class="ml-2">Delete</span>
+    </DropdownMenu.Item>
+  </DropdownMenu.Content>
+</DropdownMenu.Root>
+<!-- {/if} -->
 
 <DeleteUserGroupConfirmDialog
   bind:open={isDeleteConfirmOpen}
