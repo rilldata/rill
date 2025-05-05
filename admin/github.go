@@ -122,14 +122,12 @@ func (g *githubClient) InstallationToken(ctx context.Context, installationID, re
 		return "", fmt.Errorf("failed to create github installation transport: %w", err)
 	}
 
-	if repoID != 0 {
-		opts := itr.InstallationTokenOptions
-		if opts == nil {
-			opts = &github.InstallationTokenOptions{}
-			itr.InstallationTokenOptions = opts
-		}
-		opts.RepositoryIDs = []int64{repoID}
+	opts := itr.InstallationTokenOptions
+	if opts == nil {
+		opts = &github.InstallationTokenOptions{}
+		itr.InstallationTokenOptions = opts
 	}
+	opts.RepositoryIDs = []int64{repoID}
 
 	token, err := itr.Token(ctx)
 	if err != nil {
