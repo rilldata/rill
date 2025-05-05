@@ -112,9 +112,8 @@ export class ProjectDeployer {
     );
   }
 
-  public setOrgAndName(org: string, displayName: string | undefined) {
+  public setOrgAndName(org: string) {
     this.org.set(org);
-    this.orgDisplayName.set(displayName);
     void this.deploy();
   }
 

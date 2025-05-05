@@ -1,15 +1,19 @@
+<script context="module" lang="ts">
+  export const CreateNewOrgFormId = "org-name-form";
+</script>
+
 <script lang="ts">
-  import { Button } from "@rilldata/web-common/components/button";
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
+  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
+  import {
+    createLocalServiceCreateOrganization,
+    getLocalServiceGetCurrentUserQueryKey,
+  } from "@rilldata/web-common/runtime-client/local-service";
   import { defaults, superForm } from "sveltekit-superforms";
   import { yup } from "sveltekit-superforms/adapters";
   import { object, string } from "yup";
 
-  export let isFirstOrg: boolean;
-  export let onUpdate: (
-    orgName: string,
-    orgDisplayName: string | undefined,
-  ) => void;
+  export let onCreate: (orgName: string) => void;
 
   const initialValues: {
     name: string;
@@ -25,37 +29,42 @@
     }),
   );
 
+  const orgCreator = createLocalServiceCreateOrganization();
+
   const { form, errors, enhance, submit } = superForm(
     defaults(initialValues, schema),
     {
       SPA: true,
       validators: schema,
-      onUpdate({ form }) {
+      onUpdate: async ({ form }) => {
         if (!form.valid) return;
         const values = form.data;
 
-        onUpdate(values.name, values.displayName);
+        await $orgCreator.mutateAsync({
+          name: values.name,
+          displayName: values.displayName,
+        });
+
+        await queryClient.invalidateQueries({
+          queryKey: getLocalServiceGetCurrentUserQueryKey(),
+        });
+        onCreate(values.name);
+      },
+      onError({ result }) {
+        if (
+          result.error.message.includes("an org with that name already exists")
+        ) {
+          $errors["name"] = [
+            "Org already exists. Please choose a different name.",
+          ];
+        }
       },
     },
   );
 </script>
 
-<div class="text-xl">
-  {#if isFirstOrg}
-    Let’s create your first organization
-  {:else}
-    Create a new organization
-  {/if}
-</div>
-<div class="text-base text-gray-500">
-  Create an organization to deploy this project to. <a
-    href="https://docs.rilldata.com/reference/cli/org/create"
-    target="_blank">See docs</a
-  >
-</div>
-
 <form
-  id="org-name-form"
+  id={CreateNewOrgFormId}
   on:submit|preventDefault={submit}
   use:enhance
   class="flex flex-col gap-y-3"
@@ -91,11 +100,3 @@
     >
   </div>
 </form>
-<Button
-  wide
-  forcedStyle="min-width:500px !important;"
-  type="primary"
-  on:click={submit}
->
-  Continue
-</Button>

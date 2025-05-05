@@ -1,5 +1,6 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
+  import { Button } from "@rilldata/web-common/components/button";
   import TrialDetailsDialog from "@rilldata/web-common/features/billing/TrialDetailsDialog.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { getPlanUpgradeUrl } from "@rilldata/web-common/features/organization/utils";
@@ -17,6 +18,7 @@
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import type { PageData } from "./$types";
   import CreateNewOrgForm from "@rilldata/web-common/features/organization/CreateNewOrgForm.svelte";
+  import { CreateNewOrgFormId } from "@rilldata/web-common/features/organization/CreateNewOrgForm.svelte";
 
   export let data: PageData;
 
@@ -56,16 +58,27 @@
 <CTALayoutContainer>
   <CTAContentContainer>
     {#if $stage === ProjectDeployStage.CreateNewOrg}
-      <CreateNewOrgForm
-        isFirstOrg={!$user.data?.rillUserOrgs?.length}
-        onUpdate={(org, displayName) =>
-          deployer.setOrgAndName(org, displayName)}
-      />
+      <div class="text-xl">Let’s create your first organization</div>
+      <div class="text-base text-gray-500">
+        Create an organization to deploy this project to. <a
+          href="https://docs.rilldata.com/reference/cli/org/create"
+          target="_blank">See docs</a
+        >
+      </div>
+      <CreateNewOrgForm onCreate={(org) => deployer.setOrgAndName(org)} />
+      <Button
+        wide
+        forcedStyle="min-width:500px !important;"
+        type="primary"
+        submitForm
+        form={CreateNewOrgFormId}
+      >
+        Continue
+      </Button>
     {:else if $stage === ProjectDeployStage.SelectOrg}
       <OrgSelector
         orgs={$user.data?.rillUserOrgs ?? []}
-        onSelect={(org) => deployer.setOrgAndName(org, undefined)}
-        onNewOrg={() => deployer.onNewOrg()}
+        onSelect={(org) => deployer.setOrgAndName(org)}
       />
     {:else if $deployerStatus.isLoading}
       <div class="h-36">
