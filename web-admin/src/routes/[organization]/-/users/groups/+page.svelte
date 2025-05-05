@@ -25,7 +25,9 @@
   const currentUser = createAdminServiceGetCurrentUser();
 
   $: filteredGroups = $listOrganizationMemberUsergroups.data?.members.filter(
-    (group) => group.groupName.toLowerCase().includes(searchText.toLowerCase()),
+    (group) =>
+      !group.groupManaged &&
+      group.groupName.toLowerCase().includes(searchText.toLowerCase()),
   );
 
   $: console.log($listOrganizationMemberUsergroups.data);
