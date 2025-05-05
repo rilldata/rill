@@ -2570,7 +2570,33 @@ func (m *ListProjectsForOrgRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for Org
+	if utf8.RuneCountInString(m.GetOrg()) < 1 {
+		err := ListProjectsForOrgRequestValidationError{
+			field:  "Org",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if m.GetPageSize() != 0 {
+
+		if m.GetPageSize() > 1000 {
+			err := ListProjectsForOrgRequestValidationError{
+				field:  "PageSize",
+				reason: "value must be less than or equal to 1000",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+	}
+
+	// no validation rules for PageToken
 
 	if len(errors) > 0 {
 		return ListProjectsForOrgRequestMultiError(errors)

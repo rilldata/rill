@@ -999,6 +999,16 @@ export class ListProjectsForOrgRequest extends Message<ListProjectsForOrgRequest
    */
   org = "";
 
+  /**
+   * @generated from field: uint32 page_size = 2;
+   */
+  pageSize = 0;
+
+  /**
+   * @generated from field: string page_token = 3;
+   */
+  pageToken = "";
+
   constructor(data?: PartialMessage<ListProjectsForOrgRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1008,6 +1018,8 @@ export class ListProjectsForOrgRequest extends Message<ListProjectsForOrgRequest
   static readonly typeName = "rill.local.v1.ListProjectsForOrgRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "org", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "page_size", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 3, name: "page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListProjectsForOrgRequest {

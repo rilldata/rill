@@ -68,8 +68,8 @@ service AdminService {
     option (google.api.http) = {get: "/v1/organizations/{organization_name}/projects/{name}"};
   }
 
-  // ListProjectsByName returns projects matching a name accessible by the logged in user
-  rpc ListProjectsByName(ListProjectsByNameRequest) returns (ListProjectsByNameResponse) {
+  // ListProjectsForUserByName returns projects matching a name accessible by the logged in user
+  rpc ListProjectsForUserByName(ListProjectsForUserByNameRequest) returns (ListProjectsForUserByNameResponse) {
     option (google.api.http) = {get: "/v1/projects"};
   }
 
@@ -978,11 +978,11 @@ message GetProjectResponse {
   ProjectPermissions project_permissions = 4;
 }
 
-message ListProjectsByNameRequest {
+message ListProjectsForUserByNameRequest {
   string name = 1 [(validate.rules).string.min_len = 1];
 }
 
-message ListProjectsByNameResponse {
+message ListProjectsForUserByNameResponse {
   repeated Project projects = 1;
 }
 

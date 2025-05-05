@@ -2983,13 +2983,13 @@ paths:
         - AdminService
   /v1/projects:
     get:
-      summary: ListProjectsByName returns projects matching a name accessible by the logged in user
-      operationId: AdminService_ListProjectsByName
+      summary: ListProjectsForUserByName returns projects matching a name accessible by the logged in user
+      operationId: AdminService_ListProjectsForUserByName
       responses:
         "200":
           description: A successful response.
           schema:
-            $ref: '#/definitions/v1ListProjectsByNameResponse'
+            $ref: '#/definitions/v1ListProjectsForUserByNameResponse'
         default:
           description: An unexpected error response.
           schema:
@@ -4665,14 +4665,6 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1WhitelistedDomain'
-  v1ListProjectsByNameResponse:
-    type: object
-    properties:
-      projects:
-        type: array
-        items:
-          type: object
-          $ref: '#/definitions/v1Project'
   v1ListProjectsForOrganizationAndUserResponse:
     type: object
     properties:
@@ -4693,6 +4685,14 @@ definitions:
           $ref: '#/definitions/v1Project'
       nextPageToken:
         type: string
+  v1ListProjectsForUserByNameResponse:
+    type: object
+    properties:
+      projects:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1Project'
   v1ListPublicBillingPlansResponse:
     type: object
     properties:

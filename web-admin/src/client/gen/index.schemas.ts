@@ -651,10 +651,6 @@ export interface V1ListProjectWhitelistedDomainsResponse {
   domains?: V1WhitelistedDomain[];
 }
 
-export interface V1ListProjectsByNameResponse {
-  projects?: V1Project[];
-}
-
 export interface V1ListProjectsForOrganizationAndUserResponse {
   projects?: V1Project[];
   nextPageToken?: string;
@@ -663,6 +659,10 @@ export interface V1ListProjectsForOrganizationAndUserResponse {
 export interface V1ListProjectsForOrganizationResponse {
   projects?: V1Project[];
   nextPageToken?: string;
+}
+
+export interface V1ListProjectsForUserByNameResponse {
+  projects?: V1Project[];
 }
 
 export interface V1ListPublicBillingPlansResponse {
@@ -1682,7 +1682,7 @@ export type AdminServiceUpdateServiceBody = {
   newName?: string;
 };
 
-export type AdminServiceListProjectsByNameParams = {
+export type AdminServiceListProjectsForUserByNameParams = {
   name?: string;
 };
 

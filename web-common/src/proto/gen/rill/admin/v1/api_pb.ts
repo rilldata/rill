@@ -1071,76 +1071,76 @@ export class GetProjectResponse extends Message<GetProjectResponse> {
 }
 
 /**
- * @generated from message rill.admin.v1.ListProjectsByNameRequest
+ * @generated from message rill.admin.v1.ListProjectsForUserByNameRequest
  */
-export class ListProjectsByNameRequest extends Message<ListProjectsByNameRequest> {
+export class ListProjectsForUserByNameRequest extends Message<ListProjectsForUserByNameRequest> {
   /**
    * @generated from field: string name = 1;
    */
   name = "";
 
-  constructor(data?: PartialMessage<ListProjectsByNameRequest>) {
+  constructor(data?: PartialMessage<ListProjectsForUserByNameRequest>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.admin.v1.ListProjectsByNameRequest";
+  static readonly typeName = "rill.admin.v1.ListProjectsForUserByNameRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListProjectsByNameRequest {
-    return new ListProjectsByNameRequest().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListProjectsForUserByNameRequest {
+    return new ListProjectsForUserByNameRequest().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListProjectsByNameRequest {
-    return new ListProjectsByNameRequest().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListProjectsForUserByNameRequest {
+    return new ListProjectsForUserByNameRequest().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListProjectsByNameRequest {
-    return new ListProjectsByNameRequest().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListProjectsForUserByNameRequest {
+    return new ListProjectsForUserByNameRequest().fromJsonString(jsonString, options);
   }
 
-  static equals(a: ListProjectsByNameRequest | PlainMessage<ListProjectsByNameRequest> | undefined, b: ListProjectsByNameRequest | PlainMessage<ListProjectsByNameRequest> | undefined): boolean {
-    return proto3.util.equals(ListProjectsByNameRequest, a, b);
+  static equals(a: ListProjectsForUserByNameRequest | PlainMessage<ListProjectsForUserByNameRequest> | undefined, b: ListProjectsForUserByNameRequest | PlainMessage<ListProjectsForUserByNameRequest> | undefined): boolean {
+    return proto3.util.equals(ListProjectsForUserByNameRequest, a, b);
   }
 }
 
 /**
- * @generated from message rill.admin.v1.ListProjectsByNameResponse
+ * @generated from message rill.admin.v1.ListProjectsForUserByNameResponse
  */
-export class ListProjectsByNameResponse extends Message<ListProjectsByNameResponse> {
+export class ListProjectsForUserByNameResponse extends Message<ListProjectsForUserByNameResponse> {
   /**
    * @generated from field: repeated rill.admin.v1.Project projects = 1;
    */
   projects: Project[] = [];
 
-  constructor(data?: PartialMessage<ListProjectsByNameResponse>) {
+  constructor(data?: PartialMessage<ListProjectsForUserByNameResponse>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.admin.v1.ListProjectsByNameResponse";
+  static readonly typeName = "rill.admin.v1.ListProjectsForUserByNameResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "projects", kind: "message", T: Project, repeated: true },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListProjectsByNameResponse {
-    return new ListProjectsByNameResponse().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListProjectsForUserByNameResponse {
+    return new ListProjectsForUserByNameResponse().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListProjectsByNameResponse {
-    return new ListProjectsByNameResponse().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListProjectsForUserByNameResponse {
+    return new ListProjectsForUserByNameResponse().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListProjectsByNameResponse {
-    return new ListProjectsByNameResponse().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListProjectsForUserByNameResponse {
+    return new ListProjectsForUserByNameResponse().fromJsonString(jsonString, options);
   }
 
-  static equals(a: ListProjectsByNameResponse | PlainMessage<ListProjectsByNameResponse> | undefined, b: ListProjectsByNameResponse | PlainMessage<ListProjectsByNameResponse> | undefined): boolean {
-    return proto3.util.equals(ListProjectsByNameResponse, a, b);
+  static equals(a: ListProjectsForUserByNameResponse | PlainMessage<ListProjectsForUserByNameResponse> | undefined, b: ListProjectsForUserByNameResponse | PlainMessage<ListProjectsForUserByNameResponse> | undefined): boolean {
+    return proto3.util.equals(ListProjectsForUserByNameResponse, a, b);
   }
 }
 

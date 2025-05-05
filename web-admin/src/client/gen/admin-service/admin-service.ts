@@ -57,9 +57,9 @@ import type {
   AdminServiceListProjectInvitesParams,
   AdminServiceListProjectMemberUsergroupsParams,
   AdminServiceListProjectMemberUsersParams,
-  AdminServiceListProjectsByNameParams,
   AdminServiceListProjectsForOrganizationAndUserParams,
   AdminServiceListProjectsForOrganizationParams,
+  AdminServiceListProjectsForUserByNameParams,
   AdminServiceListUsergroupMemberUsersParams,
   AdminServiceListUsergroupsForOrganizationAndUserParams,
   AdminServiceProvisionBody,
@@ -154,9 +154,9 @@ import type {
   V1ListProjectMemberUsergroupsResponse,
   V1ListProjectMemberUsersResponse,
   V1ListProjectWhitelistedDomainsResponse,
-  V1ListProjectsByNameResponse,
   V1ListProjectsForOrganizationAndUserResponse,
   V1ListProjectsForOrganizationResponse,
+  V1ListProjectsForUserByNameResponse,
   V1ListPublicBillingPlansResponse,
   V1ListRolesResponse,
   V1ListServiceAuthTokensResponse,
@@ -10457,13 +10457,13 @@ export const createAdminServiceDenyProjectAccess = <
   return createMutation(mutationOptions, queryClient);
 };
 /**
- * @summary ListProjectsByName returns projects matching a name accessible by the logged in user
+ * @summary ListProjectsForUserByName returns projects matching a name accessible by the logged in user
  */
-export const adminServiceListProjectsByName = (
-  params?: AdminServiceListProjectsByNameParams,
+export const adminServiceListProjectsForUserByName = (
+  params?: AdminServiceListProjectsForUserByNameParams,
   signal?: AbortSignal,
 ) => {
-  return httpClient<V1ListProjectsByNameResponse>({
+  return httpClient<V1ListProjectsForUserByNameResponse>({
     url: `/v1/projects`,
     method: "GET",
     params,
@@ -10471,21 +10471,21 @@ export const adminServiceListProjectsByName = (
   });
 };
 
-export const getAdminServiceListProjectsByNameQueryKey = (
-  params?: AdminServiceListProjectsByNameParams,
+export const getAdminServiceListProjectsForUserByNameQueryKey = (
+  params?: AdminServiceListProjectsForUserByNameParams,
 ) => {
   return [`/v1/projects`, ...(params ? [params] : [])] as const;
 };
 
-export const getAdminServiceListProjectsByNameQueryOptions = <
-  TData = Awaited<ReturnType<typeof adminServiceListProjectsByName>>,
+export const getAdminServiceListProjectsForUserByNameQueryOptions = <
+  TData = Awaited<ReturnType<typeof adminServiceListProjectsForUserByName>>,
   TError = RpcStatus,
 >(
-  params?: AdminServiceListProjectsByNameParams,
+  params?: AdminServiceListProjectsForUserByNameParams,
   options?: {
     query?: Partial<
       CreateQueryOptions<
-        Awaited<ReturnType<typeof adminServiceListProjectsByName>>,
+        Awaited<ReturnType<typeof adminServiceListProjectsForUserByName>>,
         TError,
         TData
       >
@@ -10495,37 +10495,38 @@ export const getAdminServiceListProjectsByNameQueryOptions = <
   const { query: queryOptions } = options ?? {};
 
   const queryKey =
-    queryOptions?.queryKey ?? getAdminServiceListProjectsByNameQueryKey(params);
+    queryOptions?.queryKey ??
+    getAdminServiceListProjectsForUserByNameQueryKey(params);
 
   const queryFn: QueryFunction<
-    Awaited<ReturnType<typeof adminServiceListProjectsByName>>
-  > = ({ signal }) => adminServiceListProjectsByName(params, signal);
+    Awaited<ReturnType<typeof adminServiceListProjectsForUserByName>>
+  > = ({ signal }) => adminServiceListProjectsForUserByName(params, signal);
 
   return { queryKey, queryFn, ...queryOptions } as CreateQueryOptions<
-    Awaited<ReturnType<typeof adminServiceListProjectsByName>>,
+    Awaited<ReturnType<typeof adminServiceListProjectsForUserByName>>,
     TError,
     TData
   > & { queryKey: DataTag<QueryKey, TData, TError> };
 };
 
-export type AdminServiceListProjectsByNameQueryResult = NonNullable<
-  Awaited<ReturnType<typeof adminServiceListProjectsByName>>
+export type AdminServiceListProjectsForUserByNameQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceListProjectsForUserByName>>
 >;
-export type AdminServiceListProjectsByNameQueryError = RpcStatus;
+export type AdminServiceListProjectsForUserByNameQueryError = RpcStatus;
 
 /**
- * @summary ListProjectsByName returns projects matching a name accessible by the logged in user
+ * @summary ListProjectsForUserByName returns projects matching a name accessible by the logged in user
  */
 
-export function createAdminServiceListProjectsByName<
-  TData = Awaited<ReturnType<typeof adminServiceListProjectsByName>>,
+export function createAdminServiceListProjectsForUserByName<
+  TData = Awaited<ReturnType<typeof adminServiceListProjectsForUserByName>>,
   TError = RpcStatus,
 >(
-  params?: AdminServiceListProjectsByNameParams,
+  params?: AdminServiceListProjectsForUserByNameParams,
   options?: {
     query?: Partial<
       CreateQueryOptions<
-        Awaited<ReturnType<typeof adminServiceListProjectsByName>>,
+        Awaited<ReturnType<typeof adminServiceListProjectsForUserByName>>,
         TError,
         TData
       >
@@ -10535,7 +10536,7 @@ export function createAdminServiceListProjectsByName<
 ): CreateQueryResult<TData, TError> & {
   queryKey: DataTag<QueryKey, TData, TError>;
 } {
-  const queryOptions = getAdminServiceListProjectsByNameQueryOptions(
+  const queryOptions = getAdminServiceListProjectsForUserByNameQueryOptions(
     params,
     options,
   );

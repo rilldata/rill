@@ -151,7 +151,9 @@ message ListMatchingProjectsResponse {
 }
 
 message ListProjectsForOrgRequest {
-  string org = 1;
+  string org = 1 [(validate.rules).string.min_len = 1];
+  uint32 page_size = 2 [(validate.rules).uint32 = {ignore_empty: true, lte: 1000}];
+  string page_token = 3;
 }
 
 message ListProjectsForOrgResponse {

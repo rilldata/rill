@@ -137,7 +137,7 @@ func (s *Server) ListProjectsForOrganizationAndUser(ctx context.Context, req *ad
 	}, nil
 }
 
-func (s *Server) ListProjectsByName(ctx context.Context, req *adminv1.ListProjectsByNameRequest) (*adminv1.ListProjectsByNameResponse, error) {
+func (s *Server) ListProjectsForUserByName(ctx context.Context, req *adminv1.ListProjectsForUserByNameRequest) (*adminv1.ListProjectsForUserByNameResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.project", req.Name),
 	)
@@ -166,7 +166,7 @@ func (s *Server) ListProjectsByName(ctx context.Context, req *adminv1.ListProjec
 		dtos[i] = s.projToDTO(p, org.Name)
 	}
 
-	return &adminv1.ListProjectsByNameResponse{
+	return &adminv1.ListProjectsForUserByNameResponse{
 		Projects: dtos,
 	}, nil
 }

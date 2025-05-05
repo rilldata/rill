@@ -643,7 +643,7 @@ func (s *Server) ListMatchingProjects(ctx context.Context, r *connect.Request[lo
 	}
 
 	projectName := fileutil.Stem(s.app.ProjectPath)
-	projResp, err := c.ListProjectsByName(ctx, &adminv1.ListProjectsByNameRequest{
+	projResp, err := c.ListProjectsForUserByName(ctx, &adminv1.ListProjectsForUserByNameRequest{
 		Name: projectName,
 	})
 	if err != nil {
@@ -667,7 +667,8 @@ func (s *Server) ListProjectsForOrg(ctx context.Context, r *connect.Request[loca
 
 	projsResp, err := c.ListProjectsForOrganization(ctx, &adminv1.ListProjectsForOrganizationRequest{
 		OrganizationName: r.Msg.Org,
-		PageSize:         1000,
+		PageToken:        r.Msg.PageToken,
+		PageSize:         r.Msg.PageSize,
 	})
 	if err != nil {
 		return nil, err
