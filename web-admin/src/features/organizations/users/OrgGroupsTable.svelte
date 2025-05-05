@@ -6,7 +6,7 @@
   import { flexRender } from "@tanstack/svelte-table";
   import type { ColumnDef } from "@tanstack/svelte-table";
   import OrgGroupsTableActionsCell from "./OrgGroupsTableActionsCell.svelte";
-  import OrgGroupsTableRoleCell from "./OrgGroupsTableRoleCell.svelte";
+  import OrgGroupsTableGroupCompositeCell from "./OrgGroupsTableGroupCompositeCell.svelte";
   import BasicTable from "@rilldata/web-common/components/table/BasicTable.svelte";
 
   export let data: V1MemberUsergroup[];
@@ -24,31 +24,16 @@
     {
       accessorKey: "groupName",
       header: "Group",
-      cell: ({ row }) => {
-        const groupName = row.original.groupName;
-        if (groupName.startsWith("autogroup:")) {
-          return transformGroupName(groupName);
-        }
-        return groupName;
-      },
+      enableSorting: true,
+      cell: ({ row }) =>
+        flexRender(OrgGroupsTableGroupCompositeCell, {
+          name: transformGroupName(row.original.groupName),
+          usersCount: row.original.usersCount,
+        }),
       meta: {
-        widthPercent: 90,
+        widthPercent: 5,
       },
     },
-    // {
-    //   accessorKey: "roleName",
-    //   header: "Role",
-    //   cell: ({ row }) =>
-    //     flexRender(OrgGroupsTableRoleCell, {
-    //       name: row.original.groupName,
-    //       managed: row.original.groupManaged,
-    //       role: row.original.roleName,
-    //     }),
-    //   meta: {
-    //     widthPercent: 40,
-    //     marginLeft: "8px",
-    //   },
-    // },
     {
       accessorKey: "actions",
       header: "",
