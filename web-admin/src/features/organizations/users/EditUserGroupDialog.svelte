@@ -33,6 +33,7 @@
 
   export let open = false;
   export let groupName: string;
+  export let groupManaged: boolean;
   export let currentUserEmail: string;
   export let searchUsersList: V1OrganizationMemberUser[];
 
@@ -224,6 +225,7 @@
           label="Name"
           errors={$errors.newName}
           alwaysShowError
+          disabled={groupManaged}
         />
 
         <Combobox

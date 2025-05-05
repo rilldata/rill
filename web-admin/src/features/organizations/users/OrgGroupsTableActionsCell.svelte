@@ -58,6 +58,7 @@
 <EditUserGroupDialog
   bind:open={isEditDialogOpen}
   groupName={name}
+  groupManaged={managed}
   {currentUserEmail}
   {searchUsersList}
 />
