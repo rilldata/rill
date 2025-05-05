@@ -405,16 +405,16 @@ func (s *Server) CreateManagedGitRepo(ctx context.Context, req *adminv1.CreateMa
 	}
 	repo, err := s.admin.CreateManagedGitRepo(ctx, org, req.Name, createdByUserID)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
-	id, err := s.admin.Github.ManagedOrgInstallationID(ctx)
+	id, err := s.admin.Github.ManagedOrgInstallationID()
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 	token, err := s.admin.Github.InstallationToken(ctx, id, *repo.ID)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 
 	return &adminv1.CreateManagedGitRepoResponse{

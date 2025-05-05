@@ -37,7 +37,7 @@ type Github interface {
 	InstallationToken(ctx context.Context, installationID, repoID int64) (string, error)
 
 	CreateManagedRepo(ctx context.Context, repoPrefix string) (*github.Repository, error)
-	ManagedOrgInstallationID(ctx context.Context) (int64, error)
+	ManagedOrgInstallationID() (int64, error)
 }
 
 // githubClient implements the Github interface.
@@ -50,11 +50,8 @@ type githubClient struct {
 	// managedOrgInstallationID is usually populated when the client is created.
 	// But we do not return an error if there is any error in fetching the installation ID.
 	// This is to let admin server start even if there is an issue with Github service.
-	// If managedOrgFetchError is true then the installation ID is not valid and refetched again when needed.
-	// mu controls access to managedOrgInstallationID and managedOrgFetchError.
 	managedOrgInstallationID int64
 	managedOrgFetchError     error
-	mu                       sync.Mutex
 
 	cacheMu           sync.Mutex
 	installationCache *simplelru.LRU
@@ -79,10 +76,13 @@ func NewGithub(ctx context.Context, appID int64, appPrivateKey, managedGithubOrg
 		appClient:         appClient,
 		installationCache: lru,
 		managedOrg:        managedGithubOrg,
-		mu:                sync.Mutex{},
 	}
 
 	// Set the managed org installation client
+	if managedGithubOrg == "" {
+		g.managedOrgFetchError = fmt.Errorf("managed Git repositories are not configured for this environment")
+		
+	}
 	i, _, err := appClient.Apps.FindOrganizationInstallation(ctx, managedGithubOrg)
 	if err != nil {
 		logger.Error("failed to get managed org installation ID", zap.Error(err), observability.ZapCtx(ctx))
@@ -90,6 +90,7 @@ func NewGithub(ctx context.Context, appID int64, appPrivateKey, managedGithubOrg
 		return g, nil
 	}
 	g.managedOrgInstallationID = *i.ID
+
 	return g, nil
 }
 
@@ -141,7 +142,7 @@ func (g *githubClient) CreateManagedRepo(ctx context.Context, name string) (*git
 	repoName := fmt.Sprintf("%s-%v", name, uuid.New().String()[0:8])
 
 	// get managed org client
-	id, err := g.ManagedOrgInstallationID(ctx)
+	id, err := g.ManagedOrgInstallationID()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get managed org installation ID: %w", err)
 	}
@@ -178,21 +179,8 @@ func (g *githubClient) CreateManagedRepo(ctx context.Context, name string) (*git
 	return repo, nil
 }
 
-func (g *githubClient) ManagedOrgInstallationID(ctx context.Context) (int64, error) {
-	g.mu.Lock()
-	defer g.mu.Unlock()
-	if g.managedOrgFetchError == nil {
-		return g.managedOrgInstallationID, nil
-	}
-
-	// We need to refetch the installation ID
-	i, _, err := g.appClient.Apps.FindOrganizationInstallation(ctx, g.managedOrg)
-	if err != nil {
-		return 0, err
-	}
-	g.managedOrgInstallationID = *i.ID
-	g.managedOrgFetchError = nil
-	return g.managedOrgInstallationID, nil
+func (g *githubClient) ManagedOrgInstallationID() (int64, error) {
+	return g.managedOrgInstallationID, g.managedOrgFetchError
 }
 
 func (s *Service) CreateManagedGitRepo(ctx context.Context, org *database.Organization, name string, userID *string) (*github.Repository, error) {

@@ -2541,7 +2541,7 @@ func (c *connection) DeleteProvisionerResource(ctx context.Context, id string) e
 
 func (c *connection) FindManagedGitRepo(ctx context.Context, remote string) (*database.ManagedGitRepo, error) {
 	res := &database.ManagedGitRepo{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM managed_git_repo WHERE remote = $1", remote).StructScan(res)
+	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM managed_git_repos WHERE remote = $1", remote).StructScan(res)
 	if err != nil {
 		return nil, parseErr("managed git repo", err)
 	}
@@ -2554,7 +2554,7 @@ func (c *connection) FindUnusedManagedGitRepos(ctx context.Context, pageSize int
 	// that were accidentally deleted and may need to be restored
 	var res []*database.ManagedGitRepo
 	err := c.getDB(ctx).SelectContext(ctx, &res, `
-		SELECT * FROM managed_git_repo
+		SELECT * FROM managed_git_repos
 		WHERE project_id IS NULL
 		AND updated_on < now() - INTERVAL '7 DAYS'
 		ORDER BY updated_on DESC
@@ -2570,7 +2570,7 @@ func (c *connection) CountManagedGitRepos(ctx context.Context, orgID string) (in
 	var count int
 	err := c.getDB(ctx).QueryRowxContext(ctx, `
 		SELECT COUNT(*)
-		FROM managed_git_repo m
+		FROM managed_git_repos m
 		JOIN project p ON m.id = p.project_id
 		WHERE p.org_id = $1
 	`, orgID).Scan(&count)
@@ -2587,7 +2587,7 @@ func (c *connection) InsertManagedGitRepo(ctx context.Context, opts *database.In
 
 	res := &database.ManagedGitRepo{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, `
-		INSERT INTO managed_git_repo (created_by_user_id, remote)
+		INSERT INTO managed_git_repos (created_by_user_id, remote)
 		VALUES ($1, $2) RETURNING *`,
 		opts.CreatedByUserID, opts.Remote,
 	).StructScan(res)
@@ -2598,7 +2598,7 @@ func (c *connection) InsertManagedGitRepo(ctx context.Context, opts *database.In
 }
 
 func (c *connection) DeleteManagedGitRepos(ctx context.Context, ids []string) error {
-	_, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM managed_git_repo WHERE id = ANY($1)", ids)
+	_, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM managed_git_repos WHERE id = ANY($1)", ids)
 	return parseErr("managed git repo", err)
 }
 
