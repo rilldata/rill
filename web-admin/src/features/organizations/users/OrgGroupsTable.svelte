@@ -13,28 +13,42 @@
   export let currentUserEmail: string;
   export let searchUsersList: V1OrganizationMemberUser[];
 
+  function transformGroupName(groupName: string) {
+    return groupName
+      .replace("autogroup:", "")
+      .replace("_", " ")
+      .replace(/\b\w/g, (char) => char.toUpperCase());
+  }
+
   const columns: ColumnDef<V1MemberUsergroup, any>[] = [
     {
       accessorKey: "groupName",
       header: "Group",
+      cell: ({ row }) => {
+        const groupName = row.original.groupName;
+        if (groupName.startsWith("autogroup:")) {
+          return transformGroupName(groupName);
+        }
+        return groupName;
+      },
       meta: {
-        widthPercent: 50,
+        widthPercent: 90,
       },
     },
-    {
-      accessorKey: "roleName",
-      header: "Role",
-      cell: ({ row }) =>
-        flexRender(OrgGroupsTableRoleCell, {
-          name: row.original.groupName,
-          managed: row.original.groupManaged,
-          role: row.original.roleName,
-        }),
-      meta: {
-        widthPercent: 40,
-        marginLeft: "8px",
-      },
-    },
+    // {
+    //   accessorKey: "roleName",
+    //   header: "Role",
+    //   cell: ({ row }) =>
+    //     flexRender(OrgGroupsTableRoleCell, {
+    //       name: row.original.groupName,
+    //       managed: row.original.groupManaged,
+    //       role: row.original.roleName,
+    //     }),
+    //   meta: {
+    //     widthPercent: 40,
+    //     marginLeft: "8px",
+    //   },
+    // },
     {
       accessorKey: "actions",
       header: "",
@@ -53,4 +67,9 @@
   ];
 </script>
 
-<BasicTable {data} {columns} emptyText="No groups found" />
+<BasicTable
+  {data}
+  {columns}
+  emptyText="No groups found"
+  columnLayout="1fr 56px"
+/>
