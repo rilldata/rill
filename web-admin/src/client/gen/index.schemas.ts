@@ -667,6 +667,10 @@ export interface V1ListProjectsForOrganizationResponse {
   nextPageToken?: string;
 }
 
+export interface V1ListProjectsForUserByNameResponse {
+  projects?: V1Project[];
+}
+
 export interface V1ListPublicBillingPlansResponse {
   plans?: V1BillingPlan[];
 }
@@ -1688,6 +1692,10 @@ export type AdminServiceCreateServiceParams = {
 
 export type AdminServiceUpdateServiceBody = {
   newName?: string;
+};
+
+export type AdminServiceListProjectsForUserByNameParams = {
+  name?: string;
 };
 
 export type AdminServiceGetAlertMetaBodyAnnotations = { [key: string]: string };

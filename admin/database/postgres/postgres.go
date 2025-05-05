@@ -365,6 +365,22 @@ func (c *connection) FindProjectByName(ctx context.Context, orgName, name string
 	return c.projectFromDTO(res)
 }
 
+func (c *connection) FindProjectsByNameAndUser(ctx context.Context, name, userID string) ([]*database.Project, error) {
+	var res []*projectDTO
+	err := c.getDB(ctx).SelectContext(ctx, &res, `
+		SELECT * FROM projects
+		WHERE id IN (
+			SELECT upr.project_id FROM users_projects_roles upr WHERE upr.user_id = $1
+			UNION
+			SELECT ugpr.project_id FROM usergroups_projects_roles ugpr JOIN usergroups_users ugu ON ugpr.usergroup_id = ugu.usergroup_id WHERE ugu.user_id = $1
+		) AND lower(name)=lower($2)
+	`, userID, name)
+	if err != nil {
+		return nil, parseErr("projects", err)
+	}
+	return c.projectsFromDTOs(res)
+}
+
 func (c *connection) InsertProject(ctx context.Context, opts *database.InsertProjectOptions) (*database.Project, error) {
 	if err := database.Validate(opts); err != nil {
 		return nil, err
