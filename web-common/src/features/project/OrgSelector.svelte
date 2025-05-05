@@ -2,10 +2,7 @@
   import { Button } from "@rilldata/web-common/components/button";
   import * as Dialog from "@rilldata/web-common/components/dialog";
   import Select from "@rilldata/web-common/components/forms/Select.svelte";
-  import {
-    SelectSeparator,
-    SelectItem,
-  } from "@rilldata/web-common/components/select";
+  import { SelectSeparator } from "@rilldata/web-common/components/select";
   import CreateNewOrgForm from "@rilldata/web-common/features/organization/CreateNewOrgForm.svelte";
   import { CreateNewOrgFormId } from "@rilldata/web-common/features/organization/CreateNewOrgForm.svelte";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
@@ -14,7 +11,8 @@
   export let orgs: string[];
   export let onSelect: (org: string) => void;
 
-  let selectedOrg = "";
+  // As a convenience for user with only one org, we select auto select it.
+  let selectedOrg = orgs.length === 1 ? orgs[0] : "";
   let isNewOrgDialogOpen = false;
 
   function selectHandler() {
@@ -48,15 +46,17 @@
   width={400}
   sameWidth
 >
-  <div slot="extra-dropdown-content">
+  <div slot="additional-dropdown-content" let:close>
     <SelectSeparator />
-    <SelectItem
-      value="__rill_new_org"
-      on:click={() => (isNewOrgDialogOpen = true)}
-      class="text-[12px] gap-x-2 items-start"
+    <button
+      on:click={() => {
+        isNewOrgDialogOpen = true;
+        close();
+      }}
+      class="w-full cursor-pointer select-none rounded-sm py-1.5 px-2 text-left hover:bg-accent"
     >
       + Create organization
-    </SelectItem>
+    </button>
   </div>
 </Select>
 <Button wide type="primary" on:click={selectHandler}>Continue</Button>

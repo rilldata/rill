@@ -4,16 +4,16 @@ import {
   createLocalServiceGetMetadata,
   createLocalServiceListOrganizationsAndBillingMetadataRequest,
 } from "@rilldata/web-common/runtime-client/local-service";
-import { derived, type Readable } from "svelte/store";
+import { derived } from "svelte/store";
 
-export function getPlanUpgradeUrl(orgNameStore: Readable<string>) {
+export function getPlanUpgradeUrl(orgName: string) {
   const metadataQuery = createLocalServiceGetMetadata();
   const orgsMetadataQuery =
     createLocalServiceListOrganizationsAndBillingMetadataRequest();
 
   return derived(
-    [orgNameStore, metadataQuery, orgsMetadataQuery, page],
-    ([orgName, metadata, orgsMetadata, pageState]) => {
+    [metadataQuery, orgsMetadataQuery, page],
+    ([metadata, orgsMetadata, pageState]) => {
       const adminUrl = metadata.data?.adminUrl;
       if (!adminUrl) return "";
 
@@ -45,6 +45,22 @@ export function getPlanUpgradeUrl(orgNameStore: Readable<string>) {
       redirectUrl.searchParams.set("org", orgName);
       url.searchParams.set("redirect", redirectUrl.toString());
       return url.toString();
+    },
+  );
+}
+
+export function getOrgIsOnTrial(orgName: string) {
+  return derived(
+    createLocalServiceListOrganizationsAndBillingMetadataRequest(),
+    (orgsMetadata) => {
+      const metadataForOrg = orgsMetadata?.data?.orgs.find(
+        (o) => o.name === orgName,
+      );
+      return (
+        !!orgName &&
+        !!metadataForOrg?.issues &&
+        !!getNeverSubscribedIssue(metadataForOrg.issues)
+      );
     },
   );
 }

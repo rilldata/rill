@@ -87,7 +87,7 @@
     width="500px"
   >
     <div
-      slot="extra-content"
+      slot="prefix"
       class="bg-neutral-100 text-neutral-400 border border-r-0 border-gray-300 text-base px-2 py-1 max-h-8"
     >
       https://ui.rilldata.com/

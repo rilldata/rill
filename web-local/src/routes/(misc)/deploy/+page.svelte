@@ -1,9 +1,11 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { Button } from "@rilldata/web-common/components/button";
-  import TrialDetailsDialog from "@rilldata/web-common/features/billing/TrialDetailsDialog.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
-  import { getPlanUpgradeUrl } from "@rilldata/web-common/features/organization/utils";
+  import {
+    getOrgIsOnTrial,
+    getPlanUpgradeUrl,
+  } from "@rilldata/web-common/features/organization/utils";
   import OrgSelector from "@rilldata/web-common/features/project/OrgSelector.svelte";
   import {
     ProjectDeployer,
@@ -22,19 +24,16 @@
 
   export let data: PageData;
 
-  const deployer = new ProjectDeployer(data.orgParam);
+  const deployer = new ProjectDeployer();
   const metadata = deployer.metadata;
   const user = deployer.user;
   const project = deployer.project;
   const deployerStatus = deployer.getStatus();
   const stage = deployer.stage;
-  const org = deployer.org;
 
-  $: planUpgradeUrl = getPlanUpgradeUrl(org);
-
-  // This is specifically the org selected using the OrgSelector.
-  // Used to retrigger the deploy after the user confirms deploy on an empty org.
-  let deployConfirmOpen = false;
+  let selectedOrg: string = data.orgParam ?? "";
+  $: planUpgradeUrl = getPlanUpgradeUrl(selectedOrg);
+  $: orgIsOnTrial = getOrgIsOnTrial(selectedOrg);
 
   function onBack() {
     if ($user.data?.rillUserOrgs?.length) {
@@ -44,8 +43,23 @@
     }
   }
 
+  function onRetry() {
+    void deployer.deploy(selectedOrg);
+  }
+
+  function selectOrg(org: string) {
+    selectedOrg = org;
+    void deployer.deploy(org);
+  }
+
   onMount(() => {
-    void deployer.loginOrDeploy();
+    void deployer.loginOrDeploy().then(() => {
+      // When org param is present, it is probably a callback from the upgrade plan page.
+      // So directly trigger a deploy
+      if (data.orgParam) {
+        void deployer.deploy(data.orgParam);
+      }
+    });
   });
 </script>
 
@@ -65,7 +79,7 @@
           target="_blank">See docs</a
         >
       </div>
-      <CreateNewOrgForm onCreate={(org) => deployer.setOrgAndName(org)} />
+      <CreateNewOrgForm onCreate={selectOrg} />
       <Button
         wide
         forcedStyle="min-width:500px !important;"
@@ -76,10 +90,7 @@
         Continue
       </Button>
     {:else if $stage === ProjectDeployStage.SelectOrg}
-      <OrgSelector
-        orgs={$user.data?.rillUserOrgs ?? []}
-        onSelect={(org) => deployer.setOrgAndName(org)}
-      />
+      <OrgSelector orgs={$user.data?.rillUserOrgs ?? []} onSelect={selectOrg} />
     {:else if $deployerStatus.isLoading}
       <div class="h-36">
         <Spinner status={EntityStatus.Running} size="7rem" duration={725} />
@@ -92,14 +103,10 @@
       <DeployError
         error={$deployerStatus.error}
         planUpgradeUrl={$planUpgradeUrl}
-        onRetry={() => deployer.deploy()}
+        orgIsOnTrial={$orgIsOnTrial}
+        {onRetry}
         {onBack}
       />
     {/if}
   </CTAContentContainer>
 </CTALayoutContainer>
-
-<TrialDetailsDialog
-  bind:open={deployConfirmOpen}
-  onContinue={() => deployer.deploy()}
-/>

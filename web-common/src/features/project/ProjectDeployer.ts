@@ -1,7 +1,5 @@
 import { page } from "$app/stores";
 import type { ConnectError } from "@connectrpc/connect";
-import { getTrialIssue } from "@rilldata/web-common/features/billing/issues";
-import { getPrettyDeployError } from "@rilldata/web-common/features/project/deploy-errors";
 import { waitUntil } from "@rilldata/web-common/lib/waitUtils";
 import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
 import { BehaviourEventAction } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
@@ -15,7 +13,6 @@ import {
   createLocalServiceGetCurrentProject,
   createLocalServiceGetCurrentUser,
   createLocalServiceGetMetadata,
-  createLocalServiceListOrganizationsAndBillingMetadataRequest,
   createLocalServiceRedeploy,
 } from "@rilldata/web-common/runtime-client/local-service";
 import { derived, get, writable } from "svelte/store";
@@ -23,81 +20,47 @@ import { addPosthogSessionIdToUrl } from "../../lib/analytics/posthog";
 
 export enum ProjectDeployStage {
   Init,
+  Invalid,
 
   CreateNewOrg,
   SelectOrg,
-
-  FreshDeploy,
-  ReDeploy,
 }
 
 export class ProjectDeployer {
   public readonly metadata = createLocalServiceGetMetadata();
-  public readonly orgsMetadata =
-    createLocalServiceListOrganizationsAndBillingMetadataRequest();
   public readonly user = createLocalServiceGetCurrentUser();
   public readonly project = createLocalServiceGetCurrentProject();
 
   public stage = writable(ProjectDeployStage.Init);
 
-  // exposes the exact org being used to deploy.
-  // this could change based on user's selection or through auto generation based on user's email
-  public readonly org = writable("");
-  public readonly orgDisplayName = writable<string | undefined>(undefined);
-
   private readonly deployMutation = createLocalServiceDeploy();
   private readonly redeployMutation = createLocalServiceRedeploy();
-
-  public constructor(
-    // use a specific org. org could be set in url params as a callback from upgrading to team plan
-    // this marks the deployer to skip prompting for org selection or auto generation
-    useOrg: string,
-  ) {
-    this.org.set(useOrg);
-  }
 
   public getStatus() {
     return derived(
       [
         this.metadata,
-        this.orgsMetadata,
         this.user,
         this.project,
-        this.org,
         this.deployMutation,
         this.redeployMutation,
       ],
-      ([
-        metadata,
-        orgsMetadata,
-        user,
-        project,
-        org,
-        deployMutation,
-        redeployMutation,
-      ]) => {
+      ([metadata, user, project, deployMutation, redeployMutation]) => {
         if (
           metadata.error ||
-          orgsMetadata.error ||
           user.error ||
           project.error ||
           deployMutation.error ||
           redeployMutation.error
         ) {
-          const orgMetadata = orgsMetadata?.data?.orgs.find(
-            (om) => om.name === org,
-          );
-          const onTrial = !!getTrialIssue(orgMetadata?.issues ?? []);
           return {
             isLoading: false,
-            error: getPrettyDeployError(
+            error:
               (metadata.error as ConnectError) ??
-                (user.error as ConnectError) ??
-                (project.error as ConnectError) ??
-                (deployMutation.error as ConnectError) ??
-                (redeployMutation.error as ConnectError),
-              onTrial,
-            ),
+              (user.error as ConnectError) ??
+              (project.error as ConnectError) ??
+              (deployMutation.error as ConnectError) ??
+              (redeployMutation.error as ConnectError),
           };
         }
 
@@ -112,27 +75,21 @@ export class ProjectDeployer {
     );
   }
 
-  public setOrgAndName(org: string) {
-    this.org.set(org);
-    void this.deploy();
-  }
-
-  public onNewOrg() {
-    this.stage.set(ProjectDeployStage.CreateNewOrg);
-  }
-
   public onSelectOrg() {
     this.stage.set(ProjectDeployStage.SelectOrg);
   }
 
   public async loginOrDeploy() {
+    // Wait for user and metadata to load
     await waitUntil(
       () => !get(this.metadata).isLoading && !get(this.user).isLoading,
     );
 
+    // Check login status
     const metadata = get(this.metadata).data as GetMetadataResponse;
     const userResp = get(this.user).data as GetCurrentUserResponse;
     if (!userResp.user) {
+      // If user is not logged in then redirect to login url from metadata
       void behaviourEvent?.fireDeployEvent(BehaviourEventAction.LoginStart);
       const u = new URL(metadata.loginUrl);
       u.searchParams.set("redirect", get(page).url.toString());
@@ -141,49 +98,39 @@ export class ProjectDeployer {
       void behaviourEvent?.fireDeployEvent(BehaviourEventAction.LoginSuccess);
     }
 
-    return this.deploy();
-  }
+    // Check project status
 
-  public async deploy() {
+    // Wait for project request to load
     await waitUntil(() => !get(this.project).isLoading);
 
     const projectResp = get(this.project).data as GetCurrentProjectResponse;
 
     // Project already exists
     if (projectResp.project) {
-      this.stage.set(ProjectDeployStage.ReDeploy);
       if (projectResp.project.githubUrl) {
-        // we do not support pushing to a project already connected to github as of now
+        // We do not support pushing to a project already connected to github as of now
+        // Deploy page should not even open in this scenario, so this is just a safeguard.
+        this.stage.set(ProjectDeployStage.Invalid);
         return;
       }
 
-      const resp = await get(this.redeployMutation).mutateAsync({
-        projectId: projectResp.project.id,
-        reupload: true,
-      });
-      const projectUrl = resp.frontendUrl; // https://ui.rilldata.com/<org>/<project>
-      const projectUrlWithSessionId = addPosthogSessionIdToUrl(projectUrl);
-      window.open(projectUrlWithSessionId, "_self");
-      return;
+      return this.redeploy(projectResp.project.id);
     }
 
-    // Project does not yet exist
-
-    const org = get(this.org);
-    if (!org) {
-      if (get(this.user).data?.rillUserOrgs?.length) {
-        this.stage.set(ProjectDeployStage.SelectOrg);
-      } else {
-        this.stage.set(ProjectDeployStage.CreateNewOrg);
-      }
-      return;
+    if (userResp.rillUserOrgs?.length) {
+      // If the user has at least one org we show the selector.
+      // Note: The selector has the option to create a new org, so we show it even when there is only one org.
+      this.stage.set(ProjectDeployStage.SelectOrg);
+    } else {
+      this.stage.set(ProjectDeployStage.CreateNewOrg);
     }
+  }
 
-    this.stage.set(ProjectDeployStage.FreshDeploy);
+  public async deploy(org: string) {
+    const projectResp = get(this.project).data as GetCurrentProjectResponse;
 
     const resp = await get(this.deployMutation).mutateAsync({
       org,
-      newOrgDisplayName: get(this.orgDisplayName),
       projectName: projectResp.localProjectName,
       upload: true,
     });
@@ -196,5 +143,15 @@ export class ProjectDeployer {
     const projectInviteUrlWithSessionId =
       addPosthogSessionIdToUrl(projectInviteUrl);
     window.open(projectInviteUrlWithSessionId, "_self");
+  }
+
+  private async redeploy(projectId: string) {
+    const resp = await get(this.redeployMutation).mutateAsync({
+      projectId,
+      reupload: true,
+    });
+    const projectUrl = resp.frontendUrl; // https://ui.rilldata.com/<org>/<project>
+    const projectUrlWithSessionId = addPosthogSessionIdToUrl(projectUrl);
+    window.open(projectUrlWithSessionId, "_self");
   }
 }

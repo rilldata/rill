@@ -1,4 +1,5 @@
 <script lang="ts">
+  import type { ConnectError } from "@connectrpc/connect";
   import { Button } from "@rilldata/web-common/components/button";
   import CTAButton from "@rilldata/web-common/components/calls-to-action/CTAButton.svelte";
   import CTAHeader from "@rilldata/web-common/components/calls-to-action/CTAHeader.svelte";
@@ -7,34 +8,37 @@
   import CancelCircleInverse from "@rilldata/web-common/components/icons/CancelCircleInverse.svelte";
   import PricingDetails from "@rilldata/web-common/features/billing/PricingDetails.svelte";
   import {
-    type DeployError,
     DeployErrorType,
+    getPrettyDeployError,
   } from "@rilldata/web-common/features/project/deploy-errors";
 
-  export let error: DeployError;
+  export let error: ConnectError;
+  export let orgIsOnTrial: boolean;
   export let planUpgradeUrl: string;
   export let onRetry: () => void;
   export let onBack: () => void;
 
+  $: deployError = getPrettyDeployError(error, orgIsOnTrial);
+
   $: isQuotaError =
-    error.type === DeployErrorType.ProjectLimitHit ||
-    error.type === DeployErrorType.OrgLimitHit ||
-    error.type === DeployErrorType.TrialEnded ||
-    error.type === DeployErrorType.SubscriptionEnded;
+    deployError.type === DeployErrorType.ProjectLimitHit ||
+    deployError.type === DeployErrorType.OrgLimitHit ||
+    deployError.type === DeployErrorType.TrialEnded ||
+    deployError.type === DeployErrorType.SubscriptionEnded;
 </script>
 
 {#if isQuotaError}
-  <CTAHeader variant="bold">{error.title}</CTAHeader>
+  <CTAHeader variant="bold">{deployError.title}</CTAHeader>
   <p class="text-base text-gray-500 text-left w-[500px]">
-    <PricingDetails extraText={error.message} />
+    <PricingDetails extraText={deployError.message} />
   </p>
   <Button type="primary" href={planUpgradeUrl} wide>Upgrade</Button>
   <Button type="secondary" noStroke wide on:click={onBack}>Back</Button>
 {:else}
   <CancelCircleInverse size="7rem" className="text-gray-200" />
-  <CTAHeader variant="bold">{error.title}</CTAHeader>
-  <CTAMessage>{error.message}</CTAMessage>
-  {#if error.type === DeployErrorType.Unknown}
+  <CTAHeader variant="bold">{deployError.title}</CTAHeader>
+  <CTAMessage>{deployError.message}</CTAMessage>
+  {#if deployError.type === DeployErrorType.Unknown}
     <CTAButton variant="secondary" on:click={onRetry}>Retry</CTAButton>
   {/if}
 {/if}

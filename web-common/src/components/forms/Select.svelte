@@ -52,6 +52,12 @@
         option.label.toLowerCase().includes(searchText.toLowerCase()),
       )
     : options;
+
+  let open = false;
+
+  function close() {
+    open = false;
+  }
 </script>
 
 <div class="flex flex-col gap-y-2 max-w-full" class:w-full={full}>
@@ -77,6 +83,7 @@
   {/if}
 
   <Select.Root
+    bind:open
     {disabled}
     {selected}
     onSelectedChange={(newSelection) => {
@@ -149,7 +156,7 @@
       {:else}
         <div class="px-2.5 py-1.5 text-gray-600">No results found</div>
       {/each}
-      <slot name="extra-dropdown-content" />
+      <slot name="additional-dropdown-content" {close} />
     </Select.Content>
   </Select.Root>
 </div>

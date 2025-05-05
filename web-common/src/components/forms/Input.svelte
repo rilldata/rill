@@ -136,7 +136,7 @@
   {/if}
 
   <div class="flex flex-row">
-    <slot name="extra-content" />
+    <slot name="prepend" />
     {#if !options}
       <div
         class="input-wrapper {textClass}"
