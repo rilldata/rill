@@ -44,6 +44,11 @@
     groupName,
   );
 
+  $: console.log(
+    "EditUserGroupDialog: ",
+    $listUsergroupMemberUsers.data?.members,
+  );
+
   const queryClient = useQueryClient();
   const removeUserGroupMember = createAdminServiceRemoveUsergroupMemberUser();
   const addUsergroupMemberUser = createAdminServiceAddUsergroupMemberUser();
@@ -54,6 +59,7 @@
     usergroup: string,
   ) {
     try {
+      console.log("Adding user to user group", email, usergroup);
       await $addUsergroupMemberUser.mutateAsync({
         organization: organization,
         usergroup: usergroup,
@@ -112,6 +118,7 @@
 
   async function handleRemoveUser(groupName: string, email: string) {
     try {
+      console.log("Removing user from user group", email, groupName);
       await $removeUserGroupMember.mutateAsync({
         organization: organization,
         usergroup: groupName,
@@ -214,7 +221,7 @@
           bind:value={$form.newName}
           placeholder="New user group name"
           id="user-group-name"
-          label="Group label"
+          label="Name"
           errors={$errors.newName}
           alwaysShowError
         />

@@ -27,7 +27,9 @@
       enableSorting: true,
       cell: ({ row }) =>
         flexRender(OrgGroupsTableGroupCompositeCell, {
-          name: transformGroupName(row.original.groupName),
+          name: row.original.groupName?.startsWith("autogroup:")
+            ? transformGroupName(row.original.groupName)
+            : row.original.groupName,
           usersCount: row.original.usersCount,
         }),
       meta: {
