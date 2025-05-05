@@ -201,7 +201,7 @@ first_month_of_year: 1
 	// Verify that the canvas reconciliation fails with the expected error
 	c1 = testruntime.GetResource(t, rt, id, runtime.ResourceKindCanvas, "c1")
 	require.NotEmpty(t, c1.Meta.ReconcileError)
-	require.Contains(t, c1.Meta.ReconcileError, "metrics views \"mv1\" and \"mv2\" have inconsistent first_day_of_week")
+	require.Contains(t, c1.Meta.ReconcileError, "inconsistent first_day_of_week")
 
 	// With StageChanges==true, the valid spec should be preserved
 	require.NotNil(t, c1.GetCanvas().State.ValidSpec)

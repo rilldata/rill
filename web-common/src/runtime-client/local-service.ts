@@ -11,6 +11,9 @@ import {
   GetVersionRequest,
   PushToGithubRequest,
   RedeployProjectRequest,
+  CreateOrganizationRequest,
+  ListMatchingProjectsRequest,
+  ListProjectsForOrgRequest,
 } from "@rilldata/web-common/proto/gen/rill/local/v1/api_pb";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import {
@@ -257,5 +260,97 @@ export function createLocalServiceListOrganizationsAndBillingMetadataRequest<
     queryFn:
       queryOptions?.queryFn ??
       localServiceListOrganizationsAndBillingMetadataRequest,
+  });
+}
+
+export function localServiceCreateOrganization(
+  args: PartialMessage<CreateOrganizationRequest>,
+) {
+  return getClient().createOrganization(new CreateOrganizationRequest(args));
+}
+export function createLocalServiceCreateOrganization<
+  TError = ConnectError,
+  TContext = unknown,
+>(options?: {
+  mutation?: Partial<
+    CreateMutationOptions<
+      Awaited<ReturnType<typeof localServiceCreateOrganization>>,
+      TError,
+      PartialMessage<CreateOrganizationRequest>,
+      TContext
+    >
+  >;
+}) {
+  const { mutation: mutationOptions } = options ?? {};
+  return createMutation<
+    Awaited<ReturnType<typeof localServiceCreateOrganization>>,
+    unknown,
+    PartialMessage<CreateOrganizationRequest>,
+    unknown
+  >({ mutationFn: localServiceCreateOrganization, ...mutationOptions });
+}
+
+export function localServiceListMatchingProjectsRequest() {
+  return getClient().listMatchingProjects(new ListMatchingProjectsRequest());
+}
+export const getLocalServiceListMatchingProjectsRequestQueryKey = () => [
+  `/v1/local/list-matching-projects`,
+];
+export function createLocalServiceListMatchingProjectsRequest<
+  TData = Awaited<ReturnType<typeof localServiceListMatchingProjectsRequest>>,
+  TError = ConnectError,
+>(options?: {
+  query?: Partial<
+    CreateQueryOptions<
+      Awaited<ReturnType<typeof localServiceListMatchingProjectsRequest>>,
+      TError,
+      TData
+    >
+  >;
+}) {
+  const { query: queryOptions } = options ?? {};
+  return createQuery({
+    ...queryOptions,
+    queryKey:
+      queryOptions?.queryKey ??
+      getLocalServiceListMatchingProjectsRequestQueryKey(),
+    queryFn: queryOptions?.queryFn ?? localServiceListMatchingProjectsRequest,
+  });
+}
+
+export function localServiceListProjectsForOrgRequest(org: string) {
+  return getClient().listProjectsForOrg(
+    new ListProjectsForOrgRequest({
+      org,
+    }),
+  );
+}
+export const getLocalServiceListProjectsForOrgRequestQueryKey = (
+  org: string,
+) => [`/v1/local/list-projects-for-org`, org];
+export function createLocalServiceListProjectsForOrgRequest<
+  TData = Awaited<ReturnType<typeof localServiceListProjectsForOrgRequest>>,
+  TError = ConnectError,
+>(
+  org: string,
+  options?: {
+    query?: Partial<
+      CreateQueryOptions<
+        Awaited<ReturnType<typeof localServiceListProjectsForOrgRequest>>,
+        TError,
+        TData
+      >
+    >;
+  },
+) {
+  const { query: queryOptions } = options ?? {};
+  return createQuery({
+    ...queryOptions,
+    queryKey:
+      queryOptions?.queryKey ??
+      getLocalServiceListProjectsForOrgRequestQueryKey(org),
+    queryFn:
+      queryOptions?.queryFn ??
+      (() => localServiceListProjectsForOrgRequest(org)),
   });
 }

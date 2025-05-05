@@ -58,6 +58,15 @@ const (
 	// LocalServiceListOrganizationsAndBillingMetadataProcedure is the fully-qualified name of the
 	// LocalService's ListOrganizationsAndBillingMetadata RPC.
 	LocalServiceListOrganizationsAndBillingMetadataProcedure = "/rill.local.v1.LocalService/ListOrganizationsAndBillingMetadata"
+	// LocalServiceCreateOrganizationProcedure is the fully-qualified name of the LocalService's
+	// CreateOrganization RPC.
+	LocalServiceCreateOrganizationProcedure = "/rill.local.v1.LocalService/CreateOrganization"
+	// LocalServiceListMatchingProjectsProcedure is the fully-qualified name of the LocalService's
+	// ListMatchingProjects RPC.
+	LocalServiceListMatchingProjectsProcedure = "/rill.local.v1.LocalService/ListMatchingProjects"
+	// LocalServiceListProjectsForOrgProcedure is the fully-qualified name of the LocalService's
+	// ListProjectsForOrg RPC.
+	LocalServiceListProjectsForOrgProcedure = "/rill.local.v1.LocalService/ListProjectsForOrg"
 )
 
 // These variables are the protoreflect.Descriptor objects for the RPCs defined in this package.
@@ -72,6 +81,9 @@ var (
 	localServiceGetCurrentUserMethodDescriptor                      = localServiceServiceDescriptor.Methods().ByName("GetCurrentUser")
 	localServiceGetCurrentProjectMethodDescriptor                   = localServiceServiceDescriptor.Methods().ByName("GetCurrentProject")
 	localServiceListOrganizationsAndBillingMetadataMethodDescriptor = localServiceServiceDescriptor.Methods().ByName("ListOrganizationsAndBillingMetadata")
+	localServiceCreateOrganizationMethodDescriptor                  = localServiceServiceDescriptor.Methods().ByName("CreateOrganization")
+	localServiceListMatchingProjectsMethodDescriptor                = localServiceServiceDescriptor.Methods().ByName("ListMatchingProjects")
+	localServiceListProjectsForOrgMethodDescriptor                  = localServiceServiceDescriptor.Methods().ByName("ListProjectsForOrg")
 )
 
 // LocalServiceClient is a client for the rill.local.v1.LocalService service.
@@ -94,6 +106,12 @@ type LocalServiceClient interface {
 	GetCurrentProject(context.Context, *connect.Request[v1.GetCurrentProjectRequest]) (*connect.Response[v1.GetCurrentProjectResponse], error)
 	// ListOrganizationsAndBillingMetadata returns metadata about the current user's orgs.
 	ListOrganizationsAndBillingMetadata(context.Context, *connect.Request[v1.ListOrganizationsAndBillingMetadataRequest]) (*connect.Response[v1.ListOrganizationsAndBillingMetadataResponse], error)
+	// CreateOrganization creates a new organization
+	CreateOrganization(context.Context, *connect.Request[v1.CreateOrganizationRequest]) (*connect.Response[v1.CreateOrganizationResponse], error)
+	// ListMatchingProjects returns all remote projects matching the local project name
+	ListMatchingProjects(context.Context, *connect.Request[v1.ListMatchingProjectsRequest]) (*connect.Response[v1.ListMatchingProjectsResponse], error)
+	// ListProjectsForOrg returns all projects within an org
+	ListProjectsForOrg(context.Context, *connect.Request[v1.ListProjectsForOrgRequest]) (*connect.Response[v1.ListProjectsForOrgResponse], error)
 }
 
 // NewLocalServiceClient constructs a client for the rill.local.v1.LocalService service. By default,
@@ -160,6 +178,24 @@ func NewLocalServiceClient(httpClient connect.HTTPClient, baseURL string, opts .
 			connect.WithSchema(localServiceListOrganizationsAndBillingMetadataMethodDescriptor),
 			connect.WithClientOptions(opts...),
 		),
+		createOrganization: connect.NewClient[v1.CreateOrganizationRequest, v1.CreateOrganizationResponse](
+			httpClient,
+			baseURL+LocalServiceCreateOrganizationProcedure,
+			connect.WithSchema(localServiceCreateOrganizationMethodDescriptor),
+			connect.WithClientOptions(opts...),
+		),
+		listMatchingProjects: connect.NewClient[v1.ListMatchingProjectsRequest, v1.ListMatchingProjectsResponse](
+			httpClient,
+			baseURL+LocalServiceListMatchingProjectsProcedure,
+			connect.WithSchema(localServiceListMatchingProjectsMethodDescriptor),
+			connect.WithClientOptions(opts...),
+		),
+		listProjectsForOrg: connect.NewClient[v1.ListProjectsForOrgRequest, v1.ListProjectsForOrgResponse](
+			httpClient,
+			baseURL+LocalServiceListProjectsForOrgProcedure,
+			connect.WithSchema(localServiceListProjectsForOrgMethodDescriptor),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
@@ -174,6 +210,9 @@ type localServiceClient struct {
 	getCurrentUser                      *connect.Client[v1.GetCurrentUserRequest, v1.GetCurrentUserResponse]
 	getCurrentProject                   *connect.Client[v1.GetCurrentProjectRequest, v1.GetCurrentProjectResponse]
 	listOrganizationsAndBillingMetadata *connect.Client[v1.ListOrganizationsAndBillingMetadataRequest, v1.ListOrganizationsAndBillingMetadataResponse]
+	createOrganization                  *connect.Client[v1.CreateOrganizationRequest, v1.CreateOrganizationResponse]
+	listMatchingProjects                *connect.Client[v1.ListMatchingProjectsRequest, v1.ListMatchingProjectsResponse]
+	listProjectsForOrg                  *connect.Client[v1.ListProjectsForOrgRequest, v1.ListProjectsForOrgResponse]
 }
 
 // Ping calls rill.local.v1.LocalService.Ping.
@@ -222,6 +261,21 @@ func (c *localServiceClient) ListOrganizationsAndBillingMetadata(ctx context.Con
 	return c.listOrganizationsAndBillingMetadata.CallUnary(ctx, req)
 }
 
+// CreateOrganization calls rill.local.v1.LocalService.CreateOrganization.
+func (c *localServiceClient) CreateOrganization(ctx context.Context, req *connect.Request[v1.CreateOrganizationRequest]) (*connect.Response[v1.CreateOrganizationResponse], error) {
+	return c.createOrganization.CallUnary(ctx, req)
+}
+
+// ListMatchingProjects calls rill.local.v1.LocalService.ListMatchingProjects.
+func (c *localServiceClient) ListMatchingProjects(ctx context.Context, req *connect.Request[v1.ListMatchingProjectsRequest]) (*connect.Response[v1.ListMatchingProjectsResponse], error) {
+	return c.listMatchingProjects.CallUnary(ctx, req)
+}
+
+// ListProjectsForOrg calls rill.local.v1.LocalService.ListProjectsForOrg.
+func (c *localServiceClient) ListProjectsForOrg(ctx context.Context, req *connect.Request[v1.ListProjectsForOrgRequest]) (*connect.Response[v1.ListProjectsForOrgResponse], error) {
+	return c.listProjectsForOrg.CallUnary(ctx, req)
+}
+
 // LocalServiceHandler is an implementation of the rill.local.v1.LocalService service.
 type LocalServiceHandler interface {
 	// Ping returns the current time.
@@ -242,6 +296,12 @@ type LocalServiceHandler interface {
 	GetCurrentProject(context.Context, *connect.Request[v1.GetCurrentProjectRequest]) (*connect.Response[v1.GetCurrentProjectResponse], error)
 	// ListOrganizationsAndBillingMetadata returns metadata about the current user's orgs.
 	ListOrganizationsAndBillingMetadata(context.Context, *connect.Request[v1.ListOrganizationsAndBillingMetadataRequest]) (*connect.Response[v1.ListOrganizationsAndBillingMetadataResponse], error)
+	// CreateOrganization creates a new organization
+	CreateOrganization(context.Context, *connect.Request[v1.CreateOrganizationRequest]) (*connect.Response[v1.CreateOrganizationResponse], error)
+	// ListMatchingProjects returns all remote projects matching the local project name
+	ListMatchingProjects(context.Context, *connect.Request[v1.ListMatchingProjectsRequest]) (*connect.Response[v1.ListMatchingProjectsResponse], error)
+	// ListProjectsForOrg returns all projects within an org
+	ListProjectsForOrg(context.Context, *connect.Request[v1.ListProjectsForOrgRequest]) (*connect.Response[v1.ListProjectsForOrgResponse], error)
 }
 
 // NewLocalServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -304,6 +364,24 @@ func NewLocalServiceHandler(svc LocalServiceHandler, opts ...connect.HandlerOpti
 		connect.WithSchema(localServiceListOrganizationsAndBillingMetadataMethodDescriptor),
 		connect.WithHandlerOptions(opts...),
 	)
+	localServiceCreateOrganizationHandler := connect.NewUnaryHandler(
+		LocalServiceCreateOrganizationProcedure,
+		svc.CreateOrganization,
+		connect.WithSchema(localServiceCreateOrganizationMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
+	)
+	localServiceListMatchingProjectsHandler := connect.NewUnaryHandler(
+		LocalServiceListMatchingProjectsProcedure,
+		svc.ListMatchingProjects,
+		connect.WithSchema(localServiceListMatchingProjectsMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
+	)
+	localServiceListProjectsForOrgHandler := connect.NewUnaryHandler(
+		LocalServiceListProjectsForOrgProcedure,
+		svc.ListProjectsForOrg,
+		connect.WithSchema(localServiceListProjectsForOrgMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/rill.local.v1.LocalService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case LocalServicePingProcedure:
@@ -324,6 +402,12 @@ func NewLocalServiceHandler(svc LocalServiceHandler, opts ...connect.HandlerOpti
 			localServiceGetCurrentProjectHandler.ServeHTTP(w, r)
 		case LocalServiceListOrganizationsAndBillingMetadataProcedure:
 			localServiceListOrganizationsAndBillingMetadataHandler.ServeHTTP(w, r)
+		case LocalServiceCreateOrganizationProcedure:
+			localServiceCreateOrganizationHandler.ServeHTTP(w, r)
+		case LocalServiceListMatchingProjectsProcedure:
+			localServiceListMatchingProjectsHandler.ServeHTTP(w, r)
+		case LocalServiceListProjectsForOrgProcedure:
+			localServiceListProjectsForOrgHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -367,4 +451,16 @@ func (UnimplementedLocalServiceHandler) GetCurrentProject(context.Context, *conn
 
 func (UnimplementedLocalServiceHandler) ListOrganizationsAndBillingMetadata(context.Context, *connect.Request[v1.ListOrganizationsAndBillingMetadataRequest]) (*connect.Response[v1.ListOrganizationsAndBillingMetadataResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("rill.local.v1.LocalService.ListOrganizationsAndBillingMetadata is not implemented"))
+}
+
+func (UnimplementedLocalServiceHandler) CreateOrganization(context.Context, *connect.Request[v1.CreateOrganizationRequest]) (*connect.Response[v1.CreateOrganizationResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("rill.local.v1.LocalService.CreateOrganization is not implemented"))
+}
+
+func (UnimplementedLocalServiceHandler) ListMatchingProjects(context.Context, *connect.Request[v1.ListMatchingProjectsRequest]) (*connect.Response[v1.ListMatchingProjectsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("rill.local.v1.LocalService.ListMatchingProjects is not implemented"))
+}
+
+func (UnimplementedLocalServiceHandler) ListProjectsForOrg(context.Context, *connect.Request[v1.ListProjectsForOrgRequest]) (*connect.Response[v1.ListProjectsForOrgResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("rill.local.v1.LocalService.ListProjectsForOrg is not implemented"))
 }

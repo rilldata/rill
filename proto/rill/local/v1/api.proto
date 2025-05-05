@@ -3,6 +3,7 @@ package rill.local.v1;
 
 import "google/protobuf/timestamp.proto";
 import "rill/admin/v1/api.proto";
+import "validate/validate.proto";
 
 service LocalService {
   // Ping returns the current time.
@@ -31,6 +32,15 @@ service LocalService {
 
   // ListOrganizationsAndBillingMetadata returns metadata about the current user's orgs.
   rpc ListOrganizationsAndBillingMetadata(ListOrganizationsAndBillingMetadataRequest) returns (ListOrganizationsAndBillingMetadataResponse) {}
+
+  // CreateOrganization creates a new organization
+  rpc CreateOrganization(CreateOrganizationRequest) returns (CreateOrganizationResponse) {}
+
+  // ListMatchingProjects returns all remote projects matching the local project name
+  rpc ListMatchingProjects(ListMatchingProjectsRequest) returns (ListMatchingProjectsResponse) {}
+
+  // ListProjectsForOrg returns all projects within an org
+  rpc ListProjectsForOrg(ListProjectsForOrgRequest) returns (ListProjectsForOrgResponse) {}
 }
 
 message PingRequest {}
@@ -122,4 +132,30 @@ message ListOrganizationsAndBillingMetadataResponse {
   }
 
   repeated OrgMetadata orgs = 1;
+}
+
+message CreateOrganizationRequest {
+  string name = 1 [(validate.rules).string.min_len = 1];
+  string description = 2;
+  string display_name = 3;
+}
+
+message CreateOrganizationResponse {
+  admin.v1.Organization organization = 1;
+}
+
+message ListMatchingProjectsRequest {}
+
+message ListMatchingProjectsResponse {
+  repeated admin.v1.Project projects = 1;
+}
+
+message ListProjectsForOrgRequest {
+  string org = 1 [(validate.rules).string.min_len = 1];
+  uint32 page_size = 2 [(validate.rules).uint32 = {ignore_empty: true, lte: 1000}];
+  string page_token = 3;
+}
+
+message ListProjectsForOrgResponse {
+  repeated admin.v1.Project projects = 1;
 }

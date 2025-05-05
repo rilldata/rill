@@ -41,7 +41,6 @@ jobs:
             - "**.go"
           javascript-typescript:
             - "web-admin/**"
-            - "web-auth/**"
             - "web-common/**"
             - "web-local/**"
 

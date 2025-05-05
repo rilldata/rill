@@ -1003,7 +1003,7 @@ func (d *db) attachTables(ctx context.Context, conn *sqlx.Conn, tables []*tableM
 		}
 		safeTable := safeSQLName(table.Name)
 		if table.Type == "VIEW" {
-			_, err := conn.ExecContext(ctx, fmt.Sprintf("CREATE OR REPLACE VIEW %s AS %s", safeTable, table.SQL))
+			_, err := conn.ExecContext(ctx, fmt.Sprintf("CREATE OR REPLACE VIEW %s AS (%s\n)", safeTable, table.SQL))
 			if err != nil {
 				if errors.Is(err, context.Canceled) {
 					return err
