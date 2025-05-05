@@ -59,7 +59,7 @@
         getAllMeasureFilterItems,
         measureHasFilter,
       },
-      spec: { canvasSpec, allDimensions, allSimpleMeasures },
+      spec: { canvasSpec, allDimensions, allSimpleMeasures, metricViewNames },
       timeControls: {
         allTimeRange,
         timeRangeStateStore,
@@ -194,7 +194,7 @@
     } as DashboardTimeControls);
   }
 
-  function onSelectRange(name: string) {
+  async function onSelectRange(name: string, syntax?: boolean) {
     if (!$allTimeRange?.end) {
       return;
     }
@@ -216,16 +216,19 @@
       if (timeZone) setTimeZone(timeZone);
     }
 
-    const interval = deriveInterval(
-      name,
+    const interval = await deriveInterval(
+      syntax && !includesTimeZoneOffset
+        ? name + ` @ {${$selectedTimezone}}`
+        : name,
       DateTime.fromJSDate($allTimeRange.end),
+      $metricViewNames?.[0], // TODO: handle multiple metrics
     );
 
-    if (interval?.isValid) {
+    if (interval.isValid) {
       const validInterval = interval as Interval<true>;
       const baseTimeRange: TimeRange = {
         // Temporary fix for custom syntax
-        name: name as TimeRangePreset,
+        name: name,
         start: validInterval.start.toJSDate(),
         end: validInterval.end.toJSDate(),
       };
@@ -278,6 +281,7 @@
   >
     <Calendar size="16px" />
     <SuperPill
+      context={canvasName}
       allTimeRange={$allTimeRange}
       {selectedRangeAlias}
       showPivot={false}
@@ -286,6 +290,7 @@
       {availableTimeZones}
       {timeRanges}
       complete={false}
+      toggleComplete={() => {}}
       {interval}
       {timeStart}
       {timeEnd}

@@ -24,8 +24,9 @@ func Test_Eval(t *testing.T) {
 
 		{"m", "2025-03-10T06:31:00Z", "2025-03-10T06:32:00Z", timeutil.TimeGrainSecond},
 		{"m by s", "2025-03-10T06:31:00Z", "2025-03-10T06:32:00Z", timeutil.TimeGrainSecond},
-		{"0m", "2025-03-10T06:31:00Z", "2025-03-10T06:32:00Z", timeutil.TimeGrainSecond},
 		{"m~", "2025-03-10T06:32:00Z", "2025-03-10T06:33:00Z", timeutil.TimeGrainSecond},
+		// 0m is equivalent to m~. This is to keep things like -1m, 0m and +1m consistent
+		{"0m", "2025-03-10T06:32:00Z", "2025-03-10T06:33:00Z", timeutil.TimeGrainSecond},
 		// We always ceil by 1st term. So this is the same as `m~`
 		{"m~ by s", "2025-03-10T06:32:00Z", "2025-03-10T06:33:00Z", timeutil.TimeGrainSecond},
 		{"-1m", "2025-03-10T06:31:00Z", "2025-03-10T06:32:00Z", timeutil.TimeGrainSecond},
@@ -41,6 +42,7 @@ func Test_Eval(t *testing.T) {
 		{"h~ by s", "2025-03-10T06:00:00Z", "2025-03-10T07:00:00Z", timeutil.TimeGrainSecond},
 
 		{"-2d", "2025-03-08T00:00:00Z", "2025-03-09T00:00:00Z", timeutil.TimeGrainDay},
+		{"-2d tz Asia/Kathmandu", "2025-03-07T18:15:00Z", "2025-03-08T18:15:00Z", timeutil.TimeGrainDay},
 		{"+2d", "2025-03-12T00:00:00Z", "2025-03-13T00:00:00Z", timeutil.TimeGrainDay},
 		{"<2d", "2025-03-10T00:00:00Z", "2025-03-12T00:00:00Z", timeutil.TimeGrainDay},
 		{">2d", "2025-03-15T00:00:00Z", "2025-03-17T00:00:00Z", timeutil.TimeGrainDay},
@@ -64,10 +66,11 @@ func Test_Eval(t *testing.T) {
 		{"W1 by H", "2025-03-03T00:00:00Z", "2025-03-10T00:00:00Z", timeutil.TimeGrainHour},
 		// `of M` means previous month, so this will be of Feb. Since 1st of feb is on a friday we take the next monday as start.
 		{"W1 of M", "2025-02-03T00:00:00Z", "2025-02-10T00:00:00Z", timeutil.TimeGrainDay},
+		{"W1 of M tz Asia/Kathmandu", "2025-02-02T18:15:00Z", "2025-02-09T18:15:00Z", timeutil.TimeGrainDay},
 		// `of M~` means to use current month unlike `of M`
 		{"W1 of M~", "2025-03-03T00:00:00Z", "2025-03-10T00:00:00Z", timeutil.TimeGrainDay},
-		// `of 0M` means previous month.
-		{"W1 of 0M", "2025-02-03T00:00:00Z", "2025-02-10T00:00:00Z", timeutil.TimeGrainDay},
+		// `of 0M` means current month.
+		{"W1 of 0M", "2025-03-03T00:00:00Z", "2025-03-10T00:00:00Z", timeutil.TimeGrainDay},
 		// 1st of Jan is on a Wednesday, so include the 2 days from Dec 2024.
 		{"W1 of -2M", "2024-12-30T00:00:00Z", "2025-01-06T00:00:00Z", timeutil.TimeGrainDay},
 		// 1st of May is on a Thursday, so include the 2 days from Dec 2024.
@@ -80,9 +83,11 @@ func Test_Eval(t *testing.T) {
 		{"2025-03-09T09:30", "2025-03-09T09:30:00Z", "2025-03-09T09:31:00Z", timeutil.TimeGrainSecond},
 		{"2025-03-09T09", "2025-03-09T09:00:00Z", "2025-03-09T10:00:00Z", timeutil.TimeGrainMinute},
 		{"2025-03-09", "2025-03-09T00:00:00Z", "2025-03-10T00:00:00Z", timeutil.TimeGrainHour},
-		{"2025-03", "2025-03-01T00:00:00Z", "2025-04-01T00:00:00Z", timeutil.TimeGrainWeek},
+		{"2025-03", "2025-03-01T00:00:00Z", "2025-04-01T00:00:00Z", timeutil.TimeGrainDay},
+		{"2025-03 tz Asia/Kathmandu", "2025-02-28T18:15:00Z", "2025-03-31T18:15:00Z", timeutil.TimeGrainDay},
 		{"2025", "2025-01-01T00:00:00Z", "2026-01-01T00:00:00Z", timeutil.TimeGrainMonth},
 		{"D3 of W1 of 2022", "2022-01-05T00:00:00Z", "2022-01-06T00:00:00Z", timeutil.TimeGrainHour},
+		{"D3 of W1 of 2022 tz Asia/Kathmandu", "2022-01-04T18:15:00Z", "2022-01-05T18:15:00Z", timeutil.TimeGrainHour},
 		{"<3m of H2 of 2025-02-04", "2025-02-04T01:00:00Z", "2025-02-04T01:03:00Z", timeutil.TimeGrainMinute},
 
 		{"W1 to W3", "2025-03-03T00:00:00Z", "2025-03-17T00:00:00Z", timeutil.TimeGrainDay},

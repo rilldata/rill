@@ -1,0 +1,106 @@
+// Generated automatically by nearley, version 2.20.1
+// http://github.com/Hardmath123/nearley
+function id(x) { return x[0]; }
+
+  import {
+    RillTime,
+    RillTimeAbsoluteTime,
+    RillTimeLabelledAnchor,
+    RillTimeOrdinal,
+    RillTimeRelative,
+    RillTimePeriodToDate,
+  } from "./RillTime.ts"
+let Lexer = undefined;
+let ParserRules = [
+    {"name": "_$ebnf$1", "symbols": []},
+    {"name": "_$ebnf$1", "symbols": ["_$ebnf$1", "wschar"], "postprocess": function arrpush(d) {return d[0].concat([d[1]]);}},
+    {"name": "_", "symbols": ["_$ebnf$1"], "postprocess": function(d) {return null;}},
+    {"name": "__$ebnf$1", "symbols": ["wschar"]},
+    {"name": "__$ebnf$1", "symbols": ["__$ebnf$1", "wschar"], "postprocess": function arrpush(d) {return d[0].concat([d[1]]);}},
+    {"name": "__", "symbols": ["__$ebnf$1"], "postprocess": function(d) {return null;}},
+    {"name": "wschar", "symbols": [/[ \t\n\v\f]/], "postprocess": id},
+    {"name": "dqstring$ebnf$1", "symbols": []},
+    {"name": "dqstring$ebnf$1", "symbols": ["dqstring$ebnf$1", "dstrchar"], "postprocess": function arrpush(d) {return d[0].concat([d[1]]);}},
+    {"name": "dqstring", "symbols": [{"literal":"\""}, "dqstring$ebnf$1", {"literal":"\""}], "postprocess": function(d) {return d[1].join(""); }},
+    {"name": "sqstring$ebnf$1", "symbols": []},
+    {"name": "sqstring$ebnf$1", "symbols": ["sqstring$ebnf$1", "sstrchar"], "postprocess": function arrpush(d) {return d[0].concat([d[1]]);}},
+    {"name": "sqstring", "symbols": [{"literal":"'"}, "sqstring$ebnf$1", {"literal":"'"}], "postprocess": function(d) {return d[1].join(""); }},
+    {"name": "btstring$ebnf$1", "symbols": []},
+    {"name": "btstring$ebnf$1", "symbols": ["btstring$ebnf$1", /[^`]/], "postprocess": function arrpush(d) {return d[0].concat([d[1]]);}},
+    {"name": "btstring", "symbols": [{"literal":"`"}, "btstring$ebnf$1", {"literal":"`"}], "postprocess": function(d) {return d[1].join(""); }},
+    {"name": "dstrchar", "symbols": [/[^\\"\n]/], "postprocess": id},
+    {"name": "dstrchar", "symbols": [{"literal":"\\"}, "strescape"], "postprocess": 
+        function(d) {
+            return JSON.parse("\""+d.join("")+"\"");
+        }
+        },
+    {"name": "sstrchar", "symbols": [/[^\\'\n]/], "postprocess": id},
+    {"name": "sstrchar", "symbols": [{"literal":"\\"}, "strescape"], "postprocess": function(d) { return JSON.parse("\""+d.join("")+"\""); }},
+    {"name": "sstrchar$string$1", "symbols": [{"literal":"\\"}, {"literal":"'"}], "postprocess": function joiner(d) {return d.join('');}},
+    {"name": "sstrchar", "symbols": ["sstrchar$string$1"], "postprocess": function(d) {return "'"; }},
+    {"name": "strescape", "symbols": [/["\\/bfnrt]/], "postprocess": id},
+    {"name": "strescape", "symbols": [{"literal":"u"}, /[a-fA-F0-9]/, /[a-fA-F0-9]/, /[a-fA-F0-9]/, /[a-fA-F0-9]/], "postprocess": 
+        function(d) {
+            return d.join("");
+        }
+        },
+    {"name": "rill_time", "symbols": ["time_range"], "postprocess": id},
+    {"name": "rill_time$string$1", "symbols": [{"literal":"t"}, {"literal":"z"}], "postprocess": function joiner(d) {return d.join('');}},
+    {"name": "rill_time", "symbols": ["time_range", "_", "rill_time$string$1", "_", "timezone_modifier"], "postprocess": ([rt, , , , tz]) => rt.withTimeZone(tz)},
+    {"name": "time_range$subexpression$1", "symbols": [/[tT]/, /[oO]/], "postprocess": function(d) {return d.join(""); }},
+    {"name": "time_range$subexpression$2", "symbols": [/[bB]/, /[yY]/], "postprocess": function(d) {return d.join(""); }},
+    {"name": "time_range", "symbols": ["link", "_", "time_range$subexpression$1", "_", "link", "_", "time_range$subexpression$2", "_", "grain"], "postprocess": ([start, , , , end, , , grain]) => new RillTime(start, end, grain)},
+    {"name": "time_range$subexpression$3", "symbols": [/[tT]/, /[oO]/], "postprocess": function(d) {return d.join(""); }},
+    {"name": "time_range", "symbols": ["link", "_", "time_range$subexpression$3", "_", "link"], "postprocess": ([start, , , , end]) => new RillTime(start, end, undefined)},
+    {"name": "time_range$subexpression$4", "symbols": [/[bB]/, /[yY]/], "postprocess": function(d) {return d.join(""); }},
+    {"name": "time_range", "symbols": ["link", "_", "time_range$subexpression$4", "_", "grain"], "postprocess": ([start, , , , grain]) => new RillTime(start, undefined, grain)},
+    {"name": "time_range", "symbols": ["link"], "postprocess": ([start]) => new RillTime(start, undefined, undefined)},
+    {"name": "link$ebnf$1", "symbols": []},
+    {"name": "link$ebnf$1", "symbols": ["link$ebnf$1", "non_first_link_part"], "postprocess": function arrpush(d) {return d[0].concat([d[1]]);}},
+    {"name": "link", "symbols": ["link_part", "link$ebnf$1"], "postprocess": ([first, rest]) => [first, ...rest]},
+    {"name": "non_first_link_part$subexpression$1", "symbols": [/[oO]/, /[fF]/], "postprocess": function(d) {return d.join(""); }},
+    {"name": "non_first_link_part", "symbols": ["_", "non_first_link_part$subexpression$1", "_", "link_part"], "postprocess": ([, , , lp]) => lp},
+    {"name": "link_part", "symbols": ["labeled_anchor"], "postprocess": id},
+    {"name": "link_part", "symbols": ["abs_time"], "postprocess": id},
+    {"name": "link_part", "symbols": ["ordinal"], "postprocess": id},
+    {"name": "link_part", "symbols": ["period_to_grain_with_tilde"], "postprocess": id},
+    {"name": "link_part", "symbols": ["relative_time_with_tilde"], "postprocess": id},
+    {"name": "ordinal", "symbols": ["grain", "num"], "postprocess": ([grain, num]) => new RillTimeOrdinal(grain, num)},
+    {"name": "relative_time_with_tilde", "symbols": ["relative_time"], "postprocess": id},
+    {"name": "relative_time_with_tilde", "symbols": ["relative_time", {"literal":"~"}], "postprocess": ([rt]) => rt.asIncomplete()},
+    {"name": "relative_time", "symbols": ["grain"], "postprocess": ([grain]) => new RillTimeRelative(undefined, 1, grain)},
+    {"name": "relative_time", "symbols": ["prefix", "grain"], "postprocess": ([prefix, grain]) => new RillTimeRelative(prefix, 1, grain)},
+    {"name": "relative_time", "symbols": ["num", "grain"], "postprocess": ([num, grain]) => new RillTimeRelative(undefined, num, grain)},
+    {"name": "relative_time", "symbols": ["prefix", "num", "grain"], "postprocess": ([prefix, num, grain]) => new RillTimeRelative(prefix, num, grain)},
+    {"name": "period_to_grain_with_tilde", "symbols": ["period_to_grain_time"], "postprocess": id},
+    {"name": "period_to_grain_with_tilde", "symbols": ["period_to_grain_time", {"literal":"~"}], "postprocess": ([ptd]) => ptd.asIncomplete()},
+    {"name": "period_to_grain_time", "symbols": ["period_to_grain"], "postprocess": ([ptg]) => new RillTimePeriodToDate(undefined, 1, ptg)},
+    {"name": "period_to_grain_time", "symbols": ["prefix", "period_to_grain"], "postprocess": ([prefix, ptg]) => new RillTimePeriodToDate(prefix, 1, ptg)},
+    {"name": "period_to_grain_time", "symbols": ["num", "period_to_grain"], "postprocess": ([num, ptg]) => new RillTimePeriodToDate(undefined, num, ptg)},
+    {"name": "period_to_grain_time", "symbols": ["prefix", "num", "period_to_grain"], "postprocess": ([prefix, num, ptg]) => new RillTimePeriodToDate(prefix, num, ptg)},
+    {"name": "labeled_anchor$string$1", "symbols": [{"literal":"e"}, {"literal":"a"}, {"literal":"r"}, {"literal":"l"}, {"literal":"i"}, {"literal":"e"}, {"literal":"s"}, {"literal":"t"}], "postprocess": function joiner(d) {return d.join('');}},
+    {"name": "labeled_anchor", "symbols": ["labeled_anchor$string$1"], "postprocess": RillTimeLabelledAnchor.postProcessor},
+    {"name": "labeled_anchor$string$2", "symbols": [{"literal":"l"}, {"literal":"a"}, {"literal":"t"}, {"literal":"e"}, {"literal":"s"}, {"literal":"t"}], "postprocess": function joiner(d) {return d.join('');}},
+    {"name": "labeled_anchor", "symbols": ["labeled_anchor$string$2"], "postprocess": RillTimeLabelledAnchor.postProcessor},
+    {"name": "labeled_anchor$string$3", "symbols": [{"literal":"n"}, {"literal":"o"}, {"literal":"w"}], "postprocess": function joiner(d) {return d.join('');}},
+    {"name": "labeled_anchor", "symbols": ["labeled_anchor$string$3"], "postprocess": RillTimeLabelledAnchor.postProcessor},
+    {"name": "labeled_anchor$string$4", "symbols": [{"literal":"w"}, {"literal":"a"}, {"literal":"t"}, {"literal":"e"}, {"literal":"r"}, {"literal":"m"}, {"literal":"a"}, {"literal":"r"}, {"literal":"k"}], "postprocess": function joiner(d) {return d.join('');}},
+    {"name": "labeled_anchor", "symbols": ["labeled_anchor$string$4"], "postprocess": RillTimeLabelledAnchor.postProcessor},
+    {"name": "period_to_grain", "symbols": [/[sSmhHdDwWqQMyY]/, /[T]/, /[sSmhHdDwWqQMyY]/], "postprocess": (args) => args.join("")},
+    {"name": "abs_time", "symbols": [/[\d]/, /[\d]/, /[\d]/, /[\d]/, /[\-]/, /[\d]/, /[\d]/, /[\-]/, /[\d]/, /[\d]/, {"literal":"T"}, /[\d]/, /[\d]/, /[:]/, /[\d]/, /[\d]/, /[:]/, /[\d]/, /[\d]/, {"literal":"Z"}], "postprocess": RillTimeAbsoluteTime.postProcessor},
+    {"name": "abs_time", "symbols": [/[\d]/, /[\d]/, /[\d]/, /[\d]/, /[\-]/, /[\d]/, /[\d]/, /[\-]/, /[\d]/, /[\d]/, {"literal":"T"}, /[\d]/, /[\d]/, /[:]/, /[\d]/, /[\d]/], "postprocess": RillTimeAbsoluteTime.postProcessor},
+    {"name": "abs_time", "symbols": [/[\d]/, /[\d]/, /[\d]/, /[\d]/, /[\-]/, /[\d]/, /[\d]/, /[\-]/, /[\d]/, /[\d]/, {"literal":"T"}, /[\d]/, /[\d]/], "postprocess": RillTimeAbsoluteTime.postProcessor},
+    {"name": "abs_time", "symbols": [/[\d]/, /[\d]/, /[\d]/, /[\d]/, /[\-]/, /[\d]/, /[\d]/, /[\-]/, /[\d]/, /[\d]/], "postprocess": RillTimeAbsoluteTime.postProcessor},
+    {"name": "abs_time", "symbols": [/[\d]/, /[\d]/, /[\d]/, /[\d]/, /[\-]/, /[\d]/, /[\d]/], "postprocess": RillTimeAbsoluteTime.postProcessor},
+    {"name": "abs_time", "symbols": [/[\d]/, /[\d]/, /[\d]/, /[\d]/], "postprocess": RillTimeAbsoluteTime.postProcessor},
+    {"name": "timezone_modifier$ebnf$1", "symbols": [/[0-9a-zA-Z/+-_]/]},
+    {"name": "timezone_modifier$ebnf$1", "symbols": ["timezone_modifier$ebnf$1", /[0-9a-zA-Z/+-_]/], "postprocess": function arrpush(d) {return d[0].concat([d[1]]);}},
+    {"name": "timezone_modifier", "symbols": ["timezone_modifier$ebnf$1"], "postprocess": ([args]) => args.join("")},
+    {"name": "prefix", "symbols": [/[+\-<>]/], "postprocess": id},
+    {"name": "num$ebnf$1", "symbols": [/[0-9]/]},
+    {"name": "num$ebnf$1", "symbols": ["num$ebnf$1", /[0-9]/], "postprocess": function arrpush(d) {return d[0].concat([d[1]]);}},
+    {"name": "num", "symbols": ["num$ebnf$1"], "postprocess": ([args]) => Number(args.join(""))},
+    {"name": "grain", "symbols": [/[sSmhHdDwWqQMyY]/], "postprocess": id}
+];
+let ParserStart = "rill_time";
+export default { Lexer, ParserRules, ParserStart };

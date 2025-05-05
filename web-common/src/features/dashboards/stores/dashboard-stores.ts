@@ -485,6 +485,20 @@ const metricsViewReducers = {
     });
   },
 
+  setTimeGrain(name: string, timeGrain: V1TimeGrain) {
+    updateMetricsExplorerByName(name, (metricsExplorer) => {
+      console.log(timeGrain);
+      if (!metricsExplorer.selectedTimeRange) return;
+      // Reset scrub when grain changes
+      setSelectedScrubRange(metricsExplorer, undefined);
+
+      metricsExplorer.selectedTimeRange = {
+        ...metricsExplorer.selectedTimeRange,
+        interval: timeGrain,
+      };
+    });
+  },
+
   displayTimeComparison(name: string, showTimeComparison: boolean) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
       metricsExplorer.showTimeComparison = showTimeComparison;
@@ -507,6 +521,8 @@ const metricsViewReducers = {
       if (timeRange.name === TimeRangePreset.ALL_TIME) {
         metricsExplorer.showTimeComparison = false;
       }
+
+      console.log("Action", { timeGrain });
 
       metricsExplorer.selectedTimeRange = {
         ...timeRange,

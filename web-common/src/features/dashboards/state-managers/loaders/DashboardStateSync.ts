@@ -7,6 +7,7 @@ import {
   useExploreState,
 } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import { resolveTimeRanges } from "@rilldata/web-common/features/dashboards/time-controls/rill-time-ranges";
 import {
   createTimeControlStoreFromName,
   type TimeControlStore,
@@ -86,11 +87,12 @@ export class DashboardStateSync {
    * Initializes the dashboard store.
    * If the url needs to change to match the init then we replace the current url with the new url.
    */
-  private handleExploreInit(initExploreState: MetricsExplorerEntity) {
+  private async handleExploreInit(initExploreState: MetricsExplorerEntity) {
     // If this is re-triggered any of the dependant query was refetched, then we need to make sure this is not run again.
     if (this.initialized) return;
 
     const { data: validSpecData } = get(this.dataLoader.validSpecQuery);
+    const metricsViewSpec = validSpecData?.metricsView ?? {};
     const exploreSpec = validSpecData?.explore ?? {};
     const { data: rillDefaultExploreURLParams } = get(
       this.rillDefaultExploreURLParams,
@@ -98,6 +100,21 @@ export class DashboardStateSync {
     if (!rillDefaultExploreURLParams) return;
 
     const pageState = get(page);
+
+    if (metricsViewSpec.timeDimension) {
+      // Resolve start/end by making a network call.
+      [
+        initExploreState.selectedTimeRange,
+        initExploreState.selectedComparisonTimeRange,
+      ] = await resolveTimeRanges(
+        exploreSpec,
+        [
+          initExploreState.selectedTimeRange,
+          initExploreState.selectedComparisonTimeRange,
+        ],
+        initExploreState.selectedTimezone,
+      );
+    }
 
     // Init the store with state we got from dataLoader
     metricsExplorerStore.init(this.exploreName, initExploreState);
@@ -149,7 +166,7 @@ export class DashboardStateSync {
    * The decision to get the exploreState from url params depends on the navigation type.
    * This will be called from an afterNavigation callback.
    */
-  public handleURLChange(
+  public async handleURLChange(
     urlSearchParams: URLSearchParams,
     type: AfterNavigate["type"],
   ) {
@@ -177,6 +194,21 @@ export class DashboardStateSync {
     if (!partialExplore) return;
 
     const pageState = get(page);
+
+    if (metricsViewSpec.timeDimension) {
+      // Resolve start/end by making a network call.
+      [
+        partialExplore.selectedTimeRange,
+        partialExplore.selectedComparisonTimeRange,
+      ] = await resolveTimeRanges(
+        exploreSpec,
+        [
+          partialExplore.selectedTimeRange,
+          partialExplore.selectedComparisonTimeRange,
+        ],
+        partialExplore.selectedTimezone,
+      );
+    }
 
     // Merge the partial state from url into the store
     metricsExplorerStore.mergePartialExplorerEntity(
