@@ -23,9 +23,12 @@ type Client struct {
 }
 
 func New(sender Sender) *Client {
+	templateFuncs := template.FuncMap{
+		"now": time.Now,
+	}
 	return &Client{
 		Sender:    sender,
-		templates: template.Must(template.New("").ParseFS(templatesFS, "templates/gen/*.html")),
+		templates: template.Must(template.New("").Funcs(templateFuncs).ParseFS(templatesFS, "templates/gen/*.html")),
 	}
 }
 

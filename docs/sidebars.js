@@ -187,7 +187,7 @@ const sidebars = {
           label: "Other Concepts and How-to's",
           description: 'For guides that are not quite Rill related but needs consideration',
           items: [
-            // 'tutorials/other/resolvers',
+            'tutorials/other/resolvers',
             'tutorials/other/add-column-dimension',
             'tutorials/other/dashboard-row-policies',
             'tutorials/other/embed-dashboard',

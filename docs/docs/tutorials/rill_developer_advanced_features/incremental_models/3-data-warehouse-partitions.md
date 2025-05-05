@@ -49,7 +49,7 @@ sql: |
          PARSE_DATE('%Y%m%d', CAST(D_DATEKEY AS STRING)) AS DATE
   FROM rilldata.ssb_100.date
   {{if incremental}} # when incremental refreshing this part of the SQL is used.
-    WHERE PARSE_DATE('%Y%m%d', CAST(D_DATEKEY AS STRING)) = '{{.state.max_date}}' #normally would want to set this to where DATE > '{{.state.max_date}}' to only append new rows.
+    WHERE PARSE_DATE('%Y%m%d', CAST(D_DATEKEY AS STRING)) > '{{.state.max_date}}' 
   {{else}} 
     LIMIT 10 #restricts the full refresh to only 10 rows, so when we run incremental, its easy to tell the difference. 
   {{end}}
