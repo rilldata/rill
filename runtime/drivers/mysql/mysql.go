@@ -27,6 +27,7 @@ var spec = drivers.Spec{
 			Secret:      true,
 		},
 	},
+	// Important: Any edits to the below properties must be accompanied by changes to the client-side form validation schemas.
 	SourceProperties: []*drivers.PropertySpec{
 		{
 			Key:         "sql",
@@ -44,6 +45,7 @@ var spec = drivers.Spec{
 			DocsURL:     "https://github.com/go-sql-driver/mysql?tab=readme-ov-file#dsn-data-source-name",
 			Placeholder: "username:password@tcp(example.com:3306)/my-db",
 			Hint:        "Can be configured here or by setting the 'connector.mysql.dsn' environment variable (using '.env' or '--env')",
+			Secret:      true,
 		},
 		{
 			Key:         "name",

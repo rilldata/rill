@@ -1,0 +1,28 @@
+# Tests end-to-end creation of a distributed model on a test ClickHouse cluster.
+expensive: true
+connectors:
+  - clickhouse_cluster
+variables:
+  # Enable stage_changes to test that renames of distributed tables are handled correctly.
+  rill.stage_changes: true
+project_files:
+  clickhouse_cluster.yaml:
+    type: connector
+    driver: clickhouse
+    cluster: ch_cluster_2S_2R
+  one.yaml:
+    type: model
+    materialize: true
+    connector: clickhouse_cluster
+    sql: SELECT 1 AS one
+    output:
+      connector: clickhouse_cluster
+tests:
+  - name: query_all_datatypes_star_duckdb
+    resolver: sql
+    properties:
+      connector: clickhouse_cluster
+      sql: "select * from one"
+    result_csv: |
+      one
+      1

@@ -2,7 +2,6 @@ import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboar
 import { getDashboardStateFromUrl } from "@rilldata/web-common/features/dashboards/proto-state/fromProto";
 import { getWhereFilterExpressionIndex } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
 import { AdvancedMeasureCorrector } from "@rilldata/web-common/features/dashboards/stores/AdvancedMeasureCorrector";
-import { getFullInitExploreState } from "@rilldata/web-common/features/dashboards/stores/dashboard-store-defaults";
 import {
   createAndExpression,
   filterExpressions,
@@ -78,13 +77,15 @@ function syncMeasures(
 ) {
   const measuresSet = new Set(explore.measures ?? []);
 
-  // sync measures with selected leaderboard measure.
-  if (
-    explore.measures?.length &&
-    !measuresSet.has(metricsExplorer.leaderboardSortByMeasureName)
-  ) {
+  // sync measures with selected leaderboard measure and ensure default measure is set
+  if (explore.measures?.length) {
     const defaultMeasure = explore.measures[0];
-    metricsExplorer.leaderboardSortByMeasureName = defaultMeasure;
+    if (!measuresSet.has(metricsExplorer.leaderboardSortByMeasureName)) {
+      metricsExplorer.leaderboardSortByMeasureName = defaultMeasure;
+    }
+    if (!metricsExplorer.leaderboardMeasureNames?.length) {
+      metricsExplorer.leaderboardMeasureNames = [defaultMeasure];
+    }
   }
 
   if (
@@ -151,19 +152,21 @@ function syncDimensions(
     metricsExplorer.visibleDimensions = [...dimensionsSet];
   } else {
     // remove any visible dimensions that doesn't exist anymore
-    metricsExplorer.visibleDimensions =
-      metricsExplorer.visibleDimensions.filter((d) => dimensionsSet.has(d));
+    metricsExplorer.visibleDimensions = metricsExplorer.visibleDimensions
+      ? metricsExplorer.visibleDimensions.filter((d) => dimensionsSet.has(d))
+      : [];
   }
 }
 
 const metricsViewReducers = {
-  init(name: string, initState: Partial<MetricsExplorerEntity> = {}) {
+  init(name: string, initState: MetricsExplorerEntity) {
     update((state) => {
       // TODO: revisit this during the url state / restore user refactor
       initState.dimensionFilterExcludeMode = includeExcludeModeFromFilters(
         initState.whereFilter,
       );
-      state.entities[name] = getFullInitExploreState(name, initState);
+      state.entities[name] = structuredClone(initState);
+      state.entities[name].name = name;
 
       return state;
     });
@@ -207,6 +210,8 @@ const metricsViewReducers = {
     partialExploreState: Partial<MetricsExplorerEntity>,
     metricsView: V1MetricsViewSpec,
   ) {
+    partialExploreState = structuredClone(partialExploreState);
+
     updateMetricsExplorerByName(name, (metricsExplorer) => {
       for (const key in partialExploreState) {
         metricsExplorer[key] = partialExploreState[key];

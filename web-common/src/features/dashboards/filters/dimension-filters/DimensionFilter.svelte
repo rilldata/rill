@@ -1,7 +1,3 @@
-<script context="module">
-  const BulkValueSplitRegex = /\s*[,\n]\s*/;
-</script>
-
 <script lang="ts">
   import { Button } from "@rilldata/web-common/components/button";
   import { Chip } from "@rilldata/web-common/components/chip";
@@ -19,12 +15,20 @@
     DimensionFilterMode,
     DimensionFilterModeOptions,
   } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/dimension-filter-mode";
+  import {
+    mergeDimensionSearchValues,
+    splitDimensionSearchText,
+  } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/dimension-search-text-utils";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { fly } from "svelte/transition";
   import {
     useDimensionSearch,
     useAllSearchResultsCount,
   } from "web-common/src/features/dashboards/filters/dimension-filters/dimension-filter-values";
+  import { mergeDimensionAndMeasureFilters } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
+  import { getFiltersForOtherDimensions } from "@rilldata/web-common/features/dashboards/selectors";
+  import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
+  import type { V1Expression } from "@rilldata/web-common/runtime-client";
 
   export let name: string;
   export let metricsViewNames: string[];
@@ -39,6 +43,7 @@
   export let timeEnd: string | undefined;
   export let timeControlsReady: boolean | undefined;
   export let smallChip = false;
+  export let whereFilter: V1Expression;
   export let onRemove: () => void;
   export let onApplyInList: (values: string[]) => void;
   export let onSelect: (value: string) => void;
@@ -78,6 +83,13 @@
       timeStart,
       timeEnd,
       enabled: enableSearchQuery,
+      additionalFilter: sanitiseExpression(
+        mergeDimensionAndMeasureFilters(
+          getFiltersForOtherDimensions(whereFilter, name),
+          [],
+        ),
+        undefined,
+      ),
     },
   );
   $: ({
@@ -104,6 +116,13 @@
       timeStart,
       timeEnd,
       enabled: enableSearchCountQuery,
+      additionalFilter: sanitiseExpression(
+        mergeDimensionAndMeasureFilters(
+          getFiltersForOtherDimensions(whereFilter, name),
+          [],
+        ),
+        undefined,
+      ),
     },
   );
   $: ({
@@ -155,7 +174,7 @@
 
       case DimensionFilterMode.InList:
         curMode = DimensionFilterMode.InList;
-        curSearchText = selectedValues.join(",");
+        curSearchText = mergeDimensionSearchValues(selectedValues);
         break;
 
       case DimensionFilterMode.Contains:
@@ -169,11 +188,7 @@
     // Do not check search text and possibly switch to InList when mode is Contains
     if (curMode === DimensionFilterMode.Contains) return;
 
-    let values = inputText.split(BulkValueSplitRegex);
-    if (values.length > 0 && values[values.length - 1] === "") {
-      // Remove the last empty value when the last character is a comma/newline
-      values = values.slice(0, values.length - 1);
-    }
+    const values = splitDimensionSearchText(inputText);
 
     if (values.length <= 1) {
       if (curMode === DimensionFilterMode.InList) {
@@ -201,7 +216,7 @@
     if (open) {
       curSearchText =
         mode === DimensionFilterMode.InList
-          ? selectedValues.join(",")
+          ? mergeDimensionSearchValues(selectedValues)
           : (sanitisedSearchText ?? "");
     } else {
       if (selectedValues.length === 0 && !inputText) {
@@ -247,18 +262,6 @@
         open = false;
         break;
     }
-  }
-
-  // Pasting a text with new line is not supported in input element.
-  // So we need to manually replace newlines to commas.
-  function onPaste(e: ClipboardEvent) {
-    e.stopPropagation();
-    e.preventDefault();
-
-    const pastedData = e.clipboardData?.getData("Text");
-    if (!pastedData) return;
-
-    curSearchText = pastedData.replace(/[\n\r]/g, ",");
   }
 </script>
 
@@ -348,8 +351,8 @@
           retainValueOnMount
           placeholder={searchPlaceholder}
           on:submit={onApply}
-          on:paste={onPaste}
           forcedInputStyle="rounded-l-none"
+          multiline
         />
       </div>
       {#if showExtraInfo}
@@ -390,9 +393,7 @@
           <LoadingSpinner />
         </div>
       {:else if error}
-        <div class="min-h-9 p-3 text-center text-red-600 text-xs">
-          {error}
-        </div>
+        <div class="min-h-9 p-3 text-center text-red-600 text-xs">error</div>
       {:else if correctedSearchResults}
         <DropdownMenu.Group class="px-1" aria-label={`${name} results`}>
           {#each correctedSearchResults as name (name)}

@@ -1,0 +1,142 @@
+expensive: true
+connectors:
+  - clickhouse
+  - snowflake
+  - s3
+project_files:
+  all_datatypes_clickhouse.yaml:
+    type: model
+    connector: snowflake
+    # we are not doing * because TIMESTAMP_TZ and TIMESTAMP_LTZ is not support  while exporting to parquet 
+    sql: "select id, boolean_col, tinyint_col, smallint_col, int32_col, int64_col, number_col, float_col, double_col, decimal_col, string_col, text_col, date_col, time_col, timestamp_ntz_col, variant_col, array_col, object_col, binary_col, geography_col, geometry_col from INTEGRATION_TEST.PUBLIC.all_datatypes"
+    stage:
+      connector: s3
+      path: s3://integration-test.rilldata.com/snowflake/
+    output:
+      connector: clickhouse
+  all_datatypes_duckdb.yaml:
+    type: model
+    connector: snowflake
+    # we are not doing * because time_col:TIME is not support https://github.com/rilldata/rill/blob/main/runtime/drivers/snowflake/warehouse.go#L192-L193
+    sql: "select id, boolean_col, tinyint_col, smallint_col, int32_col, int64_col, number_col, float_col, double_col, decimal_col, string_col, text_col, date_col, timestamp_ntz_col, timestamp_ltz_col, timestamp_tz_col, variant_col, array_col, object_col, binary_col, geography_col, geometry_col from INTEGRATION_TEST.PUBLIC.all_datatypes"
+    output:
+      connector: duckdb
+tests:
+  - name: query_all_results_duckdb
+    resolver: sql
+    properties:
+      sql: "select * from all_datatypes_duckdb order by id"
+    result_csv: |
+      ID,BOOLEAN_COL,TINYINT_COL,SMALLINT_COL,INT32_COL,INT64_COL,NUMBER_COL,FLOAT_COL,DOUBLE_COL,DECIMAL_COL,STRING_COL,TEXT_COL,DATE_COL,TIMESTAMP_NTZ_COL,TIMESTAMP_LTZ_COL,TIMESTAMP_TZ_COL,VARIANT_COL,ARRAY_COL,OBJECT_COL,BINARY_COL,GEOGRAPHY_COL,GEOMETRY_COL
+      1,true,127,32767,2147483647,9223372036854776000,12345.6789,3.14,2.718,456.789,Sample String,Large text data,2024-03-26,2025-03-26T03:35:51.195Z,2025-03-26T10:35:51.195Z,2025-03-26T10:35:51.195Z,"{
+        ""key"": ""value""
+      }","[
+        1,
+        2,
+        3
+      ]","{
+        ""city"": ""New York""
+      }",SGVsbG8=,"{
+        ""coordinates"": [
+          -122.4194,
+          37.7749
+        ],
+        ""type"": ""Point""
+      }","{
+        ""coordinates"": [
+          [
+            0.000000000000000e+00,
+            0.000000000000000e+00
+          ],
+          [
+            1.000000000000000e+00,
+            1.000000000000000e+00
+          ],
+          [
+            2.000000000000000e+00,
+            2.000000000000000e+00
+          ]
+        ],
+        ""type"": ""LineString""
+      }"
+      2,false,0,0,0,0,0,0,0,0,,,1970-01-01,2025-03-26T03:35:51.195Z,2025-03-26T10:35:51.195Z,2025-03-26T10:35:51.195Z,{},[],{},,"{
+        ""coordinates"": [
+          0,
+          0
+        ],
+        ""type"": ""Point""
+      }","{
+        ""coordinates"": [
+          0.000000000000000e+00,
+          0.000000000000000e+00
+        ],
+        ""type"": ""Point""
+      }"
+      3,,,,,,0,,,,,,,,,,,,,,,
+  - name: query_all_datatypes_duckdb
+    resolver: sql
+    properties:
+      sql: "describe all_datatypes_duckdb"
+    result_csv: |
+      column_name,column_type,null,key,default,extra
+      ID,TINYINT,YES,,,
+      BOOLEAN_COL,BOOLEAN,YES,,,
+      TINYINT_COL,TINYINT,YES,,,
+      SMALLINT_COL,SMALLINT,YES,,,
+      INT32_COL,INTEGER,YES,,,
+      INT64_COL,BIGINT,YES,,,
+      NUMBER_COL,DOUBLE,YES,,,
+      FLOAT_COL,DOUBLE,YES,,,
+      DOUBLE_COL,DOUBLE,YES,,,
+      DECIMAL_COL,DOUBLE,YES,,,
+      STRING_COL,VARCHAR,YES,,,
+      TEXT_COL,VARCHAR,YES,,,
+      DATE_COL,DATE,YES,,,
+      TIMESTAMP_NTZ_COL,TIMESTAMP WITH TIME ZONE,YES,,,
+      TIMESTAMP_LTZ_COL,TIMESTAMP_NS,YES,,,
+      TIMESTAMP_TZ_COL,TIMESTAMP WITH TIME ZONE,YES,,,
+      VARIANT_COL,VARCHAR,YES,,,
+      ARRAY_COL,VARCHAR,YES,,,
+      OBJECT_COL,VARCHAR,YES,,,
+      BINARY_COL,BLOB,YES,,,
+      GEOGRAPHY_COL,VARCHAR,YES,,,
+      GEOMETRY_COL,VARCHAR,YES,,,
+  - name: query_all_result_clickhouse
+    resolver: sql
+    properties:
+      sql: "select * from all_datatypes_clickhouse order by ID"
+      connector: clickhouse
+    result_csv: |
+      ID,BOOLEAN_COL,TINYINT_COL,SMALLINT_COL,INT32_COL,INT64_COL,NUMBER_COL,FLOAT_COL,DOUBLE_COL,DECIMAL_COL,STRING_COL,TEXT_COL,DATE_COL,TIME_COL,TIMESTAMP_NTZ_COL,VARIANT_COL,ARRAY_COL,OBJECT_COL,BINARY_COL,GEOGRAPHY_COL,GEOMETRY_COL
+      1,true,127,32767,2147483647,9223372036854776000,12345.6789,3.14,2.718,456.789,Sample String,Large text data,2024-03-26,1970-01-01T14:30:00Z,2025-03-26T03:35:51.195Z,"{""key"":""value""}","[1,2,3]","{""city"":""New York""}",Hello,"{""coordinates"":[-122.4194,37.7749],""type"":""Point""}","{""coordinates"":[[0.000000000000000e+00,0.000000000000000e+00],[1.000000000000000e+00,1.000000000000000e+00],[2.000000000000000e+00,2.000000000000000e+00]],""type"":""LineString""}"
+      2,false,0,0,0,0,0,0,0,0,,,1970-01-01,1970-01-01T00:00:00Z,2025-03-26T03:35:51.195Z,{},[],{},,"{""coordinates"":[0,0],""type"":""Point""}","{""coordinates"":[0.000000000000000e+00,0.000000000000000e+00],""type"":""Point""}"
+      3,,,,,,,,,,,,,,,,,,,,
+  - name: query_all_datatypes_clickhouse
+    resolver: sql
+    properties:
+      sql: |
+        select name, type from system.columns where `table` = 'all_datatypes_clickhouse'
+      connector: clickhouse
+    result_csv: |
+      name,type
+      ID,"Nullable(Decimal(38, 0))"
+      BOOLEAN_COL,Nullable(Bool)
+      TINYINT_COL,"Nullable(Decimal(38, 0))"
+      SMALLINT_COL,"Nullable(Decimal(38, 0))"
+      INT32_COL,"Nullable(Decimal(38, 0))"
+      INT64_COL,"Nullable(Decimal(38, 0))"
+      NUMBER_COL,"Nullable(Decimal(38, 10))"
+      FLOAT_COL,Nullable(Float64)
+      DOUBLE_COL,Nullable(Float64)
+      DECIMAL_COL,"Nullable(Decimal(18, 6))"
+      STRING_COL,Nullable(String)
+      TEXT_COL,Nullable(String)
+      DATE_COL,Nullable(Date32)
+      TIME_COL,Nullable(DateTime64(3))
+      TIMESTAMP_NTZ_COL,Nullable(DateTime64(3))
+      VARIANT_COL,Nullable(String)
+      ARRAY_COL,Nullable(String)
+      OBJECT_COL,Nullable(String)
+      BINARY_COL,Nullable(String)
+      GEOGRAPHY_COL,Nullable(String)
+      GEOMETRY_COL,Nullable(String)

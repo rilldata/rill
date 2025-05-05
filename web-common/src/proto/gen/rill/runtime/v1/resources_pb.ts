@@ -1422,6 +1422,23 @@ export class MetricsViewSpec_Dimension extends Message<MetricsViewSpec_Dimension
    */
   uri = "";
 
+  /**
+   * Lookup fields for the dimension
+   *
+   * @generated from field: string lookup_table = 8;
+   */
+  lookupTable = "";
+
+  /**
+   * @generated from field: string lookup_key_column = 9;
+   */
+  lookupKeyColumn = "";
+
+  /**
+   * @generated from field: string lookup_value_column = 10;
+   */
+  lookupValueColumn = "";
+
   constructor(data?: PartialMessage<MetricsViewSpec_Dimension>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1437,6 +1454,9 @@ export class MetricsViewSpec_Dimension extends Message<MetricsViewSpec_Dimension
     { no: 6, name: "expression", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "unnest", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 7, name: "uri", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 8, name: "lookup_table", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 9, name: "lookup_key_column", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 10, name: "lookup_value_column", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewSpec_Dimension {
@@ -2118,6 +2138,14 @@ export class ExploreSpec extends Message<ExploreSpec> {
    */
   allowCustomTimeRange = false;
 
+  /**
+   * When true, it indicates that the explore was defined in a metrics view.
+   * This currently happens for legacy metrics views (that don't have `version: 1`), which also emits explores.
+   *
+   * @generated from field: bool defined_in_metrics_view = 21;
+   */
+  definedInMetricsView = false;
+
   constructor(data?: PartialMessage<ExploreSpec>) {
     super();
     proto3.util.initPartial(data, this);
@@ -2143,6 +2171,7 @@ export class ExploreSpec extends Message<ExploreSpec> {
     { no: 18, name: "banner", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 19, name: "lock_time_zone", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 20, name: "allow_custom_time_range", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 21, name: "defined_in_metrics_view", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ExploreSpec {
@@ -2407,9 +2436,21 @@ export class ExplorePreset extends Message<ExplorePreset> {
   exploreExpandedDimension?: string;
 
   /**
+   * Deprecated
+   *
    * @generated from field: optional uint32 explore_leaderboard_measure_count = 30;
    */
   exploreLeaderboardMeasureCount?: number;
+
+  /**
+   * @generated from field: repeated string explore_leaderboard_measures = 31;
+   */
+  exploreLeaderboardMeasures: string[] = [];
+
+  /**
+   * @generated from field: optional bool explore_leaderboard_show_context_for_all_measures = 32;
+   */
+  exploreLeaderboardShowContextForAllMeasures?: boolean;
 
   /**
    * @generated from field: optional string time_dimension_measure = 21;
@@ -2478,6 +2519,8 @@ export class ExplorePreset extends Message<ExplorePreset> {
     { no: 19, name: "explore_sort_type", kind: "enum", T: proto3.getEnumType(ExploreSortType), opt: true },
     { no: 20, name: "explore_expanded_dimension", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 30, name: "explore_leaderboard_measure_count", kind: "scalar", T: 13 /* ScalarType.UINT32 */, opt: true },
+    { no: 31, name: "explore_leaderboard_measures", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 32, name: "explore_leaderboard_show_context_for_all_measures", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
     { no: 21, name: "time_dimension_measure", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 22, name: "time_dimension_chart_type", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 23, name: "time_dimension_pin", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },

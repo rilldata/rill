@@ -276,6 +276,7 @@ export interface V1CreateBookmarkResponse {
 export interface V1CreateOrganizationRequest {
   name?: string;
   description?: string;
+  displayName?: string;
 }
 
 export interface V1CreateOrganizationResponse {
@@ -658,6 +659,10 @@ export interface V1ListProjectsForOrganizationAndUserResponse {
 export interface V1ListProjectsForOrganizationResponse {
   projects?: V1Project[];
   nextPageToken?: string;
+}
+
+export interface V1ListProjectsForUserByNameResponse {
+  projects?: V1Project[];
 }
 
 export interface V1ListPublicBillingPlansResponse {
@@ -1675,6 +1680,10 @@ export type AdminServiceCreateServiceParams = {
 
 export type AdminServiceUpdateServiceBody = {
   newName?: string;
+};
+
+export type AdminServiceListProjectsForUserByNameParams = {
+  name?: string;
 };
 
 export type AdminServiceGetAlertMetaBodyAnnotations = { [key: string]: string };

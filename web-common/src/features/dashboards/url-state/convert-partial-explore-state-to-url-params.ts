@@ -25,6 +25,7 @@ import {
   ExploreStateKeyToURLParamMap,
   ExploreStateURLParams,
 } from "@rilldata/web-common/features/dashboards/url-state/url-params";
+import { cleanUrlParams } from "@rilldata/web-common/features/dashboards/url-state/clean-url-params";
 import { arrayOrderedEquals } from "@rilldata/web-common/lib/arrayUtils";
 import {
   TimeComparisonOption,
@@ -53,30 +54,21 @@ export function getCleanedUrlParamsForGoto(
     timeControlsState,
   );
 
-  // Remove params with default values
-  [...stateParams.entries()].forEach(([key, value]) => {
-    const defaultValue = defaultExploreUrlParams.get(key);
-    if (
-      (defaultValue === null && value !== "") ||
-      (defaultValue !== null && value !== defaultValue)
-    ) {
-      return;
-    }
-    stateParams.delete(key);
-  });
+  // Clean the url params of any default or empty values.
+  const cleanedUrlParams = cleanUrlParams(stateParams, defaultExploreUrlParams);
 
-  if (!urlForCompressionCheck) return stateParams;
+  if (!urlForCompressionCheck) return cleanedUrlParams;
 
   // compression
   const urlCopy = new URL(urlForCompressionCheck);
-  urlCopy.search = stateParams.toString();
+  urlCopy.search = cleanedUrlParams.toString();
   const shouldCompress = shouldCompressParams(urlCopy);
-  if (!shouldCompress) return stateParams;
+  if (!shouldCompress) return cleanedUrlParams;
 
   const compressedUrlParams = new URLSearchParams();
   compressedUrlParams.set(
     ExploreStateURLParams.GzippedParams,
-    compressUrlParams(stateParams.toString()),
+    compressUrlParams(cleanedUrlParams.toString()),
   );
   return compressedUrlParams;
 }
@@ -148,6 +140,8 @@ export function convertPartialExploreStateToUrlParams(
       // Since we do a shallow merge, we cannot remove time grain from the state for pivot as it is a deeper key.
       // So this is a patch to remove it from the final url.
       searchParams.delete(ExploreStateURLParams.TimeGrain);
+      // TODO: fix the need for this once we move out of V1ExplorePreset in converting url to explore state
+      searchParams.delete(ExploreStateURLParams.ComparisonDimension);
       break;
   }
 
@@ -271,7 +265,12 @@ function toExploreUrlParams(
     sd === SortDirection.ASCENDING ? "ASC" : "DESC",
   );
 
-  maybeSetParam(searchParams, partialExploreState, "leaderboardMeasureCount");
+  maybeSetParam(
+    searchParams,
+    partialExploreState,
+    "leaderboardMeasureNames",
+    (names) => names?.join(","),
+  );
 
   return searchParams;
 }

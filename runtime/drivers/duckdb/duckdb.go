@@ -49,6 +49,7 @@ var spec = drivers.Spec{
 			Placeholder: "/path/to/main.db",
 		},
 	},
+	// Important: Any edits to the below properties must be accompanied by changes to the client-side form validation schemas.
 	SourceProperties: []*drivers.PropertySpec{
 		{
 			Key:         "db",
@@ -496,6 +497,7 @@ func (c *connection) reopenDB(ctx context.Context) error {
 		WriteSettings:   c.config.writeSettings(),
 		DBInitQueries:   dbInitQueries,
 		ConnInitQueries: connInitQueries,
+		LogQueries:      c.config.LogQueries,
 		Logger:          c.logger,
 		OtelAttributes:  []attribute.KeyValue{attribute.String("instance_id", c.instanceID)},
 	})

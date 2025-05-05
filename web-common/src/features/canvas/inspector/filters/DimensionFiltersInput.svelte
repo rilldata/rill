@@ -15,6 +15,7 @@
 
   export let metricsView: string;
   export let componentStore: CanvasComponentState;
+  export let excludedDimensions: string[];
   export let id: string;
   export let filter: string;
   export let canvasName: string;
@@ -31,6 +32,9 @@
   $: showFilter = !!filter || filterToggle;
 
   $: allDimensions = getDimensionsForMetricView(metricsView);
+  $: allValidDimensions = $allDimensions.filter(
+    (d) => !excludedDimensions.includes(d.name || (d.column as string)),
+  );
   $: allSimpleMeasures = getSimpleMeasuresForMetricView(metricsView);
 
   $: ({
@@ -55,7 +59,7 @@
   } = componentStore.localFilters);
 
   $: dimensionIdMap = getMapFromArray(
-    $allDimensions,
+    allValidDimensions,
     (dimension) => (dimension.name || dimension.column) as string,
   );
 
@@ -133,7 +137,7 @@
       <InputLabel small label="Filters" {id} />
 
       <FilterButton
-        allDimensions={$allDimensions}
+        allDimensions={allValidDimensions}
         filteredSimpleMeasures={$allSimpleMeasures}
         dimensionHasFilter={$dimensionHasFilter}
         measureHasFilter={$measureHasFilter}
@@ -148,7 +152,7 @@
           <AdvancedFilter advancedFilter={$whereFilter} />
         {:else if allDimensionFilters.length || allMeasureFilters.length}
           {#each allDimensionFilters as { name, label, mode, selectedValues, inputText } (name)}
-            {@const dimension = $allDimensions.find(
+            {@const dimension = allValidDimensions.find(
               (d) => d.name === name || d.column === name,
             )}
             {@const dimensionName = dimension?.name || dimension?.column}
@@ -167,6 +171,7 @@
                   timeEnd={new Date().toISOString()}
                   timeControlsReady
                   excludeMode={$isFilterExcludeMode(name)}
+                  whereFilter={$whereFilter}
                   onRemove={() => removeDimensionFilter(name)}
                   onToggleFilterMode={() => toggleDimensionFilterMode(name)}
                   onSelect={(value) =>
@@ -182,7 +187,7 @@
           {#each allMeasureFilters as { name, label, dimensionName, filter } (name)}
             <div animate:flip={{ duration: 200 }}>
               <MeasureFilter
-                allDimensions={$allDimensions}
+                allDimensions={allValidDimensions}
                 {name}
                 {label}
                 {dimensionName}

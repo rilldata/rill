@@ -4313,6 +4313,8 @@ func (m *ExploreSpec) validate(all bool) error {
 
 	// no validation rules for AllowCustomTimeRange
 
+	// no validation rules for DefinedInMetricsView
+
 	if len(errors) > 0 {
 		return ExploreSpecMultiError(errors)
 	}
@@ -4921,6 +4923,10 @@ func (m *ExplorePreset) validate(all bool) error {
 
 	if m.ExploreLeaderboardMeasureCount != nil {
 		// no validation rules for ExploreLeaderboardMeasureCount
+	}
+
+	if m.ExploreLeaderboardShowContextForAllMeasures != nil {
+		// no validation rules for ExploreLeaderboardShowContextForAllMeasures
 	}
 
 	if m.TimeDimensionMeasure != nil {
@@ -11657,6 +11663,12 @@ func (m *MetricsViewSpec_Dimension) validate(all bool) error {
 	// no validation rules for Unnest
 
 	// no validation rules for Uri
+
+	// no validation rules for LookupTable
+
+	// no validation rules for LookupKeyColumn
+
+	// no validation rules for LookupValueColumn
 
 	if len(errors) > 0 {
 		return MetricsViewSpec_DimensionMultiError(errors)

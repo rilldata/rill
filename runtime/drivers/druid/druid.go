@@ -33,6 +33,7 @@ var spec = drivers.Spec{
 	DisplayName: "Druid",
 	Description: "Connect to Apache Druid.",
 	DocsURL:     "https://docs.rilldata.com/reference/olap-engines/druid",
+	// Important: Any edits to the below properties must be accompanied by changes to the client-side form validation schemas.
 	ConfigProperties: []*drivers.PropertySpec{
 		{
 			Key:         "dsn",
@@ -318,10 +319,6 @@ func (c *connection) AsWarehouse() (drivers.Warehouse, bool) {
 // AsNotifier implements drivers.Connection.
 func (c *connection) AsNotifier(properties map[string]any) (drivers.Notifier, error) {
 	return nil, drivers.ErrNotNotifier
-}
-
-func (c *connection) AcquireLongRunning(ctx context.Context) (func(), error) {
-	return func() {}, nil
 }
 
 func dsnFromConfig(conf *configProperties) (string, error) {

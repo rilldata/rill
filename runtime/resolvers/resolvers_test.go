@@ -9,9 +9,11 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	goruntime "runtime"
 	"strings"
 	"testing"
 
+	"github.com/joho/godotenv"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
@@ -27,6 +29,7 @@ import (
 // Each test in the file will be run in sequence against that runtime instance.
 // The available connectors are defined in runtime/testruntime/connectors.go.
 type TestFileYAML struct {
+	Expensive    bool                 `yaml:"expensive,omitempty"`
 	Connectors   []string             `yaml:"connectors,omitempty"`
 	Variables    map[string]string    `yaml:"variables,omitempty"`
 	DataFiles    map[string]string    `yaml:"data_files,omitempty"`
@@ -79,6 +82,13 @@ func TestResolvers(t *testing.T) {
 	files, err := filepath.Glob("./testdata/*.yaml")
 	require.NoError(t, err)
 
+	// Load .env file at the repo root (if any)
+	_, currentFile, _, _ := goruntime.Caller(0)
+	envPath := filepath.Join(currentFile, "..", "..", "..", ".env")
+	_, err = os.Stat(envPath)
+	if err == nil {
+		require.NoError(t, godotenv.Load(envPath))
+	}
 	// Run each test file as a subtest.
 	for _, f := range files {
 		t.Run(fileutil.Stem(f), func(t *testing.T) {
@@ -88,6 +98,11 @@ func TestResolvers(t *testing.T) {
 			var tf TestFileYAML
 			err = yaml.Unmarshal(data, &tf)
 			require.NoError(t, err)
+
+			// Handle short
+			if testing.Short() && tf.Expensive {
+				t.Skip("skipping test in short mode")
+			}
 
 			// Create a map of project files for the runtime instance.
 			projectFiles := make(map[string]string)
@@ -171,16 +186,14 @@ func TestResolvers(t *testing.T) {
 					// If the -update flag is set, update the test case results instead of checking them.
 					// The updated test case will be written back to the test file later.
 					if update {
-						if tc.ResultCSV != "" {
+						tc.ErrorContains = ""
+						if err != nil {
+							tc.ErrorContains = err.Error()
+						} else if tc.ResultCSV != "" {
 							tc.Result = nil
 							tc.ResultCSV = resultToCSV(t, rows, res.Schema())
 						} else {
 							tc.Result = rows
-						}
-
-						tc.ErrorContains = ""
-						if err != nil {
-							tc.ErrorContains = err.Error()
 						}
 						return
 					}

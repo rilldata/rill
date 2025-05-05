@@ -192,7 +192,9 @@ export function getDashboardStateFromProto(
     };
   }
 
-  entity.selectedTimezone = dashboard.selectedTimezone ?? "UTC";
+  if (dashboard.selectedTimezone !== undefined) {
+    entity.selectedTimezone = dashboard.selectedTimezone;
+  }
 
   if (dashboard.allMeasuresVisible) {
     entity.allMeasuresVisible = true;
@@ -221,8 +223,12 @@ export function getDashboardStateFromProto(
   if (dashboard.leaderboardSortType) {
     entity.dashboardSortType = dashboard.leaderboardSortType;
   }
-  if (dashboard.leaderboardMeasureCount) {
-    entity.leaderboardMeasureCount = dashboard.leaderboardMeasureCount;
+  if (dashboard.leaderboardShowContextForAllMeasures) {
+    entity.leaderboardShowContextForAllMeasures =
+      dashboard.leaderboardShowContextForAllMeasures;
+  }
+  if (dashboard.leaderboardMeasures?.length) {
+    entity.leaderboardMeasureNames = dashboard.leaderboardMeasures;
   }
 
   if (dashboard.activePage === DashboardState_ActivePage.PIVOT) {

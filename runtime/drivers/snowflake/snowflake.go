@@ -29,6 +29,7 @@ var spec = drivers.Spec{
 			Secret: true,
 		},
 	},
+	// Important: Any edits to the below properties must be accompanied by changes to the client-side form validation schemas.
 	SourceProperties: []*drivers.PropertySpec{
 		{
 			Key:         "sql",
@@ -46,6 +47,7 @@ var spec = drivers.Spec{
 			DocsURL:     "https://docs.rilldata.com/reference/connectors/snowflake",
 			Placeholder: "<username>@<account_identifier>/<database>/<schema>?warehouse=<warehouse>&role=<role>&authenticator=SNOWFLAKE_JWT&privateKey=<privateKey_base64_url_encoded>",
 			Hint:        "Can be configured here or by setting the 'connector.snowflake.dsn' environment variable (using '.env' or '--env')",
+			Secret:      true,
 		},
 		{
 			Key:         "name",

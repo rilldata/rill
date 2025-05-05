@@ -273,14 +273,15 @@ function fromExploreUrlParams(
     preset.exploreSortType !== undefined &&
     preset.exploreSortType !== V1ExploreSortType.EXPLORE_SORT_TYPE_UNSPECIFIED
   ) {
-    partialExploreState.dashboardSortType =
-      Number(ToLegacySortTypeMap[preset.exploreSortType]) ??
-      DashboardState_LeaderboardSortType.UNSPECIFIED;
+    partialExploreState.dashboardSortType = Number(
+      ToLegacySortTypeMap[preset.exploreSortType] ??
+        DashboardState_LeaderboardSortType.UNSPECIFIED,
+    );
   }
 
-  if (preset.exploreLeaderboardMeasureCount !== undefined) {
-    partialExploreState.leaderboardMeasureCount =
-      preset.exploreLeaderboardMeasureCount;
+  if (preset.exploreLeaderboardMeasures !== undefined) {
+    partialExploreState.leaderboardMeasureNames =
+      preset.exploreLeaderboardMeasures;
   }
 
   if (preset.exploreExpandedDimension !== undefined) {

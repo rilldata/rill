@@ -126,7 +126,7 @@ func NewAST(mv *runtimev1.MetricsViewSpec, sec *runtime.ResolvedSecurity, qry *Q
 	if len(qry.PivotOn) > 0 {
 		return nil, errors.New("cannot build AST for pivot queries")
 	}
-	if len(qry.Dimensions) == 0 && len(qry.Measures) == 0 {
+	if len(qry.Dimensions) == 0 && len(qry.Measures) == 0 && !qry.Rows {
 		return nil, fmt.Errorf("must specify at least one dimension or measure")
 	}
 
@@ -170,10 +170,15 @@ func NewAST(mv *runtimev1.MetricsViewSpec, sec *runtime.ResolvedSecurity, qry *Q
 			return nil, fmt.Errorf("invalid dimension %q: %w", qd.Name, err)
 		}
 
+		expr, err := ast.dialect.MetricsViewDimensionExpression(dim)
+		if err != nil {
+			return nil, fmt.Errorf("failed to compile dimension %q expression: %w", dim.Name, err)
+		}
+
 		f := FieldNode{
 			Name:        dim.Name,
 			DisplayName: dim.DisplayName,
-			Expr:        ast.dialect.MetricsViewDimensionExpression(dim),
+			Expr:        expr,
 		}
 
 		if dim.Unnest {
@@ -210,6 +215,14 @@ func NewAST(mv *runtimev1.MetricsViewSpec, sec *runtime.ResolvedSecurity, qry *Q
 
 		ast.dimFields = append(ast.dimFields, f)
 		ast.comparisonDimFields = append(ast.comparisonDimFields, cf)
+	}
+
+	if qry.Rows {
+		// when Rows is set that means we want underlying rows from the model that why adding * as dim field which will also avoid using AS clause
+		ast.dimFields = append(ast.dimFields, FieldNode{
+			Name: "*",
+			Expr: "*",
+		})
 	}
 
 	// Build underlying SELECT
@@ -635,6 +648,10 @@ func (a *AST) buildBaseSelect(alias string, comparison bool) (*SelectNode, error
 		Group:     true,
 		FromTable: a.underlyingTable,
 		Where:     a.underlyingWhere,
+	}
+
+	if a.query.Rows {
+		n.Group = false
 	}
 
 	tr := a.query.TimeRange

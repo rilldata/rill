@@ -1,17 +1,6 @@
 <script lang="ts">
-  import {
-    Dialog,
-    DialogContent,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-    DialogTrigger,
-  } from "@rilldata/web-common/components/dialog-v2";
-  import Button from "@rilldata/web-common/components/button/Button.svelte";
-  import Input from "@rilldata/web-common/components/forms/Input.svelte";
-  import { defaults, superForm } from "sveltekit-superforms";
-  import { yup } from "sveltekit-superforms/adapters";
-  import { object, string } from "yup";
+  import { page } from "$app/stores";
+  import type { V1OrganizationMemberUser } from "@rilldata/web-admin/client";
   import {
     createAdminServiceAddUsergroupMemberUser,
     createAdminServiceListUsergroupMemberUsers,
@@ -21,15 +10,26 @@
     getAdminServiceListOrganizationMemberUsersQueryKey,
     getAdminServiceListUsergroupMemberUsersQueryKey,
   } from "@rilldata/web-admin/client";
-  import { page } from "$app/stores";
+  import Avatar from "@rilldata/web-common/components/avatar/Avatar.svelte";
+  import Button from "@rilldata/web-common/components/button/Button.svelte";
+  import Combobox from "@rilldata/web-common/components/combobox/Combobox.svelte";
+  import {
+    Dialog,
+    DialogContent,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+  } from "@rilldata/web-common/components/dialog";
+  import Input from "@rilldata/web-common/components/forms/Input.svelte";
+  import InfoCircle from "@rilldata/web-common/components/icons/InfoCircle.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import InfoCircle from "@rilldata/web-common/components/icons/InfoCircle.svelte";
-  import Avatar from "@rilldata/web-common/components/avatar/Avatar.svelte";
-  import Combobox from "@rilldata/web-common/components/combobox/Combobox.svelte";
-  import type { V1OrganizationMemberUser } from "@rilldata/web-admin/client";
-  import { useQueryClient } from "@tanstack/svelte-query";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
+  import { useQueryClient } from "@tanstack/svelte-query";
+  import { defaults, superForm } from "sveltekit-superforms";
+  import { yup } from "sveltekit-superforms/adapters";
+  import { object, string } from "yup";
 
   export let open = false;
   export let groupName: string;

@@ -56,6 +56,9 @@ export interface MetricsViewSpecDimension {
   expression?: string;
   unnest?: boolean;
   uri?: string;
+  lookupTable?: string;
+  lookupKeyColumn?: string;
+  lookupValueColumn?: string;
 }
 
 export interface MetricsViewSpecDimensionSelector {
@@ -801,6 +804,8 @@ If not found in `time_ranges`, it should be added to the list. */
   exploreSortType?: V1ExploreSortType;
   exploreExpandedDimension?: string;
   exploreLeaderboardMeasureCount?: number;
+  exploreLeaderboardMeasures?: string[];
+  exploreLeaderboardShowContextForAllMeasures?: boolean;
   timeDimensionMeasure?: string;
   timeDimensionChartType?: string;
   timeDimensionPin?: boolean;
@@ -853,6 +858,9 @@ These are not currently parsed from YAML, but will be derived from the parent me
   banner?: string;
   lockTimeZone?: boolean;
   allowCustomTimeRange?: boolean;
+  /** When true, it indicates that the explore was defined in a metrics view.
+This currently happens for legacy metrics views (that don't have `version: 1`), which also emits explores. */
+  definedInMetricsView?: boolean;
 }
 
 export interface V1ExploreState {
@@ -1222,6 +1230,7 @@ export interface V1MetricsViewAggregationRequest {
   filter?: V1MetricsViewFilter;
   exact?: boolean;
   fillMissing?: boolean;
+  rows?: boolean;
 }
 
 export type V1MetricsViewAggregationResponseDataItem = {
@@ -2475,6 +2484,7 @@ export type QueryServiceMetricsViewAggregationBody = {
   filter?: V1MetricsViewFilter;
   exact?: boolean;
   fillMissing?: boolean;
+  rows?: boolean;
 };
 
 export type QueryServiceMetricsViewComparisonBody = {
@@ -2532,6 +2542,7 @@ export type QueryServiceMetricsViewTimeRangeBody = {
 export type QueryServiceMetricsViewTimeRangesBody = {
   expressions?: string[];
   priority?: number;
+  timeZone?: string;
 };
 
 export type QueryServiceMetricsViewTimeSeriesBody = {
@@ -2763,11 +2774,13 @@ export type RuntimeServiceCreateTriggerBody = {
   /** Parser is a convenience flag to trigger the global project parser.
 Triggering the project parser ensures a pull of the repository and a full parse of all files. */
   parser?: boolean;
-  /** Convenience flag to trigger all sources and models. */
-  allSourcesModels?: boolean;
-  /** Convenience flag to trigger all sources and models.
-Will trigger models with RefreshModelTrigger.full set to true. */
-  allSourcesModelsFull?: boolean;
+  /** Convenience flag to trigger all resources.
+Note: Despite the name, it does not currently trigger alerts and reports. */
+  all?: boolean;
+  /** Convenience flag to trigger all resources with full refreshes for resources that support it.
+Currently, only models support full refreshes. It's equivalent to passing RefreshModelTrigger.full for those models.
+Note: Despite the name, it does not currently trigger alerts and reports. */
+  allFull?: boolean;
 };
 
 export type ConnectorServiceOLAPListTablesParams = {

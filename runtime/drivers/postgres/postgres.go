@@ -25,6 +25,7 @@ var spec = drivers.Spec{
 			Secret: true,
 		},
 	},
+	// Important: Any edits to the below properties must be accompanied by changes to the client-side form validation schemas.
 	SourceProperties: []*drivers.PropertySpec{
 		{
 			Key:         "sql",
@@ -42,6 +43,7 @@ var spec = drivers.Spec{
 			DocsURL:     "https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING",
 			Placeholder: "postgresql://postgres:postgres@localhost:5432/postgres",
 			Hint:        "Can be configured here or by setting the 'connector.postgres.database_url' environment variable (using '.env' or '--env')",
+			Secret:      true,
 		},
 		{
 			Key:         "name",
