@@ -788,12 +788,12 @@ func (d Dialect) LookupSelectExpr(lookupTable, lookupKeyColumn string) (string, 
 	}
 }
 
-func (d Dialect) SanitizeQueryForLogging(sql string) string {
+func (d Dialect) SanitizeQueryForLogging(query string) string {
 	if d == DialectClickHouse {
 		// replace inline "PASSWORD 'pwd'" for dict source with "PASSWORD '***'"
-		sql = dictPwdRegex.ReplaceAllString(sql, "PASSWORD '***'")
+		query = dictPwdRegex.ReplaceAllString(query, "PASSWORD '***'")
 	}
-	return sql
+	return query
 }
 
 func (d Dialect) checkTypeCompatibility(f *runtimev1.StructType_Field) bool {
