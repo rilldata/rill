@@ -11,9 +11,12 @@
   export let organization: string;
   export let project: string;
   export let user: User;
+  export let orgRole: string;
   export let canChangeRole: boolean;
 
   $: currentUser = createAdminServiceGetCurrentUser();
+
+  $: showGuestChip = orgRole === "guest";
 
   function isProjectMemberUser(user: User): user is V1ProjectMemberUser {
     return "userName" in user;
@@ -36,6 +39,7 @@
     {email}
     {photoUrl}
     {isCurrentUser}
+    {showGuestChip}
     pendingAcceptance={isPendingInvite(user)}
   />
   <UserSetRole

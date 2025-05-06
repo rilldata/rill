@@ -114,7 +114,7 @@
 
   $: copyLink = `${$page.url.protocol}//${$page.url.host}/${organization}/${project}`;
 
-  // viewer: "not allowed to list project user groups"
+  // NOTE: viewer: "not allowed to list project user groups"
   $: listProjectMemberUsergroups =
     createAdminServiceListProjectMemberUsergroups(
       organization,
@@ -141,7 +141,7 @@
     },
   );
 
-  // viewer: "not authorized to read project members"
+  // NOTE: viewer: "not authorized to read project members"
   $: listProjectInvites = createAdminServiceListProjectInvites(
     organization,
     project,
@@ -157,7 +157,7 @@
 
   let isHovered = false;
 
-  // NOTE: Editor: "not allowed to list user group members"
+  // NOTE: editor: "not allowed to list user group members"
   $: listUsergroupMemberUsers = createAdminServiceListUsergroupMemberUsers(
     organization,
     "autogroup:members",
@@ -190,10 +190,6 @@
     (group) => group.groupName === "autogroup:members",
   );
 
-  // $: hasRegularUserGroups = projectMemberUserGroupsList.some(
-  //   (group) => !group.groupManaged,
-  // );
-
   $: accessType = hasAutogroupMembers ? "everyone" : "invite-only";
 
   function getInitials(name: string) {
@@ -223,6 +219,7 @@
               {organization}
               {project}
               {user}
+              orgRole={user.orgRoleName}
               canChangeRole={isAdmin || isEditor}
             />
           {/each}
@@ -232,24 +229,10 @@
               {organization}
               {project}
               {user}
+              orgRole={user.orgRoleName}
               canChangeRole={isAdmin || isEditor}
             />
           {/each}
-          <!-- User Groups -->
-          <!-- TODO: revisit when https://www.notion.so/rilldata/User-Management-Role-Based-Access-Control-RBAC-Enhancements-8d331b29d9b64d87bca066e06ef87f54?pvs=4#1acba33c8f5780f38303f01a73e82e60 -->
-          <!-- {#if hasRegularUserGroups}
-            {#each projectMemberUserGroupsList as group}
-              {#if !group.groupManaged}
-                <AutogroupMembersItem
-                  {organization}
-                  {project}
-                  {group}
-                  avatarName={`Everyone at ${organization}`}
-                  {isAdmin}
-                />
-              {/if}
-            {/each}
-          {/if} -->
         </div>
         <div class="mt-2">
           <div class="text-xs text-gray-500 font-semibold uppercase">
