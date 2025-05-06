@@ -81,7 +81,7 @@ func NewGithub(ctx context.Context, appID int64, appPrivateKey, managedGithubOrg
 	// Set the managed org installation client
 	if managedGithubOrg == "" {
 		g.managedOrgFetchError = fmt.Errorf("managed Git repositories are not configured for this environment")
-		
+
 	}
 	i, _, err := appClient.Apps.FindOrganizationInstallation(ctx, managedGithubOrg)
 	if err != nil {
