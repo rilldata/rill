@@ -1646,7 +1646,7 @@ func (c *connection) FindProjectMemberUsers(ctx context.Context, orgID, projectI
 				WHERE uor.user_id = u.id AND uor.org_id = $1
 			) as org_role_name
 		FROM users u
-    	JOIN users_projects_roles upr ON upr.user_id = u.id
+		JOIN users_projects_roles upr ON upr.user_id = u.id
 		WHERE upr.project_id = $2
 	`)
 	if filterRoleID != "" {
