@@ -1,18 +1,14 @@
-import type { CompoundQueryResult } from "@rilldata/web-common/features/compound-query-result";
 import {
   createAndExpression,
   matchExpressionByName,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
-import { normalizeWeekday } from "@rilldata/web-common/features/dashboards/time-controls/new-time-controls";
 import {
   ResourceKind,
   useClientFilteredResources,
   useFilteredResources,
   useResource,
 } from "@rilldata/web-common/features/entity-management/resource-selectors";
-import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
 import {
-  getQueryServiceMetricsViewTimeRangeQueryOptions,
   type RpcStatus,
   type V1Expression,
   type V1GetResourceResponse,
@@ -27,10 +23,8 @@ import {
 import {
   type CreateQueryOptions,
   type CreateQueryResult,
-  createQuery,
   type QueryClient,
 } from "@tanstack/svelte-query";
-import { Settings } from "luxon";
 import { derived } from "svelte/store";
 import type { ErrorType } from "../../runtime-client/http-client";
 import type { DimensionThresholdFilter } from "./stores/metrics-explorer-entity";
@@ -125,93 +119,6 @@ export function useMetricsViewTimeRange(
         },
         queryClient,
       ).subscribe(set),
-  );
-}
-
-/**
- * Wrapper function that fetches full time range.
- * Uses useExploreValidSpec unlike the above useMetricsViewTimeRange since it is more widely used.
- *
- * Does an additional validation where null min and max returned throws an error instead.
- */
-export function useFullTimeRangeQuery(
-  instanceId: string,
-  validSpecQuery: ReturnType<typeof useExploreValidSpec>,
-  queryClient?: QueryClient,
-): CompoundQueryResult<V1MetricsViewTimeRangeResponse> {
-  const fullTimeRangeQueryOptionsStore = derived(
-    validSpecQuery,
-    (validSpecResp) => {
-      const metricsViewSpec = validSpecResp.data?.metricsView ?? {};
-      const exploreSpec = validSpecResp.data?.explore ?? {};
-      const firstDayOfWeek = metricsViewSpec.firstDayOfWeek;
-      const metricsViewName = exploreSpec.metricsView ?? "";
-
-      Settings.defaultWeekSettings = {
-        firstDay: normalizeWeekday(firstDayOfWeek),
-        weekend: [6, 7],
-        minimalDays: 4,
-      };
-
-      return getQueryServiceMetricsViewTimeRangeQueryOptions(
-        instanceId,
-        metricsViewName,
-        {},
-        {
-          query: {
-            enabled: Boolean(metricsViewSpec.timeDimension),
-          },
-        },
-      );
-    },
-  );
-  const fullTimeRangeQuery = createQuery(
-    fullTimeRangeQueryOptionsStore,
-    queryClient,
-  );
-
-  return derived(
-    [fullTimeRangeQueryOptionsStore, fullTimeRangeQuery],
-    ([fullTimeRangeQueryOptions, fullTimeRange]) => {
-      // TODO: update the fields once we move away from getCompoundQuery
-
-      console.log(fullTimeRangeQueryOptions, fullTimeRange);
-      if (!fullTimeRangeQueryOptions.enabled) {
-        // We return early to avoid having isLoading=true when the time range query is not enabled.
-        // This allows us to check isLoading further down without any issues of it getting stuck.
-        // TODO: revisit once we move away from getCompoundQuery
-        return {
-          data: undefined,
-          error: null,
-          isFetching: false,
-          isLoading: false,
-        };
-      }
-
-      if (
-        fullTimeRange.data?.timeRangeSummary?.min === null &&
-        fullTimeRange.data?.timeRangeSummary?.max === null
-      ) {
-        // The timeRangeSummary is null when there are 0 rows of data.
-        // Notably, this happens when a security policy fully restricts a user from reading any data.
-        // Show a different error in this case.
-        return {
-          data: undefined,
-          error: new Error(
-            "This dashboard currently has no data to display. This may be due to access permissions.",
-          ),
-          isFetching: false,
-          isLoading: false,
-        };
-      }
-
-      return {
-        data: fullTimeRange.data,
-        error: fullTimeRange.error,
-        isFetching: fullTimeRange.isFetching,
-        isLoading: fullTimeRange.isLoading,
-      };
-    },
   );
 }
 
