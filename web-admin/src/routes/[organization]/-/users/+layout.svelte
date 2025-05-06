@@ -7,9 +7,9 @@
   //   isOrgEditor,
   // } from "@rilldata/web-admin/features/organizations/users/permissions";
 
-  export let data;
+  // export let data;
 
-  $: ({ organizationPermissions } = data);
+  // $: ({ organizationPermissions } = data);
 
   $: organization = $page.params.organization;
   $: basePage = `/${organization}/-/users`;
@@ -21,14 +21,10 @@
     {
       label: "Users",
       route: "",
-      hasPermission: true,
     },
     {
       label: "Groups",
       route: "/groups",
-      // TODO: only org admin and editor can see this
-      // hasPermission: isAdmin || isEditor,
-      hasPermission: true,
     },
   ];
 </script>
