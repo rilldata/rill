@@ -138,6 +138,7 @@
     {
       SPA: true,
       validators: schema,
+      validationMethod: "oninput",
       async onUpdate({ form }) {
         if (!form.valid) return;
         const values = form.data;
@@ -204,7 +205,6 @@
           label="Name"
           placeholder="Untitled"
           errors={$errors.name}
-          alwaysShowError
         />
 
         <Combobox
