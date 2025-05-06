@@ -6,6 +6,17 @@ import httpx
 from fastmcp import FastMCP
 from pydantic import BaseModel
 
+runtime_client = httpx.AsyncClient()
+
+
+def fix_dev_runtime_host(host: str) -> str:
+    if host == "http://localhost:9091":
+        return "http://localhost:8081"
+    return host
+
+
+runtime_mcp = FastMCP(name="RillRuntimeServer")
+
 
 class RuntimeRequest(BaseModel):
     host: str
@@ -13,8 +24,59 @@ class RuntimeRequest(BaseModel):
     jwt: str
 
 
+@runtime_mcp.tool()
+async def list_metrics_views(request: RuntimeRequest):
+    host = fix_dev_runtime_host(request.host)
+    response = await runtime_client.get(
+        f"{host}/v1/instances/{request.instance_id}/resources?kind=rill.runtime.v1.MetricsView",
+        headers={"Authorization": f"Bearer {request.jwt}"},
+    )
+
+    # Extract the resource names from the response
+    # This prevents us from returning too much data in the response
+    names = [
+        resource["meta"]["name"]["name"]
+        for resource in response.json().get("resources", [])
+    ]
+
+    return names
+
+
+class GetMetricsViewResourceRequest(RuntimeRequest):
+    name: str
+
+
+@runtime_mcp.tool()
+async def get_metrics_view_spec(request: GetMetricsViewResourceRequest):
+    host = fix_dev_runtime_host(request.host)
+    response = await runtime_client.get(
+        f"{host}/v1/instances/{request.instance_id}/resource?name.name={request.name}&name.kind=rill.runtime.v1.MetricsView",
+        headers={"Authorization": f"Bearer {request.jwt}"},
+    )
+
+    response_json = response.json()
+    try:
+        valid_spec = response_json["metricsView"]["state"]["validSpec"]
+    except (KeyError, TypeError):
+        valid_spec = {}
+
+    return valid_spec
+
+
 class GetMetricsViewTimeRangeSummaryRequest(RuntimeRequest):
     metrics_view: str
+
+
+@runtime_mcp.tool()
+async def get_metrics_view_time_range_summary(
+    request: GetMetricsViewTimeRangeSummaryRequest,
+):
+    host = fix_dev_runtime_host(request.host)
+    response = await runtime_client.post(
+        f"{host}/v1/instances/{request.instance_id}/queries/metrics-views/{request.metrics_view}/time-range-summary",
+        headers={"Authorization": f"Bearer {request.jwt}"},
+    )
+    return response.json()
 
 
 class MetricsViewAggregationDimension(BaseModel):
@@ -92,50 +154,6 @@ class GetMetricsViewAggregationRequest(RuntimeRequest):
     rows: Optional[bool] = False
 
 
-runtime_client = httpx.AsyncClient()
-
-
-def fix_dev_runtime_host(host: str) -> str:
-    if host == "http://localhost:9091":
-        return "http://localhost:8081"
-    return host
-
-
-runtime_mcp = FastMCP(name="RillRuntimeServer")
-
-
-@runtime_mcp.tool()
-async def list_resources(request: RuntimeRequest):
-    host = fix_dev_runtime_host(request.host)
-    response = await runtime_client.get(
-        f"{host}/v1/instances/{request.instance_id}/resources",
-        headers={"Authorization": f"Bearer {request.jwt}"},
-    )
-    return response.json()
-
-
-@runtime_mcp.tool()
-async def list_metrics_views(request: RuntimeRequest):
-    host = fix_dev_runtime_host(request.host)
-    response = await runtime_client.get(
-        f"{host}/v1/instances/{request.instance_id}/resources?kind=rill.runtime.v1.MetricsView",
-        headers={"Authorization": f"Bearer {request.jwt}"},
-    )
-    return response.json()
-
-
-@runtime_mcp.tool()
-async def get_metrics_view_time_range_summary(
-    request: GetMetricsViewTimeRangeSummaryRequest,
-):
-    host = fix_dev_runtime_host(request.host)
-    response = await runtime_client.post(
-        f"{host}/v1/instances/{request.instance_id}/queries/metrics-views/{request.metrics_view}/time-range-summary",
-        headers={"Authorization": f"Bearer {request.jwt}"},
-    )
-    return response.json()
-
-
 @runtime_mcp.tool()
 async def get_metrics_view_aggregation(request: GetMetricsViewAggregationRequest):
     host = fix_dev_runtime_host(request.host)
@@ -151,46 +169,6 @@ async def get_metrics_view_aggregation(request: GetMetricsViewAggregationRequest
     )
 
     return response.json()
-
-
-runtime_mcp._mcp_server.instructions = """
-## 🧠 Server Instructions: Rill Runtime MCP
-
-This server exposes Rill Runtime APIs for querying **metrics views**—Rill's analytical units.
-
----
-
-### Authentication
-
-Every tool requires:
-- `host`: Runtime server base URL  
-- `instance_id`: Unique ID of the runtime  
-- `jwt`: Bearer token for auth
-
-Get these values from the `GetProject` tool in the **Rill Admin MCP**.
-
----
-
-### How to Analyze a Metrics View
-
-1. **Discover resources**  
-   Use `list_metrics_views()` to list all metrics views in the project.
-
-2. **Get time range**  
-   Use `get_metrics_view_time_range_summary()` to fetch the full available time range for a metrics view.
-
-3. **Run an aggregation query**  
-   Use `get_metrics_view_aggregation()` to query a metrics view with:
-   - `dimensions`: List of dimensions to group by
-   - `measures`: List of measures to compute
-   - Optional fields:
-     - `sort`: Sorting rules
-     - `time_range` / `comparison_time_range`: Filter by time
-     - `where` / `having`: Use structured filters (`Expression`) or `*_sql` strings
-     - `limit`, `offset`, `exact`, `fill_missing`, `rows`
-  For best results, it's highly recommended to use the `sort` and `limit` fields to control the output.
-
-"""
 
 
 if __name__ == "__main__":
