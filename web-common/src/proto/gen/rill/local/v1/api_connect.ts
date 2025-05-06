@@ -3,7 +3,7 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import { DeployProjectRequest, DeployProjectResponse, GetCurrentProjectRequest, GetCurrentProjectResponse, GetCurrentUserRequest, GetCurrentUserResponse, GetMetadataRequest, GetMetadataResponse, GetVersionRequest, GetVersionResponse, ListOrganizationsAndBillingMetadataRequest, ListOrganizationsAndBillingMetadataResponse, PingRequest, PingResponse, PushToGithubRequest, PushToGithubResponse, RedeployProjectRequest, RedeployProjectResponse } from "./api_pb.js";
+import { CreateOrganizationRequest, CreateOrganizationResponse, DeployProjectRequest, DeployProjectResponse, GetCurrentProjectRequest, GetCurrentProjectResponse, GetCurrentUserRequest, GetCurrentUserResponse, GetMetadataRequest, GetMetadataResponse, GetVersionRequest, GetVersionResponse, ListMatchingProjectsRequest, ListMatchingProjectsResponse, ListOrganizationsAndBillingMetadataRequest, ListOrganizationsAndBillingMetadataResponse, ListProjectsForOrgRequest, ListProjectsForOrgResponse, PingRequest, PingResponse, PushToGithubRequest, PushToGithubResponse, RedeployProjectRequest, RedeployProjectResponse } from "./api_pb.js";
 import { MethodKind } from "@bufbuild/protobuf";
 
 /**
@@ -109,6 +109,39 @@ export const LocalService = {
       name: "ListOrganizationsAndBillingMetadata",
       I: ListOrganizationsAndBillingMetadataRequest,
       O: ListOrganizationsAndBillingMetadataResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * CreateOrganization creates a new organization
+     *
+     * @generated from rpc rill.local.v1.LocalService.CreateOrganization
+     */
+    createOrganization: {
+      name: "CreateOrganization",
+      I: CreateOrganizationRequest,
+      O: CreateOrganizationResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * ListMatchingProjects returns all remote projects matching the local project name
+     *
+     * @generated from rpc rill.local.v1.LocalService.ListMatchingProjects
+     */
+    listMatchingProjects: {
+      name: "ListMatchingProjects",
+      I: ListMatchingProjectsRequest,
+      O: ListMatchingProjectsResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * ListProjectsForOrg returns all projects within an org
+     *
+     * @generated from rpc rill.local.v1.LocalService.ListProjectsForOrg
+     */
+    listProjectsForOrg: {
+      name: "ListProjectsForOrg",
+      I: ListProjectsForOrgRequest,
+      O: ListProjectsForOrgResponse,
       kind: MethodKind.Unary,
     },
   }

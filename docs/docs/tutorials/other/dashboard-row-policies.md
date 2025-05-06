@@ -4,14 +4,14 @@ sidebar_label:  "Access Policies for Partner Facing Dashboards"
 hide_table_of_contents: false
 ---
 
-For this example, we will use the OpenRTB Programmatic Advertising project available in our [examples repostory.](https://github.com/rilldata/rill-examples/tree/main/rill-openrtb-prog-ads). 
+For this example, we will use the OpenRTB Programmatic Advertising project available in our [examples repository.](https://github.com/rilldata/rill-examples/tree/main/rill-openrtb-prog-ads). 
 
 
 ## Dashboard Access Policies
 
 While there are times that you can completely limit a user from viewing a dashboard by setting up [dashboard-level access](https://docs.rilldata.com/manage/security#restrict-dashboard-access-to-users-matching-specific-criteria), there are times that you might want to re-use the same dashboard but limit the view based on the user.
 
-Depending on how you will manage the row policies, depends highly on the type of data and the domain. IE, if the domain of the user matches with a column's value, then you will not need to create any mapping. However, in this example, we will cover creating a mapping file, and mapping domains to different values in the column, "Pub Name".
+Depending on how you will manage the row policies, it depends highly on the type of data and the domain. i.e., if the domain of the user matches with a column's value, then you will not need to create any mapping. However, in this example, we will cover creating a mapping file, and mapping domains to different values in the column, "Pub Name".
 
 Let's look at the possible values for Pub Name: [Click Here](https://ui.rilldata.com/demo/rill-openrtb-prog-ads/auction)
 
@@ -19,7 +19,7 @@ Some values include: Disney, Pluto TV, LG USA, ...
 
 ## Dashboard Access via Mapping Table
 ### Creating the Mapping Table
-There are many ways to set up the mapping file. Whether it's directly in a model SQL, or reading from a S3 bucket. You have the freedom to decide, in this example, we will make it directly in the models/model.sql file.
+There are many ways to set up the mapping file. Whether it's directly in a model SQL, or reading from an S3 bucket. You have the freedom to decide, in this example, we will make it directly in the models/model.sql file.
 
 ```SQL
 -- Model SQL
@@ -35,8 +35,8 @@ There are many ways to set up the mapping file. Whether it's directly in a model
 From this SQL file, we create a table that will map the `rilldata.com` domain to `Disney`. You will need to modify the file to add an email domain that fits your email and add a `Pub Name` from one that exists in the demo dashboard.
 
 ### Creating the Row level Dashboard Policy
-Now that this is created, you have a few options on which level you want to create the security level policy. Some questions to ask yourself is:
-1. Am I using the metrics view on other components other than the dashboard? IE: APIs, canvas dashboards
+Now that this is created, you have a few options on which level you want to create the security level policy. Some questions to ask yourself are:
+1. Am I using the metrics view on other components other than the dashboard? i.e.: APIs, canvas dashboards
 2. If I am using the metrics view in other locations, how strict do I want the metrics layer to be? 
 
 For most situations, you would define the dashboard policies at the metrics view level. So let's do that. Let's create a new metrics view, `auction_data_model_metrics_row_policies.yaml`, and copy the contents of `auction_data_model_metrics.yaml` into it.
@@ -71,7 +71,7 @@ Which results in the current view:
 
 ### Additional Set Up Possibilities
 
-This is a relatively straight forward example of row policies in Rill. By setting up a mapping file, you can allow specific data to be visible for specific individuals.
+This is a relatively straightforward example of row policies in Rill. By setting up a mapping file, you can allow specific data to be visible for specific individuals.
 
 Let's say you hired a contractor to assist with several customers. Mapping their domain or even email to the accounts will grant them visibility to only that specific data without having to create a new dashboard, metrics view, etc.
 
@@ -96,12 +96,12 @@ For more possibilities on attributes please see [our documentation](https://docs
 
 ## Dashboard Access (Column-level access)
 
-Another use-case is removing columns for user or groups that do not need them. Going back to our example openrtb project, let's say you are creating this dashboard for bids but do not want to provide specific information to non-company viewers. While you could create a new dashboard and remove some dimensions and measures, you can also use the same dashboard with a specific security policy.
+Another use-case is removing columns for users or groups that do not need them. Going back to our example openrtb project, let's say you are creating this dashboard for bids but do not want to provide specific information to non-company viewers. While you could create a new dashboard and remove some dimensions and measures, you can also use the same dashboard with a specific security policy.
 
 ```yaml
 security: 
   access: true #access is provided but 
-  exclude: #if the use is not part of rilldata, then exclude:
+  exclude: #if the user is not part of rilldata, then exclude:
     - if: "'{{ .user.domain }}' != 'rilldata.com'"
       names: 
         - bid_floor_bucket
@@ -111,7 +111,7 @@ security:
 
 
 
-In this case, if the user is not part of the Rill Data, they will not be able to view the listed dimension and measures. This is especially the case if your dashboard has customer sensitive information that should not be viewable. 
+In this case, if the user is not part of Rill Data, they will not be able to view the listed dimensions and measures. This is especially useful if your dashboard has customer sensitive information that should not be viewable. 
 
 
 ## Dashboard Access 
