@@ -6,7 +6,6 @@
   "workspaces": [
     "docs",
     "web-admin",
-    "web-auth",
     "web-common",
     "web-local"
   ],
@@ -17,7 +16,7 @@
     "dev-web": "npm run dev -w web-local -- ",
     "dev-runtime": "go run cli/main.go start dev-project --no-ui --allowed-origins '*'",
     "clean": "rm -rf dev-project",
-    "test": "npm run test -w web-common & npm run test -w web-auth & PLAYWRIGHT_TEST=true make cli && npm run test -w web-local",
+    "test": "npm run test -w web-common & PLAYWRIGHT_TEST=true make cli && npm run test -w web-local",
     "local-test": "cd web-local && npx playwright test --headed --project=e2e-chrome -g",
     "gen:colors": "node web-common/src/features/themes/gen-colors.ts"
   },
