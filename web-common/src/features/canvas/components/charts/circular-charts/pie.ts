@@ -13,7 +13,7 @@ import type { CircularChartSpec } from "./CircularChart";
 function getInnerRadius(innerRadiusPercentage: number | undefined) {
   if (!innerRadiusPercentage) return 0;
 
-  if (innerRadiusPercentage > 100 || innerRadiusPercentage < 0) {
+  if (innerRadiusPercentage >= 100 || innerRadiusPercentage < 0) {
     console.warn("Inner radius percentage must be between 0 and 100");
     return { expr: `0.5*min(width,height)/2` };
   }
