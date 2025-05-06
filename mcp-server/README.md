@@ -3,7 +3,7 @@
 The Rill [Model Context Protocol (MCP)](https://modelcontextprotocol.io) server exposes Rill's most essential APIs to LLMs. It's designed primarily for **data analysts**, not data engineers, and focuses on **consuming** Rill metric views—not creating them.
 
 The server can also generate [VegaLite](https://vega.github.io/vega-lite/)-backed visualizations from natural language prompts and data tables. This feature uses OpenAI to translate prompts into chart specs. However:
-- Not all MCP clients support the `Image` datatype yet.
+- Not all MCP clients yet support the `Image` datatype.
 - Some clients may offer their own visualization systems you may prefer.
 
 ## Installation
@@ -39,14 +39,16 @@ Create a `mcp.json` file for your client (e.g. Claude Desktop, Cursor, Windsurf)
       "command": "docker",
       "args": [
         "run", "--rm", "-i",
-        "-e", "RILL_SERVICE_TOKEN",
         "-e", "RILL_ORGANIZATION_NAME",
+        "-e", "RILL_PROJECT_NAME",
+        "-e", "RILL_SERVICE_TOKEN",
         "-e", "OPENAI_API_KEY",
         "rilldata/rill-mcp-server"
       ],
       "env": {
-        "RILL_SERVICE_TOKEN": "your-rill-service-token",
         "RILL_ORGANIZATION_NAME": "your-org-name",
+        "RILL_PROJECT_NAME": "your-project-name",
+        "RILL_SERVICE_TOKEN": "your-rill-service-token",
         "OPENAI_API_KEY": "your-openai-api-key" // Optional
       }
     }
