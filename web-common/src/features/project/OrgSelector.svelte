@@ -7,18 +7,11 @@
   import { CreateNewOrgFormId } from "@rilldata/web-common/features/organization/CreateNewOrgForm.svelte";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
 
-  export let open = false;
   export let orgs: string[];
-  export let onSelect: (org: string) => void;
-
   // As a convenience for user with only one org, we select auto select it.
-  let selectedOrg = orgs.length === 1 ? orgs[0] : "";
-  let isNewOrgDialogOpen = false;
+  export let selectedOrg = orgs.length === 1 ? orgs[0] : "";
 
-  function selectHandler() {
-    open = false;
-    onSelect(selectedOrg);
-  }
+  let isNewOrgDialogOpen = false;
 
   function handleCreateOrg(orgName: string) {
     selectedOrg = orgName;
@@ -59,7 +52,6 @@
     </button>
   </div>
 </Select>
-<Button wide type="primary" on:click={selectHandler}>Continue</Button>
 
 <Dialog.Root bind:open={isNewOrgDialogOpen}>
   <Dialog.Trigger asChild>

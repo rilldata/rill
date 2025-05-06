@@ -92,7 +92,10 @@
         Continue
       </Button>
     {:else if $stage === ProjectDeployStage.SelectOrg}
-      <OrgSelector orgs={$user.data?.rillUserOrgs ?? []} onSelect={selectOrg} />
+      <OrgSelector bind:selectedOrg orgs={$user.data?.rillUserOrgs ?? []} />
+      <Button wide type="primary" on:click={() => deployer.deploy(selectedOrg)}>
+        Deploy as a new project
+      </Button>
     {:else if $stage === ProjectDeployStage.SelectMatchingProject}
       <ProjectSelector projects={$matchingProjects.data?.projects} />
     {:else if $deployerStatus.isLoading}
