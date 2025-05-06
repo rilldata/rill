@@ -238,7 +238,7 @@ type DB interface {
 	UpdateProjectMemberUsergroup(ctx context.Context, groupID, projectID, roleID string) error
 	DeleteProjectMemberUsergroup(ctx context.Context, groupID, projectID string) error
 
-	FindOrganizationInvites(ctx context.Context, orgID, afterEmail string, limit int) ([]*Invite, error)
+	FindOrganizationInvites(ctx context.Context, orgID, afterEmail string, limit int) ([]*OrganizationInviteWithRole, error)
 	FindOrganizationInvitesByEmail(ctx context.Context, userEmail string) ([]*OrganizationInvite, error)
 	FindOrganizationInvite(ctx context.Context, orgID, userEmail string) (*OrganizationInvite, error)
 	InsertOrganizationInvite(ctx context.Context, opts *InsertOrganizationInviteOptions) error
@@ -247,7 +247,7 @@ type DB interface {
 	CountInvitesForOrganization(ctx context.Context, orgID string) (int, error)
 	UpdateOrganizationInviteRole(ctx context.Context, id, roleID string) error
 
-	FindProjectInvites(ctx context.Context, projectID, afterEmail string, limit int) ([]*Invite, error)
+	FindProjectInvites(ctx context.Context, projectID, afterEmail string, limit int) ([]*ProjectInviteWithRole, error)
 	FindProjectInvitesByEmail(ctx context.Context, userEmail string) ([]*ProjectInvite, error)
 	FindProjectInvite(ctx context.Context, projectID, userEmail string) (*ProjectInvite, error)
 	InsertProjectInvite(ctx context.Context, opts *InsertProjectInviteOptions) error
@@ -912,6 +912,14 @@ type OrganizationInvite struct {
 	CreatedOn       time.Time `db:"created_on"`
 }
 
+// OrganizationInviteWithRole is a convenience type used for display-friendly representation of an OrganizationInvite.
+type OrganizationInviteWithRole struct {
+	ID        string
+	Email     string
+	RoleName  string `db:"role_name"`
+	InvitedBy string `db:"invited_by"`
+}
+
 // ProjectInvite represents an outstanding invitation to join a project.
 // A ProjectInvite must have a corresponding OrganizationInvite.
 type ProjectInvite struct {
@@ -924,11 +932,13 @@ type ProjectInvite struct {
 	CreatedOn       time.Time `db:"created_on"`
 }
 
-// Invite is a convenience type used for display-friendly representation of an OrganizationInvite or ProjectInvite.
-type Invite struct {
-	Email     string
-	Role      string
-	InvitedBy string `db:"invited_by"`
+// ProjectInviteWithRole is a convenience type used for display-friendly representation of a ProjectInvite.
+type ProjectInviteWithRole struct {
+	ID          string
+	Email       string
+	RoleName    string `db:"role_name"`
+	OrgRoleName string `db:"org_role_name"`
+	InvitedBy   string `db:"invited_by"`
 }
 
 type ProjectsQuotaUsage struct {

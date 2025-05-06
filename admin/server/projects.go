@@ -931,9 +931,9 @@ func (s *Server) ListProjectInvites(ctx context.Context, req *adminv1.ListProjec
 		nextToken = marshalPageToken(userInvites[len(userInvites)-1].Email)
 	}
 
-	invitesDtos := make([]*adminv1.UserInvite, len(userInvites))
+	invitesDtos := make([]*adminv1.ProjectInvite, len(userInvites))
 	for i, invite := range userInvites {
-		invitesDtos[i] = inviteToPB(invite)
+		invitesDtos[i] = projInviteToPB(invite)
 	}
 
 	return &adminv1.ListProjectInvitesResponse{

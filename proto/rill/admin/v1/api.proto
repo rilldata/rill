@@ -1326,7 +1326,7 @@ message ListOrganizationInvitesRequest {
 }
 
 message ListOrganizationInvitesResponse {
-  repeated UserInvite invites = 1;
+  repeated OrganizationInvite invites = 1;
   string next_page_token = 2;
 }
 
@@ -1498,7 +1498,7 @@ message ListProjectInvitesRequest {
 }
 
 message ListProjectInvitesResponse {
-  repeated UserInvite invites = 1;
+  repeated ProjectInvite invites = 1;
   string next_page_token = 2;
 }
 
@@ -2495,9 +2495,16 @@ message UsergroupMemberUser {
   google.protobuf.Timestamp updated_on = 6;
 }
 
-message UserInvite {
+message OrganizationInvite {
   string email = 1;
-  string role = 2;
+  string role_name = 2;
+  string invited_by = 3;
+}
+
+message ProjectInvite {
+  string email = 1;
+  string role_name = 2;
+  string org_role_name = 4;
   string invited_by = 3;
 }
 
