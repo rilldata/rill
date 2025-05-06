@@ -143,7 +143,7 @@ func (r *ExploreReconciler) validateAndRewrite(ctx context.Context, self *runtim
 		}
 
 		// Merge access rules into a single rule
-		access := mergeAccessRules(slices.Concat(spec.SecurityRules, mv.SecurityRules))
+		access := mergeAccessRules(slices.Concat(mv.SecurityRules, spec.SecurityRules))
 		if access != nil {
 			spec.SecurityRules = []*runtimev1.SecurityRule{access}
 		}
