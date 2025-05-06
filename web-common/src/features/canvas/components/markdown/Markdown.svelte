@@ -22,7 +22,7 @@
 
 <style lang="postcss">
   :global(.canvas-markdown) {
-    @apply text-gray-800;
+    @apply text-gray-900;
   }
   :global(.canvas-markdown h1) {
     font-size: 24px;

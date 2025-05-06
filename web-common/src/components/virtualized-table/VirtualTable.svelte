@@ -201,7 +201,7 @@
 
   function handleLeave() {
     showTooltip = false;
-    hovering = null;
+    // hovering = null;
   }
 
   function handleMouseDown(
@@ -381,7 +381,7 @@
   </div>
 </div>
 
-{#if showTooltip && hovering}
+{#if true && hovering}
   <VirtualTooltip
     {sortable}
     {hovering}

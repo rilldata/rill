@@ -1,5 +1,5 @@
 <div
-  class="text-gray-700 grid gap-x-2 pointer-events-none pt-1 pb-1 items-baseline"
+  class="text-gray-900 grid gap-x-2 pointer-events-none pt-1 pb-1 items-baseline"
   style="grid-template-columns: auto max-content"
   style:min-width="200px"
 >
