@@ -80,7 +80,7 @@
 
   async function handleCreate(newName: string) {
     try {
-      const response = await $createUserGroup.mutateAsync({
+      await $createUserGroup.mutateAsync({
         organization: organization,
         data: {
           name: newName,
@@ -146,6 +146,7 @@
         try {
           await handleCreate(values.name);
           open = false;
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
         } catch (error) {
           console.error(error);
         }
