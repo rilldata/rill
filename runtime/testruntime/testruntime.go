@@ -108,7 +108,9 @@ func NewInstanceWithOptions(t TestingT, opts InstanceOptions) (*runtime.Runtime,
 
 	vars := make(map[string]string)
 	maps.Copy(vars, opts.Variables)
-	vars["rill.stage_changes"] = strconv.FormatBool(opts.StageChanges)
+	if vars["rill.stage_changes"] == "" {
+		vars["rill.stage_changes"] = strconv.FormatBool(opts.StageChanges)
+	}
 
 	for _, conn := range opts.TestConnectors {
 		acquire, ok := Connectors[conn]

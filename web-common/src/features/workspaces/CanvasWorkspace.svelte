@@ -6,6 +6,7 @@
   import VisualCanvasEditing from "@rilldata/web-common/features/canvas/inspector/VisualCanvasEditing.svelte";
   import { getNameFromFile } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
+  import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
   import {
     resourceIsLoading,
     ResourceKind,
@@ -40,6 +41,10 @@
     remoteContent,
     hasUnsavedChanges,
   } = fileArtifact);
+
+  $: ({
+    canvasEntity: { _rows },
+  } = getCanvasStore(canvasName));
 
   $: resourceQuery = getResource(queryClient, instanceId);
 
@@ -135,12 +140,15 @@
         {/if}
       </WorkspaceEditorContainer>
 
-      <VisualCanvasEditing
-        {canvasName}
-        {fileArtifact}
-        autoSave={selectedView === "viz" || $autoSave}
-        slot="inspector"
-      />
+      <svelte:fragment slot="inspector">
+        {#key $_rows}
+          <VisualCanvasEditing
+            {canvasName}
+            {fileArtifact}
+            autoSave={selectedView === "viz" || $autoSave}
+          />
+        {/key}
+      </svelte:fragment>
     </WorkspaceContainer>
   </CanvasThemeProvider>
 {/key}

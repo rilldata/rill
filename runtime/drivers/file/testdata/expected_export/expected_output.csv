@@ -1,3 +1,3 @@
 id,small_int,normal_int,big_int,huge_int,numeric_val,decimal_val,real_val,double_val,float_val,bool_val,uuid_val,char_val,varchar_val,text_val,blob_val,date_val,time_val,timestamp_val,timestamptz_val,interval_val,json_val,array_val,struct_val
-1,10,100,1000,10000,123.45,987.65,1.2300000190734863,4.56,7.889999866485596,true,550e8400-e29b-41d4-a716-446655440000,A,Hello,Sample Text,Njg2NTZjNmM2Zg==,2025-03-20,12:34:56,2025-03-20 12:34:56,2025-03-20 12:34:56,86400000,"{""key"": ""value""}","[1,2,3]","{""x"":42,""y"":""struct text""}"
+1,10,100,1000,10000,123.45,987.65,1.2300000190734863,4.56,7.889999866485596,true,550e8400-e29b-41d4-a716-446655440000,A,Hello,Sample Text,Njg2NTZjNmM2Zg==,2025-03-20,12:34:56,2025-03-20 12:34:56,2025-03-20 12:34:56,86400000,"{""key"":""value""}","[1,2,3]","{""x"":42,""y"":""struct text""}"
 2,,,,,,,,,,,,,,,,,,,,,,,

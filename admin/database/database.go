@@ -85,6 +85,7 @@ type DB interface {
 	FindProjectsByGithubInstallationID(ctx context.Context, id int64) ([]*Project, error)
 	FindProject(ctx context.Context, id string) (*Project, error)
 	FindProjectByName(ctx context.Context, orgName string, name string) (*Project, error)
+	FindProjectsByNameAndUser(ctx context.Context, name, userID string) ([]*Project, error)
 	InsertProject(ctx context.Context, opts *InsertProjectOptions) (*Project, error)
 	DeleteProject(ctx context.Context, id string) error
 	UpdateProject(ctx context.Context, id string, opts *UpdateProjectOptions) (*Project, error)
@@ -1054,7 +1055,7 @@ type InsertVirtualFileOptions struct {
 	ProjectID string
 	Branch    string
 	Path      string `validate:"required"`
-	Data      []byte `validate:"max=8192"` // 8kb
+	Data      []byte `validate:"max=131072"` // 128kb
 }
 
 // Asset represents a user-uploaded file asset.

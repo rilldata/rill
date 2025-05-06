@@ -26,14 +26,13 @@
 
   $: dataLoader = new DashboardStateDataLoader(
     instanceId,
-    metricsViewName,
     exploreName,
     storageNamespacePrefix,
     bookmarkOrTokenExploreState,
   );
 
   let stateSync: DashboardStateSync | undefined;
-  $: {
+  $: if (dataLoader) {
     stateSync?.teardown();
     stateSync = new DashboardStateSync(
       instanceId,
@@ -44,13 +43,19 @@
     );
   }
 
-  $: ({ initExploreState } = dataLoader);
+  let initExploreState:
+    | CompoundQueryResult<MetricsExplorerEntity | undefined>
+    | undefined;
+  $: if (dataLoader) ({ initExploreState } = dataLoader);
+
   let error: HTTPError | null;
   let isLoading: boolean;
-  $: ({ isLoading, error } = $initExploreState as {
-    isLoading: boolean;
-    error: HTTPError | null;
-  });
+  $: if (initExploreState) {
+    ({ isLoading, error } = $initExploreState as {
+      isLoading: boolean;
+      error: HTTPError | null;
+    });
+  }
 
   afterNavigate(({ from, to, type }) => {
     if (!from?.url || !to?.url || !stateSync) return;
@@ -68,7 +73,7 @@
 {:else if error}
   <ErrorPage
     statusCode={error.response?.status}
-    header={"Failed to load dashboard."}
+    header="Failed to load dashboard"
     detail={error.response?.data?.message ?? error.message}
   />
 {:else if $exploreStore}

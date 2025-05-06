@@ -68,6 +68,11 @@ service AdminService {
     option (google.api.http) = {get: "/v1/organizations/{organization_name}/projects/{name}"};
   }
 
+  // ListProjectsForUserByName returns projects matching a name accessible by the logged in user
+  rpc ListProjectsForUserByName(ListProjectsForUserByNameRequest) returns (ListProjectsForUserByNameResponse) {
+    option (google.api.http) = {get: "/v1/projects"};
+  }
+
   // GetProject returns information about a specific project
   rpc GetProjectByID(GetProjectByIDRequest) returns (GetProjectByIDResponse) {
     option (google.api.http) = {get: "/v1/projects/{id}"};
@@ -908,6 +913,7 @@ message GetOrganizationNameForDomainResponse {
 message CreateOrganizationRequest {
   string name = 2 [(validate.rules).string.min_len = 1];
   string description = 3;
+  string display_name = 4;
 }
 
 message CreateOrganizationResponse {
@@ -970,6 +976,14 @@ message GetProjectResponse {
   Deployment prod_deployment = 2;
   string jwt = 3;
   ProjectPermissions project_permissions = 4;
+}
+
+message ListProjectsForUserByNameRequest {
+  string name = 1 [(validate.rules).string.min_len = 1];
+}
+
+message ListProjectsForUserByNameResponse {
+  repeated Project projects = 1;
 }
 
 message GetProjectByIDRequest {

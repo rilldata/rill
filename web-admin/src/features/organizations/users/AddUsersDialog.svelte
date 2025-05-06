@@ -1,26 +1,26 @@
 <script lang="ts">
+  import { page } from "$app/stores";
+  import {
+    createAdminServiceAddOrganizationMemberUser,
+    getAdminServiceListOrganizationInvitesQueryKey,
+    getAdminServiceListOrganizationMemberUsersQueryKey,
+  } from "@rilldata/web-admin/client";
+  import UserRoleSelect from "@rilldata/web-admin/features/projects/user-management/UserRoleSelect.svelte";
+  import { Button } from "@rilldata/web-common/components/button/index.js";
   import {
     Dialog,
     DialogContent,
     DialogHeader,
     DialogTitle,
     DialogTrigger,
-  } from "@rilldata/web-common/components/dialog-v2";
-  import { Button } from "@rilldata/web-common/components/button/index.js";
-  import { defaults, superForm } from "sveltekit-superforms";
-  import { yup } from "sveltekit-superforms/adapters";
-  import { array, object, string } from "yup";
+  } from "@rilldata/web-common/components/dialog";
   import MultiInput from "@rilldata/web-common/components/forms/MultiInput.svelte";
-  import UserRoleSelect from "@rilldata/web-admin/features/projects/user-management/UserRoleSelect.svelte";
   import { RFC5322EmailRegex } from "@rilldata/web-common/components/forms/validation";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { useQueryClient } from "@tanstack/svelte-query";
-  import {
-    createAdminServiceAddOrganizationMemberUser,
-    getAdminServiceListOrganizationInvitesQueryKey,
-    getAdminServiceListOrganizationMemberUsersQueryKey,
-  } from "@rilldata/web-admin/client";
-  import { page } from "$app/stores";
+  import { defaults, superForm } from "sveltekit-superforms";
+  import { yup } from "sveltekit-superforms/adapters";
+  import { array, object, string } from "yup";
 
   export let open = false;
   export let email: string;
@@ -40,32 +40,27 @@
     newRole: string,
     isSuperUser: boolean = false,
   ) {
-    try {
-      await $addOrganizationMemberUser.mutateAsync({
-        organization: organization,
-        data: {
-          email: newEmail,
-          role: newRole,
-          superuserForceAccess: isSuperUser,
-        },
-      });
+    await $addOrganizationMemberUser.mutateAsync({
+      organization: organization,
+      data: {
+        email: newEmail,
+        role: newRole,
+        superuserForceAccess: isSuperUser,
+      },
+    });
 
-      await queryClient.invalidateQueries({
-        queryKey:
-          getAdminServiceListOrganizationMemberUsersQueryKey(organization),
-      });
+    await queryClient.invalidateQueries({
+      queryKey:
+        getAdminServiceListOrganizationMemberUsersQueryKey(organization),
+    });
 
-      await queryClient.invalidateQueries({
-        queryKey: getAdminServiceListOrganizationInvitesQueryKey(organization),
-      });
+    await queryClient.invalidateQueries({
+      queryKey: getAdminServiceListOrganizationInvitesQueryKey(organization),
+    });
 
-      email = "";
-      role = "";
-      isSuperUser = false;
-    } catch (error) {
-      console.error("Error adding user to organization", error);
-      throw error;
-    }
+    email = "";
+    role = "";
+    isSuperUser = false;
   }
 
   const formId = "add-user-form";
@@ -139,12 +134,6 @@
         // Show error notification if any invites failed
         if (failed.length > 0) {
           failedInvites = failed; // Store failed emails
-          eventBus.emit("notification", {
-            type: "error",
-            message: `Failed to invite ${failed.length} ${
-              failed.length === 1 ? "person" : "people"
-            }`,
-          });
         }
 
         // Close dialog after showing notifications
@@ -220,7 +209,9 @@
       </MultiInput>
       {#if failedInvites.length > 0}
         <div class="text-sm text-red-500 py-2">
-          Failed to invite {failedInvites.join(", ")}
+          {failedInvites.length === 1
+            ? `${failedInvites[0]} is already a member of this organization`
+            : `${failedInvites.join(", ")} are already members of this organization`}
         </div>
       {/if}
     </form>
