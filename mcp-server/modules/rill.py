@@ -6,7 +6,7 @@ from typing import Any, List, Optional
 
 import httpx
 from fastmcp import FastMCP
-from pydantic import BaseModel
+from pydantic import BaseModel, model_validator
 
 RILL_ADMIN_BASE_URL = os.getenv("RILL_ADMIN_BASE_URL") or "https://admin.rilldata.com"
 RILL_ORGANIZATION_NAME = os.getenv("RILL_ORGANIZATION_NAME")
@@ -177,6 +177,16 @@ class Expression(BaseModel):
     cond: Optional["Condition"] = None
     subquery: Optional["Subquery"] = None
 
+    @model_validator(mode="after")
+    def check_oneof(cls, values):
+        fields = ["ident", "val", "cond", "subquery"]
+        set_fields = [f for f in fields if getattr(values, f) is not None]
+        if len(set_fields) > 1:
+            raise ValueError(f"Only one of {fields} can be set, but got: {set_fields}")
+        if len(set_fields) == 0:
+            raise ValueError(f"One of {fields} must be set.")
+        return values
+
 
 class Condition(BaseModel):
     op: Operation
@@ -232,19 +242,29 @@ async def get_metrics_view_aggregation(request: GetMetricsViewAggregationRequest
                     "end": "2024-12-31T23:59:59Z"
                 },
                 "where": {
-                    "op": "OPERATION_AND",
-                    "exprs": [
-                        {
-                            "ident": "country",
-                            "op": "OPERATION_IN",
-                            "val": ["US", "CA", "GB"]
-                        },
-                        {
-                            "ident": "product_category",
-                            "op": "OPERATION_EQ",
-                            "val": "Electronics"
-                        }
-                    ]
+                    "cond": {
+                        "op": "OPERATION_AND",
+                        "exprs": [
+                            {
+                                "cond": {
+                                    "op": "OPERATION_IN",
+                                    "exprs": [
+                                        {"ident": "country"},
+                                        {"val": ["US", "CA", "GB"]}
+                                    ]
+                                }
+                            },
+                            {
+                                "cond": {
+                                    "op": "OPERATION_EQ",
+                                    "exprs": [
+                                        {"ident": "product_category"},
+                                        {"val": "Electronics"}
+                                    ]
+                                }
+                            }
+                        ]
+                    },
                 },
                 "sort": [{"name": "total_revenue", "desc": true}],
                 "limit": "10"
@@ -254,7 +274,9 @@ async def get_metrics_view_aggregation(request: GetMetricsViewAggregationRequest
     runtime_info = await get_runtime_info()
     host = fix_dev_runtime_host(runtime_info["host"])
 
-    payload = request.model_dump(exclude={"metrics_view"}, mode="json")
+    payload = request.model_dump(
+        exclude={"metrics_view"}, exclude_none=True, mode="json"
+    )
 
     response = await runtime_client.post(
         f"{host}/v1/instances/{runtime_info['instance_id']}/queries/metrics-views/{request.metrics_view}/aggregation",
