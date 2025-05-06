@@ -29,7 +29,7 @@
   $: name = isProjectMemberUser(user) ? user.userName : user.email;
   $: email = isProjectMemberUser(user) ? user.userEmail : user.email;
   $: photoUrl = isProjectMemberUser(user) ? user.userPhotoUrl : null;
-  $: role = isProjectMemberUser(user) ? user.roleName : user.role;
+  $: role = user.roleName;
   $: isCurrentUser = email === $currentUser.data?.user.email;
 </script>
 
