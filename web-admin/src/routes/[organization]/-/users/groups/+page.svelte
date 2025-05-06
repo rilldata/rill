@@ -12,23 +12,41 @@
   import CreateUserGroupDialog from "@rilldata/web-admin/features/organizations/users/CreateUserGroupDialog.svelte";
   import { Search } from "@rilldata/web-common/components/search";
 
+  const PAGE_SIZE = 20;
+
   let userGroupName = "";
   let isCreateUserGroupDialogOpen = false;
   let searchText = "";
+  let pageToken = "";
 
   $: organization = $page.params.organization;
   $: listOrganizationMemberUsergroups =
-    createAdminServiceListOrganizationMemberUsergroups(organization);
+    createAdminServiceListOrganizationMemberUsergroups(organization, {
+      pageSize: PAGE_SIZE,
+      pageToken,
+    });
   $: listOrganizationMemberUsers =
     createAdminServiceListOrganizationMemberUsers(organization);
 
   const currentUser = createAdminServiceGetCurrentUser();
 
-  $: filteredGroups = $listOrganizationMemberUsergroups.data?.members.filter(
-    (group) =>
-      !group.groupManaged &&
-      group.groupName.toLowerCase().includes(searchText.toLowerCase()),
+  $: filteredGroups =
+    $listOrganizationMemberUsergroups.data?.members.filter(
+      (group) =>
+        !group.groupManaged &&
+        group.groupName.toLowerCase().includes(searchText.toLowerCase()),
+    ) ?? [];
+
+  $: hasNextPage = Boolean(
+    $listOrganizationMemberUsergroups.data?.nextPageToken,
   );
+  $: isFetchingNextPage = $listOrganizationMemberUsergroups.isFetching;
+
+  function handleLoadMore() {
+    if (hasNextPage) {
+      pageToken = $listOrganizationMemberUsergroups.data?.nextPageToken ?? "";
+    }
+  }
 </script>
 
 <div class="flex flex-col w-full">
@@ -65,6 +83,9 @@
           data={filteredGroups}
           currentUserEmail={$currentUser.data?.user.email}
           searchUsersList={$listOrganizationMemberUsers.data?.members ?? []}
+          {hasNextPage}
+          {isFetchingNextPage}
+          onLoadMore={handleLoadMore}
         />
       </div>
       {#if filteredGroups.length > 0}
