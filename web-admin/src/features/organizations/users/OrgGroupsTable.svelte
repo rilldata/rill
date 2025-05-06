@@ -18,7 +18,7 @@
       accessorKey: "groupName",
       header: "Group",
       meta: {
-        widthPercent: 5,
+        widthPercent: 50,
       },
     },
     {
@@ -31,7 +31,7 @@
           role: row.original.roleName,
         }),
       meta: {
-        widthPercent: 5,
+        widthPercent: 40,
         marginLeft: "8px",
       },
     },
@@ -47,7 +47,7 @@
           searchUsersList: searchUsersList,
         }),
       meta: {
-        widthPercent: 0,
+        widthPercent: 5,
       },
     },
   ];
