@@ -24,16 +24,12 @@
   $: metricsViewName = exploreSpec?.metricsView ?? "";
   $: exploreStore = useExploreState(exploreName);
 
-  let dataLoader: DashboardStateDataLoader | undefined;
-  $: if (metricsViewName) {
-    dataLoader = new DashboardStateDataLoader(
-      instanceId,
-      metricsViewName,
-      exploreName,
-      storageNamespacePrefix,
-      bookmarkOrTokenExploreState,
-    );
-  }
+  $: dataLoader = new DashboardStateDataLoader(
+    instanceId,
+    exploreName,
+    storageNamespacePrefix,
+    bookmarkOrTokenExploreState,
+  );
 
   let stateSync: DashboardStateSync | undefined;
   $: if (dataLoader) {
@@ -77,7 +73,7 @@
 {:else if error}
   <ErrorPage
     statusCode={error.response?.status}
-    header={"Failed to load dashboard."}
+    header="Failed to load dashboard"
     detail={error.response?.data?.message ?? error.message}
   />
 {:else if $exploreStore}
