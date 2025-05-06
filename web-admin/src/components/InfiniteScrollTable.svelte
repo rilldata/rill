@@ -14,11 +14,6 @@
   } from "@tanstack/svelte-table";
   import { createVirtualizer } from "@tanstack/svelte-virtual";
   import ArrowDown from "@rilldata/web-common/components/icons/ArrowDown.svelte";
-  import type {
-    InfiniteData,
-    InfiniteQueryObserverResult,
-  } from "@tanstack/svelte-query";
-  import { ExternalLinkIcon } from "lucide-svelte";
 
   export let data: any[];
   export let columns: ColumnDef<any, any>[];
@@ -124,7 +119,7 @@
                     style={`margin-left: ${marginLeft};`}
                     class:cursor-pointer={header.column.getCanSort()}
                     class:select-none={header.column.getCanSort()}
-                    class="font-semibold text-gray-500 flex flex-row items-center gap-x-1"
+                    class="font-semibold text-gray-500 flex flex-row items-center gap-x-1 text-sm"
                   >
                     <svelte:component
                       this={flexRender(
