@@ -6,7 +6,7 @@
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { writable } from "svelte/store";
   import { getStateManagers } from "../state-managers/state-managers";
-  import { metricsExplorerStore } from "../stores/dashboard-stores";
+  import { explorerStore } from "../stores/dashboard-stores";
   import AddField from "./AddField.svelte";
   import PivotPortalItem from "./PivotPortalItem.svelte";
   import { swapListener } from "./swapListener";
@@ -169,11 +169,11 @@
   }
 
   function handleRowClick(item: PivotChipData) {
-    metricsExplorerStore.addPivotField($exploreName, item, true);
+    explorerStore.addPivotField($exploreName, item, true);
   }
 
   function handleColumnClick(item: PivotChipData) {
-    metricsExplorerStore.addPivotField($exploreName, item, false);
+    explorerStore.addPivotField($exploreName, item, false);
   }
 </script>
 

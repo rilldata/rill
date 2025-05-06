@@ -1,5 +1,5 @@
 import { PivotChipType } from "@rilldata/web-common/features/dashboards/pivot/types";
-import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
 import { DashboardState_ActivePage } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import {
@@ -20,7 +20,7 @@ export class AdvancedMeasureCorrector {
   private measuresGrains: Map<string, V1TimeGrain>;
 
   private constructor(
-    private readonly dashboard: MetricsExplorerEntity,
+    private readonly dashboard: ExploreState,
     private readonly metricsViewSpec: V1MetricsViewSpec,
   ) {
     this.measuresMap = getMapFromArray(
@@ -41,7 +41,7 @@ export class AdvancedMeasureCorrector {
   }
 
   public static correct(
-    dashboard: MetricsExplorerEntity,
+    dashboard: ExploreState,
     metricsViewSpec: V1MetricsViewSpec,
   ) {
     new AdvancedMeasureCorrector(dashboard, metricsViewSpec).correct();

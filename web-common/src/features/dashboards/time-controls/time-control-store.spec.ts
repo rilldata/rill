@@ -1,5 +1,5 @@
 import { DashboardFetchMocks } from "@rilldata/web-common/features/dashboards/dashboard-fetch-mocks";
-import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
+import { explorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
 import {
   AD_BIDS_EXPLORE_INIT,
   AD_BIDS_EXPLORE_NAME,
@@ -31,7 +31,7 @@ describe("time-control-store", () => {
   const dashboardFetchMocks = DashboardFetchMocks.useDashboardFetchMocks();
 
   beforeEach(() => {
-    metricsExplorerStore.remove(AD_BIDS_EXPLORE_NAME);
+    explorerStore.remove(AD_BIDS_EXPLORE_NAME);
   });
 
   it("Switching from no timestamp column to having one", async () => {
@@ -97,7 +97,7 @@ describe("time-control-store", () => {
     );
     await waitForUpdate(timeControlsStore, "2022-01-01T00:00:00.000Z");
 
-    metricsExplorerStore.setSelectedTimeRange(AD_BIDS_EXPLORE_NAME, {
+    explorerStore.setSelectedTimeRange(AD_BIDS_EXPLORE_NAME, {
       name: TimeRangePreset.LAST_24_HOURS,
       start: undefined,
       end: undefined,
@@ -111,7 +111,7 @@ describe("time-control-store", () => {
       "2022-03-31T02:00:00.000Z",
     );
 
-    metricsExplorerStore.setSelectedTimeRange(AD_BIDS_EXPLORE_NAME, {
+    explorerStore.setSelectedTimeRange(AD_BIDS_EXPLORE_NAME, {
       name: TimeRangePreset.CUSTOM,
       start: new Date("2022-03-20T01:00:00.000Z"),
       end: new Date("2022-03-22T01:00:00.000Z"),
@@ -130,7 +130,7 @@ describe("time-control-store", () => {
       V1TimeGrain.TIME_GRAIN_HOUR,
     );
 
-    metricsExplorerStore.setSelectedTimeRange(AD_BIDS_EXPLORE_NAME, {
+    explorerStore.setSelectedTimeRange(AD_BIDS_EXPLORE_NAME, {
       name: TimeRangePreset.LAST_7_DAYS,
       start: new Date("2021-01-01"),
       end: new Date("2021-03-31"),
@@ -163,14 +163,14 @@ describe("time-control-store", () => {
     );
     await waitForUpdate(timeControlsStore, "2022-01-01T00:00:00.000Z");
 
-    metricsExplorerStore.displayTimeComparison(AD_BIDS_EXPLORE_NAME, true);
-    metricsExplorerStore.setSelectedTimeRange(AD_BIDS_EXPLORE_NAME, {
+    explorerStore.displayTimeComparison(AD_BIDS_EXPLORE_NAME, true);
+    explorerStore.setSelectedTimeRange(AD_BIDS_EXPLORE_NAME, {
       name: TimeRangePreset.LAST_24_HOURS,
       start: undefined,
       end: undefined,
       interval: V1TimeGrain.TIME_GRAIN_HOUR,
     });
-    metricsExplorerStore.setSelectedComparisonRange(
+    explorerStore.setSelectedComparisonRange(
       AD_BIDS_EXPLORE_NAME,
       {} as any,
       AD_BIDS_METRICS_INIT_WITH_TIME,
@@ -185,25 +185,25 @@ describe("time-control-store", () => {
       "2022-03-30T02:00:00.000Z",
     );
 
-    metricsExplorerStore.setSelectedTimeRange(AD_BIDS_EXPLORE_NAME, {
+    explorerStore.setSelectedTimeRange(AD_BIDS_EXPLORE_NAME, {
       name: TimeRangePreset.LAST_12_MONTHS,
       start: undefined,
       end: undefined,
       interval: V1TimeGrain.TIME_GRAIN_DAY,
     });
-    metricsExplorerStore.setSelectedComparisonRange(
+    explorerStore.setSelectedComparisonRange(
       AD_BIDS_EXPLORE_NAME,
       {} as any,
       AD_BIDS_METRICS_INIT_WITH_TIME,
     );
 
-    metricsExplorerStore.setSelectedTimeRange(AD_BIDS_EXPLORE_NAME, {
+    explorerStore.setSelectedTimeRange(AD_BIDS_EXPLORE_NAME, {
       name: TimeRangePreset.LAST_7_DAYS,
       start: undefined,
       end: undefined,
       interval: V1TimeGrain.TIME_GRAIN_DAY,
     });
-    metricsExplorerStore.setSelectedComparisonRange(
+    explorerStore.setSelectedComparisonRange(
       AD_BIDS_EXPLORE_NAME,
       {} as any,
       AD_BIDS_METRICS_INIT_WITH_TIME,
@@ -232,7 +232,7 @@ describe("time-control-store", () => {
 
     await waitForUpdate(timeControlsStore, "2022-01-01T00:00:00.000Z");
 
-    metricsExplorerStore.setTimeZone(AD_BIDS_EXPLORE_NAME, "IST");
+    explorerStore.setTimeZone(AD_BIDS_EXPLORE_NAME, "IST");
     assertStartAndEnd(
       get(timeControlsStore),
       "2021-12-31T18:30:00.000Z",
@@ -241,14 +241,14 @@ describe("time-control-store", () => {
       "2022-04-03T18:30:00.000Z",
     );
 
-    metricsExplorerStore.displayTimeComparison(AD_BIDS_EXPLORE_NAME, true);
-    metricsExplorerStore.setSelectedTimeRange(AD_BIDS_EXPLORE_NAME, {
+    explorerStore.displayTimeComparison(AD_BIDS_EXPLORE_NAME, true);
+    explorerStore.setSelectedTimeRange(AD_BIDS_EXPLORE_NAME, {
       name: TimeRangePreset.LAST_24_HOURS,
       start: undefined,
       end: undefined,
       interval: V1TimeGrain.TIME_GRAIN_HOUR,
     });
-    metricsExplorerStore.setSelectedComparisonRange(
+    explorerStore.setSelectedComparisonRange(
       AD_BIDS_EXPLORE_NAME,
       {} as any,
       AD_BIDS_METRICS_INIT_WITH_TIME,
@@ -282,8 +282,8 @@ describe("time-control-store", () => {
       AD_BIDS_METRICS_INIT_WITH_TIME,
     );
     await waitForUpdate(timeControlsStore, "2022-01-01T00:00:00.000Z");
-    metricsExplorerStore.displayTimeComparison(AD_BIDS_EXPLORE_NAME, true);
-    metricsExplorerStore.setSelectedComparisonRange(
+    explorerStore.displayTimeComparison(AD_BIDS_EXPLORE_NAME, true);
+    explorerStore.setSelectedComparisonRange(
       AD_BIDS_EXPLORE_NAME,
       {
         name: TimeComparisonOption.QUARTER,
@@ -291,7 +291,7 @@ describe("time-control-store", () => {
       AD_BIDS_METRICS_INIT_WITH_TIME,
     );
 
-    metricsExplorerStore.setSelectedScrubRange(AD_BIDS_EXPLORE_NAME, {
+    explorerStore.setSelectedScrubRange(AD_BIDS_EXPLORE_NAME, {
       start: new Date("2022-02-01 UTC"),
       end: new Date("2022-02-10 UTC"),
       isScrubbing: true,
@@ -313,7 +313,7 @@ describe("time-control-store", () => {
       "2022-01-03T00:00:00.000Z",
     );
 
-    metricsExplorerStore.setSelectedScrubRange(AD_BIDS_EXPLORE_NAME, {
+    explorerStore.setSelectedScrubRange(AD_BIDS_EXPLORE_NAME, {
       start: new Date("2022-02-01 UTC"),
       end: new Date("2022-02-10 UTC"),
       isScrubbing: false,

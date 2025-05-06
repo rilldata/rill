@@ -7,7 +7,7 @@
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import {
     dimensionSearchText,
-    metricsExplorerStore,
+    explorerStore,
   } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import ComparisonSelector from "@rilldata/web-common/features/dashboards/time-controls/ComparisonSelector.svelte";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
@@ -51,7 +51,7 @@
     actions: {
       dimensionsFilter: { toggleDimensionFilterMode },
     },
-    dashboardStore,
+    exploreStore,
     validSpecStore,
   } = stateManagers;
 
@@ -71,7 +71,7 @@
     expandedMeasureName;
 
   $: excludeMode =
-    $dashboardStore?.dimensionFilterExcludeMode.get(dimensionName) ?? false;
+    $exploreStore?.dimensionFilterExcludeMode.get(dimensionName) ?? false;
 
   function closeSearchBar() {
     dimensionSearchText.set("");
@@ -89,12 +89,12 @@
   }
 
   function switchMeasure(measureName: string) {
-    metricsExplorerStore.setExpandedMeasureName(exploreName, measureName);
+    explorerStore.setExpandedMeasureName(exploreName, measureName);
   }
 
   let showReplacePivotModal = false;
   function startPivotForTDD() {
-    const pivot = $dashboardStore?.pivot;
+    const pivot = $exploreStore?.pivot;
 
     const pivotColumns = splitPivotChips(pivot.columns);
     if (
@@ -110,7 +110,7 @@
 
   function createPivot() {
     showReplacePivotModal = false;
-    const dashboardGrain = $dashboardStore?.selectedTimeRange?.interval;
+    const dashboardGrain = $exploreStore?.selectedTimeRange?.interval;
     if (!dashboardGrain || !expandedMeasureName) return;
 
     const timeGrain: TimeGrain = TIME_GRAIN[dashboardGrain];
@@ -123,7 +123,7 @@
           },
         ]
       : [];
-    metricsExplorerStore.createPivot(exploreName, rowDimensions, [
+    explorerStore.createPivot(exploreName, rowDimensions, [
       {
         id: dashboardGrain,
         title: timeGrain.label,
@@ -156,7 +156,7 @@
       makeTimeSeriesTimeRangeAndUpdateAppState(
         baseTimeRange,
         timeGrain,
-        $dashboardStore?.selectedComparisonTimeRange,
+        $exploreStore?.selectedComparisonTimeRange,
       );
     }
   }
@@ -170,7 +170,7 @@
      */
     comparisonTimeRange: DashboardTimeControls | undefined,
   ) {
-    metricsExplorerStore.selectTimeRange(
+    explorerStore.selectTimeRange(
       exploreName,
       timeRange,
       timeGrain,

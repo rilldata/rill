@@ -1,7 +1,7 @@
 import { createAdminServiceSearchProjectUsers } from "@rilldata/web-admin/client";
 import { getExploreName } from "@rilldata/web-admin/features/dashboards/query-mappers/utils";
-import { getDashboardStateFromUrl } from "@rilldata/web-common/features/dashboards/proto-state/fromProto";
-import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import { getExploreStateFromUrl } from "@rilldata/web-common/features/dashboards/proto-state/fromProto";
+import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import {
   createRuntimeServiceGetExplore,
@@ -103,13 +103,13 @@ export function useIsAlertCreatedByCode(instanceId: string, name: string) {
   );
 }
 
-export function useAlertDashboardState(
+export function useAlertExploreState(
   instanceId: string,
   alertSpec: V1AlertSpec | undefined,
 ) {
   if (!alertSpec) {
     return readable({
-      data: <Partial<MetricsExplorerEntity>>{},
+      data: <Partial<ExploreState>>{},
     });
   }
 
@@ -119,7 +119,7 @@ export function useAlertDashboardState(
   const webState = alertSpec.annotations?.web_open_state ?? "";
   if (!webState) {
     return readable({
-      data: <Partial<MetricsExplorerEntity>>{},
+      data: <Partial<ExploreState>>{},
     });
   }
 
@@ -129,7 +129,7 @@ export function useAlertDashboardState(
     {
       query: {
         select: (data) =>
-          getDashboardStateFromUrl(
+          getExploreStateFromUrl(
             webState,
             data.metricsView?.metricsView?.state?.validSpec ?? {},
             data.explore?.explore?.state?.validSpec,

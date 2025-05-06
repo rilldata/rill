@@ -80,7 +80,7 @@ export function getDimensionValuesForComparison(
     [
       ctx.runtime,
       ctx.metricsViewName,
-      ctx.dashboardStore,
+      ctx.exploreStore,
       useTimeControlStore(ctx),
       dimensionSearchText,
     ],
@@ -234,7 +234,7 @@ function getAggregationQueryForTopList(
     [
       ctx.runtime,
       ctx.metricsViewName,
-      ctx.dashboardStore,
+      ctx.exploreStore,
       useTimeControlStore(ctx),
     ],
     ([runtime, metricsViewName, dashboardStore, timeStore], set) => {
@@ -282,7 +282,7 @@ function getAggregationQueryForTopList(
         },
         {
           query: {
-            enabled: !!timeStore.ready && !!ctx.dashboardStore,
+            enabled: !!timeStore.ready && !!ctx.exploreStore,
             placeholderData: keepPreviousData,
           },
         },
@@ -303,7 +303,7 @@ export function getDimensionValueTimeSeries(
 ): Readable<DimensionDataItem[]> {
   return derived(
     [
-      ctx.dashboardStore,
+      ctx.exploreStore,
       useTimeControlStore(ctx),
       createMetricsViewTimeSeries(ctx, measures, false),
       createMetricsViewTimeSeries(ctx, measures, true),

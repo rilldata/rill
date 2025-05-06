@@ -1,4 +1,4 @@
-import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import {
   MetricsViewSpecMeasureType,
   type MetricsViewSpecMeasure,
@@ -102,7 +102,7 @@ export const filteredSimpleMeasures = ({
  * 3. Window measures if includeWindowMeasures=false. Right now totals query does not support these.
  */
 export const removeSomeAdvancedMeasures = (
-  exploreState: MetricsExplorerEntity,
+  exploreState: ExploreState,
   metricsViewSpec: V1MetricsViewSpec,
   measureNames: string[],
   includeWindowMeasures: boolean,

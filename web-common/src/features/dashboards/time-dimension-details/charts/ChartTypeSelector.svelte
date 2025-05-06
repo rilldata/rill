@@ -4,7 +4,7 @@
   import LineChart from "@rilldata/web-common/components/icons/LineChart.svelte";
   import StackedArea from "@rilldata/web-common/components/icons/StackedArea.svelte";
   import StackedBar from "@rilldata/web-common/components/icons/StackedBar.svelte";
-  import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
+  import { explorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
 
   export let exploreName: string;
@@ -38,12 +38,12 @@
 
   function handleChartTypeChange(type: TDDChart, isDisabled: boolean) {
     if (isDisabled) return;
-    metricsExplorerStore.setTDDChartType(exploreName, type);
+    explorerStore.setTDDChartType(exploreName, type);
   }
 
   // switch to default if current selected chart is not available
   $: if (!hasComparison && comparisonCharts.includes(chartType)) {
-    metricsExplorerStore.setTDDChartType(exploreName, TDDChart.DEFAULT);
+    explorerStore.setTDDChartType(exploreName, TDDChart.DEFAULT);
   }
 </script>
 

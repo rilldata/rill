@@ -25,7 +25,7 @@ export function createTotalsForMeasure(
       ctx.runtime,
       ctx.metricsViewName,
       useTimeControlStore(ctx),
-      ctx.dashboardStore,
+      ctx.exploreStore,
     ],
     ([runtime, metricsViewName, timeControls, dashboard], set) =>
       createQueryServiceMetricsViewAggregation(
@@ -51,7 +51,7 @@ export function createTotalsForMeasure(
         },
         {
           query: {
-            enabled: !!timeControls.ready && !!ctx.dashboardStore,
+            enabled: !!timeControls.ready && !!ctx.exploreStore,
             refetchOnMount: false,
           },
         },
@@ -70,7 +70,7 @@ export function createUnfilteredTotalsForMeasure(
       ctx.runtime,
       ctx.metricsViewName,
       useTimeControlStore(ctx),
-      ctx.dashboardStore,
+      ctx.exploreStore,
     ],
     ([runtime, metricsViewName, timeControls, dashboard], set) => {
       const filter = sanitiseExpression(
@@ -97,7 +97,7 @@ export function createUnfilteredTotalsForMeasure(
         },
         {
           query: {
-            enabled: !!timeControls.ready && !!ctx.dashboardStore,
+            enabled: !!timeControls.ready && !!ctx.exploreStore,
           },
         },
         ctx.queryClient,

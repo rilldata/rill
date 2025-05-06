@@ -5,7 +5,7 @@ import type {
 } from "@rilldata/web-common/runtime-client";
 import type { QueryClient, QueryObserverResult } from "@tanstack/svelte-query";
 import type { Readable } from "svelte/store";
-import type { MetricsExplorerEntity } from "../../stores/metrics-explorer-entity";
+import type { ExploreState } from "web-common/src/features/dashboards/stores/explore-state";
 import type { Expand } from "../types";
 
 /**
@@ -22,7 +22,7 @@ import type { Expand } from "../types";
  * and utimately wrapped in Readables for use in components.
  */
 export type DashboardDataSources = {
-  dashboard: MetricsExplorerEntity;
+  dashboard: ExploreState;
   validMetricsView: V1MetricsViewSpec | undefined;
   validExplore: V1ExploreSpec | undefined;
   timeRangeSummary: QueryObserverResult<

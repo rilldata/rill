@@ -40,7 +40,7 @@
   const {
     metricsViewName,
     exploreName,
-    dashboardStore,
+    exploreStore,
     selectors: {
       timeRangeSelectors: { timeControlsState },
     },
@@ -54,16 +54,16 @@
   // if in TDD take active measure and comparison dimension
   // If expanded leaderboard, take first dimension and active dimensions
   let dimension = "";
-  if ($dashboardStore.tdd.expandedMeasureName) {
-    dimension = $dashboardStore.selectedComparisonDimension ?? "";
+  if ($exploreStore.tdd.expandedMeasureName) {
+    dimension = $exploreStore.selectedComparisonDimension ?? "";
   } else {
-    dimension = $dashboardStore.selectedDimensionName ?? "";
+    dimension = $exploreStore.selectedDimensionName ?? "";
   }
 
   // TODO: get metrics view spec
   const timeRange = mapSelectedTimeRangeToV1TimeRange(
     timeControls,
-    $dashboardStore.selectedTimezone,
+    $exploreStore.selectedTimezone,
     {},
   );
   const comparisonTimeRange = mapSelectedComparisonTimeRangeToV1TimeRange(
@@ -77,15 +77,15 @@
     initialValues: {
       name: "",
       measure:
-        $dashboardStore.tdd.expandedMeasureName ??
-        $dashboardStore.leaderboardSortByMeasureName ??
+        $exploreStore.tdd.expandedMeasureName ??
+        $exploreStore.leaderboardSortByMeasureName ??
         "",
       splitByDimension: dimension,
       evaluationInterval: "",
       criteria: [
         {
           ...getEmptyMeasureFilterEntry(),
-          measure: $dashboardStore.leaderboardSortByMeasureName ?? "",
+          measure: $exploreStore.leaderboardSortByMeasureName ?? "",
         },
       ],
       criteriaOperation: V1Operation.OPERATION_AND,
@@ -109,9 +109,9 @@
       // Also, in the future, they might even be editable.
       metricsViewName: $metricsViewName,
       exploreName: $exploreName,
-      whereFilter: $dashboardStore.whereFilter,
-      dimensionsWithInlistFilter: $dashboardStore.dimensionsWithInlistFilter,
-      dimensionThresholdFilters: $dashboardStore.dimensionThresholdFilters,
+      whereFilter: $exploreStore.whereFilter,
+      dimensionsWithInlistFilter: $exploreStore.dimensionsWithInlistFilter,
+      dimensionThresholdFilters: $exploreStore.dimensionThresholdFilters,
       timeRange: timeRange
         ? {
             ...timeRange,
@@ -152,7 +152,7 @@
               renotifyAfterSeconds: values.snooze ? Number(values.snooze) : 0,
               webOpenPath: `/explore/${$exploreName}`,
               webOpenState: getProtoFromDashboardState(
-                $dashboardStore,
+                $exploreStore,
                 exploreSpec,
               ),
             },

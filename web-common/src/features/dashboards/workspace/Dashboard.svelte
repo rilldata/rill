@@ -7,7 +7,6 @@
   import { navigationOpen } from "@rilldata/web-common/layout/navigation/Navigation.svelte";
   import Resizer from "@rilldata/web-common/layout/Resizer.svelte";
   import { onMount, tick } from "svelte";
-  import { useExploreState } from "web-common/src/features/dashboards/stores/dashboard-stores";
   import { DashboardState_ActivePage } from "../../../proto/gen/rill/ui/v1/dashboard_pb";
   import { runtime } from "../../../runtime-client/runtime-store";
   import MeasuresContainer from "../big-number/MeasuresContainer.svelte";
@@ -34,7 +33,7 @@
       dimensions: { getDimensionByName },
       pivot: { showPivot },
     },
-    dashboardStore,
+    exploreStore,
   } = StateManagers;
 
   const { cloudDataViewer, readOnly } = featureFlags;
@@ -45,13 +44,11 @@
 
   $: ({ instanceId } = $runtime);
 
-  $: ({ whereFilter, dimensionThresholdFilters } = $dashboardStore);
+  $: ({ whereFilter, dimensionThresholdFilters } = $exploreStore);
 
   $: extraLeftPadding = !$navigationOpen;
 
-  $: exploreState = useExploreState(exploreName);
-
-  $: activePage = $exploreState?.activePage;
+  $: activePage = $exploreStore?.activePage;
   $: showTimeDimensionDetail = Boolean(
     activePage === DashboardState_ActivePage.TIME_DIMENSIONAL_DETAIL,
   );
@@ -59,10 +56,10 @@
     activePage === DashboardState_ActivePage.DIMENSION_TABLE,
   );
 
-  $: selectedDimensionName = $exploreState?.selectedDimensionName;
+  $: selectedDimensionName = $exploreStore?.selectedDimensionName;
   $: selectedDimension =
     selectedDimensionName && $getDimensionByName(selectedDimensionName);
-  $: expandedMeasureName = $exploreState?.tdd?.expandedMeasureName;
+  $: expandedMeasureName = $exploreStore?.tdd?.expandedMeasureName;
 
   $: isRillDeveloper = $readOnly === false;
 

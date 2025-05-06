@@ -5,7 +5,7 @@
   import ReplacePivotDialog from "@rilldata/web-common/features/dashboards/pivot/ReplacePivotDialog.svelte";
   import { splitPivotChips } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils";
   import { PivotChipType } from "@rilldata/web-common/features/dashboards/pivot/types";
-  import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
+  import { explorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { onDestroy } from "svelte";
   import ExportMenu from "../../exports/ExportMenu.svelte";
@@ -46,7 +46,7 @@
       },
     },
     timeRangeSummaryStore,
-    dashboardStore,
+    exploreStore,
     exploreName,
   } = stateManagers;
 
@@ -81,7 +81,7 @@
     // we need to set a new sort measure from the available leaderboard measures
     if (
       !$leaderboardMeasureNames.includes(
-        $dashboardStore.leaderboardSortByMeasureName,
+        $exploreStore.leaderboardSortByMeasureName,
       )
     ) {
       setLeaderboardSortByMeasureName($leaderboardMeasureNames[0]);
@@ -93,7 +93,7 @@
 
   let showReplacePivotModal = false;
   function startPivotForDimensionTable() {
-    const pivot = $dashboardStore?.pivot;
+    const pivot = $exploreStore?.pivot;
 
     const pivotColumns = splitPivotChips(pivot.columns);
 
@@ -131,7 +131,7 @@
         };
       });
 
-    metricsExplorerStore.createPivot($exploreName, rowDimensions, measures);
+    explorerStore.createPivot($exploreName, rowDimensions, measures);
   }
 
   onDestroy(() => {

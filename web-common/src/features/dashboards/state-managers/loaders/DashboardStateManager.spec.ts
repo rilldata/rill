@@ -7,8 +7,8 @@ import {
   type HoistedPageForExploreTests,
   PageMockForExploreTests,
 } from "@rilldata/web-common/features/dashboards/state-managers/loaders/test/PageMockForExploreTests";
-import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
-import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import { explorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
+import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import {
   AD_BIDS_BID_PRICE_MEASURE,
   AD_BIDS_COUNTRY_DIMENSION,
@@ -90,36 +90,32 @@ describe("DashboardStateManager", () => {
     localStorage.clear();
     sessionStorage.clear();
     queryClient.clear();
-    metricsExplorerStore.remove(AD_BIDS_EXPLORE_NAME);
+    explorerStore.remove(AD_BIDS_EXPLORE_NAME);
   });
 
   describe("Dashboards with timeseries", () => {
-    const ExploreStateSubsetForRillDefaultState: Partial<MetricsExplorerEntity> =
-      {
-        selectedTimeRange: {
-          name: "rill-QTD",
-          interval: V1TimeGrain.TIME_GRAIN_WEEK,
-        } as DashboardTimeControls,
-        showTimeComparison: false,
-        selectedComparisonTimeRange: undefined,
+    const ExploreStateSubsetForRillDefaultState: Partial<ExploreState> = {
+      selectedTimeRange: {
+        name: "rill-QTD",
+        interval: V1TimeGrain.TIME_GRAIN_WEEK,
+      } as DashboardTimeControls,
+      showTimeComparison: false,
+      selectedComparisonTimeRange: undefined,
 
-        visibleMeasures: [
-          AD_BIDS_IMPRESSIONS_MEASURE,
-          AD_BIDS_BID_PRICE_MEASURE,
-        ],
-        allMeasuresVisible: true,
-        visibleDimensions: [
-          AD_BIDS_PUBLISHER_DIMENSION,
-          AD_BIDS_DOMAIN_DIMENSION,
-        ],
-        allDimensionsVisible: true,
+      visibleMeasures: [AD_BIDS_IMPRESSIONS_MEASURE, AD_BIDS_BID_PRICE_MEASURE],
+      allMeasuresVisible: true,
+      visibleDimensions: [
+        AD_BIDS_PUBLISHER_DIMENSION,
+        AD_BIDS_DOMAIN_DIMENSION,
+      ],
+      allDimensionsVisible: true,
 
-        leaderboardSortByMeasureName: AD_BIDS_IMPRESSIONS_MEASURE,
-        leaderboardMeasureNames: [AD_BIDS_IMPRESSIONS_MEASURE],
-        dashboardSortType: DashboardState_LeaderboardSortType.VALUE,
-        sortDirection: DashboardState_LeaderboardSortDirection.DESCENDING,
-      };
-    const ExploreStateSubsetForYAMLState: Partial<MetricsExplorerEntity> = {
+      leaderboardSortByMeasureName: AD_BIDS_IMPRESSIONS_MEASURE,
+      leaderboardMeasureNames: [AD_BIDS_IMPRESSIONS_MEASURE],
+      dashboardSortType: DashboardState_LeaderboardSortType.VALUE,
+      sortDirection: DashboardState_LeaderboardSortDirection.DESCENDING,
+    };
+    const ExploreStateSubsetForYAMLState: Partial<ExploreState> = {
       selectedTimeRange: {
         name: "P7D",
         interval: V1TimeGrain.TIME_GRAIN_DAY,
@@ -298,29 +294,25 @@ describe("DashboardStateManager", () => {
   });
 
   describe("Dashboards without timeseries", () => {
-    const ExploreStateSubsetForRillDefaultState: Partial<MetricsExplorerEntity> =
-      {
-        selectedTimeRange: undefined,
-        showTimeComparison: false,
-        selectedComparisonTimeRange: undefined,
+    const ExploreStateSubsetForRillDefaultState: Partial<ExploreState> = {
+      selectedTimeRange: undefined,
+      showTimeComparison: false,
+      selectedComparisonTimeRange: undefined,
 
-        visibleMeasures: [
-          AD_BIDS_IMPRESSIONS_MEASURE,
-          AD_BIDS_BID_PRICE_MEASURE,
-        ],
-        allMeasuresVisible: true,
-        visibleDimensions: [
-          AD_BIDS_PUBLISHER_DIMENSION,
-          AD_BIDS_DOMAIN_DIMENSION,
-        ],
-        allDimensionsVisible: true,
+      visibleMeasures: [AD_BIDS_IMPRESSIONS_MEASURE, AD_BIDS_BID_PRICE_MEASURE],
+      allMeasuresVisible: true,
+      visibleDimensions: [
+        AD_BIDS_PUBLISHER_DIMENSION,
+        AD_BIDS_DOMAIN_DIMENSION,
+      ],
+      allDimensionsVisible: true,
 
-        leaderboardSortByMeasureName: AD_BIDS_IMPRESSIONS_MEASURE,
-        leaderboardMeasureNames: [AD_BIDS_IMPRESSIONS_MEASURE],
-        sortDirection: DashboardState_LeaderboardSortDirection.DESCENDING,
-        dashboardSortType: DashboardState_LeaderboardSortType.VALUE,
-      };
-    const ExploreStateSubsetForYAMLState: Partial<MetricsExplorerEntity> = {
+      leaderboardSortByMeasureName: AD_BIDS_IMPRESSIONS_MEASURE,
+      leaderboardMeasureNames: [AD_BIDS_IMPRESSIONS_MEASURE],
+      sortDirection: DashboardState_LeaderboardSortDirection.DESCENDING,
+      dashboardSortType: DashboardState_LeaderboardSortType.VALUE,
+    };
+    const ExploreStateSubsetForYAMLState: Partial<ExploreState> = {
       visibleMeasures: [AD_BIDS_IMPRESSIONS_MEASURE],
       allMeasuresVisible: false,
       visibleDimensions: [AD_BIDS_PUBLISHER_DIMENSION],
@@ -482,7 +474,7 @@ describe("DashboardStateManager", () => {
 // TODO: find if there is a way to share code.
 function renderDashboardStateManager(
   bookmarkOrTokenExploreState:
-    | CompoundQueryResult<Partial<MetricsExplorerEntity> | undefined>
+    | CompoundQueryResult<Partial<ExploreState> | undefined>
     | undefined = undefined,
 ) {
   const renderResults = render(DashboardStateManagerTest, {
@@ -498,11 +490,9 @@ function renderDashboardStateManager(
   return { queryClient, renderResults };
 }
 
-function assertExploreStateSubset(
-  exploreStateSubset: Partial<MetricsExplorerEntity>,
-) {
+function assertExploreStateSubset(exploreStateSubset: Partial<ExploreState>) {
   const curExploreState = getCleanMetricsExploreForAssertion();
-  const curExploreStateSubset: Partial<MetricsExplorerEntity> = {
+  const curExploreStateSubset: Partial<ExploreState> = {
     selectedTimeRange: curExploreState.selectedTimeRange,
     showTimeComparison: curExploreState.showTimeComparison,
     selectedComparisonTimeRange: curExploreState.selectedComparisonTimeRange,

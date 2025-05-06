@@ -1,8 +1,8 @@
 import { QueryClient } from "@tanstack/svelte-query";
 import { createStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
-import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
+import { explorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
 import { createAndExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
-import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import {
   AD_BIDS_DEFAULT_TIME_RANGE,
   AD_BIDS_EXPLORE_INIT,
@@ -28,14 +28,14 @@ import { get } from "svelte/store";
 import { expect } from "vitest";
 
 export function resetDashboardStore() {
-  metricsExplorerStore.remove(AD_BIDS_EXPLORE_NAME);
-  metricsExplorerStore.remove(AD_BIDS_MIRROR_NAME);
+  explorerStore.remove(AD_BIDS_EXPLORE_NAME);
+  explorerStore.remove(AD_BIDS_MIRROR_NAME);
   initAdBidsInStore();
   initAdBidsMirrorInStore();
 }
 
 export function initAdBidsInStore() {
-  metricsExplorerStore.init(
+  explorerStore.init(
     AD_BIDS_EXPLORE_NAME,
     getInitExploreStateForTest(AD_BIDS_METRICS_INIT, AD_BIDS_EXPLORE_INIT, {
       timeRangeSummary: {
@@ -47,7 +47,7 @@ export function initAdBidsInStore() {
 }
 
 export function initAdBidsMirrorInStore() {
-  metricsExplorerStore.init(
+  explorerStore.init(
     AD_BIDS_MIRROR_NAME,
     getInitExploreStateForTest(AD_BIDS_METRICS_INIT, AD_BIDS_EXPLORE_INIT, {
       timeRangeSummary: {
@@ -73,17 +73,16 @@ export function getInitExploreStateForTest(
     exploreSpec,
     defaultExplorePreset,
   );
-  return partialExploreState as MetricsExplorerEntity;
+  return partialExploreState as ExploreState;
 }
 
 export function createAdBidsMirrorInStore({
   metricsView,
   explore,
 }: ExploreValidSpecResponse) {
-  const proto =
-    get(metricsExplorerStore).entities[AD_BIDS_EXPLORE_NAME].proto ?? "";
+  const proto = get(explorerStore).entities[AD_BIDS_EXPLORE_NAME].proto ?? "";
   // actual url is not relevant here
-  metricsExplorerStore.syncFromUrl(
+  explorerStore.syncFromUrl(
     AD_BIDS_MIRROR_NAME,
     proto,
     metricsView ?? { measures: [], dimensions: [] },
@@ -114,7 +113,7 @@ export function assertMetricsViewRaw(
   timeRange: DashboardTimeControls | undefined,
   selectedMeasure: string,
 ) {
-  const metricsView = get(metricsExplorerStore).entities[name];
+  const metricsView = get(explorerStore).entities[name];
   expect(metricsView.whereFilter).toEqual(filters);
   expect(metricsView.selectedTimeRange).toEqual(timeRange);
   expect(metricsView.leaderboardSortByMeasureName).toEqual(selectedMeasure);
@@ -124,7 +123,7 @@ export function initStateManagers(metricsViewName?: string) {
   metricsViewName ??= AD_BIDS_NAME;
   const exploreName = metricsViewName + "_explore";
 
-  metricsExplorerStore.remove(AD_BIDS_EXPLORE_NAME);
+  explorerStore.remove(AD_BIDS_EXPLORE_NAME);
   initAdBidsInStore();
 
   const queryClient = new QueryClient({
@@ -149,10 +148,10 @@ export function initStateManagers(metricsViewName?: string) {
 
 export function getPartialDashboard(
   name: string,
-  keys: (keyof MetricsExplorerEntity)[],
+  keys: (keyof ExploreState)[],
 ) {
-  const dashboard = get(metricsExplorerStore).entities[name];
-  const partialDashboard = {} as MetricsExplorerEntity;
+  const dashboard = get(explorerStore).entities[name];
+  const partialDashboard = {} as ExploreState;
   keys.forEach(
     (key) => ((partialDashboard as any)[key] = deepClone(dashboard[key])),
   );

@@ -3,7 +3,7 @@
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu/";
   import Add from "@rilldata/web-common/components/icons/Add.svelte";
   import { getStateManagers } from "../state-managers/state-managers";
-  import { metricsExplorerStore } from "../stores/dashboard-stores";
+  import { explorerStore } from "../stores/dashboard-stores";
   import type { PivotChipData } from "./types";
 </script>
 
@@ -20,7 +20,7 @@
   let open = false;
 
   function handleSelectValue(data: PivotChipData) {
-    metricsExplorerStore.addPivotField($exploreName, data, zone === "rows");
+    explorerStore.addPivotField($exploreName, data, zone === "rows");
   }
 </script>
 

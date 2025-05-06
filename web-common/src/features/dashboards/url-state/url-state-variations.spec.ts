@@ -1,6 +1,6 @@
 import { getProtoFromDashboardState } from "@rilldata/web-common/features/dashboards/proto-state/toProto";
-import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
-import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import { explorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
+import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import {
   AD_BIDS_DIMENSION_TABLE_PRESET,
   AD_BIDS_EXPLORE_INIT,
@@ -87,7 +87,7 @@ const TestCases: {
   preset?: V1ExplorePreset;
   expectedSearch: string;
   // This is to assert edge case when some state gets populated from timeControlStore
-  extraExploreState?: Partial<MetricsExplorerEntity>;
+  extraExploreState?: Partial<ExploreState>;
   // Mainly tests that close certain views.
   // Closing view would retain some state of the old view in protobuf state
   legacyNotSupported?: boolean;
@@ -449,7 +449,7 @@ describe("Human readable URL state variations", () => {
   beforeEach(() => {
     localStorage.clear();
     sessionStorage.clear();
-    metricsExplorerStore.remove(AD_BIDS_EXPLORE_NAME);
+    explorerStore.remove(AD_BIDS_EXPLORE_NAME);
   });
 
   describe("Should update url state and restore default state on empty params", () => {
@@ -460,7 +460,7 @@ describe("Human readable URL state variations", () => {
           ...(preset ? { defaultPreset: preset } : {}),
           timeZones: ["UTC", "Asia/Kathmandu"],
         };
-        metricsExplorerStore.init(
+        explorerStore.init(
           AD_BIDS_EXPLORE_NAME,
           getInitExploreStateForTest(
             AD_BIDS_METRICS_3_MEASURES_DIMENSIONS_WITH_TIME,
@@ -485,12 +485,12 @@ describe("Human readable URL state variations", () => {
         // load url params with updated metrics state
         const updateUrlParams = getCleanedUrlParamsForGoto(
           explore,
-          get(metricsExplorerStore).entities[AD_BIDS_EXPLORE_NAME],
+          get(explorerStore).entities[AD_BIDS_EXPLORE_NAME],
           getTimeControlState(
             AD_BIDS_METRICS_3_MEASURES_DIMENSIONS_WITH_TIME,
             explore,
             AD_BIDS_TIME_RANGE_SUMMARY.timeRangeSummary,
-            get(metricsExplorerStore).entities[AD_BIDS_EXPLORE_NAME],
+            get(explorerStore).entities[AD_BIDS_EXPLORE_NAME],
           ),
           defaultExploreUrlSearch,
         );
@@ -525,7 +525,7 @@ describe("Human readable URL state variations", () => {
           ...AD_BIDS_EXPLORE_INIT,
           ...(preset ? { defaultPreset: preset } : {}),
         };
-        metricsExplorerStore.init(
+        explorerStore.init(
           AD_BIDS_EXPLORE_NAME,
           getInitExploreStateForTest(
             AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
@@ -541,8 +541,7 @@ describe("Human readable URL state variations", () => {
 
         const initState = getCleanMetricsExploreForAssertion();
         applyMutationsToDashboard(AD_BIDS_EXPLORE_NAME, mutations);
-        const curState =
-          getCleanMetricsExploreForAssertion() as MetricsExplorerEntity;
+        const curState = getCleanMetricsExploreForAssertion() as ExploreState;
 
         const url = new URL("http://localhost");
         // load url with legacy protobuf state
@@ -580,7 +579,7 @@ describe("Human readable URL state variations", () => {
   });
 
   it("Large state gets compressed", () => {
-    metricsExplorerStore.init(
+    explorerStore.init(
       AD_BIDS_EXPLORE_NAME,
       getInitExploreStateForTest(
         AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
@@ -610,12 +609,12 @@ describe("Human readable URL state variations", () => {
     const url = new URL("http://localhost");
     url.search = getCleanedUrlParamsForGoto(
       AD_BIDS_EXPLORE_INIT,
-      get(metricsExplorerStore).entities[AD_BIDS_EXPLORE_NAME],
+      get(explorerStore).entities[AD_BIDS_EXPLORE_NAME],
       getTimeControlState(
         AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
         AD_BIDS_EXPLORE_INIT,
         AD_BIDS_TIME_RANGE_SUMMARY.timeRangeSummary,
-        get(metricsExplorerStore).entities[AD_BIDS_EXPLORE_NAME],
+        get(explorerStore).entities[AD_BIDS_EXPLORE_NAME],
       ),
       defaultExploreUrlSearch,
       url,
@@ -653,7 +652,7 @@ export function applyURLToExploreState(
       exploreSpec,
       defaultExplorePreset,
     );
-  metricsExplorerStore.mergePartialExplorerEntity(
+  explorerStore.mergePartialExplorerEntity(
     AD_BIDS_EXPLORE_NAME,
     partialExploreStateDefaultUrl,
     AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
@@ -665,8 +664,8 @@ export function applyURLToExploreState(
 export function getCleanMetricsExploreForAssertion() {
   // clone the existing state so that any mutations do affect the copy during assertion
   const cleanedState = deepClone(
-    get(metricsExplorerStore).entities[AD_BIDS_EXPLORE_NAME],
-  ) as Partial<MetricsExplorerEntity>;
+    get(explorerStore).entities[AD_BIDS_EXPLORE_NAME],
+  ) as Partial<ExploreState>;
 
   delete cleanedState.name;
   delete cleanedState.proto;

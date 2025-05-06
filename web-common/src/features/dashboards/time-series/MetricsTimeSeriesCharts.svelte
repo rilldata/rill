@@ -13,7 +13,7 @@
   } from "@rilldata/web-common/features/dashboards/pivot/types";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import {
-    metricsExplorerStore,
+    explorerStore,
     useExploreState,
   } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
@@ -286,11 +286,7 @@
         };
       });
 
-    metricsExplorerStore.createPivot(
-      exploreName,
-      [getTimeDimension()],
-      measures,
-    );
+    explorerStore.createPivot(exploreName, [getTimeDimension()], measures);
   }
 </script>
 
@@ -430,7 +426,7 @@
                   $exploreState?.selectedTimezone,
                 );
 
-                metricsExplorerStore.setSelectedScrubRange(exploreName, {
+                explorerStore.setSelectedScrubRange(exploreName, {
                   start,
                   end,
                   isScrubbing: true,
@@ -443,7 +439,7 @@
                   $exploreState?.selectedTimezone,
                 );
 
-                metricsExplorerStore.setSelectedScrubRange(exploreName, {
+                explorerStore.setSelectedScrubRange(exploreName, {
                   start,
                   end,
                   isScrubbing: false,
@@ -452,7 +448,7 @@
               on:chart-brush-clear={(e) => {
                 const { start, end } = e.detail;
 
-                metricsExplorerStore.setSelectedScrubRange(exploreName, {
+                explorerStore.setSelectedScrubRange(exploreName, {
                   start,
                   end,
                   isScrubbing: false,

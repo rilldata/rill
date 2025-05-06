@@ -5,7 +5,7 @@ import {
   type PivotTableMode,
 } from "@rilldata/web-common/features/dashboards/pivot/types";
 import { SortDirection } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
-import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
 import {
   getMultiFieldError,
@@ -51,7 +51,7 @@ export function convertPresetToExploreState(
   explore: V1ExploreSpec,
   preset: V1ExplorePreset,
 ) {
-  const partialExploreState: Partial<MetricsExplorerEntity> = {};
+  const partialExploreState: Partial<ExploreState> = {};
   const errors: Error[] = [];
 
   const measures = getMapFromArray(
@@ -111,7 +111,7 @@ function fromTimeRangesParams(
   preset: V1ExplorePreset,
   dimensions: Map<string, MetricsViewSpecDimension>,
 ) {
-  const partialExploreState: Partial<MetricsExplorerEntity> = {};
+  const partialExploreState: Partial<ExploreState> = {};
   const errors: Error[] = [];
 
   if (preset.timeRange) {
@@ -223,7 +223,7 @@ function fromExploreUrlParams(
   explore: V1ExploreSpec,
   preset: V1ExplorePreset,
 ) {
-  const partialExploreState: Partial<MetricsExplorerEntity> = {};
+  const partialExploreState: Partial<ExploreState> = {};
   const errors: Error[] = [];
 
   if (preset.measures?.length) {
@@ -322,7 +322,7 @@ function fromTimeDimensionUrlParams(
   measures: Map<string, MetricsViewSpecMeasure>,
   preset: V1ExplorePreset,
 ): {
-  partialExploreState: Partial<MetricsExplorerEntity>;
+  partialExploreState: Partial<ExploreState>;
   errors: Error[];
 } {
   if (!preset.timeDimensionMeasure) {
@@ -346,7 +346,7 @@ function fromTimeDimensionUrlParams(
     errors.push(getSingleFieldError("expanded measure", expandedMeasureName));
   }
 
-  const partialExploreState: Partial<MetricsExplorerEntity> = {
+  const partialExploreState: Partial<ExploreState> = {
     tdd: {
       expandedMeasureName,
       chartType: preset.timeDimensionChartType
@@ -367,7 +367,7 @@ function fromPivotUrlParams(
   dimensions: Map<string, MetricsViewSpecDimension>,
   preset: V1ExplorePreset,
 ): {
-  partialExploreState: Partial<MetricsExplorerEntity>;
+  partialExploreState: Partial<ExploreState>;
   errors: Error[];
 } {
   const errors: Error[] = [];

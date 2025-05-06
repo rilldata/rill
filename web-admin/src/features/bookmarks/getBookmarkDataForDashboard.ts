@@ -1,5 +1,5 @@
 import { getProtoFromDashboardState } from "@rilldata/web-common/features/dashboards/proto-state/toProto";
-import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import type { TimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
 import type { V1ExploreSpec } from "@rilldata/web-common/runtime-client";
@@ -15,7 +15,7 @@ import type { V1ExploreSpec } from "@rilldata/web-common/runtime-client";
  * @param timeControlState Time control state to derive the time range from.
  */
 export function getBookmarkDataForDashboard(
-  dashboard: MetricsExplorerEntity,
+  dashboard: ExploreState,
   exploreSpec: V1ExploreSpec,
   filtersOnly?: boolean,
   absoluteTimeRange?: boolean,
@@ -55,7 +55,7 @@ export function getBookmarkDataForDashboard(
         whereFilter: newDashboard.whereFilter,
         dimensionThresholdFilters: newDashboard.dimensionThresholdFilters,
         selectedTimeRange: newDashboard.selectedTimeRange,
-      } as MetricsExplorerEntity,
+      } as ExploreState,
       exploreSpec,
     );
   } else {

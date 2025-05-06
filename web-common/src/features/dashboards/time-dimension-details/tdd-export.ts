@@ -1,6 +1,6 @@
 import { SortDirection } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
-import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import {
   type TimeControlState,
   useTimeControlStore,
@@ -24,7 +24,7 @@ export function getTDDExportQuery(
   isScheduled: boolean,
 ): V1Query {
   const metricsViewName = get(ctx.metricsViewName);
-  const dashboardState = get(ctx.dashboardStore);
+  const dashboardState = get(ctx.exploreStore);
   const timeControlState = get(useTimeControlStore(ctx));
   const validSpec = get(ctx.validSpecStore);
   const dimensionSearchText = get(dimensionSearchTextStore);
@@ -46,7 +46,7 @@ export function getTDDExportQuery(
 
 function getTDDAggregationRequest(
   metricsViewName: string,
-  dashboardState: MetricsExplorerEntity,
+  dashboardState: ExploreState,
   timeControlState: TimeControlState,
   metricsView: V1MetricsViewSpec | undefined,
   explore: V1ExploreSpec | undefined,

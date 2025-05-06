@@ -342,7 +342,7 @@ function prepareTimeData(
 function createDimensionTableData(
   ctx: StateManagers,
 ): Readable<DimensionDataItem[]> {
-  return derived(ctx.dashboardStore, (dashboardStore, set) => {
+  return derived(ctx.exploreStore, (dashboardStore, set) => {
     const measureName = dashboardStore?.tdd?.expandedMeasureName;
     if (!measureName) return set([]);
     return derived(
@@ -364,7 +364,7 @@ export function createTimeDimensionDataStore(
 ): TimeSeriesDataStore {
   return derived(
     [
-      ctx.dashboardStore,
+      ctx.exploreStore,
       ctx.validSpecStore,
       useTimeControlStore(ctx),
       useTimeSeriesDataStore(ctx),

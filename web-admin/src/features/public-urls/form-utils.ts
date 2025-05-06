@@ -1,7 +1,7 @@
 import { PivotChipType } from "@rilldata/web-common/features/dashboards/pivot/types";
 import { getProtoFromDashboardState } from "@rilldata/web-common/features/dashboards/proto-state/toProto";
 import { getAllIdentifiers } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
-import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import { DashboardState_ActivePage } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import type {
   MetricsViewSpecDimension,
@@ -9,18 +9,18 @@ import type {
   V1ExploreSpec,
 } from "@rilldata/web-common/runtime-client";
 
-export function hasDashboardWhereFilter(dashboardStore: MetricsExplorerEntity) {
+export function hasDashboardWhereFilter(dashboardStore: ExploreState) {
   return dashboardStore.whereFilter?.cond?.exprs?.length;
 }
 
 export function hasDashboardDimensionThresholdFilter(
-  dashboardStore: MetricsExplorerEntity,
+  dashboardStore: ExploreState,
 ) {
   return dashboardStore.dimensionThresholdFilters?.length;
 }
 
 export function getExploreFields(
-  dashboardStore: MetricsExplorerEntity,
+  dashboardStore: ExploreState,
   visibleDimensions: MetricsViewSpecDimension[],
   visibleMeasures: MetricsViewSpecMeasure[],
 ): string[] | undefined {
@@ -60,7 +60,7 @@ export function convertDateToMinutes(date: string) {
  * This ensures we do not leak hidden information to the URL recipient.
  */
 export function getSanitizedDashboardStateParam(
-  dashboard: MetricsExplorerEntity,
+  dashboard: ExploreState,
   metricsViewFields: string[] | undefined,
   exploreSpec: V1ExploreSpec,
 ): string {
@@ -123,7 +123,7 @@ export function getSanitizedDashboardStateParam(
           chip.type === PivotChipType.Time,
       ),
     },
-  } as MetricsExplorerEntity;
+  } as ExploreState;
 
   return getProtoFromDashboardState(sanitizedDashboardState, exploreSpec);
 }

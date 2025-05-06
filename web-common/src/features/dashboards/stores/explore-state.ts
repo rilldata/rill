@@ -21,7 +21,7 @@ export interface DimensionThresholdFilter {
   filters: MeasureFilterEntry[];
 }
 
-export interface MetricsExplorerEntity {
+export interface ExploreState {
   name: string;
 
   /**

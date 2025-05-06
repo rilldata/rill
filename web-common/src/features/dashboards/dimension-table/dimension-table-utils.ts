@@ -35,7 +35,7 @@ import { formatMeasurePercentageDifference } from "@rilldata/web-common/lib/numb
 import type { SvelteComponent } from "svelte";
 import { SortType } from "../proto-state/derived-types";
 import { getFiltersForOtherDimensions } from "../selectors";
-import type { MetricsExplorerEntity } from "../stores/metrics-explorer-entity";
+import type { ExploreState } from "web-common/src/features/dashboards/stores/explore-state";
 import type { DimensionTableRow } from "./dimension-table-types";
 import type { DimensionTableConfig } from "./DimensionTableConfig";
 
@@ -237,7 +237,7 @@ export function estimateColumnSizes(
 }
 
 export function prepareVirtualizedDimTableColumns(
-  dash: MetricsExplorerEntity,
+  dash: ExploreState,
   allMeasures: MetricsViewSpecMeasure[],
   measureTotals: { [key: string]: number },
   dimension: MetricsViewSpecDimension,

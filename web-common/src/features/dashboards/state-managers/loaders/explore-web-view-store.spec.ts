@@ -3,7 +3,7 @@ import {
   type HoistedPageForExploreTests,
   PageMockForExploreTests,
 } from "@rilldata/web-common/features/dashboards/state-managers/loaders/test/PageMockForExploreTests";
-import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
+import { explorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
 import {
   AD_BIDS_EXPLORE_INIT,
   AD_BIDS_EXPLORE_NAME,
@@ -172,7 +172,7 @@ describe("Explore web view store", () => {
     localStorage.clear();
     sessionStorage.clear();
     queryClient.clear();
-    metricsExplorerStore.remove(AD_BIDS_EXPLORE_NAME);
+    explorerStore.remove(AD_BIDS_EXPLORE_NAME);
   });
 
   for (const { title, initView, view } of TestCases) {

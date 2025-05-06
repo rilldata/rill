@@ -5,7 +5,7 @@
 <script lang="ts">
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import PivotPanel from "@rilldata/web-common/components/icons/PivotPanel.svelte";
-  import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
+  import { explorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { writable } from "svelte/store";
@@ -28,14 +28,14 @@
   const stateManagers = getStateManagers();
   const {
     exploreName,
-    dashboardStore,
+    exploreStore,
     timeRangeSummaryStore,
     selectors: {
       pivot: { rows, columns, isFlat },
     },
   } = stateManagers;
 
-  $: expanded = $dashboardStore?.pivot?.expanded ?? {};
+  $: expanded = $exploreStore?.pivot?.expanded ?? {};
   $: exploreHasTimeDimension = !!$timeRangeSummaryStore.data;
 
   /**
@@ -45,7 +45,7 @@
   function togglePivotType(newJoinState: PivotTableMode) {
     if (newJoinState === "flat") {
       lastNestState.set($rows);
-      metricsExplorerStore.setPivotTableMode(
+      explorerStore.setPivotTableMode(
         $exploreName,
         "flat",
         [],
@@ -58,7 +58,7 @@
     const updatedRows = $lastNestState ?? $columns.dimension;
     const rowDimensionIds = new Set(updatedRows.map((d) => d.id));
 
-    metricsExplorerStore.setPivotTableMode($exploreName, "nest", updatedRows, [
+    explorerStore.setPivotTableMode($exploreName, "nest", updatedRows, [
       ...($lastNestState
         ? $columns.dimension.filter((d) => !rowDimensionIds.has(d.id))
         : []),
@@ -139,7 +139,7 @@
     <Button
       type="toolbar"
       on:click={() => {
-        metricsExplorerStore.setPivotExpanded($exploreName, {});
+        explorerStore.setPivotExpanded($exploreName, {});
       }}
       disabled={Object.keys(expanded).length === 0}
     >

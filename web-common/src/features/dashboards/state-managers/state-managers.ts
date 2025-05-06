@@ -1,4 +1,4 @@
-import { type MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import { type ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import { getDefaultExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/getDefaultExplorePreset";
 import {
   type ExploreValidSpecResponse,
@@ -22,8 +22,8 @@ import {
   writable,
 } from "svelte/store";
 import {
-  type MetricsExplorerStoreType,
-  metricsExplorerStore,
+  type AllExploreStoreType,
+  explorerStore,
   updateMetricsExplorerByName,
   useExploreState,
 } from "web-common/src/features/dashboards/stores/dashboard-stores";
@@ -42,8 +42,8 @@ export type StateManagers = {
   runtime: Writable<Runtime>;
   metricsViewName: Writable<string>;
   exploreName: Writable<string>;
-  metricsStore: Readable<MetricsExplorerStoreType>;
-  dashboardStore: Readable<MetricsExplorerEntity>;
+  allExploresStore: Readable<AllExploreStoreType>;
+  exploreStore: Readable<ExploreState>;
   timeRangeSummaryStore: Readable<
     QueryObserverResult<V1MetricsViewTimeRangeResponse, unknown>
   >;
@@ -88,7 +88,7 @@ export function createStateManagers({
   const metricsViewNameStore = writable(metricsViewName);
   const exploreNameStore = writable(exploreName);
 
-  const dashboardStore: Readable<MetricsExplorerEntity> = derived(
+  const dashboardStore: Readable<ExploreState> = derived(
     [exploreNameStore],
     ([name], set) => {
       const exploreState = useExploreState(name);
@@ -127,9 +127,7 @@ export function createStateManagers({
       ).subscribe(set),
   );
 
-  const updateDashboard = (
-    callback: (metricsExplorer: MetricsExplorerEntity) => void,
-  ) => {
+  const updateDashboard = (callback: (exploreState: ExploreState) => void) => {
     const name = get(dashboardStore).name;
 
     // TODO: Remove dependency on MetricsExplorerStore singleton and its exports
@@ -158,11 +156,11 @@ export function createStateManagers({
     runtime: runtime,
     metricsViewName: metricsViewNameStore,
     exploreName: exploreNameStore,
-    metricsStore: metricsExplorerStore,
+    allExploresStore: explorerStore,
     timeRangeSummaryStore,
     validSpecStore,
     queryClient,
-    dashboardStore,
+    exploreStore: dashboardStore,
 
     updateDashboard,
     /**

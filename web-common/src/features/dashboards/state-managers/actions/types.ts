@@ -1,4 +1,4 @@
-import type { MetricsExplorerEntity } from "../../stores/metrics-explorer-entity";
+import type { ExploreState } from "web-common/src/features/dashboards/stores/explore-state";
 import type { Expand } from "../types";
 
 // Note: the types below are helper types to simplify the type inference
@@ -12,9 +12,7 @@ import type { Expand } from "../types";
  * This will often be a closure over other parameters
  * that are relevant to the mutation.
  */
-export type DashboardMutatorCallback = (
-  metricsExplorer: MetricsExplorerEntity,
-) => void;
+export type DashboardMutatorCallback = (exploreState: ExploreState) => void;
 
 /**
  * DashboardCallbackExecutor is a function that takes a
@@ -37,7 +35,7 @@ export type DashboardCallbackExecutor = (
  * code, so in components these mutables will be hidden.
  */
 export type DashboardMutables = {
-  dashboard: MetricsExplorerEntity;
+  dashboard: ExploreState;
 };
 
 /**

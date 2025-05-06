@@ -5,7 +5,7 @@ import {
 } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
 import { SortDirection } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
-import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import {
   mapSelectedComparisonTimeRangeToV1TimeRange,
@@ -28,7 +28,7 @@ export function getDimensionTableExportQuery(
   isScheduled: boolean,
 ): V1Query | undefined {
   const metricsViewName = get(ctx.metricsViewName);
-  const dashboardState = get(ctx.dashboardStore);
+  const dashboardState = get(ctx.exploreStore);
   const timeControlState = get(useTimeControlStore(ctx));
   const validSpecStore = get(ctx.validSpecStore);
   const dimensionSearchText = get(dimensionSearchTextStore);
@@ -81,7 +81,7 @@ export function getDimensionTableExportQuery(
 
 export function getDimensionTableAggregationRequestForTime(
   metricsView: string,
-  dashboardState: MetricsExplorerEntity,
+  dashboardState: ExploreState,
   timeRange: V1TimeRange,
   comparisonTimeRange: V1TimeRange | undefined,
   dimensionSearchText: string,

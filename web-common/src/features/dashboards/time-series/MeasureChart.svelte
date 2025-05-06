@@ -12,7 +12,7 @@
   import { ScaleType } from "@rilldata/web-common/components/data-graphic/state";
   import type { ScaleStore } from "@rilldata/web-common/components/data-graphic/state/types";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
-  import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
+  import { explorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import { tableInteractionStore } from "@rilldata/web-common/features/dashboards/time-dimension-details/time-dimension-data-store";
   import DimensionValueMouseover from "@rilldata/web-common/features/dashboards/time-series/DimensionValueMouseover.svelte";
   import MeasurePan from "@rilldata/web-common/features/dashboards/time-series/MeasurePan.svelte";
@@ -177,7 +177,7 @@
   }
 
   function resetScrub() {
-    metricsExplorerStore.setSelectedScrubRange(exploreName, undefined);
+    explorerStore.setSelectedScrubRange(exploreName, undefined);
   }
 
   function zoomScrub() {
@@ -187,7 +187,7 @@
     const adjustedStart = start ? localToTimeZoneOffset(start, zone) : start;
     const adjustedEnd = end ? localToTimeZoneOffset(end, zone) : end;
 
-    metricsExplorerStore.setSelectedTimeRange(exploreName, {
+    explorerStore.setSelectedTimeRange(exploreName, {
       name: TimeRangePreset.CUSTOM,
       start: adjustedStart,
       end: adjustedEnd,
@@ -198,7 +198,7 @@
     const adjustedStart = start ? localToTimeZoneOffset(start, zone) : start;
     const adjustedEnd = end ? localToTimeZoneOffset(end, zone) : end;
 
-    metricsExplorerStore.setSelectedScrubRange(exploreName, {
+    explorerStore.setSelectedScrubRange(exploreName, {
       start: adjustedStart,
       end: adjustedEnd,
       isScrubbing: isScrubbing,
@@ -218,7 +218,7 @@
         } as DashboardTimeControls) // FIXME wrong typecasting across application
       : undefined;
 
-    metricsExplorerStore.selectTimeRange(
+    explorerStore.selectTimeRange(
       exploreName,
       timeRange,
       timeGrain,

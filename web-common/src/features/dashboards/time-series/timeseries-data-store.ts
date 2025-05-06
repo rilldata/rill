@@ -61,7 +61,7 @@ export function createMetricsViewTimeSeries(
     [
       ctx.runtime,
       ctx.metricsViewName,
-      ctx.dashboardStore,
+      ctx.exploreStore,
       useTimeControlStore(ctx),
     ],
     ([runtime, metricsViewName, dashboardStore, timeControls], set) => {
@@ -92,7 +92,7 @@ export function createMetricsViewTimeSeries(
           query: {
             enabled:
               !!timeControls.ready &&
-              !!ctx.dashboardStore &&
+              !!ctx.exploreStore &&
               // in case of comparison, we need to wait for the comparison start time to be available
               (!isComparison || !!timeControls.comparisonAdjustedStart),
 
@@ -110,7 +110,7 @@ export function createTimeSeriesDataStore(
   ctx: StateManagers,
 ): TimeSeriesDataStore {
   return derived(
-    [ctx.validSpecStore, useTimeControlStore(ctx), ctx.dashboardStore],
+    [ctx.validSpecStore, useTimeControlStore(ctx), ctx.exploreStore],
     ([validSpec, timeControls, dashboardStore], set) => {
       if (!validSpec.data || !timeControls.ready || timeControls.isFetching) {
         set({

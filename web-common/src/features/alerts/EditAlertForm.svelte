@@ -1,7 +1,7 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import { createAdminServiceEditAlert } from "@rilldata/web-admin/client";
-  import { useAlertDashboardState } from "@rilldata/web-admin/features/alerts/selectors";
+  import { useAlertExploreState } from "@rilldata/web-admin/features/alerts/selectors";
   import { getExploreName } from "@rilldata/web-admin/features/dashboards/query-mappers/utils";
   import {
     extractAlertFormValues,
@@ -60,7 +60,7 @@
     alertSpec.annotations?.web_open_path ?? "",
   );
   const webState = alertSpec.annotations?.web_open_state ?? "";
-  $: dashboardState = useAlertDashboardState(instanceId, alertSpec);
+  $: dashboardState = useAlertExploreState(instanceId, alertSpec);
 
   const formState = createForm<AlertFormValues>({
     initialValues: {

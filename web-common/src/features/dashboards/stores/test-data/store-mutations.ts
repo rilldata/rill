@@ -25,7 +25,7 @@ import {
 } from "@rilldata/web-common/features/dashboards/state-managers/actions/sorting";
 import type { DashboardMutables } from "@rilldata/web-common/features/dashboards/state-managers/actions/types";
 import {
-  metricsExplorerStore,
+  explorerStore,
   updateMetricsExplorerByName,
 } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
 import {
@@ -131,7 +131,7 @@ export const AD_BIDS_CLEAR_FILTERS: TestDashboardMutation = (mut) =>
   clearAllFilters(mut);
 
 export const AD_BIDS_SET_P7D_TIME_RANGE_FILTER: TestDashboardMutation = () =>
-  metricsExplorerStore.selectTimeRange(
+  explorerStore.selectTimeRange(
     AD_BIDS_EXPLORE_NAME,
     { name: TimeRangePreset.LAST_7_DAYS } as any,
     V1TimeGrain.TIME_GRAIN_DAY,
@@ -139,7 +139,7 @@ export const AD_BIDS_SET_P7D_TIME_RANGE_FILTER: TestDashboardMutation = () =>
     AD_BIDS_METRICS_INIT,
   );
 export const AD_BIDS_SET_P4W_TIME_RANGE_FILTER: TestDashboardMutation = () =>
-  metricsExplorerStore.selectTimeRange(
+  explorerStore.selectTimeRange(
     AD_BIDS_EXPLORE_NAME,
     { name: TimeRangePreset.LAST_4_WEEKS } as any,
     V1TimeGrain.TIME_GRAIN_WEEK,
@@ -147,7 +147,7 @@ export const AD_BIDS_SET_P4W_TIME_RANGE_FILTER: TestDashboardMutation = () =>
     AD_BIDS_METRICS_INIT,
   );
 export const AD_BIDS_SET_ALL_TIME_RANGE_FILTER: TestDashboardMutation = () =>
-  metricsExplorerStore.selectTimeRange(
+  explorerStore.selectTimeRange(
     AD_BIDS_EXPLORE_NAME,
     { name: TimeRangePreset.ALL_TIME } as any,
     V1TimeGrain.TIME_GRAIN_DAY,
@@ -155,13 +155,13 @@ export const AD_BIDS_SET_ALL_TIME_RANGE_FILTER: TestDashboardMutation = () =>
     AD_BIDS_METRICS_INIT,
   );
 export const AD_BIDS_SET_KATHMANDU_TIMEZONE: TestDashboardMutation = () =>
-  metricsExplorerStore.setTimeZone(AD_BIDS_EXPLORE_NAME, "Asia/Kathmandu");
+  explorerStore.setTimeZone(AD_BIDS_EXPLORE_NAME, "Asia/Kathmandu");
 export const AD_BIDS_SET_LA_TIMEZONE: TestDashboardMutation = () =>
-  metricsExplorerStore.setTimeZone(AD_BIDS_EXPLORE_NAME, "America/Los_Angeles");
+  explorerStore.setTimeZone(AD_BIDS_EXPLORE_NAME, "America/Los_Angeles");
 export const AD_BIDS_SET_PREVIOUS_PERIOD_COMPARE_TIME_RANGE_FILTER: TestDashboardMutation =
   () => {
-    metricsExplorerStore.displayTimeComparison(AD_BIDS_EXPLORE_NAME, true);
-    metricsExplorerStore.setSelectedComparisonRange(
+    explorerStore.displayTimeComparison(AD_BIDS_EXPLORE_NAME, true);
+    explorerStore.setSelectedComparisonRange(
       AD_BIDS_EXPLORE_NAME,
       { name: "rill-PP" } as any,
       AD_BIDS_METRICS_INIT,
@@ -169,24 +169,24 @@ export const AD_BIDS_SET_PREVIOUS_PERIOD_COMPARE_TIME_RANGE_FILTER: TestDashboar
   };
 export const AD_BIDS_SET_PREVIOUS_WEEK_COMPARE_TIME_RANGE_FILTER: TestDashboardMutation =
   () => {
-    metricsExplorerStore.displayTimeComparison(AD_BIDS_EXPLORE_NAME, true);
-    metricsExplorerStore.setSelectedComparisonRange(
+    explorerStore.displayTimeComparison(AD_BIDS_EXPLORE_NAME, true);
+    explorerStore.setSelectedComparisonRange(
       AD_BIDS_EXPLORE_NAME,
       { name: "rill-PW" } as any,
       AD_BIDS_METRICS_INIT,
     );
   };
 export const AD_BIDS_DISABLE_COMPARE_TIME_RANGE_FILTER: TestDashboardMutation =
-  () => metricsExplorerStore.displayTimeComparison(AD_BIDS_EXPLORE_NAME, false);
+  () => explorerStore.displayTimeComparison(AD_BIDS_EXPLORE_NAME, false);
 
 export const AD_BIDS_SET_PUBLISHER_COMPARE_DIMENSION: TestDashboardMutation =
   () =>
-    metricsExplorerStore.setComparisonDimension(
+    explorerStore.setComparisonDimension(
       AD_BIDS_EXPLORE_NAME,
       AD_BIDS_PUBLISHER_DIMENSION,
     );
 export const AD_BIDS_SET_DOMAIN_COMPARE_DIMENSION: TestDashboardMutation = () =>
-  metricsExplorerStore.setComparisonDimension(
+  explorerStore.setComparisonDimension(
     AD_BIDS_EXPLORE_NAME,
     AD_BIDS_DOMAIN_DIMENSION,
   );
@@ -271,26 +271,23 @@ export const AD_BIDS_CLOSE_DIMENSION_TABLE: TestDashboardMutation = (mut) =>
   setPrimaryDimension(mut, "");
 
 export const AD_BIDS_OPEN_IMP_TDD: TestDashboardMutation = () =>
-  metricsExplorerStore.setExpandedMeasureName(
+  explorerStore.setExpandedMeasureName(
     AD_BIDS_EXPLORE_NAME,
     AD_BIDS_IMPRESSIONS_MEASURE,
   );
 export const AD_BIDS_SWITCH_TO_STACKED_BAR_IN_TDD: TestDashboardMutation = () =>
-  metricsExplorerStore.setTDDChartType(
-    AD_BIDS_EXPLORE_NAME,
-    TDDChart.STACKED_BAR,
-  );
+  explorerStore.setTDDChartType(AD_BIDS_EXPLORE_NAME, TDDChart.STACKED_BAR);
 
 export const AD_BIDS_OPEN_BP_TDD: TestDashboardMutation = () =>
-  metricsExplorerStore.setExpandedMeasureName(
+  explorerStore.setExpandedMeasureName(
     AD_BIDS_EXPLORE_NAME,
     AD_BIDS_BID_PRICE_MEASURE,
   );
 export const AD_BIDS_CLOSE_TDD: TestDashboardMutation = () =>
-  metricsExplorerStore.setExpandedMeasureName(AD_BIDS_EXPLORE_NAME, "");
+  explorerStore.setExpandedMeasureName(AD_BIDS_EXPLORE_NAME, "");
 
 export const AD_BIDS_OPEN_PIVOT_WITH_ALL_FIELDS: TestDashboardMutation = () =>
-  metricsExplorerStore.createPivot(
+  explorerStore.createPivot(
     AD_BIDS_EXPLORE_NAME,
     [
       {
@@ -324,7 +321,7 @@ export const AD_BIDS_OPEN_PIVOT_WITH_ALL_FIELDS: TestDashboardMutation = () =>
     ],
   );
 export const AD_BIDS_OPEN_DOMAIN_BID_PRICE_PIVOT: TestDashboardMutation = () =>
-  metricsExplorerStore.createPivot(
+  explorerStore.createPivot(
     AD_BIDS_EXPLORE_NAME,
     [
       {
@@ -347,23 +344,23 @@ export const AD_BIDS_OPEN_DOMAIN_BID_PRICE_PIVOT: TestDashboardMutation = () =>
     ],
   );
 export const AD_BIDS_TOGGLE_PIVOT: TestDashboardMutation = () =>
-  metricsExplorerStore.setPivotMode(AD_BIDS_EXPLORE_NAME, false);
+  explorerStore.setPivotMode(AD_BIDS_EXPLORE_NAME, false);
 export const AD_BIDS_SORT_PIVOT_BY_DOMAIN_DESC: TestDashboardMutation = () =>
-  metricsExplorerStore.setPivotSort(AD_BIDS_EXPLORE_NAME, [
+  explorerStore.setPivotSort(AD_BIDS_EXPLORE_NAME, [
     { id: AD_BIDS_DOMAIN_DIMENSION, desc: true },
   ]);
 export const AD_BIDS_SORT_PIVOT_BY_TIME_DAY_ASC: TestDashboardMutation = () =>
-  metricsExplorerStore.setPivotSort(AD_BIDS_EXPLORE_NAME, [
+  explorerStore.setPivotSort(AD_BIDS_EXPLORE_NAME, [
     { id: V1TimeGrain.TIME_GRAIN_DAY, desc: false },
   ]);
 export const AD_BIDS_SORT_PIVOT_BY_IMPRESSIONS_DESC: TestDashboardMutation =
   () =>
-    metricsExplorerStore.setPivotSort(AD_BIDS_EXPLORE_NAME, [
+    explorerStore.setPivotSort(AD_BIDS_EXPLORE_NAME, [
       { id: AD_BIDS_IMPRESSIONS_MEASURE, desc: true },
     ]);
 
 export const AD_BIDS_TOGGLE_PIVOT_TABLE_MODE: TestDashboardMutation = () =>
-  metricsExplorerStore.setPivotTableMode(
+  explorerStore.setPivotTableMode(
     AD_BIDS_EXPLORE_NAME,
     "flat",
     [],
@@ -387,7 +384,7 @@ export const AD_BIDS_TOGGLE_PIVOT_TABLE_MODE: TestDashboardMutation = () =>
   );
 
 export const AD_BIDS_OPEN_PUB_IMP_PIVOT: TestDashboardMutation = () =>
-  metricsExplorerStore.createPivot(
+  explorerStore.createPivot(
     AD_BIDS_EXPLORE_NAME,
     [
       {
@@ -410,7 +407,7 @@ export const AD_BIDS_OPEN_PUB_IMP_PIVOT: TestDashboardMutation = () =>
     ],
   );
 export const AD_BIDS_OPEN_DOM_BP_PIVOT: TestDashboardMutation = () =>
-  metricsExplorerStore.createPivot(
+  explorerStore.createPivot(
     AD_BIDS_EXPLORE_NAME,
     [
       {

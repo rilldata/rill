@@ -39,7 +39,7 @@
   const StateManagers = getStateManagers();
 
   const {
-    dashboardStore,
+    exploreStore,
     exploreName,
     selectors: {
       measures: { visibleMeasures },
@@ -55,13 +55,13 @@
   $: isTitleEmpty = $form.title.trim() === "";
 
   $: exploreFields = getExploreFields(
-    $dashboardStore,
+    $exploreStore,
     $visibleDimensions,
     $visibleMeasures,
   );
 
   $: sanitizedState = getSanitizedDashboardStateParam(
-    $dashboardStore,
+    $exploreStore,
     exploreFields,
     $validSpecStore.data?.explore,
   );
@@ -101,7 +101,7 @@
             data: {
               resourceType: ResourceKind.Explore as string,
               resourceName: dashboard,
-              filter: hasWhereFilter ? $dashboardStore.whereFilter : undefined,
+              filter: hasWhereFilter ? $exploreStore.whereFilter : undefined,
               fields: exploreFields,
               ttlMinutes: setExpiration
                 ? convertDateToMinutes(values.expiresAt).toString()
@@ -137,9 +137,9 @@
     }, 2_000);
   }
 
-  $: hasWhereFilter = hasDashboardWhereFilter($dashboardStore);
+  $: hasWhereFilter = hasDashboardWhereFilter($exploreStore);
   $: hasDimensionThresholdFilter =
-    hasDashboardDimensionThresholdFilter($dashboardStore);
+    hasDashboardDimensionThresholdFilter($exploreStore);
 
   $: if (setExpiration && $form.expiresAt === null) {
     // When `setExpiration` is toggled, initialize the expiration time to 60 days from today
@@ -249,9 +249,9 @@
           <div class="flex flex-row gap-1 mt-2">
             <FilterChipsReadOnly
               exploreName={$exploreName}
-              filters={$dashboardStore.whereFilter}
-              dimensionsWithInlistFilter={$dashboardStore.dimensionsWithInlistFilter}
-              dimensionThresholdFilters={$dashboardStore.dimensionThresholdFilters}
+              filters={$exploreStore.whereFilter}
+              dimensionsWithInlistFilter={$exploreStore.dimensionsWithInlistFilter}
+              dimensionThresholdFilters={$exploreStore.dimensionThresholdFilters}
               displayTimeRange={undefined}
               displayComparisonTimeRange={undefined}
               queryTimeStart={$timeControlStore.timeStart}

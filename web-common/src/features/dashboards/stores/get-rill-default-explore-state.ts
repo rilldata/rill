@@ -20,7 +20,7 @@ import {
   type V1TimeRangeSummary,
 } from "@rilldata/web-common/runtime-client";
 import { DateTime, IANAZone, Interval } from "luxon";
-import type { MetricsExplorerEntity } from "./metrics-explorer-entity";
+import type { ExploreState } from "web-common/src/features/dashboards/stores/explore-state";
 import {
   DashboardState_ActivePage,
   DashboardState_LeaderboardSortDirection,
@@ -34,7 +34,7 @@ export function getRillDefaultExploreState(
   exploreSpec: V1ExploreSpec,
   timeRangeSummary: V1TimeRangeSummary | undefined,
 ) {
-  return <MetricsExplorerEntity>{
+  return <ExploreState>{
     activePage: DashboardState_ActivePage.DEFAULT,
 
     whereFilter: createAndExpression([]),
@@ -65,7 +65,7 @@ function getRillDefaultExploreTimeState(
   metricsViewSpec: V1MetricsViewSpec,
   exploreSpec: V1ExploreSpec,
   timeRangeSummary: V1TimeRangeSummary | undefined,
-): Partial<MetricsExplorerEntity> {
+): Partial<ExploreState> {
   if (!timeRangeSummary?.min || !timeRangeSummary?.max) {
     return {
       // for consistency with fromUrl
@@ -99,7 +99,7 @@ function getRillDefaultExploreTimeState(
 
 function getRillDefaultExploreViewState(
   exploreSpec: V1ExploreSpec,
-): Partial<MetricsExplorerEntity> {
+): Partial<ExploreState> {
   const defaultMeasure = exploreSpec.measures?.[0];
 
   return {
@@ -213,7 +213,7 @@ export function getDefaultTimeZone(explore: V1ExploreSpec) {
 }
 
 function getRillDefaultTDDViewState() {
-  return <Partial<MetricsExplorerEntity>>{
+  return <Partial<ExploreState>>{
     tdd: {
       expandedMeasureName: "",
       chartType: TDDChart.DEFAULT,
@@ -223,7 +223,7 @@ function getRillDefaultTDDViewState() {
 }
 
 function getRillDefaultPivotViewState() {
-  return <Partial<MetricsExplorerEntity>>{
+  return <Partial<ExploreState>>{
     pivot: {
       active: false,
       rows: [],
