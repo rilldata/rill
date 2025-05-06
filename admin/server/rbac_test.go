@@ -495,6 +495,7 @@ func TestRBAC(t *testing.T) {
 		require.Len(t, projInvites.Invites, 1)
 		require.Equal(t, userEmail, projInvites.Invites[0].Email)
 		require.Equal(t, database.ProjectRoleNameAdmin, projInvites.Invites[0].RoleName)
+		require.Equal(t, database.OrganizationRoleNameViewer, projInvites.Invites[0].OrgRoleName)
 
 		// Create the user and check they can access the org and project, and check they are in the list of members
 		_, c2 := fix.NewUserWithEmail(t, userEmail)
@@ -634,6 +635,7 @@ func TestRBAC(t *testing.T) {
 		require.Len(t, projInvites.Invites, 1)
 		require.Equal(t, userEmail, projInvites.Invites[0].Email)
 		require.Equal(t, database.ProjectRoleNameAdmin, projInvites.Invites[0].RoleName)
+		require.Equal(t, database.OrganizationRoleNameGuest, projInvites.Invites[0].OrgRoleName)
 
 		// Delete the org invite
 		_, err = c1.RemoveOrganizationMemberUser(ctx, &adminv1.RemoveOrganizationMemberUserRequest{

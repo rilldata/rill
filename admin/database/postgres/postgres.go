@@ -1937,14 +1937,14 @@ func (c *connection) UpdateOrganizationInviteRole(ctx context.Context, id, roleI
 func (c *connection) FindProjectInvites(ctx context.Context, projectID, afterEmail string, limit int) ([]*database.ProjectInviteWithRole, error) {
 	var res []*database.ProjectInviteWithRole
 	err := c.getDB(ctx).SelectContext(ctx, &res, `
-			SELECT upi.id, upi.email, upr.name as role_name, uor.name as org_role_name, u.email as invited_by
-			FROM project_invites upi
-			JOIN project_roles upr ON upi.project_role_id = upr.id
-			JOIN users u ON upi.invited_by_user_id = u.id
-			LEFT JOIN org_invites uoi ON upi.org_invite_id = uoi.id
-			LEFT JOIN org_roles uor ON uoi.org_role_id = uor.id
-			WHERE upi.project_id = $1 AND lower(upi.email) > lower($2)
-			ORDER BY lower(upi.email) LIMIT $3
+		SELECT upi.id, upi.email, upr.name as role_name, uor.name as org_role_name, u.email as invited_by
+		FROM project_invites upi
+		JOIN project_roles upr ON upi.project_role_id = upr.id
+		JOIN users u ON upi.invited_by_user_id = u.id
+		LEFT JOIN org_invites uoi ON upi.org_invite_id = uoi.id
+		LEFT JOIN org_roles uor ON uoi.org_role_id = uor.id
+		WHERE upi.project_id = $1 AND lower(upi.email) > lower($2)
+		ORDER BY lower(upi.email) LIMIT $3
 	`, projectID, afterEmail, limit)
 	if err != nil {
 		return nil, parseErr("project invites", err)
