@@ -5,7 +5,7 @@
     V1ListOrganizationInvitesResponse,
     V1ListOrganizationMemberUsersResponse,
     V1OrganizationMemberUser,
-    V1UserInvite,
+    V1OrganizationInvite,
   } from "@rilldata/web-admin/client";
   import OrgUsersTableUserCompositeCell from "./OrgUsersTableUserCompositeCell.svelte";
   import OrgUsersTableActionsCell from "./OrgUsersTableActionsCell.svelte";
@@ -30,7 +30,7 @@
   } from "@tanstack/svelte-query";
   import { ExternalLinkIcon } from "lucide-svelte";
 
-  interface OrgUser extends V1OrganizationMemberUser, V1UserInvite {
+  interface OrgUser extends V1OrganizationMemberUser, V1OrganizationInvite {
     invitedBy?: string;
   }
 
