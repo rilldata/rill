@@ -21,6 +21,7 @@
   import type { PageData } from "./$types";
   import CreateNewOrgForm from "@rilldata/web-common/features/organization/CreateNewOrgForm.svelte";
   import { CreateNewOrgFormId } from "@rilldata/web-common/features/organization/CreateNewOrgForm.svelte";
+  import ProjectSelector from "@rilldata/web-common/features/project/ProjectSelector.svelte";
 
   export let data: PageData;
 
@@ -28,6 +29,7 @@
   const metadata = deployer.metadata;
   const user = deployer.user;
   const project = deployer.project;
+  const matchingProjects = deployer.matchingProjects;
   const deployerStatus = deployer.getStatus();
   const stage = deployer.stage;
 
@@ -91,6 +93,8 @@
       </Button>
     {:else if $stage === ProjectDeployStage.SelectOrg}
       <OrgSelector orgs={$user.data?.rillUserOrgs ?? []} onSelect={selectOrg} />
+    {:else if $stage === ProjectDeployStage.SelectMatchingProject}
+      <ProjectSelector projects={$matchingProjects.data?.projects} />
     {:else if $deployerStatus.isLoading}
       <div class="h-36">
         <Spinner status={EntityStatus.Running} size="7rem" duration={725} />

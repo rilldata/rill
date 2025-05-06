@@ -13,6 +13,7 @@ import {
   createLocalServiceGetCurrentProject,
   createLocalServiceGetCurrentUser,
   createLocalServiceGetMetadata,
+  createLocalServiceListMatchingProjectsRequest,
   createLocalServiceRedeploy,
 } from "@rilldata/web-common/runtime-client/local-service";
 import { derived, get, writable } from "svelte/store";
@@ -24,12 +25,20 @@ export enum ProjectDeployStage {
 
   CreateNewOrg,
   SelectOrg,
+
+  SelectMatchingProject,
+  SelectProjectForOverwrite,
+
+  Deploy,
+  Redeploy,
 }
 
 export class ProjectDeployer {
   public readonly metadata = createLocalServiceGetMetadata();
   public readonly user = createLocalServiceGetCurrentUser();
   public readonly project = createLocalServiceGetCurrentProject();
+  public readonly matchingProjects =
+    createLocalServiceListMatchingProjectsRequest();
 
   public stage = writable(ProjectDeployStage.Init);
 
@@ -101,20 +110,22 @@ export class ProjectDeployer {
     // Check project status
 
     // Wait for project request to load
-    await waitUntil(() => !get(this.project).isLoading);
+    await waitUntil(() => !get(this.matchingProjects).isLoading);
 
-    const projectResp = get(this.project).data as GetCurrentProjectResponse;
+    const projectResp = get(this.matchingProjects).data;
 
     // Project already exists
-    if (projectResp.project) {
-      if (projectResp.project.githubUrl) {
-        // We do not support pushing to a project already connected to github as of now
-        // Deploy page should not even open in this scenario, so this is just a safeguard.
-        this.stage.set(ProjectDeployStage.Invalid);
-        return;
+    if (projectResp?.projects?.length) {
+      if (projectResp.projects.length === 1) {
+        // Exactly one project match the local project name.
+        // Go straight to redeploy from here.
+        return this.redeploy(projectResp.projects[0].id);
+      } else {
+        // Else select the project to redeploy to.
+        this.stage.set(ProjectDeployStage.SelectMatchingProject);
       }
 
-      return this.redeploy(projectResp.project.id);
+      return;
     }
 
     if (userResp.rillUserOrgs?.length) {
@@ -127,6 +138,7 @@ export class ProjectDeployer {
   }
 
   public async deploy(org: string) {
+    this.stage.set(ProjectDeployStage.Deploy);
     const projectResp = get(this.project).data as GetCurrentProjectResponse;
 
     const resp = await get(this.deployMutation).mutateAsync({
@@ -145,7 +157,8 @@ export class ProjectDeployer {
     window.open(projectInviteUrlWithSessionId, "_self");
   }
 
-  private async redeploy(projectId: string) {
+  public async redeploy(projectId: string) {
+    this.stage.set(ProjectDeployStage.Redeploy);
     const resp = await get(this.redeployMutation).mutateAsync({
       projectId,
       reupload: true,
