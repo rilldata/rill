@@ -271,6 +271,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				DatabaseDriver:            conf.DatabaseDriver,
 				DatabaseDSN:               conf.DatabaseURL,
 				DatabaseEncryptionKeyring: conf.DatabaseEncryptionKeyring,
+				ExternalURL:               conf.ExternalURL,
 				FrontendURL:               conf.FrontendURL,
 				ProvisionerSetJSON:        conf.ProvisionerSetJSON,
 				ProvisionerMaxConcurrency: conf.ProvisionerMaxConcurrency,
