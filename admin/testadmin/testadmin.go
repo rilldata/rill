@@ -225,7 +225,7 @@ func (m *mockGithub) CreateManagedRepo(ctx context.Context, repoPrefix string) (
 	return nil, fmt.Errorf("not implemented")
 }
 
-func (m *mockGithub) ManagedOrgInstallationID(ctx context.Context) (int64, error) {
+func (m *mockGithub) ManagedOrgInstallationID() (int64, error) {
 	return 0, fmt.Errorf("not implemented")
 }
 

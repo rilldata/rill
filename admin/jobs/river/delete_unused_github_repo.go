@@ -41,7 +41,7 @@ func (w *deleteUnusedGithubReposWorker) deleteUnusedGithubRepos(ctx context.Cont
 		}
 
 		// 2. Delete repos
-		id, err := w.admin.Github.ManagedOrgInstallationID(ctx)
+		id, err := w.admin.Github.ManagedOrgInstallationID()
 		if err != nil {
 			return fmt.Errorf("failed to get managed org installation id: %w", err)
 		}
