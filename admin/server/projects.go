@@ -877,7 +877,7 @@ func (s *Server) ListProjectMemberUsers(ctx context.Context, req *adminv1.ListPr
 		roleID = role.ID
 	}
 
-	members, err := s.admin.DB.FindProjectMemberUsers(ctx, proj.ID, roleID, token.Val, pageSize)
+	members, err := s.admin.DB.FindProjectMemberUsers(ctx, proj.OrganizationID, proj.ID, roleID, token.Val, pageSize)
 	if err != nil {
 		return nil, err
 	}

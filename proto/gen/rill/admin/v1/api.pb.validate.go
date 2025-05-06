@@ -36507,6 +36507,8 @@ func (m *ProjectMemberUser) validate(all bool) error {
 
 	// no validation rules for RoleName
 
+	// no validation rules for OrgRoleName
+
 	if all {
 		switch v := interface{}(m.GetCreatedOn()).(type) {
 		case interface{ ValidateAll() error }:

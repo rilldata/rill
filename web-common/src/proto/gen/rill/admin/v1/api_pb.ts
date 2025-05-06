@@ -13481,6 +13481,11 @@ export class ProjectMemberUser extends Message<ProjectMemberUser> {
   roleName = "";
 
   /**
+   * @generated from field: string org_role_name = 8;
+   */
+  orgRoleName = "";
+
+  /**
    * @generated from field: google.protobuf.Timestamp created_on = 5;
    */
   createdOn?: Timestamp;
@@ -13503,6 +13508,7 @@ export class ProjectMemberUser extends Message<ProjectMemberUser> {
     { no: 2, name: "user_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 7, name: "user_photo_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "role_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 8, name: "org_role_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "created_on", kind: "message", T: Timestamp },
     { no: 6, name: "updated_on", kind: "message", T: Timestamp },
   ]);

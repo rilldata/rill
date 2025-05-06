@@ -430,6 +430,7 @@ func projMemberUserToPB(m *database.ProjectMemberUser) *adminv1.ProjectMemberUse
 		UserName:     m.DisplayName,
 		UserPhotoUrl: m.PhotoURL,
 		RoleName:     m.RoleName,
+		OrgRoleName:  m.OrgRoleName,
 		CreatedOn:    timestamppb.New(m.CreatedOn),
 		UpdatedOn:    timestamppb.New(m.UpdatedOn),
 	}

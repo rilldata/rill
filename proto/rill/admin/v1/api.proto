@@ -2481,6 +2481,7 @@ message ProjectMemberUser {
   string user_name = 2;
   string user_photo_url = 7;
   string role_name = 4;
+  string org_role_name = 8;
   google.protobuf.Timestamp created_on = 5;
   google.protobuf.Timestamp updated_on = 6;
 }

@@ -1628,20 +1628,32 @@ func (c *connection) FindOrganizationMembersWithManageUsersRole(ctx context.Cont
 	return res, nil
 }
 
-func (c *connection) FindProjectMemberUsers(ctx context.Context, projectID, filterRoleID, afterEmail string, limit int) ([]*database.ProjectMemberUser, error) {
-	args := []any{projectID, afterEmail, limit}
+func (c *connection) FindProjectMemberUsers(ctx context.Context, orgID, projectID, filterRoleID, afterEmail string, limit int) ([]*database.ProjectMemberUser, error) {
+	args := []any{orgID, projectID, afterEmail, limit}
 	var qry strings.Builder
 	qry.WriteString(`
-		SELECT u.id, u.email, u.display_name, u.photo_url, u.created_on, u.updated_on, r.name FROM users u
-    	JOIN users_projects_roles upr ON u.id = upr.user_id
-		JOIN project_roles r ON r.id = upr.project_role_id
-		WHERE upr.project_id=$1
+		SELECT
+			-- User info
+			u.id, u.email, u.display_name, u.photo_url, u.created_on, u.updated_on,
+			-- Project role name
+			(SELECT pr.name FROM project_roles pr WHERE pr.id = upr.project_role_id) as role_name,
+			-- Org role name
+			(
+				SELECT orr.name
+				FROM org_roles orr
+				JOIN users_orgs_roles uor
+				ON orr.id = uor.org_role_id
+				WHERE uor.user_id = u.id AND uor.org_id = $1
+			) as org_role_name
+		FROM users u
+		JOIN users_projects_roles upr ON upr.user_id = u.id
+		WHERE upr.project_id = $2
 	`)
 	if filterRoleID != "" {
-		qry.WriteString(" AND upr.project_role_id=$4")
+		qry.WriteString(" AND upr.project_role_id=$5")
 		args = append(args, filterRoleID)
 	}
-	qry.WriteString(" AND lower(u.email) > lower($2) ORDER BY lower(u.email) LIMIT $3")
+	qry.WriteString(" AND lower(u.email) > lower($3) ORDER BY lower(u.email) LIMIT $4")
 
 	var res []*database.ProjectMemberUser
 	err := c.getDB(ctx).SelectContext(ctx, &res, qry.String(), args...)
