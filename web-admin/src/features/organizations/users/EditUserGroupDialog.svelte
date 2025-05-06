@@ -45,11 +45,6 @@
     groupName,
   );
 
-  $: console.log(
-    "EditUserGroupDialog: ",
-    $listUsergroupMemberUsers.data?.members,
-  );
-
   const queryClient = useQueryClient();
   const removeUserGroupMember = createAdminServiceRemoveUsergroupMemberUser();
   const addUsergroupMemberUser = createAdminServiceAddUsergroupMemberUser();
@@ -60,7 +55,6 @@
     usergroup: string,
   ) {
     try {
-      console.log("Adding user to user group", email, usergroup);
       await $addUsergroupMemberUser.mutateAsync({
         organization: organization,
         usergroup: usergroup,
@@ -84,7 +78,6 @@
         message: "User added to user group",
       });
     } catch (error) {
-      console.error("Error adding user to user group", error);
       eventBus.emit("notification", {
         message: "Error adding user to user group",
         type: "error",
@@ -119,7 +112,6 @@
 
   async function handleRemoveUser(groupName: string, email: string) {
     try {
-      console.log("Removing user from user group", email, groupName);
       await $removeUserGroupMember.mutateAsync({
         organization: organization,
         usergroup: groupName,
@@ -195,13 +187,18 @@
     label: user.userEmail,
     name: user.userName,
   }));
+
+  function handleClose() {
+    open = false;
+    searchText = "";
+  }
 </script>
 
 <Dialog
   bind:open
   onOutsideClick={(e) => {
     e.preventDefault();
-    open = false;
+    handleClose();
   }}
 >
   <DialogTrigger asChild>
@@ -297,12 +294,7 @@
       </div>
     {/if}
     <DialogFooter>
-      <Button
-        type="plain"
-        on:click={() => {
-          open = false;
-        }}>Cancel</Button
-      >
+      <Button type="plain" on:click={handleClose}>Cancel</Button>
       <Button
         type="primary"
         disabled={$submitting || $form.newName.trim() === groupName}
