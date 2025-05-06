@@ -90,7 +90,10 @@
         Continue
       </Button>
     {:else if $stage === ProjectDeployStage.SelectOrg}
-      <OrgSelector orgs={$user.data?.rillUserOrgs ?? []} onSelect={selectOrg} />
+      <OrgSelector bind:selectedOrg orgs={$user.data?.rillUserOrgs ?? []} />
+      <Button wide type="primary" on:click={() => deployer.deploy(selectedOrg)}>
+        Continue
+      </Button>
     {:else if $deployerStatus.isLoading}
       <div class="h-36">
         <Spinner status={EntityStatus.Running} size="7rem" duration={725} />
