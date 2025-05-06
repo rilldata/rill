@@ -1,7 +1,7 @@
 ---
 note: GENERATED. DO NOT EDIT.
-title: Theme YAML
-sidebar_position: 10
+title: Component YAML
+sidebar_position: 4
 ---
 
 
@@ -9,13 +9,9 @@ sidebar_position: 10
 ## Properties
 
 
-**`type`**  - _[string]_ - Refers to the resource type and must be `theme`  _(required)_
-
-**`version`**  - _[integer]_ - Version of the parser to use for this file. Enables backwards compatibility for breaking changes. 
+**`type`**  - _[string]_ - Refers to the resource type and must be `component`  _(required)_
 
 **`name`**  - _[string]_ - Name is usually inferred from the filename, but can be specified manually. 
-
-**`namespace`**  - _[string]_ - Optional value to group resources by. Prepended to the resource name as `<namespace>/<name>`. 
 
 **`refs`**  - _[array of oneOf]_ - List of resource references, each as a string or map. 
 
@@ -31,12 +27,22 @@ sidebar_position: 10
 
 **`prod`**  - _[object]_ - Overrides properties in production 
 
-**`colors`**  - _[anyOf]_   _(required)_
+**`display_name`**  - _[string]_ - Refers to the display name for the component 
 
-  *option 1* - _[object]_ 
+**`description`**  - _[string]_  
 
-  - **`primary`**  - _[string]_   _(required)_
+**`input`**  - _[array of object]_  
 
-  *option 2* - _[object]_ 
+  - **`name`**  - _[string]_   _(required)_
 
-  - **`secondary`**  - _[string]_   _(required)_
+  - **`type`**  - _[string]_   _(required)_
+
+  - **`value`**  - The value can be of any type. 
+
+**`output`**  - _[object]_  
+
+  - **`name`**  - _[string]_   _(required)_
+
+  - **`type`**  - _[string]_   _(required)_
+
+  - **`value`**  - The value can be of any type. 

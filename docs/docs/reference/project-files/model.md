@@ -11,11 +11,7 @@ sidebar_position: 8
 
 **`type`**  - _[string]_ - Refers to the resource type and must be `model`  _(required)_
 
-**`version`**  - _[integer]_ - Version of the parser to use for this file. Enables backwards compatibility for breaking changes. 
-
 **`name`**  - _[string]_ - Name is usually inferred from the filename, but can be specified manually. 
-
-**`namespace`**  - _[string]_ - Optional value to group resources by. Prepended to the resource name as `<namespace>/<name>`. 
 
 **`refs`**  - _[array of oneOf]_ - List of resource references, each as a string or map. 
 
@@ -127,7 +123,7 @@ sidebar_position: 8
 
 **`output`**  - _[object]_ - to define the properties of output 
 
-  - **`connector`**  - _[string]_ - Refers to the connector type for the output table  _(required)_
+  - **`connector`**  - _[string]_ - Refers to the connector type for the output table 
 
 **`dev`**  - _[object]_ - Overrides properties in development 
 
@@ -307,6 +303,10 @@ sidebar_position: 8
 **`path`**  - _[string]_ - Path to the data source. 
 
 **`format`**  - _[string]_ - Format of the data source (e.g., csv, json, parquet). 
+
+**`pre_exec`**  - _[string]_ - refers to a SQL queries to run before the main query, available for DuckDB based models 
+
+**`post_exec`**  - _[string]_ - refers to a SQL query that is run after the main query, available for DuckDB based models 
 
 **`pool_size`**  - _[integer]_ - Number of concurrent connections and queries allowed 
 

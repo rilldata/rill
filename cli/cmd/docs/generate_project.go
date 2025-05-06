@@ -3,6 +3,7 @@ package docs
 import (
 	"encoding/json"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -12,17 +13,95 @@ import (
 	"github.com/spf13/cobra"
 )
 
+func GenerateProjectDocsCmd(rootCmd *cobra.Command, ch *cmdutil.Helper) *cobra.Command {
+	var projectPath, rillyamlPath, outputDir string
+
+	cmd := &cobra.Command{
+		Use:   "generate-project",
+		Short: "Generate Markdown docs from JSON Schemas for Project files",
+		RunE: func(cmd *cobra.Command, args []string) error {
+
+			if _, err := os.Stat(outputDir); os.IsNotExist(err) {
+				if err := os.MkdirAll(outputDir, fs.ModePerm); err != nil {
+					return err
+				}
+			}
+
+			projectFilesSchema, err := parseSchemaWithRefs(projectPath)
+			if err != nil {
+				return fmt.Errorf("resource schema error: %w", err)
+			}
+			// ideally rillyaml should be part of project.schem.json but currenly it can't be
+			rillYamlSchema, err := parseSchemaWithRefs(rillyamlPath)
+			if err != nil {
+				return fmt.Errorf("rillyaml schema error: %w", err)
+			}
+			projectFilesSchema.OneOf = append(projectFilesSchema.OneOf, rillYamlSchema)
+
+			var projectFilesbuf strings.Builder
+
+			sidebar_position := 0
+			projectFilesbuf.WriteString("---\n")
+			projectFilesbuf.WriteString("note: GENERATED. DO NOT EDIT.\n")
+			projectFilesbuf.WriteString(fmt.Sprintf("title: %s\n", projectFilesSchema.Title))
+			projectFilesbuf.WriteString(fmt.Sprintf("sidebar_position: %d\n", sidebar_position))
+			projectFilesbuf.WriteString("---\n")
+
+			projectFilesbuf.WriteString("## Overview\n\n")
+			projectFilesbuf.WriteString(fmt.Sprintf("%s\n\n", projectFilesSchema.Description))
+			projectFilesbuf.WriteString("## Project files types\n\n")
+
+			for _, resource := range projectFilesSchema.OneOf {
+				sidebar_position += 1
+				fileName := sanitizeFileName(resource.Title) + ".md"
+				filePath := filepath.Join(outputDir, fileName)
+				requiredMap := getRequiredMap(resource.Required)
+				var resourceFilebuf strings.Builder
+				resourceFilebuf.WriteString("---\n")
+				resourceFilebuf.WriteString("note: GENERATED. DO NOT EDIT.\n")
+				resourceFilebuf.WriteString(fmt.Sprintf("title: %s\n", resource.Title))
+				resourceFilebuf.WriteString(fmt.Sprintf("sidebar_position: %d\n", sidebar_position))
+				resourceFilebuf.WriteString("---\n")
+				resourceFilebuf.WriteString(fmt.Sprintf("\n%s\n\n", resource.Description))
+				resourceFilebuf.WriteString("## Properties\n")
+				resourceFilebuf.WriteString(generateDoc("", resource, "", requiredMap))
+
+				if err := os.WriteFile(filePath, []byte(resourceFilebuf.String()), 0644); err != nil {
+					return fmt.Errorf("failed writing resource doc: %w", err)
+				}
+				projectFilesbuf.WriteString(fmt.Sprintf("- [%s](%s)\n", resource.Title, fileName))
+			}
+
+			if err := os.WriteFile(filepath.Join(outputDir, "index.md"), []byte(projectFilesbuf.String()), 0644); err != nil {
+				return fmt.Errorf("failed writing index.md: %w", err)
+			}
+
+			fmt.Printf("Documentation generated in %s\n", outputDir)
+			return nil
+		},
+	}
+
+	cmd.Flags().StringVar(&projectPath, "project", "", "Path to project.schema.json")
+	cmd.Flags().StringVar(&rillyamlPath, "rillyaml", "", "Path to rillyaml.schema.json")
+	cmd.Flags().StringVar(&outputDir, "out", "", "Output directory for generated docs")
+	cmd.MarkFlagRequired("project")
+	cmd.MarkFlagRequired("rillyaml")
+	cmd.MarkFlagRequired("out")
+	return cmd
+}
+
 type JSONSchema struct {
-	Title       string                 `json:"title"`
-	Description string                 `json:"description"`
-	Type        interface{}            `json:"type"`
-	Properties  *orderedmap.OrderedMap `json:"properties"`
-	Required    []string               `json:"required"`
-	Items       *JSONSchema            `json:"items"`
-	Enum        []interface{}          `json:"enum"`
-	OneOf       []*JSONSchema          `json:"oneOf"`
-	AnyOf       []*JSONSchema          `json:"anyOf"`
-	AllOf       []*JSONSchema          `json:"allOf"`
+	Title       string                   `json:"title"`
+	Description string                   `json:"description"`
+	Type        interface{}              `json:"type"`
+	Properties  *orderedmap.OrderedMap   `json:"properties"`
+	Examples    []*orderedmap.OrderedMap `json:"examples"`
+	Required    []string                 `json:"required"`
+	Items       *JSONSchema              `json:"items"`
+	Enum        []interface{}            `json:"enum"`
+	OneOf       []*JSONSchema            `json:"oneOf"`
+	AnyOf       []*JSONSchema            `json:"anyOf"`
+	AllOf       []*JSONSchema            `json:"allOf"`
 }
 
 func getRequiredMap(required []string) map[string]bool {
@@ -267,76 +346,4 @@ func resolveJSONPointer(root *orderedmap.OrderedMap, pointer string) (*orderedma
 
 func sanitizeFileName(name string) string {
 	return strings.ToLower(strings.ReplaceAll(strings.ReplaceAll(name, " YAML", ""), " ", "-"))
-}
-
-func GenerateProjectDocsCmd(rootCmd *cobra.Command, ch *cmdutil.Helper) *cobra.Command {
-	var resourcePath, rillPath, outputDir string
-
-	cmd := &cobra.Command{
-		Use:   "generate-docs",
-		Short: "Generate Markdown docs from JSON Schemas (resource + rillyaml)",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			rillYamlSchema, err := parseSchemaWithRefs(rillPath)
-			if err != nil {
-				return fmt.Errorf("rillyaml schema error: %w", err)
-			}
-			// Parse resource.schema.json
-			projectFilesSchema, err := parseSchemaWithRefs(resourcePath)
-			if err != nil {
-				return fmt.Errorf("resource schema error: %w", err)
-			}
-
-			//
-			projectFilesSchema.OneOf = append(projectFilesSchema.OneOf, rillYamlSchema)
-
-			// Prepare index content
-			var projectFilesbuf strings.Builder
-
-			sidebar_position := 0
-			projectFilesbuf.WriteString("---\n")
-			projectFilesbuf.WriteString("note: GENERATED. DO NOT EDIT.\n")
-			projectFilesbuf.WriteString(fmt.Sprintf("title: %s\n", projectFilesSchema.Title))
-			projectFilesbuf.WriteString(fmt.Sprintf("sidebar_position: %d\n", sidebar_position))
-			projectFilesbuf.WriteString("---\n")
-
-			projectFilesbuf.WriteString("## Overview\n\n")
-			projectFilesbuf.WriteString(fmt.Sprintf("%s\n\n", projectFilesSchema.Description))
-			projectFilesbuf.WriteString("## Project files types\n\n")
-
-			for _, resource := range projectFilesSchema.OneOf {
-				sidebar_position += 1
-				fileName := sanitizeFileName(resource.Title) + ".md"
-				filePath := filepath.Join(outputDir, fileName)
-				requiredMap := getRequiredMap(resource.Required)
-				var resourceFilebuf strings.Builder
-				resourceFilebuf.WriteString("---\n")
-				resourceFilebuf.WriteString("note: GENERATED. DO NOT EDIT.\n")
-				resourceFilebuf.WriteString(fmt.Sprintf("title: %s\n", resource.Title))
-				resourceFilebuf.WriteString(fmt.Sprintf("sidebar_position: %d\n", sidebar_position))
-				resourceFilebuf.WriteString("---\n")
-				resourceFilebuf.WriteString(fmt.Sprintf("\n%s\n\n", resource.Description))
-				resourceFilebuf.WriteString("## Properties\n")
-				resourceFilebuf.WriteString(generateDoc("", resource, "", requiredMap))
-
-				if err := os.WriteFile(filePath, []byte(resourceFilebuf.String()), 0644); err != nil {
-					return fmt.Errorf("failed writing resource doc: %w", err)
-				}
-				projectFilesbuf.WriteString(fmt.Sprintf("- [%s](%s)\n", resource.Title, fileName))
-			}
-
-			if err := os.WriteFile(filepath.Join(outputDir, "index.md"), []byte(projectFilesbuf.String()), 0644); err != nil {
-				return fmt.Errorf("failed writing index.md: %w", err)
-			}
-
-			fmt.Printf("Documentation generated in %s\n", outputDir)
-			return nil
-		},
-	}
-
-	cmd.Flags().StringVar(&resourcePath, "resource", "", "Path to resource.schema.json")
-	cmd.Flags().StringVar(&rillPath, "rill", "", "Path to rillyaml.schema.json")
-	cmd.Flags().StringVarP(&outputDir, "out", "o", "./docs", "Output directory for generated docs")
-	cmd.MarkFlagRequired("resource")
-	cmd.MarkFlagRequired("rill")
-	return cmd
 }

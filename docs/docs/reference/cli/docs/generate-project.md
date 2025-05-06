@@ -1,21 +1,21 @@
 ---
 note: GENERATED. DO NOT EDIT.
-title: rill org create
+title: rill docs generate-project
 ---
-## rill org create
+## rill docs generate-project
 
-Create organization
+Generate Markdown docs from JSON Schemas for Project files
 
 ```
-rill org create [<org-name>] [flags]
+rill docs generate-project [flags]
 ```
 
 ### Flags
 
 ```
-      --name string           Organization Name
-      --display-name string   Display name
-      --description string    Description
+      --out string        Output directory for generated docs
+      --project string    Path to project.schema.json
+      --rillyaml string   Path to rillyaml.schema.json
 ```
 
 ### Global flags
@@ -29,5 +29,5 @@ rill org create [<org-name>] [flags]
 
 ### SEE ALSO
 
-* [rill org](org.md)	 - Manage organisations
+* [rill docs](docs.md)	 - Open docs.rilldata.com
 

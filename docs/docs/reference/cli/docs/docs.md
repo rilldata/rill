@@ -22,4 +22,5 @@ rill docs [flags]
 ### SEE ALSO
 
 * [rill](../cli.md)	 - A CLI for Rill
+* [rill docs generate-project](generate-project.md)	 - Generate Markdown docs from JSON Schemas for Project files
 

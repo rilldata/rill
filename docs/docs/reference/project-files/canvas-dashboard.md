@@ -11,11 +11,7 @@ In your Rill project directory, create a explore dashboard, `<dashboard_name>.ya
 
 **`type`**  - _[string]_ - Refers to the resource type and must be `canvas`  _(required)_
 
-**`version`**  - _[integer]_ - Version of the parser to use for this file. Enables backwards compatibility for breaking changes. 
-
 **`name`**  - _[string]_ - Name is usually inferred from the filename, but can be specified manually. 
-
-**`namespace`**  - _[string]_ - Optional value to group resources by. Prepended to the resource name as `<namespace>/<name>`. 
 
 **`refs`**  - _[array of oneOf]_ - List of resource references, each as a string or map. 
 
