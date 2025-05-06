@@ -7,7 +7,7 @@
   } from "@rilldata/web-admin/client";
   import type {
     V1ProjectMemberUser,
-    V1UserInvite,
+    V1ProjectInvite,
   } from "@rilldata/web-admin/client";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import { capitalize } from "@rilldata/web-common/components/table/utils";
@@ -17,7 +17,7 @@
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import { PROJECT_ROLES_DESCRIPTION_MAP } from "../constants";
 
-  type User = V1ProjectMemberUser | V1UserInvite;
+  type User = V1ProjectMemberUser | V1ProjectInvite;
 
   export let organization: string;
   export let project: string;
@@ -29,21 +29,9 @@
   let isOpen = false;
 
   const queryClient = useQueryClient();
-  // const listProjectMemberUsers = createAdminServiceListProjectMemberUsers(
-  //   organization,
-  //   project,
-  //   undefined,
-  //   {
-  //     query: {
-  //       refetchOnMount: true,
-  //       refetchOnWindowFocus: true,
-  //     },
-  //   },
-  // );
 
   $: setProjectMemberUserRole = createAdminServiceSetProjectMemberUserRole();
   $: removeProjectMemberUser = createAdminServiceRemoveProjectMemberUser();
-  // $: projectMemberUsersList = $listProjectMemberUsers.data?.members ?? [];
 
   function getUserEmail(user: User): string {
     if ("userEmail" in user) return user.userEmail;

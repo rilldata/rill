@@ -4,9 +4,9 @@
   import { createAdminServiceGetCurrentUser } from "@rilldata/web-admin/client";
   import type {
     V1ProjectMemberUser,
-    V1UserInvite,
+    V1ProjectInvite,
   } from "@rilldata/web-admin/client";
-  type User = V1ProjectMemberUser | V1UserInvite;
+  type User = V1ProjectMemberUser | V1ProjectInvite;
 
   export let organization: string;
   export let project: string;
