@@ -212,7 +212,7 @@
       {/if}
       <!-- 52 * 8 = 416px -->
       <div class="flex flex-col gap-y-1 overflow-y-auto max-h-[416px]">
-        <div class={isAdmin ? "mt-4" : ""}>
+        <div class={isAdmin || isEditor ? "mt-4" : ""}>
           <!-- Project Users -->
           {#each sortedProjectMemberUsersList as user}
             <UserItem

@@ -43,7 +43,7 @@
       <span class="text-gray-500 font-normal">
         {isCurrentUser ? "(You)" : ""}
       </span>
-      {#if showGuestChip}
+      {#if showGuestChip || role === "guest"}
         <Chip type="amber" label="Guest" compact readOnly>
           <svelte:fragment slot="body">Guest</svelte:fragment>
         </Chip>
