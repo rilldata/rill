@@ -327,9 +327,9 @@ func orgNamePrompt(ctx context.Context, ch *cmdutil.Helper) (string, error) {
 			Prompt: &survey.Input{
 				Message: "Enter an org name",
 			},
-			Validate: func(v any) error {
+			Validate: func(any interface{}) error {
 				// Validate org name doesn't exist already
-				name := v.(string)
+				name := any.(string)
 				if name == "" {
 					return fmt.Errorf("empty name")
 				}

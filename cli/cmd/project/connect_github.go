@@ -638,8 +638,8 @@ func projectNamePrompt(ctx context.Context, ch *cmdutil.Helper, orgName string) 
 			Prompt: &survey.Input{
 				Message: "Enter a project name",
 			},
-			Validate: func(v any) error {
-				name := v.(string)
+			Validate: func(any interface{}) error {
+				name := any.(string)
 				if name == "" {
 					return fmt.Errorf("empty name")
 				}

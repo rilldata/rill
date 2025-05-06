@@ -9,7 +9,7 @@ import (
 	"os"
 	"path/filepath"
 
-	_ "github.com/marcboeker/go-duckdb/v2"
+	_ "github.com/marcboeker/go-duckdb"
 )
 
 // DuckDB extensions Rill depends on

@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
-	_ "github.com/marcboeker/go-duckdb/v2"
+	_ "github.com/marcboeker/go-duckdb"
 )
 
 func TestDuckDBToDuckDBTransfer(t *testing.T) {

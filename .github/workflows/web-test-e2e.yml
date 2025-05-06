@@ -90,7 +90,7 @@ jobs:
       - name: Set up go for E2E
         uses: actions/setup-go@v5
         with:
-          go-version: 1.24
+          go-version: 1.23
 
       - name: Build and embed static UI
         if: matrix.name == 'web-local'

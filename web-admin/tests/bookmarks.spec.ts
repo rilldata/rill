@@ -17,11 +17,9 @@ test.describe("Bookmarks", () => {
         await adminPage.getByRole("menuitem", { name: "Last 6 Hours" }).click();
       });
 
-      // Filter to "FuboTV" and "My Little Universe" "App Site Name" via leaderboard
+      // Filter to "FuboTV" and "Philo" "App Site Name" via leaderboard
       await adminPage.getByRole("row", { name: "FuboTV 2.6k" }).click();
-      await adminPage
-        .getByRole("row", { name: "My Little Universe 4.6k" })
-        .click();
+      await adminPage.getByRole("row", { name: "Philo 2.2k" }).click();
 
       // Enter dimension table "App Site Name"
       await adminPage.getByText("App Site Domain").click();
@@ -123,11 +121,9 @@ test.describe("Bookmarks", () => {
         await adminPage.getByRole("menuitem", { name: "Last 6 Hours" }).click();
       });
 
-      // Filter to "FuboTV" and "My Little Universe" "App Site Name" via leaderboard
+      // Filter to "FuboTV" and "Philo" "App Site Name" via leaderboard
       await adminPage.getByRole("row", { name: "FuboTV 2.6k" }).click();
-      await adminPage
-        .getByRole("row", { name: "My Little Universe 4.6k" })
-        .click();
+      await adminPage.getByRole("row", { name: "Philo 2.2k" }).click();
 
       // Enter dimension table "App Site Name"
       await adminPage.getByText("App Site Domain").click();
@@ -198,7 +194,7 @@ test.describe("Bookmarks", () => {
       // make sure the url has the correct params
       assertUrlParams(
         adminPage,
-        `tr=PT6H&compare_tr=rill-PP&f=app_site_name IN ('FuboTV','My+Little+Universe')&expand_dim=app_site_domain`,
+        `tr=PT6H&compare_tr=rill-PP&f=app_site_name IN ('FuboTV','Philo')&expand_dim=app_site_domain`,
       );
 
       // Open bookmark dropdown and verify the "filled" state for the bookmark
