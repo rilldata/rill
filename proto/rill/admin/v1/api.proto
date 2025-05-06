@@ -2504,8 +2504,8 @@ message OrganizationInvite {
 message ProjectInvite {
   string email = 1;
   string role_name = 2;
-  string org_role_name = 3;
-  string invited_by = 4;
+  string org_role_name = 4;
+  string invited_by = 3;
 }
 
 message WhitelistedDomain {

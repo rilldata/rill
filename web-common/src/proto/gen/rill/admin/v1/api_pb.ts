@@ -13661,12 +13661,12 @@ export class ProjectInvite extends Message<ProjectInvite> {
   roleName = "";
 
   /**
-   * @generated from field: string org_role_name = 3;
+   * @generated from field: string org_role_name = 4;
    */
   orgRoleName = "";
 
   /**
-   * @generated from field: string invited_by = 4;
+   * @generated from field: string invited_by = 3;
    */
   invitedBy = "";
 
@@ -13680,8 +13680,8 @@ export class ProjectInvite extends Message<ProjectInvite> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "email", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "role_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "org_role_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 4, name: "invited_by", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "org_role_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "invited_by", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ProjectInvite {
