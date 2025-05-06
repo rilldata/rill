@@ -168,6 +168,7 @@
     {
       SPA: true,
       validators: schema,
+      validationMethod: "oninput",
       async onUpdate({ form }) {
         if (!form.valid) return;
         const values = form.data;
