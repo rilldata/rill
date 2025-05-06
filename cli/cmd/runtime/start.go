@@ -61,6 +61,7 @@ type Config struct {
 	TracesExporter          observability.Exporter `default:"" split_words:"true"`
 	LogLevel                zapcore.Level          `default:"info" split_words:"true"`
 	Port                    int                    `default:"8080" split_words:"true"`
+	HTTPPort                int                    `default:"8080" split_words:"true"`
 	DebugPort               int                    `default:"6060" split_words:"true"`
 	AllowedOrigins          []string               `default:"*" split_words:"true"`
 	SessionKeyPairs         []string               `split_words:"true"`
@@ -253,7 +254,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 
 			// Init server
 			srvOpts := &server.Options{
-				Port:            conf.Port,
+				Port:            conf.HTTPPort,
 				AllowedOrigins:  conf.AllowedOrigins,
 				ServePrometheus: conf.MetricsExporter == observability.PrometheusExporter,
 				SessionKeyPairs: keyPairs,
