@@ -83,4 +83,6 @@
 <CreateUserGroupDialog
   bind:open={isCreateUserGroupDialogOpen}
   groupName={userGroupName}
+  searchUsersList={$listOrganizationMemberUsers.data?.members ?? []}
+  currentUserEmail={$currentUser.data?.user.email}
 />
