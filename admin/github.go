@@ -45,7 +45,7 @@ type githubClient struct {
 	appID         int64
 	appPrivateKey string
 	appClient     *github.Client
-	managedOrg    string
+	managedAcct   string
 
 	// managedOrgInstallationID is usually populated when the client is created.
 	// But we do not return an error if there is any error in fetching the installation ID.
@@ -58,7 +58,7 @@ type githubClient struct {
 }
 
 // NewGithub returns a new client for connecting to Github.
-func NewGithub(ctx context.Context, appID int64, appPrivateKey, managedGithubOrg string, logger *zap.Logger) (Github, error) {
+func NewGithub(ctx context.Context, appID int64, appPrivateKey, githubManagedAcct string, logger *zap.Logger) (Github, error) {
 	atr, err := ghinstallation.NewAppsTransport(retryableHTTPRoundTripper(), appID, []byte(appPrivateKey))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create github app transport: %w", err)
@@ -75,15 +75,14 @@ func NewGithub(ctx context.Context, appID int64, appPrivateKey, managedGithubOrg
 		appPrivateKey:     appPrivateKey,
 		appClient:         appClient,
 		installationCache: lru,
-		managedOrg:        managedGithubOrg,
+		managedAcct:       githubManagedAcct,
 	}
 
 	// Set the managed org installation client
-	if managedGithubOrg == "" {
+	if githubManagedAcct == "" {
 		g.managedOrgFetchError = fmt.Errorf("managed Git repositories are not configured for this environment")
-
 	}
-	i, _, err := appClient.Apps.FindOrganizationInstallation(ctx, managedGithubOrg)
+	i, _, err := appClient.Apps.FindOrganizationInstallation(ctx, githubManagedAcct)
 	if err != nil {
 		logger.Error("failed to get managed org installation ID", zap.Error(err), observability.ZapCtx(ctx))
 		g.managedOrgFetchError = err
@@ -152,7 +151,7 @@ func (g *githubClient) CreateManagedRepo(ctx context.Context, name string) (*git
 	}
 
 	// create the repo
-	repo, _, err := client.Repositories.Create(ctx, g.managedOrg, &github.Repository{
+	repo, _, err := client.Repositories.Create(ctx, g.managedAcct, &github.Repository{
 		Name:    github.String(repoName),
 		Private: github.Bool(true),
 	})
@@ -170,7 +169,7 @@ func (g *githubClient) CreateManagedRepo(ctx context.Context, name string) (*git
 		case <-time.After(2 * time.Second):
 			// Ready to check again.
 		}
-		_, _, err := client.Repositories.Get(ctx, g.managedOrg, repoName)
+		_, _, err := client.Repositories.Get(ctx, g.managedAcct, repoName)
 		if err == nil {
 			break
 		}
