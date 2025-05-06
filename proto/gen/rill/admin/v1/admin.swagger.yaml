@@ -4594,7 +4594,7 @@ definitions:
         type: array
         items:
           type: object
-          $ref: '#/definitions/v1UserInvite'
+          $ref: '#/definitions/v1OrganizationInvite'
       nextPageToken:
         type: string
   v1ListOrganizationMemberUsergroupsResponse:
@@ -4634,7 +4634,7 @@ definitions:
         type: array
         items:
           type: object
-          $ref: '#/definitions/v1UserInvite'
+          $ref: '#/definitions/v1ProjectInvite'
       nextPageToken:
         type: string
   v1ListProjectMemberUsergroupsResponse:
@@ -4886,6 +4886,15 @@ definitions:
       updatedOn:
         type: string
         format: date-time
+  v1OrganizationInvite:
+    type: object
+    properties:
+      email:
+        type: string
+      roleName:
+        type: string
+      invitedBy:
+        type: string
   v1OrganizationMemberUser:
     type: object
     properties:
@@ -5027,6 +5036,17 @@ definitions:
       updatedOn:
         type: string
         format: date-time
+  v1ProjectInvite:
+    type: object
+    properties:
+      email:
+        type: string
+      roleName:
+        type: string
+      orgRoleName:
+        type: string
+      invitedBy:
+        type: string
   v1ProjectMemberUser:
     type: object
     properties:
@@ -5633,15 +5653,6 @@ definitions:
       updatedOn:
         type: string
         format: date-time
-  v1UserInvite:
-    type: object
-    properties:
-      email:
-        type: string
-      role:
-        type: string
-      invitedBy:
-        type: string
   v1UserPreferences:
     type: object
     properties:
