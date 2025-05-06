@@ -40,7 +40,7 @@
   }
 
   function getUserRole(user: User): string {
-    if ("role" in user && user.role) return user.role;
+    if ("role" in user && typeof user.role === "string") return user.role;
     if ("roleName" in user) return user.roleName;
     return "";
   }
