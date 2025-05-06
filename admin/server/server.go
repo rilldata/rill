@@ -185,8 +185,10 @@ func (s *Server) HTTPHandler(ctx context.Context) (http.Handler, error) {
 
 	// Create a new HTTP mux
 	mux := http.NewServeMux()
+
 	// Add transcoder to the mux
-	mux.Handle("/", s.authenticator.CookieToAuthHeader(transcoder))
+	mux.Handle("/v1/", s.authenticator.CookieToAuthHeader(transcoder))
+
 	// Add runtime proxy
 	observability.MuxHandle(mux, "/v1/orgs/{org}/projects/{project}/runtime/{path...}",
 		observability.Middleware(
