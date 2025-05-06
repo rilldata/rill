@@ -29,8 +29,6 @@
       !group.groupManaged &&
       group.groupName.toLowerCase().includes(searchText.toLowerCase()),
   );
-
-  $: console.log($listOrganizationMemberUsergroups.data);
 </script>
 
 <div class="flex flex-col w-full">
