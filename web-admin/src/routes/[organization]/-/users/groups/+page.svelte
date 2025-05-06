@@ -44,7 +44,7 @@
       Error loading organization user groups: {$listOrganizationMemberUsergroups.error}
     </div>
   {:else if $listOrganizationMemberUsergroups.isSuccess && $listOrganizationMemberUsers.isSuccess}
-    <div class="flex flex-col gap-4">
+    <div class="flex flex-col">
       <div class="flex flex-row gap-x-4">
         <Search
           placeholder="Search"
@@ -62,11 +62,22 @@
           <span>Create group</span>
         </Button>
       </div>
-      <OrgGroupsTable
-        data={filteredGroups}
-        currentUserEmail={$currentUser.data?.user.email}
-        searchUsersList={$listOrganizationMemberUsers.data?.members ?? []}
-      />
+      <div class="mt-6">
+        <OrgGroupsTable
+          data={filteredGroups}
+          currentUserEmail={$currentUser.data?.user.email}
+          searchUsersList={$listOrganizationMemberUsers.data?.members ?? []}
+        />
+      </div>
+      {#if filteredGroups.length > 0}
+        <div class="px-2 py-3">
+          <span class="font-medium text-sm text-gray-500">
+            {filteredGroups.length} total group{filteredGroups.length === 1
+              ? ""
+              : "s"}
+          </span>
+        </div>
+      {/if}
     </div>
   {/if}
 </div>
