@@ -1,28 +1,28 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
-  import { setTheme } from "@rilldata/web-common/features/themes/actions";
   import { useTheme } from "@rilldata/web-common/features/themes/selectors";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { onMount } from "svelte";
 
   export let canvasName: string;
 
-  $: ({ canvasEntity } = getCanvasStore(canvasName));
-  $: ({ canvasSpec } = canvasEntity.spec);
+  let theme: ReturnType<typeof useTheme>;
+
+  $: ({
+    canvasEntity: { setTheme, spec },
+  } = getCanvasStore(canvasName));
+
+  $: ({ canvasSpec: cs } = spec);
+  $: ({ instanceId } = $runtime);
 
   $: themeFromUrl = $page.url.searchParams.get("theme");
 
-  let theme: ReturnType<typeof useTheme>;
-  $: themeName = themeFromUrl ?? $canvasSpec?.theme;
-  $: if (themeName) theme = useTheme($runtime.instanceId, themeName);
+  $: canvasSpec = $cs;
 
-  $: setTheme($theme?.data?.theme?.spec ?? $canvasSpec?.embeddedTheme);
+  $: themeName = themeFromUrl ?? canvasSpec?.theme;
+  $: if (themeName) theme = useTheme(instanceId, themeName);
 
-  onMount(() => {
-    // Handle the case where we have data in cache but the dashboard is not mounted yet
-    setTheme($theme?.data?.theme?.spec ?? $canvasSpec?.embeddedTheme);
-  });
+  $: setTheme($theme?.data?.theme?.spec ?? canvasSpec?.embeddedTheme);
 </script>
 
 <slot />

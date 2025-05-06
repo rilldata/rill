@@ -73,7 +73,7 @@
 </script>
 
 <div>
-  <div class="border-y border-gray-200 px-3 py-5">
+  <div class="border-y px-3 py-5">
     Enter desired <a
       href="https://vega.github.io/vega-lite/docs/config.html"
       target="_blank"

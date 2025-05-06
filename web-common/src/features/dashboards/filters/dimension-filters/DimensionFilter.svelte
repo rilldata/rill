@@ -293,6 +293,7 @@
         active={open}
         exclude={curExcludeMode}
         label={`${name} filter`}
+        theme
         on:remove={onRemove}
         removable={!readOnly}
         {readOnly}

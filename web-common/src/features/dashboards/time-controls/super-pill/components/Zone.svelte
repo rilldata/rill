@@ -152,7 +152,7 @@
 
       <DropdownMenu.Group class="max-h-72 overflow-y-auto">
         <DropdownMenu.Label
-          class="sticky top-0 bg-gradient-to-b z-10 from-white from-75% to-transparent"
+          class="sticky top-0 bg-gradient-to-b z-10 from-surface from-75% to-transparent"
         >
           Search Results
         </DropdownMenu.Label>

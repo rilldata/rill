@@ -26,6 +26,7 @@
   >
     <span>Show context for all measures</span>
     <Switch
+      theme
       checked={leaderboardShowContextForAllMeasures}
       on:click={() => {
         setLeaderboardShowContextForAllMeasures(

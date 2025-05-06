@@ -1,5 +1,4 @@
 <script lang="ts">
-  import Search from "@rilldata/web-common/components/icons/Search.svelte";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import {
@@ -11,6 +10,7 @@
   import PivotDrag from "./PivotDrag.svelte";
   import type { PivotChipData } from "./types";
   import { PivotChipType } from "./types";
+  import { Search } from "@rilldata/web-common/components/search";
 
   const CHIP_HEIGHT = 34;
 
@@ -23,7 +23,6 @@
 
   const timeControlsStore = useTimeControlStore(getStateManagers());
 
-  let inputEl: HTMLInputElement;
   let sidebarHeight = 0;
   let searchText = "";
 
@@ -81,17 +80,7 @@
   transition:slide={{ axis: "x" }}
 >
   <div class="input-wrapper">
-    <button on:click={() => inputEl.focus()}>
-      <Search size="16px" />
-    </button>
-
-    <input
-      type="text"
-      placeholder="Search"
-      class="w-full h-full select-none"
-      bind:value={searchText}
-      bind:this={inputEl}
-    />
+    <Search theme bind:value={searchText} />
   </div>
 
   <PivotDrag
@@ -132,7 +121,7 @@
 
   .input-wrapper {
     @apply flex w-full h-fit items-center;
-    @apply border-b border-slate-200;
+    @apply border-b;
     @apply gap-x-2 p-2;
   }
 </style>
