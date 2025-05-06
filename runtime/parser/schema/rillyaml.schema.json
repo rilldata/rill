@@ -11,6 +11,7 @@
     },
     {
       "title": "environment_overrides",
+      "type": "object",
       "properties": {
         "dev": {
           "type": "object",
@@ -59,16 +60,18 @@
           "description": "Defines project-wide default settings for explores. Unless overridden, individual explores will inherit these defaults"
         },
         "features": {
-          "description": "Enables or disables experimental or optional features using key-value pairs, where the key is the feature name and the value is a boolean",
+          "description": "Optional feature flags. Can be specified as a map of feature names to booleans, or as a list of enabled feature names.",
           "oneOf": [
             {
               "type": "object",
+              "description": "Map of feature names to booleans.",
               "additionalProperties": {
                 "type": "boolean"
               }
             },
             {
               "type": "array",
+              "description": "List of enabled feature names.",
               "items": {
                 "type": "string"
               }

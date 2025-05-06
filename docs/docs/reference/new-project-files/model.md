@@ -17,25 +17,162 @@ sidebar_position: 8
 
 **`namespace`**  - _[string]_ - Optional value to group resources by. Prepended to the resource name as `<namespace>/<name>`. 
 
-**`refs`**  - _[array]_ - List of resource references, each as a string or map. 
+**`refs`**  - _[array of oneOf]_ - List of resource references, each as a string or map. 
 
-     *option 1* - _[string]_ - A string reference like 'resource-name' or 'Kind/resource-name'.
+  *option 1* - _[object]_ - An object reference with at least a `<name>` and `<type>`.
 
-     *option 2* - _[object]_ - An object reference with at least a 'name' and 'type'.
+  - **`type`**  - _[string]_ - type of resource 
 
-    - **`name`**  - _[string]_ -   _(required)_
+  - **`name`**  - _[string]_ - name of resource  _(required)_
 
-    - **`type`**  - _[string]_ -  
+  *option 2* - _[string]_ - A string reference like `<resource-name>` or `<type/resource-name>`.
 
- *option 1* - _[object]_ - 
+**`refresh`**  - _[object]_ - Specifies the refresh schedule that Rill should follow to re-ingest and update the underlying model data  
 
-**`connector`**  - _[string]_ -   _(required)_
+  - **`ref_update`**  - _[boolean]_ - If true, allows the resource to run when a dependency updates. 
+
+  - **`cron`**  - _[string]_ - A cron expression that defines the execution schedule 
+
+  - **`every`**  - _[string]_ - Run at a fixed interval using a Go duration string (e.g., '1h', '30m', '24h'). See: https://pkg.go.dev/time#ParseDuration 
+
+  - **`time_zone`**  - _[string]_ - Time zone to interpret the schedule in (e.g., 'UTC', 'America/Los_Angeles'). 
+
+  - **`disable`**  - _[boolean]_ - If true, disables the resource without deleting it. 
+
+  - **`run_in_dev`**  - _[boolean]_ - If true, allows the schedule to run in development mode. 
+
+**`timeout`**  - _[string]_ - The maximum time to wait for model ingestion 
+
+**`incremental`**  - _[boolean]_ - whether incremental modeling is required (optional) 
+
+**`state`**  - _[oneOf]_ - Refers to the explicitly defined state of your model, cannot be used with partitions (optional) 
+
+  *option 1* - _[object]_ 
+
+  - **`sql`**  - _[string]_ - Raw SQL query to run against existing models in the project.  _(required)_
+
+  - **`connector`**  - _[string]_ - specifies the connector to use when running SQL or glob queries. 
+
+  *option 2* - _[object]_ 
+
+  - **`metrics_sql`**  - _[string]_ - SQL query that targets a metrics view in the project  _(required)_
+
+  *option 3* - _[object]_ 
+
+  - **`api`**  - _[string]_ - Name of a custom API defined in the project.  _(required)_
+
+  - **`args`**  - _[object]_ - Arguments to pass to the custom API. 
+
+  *option 4* - _[object]_ 
+
+  - **`glob`**  - _[anyOf]_ - Defines the file path or pattern to query from the specified connector.  _(required)_
+
+    *option 1* - _[string]_ 
+
+    *option 2* - _[object]_ 
+
+  - **`connector`**  - _[string]_ - Specifies the connector to use with the glob input. 
+
+  *option 5* - _[object]_ 
+
+  - **`resource_status`**  - _[object]_ - Based on resource status  _(required)_
+
+    - **`where_error`**  - _[boolean]_ - Indicates whether the condition should trigger when the resource is in an error state. 
+
+**`partitions`**  - _[oneOf]_ - Refers to the how your data is partitioned, cannot be used with state. (optional) 
+
+  *option 1* - _[object]_ 
+
+  - **`sql`**  - _[string]_ - Raw SQL query to run against existing models in the project.  _(required)_
+
+  - **`connector`**  - _[string]_ - specifies the connector to use when running SQL or glob queries. 
+
+  *option 2* - _[object]_ 
+
+  - **`metrics_sql`**  - _[string]_ - SQL query that targets a metrics view in the project  _(required)_
+
+  *option 3* - _[object]_ 
+
+  - **`api`**  - _[string]_ - Name of a custom API defined in the project.  _(required)_
+
+  - **`args`**  - _[object]_ - Arguments to pass to the custom API. 
+
+  *option 4* - _[object]_ 
+
+  - **`glob`**  - _[anyOf]_ - Defines the file path or pattern to query from the specified connector.  _(required)_
+
+    *option 1* - _[string]_ 
+
+    *option 2* - _[object]_ 
+
+  - **`connector`**  - _[string]_ - Specifies the connector to use with the glob input. 
+
+  *option 5* - _[object]_ 
+
+  - **`resource_status`**  - _[object]_ - Based on resource status  _(required)_
+
+    - **`where_error`**  - _[boolean]_ - Indicates whether the condition should trigger when the resource is in an error state. 
+
+**`sql`**  - _[string]_ - Raw SQL query to run against source 
+
+**`materialize`**  - _[boolean]_ - models will be materialized in olap 
+
+**`partitions_watermark`**  - _[string]_ - Refers to a customizable timestamp that can be set to check if an object has been updated (optional). 
+
+**`partitions_concurrency`**  - _[integer]_ - Refers to the number of concurrent partitions that can be read at the same time (optional). 
+
+**`stage`**  - _[object]_ - in the case of staging models, where an input source does not support direct write to the output and a staging table is required 
+
+  - **`connector`**  - _[string]_ - Refers to the connector type for the staging table  _(required)_
+
+**`output`**  - _[object]_ - to define the properties of output 
+
+  - **`connector`**  - _[string]_ - Refers to the connector type for the output table  _(required)_
+
+**`dev`**  - _[object]_ - Overrides properties in development 
+
+**`prod`**  - _[object]_ - Overrides properties in production 
+
+## One of Properties Options
+- [athena](#athena)
+- [azure](#azure)
+- [bigquery](#bigquery)
+- [clickhouse](#clickhouse)
+- [druid](#druid)
+- [duckdb](#duckdb)
+- [gcs](#gcs)
+- [https](#https)
+- [local_file](#local_file)
+- [motherduck](#motherduck)
+- [mysql](#mysql)
+- [pinot](#pinot)
+- [postgres](#postgres)
+- [redshift](#redshift)
+- [s3](#s3)
+- [salesforce](#salesforce)
+- [snowflake](#snowflake)
+- [sqlite](#sqlite)
+
+
+### athena
+
+
+
+**`connector`**  - _[string]_   _(required)_
+
+**`output_location`**  - _[string]_ - Output location for query results in S3. 
+
+**`workgroup`**  - _[string]_ - AWS Athena workgroup to use for queries. 
+
+**`region`**  - _[string]_ - AWS region to connect to Athena and the output location. 
+
+**`aws_access_key_id`**  - _[string]_ - AWS Access Key ID for Athena access 
 
 **`aws_secret_access_key`**  - _[string]_ - AWS Secret Access Key for Athena access 
 
-**`external_id`**  - _[string]_ - Optional External ID for assuming a role 
+**`aws_access_token`**  - _[string]_ - Optional AWS session token for temporary credentials 
 
-**`managed`**  - _[any of]_ - Boolean or map of properties 
+**`external_id`**  - _[string]_ - Optional External ID for assuming a role 
 
 **`role_arn`**  - _[string]_ - Optional AWS Role ARN to assume when accessing Athena 
 
@@ -43,332 +180,362 @@ sidebar_position: 8
 
 **`allow_host_access`**  - _[boolean]_ - Allow access to host environment configuration 
 
-**`aws_access_key_id`**  - _[string]_ - AWS Access Key ID for Athena access 
+### azure
 
-**`aws_access_token`**  - _[string]_ - Optional AWS session token for temporary credentials 
 
- *option 2* - _[object]_ - 
 
-**`connector`**  - _[string]_ -   _(required)_
+**`connector`**  - _[string]_   _(required)_
+
+**`path`**  - _[string]_ - Path to the source 
+
+**`account`**  - _[string]_ - Account identifier 
+
+**`uri`**  - _[string]_ - Source URI 
+
+**`extract`**  - _[object]_ - Arbitrary key-value pairs for extraction settings 
+
+**`glob`**  - _[object]_ - Settings related to glob file matching. 
+
+  - **`max_total_size`**  - _[integer]_ - Maximum total size (in bytes) matched by glob 
+
+  - **`max_objects_matched`**  - _[integer]_ - Maximum number of objects matched by glob 
+
+  - **`max_objects_listed`**  - _[integer]_ - Maximum number of objects listed in glob 
+
+  - **`page_size`**  - _[integer]_ - Page size for glob listing 
+
+**`batch_size`**  - _[string]_ - Size of a batch (e.g., '100MB') 
+
+**`azure_storage_account`**  - _[string]_ - Azure storage account name 
 
 **`azure_storage_key`**  - _[string]_ - Azure storage access key 
 
 **`azure_storage_sas_token`**  - _[string]_ - Optional azure SAS token for authentication 
 
-**`managed`**  - _[any of]_ - Boolean or map of properties 
-
-**`allow_host_access`**  - _[boolean]_ - Allow access to host environment configuration 
-
-**`azure_storage_account`**  - _[string]_ - Azure storage account name 
-
 **`azure_storage_connection_string`**  - _[string]_ - Optional azure connection string for storage account 
 
- *option 3* - _[object]_ - 
-
-**`connector`**  - _[string]_ -   _(required)_
-
-**`managed`**  - _[any of]_ - Boolean or map of properties 
-
 **`allow_host_access`**  - _[boolean]_ - Allow access to host environment configuration 
+
+### bigquery
+
+
+
+**`connector`**  - _[string]_   _(required)_
+
+**`project_id`**  - _[string]_ - ID of the BigQuery project. 
 
 **`google_application_credentials`**  - _[string]_ - Path to the Google Cloud credentials JSON file 
 
- *option 4* - _[object]_ - 
+**`allow_host_access`**  - _[boolean]_ - Allow access to host environment configuration 
 
-**`connector`**  - _[string]_ -   _(required)_
+### clickhouse
 
-**`conn_max_lifetime`**  - _[string]_ - Maximum time a connection may be reused 
 
-**`dial_timeout`**  - _[string]_ - Timeout for dialing the ClickHouse server 
 
-**`max_idle_conns`**  - _[integer]_ - Maximum number of idle connections in the pool 
+**`connector`**  - _[string]_   _(required)_
 
-**`max_open_conns`**  - _[integer]_ - Maximum number of open connections to the database 
+**`path`**  - _[string]_ - Path to the data source. 
 
-**`port`**  - _[integer]_ - Port where the ClickHouse instance is accessible 
+**`format`**  - _[string]_ - Format of the data source (e.g., csv, json, parquet). 
 
-**`read_timeout`**  - _[string]_ - Maximum time for a connection to read data 
-
-**`settings_override`**  - _[string]_ - override the default settings used in queries. example `readonly = 1, session_timezone = 'UTC'` 
-
-**`database`**  - _[string]_ - Name of the ClickHouse database within the cluster 
-
-**`managed`**  - _[any of]_ - Boolean or map of properties 
-
-**`password`**  - _[string]_ - Password for authentication 
-
-**`username`**  - _[string]_ - Username for authentication 
-
-**`cluster`**  - _[string]_ - Cluster name, required for running distributed queries 
-
-**`host`**  - _[string]_ - Host where the ClickHouse instance is running 
-
-**`ssl`**  - _[boolean]_ - Indicates whether a secured SSL connection is required 
-
-**`can_scale_to_zero`**  - _[boolean]_ - Indicates if the database can scale to zero 
+**`managed`**  - _[boolean]_ - `true` means Rill will provision the connector using the default provisioner. `false` disables automatic provisioning. 
 
 **`dsn`**  - _[string]_ - DSN(Data Source Name) for the ClickHouse connection 
 
-**`embed_port`**  - _[integer]_ - Port to run ClickHouse locally (0 for random port) 
+**`username`**  - _[string]_ - Username for authentication 
+
+**`password`**  - _[string]_ - Password for authentication 
+
+**`host`**  - _[string]_ - Host where the ClickHouse instance is running 
+
+**`port`**  - _[integer]_ - Port where the ClickHouse instance is accessible 
+
+**`database`**  - _[string]_ - Name of the ClickHouse database within the cluster 
+
+**`ssl`**  - _[boolean]_ - Indicates whether a secured SSL connection is required 
+
+**`cluster`**  - _[string]_ - Cluster name, required for running distributed queries 
 
 **`log_queries`**  - _[boolean]_ - Controls whether to log raw SQL queries 
 
- *option 5* - _[object]_ - 
+**`settings_override`**  - _[string]_ - override the default settings used in queries. example `readonly = 1, session_timezone = 'UTC'` 
 
-**`connector`**  - _[string]_ -   _(required)_
+**`embed_port`**  - _[integer]_ - Port to run ClickHouse locally (0 for random port) 
+
+**`can_scale_to_zero`**  - _[boolean]_ - Indicates if the database can scale to zero 
+
+**`max_open_conns`**  - _[integer]_ - Maximum number of open connections to the database 
+
+**`max_idle_conns`**  - _[integer]_ - Maximum number of idle connections in the pool 
+
+**`dial_timeout`**  - _[string]_ - Timeout for dialing the ClickHouse server 
+
+**`conn_max_lifetime`**  - _[string]_ - Maximum time a connection may be reused 
+
+**`read_timeout`**  - _[string]_ - Maximum time for a connection to read data 
+
+### druid
+
+
+
+**`connector`**  - _[string]_   _(required)_
 
 **`dsn`**  - _[string]_ - Data Source Name (DSN) for connecting to Druid 
 
-**`host`**  - _[string]_ - Hostname of the Druid coordinator or broker 
+**`username`**  - _[string]_ - Username for authenticating with Druid 
 
 **`password`**  - _[string]_ - Password for authenticating with Druid 
+
+**`host`**  - _[string]_ - Hostname of the Druid coordinator or broker 
+
+**`port`**  - _[integer]_ - Port number of the Druid service 
 
 **`ssl`**  - _[boolean]_ - Enable SSL for secure connection 
 
 **`log_queries`**  - _[boolean]_ - Log raw SQL queries sent to Druid 
 
-**`managed`**  - _[any of]_ - Boolean or map of properties 
-
 **`max_open_conns`**  - _[integer]_ - Maximum number of open database connections (0 = default, -1 = unlimited) 
-
-**`port`**  - _[integer]_ - Port number of the Druid service 
 
 **`skip_version_check`**  - _[boolean]_ - Skip checking Druid version compatibility 
 
-**`username`**  - _[string]_ - Username for authenticating with Druid 
+### duckdb
 
- *option 6* - _[object]_ - 
 
-**`connector`**  - _[string]_ -   _(required)_
+
+**`connector`**  - _[string]_   _(required)_
+
+**`path`**  - _[string]_ - Path to the data source. 
+
+**`format`**  - _[string]_ - Format of the data source (e.g., csv, json, parquet). 
+
+**`pool_size`**  - _[integer]_ - Number of concurrent connections and queries allowed 
 
 **`allow_host_access`**  - _[boolean]_ - Whether access to the local environment and file system is allowed 
 
-**`boot_queries`**  - _[string]_ - SQL to run when initializing a new connection, before extensions and defaults 
-
 **`cpu`**  - _[integer]_ - Number of CPU cores available to the database 
+
+**`memory_limit_gb`**  - _[integer]_ - Amount of memory in GB available to the database 
+
+**`read_write_ratio`**  - _[number]_ - Ratio of resources allocated to the read database; used to divide CPU and memory 
+
+**`boot_queries`**  - _[string]_ - SQL to run when initializing a new connection, before extensions and defaults 
 
 **`init_sql`**  - _[string]_ - SQL to run when initializing a new connection, after extensions and defaults 
 
 **`log_queries`**  - _[boolean]_ - Whether to log raw SQL queries executed through OLAP 
 
-**`managed`**  - _[any of]_ - Boolean or map of properties 
+### gcs
 
-**`memory_limit_gb`**  - _[integer]_ - Amount of memory in GB available to the database 
 
-**`path`**  - _[string]_ - File path to the DuckDB database file 
 
-**`pool_size`**  - _[integer]_ - Number of concurrent connections and queries allowed 
+**`connector`**  - _[string]_   _(required)_
 
-**`read_write_ratio`**  - _[number]_ - Ratio of resources allocated to the read database; used to divide CPU and memory 
+**`path`**  - _[string]_ - Path to the source 
 
- *option 7* - _[object]_ - 
+**`uri`**  - _[string]_ - Source URI 
 
-**`connector`**  - _[string]_ -   _(required)_
+**`extract`**  - _[object]_ - key-value pairs for extraction settings 
 
-**`allow_host_access`**  - _[boolean]_ - Allow access to host environment configuration 
+**`glob`**  - _[object]_ - Settings related to glob file matching. 
+
+  - **`max_total_size`**  - _[integer]_ - Maximum total size (in bytes) matched by glob 
+
+  - **`max_objects_matched`**  - _[integer]_ - Maximum number of objects matched by glob 
+
+  - **`max_objects_listed`**  - _[integer]_ - Maximum number of objects listed in glob 
+
+  - **`page_size`**  - _[integer]_ - Page size for glob listing 
+
+**`batch_size`**  - _[string]_ - Size of a batch (e.g., '100MB') 
 
 **`google_application_credentials`**  - _[string]_ - Google Cloud credentials JSON string 
 
-**`key_id`**  - _[string]_ - Optional S3-compatible Key ID when used in compatibility mode 
+**`allow_host_access`**  - _[boolean]_ - Allow access to host environment configuration 
 
-**`managed`**  - _[any of]_ - Boolean or map of properties 
+**`key_id`**  - _[string]_ - Optional S3-compatible Key ID when used in compatibility mode 
 
 **`secret`**  - _[string]_ - Optional S3-compatible Secret when used in compatibility mode 
 
- *option 8* - _[object]_ - 
+### https
 
-**`connector`**  - _[string]_ -   _(required)_
 
-**`headers`**  - _[object]_ - HTTP headers to include in the request 
 
-**`managed`**  - _[any of]_ - Boolean or map of properties 
+**`connector`**  - _[string]_   _(required)_
 
 **`path`**  - _[string]_ - The full HTTPS URI to fetch data from 
 
- *option 9* - _[object]_ - 
+**`headers`**  - _[object]_ - HTTP headers to include in the request 
 
-**`connector`**  - _[string]_ -   _(required)_
+### local_file
 
-**`allow_host_access`**  - _[boolean]_ - Flag to indicate if access to host-level file paths is permitted 
+
+
+**`connector`**  - _[string]_   _(required)_
+
+**`path`**  - _[string]_ - Path to the data source. 
+
+**`format`**  - _[string]_ - Format of the data source (e.g., csv, json, parquet). 
 
 **`dsn`**  - _[string]_ - Data Source Name (DSN) indicating the file path or location of the local file 
 
-**`managed`**  - _[any of]_ - Boolean or map of properties 
+**`allow_host_access`**  - _[boolean]_ - Flag to indicate if access to host-level file paths is permitted 
 
- *option 10* - _[object]_ - 
+### motherduck
 
-**`connector`**  - _[string]_ -   _(required)_
+
+
+**`connector`**  - _[string]_   _(required)_
 
 **`dsn`**  - _[string]_ - Data Source Name (DSN) specifying the MotherDuck connection endpoint 
 
-**`managed`**  - _[any of]_ - Boolean or map of properties 
-
 **`token`**  - _[string]_ - Authentication token for accessing MotherDuck (secret) 
 
- *option 11* - _[object]_ - 
+### mysql
 
-**`connector`**  - _[string]_ -   _(required)_
+
+
+**`connector`**  - _[string]_   _(required)_
 
 **`dsn`**  - _[string]_ - DSN(Data Source Name) for the mysql connection 
 
-**`managed`**  - _[any of]_ - Boolean or map of properties 
+### pinot
 
- *option 12* - _[object]_ - 
 
-**`connector`**  - _[string]_ -   _(required)_
+
+**`connector`**  - _[string]_   _(required)_
+
+**`dsn`**  - _[string]_ - DSN(Data Source Name) for the Pinot connection 
+
+**`username`**  - _[string]_ - Username for authenticating with Pinot 
+
+**`password`**  - _[string]_ - Password for authenticating with Pinot 
 
 **`broker_host`**  - _[string]_ - Hostname of the Pinot broker 
 
 **`broker_port`**  - _[integer]_ - Port number for the Pinot broker 
 
+**`controller_host`**  - _[string]_ - Hostname of the Pinot controller 
+
 **`controller_port`**  - _[integer]_ - Port number for the Pinot controller 
-
-**`dsn`**  - _[string]_ - DSN(Data Source Name) for the Pinot connection 
-
-**`managed`**  - _[any of]_ - Boolean or map of properties 
-
-**`max_open_conns`**  - _[integer]_ - Maximum number of open connections to the Pinot database 
-
-**`password`**  - _[string]_ - Password for authenticating with Pinot 
 
 **`ssl`**  - _[boolean]_ - Enable SSL connection to Pinot 
 
-**`controller_host`**  - _[string]_ - Hostname of the Pinot controller 
-
 **`log_queries`**  - _[boolean]_ - Log raw SQL queries executed through Pinot 
 
-**`username`**  - _[string]_ - Username for authenticating with Pinot 
+**`max_open_conns`**  - _[integer]_ - Maximum number of open connections to the Pinot database 
 
- *option 13* - _[object]_ - 
+### postgres
 
-**`connector`**  - _[string]_ -   _(required)_
+
+
+**`connector`**  - _[string]_   _(required)_
 
 **`dsn`**  - _[string]_ - DSN(Data Source Name) for the postgres connection 
 
-**`managed`**  - _[any of]_ - Boolean or map of properties 
+### redshift
 
- *option 14* - _[object]_ - 
 
-**`connector`**  - _[string]_ -   _(required)_
+
+**`connector`**  - _[string]_   _(required)_
+
+**`output_location`**  - _[string]_ - S3 location where query results are stored. 
+
+**`workgroup`**  - _[string]_ - Redshift Serverless workgroup to use. 
+
+**`database`**  - _[string]_ - Name of the Redshift database. 
+
+**`cluster_identifier`**  - _[string]_ - Identifier of the Redshift cluster. 
+
+**`role_arn`**  - _[string]_ - ARN of the IAM role to assume for Redshift access. 
+
+**`region`**  - _[string]_ - AWS region of the Redshift deployment. 
 
 **`aws_access_key_id`**  - _[string]_ - AWS access key ID for authentication 
 
-**`aws_access_token`**  - _[string]_ - AWS session token for temporary credentials (optional) 
-
 **`aws_secret_access_key`**  - _[string]_ - AWS secret access key for authentication 
 
-**`managed`**  - _[any of]_ - Boolean or map of properties 
+**`aws_access_token`**  - _[string]_ - AWS session token for temporary credentials (optional) 
 
 **`allow_host_access`**  - _[boolean]_ - Allow access to host environment configuration 
 
- *option 15* - _[object]_ - 
+### s3
 
-**`connector`**  - _[string]_ -   _(required)_
 
-**`retain_files`**  - _[boolean]_ - Whether to retain intermediate files after processing 
 
-**`allow_host_access`**  - _[boolean]_ - Allow access to host environment configuration 
+**`connector`**  - _[string]_   _(required)_
+
+**`region`**  - _[string]_ - AWS region 
+
+**`endpoint`**  - _[string]_ - AWS Endpoint 
+
+**`path`**  - _[string]_ - Path to the source 
+
+**`uri`**  - _[string]_ - Source URI 
+
+**`extract`**  - _[object]_ - key-value pairs for extraction settings 
+
+**`glob`**  - _[object]_ - Settings related to glob file matching. 
+
+  - **`max_total_size`**  - _[integer]_ - Maximum total size (in bytes) matched by glob 
+
+  - **`max_objects_matched`**  - _[integer]_ - Maximum number of objects matched by glob 
+
+  - **`max_objects_listed`**  - _[integer]_ - Maximum number of objects listed in glob 
+
+  - **`page_size`**  - _[integer]_ - Page size for glob listing 
+
+**`batch_size`**  - _[string]_ - Size of a batch (e.g., '100MB') 
 
 **`aws_access_key_id`**  - _[string]_ - AWS Access Key ID used for authentication 
 
-**`aws_access_token`**  - _[string]_ - Optional AWS session token for temporary credentials 
-
 **`aws_secret_access_key`**  - _[string]_ - AWS Secret Access Key used for authentication 
+
+**`aws_access_token`**  - _[string]_ - Optional AWS session token for temporary credentials 
 
 **`endpoint`**  - _[string]_ - Optional custom endpoint URL for S3-compatible storage 
 
-**`managed`**  - _[any of]_ - Boolean or map of properties 
-
 **`region`**  - _[string]_ - AWS region of the S3 bucket 
 
- *option 16* - _[object]_ - 
+**`allow_host_access`**  - _[boolean]_ - Allow access to host environment configuration 
 
-**`connector`**  - _[string]_ -   _(required)_
+**`retain_files`**  - _[boolean]_ - Whether to retain intermediate files after processing 
 
-**`client_id`**  - _[string]_ - Client ID used for Salesforce OAuth authentication 
+### salesforce
 
-**`endpoint`**  - _[string]_ - Salesforce API endpoint URL 
 
-**`key`**  - _[string]_ - Authentication key for Salesforce (secret) 
 
-**`managed`**  - _[any of]_ - Boolean or map of properties 
+**`connector`**  - _[string]_   _(required)_
 
-**`password`**  - _[string]_ - Salesforce account password (secret) 
+**`soql`**  - _[string]_ - SOQL query to execute against the Salesforce instance. 
+
+**`sobject`**  - _[string]_ - Salesforce object (e.g., Account, Contact) targeted by the query. 
+
+**`queryAll`**  - _[boolean]_ - Whether to include deleted and archived records in the query (uses queryAll API). 
 
 **`username`**  - _[string]_ - Salesforce account username 
 
- *option 17* - _[object]_ - 
+**`password`**  - _[string]_ - Salesforce account password (secret) 
 
-**`connector`**  - _[string]_ -   _(required)_
+**`key`**  - _[string]_ - Authentication key for Salesforce (secret) 
+
+**`endpoint`**  - _[string]_ - Salesforce API endpoint URL 
+
+**`client_id`**  - _[string]_ - Client ID used for Salesforce OAuth authentication 
+
+### snowflake
+
+
+
+**`connector`**  - _[string]_   _(required)_
 
 **`dsn`**  - _[string]_ - DSN (Data Source Name) for the Snowflake connection 
 
-**`managed`**  - _[any of]_ - Boolean or map of properties 
-
 **`parallel_fetch_limit`**  - _[integer]_ - Maximum number of concurrent fetches during query execution 
 
- *option 18* - _[object]_ - 
+### sqlite
 
-**`connector`**  - _[string]_ -   _(required)_
+
+
+**`connector`**  - _[string]_   _(required)_
 
 **`dsn`**  - _[string]_ - DSN(Data Source Name) for the sqlite connection 
-
-**`managed`**  - _[any of]_ - Boolean or map of properties 
-
-**`output`**  - _[object]_ - to define the properties of output 
-
-  - **`connector`**  - _[string]_ - Refers to the connector type for the output table  _(required)_
-
-**`partitions_watermark`**  - _[string]_ - Refers to a customizable timestamp that can be set to check if an object has been updated (optional). 
-
-**`refresh`**  - _[object]_ - Specifies the refresh schedule that Rill should follow to re-ingest and update the underlying model data  
-
-  - **`time_zone`**  - _[string]_ - Time zone to interpret the schedule in (e.g., 'UTC', 'America/Los_Angeles'). 
-
-  - **`cron`**  - _[string]_ - A cron expression that defines the execution schedule 
-
-  - **`disable`**  - _[boolean]_ - If true, disables the resource without deleting it. 
-
-  - **`every`**  - _[string]_ - Run at a fixed interval using a Go duration string (e.g., '1h', '30m', '24h'). See: https://pkg.go.dev/time#ParseDuration 
-
-  - **`ref_update`**  - _[boolean]_ - If true, allows the resource to run when a dependency updates. 
-
-  - **`run_in_dev`**  - _[boolean]_ - If true, allows the schedule to run in development mode. 
-
-**`stage`**  - _[object]_ - in the case of staging models, where an input source does not support direct write to the output and a staging table is required 
-
-  - **`connector`**  - _[string]_ - Refers to the connector type for the staging table  _(required)_
-
-**`incremental`**  - _[boolean]_ - whether incremental modeling is required (optional) 
-
-**`materialize`**  - _[boolean]_ - models will be materialized in olap 
-
-**`partitions`**  - _[object]_ - Refers to the how your data is partitioned, cannot be used with state. (optional) 
-
-   *option 1* - 
-
-   *option 2* - 
-
-   *option 3* - 
-
-   *option 4* - 
-
-   *option 5* - 
-
-**`partitions_concurrency`**  - _[integer]_ - Refers to the number of concurrent partitions that can be read at the same time (optional). 
-
-**`sql`**  - _[string]_ - Raw SQL query to run against source 
-
-**`state`**  - _[object]_ - Refers to the explicitly defined state of your model, cannot be used with partitions (optional) 
-
-   *option 1* - 
-
-   *option 2* - 
-
-   *option 3* - 
-
-   *option 4* - 
-
-   *option 5* - 
-
-**`timeout`**  - _[string]_ - The maximum time to wait for model ingestion 

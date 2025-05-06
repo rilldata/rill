@@ -11,80 +11,130 @@ In your Rill project directory, create a new file name `<api-name>.yaml` in the 
 
 **`type`**  - _[string]_ - Refers to the resource type and must be `api`  _(required)_
 
+**`version`**  - _[integer]_ - Version of the parser to use for this file. Enables backwards compatibility for breaking changes. 
+
 **`name`**  - _[string]_ - Name is usually inferred from the filename, but can be specified manually. 
 
 **`namespace`**  - _[string]_ - Optional value to group resources by. Prepended to the resource name as `<namespace>/<name>`. 
 
-**`refs`**  - _[array]_ - List of resource references, each as a string or map. 
+**`refs`**  - _[array of oneOf]_ - List of resource references, each as a string or map. 
 
-     *option 1* - _[string]_ - A string reference like 'resource-name' or 'Kind/resource-name'.
+  *option 1* - _[object]_ - An object reference with at least a `<name>` and `<type>`.
 
-     *option 2* - _[object]_ - An object reference with at least a 'name' and 'type'.
+  - **`type`**  - _[string]_ - type of resource 
 
-    - **`name`**  - _[string]_ -   _(required)_
+  - **`name`**  - _[string]_ - name of resource  _(required)_
 
-    - **`type`**  - _[string]_ -  
+  *option 2* - _[string]_ - A string reference like `<resource-name>` or `<type/resource-name>`.
 
-**`version`**  - _[integer]_ - Version of the parser to use for this file. Enables backwards compatibility for breaking changes. 
+**`dev`**  - _[object]_ - Overrides properties in development 
 
-**`openapi`**  - _[object]_ -  
+**`prod`**  - _[object]_ - Overrides properties in production 
 
-  - **`request`**  - _[object]_ -  
+**`openapi`**  - _[object]_  
 
-    - **`parameters`**  - _[array of object]_ -  
+  - **`summary`**  - _[string]_  
 
-  - **`response`**  - _[object]_ -  
+  - **`request`**  - _[object]_  
 
-    - **`schema`**  - _[object]_ -  
+    - **`parameters`**  - _[array of object]_  
 
-  - **`summary`**  - _[string]_ -  
+  - **`response`**  - _[object]_  
 
-**`security`**  - _[object]_ -  
+    - **`schema`**  - _[object]_  
+
+**`security`**  - _[object]_  
+
+  - **`access`**  - _[oneOf]_ - Expression indicating if the user should be granted access to the dashboard. If not defined, it will resolve to false and the dashboard won't be accessible to anyone. Needs to be a valid SQL expression that evaluates to a boolean. 
+
+    *option 1* - _[string]_ 
+
+    *option 2* - _[boolean]_ 
 
   - **`row_filter`**  - _[string]_ - SQL expression to filter the underlying model by. Can leverage templated user attributes to customize the filter for the requesting user. Needs to be a valid SQL expression that can be injected into a WHERE clause 
 
-  - **`rules`**  - _[array of object]_ -  
+  - **`include`**  - _[array of object]_ - List of dimension or measure names to include in the dashboard. If include is defined all other dimensions and measures are excluded 
 
-      - **`action`**  - _[string]_ -  
+    - **`if`**  - _[string]_ - Expression to decide if the column should be included or not. It can leverage templated user attributes. Needs to be a valid SQL expression that evaluates to a boolean  _(required)_
 
-      - **`all`**  - _[boolean]_ -  
+    - **`names`**  - _[anyOf]_ - List of fields to include. Should match the name of one of the dashboard's dimensions or measures  _(required)_
 
-      - **`if`**  - _[string]_ -  
+      *option 1* - _[array of string]_ 
 
-      - **`names`**  - _[array of string]_ -  
-
-      - **`sql`**  - _[string]_ -  
-
-      - **`type`**  - _[string]_ -   _(required)_
-
-  - **`access`**  - _[one of]_ - Expression indicating if the user should be granted access to the dashboard. If not defined, it will resolve to false and the dashboard won't be accessible to anyone. Needs to be a valid SQL expression that evaluates to a boolean. 
-
-     *option 1* - _[string]_ - 
-
-     *option 2* - _[boolean]_ - 
+      *option 2* - _[string]_ 
 
   - **`exclude`**  - _[array of object]_ - List of dimension or measure names to exclude from the dashboard. If exclude is defined all other dimensions and measures are included 
 
-      - **`if`**  - _[string]_ - Expression to decide if the column should be excluded or not. It can leverage templated user attributes. Needs to be a valid SQL expression that evaluates to a boolean  _(required)_
+    - **`if`**  - _[string]_ - Expression to decide if the column should be excluded or not. It can leverage templated user attributes. Needs to be a valid SQL expression that evaluates to a boolean  _(required)_
 
-      - **`names`**  - _[any of]_ - List of fields to exclude. Should match the name of one of the dashboard's dimensions or measures  _(required)_
+    - **`names`**  - _[anyOf]_ - List of fields to exclude. Should match the name of one of the dashboard's dimensions or measures  _(required)_
 
-  - **`include`**  - _[array of object]_ - List of dimension or measure names to include in the dashboard. If include is defined all other dimensions and measures are excluded 
+      *option 1* - _[array of string]_ 
 
-      - **`if`**  - _[string]_ - Expression to decide if the column should be included or not. It can leverage templated user attributes. Needs to be a valid SQL expression that evaluates to a boolean  _(required)_
+      *option 2* - _[string]_ 
 
-      - **`names`**  - _[any of]_ - List of fields to include. Should match the name of one of the dashboard's dimensions or measures  _(required)_
+  - **`rules`**  - _[array of object]_  
 
-**`skip_nested_security`**  - _[boolean]_ -  
+    - **`type`**  - _[string]_   _(required)_
 
- *option 1* - _[object]_ - 
+    - **`action`**  - _[string]_  
 
- *option 1* - 
+    - **`if`**  - _[string]_  
 
- *option 2* - 
+    - **`names`**  - _[array of string]_  
 
- *option 3* - 
+    - **`all`**  - _[boolean]_  
 
- *option 4* - 
+    - **`sql`**  - _[string]_  
 
- *option 5* - 
+**`skip_nested_security`**  - _[boolean]_  
+
+## One of Properties Options
+- [sql](#sql)
+- [metrics_sql](#metrics_sql)
+- [api](#api)
+- [glob](#glob)
+- [resource_status](#resource_status)
+
+
+### sql
+
+
+
+**`sql`**  - _[string]_ - Raw SQL query to run against existing models in the project.  _(required)_
+
+**`connector`**  - _[string]_ - specifies the connector to use when running SQL or glob queries. 
+
+### metrics_sql
+
+
+
+**`metrics_sql`**  - _[string]_ - SQL query that targets a metrics view in the project  _(required)_
+
+### api
+
+
+
+**`api`**  - _[string]_ - Name of a custom API defined in the project.  _(required)_
+
+**`args`**  - _[object]_ - Arguments to pass to the custom API. 
+
+### glob
+
+
+
+**`glob`**  - _[anyOf]_ - Defines the file path or pattern to query from the specified connector.  _(required)_
+
+  *option 1* - _[string]_ 
+
+  *option 2* - _[object]_ 
+
+**`connector`**  - _[string]_ - Specifies the connector to use with the glob input. 
+
+### resource_status
+
+
+
+**`resource_status`**  - _[object]_ - Based on resource status  _(required)_
+
+  - **`where_error`**  - _[boolean]_ - Indicates whether the condition should trigger when the resource is in an error state. 
