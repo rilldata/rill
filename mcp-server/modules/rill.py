@@ -92,6 +92,30 @@ class GetMetricsViewResourceRequest(BaseModel):
     name: str
 
 
+def prune(obj):
+    """
+    Recursively remove keys with empty, null, or non-substantial values from dicts/lists.
+    """
+    if isinstance(obj, dict):
+        return {
+            k: prune(v)
+            for k, v in obj.items()
+            if v not in (None, "", [], {})
+            and not (isinstance(v, dict) and not v)
+            and not (isinstance(v, list) and not v)
+        }
+    elif isinstance(obj, list):
+        return [
+            prune(v)
+            for v in obj
+            if v not in (None, "", [], {})
+            and not (isinstance(v, dict) and not v)
+            and not (isinstance(v, list) and not v)
+        ]
+    else:
+        return obj
+
+
 @rill_mcp.tool()
 async def get_metrics_view_spec(request: GetMetricsViewResourceRequest):
     """
@@ -111,7 +135,7 @@ async def get_metrics_view_spec(request: GetMetricsViewResourceRequest):
     except (KeyError, TypeError):
         valid_spec = {}
 
-    return valid_spec
+    return prune(valid_spec)
 
 
 class GetMetricsViewTimeRangeSummaryRequest(BaseModel):
