@@ -3,30 +3,21 @@ import logging
 import os
 
 from fastmcp import FastMCP
-from modules.admin import admin_mcp
-from modules.runtime import runtime_mcp
+from modules.rill import rill_mcp
 
 mcp = FastMCP(name="Rill MCP Server")
 mcp._mcp_server.instructions = """
-## Rill MCP Server - API Usage Guide
+## Rill MCP Server
 
 This server exposes APIs for querying **metrics views** (Rill's analytical units).
 
 ### Workflow Overview
-1. **List Projects:** Use `list_projects` to get all project names.
-2. **Get Runtime Details:** Use `get_project_runtime` to retrieve `host`, `instance_id`, and `jwt` for a project. These are required for all subsequent tool calls.
-3. **List Metrics Views:** Use `list_metrics_views` to discover available metrics views in a project.
-4. **Get Metrics View Spec:** Use `get_metrics_view_spec` to fetch a metrics view's spec. This is important to understand all the dimensions and measures in the metrics view.
-5. **Get Time Range:** Use `get_metrics_view_time_range_summary` to obtain the available time range for a metrics view. This is important to understand what time range the data spans.
-6. **Query Aggregations:** Use `get_metrics_view_aggregation` to run queries with:
-   - `dimensions`: Grouping fields
-   - `measures`: Metrics to compute
-   - Optional: `sort`, `limit`, `offset`, `time_range`, `comparison_time_range`, `where`, `having`, `exact`, `fill_missing`, `rows`
-   - **Tip:** Use `sort` and `limit` for best results.
+1. **List Metrics Views:** Use `list_metrics_views` to discover available metrics views in a project.
+2. **Get Metrics View Spec:** Use `get_metrics_view_spec` to fetch a metrics view's spec. This is important to understand all the dimensions and measures in the metrics view.
+3. **Get Time Range:** Use `get_metrics_view_time_range_summary` to obtain the available time range for a metrics view. This is important to understand what time range the data spans.
+4. **Query Aggregations:** Use `get_metrics_view_aggregation` to run queries.
 
-### Authentication
-- All runtime tools require: `host`, `instance_id`, and `jwt` (from `get_project_runtime`).
-- Always fetch these from the admin server before making runtime requests.
+In the workflow, do not proceed with the next step until the previous step has been completed. If the information from the previous step is already known (let's say for subsequent queries), you can skip it.
 """
 
 
@@ -37,12 +28,13 @@ async def maybe_import_viz_server():
 
         await mcp.import_server(prefix="viz", server=viz_mcp, tool_separator="_")
     else:
-        logging.warning("OPENAI_API_KEY not set. Viz server will not be enabled.")
+        logging.warning(
+            "OPENAI_API_KEY not set. The visualization server will not be enabled."
+        )
 
 
 async def setup():
-    await mcp.import_server(prefix="admin", server=admin_mcp, tool_separator="_")
-    await mcp.import_server(prefix="runtime", server=runtime_mcp, tool_separator="_")
+    await mcp.import_server(prefix="rill", server=rill_mcp, tool_separator="_")
     await maybe_import_viz_server()
 
 
