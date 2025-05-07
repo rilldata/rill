@@ -94,6 +94,9 @@ func (p *ModelOutputProperties) Validate(opts *drivers.ModelExecuteOptions) erro
 	if p.Typ == "" { // Plain unannotated models default to VIEW.
 		p.Typ = "VIEW"
 	}
+	if p.Typ != "TABLE" && p.Typ != "VIEW" && p.Typ != "DICTIONARY" {
+		return fmt.Errorf("invalid type %q, must be one of TABLE, VIEW or DICTIONARY", p.Typ)
+	}
 
 	switch p.IncrementalStrategy {
 	case drivers.IncrementalStrategyUnspecified, drivers.IncrementalStrategyAppend, drivers.IncrementalStrategyPartitionOverwrite, drivers.IncrementalStrategyMerge:
@@ -174,6 +177,7 @@ func (p *ModelOutputProperties) tblConfig() string {
 type ModelResultProperties struct {
 	Table         string `mapstructure:"table"`
 	View          bool   `mapstructure:"view"`
+	Typ           string `mapstructure:"type"`
 	UsedModelName bool   `mapstructure:"used_model_name"`
 }
 
