@@ -15,7 +15,6 @@ import (
 )
 
 func GenerateProjectDocsCmd(rootCmd *cobra.Command, ch *cmdutil.Helper) *cobra.Command {
-
 	cmd := &cobra.Command{
 		Use:    "generate-project",
 		Short:  "Generate Markdown docs from JSON Schemas for Project files",
