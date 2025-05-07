@@ -12,7 +12,7 @@
   export let id: string;
   export let label: string = "";
   export let lockTooltip: string = "";
-  export let size: "sm" | "md" | "lg" = "lg";
+  export let size: "sm" | "md" | "lg" | "xl" = "lg";
   export let options: {
     value: string;
     label: string;

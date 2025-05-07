@@ -71,10 +71,10 @@
   <Dialog.Trigger asChild>
     <div class="hidden"></div>
   </Dialog.Trigger>
-  <Dialog.Content>
+  <Dialog.Content noClose>
     <Dialog.Title>Create a new organization</Dialog.Title>
 
-    <CreateNewOrgForm onCreate={handleCreateOrg} />
+    <CreateNewOrgForm onCreate={handleCreateOrg} size="lg" />
 
     <Dialog.Footer class="gap-x-2">
       <Button large type="text" on:click={() => (isNewOrgDialogOpen = false)}>
