@@ -108,7 +108,7 @@ func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.Upd
 		}
 		if bi != nil {
 			// check against trial orgs quota, skip for superusers
-			if org.CreatedByUserID != nil && !forceAccess {
+			if org.CreatedByUserID != nil && !claims.Superuser(ctx) {
 				u, err := s.admin.DB.FindUser(ctx, *org.CreatedByUserID)
 				if err != nil {
 					return nil, err
