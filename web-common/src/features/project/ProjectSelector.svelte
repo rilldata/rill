@@ -19,7 +19,11 @@
 </script>
 
 <div class="flex flex-col gap-y-2">
-  <Search bind:value={searchText} />
+  <Search
+    bind:value={searchText}
+    background={false}
+    forcedInputStyle="bg-slate-100"
+  />
   <div class="flex flex-col gap-y-0.5 w-[500px]">
     {#each filteredProjects as project (project.id)}
       {@const selected = project.id === selectedProject?.id}
@@ -31,12 +35,12 @@
         {#if isRillManaged(project)}
           <Tooltip.Root portal="body">
             <Tooltip.Trigger>
-              <RillFilled size="12" />
+              <RillFilled size="14" />
             </Tooltip.Trigger>
             <Tooltip.Content side="bottom">Rill-managed</Tooltip.Content>
           </Tooltip.Root>
         {:else}
-          <Github size="12" />
+          <Github size="14" />
         {/if}
         {project.orgName}/{project.name}
       </button>

@@ -9,14 +9,17 @@
   let selectedProject: Project | undefined = undefined;
 </script>
 
-<div class="text-xl">Which project would you like to update?</div>
-<div class="text-base text-gray-500">
-  These all have matching project name with your Rill Developer project.
+<div class="flex flex-col gap-y-2">
+  <div class="text-xl">Which project would you like to update?</div>
+  <div class="text-sm text-gray-500">
+    These all have matching project name with your Rill Developer project.
+  </div>
+  <ProjectSelector
+    bind:selectedProject
+    projects={$matchingProjects.data?.projects}
+  />
 </div>
-<ProjectSelector
-  bind:selectedProject
-  projects={$matchingProjects.data?.projects}
-/>
+
 <Button
   wide
   type="primary"
