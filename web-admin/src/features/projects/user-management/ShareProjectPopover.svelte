@@ -213,7 +213,6 @@
       <!-- 52 * 8 = 416px -->
       <div class="flex flex-col gap-y-1 overflow-y-auto max-h-[416px]">
         <div class={isAdmin || isEditor ? "mt-4" : ""}>
-          <!-- Project Users -->
           {#each sortedProjectMemberUsersList as user}
             <UserItem
               {organization}
@@ -223,7 +222,6 @@
               canChangeRole={isAdmin || isEditor}
             />
           {/each}
-          <!-- Pending Invites -->
           {#each projectInvitesList as user}
             <UserItem
               {organization}
@@ -242,7 +240,7 @@
             location="right"
             alignment="middle"
             distance={8}
-            suppress={!isAdmin}
+            suppress={!isAdmin || accessType !== "everyone"}
           >
             <div
               role="button"
