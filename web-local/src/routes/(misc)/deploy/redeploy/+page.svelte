@@ -26,8 +26,6 @@
   $: orgIsOnTrial = getOrgIsOnTrial(orgParam ?? "");
 
   async function redeploy(projectId: string) {
-    return;
-
     const resp = await $redeployMutation.mutateAsync({
       projectId,
       reupload: true,

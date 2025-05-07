@@ -60,6 +60,12 @@
   }
 </script>
 
+<!-- This seems to be necessary to trigger tanstack query to update the query object -->
+<!-- TODO: find a config to avoid this -->
+<div class="hidden">
+  {$user.isLoading}-{$metadata.isLoading}-{$project.isLoading}
+</div>
+
 {#if loading}
   <div class="h-36">
     <Spinner status={EntityStatus.Running} size="7rem" duration={725} />
