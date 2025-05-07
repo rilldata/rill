@@ -32,8 +32,6 @@
   $: orgIsOnTrial = getOrgIsOnTrial(orgParam ?? "");
 
   async function freshDeploy(orgName: string) {
-    return;
-
     const projectResp = $project.data as GetCurrentProjectResponse;
 
     const resp = await $deployMutation.mutateAsync({
