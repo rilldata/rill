@@ -17,7 +17,7 @@
   >
 </div>
 
-<CreateNewOrgForm onCreate={selectOrg} />
+<CreateNewOrgForm onCreate={selectOrg} size="xl" />
 <Button
   wide
   forcedStyle="min-width:500px !important;"

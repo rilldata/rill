@@ -13,6 +13,7 @@
   import { yup } from "sveltekit-superforms/adapters";
   import { object, string } from "yup";
 
+  export let size: "lg" | "xl";
   export let onCreate: (orgName: string) => void;
 
   const initialValues: {
@@ -76,6 +77,8 @@
     label="Organization display name"
     textClass="text-sm"
     width="500px"
+    {size}
+    capitalizeLabel={false}
   />
   <Input
     bind:value={$form.name}
@@ -85,18 +88,20 @@
     textClass="text-sm"
     alwaysShowError
     width="500px"
+    {size}
   >
     <div
       slot="prefix"
-      class="bg-neutral-100 text-neutral-400 border border-r-0 border-gray-300 text-base px-2 py-1 max-h-8"
+      class="bg-neutral-100 text-gray-500 border border-r-0 border-gray-300 text-base px-2 py-1.5
+      {size === 'xl' ? 'text-base' : 'h-[32px] text-sm'}"
     >
       https://ui.rilldata.com/
     </div>
+    <div class="text-xs text-left" slot="description">
+      Must comply with <a
+        href="https://docs.rilldata.com/reference/cli/org/create#TODO"
+        target="_blank">our naming rules.</a
+      >
+    </div>
   </Input>
-  <div class="text-xs">
-    Must comply with <a
-      href="https://docs.rilldata.com/reference/cli/org/create#TODO"
-      target="_blank">our naming rules.</a
-    >
-  </div>
 </form>

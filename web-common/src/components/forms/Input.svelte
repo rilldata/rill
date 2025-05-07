@@ -23,7 +23,7 @@
   export let optional = false;
   export let truncate = false;
   export let width: string = "100%";
-  export let size: "sm" | "md" | "lg" = "lg";
+  export let size: "sm" | "md" | "lg" | "xl" = "lg";
   export let labelGap = 1;
   export let selected: number = -1;
   export let full = false;
@@ -248,8 +248,14 @@
     {/if}
   {/if}
 
-  {#if description}
-    <div class="description">{description}</div>
+  {#if $$slots.description || description}
+    <div class="description">
+      {#if $$slots.description}
+        <slot name="description" />
+      {:else}
+        {description}
+      {/if}
+    </div>
   {/if}
 </div>
 
@@ -269,6 +275,11 @@
 
   .lg {
     height: 30px;
+  }
+
+  .xl {
+    height: 38px;
+    font-size: 16px;
   }
 
   .input-wrapper {
