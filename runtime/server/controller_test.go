@@ -2,6 +2,7 @@ package server_test
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -102,45 +103,128 @@ metrics_view: mv2
 	}
 }
 
-func TestTriggerWithChangeModel(t *testing.T) {
-	rt, instanceID := testruntime.NewInstance(t)
+func TestModelChangeModes(t *testing.T) {
+	testCases := []struct {
+		name            string
+		changeMode      string
+		initialSQL      string
+		updatedSQL      string
+		expectedCountry string
+	}{
+		{
+			name:            "reset mode",
+			changeMode:      "reset",
+			initialSQL:      "SELECT 'US' AS country",
+			updatedSQL:      "SELECT 'UK' AS country",
+			expectedCountry: "UK",
+		},
+		{
+			name:            "manual mode",
+			changeMode:      "manual",
+			initialSQL:      "SELECT 'US' AS country",
+			updatedSQL:      "SELECT 'UK' AS country",
+			expectedCountry: "US",
+		},
+		{
+			name:            "patch mode",
+			changeMode:      "patch",
+			initialSQL:      "SELECT 'US' AS country, 1 as id",
+			updatedSQL:      "SELECT 'US-updated' AS country, 1 as id",
+			expectedCountry: "US",
+		},
+	}
 
-	// Create a table directly in the OLAP connector for testing metrics views without any refs.
-	createTableAsSelect(t, rt, instanceID, "duckdb", "foo", "SELECT 'US' AS country")
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// Create a new runtime instance for each test case
+			rt, instanceID := testruntime.NewInstance(t)
 
-	// Create test resources
-	testruntime.PutFiles(t, rt, instanceID, map[string]string{
-		// Model m1
-		"model.yaml": `
-type: model
-name: m1
-change_mode: reset
-sql: |
-  SELECT 'US' AS country
-`,
-		// Metrics view with reference to the model
-		"mv1.yaml": `
+			// Create initial model with specified change mode
+			testruntime.PutFiles(t, rt, instanceID, map[string]string{
+				"mv1.yaml": `
 type: metrics_view
 version: 1
-model: m1
+model: my_model
 dimensions:
 - column: country
 measures:
 - expression: COUNT(*)
 `,
-		// Explore on mv1
-		"e1.yaml": `
-type: explore
-metrics_view: mv1
-`,
-	})
+				"model.yaml": fmt.Sprintf(`
+type: model
+name: my_model
+change_mode: %s
+sql: |
+  %s
+`, tc.changeMode, tc.initialSQL),
+			})
+			// Reconcile to create the initial model
+			testruntime.ReconcileParserAndWait(t, rt, instanceID)
+			testruntime.RequireReconcileState(t, rt, instanceID, 3, 0, 0)
 
-	testruntime.ReconcileParserAndWait(t, rt, instanceID)
-	testruntime.RequireReconcileState(t, rt, instanceID, 4, 0, 0)
+			// Get controller
+			ctrl, err := rt.Controller(context.Background(), instanceID)
+			require.NoError(t, err)
 
-	// Create test server
-	_, err := server.NewServer(context.Background(), &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient())
-	require.NoError(t, err)
+			// Wait until model is idle
+			err = ctrl.WaitUntilIdle(context.Background(), false)
+			require.NoError(t, err)
+
+			// Verify initial data was loaded
+			h, release, err := rt.AcquireHandle(context.Background(), instanceID, "duckdb")
+			require.NoError(t, err)
+			defer release()
+			q := h.Driver()
+			require.NotNil(t, q)
+
+			// Capture initial state version
+			r, err := ctrl.Get(testCtx(), &runtimev1.ResourceName{Kind: runtime.ResourceKindModel, Name: "my_model"}, false)
+			require.NoError(t, err)
+			initialStateVersion := int64(r.Meta.StateVersion)
+
+			// Update the model with new SQL
+			testruntime.PutFiles(t, rt, instanceID, map[string]string{
+				"model.yaml": fmt.Sprintf(`
+type: model
+name: my_model
+change_mode: %s
+sql: |
+  %s
+`, tc.changeMode, tc.updatedSQL),
+			})
+			// Reconcile to pick up changes
+			testruntime.ReconcileParserAndWait(t, rt, instanceID)
+
+			// Wait until model is idle again
+			err = ctrl.WaitUntilIdle(testCtx(), false)
+			require.NoError(t, err)
+
+			// Check behavior based on change mode
+			r, err = ctrl.Get(testCtx(), &runtimev1.ResourceName{Kind: runtime.ResourceKindModel, Name: "my_model"}, false)
+			require.NoError(t, err)
+
+			olap, release, err := rt.OLAP(testCtx(), instanceID, "duckdb")
+			require.NoError(t, err)
+			defer release()
+
+			switch tc.changeMode {
+			case "reset":
+				require.Greater(t, int64(r.Meta.StateVersion), initialStateVersion)
+				verifyModelData(t, olap, tc.expectedCountry)
+
+			case "manual":
+				require.Equal(t, initialStateVersion, int64(r.Meta.StateVersion))
+				verifyModelData(t, olap, tc.expectedCountry)
+
+			case "patch":
+				require.Equal(t, initialStateVersion, int64(r.Meta.StateVersion))
+				verifyModelData(t, olap, tc.expectedCountry)
+
+			default:
+				t.Fatalf("unexpected change mode: %s", tc.changeMode)
+			}
+		})
+	}
 }
 
 // createTableAsSelect is a test utility for creating a table directly in an OLAP connector.
@@ -169,5 +253,22 @@ func createTableAsSelect(t *testing.T, rt *runtime.Runtime, instanceID, connecto
 		InputProperties:      opts.PreliminaryInputProperties,
 		OutputProperties:     opts.PreliminaryOutputProperties,
 	})
+	require.NoError(t, err)
+}
+
+// Add this helper function after the TestModelChangeModes function
+func verifyModelData(t *testing.T, olap drivers.OLAPStore, expectedCountry string) {
+	t.Helper() // Marks this as a helper function for better test failure reporting
+	res, err := olap.Query(testCtx(), &drivers.Statement{Query: "SELECT country FROM my_model"})
+	require.NoError(t, err)
+	defer res.Close()
+
+	var country string
+	for res.Next() {
+		err = res.Scan(&country)
+		require.NoError(t, err)
+		require.Equal(t, expectedCountry, country, "country value should match expected value")
+	}
+	err = res.Err()
 	require.NoError(t, err)
 }
