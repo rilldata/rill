@@ -17,7 +17,6 @@ viz_mcp = FastMCP(
 def generate_chart(data: dict, prompt: str) -> Image:
     """Calls OpenAI to generate a chart for the provided data and prompt."""
 
-    # Convert the data to a JSON string for including in the prompt
     data_json = json.dumps(data, indent=2)
 
     # Create a message for OpenAI with instructions to generate a Vega-Lite chart
@@ -34,7 +33,7 @@ def generate_chart(data: dict, prompt: str) -> Image:
 
     # Call OpenAI API to generate the chart specification
     response = openai_client.chat.completions.create(
-        model="gpt-4o",  # Use an appropriate model
+        model="gpt-4o",
         messages=messages,
         response_format={"type": "json_object"},
     )
@@ -52,12 +51,9 @@ def generate_chart(data: dict, prompt: str) -> Image:
         # Return using FastMCP's Image helper
         return Image(data=img_bytes, format="png")
     except Exception as e:
-        # If there's an error parsing the OpenAI response, say so
         print(f"Error generating chart with OpenAI: {str(e)}")
         raise e
 
-
-viz_mcp._mcp_server.instructions = "This server provides access to RillData Viz APIs. "
 
 if __name__ == "__main__":
     viz_mcp.run()
