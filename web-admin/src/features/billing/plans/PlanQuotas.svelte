@@ -10,7 +10,7 @@
   export let organization: string;
 
   $: projects = createAdminServiceListProjectsForOrganization(organization);
-  $: organizationQuotas = createAdminServiceGetOrganization(organization, {
+  $: organizationQuotas = createAdminServiceGetOrganization(organization, undefined, {
     query: {
       select: (data) => data.organization?.quotas,
     },
