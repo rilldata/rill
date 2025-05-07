@@ -6,12 +6,8 @@ import { isAxiosError } from "axios";
 export const load = async ({ params: { organization }, parent }) => {
   const { user, organizationPermissions } = await parent();
 
-  if (!organizationPermissions.readOrg) {
-    throw error(403, "You do not have permission to access this organization");
-  }
-
   let issues: V1BillingIssue[] = [];
-  if (user) {
+  if (user && organizationPermissions.readOrg) {
     // only try to get issues if the user can read org
     // also public projects will not have a user but will have `readOrg` permission
     try {
