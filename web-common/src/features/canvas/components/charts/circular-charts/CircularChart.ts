@@ -56,7 +56,7 @@ export class CircularChartComponent extends BaseChart<CircularChartSpec> {
     },
     innerRadius: {
       type: "number",
-      label: "Inner Radius",
+      label: "Inner Radius (%)",
     },
   };
 
