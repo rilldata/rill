@@ -15,24 +15,26 @@ import (
 )
 
 func GenerateProjectDocsCmd(rootCmd *cobra.Command, ch *cmdutil.Helper) *cobra.Command {
-	var projectPath, rillyamlPath, outputDir string
 
 	cmd := &cobra.Command{
-		Use:   "generate-project",
-		Short: "Generate Markdown docs from JSON Schemas for Project files",
+		Use:    "generate-project",
+		Short:  "Generate Markdown docs from JSON Schemas for Project files",
+		Args:   cobra.ExactArgs(1),
+		Hidden: !ch.IsDev(),
 		RunE: func(cmd *cobra.Command, args []string) error {
-
+			outputDir := args[0]
 			if _, err := os.Stat(outputDir); os.IsNotExist(err) {
 				if err := os.MkdirAll(outputDir, fs.ModePerm); err != nil {
 					return err
 				}
 			}
-
+			projectPath := "runtime/parser/schema/project.schema.json"
 			projectFilesSchema, err := parseSchemaWithRefs(projectPath)
 			if err != nil {
 				return fmt.Errorf("resource schema error: %w", err)
 			}
-			// ideally rillyaml should be part of project.schem.json but currenly it can't be
+			// ideally rillyaml should be part of project.schem.json but currently it can't be
+			rillyamlPath := "runtime/parser/schema/rillyaml.schema.json"
 			rillYamlSchema, err := parseSchemaWithRefs(rillyamlPath)
 			if err != nil {
 				return fmt.Errorf("rillyaml schema error: %w", err)
@@ -41,11 +43,11 @@ func GenerateProjectDocsCmd(rootCmd *cobra.Command, ch *cmdutil.Helper) *cobra.C
 
 			var projectFilesbuf strings.Builder
 
-			sidebar_position := 0
+			sidebarPosition := 30
 			projectFilesbuf.WriteString("---\n")
 			projectFilesbuf.WriteString("note: GENERATED. DO NOT EDIT.\n")
 			projectFilesbuf.WriteString(fmt.Sprintf("title: %s\n", projectFilesSchema.Title))
-			projectFilesbuf.WriteString(fmt.Sprintf("sidebar_position: %d\n", sidebar_position))
+			projectFilesbuf.WriteString(fmt.Sprintf("sidebar_position: %d\n", sidebarPosition))
 			projectFilesbuf.WriteString("---\n")
 
 			projectFilesbuf.WriteString("## Overview\n\n")
@@ -53,7 +55,7 @@ func GenerateProjectDocsCmd(rootCmd *cobra.Command, ch *cmdutil.Helper) *cobra.C
 			projectFilesbuf.WriteString("## Project files types\n\n")
 
 			for _, resource := range projectFilesSchema.OneOf {
-				sidebar_position += 1
+				sidebarPosition++
 				fileName := sanitizeFileName(resource.Title) + ".md"
 				filePath := filepath.Join(outputDir, fileName)
 				requiredMap := getRequiredMap(resource.Required)
@@ -61,19 +63,19 @@ func GenerateProjectDocsCmd(rootCmd *cobra.Command, ch *cmdutil.Helper) *cobra.C
 				resourceFilebuf.WriteString("---\n")
 				resourceFilebuf.WriteString("note: GENERATED. DO NOT EDIT.\n")
 				resourceFilebuf.WriteString(fmt.Sprintf("title: %s\n", resource.Title))
-				resourceFilebuf.WriteString(fmt.Sprintf("sidebar_position: %d\n", sidebar_position))
+				resourceFilebuf.WriteString(fmt.Sprintf("sidebar_position: %d\n", sidebarPosition))
 				resourceFilebuf.WriteString("---\n")
 				resourceFilebuf.WriteString(fmt.Sprintf("\n%s\n\n", resource.Description))
 				resourceFilebuf.WriteString("## Properties\n")
 				resourceFilebuf.WriteString(generateDoc("", resource, "", requiredMap))
 
-				if err := os.WriteFile(filePath, []byte(resourceFilebuf.String()), 0644); err != nil {
+				if err := os.WriteFile(filePath, []byte(resourceFilebuf.String()), 0o644); err != nil {
 					return fmt.Errorf("failed writing resource doc: %w", err)
 				}
 				projectFilesbuf.WriteString(fmt.Sprintf("- [%s](%s)\n", resource.Title, fileName))
 			}
 
-			if err := os.WriteFile(filepath.Join(outputDir, "index.md"), []byte(projectFilesbuf.String()), 0644); err != nil {
+			if err := os.WriteFile(filepath.Join(outputDir, "index.md"), []byte(projectFilesbuf.String()), 0o644); err != nil {
 				return fmt.Errorf("failed writing index.md: %w", err)
 			}
 
@@ -81,13 +83,6 @@ func GenerateProjectDocsCmd(rootCmd *cobra.Command, ch *cmdutil.Helper) *cobra.C
 			return nil
 		},
 	}
-
-	cmd.Flags().StringVar(&projectPath, "project", "", "Path to project.schema.json")
-	cmd.Flags().StringVar(&rillyamlPath, "rillyaml", "", "Path to rillyaml.schema.json")
-	cmd.Flags().StringVar(&outputDir, "out", "", "Output directory for generated docs")
-	cmd.MarkFlagRequired("project")
-	cmd.MarkFlagRequired("rillyaml")
-	cmd.MarkFlagRequired("out")
 	return cmd
 }
 
@@ -143,7 +138,6 @@ func getTypeString(schema *JSONSchema) string {
 				if len(schema.Items.AnyOf) > 0 {
 					return "- _[array of anyOf]_ "
 				}
-
 			}
 		}
 		return fmt.Sprintf("- _[%s]_ ", s)
@@ -154,23 +148,23 @@ func getTypeString(schema *JSONSchema) string {
 func getDescriptionString(description string) string {
 	if description == "" {
 		return ""
-	} else {
-		return fmt.Sprintf("- %s", description)
 	}
-
+	return fmt.Sprintf("- %s", description)
 }
 
 func generateDoc(parentName string, schema *JSONSchema, indent string, requiredFields map[string]bool) string {
 	var doc strings.Builder
-	var listString = "- "
+	listString := "- "
 	if indent == "" {
 		listString = ""
 	}
 	if schema.Type == "object" && schema.Properties != nil {
 		for _, propName := range schema.Properties.Keys() {
 			val, _ := schema.Properties.Get(propName)
-			b, _ := json.Marshal(val)
-
+			b, err := json.Marshal(val)
+			if err != nil {
+				panic(err)
+			}
 			var propSchema *JSONSchema
 			if err := json.Unmarshal(b, &propSchema); err != nil {
 				panic(err)
@@ -246,10 +240,8 @@ func generateDoc(parentName string, schema *JSONSchema, indent string, requiredF
 			}
 			// Write the example in YAML format to the documentation
 			doc.WriteString(fmt.Sprintf("\n\n%s```yaml\n%s\n```\n\n", indent, exampleBytes))
-
 		}
 	}
-
 	return doc.String()
 }
 
@@ -373,7 +365,7 @@ func parseSchemaWithRefs(path string) (*JSONSchema, error) {
 	return &schema, nil
 }
 
-func resolveRefs(node *orderedmap.OrderedMap, root *orderedmap.OrderedMap) error {
+func resolveRefs(node, root *orderedmap.OrderedMap) error {
 	// Handle $ref replacement
 	if refVal, ok := node.Get("$ref"); ok {
 		if refStr, ok := refVal.(string); ok && strings.HasPrefix(refStr, "#/") {
@@ -400,11 +392,11 @@ func resolveRefs(node *orderedmap.OrderedMap, root *orderedmap.OrderedMap) error
 			}
 		case orderedmap.OrderedMap:
 			// Convert to pointer so we can mutate
-			copy := v
-			if err := resolveRefs(&copy, root); err != nil {
+			cp := v
+			if err := resolveRefs(&cp, root); err != nil {
 				return err
 			}
-			node.Set(key, copy)
+			node.Set(key, cp)
 		case []interface{}:
 			for i, item := range v {
 				switch itemTyped := item.(type) {
@@ -413,11 +405,11 @@ func resolveRefs(node *orderedmap.OrderedMap, root *orderedmap.OrderedMap) error
 						return err
 					}
 				case orderedmap.OrderedMap:
-					copy := itemTyped
-					if err := resolveRefs(&copy, root); err != nil {
+					cp := itemTyped
+					if err := resolveRefs(&cp, root); err != nil {
 						return err
 					}
-					v[i] = copy
+					v[i] = cp
 				}
 			}
 			node.Set(key, v)
