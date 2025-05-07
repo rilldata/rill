@@ -1,119 +1,75 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
-  import { Button } from "@rilldata/web-common/components/button";
+  import { page } from "$app/stores";
+  import type { ConnectError } from "@connectrpc/connect";
+  import CTAMessage from "@rilldata/web-common/components/calls-to-action/CTAMessage.svelte";
+  import CancelCircleInverse from "@rilldata/web-common/components/icons/CancelCircleInverse.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
+  import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
+  import { BehaviourEventAction } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
   import {
-    getOrgIsOnTrial,
-    getPlanUpgradeUrl,
-  } from "@rilldata/web-common/features/organization/utils";
-  import OrgSelector from "@rilldata/web-common/features/project/OrgSelector.svelte";
-  import {
-    ProjectDeployer,
-    ProjectDeployStage,
-  } from "@rilldata/web-common/features/project/ProjectDeployer";
-  import DeployError from "@rilldata/web-common/features/project/DeployError.svelte";
-  import { onMount } from "svelte";
-  import CTAContentContainer from "@rilldata/web-common/components/calls-to-action/CTAContentContainer.svelte";
-  import CTALayoutContainer from "@rilldata/web-common/components/calls-to-action/CTALayoutContainer.svelte";
+    createLocalServiceGetCurrentProject,
+    createLocalServiceGetCurrentUser,
+    createLocalServiceGetMetadata,
+  } from "@rilldata/web-common/runtime-client/local-service";
   import CTAHeader from "@rilldata/web-common/components/calls-to-action/CTAHeader.svelte";
   import CTANeedHelp from "@rilldata/web-common/components/calls-to-action/CTANeedHelp.svelte";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
-  import type { PageData } from "./$types";
-  import CreateNewOrgForm from "@rilldata/web-common/features/organization/CreateNewOrgForm.svelte";
-  import { CreateNewOrgFormId } from "@rilldata/web-common/features/organization/CreateNewOrgForm.svelte";
-  import ProjectSelector from "@rilldata/web-common/features/project/ProjectSelector.svelte";
+  import { get } from "svelte/store";
 
-  export let data: PageData;
+  // It would be great if this could be moved to loader function.
+  // But these can take a significant time (~2sec)
+  // So until sveltekit supports loading state from loader function these will have to be queried here.
+  const user = createLocalServiceGetCurrentUser();
+  const metadata = createLocalServiceGetMetadata();
+  const project = createLocalServiceGetCurrentProject();
 
-  const deployer = new ProjectDeployer();
-  const metadata = deployer.metadata;
-  const user = deployer.user;
-  const project = deployer.project;
-  const matchingProjects = deployer.matchingProjects;
-  const deployerStatus = deployer.getStatus();
-  const stage = deployer.stage;
+  $: loading = $user.isPending || $metadata.isPending || $project.isPending;
+  $: error = $user.error ?? $metadata.error ?? $project.error;
 
-  let selectedOrg: string = data.orgParam ?? "";
-  $: planUpgradeUrl = getPlanUpgradeUrl(selectedOrg);
-  $: orgIsOnTrial = getOrgIsOnTrial(selectedOrg);
+  $: if (!loading && !error) {
+    if ($user.data?.user) {
+      // User is logged in already.
+      void behaviourEvent?.fireDeployEvent(BehaviourEventAction.LoginSuccess);
 
-  function onBack() {
-    if ($user.data?.rillUserOrgs?.length) {
-      deployer.onSelectOrg();
+      if ($project.data?.project) {
+        // Project already exists. Run a redeploy
+        void goto(
+          `/deploy/redeploy?org=${$project.data.project.orgName}&projectId=${$project.data.project.id}`,
+        );
+      } else if ($user.data.rillUserOrgs?.length) {
+        // If the user has at least one org we show the selector.
+        // Note: The selector has the option to create a new org, so we show it even when there is only one org.
+        void goto(`/deploy/select-org`);
+      } else {
+        void goto(`/deploy/create-org`);
+      }
+    } else if ($metadata.data?.loginUrl) {
+      // User is not logged in, redirect to login url provided from metadata query.
+      void behaviourEvent?.fireDeployEvent(BehaviourEventAction.LoginStart);
+      const u = new URL($metadata.data?.loginUrl);
+      // Set the redirect to this page so that deploy resumes after a login
+      u.searchParams.set("redirect", get(page).url.toString());
+      void goto(u.toString());
     } else {
-      void goto("/");
+      // Should not happen if the servers are up. If not, there would be a query error.
+      error = {
+        message: "Failed to fetch login URL.",
+      } as ConnectError;
     }
   }
-
-  function onRetry() {
-    void deployer.deploy(selectedOrg);
-  }
-
-  function selectOrg(org: string) {
-    selectedOrg = org;
-    void deployer.deploy(org);
-  }
-
-  onMount(() => {
-    void deployer.loginOrDeploy().then(() => {
-      // When org param is present, it is probably a callback from the upgrade plan page.
-      // So directly trigger a deploy
-      if (data.orgParam) {
-        void deployer.deploy(data.orgParam);
-      }
-    });
-  });
 </script>
 
-<!-- This seems to be necessary to trigger tanstack query to update the query object -->
-<!-- TODO: find a config to avoid this -->
-<div class="hidden">
-  {$user.isLoading}-{$metadata.isLoading}-{$project.isLoading}
-</div>
-
-<CTALayoutContainer>
-  <CTAContentContainer>
-    {#if $stage === ProjectDeployStage.CreateNewOrg}
-      <div class="text-xl">Let’s create your first organization</div>
-      <div class="text-base text-gray-500">
-        Create an organization to deploy this project to. <a
-          href="https://docs.rilldata.com/reference/cli/org/create"
-          target="_blank">See docs</a
-        >
-      </div>
-      <CreateNewOrgForm onCreate={selectOrg} />
-      <Button
-        wide
-        forcedStyle="min-width:500px !important;"
-        type="primary"
-        submitForm
-        form={CreateNewOrgFormId}
-      >
-        Continue
-      </Button>
-    {:else if $stage === ProjectDeployStage.SelectOrg}
-      <OrgSelector bind:selectedOrg orgs={$user.data?.rillUserOrgs ?? []} />
-      <Button wide type="primary" on:click={() => deployer.deploy(selectedOrg)}>
-        Deploy as a new project
-      </Button>
-    {:else if $stage === ProjectDeployStage.SelectMatchingProject}
-      <ProjectSelector projects={$matchingProjects.data?.projects} />
-    {:else if $deployerStatus.isLoading}
-      <div class="h-36">
-        <Spinner status={EntityStatus.Running} size="7rem" duration={725} />
-      </div>
-      <CTAHeader variant="bold">
-        Hang tight! We're deploying your project...
-      </CTAHeader>
-      <CTANeedHelp />
-    {:else if $deployerStatus.error}
-      <DeployError
-        error={$deployerStatus.error}
-        planUpgradeUrl={$planUpgradeUrl}
-        orgIsOnTrial={$orgIsOnTrial}
-        {onRetry}
-        {onBack}
-      />
-    {/if}
-  </CTAContentContainer>
-</CTALayoutContainer>
+{#if loading}
+  <div class="h-36">
+    <Spinner status={EntityStatus.Running} size="7rem" duration={725} />
+  </div>
+  <CTAHeader variant="bold">
+    Hang tight! We're deploying your project...
+  </CTAHeader>
+  <CTANeedHelp />
+{:else if error}
+  <CancelCircleInverse size="7rem" className="text-gray-200" />
+  <CTAHeader variant="bold">Oops! An error occurred</CTAHeader>
+  <CTAMessage>{error.message}</CTAMessage>
+{/if}

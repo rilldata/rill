@@ -53,6 +53,9 @@
       )
     : options;
 
+  // Needed to pass a close method to slots
+  // In certain cases, the "additional-dropdown-content" slot might need to close the dropdown without selecting a value.
+  // So we need an explicit close method and not use Select.Item
   let open = false;
 
   function close() {
