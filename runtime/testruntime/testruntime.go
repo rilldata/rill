@@ -151,6 +151,10 @@ func NewInstanceWithOptions(t TestingT, opts InstanceOptions) (*runtime.Runtime,
 		WatchRepo: opts.WatchRepo,
 	}
 
+	if _, ok := opts.Files["rill.yaml"]; !ok {
+		opts.Files["rill.yaml"] = ""
+	}
+
 	for path, data := range opts.Files {
 		abs := filepath.Join(tmpDir, path)
 		require.NoError(t, os.MkdirAll(filepath.Dir(abs), os.ModePerm))
