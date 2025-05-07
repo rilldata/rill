@@ -31,8 +31,6 @@ Along with alertings at the dashboard level and can be created via the UI, there
 
 **`refresh`**  - _[object]_ - Specifies the refresh schedule that Rill should follow to re-ingest and update the underlying data  _(required)_
 
-  - **`ref_update`**  - _[boolean]_ - If true, allows the resource to run when a dependency updates. 
-
   - **`cron`**  - _[string]_ - A cron expression that defines the execution schedule 
 
   - **`every`**  - _[string]_ - Run at a fixed interval using a Go duration string (e.g., '1h', '30m', '24h'). See: https://pkg.go.dev/time#ParseDuration 
@@ -41,10 +39,9 @@ Along with alertings at the dashboard level and can be created via the UI, there
 
   - **`disable`**  - _[boolean]_ - If true, disables the resource without deleting it. 
 
-  - **`run_in_dev`**  - _[boolean]_ - If true, allows the schedule to run in development mode. 
+  - **`ref_update`**  - _[boolean]_ - If true, allows the resource to run when a dependency updates. 
 
-**`watermark`**  - _[string]_ - Specifies how the watermark is determined for incremental processing.
-Use 'trigger_time' to set it at runtime or 'inherit' to use the upstream model's watermark. 
+  - **`run_in_dev`**  - _[boolean]_ - If true, allows the schedule to run in development mode. 
 
 **`intervals`**  - _[object]_ - define the interval of the alert to check 
 
@@ -53,6 +50,9 @@ Use 'trigger_time' to set it at runtime or 'inherit' to use the upstream model's
   - **`limit`**  - _[integer]_ - maximum number of intervals to check for on invocation 
 
   - **`check_unclosed`**  - _[boolean]_ - boolean, whether unclosed intervals should be checked 
+
+**`watermark`**  - _[string]_ - Specifies how the watermark is determined for incremental processing.
+Use 'trigger_time' to set it at runtime or 'inherit' to use the upstream model's watermark. 
 
 **`timeout`**  - _[string]_ - define the timeout of the alert in seconds (optional). 
 
@@ -133,3 +133,31 @@ Use 'trigger_time' to set it at runtime or 'inherit' to use the upstream model's
     - **`webhooks`**  - _[array of string]_ - An array of Slack webhook URLs to send notifications to. 
 
 **`annotations`**  - _[object]_  
+
+## Examples
+
+```yaml
+# Example: To send alert when data lags by more than 1 day to slack channel #rill-cloud-alerts
+type: alert
+display_name: Data lags by more than 1 day
+# Check the alert every hour.
+refresh:
+    cron: 0 * * * *
+# Query that returns non-empty results if the metrics lag by more than 1 day.
+data:
+    sql: |-
+        SELECT  *
+        FROM
+        (
+          SELECT  MAX(event_time) AS max_time
+          FROM rill_metrics_model
+        )
+        WHERE max_time < NOW() - INTERVAL '1 day'
+# Send notifications in Slack.
+notify:
+    slack:
+        channels:
+            - '#rill-cloud-alerts'
+
+```
+

@@ -134,3 +134,19 @@ In your Rill project directory, create a new file name `<api-name>.yaml` in the 
 **`resource_status`**  - _[object]_ - Based on resource status  _(required)_
 
   - **`where_error`**  - _[boolean]_ - Indicates whether the condition should trigger when the resource is in an error state. 
+
+## Examples
+
+```yaml
+# Example: This api returns the top 10 authors by net line changes since the specified date provided in the arguments.
+type: api
+name: metrics_view_api
+metrics_sql: |-
+    SELECT author_name, net_line_changes
+    FROM advanced_metrics_view
+      where author_date > '{{ .args.date }}'
+      order by net_line_changes DESC
+      limit 10
+
+```
+

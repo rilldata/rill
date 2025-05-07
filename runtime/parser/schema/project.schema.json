@@ -41,6 +41,29 @@
       "type": "object",
       "title": "Alert YAML",
       "description": "Along with alertings at the dashboard level and can be created via the UI, there might be more extensive alerting that you might want to develop and can be done so the an alert.yaml. When creating an alert via a YAML file, you'll see this denoted in the UI as `Created through code`.",
+      "examples": [
+        {
+          "_comment_heading": "Example: To send alert when data lags by more than 1 day to slack channel #rill-cloud-alerts",
+          "type": "alert",
+          "display_name": "Data lags by more than 1 day",
+          "_comment_refresh": "Check the alert every hour.",
+          "refresh": {
+            "cron": "0 * * * *"
+          },
+          "_comment_data": "Query that returns non-empty results if the metrics lag by more than 1 day.",
+          "data": {
+            "sql": "SELECT  *\nFROM\n(\n  SELECT  MAX(event_time) AS max_time\n  FROM rill_metrics_model\n)\nWHERE max_time < NOW() - INTERVAL '1 day'"
+          },
+          "_comment_notify": "Send notifications in Slack.",
+          "notify": {
+            "slack": {
+              "channels": [
+                "#rill-cloud-alerts"
+              ]
+            }
+          }
+        }
+      ],
       "allOf": [
         {
           "type": "object",
@@ -94,14 +117,6 @@
               "$ref": "#/definitions/schedule_properties",
               "description": "Specifies the refresh schedule that Rill should follow to re-ingest and update the underlying data"
             },
-            "watermark": {
-              "type": "string",
-              "enum": [
-                "trigger_time",
-                "inherit"
-              ],
-              "description": "Specifies how the watermark is determined for incremental processing.\nUse 'trigger_time' to set it at runtime or 'inherit' to use the upstream model's watermark."
-            },
             "intervals": {
               "type": "object",
               "description": "define the interval of the alert to check",
@@ -120,6 +135,14 @@
                   "description": "boolean, whether unclosed intervals should be checked"
                 }
               }
+            },
+            "watermark": {
+              "type": "string",
+              "enum": [
+                "trigger_time",
+                "inherit"
+              ],
+              "description": "Specifies how the watermark is determined for incremental processing.\nUse 'trigger_time' to set it at runtime or 'inherit' to use the upstream model's watermark."
             },
             "timeout": {
               "type": "string",
@@ -211,9 +234,10 @@
       "description": "In your Rill project directory, create a new file name `<api-name>.yaml` in the `apis` directory containing a custom API definition. See comprehensive documentation on how to define and use [custom APIs](/integrate/custom-apis/index.md)",
       "examples": [
         {
+          "_comment_heading": "Example: This api returns the top 10 authors by net line changes since the specified date provided in the arguments.",
           "type": "api",
-          "connector": "clickhouse",
-          "sql": "select * from my_model"
+          "name": "metrics_view_api",
+            "metrics_sql": "SELECT author_name, net_line_changes\nFROM advanced_metrics_view\n  where author_date > '{{ .args.date }}'\n  order by net_line_changes DESC\n  limit 10"
         }
       ],
       "allOf": [
@@ -3786,10 +3810,6 @@
     "schedule_properties": {
       "type": "object",
       "properties": {
-        "ref_update": {
-          "type": "boolean",
-          "description": "If true, allows the resource to run when a dependency updates."
-        },
         "cron": {
           "type": "string",
           "description": "A cron expression that defines the execution schedule"
@@ -3805,6 +3825,10 @@
         "disable": {
           "type": "boolean",
           "description": "If true, disables the resource without deleting it."
+        },
+        "ref_update": {
+          "type": "boolean",
+          "description": "If true, allows the resource to run when a dependency updates."
         },
         "run_in_dev": {
           "type": "boolean",

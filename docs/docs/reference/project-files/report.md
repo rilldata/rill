@@ -31,8 +31,6 @@ sidebar_position: 9
 
 **`refresh`**  - _[object]_ - Specifies the refresh schedule that Rill should follow to re-ingest and update the underlying data 
 
-  - **`ref_update`**  - _[boolean]_ - If true, allows the resource to run when a dependency updates. 
-
   - **`cron`**  - _[string]_ - A cron expression that defines the execution schedule 
 
   - **`every`**  - _[string]_ - Run at a fixed interval using a Go duration string (e.g., '1h', '30m', '24h'). See: https://pkg.go.dev/time#ParseDuration 
@@ -40,6 +38,8 @@ sidebar_position: 9
   - **`time_zone`**  - _[string]_ - Time zone to interpret the schedule in (e.g., 'UTC', 'America/Los_Angeles'). 
 
   - **`disable`**  - _[boolean]_ - If true, disables the resource without deleting it. 
+
+  - **`ref_update`**  - _[boolean]_ - If true, allows the resource to run when a dependency updates. 
 
   - **`run_in_dev`**  - _[boolean]_ - If true, allows the schedule to run in development mode. 
 

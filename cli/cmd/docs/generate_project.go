@@ -11,6 +11,7 @@ import (
 	"github.com/iancoleman/orderedmap"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/spf13/cobra"
+	"gopkg.in/yaml.v3"
 )
 
 func GenerateProjectDocsCmd(rootCmd *cobra.Command, ch *cmdutil.Helper) *cobra.Command {
@@ -231,7 +232,117 @@ func generateDoc(parentName string, schema *JSONSchema, indent string, requiredF
 		}
 	}
 
+	// Print Example if available
+	if len(schema.Examples) > 0 && parentName == "" {
+		doc.WriteString("\n\n## Examples")
+		for _, example := range schema.Examples {
+			exampleNode, err := orderedMapToYAMLNode(*example)
+			if err != nil {
+				panic(err)
+			}
+			exampleBytes, err := yaml.Marshal(exampleNode)
+			if err != nil {
+				panic(err) // Handle error appropriately
+			}
+			// Write the example in YAML format to the documentation
+			doc.WriteString(fmt.Sprintf("\n\n%s```yaml\n%s\n```\n\n", indent, exampleBytes))
+
+		}
+	}
+
 	return doc.String()
+}
+
+// orderedMapToYAMLNode recursively converts an orderedmap.OrderedMap to a yaml.Node
+// It treats keys starting with "_comment_" as comments.
+func orderedMapToYAMLNode(m orderedmap.OrderedMap) (*yaml.Node, error) {
+	node := &yaml.Node{
+		Kind: yaml.MappingNode,
+	}
+
+	var pendingComment string
+	for _, key := range m.Keys() {
+		value, _ := m.Get(key)
+
+		// Check if the key is a comment (starts with "_comment_")
+		if strings.HasPrefix(key, "_comment_") {
+			if strVal, ok := value.(string); ok {
+				pendingComment = strVal
+			}
+			continue
+		}
+
+		// Create key node
+		keyNode := &yaml.Node{
+			Kind:  yaml.ScalarNode,
+			Value: key,
+		}
+
+		// Create value node based on the type of value
+		var valueNode *yaml.Node
+		switch v := value.(type) {
+		case orderedmap.OrderedMap:
+			var err error
+			valueNode, err = orderedMapToYAMLNode(v)
+			if err != nil {
+				return nil, err
+			}
+		case []interface{}:
+			valueNode = &yaml.Node{
+				Kind: yaml.SequenceNode,
+			}
+			for _, item := range v {
+				switch itemVal := item.(type) {
+				case orderedmap.OrderedMap:
+					itemNode, err := orderedMapToYAMLNode(itemVal)
+					if err != nil {
+						return nil, err
+					}
+					valueNode.Content = append(valueNode.Content, itemNode)
+				default:
+					str, ok := itemVal.(string)
+					var itemNode *yaml.Node
+					if ok && strings.Contains(str, "\n") {
+						itemNode = &yaml.Node{
+							Kind:  yaml.ScalarNode,
+							Value: str,
+							Style: yaml.LiteralStyle,
+						}
+					} else {
+						itemNode = &yaml.Node{
+							Kind:  yaml.ScalarNode,
+							Value: fmt.Sprintf("%v", itemVal),
+						}
+					}
+					valueNode.Content = append(valueNode.Content, itemNode)
+				}
+			}
+		default:
+			str, ok := v.(string)
+			if ok && strings.Contains(str, "\n") {
+				valueNode = &yaml.Node{
+					Kind:  yaml.ScalarNode,
+					Value: str,
+					Style: yaml.LiteralStyle,
+				}
+			} else {
+				valueNode = &yaml.Node{
+					Kind:  yaml.ScalarNode,
+					Value: fmt.Sprintf("%v", v),
+				}
+			}
+		}
+
+		// Apply pending comment if available
+		if pendingComment != "" {
+			keyNode.HeadComment = pendingComment
+			pendingComment = ""
+		}
+
+		node.Content = append(node.Content, keyNode, valueNode)
+	}
+
+	return node, nil
 }
 
 // parseSchemaWithRefs reads and fully resolves all $ref in the JSON Schema
