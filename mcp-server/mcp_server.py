@@ -3,7 +3,7 @@ import logging
 import os
 
 from fastmcp import FastMCP
-from modules.rill import rill_mcp
+from subservers.rill.rill import rill_mcp
 
 mcp = FastMCP(name="Rill MCP Server")
 mcp._mcp_server.instructions = """
@@ -24,7 +24,7 @@ In the workflow, do not proceed with the next step until the previous step has b
 async def maybe_import_viz_server():
     openai_api_key = os.environ.get("OPENAI_API_KEY")
     if openai_api_key:
-        from modules.viz import viz_mcp
+        from subservers.viz import viz_mcp
 
         await mcp.import_server(prefix="viz", server=viz_mcp, tool_separator="_")
     else:

@@ -32,4 +32,4 @@ ENV PATH="/app/.venv/bin:$PATH"
 ENTRYPOINT []
 
 # Entrypoint
-CMD ["python", "app.py"]
+CMD ["python", "mcp_server.py"]

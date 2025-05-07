@@ -1,5 +1,6 @@
 import json
 import os
+import sys
 
 import vl_convert as vlc
 from fastmcp import FastMCP
@@ -51,7 +52,7 @@ def generate_chart(data: dict, prompt: str) -> Image:
         # Return using FastMCP's Image helper
         return Image(data=img_bytes, format="png")
     except Exception as e:
-        print(f"Error generating chart with OpenAI: {str(e)}")
+        print(f"Error generating chart with OpenAI: {str(e)}", file=sys.stderr)
         raise e
 
 
