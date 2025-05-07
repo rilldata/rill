@@ -7,7 +7,11 @@
 
   $: orgParam = $page.url.searchParams.get("org") ?? "";
 
-  const projectsForOrg = createLocalServiceListProjectsForOrgRequest(orgParam);
+  $: projectsForOrg = createLocalServiceListProjectsForOrgRequest(orgParam, {
+    query: {
+      enabled: !!orgParam,
+    },
+  });
 
   let selectedProject: Project | undefined = undefined;
 </script>

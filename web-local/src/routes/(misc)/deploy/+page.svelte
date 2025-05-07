@@ -8,9 +8,9 @@
   import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
   import { BehaviourEventAction } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
   import {
-    createLocalServiceGetCurrentProject,
     createLocalServiceGetCurrentUser,
     createLocalServiceGetMetadata,
+    createLocalServiceListMatchingProjectsRequest,
   } from "@rilldata/web-common/runtime-client/local-service";
   import CTAHeader from "@rilldata/web-common/components/calls-to-action/CTAHeader.svelte";
   import CTANeedHelp from "@rilldata/web-common/components/calls-to-action/CTANeedHelp.svelte";
@@ -22,21 +22,27 @@
   // So until sveltekit supports loading state from loader function these will have to be queried here.
   const user = createLocalServiceGetCurrentUser();
   const metadata = createLocalServiceGetMetadata();
-  const project = createLocalServiceGetCurrentProject();
+  const matchingProjects = createLocalServiceListMatchingProjectsRequest();
 
-  $: loading = $user.isPending || $metadata.isPending || $project.isPending;
-  $: error = $user.error ?? $metadata.error ?? $project.error;
+  $: loading =
+    $user.isPending || $metadata.isPending || $matchingProjects.isPending;
+  $: error = $user.error ?? $metadata.error ?? $matchingProjects.error;
 
   $: if (!loading && !error) {
     if ($user.data?.user) {
       // User is logged in already.
       void behaviourEvent?.fireDeployEvent(BehaviourEventAction.LoginSuccess);
 
-      if ($project.data?.project) {
-        // Project already exists. Run a redeploy
-        void goto(
-          `/deploy/redeploy?org=${$project.data.project.orgName}&projectId=${$project.data.project.id}`,
-        );
+      if ($matchingProjects.data?.projects?.length) {
+        if ($matchingProjects.data.projects.length === 1) {
+          const singleProject = $matchingProjects.data.projects[0];
+          // Project already exists. Run a redeploy
+          void goto(
+            `/deploy/redeploy?org=${singleProject.orgName}&projectId=${singleProject.id}`,
+          );
+        } else {
+          void goto(`/deploy/matching-projects`);
+        }
       } else if ($user.data.rillUserOrgs?.length) {
         // If the user has at least one org we show the selector.
         // Note: The selector has the option to create a new org, so we show it even when there is only one org.
@@ -59,6 +65,12 @@
     }
   }
 </script>
+
+<!-- This seems to be necessary to trigger tanstack query to update the query object -->
+<!-- TODO: find a config to avoid this -->
+<div class="hidden">
+  {$user.isLoading}-{$metadata.isLoading}-{$matchingProjects.isLoading}
+</div>
 
 {#if loading}
   <div class="h-36">
