@@ -1,18 +1,7 @@
-import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
-import {
-  getLocalServiceListOrganizationsAndBillingMetadataRequestQueryKey,
-  localServiceListOrganizationsAndBillingMetadataRequest,
-} from "@rilldata/web-common/runtime-client/local-service";
+import { redirect } from "@sveltejs/kit";
 
 export const load = async ({ url }) => {
-  const orgMetadata = await queryClient.fetchQuery({
-    queryKey:
-      getLocalServiceListOrganizationsAndBillingMetadataRequestQueryKey(),
-    queryFn: () => localServiceListOrganizationsAndBillingMetadataRequest(),
-    staleTime: Infinity,
-  });
-  return {
-    orgParam: url.searchParams.get("org") ?? "",
-    orgMetadata,
-  };
+  if (url.searchParams.has("org")) {
+    return redirect("/deploy/fresh-deploy?org=" + url.searchParams.get("org"));
+  }
 };
