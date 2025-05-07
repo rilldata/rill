@@ -22,7 +22,6 @@
   export let organization: string;
   export let project: string;
   export let user: User;
-  export let role: string;
   export let isCurrentUser = false;
   export let canChangeRole: boolean;
 
@@ -132,21 +131,18 @@
       {/if}
     </DropdownMenu.Trigger>
     <DropdownMenu.Content align="start" strategy="fixed">
-      {#if role === "admin"}
-        <DropdownMenu.Item
-          class="font-normal flex flex-col items-start py-2 {getUserRole(
-            user,
-          ) === 'admin'
-            ? 'bg-slate-100'
-            : ''}"
-          on:click={() => handleSetRole(getUserEmail(user), "admin")}
+      <DropdownMenu.Item
+        class="font-normal flex flex-col items-start py-2 {getUserRole(user) ===
+        'admin'
+          ? 'bg-slate-100'
+          : ''}"
+        on:click={() => handleSetRole(getUserEmail(user), "admin")}
+      >
+        <span class="font-medium">Admin</span>
+        <span class="text-xs text-gray-600"
+          >{PROJECT_ROLES_DESCRIPTION_MAP.admin}</span
         >
-          <span class="font-medium">Admin</span>
-          <span class="text-xs text-gray-600"
-            >{PROJECT_ROLES_DESCRIPTION_MAP.admin}</span
-          >
-        </DropdownMenu.Item>
-      {/if}
+      </DropdownMenu.Item>
 
       <DropdownMenu.Item
         class="font-normal flex flex-col items-start py-2 {getUserRole(user) ===

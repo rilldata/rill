@@ -6,6 +6,7 @@
     V1ProjectMemberUser,
     V1ProjectInvite,
   } from "@rilldata/web-admin/client";
+
   type User = V1ProjectMemberUser | V1ProjectInvite;
 
   export let organization: string;
@@ -29,7 +30,6 @@
   $: name = isProjectMemberUser(user) ? user.userName : user.email;
   $: email = isProjectMemberUser(user) ? user.userEmail : user.email;
   $: photoUrl = isProjectMemberUser(user) ? user.userPhotoUrl : null;
-  $: role = user.roleName;
   $: isCurrentUser = email === $currentUser.data?.user.email;
 </script>
 
@@ -46,7 +46,6 @@
     {organization}
     {project}
     {user}
-    {role}
     {isCurrentUser}
     {canChangeRole}
   />
