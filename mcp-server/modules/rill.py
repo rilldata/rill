@@ -161,8 +161,22 @@ async def get_metrics_view_time_range_summary(
     return response.json()
 
 
+class TimeGrain(str, Enum):
+    UNSPECIFIED = "TIME_GRAIN_UNSPECIFIED"
+    MILLISECOND = "TIME_GRAIN_MILLISECOND"
+    SECOND = "TIME_GRAIN_SECOND"
+    MINUTE = "TIME_GRAIN_MINUTE"
+    HOUR = "TIME_GRAIN_HOUR"
+    DAY = "TIME_GRAIN_DAY"
+    WEEK = "TIME_GRAIN_WEEK"
+    MONTH = "TIME_GRAIN_MONTH"
+    QUARTER = "TIME_GRAIN_QUARTER"
+    YEAR = "TIME_GRAIN_YEAR"
+
+
 class MetricsViewAggregationDimension(BaseModel):
     name: str
+    time_grain: Optional[TimeGrain] = None
 
 
 class MetricsViewAggregationMeasure(BaseModel):
@@ -292,6 +306,25 @@ async def get_metrics_view_aggregation(request: GetMetricsViewAggregationRequest
                 },
                 "sort": [{"name": "total_revenue", "desc": true}],
                 "limit": "10"
+            }
+
+        Get the total revenue by country, grouped by month:
+
+            {
+                "metrics_view": "ecommerce_financials",
+                "measures": [{"name": "total_revenue"}],
+                "dimensions": [
+                    {"name": "transaction_timestamp", "time_grain": "TIME_GRAIN_MONTH"}
+                    {"name": "country"},
+                ],
+                "time_range": {
+                    "start": "2024-01-01T00:00:00Z",
+                    "end": "2024-12-31T23:59:59Z"
+                },
+                "sort": [
+                    {"name": "transaction_timestamp"},
+                    {"name": "total_revenue", "desc": true},
+                ],
             }
     """
 
