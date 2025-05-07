@@ -31,7 +31,8 @@ func (s *Server) GetBillingSubscription(ctx context.Context, req *adminv1.GetBil
 	}
 
 	claims := auth.GetClaims(ctx)
-	if !claims.OrganizationPermissions(ctx, org.ID).ManageOrg && !claims.Superuser(ctx) {
+	forceAccess := claims.Superuser(ctx) && req.SuperuserForceAccess
+	if !claims.OrganizationPermissions(ctx, org.ID).ManageOrg && !forceAccess {
 		return nil, status.Error(codes.PermissionDenied, "not allowed to read org subscriptions")
 	}
 
@@ -65,7 +66,8 @@ func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.Upd
 	}
 
 	claims := auth.GetClaims(ctx)
-	if !claims.OrganizationPermissions(ctx, org.ID).ManageOrg && !claims.Superuser(ctx) {
+	forceAccess := claims.Superuser(ctx) && req.SuperuserForceAccess
+	if !claims.OrganizationPermissions(ctx, org.ID).ManageOrg && !forceAccess {
 		return nil, status.Error(codes.PermissionDenied, "not allowed to update org billing plan")
 	}
 
@@ -88,8 +90,6 @@ func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.Upd
 		return nil, status.Errorf(codes.FailedPrecondition, "plan cannot be changed on existing subscription as it was cancelled, please renew the subscription")
 	}
 
-	forceAccess := claims.Superuser(ctx) && req.SuperuserForceAccess
-
 	plan, err := s.admin.Biller.GetPlanByName(ctx, req.PlanName)
 	if err != nil {
 		if errors.Is(err, billing.ErrNotFound) {
@@ -108,7 +108,7 @@ func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.Upd
 		}
 		if bi != nil {
 			// check against trial orgs quota, skip for superusers
-			if org.CreatedByUserID != nil && !claims.Superuser(ctx) {
+			if org.CreatedByUserID != nil && !forceAccess {
 				u, err := s.admin.DB.FindUser(ctx, *org.CreatedByUserID)
 				if err != nil {
 					return nil, err
@@ -258,7 +258,8 @@ func (s *Server) CancelBillingSubscription(ctx context.Context, req *adminv1.Can
 	}
 
 	claims := auth.GetClaims(ctx)
-	if !claims.OrganizationPermissions(ctx, org.ID).ManageOrg && !claims.Superuser(ctx) {
+	forceAccess := claims.Superuser(ctx) && req.SuperuserForceAccess
+	if !claims.OrganizationPermissions(ctx, org.ID).ManageOrg && !forceAccess {
 		return nil, status.Error(codes.PermissionDenied, "not allowed to cancel org subscription")
 	}
 
@@ -324,7 +325,8 @@ func (s *Server) RenewBillingSubscription(ctx context.Context, req *adminv1.Rene
 	}
 
 	claims := auth.GetClaims(ctx)
-	if !claims.OrganizationPermissions(ctx, org.ID).ManageOrg && !claims.Superuser(ctx) {
+	forceAccess := claims.Superuser(ctx) && req.SuperuserForceAccess
+	if !claims.OrganizationPermissions(ctx, org.ID).ManageOrg && !forceAccess {
 		return nil, status.Error(codes.PermissionDenied, "not allowed to renew org subscription")
 	}
 
@@ -348,8 +350,6 @@ func (s *Server) RenewBillingSubscription(ctx context.Context, req *adminv1.Rene
 	if plan.Default {
 		return nil, status.Errorf(codes.FailedPrecondition, "cannot renew to trial plan %s", plan.Name)
 	}
-
-	forceAccess := claims.Superuser(ctx) && req.SuperuserForceAccess
 
 	if !plan.Public && !forceAccess {
 		return nil, status.Errorf(codes.FailedPrecondition, "cannot renew to a private plan %q", plan.Name)
@@ -472,7 +472,8 @@ func (s *Server) GetPaymentsPortalURL(ctx context.Context, req *adminv1.GetPayme
 	}
 
 	claims := auth.GetClaims(ctx)
-	if !claims.OrganizationPermissions(ctx, org.ID).ManageOrg && !claims.Superuser(ctx) {
+	forceAccess := claims.Superuser(ctx) && req.SuperuserForceAccess
+	if !claims.OrganizationPermissions(ctx, org.ID).ManageOrg && !forceAccess {
 		return nil, status.Error(codes.PermissionDenied, "not allowed to manage org billing")
 	}
 
@@ -843,7 +844,8 @@ func (s *Server) ListOrganizationBillingIssues(ctx context.Context, req *adminv1
 	}
 
 	claims := auth.GetClaims(ctx)
-	if !claims.OrganizationPermissions(ctx, org.ID).ReadOrg && !claims.Superuser(ctx) {
+	forceAccess := claims.Superuser(ctx) && req.SuperuserForceAccess
+	if !claims.OrganizationPermissions(ctx, org.ID).ReadOrg && !forceAccess {
 		return nil, status.Error(codes.PermissionDenied, "not allowed to read org billing errors")
 	}
 

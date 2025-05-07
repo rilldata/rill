@@ -61,7 +61,8 @@ func (s *Server) GetOrganization(ctx context.Context, req *adminv1.GetOrganizati
 
 	claims := auth.GetClaims(ctx)
 	perms := claims.OrganizationPermissions(ctx, org.ID)
-	if !perms.ReadOrg && !claims.Superuser(ctx) {
+	forceAccess := claims.Superuser(ctx) && req.SuperuserForceAccess
+	if !perms.ReadOrg && !forceAccess {
 		ok, err := s.admin.DB.CheckOrganizationHasPublicProjects(ctx, org.ID)
 		if err != nil {
 			return nil, err
@@ -287,7 +288,8 @@ func (s *Server) ListOrganizationMemberUsers(ctx context.Context, req *adminv1.L
 	}
 
 	claims := auth.GetClaims(ctx)
-	if !claims.Superuser(ctx) && !claims.OrganizationPermissions(ctx, org.ID).ReadOrgMembers {
+	forceAccess := claims.Superuser(ctx) && req.SuperuserForceAccess
+	if !claims.OrganizationPermissions(ctx, org.ID).ReadOrgMembers && !forceAccess {
 		return nil, status.Error(codes.PermissionDenied, "not authorized to read org members")
 	}
 

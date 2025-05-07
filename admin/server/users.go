@@ -298,9 +298,8 @@ func (s *Server) DeleteUser(ctx context.Context, req *adminv1.DeleteUserRequest)
 
 	claims := auth.GetClaims(ctx)
 	isCurrentUser := claims.OwnerType() == auth.OwnerTypeUser && claims.OwnerID() == user.ID
-	isSuperuser := claims.Superuser(ctx)
-
-	if !isCurrentUser && !isSuperuser {
+	forceAccess := claims.Superuser(ctx) && req.SuperuserForceAccess
+	if !isCurrentUser && !forceAccess {
 		return nil, status.Error(codes.PermissionDenied, "you can only delete your own user unless you are a superuser")
 	}
 

@@ -189,11 +189,12 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 
 	claims := auth.GetClaims(ctx)
 	permissions := claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID)
+	forceAccess := claims.Superuser(ctx) && req.SuperuserForceAccess
 	if proj.Public {
 		permissions.ReadProject = true
 		permissions.ReadProd = true
 	}
-	if claims.Superuser(ctx) {
+	if forceAccess {
 		permissions.ReadProject = true
 		permissions.ReadProd = true
 		permissions.ReadProdStatus = true
@@ -858,7 +859,8 @@ func (s *Server) ListProjectMemberUsers(ctx context.Context, req *adminv1.ListPr
 	}
 
 	claims := auth.GetClaims(ctx)
-	if !claims.Superuser(ctx) && !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ReadProjectMembers {
+	forceAccess := claims.Superuser(ctx) && req.SuperuserForceAccess
+	if !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ReadProjectMembers && !forceAccess {
 		return nil, status.Error(codes.PermissionDenied, "not authorized to read project members")
 	}
 
@@ -1203,14 +1205,15 @@ func (s *Server) SetProjectMemberUserRole(ctx context.Context, req *adminv1.SetP
 }
 
 func (s *Server) GetCloneCredentials(ctx context.Context, req *adminv1.GetCloneCredentialsRequest) (*adminv1.GetCloneCredentialsResponse, error) {
-	claims := auth.GetClaims(ctx)
-	if !claims.Superuser(ctx) {
-		return nil, status.Error(codes.PermissionDenied, "superuser permission required to get clone credentials")
-	}
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.org", req.Organization),
 		attribute.String("args.project", req.Project),
 	)
+
+	claims := auth.GetClaims(ctx)
+	if !claims.Superuser(ctx) {
+		return nil, status.Error(codes.PermissionDenied, "superuser permission required to get clone credentials")
+	}
 
 	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
 	if err != nil {
@@ -1707,7 +1710,7 @@ func (s *Server) RedeployProject(ctx context.Context, req *adminv1.RedeployProje
 	}
 
 	claims := auth.GetClaims(ctx)
-	forceAccess := req.SuperuserForceAccess && claims.Superuser(ctx)
+	forceAccess := claims.Superuser(ctx) && req.SuperuserForceAccess
 	if !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ManageProd && !forceAccess {
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to manage deployment")
 	}
@@ -1751,7 +1754,8 @@ func (s *Server) HibernateProject(ctx context.Context, req *adminv1.HibernatePro
 	}
 
 	claims := auth.GetClaims(ctx)
-	if !(claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ManageProject || claims.Superuser(ctx)) {
+	forceAccess := claims.Superuser(ctx) && req.SuperuserForceAccess
+	if !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ManageProject && !forceAccess {
 		return nil, status.Error(codes.PermissionDenied, "not allowed to manage project")
 	}
 
