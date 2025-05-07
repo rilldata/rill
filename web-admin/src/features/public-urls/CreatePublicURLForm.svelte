@@ -193,7 +193,7 @@
                   <Pencil size="14px" class="text-primary-600" />
                 </IconButton>
               </PopoverTrigger>
-              <PopoverContent align="end" class="p-0">
+              <PopoverContent align="end" class="p-0" strategy="fixed">
                 <Calendar
                   selection={DateTime.fromISO($form.expiresAt)}
                   singleDaySelection
