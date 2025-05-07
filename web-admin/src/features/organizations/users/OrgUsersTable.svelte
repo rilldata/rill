@@ -102,7 +102,8 @@
     }
   }
 
-  $: dynamicTableMaxHeight = data.length > 12 ? `calc(100dvh - 300px)` : "auto";
+  $: dynamicTableMaxHeight =
+    safeData.length > 12 ? `calc(100dvh - 300px)` : "auto";
 
   const headerIcons = {
     roleName: {
@@ -113,7 +114,7 @@
 </script>
 
 <InfiniteScrollTable
-  {data}
+  data={safeData}
   {columns}
   hasNextPage={usersQuery.hasNextPage || invitesQuery.hasNextPage}
   isFetchingNextPage={usersQuery.isFetchingNextPage ||

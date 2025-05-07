@@ -103,6 +103,7 @@
       open = false;
 
       eventBus.emit("notification", { message: "User group created" });
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (error) {
       eventBus.emit("notification", {
         message: "Error creating user group",
