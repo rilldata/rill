@@ -9,11 +9,13 @@
   import GlobalDimensionSearch from "@rilldata/web-common/features/dashboards/dimension-search/GlobalDimensionSearch.svelte";
   import StateManagersProvider from "@rilldata/web-common/features/dashboards/state-managers/StateManagersProvider.svelte";
   import { useExplore } from "@rilldata/web-common/features/explores/selectors";
+  import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import {
     createAdminServiceGetCurrentUser,
     createAdminServiceListOrganizations as listOrgs,
     createAdminServiceListProjectsForOrganization as listProjects,
+    type V1Organization,
   } from "../../client";
   import ViewAsUserChip from "../../features/view-as-user/ViewAsUserChip.svelte";
   import { viewAsUserStore } from "../../features/view-as-user/viewAsUserStore";
@@ -31,7 +33,6 @@
     isProjectPage,
     isPublicURLPage,
   } from "./nav-utils";
-  import { featureFlags } from "@rilldata/web-common/features/feature-flags";
 
   export let createMagicAuthTokens: boolean;
   export let manageProjectMembers: boolean;
@@ -88,10 +89,25 @@
   $: alertsQuery = useAlerts(instanceId, onAlertPage);
   $: reportsQuery = useReports(instanceId, onReportPage);
 
-  $: organizations =
-    $organizationQuery.data?.organizations ??
-    // handle case when visiting root cloud page directly (ui.rilldata.com)
-    (organization ? [{ name: organization, id: organization }] : []);
+  let organizations: V1Organization[] = [];
+  $: {
+    organizations = $organizationQuery.data?.organizations ?? [];
+
+    // If the organization of the current page is not in the user's list of organizations, add it.
+    // This can happen when a non-member visits an organization with a public project (e.g. the `demo` org).
+    const isCurrentOrgNotInUserOrgList =
+      organization &&
+      !organizations.some(
+        (o) => o.name.toLowerCase() === organization.toLowerCase(),
+      );
+
+    if (isCurrentOrgNotInUserOrgList) {
+      organizations = [
+        ...organizations,
+        { name: organization, id: organization },
+      ];
+    }
+  }
   $: projects = $projectsQuery.data?.projects ?? [];
   $: visualizations = $visualizationsQuery.data ?? [];
   $: alerts = $alertsQuery.data?.resources ?? [];
