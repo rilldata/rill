@@ -1,4 +1,4 @@
-#expensive: true
+expensive: true
 connectors:
   - redshift
 project_files:
