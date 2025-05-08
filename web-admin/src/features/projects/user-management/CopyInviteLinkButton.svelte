@@ -7,7 +7,8 @@
   export let copyLink: string;
 
   let copied = false;
-  function onCopy() {
+  function onCopy(e: Event) {
+    e.preventDefault();
     navigator.clipboard.writeText(copyLink).catch(console.error);
     copied = true;
 
