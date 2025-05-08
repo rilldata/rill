@@ -11,8 +11,9 @@ project_files:
       connector: duckdb
   all_datatypes_clickhouse.yaml:
     type: model
-    connector: clickhouse
     materialize: true
+    connector: clickhouse
+    output: clickhouse
     sql: "SELECT * FROM postgresql('{{.env.connector.postgres.ip}}:5432', 'postgres', 'all_datatypes', 'postgres', 'postgres')"
 tests:
   - name: query_all_result_duckdb
@@ -62,8 +63,8 @@ tests:
   - name: query_all_result_clickhouse
     resolver: sql
     properties:
-      sql: "select * from all_datatypes_clickhouse order by id"
       connector: clickhouse
+      sql: "select * from all_datatypes_clickhouse order by id"
     result_csv: |
       id,uuid,name,age,is_married,date_of_birth,time_of_day,created_at,personal_info,personal_info2,is_alive,binary_data,gender,gender_full,nickname,num_of_dependents,biography,last_login,weight,height,sibling_rank,credit_score,net_worth,salary_history,login_history,emp_salary,country
       1,8a25ac46-8ad6-4415-9a2e-12aa3962c144,John Doe,30,1,1983-03-08,12:35:00,2023-09-12T12:46:55Z,"{""hobbies"": ""Travel, Tech""}","{""job"": ""Software Engineer""}",1,10101010,M,Male,abcd      ,2,John is a software engineer who loves to travel and explore new places.,2023-09-12T07:16:55Z,75.4000015258789,180.5,1,720,1234567,"[1234567,7654312]","[""2023-09-12T12:46:55Z"",""2023-10-12T12:46:55Z""]",385000.71,IND
@@ -74,9 +75,9 @@ tests:
   - name: query_all_datatypes_clickhouse
     resolver: sql
     properties:
+      connector: clickhouse
       sql: |
         select name, type from system.columns where `table` = 'all_datatypes_clickhouse'
-      connector: clickhouse
     result_csv: |
       name,type
       id,Int32
