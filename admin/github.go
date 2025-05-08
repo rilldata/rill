@@ -32,8 +32,7 @@ var (
 type Github interface {
 	AppClient() *github.Client
 	InstallationClient(installationID int64) (*github.Client, error)
-	// InstallationToken returns a token for the installation ID.
-	// If repoID is non-zero, it will return a token with access to the repo only.
+	// InstallationToken returns a token for the installation ID limited to the repoID.
 	InstallationToken(ctx context.Context, installationID, repoID int64) (string, error)
 
 	CreateManagedRepo(ctx context.Context, repoPrefix string) (*github.Repository, error)
@@ -81,6 +80,7 @@ func NewGithub(ctx context.Context, appID int64, appPrivateKey, githubManagedAcc
 	// Set the managed org installation client
 	if githubManagedAcct == "" {
 		g.managedOrgFetchError = fmt.Errorf("managed Git repositories are not configured for this environment")
+		return g, nil
 	}
 	i, _, err := appClient.Apps.FindOrganizationInstallation(ctx, githubManagedAcct)
 	if err != nil {
@@ -182,7 +182,7 @@ func (g *githubClient) ManagedOrgInstallationID() (int64, error) {
 	return g.managedOrgInstallationID, g.managedOrgFetchError
 }
 
-func (s *Service) CreateManagedGitRepo(ctx context.Context, org *database.Organization, name string, ownerID string) (*github.Repository, error) {
+func (s *Service) CreateManagedGitRepo(ctx context.Context, org *database.Organization, name, ownerID string) (*github.Repository, error) {
 	if org.QuotaProjects >= 0 {
 		count, err := s.DB.CountManagedGitRepos(ctx, org.ID)
 		if err != nil {
