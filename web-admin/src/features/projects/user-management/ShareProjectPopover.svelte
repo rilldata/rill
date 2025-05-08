@@ -220,7 +220,7 @@
               {user}
               orgRole={user.orgRoleName}
               {manageProjectAdmins}
-              canChangeRole={manageProjectMembers}
+              {manageProjectMembers}
             />
           {/each}
           {#each projectInvitesList as user}
@@ -230,7 +230,7 @@
               {user}
               orgRole={user.orgRoleName}
               {manageProjectAdmins}
-              canChangeRole={manageProjectMembers}
+              {manageProjectMembers}
             />
           {/each}
         </div>

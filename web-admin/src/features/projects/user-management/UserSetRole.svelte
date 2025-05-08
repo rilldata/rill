@@ -23,7 +23,8 @@
   export let project: string;
   export let user: User;
   export let isCurrentUser = false;
-  export let canChangeRole: boolean;
+  export let manageProjectMembers: boolean;
+  export let manageProjectAdmins: boolean;
 
   let isOpen = false;
 
@@ -113,33 +114,39 @@
   }
 </script>
 
-{#if canChangeRole}
+{#if manageProjectMembers}
   <DropdownMenu.Root bind:open={isOpen}>
     <DropdownMenu.Trigger
       class="w-18 flex flex-row gap-1 items-center rounded-sm mr-[10px] {isOpen
         ? 'bg-slate-200'
         : 'hover:bg-slate-100'} px-2 py-1"
+      disabled={!manageProjectAdmins && getUserRole(user) === "admin"}
     >
       {capitalize(getUserRole(user))}
-      {#if isOpen}
-        <CaretUpIcon size="12px" />
-      {:else}
-        <CaretDownIcon size="12px" />
+      {#if !(!manageProjectAdmins && getUserRole(user) === "admin")}
+        {#if isOpen}
+          <CaretUpIcon size="12px" />
+        {:else}
+          <CaretDownIcon size="12px" />
+        {/if}
       {/if}
     </DropdownMenu.Trigger>
     <DropdownMenu.Content align="start" strategy="fixed">
-      <DropdownMenu.Item
-        class="font-normal flex flex-col items-start py-2 {getUserRole(user) ===
-        'admin'
-          ? 'bg-slate-100'
-          : ''}"
-        on:click={() => handleSetRole(getUserEmail(user), "admin")}
-      >
-        <span class="font-medium">Admin</span>
-        <span class="text-xs text-gray-600"
-          >{PROJECT_ROLES_DESCRIPTION_MAP.admin}</span
+      {#if manageProjectAdmins}
+        <DropdownMenu.Item
+          class="font-normal flex flex-col items-start py-2 {getUserRole(
+            user,
+          ) === 'admin'
+            ? 'bg-slate-100'
+            : ''}"
+          on:click={() => handleSetRole(getUserEmail(user), "admin")}
         >
-      </DropdownMenu.Item>
+          <span class="font-medium">Admin</span>
+          <span class="text-xs text-gray-600"
+            >{PROJECT_ROLES_DESCRIPTION_MAP.admin}</span
+          >
+        </DropdownMenu.Item>
+      {/if}
 
       <DropdownMenu.Item
         class="font-normal flex flex-col items-start py-2 {getUserRole(user) ===
