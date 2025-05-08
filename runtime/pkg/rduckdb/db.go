@@ -24,6 +24,7 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"gocloud.dev/blob"
@@ -350,7 +351,12 @@ func (d *db) CreateTableAsSelect(ctx context.Context, name, query string, opts *
 		attribute.String("query", query),
 		attribute.Bool("view", opts.View),
 	))
-	defer span.End()
+	defer func() {
+		if createErr != nil {
+			span.SetStatus(codes.Error, createErr.Error())
+		}
+		span.End()
+	}()
 
 	d.logger.Debug("create: create table", zap.String("name", name), zap.Bool("view", opts.View), observability.ZapCtx(ctx))
 	err := d.writeSem.Acquire(ctx, 1)
@@ -472,9 +478,14 @@ func (d *db) CreateTableAsSelect(ctx context.Context, name, query string, opts *
 	return &TableWriteMetrics{Duration: duration}, nil
 }
 
-func (d *db) MutateTable(ctx context.Context, name string, initQueries []string, mutateFn func(ctx context.Context, conn *sqlx.Conn) error) (*TableWriteMetrics, error) {
+func (d *db) MutateTable(ctx context.Context, name string, initQueries []string, mutateFn func(ctx context.Context, conn *sqlx.Conn) error) (res *TableWriteMetrics, resErr error) {
 	ctx, span := tracer.Start(ctx, "MutateTable", trace.WithAttributes(attribute.String("name", name)))
-	defer span.End()
+	defer func() {
+		if resErr != nil {
+			span.SetStatus(codes.Error, resErr.Error())
+		}
+		span.End()
+	}()
 
 	d.logger.Debug("mutate table", zap.String("name", name), observability.ZapCtx(ctx))
 	err := d.writeSem.Acquire(ctx, 1)
@@ -560,9 +571,18 @@ func (d *db) MutateTable(ctx context.Context, name string, initQueries []string,
 }
 
 // DropTable implements DB.
-func (d *db) DropTable(ctx context.Context, name string) error {
+func (d *db) DropTable(ctx context.Context, name string) (resErr error) {
 	ctx, span := tracer.Start(ctx, "DropTable", trace.WithAttributes(attribute.String("name", name)))
-	defer span.End()
+	defer func() {
+		if resErr != nil {
+			span.SetAttributes(attribute.String("error", resErr.Error()))
+			if !strings.Contains(resErr.Error(), "not found") {
+				// not found error is an expected error in various cases so best to not mark status as error
+				span.SetStatus(codes.Error, resErr.Error())
+			}
+		}
+		span.End()
+	}()
 
 	d.logger.Debug("drop table", zap.String("name", name), observability.ZapCtx(ctx))
 	err := d.writeSem.Acquire(ctx, 1)
@@ -599,9 +619,14 @@ func (d *db) DropTable(ctx context.Context, name string) error {
 	return nil
 }
 
-func (d *db) RenameTable(ctx context.Context, oldName, newName string) error {
+func (d *db) RenameTable(ctx context.Context, oldName, newName string) (resErr error) {
 	ctx, span := tracer.Start(ctx, "RenameTable", trace.WithAttributes(attribute.String("old_name", oldName), attribute.String("new_name", newName)))
-	defer span.End()
+	defer func() {
+		if resErr != nil {
+			span.SetStatus(codes.Error, resErr.Error())
+		}
+		span.End()
+	}()
 
 	d.logger.Debug("rename table", zap.String("from", oldName), zap.String("to", newName), observability.ZapCtx(ctx))
 	if strings.EqualFold(oldName, newName) {
