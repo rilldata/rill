@@ -63,7 +63,7 @@ measures:
 					OutputProperties: must(structpb.NewStruct(map[string]any{"materialize": true})),
 					RefreshSchedule:  &runtimev1.Schedule{RefUpdate: true},
 					DefinedAsSource:  true,
-					ChangeMode:       "reset",
+					ChangeMode:       runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
 				},
 				State: &runtimev1.ModelState{
 					ExecutorConnector: "duckdb",
@@ -92,7 +92,7 @@ measures:
 					InputConnector:  "duckdb",
 					InputProperties: must(structpb.NewStruct(map[string]any{"sql": "SELECT * FROM foo"})),
 					OutputConnector: "duckdb",
-					ChangeMode:      "reset",
+					ChangeMode:      runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
 				},
 				State: &runtimev1.ModelState{
 					ExecutorConnector: "duckdb",
@@ -163,7 +163,7 @@ path
 					InputConnector:  "duckdb",
 					InputProperties: must(structpb.NewStruct(map[string]any{"sql": "SELECT * FROM foo"})),
 					OutputConnector: "duckdb",
-					ChangeMode:      "reset",
+					ChangeMode:      runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
 				},
 				State: &runtimev1.ModelState{},
 			},
@@ -230,7 +230,7 @@ path: data/foo.csv
 					OutputProperties: must(structpb.NewStruct(map[string]any{"materialize": true})),
 					RefreshSchedule:  &runtimev1.Schedule{RefUpdate: true},
 					DefinedAsSource:  true,
-					ChangeMode:       "reset",
+					ChangeMode:       runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
 				},
 				State: &runtimev1.ModelState{
 					ExecutorConnector: "duckdb",
@@ -318,7 +318,7 @@ path: data/foo.csv
 					OutputProperties: must(structpb.NewStruct(map[string]any{"materialize": true})),
 					RefreshSchedule:  &runtimev1.Schedule{RefUpdate: true},
 					DefinedAsSource:  true,
-					ChangeMode:       "reset",
+					ChangeMode:       runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
 				},
 				State: &runtimev1.ModelState{
 					ExecutorConnector: "duckdb",
@@ -1178,7 +1178,7 @@ func newSource(name, path, localFileHash string) (*runtimev1.Model, *runtimev1.R
 			OutputProperties: must(structpb.NewStruct(map[string]any{"materialize": true})),
 			RefreshSchedule:  &runtimev1.Schedule{RefUpdate: true},
 			DefinedAsSource:  true,
-			ChangeMode:       "reset",
+			ChangeMode:       runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
 		},
 		State: &runtimev1.ModelState{
 			ExecutorConnector: "duckdb",
@@ -1207,7 +1207,7 @@ func newModel(query, name, source string) (*runtimev1.Model, *runtimev1.Resource
 			InputConnector:  "duckdb",
 			InputProperties: must(structpb.NewStruct(map[string]any{"sql": query})),
 			OutputConnector: "duckdb",
-			ChangeMode:      "reset",
+			ChangeMode:      runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
 		},
 		State: &runtimev1.ModelState{
 			ExecutorConnector: "duckdb",
