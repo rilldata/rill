@@ -70,8 +70,7 @@
       eventBus.emit("notification", {
         message: "User added to user group",
       });
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    } catch (error) {
+    } catch {
       eventBus.emit("notification", {
         message: "Error adding user to user group",
         type: "error",
@@ -103,8 +102,7 @@
       open = false;
 
       eventBus.emit("notification", { message: "User group created" });
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    } catch (error) {
+    } catch {
       eventBus.emit("notification", {
         message: "Error creating user group",
         type: "error",
@@ -248,7 +246,7 @@
         </div>
         <div class="max-h-[208px] overflow-y-auto">
           <div class="flex flex-col gap-2">
-            {#each selectedUsers as user}
+            {#each selectedUsers as user (user.userEmail)}
               <div class="flex flex-row justify-between gap-2 items-center">
                 <div class="flex items-center gap-2">
                   <Avatar avatarSize="h-7 w-7" alt={user.userName} />
