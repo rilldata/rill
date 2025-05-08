@@ -156,7 +156,7 @@ export class CircularChartComponent extends BaseChart<CircularChartSpec> {
 
     return {
       metrics_view: metricsViewName,
-      innerRadius: 0,
+      innerRadius: 50,
       color: {
         type: "nominal",
         field: randomDimension,
