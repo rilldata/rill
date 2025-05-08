@@ -538,6 +538,7 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 		GithubURL:            nil,         // Populated below
 		GithubInstallationID: nil,         // Populated below
 		GithubRepoID:         nil,         // Populated below
+		ManagedGitRepoID:     nil,         // Populated below
 		ProdBranch:           "",          // Populated below
 		Subpath:              req.Subpath, // Populated below
 		ProdVersion:          req.ProdVersion,
@@ -565,6 +566,7 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 		opts.GithubInstallationID = &installationID
 		opts.GithubURL = &req.GithubUrl
 		opts.GithubRepoID = &repoID
+		opts.ManagedGitRepoID = nil
 		opts.ProdBranch = req.ProdBranch
 		opts.Subpath = req.Subpath
 	} else if req.ArchiveAssetId != "" {
@@ -746,6 +748,7 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 		GithubURL:            githubURL,
 		GithubInstallationID: githubInstID,
 		GithubRepoID:         githubRepoID,
+		ManagedGitRepoID:     nil,
 		Subpath:              subpath,
 		ProdVersion:          valOrDefault(req.ProdVersion, proj.ProdVersion),
 		ProdBranch:           prodBranch,
@@ -1540,6 +1543,7 @@ func (s *Server) SudoUpdateAnnotations(ctx context.Context, req *adminv1.SudoUpd
 		GithubURL:            proj.GithubURL,
 		GithubInstallationID: proj.GithubInstallationID,
 		GithubRepoID:         proj.GithubRepoID,
+		ManagedGitRepoID:     proj.ManagedGitRepoID,
 		ProdVersion:          proj.ProdVersion,
 		ProdBranch:           proj.ProdBranch,
 		Subpath:              proj.Subpath,
@@ -1910,6 +1914,7 @@ func (s *Server) githubRepoIDForProject(ctx context.Context, p *database.Project
 		GithubURL:            p.GithubURL,
 		GithubInstallationID: p.GithubInstallationID,
 		GithubRepoID:         &id,
+		ManagedGitRepoID:     p.ManagedGitRepoID,
 		ProdVersion:          p.ProdVersion,
 		ProdBranch:           p.ProdBranch,
 		Subpath:              p.Subpath,

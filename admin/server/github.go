@@ -398,12 +398,7 @@ func (s *Server) CreateManagedGitRepo(ctx context.Context, req *adminv1.CreateMa
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to create projects")
 	}
 
-	var createdByUserID *string
-	if claims.OwnerType() == auth.OwnerTypeUser {
-		id := claims.OwnerID()
-		createdByUserID = &id
-	}
-	repo, err := s.admin.CreateManagedGitRepo(ctx, org, req.Name, createdByUserID)
+	repo, err := s.admin.CreateManagedGitRepo(ctx, org, req.Name, claims.OwnerID())
 	if err != nil {
 		return nil, err
 	}

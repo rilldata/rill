@@ -110,6 +110,7 @@ func (w *Worker) runAutoscaler(ctx context.Context) error {
 			GithubURL:            targetProject.GithubURL,
 			GithubInstallationID: targetProject.GithubInstallationID,
 			GithubRepoID:         targetProject.GithubRepoID,
+			ManagedGitRepoID:     targetProject.ManagedGitRepoID,
 			ProdVersion:          targetProject.ProdVersion,
 			ProdBranch:           targetProject.ProdBranch,
 			Subpath:              targetProject.Subpath,

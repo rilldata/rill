@@ -444,6 +444,7 @@ type InsertProjectOptions struct {
 	GithubURL            *string `validate:"omitempty,http_url"`
 	GithubInstallationID *int64  `validate:"omitempty,ne=0"`
 	GithubRepoID         *int64
+	ManagedGitRepoID     *string
 	Subpath              string
 	ProdVersion          string
 	ProdBranch           string
@@ -463,6 +464,7 @@ type UpdateProjectOptions struct {
 	GithubURL            *string `validate:"omitempty,http_url"`
 	GithubInstallationID *int64  `validate:"omitempty,ne=0"`
 	GithubRepoID         *int64
+	ManagedGitRepoID     *string
 	Subpath              string
 	ProdVersion          string
 	ProdBranch           string
@@ -1286,14 +1288,16 @@ type UpdateProvisionerResourceOptions struct {
 
 // ManagedGitRepo represents metadata about a Rill managed Git repository for projects deployed on Rill Cloud.
 type ManagedGitRepo struct {
-	ID              string    `db:"id"`
-	Remote          string    `db:"remote"`
-	CreatedByUserID string    `db:"created_by_user_id"`
-	CreatedOn       time.Time `db:"created_on"`
-	UpdatedOn       time.Time `db:"updated_on"`
+	ID        string    `db:"id"`
+	OrgID     *string   `db:"org_id"`
+	Remote    string    `db:"remote"`
+	OwnerID   string    `db:"owner_id"`
+	CreatedOn time.Time `db:"created_on"`
+	UpdatedOn time.Time `db:"updated_on"`
 }
 
 type InsertManagedGitRepoOptions struct {
-	CreatedByUserID *string `validate:"required"`
-	Remote          string  `validate:"required"`
+	OrgID   string `validate:"required"`
+	Remote  string `validate:"required"`
+	OwnerID string `validate:"required"`
 }

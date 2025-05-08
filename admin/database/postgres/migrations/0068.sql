@@ -1,7 +1,8 @@
 CREATE TABLE managed_git_repos (
     id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+    org_id UUID REFERENCES orgs (id) ON DELETE SET NULL,
     remote TEXT NOT NULL UNIQUE,
-    created_by_user_id UUID REFERENCES users (id) ON DELETE SET NULL,
+    owner_id UUID NOT NULL,
     created_on TIMESTAMP DEFAULT NOW(),
     updated_on TIMESTAMP DEFAULT NOW()
 );

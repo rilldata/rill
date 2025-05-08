@@ -182,7 +182,7 @@ func (g *githubClient) ManagedOrgInstallationID() (int64, error) {
 	return g.managedOrgInstallationID, g.managedOrgFetchError
 }
 
-func (s *Service) CreateManagedGitRepo(ctx context.Context, org *database.Organization, name string, userID *string) (*github.Repository, error) {
+func (s *Service) CreateManagedGitRepo(ctx context.Context, org *database.Organization, name string, ownerID string) (*github.Repository, error) {
 	if org.QuotaProjects >= 0 {
 		count, err := s.DB.CountManagedGitRepos(ctx, org.ID)
 		if err != nil {
@@ -200,8 +200,9 @@ func (s *Service) CreateManagedGitRepo(ctx context.Context, org *database.Organi
 		return nil, fmt.Errorf("failed to create managed repo: %w", err)
 	}
 	_, err = s.DB.InsertManagedGitRepo(ctx, &database.InsertManagedGitRepoOptions{
-		CreatedByUserID: userID,
-		Remote:          repo.GetCloneURL(),
+		OrgID:   org.ID,
+		Remote:  repo.GetCloneURL(),
+		OwnerID: ownerID,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to insert managed repo meta: %w", err)
