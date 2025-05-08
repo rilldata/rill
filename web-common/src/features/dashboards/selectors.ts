@@ -20,10 +20,10 @@ import {
   createQueryServiceMetricsViewTimeRange,
   createRuntimeServiceListResources,
 } from "@rilldata/web-common/runtime-client";
-import type {
-  CreateQueryOptions,
-  CreateQueryResult,
-  QueryClient,
+import {
+  type CreateQueryOptions,
+  type CreateQueryResult,
+  type QueryClient,
 } from "@tanstack/svelte-query";
 import { derived } from "svelte/store";
 import type { ErrorType } from "../../runtime-client/http-client";

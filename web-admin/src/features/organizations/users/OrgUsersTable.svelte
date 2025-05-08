@@ -5,7 +5,7 @@
     V1ListOrganizationInvitesResponse,
     V1ListOrganizationMemberUsersResponse,
     V1OrganizationMemberUser,
-    V1UserInvite,
+    V1OrganizationInvite,
   } from "@rilldata/web-admin/client";
   import OrgUsersTableUserCompositeCell from "./OrgUsersTableUserCompositeCell.svelte";
   import OrgUsersTableActionsCell from "./OrgUsersTableActionsCell.svelte";
@@ -30,7 +30,7 @@
   } from "@tanstack/svelte-query";
   import { ExternalLinkIcon } from "lucide-svelte";
 
-  interface OrgUser extends V1OrganizationMemberUser, V1UserInvite {
+  interface OrgUser extends V1OrganizationMemberUser, V1OrganizationInvite {
     invitedBy?: string;
   }
 
@@ -81,7 +81,7 @@
           role: row.original.roleName,
         }),
       meta: {
-        widthPercent: 5,
+        widthPercent: 50,
       },
     },
     {
@@ -97,7 +97,7 @@
           onAttemptChangeBillingContactUserRole,
         }),
       meta: {
-        widthPercent: 5,
+        widthPercent: 40,
         marginLeft: "8px",
       },
     },
@@ -115,7 +115,7 @@
           onAttemptRemoveBillingContactUser,
         }),
       meta: {
-        widthPercent: 0,
+        widthPercent: 5,
       },
     },
   ];
@@ -211,7 +211,7 @@
                     style={`margin-left: ${marginLeft};`}
                     class:cursor-pointer={header.column.getCanSort()}
                     class:select-none={header.column.getCanSort()}
-                    class="font-semibold text-gray-500 flex flex-row items-center gap-x-1"
+                    class="font-semibold text-gray-500 flex flex-row items-center gap-x-1 text-sm"
                   >
                     <svelte:component
                       this={flexRender(

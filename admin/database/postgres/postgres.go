@@ -365,6 +365,22 @@ func (c *connection) FindProjectByName(ctx context.Context, orgName, name string
 	return c.projectFromDTO(res)
 }
 
+func (c *connection) FindProjectsByNameAndUser(ctx context.Context, name, userID string) ([]*database.Project, error) {
+	var res []*projectDTO
+	err := c.getDB(ctx).SelectContext(ctx, &res, `
+		SELECT * FROM projects
+		WHERE id IN (
+			SELECT upr.project_id FROM users_projects_roles upr WHERE upr.user_id = $1
+			UNION
+			SELECT ugpr.project_id FROM usergroups_projects_roles ugpr JOIN usergroups_users ugu ON ugpr.usergroup_id = ugu.usergroup_id WHERE ugu.user_id = $1
+		) AND lower(name)=lower($2)
+	`, userID, name)
+	if err != nil {
+		return nil, parseErr("projects", err)
+	}
+	return c.projectsFromDTOs(res)
+}
+
 func (c *connection) InsertProject(ctx context.Context, opts *database.InsertProjectOptions) (*database.Project, error) {
 	if err := database.Validate(opts); err != nil {
 		return nil, err
@@ -1612,20 +1628,32 @@ func (c *connection) FindOrganizationMembersWithManageUsersRole(ctx context.Cont
 	return res, nil
 }
 
-func (c *connection) FindProjectMemberUsers(ctx context.Context, projectID, filterRoleID, afterEmail string, limit int) ([]*database.ProjectMemberUser, error) {
-	args := []any{projectID, afterEmail, limit}
+func (c *connection) FindProjectMemberUsers(ctx context.Context, orgID, projectID, filterRoleID, afterEmail string, limit int) ([]*database.ProjectMemberUser, error) {
+	args := []any{orgID, projectID, afterEmail, limit}
 	var qry strings.Builder
 	qry.WriteString(`
-		SELECT u.id, u.email, u.display_name, u.photo_url, u.created_on, u.updated_on, r.name FROM users u
-    	JOIN users_projects_roles upr ON u.id = upr.user_id
-		JOIN project_roles r ON r.id = upr.project_role_id
-		WHERE upr.project_id=$1
+		SELECT
+			-- User info
+			u.id, u.email, u.display_name, u.photo_url, u.created_on, u.updated_on,
+			-- Project role name
+			(SELECT pr.name FROM project_roles pr WHERE pr.id = upr.project_role_id) as role_name,
+			-- Org role name
+			(
+				SELECT orr.name
+				FROM org_roles orr
+				JOIN users_orgs_roles uor
+				ON orr.id = uor.org_role_id
+				WHERE uor.user_id = u.id AND uor.org_id = $1
+			) as org_role_name
+		FROM users u
+		JOIN users_projects_roles upr ON upr.user_id = u.id
+		WHERE upr.project_id = $2
 	`)
 	if filterRoleID != "" {
-		qry.WriteString(" AND upr.project_role_id=$4")
+		qry.WriteString(" AND upr.project_role_id=$5")
 		args = append(args, filterRoleID)
 	}
-	qry.WriteString(" AND lower(u.email) > lower($2) ORDER BY lower(u.email) LIMIT $3")
+	qry.WriteString(" AND lower(u.email) > lower($3) ORDER BY lower(u.email) LIMIT $4")
 
 	var res []*database.ProjectMemberUser
 	err := c.getDB(ctx).SelectContext(ctx, &res, qry.String(), args...)
@@ -1821,11 +1849,13 @@ func (c *connection) UpdateProjectMemberUserRole(ctx context.Context, projectID,
 	return checkUpdateRow("project member", res, err)
 }
 
-func (c *connection) FindOrganizationInvites(ctx context.Context, orgID, afterEmail string, limit int) ([]*database.Invite, error) {
-	var res []*database.Invite
+func (c *connection) FindOrganizationInvites(ctx context.Context, orgID, afterEmail string, limit int) ([]*database.OrganizationInviteWithRole, error) {
+	var res []*database.OrganizationInviteWithRole
 	err := c.getDB(ctx).SelectContext(ctx, &res, `
-		SELECT uoi.email, ur.name as role, u.email as invited_by
-		FROM org_invites uoi JOIN org_roles ur ON uoi.org_role_id = ur.id JOIN users u ON uoi.invited_by_user_id = u.id
+		SELECT uoi.id, uoi.email, ur.name as role_name, u.email as invited_by
+		FROM org_invites uoi
+		JOIN org_roles ur ON uoi.org_role_id = ur.id
+		JOIN users u ON uoi.invited_by_user_id = u.id
 		WHERE uoi.org_id = $1 AND lower(uoi.email) > lower($2)
 		ORDER BY lower(uoi.email) LIMIT $3
 	`, orgID, afterEmail, limit)
@@ -1904,13 +1934,17 @@ func (c *connection) UpdateOrganizationInviteRole(ctx context.Context, id, roleI
 	return checkUpdateRow("org invite", res, err)
 }
 
-func (c *connection) FindProjectInvites(ctx context.Context, projectID, afterEmail string, limit int) ([]*database.Invite, error) {
-	var res []*database.Invite
+func (c *connection) FindProjectInvites(ctx context.Context, projectID, afterEmail string, limit int) ([]*database.ProjectInviteWithRole, error) {
+	var res []*database.ProjectInviteWithRole
 	err := c.getDB(ctx).SelectContext(ctx, &res, `
-			SELECT upi.email, ur.name as role, u.email as invited_by
-			FROM project_invites upi JOIN project_roles ur ON upi.project_role_id = ur.id JOIN users u ON upi.invited_by_user_id = u.id
-			WHERE upi.project_id = $1 AND lower(upi.email) > lower($2)
-			ORDER BY lower(upi.email) LIMIT $3
+		SELECT upi.id, upi.email, upr.name as role_name, uor.name as org_role_name, u.email as invited_by
+		FROM project_invites upi
+		JOIN project_roles upr ON upi.project_role_id = upr.id
+		JOIN users u ON upi.invited_by_user_id = u.id
+		LEFT JOIN org_invites uoi ON upi.org_invite_id = uoi.id
+		LEFT JOIN org_roles uor ON uoi.org_role_id = uor.id
+		WHERE upi.project_id = $1 AND lower(upi.email) > lower($2)
+		ORDER BY lower(upi.email) LIMIT $3
 	`, projectID, afterEmail, limit)
 	if err != nil {
 		return nil, parseErr("project invites", err)

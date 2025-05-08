@@ -107,7 +107,6 @@ Here's a guide to the top-level structure of the repository:
 - `runtime` contains the engine (data plane) responsible for orchestrating and serving data.
 - `scripts` contains various scripts and other resources used in development.
 - `web-admin` contains the frontend control plane for the managed, multi-user version of Rill.
-- `web-auth` contains the frontend code for `auth.rilldata.com` (managed with Auth0).
 - `web-common` contains common functionality shared across the local and admin frontend applications.
 - `web-local` contains the local Rill application, notably the data modeller.
 

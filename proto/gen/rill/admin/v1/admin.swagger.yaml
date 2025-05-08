@@ -2981,6 +2981,26 @@ paths:
             type: object
       tags:
         - AdminService
+  /v1/projects:
+    get:
+      summary: ListProjectsForUserByName returns projects matching a name accessible by the logged in user
+      operationId: AdminService_ListProjectsForUserByName
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ListProjectsForUserByNameResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: name
+          in: query
+          required: false
+          type: string
+      tags:
+        - AdminService
   /v1/projects/-/redeploy:
     post:
       summary: |-
@@ -4159,6 +4179,8 @@ definitions:
         type: string
       description:
         type: string
+      displayName:
+        type: string
   v1CreateOrganizationResponse:
     type: object
     properties:
@@ -4572,7 +4594,7 @@ definitions:
         type: array
         items:
           type: object
-          $ref: '#/definitions/v1UserInvite'
+          $ref: '#/definitions/v1OrganizationInvite'
       nextPageToken:
         type: string
   v1ListOrganizationMemberUsergroupsResponse:
@@ -4612,7 +4634,7 @@ definitions:
         type: array
         items:
           type: object
-          $ref: '#/definitions/v1UserInvite'
+          $ref: '#/definitions/v1ProjectInvite'
       nextPageToken:
         type: string
   v1ListProjectMemberUsergroupsResponse:
@@ -4663,6 +4685,14 @@ definitions:
           $ref: '#/definitions/v1Project'
       nextPageToken:
         type: string
+  v1ListProjectsForUserByNameResponse:
+    type: object
+    properties:
+      projects:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1Project'
   v1ListPublicBillingPlansResponse:
     type: object
     properties:
@@ -4856,6 +4886,15 @@ definitions:
       updatedOn:
         type: string
         format: date-time
+  v1OrganizationInvite:
+    type: object
+    properties:
+      email:
+        type: string
+      roleName:
+        type: string
+      invitedBy:
+        type: string
   v1OrganizationMemberUser:
     type: object
     properties:
@@ -4997,6 +5036,17 @@ definitions:
       updatedOn:
         type: string
         format: date-time
+  v1ProjectInvite:
+    type: object
+    properties:
+      email:
+        type: string
+      roleName:
+        type: string
+      orgRoleName:
+        type: string
+      invitedBy:
+        type: string
   v1ProjectMemberUser:
     type: object
     properties:
@@ -5009,6 +5059,8 @@ definitions:
       userPhotoUrl:
         type: string
       roleName:
+        type: string
+      orgRoleName:
         type: string
       createdOn:
         type: string
@@ -5601,15 +5653,6 @@ definitions:
       updatedOn:
         type: string
         format: date-time
-  v1UserInvite:
-    type: object
-    properties:
-      email:
-        type: string
-      role:
-        type: string
-      invitedBy:
-        type: string
   v1UserPreferences:
     type: object
     properties:
