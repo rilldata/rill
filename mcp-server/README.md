@@ -28,38 +28,50 @@ rill service create mcp-server
 
 Generate one at https://platform.openai.com/api-keys if you want to enable chart generation.
 
-### 3. Configure your MCP client
+### 3. Configure Claude Desktop
 
-Create a `mcp.json` file for your client (e.g. Claude Desktop, Cursor, Windsurf):
+As of 2025-05-08, it's recommended to use [Claude Desktop](https://claude.ai/download) as your MCP client. Cursor currently struggles to compose complex structured payloads ([see issue](https://forum.cursor.com/t/issue-with-mcp-server-and-pydantic-model-object-as-tool-parameter-in-cursor/77110/4?u=ericpgreen)), and Windsurf often thinks it can find the answer in your current code project. Other MCP clients have not yet been tested.
 
-```json
-{
-  "mcpServers": {
-    "rill": {
-      "command": "docker",
-      "args": [
-        "run", "--rm", "-i",
-        "-e", "RILL_ORGANIZATION_NAME",
-        "-e", "RILL_PROJECT_NAME",
-        "-e", "RILL_SERVICE_TOKEN",
-        "-e", "OPENAI_API_KEY",
-        "rilldata/rill-mcp-server"
-      ],
-      "env": {
-        "RILL_ORGANIZATION_NAME": "your-org-name",
-        "RILL_PROJECT_NAME": "your-project-name",
-        "RILL_SERVICE_TOKEN": "your-rill-service-token",
-        "OPENAI_API_KEY": "your-openai-api-key" // Optional
-      }
-    }
-  }
-}
-```
+**To configure Claude Desktop:**
 
-Claude Desktop notes:
-- Restart the app after editing `mcp.json`.
-- You may need to provide a full path to docker in the command field (e.g. `/opt/homebrew/bin/docker` on macOS with Homebrew).
+1. **Find your Docker executable path:**  
+   Run `which docker` in your terminal and copy the output (e.g., `/Users/<your-username>/.docker/bin/docker`).
 
+2. **Edit your `claude_desktop_config.json` file:**  
+   Replace `/path/to/docker` below with the path from step 1. Without the full path to Docker, Claude may fail to find it.
+
+   ```json
+   {
+     "mcpServers": {
+       "rill": {
+         "command": "/path/to/docker", // Use the full path from `which docker`
+         "args": [
+           "run", "--rm", "-i",
+           "-e", "RILL_ORGANIZATION_NAME",
+           "-e", "RILL_PROJECT_NAME",
+           "-e", "RILL_SERVICE_TOKEN",
+           "-e", "OPENAI_API_KEY",
+           "rilldata/rill-mcp-server"
+         ],
+         "env": {
+           "RILL_ORGANIZATION_NAME": "your-org-name",
+           "RILL_PROJECT_NAME": "your-project-name",
+           "RILL_SERVICE_TOKEN": "your-rill-service-token",
+           "OPENAI_API_KEY": "your-openai-api-key" // Optional
+         }
+       }
+     }
+   }
+   ```
+
+3. **Restart Claude Desktop** for the changes to take effect.
+
+**Troubleshooting:**  
+If Claude Desktop cannot connect to the MCP server:
+- In Claude Desktop, click on **Developer → Open MCP Log File** and check the logs for any errors.
+- Double-check the Docker path is correct.
+- Ensure all required environment variables are set.
+- Make sure Docker is running.
 
 ## Usage
 TODO
