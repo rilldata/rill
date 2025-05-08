@@ -16,6 +16,13 @@ enum ReconcileStatus {
   RECONCILE_STATUS_RUNNING = 3;
 }
 
+enum ModelChangeMode {
+  MODEL_CHANGE_MODE_UNSPECIFIED = 0;
+  MODEL_CHANGE_MODE_RESET = 1;
+  MODEL_CHANGE_MODE_MANUAL = 2;
+  MODEL_CHANGE_MODE_PATCH = 3;
+}
+
 message Resource {
   ResourceMeta meta = 1;
   oneof resource {
@@ -121,12 +128,12 @@ message ModelSpec {
   google.protobuf.Struct stage_properties = 17;
   string output_connector = 1;
   google.protobuf.Struct output_properties = 12;
+  // change_mode is the mode of change detection to use for the model.
+  ModelChangeMode change_mode = 24;
   bool trigger = 9;
   bool trigger_full = 22;
   // defined_as_source is true if it was defined by user as a source but converted internally to a model.
   bool defined_as_source = 23;
-  // change_mode is the mode of change detection to use for the model.
-  string change_mode = 24;
   reserved 2, 3, 6, 7, 8;
 }
 

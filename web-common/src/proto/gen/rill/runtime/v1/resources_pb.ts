@@ -44,6 +44,38 @@ proto3.util.setEnumType(ReconcileStatus, "rill.runtime.v1.ReconcileStatus", [
 ]);
 
 /**
+ * @generated from enum rill.runtime.v1.ModelChangeMode
+ */
+export enum ModelChangeMode {
+  /**
+   * @generated from enum value: MODEL_CHANGE_MODE_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: MODEL_CHANGE_MODE_RESET = 1;
+   */
+  RESET = 1,
+
+  /**
+   * @generated from enum value: MODEL_CHANGE_MODE_MANUAL = 2;
+   */
+  MANUAL = 2,
+
+  /**
+   * @generated from enum value: MODEL_CHANGE_MODE_PATCH = 3;
+   */
+  PATCH = 3,
+}
+// Retrieve enum metadata with: proto3.getEnumType(ModelChangeMode)
+proto3.util.setEnumType(ModelChangeMode, "rill.runtime.v1.ModelChangeMode", [
+  { no: 0, name: "MODEL_CHANGE_MODE_UNSPECIFIED" },
+  { no: 1, name: "MODEL_CHANGE_MODE_RESET" },
+  { no: 2, name: "MODEL_CHANGE_MODE_MANUAL" },
+  { no: 3, name: "MODEL_CHANGE_MODE_PATCH" },
+]);
+
+/**
  * @generated from enum rill.runtime.v1.ExploreComparisonMode
  */
 export enum ExploreComparisonMode {
@@ -934,6 +966,13 @@ export class ModelSpec extends Message<ModelSpec> {
   outputProperties?: Struct;
 
   /**
+   * change_mode is the mode of change detection to use for the model.
+   *
+   * @generated from field: rill.runtime.v1.ModelChangeMode change_mode = 24;
+   */
+  changeMode = ModelChangeMode.UNSPECIFIED;
+
+  /**
    * @generated from field: bool trigger = 9;
    */
   trigger = false;
@@ -949,13 +988,6 @@ export class ModelSpec extends Message<ModelSpec> {
    * @generated from field: bool defined_as_source = 23;
    */
   definedAsSource = false;
-
-  /**
-   * change_mode is the mode of change detection to use for the model.
-   *
-   * @generated from field: string change_mode = 24;
-   */
-  changeMode = "";
 
   constructor(data?: PartialMessage<ModelSpec>) {
     super();
@@ -980,10 +1012,10 @@ export class ModelSpec extends Message<ModelSpec> {
     { no: 17, name: "stage_properties", kind: "message", T: Struct },
     { no: 1, name: "output_connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 12, name: "output_properties", kind: "message", T: Struct },
+    { no: 24, name: "change_mode", kind: "enum", T: proto3.getEnumType(ModelChangeMode) },
     { no: 9, name: "trigger", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 22, name: "trigger_full", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 23, name: "defined_as_source", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 24, name: "change_mode", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ModelSpec {

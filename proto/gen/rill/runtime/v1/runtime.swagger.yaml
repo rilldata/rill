@@ -5536,6 +5536,14 @@ definitions:
         $ref: '#/definitions/v1ModelSpec'
       state:
         $ref: '#/definitions/v1ModelState'
+  v1ModelChangeMode:
+    type: string
+    enum:
+      - MODEL_CHANGE_MODE_UNSPECIFIED
+      - MODEL_CHANGE_MODE_RESET
+      - MODEL_CHANGE_MODE_MANUAL
+      - MODEL_CHANGE_MODE_PATCH
+    default: MODEL_CHANGE_MODE_UNSPECIFIED
   v1ModelPartition:
     type: object
     properties:
@@ -5590,6 +5598,9 @@ definitions:
         type: string
       outputProperties:
         type: object
+      changeMode:
+        $ref: '#/definitions/v1ModelChangeMode'
+        description: change_mode is the mode of change detection to use for the model.
       trigger:
         type: boolean
       triggerFull:
@@ -5597,9 +5608,6 @@ definitions:
       definedAsSource:
         type: boolean
         description: defined_as_source is true if it was defined by user as a source but converted internally to a model.
-      changeMode:
-        type: string
-        description: change_mode is the mode of change detection to use for the model.
   v1ModelState:
     type: object
     properties:

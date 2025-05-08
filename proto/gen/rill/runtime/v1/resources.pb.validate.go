@@ -2492,13 +2492,13 @@ func (m *ModelSpec) validate(all bool) error {
 		}
 	}
 
+	// no validation rules for ChangeMode
+
 	// no validation rules for Trigger
 
 	// no validation rules for TriggerFull
 
 	// no validation rules for DefinedAsSource
-
-	// no validation rules for ChangeMode
 
 	if len(errors) > 0 {
 		return ModelSpecMultiError(errors)
