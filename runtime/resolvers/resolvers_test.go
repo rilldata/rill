@@ -29,6 +29,7 @@ import (
 // Each test in the file will be run in sequence against that runtime instance.
 // The available connectors are defined in runtime/testruntime/connectors.go.
 type TestFileYAML struct {
+	Skip         bool                 `yaml:"skip,omitempty"`
 	Expensive    bool                 `yaml:"expensive,omitempty"`
 	Connectors   []string             `yaml:"connectors,omitempty"`
 	Variables    map[string]string    `yaml:"variables,omitempty"`
@@ -99,9 +100,12 @@ func TestResolvers(t *testing.T) {
 			err = yaml.Unmarshal(data, &tf)
 			require.NoError(t, err)
 
-			// Handle short
+			// Handle skip and expensive
+			if tf.Skip {
+				t.Skip("skipping test because it is marked skip: true")
+			}
 			if testing.Short() && tf.Expensive {
-				t.Skip("skipping test in short mode")
+				t.Skip("skipping test in short mode because it is marked expensive: true")
 			}
 
 			// Create a map of project files for the runtime instance.
