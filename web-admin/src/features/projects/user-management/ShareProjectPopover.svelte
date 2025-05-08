@@ -8,7 +8,7 @@
   import CopyInviteLinkButton from "@rilldata/web-admin/features/projects/user-management/CopyInviteLinkButton.svelte";
   import UserInviteForm from "@rilldata/web-admin/features/projects/user-management/UserInviteForm.svelte";
   import { Button } from "@rilldata/web-common/components/button";
-  import type { V1UserInvite } from "@rilldata/web-admin/client";
+  import type { V1ProjectInvite } from "@rilldata/web-admin/client";
   import OrganizationItem from "./OrganizationItem.svelte";
   import {
     Popover,
@@ -41,13 +41,13 @@
   $: projectMemberUsersList = $listProjectMemberUsers.data?.members ?? [];
   $: projectInvitesList = $listProjectInvites.data?.invites ?? [];
 
-  function coerceInvitesToUsers(invites: V1UserInvite[]) {
+  function coerceInvitesToUsers(invites: V1ProjectInvite[]) {
     return invites.map((invite) => ({
       ...invite,
       userName: null,
       userEmail: invite.email,
       userPhotoUrl: null,
-      roleName: invite.role,
+      roleName: invite.roleName,
     }));
   }
 

@@ -1,6 +1,6 @@
 <script lang="ts">
   import { page } from "$app/stores";
-  import type { V1UserInvite } from "@rilldata/web-admin/client";
+  import type { V1OrganizationInvite } from "@rilldata/web-admin/client";
   import {
     createAdminServiceGetCurrentUser,
     createAdminServiceListOrganizationInvitesInfinite,
@@ -78,11 +78,11 @@
       (page) => page.invites ?? [],
     ) ?? [];
 
-  function coerceInvitesToUsers(invites: V1UserInvite[]) {
+  function coerceInvitesToUsers(invites: V1OrganizationInvite[]) {
     return invites.map((invite) => ({
       ...invite,
       userEmail: invite.email,
-      roleName: invite.role,
+      roleName: invite.roleName,
     }));
   }
 

@@ -619,7 +619,7 @@ export interface V1ListOrganizationBillingIssuesResponse {
 }
 
 export interface V1ListOrganizationInvitesResponse {
-  invites?: V1UserInvite[];
+  invites?: V1OrganizationInvite[];
   nextPageToken?: string;
 }
 
@@ -639,7 +639,7 @@ export interface V1ListOrganizationsResponse {
 }
 
 export interface V1ListProjectInvitesResponse {
-  invites?: V1UserInvite[];
+  invites?: V1ProjectInvite[];
   nextPageToken?: string;
 }
 
@@ -776,6 +776,12 @@ export interface V1Organization {
   updatedOn?: string;
 }
 
+export interface V1OrganizationInvite {
+  email?: string;
+  roleName?: string;
+  invitedBy?: string;
+}
+
 export interface V1OrganizationMemberUser {
   userId?: string;
   userEmail?: string;
@@ -849,12 +855,20 @@ export interface V1Project {
   updatedOn?: string;
 }
 
+export interface V1ProjectInvite {
+  email?: string;
+  roleName?: string;
+  orgRoleName?: string;
+  invitedBy?: string;
+}
+
 export interface V1ProjectMemberUser {
   userId?: string;
   userEmail?: string;
   userName?: string;
   userPhotoUrl?: string;
   roleName?: string;
+  orgRoleName?: string;
   createdOn?: string;
   updatedOn?: string;
 }
@@ -1290,12 +1304,6 @@ export interface V1User {
   quotas?: V1UserQuotas;
   createdOn?: string;
   updatedOn?: string;
-}
-
-export interface V1UserInvite {
-  email?: string;
-  role?: string;
-  invitedBy?: string;
 }
 
 export interface V1UserPreferences {
