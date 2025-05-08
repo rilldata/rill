@@ -51,7 +51,6 @@ func JoinCmd(ch *cmdutil.Helper) *cobra.Command {
 				if retryErr != nil {
 					return err
 				}
-				err = nil
 			}
 
 			return nil
