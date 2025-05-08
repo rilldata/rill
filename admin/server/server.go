@@ -189,7 +189,7 @@ func (s *Server) HTTPHandler(ctx context.Context) (http.Handler, error) {
 	mux := http.NewServeMux()
 
 	// Add transcoder to the mux
-	mux.Handle("/v1/", transcoder)
+	mux.Handle("/", transcoder)
 
 	// Add runtime proxy
 	observability.MuxHandle(mux, "/v1/orgs/{org}/projects/{project}/runtime/{path...}",
