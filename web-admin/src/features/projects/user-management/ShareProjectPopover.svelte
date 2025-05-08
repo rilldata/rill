@@ -35,9 +35,7 @@
 
   export let organization: string;
   export let project: string;
-  export let isAdmin: boolean;
-  export let isEditor: boolean;
-
+  export let manageProjectMembers: boolean;
   let open = false;
   let accessDropdownOpen = false;
   let accessType: "everyone" | "invite-only" = "everyone";
@@ -122,7 +120,7 @@
       undefined,
       {
         query: {
-          enabled: isAdmin,
+          enabled: manageProjectMembers,
           refetchOnMount: true,
           refetchOnWindowFocus: true,
         },
@@ -148,7 +146,7 @@
     undefined,
     {
       query: {
-        enabled: isAdmin,
+        enabled: manageProjectMembers,
         refetchOnMount: true,
         refetchOnWindowFocus: true,
       },
@@ -164,7 +162,7 @@
     undefined,
     {
       query: {
-        enabled: isAdmin,
+        enabled: manageProjectMembers,
         refetchOnMount: true,
         refetchOnWindowFocus: true,
       },
@@ -207,19 +205,19 @@
         <div class="text-sm font-medium">Share project: {project}</div>
         <div class="grow"></div>
       </div>
-      {#if isAdmin || isEditor}
+      {#if manageProjectMembers}
         <UserInviteForm {organization} {project} />
       {/if}
       <!-- 52 * 8 = 416px -->
       <div class="flex flex-col gap-y-1 overflow-y-auto max-h-[416px]">
-        <div class={isAdmin || isEditor ? "mt-4" : ""}>
+        <div class={manageProjectMembers ? "mt-4" : ""}>
           {#each sortedProjectMemberUsersList as user}
             <UserItem
               {organization}
               {project}
               {user}
               orgRole={user.orgRoleName}
-              canChangeRole={isAdmin || isEditor}
+              canChangeRole={manageProjectMembers}
             />
           {/each}
           {#each projectInvitesList as user}
@@ -228,7 +226,7 @@
               {project}
               {user}
               orgRole={user.orgRoleName}
-              canChangeRole={isAdmin || isEditor}
+              canChangeRole={manageProjectMembers}
             />
           {/each}
         </div>
@@ -240,7 +238,7 @@
             location="right"
             alignment="middle"
             distance={8}
-            suppress={!isAdmin || accessType !== "everyone"}
+            suppress={!manageProjectMembers || accessType !== "everyone"}
           >
             <div
               role="button"
@@ -253,7 +251,7 @@
               on:blur={() => (isHovered = false)}
             >
               <!-- Only users with admin rights can see and use the dropdown selector -->
-              {#if isAdmin}
+              {#if manageProjectMembers}
                 <DropdownMenu.Root bind:open={accessDropdownOpen}>
                   <DropdownMenu.Trigger>
                     <div class="flex flex-row items-center gap-x-2">

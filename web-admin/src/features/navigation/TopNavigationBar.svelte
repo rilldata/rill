@@ -34,8 +34,7 @@
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
 
   export let createMagicAuthTokens: boolean;
-  export let isAdmin: boolean;
-  export let isEditor: boolean;
+  export let manageProjectMembers: boolean;
   export let organizationLogoUrl: string | undefined = undefined;
   export let planDisplayName: string | undefined;
 
@@ -189,8 +188,10 @@
     {#if $viewAsUserStore}
       <ViewAsUserChip />
     {/if}
-    {#if onProjectPage && (isAdmin || isEditor)}
-      <ShareProjectPopover {organization} {project} {isAdmin} {isEditor} />
+    <!-- NOTE: only project admin and editor can manage project members -->
+    <!-- https://docs.rilldata.com/manage/roles-permissions#project-level-permissions -->
+    {#if onProjectPage && manageProjectMembers}
+      <ShareProjectPopover {organization} {project} {manageProjectMembers} />
     {/if}
     {#if onMetricsExplorerPage && isDashboardValid}
       {#if exploreSpec}

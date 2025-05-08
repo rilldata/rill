@@ -25,10 +25,6 @@
   import { onMount } from "svelte";
   import ErrorBoundary from "../components/errors/ErrorBoundary.svelte";
   import TopNavigationBar from "../features/navigation/TopNavigationBar.svelte";
-  import {
-    isProjectAdmin,
-    isProjectEditor,
-  } from "../features/projects/user-management/permissions";
 
   export let data;
 
@@ -43,9 +39,6 @@
     params: { organization },
     url: { pathname },
   } = $page);
-
-  $: isAdmin = isProjectAdmin(projectPermissions);
-  $: isEditor = isProjectEditor(projectPermissions);
 
   // Remember:
   // - https://tkdodo.eu/blog/breaking-react-querys-api-on-purpose#a-bad-api
@@ -120,8 +113,7 @@
       {#if !isEmbed && !hideTopBar}
         <TopNavigationBar
           createMagicAuthTokens={projectPermissions?.createMagicAuthTokens}
-          {isAdmin}
-          {isEditor}
+          manageProjectMembers={projectPermissions?.manageProjectMembers}
           {organizationLogoUrl}
           {planDisplayName}
         />
