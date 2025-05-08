@@ -1,5 +1,7 @@
 <script lang="ts">
-  import { PreviewTable } from "@rilldata/web-common/components/preview-table";
+  import FieldSwitcher from "@rilldata/web-common/components/forms/FieldSwitcher.svelte";
+  import PreviewTable from "@rilldata/web-common/components/preview-table/PreviewTable.svelte";
+  import { getRillTheme } from "@rilldata/web-common/components/vega/vega-config";
   import VegaLiteRenderer from "@rilldata/web-common/components/vega/VegaLiteRenderer.svelte";
   import type { VirtualizedTableColumns } from "@rilldata/web-common/components/virtualized-table/types";
   import ReconcilingSpinner from "@rilldata/web-common/features/entity-management/ReconcilingSpinner.svelte";
@@ -9,7 +11,8 @@
 
   export let spec: string | undefined = undefined;
   export let metricsSQL: string;
-  export let renderer: "canvas" | "svg" = "canvas";
+  export let renderer: "canvas" | "svg" = "svg";
+  export let showDataTable = false;
   export let name: string = "Custom Chart";
 
   let viewVL: View;
@@ -17,6 +20,8 @@
   let error: string | null = null;
   let rows;
   let tableColumns: VirtualizedTableColumns[];
+  let selectedView = 0; // 0 = Chart, 1 = Table
+  const viewOptions = ["Chart", "Table"];
 
   $: instanceId = $runtime.instanceId;
 
@@ -48,23 +53,47 @@
       })) as VirtualizedTableColumns[];
     }
   }
-
-  $: console.log("data", data, tableColumns);
 </script>
 
-{#if rows}
-  <PreviewTable {rows} columnNames={tableColumns} rowHeight={32} {name} />
-{:else if $dataQuery.isLoading}
-  <ReconcilingSpinner />
-{/if}
-
-{#if spec && error}
-  {error}
-{:else if data && parsedSpec}
-  <VegaLiteRenderer
-    {renderer}
-    spec={parsedSpec}
-    data={{ metrics: data }}
-    bind:viewVL
-  />
-{/if}
+<div class="flex flex-col gap-2 h-full">
+  {#if showDataTable}
+    <div class="flex flex-row justify-end items-center">
+      <FieldSwitcher
+        fields={viewOptions}
+        selected={selectedView}
+        onClick={(i) => (selectedView = i)}
+        small={true}
+      />
+    </div>
+  {/if}
+  <div class="flex-1 flex flex-col min-h-0 min-w-0">
+    {#if selectedView === 0}
+      <div class="flex-1">
+        {#if spec && error}
+          {error}
+        {:else if data && parsedSpec}
+          <VegaLiteRenderer
+            {renderer}
+            spec={parsedSpec}
+            config={getRillTheme(true)}
+            data={{ metrics: data }}
+            bind:viewVL
+          />
+        {/if}
+      </div>
+    {:else}
+      <div class="flex-1 min-h-0 min-w-0">
+        {#if rows}
+          <PreviewTable
+            {rows}
+            columnNames={tableColumns}
+            rowHeight={32}
+            {name}
+          />
+        {:else if $dataQuery.isLoading}
+          <ReconcilingSpinner />
+        {/if}
+      </div>
+    {/if}
+  </div>
+</div>

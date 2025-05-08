@@ -9,4 +9,9 @@
   $: ({ metrics_sql, vega_spec } = $specStore);
 </script>
 
-<CustomChartRenderer spec={vega_spec} metricsSQL={metrics_sql} />
+<CustomChartRenderer
+  name={component.id}
+  spec={vega_spec}
+  metricsSQL={metrics_sql}
+  showDataTable
+/>
