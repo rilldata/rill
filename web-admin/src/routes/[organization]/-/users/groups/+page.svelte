@@ -24,6 +24,7 @@
     createAdminServiceListOrganizationMemberUsergroups(organization, {
       pageSize: PAGE_SIZE,
       pageToken,
+      includeCounts: true,
     });
   $: listOrganizationMemberUsers =
     createAdminServiceListOrganizationMemberUsers(organization);
