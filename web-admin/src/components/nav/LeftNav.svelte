@@ -4,16 +4,17 @@
 
   export let basePage: string;
   export let baseRoute: string;
+  export let minWidth: string = "180px";
   export let navItems: {
     label: string;
     route: string;
-    hasPermission: boolean;
+    hasPermission?: boolean;
   }[];
-  export let minWidth: string = "180px";
 </script>
 
 <div class="nav-items" style:min-width={minWidth}>
-  {#each navItems as { label, route, hasPermission } (route)}
+  <!-- if hasPermission is not provided, it will be undefined -->
+  {#each navItems as { label, route, hasPermission = true } (route)}
     {#if hasPermission}
       <LeftNavItem
         {label}

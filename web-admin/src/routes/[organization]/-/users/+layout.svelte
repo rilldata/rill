@@ -10,16 +10,20 @@
   $: organization = $page.params.organization;
   $: basePage = `/${organization}/-/users`;
 
+  // https://docs.rilldata.com/manage/roles-permissions#organization-level-permissions
+  // org admin and editor can manage org members
+  $: hasManageOrgMembers = organizationPermissions?.manageOrgMembers;
+
   const navItems = [
     {
       label: "Users",
       route: "",
-      hasPermission: organizationPermissions?.manageOrgMembers,
+      hasPermission: hasManageOrgMembers,
     },
     {
       label: "Groups",
       route: "/groups",
-      hasPermission: organizationPermissions?.manageOrgMembers,
+      hasPermission: hasManageOrgMembers,
     },
   ];
 </script>

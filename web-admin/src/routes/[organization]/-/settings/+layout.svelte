@@ -19,12 +19,14 @@
   $: hideUsageSettings = onEnterprisePlan || !billingPortalUrl;
 
   $: navItems = [
-    { label: "General", route: "" },
+    { label: "General", route: "", hasPermission: true },
     ...(hideBillingSettings
       ? []
       : [
-          { label: "Billing", route: "/billing" },
-          ...(hideUsageSettings ? [] : [{ label: "Usage", route: "/usage" }]),
+          { label: "Billing", route: "/billing", hasPermission: true },
+          ...(hideUsageSettings
+            ? []
+            : [{ label: "Usage", route: "/usage", hasPermission: true }]),
         ]),
   ];
 </script>
