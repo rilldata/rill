@@ -139,7 +139,6 @@
         >{PROJECT_ROLES_DESCRIPTION_MAP.viewer}</span
       >
     </DropdownMenu.Item>
-    <!-- TODO: allow admin to remove `autogroup:members`, and set to Invite only -->
     <DropdownMenu.Separator />
     <DropdownMenu.Item
       class="font-normal flex items-center"

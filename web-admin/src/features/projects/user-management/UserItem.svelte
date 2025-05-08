@@ -6,6 +6,7 @@
     V1ProjectMemberUser,
     V1ProjectInvite,
   } from "@rilldata/web-admin/client";
+  import { capitalize } from "@rilldata/web-common/components/table/utils";
 
   type User = V1ProjectMemberUser | V1ProjectInvite;
 
@@ -14,6 +15,7 @@
   export let user: User;
   export let orgRole: string;
   export let canChangeRole: boolean;
+  export let manageProjectAdmins: boolean;
 
   $: currentUser = createAdminServiceGetCurrentUser();
 
@@ -30,6 +32,7 @@
   $: name = isProjectMemberUser(user) ? user.userName : user.email;
   $: email = isProjectMemberUser(user) ? user.userEmail : user.email;
   $: photoUrl = isProjectMemberUser(user) ? user.userPhotoUrl : null;
+  $: roleName = user.roleName;
   $: isCurrentUser = email === $currentUser.data?.user.email;
 </script>
 
@@ -42,11 +45,19 @@
     {showGuestChip}
     pendingAcceptance={isPendingInvite(user)}
   />
-  <UserSetRole
-    {organization}
-    {project}
-    {user}
-    {isCurrentUser}
-    {canChangeRole}
-  />
+  {#if manageProjectAdmins}
+    <UserSetRole
+      {organization}
+      {project}
+      {user}
+      {isCurrentUser}
+      {canChangeRole}
+    />
+  {:else}
+    <div
+      class="w-18 flex flex-row gap-1 items-center rounded-sm mr-[10px] cursor-auto"
+    >
+      {capitalize(roleName)}
+    </div>
+  {/if}
 </div>

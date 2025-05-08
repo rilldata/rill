@@ -35,7 +35,9 @@
 
   export let organization: string;
   export let project: string;
+  export let manageProjectAdmins: boolean;
   export let manageProjectMembers: boolean;
+
   let open = false;
   let accessDropdownOpen = false;
   let accessType: "everyone" | "invite-only" = "everyone";
@@ -217,6 +219,7 @@
               {project}
               {user}
               orgRole={user.orgRoleName}
+              {manageProjectAdmins}
               canChangeRole={manageProjectMembers}
             />
           {/each}
@@ -226,6 +229,7 @@
               {project}
               {user}
               orgRole={user.orgRoleName}
+              {manageProjectAdmins}
               canChangeRole={manageProjectMembers}
             />
           {/each}
