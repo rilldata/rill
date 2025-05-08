@@ -1,5 +1,8 @@
 <script lang="ts">
-  import { type V1OrganizationPermissions } from "@rilldata/web-admin/client";
+  import {
+    createAdminServiceListRoles,
+    type V1OrganizationPermissions,
+  } from "@rilldata/web-admin/client";
   import Tab from "@rilldata/web-admin/components/nav/Tab.svelte";
   import {
     width,
@@ -14,8 +17,16 @@
   export let organizationPermissions: V1OrganizationPermissions;
   export let pathname: string;
 
-  $: isAdmin = isOrgAdmin(organizationPermissions);
-  $: isEditor = isOrgEditor(organizationPermissions);
+  const listRoles = createAdminServiceListRoles();
+
+  $: isAdmin = isOrgAdmin(
+    organizationPermissions,
+    $listRoles?.data?.organizationRoles,
+  );
+  $: isEditor = isOrgEditor(
+    organizationPermissions,
+    $listRoles?.data?.organizationRoles,
+  );
 
   $: tabs = [
     {
