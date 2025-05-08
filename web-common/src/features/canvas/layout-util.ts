@@ -21,6 +21,7 @@ export const initialHeights: Record<CanvasComponentType, number> = {
   stacked_bar_normalized: 320,
   pie_chart: 320,
   heatmap: 320,
+  custom_chart: 320,
   markdown: 40,
   kpi_grid: 128,
   image: 80,

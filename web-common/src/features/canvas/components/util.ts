@@ -1,5 +1,6 @@
 import { getChartComponent } from "@rilldata/web-common/features/canvas/components/charts";
 import { CartesianChartComponent } from "@rilldata/web-common/features/canvas/components/charts/cartesian-charts/CartesianChart";
+import { CustomChartComponent } from "@rilldata/web-common/features/canvas/components/charts/custom-chart";
 import { KPIGridComponent } from "@rilldata/web-common/features/canvas/components/kpi-grid";
 import type {
   ComponentInputParam,
@@ -77,6 +78,7 @@ const NON_CHART_TYPES = [
   "table",
   "pivot",
   "leaderboard",
+  "custom_chart",
 ] as const;
 const ALL_COMPONENT_TYPES = [...CHART_TYPES, ...NON_CHART_TYPES] as const;
 
@@ -108,6 +110,7 @@ const baseComponentMap = {
   leaderboard: LeaderboardComponent,
   table: PivotCanvasComponent,
   pivot: PivotCanvasComponent,
+  custom_chart: CustomChartComponent,
 } as const;
 
 const chartComponentMap = Object.fromEntries(
@@ -127,6 +130,7 @@ const baseDisplayMap = {
   pivot: "Pivot",
   image: "Image",
   leaderboard: "Leaderboard",
+  custom_chart: "Custom Chart",
 } as const;
 
 const chartDisplayMap = Object.fromEntries(

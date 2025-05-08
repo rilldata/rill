@@ -2643,77 +2643,106 @@ export const runtimeServiceQueryResolver = (
   });
 };
 
-export const getRuntimeServiceQueryResolverMutationOptions = <
-  TError = ErrorType<RpcStatus>,
-  TContext = unknown,
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof runtimeServiceQueryResolver>>,
-    TError,
-    { instanceId: string; data: RuntimeServiceQueryResolverBody },
-    TContext
-  >;
-}): CreateMutationOptions<
-  Awaited<ReturnType<typeof runtimeServiceQueryResolver>>,
-  TError,
-  { instanceId: string; data: RuntimeServiceQueryResolverBody },
-  TContext
-> => {
-  const mutationKey = ["runtimeServiceQueryResolver"];
-  const { mutation: mutationOptions } = options
-    ? options.mutation &&
-      "mutationKey" in options.mutation &&
-      options.mutation.mutationKey
-      ? options
-      : { ...options, mutation: { ...options.mutation, mutationKey } }
-    : { mutation: { mutationKey } };
-
-  const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof runtimeServiceQueryResolver>>,
-    { instanceId: string; data: RuntimeServiceQueryResolverBody }
-  > = (props) => {
-    const { instanceId, data } = props ?? {};
-
-    return runtimeServiceQueryResolver(instanceId, data);
-  };
-
-  return { mutationFn, ...mutationOptions };
+export const getRuntimeServiceQueryResolverQueryKey = (
+  instanceId: string,
+  runtimeServiceQueryResolverBody: RuntimeServiceQueryResolverBody,
+) => {
+  return [
+    `/v1/instances/${instanceId}/query/resolver`,
+    runtimeServiceQueryResolverBody,
+  ] as const;
 };
 
-export type RuntimeServiceQueryResolverMutationResult = NonNullable<
+export const getRuntimeServiceQueryResolverQueryOptions = <
+  TData = Awaited<ReturnType<typeof runtimeServiceQueryResolver>>,
+  TError = ErrorType<RpcStatus>,
+>(
+  instanceId: string,
+  runtimeServiceQueryResolverBody: RuntimeServiceQueryResolverBody,
+  options?: {
+    query?: Partial<
+      CreateQueryOptions<
+        Awaited<ReturnType<typeof runtimeServiceQueryResolver>>,
+        TError,
+        TData
+      >
+    >;
+  },
+) => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getRuntimeServiceQueryResolverQueryKey(
+      instanceId,
+      runtimeServiceQueryResolverBody,
+    );
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof runtimeServiceQueryResolver>>
+  > = ({ signal }) =>
+    runtimeServiceQueryResolver(
+      instanceId,
+      runtimeServiceQueryResolverBody,
+      signal,
+    );
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!instanceId,
+    ...queryOptions,
+  } as CreateQueryOptions<
+    Awaited<ReturnType<typeof runtimeServiceQueryResolver>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
+
+export type RuntimeServiceQueryResolverQueryResult = NonNullable<
   Awaited<ReturnType<typeof runtimeServiceQueryResolver>>
 >;
-export type RuntimeServiceQueryResolverMutationBody =
-  RuntimeServiceQueryResolverBody;
-export type RuntimeServiceQueryResolverMutationError = ErrorType<RpcStatus>;
+export type RuntimeServiceQueryResolverQueryError = ErrorType<RpcStatus>;
 
 /**
  * @summary QueryResolver queries a resolver with the given properties and arguments
  */
-export const createRuntimeServiceQueryResolver = <
+
+export function createRuntimeServiceQueryResolver<
+  TData = Awaited<ReturnType<typeof runtimeServiceQueryResolver>>,
   TError = ErrorType<RpcStatus>,
-  TContext = unknown,
 >(
+  instanceId: string,
+  runtimeServiceQueryResolverBody: RuntimeServiceQueryResolverBody,
   options?: {
-    mutation?: CreateMutationOptions<
-      Awaited<ReturnType<typeof runtimeServiceQueryResolver>>,
-      TError,
-      { instanceId: string; data: RuntimeServiceQueryResolverBody },
-      TContext
+    query?: Partial<
+      CreateQueryOptions<
+        Awaited<ReturnType<typeof runtimeServiceQueryResolver>>,
+        TError,
+        TData
+      >
     >;
   },
   queryClient?: QueryClient,
-): CreateMutationResult<
-  Awaited<ReturnType<typeof runtimeServiceQueryResolver>>,
-  TError,
-  { instanceId: string; data: RuntimeServiceQueryResolverBody },
-  TContext
-> => {
-  const mutationOptions =
-    getRuntimeServiceQueryResolverMutationOptions(options);
+): CreateQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+} {
+  const queryOptions = getRuntimeServiceQueryResolverQueryOptions(
+    instanceId,
+    runtimeServiceQueryResolverBody,
+    options,
+  );
 
-  return createMutation(mutationOptions, queryClient);
-};
+  const query = createQuery(queryOptions, queryClient) as CreateQueryResult<
+    TData,
+    TError
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
 /**
  * @summary GetResource looks up a specific catalog resource
  */

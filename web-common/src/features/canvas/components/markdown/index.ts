@@ -1,12 +1,12 @@
 import { BaseCanvasComponent } from "@rilldata/web-common/features/canvas/components/BaseCanvasComponent";
 import type { InputParams } from "@rilldata/web-common/features/canvas/inspector/types";
+import type { V1Resource } from "@rilldata/web-common/runtime-client";
+import type { CanvasEntity, ComponentPath } from "../../stores/canvas-entity";
 import {
   type CanvasComponentType,
   type ComponentAlignment,
   type ComponentCommonProperties,
 } from "../types";
-import type { V1Resource } from "@rilldata/web-common/runtime-client";
-import type { CanvasEntity, ComponentPath } from "../../stores/canvas-entity";
 import Markdown from "./Markdown.svelte";
 
 export { default as Markdown } from "./Markdown.svelte";
@@ -46,7 +46,7 @@ export class MarkdownCanvasComponent extends BaseCanvasComponent<MarkdownSpec> {
     return {
       options: {
         content: {
-          type: "textArea",
+          type: "textarea",
           label: "Markdown",
           description: "Write text using the markdown syntax",
         },

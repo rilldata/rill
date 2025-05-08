@@ -120,7 +120,7 @@
           </div>
 
           <!-- TEXT AREA -->
-        {:else if config.type === "textArea"}
+        {:else if config.type === "textarea"}
           <div class="flex flex-col gap-y-2">
             <InputLabel
               hint={config?.description}

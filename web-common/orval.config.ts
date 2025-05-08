@@ -115,6 +115,12 @@ export default defineConfig({
               useMutation: false,
             },
           },
+          RuntimeService_QueryResolver: {
+            query: {
+              useQuery: true,
+              useMutation: false,
+            },
+          },
         },
       },
     },
