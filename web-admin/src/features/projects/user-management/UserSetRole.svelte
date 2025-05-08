@@ -28,9 +28,8 @@
   let isOpen = false;
 
   const queryClient = useQueryClient();
-
-  $: setProjectMemberUserRole = createAdminServiceSetProjectMemberUserRole();
-  $: removeProjectMemberUser = createAdminServiceRemoveProjectMemberUser();
+  const setProjectMemberUserRole = createAdminServiceSetProjectMemberUserRole();
+  const removeProjectMemberUser = createAdminServiceRemoveProjectMemberUser();
 
   function getUserEmail(user: User): string {
     if ("userEmail" in user) return user.userEmail;
@@ -39,7 +38,6 @@
   }
 
   function getUserRole(user: User): string {
-    if ("role" in user && typeof user.role === "string") return user.role;
     if ("roleName" in user) return user.roleName;
     return "";
   }
@@ -72,8 +70,7 @@
       eventBus.emit("notification", {
         message: "User role updated",
       });
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    } catch (_) {
+    } catch {
       eventBus.emit("notification", {
         message: "Error updating user role",
         type: "error",
