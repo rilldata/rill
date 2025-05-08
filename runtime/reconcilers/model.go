@@ -243,7 +243,12 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 	}
 
 	// Check if we need to reset the model
-	triggerReset := r.shouldTriggerReset(model, specHash, exists)
+	triggerReset, resetErr := r.shouldTriggerReset(ctx, n, self, specHash, exists)
+	if resetErr != nil {
+		// This error indicates a manual intervention is required.
+		self.Meta.ReconcileError = resetErr.Error()
+		return runtime.ReconcileResult{Err: resetErr}
+	}
 	trigger := triggerReset
 	trigger = trigger || model.Spec.Trigger
 	trigger = trigger || !refreshOn.IsZero() && time.Now().After(refreshOn)
@@ -1517,29 +1522,47 @@ func md5Hash(val []byte) (string, error) {
 }
 
 // shouldTriggerReset determines if a model should trigger a reset based on its change mode and the current state compared to the specified hash.
-func (r *ModelReconciler) shouldTriggerReset(model *runtimev1.Model, specHash string, exists bool) bool {
-	// These conditions trigger a reset regardless of change mode
+func (r *ModelReconciler) shouldTriggerReset(ctx context.Context, resourceName *runtimev1.ResourceName, selfResource *runtimev1.Resource, specHash string, exists bool) (bool, error) {
+	model := selfResource.GetModel()
+	// These conditions trigger a reset regardless of mode
 	if model.Spec.TriggerFull ||
 		model.State.ResultConnector == "" ||
 		model.State.RefreshedOn == nil ||
 		!exists {
-		return true
+		return true, nil
 	}
 
-	// Handle different change modes
 	switch model.Spec.ChangeMode {
-	case "manual":
+	case runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_MANUAL:
 		// In manual mode, spec hash changes don't trigger automatic resets
-		// Only explicit trigger or missing output will cause a reset
-		return false
-	case "patch":
-		// In patch mode, silently update the hash but don't trigger a reset
 		if model.State.SpecHash != specHash {
-			model.State.SpecHash = specHash
+			if model.Spec.Trigger {
+				return false, nil // Manual incremental trigger, allow reconciliation
+			}
+
+			// No active manual trigger (Spec.Trigger is false, and Spec.TriggerFull was false to get here), and spec hash has changed. Block with an error.
+			return false, fmt.Errorf("execution paused because the model definition was changed and change_mode=manual: you must manually trigger either a full or incremental refresh")
 		}
-		return false
-	default: // "reset" mode (default)
+		return false, nil
+	case runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_PATCH:
+		// In patch mode, silently update the hash but don't trigger a reset
+		if !model.Spec.Incremental {
+			r.C.Logger.Warn("Invalid configuration: change_mode=patch requires incremental=true", zap.String("model", resourceName.Name), observability.ZapCtx(ctx))
+			return false, fmt.Errorf("change_mode=patch can only be used with incremental models")
+		}
+
+		if model.State.SpecHash != specHash {
+			r.C.Logger.Info("Model definition changed, updating spec hash without a full refresh due to change_mode=patch", zap.String("model", resourceName.Name), observability.ZapCtx(ctx))
+			model.State.SpecHash = specHash
+			if err := r.C.UpdateState(ctx, resourceName, selfResource); err != nil {
+				return false, fmt.Errorf("failed to update model state after spec hash change in patch mode: %w", err)
+			}
+		}
+		return false, nil
+	case runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET:
 		// In reset mode, trigger a reset when the spec hash changes
-		return model.State.SpecHash != specHash
+		return model.State.SpecHash != specHash, nil
+	default:
+		return model.State.SpecHash != specHash, nil
 	}
 }
