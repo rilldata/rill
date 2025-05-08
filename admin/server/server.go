@@ -139,6 +139,8 @@ func (s *Server) Serve(ctx context.Context) error {
 		return err
 	}
 
+	s.authenticator.CookieToAuthHeader(handler)
+
 	server := &http.Server{Handler: handler}
 	s.logger.Sugar().Infof("serving admin HTTP on port:%v", s.opts.Port)
 
@@ -187,7 +189,7 @@ func (s *Server) HTTPHandler(ctx context.Context) (http.Handler, error) {
 	mux := http.NewServeMux()
 
 	// Add transcoder to the mux
-	mux.Handle("/v1/", s.authenticator.CookieToAuthHeader(transcoder))
+	mux.Handle("/v1/", transcoder)
 
 	// Add runtime proxy
 	observability.MuxHandle(mux, "/v1/orgs/{org}/projects/{project}/runtime/{path...}",
