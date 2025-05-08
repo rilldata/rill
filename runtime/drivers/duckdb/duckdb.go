@@ -651,7 +651,7 @@ func (c *connection) triggerReopen() {
 	go func() {
 		c.dbCond.L.Lock()
 		defer c.dbCond.L.Unlock()
-		if !c.dbReopen || c.dbConnCount == 0 {
+		if !c.dbReopen || c.dbConnCount != 0 {
 			c.logger.Error("triggerReopen called but should not reopen", zap.Bool("dbReopen", c.dbReopen), zap.Int("dbConnCount", c.dbConnCount))
 			return
 		}

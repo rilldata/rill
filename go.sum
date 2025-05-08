@@ -2184,8 +2184,8 @@ github.com/richardlehane/msoleps v1.0.3 h1:aznSZzrwYRl3rLKRT3gUk9am7T/mLNSnJINvN
 github.com/richardlehane/msoleps v1.0.3/go.mod h1:BWev5JBpU9Ko2WAgmZEuiz4/u3ZYTKbjLycmwiWUfWg=
 github.com/rilldata/arrow/go/v15 v15.0.0-20250102090621-2b8f541ea250 h1:ZN01YfdGL/MdI4Ky1eXMKB0HstCD0Ihdjtu9fhDO6PI=
 github.com/rilldata/arrow/go/v15 v15.0.0-20250102090621-2b8f541ea250/go.mod h1:DGXsR3ajT524njufqf95822i+KTh+yea1jass9YXgjA=
-github.com/rilldata/go-duckdb/v2 v2.0.0-20250423070158-2459b722ea3c h1:JC8kzn3PMy5lBEe6pfwc6VsH76ywm2iJsc0c/oX40ys=
-github.com/rilldata/go-duckdb/v2 v2.0.0-20250423070158-2459b722ea3c/go.mod h1:xrGwIsWoH41GxmEsS3K5ZnuM2b8OmXtLTjOxQ5Dfqzs=
+github.com/rilldata/go-duckdb/v2 v2.0.0-20250507083807-716453e5e586 h1:+GMGTCqfY9qY92/pJsnc8k5psz/WImzj/U692TCs4KU=
+github.com/rilldata/go-duckdb/v2 v2.0.0-20250507083807-716453e5e586/go.mod h1:xrGwIsWoH41GxmEsS3K5ZnuM2b8OmXtLTjOxQ5Dfqzs=
 github.com/rilldata/google-cloud-go/bigquery v0.0.0-20250426042021-091fd79360f3 h1:VRGj5Ti1fBMs2UrEJ3kjq2/KL/UfUFRVyBDAYzsB3yg=
 github.com/rilldata/google-cloud-go/bigquery v0.0.0-20250426042021-091fd79360f3/go.mod h1:yTg8kAyK/04LJe6akoH/IoLuvFAO04x0FyJf/YIP13A=
 github.com/riverqueue/river v0.19.0 h1:WRh/NXhp+WEEY0HpCYgr4wSRllugYBt30HtyQ3jlz08=

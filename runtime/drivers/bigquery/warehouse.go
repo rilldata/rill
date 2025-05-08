@@ -38,7 +38,7 @@ var _ drivers.Warehouse = &Connection{}
 
 // QueryAsFiles implements drivers.SQLStore
 func (c *Connection) QueryAsFiles(ctx context.Context, props map[string]any) (drivers.FileIterator, error) {
-	srcProps, err := parseSourceProperties(props)
+	srcProps, err := c.parseSourceProperties(props)
 	if err != nil {
 		return nil, err
 	}
