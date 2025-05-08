@@ -697,6 +697,8 @@ paths:
             properties:
               role:
                 type: string
+              superuserForceAccess:
+                type: boolean
       tags:
         - AdminService
   /v1/organizations/{organization}/members/current:
