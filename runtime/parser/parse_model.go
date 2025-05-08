@@ -324,15 +324,19 @@ func findLineNumber(text string, pos int) int {
 }
 
 // parseChangeModeYAML parses the change mode from the YAML file.
-func parseChangeModeYAML(mode string) (string, error) {
+func parseChangeModeYAML(mode string) (runtimev1.ModelChangeMode, error) {
 	if mode == "" {
-		return "reset", nil
+		return runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET, nil
 	}
 
 	switch mode {
-	case "reset", "manual", "patch":
-		return mode, nil
+	case "reset":
+		return runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET, nil
+	case "manual":
+		return runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_MANUAL, nil
+	case "patch":
+		return runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_PATCH, nil
 	default:
-		return "", fmt.Errorf("unsupported change mode: %q (supported values: reset, manual, patch)", mode)
+		return runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_UNSPECIFIED, fmt.Errorf("unsupported change mode: %q (supported values: reset, manual, patch)", mode)
 	}
 }
