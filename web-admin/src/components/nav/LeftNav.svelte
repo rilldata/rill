@@ -7,17 +7,20 @@
   export let navItems: {
     label: string;
     route: string;
+    hasPermission: boolean;
   }[];
   export let minWidth: string = "180px";
 </script>
 
 <div class="nav-items" style:min-width={minWidth}>
-  {#each navItems as { label, route } (route)}
-    <LeftNavItem
-      {label}
-      link={`${basePage}${route}`}
-      selected={$page.route.id === `${baseRoute}${route}`}
-    />
+  {#each navItems as { label, route, hasPermission } (route)}
+    {#if hasPermission}
+      <LeftNavItem
+        {label}
+        link={`${basePage}${route}`}
+        selected={$page.route.id === `${baseRoute}${route}`}
+      />
+    {/if}
   {/each}
 </div>
 
