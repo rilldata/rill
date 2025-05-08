@@ -49,7 +49,7 @@ func (p *Parser) parseModel(ctx context.Context, node *Node) error {
 	}
 
 	// Parse the change mode
-	changeMode, err := p.parseChangeModeYAML(tmp.ChangeMode)
+	changeMode, err := parseChangeModeYAML(tmp.ChangeMode)
 	if err != nil {
 		return err
 	}
@@ -321,4 +321,18 @@ func findLineNumber(text string, pos int) int {
 	}
 
 	return lineNumber
+}
+
+// parseChangeModeYAML parses the change mode from the YAML file.
+func parseChangeModeYAML(mode string) (string, error) {
+	if mode == "" {
+		return "reset", nil
+	}
+
+	switch mode {
+	case "reset", "manual", "patch":
+		return mode, nil
+	default:
+		return "", fmt.Errorf("unsupported change mode: %q (supported values: reset, manual, patch)", mode)
+	}
 }
