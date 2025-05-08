@@ -18,8 +18,8 @@ import {
 } from "@rilldata/web-common/runtime-client";
 import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
 import {
-  keepPreviousData,
   type CreateQueryResult,
+  keepPreviousData,
 } from "@tanstack/svelte-query";
 import { type Readable, type Writable, derived, writable } from "svelte/store";
 import { DashboardState_ActivePage } from "../../../proto/gen/rill/ui/v1/dashboard_pb";
@@ -95,7 +95,8 @@ export function createMetricsViewTimeSeries(
               !!ctx.dashboardStore &&
               // in case of comparison, we need to wait for the comparison start time to be available
               (!isComparison || !!timeControls.comparisonAdjustedStart),
-
+            // Note: `keepPreviousData` doesn't work here b/c every update to the derived store creates a whole new QueryObserver, which
+            // instanites a new Query store. However, I'm keeping this here to remind us to use `keepPreviousData` once we have a stable QueryObserver.
             placeholderData: keepPreviousData,
             refetchOnMount: false,
           },
@@ -109,6 +110,11 @@ export function createMetricsViewTimeSeries(
 export function createTimeSeriesDataStore(
   ctx: StateManagers,
 ): TimeSeriesDataStore {
+  // A cache to keep previous data to preserve animations while fetching new data
+  // Note: a better approach would be to use TanStack Query's `keepPreviousData` option
+  let previousTimeSeriesData: TimeSeriesDatum[] = [];
+  let previousDimensionChartData: DimensionDataItem[] = [];
+
   return derived(
     [ctx.validSpecStore, useTimeControlStore(ctx), ctx.dashboardStore],
     ([validSpec, timeControls, dashboardStore], set) => {
@@ -211,6 +217,10 @@ export function createTimeSeriesDataStore(
           ctx,
           measuresForTimeSeries,
           "chart",
+          previousDimensionChartData,
+          (results) => {
+            previousDimensionChartData = results;
+          },
         );
       }
 
@@ -231,6 +241,8 @@ export function createTimeSeriesDataStore(
           comparisonTotal,
           dimensionChart,
         ]) => {
+          const isFetching = primary?.isFetching || primaryTotal?.isFetching;
+
           let preparedTimeSeriesData: TimeSeriesDatum[] = [];
 
           if (!primary.isFetching && interval) {
@@ -256,18 +268,24 @@ export function createTimeSeriesDataStore(
             isError = true;
             error["totals"] = primaryTotal.error.response?.data?.message;
           }
-          const primaryIsFetching = primary.isFetching;
-          const primaryTotalIsFetching = primaryTotal.isFetching;
+
+          // Either return the previous data or the new data, depending on whether the data is still fetching
+          const timeSeriesData = isFetching
+            ? previousTimeSeriesData
+            : preparedTimeSeriesData;
+
+          // Update the previous data cache
+          previousTimeSeriesData = timeSeriesData;
 
           return {
-            isFetching: primaryIsFetching || primaryTotalIsFetching,
+            isFetching,
             isError,
             error,
-            timeSeriesData: preparedTimeSeriesData,
+            timeSeriesData,
             total: primaryTotal?.data?.data?.[0],
             unfilteredTotal: unfilteredTotal?.data?.data?.[0],
             comparisonTotal: comparisonTotal?.data?.data?.[0],
-            dimensionChartData: (dimensionChart as DimensionDataItem[]) || [],
+            dimensionChartData: dimensionChart || [],
           };
         },
       ).subscribe(set);
