@@ -3,8 +3,12 @@
   import CTALayoutContainer from "@rilldata/web-common/components/calls-to-action/CTALayoutContainer.svelte";
 </script>
 
-<CTALayoutContainer>
-  <CTAContentContainer>
-    <slot />
-  </CTAContentContainer>
-</CTALayoutContainer>
+<!-- TODO: mocks have the background as white without any header.
+           Need a confirmation on this since it is different from current deploy pages. -->
+<div class="bg-white">
+  <CTALayoutContainer>
+    <CTAContentContainer>
+      <slot />
+    </CTAContentContainer>
+  </CTALayoutContainer>
+</div>

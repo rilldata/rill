@@ -4,6 +4,7 @@
 
 <script lang="ts">
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
+  import { sanitizeOrgName } from "@rilldata/web-common/features/organization/sanitizeOrgName";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import {
     createLocalServiceCreateOrganization,
@@ -13,7 +14,9 @@
   import { yup } from "sveltekit-superforms/adapters";
   import { object, string } from "yup";
 
-  export let size: "lg" | "xl";
+  // We need different sizes for showing in dialog vs a full page form.
+  // "lg" matches all the input sizes so we have "lg"/"xl" and not something else.
+  export let size: "lg" | "xl" = "lg";
   export let onCreate: (orgName: string) => void;
 
   const initialValues: {
@@ -62,6 +65,16 @@
       },
     },
   );
+
+  // As a convenience, we auto generate an org name based on the display name.
+  // But the moment the org name is directly changed,
+  // we should stop doing this since the user probably changed it directly.
+  let orgNameChangedDirectly = false;
+  function updateName(displayName: string) {
+    if (orgNameChangedDirectly) return;
+    $form.name = sanitizeOrgName(displayName);
+  }
+  $: updateName($form.displayName);
 </script>
 
 <form
@@ -89,6 +102,7 @@
     alwaysShowError
     width="500px"
     {size}
+    onInput={() => (orgNameChangedDirectly = true)}
   >
     <div
       slot="prefix"
