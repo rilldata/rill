@@ -5,10 +5,12 @@ import {
 import type { ChartSpec } from "@rilldata/web-common/features/canvas/components/charts";
 import type { CartesianChartSpec } from "@rilldata/web-common/features/canvas/components/charts/cartesian-charts/CartesianChart";
 import type {
+  ChartLegend,
   FieldConfig,
   TooltipValue,
 } from "@rilldata/web-common/features/canvas/components/charts/types";
 import { mergedVlConfig } from "@rilldata/web-common/features/canvas/components/charts/util";
+import merge from "deepmerge";
 import type { VisualizationSpec } from "svelte-vega";
 import type { Config } from "vega-lite";
 import type {
@@ -147,6 +149,51 @@ export function createDefaultTooltipEncoding(
   }
 
   return tooltip;
+}
+
+export function getLegendConfig(
+  orientation: ChartLegend,
+): Config<ExprRef | SignalRef> {
+  let columns: number | ExprRef = 1;
+  let symbolLimit: number | ExprRef = 40;
+  if (orientation === "top" || orientation === "bottom") {
+    columns = { expr: "floor(width / 140)" };
+  } else if (orientation === "right" || orientation === "left") {
+    symbolLimit = { expr: "floor(height / 13 )" };
+  }
+  if (orientation === "none") {
+    return {
+      legend: {
+        disable: true,
+      },
+    };
+  }
+  return {
+    legend: {
+      orient: orientation,
+      columns: columns,
+      labelLimit: 140,
+      symbolLimit: symbolLimit,
+    },
+  };
+}
+
+export function createConfigWithLegend(
+  config: ChartSpec,
+  legendField: FieldConfig | string | undefined,
+  chartVLConfig: Config<ExprRef | SignalRef> | undefined = undefined,
+  defaultLegendPosition: ChartLegend = "top",
+): Config<ExprRef | SignalRef> | undefined {
+  const vlConfig = createConfig(config, chartVLConfig);
+
+  if (!legendField || typeof legendField === "string") {
+    return vlConfig;
+  }
+  const legendConfig = getLegendConfig(
+    legendField.legendOrientation ?? defaultLegendPosition,
+  );
+  if (!vlConfig) return legendConfig;
+  return merge(vlConfig, legendConfig);
 }
 
 export function createConfig(

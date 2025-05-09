@@ -192,10 +192,10 @@
         {:else if metricsView && config.type === "mark"}
           <MarkSelector
             {canvasName}
-            label={config.label ?? key}
             {key}
+            {config}
             {metricsView}
-            value={localParamValues[key] || {}}
+            markConfig={localParamValues[key] || {}}
             onChange={(updatedConfig) => {
               localParamValues[key] = updatedConfig;
               component.updateProperty(key, updatedConfig);
