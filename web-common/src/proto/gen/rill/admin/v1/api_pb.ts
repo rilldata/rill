@@ -3920,6 +3920,11 @@ export class SetOrganizationMemberUserRoleRequest extends Message<SetOrganizatio
    */
   role = "";
 
+  /**
+   * @generated from field: bool superuser_force_access = 4;
+   */
+  superuserForceAccess = false;
+
   constructor(data?: PartialMessage<SetOrganizationMemberUserRoleRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -3931,6 +3936,7 @@ export class SetOrganizationMemberUserRoleRequest extends Message<SetOrganizatio
     { no: 1, name: "organization", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "email", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "role", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "superuser_force_access", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SetOrganizationMemberUserRoleRequest {
