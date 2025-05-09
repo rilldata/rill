@@ -353,7 +353,43 @@ func (s *Server) ConnectProjectToGithub(ctx context.Context, req *adminv1.Connec
 		}
 	} else if proj.GithubURL != nil {
 		err = s.pushToGit(ctx, func(projPath string) error {
-			return copyFromSrcGit(projPath, *proj.GithubURL, proj.ProdBranch, proj.Subpath, token)
+			isRillManagedRepo := true
+			_, err := s.admin.DB.FindManagedGitRepo(ctx, *proj.GithubURL)
+			if err != nil {
+				if errors.Is(err, database.ErrNotFound) {
+					isRillManagedRepo = false
+				} else {
+					return err
+				}
+			}
+			var appToken string
+			if isRillManagedRepo {
+				installationID, err := s.admin.Github.ManagedOrgInstallationID()
+				if err != nil {
+					return err
+				}
+				ghClient, err := s.admin.Github.InstallationClient(installationID)
+				if err != nil {
+					return err
+				}
+				account, repo, ok := gitutil.SplitGithubURL(*proj.GithubURL)
+				if !ok {
+					return status.Error(codes.InvalidArgument, "invalid github url")
+				}
+				ghRepo, _, err := ghClient.Repositories.Get(ctx, account, repo)
+				if err != nil {
+					return err
+				}
+
+				// user token is not valid for cloning rill managed repo
+				appToken, err = s.admin.Github.InstallationToken(ctx, *proj.GithubInstallationID, ghRepo.GetID())
+				if err != nil {
+					return err
+				}
+			} else {
+				appToken = token
+			}
+			return copyFromSrcGit(projPath, *proj.GithubURL, proj.ProdBranch, proj.Subpath, appToken)
 		}, req.Repo, req.Branch, req.Subpath, token, req.Force)
 		if err != nil {
 			return nil, status.Error(codes.InvalidArgument, err.Error())

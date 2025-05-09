@@ -26,10 +26,11 @@
 
   $: proj = createAdminServiceGetProject(organization, project);
   $: ({
-    project: { githubUrl, subpath, prodBranch },
+    project: { githubUrl, managedGitId, subpath, prodBranch },
   } = $proj.data);
 
   $: isGithubConnected = !!githubUrl;
+  $: isManagedGit = !!managedGitId;
   $: repoName = getRepoNameFromGithubUrl(githubUrl);
   $: githubLastSynced = useGithubLastSynced(instanceId);
   $: dashboardsLastUpdated = useDashboardsLastUpdated(
@@ -81,7 +82,7 @@
       GitHub
     </span>
     <div class="flex flex-col gap-x-1">
-      {#if isGithubConnected}
+      {#if isGithubConnected && !isManagedGit}
         <div class="flex flex-row gap-x-1 items-center">
           <Github className="w-4 h-4" />
           <a
