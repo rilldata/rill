@@ -7,12 +7,10 @@ import {
 } from "@rilldata/web-common/runtime-client";
 import {
   INITIAL_REFETCH_INTERVAL,
-  pollUntilResourcesReconciled,
+  refetchIntervalStore,
 } from "../shared/refetch-interval";
 
 export function useReports(instanceId: string, enabled = true) {
-  let currentRefetchInterval = INITIAL_REFETCH_INTERVAL;
-
   return createRuntimeServiceListResources(
     instanceId,
     {
@@ -22,19 +20,7 @@ export function useReports(instanceId: string, enabled = true) {
       query: {
         enabled: enabled && !!instanceId,
         refetchOnMount: true,
-        refetchInterval: (query) => {
-          const newInterval = pollUntilResourcesReconciled(
-            currentRefetchInterval,
-            query.state.data,
-            query,
-          );
-          if (newInterval === false) {
-            currentRefetchInterval = INITIAL_REFETCH_INTERVAL;
-            return false;
-          }
-          currentRefetchInterval = newInterval;
-          return newInterval;
-        },
+        refetchInterval: refetchIntervalStore.calculatePollingInterval,
       },
     },
   );
