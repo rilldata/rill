@@ -103,7 +103,7 @@
 
   function createOrgPaths(
     organizations: V1Organization[],
-    viewingOrg: string,
+    viewingOrg: string | undefined,
     planDisplayName: string,
   ) {
     const pathMap = new Map<string, PathOption>();
@@ -114,6 +114,8 @@
         pill: planDisplayName,
       });
     });
+
+    if (!viewingOrg) return pathMap;
 
     if (!pathMap.has(viewingOrg.toLowerCase())) {
       pathMap.set(viewingOrg.toLowerCase(), {
