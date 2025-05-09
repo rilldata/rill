@@ -6,7 +6,7 @@
   import CtaContentContainer from "@rilldata/web-common/components/calls-to-action/CTAContentContainer.svelte";
   import CtaLayoutContainer from "@rilldata/web-common/components/calls-to-action/CTALayoutContainer.svelte";
   import CtaMessage from "@rilldata/web-common/components/calls-to-action/CTAMessage.svelte";
-  import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+  import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import type { PageData } from "./$types";
@@ -41,7 +41,7 @@
 
   async function gotoExplorePage(
     exploreName: string,
-    exploreState: MetricsExplorerEntity,
+    exploreState: ExploreState,
   ) {
     const url = new URL(window.location.origin);
     if (token) {

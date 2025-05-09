@@ -5,7 +5,7 @@ The main feature-set component for dashboard filters
   import TimeRangeReadOnly from "@rilldata/web-common/features/dashboards/filters/TimeRangeReadOnly.svelte";
   import { allDimensions } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimensions";
   import { allMeasures } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measures";
-  import type { DimensionThresholdFilter } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+  import type { DimensionThresholdFilter } from "@rilldata/web-common/features/dashboards/stores/explore-state";
   import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
   import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
   import type {

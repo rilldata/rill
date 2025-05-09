@@ -4,7 +4,7 @@ import type {
   V1ExploreSpec,
   V1MetricsViewSpec,
 } from "@rilldata/web-common/runtime-client";
-import type { MetricsExplorerEntity } from "../../stores/metrics-explorer-entity";
+import type { ExploreState } from "web-common/src/features/dashboards/stores/explore-state";
 
 function getKeyForLocalStore(
   exploreName: string,
@@ -29,7 +29,7 @@ export function getMostRecentPartialExploreState(
 
     const stateFromLocalStorage = JSON.parse(
       rawExploreState,
-    ) as Partial<MetricsExplorerEntity>;
+    ) as Partial<ExploreState>;
     const errors = validateAndCleanExploreState(
       metricsViewSpec,
       exploreSpec,
@@ -50,7 +50,7 @@ export function getMostRecentPartialExploreState(
 export function saveMostRecentPartialExploreState(
   exploreName: string,
   storageNamespacePrefix: string | undefined,
-  exploreState: MetricsExplorerEntity,
+  exploreState: ExploreState,
 ) {
   if (
     exploreState.activePage !== DashboardState_ActivePage.DEFAULT &&
@@ -96,7 +96,7 @@ export function clearMostRecentExploreState(
 export function setMostRecentExploreStateInLocalStorage(
   exploreName: string,
   storageNamespacePrefix: string | undefined,
-  exploreState: Partial<MetricsExplorerEntity>,
+  exploreState: Partial<ExploreState>,
 ) {
   localStorage.setItem(
     getKeyForLocalStore(exploreName, storageNamespacePrefix),

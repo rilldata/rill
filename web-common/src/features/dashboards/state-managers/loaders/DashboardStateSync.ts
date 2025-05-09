@@ -6,7 +6,7 @@ import {
   metricsExplorerStore,
   useExploreState,
 } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
-import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import {
   createTimeControlStoreFromName,
   type TimeControlStore,
@@ -25,7 +25,7 @@ import type { CompoundQueryResult } from "@rilldata/web-common/features/compound
  * prevUrl is used to make sure there is no redirect loop.
  */
 export class DashboardStateSync {
-  private readonly exploreStore: Readable<MetricsExplorerEntity | undefined>;
+  private readonly exploreStore: Readable<ExploreState | undefined>;
   private readonly timeControlStore: TimeControlStore;
   // Cached url params for a rill opinionated dashboard defaults. Used to remove params from url.
   // To avoid converting the default explore state to url evey time it is needed we maintain a cached version here.
@@ -86,7 +86,7 @@ export class DashboardStateSync {
    * Initializes the dashboard store.
    * If the url needs to change to match the init then we replace the current url with the new url.
    */
-  private handleExploreInit(initExploreState: MetricsExplorerEntity) {
+  private handleExploreInit(initExploreState: ExploreState) {
     // If this is re-triggered any of the dependant query was refetched, then we need to make sure this is not run again.
     if (this.initialized) return;
 
@@ -234,7 +234,7 @@ export class DashboardStateSync {
    *
    * This will check if the url needs to be changed and will navigate to the new url.
    */
-  private gotoNewState(exploreState: MetricsExplorerEntity) {
+  private gotoNewState(exploreState: ExploreState) {
     // Updating state either in handleExploreInit or handleURLChange will synchronously update the state triggering this function.
     // Since those methods handle redirect themselves we need to skip this logic.
     // Those methods need to replace the current URL while this does a direct navigation.

@@ -5,7 +5,7 @@ import {
   PageMockForExploreTests,
 } from "@rilldata/web-common/features/dashboards/state-managers/loaders/test/PageMockForExploreTests";
 import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
-import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import {
   AD_BIDS_BID_PRICE_MEASURE,
   AD_BIDS_EXPLORE_INIT,
@@ -56,7 +56,7 @@ const TestCases: {
   mutations: TestDashboardMutation[];
 
   expectedUrlSearch: string;
-  expectedExplore: Partial<MetricsExplorerEntity>;
+  expectedExplore: Partial<ExploreState>;
 }[] = [
   {
     title: "Changes to dashboard using actions",

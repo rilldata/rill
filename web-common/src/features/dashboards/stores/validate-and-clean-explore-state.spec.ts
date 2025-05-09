@@ -1,5 +1,5 @@
 import { validateAndCleanExploreState } from "@rilldata/web-common/features/dashboards/stores/validate-and-clean-explore-state";
-import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import {
   AD_BIDS_BID_PRICE_MEASURE,
   AD_BIDS_DOMAIN_DIMENSION,
@@ -17,8 +17,8 @@ import { describe, expect, it } from "vitest";
 
 const TestCases: {
   title: string;
-  exploreState: Partial<MetricsExplorerEntity>;
-  expectedState: Partial<MetricsExplorerEntity>;
+  exploreState: Partial<ExploreState>;
+  expectedState: Partial<ExploreState>;
   expectedErrorMessages: string[];
 }[] = [
   {

@@ -1,7 +1,7 @@
 import { createAdminServiceSearchProjectUsers } from "@rilldata/web-admin/client";
 import { getExploreName } from "@rilldata/web-admin/features/dashboards/query-mappers/utils";
 import { getDashboardStateFromUrl } from "@rilldata/web-common/features/dashboards/proto-state/fromProto";
-import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import {
   createRuntimeServiceGetExplore,
@@ -109,7 +109,7 @@ export function useAlertDashboardState(
 ) {
   if (!alertSpec) {
     return readable({
-      data: <Partial<MetricsExplorerEntity>>{},
+      data: <Partial<ExploreState>>{},
     });
   }
 
@@ -119,7 +119,7 @@ export function useAlertDashboardState(
   const webState = alertSpec.annotations?.web_open_state ?? "";
   if (!webState) {
     return readable({
-      data: <Partial<MetricsExplorerEntity>>{},
+      data: <Partial<ExploreState>>{},
     });
   }
 

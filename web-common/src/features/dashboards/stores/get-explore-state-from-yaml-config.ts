@@ -1,6 +1,6 @@
 import { SortDirection } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
 import { getGrainForRange } from "@rilldata/web-common/features/dashboards/stores/get-rill-default-explore-state";
-import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import { getValidComparisonOption } from "@rilldata/web-common/features/dashboards/time-controls/time-range-store";
 import { ToLegacySortTypeMap } from "@rilldata/web-common/features/dashboards/url-state/legacyMappers";
 import { FromURLParamTimeGrainMap } from "@rilldata/web-common/features/dashboards/url-state/mappers";
@@ -23,7 +23,7 @@ export function getExploreStateFromYAMLConfig(
   timeRangeSummary: V1TimeRangeSummary | undefined,
 ) {
   // TODO: support all fields from V1ExplorePreset. Not urgent since we do not parse them in backend.
-  return <Partial<MetricsExplorerEntity>>{
+  return <Partial<ExploreState>>{
     activePage: DashboardState_ActivePage.DEFAULT,
 
     ...getExploreTimeStateFromYAMLConfig(exploreSpec, timeRangeSummary),
@@ -34,8 +34,8 @@ export function getExploreStateFromYAMLConfig(
 function getExploreTimeStateFromYAMLConfig(
   exploreSpec: V1ExploreSpec,
   timeRangeSummary: V1TimeRangeSummary | undefined,
-): Partial<MetricsExplorerEntity> {
-  const exploreTimeState: Partial<MetricsExplorerEntity> = {};
+): Partial<ExploreState> {
+  const exploreTimeState: Partial<ExploreState> = {};
   if (!exploreSpec.defaultPreset || !timeRangeSummary) {
     return exploreTimeState;
   }
@@ -122,8 +122,8 @@ function getDefaultComparisonTimeRangeName(
 
 function getExploreViewStateFromYAMLConfig(
   exploreSpec: V1ExploreSpec,
-): Partial<MetricsExplorerEntity> {
-  const exploreViewState: Partial<MetricsExplorerEntity> = {};
+): Partial<ExploreState> {
+  const exploreViewState: Partial<ExploreState> = {};
   if (!exploreSpec.defaultPreset) return exploreViewState;
   const defaultPreset = exploreSpec.defaultPreset;
 

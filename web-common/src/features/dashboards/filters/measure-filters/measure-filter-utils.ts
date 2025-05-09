@@ -9,7 +9,7 @@ import {
   isExpressionUnsupported,
   removeWrapperAndOrExpression,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
-import type { DimensionThresholdFilter } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import type { DimensionThresholdFilter } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import type { V1Expression } from "@rilldata/web-common/runtime-client";
 
 export function mergeDimensionAndMeasureFilters(

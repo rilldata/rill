@@ -1,6 +1,6 @@
 import { SortDirection } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
-import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import {
   type TimeControlState,
   useTimeControlStore,
@@ -46,7 +46,7 @@ export function getTDDExportQuery(
 
 function getTDDAggregationRequest(
   metricsViewName: string,
-  dashboardState: MetricsExplorerEntity,
+  exploreState: ExploreState,
   timeControlState: TimeControlState,
   metricsView: V1MetricsViewSpec | undefined,
   explore: V1ExploreSpec | undefined,
@@ -57,7 +57,7 @@ function getTDDAggregationRequest(
     !metricsView ||
     !explore ||
     !timeControlState.ready ||
-    !dashboardState.tdd.expandedMeasureName
+    !exploreState.tdd.expandedMeasureName
   )
     return undefined;
 
@@ -65,7 +65,7 @@ function getTDDAggregationRequest(
   if (isScheduled) {
     timeRange = mapSelectedTimeRangeToV1TimeRange(
       timeControlState,
-      dashboardState.selectedTimezone,
+      exploreState.selectedTimezone,
       explore,
     );
   } else {
@@ -77,11 +77,11 @@ function getTDDAggregationRequest(
   if (!timeRange) return undefined;
 
   const measures: V1MetricsViewAggregationMeasure[] = [
-    { name: dashboardState.tdd.expandedMeasureName },
+    { name: exploreState.tdd.expandedMeasureName },
   ];
 
   // CAST SAFETY: exports are only available in TDD when a comparison dimension is selected
-  const dimensionName = dashboardState.selectedComparisonDimension as string;
+  const dimensionName = exploreState.selectedComparisonDimension as string;
   const timeDimension = metricsView.timeDimension ?? "";
 
   return {
@@ -91,8 +91,8 @@ function getTDDAggregationRequest(
       { name: dimensionName },
       {
         name: metricsView.timeDimension ?? "",
-        timeGrain: dashboardState.selectedTimeRange?.interval,
-        timeZone: dashboardState.selectedTimezone,
+        timeGrain: exploreState.selectedTimeRange?.interval,
+        timeZone: exploreState.selectedTimezone,
       },
     ],
     measures,
@@ -101,12 +101,12 @@ function getTDDAggregationRequest(
     sort: [
       {
         name: dimensionName,
-        desc: dashboardState.sortDirection === SortDirection.DESCENDING,
+        desc: exploreState.sortDirection === SortDirection.DESCENDING,
       },
     ],
     where: buildWhereParamForDimensionTableAndTDDExports(
-      dashboardState.whereFilter,
-      dashboardState.dimensionThresholdFilters,
+      exploreState.whereFilter,
+      exploreState.dimensionThresholdFilters,
       dimensionName,
       dimensionSearchText,
     ),

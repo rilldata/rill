@@ -30,7 +30,7 @@
   import {
     convertDateToMinutes,
     getExploreFields,
-    getSanitizedDashboardStateParam,
+    getSanitizedExploreStateParam,
     hasDashboardDimensionThresholdFilter,
     hasDashboardWhereFilter,
   } from "./form-utils";
@@ -60,7 +60,7 @@
     $visibleMeasures,
   );
 
-  $: sanitizedState = getSanitizedDashboardStateParam(
+  $: sanitizedState = getSanitizedExploreStateParam(
     $dashboardStore,
     exploreFields,
     $validSpecStore.data?.explore,

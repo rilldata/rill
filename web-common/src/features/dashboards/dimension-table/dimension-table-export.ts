@@ -5,7 +5,7 @@ import {
 } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
 import { SortDirection } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
-import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import {
   mapSelectedComparisonTimeRangeToV1TimeRange,
@@ -81,18 +81,18 @@ export function getDimensionTableExportQuery(
 
 export function getDimensionTableAggregationRequestForTime(
   metricsView: string,
-  dashboardState: MetricsExplorerEntity,
+  exploreState: ExploreState,
   timeRange: V1TimeRange,
   comparisonTimeRange: V1TimeRange | undefined,
   dimensionSearchText: string,
 ): V1MetricsViewAggregationRequest {
   const measures: V1MetricsViewAggregationMeasure[] =
-    dashboardState.visibleMeasures.map((name) => ({
+    exploreState.visibleMeasures.map((name) => ({
       name: name,
     }));
 
-  let apiSortName = dashboardState.leaderboardSortByMeasureName;
-  if (!dashboardState.visibleMeasures.includes(apiSortName)) {
+  let apiSortName = exploreState.leaderboardSortByMeasureName;
+  if (!exploreState.visibleMeasures.includes(apiSortName)) {
     // if selected sort measure is not visible add it to list
     measures.push({ name: apiSortName });
   }
@@ -103,7 +103,7 @@ export function getDimensionTableAggregationRequestForTime(
       0,
       ...getComparisonRequestMeasures(apiSortName),
     );
-    switch (dashboardState.dashboardSortType) {
+    switch (exploreState.dashboardSortType) {
       case DashboardState_LeaderboardSortType.DELTA_ABSOLUTE:
         apiSortName += ComparisonDeltaAbsoluteSuffix;
         break;
@@ -114,9 +114,9 @@ export function getDimensionTableAggregationRequestForTime(
   }
 
   const where = buildWhereParamForDimensionTableAndTDDExports(
-    dashboardState.whereFilter,
-    dashboardState.dimensionThresholdFilters,
-    dashboardState.selectedDimensionName!, // must exist when viewing a dimension table
+    exploreState.whereFilter,
+    exploreState.dimensionThresholdFilters,
+    exploreState.selectedDimensionName!, // must exist when viewing a dimension table
     dimensionSearchText,
   );
 
@@ -125,7 +125,7 @@ export function getDimensionTableAggregationRequestForTime(
     metricsView,
     dimensions: [
       {
-        name: dashboardState.selectedDimensionName,
+        name: exploreState.selectedDimensionName,
       },
     ],
     measures,
@@ -134,7 +134,7 @@ export function getDimensionTableAggregationRequestForTime(
     sort: [
       {
         name: apiSortName,
-        desc: dashboardState.sortDirection === SortDirection.DESCENDING,
+        desc: exploreState.sortDirection === SortDirection.DESCENDING,
       },
     ],
     where,
