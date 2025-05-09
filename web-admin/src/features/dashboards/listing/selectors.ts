@@ -9,6 +9,7 @@ import {
   INITIAL_REFETCH_INTERVAL,
   pollUntilResourcesReconciled,
 } from "../../shared/refetch-interval";
+import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
 
 export function useDashboardsLastUpdated(
   instanceId: string,
@@ -53,7 +54,7 @@ export interface DashboardResource {
 // This iteration of `useDashboards` returns the above `DashboardResource` type, which includes `refreshedOn`
 export function useDashboardsV2(
   instanceId: string,
-): CreateQueryResult<DashboardResource[]> {
+): CreateQueryResult<DashboardResource[], HTTPError> {
   let currentRefetchInterval = INITIAL_REFETCH_INTERVAL;
 
   return createRuntimeServiceListResources(instanceId, undefined, {
