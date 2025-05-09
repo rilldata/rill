@@ -40,7 +40,7 @@ export function pollUntilResourcesReconciled(
 }
 
 function createRefetchIntervalStore() {
-  const { subscribe, set, update } = writable(INITIAL_REFETCH_INTERVAL);
+  const { subscribe, set } = writable(INITIAL_REFETCH_INTERVAL);
 
   return {
     subscribe,

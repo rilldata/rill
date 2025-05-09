@@ -5,10 +5,7 @@ import {
   createRuntimeServiceGetResource,
   createRuntimeServiceListResources,
 } from "@rilldata/web-common/runtime-client";
-import {
-  INITIAL_REFETCH_INTERVAL,
-  refetchIntervalStore,
-} from "../shared/refetch-interval";
+import { refetchIntervalStore } from "../shared/refetch-interval";
 
 export function useReports(instanceId: string, enabled = true) {
   return createRuntimeServiceListResources(

@@ -1,11 +1,8 @@
 <script lang="ts">
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
-  import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import {
     createRuntimeServiceCreateTrigger,
     getRuntimeServiceListResourcesQueryKey,
-    type V1ListResourcesResponse,
-    type V1Resource,
   } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { useQueryClient } from "@tanstack/svelte-query";
@@ -22,7 +19,7 @@
 
   $: ({ instanceId } = $runtime);
 
-  $: resources = useResources(instanceId, true);
+  $: resources = useResources(instanceId);
 
   $: hasReconcilingResources = $resources.data?.resources?.some(
     isResourceReconciling,

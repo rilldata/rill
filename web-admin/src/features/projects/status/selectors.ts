@@ -22,7 +22,7 @@ export function useProjectDeployment(orgName: string, projName: string) {
   );
 }
 
-export function useResources(instanceId: string, isAdmin = false) {
+export function useResources(instanceId: string) {
   return createRuntimeServiceListResources(
     instanceId,
     {},
