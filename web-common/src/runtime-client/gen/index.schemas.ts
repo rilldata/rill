@@ -1513,6 +1513,17 @@ export interface V1Model {
   state?: V1ModelState;
 }
 
+export type V1ModelChangeMode =
+  (typeof V1ModelChangeMode)[keyof typeof V1ModelChangeMode];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const V1ModelChangeMode = {
+  MODEL_CHANGE_MODE_UNSPECIFIED: "MODEL_CHANGE_MODE_UNSPECIFIED",
+  MODEL_CHANGE_MODE_RESET: "MODEL_CHANGE_MODE_RESET",
+  MODEL_CHANGE_MODE_MANUAL: "MODEL_CHANGE_MODE_MANUAL",
+  MODEL_CHANGE_MODE_PATCH: "MODEL_CHANGE_MODE_PATCH",
+} as const;
+
 export type V1ModelPartitionData = { [key: string]: unknown };
 
 export interface V1ModelPartition {
@@ -1555,6 +1566,7 @@ export interface V1ModelSpec {
   stageProperties?: V1ModelSpecStageProperties;
   outputConnector?: string;
   outputProperties?: V1ModelSpecOutputProperties;
+  changeMode?: V1ModelChangeMode;
   trigger?: boolean;
   triggerFull?: boolean;
   /** defined_as_source is true if it was defined by user as a source but converted internally to a model. */
