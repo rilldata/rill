@@ -137,6 +137,40 @@ func (s *Server) ListProjectsForOrganizationAndUser(ctx context.Context, req *ad
 	}, nil
 }
 
+func (s *Server) ListProjectsForUserByName(ctx context.Context, req *adminv1.ListProjectsForUserByNameRequest) (*adminv1.ListProjectsForUserByNameResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.project", req.Name),
+	)
+
+	claims := auth.GetClaims(ctx)
+	userID := claims.OwnerID()
+
+	projects, err := s.admin.DB.FindProjectsByNameAndUser(ctx, req.Name, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	orgsByID := make(map[string]*database.Organization)
+
+	dtos := make([]*adminv1.Project, len(projects))
+	for i, p := range projects {
+		org, hasOrg := orgsByID[p.OrganizationID]
+		if !hasOrg {
+			org, err = s.admin.DB.FindOrganization(ctx, p.OrganizationID)
+			if err != nil {
+				return nil, err
+			}
+			orgsByID[p.OrganizationID] = org
+		}
+
+		dtos[i] = s.projToDTO(p, org.Name)
+	}
+
+	return &adminv1.ListProjectsForUserByNameResponse{
+		Projects: dtos,
+	}, nil
+}
+
 func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest) (*adminv1.GetProjectResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.org", req.OrganizationName),
@@ -843,7 +877,7 @@ func (s *Server) ListProjectMemberUsers(ctx context.Context, req *adminv1.ListPr
 		roleID = role.ID
 	}
 
-	members, err := s.admin.DB.FindProjectMemberUsers(ctx, proj.ID, roleID, token.Val, pageSize)
+	members, err := s.admin.DB.FindProjectMemberUsers(ctx, proj.OrganizationID, proj.ID, roleID, token.Val, pageSize)
 	if err != nil {
 		return nil, err
 	}
@@ -897,9 +931,9 @@ func (s *Server) ListProjectInvites(ctx context.Context, req *adminv1.ListProjec
 		nextToken = marshalPageToken(userInvites[len(userInvites)-1].Email)
 	}
 
-	invitesDtos := make([]*adminv1.UserInvite, len(userInvites))
+	invitesDtos := make([]*adminv1.ProjectInvite, len(userInvites))
 	for i, invite := range userInvites {
-		invitesDtos[i] = inviteToPB(invite)
+		invitesDtos[i] = projInviteToPB(invite)
 	}
 
 	return &adminv1.ListProjectInvitesResponse{

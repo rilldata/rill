@@ -5,7 +5,7 @@
     V1ListOrganizationInvitesResponse,
     V1ListOrganizationMemberUsersResponse,
     V1OrganizationMemberUser,
-    V1UserInvite,
+    V1OrganizationInvite,
   } from "@rilldata/web-admin/client";
   import OrgUsersTableUserCompositeCell from "./OrgUsersTableUserCompositeCell.svelte";
   import OrgUsersTableActionsCell from "./OrgUsersTableActionsCell.svelte";
@@ -28,8 +28,9 @@
     InfiniteData,
     InfiniteQueryObserverResult,
   } from "@tanstack/svelte-query";
+  import { ExternalLinkIcon } from "lucide-svelte";
 
-  interface OrgUser extends V1OrganizationMemberUser, V1UserInvite {
+  interface OrgUser extends V1OrganizationMemberUser, V1OrganizationInvite {
     invitedBy?: string;
   }
 
@@ -43,6 +44,11 @@
     RpcStatus
   >;
   export let currentUserEmail: string;
+  export let currentUserRole: string;
+  export let billingContact: string | undefined;
+
+  export let onAttemptRemoveBillingContactUser: () => void;
+  export let onAttemptChangeBillingContactUserRole: () => void;
 
   const ROW_HEIGHT = 69;
   const OVERSCAN = 5;
@@ -60,7 +66,7 @@
     }
   }
 
-  const columns: ColumnDef<OrgUser, any>[] = [
+  $: columns = <ColumnDef<OrgUser, any>[]>[
     {
       accessorKey: "user",
       header: "User",
@@ -72,22 +78,26 @@
           pendingAcceptance: Boolean(row.original.invitedBy),
           isCurrentUser: row.original.userEmail === currentUserEmail,
           photoUrl: row.original.userPhotoUrl,
+          role: row.original.roleName,
         }),
       meta: {
-        widthPercent: 5,
+        widthPercent: 50,
       },
     },
     {
       accessorKey: "roleName",
-      header: "Role",
+      header: "Organization Role",
       cell: ({ row }) =>
         flexRender(OrgUsersTableRoleCell, {
           email: row.original.userEmail,
           role: row.original.roleName,
           isCurrentUser: row.original.userEmail === currentUserEmail,
+          currentUserRole,
+          isBillingContact: row.original.userEmail === billingContact,
+          onAttemptChangeBillingContactUserRole,
         }),
       meta: {
-        widthPercent: 5,
+        widthPercent: 40,
         marginLeft: "8px",
       },
     },
@@ -98,10 +108,14 @@
       cell: ({ row }) =>
         flexRender(OrgUsersTableActionsCell, {
           email: row.original.userEmail,
+          role: row.original.roleName,
           isCurrentUser: row.original.userEmail === currentUserEmail,
+          currentUserRole,
+          isBillingContact: row.original.userEmail === billingContact,
+          onAttemptRemoveBillingContactUser,
         }),
       meta: {
-        widthPercent: 0,
+        widthPercent: 5,
       },
     },
   ];
@@ -122,7 +136,7 @@
     }));
   };
 
-  const options = writable<TableOptions<OrgUser>>({
+  $: options = writable<TableOptions<OrgUser>>({
     data: safeData,
     columns,
     state: {
@@ -133,7 +147,7 @@
     getSortedRowModel: getSortedRowModel(),
   });
 
-  const table = createSvelteTable(options);
+  $: table = createSvelteTable(options);
 
   $: rows = $table.getRowModel().rows;
 
@@ -197,7 +211,7 @@
                     style={`margin-left: ${marginLeft};`}
                     class:cursor-pointer={header.column.getCanSort()}
                     class:select-none={header.column.getCanSort()}
-                    class="font-semibold text-gray-500 flex flex-row items-center gap-x-1"
+                    class="font-semibold text-gray-500 flex flex-row items-center gap-x-1 text-sm"
                   >
                     <svelte:component
                       this={flexRender(
@@ -205,6 +219,20 @@
                         header.getContext(),
                       )}
                     />
+                    {#if header.column.id === "roleName"}
+                      <a
+                        href="https://docs.rilldata.com/manage/roles-permissions#organization-level-permissions"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="hover:text-gray-700"
+                      >
+                        <ExternalLinkIcon
+                          class="text-gray-500"
+                          size="11px"
+                          strokeWidth={2}
+                        />
+                      </a>
+                    {/if}
                     {#if header.column.getIsSorted().toString() === "asc"}
                       <span>
                         <ArrowDown flip size="12px" />

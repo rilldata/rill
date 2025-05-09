@@ -133,7 +133,7 @@ func (s *Server) CreateOrganization(ctx context.Context, req *adminv1.CreateOrga
 		}
 	}
 
-	org, err := s.admin.CreateOrganizationForUser(ctx, user.ID, user.Email, req.Name, req.Description)
+	org, err := s.admin.CreateOrganizationForUser(ctx, user.ID, user.Email, req.Name, req.DisplayName, req.Description)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -359,9 +359,9 @@ func (s *Server) ListOrganizationInvites(ctx context.Context, req *adminv1.ListO
 		nextToken = marshalPageToken(userInvites[len(userInvites)-1].Email)
 	}
 
-	invitesDtos := make([]*adminv1.UserInvite, len(userInvites))
+	invitesDtos := make([]*adminv1.OrganizationInvite, len(userInvites))
 	for i, invite := range userInvites {
-		invitesDtos[i] = inviteToPB(invite)
+		invitesDtos[i] = orgInviteToPB(invite)
 	}
 
 	return &adminv1.ListOrganizationInvitesResponse{

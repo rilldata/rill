@@ -38,6 +38,7 @@ var spec = drivers.Spec{
 			Hint: "Enter path of file to load from.",
 		},
 	},
+	// Important: Any edits to the below properties must be accompanied by changes to the client-side form validation schemas.
 	SourceProperties: []*drivers.PropertySpec{
 		{
 			Key:         "path",

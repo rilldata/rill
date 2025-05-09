@@ -18,6 +18,7 @@ type tableWriteMetrics struct {
 
 type createTableOptions struct {
 	view         bool
+	initQueries  []string
 	beforeCreate string
 	afterCreate  string
 }
@@ -45,6 +46,7 @@ func (c *connection) createTableAsSelect(ctx context.Context, name, sql string, 
 	}
 	res, err := db.CreateTableAsSelect(ctx, name, sql, &rduckdb.CreateTableOptions{
 		View:           opts.view,
+		InitQueries:    opts.initQueries,
 		BeforeCreateFn: beforeCreateFn,
 		AfterCreateFn:  afterCreateFn,
 	})

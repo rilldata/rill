@@ -3,6 +3,7 @@
   import { setLineStatuses } from "@rilldata/web-common/components/editor/line-status";
   import type { LineStatus } from "@rilldata/web-common/components/editor/line-status/state";
   import { metricsPlusSQL } from "@rilldata/web-common/components/editor/presets/yamlWithJsonAndSql";
+  import { clearMostRecentExploreState } from "@rilldata/web-common/features/dashboards/state-managers/loaders/most-recent-explore-state";
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import { clearExploreSessionStore } from "@rilldata/web-common/features/dashboards/state-managers/loaders/explore-web-view-store";
   import Editor from "@rilldata/web-common/features/editor/Editor.svelte";
@@ -46,13 +47,15 @@
       metricsExplorerStore.remove(metricsViewName);
       // Reset local persisted dashboard state for the metrics view
       clearExploreSessionStore(metricsViewName, undefined);
+      clearMostRecentExploreState(metricsViewName, undefined);
 
       // Reset local persisted explore state derived from this metrics view
       fileArtifacts
         .getNamesForKind(ResourceKind.Explore)
-        .forEach((resourceName) =>
-          clearExploreSessionStore(resourceName, undefined),
-        );
+        .forEach((resourceName) => {
+          clearExploreSessionStore(resourceName, undefined);
+          clearMostRecentExploreState(resourceName, undefined);
+        });
       if (!content?.length) {
         setLineStatuses([], editor);
       }

@@ -12,12 +12,14 @@ import (
 	"net/http"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"connectrpc.com/connect"
 	"github.com/eapache/go-resiliency/retrier"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/plumbing/object"
 	githttp "github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/google/go-github/v50/github"
 	"github.com/rilldata/rill/admin/database"
@@ -31,6 +33,7 @@ import (
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	localv1 "github.com/rilldata/rill/proto/gen/rill/local/v1"
 	"github.com/rilldata/rill/proto/gen/rill/local/v1/localv1connect"
+	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
@@ -241,7 +244,11 @@ func (s *Server) PushToGithub(ctx context.Context, r *connect.Request[localv1.Pu
 	}
 
 	// git commit -m
-	_, err = wt.Commit("Auto committed by Rill", &git.CommitOptions{All: true})
+	author, err := autoCommitGitSignature(ctx, c, repo)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate git commit signature: %w", err)
+	}
+	_, err = wt.Commit("Auto committed by Rill", &git.CommitOptions{All: true, Author: author})
 	if err != nil {
 		if !errors.Is(err, git.ErrEmptyCommit) {
 			return nil, fmt.Errorf("failed to commit files to git: %w", err)
@@ -292,6 +299,7 @@ func (s *Server) DeployProject(ctx context.Context, r *connect.Request[localv1.D
 			// create org if not exists
 			_, err = c.CreateOrganization(ctx, &adminv1.CreateOrganizationRequest{
 				Name:        r.Msg.Org,
+				DisplayName: r.Msg.NewOrgDisplayName,
 				Description: "Auto created by Rill",
 			})
 			if err != nil {
@@ -600,6 +608,77 @@ func (s *Server) ListOrganizationsAndBillingMetadata(ctx context.Context, r *con
 	}), nil
 }
 
+func (s *Server) CreateOrganization(ctx context.Context, r *connect.Request[localv1.CreateOrganizationRequest]) (*connect.Response[localv1.CreateOrganizationResponse], error) {
+	// Get authenticated admin client
+	if !s.app.ch.IsAuthenticated() {
+		return nil, errors.New("must authenticate before performing this action")
+	}
+	c, err := s.app.ch.Client()
+	if err != nil {
+		return nil, err
+	}
+
+	orgResp, err := c.CreateOrganization(ctx, &adminv1.CreateOrganizationRequest{
+		Name:        r.Msg.Name,
+		DisplayName: r.Msg.DisplayName,
+		Description: r.Msg.Description,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return connect.NewResponse(&localv1.CreateOrganizationResponse{
+		Organization: orgResp.Organization,
+	}), nil
+}
+
+func (s *Server) ListMatchingProjects(ctx context.Context, r *connect.Request[localv1.ListMatchingProjectsRequest]) (*connect.Response[localv1.ListMatchingProjectsResponse], error) {
+	// Get authenticated admin client
+	if !s.app.ch.IsAuthenticated() {
+		return nil, errors.New("must authenticate before performing this action")
+	}
+	c, err := s.app.ch.Client()
+	if err != nil {
+		return nil, err
+	}
+
+	projectName := fileutil.Stem(s.app.ProjectPath)
+	projResp, err := c.ListProjectsForUserByName(ctx, &adminv1.ListProjectsForUserByNameRequest{
+		Name: projectName,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return connect.NewResponse(&localv1.ListMatchingProjectsResponse{
+		Projects: projResp.Projects,
+	}), nil
+}
+
+func (s *Server) ListProjectsForOrg(ctx context.Context, r *connect.Request[localv1.ListProjectsForOrgRequest]) (*connect.Response[localv1.ListProjectsForOrgResponse], error) {
+	// Get authenticated admin client
+	if !s.app.ch.IsAuthenticated() {
+		return nil, errors.New("must authenticate before performing this action")
+	}
+	c, err := s.app.ch.Client()
+	if err != nil {
+		return nil, err
+	}
+
+	projsResp, err := c.ListProjectsForOrganization(ctx, &adminv1.ListProjectsForOrganizationRequest{
+		OrganizationName: r.Msg.Org,
+		PageToken:        r.Msg.PageToken,
+		PageSize:         r.Msg.PageSize,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return connect.NewResponse(&localv1.ListProjectsForOrgResponse{
+		Projects: projsResp.Projects,
+	}), nil
+}
+
 // authHandler starts the OAuth2 PKCE flow to authenticate the user and get a rill access token.
 func (s *Server) authHandler(httpPort int, secure bool) http.Handler {
 	scheme := "http"
@@ -864,4 +943,30 @@ func (s *Server) traceHandler() http.Handler {
 			return
 		}
 	})
+}
+
+func autoCommitGitSignature(ctx context.Context, c adminv1.AdminServiceClient, repo *git.Repository) (*object.Signature, error) {
+	cfg, err := repo.ConfigScoped(config.SystemScope)
+	if err == nil && cfg.User.Email != "" && cfg.User.Name != "" {
+		// user has git properly configured use that
+		return &object.Signature{
+			Name:  cfg.User.Name,
+			Email: cfg.User.Email,
+			When:  time.Now(),
+		}, nil
+	}
+	// use email of rill user
+	userResp, err := c.GetCurrentUser(ctx, &adminv1.GetCurrentUserRequest{})
+	if err != nil {
+		return nil, err
+	}
+	if userResp.User == nil {
+		return nil, errors.New("failed to get current user")
+	}
+
+	return &object.Signature{
+		Name:  userResp.User.DisplayName,
+		Email: userResp.User.Email,
+		When:  time.Now(),
+	}, nil
 }

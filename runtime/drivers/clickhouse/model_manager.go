@@ -58,6 +58,10 @@ type ModelOutputProperties struct {
 	DistributedSettings string `mapstructure:"distributed.settings"`
 	// DistributedShardingKey is the sharding key for distributed table.
 	DistributedShardingKey string `mapstructure:"distributed.sharding_key"`
+	// DictionarySourceUser is the user that case access the source dictionary table. Only used when typ is DICTIONARY.
+	DictionarySourceUser string `mapstructure:"dictionary_source_user"`
+	// DictionarySourcePassword is the password for the user that can access the source dictionary table. Only used when typ is DICTIONARY.
+	DictionarySourcePassword string `mapstructure:"dictionary_source_password"`
 }
 
 func (p *ModelOutputProperties) Validate(opts *drivers.ModelExecuteOptions) error {
@@ -66,25 +70,36 @@ func (p *ModelOutputProperties) Validate(opts *drivers.ModelExecuteOptions) erro
 			return fmt.Errorf("`engine_full ` property cannot be used with individual properties")
 		}
 	}
+
+	// Handle materialize and type properties. We want to gracefully handle the cases where either or both are set in a non-contradictory way.
+	// This gets extra tricky since materialize=true is compatible with both TABLE and DICTIONARY types (just not VIEW).
 	p.Typ = strings.ToUpper(p.Typ)
-	if p.Typ != "" && p.Materialize != nil {
-		return fmt.Errorf("cannot set both `type` and `materialize` properties")
-	}
 	if p.Materialize != nil {
 		if *p.Materialize {
-			p.Typ = "TABLE"
+			if p.Typ == "VIEW" {
+				return fmt.Errorf("the `type` and `materialize` properties contradict each other")
+			} else if p.Typ == "" {
+				p.Typ = "TABLE"
+			}
 		} else {
-			p.Typ = "VIEW"
+			if p.Typ == "" {
+				p.Typ = "VIEW"
+			} else if p.Typ != "VIEW" {
+				return fmt.Errorf("the `type` and `materialize` properties contradict each other")
+			}
 		}
 	}
-	if opts.Incremental || opts.PartitionRun {
+	if opts.Incremental || opts.PartitionRun { // Incremental or partitioned models default to TABLE.
 		if p.Typ != "" && p.Typ != "TABLE" {
-			return fmt.Errorf("incremental or partitioned models must be materialized")
+			return fmt.Errorf("incremental or partitioned models must be materialized as a table")
 		}
 		p.Typ = "TABLE"
 	}
-	if p.Typ == "" {
+	if p.Typ == "" { // Plain unannotated models default to VIEW.
 		p.Typ = "VIEW"
+	}
+	if p.Typ != "TABLE" && p.Typ != "VIEW" && p.Typ != "DICTIONARY" {
+		return fmt.Errorf("invalid type %q, must be one of TABLE, VIEW or DICTIONARY", p.Typ)
 	}
 
 	switch p.IncrementalStrategy {
@@ -166,6 +181,7 @@ func (p *ModelOutputProperties) tblConfig() string {
 type ModelResultProperties struct {
 	Table         string `mapstructure:"table"`
 	View          bool   `mapstructure:"view"`
+	Typ           string `mapstructure:"type"`
 	UsedModelName bool   `mapstructure:"used_model_name"`
 }
 
