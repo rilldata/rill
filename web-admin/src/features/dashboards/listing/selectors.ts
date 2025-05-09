@@ -5,10 +5,7 @@ import type { V1Resource } from "@rilldata/web-common/runtime-client";
 import { createRuntimeServiceListResources } from "@rilldata/web-common/runtime-client";
 import type { CreateQueryResult } from "@tanstack/svelte-query";
 import { derived } from "svelte/store";
-import {
-  INITIAL_REFETCH_INTERVAL,
-  pollUntilResourcesReconciled,
-} from "../../shared/refetch-interval";
+import { refetchIntervalStore } from "../../shared/refetch-interval";
 import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
 
 export function useDashboardsLastUpdated(
@@ -55,8 +52,6 @@ export interface DashboardResource {
 export function useDashboardsV2(
   instanceId: string,
 ): CreateQueryResult<DashboardResource[], HTTPError> {
-  let currentRefetchInterval = INITIAL_REFETCH_INTERVAL;
-
   return createRuntimeServiceListResources(instanceId, undefined, {
     query: {
       select: (data) => {
@@ -86,19 +81,7 @@ export function useDashboardsV2(
         );
         return allDashboards;
       },
-      refetchInterval: (query) => {
-        const newInterval = pollUntilResourcesReconciled(
-          currentRefetchInterval,
-          query.state.data,
-          query,
-        );
-        if (newInterval === false) {
-          currentRefetchInterval = INITIAL_REFETCH_INTERVAL;
-          return false;
-        }
-        currentRefetchInterval = newInterval;
-        return newInterval;
-      },
+      refetchInterval: refetchIntervalStore.calculatePollingInterval,
     },
   });
 }
