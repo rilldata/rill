@@ -2,6 +2,7 @@ package duckdb
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -91,8 +92,9 @@ func (c *connection) insertTableAsSelect(ctx context.Context, name, sql string, 
 				}
 			}
 			_, err := conn.ExecContext(ctx, fmt.Sprintf("INSERT INTO %s %s (%s\n)", safeSQLName(name), byNameClause, sql))
-			if err == nil && opts.AfterInsert != "" {
-				_, err = conn.ExecContext(ctx, opts.AfterInsert)
+			if opts.AfterInsert != "" {
+				_, afterInsertErr := conn.ExecContext(ctx, opts.AfterInsert)
+				err = errors.Join(err, afterInsertErr)
 			}
 			return err
 		})
