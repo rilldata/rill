@@ -19,7 +19,7 @@ export type ChartType =
   | "area_chart"
   | "stacked_bar"
   | "stacked_bar_normalized"
-  | "pie_chart"
+  | "donut_chart"
   | "heatmap";
 
 export type ChartDataQuery = CreateQueryResult<
