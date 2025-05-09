@@ -83,7 +83,6 @@ export function useDashboardsV2(
   });
 }
 
-// Super naive heuristic for now.
 function getCanvasRefreshedOn(
   dashboard: V1Resource,
   allResources: Map<string, V1Resource>,
@@ -93,7 +92,7 @@ function getCanvasRefreshedOn(
   // Find the max refresh time of all the resources that are referenced by the components in the dashboard
   const maxRefresh = dashboard.meta.refs
     .map((r) => allResources.get(`${r?.kind}_${r?.name}`))
-    .filter((c) => c.meta.refs.length)
+    .filter((c) => c.meta.refs.length) // filter out resources that don't have refs such as markdown and image
     .map((m) => allResources.get(`${m.meta.refs[0].kind}_${m.meta.refs[0].name}`))
     .map((m) => m.metricsView.state?.modelRefreshedOn)
     .reduce((max, c) => c > max ? c : max)
