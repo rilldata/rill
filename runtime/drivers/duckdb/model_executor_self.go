@@ -156,6 +156,7 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 			ByName:       false,
 			Strategy:     outputProps.IncrementalStrategy,
 			UniqueKey:    outputProps.UniqueKey,
+			PartitionBy:  outputProps.PartitionBy,
 		}
 		if inputProps.InitQueries != "" {
 			insertTableOpts.InitQueries = []string{inputProps.InitQueries}
