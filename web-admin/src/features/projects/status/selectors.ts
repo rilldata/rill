@@ -2,7 +2,10 @@ import {
   createAdminServiceGetProject,
   type V1Deployment,
 } from "@rilldata/web-admin/client";
-import { createRuntimeServiceListResources } from "@rilldata/web-common/runtime-client";
+import {
+  createRuntimeServiceListResources,
+  type V1ListResourcesResponse,
+} from "@rilldata/web-common/runtime-client";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import { refetchIntervalStore } from "../../shared/refetch-interval";
 
@@ -28,13 +31,13 @@ export function useResources(instanceId: string) {
     {},
     {
       query: {
-        select: (data) => ({
+        select: (data: V1ListResourcesResponse) => ({
           ...data,
           // Filter out project parser and refresh triggers
           resources: data?.resources?.filter(
             (resource) =>
-              resource.meta.name.kind !== ResourceKind.ProjectParser &&
-              resource.meta.name.kind !== ResourceKind.RefreshTrigger,
+              resource?.meta?.name?.kind !== ResourceKind.ProjectParser &&
+              resource?.meta?.name?.kind !== ResourceKind.RefreshTrigger,
           ),
         }),
         refetchInterval: refetchIntervalStore.calculatePollingInterval,
