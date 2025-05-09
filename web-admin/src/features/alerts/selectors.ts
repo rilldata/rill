@@ -10,10 +10,7 @@ import {
   type V1AlertSpec,
 } from "@rilldata/web-common/runtime-client";
 import { readable } from "svelte/store";
-import {
-  INITIAL_REFETCH_INTERVAL,
-  refetchIntervalStore,
-} from "../shared/refetch-interval";
+import { refetchIntervalStore } from "../shared/refetch-interval";
 
 export function useAlerts(instanceId: string, enabled = true) {
   return createRuntimeServiceListResources(
