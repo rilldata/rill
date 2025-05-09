@@ -30,6 +30,7 @@ import type {
   AdminServiceConnectProjectToGithubBody,
   AdminServiceCreateAlertBodyBody,
   AdminServiceCreateAssetBody,
+  AdminServiceCreateManagedGitRepoBody,
   AdminServiceCreateProjectBody,
   AdminServiceCreateProjectWhitelistedDomainBodyBody,
   AdminServiceCreateReportBodyBody,
@@ -91,6 +92,7 @@ import type {
   V1CreateAssetResponse,
   V1CreateBookmarkRequest,
   V1CreateBookmarkResponse,
+  V1CreateManagedGitRepoResponse,
   V1CreateOrganizationRequest,
   V1CreateOrganizationResponse,
   V1CreateProjectResponse,
@@ -2229,6 +2231,92 @@ export const createAdminServiceRenewBillingSubscription = <
 > => {
   const mutationOptions =
     getAdminServiceRenewBillingSubscriptionMutationOptions(options);
+
+  return createMutation(mutationOptions, queryClient);
+};
+/**
+ * @summary CreateManagedGitRepo creates a new rill managed git repo for the organization.
+ */
+export const adminServiceCreateManagedGitRepo = (
+  organization: string,
+  adminServiceCreateManagedGitRepoBody: AdminServiceCreateManagedGitRepoBody,
+) => {
+  return httpClient<V1CreateManagedGitRepoResponse>({
+    url: `/v1/organizations/${organization}/create-managed-git-repo`,
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    data: adminServiceCreateManagedGitRepoBody,
+  });
+};
+
+export const getAdminServiceCreateManagedGitRepoMutationOptions = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceCreateManagedGitRepo>>,
+    TError,
+    { organization: string; data: AdminServiceCreateManagedGitRepoBody },
+    TContext
+  >;
+}): CreateMutationOptions<
+  Awaited<ReturnType<typeof adminServiceCreateManagedGitRepo>>,
+  TError,
+  { organization: string; data: AdminServiceCreateManagedGitRepoBody },
+  TContext
+> => {
+  const mutationKey = ["adminServiceCreateManagedGitRepo"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceCreateManagedGitRepo>>,
+    { organization: string; data: AdminServiceCreateManagedGitRepoBody }
+  > = (props) => {
+    const { organization, data } = props ?? {};
+
+    return adminServiceCreateManagedGitRepo(organization, data);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminServiceCreateManagedGitRepoMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceCreateManagedGitRepo>>
+>;
+export type AdminServiceCreateManagedGitRepoMutationBody =
+  AdminServiceCreateManagedGitRepoBody;
+export type AdminServiceCreateManagedGitRepoMutationError = RpcStatus;
+
+/**
+ * @summary CreateManagedGitRepo creates a new rill managed git repo for the organization.
+ */
+export const createAdminServiceCreateManagedGitRepo = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof adminServiceCreateManagedGitRepo>>,
+      TError,
+      { organization: string; data: AdminServiceCreateManagedGitRepoBody },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
+  Awaited<ReturnType<typeof adminServiceCreateManagedGitRepo>>,
+  TError,
+  { organization: string; data: AdminServiceCreateManagedGitRepoBody },
+  TContext
+> => {
+  const mutationOptions =
+    getAdminServiceCreateManagedGitRepoMutationOptions(options);
 
   return createMutation(mutationOptions, queryClient);
 };

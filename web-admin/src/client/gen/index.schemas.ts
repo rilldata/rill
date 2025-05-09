@@ -273,6 +273,12 @@ export interface V1CreateBookmarkResponse {
   bookmark?: V1Bookmark;
 }
 
+export interface V1CreateManagedGitRepoResponse {
+  remote?: string;
+  username?: string;
+  password?: string;
+}
+
 export interface V1CreateOrganizationRequest {
   name?: string;
   description?: string;
@@ -1407,6 +1413,12 @@ export type AdminServiceUpdateOrganizationBody = {
 
 export type AdminServiceGetPaymentsPortalURLParams = {
   returnUrl?: string;
+};
+
+export type AdminServiceCreateManagedGitRepoBody = {
+  /** name of the repo to create. 
+Note: The final name will be suffixed with a random string to ensure uniqueness. */
+  name?: string;
 };
 
 export type AdminServiceListOrganizationInvitesParams = {

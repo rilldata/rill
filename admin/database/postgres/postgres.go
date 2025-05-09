@@ -388,9 +388,9 @@ func (c *connection) InsertProject(ctx context.Context, opts *database.InsertPro
 
 	res := &projectDTO{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, `
-		INSERT INTO projects (org_id, name, description, public, created_by_user_id, provisioner, prod_olap_driver, prod_olap_dsn, prod_slots, subpath, prod_branch, archive_asset_id, github_url, github_installation_id, prod_ttl_seconds, prod_version)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16) RETURNING *`,
-		opts.OrganizationID, opts.Name, opts.Description, opts.Public, opts.CreatedByUserID, opts.Provisioner, opts.ProdOLAPDriver, opts.ProdOLAPDSN, opts.ProdSlots, opts.Subpath, opts.ProdBranch, opts.ArchiveAssetID, opts.GithubURL, opts.GithubInstallationID, opts.ProdTTLSeconds, opts.ProdVersion,
+		INSERT INTO projects (org_id, name, description, public, created_by_user_id, provisioner, prod_olap_driver, prod_olap_dsn, prod_slots, subpath, prod_branch, archive_asset_id, github_url, github_installation_id, github_repo_id, managed_git_repo_id, prod_ttl_seconds, prod_version)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18) RETURNING *`,
+		opts.OrganizationID, opts.Name, opts.Description, opts.Public, opts.CreatedByUserID, opts.Provisioner, opts.ProdOLAPDriver, opts.ProdOLAPDSN, opts.ProdSlots, opts.Subpath, opts.ProdBranch, opts.ArchiveAssetID, opts.GithubURL, opts.GithubInstallationID, opts.GithubRepoID, opts.ManagedGitRepoID, opts.ProdTTLSeconds, opts.ProdVersion,
 	).StructScan(res)
 	if err != nil {
 		return nil, parseErr("project", err)
@@ -413,9 +413,9 @@ func (c *connection) UpdateProject(ctx context.Context, id string, opts *databas
 
 	res := &projectDTO{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, `
-		UPDATE projects SET name=$1, description=$2, public=$3, prod_branch=$4, github_url=$5, github_installation_id=$6, archive_asset_id=$7, prod_deployment_id=$8, provisioner=$9, prod_slots=$10, subpath=$11, prod_ttl_seconds=$12, annotations=$13, prod_version=$14, updated_on=now()
-		WHERE id=$15 RETURNING *`,
-		opts.Name, opts.Description, opts.Public, opts.ProdBranch, opts.GithubURL, opts.GithubInstallationID, opts.ArchiveAssetID, opts.ProdDeploymentID, opts.Provisioner, opts.ProdSlots, opts.Subpath, opts.ProdTTLSeconds, opts.Annotations, opts.ProdVersion, id,
+		UPDATE projects SET name=$1, description=$2, public=$3, prod_branch=$4, github_url=$5, github_installation_id=$6, github_repo_id=$7, managed_git_repo_id=$8, archive_asset_id=$9, prod_deployment_id=$10, provisioner=$11, prod_slots=$12, subpath=$13, prod_ttl_seconds=$14, annotations=$15, prod_version=$16, updated_on=now()
+		WHERE id=$17 RETURNING *`,
+		opts.Name, opts.Description, opts.Public, opts.ProdBranch, opts.GithubURL, opts.GithubInstallationID, opts.GithubRepoID, opts.ManagedGitRepoID, opts.ArchiveAssetID, opts.ProdDeploymentID, opts.Provisioner, opts.ProdSlots, opts.Subpath, opts.ProdTTLSeconds, opts.Annotations, opts.ProdVersion, id,
 	).StructScan(res)
 	if err != nil {
 		return nil, parseErr("project", err)
@@ -2555,6 +2555,71 @@ func (c *connection) UpdateProvisionerResource(ctx context.Context, id string, o
 func (c *connection) DeleteProvisionerResource(ctx context.Context, id string) error {
 	res, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM provisioner_resources WHERE id = $1", id)
 	return checkDeleteRow("provisioner resource", res, err)
+}
+
+func (c *connection) FindManagedGitRepo(ctx context.Context, remote string) (*database.ManagedGitRepo, error) {
+	res := &database.ManagedGitRepo{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM managed_git_repos WHERE remote = $1", remote).StructScan(res)
+	if err != nil {
+		return nil, parseErr("managed git repo", err)
+	}
+	return res, nil
+}
+
+func (c *connection) FindUnusedManagedGitRepos(ctx context.Context, pageSize int) ([]*database.ManagedGitRepo, error) {
+	// find managed github repos that are not associated with any project
+	// skip repos that are less than 7 days old to avoid deleting repos for projects
+	// that were accidentally deleted and may need to be restored
+	var res []*database.ManagedGitRepo
+	err := c.getDB(ctx).SelectContext(ctx, &res, `
+		SELECT * FROM managed_git_repos m
+		WHERE updated_on < now() - INTERVAL '7 DAYS'
+		AND (
+			m.org_id IS NULL 
+			OR NOT EXISTS (SELECT 1 FROM projects p WHERE p.managed_git_repo_id = m.id)
+		)
+		ORDER BY updated_on DESC
+		LIMIT $1
+	`, pageSize)
+	if err != nil {
+		return nil, parseErr("managed git repo", err)
+	}
+	return res, nil
+}
+
+func (c *connection) CountManagedGitRepos(ctx context.Context, orgID string) (int, error) {
+	var count int
+	err := c.getDB(ctx).QueryRowxContext(ctx, `
+		SELECT COUNT(*)
+		FROM managed_git_repos m
+		WHERE org_id = $1
+	`, orgID).Scan(&count)
+	if err != nil {
+		return 0, parseErr("managed git repo count", err)
+	}
+	return count, nil
+}
+
+func (c *connection) InsertManagedGitRepo(ctx context.Context, opts *database.InsertManagedGitRepoOptions) (*database.ManagedGitRepo, error) {
+	if err := database.Validate(opts); err != nil {
+		return nil, err
+	}
+
+	res := &database.ManagedGitRepo{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, `
+		INSERT INTO managed_git_repos (org_id, remote, owner_id)
+		VALUES ($1, $2, $3) RETURNING *`,
+		opts.OrgID, opts.Remote, opts.OwnerID,
+	).StructScan(res)
+	if err != nil {
+		return nil, parseErr("managed git repo", err)
+	}
+	return res, nil
+}
+
+func (c *connection) DeleteManagedGitRepos(ctx context.Context, ids []string) error {
+	_, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM managed_git_repos WHERE id = ANY($1)", ids)
+	return parseErr("managed git repo", err)
 }
 
 // projectDTO wraps database.Project, using the pgtype package to handle types that pgx can't read directly into their native Go types.
