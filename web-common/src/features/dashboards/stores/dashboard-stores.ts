@@ -7,7 +7,7 @@ import {
   filterExpressions,
   forEachIdentifier,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
-import { type MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import { type ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
 import {
   TimeRangePreset,
@@ -36,7 +36,7 @@ import {
 } from "../pivot/types";
 
 export interface MetricsExplorerStoreType {
-  entities: Record<string, MetricsExplorerEntity>;
+  entities: Record<string, ExploreState>;
 }
 const { update, subscribe } = writable({
   entities: {},
@@ -44,7 +44,7 @@ const { update, subscribe } = writable({
 
 export const updateMetricsExplorerByName = (
   name: string,
-  callback: (metricsExplorer: MetricsExplorerEntity) => void,
+  callback: (exploreState: ExploreState) => void,
 ) => {
   update((state) => {
     if (!state.entities[name]) {
@@ -71,10 +71,7 @@ function includeExcludeModeFromFilters(filters: V1Expression | undefined) {
   return map;
 }
 
-function syncMeasures(
-  explore: V1ExploreSpec,
-  metricsExplorer: MetricsExplorerEntity,
-) {
+function syncMeasures(explore: V1ExploreSpec, metricsExplorer: ExploreState) {
   const measuresSet = new Set(explore.measures ?? []);
 
   // sync measures with selected leaderboard measure and ensure default measure is set
@@ -117,10 +114,7 @@ function syncMeasures(
   }
 }
 
-function syncDimensions(
-  explore: V1ExploreSpec,
-  metricsExplorer: MetricsExplorerEntity,
-) {
+function syncDimensions(explore: V1ExploreSpec, metricsExplorer: ExploreState) {
   // Having a map here improves the lookup for existing dimension name
   const dimensionsSet = new Set(explore.dimensions ?? []);
   metricsExplorer.whereFilter =
@@ -159,7 +153,7 @@ function syncDimensions(
 }
 
 const metricsViewReducers = {
-  init(name: string, initState: MetricsExplorerEntity) {
+  init(name: string, initState: ExploreState) {
     update((state) => {
       // TODO: revisit this during the url state / restore user refactor
       initState.dimensionFilterExcludeMode = includeExcludeModeFromFilters(
@@ -207,7 +201,7 @@ const metricsViewReducers = {
 
   mergePartialExplorerEntity(
     name: string,
-    partialExploreState: Partial<MetricsExplorerEntity>,
+    partialExploreState: Partial<ExploreState>,
     metricsView: V1MetricsViewSpec,
   ) {
     partialExploreState = structuredClone(partialExploreState);
@@ -552,7 +546,7 @@ export const metricsExplorerStore: Readable<MetricsExplorerStoreType> &
   ...metricsViewReducers,
 };
 
-export function useExploreState(name: string): Readable<MetricsExplorerEntity> {
+export function useExploreState(name: string): Readable<ExploreState> {
   return derived(metricsExplorerStore, ($store) => {
     return $store.entities[name];
   });
@@ -579,30 +573,29 @@ export function sortTypeForContextColumnType(
 }
 
 function setSelectedScrubRange(
-  metricsExplorer: MetricsExplorerEntity,
+  exploreState: ExploreState,
   scrubRange: ScrubRange | undefined,
 ) {
   if (scrubRange === undefined) {
-    metricsExplorer.lastDefinedScrubRange = undefined;
+    exploreState.lastDefinedScrubRange = undefined;
   } else if (!scrubRange.isScrubbing && scrubRange?.start && scrubRange?.end) {
-    metricsExplorer.lastDefinedScrubRange = scrubRange;
+    exploreState.lastDefinedScrubRange = scrubRange;
   }
 
-  metricsExplorer.selectedScrubRange = scrubRange;
+  exploreState.selectedScrubRange = scrubRange;
 }
 
 function getPinIndexForDimension(
-  metricsExplorer: MetricsExplorerEntity,
+  exploreState: ExploreState,
   dimensionName: string,
 ) {
   const dimensionEntryIndex = getWhereFilterExpressionIndex({
-    dashboard: metricsExplorer,
+    dashboard: exploreState,
   })(dimensionName);
   if (dimensionEntryIndex === undefined || dimensionEntryIndex === -1)
     return -1;
 
-  const dimExpr =
-    metricsExplorer.whereFilter.cond?.exprs?.[dimensionEntryIndex];
+  const dimExpr = exploreState.whereFilter.cond?.exprs?.[dimensionEntryIndex];
   if (!dimExpr?.cond?.exprs?.length) return -1;
 
   // 1st entry in the expression is the identifier. hence the -2 here.
