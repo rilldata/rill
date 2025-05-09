@@ -269,10 +269,10 @@ type DB interface {
 
 	SearchProjectUsers(ctx context.Context, projectID, emailQuery string, afterEmail string, limit int) ([]*User, error)
 
-	FindVirtualFiles(ctx context.Context, projectID, branch string, afterUpdatedOn time.Time, afterPath string, limit int) ([]*VirtualFile, error)
-	FindVirtualFile(ctx context.Context, projectID, branch, path string) (*VirtualFile, error)
+	FindVirtualFiles(ctx context.Context, projectID, environment string, afterUpdatedOn time.Time, afterPath string, limit int) ([]*VirtualFile, error)
+	FindVirtualFile(ctx context.Context, projectID, environment, path string) (*VirtualFile, error)
 	UpsertVirtualFile(ctx context.Context, opts *InsertVirtualFileOptions) error
-	UpdateVirtualFileDeleted(ctx context.Context, projectID, branch, path string) error
+	UpdateVirtualFileDeleted(ctx context.Context, projectID, environment, path string) error
 	DeleteExpiredVirtualFiles(ctx context.Context, retention time.Duration) error
 
 	FindAsset(ctx context.Context, id string) (*Asset, error)
@@ -1062,10 +1062,10 @@ type VirtualFile struct {
 
 // InsertVirtualFileOptions defines options for inserting a VirtualFile
 type InsertVirtualFileOptions struct {
-	ProjectID string
-	Branch    string
-	Path      string `validate:"required"`
-	Data      []byte `validate:"max=131072"` // 128kb
+	ProjectID   string
+	Environment string
+	Path        string `validate:"required"`
+	Data        []byte `validate:"max=131072"` // 128kb
 }
 
 // Asset represents a user-uploaded file asset.

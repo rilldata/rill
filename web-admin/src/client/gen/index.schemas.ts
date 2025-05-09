@@ -1697,7 +1697,6 @@ export type AdminServiceListProjectsForUserByNameParams = {
 export type AdminServiceGetAlertMetaBodyAnnotations = { [key: string]: string };
 
 export type AdminServiceGetAlertMetaBody = {
-  branch?: string;
   alert?: string;
   annotations?: AdminServiceGetAlertMetaBodyAnnotations;
   queryForUserId?: string;
@@ -1709,13 +1708,11 @@ export type AdminServiceGetRepoMetaParams = {
 };
 
 export type AdminServicePullVirtualRepoParams = {
-  branch?: string;
   pageSize?: number;
   pageToken?: string;
 };
 
 export type AdminServiceGetReportMetaBody = {
-  branch?: string;
   report?: string;
   ownerId?: string;
   executionTime?: string;

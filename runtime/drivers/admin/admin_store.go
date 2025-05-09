@@ -34,7 +34,6 @@ func (h *Handle) GetReportMetadata(ctx context.Context, reportName, ownerID, exp
 
 	res, err := h.admin.GetReportMeta(ctx, &adminv1.GetReportMetaRequest{
 		ProjectId:       h.config.ProjectID,
-		Branch:          h.config.Branch,
 		Report:          reportName,
 		OwnerId:         ownerID,
 		EmailRecipients: emailRecipients,
@@ -65,7 +64,6 @@ func (h *Handle) GetReportMetadata(ctx context.Context, reportName, ownerID, exp
 func (h *Handle) GetAlertMetadata(ctx context.Context, alertName string, annotations map[string]string, queryForUserID, queryForUserEmail string) (*drivers.AlertMetadata, error) {
 	req := &adminv1.GetAlertMetaRequest{
 		ProjectId:   h.config.ProjectID,
-		Branch:      h.config.Branch,
 		Alert:       alertName,
 		Annotations: annotations,
 	}

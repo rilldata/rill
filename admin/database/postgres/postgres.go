@@ -2116,27 +2116,27 @@ func (c *connection) DeleteBookmark(ctx context.Context, bookmarkID string) erro
 	return checkDeleteRow("bookmarks", res, err)
 }
 
-func (c *connection) FindVirtualFiles(ctx context.Context, projectID, branch string, afterUpdatedOn time.Time, afterPath string, limit int) ([]*database.VirtualFile, error) {
+func (c *connection) FindVirtualFiles(ctx context.Context, projectID, environment string, afterUpdatedOn time.Time, afterPath string, limit int) ([]*database.VirtualFile, error) {
 	var res []*database.VirtualFile
 	err := c.getDB(ctx).SelectContext(ctx, &res, `
 		SELECT path, data, deleted, updated_on
 		FROM virtual_files
-		WHERE project_id=$1 AND branch=$2 AND (updated_on>$3 OR updated_on=$3 AND path>$4)
+		WHERE project_id=$1 AND environment=$2 AND (updated_on>$3 OR updated_on=$3 AND path>$4)
 		ORDER BY updated_on, path LIMIT $5
-	`, projectID, branch, afterUpdatedOn, afterPath, limit)
+	`, projectID, environment, afterUpdatedOn, afterPath, limit)
 	if err != nil {
 		return nil, parseErr("virtual files", err)
 	}
 	return res, nil
 }
 
-func (c *connection) FindVirtualFile(ctx context.Context, projectID, branch, path string) (*database.VirtualFile, error) {
+func (c *connection) FindVirtualFile(ctx context.Context, projectID, environment, path string) (*database.VirtualFile, error) {
 	res := &database.VirtualFile{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, `
 		SELECT path, data, deleted, updated_on
 		FROM virtual_files
-		WHERE project_id=$1 AND branch=$2 AND path=$3
-	`, projectID, branch, path).StructScan(res)
+		WHERE project_id=$1 AND environment=$2 AND path=$3
+	`, projectID, environment, path).StructScan(res)
 	if err != nil {
 		return nil, parseErr("virtual files", err)
 	}
@@ -2149,26 +2149,26 @@ func (c *connection) UpsertVirtualFile(ctx context.Context, opts *database.Inser
 	}
 
 	_, err := c.getDB(ctx).ExecContext(ctx, `
-		INSERT INTO virtual_files (project_id, branch, path, data, deleted)
+		INSERT INTO virtual_files (project_id, environment, path, data, deleted)
 		VALUES ($1, $2, $3, $4, FALSE)
-		ON CONFLICT (project_id, branch, path) DO UPDATE SET
+		ON CONFLICT (project_id, environment, path) DO UPDATE SET
 			data = EXCLUDED.data,
 			deleted = FALSE,
 			updated_on = now()
-	`, opts.ProjectID, opts.Branch, opts.Path, opts.Data)
+	`, opts.ProjectID, opts.Environment, opts.Path, opts.Data)
 	if err != nil {
 		return parseErr("virtual file", err)
 	}
 	return nil
 }
 
-func (c *connection) UpdateVirtualFileDeleted(ctx context.Context, projectID, branch, path string) error {
+func (c *connection) UpdateVirtualFileDeleted(ctx context.Context, projectID, environment, path string) error {
 	res, err := c.getDB(ctx).ExecContext(ctx, `
 		UPDATE virtual_files SET
 			data = ''::BYTEA,
 			deleted = TRUE,
 			updated_on = now()
-		WHERE project_id=$1 AND branch=$2 AND path=$3`, projectID, branch, path)
+		WHERE project_id=$1 AND environment=$2 AND path=$3`, projectID, environment, path)
 	return checkUpdateRow("virtual file", res, err)
 }
 
