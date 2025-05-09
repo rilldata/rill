@@ -4,6 +4,7 @@ import type {
   V1Resource,
 } from "@rilldata/web-common/runtime-client";
 import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
+import { writable } from "svelte/store";
 
 export const INITIAL_REFETCH_INTERVAL = 200; // Start at 200ms for immediate feedback
 export const MAX_REFETCH_INTERVAL = 2_000; // Cap at 2s
@@ -37,3 +38,34 @@ export function pollUntilResourcesReconciled(
 
   return Math.min(currentInterval * BACKOFF_FACTOR, MAX_REFETCH_INTERVAL);
 }
+
+function createRefetchIntervalStore() {
+  const { subscribe, set, update } = writable(INITIAL_REFETCH_INTERVAL);
+
+  return {
+    subscribe,
+    reset: () => set(INITIAL_REFETCH_INTERVAL),
+    calculatePollingInterval: (
+      query: Query<V1ListResourcesResponse, HTTPError>,
+    ) => {
+      let currentInterval: number;
+      subscribe((value) => (currentInterval = value))();
+
+      const newInterval = pollUntilResourcesReconciled(
+        currentInterval,
+        query.state.data,
+        query,
+      );
+
+      if (newInterval === false) {
+        set(INITIAL_REFETCH_INTERVAL);
+        return false;
+      }
+
+      set(newInterval);
+      return newInterval;
+    },
+  };
+}
+
+export const refetchIntervalStore = createRefetchIntervalStore();
