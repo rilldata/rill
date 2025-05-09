@@ -16,6 +16,7 @@ import (
 	"github.com/rilldata/rill/cli/pkg/dotrillcloud"
 	"github.com/rilldata/rill/cli/pkg/gitutil"
 	"github.com/rilldata/rill/cli/pkg/local"
+	"github.com/rilldata/rill/cli/pkg/printer"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
@@ -244,6 +245,177 @@ func DeployUsingManagedGitHubFlow(ctx context.Context, ch *cmdutil.Helper, opts 
 		ProdSlots:        int64(opts.Slots),
 		Public:           opts.Public,
 		GithubUrl:        remote,
+	})
+	if err != nil {
+		if s, ok := status.FromError(err); ok && s.Code() == codes.PermissionDenied {
+			ch.PrintfError("You do not have the permissions needed to create a project in org %q. Please reach out to your Rill admin.\n", ch.Org)
+			return nil
+		}
+		return fmt.Errorf("create project failed with error %w", err)
+	}
+
+	err = dotrillcloud.SetAll(localProjectPath, ch.AdminURL(), &dotrillcloud.Config{
+		ProjectID: res.Project.Id,
+	})
+	if err != nil {
+		return err
+	}
+
+	// Success!
+	ch.PrintfSuccess("Created project \"%s/%s\". Use `rill project rename` to change name if required.\n\n", ch.Org, res.Project.Name)
+
+	// Upload .env
+	vars, err := local.ParseDotenv(ctx, localProjectPath)
+	if err != nil {
+		ch.PrintfWarn("Failed to parse .env: %v\n", err)
+	} else if len(vars) > 0 {
+		_, err = adminClient.UpdateProjectVariables(ctx, &adminv1.UpdateProjectVariablesRequest{
+			Organization: ch.Org,
+			Project:      opts.Name,
+			Variables:    vars,
+		})
+		if err != nil {
+			ch.PrintfWarn("Failed to upload .env: %v\n", err)
+		}
+	}
+
+	// Open browser
+	if res.Project.FrontendUrl != "" {
+		ch.PrintfSuccess("Your project can be accessed at: %s\n", res.Project.FrontendUrl)
+		if ch.Interactive {
+			ch.PrintfSuccess("Opening project in browser...\n")
+			time.Sleep(3 * time.Second)
+			_ = browser.Open(res.Project.FrontendUrl)
+		}
+	}
+	ch.Telemetry(ctx).RecordBehavioralLegacy(activity.BehavioralEventDeploySuccess)
+	return nil
+}
+
+func DeployWithZipShipFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts) error {
+	_, localProjectPath, err := ValidateLocalProject(ch, opts.GitPath, opts.SubPath)
+	if err != nil {
+		return err
+	}
+	// If no project name was provided, default to dir name
+	if opts.Name == "" {
+		opts.Name = filepath.Base(localProjectPath)
+	}
+
+	// Set a default org for the user if necessary
+	// (If user is not in an org, we'll create one based on their user name later in the flow.)
+	adminClient, err := ch.Client()
+	if err != nil {
+		return err
+	}
+	if ch.Org == "" {
+		if err := org.SetDefaultOrg(ctx, ch); err != nil {
+			return err
+		}
+	}
+
+	// If no default org is set, it means the user is not in an org yet.
+	// We create a default org based on the user name.
+	if ch.Org == "" {
+		user, err := adminClient.GetCurrentUser(ctx, &adminv1.GetCurrentUserRequest{})
+		if err != nil {
+			return err
+		}
+		// email can have other characters like . and + what to do ?
+		username, _, _ := strings.Cut(user.User.Email, "@")
+		username = nonSlugRegex.ReplaceAllString(username, "-")
+		err = createOrgFlow(ctx, ch, username)
+		if err != nil {
+			return fmt.Errorf("org creation failed with error: %w", err)
+		}
+		ch.PrintfSuccess("Created org %q. Run `rill org edit` to change name if required.\n\n", ch.Org)
+	} else {
+		ch.PrintfBold("Using org %q.\n\n", ch.Org)
+	}
+
+	// get repo for current project
+	repo, _, err := cmdutil.RepoForProjectPath(localProjectPath)
+	if err != nil {
+		return err
+	}
+
+	projResp, err := adminClient.GetProject(ctx, &adminv1.GetProjectRequest{OrganizationName: ch.Org, Name: opts.Name})
+	if err != nil {
+		if st, ok := status.FromError(err); !ok || st.Code() != codes.NotFound {
+			return err
+		}
+	}
+
+	// check if the project with name already exists
+	if projResp != nil {
+		if projResp.Project.GithubUrl != "" {
+			ch.PrintfError("Found existing project. But it is connected to a github repo.\nPush any changes to %q to deploy.\n", projResp.Project.GithubUrl)
+			return nil
+		}
+
+		ch.Printer.Println("Found existing project. Starting re-upload.")
+		assetID, err := cmdutil.UploadRepo(ctx, repo, ch, ch.Org, opts.Name)
+		if err != nil {
+			return err
+		}
+		printer.ColorGreenBold.Printf("All files uploaded successfully.\n\n")
+
+		// Update the project
+		// Silently ignores other flags like description etc which are handled with project update.
+		res, err := adminClient.UpdateProject(ctx, &adminv1.UpdateProjectRequest{
+			OrganizationName: ch.Org,
+			Name:             opts.Name,
+			ArchiveAssetId:   &assetID,
+		})
+		if err != nil {
+			if s, ok := status.FromError(err); ok && s.Code() == codes.PermissionDenied {
+				ch.PrintfError("You do not have the permissions needed to update a project in org %q. Please reach out to your Rill admin.\n", ch.Org)
+				return nil
+			}
+			return fmt.Errorf("update project failed with error %w", err)
+		}
+		ch.Telemetry(ctx).RecordBehavioralLegacy(activity.BehavioralEventDeploySuccess)
+
+		// Fetch vars from .env
+		vars, err := local.ParseDotenv(ctx, localProjectPath)
+		if err != nil {
+			ch.PrintfWarn("Failed to parse .env: %v\n", err)
+		} else if len(vars) > 0 {
+			_, err = adminClient.UpdateProjectVariables(ctx, &adminv1.UpdateProjectVariablesRequest{
+				Organization: ch.Org,
+				Project:      opts.Name,
+				Variables:    vars,
+			})
+			if err != nil {
+				ch.PrintfWarn("Failed to upload .env: %v\n", err)
+			}
+		}
+
+		// Success
+		ch.PrintfSuccess("Updated project \"%s/%s\".\n\n", ch.Org, res.Project.Name)
+		return nil
+	}
+
+	// create a tar archive of the project and upload it
+	ch.Printer.Println("Starting upload.")
+	assetID, err := cmdutil.UploadRepo(ctx, repo, ch, ch.Org, opts.Name)
+	if err != nil {
+		return err
+	}
+	printer.ColorGreenBold.Printf("All files uploaded successfully.\n\n")
+
+	// Create the project
+	res, err := adminClient.CreateProject(ctx, &adminv1.CreateProjectRequest{
+		OrganizationName: ch.Org,
+		Name:             opts.Name,
+		Description:      opts.Description,
+		Provisioner:      opts.Provisioner,
+		ProdVersion:      opts.ProdVersion,
+		ProdOlapDriver:   local.DefaultOLAPDriver,
+		ProdOlapDsn:      local.DefaultOLAPDSN,
+		ProdSlots:        int64(opts.Slots),
+		Public:           opts.Public,
+		ArchiveAssetId:   assetID,
 	})
 	if err != nil {
 		if s, ok := status.FromError(err); ok && s.Code() == codes.PermissionDenied {
