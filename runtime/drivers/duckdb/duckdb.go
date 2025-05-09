@@ -10,12 +10,14 @@ import (
 	"sync"
 	"time"
 
+	"github.com/aws/aws-sdk-go-v2/service/sts/types"
 	"github.com/jmoiron/sqlx"
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/drivers/duckdb/extensions"
 	"github.com/rilldata/rill/runtime/drivers/file"
 	activity "github.com/rilldata/rill/runtime/pkg/activity"
+	"github.com/rilldata/rill/runtime/pkg/credentials"
 	"github.com/rilldata/rill/runtime/pkg/duckdbsql"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/pkg/priorityqueue"
@@ -299,6 +301,10 @@ type connection struct {
 	cancel context.CancelFunc
 	// registration should be unregistered on close
 	registration metric.Registration
+
+	// AWS credentials
+	awsCredentials        *types.Credentials
+	awsCredentialsCacheMu sync.Mutex
 }
 
 var _ drivers.OLAPStore = &connection{}
@@ -486,6 +492,55 @@ func (c *connection) reopenDB(ctx context.Context) error {
 	}
 	connInitQueries = append(connInitQueries, "SET max_expression_depth TO 250")
 
+	// If AWSRoleARN is provided, assume the role and configure S3 credentials
+	if c.config.AWSRoleARN != "" {
+		var awsCreds *types.Credentials
+		c.awsCredentialsCacheMu.Lock()
+		if c.awsCredentials != nil && c.awsCredentials.Expiration.After(time.Now().Add(5*time.Minute)) {
+			awsCreds = c.awsCredentials
+			c.logger.Info("using cached AWS credentials for S3 access", zap.String("role_arn", c.config.AWSRoleARN), zap.Time("expiration", *awsCreds.Expiration))
+		}
+		c.awsCredentialsCacheMu.Unlock()
+
+		if awsCreds == nil {
+			c.logger.Info("assuming AWS role", zap.String("role_arn", c.config.AWSRoleARN))
+			newCreds, assumeErr := credentials.AssumeRole(ctx, credentials.AssumeRoleOptions{
+				RoleARN:         c.config.AWSRoleARN,
+				RoleSessionName: c.config.AWSRoleSessionName,
+				DurationSeconds: c.config.AWSSessionDurationSeconds,
+			})
+			if assumeErr != nil {
+				return fmt.Errorf("failed to assume AWS role %s: %w", c.config.AWSRoleARN, assumeErr)
+			}
+			awsCreds = newCreds
+			c.logger.Info("assumed AWS role for S3 access", zap.String("role_arn", c.config.AWSRoleARN), zap.Time("expiration", *awsCreds.Expiration))
+
+			// Update cache
+			c.awsCredentialsCacheMu.Lock()
+			c.awsCredentials = awsCreds
+			c.awsCredentialsCacheMu.Unlock()
+		}
+
+		// Set AWS credentials in DuckDB with the conn init queries
+		connInitQueries = append(connInitQueries,
+			fmt.Sprintf("SET s3_access_key_id='%s';", escapeDuckDBString(*awsCreds.AccessKeyId)),
+			fmt.Sprintf("SET s3_secret_access_key='%s';", escapeDuckDBString(*awsCreds.SecretAccessKey)),
+			fmt.Sprintf("SET s3_session_token='%s';", escapeDuckDBString(*awsCreds.SessionToken)))
+
+		if c.config.AWSEndpoint != "" {
+			connInitQueries = append(connInitQueries,
+				fmt.Sprintf("SET s3_endpoint='%s';", escapeDuckDBString(c.config.AWSEndpoint)))
+		}
+		if c.config.AWSRegion != "" {
+			connInitQueries = append(connInitQueries,
+				fmt.Sprintf("SET s3_region='%s';", escapeDuckDBString(c.config.AWSRegion)))
+		}
+		if c.config.AWSS3UseSSL {
+			connInitQueries = append(connInitQueries,
+				fmt.Sprintf("SET s3_use_ssl=%t;", c.config.AWSS3UseSSL))
+		}
+	}
+
 	// Create new DB
 	c.db, err = rduckdb.NewDB(ctx, &rduckdb.DBOptions{
 		LocalPath:       dataDir,
@@ -501,6 +556,7 @@ func (c *connection) reopenDB(ctx context.Context) error {
 		Logger:          c.logger,
 		OtelAttributes:  []attribute.KeyValue{attribute.String("instance_id", c.instanceID)},
 	})
+
 	return err
 }
 
@@ -727,4 +783,9 @@ func (c *connection) periodicallyCheckConnDurations(d time.Duration) {
 			c.connTimesMu.Unlock()
 		}
 	}
+}
+
+// escapeDuckDBString escapes single quotes for DuckDB string literals.
+func escapeDuckDBString(s string) string {
+	return strings.ReplaceAll(s, "'", "''")
 }

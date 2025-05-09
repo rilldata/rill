@@ -105,7 +105,14 @@ func (e *objectStoreToSelfExecutor) Execute(ctx context.Context, opts *drivers.M
 func (e *objectStoreToSelfExecutor) genSQL(glob, format string) (string, error) {
 	switch e.objectStore.Driver() {
 	case "s3":
+		credentials := e.c.getAWSCredentials()
+
 		props := &s3.ConfigProperties{}
+		if credentials != nil {
+			props.AccessKeyID = *credentials.AccessKeyId
+			props.SecretAccessKey = *credentials.SecretAccessKey
+		}
+
 		if err := mapstructure.Decode(e.objectStore.Config(), props); err != nil {
 			return "", err
 		}

@@ -29,6 +29,18 @@ type config struct {
 	InitSQL string `mapstructure:"init_sql"`
 	// LogQueries controls whether to log the raw SQL passed to OLAP.Execute. (Internal queries will not be logged.)
 	LogQueries bool `mapstructure:"log_queries"`
+	// AWSRoleARN is the ARN of the role to assume for S3 access.
+	AWSRoleARN string `mapstructure:"aws_role_arn"`
+	// AWSRoleSessionName is the name of the session to use when assuming the role.
+	AWSRoleSessionName string `mapstructure:"aws_role_session_name"`
+	// AWSRoleSessionDurationSeconds is the duration of the session in seconds. (Optional)
+	AWSSessionDurationSeconds *int32 `mapstructure:"aws_session_duration_seconds"`
+	// AWSRegion is the AWS region to use for S3 access.
+	AWSRegion string `mapstructure:"aws_region"`
+	// AWSS3Endpoint is the S3 endpoint to use for S3 access.
+	AWSEndpoint string `mapstructure:"aws_s3_endpoint"`
+	// AWSS3UseSSL controls whether to use SSL for S3 access.
+	AWSS3UseSSL bool `mapstructure:"aws_s3_use_ssl"`
 }
 
 func newConfig(cfgMap map[string]any) (*config, error) {
