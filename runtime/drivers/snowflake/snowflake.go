@@ -22,6 +22,7 @@ func init() {
 var spec = drivers.Spec{
 	DisplayName: "Snowflake",
 	Description: "Connect to Snowflake.",
+	DocsURL:     "https://docs.rilldata.com/reference/connectors/snowflake",
 	ConfigProperties: []*drivers.PropertySpec{
 		{
 			Key:    "dsn",

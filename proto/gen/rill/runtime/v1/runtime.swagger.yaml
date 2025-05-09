@@ -4073,6 +4073,9 @@ definitions:
       description:
         type: string
         title: Human readable description of the connector
+      docsUrl:
+        type: string
+        title: Docs url for the connector
       implementsRegistry:
         type: boolean
         title: Capabilities supported by the connector
