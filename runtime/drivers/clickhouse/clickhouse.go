@@ -6,14 +6,17 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/ClickHouse/clickhouse-go/v2"
 	"github.com/XSAM/otelsql"
+	"github.com/aws/aws-sdk-go-v2/service/sts/types"
 	"github.com/jmoiron/sqlx"
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
+	"github.com/rilldata/rill/runtime/pkg/credentials"
 	"github.com/rilldata/rill/runtime/pkg/priorityqueue"
 	"github.com/rilldata/rill/runtime/storage"
 	"go.opentelemetry.io/otel/attribute"
@@ -124,6 +127,11 @@ type configProperties struct {
 	ConnMaxLifetime string `mapstructure:"conn_max_lifetime"`
 	// ReadTimeout is the maximum amount of time a connection may be reused. Default is 300s.
 	ReadTimeout string `mapstructure:"read_timeout"`
+
+	// AWS S3 related configuration
+	AWSRoleARN                string `mapstructure:"aws_role_arn"`
+	AWSRoleSessionName        string `mapstructure:"aws_role_session_name"`
+	AWSSessionDurationSeconds *int32 `mapstructure:"aws_session_duration_seconds"`
 }
 
 // Open connects to Clickhouse using std API.
@@ -310,6 +318,33 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 		embed:      embed,
 	}
 
+	// If AWSRoleARN is provided, assume the role and cache credentials
+	if conf.AWSRoleARN != "" {
+		// Check cache first (lock, check, unlock pattern)
+		c.awsCredentialsCacheMu.Lock()
+		awsCreds := c.awsCredentials
+		c.awsCredentialsCacheMu.Unlock()
+
+		if awsCreds != nil && awsCreds.Expiration.After(time.Now().Add(5*time.Minute)) {
+			logger.Info("using cached AWS credentials for S3 access", zap.String("role_arn", conf.AWSRoleARN), zap.Time("expiration", *awsCreds.Expiration))
+		} else {
+			logger.Info("assuming AWS role for S3 access", zap.String("role_arn", conf.AWSRoleARN))
+			creds, assumeErr := credentials.AssumeRole(ctx, credentials.AssumeRoleOptions{
+				RoleARN:         conf.AWSRoleARN,
+				RoleSessionName: conf.AWSRoleSessionName,
+				DurationSeconds: conf.AWSSessionDurationSeconds,
+			})
+			if assumeErr != nil {
+				logger.Error("failed to assume AWS role", zap.String("role_arn", conf.AWSRoleARN), zap.Error(assumeErr))
+			} else {
+				logger.Info("successfully assumed AWS role for S3 access", zap.String("role_arn", conf.AWSRoleARN), zap.Time("expiration", *creds.Expiration))
+				c.awsCredentialsCacheMu.Lock()
+				c.awsCredentials = creds
+				c.awsCredentialsCacheMu.Unlock()
+			}
+		}
+	}
+
 	c.used()
 	go c.periodicallyEmitStats(time.Minute)
 
@@ -357,6 +392,10 @@ type Connection struct {
 	opts *clickhouse.Options
 	// embed is embedded clickhouse server for local run
 	embed *embedClickHouse
+
+	// AwS credentials for S3 access
+	awsCredentials        *types.Credentials
+	awsCredentialsCacheMu sync.Mutex
 }
 
 // Ping implements drivers.Handle.
@@ -534,4 +573,18 @@ func (c *Connection) estimateSize(ctx context.Context) (int64, error) {
 	}
 
 	return size, nil
+}
+
+// getAWSCredentials returns the cached AWS credentials.
+func (c *Connection) getAWSCredentials() *types.Credentials {
+	c.awsCredentialsCacheMu.Lock()
+	defer c.awsCredentialsCacheMu.Unlock()
+	if c.awsCredentials == nil {
+		return nil
+	}
+	if c.awsCredentials.Expiration.Before(time.Now()) {
+		c.awsCredentials = nil
+		return nil
+	}
+	return c.awsCredentials
 }
