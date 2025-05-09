@@ -92,6 +92,7 @@ func TestServer_MetricsViewRows_export_xlsx(t *testing.T) {
 	require.NoError(t, err)
 
 	file, err := excelize.OpenReader(&buf)
+	require.NoError(t, err)
 	rows, err := file.GetRows("Sheet1")
 	require.NoError(t, err)
 

@@ -101,7 +101,7 @@ setup.describe("global setup", () => {
     // Wait for the runtime service to be ready
     await expect
       .poll(() => isServiceReady("http://localhost:8081/v1/ping"), {
-        timeout: 20_000,
+        timeout: 45_000,
       })
       .toBeTruthy();
     console.log("Runtime service ready");

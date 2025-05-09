@@ -7,7 +7,8 @@ toolchain go1.24.1
 require (
 	cloud.google.com/go/bigquery v1.66.2
 	cloud.google.com/go/storage v1.51.0
-	connectrpc.com/connect v1.16.1
+	connectrpc.com/connect v1.16.2
+	connectrpc.com/vanguard v0.3.0
 	github.com/AlecAivazis/survey/v2 v2.3.7
 	github.com/Andrew-M-C/go.jsonvalue v1.3.4
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.16.0
@@ -79,6 +80,7 @@ require (
 	github.com/paulmach/orb v0.11.1
 	github.com/pingcap/tidb/pkg/parser v0.0.0-20231124053542-069631e2ecfe
 	github.com/prometheus/client_golang v1.20.5
+	github.com/r3labs/sse/v2 v2.10.0
 	github.com/redis/go-redis/v9 v9.6.1
 	github.com/riverqueue/river v0.19.0
 	github.com/riverqueue/river/riverdriver/riverpgxv5 v0.19.0
@@ -118,6 +120,7 @@ require (
 	go.uber.org/zap/exp v0.2.0
 	gocloud.dev v0.36.0
 	golang.org/x/exp v0.0.0-20250408133849-7e4ce0ab07d0
+	golang.org/x/net v0.39.0
 	golang.org/x/oauth2 v0.29.0
 	golang.org/x/sync v0.13.0
 	golang.org/x/sys v0.32.0
@@ -423,7 +426,6 @@ require (
 	go.uber.org/mock v0.5.0 // indirect
 	golang.org/x/crypto v0.37.0 // indirect
 	golang.org/x/mod v0.24.0 // indirect
-	golang.org/x/net v0.39.0 // indirect
 	golang.org/x/term v0.31.0 // indirect
 	golang.org/x/time v0.11.0 // indirect
 	golang.org/x/tools v0.32.0 // indirect

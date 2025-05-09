@@ -43,7 +43,7 @@ import (
 
 // Config describes admin server config derived from environment variables.
 // Env var keys must be prefixed with RILL_ADMIN_ and are converted from snake_case to CamelCase.
-// For example RILL_ADMIN_HTTP_PORT is mapped to Config.HTTPPort.
+// For example RILL_ADMIN_PORT is mapped to Config.Port.
 type Config struct {
 	DatabaseDriver string `default:"postgres" split_words:"true"`
 	DatabaseURL    string `split_words:"true"`
@@ -58,11 +58,9 @@ type Config struct {
 	LogLevel                  zapcore.Level          `default:"info" split_words:"true"`
 	MetricsExporter           observability.Exporter `default:"prometheus" split_words:"true"`
 	TracesExporter            observability.Exporter `default:"" split_words:"true"`
-	HTTPPort                  int                    `default:"8080" split_words:"true"`
-	GRPCPort                  int                    `default:"9090" split_words:"true"`
+	Port                      int                    `default:"8080" split_words:"true"`
 	DebugPort                 int                    `split_words:"true"`
 	ExternalURL               string                 `default:"http://localhost:8080" split_words:"true"`
-	ExternalGRPCURL           string                 `envconfig:"external_grpc_url"`
 	FrontendURL               string                 `default:"http://localhost:3000" split_words:"true"`
 	AllowedOrigins            []string               `default:"*" split_words:"true"`
 	SessionKeyPairs           []string               `split_words:"true"`
@@ -130,16 +128,6 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				os.Exit(1)
 			}
 
-			// Let ExternalGRPCURL default to ExternalURL, unless ExternalURL is itself the default.
-			// NOTE: This is temporary until we migrate to a server that can host HTTP and gRPC on the same port.
-			if conf.ExternalGRPCURL == "" {
-				if conf.ExternalURL == "http://localhost:8080" {
-					conf.ExternalGRPCURL = "http://localhost:9090"
-				} else {
-					conf.ExternalGRPCURL = conf.ExternalURL
-				}
-			}
-
 			// Validate frontend and external URLs
 			_, err = url.Parse(conf.FrontendURL)
 			if err != nil {
@@ -148,10 +136,6 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 			_, err = url.Parse(conf.ExternalURL)
 			if err != nil {
 				logger.Fatal("invalid external URL", zap.Error(err))
-			}
-			_, err = url.Parse(conf.ExternalGRPCURL)
-			if err != nil {
-				logger.Fatal("invalid external grpc URL", zap.Error(err))
 			}
 
 			// Init observability
@@ -287,7 +271,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				DatabaseDriver:            conf.DatabaseDriver,
 				DatabaseDSN:               conf.DatabaseURL,
 				DatabaseEncryptionKeyring: conf.DatabaseEncryptionKeyring,
-				ExternalURL:               conf.ExternalGRPCURL, // NOTE: using gRPC url
+				ExternalURL:               conf.ExternalURL,
 				FrontendURL:               conf.FrontendURL,
 				ProvisionerSetJSON:        conf.ProvisionerSetJSON,
 				ProvisionerMaxConcurrency: conf.ProvisionerMaxConcurrency,
@@ -349,8 +333,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				}
 
 				srv, err := server.New(logger, adm, issuer, limiter, activityClient, &server.Options{
-					HTTPPort:               conf.HTTPPort,
-					GRPCPort:               conf.GRPCPort,
+					Port:                   conf.Port,
 					AllowedOrigins:         conf.AllowedOrigins,
 					SessionKeyPairs:        keyPairs,
 					ServePrometheus:        conf.MetricsExporter == observability.PrometheusExporter,
@@ -366,8 +349,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				if err != nil {
 					logger.Fatal("error creating server", zap.Error(err))
 				}
-				group.Go(func() error { return srv.ServeGRPC(cctx) })
-				group.Go(func() error { return srv.ServeHTTP(cctx) })
+				group.Go(func() error { return srv.Serve(cctx) })
 				if conf.DebugPort != 0 {
 					group.Go(func() error { return debugserver.ServeHTTP(cctx, conf.DebugPort) })
 				}
@@ -380,7 +362,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 					group.Go(func() error { return wkr.Run(cctx) })
 					if !runServer {
 						// If we're not running the server, lets start a http server with /ping endpoint for health checks
-						group.Go(func() error { return worker.StartPingServer(cctx, conf.HTTPPort) })
+						group.Go(func() error { return worker.StartPingServer(cctx, conf.Port) })
 					}
 				}
 				if runJobs {

@@ -54,10 +54,10 @@ Check [admin/billing/README.md](../../../admin/billing/README.MD) for more infor
 
 - UI: `http://localhost:3000`
 - Admin HTTP: `http://localhost:8080`
-- Admin gRPC: `http://localhost:9090`
+- Admin gRPC: `http://localhost:8080`
 - Admin debug: `http://localhost:6060`
 - Runtime HTTP: `http://localhost:8081`
-- Runtime gRPC: `http://localhost:9091`
+- Runtime gRPC: `http://localhost:8081`
 - Runtime debug: `http://localhost:6061`
 - Postgres: `http://localhost:5432`
 - Redis: `http://localhost:6379`

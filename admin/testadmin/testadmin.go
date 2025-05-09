@@ -25,7 +25,6 @@ import (
 	runtimeauth "github.com/rilldata/rill/runtime/server/auth"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
-	"golang.org/x/sync/errgroup"
 
 	// Register database driver and supported provisioners
 	_ "github.com/rilldata/rill/admin/database/postgres"
@@ -74,20 +73,18 @@ func New(t *testing.T) *Fixture {
 	require.NoError(t, err)
 
 	// Ports and external URLs
-	httpPort := findPort(t)
-	grpcPort := findPort(t)
-	externalURL := fmt.Sprintf("http://localhost:%d", grpcPort)
-	externalHTTPURL := fmt.Sprintf("http://localhost:%d", httpPort)
+	port := findPort(t)
+	externalURL := fmt.Sprintf("http://localhost:%d", port)
 	frontendURL := "http://frontend.mock"
 
 	// JWT issuer
-	issuer, err := runtimeauth.NewEphemeralIssuer(externalHTTPURL)
+	issuer, err := runtimeauth.NewEphemeralIssuer(externalURL)
 	require.NoError(t, err)
 
 	// Runtime provisioner.
 	// NOTE: Only gives the appearance of a static runtime, but does not actually start one.
 	// TODO: Support actually starting a runtime.
-	runtimeExternalURL := "http://localhost:9091"
+	runtimeExternalURL := "http://localhost:8081"
 	runtimeAudienceURL := "http://localhost:8081"
 	defaultProvisioner := "static"
 	provisionerSetJSON := must(json.Marshal(map[string]any{
@@ -133,8 +130,7 @@ func New(t *testing.T) *Fixture {
 
 	// Server
 	srvOpts := &server.Options{
-		HTTPPort:         httpPort,
-		GRPCPort:         grpcPort,
+		Port:             port,
 		AllowedOrigins:   []string{"*"},
 		SessionKeyPairs:  [][]byte{randomBytes(16), randomBytes(16)},
 		ServePrometheus:  true,
@@ -148,9 +144,11 @@ func New(t *testing.T) *Fixture {
 	// Serve
 	ctx, cancel := context.WithCancel(ctx)
 	t.Cleanup(cancel)
-	group, ctx := errgroup.WithContext(ctx)
-	group.Go(func() error { return srv.ServeGRPC(ctx) })
-	group.Go(func() error { return srv.ServeHTTP(ctx) })
+	go func() {
+		if err := srv.Serve(ctx); err != nil {
+			logger.Error("server error", zap.Error(err))
+		}
+	}()
 	require.NoError(t, srv.AwaitServing(ctx))
 
 	return &Fixture{
@@ -203,7 +201,7 @@ func (f *Fixture) NewClient(t *testing.T, token string) *client.Client {
 
 // ExternalURL returns the localhost URL of the fixture's server.
 func (f *Fixture) ExternalURL() string {
-	return fmt.Sprintf("http://localhost:%d", f.ServerOpts.GRPCPort)
+	return fmt.Sprintf("http://localhost:%d", f.ServerOpts.Port)
 }
 
 // mockGithub provides a mock implementation of admin.Github.

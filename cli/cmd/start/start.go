@@ -19,8 +19,7 @@ import (
 func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 	var olapDriver string
 	var olapDSN string
-	var httpPort int
-	var grpcPort int
+	var port int
 	var verbose bool
 	var debug bool
 	var readonly bool
@@ -152,7 +151,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 			if tlsCertPath != "" && tlsKeyPath != "" {
 				scheme = "https"
 			}
-			localURL := fmt.Sprintf("%s://localhost:%d", scheme, httpPort)
+			localURL := fmt.Sprintf("%s://localhost:%d", scheme, port)
 
 			allowedOrigins = append(allowedOrigins, localURL)
 
@@ -177,7 +176,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 
 			userID, _ := ch.CurrentUserID(cmd.Context())
 
-			err = app.Serve(httpPort, grpcPort, !noUI, !noOpen, readonly, userID, tlsCertPath, tlsKeyPath)
+			err = app.Serve(port, !noUI, !noOpen, readonly, userID, tlsCertPath, tlsKeyPath)
 			if err != nil {
 				return fmt.Errorf("serve: %w", err)
 			}
@@ -193,8 +192,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 	startCmd.Flags().BoolVar(&noOpen, "no-open", false, "Do not open browser")
 	startCmd.Flags().BoolVar(&verbose, "verbose", false, "Sets the log level to debug")
 	startCmd.Flags().BoolVar(&readonly, "readonly", false, "Show only dashboards in UI")
-	startCmd.Flags().IntVar(&httpPort, "port", 9009, "Port for HTTP")
-	startCmd.Flags().IntVar(&grpcPort, "port-grpc", 49009, "Port for gRPC (internal)")
+	startCmd.Flags().IntVar(&port, "port", 9009, "Port for HTTP")
 	startCmd.Flags().BoolVar(&noUI, "no-ui", false, "Serve only the backend")
 	startCmd.Flags().BoolVar(&debug, "debug", false, "Collect additional debug info")
 	startCmd.Flags().StringVar(&logFormat, "log-format", "console", "Log format (options: \"console\", \"json\")")

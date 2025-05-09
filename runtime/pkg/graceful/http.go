@@ -7,6 +7,9 @@ import (
 	"net/http"
 	"strings"
 	"time"
+
+	"golang.org/x/net/http2"
+	"golang.org/x/net/http2/h2c"
 )
 
 const httpShutdownTimeout = 15 * time.Second
@@ -37,6 +40,10 @@ func ServeHTTP(ctx context.Context, server *http.Server, options ServeOptions) e
 	serveErrCh := make(chan error)
 	// Start server in a goroutine
 	go func() {
+		// Set up h2c handler (for HTTP/2 over cleartext) only once
+		server.Handler = h2c.NewHandler(server.Handler, &http2.Server{})
+
+		// Serve HTTP or HTTPS based on certificate configuration
 		if options.CertPath != "" && options.KeyPath != "" {
 			// Use HTTPS if cert and key are provided
 			err := server.ServeTLS(lis, options.CertPath, options.KeyPath)

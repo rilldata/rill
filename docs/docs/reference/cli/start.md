@@ -19,7 +19,6 @@ rill start [<path>] [flags]
       --no-open                   Do not open browser
       --verbose                   Sets the log level to debug
       --port int                  Port for HTTP (default 9009)
-      --port-grpc int             Port for gRPC (internal) (default 49009)
       --no-ui                     Serve only the backend
       --debug                     Collect additional debug info
       --log-format string         Log format (options: "console", "json") (default "console")

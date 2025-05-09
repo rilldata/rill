@@ -18,7 +18,6 @@ export const test = base.extend<MyFixtures>({
 
   page: async ({ page, project }, use) => {
     const TEST_PORT = await getOpenPort();
-    const TEST_PORT_GRPC = await getOpenPort();
     const TEST_PROJECT_DIRECTORY = join(BASE_PROJECT_DIRECTORY, "" + TEST_PORT);
 
     rmSync(TEST_PROJECT_DIRECTORY, { force: true, recursive: true });
@@ -34,7 +33,7 @@ export const test = base.extend<MyFixtures>({
       });
     }
 
-    const cmd = `start --no-open --port ${TEST_PORT} --port-grpc ${TEST_PORT_GRPC} ${TEST_PROJECT_DIRECTORY}`;
+    const cmd = `start --no-open --port ${TEST_PORT} ${TEST_PROJECT_DIRECTORY}`;
 
     const childProcess = spawn("../rill", cmd.split(" "), {
       stdio: "inherit",

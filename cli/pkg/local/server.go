@@ -110,7 +110,7 @@ func (s *Server) GetMetadata(ctx context.Context, r *connect.Request[localv1.Get
 		IsDev:            s.metadata.IsDev,
 		AnalyticsEnabled: s.metadata.AnalyticsEnabled,
 		Readonly:         s.metadata.Readonly,
-		GrpcPort:         int32(s.metadata.GRPCPort),
+		Port:             int32(s.metadata.Port),
 		LoginUrl:         s.app.localURL + "/auth",
 		AdminUrl:         s.app.ch.AdminURL(),
 	}), nil
@@ -776,12 +776,7 @@ func (s *Server) logoutHandler() http.Handler {
 			return
 		}
 
-		// Get URL for cloud auth.
-		// NOTE: This is temporary until we migrate to a server that can host HTTP and gRPC on the same port.
 		authURL := s.app.ch.AdminURL()
-		if strings.Contains(authURL, "http://localhost:9090") {
-			authURL = "http://localhost:8080"
-		}
 
 		// Logout on cloud as well
 		var qry map[string]string
@@ -839,7 +834,7 @@ type localMetadata struct {
 	IsDev            bool   `json:"is_dev"`
 	AnalyticsEnabled bool   `json:"analytics_enabled"`
 	Readonly         bool   `json:"readonly"`
-	GRPCPort         int    `json:"grpc_port"`
+	Port             int    `json:"port"`
 }
 
 // metadataHandler serves the metadata of the local Rill instance.

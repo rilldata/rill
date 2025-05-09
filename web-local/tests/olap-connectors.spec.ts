@@ -94,6 +94,9 @@ test.describe("ClickHouse connector", () => {
     );
 
     // Assert that the connector explorer now has a ClickHouse connector
+    await page.reload();
+
+    // Assert that the connector explorer now has a ClickHouse connector
     await expect(
       page
         .getByRole("region", { name: "Connector explorer" })
@@ -147,6 +150,9 @@ test.describe("ClickHouse connector", () => {
     await expect(envEditor).toContainText(
       `connector.clickhouse.dsn=http://${clickhouse.getHost()}:${clickhouse.getPort().toString()}?username=default&password=password`,
     );
+
+    // Assert that the connector explorer now has a ClickHouse connector
+    await page.reload();
 
     // Go to the `rill.yaml` and verify the OLAP connector is set
     await page.getByRole("link", { name: "rill.yaml" }).click();

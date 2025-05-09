@@ -43,12 +43,12 @@ If you still have any questions, please [contact us!](/contact)
 
 If you try to start two instances of Rill Developer, you will hit the following error:
 ```bash
-Error: serve: server crashed: grpc port 49009 is in use by another process. Either kill that process or pass `--port-grpc PORT` to run Rill on another port
+Error: serve: server crashed: port 49009 is in use by another process. Either kill that process or pass `--port PORT` to run Rill on another port
 ```
 
 In other to run two instances, please use the following flags with a unique port number.
 ```bash
-rill start --port 10010 --port-grpc 10011
+rill start --port 10010
 ```
 
 ### How do I share my dashboard with my colleagues?

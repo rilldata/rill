@@ -763,6 +763,7 @@ func TestServer_MetricsViewTimeseries_export_xlsx(t *testing.T) {
 	require.NoError(t, err)
 
 	file, err := excelize.OpenReader(&buf)
+	require.NoError(t, err)
 	rows, err := file.GetRows("Sheet1")
 	require.NoError(t, err)
 
@@ -792,7 +793,7 @@ func TestServer_MetricsViewTimeseries_export_csv(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	require.Equal(t, 3, strings.Count(string(buf.Bytes()), "\n"))
+	require.Equal(t, 3, strings.Count(buf.String(), "\n"))
 }
 
 func resolveMVAndSecurity(t *testing.T, rt *runtime.Runtime, instanceID, metricsViewName string) (*runtimev1.MetricsViewSpec, *runtime.ResolvedSecurity) {

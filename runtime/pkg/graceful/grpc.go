@@ -24,7 +24,7 @@ func ServeGRPC(ctx context.Context, server *grpc.Server, port int) error {
 	}
 	if err != nil {
 		if strings.Contains(err.Error(), "address already in use") {
-			return fmt.Errorf("grpc port %d is in use by another process. Either kill that process or pass `--port-grpc PORT` to run Rill on another port", port)
+			return fmt.Errorf("grpc port %d is in use by another process. Either kill that process or pass `--port PORT` to run Rill on another port", port)
 		}
 		return err
 	}
