@@ -93,38 +93,34 @@
           >
             {repoName}
           </a>
-            <DropdownMenu.Root bind:open={editDropdownOpen}>
-              <DropdownMenu.Trigger>
-                <IconButton>
-                  {#if hovered || editDropdownOpen}
-                    <ThreeDot size="16px" />
-                  {/if}
-                </IconButton>
-              </DropdownMenu.Trigger>
-              <DropdownMenu.Content align="start">
-                <!-- Disabling for now, until we figure out how to do this  -->
-                <!--              <DropdownMenu.Item class="px-1 py-1">-->
-                <!--                <Button on:click={editGithubConnection} type="text" compact>-->
-                <!--                  <div class="flex flex-row items-center gap-x-2">-->
-                <!--                    <EditIcon size="14px" />-->
-                <!--                    <span class="text-xs">Edit</span>-->
-                <!--                  </div>-->
-                <!--                </Button>-->
-                <!--              </DropdownMenu.Item>-->
-                <DropdownMenu.Item class="px-1 py-1">
-                  <Button
-                    on:click={disconnectGithubConnect}
-                    type="text"
-                    compact
-                  >
-                    <div class="flex flex-row items-center gap-x-2">
-                      <DisconnectIcon size="14px" />
-                      <span class="text-xs">Disconnect</span>
-                    </div>
-                  </Button>
-                </DropdownMenu.Item>
-              </DropdownMenu.Content>
-            </DropdownMenu.Root>
+          <DropdownMenu.Root bind:open={editDropdownOpen}>
+            <DropdownMenu.Trigger>
+              <IconButton>
+                {#if hovered || editDropdownOpen}
+                  <ThreeDot size="16px" />
+                {/if}
+              </IconButton>
+            </DropdownMenu.Trigger>
+            <DropdownMenu.Content align="start">
+              <!-- Disabling for now, until we figure out how to do this  -->
+              <!--              <DropdownMenu.Item class="px-1 py-1">-->
+              <!--                <Button on:click={editGithubConnection} type="text" compact>-->
+              <!--                  <div class="flex flex-row items-center gap-x-2">-->
+              <!--                    <EditIcon size="14px" />-->
+              <!--                    <span class="text-xs">Edit</span>-->
+              <!--                  </div>-->
+              <!--                </Button>-->
+              <!--              </DropdownMenu.Item>-->
+              <DropdownMenu.Item class="px-1 py-1">
+                <Button on:click={disconnectGithubConnect} type="text" compact>
+                  <div class="flex flex-row items-center gap-x-2">
+                    <DisconnectIcon size="14px" />
+                    <span class="text-xs">Disconnect</span>
+                  </div>
+                </Button>
+              </DropdownMenu.Item>
+            </DropdownMenu.Content>
+          </DropdownMenu.Root>
         </div>
         {#if subpath}
           <div class="flex items-center">
