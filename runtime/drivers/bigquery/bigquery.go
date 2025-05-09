@@ -133,7 +133,7 @@ func (c *Connection) Ping(ctx context.Context) error {
 
 // Driver implements drivers.Connection.
 func (c *Connection) Driver() string {
-	return "gcs"
+	return "bigquery"
 }
 
 // Config implements drivers.Connection.
