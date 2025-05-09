@@ -27,6 +27,7 @@ import type {
 import type {
   AdminServiceAddOrganizationMemberUserBody,
   AdminServiceAddProjectMemberUserBody,
+  AdminServiceCancelBillingSubscriptionParams,
   AdminServiceConnectProjectToGithubBody,
   AdminServiceCreateAlertBodyBody,
   AdminServiceCreateAssetBody,
@@ -35,11 +36,14 @@ import type {
   AdminServiceCreateReportBodyBody,
   AdminServiceCreateServiceParams,
   AdminServiceCreateUsergroupBodyBody,
+  AdminServiceDeleteUserParams,
   AdminServiceEditUsergroupBody,
   AdminServiceGetAlertMetaBody,
+  AdminServiceGetBillingSubscriptionParams,
   AdminServiceGetDeploymentCredentialsBody,
   AdminServiceGetGithubRepoStatusParams,
   AdminServiceGetIFrameBody,
+  AdminServiceGetOrganizationParams,
   AdminServiceGetPaymentsPortalURLParams,
   AdminServiceGetProjectParams,
   AdminServiceGetProjectVariablesParams,
@@ -47,9 +51,11 @@ import type {
   AdminServiceGetReportMetaBody,
   AdminServiceGetUserParams,
   AdminServiceGetUsergroupParams,
+  AdminServiceHibernateProjectParams,
   AdminServiceIssueMagicAuthTokenBody,
   AdminServiceListBookmarksParams,
   AdminServiceListMagicAuthTokensParams,
+  AdminServiceListOrganizationBillingIssuesParams,
   AdminServiceListOrganizationInvitesParams,
   AdminServiceListOrganizationMemberUsergroupsParams,
   AdminServiceListOrganizationMemberUsersParams,
@@ -1395,17 +1401,22 @@ export const createAdminServiceCreateOrganization = <
  */
 export const adminServiceGetOrganization = (
   name: string,
+  params?: AdminServiceGetOrganizationParams,
   signal?: AbortSignal,
 ) => {
   return httpClient<V1GetOrganizationResponse>({
     url: `/v1/organizations/${name}`,
     method: "GET",
+    params,
     signal,
   });
 };
 
-export const getAdminServiceGetOrganizationQueryKey = (name: string) => {
-  return [`/v1/organizations/${name}`] as const;
+export const getAdminServiceGetOrganizationQueryKey = (
+  name: string,
+  params?: AdminServiceGetOrganizationParams,
+) => {
+  return [`/v1/organizations/${name}`, ...(params ? [params] : [])] as const;
 };
 
 export const getAdminServiceGetOrganizationQueryOptions = <
@@ -1413,6 +1424,7 @@ export const getAdminServiceGetOrganizationQueryOptions = <
   TError = RpcStatus,
 >(
   name: string,
+  params?: AdminServiceGetOrganizationParams,
   options?: {
     query?: Partial<
       CreateQueryOptions<
@@ -1426,11 +1438,12 @@ export const getAdminServiceGetOrganizationQueryOptions = <
   const { query: queryOptions } = options ?? {};
 
   const queryKey =
-    queryOptions?.queryKey ?? getAdminServiceGetOrganizationQueryKey(name);
+    queryOptions?.queryKey ??
+    getAdminServiceGetOrganizationQueryKey(name, params);
 
   const queryFn: QueryFunction<
     Awaited<ReturnType<typeof adminServiceGetOrganization>>
-  > = ({ signal }) => adminServiceGetOrganization(name, signal);
+  > = ({ signal }) => adminServiceGetOrganization(name, params, signal);
 
   return {
     queryKey,
@@ -1458,6 +1471,7 @@ export function createAdminServiceGetOrganization<
   TError = RpcStatus,
 >(
   name: string,
+  params?: AdminServiceGetOrganizationParams,
   options?: {
     query?: Partial<
       CreateQueryOptions<
@@ -1473,6 +1487,7 @@ export function createAdminServiceGetOrganization<
 } {
   const queryOptions = getAdminServiceGetOrganizationQueryOptions(
     name,
+    params,
     options,
   );
 
@@ -1657,19 +1672,25 @@ export const createAdminServiceUpdateOrganization = <
  */
 export const adminServiceListOrganizationBillingIssues = (
   organization: string,
+  params?: AdminServiceListOrganizationBillingIssuesParams,
   signal?: AbortSignal,
 ) => {
   return httpClient<V1ListOrganizationBillingIssuesResponse>({
     url: `/v1/organizations/${organization}/billing/issues`,
     method: "GET",
+    params,
     signal,
   });
 };
 
 export const getAdminServiceListOrganizationBillingIssuesQueryKey = (
   organization: string,
+  params?: AdminServiceListOrganizationBillingIssuesParams,
 ) => {
-  return [`/v1/organizations/${organization}/billing/issues`] as const;
+  return [
+    `/v1/organizations/${organization}/billing/issues`,
+    ...(params ? [params] : []),
+  ] as const;
 };
 
 export const getAdminServiceListOrganizationBillingIssuesQueryOptions = <
@@ -1677,6 +1698,7 @@ export const getAdminServiceListOrganizationBillingIssuesQueryOptions = <
   TError = RpcStatus,
 >(
   organization: string,
+  params?: AdminServiceListOrganizationBillingIssuesParams,
   options?: {
     query?: Partial<
       CreateQueryOptions<
@@ -1691,12 +1713,12 @@ export const getAdminServiceListOrganizationBillingIssuesQueryOptions = <
 
   const queryKey =
     queryOptions?.queryKey ??
-    getAdminServiceListOrganizationBillingIssuesQueryKey(organization);
+    getAdminServiceListOrganizationBillingIssuesQueryKey(organization, params);
 
   const queryFn: QueryFunction<
     Awaited<ReturnType<typeof adminServiceListOrganizationBillingIssues>>
   > = ({ signal }) =>
-    adminServiceListOrganizationBillingIssues(organization, signal);
+    adminServiceListOrganizationBillingIssues(organization, params, signal);
 
   return {
     queryKey,
@@ -1724,6 +1746,7 @@ export function createAdminServiceListOrganizationBillingIssues<
   TError = RpcStatus,
 >(
   organization: string,
+  params?: AdminServiceListOrganizationBillingIssuesParams,
   options?: {
     query?: Partial<
       CreateQueryOptions<
@@ -1739,6 +1762,7 @@ export function createAdminServiceListOrganizationBillingIssues<
 } {
   const queryOptions = getAdminServiceListOrganizationBillingIssuesQueryOptions(
     organization,
+    params,
     options,
   );
 
@@ -1866,19 +1890,25 @@ export function createAdminServiceGetPaymentsPortalURL<
  */
 export const adminServiceGetBillingSubscription = (
   organization: string,
+  params?: AdminServiceGetBillingSubscriptionParams,
   signal?: AbortSignal,
 ) => {
   return httpClient<V1GetBillingSubscriptionResponse>({
     url: `/v1/organizations/${organization}/billing/subscriptions`,
     method: "GET",
+    params,
     signal,
   });
 };
 
 export const getAdminServiceGetBillingSubscriptionQueryKey = (
   organization: string,
+  params?: AdminServiceGetBillingSubscriptionParams,
 ) => {
-  return [`/v1/organizations/${organization}/billing/subscriptions`] as const;
+  return [
+    `/v1/organizations/${organization}/billing/subscriptions`,
+    ...(params ? [params] : []),
+  ] as const;
 };
 
 export const getAdminServiceGetBillingSubscriptionQueryOptions = <
@@ -1886,6 +1916,7 @@ export const getAdminServiceGetBillingSubscriptionQueryOptions = <
   TError = RpcStatus,
 >(
   organization: string,
+  params?: AdminServiceGetBillingSubscriptionParams,
   options?: {
     query?: Partial<
       CreateQueryOptions<
@@ -1900,11 +1931,12 @@ export const getAdminServiceGetBillingSubscriptionQueryOptions = <
 
   const queryKey =
     queryOptions?.queryKey ??
-    getAdminServiceGetBillingSubscriptionQueryKey(organization);
+    getAdminServiceGetBillingSubscriptionQueryKey(organization, params);
 
   const queryFn: QueryFunction<
     Awaited<ReturnType<typeof adminServiceGetBillingSubscription>>
-  > = ({ signal }) => adminServiceGetBillingSubscription(organization, signal);
+  > = ({ signal }) =>
+    adminServiceGetBillingSubscription(organization, params, signal);
 
   return {
     queryKey,
@@ -1932,6 +1964,7 @@ export function createAdminServiceGetBillingSubscription<
   TError = RpcStatus,
 >(
   organization: string,
+  params?: AdminServiceGetBillingSubscriptionParams,
   options?: {
     query?: Partial<
       CreateQueryOptions<
@@ -1947,6 +1980,7 @@ export function createAdminServiceGetBillingSubscription<
 } {
   const queryOptions = getAdminServiceGetBillingSubscriptionQueryOptions(
     organization,
+    params,
     options,
   );
 
@@ -1963,10 +1997,14 @@ export function createAdminServiceGetBillingSubscription<
 /**
  * @summary CancelBillingSubscription cancels the billing subscription for the organization
  */
-export const adminServiceCancelBillingSubscription = (organization: string) => {
+export const adminServiceCancelBillingSubscription = (
+  organization: string,
+  params?: AdminServiceCancelBillingSubscriptionParams,
+) => {
   return httpClient<V1CancelBillingSubscriptionResponse>({
     url: `/v1/organizations/${organization}/billing/subscriptions`,
     method: "DELETE",
+    params,
   });
 };
 
@@ -1977,13 +2015,19 @@ export const getAdminServiceCancelBillingSubscriptionMutationOptions = <
   mutation?: CreateMutationOptions<
     Awaited<ReturnType<typeof adminServiceCancelBillingSubscription>>,
     TError,
-    { organization: string },
+    {
+      organization: string;
+      params?: AdminServiceCancelBillingSubscriptionParams;
+    },
     TContext
   >;
 }): CreateMutationOptions<
   Awaited<ReturnType<typeof adminServiceCancelBillingSubscription>>,
   TError,
-  { organization: string },
+  {
+    organization: string;
+    params?: AdminServiceCancelBillingSubscriptionParams;
+  },
   TContext
 > => {
   const mutationKey = ["adminServiceCancelBillingSubscription"];
@@ -1997,11 +2041,14 @@ export const getAdminServiceCancelBillingSubscriptionMutationOptions = <
 
   const mutationFn: MutationFunction<
     Awaited<ReturnType<typeof adminServiceCancelBillingSubscription>>,
-    { organization: string }
+    {
+      organization: string;
+      params?: AdminServiceCancelBillingSubscriptionParams;
+    }
   > = (props) => {
-    const { organization } = props ?? {};
+    const { organization, params } = props ?? {};
 
-    return adminServiceCancelBillingSubscription(organization);
+    return adminServiceCancelBillingSubscription(organization, params);
   };
 
   return { mutationFn, ...mutationOptions };
@@ -2024,7 +2071,10 @@ export const createAdminServiceCancelBillingSubscription = <
     mutation?: CreateMutationOptions<
       Awaited<ReturnType<typeof adminServiceCancelBillingSubscription>>,
       TError,
-      { organization: string },
+      {
+        organization: string;
+        params?: AdminServiceCancelBillingSubscriptionParams;
+      },
       TContext
     >;
   },
@@ -2032,7 +2082,10 @@ export const createAdminServiceCancelBillingSubscription = <
 ): CreateMutationResult<
   Awaited<ReturnType<typeof adminServiceCancelBillingSubscription>>,
   TError,
-  { organization: string },
+  {
+    organization: string;
+    params?: AdminServiceCancelBillingSubscriptionParams;
+  },
   TContext
 > => {
   const mutationOptions =
@@ -4263,11 +4316,13 @@ export function createAdminServiceGetDeploymentCredentials<
 export const adminServiceHibernateProject = (
   organization: string,
   project: string,
+  params?: AdminServiceHibernateProjectParams,
   signal?: AbortSignal,
 ) => {
   return httpClient<V1HibernateProjectResponse>({
     url: `/v1/organizations/${organization}/projects/${project}/hibernate`,
     method: "POST",
+    params,
     signal,
   });
 };
@@ -4279,13 +4334,21 @@ export const getAdminServiceHibernateProjectMutationOptions = <
   mutation?: CreateMutationOptions<
     Awaited<ReturnType<typeof adminServiceHibernateProject>>,
     TError,
-    { organization: string; project: string },
+    {
+      organization: string;
+      project: string;
+      params?: AdminServiceHibernateProjectParams;
+    },
     TContext
   >;
 }): CreateMutationOptions<
   Awaited<ReturnType<typeof adminServiceHibernateProject>>,
   TError,
-  { organization: string; project: string },
+  {
+    organization: string;
+    project: string;
+    params?: AdminServiceHibernateProjectParams;
+  },
   TContext
 > => {
   const mutationKey = ["adminServiceHibernateProject"];
@@ -4299,11 +4362,15 @@ export const getAdminServiceHibernateProjectMutationOptions = <
 
   const mutationFn: MutationFunction<
     Awaited<ReturnType<typeof adminServiceHibernateProject>>,
-    { organization: string; project: string }
+    {
+      organization: string;
+      project: string;
+      params?: AdminServiceHibernateProjectParams;
+    }
   > = (props) => {
-    const { organization, project } = props ?? {};
+    const { organization, project, params } = props ?? {};
 
-    return adminServiceHibernateProject(organization, project);
+    return adminServiceHibernateProject(organization, project, params);
   };
 
   return { mutationFn, ...mutationOptions };
@@ -4326,7 +4393,11 @@ export const createAdminServiceHibernateProject = <
     mutation?: CreateMutationOptions<
       Awaited<ReturnType<typeof adminServiceHibernateProject>>,
       TError,
-      { organization: string; project: string },
+      {
+        organization: string;
+        project: string;
+        params?: AdminServiceHibernateProjectParams;
+      },
       TContext
     >;
   },
@@ -4334,7 +4405,11 @@ export const createAdminServiceHibernateProject = <
 ): CreateMutationResult<
   Awaited<ReturnType<typeof adminServiceHibernateProject>>,
   TError,
-  { organization: string; project: string },
+  {
+    organization: string;
+    project: string;
+    params?: AdminServiceHibernateProjectParams;
+  },
   TContext
 > => {
   const mutationOptions =
@@ -12759,10 +12834,14 @@ export function createAdminServiceGetUser<
 /**
  * @summary DeleteUser deletes the user from the organization by email
  */
-export const adminServiceDeleteUser = (email: string) => {
+export const adminServiceDeleteUser = (
+  email: string,
+  params?: AdminServiceDeleteUserParams,
+) => {
   return httpClient<V1DeleteUserResponse>({
     url: `/v1/users/${email}`,
     method: "DELETE",
+    params,
   });
 };
 
@@ -12773,13 +12852,13 @@ export const getAdminServiceDeleteUserMutationOptions = <
   mutation?: CreateMutationOptions<
     Awaited<ReturnType<typeof adminServiceDeleteUser>>,
     TError,
-    { email: string },
+    { email: string; params?: AdminServiceDeleteUserParams },
     TContext
   >;
 }): CreateMutationOptions<
   Awaited<ReturnType<typeof adminServiceDeleteUser>>,
   TError,
-  { email: string },
+  { email: string; params?: AdminServiceDeleteUserParams },
   TContext
 > => {
   const mutationKey = ["adminServiceDeleteUser"];
@@ -12793,11 +12872,11 @@ export const getAdminServiceDeleteUserMutationOptions = <
 
   const mutationFn: MutationFunction<
     Awaited<ReturnType<typeof adminServiceDeleteUser>>,
-    { email: string }
+    { email: string; params?: AdminServiceDeleteUserParams }
   > = (props) => {
-    const { email } = props ?? {};
+    const { email, params } = props ?? {};
 
-    return adminServiceDeleteUser(email);
+    return adminServiceDeleteUser(email, params);
   };
 
   return { mutationFn, ...mutationOptions };
@@ -12820,7 +12899,7 @@ export const createAdminServiceDeleteUser = <
     mutation?: CreateMutationOptions<
       Awaited<ReturnType<typeof adminServiceDeleteUser>>,
       TError,
-      { email: string },
+      { email: string; params?: AdminServiceDeleteUserParams },
       TContext
     >;
   },
@@ -12828,7 +12907,7 @@ export const createAdminServiceDeleteUser = <
 ): CreateMutationResult<
   Awaited<ReturnType<typeof adminServiceDeleteUser>>,
   TError,
-  { email: string },
+  { email: string; params?: AdminServiceDeleteUserParams },
   TContext
 > => {
   const mutationOptions = getAdminServiceDeleteUserMutationOptions(options);

@@ -26,7 +26,8 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			subResp, err := client.GetBillingSubscription(ctx, &adminv1.GetBillingSubscriptionRequest{
-				Organization: ch.Org,
+				Organization:         ch.Org,
+				SuperuserForceAccess: force,
 			})
 			if err != nil {
 				return err

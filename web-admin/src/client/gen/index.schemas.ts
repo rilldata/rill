@@ -1395,6 +1395,10 @@ export type AdminServiceListOrganizationsParams = {
   pageToken?: string;
 };
 
+export type AdminServiceGetOrganizationParams = {
+  superuserForceAccess?: boolean;
+};
+
 export type AdminServiceUpdateOrganizationBody = {
   description?: string;
   newName?: string;
@@ -1405,8 +1409,21 @@ export type AdminServiceUpdateOrganizationBody = {
   billingEmail?: string;
 };
 
+export type AdminServiceListOrganizationBillingIssuesParams = {
+  superuserForceAccess?: boolean;
+};
+
 export type AdminServiceGetPaymentsPortalURLParams = {
   returnUrl?: string;
+  superuserForceAccess?: boolean;
+};
+
+export type AdminServiceGetBillingSubscriptionParams = {
+  superuserForceAccess?: boolean;
+};
+
+export type AdminServiceCancelBillingSubscriptionParams = {
+  superuserForceAccess?: boolean;
 };
 
 export type AdminServiceListOrganizationInvitesParams = {
@@ -1425,6 +1442,7 @@ export type AdminServiceListOrganizationMemberUsersParams = {
   includeCounts?: boolean;
   pageSize?: number;
   pageToken?: string;
+  superuserForceAccess?: boolean;
 };
 
 export type AdminServiceAddOrganizationMemberUserBody = {
@@ -1465,6 +1483,10 @@ export type AdminServiceGetDeploymentCredentialsBody = {
   userId?: string;
   userEmail?: string;
   attributes?: AdminServiceGetDeploymentCredentialsBodyAttributes;
+};
+
+export type AdminServiceHibernateProjectParams = {
+  superuserForceAccess?: boolean;
 };
 
 /**
@@ -1519,6 +1541,7 @@ export type AdminServiceListProjectMemberUsersParams = {
   role?: string;
   pageSize?: number;
   pageToken?: string;
+  superuserForceAccess?: boolean;
 };
 
 export type AdminServiceAddProjectMemberUserBody = {
@@ -1664,6 +1687,7 @@ Either github_url or archive_asset_id should be set. */
 
 export type AdminServiceGetProjectParams = {
   accessTokenTtlSeconds?: number;
+  superuserForceAccess?: boolean;
   issueSuperuserToken?: boolean;
 };
 
@@ -1745,6 +1769,10 @@ export type AdminServiceSudoGetResourceParams = {
 
 export type AdminServiceGetUserParams = {
   email?: string;
+};
+
+export type AdminServiceDeleteUserParams = {
+  superuserForceAccess?: boolean;
 };
 
 export type AdminServiceListBookmarksParams = {
