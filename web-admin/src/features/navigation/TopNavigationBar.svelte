@@ -89,38 +89,41 @@
   $: alertsQuery = useAlerts(instanceId, onAlertPage);
   $: reportsQuery = useReports(instanceId, onReportPage);
 
-  let organizations: V1Organization[] = [];
-  $: {
-    organizations = $organizationQuery.data?.organizations ?? [];
-
-    // If the organization of the current page is not in the user's list of organizations, add it.
-    // This can happen when a non-member visits an organization with a public project (e.g. the `demo` org).
-    const isCurrentOrgNotInUserOrgList =
-      organization &&
-      !organizations.some(
-        (o) => o.name.toLowerCase() === organization.toLowerCase(),
-      );
-
-    if (isCurrentOrgNotInUserOrgList) {
-      organizations = [
-        ...organizations,
-        { name: organization, id: organization },
-      ];
-    }
-  }
+  $: organizations = $organizationQuery.data?.organizations ?? [];
   $: projects = $projectsQuery.data?.projects ?? [];
   $: visualizations = $visualizationsQuery.data ?? [];
   $: alerts = $alertsQuery.data?.resources ?? [];
   $: reports = $reportsQuery.data?.resources ?? [];
 
-  $: organizationPaths = organizations.reduce(
-    (map, { name, displayName }) =>
-      map.set(name.toLowerCase(), {
+  $: organizationPaths = createOrgPaths(
+    organizations,
+    organization,
+    planDisplayName,
+  );
+
+  function createOrgPaths(
+    organizations: V1Organization[],
+    viewingOrg: string,
+    planDisplayName: string,
+  ) {
+    const pathMap = new Map<string, PathOption>();
+
+    organizations.forEach(({ name, displayName }) => {
+      pathMap.set(name.toLowerCase(), {
         label: displayName || name,
         pill: planDisplayName,
-      }),
-    new Map<string, PathOption>(),
-  );
+      });
+    });
+
+    if (!pathMap.has(viewingOrg.toLowerCase())) {
+      pathMap.set(viewingOrg.toLowerCase(), {
+        label: viewingOrg,
+        pill: planDisplayName,
+      });
+    }
+
+    return pathMap;
+  }
 
   $: projectPaths = projects.reduce(
     (map, { name }) =>
