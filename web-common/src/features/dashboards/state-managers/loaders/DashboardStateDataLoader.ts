@@ -306,12 +306,11 @@ export class DashboardStateDataLoader {
           exploreSpec,
         );
 
-    const { partialExploreState: partialExploreStateFromUrl } =
+    const { exploreState: partialExploreStateFromUrl } =
       convertURLSearchParamsToExploreState(
         urlSearchParams,
         metricsViewSpec,
         exploreSpec,
-        {},
       );
 
     const { mostRecentPartialExploreState } = getMostRecentPartialExploreState(
