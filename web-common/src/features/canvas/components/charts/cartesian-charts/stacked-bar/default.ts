@@ -1,6 +1,6 @@
 import type { VisualizationSpec } from "svelte-vega";
 import {
-  createConfig,
+  createConfigWithLegend,
   createEncoding,
   createSingleLayerBaseSpec,
 } from "../../builder";
@@ -14,7 +14,7 @@ export function generateVLStackedBarChartSpec(
   const spec = createSingleLayerBaseSpec("bar");
   spec.encoding = createEncoding(config, data);
 
-  const vegaConfig = createConfig(config);
+  const vegaConfig = createConfigWithLegend(config, config.color);
 
   return {
     ...spec,

@@ -6,7 +6,7 @@ import type { TooltipValue } from "@rilldata/web-common/features/canvas/componen
 import type { VisualizationSpec } from "svelte-vega";
 import {
   createColorEncoding,
-  createConfig,
+  createConfigWithLegend,
   createDefaultTooltipEncoding,
   createMultiLayerBaseSpec,
   createPositionEncoding,
@@ -18,7 +18,7 @@ export function generateVLAreaChartSpec(
   data: ChartDataResult,
 ): VisualizationSpec {
   const spec = createMultiLayerBaseSpec();
-  const vegaConfig = createConfig(config);
+  const vegaConfig = createConfigWithLegend(config, config.color);
 
   const colorField =
     typeof config.color === "object" ? config.color.field : undefined;
