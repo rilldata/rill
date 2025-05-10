@@ -6,33 +6,37 @@
   import { flexRender } from "@tanstack/svelte-table";
   import type { ColumnDef } from "@tanstack/svelte-table";
   import OrgGroupsTableActionsCell from "./OrgGroupsTableActionsCell.svelte";
-  import OrgGroupsTableRoleCell from "./OrgGroupsTableRoleCell.svelte";
-  import BasicTable from "@rilldata/web-common/components/table/BasicTable.svelte";
+  import OrgGroupsTableGroupCompositeCell from "./OrgGroupsTableGroupCompositeCell.svelte";
+  import InfiniteScrollTable from "@rilldata/web-admin/components/InfiniteScrollTable.svelte";
 
   export let data: V1MemberUsergroup[];
   export let currentUserEmail: string;
   export let searchUsersList: V1OrganizationMemberUser[];
+  export let hasNextPage: boolean;
+  export let isFetchingNextPage: boolean;
+  export let onLoadMore: () => void;
+
+  function transformGroupName(groupName: string) {
+    return groupName
+      .replace("autogroup:", "")
+      .replace("_", " ")
+      .replace(/\b\w/g, (char) => char.toUpperCase());
+  }
 
   const columns: ColumnDef<V1MemberUsergroup, any>[] = [
     {
       accessorKey: "groupName",
       header: "Group",
-      meta: {
-        widthPercent: 50,
-      },
-    },
-    {
-      accessorKey: "roleName",
-      header: "Role",
+      enableSorting: true,
       cell: ({ row }) =>
-        flexRender(OrgGroupsTableRoleCell, {
-          name: row.original.groupName,
-          managed: row.original.groupManaged,
-          role: row.original.roleName,
+        flexRender(OrgGroupsTableGroupCompositeCell, {
+          name: row.original.groupName?.startsWith("autogroup:")
+            ? transformGroupName(row.original.groupName)
+            : row.original.groupName,
+          usersCount: row.original.usersCount,
         }),
       meta: {
-        widthPercent: 40,
-        marginLeft: "8px",
+        widthPercent: 95,
       },
     },
     {
@@ -51,6 +55,16 @@
       },
     },
   ];
+
+  $: dynamicTableMaxHeight = data.length > 12 ? `calc(100dvh - 300px)` : "auto";
 </script>
 
-<BasicTable {data} {columns} emptyText="No groups found" />
+<InfiniteScrollTable
+  {data}
+  {columns}
+  {hasNextPage}
+  {isFetchingNextPage}
+  {onLoadMore}
+  maxHeight={dynamicTableMaxHeight}
+  emptyStateMessage="No groups found"
+/>

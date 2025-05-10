@@ -33,6 +33,7 @@
 
   export let open = false;
   export let groupName: string;
+  export let groupManaged: boolean;
   export let currentUserEmail: string;
   export let searchUsersList: V1OrganizationMemberUser[];
 
@@ -76,8 +77,7 @@
       eventBus.emit("notification", {
         message: "User added to user group",
       });
-    } catch (error) {
-      console.error("Error adding user to user group", error);
+    } catch {
       eventBus.emit("notification", {
         message: "Error adding user to user group",
         type: "error",
@@ -101,8 +101,7 @@
       });
 
       eventBus.emit("notification", { message: "User group renamed" });
-    } catch (error) {
-      console.error("Error renaming user group", error);
+    } catch {
       eventBus.emit("notification", {
         message: "Error renaming user group",
         type: "error",
@@ -168,6 +167,7 @@
     {
       SPA: true,
       validators: schema,
+      validationMethod: "oninput",
       async onUpdate({ form }) {
         if (!form.valid) return;
         const values = form.data;
@@ -187,13 +187,18 @@
     label: user.userEmail,
     name: user.userName,
   }));
+
+  function handleClose() {
+    open = false;
+    searchText = "";
+  }
 </script>
 
 <Dialog
   bind:open
   onOutsideClick={(e) => {
     e.preventDefault();
-    open = false;
+    handleClose();
   }}
 >
   <DialogTrigger asChild>
@@ -214,9 +219,10 @@
           bind:value={$form.newName}
           placeholder="New user group name"
           id="user-group-name"
-          label="Group label"
+          label="Name"
           errors={$errors.newName}
           alwaysShowError
+          disabled={groupManaged}
         />
 
         <Combobox
@@ -288,12 +294,7 @@
       </div>
     {/if}
     <DialogFooter>
-      <Button
-        type="plain"
-        on:click={() => {
-          open = false;
-        }}>Cancel</Button
-      >
+      <Button type="plain" on:click={handleClose}>Cancel</Button>
       <Button
         type="primary"
         disabled={$submitting || $form.newName.trim() === groupName}
