@@ -77,8 +77,7 @@
       eventBus.emit("notification", {
         message: "User added to user group",
       });
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    } catch (error) {
+    } catch {
       eventBus.emit("notification", {
         message: "Error adding user to user group",
         type: "error",
@@ -102,8 +101,7 @@
       });
 
       eventBus.emit("notification", { message: "User group renamed" });
-    } catch (error) {
-      console.error("Error renaming user group", error);
+    } catch {
       eventBus.emit("notification", {
         message: "Error renaming user group",
         type: "error",
