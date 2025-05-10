@@ -1,6 +1,6 @@
 <script lang="ts">
   import Avatar from "@rilldata/web-common/components/avatar/Avatar.svelte";
-  import Chip from "@rilldata/web-common/components/chip/core/Chip.svelte";
+  import { Chip } from "@rilldata/web-common/components/chip";
   import { getRandomBgColor } from "@rilldata/web-common/features/themes/color-config";
   import { cn } from "@rilldata/web-common/lib/shadcn";
 
@@ -12,6 +12,7 @@
   export let shape: "circle" | "square" = "circle";
   export let count: number = 0;
   export let role: string | null = null;
+  export let showGuestChip: boolean = false;
 
   function getInitials(name: string) {
     return name.charAt(0).toUpperCase();
@@ -42,7 +43,7 @@
       <span class="text-gray-500 font-normal">
         {isCurrentUser ? "(You)" : ""}
       </span>
-      {#if role === "guest"}
+      {#if showGuestChip || role === "guest"}
         <Chip type="amber" label="Guest" compact readOnly>
           <svelte:fragment slot="body">Guest</svelte:fragment>
         </Chip>

@@ -7,37 +7,17 @@
   } from "@rilldata/web-common/components/dropdown-menu";
   import CaretUpIcon from "@rilldata/web-common/components/icons/CaretUpIcon.svelte";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
+  import { PROJECT_ROLES_OPTIONS } from "../constants";
 
   export let value: string;
 
   let open = false;
 
-  const Options = [
-    {
-      value: "admin",
-      label: "Admin",
-      description: "Full access to org settings, members, and all projects",
-    },
-    {
-      value: "editor",
-      label: "Editor",
-      description: "Can create/manage projects and non-admin members",
-    },
-    {
-      value: "viewer",
-      label: "Viewer",
-      description: "Read-only access to all org projects",
-    },
-    {
-      value: "guest",
-      label: "Guest",
-      description: "Access to invited projects only",
-    },
-  ];
   function onSelect(val: string) {
     value = val;
   }
-  $: selected = Options.find((o) => o.value === value);
+
+  $: selected = PROJECT_ROLES_OPTIONS.find((o) => o.value === value);
 </script>
 
 <DropdownMenu bind:open typeahead={false}>
@@ -53,8 +33,13 @@
       <CaretDownIcon size="12px" />
     {/if}
   </DropdownMenuTrigger>
-  <DropdownMenuContent side="bottom" align="end" class="w-[240px]">
-    {#each Options as { value, label, description } (value)}
+  <DropdownMenuContent
+    side="bottom"
+    align="end"
+    class="w-[240px]"
+    strategy="fixed"
+  >
+    {#each PROJECT_ROLES_OPTIONS as { value, label, description } (value)}
       <DropdownMenuItem
         on:click={() => onSelect(value)}
         class="text-xs hover:bg-slate-100 {selected?.value === value
