@@ -20,14 +20,16 @@
 
   $: navItems = [
     { label: "General", route: "", hasPermission: true },
-    ...(hideBillingSettings
-      ? []
-      : [
-          { label: "Billing", route: "/billing", hasPermission: true },
-          ...(hideUsageSettings
-            ? []
-            : [{ label: "Usage", route: "/usage", hasPermission: true }]),
-        ]),
+    {
+      label: "Billing",
+      route: "/billing",
+      hasPermission: !hideBillingSettings,
+    },
+    {
+      label: "Usage",
+      route: "/usage",
+      hasPermission: !hideBillingSettings && !hideUsageSettings,
+    },
   ];
 </script>
 

@@ -142,13 +142,8 @@
         if (!form.valid) return;
         const values = form.data;
 
-        try {
-          await handleCreate(values.name);
-          open = false;
-          // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        } catch (error) {
-          console.error(error);
-        }
+        await handleCreate(values.name);
+        open = false;
       },
     },
   );
