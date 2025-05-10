@@ -17,7 +17,7 @@ test.describe("canvas charts", () => {
       .locator("canvas")
       .click();
 
-    await page.locator(".chart-icons").getByLabel("Pie").click();
+    await page.locator(".chart-icons").getByLabel("Donut").click();
     await page
       .getByLabel("A arc chart with embedded")
       .locator("canvas")

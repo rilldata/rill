@@ -49,7 +49,7 @@ export function getChartComponent(
     case "stacked_bar":
     case "stacked_bar_normalized":
       return CartesianChartComponent;
-    case "pie_chart":
+    case "donut_chart":
       return CircularChartComponent;
     case "heatmap":
       return HeatmapChartComponent;
@@ -96,8 +96,8 @@ export const CHART_CONFIG: Record<ChartType, ChartMetadataConfig> = {
     component: CartesianChartComponent,
     generateSpec: generateVLStackedBarNormalizedSpec,
   },
-  pie_chart: {
-    title: "Pie",
+  donut_chart: {
+    title: "Donut",
     icon: Donut,
     component: CircularChartComponent,
     generateSpec: generateVLPieChartSpec,
