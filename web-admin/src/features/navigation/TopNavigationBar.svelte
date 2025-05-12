@@ -192,12 +192,7 @@
     <!-- NOTE: only project admin and editor can manage project members -->
     <!-- https://docs.rilldata.com/manage/roles-permissions#project-level-permissions -->
     {#if onProjectPage && manageProjectMembers}
-      <ShareProjectPopover
-        {organization}
-        {project}
-        {manageProjectAdmins}
-        {manageProjectMembers}
-      />
+      <ShareProjectPopover {organization} {project} {manageProjectAdmins} />
     {/if}
     {#if onMetricsExplorerPage && isDashboardValid}
       {#if exploreSpec}

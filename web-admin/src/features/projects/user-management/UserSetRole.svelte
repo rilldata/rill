@@ -104,8 +104,7 @@
       eventBus.emit("notification", {
         message: "User removed",
       });
-    } catch (error) {
-      console.error("Error removing user", error);
+    } catch {
       eventBus.emit("notification", {
         message: "Error removing user",
         type: "error",
