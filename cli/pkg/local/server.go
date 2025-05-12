@@ -679,6 +679,32 @@ func (s *Server) ListProjectsForOrg(ctx context.Context, r *connect.Request[loca
 	}), nil
 }
 
+func (s *Server) GetProject(ctx context.Context, r *connect.Request[localv1.GetProjectRequest]) (*connect.Response[localv1.GetProjectResponse], error) {
+	// Get authenticated admin client
+	if !s.app.ch.IsAuthenticated() {
+		return nil, errors.New("must authenticate before performing this action")
+	}
+	c, err := s.app.ch.Client()
+	if err != nil {
+		return nil, err
+	}
+
+	projResp, err := c.GetProject(ctx, &adminv1.GetProjectRequest{
+		OrganizationName: r.Msg.OrganizationName,
+		Name:             r.Msg.Name,
+		// We dont need deployment or jwt so skip fetching it.
+		SkipDeployment: true,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return connect.NewResponse(&localv1.GetProjectResponse{
+		Project:            projResp.Project,
+		ProjectPermissions: projResp.ProjectPermissions,
+	}), nil
+}
+
 // authHandler starts the OAuth2 PKCE flow to authenticate the user and get a rill access token.
 func (s *Server) authHandler(httpPort int, secure bool) http.Handler {
 	scheme := "http"
