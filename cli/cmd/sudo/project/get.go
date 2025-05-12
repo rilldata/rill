@@ -41,7 +41,7 @@ func GetCmd(ch *cmdutil.Helper) *cobra.Command {
 			fmt.Printf("Org: %s (ID: %s)\n", project.OrgName, project.OrgId)
 			fmt.Printf("Created on: %s\n", project.CreatedOn.AsTime().Format(time.RFC3339Nano))
 			fmt.Printf("Public: %t\n", project.Public)
-			fmt.Printf("Created by user ID: %s\n", project.CreatedByUserId)
+			fmt.Printf("Created by: %s (ID: %s)\n", project.CreatedByUserEmail, project.CreatedByUserId)
 			fmt.Printf("Provisioner: %s\n", project.Provisioner)
 			fmt.Printf("Github URL: %s\n", project.GithubUrl)
 			fmt.Printf("Subpath: %s\n", project.Subpath)

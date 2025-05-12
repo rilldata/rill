@@ -254,7 +254,7 @@ func (s *Server) SudoGetResource(ctx context.Context, req *adminv1.SudoGetResour
 		if err != nil {
 			return nil, err
 		}
-		res.Resource = &adminv1.SudoGetResourceResponse_Project{Project: s.projToDTO(proj, org.Name)}
+		res.Resource = &adminv1.SudoGetResourceResponse_Project{Project: s.projToDTO(ctx, proj, org.Name)}
 	case *adminv1.SudoGetResourceRequest_DeploymentId:
 		depl, err := s.admin.DB.FindDeployment(ctx, id.DeploymentId)
 		if err != nil {

@@ -85,7 +85,7 @@ func (s *Server) ListProjectsForOrganization(ctx context.Context, req *adminv1.L
 
 	dtos := make([]*adminv1.Project, len(projs))
 	for i, p := range projs {
-		dtos[i] = s.projToDTO(p, org.Name)
+		dtos[i] = s.projToDTO(ctx, p, org.Name)
 	}
 
 	return &adminv1.ListProjectsForOrganizationResponse{
@@ -128,7 +128,7 @@ func (s *Server) ListProjectsForOrganizationAndUser(ctx context.Context, req *ad
 
 	dtos := make([]*adminv1.Project, len(projects))
 	for i, p := range projects {
-		dtos[i] = s.projToDTO(p, org.Name)
+		dtos[i] = s.projToDTO(ctx, p, org.Name)
 	}
 
 	return &adminv1.ListProjectsForOrganizationAndUserResponse{
@@ -163,7 +163,7 @@ func (s *Server) ListProjectsForUserByName(ctx context.Context, req *adminv1.Lis
 			orgsByID[p.OrganizationID] = org
 		}
 
-		dtos[i] = s.projToDTO(p, org.Name)
+		dtos[i] = s.projToDTO(ctx, p, org.Name)
 	}
 
 	return &adminv1.ListProjectsForUserByNameResponse{
@@ -210,7 +210,7 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 
 	if proj.ProdDeploymentID == nil || !permissions.ReadProd {
 		return &adminv1.GetProjectResponse{
-			Project:            s.projToDTO(proj, org.Name),
+			Project:            s.projToDTO(ctx, proj, org.Name),
 			ProjectPermissions: permissions,
 		}, nil
 	}
@@ -371,7 +371,7 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 	s.admin.Used.Deployment(depl.ID)
 
 	return &adminv1.GetProjectResponse{
-		Project:            s.projToDTO(proj, org.Name),
+		Project:            s.projToDTO(ctx, proj, org.Name),
 		ProdDeployment:     deploymentToDTO(depl),
 		Jwt:                jwt,
 		ProjectPermissions: permissions,
@@ -400,7 +400,7 @@ func (s *Server) GetProjectByID(ctx context.Context, req *adminv1.GetProjectByID
 	}
 
 	return &adminv1.GetProjectByIDResponse{
-		Project: s.projToDTO(proj, org.Name),
+		Project: s.projToDTO(ctx, proj, org.Name),
 	}, nil
 }
 
@@ -603,7 +603,7 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 	}
 
 	return &adminv1.CreateProjectResponse{
-		Project: s.projToDTO(proj, org.Name),
+		Project: s.projToDTO(ctx, proj, org.Name),
 	}, nil
 }
 
@@ -756,7 +756,7 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 	}
 
 	return &adminv1.UpdateProjectResponse{
-		Project: s.projToDTO(proj, req.OrganizationName),
+		Project: s.projToDTO(ctx, proj, req.OrganizationName),
 	}, nil
 }
 
@@ -1537,7 +1537,7 @@ func (s *Server) SudoUpdateAnnotations(ctx context.Context, req *adminv1.SudoUpd
 	}
 
 	return &adminv1.SudoUpdateAnnotationsResponse{
-		Project: s.projToDTO(proj, req.Organization),
+		Project: s.projToDTO(ctx, proj, req.Organization),
 	}, nil
 }
 
@@ -1828,30 +1828,41 @@ func (s *Server) TriggerRedeploy(ctx context.Context, req *adminv1.TriggerRedepl
 	return &adminv1.TriggerRedeployResponse{}, nil
 }
 
-func (s *Server) projToDTO(p *database.Project, orgName string) *adminv1.Project {
+func (s *Server) projToDTO(ctx context.Context, p *database.Project, orgName string) *adminv1.Project {
+
+	var createdByUserEmail string
+	if p.CreatedByUserID != nil {
+		u, err := s.admin.DB.FindUser(ctx, *p.CreatedByUserID)
+		// ignoring err will be empty in case error in getting user
+		if err == nil {
+			createdByUserEmail = u.Email
+		}
+	}
+
 	return &adminv1.Project{
-		Id:               p.ID,
-		Name:             p.Name,
-		OrgId:            p.OrganizationID,
-		OrgName:          orgName,
-		Description:      p.Description,
-		Public:           p.Public,
-		CreatedByUserId:  safeStr(p.CreatedByUserID),
-		Provisioner:      p.Provisioner,
-		ProdVersion:      p.ProdVersion,
-		ProdOlapDriver:   p.ProdOLAPDriver,
-		ProdOlapDsn:      p.ProdOLAPDSN,
-		ProdSlots:        int64(p.ProdSlots),
-		ProdBranch:       p.ProdBranch,
-		Subpath:          p.Subpath,
-		GithubUrl:        safeStr(p.GithubURL),
-		ArchiveAssetId:   safeStr(p.ArchiveAssetID),
-		ProdDeploymentId: safeStr(p.ProdDeploymentID),
-		ProdTtlSeconds:   safeInt64(p.ProdTTLSeconds),
-		FrontendUrl:      s.admin.URLs.Project(orgName, p.Name),
-		Annotations:      p.Annotations,
-		CreatedOn:        timestamppb.New(p.CreatedOn),
-		UpdatedOn:        timestamppb.New(p.UpdatedOn),
+		Id:                 p.ID,
+		Name:               p.Name,
+		OrgId:              p.OrganizationID,
+		OrgName:            orgName,
+		Description:        p.Description,
+		Public:             p.Public,
+		CreatedByUserId:    safeStr(p.CreatedByUserID),
+		CreatedByUserEmail: createdByUserEmail,
+		Provisioner:        p.Provisioner,
+		ProdVersion:        p.ProdVersion,
+		ProdOlapDriver:     p.ProdOLAPDriver,
+		ProdOlapDsn:        p.ProdOLAPDSN,
+		ProdSlots:          int64(p.ProdSlots),
+		ProdBranch:         p.ProdBranch,
+		Subpath:            p.Subpath,
+		GithubUrl:          safeStr(p.GithubURL),
+		ArchiveAssetId:     safeStr(p.ArchiveAssetID),
+		ProdDeploymentId:   safeStr(p.ProdDeploymentID),
+		ProdTtlSeconds:     safeInt64(p.ProdTTLSeconds),
+		FrontendUrl:        s.admin.URLs.Project(orgName, p.Name),
+		Annotations:        p.Annotations,
+		CreatedOn:          timestamppb.New(p.CreatedOn),
+		UpdatedOn:          timestamppb.New(p.UpdatedOn),
 	}
 }
 

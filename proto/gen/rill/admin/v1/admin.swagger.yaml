@@ -5039,6 +5039,8 @@ definitions:
         type: boolean
       createdByUserId:
         type: string
+      createdByUserEmail:
+        type: string
       provisioner:
         type: string
       githubUrl:

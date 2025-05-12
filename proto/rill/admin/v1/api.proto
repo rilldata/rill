@@ -2378,6 +2378,7 @@ message Project {
   string description = 5;
   bool public = 6;
   string created_by_user_id = 22;
+  string created_by_user_email = 24;
   string provisioner = 7;
   string github_url = 8;
   string subpath = 17;

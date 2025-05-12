@@ -50,8 +50,9 @@ func StatusCmd(ch *cmdutil.Helper) *cobra.Command {
 			fmt.Printf("  Organization: %v\n", proj.Project.OrgName)
 			fmt.Printf("  Public: %v\n", proj.Project.Public)
 			fmt.Printf("  Github: %v\n", proj.Project.GithubUrl)
-			fmt.Printf("  Created: %s\n", proj.Project.CreatedOn.AsTime().Local().Format(time.RFC3339))
-			fmt.Printf("  Updated: %s\n", proj.Project.UpdatedOn.AsTime().Local().Format(time.RFC3339))
+			fmt.Printf("  Created by: %s\n", proj.Project.CreatedByUserEmail)
+			fmt.Printf("  Created on: %s\n", proj.Project.CreatedOn.AsTime().Local().Format(time.RFC3339))
+			fmt.Printf("  Updated on: %s\n", proj.Project.UpdatedOn.AsTime().Local().Format(time.RFC3339))
 
 			depl := proj.ProdDeployment
 			if depl == nil {
@@ -72,8 +73,8 @@ func StatusCmd(ch *cmdutil.Helper) *cobra.Command {
 			if proj.Project.Subpath != "" {
 				fmt.Printf("  Subpath: %s\n", proj.Project.Subpath)
 			}
-			fmt.Printf("  Created: %s\n", depl.CreatedOn.AsTime().Local().Format(time.RFC3339))
-			fmt.Printf("  Updated: %s\n", depl.UpdatedOn.AsTime().Local().Format(time.RFC3339))
+			fmt.Printf("  Created on: %s\n", depl.CreatedOn.AsTime().Local().Format(time.RFC3339))
+			fmt.Printf("  Updated on: %s\n", depl.UpdatedOn.AsTime().Local().Format(time.RFC3339))
 			if depl.Status != adminv1.DeploymentStatus_DEPLOYMENT_STATUS_OK {
 				fmt.Printf("  Status: %s\n", depl.Status.String())
 				fmt.Printf("  Status Message: %s\n", depl.StatusMessage)

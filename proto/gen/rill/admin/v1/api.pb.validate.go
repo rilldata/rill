@@ -35288,6 +35288,8 @@ func (m *Project) validate(all bool) error {
 
 	// no validation rules for CreatedByUserId
 
+	// no validation rules for CreatedByUserEmail
+
 	// no validation rules for Provisioner
 
 	// no validation rules for GithubUrl
