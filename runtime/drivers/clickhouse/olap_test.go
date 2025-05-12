@@ -400,8 +400,10 @@ func testInsertTableAsSelect_WithPartitionOverwrite_DatePartition(t *testing.T, 
 
 func testDictionary(t *testing.T, c *Connection, olap drivers.OLAPStore) {
 	_, err := c.createTableAsSelect(context.Background(), "dict", "SELECT 1 AS id, 'Earth' AS planet", &ModelOutputProperties{
-		Typ:        "DICTIONARY",
-		PrimaryKey: "id",
+		Typ:                      "DICTIONARY",
+		PrimaryKey:               "id",
+		DictionarySourceUser:     "clickhouse",
+		DictionarySourcePassword: "clickhouse",
 	})
 	require.NoError(t, err)
 
