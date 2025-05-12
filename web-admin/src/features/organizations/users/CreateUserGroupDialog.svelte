@@ -67,6 +67,15 @@
         ),
       });
 
+      await queryClient.invalidateQueries({
+        queryKey: getAdminServiceListOrganizationMemberUsergroupsQueryKey(
+          organization,
+          {
+            includeCounts: true,
+          },
+        ),
+      });
+
       eventBus.emit("notification", {
         message: "User added to user group",
       });
@@ -93,8 +102,12 @@
       }
 
       await queryClient.invalidateQueries({
-        queryKey:
-          getAdminServiceListOrganizationMemberUsergroupsQueryKey(organization),
+        queryKey: getAdminServiceListOrganizationMemberUsergroupsQueryKey(
+          organization,
+          {
+            includeCounts: true,
+          },
+        ),
       });
 
       groupName = "";
