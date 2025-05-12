@@ -1829,7 +1829,6 @@ func (s *Server) TriggerRedeploy(ctx context.Context, req *adminv1.TriggerRedepl
 }
 
 func (s *Server) projToDTO(ctx context.Context, p *database.Project, orgName string) *adminv1.Project {
-
 	var createdByUserEmail string
 	if p.CreatedByUserID != nil {
 		u, err := s.admin.DB.FindUser(ctx, *p.CreatedByUserID)
