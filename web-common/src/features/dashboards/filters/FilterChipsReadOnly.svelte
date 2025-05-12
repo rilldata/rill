@@ -3,23 +3,23 @@ The main feature-set component for dashboard filters
  -->
 <script lang="ts">
   import TimeRangeReadOnly from "@rilldata/web-common/features/dashboards/filters/TimeRangeReadOnly.svelte";
-  import { allDimensions } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimensions";
-  import { allMeasures } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measures";
   import type { DimensionThresholdFilter } from "@rilldata/web-common/features/dashboards/stores/explore-state";
-  import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
   import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
   import type {
+    MetricsViewSpecDimension,
+    MetricsViewSpecMeasure,
     V1Expression,
     V1TimeRange,
   } from "@rilldata/web-common/runtime-client";
   import { flip } from "svelte/animate";
-  import { runtime } from "../../../runtime-client/runtime-store";
   import { getDimensionFilters } from "../state-managers/selectors/dimension-filters";
   import { getMeasureFilters } from "../state-managers/selectors/measure-filters";
   import DimensionFilterReadOnlyChip from "./dimension-filters/DimensionFilterReadOnlyChip.svelte";
   import MeasureFilterReadOnlyChip from "./measure-filters/MeasureFilterReadOnlyChip.svelte";
 
-  export let exploreName: string;
+  export let metricsViewName: string;
+  export let dimensions: MetricsViewSpecDimension[];
+  export let measures: MetricsViewSpecMeasure[];
   export let filters: V1Expression | undefined;
   export let dimensionsWithInlistFilter: string[];
   export let dimensionThresholdFilters: DimensionThresholdFilter[];
@@ -30,16 +30,6 @@ The main feature-set component for dashboard filters
   export let queryTimeStart: string | undefined = undefined;
   export let queryTimeEnd: string | undefined = undefined;
 
-  $: ({ instanceId } = $runtime);
-
-  $: validExploreSpecs = useExploreValidSpec(instanceId, exploreName);
-  $: metricsViewName = $validExploreSpecs.data?.explore?.metricsView ?? "";
-
-  // Get dimension filters
-  $: dimensions = allDimensions({
-    validExplore: $validExploreSpecs.data?.explore,
-    validMetricsView: $validExploreSpecs.data?.metricsView,
-  });
   $: dimensionIdMap = getMapFromArray(
     dimensions,
     (dimension) => dimension.name as string,
@@ -50,11 +40,6 @@ The main feature-set component for dashboard filters
     dimensionsWithInlistFilter,
   );
 
-  // Get measure filters
-  $: measures = allMeasures({
-    validExplore: $validExploreSpecs.data?.explore,
-    validMetricsView: $validExploreSpecs.data?.metricsView,
-  });
   $: measureIdMap = getMapFromArray(
     measures,
     (measure) => measure.name as string,

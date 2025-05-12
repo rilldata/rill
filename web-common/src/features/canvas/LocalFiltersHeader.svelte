@@ -3,8 +3,18 @@
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import type { ComponentFilterProperties } from "@rilldata/web-common/features/canvas/components/types";
+  import { getFiltersFromText } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/dimension-search-text-utils";
+  import { splitWhereFilter } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
 
   export let filters: ComponentFilterProperties;
+
+  $: if (filters.dimension_filters) {
+    const { expr, dimensionsWithInlistFilter } = getFiltersFromText(
+      filters.dimension_filters,
+    );
+    const { dimensionFilters, dimensionThresholdFilters } =
+      splitWhereFilter(expr);
+  }
 </script>
 
 <Tooltip distance={8} location="top">
