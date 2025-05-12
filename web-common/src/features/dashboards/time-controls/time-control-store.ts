@@ -85,7 +85,7 @@ export const timeControlStateSelector = ([
   metricsView,
   explore,
   timeRangeResponse,
-  metricsExplorer,
+  exploreState,
 ]: [
   V1MetricsViewSpec | undefined,
   V1ExploreSpec | undefined,
@@ -96,14 +96,14 @@ export const timeControlStateSelector = ([
   if (
     !metricsView ||
     !explore ||
-    !metricsExplorer ||
+    !exploreState ||
     !timeRangeResponse ||
     !timeRangeResponse.isSuccess ||
     !hasTimeSeries
   ) {
     return {
       isFetching: timeRangeResponse.isRefetching,
-      ready: !metricsExplorer || !hasTimeSeries,
+      ready: !exploreState || !hasTimeSeries,
     } as TimeControlState;
   }
 
@@ -111,7 +111,7 @@ export const timeControlStateSelector = ([
     metricsView,
     explore,
     timeRangeResponse.data?.timeRangeSummary,
-    metricsExplorer,
+    exploreState,
   );
 
   if (!state) {
