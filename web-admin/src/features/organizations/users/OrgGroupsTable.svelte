@@ -15,6 +15,7 @@
   export let searchUsersList: V1OrganizationMemberUser[];
   export let hasNextPage: boolean;
   export let isFetchingNextPage: boolean;
+  export let manageOrgAdmins: boolean;
   export let onLoadMore: () => void;
 
   function transformGroupName(groupName: string) {
@@ -47,6 +48,7 @@
         flexRender(OrgGroupsTableRoleCell, {
           name: row.original.groupName,
           role: row.original.roleName,
+          manageOrgAdmins: manageOrgAdmins,
         }),
       meta: {
         widthPercent: 20,

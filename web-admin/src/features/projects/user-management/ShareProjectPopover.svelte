@@ -36,7 +36,6 @@
   export let organization: string;
   export let project: string;
   export let manageProjectAdmins: boolean;
-  // export let manageProjectMembers: boolean;
 
   let open = false;
   let accessDropdownOpen = false;

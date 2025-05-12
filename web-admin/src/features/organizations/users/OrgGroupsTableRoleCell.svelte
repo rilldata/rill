@@ -15,7 +15,7 @@
 
   export let name: string;
   export let role: string | undefined = undefined;
-
+  export let manageOrgAdmins: boolean;
   let isDropdownOpen = false;
 
   $: organization = $page.params.organization;
@@ -113,19 +113,21 @@
     {/if}
   </DropdownMenu.Trigger>
   <DropdownMenu.Content align="start">
-    <DropdownMenu.CheckboxItem
-      class="font-normal flex items-center"
-      checked={role === "admin"}
-      on:click={() => {
-        if (role) {
-          handleSetRole("admin");
-        } else {
-          handleAddRole("admin");
-        }
-      }}
-    >
-      <span>Admin</span>
-    </DropdownMenu.CheckboxItem>
+    {#if manageOrgAdmins}
+      <DropdownMenu.CheckboxItem
+        class="font-normal flex items-center"
+        checked={role === "admin"}
+        on:click={() => {
+          if (role) {
+            handleSetRole("admin");
+          } else {
+            handleAddRole("admin");
+          }
+        }}
+      >
+        <span>Admin</span>
+      </DropdownMenu.CheckboxItem>
+    {/if}
     <DropdownMenu.CheckboxItem
       class="font-normal flex items-center"
       checked={role === "editor"}
