@@ -12,10 +12,12 @@
   } from "@rilldata/web-admin/client";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { capitalize } from "@rilldata/web-common/components/table/utils";
+  import { ORG_ROLES_DESCRIPTION_MAP } from "../constants";
 
   export let name: string;
   export let role: string | undefined = undefined;
   export let manageOrgAdmins: boolean;
+
   let isDropdownOpen = false;
 
   $: organization = $page.params.organization;
@@ -112,11 +114,12 @@
       <CaretDownIcon size="12px" />
     {/if}
   </DropdownMenu.Trigger>
-  <DropdownMenu.Content align="start">
+  <DropdownMenu.Content align="start" strategy="fixed">
     {#if manageOrgAdmins}
-      <DropdownMenu.CheckboxItem
-        class="font-normal flex items-center"
-        checked={role === "admin"}
+      <DropdownMenu.Item
+        class="font-normal flex flex-col items-start py-2 {role === 'admin'
+          ? 'bg-slate-100'
+          : ''}"
         on:click={() => {
           if (role) {
             handleSetRole("admin");
@@ -125,12 +128,16 @@
           }
         }}
       >
-        <span>Admin</span>
-      </DropdownMenu.CheckboxItem>
+        <span class="font-medium">Admin</span>
+        <span class="text-xs text-gray-600"
+          >{ORG_ROLES_DESCRIPTION_MAP.admin}</span
+        >
+      </DropdownMenu.Item>
     {/if}
-    <DropdownMenu.CheckboxItem
-      class="font-normal flex items-center"
-      checked={role === "editor"}
+    <DropdownMenu.Item
+      class="font-normal flex flex-col items-start py-2 {role === 'editor'
+        ? 'bg-slate-100'
+        : ''}"
       on:click={() => {
         if (role) {
           handleSetRole("editor");
@@ -139,11 +146,15 @@
         }
       }}
     >
-      <span>Editor</span>
-    </DropdownMenu.CheckboxItem>
-    <DropdownMenu.CheckboxItem
-      class="font-normal flex items-center"
-      checked={role === "viewer"}
+      <span class="font-medium">Editor</span>
+      <span class="text-xs text-gray-600"
+        >{ORG_ROLES_DESCRIPTION_MAP.editor}</span
+      >
+    </DropdownMenu.Item>
+    <DropdownMenu.Item
+      class="font-normal flex flex-col items-start py-2 {role === 'viewer'
+        ? 'bg-slate-100'
+        : ''}"
       on:click={() => {
         if (role) {
           handleSetRole("viewer");
@@ -152,15 +163,18 @@
         }
       }}
     >
-      <span>Viewer</span>
-    </DropdownMenu.CheckboxItem>
+      <span class="font-medium">Viewer</span>
+      <span class="text-xs text-gray-600"
+        >{ORG_ROLES_DESCRIPTION_MAP.viewer}</span
+      >
+    </DropdownMenu.Item>
     {#if role}
       <DropdownMenu.Separator />
       <DropdownMenu.Item
         class="font-normal flex items-center"
         on:click={handleRevokeRole}
       >
-        <span class="ml-6">Remove</span>
+        <span>Remove</span>
       </DropdownMenu.Item>
     {/if}
   </DropdownMenu.Content>
