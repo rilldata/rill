@@ -8,6 +8,7 @@
     createAdminServiceAddProjectMemberUsergroup,
     createAdminServiceGetCurrentUser,
     createAdminServiceListUsergroupMemberUsers,
+    createAdminServiceListOrganizationMemberUsergroups,
   } from "@rilldata/web-admin/client";
   import CopyInviteLinkButton from "@rilldata/web-admin/features/projects/user-management/CopyInviteLinkButton.svelte";
   import UserInviteForm from "@rilldata/web-admin/features/projects/user-management/UserInviteForm.svelte";
@@ -40,6 +41,7 @@
   let open = false;
   let accessDropdownOpen = false;
   let accessType: "everyone" | "invite-only" = "everyone";
+  let isHovered = false;
 
   const queryClient = useQueryClient();
   const removeProjectMemberUsergroup =
@@ -152,8 +154,6 @@
     },
   );
 
-  let isHovered = false;
-
   // NOTE: editor: "not allowed to list user group members"
   $: listUsergroupMemberUsers = createAdminServiceListUsergroupMemberUsers(
     organization,
@@ -166,6 +166,19 @@
       },
     },
   );
+
+  const PAGE_SIZE = 20;
+  $: listOrganizationMemberUsergroups =
+    createAdminServiceListOrganizationMemberUsergroups(organization, {
+      pageSize: PAGE_SIZE,
+      pageToken: "",
+      includeCounts: true,
+    });
+  $: nonManagedGroups =
+    $listOrganizationMemberUsergroups.data?.members.filter(
+      (group) => !group.groupManaged,
+    ) ?? [];
+  $: console.log("nonManagedGroups: ", nonManagedGroups);
 
   $: userGroupMemberUsers = $listUsergroupMemberUsers?.data?.members ?? [];
   $: userGroupMemberUsersCount = userGroupMemberUsers?.length ?? 0;
