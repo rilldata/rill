@@ -895,6 +895,7 @@ message ListOrganizationsResponse {
 
 message GetOrganizationRequest {
   string name = 1;
+  bool superuser_force_access = 2;
 }
 
 message GetOrganizationResponse {
@@ -968,6 +969,7 @@ message GetProjectRequest {
   string organization_name = 1;
   string name = 2;
   uint32 access_token_ttl_seconds = 3;
+  bool superuser_force_access = 5;
   bool issue_superuser_token = 4;
 }
 
@@ -1255,6 +1257,7 @@ message RedeployProjectResponse {}
 message HibernateProjectRequest {
   string organization = 1;
   string project = 2;
+  bool superuser_force_access = 3;
 }
 
 message HibernateProjectResponse {}
@@ -1312,6 +1315,7 @@ message ListOrganizationMemberUsersRequest {
   bool include_counts = 5; // Optionally include counts
   uint32 page_size = 2 [(validate.rules).uint32 = {ignore_empty: true, lte: 1000}];
   string page_token = 3;
+  bool superuser_force_access = 6;
 }
 
 message ListOrganizationMemberUsersResponse {
@@ -1483,6 +1487,7 @@ message ListProjectMemberUsersRequest {
   string role = 5; // Optionally filter by role
   uint32 page_size = 3 [(validate.rules).uint32 = {ignore_empty: true, lte: 1000}];
   string page_token = 4;
+  bool superuser_force_access = 6;
 }
 
 message ListProjectMemberUsersResponse {
@@ -1718,6 +1723,7 @@ message UpdateUserPreferencesResponse {
 
 message DeleteUserRequest {
   string email = 1 [(validate.rules).string.email = true];
+  bool superuser_force_access = 2;
 }
 
 message DeleteUserResponse {}
@@ -2188,6 +2194,7 @@ message GetAlertYAMLResponse {
 
 message GetBillingSubscriptionRequest {
   string organization = 1 [(validate.rules).string.min_len = 1];
+  bool superuser_force_access = 2;
 }
 
 message GetBillingSubscriptionResponse {
@@ -2209,6 +2216,7 @@ message UpdateBillingSubscriptionResponse {
 
 message CancelBillingSubscriptionRequest {
   string organization = 1 [(validate.rules).string.min_len = 1];
+  bool superuser_force_access = 2;
 }
 
 message CancelBillingSubscriptionResponse {}
@@ -2227,6 +2235,7 @@ message RenewBillingSubscriptionResponse {
 message GetPaymentsPortalURLRequest {
   string organization = 1 [(validate.rules).string.min_len = 1];
   string return_url = 2 [(validate.rules).string.min_len = 1];
+  bool superuser_force_access = 3;
 }
 
 message GetPaymentsPortalURLResponse {
@@ -2291,6 +2300,7 @@ message DenyProjectAccessResponse {}
 
 message ListOrganizationBillingIssuesRequest {
   string organization = 1;
+  bool superuser_force_access = 2;
 }
 
 message ListOrganizationBillingIssuesResponse {

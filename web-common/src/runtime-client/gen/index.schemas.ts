@@ -659,6 +659,7 @@ export interface V1ConnectorDriver {
   sourceProperties?: ConnectorDriverProperty[];
   displayName?: string;
   description?: string;
+  docsUrl?: string;
   implementsRegistry?: boolean;
   implementsCatalog?: boolean;
   implementsRepo?: boolean;
