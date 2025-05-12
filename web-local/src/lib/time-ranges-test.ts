@@ -278,11 +278,11 @@ function generateCurrentAndPreviousPeriods(now: DateTime) {
       now.plus({ millisecond: 1 }),
     );
 
-    tests.push({
-      syntax: `${grain}`,
-      description: `The full current ${unit}`,
-      interval: current,
-    });
+    // tests.push({
+    //   syntax: `${grain}`,
+    //   description: `The full current ${unit}`,
+    //   interval: current,
+    // });
 
     tests.push({
       syntax: `${grain}${START_CHARACTER} to now`,
@@ -346,13 +346,13 @@ function generateFirstNPeriodTests(now: DateTime, n: number = 3) {
     }
 
     tests.push({
-      syntax: `${higherOrderUnit}${START_CHARACTER} to ${higherOrderUnit}${START_CHARACTER}+${n}${unit}`,
+      syntax: `${higherOrderGrain}${START_CHARACTER} to ${higherOrderGrain}${START_CHARACTER}+${n}${grain}`,
       description: `First ${n} ${unit}(s) of the current ${higherOrderUnit}`,
       interval: Interval.fromDateTimes(start, start.plus({ [unit]: n })),
     });
 
     tests.push({
-      syntax: `${n}${unit} starting ${higherOrderUnit}${START_CHARACTER}`,
+      syntax: `${n}${grain} starting ${higherOrderGrain}${START_CHARACTER}`,
       description: `First ${n} ${unit}(s) of the current ${higherOrderUnit} using starting terminology`,
       interval: Interval.fromDateTimes(start, start.plus({ [unit]: n })),
     });

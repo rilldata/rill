@@ -441,7 +441,7 @@ func (s *Server) MetricsViewTimeRanges(ctx context.Context, req *runtimev1.Metri
 
 	timeRanges := make([]*runtimev1.TimeRange, len(req.Expressions))
 	for i, tr := range req.Expressions {
-		rillTime, err := rilltime.Parse(tr, rilltime.ParseOptions{
+		rillTime, err := rilltime.ParseFinal(tr, rilltime.ParseOptions{
 			TimeZoneOverride: tz,
 		})
 		if err != nil {
