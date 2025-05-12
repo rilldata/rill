@@ -971,6 +971,8 @@ message GetProjectRequest {
   uint32 access_token_ttl_seconds = 3;
   bool superuser_force_access = 5;
   bool issue_superuser_token = 4;
+  // Skips fetching deployment and jwt related to querying deployment
+  bool skip_deployment = 6;
 }
 
 message GetProjectResponse {

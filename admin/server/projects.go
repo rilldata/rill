@@ -215,164 +215,174 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 		}, nil
 	}
 
-	depl, err := s.admin.DB.FindDeployment(ctx, *proj.ProdDeploymentID)
-	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+	var depl *database.Deployment
+	var deplDto *adminv1.Deployment
+	if !req.SkipDeployment {
+		depl, err = s.admin.DB.FindDeployment(ctx, *proj.ProdDeploymentID)
+		if err != nil {
+			return nil, status.Error(codes.InvalidArgument, err.Error())
+		}
+
+		deplDto = deploymentToDTO(depl)
 	}
 
 	if !permissions.ReadProdStatus {
 		depl.StatusMessage = ""
 	}
 
-	var attr map[string]any
-	var rules []*runtimev1.SecurityRule
-	if claims.OwnerType() == auth.OwnerTypeUser {
-		attr, err = s.jwtAttributesForUser(ctx, claims.OwnerID(), proj.OrganizationID, permissions)
-		if err != nil {
-			return nil, err
-		}
-	} else if claims.OwnerType() == auth.OwnerTypeService {
-		attr = map[string]any{"admin": true}
-	} else if claims.OwnerType() == auth.OwnerTypeMagicAuthToken {
-		mdl, ok := claims.AuthTokenModel().(*database.MagicAuthToken)
-		if !ok {
-			return nil, status.Errorf(codes.Internal, "unexpected type %T for magic auth token model", claims.AuthTokenModel())
-		}
+	var jwt string
 
-		// Build condition for what the magic auth token can access
-		var condition strings.Builder
-		// All themes
-		condition.WriteString(fmt.Sprintf("'{{.self.kind}}'='%s'", runtime.ResourceKindTheme))
+	if !req.SkipDeployment {
+		var attr map[string]any
+		var rules []*runtimev1.SecurityRule
+		if claims.OwnerType() == auth.OwnerTypeUser {
+			attr, err = s.jwtAttributesForUser(ctx, claims.OwnerID(), proj.OrganizationID, permissions)
+			if err != nil {
+				return nil, err
+			}
+		} else if claims.OwnerType() == auth.OwnerTypeService {
+			attr = map[string]any{"admin": true}
+		} else if claims.OwnerType() == auth.OwnerTypeMagicAuthToken {
+			mdl, ok := claims.AuthTokenModel().(*database.MagicAuthToken)
+			if !ok {
+				return nil, status.Errorf(codes.Internal, "unexpected type %T for magic auth token model", claims.AuthTokenModel())
+			}
 
-		var c *client.Client
+			// Build condition for what the magic auth token can access
+			var condition strings.Builder
+			// All themes
+			condition.WriteString(fmt.Sprintf("'{{.self.kind}}'='%s'", runtime.ResourceKindTheme))
 
-		for _, r := range mdl.Resources {
-			condition.WriteString(fmt.Sprintf(" OR ('{{.self.kind}}'=%s AND '{{lower .self.name}}'=%s)", duckdbsql.EscapeStringValue(r.Type), duckdbsql.EscapeStringValue(strings.ToLower(r.Name))))
+			var c *client.Client
 
-			// If the magic token's resource is an Explore, we also need to include its underlying metrics view
-			if r.Type == runtime.ResourceKindExplore {
-				if c == nil {
-					c, err = s.admin.OpenRuntimeClient(depl)
-					if err != nil {
-						return nil, status.Errorf(codes.Internal, "could not open runtime client: %s", err.Error())
+			for _, r := range mdl.Resources {
+				condition.WriteString(fmt.Sprintf(" OR ('{{.self.kind}}'=%s AND '{{lower .self.name}}'=%s)", duckdbsql.EscapeStringValue(r.Type), duckdbsql.EscapeStringValue(strings.ToLower(r.Name))))
+
+				// If the magic token's resource is an Explore, we also need to include its underlying metrics view
+				if r.Type == runtime.ResourceKindExplore {
+					if c == nil {
+						c, err = s.admin.OpenRuntimeClient(depl)
+						if err != nil {
+							return nil, status.Errorf(codes.Internal, "could not open runtime client: %s", err.Error())
+						}
+						defer c.Close() // nolint:gocritic // client is created only once
 					}
-					defer c.Close() // nolint:gocritic // client is created only once
+
+					resp, err := c.GetResource(ctx, &runtimev1.GetResourceRequest{
+						InstanceId: depl.RuntimeInstanceID,
+						Name: &runtimev1.ResourceName{
+							Kind: r.Type,
+							Name: r.Name,
+						},
+					})
+					if err != nil {
+						if status.Code(err) == codes.NotFound {
+							return nil, status.Errorf(codes.NotFound, "resource for magic token not found (name=%q, type=%q)", r.Name, r.Type)
+						}
+						return nil, fmt.Errorf("could not get resource for magic token: %w", err)
+					}
+
+					spec := resp.Resource.GetExplore().State.ValidSpec
+					if spec != nil {
+						condition.WriteString(fmt.Sprintf(" OR ('{{.self.kind}}'='%s' AND '{{lower .self.name}}'=%s)", runtime.ResourceKindMetricsView, duckdbsql.EscapeStringValue(strings.ToLower(spec.MetricsView))))
+					}
+				} else if r.Type == runtime.ResourceKindReport {
+					// adding this rule to allow report resource accessible by non admin users
+					rules = append(rules, &runtimev1.SecurityRule{
+						Rule: &runtimev1.SecurityRule_Access{
+							Access: &runtimev1.SecurityRuleAccess{
+								Condition: fmt.Sprintf("'{{.self.kind}}'='%s' AND '{{lower .self.name}}'=%s", runtime.ResourceKindReport, duckdbsql.EscapeStringValue(strings.ToLower(r.Name))),
+								Allow:     true,
+							},
+						},
+					})
+				}
+			}
+
+			attr = mdl.Attributes
+
+			// Add a rule that denies access to anything that doesn't match the condition.
+			rules = append(rules, &runtimev1.SecurityRule{
+				Rule: &runtimev1.SecurityRule_Access{
+					Access: &runtimev1.SecurityRuleAccess{
+						Condition: fmt.Sprintf("NOT (%s)", condition.String()),
+						Allow:     false,
+					},
+				},
+			})
+
+			if mdl.FilterJSON != "" {
+				expr := &runtimev1.Expression{}
+				err := protojson.Unmarshal([]byte(mdl.FilterJSON), expr)
+				if err != nil {
+					return nil, status.Errorf(codes.Internal, "could not unmarshal metrics view filter: %s", err.Error())
 				}
 
-				resp, err := c.GetResource(ctx, &runtimev1.GetResourceRequest{
-					InstanceId: depl.RuntimeInstanceID,
-					Name: &runtimev1.ResourceName{
-						Kind: r.Type,
-						Name: r.Name,
+				rules = append(rules, &runtimev1.SecurityRule{
+					Rule: &runtimev1.SecurityRule_RowFilter{
+						RowFilter: &runtimev1.SecurityRuleRowFilter{
+							Expression: expr,
+						},
 					},
 				})
-				if err != nil {
-					if status.Code(err) == codes.NotFound {
-						return nil, status.Errorf(codes.NotFound, "resource for magic token not found (name=%q, type=%q)", r.Name, r.Type)
-					}
-					return nil, fmt.Errorf("could not get resource for magic token: %w", err)
-				}
+			}
 
-				spec := resp.Resource.GetExplore().State.ValidSpec
-				if spec != nil {
-					condition.WriteString(fmt.Sprintf(" OR ('{{.self.kind}}'='%s' AND '{{lower .self.name}}'=%s)", runtime.ResourceKindMetricsView, duckdbsql.EscapeStringValue(strings.ToLower(spec.MetricsView))))
-				}
-			} else if r.Type == runtime.ResourceKindReport {
-				// adding this rule to allow report resource accessible by non admin users
+			if len(mdl.Fields) > 0 {
 				rules = append(rules, &runtimev1.SecurityRule{
-					Rule: &runtimev1.SecurityRule_Access{
-						Access: &runtimev1.SecurityRuleAccess{
-							Condition: fmt.Sprintf("'{{.self.kind}}'='%s' AND '{{lower .self.name}}'=%s", runtime.ResourceKindReport, duckdbsql.EscapeStringValue(strings.ToLower(r.Name))),
-							Allow:     true,
+					Rule: &runtimev1.SecurityRule_FieldAccess{
+						FieldAccess: &runtimev1.SecurityRuleFieldAccess{
+							Fields: mdl.Fields,
+							Allow:  true,
 						},
 					},
 				})
 			}
 		}
 
-		attr = mdl.Attributes
+		ttlDuration := runtimeAccessTokenDefaultTTL
+		if req.AccessTokenTtlSeconds != 0 {
+			ttlDuration = time.Duration(req.AccessTokenTtlSeconds) * time.Second
+		}
 
-		// Add a rule that denies access to anything that doesn't match the condition.
-		rules = append(rules, &runtimev1.SecurityRule{
-			Rule: &runtimev1.SecurityRule_Access{
-				Access: &runtimev1.SecurityRuleAccess{
-					Condition: fmt.Sprintf("NOT (%s)", condition.String()),
-					Allow:     false,
-				},
-			},
-		})
+		instancePermissions := []runtimeauth.Permission{
+			runtimeauth.ReadObjects,
+			runtimeauth.ReadMetrics,
+			runtimeauth.ReadAPI,
+		}
+		if permissions.ManageProject {
+			instancePermissions = append(instancePermissions, runtimeauth.EditTrigger, runtimeauth.ReadResolvers)
+		}
 
-		if mdl.FilterJSON != "" {
-			expr := &runtimev1.Expression{}
-			err := protojson.Unmarshal([]byte(mdl.FilterJSON), expr)
-			if err != nil {
-				return nil, status.Errorf(codes.Internal, "could not unmarshal metrics view filter: %s", err.Error())
+		var systemPermissions []runtimeauth.Permission
+		if req.IssueSuperuserToken {
+			if !claims.Superuser(ctx) {
+				return nil, status.Error(codes.PermissionDenied, "only superusers can issue superuser tokens")
 			}
-
-			rules = append(rules, &runtimev1.SecurityRule{
-				Rule: &runtimev1.SecurityRule_RowFilter{
-					RowFilter: &runtimev1.SecurityRuleRowFilter{
-						Expression: expr,
-					},
-				},
-			})
+			// NOTE: The ManageInstances permission is currently used by the runtime to skip access checks.
+			systemPermissions = append(systemPermissions, runtimeauth.ManageInstances)
 		}
 
-		if len(mdl.Fields) > 0 {
-			rules = append(rules, &runtimev1.SecurityRule{
-				Rule: &runtimev1.SecurityRule_FieldAccess{
-					FieldAccess: &runtimev1.SecurityRuleFieldAccess{
-						Fields: mdl.Fields,
-						Allow:  true,
-					},
-				},
-			})
+		jwt, err = s.issuer.NewToken(runtimeauth.TokenOptions{
+			AudienceURL:       depl.RuntimeAudience,
+			Subject:           claims.OwnerID(),
+			TTL:               ttlDuration,
+			SystemPermissions: systemPermissions,
+			InstancePermissions: map[string][]runtimeauth.Permission{
+				depl.RuntimeInstanceID: instancePermissions,
+			},
+			Attributes:    attr,
+			SecurityRules: rules,
+		})
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "could not issue jwt: %s", err.Error())
 		}
-	}
 
-	ttlDuration := runtimeAccessTokenDefaultTTL
-	if req.AccessTokenTtlSeconds != 0 {
-		ttlDuration = time.Duration(req.AccessTokenTtlSeconds) * time.Second
+		s.admin.Used.Deployment(depl.ID)
 	}
-
-	instancePermissions := []runtimeauth.Permission{
-		runtimeauth.ReadObjects,
-		runtimeauth.ReadMetrics,
-		runtimeauth.ReadAPI,
-	}
-	if permissions.ManageProject {
-		instancePermissions = append(instancePermissions, runtimeauth.EditTrigger, runtimeauth.ReadResolvers)
-	}
-
-	var systemPermissions []runtimeauth.Permission
-	if req.IssueSuperuserToken {
-		if !claims.Superuser(ctx) {
-			return nil, status.Error(codes.PermissionDenied, "only superusers can issue superuser tokens")
-		}
-		// NOTE: The ManageInstances permission is currently used by the runtime to skip access checks.
-		systemPermissions = append(systemPermissions, runtimeauth.ManageInstances)
-	}
-
-	jwt, err := s.issuer.NewToken(runtimeauth.TokenOptions{
-		AudienceURL:       depl.RuntimeAudience,
-		Subject:           claims.OwnerID(),
-		TTL:               ttlDuration,
-		SystemPermissions: systemPermissions,
-		InstancePermissions: map[string][]runtimeauth.Permission{
-			depl.RuntimeInstanceID: instancePermissions,
-		},
-		Attributes:    attr,
-		SecurityRules: rules,
-	})
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "could not issue jwt: %s", err.Error())
-	}
-
-	s.admin.Used.Deployment(depl.ID)
 
 	return &adminv1.GetProjectResponse{
 		Project:            s.projToDTO(proj, org.Name),
-		ProdDeployment:     deploymentToDTO(depl),
+		ProdDeployment:     deplDto,
 		Jwt:                jwt,
 		ProjectPermissions: permissions,
 	}, nil
