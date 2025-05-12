@@ -8,7 +8,6 @@
   import type { V1OrganizationMemberUser } from "@rilldata/web-admin/client";
 
   export let name: string;
-  export let managed: boolean;
   export let currentUserEmail: string;
   export let searchUsersList: V1OrganizationMemberUser[];
 
@@ -17,9 +16,7 @@
   let isEditDialogOpen = false;
 </script>
 
-<!-- TODO: Should I display autogroup:guests, autogroup:members, autogroup:users? -->
 <!-- Managed groups cannot be deleted or edited -->
-<!-- {#if !managed} -->
 <DropdownMenu.Root bind:open={isDropdownOpen}>
   <DropdownMenu.Trigger class="flex-none">
     <IconButton rounded active={isDropdownOpen}>
@@ -48,7 +45,6 @@
     </DropdownMenu.Item>
   </DropdownMenu.Content>
 </DropdownMenu.Root>
-<!-- {/if} -->
 
 <DeleteUserGroupConfirmDialog
   bind:open={isDeleteConfirmOpen}
@@ -58,7 +54,6 @@
 <EditUserGroupDialog
   bind:open={isEditDialogOpen}
   groupName={name}
-  groupManaged={managed}
   {currentUserEmail}
   {searchUsersList}
 />

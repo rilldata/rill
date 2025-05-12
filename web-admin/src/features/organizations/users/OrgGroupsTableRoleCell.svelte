@@ -100,7 +100,6 @@
   }
 </script>
 
-<!-- https://docs.rilldata.com/reference/cli/usergroup/set-role -->
 <DropdownMenu.Root bind:open={isDropdownOpen}>
   <DropdownMenu.Trigger
     class="w-18 flex flex-row gap-1 items-center rounded-sm {isDropdownOpen

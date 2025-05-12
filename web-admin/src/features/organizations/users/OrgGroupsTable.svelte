@@ -62,7 +62,6 @@
       cell: ({ row }) =>
         flexRender(OrgGroupsTableActionsCell, {
           name: row.original.groupName,
-          managed: row.original.groupManaged,
           currentUserEmail: currentUserEmail,
           searchUsersList: searchUsersList,
         }),
