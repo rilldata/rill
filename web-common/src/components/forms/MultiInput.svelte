@@ -21,6 +21,7 @@
 
   export let singular: string;
   export let plural: string;
+  export let preventFocus = false;
 
   export let values: string[];
   export let errors: Record<string | number, string[]> | undefined;
@@ -161,6 +162,7 @@
           class="focus:outline-white group-hover:text-red-500 text-sm grow px-1"
           on:focusin={() => (focused = true)}
           on:focusout={() => (focused = false)}
+          on:click|preventDefault|stopPropagation={() => preventFocus}
           placeholder={!hasSomeValue ? placeholder : ""}
         />
       </div>
