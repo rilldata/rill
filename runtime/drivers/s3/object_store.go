@@ -80,7 +80,7 @@ func (c *Connection) ListObjects(ctx context.Context, propsMap map[string]any) (
 		return nil, fmt.Errorf("failed to parse config: %w", err)
 	}
 
-	creds, err := c.newCredentials()
+	creds, err := c.newCredentials(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -106,7 +106,7 @@ func (c *Connection) DownloadFiles(ctx context.Context, src map[string]any) (dri
 		return nil, fmt.Errorf("failed to parse config: %w", err)
 	}
 
-	creds, err := c.newCredentials()
+	creds, err := c.newCredentials(ctx)
 	if err != nil {
 		return nil, err
 	}

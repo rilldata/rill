@@ -34,7 +34,7 @@ func (c *Connection) Delete(ctx context.Context, res *drivers.ModelResult) error
 		return err
 	}
 
-	creds, err := c.newCredentials()
+	creds, err := c.newCredentials(ctx)
 	if err != nil {
 		return err
 	}

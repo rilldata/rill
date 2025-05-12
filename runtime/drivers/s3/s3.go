@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -27,6 +29,18 @@ var spec = drivers.Spec{
 			Key:    "aws_secret_access_key",
 			Type:   drivers.StringPropertyType,
 			Secret: true,
+		},
+		{
+			Key:         "aws_role_arn",
+			Type:        drivers.StringPropertyType,
+			Secret:      false,
+			Description: "AWS Role ARN to assume",
+		},
+		{
+			Key:         "aws_role_session_name",
+			Type:        drivers.StringPropertyType,
+			Secret:      false,
+			Description: "Optional session name to use when assuming an AWS role. Defaults to 'rill-session'.",
 		},
 	},
 	SourceProperties: []*drivers.PropertySpec{
@@ -91,6 +105,8 @@ var _ drivers.Driver = driver{}
 type ConfigProperties struct {
 	AccessKeyID     string `mapstructure:"aws_access_key_id"`
 	SecretAccessKey string `mapstructure:"aws_secret_access_key"`
+	RoleARN         string `mapstructure:"aws_role_arn"`
+	RoleSessionName string `mapstructure:"aws_role_session_name"`
 	SessionToken    string `mapstructure:"aws_access_token"`
 	Endpoint        string `mapstructure:"endpoint"`
 	Region          string `mapstructure:"region"`
@@ -251,8 +267,16 @@ func (c *Connection) AsNotifier(properties map[string]any) (drivers.Notifier, er
 }
 
 // newCredentials returns credentials for connecting to AWS.
-// If AllowHostAccess is enabled, it looks for credentials in the host machine as well.
-func (c *Connection) newCredentials() (*credentials.Credentials, error) {
+func (c *Connection) newCredentials(ctx context.Context) (*credentials.Credentials, error) {
+	// If a role ARN is provided, assume the role and return the credentials.
+	if c.config.RoleARN != "" {
+		assumedCreds, err := c.assumeRole(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("failed to assume role: %w", err)
+		}
+		return assumedCreds, nil
+	}
+
 	providers := make([]credentials.Provider, 0)
 
 	staticProvider := &credentials.StaticProvider{}
@@ -281,4 +305,34 @@ func (c *Connection) newCredentials() (*credentials.Credentials, error) {
 	}
 
 	return creds, nil
+}
+
+// assumeRole returns a new credentials object that assumes the role specified by the ARN.
+func (c *Connection) assumeRole(ctx context.Context) (*credentials.Credentials, error) {
+	cfg, err := config.LoadDefaultConfig(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load AWS config: %w", err)
+	}
+	stsClient := sts.NewFromConfig(cfg)
+
+	sessionName := c.config.RoleSessionName
+	if sessionName == "" {
+		sessionName = "rill-session"
+	}
+
+	assumeRoleInput := &sts.AssumeRoleInput{
+		RoleArn:         &c.config.RoleARN,
+		RoleSessionName: &sessionName,
+	}
+
+	result, err := stsClient.AssumeRole(ctx, assumeRoleInput)
+	if err != nil {
+		return nil, fmt.Errorf("failed to assume role: %w", err)
+	}
+
+	return credentials.NewStaticCredentials(
+		*result.Credentials.AccessKeyId,
+		*result.Credentials.SecretAccessKey,
+		*result.Credentials.SessionToken,
+	), nil
 }
