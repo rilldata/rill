@@ -114,7 +114,7 @@
       <CaretDownIcon size="12px" />
     {/if}
   </DropdownMenu.Trigger>
-  <DropdownMenu.Content align="start" strategy="fixed">
+  <DropdownMenu.Content align="start" strategy="fixed" class="w-[200px]">
     {#if manageOrgAdmins}
       <DropdownMenu.Item
         class="font-normal flex flex-col items-start py-2 {role === 'admin'
