@@ -29,10 +29,11 @@ func ListCmd(ch *cmdutil.Helper) *cobra.Command {
 
 			if projectName != "" {
 				members, err := client.ListProjectMemberUsers(ctx, &adminv1.ListProjectMemberUsersRequest{
-					Organization: orgName,
-					Project:      projectName,
-					PageSize:     pageSize,
-					PageToken:    pageToken,
+					Organization:         orgName,
+					Project:              projectName,
+					PageSize:             pageSize,
+					PageToken:            pageToken,
+					SuperuserForceAccess: true,
 				})
 				if err != nil {
 					return err
@@ -46,9 +47,10 @@ func ListCmd(ch *cmdutil.Helper) *cobra.Command {
 				}
 			} else {
 				members, err := client.ListOrganizationMemberUsers(ctx, &adminv1.ListOrganizationMemberUsersRequest{
-					Organization: orgName,
-					PageSize:     pageSize,
-					PageToken:    pageToken,
+					Organization:         orgName,
+					PageSize:             pageSize,
+					PageToken:            pageToken,
+					SuperuserForceAccess: true,
 				})
 				if err != nil {
 					return err

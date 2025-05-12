@@ -3515,6 +3515,13 @@ export class ConnectorDriver extends Message<ConnectorDriver> {
   description = "";
 
   /**
+   * Docs url for the connector
+   *
+   * @generated from field: string docs_url = 21;
+   */
+  docsUrl = "";
+
+  /**
    * Capabilities supported by the connector
    *
    * @generated from field: bool implements_registry = 10;
@@ -3584,6 +3591,7 @@ export class ConnectorDriver extends Message<ConnectorDriver> {
     { no: 3, name: "source_properties", kind: "message", T: ConnectorDriver_Property, repeated: true },
     { no: 4, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 21, name: "docs_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 10, name: "implements_registry", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 11, name: "implements_catalog", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 12, name: "implements_repo", kind: "scalar", T: 8 /* ScalarType.BOOL */ },

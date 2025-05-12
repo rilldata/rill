@@ -1,8 +1,9 @@
 import type { VisualizationSpec } from "svelte-vega";
 import type { Config } from "vega-lite";
+import type { ExprRef, SignalRef } from "vega-typings";
 import {
   createColorEncoding,
-  createConfig,
+  createConfigWithLegend,
   createDefaultTooltipEncoding,
   createPositionEncoding,
   createSingleLayerBaseSpec,
@@ -22,23 +23,30 @@ function getInnerRadius(innerRadiusPercentage: number | undefined) {
   return { expr: `${decimal}*min(width,height)/2` };
 }
 
-/**
- * The layout property is not typed in the current version of Vega-Lite.
- * This will be fixed when we upgrade to Svelte 5 and subseqent Vega-Lite versions.
- */
 export function generateVLPieChartSpec(
   config: CircularChartSpec,
   data: ChartDataResult,
 ): VisualizationSpec {
   const spec = createSingleLayerBaseSpec("arc");
-  const vegaConfig = createConfig(config, {
-    legend: {
-      orient: "right",
-      layout: {
-        right: { anchor: "middle" },
+  /**
+   * The layout property is not typed in the current version of Vega-Lite.
+   * This will be fixed when we upgrade to Svelte 5 and subseqent Vega-Lite versions.
+   */
+  const vegaConfig = createConfigWithLegend(
+    config,
+    config.color,
+    {
+      legend: {
+        layout: {
+          right: { anchor: "middle" },
+          left: { anchor: "middle" },
+          top: { anchor: "middle" },
+          bottom: { anchor: "middle" },
+        },
       },
-    },
-  } as unknown as Config);
+    } as unknown as Config<ExprRef | SignalRef>,
+    "right",
+  );
 
   spec.mark = {
     type: "arc",

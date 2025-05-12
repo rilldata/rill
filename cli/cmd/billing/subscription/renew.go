@@ -26,7 +26,8 @@ func RenewCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			subResp, err := client.GetBillingSubscription(ctx, &adminv1.GetBillingSubscriptionRequest{
-				Organization: ch.Org,
+				Organization:         ch.Org,
+				SuperuserForceAccess: force,
 			})
 			if err != nil {
 				return err
@@ -81,6 +82,7 @@ func RenewCmd(ch *cmdutil.Helper) *cobra.Command {
 			return nil
 		},
 	}
+
 	renewCmd.Flags().StringVar(&plan, "plan", "", "Plan name to renew subscription to")
 	renewCmd.Flags().BoolVar(&force, "force", false, "Allows superusers to bypass certain checks")
 	_ = renewCmd.Flags().MarkHidden("force")
