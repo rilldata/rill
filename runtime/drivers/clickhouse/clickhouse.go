@@ -224,7 +224,9 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 	}
 
 	// max_idle_conns
-	opts.MaxIdleConns = conf.MaxIdleConns
+	if conf.MaxIdleConns != 0 {
+		opts.MaxIdleConns = conf.MaxIdleConns
+	}
 
 	// conn_max_lifetime
 	if conf.ConnMaxLifetime != "" {

@@ -113,7 +113,7 @@ func (c *Connection) validateAndApplyDefaults(opts *drivers.ModelExecuteOptions,
 	}
 
 	// For tables, apply a default table engine.
-	if op.Typ == "TABLE" && op.Engine == "" {
+	if op.Engine == "" && (op.Typ == "TABLE" || op.Typ == "DICTIONARY") {
 		if c.config.Cluster != "" {
 			op.Engine = "ReplicatedMergeTree"
 		} else {
@@ -182,8 +182,10 @@ func (p *ModelOutputProperties) tblConfig() string {
 
 	var sb strings.Builder
 
-	// engine with default
-	fmt.Fprintf(&sb, "ENGINE = %s", p.Engine)
+	// engine
+	if p.Engine != "" {
+		fmt.Fprintf(&sb, "ENGINE = %s", p.Engine)
+	}
 
 	// order_by
 	if p.OrderBy != "" {

@@ -36,7 +36,7 @@ func TestClickhouseSingle(t *testing.T) {
 	t.Run("InsertTableAsSelect_WithPartitionOverwrite", func(t *testing.T) { testInsertTableAsSelect_WithPartitionOverwrite(t, c, olap) })
 	t.Run("InsertTableAsSelect_WithPartitionOverwrite_DatePartition", func(t *testing.T) { testInsertTableAsSelect_WithPartitionOverwrite_DatePartition(t, c, olap) })
 	t.Run("TestDictionary", func(t *testing.T) { testDictionary(t, c, olap) })
-	t.Run("TestIntervalType", func(t *testing.T) { testIntervalType(t, c, olap) })
+	t.Run("TestIntervalType", func(t *testing.T) { testIntervalType(t, olap) })
 }
 
 func TestClickhouseCluster(t *testing.T) {
@@ -422,7 +422,7 @@ func testDictionary(t *testing.T, c *Connection, olap drivers.OLAPStore) {
 	require.NoError(t, c.dropTable(context.Background(), "dict1"))
 }
 
-func testIntervalType(t *testing.T, c *Connection, olap drivers.OLAPStore) {
+func testIntervalType(t *testing.T, olap drivers.OLAPStore) {
 	cases := []struct {
 		query string
 		ms    int64
