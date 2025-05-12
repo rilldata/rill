@@ -40,3 +40,20 @@ export function cleanUrlParams(
   });
   return cleanedParams;
 }
+
+/**
+ * Temporary fix for embed where non-dashboard params are cleaned.
+ * TODO: we should do a complete fix for embed
+ */
+export function cleanUrlParamsForEmbed(searchParams: URLSearchParams) {
+  const cleanedParams = new URLSearchParams(searchParams);
+  [
+    "access_token",
+    "instance_id",
+    "kind",
+    "resource",
+    "runtime_host",
+    "type",
+  ].forEach((p) => cleanedParams.delete(p));
+  return cleanedParams;
+}
