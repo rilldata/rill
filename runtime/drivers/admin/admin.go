@@ -288,8 +288,8 @@ func (h *Handle) cloneOrPull(ctx context.Context) error {
 
 		r := retrier.New(retrier.ExponentialBackoff(pullRetryN, pullRetryWait), retryErrClassifier{})
 		h.syncErr = r.Run(func() error {
-			h.syncErr = h.cloneOrPullInner(ctx)
-			if h.syncErr != nil {
+			err := h.cloneOrPullInner(ctx)
+			if err != nil {
 				h.cloned = false
 				h.repoPath = ""
 				h.projPath = ""
@@ -302,7 +302,7 @@ func (h *Handle) cloneOrPull(ctx context.Context) error {
 				h.archiveID = ""
 				h.archiveCreatedOn = time.Time{}
 			}
-			return h.syncErr
+			return err
 		})
 		if h.syncErr != nil {
 			return nil, h.syncErr
