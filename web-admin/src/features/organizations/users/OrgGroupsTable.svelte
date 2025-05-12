@@ -7,6 +7,7 @@
   import type { ColumnDef } from "@tanstack/svelte-table";
   import OrgGroupsTableActionsCell from "./OrgGroupsTableActionsCell.svelte";
   import OrgGroupsTableGroupCompositeCell from "./OrgGroupsTableGroupCompositeCell.svelte";
+  import OrgGroupsTableRoleCell from "./OrgGroupsTableRoleCell.svelte";
   import InfiniteScrollTable from "@rilldata/web-admin/components/InfiniteScrollTable.svelte";
 
   export let data: V1MemberUsergroup[];
@@ -36,7 +37,20 @@
           usersCount: row.original.usersCount,
         }),
       meta: {
-        widthPercent: 95,
+        widthPercent: 25,
+      },
+    },
+    {
+      accessorKey: "roleName",
+      header: "Role",
+      cell: ({ row }) =>
+        flexRender(OrgGroupsTableRoleCell, {
+          name: row.original.groupName,
+          role: row.original.roleName,
+        }),
+      meta: {
+        widthPercent: 20,
+        marginLeft: "8px",
       },
     },
     {
