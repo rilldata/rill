@@ -31,12 +31,16 @@ var (
 		// this has to be at the end
 		{"TimeZone", `{.+?}`},
 		{"ISOTime", isoTimePattern},
+		{"Prefix", `[+\-]`},
+		{"Suffix", `[\^\$]`},
 		{"AnchorPrefix", `[+\-<>]`},
 		{"Current", "[~]"},
 		{"Number", `\d+`},
+		{"Snap", `[/]`},
 		{"To", `(?i)to`},
 		{"By", `(?i)by`},
 		{"Of", `(?i)of`},
+		{"As", `(?i)as`},
 		// needed for misc. direct character references used
 		{"Punct", `[-[!@#$%^&*()+_={}\|:;"'<,>.?/]]`},
 		{"Whitespace", `[ \t]+`},
