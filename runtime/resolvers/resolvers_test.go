@@ -163,6 +163,9 @@ func TestResolvers(t *testing.T) {
 						Args:               args,
 						UserAttributes:     userAttributes,
 						SkipSecurityChecks: tc.SkipSecurityChecks,
+						Result:             tc.Result,
+						ResultCSV:          tc.ResultCSV,
+						ErrorContains:      tc.ErrorContains,
 						Update:             update,
 					}
 					testruntime.RequireResolve(t, rt, instanceID, opts)
