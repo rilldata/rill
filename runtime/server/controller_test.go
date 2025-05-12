@@ -180,7 +180,7 @@ measures:
 `,
 		})
 		testruntime.ReconcileParserAndWait(t, rt, instanceID)
-		testruntime.RequireReconcileState(t, rt, instanceID, 3, 0, 0) // m2, mv2, project_settings
+		testruntime.RequireReconcileState(t, rt, instanceID, 3, 2, 0) // m2, mv2, project_settings
 
 		ctrl, err := rt.Controller(context.Background(), instanceID)
 		require.NoError(t, err)
@@ -200,7 +200,7 @@ incremental: false
 		})
 		testruntime.ReconcileParserAndWait(t, rt, instanceID)
 		// Expects an error because changes in manual mode are not automatically applied
-		testruntime.RequireReconcileState(t, rt, instanceID, 3, 1, 0) // m2, mv2, project_settings
+		testruntime.RequireReconcileState(t, rt, instanceID, 3, 2, 0) // m2, mv2, project_settings
 
 		// Change the mode by removing change_mode (implicitly defaults, e.g., to reset)
 		testruntime.PutFiles(t, rt, instanceID, map[string]string{

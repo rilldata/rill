@@ -2686,6 +2686,10 @@
               "type": "boolean",
               "description": "whether incremental modeling is required (optional)"
             },
+            "change_mode": {
+              "type": "string",
+              "description": "Configure how changes to your model specifications are applied {reset|manual|patch} (optional)"
+            },
             "state": {
               "$ref": "#/$defs/data_properties",
               "description": "Refers to the explicitly defined state of your model, cannot be used with partitions (optional)"

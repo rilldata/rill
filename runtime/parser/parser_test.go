@@ -2305,7 +2305,7 @@ func TestModelChangeModes(t *testing.T) {
 type: model
 connector: duckdb
 `,
-			wantMode: "reset",
+			wantMode: "MODEL_CHANGE_MODE_RESET",
 		},
 		{
 			name: "manual change mode",
@@ -2314,7 +2314,7 @@ type: model
 connector: duckdb
 change_mode: manual
 `,
-			wantMode: "manual",
+			wantMode: "MODEL_CHANGE_MODE_MANUAL",
 		},
 		{
 			name: "patch change mode",
@@ -2323,7 +2323,7 @@ type: model
 connector: duckdb
 change_mode: patch
 `,
-			wantMode: "patch",
+			wantMode: "MODEL_CHANGE_MODE_PATCH",
 		},
 	}
 
@@ -2341,6 +2341,9 @@ change_mode: patch
 			resource := p.Resources[ResourceName{Kind: ResourceKindModel, Name: "m1"}]
 			require.NotNil(t, resource)
 
+			modelSpec := resource.ModelSpec
+			require.NotNil(t, modelSpec)
+			require.Equal(t, modelSpec.ChangeMode.String(), tt.wantMode, "expected change mode to be %s, got %s", tt.wantMode, modelSpec.ChangeMode.String())
 		})
 	}
 }

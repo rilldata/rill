@@ -16,13 +16,6 @@ enum ReconcileStatus {
   RECONCILE_STATUS_RUNNING = 3;
 }
 
-enum ModelChangeMode {
-  MODEL_CHANGE_MODE_UNSPECIFIED = 0;
-  MODEL_CHANGE_MODE_RESET = 1;
-  MODEL_CHANGE_MODE_MANUAL = 2;
-  MODEL_CHANGE_MODE_PATCH = 3;
-}
-
 message Resource {
   ResourceMeta meta = 1;
   oneof resource {
@@ -166,6 +159,13 @@ message ModelState {
   int64 total_execution_duration_ms = 12;
   // latest_execution_duration_ms is the time user queries took to execute in the last successful refresh.
   int64 latest_execution_duration_ms = 13;
+}
+
+enum ModelChangeMode {
+  MODEL_CHANGE_MODE_UNSPECIFIED = 0;
+  MODEL_CHANGE_MODE_RESET = 1;
+  MODEL_CHANGE_MODE_MANUAL = 2;
+  MODEL_CHANGE_MODE_PATCH = 3;
 }
 
 message MetricsView {

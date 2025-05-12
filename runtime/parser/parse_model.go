@@ -20,10 +20,10 @@ type ModelYAML struct {
 	Refresh               *ScheduleYAML                           `yaml:"refresh"`
 	Timeout               string                                  `yaml:"timeout"`
 	Incremental           bool                                    `yaml:"incremental"`
+	ChangeMode            string                                  `yaml:"change_mode"`
 	State                 *DataYAML                               `yaml:"state"`
 	Partitions            *DataYAML                               `yaml:"partitions"`
 	Splits                *DataYAML                               `yaml:"splits"` // Deprecated: use "partitions" instead
-	ChangeMode            string                                  `yaml:"change_mode"`
 	PartitionsWatermark   string                                  `yaml:"partitions_watermark"`
 	PartitionsConcurrency uint                                    `yaml:"partitions_concurrency"`
 	InputProperties       map[string]any                          `yaml:",inline" mapstructure:",remain"`
