@@ -32,7 +32,7 @@
 
   let isLeaderboardActionsOpen = false;
 
-  $: metricsExplorer = $metricsExplorerStore.entities[exploreName];
+  $: exploreState = $metricsExplorerStore.entities[exploreName];
 
   $: activeLeaderboardMeasure = $getMeasureByName(
     $leaderboardSortByMeasureName,
@@ -51,8 +51,7 @@
   // but it is not valid for this measure, then turn it off
   $: if (
     !validPercentOfTotal &&
-    metricsExplorer?.leaderboardContextColumn ===
-      LeaderboardContextColumn.PERCENT
+    exploreState?.leaderboardContextColumn === LeaderboardContextColumn.PERCENT
   ) {
     setContextColumn(LeaderboardContextColumn.HIDDEN);
   }

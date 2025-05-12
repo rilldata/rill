@@ -1,6 +1,6 @@
 import { getProtoFromDashboardState } from "@rilldata/web-common/features/dashboards/proto-state/toProto";
 import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
-import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import {
   AD_BIDS_DIMENSION_TABLE_PRESET,
   AD_BIDS_EXPLORE_INIT,
@@ -87,7 +87,7 @@ const TestCases: {
   preset?: V1ExplorePreset;
   expectedSearch: string;
   // This is to assert edge case when some state gets populated from timeControlStore
-  extraExploreState?: Partial<MetricsExplorerEntity>;
+  extraExploreState?: Partial<ExploreState>;
   // Mainly tests that close certain views.
   // Closing view would retain some state of the old view in protobuf state
   legacyNotSupported?: boolean;
@@ -541,8 +541,7 @@ describe("Human readable URL state variations", () => {
 
         const initState = getCleanMetricsExploreForAssertion();
         applyMutationsToDashboard(AD_BIDS_EXPLORE_NAME, mutations);
-        const curState =
-          getCleanMetricsExploreForAssertion() as MetricsExplorerEntity;
+        const curState = getCleanMetricsExploreForAssertion() as ExploreState;
 
         const url = new URL("http://localhost");
         // load url with legacy protobuf state
@@ -666,7 +665,7 @@ export function getCleanMetricsExploreForAssertion() {
   // clone the existing state so that any mutations do affect the copy during assertion
   const cleanedState = deepClone(
     get(metricsExplorerStore).entities[AD_BIDS_EXPLORE_NAME],
-  ) as Partial<MetricsExplorerEntity>;
+  ) as Partial<ExploreState>;
 
   delete cleanedState.name;
   delete cleanedState.proto;
