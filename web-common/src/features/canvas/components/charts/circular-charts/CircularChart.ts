@@ -1,8 +1,8 @@
+import { getFilterWithNullHandling } from "@rilldata/web-common/features/canvas/components/charts/query-utils";
 import type {
   ChartFieldsMap,
   FieldConfig,
 } from "@rilldata/web-common/features/canvas/components/charts/types";
-import { getFilterWithNullHandling } from "@rilldata/web-common/features/canvas/components/charts/util";
 import type { ComponentInputParam } from "@rilldata/web-common/features/canvas/inspector/types";
 import type { CanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
 import type { TimeAndFilterStore } from "@rilldata/web-common/features/canvas/stores/types";

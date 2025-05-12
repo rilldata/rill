@@ -12,6 +12,7 @@ import {
 } from "@rilldata/web-common/runtime-client";
 import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
 import type { CreateQueryResult } from "@tanstack/svelte-query";
+import type { TimeUnit } from "vega-lite/build/src/timeunit";
 
 export type ChartType =
   | "bar_chart"
@@ -44,7 +45,7 @@ export type ChartDataResult = {
 export interface TimeDimensionDefinition {
   field: string;
   displayName: string;
-  timeUnit?: string;
+  timeUnit?: TimeUnit;
   format?: string;
 }
 
