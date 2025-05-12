@@ -15,14 +15,14 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 )
 
-type inputProps struct {
+type objectStoreInputProps struct {
 	Path   string             `mapstructure:"path"`
 	Format drivers.FileFormat `mapstructure:"format"`
 }
 
-func (p *inputProps) Validate() error {
+func (p *objectStoreInputProps) Validate() error {
 	if p.Path == "" {
-		return fmt.Errorf("path is mandatory for s3 input connector")
+		return fmt.Errorf("clickhouse: path is required for the object store connector")
 	}
 	return nil
 }
@@ -42,7 +42,7 @@ func (e *objectStoreToSelfExecutor) Concurrency(desired int) (int, bool) {
 }
 
 func (e *objectStoreToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExecuteOptions) (*drivers.ModelResult, error) {
-	inputProps := &inputProps{}
+	inputProps := &objectStoreInputProps{}
 	if err := mapstructure.WeakDecode(opts.InputProperties, inputProps); err != nil {
 		return nil, fmt.Errorf("failed to parse input properties: %w", err)
 	}
@@ -57,7 +57,7 @@ func (e *objectStoreToSelfExecutor) Execute(ctx context.Context, opts *drivers.M
 		glob = inputProps.Path
 	} else {
 		if inputProps.Format == "" {
-			return nil, fmt.Errorf("clickhouse executor requires a format to be specified for non-glob paths")
+			return nil, fmt.Errorf("clickhouse: format is required for non-glob paths")
 		}
 		var err error
 		glob, err = url.JoinPath(inputProps.Path, "**")
@@ -87,9 +87,8 @@ func (e *objectStoreToSelfExecutor) Execute(ctx context.Context, opts *drivers.M
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse output properties: %w", err)
 	}
-
 	if outputProps.Materialize != nil && !*outputProps.Materialize {
-		return nil, fmt.Errorf("models must be materialized when fetching data from objectstore")
+		return nil, fmt.Errorf("models must be materialized when fetching data from object store")
 	}
 	outputProps.Materialize = boolPtr(true)
 	err = mapstructure.WeakDecode(outputProps, &newOpts.OutputProperties)
