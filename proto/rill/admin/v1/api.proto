@@ -2017,20 +2017,20 @@ message GetRepoMetaRequest {
 }
 
 message GetRepoMetaResponse {
-    // If the Git-related fields are set, the archive-related fields will not be set (and vice versa).
-    string git_url = 1;
-    google.protobuf.Timestamp git_url_expires_on = 2;
-    string git_subpath = 3;
-    string archive_download_url = 4;
-    string archive_id = 5;
-    google.protobuf.Timestamp archive_created_on = 6;
+  // If the Git-related fields are set, the archive-related fields will not be set (and vice versa).
+  string git_url = 1;
+  google.protobuf.Timestamp git_url_expires_on = 2;
+  string git_subpath = 3;
+  string archive_download_url = 4;
+  string archive_id = 5;
+  google.protobuf.Timestamp archive_created_on = 6;
 }
 
 message PullVirtualRepoRequest {
   string project_id = 1;
-  string branch = 2;
   uint32 page_size = 3 [(validate.rules).uint32 = {ignore_empty: true, lte: 100}];
   string page_token = 4;
+  reserved 2;
 }
 
 message PullVirtualRepoResponse {
@@ -2040,7 +2040,6 @@ message PullVirtualRepoResponse {
 
 message GetReportMetaRequest {
   string project_id = 1;
-  string branch = 2;
   string report = 3;
   string owner_id = 5;
   google.protobuf.Timestamp execution_time = 6;
@@ -2048,7 +2047,7 @@ message GetReportMetaRequest {
   bool anon_recipients = 8;
   repeated ResourceName resources = 9;
   string web_open_mode = 10;
-  reserved 4;
+  reserved 2, 4;
 }
 
 message GetReportMetaResponse {
@@ -2064,13 +2063,13 @@ message GetReportMetaResponse {
 
 message GetAlertMetaRequest {
   string project_id = 1;
-  string branch = 2;
   string alert = 3;
   map<string, string> annotations = 4;
   oneof query_for {
     string query_for_user_id = 5;
     string query_for_user_email = 6;
   }
+  reserved 2;
 }
 
 message GetAlertMetaResponse {

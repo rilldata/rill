@@ -27406,8 +27406,6 @@ func (m *PullVirtualRepoRequest) validate(all bool) error {
 
 	// no validation rules for ProjectId
 
-	// no validation rules for Branch
-
 	if m.GetPageSize() != 0 {
 
 		if m.GetPageSize() > 100 {
@@ -27666,8 +27664,6 @@ func (m *GetReportMetaRequest) validate(all bool) error {
 	var errors []error
 
 	// no validation rules for ProjectId
-
-	// no validation rules for Branch
 
 	// no validation rules for Report
 
@@ -27991,8 +27987,6 @@ func (m *GetAlertMetaRequest) validate(all bool) error {
 	var errors []error
 
 	// no validation rules for ProjectId
-
-	// no validation rules for Branch
 
 	// no validation rules for Alert
 
