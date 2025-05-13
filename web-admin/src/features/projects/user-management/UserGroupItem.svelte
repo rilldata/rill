@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { V1MemberUsergroup } from "@rilldata/web-admin/client";
   import AvatarListItem from "../../organizations/users/AvatarListItem.svelte";
-  import UserGroupSetRole from "./UserGroupSetRolee.svelte";
+  import UserGroupSetRole from "./UserGroupSetRole.svelte";
 
   export let organization: string;
   export let group: V1MemberUsergroup;

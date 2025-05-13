@@ -31,7 +31,7 @@
   import CaretUpIcon from "@rilldata/web-common/components/icons/CaretUpIcon.svelte";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import Lock from "@rilldata/web-common/components/icons/Lock.svelte";
-  import UserGroupSetRole from "./UserGroupSetRolee.svelte";
+  import UserGroupSetRole from "./UserGroupSetRole.svelte";
   import { cn } from "@rilldata/web-common/lib/shadcn";
   import UserGroupItem from "./UserGroupItem.svelte";
 
