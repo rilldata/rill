@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { V1MemberUsergroup } from "@rilldata/web-admin/client";
   import AvatarListItem from "../../organizations/users/AvatarListItem.svelte";
-  import UsergroupSetRole from "./UsergroupSetRole.svelte";
+  import UserGroupSetRole from "./UserGroupSetRole.svelte";
 
   export let organization: string;
   export let group: V1MemberUsergroup;
@@ -16,5 +16,5 @@
     shape="square"
     showManage={manageOrgMembers}
   />
-  <UsergroupSetRole {organization} {group} {manageOrgAdmins} />
+  <UserGroupSetRole {organization} {group} {manageOrgAdmins} />
 </div>

@@ -31,9 +31,9 @@
   import CaretUpIcon from "@rilldata/web-common/components/icons/CaretUpIcon.svelte";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import Lock from "@rilldata/web-common/components/icons/Lock.svelte";
-  import UsergroupSetRole from "./UsergroupSetRole.svelte";
+  import UserGroupSetRole from "./UserGroupSetRole.svelte";
   import { cn } from "@rilldata/web-common/lib/shadcn";
-  import UsergroupItem from "./UsergroupItem.svelte";
+  import UserGroupItem from "./UserGroupItem.svelte";
 
   export let organization: string;
   export let project: string;
@@ -237,7 +237,7 @@
             />
           {/each}
           {#each nonManagedGroups as group}
-            <UsergroupItem
+            <UserGroupItem
               {organization}
               {group}
               {manageOrgAdmins}
@@ -375,7 +375,7 @@
               {#if hasAutogroupMembers}
                 {#each projectMemberUserGroupsList as group}
                   {#if group.groupName === "autogroup:members"}
-                    <UsergroupSetRole
+                    <UserGroupSetRole
                       {organization}
                       {group}
                       {manageOrgAdmins}
