@@ -65,7 +65,7 @@ func GenerateProjectDocsCmd(rootCmd *cobra.Command, ch *cmdutil.Helper) *cobra.C
 				resourceFilebuf.WriteString(fmt.Sprintf("sidebar_position: %d\n", sidebarPosition))
 				resourceFilebuf.WriteString("---\n")
 				resourceFilebuf.WriteString(fmt.Sprintf("\n%s\n\n", resource.Description))
-				resourceFilebuf.WriteString("## Properties\n")
+				resourceFilebuf.WriteString("## Properties")
 				resourceFilebuf.WriteString(generateDoc("", resource, "", requiredMap))
 
 				if err := os.WriteFile(filePath, []byte(resourceFilebuf.String()), 0o644); err != nil {
@@ -107,19 +107,26 @@ func getRequiredMap(required []string) map[string]bool {
 	return reqMap
 }
 
+func addHyphen(s string) string {
+	if s == "" {
+		return s
+	}
+	return fmt.Sprintf("- %s", s)
+}
+
 func getTypeString(schema *JSONSchema) string {
 	if schema == nil {
 		return ""
 	}
 	if schema.Type == nil {
 		if schema.OneOf != nil {
-			return "- _[oneOf]_ "
+			return "_[oneOf]_ "
 		}
 		if schema.AnyOf != nil {
-			return "- _[anyOf]_ "
+			return "_[anyOf]_ "
 		}
 		if schema.AnyOf != nil {
-			return "- _[allOf]_ "
+			return "_[allOf]_ "
 		}
 		return ""
 	}
@@ -127,35 +134,32 @@ func getTypeString(schema *JSONSchema) string {
 	if s, ok := t.(string); ok {
 		if s == "array" {
 			if schema.Items.Type == "string" {
-				return "- _[array of string]_ "
+				return "_[array of string]_ "
 			} else if schema.Items.Type == "object" {
-				return "- _[array of object]_ "
+				return "_[array of object]_ "
 			} else if schema.Items.Type == nil {
 				if len(schema.Items.OneOf) > 0 {
-					return "- _[array of oneOf]_ "
+					return "_[array of oneOf]_ "
 				}
 				if len(schema.Items.AnyOf) > 0 {
-					return "- _[array of anyOf]_ "
+					return "_[array of anyOf]_ "
 				}
 			}
 		}
-		return fmt.Sprintf("- _[%s]_ ", s)
+		return fmt.Sprintf("_[%s]_ ", s)
 	}
 	return ""
 }
 
-func getDescriptionString(description string) string {
-	if description == "" {
-		return ""
-	}
-	return fmt.Sprintf("- %s", description)
+func convertAllSpacesToNbsp(input string) string {
+	return strings.ReplaceAll(input, " ", "&nbsp;&nbsp;")
 }
 
 func generateDoc(parentName string, schema *JSONSchema, indent string, requiredFields map[string]bool) string {
 	var doc strings.Builder
-	listString := "- "
+	formatString := "- "
 	if indent == "" {
-		listString = ""
+		formatString = ""
 	}
 	if schema.Type == "object" && schema.Properties != nil {
 		for _, propName := range schema.Properties.Keys() {
@@ -172,7 +176,13 @@ func generateDoc(parentName string, schema *JSONSchema, indent string, requiredF
 			if requiredFields[propName] {
 				required = " _(required)_"
 			}
-			doc.WriteString(fmt.Sprintf("\n\n%s%s**`%s`**  %s%s %s", indent, listString, propName, getTypeString(propSchema), getDescriptionString(propSchema.Description), required))
+			if parentName == "" {
+				doc.WriteString(fmt.Sprintf("\n\n### `%s`", propName))
+				doc.WriteString(fmt.Sprintf("\n\n%s%s %s", getTypeString(propSchema), addHyphen(propSchema.Description), required))
+			} else {
+				doc.WriteString(fmt.Sprintf("\n\n%s%s**`%s`** %s%s %s", indent, formatString, propName, addHyphen(getTypeString(propSchema)), addHyphen(propSchema.Description), required))
+
+			}
 			if propSchema.Type == "object" && !(propName == "dev" || propName == "prod") {
 				doc.WriteString(generateDoc(propName, propSchema, indent+"  ", getRequiredMap(propSchema.Required)))
 			} else if propSchema.Type == "array" || propSchema.Type == nil {
@@ -204,7 +214,7 @@ func generateDoc(parentName string, schema *JSONSchema, indent string, requiredF
 			} else {
 				for i, subSchema := range schema.OneOf {
 					if len(schema.OneOf) != 1 && (subSchema.Properties != nil || subSchema.Type != nil) {
-						doc.WriteString(fmt.Sprintf("\n\n%s*option %d* %s%s", indent, i+1, getTypeString(subSchema), getDescriptionString(subSchema.Description)))
+						doc.WriteString(fmt.Sprintf("\n\n%s**%soption %d** %s%s", indent, convertAllSpacesToNbsp(indent), i+1, addHyphen(getTypeString(subSchema)), addHyphen(subSchema.Description)))
 					}
 					doc.WriteString(generateDoc(parentName, subSchema, indent, getRequiredMap(subSchema.Required)))
 				}
@@ -214,7 +224,7 @@ func generateDoc(parentName string, schema *JSONSchema, indent string, requiredF
 	if len(schema.AnyOf) > 0 {
 		for i, subSchema := range schema.AnyOf {
 			if len(schema.AnyOf) != 1 && (subSchema.Properties != nil || subSchema.Type != nil) {
-				doc.WriteString(fmt.Sprintf("\n\n%s*option %d* %s%s", indent, i+1, getTypeString(subSchema), getDescriptionString(subSchema.Description)))
+				doc.WriteString(fmt.Sprintf("\n\n%s**%soption %d** %s%s", indent, convertAllSpacesToNbsp(indent), i+1, addHyphen(getTypeString(subSchema)), addHyphen(subSchema.Description)))
 			}
 			doc.WriteString(generateDoc(parentName, subSchema, indent, getRequiredMap(subSchema.Required)))
 		}

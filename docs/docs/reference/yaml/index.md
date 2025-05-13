@@ -1,6 +1,6 @@
 ---
 note: GENERATED. DO NOT EDIT.
-title: New Project files
+title: YAML Syntax
 sidebar_position: 30
 ---
 ## Overview
@@ -9,7 +9,7 @@ When you create models and dashboards, these objects are represented as object f
 
 :::info Working with resources outside their native folders
 
-It is possible to define resources (such as [models](model.md), [metrics-views](metrics-view.md), [dashboards](explore-dashboard.md), [custom APIs](api.md), or [themes](theme.md)) within <u>any</u> nested folder within your Rill project directory. However, for any YAML configuration file, it is then imperative that the `type` property is then appropriately defined within the underlying resource configuration or Rill will not able to resolve the resource type correctly!
+It is possible to define resources (such as [models](model.md), [metrics-views](metrics-view.md), [dashboards](explore.md), [custom APIs](api.md), or [themes](theme.md)) within <u>any</u> nested folder within your Rill project directory. However, for any YAML configuration file, it is then imperative that the `type` property is then appropriately defined within the underlying resource configuration or Rill will not able to resolve the resource type correctly!
 
 :::
 
@@ -27,10 +27,10 @@ For more information about using Git or cloning projects locally, please see our
 
 - [Alert YAML](alert.md)
 - [API YAML](api.md)
-- [Canvas Dashboard YAML](canvas-dashboard.md)
+- [Canvas YAML](canvas.md)
 - [Component YAML](component.md)
 - [Connector YAML](connector.md)
-- [Explore Dashboard YAML](explore-dashboard.md)
+- [Explore YAML](explore.md)
 - [Metrics View YAML](metrics-view.md)
 - [Model YAML](model.md)
 - [Report YAML](report.md)

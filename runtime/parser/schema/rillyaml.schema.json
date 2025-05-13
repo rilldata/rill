@@ -48,14 +48,17 @@
           "description": "Specifies the default OLAP engine for the project. Defaults to duckdb if not set"
         },
         "models": {
+          "type": "object",
           "$ref": "./project.schema.json#/definitions/model/definitions/model_properties",
           "description": "Defines project-wide default settings for models. Unless overridden, individual models will inherit these defaults"
         },
         "metrics_views": {
+          "type": "object",
           "$ref": "./project.schema.json#/definitions/metrics_view/definitions/metrics_view_properties",
           "description": "Defines project-wide default settings for metrics_views. Unless overridden, individual metrics_views will inherit these defaults"
         },
         "explores": {
+          "type": "object",
           "$ref": "./project.schema.json#/definitions/explore/definitions/explore_properties",
           "description": "Defines project-wide default settings for explores. Unless overridden, individual explores will inherit these defaults"
         },
