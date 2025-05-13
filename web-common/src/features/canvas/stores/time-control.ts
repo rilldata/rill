@@ -8,13 +8,8 @@ import {
   type ComparisonTimeRangeState,
   type TimeRangeState,
 } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
-import { toTimeRangeParam } from "@rilldata/web-common/features/dashboards/url-state/convert-partial-explore-state-to-url-params";
-import { fromTimeRangeUrlParam } from "@rilldata/web-common/features/dashboards/url-state/convertPresetToExploreState";
-import { fromTimeRangesParams } from "@rilldata/web-common/features/dashboards/url-state/convertURLToExplorePreset";
-import {
-  FromURLParamTimeGrainMap,
-  ToURLParamTimeGrainMapMap,
-} from "@rilldata/web-common/features/dashboards/url-state/mappers";
+import { getTimeControlsFromURLParams } from "@rilldata/web-common/features/dashboards/url-state/convertURLSearchParamsToExploreState";
+import { ToURLParamTimeGrainMapMap } from "@rilldata/web-common/features/dashboards/url-state/mappers";
 import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import { isGrainBigger } from "@rilldata/web-common/lib/time/grains";
@@ -42,6 +37,7 @@ import {
   type Writable,
 } from "svelte/store";
 import { normalizeWeekday } from "../../dashboards/time-controls/new-time-controls";
+import { toTimeRangeParam } from "../../dashboards/url-state/convert-partial-explore-state-to-url-params";
 
 type AllTimeRange = TimeRange & { isFetching: boolean };
 
@@ -446,49 +442,16 @@ export class TimeControls {
 
   setTimeFiltersFromText = (timeFilter: string) => {
     const urlParams = new URLSearchParams(timeFilter);
-    const { preset, errors } = fromTimeRangesParams(urlParams, new Map());
 
-    if (errors?.length) {
-      console.warn(errors);
-      return;
-    }
-    let selectedTimeRange: DashboardTimeControls | undefined;
-    let selectedComparisonTimeRange: DashboardTimeControls | undefined;
-    let showTimeComparison = false;
+    const { exploreState } = getTimeControlsFromURLParams(urlParams, new Map()); // TODO: this function should not be coupled to ExploreState
 
-    if (preset.timeRange) {
-      selectedTimeRange = fromTimeRangeUrlParam(preset.timeRange);
-    }
-
-    if (preset.timeGrain && selectedTimeRange) {
-      selectedTimeRange.interval = FromURLParamTimeGrainMap[preset.timeGrain];
-    }
-
-    if (preset.compareTimeRange) {
-      selectedComparisonTimeRange = fromTimeRangeUrlParam(
-        preset.compareTimeRange,
+    this.selectedTimeRange.set(exploreState.selectedTimeRange);
+    if (exploreState.selectedComparisonTimeRange) {
+      this.selectedComparisonTimeRange.set(
+        exploreState.selectedComparisonTimeRange,
       );
-      showTimeComparison = true;
-    } else if (
-      preset.comparisonMode ===
-      V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_TIME
-    ) {
-      showTimeComparison = true;
     }
-
-    if (
-      preset.comparisonMode ===
-      V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_NONE
-    ) {
-      // unset all comparison setting if mode is none
-      selectedComparisonTimeRange = undefined;
-      showTimeComparison = false;
-    }
-
-    this.selectedTimeRange.set(selectedTimeRange);
-    if (selectedComparisonTimeRange)
-      this.selectedComparisonTimeRange.set(selectedComparisonTimeRange);
-    this.showTimeComparison.set(showTimeComparison);
+    this.showTimeComparison.set(!!exploreState.selectedComparisonTimeRange);
 
     this.isInitialStateSet = true;
   };
