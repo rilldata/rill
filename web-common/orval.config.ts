@@ -115,6 +115,12 @@ export default defineConfig({
               useMutation: false,
             },
           },
+          RuntimeService_GetModelPartitions: {
+            query: {
+              useInfinite: true,
+              useInfiniteQueryParam: "pageToken",
+            },
+          },
         },
       },
     },
