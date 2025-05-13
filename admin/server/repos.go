@@ -93,7 +93,6 @@ func (s *Server) GetRepoMeta(ctx context.Context, req *adminv1.GetRepoMetaReques
 func (s *Server) PullVirtualRepo(ctx context.Context, req *adminv1.PullVirtualRepoRequest) (*adminv1.PullVirtualRepoResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.project_id", req.ProjectId),
-		attribute.String("args.branch", req.Branch),
 		attribute.Int("args.page_size", int(req.PageSize)),
 		attribute.String("args.page_token", req.PageToken),
 	)
@@ -101,10 +100,6 @@ func (s *Server) PullVirtualRepo(ctx context.Context, req *adminv1.PullVirtualRe
 	proj, err := s.admin.DB.FindProject(ctx, req.ProjectId)
 	if err != nil {
 		return nil, err
-	}
-
-	if proj.ProdBranch != req.Branch {
-		return nil, status.Error(codes.InvalidArgument, "branch not found")
 	}
 
 	permissions := auth.GetClaims(ctx).ProjectPermissions(ctx, proj.OrganizationID, proj.ID)
@@ -118,7 +113,7 @@ func (s *Server) PullVirtualRepo(ctx context.Context, req *adminv1.PullVirtualRe
 	}
 	pageSize := validPageSize(req.PageSize)
 
-	vfs, err := s.admin.DB.FindVirtualFiles(ctx, proj.ID, req.Branch, pageToken.Ts.AsTime(), pageToken.Str, pageSize)
+	vfs, err := s.admin.DB.FindVirtualFiles(ctx, proj.ID, "prod", pageToken.Ts.AsTime(), pageToken.Str, pageSize)
 	if err != nil {
 		return nil, err
 	}

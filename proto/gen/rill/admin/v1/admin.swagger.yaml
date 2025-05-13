@@ -3137,8 +3137,6 @@ paths:
           schema:
             type: object
             properties:
-              branch:
-                type: string
               alert:
                 type: string
               annotations:
@@ -3193,10 +3191,6 @@ paths:
           in: path
           required: true
           type: string
-        - name: branch
-          in: query
-          required: false
-          type: string
         - name: pageSize
           in: query
           required: false
@@ -3232,8 +3226,6 @@ paths:
           schema:
             type: object
             properties:
-              branch:
-                type: string
               report:
                 type: string
               ownerId:

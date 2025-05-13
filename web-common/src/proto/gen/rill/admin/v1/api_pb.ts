@@ -9950,11 +9950,6 @@ export class PullVirtualRepoRequest extends Message<PullVirtualRepoRequest> {
   projectId = "";
 
   /**
-   * @generated from field: string branch = 2;
-   */
-  branch = "";
-
-  /**
    * @generated from field: uint32 page_size = 3;
    */
   pageSize = 0;
@@ -9973,7 +9968,6 @@ export class PullVirtualRepoRequest extends Message<PullVirtualRepoRequest> {
   static readonly typeName = "rill.admin.v1.PullVirtualRepoRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "project_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "page_size", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 4, name: "page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
@@ -10048,11 +10042,6 @@ export class GetReportMetaRequest extends Message<GetReportMetaRequest> {
   projectId = "";
 
   /**
-   * @generated from field: string branch = 2;
-   */
-  branch = "";
-
-  /**
    * @generated from field: string report = 3;
    */
   report = "";
@@ -10096,7 +10085,6 @@ export class GetReportMetaRequest extends Message<GetReportMetaRequest> {
   static readonly typeName = "rill.admin.v1.GetReportMetaRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "project_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "report", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "owner_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "execution_time", kind: "message", T: Timestamp },
@@ -10225,11 +10213,6 @@ export class GetAlertMetaRequest extends Message<GetAlertMetaRequest> {
   projectId = "";
 
   /**
-   * @generated from field: string branch = 2;
-   */
-  branch = "";
-
-  /**
    * @generated from field: string alert = 3;
    */
   alert = "";
@@ -10265,7 +10248,6 @@ export class GetAlertMetaRequest extends Message<GetAlertMetaRequest> {
   static readonly typeName = "rill.admin.v1.GetAlertMetaRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "project_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "alert", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "annotations", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
     { no: 5, name: "query_for_user_id", kind: "scalar", T: 9 /* ScalarType.STRING */, oneof: "query_for" },
