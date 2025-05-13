@@ -33,7 +33,7 @@
   import Lock from "@rilldata/web-common/components/icons/Lock.svelte";
   import UsergroupSetRole from "./UsergroupSetRole.svelte";
   import { cn } from "@rilldata/web-common/lib/shadcn";
-  import UserGroupItem from "./UserGroupItem.svelte";
+  import UsergroupItem from "./UsergroupItem.svelte";
 
   export let organization: string;
   export let project: string;
@@ -237,7 +237,7 @@
             />
           {/each}
           {#each nonManagedGroups as group}
-            <UserGroupItem
+            <UsergroupItem
               {organization}
               {group}
               {manageOrgAdmins}
