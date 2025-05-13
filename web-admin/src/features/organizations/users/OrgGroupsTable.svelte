@@ -7,7 +7,6 @@
   import type { ColumnDef } from "@tanstack/svelte-table";
   import OrgGroupsTableActionsCell from "./OrgGroupsTableActionsCell.svelte";
   import OrgGroupsTableGroupCompositeCell from "./OrgGroupsTableGroupCompositeCell.svelte";
-  import OrgGroupsTableRoleCell from "./OrgGroupsTableRoleCell.svelte";
   import InfiniteScrollTable from "@rilldata/web-admin/components/InfiniteScrollTable.svelte";
 
   export let data: V1MemberUsergroup[];
@@ -15,7 +14,6 @@
   export let searchUsersList: V1OrganizationMemberUser[];
   export let hasNextPage: boolean;
   export let isFetchingNextPage: boolean;
-  export let manageOrgAdmins: boolean;
   export let onLoadMore: () => void;
 
   function transformGroupName(groupName: string) {

@@ -257,7 +257,6 @@
           onSelectedChange={(value) => {
             if (value) {
               handleAddUsergroupMemberUser(value.value);
-              searchText = ""; // Clear the search after adding
             }
           }}
         />

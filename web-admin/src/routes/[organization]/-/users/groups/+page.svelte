@@ -12,11 +12,6 @@
   import CreateUserGroupDialog from "@rilldata/web-admin/features/organizations/users/CreateUserGroupDialog.svelte";
   import { Search } from "@rilldata/web-common/components/search";
 
-  export let data;
-
-  $: ({ organizationPermissions } = data);
-  $: manageOrgAdmins = organizationPermissions.manageOrgAdmins;
-
   const PAGE_SIZE = 20;
 
   let userGroupName = "";
@@ -91,7 +86,6 @@
           searchUsersList={$listOrganizationMemberUsers.data?.members ?? []}
           {hasNextPage}
           {isFetchingNextPage}
-          {manageOrgAdmins}
           onLoadMore={handleLoadMore}
         />
       </div>
