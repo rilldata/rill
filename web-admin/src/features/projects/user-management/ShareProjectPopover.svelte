@@ -39,6 +39,7 @@
   export let organization: string;
   export let project: string;
   export let manageProjectAdmins: boolean;
+  export let manageOrgAdmins: boolean;
 
   let open = false;
   let accessDropdownOpen = false;
@@ -180,7 +181,6 @@
     $listOrganizationMemberUsergroups.data?.members.filter(
       (group) => !group.groupManaged,
     ) ?? [];
-  $: console.log("nonManagedGroups: ", nonManagedGroups);
 
   $: userGroupMemberUsers = $listUsergroupMemberUsers?.data?.members ?? [];
   $: userGroupMemberUsersCount = userGroupMemberUsers?.length ?? 0;
@@ -252,7 +252,7 @@
                 count={group.usersCount}
                 shape="square"
               />
-              <UserGroupSetRole {organization} {group} manageOrgAdmins={true} />
+              <UserGroupSetRole {organization} {group} {manageOrgAdmins} />
             </div>
           {/each}
         </div>

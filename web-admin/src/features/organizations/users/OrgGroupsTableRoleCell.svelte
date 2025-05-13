@@ -45,8 +45,7 @@
       });
 
       eventBus.emit("notification", { message: "User group role added" });
-    } catch (error) {
-      console.error("Error adding role to user group", error);
+    } catch {
       eventBus.emit("notification", {
         message: "Error adding role to user group",
         type: "error",

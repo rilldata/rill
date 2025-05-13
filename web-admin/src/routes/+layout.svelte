@@ -115,6 +115,7 @@
           createMagicAuthTokens={projectPermissions?.createMagicAuthTokens}
           manageProjectMembers={projectPermissions?.manageProjectMembers}
           manageProjectAdmins={projectPermissions?.manageProjectAdmins}
+          manageOrgAdmins={organizationPermissions?.manageOrgAdmins}
           {organizationLogoUrl}
           {planDisplayName}
         />
