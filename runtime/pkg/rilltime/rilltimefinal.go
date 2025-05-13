@@ -76,10 +76,11 @@ type GrainPointInTime struct {
 }
 
 type GrainPointInTimePart struct {
-	Prefix   *string   `parser:"@Prefix?"`
-	Duration *GrainDur `parser:"@@"`
-	Snap     *string   `parser:"(Snap @Grain)?"`
-	Suffix   *string   `parser:"@Suffix?"`
+	Prefix        *string   `parser:"@Prefix?"`
+	Duration      *GrainDur `parser:"@@"`
+	Snap          *string   `parser:"( Snap @Grain"`
+	WeekSnapGrain *string   `parser:"| Snap @WeekSnapGrain)?"`
+	Suffix        *string   `parser:"@Suffix?"`
 }
 
 type LabeledPointInTime struct {
@@ -171,9 +172,7 @@ func (e *ExpressionFinal) Eval(evalOpts EvalOptions) (time.Time, time.Time, time
 
 	start := evalOpts.Watermark
 	if e.AnchorOverride != nil {
-		var tg timeutil.TimeGrain
-		start, tg = e.AnchorOverride.eval(evalOpts, start, e.timeZone)
-		start = truncateWithCorrection(start, tg, e.timeZone, evalOpts.FirstDay, evalOpts.FirstMonth)
+		start, _ = e.AnchorOverride.eval(evalOpts, start, e.timeZone)
 	}
 
 	if e.Interval != nil {
@@ -220,9 +219,12 @@ func (o *OrdinalInterval) eval(evalOpts EvalOptions, start time.Time, tz *time.L
 	end := start
 	if o.End != nil {
 		start, end, _ = o.End.eval(evalOpts, start, tz)
+	} else {
+		tg := higherOrderMap[grainMap[o.Ordinal.Durations[0].Ordinal.Grain]] // TODO: length check
+		start = truncateWithCorrection(start, tg, tz, evalOpts.FirstDay, evalOpts.FirstMonth)
+		end = timeutil.CeilTime(end, tg, tz, evalOpts.FirstDay, evalOpts.FirstMonth)
 	}
 
-	// TODO: should end from above be passed here?
 	start, end, tg := o.Ordinal.eval(evalOpts, start, end, tz)
 
 	return start, end, tg
@@ -318,6 +320,11 @@ func (g *GrainPointInTimePart) eval(evalOpts EvalOptions, start time.Time, tz *t
 	if g.Snap != nil {
 		// Truncate by the duration's grain 1st
 		tg = grainMap[*g.Snap]
+	} else if g.WeekSnapGrain != nil {
+		tgs := strings.Split(*g.WeekSnapGrain, "")
+		// TODO: validation
+		tm = truncateWithCorrection(tm, grainMap[tgs[0]], tz, evalOpts.FirstDay, evalOpts.FirstMonth)
+		tg = grainMap[tgs[1]]
 	}
 
 	if g.Suffix != nil {

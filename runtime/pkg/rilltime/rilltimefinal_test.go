@@ -54,7 +54,7 @@ func Test_EvalFinal(t *testing.T) {
 		{"-1Y!", "2024-01-01T00:00:00Z", "2025-01-01T00:00:00Z", timeutil.TimeGrainSecond},
 		{"W1 of Y", "2024-12-30T00:00:00Z", "2025-01-06T00:00:00Z", timeutil.TimeGrainSecond},
 		{"W1 of -1M^ to -1M$", "2025-02-03T00:00:00Z", "2025-02-10T00:00:00Z", timeutil.TimeGrainSecond},
-		{"-2d^ to d$ as of -1Q", "2025-03-08T00:00:00Z", "2025-03-11T00:00:00Z", timeutil.TimeGrainSecond},
+		{"-2d^ to d$ as of -1Q", "2024-12-08T00:00:00Z", "2024-12-11T00:00:00Z", timeutil.TimeGrainSecond},
 
 		{"-6d to D25^ as of -3M", "2013-06-22T02:29:34Z", "2014-10-30T03:30:35Z", timeutil.TimeGrainSecond},
 		{"6h starting D25^ as of -3M", "2013-06-22T02:29:34Z", "2014-10-30T03:30:35Z", timeutil.TimeGrainSecond},
@@ -69,6 +69,9 @@ func Test_EvalFinal(t *testing.T) {
 		{"H4 as of -1d", "2025-03-09T03:00:00Z", "2025-03-09T04:00:00Z", timeutil.TimeGrainSecond},
 		{"H4 of -1d!", "2025-03-09T03:00:00Z", "2025-03-09T04:00:00Z", timeutil.TimeGrainSecond},
 		{"3d ending -1Q/d$", "2024-12-08T00:00:00Z", "2024-12-11T00:00:00Z", timeutil.TimeGrainSecond},
+
+		{"y/yw^ to w^", "2024-12-30T00:00:00Z", "2025-03-10T00:00:00Z", timeutil.TimeGrainSecond},
+		{"M/MW^ to M/MW^+3W", "2025-03-03T00:00:00Z", "2025-03-24T00:00:00Z", timeutil.TimeGrainSecond},
 	}
 
 	for _, testCase := range testCases {

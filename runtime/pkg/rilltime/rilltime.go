@@ -28,6 +28,7 @@ var (
 		{"Starting", "starting"},
 		{"Ending", "ending"},
 		// this needs to be after Now and Latest to match to them
+		{"WeekSnapGrain", `[qQMyY][wW]`},
 		{"PeriodToGrain", `[sSmhHdDwWqQMyY]T[sSmhHdDwWqQMyY]`},
 		{"Grain", `[sSmhHdDwWqQMyY]`},
 		// this has to be at the end
