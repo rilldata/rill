@@ -12,7 +12,7 @@ func Test_EvalFinal(t *testing.T) {
 	now := parseTestTime(t, "2025-03-12T10:32:36Z")
 	minTime := parseTestTime(t, "2020-01-01T00:32:36Z")
 	maxTime := parseTestTime(t, "2025-03-11T06:32:36Z")
-	watermark := parseTestTime(t, "2025-03-10T06:32:36Z")
+	watermark := parseTestTime(t, "2025-03-30T23:59:43Z")
 	testCases := []struct {
 		timeRange string
 		start     string
@@ -42,6 +42,22 @@ func Test_EvalFinal(t *testing.T) {
 		{"1W starting -4W^", "2025-02-10T00:00:00Z", "2025-02-17T00:00:00Z", timeutil.TimeGrainDay},
 		{"1W ending -3W^", "2025-02-10T00:00:00Z", "2025-02-17T00:00:00Z", timeutil.TimeGrainDay},
 		{"-4w/w^ to -3w/w^", "2025-02-10T00:00:00Z", "2025-02-17T00:00:00Z", timeutil.TimeGrainDay},
+
+		{"-2s-3m-4h-5d-6w-7M-8Q-9Y to -1s-2m-3h-4d-5w-6M-7Q-8Y", "2013-06-22T02:29:34Z", "2014-10-30T03:30:35Z", timeutil.TimeGrainSecond},
+		{"-2s3m4h5d6w7M8Q9Y to -1s2m3h4d5w6M7Q8Y", "2013-06-22T02:29:34Z", "2014-10-30T03:30:35Z", timeutil.TimeGrainSecond},
+
+		{"-4Y^ to -1M^", "2021-01-01T00:00:00Z", "2025-02-01T00:00:00Z", timeutil.TimeGrainMonth},
+
+		{"3W18D23h^ to -3Y", "2025-01-29T07:00:00Z", "2022-03-10T06:32:36Z", timeutil.TimeGrainSecond},
+
+		{"Y^ to now", "2013-06-22T02:29:34Z", "2014-10-30T03:30:35Z", timeutil.TimeGrainSecond},
+		{"-1Y!", "2024-01-01T00:00:00Z", "2025-01-01T00:00:00Z", timeutil.TimeGrainSecond},
+		{"W1 of Y", "2013-06-22T02:29:34Z", "2014-10-30T03:30:35Z", timeutil.TimeGrainSecond},
+		{"W1 of -1M^ to -1M$", "2013-06-22T02:29:34Z", "2014-10-30T03:30:35Z", timeutil.TimeGrainSecond},
+		{"-2d^ to d$ as of -1Q", "2013-06-22T02:29:34Z", "2014-10-30T03:30:35Z", timeutil.TimeGrainSecond},
+
+		{"-6d to D25^ as of -3M", "2013-06-22T02:29:34Z", "2014-10-30T03:30:35Z", timeutil.TimeGrainSecond},
+		{"6h starting D25^ as of -3M", "2013-06-22T02:29:34Z", "2014-10-30T03:30:35Z", timeutil.TimeGrainSecond},
 	}
 
 	for _, testCase := range testCases {

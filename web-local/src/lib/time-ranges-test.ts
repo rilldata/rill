@@ -89,8 +89,8 @@ function generateEndTests(now: DateTime, n1?: number, n2?: number): Test[] {
         description: `${n1} ${unit1}(s) ago to ${n2} ${unit2}(s) ago, snapped to grain end`,
 
         interval: Interval.fromDateTimes(
-          now.minus({ [unit1]: n1 + 1 }).startOf(unit1),
-          now.minus({ [unit2]: n2 + 1 }).startOf(unit2),
+          now.minus({ [unit1]: n1 - 1 }).startOf(unit1),
+          now.minus({ [unit2]: n2 - 1 }).startOf(unit2),
         ),
       });
     });
@@ -230,13 +230,14 @@ function lastNPeriodToNow(now: DateTime, upTo: number = 100) {
 
       const interval = Interval.fromDateTimes(
         now.minus({ [unit]: i }).startOf(unit),
-        now.plus({ millisecond: 1 }),
+        // now.plus({ millisecond: 1 }),
+        now,
       );
 
       // Short
       tests.push({
-        syntax: `-${i}${grain}${START_CHARACTER} to now`,
-        description: `Last ${i} ${unit}(s) to now`,
+        syntax: `-${i}${grain}${START_CHARACTER} to watermark`,
+        description: `Last ${i} ${unit}(s) to watermark`,
         interval,
       });
     });
@@ -373,14 +374,18 @@ export async function runTests(metricsViewName: string) {
   );
 
   const { timeRangeSummary } = okay;
-  if (!timeRangeSummary || !timeRangeSummary.min || !timeRangeSummary.max) {
+  if (
+    !timeRangeSummary ||
+    !timeRangeSummary.min ||
+    !timeRangeSummary.watermark
+  ) {
     console.log("No time range summary");
     return;
   }
 
   const allTime = Interval.fromDateTimes(
     DateTime.fromISO(timeRangeSummary.min).setZone("UTC"),
-    DateTime.fromISO(timeRangeSummary.max).setZone("UTC"),
+    DateTime.fromISO(timeRangeSummary.watermark).setZone("UTC"),
   );
 
   if (!allTime.isValid) {
@@ -631,7 +636,7 @@ function generateTestCases(now: DateTime): Test[] {
       ),
     },
     {
-      syntax: `6h ${STARTING} MD25^ as of -3M`,
+      syntax: `6h ${STARTING} D25^ as of -3M`,
       description:
         "The first 6 hours of the 25th day of the month three months ago",
       interval: Interval.fromDateTimes(
@@ -801,7 +806,7 @@ function generateTestCases(now: DateTime): Test[] {
       ),
     },
     {
-      syntax: `-2d${START_CHARACTER} to d${END_CHARACTER} of -1Q`,
+      syntax: `-2d${START_CHARACTER} to d${END_CHARACTER} as of -1Q`,
       description:
         "The 3 day period that includes the current incomplete day and the 2 previous complete days offset into the previous quarter",
       interval: Interval.fromDateTimes(
@@ -941,133 +946,5 @@ function generateTestCases(now: DateTime): Test[] {
         now.plus({ day: 1 }).startOf("day"),
       ),
     },
-
-    // {
-    //   syntax: `(W1 of Y)${START_CHARACTER} to W${START_CHARACTER}`,
-    //   description:
-    //     "All weeks of the current year, excluding the current incomplete one",
-    //   interval: Interval.fromDateTimes(
-    //     DateTime.fromObject(
-    //       {
-    //         weekYear: now.year,
-    //         weekNumber: 1,
-    //       },
-    //       { zone: now.zone },
-    //     ),
-    //     now.startOf("week"),
-    //   ),
-    // },
-    // {
-    //   syntax: "Y/W1^ to W^",
-    //   description:
-    //     "All weeks of the current year, including the current incomplete one",
-    //   interval: Interval.fromDateTimes(
-    //     DateTime.fromObject(
-    //       {
-    //         weekYear: now.year,
-    //         weekNumber: 1,
-    //       },
-    //       { zone: now.zone },
-    //     ),
-    //     now.plus({ week: 1 }).startOf("week"),
-    //   ),
-    // },
-    // {
-    //   syntax: "(W1 of Y)^ to W^",
-    //   description:
-    //     "All weeks of the current year, including the current incomplete one",
-    //   interval: Interval.fromDateTimes(
-    //     DateTime.fromObject(
-    //       {
-    //         weekYear: now.year,
-    //         weekNumber: 1,
-    //       },
-    //       { zone: now.zone },
-    //     ),
-    //     now.plus({ week: 1 }).startOf("week"),
-    //   ),
-    // },
-    // {
-    //   syntax: "Q/W1^ to W^",
-    //   description:
-    //     "All weeks of the current quarter, excluding the current incomplete one",
-    //   interval: Interval.fromDateTimes(
-    //     now.set({ weekNumber: 1 }).startOf("week"),
-    //     now.startOf("week"),
-    //   ),
-    // },
-    // {
-    //   syntax: "QW1^ to W^",
-    //   description:
-    //     "All weeks of the current quarter, excluding the current incomplete one",
-    //   interval: Interval.fromDateTimes(
-    //     now.set({ weekNumber: 1 }).startOf("week"),
-    //     now.startOf("week"),
-    //   ),
-    // },
-    // {
-    //   syntax: "(W1 of Q)^ to W^",
-    //   description:
-    //     "All weeks of the current year, including the current incomplete one",
-    //   interval: Interval.fromDateTimes(
-    //     DateTime.fromObject(
-    //       {
-    //         weekYear: now.year,
-    //         weekNumber: 1,
-    //       },
-    //       { zone: now.zone },
-    //     ),
-    //     now.plus({ week: 1 }).startOf("week"),
-    //   ),
-    // },
-    // {
-    //   syntax: `D3 of W2 of -2M${INTERVAL_CHARACTER}`,
-    //   description: "Day 3 of week 2 of two months ago",
-    //   interval: Interval.fromDateTimes(
-    //     (now.minus({ month: 2 }).startOf("month").weekday >= 4
-    //       ? now
-    //           .minus({ month: 2 })
-    //           .startOf("month")
-    //           .startOf("week")
-    //           .plus({ week: 1 })
-    //       : now.minus({ month: 2 }).startOf("month").startOf("week")
-    //     ).plus({ day: 2, week: 1 }),
-    //     (now.minus({ month: 2 }).startOf("month").weekday >= 4
-    //       ? now
-    //           .minus({ month: 2 })
-    //           .startOf("month")
-    //           .startOf("week")
-    //           .plus({ week: 1 })
-    //       : now.minus({ month: 2 }).startOf("month").startOf("week")
-    //     ).plus({ day: 3, week: 1 }),
-    //   ),
-    // },
-    // {
-    //   syntax: `-6h${END_CHARACTER} to h${END_CHARACTER} of D3 of W2 of -2M${INTERVAL_CHARACTER}`,
-    //   description:
-    //     "The current 6 hour period of day 3 of week 2 of two months ago",
-    //   interval: Interval.fromDateTimes(
-    //     (now.minus({ month: 2 }).startOf("month").weekday >= 4
-    //       ? now
-    //           .minus({ month: 2 })
-    //           .startOf("month")
-    //           .startOf("week")
-    //           .plus({ week: 1 })
-    //       : now.minus({ month: 2 }).startOf("month").startOf("week")
-    //     )
-    //       .plus({ day: 2, week: 1 })
-    //       .set({ hour: now.hour - 5 }),
-    //     (now.minus({ month: 2 }).startOf("month").weekday >= 4
-    //       ? now
-    //           .minus({ month: 2 })
-    //           .startOf("month")
-    //           .startOf("week")
-    //           .plus({ week: 1 })
-    //       : now.minus({ month: 2 }).startOf("month").startOf("week")
-    //     )
-    //       .plus({ day: 2, week: 1 })
-    //       .set({ hour: now.hour + 1 }),
-    //   ),
-    // },
   ];
 }
