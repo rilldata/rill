@@ -33,6 +33,8 @@
   import Lock from "@rilldata/web-common/components/icons/Lock.svelte";
   import UsergroupSetRole from "./UsergroupSetRole.svelte";
   import { cn } from "@rilldata/web-common/lib/shadcn";
+  import AvatarListItem from "../../organizations/users/AvatarListItem.svelte";
+  import UserGroupSetRole from "./UserGroupSetRole.svelte";
 
   export let organization: string;
   export let project: string;
@@ -239,6 +241,19 @@
               {manageProjectAdmins}
               manageProjectMembers={true}
             />
+          {/each}
+          {#each nonManagedGroups as group}
+            <!-- TODO: can move to UserGroupItem -->
+            <div
+              class="flex flex-row items-center gap-x-2 justify-between cursor-auto"
+            >
+              <AvatarListItem
+                name={group.groupName}
+                count={group.usersCount}
+                shape="square"
+              />
+              <UserGroupSetRole {organization} {group} manageOrgAdmins={true} />
+            </div>
           {/each}
         </div>
         <div class="mt-2">

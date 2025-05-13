@@ -1,8 +1,9 @@
 <script lang="ts">
   import {
-    createAdminServiceRemoveProjectMemberUsergroup,
-    createAdminServiceSetProjectMemberUsergroupRole,
-    getAdminServiceListProjectMemberUsergroupsQueryKey,
+    createAdminServiceRemoveOrganizationMemberUsergroup,
+    createAdminServiceSetOrganizationMemberUsergroupRole,
+    createAdminServiceAddOrganizationMemberUsergroup,
+    getAdminServiceListOrganizationMemberUsergroupsQueryKey,
   } from "@rilldata/web-admin/client";
   import type { V1MemberUsergroup } from "@rilldata/web-admin/client";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
@@ -14,33 +15,57 @@
   import { PROJECT_ROLES_DESCRIPTION_MAP } from "../constants";
 
   export let organization: string;
-  export let project: string;
   export let group: V1MemberUsergroup;
+  export let manageOrgAdmins: boolean;
 
   let isOpen = false;
 
   const queryClient = useQueryClient();
-  const setProjectMemberUserGroupRole =
-    createAdminServiceSetProjectMemberUsergroupRole();
-  const removeProjectMemberUsergroup =
-    createAdminServiceRemoveProjectMemberUsergroup();
+  const addUserGroupRole = createAdminServiceAddOrganizationMemberUsergroup();
+  const setUserGroupRole =
+    createAdminServiceSetOrganizationMemberUsergroupRole();
+  const revokeUserGroupRole =
+    createAdminServiceRemoveOrganizationMemberUsergroup();
 
-  async function handleSetRole(groupName: string, role: string) {
+  async function handleAddRole(role: string) {
     try {
-      await $setProjectMemberUserGroupRole.mutateAsync({
+      await $addUserGroupRole.mutateAsync({
         organization: organization,
-        project: project,
-        usergroup: groupName,
+        usergroup: group.groupName,
         data: {
           role: role,
         },
       });
 
       await queryClient.invalidateQueries({
-        queryKey: getAdminServiceListProjectMemberUsergroupsQueryKey(
-          organization,
-          project,
-        ),
+        queryKey:
+          getAdminServiceListOrganizationMemberUsergroupsQueryKey(organization),
+      });
+
+      eventBus.emit("notification", {
+        message: "User group role added",
+      });
+    } catch {
+      eventBus.emit("notification", {
+        message: "Error adding user group role",
+        type: "error",
+      });
+    }
+  }
+
+  async function handleSetRole(role: string) {
+    try {
+      await $setUserGroupRole.mutateAsync({
+        organization: organization,
+        usergroup: group.groupName,
+        data: {
+          role: role,
+        },
+      });
+
+      await queryClient.invalidateQueries({
+        queryKey:
+          getAdminServiceListOrganizationMemberUsergroupsQueryKey(organization),
       });
 
       eventBus.emit("notification", {
@@ -54,19 +79,16 @@
     }
   }
 
-  async function handleRemove(groupName: string) {
+  async function handleRemove() {
     try {
-      await $removeProjectMemberUsergroup.mutateAsync({
+      await $revokeUserGroupRole.mutateAsync({
         organization: organization,
-        project: project,
-        usergroup: groupName,
+        usergroup: group.groupName,
       });
 
       await queryClient.invalidateQueries({
-        queryKey: getAdminServiceListProjectMemberUsergroupsQueryKey(
-          organization,
-          project,
-        ),
+        queryKey:
+          getAdminServiceListOrganizationMemberUsergroupsQueryKey(organization),
       });
 
       eventBus.emit("notification", {
@@ -86,36 +108,50 @@
     class="w-18 flex flex-row gap-1 items-center rounded-sm mr-[10px] {isOpen
       ? 'bg-slate-200'
       : 'hover:bg-slate-100'} px-2 py-1"
+    disabled={!manageOrgAdmins && group.roleName === "admin"}
   >
-    {capitalize(group.roleName)}
-    {#if isOpen}
-      <CaretUpIcon size="12px" />
-    {:else}
-      <CaretDownIcon size="12px" />
+    {group.roleName ? capitalize(group.roleName) : "-"}
+    {#if !(!manageOrgAdmins && group.roleName === "admin")}
+      {#if isOpen}
+        <CaretUpIcon size="12px" />
+      {:else}
+        <CaretDownIcon size="12px" />
+      {/if}
     {/if}
   </DropdownMenu.Trigger>
   <DropdownMenu.Content align="start" strategy="fixed">
-    <DropdownMenu.Item
-      class="font-normal flex flex-col items-start py-2 {group.roleName ===
-      'admin'
-        ? 'bg-slate-100'
-        : ''}"
-      on:click={() => {
-        handleSetRole(group.groupName, "admin");
-      }}
-    >
-      <span class="font-medium">Admin</span>
-      <span class="text-xs text-gray-600"
-        >{PROJECT_ROLES_DESCRIPTION_MAP.admin}</span
+    {#if manageOrgAdmins}
+      <DropdownMenu.Item
+        class="font-normal flex flex-col items-start py-2 {group.roleName ===
+        'admin'
+          ? 'bg-slate-100'
+          : ''}"
+        on:click={() => {
+          if (group.roleName) {
+            handleSetRole("admin");
+          } else {
+            handleAddRole("admin");
+          }
+        }}
       >
-    </DropdownMenu.Item>
+        <span class="font-medium">Admin</span>
+        <span class="text-xs text-gray-600"
+          >{PROJECT_ROLES_DESCRIPTION_MAP.admin}</span
+        >
+      </DropdownMenu.Item>
+    {/if}
+
     <DropdownMenu.Item
       class="font-normal flex flex-col items-start py-2 {group.roleName ===
       'editor'
         ? 'bg-slate-100'
         : ''}"
       on:click={() => {
-        handleSetRole(group.groupName, "editor");
+        if (group.roleName) {
+          handleSetRole("editor");
+        } else {
+          handleAddRole("editor");
+        }
       }}
     >
       <span class="font-medium">Editor</span>
@@ -123,13 +159,18 @@
         >{PROJECT_ROLES_DESCRIPTION_MAP.editor}</span
       >
     </DropdownMenu.Item>
+
     <DropdownMenu.Item
       class="font-normal flex flex-col items-start py-2 {group.roleName ===
       'viewer'
         ? 'bg-slate-100'
         : ''}"
       on:click={() => {
-        handleSetRole(group.groupName, "viewer");
+        if (group.roleName) {
+          handleSetRole("viewer");
+        } else {
+          handleAddRole("viewer");
+        }
       }}
     >
       <span class="font-medium">Viewer</span>
@@ -137,14 +178,15 @@
         >{PROJECT_ROLES_DESCRIPTION_MAP.viewer}</span
       >
     </DropdownMenu.Item>
-    <DropdownMenu.Separator />
-    <DropdownMenu.Item
-      class="font-normal flex items-center"
-      on:click={() => {
-        handleRemove(group.groupName);
-      }}
-    >
-      <span class="text-red-600">Remove</span>
-    </DropdownMenu.Item>
+
+    {#if group.roleName}
+      <DropdownMenu.Separator />
+      <DropdownMenu.Item
+        class="font-normal flex items-center py-2"
+        on:click={handleRemove}
+      >
+        <span class="text-red-600">Remove</span>
+      </DropdownMenu.Item>
+    {/if}
   </DropdownMenu.Content>
 </DropdownMenu.Root>
