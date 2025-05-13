@@ -84,18 +84,22 @@ func (c *connection) insertTableAsSelect(ctx context.Context, name, sql string, 
 	}
 
 	if opts.Strategy == drivers.IncrementalStrategyAppend {
-		res, err := db.MutateTable(ctx, name, opts.InitQueries, func(ctx context.Context, conn *sqlx.Conn) error {
+		res, err := db.MutateTable(ctx, name, opts.InitQueries, func(ctx context.Context, conn *sqlx.Conn) (retErr error) {
+			// Execute the pre SQL and defer execute the post SQL
 			if opts.BeforeInsert != "" {
 				_, err := conn.ExecContext(ctx, opts.BeforeInsert)
 				if err != nil {
 					return err
 				}
 			}
-			_, err := conn.ExecContext(ctx, fmt.Sprintf("INSERT INTO %s %s (%s\n)", safeSQLName(name), byNameClause, sql))
 			if opts.AfterInsert != "" {
-				_, afterInsertErr := conn.ExecContext(ctx, opts.AfterInsert)
-				err = errors.Join(err, afterInsertErr)
+				defer func() {
+					_, afterInsertErr := conn.ExecContext(ctx, opts.AfterInsert)
+					retErr = errors.Join(retErr, afterInsertErr)
+				}()
 			}
+
+			_, err := conn.ExecContext(ctx, fmt.Sprintf("INSERT INTO %s %s (%s\n)", safeSQLName(name), byNameClause, sql))
 			return err
 		})
 		if err != nil {
@@ -108,19 +112,20 @@ func (c *connection) insertTableAsSelect(ctx context.Context, name, sql string, 
 
 	if opts.Strategy == drivers.IncrementalStrategyMerge {
 		res, err := db.MutateTable(ctx, name, opts.InitQueries, func(ctx context.Context, conn *sqlx.Conn) (retErr error) {
-			// Execute the pre-init SQL first
+			// Execute the pre SQL and defer execute the post SQL
 			if opts.BeforeInsert != "" {
 				_, err := conn.ExecContext(ctx, opts.BeforeInsert)
 				if err != nil {
 					return err
 				}
 			}
-			defer func() {
-				if retErr == nil && opts.AfterInsert != "" {
-					_, err := conn.ExecContext(ctx, opts.AfterInsert)
-					retErr = err
-				}
-			}()
+			if opts.AfterInsert != "" {
+				defer func() {
+					_, afterInsertErr := conn.ExecContext(ctx, opts.AfterInsert)
+					retErr = errors.Join(retErr, afterInsertErr)
+				}()
+			}
+
 			// Create a temporary table with the new data
 			tmp := uuid.New().String()
 			_, err := conn.ExecContext(ctx, fmt.Sprintf("CREATE TEMPORARY TABLE %s AS (%s\n)", safeSQLName(tmp), sql))
@@ -168,19 +173,19 @@ func (c *connection) insertTableAsSelect(ctx context.Context, name, sql string, 
 
 	if opts.Strategy == drivers.IncrementalStrategyPartitionOverwrite {
 		res, err := db.MutateTable(ctx, name, opts.InitQueries, func(ctx context.Context, conn *sqlx.Conn) (retErr error) {
-			// Execute the pre-init SQL first
+			// Execute the pre SQL and defer execute the post SQL
 			if opts.BeforeInsert != "" {
 				_, err := conn.ExecContext(ctx, opts.BeforeInsert)
 				if err != nil {
 					return err
 				}
 			}
-			defer func() {
-				if retErr == nil && opts.AfterInsert != "" {
-					_, err := conn.ExecContext(ctx, opts.AfterInsert)
-					retErr = err
-				}
-			}()
+			if opts.AfterInsert != "" {
+				defer func() {
+					_, afterInsertErr := conn.ExecContext(ctx, opts.AfterInsert)
+					retErr = errors.Join(retErr, afterInsertErr)
+				}()
+			}
 
 			// Create a temporary table with the new data
 			tmp := uuid.New().String()
