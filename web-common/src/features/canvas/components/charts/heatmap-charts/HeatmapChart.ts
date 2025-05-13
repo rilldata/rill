@@ -60,6 +60,7 @@ export class HeatmapChartComponent extends BaseChart<HeatmapChartSpec> {
       meta: {
         chartFieldInput: {
           type: "measure",
+          defaultLegendOrientation: "right",
         },
       },
     },

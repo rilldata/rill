@@ -1,4 +1,4 @@
-import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 
 export enum ExploreStateURLParams {
   WebView = "view",
@@ -34,7 +34,7 @@ export enum ExploreStateURLParams {
 }
 
 export const ExploreStateKeyToURLParamMap: Partial<
-  Record<keyof MetricsExplorerEntity, ExploreStateURLParams>
+  Record<keyof ExploreState, ExploreStateURLParams>
 > = {
   activePage: ExploreStateURLParams.WebView,
 

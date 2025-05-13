@@ -8,8 +8,9 @@ import { getPartialExploreStateFromSessionStorage } from "@rilldata/web-common/f
 import { getMostRecentPartialExploreState } from "@rilldata/web-common/features/dashboards/state-managers/loaders/most-recent-explore-state";
 import { getExploreStateFromYAMLConfig } from "@rilldata/web-common/features/dashboards/stores/get-explore-state-from-yaml-config";
 import { getRillDefaultExploreState } from "@rilldata/web-common/features/dashboards/stores/get-rill-default-explore-state";
-import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import { normalizeWeekday } from "@rilldata/web-common/features/dashboards/time-controls/new-time-controls";
+import { cleanEmbedUrlParams } from "@rilldata/web-common/features/dashboards/url-state/clean-url-params";
 import { convertURLSearchParamsToExploreState } from "@rilldata/web-common/features/dashboards/url-state/convertURLSearchParamsToExploreState";
 import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
 import {
@@ -34,10 +35,10 @@ export class DashboardStateDataLoader {
   public readonly fullTimeRangeQuery: CompoundQueryResult<V1MetricsViewTimeRangeResponse>;
 
   // Default explore state show when there is no data in session/local storage or a home bookmark.
-  public readonly rillDefaultExploreState: CompoundQueryResult<MetricsExplorerEntity>;
+  public readonly rillDefaultExploreState: CompoundQueryResult<ExploreState>;
   // Explore state from yaml config
   public readonly exploreStateFromYAMLConfig: CompoundQueryResult<
-    Partial<MetricsExplorerEntity>
+    Partial<ExploreState>
   >;
 
   /**
@@ -50,14 +51,14 @@ export class DashboardStateDataLoader {
    * 5. Rill opinionated defaults.
    */
   public readonly initExploreState: CompoundQueryResult<
-    MetricsExplorerEntity | undefined
+    ExploreState | undefined
   >;
 
   public constructor(
     instanceId: string,
     private readonly exploreName: string,
     private readonly storageNamespacePrefix: string | undefined,
-    private readonly bookmarkOrTokenExploreState?: CompoundQueryResult<Partial<MetricsExplorerEntity> | null>,
+    private readonly bookmarkOrTokenExploreState?: CompoundQueryResult<Partial<ExploreState> | null>,
   ) {
     this.validSpecQuery = useExploreValidSpec(instanceId, exploreName);
     this.fullTimeRangeQuery = this.useFullTimeRangeQuery(
@@ -287,14 +288,13 @@ export class DashboardStateDataLoader {
     metricsViewSpec: V1MetricsViewSpec;
     exploreSpec: V1ExploreSpec;
     urlSearchParams: URLSearchParams;
-    bookmarkOrTokenExploreState:
-      | Partial<MetricsExplorerEntity>
-      | null
-      | undefined;
-    exploreStateFromYAMLConfig: Partial<MetricsExplorerEntity>;
-    rillDefaultExploreState: MetricsExplorerEntity;
+    bookmarkOrTokenExploreState: Partial<ExploreState> | null | undefined;
+    exploreStateFromYAMLConfig: Partial<ExploreState>;
+    rillDefaultExploreState: ExploreState;
     backButtonUsed: boolean;
   }) {
+    urlSearchParams = cleanEmbedUrlParams(urlSearchParams);
+
     const skipSessionStorage = backButtonUsed;
     const exploreStateFromSessionStorage = skipSessionStorage
       ? null
@@ -347,10 +347,10 @@ export class DashboardStateDataLoader {
 
     const nonEmptyExploreStateOrder = exploreStateOrder.filter(
       Boolean,
-    ) as Partial<MetricsExplorerEntity>[];
+    ) as Partial<ExploreState>[];
     const finalExploreState = cascadingExploreStateMerge(
       nonEmptyExploreStateOrder,
-    ) as MetricsExplorerEntity;
+    ) as ExploreState;
 
     return finalExploreState;
   }

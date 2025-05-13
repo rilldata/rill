@@ -19,7 +19,7 @@ func init() {
 var spec = drivers.Spec{
 	DisplayName: "Amazon Redshift",
 	Description: "Connect to Amazon Redshift database.",
-	DocsURL:     "",
+	DocsURL:     "https://docs.rilldata.com/reference/connectors/redshift",
 	ConfigProperties: []*drivers.PropertySpec{
 		{
 			Key:    "aws_access_key_id",

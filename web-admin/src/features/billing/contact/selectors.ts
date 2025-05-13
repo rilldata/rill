@@ -12,7 +12,12 @@ export function getOrganizationBillingContactUser(
 ): Readable<V1User | undefined> {
   return derived(
     [
-      createAdminServiceGetOrganization(organization, undefined, queryClient),
+      createAdminServiceGetOrganization(
+        organization,
+        undefined,
+        undefined,
+        queryClient,
+      ),
       createAdminServiceGetCurrentUser(undefined, queryClient),
     ],
     ([orgResp, currentUser], set) => {

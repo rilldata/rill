@@ -11,6 +11,7 @@
   import { useQueryClient } from "@tanstack/svelte-query";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import OrgUpgradeGuestConfirmDialog from "./OrgUpgradeGuestConfirmDialog.svelte";
+  import { ORG_ROLES_DESCRIPTION_MAP } from "../constants";
 
   export let email: string;
   export let role: string;
@@ -34,13 +35,6 @@
     (isAdmin ||
       (isEditor &&
         (role === "editor" || role === "viewer" || role === "guest")));
-
-  const OPTION_DESCRIPTION_MAP = {
-    admin: "Full access to org settings, members, and all projects",
-    editor: "Can create/manage projects and non-admin members",
-    viewer: "Read-only access to all org projects",
-    guest: "Access to invited projects only",
-  };
 
   const queryClient = useQueryClient();
   const setOrganizationMemberUserRole =
@@ -148,7 +142,7 @@
         >
           <span class="text-xs font-medium text-slate-700">Admin</span>
           <span class="text-[11px] text-slate-500"
-            >{OPTION_DESCRIPTION_MAP.admin}</span
+            >{ORG_ROLES_DESCRIPTION_MAP.admin}</span
           >
         </DropdownMenu.Item>
       {/if}
@@ -163,7 +157,7 @@
       >
         <span class="text-xs font-medium text-slate-700">Editor</span>
         <span class="text-[11px] text-slate-500"
-          >{OPTION_DESCRIPTION_MAP.editor}</span
+          >{ORG_ROLES_DESCRIPTION_MAP.editor}</span
         >
       </DropdownMenu.Item>
       <DropdownMenu.Item
@@ -177,7 +171,7 @@
       >
         <span class="text-xs font-medium text-slate-700">Viewer</span>
         <span class="text-[11px] text-slate-500"
-          >{OPTION_DESCRIPTION_MAP.viewer}</span
+          >{ORG_ROLES_DESCRIPTION_MAP.viewer}</span
         >
       </DropdownMenu.Item>
       {#if isAdmin}
@@ -192,7 +186,7 @@
         >
           <span class="text-xs font-medium text-slate-700">Guest</span>
           <span class="text-[11px] text-slate-500"
-            >{OPTION_DESCRIPTION_MAP.guest}</span
+            >{ORG_ROLES_DESCRIPTION_MAP.guest}</span
           >
         </DropdownMenu.Item>
       {/if}

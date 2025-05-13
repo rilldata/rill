@@ -343,6 +343,10 @@ paths:
           in: path
           required: true
           type: string
+        - name: superuserForceAccess
+          in: query
+          required: false
+          type: boolean
       tags:
         - AdminService
     delete:
@@ -421,6 +425,10 @@ paths:
           in: path
           required: true
           type: string
+        - name: superuserForceAccess
+          in: query
+          required: false
+          type: boolean
       tags:
         - AdminService
   /v1/organizations/{organization}/billing/payments/portal-url:
@@ -445,6 +453,10 @@ paths:
           in: query
           required: false
           type: string
+        - name: superuserForceAccess
+          in: query
+          required: false
+          type: boolean
       tags:
         - AdminService
   /v1/organizations/{organization}/billing/subscriptions:
@@ -465,6 +477,10 @@ paths:
           in: path
           required: true
           type: string
+        - name: superuserForceAccess
+          in: query
+          required: false
+          type: boolean
       tags:
         - AdminService
     delete:
@@ -484,6 +500,10 @@ paths:
           in: path
           required: true
           type: string
+        - name: superuserForceAccess
+          in: query
+          required: false
+          type: boolean
       tags:
         - AdminService
     patch:
@@ -640,6 +660,10 @@ paths:
           in: query
           required: false
           type: string
+        - name: superuserForceAccess
+          in: query
+          required: false
+          type: boolean
       tags:
         - AdminService
     post:
@@ -1136,6 +1160,10 @@ paths:
           in: path
           required: true
           type: string
+        - name: superuserForceAccess
+          in: query
+          required: false
+          type: boolean
       tags:
         - AdminService
   /v1/organizations/{organization}/projects/{project}/iframe:
@@ -1279,6 +1307,10 @@ paths:
           in: query
           required: false
           type: string
+        - name: superuserForceAccess
+          in: query
+          required: false
+          type: boolean
       tags:
         - AdminService
     post:
@@ -2691,6 +2723,10 @@ paths:
           required: false
           type: integer
           format: int64
+        - name: superuserForceAccess
+          in: query
+          required: false
+          type: boolean
         - name: issueSuperuserToken
           in: query
           required: false
@@ -3657,6 +3693,10 @@ paths:
           in: path
           required: true
           type: string
+        - name: superuserForceAccess
+          in: query
+          required: false
+          type: boolean
       tags:
         - AdminService
   /v1/users/bookmarks:
