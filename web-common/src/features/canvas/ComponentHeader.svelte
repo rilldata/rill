@@ -1,4 +1,5 @@
 <script lang="ts">
+  import type { BaseCanvasComponent } from "@rilldata/web-common/features/canvas/components/BaseCanvasComponent";
   import type { ComponentFilterProperties } from "@rilldata/web-common/features/canvas/components/types";
   import LocalFiltersHeader from "@rilldata/web-common/features/canvas/LocalFiltersHeader.svelte";
 
@@ -6,6 +7,7 @@
   export let description: string | undefined = undefined;
   export let filters: ComponentFilterProperties | undefined = undefined;
   export let faint: boolean = false;
+  export let component: BaseCanvasComponent;
 
   $: atleastOneFilter = Boolean(
     filters?.time_filters || filters?.dimension_filters,
@@ -17,25 +19,23 @@
     {#if title}
       <div class="flex items-center gap-x-2">
         <h1 class:faint class="title">{title}</h1>
-        {#if filters && atleastOneFilter}
-          <LocalFiltersHeader {filters} />
+        {#if atleastOneFilter}
+          <LocalFiltersHeader {component} />
         {/if}
       </div>
     {/if}
     {#if description}
       <div class="flex items-center gap-x-2">
         <h2 class="description">{description}</h2>
-        {#if !title}
-          {#if filters && atleastOneFilter}
-            <LocalFiltersHeader {filters} />
-          {/if}
+        {#if !title && atleastOneFilter}
+          <LocalFiltersHeader {component} />
         {/if}
       </div>
     {/if}
   </div>
-{:else if filters && atleastOneFilter}
-  <div class="absolute top-0 left-0 z-[60] pl-1 pt-1">
-    <LocalFiltersHeader {filters} />
+{:else if atleastOneFilter}
+  <div class="px-2 py-1">
+    <LocalFiltersHeader {component} />
   </div>
 {/if}
 

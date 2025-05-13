@@ -1,39 +1,62 @@
 <script lang="ts">
   import Filter from "@rilldata/web-common/components/icons/Filter.svelte";
-  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
-  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import type { ComponentFilterProperties } from "@rilldata/web-common/features/canvas/components/types";
-  import { getFiltersFromText } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/dimension-search-text-utils";
-  import { splitWhereFilter } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
+  import type { BaseCanvasComponent } from "@rilldata/web-common/features/canvas/components/BaseCanvasComponent";
+  import FilterChipsReadOnly from "@rilldata/web-common/features/dashboards/filters/FilterChipsReadOnly.svelte";
+  import type {
+    MetricsViewSpecDimension,
+    MetricsViewSpecMeasure,
+  } from "@rilldata/web-common/runtime-client";
+  import { readable, type Readable } from "svelte/store";
 
-  export let filters: ComponentFilterProperties;
+  export let component: BaseCanvasComponent;
 
-  $: if (filters.dimension_filters) {
-    const { expr, dimensionsWithInlistFilter } = getFiltersFromText(
-      filters.dimension_filters,
-    );
-    const { dimensionFilters, dimensionThresholdFilters } =
-      splitWhereFilter(expr);
+  let measures: Readable<MetricsViewSpecMeasure[]> = readable([]);
+  let dimensions: Readable<MetricsViewSpecDimension[]> = readable([]);
+
+  $: ({
+    specStore,
+    parent: {
+      spec: { getDimensionsForMetricView, getMeasuresForMetricView },
+    },
+    timeAndFilterStore,
+    state: { localFilters, localTimeControls },
+  } = component);
+
+  $: metricsViewName =
+    "metrics_view" in $specStore ? $specStore.metrics_view : null;
+
+  $: if (metricsViewName) {
+    measures = getMeasuresForMetricView(metricsViewName);
+    dimensions = getDimensionsForMetricView(metricsViewName);
   }
+
+  $: whereFilters = localFilters.whereFilter;
+  $: dimensionThresholdFilters = localFilters.dimensionThresholdFilters;
+  $: dimensionsWithInlistFilter = localFilters.dimensionsWithInlistFilter;
+  $: selectedTimeRange = localTimeControls.selectedTimeRange;
+  $: showTimeComparison = localTimeControls.showTimeComparison;
+  $: displayTimeRange = $timeAndFilterStore.timeRange;
+  $: displayComparisonTimeRange = $timeAndFilterStore.comparisonTimeRange;
+
+  $: hasTimeFilters = "time_filters" in $specStore && $specStore.time_filters;
 </script>
 
-<Tooltip distance={8} location="top">
-  <Filter size="16px" className="text-gray-400" />
-  <TooltipContent slot="tooltip-content">
-    <div class="p-2">
-      <div class="font-semibold mb-2">Local Filters Applied</div>
-      {#if filters.time_filters}
-        <div>
-          <span class="font-medium">Time Filters:</span>
-          {filters.time_filters}
-        </div>
-      {/if}
-      {#if filters.dimension_filters}
-        <div>
-          <span class="font-medium">Dimension Filters:</span>
-          {filters.dimension_filters}
-        </div>
-      {/if}
-    </div>
-  </TooltipContent>
-</Tooltip>
+{#if "metrics_view" in $specStore}
+  <div class="flex items-center gap-x-2">
+    <Filter size="16px" className="text-gray-400" />
+    <FilterChipsReadOnly
+      metricsViewName={$specStore.metrics_view}
+      dimensions={$dimensions}
+      measures={$measures}
+      dimensionThresholdFilters={$dimensionThresholdFilters}
+      dimensionsWithInlistFilter={$dimensionsWithInlistFilter}
+      filters={$whereFilters}
+      displayComparisonTimeRange={$showTimeComparison
+        ? displayComparisonTimeRange
+        : undefined}
+      displayTimeRange={hasTimeFilters ? displayTimeRange : undefined}
+      queryTimeStart={$selectedTimeRange?.start?.toISOString()}
+      queryTimeEnd={$selectedTimeRange?.end?.toISOString()}
+    />
+  </div>
+{/if}
