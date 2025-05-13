@@ -38,6 +38,7 @@
   export let manageProjectAdmins: boolean;
   export let manageProjectMembers: boolean;
   export let manageOrgAdmins: boolean;
+  export let manageOrgMembers: boolean;
   export let organizationLogoUrl: string | undefined = undefined;
   export let planDisplayName: string | undefined;
 
@@ -219,6 +220,7 @@
         {project}
         {manageProjectAdmins}
         {manageOrgAdmins}
+        {manageOrgMembers}
       />
     {/if}
     {#if onMetricsExplorerPage && isDashboardValid}

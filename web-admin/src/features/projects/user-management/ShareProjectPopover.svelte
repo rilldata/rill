@@ -40,6 +40,7 @@
   export let project: string;
   export let manageProjectAdmins: boolean;
   export let manageOrgAdmins: boolean;
+  export let manageOrgMembers: boolean;
 
   let open = false;
   let accessDropdownOpen = false;
@@ -251,7 +252,7 @@
                 name={group.groupName}
                 count={group.usersCount}
                 shape="square"
-                showManage={true}
+                showManage={manageOrgMembers}
               />
               <UserGroupSetRole {organization} {group} {manageOrgAdmins} />
             </div>
