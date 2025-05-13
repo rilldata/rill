@@ -20,9 +20,6 @@
     DialogTrigger,
   } from "@rilldata/web-common/components/dialog";
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
-  import InfoCircle from "@rilldata/web-common/components/icons/InfoCircle.svelte";
-  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
-  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { defaults, superForm } from "sveltekit-superforms";
@@ -139,8 +136,8 @@
         .required("User group name is required")
         .min(3, "User group name must be at least 3 characters")
         .matches(
-          /^[a-z0-9]+(-[a-z0-9]+)*$/,
-          "User group name must be lowercase and can contain letters, numbers, and hyphens (slug)",
+          /^[a-zA-Z0-9]+(-[a-zA-Z0-9]+)*$/,
+          "User group name must contain only letters, numbers, and hyphens (slug)",
         ),
     }),
   );
