@@ -58,6 +58,7 @@ import {
   AD_BIDS_MEASURE_NAMES_BID_PRICE_AND_IMPRESSIONS,
   AD_BIDS_APPLY_IMP_COUNTRY_BETWEEN_MEASURE_FILTER,
   AD_BIDS_APPLY_IMP_COUNTRY_NOT_BETWEEN_MEASURE_FILTER,
+  AD_BIDS_SET_MINUTE_TIME_GRAIN,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/store-mutations";
 import { getTimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import { getCleanedUrlParamsForGoto } from "@rilldata/web-common/features/dashboards/url-state/convert-partial-explore-state-to-url-params";
@@ -201,6 +202,12 @@ const TestCases: {
     },
     expectedSearch: "tr=P9D&grain=day",
     legacyNotSupported: true,
+  },
+
+  {
+    title: "Only time grain different than default",
+    mutations: [AD_BIDS_SET_MINUTE_TIME_GRAIN],
+    expectedSearch: "grain=minute",
   },
 
   {
