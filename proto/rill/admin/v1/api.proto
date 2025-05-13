@@ -406,6 +406,14 @@ service AdminService {
     };
   }
 
+  // CreateManagedGitRepo creates a new rill managed git repo for the organization.
+  rpc CreateManagedGitRepo(CreateManagedGitRepoRequest) returns (CreateManagedGitRepoResponse) {
+    option (google.api.http) = {
+      put: "/v1/organizations/{organization}/create-managed-git-repo",
+      body: "*"
+    };
+  }
+
   // Converts a project connected to github to a rill managed project.
   // Uploads the current project to assets.
   rpc UploadProjectAssets(UploadProjectAssetsRequest) returns (UploadProjectAssetsResponse) {
@@ -1934,6 +1942,19 @@ message ConnectProjectToGithubRequest {
 
 message ConnectProjectToGithubResponse {}
 
+message CreateManagedGitRepoRequest {
+  string organization = 1;
+  // name of the repo to create. 
+  // Note: The final name will be suffixed with a random string to ensure uniqueness.
+  string name = 2;
+}
+
+message CreateManagedGitRepoResponse {
+  string remote = 1;
+  string username = 2;
+  string password = 3;
+}
+
 message UploadProjectAssetsRequest {
   string organization = 1;
   string project = 2;
@@ -1950,6 +1971,7 @@ enum GithubPermission {
 message GetCloneCredentialsRequest {
   string organization = 1 [(validate.rules).string.min_len = 1];
   string project = 2 [(validate.rules).string.min_len = 1];
+  bool superuser_force_access = 3;
 }
 
 message GetCloneCredentialsResponse {

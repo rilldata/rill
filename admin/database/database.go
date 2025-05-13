@@ -309,6 +309,12 @@ type DB interface {
 	InsertProvisionerResource(ctx context.Context, opts *InsertProvisionerResourceOptions) (*ProvisionerResource, error)
 	UpdateProvisionerResource(ctx context.Context, id string, opts *UpdateProvisionerResourceOptions) (*ProvisionerResource, error)
 	DeleteProvisionerResource(ctx context.Context, id string) error
+
+	FindManagedGitRepo(ctx context.Context, remote string) (*ManagedGitRepo, error)
+	FindUnusedManagedGitRepos(ctx context.Context, limit int) ([]*ManagedGitRepo, error)
+	CountManagedGitRepos(ctx context.Context, orgID string) (int, error)
+	InsertManagedGitRepo(ctx context.Context, opts *InsertManagedGitRepoOptions) (*ManagedGitRepo, error)
+	DeleteManagedGitRepos(ctx context.Context, ids []string) error
 }
 
 // Tx represents a database transaction. It can only be used to commit and rollback transactions.
@@ -409,6 +415,8 @@ type Project struct {
 	ArchiveAssetID               *string           `db:"archive_asset_id"`
 	GithubURL                    *string           `db:"github_url"`
 	GithubInstallationID         *int64            `db:"github_installation_id"`
+	GithubRepoID                 *int64            `db:"github_repo_id"`
+	ManagedGitRepoID             *string           `db:"managed_git_repo_id"`
 	Subpath                      string            `db:"subpath"`
 	ProdVersion                  string            `db:"prod_version"`
 	ProdBranch                   string            `db:"prod_branch"`
@@ -435,6 +443,8 @@ type InsertProjectOptions struct {
 	ArchiveAssetID       *string
 	GithubURL            *string `validate:"omitempty,http_url"`
 	GithubInstallationID *int64  `validate:"omitempty,ne=0"`
+	GithubRepoID         *int64
+	ManagedGitRepoID     *string
 	Subpath              string
 	ProdVersion          string
 	ProdBranch           string
@@ -453,6 +463,8 @@ type UpdateProjectOptions struct {
 	ArchiveAssetID       *string
 	GithubURL            *string `validate:"omitempty,http_url"`
 	GithubInstallationID *int64  `validate:"omitempty,ne=0"`
+	GithubRepoID         *int64
+	ManagedGitRepoID     *string
 	Subpath              string
 	ProdVersion          string
 	ProdBranch           string
@@ -1272,4 +1284,20 @@ type UpdateProvisionerResourceOptions struct {
 	Args          map[string]any
 	State         map[string]any
 	Config        map[string]any
+}
+
+// ManagedGitRepo represents metadata about a Rill managed Git repository for projects deployed on Rill Cloud.
+type ManagedGitRepo struct {
+	ID        string    `db:"id"`
+	OrgID     *string   `db:"org_id"`
+	Remote    string    `db:"remote"`
+	OwnerID   string    `db:"owner_id"`
+	CreatedOn time.Time `db:"created_on"`
+	UpdatedOn time.Time `db:"updated_on"`
+}
+
+type InsertManagedGitRepoOptions struct {
+	OrgID   string `validate:"required"`
+	Remote  string `validate:"required"`
+	OwnerID string `validate:"required"`
 }
