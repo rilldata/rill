@@ -8,7 +8,6 @@
   import UserRoleSelect from "@rilldata/web-admin/features/projects/user-management/UserRoleSelect.svelte";
   import { Button } from "@rilldata/web-common/components/button";
   import MultiInput from "@rilldata/web-common/components/forms/MultiInput.svelte";
-  import Combobox from "@rilldata/web-common/components/combobox/Combobox.svelte";
   import { RFC5322EmailRegex } from "@rilldata/web-common/components/forms/validation";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { useQueryClient } from "@tanstack/svelte-query";
@@ -20,6 +19,7 @@
     V1ProjectInvite,
     V1MemberUsergroup,
   } from "@rilldata/web-admin/client";
+  import AvatarListItem from "@rilldata/web-admin/features/organizations/users/AvatarListItem.svelte";
 
   export let organization: string;
   export let project: string;
@@ -34,6 +34,26 @@
   }[] = [];
 
   let searchText = "";
+  let showDropdown = false;
+
+  // Filter searchUsersList based on searchText
+  $: filteredSearchList = searchText
+    ? searchUsersList.filter((user) => {
+        const searchLower = searchText.toLowerCase();
+        return (
+          user.name.toLowerCase().includes(searchLower) ||
+          user.value.toLowerCase().includes(searchLower) ||
+          user.label.toLowerCase().includes(searchLower)
+        );
+      })
+    : [];
+
+  $: showDropdown = searchText.length > 0 && filteredSearchList.length > 0;
+
+  function handleInputChange(event: Event) {
+    const input = event.target as HTMLInputElement;
+    searchText = input.value;
+  }
 
   const queryClient = useQueryClient();
   const userInvite = createAdminServiceAddProjectMemberUser();
@@ -126,38 +146,46 @@
     (e, i) => e.length > 0 && $errors.emails?.[i] !== undefined,
   );
 
-  async function handleUserSelect(value: {
-    value: string;
-    label: string;
-    name: string;
-  }) {
-    if (!value) return;
+  // Update search text when input changes
+  $: {
+    if ($form.emails.length > 0) {
+      searchText = $form.emails[$form.emails.length - 1];
+    }
+  }
+
+  function handleUserSelect(user: (typeof searchUsersList)[0]) {
+    if (!user) return;
 
     try {
-      await $userInvite.mutateAsync({
+      $userInvite.mutateAsync({
         organization,
         project,
         data: {
-          email: value.value,
+          email: user.value,
           role: $form.role,
         },
       });
 
-      await queryClient.invalidateQueries({
+      // Clear the input after successful invite
+      $form.emails = [""];
+      searchText = "";
+      showDropdown = false;
+
+      queryClient.invalidateQueries({
         queryKey: getAdminServiceListProjectMemberUsersQueryKey(
           organization,
           project,
         ),
       });
 
-      await queryClient.invalidateQueries({
+      queryClient.invalidateQueries({
         queryKey: getAdminServiceListProjectInvitesQueryKey(
           organization,
           project,
         ),
       });
 
-      await queryClient.invalidateQueries({
+      queryClient.invalidateQueries({
         queryKey:
           getAdminServiceListOrganizationMemberUsersQueryKey(organization),
         type: "all",
@@ -165,7 +193,7 @@
 
       eventBus.emit("notification", {
         type: "success",
-        message: `Invited ${value.name} as ${$form.role}`,
+        message: `Invited ${user.name} as ${$form.role}`,
       });
       onInvite();
     } catch (error) {
@@ -184,40 +212,49 @@
     class="w-full"
     use:enhance
   >
-    <MultiInput
-      id="emails"
-      placeholder="Search or add emails, separated by commas"
-      contentClassName="relative"
-      bind:values={$form.emails}
-      errors={$errors.emails}
-      singular="email"
-      plural="emails"
-      preventFocus={true}
-    >
-      <div slot="within-input" class="h-full items-center flex">
-        <UserRoleSelect bind:value={$form.role} />
-      </div>
-      <svelte:fragment slot="beside-input" let:hasSomeValue>
-        <Button
-          submitForm
-          type="primary"
-          form="user-invite-form"
-          loading={$submitting}
-          disabled={hasInvalidEmails || !hasSomeValue}
-          forcedStyle="height: 32px !important; padding-left: 20px; padding-right: 20px;"
-        >
-          Invite
-        </Button>
-      </svelte:fragment>
-    </MultiInput>
-  </form>
+    <div class="relative">
+      <MultiInput
+        id="emails"
+        placeholder="Search users or enter email addresses (separated by commas)"
+        contentClassName="relative"
+        bind:values={$form.emails}
+        errors={$errors.emails}
+        singular="email"
+        plural="emails"
+        preventFocus={true}
+        on:input={handleInputChange}
+      >
+        <div slot="within-input" class="h-full items-center flex">
+          <UserRoleSelect bind:value={$form.role} />
+        </div>
+        <svelte:fragment slot="beside-input" let:hasSomeValue>
+          <Button
+            submitForm
+            type="primary"
+            form="user-invite-form"
+            loading={$submitting}
+            disabled={hasInvalidEmails || !hasSomeValue}
+            forcedStyle="height: 32px !important; padding-left: 20px; padding-right: 20px;"
+          >
+            Invite
+          </Button>
+        </svelte:fragment>
+      </MultiInput>
 
-  <Combobox
-    bind:inputValue={searchText}
-    options={searchUsersList}
-    id="user-search"
-    placeholder="Search for users or add emails, separated by commas"
-    emptyText="No users found"
-    onSelectedChange={handleUserSelect}
-  />
+      {#if showDropdown}
+        <div
+          class="absolute w-full mt-1 z-50 bg-white rounded-md shadow-lg border border-gray-200 max-h-[208px] overflow-y-auto"
+        >
+          {#each filteredSearchList as user (user.value)}
+            <button
+              class="flex w-full items-center px-4 py-2 text-sm hover:bg-gray-100 cursor-pointer"
+              on:click={() => handleUserSelect(user)}
+            >
+              <AvatarListItem name={user.name} email={user.value} />
+            </button>
+          {/each}
+        </div>
+      {/if}
+    </div>
+  </form>
 </div>
