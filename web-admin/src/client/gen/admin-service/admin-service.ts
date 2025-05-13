@@ -31,6 +31,7 @@ import type {
   AdminServiceConnectProjectToGithubBody,
   AdminServiceCreateAlertBodyBody,
   AdminServiceCreateAssetBody,
+  AdminServiceCreateManagedGitRepoBody,
   AdminServiceCreateProjectBody,
   AdminServiceCreateProjectWhitelistedDomainBodyBody,
   AdminServiceCreateReportBodyBody,
@@ -40,6 +41,7 @@ import type {
   AdminServiceEditUsergroupBody,
   AdminServiceGetAlertMetaBody,
   AdminServiceGetBillingSubscriptionParams,
+  AdminServiceGetCloneCredentialsParams,
   AdminServiceGetDeploymentCredentialsBody,
   AdminServiceGetGithubRepoStatusParams,
   AdminServiceGetIFrameBody,
@@ -98,6 +100,7 @@ import type {
   V1CreateAssetResponse,
   V1CreateBookmarkRequest,
   V1CreateBookmarkResponse,
+  V1CreateManagedGitRepoResponse,
   V1CreateOrganizationRequest,
   V1CreateOrganizationResponse,
   V1CreateProjectResponse,
@@ -2287,6 +2290,92 @@ export const createAdminServiceRenewBillingSubscription = <
   return createMutation(mutationOptions, queryClient);
 };
 /**
+ * @summary CreateManagedGitRepo creates a new rill managed git repo for the organization.
+ */
+export const adminServiceCreateManagedGitRepo = (
+  organization: string,
+  adminServiceCreateManagedGitRepoBody: AdminServiceCreateManagedGitRepoBody,
+) => {
+  return httpClient<V1CreateManagedGitRepoResponse>({
+    url: `/v1/organizations/${organization}/create-managed-git-repo`,
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    data: adminServiceCreateManagedGitRepoBody,
+  });
+};
+
+export const getAdminServiceCreateManagedGitRepoMutationOptions = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceCreateManagedGitRepo>>,
+    TError,
+    { organization: string; data: AdminServiceCreateManagedGitRepoBody },
+    TContext
+  >;
+}): CreateMutationOptions<
+  Awaited<ReturnType<typeof adminServiceCreateManagedGitRepo>>,
+  TError,
+  { organization: string; data: AdminServiceCreateManagedGitRepoBody },
+  TContext
+> => {
+  const mutationKey = ["adminServiceCreateManagedGitRepo"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceCreateManagedGitRepo>>,
+    { organization: string; data: AdminServiceCreateManagedGitRepoBody }
+  > = (props) => {
+    const { organization, data } = props ?? {};
+
+    return adminServiceCreateManagedGitRepo(organization, data);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminServiceCreateManagedGitRepoMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceCreateManagedGitRepo>>
+>;
+export type AdminServiceCreateManagedGitRepoMutationBody =
+  AdminServiceCreateManagedGitRepoBody;
+export type AdminServiceCreateManagedGitRepoMutationError = RpcStatus;
+
+/**
+ * @summary CreateManagedGitRepo creates a new rill managed git repo for the organization.
+ */
+export const createAdminServiceCreateManagedGitRepo = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof adminServiceCreateManagedGitRepo>>,
+      TError,
+      { organization: string; data: AdminServiceCreateManagedGitRepoBody },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
+  Awaited<ReturnType<typeof adminServiceCreateManagedGitRepo>>,
+  TError,
+  { organization: string; data: AdminServiceCreateManagedGitRepoBody },
+  TContext
+> => {
+  const mutationOptions =
+    getAdminServiceCreateManagedGitRepoMutationOptions(options);
+
+  return createMutation(mutationOptions, queryClient);
+};
+/**
  * @summary ListOrganizationInvites lists all the org invites
  */
 export const adminServiceListOrganizationInvites = (
@@ -3975,11 +4064,13 @@ export function createAdminServiceGetAlertYAML<
 export const adminServiceGetCloneCredentials = (
   organization: string,
   project: string,
+  params?: AdminServiceGetCloneCredentialsParams,
   signal?: AbortSignal,
 ) => {
   return httpClient<V1GetCloneCredentialsResponse>({
     url: `/v1/organizations/${organization}/projects/${project}/clone-credentials`,
     method: "GET",
+    params,
     signal,
   });
 };
@@ -3987,9 +4078,11 @@ export const adminServiceGetCloneCredentials = (
 export const getAdminServiceGetCloneCredentialsQueryKey = (
   organization: string,
   project: string,
+  params?: AdminServiceGetCloneCredentialsParams,
 ) => {
   return [
     `/v1/organizations/${organization}/projects/${project}/clone-credentials`,
+    ...(params ? [params] : []),
   ] as const;
 };
 
@@ -3999,6 +4092,7 @@ export const getAdminServiceGetCloneCredentialsQueryOptions = <
 >(
   organization: string,
   project: string,
+  params?: AdminServiceGetCloneCredentialsParams,
   options?: {
     query?: Partial<
       CreateQueryOptions<
@@ -4013,12 +4107,12 @@ export const getAdminServiceGetCloneCredentialsQueryOptions = <
 
   const queryKey =
     queryOptions?.queryKey ??
-    getAdminServiceGetCloneCredentialsQueryKey(organization, project);
+    getAdminServiceGetCloneCredentialsQueryKey(organization, project, params);
 
   const queryFn: QueryFunction<
     Awaited<ReturnType<typeof adminServiceGetCloneCredentials>>
   > = ({ signal }) =>
-    adminServiceGetCloneCredentials(organization, project, signal);
+    adminServiceGetCloneCredentials(organization, project, params, signal);
 
   return {
     queryKey,
@@ -4047,6 +4141,7 @@ export function createAdminServiceGetCloneCredentials<
 >(
   organization: string,
   project: string,
+  params?: AdminServiceGetCloneCredentialsParams,
   options?: {
     query?: Partial<
       CreateQueryOptions<
@@ -4063,6 +4158,7 @@ export function createAdminServiceGetCloneCredentials<
   const queryOptions = getAdminServiceGetCloneCredentialsQueryOptions(
     organization,
     project,
+    params,
     options,
   );
 

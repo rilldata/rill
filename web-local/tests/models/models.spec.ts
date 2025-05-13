@@ -1,14 +1,14 @@
-import { test } from "./setup/base";
+import { test } from "../setup/base";
 import {
   deleteFile,
   renameFileUsingMenu,
   updateCodeEditor,
   waitForProfiling,
   wrapRetryAssertion,
-} from "./utils/commonHelpers";
-import { createModel, modelHasError } from "./utils/modelHelpers";
-import { createSource } from "./utils/sourceHelpers";
-import { fileNotPresent, waitForFileNavEntry } from "./utils/waitHelpers";
+} from "../utils/commonHelpers";
+import { createModel, modelHasError } from "../utils/modelHelpers";
+import { createSource } from "../utils/sourceHelpers";
+import { fileNotPresent, waitForFileNavEntry } from "../utils/waitHelpers";
 
 test.describe("models", () => {
   test.use({ project: "Blank" });

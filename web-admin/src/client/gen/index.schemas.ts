@@ -273,6 +273,12 @@ export interface V1CreateBookmarkResponse {
   bookmark?: V1Bookmark;
 }
 
+export interface V1CreateManagedGitRepoResponse {
+  remote?: string;
+  username?: string;
+  password?: string;
+}
+
 export interface V1CreateOrganizationRequest {
   name?: string;
   description?: string;
@@ -1426,6 +1432,12 @@ export type AdminServiceCancelBillingSubscriptionParams = {
   superuserForceAccess?: boolean;
 };
 
+export type AdminServiceCreateManagedGitRepoBody = {
+  /** name of the repo to create. 
+Note: The final name will be suffixed with a random string to ensure uniqueness. */
+  name?: string;
+};
+
 export type AdminServiceListOrganizationInvitesParams = {
   pageSize?: number;
   pageToken?: string;
@@ -1469,6 +1481,10 @@ export type AdminServiceListProjectsForOrganizationAndUserParams = {
   userId?: string;
   pageSize?: number;
   pageToken?: string;
+};
+
+export type AdminServiceGetCloneCredentialsParams = {
+  superuserForceAccess?: boolean;
 };
 
 export type AdminServiceConnectProjectToGithubBody = {
@@ -1726,7 +1742,6 @@ export type AdminServiceListProjectsForUserByNameParams = {
 export type AdminServiceGetAlertMetaBodyAnnotations = { [key: string]: string };
 
 export type AdminServiceGetAlertMetaBody = {
-  branch?: string;
   alert?: string;
   annotations?: AdminServiceGetAlertMetaBodyAnnotations;
   queryForUserId?: string;
@@ -1738,13 +1753,11 @@ export type AdminServiceGetRepoMetaParams = {
 };
 
 export type AdminServicePullVirtualRepoParams = {
-  branch?: string;
   pageSize?: number;
   pageToken?: string;
 };
 
 export type AdminServiceGetReportMetaBody = {
-  branch?: string;
   report?: string;
   ownerId?: string;
   executionTime?: string;

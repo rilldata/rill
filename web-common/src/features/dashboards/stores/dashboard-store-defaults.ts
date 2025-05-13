@@ -2,13 +2,13 @@ import {
   contextColWidthDefaults,
   LeaderboardContextColumn,
 } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
-import { type MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import { type ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 
 // TODO: Remove this in favour of just `getDefaultExplorePreset`
 export function getFullInitExploreState(
   name: string,
-  partialInitState: Partial<MetricsExplorerEntity>,
-): MetricsExplorerEntity {
+  partialInitState: Partial<ExploreState>,
+): ExploreState {
   return {
     // fields filled here are the ones that are not stored and loaded to/from URL
     name,
@@ -21,5 +21,5 @@ export function getFullInitExploreState(
     lastDefinedScrubRange: undefined,
 
     ...partialInitState,
-  } as MetricsExplorerEntity;
+  } as ExploreState;
 }

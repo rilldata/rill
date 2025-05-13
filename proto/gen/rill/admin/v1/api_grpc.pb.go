@@ -81,6 +81,7 @@ const (
 	AdminService_GetGithubUserStatus_FullMethodName                   = "/rill.admin.v1.AdminService/GetGithubUserStatus"
 	AdminService_ListGithubUserRepos_FullMethodName                   = "/rill.admin.v1.AdminService/ListGithubUserRepos"
 	AdminService_ConnectProjectToGithub_FullMethodName                = "/rill.admin.v1.AdminService/ConnectProjectToGithub"
+	AdminService_CreateManagedGitRepo_FullMethodName                  = "/rill.admin.v1.AdminService/CreateManagedGitRepo"
 	AdminService_UploadProjectAssets_FullMethodName                   = "/rill.admin.v1.AdminService/UploadProjectAssets"
 	AdminService_GetCloneCredentials_FullMethodName                   = "/rill.admin.v1.AdminService/GetCloneCredentials"
 	AdminService_CreateWhitelistedDomain_FullMethodName               = "/rill.admin.v1.AdminService/CreateWhitelistedDomain"
@@ -292,6 +293,8 @@ type AdminServiceClient interface {
 	// Connects a rill managed project to github.
 	// Replaces the contents of the remote repo with the contents of the project.
 	ConnectProjectToGithub(ctx context.Context, in *ConnectProjectToGithubRequest, opts ...grpc.CallOption) (*ConnectProjectToGithubResponse, error)
+	// CreateManagedGitRepo creates a new rill managed git repo for the organization.
+	CreateManagedGitRepo(ctx context.Context, in *CreateManagedGitRepoRequest, opts ...grpc.CallOption) (*CreateManagedGitRepoResponse, error)
 	// Converts a project connected to github to a rill managed project.
 	// Uploads the current project to assets.
 	UploadProjectAssets(ctx context.Context, in *UploadProjectAssetsRequest, opts ...grpc.CallOption) (*UploadProjectAssetsResponse, error)
@@ -1055,6 +1058,16 @@ func (c *adminServiceClient) ConnectProjectToGithub(ctx context.Context, in *Con
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ConnectProjectToGithubResponse)
 	err := c.cc.Invoke(ctx, AdminService_ConnectProjectToGithub_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) CreateManagedGitRepo(ctx context.Context, in *CreateManagedGitRepoRequest, opts ...grpc.CallOption) (*CreateManagedGitRepoResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CreateManagedGitRepoResponse)
+	err := c.cc.Invoke(ctx, AdminService_CreateManagedGitRepo_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1900,6 +1913,8 @@ type AdminServiceServer interface {
 	// Connects a rill managed project to github.
 	// Replaces the contents of the remote repo with the contents of the project.
 	ConnectProjectToGithub(context.Context, *ConnectProjectToGithubRequest) (*ConnectProjectToGithubResponse, error)
+	// CreateManagedGitRepo creates a new rill managed git repo for the organization.
+	CreateManagedGitRepo(context.Context, *CreateManagedGitRepoRequest) (*CreateManagedGitRepoResponse, error)
 	// Converts a project connected to github to a rill managed project.
 	// Uploads the current project to assets.
 	UploadProjectAssets(context.Context, *UploadProjectAssetsRequest) (*UploadProjectAssetsResponse, error)
@@ -2234,6 +2249,9 @@ func (UnimplementedAdminServiceServer) ListGithubUserRepos(context.Context, *Lis
 }
 func (UnimplementedAdminServiceServer) ConnectProjectToGithub(context.Context, *ConnectProjectToGithubRequest) (*ConnectProjectToGithubResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ConnectProjectToGithub not implemented")
+}
+func (UnimplementedAdminServiceServer) CreateManagedGitRepo(context.Context, *CreateManagedGitRepoRequest) (*CreateManagedGitRepoResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateManagedGitRepo not implemented")
 }
 func (UnimplementedAdminServiceServer) UploadProjectAssets(context.Context, *UploadProjectAssetsRequest) (*UploadProjectAssetsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UploadProjectAssets not implemented")
@@ -3578,6 +3596,24 @@ func _AdminService_ConnectProjectToGithub_Handler(srv interface{}, ctx context.C
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(AdminServiceServer).ConnectProjectToGithub(ctx, req.(*ConnectProjectToGithubRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_CreateManagedGitRepo_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateManagedGitRepoRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).CreateManagedGitRepo(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_CreateManagedGitRepo_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).CreateManagedGitRepo(ctx, req.(*CreateManagedGitRepoRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -5096,6 +5132,10 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ConnectProjectToGithub",
 			Handler:    _AdminService_ConnectProjectToGithub_Handler,
+		},
+		{
+			MethodName: "CreateManagedGitRepo",
+			Handler:    _AdminService_CreateManagedGitRepo_Handler,
 		},
 		{
 			MethodName: "UploadProjectAssets",

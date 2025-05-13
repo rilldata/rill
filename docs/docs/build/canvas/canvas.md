@@ -33,8 +33,9 @@ While Rill's signature **[Explore dashboards](/build/dashboards/dashboards.md)**
 
 You can add the following widgets to a Canvas dashboard:
 
+- **Chart**: Select dimensions and measures to visualize as a line, bar, or donut chart.
 - **KPI**: Create a grid of key performance indicators from measures defined in a metrics view.
-- **Chart**: Select dimensions and measures to visualize as a line or bar chart, optionally split by category.
+- **Leaderboard**: Just like in our Explore dashboards, display a grid of your top lists per category and click to quickly filter.
 - **Table**: Select dimensions and measures to visualize as a flat or nested table.
 - **Text**: Use markdown to create labels or descriptive text blocks.
 - **Image**: Provide a URL to an image.
