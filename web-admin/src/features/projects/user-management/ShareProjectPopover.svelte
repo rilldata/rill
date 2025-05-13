@@ -251,6 +251,7 @@
                 name={group.groupName}
                 count={group.usersCount}
                 shape="square"
+                showManage={true}
               />
               <UserGroupSetRole {organization} {group} {manageOrgAdmins} />
             </div>
