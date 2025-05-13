@@ -11,7 +11,7 @@
     createAdminServiceListOrganizationMemberUsergroups,
   } from "@rilldata/web-admin/client";
   import CopyInviteLinkButton from "@rilldata/web-admin/features/projects/user-management/CopyInviteLinkButton.svelte";
-  import UserInviteForm from "@rilldata/web-admin/features/projects/user-management/UserInviteForm.svelte";
+  import UserSearchAndInviteForm from "@rilldata/web-admin/features/projects/user-management/UserSearchAndInviteForm.svelte";
   import { Button } from "@rilldata/web-common/components/button";
   import {
     Popover,
@@ -200,6 +200,30 @@
   function getInitials(name: string) {
     return name.charAt(0).toUpperCase();
   }
+
+  $: searchOptions = [
+    ...sortedProjectMemberUsersList.map((user) => ({
+      value: user.userEmail,
+      label: user.userName,
+      name: user.userName,
+      type: "member" as const,
+      user,
+    })),
+    ...projectInvitesList.map((user) => ({
+      value: user.email,
+      label: user.email,
+      name: user.email,
+      type: "invite" as const,
+      user,
+    })),
+    ...nonManagedGroups.map((group) => ({
+      value: group.groupName,
+      label: group.groupName,
+      name: group.groupName,
+      type: "group" as const,
+      group: group,
+    })),
+  ];
 </script>
 
 <Popover bind:open>
@@ -212,7 +236,11 @@
         <div class="text-sm font-medium">Share project: {project}</div>
         <div class="grow"></div>
       </div>
-      <UserInviteForm {organization} {project} />
+      <UserSearchAndInviteForm
+        {organization}
+        {project}
+        searchUsersList={searchOptions}
+      />
       <!-- 52 * 8 = 416px -->
       <div class="flex flex-col gap-y-1 overflow-y-auto max-h-[416px]">
         <div class="mt-4">
