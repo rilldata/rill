@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { createInfiniteQuery } from "@tanstack/svelte-query";
   import {
     type ColumnDef,
     type Row,
@@ -14,8 +13,7 @@
   import {
     type V1ModelPartition,
     type V1Resource,
-    getRuntimeServiceGetModelPartitionsQueryKey,
-    runtimeServiceGetModelPartitions,
+    createRuntimeServiceGetModelPartitionsInfinite,
   } from "../../../runtime-client";
 
   import { runtime } from "../../../runtime-client/runtime-store";
@@ -37,37 +35,25 @@
     ...(whereErrored ? { errored: true } : {}),
     ...(wherePending ? { pending: true } : {}),
   };
-  $: query = createInfiniteQuery({
-    initialPageParam: "1",
-    queryKey: getRuntimeServiceGetModelPartitionsQueryKey(
-      instanceId,
-      modelName,
-      baseParams,
-    ),
-    queryFn: ({ pageParam }) => {
-      const getModelPartitionsParams = {
-        ...baseParams,
-        ...(pageParam
-          ? {
-              pageToken: pageParam as string,
-            }
-          : {}),
-      };
-      return runtimeServiceGetModelPartitions(
-        instanceId,
-        modelName,
-        getModelPartitionsParams,
-      );
+  $: query = createRuntimeServiceGetModelPartitionsInfinite(
+    instanceId,
+    modelName,
+    {
+      ...baseParams,
     },
-    enabled: !!modelName,
-    getNextPageParam: (lastPage) => {
-      if (!lastPage.nextPageToken || lastPage.nextPageToken === "") {
-        return undefined;
-      }
-      return lastPage.nextPageToken;
+    {
+      query: {
+        getNextPageParam: (lastPage) => {
+          if (lastPage.nextPageToken !== "") {
+            return lastPage.nextPageToken;
+          }
+          return undefined;
+        },
+        enabled: !!modelName,
+        refetchOnMount: true,
+      },
     },
-    refetchOnMount: true,
-  });
+  );
   $: ({ error } = $query);
 
   // ==========================
@@ -262,7 +248,7 @@
           <tr>
             <td class="text-center h-16" colspan={columns.length}>
               <span class="text-red-500 font-semibold"
-                >Error: {error.message}</span
+                >Error: {error.response.data.message}</span
               >
             </td>
           </tr>
