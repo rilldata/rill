@@ -10,12 +10,14 @@
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import { Plus } from "lucide-svelte";
   import CreateUserGroupDialog from "@rilldata/web-admin/features/organizations/users/CreateUserGroupDialog.svelte";
+  import EditUserGroupDialog from "@rilldata/web-admin/features/organizations/users/EditUserGroupDialog.svelte";
   import { Search } from "@rilldata/web-common/components/search";
 
   const PAGE_SIZE = 20;
 
   let userGroupName = "";
   let isCreateUserGroupDialogOpen = false;
+  let isEditUserGroupDialogOpen = false;
   let searchText = "";
   let pageToken = "";
 
@@ -47,6 +49,20 @@
     if (hasNextPage) {
       pageToken = $listOrganizationMemberUsergroups.data?.nextPageToken ?? "";
     }
+  }
+
+  // Handle URL parameter to open edit dialog
+  $: if (
+    $page.url.searchParams.get("action") === "open-edit-user-group-dialog"
+  ) {
+    const groupName = $page.url.searchParams.get("groupName");
+    if (groupName) {
+      userGroupName = groupName;
+      isEditUserGroupDialogOpen = true;
+    }
+    // Clear the URL parameters
+    $page.url.searchParams.delete("action");
+    $page.url.searchParams.delete("groupName");
   }
 </script>
 
@@ -106,5 +122,12 @@
   bind:open={isCreateUserGroupDialogOpen}
   groupName={userGroupName}
   organizationUsers={$listOrganizationMemberUsers.data?.members ?? []}
+  currentUserEmail={$currentUser.data?.user.email}
+/>
+
+<EditUserGroupDialog
+  bind:open={isEditUserGroupDialogOpen}
+  groupName={userGroupName}
+  searchUsersList={$listOrganizationMemberUsers.data?.members ?? []}
   currentUserEmail={$currentUser.data?.user.email}
 />

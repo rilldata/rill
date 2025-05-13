@@ -16,7 +16,6 @@
   let isEditDialogOpen = false;
 </script>
 
-<!-- Managed groups cannot be deleted or edited -->
 <DropdownMenu.Root bind:open={isDropdownOpen}>
   <DropdownMenu.Trigger class="flex-none">
     <IconButton rounded active={isDropdownOpen}>

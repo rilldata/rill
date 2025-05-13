@@ -24,7 +24,9 @@
 
   function handleManageClick() {
     const organization = $page.params.organization;
-    goto(`/${organization}/-/users/groups`);
+    goto(
+      `/${organization}/-/users/groups?action=open-edit-user-group-dialog&groupName=${name}`,
+    );
   }
 </script>
 
