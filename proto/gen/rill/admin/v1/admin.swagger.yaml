@@ -4244,6 +4244,8 @@ definitions:
         type: string
       password:
         type: string
+      defaultBranch:
+        type: string
   v1CreateOrganizationRequest:
     type: object
     properties:

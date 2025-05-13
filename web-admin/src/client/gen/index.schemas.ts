@@ -277,6 +277,7 @@ export interface V1CreateManagedGitRepoResponse {
   remote?: string;
   username?: string;
   password?: string;
+  defaultBranch?: string;
 }
 
 export interface V1CreateOrganizationRequest {

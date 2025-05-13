@@ -401,7 +401,13 @@ func createGithubRepoFlow(ctx context.Context, ch *cmdutil.Helper, localGitPath 
 	if err != nil {
 		return fmt.Errorf("failed to generate git commit signature: %w", err)
 	}
-	err = gitutil.CommitAndForcePush(ctx, localGitPath, *githubRepository.CloneURL, "x-access-token", pollRes.AccessToken, author)
+	var branch string
+	if githubRepository.DefaultBranch != nil {
+		branch = *githubRepository.DefaultBranch
+	} else {
+		branch = "main"
+	}
+	err = gitutil.CommitAndForcePush(ctx, localGitPath, *githubRepository.CloneURL, "x-access-token", pollRes.AccessToken, branch, author)
 	if err != nil {
 		return fmt.Errorf("failed to push local project to Github: %w", err)
 	}
@@ -623,17 +629,16 @@ func projectNamePrompt(ctx context.Context, ch *cmdutil.Helper, orgName string) 
 
 func autoCommitGitSignature(ctx context.Context, c adminv1.AdminServiceClient, path string) (*object.Signature, error) {
 	repo, err := git.PlainOpen(path)
-	if err != nil {
-		return nil, err
-	}
-	cfg, err := repo.ConfigScoped(config.SystemScope)
-	if err == nil && cfg.User.Email != "" && cfg.User.Name != "" {
-		// user has git properly configured use that
-		return &object.Signature{
-			Name:  cfg.User.Name,
-			Email: cfg.User.Email,
-			When:  time.Now(),
-		}, nil
+	if err == nil {
+		cfg, err := repo.ConfigScoped(config.SystemScope)
+		if err == nil && cfg.User.Email != "" && cfg.User.Name != "" {
+			// user has git properly configured use that
+			return &object.Signature{
+				Name:  cfg.User.Name,
+				Email: cfg.User.Email,
+				When:  time.Now(),
+			}, nil
+		}
 	}
 	// use email of rill user
 	userResp, err := c.GetCurrentUser(ctx, &adminv1.GetCurrentUserRequest{})

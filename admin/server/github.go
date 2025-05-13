@@ -353,36 +353,10 @@ func (s *Server) ConnectProjectToGithub(ctx context.Context, req *adminv1.Connec
 		}
 	} else if proj.GithubURL != nil {
 		err = s.pushToGit(ctx, func(projPath string) error {
-			isRillManagedRepo := true
-			_, err := s.admin.DB.FindManagedGitRepo(ctx, *proj.GithubURL)
-			if err != nil {
-				if errors.Is(err, database.ErrNotFound) {
-					isRillManagedRepo = false
-				} else {
-					return err
-				}
-			}
 			var appToken string
-			if isRillManagedRepo {
-				installationID, err := s.admin.Github.ManagedOrgInstallationID()
-				if err != nil {
-					return err
-				}
-				ghClient, err := s.admin.Github.InstallationClient(installationID)
-				if err != nil {
-					return err
-				}
-				account, repo, ok := gitutil.SplitGithubURL(*proj.GithubURL)
-				if !ok {
-					return status.Error(codes.InvalidArgument, "invalid github url")
-				}
-				ghRepo, _, err := ghClient.Repositories.Get(ctx, account, repo)
-				if err != nil {
-					return err
-				}
-
+			if proj.ManagedGitRepoID != nil {
 				// user token is not valid for cloning rill managed repo
-				appToken, err = s.admin.Github.InstallationToken(ctx, *proj.GithubInstallationID, ghRepo.GetID())
+				appToken, err = s.admin.Github.InstallationToken(ctx, *proj.GithubInstallationID, *proj.GithubRepoID)
 				if err != nil {
 					return err
 				}
@@ -449,9 +423,10 @@ func (s *Server) CreateManagedGitRepo(ctx context.Context, req *adminv1.CreateMa
 	}
 
 	return &adminv1.CreateManagedGitRepoResponse{
-		Remote:   *repo.CloneURL,
-		Username: "x-access-token",
-		Password: token,
+		Remote:        *repo.CloneURL,
+		Username:      "x-access-token",
+		Password:      token,
+		DefaultBranch: valOrDefault(repo.DefaultBranch, "main"),
 	}, nil
 }
 
@@ -464,7 +439,7 @@ func (s *Server) DisconnectProjectFromGithub(ctx context.Context, req *adminv1.D
 
 	// Check the request is made by a user
 	claims := auth.GetClaims(ctx)
-	if claims.OwnerType() != auth.OwnerTypeUser && claims.OwnerType() != auth.OwnerTypeService {
+	if claims.OwnerType() != auth.OwnerTypeUser {
 		return nil, status.Error(codes.Unauthenticated, "not authenticated as a user")
 	}
 
@@ -475,7 +450,6 @@ func (s *Server) DisconnectProjectFromGithub(ctx context.Context, req *adminv1.D
 	}
 
 	// Check permissions
-	// create asset and create project should be the same permission
 	if !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ManageProject {
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to edit project")
 	}

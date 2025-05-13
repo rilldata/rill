@@ -1953,6 +1953,7 @@ message CreateManagedGitRepoResponse {
   string remote = 1;
   string username = 2;
   string password = 3;
+  string default_branch = 4;
 }
 
 message DisconnectProjectFromGithubRequest {

@@ -157,7 +157,7 @@ func DeployUsingManagedGitFlow(ctx context.Context, ch *cmdutil.Helper, opts *De
 		}
 	}
 
-	var remote, username, password string
+	var remote, username, password, branch string
 	if projResp == nil || projResp.Project.ArchiveAssetId != "" {
 		ghRepo, err := adminClient.CreateManagedGitRepo(ctx, &adminv1.CreateManagedGitRepoRequest{
 			Organization: ch.Org,
@@ -173,6 +173,7 @@ func DeployUsingManagedGitFlow(ctx context.Context, ch *cmdutil.Helper, opts *De
 		remote = ghRepo.Remote
 		username = ghRepo.Username
 		password = ghRepo.Password
+		branch = ghRepo.DefaultBranch
 	} else {
 		// existing project backed by github handling
 		// get token for the existing project
@@ -186,13 +187,14 @@ func DeployUsingManagedGitFlow(ctx context.Context, ch *cmdutil.Helper, opts *De
 		remote = projResp.Project.GithubUrl
 		username = creds.GitUsername
 		password = creds.GitPassword
+		branch = projResp.Project.ProdBranch
 	}
 
 	author, err := autoCommitGitSignature(ctx, adminClient, localGitPath)
 	if err != nil {
 		return err
 	}
-	err = gitutil.CommitAndForcePush(ctx, localProjectPath, remote, username, password, author)
+	err = gitutil.CommitAndForcePush(ctx, localProjectPath, remote, username, password, branch, author)
 	if err != nil {
 		return fmt.Errorf("failed to create and push to managed github: %w", err)
 	}

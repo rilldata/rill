@@ -227,11 +227,11 @@ func GetSyncStatus(repoPath, branch, remote string) (SyncStatus, error) {
 	return SyncStatusSynced, nil
 }
 
-func CommitAndForcePush(ctx context.Context, projectPath, remote, username, password string, author *object.Signature) error {
+func CommitAndForcePush(ctx context.Context, projectPath, remote, username, password, branch string, author *object.Signature) error {
 	// init git repo
 	repo, err := git.PlainInitWithOptions(projectPath, &git.PlainInitOptions{
 		InitOptions: git.InitOptions{
-			DefaultBranch: plumbing.NewBranchReferenceName("main"),
+			DefaultBranch: plumbing.NewBranchReferenceName(branch),
 		},
 		Bare: false,
 	})

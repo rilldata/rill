@@ -9132,6 +9132,11 @@ export class CreateManagedGitRepoResponse extends Message<CreateManagedGitRepoRe
    */
   password = "";
 
+  /**
+   * @generated from field: string default_branch = 4;
+   */
+  defaultBranch = "";
+
   constructor(data?: PartialMessage<CreateManagedGitRepoResponse>) {
     super();
     proto3.util.initPartial(data, this);
@@ -9143,6 +9148,7 @@ export class CreateManagedGitRepoResponse extends Message<CreateManagedGitRepoRe
     { no: 1, name: "remote", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "username", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "password", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "default_branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateManagedGitRepoResponse {
