@@ -22,10 +22,7 @@
   import { chartInteractionColumn } from "@rilldata/web-common/features/dashboards/time-dimension-details/time-dimension-data-store";
   import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
   import BackToExplore from "@rilldata/web-common/features/dashboards/time-series/BackToExplore.svelte";
-  import {
-    useTimeSeriesDataStore,
-    type TimeSeriesDatum,
-  } from "@rilldata/web-common/features/dashboards/time-series/timeseries-data-store";
+  import { useTimeSeriesDataStore } from "@rilldata/web-common/features/dashboards/time-series/timeseries-data-store";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { adjustOffsetForZone } from "@rilldata/web-common/lib/convertTimestampPreview";
   import { timeGrainToDuration } from "@rilldata/web-common/lib/time/grains";
@@ -44,7 +41,6 @@
   import ChartInteractions from "./ChartInteractions.svelte";
   import MeasureChart from "./MeasureChart.svelte";
   import TimeSeriesChartContainer from "./TimeSeriesChartContainer.svelte";
-  import type { DimensionDataItem } from "./multiple-dimension-queries";
   import {
     adjustTimeInterval,
     getOrderedStartEnd,
@@ -82,9 +78,6 @@
   let startValue: Date | undefined;
   let endValue: Date | undefined;
 
-  let dataCopy: TimeSeriesDatum[];
-  let dimensionDataCopy: DimensionDataItem[] = [];
-
   $: exploreState = useExploreState(exploreName);
 
   $: activePage = $exploreState?.activePage;
@@ -112,6 +105,7 @@
   $: isAlternateChart = tddChartType !== TDDChart.DEFAULT;
 
   $: expandedMeasure = $getMeasureByName(expandedMeasureName);
+  // List of measures which will be shown on the dashboard
   let renderedMeasures: MetricsViewSpecMeasure[];
   $: {
     renderedMeasures =
@@ -125,25 +119,9 @@
     [key: string]: number;
   };
 
-  // When changing the timeseries query and the cache is empty, $timeSeriesQuery.data?.data is
-  // temporarily undefined as results are fetched.
-  // To avoid unmounting TimeSeriesBody, which would cause us to lose our tween animations,
-  // we make a copy of the data that avoids `undefined` transition states.
-  // TODO: instead, try using svelte-query's `keepPreviousData = True` option.
-
-  $: if ($timeSeriesDataStore?.timeSeriesData) {
-    dataCopy = $timeSeriesDataStore.timeSeriesData;
-  }
-  $: formattedData = dataCopy;
-
-  $: if (
-    $timeSeriesDataStore?.dimensionChartData?.length ||
-    !comparisonDimension ||
-    includedValuesForDimension.length === 0
-  ) {
-    dimensionDataCopy = $timeSeriesDataStore.dimensionChartData || [];
-  }
-  $: dimensionData = dimensionDataCopy;
+  $: timeSeriesData = $timeSeriesDataStore.timeSeriesData || [];
+  $: comparedDimensionTimeSeriesData =
+    $timeSeriesDataStore.dimensionChartData || [];
 
   // FIXME: move this logic to a function + write tests.
   $: if ($timeControlsStore.ready && interval) {
@@ -160,8 +138,8 @@
     );
 
     const slicedData = isAllTime
-      ? formattedData?.slice(1)
-      : formattedData?.slice(1, -1);
+      ? timeSeriesData?.slice(1)
+      : timeSeriesData?.slice(1, -1);
 
     chartInteractionColumn.update((state) => {
       const { start, end } = getOrderedStartEnd(scrubStart, scrubEnd);
@@ -220,8 +198,8 @@
   }
 
   $: if (
+    timeSeriesData &&
     showTimeDimensionDetail &&
-    formattedData &&
     $timeControlsStore.selectedTimeRange &&
     !isScrubbing
   ) {
@@ -229,7 +207,7 @@
       mouseoverValue?.x,
       undefined,
       isAllTime,
-      formattedData,
+      timeSeriesData,
     );
   }
 
@@ -385,11 +363,10 @@
             errorMessage={$timeSeriesDataStore?.error?.totals}
             status={hasTotalsError
               ? EntityStatus.Error
-              : $timeSeriesDataStore?.isFetching
+              : $timeSeriesDataStore.isFetching
                 ? EntityStatus.Running
                 : EntityStatus.Idle}
           />
-
           {#if hasTimeseriesError}
             <div
               class="flex flex-col p-5 items-center justify-center text-xs ui-copy-muted"
@@ -407,8 +384,8 @@
               timeGrain={interval}
               chartType={tddChartType}
               {expandedMeasureName}
-              totalsData={formattedData}
-              {dimensionData}
+              totalsData={timeSeriesData}
+              dimensionData={comparedDimensionTimeSeriesData}
               xMin={startValue}
               xMax={endValue}
               isTimeComparison={showComparison}
@@ -420,7 +397,7 @@
                   ts,
                   dimension,
                   isAllTime,
-                  formattedData,
+                  timeSeriesData,
                 );
               }}
               on:chart-brush={(e) => {
@@ -459,7 +436,7 @@
                 });
               }}
             />
-          {:else if formattedData && interval}
+          {:else if timeSeriesData && interval}
             <MeasureChart
               bind:mouseoverValue
               {measure}
@@ -468,8 +445,9 @@
               {scrubStart}
               {scrubEnd}
               {exploreName}
-              data={formattedData}
-              {dimensionData}
+              data={timeSeriesData}
+              dimensionData={comparedDimensionTimeSeriesData}
+              isFetching={$timeSeriesDataStore.isFetching}
               zone={$exploreState?.selectedTimezone}
               xAccessor="ts_position"
               labelAccessor="ts"

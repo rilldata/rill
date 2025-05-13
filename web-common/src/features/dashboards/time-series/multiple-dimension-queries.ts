@@ -300,6 +300,8 @@ export function getDimensionValueTimeSeries(
   ctx: StateManagers,
   measures: string[],
   surface: "chart" | "table",
+  previousDimensionChartData: DimensionDataItem[],
+  updatePreviousResultsFn: (results: DimensionDataItem[]) => void,
 ): Readable<DimensionDataItem[]> {
   return derived(
     [
@@ -331,13 +333,15 @@ export function getDimensionValueTimeSeries(
         timeStore?.comparisonAdjustedStart && surface === "chart",
       );
 
-      if (
-        !topListValues.length ||
-        !isValidMeasureList ||
-        !dimensionName ||
-        timeSeriesData?.isFetching
-      )
+      // Keep previous data while fetching
+      if (timeSeriesData?.isFetching) {
+        return set(previousDimensionChartData);
+      }
+
+      if (!topListValues.length || !isValidMeasureList || !dimensionName) {
         return set([]);
+      }
+
       if (!timeDimension || dashboardStore?.selectedScrubRange?.isScrubbing)
         return;
 
@@ -349,6 +353,13 @@ export function getDimensionValueTimeSeries(
       );
 
       return derived(batchedQueries, (batchedAggTimeSeriesData) => {
+        const isFetching = batchedAggTimeSeriesData.some((d) => d.isFetching);
+
+        // Keep previous data while fetching
+        if (isFetching) {
+          return previousDimensionChartData;
+        }
+
         let transformedData: V1TimeSeriesValue[][] = [];
         for (let i = 0; i < batchedTopList.length; i++) {
           transformedData = transformedData.concat(
@@ -379,8 +390,6 @@ export function getDimensionValueTimeSeries(
           }
         }
 
-        const isFetching = batchedAggTimeSeriesData.some((d) => d.isFetching);
-
         const results: DimensionDataItem[] = [];
         for (let i = 0; i < topListValues.length; i++) {
           const value = topListValues[i];
@@ -404,6 +413,9 @@ export function getDimensionValueTimeSeries(
             isFetching,
           });
         }
+
+        // Update the previous results cache
+        updatePreviousResultsFn(results);
 
         return results;
       }).subscribe(set);
