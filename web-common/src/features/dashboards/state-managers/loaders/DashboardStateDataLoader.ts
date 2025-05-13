@@ -10,6 +10,7 @@ import { getMostRecentPartialExploreState } from "@rilldata/web-common/features/
 import { getExploreStateFromYAMLConfig } from "@rilldata/web-common/features/dashboards/stores/get-explore-state-from-yaml-config";
 import { getRillDefaultExploreState } from "@rilldata/web-common/features/dashboards/stores/get-rill-default-explore-state";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import { cleanEmbedUrlParams } from "@rilldata/web-common/features/dashboards/url-state/clean-url-params";
 import { convertURLSearchParamsToExploreState } from "@rilldata/web-common/features/dashboards/url-state/convertURLSearchParamsToExploreState";
 import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
@@ -241,6 +242,8 @@ export class DashboardStateDataLoader {
     rillDefaultExploreState: MetricsExplorerEntity;
     backButtonUsed: boolean;
   }) {
+    urlSearchParams = cleanEmbedUrlParams(urlSearchParams);
+
     const skipSessionStorage = backButtonUsed;
     const exploreStateFromSessionStorage = skipSessionStorage
       ? null
