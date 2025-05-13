@@ -170,6 +170,11 @@ func (e *ExpressionFinal) Eval(evalOpts EvalOptions) (time.Time, time.Time, time
 	}
 
 	start := evalOpts.Watermark
+	if e.AnchorOverride != nil {
+		var tg timeutil.TimeGrain
+		start, tg = e.AnchorOverride.eval(evalOpts, start, e.timeZone)
+		start = truncateWithCorrection(start, tg, e.timeZone, evalOpts.FirstDay, evalOpts.FirstMonth)
+	}
 
 	if e.Interval != nil {
 		return e.Interval.eval(evalOpts, start, e.timeZone)
@@ -197,10 +202,14 @@ func (o *AnchoredDurationInterval) eval(evalOpts EvalOptions, tm time.Time, tz *
 	start, _ := o.PointInTime.eval(evalOpts, tm, tz)
 	end := start
 
+	durTg := grainMap[o.Duration.Parts[0].Grain] // TODO: length check
+
 	tg := timeutil.TimeGrainUnspecified
 	if o.Starting {
+		start = truncateWithCorrection(start, durTg, tz, evalOpts.FirstDay, evalOpts.FirstMonth)
 		end, tg = o.Duration.offset(start, 1)
 	} else if o.Ending {
+		start = truncateWithCorrection(end, durTg, tz, evalOpts.FirstDay, evalOpts.FirstMonth)
 		start, tg = o.Duration.offset(end, -1)
 	}
 
@@ -208,12 +217,13 @@ func (o *AnchoredDurationInterval) eval(evalOpts EvalOptions, tm time.Time, tz *
 }
 
 func (o *OrdinalInterval) eval(evalOpts EvalOptions, start time.Time, tz *time.Location) (time.Time, time.Time, timeutil.TimeGrain) {
+	end := start
 	if o.End != nil {
-		start, _, _ = o.End.eval(evalOpts, start, tz)
+		start, end, _ = o.End.eval(evalOpts, start, tz)
 	}
 
 	// TODO: should end from above be passed here?
-	start, end, tg := o.Ordinal.eval(evalOpts, start, tz)
+	start, end, tg := o.Ordinal.eval(evalOpts, start, end, tz)
 
 	return start, end, tg
 }
@@ -235,6 +245,10 @@ func (o *OrdinalIntervalEnd) eval(evalOpts EvalOptions, start time.Time, tz *tim
 func (o *StartEndInterval) eval(evalOpts EvalOptions, tm time.Time, tz *time.Location) (time.Time, time.Time, timeutil.TimeGrain) {
 	start, startTg := o.Start.eval(evalOpts, tm, tz)
 	end, endTg := o.End.eval(evalOpts, tm, tz)
+	// Correction for labeled ends points. We need to add +1ms to make sure the final point is included as our end time is exclusive.
+	if o.End.Labeled != nil {
+		end = timeutil.OffsetTime(end, timeutil.TimeGrainMillisecond, 1)
+	}
 
 	tg := endTg
 	if endTg == timeutil.TimeGrainUnspecified {
@@ -272,11 +286,12 @@ func (p *Point) eval(evalOpts EvalOptions, start time.Time, tz *time.Location) (
 
 func (o *OrdinalPointInTime) eval(evalOpts EvalOptions, start time.Time, tz *time.Location) (time.Time, timeutil.TimeGrain) {
 	tg := timeutil.TimeGrainUnspecified
+	end := start
 	if o.Rest != nil {
-		start, _, tg = o.Rest.eval(evalOpts, start, tz)
+		start, end, tg = o.Rest.eval(evalOpts, start, end, tz)
 	}
 
-	start, end, tg := o.Ordinal.eval(evalOpts, start, tz)
+	start, end, tg = o.Ordinal.eval(evalOpts, start, tz)
 
 	if o.Suffix == "$" {
 		start = end
@@ -301,6 +316,7 @@ func (g *GrainPointInTimePart) eval(evalOpts EvalOptions, start time.Time, tz *t
 	tm, tg := g.Duration.offset(start, sign)
 
 	if g.Snap != nil {
+		// Truncate by the duration's grain 1st
 		tg = grainMap[*g.Snap]
 	}
 
@@ -330,8 +346,7 @@ func (l *LabeledPointInTime) eval(evalOpts EvalOptions) time.Time {
 
 /* Durations */
 
-func (o *OrdinalDuration) eval(evalOpts EvalOptions, start time.Time, tz *time.Location) (time.Time, time.Time, timeutil.TimeGrain) {
-	end := start
+func (o *OrdinalDuration) eval(evalOpts EvalOptions, start, end time.Time, tz *time.Location) (time.Time, time.Time, timeutil.TimeGrain) {
 	tg := timeutil.TimeGrainUnspecified
 
 	i := len(o.Durations) - 1

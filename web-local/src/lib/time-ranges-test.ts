@@ -230,8 +230,7 @@ function lastNPeriodToNow(now: DateTime, upTo: number = 100) {
 
       const interval = Interval.fromDateTimes(
         now.minus({ [unit]: i }).startOf(unit),
-        // now.plus({ millisecond: 1 }),
-        now,
+        now.plus({ millisecond: 1 }),
       );
 
       // Short
@@ -266,7 +265,7 @@ function generateCurrentAndPreviousPeriods(now: DateTime) {
 
     const current = Interval.fromDateTimes(
       now.startOf(unit),
-      now.plus({ second: 1 }).startOf(unit),
+      now.plus({ [unit]: 1 }).startOf(unit),
     );
 
     const previous = Interval.fromDateTimes(
@@ -286,21 +285,21 @@ function generateCurrentAndPreviousPeriods(now: DateTime) {
     // });
 
     tests.push({
-      syntax: `${grain}${START_CHARACTER} to now`,
-      description: `Start of ${unit} to now`,
+      syntax: `${grain}${START_CHARACTER} to watermark`,
+      description: `Start of ${unit} to watermark`,
       interval: toNow,
     });
 
     tests.push({
       syntax: `1${grain} ${STARTING} ${grain}${START_CHARACTER}`,
       description: `The full current ${unit}`,
-      interval: previous,
+      interval: current,
     });
 
     tests.push({
       syntax: `1${grain} ${ENDING} ${grain}${END_CHARACTER}`,
       description: `The full current ${unit}`,
-      interval: previous,
+      interval: current,
     });
 
     tests.push({
@@ -414,6 +413,7 @@ export async function runTests(metricsViewName: string) {
     };
 
     if (response?.timeRanges?.[i]?.start !== apiFormat.start) {
+      console.log(testCases[i].description);
       console.log(
         `${failures.toLocaleString("en-US", {
           minimumIntegerDigits: 2,
@@ -422,6 +422,7 @@ export async function runTests(metricsViewName: string) {
       );
       failures++;
     } else if (response?.timeRanges?.[i]?.end !== apiFormat.end) {
+      console.log(testCases[i].description);
       console.log(
         `${failures.toLocaleString("en-US", {
           minimumIntegerDigits: 2,
@@ -528,7 +529,7 @@ function generateTestCases(now: DateTime): Test[] {
     },
 
     {
-      syntax: `-42W-3m/W${START_CHARACTER} to -2M-3h/M${END_CHARACTER}`,
+      syntax: `-42W-3M/W${START_CHARACTER} to -2M-3h/M${END_CHARACTER}`,
       description:
         "The start of the week 42 weeks and 3 minutes ago to the end of the month 2 months and 3 hours ago",
       interval: Interval.fromDateTimes(
@@ -676,16 +677,16 @@ function generateTestCases(now: DateTime): Test[] {
       syntax: `H4 as of -1d`,
       description: "The fourth hour of the previous day",
       interval: Interval.fromDateTimes(
-        now.minus({ day: 1 }).set({ hour: 3 }),
-        now.minus({ day: 1 }).set({ hour: 4 }),
+        now.minus({ day: 1 }).set({ hour: 3 }).startOf("hour"),
+        now.minus({ day: 1 }).set({ hour: 4 }).startOf("hour"),
       ),
     },
     {
       syntax: `H4 of -1d${INTERVAL_CHARACTER}`,
       description: "The fourth hour of the previous day",
       interval: Interval.fromDateTimes(
-        now.minus({ day: 1 }).set({ hour: 3 }),
-        now.minus({ day: 1 }).set({ hour: 4 }),
+        now.minus({ day: 1 }).set({ hour: 3 }).startOf("hour"),
+        now.minus({ day: 1 }).set({ hour: 4 }).startOf("hour"),
       ),
     },
     {
@@ -693,7 +694,7 @@ function generateTestCases(now: DateTime): Test[] {
       description: "The first 3 hours of two days ago",
       interval: Interval.fromDateTimes(
         now.minus({ day: 2 }).startOf("day"),
-        now.minus({ day: 2 }).set({ hour: 3 }),
+        now.minus({ day: 2 }).set({ hour: 3 }).startOf("hour"),
       ),
     },
     ...[1, 2, 4, 13, 26, 39, 52, 53, 54].map((value) => {
