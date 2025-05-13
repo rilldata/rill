@@ -30,7 +30,7 @@
   import {
     convertDateToMinutes,
     getExploreFields,
-    getSanitizedDashboardStateParam,
+    getSanitizedExploreStateParam,
     hasDashboardDimensionThresholdFilter,
     hasDashboardWhereFilter,
   } from "./form-utils";
@@ -60,7 +60,7 @@
     $visibleMeasures,
   );
 
-  $: sanitizedState = getSanitizedDashboardStateParam(
+  $: sanitizedState = getSanitizedExploreStateParam(
     $dashboardStore,
     exploreFields,
     $validSpecStore.data?.explore,
@@ -193,7 +193,7 @@
                   <Pencil size="14px" class="text-primary-600" />
                 </IconButton>
               </PopoverTrigger>
-              <PopoverContent align="end" class="p-0">
+              <PopoverContent align="end" class="p-0" strategy="fixed">
                 <Calendar
                   selection={DateTime.fromISO($form.expiresAt)}
                   singleDaySelection

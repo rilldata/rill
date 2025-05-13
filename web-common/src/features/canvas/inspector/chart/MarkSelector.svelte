@@ -4,30 +4,51 @@
   import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
   import type { FieldConfig } from "@rilldata/web-common/features/canvas/components/charts/types";
   import SingleFieldInput from "@rilldata/web-common/features/canvas/inspector/SingleFieldInput.svelte";
+  import type { ComponentInputParam } from "@rilldata/web-common/features/canvas/inspector/types";
+  import FieldConfigPopover from "./FieldConfigPopover.svelte";
 
   export let key: string;
-  export let label: string;
   export let metricsView: string;
-  export let value: FieldConfig | string;
+  export let markConfig: FieldConfig | string;
+  export let config: ComponentInputParam;
   export let canvasName: string;
   export let onChange: (updatedConfig: FieldConfig | string) => void;
 
-  $: selected = !value || typeof value === "string" ? 0 : 1;
+  $: selected = !markConfig || typeof markConfig === "string" ? 0 : 1;
 
   // TODO: Replace with theme primary color
-  $: color = typeof value === "string" ? value : "rgb(117, 126, 255)";
+  $: color = typeof markConfig === "string" ? markConfig : "rgb(117, 126, 255)";
 
-  function updateFieldConfig(field: string) {
-    const updatedConfig: FieldConfig = {
-      field,
-      type: "nominal",
-    };
-    onChange(updatedConfig);
+  $: chartFieldInput = config.meta?.chartFieldInput;
+
+  function updateFieldConfig(property: keyof FieldConfig, value: any) {
+    if (typeof markConfig !== "string") {
+      const updatedConfig: FieldConfig = {
+        ...markConfig,
+        [property]: value,
+      };
+      onChange(updatedConfig);
+    } else if (property === "field") {
+      onChange({
+        field: value,
+        type: "nominal",
+      });
+    }
   }
 </script>
 
 <div class="space-y-2">
-  <InputLabel small {label} id={key} />
+  <div class="flex justify-between items-center">
+    <InputLabel small label={config.label ?? key} id={key} />
+    {#if Object.keys(chartFieldInput ?? {}).length > 1 && typeof markConfig !== "string"}
+      <FieldConfigPopover
+        fieldConfig={markConfig}
+        label={config.label ?? key}
+        onChange={updateFieldConfig}
+        {chartFieldInput}
+      />
+    {/if}
+  </div>
 
   <FieldSwitcher
     small
@@ -42,8 +63,10 @@
       }
     }}
   />
+</div>
 
-  {#if selected === 0}
+{#if selected === 0}
+  <div class="pt-2">
     <ColorInput
       small
       stringColor={color}
@@ -52,16 +75,18 @@
         onChange(color);
       }}
     />
-  {:else if selected === 1}
-    <SingleFieldInput
-      {canvasName}
-      metricName={metricsView}
-      id={`${key}-field`}
-      type="dimension"
-      selectedItem={typeof value === "string" ? undefined : value?.field}
-      onSelect={async (field) => {
-        updateFieldConfig(field);
-      }}
-    />
-  {/if}
-</div>
+  </div>
+{:else if selected === 1}
+  <SingleFieldInput
+    {canvasName}
+    metricName={metricsView}
+    id={`${key}-field`}
+    type="dimension"
+    selectedItem={typeof markConfig === "string"
+      ? undefined
+      : markConfig?.field}
+    onSelect={async (field) => {
+      updateFieldConfig("field", field);
+    }}
+  />
+{/if}

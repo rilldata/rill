@@ -1494,8 +1494,6 @@ github.com/google/go-cmp v0.5.9/go.mod h1:17dUlkBOakJ0+DkrSSNjCkIjxS6bF9zb3elmeN
 github.com/google/go-cmp v0.7.0 h1:wk8382ETsv4JYUZwIsn6YpYiWiBsYLSJiTsyBybVuN8=
 github.com/google/go-cmp v0.7.0/go.mod h1:pXiqmnSA92OHEEa9HXL2W4E7lf9JzCmGVUdgjX3N/iU=
 github.com/google/go-containerregistry v0.5.1/go.mod h1:Ct15B4yir3PLOP5jsy0GNeYVaIZs/MK/Jz5any1wFW0=
-github.com/google/go-github/v50 v50.2.0 h1:j2FyongEHlO9nxXLc+LP3wuBSVU9mVxfpdYUexMpIfk=
-github.com/google/go-github/v50 v50.2.0/go.mod h1:VBY8FB6yPIjrtKhozXv4FQupxKLS6H4m6xFZlT43q8Q=
 github.com/google/go-github/v52 v52.0.0 h1:uyGWOY+jMQ8GVGSX8dkSwCzlehU3WfdxQ7GweO/JP7M=
 github.com/google/go-github/v52 v52.0.0/go.mod h1:WJV6VEEUPuMo5pXqqa2ZCZEdbQqua4zAk2MZTIo+m+4=
 github.com/google/go-querystring v1.1.0 h1:AnCroh3fv4ZBgVIf1Iwtovgjaw/GiKJo8M8yD/fhyJ8=
@@ -2184,8 +2182,8 @@ github.com/richardlehane/msoleps v1.0.3 h1:aznSZzrwYRl3rLKRT3gUk9am7T/mLNSnJINvN
 github.com/richardlehane/msoleps v1.0.3/go.mod h1:BWev5JBpU9Ko2WAgmZEuiz4/u3ZYTKbjLycmwiWUfWg=
 github.com/rilldata/arrow/go/v15 v15.0.0-20250102090621-2b8f541ea250 h1:ZN01YfdGL/MdI4Ky1eXMKB0HstCD0Ihdjtu9fhDO6PI=
 github.com/rilldata/arrow/go/v15 v15.0.0-20250102090621-2b8f541ea250/go.mod h1:DGXsR3ajT524njufqf95822i+KTh+yea1jass9YXgjA=
-github.com/rilldata/go-duckdb/v2 v2.0.0-20250423070158-2459b722ea3c h1:JC8kzn3PMy5lBEe6pfwc6VsH76ywm2iJsc0c/oX40ys=
-github.com/rilldata/go-duckdb/v2 v2.0.0-20250423070158-2459b722ea3c/go.mod h1:xrGwIsWoH41GxmEsS3K5ZnuM2b8OmXtLTjOxQ5Dfqzs=
+github.com/rilldata/go-duckdb/v2 v2.0.0-20250507083807-716453e5e586 h1:+GMGTCqfY9qY92/pJsnc8k5psz/WImzj/U692TCs4KU=
+github.com/rilldata/go-duckdb/v2 v2.0.0-20250507083807-716453e5e586/go.mod h1:xrGwIsWoH41GxmEsS3K5ZnuM2b8OmXtLTjOxQ5Dfqzs=
 github.com/rilldata/google-cloud-go/bigquery v0.0.0-20250426042021-091fd79360f3 h1:VRGj5Ti1fBMs2UrEJ3kjq2/KL/UfUFRVyBDAYzsB3yg=
 github.com/rilldata/google-cloud-go/bigquery v0.0.0-20250426042021-091fd79360f3/go.mod h1:yTg8kAyK/04LJe6akoH/IoLuvFAO04x0FyJf/YIP13A=
 github.com/riverqueue/river v0.19.0 h1:WRh/NXhp+WEEY0HpCYgr4wSRllugYBt30HtyQ3jlz08=

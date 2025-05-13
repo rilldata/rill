@@ -113,6 +113,7 @@
       <TopNavigationBar
         createMagicAuthTokens={projectPermissions?.createMagicAuthTokens}
         manageProjectMembers={projectPermissions?.manageProjectMembers}
+        manageProjectAdmins={projectPermissions?.manageProjectAdmins}
         {organizationLogoUrl}
         {planDisplayName}
       />

@@ -58,6 +58,7 @@ type Options struct {
 	GithubAppWebhookSecret string
 	GithubClientID         string
 	GithubClientSecret     string
+	GithubManagedAccount   string
 	// AssetsBucket is the path on gcs where rill managed project artifacts are stored.
 	AssetsBucket string
 }

@@ -1,4 +1,4 @@
-import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import type { TimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
 import { convertPartialExploreStateToUrlParams } from "@rilldata/web-common/features/dashboards/url-state/convert-partial-explore-state-to-url-params";
@@ -33,7 +33,7 @@ export function getKeyForSessionStore(
 export function updateExploreSessionStore(
   exploreName: string,
   storageNamespacePrefix: string | undefined,
-  exploreState: MetricsExplorerEntity,
+  exploreState: ExploreState,
   exploreSpec: V1ExploreSpec,
   timeControlsState: TimeControlState | undefined,
 ) {

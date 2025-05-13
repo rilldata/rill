@@ -42,6 +42,7 @@ export class CircularChartComponent extends BaseChart<CircularChartSpec> {
           nullSelector: true,
           limitSelector: true,
           hideTimeDimension: true,
+          defaultLegendOrientation: "right",
         },
       },
     },
@@ -56,7 +57,7 @@ export class CircularChartComponent extends BaseChart<CircularChartSpec> {
     },
     innerRadius: {
       type: "number",
-      label: "Inner Radius",
+      label: "Inner Radius (%)",
     },
   };
 

@@ -549,6 +549,8 @@ func (m *GetOrganizationRequest) validate(all bool) error {
 
 	// no validation rules for Name
 
+	// no validation rules for SuperuserForceAccess
+
 	if len(errors) > 0 {
 		return GetOrganizationRequestMultiError(errors)
 	}
@@ -2388,6 +2390,8 @@ func (m *GetProjectRequest) validate(all bool) error {
 	// no validation rules for Name
 
 	// no validation rules for AccessTokenTtlSeconds
+
+	// no validation rules for SuperuserForceAccess
 
 	// no validation rules for IssueSuperuserToken
 
@@ -7363,6 +7367,8 @@ func (m *HibernateProjectRequest) validate(all bool) error {
 
 	// no validation rules for Project
 
+	// no validation rules for SuperuserForceAccess
+
 	if len(errors) > 0 {
 		return HibernateProjectRequestMultiError(errors)
 	}
@@ -8760,6 +8766,8 @@ func (m *ListOrganizationMemberUsersRequest) validate(all bool) error {
 
 	// no validation rules for PageToken
 
+	// no validation rules for SuperuserForceAccess
+
 	if len(errors) > 0 {
 		return ListOrganizationMemberUsersRequestMultiError(errors)
 	}
@@ -10087,6 +10095,8 @@ func (m *SetOrganizationMemberUserRoleRequest) validate(all bool) error {
 		}
 		errors = append(errors, err)
 	}
+
+	// no validation rules for SuperuserForceAccess
 
 	if len(errors) > 0 {
 		return SetOrganizationMemberUserRoleRequestMultiError(errors)
@@ -13563,6 +13573,8 @@ func (m *ListProjectMemberUsersRequest) validate(all bool) error {
 	}
 
 	// no validation rules for PageToken
+
+	// no validation rules for SuperuserForceAccess
 
 	if len(errors) > 0 {
 		return ListProjectMemberUsersRequestMultiError(errors)
@@ -20330,6 +20342,8 @@ func (m *DeleteUserRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
+	// no validation rules for SuperuserForceAccess
+
 	if len(errors) > 0 {
 		return DeleteUserRequestMultiError(errors)
 	}
@@ -25165,6 +25179,222 @@ var _ interface {
 	ErrorName() string
 } = ConnectProjectToGithubResponseValidationError{}
 
+// Validate checks the field values on CreateManagedGitRepoRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *CreateManagedGitRepoRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on CreateManagedGitRepoRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// CreateManagedGitRepoRequestMultiError, or nil if none found.
+func (m *CreateManagedGitRepoRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *CreateManagedGitRepoRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Organization
+
+	// no validation rules for Name
+
+	if len(errors) > 0 {
+		return CreateManagedGitRepoRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// CreateManagedGitRepoRequestMultiError is an error wrapping multiple
+// validation errors returned by CreateManagedGitRepoRequest.ValidateAll() if
+// the designated constraints aren't met.
+type CreateManagedGitRepoRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m CreateManagedGitRepoRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m CreateManagedGitRepoRequestMultiError) AllErrors() []error { return m }
+
+// CreateManagedGitRepoRequestValidationError is the validation error returned
+// by CreateManagedGitRepoRequest.Validate if the designated constraints
+// aren't met.
+type CreateManagedGitRepoRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e CreateManagedGitRepoRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e CreateManagedGitRepoRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e CreateManagedGitRepoRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e CreateManagedGitRepoRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e CreateManagedGitRepoRequestValidationError) ErrorName() string {
+	return "CreateManagedGitRepoRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e CreateManagedGitRepoRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sCreateManagedGitRepoRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = CreateManagedGitRepoRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = CreateManagedGitRepoRequestValidationError{}
+
+// Validate checks the field values on CreateManagedGitRepoResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *CreateManagedGitRepoResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on CreateManagedGitRepoResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// CreateManagedGitRepoResponseMultiError, or nil if none found.
+func (m *CreateManagedGitRepoResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *CreateManagedGitRepoResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Remote
+
+	// no validation rules for Username
+
+	// no validation rules for Password
+
+	if len(errors) > 0 {
+		return CreateManagedGitRepoResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// CreateManagedGitRepoResponseMultiError is an error wrapping multiple
+// validation errors returned by CreateManagedGitRepoResponse.ValidateAll() if
+// the designated constraints aren't met.
+type CreateManagedGitRepoResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m CreateManagedGitRepoResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m CreateManagedGitRepoResponseMultiError) AllErrors() []error { return m }
+
+// CreateManagedGitRepoResponseValidationError is the validation error returned
+// by CreateManagedGitRepoResponse.Validate if the designated constraints
+// aren't met.
+type CreateManagedGitRepoResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e CreateManagedGitRepoResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e CreateManagedGitRepoResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e CreateManagedGitRepoResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e CreateManagedGitRepoResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e CreateManagedGitRepoResponseValidationError) ErrorName() string {
+	return "CreateManagedGitRepoResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e CreateManagedGitRepoResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sCreateManagedGitRepoResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = CreateManagedGitRepoResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = CreateManagedGitRepoResponseValidationError{}
+
 // Validate checks the field values on UploadProjectAssetsRequest with the
 // rules defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
@@ -25417,6 +25647,8 @@ func (m *GetCloneCredentialsRequest) validate(all bool) error {
 		}
 		errors = append(errors, err)
 	}
+
+	// no validation rules for SuperuserForceAccess
 
 	if len(errors) > 0 {
 		return GetCloneCredentialsRequestMultiError(errors)
@@ -27394,8 +27626,6 @@ func (m *PullVirtualRepoRequest) validate(all bool) error {
 
 	// no validation rules for ProjectId
 
-	// no validation rules for Branch
-
 	if m.GetPageSize() != 0 {
 
 		if m.GetPageSize() > 100 {
@@ -27654,8 +27884,6 @@ func (m *GetReportMetaRequest) validate(all bool) error {
 	var errors []error
 
 	// no validation rules for ProjectId
-
-	// no validation rules for Branch
 
 	// no validation rules for Report
 
@@ -27979,8 +28207,6 @@ func (m *GetAlertMetaRequest) validate(all bool) error {
 	var errors []error
 
 	// no validation rules for ProjectId
-
-	// no validation rules for Branch
 
 	// no validation rules for Alert
 
@@ -31105,6 +31331,8 @@ func (m *GetBillingSubscriptionRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
+	// no validation rules for SuperuserForceAccess
+
 	if len(errors) > 0 {
 		return GetBillingSubscriptionRequestMultiError(errors)
 	}
@@ -31675,6 +31903,8 @@ func (m *CancelBillingSubscriptionRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
+	// no validation rules for SuperuserForceAccess
+
 	if len(errors) > 0 {
 		return CancelBillingSubscriptionRequestMultiError(errors)
 	}
@@ -32195,6 +32425,8 @@ func (m *GetPaymentsPortalURLRequest) validate(all bool) error {
 		}
 		errors = append(errors, err)
 	}
+
+	// no validation rules for SuperuserForceAccess
 
 	if len(errors) > 0 {
 		return GetPaymentsPortalURLRequestMultiError(errors)
@@ -33946,6 +34178,8 @@ func (m *ListOrganizationBillingIssuesRequest) validate(all bool) error {
 	var errors []error
 
 	// no validation rules for Organization
+
+	// no validation rules for SuperuserForceAccess
 
 	if len(errors) > 0 {
 		return ListOrganizationBillingIssuesRequestMultiError(errors)
@@ -36507,6 +36741,8 @@ func (m *ProjectMemberUser) validate(all bool) error {
 
 	// no validation rules for RoleName
 
+	// no validation rules for OrgRoleName
+
 	if all {
 		switch v := interface{}(m.GetCreatedOn()).(type) {
 		case interface{ ValidateAll() error }:
@@ -36813,22 +37049,22 @@ var _ interface {
 	ErrorName() string
 } = UsergroupMemberUserValidationError{}
 
-// Validate checks the field values on UserInvite with the rules defined in the
-// proto definition for this message. If any rules are violated, the first
-// error encountered is returned, or nil if there are no violations.
-func (m *UserInvite) Validate() error {
+// Validate checks the field values on OrganizationInvite with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *OrganizationInvite) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on UserInvite with the rules defined in
-// the proto definition for this message. If any rules are violated, the
-// result is a list of violation errors wrapped in UserInviteMultiError, or
-// nil if none found.
-func (m *UserInvite) ValidateAll() error {
+// ValidateAll checks the field values on OrganizationInvite with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// OrganizationInviteMultiError, or nil if none found.
+func (m *OrganizationInvite) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *UserInvite) validate(all bool) error {
+func (m *OrganizationInvite) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -36837,23 +37073,24 @@ func (m *UserInvite) validate(all bool) error {
 
 	// no validation rules for Email
 
-	// no validation rules for Role
+	// no validation rules for RoleName
 
 	// no validation rules for InvitedBy
 
 	if len(errors) > 0 {
-		return UserInviteMultiError(errors)
+		return OrganizationInviteMultiError(errors)
 	}
 
 	return nil
 }
 
-// UserInviteMultiError is an error wrapping multiple validation errors
-// returned by UserInvite.ValidateAll() if the designated constraints aren't met.
-type UserInviteMultiError []error
+// OrganizationInviteMultiError is an error wrapping multiple validation errors
+// returned by OrganizationInvite.ValidateAll() if the designated constraints
+// aren't met.
+type OrganizationInviteMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m UserInviteMultiError) Error() string {
+func (m OrganizationInviteMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -36862,11 +37099,11 @@ func (m UserInviteMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m UserInviteMultiError) AllErrors() []error { return m }
+func (m OrganizationInviteMultiError) AllErrors() []error { return m }
 
-// UserInviteValidationError is the validation error returned by
-// UserInvite.Validate if the designated constraints aren't met.
-type UserInviteValidationError struct {
+// OrganizationInviteValidationError is the validation error returned by
+// OrganizationInvite.Validate if the designated constraints aren't met.
+type OrganizationInviteValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -36874,22 +37111,24 @@ type UserInviteValidationError struct {
 }
 
 // Field function returns field value.
-func (e UserInviteValidationError) Field() string { return e.field }
+func (e OrganizationInviteValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e UserInviteValidationError) Reason() string { return e.reason }
+func (e OrganizationInviteValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e UserInviteValidationError) Cause() error { return e.cause }
+func (e OrganizationInviteValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e UserInviteValidationError) Key() bool { return e.key }
+func (e OrganizationInviteValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e UserInviteValidationError) ErrorName() string { return "UserInviteValidationError" }
+func (e OrganizationInviteValidationError) ErrorName() string {
+	return "OrganizationInviteValidationError"
+}
 
 // Error satisfies the builtin error interface
-func (e UserInviteValidationError) Error() string {
+func (e OrganizationInviteValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -36901,14 +37140,14 @@ func (e UserInviteValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sUserInvite.%s: %s%s",
+		"invalid %sOrganizationInvite.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = UserInviteValidationError{}
+var _ error = OrganizationInviteValidationError{}
 
 var _ interface {
 	Field() string
@@ -36916,7 +37155,115 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = UserInviteValidationError{}
+} = OrganizationInviteValidationError{}
+
+// Validate checks the field values on ProjectInvite with the rules defined in
+// the proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *ProjectInvite) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ProjectInvite with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in ProjectInviteMultiError, or
+// nil if none found.
+func (m *ProjectInvite) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ProjectInvite) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Email
+
+	// no validation rules for RoleName
+
+	// no validation rules for OrgRoleName
+
+	// no validation rules for InvitedBy
+
+	if len(errors) > 0 {
+		return ProjectInviteMultiError(errors)
+	}
+
+	return nil
+}
+
+// ProjectInviteMultiError is an error wrapping multiple validation errors
+// returned by ProjectInvite.ValidateAll() if the designated constraints
+// aren't met.
+type ProjectInviteMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ProjectInviteMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ProjectInviteMultiError) AllErrors() []error { return m }
+
+// ProjectInviteValidationError is the validation error returned by
+// ProjectInvite.Validate if the designated constraints aren't met.
+type ProjectInviteValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ProjectInviteValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ProjectInviteValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ProjectInviteValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ProjectInviteValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ProjectInviteValidationError) ErrorName() string { return "ProjectInviteValidationError" }
+
+// Error satisfies the builtin error interface
+func (e ProjectInviteValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sProjectInvite.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ProjectInviteValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ProjectInviteValidationError{}
 
 // Validate checks the field values on WhitelistedDomain with the rules defined
 // in the proto definition for this message. If any rules are violated, the

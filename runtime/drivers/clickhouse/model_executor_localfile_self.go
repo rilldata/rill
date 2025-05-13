@@ -146,6 +146,7 @@ func (e *localFileToSelfExecutor) Execute(ctx context.Context, opts *drivers.Mod
 	err = mapstructure.WeakDecode(&ModelResultProperties{
 		Table:         tableName,
 		View:          false,
+		Typ:           outputProps.Typ,
 		UsedModelName: usedModelName,
 	}, &resultPropsMap)
 	if err != nil {

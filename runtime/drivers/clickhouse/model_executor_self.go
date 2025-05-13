@@ -99,6 +99,7 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 	resultProps := &ModelResultProperties{
 		Table:         tableName,
 		View:          asView,
+		Typ:           outputProps.Typ,
 		UsedModelName: usedModelName,
 	}
 	resultPropsMap := map[string]interface{}{}

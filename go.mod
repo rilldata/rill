@@ -53,7 +53,7 @@ require (
 	github.com/go-sql-driver/mysql v1.7.1
 	github.com/gocarina/gocsv v0.0.0-20231116093920-b87c2d0e983a
 	github.com/golang-jwt/jwt/v4 v4.5.0
-	github.com/google/go-github/v50 v50.2.0
+	github.com/google/go-github/v52 v52.0.0
 	github.com/google/uuid v1.6.0
 	github.com/gorilla/securecookie v1.1.1
 	github.com/gorilla/sessions v1.2.1
@@ -278,7 +278,6 @@ require (
 	github.com/google/flatbuffers v25.2.10+incompatible // indirect
 	github.com/google/gnostic-models v0.6.8 // indirect
 	github.com/google/go-cmp v0.7.0 // indirect
-	github.com/google/go-github/v52 v52.0.0 // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/google/s2a-go v0.1.9 // indirect
@@ -463,5 +462,5 @@ replace github.com/dgrijalva/jwt-go => github.com/golang-jwt/jwt v3.2.1+incompat
 // https://github.com/googleapis/google-cloud-go/pull/12065
 replace cloud.google.com/go/bigquery v1.66.2 => github.com/rilldata/google-cloud-go/bigquery v0.0.0-20250426042021-091fd79360f3
 
-// remove when next version of go-duckdb is released
-replace github.com/marcboeker/go-duckdb/v2 => github.com/rilldata/go-duckdb/v2 v2.0.0-20250423070158-2459b722ea3c
+// Adds following PR: https://github.com/marcboeker/go-duckdb/pull/435
+replace github.com/marcboeker/go-duckdb/v2 => github.com/rilldata/go-duckdb/v2 v2.0.0-20250507083807-716453e5e586
