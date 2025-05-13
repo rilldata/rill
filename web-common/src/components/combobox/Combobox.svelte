@@ -14,8 +14,8 @@
   export let placeholder = "Search";
   export let label = "";
   export let id = "";
-  export let onSelectedChange: (value: Selected<string> | undefined) => void;
   export let emptyText = "No results found";
+  export let onSelectedChange: (value: Selected<string> | undefined) => void;
 
   function handleSelectedChange(selected: Selected<string> | undefined) {
     onSelectedChange(selected);
@@ -55,7 +55,11 @@
           value={item.value}
           label={item.label}
         >
-          <AvatarListItem name={item.name} email={item.value} />
+          <AvatarListItem
+            name={item.name}
+            email={item.value}
+            leftSpacing={false}
+          />
           <Combobox.ItemIndicator class="ml-auto" asChild={false}>
             <Check size="16px" />
           </Combobox.ItemIndicator>
