@@ -181,7 +181,6 @@ func generateDoc(parentName string, schema *JSONSchema, indent string, requiredF
 				doc.WriteString(fmt.Sprintf("\n\n%s%s %s", getTypeString(propSchema), addHyphen(propSchema.Description), required))
 			} else {
 				doc.WriteString(fmt.Sprintf("\n\n%s%s**`%s`** %s%s %s", indent, formatString, propName, addHyphen(getTypeString(propSchema)), addHyphen(propSchema.Description), required))
-
 			}
 			if propSchema.Type == "object" && !(propName == "dev" || propName == "prod") {
 				doc.WriteString(generateDoc(propName, propSchema, indent+"  ", getRequiredMap(propSchema.Required)))
