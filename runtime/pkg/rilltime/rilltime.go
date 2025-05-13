@@ -94,7 +94,7 @@ var (
 		timeutil.TimeGrainSecond:  timeutil.TimeGrainMinute,
 		timeutil.TimeGrainMinute:  timeutil.TimeGrainHour,
 		timeutil.TimeGrainHour:    timeutil.TimeGrainDay,
-		timeutil.TimeGrainDay:     timeutil.TimeGrainWeek,
+		timeutil.TimeGrainDay:     timeutil.TimeGrainMonth,
 		timeutil.TimeGrainWeek:    timeutil.TimeGrainMonth,
 		timeutil.TimeGrainMonth:   timeutil.TimeGrainYear,
 		timeutil.TimeGrainQuarter: timeutil.TimeGrainYear,
@@ -105,7 +105,7 @@ var (
 		timeutil.TimeGrainHour:    timeutil.TimeGrainMinute,
 		timeutil.TimeGrainDay:     timeutil.TimeGrainHour,
 		timeutil.TimeGrainWeek:    timeutil.TimeGrainDay,
-		timeutil.TimeGrainMonth:   timeutil.TimeGrainWeek,
+		timeutil.TimeGrainMonth:   timeutil.TimeGrainDay,
 		timeutil.TimeGrainQuarter: timeutil.TimeGrainMonth,
 		timeutil.TimeGrainYear:    timeutil.TimeGrainMonth,
 	}
@@ -695,6 +695,25 @@ func truncateWithCorrection(tm time.Time, tg timeutil.TimeGrain, tz *time.Locati
 		}
 		if weekday >= 5 {
 			tm = timeutil.OffsetTime(tm, tg, 1)
+		}
+	}
+
+	return tm
+}
+
+// ceilWithCorrection ceils time by a grain but corrects for https://en.wikipedia.org/wiki/ISO_week_date#First_week
+// TODO: will adding this directly to timeutil.CeilTime break anything?
+func ceilWithCorrection(tm time.Time, tg timeutil.TimeGrain, tz *time.Location, firstDay, firstMonth int) time.Time {
+	weekday := int(tm.Weekday())
+	tm = timeutil.CeilTime(tm, tg, tz, firstDay, firstMonth)
+
+	if tg == timeutil.TimeGrainWeek {
+		if weekday == 0 {
+			// time package's week starts on sunday
+			weekday = 7
+		}
+		if weekday < 5 {
+			tm = timeutil.OffsetTime(tm, tg, -1)
 		}
 	}
 

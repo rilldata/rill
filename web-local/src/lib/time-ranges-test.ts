@@ -573,7 +573,7 @@ function generateTestCases(now: DateTime): Test[] {
           .minus({
             day: 4,
           })
-          .startOf("month")
+          .endOf("month")
           .minus({
             hour: 23,
           })
@@ -886,7 +886,7 @@ function generateTestCases(now: DateTime): Test[] {
         "The 30th minute of the 12th hour of the fifth day of the last week of quarter three of two years ago",
       interval: Interval.fromDateTimes(
         (now.minus({ year: 2 }).startOf("year").plus({ quarter: 3 }).weekday >=
-        3
+        5
           ? now.minus({ year: 2 }).startOf("year").plus({ quarter: 3 })
           : now
               .minus({ year: 2 })
@@ -900,7 +900,7 @@ function generateTestCases(now: DateTime): Test[] {
           .set({ minute: 29 })
           .startOf("minute"),
         (now.minus({ year: 2 }).startOf("year").plus({ quarter: 3 }).weekday >=
-        3
+        5
           ? now.minus({ year: 2 }).startOf("year").plus({ quarter: 3 })
           : now
               .minus({ year: 2 })

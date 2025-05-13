@@ -95,9 +95,9 @@ type OrdinalDuration struct {
 }
 
 type OrdinalDurationPart struct {
-	Ordinal       *Ord      `parser:"( @@"`
-	Snap          *string   `parser:"| @SnapPrefix"`
-	GrainDuration *GrainDur `parser:"  @@)"`
+	Ordinal       *Ord          `parser:"( @@"`
+	Snap          *string       `parser:"| @SnapPrefix"`
+	GrainDuration *GrainDurPart `parser:"  @@)"`
 }
 
 type Ord struct {
@@ -219,10 +219,13 @@ func (o *OrdinalInterval) eval(evalOpts EvalOptions, start time.Time, tz *time.L
 	end := start
 	if o.End != nil {
 		start, end, _ = o.End.eval(evalOpts, start, tz)
-	} else {
-		tg := higherOrderMap[grainMap[o.Ordinal.Durations[0].Ordinal.Grain]] // TODO: length check
-		start = truncateWithCorrection(start, tg, tz, evalOpts.FirstDay, evalOpts.FirstMonth)
-		end = timeutil.CeilTime(end, tg, tz, evalOpts.FirstDay, evalOpts.FirstMonth)
+	} else if len(o.Ordinal.Durations) > 0 {
+		lastPart := o.Ordinal.Durations[len(o.Ordinal.Durations)-1]
+		if lastPart.Ordinal != nil {
+			tg := higherOrderMap[grainMap[lastPart.Ordinal.Grain]]
+			start = truncateWithCorrection(start, tg, tz, evalOpts.FirstDay, evalOpts.FirstMonth)
+			end = timeutil.CeilTime(end, tg, tz, evalOpts.FirstDay, evalOpts.FirstMonth)
+		}
 	}
 
 	start, end, tg := o.Ordinal.eval(evalOpts, start, end, tz)
@@ -291,6 +294,10 @@ func (o *OrdinalPointInTime) eval(evalOpts EvalOptions, start time.Time, tz *tim
 	end := start
 	if o.Rest != nil {
 		start, end, tg = o.Rest.eval(evalOpts, start, end, tz)
+	} else {
+		tg := higherOrderMap[grainMap[o.Ordinal.Grain]]
+		start = truncateWithCorrection(start, tg, tz, evalOpts.FirstDay, evalOpts.FirstMonth)
+		end = timeutil.CeilTime(end, tg, tz, evalOpts.FirstDay, evalOpts.FirstMonth)
 	}
 
 	start, end, tg = o.Ordinal.eval(evalOpts, start, tz)
@@ -374,15 +381,17 @@ func (o *OrdinalDurationPart) eval(evalOpts EvalOptions, start, end time.Time, t
 		return time.Time{}, time.Time{}, timeutil.TimeGrainUnspecified
 	}
 
-	tg := timeutil.TimeGrainUnspecified
+	tg := grainMap[o.GrainDuration.Grain]
 	if *o.Snap == "<" {
 		// Anchor the range to the beginning of the higher order start
 		// EG: <4d of M : gives 1st 4 days of the current month regardless of current date.
-		end, tg = o.GrainDuration.offset(start, 1)
+		start = truncateWithCorrection(start, tg, tz, evalOpts.FirstDay, evalOpts.FirstMonth)
+		end, _ = o.GrainDuration.offset(start, 1)
 	} else {
 		// Anchor the range to the end of the higher order end
 		// EG: >4d of M : gives last 4 days of the current month regardless of current date.
-		start, tg = o.GrainDuration.offset(end, -1)
+		end = ceilWithCorrection(end, tg, tz, evalOpts.FirstDay, evalOpts.FirstMonth)
+		start, _ = o.GrainDuration.offset(end, -1)
 	}
 	return start, end, tg
 }
@@ -401,8 +410,10 @@ func (o *Ord) eval(evalOpts EvalOptions, start time.Time, tz *time.Location) (ti
 
 func (g *GrainDur) offset(tm time.Time, sign int) (time.Time, timeutil.TimeGrain) {
 	tg := timeutil.TimeGrainUnspecified
-	for _, part := range g.Parts {
-		tm, tg = part.offset(tm, sign)
+	i := len(g.Parts) - 1
+	for i >= 0 {
+		tm, tg = g.Parts[i].offset(tm, sign)
+		i--
 	}
 	return tm, tg
 }
