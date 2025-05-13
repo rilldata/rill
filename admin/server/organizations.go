@@ -570,7 +570,8 @@ func (s *Server) SetOrganizationMemberUserRole(ctx context.Context, req *adminv1
 	}
 
 	claims := auth.GetClaims(ctx)
-	if !claims.OrganizationPermissions(ctx, org.ID).ManageOrgMembers {
+	forceAccess := claims.Superuser(ctx) && req.SuperuserForceAccess
+	if !claims.OrganizationPermissions(ctx, org.ID).ManageOrgMembers && !forceAccess {
 		return nil, status.Error(codes.PermissionDenied, "not allowed to set org members role")
 	}
 
@@ -578,7 +579,7 @@ func (s *Server) SetOrganizationMemberUserRole(ctx context.Context, req *adminv1
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
-	if role.Admin && !claims.OrganizationPermissions(ctx, org.ID).ManageOrgAdmins {
+	if role.Admin && !claims.OrganizationPermissions(ctx, org.ID).ManageOrgAdmins && !forceAccess {
 		return nil, status.Error(codes.PermissionDenied, "as a non-admin you are not allowed to assign an admin role")
 	}
 
@@ -604,7 +605,7 @@ func (s *Server) SetOrganizationMemberUserRole(ctx context.Context, req *adminv1
 	if err != nil {
 		return nil, err
 	}
-	if isAdmin && !claims.OrganizationPermissions(ctx, org.ID).ManageOrgAdmins {
+	if isAdmin && !claims.OrganizationPermissions(ctx, org.ID).ManageOrgAdmins && !forceAccess {
 		return nil, status.Error(codes.PermissionDenied, "as a non-admin you are not allowed to remove an admin member")
 	}
 	if isLastAdmin {
