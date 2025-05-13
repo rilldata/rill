@@ -1219,18 +1219,14 @@ func (s *Server) GetCloneCredentials(ctx context.Context, req *adminv1.GetCloneC
 		attribute.String("args.project", req.Project),
 	)
 
-	claims := auth.GetClaims(ctx)
-	if !claims.Superuser(ctx) {
-		return nil, status.Error(codes.PermissionDenied, "superuser permission required to get clone credentials")
-	}
-
 	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	claims := auth.GetClaims(ctx)
-	if !claims.Superuser(ctx) && !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ManageProject {
+	forceAccess := claims.Superuser(ctx) && req.SuperuserForceAccess
+	if !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ManageProject && !forceAccess {
 		// neither a superuser nor can manage the project
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to get clone credentials")
 	}
@@ -1898,6 +1894,10 @@ func (s *Server) hasAssetUsagePermission(ctx context.Context, id, orgID, ownerID
 func (s *Server) githubRepoIDForProject(ctx context.Context, p *database.Project) (int64, error) {
 	if p.GithubRepoID != nil {
 		return *p.GithubRepoID, nil
+	}
+
+	if p.GithubInstallationID == nil {
+		return 0, fmt.Errorf("project %q is not connected to github", p.Name)
 	}
 
 	client, err := s.admin.Github.InstallationClient(*p.GithubInstallationID)

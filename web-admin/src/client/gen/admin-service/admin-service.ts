@@ -41,6 +41,7 @@ import type {
   AdminServiceEditUsergroupBody,
   AdminServiceGetAlertMetaBody,
   AdminServiceGetBillingSubscriptionParams,
+  AdminServiceGetCloneCredentialsParams,
   AdminServiceGetDeploymentCredentialsBody,
   AdminServiceGetGithubRepoStatusParams,
   AdminServiceGetIFrameBody,
@@ -4062,11 +4063,13 @@ export function createAdminServiceGetAlertYAML<
 export const adminServiceGetCloneCredentials = (
   organization: string,
   project: string,
+  params?: AdminServiceGetCloneCredentialsParams,
   signal?: AbortSignal,
 ) => {
   return httpClient<V1GetCloneCredentialsResponse>({
     url: `/v1/organizations/${organization}/projects/${project}/clone-credentials`,
     method: "GET",
+    params,
     signal,
   });
 };
@@ -4074,9 +4077,11 @@ export const adminServiceGetCloneCredentials = (
 export const getAdminServiceGetCloneCredentialsQueryKey = (
   organization: string,
   project: string,
+  params?: AdminServiceGetCloneCredentialsParams,
 ) => {
   return [
     `/v1/organizations/${organization}/projects/${project}/clone-credentials`,
+    ...(params ? [params] : []),
   ] as const;
 };
 
@@ -4086,6 +4091,7 @@ export const getAdminServiceGetCloneCredentialsQueryOptions = <
 >(
   organization: string,
   project: string,
+  params?: AdminServiceGetCloneCredentialsParams,
   options?: {
     query?: Partial<
       CreateQueryOptions<
@@ -4100,12 +4106,12 @@ export const getAdminServiceGetCloneCredentialsQueryOptions = <
 
   const queryKey =
     queryOptions?.queryKey ??
-    getAdminServiceGetCloneCredentialsQueryKey(organization, project);
+    getAdminServiceGetCloneCredentialsQueryKey(organization, project, params);
 
   const queryFn: QueryFunction<
     Awaited<ReturnType<typeof adminServiceGetCloneCredentials>>
   > = ({ signal }) =>
-    adminServiceGetCloneCredentials(organization, project, signal);
+    adminServiceGetCloneCredentials(organization, project, params, signal);
 
   return {
     queryKey,
@@ -4134,6 +4140,7 @@ export function createAdminServiceGetCloneCredentials<
 >(
   organization: string,
   project: string,
+  params?: AdminServiceGetCloneCredentialsParams,
   options?: {
     query?: Partial<
       CreateQueryOptions<
@@ -4150,6 +4157,7 @@ export function createAdminServiceGetCloneCredentials<
   const queryOptions = getAdminServiceGetCloneCredentialsQueryOptions(
     organization,
     project,
+    params,
     options,
   );
 

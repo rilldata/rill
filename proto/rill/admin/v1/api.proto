@@ -1971,6 +1971,7 @@ enum GithubPermission {
 message GetCloneCredentialsRequest {
   string organization = 1 [(validate.rules).string.min_len = 1];
   string project = 2 [(validate.rules).string.min_len = 1];
+  bool superuser_force_access = 3;
 }
 
 message GetCloneCredentialsResponse {

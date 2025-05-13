@@ -1478,6 +1478,10 @@ export type AdminServiceListProjectsForOrganizationAndUserParams = {
   pageToken?: string;
 };
 
+export type AdminServiceGetCloneCredentialsParams = {
+  superuserForceAccess?: boolean;
+};
+
 export type AdminServiceConnectProjectToGithubBody = {
   repo?: string;
   branch?: string;
