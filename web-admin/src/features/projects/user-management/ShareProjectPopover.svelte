@@ -89,18 +89,15 @@
   async function setAccessEveryone() {
     if (accessType === "everyone") return;
 
-    // Add the autogroup:members user group back with the viewer role
-    // This is the default role for autogroup:members as seen in the tests
     await $addProjectMemberUsergroup.mutateAsync({
       organization,
       project,
       usergroup: "autogroup:members",
       data: {
-        role: "viewer", // Default role for autogroup:members
+        role: "viewer",
       },
     });
 
-    // Invalidate the query to refresh the list
     await queryClient.invalidateQueries({
       queryKey: getAdminServiceListProjectMemberUsergroupsQueryKey(
         organization,
@@ -118,7 +115,6 @@
 
   $: copyLink = `${$page.url.protocol}//${$page.url.host}/${organization}/${project}`;
 
-  // NOTE: viewer: "not allowed to list project user groups"
   $: listProjectMemberUsergroups =
     createAdminServiceListProjectMemberUsergroups(
       organization,
@@ -144,7 +140,6 @@
     },
   );
 
-  // NOTE: viewer: "not authorized to read project members"
   $: listProjectInvites = createAdminServiceListProjectInvites(
     organization,
     project,
@@ -157,7 +152,6 @@
     },
   );
 
-  // NOTE: editor: "not allowed to list user group members"
   $: listUsergroupMemberUsers = createAdminServiceListUsergroupMemberUsers(
     organization,
     "autogroup:members",
@@ -381,7 +375,11 @@
               {#if hasAutogroupMembers}
                 {#each projectMemberUserGroupsList as group}
                   {#if group.groupName === "autogroup:members"}
-                    <UsergroupSetRole {organization} {group} />
+                    <UsergroupSetRole
+                      {organization}
+                      {group}
+                      {manageOrgAdmins}
+                    />
                   {/if}
                 {/each}
               {/if}
