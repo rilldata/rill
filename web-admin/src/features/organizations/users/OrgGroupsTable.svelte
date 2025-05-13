@@ -38,23 +38,23 @@
           usersCount: row.original.usersCount,
         }),
       meta: {
-        widthPercent: 25,
+        widthPercent: 95,
       },
     },
-    {
-      accessorKey: "roleName",
-      header: "Role",
-      cell: ({ row }) =>
-        flexRender(OrgGroupsTableRoleCell, {
-          name: row.original.groupName,
-          role: row.original.roleName,
-          manageOrgAdmins: manageOrgAdmins,
-        }),
-      meta: {
-        widthPercent: 20,
-        marginLeft: "8px",
-      },
-    },
+    // {
+    //   accessorKey: "roleName",
+    //   header: "Role",
+    //   cell: ({ row }) =>
+    //     flexRender(OrgGroupsTableRoleCell, {
+    //       name: row.original.groupName,
+    //       role: row.original.roleName,
+    //       manageOrgAdmins: manageOrgAdmins,
+    //     }),
+    //   meta: {
+    //     widthPercent: 20,
+    //     marginLeft: "8px",
+    //   },
+    // },
     {
       accessorKey: "actions",
       header: "",
