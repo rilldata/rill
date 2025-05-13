@@ -220,7 +220,9 @@ func (p *ModelOutputProperties) tblConfig() string {
 
 	// settings
 	if p.TableSettings != "" {
-		if strings.HasPrefix(p.TableSettings, "SETTINGS") || strings.HasPrefix(p.TableSettings, "settings") {
+		// Backwards compatibility: previously we did not automatically add the `SETTINGS` keyword.
+		// So we only add it if it's not already there.
+		if strings.HasPrefix(strings.TrimSpace(p.TableSettings), "SETTINGS") || strings.HasPrefix(strings.TrimSpace(p.TableSettings), "settings") {
 			fmt.Fprintf(&sb, " %s", p.TableSettings)
 		} else {
 			fmt.Fprintf(&sb, " SETTINGS %s", p.TableSettings)

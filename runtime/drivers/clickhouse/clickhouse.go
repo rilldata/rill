@@ -131,9 +131,9 @@ type configProperties struct {
 	Cluster string `mapstructure:"cluster"`
 	// LogQueries controls whether to log the raw SQL passed to OLAP.Execute.
 	LogQueries bool `mapstructure:"log_queries"`
-	// QuerySettings overrides the default query settings used for OLAP SELECT queries.
+	// QuerySettingsOverride overrides the default query settings used for OLAP SELECT queries.
 	// Use cases include disabling settings or setting `readonly = 1` when using read-only user.
-	QuerySettings string `mapstructure:"query_settings"`
+	QuerySettingsOverride string `mapstructure:"query_settings_override"`
 	// EmbedPort is the port to run Clickhouse locally (0 is random port).
 	EmbedPort int `mapstructure:"embed_port"`
 	// CanScaleToZero indicates if the underlying Clickhouse service may scale to zero when idle.

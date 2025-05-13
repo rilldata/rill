@@ -122,8 +122,8 @@ func (c *Connection) Query(ctx context.Context, stmt *drivers.Statement) (res *d
 		return nil, err
 	}
 
-	if c.config.QuerySettings != "" {
-		stmt.Query += "\n SETTINGS " + c.config.QuerySettings
+	if c.config.QuerySettingsOverride != "" {
+		stmt.Query += "\n SETTINGS " + c.config.QuerySettingsOverride
 	} else {
 		stmt.Query += "\n SETTINGS cast_keep_nullable = 1, join_use_nulls = 1, session_timezone = 'UTC', prefer_global_in_and_join = 1, insert_distributed_sync = 1"
 	}
