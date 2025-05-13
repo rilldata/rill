@@ -381,7 +381,7 @@
               {#if hasAutogroupMembers}
                 {#each projectMemberUserGroupsList as group}
                   {#if group.groupName === "autogroup:members"}
-                    <UsergroupSetRole {organization} {project} {group} />
+                    <UsergroupSetRole {organization} {group} />
                   {/if}
                 {/each}
               {/if}
