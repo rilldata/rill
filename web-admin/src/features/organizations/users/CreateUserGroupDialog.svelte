@@ -237,55 +237,33 @@
       </div>
     </form>
 
-    {#if selectedUsers.length > 0}
-      <div class="flex flex-col gap-2 w-full">
-        <div class="flex flex-row items-center gap-x-1">
-          <div class="text-xs font-semibold uppercase text-gray-500">
-            {selectedUsers.length} Users
-          </div>
-          <Tooltip location="right" alignment="middle" distance={8}>
-            <div class="text-gray-500">
-              <InfoCircle size="12px" />
-            </div>
-            <TooltipContent maxWidth="400px" slot="tooltip-content">
-              Users in this group will inherit the group's permissions.
-            </TooltipContent>
-          </Tooltip>
-        </div>
-        <div class="max-h-[208px] overflow-y-auto">
-          <div class="flex flex-col gap-2">
-            {#each selectedUsers as user (user.userEmail)}
-              <div class="flex flex-row justify-between gap-2 items-center">
-                <div class="flex items-center gap-2">
-                  <Avatar avatarSize="h-7 w-7" alt={user.userName} />
-                  <div class="flex flex-col text-left">
-                    <span class="text-sm font-medium text-gray-900">
-                      {user.userName}
-                      <span class="text-gray-500 font-normal">
-                        {user.userEmail === currentUserEmail ? "(You)" : ""}
-                      </span>
-                    </span>
-                    <span class="text-xs text-gray-500">{user.userEmail}</span>
-                  </div>
-                </div>
-                <Button
-                  type="text"
-                  danger
-                  on:click={() => handleRemoveUser(user.userEmail)}
-                >
-                  Remove
-                </Button>
+    <div class="max-h-[208px] overflow-y-auto">
+      <div class="flex flex-col gap-2">
+        {#each selectedUsers as user (user.userEmail)}
+          <div class="flex flex-row justify-between gap-2 items-center">
+            <div class="flex items-center gap-2">
+              <Avatar avatarSize="h-7 w-7" alt={user.userName} />
+              <div class="flex flex-col text-left">
+                <span class="text-sm font-medium text-gray-900">
+                  {user.userName}
+                  <span class="text-gray-500 font-normal">
+                    {user.userEmail === currentUserEmail ? "(You)" : ""}
+                  </span>
+                </span>
+                <span class="text-xs text-gray-500">{user.userEmail}</span>
               </div>
-            {/each}
+            </div>
+            <Button
+              type="text"
+              danger
+              on:click={() => handleRemoveUser(user.userEmail)}
+            >
+              Remove
+            </Button>
           </div>
-        </div>
+        {/each}
       </div>
-    {:else}
-      <div class="flex flex-col gap-2 w-full">
-        <div class="text-xs font-semibold uppercase text-gray-500">Users</div>
-        <div class="text-gray-500">No users selected</div>
-      </div>
-    {/if}
+    </div>
 
     <DialogFooter>
       <Button type="plain" on:click={handleClose}>Cancel</Button>
