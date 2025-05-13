@@ -49,48 +49,12 @@
   const addUsergroupMemberUser = createAdminServiceAddUsergroupMemberUser();
   const renameUserGroup = createAdminServiceRenameUsergroup();
 
-  async function handleAddUsergroupMemberUser(
-    email: string,
-    usergroup: string,
-  ) {
-    try {
-      await $addUsergroupMemberUser.mutateAsync({
-        organization: organization,
-        usergroup: usergroup,
-        email: email,
-        data: {},
-      });
+  let pendingAdditions: string[] = [];
+  let pendingRemovals: string[] = [];
 
-      await queryClient.invalidateQueries({
-        queryKey:
-          getAdminServiceListOrganizationMemberUsersQueryKey(organization),
-      });
-
-      await queryClient.invalidateQueries({
-        queryKey: getAdminServiceListUsergroupMemberUsersQueryKey(
-          organization,
-          usergroup,
-        ),
-      });
-
-      await queryClient.invalidateQueries({
-        queryKey: getAdminServiceListOrganizationMemberUsergroupsQueryKey(
-          organization,
-          {
-            includeCounts: true,
-          },
-        ),
-      });
-
-      eventBus.emit("notification", {
-        message: "User added to user group",
-      });
-    } catch {
-      eventBus.emit("notification", {
-        message: "Error adding user to user group",
-        type: "error",
-      });
-    }
+  async function handleAddUsergroupMemberUser(email: string) {
+    pendingAdditions = [...pendingAdditions, email];
+    pendingRemovals = pendingRemovals.filter((e) => e !== email);
   }
 
   async function handleRename(groupName: string, newName: string) {
@@ -122,11 +86,32 @@
   }
 
   async function handleRemoveUser(groupName: string, email: string) {
+    pendingRemovals = [...pendingRemovals, email];
+    pendingAdditions = pendingAdditions.filter((e) => e !== email);
+  }
+
+  async function applyPendingChanges() {
     try {
-      await $removeUserGroupMember.mutateAsync({
-        organization: organization,
-        usergroup: groupName,
-        email: email,
+      for (const email of pendingAdditions) {
+        await $addUsergroupMemberUser.mutateAsync({
+          organization: organization,
+          usergroup: groupName,
+          email: email,
+          data: {},
+        });
+      }
+
+      for (const email of pendingRemovals) {
+        await $removeUserGroupMember.mutateAsync({
+          organization: organization,
+          usergroup: groupName,
+          email: email,
+        });
+      }
+
+      await queryClient.invalidateQueries({
+        queryKey:
+          getAdminServiceListOrganizationMemberUsersQueryKey(organization),
       });
 
       await queryClient.invalidateQueries({
@@ -136,25 +121,29 @@
         ),
       });
 
+      await queryClient.invalidateQueries({
+        queryKey: getAdminServiceListOrganizationMemberUsergroupsQueryKey(
+          organization,
+          {
+            includeCounts: true,
+          },
+        ),
+      });
+
+      pendingAdditions = [];
+      pendingRemovals = [];
+
       eventBus.emit("notification", {
-        message: "User removed from user group",
+        message: "User group changes saved successfully",
       });
     } catch (error) {
-      console.error("Error removing user from user group", error);
+      console.error("Error applying group changes", error);
       eventBus.emit("notification", {
-        message: "Error removing user from user group",
+        message: "Error saving user group changes",
         type: "error",
       });
     }
   }
-
-  // We don't want to show users that are already in the group
-  $: availableSearchUsersList = searchUsersList.filter(
-    (user) =>
-      !$listUsergroupMemberUsers.data?.members.some(
-        (member) => member.userEmail === user.userEmail,
-      ),
-  );
 
   const formId = "edit-user-group-form";
 
@@ -186,6 +175,7 @@
 
         try {
           await handleRename(groupName, values.newName);
+          await applyPendingChanges();
           open = false;
         } catch (error) {
           console.error(error);
@@ -193,6 +183,24 @@
       },
     },
   );
+
+  $: availableSearchUsersList = searchUsersList.filter(
+    (user) =>
+      !$listUsergroupMemberUsers.data?.members.some(
+        (member) => member.userEmail === user.userEmail,
+      ) && !pendingAdditions.includes(user.userEmail),
+  );
+
+  $: displayedMembers = [
+    ...($listUsergroupMemberUsers.data?.members.filter(
+      (member) => !pendingRemovals.includes(member.userEmail),
+    ) || []),
+    ...pendingAdditions.map((email) => ({
+      userEmail: email,
+      userName:
+        searchUsersList.find((u) => u.userEmail === email)?.userName || email,
+    })),
+  ];
 
   $: coercedUsersToOptions = availableSearchUsersList.map((user) => ({
     value: user.userEmail,
@@ -203,6 +211,8 @@
   function handleClose() {
     open = false;
     searchText = "";
+    pendingAdditions = [];
+    pendingRemovals = [];
   }
 </script>
 
@@ -246,17 +256,18 @@
           emptyText="No users found"
           onSelectedChange={(value) => {
             if (value) {
-              handleAddUsergroupMemberUser(value.value, groupName);
+              handleAddUsergroupMemberUser(value.value);
+              searchText = ""; // Clear the search after adding
             }
           }}
         />
       </div>
     </form>
-    {#if $listUsergroupMemberUsers.data?.members.length > 0}
+    {#if displayedMembers.length > 0}
       <div class="flex flex-col gap-2 w-full">
         <div class="flex flex-row items-center gap-x-1">
           <div class="text-xs font-semibold uppercase text-gray-500">
-            {$listUsergroupMemberUsers.data?.members.length} Users
+            {displayedMembers.length} Users
           </div>
           <Tooltip location="right" alignment="middle" distance={8}>
             <div class="text-gray-500">
@@ -269,7 +280,7 @@
         </div>
         <div class="max-h-[208px] overflow-y-auto">
           <div class="flex flex-col gap-2">
-            {#each $listUsergroupMemberUsers.data?.members as member}
+            {#each displayedMembers as member}
               <div class="flex flex-row justify-between gap-2 items-center">
                 <div class="flex items-center gap-2">
                   <Avatar avatarSize="h-7 w-7" alt={member.userName} />
@@ -308,7 +319,10 @@
       <Button type="plain" on:click={handleClose}>Cancel</Button>
       <Button
         type="primary"
-        disabled={$submitting || $form.newName.trim() === groupName}
+        disabled={$submitting ||
+          ($form.newName.trim() === groupName &&
+            pendingAdditions.length === 0 &&
+            pendingRemovals.length === 0)}
         form={formId}
         submitForm
       >
