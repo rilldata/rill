@@ -293,6 +293,16 @@ func (p *Parser) parseMetricsView(node *Node) error {
 			return fmt.Errorf("exactly one of column or expression should be set for dimension: %q", dim.Name)
 		}
 
+		// Validate the lookup table fields
+		if dim.LookupTable != "" || dim.LookKeyColumn != "" || dim.LookValueColumn != "" {
+			if dim.LookupTable == "" || dim.LookKeyColumn == "" || dim.LookValueColumn == "" {
+				return fmt.Errorf("all lookup fields should be defined (lookup_table, lookup_key_column and lookup_value_column should be defined")
+			}
+			if strings.Contains(dim.Expression, "dictGet") {
+				return fmt.Errorf("dictGet expression and lookup fields cannot be used together")
+			}
+		}
+
 		lower := strings.ToLower(dim.Name)
 		if _, ok := names[lower]; ok {
 			return fmt.Errorf("found duplicate dimension or measure name %q", dim.Name)
@@ -507,6 +517,17 @@ func (p *Parser) parseMetricsView(node *Node) error {
 		}
 	}
 
+	// Gather all lookup table names
+	var lookupTableNames map[string]bool
+	for _, dim := range tmp.Dimensions {
+		if dim != nil && dim.LookupTable != "" {
+			if lookupTableNames == nil {
+				lookupTableNames = make(map[string]bool)
+			}
+			lookupTableNames[dim.LookupTable] = true
+		}
+	}
+
 	securityRules, err := tmp.Security.Proto()
 	if err != nil {
 		return err
@@ -521,6 +542,13 @@ func (p *Parser) parseMetricsView(node *Node) error {
 		// We may want to remove this at some point, but the cases where it would not be desired are very rare.
 		// Not setting Kind so that inference kicks in.
 		node.Refs = append(node.Refs, ResourceName{Name: tmp.Table})
+	}
+
+	// Attempt to link the lookup tables in the DAG in case they are models.
+	// If they are not models, the upstream logic for refs will filter them out.
+	for lookupTable := range lookupTableNames {
+		// Not setting Kind so that inference kicks in.
+		node.Refs = append(node.Refs, ResourceName{Name: lookupTable})
 	}
 
 	if tmp.DefaultTheme != "" {
@@ -567,17 +595,6 @@ func (p *Parser) parseMetricsView(node *Node) error {
 	for _, dim := range tmp.Dimensions {
 		if dim == nil || dim.Ignore {
 			continue
-		}
-
-		// all dict fields should be defined or none
-		if dim.LookupTable == "" && dim.LookKeyColumn == "" && dim.LookValueColumn == "" { // nolint:revive // avoids checking all permutations
-			// do nothing
-		} else if dim.LookupTable != "" && dim.LookKeyColumn != "" && dim.LookValueColumn != "" {
-			if dim.Expression != "" && strings.Contains(dim.Expression, "dictGet") {
-				return fmt.Errorf("dictGet expression and lookup fields cannot be used together")
-			}
-		} else {
-			return fmt.Errorf("all lookup fields - lookup_table, lookup_key_column and lookup_value_column should be defined")
 		}
 
 		spec.Dimensions = append(spec.Dimensions, &runtimev1.MetricsViewSpec_Dimension{
