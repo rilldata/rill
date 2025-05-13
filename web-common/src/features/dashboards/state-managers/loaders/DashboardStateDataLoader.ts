@@ -10,7 +10,7 @@ import { getExploreStateFromYAMLConfig } from "@rilldata/web-common/features/das
 import { getRillDefaultExploreState } from "@rilldata/web-common/features/dashboards/stores/get-rill-default-explore-state";
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import { normalizeWeekday } from "@rilldata/web-common/features/dashboards/time-controls/new-time-controls";
-import { cleanUrlParamsForEmbed } from "@rilldata/web-common/features/dashboards/url-state/clean-url-params";
+import { cleanEmbedUrlParams } from "@rilldata/web-common/features/dashboards/url-state/clean-url-params";
 import { convertURLSearchParamsToExploreState } from "@rilldata/web-common/features/dashboards/url-state/convertURLSearchParamsToExploreState";
 import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
 import {
@@ -293,7 +293,7 @@ export class DashboardStateDataLoader {
     rillDefaultExploreState: ExploreState;
     backButtonUsed: boolean;
   }) {
-    urlSearchParams = cleanUrlParamsForEmbed(urlSearchParams);
+    urlSearchParams = cleanEmbedUrlParams(urlSearchParams);
 
     const skipSessionStorage = backButtonUsed;
     const exploreStateFromSessionStorage = skipSessionStorage

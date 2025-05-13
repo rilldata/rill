@@ -42,10 +42,13 @@ export function cleanUrlParams(
 }
 
 /**
- * Temporary fix for embed where non-dashboard params are cleaned.
- * TODO: we should do a complete fix for embed
+ * Temporary fix to clean non-dashboard parameters from embed URLs.
+ * When URL parameters exist, they are loaded exclusively from the URL, bypassing dashboard yaml defaults.
+ * Since non-dashboard parameters are already removed in DashboardStateSync during URL state sync, we remove them here preemptively.
+ *
+ * TODO: Implement permanent solution for embed URLs, possibly by ignoring non-dashboard parameters in DashboardStateSync.
  */
-export function cleanUrlParamsForEmbed(searchParams: URLSearchParams) {
+export function cleanEmbedUrlParams(searchParams: URLSearchParams) {
   const cleanedParams = new URLSearchParams(searchParams);
   [
     "access_token",
