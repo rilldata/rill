@@ -1355,7 +1355,7 @@ export type AdminServiceUpdateBillingSubscriptionBodyBody = {
 
 export type AdminServiceTriggerReconcileBodyBody = { [key: string]: unknown };
 
-export type AdminServiceSetOrganizationMemberUserRoleBodyBody = {
+export type AdminServiceSetProjectMemberUserRoleBodyBody = {
   role?: string;
 };
 
@@ -1462,6 +1462,11 @@ export type AdminServiceListOrganizationMemberUsersParams = {
 
 export type AdminServiceAddOrganizationMemberUserBody = {
   email?: string;
+  role?: string;
+  superuserForceAccess?: boolean;
+};
+
+export type AdminServiceSetOrganizationMemberUserRoleBody = {
   role?: string;
   superuserForceAccess?: boolean;
 };
