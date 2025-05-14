@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/alecthomas/participle/v2"
+	"github.com/rilldata/rill/runtime/pkg/duration"
 	"github.com/rilldata/rill/runtime/pkg/timeutil"
 )
 
@@ -12,7 +13,7 @@ var (
 	rillTimeParserFinal = participle.MustBuild[ExpressionFinal](
 		participle.Lexer(rillTimeLexer),
 		participle.Elide("Whitespace"),
-		participle.UseLookahead(-1), // TODO: try and avoid this
+		participle.UseLookahead(25), // We need this to disambiguate certain cases. Mainly for something like `-4d!`
 	)
 )
 
@@ -22,7 +23,9 @@ type ExpressionFinal struct {
 	Grain          *string           `parser:"(By @Grain)?"`
 	TimeZone       *string           `parser:"('@' @TimeZone)?"`
 
-	timeZone *time.Location
+	isNewFormat bool
+	timeZone    *time.Location
+	isoDuration *duration.StandardDuration
 }
 
 type Interval struct {
@@ -114,25 +117,16 @@ type GrainDurPart struct {
 	Grain string `parser:"@Grain"`
 }
 
-func ParseFinal(from string, parseOpts ParseOptions) (*ExpressionFinal, error) {
-	//tokens, err := rillTimeParserFinal.Lex("", strings.NewReader(from))
-	//if err != nil {
-	//	return nil, err
-	//}
-	//syms := rillTimeParserFinal.Lexer().Symbols()
-	//for _, token := range tokens {
-	//	typeName := ""
-	//	for tn, tt := range syms {
-	//		if tt == token.Type {
-	//			typeName = tn
-	//			break
-	//		}
-	//	}
-	//
-	//	fmt.Println(typeName, token.Value)
-	//}
+func Parse(from string, parseOpts ParseOptions) (*ExpressionFinal, error) {
+	var rt *ExpressionFinal
+	var err error
 
-	rt, err := rillTimeParserFinal.ParseString("", from)
+	rt, err = parseISOFinal(from, parseOpts)
+	if err != nil {
+		return nil, err
+	}
+
+	rt, err = rillTimeParserFinal.ParseString("", from)
 	if err != nil {
 		return nil, err
 	}
@@ -175,11 +169,33 @@ func (e *ExpressionFinal) Eval(evalOpts EvalOptions) (time.Time, time.Time, time
 		start, _ = e.AnchorOverride.eval(evalOpts, start, e.timeZone)
 	}
 
-	if e.Interval != nil {
-		return e.Interval.eval(evalOpts, start, e.timeZone)
+	if e.isoDuration != nil {
+		// handling for old iso format
+		isoStart := e.isoDuration.Sub(evalOpts.MaxTime.In(e.timeZone))
+		isoEnd := start
+		tg := timeutil.TimeGrainUnspecified
+		if e.Grain != nil {
+			tg = grainMap[*e.Grain]
+			isoStart = timeutil.TruncateTime(isoStart, tg, e.timeZone, evalOpts.FirstDay, evalOpts.FirstMonth)
+			isoEnd = timeutil.TruncateTime(start, tg, e.timeZone, evalOpts.FirstDay, evalOpts.FirstMonth)
+		}
+
+		return isoStart, isoEnd, tg
 	}
 
-	return start, start, timeutil.TimeGrainUnspecified
+	start, end, tg := e.Interval.eval(evalOpts, start, e.timeZone)
+
+	if e.Grain != nil {
+		tg = grainMap[*e.Grain]
+	} else {
+		twoLower := timeutil.OffsetTime(end, tg, -2)
+		if start.After(twoLower) {
+			// if start > end - 2*grain, then we need to return the lower order grain.
+			tg = lowerOrderMap[tg]
+		}
+	}
+
+	return start, end, tg
 }
 
 /* Intervals */
@@ -208,7 +224,7 @@ func (o *AnchoredDurationInterval) eval(evalOpts EvalOptions, tm time.Time, tz *
 		start = truncateWithCorrection(start, durTg, tz, evalOpts.FirstDay, evalOpts.FirstMonth)
 		end, tg = o.Duration.offset(start, 1)
 	} else if o.Ending {
-		start = truncateWithCorrection(end, durTg, tz, evalOpts.FirstDay, evalOpts.FirstMonth)
+		end = truncateWithCorrection(end, durTg, tz, evalOpts.FirstDay, evalOpts.FirstMonth)
 		start, tg = o.Duration.offset(end, -1)
 	}
 
