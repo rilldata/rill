@@ -11,6 +11,7 @@
   export let ghost = false;
   export let allowPointerEvents = true;
   export let editable = false;
+
   export let onMouseDown: (e: MouseEvent) => void = () => {};
   export let onDuplicate: () => void = () => {};
   export let onDelete: () => void = () => {};
@@ -31,6 +32,7 @@
   style:pointer-events={!allowPointerEvents ? "none" : "auto"}
   class:outline={allowBorder || open}
   class:shadow-sm={allowBorder || open}
+  class:cursor-pointer={editable}
   class="group component-card size-full flex flex-col cursor-pointer z-10 p-0 relative outline-[1px] outline-gray-200 bg-white overflow-hidden rounded-sm"
 >
   {#if editable}
@@ -39,11 +41,11 @@
 
   <div
     role="presentation"
-    class="size-full grow flex flex-col"
+    class="size-full grow flex flex-col component-body"
     on:mousedown={onMouseDown}
   >
     {#if component}
-      <svelte:component this={component.component} {component} />
+      <svelte:component this={component.component} {component} {editable} />
     {:else}
       <div class="size-full grid place-content-center">
         <LoadingSpinner size="36px" />
