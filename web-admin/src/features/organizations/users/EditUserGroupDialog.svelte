@@ -263,7 +263,9 @@
       {#if displayedMembers.length > 0}
         <div class="flex flex-row items-center gap-x-1">
           <div class="text-xs font-semibold uppercase text-gray-500">
-            {displayedMembers.length} Users
+            {displayedMembers.length} User{displayedMembers.length === 1
+              ? ""
+              : "s"}
           </div>
         </div>
       {/if}

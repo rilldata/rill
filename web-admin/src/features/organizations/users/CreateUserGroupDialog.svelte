@@ -242,7 +242,7 @@
       {#if selectedUsers.length > 0}
         <div class="flex flex-row items-center gap-x-1">
           <div class="text-xs font-semibold uppercase text-gray-500">
-            {selectedUsers.length} Users
+            {selectedUsers.length} User{selectedUsers.length === 1 ? "" : "s"}
           </div>
         </div>
       {/if}
