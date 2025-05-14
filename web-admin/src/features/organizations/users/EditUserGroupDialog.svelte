@@ -154,11 +154,11 @@
   const schema = yup(
     object({
       newName: string()
-        .required("New user group name is required")
-        .min(3, "New user group name must be at least 3 characters")
+        .required("Name is required")
+        .min(3, "Name must be at least 3 characters")
         .matches(
           /^[a-z0-9]+(-[a-z0-9]+)*$/,
-          "New user group name must be lowercase and can contain letters, numbers, and hyphens (slug)",
+          "Name must be lowercase and can contain letters, numbers, and hyphens (slug)",
         ),
     }),
   );
