@@ -1238,15 +1238,30 @@ function generateTestCases(now: DateTime): Test[] {
         now.minus({ day: 9 }),
       ),
     },
+    // This fails
     {
-      syntax: `-2y/W^ to -2y/W$ as of 2025-05-14T13:43:00Z`,
+      syntax: `-1y/W^ to -1y/W$ as of 2025-05-17T13:43:00Z`,
       description: "The one week period starting two years ago from 05/14/2025",
       interval: Interval.fromDateTimes(
-        DateTime.fromISO("2025-05-09T13:43:00Z", { zone: "UTC" })
-          .minus({ year: 2 })
+        DateTime.fromISO("2025-05-17T13:43:00Z", { zone: "UTC" })
+          .minus({ year: 1 })
           .startOf("week"),
-        DateTime.fromISO("2025-05-09T13:43:00Z", { zone: "UTC" })
-          .minus({ year: 2 })
+        DateTime.fromISO("2025-05-17T13:43:00Z", { zone: "UTC" })
+          .minus({ year: 1 })
+          .plus({ week: 1 })
+          .startOf("week"),
+      ),
+    },
+    // This doesn't fail (but they should both be the same)
+    {
+      syntax: `-1y/W^ to -1y/W$ as of 2025-05-15T13:43:00Z`,
+      description: "The one week period starting two years ago from 05/14/2025",
+      interval: Interval.fromDateTimes(
+        DateTime.fromISO("2025-05-15T13:43:00Z", { zone: "UTC" })
+          .minus({ year: 1 })
+          .startOf("week"),
+        DateTime.fromISO("2025-05-15T13:43:00Z", { zone: "UTC" })
+          .minus({ year: 1 })
           .plus({ week: 1 })
           .startOf("week"),
       ),
