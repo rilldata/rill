@@ -51,7 +51,7 @@ func DeployCmd(ch *cmdutil.Helper) *cobra.Command {
 
 	deployCmd := &cobra.Command{
 		Use:   "deploy [<path>]",
-		Short: "Deploy project to Rill Cloud by using a Rill Managed GitHub repo",
+		Short: "Deploy project to Rill Cloud by using a Rill Managed Git repo",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if len(args) > 0 {
 				opts.GitPath = args[0]
@@ -200,7 +200,6 @@ func DeployWithUploadFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployO
 		}
 		req.ArchiveAssetId = assetID
 	} else {
-		// need to migrate to rill managed git
 		gitRepo, err := adminClient.CreateManagedGitRepo(ctx, &adminv1.CreateManagedGitRepoRequest{
 			Organization: ch.Org,
 			Name:         opts.Name,
@@ -277,7 +276,7 @@ func redeployUploadedProject(ctx context.Context, projResp *adminv1.GetProjectRe
 	ch.Printer.Println("Found existing project. Starting re-upload.")
 	var updateProjReq *adminv1.UpdateProjectRequest
 	if projResp.Project.GithubUrl != "" {
-		// rill managed github
+		// rill managed git
 		creds, err := adminClient.GetCloneCredentials(ctx, &adminv1.GetCloneCredentialsRequest{
 			Organization: ch.Org,
 			Project:      projResp.Project.Name,

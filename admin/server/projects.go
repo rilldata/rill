@@ -1886,7 +1886,7 @@ func (s *Server) githubOptsForGithubURL(ctx context.Context, orgID, branch strin
 		isMgdGitRepo = false
 	}
 	if isMgdGitRepo {
-		// rill managed github repo
+		// rill managed git repo
 		if mgdGitRepo.OrgID == nil || orgID != *mgdGitRepo.OrgID {
 			return nil, nil, nil, "", status.Error(codes.PermissionDenied, "not allowed to access this managed git repo")
 		}
