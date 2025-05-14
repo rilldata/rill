@@ -42,50 +42,6 @@
   const createUserGroup = createAdminServiceCreateUsergroup();
   const addUsergroupMemberUser = createAdminServiceAddUsergroupMemberUser();
 
-  async function handleAddUsergroupMemberUser(
-    email: string,
-    usergroup: string,
-  ) {
-    try {
-      await $addUsergroupMemberUser.mutateAsync({
-        organization: organization,
-        usergroup: usergroup,
-        email: email,
-        data: {},
-      });
-
-      await queryClient.invalidateQueries({
-        queryKey:
-          getAdminServiceListOrganizationMemberUsersQueryKey(organization),
-      });
-
-      await queryClient.invalidateQueries({
-        queryKey: getAdminServiceListUsergroupMemberUsersQueryKey(
-          organization,
-          usergroup,
-        ),
-      });
-
-      await queryClient.invalidateQueries({
-        queryKey: getAdminServiceListOrganizationMemberUsergroupsQueryKey(
-          organization,
-          {
-            includeCounts: true,
-          },
-        ),
-      });
-
-      eventBus.emit("notification", {
-        message: "User added to user group",
-      });
-    } catch (error) {
-      eventBus.emit("notification", {
-        message: `Error: ${error.response.data.message}`,
-        type: "error",
-      });
-    }
-  }
-
   async function handleCreate(newName: string) {
     try {
       await $createUserGroup.mutateAsync({
