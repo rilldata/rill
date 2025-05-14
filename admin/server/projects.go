@@ -1279,7 +1279,7 @@ func (s *Server) GetCloneCredentials(ctx context.Context, req *adminv1.GetCloneC
 		return nil, err
 	}
 
-	token, err := s.admin.Github.InstallationToken(ctx, *proj.GithubInstallationID, repoID)
+	token, expiresAt, err := s.admin.Github.InstallationToken(ctx, *proj.GithubInstallationID, repoID)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -1291,11 +1291,12 @@ func (s *Server) GetCloneCredentials(ctx context.Context, req *adminv1.GetCloneC
 	}
 
 	return &adminv1.GetCloneCredentialsResponse{
-		GitRepoUrl:    cloneURL,
-		GitUsername:   "x-access-token",
-		GitPassword:   token,
-		GitSubpath:    proj.Subpath,
-		GitProdBranch: proj.ProdBranch,
+		GitRepoUrl:           cloneURL,
+		GitUsername:          "x-access-token",
+		GitPassword:          token,
+		GitPasswordExpiresAt: timestamppb.New(expiresAt),
+		GitSubpath:           proj.Subpath,
+		GitProdBranch:        proj.ProdBranch,
 	}, nil
 }
 

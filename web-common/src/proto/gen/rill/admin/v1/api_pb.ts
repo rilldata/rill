@@ -9139,9 +9139,15 @@ export class CreateManagedGitRepoResponse extends Message<CreateManagedGitRepoRe
   password = "";
 
   /**
+<<<<<<< Updated upstream
    * @generated from field: string default_branch = 4;
    */
   defaultBranch = "";
+=======
+   * @generated from field: google.protobuf.Timestamp password_expires_at = 4;
+   */
+  passwordExpiresAt?: Timestamp;
+>>>>>>> Stashed changes
 
   constructor(data?: PartialMessage<CreateManagedGitRepoResponse>) {
     super();
@@ -9154,7 +9160,11 @@ export class CreateManagedGitRepoResponse extends Message<CreateManagedGitRepoRe
     { no: 1, name: "remote", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "username", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "password", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+<<<<<<< Updated upstream
     { no: 4, name: "default_branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+=======
+    { no: 4, name: "password_expires_at", kind: "message", T: Timestamp },
+>>>>>>> Stashed changes
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateManagedGitRepoResponse {
@@ -9317,6 +9327,11 @@ export class GetCloneCredentialsResponse extends Message<GetCloneCredentialsResp
   gitPassword = "";
 
   /**
+   * @generated from field: google.protobuf.Timestamp git_password_expires_at = 7;
+   */
+  gitPasswordExpiresAt?: Timestamp;
+
+  /**
    * @generated from field: string git_subpath = 4;
    */
   gitSubpath = "";
@@ -9344,6 +9359,7 @@ export class GetCloneCredentialsResponse extends Message<GetCloneCredentialsResp
     { no: 1, name: "git_repo_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "git_username", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "git_password", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 7, name: "git_password_expires_at", kind: "message", T: Timestamp },
     { no: 4, name: "git_subpath", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "git_prod_branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "archive_download_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },

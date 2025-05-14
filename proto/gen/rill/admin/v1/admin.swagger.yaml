@@ -4246,8 +4246,14 @@ definitions:
         type: string
       password:
         type: string
+<<<<<<< Updated upstream
       defaultBranch:
         type: string
+=======
+      passwordExpiresAt:
+        type: string
+        format: date-time
+>>>>>>> Stashed changes
   v1CreateOrganizationRequest:
     type: object
     properties:
@@ -4429,6 +4435,9 @@ definitions:
         type: string
       gitPassword:
         type: string
+      gitPasswordExpiresAt:
+        type: string
+        format: date-time
       gitSubpath:
         type: string
       gitProdBranch:

@@ -7,14 +7,13 @@ import (
 	"net/url"
 	"os"
 	"path"
+	"strconv"
 	"strings"
 
 	"github.com/go-git/go-git/v5"
-	"github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/go-git/go-git/v5/plumbing/transport"
-	githttp "github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	exec "golang.org/x/sys/execabs"
 )
@@ -265,27 +264,183 @@ func CommitAndForcePush(ctx context.Context, projectPath, remote, username, pass
 		return nil
 	}
 
-	// set remote
-	_, err = repo.CreateRemote(&config.RemoteConfig{
-		Name: "origin",
-		URLs: []string{remote},
+	err = RunGitPush(ctx, projectPath, force, GitRemoteCredentials{
+		Remote:   remote,
+		Username: username,
+		Password: password,
 	})
 	if err != nil {
-		if !errors.Is(err, git.ErrRemoteExists) {
-			return fmt.Errorf("failed to create remote: %w", err)
+		var execErr *exec.ExitError
+		if errors.As(err, &execErr) {
+			return fmt.Errorf("git push failed: %s", string(execErr.Stderr))
 		}
-		// remote already exists do nothing we can override the URL while pushing
+		return err
+	}
+	return nil
+}
+
+type GitStatus struct {
+	Branch        string
+	LocalChanges  bool
+	RemoteChanges bool
+}
+
+func RunGitStatus(path string) (*GitStatus, error) {
+	cmd := exec.Command("git", "-C", path, "status", "--porcelain=v2", "--branch")
+	data, err := cmd.CombinedOutput()
+	if err != nil {
+		return nil, err
 	}
 
-	// push the changes
-	err = repo.PushContext(ctx, &git.PushOptions{
-		RemoteName: "origin",
-		RemoteURL:  remote,
-		Auth:       &githttp.BasicAuth{Username: username, Password: password},
-		Force:      true,
-	})
+	// parse the output
+	// Format is
+	// # branch.oid 4954f542d4b1f652bba02064aa8ee64ece38d02a
+	// # branch.head mgd_repo_poc
+	// # branch.upstream origin/mgd_repo_poc
+	// # branch.ab +0 -0
+	// lines describing the status of the working tree
+	status := &GitStatus{}
+	lines := strings.SplitSeq(strings.TrimSpace(string(data)), "\n")
+	for line := range lines {
+		switch {
+		// standard headers - all may not be present
+		case strings.HasPrefix(line, "# branch.oid "):
+		case strings.HasPrefix(line, "# branch.head "):
+			// Should handle detached state ?
+			status.Branch = strings.TrimPrefix(line, "# branch.head ")
+		case strings.HasPrefix(line, "# branch.upstream "):
+		case strings.HasPrefix(line, "# branch.ab "):
+			s := strings.Split(line, " ")
+
+			ahead, err := strconv.Atoi(s[2])
+			if err != nil {
+				return nil, err
+			}
+			if ahead != 0 {
+				status.LocalChanges = true
+			}
+
+			behind, err := strconv.Atoi(s[3])
+			if err != nil {
+				return nil, err
+			}
+			if behind != 0 {
+				status.RemoteChanges = true
+			}
+		default:
+			// any non header line means staged, unstaged or untracked changes
+			status.LocalChanges = true
+			return status, nil
+		}
+	}
+	return status, nil
+}
+
+type GitRemoteCredentials struct {
+	Remote   string
+	Username string
+	Password string
+}
+
+func (g GitRemoteCredentials) FullyQualifiedRemote() (string, error) {
+	if g.Remote == "" {
+		return "", fmt.Errorf("remote is not set")
+	}
+	u, err := url.Parse(g.Remote)
 	if err != nil {
-		return fmt.Errorf("failed to push to remote : %w", err)
+		return "", err
+	}
+	if g.Username != "" {
+		if g.Password != "" {
+			u.User = url.UserPassword(g.Username, g.Password)
+		} else {
+			u.User = url.User(g.Username)
+		}
+	}
+	return u.String(), nil
+}
+
+func RunGitFetch(ctx context.Context, path string) error {
+	args := []string{"-C", path, "fetch"}
+	cmd := exec.CommandContext(ctx, "git", args...)
+	_, err := cmd.Output()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func RunGitPull(ctx context.Context, path string, discardLocal bool, g GitRemoteCredentials) (string, error) {
+	if discardLocal {
+		// instead of doing a hard clean, do a stash instead
+		cmd := exec.CommandContext(ctx, "git", "-C", path, "stash", "--include-untracked")
+		if err := cmd.Run(); err != nil {
+			return "", fmt.Errorf("failed to remove local changes: %w", err)
+		}
+	}
+
+	args := []string{"-C", path, "pull"}
+	if g.Remote != "" {
+		u, err := g.FullyQualifiedRemote()
+		if err != nil {
+			return "", err
+		}
+		args = append(args, u)
+	}
+
+	cmd := exec.CommandContext(ctx, "git", args...)
+	out, err := cmd.Output()
+	if err != nil {
+		var execErr *exec.ExitError
+		if errors.As(err, &execErr) {
+			return "", fmt.Errorf("git pull failed: %s", string(execErr.Stderr))
+		}
+		return "", err
+	}
+	return string(out), nil
+}
+
+func RunGitPush(ctx context.Context, path string, force bool, g GitRemoteCredentials) error {
+	args := []string{"-C", path, "push", "--set-upstream"}
+	if force {
+		args = append(args, "--force")
+	}
+	if g.Remote != "" {
+		u, err := g.FullyQualifiedRemote()
+		if err != nil {
+			return err
+		}
+		args = append(args, u)
+	}
+	st, err := RunGitStatus(path)
+	if err != nil {
+		return err
+	}
+	// TODO :: handle detached state
+	args = append(args, st.Branch)
+
+	cmd := exec.CommandContext(ctx, "git", args...)
+	_, err = cmd.Output()
+	if err != nil {
+		var execErr *exec.ExitError
+		if errors.As(err, &execErr) {
+			return fmt.Errorf("git push failed: %s", string(execErr.Stderr))
+		}
+		return err
+	}
+	return nil
+}
+
+func RunGitClone(ctx context.Context, path, branch string, g GitRemoteCredentials) error {
+	u, err := g.FullyQualifiedRemote()
+	if err != nil {
+		return err
+	}
+
+	cmd := exec.CommandContext(ctx, "git", "clone", "-b", branch, u, path)
+	_, err = cmd.Output()
+	if err != nil {
+		return err
 	}
 	return nil
 }

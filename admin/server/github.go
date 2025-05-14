@@ -38,6 +38,7 @@ import (
 	githuboauth "golang.org/x/oauth2/github"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 const (
@@ -356,7 +357,7 @@ func (s *Server) ConnectProjectToGithub(ctx context.Context, req *adminv1.Connec
 			var appToken string
 			if proj.ManagedGitRepoID != nil {
 				// user token is not valid for cloning rill managed repo
-				appToken, err = s.admin.Github.InstallationToken(ctx, *proj.GithubInstallationID, *proj.GithubRepoID)
+				appToken, _, err = s.admin.Github.InstallationToken(ctx, *proj.GithubInstallationID, ghRepo.GetID())
 				if err != nil {
 					return err
 				}
@@ -417,16 +418,16 @@ func (s *Server) CreateManagedGitRepo(ctx context.Context, req *adminv1.CreateMa
 	if err != nil {
 		return nil, err
 	}
-	token, err := s.admin.Github.InstallationToken(ctx, id, *repo.ID)
+	token, expiresAt, err := s.admin.Github.InstallationToken(ctx, id, *repo.ID)
 	if err != nil {
 		return nil, err
 	}
 
 	return &adminv1.CreateManagedGitRepoResponse{
-		Remote:        *repo.CloneURL,
-		Username:      "x-access-token",
-		Password:      token,
-		DefaultBranch: valOrDefault(repo.DefaultBranch, "main"),
+		Remote:            *repo.CloneURL,
+		Username:          "x-access-token",
+		Password:          token,
+		PasswordExpiresAt: timestamppb.New(expiresAt),
 	}, nil
 }
 

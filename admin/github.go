@@ -33,7 +33,7 @@ type Github interface {
 	AppClient() *github.Client
 	InstallationClient(installationID int64) (*github.Client, error)
 	// InstallationToken returns a token for the installation ID limited to the repoID.
-	InstallationToken(ctx context.Context, installationID, repoID int64) (string, error)
+	InstallationToken(ctx context.Context, installationID, repoID int64) (token string, expiresAt time.Time, err error)
 
 	CreateManagedRepo(ctx context.Context, repoPrefix string) (*github.Repository, error)
 	ManagedOrgInstallationID() (int64, error)
@@ -116,10 +116,10 @@ func (g *githubClient) InstallationClient(installationID int64) (*github.Client,
 	return installationClient, nil
 }
 
-func (g *githubClient) InstallationToken(ctx context.Context, installationID, repoID int64) (string, error) {
+func (g *githubClient) InstallationToken(ctx context.Context, installationID, repoID int64) (token string, expiresAt time.Time, err error) {
 	itr, err := ghinstallation.New(retryableHTTPRoundTripper(), g.appID, installationID, []byte(g.appPrivateKey))
 	if err != nil {
-		return "", fmt.Errorf("failed to create github installation transport: %w", err)
+		return "", time.Time{}, fmt.Errorf("failed to create github installation transport: %w", err)
 	}
 
 	opts := itr.InstallationTokenOptions
@@ -129,12 +129,17 @@ func (g *githubClient) InstallationToken(ctx context.Context, installationID, re
 	}
 	opts.RepositoryIDs = []int64{repoID}
 
-	token, err := itr.Token(ctx)
+	token, err = itr.Token(ctx)
 	if err != nil {
-		return "", fmt.Errorf("failed to create token: %w", err)
+		return "", time.Time{}, fmt.Errorf("failed to create token: %w", err)
 	}
 
-	return token, nil
+	_, at, err := itr.Expiry()
+	if err != nil {
+		return "", time.Time{}, fmt.Errorf("failed to get token expiry: %w", err)
+	}
+
+	return token, at, nil
 }
 
 func (g *githubClient) CreateManagedRepo(ctx context.Context, name string) (*github.Repository, error) {

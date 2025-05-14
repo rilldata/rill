@@ -191,7 +191,7 @@ func DeployUsingManagedGitHubFlow(ctx context.Context, ch *cmdutil.Helper, opts 
 		password = creds.GitPassword
 	}
 
-	err = gitutil.CommitAndForcePush(ctx, localProjectPath, remote, username, password)
+	err = gitutil.CommitAndForcePush(ctx, localProjectPath, remote, username, password, true)
 	if err != nil {
 		return fmt.Errorf("failed to create and push to managed github: %w", err)
 	}

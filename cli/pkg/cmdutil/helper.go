@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/rilldata/rill/admin/client"
+	"github.com/rilldata/rill/cli/pkg/dotgit"
 	"github.com/rilldata/rill/cli/pkg/dotrill"
 	"github.com/rilldata/rill/cli/pkg/dotrillcloud"
 	"github.com/rilldata/rill/cli/pkg/gitutil"
@@ -437,6 +438,48 @@ func (h *Helper) OpenRuntimeClient(ctx context.Context, org, project string, loc
 	}
 
 	return rt, instanceID, nil
+}
+
+func (h *Helper) GitCredentials(ctx context.Context, org, project, projectPath string) (gitutil.GitRemoteCredentials, error) {
+	g := dotgit.New(projectPath)
+	props, err := g.GetAll()
+	if err != nil {
+		return gitutil.GitRemoteCredentials{}, err
+	}
+	// Check if we have the git credentials in .git
+	val, ok := props[dotgit.PasswordExpiryKey]
+	refreshCreds := false
+	if !ok {
+		refreshCreds = true
+	} else {
+		expiryTS, err := time.Parse(time.RFC3339, val)
+		if err != nil || expiryTS.Before(time.Now()) {
+			refreshCreds = true
+		}
+	}
+	if refreshCreds {
+		resp, err := h.adminClient.GetCloneCredentials(ctx, &adminv1.GetCloneCredentialsRequest{
+			Organization: org,
+			Project:      project,
+		})
+		if err != nil {
+			return gitutil.GitRemoteCredentials{}, err
+		}
+		g.Set(dotgit.RemoteKey, resp.GitRepoUrl)
+		g.Set(dotgit.UsernameKey, resp.GitUsername)
+		g.Set(dotgit.PasswordKey, resp.GitPassword)
+		g.Set(dotgit.PasswordExpiryKey, resp.GitPasswordExpiresAt.AsTime().Format(time.RFC3339))
+		props, err = g.GetAll()
+		if err != nil {
+			return gitutil.GitRemoteCredentials{}, err
+		}
+	}
+
+	return gitutil.GitRemoteCredentials{
+		Remote:   props[dotgit.RemoteKey],
+		Username: props[dotgit.UsernameKey],
+		Password: props[dotgit.PasswordKey],
+	}, nil
 }
 
 func hashStr(ss ...string) string {
