@@ -3,6 +3,7 @@ package local
 import (
 	"context"
 	"crypto/rand"
+	"database/sql"
 	"embed"
 	"encoding/base64"
 	"encoding/json"
@@ -930,6 +931,10 @@ func (s *Server) traceHandler() http.Handler {
 
 		bytes, err := observability.SearchTracesFile(r.Context(), traceID, resourceName)
 		if err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				w.WriteHeader(http.StatusNotFound)
+				return
+			}
 			s.logger.Error("failed to search trace", zap.Error(err))
 			w.WriteHeader(http.StatusInternalServerError)
 			return
