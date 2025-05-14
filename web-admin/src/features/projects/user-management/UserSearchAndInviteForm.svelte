@@ -215,7 +215,7 @@
     <div class="relative">
       <MultiInput
         id="emails"
-        placeholder="Search users or enter email addresses (separated by commas)"
+        placeholder="Search users or enter email addresses"
         contentClassName="relative"
         bind:values={$form.emails}
         errors={$errors.emails}
