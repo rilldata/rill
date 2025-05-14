@@ -343,6 +343,10 @@ paths:
           in: path
           required: true
           type: string
+        - name: superuserForceAccess
+          in: query
+          required: false
+          type: boolean
       tags:
         - AdminService
     delete:
@@ -421,6 +425,10 @@ paths:
           in: path
           required: true
           type: string
+        - name: superuserForceAccess
+          in: query
+          required: false
+          type: boolean
       tags:
         - AdminService
   /v1/organizations/{organization}/billing/payments/portal-url:
@@ -445,6 +453,10 @@ paths:
           in: query
           required: false
           type: string
+        - name: superuserForceAccess
+          in: query
+          required: false
+          type: boolean
       tags:
         - AdminService
   /v1/organizations/{organization}/billing/subscriptions:
@@ -465,6 +477,10 @@ paths:
           in: path
           required: true
           type: string
+        - name: superuserForceAccess
+          in: query
+          required: false
+          type: boolean
       tags:
         - AdminService
     delete:
@@ -484,6 +500,10 @@ paths:
           in: path
           required: true
           type: string
+        - name: superuserForceAccess
+          in: query
+          required: false
+          type: boolean
       tags:
         - AdminService
     patch:
@@ -640,6 +660,10 @@ paths:
           in: query
           required: false
           type: string
+        - name: superuserForceAccess
+          in: query
+          required: false
+          type: boolean
       tags:
         - AdminService
     post:
@@ -726,6 +750,8 @@ paths:
             properties:
               role:
                 type: string
+              superuserForceAccess:
+                type: boolean
       tags:
         - AdminService
   /v1/organizations/{organization}/members/current:
@@ -1031,6 +1057,10 @@ paths:
           in: path
           required: true
           type: string
+        - name: superuserForceAccess
+          in: query
+          required: false
+          type: boolean
       tags:
         - AdminService
   /v1/organizations/{organization}/projects/{project}/connect-to-github:
@@ -1136,6 +1166,10 @@ paths:
           in: path
           required: true
           type: string
+        - name: superuserForceAccess
+          in: query
+          required: false
+          type: boolean
       tags:
         - AdminService
   /v1/organizations/{organization}/projects/{project}/iframe:
@@ -1279,6 +1313,10 @@ paths:
           in: query
           required: false
           type: string
+        - name: superuserForceAccess
+          in: query
+          required: false
+          type: boolean
       tags:
         - AdminService
     post:
@@ -1734,15 +1772,13 @@ paths:
         - AdminService
   /v1/organizations/{organization}/projects/{project}/upload-assets:
     post:
-      summary: |-
-        Converts a project connected to github to a rill managed project.
-        Uploads the current project to assets.
-      operationId: AdminService_UploadProjectAssets
+      summary: Converts a project connected to github to a rill managed project.
+      operationId: AdminService_DisconnectProjectFromGithub
       responses:
         "200":
           description: A successful response.
           schema:
-            $ref: '#/definitions/v1UploadProjectAssetsResponse'
+            $ref: '#/definitions/v1DisconnectProjectFromGithubResponse'
         default:
           description: An unexpected error response.
           schema:
@@ -2691,6 +2727,10 @@ paths:
           required: false
           type: integer
           format: int64
+        - name: superuserForceAccess
+          in: query
+          required: false
+          type: boolean
         - name: issueSuperuserToken
           in: query
           required: false
@@ -3097,8 +3137,6 @@ paths:
           schema:
             type: object
             properties:
-              branch:
-                type: string
               alert:
                 type: string
               annotations:
@@ -3153,10 +3191,6 @@ paths:
           in: path
           required: true
           type: string
-        - name: branch
-          in: query
-          required: false
-          type: string
         - name: pageSize
           in: query
           required: false
@@ -3192,8 +3226,6 @@ paths:
           schema:
             type: object
             properties:
-              branch:
-                type: string
               report:
                 type: string
               ownerId:
@@ -3657,6 +3689,10 @@ paths:
           in: path
           required: true
           type: string
+        - name: superuserForceAccess
+          in: query
+          required: false
+          type: boolean
       tags:
         - AdminService
   /v1/users/bookmarks:
@@ -4210,6 +4246,8 @@ definitions:
         type: string
       password:
         type: string
+      defaultBranch:
+        type: string
   v1CreateOrganizationRequest:
     type: object
     properties:
@@ -4301,6 +4339,8 @@ definitions:
       - DEPLOYMENT_STATUS_OK
       - DEPLOYMENT_STATUS_ERROR
     default: DEPLOYMENT_STATUS_UNSPECIFIED
+  v1DisconnectProjectFromGithubResponse:
+    type: object
   v1EditAlertResponse:
     type: object
   v1EditReportResponse:
@@ -5673,8 +5713,6 @@ definitions:
     properties:
       preferences:
         $ref: '#/definitions/v1UserPreferences'
-  v1UploadProjectAssetsResponse:
-    type: object
   v1User:
     type: object
     properties:

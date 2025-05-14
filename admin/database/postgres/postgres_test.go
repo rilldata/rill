@@ -2,6 +2,8 @@ package postgres
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"testing"
@@ -30,6 +32,7 @@ func TestPostgres(t *testing.T) {
 	require.NotNil(t, db)
 
 	require.NoError(t, db.Migrate(ctx))
+	defer func() { require.NoError(t, db.Close()) }()
 
 	t.Run("TestOrganizations", func(t *testing.T) { testOrganizations(t, db) })
 	t.Run("TestOrgsWithPagination", func(t *testing.T) { testOrgsWithPagination(t, db) })
@@ -40,9 +43,70 @@ func TestPostgres(t *testing.T) {
 	t.Run("TestMembersWithPagination", func(t *testing.T) { testOrgsMembersPagination(t, db) })
 	t.Run("TestUpsertProjectVariable", func(t *testing.T) { testUpsertProjectVariable(t, db) })
 	t.Run("TestManagedGitRepos", func(t *testing.T) { testManagedGitRepos(t, db) })
-	// Add new tests here
 
-	require.NoError(t, db.Close())
+	t.Run("TestOrgNameValidation", func(t *testing.T) {
+		cases := []struct {
+			name          string
+			errorContains string
+		}{
+			{"", "must be at least 2 characters"},
+			{"a", "must be at least 2 characters"},
+			{"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "must be at most 40 characters"},
+			{"foo bar", "must use only letters, numbers, underscores and dashes"},
+			{"foo@bar", "must use only letters, numbers, underscores and dashes"},
+			{"foo_bar!", "must use only letters, numbers, underscores and dashes"},
+			{"-foo", "must use only letters, numbers, underscores and dashes"},
+			{"aa", ""},
+			{"foo-", ""},
+			{"_foo", ""},
+			{"foo_bar_baz_123", ""},
+			{"hello", ""},
+			{"foo-bar", ""},
+			{"foo-bar-baz", ""},
+			{"foo_bar_baz", ""},
+			{"foo_bar_baz_123_", ""},
+			{"FooBar", ""},
+		}
+		for _, tc := range cases {
+			t.Run(tc.name, func(t *testing.T) {
+				_, err := db.InsertOrganization(context.Background(), &database.InsertOrganizationOptions{Name: tc.name})
+				if tc.errorContains != "" {
+					require.ErrorContains(t, err, tc.errorContains)
+				} else {
+					require.NoError(t, err)
+					require.NoError(t, db.DeleteOrganization(context.Background(), tc.name))
+				}
+			})
+		}
+	})
+
+	t.Run("TestProjectNameValidation", func(t *testing.T) {
+		org, err := db.InsertOrganization(context.Background(), &database.InsertOrganizationOptions{Name: randomName()})
+		require.NoError(t, err)
+
+		cases := []struct {
+			name          string
+			errorContains string
+		}{
+			{"", "must be at least 1 character"},
+			{"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "must be at most 40 characters"},
+			{"foo bar", "must use only letters, numbers, underscores and dashes"},
+			{"foo!", "must use only letters, numbers, underscores and dashes"},
+			{"a", ""},
+			{"foo", ""},
+			{"Foo-Bar_1", ""},
+		}
+		for _, tc := range cases {
+			t.Run(tc.name, func(t *testing.T) {
+				_, err = db.InsertProject(context.Background(), &database.InsertProjectOptions{OrganizationID: org.ID, Name: tc.name})
+				if tc.errorContains != "" {
+					require.ErrorContains(t, err, tc.errorContains)
+				} else {
+					require.NoError(t, err)
+				}
+			})
+		}
+	})
 }
 
 func testOrganizations(t *testing.T, db database.DB) {
@@ -611,6 +675,15 @@ func seed(t *testing.T, db database.DB) (orgID, projectID, userID string) {
 	require.NoError(t, err)
 
 	return org.ID, proj.ID, adminUser.ID
+}
+
+func randomName() string {
+	id := make([]byte, 16)
+	_, err := rand.Read(id)
+	if err != nil {
+		panic(err)
+	}
+	return "test_" + hex.EncodeToString(id)
 }
 
 func strPtr(s string) *string {

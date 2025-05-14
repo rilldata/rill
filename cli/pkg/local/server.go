@@ -243,7 +243,7 @@ func (s *Server) PushToGithub(ctx context.Context, r *connect.Request[localv1.Pu
 	}
 
 	// git commit -m
-	author, err := autoCommitGitSignature(ctx, c, repo)
+	author, err := autoCommitGitSignature(ctx, c, s.app.ProjectPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate git commit signature: %w", err)
 	}
@@ -318,7 +318,15 @@ func (s *Server) DeployProject(ctx context.Context, r *connect.Request[localv1.D
 		if err != nil {
 			return nil, err
 		}
+<<<<<<< HEAD
 		err = gitutil.CommitAndForcePush(ctx, s.app.ProjectPath, ghRepo.Remote, ghRepo.Username, ghRepo.Password)
+=======
+		author, err := autoCommitGitSignature(ctx, c, s.app.ProjectPath)
+		if err != nil {
+			return nil, fmt.Errorf("failed to generate git commit signature: %w", err)
+		}
+		err = gitutil.CommitAndForcePush(ctx, s.app.ProjectPath, ghRepo.Remote, ghRepo.Username, ghRepo.Password, ghRepo.DefaultBranch, author)
+>>>>>>> mgd_repo_poc
 		if err != nil {
 			return nil, err
 		}
@@ -456,7 +464,11 @@ func (s *Server) RedeployProject(ctx context.Context, r *connect.Request[localv1
 	}
 
 	if r.Msg.Reupload {
+<<<<<<< HEAD
 		var remote, username, password string
+=======
+		var remote, username, password, branch string
+>>>>>>> mgd_repo_poc
 		if projResp.Project.ArchiveAssetId != "" {
 			// project was previously deployed using zip and ship
 			ghRepo, err := c.CreateManagedGitRepo(ctx, &adminv1.CreateManagedGitRepoRequest{
@@ -469,7 +481,12 @@ func (s *Server) RedeployProject(ctx context.Context, r *connect.Request[localv1
 			remote = ghRepo.Remote
 			username = ghRepo.Username
 			password = ghRepo.Password
+<<<<<<< HEAD
 		} else {
+=======
+			branch = ghRepo.DefaultBranch
+		} else if projResp.Project.ManagedGitId != "" {
+>>>>>>> mgd_repo_poc
 			creds, err := c.GetCloneCredentials(ctx, &adminv1.GetCloneCredentialsRequest{
 				Organization: projResp.Project.OrgName,
 				Project:      projResp.Project.Name,
@@ -480,9 +497,22 @@ func (s *Server) RedeployProject(ctx context.Context, r *connect.Request[localv1
 			remote = creds.GitRepoUrl
 			username = creds.GitUsername
 			password = creds.GitPassword
+<<<<<<< HEAD
 		}
 
 		err = gitutil.CommitAndForcePush(ctx, s.app.ProjectPath, remote, username, password)
+=======
+			branch = creds.GitProdBranch
+		} else {
+			return nil, fmt.Errorf("to update this deployment, use GitHub")
+		}
+
+		author, err := autoCommitGitSignature(ctx, c, s.app.ProjectPath)
+		if err != nil {
+			return nil, fmt.Errorf("failed to generate git commit signature: %w", err)
+		}
+		err = gitutil.CommitAndForcePush(ctx, s.app.ProjectPath, remote, username, password, branch, author)
+>>>>>>> mgd_repo_poc
 		if err != nil {
 			return nil, err
 		}
@@ -967,16 +997,20 @@ func (s *Server) traceHandler() http.Handler {
 	})
 }
 
-func autoCommitGitSignature(ctx context.Context, c adminv1.AdminServiceClient, repo *git.Repository) (*object.Signature, error) {
-	cfg, err := repo.ConfigScoped(config.SystemScope)
-	if err == nil && cfg.User.Email != "" && cfg.User.Name != "" {
-		// user has git properly configured use that
-		return &object.Signature{
-			Name:  cfg.User.Name,
-			Email: cfg.User.Email,
-			When:  time.Now(),
-		}, nil
+func autoCommitGitSignature(ctx context.Context, c adminv1.AdminServiceClient, path string) (*object.Signature, error) {
+	repo, err := git.PlainOpen(path)
+	if err == nil {
+		cfg, err := repo.ConfigScoped(config.SystemScope)
+		if err == nil && cfg.User.Email != "" && cfg.User.Name != "" {
+			// user has git properly configured use that
+			return &object.Signature{
+				Name:  cfg.User.Name,
+				Email: cfg.User.Email,
+				When:  time.Now(),
+			}, nil
+		}
 	}
+
 	// use email of rill user
 	userResp, err := c.GetCurrentUser(ctx, &adminv1.GetCurrentUserRequest{})
 	if err != nil {

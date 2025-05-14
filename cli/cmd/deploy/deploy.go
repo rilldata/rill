@@ -41,10 +41,11 @@ func DeployCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			if zipship {
-				return project.DeployWithZipShipFlow(cmd.Context(), ch, opts)
+				opts.ZipShipForUploads = true
+				return project.DeployWithUploadFlow(cmd.Context(), ch, opts)
 			}
 			if upload {
-				return project.DeployUsingManagedGitHubFlow(cmd.Context(), ch, opts)
+				return project.DeployWithUploadFlow(cmd.Context(), ch, opts)
 			}
 			return project.ConnectGithubFlow(cmd.Context(), ch, opts)
 		},
@@ -69,7 +70,7 @@ func DeployCmd(ch *cmdutil.Helper) *cobra.Command {
 	}
 
 	deployCmd.Flags().BoolVar(&upload, "upload", false, "Create project using rill managed repo")
-	deployCmd.Flags().BoolVar(&zipship, "zipship", false, "Create project using the old zip and ship flow(for testing only)")
+	deployCmd.Flags().BoolVar(&zipship, "zipship", false, "Create project using the zip and ship flow(for testing only)")
 	err := deployCmd.Flags().MarkHidden("zipship")
 	if err != nil {
 		panic(err)

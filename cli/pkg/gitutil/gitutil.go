@@ -12,6 +12,7 @@ import (
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/go-git/go-git/v5/plumbing/transport"
 	githttp "github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
@@ -226,11 +227,11 @@ func GetSyncStatus(repoPath, branch, remote string) (SyncStatus, error) {
 	return SyncStatusSynced, nil
 }
 
-func CommitAndForcePush(ctx context.Context, projectPath, remote, username, password string) error {
+func CommitAndForcePush(ctx context.Context, projectPath, remote, username, password, branch string, author *object.Signature) error {
 	// init git repo
 	repo, err := git.PlainInitWithOptions(projectPath, &git.PlainInitOptions{
 		InitOptions: git.InitOptions{
-			DefaultBranch: plumbing.NewBranchReferenceName("main"),
+			DefaultBranch: plumbing.NewBranchReferenceName(branch),
 		},
 		Bare: false,
 	})
@@ -255,11 +256,13 @@ func CommitAndForcePush(ctx context.Context, projectPath, remote, username, pass
 	}
 
 	// git commit -m
-	_, err = wt.Commit("Auto committed by Rill", &git.CommitOptions{All: true})
+	_, err = wt.Commit("Auto committed by Rill", &git.CommitOptions{All: true, Author: author})
 	if err != nil {
 		if !errors.Is(err, git.ErrEmptyCommit) {
 			return fmt.Errorf("failed to commit files to git: %w", err)
 		}
+		// empty commit - nothing to cmmit
+		return nil
 	}
 
 	// set remote

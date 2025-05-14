@@ -269,10 +269,10 @@ type DB interface {
 
 	SearchProjectUsers(ctx context.Context, projectID, emailQuery string, afterEmail string, limit int) ([]*User, error)
 
-	FindVirtualFiles(ctx context.Context, projectID, branch string, afterUpdatedOn time.Time, afterPath string, limit int) ([]*VirtualFile, error)
-	FindVirtualFile(ctx context.Context, projectID, branch, path string) (*VirtualFile, error)
+	FindVirtualFiles(ctx context.Context, projectID, environment string, afterUpdatedOn time.Time, afterPath string, limit int) ([]*VirtualFile, error)
+	FindVirtualFile(ctx context.Context, projectID, environment, path string) (*VirtualFile, error)
 	UpsertVirtualFile(ctx context.Context, opts *InsertVirtualFileOptions) error
-	UpdateVirtualFileDeleted(ctx context.Context, projectID, branch, path string) error
+	UpdateVirtualFileDeleted(ctx context.Context, projectID, environment, path string) error
 	DeleteExpiredVirtualFiles(ctx context.Context, retention time.Duration) error
 
 	FindAsset(ctx context.Context, id string) (*Asset, error)
@@ -358,7 +358,7 @@ type Organization struct {
 
 // InsertOrganizationOptions defines options for inserting a new org
 type InsertOrganizationOptions struct {
-	Name                                string `validate:"slug"`
+	Name                                string `validate:"min=2,max=40,slug"`
 	DisplayName                         string
 	Description                         string
 	LogoAssetID                         *string
@@ -379,7 +379,7 @@ type InsertOrganizationOptions struct {
 
 // UpdateOrganizationOptions defines options for updating an existing org
 type UpdateOrganizationOptions struct {
-	Name                                string `validate:"slug"`
+	Name                                string `validate:"min=2,max=40,slug"`
 	DisplayName                         string
 	Description                         string
 	LogoAssetID                         *string
@@ -435,7 +435,7 @@ type Project struct {
 // InsertProjectOptions defines options for inserting a new Project.
 type InsertProjectOptions struct {
 	OrganizationID       string `validate:"required"`
-	Name                 string `validate:"slug"`
+	Name                 string `validate:"min=1,max=40,slug"`
 	Description          string
 	Public               bool
 	CreatedByUserID      *string
@@ -456,7 +456,7 @@ type InsertProjectOptions struct {
 
 // UpdateProjectOptions defines options for updating a Project.
 type UpdateProjectOptions struct {
-	Name                 string `validate:"slug"`
+	Name                 string `validate:"min=1,max=40,slug"`
 	Description          string
 	Public               bool
 	Provisioner          string
@@ -584,8 +584,8 @@ type UpdateUserOptions struct {
 // Service accounts may belong to single organization
 type Service struct {
 	ID        string
-	OrgID     string    `db:"org_id"`
-	Name      string    `validate:"slug"`
+	OrgID     string `db:"org_id"`
+	Name      string
 	CreatedOn time.Time `db:"created_on"`
 	UpdatedOn time.Time `db:"updated_on"`
 	ActiveOn  time.Time `db:"active_on"`
@@ -594,19 +594,19 @@ type Service struct {
 // InsertServiceOptions defines options for inserting a new service
 type InsertServiceOptions struct {
 	OrgID string
-	Name  string `validate:"slug"`
+	Name  string `validate:"min=1,max=40,slug"`
 }
 
 // UpdateServiceOptions defines options for updating an existing service
 type UpdateServiceOptions struct {
-	Name string `validate:"slug"`
+	Name string `validate:"min=1,max=40,slug"`
 }
 
 // Usergroup represents a group of org members
 type Usergroup struct {
 	ID          string    `db:"id"`
 	OrgID       string    `db:"org_id"`
-	Name        string    `db:"name" validate:"slug"`
+	Name        string    `db:"name"`
 	Managed     bool      `db:"managed"`
 	Description string    `db:"description"`
 	CreatedOn   time.Time `db:"created_on"`
@@ -616,7 +616,7 @@ type Usergroup struct {
 // InsertUsergroupOptions defines options for inserting a new usergroup
 type InsertUsergroupOptions struct {
 	OrgID   string
-	Name    string `validate:"slug"`
+	Name    string `validate:"min=1,max=40,slug"`
 	Managed bool
 }
 
@@ -905,7 +905,7 @@ type UsergroupMemberUser struct {
 // MemberUsergroup is a convenience type used for display-friendly representation of an org or project member that is a usergroup.
 type MemberUsergroup struct {
 	ID         string    `db:"id"`
-	Name       string    `db:"name" validate:"slug"`
+	Name       string    `db:"name"`
 	Managed    bool      `db:"managed"`
 	RoleName   string    `db:"role_name"`
 	UsersCount int       `db:"users_count"`
@@ -1074,10 +1074,10 @@ type VirtualFile struct {
 
 // InsertVirtualFileOptions defines options for inserting a VirtualFile
 type InsertVirtualFileOptions struct {
-	ProjectID string
-	Branch    string
-	Path      string `validate:"required"`
-	Data      []byte `validate:"max=131072"` // 128kb
+	ProjectID   string
+	Environment string
+	Path        string `validate:"required"`
+	Data        []byte `validate:"max=131072"` // 128kb
 }
 
 // Asset represents a user-uploaded file asset.

@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/AlecAivazis/survey/v2"
+	"github.com/rilldata/rill/admin/client"
 	"github.com/rilldata/rill/cli/cmd/org"
 	"github.com/rilldata/rill/cli/pkg/browser"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
@@ -18,6 +19,7 @@ import (
 	"github.com/rilldata/rill/cli/pkg/local"
 	"github.com/rilldata/rill/cli/pkg/printer"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
+	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"github.com/spf13/cobra"
@@ -31,16 +33,17 @@ var (
 )
 
 type DeployOpts struct {
-	GitPath     string
-	SubPath     string
-	RemoteName  string
-	Name        string
-	Description string
-	Public      bool
-	Provisioner string
-	ProdVersion string
-	ProdBranch  string
-	Slots       int
+	GitPath           string
+	SubPath           string
+	RemoteName        string
+	Name              string
+	Description       string
+	Public            bool
+	Provisioner       string
+	ProdVersion       string
+	ProdBranch        string
+	Slots             int
+	ZipShipForUploads bool
 }
 
 func DeployCmd(ch *cmdutil.Helper) *cobra.Command {
@@ -48,7 +51,7 @@ func DeployCmd(ch *cmdutil.Helper) *cobra.Command {
 
 	deployCmd := &cobra.Command{
 		Use:   "deploy [<path>]",
-		Short: "Deploy project to Rill Cloud by using a Rill Managed GitHub repo",
+		Short: "Deploy project to Rill Cloud by using a Rill Managed Git repo",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if len(args) > 0 {
 				opts.GitPath = args[0]
@@ -346,27 +349,9 @@ func DeployWithZipShipFlow(ctx context.Context, ch *cmdutil.Helper, opts *Deploy
 		}
 	}
 
-	// check if the project with name already exists
+	// check if the project already exists
 	if projResp != nil {
-		if projResp.Project.GithubUrl != "" {
-			ch.PrintfError("Found existing project. But it is connected to a github repo.\nPush any changes to %q to deploy.\n", projResp.Project.GithubUrl)
-			return nil
-		}
-
-		ch.Printer.Println("Found existing project. Starting re-upload.")
-		assetID, err := cmdutil.UploadRepo(ctx, repo, ch, ch.Org, opts.Name)
-		if err != nil {
-			return err
-		}
-		printer.ColorGreenBold.Printf("All files uploaded successfully.\n\n")
-
-		// Update the project
-		// Silently ignores other flags like description etc which are handled with project update.
-		res, err := adminClient.UpdateProject(ctx, &adminv1.UpdateProjectRequest{
-			OrganizationName: ch.Org,
-			Name:             opts.Name,
-			ArchiveAssetId:   &assetID,
-		})
+		err = redeployUploadedProject(ctx, projResp, ch, adminClient, localProjectPath, opts, repo)
 		if err != nil {
 			if s, ok := status.FromError(err); ok && s.Code() == codes.PermissionDenied {
 				ch.PrintfError("You do not have the permissions needed to update a project in org %q. Please reach out to your Rill admin.\n", ch.Org)
@@ -374,38 +359,10 @@ func DeployWithZipShipFlow(ctx context.Context, ch *cmdutil.Helper, opts *Deploy
 			}
 			return fmt.Errorf("update project failed with error %w", err)
 		}
-		ch.Telemetry(ctx).RecordBehavioralLegacy(activity.BehavioralEventDeploySuccess)
-
-		// Fetch vars from .env
-		vars, err := local.ParseDotenv(ctx, localProjectPath)
-		if err != nil {
-			ch.PrintfWarn("Failed to parse .env: %v\n", err)
-		} else if len(vars) > 0 {
-			_, err = adminClient.UpdateProjectVariables(ctx, &adminv1.UpdateProjectVariablesRequest{
-				Organization: ch.Org,
-				Project:      opts.Name,
-				Variables:    vars,
-			})
-			if err != nil {
-				ch.PrintfWarn("Failed to upload .env: %v\n", err)
-			}
-		}
-
-		// Success
-		ch.PrintfSuccess("Updated project \"%s/%s\".\n\n", ch.Org, res.Project.Name)
 		return nil
 	}
 
-	// create a tar archive of the project and upload it
-	ch.Printer.Println("Starting upload.")
-	assetID, err := cmdutil.UploadRepo(ctx, repo, ch, ch.Org, opts.Name)
-	if err != nil {
-		return err
-	}
-	printer.ColorGreenBold.Printf("All files uploaded successfully.\n\n")
-
-	// Create the project
-	res, err := adminClient.CreateProject(ctx, &adminv1.CreateProjectRequest{
+	req := &adminv1.CreateProjectRequest{
 		OrganizationName: ch.Org,
 		Name:             opts.Name,
 		Description:      opts.Description,
@@ -415,8 +372,38 @@ func DeployWithZipShipFlow(ctx context.Context, ch *cmdutil.Helper, opts *Deploy
 		ProdOlapDsn:      local.DefaultOLAPDSN,
 		ProdSlots:        int64(opts.Slots),
 		Public:           opts.Public,
-		ArchiveAssetId:   assetID,
-	})
+	}
+
+	ch.Printer.Println("Starting upload.")
+	if opts.ZipShipForUploads {
+		// create a tar archive of the project and upload it
+		assetID, err := cmdutil.UploadRepo(ctx, repo, ch, ch.Org, opts.Name)
+		if err != nil {
+			return err
+		}
+		req.ArchiveAssetId = assetID
+	} else {
+		gitRepo, err := adminClient.CreateManagedGitRepo(ctx, &adminv1.CreateManagedGitRepoRequest{
+			Organization: ch.Org,
+			Name:         opts.Name,
+		})
+		if err != nil {
+			return err
+		}
+		author, err := autoCommitGitSignature(ctx, adminClient, localProjectPath)
+		if err != nil {
+			return err
+		}
+		err = gitutil.CommitAndForcePush(ctx, localProjectPath, gitRepo.Remote, gitRepo.Username, gitRepo.Password, gitRepo.DefaultBranch, author)
+		if err != nil {
+			return err
+		}
+		req.GithubUrl = gitRepo.Remote
+	}
+	printer.ColorGreenBold.Printf("All files uploaded successfully.\n\n")
+
+	// Create the project
+	res, err := adminClient.CreateProject(ctx, req)
 	if err != nil {
 		if s, ok := status.FromError(err); ok && s.Code() == codes.PermissionDenied {
 			ch.PrintfError("You do not have the permissions needed to create a project in org %q. Please reach out to your Rill admin.\n", ch.Org)
@@ -460,6 +447,104 @@ func DeployWithZipShipFlow(ctx context.Context, ch *cmdutil.Helper, opts *Deploy
 		}
 	}
 	ch.Telemetry(ctx).RecordBehavioralLegacy(activity.BehavioralEventDeploySuccess)
+	return nil
+}
+
+func redeployUploadedProject(ctx context.Context, projResp *adminv1.GetProjectResponse, ch *cmdutil.Helper, adminClient *client.Client, localProjectPath string, opts *DeployOpts, repo drivers.RepoStore) error {
+	if projResp.Project.GithubUrl != "" && projResp.Project.ManagedGitId == "" {
+		// connected to user managed github
+		ch.PrintfError("Found existing project. But it is connected to a github repo.\nPush any changes to %q to deploy.\n", projResp.Project.GithubUrl)
+		return nil
+	}
+	ch.Printer.Println("Found existing project. Starting re-upload.")
+	var updateProjReq *adminv1.UpdateProjectRequest
+	if projResp.Project.GithubUrl != "" {
+		// rill managed git
+		creds, err := adminClient.GetCloneCredentials(ctx, &adminv1.GetCloneCredentialsRequest{
+			Organization: ch.Org,
+			Project:      projResp.Project.Name,
+		})
+		if err != nil {
+			return err
+		}
+		author, err := autoCommitGitSignature(ctx, adminClient, localProjectPath)
+		if err != nil {
+			return err
+		}
+		err = gitutil.CommitAndForcePush(ctx, localProjectPath, projResp.Project.GithubUrl, creds.GitUsername, creds.GitPassword, creds.GitProdBranch, author)
+		if err != nil {
+			return err
+		}
+	} else {
+		// older zip and ship flow
+		if opts.ZipShipForUploads {
+			assetID, err := cmdutil.UploadRepo(ctx, repo, ch, ch.Org, opts.Name)
+			if err != nil {
+				return err
+			}
+			updateProjReq = &adminv1.UpdateProjectRequest{
+				OrganizationName: ch.Org,
+				Name:             projResp.Project.Name,
+				ArchiveAssetId:   &assetID,
+			}
+		} else {
+			// need to migrate to rill managed git
+			gitRepo, err := adminClient.CreateManagedGitRepo(ctx, &adminv1.CreateManagedGitRepoRequest{
+				Organization: ch.Org,
+				Name:         projResp.Project.Name,
+			})
+			if err != nil {
+				return err
+			}
+			author, err := autoCommitGitSignature(ctx, adminClient, localProjectPath)
+			if err != nil {
+				return err
+			}
+			err = gitutil.CommitAndForcePush(ctx, localProjectPath, gitRepo.Remote, gitRepo.Username, gitRepo.Password, gitRepo.DefaultBranch, author)
+			if err != nil {
+				return err
+			}
+			updateProjReq = &adminv1.UpdateProjectRequest{
+				OrganizationName: ch.Org,
+				Name:             opts.Name,
+				GithubUrl:        &gitRepo.Remote,
+			}
+		}
+	}
+
+	if updateProjReq != nil {
+		// Update the project
+		// Silently ignores other flags like description etc which are handled with project update.
+		_, err := adminClient.UpdateProject(ctx, updateProjReq)
+		if err != nil {
+			if s, ok := status.FromError(err); ok && s.Code() == codes.PermissionDenied {
+				ch.PrintfError("You do not have the permissions needed to update a project in org %q. Please reach out to your Rill admin.\n", ch.Org)
+				return nil
+			}
+			return fmt.Errorf("update project failed with error %w", err)
+		}
+	}
+
+	printer.ColorGreenBold.Printf("All files uploaded successfully.\n\n")
+	ch.Telemetry(ctx).RecordBehavioralLegacy(activity.BehavioralEventDeploySuccess)
+
+	// Fetch vars from .env
+	vars, err := local.ParseDotenv(ctx, localProjectPath)
+	if err != nil {
+		ch.PrintfWarn("Failed to parse .env: %v\n", err)
+	} else if len(vars) > 0 {
+		_, err = adminClient.UpdateProjectVariables(ctx, &adminv1.UpdateProjectVariablesRequest{
+			Organization: ch.Org,
+			Project:      projResp.Project.Name,
+			Variables:    vars,
+		})
+		if err != nil {
+			ch.PrintfWarn("Failed to upload .env: %v\n", err)
+		}
+	}
+
+	// Success
+	ch.PrintfSuccess("Updated project \"%s/%s\".\n\n", ch.Org, projResp.Project.Name)
 	return nil
 }
 
