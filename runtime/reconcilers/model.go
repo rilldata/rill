@@ -242,7 +242,7 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 		}
 	}
 
-	// Check if we need to reset the model
+	// Check if and how we should trigger
 	trigger, triggerReset, err := r.shouldTrigger(ctx, self, specHash, refsHash, exists, refreshOn)
 	if err != nil {
 		// This error indicates a manual intervention is required.
@@ -1484,6 +1484,67 @@ func (r *ModelReconciler) analyzeTemplatedVariables(ctx context.Context, props m
 	return res, nil
 }
 
+// shouldTrigger determines if a model should trigger based on its change mode and the current state.
+// If `triggerReset` is returned as true, `trigger` will also be true.
+func (r *ModelReconciler) shouldTrigger(ctx context.Context, self *runtimev1.Resource, specHash, refsHash string, exists bool, refreshOn time.Time) (trigger, triggerReset bool, err error) {
+	model := self.GetModel()
+
+	// Determine if this is the first run of the model
+	firstRun := model.State.ResultConnector == "" || model.State.RefreshedOn == nil || !exists
+
+	// Determine if the spec changed
+	specChanged := model.State.SpecHash != specHash
+
+	// Determine if our refresh clause or DAG refs indicate we should trigger
+	scheduledTrigger := model.State.RefsHash != refsHash
+	scheduledTrigger = scheduledTrigger || !refreshOn.IsZero() && time.Now().After(refreshOn)
+
+	// Handle the change mode.
+	switch model.Spec.ChangeMode {
+	// Reset mode is the default. It does a full refresh when the model spec changes.
+	case runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET:
+		full := model.Spec.TriggerFull || firstRun || specChanged
+		trigger := full || model.Spec.Trigger || scheduledTrigger
+		return trigger, full, nil
+
+	// Manual mode requires a manual full or incremental trigger to run when the model spec changes.
+	case runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_MANUAL:
+		// If it's the first run or the spec changed, we block until we observe a manual trigger.
+		if firstRun || specChanged {
+			if !model.Spec.Trigger && !model.Spec.TriggerFull {
+				return false, false, fmt.Errorf("execution paused because the model definition has changed and 'change_mode' is 'manual': you must manually trigger a refresh")
+			}
+			return true, model.Spec.TriggerFull || firstRun, nil
+		}
+
+		full := model.Spec.TriggerFull
+		trigger := full || scheduledTrigger || model.Spec.Trigger
+		return full, trigger, nil
+
+	// Patch mode changes to the new model logic without a full refresh.
+	case runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_PATCH:
+		if !model.Spec.Incremental {
+			return false, false, fmt.Errorf("change_mode=patch can only be used with incremental models")
+		}
+
+		if model.Spec.TriggerFull || firstRun {
+			return true, true, nil
+		}
+
+		if specChanged {
+			model.State.SpecHash = specHash
+			if err := r.C.UpdateState(ctx, self.Meta.Name, self); err != nil {
+				return false, false, err
+			}
+			r.C.Logger.Info("Updated model definition without a full refresh because change_mode=patch", zap.String("model", self.Meta.Name.Name), observability.ZapCtx(ctx))
+		}
+
+		return specChanged || scheduledTrigger, false, nil
+	default:
+		return false, false, fmt.Errorf("unknown change mode %q", model.Spec.ChangeMode)
+	}
+}
+
 // hashWriteMapOrdered writes the keys and values of a map to the writer in a deterministic order.
 func hashWriteMapOrdered(w io.Writer, m map[string]string) error {
 	keys := make([]string, 0, len(m))
@@ -1514,62 +1575,4 @@ func md5Hash(val []byte) (string, error) {
 		return "", err
 	}
 	return hex.EncodeToString(hash.Sum(nil)), nil
-}
-
-// shouldTrigger determines if a model should trigger an incremental or full refresh based on its change mode and the current state.
-func (r *ModelReconciler) shouldTrigger(ctx context.Context, self *runtimev1.Resource, specHash, refsHash string, exists bool, refreshOn time.Time) (trigger, triggerReset bool, err error) {
-	model := self.GetModel()
-
-	// Determine if this is the first run of the model
-	firstRun := model.State.ResultConnector == "" || model.State.RefreshedOn == nil || !exists
-
-	// Determine if our refresh clause or DAG refs indicate we should trigger
-	scheduledTrigger := model.State.RefsHash != refsHash
-	scheduledTrigger = scheduledTrigger || !refreshOn.IsZero() && time.Now().After(refreshOn)
-
-	// Determine if the spec changed
-	specChanged := model.State.SpecHash != specHash
-
-	// Handle the change mode.
-	// Reset mode is the default. It does a full refresh when the model spec changes.
-	// Manual mode requires a manual full or incremental trigger to run when the model spec changes.
-	// Patch mode changes to the new model logic without a full refresh.
-	switch model.Spec.ChangeMode {
-	case runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET:
-		full := model.Spec.TriggerFull || firstRun || model.State.SpecHash != specHash
-		trigger := full || scheduledTrigger || model.Spec.Trigger
-		return trigger, full, nil
-	case runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_MANUAL:
-		// If it's the first run or the spec changed, we block until we observe a manual trigger.
-		if firstRun || specChanged {
-			if !model.Spec.Trigger && !model.Spec.TriggerFull {
-				return false, false, fmt.Errorf("execution paused because the model definition has changed and 'change_mode' is 'manual': you must manually trigger either a full or incremental refresh")
-			}
-			return true, model.Spec.TriggerFull || firstRun, nil
-		}
-
-		full := model.Spec.TriggerFull
-		trigger := full || scheduledTrigger || model.Spec.Trigger
-		return full, trigger, nil
-	case runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_PATCH:
-		if !model.Spec.Incremental {
-			return false, false, fmt.Errorf("change_mode=patch can only be used with incremental models")
-		}
-
-		if model.Spec.TriggerFull || firstRun {
-			return true, true, nil
-		}
-
-		if specChanged {
-			model.State.SpecHash = specHash
-			if err := r.C.UpdateState(ctx, self.Meta.Name, self); err != nil {
-				return false, false, err
-			}
-			r.C.Logger.Info("Patched model without a full refresh ()", zap.String("model", self.Meta.Name.Name), observability.ZapCtx(ctx))
-		}
-
-		return specChanged || scheduledTrigger, false, nil
-	default:
-		return false, false, fmt.Errorf("unknown change mode %q", model.Spec.ChangeMode)
-	}
 }
