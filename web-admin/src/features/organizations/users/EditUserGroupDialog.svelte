@@ -247,9 +247,7 @@
           options={coercedUsersToOptions}
           id="user-group-users"
           label="Users"
-          name="searchUsers"
           placeholder="Search for users"
-          emptyText="No users found"
           onSelectedChange={(value) => {
             if (value) {
               handleAddUsergroupMemberUser(value.value);

@@ -10,11 +10,9 @@
     name: string;
   }[] = [];
   export let inputValue = "";
-  export let name = "";
   export let placeholder = "Search";
   export let label = "";
   export let id = "";
-  export let emptyText = "No results found";
   export let onSelectedChange: (value: Selected<string> | undefined) => void;
 
   function handleSelectedChange(selected: Selected<string> | undefined) {
@@ -64,12 +62,7 @@
             <Check size="16px" />
           </Combobox.ItemIndicator>
         </Combobox.Item>
-      {:else}
-        <span class="block px-5 py-4 text-xs text-gray-500">
-          {emptyText}
-        </span>
       {/each}
     </Combobox.Content>
-    <Combobox.HiddenInput {name} />
   </Combobox.Root>
 </div>
