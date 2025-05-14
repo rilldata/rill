@@ -41,10 +41,11 @@ func DeployCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			if zipship {
-				return project.DeployWithZipShipFlow(cmd.Context(), ch, opts)
+				opts.ZipShipForUploads = true
+				return project.DeployWithUploadFlow(cmd.Context(), ch, opts)
 			}
 			if upload {
-				return project.DeployUsingManagedGitFlow(cmd.Context(), ch, opts)
+				return project.DeployWithUploadFlow(cmd.Context(), ch, opts)
 			}
 			return project.ConnectGithubFlow(cmd.Context(), ch, opts)
 		},

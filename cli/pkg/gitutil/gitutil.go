@@ -261,6 +261,8 @@ func CommitAndForcePush(ctx context.Context, projectPath, remote, username, pass
 		if !errors.Is(err, git.ErrEmptyCommit) {
 			return fmt.Errorf("failed to commit files to git: %w", err)
 		}
+		// empty commit - nothing to cmmit
+		return nil
 	}
 
 	// set remote
