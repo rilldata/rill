@@ -49,7 +49,7 @@
   let pendingAdditions: string[] = [];
   let pendingRemovals: string[] = [];
 
-  async function handleAddUsergroupMemberUser(email: string) {
+  async function handleAdd(email: string) {
     pendingAdditions = [...pendingAdditions, email];
     pendingRemovals = pendingRemovals.filter((e) => e !== email);
   }
@@ -82,7 +82,7 @@
     }
   }
 
-  async function handleRemoveUser(groupName: string, email: string) {
+  async function handleRemove(email: string) {
     pendingRemovals = [...pendingRemovals, email];
     pendingAdditions = pendingAdditions.filter((e) => e !== email);
   }
@@ -251,21 +251,26 @@
             Users
           </label>
           <Combobox
-            bind:inputValue={searchText}
+            searchValue={searchText}
             options={coercedUsersToOptions}
             placeholder="Search for users"
             {getMetadata}
-            onSelectedChange={(value) => {
-              if (value) {
-                const isSelected = coercedUsersToOptions.find(
-                  (opt) => opt.value === value.value,
-                )?.selected;
-                if (isSelected) {
-                  handleRemoveUser(groupName, value.value);
-                } else {
-                  handleAddUsergroupMemberUser(value.value);
-                }
-              }
+            selectedValues={displayedMembers.map((member) => member.userEmail)}
+            onSelectedChange={(values) => {
+              if (!values) return;
+
+              const newEmails = values.map((v) => v.value);
+              const currentEmails = displayedMembers.map((m) => m.userEmail);
+
+              // Find emails to add (in new but not in current)
+              newEmails
+                .filter((email) => !currentEmails.includes(email))
+                .forEach((email) => handleAdd(email));
+
+              // Find emails to remove (in current but not in new)
+              currentEmails
+                .filter((email) => !newEmails.includes(email))
+                .forEach((email) => handleRemove(email));
             }}
           />
         </div>
@@ -302,7 +307,7 @@
                 type="text"
                 danger
                 on:click={() => {
-                  handleRemoveUser(groupName, member.userEmail);
+                  handleRemove(member.userEmail);
                 }}
               >
                 Remove

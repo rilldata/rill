@@ -223,26 +223,37 @@
             Users
           </label>
           <Combobox
-            bind:inputValue={searchText}
+            searchValue={searchText}
             options={coercedUsersToOptions}
             placeholder="Search for users"
             {getMetadata}
-            onSelectedChange={(value) => {
-              if (value) {
-                const selectedUser = searchUsersList.find(
-                  (user) => user.userEmail === value.value,
-                );
-                if (selectedUser) {
-                  selectedUsers = [...selectedUsers, selectedUser];
-                  pendingAdditions = [
-                    ...pendingAdditions,
-                    selectedUser.userEmail,
-                  ];
-                  pendingRemovals = pendingRemovals.filter(
-                    (e) => e !== selectedUser.userEmail,
+            selectedValues={selectedUsers.map((user) => user.userEmail)}
+            onSelectedChange={(values) => {
+              if (!values) return;
+
+              const newEmails = values.map((v) => v.value);
+              const currentEmails = selectedUsers.map((u) => u.userEmail);
+
+              // Find emails to add (in new but not in current)
+              newEmails
+                .filter((email) => !currentEmails.includes(email))
+                .forEach((email) => {
+                  const user = searchUsersList.find(
+                    (u) => u.userEmail === email,
                   );
-                }
-              }
+                  if (user) {
+                    selectedUsers = [...selectedUsers, user];
+                    pendingAdditions = [...pendingAdditions, email];
+                    pendingRemovals = pendingRemovals.filter(
+                      (e) => e !== email,
+                    );
+                  }
+                });
+
+              // Find emails to remove (in current but not in new)
+              currentEmails
+                .filter((email) => !newEmails.includes(email))
+                .forEach((email) => handleRemoveUser(email));
             }}
           />
         </div>
