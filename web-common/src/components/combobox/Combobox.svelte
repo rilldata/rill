@@ -2,18 +2,17 @@
   import AvatarListItem from "@rilldata/web-admin/features/organizations/users/AvatarListItem.svelte";
   import { Combobox } from "bits-ui";
   import type { Selected } from "bits-ui";
-  import { Check } from "lucide-svelte";
 
   export let options: {
     value: string;
     label: string;
-    name: string;
-    photoUrl?: string;
-    selected?: boolean;
   }[] = [];
   export let inputValue = "";
   export let placeholder = "Search";
   export let onSelectedChange: (value: Selected<string> | undefined) => void;
+  export let getMetadata: (
+    value: string,
+  ) => { name: string; photoUrl?: string } | undefined = () => undefined;
 
   function handleSelectedChange(selected: Selected<string> | undefined) {
     onSelectedChange(selected);
@@ -36,6 +35,7 @@
   <Combobox.Input
     class="flex justify-center items-center pl-2 w-full border border-gray-300 rounded-[2px] cursor-pointer min-h-8 h-fit focus-within:border-primary-500 focus-within:ring-2 focus-within:ring-primary-100 focus:outline-none"
     {placeholder}
+    value={inputValue}
     aria-label={placeholder}
   />
 
@@ -52,16 +52,11 @@
           label={item.label}
         >
           <AvatarListItem
-            name={item.name}
+            name={getMetadata(item.value)?.name || item.label}
             email={item.value}
-            photoUrl={item.photoUrl}
+            photoUrl={getMetadata(item.value)?.photoUrl}
             leftSpacing={false}
           />
-          {#if item.selected}
-            <Combobox.ItemIndicator class="ml-auto" asChild={false}>
-              <Check size="16px" />
-            </Combobox.ItemIndicator>
-          {/if}
         </Combobox.Item>
       {/each}
     </Combobox.Content>

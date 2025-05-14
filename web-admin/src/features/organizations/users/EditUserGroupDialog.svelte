@@ -180,13 +180,6 @@
     },
   );
 
-  $: availableSearchUsersList = searchUsersList.filter(
-    (user) =>
-      !$listUsergroupMemberUsers.data?.members.some(
-        (member) => member.userEmail === user.userEmail,
-      ) && !pendingAdditions.includes(user.userEmail),
-  );
-
   $: displayedMembers = [
     ...($listUsergroupMemberUsers.data?.members.filter(
       (member) => !pendingRemovals.includes(member.userEmail),
@@ -198,12 +191,19 @@
     })),
   ];
 
-  $: coercedUsersToOptions = availableSearchUsersList.map((user) => ({
-    value: user.userEmail,
-    label: user.userName,
-    name: user.userName,
-    photoUrl: user.userPhotoUrl,
-  }));
+  $: coercedUsersToOptions = searchUsersList.map((user) => {
+    return {
+      value: user.userEmail,
+      label: user.userName,
+    };
+  });
+
+  function getMetadata(email: string) {
+    const user = searchUsersList.find((user) => user.userEmail === email);
+    return user
+      ? { name: user.userName, photoUrl: user.userPhotoUrl }
+      : undefined;
+  }
 
   function handleClose() {
     open = false;
@@ -254,9 +254,17 @@
             bind:inputValue={searchText}
             options={coercedUsersToOptions}
             placeholder="Search for users"
+            {getMetadata}
             onSelectedChange={(value) => {
               if (value) {
-                handleAddUsergroupMemberUser(value.value);
+                const isSelected = coercedUsersToOptions.find(
+                  (opt) => opt.value === value.value,
+                )?.selected;
+                if (isSelected) {
+                  handleRemoveUser(groupName, value.value);
+                } else {
+                  handleAddUsergroupMemberUser(value.value);
+                }
               }
             }}
           />

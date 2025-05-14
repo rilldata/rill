@@ -162,10 +162,15 @@
     )
     .map((user) => ({
       value: user.userEmail,
-      label: user.userEmail,
-      name: user.userName,
-      photoUrl: user.userPhotoUrl,
+      label: user.userName,
     }));
+
+  function getMetadata(email: string) {
+    const user = searchUsersList.find((user) => user.userEmail === email);
+    return user
+      ? { name: user.userName, photoUrl: user.userPhotoUrl }
+      : undefined;
+  }
 
   function handleClose() {
     open = false;
@@ -221,6 +226,7 @@
             bind:inputValue={searchText}
             options={coercedUsersToOptions}
             placeholder="Search for users"
+            {getMetadata}
             onSelectedChange={(value) => {
               if (value) {
                 const selectedUser = searchUsersList.find(
