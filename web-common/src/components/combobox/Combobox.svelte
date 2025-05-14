@@ -8,6 +8,7 @@
     value: string;
     label: string;
     name: string;
+    selected?: boolean;
   }[] = [];
   export let inputValue = "";
   export let placeholder = "Search";
@@ -20,7 +21,9 @@
   }
 
   $: filteredItems = inputValue
-    ? options.filter((fruit) => fruit.value.includes(inputValue.toLowerCase()))
+    ? options.filter((option) =>
+        option.value.toLowerCase().includes(inputValue.toLowerCase()),
+      )
     : options;
 </script>
 
@@ -42,27 +45,31 @@
       aria-label={placeholder}
     />
 
-    <!-- NOTE: 52px * 4 for 208px to show scroller -->
-    <Combobox.Content
-      class="w-full rounded-sm border border-muted bg-surface p-[6px] shadow-md outline-none max-h-[208px] overflow-y-auto"
-      sideOffset={8}
-    >
-      {#each filteredItems as item (item.value)}
-        <Combobox.Item
-          class="flex h-[52px] w-full select-none items-center rounded px-4 py-2 text-sm outline-none transition-all duration-75 data-[highlighted]:bg-slate-100"
-          value={item.value}
-          label={item.label}
-        >
-          <AvatarListItem
-            name={item.name}
-            email={item.value}
-            leftSpacing={false}
-          />
-          <Combobox.ItemIndicator class="ml-auto" asChild={false}>
-            <Check size="16px" />
-          </Combobox.ItemIndicator>
-        </Combobox.Item>
-      {/each}
-    </Combobox.Content>
+    {#if filteredItems.length}
+      <!-- NOTE: 52px * 4 for 208px to show scroller -->
+      <Combobox.Content
+        class="w-full rounded-sm border border-muted bg-surface p-[6px] shadow-md outline-none max-h-[208px] overflow-y-auto"
+        sideOffset={8}
+      >
+        {#each filteredItems as item (item.value)}
+          <Combobox.Item
+            class="flex h-[52px] w-full select-none items-center rounded px-4 py-2 text-sm outline-none transition-all duration-75 data-[highlighted]:bg-slate-100"
+            value={item.value}
+            label={item.label}
+          >
+            <AvatarListItem
+              name={item.name}
+              email={item.value}
+              leftSpacing={false}
+            />
+            {#if item.selected}
+              <Combobox.ItemIndicator class="ml-auto" asChild={false}>
+                <Check size="16px" />
+              </Combobox.ItemIndicator>
+            {/if}
+          </Combobox.Item>
+        {/each}
+      </Combobox.Content>
+    {/if}
   </Combobox.Root>
 </div>
