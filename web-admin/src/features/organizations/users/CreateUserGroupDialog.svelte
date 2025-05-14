@@ -133,11 +133,11 @@
   const schema = yup(
     object({
       name: string()
-        .required("User group name is required")
-        .min(3, "User group name must be at least 3 characters")
+        .required("Name is required")
+        .min(3, "Name must be at least 3 characters")
         .matches(
           /^[a-zA-Z0-9]+(-[a-zA-Z0-9]+)*$/,
-          "User group name must contain only letters, numbers, and hyphens (slug)",
+          "Name must contain only letters, numbers, and hyphens (slug)",
         ),
     }),
   );
@@ -234,31 +234,40 @@
       </div>
     </form>
 
-    <div class="max-h-[208px] overflow-y-auto">
-      <div class="flex flex-col gap-2">
-        {#each selectedUsers as user (user.userEmail)}
-          <div class="flex flex-row justify-between gap-2 items-center">
-            <div class="flex items-center gap-2">
-              <Avatar avatarSize="h-7 w-7" alt={user.userName} />
-              <div class="flex flex-col text-left">
-                <span class="text-sm font-medium text-gray-900">
-                  {user.userName}
-                  <span class="text-gray-500 font-normal">
-                    {user.userEmail === currentUserEmail ? "(You)" : ""}
-                  </span>
-                </span>
-                <span class="text-xs text-gray-500">{user.userEmail}</span>
-              </div>
-            </div>
-            <Button
-              type="text"
-              danger
-              on:click={() => handleRemoveUser(user.userEmail)}
-            >
-              Remove
-            </Button>
+    <div class="flex flex-col gap-2 w-full">
+      {#if selectedUsers.length > 0}
+        <div class="flex flex-row items-center gap-x-1">
+          <div class="text-xs font-semibold uppercase text-gray-500">
+            {selectedUsers.length} Users
           </div>
-        {/each}
+        </div>
+      {/if}
+      <div class="max-h-[208px] overflow-y-auto">
+        <div class="flex flex-col gap-2">
+          {#each selectedUsers as user (user.userEmail)}
+            <div class="flex flex-row justify-between gap-2 items-center">
+              <div class="flex items-center gap-2">
+                <Avatar avatarSize="h-7 w-7" alt={user.userName} />
+                <div class="flex flex-col text-left">
+                  <span class="text-sm font-medium text-gray-900">
+                    {user.userName}
+                    <span class="text-gray-500 font-normal">
+                      {user.userEmail === currentUserEmail ? "(You)" : ""}
+                    </span>
+                  </span>
+                  <span class="text-xs text-gray-500">{user.userEmail}</span>
+                </div>
+              </div>
+              <Button
+                type="text"
+                danger
+                on:click={() => handleRemoveUser(user.userEmail)}
+              >
+                Remove
+              </Button>
+            </div>
+          {/each}
+        </div>
       </div>
     </div>
 

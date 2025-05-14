@@ -22,9 +22,6 @@
     DialogTrigger,
   } from "@rilldata/web-common/components/dialog";
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
-  import InfoCircle from "@rilldata/web-common/components/icons/InfoCircle.svelte";
-  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
-  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { defaults, superForm } from "sveltekit-superforms";
@@ -239,7 +236,7 @@
       <div class="flex flex-col gap-4 w-full">
         <Input
           bind:value={$form.newName}
-          placeholder="New user group name"
+          placeholder="New name"
           id="user-group-name"
           label="Name"
           errors={$errors.newName}
@@ -262,58 +259,45 @@
         />
       </div>
     </form>
-    {#if displayedMembers.length > 0}
-      <div class="flex flex-col gap-2 w-full">
+
+    <div class="flex flex-col gap-2 w-full">
+      {#if displayedMembers.length > 0}
         <div class="flex flex-row items-center gap-x-1">
           <div class="text-xs font-semibold uppercase text-gray-500">
             {displayedMembers.length} Users
           </div>
-          <Tooltip location="right" alignment="middle" distance={8}>
-            <div class="text-gray-500">
-              <InfoCircle size="12px" />
-            </div>
-            <TooltipContent maxWidth="400px" slot="tooltip-content">
-              Users in this group will inherit the group's permissions.
-            </TooltipContent>
-          </Tooltip>
         </div>
-        <div class="max-h-[208px] overflow-y-auto">
-          <div class="flex flex-col gap-2">
-            {#each displayedMembers as member}
-              <div class="flex flex-row justify-between gap-2 items-center">
-                <div class="flex items-center gap-2">
-                  <Avatar avatarSize="h-7 w-7" alt={member.userName} />
-                  <div class="flex flex-col text-left">
-                    <span class="text-sm font-medium text-gray-900">
-                      {member.userName}
-                      <span class="text-gray-500 font-normal">
-                        {member.userEmail === currentUserEmail ? "(You)" : ""}
-                      </span>
+      {/if}
+      <div class="max-h-[208px] overflow-y-auto">
+        <div class="flex flex-col gap-2">
+          {#each displayedMembers as member}
+            <div class="flex flex-row justify-between gap-2 items-center">
+              <div class="flex items-center gap-2">
+                <Avatar avatarSize="h-7 w-7" alt={member.userName} />
+                <div class="flex flex-col text-left">
+                  <span class="text-sm font-medium text-gray-900">
+                    {member.userName}
+                    <span class="text-gray-500 font-normal">
+                      {member.userEmail === currentUserEmail ? "(You)" : ""}
                     </span>
-                    <span class="text-xs text-gray-500">{member.userEmail}</span
-                    >
-                  </div>
+                  </span>
+                  <span class="text-xs text-gray-500">{member.userEmail}</span>
                 </div>
-                <Button
-                  type="text"
-                  danger
-                  on:click={() => {
-                    handleRemoveUser(groupName, member.userEmail);
-                  }}
-                >
-                  Remove
-                </Button>
               </div>
-            {/each}
-          </div>
+              <Button
+                type="text"
+                danger
+                on:click={() => {
+                  handleRemoveUser(groupName, member.userEmail);
+                }}
+              >
+                Remove
+              </Button>
+            </div>
+          {/each}
         </div>
       </div>
-    {:else}
-      <div class="flex flex-col gap-2 w-full">
-        <div class="text-xs font-semibold uppercase text-gray-500">Users</div>
-        <div class="text-gray-500">No users in this group</div>
-      </div>
-    {/if}
+    </div>
     <DialogFooter>
       <Button type="plain" on:click={handleClose}>Cancel</Button>
       <Button
