@@ -209,30 +209,36 @@
           errors={$errors.name}
         />
 
-        <Combobox
-          bind:inputValue={searchText}
-          options={coercedUsersToOptions}
-          id="user-group-users"
-          label="Users"
-          placeholder="Search for users"
-          onSelectedChange={(value) => {
-            if (value) {
-              const selectedUser = searchUsersList.find(
-                (user) => user.userEmail === value.value,
-              );
-              if (selectedUser) {
-                selectedUsers = [...selectedUsers, selectedUser];
-                pendingAdditions = [
-                  ...pendingAdditions,
-                  selectedUser.userEmail,
-                ];
-                pendingRemovals = pendingRemovals.filter(
-                  (e) => e !== selectedUser.userEmail,
+        <div class="flex flex-col gap-y-1">
+          <label
+            for="user-group-users"
+            class="line-clamp-1 text-sm font-medium text-gray-800"
+          >
+            Users
+          </label>
+          <Combobox
+            bind:inputValue={searchText}
+            options={coercedUsersToOptions}
+            placeholder="Search for users"
+            onSelectedChange={(value) => {
+              if (value) {
+                const selectedUser = searchUsersList.find(
+                  (user) => user.userEmail === value.value,
                 );
+                if (selectedUser) {
+                  selectedUsers = [...selectedUsers, selectedUser];
+                  pendingAdditions = [
+                    ...pendingAdditions,
+                    selectedUser.userEmail,
+                  ];
+                  pendingRemovals = pendingRemovals.filter(
+                    (e) => e !== selectedUser.userEmail,
+                  );
+                }
               }
-            }
-          }}
-        />
+            }}
+          />
+        </div>
       </div>
     </form>
 

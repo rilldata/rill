@@ -242,18 +242,24 @@
           alwaysShowError
         />
 
-        <Combobox
-          bind:inputValue={searchText}
-          options={coercedUsersToOptions}
-          id="user-group-users"
-          label="Users"
-          placeholder="Search for users"
-          onSelectedChange={(value) => {
-            if (value) {
-              handleAddUsergroupMemberUser(value.value);
-            }
-          }}
-        />
+        <div class="flex flex-col gap-y-1">
+          <label
+            for="user-group-users"
+            class="line-clamp-1 text-sm font-medium text-gray-800"
+          >
+            Users
+          </label>
+          <Combobox
+            bind:inputValue={searchText}
+            options={coercedUsersToOptions}
+            placeholder="Search for users"
+            onSelectedChange={(value) => {
+              if (value) {
+                handleAddUsergroupMemberUser(value.value);
+              }
+            }}
+          />
+        </div>
       </div>
     </form>
 
