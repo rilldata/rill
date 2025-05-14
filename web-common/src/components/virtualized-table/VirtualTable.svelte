@@ -381,7 +381,7 @@
   </div>
 </div>
 
-{#if true && hovering}
+{#if showTooltip && hovering}
   <VirtualTooltip
     {sortable}
     {hovering}

@@ -124,11 +124,11 @@
   /* PRIMARY STYLES */
 
   .primary {
-    @apply bg-primary-500 text-white;
+    @apply bg-primary-600 text-white;
   }
 
   .primary:hover {
-    @apply bg-primary-600;
+    @apply bg-primary-700;
   }
 
   .primary:active,
@@ -141,11 +141,11 @@
   }
 
   .primary.theme {
-    @apply bg-theme-500 text-white;
+    @apply bg-theme-600 text-white;
   }
 
   .primary.theme:hover {
-    @apply bg-theme-600;
+    @apply bg-theme-700;
   }
 
   .primary.theme:active,
