@@ -448,10 +448,10 @@ func (s *Server) DisconnectProjectFromGithub(ctx context.Context, req *adminv1.D
 		attribute.String("args.project", req.Project),
 	)
 
-	// Check the request is made by a user
+	// Check the request is made by a user or service
 	claims := auth.GetClaims(ctx)
-	if claims.OwnerType() != auth.OwnerTypeUser {
-		return nil, status.Error(codes.Unauthenticated, "not authenticated as a user")
+	if claims.OwnerType() != auth.OwnerTypeUser && claims.OwnerType() != auth.OwnerTypeService {
+		return nil, status.Error(codes.Unauthenticated, "not authenticated as a user or service")
 	}
 
 	// Find parent org
@@ -489,6 +489,7 @@ func (s *Server) DisconnectProjectFromGithub(ctx context.Context, req *adminv1.D
 		return nil, err
 	}
 
+	// copy data from github to the managed git repo
 	copyData := func(path string) error {
 		// download and copy to a temp location
 		repoID, err := s.githubRepoIDForProject(ctx, proj)
@@ -502,21 +503,16 @@ func (s *Server) DisconnectProjectFromGithub(ctx context.Context, req *adminv1.D
 
 		return copyFromSrcGit(path, *proj.GithubURL, proj.ProdBranch, proj.Subpath, token)
 	}
-	// generate git commit signature
-	u, err := s.admin.DB.FindUser(ctx, claims.OwnerID())
+	sign, err := s.gitSignFromClaims(ctx, claims)
 	if err != nil {
-		return nil, status.Error(codes.NotFound, "user not found")
-	}
-	sign := &object.Signature{
-		Name:  u.DisplayName,
-		Email: u.Email,
-		When:  time.Now(),
+		return nil, err
 	}
 	err = s.pushToGit(ctx, copyData, *repo.CloneURL, *repo.DefaultBranch, "", mgdRepoToken, true, sign)
 	if err != nil {
 		return nil, err
 	}
 
+	// update project
 	branch := "main"
 	subpath := ""
 	_, err = s.UpdateProject(ctx, &adminv1.UpdateProjectRequest{
@@ -1218,6 +1214,34 @@ func (s *Server) githubAppInstallationURL(state string) string {
 		res = urlutil.MustWithQuery(res, map[string]string{"state": state})
 	}
 	return res
+}
+
+func (s *Server) gitSignFromClaims(ctx context.Context, claims auth.Claims) (*object.Signature, error) {
+	switch claims.OwnerType() {
+	case auth.OwnerTypeUser:
+		user, err := s.admin.DB.FindUser(ctx, claims.OwnerID())
+		if err != nil {
+			return nil, err
+		}
+
+		return &object.Signature{
+			Name:  user.DisplayName,
+			Email: user.Email,
+			When:  time.Now(),
+		}, nil
+	case auth.OwnerTypeService:
+		svc, err := s.admin.DB.FindService(ctx, claims.OwnerID())
+		if err != nil {
+			return nil, err
+		}
+		return &object.Signature{
+			Name:  svc.Name,
+			Email: "noreply@rilldata.com",
+			When:  time.Now(),
+		}, nil
+	default:
+		return nil, status.Errorf(codes.InvalidArgument, "can not generate signature for owner type %q", claims.OwnerType())
+	}
 }
 
 func fromStringPtr(s *string) string {
