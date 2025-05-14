@@ -3,9 +3,11 @@ package rilltime
 import (
 	"fmt"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
+	"github.com/alecthomas/participle/v2"
 	"github.com/alecthomas/participle/v2/lexer"
 	"github.com/rilldata/rill/runtime/pkg/duration"
 	"github.com/rilldata/rill/runtime/pkg/timeutil"
@@ -47,6 +49,11 @@ var (
 		{"Punct", `[-[!@#$%^&*()+_={}\|:;"'<,>.?/]]`},
 		{"Whitespace", `[ \t]+`},
 	})
+	rillTimeParserFinal = participle.MustBuild[Expression](
+		participle.Lexer(rillTimeLexer),
+		participle.Elide("Whitespace"),
+		participle.UseLookahead(25), // We need this to disambiguate certain cases. Mainly for something like `-4d!`
+	)
 	daxNotations = map[string]string{
 		// Mapping for our old rill-<DAX> syntax
 		"TD":  "D~",
@@ -104,6 +111,132 @@ var (
 	}
 )
 
+type Expression struct {
+	Interval       *Interval       `parser:"@@"`
+	AnchorOverride *AnchorOverride `parser:"(As Of @@)?"`
+	Grain          *string         `parser:"(By @Grain)?"`
+	TimeZone       *string         `parser:"('@' @TimeZone)?"`
+
+	isNewFormat bool
+	timeZone    *time.Location
+	isoDuration *duration.StandardDuration
+}
+
+type Interval struct {
+	AnchoredDuration *AnchoredDurationInterval `parser:"( @@"`
+	Ordinal          *OrdinalInterval          `parser:"| @@"`
+	StartEnd         *StartEndInterval         `parser:"| @@"`
+	Interval         *GrainToInterval          `parser:"| @@"`
+	Iso              *IsoInterval              `parser:"| @@)"`
+}
+
+type AnchoredDurationInterval struct {
+	Duration    *GrainDuration `parser:"@@"`
+	Starting    bool           `parser:"( @Starting"`
+	Ending      bool           `parser:"| @Ending)"`
+	PointInTime *PointInTime   `parser:"@@"`
+}
+
+type OrdinalInterval struct {
+	Ordinal *OrdinalDuration    `parser:"@@"`
+	End     *OrdinalIntervalEnd `parser:"(Of @@)?"`
+}
+
+type OrdinalIntervalEnd struct {
+	Grains      *GrainToInterval  `parser:"( @@"`
+	Interval    *StartEndInterval `parser:"| @@"`
+	SingleGrain *string           `parser:"| @Grain)"`
+}
+
+type StartEndInterval struct {
+	Start *PointInTime `parser:"@@"`
+	End   *PointInTime `parser:"To @@"`
+}
+
+type GrainToInterval struct {
+	Interval *GrainPointInTime `parser:"@@ Interval"`
+}
+
+type IsoInterval struct {
+	Start *AbsoluteTime `parser:"@@"`
+	End   *AbsoluteTime `parser:"((To | '/') @@)?"`
+}
+
+type AnchorOverride struct {
+	Grain *GrainPointInTime   `parser:"( @@"`
+	Label *LabeledPointInTime `parser:"| @@"`
+	Abs   *AbsoluteTime       `parser:"| @@)"`
+}
+
+type PointInTime struct {
+	Ordinal *OrdinalPointInTime `parser:"( @@"`
+	Grain   *GrainPointInTime   `parser:"| @@"`
+	Labeled *LabeledPointInTime `parser:"| @@)"`
+}
+
+type OrdinalPointInTime struct {
+	Ordinal *Ordinal         `parser:"@@"`
+	Suffix  string           `parser:"@Suffix"`
+	Rest    *OrdinalDuration `parser:"@@?"`
+}
+
+type GrainPointInTime struct {
+	Parts []*GrainPointInTimePart `parser:"@@ @@*"`
+}
+
+type GrainPointInTimePart struct {
+	Prefix        *string        `parser:"@Prefix?"`
+	Duration      *GrainDuration `parser:"@@"`
+	Snap          *string        `parser:"( Snap @Grain"`
+	WeekSnapGrain *string        `parser:"| Snap @WeekSnapGrain)?"`
+	Suffix        *string        `parser:"@Suffix?"`
+}
+
+type LabeledPointInTime struct {
+	Earliest  bool `parser:"( @Earliest"`
+	Now       bool `parser:"| @Now"`
+	Latest    bool `parser:"| @Latest"`
+	Watermark bool `parser:"| @Watermark)"`
+}
+
+type OrdinalDuration struct {
+	Durations []*OrdinalDurationPart `parser:"@@ (Of @@)*"`
+}
+
+type OrdinalDurationPart struct {
+	Ordinal       *Ordinal           `parser:"( @@"`
+	Snap          *string            `parser:"| @SnapPrefix"`
+	GrainDuration *GrainDurationPart `parser:"  @@)"`
+}
+
+type Ordinal struct {
+	Grain string `parser:"@Grain"`
+	Num   int    `parser:"@Number"`
+}
+
+type GrainDuration struct {
+	Parts []*GrainDurationPart `parser:"@@ @@*"`
+}
+
+type GrainDurationPart struct {
+	Num   *int   `parser:"@Number?"`
+	Grain string `parser:"@Grain"`
+}
+
+type AbsoluteTime struct {
+	ISO string `parser:"@ISOTime"`
+
+	year   int
+	month  int
+	week   int
+	day    int
+	hour   int
+	minute int
+	second int
+
+	tg timeutil.TimeGrain
+}
+
 // ParseOptions allows for additional options that could probably not be added to the time range itself
 type ParseOptions struct {
 	DefaultTimeZone  *time.Location
@@ -117,6 +250,28 @@ type EvalOptions struct {
 	Watermark  time.Time
 	FirstDay   int
 	FirstMonth int
+}
+
+func Parse(from string, parseOpts ParseOptions) (*Expression, error) {
+	var rt *Expression
+	var err error
+
+	rt, err = parseISO(from, parseOpts)
+	if err != nil {
+		return nil, err
+	}
+
+	rt, err = rillTimeParserFinal.ParseString("", from)
+	if err != nil {
+		return nil, err
+	}
+
+	err = rt.parse(parseOpts)
+	if err != nil {
+		return nil, err
+	}
+
+	return rt, nil
 }
 
 func ParseCompatibility(timeRange, offset string) error {
@@ -141,18 +296,435 @@ func ParseCompatibility(timeRange, offset string) error {
 	return nil
 }
 
-func parseISOFinal(from string, parseOpts ParseOptions) (*ExpressionFinal, error) {
+func (e *Expression) parse(parseOpts ParseOptions) error {
+	e.timeZone = time.UTC
+	if parseOpts.TimeZoneOverride != nil {
+		e.timeZone = parseOpts.TimeZoneOverride
+	} else if e.TimeZone != nil {
+		var err error
+		e.timeZone, err = time.LoadLocation(strings.Trim(*e.TimeZone, "{}"))
+		if err != nil {
+			return err
+		}
+	} else if parseOpts.DefaultTimeZone != nil {
+		e.timeZone = parseOpts.DefaultTimeZone
+	}
+
+	if e.Interval != nil {
+		err := e.Interval.parse()
+		if err != nil {
+			return err
+		}
+	}
+
+	if e.AnchorOverride != nil {
+		err := e.AnchorOverride.parse()
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (e *Expression) Eval(evalOpts EvalOptions) (time.Time, time.Time, timeutil.TimeGrain) {
+	if evalOpts.FirstDay == 0 {
+		evalOpts.FirstDay = 1
+	}
+	if evalOpts.FirstMonth == 0 {
+		evalOpts.FirstMonth = 1
+	}
+
+	start := evalOpts.Watermark
+	if e.AnchorOverride != nil {
+		start = e.AnchorOverride.eval(evalOpts, start, e.timeZone)
+	}
+
+	if e.isoDuration != nil {
+		// handling for old iso format
+		isoStart := e.isoDuration.Sub(evalOpts.MaxTime.In(e.timeZone))
+		isoEnd := start
+		tg := timeutil.TimeGrainUnspecified
+		if e.Grain != nil {
+			tg = grainMap[*e.Grain]
+			isoStart = timeutil.TruncateTime(isoStart, tg, e.timeZone, evalOpts.FirstDay, evalOpts.FirstMonth)
+			isoEnd = timeutil.TruncateTime(start, tg, e.timeZone, evalOpts.FirstDay, evalOpts.FirstMonth)
+		}
+
+		return isoStart, isoEnd, tg
+	}
+
+	start, end, tg := e.Interval.eval(evalOpts, start, e.timeZone)
+
+	if e.Grain != nil {
+		tg = grainMap[*e.Grain]
+	} else {
+		tg = getLowerOrderGrain(start, end, tg)
+	}
+
+	return start, end, tg
+}
+
+/* Intervals */
+
+func (i *Interval) parse() error {
+	if i.Iso != nil {
+		return i.Iso.parse()
+	}
+	return nil
+}
+
+func (i *Interval) eval(evalOpts EvalOptions, start time.Time, tz *time.Location) (time.Time, time.Time, timeutil.TimeGrain) {
+	if i.AnchoredDuration != nil {
+		return i.AnchoredDuration.eval(evalOpts, start, tz)
+	} else if i.Ordinal != nil {
+		return i.Ordinal.eval(evalOpts, start, tz)
+	} else if i.StartEnd != nil {
+		return i.StartEnd.eval(evalOpts, start, tz)
+	} else if i.Interval != nil {
+		return i.Interval.eval(evalOpts, start, tz)
+	} else if i.Iso != nil {
+		return i.Iso.eval(tz)
+	}
+	return start, start, timeutil.TimeGrainUnspecified
+}
+
+func (o *AnchoredDurationInterval) eval(evalOpts EvalOptions, tm time.Time, tz *time.Location) (time.Time, time.Time, timeutil.TimeGrain) {
+	start, _ := o.PointInTime.eval(evalOpts, tm, tz)
+	end := start
+
+	durTg := grainMap[o.Duration.Parts[0].Grain] // TODO: length check
+
+	tg := timeutil.TimeGrainUnspecified
+	if o.Starting {
+		start = truncateWithCorrection(start, durTg, tz, evalOpts.FirstDay, evalOpts.FirstMonth)
+		end, tg = o.Duration.offset(start, 1)
+	} else if o.Ending {
+		end = truncateWithCorrection(end, durTg, tz, evalOpts.FirstDay, evalOpts.FirstMonth)
+		start, tg = o.Duration.offset(end, -1)
+	}
+
+	return start, end, tg
+}
+
+func (o *OrdinalInterval) eval(evalOpts EvalOptions, start time.Time, tz *time.Location) (time.Time, time.Time, timeutil.TimeGrain) {
+	end := start
+	if o.End != nil {
+		start, end, _ = o.End.eval(evalOpts, start, tz)
+	} else if len(o.Ordinal.Durations) > 0 {
+		lastPart := o.Ordinal.Durations[len(o.Ordinal.Durations)-1]
+		if lastPart.Ordinal != nil {
+			tg := higherOrderMap[grainMap[lastPart.Ordinal.Grain]]
+			start = truncateWithCorrection(start, tg, tz, evalOpts.FirstDay, evalOpts.FirstMonth)
+			end = timeutil.CeilTime(end, tg, tz, evalOpts.FirstDay, evalOpts.FirstMonth)
+		}
+	}
+
+	start, end, tg := o.Ordinal.eval(evalOpts, start, end, tz)
+
+	return start, end, tg
+}
+
+func (o *OrdinalIntervalEnd) eval(evalOpts EvalOptions, start time.Time, tz *time.Location) (time.Time, time.Time, timeutil.TimeGrain) {
+	if o.Grains != nil {
+		return o.Grains.eval(evalOpts, start, tz)
+	} else if o.Interval != nil {
+		return o.Interval.eval(evalOpts, start, tz)
+	} else if o.SingleGrain != nil {
+		tg := grainMap[*o.SingleGrain]
+		end := timeutil.CeilTime(start, tg, tz, evalOpts.FirstDay, evalOpts.FirstMonth)
+		start = truncateWithCorrection(start, tg, tz, evalOpts.FirstDay, evalOpts.FirstMonth)
+		return start, end, tg
+	}
+	return start, start, timeutil.TimeGrainUnspecified
+}
+
+func (o *StartEndInterval) eval(evalOpts EvalOptions, tm time.Time, tz *time.Location) (time.Time, time.Time, timeutil.TimeGrain) {
+	start, startTg := o.Start.eval(evalOpts, tm, tz)
+	end, endTg := o.End.eval(evalOpts, tm, tz)
+	// Correction for labeled ends points. We need to add +1ms to make sure the final point is included as our end time is exclusive.
+	if o.End.Labeled != nil {
+		end = timeutil.OffsetTime(end, timeutil.TimeGrainMillisecond, 1)
+	}
+
+	tg := endTg
+	if endTg == timeutil.TimeGrainUnspecified || startTg < endTg {
+		tg = startTg
+	}
+
+	return start, end, tg
+}
+
+func (o *GrainToInterval) eval(evalOpts EvalOptions, start time.Time, tz *time.Location) (time.Time, time.Time, timeutil.TimeGrain) {
+	if len(o.Interval.Parts) == 0 {
+		return start, start, timeutil.TimeGrainUnspecified
+	}
+
+	start, tg := o.Interval.eval(evalOpts, start, tz)
+
+	end := timeutil.OffsetTime(start, tg, 1)
+	end = truncateWithCorrection(end, tg, tz, evalOpts.FirstDay, evalOpts.FirstMonth)
+
+	start = truncateWithCorrection(start, tg, tz, evalOpts.FirstDay, evalOpts.FirstMonth)
+
+	return start, end, tg
+}
+
+func (i *IsoInterval) parse() error {
+	err := i.Start.parse()
+	if err != nil {
+		return err
+	}
+
+	if i.End != nil {
+		return i.End.parse()
+	}
+
+	return nil
+}
+
+func (i *IsoInterval) eval(tz *time.Location) (time.Time, time.Time, timeutil.TimeGrain) {
+	start, end, tg := i.Start.eval(tz)
+	if i.End != nil {
+		end, _, _ = i.End.eval(tz)
+	}
+	return start, end, tg
+}
+
+func (a *AnchorOverride) parse() error {
+	if a.Abs != nil {
+		return a.Abs.parse()
+	}
+	return nil
+}
+
+func (a *AnchorOverride) eval(evalOpts EvalOptions, tm time.Time, tz *time.Location) time.Time {
+	if a.Grain != nil {
+		tm, _ = a.Grain.eval(evalOpts, tm, tz)
+	} else if a.Label != nil {
+		tm = a.Label.eval(evalOpts)
+	} else if a.Abs != nil {
+		tm, _, _ = a.Abs.eval(tz)
+	}
+
+	return tm
+}
+
+/* Point in times */
+
+func (p *PointInTime) eval(evalOpts EvalOptions, start time.Time, tz *time.Location) (time.Time, timeutil.TimeGrain) {
+	if p.Ordinal != nil {
+		return p.Ordinal.eval(evalOpts, start, tz)
+	} else if p.Grain != nil {
+		return p.Grain.eval(evalOpts, start, tz)
+	} else if p.Labeled != nil {
+		return p.Labeled.eval(evalOpts), timeutil.TimeGrainUnspecified
+	}
+	return start, timeutil.TimeGrainUnspecified
+}
+
+func (o *OrdinalPointInTime) eval(evalOpts EvalOptions, start time.Time, tz *time.Location) (time.Time, timeutil.TimeGrain) {
+	tg := timeutil.TimeGrainUnspecified
+	end := start
+	if o.Rest != nil {
+		start, end, tg = o.Rest.eval(evalOpts, start, end, tz)
+	} else {
+		tg := higherOrderMap[grainMap[o.Ordinal.Grain]]
+		start = truncateWithCorrection(start, tg, tz, evalOpts.FirstDay, evalOpts.FirstMonth)
+		end = timeutil.CeilTime(end, tg, tz, evalOpts.FirstDay, evalOpts.FirstMonth)
+	}
+
+	start, end, tg = o.Ordinal.eval(evalOpts, start, tz)
+
+	if o.Suffix == "$" {
+		start = end
+	}
+
+	return start, tg
+}
+
+func (g *GrainPointInTime) eval(evalOpts EvalOptions, start time.Time, tz *time.Location) (time.Time, timeutil.TimeGrain) {
+	tg := timeutil.TimeGrainUnspecified
+	for _, part := range g.Parts {
+		start, tg = part.eval(evalOpts, start, tz)
+	}
+	return start, tg
+}
+
+func (g *GrainPointInTimePart) eval(evalOpts EvalOptions, start time.Time, tz *time.Location) (time.Time, timeutil.TimeGrain) {
+	sign := -1
+	if g.Prefix != nil && *g.Prefix == "+" {
+		sign = 1
+	}
+	tm, tg := g.Duration.offset(start, sign)
+
+	if g.Snap != nil {
+		tg = grainMap[*g.Snap]
+	} else if g.WeekSnapGrain != nil {
+		tgs := strings.Split(*g.WeekSnapGrain, "")
+		tm = truncateWithCorrection(tm, grainMap[tgs[0]], tz, evalOpts.FirstDay, evalOpts.FirstMonth)
+		tg = grainMap[tgs[1]]
+	}
+
+	if g.Suffix != nil {
+		// `$` suffix means snap to end. So add 1 to the offset before truncating.
+		if *g.Suffix == "$" {
+			tm = timeutil.OffsetTime(tm, tg, 1)
+		}
+		tm = truncateWithCorrection(tm, tg, tz, evalOpts.FirstDay, evalOpts.FirstMonth)
+	}
+
+	return tm, tg
+}
+
+func (l *LabeledPointInTime) eval(evalOpts EvalOptions) time.Time {
+	if l.Earliest {
+		return evalOpts.MinTime
+	} else if l.Now {
+		return evalOpts.Now
+	} else if l.Latest {
+		return evalOpts.MaxTime
+	} else if l.Watermark {
+		return evalOpts.Watermark
+	}
+	return time.Time{}
+}
+
+/* Durations */
+
+func (o *OrdinalDuration) eval(evalOpts EvalOptions, start, end time.Time, tz *time.Location) (time.Time, time.Time, timeutil.TimeGrain) {
+	tg := timeutil.TimeGrainUnspecified
+
+	i := len(o.Durations) - 1
+	for i >= 0 {
+		start, end, tg = o.Durations[i].eval(evalOpts, start, end, tz)
+		i--
+	}
+
+	return start, end, tg
+}
+
+func (o *OrdinalDurationPart) eval(evalOpts EvalOptions, start, end time.Time, tz *time.Location) (time.Time, time.Time, timeutil.TimeGrain) {
+	if o.Ordinal != nil {
+		return o.Ordinal.eval(evalOpts, start, tz)
+	}
+
+	if o.Snap == nil || o.GrainDuration == nil {
+		return time.Time{}, time.Time{}, timeutil.TimeGrainUnspecified
+	}
+
+	tg := grainMap[o.GrainDuration.Grain]
+	if *o.Snap == "<" {
+		// Anchor the range to the beginning of the higher order start
+		// EG: <4d of M : gives 1st 4 days of the current month regardless of current date.
+		start = truncateWithCorrection(start, tg, tz, evalOpts.FirstDay, evalOpts.FirstMonth)
+		end, _ = o.GrainDuration.offset(start, 1)
+	} else {
+		// Anchor the range to the end of the higher order end
+		// EG: >4d of M : gives last 4 days of the current month regardless of current date.
+		end = ceilWithCorrection(end, tg, tz, evalOpts.FirstDay, evalOpts.FirstMonth)
+		start, _ = o.GrainDuration.offset(end, -1)
+	}
+	return start, end, tg
+}
+
+// TODO: reuse code from duration.ParseISO8601
+func (a *AbsoluteTime) parse() error {
+	match := isoTimeRegex.FindStringSubmatch(a.ISO)
+
+	for i, name := range isoTimeRegex.SubexpNames() {
+		part := match[i]
+		if i == 0 || name == "" || part == "" {
+			continue
+		}
+
+		val, err := strconv.Atoi(part)
+		if err != nil {
+			return err
+		}
+		switch name {
+		case "year":
+			a.year = val
+			a.tg = timeutil.TimeGrainYear
+		case "month":
+			a.month = val
+			a.tg = timeutil.TimeGrainMonth
+		case "week":
+			a.week = val
+			a.tg = timeutil.TimeGrainWeek
+		case "day":
+			a.day = val
+			a.tg = timeutil.TimeGrainDay
+		case "hour":
+			a.hour = val
+			a.tg = timeutil.TimeGrainHour
+		case "minute":
+			a.minute = val
+			a.tg = timeutil.TimeGrainMinute
+		case "second":
+			a.second = val
+			a.tg = timeutil.TimeGrainSecond
+		default:
+			return fmt.Errorf("unexpected field %q in duration", name)
+		}
+	}
+
+	return nil
+}
+
+func (a *AbsoluteTime) eval(tz *time.Location) (time.Time, time.Time, timeutil.TimeGrain) {
+	// Since we use this to build a time, month and day cannot be zero, hence the max(1, xx)
+	absStart := time.Date(a.year, time.Month(max(1, a.month)), max(1, a.day), a.hour, a.minute, a.second, 0, tz)
+	absEnd := timeutil.OffsetTime(absStart, a.tg, 1)
+
+	return absStart, absEnd, a.tg
+}
+
+func (o *Ordinal) eval(evalOpts EvalOptions, start time.Time, tz *time.Location) (time.Time, time.Time, timeutil.TimeGrain) {
+	tg := grainMap[o.Grain]
+	offset := o.Num - 1
+
+	start = timeutil.OffsetTime(start, tg, offset)
+	start = truncateWithCorrection(start, tg, tz, evalOpts.FirstDay, evalOpts.FirstMonth)
+
+	end := timeutil.OffsetTime(start, tg, 1)
+
+	return start, end, tg
+}
+
+func (g *GrainDuration) offset(tm time.Time, sign int) (time.Time, timeutil.TimeGrain) {
+	tg := timeutil.TimeGrainUnspecified
+	i := len(g.Parts) - 1
+	for i >= 0 {
+		tm, tg = g.Parts[i].offset(tm, sign)
+		i--
+	}
+	return tm, tg
+}
+
+func (g *GrainDurationPart) offset(tm time.Time, sign int) (time.Time, timeutil.TimeGrain) {
+	tg := grainMap[g.Grain]
+	offset := 0
+	if g.Num != nil {
+		offset = *g.Num
+	}
+	offset *= sign
+
+	return timeutil.OffsetTime(tm, tg, offset), tg
+}
+
+func parseISO(from string, parseOpts ParseOptions) (*Expression, error) {
 	// Try parsing for "inf"
 	if infPattern.MatchString(from) {
-		return &ExpressionFinal{
+		return &Expression{
 			Interval: &Interval{
 				StartEnd: &StartEndInterval{
-					Start: &Point{
+					Start: &PointInTime{
 						Labeled: &LabeledPointInTime{
 							Earliest: true,
 						},
 					},
-					End: &Point{
+					End: &PointInTime{
 						Labeled: &LabeledPointInTime{
 							Latest: true,
 						},
@@ -176,7 +748,7 @@ func parseISOFinal(from string, parseOpts ParseOptions) (*ExpressionFinal, error
 		return nil, nil
 	}
 
-	rt := &ExpressionFinal{}
+	rt := &Expression{}
 	d, err := duration.ParseISO8601(from)
 	if err != nil {
 		return nil, nil
@@ -249,4 +821,18 @@ func ceilWithCorrection(tm time.Time, tg timeutil.TimeGrain, tz *time.Location, 
 	}
 
 	return tm
+}
+
+// getLowerOrderGrain returns the lowest grain where 2 periods can fit between start and end. Uses lowerOrderMap to get the lower grain.
+func getLowerOrderGrain(start, end time.Time, tg timeutil.TimeGrain) timeutil.TimeGrain {
+	for tg > timeutil.TimeGrainMillisecond {
+		twoLower := timeutil.OffsetTime(end, tg, -2)
+		// if start < end - 2*grain, then we need can return the grain.
+		if start.Before(twoLower) || start.Equal(twoLower) {
+			return tg
+		}
+		// else check the lower order grain
+		tg = lowerOrderMap[tg]
+	}
+	return tg
 }

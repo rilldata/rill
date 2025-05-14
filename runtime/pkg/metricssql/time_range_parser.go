@@ -61,7 +61,7 @@ func (q *query) parseTimeRangeEnd(ctx context.Context, node *ast.FuncCallExpr) (
 	}, nil
 }
 
-func parseTimeRangeArgs(args []ast.ExprNode) (*rilltime.ExpressionFinal, error) {
+func parseTimeRangeArgs(args []ast.ExprNode) (*rilltime.Expression, error) {
 	if len(args) != 1 {
 		return nil, fmt.Errorf("metrics sql: time_range_start/time_range_end expects exactly one arg")
 	}
