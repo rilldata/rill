@@ -2492,6 +2492,8 @@ func (m *ModelSpec) validate(all bool) error {
 		}
 	}
 
+	// no validation rules for ChangeMode
+
 	// no validation rules for Trigger
 
 	// no validation rules for TriggerFull

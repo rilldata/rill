@@ -273,6 +273,12 @@ export interface V1CreateBookmarkResponse {
   bookmark?: V1Bookmark;
 }
 
+export interface V1CreateManagedGitRepoResponse {
+  remote?: string;
+  username?: string;
+  password?: string;
+}
+
 export interface V1CreateOrganizationRequest {
   name?: string;
   description?: string;
@@ -1346,7 +1352,7 @@ export type AdminServiceUpdateBillingSubscriptionBodyBody = {
 
 export type AdminServiceTriggerReconcileBodyBody = { [key: string]: unknown };
 
-export type AdminServiceSetOrganizationMemberUserRoleBodyBody = {
+export type AdminServiceSetProjectMemberUserRoleBodyBody = {
   role?: string;
 };
 
@@ -1426,6 +1432,12 @@ export type AdminServiceCancelBillingSubscriptionParams = {
   superuserForceAccess?: boolean;
 };
 
+export type AdminServiceCreateManagedGitRepoBody = {
+  /** name of the repo to create. 
+Note: The final name will be suffixed with a random string to ensure uniqueness. */
+  name?: string;
+};
+
 export type AdminServiceListOrganizationInvitesParams = {
   pageSize?: number;
   pageToken?: string;
@@ -1451,6 +1463,11 @@ export type AdminServiceAddOrganizationMemberUserBody = {
   superuserForceAccess?: boolean;
 };
 
+export type AdminServiceSetOrganizationMemberUserRoleBody = {
+  role?: string;
+  superuserForceAccess?: boolean;
+};
+
 export type AdminServiceListProjectMemberUsergroupsParams = {
   /**
    * Optionally filter by role
@@ -1464,6 +1481,10 @@ export type AdminServiceListProjectsForOrganizationAndUserParams = {
   userId?: string;
   pageSize?: number;
   pageToken?: string;
+};
+
+export type AdminServiceGetCloneCredentialsParams = {
+  superuserForceAccess?: boolean;
 };
 
 export type AdminServiceConnectProjectToGithubBody = {

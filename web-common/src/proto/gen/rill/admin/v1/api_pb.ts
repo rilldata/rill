@@ -3944,6 +3944,11 @@ export class SetOrganizationMemberUserRoleRequest extends Message<SetOrganizatio
    */
   role = "";
 
+  /**
+   * @generated from field: bool superuser_force_access = 4;
+   */
+  superuserForceAccess = false;
+
   constructor(data?: PartialMessage<SetOrganizationMemberUserRoleRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -3955,6 +3960,7 @@ export class SetOrganizationMemberUserRoleRequest extends Message<SetOrganizatio
     { no: 1, name: "organization", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "email", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "role", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "superuser_force_access", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SetOrganizationMemberUserRoleRequest {
@@ -9068,6 +9074,101 @@ export class ConnectProjectToGithubResponse extends Message<ConnectProjectToGith
 }
 
 /**
+ * @generated from message rill.admin.v1.CreateManagedGitRepoRequest
+ */
+export class CreateManagedGitRepoRequest extends Message<CreateManagedGitRepoRequest> {
+  /**
+   * @generated from field: string organization = 1;
+   */
+  organization = "";
+
+  /**
+   * name of the repo to create. 
+   * Note: The final name will be suffixed with a random string to ensure uniqueness.
+   *
+   * @generated from field: string name = 2;
+   */
+  name = "";
+
+  constructor(data?: PartialMessage<CreateManagedGitRepoRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.CreateManagedGitRepoRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "organization", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateManagedGitRepoRequest {
+    return new CreateManagedGitRepoRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): CreateManagedGitRepoRequest {
+    return new CreateManagedGitRepoRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): CreateManagedGitRepoRequest {
+    return new CreateManagedGitRepoRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: CreateManagedGitRepoRequest | PlainMessage<CreateManagedGitRepoRequest> | undefined, b: CreateManagedGitRepoRequest | PlainMessage<CreateManagedGitRepoRequest> | undefined): boolean {
+    return proto3.util.equals(CreateManagedGitRepoRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.CreateManagedGitRepoResponse
+ */
+export class CreateManagedGitRepoResponse extends Message<CreateManagedGitRepoResponse> {
+  /**
+   * @generated from field: string remote = 1;
+   */
+  remote = "";
+
+  /**
+   * @generated from field: string username = 2;
+   */
+  username = "";
+
+  /**
+   * @generated from field: string password = 3;
+   */
+  password = "";
+
+  constructor(data?: PartialMessage<CreateManagedGitRepoResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.CreateManagedGitRepoResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "remote", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "username", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "password", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateManagedGitRepoResponse {
+    return new CreateManagedGitRepoResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): CreateManagedGitRepoResponse {
+    return new CreateManagedGitRepoResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): CreateManagedGitRepoResponse {
+    return new CreateManagedGitRepoResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: CreateManagedGitRepoResponse | PlainMessage<CreateManagedGitRepoResponse> | undefined, b: CreateManagedGitRepoResponse | PlainMessage<CreateManagedGitRepoResponse> | undefined): boolean {
+    return proto3.util.equals(CreateManagedGitRepoResponse, a, b);
+  }
+}
+
+/**
  * @generated from message rill.admin.v1.UploadProjectAssetsRequest
  */
 export class UploadProjectAssetsRequest extends Message<UploadProjectAssetsRequest> {
@@ -9155,6 +9256,11 @@ export class GetCloneCredentialsRequest extends Message<GetCloneCredentialsReque
    */
   project = "";
 
+  /**
+   * @generated from field: bool superuser_force_access = 3;
+   */
+  superuserForceAccess = false;
+
   constructor(data?: PartialMessage<GetCloneCredentialsRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -9165,6 +9271,7 @@ export class GetCloneCredentialsRequest extends Message<GetCloneCredentialsReque
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "organization", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "project", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "superuser_force_access", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetCloneCredentialsRequest {

@@ -120,7 +120,8 @@ function fromTimeRangesParams(
     );
   }
 
-  if (preset.timeGrain && partialExploreState.selectedTimeRange) {
+  if (preset.timeGrain) {
+    partialExploreState.selectedTimeRange ??= {} as DashboardTimeControls;
     partialExploreState.selectedTimeRange.interval =
       FromURLParamTimeGrainMap[preset.timeGrain];
   }

@@ -4,6 +4,11 @@
  * rill/runtime/v1/schema.proto
  * OpenAPI spec version: version not set
  */
+import {
+  createInfiniteQuery,
+  createMutation,
+  createQuery,
+} from "@tanstack/svelte-query";
 import type {
   CreateInfiniteQueryOptions,
   CreateInfiniteQueryResult,
@@ -17,11 +22,6 @@ import type {
   QueryClient,
   QueryFunction,
   QueryKey,
-} from "@tanstack/svelte-query";
-import {
-  createInfiniteQuery,
-  createMutation,
-  createQuery,
 } from "@tanstack/svelte-query";
 
 import type {
@@ -90,8 +90,8 @@ import type {
   V1UnpackExampleResponse,
 } from "../index.schemas";
 
-import type { ErrorType } from "../../http-client";
 import { httpClient } from "../../http-client";
+import type { ErrorType } from "../../http-client";
 
 type AwaitedInput<T> = PromiseLike<T> | T;
 
@@ -2580,15 +2580,13 @@ export const getRuntimeServiceGetModelPartitionsInfiniteQueryOptions = <
     Awaited<ReturnType<typeof runtimeServiceGetModelPartitions>>,
     QueryKey,
     RuntimeServiceGetModelPartitionsParams["pageToken"]
-  > = ({ signal, pageParam }) => {
-    console.log("pageParam", pageParam);
-    return runtimeServiceGetModelPartitions(
+  > = ({ signal, pageParam }) =>
+    runtimeServiceGetModelPartitions(
       instanceId,
       model,
       { ...params, pageToken: pageParam || params?.["pageToken"] },
       signal,
     );
-  };
 
   return {
     queryKey,

@@ -34,6 +34,10 @@ func (e *localFileToSelfExecutor) Concurrency(desired int) (int, bool) {
 }
 
 func (e *localFileToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExecuteOptions) (*drivers.ModelResult, error) {
+	if opts.IncrementalRun {
+		return nil, fmt.Errorf("duckdb: incremental models are not supported for the local_file connector")
+	}
+
 	inputProps := &inputProps{}
 	if err := mapstructure.WeakDecode(opts.InputProperties, inputProps); err != nil {
 		return nil, fmt.Errorf("failed to parse input properties: %w", err)

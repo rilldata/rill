@@ -3,6 +3,7 @@ package local
 import (
 	"context"
 	"crypto/rand"
+	"database/sql"
 	"embed"
 	"encoding/base64"
 	"encoding/json"
@@ -21,7 +22,7 @@ import (
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	githttp "github.com/go-git/go-git/v5/plumbing/transport/http"
-	"github.com/google/go-github/v50/github"
+	"github.com/google/go-github/v52/github"
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/pkg/urlutil"
 	"github.com/rilldata/rill/cli/cmd/auth"
@@ -930,6 +931,10 @@ func (s *Server) traceHandler() http.Handler {
 
 		bytes, err := observability.SearchTracesFile(r.Context(), traceID, resourceName)
 		if err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				w.WriteHeader(http.StatusNotFound)
+				return
+			}
 			s.logger.Error("failed to search trace", zap.Error(err))
 			w.WriteHeader(http.StatusInternalServerError)
 			return
