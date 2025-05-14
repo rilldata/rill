@@ -17,7 +17,7 @@ import (
 )
 
 func (c *Connection) ListBuckets(ctx context.Context) ([]string, error) {
-	creds, err := c.newCredentials(ctx)
+	creds, err := c.newCredentials()
 	if err != nil {
 		return nil, err
 	}
@@ -60,7 +60,7 @@ func (c *Connection) ListBuckets(ctx context.Context) ([]string, error) {
 }
 
 func (c *Connection) ListObjectsRaw(ctx context.Context, req *runtimev1.S3ListObjectsRequest) ([]*runtimev1.S3Object, string, error) {
-	creds, err := c.newCredentials(ctx)
+	creds, err := c.newCredentials()
 	if err != nil {
 		return nil, "", err
 	}
@@ -116,7 +116,7 @@ func (c *Connection) ListObjectsRaw(ctx context.Context, req *runtimev1.S3ListOb
 }
 
 func (c *Connection) GetBucketRegion(ctx context.Context, bkt string) (string, error) {
-	creds, err := c.newCredentials(ctx)
+	creds, err := c.newCredentials()
 	if err != nil {
 		return "", err
 	}
@@ -133,7 +133,7 @@ func (c *Connection) GetBucketRegion(ctx context.Context, bkt string) (string, e
 }
 
 func (c *Connection) GetCredentialsInfo(ctx context.Context) (provider string, exist bool, err error) {
-	creds, err := c.newCredentials(ctx)
+	creds, err := c.newCredentials()
 	if creds == credentials.AnonymousCredentials {
 		return "", false, nil
 	}
