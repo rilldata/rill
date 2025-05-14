@@ -33,6 +33,8 @@
 
   let searchText = "";
   let selectedUsers: V1OrganizationMemberUser[] = [];
+  let pendingAdditions: string[] = [];
+  let pendingRemovals: string[] = [];
 
   $: organization = $page.params.organization;
 
@@ -76,9 +78,9 @@
       eventBus.emit("notification", {
         message: "User added to user group",
       });
-    } catch {
+    } catch (error) {
       eventBus.emit("notification", {
-        message: "Error adding user to user group",
+        message: `Error: ${error.response.data.message}`,
         type: "error",
       });
     }
@@ -93,10 +95,8 @@
         },
       });
 
-      // Add selected users to the newly created group
-      for (const user of selectedUsers) {
-        await handleAddUsergroupMemberUser(user.userEmail, newName);
-      }
+      // Apply pending user changes after group creation
+      await applyPendingChanges(newName);
 
       await queryClient.invalidateQueries({
         queryKey: getAdminServiceListOrganizationMemberUsergroupsQueryKey(
@@ -109,12 +109,49 @@
 
       groupName = "";
       selectedUsers = [];
+      pendingAdditions = [];
+      pendingRemovals = [];
       open = false;
 
       eventBus.emit("notification", { message: "User group created" });
-    } catch {
+    } catch (error) {
       eventBus.emit("notification", {
-        message: "Error creating user group",
+        message: `Error: ${error.response.data.message}`,
+        type: "error",
+      });
+    }
+  }
+
+  async function applyPendingChanges(usergroup: string) {
+    try {
+      // Add pending users to the group
+      for (const email of pendingAdditions) {
+        await $addUsergroupMemberUser.mutateAsync({
+          organization: organization,
+          usergroup: usergroup,
+          email: email,
+          data: {},
+        });
+      }
+
+      await queryClient.invalidateQueries({
+        queryKey:
+          getAdminServiceListOrganizationMemberUsersQueryKey(organization),
+      });
+
+      await queryClient.invalidateQueries({
+        queryKey: getAdminServiceListUsergroupMemberUsersQueryKey(
+          organization,
+          usergroup,
+        ),
+      });
+
+      eventBus.emit("notification", {
+        message: "User group changes saved successfully",
+      });
+    } catch (error) {
+      eventBus.emit("notification", {
+        message: `Error: ${error.response.data.message}`,
         type: "error",
       });
     }
@@ -122,6 +159,8 @@
 
   function handleRemoveUser(email: string) {
     selectedUsers = selectedUsers.filter((user) => user.userEmail !== email);
+    pendingRemovals = [...pendingRemovals, email];
+    pendingAdditions = pendingAdditions.filter((e) => e !== email);
   }
 
   const formId = "create-user-group-form";
@@ -163,7 +202,7 @@
       (user) =>
         !selectedUsers.some(
           (selected) => selected.userEmail === user.userEmail,
-        ),
+        ) && !pendingAdditions.includes(user.userEmail),
     )
     .map((user) => ({
       value: user.userEmail,
@@ -175,6 +214,8 @@
     open = false;
     searchText = "";
     selectedUsers = [];
+    pendingAdditions = [];
+    pendingRemovals = [];
   }
 </script>
 
@@ -227,6 +268,13 @@
               );
               if (selectedUser) {
                 selectedUsers = [...selectedUsers, selectedUser];
+                pendingAdditions = [
+                  ...pendingAdditions,
+                  selectedUser.userEmail,
+                ];
+                pendingRemovals = pendingRemovals.filter(
+                  (e) => e !== selectedUser.userEmail,
+                );
               }
             }
           }}

@@ -74,9 +74,9 @@
       });
 
       eventBus.emit("notification", { message: "User group renamed" });
-    } catch {
+    } catch (error) {
       eventBus.emit("notification", {
-        message: "Error renaming user group",
+        message: `Error: ${error.response.data.message}`,
         type: "error",
       });
     }
@@ -134,9 +134,8 @@
         message: "User group changes saved successfully",
       });
     } catch (error) {
-      console.error("Error applying group changes", error);
       eventBus.emit("notification", {
-        message: "Error saving user group changes",
+        message: `Error: ${error.response.data.message}`,
         type: "error",
       });
     }
