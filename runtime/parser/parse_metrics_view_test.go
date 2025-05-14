@@ -50,6 +50,7 @@ measures:
 				InputConnector:  "duckdb",
 				InputProperties: must(structpb.NewStruct(map[string]any{"sql": strings.TrimSpace(files["models/m1.sql"])})),
 				OutputConnector: "duckdb",
+				ChangeMode:      runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
 			},
 		},
 		// model m2
@@ -61,6 +62,7 @@ measures:
 				InputConnector:  "duckdb",
 				InputProperties: must(structpb.NewStruct(map[string]any{"sql": strings.TrimSpace(files["models/m2.sql"])})),
 				OutputConnector: "duckdb",
+				ChangeMode:      runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
 			},
 		},
 		// metrics view
