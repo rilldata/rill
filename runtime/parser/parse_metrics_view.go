@@ -30,19 +30,19 @@ type MetricsViewYAML struct {
 	FirstDayOfWeek    uint32           `yaml:"first_day_of_week"`
 	FirstMonthOfYear  uint32           `yaml:"first_month_of_year"`
 	Dimensions        []*struct {
-		Name            string
-		DisplayName     string `yaml:"display_name"`
-		Label           string // Deprecated: use display_name
-		Description     string
-		Column          string
-		Expression      string
-		Property        string // For backwards compatibility
-		Ignore          bool   `yaml:"ignore"` // Deprecated
-		Unnest          bool
-		URI             string
-		LookupTable     string `yaml:"lookup_table"`
-		LookKeyColumn   string `yaml:"lookup_key_column"`
-		LookValueColumn string `yaml:"lookup_value_column"`
+		Name              string
+		DisplayName       string `yaml:"display_name"`
+		Label             string // Deprecated: use display_name
+		Description       string
+		Column            string
+		Expression        string
+		Property          string // For backwards compatibility
+		Ignore            bool   `yaml:"ignore"` // Deprecated
+		Unnest            bool
+		URI               string
+		LookupTable       string `yaml:"lookup_table"`
+		LookupKeyColumn   string `yaml:"lookup_key_column"`
+		LookupValueColumn string `yaml:"lookup_value_column"`
 	}
 	Measures []*struct {
 		Name                string
@@ -294,8 +294,8 @@ func (p *Parser) parseMetricsView(node *Node) error {
 		}
 
 		// Validate the lookup table fields
-		if dim.LookupTable != "" || dim.LookKeyColumn != "" || dim.LookValueColumn != "" {
-			if dim.LookupTable == "" || dim.LookKeyColumn == "" || dim.LookValueColumn == "" {
+		if dim.LookupTable != "" || dim.LookupKeyColumn != "" || dim.LookupValueColumn != "" {
+			if dim.LookupTable == "" || dim.LookupKeyColumn == "" || dim.LookupValueColumn == "" {
 				return fmt.Errorf("all lookup fields should be defined (lookup_table, lookup_key_column and lookup_value_column should be defined")
 			}
 			if strings.Contains(dim.Expression, "dictGet") {
@@ -606,8 +606,8 @@ func (p *Parser) parseMetricsView(node *Node) error {
 			Unnest:            dim.Unnest,
 			Uri:               dim.URI,
 			LookupTable:       dim.LookupTable,
-			LookupKeyColumn:   dim.LookKeyColumn,
-			LookupValueColumn: dim.LookValueColumn,
+			LookupKeyColumn:   dim.LookupKeyColumn,
+			LookupValueColumn: dim.LookupValueColumn,
 		})
 	}
 
