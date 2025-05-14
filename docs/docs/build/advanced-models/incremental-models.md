@@ -103,6 +103,6 @@ Configure how changes to your model specifications are applied:
 change_mode: reset  # Options: reset (default), manual, patch
 ```
 
-- reset: changing the model automatically leads to a full refresh `(default, current behavior)`
-- manual: changing the model stops refreshes until a manual incremental or full refresh is run
-- patch: changing the model automatically changes to the new logic without a reset
+- `reset`: changing the model automatically leads to a full refresh (default)
+- `manual`: changing the model stops refreshes until a manual incremental or full refresh is run
+- `patch`: changing the model automatically changes to the new logic without a reset (only works for models with `incremental: true`)

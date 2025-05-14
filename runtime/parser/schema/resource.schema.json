@@ -2688,7 +2688,12 @@
             },
             "change_mode": {
               "type": "string",
-              "description": "Configure how changes to your model specifications are applied {reset|manual|patch} (optional)"
+              "enum": [
+                "reset",
+                "manual",
+                "patch"
+              ],
+              "description": "Configure how changes to the model specifications are applied (optional). 'reset' will drop and recreate the model automatically, 'manual' will require a manual full or incremental refresh to apply changes, and 'patch' will switch to the new logic without re-processing historical data (only applies for incremental models)."
             },
             "state": {
               "$ref": "#/$defs/data_properties",
