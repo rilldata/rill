@@ -200,8 +200,9 @@
 
   $: coercedUsersToOptions = availableSearchUsersList.map((user) => ({
     value: user.userEmail,
-    label: user.userEmail,
+    label: user.userName,
     name: user.userName,
+    photoUrl: user.userPhotoUrl,
   }));
 
   function handleClose() {

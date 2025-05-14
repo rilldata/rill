@@ -8,6 +8,7 @@
     value: string;
     label: string;
     name: string;
+    photoUrl?: string;
     selected?: boolean;
   }[] = [];
   export let inputValue = "";
@@ -23,6 +24,8 @@
         option.value.toLowerCase().includes(inputValue.toLowerCase()),
       )
     : options;
+
+  $: console.log(filteredItems);
 </script>
 
 <Combobox.Root
@@ -51,6 +54,7 @@
           <AvatarListItem
             name={item.name}
             email={item.value}
+            photoUrl={item.photoUrl}
             leftSpacing={false}
           />
           {#if item.selected}

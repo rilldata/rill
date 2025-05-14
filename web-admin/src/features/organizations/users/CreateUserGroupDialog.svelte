@@ -164,6 +164,7 @@
       value: user.userEmail,
       label: user.userEmail,
       name: user.userName,
+      photoUrl: user.userPhotoUrl,
     }));
 
   function handleClose() {
