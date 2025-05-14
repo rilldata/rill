@@ -20,6 +20,7 @@ type ModelYAML struct {
 	Refresh               *ScheduleYAML                           `yaml:"refresh"`
 	Timeout               string                                  `yaml:"timeout"`
 	Incremental           bool                                    `yaml:"incremental"`
+	ChangeMode            string                                  `yaml:"change_mode"`
 	State                 *DataYAML                               `yaml:"state"`
 	Partitions            *DataYAML                               `yaml:"partitions"`
 	Splits                *DataYAML                               `yaml:"splits"` // Deprecated: use "partitions" instead
@@ -43,6 +44,12 @@ func (p *Parser) parseModel(ctx context.Context, node *Node) error {
 	// Parse YAML
 	tmp := &ModelYAML{}
 	err := p.decodeNodeYAML(node, false, tmp)
+	if err != nil {
+		return err
+	}
+
+	// Parse the change mode
+	changeMode, err := parseChangeModeYAML(tmp.ChangeMode)
 	if err != nil {
 		return err
 	}
@@ -178,6 +185,8 @@ func (p *Parser) parseModel(ctx context.Context, node *Node) error {
 		r.ModelSpec.TimeoutSeconds = uint32(timeout.Seconds())
 	}
 
+	r.ModelSpec.ChangeMode = changeMode
+
 	r.ModelSpec.DefinedAsSource = tmp.DefinedAsSource
 
 	r.ModelSpec.Incremental = tmp.Incremental
@@ -312,4 +321,22 @@ func findLineNumber(text string, pos int) int {
 	}
 
 	return lineNumber
+}
+
+// parseChangeModeYAML parses the change mode from the YAML file.
+func parseChangeModeYAML(mode string) (runtimev1.ModelChangeMode, error) {
+	if mode == "" {
+		return runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET, nil
+	}
+
+	switch mode {
+	case "reset":
+		return runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET, nil
+	case "manual":
+		return runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_MANUAL, nil
+	case "patch":
+		return runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_PATCH, nil
+	default:
+		return runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_UNSPECIFIED, fmt.Errorf("unsupported change mode: %q (supported values: reset, manual, patch)", mode)
+	}
 }
