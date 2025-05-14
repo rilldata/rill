@@ -4,12 +4,16 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math"
 	"net/http"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/bradleyfalzon/ghinstallation/v2"
-	"github.com/google/go-github/v50/github"
+	"github.com/google/go-github/v52/github"
+	"github.com/google/uuid"
+	"github.com/hashicorp/go-retryablehttp"
 	"github.com/hashicorp/golang-lru/simplelru"
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/pkg/gitutil"
@@ -28,7 +32,11 @@ var (
 type Github interface {
 	AppClient() *github.Client
 	InstallationClient(installationID int64) (*github.Client, error)
-	InstallationToken(ctx context.Context, installationID int64) (string, error)
+	// InstallationToken returns a token for the installation ID limited to the repoID.
+	InstallationToken(ctx context.Context, installationID, repoID int64) (string, error)
+
+	CreateManagedRepo(ctx context.Context, repoPrefix string) (*github.Repository, error)
+	ManagedOrgInstallationID() (int64, error)
 }
 
 // githubClient implements the Github interface.
@@ -36,14 +44,21 @@ type githubClient struct {
 	appID         int64
 	appPrivateKey string
 	appClient     *github.Client
+	managedAcct   string
+
+	// managedOrgInstallationID is usually populated when the client is created.
+	// But we do not return an error if there is any error in fetching the installation ID.
+	// This is to let admin server start even if there is an issue with Github service.
+	managedOrgInstallationID int64
+	managedOrgFetchError     error
 
 	cacheMu           sync.Mutex
 	installationCache *simplelru.LRU
 }
 
 // NewGithub returns a new client for connecting to Github.
-func NewGithub(appID int64, appPrivateKey string) (Github, error) {
-	atr, err := ghinstallation.NewAppsTransport(http.DefaultTransport, appID, []byte(appPrivateKey))
+func NewGithub(ctx context.Context, appID int64, appPrivateKey, githubManagedAcct string, logger *zap.Logger) (Github, error) {
+	atr, err := ghinstallation.NewAppsTransport(retryableHTTPRoundTripper(), appID, []byte(appPrivateKey))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create github app transport: %w", err)
 	}
@@ -54,12 +69,28 @@ func NewGithub(appID int64, appPrivateKey string) (Github, error) {
 		panic(err)
 	}
 
-	return &githubClient{
+	g := &githubClient{
 		appID:             appID,
 		appPrivateKey:     appPrivateKey,
 		appClient:         appClient,
 		installationCache: lru,
-	}, nil
+		managedAcct:       githubManagedAcct,
+	}
+
+	// Set the managed org installation client
+	if githubManagedAcct == "" {
+		g.managedOrgFetchError = fmt.Errorf("managed Git repositories are not configured for this environment")
+		return g, nil
+	}
+	i, _, err := appClient.Apps.FindOrganizationInstallation(ctx, githubManagedAcct)
+	if err != nil {
+		logger.Error("failed to get managed org installation ID", zap.Error(err), observability.ZapCtx(ctx))
+		g.managedOrgFetchError = err
+		return g, nil
+	}
+	g.managedOrgInstallationID = *i.ID
+
+	return g, nil
 }
 
 func (g *githubClient) AppClient() *github.Client {
@@ -75,7 +106,7 @@ func (g *githubClient) InstallationClient(installationID int64) (*github.Client,
 		return val.(*github.Client), nil
 	}
 
-	itr, err := ghinstallation.New(http.DefaultTransport, g.appID, installationID, []byte(g.appPrivateKey))
+	itr, err := ghinstallation.New(retryableHTTPRoundTripper(), g.appID, installationID, []byte(g.appPrivateKey))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create github installation transport: %w", err)
 	}
@@ -85,11 +116,18 @@ func (g *githubClient) InstallationClient(installationID int64) (*github.Client,
 	return installationClient, nil
 }
 
-func (g *githubClient) InstallationToken(ctx context.Context, installationID int64) (string, error) {
-	itr, err := ghinstallation.New(http.DefaultTransport, g.appID, installationID, []byte(g.appPrivateKey))
+func (g *githubClient) InstallationToken(ctx context.Context, installationID, repoID int64) (string, error) {
+	itr, err := ghinstallation.New(retryableHTTPRoundTripper(), g.appID, installationID, []byte(g.appPrivateKey))
 	if err != nil {
 		return "", fmt.Errorf("failed to create github installation transport: %w", err)
 	}
+
+	opts := itr.InstallationTokenOptions
+	if opts == nil {
+		opts = &github.InstallationTokenOptions{}
+		itr.InstallationTokenOptions = opts
+	}
+	opts.RepositoryIDs = []int64{repoID}
 
 	token, err := itr.Token(ctx)
 	if err != nil {
@@ -97,6 +135,80 @@ func (g *githubClient) InstallationToken(ctx context.Context, installationID int
 	}
 
 	return token, nil
+}
+
+func (g *githubClient) CreateManagedRepo(ctx context.Context, name string) (*github.Repository, error) {
+	repoName := fmt.Sprintf("%s-%v", name, uuid.New().String()[0:8])
+
+	// get managed org client
+	id, err := g.ManagedOrgInstallationID()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get managed org installation ID: %w", err)
+	}
+	client, err := g.InstallationClient(id)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create github installation client: %w", err)
+	}
+
+	// create the repo
+	repo, _, err := client.Repositories.Create(ctx, g.managedAcct, &github.Repository{
+		Name:    github.String(repoName),
+		Private: github.Bool(true),
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create managed repo: %w", err)
+	}
+
+	// the create repo API does not wait for repo creation to be fully processed on server. Need to verify by making a get call in a loop
+	pollCtx, cancel := context.WithTimeout(ctx, 10*time.Minute)
+	defer cancel()
+	for {
+		select {
+		case <-pollCtx.Done():
+			return nil, pollCtx.Err()
+		case <-time.After(2 * time.Second):
+			// Ready to check again.
+		}
+		_, _, err := client.Repositories.Get(ctx, g.managedAcct, repoName)
+		if err == nil {
+			break
+		}
+	}
+
+	return repo, nil
+}
+
+func (g *githubClient) ManagedOrgInstallationID() (int64, error) {
+	return g.managedOrgInstallationID, g.managedOrgFetchError
+}
+
+func (s *Service) CreateManagedGitRepo(ctx context.Context, org *database.Organization, name, ownerID string) (*github.Repository, error) {
+	if org.QuotaProjects >= 0 {
+		count, err := s.DB.CountManagedGitRepos(ctx, org.ID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to count managed repos: %w", err)
+		}
+
+		quota := quotaManagedRepos(org)
+		if count >= quota {
+			return nil, fmt.Errorf("managed repo quota exceeded: %d/%d", count, quota)
+		}
+	}
+
+	repo, err := s.Github.CreateManagedRepo(ctx, fmt.Sprintf("%s-%s", org.Name, name))
+	if err != nil {
+		return nil, fmt.Errorf("failed to create managed repo: %w", err)
+	}
+	_, err = s.DB.InsertManagedGitRepo(ctx, &database.InsertManagedGitRepoOptions{
+		OrgID:   org.ID,
+		Remote:  repo.GetCloneURL(),
+		OwnerID: ownerID,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to insert managed repo meta: %w", err)
+	}
+
+	return repo, nil
 }
 
 // GetGithubInstallation returns a non zero Github installation ID if the Github App is installed on the repository
@@ -256,4 +368,21 @@ func (s *Service) processGithubInstallationRepositoriesEvent(_ context.Context, 
 		// but that means if there is an accidental removal we delete all projects
 	}
 	return nil
+}
+
+func quotaManagedRepos(org *database.Organization) int {
+	if org.QuotaProjects >= 0 {
+		// allow additional 10 repos for cases where we provision a github repo but it is not used because of errors/user bailed out etc/unused repos were not garbage collected
+		return org.QuotaProjects + 10
+	}
+	return math.MaxInt
+}
+
+func retryableHTTPRoundTripper() http.RoundTripper {
+	retryClient := retryablehttp.NewClient()
+	retryClient.RetryMax = 3
+	retryClient.RetryWaitMin = 2 * time.Second
+	retryClient.RetryWaitMax = 10 * time.Second
+	retryClient.Logger = nil // Disable inbuilt logger
+	return retryClient.StandardClient().Transport
 }

@@ -126,9 +126,10 @@ func (e *warehouseToSelfExecutor) queryAndInsert(ctx context.Context, opts *driv
 
 		if !create && opts.IncrementalRun {
 			insertOpts := &InsertTableOptions{
-				ByName:    false,
-				Strategy:  outputProps.IncrementalStrategy,
-				UniqueKey: outputProps.UniqueKey,
+				ByName:      false,
+				Strategy:    outputProps.IncrementalStrategy,
+				UniqueKey:   outputProps.UniqueKey,
+				PartitionBy: outputProps.PartitionBy,
 			}
 			metrics, err := e.c.insertTableAsSelect(ctx, outputTable, qry, insertOpts)
 			if err != nil {

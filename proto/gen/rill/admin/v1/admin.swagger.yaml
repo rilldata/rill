@@ -565,6 +565,35 @@ paths:
                 type: boolean
       tags:
         - AdminService
+  /v1/organizations/{organization}/create-managed-git-repo:
+    put:
+      summary: CreateManagedGitRepo creates a new rill managed git repo for the organization.
+      operationId: AdminService_CreateManagedGitRepo
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1CreateManagedGitRepoResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organization
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              name:
+                type: string
+                description: "name of the repo to create. \nNote: The final name will be suffixed with a random string to ensure uniqueness."
+      tags:
+        - AdminService
   /v1/organizations/{organization}/invites:
     get:
       summary: ListOrganizationInvites lists all the org invites
@@ -721,6 +750,8 @@ paths:
             properties:
               role:
                 type: string
+              superuserForceAccess:
+                type: boolean
       tags:
         - AdminService
   /v1/organizations/{organization}/members/current:
@@ -1026,6 +1057,10 @@ paths:
           in: path
           required: true
           type: string
+        - name: superuserForceAccess
+          in: query
+          required: false
+          type: boolean
       tags:
         - AdminService
   /v1/organizations/{organization}/projects/{project}/connect-to-github:
@@ -3104,8 +3139,6 @@ paths:
           schema:
             type: object
             properties:
-              branch:
-                type: string
               alert:
                 type: string
               annotations:
@@ -3160,10 +3193,6 @@ paths:
           in: path
           required: true
           type: string
-        - name: branch
-          in: query
-          required: false
-          type: string
         - name: pageSize
           in: query
           required: false
@@ -3199,8 +3228,6 @@ paths:
           schema:
             type: object
             properties:
-              branch:
-                type: string
               report:
                 type: string
               ownerId:
@@ -4212,6 +4239,15 @@ definitions:
     properties:
       bookmark:
         $ref: '#/definitions/v1Bookmark'
+  v1CreateManagedGitRepoResponse:
+    type: object
+    properties:
+      remote:
+        type: string
+      username:
+        type: string
+      password:
+        type: string
   v1CreateOrganizationRequest:
     type: object
     properties:

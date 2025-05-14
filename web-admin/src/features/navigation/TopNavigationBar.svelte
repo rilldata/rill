@@ -35,6 +35,7 @@
   } from "./nav-utils";
 
   export let createMagicAuthTokens: boolean;
+  export let manageProjectAdmins: boolean;
   export let manageProjectMembers: boolean;
   export let organizationLogoUrl: string | undefined = undefined;
   export let planDisplayName: string | undefined;
@@ -209,8 +210,10 @@
     {#if $viewAsUserStore}
       <ViewAsUserChip />
     {/if}
+    <!-- NOTE: only project admin and editor can manage project members -->
+    <!-- https://docs.rilldata.com/manage/roles-permissions#project-level-permissions -->
     {#if onProjectPage && manageProjectMembers}
-      <ShareProjectPopover {organization} {project} />
+      <ShareProjectPopover {organization} {project} {manageProjectAdmins} />
     {/if}
     {#if onMetricsExplorerPage && isDashboardValid}
       {#if exploreSpec}
