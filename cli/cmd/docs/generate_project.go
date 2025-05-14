@@ -1,0 +1,460 @@
+package docs
+
+import (
+	"encoding/json"
+	"fmt"
+	"io/fs"
+	"os"
+	"path/filepath"
+	"strings"
+
+	"github.com/iancoleman/orderedmap"
+	"github.com/rilldata/rill/cli/pkg/cmdutil"
+	"github.com/spf13/cobra"
+	"gopkg.in/yaml.v3"
+)
+
+func GenerateProjectDocsCmd(rootCmd *cobra.Command, ch *cmdutil.Helper) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:    "generate-project",
+		Short:  "Generate Markdown docs from JSON Schemas for Project files",
+		Args:   cobra.ExactArgs(1),
+		Hidden: !ch.IsDev(),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			outputDir := args[0]
+			if _, err := os.Stat(outputDir); os.IsNotExist(err) {
+				if err := os.MkdirAll(outputDir, fs.ModePerm); err != nil {
+					return err
+				}
+			}
+			projectPath := "runtime/parser/schema/project.schema.json"
+			projectFilesSchema, err := parseSchemaWithRefs(projectPath)
+			if err != nil {
+				return fmt.Errorf("resource schema error: %w", err)
+			}
+			// ideally rillyaml should be part of project.schem.json but currently it can't be
+			rillyamlPath := "runtime/parser/schema/rillyaml.schema.json"
+			rillYamlSchema, err := parseSchemaWithRefs(rillyamlPath)
+			if err != nil {
+				return fmt.Errorf("rillyaml schema error: %w", err)
+			}
+			projectFilesSchema.OneOf = append(projectFilesSchema.OneOf, rillYamlSchema)
+
+			var projectFilesbuf strings.Builder
+
+			sidebarPosition := 30
+			projectFilesbuf.WriteString("---\n")
+			projectFilesbuf.WriteString("note: GENERATED. DO NOT EDIT.\n")
+			projectFilesbuf.WriteString(fmt.Sprintf("title: %s\n", projectFilesSchema.Title))
+			projectFilesbuf.WriteString(fmt.Sprintf("sidebar_position: %d\n", sidebarPosition))
+			projectFilesbuf.WriteString("---\n")
+
+			projectFilesbuf.WriteString("## Overview\n\n")
+			projectFilesbuf.WriteString(fmt.Sprintf("%s\n\n", projectFilesSchema.Description))
+			projectFilesbuf.WriteString("## Project files types\n\n")
+
+			for _, resource := range projectFilesSchema.OneOf {
+				sidebarPosition++
+				fileName := sanitizeFileName(resource.Title) + ".md"
+				filePath := filepath.Join(outputDir, fileName)
+				requiredMap := getRequiredMap(resource.Required)
+				var resourceFilebuf strings.Builder
+				resourceFilebuf.WriteString("---\n")
+				resourceFilebuf.WriteString("note: GENERATED. DO NOT EDIT.\n")
+				resourceFilebuf.WriteString(fmt.Sprintf("title: %s\n", resource.Title))
+				resourceFilebuf.WriteString(fmt.Sprintf("sidebar_position: %d\n", sidebarPosition))
+				resourceFilebuf.WriteString("---\n")
+				resourceFilebuf.WriteString(fmt.Sprintf("\n%s\n\n", resource.Description))
+				resourceFilebuf.WriteString("## Properties")
+				resourceFilebuf.WriteString(generateDoc("", resource, "", requiredMap))
+
+				if err := os.WriteFile(filePath, []byte(resourceFilebuf.String()), 0o644); err != nil {
+					return fmt.Errorf("failed writing resource doc: %w", err)
+				}
+				projectFilesbuf.WriteString(fmt.Sprintf("- [%s](%s)\n", resource.Title, fileName))
+			}
+
+			if err := os.WriteFile(filepath.Join(outputDir, "index.md"), []byte(projectFilesbuf.String()), 0o644); err != nil {
+				return fmt.Errorf("failed writing index.md: %w", err)
+			}
+
+			fmt.Printf("Documentation generated in %s\n", outputDir)
+			return nil
+		},
+	}
+	return cmd
+}
+
+type JSONSchema struct {
+	Title       string                   `json:"title"`
+	Description string                   `json:"description"`
+	Type        interface{}              `json:"type"`
+	Properties  *orderedmap.OrderedMap   `json:"properties"`
+	Examples    []*orderedmap.OrderedMap `json:"examples"`
+	Required    []string                 `json:"required"`
+	Items       *JSONSchema              `json:"items"`
+	Enum        []interface{}            `json:"enum"`
+	OneOf       []*JSONSchema            `json:"oneOf"`
+	AnyOf       []*JSONSchema            `json:"anyOf"`
+	AllOf       []*JSONSchema            `json:"allOf"`
+}
+
+func getRequiredMap(required []string) map[string]bool {
+	reqMap := make(map[string]bool)
+	for _, r := range required {
+		reqMap[r] = true
+	}
+	return reqMap
+}
+
+func addHyphen(s string) string {
+	if s == "" {
+		return s
+	}
+	return fmt.Sprintf("- %s", s)
+}
+
+func getTypeString(schema *JSONSchema) string {
+	if schema == nil {
+		return ""
+	}
+	if schema.Type == nil {
+		if schema.OneOf != nil {
+			return "_[oneOf]_ "
+		}
+		if schema.AnyOf != nil {
+			return "_[anyOf]_ "
+		}
+		if schema.AnyOf != nil {
+			return "_[allOf]_ "
+		}
+		return ""
+	}
+	t := schema.Type
+	if s, ok := t.(string); ok {
+		if s == "array" {
+			if schema.Items.Type == "string" {
+				return "_[array of string]_ "
+			} else if schema.Items.Type == "object" {
+				return "_[array of object]_ "
+			} else if schema.Items.Type == nil {
+				if len(schema.Items.OneOf) > 0 {
+					return "_[array of oneOf]_ "
+				}
+				if len(schema.Items.AnyOf) > 0 {
+					return "_[array of anyOf]_ "
+				}
+			}
+		}
+		return fmt.Sprintf("_[%s]_ ", s)
+	}
+	return ""
+}
+
+func convertAllSpacesToNbsp(input string) string {
+	return strings.ReplaceAll(input, " ", "&nbsp;&nbsp;")
+}
+
+func generateDoc(parentName string, schema *JSONSchema, indent string, requiredFields map[string]bool) string {
+	var doc strings.Builder
+	formatString := "- "
+	if indent == "" {
+		formatString = ""
+	}
+	if schema.Type == "object" && schema.Properties != nil {
+		for _, propName := range schema.Properties.Keys() {
+			val, _ := schema.Properties.Get(propName)
+			b, err := json.Marshal(val)
+			if err != nil {
+				panic(err)
+			}
+			var propSchema *JSONSchema
+			if err := json.Unmarshal(b, &propSchema); err != nil {
+				panic(err)
+			}
+			required := ""
+			if requiredFields[propName] {
+				required = " _(required)_"
+			}
+			if parentName == "" {
+				doc.WriteString(fmt.Sprintf("\n\n### `%s`", propName))
+				doc.WriteString(fmt.Sprintf("\n\n%s%s %s", getTypeString(propSchema), addHyphen(propSchema.Description), required))
+			} else {
+				doc.WriteString(fmt.Sprintf("\n\n%s%s**`%s`** %s%s %s", indent, formatString, propName, addHyphen(getTypeString(propSchema)), addHyphen(propSchema.Description), required))
+			}
+			if propSchema.Type == "object" && !(propName == "dev" || propName == "prod") {
+				doc.WriteString(generateDoc(propName, propSchema, indent+"  ", getRequiredMap(propSchema.Required)))
+			} else if propSchema.Type == "array" || propSchema.Type == nil {
+				doc.WriteString(generateDoc(propName, propSchema, indent+"  ", getRequiredMap(propSchema.Required)))
+			}
+		}
+	} else if schema.Type == "array" && schema.Items != nil {
+		doc.WriteString(generateDoc(parentName, schema.Items, indent, getRequiredMap(schema.Items.Required)))
+	}
+
+	if len(schema.OneOf) > 0 {
+		// single oneof is always selected to print it as same level as properties.
+		if len(schema.OneOf) == 1 {
+			doc.WriteString(generateDoc(parentName, schema.OneOf[0], indent, getRequiredMap(schema.OneOf[0].Required)))
+		} else {
+			// root level(parentName == "") options handling is different
+			if parentName == "" {
+				doc.WriteString("\n\n## One of Properties Options\n")
+				for _, subSchema := range schema.OneOf {
+					doc.WriteString(fmt.Sprintf("- [%s](#%s)\n", subSchema.Title, subSchema.Title))
+				}
+				for _, subSchema := range schema.OneOf {
+					if len(schema.OneOf) != 1 && (subSchema.Properties != nil || subSchema.Type != nil) {
+						doc.WriteString(fmt.Sprintf("\n\n### %s", subSchema.Title))
+						doc.WriteString(fmt.Sprintf("\n\n%s", subSchema.Description))
+					}
+					doc.WriteString(generateDoc(parentName, subSchema, indent, getRequiredMap(subSchema.Required)))
+				}
+			} else {
+				for i, subSchema := range schema.OneOf {
+					if len(schema.OneOf) != 1 && (subSchema.Properties != nil || subSchema.Type != nil) {
+						doc.WriteString(fmt.Sprintf("\n\n%s**%soption %d** %s%s", indent, convertAllSpacesToNbsp(indent), i+1, addHyphen(getTypeString(subSchema)), addHyphen(subSchema.Description)))
+					}
+					doc.WriteString(generateDoc(parentName, subSchema, indent, getRequiredMap(subSchema.Required)))
+				}
+			}
+		}
+	}
+	if len(schema.AnyOf) > 0 {
+		for i, subSchema := range schema.AnyOf {
+			if len(schema.AnyOf) != 1 && (subSchema.Properties != nil || subSchema.Type != nil) {
+				doc.WriteString(fmt.Sprintf("\n\n%s**%soption %d** %s%s", indent, convertAllSpacesToNbsp(indent), i+1, addHyphen(getTypeString(subSchema)), addHyphen(subSchema.Description)))
+			}
+			doc.WriteString(generateDoc(parentName, subSchema, indent, getRequiredMap(subSchema.Required)))
+		}
+	}
+	if len(schema.AllOf) > 0 {
+		for _, subSchema := range schema.AllOf {
+			doc.WriteString(generateDoc(parentName, subSchema, indent, getRequiredMap(subSchema.Required)))
+		}
+	}
+
+	// Print Example if available
+	if len(schema.Examples) > 0 && parentName == "" {
+		doc.WriteString("\n\n## Examples")
+		for _, example := range schema.Examples {
+			exampleNode, err := orderedMapToYAMLNode(*example)
+			if err != nil {
+				panic(err)
+			}
+			exampleBytes, err := yaml.Marshal(exampleNode)
+			if err != nil {
+				panic(err) // Handle error appropriately
+			}
+			// Write the example in YAML format to the documentation
+			doc.WriteString(fmt.Sprintf("\n\n%s```yaml\n%s\n```\n\n", indent, exampleBytes))
+		}
+	}
+	return doc.String()
+}
+
+// orderedMapToYAMLNode recursively converts an orderedmap.OrderedMap to a yaml.Node
+// It treats keys starting with "_comment_" as comments.
+func orderedMapToYAMLNode(m orderedmap.OrderedMap) (*yaml.Node, error) {
+	node := &yaml.Node{
+		Kind: yaml.MappingNode,
+	}
+
+	var pendingComment string
+	for _, key := range m.Keys() {
+		value, _ := m.Get(key)
+
+		// Check if the key is a comment (starts with "_comment_")
+		if strings.HasPrefix(key, "_comment_") {
+			if strVal, ok := value.(string); ok {
+				pendingComment = strVal
+			}
+			continue
+		}
+
+		// Create key node
+		keyNode := &yaml.Node{
+			Kind:  yaml.ScalarNode,
+			Value: key,
+		}
+
+		// Create value node based on the type of value
+		var valueNode *yaml.Node
+		switch v := value.(type) {
+		case orderedmap.OrderedMap:
+			var err error
+			valueNode, err = orderedMapToYAMLNode(v)
+			if err != nil {
+				return nil, err
+			}
+		case []interface{}:
+			valueNode = &yaml.Node{
+				Kind: yaml.SequenceNode,
+			}
+			for _, item := range v {
+				switch itemVal := item.(type) {
+				case orderedmap.OrderedMap:
+					itemNode, err := orderedMapToYAMLNode(itemVal)
+					if err != nil {
+						return nil, err
+					}
+					valueNode.Content = append(valueNode.Content, itemNode)
+				default:
+					str, ok := itemVal.(string)
+					var itemNode *yaml.Node
+					if ok && strings.Contains(str, "\n") {
+						itemNode = &yaml.Node{
+							Kind:  yaml.ScalarNode,
+							Value: str,
+							Style: yaml.LiteralStyle,
+						}
+					} else {
+						itemNode = &yaml.Node{
+							Kind:  yaml.ScalarNode,
+							Value: fmt.Sprintf("%v", itemVal),
+						}
+					}
+					valueNode.Content = append(valueNode.Content, itemNode)
+				}
+			}
+		default:
+			str, ok := v.(string)
+			if ok && strings.Contains(str, "\n") {
+				valueNode = &yaml.Node{
+					Kind:  yaml.ScalarNode,
+					Value: str,
+					Style: yaml.LiteralStyle,
+				}
+			} else {
+				valueNode = &yaml.Node{
+					Kind:  yaml.ScalarNode,
+					Value: fmt.Sprintf("%v", v),
+				}
+			}
+		}
+
+		// Apply pending comment if available
+		if pendingComment != "" {
+			keyNode.HeadComment = pendingComment
+			pendingComment = ""
+		}
+
+		node.Content = append(node.Content, keyNode, valueNode)
+	}
+
+	return node, nil
+}
+
+// parseSchemaWithRefs reads and fully resolves all $ref in the JSON Schema
+func parseSchemaWithRefs(path string) (*JSONSchema, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+
+	root := orderedmap.New()
+	if err := json.Unmarshal(data, &root); err != nil {
+		return nil, fmt.Errorf("unmarshal root schema: %w", err)
+	}
+	node := root //
+	if err := resolveRefs(node, root); err != nil {
+		return nil, fmt.Errorf("failed to resolve $refs: %w", err)
+	}
+
+	finalData, err := json.Marshal(root)
+	if err != nil {
+		return nil, fmt.Errorf("marshal resolved schema: %w", err)
+	}
+
+	var schema JSONSchema
+	if err := json.Unmarshal(finalData, &schema); err != nil {
+		return nil, fmt.Errorf("unmarshal resolved JSONSchema: %w", err)
+	}
+	return &schema, nil
+}
+
+func resolveRefs(node, root *orderedmap.OrderedMap) error {
+	// Handle $ref replacement
+	if refVal, ok := node.Get("$ref"); ok {
+		if refStr, ok := refVal.(string); ok && strings.HasPrefix(refStr, "#/") {
+			resolved, err := resolveJSONPointer(root, refStr[2:])
+			if err != nil {
+				return err
+			}
+			node.Delete("$ref")
+			for _, key := range resolved.Keys() {
+				val, _ := resolved.Get(key)
+				node.Set(key, val)
+			}
+		}
+	}
+
+	// Recurse into keys
+	for _, key := range node.Keys() {
+		val, _ := node.Get(key)
+
+		switch v := val.(type) {
+		case *orderedmap.OrderedMap:
+			if err := resolveRefs(v, root); err != nil {
+				return err
+			}
+		case orderedmap.OrderedMap:
+			// Convert to pointer so we can mutate
+			cp := v
+			if err := resolveRefs(&cp, root); err != nil {
+				return err
+			}
+			node.Set(key, cp)
+		case []interface{}:
+			for i, item := range v {
+				switch itemTyped := item.(type) {
+				case *orderedmap.OrderedMap:
+					if err := resolveRefs(itemTyped, root); err != nil {
+						return err
+					}
+				case orderedmap.OrderedMap:
+					cp := itemTyped
+					if err := resolveRefs(&cp, root); err != nil {
+						return err
+					}
+					v[i] = cp
+				}
+			}
+			node.Set(key, v)
+		}
+	}
+	return nil
+}
+
+func resolveJSONPointer(root *orderedmap.OrderedMap, pointer string) (*orderedmap.OrderedMap, error) {
+	parts := strings.Split(pointer, "/")
+	var current any
+	current = root
+	for _, part := range parts {
+		m, ok := current.(*orderedmap.OrderedMap)
+		if !ok {
+			return nil, fmt.Errorf("invalid pointer resolution at part '%s'", part)
+		}
+
+		val, exists := m.Get(part)
+		if !exists {
+			return nil, fmt.Errorf("key '%s' not found", part)
+		}
+		switch valTyped := val.(type) {
+		case orderedmap.OrderedMap:
+			current = &valTyped
+		default:
+			current = valTyped.(*orderedmap.OrderedMap)
+		}
+	}
+
+	resolved, ok := current.(*orderedmap.OrderedMap)
+	if !ok {
+		return nil, fmt.Errorf("resolved reference is not an object")
+	}
+	return resolved, nil
+}
+
+func sanitizeFileName(name string) string {
+	return strings.ToLower(strings.ReplaceAll(strings.ReplaceAll(name, " YAML", ""), " ", "-"))
+}

@@ -1,31 +1,32 @@
 {
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://rilldata.com/schemas/rillyaml.schema.json",
-  "title": "rillyaml",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "rillyaml.schema.json",
+  "title": "Project YAML",
   "type": "object",
-  "description": "The rill.yaml file contains metadata about your project.",
+  "description": "The `rill.yaml` file contains metadata about your project.",
   "allOf": [
     {
       "title": "rillyaml_properties",
-      "$ref": "#/$defs/rillyaml_properties"
+      "$ref": "#/definitions/rillyaml_properties"
     },
     {
       "title": "environment_overrides",
+      "type": "object",
       "properties": {
         "dev": {
           "type": "object",
           "description": "Overrides properties in development",
-          "$ref": "#/$defs/rillyaml_properties"
+          "$ref": "#/definitions/rillyaml_properties"
         },
         "prod": {
           "type": "object",
           "description": "Overrides properties in production",
-          "$ref": "#/$defs/rillyaml_properties"
+          "$ref": "#/definitions/rillyaml_properties"
         }
       }
     }
   ],
-  "$defs": {
+  "definitions": {
     "rillyaml_properties": {
       "title": "rillyaml_properties",
       "type": "object",
@@ -47,33 +48,38 @@
           "description": "Specifies the default OLAP engine for the project. Defaults to duckdb if not set"
         },
         "models": {
-          "$ref": "./resource.schema.json#/$defs/model/$defs/model_properties",
+          "type": "object",
+          "$ref": "./project.schema.json#/definitions/model/definitions/model_properties",
           "description": "Defines project-wide default settings for models. Unless overridden, individual models will inherit these defaults"
         },
         "metrics_views": {
-          "$ref": "./resource.schema.json#/$defs/metrics_view/$defs/metrics_view_properties",
+          "type": "object",
+          "$ref": "./project.schema.json#/definitions/metrics_view/definitions/metrics_view_properties",
           "description": "Defines project-wide default settings for metrics_views. Unless overridden, individual metrics_views will inherit these defaults"
         },
         "explores": {
-          "$ref": "./resource.schema.json#/$defs/explore/$defs/explore_properties",
+          "type": "object",
+          "$ref": "./project.schema.json#/definitions/explore/definitions/explore_properties",
           "description": "Defines project-wide default settings for explores. Unless overridden, individual explores will inherit these defaults"
         },
         "features": {
+          "description": "Optional feature flags. Can be specified as a map of feature names to booleans, or as a list of enabled feature names.",
           "oneOf": [
             {
               "type": "object",
+              "description": "Map of feature names to booleans.",
               "additionalProperties": {
                 "type": "boolean"
               }
             },
             {
               "type": "array",
+              "description": "List of enabled feature names.",
               "items": {
                 "type": "string"
               }
             }
-          ],
-          "description": "Enables or disables experimental or optional features using key-value pairs, where the key is the feature name and the value is a boolean"
+          ]
         },
         "public_paths": {
           "type": "array",

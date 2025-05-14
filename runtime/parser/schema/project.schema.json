@@ -1,51 +1,77 @@
 {
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "resource.schema.json",
-  "title": "Rill Resource",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "project.schema.json",
+  "title": "YAML Syntax",
+  "description": "When you create models and dashboards, these objects are represented as object files on the file system. You can find these files in your `models` and `dashboards` folders in your project by default. \r\n\r\n:::info Working with resources outside their native folders\r\n\r\nIt is possible to define resources (such as [models](model.md), [metrics-views](metrics-view.md), [dashboards](explore.md), [custom APIs](api.md), or [themes](theme.md)) within <u>any</u> nested folder within your Rill project directory. However, for any YAML configuration file, it is then imperative that the `type` property is then appropriately defined within the underlying resource configuration or Rill will not able to resolve the resource type correctly!\r\n\r\n:::\r\n\r\nProjects can simply be rehydrated from Rill project files into an explorable data application as long as there is sufficient access and credentials to the source data - figuring out the dependencies, pulling down data, & validating your model queries and metrics configurations. The result is a set of functioning exploratory dashboards.\r\n\r\nYou can see a few different example projects by visiting our [example github repository](https://github.com/rilldata/rill-examples).\r\n\r\n:::tip\r\n\r\nFor more information about using Git or cloning projects locally, please see our page on [GitHub Basics](/deploy/deploy-dashboard/github-101).\r\n\r\n:::",
   "type": "object",
   "oneOf": [
     {
-      "$ref": "#/$defs/alert"
+      "$ref": "#/definitions/alert"
     },
     {
-      "$ref": "#/$defs/api"
+      "$ref": "#/definitions/api"
     },
     {
-      "$ref": "#/$defs/canvas"
+      "$ref": "#/definitions/canvas"
     },
     {
-      "$ref": "#/$defs/component"
+      "$ref": "#/definitions/component"
     },
     {
-      "$ref": "#/$defs/connector"
+      "$ref": "#/definitions/connector"
     },
     {
-      "$ref": "#/$defs/explore"
+      "$ref": "#/definitions/explore"
     },
     {
-      "$ref": "#/$defs/metrics_view"
+      "$ref": "#/definitions/metrics_view"
     },
     {
-      "$ref": "#/$defs/model"
+      "$ref": "#/definitions/model"
     },
     {
-      "$ref": "#/$defs/report"
+      "$ref": "#/definitions/report"
     },
     {
-      "$ref": "#/$defs/theme"
+      "$ref": "#/definitions/theme"
     }
   ],
-  "$defs": {
+  "definitions": {
     "alert": {
       "type": "object",
-      "title": "alert",
+      "title": "Alert YAML",
+      "description": "Along with alertings at the dashboard level and can be created via the UI, there might be more extensive alerting that you might want to develop and can be done so the an alert.yaml. When creating an alert via a YAML file, you'll see this denoted in the UI as `Created through code`.",
+      "examples": [
+        {
+          "_comment_heading": "Example: To send alert when data lags by more than 1 day to slack channel #rill-cloud-alerts",
+          "type": "alert",
+          "display_name": "Data lags by more than 1 day",
+          "_comment_refresh": "Check the alert every hour.",
+          "refresh": {
+            "cron": "0 * * * *"
+          },
+          "_comment_data": "Query that returns non-empty results if the metrics lag by more than 1 day.",
+          "data": {
+            "sql": "SELECT  *\nFROM\n(\n  SELECT  MAX(event_time) AS max_time\n  FROM rill_metrics_model\n)\nWHERE max_time < NOW() - INTERVAL '1 day'"
+          },
+          "_comment_notify": "Send notifications in Slack.",
+          "notify": {
+            "slack": {
+              "channels": [
+                "#rill-cloud-alerts"
+              ]
+            }
+          }
+        }
+      ],
       "allOf": [
         {
-          "title": "type",
           "type": "object",
           "properties": {
             "type": {
-              "const": "alert"
+              "type": "string",
+              "const": "alert",
+              "description": "Refers to the resource type and must be `alert`"
             }
           },
           "required": [
@@ -53,37 +79,34 @@
           ]
         },
         {
-          "title": "common_properties",
-          "$ref": "#/$defs/common_properties"
+          "$ref": "#/definitions/common_properties"
         },
         {
-          "title": "alert_properties",
-          "$ref": "#/$defs/alert/$defs/alert_properties",
+          "type": "object",
+          "properties": {
+            "dev": {
+              "type": "object",
+              "description": "Overrides properties in development",
+              "$ref": "#/definitions/alert/definitions/alert_properties"
+            },
+            "prod": {
+              "type": "object",
+              "description": "Overrides properties in production",
+              "$ref": "#/definitions/alert/definitions/alert_properties"
+            }
+          }
+        },
+        {
+          "$ref": "#/definitions/alert/definitions/alert_properties",
           "required": [
             "refresh",
             "data",
             "notify"
           ]
-        },
-        {
-          "title": "environment_overrides",
-          "properties": {
-            "dev": {
-              "type": "object",
-              "description": "Overrides properties in development",
-              "$ref": "#/$defs/alert/$defs/alert_properties"
-            },
-            "prod": {
-              "type": "object",
-              "description": "Overrides properties in production",
-              "$ref": "#/$defs/alert/$defs/alert_properties"
-            }
-          }
         }
       ],
-      "$defs": {
+      "definitions": {
         "alert_properties": {
-          "title": "alert_properties",
           "type": "object",
           "properties": {
             "display_name": {
@@ -91,16 +114,8 @@
               "description": "Refers to the display name for the alert"
             },
             "refresh": {
-              "$ref": "#/$defs/schedule_properties",
+              "$ref": "#/definitions/schedule_properties",
               "description": "Specifies the refresh schedule that Rill should follow to re-ingest and update the underlying data"
-            },
-            "watermark": {
-              "type": "string",
-              "enum": [
-                "trigger_time",
-                "inherit"
-              ],
-              "description": "Specifies how the watermark is determined for incremental processing.\nUse 'trigger_time' to set it at runtime or 'inherit' to use the upstream model's watermark."
             },
             "intervals": {
               "type": "object",
@@ -121,17 +136,26 @@
                 }
               }
             },
+            "watermark": {
+              "type": "string",
+              "enum": [
+                "trigger_time",
+                "inherit"
+              ],
+              "description": "Specifies how the watermark is determined for incremental processing.\nUse 'trigger_time' to set it at runtime or 'inherit' to use the upstream model's watermark."
+            },
             "timeout": {
               "type": "string",
               "description": "define the timeout of the alert in seconds (optional)."
             },
             "data": {
-              "$ref": "#/$defs/data_properties"
+              "description": "Specifies one of the options to retrieve or compute the data used by alert",
+              "$ref": "#/definitions/data_properties"
             },
             "for": {
-              "type": "object",
               "oneOf": [
                 {
+                  "type": "object",
                   "properties": {
                     "user_id": {
                       "type": "string"
@@ -143,6 +167,7 @@
                   "additionalProperties": false
                 },
                 {
+                  "type": "object",
                   "properties": {
                     "user_email": {
                       "type": "string",
@@ -155,6 +180,7 @@
                   "additionalProperties": false
                 },
                 {
+                  "type": "object",
                   "properties": {
                     "attributes": {
                       "type": "object",
@@ -189,7 +215,7 @@
               "description": "Defines the re-notification interval for the alert (e.g., '10m', '24h'), equivalent to snooze duration in UI, defaults to 'Off'"
             },
             "notify": {
-              "$ref": "#/$defs/notify_properties",
+              "$ref": "#/definitions/notify_properties",
               "description": "Defines how and where to send notifications. At least one method (email or Slack) is required."
             },
             "annotations": {
@@ -203,22 +229,25 @@
       }
     },
     "api": {
-      "title": "api",
       "type": "object",
+      "title": "API YAML",
+      "description": "In your Rill project directory, create a new file name `<api-name>.yaml` in the `apis` directory containing a custom API definition. See comprehensive documentation on how to define and use [custom APIs](/integrate/custom-apis/index.md)",
       "examples": [
         {
+          "_comment_heading": "Example: This api returns the top 10 authors by net line changes since the specified date provided in the arguments.",
           "type": "api",
-          "connector": "clickhouse",
-          "sql": "select * from my_model"
+          "name": "metrics_view_api",
+            "metrics_sql": "SELECT author_name, net_line_changes\nFROM advanced_metrics_view\n  where author_date > '{{ .args.date }}'\n  order by net_line_changes DESC\n  limit 10"
         }
       ],
       "allOf": [
         {
-          "title": "type",
           "type": "object",
           "properties": {
             "type": {
-              "const": "api"
+              "type": "string",
+              "const": "api",
+              "description": "Refers to the resource type and must be `api`"
             }
           },
           "required": [
@@ -226,31 +255,29 @@
           ]
         },
         {
-          "$ref": "#/$defs/common_properties"
+          "$ref": "#/definitions/common_properties"
         },
         {
-          "title": "api_properties",
-          "$ref": "#/$defs/api/$defs/api_properties"
-        },
-        {
-          "title": "environment_overrides",
+          "type": "object",
           "properties": {
             "dev": {
               "type": "object",
               "description": "Overrides properties in development",
-              "$ref": "#/$defs/api/$defs/api_properties"
+              "$ref": "#/definitions/api/definitions/api_properties"
             },
             "prod": {
               "type": "object",
               "description": "Overrides properties in production",
-              "$ref": "#/$defs/api/$defs/api_properties"
+              "$ref": "#/definitions/api/definitions/api_properties"
             }
           }
+        },
+        {
+          "$ref": "#/definitions/api/definitions/api_properties"
         }
       ],
-      "$defs": {
+      "definitions": {
         "api_properties": {
-          "title": "api_properties",
           "type": "object",
           "properties": {
             "openapi": {
@@ -283,7 +310,7 @@
               }
             },
             "security": {
-              "$ref": "#/$defs/security_policy_properties"
+              "$ref": "#/definitions/security_policy_properties"
             },
             "skip_nested_security": {
               "type": "boolean"
@@ -291,7 +318,7 @@
           },
           "oneOf": [
             {
-              "$ref": "#/$defs/data_properties"
+              "$ref": "#/definitions/data_properties"
             }
           ]
         }
@@ -299,14 +326,16 @@
     },
     "canvas": {
       "type": "object",
-      "title": "canvas",
+      "title": "Canvas YAML",
+      "description": "In your Rill project directory, create a explore dashboard, `<dashboard_name>.yaml`, file in the `dashboards` directory. Rill will ingest the dashboard definition next time you run `rill start`.",
       "allOf": [
         {
-          "title": "type",
           "type": "object",
           "properties": {
             "type": {
-              "const": "canvas"
+              "type": "string",
+              "const": "canvas",
+              "description": "Refers to the resource type and must be `canvas`"
             }
           },
           "required": [
@@ -314,34 +343,32 @@
           ]
         },
         {
-          "$ref": "#/$defs/common_properties"
+          "$ref": "#/definitions/common_properties"
         },
         {
-          "title": "canvas_properties",
-          "$ref": "#/$defs/canvas/$defs/canvas_properties",
-          "required": [
-            "rows"
-          ]
-        },
-        {
-          "title": "environment_overrides",
+          "type": "object",
           "properties": {
             "dev": {
               "type": "object",
               "description": "Overrides properties in development",
-              "$ref": "#/$defs/canvas/$defs/canvas_properties"
+              "$ref": "#/definitions/canvas/definitions/canvas_properties"
             },
             "prod": {
               "type": "object",
               "description": "Overrides properties in production",
-              "$ref": "#/$defs/canvas/$defs/canvas_properties"
+              "$ref": "#/definitions/canvas/definitions/canvas_properties"
             }
           }
+        },
+        {
+          "$ref": "#/definitions/canvas/definitions/canvas_properties",
+          "required": [
+            "rows"
+          ]
         }
       ],
-      "$defs": {
+      "definitions": {
         "canvas_properties": {
-          "title": "canvas_properties",
           "type": "object",
           "properties": {
             "display_name": {
@@ -387,7 +414,7 @@
               "type": "array",
               "description": "Overrides the list of default time range selections available in the dropdown. It can be string or an object with a 'range' and optional 'comparison_offsets'",
               "items": {
-                "$ref": "#/$defs/explore_time_range_properties"
+                "$ref": "#/definitions/explore_time_range_properties"
               }
             },
             "time_zones": {
@@ -427,7 +454,7 @@
               "type": "array",
               "description": "Variables that can be used in the canvas",
               "items": {
-                "$ref": "#/$defs/component_variable_properties"
+                "$ref": "#/definitions/component_variable_properties"
               }
             },
             "rows": {
@@ -463,7 +490,7 @@
               }
             },
             "security": {
-              "$ref": "#/$defs/security_policy_properties",
+              "$ref": "#/definitions/security_policy_properties",
               "description": "Security rules to apply for access to the canvas"
             }
           }
@@ -472,14 +499,16 @@
     },
     "component": {
       "type": "object",
-      "title": "component",
+      "title": "Component YAML",
+      "description": "",
       "allOf": [
         {
-          "title": "type",
           "type": "object",
           "properties": {
             "type": {
-              "const": "component"
+              "type": "string",
+              "const": "component",
+              "description": "Refers to the resource type and must be `component`"
             }
           },
           "required": [
@@ -487,32 +516,29 @@
           ]
         },
         {
-          "title": "common_properties",
-          "$ref": "#/$defs/common_properties"
+          "$ref": "#/definitions/common_properties"
         },
         {
-          "title": "component_properties",
-          "$ref": "#/$defs/component/$defs/component_properties"
-        },
-        {
-          "title": "environment_overrides",
+          "type": "object",
           "properties": {
             "dev": {
               "type": "object",
               "description": "Overrides properties in development",
-              "$ref": "#/$defs/component/$defs/component_properties"
+              "$ref": "#/definitions/component/definitions/component_properties"
             },
             "prod": {
               "type": "object",
               "description": "Overrides properties in production",
-              "$ref": "#/$defs/component/$defs/component_properties"
+              "$ref": "#/definitions/component/definitions/component_properties"
             }
           }
+        },
+        {
+          "$ref": "#/definitions/component/definitions/component_properties"
         }
       ],
-      "$defs": {
+      "definitions": {
         "component_properties": {
-          "title": "component_properties",
           "type": "object",
           "properties": {
             "display_name": {
@@ -525,11 +551,11 @@
             "input": {
               "type": "array",
               "items": {
-                "$ref": "#/$defs/component_variable_properties"
+                "$ref": "#/definitions/component_variable_properties"
               }
             },
             "output": {
-              "$ref": "#/$defs/component_variable_properties"
+              "$ref": "#/definitions/component_variable_properties"
             }
           }
         }
@@ -537,14 +563,15 @@
     },
     "connector": {
       "type": "object",
-      "title": "connector",
+      "title": "Connector YAML",
       "allOf": [
         {
-          "title": "type",
           "type": "object",
           "properties": {
             "type": {
-              "const": "connector"
+              "type": "string",
+              "const": "connector",
+              "description": "Refers to the resource type and must be `connector`"
             }
           },
           "required": [
@@ -552,83 +579,82 @@
           ]
         },
         {
-          "title": "common_properties",
-          "$ref": "#/$defs/common_properties"
+          "$ref": "#/definitions/common_properties"
         },
         {
-          "title": "connector_properties",
-          "type": "object",
           "oneOf": [
             {
-              "$ref": "#/$defs/connector/$defs/athena"
+              "$ref": "#/definitions/connector/definitions/athena"
             },
             {
-              "$ref": "#/$defs/connector/$defs/azure"
+              "$ref": "#/definitions/connector/definitions/azure"
             },
             {
-              "$ref": "#/$defs/connector/$defs/bigquery"
+              "$ref": "#/definitions/connector/definitions/bigquery"
             },
             {
-              "$ref": "#/$defs/connector/$defs/clickhouse"
+              "$ref": "#/definitions/connector/definitions/clickhouse"
             },
             {
-              "$ref": "#/$defs/connector/$defs/druid"
+              "$ref": "#/definitions/connector/definitions/druid"
             },
             {
-              "$ref": "#/$defs/connector/$defs/duckdb"
+              "$ref": "#/definitions/connector/definitions/duckdb"
             },
             {
-              "$ref": "#/$defs/connector/$defs/gcs"
+              "$ref": "#/definitions/connector/definitions/gcs"
             },
             {
-              "$ref": "#/$defs/connector/$defs/https"
+              "$ref": "#/definitions/connector/definitions/https"
             },
             {
-              "$ref": "#/$defs/connector/$defs/local_file"
+              "$ref": "#/definitions/connector/definitions/local_file"
             },
             {
-              "$ref": "#/$defs/connector/$defs/motherduck"
+              "$ref": "#/definitions/connector/definitions/motherduck"
             },
             {
-              "$ref": "#/$defs/connector/$defs/mysql"
+              "$ref": "#/definitions/connector/definitions/mysql"
             },
             {
-              "$ref": "#/$defs/connector/$defs/pinot"
+              "$ref": "#/definitions/connector/definitions/pinot"
             },
             {
-              "$ref": "#/$defs/connector/$defs/postgres"
+              "$ref": "#/definitions/connector/definitions/postgres"
             },
             {
-              "$ref": "#/$defs/connector/$defs/redshift"
+              "$ref": "#/definitions/connector/definitions/redshift"
             },
             {
-              "$ref": "#/$defs/connector/$defs/s3"
+              "$ref": "#/definitions/connector/definitions/s3"
             },
             {
-              "$ref": "#/$defs/connector/$defs/salesforce"
+              "$ref": "#/definitions/connector/definitions/salesforce"
             },
             {
-              "$ref": "#/$defs/connector/$defs/slack"
+              "$ref": "#/definitions/connector/definitions/slack"
             },
             {
-              "$ref": "#/$defs/connector/$defs/snowflake"
+              "$ref": "#/definitions/connector/definitions/snowflake"
             },
             {
-              "$ref": "#/$defs/connector/$defs/sqlite"
+              "$ref": "#/definitions/connector/definitions/sqlite"
             }
           ]
         }
       ],
-      "$defs": {
+      "definitions": {
         "athena": {
           "type": "object",
           "title": "athena",
+          "description": "Configuration properties specific to the athena",
           "allOf": [
             {
-              "title": "driver",
               "type": "object",
               "properties": {
                 "driver": {
+                  "type": "string",
+                  "description": "Refers to the driver type and must be driver `athena`",
                   "const": "athena"
                 }
               },
@@ -637,42 +663,28 @@
               ]
             },
             {
-              "title": "athena_properties",
-              "$ref": "#/$defs/connector/$defs/athena/$defs/athena_properties"
+              "$ref": "#/definitions/connector/definitions/athena/definitions/athena_properties"
             },
             {
-              "title": "environment_overrides",
+              "type": "object",
               "properties": {
                 "dev": {
                   "type": "object",
                   "description": "Overrides properties in development",
-                  "$ref": "#/$defs/connector/$defs/athena/$defs/athena_properties"
+                  "$ref": "#/definitions/connector/definitions/athena/definitions/athena_properties"
                 },
                 "prod": {
                   "type": "object",
                   "description": "Overrides properties in production",
-                  "$ref": "#/$defs/connector/$defs/athena/$defs/athena_properties"
+                  "$ref": "#/definitions/connector/definitions/athena/definitions/athena_properties"
                 }
               }
             }
           ],
-          "$defs": {
+          "definitions": {
             "athena_properties": {
-              "title": "athena_properties",
               "type": "object",
               "properties": {
-                "managed": {
-                  "description": "Boolean or map of properties",
-                  "anyOf": [
-                    {
-                      "type": "boolean"
-                    },
-                    {
-                      "type": "object",
-                      "additionalProperties": true
-                    }
-                  ]
-                },
                 "aws_access_key_id": {
                   "type": "string",
                   "description": "AWS Access Key ID for Athena access"
@@ -708,12 +720,14 @@
         "azure": {
           "type": "object",
           "title": "azure",
+          "description": "Configuration properties specific to the azure",
           "allOf": [
             {
-              "title": "driver",
               "type": "object",
               "properties": {
                 "driver": {
+                  "type": "string",
+                  "description": "Refers to the driver type and must be driver `azure`",
                   "const": "azure"
                 }
               },
@@ -722,42 +736,28 @@
               ]
             },
             {
-              "title": "azure_properties",
-              "$ref": "#/$defs/connector/$defs/azure/$defs/azure_properties"
+              "$ref": "#/definitions/connector/definitions/azure/definitions/azure_properties"
             },
             {
-              "title": "environment_overrides",
+              "type": "object",
               "properties": {
                 "dev": {
                   "type": "object",
                   "description": "Overrides properties in development",
-                  "$ref": "#/$defs/connector/$defs/azure/$defs/azure_properties"
+                  "$ref": "#/definitions/connector/definitions/azure/definitions/azure_properties"
                 },
                 "prod": {
                   "type": "object",
                   "description": "Overrides properties in production",
-                  "$ref": "#/$defs/connector/$defs/azure/$defs/azure_properties"
+                  "$ref": "#/definitions/connector/definitions/azure/definitions/azure_properties"
                 }
               }
             }
           ],
-          "$defs": {
+          "definitions": {
             "azure_properties": {
               "type": "object",
-              "title": "azure_properties",
               "properties": {
-                "managed": {
-                  "description": "Boolean or map of properties",
-                  "anyOf": [
-                    {
-                      "type": "boolean"
-                    },
-                    {
-                      "type": "object",
-                      "additionalProperties": true
-                    }
-                  ]
-                },
                 "azure_storage_account": {
                   "type": "string",
                   "description": "Azure storage account name"
@@ -782,15 +782,70 @@
             }
           }
         },
-        "clickhouse": {
+        "bigquery": {
           "type": "object",
-          "title": "clickhouse",
+          "title": "bigquery",
+          "description": "Configuration properties specific to the bigquery",
           "allOf": [
             {
-              "title": "driver",
               "type": "object",
               "properties": {
                 "driver": {
+                  "type": "string",
+                  "description": "Refers to the driver type and must be driver `bigquery`",
+                  "const": "bigquery"
+                }
+              },
+              "required": [
+                "driver"
+              ]
+            },
+            {
+              "$ref": "#/definitions/connector/definitions/bigquery/definitions/bigquery_properties"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "dev": {
+                  "type": "object",
+                  "description": "Overrides properties in development",
+                  "$ref": "#/definitions/connector/definitions/bigquery/definitions/bigquery_properties"
+                },
+                "prod": {
+                  "type": "object",
+                  "description": "Overrides properties in production",
+                  "$ref": "#/definitions/connector/definitions/bigquery/definitions/bigquery_properties"
+                }
+              }
+            }
+          ],
+          "definitions": {
+            "bigquery_properties": {
+              "type": "object",
+              "properties": {
+                "google_application_credentials": {
+                  "type": "string",
+                  "description": "Path to the Google Cloud credentials JSON file"
+                },
+                "allow_host_access": {
+                  "type": "boolean",
+                  "description": "Allow access to host environment configuration"
+                }
+              }
+            }
+          }
+        },
+        "clickhouse": {
+          "type": "object",
+          "title": "clickhouse",
+          "description": "Configuration properties specific to the clickhouse",
+          "allOf": [
+            {
+              "type": "object",
+              "properties": {
+                "driver": {
+                  "type": "string",
+                  "description": "Refers to the driver type and must be driver `clickhouse`",
                   "const": "clickhouse"
                 }
               },
@@ -799,41 +854,31 @@
               ]
             },
             {
-              "title": "clickhouse_properties",
-              "$ref": "#/$defs/connector/$defs/clickhouse/$defs/clickhouse_properties"
+              "$ref": "#/definitions/connector/definitions/clickhouse/definitions/clickhouse_properties"
             },
             {
-              "title": "environment_overrides",
+              "type": "object",
               "properties": {
                 "dev": {
                   "type": "object",
                   "description": "Overrides properties in development",
-                  "$ref": "#/$defs/connector/$defs/clickhouse/$defs/clickhouse_properties"
+                  "$ref": "#/definitions/connector/definitions/clickhouse/definitions/clickhouse_properties"
                 },
                 "prod": {
                   "type": "object",
                   "description": "Overrides properties in production",
-                  "$ref": "#/$defs/connector/$defs/clickhouse/$defs/clickhouse_properties"
+                  "$ref": "#/definitions/connector/definitions/clickhouse/definitions/clickhouse_properties"
                 }
               }
             }
           ],
-          "$defs": {
+          "definitions": {
             "clickhouse_properties": {
               "type": "object",
-              "title": "clickhouse_properties",
               "properties": {
                 "managed": {
-                  "description": "Boolean or map of properties",
-                  "anyOf": [
-                    {
-                      "type": "boolean"
-                    },
-                    {
-                      "type": "object",
-                      "additionalProperties": true
-                    }
-                  ]
+                  "type": "boolean",
+                  "description": "`true` means Rill will provision the connector using the default provisioner. `false` disables automatic provisioning."
                 },
                 "dsn": {
                   "type": "string",
@@ -907,80 +952,17 @@
             }
           }
         },
-        "bigquery": {
-          "type": "object",
-          "title": "bigquery",
-          "allOf": [
-            {
-              "title": "driver",
-              "type": "object",
-              "properties": {
-                "driver": {
-                  "const": "bigquery"
-                }
-              },
-              "required": [
-                "driver"
-              ]
-            },
-            {
-              "title": "bigquery_properties",
-              "$ref": "#/$defs/connector/$defs/bigquery/$defs/bigquery_properties"
-            },
-            {
-              "title": "environment_overrides",
-              "properties": {
-                "dev": {
-                  "type": "object",
-                  "description": "Overrides properties in development",
-                  "$ref": "#/$defs/connector/$defs/bigquery/$defs/bigquery_properties"
-                },
-                "prod": {
-                  "type": "object",
-                  "description": "Overrides properties in production",
-                  "$ref": "#/$defs/connector/$defs/bigquery/$defs/bigquery_properties"
-                }
-              }
-            }
-          ],
-          "$defs": {
-            "bigquery_properties": {
-              "type": "object",
-              "title": "bigquery_properties",
-              "properties": {
-                "managed": {
-                  "description": "Boolean or map of properties",
-                  "anyOf": [
-                    {
-                      "type": "boolean"
-                    },
-                    {
-                      "type": "object",
-                      "additionalProperties": true
-                    }
-                  ]
-                },
-                "google_application_credentials": {
-                  "type": "string",
-                  "description": "Path to the Google Cloud credentials JSON file"
-                },
-                "allow_host_access": {
-                  "type": "boolean",
-                  "description": "Allow access to host environment configuration"
-                }
-              }
-            }
-          }
-        },
         "druid": {
           "type": "object",
           "title": "druid",
+          "description": "Configuration properties specific to the druid",
           "allOf": [
             {
-              "title": "driver",
               "type": "object",
               "properties": {
                 "driver": {
+                  "type": "string",
+                  "description": "Refers to the driver type and must be driver `druid`",
                   "const": "druid"
                 }
               },
@@ -989,42 +971,28 @@
               ]
             },
             {
-              "title": "druid_properties",
-              "$ref": "#/$defs/connector/$defs/druid/$defs/druid_properties"
+              "$ref": "#/definitions/connector/definitions/druid/definitions/druid_properties"
             },
             {
-              "title": "environment_overrides",
+              "type": "object",
               "properties": {
                 "dev": {
                   "type": "object",
                   "description": "Overrides properties in development",
-                  "$ref": "#/$defs/connector/$defs/druid/$defs/druid_properties"
+                  "$ref": "#/definitions/connector/definitions/druid/definitions/druid_properties"
                 },
                 "prod": {
                   "type": "object",
                   "description": "Overrides properties in production",
-                  "$ref": "#/$defs/connector/$defs/druid/$defs/druid_properties"
+                  "$ref": "#/definitions/connector/definitions/druid/definitions/druid_properties"
                 }
               }
             }
           ],
-          "$defs": {
+          "definitions": {
             "druid_properties": {
               "type": "object",
-              "title": "druid_properties",
               "properties": {
-                "managed": {
-                  "description": "Boolean or map of properties",
-                  "anyOf": [
-                    {
-                      "type": "boolean"
-                    },
-                    {
-                      "type": "object",
-                      "additionalProperties": true
-                    }
-                  ]
-                },
                 "dsn": {
                   "type": "string",
                   "description": "Data Source Name (DSN) for connecting to Druid"
@@ -1068,12 +1036,14 @@
         "duckdb": {
           "type": "object",
           "title": "duckdb",
+          "description": "Configuration properties specific to the duckdb",
           "allOf": [
             {
-              "title": "driver",
               "type": "object",
               "properties": {
                 "driver": {
+                  "type": "string",
+                  "description": "Refers to the driver type and must be driver `duckdb`",
                   "const": "duckdb"
                 }
               },
@@ -1082,46 +1052,28 @@
               ]
             },
             {
-              "title": "duckdb_properties",
-              "$ref": "#/$defs/connector/$defs/duckdb/$defs/duckdb_properties"
+              "$ref": "#/definitions/connector/definitions/duckdb/definitions/duckdb_properties"
             },
             {
-              "title": "environment_overrides",
+              "type": "object",
               "properties": {
                 "dev": {
                   "type": "object",
                   "description": "Overrides properties in development",
-                  "$ref": "#/$defs/connector/$defs/duckdb/$defs/duckdb_properties"
+                  "$ref": "#/definitions/connector/definitions/duckdb/definitions/duckdb_properties"
                 },
                 "prod": {
                   "type": "object",
                   "description": "Overrides properties in production",
-                  "$ref": "#/$defs/connector/$defs/duckdb/$defs/duckdb_properties"
+                  "$ref": "#/definitions/connector/definitions/duckdb/definitions/duckdb_properties"
                 }
               }
             }
           ],
-          "$defs": {
+          "definitions": {
             "duckdb_properties": {
               "type": "object",
-              "title": "duckdb_properties",
               "properties": {
-                "managed": {
-                  "description": "Boolean or map of properties",
-                  "anyOf": [
-                    {
-                      "type": "boolean"
-                    },
-                    {
-                      "type": "object",
-                      "additionalProperties": true
-                    }
-                  ]
-                },
-                "path": {
-                  "type": "string",
-                  "description": "File path to the DuckDB database file"
-                },
                 "pool_size": {
                   "type": "integer",
                   "description": "Number of concurrent connections and queries allowed"
@@ -1161,12 +1113,14 @@
         "gcs": {
           "type": "object",
           "title": "gcs",
+          "description": "Configuration properties specific to the gcs",
           "allOf": [
             {
-              "title": "driver",
               "type": "object",
               "properties": {
                 "driver": {
+                  "type": "string",
+                  "description": "Refers to the driver type and must be driver `gcs`",
                   "const": "gcs"
                 }
               },
@@ -1175,42 +1129,28 @@
               ]
             },
             {
-              "title": "gcs_properties",
-              "$ref": "#/$defs/connector/$defs/gcs/$defs/gcs_properties"
+              "$ref": "#/definitions/connector/definitions/gcs/definitions/gcs_properties"
             },
             {
-              "title": "environment_overrides",
+              "type": "object",
               "properties": {
                 "dev": {
                   "type": "object",
                   "description": "Overrides properties in development",
-                  "$ref": "#/$defs/connector/$defs/gcs/$defs/gcs_properties"
+                  "$ref": "#/definitions/connector/definitions/gcs/definitions/gcs_properties"
                 },
                 "prod": {
                   "type": "object",
                   "description": "Overrides properties in production",
-                  "$ref": "#/$defs/connector/$defs/gcs/$defs/gcs_properties"
+                  "$ref": "#/definitions/connector/definitions/gcs/definitions/gcs_properties"
                 }
               }
             }
           ],
-          "$defs": {
+          "definitions": {
             "gcs_properties": {
               "type": "object",
-              "title": "gcs_properties",
               "properties": {
-                "managed": {
-                  "description": "Boolean or map of properties",
-                  "anyOf": [
-                    {
-                      "type": "boolean"
-                    },
-                    {
-                      "type": "object",
-                      "additionalProperties": true
-                    }
-                  ]
-                },
                 "google_application_credentials": {
                   "type": "string",
                   "description": "Google Cloud credentials JSON string"
@@ -1234,12 +1174,14 @@
         "https": {
           "type": "object",
           "title": "https",
+          "description": "Configuration properties specific to the https",
           "allOf": [
             {
-              "title": "driver",
               "type": "object",
               "properties": {
                 "driver": {
+                  "type": "string",
+                  "description": "Refers to the driver type and must be driver `https`",
                   "const": "https"
                 }
               },
@@ -1248,42 +1190,28 @@
               ]
             },
             {
-              "title": "https_properties",
-              "$ref": "#/$defs/connector/$defs/https/$defs/https_properties"
+              "$ref": "#/definitions/connector/definitions/https/definitions/https_properties"
             },
             {
-              "title": "environment_overrides",
+              "type": "object",
               "properties": {
                 "dev": {
                   "type": "object",
                   "description": "Overrides properties in development",
-                  "$ref": "#/$defs/connector/$defs/https/$defs/https_properties"
+                  "$ref": "#/definitions/connector/definitions/https/definitions/https_properties"
                 },
                 "prod": {
                   "type": "object",
                   "description": "Overrides properties in production",
-                  "$ref": "#/$defs/connector/$defs/https/$defs/https_properties"
+                  "$ref": "#/definitions/connector/definitions/https/definitions/https_properties"
                 }
               }
             }
           ],
-          "$defs": {
+          "definitions": {
             "https_properties": {
               "type": "object",
-              "title": "https_properties",
               "properties": {
-                "managed": {
-                  "description": "Boolean or map of properties",
-                  "anyOf": [
-                    {
-                      "type": "boolean"
-                    },
-                    {
-                      "type": "object",
-                      "additionalProperties": true
-                    }
-                  ]
-                },
                 "path": {
                   "type": "string",
                   "description": "The full HTTPS URI to fetch data from"
@@ -1302,12 +1230,14 @@
         "local_file": {
           "type": "object",
           "title": "local_file",
+          "description": "Configuration properties specific to the local_file",
           "allOf": [
             {
-              "title": "driver",
               "type": "object",
               "properties": {
                 "driver": {
+                  "type": "string",
+                  "description": "Refers to the driver type and must be driver `local_file`",
                   "const": "local_file"
                 }
               },
@@ -1316,42 +1246,28 @@
               ]
             },
             {
-              "title": "local_file_properties",
-              "$ref": "#/$defs/connector/$defs/local_file/$defs/local_file_properties"
+              "$ref": "#/definitions/connector/definitions/local_file/definitions/local_file_properties"
             },
             {
-              "title": "environment_overrides",
+              "type": "object",
               "properties": {
                 "dev": {
                   "type": "object",
                   "description": "Overrides properties in development",
-                  "$ref": "#/$defs/connector/$defs/local_file/$defs/local_file_properties"
+                  "$ref": "#/definitions/connector/definitions/local_file/definitions/local_file_properties"
                 },
                 "prod": {
                   "type": "object",
                   "description": "Overrides properties in production",
-                  "$ref": "#/$defs/connector/$defs/local_file/$defs/local_file_properties"
+                  "$ref": "#/definitions/connector/definitions/local_file/definitions/local_file_properties"
                 }
               }
             }
           ],
-          "$defs": {
+          "definitions": {
             "local_file_properties": {
               "type": "object",
-              "title": "local_file_properties",
               "properties": {
-                "managed": {
-                  "description": "Boolean or map of properties",
-                  "anyOf": [
-                    {
-                      "type": "boolean"
-                    },
-                    {
-                      "type": "object",
-                      "additionalProperties": true
-                    }
-                  ]
-                },
                 "dsn": {
                   "type": "string",
                   "description": "Data Source Name (DSN) indicating the file path or location of the local file"
@@ -1367,12 +1283,14 @@
         "motherduck": {
           "type": "object",
           "title": "motherduck",
+          "description": "Configuration properties specific to the motherduck",
           "allOf": [
             {
-              "title": "driver",
               "type": "object",
               "properties": {
                 "driver": {
+                  "type": "string",
+                  "description": "Refers to the driver type and must be driver `motherduck`",
                   "const": "motherduck"
                 }
               },
@@ -1381,42 +1299,28 @@
               ]
             },
             {
-              "title": "motherduck_properties",
-              "$ref": "#/$defs/connector/$defs/motherduck/$defs/motherduck_properties"
+              "$ref": "#/definitions/connector/definitions/motherduck/definitions/motherduck_properties"
             },
             {
-              "title": "environment_overrides",
+              "type": "object",
               "properties": {
                 "dev": {
                   "type": "object",
                   "description": "Overrides properties in development",
-                  "$ref": "#/$defs/connector/$defs/motherduck/$defs/motherduck_properties"
+                  "$ref": "#/definitions/connector/definitions/motherduck/definitions/motherduck_properties"
                 },
                 "prod": {
                   "type": "object",
                   "description": "Overrides properties in production",
-                  "$ref": "#/$defs/connector/$defs/motherduck/$defs/motherduck_properties"
+                  "$ref": "#/definitions/connector/definitions/motherduck/definitions/motherduck_properties"
                 }
               }
             }
           ],
-          "$defs": {
+          "definitions": {
             "motherduck_properties": {
               "type": "object",
-              "title": "motherduck_properties",
               "properties": {
-                "managed": {
-                  "description": "Boolean or map of properties",
-                  "anyOf": [
-                    {
-                      "type": "boolean"
-                    },
-                    {
-                      "type": "object",
-                      "additionalProperties": true
-                    }
-                  ]
-                },
                 "dsn": {
                   "type": "string",
                   "description": "Data Source Name (DSN) specifying the MotherDuck connection endpoint"
@@ -1432,12 +1336,14 @@
         "mysql": {
           "type": "object",
           "title": "mysql",
+          "description": "Configuration properties specific to the mysql",
           "allOf": [
             {
-              "title": "driver",
               "type": "object",
               "properties": {
                 "driver": {
+                  "type": "string",
+                  "description": "Refers to the driver type and must be driver `mysql`",
                   "const": "mysql"
                 }
               },
@@ -1446,42 +1352,28 @@
               ]
             },
             {
-              "title": "mysql_properties",
-              "$ref": "#/$defs/connector/$defs/mysql/$defs/mysql_properties"
+              "$ref": "#/definitions/connector/definitions/mysql/definitions/mysql_properties"
             },
             {
-              "title": "environment_overrides",
+              "type": "object",
               "properties": {
                 "dev": {
                   "type": "object",
                   "description": "Overrides properties in development",
-                  "$ref": "#/$defs/connector/$defs/mysql/$defs/mysql_properties"
+                  "$ref": "#/definitions/connector/definitions/mysql/definitions/mysql_properties"
                 },
                 "prod": {
                   "type": "object",
                   "description": "Overrides properties in production",
-                  "$ref": "#/$defs/connector/$defs/mysql/$defs/mysql_properties"
+                  "$ref": "#/definitions/connector/definitions/mysql/definitions/mysql_properties"
                 }
               }
             }
           ],
-          "$defs": {
+          "definitions": {
             "mysql_properties": {
               "type": "object",
-              "title": "mysql_properties",
               "properties": {
-                "managed": {
-                  "description": "Boolean or map of properties",
-                  "anyOf": [
-                    {
-                      "type": "boolean"
-                    },
-                    {
-                      "type": "object",
-                      "additionalProperties": true
-                    }
-                  ]
-                },
                 "dsn": {
                   "type": "string",
                   "description": "DSN(Data Source Name) for the mysql connection"
@@ -1493,12 +1385,14 @@
         "pinot": {
           "type": "object",
           "title": "pinot",
+          "description": "Configuration properties specific to the pinot",
           "allOf": [
             {
-              "title": "driver",
               "type": "object",
               "properties": {
                 "driver": {
+                  "type": "string",
+                  "description": "Refers to the driver type and must be driver `pinot`",
                   "const": "pinot"
                 }
               },
@@ -1507,42 +1401,28 @@
               ]
             },
             {
-              "title": "pinot_properties",
-              "$ref": "#/$defs/connector/$defs/pinot/$defs/pinot_properties"
+              "$ref": "#/definitions/connector/definitions/pinot/definitions/pinot_properties"
             },
             {
-              "title": "environment_overrides",
+              "type": "object",
               "properties": {
                 "dev": {
                   "type": "object",
                   "description": "Overrides properties in development",
-                  "$ref": "#/$defs/connector/$defs/pinot/$defs/pinot_properties"
+                  "$ref": "#/definitions/connector/definitions/pinot/definitions/pinot_properties"
                 },
                 "prod": {
                   "type": "object",
                   "description": "Overrides properties in production",
-                  "$ref": "#/$defs/connector/$defs/pinot/$defs/pinot_properties"
+                  "$ref": "#/definitions/connector/definitions/pinot/definitions/pinot_properties"
                 }
               }
             }
           ],
-          "$defs": {
+          "definitions": {
             "pinot_properties": {
               "type": "object",
-              "title": "pinot_properties",
               "properties": {
-                "managed": {
-                  "description": "Boolean or map of properties",
-                  "anyOf": [
-                    {
-                      "type": "boolean"
-                    },
-                    {
-                      "type": "object",
-                      "additionalProperties": true
-                    }
-                  ]
-                },
                 "dsn": {
                   "type": "string",
                   "description": "DSN(Data Source Name) for the Pinot connection"
@@ -1590,12 +1470,14 @@
         "postgres": {
           "type": "object",
           "title": "postgres",
+          "description": "Configuration properties specific to the postgres",
           "allOf": [
             {
-              "title": "driver",
               "type": "object",
               "properties": {
                 "driver": {
+                  "type": "string",
+                  "description": "Refers to the driver type and must be driver `postgres`",
                   "const": "postgres"
                 }
               },
@@ -1604,42 +1486,28 @@
               ]
             },
             {
-              "title": "postgres_properties",
-              "$ref": "#/$defs/connector/$defs/postgres/$defs/postgres_properties"
+              "$ref": "#/definitions/connector/definitions/postgres/definitions/postgres_properties"
             },
             {
-              "title": "environment_overrides",
+              "type": "object",
               "properties": {
                 "dev": {
                   "type": "object",
                   "description": "Overrides properties in development",
-                  "$ref": "#/$defs/connector/$defs/postgres/$defs/postgres_properties"
+                  "$ref": "#/definitions/connector/definitions/postgres/definitions/postgres_properties"
                 },
                 "prod": {
                   "type": "object",
                   "description": "Overrides properties in production",
-                  "$ref": "#/$defs/connector/$defs/postgres/$defs/postgres_properties"
+                  "$ref": "#/definitions/connector/definitions/postgres/definitions/postgres_properties"
                 }
               }
             }
           ],
-          "$defs": {
+          "definitions": {
             "postgres_properties": {
               "type": "object",
-              "title": "postgres_properties",
               "properties": {
-                "managed": {
-                  "description": "Boolean or map of properties",
-                  "anyOf": [
-                    {
-                      "type": "boolean"
-                    },
-                    {
-                      "type": "object",
-                      "additionalProperties": true
-                    }
-                  ]
-                },
                 "dsn": {
                   "type": "string",
                   "description": "DSN(Data Source Name) for the postgres connection"
@@ -1651,12 +1519,14 @@
         "redshift": {
           "type": "object",
           "title": "redshift",
+          "description": "Configuration properties specific to the redshift",
           "allOf": [
             {
-              "title": "driver",
               "type": "object",
               "properties": {
                 "driver": {
+                  "type": "string",
+                  "description": "Refers to the driver type and must be driver `redshift`",
                   "const": "redshift"
                 }
               },
@@ -1665,42 +1535,28 @@
               ]
             },
             {
-              "title": "redshift_properties",
-              "$ref": "#/$defs/connector/$defs/redshift/$defs/redshift_properties"
+              "$ref": "#/definitions/connector/definitions/redshift/definitions/redshift_properties"
             },
             {
-              "title": "environment_overrides",
+              "type": "object",
               "properties": {
                 "dev": {
                   "type": "object",
                   "description": "Overrides properties in development",
-                  "$ref": "#/$defs/connector/$defs/redshift/$defs/redshift_properties"
+                  "$ref": "#/definitions/connector/definitions/redshift/definitions/redshift_properties"
                 },
                 "prod": {
                   "type": "object",
                   "description": "Overrides properties in production",
-                  "$ref": "#/$defs/connector/$defs/redshift/$defs/redshift_properties"
+                  "$ref": "#/definitions/connector/definitions/redshift/definitions/redshift_properties"
                 }
               }
             }
           ],
-          "$defs": {
+          "definitions": {
             "redshift_properties": {
               "type": "object",
-              "title": "redshift_properties",
               "properties": {
-                "managed": {
-                  "description": "Boolean or map of properties",
-                  "anyOf": [
-                    {
-                      "type": "boolean"
-                    },
-                    {
-                      "type": "object",
-                      "additionalProperties": true
-                    }
-                  ]
-                },
                 "aws_access_key_id": {
                   "type": "string",
                   "description": "AWS access key ID for authentication"
@@ -1724,12 +1580,14 @@
         "s3": {
           "type": "object",
           "title": "s3",
+          "description": "Configuration properties specific to the s3",
           "allOf": [
             {
-              "title": "driver",
               "type": "object",
               "properties": {
                 "driver": {
+                  "type": "string",
+                  "description": "Refers to the driver type and must be driver `s3`",
                   "const": "s3"
                 }
               },
@@ -1738,42 +1596,28 @@
               ]
             },
             {
-              "title": "s3_properties",
-              "$ref": "#/$defs/connector/$defs/s3/$defs/s3_properties"
+              "$ref": "#/definitions/connector/definitions/s3/definitions/s3_properties"
             },
             {
-              "title": "environment_overrides",
+              "type": "object",
               "properties": {
                 "dev": {
                   "type": "object",
                   "description": "Overrides properties in development",
-                  "$ref": "#/$defs/connector/$defs/s3/$defs/s3_properties"
+                  "$ref": "#/definitions/connector/definitions/s3/definitions/s3_properties"
                 },
                 "prod": {
                   "type": "object",
                   "description": "Overrides properties in production",
-                  "$ref": "#/$defs/connector/$defs/s3/$defs/s3_properties"
+                  "$ref": "#/definitions/connector/definitions/s3/definitions/s3_properties"
                 }
               }
             }
           ],
-          "$defs": {
+          "definitions": {
             "s3_properties": {
               "type": "object",
-              "title": "s3_properties",
               "properties": {
-                "managed": {
-                  "description": "Boolean or map of properties",
-                  "anyOf": [
-                    {
-                      "type": "boolean"
-                    },
-                    {
-                      "type": "object",
-                      "additionalProperties": true
-                    }
-                  ]
-                },
                 "aws_access_key_id": {
                   "type": "string",
                   "description": "AWS Access Key ID used for authentication"
@@ -1809,12 +1653,14 @@
         "salesforce": {
           "type": "object",
           "title": "salesforce",
+          "description": "Configuration properties specific to the salesforce",
           "allOf": [
             {
-              "title": "driver",
               "type": "object",
               "properties": {
                 "driver": {
+                  "type": "string",
+                  "description": "Refers to the driver type and must be driver `salesforce`",
                   "const": "salesforce"
                 }
               },
@@ -1823,42 +1669,28 @@
               ]
             },
             {
-              "title": "salesforce_properties",
-              "$ref": "#/$defs/connector/$defs/salesforce/$defs/salesforce_properties"
+              "$ref": "#/definitions/connector/definitions/salesforce/definitions/salesforce_properties"
             },
             {
-              "title": "environment_overrides",
+              "type": "object",
               "properties": {
                 "dev": {
                   "type": "object",
                   "description": "Overrides properties in development",
-                  "$ref": "#/$defs/connector/$defs/salesforce/$defs/salesforce_properties"
+                  "$ref": "#/definitions/connector/definitions/salesforce/definitions/salesforce_properties"
                 },
                 "prod": {
                   "type": "object",
                   "description": "Overrides properties in production",
-                  "$ref": "#/$defs/connector/$defs/salesforce/$defs/salesforce_properties"
+                  "$ref": "#/definitions/connector/definitions/salesforce/definitions/salesforce_properties"
                 }
               }
             }
           ],
-          "$defs": {
+          "definitions": {
             "salesforce_properties": {
               "type": "object",
-              "title": "salesforce_properties",
               "properties": {
-                "managed": {
-                  "description": "Boolean or map of properties",
-                  "anyOf": [
-                    {
-                      "type": "boolean"
-                    },
-                    {
-                      "type": "object",
-                      "additionalProperties": true
-                    }
-                  ]
-                },
                 "username": {
                   "type": "string",
                   "description": "Salesforce account username"
@@ -1886,12 +1718,14 @@
         "slack": {
           "type": "object",
           "title": "slack",
+          "description": "Configuration properties specific to the slack",
           "allOf": [
             {
-              "title": "driver",
               "type": "object",
               "properties": {
                 "driver": {
+                  "type": "string",
+                  "description": "Refers to the driver type and must be driver `slack`",
                   "const": "slack"
                 }
               },
@@ -1900,42 +1734,28 @@
               ]
             },
             {
-              "title": "slack_properties",
-              "$ref": "#/$defs/connector/$defs/slack/$defs/slack_properties"
+              "$ref": "#/definitions/connector/definitions/slack/definitions/slack_properties"
             },
             {
-              "title": "environment_overrides",
+              "type": "object",
               "properties": {
                 "dev": {
                   "type": "object",
                   "description": "Overrides properties in development",
-                  "$ref": "#/$defs/connector/$defs/slack/$defs/slack_properties"
+                  "$ref": "#/definitions/connector/definitions/slack/definitions/slack_properties"
                 },
                 "prod": {
                   "type": "object",
                   "description": "Overrides properties in production",
-                  "$ref": "#/$defs/connector/$defs/slack/$defs/slack_properties"
+                  "$ref": "#/definitions/connector/definitions/slack/definitions/slack_properties"
                 }
               }
             }
           ],
-          "$defs": {
+          "definitions": {
             "slack_properties": {
               "type": "object",
-              "title": "slack_properties",
               "properties": {
-                "managed": {
-                  "description": "Boolean or map of properties",
-                  "anyOf": [
-                    {
-                      "type": "boolean"
-                    },
-                    {
-                      "type": "object",
-                      "additionalProperties": true
-                    }
-                  ]
-                },
                 "bot_token": {
                   "type": "string",
                   "description": "Bot token used for authenticating Slack API requests"
@@ -1947,12 +1767,14 @@
         "snowflake": {
           "type": "object",
           "title": "snowflake",
+          "description": "Configuration properties specific to the snowflake",
           "allOf": [
             {
-              "title": "driver",
               "type": "object",
               "properties": {
                 "driver": {
+                  "type": "string",
+                  "description": "Refers to the driver type and must be driver `snowflake`",
                   "const": "snowflake"
                 }
               },
@@ -1961,42 +1783,28 @@
               ]
             },
             {
-              "title": "snowflake_properties",
-              "$ref": "#/$defs/connector/$defs/snowflake/$defs/snowflake_properties"
+              "$ref": "#/definitions/connector/definitions/snowflake/definitions/snowflake_properties"
             },
             {
-              "title": "environment_overrides",
+              "type": "object",
               "properties": {
                 "dev": {
                   "type": "object",
                   "description": "Overrides properties in development",
-                  "$ref": "#/$defs/connector/$defs/snowflake/$defs/snowflake_properties"
+                  "$ref": "#/definitions/connector/definitions/snowflake/definitions/snowflake_properties"
                 },
                 "prod": {
                   "type": "object",
                   "description": "Overrides properties in production",
-                  "$ref": "#/$defs/connector/$defs/snowflake/$defs/snowflake_properties"
+                  "$ref": "#/definitions/connector/definitions/snowflake/definitions/snowflake_properties"
                 }
               }
             }
           ],
-          "$defs": {
+          "definitions": {
             "snowflake_properties": {
               "type": "object",
-              "title": "snowflake_properties",
               "properties": {
-                "managed": {
-                  "description": "Boolean or map of properties",
-                  "anyOf": [
-                    {
-                      "type": "boolean"
-                    },
-                    {
-                      "type": "object",
-                      "additionalProperties": true
-                    }
-                  ]
-                },
                 "dsn": {
                   "type": "string",
                   "description": "DSN (Data Source Name) for the Snowflake connection"
@@ -2012,12 +1820,14 @@
         "sqlite": {
           "type": "object",
           "title": "sqlite",
+          "description": "Configuration properties specific to the sqlite",
           "allOf": [
             {
-              "title": "driver",
               "type": "object",
               "properties": {
                 "driver": {
+                  "type": "string",
+                  "description": "Refers to the driver type and must be driver `sqlite`",
                   "const": "sqlite"
                 }
               },
@@ -2026,42 +1836,28 @@
               ]
             },
             {
-              "title": "sqlite_properties",
-              "$ref": "#/$defs/connector/$defs/sqlite/$defs/sqlite_properties"
+              "$ref": "#/definitions/connector/definitions/sqlite/definitions/sqlite_properties"
             },
             {
-              "title": "environment_overrides",
+              "type": "object",
               "properties": {
                 "dev": {
                   "type": "object",
                   "description": "Overrides properties in development",
-                  "$ref": "#/$defs/connector/$defs/sqlite/$defs/sqlite_properties"
+                  "$ref": "#/definitions/connector/definitions/sqlite/definitions/sqlite_properties"
                 },
                 "prod": {
                   "type": "object",
                   "description": "Overrides properties in production",
-                  "$ref": "#/$defs/connector/$defs/sqlite/$defs/sqlite_properties"
+                  "$ref": "#/definitions/connector/definitions/sqlite/definitions/sqlite_properties"
                 }
               }
             }
           ],
-          "$defs": {
+          "definitions": {
             "sqlite_properties": {
               "type": "object",
-              "title": "sqlite_properties",
               "properties": {
-                "managed": {
-                  "description": "Boolean or map of properties",
-                  "anyOf": [
-                    {
-                      "type": "boolean"
-                    },
-                    {
-                      "type": "object",
-                      "additionalProperties": true
-                    }
-                  ]
-                },
                 "dsn": {
                   "type": "string",
                   "description": "DSN(Data Source Name) for the sqlite connection"
@@ -2074,14 +1870,16 @@
     },
     "explore": {
       "type": "object",
-      "title": "explore",
+      "title": "Explore YAML",
+      "description": "In your Rill project directory, create a explore dashboard, `<dashboard_name>.yaml`, file in the `dashboards` directory. Rill will ingest the dashboard definition next time you run `rill start`.",
       "allOf": [
         {
-          "title": "type",
           "type": "object",
           "properties": {
             "type": {
-              "const": "explore"
+              "type": "string",
+              "const": "explore",
+              "description": "Refers to the resource type and must be `explore`"
             }
           },
           "required": [
@@ -2089,37 +1887,31 @@
           ]
         },
         {
-          "title": "common_properties",
-          "$ref": "#/$defs/common_properties"
+          "$ref": "#/definitions/common_properties"
         },
         {
-          "title": "explore_properties",
-          "$ref": "#/$defs/explore/$defs/explore_properties"
-        },
-        {
-          "title": "environment_overrides",
+          "type": "object",
           "properties": {
             "dev": {
               "type": "object",
               "description": "Overrides properties in development",
-              "$ref": "#/$defs/explore/$defs/explore_properties"
+              "$ref": "#/definitions/explore/definitions/explore_properties"
             },
             "prod": {
               "type": "object",
               "description": "Overrides properties in production",
-              "$ref": "#/$defs/explore/$defs/explore_properties"
+              "$ref": "#/definitions/explore/definitions/explore_properties"
             }
           }
+        },
+        {
+          "$ref": "#/definitions/explore/definitions/explore_properties"
         }
       ],
-      "$defs": {
+      "definitions": {
         "explore_properties": {
-          "title": "explore_properties",
           "type": "object",
           "properties": {
-            "type": {
-              "const": "explore"
-            },
             "display_name": {
               "type": "string",
               "description": "Refers to the display name for the explore dashboard"
@@ -2137,12 +1929,12 @@
               "description": "Refers to the metrics view resource"
             },
             "dimensions": {
-              "description": "can be:\n1. The string '*'\n2. An array of strings\n3. An object with one of: 'regex', 'expr', or 'exclude'",
-              "$ref": "#/$defs/explore/$defs/explore_properties/$defs/field_selector_properties"
+              "description": "List of dimension names. Use '*' to select all dimensions (default) ",
+              "$ref": "#/definitions/explore/definitions/explore_properties/definitions/field_selector_properties"
             },
             "measures": {
-              "description": "can be:\n1. The string '*'\n2. An array of strings\n3. An object with one of: 'regex', 'expr', or 'exclude'",
-              "$ref": "#/$defs/explore/$defs/explore_properties/$defs/field_selector_properties"
+              "description": " List of measure names. Use '*' to select all measures (default)",
+              "$ref": "#/definitions/explore/definitions/explore_properties/definitions/field_selector_properties"
             },
             "theme": {
               "oneOf": [
@@ -2150,7 +1942,7 @@
                   "type": "string"
                 },
                 {
-                  "$ref": "#/$defs/theme"
+                  "$ref": "#/definitions/theme"
                 }
               ],
               "description": "Name of the theme to use. Only one of theme and embedded_theme can be set."
@@ -2159,7 +1951,7 @@
               "type": "array",
               "description": "Overrides the list of default time range selections available in the dropdown. It can be string or an object with a 'range' and optional 'comparison_offsets'",
               "items": {
-                "$ref": "#/$defs/explore_time_range_properties"
+                "$ref": "#/definitions/explore_time_range_properties"
               }
             },
             "time_zones": {
@@ -2183,11 +1975,11 @@
               "properties": {
                 "dimensions": {
                   "description": "Provides the default dimensions to load on viewing the dashboard",
-                  "$ref": "#/$defs/explore/$defs/explore_properties/$defs/field_selector_properties"
+                  "$ref": "#/definitions/explore/definitions/explore_properties/definitions/field_selector_properties"
                 },
                 "measures": {
                   "description": "Provides the default measures to load on viewing the dashboard",
-                  "$ref": "#/$defs/explore/$defs/explore_properties/$defs/field_selector_properties"
+                  "$ref": "#/definitions/explore/definitions/explore_properties/definitions/field_selector_properties"
                 },
                 "time_range": {
                   "description": "Refers to the default time range shown when a user initially loads the dashboard. The value must be either a valid [ISO 8601 duration](https://en.wikipedia.org/wiki/ISO_8601#Durations) (for example, PT12H for 12 hours, P1M for 1 month, or P26W for 26 weeks) or one of the [Rill ISO 8601 extensions](https://docs.rilldata.com/reference/rill-iso-extensions#extensions)",
@@ -2215,10 +2007,10 @@
             },
             "security": {
               "description": "Security rules to apply for access to the explore dashboard",
-              "$ref": "#/$defs/security_policy_properties"
+              "$ref": "#/definitions/security_policy_properties"
             }
           },
-          "$defs": {
+          "definitions": {
             "field_selector_properties": {
               "oneOf": [
                 {
@@ -2276,14 +2068,16 @@
     },
     "metrics_view": {
       "type": "object",
-      "title": "metrics_view",
+      "title": "Metrics View YAML",
+      "description": "In your Rill project directory, create a metrics view, `<metrics_view>.yaml`, file in the `metrics` directory. Rill will ingest the metric view definition next time you run `rill start`.",
       "allOf": [
         {
-          "title": "type",
           "type": "object",
           "properties": {
             "type": {
-              "const": "metrics_view"
+              "type": "string",
+              "const": "metrics_view",
+              "description": "Refers to the resource type and must be `metrics_view`"
             }
           },
           "required": [
@@ -2291,32 +2085,29 @@
           ]
         },
         {
-          "title": "common_properties",
-          "$ref": "#/$defs/common_properties"
+          "$ref": "#/definitions/common_properties"
         },
         {
-          "title": "metrics_view_properties",
-          "$ref": "#/$defs/metrics_view/$defs/metrics_view_properties"
-        },
-        {
-          "title": "environment_overrides",
+          "type": "object",
           "properties": {
             "dev": {
               "type": "object",
               "description": "Overrides properties in development",
-              "$ref": "#/$defs/metrics_view/$defs/metrics_view_properties"
+              "$ref": "#/definitions/metrics_view/definitions/metrics_view_properties"
             },
             "prod": {
               "type": "object",
               "description": "Overrides properties in production",
-              "$ref": "#/$defs/metrics_view/$defs/metrics_view_properties"
+              "$ref": "#/definitions/metrics_view/definitions/metrics_view_properties"
             }
           }
+        },
+        {
+          "$ref": "#/definitions/metrics_view/definitions/metrics_view_properties"
         }
       ],
-      "$defs": {
+      "definitions": {
         "metrics_view_properties": {
-          "title": "metrics_view_properties",
           "type": "object",
           "properties": {
             "display_name": {
@@ -2459,7 +2250,7 @@
                             "type": "boolean"
                           },
                           "order": {
-                            "$ref": "#/$defs/metrics_view/$defs/metrics_view_properties/$defs/field_selectors_properties",
+                            "$ref": "#/definitions/metrics_view/definitions/metrics_view_properties/definitions/field_selectors_properties",
                             "description": "to order the window"
                           },
                           "frame": {
@@ -2472,11 +2263,11 @@
                     ]
                   },
                   "per": {
-                    "$ref": "#/$defs/metrics_view/$defs/metrics_view_properties/$defs/field_selectors_properties",
+                    "$ref": "#/definitions/metrics_view/definitions/metrics_view_properties/definitions/field_selectors_properties",
                     "description": "for per dimensions"
                   },
                   "requires": {
-                    "$ref": "#/$defs/metrics_view/$defs/metrics_view_properties/$defs/field_selectors_properties",
+                    "$ref": "#/definitions/metrics_view/definitions/metrics_view_properties/definitions/field_selectors_properties",
                     "description": "using an available measure or dimension in your metrics view to set a required parameter, cannot be used with simple measures"
                   },
                   "format_preset": {
@@ -2505,11 +2296,11 @@
               "minItems": 1
             },
             "security": {
-              "$ref": "#/$defs/security_policy_properties",
+              "$ref": "#/definitions/security_policy_properties",
               "description": "Defines a security policy for the dashboard"
             }
           },
-          "$defs": {
+          "definitions": {
             "field_selectors_properties": {
               "anyOf": [
                 {
@@ -2571,14 +2362,16 @@
     },
     "model": {
       "type": "object",
-      "title": "model",
+      "title": "Model YAML",
+      "description": "",
       "allOf": [
         {
-          "title": "type",
           "type": "object",
           "properties": {
             "type": {
-              "const": "model"
+              "type": "string",
+              "const": "model",
+              "description": "Refers to the resource type and must be `model`"
             }
           },
           "required": [
@@ -2586,96 +2379,92 @@
           ]
         },
         {
-          "title": "common_properties",
-          "$ref": "#/$defs/common_properties"
+          "$ref": "#/definitions/common_properties"
         },
         {
-          "title": "connector_properties",
+          "$ref": "#/definitions/model/definitions/model_properties"
+        },
+        {
           "type": "object",
-          "oneOf": [
-            {
-              "$ref": "#/$defs/model/$defs/athena"
-            },
-            {
-              "$ref": "#/$defs/model/$defs/azure"
-            },
-            {
-              "$ref": "#/$defs/model/$defs/bigquery"
-            },
-            {
-              "$ref": "#/$defs/model/$defs/clickhouse"
-            },
-            {
-              "$ref": "#/$defs/model/$defs/druid"
-            },
-            {
-              "$ref": "#/$defs/model/$defs/duckdb"
-            },
-            {
-              "$ref": "#/$defs/model/$defs/gcs"
-            },
-            {
-              "$ref": "#/$defs/model/$defs/https"
-            },
-            {
-              "$ref": "#/$defs/model/$defs/local_file"
-            },
-            {
-              "$ref": "#/$defs/model/$defs/motherduck"
-            },
-            {
-              "$ref": "#/$defs/model/$defs/mysql"
-            },
-            {
-              "$ref": "#/$defs/model/$defs/pinot"
-            },
-            {
-              "$ref": "#/$defs/model/$defs/postgres"
-            },
-            {
-              "$ref": "#/$defs/model/$defs/redshift"
-            },
-            {
-              "$ref": "#/$defs/model/$defs/s3"
-            },
-            {
-              "$ref": "#/$defs/model/$defs/salesforce"
-            },
-            {
-              "$ref": "#/$defs/model/$defs/snowflake"
-            },
-            {
-              "$ref": "#/$defs/model/$defs/sqlite"
-            }
-          ]
-        },
-        {
-          "title": "model_properties",
-          "$ref": "#/$defs/model/$defs/model_properties"
-        },
-        {
-          "title": "environment_overrides",
           "properties": {
             "dev": {
               "type": "object",
               "description": "Overrides properties in development",
-              "$ref": "#/$defs/model/$defs/model_properties"
+              "$ref": "#/definitions/model/definitions/model_properties"
             },
             "prod": {
               "type": "object",
               "description": "Overrides properties in production",
-              "$ref": "#/$defs/model/$defs/model_properties"
+              "$ref": "#/definitions/model/definitions/model_properties"
             }
           }
+        },
+        {
+          "type": "object",
+          "oneOf": [
+            {
+              "$ref": "#/definitions/model/definitions/athena"
+            },
+            {
+              "$ref": "#/definitions/model/definitions/azure"
+            },
+            {
+              "$ref": "#/definitions/model/definitions/bigquery"
+            },
+            {
+              "$ref": "#/definitions/model/definitions/clickhouse"
+            },
+            {
+              "$ref": "#/definitions/model/definitions/druid"
+            },
+            {
+              "$ref": "#/definitions/model/definitions/duckdb"
+            },
+            {
+              "$ref": "#/definitions/model/definitions/gcs"
+            },
+            {
+              "$ref": "#/definitions/model/definitions/https"
+            },
+            {
+              "$ref": "#/definitions/model/definitions/local_file"
+            },
+            {
+              "$ref": "#/definitions/model/definitions/motherduck"
+            },
+            {
+              "$ref": "#/definitions/model/definitions/mysql"
+            },
+            {
+              "$ref": "#/definitions/model/definitions/pinot"
+            },
+            {
+              "$ref": "#/definitions/model/definitions/postgres"
+            },
+            {
+              "$ref": "#/definitions/model/definitions/redshift"
+            },
+            {
+              "$ref": "#/definitions/model/definitions/s3"
+            },
+            {
+              "$ref": "#/definitions/model/definitions/salesforce"
+            },
+            {
+              "$ref": "#/definitions/model/definitions/snowflake"
+            },
+            {
+              "$ref": "#/definitions/model/definitions/sqlite"
+            }
+          ]
         }
       ],
-      "$defs": {
+      "definitions": {
         "model_properties": {
-          "title": "model_properties",
           "type": "object",
           "properties": {
             "refresh": {
-              "$ref": "#/$defs/schedule_properties",
+              "$ref": "#/definitions/schedule_properties",
               "description": "Specifies the refresh schedule that Rill should follow to re-ingest and update the underlying model data "
             },
             "timeout": {
@@ -2687,11 +2476,11 @@
               "description": "whether incremental modeling is required (optional)"
             },
             "state": {
-              "$ref": "#/$defs/data_properties",
+              "$ref": "#/definitions/data_properties",
               "description": "Refers to the explicitly defined state of your model, cannot be used with partitions (optional)"
             },
             "partitions": {
-              "$ref": "#/$defs/data_properties",
+              "$ref": "#/definitions/data_properties",
               "description": "Refers to the how your data is partitioned, cannot be used with state. (optional)"
             },
             "sql": {
@@ -2733,9 +2522,6 @@
                   "description": "Refers to the connector type for the output table"
                 }
               },
-              "required": [
-                "connector"
-              ],
               "additionalProperties": true
             }
           }
@@ -2745,10 +2531,10 @@
           "title": "athena",
           "allOf": [
             {
-              "connector": "connector",
               "type": "object",
               "properties": {
                 "connector": {
+                  "type": "string",
                   "const": "athena"
                 }
               },
@@ -2757,20 +2543,41 @@
               ]
             },
             {
-              "title": "athena_properties",
-              "$ref": "#/$defs/connector/$defs/athena/$defs/athena_properties"
+              "$ref": "#/definitions/model/definitions/athena/definitions/athena_properties"
+            },
+            {
+              "$ref": "#/definitions/connector/definitions/athena/definitions/athena_properties"
             }
-          ]
+          ],
+          "definitions": {
+            "athena_properties": {
+              "type": "object",
+              "properties": {
+                "output_location": {
+                  "type": "string",
+                  "description": "Output location for query results in S3."
+                },
+                "workgroup": {
+                  "type": "string",
+                  "description": "AWS Athena workgroup to use for queries."
+                },
+                "region": {
+                  "type": "string",
+                  "description": "AWS region to connect to Athena and the output location."
+                }
+              }
+            }
+          }
         },
         "azure": {
           "type": "object",
           "title": "azure",
           "allOf": [
             {
-              "connector": "connector",
               "type": "object",
               "properties": {
                 "connector": {
+                  "type": "string",
                   "const": "azure"
                 }
               },
@@ -2779,42 +2586,72 @@
               ]
             },
             {
-              "title": "azure_properties",
-              "$ref": "#/$defs/connector/$defs/azure/$defs/azure_properties"
-            }
-          ]
-        },
-        "clickhouse": {
-          "type": "object",
-          "title": "clickhouse",
-          "allOf": [
-            {
-              "connector": "connector",
-              "type": "object",
-              "properties": {
-                "connector": {
-                  "const": "clickhouse"
-                }
-              },
-              "required": [
-                "connector"
-              ]
+              "$ref": "#/definitions/model/definitions/azure/definitions/azure_properties"
             },
             {
-              "title": "clickhouse_properties",
-              "$ref": "#/$defs/connector/$defs/clickhouse/$defs/clickhouse_properties"
+              "$ref": "#/definitions/connector/definitions/azure/definitions/azure_properties"
             }
-          ]
+          ],
+          "definitions": {
+            "azure_properties": {
+              "type": "object",
+              "properties": {
+                "path": {
+                  "type": "string",
+                  "description": "Path to the source"
+                },
+                "account": {
+                  "type": "string",
+                  "description": "Account identifier"
+                },
+                "uri": {
+                  "type": "string",
+                  "description": "Source URI"
+                },
+                "extract": {
+                  "type": "object",
+                  "description": "Arbitrary key-value pairs for extraction settings",
+                  "additionalProperties": true
+                },
+                "glob": {
+                  "type": "object",
+                  "description": "Settings related to glob file matching.",
+                  "properties": {
+                    "max_total_size": {
+                      "type": "integer",
+                      "description": "Maximum total size (in bytes) matched by glob"
+                    },
+                    "max_objects_matched": {
+                      "type": "integer",
+                      "description": "Maximum number of objects matched by glob"
+                    },
+                    "max_objects_listed": {
+                      "type": "integer",
+                      "description": "Maximum number of objects listed in glob"
+                    },
+                    "page_size": {
+                      "type": "integer",
+                      "description": "Page size for glob listing"
+                    }
+                  }
+                },
+                "batch_size": {
+                  "type": "string",
+                  "description": "Size of a batch (e.g., '100MB')"
+                }
+              }
+            }
+          }
         },
         "bigquery": {
           "type": "object",
           "title": "bigquery",
           "allOf": [
             {
-              "connector": "connector",
               "type": "object",
               "properties": {
                 "connector": {
+                  "type": "string",
                   "const": "bigquery"
                 }
               },
@@ -2823,20 +2660,72 @@
               ]
             },
             {
-              "title": "bigquery_properties",
-              "$ref": "#/$defs/connector/$defs/bigquery/$defs/bigquery_properties"
+              "$ref": "#/definitions/model/definitions/bigquery/definitions/bigquery_properties"
+            },
+            {
+              "$ref": "#/definitions/connector/definitions/bigquery/definitions/bigquery_properties"
             }
-          ]
+          ],
+          "definitions": {
+            "bigquery_properties": {
+              "type": "object",
+              "properties": {
+                "project_id": {
+                  "type": "string",
+                  "description": "ID of the BigQuery project."
+                }
+              }
+            }
+          }
+        },
+        "clickhouse": {
+          "type": "object",
+          "title": "clickhouse",
+          "allOf": [
+            {
+              "type": "object",
+              "properties": {
+                "connector": {
+                  "type": "string",
+                  "const": "clickhouse"
+                }
+              },
+              "required": [
+                "connector"
+              ]
+            },
+            {
+              "$ref": "#/definitions/model/definitions/clickhouse/definitions/clickhouse_properties"
+            },
+            {
+              "$ref": "#/definitions/connector/definitions/clickhouse/definitions/clickhouse_properties"
+            }
+          ],
+          "definitions": {
+            "clickhouse_properties": {
+              "type": "object",
+              "properties": {
+                "path": {
+                  "type": "string",
+                  "description": "Path to the data source."
+                },
+                "format": {
+                  "type": "string",
+                  "description": "Format of the data source (e.g., csv, json, parquet)."
+                }
+              }
+            }
+          }
         },
         "druid": {
           "type": "object",
           "title": "druid",
           "allOf": [
             {
-              "connector": "connector",
               "type": "object",
               "properties": {
                 "connector": {
+                  "type": "string",
                   "const": "druid"
                 }
               },
@@ -2845,20 +2734,28 @@
               ]
             },
             {
-              "title": "druid_properties",
-              "$ref": "#/$defs/connector/$defs/druid/$defs/druid_properties"
+              "$ref": "#/definitions/model/definitions/druid/definitions/druid_properties"
+            },
+            {
+              "$ref": "#/definitions/connector/definitions/druid/definitions/druid_properties"
             }
-          ]
+          ],
+          "definitions": {
+            "druid_properties": {
+              "type": "object",
+              "properties": {}
+            }
+          }
         },
         "duckdb": {
           "type": "object",
           "title": "duckdb",
           "allOf": [
             {
-              "connector": "connector",
               "type": "object",
               "properties": {
                 "connector": {
+                  "type": "string",
                   "const": "duckdb"
                 }
               },
@@ -2867,20 +2764,45 @@
               ]
             },
             {
-              "title": "duckdb_properties",
-              "$ref": "#/$defs/connector/$defs/duckdb/$defs/duckdb_properties"
+              "$ref": "#/definitions/model/definitions/duckdb/definitions/duckdb_properties"
+            },
+            {
+              "$ref": "#/definitions/connector/definitions/duckdb/definitions/duckdb_properties"
             }
-          ]
+          ],
+          "definitions": {
+            "duckdb_properties": {
+              "type": "object",
+              "properties": {
+                "path": {
+                  "type": "string",
+                  "description": "Path to the data source."
+                },
+                "format": {
+                  "type": "string",
+                  "description": "Format of the data source (e.g., csv, json, parquet)."
+                },
+                "pre_exec": {
+                  "type": "string",
+                  "description": "refers to a SQL queries to run before the main query, available for DuckDB based models"
+                },
+                "post_exec": {
+                  "type": "string",
+                  "description": "refers to a SQL query that is run after the main query, available for DuckDB based models"
+                }
+              }
+            }
+          }
         },
         "gcs": {
           "type": "object",
           "title": "gcs",
           "allOf": [
             {
-              "connector": "connector",
               "type": "object",
               "properties": {
                 "connector": {
+                  "type": "string",
                   "const": "gcs"
                 }
               },
@@ -2889,20 +2811,68 @@
               ]
             },
             {
-              "title": "gcs_properties",
-              "$ref": "#/$defs/connector/$defs/gcs/$defs/gcs_properties"
+              "$ref": "#/definitions/model/definitions/gcs/definitions/gcs_properties"
+            },
+            {
+              "$ref": "#/definitions/connector/definitions/gcs/definitions/gcs_properties"
             }
-          ]
+          ],
+          "definitions": {
+            "gcs_properties": {
+              "type": "object",
+              "properties": {
+                "path": {
+                  "type": "string",
+                  "description": "Path to the source"
+                },
+                "uri": {
+                  "type": "string",
+                  "description": "Source URI"
+                },
+                "extract": {
+                  "type": "object",
+                  "description": "key-value pairs for extraction settings",
+                  "additionalProperties": true
+                },
+                "glob": {
+                  "type": "object",
+                  "description": "Settings related to glob file matching.",
+                  "properties": {
+                    "max_total_size": {
+                      "type": "integer",
+                      "description": "Maximum total size (in bytes) matched by glob"
+                    },
+                    "max_objects_matched": {
+                      "type": "integer",
+                      "description": "Maximum number of objects matched by glob"
+                    },
+                    "max_objects_listed": {
+                      "type": "integer",
+                      "description": "Maximum number of objects listed in glob"
+                    },
+                    "page_size": {
+                      "type": "integer",
+                      "description": "Page size for glob listing"
+                    }
+                  }
+                },
+                "batch_size": {
+                  "type": "string",
+                  "description": "Size of a batch (e.g., '100MB')"
+                }
+              }
+            }
+          }
         },
         "https": {
           "type": "object",
           "title": "https",
           "allOf": [
             {
-              "connector": "connector",
               "type": "object",
               "properties": {
                 "connector": {
+                  "type": "string",
                   "const": "https"
                 }
               },
@@ -2911,20 +2881,28 @@
               ]
             },
             {
-              "title": "https_properties",
-              "$ref": "#/$defs/connector/$defs/https/$defs/https_properties"
+              "$ref": "#/definitions/model/definitions/https/definitions/https_properties"
+            },
+            {
+              "$ref": "#/definitions/connector/definitions/https/definitions/https_properties"
             }
-          ]
+          ],
+          "definitions": {
+            "https_properties": {
+              "type": "object",
+              "properties": {}
+            }
+          }
         },
         "local_file": {
           "type": "object",
           "title": "local_file",
           "allOf": [
             {
-              "connector": "connector",
               "type": "object",
               "properties": {
                 "connector": {
+                  "type": "string",
                   "const": "local_file"
                 }
               },
@@ -2933,20 +2911,37 @@
               ]
             },
             {
-              "title": "local_file_properties",
-              "$ref": "#/$defs/connector/$defs/local_file/$defs/local_file_properties"
+              "$ref": "#/definitions/model/definitions/local_file/definitions/local_file_properties"
+            },
+            {
+              "$ref": "#/definitions/connector/definitions/local_file/definitions/local_file_properties"
             }
-          ]
+          ],
+          "definitions": {
+            "local_file_properties": {
+              "type": "object",
+              "properties": {
+                "path": {
+                  "type": "string",
+                  "description": "Path to the data source."
+                },
+                "format": {
+                  "type": "string",
+                  "description": "Format of the data source (e.g., csv, json, parquet)."
+                }
+              }
+            }
+          }
         },
         "motherduck": {
           "type": "object",
           "title": "motherduck",
           "allOf": [
             {
-              "connector": "connector",
               "type": "object",
               "properties": {
                 "connector": {
+                  "type": "string",
                   "const": "motherduck"
                 }
               },
@@ -2955,20 +2950,28 @@
               ]
             },
             {
-              "title": "motherduck_properties",
-              "$ref": "#/$defs/connector/$defs/motherduck/$defs/motherduck_properties"
+              "$ref": "#/definitions/model/definitions/motherduck/definitions/motherduck_properties"
+            },
+            {
+              "$ref": "#/definitions/connector/definitions/motherduck/definitions/motherduck_properties"
             }
-          ]
+          ],
+          "definitions": {
+            "motherduck_properties": {
+              "type": "object",
+              "properties": {}
+            }
+          }
         },
         "mysql": {
           "type": "object",
           "title": "mysql",
           "allOf": [
             {
-              "connector": "connector",
               "type": "object",
               "properties": {
                 "connector": {
+                  "type": "string",
                   "const": "mysql"
                 }
               },
@@ -2977,20 +2980,28 @@
               ]
             },
             {
-              "title": "mysql_properties",
-              "$ref": "#/$defs/connector/$defs/mysql/$defs/mysql_properties"
+              "$ref": "#/definitions/model/definitions/mysql/definitions/mysql_properties"
+            },
+            {
+              "$ref": "#/definitions/connector/definitions/mysql/definitions/mysql_properties"
             }
-          ]
+          ],
+          "definitions": {
+            "mysql_properties": {
+              "type": "object",
+              "properties": {}
+            }
+          }
         },
         "pinot": {
           "type": "object",
           "title": "pinot",
           "allOf": [
             {
-              "connector": "connector",
               "type": "object",
               "properties": {
                 "connector": {
+                  "type": "string",
                   "const": "pinot"
                 }
               },
@@ -2999,20 +3010,28 @@
               ]
             },
             {
-              "title": "pinot_properties",
-              "$ref": "#/$defs/connector/$defs/pinot/$defs/pinot_properties"
+              "$ref": "#/definitions/model/definitions/pinot/definitions/pinot_properties"
+            },
+            {
+              "$ref": "#/definitions/connector/definitions/pinot/definitions/pinot_properties"
             }
-          ]
+          ],
+          "definitions": {
+            "pinot_properties": {
+              "type": "object",
+              "properties": {}
+            }
+          }
         },
         "postgres": {
           "type": "object",
           "title": "postgres",
           "allOf": [
             {
-              "connector": "connector",
               "type": "object",
               "properties": {
                 "connector": {
+                  "type": "string",
                   "const": "postgres"
                 }
               },
@@ -3021,20 +3040,28 @@
               ]
             },
             {
-              "title": "postgres_properties",
-              "$ref": "#/$defs/connector/$defs/postgres/$defs/postgres_properties"
+              "$ref": "#/definitions/model/definitions/postgres/definitions/postgres_properties"
+            },
+            {
+              "$ref": "#/definitions/connector/definitions/postgres/definitions/postgres_properties"
             }
-          ]
+          ],
+          "definitions": {
+            "postgres_properties": {
+              "type": "object",
+              "properties": {}
+            }
+          }
         },
         "redshift": {
           "type": "object",
           "title": "redshift",
           "allOf": [
             {
-              "connector": "connector",
               "type": "object",
               "properties": {
                 "connector": {
+                  "type": "string",
                   "const": "redshift"
                 }
               },
@@ -3043,20 +3070,53 @@
               ]
             },
             {
-              "title": "redshift_properties",
-              "$ref": "#/$defs/connector/$defs/redshift/$defs/redshift_properties"
+              "$ref": "#/definitions/model/definitions/redshift/definitions/redshift_properties"
+            },
+            {
+              "$ref": "#/definitions/connector/definitions/redshift/definitions/redshift_properties"
             }
-          ]
+          ],
+          "definitions": {
+            "redshift_properties": {
+              "type": "object",
+              "properties": {
+                "output_location": {
+                  "type": "string",
+                  "description": "S3 location where query results are stored."
+                },
+                "workgroup": {
+                  "type": "string",
+                  "description": "Redshift Serverless workgroup to use."
+                },
+                "database": {
+                  "type": "string",
+                  "description": "Name of the Redshift database."
+                },
+                "cluster_identifier": {
+                  "type": "string",
+                  "description": "Identifier of the Redshift cluster."
+                },
+                "role_arn": {
+                  "type": "string",
+                  "description": "ARN of the IAM role to assume for Redshift access."
+                },
+                "region": {
+                  "type": "string",
+                  "description": "AWS region of the Redshift deployment."
+                }
+              }
+            }
+          }
         },
         "s3": {
           "type": "object",
           "title": "s3",
           "allOf": [
             {
-              "connector": "connector",
               "type": "object",
               "properties": {
                 "connector": {
+                  "type": "string",
                   "const": "s3"
                 }
               },
@@ -3065,20 +3125,76 @@
               ]
             },
             {
-              "title": "s3_properties",
-              "$ref": "#/$defs/connector/$defs/s3/$defs/s3_properties"
+              "$ref": "#/definitions/model/definitions/s3/definitions/s3_properties"
+            },
+            {
+              "$ref": "#/definitions/connector/definitions/s3/definitions/s3_properties"
             }
-          ]
+          ],
+          "definitions": {
+            "s3_properties": {
+              "type": "object",
+              "properties": {
+                "region": {
+                  "type": "string",
+                  "description": "AWS region"
+                },
+                "endpoint": {
+                  "type": "string",
+                  "description": "AWS Endpoint"
+                },
+                "path": {
+                  "type": "string",
+                  "description": "Path to the source"
+                },
+                "uri": {
+                  "type": "string",
+                  "description": "Source URI"
+                },
+                "extract": {
+                  "type": "object",
+                  "description": "key-value pairs for extraction settings",
+                  "additionalProperties": true
+                },
+                "glob": {
+                  "type": "object",
+                  "description": "Settings related to glob file matching.",
+                  "properties": {
+                    "max_total_size": {
+                      "type": "integer",
+                      "description": "Maximum total size (in bytes) matched by glob"
+                    },
+                    "max_objects_matched": {
+                      "type": "integer",
+                      "description": "Maximum number of objects matched by glob"
+                    },
+                    "max_objects_listed": {
+                      "type": "integer",
+                      "description": "Maximum number of objects listed in glob"
+                    },
+                    "page_size": {
+                      "type": "integer",
+                      "description": "Page size for glob listing"
+                    }
+                  }
+                },
+                "batch_size": {
+                  "type": "string",
+                  "description": "Size of a batch (e.g., '100MB')"
+                }
+              }
+            }
+          }
         },
         "salesforce": {
           "type": "object",
           "title": "salesforce",
           "allOf": [
             {
-              "connector": "connector",
               "type": "object",
               "properties": {
                 "connector": {
+                  "type": "string",
                   "const": "salesforce"
                 }
               },
@@ -3087,20 +3203,41 @@
               ]
             },
             {
-              "title": "salesforce_properties",
-              "$ref": "#/$defs/connector/$defs/salesforce/$defs/salesforce_properties"
+              "$ref": "#/definitions/model/definitions/salesforce/definitions/salesforce_properties"
+            },
+            {
+              "$ref": "#/definitions/connector/definitions/salesforce/definitions/salesforce_properties"
             }
-          ]
+          ],
+          "definitions": {
+            "salesforce_properties": {
+              "type": "object",
+              "properties": {
+                "soql": {
+                  "type": "string",
+                  "description": "SOQL query to execute against the Salesforce instance."
+                },
+                "sobject": {
+                  "type": "string",
+                  "description": "Salesforce object (e.g., Account, Contact) targeted by the query."
+                },
+                "queryAll": {
+                  "type": "boolean",
+                  "description": "Whether to include deleted and archived records in the query (uses queryAll API)."
+                }
+              }
+            }
+          }
         },
         "snowflake": {
           "type": "object",
           "title": "snowflake",
           "allOf": [
             {
-              "connector": "connector",
               "type": "object",
               "properties": {
                 "connector": {
+                  "type": "string",
                   "const": "snowflake"
                 }
               },
@@ -3109,20 +3246,28 @@
               ]
             },
             {
-              "title": "snowflake_properties",
-              "$ref": "#/$defs/connector/$defs/snowflake/$defs/snowflake_properties"
+              "$ref": "#/definitions/model/definitions/snowflake/definitions/snowflake_properties"
+            },
+            {
+              "$ref": "#/definitions/connector/definitions/snowflake/definitions/snowflake_properties"
             }
-          ]
+          ],
+          "definitions": {
+            "snowflake_properties": {
+              "type": "object",
+              "properties": {}
+            }
+          }
         },
         "sqlite": {
           "type": "object",
           "title": "sqlite",
           "allOf": [
             {
-              "connector": "connector",
               "type": "object",
               "properties": {
                 "connector": {
+                  "type": "string",
                   "const": "sqlite"
                 }
               },
@@ -3131,23 +3276,33 @@
               ]
             },
             {
-              "title": "sqlite_properties",
-              "$ref": "#/$defs/connector/$defs/sqlite/$defs/sqlite_properties"
+              "$ref": "#/definitions/model/definitions/sqlite/definitions/sqlite_properties"
+            },
+            {
+              "$ref": "#/definitions/connector/definitions/sqlite/definitions/sqlite_properties"
             }
-          ]
+          ],
+          "definitions": {
+            "sqlite_properties": {
+              "type": "object",
+              "properties": {}
+            }
+          }
         }
       }
     },
     "report": {
       "type": "object",
-      "title": "report",
+      "title": "Report YAML",
+      "description": "",
       "allOf": [
         {
-          "title": "type",
           "type": "object",
           "properties": {
             "type": {
-              "const": "report"
+              "type": "string",
+              "const": "report",
+              "description": "Refers to the resource type and must be `report`"
             }
           },
           "required": [
@@ -3155,37 +3310,34 @@
           ]
         },
         {
-          "title": "common_properties",
-          "$ref": "#/$defs/common_properties"
+          "$ref": "#/definitions/common_properties"
         },
         {
-          "title": "report_properties",
-          "$ref": "#/$defs/report/$defs/report_properties",
+          "type": "object",
+          "properties": {
+            "dev": {
+              "type": "object",
+              "description": "Overrides properties in development",
+              "$ref": "#/definitions/report/definitions/report_properties"
+            },
+            "prod": {
+              "type": "object",
+              "description": "Overrides properties in production",
+              "$ref": "#/definitions/report/definitions/report_properties"
+            }
+          }
+        },
+        {
+          "$ref": "#/definitions/report/definitions/report_properties",
           "required": [
             "query",
             "notify",
             "export"
           ]
-        },
-        {
-          "title": "environment_overrides",
-          "properties": {
-            "dev": {
-              "type": "object",
-              "description": "Overrides properties in development",
-              "$ref": "#/$defs/report/$defs/report_properties"
-            },
-            "prod": {
-              "type": "object",
-              "description": "Overrides properties in production",
-              "$ref": "#/$defs/report/$defs/report_properties"
-            }
-          }
         }
       ],
-      "$defs": {
+      "definitions": {
         "report_properties": {
-          "title": "report_properties",
           "type": "object",
           "properties": {
             "display_name": {
@@ -3193,7 +3345,7 @@
               "description": "the display name of your report."
             },
             "refresh": {
-              "$ref": "#/$defs/schedule_properties",
+              "$ref": "#/definitions/schedule_properties",
               "description": "Specifies the refresh schedule that Rill should follow to re-ingest and update the underlying data"
             },
             "watermark": {
@@ -3271,7 +3423,7 @@
               ]
             },
             "notify": {
-              "$ref": "#/$defs/notify_properties",
+              "$ref": "#/definitions/notify_properties",
               "description": "Defines how and where to send notifications. At least one method (email or Slack) is required"
             },
             "annotations": {
@@ -3286,14 +3438,15 @@
     },
     "theme": {
       "type": "object",
-      "title": "theme",
+      "title": "Theme YAML",
       "allOf": [
         {
-          "title": "type",
           "type": "object",
           "properties": {
             "type": {
-              "const": "theme"
+              "type": "string",
+              "const": "theme",
+              "description": "Refers to the resource type and must be `theme`"
             }
           },
           "required": [
@@ -3301,40 +3454,38 @@
           ]
         },
         {
-          "title": "common_properties",
-          "$ref": "#/$defs/common_properties"
+          "$ref": "#/definitions/common_properties"
         },
         {
-          "title": "theme_properties",
-          "$ref": "#/$defs/theme/$defs/theme_properties",
-          "required": [
-            "colors"
-          ]
-        },
-        {
-          "title": "environment_overrides",
+          "type": "object",
           "properties": {
             "dev": {
               "type": "object",
               "description": "Overrides properties in development",
-              "$ref": "#/$defs/theme/$defs/theme_properties"
+              "$ref": "#/definitions/theme/definitions/theme_properties"
             },
             "prod": {
               "type": "object",
               "description": "Overrides properties in production",
-              "$ref": "#/$defs/theme/$defs/theme_properties"
+              "$ref": "#/definitions/theme/definitions/theme_properties"
             }
           }
+        },
+        {
+          "$ref": "#/definitions/theme/definitions/theme_properties",
+          "required": [
+            "colors"
+          ]
         }
       ],
-      "$defs": {
+      "definitions": {
         "theme_properties": {
           "type": "object",
           "properties": {
             "colors": {
-              "type": "object",
               "anyOf": [
                 {
+                  "type": "object",
                   "properties": {
                     "primary": {
                       "type": "string"
@@ -3345,6 +3496,7 @@
                   ]
                 },
                 {
+                  "type": "object",
                   "properties": {
                     "secondary": {
                       "type": "string"
@@ -3361,47 +3513,17 @@
       }
     },
     "common_properties": {
-      "title": "common_properties",
       "type": "object",
       "properties": {
-        "version": {
-          "type": "integer",
-          "description": "Version of the parser to use for this file. Enables backwards compatibility for breaking changes."
-        },
         "name": {
           "type": "string",
           "description": "Name is usually inferred from the filename, but can be specified manually."
         },
-        "namespace": {
-          "type": "string",
-          "description": "Optional value to group resources by. Prepended to the resource name as <namespace>/<name>."
-        },
         "refs": {
           "type": "array",
           "items": {
-            "oneOf": [
-              {
                 "type": "string",
-                "description": "A string reference like 'resource-name' or 'Kind/resource-name'."
-              },
-              {
-                "type": "object",
-                "properties": {
-                  "type": {
-                    "type": "string"
-                  },
-                  "name": {
-                    "type": "string",
-                    "minLength": 1
-                  }
-                },
-                "required": [
-                  "name"
-                ],
-                "additionalProperties": false,
-                "description": "An object reference with at least a 'name' and 'type'."
-              }
-            ]
+                "description": "A string reference like `<resource-name>` or `<type/resource-name>`."
           },
           "description": "List of resource references, each as a string or map."
         }
@@ -3435,10 +3557,10 @@
       "additionalProperties": false
     },
     "data_properties": {
-      "type": "object",
       "oneOf": [
         {
           "title": "sql",
+          "type": "object",
           "properties": {
             "sql": {
               "type": "string",
@@ -3455,6 +3577,7 @@
         },
         {
           "title": "metrics_sql",
+          "type": "object",
           "properties": {
             "metrics_sql": {
               "type": "string",
@@ -3467,6 +3590,7 @@
         },
         {
           "title": "api",
+          "type": "object",
           "properties": {
             "api": {
               "type": "string",
@@ -3484,6 +3608,7 @@
         },
         {
           "title": "glob",
+          "type": "object",
           "properties": {
             "glob": {
               "anyOf": [
@@ -3508,6 +3633,7 @@
         },
         {
           "title": "resource_status",
+          "type": "object",
           "properties": {
             "resource_status": {
               "type": "object",
@@ -3573,11 +3699,9 @@
       ]
     },
     "notify_properties": {
-      "title": "notify_properties",
-      "type": "object",
       "anyOf": [
         {
-          "title": "email_properties",
+          "type": "object",
           "properties": {
             "email": {
               "type": "object",
@@ -3603,7 +3727,7 @@
           ]
         },
         {
-          "title": "slack_properties",
+          "type": "object",
           "properties": {
             "slack": {
               "type": "object",
@@ -3663,17 +3787,9 @@
     "schedule_properties": {
       "type": "object",
       "properties": {
-        "ref_update": {
-          "type": "boolean",
-          "description": "If true, allows the resource to run when a dependency updates."
-        },
         "cron": {
           "type": "string",
           "description": "A cron expression that defines the execution schedule"
-        },
-        "every": {
-          "type": "string",
-          "description": "Run at a fixed interval using a Go duration string (e.g., '1h', '30m', '24h'). See: https://pkg.go.dev/time#ParseDuration"
         },
         "time_zone": {
           "type": "string",
@@ -3682,6 +3798,10 @@
         "disable": {
           "type": "boolean",
           "description": "If true, disables the resource without deleting it."
+        },
+        "ref_update": {
+          "type": "boolean",
+          "description": "If true, allows the resource to run when a dependency updates."
         },
         "run_in_dev": {
           "type": "boolean",
