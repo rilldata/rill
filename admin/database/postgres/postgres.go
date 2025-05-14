@@ -329,9 +329,9 @@ func (c *connection) FindPublicProjectsInOrganization(ctx context.Context, orgID
 	return c.projectsFromDTOs(res)
 }
 
-func (c *connection) FindProjectsByGithubURL(ctx context.Context, githubURL []string) ([]*database.Project, error) {
+func (c *connection) FindProjectsByGithubURL(ctx context.Context, githubURL string) ([]*database.Project, error) {
 	var res []*projectDTO
-	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT p.* FROM projects p WHERE lower(p.github_url) = ANY(ARRAY(SELECT lower(unnest($1::text[]))))", githubURL)
+	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT p.* FROM projects p WHERE lower(p.github_url)=lower($1) ", githubURL)
 	if err != nil {
 		return nil, parseErr("projects", err)
 	}

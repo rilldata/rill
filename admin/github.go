@@ -301,8 +301,7 @@ func (s *Service) ProcessGithubEvent(ctx context.Context, rawEvent any) error {
 func (s *Service) processGithubPush(ctx context.Context, event *github.PushEvent) error {
 	// Find Rill project matching the repo that was pushed to
 	repo := event.GetRepo()
-	// We stored HTML URL earlier, but now we are using clone URL
-	projects, err := s.DB.FindProjectsByGithubURL(ctx, []string{*repo.HTMLURL, *repo.CloneURL})
+	projects, err := s.DB.FindProjectsByGithubURL(ctx, *repo.CloneURL)
 	if err != nil {
 		if errors.Is(err, database.ErrNotFound) {
 			// App is installed on repo not currently deployed. Do nothing.

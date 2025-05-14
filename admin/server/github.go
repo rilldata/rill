@@ -328,6 +328,17 @@ func (s *Server) ConnectProjectToGithub(ctx context.Context, req *adminv1.Connec
 		return nil, fmt.Errorf("failed to update user: %w", err)
 	}
 
+	client := github.NewTokenClient(ctx, token)
+	ghUser, _, err := client.Users.Get(ctx, "")
+	if err != nil {
+		return nil, err
+	}
+	sign := &object.Signature{
+		Name:  safeStr(ghUser.Name),
+		Email: safeStr(ghUser.Email),
+		When:  time.Now(),
+	}
+
 	if proj.ArchiveAssetID != nil {
 		asset, err := s.admin.DB.FindAsset(ctx, *proj.ArchiveAssetID)
 		if err != nil {
@@ -347,7 +358,7 @@ func (s *Server) ConnectProjectToGithub(ctx context.Context, req *adminv1.Connec
 			downloadDst := filepath.Join(downloadDir, "zipped_repo.tar.gz")
 			// extract the archive once the folder is prepped with git
 			return archive.Download(ctx, downloadURL, downloadDst, projPath, false, true)
-		}, req.Repo, req.Branch, req.Subpath, token, req.Force)
+		}, req.Repo, req.Branch, req.Subpath, token, req.Force, sign)
 		if err != nil {
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
@@ -364,7 +375,7 @@ func (s *Server) ConnectProjectToGithub(ctx context.Context, req *adminv1.Connec
 				appToken = token
 			}
 			return copyFromSrcGit(projPath, *proj.GithubURL, proj.ProdBranch, proj.Subpath, appToken)
-		}, req.Repo, req.Branch, req.Subpath, token, req.Force)
+		}, req.Repo, req.Branch, req.Subpath, token, req.Force, sign)
 		if err != nil {
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
@@ -479,7 +490,7 @@ func (s *Server) DisconnectProjectFromGithub(ctx context.Context, req *adminv1.D
 	}
 
 	copyData := func(path string) error {
-		// download and copy to a tempo location
+		// download and copy to a temp location
 		repoID, err := s.githubRepoIDForProject(ctx, proj)
 		if err != nil {
 			return err
@@ -491,7 +502,17 @@ func (s *Server) DisconnectProjectFromGithub(ctx context.Context, req *adminv1.D
 
 		return copyFromSrcGit(path, *proj.GithubURL, proj.ProdBranch, proj.Subpath, token)
 	}
-	err = s.pushToGit(ctx, copyData, *repo.CloneURL, *repo.DefaultBranch, "", mgdRepoToken, true)
+	// generate git commit signature
+	u, err := s.admin.DB.FindUser(ctx, claims.OwnerID())
+	if err != nil {
+		return nil, status.Error(codes.NotFound, "user not found")
+	}
+	sign := &object.Signature{
+		Name:  u.DisplayName,
+		Email: u.Email,
+		When:  time.Now(),
+	}
+	err = s.pushToGit(ctx, copyData, *repo.CloneURL, *repo.DefaultBranch, "", mgdRepoToken, true, sign)
 	if err != nil {
 		return nil, err
 	}
@@ -1061,7 +1082,7 @@ func (s *Server) fetchReposForInstallation(ctx context.Context, client *github.C
 	return repos, nil
 }
 
-func (s *Server) pushToGit(ctx context.Context, copyData func(projPath string) error, remote, branch, subpath, token string, force bool) error {
+func (s *Server) pushToGit(ctx context.Context, copyData func(projPath string) error, remote, branch, subpath, token string, force bool, author *object.Signature) error {
 	ctx, cancel := context.WithTimeout(ctx, archivePullTimeout)
 	defer cancel()
 
@@ -1163,37 +1184,10 @@ func (s *Server) pushToGit(ctx context.Context, copyData func(projPath string) e
 		return fmt.Errorf("failed to add files to git: %w", err)
 	}
 
-	var sign *object.Signature
-	client := github.NewTokenClient(ctx, token)
-	user, _, err := client.Users.Get(ctx, "")
-	if err != nil {
-		// fallback to username and email in Rill
-		claims := auth.GetClaims(ctx)
-		if claims.OwnerType() != auth.OwnerTypeUser {
-			// ideally should never reach here
-			return fmt.Errorf("failed to get current user: %w", err)
-		}
-		u, err := s.admin.DB.FindUser(ctx, claims.OwnerID())
-		if err != nil {
-			return err
-		}
-		sign = &object.Signature{
-			Name:  u.DisplayName,
-			Email: u.Email,
-			When:  time.Now(),
-		}
-	} else {
-		sign = &object.Signature{
-			Name:  safeStr(user.Name),
-			Email: safeStr(user.Email),
-			When:  time.Now(),
-		}
-	}
-
 	// git commit -m
 	_, err = wt.Commit("Auto committed by Rill", &git.CommitOptions{
 		All:    true,
-		Author: sign,
+		Author: author,
 	})
 	if err != nil {
 		if !errors.Is(err, git.ErrEmptyCommit) {
