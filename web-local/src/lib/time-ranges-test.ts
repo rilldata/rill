@@ -604,35 +604,65 @@ function generateTestCases(now: DateTime): Test[] {
       ),
     },
     {
-      syntax: `-2s-3m-4h-5d-6w-7M-8Q-9Y to -1s-2m-3h-4d-5w-6M-7Q-8Y`,
-      description: "Six days to date excluding the current hour",
+      syntax: `-2s-3m-4h-5d-6W-7M-8Q-9Y to -1s-2m-3h-4d-5W-6M-7Q-8Y`,
+      description: "Stacking offsets",
       interval: Interval.fromDateTimes(
-        now.minus({
-          second: 2,
-          minute: 3,
-          hour: 4,
-          day: 5,
-          week: 6,
-          month: 7,
-          quarter: 8,
-          year: 9,
-        }),
-        now.minus({
-          second: 1,
-          minute: 2,
-          hour: 3,
-          day: 4,
-          week: 5,
-          month: 6,
-          quarter: 7,
-          year: 8,
-        }),
+        now
+          .minus({
+            second: 2,
+          })
+          .minus({
+            minute: 3,
+          })
+          .minus({
+            hour: 4,
+          })
+          .minus({
+            day: 5,
+          })
+          .minus({
+            week: 6,
+          })
+          .minus({
+            month: 7,
+          })
+          .minus({
+            quarter: 8,
+          })
+          .minus({
+            year: 9,
+          }),
+
+        now
+          .minus({
+            second: 1,
+          })
+          .minus({
+            minute: 2,
+          })
+          .minus({
+            hour: 3,
+          })
+          .minus({
+            day: 4,
+          })
+          .minus({
+            week: 5,
+          })
+          .minus({
+            month: 6,
+          })
+          .minus({
+            quarter: 7,
+          })
+          .minus({
+            year: 8,
+          }),
       ),
     },
     {
       syntax: `-2s3m4h5d6w7M8Q9Y to -1s2m3h4d5w6M7Q8Y`,
-      description:
-        "Six days to date excluding the current hour (without minuses",
+      description: "Offsetting by compound duration",
       interval: Interval.fromDateTimes(
         now.minus({
           second: 2,
@@ -1264,6 +1294,55 @@ function generateTestCases(now: DateTime): Test[] {
           .minus({ year: 1 })
           .plus({ week: 1 })
           .startOf("week"),
+      ),
+    },
+
+    {
+      syntax: `1Q ${ENDING} -8W as of 2025-02-25T09:00:00Z`,
+      description: "The 61 quarter period ending exactly 8 weeks ago",
+      interval: Interval.fromDateTimes(
+        DateTime.fromISO("2025-02-25T09:00:00Z", { zone: "UTC" })
+          .minus({ week: 8 })
+          .minus({ quarter: 1 }),
+        DateTime.fromISO("2025-02-25T09:00:00Z", { zone: "UTC" }).minus({
+          week: 8,
+        }),
+      ),
+    },
+    {
+      syntax: `1Q ${ENDING} -8W/Q${START_CHARACTER} as of 2025-02-25T09:00:00Z`,
+      description: "The 61 quarter period ending exactly 8 weeks ago",
+      interval: Interval.fromDateTimes(
+        DateTime.fromISO("2025-02-25T09:00:00Z", { zone: "UTC" })
+          .minus({ week: 8 })
+          .startOf("quarter")
+          .minus({ quarter: 1 }),
+        DateTime.fromISO("2025-02-25T09:00:00Z", { zone: "UTC" })
+          .minus({ week: 8 })
+          .startOf("quarter"),
+      ),
+    },
+
+    {
+      syntax: `73M ${STARTING} -26D as of 2025-02-25T09:00:00Z`,
+      description: "The 61 quarter period ending exactly 8 weeks ago",
+      interval: Interval.fromDateTimes(
+        DateTime.fromISO("2025-02-25T09:00:00Z", { zone: "UTC" }).minus({
+          day: 26,
+        }),
+        DateTime.fromISO("2025-02-25T09:00:00Z", { zone: "UTC" })
+          .minus({ day: 26 })
+          .plus({ month: 73 }),
+      ),
+    },
+
+    {
+      syntax: `-1Y/W^ to -1Y/W$`,
+      description:
+        "The one week period starting one year ago, rounded to the week",
+      interval: Interval.fromDateTimes(
+        now.minus({ year: 1 }).startOf("week"),
+        now.minus({ year: 1 }).plus({ week: 1 }).startOf("week"),
       ),
     },
   ];
