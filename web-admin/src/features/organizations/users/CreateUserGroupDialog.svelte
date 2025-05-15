@@ -113,10 +113,19 @@
     }
   }
 
-  function handleRemoveUser(email: string) {
+  async function handleRemove(email: string) {
     selectedUsers = selectedUsers.filter((user) => user.userEmail !== email);
     pendingRemovals = [...pendingRemovals, email];
     pendingAdditions = pendingAdditions.filter((e) => e !== email);
+  }
+
+  async function handleAdd(email: string) {
+    const user = searchUsersList.find((u) => u.userEmail === email);
+    if (user) {
+      selectedUsers = [...selectedUsers, user];
+      pendingAdditions = [...pendingAdditions, email];
+      pendingRemovals = pendingRemovals.filter((e) => e !== email);
+    }
   }
 
   const formId = "create-user-group-form";
@@ -237,23 +246,12 @@
               // Find emails to add (in new but not in current)
               newEmails
                 .filter((email) => !currentEmails.includes(email))
-                .forEach((email) => {
-                  const user = searchUsersList.find(
-                    (u) => u.userEmail === email,
-                  );
-                  if (user) {
-                    selectedUsers = [...selectedUsers, user];
-                    pendingAdditions = [...pendingAdditions, email];
-                    pendingRemovals = pendingRemovals.filter(
-                      (e) => e !== email,
-                    );
-                  }
-                });
+                .forEach((email) => handleAdd(email));
 
               // Find emails to remove (in current but not in new)
               currentEmails
                 .filter((email) => !newEmails.includes(email))
-                .forEach((email) => handleRemoveUser(email));
+                .forEach((email) => handleRemove(email));
             }}
           />
         </div>
@@ -287,7 +285,7 @@
               <Button
                 type="text"
                 danger
-                on:click={() => handleRemoveUser(user.userEmail)}
+                on:click={() => handleRemove(user.userEmail)}
               >
                 Remove
               </Button>
