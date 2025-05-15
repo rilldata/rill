@@ -52,7 +52,7 @@ func (e *Executor) resolveDuckDBClickHouseAndPinot(ctx context.Context) (Timesta
 		err = rows.Scan(&minTime, &maxTime, &watermark)
 		if err != nil {
 			if e.olap.Dialect() == drivers.DialectPinot {
-				// retry again with long var as pinot supports long timestamp column
+				// retry again with long type as pinot supports timestamp columns with long type
 				var minTime, maxTime, watermark int64
 				innerErr := rows.Scan(&minTime, &maxTime, &watermark)
 				if innerErr != nil {
