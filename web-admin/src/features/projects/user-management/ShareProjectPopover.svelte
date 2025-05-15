@@ -34,6 +34,7 @@
   import UserGroupSetRole from "./UserGroupSetRole.svelte";
   import { cn } from "@rilldata/web-common/lib/shadcn";
   import UserGroupItem from "./UserGroupItem.svelte";
+  import UserInviteForm from "./UserInviteForm.svelte";
 
   export let organization: string;
   export let project: string;
@@ -236,11 +237,12 @@
         <div class="text-sm font-medium">Share project: {project}</div>
         <div class="grow"></div>
       </div>
-      <UserSearchAndInviteForm
+      <UserInviteForm {organization} {project} />
+      <!-- <UserSearchAndInviteForm
         {organization}
         {project}
         searchUsersList={searchOptions}
-      />
+      /> -->
       <!-- 52 * 8 = 416px -->
       <div class="flex flex-col gap-y-1 overflow-y-auto max-h-[416px]">
         <div class="mt-4">

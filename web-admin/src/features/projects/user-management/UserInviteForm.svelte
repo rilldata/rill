@@ -20,7 +20,7 @@
   export let onInvite: () => void = () => {};
 
   const queryClient = useQueryClient();
-  const userInvite = createAdminServiceAddProjectMemberUser();
+  const addProjectMemberUser = createAdminServiceAddProjectMemberUser();
 
   const initialValues: {
     emails: string[];
@@ -57,7 +57,7 @@
         await Promise.all(
           emails.map(async (email) => {
             try {
-              await $userInvite.mutateAsync({
+              await $addProjectMemberUser.mutateAsync({
                 organization,
                 project,
                 data: {
