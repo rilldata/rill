@@ -100,13 +100,14 @@
   <Button
     square
     type="secondary"
+    theme
     selected={showPanels}
     on:click={(e) => {
       showPanels = !showPanels;
       e.detail.currentTarget.blur();
     }}
   >
-    <PivotPanel size="18px" open={showPanels} />
+    <PivotPanel size="18px" open={showPanels} colorClass="fill-theme-800" />
   </Button>
 
   <div class="flex items-center gap-x-1">

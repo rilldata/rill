@@ -207,7 +207,7 @@ TableCells – the cell contents.
       <div
         role="grid"
         tabindex="0"
-        class="relative surface"
+        class="relative bg-surface"
         on:mouseleave={clearActiveIndex}
         on:blur={clearActiveIndex}
         style:will-change="transform, contents"

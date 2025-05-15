@@ -127,13 +127,3 @@
     }}
   />
 {/if}
-
-<style lang="postcss">
-  button {
-    @apply h-6 px-1.5 py-px flex items-center gap-[3px] rounded-sm text-slate-600 pointer-events-auto;
-  }
-
-  button:hover {
-    @apply bg-gray-200;
-  }
-</style>

@@ -44,7 +44,7 @@
 
 <style lang="postcss">
   .label-wrapper {
-    @apply flex items-center gap-x-1;
+    @apply flex items-center gap-x-1 select-none;
   }
 
   label {
