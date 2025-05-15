@@ -1,5 +1,6 @@
 import type { CanvasResolvedSpec } from "@rilldata/web-common/features/canvas/stores/spec";
 import { DimensionFilterMode } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/dimension-filter-mode";
+import { getFiltersFromText } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/dimension-search-text-utils";
 import {
   getDimensionDisplayName,
   getMeasureDisplayName,
@@ -15,6 +16,7 @@ import {
 } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
 import { filterItemsSortFunction } from "@rilldata/web-common/features/dashboards/state-managers/selectors/filters";
 import type { MeasureFilterItem } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measure-filters";
+import type { DimensionThresholdFilter } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import {
   createAndExpression,
   createInExpression,
@@ -26,11 +28,7 @@ import {
   negateExpression,
   sanitiseExpression,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
-import type { DimensionThresholdFilter } from "@rilldata/web-common/features/dashboards/stores/explore-state";
-import {
-  convertExpressionToFilterParam,
-  convertFilterParamToExpression,
-} from "@rilldata/web-common/features/dashboards/url-state/filters/converters";
+import { convertExpressionToFilterParam } from "@rilldata/web-common/features/dashboards/url-state/filters/converters";
 import type {
   MetricsViewSpecDimension,
   V1Expression,
@@ -622,28 +620,12 @@ export class Filters {
     this.dimensionFilterExcludeMode.set(excludeMode);
   };
 
-  getFiltersFromText = (filterText: string) => {
-    const { expr, dimensionsWithInlistFilter } =
-      convertFilterParamToExpression(filterText);
-    let sanitisedExpr = expr;
-    if (!sanitisedExpr) {
-      sanitisedExpr = createAndExpression([]);
-    } else if (
-      sanitisedExpr.cond?.op !== V1Operation.OPERATION_AND &&
-      sanitisedExpr.cond?.op !== V1Operation.OPERATION_OR
-    ) {
-      sanitisedExpr = createAndExpression([sanitisedExpr]);
-    }
-    return { expr: sanitisedExpr, dimensionsWithInlistFilter };
-  };
-
   setTemporaryFilterName = (name: string) => {
     this.temporaryFilterName.set(name);
   };
 
   setFiltersFromText = (filterText: string) => {
-    const { expr, dimensionsWithInlistFilter } =
-      this.getFiltersFromText(filterText);
+    const { expr, dimensionsWithInlistFilter } = getFiltersFromText(filterText);
     this.setFilters(expr);
     this.dimensionsWithInlistFilter.set(dimensionsWithInlistFilter);
   };

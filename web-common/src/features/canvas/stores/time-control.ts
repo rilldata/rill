@@ -445,45 +445,11 @@ export class TimeControls {
   };
 
   setTimeFiltersFromText = (timeFilter: string) => {
-    const urlParams = new URLSearchParams(timeFilter);
-    const { preset, errors } = fromTimeRangesParams(urlParams, new Map());
-
-    if (errors?.length) {
-      console.warn(errors);
-      return;
-    }
-    let selectedTimeRange: DashboardTimeControls | undefined;
-    let selectedComparisonTimeRange: DashboardTimeControls | undefined;
-    let showTimeComparison = false;
-
-    if (preset.timeRange) {
-      selectedTimeRange = fromTimeRangeUrlParam(preset.timeRange);
-    }
-
-    if (preset.timeGrain && selectedTimeRange) {
-      selectedTimeRange.interval = FromURLParamTimeGrainMap[preset.timeGrain];
-    }
-
-    if (preset.compareTimeRange) {
-      selectedComparisonTimeRange = fromTimeRangeUrlParam(
-        preset.compareTimeRange,
-      );
-      showTimeComparison = true;
-    } else if (
-      preset.comparisonMode ===
-      V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_TIME
-    ) {
-      showTimeComparison = true;
-    }
-
-    if (
-      preset.comparisonMode ===
-      V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_NONE
-    ) {
-      // unset all comparison setting if mode is none
-      selectedComparisonTimeRange = undefined;
-      showTimeComparison = false;
-    }
+    const {
+      selectedTimeRange,
+      selectedComparisonTimeRange,
+      showTimeComparison,
+    } = getTimeRangeFromText(timeFilter);
 
     this.selectedTimeRange.set(selectedTimeRange);
     if (selectedComparisonTimeRange)
@@ -492,4 +458,51 @@ export class TimeControls {
 
     this.isInitialStateSet = true;
   };
+}
+
+export function getTimeRangeFromText(timeFilter: string) {
+  const urlParams = new URLSearchParams(timeFilter);
+  const { preset, errors } = fromTimeRangesParams(urlParams, new Map());
+
+  if (errors?.length) {
+    console.warn(errors);
+    return {
+      selectedTimeRange: undefined,
+      selectedComparisonTimeRange: undefined,
+      showTimeComparison: false,
+    };
+  }
+  let selectedTimeRange: DashboardTimeControls | undefined;
+  let selectedComparisonTimeRange: DashboardTimeControls | undefined;
+  let showTimeComparison = false;
+
+  if (preset.timeRange) {
+    selectedTimeRange = fromTimeRangeUrlParam(preset.timeRange);
+  }
+
+  if (preset.timeGrain && selectedTimeRange) {
+    selectedTimeRange.interval = FromURLParamTimeGrainMap[preset.timeGrain];
+  }
+
+  if (preset.compareTimeRange) {
+    selectedComparisonTimeRange = fromTimeRangeUrlParam(
+      preset.compareTimeRange,
+    );
+    showTimeComparison = true;
+  } else if (
+    preset.comparisonMode ===
+    V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_TIME
+  ) {
+    showTimeComparison = true;
+  }
+
+  if (
+    preset.comparisonMode ===
+    V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_NONE
+  ) {
+    // unset all comparison setting if mode is none
+    selectedComparisonTimeRange = undefined;
+    showTimeComparison = false;
+  }
+  return { selectedTimeRange, selectedComparisonTimeRange, showTimeComparison };
 }

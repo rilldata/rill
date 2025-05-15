@@ -2,9 +2,9 @@
   import ComponentError from "@rilldata/web-common/features/canvas/components/ComponentError.svelte";
   import httpClient from "@rilldata/web-common/runtime-client/http-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import ComponentHeader from "../../ComponentHeader.svelte";
   import type { ImageComponent } from "./";
   import { getImagePosition } from "./util";
-  import ComponentHeader from "../../ComponentHeader.svelte";
 
   export let component: ImageComponent;
 
@@ -67,7 +67,7 @@
 {#if errorMessage}
   <ComponentError error={errorMessage} />
 {:else}
-  <ComponentHeader {title} {description} />
+  <ComponentHeader {component} {title} {description} />
   <img
     src={imageSrc || ""}
     alt={"Canvas Image"}

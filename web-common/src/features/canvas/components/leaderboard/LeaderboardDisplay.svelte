@@ -134,7 +134,7 @@
 </script>
 
 {#if schema.isValid}
-  <ComponentHeader {title} {description} {filters} />
+  <ComponentHeader {component} {title} {description} {filters} />
 
   <div
     class="h-fit p-0 grow relative"
