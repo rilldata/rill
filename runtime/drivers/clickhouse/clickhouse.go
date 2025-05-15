@@ -125,6 +125,10 @@ type configProperties struct {
 	Password string `mapstructure:"password"`
 	// Database configuration. Should not be set if DSN is set.
 	Database string `mapstructure:"database"`
+	// DatabaseWhitelist is a comma separated list of databases to fetch in information_schema all calls.
+	// This is just a *quick hack* to avoid fetching all databases in the table list till we have a better solution.
+	// This does not list queries to other databases.
+	DatabaseWhitelist string `mapstructure:"database_whitelist"`
 	// SSL determines whether secured connection need to be established. Should not be set if DSN is set.
 	SSL bool `mapstructure:"ssl"`
 	// Cluster name. If a cluster is configured, Rill will create all models in the cluster as distributed tables.
