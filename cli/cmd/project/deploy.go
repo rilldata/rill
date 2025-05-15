@@ -43,7 +43,7 @@ type DeployOpts struct {
 	ProdVersion       string
 	ProdBranch        string
 	Slots             int
-	ZipShipForUploads bool
+	ArchiveUpload bool
 }
 
 func DeployCmd(ch *cmdutil.Helper) *cobra.Command {
