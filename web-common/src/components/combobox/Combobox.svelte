@@ -57,6 +57,7 @@
   items={filteredItems}
   onSelectedChange={handleSelectedChange}
   multiple={true}
+  bind:inputValue={searchValue}
   {disabled}
   {required}
 >
@@ -82,7 +83,7 @@
     sideOffset={8}
   >
     {#if filteredItems.length === 0}
-      <div class="px-4 py-2 text-sm text-gray-500">No results found</div>
+      <div class="px-4 py-2 text-xs text-gray-500">No results found</div>
     {:else}
       {#each filteredItems as item (item.value)}
         <Combobox.Item
