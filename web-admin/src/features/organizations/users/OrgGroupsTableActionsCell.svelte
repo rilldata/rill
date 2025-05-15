@@ -55,5 +55,5 @@
   bind:open={isEditDialogOpen}
   groupName={name}
   {currentUserEmail}
-  {searchUsersList}
+  organizationUsers={searchUsersList}
 />

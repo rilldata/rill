@@ -28,7 +28,7 @@
 
   export let open = false;
   export let groupName: string;
-  export let searchUsersList: V1OrganizationMemberUser[] = [];
+  export let organizationUsers: V1OrganizationMemberUser[] = [];
   export let currentUserEmail: string = "";
 
   let searchText = "";
@@ -120,7 +120,7 @@
   }
 
   async function handleAdd(email: string) {
-    const user = searchUsersList.find((u) => u.userEmail === email);
+    const user = organizationUsers.find((u) => u.userEmail === email);
 
     // Don't add if already in selectedUsers
     if (
@@ -167,7 +167,7 @@
     },
   );
 
-  $: coercedUsersToOptions = searchUsersList
+  $: coercedUsersToOptions = organizationUsers
     .filter(
       (user) =>
         !selectedUsers.some(
@@ -180,7 +180,7 @@
     }));
 
   function getMetadata(email: string) {
-    const user = searchUsersList.find((user) => user.userEmail === email);
+    const user = organizationUsers.find((user) => user.userEmail === email);
     return user
       ? { name: user.userName, photoUrl: user.userPhotoUrl }
       : undefined;

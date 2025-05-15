@@ -31,7 +31,7 @@
   export let open = false;
   export let groupName: string;
   export let currentUserEmail: string;
-  export let searchUsersList: V1OrganizationMemberUser[];
+  export let organizationUsers: V1OrganizationMemberUser[];
 
   let searchText = "";
   let pendingAdditions: string[] = [];
@@ -182,6 +182,8 @@
     },
   );
 
+  $: console.log("organizationUsers: ", organizationUsers);
+
   $: displayedMembers = [
     ...($listUsergroupMemberUsers.data?.members.filter(
       (member) => !pendingRemovals.includes(member.userEmail),
@@ -196,11 +198,14 @@
       .map((email) => ({
         userEmail: email,
         userName:
-          searchUsersList.find((u) => u.userEmail === email)?.userName || email,
+          organizationUsers.find((u) => u.userEmail === email)?.userName ||
+          email,
       })),
   ];
 
-  $: coercedUsersToOptions = searchUsersList.map((user) => {
+  $: console.log("displayedMembers: ", displayedMembers);
+
+  $: coercedUsersToOptions = organizationUsers.map((user) => {
     return {
       value: user.userEmail,
       label: user.userName,
@@ -208,7 +213,7 @@
   });
 
   function getMetadata(email: string) {
-    const user = searchUsersList.find((user) => user.userEmail === email);
+    const user = organizationUsers.find((user) => user.userEmail === email);
     return user
       ? { name: user.userName, photoUrl: user.userPhotoUrl }
       : undefined;
