@@ -33,16 +33,16 @@ var (
 )
 
 type DeployOpts struct {
-	GitPath           string
-	SubPath           string
-	RemoteName        string
-	Name              string
-	Description       string
-	Public            bool
-	Provisioner       string
-	ProdVersion       string
-	ProdBranch        string
-	Slots             int
+	GitPath       string
+	SubPath       string
+	RemoteName    string
+	Name          string
+	Description   string
+	Public        bool
+	Provisioner   string
+	ProdVersion   string
+	ProdBranch    string
+	Slots         int
 	ArchiveUpload bool
 }
 
@@ -192,7 +192,7 @@ func DeployWithUploadFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployO
 	}
 
 	ch.Printer.Println("Starting upload.")
-	if opts.ZipShipForUploads {
+	if opts.ArchiveUpload {
 		// create a tar archive of the project and upload it
 		assetID, err := cmdutil.UploadRepo(ctx, repo, ch, ch.Org, opts.Name)
 		if err != nil {
@@ -293,8 +293,8 @@ func redeployUploadedProject(ctx context.Context, projResp *adminv1.GetProjectRe
 			return err
 		}
 	} else {
-		// older zip and ship flow
-		if opts.ZipShipForUploads {
+		// test tarball flow
+		if opts.ArchiveUpload {
 			assetID, err := cmdutil.UploadRepo(ctx, repo, ch, ch.Org, opts.Name)
 			if err != nil {
 				return err

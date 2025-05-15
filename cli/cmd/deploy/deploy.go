@@ -28,7 +28,7 @@ func DeployCmd(ch *cmdutil.Helper) *cobra.Command {
 				opts.GitPath = args[0]
 			}
 
-			if !upload && !github && !zipship {
+			if !managed && !github && !archive {
 				confirmed, err := cmdutil.ConfirmPrompt("Enable automatic deploys to Rill Cloud from GitHub?", "", false)
 				if err != nil {
 					return err
@@ -36,15 +36,15 @@ func DeployCmd(ch *cmdutil.Helper) *cobra.Command {
 				if confirmed {
 					github = true
 				} else {
-					upload = true
+					managed = true
 				}
 			}
 
-			if zipship {
-				opts.ZipShipForUploads = true
+			if archive {
+				opts.ArchiveUpload = true
 				return project.DeployWithUploadFlow(cmd.Context(), ch, opts)
 			}
-			if upload {
+			if managed {
 				return project.DeployWithUploadFlow(cmd.Context(), ch, opts)
 			}
 			return project.ConnectGithubFlow(cmd.Context(), ch, opts)
@@ -69,21 +69,10 @@ func DeployCmd(ch *cmdutil.Helper) *cobra.Command {
 		}
 	}
 
-	// the older `upload`` flag(which used tarballs) is now deprecated in favour of `managed` flag(which uses rill managed git repos)
-	// but we still keep it for backwards compatibility and use it for same behaviour as managed. Summarily:
-	// --managed and --upload are mutually exclusive and do the same thing i.e. create a project using rill managed git repo
-	// --archive is hidden and create a project using tarballs. It is for testing only.
-	// --github creates a project using user managed github repo
-	deployCmd.Flags().BoolVar(&upload, "managed", false, "Create project using rill managed repo")
-	deployCmd.Flags().BoolVar(&upload, "upload", false, "Create project using rill managed repo")
-	err := deployCmd.Flags().MarkDeprecated("upload", "Use --managed instead")
-	if err != nil {
-		panic(err)
-	}
-	deployCmd.MarkFlagsMutuallyExclusive("managed", "upload")
+	deployCmd.Flags().BoolVar(&managed, "managed", false, "Create project using rill managed repo")
 
-	deployCmd.Flags().BoolVar(&zipship, "archive", false, "Create project using tarballs(for testing only)")
-	err = deployCmd.Flags().MarkHidden("archive")
+	deployCmd.Flags().BoolVar(&archive, "archive", false, "Create project using tarballs(for testing only)")
+	err := deployCmd.Flags().MarkHidden("archive")
 	if err != nil {
 		panic(err)
 	}
