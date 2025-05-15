@@ -44,6 +44,38 @@ proto3.util.setEnumType(ReconcileStatus, "rill.runtime.v1.ReconcileStatus", [
 ]);
 
 /**
+ * @generated from enum rill.runtime.v1.ModelChangeMode
+ */
+export enum ModelChangeMode {
+  /**
+   * @generated from enum value: MODEL_CHANGE_MODE_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: MODEL_CHANGE_MODE_RESET = 1;
+   */
+  RESET = 1,
+
+  /**
+   * @generated from enum value: MODEL_CHANGE_MODE_MANUAL = 2;
+   */
+  MANUAL = 2,
+
+  /**
+   * @generated from enum value: MODEL_CHANGE_MODE_PATCH = 3;
+   */
+  PATCH = 3,
+}
+// Retrieve enum metadata with: proto3.getEnumType(ModelChangeMode)
+proto3.util.setEnumType(ModelChangeMode, "rill.runtime.v1.ModelChangeMode", [
+  { no: 0, name: "MODEL_CHANGE_MODE_UNSPECIFIED" },
+  { no: 1, name: "MODEL_CHANGE_MODE_RESET" },
+  { no: 2, name: "MODEL_CHANGE_MODE_MANUAL" },
+  { no: 3, name: "MODEL_CHANGE_MODE_PATCH" },
+]);
+
+/**
  * @generated from enum rill.runtime.v1.ExploreComparisonMode
  */
 export enum ExploreComparisonMode {
@@ -934,6 +966,13 @@ export class ModelSpec extends Message<ModelSpec> {
   outputProperties?: Struct;
 
   /**
+   * change_mode is the mode of change detection to use for the model.
+   *
+   * @generated from field: rill.runtime.v1.ModelChangeMode change_mode = 24;
+   */
+  changeMode = ModelChangeMode.UNSPECIFIED;
+
+  /**
    * @generated from field: bool trigger = 9;
    */
   trigger = false;
@@ -973,6 +1012,7 @@ export class ModelSpec extends Message<ModelSpec> {
     { no: 17, name: "stage_properties", kind: "message", T: Struct },
     { no: 1, name: "output_connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 12, name: "output_properties", kind: "message", T: Struct },
+    { no: 24, name: "change_mode", kind: "enum", T: proto3.getEnumType(ModelChangeMode) },
     { no: 9, name: "trigger", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 22, name: "trigger_full", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 23, name: "defined_as_source", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
@@ -1422,6 +1462,23 @@ export class MetricsViewSpec_Dimension extends Message<MetricsViewSpec_Dimension
    */
   uri = "";
 
+  /**
+   * Lookup fields for the dimension
+   *
+   * @generated from field: string lookup_table = 8;
+   */
+  lookupTable = "";
+
+  /**
+   * @generated from field: string lookup_key_column = 9;
+   */
+  lookupKeyColumn = "";
+
+  /**
+   * @generated from field: string lookup_value_column = 10;
+   */
+  lookupValueColumn = "";
+
   constructor(data?: PartialMessage<MetricsViewSpec_Dimension>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1437,6 +1494,9 @@ export class MetricsViewSpec_Dimension extends Message<MetricsViewSpec_Dimension
     { no: 6, name: "expression", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "unnest", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 7, name: "uri", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 8, name: "lookup_table", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 9, name: "lookup_key_column", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 10, name: "lookup_value_column", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewSpec_Dimension {
@@ -2118,6 +2178,14 @@ export class ExploreSpec extends Message<ExploreSpec> {
    */
   allowCustomTimeRange = false;
 
+  /**
+   * When true, it indicates that the explore was defined in a metrics view.
+   * This currently happens for legacy metrics views (that don't have `version: 1`), which also emits explores.
+   *
+   * @generated from field: bool defined_in_metrics_view = 21;
+   */
+  definedInMetricsView = false;
+
   constructor(data?: PartialMessage<ExploreSpec>) {
     super();
     proto3.util.initPartial(data, this);
@@ -2143,6 +2211,7 @@ export class ExploreSpec extends Message<ExploreSpec> {
     { no: 18, name: "banner", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 19, name: "lock_time_zone", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 20, name: "allow_custom_time_range", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 21, name: "defined_in_metrics_view", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ExploreSpec {

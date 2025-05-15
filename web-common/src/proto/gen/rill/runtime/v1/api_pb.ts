@@ -3393,19 +3393,21 @@ export class CreateTriggerRequest extends Message<CreateTriggerRequest> {
   parser = false;
 
   /**
-   * Convenience flag to trigger all sources and models.
+   * Convenience flag to trigger all resources.
+   * Note: Despite the name, it does not currently trigger alerts and reports.
    *
-   * @generated from field: bool all_sources_models = 7;
+   * @generated from field: bool all = 7;
    */
-  allSourcesModels = false;
+  all = false;
 
   /**
-   * Convenience flag to trigger all sources and models.
-   * Will trigger models with RefreshModelTrigger.full set to true.
+   * Convenience flag to trigger all resources with full refreshes for resources that support it.
+   * Currently, only models support full refreshes. It's equivalent to passing RefreshModelTrigger.full for those models.
+   * Note: Despite the name, it does not currently trigger alerts and reports.
    *
-   * @generated from field: bool all_sources_models_full = 8;
+   * @generated from field: bool all_full = 8;
    */
-  allSourcesModelsFull = false;
+  allFull = false;
 
   constructor(data?: PartialMessage<CreateTriggerRequest>) {
     super();
@@ -3419,8 +3421,8 @@ export class CreateTriggerRequest extends Message<CreateTriggerRequest> {
     { no: 4, name: "resources", kind: "message", T: ResourceName, repeated: true },
     { no: 5, name: "models", kind: "message", T: RefreshModelTrigger, repeated: true },
     { no: 6, name: "parser", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 7, name: "all_sources_models", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 8, name: "all_sources_models_full", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 7, name: "all", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 8, name: "all_full", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateTriggerRequest {
@@ -3513,6 +3515,13 @@ export class ConnectorDriver extends Message<ConnectorDriver> {
   description = "";
 
   /**
+   * Docs url for the connector
+   *
+   * @generated from field: string docs_url = 21;
+   */
+  docsUrl = "";
+
+  /**
    * Capabilities supported by the connector
    *
    * @generated from field: bool implements_registry = 10;
@@ -3582,6 +3591,7 @@ export class ConnectorDriver extends Message<ConnectorDriver> {
     { no: 3, name: "source_properties", kind: "message", T: ConnectorDriver_Property, repeated: true },
     { no: 4, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 21, name: "docs_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 10, name: "implements_registry", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 11, name: "implements_catalog", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 12, name: "implements_repo", kind: "scalar", T: 8 /* ScalarType.BOOL */ },

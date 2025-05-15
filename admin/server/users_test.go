@@ -42,7 +42,8 @@ func TestUser(t *testing.T) {
 
 		// A superuser can delete any user
 		_, err = sc1.DeleteUser(ctx, &adminv1.DeleteUserRequest{
-			Email: u3.Email,
+			Email:                u3.Email,
+			SuperuserForceAccess: true,
 		})
 		require.NoError(t, err)
 		_, err = c3.GetCurrentUser(ctx, &adminv1.GetCurrentUserRequest{})

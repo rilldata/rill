@@ -50,6 +50,11 @@ var Connectors = map[string]ConnectorAcquireFunc{
 		dsn := testclickhouse.Start(t)
 		return map[string]string{"dsn": dsn}
 	},
+	// clickhouse_cluster starts multiple test containers and configures them as a ClickHouse cluster.
+	"clickhouse_cluster": func(t TestingT) map[string]string {
+		dsn, cluster := testclickhouse.StartCluster(t)
+		return map[string]string{"dsn": dsn, "cluster": cluster}
+	},
 	// Bigquery connector connects to a real bigquery cluster using the credentials json in RILL_RUNTIME_BIGQUERY_TEST_GOOGLE_APPLICATION_CREDENTIALS_JSON.
 	// The service account must have the following permissions:
 	// - BigQuery Data Viewer
@@ -81,8 +86,21 @@ var Connectors = map[string]ConnectorAcquireFunc{
 		}
 
 		dsn := os.Getenv("RILL_RUNTIME_SNOWFLAKE_TEST_DSN")
-		require.NotEmpty(t, dsn, "SNOWFLAKE test DSN not configured")
+		require.NotEmpty(t, dsn, "RILL_RUNTIME_SNOWFLAKE_TEST_DSN not configured")
 		return map[string]string{"dsn": dsn}
+	},
+	"motherduck": func(t TestingT) map[string]string {
+		// Load .env file at the repo root (if any)
+		_, currentFile, _, _ := goruntime.Caller(0)
+		envPath := filepath.Join(currentFile, "..", "..", "..", ".env")
+		_, err := os.Stat(envPath)
+		if err == nil {
+			require.NoError(t, godotenv.Load(envPath))
+		}
+
+		token := os.Getenv("RILL_RUNTIME_MOTHERDUCK_TEST_TOKEN")
+		require.NotEmpty(t, token, "RILL_RUNTIME_MOTHERDUCK_TEST_TOKEN not configured")
+		return map[string]string{"token": token}
 	},
 	// gcs connector uses an actual gcs bucket with data populated from testdata/init_data/azure.
 	"gcs": func(t TestingT) map[string]string {
@@ -157,6 +175,25 @@ var Connectors = map[string]ConnectorAcquireFunc{
 		secretAccessKey := os.Getenv("RILL_RUNTIME_ATHENA_TEST_AWS_SECRET_ACCESS_KEY")
 		require.NotEmpty(t, accessKeyID, "Athena RILL_RUNTIME_ATHENA_TEST_AWS_ACCESS_KEY_ID not configured")
 		require.NotEmpty(t, secretAccessKey, "Athena RILL_RUNTIME_ATHENA_TEST_AWS_SECRET_ACCESS_KEY not configured")
+		return map[string]string{
+			"aws_access_key_id":     accessKeyID,
+			"aws_secret_access_key": secretAccessKey,
+		}
+	},
+	// Redshift connector connects to an actual Redshift Serverless Service.
+	// The test dataset is pre-populated with table definitions in testdata/init_data/redshift_init_data.sql,
+	"redshift": func(t TestingT) map[string]string {
+		// Load .env file at the repo root (if any)
+		_, currentFile, _, _ := goruntime.Caller(0)
+		envPath := filepath.Join(currentFile, "..", "..", "..", ".env")
+		_, err := os.Stat(envPath)
+		if err == nil {
+			require.NoError(t, godotenv.Load(envPath))
+		}
+		accessKeyID := os.Getenv("RILL_RUNTIME_REDSHIFT_TEST_AWS_ACCESS_KEY_ID")
+		secretAccessKey := os.Getenv("RILL_RUNTIME_REDSHIFT_TEST_AWS_SECRET_ACCESS_KEY")
+		require.NotEmpty(t, accessKeyID, "RILL_RUNTIME_REDSHIFT_TEST_AWS_ACCESS_KEY_ID not configured")
+		require.NotEmpty(t, secretAccessKey, "RILL_RUNTIME_REDSHIFT_TEST_AWS_SECRET_ACCESS_KEY not configured")
 		return map[string]string{
 			"aws_access_key_id":     accessKeyID,
 			"aws_secret_access_key": secretAccessKey,

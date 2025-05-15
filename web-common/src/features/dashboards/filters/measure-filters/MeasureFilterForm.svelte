@@ -114,7 +114,7 @@
   }}
 />
 
-<Popover.Content align="start" class="p-2 px-3 w-[250px]">
+<Popover.Content align="start" class="p-2 px-3 w-[250px]" strategy="fixed">
   <form
     use:enhance
     autocomplete="off"

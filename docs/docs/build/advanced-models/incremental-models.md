@@ -94,5 +94,15 @@ Kind in mind that if you select `Full refresh` this will start the ingestion of 
  rill project refresh --local --model <model_name> --full
 ```
 
+## Model Change Modes
 
+Configure how changes to your model specifications are applied:
 
+```yaml
+# model.yaml
+change_mode: reset  # Options: reset (default), manual, patch
+```
+
+- `reset`: changing the model automatically leads to a full refresh (default)
+- `manual`: changing the model stops refreshes until a manual incremental or full refresh is run
+- `patch`: changing the model automatically changes to the new logic without a reset (only works for models with `incremental: true`)

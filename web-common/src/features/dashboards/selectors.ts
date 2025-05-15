@@ -20,14 +20,14 @@ import {
   createQueryServiceMetricsViewTimeRange,
   createRuntimeServiceListResources,
 } from "@rilldata/web-common/runtime-client";
-import type {
-  CreateQueryOptions,
-  CreateQueryResult,
-  QueryClient,
+import {
+  type CreateQueryOptions,
+  type CreateQueryResult,
+  type QueryClient,
 } from "@tanstack/svelte-query";
 import { derived } from "svelte/store";
 import type { ErrorType } from "../../runtime-client/http-client";
-import type { DimensionThresholdFilter } from "./stores/metrics-explorer-entity";
+import type { DimensionThresholdFilter } from "web-common/src/features/dashboards/stores/explore-state";
 
 export function useMetricsView(
   instanceId: string,

@@ -9,11 +9,11 @@ import (
 	"os"
 	"path/filepath"
 
-	_ "github.com/marcboeker/go-duckdb"
+	_ "github.com/marcboeker/go-duckdb/v2"
 )
 
 // DuckDB extensions Rill depends on
-var extensions = []string{"json", "icu", "parquet", "httpfs", "sqlite_scanner", "motherduck", "aws"}
+var extensions = []string{"json", "icu", "parquet", "httpfs", "sqlite_scanner", "motherduck"}
 
 // DuckDB platforms to download extensions for
 var platforms = []string{"linux_amd64", "linux_arm64", "osx_amd64", "osx_arm64"}

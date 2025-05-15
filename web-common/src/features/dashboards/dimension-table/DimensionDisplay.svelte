@@ -5,7 +5,7 @@
    * Create a table with the selected dimension and measures
    * to be displayed in explore
    */
-  import { selectedDimensionValuesV2 } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
+  import { selectedDimensionValues } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import {
@@ -23,7 +23,7 @@
   import { getMeasuresForDimensionOrLeaderboardDisplay } from "../state-managers/selectors/dashboard-queries";
   import { dimensionSearchText } from "../stores/dashboard-stores";
   import { sanitiseExpression } from "../stores/filter-utils";
-  import type { DimensionThresholdFilter } from "../stores/metrics-explorer-entity";
+  import type { DimensionThresholdFilter } from "web-common/src/features/dashboards/stores/explore-state";
   import DimensionHeader from "./DimensionHeader.svelte";
   import DimensionTable from "./DimensionTable.svelte";
   import { getDimensionFilterWithSearch } from "./dimension-table-utils";
@@ -43,11 +43,7 @@
   const {
     selectors: {
       dimensionFilters: { unselectedDimensionValues },
-      dimensionTable: {
-        virtualizedTableColumns,
-        selectedDimensionValueNames,
-        prepareDimTableRows,
-      },
+      dimensionTable: { virtualizedTableColumns, prepareDimTableRows },
       sorting: { sortedAscending, sortType },
       leaderboard: {
         leaderboardShowContextForAllMeasures,
@@ -67,6 +63,15 @@
   $: ({ name: dimensionName = "" } = dimension);
 
   $: ({ instanceId } = $runtime);
+
+  $: selectedValues = selectedDimensionValues(
+    $runtime.instanceId,
+    [metricsViewName],
+    $dashboardStore.whereFilter,
+    dimensionName,
+    timeRange.start,
+    timeRange.end,
+  );
 
   $: filterSet = getDimensionFilterWithSearch(
     whereFilter,
@@ -170,7 +175,7 @@
   $: tableRows = $prepareDimTableRows($sortedQuery, unfilteredTotal);
 
   $: areAllTableRowsSelected = tableRows.every((row) =>
-    $selectedDimensionValueNames.includes(row[dimensionName] as string),
+    $selectedValues.data?.includes(row[dimensionName] as string),
   );
 
   function onSelectItem(event) {
@@ -243,14 +248,7 @@
           isFetching={$sortedQuery?.isFetching}
           {dimensionName}
           {columns}
-          selectedValues={selectedDimensionValuesV2(
-            $runtime.instanceId,
-            [metricsViewName],
-            $dashboardStore.whereFilter,
-            dimensionName,
-            timeRange.start,
-            timeRange.end,
-          )}
+          {selectedValues}
           rows={tableRows}
         />
       </div>

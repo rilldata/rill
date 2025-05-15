@@ -4,7 +4,6 @@ on:
     paths:
       - ".github/workflows/web-test.yml"
       - "web-admin/**"
-      - "web-auth/**"
       - "web-common/**"
       - "web-local/**"
 jobs:
@@ -22,12 +21,6 @@ jobs:
             admin:
               - ".github/workflows/web-test.yml"
               - "web-admin/**"
-            auth:
-              - ".github/workflows/web-test.yml"
-              - "web-auth/**"
-            local:
-              - ".github/workflows/web-test.yml"
-              - "web-local/**"
             common:
               - ".github/workflows/web-test.yml"
               - "web-common/**"
@@ -46,10 +39,6 @@ jobs:
       - name: Run web-common unit tests
         if: steps.filter.outputs.common == 'true'
         run: npm run test -w web-common
-
-      - name: Run web-auth unit tests
-        if: steps.filter.outputs.auth == 'true'
-        run: npm run test -w web-auth
 
       - name: Run storybook smoke tests
         run: |-

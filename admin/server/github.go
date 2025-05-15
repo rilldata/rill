@@ -21,7 +21,7 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/go-git/go-git/v5/plumbing/transport"
 	githttp "github.com/go-git/go-git/v5/plumbing/transport/http"
-	"github.com/google/go-github/v50/github"
+	"github.com/google/go-github/v52/github"
 	"github.com/rilldata/rill/admin"
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/pkg/gitutil"
@@ -379,6 +379,44 @@ func (s *Server) ConnectProjectToGithub(ctx context.Context, req *adminv1.Connec
 	}
 
 	return &adminv1.ConnectProjectToGithubResponse{}, nil
+}
+
+func (s *Server) CreateManagedGitRepo(ctx context.Context, req *adminv1.CreateManagedGitRepoRequest) (*adminv1.CreateManagedGitRepoResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.organization", req.Organization),
+		attribute.String("args.name", req.Name),
+	)
+
+	// Find org
+	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Organization)
+	if err != nil {
+		return nil, err
+	}
+
+	claims := auth.GetClaims(ctx)
+	if !claims.OrganizationPermissions(ctx, org.ID).CreateProjects {
+		return nil, status.Error(codes.PermissionDenied, "does not have permission to create projects")
+	}
+
+	repo, err := s.admin.CreateManagedGitRepo(ctx, org, req.Name, claims.OwnerID())
+	if err != nil {
+		return nil, err
+	}
+
+	id, err := s.admin.Github.ManagedOrgInstallationID()
+	if err != nil {
+		return nil, err
+	}
+	token, err := s.admin.Github.InstallationToken(ctx, id, *repo.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	return &adminv1.CreateManagedGitRepoResponse{
+		Remote:   *repo.CloneURL,
+		Username: "x-access-token",
+		Password: token,
+	}, nil
 }
 
 // registerGithubEndpoints registers the non-gRPC endpoints for the Github integration.
@@ -1061,7 +1099,9 @@ func (s *Server) pushToGit(ctx context.Context, copyData func(projPath string) e
 	}
 
 	if err := ghRepo.PushContext(ctx, &git.PushOptions{Auth: gitAuth}); err != nil {
-		return fmt.Errorf("failed to push to remote %q : %w", repo, err)
+		if !errors.Is(err, git.NoErrAlreadyUpToDate) {
+			return fmt.Errorf("failed to push to remote %q : %w", repo, err)
+		}
 	}
 
 	return nil

@@ -7,20 +7,17 @@
   } from "@rilldata/web-common/components/dropdown-menu";
   import CaretUpIcon from "@rilldata/web-common/components/icons/CaretUpIcon.svelte";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
+  import { PROJECT_ROLES_OPTIONS } from "../constants";
 
   export let value: string;
 
   let open = false;
 
-  const Options = [
-    { value: "admin", label: "Admin" },
-    { value: "editor", label: "Editor" },
-    { value: "viewer", label: "Viewer" },
-  ];
   function onSelect(val: string) {
     value = val;
   }
-  $: selected = Options.find((o) => o.value === value);
+
+  $: selected = PROJECT_ROLES_OPTIONS.find((o) => o.value === value);
 </script>
 
 <DropdownMenu bind:open typeahead={false}>
@@ -36,10 +33,23 @@
       <CaretDownIcon size="12px" />
     {/if}
   </DropdownMenuTrigger>
-  <DropdownMenuContent side="bottom" align="end">
-    {#each Options as { value, label } (value)}
-      <DropdownMenuItem on:click={() => onSelect(value)} class="text-xs">
-        {label}
+  <DropdownMenuContent
+    side="bottom"
+    align="end"
+    class="w-[240px]"
+    strategy="fixed"
+  >
+    {#each PROJECT_ROLES_OPTIONS as { value, label, description } (value)}
+      <DropdownMenuItem
+        on:click={() => onSelect(value)}
+        class="text-xs hover:bg-slate-100 {selected?.value === value
+          ? 'bg-slate-50'
+          : ''}"
+      >
+        <div class="flex flex-col">
+          <div class="text-xs font-medium text-slate-700">{label}</div>
+          <div class="text-slate-500 text-[11px]">{description}</div>
+        </div>
       </DropdownMenuItem>
     {/each}
   </DropdownMenuContent>

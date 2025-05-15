@@ -4,7 +4,7 @@ import {
   PivotChipType,
 } from "@rilldata/web-common/features/dashboards/pivot/types";
 import { SortDirection } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
-import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import type { TimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import {
   compressUrlParams,
@@ -25,7 +25,7 @@ import {
   ExploreStateKeyToURLParamMap,
   ExploreStateURLParams,
 } from "@rilldata/web-common/features/dashboards/url-state/url-params";
-import { stripDefaultOrEmptyUrlParams } from "@rilldata/web-common/features/dashboards/url-state/url-params-strip-utils";
+import { cleanUrlParams } from "@rilldata/web-common/features/dashboards/url-state/clean-url-params";
 import { arrayOrderedEquals } from "@rilldata/web-common/lib/arrayUtils";
 import {
   TimeComparisonOption,
@@ -42,7 +42,7 @@ import { type V1ExploreSpec } from "@rilldata/web-common/runtime-client";
  */
 export function getCleanedUrlParamsForGoto(
   exploreSpec: V1ExploreSpec,
-  partialExploreState: Partial<MetricsExplorerEntity>,
+  partialExploreState: Partial<ExploreState>,
   timeControlsState: TimeControlState | undefined,
   defaultExploreUrlParams: URLSearchParams,
   urlForCompressionCheck?: URL,
@@ -55,10 +55,7 @@ export function getCleanedUrlParamsForGoto(
   );
 
   // Clean the url params of any default or empty values.
-  const cleanedUrlParams = stripDefaultOrEmptyUrlParams(
-    stateParams,
-    defaultExploreUrlParams,
-  );
+  const cleanedUrlParams = cleanUrlParams(stateParams, defaultExploreUrlParams);
 
   if (!urlForCompressionCheck) return cleanedUrlParams;
 
@@ -78,7 +75,7 @@ export function getCleanedUrlParamsForGoto(
 
 export function convertPartialExploreStateToUrlParams(
   exploreSpec: V1ExploreSpec,
-  partialExploreState: Partial<MetricsExplorerEntity>,
+  partialExploreState: Partial<ExploreState>,
   // We have quite a bit of logic in TimeControlState to validate selections and update them
   // Eg: if a selected grain is not applicable for the current grain then we change it
   // But it is only available in TimeControlState and not MetricsExplorerEntity
@@ -143,6 +140,8 @@ export function convertPartialExploreStateToUrlParams(
       // Since we do a shallow merge, we cannot remove time grain from the state for pivot as it is a deeper key.
       // So this is a patch to remove it from the final url.
       searchParams.delete(ExploreStateURLParams.TimeGrain);
+      // TODO: fix the need for this once we move out of V1ExplorePreset in converting url to explore state
+      searchParams.delete(ExploreStateURLParams.ComparisonDimension);
       break;
   }
 
@@ -150,7 +149,7 @@ export function convertPartialExploreStateToUrlParams(
 }
 
 function toTimeRangesUrl(
-  partialExploreState: Partial<MetricsExplorerEntity>,
+  partialExploreState: Partial<ExploreState>,
   timeControlsState: TimeControlState,
 ) {
   const searchParams = new URLSearchParams();
@@ -219,7 +218,7 @@ export function toTimeRangeParam(timeRange: TimeRange | undefined) {
 }
 
 function toExploreUrlParams(
-  partialExploreState: Partial<MetricsExplorerEntity>,
+  partialExploreState: Partial<ExploreState>,
   exploreSpec: V1ExploreSpec,
 ) {
   const searchParams = new URLSearchParams();
@@ -277,7 +276,7 @@ function toExploreUrlParams(
 }
 
 function toVisibleMeasuresUrlParam(
-  partialExploreState: Partial<MetricsExplorerEntity>,
+  partialExploreState: Partial<ExploreState>,
   exploreSpec: V1ExploreSpec,
 ) {
   if (!partialExploreState.visibleMeasures) return undefined;
@@ -297,7 +296,7 @@ function toVisibleMeasuresUrlParam(
 }
 
 function toVisibleDimensionsUrlParam(
-  partialExploreState: Partial<MetricsExplorerEntity>,
+  partialExploreState: Partial<ExploreState>,
   exploreSpec: V1ExploreSpec,
 ) {
   if (!partialExploreState.visibleDimensions) return undefined;
@@ -316,9 +315,7 @@ function toVisibleDimensionsUrlParam(
   return partialExploreState.visibleDimensions.join(",");
 }
 
-function toTimeDimensionUrlParams(
-  partialExploreState: Partial<MetricsExplorerEntity>,
-) {
+function toTimeDimensionUrlParams(partialExploreState: Partial<ExploreState>) {
   const searchParams = new URLSearchParams();
   if (!partialExploreState.tdd) return searchParams;
 
@@ -335,7 +332,7 @@ function toTimeDimensionUrlParams(
   return searchParams;
 }
 
-function toPivotUrlParams(partialExploreState: Partial<MetricsExplorerEntity>) {
+function toPivotUrlParams(partialExploreState: Partial<ExploreState>) {
   const searchParams = new URLSearchParams();
   if (
     !partialExploreState.pivot ||
@@ -379,13 +376,12 @@ function toPivotUrlParams(partialExploreState: Partial<MetricsExplorerEntity>) {
   return searchParams;
 }
 
-function maybeSetParam<K extends keyof MetricsExplorerEntity>(
+function maybeSetParam<K extends keyof ExploreState>(
   searchParams: URLSearchParams,
-  partialExploreState: Partial<MetricsExplorerEntity>,
+  partialExploreState: Partial<ExploreState>,
   key: K,
-  mapper: (value: Partial<MetricsExplorerEntity>[K]) => string | undefined = (
-    x,
-  ) => x?.toString(),
+  mapper: (value: Partial<ExploreState>[K]) => string | undefined = (x) =>
+    x?.toString(),
 ) {
   const param = ExploreStateKeyToURLParamMap[key];
   if (

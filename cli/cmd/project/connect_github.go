@@ -13,8 +13,9 @@ import (
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/plumbing/object"
 	githttp "github.com/go-git/go-git/v5/plumbing/transport/http"
-	"github.com/google/go-github/v50/github"
+	"github.com/google/go-github/v52/github"
 	"github.com/rilldata/rill/cli/cmd/org"
 	"github.com/rilldata/rill/cli/pkg/browser"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
@@ -426,7 +427,11 @@ func createGithubRepoFlow(ctx context.Context, ch *cmdutil.Helper, localGitPath 
 	}
 
 	// git commit -m
-	_, err = wt.Commit("Auto committed by Rill", &git.CommitOptions{All: true})
+	author, err := autoCommitGitSignature(ctx, c, repo)
+	if err != nil {
+		return fmt.Errorf("failed to generate git commit signature: %w", err)
+	}
+	_, err = wt.Commit("Auto committed by Rill", &git.CommitOptions{All: true, Author: author})
 	if err != nil {
 		if !errors.Is(err, git.ErrEmptyCommit) {
 			return fmt.Errorf("failed to commit files to git: %w", err)
@@ -633,8 +638,8 @@ func projectNamePrompt(ctx context.Context, ch *cmdutil.Helper, orgName string) 
 			Prompt: &survey.Input{
 				Message: "Enter a project name",
 			},
-			Validate: func(any interface{}) error {
-				name := any.(string)
+			Validate: func(v any) error {
+				name := v.(string)
 				if name == "" {
 					return fmt.Errorf("empty name")
 				}
@@ -657,4 +662,30 @@ func projectNamePrompt(ctx context.Context, ch *cmdutil.Helper, orgName string) 
 	}
 
 	return name, nil
+}
+
+func autoCommitGitSignature(ctx context.Context, c adminv1.AdminServiceClient, repo *git.Repository) (*object.Signature, error) {
+	cfg, err := repo.ConfigScoped(config.SystemScope)
+	if err == nil && cfg.User.Email != "" && cfg.User.Name != "" {
+		// user has git properly configured use that
+		return &object.Signature{
+			Name:  cfg.User.Name,
+			Email: cfg.User.Email,
+			When:  time.Now(),
+		}, nil
+	}
+	// use email of rill user
+	userResp, err := c.GetCurrentUser(ctx, &adminv1.GetCurrentUserRequest{})
+	if err != nil {
+		return nil, err
+	}
+	if userResp.User == nil {
+		return nil, errors.New("failed to get current user")
+	}
+
+	return &object.Signature{
+		Name:  userResp.User.DisplayName,
+		Email: userResp.User.Email,
+		When:  time.Now(),
+	}, nil
 }

@@ -56,6 +56,9 @@ export interface MetricsViewSpecDimension {
   expression?: string;
   unnest?: boolean;
   uri?: string;
+  lookupTable?: string;
+  lookupKeyColumn?: string;
+  lookupValueColumn?: string;
 }
 
 export interface MetricsViewSpecDimensionSelector {
@@ -656,6 +659,7 @@ export interface V1ConnectorDriver {
   sourceProperties?: ConnectorDriverProperty[];
   displayName?: string;
   description?: string;
+  docsUrl?: string;
   implementsRegistry?: boolean;
   implementsCatalog?: boolean;
   implementsRepo?: boolean;
@@ -855,6 +859,9 @@ These are not currently parsed from YAML, but will be derived from the parent me
   banner?: string;
   lockTimeZone?: boolean;
   allowCustomTimeRange?: boolean;
+  /** When true, it indicates that the explore was defined in a metrics view.
+This currently happens for legacy metrics views (that don't have `version: 1`), which also emits explores. */
+  definedInMetricsView?: boolean;
 }
 
 export interface V1ExploreState {
@@ -1506,6 +1513,17 @@ export interface V1Model {
   state?: V1ModelState;
 }
 
+export type V1ModelChangeMode =
+  (typeof V1ModelChangeMode)[keyof typeof V1ModelChangeMode];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const V1ModelChangeMode = {
+  MODEL_CHANGE_MODE_UNSPECIFIED: "MODEL_CHANGE_MODE_UNSPECIFIED",
+  MODEL_CHANGE_MODE_RESET: "MODEL_CHANGE_MODE_RESET",
+  MODEL_CHANGE_MODE_MANUAL: "MODEL_CHANGE_MODE_MANUAL",
+  MODEL_CHANGE_MODE_PATCH: "MODEL_CHANGE_MODE_PATCH",
+} as const;
+
 export type V1ModelPartitionData = { [key: string]: unknown };
 
 export interface V1ModelPartition {
@@ -1548,6 +1566,7 @@ export interface V1ModelSpec {
   stageProperties?: V1ModelSpecStageProperties;
   outputConnector?: string;
   outputProperties?: V1ModelSpecOutputProperties;
+  changeMode?: V1ModelChangeMode;
   trigger?: boolean;
   triggerFull?: boolean;
   /** defined_as_source is true if it was defined by user as a source but converted internally to a model. */
@@ -2768,11 +2787,13 @@ export type RuntimeServiceCreateTriggerBody = {
   /** Parser is a convenience flag to trigger the global project parser.
 Triggering the project parser ensures a pull of the repository and a full parse of all files. */
   parser?: boolean;
-  /** Convenience flag to trigger all sources and models. */
-  allSourcesModels?: boolean;
-  /** Convenience flag to trigger all sources and models.
-Will trigger models with RefreshModelTrigger.full set to true. */
-  allSourcesModelsFull?: boolean;
+  /** Convenience flag to trigger all resources.
+Note: Despite the name, it does not currently trigger alerts and reports. */
+  all?: boolean;
+  /** Convenience flag to trigger all resources with full refreshes for resources that support it.
+Currently, only models support full refreshes. It's equivalent to passing RefreshModelTrigger.full for those models.
+Note: Despite the name, it does not currently trigger alerts and reports. */
+  allFull?: boolean;
 };
 
 export type ConnectorServiceOLAPListTablesParams = {

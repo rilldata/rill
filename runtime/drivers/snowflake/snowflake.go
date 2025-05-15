@@ -22,6 +22,7 @@ func init() {
 var spec = drivers.Spec{
 	DisplayName: "Snowflake",
 	Description: "Connect to Snowflake.",
+	DocsURL:     "https://docs.rilldata.com/reference/connectors/snowflake",
 	ConfigProperties: []*drivers.PropertySpec{
 		{
 			Key:    "dsn",
@@ -29,6 +30,7 @@ var spec = drivers.Spec{
 			Secret: true,
 		},
 	},
+	// Important: Any edits to the below properties must be accompanied by changes to the client-side form validation schemas.
 	SourceProperties: []*drivers.PropertySpec{
 		{
 			Key:         "sql",

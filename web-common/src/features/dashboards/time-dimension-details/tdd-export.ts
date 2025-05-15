@@ -1,6 +1,6 @@
 import { SortDirection } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
-import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import {
   type TimeControlState,
   useTimeControlStore,
@@ -12,6 +12,7 @@ import type {
   V1MetricsViewAggregationRequest,
   V1MetricsViewSpec,
   V1Query,
+  V1TimeRange,
 } from "@rilldata/web-common/runtime-client";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import { get } from "svelte/store";
@@ -45,7 +46,7 @@ export function getTDDExportQuery(
 
 function getTDDAggregationRequest(
   metricsViewName: string,
-  dashboardState: MetricsExplorerEntity,
+  exploreState: ExploreState,
   timeControlState: TimeControlState,
   metricsView: V1MetricsViewSpec | undefined,
   explore: V1ExploreSpec | undefined,
@@ -56,27 +57,31 @@ function getTDDAggregationRequest(
     !metricsView ||
     !explore ||
     !timeControlState.ready ||
-    !dashboardState.tdd.expandedMeasureName
+    !exploreState.tdd.expandedMeasureName
   )
     return undefined;
 
-  const timeRange = mapSelectedTimeRangeToV1TimeRange(
-    timeControlState,
-    dashboardState.selectedTimezone,
-    explore,
-  );
-  if (!timeRange) return undefined;
-  if (!isScheduled) {
-    // To match the UI's time range, we must explicitly specify `timeEnd` for on-demand exports
-    timeRange.end = timeControlState.timeEnd;
+  let timeRange: V1TimeRange | undefined;
+  if (isScheduled) {
+    timeRange = mapSelectedTimeRangeToV1TimeRange(
+      timeControlState,
+      exploreState.selectedTimezone,
+      explore,
+    );
+  } else {
+    timeRange = {
+      start: timeControlState.timeStart,
+      end: timeControlState.timeEnd,
+    };
   }
+  if (!timeRange) return undefined;
 
   const measures: V1MetricsViewAggregationMeasure[] = [
-    { name: dashboardState.tdd.expandedMeasureName },
+    { name: exploreState.tdd.expandedMeasureName },
   ];
 
   // CAST SAFETY: exports are only available in TDD when a comparison dimension is selected
-  const dimensionName = dashboardState.selectedComparisonDimension as string;
+  const dimensionName = exploreState.selectedComparisonDimension as string;
   const timeDimension = metricsView.timeDimension ?? "";
 
   return {
@@ -86,8 +91,8 @@ function getTDDAggregationRequest(
       { name: dimensionName },
       {
         name: metricsView.timeDimension ?? "",
-        timeGrain: dashboardState.selectedTimeRange?.interval,
-        timeZone: dashboardState.selectedTimezone,
+        timeGrain: exploreState.selectedTimeRange?.interval,
+        timeZone: exploreState.selectedTimezone,
       },
     ],
     measures,
@@ -96,12 +101,12 @@ function getTDDAggregationRequest(
     sort: [
       {
         name: dimensionName,
-        desc: dashboardState.sortDirection === SortDirection.DESCENDING,
+        desc: exploreState.sortDirection === SortDirection.DESCENDING,
       },
     ],
     where: buildWhereParamForDimensionTableAndTDDExports(
-      dashboardState.whereFilter,
-      dashboardState.dimensionThresholdFilters,
+      exploreState.whereFilter,
+      exploreState.dimensionThresholdFilters,
       dimensionName,
       dimensionSearchText,
     ),
