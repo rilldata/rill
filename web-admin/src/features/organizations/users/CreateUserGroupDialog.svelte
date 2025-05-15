@@ -242,7 +242,12 @@
             placeholder="Search for users"
             {getMetadata}
             selectedValues={[
-              ...new Set(selectedUsers.map((user) => user.userEmail)),
+              ...new Set(
+                [
+                  ...selectedUsers.map((user) => user.userEmail),
+                  ...pendingAdditions,
+                ].filter((email) => !pendingRemovals.includes(email)),
+              ),
             ]}
             onSelectedChange={(values) => {
               if (!values) return;
