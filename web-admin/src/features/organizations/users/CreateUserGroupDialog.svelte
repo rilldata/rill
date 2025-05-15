@@ -121,7 +121,12 @@
 
   async function handleAdd(email: string) {
     const user = searchUsersList.find((u) => u.userEmail === email);
-    if (user) {
+
+    // Don't add if already in selectedUsers
+    if (
+      user &&
+      !selectedUsers.some((selected) => selected.userEmail === email)
+    ) {
       selectedUsers = [...selectedUsers, user];
       pendingAdditions = [...pendingAdditions, email];
       pendingRemovals = pendingRemovals.filter((e) => e !== email);

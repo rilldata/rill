@@ -11,7 +11,7 @@
     getAdminServiceListUsergroupMemberUsersQueryKey,
   } from "@rilldata/web-admin/client";
   import Avatar from "@rilldata/web-common/components/avatar/Avatar.svelte";
-  import Button from "@rilldata/web-common/components/button/Button.svelte";
+  import { Button } from "@rilldata/web-common/components/button/index.js";
   import Combobox from "@rilldata/web-common/components/combobox/Combobox.svelte";
   import {
     Dialog,
@@ -34,6 +34,8 @@
   export let searchUsersList: V1OrganizationMemberUser[];
 
   let searchText = "";
+  let pendingAdditions: string[] = [];
+  let pendingRemovals: string[] = [];
 
   $: organization = $page.params.organization;
   $: listUsergroupMemberUsers = createAdminServiceListUsergroupMemberUsers(
@@ -46,12 +48,12 @@
   const addUsergroupMemberUser = createAdminServiceAddUsergroupMemberUser();
   const renameUserGroup = createAdminServiceRenameUsergroup();
 
-  let pendingAdditions: string[] = [];
-  let pendingRemovals: string[] = [];
-
   async function handleAdd(email: string) {
-    pendingAdditions = [...pendingAdditions, email];
-    pendingRemovals = pendingRemovals.filter((e) => e !== email);
+    // Don't add if already in displayedMembers
+    if (!displayedMembers.some((member) => member.userEmail === email)) {
+      pendingAdditions = [...pendingAdditions, email];
+      pendingRemovals = pendingRemovals.filter((e) => e !== email);
+    }
   }
 
   async function handleRename(groupName: string, newName: string) {
@@ -153,8 +155,8 @@
         .required("Name is required")
         .min(3, "Name must be at least 3 characters")
         .matches(
-          /^[a-z0-9]+(-[a-z0-9]+)*$/,
-          "Name must be lowercase and can contain letters, numbers, and hyphens (slug)",
+          /^[a-zA-Z0-9]+(-[a-zA-Z0-9]+)*$/,
+          "Name must contain only letters, numbers, and hyphens (slug)",
         ),
     }),
   );
@@ -184,11 +186,18 @@
     ...($listUsergroupMemberUsers.data?.members.filter(
       (member) => !pendingRemovals.includes(member.userEmail),
     ) || []),
-    ...pendingAdditions.map((email) => ({
-      userEmail: email,
-      userName:
-        searchUsersList.find((u) => u.userEmail === email)?.userName || email,
-    })),
+    ...pendingAdditions
+      .filter(
+        (email) =>
+          !$listUsergroupMemberUsers.data?.members.some(
+            (m) => m.userEmail === email,
+          ),
+      )
+      .map((email) => ({
+        userEmail: email,
+        userName:
+          searchUsersList.find((u) => u.userEmail === email)?.userName || email,
+      })),
   ];
 
   $: coercedUsersToOptions = searchUsersList.map((user) => {
@@ -218,6 +227,11 @@
   onOutsideClick={(e) => {
     e.preventDefault();
     handleClose();
+  }}
+  onOpenChange={(open) => {
+    if (!open) {
+      handleClose();
+    }
   }}
 >
   <DialogTrigger asChild>
