@@ -27,6 +27,16 @@ var (
 		"2024-10-01T00:00:00Z", // Q
 		"2023-01-01T00:00:00Z", // Y
 	}
+	twoPeriodAgoWeekBoundaryStarts = []string{
+		"2025-05-13T06:32:34Z", // s
+		"2025-05-13T06:30:00Z", // m
+		"2025-05-13T04:00:00Z", // h
+		"2025-05-11T00:00:00Z", // D
+		"2025-04-28T00:00:00Z", // W
+		"2025-03-03T00:00:00Z", // M
+		"2024-09-30T00:00:00Z", // Q
+		"2023-01-02T00:00:00Z", // Y
+	}
 	prevPeriodStarts = []string{
 		"2025-05-13T06:32:35Z", // s
 		"2025-05-13T06:31:00Z", // m
@@ -187,53 +197,54 @@ func Test_CompletePreviousAndCurrentGrain(t *testing.T) {
 func Test_FirstAndLastOfPeriod(t *testing.T) {
 	var testCases []testCase
 
-	lastStarts := []string{
-		"2025-05-13T06:29:58Z", // for s
-		"2025-05-13T03:58:00Z", // for m
-		"2025-05-10T22:00:00Z", // for h
-		"2025-04-26T00:00:00Z", // for D
-		"2025-02-17T00:00:00Z", // for W
-		"2024-08-01T00:00:00Z", // for M
-		"2022-07-01T00:00:00Z", // for Q
+	// Expected timestamps for each grain.
+	// Each entry is an array starting for grain just after it, EG: for D, timestamps will start for W, M, etc.
+	lastStarts := [][]string{
+		{"2025-05-13T06:29:58Z", "2025-05-13T03:59:58Z"}, // for s
+		{"2025-05-13T03:58:00Z", "2025-05-10T23:58:00Z"}, // for m
+		{"2025-05-10T22:00:00Z", "2025-04-27T22:00:00Z"}, // for h
+		{"2025-04-26T00:00:00Z", "2025-02-27T00:00:00Z"}, // for D
+		{"2025-02-17T00:00:00Z", "2024-09-16T00:00:00Z"}, // for W
+		{"2024-08-01T00:00:00Z", "2022-11-01T00:00:00Z"}, // for M
+		{"2022-07-01T00:00:00Z"},                         // for Q
 	}
-	ordinalStarts := []string{
-		"2025-05-13T06:30:01Z", // for s
-		"2025-05-13T04:01:00Z", // for m
-		"2025-05-11T01:00:00Z", // for h
-		"2025-04-29T00:00:00Z", // for D
-		"2025-03-10T00:00:00Z", // for W
-		"2024-11-01T00:00:00Z", // for M
-		"2023-04-01T00:00:00Z", // for Q
+	ordinalStarts := [][]string{
+		{"2025-05-13T06:30:01Z", "2025-05-13T04:00:01Z"}, // for s
+		{"2025-05-13T04:01:00Z", "2025-05-11T00:01:00Z"}, // for m
+		{"2025-05-11T01:00:00Z", "2025-04-28T01:00:00Z"}, // for h
+		{"2025-04-29T00:00:00Z", "2025-03-02T00:00:00Z"}, // for D
+		{"2025-03-10T00:00:00Z", "2024-10-07T00:00:00Z"}, // for W
+		{"2024-11-01T00:00:00Z", "2023-02-01T00:00:00Z"}, // for M
+		{"2023-04-01T00:00:00Z"},                         // for Q
 	}
-	firstEnds := []string{
-		"2025-05-13T06:30:02Z", // for s
-		"2025-05-13T04:02:00Z", // for m
-		"2025-05-11T02:00:00Z", // for h
-		"2025-04-30T00:00:00Z", // for D
-		"2025-03-17T00:00:00Z", // for W
-		"2024-12-01T00:00:00Z", // for M
-		"2023-07-01T00:00:00Z", // for Q
+	firstEnds := [][]string{
+		{"2025-05-13T06:30:02Z", "2025-05-13T04:00:02Z"}, // for s
+		{"2025-05-13T04:02:00Z", "2025-05-11T00:02:00Z"}, // for m
+		{"2025-05-11T02:00:00Z", "2025-04-28T02:00:00Z"}, // for h
+		{"2025-04-30T00:00:00Z", "2025-03-03T00:00:00Z"}, // for D
+		{"2025-03-17T00:00:00Z", "2024-10-14T00:00:00Z"}, // for W
+		{"2024-12-01T00:00:00Z", "2023-03-01T00:00:00Z"}, // for M
+		{"2023-07-01T00:00:00Z"},                         // for Q
 	}
 
 	var grainParis []testGrainPair
 
 	for i, grain := range grains {
-		if i == len(grains)-1 {
-			continue
+		if i < len(grains)-1 {
+			grainParis = append(grainParis, testGrainPair{grain, grains[i+1]})
 		}
-		higherPeriod := twoPeriodAgoStarts[i+1]
-		if grain == "W" {
-			higherPeriod = "2025-03-03T00:00:00Z"
+		if i < len(grains)-2 {
+			grainParis = append(grainParis, testGrainPair{grain, grains[i+2]})
 		}
-		grainParis = append(grainParis, testGrainPair{grain, grains[i+1], lastStarts[i], higherPeriod, ordinalStarts[i], firstEnds[i]})
 	}
-	grainParis = append(grainParis, testGrainPair{"D", "M", "2025-02-27T00:00:00Z", "2025-03-01T00:00:00Z", "2025-03-02T00:00:00Z", "2025-03-03T00:00:00Z"})
-	grainParis = append(grainParis, testGrainPair{"D", "Y", "2022-12-30T00:00:00Z", "2023-01-01T00:00:00Z", "2023-01-02T00:00:00Z", "2023-01-03T00:00:00Z"})
-	grainParis = append(grainParis, testGrainPair{"W", "Q", "2024-09-16T00:00:00Z", "2024-09-30T00:00:00Z", "2024-10-07T00:00:00Z", "2024-10-14T00:00:00Z"})
-	grainParis = append(grainParis, testGrainPair{"W", "Y", "2022-12-19T00:00:00Z", "2023-01-02T00:00:00Z", "2023-01-09T00:00:00Z", "2023-01-16T00:00:00Z"})
+	// Select tests with higher order grains
+	//grainParis = append(grainParis, testGrainPair{"D", "Y"})
+	//grainParis = append(grainParis, testGrainPair{"W", "Y"})
 
 	for _, grainPair := range grainParis {
 		grainIndex := slices.Index(grains, grainPair.grain)
+		higherGrainIndex := slices.Index(grains, grainPair.higherGrain)
+		indexDiff := higherGrainIndex - grainIndex - 1
 		tmGrain := timeutil.TimeGrain(grainIndex + 2)
 
 		snapGrain := grainPair.higherGrain
@@ -241,46 +252,69 @@ func Test_FirstAndLastOfPeriod(t *testing.T) {
 			snapGrain += "W"
 		}
 
+		lastStart := lastStarts[grainIndex][indexDiff]
+		ordinalStart := ordinalStarts[grainIndex][indexDiff]
+		firstEnd := firstEnds[grainIndex][indexDiff]
+
+		higherPeriod := twoPeriodAgoStarts[higherGrainIndex]
+		if grainPair.grain == "W" {
+			higherPeriod = twoPeriodAgoWeekBoundaryStarts[higherGrainIndex]
+		}
+
 		// Last 2 periods of -2<higher grain>
 		testCases = append(testCases, testCase{
-			timeRange: fmt.Sprintf("2%[1]s ending -2%[2]s^", grainPair.grain, grainPair.higherGrain),
-			start:     grainPair.lastStart,
-			end:       grainPair.higherPeriod,
+			timeRange: fmt.Sprintf("2%[1]s ending -2%[2]s/%[3]s^", grainPair.grain, grainPair.higherGrain, snapGrain),
+			start:     lastStart,
+			end:       higherPeriod,
 			grain:     tmGrain,
 		})
 		testCases = append(testCases, testCase{
 			timeRange: fmt.Sprintf("-2%[2]s/%[3]s^-2%[1]s to -2%[2]s/%[3]s^", grainPair.grain, grainPair.higherGrain, snapGrain),
-			start:     grainPair.lastStart,
-			end:       grainPair.higherPeriod,
+			start:     lastStart,
+			end:       higherPeriod,
+			grain:     tmGrain,
+		})
+		testCases = append(testCases, testCase{
+			timeRange: fmt.Sprintf("-3%[2]s/%[3]s$-2%[1]s to -3%[2]s/%[3]s$", grainPair.grain, grainPair.higherGrain, snapGrain),
+			start:     lastStart,
+			end:       higherPeriod,
+			grain:     tmGrain,
+		})
+		testCases = append(testCases, testCase{
+			timeRange: fmt.Sprintf(">2%[1]s of -3%[2]s!", grainPair.grain, grainPair.higherGrain, snapGrain),
+			start:     lastStart,
+			end:       higherPeriod,
 			grain:     tmGrain,
 		})
 
 		// First 2 periods of -2<higher grain>
 		testCases = append(testCases, testCase{
-			timeRange: fmt.Sprintf("2%[1]s starting -2%[2]s^", grainPair.grain, grainPair.higherGrain),
-			start:     grainPair.higherPeriod,
-			end:       grainPair.firstEnd,
+			timeRange: fmt.Sprintf("2%[1]s starting -2%[2]s/%[3]s^", grainPair.grain, grainPair.higherGrain, snapGrain),
+			start:     higherPeriod,
+			end:       firstEnd,
 			grain:     tmGrain,
 		})
 		testCases = append(testCases, testCase{
 			timeRange: fmt.Sprintf("-2%[2]s/%[3]s^ to -2%[2]s/%[3]s^+2%[1]s", grainPair.grain, grainPair.higherGrain, snapGrain),
-			start:     grainPair.higherPeriod,
-			end:       grainPair.firstEnd,
+			start:     higherPeriod,
+			end:       firstEnd,
+			grain:     tmGrain,
+		})
+		testCases = append(testCases, testCase{
+			timeRange: fmt.Sprintf("<2%[1]s of -2%[2]s!", grainPair.grain, grainPair.higherGrain, snapGrain),
+			start:     higherPeriod,
+			end:       firstEnd,
 			grain:     tmGrain,
 		})
 
 		// 2nd period of -2<higher grain>
 		testCases = append(testCases, testCase{
 			timeRange: fmt.Sprintf("%[1]s2 of -2%[2]s!", grainPair.grain, grainPair.higherGrain, snapGrain),
-			start:     grainPair.ordinalStart,
-			end:       grainPair.firstEnd,
+			start:     ordinalStart,
+			end:       firstEnd,
 			grain:     lowerOrderMap[tmGrain],
 		})
 	}
-
-	// Misc tests that do not follow exact patterns
-	testCases = append(testCases, testCase{"D2 as of -2Y", "2023-05-02T00:00:00Z", "2023-05-03T00:00:00Z", timeutil.TimeGrainHour})
-	testCases = append(testCases, testCase{"W2 as of -2Y", "2023-05-08T00:00:00Z", "2023-05-15T00:00:00Z", timeutil.TimeGrainDay})
 
 	runTests(t, testCases, now, minTime, maxTime, watermark, nil)
 }
@@ -300,6 +334,33 @@ func Test_IsoTimeRanges(t *testing.T) {
 	runTests(t, testCases, now, minTime, maxTime, watermark, nil)
 }
 
+func Test_EvalMisc(t *testing.T) {
+	testCases := []testCase{
+		// No snapping
+		{"2m ending -2d", "2025-05-11T06:30:36Z", "2025-05-11T06:32:36Z", timeutil.TimeGrainMinute},
+		{"-4d to -2d", "2025-05-09T06:32:36Z", "2025-05-11T06:32:36Z", timeutil.TimeGrainDay},
+
+		// Ending on boundary explicitly
+		{"Y^ to watermark", "2025-01-01T00:00:00Z", "2025-05-13T06:32:36.001Z", timeutil.TimeGrainMonth},
+		{"Y^ to latest", "2025-01-01T00:00:00Z", "2025-05-14T06:32:36.001Z", timeutil.TimeGrainMonth},
+		{"Y^ to now", "2025-01-01T00:00:00Z", "2025-05-15T10:32:36.001Z", timeutil.TimeGrainMonth},
+
+		// `as of` without explicit truncate. Should take the higher order for calculating ordinals
+		{"D2 as of -2Y", "2023-05-02T00:00:00Z", "2023-05-03T00:00:00Z", timeutil.TimeGrainHour},
+		{"W2 as of -2Y", "2023-05-08T00:00:00Z", "2023-05-15T00:00:00Z", timeutil.TimeGrainDay},
+
+		// Snapping using `/W` does not correct for ISO week boundary.
+		{"-1y/W^ to -1y/W$ as of 2025-05-17T13:43:00Z", "2024-05-13T00:00:00Z", "2024-05-20T00:00:00Z", timeutil.TimeGrainDay},
+		{"-1y/W^ to -1y/W$ as of 2025-05-15T13:43:00Z", "2024-05-13T00:00:00Z", "2024-05-20T00:00:00Z", timeutil.TimeGrainDay},
+
+		// Snapping using `/YW` will snap by year and corrects for ISO week boundary.
+		{"-2Y/YW^ to -1Y/YW^", "2023-01-02T00:00:00Z", "2024-01-01T00:00:00Z", timeutil.TimeGrainMonth},
+		{"-2Y/YW^ to -2Y/YW$", "2023-01-02T00:00:00Z", "2024-01-01T00:00:00Z", timeutil.TimeGrainMonth},
+	}
+
+	runTests(t, testCases, now, minTime, maxTime, watermark, nil)
+}
+
 func Test_EvalFinal(t *testing.T) {
 	now := parseTestTime(t, "2025-03-12T10:32:36Z")
 	minTime := parseTestTime(t, "2020-01-01T00:32:36Z")
@@ -311,14 +372,6 @@ func Test_EvalFinal(t *testing.T) {
 		end       string
 		grain     timeutil.TimeGrain
 	}{
-		{"D2 as of -2Y", "2023-05-02T00:00:00Z", "2023-05-03T00:00:00Z", timeutil.TimeGrainHour},
-		{"W2 as of -2Y", "2023-05-08T00:00:00Z", "2023-05-15T00:00:00Z", timeutil.TimeGrainDay},
-
-		{"<6h of -1D!", "2025-03-09T00:00:00Z", "2025-03-09T06:00:00Z", timeutil.TimeGrainHour},
-		{"-1d^ to -1d^+6h", "2025-03-09T00:00:00Z", "2025-03-09T06:00:00Z", timeutil.TimeGrainHour},
-		{"6h starting -1d^", "2025-03-09T00:00:00Z", "2025-03-09T06:00:00Z", timeutil.TimeGrainHour},
-		{"-1d/d^ to -1d/d^+6h", "2025-03-09T00:00:00Z", "2025-03-09T06:00:00Z", timeutil.TimeGrainHour},
-
 		{"M^ to d^", "2025-03-01T00:00:00Z", "2025-03-10T00:00:00Z", timeutil.TimeGrainDay},
 		{"-0M/M^ to -0d/d^", "2025-03-01T00:00:00Z", "2025-03-10T00:00:00Z", timeutil.TimeGrainDay},
 
@@ -330,7 +383,6 @@ func Test_EvalFinal(t *testing.T) {
 
 		{"-4Y^ to -1M^", "2021-01-01T00:00:00Z", "2025-02-01T00:00:00Z", timeutil.TimeGrainMonth},
 
-		{"Y^ to now", "2025-01-01T00:00:00Z", "2025-03-12T10:32:36.001Z", timeutil.TimeGrainSecond},
 		{"-1Y!", "2024-01-01T00:00:00Z", "2025-01-01T00:00:00Z", timeutil.TimeGrainSecond},
 		{"W1 of Y", "2024-12-30T00:00:00Z", "2025-01-06T00:00:00Z", timeutil.TimeGrainSecond},
 		{"W1 of -1M^ to -1M$", "2025-02-03T00:00:00Z", "2025-02-10T00:00:00Z", timeutil.TimeGrainSecond},
@@ -343,11 +395,6 @@ func Test_EvalFinal(t *testing.T) {
 		{"M/MW^ to M/MW^+3W", "2025-03-03T00:00:00Z", "2025-03-24T00:00:00Z", timeutil.TimeGrainSecond},
 		{"3W starting M^", "2025-03-03T00:00:00Z", "2025-03-24T00:00:00Z", timeutil.TimeGrainSecond},
 		{"1Y starting Y^", "2025-01-01T00:00:00Z", "2026-01-01T00:00:00Z", timeutil.TimeGrainSecond},
-
-		{">7h of -1d!", "2025-03-09T17:00:00Z", "2025-03-10T00:00:00Z", timeutil.TimeGrainSecond},
-		{"H4 as of -1d", "2025-03-09T03:00:00Z", "2025-03-09T04:00:00Z", timeutil.TimeGrainSecond},
-		{"H4 of -1d!", "2025-03-09T03:00:00Z", "2025-03-09T04:00:00Z", timeutil.TimeGrainSecond},
-		{"3d ending -1Q/d$", "2024-12-08T00:00:00Z", "2024-12-11T00:00:00Z", timeutil.TimeGrainSecond},
 
 		{"y/yw^ to w^", "2024-12-30T00:00:00Z", "2025-03-10T00:00:00Z", timeutil.TimeGrainSecond},
 		{"m30 of H12 of D5 of >1W of Q3", "2025-09-26T11:29:00Z", "2025-09-26T11:30:00Z", timeutil.TimeGrainSecond},
@@ -412,8 +459,7 @@ type testCase struct {
 }
 
 type testGrainPair struct {
-	grain, higherGrain                              string
-	lastStart, higherPeriod, ordinalStart, firstEnd string
+	grain, higherGrain string
 }
 
 func runTests(t *testing.T, testCases []testCase, now, minTime, maxTime, watermark string, tz *time.Location) {

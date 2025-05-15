@@ -393,14 +393,10 @@ func (o *AnchoredDurationInterval) eval(evalOpts EvalOptions, tm time.Time, tz *
 	start, _ := o.PointInTime.eval(evalOpts, tm, tz)
 	end := start
 
-	durTg := grainMap[o.Duration.Parts[0].Grain] // TODO: length check
-
 	tg := timeutil.TimeGrainUnspecified
 	if o.Starting {
-		start = truncateWithCorrection(start, durTg, tz, evalOpts.FirstDay, evalOpts.FirstMonth)
 		end, tg = o.Duration.offset(start, 1)
 	} else if o.Ending {
-		end = truncateWithCorrection(end, durTg, tz, evalOpts.FirstDay, evalOpts.FirstMonth)
 		start, tg = o.Duration.offset(end, -1)
 	}
 
@@ -558,20 +554,33 @@ func (g *GrainPointInTimePart) eval(evalOpts EvalOptions, start time.Time, tz *t
 	}
 	tm, tg := g.Duration.offset(start, sign)
 
+	// without a suffix we do not snap to start or end of grain
+	if g.Suffix == nil {
+		return tm, tg
+	}
+
+	secondarySnap := timeutil.TimeGrainUnspecified
+
 	if g.Snap != nil {
 		tg = grainMap[*g.Snap]
 	} else if g.WeekSnapGrain != nil {
 		tgs := strings.Split(*g.WeekSnapGrain, "")
-		tm = truncateWithCorrection(tm, grainMap[tgs[0]], tz, evalOpts.FirstDay, evalOpts.FirstMonth)
-		tg = grainMap[tgs[1]]
+		tg = grainMap[tgs[0]]
+		secondarySnap = grainMap[tgs[1]]
 	}
 
-	if g.Suffix != nil {
-		// `$` suffix means snap to end. So add 1 to the offset before truncating.
+	// `$` suffix means snap to end. So add 1 to the offset before truncating.
+	if *g.Suffix == "$" {
+		tm = timeutil.OffsetTime(tm, tg, 1)
+	}
+	tm = timeutil.TruncateTime(tm, tg, tz, evalOpts.FirstDay, evalOpts.FirstMonth)
+
+	if secondarySnap != timeutil.TimeGrainUnspecified {
 		if *g.Suffix == "$" {
-			tm = timeutil.OffsetTime(tm, tg, 1)
+			tm = ceilWithCorrection(tm, secondarySnap, tz, evalOpts.FirstDay, evalOpts.FirstMonth)
+		} else {
+			tm = truncateWithCorrection(tm, secondarySnap, tz, evalOpts.FirstDay, evalOpts.FirstMonth)
 		}
-		tm = truncateWithCorrection(tm, tg, tz, evalOpts.FirstDay, evalOpts.FirstMonth)
 	}
 
 	return tm, tg
@@ -808,7 +817,10 @@ func truncateWithCorrection(tm time.Time, tg timeutil.TimeGrain, tz *time.Locati
 // TODO: will adding this directly to timeutil.CeilTime break anything?
 func ceilWithCorrection(tm time.Time, tg timeutil.TimeGrain, tz *time.Location, firstDay, firstMonth int) time.Time {
 	weekday := int(tm.Weekday())
-	tm = timeutil.CeilTime(tm, tg, tz, firstDay, firstMonth)
+	newTm := timeutil.CeilTime(tm, tg, tz, firstDay, firstMonth)
+	if newTm.Equal(tm) {
+		return newTm
+	}
 
 	if tg == timeutil.TimeGrainWeek {
 		if weekday == 0 {
@@ -816,11 +828,11 @@ func ceilWithCorrection(tm time.Time, tg timeutil.TimeGrain, tz *time.Location, 
 			weekday = 7
 		}
 		if weekday < 5 {
-			tm = timeutil.OffsetTime(tm, tg, -1)
+			newTm = timeutil.OffsetTime(newTm, tg, -1)
 		}
 	}
 
-	return tm
+	return newTm
 }
 
 // getLowerOrderGrain returns the lowest grain where 2 periods can fit between start and end. Uses lowerOrderMap to get the lower grain.

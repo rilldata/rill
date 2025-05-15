@@ -186,26 +186,26 @@ export function generateStartingAndEndingTests(now: DateTime) {
       const offsetUnit = GRAIN_TO_LUXON[offsetGrain];
 
       return [
-        // <Test>{
-        //   syntax: `${periodInteger}${periodGrain} ${STARTING} -${offsetInteger}${offsetGrain}`,
-        //   description: `The ${periodInteger} ${periodUnit} period starting exactly -${offsetInteger} ${offsetUnit}(s) ago`,
-        //   interval: Interval.fromDateTimes(
-        //     now.minus({ [offsetUnit]: offsetInteger }),
-        //     now
-        //       .minus({ [offsetUnit]: offsetInteger })
-        //       .plus({ [periodUnit]: periodInteger }),
-        //   ),
-        // },
-        // <Test>{
-        //   syntax: `${periodInteger}${periodGrain} ${ENDING} -${offsetInteger}${offsetGrain}`,
-        //   description: `The ${periodInteger} ${periodUnit} period ending exactly -${offsetInteger} ${offsetUnit}(s) ago`,
-        //   interval: Interval.fromDateTimes(
-        //     now
-        //       .minus({ [offsetUnit]: offsetInteger })
-        //       .minus({ [periodUnit]: periodInteger }),
-        //     now.minus({ [offsetUnit]: offsetInteger }),
-        //   ),
-        // },
+        <Test>{
+          syntax: `${periodInteger}${periodGrain} ${STARTING} -${offsetInteger}${offsetGrain}`,
+          description: `The ${periodInteger} ${periodUnit} period starting exactly -${offsetInteger} ${offsetUnit}(s) ago`,
+          interval: Interval.fromDateTimes(
+            now.minus({ [offsetUnit]: offsetInteger }),
+            now
+              .minus({ [offsetUnit]: offsetInteger })
+              .plus({ [periodUnit]: periodInteger }),
+          ),
+        },
+        <Test>{
+          syntax: `${periodInteger}${periodGrain} ${ENDING} -${offsetInteger}${offsetGrain}`,
+          description: `The ${periodInteger} ${periodUnit} period ending exactly -${offsetInteger} ${offsetUnit}(s) ago`,
+          interval: Interval.fromDateTimes(
+            now
+              .minus({ [offsetUnit]: offsetInteger })
+              .minus({ [periodUnit]: periodInteger }),
+            now.minus({ [offsetUnit]: offsetInteger }),
+          ),
+        },
         <Test>{
           syntax: `${periodInteger}${periodGrain} ${STARTING} -${offsetInteger}${offsetGrain}/${periodGrain}${START_CHARACTER}`,
           description: `The ${periodInteger} ${periodUnit} period starting exactly -${offsetInteger} ${offsetUnit}(s) ago rounded to the ${periodUnit} start`,
