@@ -19,41 +19,6 @@ headers = {}
 headers["Authorization"] = f"Bearer {RILL_SERVICE_TOKEN}"
 
 admin_client = httpx.AsyncClient(
-    base_url=RILL_ADMIN_BASE_URL,
+    base_url=f"{RILL_ADMIN_BASE_URL}/v1/orgs/{RILL_ORGANIZATION_NAME}/projects/{RILL_PROJECT_NAME}",
     headers=headers,
 )
-
-runtime_info = None
-
-
-async def get_project():
-    response = await admin_client.get(
-        f"/v1/organizations/{RILL_ORGANIZATION_NAME}/projects/{RILL_PROJECT_NAME}"
-    )
-
-    return response.json()
-
-
-def fix_dev_runtime_host(host: str) -> str:
-    if host == "http://localhost:9091":
-        return "http://localhost:8081"
-    return host
-
-
-async def get_runtime_info(force_refresh=False):
-    global runtime_info
-
-    if runtime_info is None or force_refresh:
-        project = await get_project()
-        prod_deployment = project.get("prodDeployment", {})
-        host = fix_dev_runtime_host(prod_deployment.get("runtimeHost"))
-        runtime_info = {
-            "host": host,
-            "instance_id": prod_deployment.get("runtimeInstanceId"),
-            "jwt": project.get("jwt"),
-        }
-
-    if runtime_info is None:
-        raise ValueError("Failed to get runtime info")
-
-    return runtime_info

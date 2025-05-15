@@ -1,11 +1,10 @@
 from fastmcp import FastMCP
-from subservers.rill.admin_client import get_runtime_info
+from subservers.rill.admin_client import admin_client
 from subservers.rill.pydantic_models import (
     GetMetricsViewAggregationRequest,
     GetMetricsViewResourceRequest,
     GetMetricsViewTimeRangeSummaryRequest,
 )
-from subservers.rill.runtime_client import runtime_client
 from subservers.rill.utils import prune
 
 rill_mcp = FastMCP(name="RillRuntimeServer")
@@ -16,10 +15,8 @@ async def list_metrics_views():
     """
     List all metrics views in the current project.
     """
-    runtime_info = await get_runtime_info()
-    response = await runtime_client.get(
-        f"{runtime_info['host']}/v1/instances/{runtime_info['instance_id']}/resources?kind=rill.runtime.v1.MetricsView",
-        headers={"Authorization": f"Bearer {runtime_info['jwt']}"},
+    response = await admin_client.get(
+        f"/runtime/resources?kind=rill.runtime.v1.MetricsView"
     )
 
     names = [
@@ -35,10 +32,8 @@ async def get_metrics_view_spec(request: GetMetricsViewResourceRequest):
     """
     Retrieve the specification for a given metrics view, including available measures and dimensions.
     """
-    runtime_info = await get_runtime_info()
-    response = await runtime_client.get(
-        f"{runtime_info['host']}/v1/instances/{runtime_info['instance_id']}/resource?name.name={request.name}&name.kind=rill.runtime.v1.MetricsView",
-        headers={"Authorization": f"Bearer {runtime_info['jwt']}"},
+    response = await admin_client.get(
+        f"/runtime/resource?name.kind=rill.runtime.v1.MetricsView&name.name={request.name}",
     )
 
     response_json = response.json()
@@ -61,10 +56,8 @@ async def get_metrics_view_time_range_summary(
     Notes:
         All subsequent queries of the metrics view should be constrained to this time range to ensure accurate results.
     """
-    runtime_info = await get_runtime_info()
-    response = await runtime_client.post(
-        f"{runtime_info['host']}/v1/instances/{runtime_info['instance_id']}/queries/metrics-views/{request.metrics_view}/time-range-summary",
-        headers={"Authorization": f"Bearer {runtime_info['jwt']}"},
+    response = await admin_client.post(
+        f"/runtime/queries/metrics-views/{request.metrics_view}/time-range-summary",
     )
     return response.json()
 
@@ -137,14 +130,12 @@ async def get_metrics_view_aggregation(request: GetMetricsViewAggregationRequest
             }
     """
 
-    runtime_info = await get_runtime_info()
     payload = request.model_dump(
         exclude={"metrics_view"}, exclude_none=True, mode="json"
     )
 
-    response = await runtime_client.post(
-        f"{runtime_info['host']}/v1/instances/{runtime_info['instance_id']}/queries/metrics-views/{request.metrics_view}/aggregation",
-        headers={"Authorization": f"Bearer {runtime_info['jwt']}"},
+    response = await admin_client.post(
+        f"/runtime/queries/metrics-views/{request.metrics_view}/aggregation",
         json=payload,
     )
 
