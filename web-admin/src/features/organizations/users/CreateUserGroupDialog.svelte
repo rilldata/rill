@@ -283,7 +283,11 @@
           {#each selectedUsers as user (user.userEmail)}
             <div class="flex flex-row justify-between gap-2 items-center">
               <div class="flex items-center gap-2">
-                <Avatar avatarSize="h-7 w-7" alt={user.userName} />
+                <Avatar
+                  avatarSize="h-7 w-7"
+                  alt={user.userName}
+                  src={user.userPhotoUrl}
+                />
                 <div class="flex flex-col text-left">
                   <span class="text-sm font-medium text-gray-900">
                     {user.userName}

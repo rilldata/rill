@@ -12,16 +12,16 @@
   export let options: Option[] = [];
   export let searchValue = "";
   export let placeholder = "Search";
+  export let disabled = false;
+  export let required = false;
+  export let error: string | undefined = undefined;
+  export let selectedValues: string[] = [];
   export let onSelectedChange: (
     value: Selected<string>[] | undefined,
   ) => void = () => {};
   export let getMetadata: (
     value: string,
   ) => { name: string; photoUrl?: string } | undefined = () => undefined;
-  export let disabled = false;
-  export let required = false;
-  export let error: string | undefined = undefined;
-  export let selectedValues: string[] = [];
 
   $: if (!Array.isArray(options)) {
     console.error("Combobox: options must be an array");

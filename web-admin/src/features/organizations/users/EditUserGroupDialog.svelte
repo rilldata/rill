@@ -198,6 +198,9 @@
         userName:
           organizationUsers.find((u) => u.userEmail === email)?.userName ||
           email,
+        userPhotoUrl:
+          organizationUsers.find((u) => u.userEmail === email)?.userPhotoUrl ||
+          undefined,
       })),
   ];
 
@@ -309,7 +312,11 @@
           {#each displayedMembers as member}
             <div class="flex flex-row justify-between gap-2 items-center">
               <div class="flex items-center gap-2">
-                <Avatar avatarSize="h-7 w-7" alt={member.userName} />
+                <Avatar
+                  avatarSize="h-7 w-7"
+                  alt={member.userName}
+                  src={member.userPhotoUrl}
+                />
                 <div class="flex flex-col text-left">
                   <span class="text-sm font-medium text-gray-900">
                     {member.userName}
