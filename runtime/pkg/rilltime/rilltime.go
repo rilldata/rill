@@ -49,30 +49,30 @@ var (
 		{"Punct", `[-[!@#$%^&*()+_={}\|:;"'<,>.?/]]`},
 		{"Whitespace", `[ \t]+`},
 	})
-	rillTimeParserFinal = participle.MustBuild[Expression](
+	rillTimeParser = participle.MustBuild[Expression](
 		participle.Lexer(rillTimeLexer),
 		participle.Elide("Whitespace"),
 		participle.UseLookahead(25), // We need this to disambiguate certain cases. Mainly for something like `-4d!`
 	)
 	daxNotations = map[string]string{
 		// Mapping for our old rill-<DAX> syntax
-		"TD":  "D~",
-		"WTD": "WTD",
-		"MTD": "MTD",
-		"QTD": "QTD",
-		"YTD": "YTD",
-		"PDC": "D",
-		"PWC": "W",
-		"PMC": "M",
-		"PQC": "Q",
-		"PYC": "Y",
+		"TD":  "D^ to D$",
+		"WTD": "W^ to D$",
+		"MTD": "M^ to D$",
+		"QTD": "Q^ to D$",
+		"YTD": "Y^ to D$",
+		"PDC": "-1D^ to D^",
+		"PWC": "-1W^ to W^",
+		"PMC": "-1M^ to M^",
+		"PQC": "-1Q^ to Q^",
+		"PYC": "-1Y^ to Y^",
 		// TODO: previous period is contextual. should be handled in UI
 		"PP": "",
-		"PD": "-1D to D~",
-		"PW": "-1W to W~",
-		"PM": "-1M to M~",
-		"PQ": "-1Q to Q~",
-		"PY": "-1Y to Y~",
+		"PD": "-1D^ to D^",
+		"PW": "-1W^ to W^",
+		"PM": "-1M^ to M^",
+		"PQ": "-1Q^ to Q^",
+		"PY": "-1Y^ to Y^",
 	}
 	grainMap = map[string]timeutil.TimeGrain{
 		"s": timeutil.TimeGrainSecond,
@@ -261,9 +261,12 @@ func Parse(from string, parseOpts ParseOptions) (*Expression, error) {
 		return nil, err
 	}
 
-	rt, err = rillTimeParserFinal.ParseString("", from)
-	if err != nil {
-		return nil, err
+	if rt == nil {
+		rt, err = rillTimeParser.ParseString("", from)
+		if err != nil {
+			return nil, err
+		}
+		rt.isNewFormat = true
 	}
 
 	err = rt.parse(parseOpts)
@@ -444,7 +447,7 @@ func (o *StartEndInterval) eval(evalOpts EvalOptions, tm time.Time, tz *time.Loc
 	}
 
 	tg := endTg
-	if endTg == timeutil.TimeGrainUnspecified || startTg < endTg {
+	if endTg == timeutil.TimeGrainUnspecified || startTg > endTg {
 		tg = startTg
 	}
 
@@ -797,8 +800,11 @@ func getMinGrain(d duration.StandardDuration) string {
 // truncateWithCorrection truncates time by a grain but corrects for https://en.wikipedia.org/wiki/ISO_week_date#First_week
 // TODO: will adding this directly to timeutil.TruncateTime break anything?
 func truncateWithCorrection(tm time.Time, tg timeutil.TimeGrain, tz *time.Location, firstDay, firstMonth int) time.Time {
-	weekday := int(tm.Weekday())
-	tm = timeutil.TruncateTime(tm, tg, tz, firstDay, firstMonth)
+	weekday := (7 + int(tm.Weekday()) - (firstDay - 1)) % 7
+	newTm := timeutil.TruncateTime(tm, tg, tz, firstDay, firstMonth)
+	if newTm.Equal(tm) {
+		return newTm
+	}
 
 	if tg == timeutil.TimeGrainWeek {
 		if weekday == 0 {
@@ -806,17 +812,17 @@ func truncateWithCorrection(tm time.Time, tg timeutil.TimeGrain, tz *time.Locati
 			weekday = 7
 		}
 		if weekday >= 5 {
-			tm = timeutil.OffsetTime(tm, tg, 1)
+			newTm = timeutil.OffsetTime(newTm, tg, 1)
 		}
 	}
 
-	return tm
+	return newTm
 }
 
 // ceilWithCorrection ceils time by a grain but corrects for https://en.wikipedia.org/wiki/ISO_week_date#First_week
 // TODO: will adding this directly to timeutil.CeilTime break anything?
 func ceilWithCorrection(tm time.Time, tg timeutil.TimeGrain, tz *time.Location, firstDay, firstMonth int) time.Time {
-	weekday := int(tm.Weekday())
+	weekday := (7 + int(tm.Weekday()) - (firstDay - 1)) % 7
 	newTm := timeutil.CeilTime(tm, tg, tz, firstDay, firstMonth)
 	if newTm.Equal(tm) {
 		return newTm
@@ -839,7 +845,7 @@ func ceilWithCorrection(tm time.Time, tg timeutil.TimeGrain, tz *time.Location, 
 func getLowerOrderGrain(start, end time.Time, tg timeutil.TimeGrain) timeutil.TimeGrain {
 	for tg > timeutil.TimeGrainMillisecond {
 		twoLower := timeutil.OffsetTime(end, tg, -2)
-		// if start < end - 2*grain, then we need can return the grain.
+		// if start < end - 2*grain, then we can return the grain.
 		if start.Before(twoLower) || start.Equal(twoLower) {
 			return tg
 		}

@@ -326,11 +326,11 @@ function generateCurrentAndPreviousPeriods(now: DateTime) {
       now.plus({ millisecond: 1 }),
     );
 
-    // tests.push({
-    //   syntax: `${grain}`,
-    //   description: `The full current ${unit}`,
-    //   interval: current,
-    // });
+    tests.push({
+      syntax: `${grain}!`,
+      description: `The full current ${unit}`,
+      interval: current,
+    });
 
     tests.push({
       syntax: `${grain}${START_CHARACTER} to watermark`,
