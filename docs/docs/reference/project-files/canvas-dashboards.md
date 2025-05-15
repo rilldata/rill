@@ -30,7 +30,7 @@ In your Rill project directory, create a explore dashboard, `<dashboard_name>.ya
       - **`image`** - provide a `url` to embed into canvas dashboard
       - **`table`** - similar to Pivot table, add dimensions and measures to visual your data.
       - **`heatmap`** - Heat Map chart to visualize distribution of data.
-      - **`pie_chart`** - Pie or Donut chart to displays sums of total.
+      - **`donut_chart`** - Donut or Pie chart to displays sums of total.
   
   :::tip 
         Each component varies slightly on what keys are required. For the most part, each component will require a `metrics_view` (except for text and image.) The charts will require a `x` and `y` valeu To build a successful component via code, take a look at what gets generated in the YAML file when select various features in the visual canvas editor.
