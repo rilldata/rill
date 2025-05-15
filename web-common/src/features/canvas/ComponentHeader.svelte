@@ -15,9 +15,11 @@
 </script>
 
 {#if title || description}
-  <div class="w-full h-fit flex flex-col bg-white px-4 pt-2 pb-1 items-start">
+  <div
+    class="component-header-container w-full h-fit flex flex-col bg-white px-4 pt-2 pb-1 items-start"
+  >
     {#if title}
-      <div class="flex items-center gap-x-2">
+      <div class="header-row">
         <h1 class:faint class="title">{title}</h1>
         {#if atleastOneFilter}
           <LocalFiltersHeader {component} />
@@ -25,7 +27,7 @@
       </div>
     {/if}
     {#if description}
-      <div class="flex items-center gap-x-2">
+      <div class="header-row">
         <h2 class="description">{description}</h2>
         {#if !title && atleastOneFilter}
           <LocalFiltersHeader {component} />
@@ -34,15 +36,30 @@
     {/if}
   </div>
 {:else if atleastOneFilter}
-  <div class="px-2 py-1">
+  <div class="w-full px-2 py-1">
     <LocalFiltersHeader {component} />
   </div>
 {/if}
 
 <style lang="postcss">
+  .component-header-container {
+    container-type: inline-size;
+  }
+
+  .header-row {
+    @apply flex flex-col items-start gap-y-1 gap-x-2 w-full;
+  }
+
+  @container (min-width: 480px) {
+    .header-row {
+      @apply flex-row items-center;
+    }
+  }
+
   .title {
     font-size: 15px;
     line-height: 26px;
+    @apply flex-shrink-0;
     @apply font-medium text-gray-700 truncate;
   }
 

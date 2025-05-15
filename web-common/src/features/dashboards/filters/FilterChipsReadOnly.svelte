@@ -29,6 +29,8 @@ The main feature-set component for dashboard filters
   // But we need resolved start and end based on current time in dimension filters to get query for accurate results.
   export let queryTimeStart: string | undefined = undefined;
   export let queryTimeEnd: string | undefined = undefined;
+  export let hasBoldTimeRange: boolean = true;
+  export let wrapChips: boolean = true;
 
   $: dimensionIdMap = getMapFromArray(
     dimensions,
@@ -51,13 +53,16 @@ The main feature-set component for dashboard filters
 </script>
 
 <div
-  class="relative flex flex-row flex-wrap gap-x-2 gap-y-2 items-center"
+  class="relative flex flex-row items-center gap-x-2 gap-y-2 w-full max-w-full"
+  class:scrollable-chips={!wrapChips}
+  class:flex-wrap={wrapChips}
   aria-label="Readonly Filter Chips"
 >
   {#if displayTimeRange}
     <TimeRangeReadOnly
       timeRange={displayTimeRange}
       comparisonTimeRange={displayComparisonTimeRange}
+      {hasBoldTimeRange}
     />
   {/if}
   {#if dimensionFilters.length > 0}
@@ -92,3 +97,14 @@ The main feature-set component for dashboard filters
     {/each}
   {/if}
 </div>
+
+<style lang="postcss">
+  .scrollable-chips {
+    @apply overflow-x-auto whitespace-nowrap;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .scrollable-chips::-webkit-scrollbar {
+    @apply hidden;
+  }
+</style>

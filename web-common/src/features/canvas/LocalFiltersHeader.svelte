@@ -35,14 +35,17 @@
   $: dimensionsWithInlistFilter = localFilters.dimensionsWithInlistFilter;
   $: selectedTimeRange = localTimeControls.selectedTimeRange;
   $: showTimeComparison = localTimeControls.showTimeComparison;
-  $: displayTimeRange = $timeAndFilterStore.timeRange;
+  $: displayTimeRange = {
+    ...$timeAndFilterStore.timeRange,
+    isoDuration: $selectedTimeRange?.name,
+  };
   $: displayComparisonTimeRange = $timeAndFilterStore.comparisonTimeRange;
 
   $: hasTimeFilters = "time_filters" in $specStore && $specStore.time_filters;
 </script>
 
 {#if "metrics_view" in $specStore}
-  <div class="flex items-center gap-x-2">
+  <div class="flex items-center gap-x-2 w-full max-w-full">
     <Filter size="16px" className="text-gray-400" />
     <FilterChipsReadOnly
       metricsViewName={$specStore.metrics_view}
@@ -57,6 +60,8 @@
       displayTimeRange={hasTimeFilters ? displayTimeRange : undefined}
       queryTimeStart={$selectedTimeRange?.start?.toISOString()}
       queryTimeEnd={$selectedTimeRange?.end?.toISOString()}
+      hasBoldTimeRange={false}
+      wrapChips={false}
     />
   </div>
 {/if}
