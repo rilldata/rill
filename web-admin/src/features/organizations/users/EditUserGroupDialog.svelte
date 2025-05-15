@@ -182,8 +182,6 @@
     },
   );
 
-  $: console.log("organizationUsers: ", organizationUsers);
-
   $: displayedMembers = [
     ...($listUsergroupMemberUsers.data?.members.filter(
       (member) => !pendingRemovals.includes(member.userEmail),
@@ -202,8 +200,6 @@
           email,
       })),
   ];
-
-  $: console.log("displayedMembers: ", displayedMembers);
 
   $: coercedUsersToOptions = organizationUsers.map((user) => {
     return {

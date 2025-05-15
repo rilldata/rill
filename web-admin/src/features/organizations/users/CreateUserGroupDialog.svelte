@@ -168,12 +168,12 @@
   );
 
   $: coercedUsersToOptions = organizationUsers
-    .filter(
-      (user) =>
-        !selectedUsers.some(
-          (selected) => selected.userEmail === user.userEmail,
-        ) && !pendingAdditions.includes(user.userEmail),
-    )
+    // .filter(
+    //   (user) =>
+    //     !selectedUsers.some(
+    //       (selected) => selected.userEmail === user.userEmail,
+    //     ) && !pendingAdditions.includes(user.userEmail),
+    // )
     .map((user) => ({
       value: user.userEmail,
       label: user.userName,
