@@ -10,7 +10,7 @@ import (
 
 // DeployCmd is the guided tour for deploying rill projects to rill cloud.
 func DeployCmd(ch *cmdutil.Helper) *cobra.Command {
-	var upload, github, zipship bool
+	var managed, github, archive bool
 	opts := &project.DeployOpts{}
 
 	deployCmd := &cobra.Command{
