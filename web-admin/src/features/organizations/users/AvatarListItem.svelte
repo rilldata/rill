@@ -17,6 +17,7 @@
   export let leftSpacing: boolean = true;
   export let showGuestChip: boolean = false;
   export let showManage: boolean = false;
+  export let parentDivClass: string = "";
 
   function getInitials(name: string) {
     return name.charAt(0).toUpperCase();
@@ -31,7 +32,7 @@
 </script>
 
 <div
-  class={cn("flex items-center gap-2 py-2", {
+  class={cn(parentDivClass, "flex items-center gap-2 py-2", {
     "pl-2": leftSpacing,
   })}
 >
