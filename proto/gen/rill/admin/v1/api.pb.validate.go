@@ -25316,6 +25316,35 @@ func (m *CreateManagedGitRepoResponse) validate(all bool) error {
 
 	// no validation rules for DefaultBranch
 
+	if all {
+		switch v := interface{}(m.GetPasswordExpiresAt()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, CreateManagedGitRepoResponseValidationError{
+					field:  "PasswordExpiresAt",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, CreateManagedGitRepoResponseValidationError{
+					field:  "PasswordExpiresAt",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetPasswordExpiresAt()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return CreateManagedGitRepoResponseValidationError{
+				field:  "PasswordExpiresAt",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
 	if len(errors) > 0 {
 		return CreateManagedGitRepoResponseMultiError(errors)
 	}
@@ -25764,6 +25793,35 @@ func (m *GetCloneCredentialsResponse) validate(all bool) error {
 	// no validation rules for GitUsername
 
 	// no validation rules for GitPassword
+
+	if all {
+		switch v := interface{}(m.GetGitPasswordExpiresAt()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, GetCloneCredentialsResponseValidationError{
+					field:  "GitPasswordExpiresAt",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, GetCloneCredentialsResponseValidationError{
+					field:  "GitPasswordExpiresAt",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetGitPasswordExpiresAt()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return GetCloneCredentialsResponseValidationError{
+				field:  "GitPasswordExpiresAt",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
 
 	// no validation rules for GitSubpath
 
