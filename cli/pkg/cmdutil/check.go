@@ -33,6 +33,11 @@ func CheckAuth(ch *Helper) PreRunCheck {
 
 func CheckOrganization(ch *Helper) PreRunCheck {
 	return func(cmd *cobra.Command, args []string) error {
+		// If the command is run in local mode, skip the check.
+		if cmd.Flags().Lookup("local").Changed {
+			return nil
+		}
+
 		if ch.Org != "" {
 			return nil
 		}
