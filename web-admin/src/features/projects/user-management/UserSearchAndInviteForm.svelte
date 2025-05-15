@@ -20,6 +20,7 @@
     V1MemberUsergroup,
   } from "@rilldata/web-admin/client";
   import AvatarListItem from "@rilldata/web-admin/features/organizations/users/AvatarListItem.svelte";
+  import Combobox from "@rilldata/web-common/components/combobox/Combobox.svelte";
 
   export let organization: string;
   export let project: string;
@@ -33,26 +34,41 @@
     group?: V1MemberUsergroup;
   }[] = [];
 
+  $: console.log(searchUsersList);
+
+  type PendingUser = {
+    value: string;
+    name: string;
+    label: string;
+  };
+
   let searchText = "";
-  let showDropdown = false;
+  let comboboxOptions = searchUsersList.map((user) => ({
+    value: user.value,
+    label: user.label,
+  }));
 
-  // Filter searchUsersList based on searchText
-  $: filteredSearchList = searchText
-    ? searchUsersList.filter((user) => {
-        const searchLower = searchText.toLowerCase();
-        return (
-          user.name.toLowerCase().includes(searchLower) ||
-          user.value.toLowerCase().includes(searchLower) ||
-          user.label.toLowerCase().includes(searchLower)
-        );
-      })
-    : [];
+  // Array to store pending selections
+  let pendingSelections: string[] = [];
+  let pendingUsers: PendingUser[] = [];
 
-  $: showDropdown = searchText.length > 0 && filteredSearchList.length > 0;
-
-  function handleInputChange(event: Event) {
-    const input = event.target as HTMLInputElement;
-    searchText = input.value;
+  function updatePendingUsers() {
+    pendingUsers = pendingSelections.map((value) => {
+      const user = searchUsersList.find((u) => u.value === value);
+      if (user) {
+        return {
+          value: user.value,
+          name: user.name,
+          label: user.label,
+        };
+      } else {
+        return {
+          value,
+          name: value,
+          label: value,
+        };
+      }
+    });
   }
 
   const queryClient = useQueryClient();
@@ -77,7 +93,9 @@
     }),
   );
 
-  const { form, errors, enhance, submit, submitting } = superForm(
+  let needsReset = false;
+
+  const { form, errors, enhance, submit, submitting, reset } = superForm(
     defaults(initialValues, schema),
     {
       SPA: true,
@@ -85,13 +103,19 @@
       async onUpdate({ form }) {
         if (!form.valid) return;
         const values = form.data;
-        const emails = values.emails.map((e) => e.trim()).filter(Boolean);
-        if (emails.length === 0) return;
+
+        // Combine text input emails with selected users/groups
+        const emailsToInvite = [
+          ...values.emails.map((e) => e.trim()).filter(Boolean),
+          ...pendingSelections,
+        ];
+
+        if (emailsToInvite.length === 0) return;
 
         const succeeded = [];
         let errored = false;
         await Promise.all(
-          emails.map(async (email) => {
+          emailsToInvite.map(async (email) => {
             try {
               await $userInvite.mutateAsync({
                 organization,
@@ -132,6 +156,13 @@
           type: "success",
           message: `Invited ${succeeded.length} ${succeeded.length === 1 ? "person" : "people"} as ${values.role}`,
         });
+
+        // Mark form for reset instead of directly changing the store
+        needsReset = true;
+        pendingSelections = [];
+        pendingUsers = [];
+        searchText = "";
+
         onInvite();
         if (errored) {
           // TODO: there no mocks for this yet, but will be added in future.
@@ -142,117 +173,139 @@
     },
   );
 
+  // Reset form at the top level when needed
+  $: if (needsReset) {
+    reset();
+    needsReset = false;
+  }
+
   $: hasInvalidEmails = $form.emails.some(
     (e, i) => e.length > 0 && $errors.emails?.[i] !== undefined,
   );
 
-  // Update search text when input changes
-  $: {
-    if ($form.emails.length > 0) {
-      searchText = $form.emails[$form.emails.length - 1];
-    }
+  function getMetadata(value: string) {
+    const user = searchUsersList.find((u) => u.value === value);
+    if (!user) return undefined;
+    return {
+      name: user.name,
+      photoUrl: undefined,
+    };
   }
 
-  function handleUserSelect(user: (typeof searchUsersList)[0]) {
-    if (!user) return;
+  function handleSelectedChange(selected: any) {
+    if (!selected || selected.length === 0) return;
 
-    try {
-      $userInvite.mutateAsync({
-        organization,
-        project,
-        data: {
-          email: user.value,
-          role: $form.role,
-        },
-      });
+    const lastSelected = selected[selected.length - 1];
+    if (!lastSelected) return;
 
-      // Clear the input after successful invite
-      $form.emails = [""];
-      searchText = "";
-      showDropdown = false;
-
-      queryClient.invalidateQueries({
-        queryKey: getAdminServiceListProjectMemberUsersQueryKey(
-          organization,
-          project,
-        ),
-      });
-
-      queryClient.invalidateQueries({
-        queryKey: getAdminServiceListProjectInvitesQueryKey(
-          organization,
-          project,
-        ),
-      });
-
-      queryClient.invalidateQueries({
-        queryKey:
-          getAdminServiceListOrganizationMemberUsersQueryKey(organization),
-        type: "all",
-      });
-
-      eventBus.emit("notification", {
-        type: "success",
-        message: `Invited ${user.name} as ${$form.role}`,
-      });
-      onInvite();
-    } catch (error) {
-      eventBus.emit("notification", {
-        type: "error",
-        message: "Error inviting user",
-      });
+    const user = searchUsersList.find((u) => u.value === lastSelected.value);
+    if (user) {
+      // Add to pending selections instead of immediately inviting
+      if (!pendingSelections.includes(user.value)) {
+        pendingSelections = [...pendingSelections, user.value];
+        updatePendingUsers();
+      }
+    } else if (RFC5322EmailRegex.test(lastSelected.value)) {
+      // Valid email that's not in the search list
+      if (!pendingSelections.includes(lastSelected.value)) {
+        pendingSelections = [...pendingSelections, lastSelected.value];
+        updatePendingUsers();
+      }
+    } else {
+      // Regular text input
+      $form.emails = [$form.emails[0] || lastSelected.value];
     }
+
+    // Clear search text after selection
+    searchText = "";
+  }
+
+  // Update combobox options when searchUsersList changes
+  $: {
+    comboboxOptions = searchUsersList.map((user) => ({
+      value: user.value,
+      label: user.label,
+    }));
+  }
+
+  function removePendingSelection(value: string) {
+    pendingSelections = pendingSelections.filter((v) => v !== value);
+    updatePendingUsers();
+  }
+
+  function handleInvite() {
+    // For direct text input
+    if (searchText && RFC5322EmailRegex.test(searchText)) {
+      if (!pendingSelections.includes(searchText)) {
+        pendingSelections = [...pendingSelections, searchText];
+        updatePendingUsers();
+      }
+      searchText = "";
+    }
+
+    submit();
   }
 </script>
 
 <div class="flex flex-col gap-4 w-full">
   <form
     id="user-invite-form"
-    on:submit|preventDefault={submit}
+    on:submit|preventDefault={handleInvite}
     class="w-full"
     use:enhance
   >
     <div class="relative">
-      <MultiInput
-        id="emails"
-        placeholder="Search users or enter email addresses"
-        contentClassName="relative"
-        bind:values={$form.emails}
-        errors={$errors.emails}
-        singular="email"
-        plural="emails"
-        preventFocus={true}
-        on:input={handleInputChange}
-      >
-        <div slot="within-input" class="h-full items-center flex">
+      <div class="flex items-center">
+        <div class="flex-grow">
+          <Combobox
+            options={comboboxOptions}
+            bind:searchValue={searchText}
+            placeholder="Search users or enter email addresses"
+            onSelectedChange={handleSelectedChange}
+            {getMetadata}
+          />
+        </div>
+        <div class="ml-2 h-full">
           <UserRoleSelect bind:value={$form.role} />
         </div>
-        <svelte:fragment slot="beside-input" let:hasSomeValue>
+        <div class="ml-2">
           <Button
             submitForm
             type="primary"
             form="user-invite-form"
             loading={$submitting}
-            disabled={hasInvalidEmails || !hasSomeValue}
+            disabled={hasInvalidEmails &&
+              pendingSelections.length === 0 &&
+              searchText.length === 0}
             forcedStyle="height: 32px !important; padding-left: 20px; padding-right: 20px;"
           >
             Invite
           </Button>
-        </svelte:fragment>
-      </MultiInput>
+        </div>
+      </div>
 
-      {#if showDropdown}
-        <div
-          class="absolute w-full mt-1 z-50 bg-white rounded-md shadow-lg border border-gray-200 max-h-[208px] overflow-y-auto"
-        >
-          {#each filteredSearchList as user (user.value)}
-            <button
-              class="flex w-full items-center px-4 py-2 text-sm hover:bg-gray-100 cursor-pointer"
-              on:click={() => handleUserSelect(user)}
+      {#if pendingSelections.length > 0}
+        <div class="mt-2 flex flex-wrap gap-2">
+          {#each pendingUsers as user}
+            <div
+              class="flex items-center bg-gray-100 rounded-md px-2 py-1 text-sm"
             >
-              <AvatarListItem name={user.name} email={user.value} />
-            </button>
+              <span>{user.name}</span>
+              <button
+                type="button"
+                class="ml-2 text-gray-500 hover:text-gray-700"
+                on:click={() => removePendingSelection(user.value)}
+              >
+                ×
+              </button>
+            </div>
           {/each}
+        </div>
+      {/if}
+
+      {#if $errors.emails && Object.values($errors.emails).some(Boolean)}
+        <div class="text-red-500 text-sm mt-1">
+          {Object.values($errors.emails).filter(Boolean).join(", ")}
         </div>
       {/if}
     </div>

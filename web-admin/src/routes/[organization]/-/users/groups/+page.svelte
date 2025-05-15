@@ -128,6 +128,6 @@
 <EditUserGroupDialog
   bind:open={isEditUserGroupDialogOpen}
   groupName={userGroupName}
-  searchUsersList={$listOrganizationMemberUsers.data?.members ?? []}
+  organizationUsers={$listOrganizationMemberUsers.data?.members ?? []}
   currentUserEmail={$currentUser.data?.user.email}
 />
