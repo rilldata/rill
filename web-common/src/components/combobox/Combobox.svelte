@@ -3,6 +3,7 @@
   import { Combobox } from "bits-ui";
   import type { Selected } from "bits-ui";
   import { Check } from "lucide-svelte";
+  import { onMount } from "svelte";
 
   type Option = {
     value: string;
@@ -23,6 +24,16 @@
     value: string,
   ) => { name: string; photoUrl?: string } | undefined = () => undefined;
 
+  let initialSelectedItems: Selected<string>[] = [];
+
+  onMount(() => {
+    // Initialize the selected state for bits-ui combobox
+    initialSelectedItems = selectedValues.map((value) => ({
+      value,
+      label: options.find((opt) => opt.value === value)?.label || value,
+    }));
+  });
+
   $: if (!Array.isArray(options)) {
     console.error("Combobox: options must be an array");
     options = [];
@@ -37,6 +48,14 @@
         );
       })
     : options;
+
+  // Update initialSelectedItems when selectedValues changes
+  $: if (selectedValues && selectedValues.length > 0) {
+    initialSelectedItems = selectedValues.map((value) => ({
+      value,
+      label: options.find((opt) => opt.value === value)?.label || value,
+    }));
+  }
 
   function handleSelectedChange(selected: Selected<string>[] | undefined) {
     if (disabled) return;
@@ -58,6 +77,7 @@
   onSelectedChange={handleSelectedChange}
   multiple={true}
   bind:inputValue={searchValue}
+  selected={initialSelectedItems}
   {disabled}
   {required}
 >
@@ -98,11 +118,10 @@
             photoUrl={getValidMetadata(item.value)?.photoUrl}
             leftSpacing={false}
           />
-          {#if selectedValues.includes(item.value)}
-            <Combobox.ItemIndicator class="ml-auto">
-              <Check size="16px" />
-            </Combobox.ItemIndicator>
-          {/if}
+          <div class="grow"></div>
+          <Combobox.ItemIndicator>
+            <Check size="16px" />
+          </Combobox.ItemIndicator>
         </Combobox.Item>
       {/each}
     {/if}
