@@ -2742,6 +2742,7 @@ export type QueryServiceExportReportBody = {
   limit?: string;
   format?: V1ExportFormat;
   executionTime?: string;
+  includeHeader?: boolean;
 };
 
 export type RuntimeServiceGetResourceParams = {

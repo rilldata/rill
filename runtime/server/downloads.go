@@ -72,10 +72,11 @@ func (s *Server) ExportReport(ctx context.Context, req *runtimev1.ExportReportRe
 
 	// Note - We are passing caller's user attributes to generateDownloadToken which may not always be the creator's attributes in case of external user's magic token. This is different from the alerts use case.
 	tkn, err := s.generateDownloadToken(&runtimev1.ExportRequest{
-		InstanceId: req.InstanceId,
-		Limit:      req.Limit,
-		Format:     req.Format,
-		Query:      qry,
+		InstanceId:    req.InstanceId,
+		Limit:         req.Limit,
+		Format:        req.Format,
+		Query:         qry,
+		IncludeHeader: req.IncludeHeader,
 	}, &runtime.SecurityClaims{UserAttributes: auth.GetClaims(ctx).SecurityClaims().UserAttributes})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to generate download token: %s", err.Error())

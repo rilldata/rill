@@ -483,6 +483,11 @@ export class ExportReportRequest extends Message<ExportReportRequest> {
    */
   executionTime?: Timestamp;
 
+  /**
+   * @generated from field: bool include_header = 6;
+   */
+  includeHeader = false;
+
   constructor(data?: PartialMessage<ExportReportRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -496,6 +501,7 @@ export class ExportReportRequest extends Message<ExportReportRequest> {
     { no: 3, name: "limit", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
     { no: 4, name: "format", kind: "enum", T: proto3.getEnumType(ExportFormat) },
     { no: 5, name: "execution_time", kind: "message", T: Timestamp },
+    { no: 6, name: "include_header", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ExportReportRequest {

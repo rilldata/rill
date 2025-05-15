@@ -307,6 +307,7 @@ message ExportReportRequest {
   int64 limit = 3;
   ExportFormat format = 4;
   google.protobuf.Timestamp execution_time = 5;
+  bool include_header = 6;
 }
 
 message ExportReportResponse {

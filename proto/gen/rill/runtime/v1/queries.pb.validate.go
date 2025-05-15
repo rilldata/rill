@@ -936,6 +936,8 @@ func (m *ExportReportRequest) validate(all bool) error {
 		}
 	}
 
+	// no validation rules for IncludeHeader
+
 	if len(errors) > 0 {
 		return ExportReportRequestMultiError(errors)
 	}

@@ -118,15 +118,21 @@ func (e *olapToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 }
 
 func writeCSV(res *drivers.Result, fw io.Writer, headerMetadata drivers.FileHeaderMetaData) error {
-	// writing header
+	w := csv.NewWriter(fw)
+
+	// Write headerMetadata first if it's provided
 	if headerMetadata != "" {
-		_, err := fw.Write([]byte(headerMetadata))
-		if err != nil {
-			return err
+		// Split the headerMetadata into multiple lines
+		lines := strings.Split(string(headerMetadata), "\n")
+		// Write each line of the headerMetadata as a new row
+		for _, line := range lines[:len(lines)-1] {
+			// Keep empty lines as-is
+			err := w.Write([]string{line})
+			if err != nil {
+				return err
+			}
 		}
 	}
-
-	w := csv.NewWriter(fw)
 
 	strs := make([]string, len(res.Schema.Fields))
 	for i, f := range res.Schema.Fields {

@@ -2559,6 +2559,8 @@ paths:
               executionTime:
                 type: string
                 format: date-time
+              includeHeader:
+                type: boolean
       tags:
         - QueryService
   /v1/instances/{instanceId}/resource:
