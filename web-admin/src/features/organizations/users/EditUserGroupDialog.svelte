@@ -8,6 +8,7 @@
     getAdminServiceListUsergroupMemberUsersQueryKey,
     createAdminServiceRemoveUsergroupMemberUser,
     createAdminServiceRenameUsergroup,
+    createAdminServiceListUsergroupMemberUsers,
   } from "@rilldata/web-admin/client";
   import Avatar from "@rilldata/web-common/components/avatar/Avatar.svelte";
   import { Button } from "@rilldata/web-common/components/button/index.js";
@@ -36,15 +37,29 @@
   let selectedUsers: V1OrganizationMemberUser[] = [];
   let pendingAdditions: string[] = [];
   let pendingRemovals: string[] = [];
+  let initialized = false;
 
   $: organization = $page.params.organization;
+  $: listUsergroupMemberUsers = createAdminServiceListUsergroupMemberUsers(
+    organization,
+    groupName,
+  );
+  $: userGroupMembersUsers = $listUsergroupMemberUsers.data?.members ?? [];
+  $: if (
+    userGroupMembersUsers.length > 0 &&
+    selectedUsers.length === 0 &&
+    !initialized
+  ) {
+    selectedUsers = [...userGroupMembersUsers];
+    initialized = true;
+  }
 
   const queryClient = useQueryClient();
   const addUsergroupMemberUser = createAdminServiceAddUsergroupMemberUser();
   const removeUserGroupMember = createAdminServiceRemoveUsergroupMemberUser();
   const renameUserGroup = createAdminServiceRenameUsergroup();
 
-  async function handleRemove(email: string) {
+  function handleRemove(email: string) {
     selectedUsers = selectedUsers.filter((user) => user.userEmail !== email);
     pendingRemovals = [...pendingRemovals, email];
     pendingAdditions = pendingAdditions.filter((e) => e !== email);
@@ -190,8 +205,6 @@
     label: user.userName,
   }));
 
-  $: console.log("selectedUsers: ", selectedUsers);
-
   function getMetadata(email: string) {
     const user = organizationUsers.find((user) => user.userEmail === email);
     return user
@@ -205,6 +218,7 @@
     selectedUsers = [];
     pendingAdditions = [];
     pendingRemovals = [];
+    initialized = false;
   }
 </script>
 
