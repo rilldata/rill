@@ -69,6 +69,7 @@
 
   .description {
     font-size: 13px;
+    @apply flex-shrink-0;
     @apply text-gray-500 font-normal leading-none;
   }
 </style>

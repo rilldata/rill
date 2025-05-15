@@ -45,7 +45,7 @@
 </script>
 
 {#if "metrics_view" in $specStore}
-  <div class="flex items-center gap-x-2 w-full max-w-full">
+  <div class="flex items-center gap-x-2 w-full max-w-full overflow-x-auto">
     <Filter size="16px" className="text-gray-400" />
     <FilterChipsReadOnly
       metricsViewName={$specStore.metrics_view}
