@@ -20,6 +20,7 @@ export type ChartType =
   | "area_chart"
   | "stacked_bar"
   | "stacked_bar_normalized"
+  | "donut_chart"
   | "pie_chart"
   | "heatmap";
 

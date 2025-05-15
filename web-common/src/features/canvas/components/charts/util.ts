@@ -15,7 +15,7 @@ export function generateSpec(
   data: ChartDataResult,
 ) {
   if (data.isFetching || data.error) return {};
-  return CHART_CONFIG[chartType].generateSpec(rillChartSpec, data);
+  return CHART_CONFIG[chartType]?.generateSpec(rillChartSpec, data);
 }
 
 export function isChartLineLike(chartType: ChartType) {
