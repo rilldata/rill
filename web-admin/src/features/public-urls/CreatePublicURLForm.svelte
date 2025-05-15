@@ -1,8 +1,8 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import {
-      createAdminServiceIssueMagicAuthToken,
-      getAdminServiceListMagicAuthTokensQueryKey,
+    createAdminServiceIssueMagicAuthToken,
+    getAdminServiceListMagicAuthTokensQueryKey,
   } from "@rilldata/web-admin/client";
   import { Button, IconButton } from "@rilldata/web-common/components/button";
   import Calendar from "@rilldata/web-common/components/date-picker/Calendar.svelte";
@@ -11,11 +11,11 @@
   import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
   import Check from "@rilldata/web-common/components/icons/Check.svelte";
   import {
-      Popover,
-      PopoverContent,
-      PopoverTrigger,
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
   } from "@rilldata/web-common/components/popover";
-  import FilterChipsReadOnly from "@rilldata/web-common/features/dashboards/filters/FilterChipsReadOnly.svelte";
+  import ExploreFilterChipsReadOnly from "@rilldata/web-common/features/dashboards/filters/ExploreFilterChipsReadOnly.svelte";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
@@ -28,13 +28,12 @@
   import { yup } from "sveltekit-superforms/adapters";
   import { object, string } from "yup";
   import {
-      convertDateToMinutes,
-      getExploreFields,
-      getSanitizedExploreStateParam,
-      hasDashboardDimensionThresholdFilter,
-      hasDashboardWhereFilter,
+    convertDateToMinutes,
+    getExploreFields,
+    getSanitizedExploreStateParam,
+    hasDashboardDimensionThresholdFilter,
+    hasDashboardWhereFilter,
   } from "./form-utils";
-/form-utils";
 
   const queryClient = useQueryClient();
   const StateManagers = getStateManagers();
