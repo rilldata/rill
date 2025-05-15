@@ -31,6 +31,13 @@ var spec = drivers.Spec{
 			Type: drivers.FilePropertyType,
 			Hint: "Enter path of file to load from.",
 		},
+		{
+			Key:         "project_id",
+			Type:        drivers.StringPropertyType,
+			Required:    false,
+			DisplayName: "Project ID",
+			Description: "Default Google project ID.",
+		},
 	},
 	// Important: Any edits to the below properties must be accompanied by changes to the client-side form validation schemas.
 	SourceProperties: []*drivers.PropertySpec{
@@ -75,6 +82,7 @@ type driver struct{}
 
 type configProperties struct {
 	SecretJSON      string `mapstructure:"google_application_credentials"`
+	ProjectID       string `mapstructure:"project_id"`
 	AllowHostAccess bool   `mapstructure:"allow_host_access"`
 }
 
@@ -125,7 +133,7 @@ func (c *Connection) Ping(ctx context.Context) error {
 
 // Driver implements drivers.Connection.
 func (c *Connection) Driver() string {
-	return "gcs"
+	return "bigquery"
 }
 
 // Config implements drivers.Connection.
@@ -218,26 +226,6 @@ func (c *Connection) AsNotifier(properties map[string]any) (drivers.Notifier, er
 	return nil, drivers.ErrNotNotifier
 }
 
-type sourceProperties struct {
-	ProjectID string `mapstructure:"project_id"`
-	SQL       string `mapstructure:"sql"`
-}
-
-func parseSourceProperties(props map[string]any) (*sourceProperties, error) {
-	conf := &sourceProperties{}
-	err := mapstructure.Decode(props, conf)
-	if err != nil {
-		return nil, err
-	}
-	if conf.SQL == "" {
-		return nil, fmt.Errorf("property 'sql' is mandatory for connector \"bigquery\"")
-	}
-	if conf.ProjectID == "" {
-		conf.ProjectID = bigquery.DetectProjectID
-	}
-	return conf, err
-}
-
 func (c *Connection) clientOption(ctx context.Context) ([]option.ClientOption, error) {
 	scopes := []string{
 		"https://www.googleapis.com/auth/cloud-platform",
@@ -248,4 +236,28 @@ func (c *Connection) clientOption(ctx context.Context) ([]option.ClientOption, e
 		return nil, err
 	}
 	return []option.ClientOption{option.WithCredentials(creds)}, nil
+}
+
+type sourceProperties struct {
+	ProjectID string `mapstructure:"project_id"`
+	SQL       string `mapstructure:"sql"`
+}
+
+func (c *Connection) parseSourceProperties(props map[string]any) (*sourceProperties, error) {
+	conf := &sourceProperties{}
+	err := mapstructure.Decode(props, conf)
+	if err != nil {
+		return nil, err
+	}
+	if conf.SQL == "" {
+		return nil, fmt.Errorf("property 'sql' is mandatory for connector \"bigquery\"")
+	}
+	if conf.ProjectID == "" {
+		if c.config.ProjectID != "" {
+			conf.ProjectID = c.config.ProjectID
+		} else {
+			conf.ProjectID = bigquery.DetectProjectID
+		}
+	}
+	return conf, err
 }

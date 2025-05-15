@@ -7,7 +7,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
 	"github.com/rilldata/rill/runtime/pkg/observability"
@@ -20,12 +19,9 @@ type tableWriteMetrics struct {
 	duration time.Duration
 }
 
-func (c *Connection) createTableAsSelect(ctx context.Context, name, sql string, tableOpts map[string]any) (*tableWriteMetrics, error) {
+func (c *Connection) createTableAsSelect(ctx context.Context, name, sql string, outputProps *ModelOutputProperties) (*tableWriteMetrics, error) {
 	ctx = contextWithQueryID(ctx)
-	outputProps := &ModelOutputProperties{}
-	if err := mapstructure.WeakDecode(tableOpts, outputProps); err != nil {
-		return nil, fmt.Errorf("failed to parse output properties: %w", err)
-	}
+
 	var onClusterClause string
 	if c.config.Cluster != "" {
 		onClusterClause = "ON CLUSTER " + safeSQLName(c.config.Cluster)
@@ -70,8 +66,9 @@ type InsertTableOptions struct {
 
 func (c *Connection) insertTableAsSelect(ctx context.Context, name, sql string, opts *InsertTableOptions) (*tableWriteMetrics, error) {
 	ctx = contextWithQueryID(ctx)
+	start := time.Now()
+
 	if opts.Strategy == drivers.IncrementalStrategyAppend {
-		t := time.Now()
 		err := c.Exec(ctx, &drivers.Statement{
 			Query:    fmt.Sprintf("INSERT INTO %s %s", safeSQLName(name), sql),
 			Priority: 1,
@@ -79,7 +76,7 @@ func (c *Connection) insertTableAsSelect(ctx context.Context, name, sql string, 
 		if err != nil {
 			return nil, err
 		}
-		return &tableWriteMetrics{duration: time.Since(t)}, nil
+		return &tableWriteMetrics{duration: time.Since(start)}, nil
 	}
 
 	if opts.Strategy == drivers.IncrementalStrategyPartitionOverwrite {
@@ -126,7 +123,6 @@ func (c *Connection) insertTableAsSelect(ctx context.Context, name, sql string, 
 			return nil, err
 		}
 		// insert into temp table
-		t := time.Now()
 		err = c.Exec(ctx, &drivers.Statement{
 			Query:    fmt.Sprintf("INSERT INTO %s %s", safeSQLName(tempName), sql),
 			Priority: 1,
@@ -134,7 +130,6 @@ func (c *Connection) insertTableAsSelect(ctx context.Context, name, sql string, 
 		if err != nil {
 			return nil, err
 		}
-		metrics := &tableWriteMetrics{duration: time.Since(t)}
 		// list partitions from the temp table
 		partitions, err := c.getTablePartitions(ctx, tempName)
 		if err != nil {
@@ -152,7 +147,7 @@ func (c *Connection) insertTableAsSelect(ctx context.Context, name, sql string, 
 				return nil, err
 			}
 		}
-		return metrics, nil
+		return &tableWriteMetrics{duration: time.Since(start)}, nil
 	}
 
 	if opts.Strategy == drivers.IncrementalStrategyMerge {
@@ -173,7 +168,6 @@ func (c *Connection) insertTableAsSelect(ctx context.Context, name, sql string, 
 			return nil, fmt.Errorf("clickhouse: merge strategy requires ReplacingMergeTree engine")
 		}
 
-		t := time.Now()
 		// insert into table using the merge strategy
 		err = c.Exec(ctx, &drivers.Statement{
 			Query:    fmt.Sprintf("INSERT INTO %s %s %s", safeSQLName(name), onClusterClause, sql),
@@ -182,8 +176,9 @@ func (c *Connection) insertTableAsSelect(ctx context.Context, name, sql string, 
 		if err != nil {
 			return nil, err
 		}
-		return &tableWriteMetrics{duration: time.Since(t)}, nil
+		return &tableWriteMetrics{duration: time.Since(start)}, nil
 	}
+
 	return nil, fmt.Errorf("incremental insert strategy %q not supported", opts.Strategy)
 }
 
@@ -227,7 +222,7 @@ func (c *Connection) dropTable(ctx context.Context, name string) error {
 		// then drop the local table in case of cluster
 		if onCluster && !strings.HasSuffix(name, "_local") {
 			return c.Exec(ctx, &drivers.Statement{
-				Query:    fmt.Sprintf("DROP TABLE %s %s", safelocalTableName(name), onClusterClause),
+				Query:    fmt.Sprintf("DROP TABLE %s %s", safeSQLName(localTableName(name)), onClusterClause),
 				Priority: 100,
 			})
 		}
@@ -283,7 +278,7 @@ func (c *Connection) renameEntity(ctx context.Context, oldName, newName string) 
 			return err
 		}
 		res.Close()
-		engineFull = strings.ReplaceAll(engineFull, localTableName(oldName), safelocalTableName(newName))
+		engineFull = strings.ReplaceAll(engineFull, localTableName(oldName), localTableName(newName))
 
 		// build the column type clause
 		columnClause, err := c.columnClause(ctx, oldName)
@@ -396,7 +391,7 @@ func (c *Connection) createTable(ctx context.Context, name, sql string, outputPr
 	create.WriteString("CREATE OR REPLACE TABLE ")
 	if c.config.Cluster != "" {
 		// need to create a local table on the cluster first
-		fmt.Fprintf(&create, "%s %s", safelocalTableName(name), onClusterClause)
+		fmt.Fprintf(&create, "%s %s", safeSQLName(localTableName(name)), onClusterClause)
 	} else {
 		create.WriteString(safeSQLName(name))
 	}
@@ -450,7 +445,7 @@ func (c *Connection) createTable(ctx context.Context, name, sql string, outputPr
 	if c.config.Database != "" {
 		database = safeSQLString(c.config.Database)
 	}
-	fmt.Fprintf(&distributed, "CREATE OR REPLACE TABLE %s %s AS %s", safeSQLName(name), onClusterClause, safelocalTableName(name))
+	fmt.Fprintf(&distributed, "CREATE OR REPLACE TABLE %s %s AS %s", safeSQLName(name), onClusterClause, safeSQLName(localTableName(name)))
 	fmt.Fprintf(&distributed, " ENGINE = Distributed(%s, %s, %s", safeSQLString(c.config.Cluster), database, safeSQLString(localTableName(name)))
 	if outputProps.DistributedShardingKey != "" {
 		fmt.Fprintf(&distributed, ", %s", outputProps.DistributedShardingKey)
@@ -506,9 +501,17 @@ func (c *Connection) createDictionary(ctx context.Context, name, sql string, out
 		return fmt.Errorf("clickhouse: no primary key specified for dictionary %q", name)
 	}
 
+	srcTbl := fmt.Sprintf("CLICKHOUSE(TABLE %s)", c.Dialect().EscapeStringValue(tempTable))
+	if outputProps.DictionarySourceUser != "" {
+		if outputProps.DictionarySourcePassword == "" {
+			return fmt.Errorf("clickhouse: no password specified for dictionary user")
+		}
+		srcTbl = fmt.Sprintf("CLICKHOUSE(TABLE %s USER %s PASSWORD %s)", c.Dialect().EscapeStringValue(tempTable), safeSQLString(outputProps.DictionarySourceUser), safeSQLString(outputProps.DictionarySourcePassword))
+	}
+
 	// create dictionary
 	return c.Exec(ctx, &drivers.Statement{
-		Query:    fmt.Sprintf(`CREATE OR REPLACE DICTIONARY %s %s %s PRIMARY KEY %s SOURCE(CLICKHOUSE(TABLE %s)) LAYOUT(HASHED()) LIFETIME(0)`, safeSQLName(name), onClusterClause, outputProps.Columns, outputProps.PrimaryKey, c.Dialect().EscapeStringValue(tempTable)),
+		Query:    fmt.Sprintf(`CREATE OR REPLACE DICTIONARY %s %s %s PRIMARY KEY %s SOURCE(%s) LAYOUT(HASHED()) LIFETIME(0)`, safeSQLName(name), onClusterClause, outputProps.Columns, outputProps.PrimaryKey, srcTbl),
 		Priority: 100,
 	})
 }
@@ -601,10 +604,6 @@ func (c *Connection) getTablePartitions(ctx context.Context, name string) ([]str
 		return nil, err
 	}
 	return partitions, nil
-}
-
-func safelocalTableName(name string) string {
-	return safeSQLName(name + "_local")
 }
 
 func localTableName(name string) string {

@@ -31,12 +31,12 @@ func (p *Parser) parseSource(ctx context.Context, node *Node) error {
 		}
 	}
 
-	tmp["output"] = map[string]any{
-		"connector":   p.defaultOLAPConnector(),
-		"materialize": true,
-	}
 	tmp["type"] = "model"
 	tmp["defined_as_source"] = true
+	tmp["materialize"] = true
+	if _, ok := tmp["output"]; !ok {
+		tmp["output"] = map[string]any{"connector": p.defaultOLAPConnector()}
+	}
 
 	// Backward compatibility: when the default connector is "olap", and it's a DuckDB connector, a source with connector "duckdb" should run on it
 	if p.DefaultOLAPConnector == "olap" && node.Connector == "duckdb" {

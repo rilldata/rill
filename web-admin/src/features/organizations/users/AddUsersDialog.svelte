@@ -40,32 +40,27 @@
     newRole: string,
     isSuperUser: boolean = false,
   ) {
-    try {
-      await $addOrganizationMemberUser.mutateAsync({
-        organization: organization,
-        data: {
-          email: newEmail,
-          role: newRole,
-          superuserForceAccess: isSuperUser,
-        },
-      });
+    await $addOrganizationMemberUser.mutateAsync({
+      organization: organization,
+      data: {
+        email: newEmail,
+        role: newRole,
+        superuserForceAccess: isSuperUser,
+      },
+    });
 
-      await queryClient.invalidateQueries({
-        queryKey:
-          getAdminServiceListOrganizationMemberUsersQueryKey(organization),
-      });
+    await queryClient.invalidateQueries({
+      queryKey:
+        getAdminServiceListOrganizationMemberUsersQueryKey(organization),
+    });
 
-      await queryClient.invalidateQueries({
-        queryKey: getAdminServiceListOrganizationInvitesQueryKey(organization),
-      });
+    await queryClient.invalidateQueries({
+      queryKey: getAdminServiceListOrganizationInvitesQueryKey(organization),
+    });
 
-      email = "";
-      role = "";
-      isSuperUser = false;
-    } catch (error) {
-      console.error("Error adding user to organization", error);
-      throw error;
-    }
+    email = "";
+    role = "";
+    isSuperUser = false;
   }
 
   const formId = "add-user-form";
@@ -139,12 +134,6 @@
         // Show error notification if any invites failed
         if (failed.length > 0) {
           failedInvites = failed; // Store failed emails
-          eventBus.emit("notification", {
-            type: "error",
-            message: `Failed to invite ${failed.length} ${
-              failed.length === 1 ? "person" : "people"
-            }`,
-          });
         }
 
         // Close dialog after showing notifications
@@ -220,7 +209,9 @@
       </MultiInput>
       {#if failedInvites.length > 0}
         <div class="text-sm text-red-500 py-2">
-          Failed to invite {failedInvites.join(", ")}
+          {failedInvites.length === 1
+            ? `${failedInvites[0]} is already a member of this organization`
+            : `${failedInvites.join(", ")} are already members of this organization`}
         </div>
       {/if}
     </form>

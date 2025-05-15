@@ -1,4 +1,4 @@
-import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import {
   getAvailableComparisonsForTimeRange,
   getComparisonRange,
@@ -48,7 +48,7 @@ export function timeRangeSelectionsSelector([
   V1MetricsViewSpec | undefined,
   V1ExploreSpec | undefined,
   QueryObserverResult<V1MetricsViewTimeRangeResponse, unknown>,
-  MetricsExplorerEntity,
+  ExploreState,
 ]): TimeRangeControlsState {
   if (!metricsView || !explore || !timeRangeResponse?.data?.timeRangeSummary)
     return {
@@ -147,7 +147,7 @@ export function timeComparisonOptionsSelector([
   V1MetricsViewSpec | undefined,
   V1ExploreSpec | undefined,
   QueryObserverResult<V1MetricsViewTimeRangeResponse, unknown>,
-  MetricsExplorerEntity,
+  ExploreState,
   DashboardTimeControls | undefined,
 ]): Array<{
   name: TimeComparisonOption;

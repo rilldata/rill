@@ -1,6 +1,6 @@
-import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 
-const ShallowMergeOneLevelDeepKeys = new Set<keyof MetricsExplorerEntity>([
+const ShallowMergeOneLevelDeepKeys = new Set<keyof ExploreState>([
   "selectedTimeRange",
   "selectedComparisonTimeRange",
   "tdd",
@@ -26,14 +26,14 @@ const ShallowMergeOneLevelDeepKeys = new Set<keyof MetricsExplorerEntity>([
  * Then we could offload the specific merging logic to the class methods.
  */
 export function cascadingExploreStateMerge(
-  exploreStatesInOrder: Partial<MetricsExplorerEntity>[],
+  exploreStatesInOrder: Partial<ExploreState>[],
 ) {
-  const mergedExploreState: Partial<MetricsExplorerEntity> = {};
+  const mergedExploreState: Partial<ExploreState> = {};
 
   const keyProcessed = new Set<string>();
   // Merge all keys not part of ShallowMergeOneLevelDeepKeys. This allows for future keys to be merged without changes.
   exploreStatesInOrder.forEach((state) => {
-    Object.keys(state).forEach((key: keyof MetricsExplorerEntity) => {
+    Object.keys(state).forEach((key: keyof ExploreState) => {
       // Since the states are in order a key found 1st should only be merged once.
       // So ignore keys we have already seen
       const isKeyAlreadyProcessed = keyProcessed.has(key);

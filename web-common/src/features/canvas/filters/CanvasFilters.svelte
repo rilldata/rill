@@ -355,6 +355,7 @@
                 {timeEnd}
                 timeControlsReady={!!$timeRangeStateStore}
                 excludeMode={$isFilterExcludeMode(name)}
+                whereFilter={$whereFilter}
                 onRemove={() => removeDimensionFilter(name)}
                 onToggleFilterMode={() => toggleDimensionFilterMode(name)}
                 onSelect={(value) =>

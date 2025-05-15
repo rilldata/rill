@@ -35,6 +35,16 @@ var spec = drivers.Spec{
 	// Important: Any edits to the below properties must be accompanied by changes to the client-side form validation schemas.
 	ConfigProperties: []*drivers.PropertySpec{
 		{
+			Key:         "managed",
+			Type:        drivers.BooleanPropertyType,
+			Required:    false,
+			DisplayName: "Managed",
+			Description: "Use a managed ClickHouse instance. This will start an embedded ClickHouse server in development.",
+			Placeholder: "false",
+			Default:     "false",
+			NoPrompt:    true,
+		},
+		{
 			Key:         "dsn",
 			Type:        drivers.StringPropertyType,
 			Required:    false,
@@ -77,6 +87,14 @@ var spec = drivers.Spec{
 			Secret:      true,
 		},
 		{
+			Key:         "database",
+			Type:        drivers.StringPropertyType,
+			Required:    false,
+			DisplayName: "Database",
+			Description: "Name of the ClickHouse database to connect to",
+			Placeholder: "default",
+		},
+		{
 			Key:         "ssl",
 			Type:        drivers.BooleanPropertyType,
 			Required:    true,
@@ -96,26 +114,37 @@ type configProperties struct {
 	// (In practice, this gets set on local and means we should start an embedded Clickhouse server).
 	Provision bool `mapstructure:"provision"`
 	// DSN is the connection string. Either DSN can be passed or the individual properties below can be set.
-	DSN      string `mapstructure:"dsn"`
+	DSN string `mapstructure:"dsn"`
+	// Host configuration. Should not be set if DSN is set.
+	Host string `mapstructure:"host"`
+	// Port configuration. Should not be set if DSN is set.
+	Port int `mapstructure:"port"`
+	// Username configuration. Should not be set if DSN is set.
 	Username string `mapstructure:"username"`
+	// Password configuration. Should not be set if DSN is set.
 	Password string `mapstructure:"password"`
-	Host     string `mapstructure:"host"`
-	Port     int    `mapstructure:"port"`
-	// Database specifies the name of the ClickHouse database within the cluster.
+	// Database configuration. Should not be set if DSN is set.
 	Database string `mapstructure:"database"`
-	// SSL determines whether secured connection need to be established. To be set when setting individual fields.
+	// DatabaseWhitelist is a comma separated list of databases to fetch in information_schema all calls.
+	// This is just a *quick hack* to avoid fetching all databases in the table list till we have a better solution.
+	// This does not list queries to other databases.
+	DatabaseWhitelist string `mapstructure:"database_whitelist"`
+	// SSL determines whether secured connection need to be established. Should not be set if DSN is set.
 	SSL bool `mapstructure:"ssl"`
-	// Cluster name. Required for running distributed queries.
+	// Cluster name. If a cluster is configured, Rill will create all models in the cluster as distributed tables.
 	Cluster string `mapstructure:"cluster"`
 	// LogQueries controls whether to log the raw SQL passed to OLAP.Execute.
 	LogQueries bool `mapstructure:"log_queries"`
-	// SettingsOverride override the default settings used in queries. One use case is to disable settings and set `readonly = 1` when using read-only user.
-	SettingsOverride string `mapstructure:"settings_override"`
+	// QuerySettingsOverride overrides the default query settings used for OLAP SELECT queries.
+	// Use cases include disabling settings or setting `readonly = 1` when using read-only user.
+	QuerySettingsOverride string `mapstructure:"query_settings_override"`
 	// EmbedPort is the port to run Clickhouse locally (0 is random port).
-	EmbedPort      int  `mapstructure:"embed_port"`
+	EmbedPort int `mapstructure:"embed_port"`
+	// CanScaleToZero indicates if the underlying Clickhouse service may scale to zero when idle.
+	// When set to true, we try to avoid too frequent non-user queries to the database (such as alert checks and fetching metrics).
 	CanScaleToZero bool `mapstructure:"can_scale_to_zero"`
 	// MaxOpenConns is the maximum number of open connections to the database.
-	// https://github.com/ClickHouse/clickhouse-go/blob/main/clickhouse_options.go
+	// See https://github.com/ClickHouse/clickhouse-go/blob/main/clickhouse_options.go
 	MaxOpenConns int `mapstructure:"max_open_conns"`
 	// MaxIdleConns is the maximum number of connections in the idle connection pool. Default is 5s.
 	MaxIdleConns int `mapstructure:"max_idle_conns"`
@@ -145,7 +174,6 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 	// build clickhouse options
 	var opts *clickhouse.Options
 	var embed *embedClickHouse
-	maxOpenConnections := 20 // based on observations
 	if conf.DSN != "" {
 		opts, err = clickhouse.ParseDSN(conf.DSN)
 		if err != nil {
@@ -171,54 +199,11 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 		}
 
 		// username password
-		if conf.Password != "" {
-			opts.Auth.Username = conf.Username
-			opts.Auth.Password = conf.Password
-		} else if conf.Username != "" {
-			opts.Auth.Username = conf.Username
-		}
+		opts.Auth.Username = conf.Username
+		opts.Auth.Password = conf.Password
 
 		// database
-		if conf.Database != "" {
-			opts.Auth.Database = conf.Database
-		}
-
-		// max_open_conns
-		if conf.MaxOpenConns != 0 {
-			maxOpenConnections = conf.MaxOpenConns
-		}
-
-		// max_idle_conns
-		if conf.MaxIdleConns != 0 {
-			opts.MaxIdleConns = conf.MaxIdleConns
-		}
-
-		// dial_timeout
-		if conf.DialTimeout != "" {
-			d, err := time.ParseDuration(conf.DialTimeout)
-			if err != nil {
-				return nil, fmt.Errorf("failed to parse dial_timeout: %w", err)
-			}
-			opts.DialTimeout = d
-		}
-
-		// conn_max_lifetime
-		if conf.ConnMaxLifetime != "" {
-			d, err := time.ParseDuration(conf.ConnMaxLifetime)
-			if err != nil {
-				return nil, fmt.Errorf("failed to parse conn_max_lifetime: %w", err)
-			}
-			opts.ConnMaxLifetime = d
-		}
-
-		// read_timeout
-		if conf.ReadTimeout != "" {
-			d, err := time.ParseDuration(conf.ReadTimeout)
-			if err != nil {
-				return nil, fmt.Errorf("failed to parse read_timeout: %w", err)
-			}
-			opts.ReadTimeout = d
-		}
+		opts.Auth.Database = conf.Database
 	} else if conf.Provision {
 		// run clickhouse locally
 		dataDir, err := st.DataDir(instanceID)
@@ -242,16 +227,42 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 		return nil, errors.New("no clickhouse connection configured: 'dsn', 'host' or 'managed: true' must be set")
 	}
 
-	// Apply our own defaults for the options.
-	// We increase timeouts to decrease the chance of dropped connections with scaled-to-zero ClickHouse.
-	if opts.DialTimeout == 0 {
+	// max_idle_conns
+	if conf.MaxIdleConns != 0 {
+		opts.MaxIdleConns = conf.MaxIdleConns
+	}
+
+	// conn_max_lifetime
+	if conf.ConnMaxLifetime != "" {
+		d, err := time.ParseDuration(conf.ConnMaxLifetime)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse conn_max_lifetime: %w", err)
+		}
+		opts.ConnMaxLifetime = d
+	}
+
+	// dial_timeout
+	if conf.DialTimeout != "" {
+		d, err := time.ParseDuration(conf.DialTimeout)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse dial_timeout: %w", err)
+		}
+		opts.DialTimeout = d
+	}
+	if opts.DialTimeout == 0 { // Apply an increased default to reduce the chance of dropped connections with scaled-to-zero ClickHouse.
 		opts.DialTimeout = time.Second * 60
 	}
-	if opts.ReadTimeout == 0 {
-		opts.ReadTimeout = time.Second * 300
+
+	// read_timeout
+	if conf.ReadTimeout != "" {
+		d, err := time.ParseDuration(conf.ReadTimeout)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse read_timeout: %w", err)
+		}
+		opts.ReadTimeout = d
 	}
-	if opts.ConnMaxLifetime == 0 {
-		opts.ConnMaxLifetime = time.Hour
+	if opts.ReadTimeout == 0 { // Apply an increased default to reduce the chance of dropped connections with scaled-to-zero ClickHouse.
+		opts.ReadTimeout = time.Second * 300
 	}
 
 	db := sqlx.NewDb(otelsql.OpenDB(clickhouse.Connector(opts)), "clickhouse")
@@ -271,10 +282,16 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 			return nil, err
 		}
 		// connection with http protocol is successful
-		logger.Warn("clickHouse connection is established with HTTP protocol. Use native port for better performance")
+		logger.Warn("ClickHouse connection was established with the HTTP protocol, consider using the native port for better performance")
 	}
-	db.SetMaxOpenConns(maxOpenConnections)
 
+	// Limit the number of concurrent connections
+	if conf.MaxOpenConns == 0 {
+		conf.MaxOpenConns = 20 // based on observations
+	}
+	db.SetMaxOpenConns(conf.MaxOpenConns)
+
+	// Capture database stats with OpenTelemetry
 	err = otelsql.RegisterDBStatsMetrics(db.DB, otelsql.WithAttributes(semconv.DBSystemClickhouse, attribute.String("instance_id", instanceID)))
 	if err != nil {
 		return nil, fmt.Errorf("registering db stats metrics: %w", err)
@@ -282,11 +299,11 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 
 	// group by positional args are supported post 22.7 and we use them heavily in our queries
 	row := db.QueryRow(`
-	WITH
-    	splitByChar('.', version()) AS parts,
-    	toInt32(parts[1]) AS major,
-    	toInt32(parts[2]) AS minor
-	SELECT (major > 22) OR ((major = 22) AND (minor >= 7)) AS is_supported
+		WITH
+			splitByChar('.', version()) AS parts,
+			toInt32(parts[1]) AS major,
+			toInt32(parts[2]) AS minor
+		SELECT (major > 22) OR ((major = 22) AND (minor >= 7)) AS is_supported
 `)
 	var isSupported bool
 	if err := row.Scan(&isSupported); err != nil {
@@ -306,7 +323,7 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 		ctx:        ctx,
 		cancel:     cancel,
 		metaSem:    semaphore.NewWeighted(1),
-		olapSem:    priorityqueue.NewSemaphore(maxOpenConnections - 1),
+		olapSem:    priorityqueue.NewSemaphore(conf.MaxOpenConns - 1),
 		opts:       opts,
 		embed:      embed,
 	}

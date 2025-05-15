@@ -1,10 +1,12 @@
 import { goto } from "$app/navigation";
 import { page } from "$app/stores";
 import { DashboardStateDataLoader } from "@rilldata/web-common/features/dashboards/state-managers/loaders/DashboardStateDataLoader";
+import { saveMostRecentPartialExploreState } from "@rilldata/web-common/features/dashboards/state-managers/loaders/most-recent-explore-state";
 import {
   metricsExplorerStore,
   useExploreState,
 } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
+import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import { resolveTimeRanges } from "@rilldata/web-common/features/dashboards/time-controls/rill-time-ranges";
 import {
@@ -25,7 +27,7 @@ import type { CompoundQueryResult } from "@rilldata/web-common/features/compound
  * prevUrl is used to make sure there is no redirect loop.
  */
 export class DashboardStateSync {
-  private readonly exploreStore: Readable<MetricsExplorerEntity | undefined>;
+  private readonly exploreStore: Readable<ExploreState | undefined>;
   private readonly timeControlStore: TimeControlStore;
   // Cached url params for a rill opinionated dashboard defaults. Used to remove params from url.
   // To avoid converting the default explore state to url evey time it is needed we maintain a cached version here.
@@ -86,7 +88,7 @@ export class DashboardStateSync {
    * Initializes the dashboard store.
    * If the url needs to change to match the init then we replace the current url with the new url.
    */
-  private async handleExploreInit(initExploreState: MetricsExplorerEntity) {
+  private handleExploreInit(initExploreState: ExploreState) {
     // If this is re-triggered any of the dependant query was refetched, then we need to make sure this is not run again.
     if (this.initialized) return;
 
@@ -137,6 +139,12 @@ export class DashboardStateSync {
       initExploreState,
       exploreSpec,
       timeControlsState,
+    );
+    // Update "most recent explore state" with the initial state
+    saveMostRecentPartialExploreState(
+      this.exploreName,
+      this.extraPrefix,
+      initExploreState,
     );
 
     // If the current url same as the new url then there is no need to do anything
@@ -233,9 +241,15 @@ export class DashboardStateSync {
       exploreSpec,
       timeControlsState,
     );
+    // Update "most recent explore state" with updated state from url
+    saveMostRecentPartialExploreState(
+      this.exploreName,
+      this.extraPrefix,
+      updatedExploreState,
+    );
 
     this.updating = false;
-    // If the url doesnt need to be changed further then we can skip the goto
+    // If the url doesn't need to be changed further then we can skip the goto
     if (redirectUrl.search === pageState.url.search) {
       return;
     }
@@ -253,7 +267,7 @@ export class DashboardStateSync {
    *
    * This will check if the url needs to be changed and will navigate to the new url.
    */
-  private gotoNewState(exploreState: MetricsExplorerEntity) {
+  private gotoNewState(exploreState: ExploreState) {
     // Updating state either in handleExploreInit or handleURLChange will synchronously update the state triggering this function.
     // Since those methods handle redirect themselves we need to skip this logic.
     // Those methods need to replace the current URL while this does a direct navigation.
@@ -289,6 +303,13 @@ export class DashboardStateSync {
       exploreState,
       exploreSpec,
       timeControlsState,
+    );
+    // Update "most recent explore state" with updated state.
+    // Since we do not update the state per action we do it here as blanket update.
+    saveMostRecentPartialExploreState(
+      this.exploreName,
+      this.extraPrefix,
+      exploreState,
     );
 
     this.updating = false;

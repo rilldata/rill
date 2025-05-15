@@ -1,5 +1,5 @@
 import { removeSomeAdvancedMeasures } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measures";
-import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import {
   type V1MetricsViewSpec,
   V1TimeGrain,
@@ -104,7 +104,7 @@ describe("measures selectors", () => {
               selectedTimeRange: {
                 interval: timeGrain,
               },
-            } as MetricsExplorerEntity,
+            } as ExploreState,
             MetricsView,
             measures,
             true,
@@ -120,7 +120,7 @@ describe("measures selectors", () => {
             selectedTimeRange: {
               interval: V1TimeGrain.TIME_GRAIN_UNSPECIFIED,
             },
-          } as MetricsExplorerEntity,
+          } as ExploreState,
           MetricsView,
           ["mes", "window_mes"],
           false,

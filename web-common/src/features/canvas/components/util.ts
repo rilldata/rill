@@ -1,3 +1,5 @@
+import { getChartComponent } from "@rilldata/web-common/features/canvas/components/charts";
+import { CartesianChartComponent } from "@rilldata/web-common/features/canvas/components/charts/cartesian-charts/CartesianChart";
 import { KPIGridComponent } from "@rilldata/web-common/features/canvas/components/kpi-grid";
 import type {
   ComponentInputParam,
@@ -13,7 +15,6 @@ import type {
 import type { QueryObserverResult } from "@tanstack/svelte-query";
 import type { CanvasEntity, ComponentPath } from "../stores/canvas-entity";
 import type { BaseCanvasComponent } from "./BaseCanvasComponent";
-import { ChartComponent } from "./charts";
 import { ImageComponent } from "./image";
 import { LeaderboardComponent } from "./leaderboard";
 import { MarkdownCanvasComponent } from "./markdown";
@@ -65,6 +66,9 @@ const CHART_TYPES = [
   "stacked_bar",
   "stacked_bar_normalized",
   "area_chart",
+  "donut_chart",
+  "pie_chart",
+  "heatmap",
 ] as const;
 const NON_CHART_TYPES = [
   "markdown",
@@ -80,7 +84,7 @@ const ALL_COMPONENT_TYPES = [...CHART_TYPES, ...NON_CHART_TYPES] as const;
 type ChartType = (typeof CHART_TYPES)[number];
 type TableType = (typeof TABLE_TYPES)[number];
 
-interface BaseCanvasComponentConstructor<
+export interface BaseCanvasComponentConstructor<
   T extends ComponentSpec = ComponentSpec,
 > {
   new (
@@ -89,6 +93,8 @@ interface BaseCanvasComponentConstructor<
     path: ComponentPath,
   ): BaseCanvasComponent<T>;
 
+  chartInputParams?: Record<string, ComponentInputParam>;
+
   newComponentSpec(
     metricsViewName: string,
     metricsViewSpec?: V1MetricsViewSpec,
@@ -96,36 +102,41 @@ interface BaseCanvasComponentConstructor<
 }
 
 // Component type to class mapping
-export const COMPONENT_CLASS_MAP: Record<
-  CanvasComponentType,
-  BaseCanvasComponentConstructor
-> = {
+const baseComponentMap = {
   markdown: MarkdownCanvasComponent,
   kpi_grid: KPIGridComponent,
   image: ImageComponent,
   leaderboard: LeaderboardComponent,
   table: PivotCanvasComponent,
   pivot: PivotCanvasComponent,
-  bar_chart: ChartComponent,
-  line_chart: ChartComponent,
-  stacked_bar: ChartComponent,
-  stacked_bar_normalized: ChartComponent,
-  area_chart: ChartComponent,
+} as const;
+
+const chartComponentMap = Object.fromEntries(
+  CHART_TYPES.map((type) => [type, getChartComponent(type)]),
+) as Record<ChartType, BaseCanvasComponentConstructor>;
+
+export const COMPONENT_CLASS_MAP = {
+  ...baseComponentMap,
+  ...chartComponentMap,
 } as const;
 
 // Component display names mapping
-const DISPLAY_MAP: Record<CanvasComponentType, string> = {
+const baseDisplayMap = {
   kpi_grid: "KPI Grid",
   markdown: "Markdown",
   table: "Table",
   pivot: "Pivot",
   image: "Image",
   leaderboard: "Leaderboard",
-  bar_chart: "Chart",
-  line_chart: "Chart",
-  stacked_bar: "Chart",
-  stacked_bar_normalized: "Chart",
-  area_chart: "Chart",
+} as const;
+
+const chartDisplayMap = Object.fromEntries(
+  CHART_TYPES.map((type) => [type, "Chart"]),
+) as Record<ChartType, string>;
+
+const DISPLAY_MAP = {
+  ...baseDisplayMap,
+  ...chartDisplayMap,
 } as const;
 
 export function createComponent(
@@ -139,7 +150,7 @@ export function createComponent(
   if (ComponentClass) {
     return new ComponentClass(resource, parent, path);
   }
-  return new ChartComponent(resource, parent, path);
+  return new CartesianChartComponent(resource, parent, path);
 }
 
 export function isCanvasComponentType(
