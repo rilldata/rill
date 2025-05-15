@@ -442,6 +442,8 @@ func Test_Eval_watermark_on_boundary(t *testing.T) {
 		{"-4D^ to -2D^", "2025-05-08T00:00:00Z", "2025-05-10T00:00:00Z", timeutil.TimeGrainDay, 1, 1},
 		{"-1D^ to D^", "2025-05-11T00:00:00Z", "2025-05-12T00:00:00Z", timeutil.TimeGrainHour, 1, 1},
 		{"D^ to D$", "2025-05-12T00:00:00Z", "2025-05-13T00:00:00Z", timeutil.TimeGrainHour, 1, 1},
+		{"-2D^ to watermark", "2025-05-10T00:00:00Z", "2025-05-12T00:00:00.001Z", timeutil.TimeGrainDay, 1, 1},
+		{"-2D^ to +1D^", "2025-05-10T00:00:00Z", "2025-05-13T00:00:00Z", timeutil.TimeGrainDay, 1, 1},
 
 		{"-2D!", "2025-05-10T00:00:00Z", "2025-05-11T00:00:00Z", timeutil.TimeGrainHour, 1, 1},
 		{"-2W!", "2025-04-28T00:00:00Z", "2025-05-05T00:00:00Z", timeutil.TimeGrainDay, 1, 1},

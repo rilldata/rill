@@ -523,17 +523,14 @@ func (p *PointInTime) eval(evalOpts EvalOptions, start time.Time, tz *time.Locat
 }
 
 func (o *OrdinalPointInTime) eval(evalOpts EvalOptions, start time.Time, tz *time.Location) (time.Time, timeutil.TimeGrain) {
-	tg := timeutil.TimeGrainUnspecified
-	end := start
 	if o.Rest != nil {
-		start, end, tg = o.Rest.eval(evalOpts, start, end, tz)
+		start, _, _ = o.Rest.eval(evalOpts, start, start, tz)
 	} else {
 		tg := higherOrderMap[grainMap[o.Ordinal.Grain]]
 		start = truncateWithCorrection(start, tg, tz, evalOpts.FirstDay, evalOpts.FirstMonth)
-		end = timeutil.CeilTime(end, tg, tz, evalOpts.FirstDay, evalOpts.FirstMonth)
 	}
 
-	start, end, tg = o.Ordinal.eval(evalOpts, start, tz)
+	start, end, tg := o.Ordinal.eval(evalOpts, start, tz)
 
 	if o.Suffix == "$" {
 		start = end

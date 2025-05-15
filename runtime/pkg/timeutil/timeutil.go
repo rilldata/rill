@@ -2,10 +2,11 @@ package timeutil
 
 import (
 	"time"
-	// Load IANA time zone data
-	_ "time/tzdata"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+
+	// Load IANA time zone data
+	_ "time/tzdata"
 )
 
 // TimeGrain is extension of std time package with Week and Quarter added

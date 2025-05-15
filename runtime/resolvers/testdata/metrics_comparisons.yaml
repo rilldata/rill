@@ -234,9 +234,9 @@ tests:
             comparison_value:
               measure: sum
       time_range:
-        expression: '3D~'
+        expression: '-2D^ to +1D^'
       comparison_time_range:
-        expression: '3D~ of -3D'
+        expression: '-4D^ to -2D^'
       sort:
         - name: sum
     result:
@@ -259,9 +259,9 @@ tests:
             comparison_value:
               measure: sum
       time_range:
-        expression: '3D~'
+        expression: '-2D^ to +1D^'
       comparison_time_range:
-        expression: '3D~ of -3D'
+        expression: '-4D^ to -2D^'
       sort:
         - name: sum
     result:
