@@ -88,7 +88,7 @@ export class DashboardStateSync {
    * Initializes the dashboard store.
    * If the url needs to change to match the init then we replace the current url with the new url.
    */
-  private handleExploreInit(initExploreState: ExploreState) {
+  private async handleExploreInit(initExploreState: ExploreState) {
     // If this is re-triggered any of the dependant query was refetched, then we need to make sure this is not run again.
     if (this.initialized) return;
 

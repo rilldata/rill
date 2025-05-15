@@ -60,19 +60,19 @@
   }}
 />
 
-<div class="flex flex-col bg-slate-50 w-full">
-  <div class="p-3 border-b">
-    <Calendar
-      {maxDate}
-      {minDate}
-      selection={calendarInterval}
-      {selectingStart}
-      {firstVisibleMonth}
-      onSelectDay={onValidDateInput}
-    />
-  </div>
+<div class="flex flex-col w-full gap-y-3">
+  <Calendar
+    {maxDate}
+    {minDate}
+    selection={calendarInterval}
+    {selectingStart}
+    {firstVisibleMonth}
+    onSelectDay={onValidDateInput}
+  />
 
-  <div class="flex flex-col gap-y-2 p-3">
+  <div class="w-full h-px bg-gray-200"></div>
+
+  <div class="flex flex-col gap-y-2">
     <DateInput
       bind:selectingStart
       date={calendarInterval?.start ?? DateTime.now()}
@@ -95,7 +95,7 @@
       {onValidDateInput}
     />
   </div>
-  <div class="flex justify-end w-full px-2">
+  <div class="flex justify-end w-full">
     <Button
       fit
       compact

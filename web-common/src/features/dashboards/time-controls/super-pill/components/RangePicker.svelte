@@ -93,16 +93,19 @@
           onSelectCustomOption={() => (showSelector = !showSelector)}
         />
       </div>
+
       {#if showSelector}
-        <CalendarPlusDateInput
-          {firstVisibleMonth}
-          {interval}
-          {zone}
-          {maxDate}
-          {minDate}
-          applyRange={applyCustomRange}
-          closeMenu={() => (open = false)}
-        />
+        <div class="bg-slate-50 border-l p-3">
+          <CalendarPlusDateInput
+            {firstVisibleMonth}
+            {interval}
+            {zone}
+            {maxDate}
+            {minDate}
+            applyRange={applyCustomRange}
+            closeMenu={() => (open = false)}
+          />
+        </div>
       {/if}
     </div>
   </DropdownMenu.Content>
