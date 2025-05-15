@@ -1,6 +1,7 @@
 <script lang="ts">
   import {
     createAdminServiceAddProjectMemberUser,
+    createAdminServiceAddProjectMemberUsergroup,
     getAdminServiceListOrganizationMemberUsersQueryKey,
     getAdminServiceListProjectInvitesQueryKey,
     getAdminServiceListProjectMemberUsersQueryKey,
@@ -84,7 +85,10 @@
   }
 
   const queryClient = useQueryClient();
-  const userInvite = createAdminServiceAddProjectMemberUser();
+  const addProjectMemberUser = createAdminServiceAddProjectMemberUser();
+  // TODO: allow users to set project role for user groups
+  const addProjectMemberUsergroup =
+    createAdminServiceAddProjectMemberUsergroup();
 
   const initialValues: {
     emails: string[];
@@ -129,7 +133,7 @@
         await Promise.all(
           emailsToInvite.map(async (email) => {
             try {
-              await $userInvite.mutateAsync({
+              await $addProjectMemberUser.mutateAsync({
                 organization,
                 project,
                 data: {

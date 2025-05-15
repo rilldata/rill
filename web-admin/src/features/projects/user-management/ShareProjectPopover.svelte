@@ -264,14 +264,15 @@
               manageProjectMembers={true}
             />
           {/each}
-          {#each nonManagedGroups as group}
+          <!-- TODO:  -->
+          <!-- {#each nonManagedGroups as group}
             <UserGroupItem
               {organization}
               {group}
               {manageOrgAdmins}
               {manageOrgMembers}
             />
-          {/each}
+          {/each} -->
         </div>
         <div class="mt-2">
           <div class="text-xs text-gray-500 font-semibold uppercase">
