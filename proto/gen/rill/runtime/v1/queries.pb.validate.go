@@ -695,6 +695,8 @@ func (m *ExportRequest) validate(all bool) error {
 
 	// no validation rules for BakedQuery
 
+	// no validation rules for IncludeHeader
+
 	if len(errors) > 0 {
 		return ExportRequestMultiError(errors)
 	}

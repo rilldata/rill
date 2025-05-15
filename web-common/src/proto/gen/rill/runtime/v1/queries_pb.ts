@@ -379,6 +379,11 @@ export class ExportRequest extends Message<ExportRequest> {
    */
   bakedQuery = "";
 
+  /**
+   * @generated from field: bool include_header = 6;
+   */
+  includeHeader = false;
+
   constructor(data?: PartialMessage<ExportRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -392,6 +397,7 @@ export class ExportRequest extends Message<ExportRequest> {
     { no: 3, name: "format", kind: "enum", T: proto3.getEnumType(ExportFormat) },
     { no: 4, name: "query", kind: "message", T: Query },
     { no: 5, name: "baked_query", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 6, name: "include_header", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ExportRequest {

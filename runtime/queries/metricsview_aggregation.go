@@ -158,7 +158,16 @@ func (q *MetricsViewAggregation) Export(ctx context.Context, rt *runtime.Runtime
 		return fmt.Errorf("unsupported format: %s", opts.Format.String())
 	}
 
-	path, err := e.Export(ctx, qry, nil, format)
+	var headerMetadata string
+	if opts.IncludeHeader {
+		expStr, err := metricsview.ExpressionToString(qry.Where)
+		if err != nil {
+			return err
+		}
+		headerMetadata = fmt.Sprintf("Report by Rill Data \nDate range: %s to %s\nFilters: %s\n\n", qry.TimeRange.Start, qry.TimeRange.End, expStr)
+	}
+
+	path, err := e.Export(ctx, qry, nil, format, drivers.FileHeaderMetaData(headerMetadata))
 	if err != nil {
 		return err
 	}

@@ -139,11 +139,12 @@ func exportSQL(qry, path string, format drivers.FileFormat) (string, error) {
 	}
 }
 
-func supportsExportFormat(format drivers.FileFormat) bool {
+func supportsExportFormat(format drivers.FileFormat, headerMetadata drivers.FileHeaderMetaData) bool {
 	switch format {
 	case drivers.FileFormatParquet, drivers.FileFormatCSV, drivers.FileFormatJSON:
-		return true
-	default:
-		return false
+		if headerMetadata == "" {
+			return true
+		}
 	}
+	return false
 }

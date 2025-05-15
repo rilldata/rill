@@ -2473,6 +2473,7 @@ export type QueryServiceExportBody = {
   format?: V1ExportFormat;
   query?: V1Query;
   bakedQuery?: string;
+  includeHeader?: boolean;
 };
 
 export type QueryServiceMetricsViewAggregationBody = {

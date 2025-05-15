@@ -259,6 +259,7 @@ func (s *Server) downloadHandler(w http.ResponseWriter, req *http.Request) {
 			}
 			return nil
 		},
+		IncludeHeader: request.IncludeHeader,
 	})
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)

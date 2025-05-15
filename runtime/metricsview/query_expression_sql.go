@@ -8,8 +8,8 @@ import (
 	"strings"
 )
 
-func ExpressionToString(e *Expression) (string, error) {
-	b := exprStrBuilder{Builder: &strings.Builder{}}
+func ExpressionToSQL(e *Expression) (string, error) {
+	b := exprSQLBuilder{Builder: &strings.Builder{}}
 	err := b.writeExpression(e)
 	if err != nil {
 		return "", err
@@ -17,11 +17,11 @@ func ExpressionToString(e *Expression) (string, error) {
 	return b.String(), nil
 }
 
-type exprStrBuilder struct {
+type exprSQLBuilder struct {
 	*strings.Builder
 }
 
-func (b exprStrBuilder) writeExpression(e *Expression) error {
+func (b exprSQLBuilder) writeExpression(e *Expression) error {
 	if e == nil {
 		return nil
 	}
@@ -40,7 +40,7 @@ func (b exprStrBuilder) writeExpression(e *Expression) error {
 	return errors.New("invalid expression")
 }
 
-func (b exprStrBuilder) writeName(name string) error {
+func (b exprSQLBuilder) writeName(name string) error {
 	if strings.Contains(name, `"`) {
 		_, err := strings.NewReplacer(`"`, `""`).WriteString(b.Builder, name)
 		return err
@@ -49,7 +49,7 @@ func (b exprStrBuilder) writeName(name string) error {
 	return nil
 }
 
-func (b exprStrBuilder) writeValue(val any) error {
+func (b exprSQLBuilder) writeValue(val any) error {
 	res, err := json.Marshal(val)
 	if err != nil {
 		return err
@@ -61,12 +61,12 @@ func (b exprStrBuilder) writeValue(val any) error {
 	return err
 }
 
-func (b exprStrBuilder) writeSubquery(_ *Subquery) error {
+func (b exprSQLBuilder) writeSubquery(_ *Subquery) error {
 	_, err := b.WriteString("<subquery>")
 	return err
 }
 
-func (b exprStrBuilder) writeCondition(cond *Condition) error {
+func (b exprSQLBuilder) writeCondition(cond *Condition) error {
 	switch cond.Operator {
 	case OperatorOr:
 		return b.writeJoinedExpressions(cond.Expressions, " OR ")
@@ -80,7 +80,7 @@ func (b exprStrBuilder) writeCondition(cond *Condition) error {
 	}
 }
 
-func (b exprStrBuilder) writeJoinedExpressions(exprs []*Expression, joiner string) error {
+func (b exprSQLBuilder) writeJoinedExpressions(exprs []*Expression, joiner string) error {
 	if len(exprs) == 0 {
 		return nil
 	}
@@ -98,7 +98,7 @@ func (b exprStrBuilder) writeJoinedExpressions(exprs []*Expression, joiner strin
 	return nil
 }
 
-func (b exprStrBuilder) writeBinaryCondition(exprs []*Expression, op Operator) error {
+func (b exprSQLBuilder) writeBinaryCondition(exprs []*Expression, op Operator) error {
 	// Backwards compatibility: For IN and NIN, the right hand side may be a flattened list of values, not a single list.
 	if op == OperatorIn || op == OperatorNin {
 		if len(exprs) == 2 {
@@ -181,7 +181,7 @@ func (b exprStrBuilder) writeBinaryCondition(exprs []*Expression, op Operator) e
 	return nil
 }
 
-func (b exprStrBuilder) writeWrappedExpression(e *Expression) error {
+func (b exprSQLBuilder) writeWrappedExpression(e *Expression) error {
 	if e.Condition != nil {
 		b.writeByte('(')
 	}
@@ -195,11 +195,11 @@ func (b exprStrBuilder) writeWrappedExpression(e *Expression) error {
 	return nil
 }
 
-func (b exprStrBuilder) writeByte(v byte) {
+func (b exprSQLBuilder) writeByte(v byte) {
 	_ = b.WriteByte(v)
 }
 
-func (b exprStrBuilder) writeString(s string) {
+func (b exprSQLBuilder) writeString(s string) {
 	_, _ = b.WriteString(s)
 }
 

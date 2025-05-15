@@ -2,7 +2,7 @@ package metricsview
 
 import "testing"
 
-func TestExpressionToString(t *testing.T) {
+func TestExpressionToSQL(t *testing.T) {
 	tests := []struct {
 		name    string
 		e       *Expression
@@ -165,13 +165,13 @@ func TestExpressionToString(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := ExpressionToString(tt.e)
+			got, err := ExpressionToSQL(tt.e)
 			if err != nil {
-				t.Errorf("ExpressionToString: got error: %v, want nil", err)
+				t.Errorf("ExpressionToSQL: got error: %v, want nil", err)
 				return
 			}
 			if got != tt.want {
-				t.Errorf("ExpressionToString: got %q, want %q", got, tt.want)
+				t.Errorf("ExpressionToSQL: got %q, want %q", got, tt.want)
 			}
 		})
 	}

@@ -404,7 +404,7 @@ func (c *connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecu
 			if err := mapstructure.WeakDecode(opts.PreliminaryOutputProperties, outputProps); err != nil {
 				return nil, false
 			}
-			if supportsExportFormat(outputProps.Format) {
+			if supportsExportFormat(outputProps.Format, outputProps.FileHeaderMetadata) {
 				return &selfToFileExecutor{c}, true
 			}
 		}

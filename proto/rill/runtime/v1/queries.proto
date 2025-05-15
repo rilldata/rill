@@ -294,6 +294,7 @@ message ExportRequest {
   ExportFormat format = 3;
   Query query = 4;
   string baked_query = 5 [deprecated = true];
+  bool include_header = 6;
 }
 
 message ExportResponse {
