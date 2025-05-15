@@ -7,7 +7,7 @@
   import EditUserGroupDialog from "./EditUserGroupDialog.svelte";
   import type { V1OrganizationMemberUser } from "@rilldata/web-admin/client";
 
-  export let name: string;
+  export let groupName: string;
   export let currentUserEmail: string;
   export let searchUsersList: V1OrganizationMemberUser[];
 
@@ -46,14 +46,11 @@
   </DropdownMenu.Content>
 </DropdownMenu.Root>
 
-<DeleteUserGroupConfirmDialog
-  bind:open={isDeleteConfirmOpen}
-  groupName={name}
-/>
+<DeleteUserGroupConfirmDialog bind:open={isDeleteConfirmOpen} {groupName} />
 
 <EditUserGroupDialog
   bind:open={isEditDialogOpen}
-  groupName={name}
+  {groupName}
   {currentUserEmail}
   organizationUsers={searchUsersList}
 />

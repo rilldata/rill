@@ -3,12 +3,11 @@
   import type { V1OrganizationMemberUser } from "@rilldata/web-admin/client";
   import {
     createAdminServiceAddUsergroupMemberUser,
-    createAdminServiceListUsergroupMemberUsers,
-    createAdminServiceRemoveUsergroupMemberUser,
-    createAdminServiceRenameUsergroup,
     getAdminServiceListOrganizationMemberUsergroupsQueryKey,
     getAdminServiceListOrganizationMemberUsersQueryKey,
     getAdminServiceListUsergroupMemberUsersQueryKey,
+    createAdminServiceRemoveUsergroupMemberUser,
+    createAdminServiceRenameUsergroup,
   } from "@rilldata/web-admin/client";
   import Avatar from "@rilldata/web-common/components/avatar/Avatar.svelte";
   import { Button } from "@rilldata/web-common/components/button/index.js";
@@ -30,30 +29,25 @@
 
   export let open = false;
   export let groupName: string;
-  export let currentUserEmail: string;
-  export let organizationUsers: V1OrganizationMemberUser[];
+  export let organizationUsers: V1OrganizationMemberUser[] = [];
+  export let currentUserEmail: string = "";
 
   let searchText = "";
+  let selectedUsers: V1OrganizationMemberUser[] = [];
   let pendingAdditions: string[] = [];
   let pendingRemovals: string[] = [];
 
   $: organization = $page.params.organization;
-  $: listUsergroupMemberUsers = createAdminServiceListUsergroupMemberUsers(
-    organization,
-    groupName,
-  );
 
   const queryClient = useQueryClient();
-  const removeUserGroupMember = createAdminServiceRemoveUsergroupMemberUser();
   const addUsergroupMemberUser = createAdminServiceAddUsergroupMemberUser();
+  const removeUserGroupMember = createAdminServiceRemoveUsergroupMemberUser();
   const renameUserGroup = createAdminServiceRenameUsergroup();
 
-  async function handleAdd(email: string) {
-    // Don't add if already in displayedMembers
-    if (!displayedMembers.some((member) => member.userEmail === email)) {
-      pendingAdditions = [...pendingAdditions, email];
-      pendingRemovals = pendingRemovals.filter((e) => e !== email);
-    }
+  async function handleRemove(email: string) {
+    selectedUsers = selectedUsers.filter((user) => user.userEmail !== email);
+    pendingRemovals = [...pendingRemovals, email];
+    pendingAdditions = pendingAdditions.filter((e) => e !== email);
   }
 
   async function handleRename(groupName: string, newName: string) {
@@ -84,9 +78,18 @@
     }
   }
 
-  async function handleRemove(email: string) {
-    pendingRemovals = [...pendingRemovals, email];
-    pendingAdditions = pendingAdditions.filter((e) => e !== email);
+  async function handleAdd(email: string) {
+    const user = organizationUsers.find((u) => u.userEmail === email);
+
+    // Don't add if already in selectedUsers
+    if (
+      user &&
+      !selectedUsers.some((selected) => selected.userEmail === email)
+    ) {
+      selectedUsers = [...selectedUsers, user];
+      pendingAdditions = [...pendingAdditions, email];
+      pendingRemovals = pendingRemovals.filter((e) => e !== email);
+    }
   }
 
   async function applyPendingChanges() {
@@ -182,34 +185,12 @@
     },
   );
 
-  $: displayedMembers = [
-    ...($listUsergroupMemberUsers.data?.members.filter(
-      (member) => !pendingRemovals.includes(member.userEmail),
-    ) || []),
-    ...pendingAdditions
-      .filter(
-        (email) =>
-          !$listUsergroupMemberUsers.data?.members.some(
-            (m) => m.userEmail === email,
-          ),
-      )
-      .map((email) => ({
-        userEmail: email,
-        userName:
-          organizationUsers.find((u) => u.userEmail === email)?.userName ||
-          email,
-        userPhotoUrl:
-          organizationUsers.find((u) => u.userEmail === email)?.userPhotoUrl ||
-          undefined,
-      })),
-  ];
+  $: coercedUsersToOptions = organizationUsers.map((user) => ({
+    value: user.userEmail,
+    label: user.userName,
+  }));
 
-  $: coercedUsersToOptions = organizationUsers.map((user) => {
-    return {
-      value: user.userEmail,
-      label: user.userName,
-    };
-  });
+  $: console.log("selectedUsers: ", selectedUsers);
 
   function getMetadata(email: string) {
     const user = organizationUsers.find((user) => user.userEmail === email);
@@ -221,6 +202,7 @@
   function handleClose() {
     open = false;
     searchText = "";
+    selectedUsers = [];
     pendingAdditions = [];
     pendingRemovals = [];
   }
@@ -254,11 +236,10 @@
       <div class="flex flex-col gap-4 w-full">
         <Input
           bind:value={$form.newName}
-          placeholder="New name"
-          id="user-group-name"
+          id="edit-user-group-name"
           label="Name"
+          placeholder="Untitled"
           errors={$errors.newName}
-          alwaysShowError
         />
 
         <div class="flex flex-col gap-y-1">
@@ -274,13 +255,18 @@
             placeholder="Search for users"
             {getMetadata}
             selectedValues={[
-              ...new Set(displayedMembers.map((member) => member.userEmail)),
+              ...new Set(
+                [
+                  ...selectedUsers.map((user) => user.userEmail),
+                  ...pendingAdditions,
+                ].filter((email) => !pendingRemovals.includes(email)),
+              ),
             ]}
             onSelectedChange={(values) => {
               if (!values) return;
 
               const newEmails = values.map((v) => v.value);
-              const currentEmails = displayedMembers.map((m) => m.userEmail);
+              const currentEmails = selectedUsers.map((u) => u.userEmail);
 
               // Find emails to add (in new but not in current)
               newEmails
@@ -298,41 +284,37 @@
     </form>
 
     <div class="flex flex-col gap-2 w-full">
-      {#if displayedMembers.length > 0}
+      {#if selectedUsers.length > 0}
         <div class="flex flex-row items-center gap-x-1">
           <div class="text-xs font-semibold uppercase text-gray-500">
-            {displayedMembers.length} User{displayedMembers.length === 1
-              ? ""
-              : "s"}
+            {selectedUsers.length} User{selectedUsers.length === 1 ? "" : "s"}
           </div>
         </div>
       {/if}
       <div class="max-h-[208px] overflow-y-auto">
         <div class="flex flex-col gap-2">
-          {#each displayedMembers as member}
+          {#each selectedUsers as user (user.userEmail)}
             <div class="flex flex-row justify-between gap-2 items-center">
               <div class="flex items-center gap-2">
                 <Avatar
                   avatarSize="h-7 w-7"
-                  alt={member.userName}
-                  src={member.userPhotoUrl}
+                  alt={user.userName}
+                  src={user.userPhotoUrl}
                 />
                 <div class="flex flex-col text-left">
                   <span class="text-sm font-medium text-gray-900">
-                    {member.userName}
+                    {user.userName}
                     <span class="text-gray-500 font-normal">
-                      {member.userEmail === currentUserEmail ? "(You)" : ""}
+                      {user.userEmail === currentUserEmail ? "(You)" : ""}
                     </span>
                   </span>
-                  <span class="text-xs text-gray-500">{member.userEmail}</span>
+                  <span class="text-xs text-gray-500">{user.userEmail}</span>
                 </div>
               </div>
               <Button
                 type="text"
                 danger
-                on:click={() => {
-                  handleRemove(member.userEmail);
-                }}
+                on:click={() => handleRemove(user.userEmail)}
               >
                 Remove
               </Button>
@@ -341,14 +323,12 @@
         </div>
       </div>
     </div>
+
     <DialogFooter>
       <Button type="plain" on:click={handleClose}>Cancel</Button>
       <Button
         type="primary"
-        disabled={$submitting ||
-          ($form.newName.trim() === groupName &&
-            pendingAdditions.length === 0 &&
-            pendingRemovals.length === 0)}
+        disabled={$submitting || $form.newName.trim() === ""}
         form={formId}
         submitForm
       >

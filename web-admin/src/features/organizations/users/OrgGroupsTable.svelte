@@ -59,7 +59,7 @@
       enableSorting: false,
       cell: ({ row }) =>
         flexRender(OrgGroupsTableActionsCell, {
-          name: row.original.groupName,
+          groupName: row.original.groupName,
           currentUserEmail: currentUserEmail,
           searchUsersList: searchUsersList,
         }),
