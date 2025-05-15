@@ -255,7 +255,9 @@
             options={coercedUsersToOptions}
             placeholder="Search for users"
             {getMetadata}
-            selectedValues={displayedMembers.map((member) => member.userEmail)}
+            selectedValues={[
+              ...new Set(displayedMembers.map((member) => member.userEmail)),
+            ]}
             onSelectedChange={(values) => {
               if (!values) return;
 
