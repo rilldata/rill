@@ -12,7 +12,7 @@ export class RillTime {
   public timezone: string | undefined;
 
   public constructor(public readonly interval: RillTimeInterval) {
-    this.isComplete = !this.interval.includesCurrent;
+    this.isComplete = !this.interval.includesFuture;
   }
 
   public withGrain(grain: string) {
@@ -37,13 +37,13 @@ export class RillTime {
 }
 
 interface RillTimeInterval {
-  includesCurrent: boolean;
+  includesFuture: boolean;
 
   getLabel(): [label: string, supported: boolean];
 }
 
 export class RillTimeAnchoredDurationInterval implements RillTimeInterval {
-  public includesCurrent: boolean;
+  public includesFuture: boolean;
 
   public constructor(
     public readonly grains: RillGrain[],
@@ -51,8 +51,8 @@ export class RillTimeAnchoredDurationInterval implements RillTimeInterval {
     public readonly point: RillPointInTime,
   ) {
     // If this ends before current, then it is guaranteed to be complete.
-    const endingBeforeCurrent = !starting && !point.afterCurrent;
-    this.includesCurrent = !endingBeforeCurrent;
+    const endingBeforeCurrent = !starting && !point.includesFuture;
+    this.includesFuture = !endingBeforeCurrent;
   }
 
   public getLabel(): [label: string, supported: boolean] {
@@ -61,7 +61,7 @@ export class RillTimeAnchoredDurationInterval implements RillTimeInterval {
 }
 
 export class RillTimeOrdinalInterval implements RillTimeInterval {
-  public includesCurrent = false; // TODO: anything snapped to end before current should be true here
+  public includesFuture = false; // TODO: anything snapped to end before current should be true here
 
   public getLabel(): [label: string, supported: boolean] {
     return ["", false];
@@ -69,13 +69,13 @@ export class RillTimeOrdinalInterval implements RillTimeInterval {
 }
 
 export class RillTimeStartEndInterval implements RillTimeInterval {
-  public includesCurrent = false;
+  public includesFuture = false;
 
   public constructor(
     public readonly start: RillPointInTime,
     public readonly end: RillPointInTime,
   ) {
-    this.includesCurrent = !start.afterCurrent && end.afterCurrent;
+    this.includesFuture = start.includesFuture || end.includesFuture;
   }
 
   public getLabel(): [label: string, supported: boolean] {
@@ -106,7 +106,7 @@ export class RillTimeStartEndInterval implements RillTimeInterval {
     const grainPrefix = numDiff ? numDiff + " " : "";
     const grainLabel = `${grainPrefix}${grainPart}${grainSuffix}`;
 
-    if (!start.firstPart.afterCurrent && !end.firstPart.afterCurrent) {
+    if (!start.firstPart.includesFuture && !end.firstPart.includesFuture) {
       if (end.num < -1) {
         return ["", false];
       }
@@ -116,10 +116,11 @@ export class RillTimeStartEndInterval implements RillTimeInterval {
       return [`last ${grainLabel}`, true];
     }
 
-    if (start.firstPart.afterCurrent && end.firstPart.afterCurrent) {
+    if (start.firstPart.includesFuture && end.firstPart.includesFuture) {
       if (end.num > 1) {
         return ["", false];
       }
+      if (end.num === 1) return [`next ${grainPart}`, true];
       return [`next ${grainLabel}`, true];
     }
 
@@ -130,14 +131,12 @@ export class RillTimeStartEndInterval implements RillTimeInterval {
 }
 
 export class RillGrainToInterval implements RillTimeInterval {
-  public includesCurrent = false;
+  public includesFuture = false;
 
   public constructor(public readonly point: RillGrainPointInTime) {
-    const firstGrainOfFirstPart = point.parts[0]?.grains[0];
-    if (!firstGrainOfFirstPart) return;
-    this.includesCurrent =
-      firstGrainOfFirstPart.num === 0 ||
-      firstGrainOfFirstPart.num === undefined;
+    const first = point.getSingleGrainAndNum();
+    if (!first) return;
+    this.includesFuture = first.num >= 0 || first.num === undefined;
   }
 
   public getLabel(): [label: string, supported: boolean] {
@@ -159,7 +158,7 @@ export class RillGrainToInterval implements RillTimeInterval {
 }
 
 export class RillIsoInterval implements RillTimeInterval {
-  public includesCurrent = false;
+  public includesFuture = false;
 
   public getLabel(): [label: string, supported: boolean] {
     return ["", false];
@@ -167,18 +166,18 @@ export class RillIsoInterval implements RillTimeInterval {
 }
 
 interface RillPointInTime {
-  afterCurrent: boolean;
+  includesFuture: boolean;
 }
 
 export class RillOrdinalPointInTime implements RillPointInTime {
-  public afterCurrent = false;
+  public includesFuture = false;
 }
 
 export class RillGrainPointInTime implements RillPointInTime {
-  public afterCurrent: boolean;
+  public includesFuture: boolean;
 
   public constructor(public readonly parts: RillGrainPointInTimePart[]) {
-    this.afterCurrent = parts[0]?.afterCurrent ?? false;
+    this.includesFuture = parts[0]?.includesFuture ?? false;
   }
 
   public getSingleGrainAndNum() {
@@ -205,7 +204,7 @@ export class RillGrainPointInTimePart {
   public snap: string;
   public suffix: string;
 
-  public afterCurrent = false;
+  public includesFuture = false;
 
   public constructor(public readonly grains: RillGrain[]) {
     this.updateAfterCurrent();
@@ -230,8 +229,9 @@ export class RillGrainPointInTimePart {
   }
 
   public diff(num1: number, part2: RillGrainPointInTimePart, num2: number) {
-    const offset = this.suffix === part2.suffix ? 0 : 1;
-    return Math.abs(num1 - num2) + offset;
+    const offset1 = this.suffix === "$" ? 1 : 0;
+    const offset2 = part2.suffix === "$" ? 1 : 0;
+    return Math.abs(num1 + offset1 - (num2 + offset2));
   }
 
   private updateAfterCurrent() {
@@ -241,9 +241,9 @@ export class RillGrainPointInTimePart {
     const firstGrainNum = firstGrain.num ?? 0;
 
     if (firstGrainNum === 0 && this.suffix !== undefined) {
-      this.afterCurrent = this.suffix === "$";
+      this.includesFuture = this.suffix === "$";
     } else {
-      this.afterCurrent = this.prefix === "+";
+      this.includesFuture = this.prefix === "+";
     }
   }
 }
@@ -307,97 +307,6 @@ export class RillAbsoluteTime implements RillTimePart {
 
   public toString() {
     return this.timeStr;
-  }
-}
-
-export class RillTimeLabelledAnchor implements RillTimePart {
-  public isComplete = false; // TODO: can this be anything else?
-
-  public constructor(public readonly label: string) {}
-
-  public static postProcessor([label]: [string]) {
-    return new RillTimeLabelledAnchor(label);
-  }
-
-  public getLabel() {
-    return this.label;
-  }
-
-  public toString() {
-    return this.label;
-  }
-}
-
-export class RillTimeOrdinal implements RillTimePart {
-  public isComplete = true;
-
-  public constructor(
-    private readonly grain: string,
-    private readonly num: number,
-  ) {}
-
-  public getLabel() {
-    const grainPart = grainAliasToDateTimeUnit(this.grain);
-    return `${grainPart} ${this.num}`;
-  }
-
-  public toString() {
-    return `${this.grain}${this.num}`;
-  }
-}
-
-export class RillTimeRelative implements RillTimePart {
-  public isComplete = true;
-
-  public constructor(
-    private readonly prefix: "+" | "-" | "<" | ">" | undefined,
-    private readonly num: number,
-    private readonly grain: string,
-  ) {}
-
-  public asIncomplete() {
-    this.isComplete = false;
-    return this;
-  }
-
-  public getLabel() {
-    const grainPart = grainAliasToDateTimeUnit(this.grain);
-    const grainSuffix = this.num > 1 ? "s" : "";
-    const grainPrefix = this.num ? this.num + " " : "";
-    const grainLabel = `${grainPrefix}${grainPart}${grainSuffix}`;
-
-    switch (this.prefix) {
-      case undefined:
-        if (this.num === 1) {
-          return `${this.isComplete ? "previous" : "this"} ${grainPart}`;
-        }
-        return `last ${grainLabel}`;
-
-      case "-":
-        if (this.num === 1) {
-          return `previous ${grainPart}`;
-        }
-        return `${grainLabel} ago`;
-
-      case "+":
-        if (this.num === 1) {
-          return `next ${grainPart}`;
-        }
-        return `${grainLabel} in the future`;
-
-      case "<":
-        return `first ${grainLabel}`;
-
-      case ">":
-        return `last ${grainLabel}`;
-    }
-  }
-
-  public toString() {
-    return (
-      `${this.prefix ?? ""}${this.num != 0 ? this.num : ""}` +
-      `${this.grain}${this.isComplete ? "" : "~"}`
-    );
   }
 }
 
