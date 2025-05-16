@@ -18,7 +18,6 @@
   export let isFetching: boolean;
   export let isValidPercentOfTotal: (measureName: string) => boolean;
   export let isTimeComparisonActive: boolean;
-  export let dimensionDescription: string;
   export let isBeingCompared: boolean;
   export let sortedAscending: boolean;
   export let displayName: string;
@@ -74,7 +73,7 @@
         </button>
         <TooltipContent slot="tooltip-content">
           <div class="pointer-events-none items-baseline">
-            <div class="truncate" aria-label="tooltip-name">
+            <div aria-label="tooltip-name">
               {displayName}
             </div>
           </div>

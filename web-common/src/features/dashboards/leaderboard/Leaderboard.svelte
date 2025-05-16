@@ -328,7 +328,6 @@
       {allowExpandTable}
       {hovered}
       displayName={displayName || dimensionName}
-      dimensionDescription={description}
       {dimensionName}
       {isBeingCompared}
       isFetching={isLoading}
