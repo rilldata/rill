@@ -1,7 +1,7 @@
 <script lang="ts">
   import {
-    createAdminServiceSetOrganizationMemberUsergroupRole,
-    createAdminServiceAddOrganizationMemberUsergroup,
+    createAdminServiceSetProjectMemberUsergroupRole,
+    createAdminServiceAddProjectMemberUsergroup,
     getAdminServiceListProjectMemberUsergroupsQueryKey,
     createAdminServiceRemoveProjectMemberUsergroup,
   } from "@rilldata/web-admin/client";
@@ -22,21 +22,18 @@
   let isOpen = false;
 
   const queryClient = useQueryClient();
-
-  // FIXME
-  const addUserGroupRole = createAdminServiceAddOrganizationMemberUsergroup();
-
-  // FIXME
-  const setUserGroupRole =
-    createAdminServiceSetOrganizationMemberUsergroupRole();
-
+  const addProjectMemberUsergroup =
+    createAdminServiceAddProjectMemberUsergroup();
+  const setProjectMemberUsergroupRole =
+    createAdminServiceSetProjectMemberUsergroupRole();
   const removeProjectMemberUsergroup =
     createAdminServiceRemoveProjectMemberUsergroup();
 
   async function handleAddRole(role: string) {
     try {
-      await $addUserGroupRole.mutateAsync({
+      await $addProjectMemberUsergroup.mutateAsync({
         organization: organization,
+        project: project,
         usergroup: group.groupName,
         data: {
           role: role,
@@ -63,8 +60,9 @@
 
   async function handleSetRole(role: string) {
     try {
-      await $setUserGroupRole.mutateAsync({
+      await $setProjectMemberUsergroupRole.mutateAsync({
         organization: organization,
+        project: project,
         usergroup: group.groupName,
         data: {
           role: role,
