@@ -183,7 +183,7 @@
 >
   <MultiInput
     id="inputs"
-    placeholder="Search users, groups or add emails, separated by commas"
+    placeholder="Add emails and groups, separated by commas"
     contentClassName="relative"
     bind:values={$form.inputs}
     errors={$errors.inputs}
