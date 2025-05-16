@@ -54,7 +54,7 @@
   }
 </script>
 
-<div class="flex gap-x-3 p-2 w-full min-w-56">
+<div class="flex gap-x-3 w-full">
   {#each { length: visibleMonths } as month, i (month)}
     <Month
       {firstDayOfWeek}

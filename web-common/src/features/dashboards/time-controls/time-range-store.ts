@@ -17,6 +17,7 @@ import {
   type DashboardTimeControls,
   TimeComparisonOption,
   type TimeRange,
+  type TimeRangeMeta,
   type TimeRangeOption,
   TimeRangePreset,
 } from "@rilldata/web-common/lib/time/types";
@@ -28,6 +29,8 @@ import {
   V1TimeGrain,
 } from "@rilldata/web-common/runtime-client";
 import type { QueryObserverResult } from "@tanstack/svelte-query";
+import { RillTime } from "../url-state/time-ranges/RillTime";
+import { parseRillTime } from "../url-state/time-ranges/parser";
 
 export type TimeRangeControlsState = {
   latestWindowTimeRanges: Array<TimeRangeOption>;
@@ -260,4 +263,112 @@ export function getValidComparisonOption(
   }
 
   return timeRange.comparisonTimeRanges[0].offset as TimeComparisonOption;
+}
+
+export type UITimeRange = V1ExploreTimeRange & {
+  meta?: TimeRangeMeta;
+  enabled?: boolean;
+  parsed?: RillTime;
+};
+
+export function bucketTimeRanges(
+  ranges: V1ExploreTimeRange[],
+  defaultTimeRange: string | undefined,
+  smallestTimeGrain?: V1TimeGrain | undefined,
+) {
+  let latestWindowTimeRanges: UITimeRange[] = [];
+  let periodToDateRanges: UITimeRange[] = [];
+  let previousCompleteDateRanges: UITimeRange[] = [];
+  const customTimeRanges: UITimeRange[] = [];
+  let hasDefaultInRanges = false;
+
+  // const defaultTimeRange = explore?.defaultPreset?.timeRange;
+  if (ranges.length) {
+    for (const range of ranges) {
+      if (!range.range) continue;
+
+      // default time range is part of availableTimeRanges.
+      // this is used to not show a separate selection for the default
+      if (defaultTimeRange === range.range) {
+        hasDefaultInRanges = true;
+      }
+
+      if (range.range in LATEST_WINDOW_TIME_RANGES) {
+        const meta = LATEST_WINDOW_TIME_RANGES[range.range] as TimeRangeMeta;
+
+        latestWindowTimeRanges.push({
+          ...range,
+          meta,
+        });
+      } else if (range.range in PERIOD_TO_DATE_RANGES) {
+        periodToDateRanges.push({
+          ...range,
+          meta: PERIOD_TO_DATE_RANGES[range.range] as TimeRangeMeta,
+        });
+      } else if (range.range in PREVIOUS_COMPLETE_DATE_RANGES) {
+        previousCompleteDateRanges.push({
+          ...range,
+          meta: PREVIOUS_COMPLETE_DATE_RANGES[range.range] as TimeRangeMeta,
+        });
+      } else {
+        if (range.range.startsWith("P")) {
+          const meta = isoDurationToTimeRangeMeta(
+            range.range,
+            range.comparisonTimeRanges?.[0]?.offset as TimeComparisonOption,
+          );
+          latestWindowTimeRanges.push({
+            ...range,
+            meta,
+          });
+        } else {
+          customTimeRanges.push(range);
+        }
+      }
+    }
+  } else {
+    latestWindowTimeRanges = Object.entries(LATEST_WINDOW_TIME_RANGES).map(
+      ([range, meta]) => {
+        if (meta.rillSyntax) {
+          const parsed = parseRillTime(meta.rillSyntax);
+
+          console.log({ parsed });
+        }
+
+        return {
+          range,
+          meta,
+          comparisonTimeRanges: [],
+        };
+      },
+    );
+    periodToDateRanges = Object.entries(PERIOD_TO_DATE_RANGES).map(
+      ([range, meta]) => ({
+        range,
+        meta,
+        comparisonTimeRanges: [],
+      }),
+    );
+    previousCompleteDateRanges = Object.entries(
+      PREVIOUS_COMPLETE_DATE_RANGES,
+    ).map(([range, meta]) => ({
+      range,
+      meta,
+      comparisonTimeRanges: [],
+    }));
+    hasDefaultInRanges =
+      !!defaultTimeRange &&
+      (defaultTimeRange in LATEST_WINDOW_TIME_RANGES ||
+        defaultTimeRange in PERIOD_TO_DATE_RANGES ||
+        defaultTimeRange in PREVIOUS_COMPLETE_DATE_RANGES);
+  }
+
+  return {
+    ranges: [
+      latestWindowTimeRanges,
+      periodToDateRanges,
+      previousCompleteDateRanges,
+    ],
+    customTimeRanges,
+    showDefaultItem: !!defaultTimeRange && !hasDefaultInRanges,
+  };
 }
