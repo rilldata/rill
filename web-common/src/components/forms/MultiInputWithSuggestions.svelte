@@ -2,6 +2,7 @@
   import { createEventDispatcher, onMount, tick, onDestroy } from "svelte";
   import MultiInput from "@rilldata/web-common/components/forms/MultiInput.svelte";
   import AvatarListItem from "@rilldata/web-admin/features/organizations/users/AvatarListItem.svelte";
+  import { PillManager } from "./pill-manager";
 
   type Suggestion = {
     value: string;
@@ -26,41 +27,10 @@
   export let id: string = "multi-input-with-suggestions";
 
   const dispatch = createEventDispatcher();
-
-  // Convert string array to PillItem array with unique IDs
-  let pillItems: PillItem[] = values.map((val) => ({
-    id: generateUniqueId(),
-    value: val,
-  }));
-
-  // Generate a unique ID for each pill
-  function generateUniqueId(): string {
-    return Math.random().toString(36).substring(2, 10);
-  }
-
-  // Keep values in sync with pillItems
-  $: {
-    if (
-      values.length !== pillItems.length ||
-      !values.every((val, i) => val === pillItems[i].value)
-    ) {
-      pillItems = values.map((val, i) => {
-        // If we already have a pill at this index, preserve its ID
-        if (pillItems[i]) {
-          return { ...pillItems[i], value: val };
-        }
-        // Otherwise create a new pill with a new ID
-        return { id: generateUniqueId(), value: val };
-      });
-    }
-  }
-
-  // Update values when pillItems change
-  function updateValues() {
-    const newValues = pillItems.map((item) => item.value);
+  const pillManager = new PillManager(values, (newValues) => {
     values = newValues;
     dispatch("change", { values: newValues });
-  }
+  });
 
   let inputValue = "";
   let showSuggestions = false;
@@ -131,16 +101,7 @@
 
         // Update the pill value directly
         if (inputId) {
-          const pillIndex = pillItems.findIndex((pill) => pill.id === inputId);
-          if (pillIndex !== -1) {
-            const newPillItems = [...pillItems];
-            newPillItems[pillIndex] = {
-              ...newPillItems[pillIndex],
-              value: inputValue,
-            };
-            pillItems = newPillItems;
-            updateValues();
-          }
+          pillManager.updatePillValue(inputId, inputValue);
         }
 
         if (filteredSuggestions.length > 0) {
@@ -163,15 +124,15 @@
     });
   }
 
-  // Re-setup listeners when values or pillIds change
-  $: if (values || pillIds) {
+  // Re-setup listeners when values change
+  $: if (values) {
     tick().then(() => {
       setupInputListeners();
     });
   }
 
   // Keep pillIds in sync with pillItems
-  $: pillIds = pillItems.map((pill) => pill.id);
+  $: pillIds = pillManager.getPills().map((pill) => pill.id);
 
   // Update suggestions when they change
   $: if (suggestions) {
@@ -202,35 +163,13 @@
 
       // Find which pill to update based on activeInputId
       if (activeInputId) {
-        const pillIndex = pillItems.findIndex(
-          (pill) => pill.id === activeInputId,
-        );
-        if (pillIndex !== -1) {
-          const newPillItems = [...pillItems];
-          newPillItems[pillIndex] = {
-            ...newPillItems[pillIndex],
-            value: inputValue,
-          };
-          pillItems = newPillItems;
-          updateValues();
-        }
+        pillManager.updatePillValue(activeInputId, inputValue);
       }
     }
 
     // Also handle pillItems changes
     if (e.detail?.values) {
-      // Convert the string array to pill items preserving IDs where possible
-      const newPillItems: PillItem[] = e.detail.values.map((val, i) => {
-        // If we already have a pill at this index, preserve its ID
-        if (pillItems[i]) {
-          return { ...pillItems[i], value: val };
-        }
-        // Otherwise create a new pill with a new ID
-        return { id: generateUniqueId(), value: val };
-      });
-
-      pillItems = newPillItems;
-      updateValues();
+      pillManager.setValues(e.detail.values);
     }
   }
 
@@ -239,36 +178,25 @@
     let pillIndex = -1;
 
     if (activeInputId) {
-      pillIndex = pillItems.findIndex((pill) => pill.id === activeInputId);
+      const pills = pillManager.getPills();
+      pillIndex = pills.findIndex((pill) => pill.id === activeInputId);
     }
 
     // If no active input ID or not found, find first empty pill
     if (pillIndex === -1) {
-      pillIndex = pillItems.findIndex((pill) => !pill.value.trim());
+      const pills = pillManager.getPills();
+      pillIndex = pills.findIndex((pill) => !pill.value.trim());
       if (pillIndex === -1) {
         // If no empty pill, use the last one
-        pillIndex = pillItems.length - 1;
+        pillIndex = pills.length - 1;
       }
     }
 
-    // Create new array of pill items with the updated value
-    const newPillItems = [...pillItems];
-    newPillItems[pillIndex] = {
-      ...newPillItems[pillIndex],
-      value: suggestion.value,
-    };
-
-    // Add an empty pill at the end if we're at the last one
-    if (pillIndex === newPillItems.length - 1) {
-      newPillItems.push({
-        id: generateUniqueId(),
-        value: "",
-      });
+    // Update the pill value
+    const pills = pillManager.getPills();
+    if (pillIndex !== -1) {
+      pillManager.updatePillValue(pills[pillIndex].id, suggestion.value);
     }
-
-    // Update pill items and dispatch change
-    pillItems = newPillItems;
-    updateValues();
 
     // Reset state
     inputValue = "";
@@ -289,15 +217,12 @@
 
       // Re-setup listeners
       setupInputListeners();
-
-      // Ensure form receives the updated values
-      dispatch("change", { values: pillItems.map((item) => item.value) });
     }, 10);
   }
 
   function updateFilteredSuggestions() {
     // Get currently selected values
-    const selectedValues = pillItems.map((item) => item.value).filter(Boolean);
+    const selectedValues = pillManager.getValues().filter(Boolean);
 
     if (!inputValue || !inputValue.trim()) {
       // Show all suggestions when input is empty, but exclude already selected values
@@ -324,7 +249,7 @@
       {id}
       {placeholder}
       {contentClassName}
-      values={pillItems.map((p) => p.value)}
+      values={pillManager.getValues()}
       {pillIds}
       {errors}
       {singular}
