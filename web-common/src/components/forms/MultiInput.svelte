@@ -26,7 +26,6 @@
   export let values: string[];
   export let errors: Record<string | number, string[]> | undefined;
 
-  // Add support for optional pill IDs
   export let pillIds: string[] = [];
 
   $: lastIdx = values.length - 1;

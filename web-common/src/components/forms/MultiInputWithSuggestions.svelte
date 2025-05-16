@@ -128,6 +128,21 @@
         inputValue = target.value || "";
         activeInputId = inputId;
         updateFilteredSuggestions();
+
+        // Update the pill value directly
+        if (inputId) {
+          const pillIndex = pillItems.findIndex((pill) => pill.id === inputId);
+          if (pillIndex !== -1) {
+            const newPillItems = [...pillItems];
+            newPillItems[pillIndex] = {
+              ...newPillItems[pillIndex],
+              value: inputValue,
+            };
+            pillItems = newPillItems;
+            updateValues();
+          }
+        }
+
         if (filteredSuggestions.length > 0) {
           showSuggestions = true;
         }
@@ -183,6 +198,22 @@
       // Only show dropdown when typing (not when clicking to toggle)
       if (inputValue.trim() && filteredSuggestions.length > 0) {
         showSuggestions = true;
+      }
+
+      // Find which pill to update based on activeInputId
+      if (activeInputId) {
+        const pillIndex = pillItems.findIndex(
+          (pill) => pill.id === activeInputId,
+        );
+        if (pillIndex !== -1) {
+          const newPillItems = [...pillItems];
+          newPillItems[pillIndex] = {
+            ...newPillItems[pillIndex],
+            value: inputValue,
+          };
+          pillItems = newPillItems;
+          updateValues();
+        }
       }
     }
 
@@ -258,6 +289,9 @@
 
       // Re-setup listeners
       setupInputListeners();
+
+      // Ensure form receives the updated values
+      dispatch("change", { values: pillItems.map((item) => item.value) });
     }, 10);
   }
 
