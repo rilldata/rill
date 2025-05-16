@@ -12,6 +12,7 @@
   export let shape: "circle" | "square" = "circle";
   export let count: number = 0;
   export let role: string | null = null;
+  export let leftSpacing: boolean = true;
   export let showGuestChip: boolean = false;
 
   function getInitials(name: string) {
@@ -19,7 +20,11 @@
   }
 </script>
 
-<div class="flex items-center gap-2 py-2 pl-2">
+<div
+  class={cn("flex items-center gap-2 py-2", {
+    "pl-2": leftSpacing,
+  })}
+>
   {#if shape === "circle"}
     <Avatar
       avatarSize="h-7 w-7"
