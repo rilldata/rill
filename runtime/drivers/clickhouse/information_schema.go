@@ -2,7 +2,6 @@ package clickhouse
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"fmt"
 	"strings"
@@ -69,6 +68,7 @@ func (i informationSchema) All(ctx context.Context, like string) ([]*drivers.Tab
 		ORDER BY SCHEMA, NAME, TABLE_TYPE, ORDINAL_POSITION
 	`, dbFilter, likeClause)
 
+	ctx = contextWithQueryID(ctx)
 	rows, err := conn.QueryxContext(ctx, q, args...)
 	if err != nil {
 		return nil, err
@@ -111,6 +111,7 @@ func (i informationSchema) Lookup(ctx context.Context, db, schema, name string) 
 		args = append(args, schema, name)
 	}
 
+	ctx = contextWithQueryID(ctx)
 	rows, err := conn.QueryxContext(ctx, q, args...)
 	if err != nil {
 		return nil, err
@@ -150,15 +151,14 @@ func (i informationSchema) LoadPhysicalSize(ctx context.Context, tables []*drive
 	`)
 	args := make([]interface{}, 0, len(tables)*2)
 	placeholders := make([]string, 0, len(tables))
-
 	for _, table := range tables {
-		placeholders = append(placeholders, "(?, ?)")
 		args = append(args, table.DatabaseSchema, table.Name)
+		placeholders = append(placeholders, "(?, ?)")
 	}
-
 	queryBuilder.WriteString(strings.Join(placeholders, ", "))
 	queryBuilder.WriteString(") GROUP BY database, table")
 
+	ctx = contextWithQueryID(ctx)
 	rows, err := conn.QueryxContext(ctx, queryBuilder.String(), args...)
 	if err != nil {
 		return err
@@ -261,45 +261,4 @@ func (i informationSchema) scanTables(rows *sqlx.Rows) ([]*drivers.Table, error)
 	}
 
 	return res, nil
-}
-
-func (i informationSchema) entityType(ctx context.Context, db, name string) (typ string, onCluster bool, err error) {
-	conn, release, err := i.c.acquireMetaConn(ctx)
-	if err != nil {
-		return "", false, err
-	}
-	defer func() { _ = release() }()
-
-	var q string
-	if i.c.config.Cluster == "" {
-		q = `SELECT
-    			multiIf(engine IN ('MaterializedView', 'View'), 'VIEW', engine = 'Dictionary', 'DICTIONARY', 'TABLE') AS type,
-    			0 AS is_on_cluster
-			FROM system.tables AS t
-			JOIN system.databases AS db ON t.database = db.name
-			WHERE t.database = coalesce(?, currentDatabase()) AND t.name = ?`
-	} else {
-		q = `SELECT
-    			multiIf(engine IN ('MaterializedView', 'View'), 'VIEW', engine = 'Dictionary', 'DICTIONARY', 'TABLE') AS type,
-    			countDistinct(_shard_num) > 1 AS is_on_cluster
-			FROM clusterAllReplicas(` + safeSQLName(i.c.config.Cluster) + `, system.tables) AS t
-			JOIN system.databases AS db ON t.database = db.name
-			WHERE t.database = coalesce(?, currentDatabase()) AND t.name = ?
-			GROUP BY engine, t.name`
-	}
-	var args []any
-	if db == "" {
-		args = []any{nil, name}
-	} else {
-		args = []any{db, name}
-	}
-	row := conn.QueryRowxContext(ctx, q, args...)
-	err = row.Scan(&typ, &onCluster)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return "", false, drivers.ErrNotFound
-		}
-		return "", false, err
-	}
-	return typ, onCluster, nil
 }

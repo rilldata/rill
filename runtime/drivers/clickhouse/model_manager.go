@@ -12,7 +12,13 @@ import (
 const _defaultConcurrentInserts = 1
 
 type ModelInputProperties struct {
+	// SQL is the main entrypoint for models.
+	// It is usually a SELECT statement that usually is templated into `CREATE TABLE tbl AS %s` or `INSERT INTO tbl %s`.
+	// While often set, it is optional because tables may also be defined with InsertSQLs or purely using the output properties (e.g. for external tables or some dictionaries).
 	SQL string `mapstructure:"sql"`
+	// InsertSQLs is a list of partial SQL clauses that are templated into `INSERT INTO tbl %s` statements.
+	// This enables non-SELECT inserts like `INSERT INTO tbl FORMAT ...`, which can be useful in some cases.
+	InsertSQLs []string `mapstructure:"insert_sqls"`
 }
 
 type ModelOutputProperties struct {
@@ -64,6 +70,10 @@ type ModelOutputProperties struct {
 	DictionarySourceUser string `mapstructure:"dictionary_source_user"`
 	// DictionarySourcePassword is the password for the user that can access the source dictionary table. Only used when typ is DICTIONARY.
 	DictionarySourcePassword string `mapstructure:"dictionary_source_password"`
+	// DictionaryColumns is the column schema to be used in the dictionary. Only used when typ is DICTIONARY.
+	// The normal 'columns' property is still used for the dictionary's underlying table.
+	// The 'dictionary_columns' property enables specifying dictionary-specific column attributes, such as INJECTIVE.
+	DictionaryColumns string `mapstructure:"dictionary_columns"`
 }
 
 // validateAndApplyDefaults validates the model input and output properties and applies defaults.
@@ -101,11 +111,14 @@ func (c *Connection) validateAndApplyDefaults(opts *drivers.ModelExecuteOptions,
 		}
 		op.Typ = "TABLE"
 	}
-	if op.Typ == "" { // Apply default for plain unannotated models.
-		if opts.Env.DefaultMaterialize {
-			op.Typ = "TABLE"
-		} else {
+	if op.Typ == "" && ip != nil && len(ip.InsertSQLs) > 0 { // If InsertSQLs are set, default to TABLE.
+		op.Typ = "TABLE"
+	}
+	if op.Typ == "" { // Apply default for unannotated models.
+		if !opts.Env.DefaultMaterialize { // Only apply DefaultMaterialize for SQL models.
 			op.Typ = "VIEW"
+		} else {
+			op.Typ = "TABLE"
 		}
 	}
 	if op.Typ != "TABLE" && op.Typ != "VIEW" && op.Typ != "DICTIONARY" {
@@ -114,10 +127,14 @@ func (c *Connection) validateAndApplyDefaults(opts *drivers.ModelExecuteOptions,
 
 	// For tables, apply a default table engine.
 	if op.Engine == "" && (op.Typ == "TABLE" || op.Typ == "DICTIONARY") {
-		if c.config.Cluster != "" {
-			op.Engine = "ReplicatedMergeTree"
-		} else {
+		if c.config.Cluster == "" || c.config.isClickhouseCloud() {
+			// NOTE: Clickhouse Cloud automatically map MergeTree to SharedMergeTree.
 			op.Engine = "MergeTree"
+		} else {
+			// NOTE: Since we're not passing the replica path or name here (we don't know it),
+			// this REQUIRES the 'default_replica_path' and 'default_replica_name' properties to be configured on the server.
+			// See this page for details: https://clickhouse.com/docs/engines/table-engines/mergetree-family/replication.
+			op.Engine = "ReplicatedMergeTree"
 		}
 	}
 
@@ -133,11 +150,26 @@ func (c *Connection) validateAndApplyDefaults(opts *drivers.ModelExecuteOptions,
 		return fmt.Errorf(`must specify a "partition_by" when "incremental_strategy" is %q`, op.IncrementalStrategy)
 	}
 
-	// ClickHouse enforces the requirement of either a primary key or an ORDER BY clause for the ReplacingMergeTree engine.
-	// When using the incremental strategy as 'merge', the engine must be ReplacingMergeTree.
-	// This ensures that duplicate rows are eventually replaced, maintaining data consistency.
-	if op.IncrementalStrategy == drivers.IncrementalStrategyMerge && !(strings.Contains(op.Engine, "ReplacingMergeTree") || strings.Contains(op.EngineFull, "ReplacingMergeTree")) {
-		return fmt.Errorf(`must use "ReplacingMergeTree" engine when "incremental_strategy" is %q`, op.IncrementalStrategy)
+	// When the incremental strategy is "merge", we rewrite it to "append" and use the ReplacingMergeTree engine with the unique key as the ORDER BY.
+	if op.IncrementalStrategy == drivers.IncrementalStrategyMerge {
+		if len(op.UniqueKey) == 0 {
+			return fmt.Errorf("must specify a 'unique_key' when using the 'merge' incremental strategy")
+		}
+		if op.Engine != "" || op.OrderBy != "" {
+			return fmt.Errorf("cannot set 'engine' or 'order_by' when using the 'merge' incremental strategy")
+		}
+
+		var orderBy string
+		for _, col := range op.UniqueKey {
+			if orderBy != "" {
+				orderBy += ", "
+			}
+			orderBy += safeSQLName(col)
+		}
+
+		op.IncrementalStrategy = drivers.IncrementalStrategyAppend
+		op.Engine = "ReplacingMergeTree"
+		op.OrderBy = fmt.Sprintf("(%s)", orderBy)
 	}
 
 	// We want to use partition_overwrite as the default incremental strategy for models with partitions.
@@ -156,10 +188,19 @@ func (c *Connection) validateAndApplyDefaults(opts *drivers.ModelExecuteOptions,
 		op.IncrementalStrategy = drivers.IncrementalStrategyAppend
 	}
 
-	// The input props are optional, but if set, check there's a valid SQL query.
+	// The input props are optional, but if set, check its validity.
 	if ip != nil {
-		if ip.SQL == "" && op.Typ != "DICTIONARY" {
+		// Check there's a valid SQL query.
+		if ip.SQL == "" && len(ip.InsertSQLs) == 0 && op.Typ != "DICTIONARY" {
 			return fmt.Errorf("input SQL is required")
+		}
+		if ip.SQL != "" && len(ip.InsertSQLs) > 0 {
+			return fmt.Errorf("cannot use both sql and insert_sqls")
+		}
+
+		// If InsertSQLs are set, we need to ensure its not a view.
+		if len(ip.InsertSQLs) > 0 && op.Typ != "TABLE" && op.Typ != "DICTIONARY" {
+			return fmt.Errorf("can only use insert_sqls with table or dictionary types")
 		}
 	}
 
@@ -284,14 +325,14 @@ func (c *Connection) Delete(ctx context.Context, res *drivers.ModelResult) error
 		return fmt.Errorf("connector is not an OLAP")
 	}
 
-	_ = c.dropTable(ctx, stagingTableNameFor(res.Table))
+	_ = c.dropEntity(ctx, stagingTableNameFor(res.Table))
 
 	table, err := olap.InformationSchema().Lookup(ctx, c.config.Database, "", res.Table)
 	if err != nil {
 		return err
 	}
 
-	return c.dropTable(ctx, table.Name)
+	return c.dropEntity(ctx, table.Name)
 }
 
 func (c *Connection) MergePartitionResults(a, b *drivers.ModelResult) (*drivers.ModelResult, error) {
