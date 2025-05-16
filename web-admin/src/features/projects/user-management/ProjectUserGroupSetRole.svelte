@@ -1,9 +1,9 @@
 <script lang="ts">
   import {
-    createAdminServiceRemoveOrganizationMemberUsergroup,
     createAdminServiceSetOrganizationMemberUsergroupRole,
     createAdminServiceAddOrganizationMemberUsergroup,
-    getAdminServiceListOrganizationMemberUsergroupsQueryKey,
+    getAdminServiceListProjectMemberUsergroupsQueryKey,
+    createAdminServiceRemoveProjectMemberUsergroup,
   } from "@rilldata/web-admin/client";
   import type { V1MemberUsergroup } from "@rilldata/web-admin/client";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
@@ -16,16 +16,22 @@
 
   export let organization: string;
   export let group: V1MemberUsergroup;
+  export let project: string;
   export let manageOrgAdmins: boolean;
 
   let isOpen = false;
 
   const queryClient = useQueryClient();
+
+  // FIXME
   const addUserGroupRole = createAdminServiceAddOrganizationMemberUsergroup();
+
+  // FIXME
   const setUserGroupRole =
     createAdminServiceSetOrganizationMemberUsergroupRole();
-  const removeOrganizationMemberUsergroup =
-    createAdminServiceRemoveOrganizationMemberUsergroup();
+
+  const removeProjectMemberUsergroup =
+    createAdminServiceRemoveProjectMemberUsergroup();
 
   async function handleAddRole(role: string) {
     try {
@@ -38,8 +44,10 @@
       });
 
       await queryClient.invalidateQueries({
-        queryKey:
-          getAdminServiceListOrganizationMemberUsergroupsQueryKey(organization),
+        queryKey: getAdminServiceListProjectMemberUsergroupsQueryKey(
+          organization,
+          project,
+        ),
       });
 
       eventBus.emit("notification", {
@@ -64,8 +72,10 @@
       });
 
       await queryClient.invalidateQueries({
-        queryKey:
-          getAdminServiceListOrganizationMemberUsergroupsQueryKey(organization),
+        queryKey: getAdminServiceListProjectMemberUsergroupsQueryKey(
+          organization,
+          project,
+        ),
       });
 
       eventBus.emit("notification", {
@@ -81,14 +91,17 @@
 
   async function handleRemove() {
     try {
-      await $removeOrganizationMemberUsergroup.mutateAsync({
+      await $removeProjectMemberUsergroup.mutateAsync({
         organization: organization,
+        project: project,
         usergroup: group.groupName,
       });
 
       await queryClient.invalidateQueries({
-        queryKey:
-          getAdminServiceListOrganizationMemberUsergroupsQueryKey(organization),
+        queryKey: getAdminServiceListProjectMemberUsergroupsQueryKey(
+          organization,
+          project,
+        ),
       });
 
       eventBus.emit("notification", {

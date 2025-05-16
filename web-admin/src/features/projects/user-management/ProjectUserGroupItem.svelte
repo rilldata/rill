@@ -5,6 +5,7 @@
 
   export let organization: string;
   export let group: V1MemberUsergroup;
+  export let project: string;
   export let manageOrgAdmins: boolean;
   export let manageOrgMembers: boolean;
 </script>
@@ -16,5 +17,5 @@
     shape="square"
     showManage={manageOrgMembers}
   />
-  <ProjectUserGroupSetRole {organization} {group} {manageOrgAdmins} />
+  <ProjectUserGroupSetRole {organization} {group} {project} {manageOrgAdmins} />
 </div>

@@ -26,14 +26,13 @@
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import Avatar from "@rilldata/web-common/components/avatar/Avatar.svelte";
   import { getRandomBgColor } from "@rilldata/web-common/features/themes/color-config";
-
+  import { cn } from "@rilldata/web-common/lib/shadcn";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import CaretUpIcon from "@rilldata/web-common/components/icons/CaretUpIcon.svelte";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import Lock from "@rilldata/web-common/components/icons/Lock.svelte";
   import OrgUserGroupSetRole from "./OrgUserGroupSetRole.svelte";
-  import OrgUserGroupItem from "./OrgUserGroupItem.svelte";
-  import { cn } from "@rilldata/web-common/lib/shadcn";
+  import ProjectUserGroupItem from "./ProjectUserGroupItem.svelte";
 
   export let organization: string;
   export let project: string;
@@ -248,9 +247,10 @@
             />
           {/each}
           {#each projectUserGroups as group}
-            <OrgUserGroupItem
+            <ProjectUserGroupItem
               {organization}
               {group}
+              {project}
               {manageOrgAdmins}
               {manageOrgMembers}
             />
