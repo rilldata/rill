@@ -470,13 +470,20 @@ func (c *Connection) renameNonDistributedTable(ctx context.Context, oldName, new
 
 func (c *Connection) renameDictionary(ctx context.Context, oldName, newName string) error {
 	// Rename the dictionary's underlying table.
-	err := c.renameTable(ctx, dictionaryTableName(oldName), dictionaryTableName(newName))
+	// NOTE: There's a chance it doesn't exist (for dictionaries created with a custom source provided in engine_full), so we ignore not found errors.
+	// TODO: We actually need to do this otherwise the underlying table has a funky name.
+	// err := c.renameTable(ctx, dictionaryTableName(oldName), dictionaryTableName(newName))
+	// if err != nil && !errors.Is(err, drivers.ErrNotFound) {
+	// 	return err
+	// }
+
+	// Rename the dictionary itself.
+	// TODO: It's rather weird that this works because it's a dictionary, not a table.
+	err := c.renameTable(ctx, oldName, newName)
 	if err != nil && !errors.Is(err, drivers.ErrNotFound) {
 		return err
 	}
 
-	// Rename the dictionary itself.
-	// TODO: Tricky, we can't easily swap the table name in the source.
 	return nil
 }
 
