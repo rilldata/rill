@@ -66,7 +66,7 @@
     </span>
     {#if pendingAcceptance || email}
       <span class="text-xs text-gray-500">
-        {pendingAcceptance ? "Pending invitation" : email}2
+        {pendingAcceptance ? "Pending invitation" : email}
       </span>
     {/if}
     <div class="flex flex-row items-center gap-x-1">
