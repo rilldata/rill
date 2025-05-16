@@ -11,7 +11,9 @@ export class RillTime {
   public timeRangeGrain: string | undefined;
   public timezone: string | undefined;
 
-  public constructor(public readonly interval: RillTimeInterval) {}
+  public constructor(public readonly interval: RillTimeInterval) {
+    this.isComplete = !this.interval.includesCurrent;
+  }
 
   public withGrain(grain: string) {
     this.timeRangeGrain = grain;
@@ -25,7 +27,8 @@ export class RillTime {
 
   public getLabel() {
     console.log("GETTING LABEL");
-    return this.timeRange;
+    const [label, supported] = this.interval.getLabel();
+    return capitalizeFirstChar(supported ? label : this.timeRange);
   }
 
   public toString() {
@@ -34,89 +37,214 @@ export class RillTime {
 }
 
 interface RillTimeInterval {
-  getLabel(): string;
+  includesCurrent: boolean;
+
+  getLabel(): [label: string, supported: boolean];
 }
 
 export class RillTimeAnchoredDurationInterval implements RillTimeInterval {
+  public includesCurrent: boolean;
+
   public constructor(
     public readonly grains: RillGrain[],
     public readonly starting: boolean,
     public readonly point: RillPointInTime,
-  ) {}
+  ) {
+    // If this ends before current, then it is guaranteed to be complete.
+    const endingBeforeCurrent = !starting && !point.afterCurrent;
+    this.includesCurrent = !endingBeforeCurrent;
+  }
 
-  public getLabel() {
-    return "";
+  public getLabel(): [label: string, supported: boolean] {
+    return ["", false];
   }
 }
 
 export class RillTimeOrdinalInterval implements RillTimeInterval {
-  public getLabel() {
-    return "";
+  public includesCurrent = false; // TODO: anything snapped to end before current should be true here
+
+  public getLabel(): [label: string, supported: boolean] {
+    return ["", false];
   }
 }
 
 export class RillTimeStartEndInterval implements RillTimeInterval {
+  public includesCurrent = false;
+
   public constructor(
     public readonly start: RillPointInTime,
     public readonly end: RillPointInTime,
-  ) {}
+  ) {
+    this.includesCurrent = !start.afterCurrent && end.afterCurrent;
+  }
 
-  public getLabel() {
-    return "";
+  public getLabel(): [label: string, supported: boolean] {
+    if (
+      !(this.start instanceof RillGrainPointInTime) ||
+      !(this.end instanceof RillGrainPointInTime)
+    ) {
+      return ["", false];
+    }
+
+    const start = this.start.getSingleGrainAndNum();
+    const end = this.end.getSingleGrainAndNum();
+    if (!start || !end) return ["", false];
+
+    const numDiff = start.firstPart.diff(start.num, end.firstPart, end.num);
+    if (start.grain !== end.grain) {
+      if (numDiff > 1) {
+        return ["", false];
+      }
+
+      const startLabel = grainAliasToDateTimeUnit(start.grain as any);
+      const endLabel = grainAliasToDateTimeUnit(end.grain as any);
+      return [`${startLabel} to ${endLabel}`, true];
+    }
+
+    const grainPart = grainAliasToDateTimeUnit(start.grain);
+    const grainSuffix = numDiff > 1 ? "s" : "";
+    const grainPrefix = numDiff ? numDiff + " " : "";
+    const grainLabel = `${grainPrefix}${grainPart}${grainSuffix}`;
+
+    if (!start.firstPart.afterCurrent && !end.firstPart.afterCurrent) {
+      if (end.num < -1) {
+        return ["", false];
+      }
+      if (numDiff === 1) {
+        return [`previous ${grainPart}`, true];
+      }
+      return [`last ${grainLabel}`, true];
+    }
+
+    if (start.firstPart.afterCurrent && end.firstPart.afterCurrent) {
+      if (end.num > 1) {
+        return ["", false];
+      }
+      return [`next ${grainLabel}`, true];
+    }
+
+    if (numDiff === 1) return [`this ${grainPart}`, true];
+
+    return ["", false];
   }
 }
 
 export class RillGrainToInterval implements RillTimeInterval {
-  public constructor(public readonly point: RillGrainPointInTime) {}
+  public includesCurrent = false;
 
-  public getLabel() {
-    return "";
+  public constructor(public readonly point: RillGrainPointInTime) {
+    const firstGrainOfFirstPart = point.parts[0]?.grains[0];
+    if (!firstGrainOfFirstPart) return;
+    this.includesCurrent =
+      firstGrainOfFirstPart.num === 0 ||
+      firstGrainOfFirstPart.num === undefined;
+  }
+
+  public getLabel(): [label: string, supported: boolean] {
+    const grainAndNum = this.point.getSingleGrainAndNum();
+    if (!grainAndNum) return ["", false];
+
+    const label = grainAliasToDateTimeUnit(grainAndNum.grain as any);
+
+    if (grainAndNum.num === 0) {
+      return [`this ${label}`, true];
+    } else if (grainAndNum.num === 1) {
+      return [`next ${label}`, true];
+    } else if (grainAndNum.num === -1) {
+      return [`previous ${label}`, true];
+    } else {
+      return ["", true];
+    }
   }
 }
 
 export class RillIsoInterval implements RillTimeInterval {
-  public getLabel() {
-    return "";
+  public includesCurrent = false;
+
+  public getLabel(): [label: string, supported: boolean] {
+    return ["", false];
   }
 }
 
 interface RillPointInTime {
-  getLabel(): string;
+  afterCurrent: boolean;
 }
 
 export class RillOrdinalPointInTime implements RillPointInTime {
-  public getLabel() {
-    return "";
-  }
+  public afterCurrent = false;
 }
 
 export class RillGrainPointInTime implements RillPointInTime {
-  public constructor(private readonly parts: RillGrainPointInTimePart[]) {}
+  public afterCurrent: boolean;
 
-  public getLabel() {
-    return "";
+  public constructor(public readonly parts: RillGrainPointInTimePart[]) {
+    this.afterCurrent = parts[0]?.afterCurrent ?? false;
+  }
+
+  public getSingleGrainAndNum() {
+    if (this.parts.length !== 1) return undefined;
+    const firstPart = this.parts[0];
+    if (firstPart.grains.length !== 1) return undefined;
+    const firstGrain = firstPart.grains[0];
+
+    let num = firstGrain.num ?? 0;
+    if (firstPart.prefix === "-" && num) {
+      num = -num;
+    }
+
+    return {
+      grain: firstGrain.grain,
+      num,
+      firstPart,
+      firstGrain,
+    };
   }
 }
 export class RillGrainPointInTimePart {
-  private prefix: string;
-  private snap: string;
-  private suffix: string;
+  public prefix: string;
+  public snap: string;
+  public suffix: string;
 
-  public constructor(private readonly grains: RillGrain[]) {}
+  public afterCurrent = false;
+
+  public constructor(public readonly grains: RillGrain[]) {
+    this.updateAfterCurrent();
+  }
 
   public withPrefix(prefix: string) {
     this.prefix = prefix;
+    this.updateAfterCurrent();
     return this;
   }
 
   public withSnap(snap: string) {
     this.snap = snap;
+    this.updateAfterCurrent();
     return this;
   }
 
   public withSuffix(suffix: string) {
     this.suffix = suffix;
+    this.updateAfterCurrent();
     return this;
+  }
+
+  public diff(num1: number, part2: RillGrainPointInTimePart, num2: number) {
+    const offset = this.suffix === part2.suffix ? 0 : 1;
+    return Math.abs(num1 - num2) + offset;
+  }
+
+  private updateAfterCurrent() {
+    const firstGrain = this.grains[0];
+    if (!firstGrain) return;
+
+    const firstGrainNum = firstGrain.num ?? 0;
+
+    if (firstGrainNum === 0 && this.suffix !== undefined) {
+      this.afterCurrent = this.suffix === "$";
+    } else {
+      this.afterCurrent = this.prefix === "+";
+    }
   }
 }
 
@@ -126,7 +254,7 @@ interface RillTimePart {
   isComplete: boolean;
 }
 
-export class RillTimeAbsoluteTime implements RillTimePart {
+export class RillAbsoluteTime implements RillTimePart {
   public isComplete = true; // TODO: can this be anything else?
 
   private readonly dateObject: DateObjectUnits = {};
@@ -152,7 +280,7 @@ export class RillTimeAbsoluteTime implements RillTimePart {
   }
 
   public static postProcessor(args: string[]) {
-    return new RillTimeAbsoluteTime(args.join(""));
+    return new RillAbsoluteTime(args.join(""));
   }
 
   public getLabel() {
@@ -269,39 +397,6 @@ export class RillTimeRelative implements RillTimePart {
     return (
       `${this.prefix ?? ""}${this.num != 0 ? this.num : ""}` +
       `${this.grain}${this.isComplete ? "" : "~"}`
-    );
-  }
-}
-
-export class RillTimePeriodToDate implements RillTimePart {
-  private readonly from: string;
-  private readonly to: string;
-  public isComplete = true;
-
-  public constructor(
-    private readonly prefix: "+" | "-" | undefined,
-    private readonly num: number,
-    private readonly periodToDate: string,
-  ) {
-    [this.from, this.to] = periodToDate.split("T");
-  }
-
-  public asIncomplete() {
-    this.isComplete = false;
-    return this;
-  }
-
-  public getLabel() {
-    const from = grainAliasToDateTimeUnit(this.from);
-    const to = grainAliasToDateTimeUnit(this.to);
-    // TODO
-    return `${from} by ${to}`;
-  }
-
-  public toString() {
-    return (
-      `${this.prefix ?? ""}${this.num != 0 ? this.num : ""}` +
-      `${this.periodToDate}${this.isComplete ? "" : "~"}`
     );
   }
 }

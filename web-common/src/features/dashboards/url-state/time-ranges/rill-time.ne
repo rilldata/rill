@@ -12,8 +12,7 @@
 
     RillGrainPointInTime,
     RillGrainPointInTimePart,
-
-    RillTimeAbsoluteTime,
+    RillAbsoluteTime,
   } from "./RillTime.ts"
 %}
 
@@ -85,12 +84,12 @@ grain_duration      => grain_duration_part (_ grain_duration_part):* {% ([part, 
 grain_duration_part => num grain                                     {% ([num, grain]) => ({num, grain}) %}
                      | grain                                         {% ([grain]) => ({grain}) %}
 
-abs_time => [\d] [\d] [\d] [\d] [\-] [\d] [\d] [\-] [\d] [\d] "T" [\d] [\d] [:] [\d] [\d] [:] [\d] [\d] "Z" {% RillTimeAbsoluteTime.postProcessor %}
-          | [\d] [\d] [\d] [\d] [\-] [\d] [\d] [\-] [\d] [\d] "T" [\d] [\d] [:] [\d] [\d]                   {% RillTimeAbsoluteTime.postProcessor %}
-          | [\d] [\d] [\d] [\d] [\-] [\d] [\d] [\-] [\d] [\d] "T" [\d] [\d]                                 {% RillTimeAbsoluteTime.postProcessor %}
-          | [\d] [\d] [\d] [\d] [\-] [\d] [\d] [\-] [\d] [\d]                                               {% RillTimeAbsoluteTime.postProcessor %}
-          | [\d] [\d] [\d] [\d] [\-] [\d] [\d]                                                              {% RillTimeAbsoluteTime.postProcessor %}
-          | [\d] [\d] [\d] [\d]                                                                             {% RillTimeAbsoluteTime.postProcessor %}
+abs_time => [\d] [\d] [\d] [\d] [\-] [\d] [\d] [\-] [\d] [\d] "T" [\d] [\d] [:] [\d] [\d] [:] [\d] [\d] "Z" {% RillAbsoluteTime.postProcessor %}
+          | [\d] [\d] [\d] [\d] [\-] [\d] [\d] [\-] [\d] [\d] "T" [\d] [\d] [:] [\d] [\d]                   {% RillAbsoluteTime.postProcessor %}
+          | [\d] [\d] [\d] [\d] [\-] [\d] [\d] [\-] [\d] [\d] "T" [\d] [\d]                                 {% RillAbsoluteTime.postProcessor %}
+          | [\d] [\d] [\d] [\d] [\-] [\d] [\d] [\-] [\d] [\d]                                               {% RillAbsoluteTime.postProcessor %}
+          | [\d] [\d] [\d] [\d] [\-] [\d] [\d]                                                              {% RillAbsoluteTime.postProcessor %}
+          | [\d] [\d] [\d] [\d]                                                                             {% RillAbsoluteTime.postProcessor %}
 
 timezone_modifier => [0-9a-zA-Z/+\-_]:+ {% ([args]) => args.join("") %}
 

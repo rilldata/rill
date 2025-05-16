@@ -11,8 +11,7 @@ function id(x) { return x[0]; }
 
     RillGrainPointInTime,
     RillGrainPointInTimePart,
-
-    RillTimeAbsoluteTime,
+    RillAbsoluteTime,
   } from "./RillTime.ts"
 let Lexer = undefined;
 let ParserRules = [
@@ -121,12 +120,12 @@ let ParserRules = [
     {"name": "grain_duration", "symbols": ["grain_duration_part", "grain_duration$ebnf$1"], "postprocess": ([part, rest]) => ([part, ...rest.map(([, p]) => p)])},
     {"name": "grain_duration_part", "symbols": ["num", "grain"], "postprocess": ([num, grain]) => ({num, grain})},
     {"name": "grain_duration_part", "symbols": ["grain"], "postprocess": ([grain]) => ({grain})},
-    {"name": "abs_time", "symbols": [/[\d]/, /[\d]/, /[\d]/, /[\d]/, /[\-]/, /[\d]/, /[\d]/, /[\-]/, /[\d]/, /[\d]/, {"literal":"T"}, /[\d]/, /[\d]/, /[:]/, /[\d]/, /[\d]/, /[:]/, /[\d]/, /[\d]/, {"literal":"Z"}], "postprocess": RillTimeAbsoluteTime.postProcessor},
-    {"name": "abs_time", "symbols": [/[\d]/, /[\d]/, /[\d]/, /[\d]/, /[\-]/, /[\d]/, /[\d]/, /[\-]/, /[\d]/, /[\d]/, {"literal":"T"}, /[\d]/, /[\d]/, /[:]/, /[\d]/, /[\d]/], "postprocess": RillTimeAbsoluteTime.postProcessor},
-    {"name": "abs_time", "symbols": [/[\d]/, /[\d]/, /[\d]/, /[\d]/, /[\-]/, /[\d]/, /[\d]/, /[\-]/, /[\d]/, /[\d]/, {"literal":"T"}, /[\d]/, /[\d]/], "postprocess": RillTimeAbsoluteTime.postProcessor},
-    {"name": "abs_time", "symbols": [/[\d]/, /[\d]/, /[\d]/, /[\d]/, /[\-]/, /[\d]/, /[\d]/, /[\-]/, /[\d]/, /[\d]/], "postprocess": RillTimeAbsoluteTime.postProcessor},
-    {"name": "abs_time", "symbols": [/[\d]/, /[\d]/, /[\d]/, /[\d]/, /[\-]/, /[\d]/, /[\d]/], "postprocess": RillTimeAbsoluteTime.postProcessor},
-    {"name": "abs_time", "symbols": [/[\d]/, /[\d]/, /[\d]/, /[\d]/], "postprocess": RillTimeAbsoluteTime.postProcessor},
+    {"name": "abs_time", "symbols": [/[\d]/, /[\d]/, /[\d]/, /[\d]/, /[\-]/, /[\d]/, /[\d]/, /[\-]/, /[\d]/, /[\d]/, {"literal":"T"}, /[\d]/, /[\d]/, /[:]/, /[\d]/, /[\d]/, /[:]/, /[\d]/, /[\d]/, {"literal":"Z"}], "postprocess": RillAbsoluteTime.postProcessor},
+    {"name": "abs_time", "symbols": [/[\d]/, /[\d]/, /[\d]/, /[\d]/, /[\-]/, /[\d]/, /[\d]/, /[\-]/, /[\d]/, /[\d]/, {"literal":"T"}, /[\d]/, /[\d]/, /[:]/, /[\d]/, /[\d]/], "postprocess": RillAbsoluteTime.postProcessor},
+    {"name": "abs_time", "symbols": [/[\d]/, /[\d]/, /[\d]/, /[\d]/, /[\-]/, /[\d]/, /[\d]/, /[\-]/, /[\d]/, /[\d]/, {"literal":"T"}, /[\d]/, /[\d]/], "postprocess": RillAbsoluteTime.postProcessor},
+    {"name": "abs_time", "symbols": [/[\d]/, /[\d]/, /[\d]/, /[\d]/, /[\-]/, /[\d]/, /[\d]/, /[\-]/, /[\d]/, /[\d]/], "postprocess": RillAbsoluteTime.postProcessor},
+    {"name": "abs_time", "symbols": [/[\d]/, /[\d]/, /[\d]/, /[\d]/, /[\-]/, /[\d]/, /[\d]/], "postprocess": RillAbsoluteTime.postProcessor},
+    {"name": "abs_time", "symbols": [/[\d]/, /[\d]/, /[\d]/, /[\d]/], "postprocess": RillAbsoluteTime.postProcessor},
     {"name": "timezone_modifier$ebnf$1", "symbols": [/[0-9a-zA-Z/+\-_]/]},
     {"name": "timezone_modifier$ebnf$1", "symbols": ["timezone_modifier$ebnf$1", /[0-9a-zA-Z/+\-_]/], "postprocess": function arrpush(d) {return d[0].concat([d[1]]);}},
     {"name": "timezone_modifier", "symbols": ["timezone_modifier$ebnf$1"], "postprocess": ([args]) => args.join("")},
