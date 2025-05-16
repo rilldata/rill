@@ -123,6 +123,8 @@ func (s *Server) GetReportMeta(ctx context.Context, req *adminv1.GetReportMetaRe
 	}
 
 	return &adminv1.GetReportMetaResponse{
+		Organization:  org.Name,
+		Project:       proj.Name,
 		RecipientUrls: urls,
 	}, nil
 }
@@ -508,6 +510,7 @@ func (s *Server) yamlForManagedReport(opts *adminv1.ReportOptions, ownerUserID s
 	res.Query.Name = opts.QueryName
 	res.Query.ArgsJSON = opts.QueryArgsJson
 	res.Export.Format = opts.ExportFormat.String()
+	res.Export.IncludeHeader = opts.ExportIncludeHeader
 	res.Export.Limit = uint(opts.ExportLimit)
 	res.Notify.Email.Recipients = opts.EmailRecipients
 	res.Notify.Slack.Channels = opts.SlackChannels
@@ -566,6 +569,7 @@ func (s *Server) yamlForCommittedReport(opts *adminv1.ReportOptions) ([]byte, er
 	res.Query.Name = opts.QueryName
 	res.Query.Args = args
 	res.Export.Format = exportFormat
+	res.Export.IncludeHeader = opts.ExportIncludeHeader
 	res.Export.Limit = uint(opts.ExportLimit)
 	res.Notify.Email.Recipients = opts.EmailRecipients
 	res.Notify.Slack.Channels = opts.SlackChannels
@@ -727,6 +731,7 @@ func recreateReportOptionsFromSpec(spec *runtimev1.ReportSpec) (*adminv1.ReportO
 	opts.QueryArgsJson = spec.QueryArgsJson
 	opts.ExportLimit = spec.ExportLimit
 	opts.ExportFormat = spec.ExportFormat
+	opts.ExportIncludeHeader = spec.ExportIncludeHeader
 	for _, notifier := range spec.Notifiers {
 		switch notifier.Connector {
 		case "email":
@@ -779,8 +784,9 @@ type reportYAML struct {
 		ArgsJSON string         `yaml:"args_json,omitempty"`
 	} `yaml:"query"`
 	Export struct {
-		Format string `yaml:"format"`
-		Limit  uint   `yaml:"limit"`
+		Format        string `yaml:"format"`
+		IncludeHeader bool   `yaml:"include_header"`
+		Limit         uint   `yaml:"limit"`
 	} `yaml:"export"`
 	Notify struct {
 		Email struct {

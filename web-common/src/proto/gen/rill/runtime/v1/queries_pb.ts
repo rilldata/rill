@@ -369,6 +369,11 @@ export class ExportRequest extends Message<ExportRequest> {
   format = ExportFormat.UNSPECIFIED;
 
   /**
+   * @generated from field: bool include_header = 6;
+   */
+  includeHeader = false;
+
+  /**
    * @generated from field: rill.runtime.v1.Query query = 4;
    */
   query?: Query;
@@ -380,9 +385,24 @@ export class ExportRequest extends Message<ExportRequest> {
   bakedQuery = "";
 
   /**
-   * @generated from field: bool include_header = 6;
+   * @generated from field: string organization = 7;
    */
-  includeHeader = false;
+  organization = "";
+
+  /**
+   * @generated from field: string project = 8;
+   */
+  project = "";
+
+  /**
+   * @generated from field: string dashboard = 9;
+   */
+  dashboard = "";
+
+  /**
+   * @generated from field: string dashboard_url = 10;
+   */
+  dashboardUrl = "";
 
   constructor(data?: PartialMessage<ExportRequest>) {
     super();
@@ -395,9 +415,13 @@ export class ExportRequest extends Message<ExportRequest> {
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "limit", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
     { no: 3, name: "format", kind: "enum", T: proto3.getEnumType(ExportFormat) },
+    { no: 6, name: "include_header", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 4, name: "query", kind: "message", T: Query },
     { no: 5, name: "baked_query", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 6, name: "include_header", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 7, name: "organization", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 8, name: "project", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 9, name: "dashboard", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 10, name: "dashboard_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ExportRequest {
@@ -479,14 +503,34 @@ export class ExportReportRequest extends Message<ExportReportRequest> {
   format = ExportFormat.UNSPECIFIED;
 
   /**
+   * @generated from field: bool include_header = 6;
+   */
+  includeHeader = false;
+
+  /**
    * @generated from field: google.protobuf.Timestamp execution_time = 5;
    */
   executionTime?: Timestamp;
 
   /**
-   * @generated from field: bool include_header = 6;
+   * @generated from field: string organization = 7;
    */
-  includeHeader = false;
+  organization = "";
+
+  /**
+   * @generated from field: string project = 8;
+   */
+  project = "";
+
+  /**
+   * @generated from field: string dashboard = 9;
+   */
+  dashboard = "";
+
+  /**
+   * @generated from field: string dashboard_url = 10;
+   */
+  dashboardUrl = "";
 
   constructor(data?: PartialMessage<ExportReportRequest>) {
     super();
@@ -500,8 +544,12 @@ export class ExportReportRequest extends Message<ExportReportRequest> {
     { no: 2, name: "report", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "limit", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
     { no: 4, name: "format", kind: "enum", T: proto3.getEnumType(ExportFormat) },
-    { no: 5, name: "execution_time", kind: "message", T: Timestamp },
     { no: 6, name: "include_header", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 5, name: "execution_time", kind: "message", T: Timestamp },
+    { no: 7, name: "organization", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 8, name: "project", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 9, name: "dashboard", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 10, name: "dashboard_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ExportReportRequest {

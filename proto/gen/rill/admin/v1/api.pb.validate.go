@@ -28104,6 +28104,10 @@ func (m *GetReportMetaResponse) validate(all bool) error {
 		}
 	}
 
+	// no validation rules for Organization
+
+	// no validation rules for Project
+
 	if len(errors) > 0 {
 		return GetReportMetaResponseMultiError(errors)
 	}
@@ -38177,6 +38181,8 @@ func (m *ReportOptions) validate(all bool) error {
 	// no validation rules for ExportLimit
 
 	// no validation rules for ExportFormat
+
+	// no validation rules for ExportIncludeHeader
 
 	// no validation rules for WebOpenPath
 

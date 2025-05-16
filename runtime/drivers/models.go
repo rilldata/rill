@@ -132,4 +132,4 @@ func (f FileFormat) Valid() bool {
 	return false
 }
 
-type FileHeaderMetaData string
+type FileHeaderMetaData []string

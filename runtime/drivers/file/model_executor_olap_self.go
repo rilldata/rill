@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"strings"
 	"time"
 
 	"github.com/apache/arrow/go/v15/arrow"
@@ -121,11 +120,8 @@ func writeCSV(res *drivers.Result, fw io.Writer, headerMetadata drivers.FileHead
 	w := csv.NewWriter(fw)
 
 	// Write headerMetadata first if it's provided
-	if headerMetadata != "" {
-		// Split the headerMetadata into multiple lines
-		lines := strings.Split(string(headerMetadata), "\n")
-		// Write each line of the headerMetadata as a new row
-		for _, line := range lines[:len(lines)-1] {
+	if len(headerMetadata) > 0 {
+		for _, line := range headerMetadata {
 			// Keep empty lines as-is
 			err := w.Write([]string{line})
 			if err != nil {
@@ -211,11 +207,8 @@ func writeXLSX(res *drivers.Result, fw io.Writer, headerMetadata drivers.FileHea
 	idx := 1
 
 	// Write headerMetadata first if it's provided
-	if headerMetadata != "" {
-		// Split the headerMetadata into multiple lines
-		lines := strings.Split(string(headerMetadata), "\n")
-		// Write each line of the headerMetadata as a new row
-		for _, line := range lines[:len(lines)-1] {
+	if len(headerMetadata) > 0 {
+		for _, line := range headerMetadata {
 			row := []any{line} // Each line is a separate row
 			cell, err := excelize.CoordinatesToCellName(1, idx)
 			if err != nil {

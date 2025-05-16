@@ -34,6 +34,10 @@ type QueryResult struct {
 type ExportOptions struct {
 	Format        runtimev1.ExportFormat
 	IncludeHeader bool
+	Organization  string
+	Project       string
+	Dashboard     string
+	DashboardUrl  string
 	Priority      int
 	PreWriteHook  func(filename string) error
 }

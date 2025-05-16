@@ -335,7 +335,7 @@ func (e *Executor) Query(ctx context.Context, qry *Query, executionTime *time.Ti
 		}
 
 		// Execute the pivot export
-		path, err := e.executePivotExport(ctx, ast, pivotAST, "parquet", "")
+		path, err := e.executePivotExport(ctx, ast, pivotAST, "parquet", drivers.FileHeaderMetaData{})
 		if err != nil {
 			return nil, err
 		}

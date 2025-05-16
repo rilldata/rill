@@ -554,6 +554,8 @@ export type V1GetReportMetaResponseRecipientUrls = {
 
 export interface V1GetReportMetaResponse {
   recipientUrls?: V1GetReportMetaResponseRecipientUrls;
+  organization?: string;
+  project?: string;
 }
 
 export interface V1GetUserResponse {
@@ -1017,6 +1019,7 @@ export interface V1ReportOptions {
   queryArgsJson?: string;
   exportLimit?: string;
   exportFormat?: V1ExportFormat;
+  exportIncludeHeader?: boolean;
   emailRecipients?: string[];
   slackUsers?: string[];
   slackChannels?: string[];

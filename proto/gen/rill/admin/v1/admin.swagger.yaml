@@ -4581,6 +4581,10 @@ definitions:
         type: object
         additionalProperties:
           $ref: '#/definitions/GetReportMetaResponseURLs'
+      organization:
+        type: string
+      project:
+        type: string
   v1GetUserResponse:
     type: object
     properties:
@@ -5329,6 +5333,8 @@ definitions:
         format: uint64
       exportFormat:
         $ref: '#/definitions/v1ExportFormat'
+      exportIncludeHeader:
+        type: boolean
       emailRecipients:
         type: array
         items:

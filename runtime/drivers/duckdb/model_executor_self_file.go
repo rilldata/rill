@@ -142,7 +142,7 @@ func exportSQL(qry, path string, format drivers.FileFormat) (string, error) {
 func supportsExportFormat(format drivers.FileFormat, headerMetadata drivers.FileHeaderMetaData) bool {
 	switch format {
 	case drivers.FileFormatParquet, drivers.FileFormatCSV, drivers.FileFormatJSON:
-		if headerMetadata == "" {
+		if len(headerMetadata) == 0 {
 			return true
 		}
 	}
