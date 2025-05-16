@@ -8,7 +8,6 @@
     createAdminServiceAddProjectMemberUsergroup,
     createAdminServiceGetCurrentUser,
     createAdminServiceListUsergroupMemberUsers,
-    createAdminServiceListOrganizationMemberUsergroups,
   } from "@rilldata/web-admin/client";
   import CopyInviteLinkButton from "@rilldata/web-admin/features/projects/user-management/CopyInviteLinkButton.svelte";
   import UserAndGroupInviteForm from "@rilldata/web-admin/features/projects/user-management/UserAndGroupInviteForm.svelte";
@@ -50,18 +49,6 @@
   const addProjectMemberUsergroup =
     createAdminServiceAddProjectMemberUsergroup();
   const currentUser = createAdminServiceGetCurrentUser();
-
-  const PAGE_SIZE = 20;
-  $: listOrganizationMemberUsergroups =
-    createAdminServiceListOrganizationMemberUsergroups(organization, {
-      pageSize: PAGE_SIZE,
-      pageToken: "",
-      includeCounts: true,
-    });
-  $: orgUserGroups =
-    $listOrganizationMemberUsergroups.data?.members.filter(
-      (group) => !group.groupManaged,
-    ) ?? [];
 
   async function setAccessInviteOnly() {
     if (accessType === "invite-only") return;
@@ -201,14 +188,6 @@
   $: projectUserGroups = projectMemberUserGroupsList.filter(
     (group) => !group.groupManaged,
   );
-
-  $: searchableUserGroups = orgUserGroups.filter(
-    (orgGroup) =>
-      !projectUserGroups.some(
-        (projectGroup) => projectGroup.groupName === orgGroup.groupName,
-      ),
-  );
-  $: searchList = [...searchableUserGroups];
 
   $: hasAutogroupMembers = projectMemberUserGroupsList.some(
     (group) => group.groupName === "autogroup:members",
