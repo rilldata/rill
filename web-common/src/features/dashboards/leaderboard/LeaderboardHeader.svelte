@@ -61,38 +61,23 @@
     </th>
 
     <th data-dimension-header>
-      <Tooltip distance={16} location="top">
+      <Tooltip location="top">
         <button
           disabled={!allowExpandTable}
-          class="text-slate-600 {allowExpandTable
+          class="text-slate-600 text-left {allowExpandTable
             ? 'hover:text-primary-700'
             : ''}"
           aria-label="Open dimension details"
           on:click={() => setPrimaryDimension(dimensionName)}
         >
-          {displayName}
+          <span class="line-clamp-2">{displayName}</span>
         </button>
         <TooltipContent slot="tooltip-content">
-          <TooltipTitle>
-            <svelte:fragment slot="name">
+          <div class="pointer-events-none items-baseline">
+            <div class="truncate" aria-label="tooltip-name">
               {displayName}
-            </svelte:fragment>
-            <svelte:fragment slot="description" />
-          </TooltipTitle>
-          <TooltipShortcutContainer>
-            <div class="line-clamp-2">
-              {#if dimensionDescription}
-                {dimensionDescription}
-              {:else}
-                The leaderboard metrics for {displayName}
-              {/if}
             </div>
-            <Shortcut />
-            {#if allowExpandTable}
-              <div>Expand leaderboard</div>
-              <Shortcut>Click</Shortcut>
-            {/if}
-          </TooltipShortcutContainer>
+          </div>
         </TooltipContent>
       </Tooltip>
     </th>
