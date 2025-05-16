@@ -152,13 +152,13 @@ func (s *Server) ServeGRPC(ctx context.Context) (*vanguard.Transcoder, error) {
 }
 
 // Starts the HTTP server.
-func (s *Server) ServeHTTP(ctx context.Context, registerAdditionalHandlers func(mux *http.ServeMux)) error {
+func (s *Server) ServeHTTP(ctx context.Context, registerAdditionalHandlers func(mux *http.ServeMux), local bool) error {
 	transcoder, err := s.ServeGRPC(ctx)
 	if err != nil {
 		return err
 	}
 
-	handler, err := s.HTTPHandler(ctx, registerAdditionalHandlers, transcoder)
+	handler, err := s.HTTPHandler(ctx, registerAdditionalHandlers, transcoder, local)
 	if err != nil {
 		return err
 	}
@@ -174,11 +174,15 @@ func (s *Server) ServeHTTP(ctx context.Context, registerAdditionalHandlers func(
 }
 
 // HTTPHandler HTTP handler serving REST gateway.
-func (s *Server) HTTPHandler(ctx context.Context, registerAdditionalHandlers func(mux *http.ServeMux), transcoder *vanguard.Transcoder) (http.Handler, error) {
+func (s *Server) HTTPHandler(ctx context.Context, registerAdditionalHandlers func(mux *http.ServeMux), transcoder *vanguard.Transcoder, local bool) (http.Handler, error) {
 	httpMux := http.NewServeMux()
 
 	// Register the Vanguard handler for gRPC transcoding
-	httpMux.Handle("/v1/", transcoder)
+	if local {
+		httpMux.Handle("/v1/", transcoder)
+	} else {
+		httpMux.Handle("/", transcoder)
+	}
 
 	// Call callback to register additional paths
 	// NOTE: This is so ugly, but not worth refactoring it properly right now.
