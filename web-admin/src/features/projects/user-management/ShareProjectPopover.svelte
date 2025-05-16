@@ -58,7 +58,7 @@
       pageToken: "",
       includeCounts: true,
     });
-  $: nonManagedGroups =
+  $: orgUserGroups =
     $listOrganizationMemberUsergroups.data?.members.filter(
       (group) => !group.groupManaged,
     ) ?? [];
@@ -197,9 +197,18 @@
     return 0;
   });
 
+  // FIXME: low priority - investigate if the usersCount is correct
   $: projectUserGroups = projectMemberUserGroupsList.filter(
     (group) => !group.groupManaged,
   );
+
+  $: searchableUserGroups = orgUserGroups.filter(
+    (orgGroup) =>
+      !projectUserGroups.some(
+        (projectGroup) => projectGroup.groupName === orgGroup.groupName,
+      ),
+  );
+  $: searchList = [...searchableUserGroups];
 
   $: hasAutogroupMembers = projectMemberUserGroupsList.some(
     (group) => group.groupName === "autogroup:members",
