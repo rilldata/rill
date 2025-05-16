@@ -64,7 +64,6 @@
         const succeededGroups = [];
         const failedEmails = [];
         const failedGroups = [];
-        let errored = false;
 
         await Promise.all(
           inputs.map(async (input) => {
@@ -81,9 +80,8 @@
                   },
                 });
                 succeededEmails.push(input);
-              } catch (error) {
+              } catch {
                 failedEmails.push(input);
-                errored = true;
               }
             } else {
               // Handle as group name
@@ -97,9 +95,8 @@
                   },
                 });
                 succeededGroups.push(input);
-              } catch (error) {
+              } catch {
                 failedGroups.push(input);
-                errored = true;
               }
             }
           }),
