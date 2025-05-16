@@ -30,7 +30,6 @@
   import CaretUpIcon from "@rilldata/web-common/components/icons/CaretUpIcon.svelte";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import Lock from "@rilldata/web-common/components/icons/Lock.svelte";
-  import OrgUserGroupSetRole from "./OrgUserGroupSetRole.svelte";
   import ProjectUserGroupItem from "./ProjectUserGroupItem.svelte";
 
   export let organization: string;
@@ -370,18 +369,6 @@
                   </DropdownMenu.Item>
                 </DropdownMenu.Content>
               </DropdownMenu.Root>
-
-              {#if hasAutogroupMembers}
-                {#each projectMemberUserGroupsList as group}
-                  {#if group.groupName === "autogroup:members"}
-                    <OrgUserGroupSetRole
-                      {organization}
-                      {group}
-                      {manageOrgAdmins}
-                    />
-                  {/if}
-                {/each}
-              {/if}
             </div>
 
             <TooltipContent slot="tooltip-content">
