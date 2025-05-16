@@ -9,17 +9,25 @@
   } from "@rilldata/web-admin/client";
   import UserRoleSelect from "@rilldata/web-admin/features/projects/user-management/UserRoleSelect.svelte";
   import { Button } from "@rilldata/web-common/components/button";
-  import MultiInput from "@rilldata/web-common/components/forms/MultiInput.svelte";
   import { RFC5322EmailRegex } from "@rilldata/web-common/components/forms/validation";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { defaults, superForm } from "sveltekit-superforms";
   import { yup } from "sveltekit-superforms/adapters";
   import { array, object, string } from "yup";
+  import MultiInputWithSuggestions from "@rilldata/web-common/components/forms/MultiInputWithSuggestions.svelte";
 
   export let organization: string;
   export let project: string;
   export let onInvite: () => void = () => {};
+  export let searchableGroups: any[] = [];
+
+  // Use only searchable groups for suggestions
+  $: suggestions = (searchableGroups || []).map((group) => ({
+    value: group.groupName,
+    label: group.groupName,
+    type: "group",
+  }));
 
   const queryClient = useQueryClient();
   const userInvite = createAdminServiceAddProjectMemberUser();
@@ -49,7 +57,7 @@
     }),
   );
 
-  const { form, errors, enhance, submit, submitting } = superForm(
+  const { form, errors, enhance, submit, submitting, reset } = superForm(
     defaults(initialValues, schema),
     {
       SPA: true,
@@ -164,15 +172,26 @@
           });
         }
 
+        reset();
         onInvite();
       },
       validationMethod: "oninput",
     },
   );
 
+  function handleInputChange(event) {
+    if (event.detail && event.detail.values) {
+      $form.inputs = event.detail.values;
+    }
+  }
+
   $: hasInvalidInputs = $form.inputs.some(
     (e, i) => e.length > 0 && $errors.inputs?.[i] !== undefined,
   );
+
+  $: errorsRecord = $errors.inputs
+    ? { inputs: Object.values($errors.inputs).flat() }
+    : undefined;
 </script>
 
 <form
@@ -181,30 +200,29 @@
   class="w-full"
   use:enhance
 >
-  <MultiInput
-    id="inputs"
-    placeholder="Search users, groups or add emails, separated by commas"
-    contentClassName="relative"
-    bind:values={$form.inputs}
-    errors={$errors.inputs}
+  <MultiInputWithSuggestions
+    id="user-group-input"
+    {suggestions}
+    values={$form.inputs}
+    errors={errorsRecord}
     singular="input"
     plural="inputs"
-    preventFocus={true}
+    placeholder="Search users, groups or add emails, separated by commas"
+    on:change={handleInputChange}
   >
     <div slot="within-input" class="h-full items-center flex">
       <UserRoleSelect bind:value={$form.role} />
     </div>
-    <svelte:fragment slot="beside-input" let:hasSomeValue>
-      <Button
-        submitForm
-        type="primary"
-        form="user-invite-form"
-        loading={$submitting}
-        disabled={hasInvalidInputs || !hasSomeValue}
-        forcedStyle="height: 32px !important; padding-left: 20px; padding-right: 20px;"
-      >
-        Invite
-      </Button>
-    </svelte:fragment>
-  </MultiInput>
+    <Button
+      slot="action-button"
+      submitForm
+      type="primary"
+      form="user-and-group-invite-form"
+      loading={$submitting}
+      disabled={hasInvalidInputs || !$form.inputs.some((i) => i.trim())}
+      forcedStyle="height: 32px !important; padding-left: 20px; padding-right: 20px;"
+    >
+      Invite
+    </Button>
+  </MultiInputWithSuggestions>
 </form>

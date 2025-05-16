@@ -231,7 +231,11 @@
         <div class="text-sm font-medium">Share project: {project}</div>
         <div class="grow"></div>
       </div>
-      <UserAndGroupInviteForm {organization} {project} />
+      <UserAndGroupInviteForm
+        {organization}
+        {project}
+        searchableGroups={searchList}
+      />
       <!-- 52 * 8 = 416px -->
       <div class="flex flex-col gap-y-1 overflow-y-auto max-h-[416px]">
         <div class="mt-4">
