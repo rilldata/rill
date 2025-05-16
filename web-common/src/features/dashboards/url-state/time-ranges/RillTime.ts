@@ -1,4 +1,3 @@
-import type { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import { DateTime } from "luxon";
 import type { DateObjectUnits } from "luxon/src/datetime";
 import { grainAliasToDateTimeUnit } from "@rilldata/web-common/lib/time/new-grains";
@@ -8,15 +7,15 @@ const absTimeRegex =
 
 export class RillTime {
   public timeRange: string;
-  public readonly isComplete: boolean;
+  public readonly isComplete: boolean = false;
+  public timeRangeGrain: string | undefined;
+  public timezone: string | undefined;
 
-  public constructor(
-    public readonly start: RillTimePart[],
-    public readonly end: RillTimePart[] | undefined,
-    public readonly timeRangeGrain: string | undefined,
-    public timezone: string | undefined,
-  ) {
-    this.isComplete = end?.[0]?.isComplete ?? start[0]?.isComplete ?? false;
+  public constructor(public readonly interval: RillTimeInterval) {}
+
+  public withGrain(grain: string) {
+    this.timeRangeGrain = grain;
+    return this;
   }
 
   public withTimeZone(timezone: string) {
@@ -26,9 +25,7 @@ export class RillTime {
 
   public getLabel() {
     console.log("GETTING LABEL");
-    if (this.end) return this.timeRange; // TODO: what would the labels be here?
-
-    let range = this.start.map((p) => p.getLabel()).join(" of ");
+    let range = ""; // this.start.map((p) => p.getLabel()).join(" of ");
 
     if (this.timezone) {
       range += ` in ${this.timezone}`;
@@ -38,11 +35,11 @@ export class RillTime {
   }
 
   public toString() {
-    let range = this.start.map((p) => p.toString()).join(" of ");
+    let range = ""; //this.start.map((p) => p.toString()).join(" of ");
 
-    if (this.end) {
-      range += ` to ${this.end.map((p) => p.toString()).join(" of ")}`;
-    }
+    // if (this.end) {
+    //   range += ` to ${this.end.map((p) => p.toString()).join(" of ")}`;
+    // }
 
     if (this.timeRangeGrain) {
       range += ` by ${this.timeRangeGrain}`;
@@ -53,6 +50,93 @@ export class RillTime {
     }
 
     return range;
+  }
+}
+
+interface RillTimeInterval {
+  getLabel(): string;
+}
+
+export class RillTimeAnchoredDurationInterval implements RillTimeInterval {
+  public constructor(
+    public readonly grains: RillGrain[],
+    public readonly starting: boolean,
+    public readonly point: RillPointInTime,
+  ) {}
+
+  public getLabel() {
+    return "";
+  }
+}
+
+export class RillTimeOrdinalInterval implements RillTimeInterval {
+  public getLabel() {
+    return "";
+  }
+}
+
+export class RillTimeStartEndInterval implements RillTimeInterval {
+  public constructor(
+    public readonly start: RillPointInTime,
+    public readonly end: RillPointInTime,
+  ) {}
+
+  public getLabel() {
+    return "";
+  }
+}
+
+export class RillGrainToInterval implements RillTimeInterval {
+  public constructor(public readonly point: RillGrainPointInTime) {}
+
+  public getLabel() {
+    return "";
+  }
+}
+
+export class RillIsoInterval implements RillTimeInterval {
+  public getLabel() {
+    return "";
+  }
+}
+
+interface RillPointInTime {
+  getLabel(): string;
+}
+
+export class RillOrdinalPointInTime implements RillPointInTime {
+  public getLabel() {
+    return "";
+  }
+}
+
+export class RillGrainPointInTime implements RillPointInTime {
+  public constructor(private readonly parts: RillGrainPointInTimePart[]) {}
+
+  public getLabel() {
+    return "";
+  }
+}
+export class RillGrainPointInTimePart {
+  private prefix: string;
+  private snap: string;
+  private suffix: string;
+
+  public constructor(private readonly grains: RillGrain[]) {}
+
+  public withPrefix(prefix: string) {
+    this.prefix = prefix;
+    return this;
+  }
+
+  public withSnap(snap: string) {
+    this.snap = snap;
+    return this;
+  }
+
+  public withSuffix(suffix: string) {
+    this.suffix = suffix;
+    return this;
   }
 }
 
@@ -241,6 +325,11 @@ export class RillTimePeriodToDate implements RillTimePart {
     );
   }
 }
+
+type RillGrain = {
+  grain: string;
+  num?: number;
+};
 
 function capitalizeFirstChar(str: string): string {
   return str.charAt(0).toUpperCase() + str.slice(1);
