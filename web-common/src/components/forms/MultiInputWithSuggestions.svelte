@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { createEventDispatcher, onMount, tick } from "svelte";
+  import { createEventDispatcher, onMount, tick, onDestroy } from "svelte";
   import MultiInput from "@rilldata/web-common/components/forms/MultiInput.svelte";
 
   type Suggestion = {
@@ -7,6 +7,12 @@
     label: string;
     type?: string;
     photoUrl?: string;
+  };
+
+  // Define a PillItem type with unique ID
+  type PillItem = {
+    id: string;
+    value: string;
   };
 
   export let suggestions: Suggestion[] = [];
@@ -21,57 +27,136 @@
 
   const dispatch = createEventDispatcher();
 
+  // Convert string array to PillItem array with unique IDs
+  let pillItems: PillItem[] = values.map((val) => ({
+    id: generateUniqueId(),
+    value: val,
+  }));
+
+  // Generate a unique ID for each pill
+  function generateUniqueId(): string {
+    return Math.random().toString(36).substring(2, 10);
+  }
+
+  // Keep values in sync with pillItems
+  $: {
+    if (
+      values.length !== pillItems.length ||
+      !values.every((val, i) => val === pillItems[i].value)
+    ) {
+      pillItems = values.map((val, i) => {
+        // If we already have a pill at this index, preserve its ID
+        if (pillItems[i]) {
+          return { ...pillItems[i], value: val };
+        }
+        // Otherwise create a new pill with a new ID
+        return { id: generateUniqueId(), value: val };
+      });
+    }
+  }
+
+  // Update values when pillItems change
+  function updateValues() {
+    const newValues = pillItems.map((item) => item.value);
+    values = newValues;
+    dispatch("change", { values: newValues });
+  }
+
   let inputValue = "";
   let showSuggestions = false;
   let filteredSuggestions: Suggestion[] = suggestions.slice(0, 10);
   let multiInputEl: HTMLElement;
-  let activeInput: HTMLInputElement | null = null;
+  let activeInputId: string | null = null;
 
-  // Initialize suggestions and listeners on mount
+  // Store references to event handlers so we can remove them later
+  let inputEventHandlers = new Map();
+  let mousedownEventHandlers = new Map();
+
+  // Initialize listeners on mount
   onMount(() => {
     // Initial suggestions
     filteredSuggestions = suggestions.slice(0, 10);
 
-    // We need to add event listeners directly to handle MultiInput's complex structure
+    // Setup input element event listeners
     setTimeout(() => {
       setupInputListeners();
     }, 0);
   });
 
-  // Called on mount and whenever values change (which might mean new inputs)
+  // Clean up all event listeners when component is destroyed
+  onDestroy(() => {
+    if (inputEventHandlers) {
+      inputEventHandlers.forEach((handler, input) => {
+        input.removeEventListener("input", handler);
+      });
+    }
+
+    if (mousedownEventHandlers) {
+      mousedownEventHandlers.forEach((handler, input) => {
+        input.removeEventListener("mousedown", handler);
+      });
+    }
+
+    inputEventHandlers.clear();
+    mousedownEventHandlers.clear();
+  });
+
+  // Add direct event listeners to each input
   function setupInputListeners() {
     if (!multiInputEl) return;
 
-    // Find all input elements inside MultiInput
+    // First, remove any existing event listeners to prevent duplicates
+    inputEventHandlers.forEach((handler, input) => {
+      input.removeEventListener("input", handler);
+    });
+    mousedownEventHandlers.forEach((handler, input) => {
+      input.removeEventListener("mousedown", handler);
+    });
+
+    // Clear the maps
+    inputEventHandlers.clear();
+    mousedownEventHandlers.clear();
+
+    // Find all input elements inside MultiInput and map them to their IDs
     const inputs = multiInputEl.querySelectorAll("input");
     inputs.forEach((input) => {
-      // Add direct event listeners to catch typing
-      input.addEventListener("input", (e) => {
+      const inputId = input.getAttribute("data-pill-id");
+
+      // Create and store input event handler
+      const inputHandler = (e) => {
         const target = e.target as HTMLInputElement;
         inputValue = target.value || "";
-        activeInput = target;
+        activeInputId = inputId;
         updateFilteredSuggestions();
-        if (inputValue.trim() && filteredSuggestions.length > 0) {
+        if (filteredSuggestions.length > 0) {
           showSuggestions = true;
         }
-      });
+      };
+      inputEventHandlers.set(input, inputHandler);
+      input.addEventListener("input", inputHandler);
 
-      input.addEventListener("focus", () => {
-        activeInput = input;
-        showSuggestions = true;
-        if (suggestions.length > 0) {
-          filteredSuggestions = suggestions.slice(0, 10);
+      // Create and store mousedown event handler
+      const mousedownHandler = (e) => {
+        activeInputId = inputId;
+        showSuggestions = !showSuggestions;
+        if (showSuggestions) {
+          updateFilteredSuggestions();
         }
-      });
+      };
+      mousedownEventHandlers.set(input, mousedownHandler);
+      input.addEventListener("mousedown", mousedownHandler);
     });
   }
 
-  // Re-setup listeners when values change (new inputs might be created)
-  $: if (values) {
+  // Re-setup listeners when values or pillIds change
+  $: if (values || pillIds) {
     tick().then(() => {
       setupInputListeners();
     });
   }
+
+  // Keep pillIds in sync with pillItems
+  $: pillIds = pillItems.map((pill) => pill.id);
 
   // Update suggestions when they change
   $: if (suggestions) {
@@ -79,64 +164,101 @@
   }
 
   function handleInputFocus() {
-    showSuggestions = true;
-    if (suggestions.length > 0) {
-      filteredSuggestions = suggestions.slice(0, 10);
-    }
+    // Don't automatically show suggestions on focus
+    // as we're now controlling this with clicks
   }
 
   function handleInputBlur() {
+    // Small delay to allow clicking suggestions
     setTimeout(() => {
       showSuggestions = false;
     }, 200);
   }
 
-  // This is still used by the MultiInput events, but we mainly rely on direct DOM events
   function handleInputChange(e) {
     if (e.detail?.value !== undefined) {
       inputValue = e.detail.value;
       updateFilteredSuggestions();
+
+      // Only show dropdown when typing (not when clicking to toggle)
       if (inputValue.trim() && filteredSuggestions.length > 0) {
         showSuggestions = true;
       }
     }
+
+    // Also handle pillItems changes
+    if (e.detail?.values) {
+      // Convert the string array to pill items preserving IDs where possible
+      const newPillItems: PillItem[] = e.detail.values.map((val, i) => {
+        // If we already have a pill at this index, preserve its ID
+        if (pillItems[i]) {
+          return { ...pillItems[i], value: val };
+        }
+        // Otherwise create a new pill with a new ID
+        return { id: generateUniqueId(), value: val };
+      });
+
+      pillItems = newPillItems;
+      updateValues();
+    }
   }
 
   function handleSuggestionClick(suggestion: Suggestion) {
-    let index = 0;
+    // Find which pill to update based on activeInputId
+    let pillIndex = -1;
 
-    // Try to find which input is active
-    if (activeInput && multiInputEl) {
-      const inputs = Array.from(multiInputEl.querySelectorAll("input"));
-      index = inputs.indexOf(activeInput);
-      if (index === -1) index = values.length - 1;
-    } else {
-      // Fallback to finding empty input
-      index = values.findIndex((v) => !v.trim());
-      if (index === -1) index = values.length - 1;
+    if (activeInputId) {
+      pillIndex = pillItems.findIndex((pill) => pill.id === activeInputId);
     }
 
-    // Update values with suggestion
-    const newValues = [...values];
-    newValues[index] = suggestion.value;
-
-    // Add empty input at the end if needed
-    if (index === newValues.length - 1) {
-      newValues.push("");
+    // If no active input ID or not found, find first empty pill
+    if (pillIndex === -1) {
+      pillIndex = pillItems.findIndex((pill) => !pill.value.trim());
+      if (pillIndex === -1) {
+        // If no empty pill, use the last one
+        pillIndex = pillItems.length - 1;
+      }
     }
 
-    // Update values and dispatch change event
-    values = newValues;
-    dispatch("change", { values: newValues });
+    // Create new array of pill items with the updated value
+    const newPillItems = [...pillItems];
+    newPillItems[pillIndex] = {
+      ...newPillItems[pillIndex],
+      value: suggestion.value,
+    };
 
-    // Reset input
+    // Add an empty pill at the end if we're at the last one
+    if (pillIndex === newPillItems.length - 1) {
+      newPillItems.push({
+        id: generateUniqueId(),
+        value: "",
+      });
+    }
+
+    // Update pill items and dispatch change
+    pillItems = newPillItems;
+    updateValues();
+
+    // Reset state
     inputValue = "";
     showSuggestions = false;
+    activeInputId = null;
 
-    // Re-setup listeners after values change
-    tick().then(() => {
+    // Focus the empty input after DOM update
+    setTimeout(() => {
+      if (multiInputEl) {
+        // Get all inputs and focus the last one (which should be empty)
+        const inputs = Array.from(multiInputEl.querySelectorAll("input"));
+        const lastInput = inputs[inputs.length - 1];
+        if (lastInput) {
+          lastInput.focus();
+          activeInputId = lastInput.getAttribute("data-pill-id");
+        }
+      }
+
+      // Re-setup listeners
       setupInputListeners();
-    });
+    }, 10);
   }
 
   function updateFilteredSuggestions() {
@@ -157,25 +279,28 @@
 </script>
 
 <div class="relative w-full" bind:this={multiInputEl}>
-  <MultiInput
-    {id}
-    {placeholder}
-    {contentClassName}
-    bind:values
-    {errors}
-    {singular}
-    {plural}
-    {preventFocus}
-    on:focus={handleInputFocus}
-    on:blur={handleInputBlur}
-    on:input={handleInputChange}
-    on:change={handleInputChange}
-  >
-    <slot name="within-input" slot="within-input"></slot>
-    <slot name="beside-input" slot="beside-input" let:hasSomeValue>
-      <slot name="action-button" {hasSomeValue}></slot>
-    </slot>
-  </MultiInput>
+  <div class="custom-multi-input">
+    <MultiInput
+      {id}
+      {placeholder}
+      {contentClassName}
+      values={pillItems.map((p) => p.value)}
+      {pillIds}
+      {errors}
+      {singular}
+      {plural}
+      {preventFocus}
+      on:focus={handleInputFocus}
+      on:blur={handleInputBlur}
+      on:input={handleInputChange}
+      on:change={handleInputChange}
+    >
+      <slot name="within-input" slot="within-input"></slot>
+      <slot name="beside-input" slot="beside-input" let:hasSomeValue>
+        <slot name="action-button" {hasSomeValue}></slot>
+      </slot>
+    </MultiInput>
+  </div>
 
   <!-- Show dropdown only when we have suggestions and showSuggestions is true -->
   {#if showSuggestions && filteredSuggestions.length > 0}

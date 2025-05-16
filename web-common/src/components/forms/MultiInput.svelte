@@ -26,6 +26,9 @@
   export let values: string[];
   export let errors: Record<string | number, string[]> | undefined;
 
+  // Add support for optional pill IDs
+  export let pillIds: string[] = [];
+
   $: lastIdx = values.length - 1;
   $: lastValue = values[lastIdx] ?? "";
 
@@ -159,11 +162,15 @@
           on:keydown={handleKeyDown}
           autocomplete="off"
           id="{id}.{lastIdx}"
+          data-pill-id={pillIds[lastIdx] || ""}
           class="focus:outline-white group-hover:text-red-500 text-sm grow px-1"
           on:focusin={() => (focused = true)}
           on:focusout={() => (focused = false)}
           on:click|preventDefault|stopPropagation={() => preventFocus}
           placeholder={!hasSomeValue ? placeholder : ""}
+          {...$$slots["input-attributes"]
+            ? $$slots["input-attributes"]({ index: lastIdx })
+            : {}}
         />
       </div>
       {#if hasSomeValue}
