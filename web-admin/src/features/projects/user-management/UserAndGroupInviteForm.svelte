@@ -40,8 +40,11 @@
           message: "Must be a valid email or group name",
           test: (value) => {
             if (!value) return true;
-            // Either a valid email or assumed to be a valid group name
-            return RFC5322EmailRegex.test(value) || value.trim().length > 0;
+            // Either a valid email or a valid group name (must be at least 3 chars and alphanumeric with hyphens)
+            return (
+              RFC5322EmailRegex.test(value) ||
+              /^[a-zA-Z0-9]+(-[a-zA-Z0-9]+)*$/.test(value)
+            );
           },
         }),
       ),
@@ -80,7 +83,7 @@
                   },
                 });
                 succeededEmails.push(input);
-              } catch {
+              } catch (error) {
                 failedEmails.push(input);
               }
             } else {
@@ -95,8 +98,15 @@
                   },
                 });
                 succeededGroups.push(input);
-              } catch {
+              } catch (error) {
                 failedGroups.push(input);
+                // Show specific error message for non-existent groups
+                if (error.response?.status === 404) {
+                  eventBus.emit("notification", {
+                    type: "error",
+                    message: `Group "${input}" does not exist. Please create the group first.`,
+                  });
+                }
               }
             }
           }),
