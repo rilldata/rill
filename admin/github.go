@@ -112,15 +112,27 @@ func (g *githubClient) InstallationClient(installationID int64, repoID *int64) *
 	g.cacheMu.Lock()
 	defer g.cacheMu.Unlock()
 
+	// lookup cache
 	cacheKey := installationCacheKey(installationID, repoID)
 	val, ok := g.installationCache.Get(cacheKey)
 	if ok {
 		return val.(*github.Client)
 	}
 
+	// create transport for the installation from the app transport
 	itr := ghinstallation.NewFromAppsTransport(g.appTransport, installationID)
+	if repoID != nil {
+		// set the repository ID in the transport options
+		opts := itr.InstallationTokenOptions
+		if opts == nil {
+			opts = &github.InstallationTokenOptions{}
+		}
+		opts.RepositoryIDs = []int64{*repoID}
+	}
+	// create the installation client
 	installationClient := github.NewClient(&http.Client{Transport: itr})
 
+	// add to cache
 	g.installationCache.Add(cacheKey, installationClient)
 	return installationClient
 }
