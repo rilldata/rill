@@ -329,9 +329,12 @@ export function bucketTimeRanges(
     latestWindowTimeRanges = Object.entries(LATEST_WINDOW_TIME_RANGES).map(
       ([range, meta]) => {
         if (meta.rillSyntax) {
-          const parsed = parseRillTime(meta.rillSyntax);
-
-          console.log({ parsed });
+          try {
+            const parsed = parseRillTime(meta.rillSyntax);
+            console.log({ parsed });
+          } catch {
+            // no-op
+          }
         }
 
         return {
