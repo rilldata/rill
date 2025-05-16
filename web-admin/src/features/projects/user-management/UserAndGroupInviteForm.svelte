@@ -83,7 +83,7 @@
                   },
                 });
                 succeededEmails.push(input);
-              } catch (error) {
+              } catch {
                 failedEmails.push(input);
               }
             } else {
@@ -98,15 +98,8 @@
                   },
                 });
                 succeededGroups.push(input);
-              } catch (error) {
+              } catch {
                 failedGroups.push(input);
-                // Show specific error message for non-existent groups
-                if (error.response?.status === 404) {
-                  eventBus.emit("notification", {
-                    type: "error",
-                    message: `Group "${input}" does not exist. Please create the group first.`,
-                  });
-                }
               }
             }
           }),
