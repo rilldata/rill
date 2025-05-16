@@ -16,6 +16,9 @@
   $: limit = $page.url.searchParams.get("limit");
   $: executionTime = $page.url.searchParams.get("execution_time");
   $: token = $page.url.searchParams.get("token");
+  $: includeHeader = $page.url.searchParams.get("include_header") === "true";
+  $: dashboard = $page.url.searchParams.get("dashboard") ?? "";
+  $: dashboardUrl = $page.url.searchParams.get("dashboard_url") ?? "";
 
   const downloadReportMutation = createDownloadReportMutation();
   let downloadOnce = false;
@@ -30,6 +33,11 @@
         format: (format as V1ExportFormat) ?? V1ExportFormat.EXPORT_FORMAT_CSV,
         executionTime,
         limit,
+        includeHeader,
+        organization,
+        project,
+        dashboard,
+        dashboardUrl,
       },
     });
   }
