@@ -1,6 +1,7 @@
 <script lang="ts">
   import { createEventDispatcher, onMount, tick, onDestroy } from "svelte";
   import MultiInput from "@rilldata/web-common/components/forms/MultiInput.svelte";
+  import AvatarListItem from "@rilldata/web-admin/features/organizations/users/AvatarListItem.svelte";
 
   type Suggestion = {
     value: string;
@@ -9,7 +10,6 @@
     photoUrl?: string;
   };
 
-  // Define a PillItem type with unique ID
   type PillItem = {
     id: string;
     value: string;
@@ -296,16 +296,22 @@
   }
 
   function updateFilteredSuggestions() {
+    // Get currently selected values
+    const selectedValues = pillItems.map((item) => item.value).filter(Boolean);
+
     if (!inputValue || !inputValue.trim()) {
-      // Show all suggestions when input is empty
-      filteredSuggestions = suggestions.slice(0, 10);
+      // Show all suggestions when input is empty, but exclude already selected values
+      filteredSuggestions = suggestions
+        .filter((s) => !selectedValues.includes(s.value))
+        .slice(0, 10);
     } else {
-      // Filter suggestions based on input
+      // Filter suggestions based on input and exclude already selected values
       filteredSuggestions = suggestions
         .filter(
           (s) =>
-            s.label.toLowerCase().includes(inputValue.toLowerCase()) ||
-            s.value.toLowerCase().includes(inputValue.toLowerCase()),
+            (s.label.toLowerCase().includes(inputValue.toLowerCase()) ||
+              s.value.toLowerCase().includes(inputValue.toLowerCase())) &&
+            !selectedValues.includes(s.value),
         )
         .slice(0, 10);
     }
@@ -344,46 +350,23 @@
       {#each filteredSuggestions as suggestion}
         <button
           type="button"
-          class="flex items-center p-2 w-full text-left hover:bg-gray-100 cursor-pointer"
+          class="w-full text-left hover:bg-gray-100 cursor-pointer"
           on:click={() => handleSuggestionClick(suggestion)}
           on:keydown={(e) =>
             e.key === "Enter" && handleSuggestionClick(suggestion)}
         >
           {#if suggestion.type === "user"}
-            <div class="flex items-center gap-2">
-              <div
-                class="h-6 w-6 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden"
-              >
-                {#if suggestion.photoUrl}
-                  <img
-                    src={suggestion.photoUrl}
-                    alt={suggestion.label}
-                    class="h-full w-full object-cover"
-                  />
-                {:else}
-                  <span class="text-xs text-gray-700"
-                    >{suggestion.label[0]?.toUpperCase()}</span
-                  >
-                {/if}
-              </div>
-              <div class="flex flex-col">
-                <span class="text-sm">{suggestion.label}</span>
-                {#if suggestion.value !== suggestion.label}
-                  <span class="text-xs text-gray-500">{suggestion.value}</span>
-                {/if}
-              </div>
-            </div>
+            <AvatarListItem
+              name={suggestion.label}
+              email={suggestion.value !== suggestion.label
+                ? suggestion.value
+                : null}
+              photoUrl={suggestion.photoUrl}
+              shape="circle"
+            />
           {:else}
-            <div class="flex items-center gap-2">
-              <div
-                class="h-6 w-6 rounded-sm bg-primary-600 flex items-center justify-center"
-              >
-                <span class="text-xs text-white"
-                  >{suggestion.label[0]?.toUpperCase()}</span
-                >
-              </div>
-              <span class="text-sm">{suggestion.label}</span>
-            </div>
+            <!-- TODO: add count -->
+            <AvatarListItem name={suggestion.label} shape="square" />
           {/if}
         </button>
       {/each}
