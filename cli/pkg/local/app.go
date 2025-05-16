@@ -368,11 +368,6 @@ func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly bool
 		return err
 	}
 
-	// Start the gRPC server
-	group.Go(func() error {
-		return runtimeServer.ServeGRPC(ctx)
-	})
-
 	// if keypath and certpath are provided
 	secure := tlsCertPath != "" && tlsKeyPath != ""
 

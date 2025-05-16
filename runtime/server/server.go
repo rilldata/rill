@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	"connectrpc.com/vanguard"
+	"connectrpc.com/vanguard/vanguardgrpc"
 	grpc_auth "github.com/grpc-ecosystem/go-grpc-middleware/auth"
 	grpc_validator "github.com/grpc-ecosystem/go-grpc-middleware/validator"
 	gateway "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
@@ -28,7 +30,6 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -120,7 +121,7 @@ func (s *Server) Ping(ctx context.Context, req *runtimev1.PingRequest) (*runtime
 }
 
 // ServeGRPC Starts the gRPC server.
-func (s *Server) ServeGRPC(ctx context.Context) error {
+func (s *Server) ServeGRPC(ctx context.Context) (*vanguard.Transcoder, error) {
 	server := grpc.NewServer(
 		grpc.ChainStreamInterceptor(
 			middleware.TimeoutStreamServerInterceptor(timeoutSelector),
@@ -146,13 +147,18 @@ func (s *Server) ServeGRPC(ctx context.Context) error {
 	runtimev1.RegisterRuntimeServiceServer(server, s)
 	runtimev1.RegisterQueryServiceServer(server, s)
 	runtimev1.RegisterConnectorServiceServer(server, s)
-	s.logger.Sugar().Infof("serving runtime gRPC on port:%v", s.opts.GRPCPort)
-	return graceful.ServeGRPC(ctx, server, s.opts.GRPCPort)
+	s.logger.Sugar().Infof("serving runtime gRPC on port:%v", s.opts.HTTPPort)
+	return vanguardgrpc.NewTranscoder(server)
 }
 
 // Starts the HTTP server.
 func (s *Server) ServeHTTP(ctx context.Context, registerAdditionalHandlers func(mux *http.ServeMux)) error {
-	handler, err := s.HTTPHandler(ctx, registerAdditionalHandlers)
+	transcoder, err := s.ServeGRPC(ctx)
+	if err != nil {
+		return err
+	}
+
+	handler, err := s.HTTPHandler(ctx, registerAdditionalHandlers, transcoder)
 	if err != nil {
 		return err
 	}
@@ -168,51 +174,18 @@ func (s *Server) ServeHTTP(ctx context.Context, registerAdditionalHandlers func(
 }
 
 // HTTPHandler HTTP handler serving REST gateway.
-func (s *Server) HTTPHandler(ctx context.Context, registerAdditionalHandlers func(mux *http.ServeMux)) (http.Handler, error) {
-	// Create REST gateway
-	gwMux := gateway.NewServeMux(
-		gateway.WithErrorHandler(HTTPErrorHandler),
-		gateway.WithOutgoingHeaderMatcher(func(s string) (string, bool) {
-			// grpc gateway adds gateway.MetadataHeaderPrefix to all outgoing headers
-			// we want to skip that for `x-trace-id` set in response
-			if s == observability.TracingHeader {
-				return s, true
-			}
-			// default matcher logic
-			return fmt.Sprintf("%s%s", gateway.MetadataHeaderPrefix, s), true
-		}),
-	)
-	opts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
-	grpcAddress := fmt.Sprintf("localhost:%d", s.opts.GRPCPort)
-	err := runtimev1.RegisterRuntimeServiceHandlerFromEndpoint(ctx, gwMux, grpcAddress, opts)
-	if err != nil {
-		return nil, err
-	}
-	err = runtimev1.RegisterQueryServiceHandlerFromEndpoint(ctx, gwMux, grpcAddress, opts)
-	if err != nil {
-		return nil, err
-	}
-	err = runtimev1.RegisterConnectorServiceHandlerFromEndpoint(ctx, gwMux, grpcAddress, opts)
-	if err != nil {
-		return nil, err
-	}
+func (s *Server) HTTPHandler(ctx context.Context, registerAdditionalHandlers func(mux *http.ServeMux), transcoder *vanguard.Transcoder) (http.Handler, error) {
+	httpMux := http.NewServeMux()
 
-	// One-off REST-only path for multipart file upload
-	// NOTE: It's local only and we should deprecate it in favor of a cloud-friendly alternative.
-	err = gwMux.HandlePath("POST", "/v1/instances/{instance_id}/files/upload/-/{path=**}", auth.GatewayMiddleware(s.aud, s.UploadMultipartFile))
-	if err != nil {
-		panic(err)
-	}
+	// Register the Vanguard handler for gRPC transcoding
+	httpMux.Handle("/", transcoder)
+	httpMux.Handle("/v1/", transcoder)
 
 	// Call callback to register additional paths
 	// NOTE: This is so ugly, but not worth refactoring it properly right now.
-	httpMux := http.NewServeMux()
 	if registerAdditionalHandlers != nil {
 		registerAdditionalHandlers(httpMux)
 	}
-
-	// Add gRPC-gateway on httpMux
-	httpMux.Handle("/v1/", gwMux)
 
 	// Add HTTP handler for health check
 	observability.MuxHandle(httpMux, "/v1/health", observability.Middleware("runtime", s.logger, http.HandlerFunc(s.healthCheckHandler)))
@@ -228,6 +201,15 @@ func (s *Server) HTTPHandler(ctx context.Context, registerAdditionalHandlers fun
 
 	// Serving static assets
 	observability.MuxHandle(httpMux, "/v1/instances/{instance_id}/assets/{path...}", observability.Middleware("runtime", s.logger, auth.HTTPMiddleware(s.aud, httputil.Handler(s.assetsHandler))))
+
+	// Add HTTP handler for multipart file upload
+	observability.MuxHandle(httpMux, "/v1/instances/{instance_id}/files/upload/-/{path...}", observability.Middleware("runtime", s.logger, auth.HTTPMiddleware(s.aud, http.HandlerFunc(s.UploadMultipartFile))))
+
+	// Add HTTP handler for watching files
+	httpMux.Handle("/v1/instances/{instance_id}/files/watch", auth.HTTPMiddleware(s.aud, http.HandlerFunc(s.WatchFilesHandler)))
+
+	// Add HTTP handler for watching resources
+	httpMux.Handle("/v1/instances/{instance_id}/resources/-/watch", auth.HTTPMiddleware(s.aud, http.HandlerFunc(s.WatchResourcesHandler)))
 
 	// Add Prometheus
 	if s.opts.ServePrometheus {

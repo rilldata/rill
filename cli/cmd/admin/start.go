@@ -368,7 +368,6 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				if err != nil {
 					logger.Fatal("error creating server", zap.Error(err))
 				}
-				group.Go(func() error { return srv.ServeGRPC(cctx) })
 				group.Go(func() error { return srv.ServeHTTP(cctx) })
 				if conf.DebugPort != 0 {
 					group.Go(func() error { return debugserver.ServeHTTP(cctx, conf.DebugPort) })

@@ -149,7 +149,6 @@ func New(t *testing.T) *Fixture {
 	ctx, cancel := context.WithCancel(ctx)
 	t.Cleanup(cancel)
 	group, ctx := errgroup.WithContext(ctx)
-	group.Go(func() error { return srv.ServeGRPC(ctx) })
 	group.Go(func() error { return srv.ServeHTTP(ctx) })
 	require.NoError(t, srv.AwaitServing(ctx))
 
