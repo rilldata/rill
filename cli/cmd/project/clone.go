@@ -8,8 +8,6 @@ import (
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/rilldata/rill/cli/cmd/env"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
-	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
-	"github.com/rilldata/rill/runtime/pkg/archive"
 	"github.com/spf13/cobra"
 )
 
@@ -21,10 +19,6 @@ func CloneCmd(ch *cmdutil.Helper) *cobra.Command {
 		Args:  cobra.ExactArgs(1),
 		Short: "Clone Project",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			client, err := ch.Client()
-			if err != nil {
-				return err
-			}
 			name := args[0]
 			if path == "" {
 				path = name
@@ -51,29 +45,10 @@ func CloneCmd(ch *cmdutil.Helper) *cobra.Command {
 				return fmt.Errorf("failed to create directory %q: %w", path, err)
 			}
 
-			p, err := client.GetProject(cmd.Context(), &adminv1.GetProjectRequest{OrganizationName: ch.Org, Name: name})
+			// get creds
+			creds, err := ch.GitCredentials(cmd.Context(), ch.Org, name, path)
 			if err != nil {
 				return err
-			}
-
-			// get creds
-			creds, archiveURL, err := ch.GitCredentials(cmd.Context(), p.Project, path)
-			if err != nil {
-				if archiveURL == "" {
-					return err
-				}
-
-				// it is based on archive URL
-				dst, err := os.MkdirTemp("", "rill-archive")
-				if err != nil {
-					return err
-				}
-				defer os.RemoveAll(dst)
-				if err := archive.Download(cmd.Context(), archiveURL, dst, path, false, true); err != nil {
-					return err
-				}
-				return env.PullVars(cmd.Context(), ch, path, name, "prod", false)
-				// Should it auto migrate to managed git as well ?
 			}
 
 			remote, err := creds.FullyQualifiedRemote()
@@ -84,7 +59,7 @@ func CloneCmd(ch *cmdutil.Helper) *cobra.Command {
 			// clone repository
 			_, err = git.PlainCloneContext(cmd.Context(), path, false, &git.CloneOptions{
 				URL:           remote,
-				ReferenceName: plumbing.NewBranchReferenceName(p.Project.ProdBranch), // TODO:: may be store prod branch in .git as well ?
+				ReferenceName: plumbing.NewBranchReferenceName(creds.DefaultBranch),
 				SingleBranch:  true,
 			})
 			if err != nil {

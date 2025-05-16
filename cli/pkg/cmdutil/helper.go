@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/rilldata/rill/admin/client"
-	"github.com/rilldata/rill/cli/pkg/dotgit"
 	"github.com/rilldata/rill/cli/pkg/dotrill"
 	"github.com/rilldata/rill/cli/pkg/dotrillcloud"
 	"github.com/rilldata/rill/cli/pkg/gitutil"
@@ -440,45 +439,6 @@ func (h *Helper) OpenRuntimeClient(ctx context.Context, org, project string, loc
 	}
 
 	return rt, instanceID, nil
-}
-
-func (h *Helper) GitCredentials(ctx context.Context, p *adminv1.Project, projectPath string) (*dotgit.GitConfig, string, error) {
-	g := dotgit.New(projectPath)
-
-	// Check if we have the git credentials in .git
-	creds, err := g.LoadGitCredentials()
-	if err != nil {
-		return nil, "", err
-	}
-	if !creds.IsEmpty() && !creds.CredentialsExpired() {
-		return creds, "", nil
-	}
-
-	resp, err := h.adminClient.GetCloneCredentials(ctx, &adminv1.GetCloneCredentialsRequest{
-		Organization: p.OrgName,
-		Project:      p.Name,
-	})
-	if err != nil {
-		return nil, "", err
-	}
-	if resp.ArchiveDownloadUrl != "" {
-		// This is a very hacky way to get the archive download URL without making duplicate calls.
-		// Remove this once all projects are connected to Git.
-		return nil, resp.ArchiveDownloadUrl, ErrNotConnectedToGit
-	}
-	creds = &dotgit.GitConfig{
-		Remote:         resp.GitRepoUrl,
-		Username:       resp.GitUsername,
-		Password:       resp.GitPassword,
-		PasswordExpiry: resp.GitPasswordExpiresAt.AsTime().Format(time.RFC3339),
-		DefaultBranch:  resp.GitProdBranch,
-		Subpath:        resp.GitSubpath,
-	}
-	err = g.StoreGitCredentials(creds)
-	if err != nil {
-		return nil, "", err
-	}
-	return creds, "", nil
 }
 
 func hashStr(ss ...string) string {
