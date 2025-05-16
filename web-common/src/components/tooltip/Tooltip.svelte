@@ -33,7 +33,7 @@ FIXME: In the future, we should also be listening to focus events from the child
   // provide a programmatic guard to suppressing the tooltip.
   export let suppress = false;
   /** the delay in miliseconds before rendering the tooltip once mouse has entered */
-  export let activeDelay = 120;
+  export let activeDelay = 200;
   /** the delay in miliseconds before unrendering the tooltip once mouse has left */
   export let nonActiveDelay = 0;
   export let active = false;
@@ -41,7 +41,7 @@ FIXME: In the future, we should also be listening to focus events from the child
   let parent: HTMLDivElement;
   let waitUntilTimer: ReturnType<typeof setTimeout>;
 
-  function waitUntil(callback, time = 120) {
+  function waitUntil(callback, time = activeDelay) {
     if (waitUntilTimer) clearTimeout(waitUntilTimer);
     waitUntilTimer = setTimeout(callback, time);
   }
@@ -66,7 +66,7 @@ FIXME: In the future, we should also be listening to focus events from the child
   on:mouseenter={() => {
     waitUntil(() => {
       active = true;
-    }, activeDelay);
+    });
   }}
   on:mouseleave={() => {
     waitUntil(() => {
