@@ -79,10 +79,11 @@
           >
         </button>
         <TooltipContent slot="tooltip-content">
-          <div class="pointer-events-none items-baseline">
-            <div aria-label="tooltip-name">
-              {displayName}
-            </div>
+          <div
+            class="pointer-events-none items-baseline"
+            aria-label="tooltip-name"
+          >
+            {displayName}
           </div>
         </TooltipContent>
       </Tooltip>
