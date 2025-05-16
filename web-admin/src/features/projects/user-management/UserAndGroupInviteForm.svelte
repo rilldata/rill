@@ -147,7 +147,7 @@
         }
         if (succeededGroups.length > 0) {
           if (successMessage) successMessage += " and ";
-          successMessage += `added ${succeededGroups.length} ${succeededGroups.length === 1 ? "group" : "groups"}`;
+          successMessage += `Added ${succeededGroups.length} ${succeededGroups.length === 1 ? "group" : "groups"}`;
         }
         if (successMessage) {
           successMessage += ` as ${values.role}`;
