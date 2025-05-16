@@ -1,9 +1,13 @@
 ---
-title: "GCS Bucket"
+title: "Managed GCS Bucket"
 description: Setting up gcs access
 sidebar_label: "GCS Bucket"
 sidebar_position: 20
 ---
+
+:::warning
+Please note that these instructions were made specifically for Rill Managed Pipelines and used by our data engineering team to set up orchestration from object stores/data warehouses into Rill Managed Database Services. While some of the concepts may apply, please refer to your providers documentation on the correct permissions required to connect to your service.
+:::
 
 ## Setup instructions
 Follow the instructions below to grant Rill access to your Google Cloud Storage Bucket.
