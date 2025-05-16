@@ -91,6 +91,45 @@
   $: valueColumn.update(valueElementWith);
   $: deltaColumn.update(deltaElementWidth);
 
+  $: formattedPctOfTotalTitles = Object.fromEntries(
+    Object.entries(pctOfTotals).map(([name, value]) => [
+      name,
+      value !== null ? formatMeasurePercentageDifference(value) : null,
+    ]),
+  );
+
+  $: formattedPctOfTotalStrings = Object.fromEntries(
+    Object.entries(formattedPctOfTotalTitles).map(([name, parts]) => [
+      name,
+      parts
+        ? `${parts.neg || ""}${parts.int}${parts.dot}${parts.frac}${parts.suffix}%`
+        : null,
+    ]),
+  );
+
+  $: formattedDeltaAbsTitles = Object.fromEntries(
+    Object.entries(deltaAbsMap).map(([name, value]) => [
+      name,
+      value !== null ? formatters[name]?.(value)?.toString() : null,
+    ]),
+  );
+
+  $: formattedDeltaRelTitles = Object.fromEntries(
+    Object.entries(deltaRels).map(([name, value]) => [
+      name,
+      value !== null ? formatMeasurePercentageDifference(value) : null,
+    ]),
+  );
+
+  $: formattedDeltaRelStrings = Object.fromEntries(
+    Object.entries(formattedDeltaRelTitles).map(([name, parts]) => [
+      name,
+      parts
+        ? `${parts.neg || ""}${parts.int}${parts.dot}${parts.frac}${parts.suffix}%`
+        : null,
+    ]),
+  );
+
   $: barLengths = Object.fromEntries(
     Object.entries(pctOfTotals).map(([name, pct]) => [
       name,
@@ -229,6 +268,7 @@
       on:click={modified({
         shift: () => shiftClickHandler(values[measureName]?.toString() || ""),
       })}
+      title={values[measureName]?.toString()}
       style:background={leaderboardMeasureNames.length === 1
         ? measureGradients
         : measureGradientMap?.[measureName]}
@@ -250,10 +290,10 @@
     {#if isValidPercentOfTotal(measureName) && shouldShowContextColumns(measureName)}
       <td
         data-comparison-cell
-        title={pctOfTotals[measureName]?.toString() || ""}
+        title={formattedPctOfTotalStrings[measureName]}
         on:click={modified({
           shift: () =>
-            shiftClickHandler(pctOfTotals[measureName]?.toString() || ""),
+            shiftClickHandler(formattedPctOfTotalStrings[measureName] || ""),
         })}
       >
         <PercentageChange
@@ -269,10 +309,10 @@
     {#if isTimeComparisonActive && shouldShowContextColumns(measureName)}
       <td
         data-comparison-cell
-        title={deltaAbsMap[measureName]?.toString() || ""}
+        title={formattedDeltaAbsTitles[measureName]}
         on:click={modified({
           shift: () =>
-            shiftClickHandler(deltaAbsMap[measureName]?.toString() || ""),
+            shiftClickHandler(formattedDeltaAbsTitles[measureName] || ""),
         })}
       >
         <FormattedDataType
@@ -293,16 +333,14 @@
     {#if isTimeComparisonActive && shouldShowContextColumns(measureName)}
       <td
         data-comparison-cell
-        title={deltaRels[measureName]?.toString() || ""}
+        title={formattedDeltaRelStrings[measureName]}
         on:click={modified({
           shift: () =>
-            shiftClickHandler(deltaRels[measureName]?.toString() || ""),
+            shiftClickHandler(formattedDeltaRelStrings[measureName] || ""),
         })}
       >
         <PercentageChange
-          value={deltaRels[measureName]
-            ? formatMeasurePercentageDifference(deltaRels[measureName])
-            : null}
+          value={deltaRels[measureName]}
           color="text-gray-500"
         />
         {#if showZigZags[measureName]}
