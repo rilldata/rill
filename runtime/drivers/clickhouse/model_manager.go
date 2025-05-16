@@ -76,14 +76,42 @@ type ModelOutputProperties struct {
 	DictionaryColumns string `mapstructure:"dictionary_columns"`
 }
 
-// validateAndApplyDefaults validates the model input and output properties and applies defaults.
+// parsePropertiesAndApplyDefaults parses and validates the model input and output properties and applies defaults.
 // The inputProps may optionally be nil to allow for connectors that don't use the base SQL-centric input properties.
 // The outputProps may not be nil.
-func (c *Connection) validateAndApplyDefaults(opts *drivers.ModelExecuteOptions, ip *ModelInputProperties, op *ModelOutputProperties) error {
+func (c *Connection) parsePropertiesAndApplyDefaults(opts *drivers.ModelExecuteOptions) (*ModelInputProperties, *ModelOutputProperties, error) {
+	// Parse the input and output properties
+	im := &mapstructure.Metadata{}
+	ip := &ModelInputProperties{}
+	if err := mapstructure.WeakDecodeMetadata(opts.InputProperties, opts.InputProperties, im); err != nil {
+		return nil, nil, fmt.Errorf("failed to parse input properties: %w", err)
+	}
+	if len(im.Unused) > 0 {
+		return nil, nil, fmt.Errorf("unknown input properties: %s", strings.Join(im.Unused, ", "))
+	}
+
+	// Parse the output properties
+	om := &mapstructure.Metadata{}
+	op := &ModelOutputProperties{}
+	if err := mapstructure.WeakDecodeMetadata(opts.OutputProperties, opts.OutputProperties, om); err != nil {
+		return nil, nil, fmt.Errorf("failed to parse output properties: %w", err)
+	}
+	if len(om.Unused) > 0 {
+		return nil, nil, fmt.Errorf("unknown output properties: %s", strings.Join(om.Unused, ", "))
+	}
+
+	// Check there's a valid SQL query.
+	if ip.SQL == "" && len(ip.InsertSQLs) == 0 && op.Typ != "DICTIONARY" {
+		return nil, nil, fmt.Errorf("input SQL is required")
+	}
+	if ip.SQL != "" && len(ip.InsertSQLs) > 0 {
+		return nil, nil, fmt.Errorf("cannot use both sql and insert_sqls")
+	}
+
 	// EngineFull is not compatible with most other individual properties.
 	if op.EngineFull != "" {
 		if op.Engine != "" || op.OrderBy != "" || op.PartitionBy != "" || op.PrimaryKey != "" || op.SampleBy != "" || op.TTL != "" || op.TableSettings != "" || op.DictionarySourceUser != "" || op.DictionarySourcePassword != "" {
-			return fmt.Errorf("`engine_full` property cannot be used with individual properties")
+			return nil, nil, fmt.Errorf("`engine_full` property cannot be used with individual properties")
 		}
 	}
 
@@ -93,7 +121,7 @@ func (c *Connection) validateAndApplyDefaults(opts *drivers.ModelExecuteOptions,
 	if op.Materialize != nil {
 		if *op.Materialize {
 			if op.Typ == "VIEW" {
-				return fmt.Errorf("the `type` and `materialize` properties contradict each other")
+				return nil, nil, fmt.Errorf("the `type` and `materialize` properties contradict each other")
 			} else if op.Typ == "" {
 				op.Typ = "TABLE"
 			}
@@ -101,17 +129,17 @@ func (c *Connection) validateAndApplyDefaults(opts *drivers.ModelExecuteOptions,
 			if op.Typ == "" {
 				op.Typ = "VIEW"
 			} else if op.Typ != "VIEW" {
-				return fmt.Errorf("the `type` and `materialize` properties contradict each other")
+				return nil, nil, fmt.Errorf("the `type` and `materialize` properties contradict each other")
 			}
 		}
 	}
 	if opts.Incremental || opts.PartitionRun { // Incremental or partitioned models default to TABLE.
 		if op.Typ != "" && op.Typ != "TABLE" {
-			return fmt.Errorf("incremental or partitioned models must be materialized as a table")
+			return nil, nil, fmt.Errorf("incremental or partitioned models must be materialized as a table")
 		}
 		op.Typ = "TABLE"
 	}
-	if op.Typ == "" && ip != nil && len(ip.InsertSQLs) > 0 { // If InsertSQLs are set, default to TABLE.
+	if op.Typ == "" && len(ip.InsertSQLs) > 0 { // If InsertSQLs are set, default to TABLE.
 		op.Typ = "TABLE"
 	}
 	if op.Typ == "" { // Apply default for unannotated models.
@@ -122,7 +150,12 @@ func (c *Connection) validateAndApplyDefaults(opts *drivers.ModelExecuteOptions,
 		}
 	}
 	if op.Typ != "TABLE" && op.Typ != "VIEW" && op.Typ != "DICTIONARY" {
-		return fmt.Errorf("invalid type %q, must be one of TABLE, VIEW or DICTIONARY", op.Typ)
+		return nil, nil, fmt.Errorf("invalid type %q, must be one of TABLE, VIEW or DICTIONARY", op.Typ)
+	}
+
+	// If InsertSQLs are set, we need to ensure it did not resolve to a view.
+	if len(ip.InsertSQLs) > 0 && op.Typ != "TABLE" && op.Typ != "DICTIONARY" {
+		return nil, nil, fmt.Errorf("can only use insert_sqls with table or dictionary types")
 	}
 
 	// For tables, apply a default table engine.
@@ -142,21 +175,21 @@ func (c *Connection) validateAndApplyDefaults(opts *drivers.ModelExecuteOptions,
 	switch op.IncrementalStrategy {
 	case drivers.IncrementalStrategyUnspecified, drivers.IncrementalStrategyAppend, drivers.IncrementalStrategyPartitionOverwrite, drivers.IncrementalStrategyMerge:
 	default:
-		return fmt.Errorf("invalid incremental strategy %q", op.IncrementalStrategy)
+		return nil, nil, fmt.Errorf("invalid incremental strategy %q", op.IncrementalStrategy)
 	}
 
 	// partition_by is required for the partition_overwrite incremental strategy.
 	if op.IncrementalStrategy == drivers.IncrementalStrategyPartitionOverwrite && op.PartitionBy == "" {
-		return fmt.Errorf(`must specify a "partition_by" when "incremental_strategy" is %q`, op.IncrementalStrategy)
+		return nil, nil, fmt.Errorf(`must specify a "partition_by" when "incremental_strategy" is %q`, op.IncrementalStrategy)
 	}
 
 	// When the incremental strategy is "merge", we rewrite it to "append" and use the ReplacingMergeTree engine with the unique key as the ORDER BY.
 	if op.IncrementalStrategy == drivers.IncrementalStrategyMerge {
 		if len(op.UniqueKey) == 0 {
-			return fmt.Errorf("must specify a 'unique_key' when using the 'merge' incremental strategy")
+			return nil, nil, fmt.Errorf("must specify a 'unique_key' when using the 'merge' incremental strategy")
 		}
 		if op.Engine != "" || op.OrderBy != "" {
-			return fmt.Errorf("cannot set 'engine' or 'order_by' when using the 'merge' incremental strategy")
+			return nil, nil, fmt.Errorf("cannot set 'engine' or 'order_by' when using the 'merge' incremental strategy")
 		}
 
 		var orderBy string
@@ -174,9 +207,9 @@ func (c *Connection) validateAndApplyDefaults(opts *drivers.ModelExecuteOptions,
 
 	// We want to use partition_overwrite as the default incremental strategy for models with partitions.
 	// This requires us to inject the partition key into the SQL query, so this only works for SQL models.
-	if op.IncrementalStrategy == drivers.IncrementalStrategyUnspecified && opts.PartitionRun && ip != nil && ip.SQL != "" {
+	if op.IncrementalStrategy == drivers.IncrementalStrategyUnspecified && opts.PartitionRun && ip.SQL != "" {
 		if op.EngineFull != "" {
-			return fmt.Errorf("you must provide an explicit `incremental_strategy` when using `engine_full` with a partitioned model")
+			return nil, nil, fmt.Errorf("you must provide an explicit `incremental_strategy` when using `engine_full` with a partitioned model")
 		}
 		ip.SQL = fmt.Sprintf("SELECT %s AS __rill_partition, * FROM (%s\n)", safeSQLString(opts.PartitionKey), ip.SQL)
 		op.IncrementalStrategy = drivers.IncrementalStrategyPartitionOverwrite
@@ -188,32 +221,16 @@ func (c *Connection) validateAndApplyDefaults(opts *drivers.ModelExecuteOptions,
 		op.IncrementalStrategy = drivers.IncrementalStrategyAppend
 	}
 
-	// The input props are optional, but if set, check its validity.
-	if ip != nil {
-		// Check there's a valid SQL query.
-		if ip.SQL == "" && len(ip.InsertSQLs) == 0 && op.Typ != "DICTIONARY" {
-			return fmt.Errorf("input SQL is required")
-		}
-		if ip.SQL != "" && len(ip.InsertSQLs) > 0 {
-			return fmt.Errorf("cannot use both sql and insert_sqls")
-		}
-
-		// If InsertSQLs are set, we need to ensure its not a view.
-		if len(ip.InsertSQLs) > 0 && op.Typ != "TABLE" && op.Typ != "DICTIONARY" {
-			return fmt.Errorf("can only use insert_sqls with table or dictionary types")
-		}
-	}
-
 	// Add query settings to the SQL query.
 	// We do this last since the SQL query may be modified in some of the above steps.
 	if op.QuerySettings != "" {
-		if ip == nil || ip.SQL == "" {
-			return fmt.Errorf("cannot set query_settings without a SQL query")
+		if ip.SQL == "" {
+			return nil, nil, fmt.Errorf("cannot set query_settings without a SQL query")
 		}
 		ip.SQL = ip.SQL + " SETTINGS " + op.QuerySettings
 	}
 
-	return nil
+	return ip, op, nil
 }
 
 func (p *ModelOutputProperties) tblConfig() string {

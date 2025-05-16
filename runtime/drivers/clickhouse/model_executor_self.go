@@ -22,18 +22,8 @@ func (e *selfToSelfExecutor) Concurrency(desired int) (int, bool) {
 }
 
 func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExecuteOptions) (*drivers.ModelResult, error) {
-	// Parse the input and output properties
-	inputProps := &ModelInputProperties{}
-	if err := mapstructure.WeakDecode(opts.InputProperties, inputProps); err != nil {
-		return nil, fmt.Errorf("failed to parse input properties: %w", err)
-	}
-	outputProps := &ModelOutputProperties{}
-	if err := mapstructure.WeakDecode(opts.OutputProperties, outputProps); err != nil {
-		return nil, fmt.Errorf("failed to parse output properties: %w", err)
-	}
-
 	// Validate the output properties
-	err := e.c.validateAndApplyDefaults(opts, inputProps, outputProps)
+	inputProps, outputProps, err := e.c.parsePropertiesAndApplyDefaults(opts)
 	if err != nil {
 		return nil, fmt.Errorf("invalid model properties: %w", err)
 	}
