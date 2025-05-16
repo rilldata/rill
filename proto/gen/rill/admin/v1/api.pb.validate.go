@@ -25314,6 +25314,8 @@ func (m *CreateManagedGitRepoResponse) validate(all bool) error {
 
 	// no validation rules for Password
 
+	// no validation rules for DefaultBranch
+
 	if len(errors) > 0 {
 		return CreateManagedGitRepoResponseMultiError(errors)
 	}
@@ -25395,22 +25397,23 @@ var _ interface {
 	ErrorName() string
 } = CreateManagedGitRepoResponseValidationError{}
 
-// Validate checks the field values on UploadProjectAssetsRequest with the
-// rules defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
-func (m *UploadProjectAssetsRequest) Validate() error {
+// Validate checks the field values on DisconnectProjectFromGithubRequest with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the first error encountered is returned, or nil if there are
+// no violations.
+func (m *DisconnectProjectFromGithubRequest) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on UploadProjectAssetsRequest with the
-// rules defined in the proto definition for this message. If any rules are
-// violated, the result is a list of violation errors wrapped in
-// UploadProjectAssetsRequestMultiError, or nil if none found.
-func (m *UploadProjectAssetsRequest) ValidateAll() error {
+// ValidateAll checks the field values on DisconnectProjectFromGithubRequest
+// with the rules defined in the proto definition for this message. If any
+// rules are violated, the result is a list of violation errors wrapped in
+// DisconnectProjectFromGithubRequestMultiError, or nil if none found.
+func (m *DisconnectProjectFromGithubRequest) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *UploadProjectAssetsRequest) validate(all bool) error {
+func (m *DisconnectProjectFromGithubRequest) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -25422,19 +25425,20 @@ func (m *UploadProjectAssetsRequest) validate(all bool) error {
 	// no validation rules for Project
 
 	if len(errors) > 0 {
-		return UploadProjectAssetsRequestMultiError(errors)
+		return DisconnectProjectFromGithubRequestMultiError(errors)
 	}
 
 	return nil
 }
 
-// UploadProjectAssetsRequestMultiError is an error wrapping multiple
-// validation errors returned by UploadProjectAssetsRequest.ValidateAll() if
-// the designated constraints aren't met.
-type UploadProjectAssetsRequestMultiError []error
+// DisconnectProjectFromGithubRequestMultiError is an error wrapping multiple
+// validation errors returned by
+// DisconnectProjectFromGithubRequest.ValidateAll() if the designated
+// constraints aren't met.
+type DisconnectProjectFromGithubRequestMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m UploadProjectAssetsRequestMultiError) Error() string {
+func (m DisconnectProjectFromGithubRequestMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -25443,11 +25447,12 @@ func (m UploadProjectAssetsRequestMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m UploadProjectAssetsRequestMultiError) AllErrors() []error { return m }
+func (m DisconnectProjectFromGithubRequestMultiError) AllErrors() []error { return m }
 
-// UploadProjectAssetsRequestValidationError is the validation error returned
-// by UploadProjectAssetsRequest.Validate if the designated constraints aren't met.
-type UploadProjectAssetsRequestValidationError struct {
+// DisconnectProjectFromGithubRequestValidationError is the validation error
+// returned by DisconnectProjectFromGithubRequest.Validate if the designated
+// constraints aren't met.
+type DisconnectProjectFromGithubRequestValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -25455,24 +25460,24 @@ type UploadProjectAssetsRequestValidationError struct {
 }
 
 // Field function returns field value.
-func (e UploadProjectAssetsRequestValidationError) Field() string { return e.field }
+func (e DisconnectProjectFromGithubRequestValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e UploadProjectAssetsRequestValidationError) Reason() string { return e.reason }
+func (e DisconnectProjectFromGithubRequestValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e UploadProjectAssetsRequestValidationError) Cause() error { return e.cause }
+func (e DisconnectProjectFromGithubRequestValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e UploadProjectAssetsRequestValidationError) Key() bool { return e.key }
+func (e DisconnectProjectFromGithubRequestValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e UploadProjectAssetsRequestValidationError) ErrorName() string {
-	return "UploadProjectAssetsRequestValidationError"
+func (e DisconnectProjectFromGithubRequestValidationError) ErrorName() string {
+	return "DisconnectProjectFromGithubRequestValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e UploadProjectAssetsRequestValidationError) Error() string {
+func (e DisconnectProjectFromGithubRequestValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -25484,14 +25489,14 @@ func (e UploadProjectAssetsRequestValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sUploadProjectAssetsRequest.%s: %s%s",
+		"invalid %sDisconnectProjectFromGithubRequest.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = UploadProjectAssetsRequestValidationError{}
+var _ error = DisconnectProjectFromGithubRequestValidationError{}
 
 var _ interface {
 	Field() string
@@ -25499,24 +25504,25 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = UploadProjectAssetsRequestValidationError{}
+} = DisconnectProjectFromGithubRequestValidationError{}
 
-// Validate checks the field values on UploadProjectAssetsResponse with the
-// rules defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
-func (m *UploadProjectAssetsResponse) Validate() error {
+// Validate checks the field values on DisconnectProjectFromGithubResponse with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the first error encountered is returned, or nil if there are
+// no violations.
+func (m *DisconnectProjectFromGithubResponse) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on UploadProjectAssetsResponse with the
-// rules defined in the proto definition for this message. If any rules are
-// violated, the result is a list of violation errors wrapped in
-// UploadProjectAssetsResponseMultiError, or nil if none found.
-func (m *UploadProjectAssetsResponse) ValidateAll() error {
+// ValidateAll checks the field values on DisconnectProjectFromGithubResponse
+// with the rules defined in the proto definition for this message. If any
+// rules are violated, the result is a list of violation errors wrapped in
+// DisconnectProjectFromGithubResponseMultiError, or nil if none found.
+func (m *DisconnectProjectFromGithubResponse) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *UploadProjectAssetsResponse) validate(all bool) error {
+func (m *DisconnectProjectFromGithubResponse) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -25524,19 +25530,20 @@ func (m *UploadProjectAssetsResponse) validate(all bool) error {
 	var errors []error
 
 	if len(errors) > 0 {
-		return UploadProjectAssetsResponseMultiError(errors)
+		return DisconnectProjectFromGithubResponseMultiError(errors)
 	}
 
 	return nil
 }
 
-// UploadProjectAssetsResponseMultiError is an error wrapping multiple
-// validation errors returned by UploadProjectAssetsResponse.ValidateAll() if
-// the designated constraints aren't met.
-type UploadProjectAssetsResponseMultiError []error
+// DisconnectProjectFromGithubResponseMultiError is an error wrapping multiple
+// validation errors returned by
+// DisconnectProjectFromGithubResponse.ValidateAll() if the designated
+// constraints aren't met.
+type DisconnectProjectFromGithubResponseMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m UploadProjectAssetsResponseMultiError) Error() string {
+func (m DisconnectProjectFromGithubResponseMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -25545,12 +25552,12 @@ func (m UploadProjectAssetsResponseMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m UploadProjectAssetsResponseMultiError) AllErrors() []error { return m }
+func (m DisconnectProjectFromGithubResponseMultiError) AllErrors() []error { return m }
 
-// UploadProjectAssetsResponseValidationError is the validation error returned
-// by UploadProjectAssetsResponse.Validate if the designated constraints
-// aren't met.
-type UploadProjectAssetsResponseValidationError struct {
+// DisconnectProjectFromGithubResponseValidationError is the validation error
+// returned by DisconnectProjectFromGithubResponse.Validate if the designated
+// constraints aren't met.
+type DisconnectProjectFromGithubResponseValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -25558,24 +25565,24 @@ type UploadProjectAssetsResponseValidationError struct {
 }
 
 // Field function returns field value.
-func (e UploadProjectAssetsResponseValidationError) Field() string { return e.field }
+func (e DisconnectProjectFromGithubResponseValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e UploadProjectAssetsResponseValidationError) Reason() string { return e.reason }
+func (e DisconnectProjectFromGithubResponseValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e UploadProjectAssetsResponseValidationError) Cause() error { return e.cause }
+func (e DisconnectProjectFromGithubResponseValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e UploadProjectAssetsResponseValidationError) Key() bool { return e.key }
+func (e DisconnectProjectFromGithubResponseValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e UploadProjectAssetsResponseValidationError) ErrorName() string {
-	return "UploadProjectAssetsResponseValidationError"
+func (e DisconnectProjectFromGithubResponseValidationError) ErrorName() string {
+	return "DisconnectProjectFromGithubResponseValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e UploadProjectAssetsResponseValidationError) Error() string {
+func (e DisconnectProjectFromGithubResponseValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -25587,14 +25594,14 @@ func (e UploadProjectAssetsResponseValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sUploadProjectAssetsResponse.%s: %s%s",
+		"invalid %sDisconnectProjectFromGithubResponse.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = UploadProjectAssetsResponseValidationError{}
+var _ error = DisconnectProjectFromGithubResponseValidationError{}
 
 var _ interface {
 	Field() string
@@ -25602,7 +25609,7 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = UploadProjectAssetsResponseValidationError{}
+} = DisconnectProjectFromGithubResponseValidationError{}
 
 // Validate checks the field values on GetCloneCredentialsRequest with the
 // rules defined in the proto definition for this message. If any rules are
@@ -35505,6 +35512,8 @@ func (m *Project) validate(all bool) error {
 	// no validation rules for Provisioner
 
 	// no validation rules for GithubUrl
+
+	// no validation rules for ManagedGitId
 
 	// no validation rules for Subpath
 

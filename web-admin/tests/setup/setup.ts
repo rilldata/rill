@@ -190,7 +190,7 @@ setup.describe("global setup", () => {
         "tests/setup/projects/openrtb",
         "--project",
         RILL_PROJECT_NAME,
-        "--upload",
+        "--archive",
         "--interactive=false",
       ],
       /https?:\/\/[^\s]+/,

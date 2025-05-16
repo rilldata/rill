@@ -277,6 +277,7 @@ export interface V1CreateManagedGitRepoResponse {
   remote?: string;
   username?: string;
   password?: string;
+  defaultBranch?: string;
 }
 
 export interface V1CreateOrganizationRequest {
@@ -367,6 +368,10 @@ export const V1DeploymentStatus = {
   DEPLOYMENT_STATUS_OK: "DEPLOYMENT_STATUS_OK",
   DEPLOYMENT_STATUS_ERROR: "DEPLOYMENT_STATUS_ERROR",
 } as const;
+
+export interface V1DisconnectProjectFromGithubResponse {
+  [key: string]: unknown;
+}
 
 export interface V1EditAlertResponse {
   [key: string]: unknown;
@@ -839,6 +844,8 @@ export interface V1Project {
   createdByUserId?: string;
   provisioner?: string;
   githubUrl?: string;
+  /** managed_git_id is set if the project is connected to a rill-managed git repo. */
+  managedGitId?: string;
   subpath?: string;
   prodBranch?: string;
   archiveAssetId?: string;
@@ -1291,10 +1298,6 @@ export interface V1UpdateUserPreferencesRequest {
 
 export interface V1UpdateUserPreferencesResponse {
   preferences?: V1UserPreferences;
-}
-
-export interface V1UploadProjectAssetsResponse {
-  [key: string]: unknown;
 }
 
 export interface V1User {
