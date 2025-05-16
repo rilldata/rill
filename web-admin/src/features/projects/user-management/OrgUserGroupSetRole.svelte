@@ -24,7 +24,7 @@
   const addUserGroupRole = createAdminServiceAddOrganizationMemberUsergroup();
   const setUserGroupRole =
     createAdminServiceSetOrganizationMemberUsergroupRole();
-  const revokeUserGroupRole =
+  const removeOrganizationMemberUsergroup =
     createAdminServiceRemoveOrganizationMemberUsergroup();
 
   async function handleAddRole(role: string) {
@@ -45,9 +45,9 @@
       eventBus.emit("notification", {
         message: "User group role added",
       });
-    } catch {
+    } catch (error) {
       eventBus.emit("notification", {
-        message: "Error adding user group role",
+        message: `Error: ${error.response.data.message}`,
         type: "error",
       });
     }
@@ -71,9 +71,9 @@
       eventBus.emit("notification", {
         message: "User group role updated",
       });
-    } catch {
+    } catch (error) {
       eventBus.emit("notification", {
-        message: "Error updating user group role",
+        message: `Error: ${error.response.data.message}`,
         type: "error",
       });
     }
@@ -81,7 +81,7 @@
 
   async function handleRemove() {
     try {
-      await $revokeUserGroupRole.mutateAsync({
+      await $removeOrganizationMemberUsergroup.mutateAsync({
         organization: organization,
         usergroup: group.groupName,
       });
@@ -94,9 +94,9 @@
       eventBus.emit("notification", {
         message: "User group removed",
       });
-    } catch {
+    } catch (error) {
       eventBus.emit("notification", {
-        message: "Error removing user group",
+        message: `Error: ${error.response.data.message}`,
         type: "error",
       });
     }
