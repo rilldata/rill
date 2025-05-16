@@ -46,10 +46,7 @@ func (w *deleteUnusedGithubReposWorker) deleteUnusedGithubRepos(ctx context.Cont
 			return fmt.Errorf("failed to get managed org installation id: %w", err)
 		}
 
-		client, err := w.admin.Github.InstallationClient(id)
-		if err != nil {
-			return fmt.Errorf("failed to get github client: %w", err)
-		}
+		client := w.admin.Github.InstallationClient(id, nil)
 
 		// Limit the number of concurrent deletes to 8
 		group, cctx := errgroup.WithContext(ctx)
