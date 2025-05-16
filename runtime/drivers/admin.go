@@ -12,8 +12,6 @@ type AdminService interface {
 }
 
 type ReportMetadata struct {
-	Organization  string
-	Project       string
 	RecipientURLs map[string]ReportURLs
 }
 
