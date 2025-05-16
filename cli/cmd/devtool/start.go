@@ -41,7 +41,7 @@ var (
 	logInfo = color.New(color.FgHiGreen)
 )
 
-var presets = []string{"cloud", "local", "e2e"}
+var presets = []string{"cloud", "local", "e2e", "other"}
 
 func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 	var verbose, reset, refreshDotenv bool
@@ -97,6 +97,8 @@ func start(ch *cmdutil.Helper, preset string, verbose, reset, refreshDotenv bool
 		err = cloud{}.start(ctx, ch, verbose, reset, refreshDotenv, "cloud", services)
 	case "e2e":
 		err = cloud{}.start(ctx, ch, verbose, reset, refreshDotenv, "e2e", services)
+	case "other":
+		err = cloud{}.start(ctx, ch, verbose, reset, refreshDotenv, "other", services)
 	case "local":
 		err = local{}.start(ctx, verbose, reset, services)
 	default:
@@ -233,6 +235,10 @@ func (s cloud) start(ctx context.Context, ch *cmdutil.Helper, verbose, reset, re
 			return fmt.Errorf("failed to refresh .env: %w", err)
 		}
 		logInfo.Printf("Refreshed .env\n")
+	}
+
+	if preset == "other" {
+		preset = "e2e"
 	}
 
 	// Validate the .env file is well-formed.
