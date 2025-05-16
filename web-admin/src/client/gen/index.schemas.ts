@@ -554,8 +554,6 @@ export type V1GetReportMetaResponseRecipientUrls = {
 
 export interface V1GetReportMetaResponse {
   recipientUrls?: V1GetReportMetaResponseRecipientUrls;
-  organization?: string;
-  project?: string;
 }
 
 export interface V1GetUserResponse {

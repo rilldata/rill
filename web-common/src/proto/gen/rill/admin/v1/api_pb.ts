@@ -10126,16 +10126,6 @@ export class GetReportMetaResponse extends Message<GetReportMetaResponse> {
    */
   recipientUrls: { [key: string]: GetReportMetaResponse_URLs } = {};
 
-  /**
-   * @generated from field: string organization = 3;
-   */
-  organization = "";
-
-  /**
-   * @generated from field: string project = 4;
-   */
-  project = "";
-
   constructor(data?: PartialMessage<GetReportMetaResponse>) {
     super();
     proto3.util.initPartial(data, this);
@@ -10145,8 +10135,6 @@ export class GetReportMetaResponse extends Message<GetReportMetaResponse> {
   static readonly typeName = "rill.admin.v1.GetReportMetaResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 2, name: "recipient_urls", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "message", T: GetReportMetaResponse_URLs} },
-    { no: 3, name: "organization", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 4, name: "project", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetReportMetaResponse {

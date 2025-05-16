@@ -57,8 +57,6 @@ func (h *Handle) GetReportMetadata(ctx context.Context, reportName, ownerID, exp
 	}
 
 	return &drivers.ReportMetadata{
-		Organization:  res.Organization,
-		Project:       res.Project,
 		RecipientURLs: recipientURLs,
 	}, nil
 }

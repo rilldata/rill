@@ -4581,10 +4581,6 @@ definitions:
         type: object
         additionalProperties:
           $ref: '#/definitions/GetReportMetaResponseURLs'
-      organization:
-        type: string
-      project:
-        type: string
   v1GetUserResponse:
     type: object
     properties:

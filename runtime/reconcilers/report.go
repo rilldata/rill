@@ -475,7 +475,7 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 					return false, fmt.Errorf("failed to get recipient URLs for %q", recipient)
 				}
 				opts.OpenLink = urls.OpenURL
-				u, err := createExportURL(urls.ExportURL, meta.Organization, meta.Project, rep.Spec, t, urls.OpenURL)
+				u, err := createExportURL(urls.ExportURL, rep.Spec, t, urls.OpenURL)
 				if err != nil {
 					return false, err
 				}
@@ -503,7 +503,7 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 				if !ok {
 					return fmt.Errorf("failed to get recipient URLs for anon user")
 				}
-				u, err := createExportURL(urls.ExportURL, meta.Organization, meta.Project, rep.Spec, t, urls.OpenURL)
+				u, err := createExportURL(urls.ExportURL, rep.Spec, t, urls.OpenURL)
 				if err != nil {
 					return err
 				}
@@ -543,7 +543,7 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 	return false, nil
 }
 
-func createExportURL(inURL, organization, project string, spec *runtimev1.ReportSpec, executionTime time.Time, openURL string) (*url.URL, error) {
+func createExportURL(inURL string, spec *runtimev1.ReportSpec, executionTime time.Time, openURL string) (*url.URL, error) {
 	exportURL, err := url.Parse(inURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse export URL %q: %w", inURL, err)
@@ -559,8 +559,6 @@ func createExportURL(inURL, organization, project string, spec *runtimev1.Report
 	}
 	if spec.ExportIncludeHeader {
 		if openURL != "" {
-			exportURLQry.Set("organization", organization)
-			exportURLQry.Set("project", project)
 			exportURLQry.Set("dashboard_url", openURL)
 		}
 		if e, ok := spec.Annotations["explore"]; ok {

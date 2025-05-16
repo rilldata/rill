@@ -28104,10 +28104,6 @@ func (m *GetReportMetaResponse) validate(all bool) error {
 		}
 	}
 
-	// no validation rules for Organization
-
-	// no validation rules for Project
-
 	if len(errors) > 0 {
 		return GetReportMetaResponseMultiError(errors)
 	}

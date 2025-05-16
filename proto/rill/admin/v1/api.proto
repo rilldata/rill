@@ -2081,8 +2081,6 @@ message GetReportMetaResponse {
     string unsubscribe_url = 4;
   }
   map<string, URLs> recipient_urls = 2;
-  string organization = 3;
-  string project = 4;
   reserved 1;
 }
 

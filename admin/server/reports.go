@@ -123,8 +123,6 @@ func (s *Server) GetReportMeta(ctx context.Context, req *adminv1.GetReportMetaRe
 	}
 
 	return &adminv1.GetReportMetaResponse{
-		Organization:  org.Name,
-		Project:       proj.Name,
 		RecipientUrls: urls,
 	}, nil
 }
