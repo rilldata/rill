@@ -25,6 +25,8 @@
   const userInvite = createAdminServiceAddProjectMemberUser();
   const addUsergroup = createAdminServiceAddProjectMemberUsergroup();
 
+  const formId = "user-and-group-invite-form";
+
   const initialValues: {
     inputs: string[];
     role: string;
@@ -178,12 +180,7 @@
   );
 </script>
 
-<form
-  id="user-and-group-invite-form"
-  on:submit|preventDefault={submit}
-  class="w-full"
-  use:enhance
->
+<form id={formId} on:submit|preventDefault={submit} class="w-full" use:enhance>
   <MultiInput
     id="inputs"
     placeholder="Add emails and groups, separated by commas"
@@ -201,7 +198,7 @@
       <Button
         submitForm
         type="primary"
-        form="user-invite-form"
+        form={formId}
         loading={$submitting}
         disabled={hasInvalidInputs || !hasSomeValue}
         forcedStyle="height: 32px !important; padding-left: 20px; padding-right: 20px;"
