@@ -178,7 +178,6 @@ func (s *Server) HTTPHandler(ctx context.Context, registerAdditionalHandlers fun
 	httpMux := http.NewServeMux()
 
 	// Register the Vanguard handler for gRPC transcoding
-	httpMux.Handle("/", transcoder)
 	httpMux.Handle("/v1/", transcoder)
 
 	// Call callback to register additional paths

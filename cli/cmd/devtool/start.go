@@ -73,7 +73,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 
 	cmd.Flags().BoolVar(&verbose, "verbose", false, "Set log level to debug")
 	cmd.Flags().BoolVar(&reset, "reset", false, "Reset local development state")
-	cmd.Flags().BoolVar(&refreshDotenv, "refresh-dotenv", false, "Refresh .env file from shared storage")
+	cmd.Flags().BoolVar(&refreshDotenv, "refresh-dotenv", true, "Refresh .env file from shared storage")
 	services.addFlags(cmd)
 
 	return cmd

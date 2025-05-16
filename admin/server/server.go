@@ -13,7 +13,6 @@ import (
 	grpc_auth "github.com/grpc-ecosystem/go-grpc-middleware/auth"
 	"github.com/grpc-ecosystem/go-grpc-middleware/util/metautils"
 	grpc_validator "github.com/grpc-ecosystem/go-grpc-middleware/validator"
-	gateway "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/hashicorp/go-version"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rilldata/rill/admin"
@@ -379,16 +378,6 @@ func (s *Server) jwtAttributesForUser(ctx context.Context, userID, orgID string,
 	}
 
 	return attr, nil
-}
-
-// httpErrorHandler wraps gateway.DefaultHTTPErrorHandler to map gRPC unknown errors (i.e. errors without an explicit
-// code) to HTTP status code 400 instead of 500.
-func httpErrorHandler(ctx context.Context, mux *gateway.ServeMux, marshaler gateway.Marshaler, w http.ResponseWriter, r *http.Request, err error) {
-	s := status.Convert(err)
-	if s.Code() == codes.Unknown {
-		err = &gateway.HTTPStatusError{HTTPStatus: http.StatusBadRequest, Err: err}
-	}
-	gateway.DefaultHTTPErrorHandler(ctx, mux, marshaler, w, r, err)
 }
 
 func timeoutSelector(fullMethodName string) time.Duration {
