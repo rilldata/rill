@@ -198,6 +198,10 @@
     return 0;
   });
 
+  $: projectUserGroups = projectMemberUserGroupsList.filter(
+    (group) => !group.groupManaged,
+  );
+
   $: hasAutogroupMembers = projectMemberUserGroupsList.some(
     (group) => group.groupName === "autogroup:members",
   );
@@ -243,8 +247,7 @@
               manageProjectMembers={true}
             />
           {/each}
-          <!-- TODO:  -->
-          {#each nonManagedGroups as group}
+          {#each projectUserGroups as group}
             <UserGroupItem
               {organization}
               {group}
