@@ -57,22 +57,26 @@ FIXME: In the future, we should also be listening to focus events from the child
     "rill:app:childRequestedTooltipSuppression",
     childRequestedTooltipSuppression,
   );
+
+  function handlePointerEnter() {
+    waitUntil(() => {
+      active = true;
+    });
+  }
+
+  function handlePointerLeave() {
+    waitUntil(() => {
+      active = false;
+    }, nonActiveDelay);
+  }
 </script>
 
 <div
   role="tooltip"
   class="contents"
   bind:this={parent}
-  on:mouseenter={() => {
-    waitUntil(() => {
-      active = true;
-    });
-  }}
-  on:mouseleave={() => {
-    waitUntil(() => {
-      active = false;
-    }, nonActiveDelay);
-  }}
+  on:pointerenter={handlePointerEnter}
+  on:pointerleave={handlePointerLeave}
 >
   <slot />
   {#if active && !suppress && !$childRequestedTooltipSuppression}
