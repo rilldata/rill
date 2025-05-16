@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/bradleyfalzon/ghinstallation/v2"
-	"github.com/google/go-github/v52/github"
+	"github.com/google/go-github/v71/github"
 	"github.com/google/uuid"
 	"github.com/hashicorp/go-retryablehttp"
 	"github.com/hashicorp/golang-lru/simplelru"
@@ -31,7 +31,7 @@ var (
 // Github exposes the features we require from the Github API.
 type Github interface {
 	AppClient() *github.Client
-	InstallationClient(installationID int64) (*github.Client, error)
+	InstallationClient(installationID int64, repoID *int64) *github.Client
 	// InstallationToken returns a token for the installation ID limited to the repoID.
 	InstallationToken(ctx context.Context, installationID, repoID int64) (string, error)
 
@@ -44,7 +44,10 @@ type githubClient struct {
 	appID         int64
 	appPrivateKey string
 	appClient     *github.Client
-	managedAcct   string
+	// appTransport is the transport used to create the app client.
+	// It can used across multiple installation clients to reuse TCP connections to Github.
+	appTransport *ghinstallation.AppsTransport
+	managedAcct  string
 
 	// managedOrgInstallationID is usually populated when the client is created.
 	// But we do not return an error if there is any error in fetching the installation ID.
@@ -73,6 +76,7 @@ func NewGithub(ctx context.Context, appID int64, appPrivateKey, githubManagedAcc
 		appID:             appID,
 		appPrivateKey:     appPrivateKey,
 		appClient:         appClient,
+		appTransport:      atr,
 		installationCache: lru,
 		managedAcct:       githubManagedAcct,
 	}
@@ -97,44 +101,42 @@ func (g *githubClient) AppClient() *github.Client {
 	return g.appClient
 }
 
-func (g *githubClient) InstallationClient(installationID int64) (*github.Client, error) {
+func (g *githubClient) InstallationClient(installationID int64, repoID *int64) *github.Client {
 	g.cacheMu.Lock()
 	defer g.cacheMu.Unlock()
 
-	val, ok := g.installationCache.Get(installationID)
+	// lookup cache
+	cacheKey := installationCacheKey(installationID, repoID)
+	val, ok := g.installationCache.Get(cacheKey)
 	if ok {
-		return val.(*github.Client), nil
+		return val.(*github.Client)
 	}
 
-	itr, err := ghinstallation.New(retryableHTTPRoundTripper(), g.appID, installationID, []byte(g.appPrivateKey))
-	if err != nil {
-		return nil, fmt.Errorf("failed to create github installation transport: %w", err)
+	// create transport for the installation from the app transport
+	itr := ghinstallation.NewFromAppsTransport(g.appTransport, installationID)
+	if repoID != nil {
+		// set the repository ID in the transport options
+		opts := itr.InstallationTokenOptions
+		if opts == nil {
+			opts = &github.InstallationTokenOptions{}
+		}
+		opts.RepositoryIDs = []int64{*repoID}
 	}
+	// create the installation client
 	installationClient := github.NewClient(&http.Client{Transport: itr})
 
-	g.installationCache.Add(installationID, installationClient)
-	return installationClient, nil
+	// add to cache
+	g.installationCache.Add(cacheKey, installationClient)
+	return installationClient
 }
 
 func (g *githubClient) InstallationToken(ctx context.Context, installationID, repoID int64) (string, error) {
-	itr, err := ghinstallation.New(retryableHTTPRoundTripper(), g.appID, installationID, []byte(g.appPrivateKey))
-	if err != nil {
-		return "", fmt.Errorf("failed to create github installation transport: %w", err)
+	client := g.InstallationClient(installationID, &repoID)
+	tr, ok := client.Client().Transport.(*ghinstallation.Transport)
+	if !ok {
+		return "", fmt.Errorf("transport is not of type *ghinstallation.Transport")
 	}
-
-	opts := itr.InstallationTokenOptions
-	if opts == nil {
-		opts = &github.InstallationTokenOptions{}
-		itr.InstallationTokenOptions = opts
-	}
-	opts.RepositoryIDs = []int64{repoID}
-
-	token, err := itr.Token(ctx)
-	if err != nil {
-		return "", fmt.Errorf("failed to create token: %w", err)
-	}
-
-	return token, nil
+	return tr.Token(ctx)
 }
 
 func (g *githubClient) CreateManagedRepo(ctx context.Context, name string) (*github.Repository, error) {
@@ -145,15 +147,12 @@ func (g *githubClient) CreateManagedRepo(ctx context.Context, name string) (*git
 	if err != nil {
 		return nil, fmt.Errorf("failed to get managed org installation ID: %w", err)
 	}
-	client, err := g.InstallationClient(id)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create github installation client: %w", err)
-	}
+	client := g.InstallationClient(id, nil)
 
 	// create the repo
 	repo, _, err := client.Repositories.Create(ctx, g.managedAcct, &github.Repository{
-		Name:    github.String(repoName),
-		Private: github.Bool(true),
+		Name:    github.Ptr(repoName),
+		Private: github.Ptr(true),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create managed repo: %w", err)
@@ -255,10 +254,7 @@ func (s *Service) LookupGithubRepoForUser(ctx context.Context, installationID in
 		return nil, fmt.Errorf("invalid gitUsername %q", gitUsername)
 	}
 
-	gh, err := s.Github.InstallationClient(installationID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create github installation client: %w", err)
-	}
+	gh := s.Github.InstallationClient(installationID, nil)
 
 	isColab, resp, err := gh.Repositories.IsCollaborator(ctx, account, repo, gitUsername)
 	if err != nil {
@@ -384,4 +380,11 @@ func retryableHTTPRoundTripper() http.RoundTripper {
 	retryClient.RetryWaitMax = 10 * time.Second
 	retryClient.Logger = nil // Disable inbuilt logger
 	return retryClient.StandardClient().Transport
+}
+
+func installationCacheKey(installationID int64, repoID *int64) string {
+	if repoID != nil {
+		return fmt.Sprintf("%d-%d", installationID, *repoID)
+	}
+	return fmt.Sprintf("%d", installationID)
 }

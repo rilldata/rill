@@ -1897,10 +1897,7 @@ func (s *Server) githubOptsForGithubURL(ctx context.Context, orgID, branch strin
 
 		// fetch github repo id from github
 		// ideally this can be stored in managed git repo table but it is fine to fetch it from github during project creation/updation
-		c, err := s.admin.Github.InstallationClient(id)
-		if err != nil {
-			return nil, nil, nil, "", err
-		}
+		c := s.admin.Github.InstallationClient(id, nil)
 		account, repo, ok := gitutil.SplitGithubURL(githubURL)
 		if !ok {
 			return nil, nil, nil, "", status.Error(codes.InvalidArgument, "invalid github url")
@@ -1941,10 +1938,7 @@ func (s *Server) githubRepoIDForProject(ctx context.Context, p *database.Project
 		return 0, fmt.Errorf("project %q is not connected to github", p.Name)
 	}
 
-	client, err := s.admin.Github.InstallationClient(*p.GithubInstallationID)
-	if err != nil {
-		return 0, err
-	}
+	client := s.admin.Github.InstallationClient(*p.GithubInstallationID, nil)
 	account, repo, ok := gitutil.SplitGithubURL(*p.GithubURL)
 	if !ok {
 		return 0, status.Error(codes.InvalidArgument, "invalid github url")

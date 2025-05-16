@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/google/go-github/v52/github"
+	"github.com/google/go-github/v71/github"
 	"github.com/rilldata/rill/admin"
 	"github.com/rilldata/rill/admin/ai"
 	"github.com/rilldata/rill/admin/billing"
@@ -213,8 +213,8 @@ func (m *mockGithub) AppClient() *github.Client {
 	return nil
 }
 
-func (m *mockGithub) InstallationClient(installationID int64) (*github.Client, error) {
-	return nil, nil
+func (m *mockGithub) InstallationClient(installationID int64, repoID *int64) *github.Client {
+	return nil
 }
 
 func (m *mockGithub) InstallationToken(ctx context.Context, installationID, repoID int64) (string, error) {
