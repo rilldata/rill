@@ -59,13 +59,6 @@ type githubClient struct {
 	installationCache *simplelru.LRU
 }
 
-func installationCacheKey(installationID int64, repoID *int64) string {
-	if repoID != nil {
-		return fmt.Sprintf("%d-%d", installationID, *repoID)
-	}
-	return fmt.Sprintf("%d", installationID)
-}
-
 // NewGithub returns a new client for connecting to Github.
 func NewGithub(ctx context.Context, appID int64, appPrivateKey, githubManagedAcct string, logger *zap.Logger) (Github, error) {
 	atr, err := ghinstallation.NewAppsTransport(retryableHTTPRoundTripper(), appID, []byte(appPrivateKey))
@@ -387,4 +380,11 @@ func retryableHTTPRoundTripper() http.RoundTripper {
 	retryClient.RetryWaitMax = 10 * time.Second
 	retryClient.Logger = nil // Disable inbuilt logger
 	return retryClient.StandardClient().Transport
+}
+
+func installationCacheKey(installationID int64, repoID *int64) string {
+	if repoID != nil {
+		return fmt.Sprintf("%d-%d", installationID, *repoID)
+	}
+	return fmt.Sprintf("%d", installationID)
 }
