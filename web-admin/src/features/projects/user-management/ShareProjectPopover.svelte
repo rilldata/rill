@@ -8,6 +8,7 @@
     createAdminServiceAddProjectMemberUsergroup,
     createAdminServiceGetCurrentUser,
     createAdminServiceListUsergroupMemberUsers,
+    createAdminServiceListOrganizationMemberUsergroups,
   } from "@rilldata/web-admin/client";
   import CopyInviteLinkButton from "@rilldata/web-admin/features/projects/user-management/CopyInviteLinkButton.svelte";
   import UserInviteForm from "@rilldata/web-admin/features/projects/user-management/UserInviteForm.svelte";
@@ -30,12 +31,15 @@
   import CaretUpIcon from "@rilldata/web-common/components/icons/CaretUpIcon.svelte";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import Lock from "@rilldata/web-common/components/icons/Lock.svelte";
-  import UsergroupSetRole from "./UsergroupSetRole.svelte";
+  import UserGroupSetRole from "./UserGroupSetRole.svelte";
+  import UserGroupItem from "./UserGroupItem.svelte";
   import { cn } from "@rilldata/web-common/lib/shadcn";
 
   export let organization: string;
   export let project: string;
   export let manageProjectAdmins: boolean;
+  export let manageOrgAdmins: boolean;
+  export let manageOrgMembers: boolean;
 
   let open = false;
   let accessDropdownOpen = false;
@@ -47,6 +51,18 @@
   const addProjectMemberUsergroup =
     createAdminServiceAddProjectMemberUsergroup();
   const currentUser = createAdminServiceGetCurrentUser();
+
+  const PAGE_SIZE = 20;
+  $: listOrganizationMemberUsergroups =
+    createAdminServiceListOrganizationMemberUsergroups(organization, {
+      pageSize: PAGE_SIZE,
+      pageToken: "",
+      includeCounts: true,
+    });
+  $: nonManagedGroups =
+    $listOrganizationMemberUsergroups.data?.members.filter(
+      (group) => !group.groupManaged,
+    ) ?? [];
 
   async function setAccessInviteOnly() {
     if (accessType === "invite-only") return;
@@ -227,6 +243,15 @@
               manageProjectMembers={true}
             />
           {/each}
+          <!-- TODO:  -->
+          {#each nonManagedGroups as group}
+            <UserGroupItem
+              {organization}
+              {group}
+              {manageOrgAdmins}
+              {manageOrgMembers}
+            />
+          {/each}
         </div>
         <div class="mt-2">
           <div class="text-xs text-gray-500 font-semibold uppercase">
@@ -358,7 +383,11 @@
               {#if hasAutogroupMembers}
                 {#each projectMemberUserGroupsList as group}
                   {#if group.groupName === "autogroup:members"}
-                    <UsergroupSetRole {organization} {project} {group} />
+                    <UserGroupSetRole
+                      {organization}
+                      {group}
+                      {manageOrgAdmins}
+                    />
                   {/if}
                 {/each}
               {/if}
