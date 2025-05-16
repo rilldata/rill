@@ -11,7 +11,7 @@
     createAdminServiceListOrganizationMemberUsergroups,
   } from "@rilldata/web-admin/client";
   import CopyInviteLinkButton from "@rilldata/web-admin/features/projects/user-management/CopyInviteLinkButton.svelte";
-  import UserInviteForm from "@rilldata/web-admin/features/projects/user-management/UserInviteForm.svelte";
+  import UserAndGroupInviteForm from "@rilldata/web-admin/features/projects/user-management/UserAndGroupInviteForm.svelte";
   import { Button } from "@rilldata/web-common/components/button";
   import {
     Popover,
@@ -231,7 +231,7 @@
         <div class="text-sm font-medium">Share project: {project}</div>
         <div class="grow"></div>
       </div>
-      <UserInviteForm {organization} {project} />
+      <UserAndGroupInviteForm {organization} {project} />
       <!-- 52 * 8 = 416px -->
       <div class="flex flex-col gap-y-1 overflow-y-auto max-h-[416px]">
         <div class="mt-4">
