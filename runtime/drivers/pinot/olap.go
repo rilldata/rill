@@ -181,7 +181,7 @@ func (i informationSchema) Lookup(ctx context.Context, db, schema, name string) 
 	unsupportedCols := make(map[string]string)
 	var schemaFields []*runtimev1.StructType_Field
 	for _, field := range schemaResponse.DateTimeFieldSpecs {
-		if field.DataType != "TIMESTAMP" {
+		if field.DataType != "TIMESTAMP" && field.DataType != "LONG" {
 			unsupportedCols[field.Name] = field.DataType + "_(DATE_TIME_FIELD)"
 			continue
 		}
@@ -269,7 +269,7 @@ func (i informationSchema) LoadPhysicalSize(ctx context.Context, tables []*drive
 
 			var size int64
 			for _, d := range data {
-				if d.TableSize.ReportedSize != "" && d.TableSize.ReportedSize != "-1" {
+				if d.TableSize.ReportedSize != "" && d.TableSize.ReportedSize != "-1 bytes" {
 					// Reported size is in bytes
 					sz, err := datasize.ParseString(d.TableSize.ReportedSize)
 					if err != nil {
