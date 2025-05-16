@@ -37,7 +37,7 @@ type ExportOptions struct {
 	Organization  string
 	Project       string
 	Dashboard     string
-	DashboardUrl  string
+	DashboardURL  string
 	Priority      int
 	PreWriteHook  func(filename string) error
 }

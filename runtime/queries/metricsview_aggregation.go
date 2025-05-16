@@ -197,7 +197,7 @@ func generateHeaderMetadata(opts *runtime.ExportOptions, qry *metricsview.Query)
 		}
 		// Determine Line 1
 		var line1 string
-		if opts.DashboardUrl != "" {
+		if opts.DashboardURL != "" {
 			parts := []string{}
 			if opts.Organization != "" {
 				parts = append(parts, opts.Organization)
@@ -220,13 +220,14 @@ func generateHeaderMetadata(opts *runtime.ExportOptions, qry *metricsview.Query)
 		}
 
 		// Always present lines
-		headerMetadata = append(headerMetadata, line1)
-		headerMetadata = append(headerMetadata, fmt.Sprintf("Date range: %s to %s", qry.TimeRange.Start, qry.TimeRange.End))
-		headerMetadata = append(headerMetadata, fmt.Sprintf("Filters: %s", expStr))
+		headerMetadata = append(headerMetadata,
+			line1,
+			fmt.Sprintf("Date range: %s to %s", qry.TimeRange.Start, qry.TimeRange.End),
+			fmt.Sprintf("Filters: %s", expStr))
 
 		// add dashboard URL
-		if opts.DashboardUrl != "" {
-			headerMetadata = append(headerMetadata, fmt.Sprintf("Go to dashboard: %s", opts.DashboardUrl))
+		if opts.DashboardURL != "" {
+			headerMetadata = append(headerMetadata, fmt.Sprintf("Go to dashboard: %s", opts.DashboardURL))
 		}
 
 		// Always add blank line at end

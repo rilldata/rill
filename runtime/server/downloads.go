@@ -268,7 +268,7 @@ func (s *Server) downloadHandler(w http.ResponseWriter, req *http.Request) {
 		Organization:  request.Organization,
 		Project:       request.Project,
 		Dashboard:     request.Dashboard,
-		DashboardUrl:  request.DashboardUrl,
+		DashboardURL:  request.DashboardUrl,
 	})
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
