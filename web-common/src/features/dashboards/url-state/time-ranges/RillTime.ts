@@ -25,31 +25,11 @@ export class RillTime {
 
   public getLabel() {
     console.log("GETTING LABEL");
-    let range = ""; // this.start.map((p) => p.getLabel()).join(" of ");
-
-    if (this.timezone) {
-      range += ` in ${this.timezone}`;
-    }
-
-    return capitalizeFirstChar(range);
+    return this.timeRange;
   }
 
   public toString() {
-    let range = ""; //this.start.map((p) => p.toString()).join(" of ");
-
-    // if (this.end) {
-    //   range += ` to ${this.end.map((p) => p.toString()).join(" of ")}`;
-    // }
-
-    if (this.timeRangeGrain) {
-      range += ` by ${this.timeRangeGrain}`;
-    }
-
-    if (this.timezone) {
-      range += ` tz ${this.timezone}`;
-    }
-
-    return range;
+    return this.timeRange;
   }
 }
 
