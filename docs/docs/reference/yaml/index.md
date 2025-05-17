@@ -33,6 +33,5 @@ For more information about using Git or cloning projects locally, please see our
 - [Explore YAML](explore.md)
 - [Metrics View YAML](metrics-view.md)
 - [Model YAML](model.md)
-- [Report YAML](report.md)
 - [Theme YAML](theme.md)
 - [Project YAML](project.md)

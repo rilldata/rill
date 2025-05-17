@@ -100,7 +100,7 @@ _[boolean]_
 - [resource_status](#resource_status)
 
 
-### sql
+## sql
 
 
 
@@ -112,7 +112,7 @@ _[string]_ - Raw SQL query to run against existing models in the project.  _(req
 
 _[string]_ - specifies the connector to use when running SQL or glob queries. 
 
-### metrics_sql
+## metrics_sql
 
 
 
@@ -120,7 +120,7 @@ _[string]_ - specifies the connector to use when running SQL or glob queries.
 
 _[string]_ - SQL query that targets a metrics view in the project  _(required)_
 
-### api
+## api
 
 
 
@@ -132,7 +132,7 @@ _[string]_ - Name of a custom API defined in the project.  _(required)_
 
 _[object]_ - Arguments to pass to the custom API. 
 
-### glob
+## glob
 
 
 
@@ -148,7 +148,7 @@ _[anyOf]_ - Defines the file path or pattern to query from the specified connect
 
 _[string]_ - Specifies the connector to use with the glob input. 
 
-### resource_status
+## resource_status
 
 
 

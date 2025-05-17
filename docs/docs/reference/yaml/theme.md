@@ -1,7 +1,7 @@
 ---
 note: GENERATED. DO NOT EDIT.
 title: Theme YAML
-sidebar_position: 40
+sidebar_position: 39
 ---
 
 

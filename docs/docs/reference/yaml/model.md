@@ -42,6 +42,10 @@ _[string]_ - The maximum time to wait for model ingestion
 
 _[boolean]_ - whether incremental modeling is required (optional) 
 
+### `change_mode`
+
+_[string]_ - Configure how changes to the model specifications are applied (optional). 'reset' will drop and recreate the model automatically, 'manual' will require a manual full or incremental refresh to apply changes, and 'patch' will switch to the new logic without re-processing historical data (only applies for incremental models). 
+
 ### `state`
 
 _[oneOf]_ - Refers to the explicitly defined state of your model, cannot be used with partitions (optional) 
@@ -171,7 +175,7 @@ _[object]_ - Overrides properties in production
 - [sqlite](#sqlite)
 
 
-### athena
+## athena
 
 
 
@@ -191,35 +195,7 @@ _[string]_ - AWS Athena workgroup to use for queries.
 
 _[string]_ - AWS region to connect to Athena and the output location. 
 
-### `aws_access_key_id`
-
-_[string]_ - AWS Access Key ID for Athena access 
-
-### `aws_secret_access_key`
-
-_[string]_ - AWS Secret Access Key for Athena access 
-
-### `aws_access_token`
-
-_[string]_ - Optional AWS session token for temporary credentials 
-
-### `external_id`
-
-_[string]_ - Optional External ID for assuming a role 
-
-### `role_arn`
-
-_[string]_ - Optional AWS Role ARN to assume when accessing Athena 
-
-### `role_session_name`
-
-_[string]_ - Optional Session name when assuming the role 
-
-### `allow_host_access`
-
-_[boolean]_ - Allow access to host environment configuration 
-
-### azure
+## azure
 
 
 
@@ -259,27 +235,7 @@ _[object]_ - Settings related to glob file matching.
 
 _[string]_ - Size of a batch (e.g., '100MB') 
 
-### `azure_storage_account`
-
-_[string]_ - Azure storage account name 
-
-### `azure_storage_key`
-
-_[string]_ - Azure storage access key 
-
-### `azure_storage_sas_token`
-
-_[string]_ - Optional azure SAS token for authentication 
-
-### `azure_storage_connection_string`
-
-_[string]_ - Optional azure connection string for storage account 
-
-### `allow_host_access`
-
-_[boolean]_ - Allow access to host environment configuration 
-
-### bigquery
+## bigquery
 
 
 
@@ -291,15 +247,7 @@ _[string]_   _(required)_
 
 _[string]_ - ID of the BigQuery project. 
 
-### `google_application_credentials`
-
-_[string]_ - Path to the Google Cloud credentials JSON file 
-
-### `allow_host_access`
-
-_[boolean]_ - Allow access to host environment configuration 
-
-### clickhouse
+## clickhouse
 
 
 
@@ -315,79 +263,7 @@ _[string]_ - Path to the data source.
 
 _[string]_ - Format of the data source (e.g., csv, json, parquet). 
 
-### `managed`
-
-_[boolean]_ - `true` means Rill will provision the connector using the default provisioner. `false` disables automatic provisioning. 
-
-### `dsn`
-
-_[string]_ - DSN(Data Source Name) for the ClickHouse connection 
-
-### `username`
-
-_[string]_ - Username for authentication 
-
-### `password`
-
-_[string]_ - Password for authentication 
-
-### `host`
-
-_[string]_ - Host where the ClickHouse instance is running 
-
-### `port`
-
-_[integer]_ - Port where the ClickHouse instance is accessible 
-
-### `database`
-
-_[string]_ - Name of the ClickHouse database within the cluster 
-
-### `ssl`
-
-_[boolean]_ - Indicates whether a secured SSL connection is required 
-
-### `cluster`
-
-_[string]_ - Cluster name, required for running distributed queries 
-
-### `log_queries`
-
-_[boolean]_ - Controls whether to log raw SQL queries 
-
-### `settings_override`
-
-_[string]_ - override the default settings used in queries. example `readonly = 1, session_timezone = 'UTC'` 
-
-### `embed_port`
-
-_[integer]_ - Port to run ClickHouse locally (0 for random port) 
-
-### `can_scale_to_zero`
-
-_[boolean]_ - Indicates if the database can scale to zero 
-
-### `max_open_conns`
-
-_[integer]_ - Maximum number of open connections to the database 
-
-### `max_idle_conns`
-
-_[integer]_ - Maximum number of idle connections in the pool 
-
-### `dial_timeout`
-
-_[string]_ - Timeout for dialing the ClickHouse server 
-
-### `conn_max_lifetime`
-
-_[string]_ - Maximum time a connection may be reused 
-
-### `read_timeout`
-
-_[string]_ - Maximum time for a connection to read data 
-
-### druid
+## druid
 
 
 
@@ -395,43 +271,7 @@ _[string]_ - Maximum time for a connection to read data
 
 _[string]_   _(required)_
 
-### `dsn`
-
-_[string]_ - Data Source Name (DSN) for connecting to Druid 
-
-### `username`
-
-_[string]_ - Username for authenticating with Druid 
-
-### `password`
-
-_[string]_ - Password for authenticating with Druid 
-
-### `host`
-
-_[string]_ - Hostname of the Druid coordinator or broker 
-
-### `port`
-
-_[integer]_ - Port number of the Druid service 
-
-### `ssl`
-
-_[boolean]_ - Enable SSL for secure connection 
-
-### `log_queries`
-
-_[boolean]_ - Log raw SQL queries sent to Druid 
-
-### `max_open_conns`
-
-_[integer]_ - Maximum number of open database connections (0 = default, -1 = unlimited) 
-
-### `skip_version_check`
-
-_[boolean]_ - Skip checking Druid version compatibility 
-
-### duckdb
+## duckdb
 
 
 
@@ -455,39 +295,7 @@ _[string]_ - refers to a SQL queries to run before the main query, available for
 
 _[string]_ - refers to a SQL query that is run after the main query, available for DuckDB based models 
 
-### `pool_size`
-
-_[integer]_ - Number of concurrent connections and queries allowed 
-
-### `allow_host_access`
-
-_[boolean]_ - Whether access to the local environment and file system is allowed 
-
-### `cpu`
-
-_[integer]_ - Number of CPU cores available to the database 
-
-### `memory_limit_gb`
-
-_[integer]_ - Amount of memory in GB available to the database 
-
-### `read_write_ratio`
-
-_[number]_ - Ratio of resources allocated to the read database; used to divide CPU and memory 
-
-### `boot_queries`
-
-_[string]_ - SQL to run when initializing a new connection, before extensions and defaults 
-
-### `init_sql`
-
-_[string]_ - SQL to run when initializing a new connection, after extensions and defaults 
-
-### `log_queries`
-
-_[boolean]_ - Whether to log raw SQL queries executed through OLAP 
-
-### gcs
+## gcs
 
 
 
@@ -523,23 +331,7 @@ _[object]_ - Settings related to glob file matching.
 
 _[string]_ - Size of a batch (e.g., '100MB') 
 
-### `google_application_credentials`
-
-_[string]_ - Google Cloud credentials JSON string 
-
-### `allow_host_access`
-
-_[boolean]_ - Allow access to host environment configuration 
-
-### `key_id`
-
-_[string]_ - Optional S3-compatible Key ID when used in compatibility mode 
-
-### `secret`
-
-_[string]_ - Optional S3-compatible Secret when used in compatibility mode 
-
-### https
+## https
 
 
 
@@ -547,15 +339,7 @@ _[string]_ - Optional S3-compatible Secret when used in compatibility mode
 
 _[string]_   _(required)_
 
-### `path`
-
-_[string]_ - The full HTTPS URI to fetch data from 
-
-### `headers`
-
-_[object]_ - HTTP headers to include in the request 
-
-### local_file
+## local_file
 
 
 
@@ -571,15 +355,7 @@ _[string]_ - Path to the data source.
 
 _[string]_ - Format of the data source (e.g., csv, json, parquet). 
 
-### `dsn`
-
-_[string]_ - Data Source Name (DSN) indicating the file path or location of the local file 
-
-### `allow_host_access`
-
-_[boolean]_ - Flag to indicate if access to host-level file paths is permitted 
-
-### motherduck
+## motherduck
 
 
 
@@ -587,15 +363,7 @@ _[boolean]_ - Flag to indicate if access to host-level file paths is permitted
 
 _[string]_   _(required)_
 
-### `dsn`
-
-_[string]_ - Data Source Name (DSN) specifying the MotherDuck connection endpoint 
-
-### `token`
-
-_[string]_ - Authentication token for accessing MotherDuck (secret) 
-
-### mysql
+## mysql
 
 
 
@@ -603,11 +371,7 @@ _[string]_ - Authentication token for accessing MotherDuck (secret)
 
 _[string]_   _(required)_
 
-### `dsn`
-
-_[string]_ - DSN(Data Source Name) for the mysql connection 
-
-### pinot
+## pinot
 
 
 
@@ -615,47 +379,7 @@ _[string]_ - DSN(Data Source Name) for the mysql connection
 
 _[string]_   _(required)_
 
-### `dsn`
-
-_[string]_ - DSN(Data Source Name) for the Pinot connection 
-
-### `username`
-
-_[string]_ - Username for authenticating with Pinot 
-
-### `password`
-
-_[string]_ - Password for authenticating with Pinot 
-
-### `broker_host`
-
-_[string]_ - Hostname of the Pinot broker 
-
-### `broker_port`
-
-_[integer]_ - Port number for the Pinot broker 
-
-### `controller_host`
-
-_[string]_ - Hostname of the Pinot controller 
-
-### `controller_port`
-
-_[integer]_ - Port number for the Pinot controller 
-
-### `ssl`
-
-_[boolean]_ - Enable SSL connection to Pinot 
-
-### `log_queries`
-
-_[boolean]_ - Log raw SQL queries executed through Pinot 
-
-### `max_open_conns`
-
-_[integer]_ - Maximum number of open connections to the Pinot database 
-
-### postgres
+## postgres
 
 
 
@@ -663,11 +387,7 @@ _[integer]_ - Maximum number of open connections to the Pinot database
 
 _[string]_   _(required)_
 
-### `dsn`
-
-_[string]_ - DSN(Data Source Name) for the postgres connection 
-
-### redshift
+## redshift
 
 
 
@@ -699,23 +419,7 @@ _[string]_ - ARN of the IAM role to assume for Redshift access.
 
 _[string]_ - AWS region of the Redshift deployment. 
 
-### `aws_access_key_id`
-
-_[string]_ - AWS access key ID for authentication 
-
-### `aws_secret_access_key`
-
-_[string]_ - AWS secret access key for authentication 
-
-### `aws_access_token`
-
-_[string]_ - AWS session token for temporary credentials (optional) 
-
-### `allow_host_access`
-
-_[boolean]_ - Allow access to host environment configuration 
-
-### s3
+## s3
 
 
 
@@ -759,35 +463,7 @@ _[object]_ - Settings related to glob file matching.
 
 _[string]_ - Size of a batch (e.g., '100MB') 
 
-### `aws_access_key_id`
-
-_[string]_ - AWS Access Key ID used for authentication 
-
-### `aws_secret_access_key`
-
-_[string]_ - AWS Secret Access Key used for authentication 
-
-### `aws_access_token`
-
-_[string]_ - Optional AWS session token for temporary credentials 
-
-### `endpoint`
-
-_[string]_ - Optional custom endpoint URL for S3-compatible storage 
-
-### `region`
-
-_[string]_ - AWS region of the S3 bucket 
-
-### `allow_host_access`
-
-_[boolean]_ - Allow access to host environment configuration 
-
-### `retain_files`
-
-_[boolean]_ - Whether to retain intermediate files after processing 
-
-### salesforce
+## salesforce
 
 
 
@@ -807,27 +483,7 @@ _[string]_ - Salesforce object (e.g., Account, Contact) targeted by the query.
 
 _[boolean]_ - Whether to include deleted and archived records in the query (uses queryAll API). 
 
-### `username`
-
-_[string]_ - Salesforce account username 
-
-### `password`
-
-_[string]_ - Salesforce account password (secret) 
-
-### `key`
-
-_[string]_ - Authentication key for Salesforce (secret) 
-
-### `endpoint`
-
-_[string]_ - Salesforce API endpoint URL 
-
-### `client_id`
-
-_[string]_ - Client ID used for Salesforce OAuth authentication 
-
-### snowflake
+## snowflake
 
 
 
@@ -835,22 +491,10 @@ _[string]_ - Client ID used for Salesforce OAuth authentication
 
 _[string]_   _(required)_
 
-### `dsn`
-
-_[string]_ - DSN (Data Source Name) for the Snowflake connection 
-
-### `parallel_fetch_limit`
-
-_[integer]_ - Maximum number of concurrent fetches during query execution 
-
-### sqlite
+## sqlite
 
 
 
 ### `connector`
 
 _[string]_   _(required)_
-
-### `dsn`
-
-_[string]_ - DSN(Data Source Name) for the sqlite connection 

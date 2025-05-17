@@ -205,7 +205,7 @@ func generateDoc(parentName string, schema *JSONSchema, indent string, requiredF
 				}
 				for _, subSchema := range schema.OneOf {
 					if len(schema.OneOf) != 1 && (subSchema.Properties != nil || subSchema.Type != nil) {
-						doc.WriteString(fmt.Sprintf("\n\n### %s", subSchema.Title))
+						doc.WriteString(fmt.Sprintf("\n\n## %s", subSchema.Title))
 						doc.WriteString(fmt.Sprintf("\n\n%s", subSchema.Description))
 					}
 					doc.WriteString(generateDoc(parentName, subSchema, indent, getRequiredMap(subSchema.Required)))

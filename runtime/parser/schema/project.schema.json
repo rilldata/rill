@@ -30,9 +30,6 @@
       "$ref": "#/definitions/model"
     },
     {
-      "$ref": "#/definitions/report"
-    },
-    {
       "$ref": "#/definitions/theme"
     }
   ],
@@ -2553,9 +2550,6 @@
             },
             {
               "$ref": "#/definitions/model/definitions/athena/definitions/athena_properties"
-            },
-            {
-              "$ref": "#/definitions/connector/definitions/athena/definitions/athena_properties"
             }
           ],
           "definitions": {
@@ -2596,9 +2590,6 @@
             },
             {
               "$ref": "#/definitions/model/definitions/azure/definitions/azure_properties"
-            },
-            {
-              "$ref": "#/definitions/connector/definitions/azure/definitions/azure_properties"
             }
           ],
           "definitions": {
@@ -2670,9 +2661,6 @@
             },
             {
               "$ref": "#/definitions/model/definitions/bigquery/definitions/bigquery_properties"
-            },
-            {
-              "$ref": "#/definitions/connector/definitions/bigquery/definitions/bigquery_properties"
             }
           ],
           "definitions": {
@@ -2705,9 +2693,6 @@
             },
             {
               "$ref": "#/definitions/model/definitions/clickhouse/definitions/clickhouse_properties"
-            },
-            {
-              "$ref": "#/definitions/connector/definitions/clickhouse/definitions/clickhouse_properties"
             }
           ],
           "definitions": {
@@ -2744,9 +2729,6 @@
             },
             {
               "$ref": "#/definitions/model/definitions/druid/definitions/druid_properties"
-            },
-            {
-              "$ref": "#/definitions/connector/definitions/druid/definitions/druid_properties"
             }
           ],
           "definitions": {
@@ -2774,9 +2756,6 @@
             },
             {
               "$ref": "#/definitions/model/definitions/duckdb/definitions/duckdb_properties"
-            },
-            {
-              "$ref": "#/definitions/connector/definitions/duckdb/definitions/duckdb_properties"
             }
           ],
           "definitions": {
@@ -2821,9 +2800,6 @@
             },
             {
               "$ref": "#/definitions/model/definitions/gcs/definitions/gcs_properties"
-            },
-            {
-              "$ref": "#/definitions/connector/definitions/gcs/definitions/gcs_properties"
             }
           ],
           "definitions": {
@@ -2891,9 +2867,6 @@
             },
             {
               "$ref": "#/definitions/model/definitions/https/definitions/https_properties"
-            },
-            {
-              "$ref": "#/definitions/connector/definitions/https/definitions/https_properties"
             }
           ],
           "definitions": {
@@ -2921,9 +2894,6 @@
             },
             {
               "$ref": "#/definitions/model/definitions/local_file/definitions/local_file_properties"
-            },
-            {
-              "$ref": "#/definitions/connector/definitions/local_file/definitions/local_file_properties"
             }
           ],
           "definitions": {
@@ -2960,9 +2930,6 @@
             },
             {
               "$ref": "#/definitions/model/definitions/motherduck/definitions/motherduck_properties"
-            },
-            {
-              "$ref": "#/definitions/connector/definitions/motherduck/definitions/motherduck_properties"
             }
           ],
           "definitions": {
@@ -2990,9 +2957,6 @@
             },
             {
               "$ref": "#/definitions/model/definitions/mysql/definitions/mysql_properties"
-            },
-            {
-              "$ref": "#/definitions/connector/definitions/mysql/definitions/mysql_properties"
             }
           ],
           "definitions": {
@@ -3020,9 +2984,6 @@
             },
             {
               "$ref": "#/definitions/model/definitions/pinot/definitions/pinot_properties"
-            },
-            {
-              "$ref": "#/definitions/connector/definitions/pinot/definitions/pinot_properties"
             }
           ],
           "definitions": {
@@ -3050,9 +3011,6 @@
             },
             {
               "$ref": "#/definitions/model/definitions/postgres/definitions/postgres_properties"
-            },
-            {
-              "$ref": "#/definitions/connector/definitions/postgres/definitions/postgres_properties"
             }
           ],
           "definitions": {
@@ -3080,9 +3038,6 @@
             },
             {
               "$ref": "#/definitions/model/definitions/redshift/definitions/redshift_properties"
-            },
-            {
-              "$ref": "#/definitions/connector/definitions/redshift/definitions/redshift_properties"
             }
           ],
           "definitions": {
@@ -3135,9 +3090,6 @@
             },
             {
               "$ref": "#/definitions/model/definitions/s3/definitions/s3_properties"
-            },
-            {
-              "$ref": "#/definitions/connector/definitions/s3/definitions/s3_properties"
             }
           ],
           "definitions": {
@@ -3213,9 +3165,6 @@
             },
             {
               "$ref": "#/definitions/model/definitions/salesforce/definitions/salesforce_properties"
-            },
-            {
-              "$ref": "#/definitions/connector/definitions/salesforce/definitions/salesforce_properties"
             }
           ],
           "definitions": {
@@ -3256,9 +3205,6 @@
             },
             {
               "$ref": "#/definitions/model/definitions/snowflake/definitions/snowflake_properties"
-            },
-            {
-              "$ref": "#/definitions/connector/definitions/snowflake/definitions/snowflake_properties"
             }
           ],
           "definitions": {
@@ -3286,160 +3232,12 @@
             },
             {
               "$ref": "#/definitions/model/definitions/sqlite/definitions/sqlite_properties"
-            },
-            {
-              "$ref": "#/definitions/connector/definitions/sqlite/definitions/sqlite_properties"
             }
           ],
           "definitions": {
             "sqlite_properties": {
               "type": "object",
               "properties": {}
-            }
-          }
-        }
-      }
-    },
-    "report": {
-      "type": "object",
-      "title": "Report YAML",
-      "description": "",
-      "allOf": [
-        {
-          "type": "object",
-          "properties": {
-            "type": {
-              "type": "string",
-              "const": "report",
-              "description": "Refers to the resource type and must be `report`"
-            }
-          },
-          "required": [
-            "type"
-          ]
-        },
-        {
-          "$ref": "#/definitions/common_properties"
-        },
-        {
-          "type": "object",
-          "properties": {
-            "dev": {
-              "type": "object",
-              "description": "Overrides properties in development",
-              "$ref": "#/definitions/report/definitions/report_properties"
-            },
-            "prod": {
-              "type": "object",
-              "description": "Overrides properties in production",
-              "$ref": "#/definitions/report/definitions/report_properties"
-            }
-          }
-        },
-        {
-          "$ref": "#/definitions/report/definitions/report_properties",
-          "required": [
-            "query",
-            "notify",
-            "export"
-          ]
-        }
-      ],
-      "definitions": {
-        "report_properties": {
-          "type": "object",
-          "properties": {
-            "display_name": {
-              "type": "string",
-              "description": "the display name of your report."
-            },
-            "refresh": {
-              "$ref": "#/definitions/schedule_properties",
-              "description": "Specifies the refresh schedule that Rill should follow to re-ingest and update the underlying data"
-            },
-            "watermark": {
-              "type": "string",
-              "enum": [
-                "trigger_time",
-                "inherit"
-              ],
-              "description": "Specifies how the watermark is determined for incremental processing.\nUse 'trigger_time' to set it at runtime or 'inherit' to use the upstream model's watermark."
-            },
-            "intervals": {
-              "type": "object",
-              "description": "define the interval of the report to check",
-              "properties": {
-                "duration": {
-                  "type": "string",
-                  "description": "a valid ISO8601 duration to define the interval duration"
-                },
-                "limit": {
-                  "type": "integer",
-                  "description": "maximum number of intervals to check for on invocation",
-                  "minimum": 0
-                },
-                "check_unclosed": {
-                  "type": "boolean",
-                  "description": "boolean, whether unclosed intervals should be checked"
-                }
-              }
-            },
-            "timeout": {
-              "type": "string",
-              "description": "define the timeout of the report in seconds (optional)."
-            },
-            "query": {
-              "type": "object",
-              "properties": {
-                "name": {
-                  "type": "string",
-                  "minLength": 1
-                },
-                "args": {
-                  "type": "object",
-                  "additionalProperties": true
-                },
-                "args_json": {
-                  "type": "string",
-                  "minLength": 1
-                }
-              },
-              "additionalProperties": false,
-              "required": [
-                "name"
-              ]
-            },
-            "export": {
-              "type": "object",
-              "description": "to define the export properties",
-              "properties": {
-                "format": {
-                  "type": "string",
-                  "enum": [
-                    "csv",
-                    "xlsx",
-                    "parquet"
-                  ],
-                  "description": "Format for exported report: can be 'csv', 'xlsx', or 'parquet'."
-                },
-                "limit": {
-                  "type": "integer"
-                }
-              },
-              "additionalProperties": false,
-              "required": [
-                "format"
-              ]
-            },
-            "notify": {
-              "$ref": "#/definitions/notify_properties",
-              "description": "Defines how and where to send notifications. At least one method (email or Slack) is required"
-            },
-            "annotations": {
-              "type": "object",
-              "additionalProperties": {
-                "type": "string"
-              }
             }
           }
         }

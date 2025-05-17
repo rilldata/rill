@@ -42,7 +42,7 @@ _[array of string]_ - List of resource references, each as a string or map.
 - [sqlite](#sqlite)
 
 
-### athena
+## athena
 
 Configuration properties specific to the athena
 
@@ -86,7 +86,7 @@ _[object]_ - Overrides properties in development
 
 _[object]_ - Overrides properties in production 
 
-### azure
+## azure
 
 Configuration properties specific to the azure
 
@@ -122,7 +122,7 @@ _[object]_ - Overrides properties in development
 
 _[object]_ - Overrides properties in production 
 
-### bigquery
+## bigquery
 
 Configuration properties specific to the bigquery
 
@@ -146,7 +146,7 @@ _[object]_ - Overrides properties in development
 
 _[object]_ - Overrides properties in production 
 
-### clickhouse
+## clickhouse
 
 Configuration properties specific to the clickhouse
 
@@ -234,7 +234,7 @@ _[object]_ - Overrides properties in development
 
 _[object]_ - Overrides properties in production 
 
-### druid
+## druid
 
 Configuration properties specific to the druid
 
@@ -286,7 +286,7 @@ _[object]_ - Overrides properties in development
 
 _[object]_ - Overrides properties in production 
 
-### duckdb
+## duckdb
 
 Configuration properties specific to the duckdb
 
@@ -334,7 +334,7 @@ _[object]_ - Overrides properties in development
 
 _[object]_ - Overrides properties in production 
 
-### gcs
+## gcs
 
 Configuration properties specific to the gcs
 
@@ -366,7 +366,7 @@ _[object]_ - Overrides properties in development
 
 _[object]_ - Overrides properties in production 
 
-### https
+## https
 
 Configuration properties specific to the https
 
@@ -390,7 +390,7 @@ _[object]_ - Overrides properties in development
 
 _[object]_ - Overrides properties in production 
 
-### local_file
+## local_file
 
 Configuration properties specific to the local_file
 
@@ -414,7 +414,7 @@ _[object]_ - Overrides properties in development
 
 _[object]_ - Overrides properties in production 
 
-### motherduck
+## motherduck
 
 Configuration properties specific to the motherduck
 
@@ -438,7 +438,7 @@ _[object]_ - Overrides properties in development
 
 _[object]_ - Overrides properties in production 
 
-### mysql
+## mysql
 
 Configuration properties specific to the mysql
 
@@ -458,7 +458,7 @@ _[object]_ - Overrides properties in development
 
 _[object]_ - Overrides properties in production 
 
-### pinot
+## pinot
 
 Configuration properties specific to the pinot
 
@@ -514,7 +514,7 @@ _[object]_ - Overrides properties in development
 
 _[object]_ - Overrides properties in production 
 
-### postgres
+## postgres
 
 Configuration properties specific to the postgres
 
@@ -534,7 +534,7 @@ _[object]_ - Overrides properties in development
 
 _[object]_ - Overrides properties in production 
 
-### redshift
+## redshift
 
 Configuration properties specific to the redshift
 
@@ -566,7 +566,7 @@ _[object]_ - Overrides properties in development
 
 _[object]_ - Overrides properties in production 
 
-### s3
+## s3
 
 Configuration properties specific to the s3
 
@@ -610,7 +610,7 @@ _[object]_ - Overrides properties in development
 
 _[object]_ - Overrides properties in production 
 
-### salesforce
+## salesforce
 
 Configuration properties specific to the salesforce
 
@@ -646,7 +646,7 @@ _[object]_ - Overrides properties in development
 
 _[object]_ - Overrides properties in production 
 
-### slack
+## slack
 
 Configuration properties specific to the slack
 
@@ -666,7 +666,7 @@ _[object]_ - Overrides properties in development
 
 _[object]_ - Overrides properties in production 
 
-### snowflake
+## snowflake
 
 Configuration properties specific to the snowflake
 
@@ -690,7 +690,7 @@ _[object]_ - Overrides properties in development
 
 _[object]_ - Overrides properties in production 
 
-### sqlite
+## sqlite
 
 Configuration properties specific to the sqlite
 
