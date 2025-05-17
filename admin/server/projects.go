@@ -10,6 +10,7 @@ import (
 
 	"github.com/rilldata/rill/admin"
 	"github.com/rilldata/rill/admin/database"
+	"github.com/rilldata/rill/admin/pkg/gitutil"
 	"github.com/rilldata/rill/admin/pkg/publicemail"
 	"github.com/rilldata/rill/admin/server/auth"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
@@ -537,6 +538,8 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 		ArchiveAssetID:       nil,         // Populated below
 		GithubURL:            nil,         // Populated below
 		GithubInstallationID: nil,         // Populated below
+		GithubRepoID:         nil,         // Populated below
+		ManagedGitRepoID:     nil,         // Populated below
 		ProdBranch:           "",          // Populated below
 		Subpath:              req.Subpath, // Populated below
 		ProdVersion:          req.ProdVersion,
@@ -551,19 +554,11 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 	if req.GithubUrl != "" && req.ArchiveAssetId != "" {
 		return nil, status.Error(codes.InvalidArgument, "cannot set both github_url and archive_asset_id")
 	} else if req.GithubUrl != "" {
-		// Github projects must be configured by a user so we can ensure that they're allowed to access the repo.
-		if userID == nil {
-			return nil, status.Error(codes.Unauthenticated, "not authenticated as a user")
-		}
-
-		// Check Github app is installed and caller has access on the repo
-		installationID, err := s.getAndCheckGithubInstallationID(ctx, req.GithubUrl, *userID)
+		opts.GithubRepoID, opts.GithubInstallationID, opts.ManagedGitRepoID, opts.ProdBranch, err = s.githubOptsForGithubURL(ctx, org.ID, req.ProdBranch, userID, req.GithubUrl)
 		if err != nil {
 			return nil, err
 		}
-		opts.GithubInstallationID = &installationID
 		opts.GithubURL = &req.GithubUrl
-		opts.ProdBranch = req.ProdBranch
 		opts.Subpath = req.Subpath
 	} else if req.ArchiveAssetId != "" {
 		// Check access to the archive asset
@@ -689,20 +684,20 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 	}
 	githubURL := proj.GithubURL
 	githubInstID := proj.GithubInstallationID
+	githubRepoID := proj.GithubRepoID
+	managedGitRepoID := proj.ManagedGitRepoID
 	subpath := valOrDefault(req.Subpath, proj.Subpath)
 	prodBranch := valOrDefault(req.ProdBranch, proj.ProdBranch)
 	archiveAssetID := proj.ArchiveAssetID
 	if req.GithubUrl != nil {
 		// If changing the Github URL, check github app is installed and caller has access on the repo
 		if safeStr(proj.GithubURL) != *req.GithubUrl {
-			// Github projects must be configured by a user so we can ensure that they're allowed to access the repo.
-			if claims.OwnerType() != auth.OwnerTypeUser {
-				return nil, status.Error(codes.Unauthenticated, "not authenticated as a user")
+			var userID *string
+			if claims.OwnerType() == auth.OwnerTypeUser {
+				tmp := claims.OwnerID()
+				userID = &tmp
 			}
-
-			instID, err := s.getAndCheckGithubInstallationID(ctx, *req.GithubUrl, claims.OwnerID())
-			// github installation ID might change, so make sure it is updated
-			githubInstID = &instID
+			githubRepoID, githubInstID, managedGitRepoID, prodBranch, err = s.githubOptsForGithubURL(ctx, proj.OrganizationID, prodBranch, userID, *req.GithubUrl)
 			if err != nil {
 				return nil, err
 			}
@@ -741,6 +736,8 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 		ArchiveAssetID:       archiveAssetID,
 		GithubURL:            githubURL,
 		GithubInstallationID: githubInstID,
+		GithubRepoID:         githubRepoID,
+		ManagedGitRepoID:     managedGitRepoID,
 		Subpath:              subpath,
 		ProdVersion:          valOrDefault(req.ProdVersion, proj.ProdVersion),
 		ProdBranch:           prodBranch,
@@ -1210,14 +1207,16 @@ func (s *Server) GetCloneCredentials(ctx context.Context, req *adminv1.GetCloneC
 		attribute.String("args.project", req.Project),
 	)
 
-	claims := auth.GetClaims(ctx)
-	if !claims.Superuser(ctx) {
-		return nil, status.Error(codes.PermissionDenied, "superuser permission required to get clone credentials")
-	}
-
 	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	claims := auth.GetClaims(ctx)
+	forceAccess := claims.Superuser(ctx) && req.SuperuserForceAccess
+	if !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ManageProject && !forceAccess {
+		// neither a superuser nor can manage the project
+		return nil, status.Error(codes.PermissionDenied, "does not have permission to get clone credentials")
 	}
 
 	if proj.ArchiveAssetID != nil {
@@ -1236,13 +1235,24 @@ func (s *Server) GetCloneCredentials(ctx context.Context, req *adminv1.GetCloneC
 		return nil, status.Error(codes.FailedPrecondition, "project's repository is not managed by Rill, and it does not have a GitHub integration")
 	}
 
-	token, err := s.admin.Github.InstallationToken(ctx, *proj.GithubInstallationID)
+	repoID, err := s.githubRepoIDForProject(ctx, proj)
+	if err != nil {
+		return nil, err
+	}
+
+	token, err := s.admin.Github.InstallationToken(ctx, *proj.GithubInstallationID, repoID)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
+	var cloneURL string
+	if strings.HasSuffix(*proj.GithubURL, ".git") {
+		cloneURL = *proj.GithubURL
+	} else {
+		cloneURL = *proj.GithubURL + ".git"
+	}
 
 	return &adminv1.GetCloneCredentialsResponse{
-		GitRepoUrl:    *proj.GithubURL + ".git", // TODO: Can the clone URL be different from the HTTP URL of a Github repo?
+		GitRepoUrl:    cloneURL,
 		GitUsername:   "x-access-token",
 		GitPassword:   token,
 		GitSubpath:    proj.Subpath,
@@ -1461,40 +1471,40 @@ func (s *Server) DenyProjectAccess(ctx context.Context, req *adminv1.DenyProject
 }
 
 // getAndCheckGithubInstallationID returns a valid installation ID iff app is installed and user is a collaborator of the repo
-func (s *Server) getAndCheckGithubInstallationID(ctx context.Context, githubURL, userID string) (int64, error) {
+func (s *Server) getAndCheckGithubInstallationID(ctx context.Context, githubURL, userID string) (repoID, installationID int64, err error) {
 	// Get Github installation ID for the repo
-	installationID, err := s.admin.GetGithubInstallation(ctx, githubURL)
+	installationID, err = s.admin.GetGithubInstallation(ctx, githubURL)
 	if err != nil {
 		if errors.Is(err, admin.ErrGithubInstallationNotFound) {
-			return 0, status.Errorf(codes.PermissionDenied, "you have not granted Rill access to %q", githubURL)
+			return 0, 0, status.Errorf(codes.PermissionDenied, "you have not granted Rill access to %q", githubURL)
 		}
 
-		return 0, fmt.Errorf("failed to get Github installation: %w", err)
+		return 0, 0, fmt.Errorf("failed to get Github installation: %w", err)
 	}
 
 	if installationID == 0 {
-		return 0, status.Errorf(codes.PermissionDenied, "you have not granted Rill access to %q", githubURL)
+		return 0, 0, status.Errorf(codes.PermissionDenied, "you have not granted Rill access to %q", githubURL)
 	}
 
 	// Check that user is a collaborator on the repo
 	user, err := s.admin.DB.FindUser(ctx, userID)
 	if err != nil {
-		return 0, err
+		return 0, 0, err
 	}
 
 	if user.GithubUsername == "" {
-		return 0, status.Errorf(codes.PermissionDenied, "you have not granted Rill access to your Github account")
+		return 0, 0, status.Errorf(codes.PermissionDenied, "you have not granted Rill access to your Github account")
 	}
 
-	_, err = s.admin.LookupGithubRepoForUser(ctx, installationID, githubURL, user.GithubUsername)
+	repo, err := s.admin.LookupGithubRepoForUser(ctx, installationID, githubURL, user.GithubUsername)
 	if err != nil {
 		if errors.Is(err, admin.ErrUserIsNotCollaborator) {
-			return 0, status.Errorf(codes.PermissionDenied, "you are not collaborator to the repo %q", githubURL)
+			return 0, 0, status.Errorf(codes.PermissionDenied, "you are not collaborator to the repo %q", githubURL)
 		}
-		return 0, err
+		return 0, 0, err
 	}
 
-	return installationID, nil
+	return repo.GetID(), installationID, nil
 }
 
 // SudoUpdateTags updates the tags for a project in organization for superusers
@@ -1523,6 +1533,8 @@ func (s *Server) SudoUpdateAnnotations(ctx context.Context, req *adminv1.SudoUpd
 		ArchiveAssetID:       proj.ArchiveAssetID,
 		GithubURL:            proj.GithubURL,
 		GithubInstallationID: proj.GithubInstallationID,
+		GithubRepoID:         proj.GithubRepoID,
+		ManagedGitRepoID:     proj.ManagedGitRepoID,
 		ProdVersion:          proj.ProdVersion,
 		ProdBranch:           proj.ProdBranch,
 		Subpath:              proj.Subpath,
@@ -1837,7 +1849,6 @@ func (s *Server) projToDTO(ctx context.Context, p *database.Project, orgName str
 			createdByUserEmail = u.Email
 		}
 	}
-
 	return &adminv1.Project{
 		Id:                 p.ID,
 		Name:               p.Name,
@@ -1855,6 +1866,7 @@ func (s *Server) projToDTO(ctx context.Context, p *database.Project, orgName str
 		ProdBranch:         p.ProdBranch,
 		Subpath:            p.Subpath,
 		GithubUrl:          safeStr(p.GithubURL),
+		ManagedGitId:       safeStr(p.ManagedGitRepoID),
 		ArchiveAssetId:     safeStr(p.ArchiveAssetID),
 		ProdDeploymentId:   safeStr(p.ProdDeploymentID),
 		ProdTtlSeconds:     safeInt64(p.ProdTTLSeconds),
@@ -1871,6 +1883,103 @@ func (s *Server) hasAssetUsagePermission(ctx context.Context, id, orgID, ownerID
 		return false
 	}
 	return asset.OrganizationID != nil && *asset.OrganizationID == orgID && asset.OwnerID == ownerID
+}
+
+func (s *Server) githubOptsForGithubURL(ctx context.Context, orgID, branch string, userID *string, githubURL string) (githubRepoID, instID *int64, mgdGitRepoID *string, prodBranch string, resErr error) {
+	isMgdGitRepo := true
+	mgdGitRepo, err := s.admin.DB.FindManagedGitRepo(ctx, githubURL)
+	if err != nil {
+		if !errors.Is(err, database.ErrNotFound) {
+			return nil, nil, nil, "", err
+		}
+		isMgdGitRepo = false
+	}
+	if isMgdGitRepo {
+		// rill managed git repo
+		if mgdGitRepo.OrgID == nil || orgID != *mgdGitRepo.OrgID {
+			return nil, nil, nil, "", status.Error(codes.PermissionDenied, "not allowed to access this managed git repo")
+		}
+		id, err := s.admin.Github.ManagedOrgInstallationID()
+		if err != nil {
+			return nil, nil, nil, "", err
+		}
+
+		// fetch github repo id from github
+		// ideally this can be stored in managed git repo table but it is fine to fetch it from github during project creation/updation
+		c := s.admin.Github.InstallationClient(id, nil)
+		account, repo, ok := gitutil.SplitGithubURL(githubURL)
+		if !ok {
+			return nil, nil, nil, "", status.Error(codes.InvalidArgument, "invalid github url")
+		}
+		ghRepo, _, err := c.Repositories.Get(ctx, account, repo)
+		if err != nil {
+			return nil, nil, nil, "", status.Error(codes.InvalidArgument, "failed to get github repo")
+		}
+
+		if prodBranch != "" && prodBranch != safeStr(ghRepo.DefaultBranch) {
+			return nil, nil, nil, "", fmt.Errorf("branch should be empty or default repo branch for rill managed git repos")
+		}
+		return ghRepo.ID, &id, &mgdGitRepo.ID, safeStr(ghRepo.DefaultBranch), nil
+	}
+	// User managed github projects must be configured by a user so we can ensure that they're allowed to access the repo.
+	if userID == nil {
+		return nil, nil, nil, "", status.Error(codes.Unauthenticated, "not authenticated as a user")
+	}
+
+	// Check Github app is installed and caller has access on the repo
+	ghRepoID, installationID, err := s.getAndCheckGithubInstallationID(ctx, githubURL, *userID)
+	if err != nil {
+		return nil, nil, nil, "", err
+	}
+	return &ghRepoID, &installationID, nil, branch, nil
+}
+
+// githubRepoIDForProject returns the github repo id for a project stored in the database.
+// For older projects this may be nil since the github repo id was not stored.
+// This function fetches the ID from github API and stores it in the database.
+// It assumes that the project is connected to github and necessary checks have been done by the caller.
+func (s *Server) githubRepoIDForProject(ctx context.Context, p *database.Project) (int64, error) {
+	if p.GithubRepoID != nil {
+		return *p.GithubRepoID, nil
+	}
+
+	if p.GithubInstallationID == nil {
+		return 0, fmt.Errorf("project %q is not connected to github", p.Name)
+	}
+
+	client := s.admin.Github.InstallationClient(*p.GithubInstallationID, nil)
+	account, repo, ok := gitutil.SplitGithubURL(*p.GithubURL)
+	if !ok {
+		return 0, status.Error(codes.InvalidArgument, "invalid github url")
+	}
+
+	ghRepo, _, err := client.Repositories.Get(ctx, account, repo)
+	if err != nil {
+		return 0, status.Error(codes.InvalidArgument, "failed to get github repo")
+	}
+	id := ghRepo.GetID()
+	_, err = s.admin.DB.UpdateProject(ctx, p.ID, &database.UpdateProjectOptions{
+		Name:                 p.Name,
+		Description:          p.Description,
+		Public:               p.Public,
+		ArchiveAssetID:       p.ArchiveAssetID,
+		GithubURL:            p.GithubURL,
+		GithubInstallationID: p.GithubInstallationID,
+		GithubRepoID:         &id,
+		ManagedGitRepoID:     p.ManagedGitRepoID,
+		ProdVersion:          p.ProdVersion,
+		ProdBranch:           p.ProdBranch,
+		Subpath:              p.Subpath,
+		ProdDeploymentID:     p.ProdDeploymentID,
+		ProdSlots:            p.ProdSlots,
+		ProdTTLSeconds:       p.ProdTTLSeconds,
+		Provisioner:          p.Provisioner,
+		Annotations:          p.Annotations,
+	})
+	if err != nil {
+		return 0, status.Error(codes.Internal, "failed to update project with github repo id")
+	}
+	return id, nil
 }
 
 func deploymentToDTO(d *database.Deployment) *adminv1.Deployment {

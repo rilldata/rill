@@ -8,6 +8,7 @@ import (
 )
 
 func SplitGithubURL(githubURL string) (account, repo string, ok bool) {
+	githubURL = strings.TrimSuffix(githubURL, ".git")
 	ep, err := transport.NewEndpoint(githubURL)
 	if err != nil {
 		return "", "", false

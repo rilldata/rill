@@ -187,6 +187,10 @@
 
       try {
         const response = await fetch(url);
+        if (response.status === 404) {
+          alert("No data found for the given Trace ID or Resource Name.");
+          return;
+        }
         if (!response.ok) {
           throw new Error(`HTTP error ${response.status}`);
         }
