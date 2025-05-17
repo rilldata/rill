@@ -6,8 +6,11 @@ import (
 
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
+	githttp "github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/rilldata/rill/cli/cmd/env"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
+	"github.com/rilldata/rill/cli/pkg/dotrillcloud"
+	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
 )
 
@@ -45,21 +48,28 @@ func CloneCmd(ch *cmdutil.Helper) *cobra.Command {
 				return fmt.Errorf("failed to create directory %q: %w", path, err)
 			}
 
-			// get creds
-			creds, err := ch.GitCredentials(cmd.Context(), ch.Org, name, path)
+			client, err := ch.Client()
 			if err != nil {
 				return err
 			}
 
-			remote, err := creds.FullyQualifiedRemote()
+			// get project
+			res, err := client.GetProject(cmd.Context(), &adminv1.GetProjectRequest{OrganizationName: ch.Org, Name: name})
+			if err != nil {
+				return err
+			}
+
+			// get config
+			config, err := cmdutil.NewGitHelper(client, ch.Org, name, path).FetchGitConfig(cmd.Context())
 			if err != nil {
 				return err
 			}
 
 			// clone repository
 			_, err = git.PlainCloneContext(cmd.Context(), path, false, &git.CloneOptions{
-				URL:           remote,
-				ReferenceName: plumbing.NewBranchReferenceName(creds.DefaultBranch),
+				URL:           config.Remote,
+				Auth:          &githttp.BasicAuth{Username: config.Username, Password: config.Password},
+				ReferenceName: plumbing.NewBranchReferenceName(config.DefaultBranch),
 				SingleBranch:  true,
 			})
 			if err != nil {
@@ -67,7 +77,15 @@ func CloneCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			// download variables
-			return env.PullVars(cmd.Context(), ch, path, name, "prod", false)
+			err = env.PullVars(cmd.Context(), ch, path, name, "prod", false)
+			if err != nil {
+				return fmt.Errorf("failed to download variables: %w", err)
+			}
+
+			// set rill cloud
+			return dotrillcloud.SetAll(path, ch.AdminURL(), &dotrillcloud.Config{
+				ProjectID: res.Project.Id,
+			})
 		},
 	}
 

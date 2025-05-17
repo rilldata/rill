@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/rilldata/rill/admin/client"
@@ -48,6 +49,9 @@ type Helper struct {
 	adminClientHash    string
 	activityClient     *activity.Client
 	activityClientHash string
+
+	gitHelper     *GitHelper
+	gitHelperOnce sync.Once
 }
 
 func NewHelper(ver Version, homeDir string) (*Helper, error) {
@@ -439,6 +443,13 @@ func (h *Helper) OpenRuntimeClient(ctx context.Context, org, project string, loc
 	}
 
 	return rt, instanceID, nil
+}
+
+func (h *Helper) GitHelper(client *client.Client, org, project, localPath string) *GitHelper {
+	h.gitHelperOnce.Do(func() {
+		h.gitHelper = NewGitHelper(client, org, project, localPath)
+	})
+	return h.gitHelper
 }
 
 func hashStr(ss ...string) string {
