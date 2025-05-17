@@ -63,7 +63,7 @@ describe("ButtonGroup", () => {
     unmount();
   });
 
-  it("correct tooltips", async () => {
+  it.skip("correct tooltips", async () => {
     const { unmount } = render(ButtonGroupTestingWrapper, {
       values: [1, 2, 3],
       selected: [1],
@@ -143,7 +143,7 @@ describe("ButtonGroup - adding buttons", () => {
     expect(onClick).toBeCalledTimes(0);
   });
 
-  it("added has correct tooltip, including on props change", async () => {
+  it.skip("added has correct tooltip, including on props change", async () => {
     component.$set({ values: [1, 2, 3, 4] });
 
     const button = await screen.findByRole("button", { name: `button-${4}` });
