@@ -162,7 +162,6 @@ func (s *Server) ServeGRPC(ctx context.Context) (*vanguard.Transcoder, error) {
 	adminv1.RegisterAdminServiceServer(server, s)
 	adminv1.RegisterAIServiceServer(server, s)
 	adminv1.RegisterTelemetryServiceServer(server, s)
-	s.logger.Sugar().Infof("serving admin gRPC on port:%v", s.opts.HTTPPort)
 
 	return vanguardgrpc.NewTranscoder(server)
 }

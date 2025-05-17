@@ -147,7 +147,7 @@ func (s *Server) ServeGRPC(ctx context.Context) (*vanguard.Transcoder, error) {
 	runtimev1.RegisterRuntimeServiceServer(server, s)
 	runtimev1.RegisterQueryServiceServer(server, s)
 	runtimev1.RegisterConnectorServiceServer(server, s)
-	s.logger.Sugar().Infof("serving runtime gRPC on port:%v", s.opts.HTTPPort)
+
 	return vanguardgrpc.NewTranscoder(server)
 }
 
