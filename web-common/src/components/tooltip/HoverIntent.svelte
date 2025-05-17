@@ -8,13 +8,16 @@
   export let active = false;
 
   let isHovering = false;
-  let mouseMoved = false;
+  let isMouseMoved = false;
+  let isPointerMoving = false;
+
   let lastMouseX = 0;
   let lastMouseY = 0;
 
   let waitUntilTimer: ReturnType<typeof setTimeout> | undefined;
   let hoverIntentTimer: ReturnType<typeof setTimeout> | undefined;
   let resetMoveTimer: ReturnType<typeof setTimeout> | undefined;
+  let moveThrottleTimer: ReturnType<typeof setTimeout> | undefined;
 
   function clearAllTimers() {
     if (waitUntilTimer) {
@@ -29,6 +32,10 @@
       clearTimeout(resetMoveTimer);
       resetMoveTimer = undefined;
     }
+    if (moveThrottleTimer) {
+      clearTimeout(moveThrottleTimer);
+      moveThrottleTimer = undefined;
+    }
   }
 
   function waitUntil(callback: () => void, time = activeDelay) {
@@ -37,11 +44,12 @@
   }
 
   function resetMoveState() {
-    mouseMoved = false;
+    isMouseMoved = false;
+    isPointerMoving = false;
 
     if (isHovering) {
       hoverIntentTimer = setTimeout(() => {
-        if (!mouseMoved && isHovering) {
+        if (!isMouseMoved && isHovering) {
           waitUntil(() => {
             active = true;
           });
@@ -54,12 +62,13 @@
     isHovering = true;
     lastMouseX = event.clientX;
     lastMouseY = event.clientY;
-    mouseMoved = false;
+    isMouseMoved = false;
+    isPointerMoving = false;
 
     clearAllTimers();
 
     hoverIntentTimer = setTimeout(() => {
-      if (!mouseMoved && isHovering) {
+      if (!isMouseMoved && isHovering) {
         waitUntil(() => {
           active = true;
         });
@@ -68,13 +77,18 @@
   }
 
   function handlePointerMove(event: PointerEvent) {
-    if (!isHovering) return;
+    if (!isHovering || isPointerMoving) return;
+
+    isPointerMoving = true;
+    moveThrottleTimer = setTimeout(() => {
+      isPointerMoving = false;
+    }, 16); // ~60fps
 
     const deltaX = Math.abs(event.clientX - lastMouseX);
     const deltaY = Math.abs(event.clientY - lastMouseY);
 
     if (deltaX > threshold || deltaY > threshold) {
-      mouseMoved = true;
+      isMouseMoved = true;
       clearAllTimers();
       active = false;
 
@@ -87,7 +101,8 @@
 
   function handlePointerLeave() {
     isHovering = false;
-    mouseMoved = false;
+    isMouseMoved = false;
+    isPointerMoving = false;
     clearAllTimers();
 
     waitUntil(() => {
