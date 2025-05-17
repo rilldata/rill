@@ -842,7 +842,6 @@ export interface V1Project {
   description?: string;
   public?: boolean;
   createdByUserId?: string;
-  createdByUserEmail?: string;
   provisioner?: string;
   githubUrl?: string;
   /** managed_git_id is set if the project is connected to a rill-managed git repo. */
