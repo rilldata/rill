@@ -31,7 +31,8 @@ func (y *FieldSelectorYAML) UnmarshalYAML(v *yaml.Node) error {
 			y.All = true
 			return nil
 		}
-		return fmt.Errorf("unexpected scalar %q", v.Value)
+		fields := []string{v.Value}
+		y.Fields = &fields
 	case yaml.SequenceNode:
 		fields := make([]string, len(v.Content))
 		for i, c := range v.Content {

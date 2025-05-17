@@ -464,7 +464,6 @@ func (c *connection) reopenDB(ctx context.Context) error {
 		"LOAD 'httpfs'",
 		"SET GLOBAL timezone='UTC'",
 		"SET GLOBAL old_implicit_casting = true", // Implicit Cast to VARCHAR
-		"SET GLOBAL allow_community_extensions = false", // This locks the configuration, so it can't later be enabled.
 	)
 
 	dataDir, err := c.storage.DataDir()
@@ -651,7 +650,7 @@ func (c *connection) triggerReopen() {
 	go func() {
 		c.dbCond.L.Lock()
 		defer c.dbCond.L.Unlock()
-		if !c.dbReopen || c.dbConnCount == 0 {
+		if !c.dbReopen || c.dbConnCount != 0 {
 			c.logger.Error("triggerReopen called but should not reopen", zap.Bool("dbReopen", c.dbReopen), zap.Int("dbConnCount", c.dbConnCount))
 			return
 		}

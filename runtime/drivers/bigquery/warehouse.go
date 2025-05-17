@@ -38,7 +38,7 @@ var _ drivers.Warehouse = &Connection{}
 
 // QueryAsFiles implements drivers.SQLStore
 func (c *Connection) QueryAsFiles(ctx context.Context, props map[string]any) (drivers.FileIterator, error) {
-	srcProps, err := parseSourceProperties(props)
+	srcProps, err := c.parseSourceProperties(props)
 	if err != nil {
 		return nil, err
 	}
@@ -271,7 +271,7 @@ func (f *fileIterator) Next() ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	f.logger.Info("parquet file written", zap.String("size", datasize.ByteSize(fileInfo.Size()).HumanReadable()), zap.Int64("rows", rows), observability.ZapCtx(f.ctx))
+	f.logger.Debug("parquet file written", zap.String("size", datasize.ByteSize(fileInfo.Size()).HumanReadable()), zap.Int64("rows", rows), observability.ZapCtx(f.ctx))
 	return []string{fw.Name()}, nil
 }
 
@@ -317,7 +317,7 @@ func (f *fileIterator) downloadAsJSONFile() (string, error) {
 				f.logger.Error("not all rows written to json file", zap.Int64("rows_written", rows), zap.Uint64("total_rows", f.bqIter.TotalRows), observability.ZapCtx(f.ctx))
 			}
 
-			f.logger.Info("json file written", zap.String("size", datasize.ByteSize(fileInfo.Size()).HumanReadable()), zap.Int64("rows", rows), observability.ZapCtx(f.ctx))
+			f.logger.Debug("json file written", zap.String("size", datasize.ByteSize(fileInfo.Size()).HumanReadable()), zap.Int64("rows", rows), observability.ZapCtx(f.ctx))
 			// all rows written successfully
 			return fw.Name(), nil
 		}

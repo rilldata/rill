@@ -797,6 +797,8 @@ message ConnectorDriver {
   string display_name = 4;
   // Human readable description of the connector
   string description = 5;
+  // Docs url for the connector
+  string docs_url = 21;
   // Capabilities supported by the connector
   bool implements_registry = 10;
   bool implements_catalog = 11;

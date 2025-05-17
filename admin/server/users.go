@@ -298,9 +298,8 @@ func (s *Server) DeleteUser(ctx context.Context, req *adminv1.DeleteUserRequest)
 
 	claims := auth.GetClaims(ctx)
 	isCurrentUser := claims.OwnerType() == auth.OwnerTypeUser && claims.OwnerID() == user.ID
-	isSuperuser := claims.Superuser(ctx)
-
-	if !isCurrentUser && !isSuperuser {
+	forceAccess := claims.Superuser(ctx) && req.SuperuserForceAccess
+	if !isCurrentUser && !forceAccess {
 		return nil, status.Error(codes.PermissionDenied, "you can only delete your own user unless you are a superuser")
 	}
 
@@ -430,6 +429,7 @@ func projMemberUserToPB(m *database.ProjectMemberUser) *adminv1.ProjectMemberUse
 		UserName:     m.DisplayName,
 		UserPhotoUrl: m.PhotoURL,
 		RoleName:     m.RoleName,
+		OrgRoleName:  m.OrgRoleName,
 		CreatedOn:    timestamppb.New(m.CreatedOn),
 		UpdatedOn:    timestamppb.New(m.UpdatedOn),
 	}
@@ -446,10 +446,19 @@ func usergroupMemberUserToPB(m *database.UsergroupMemberUser) *adminv1.Usergroup
 	}
 }
 
-func inviteToPB(i *database.Invite) *adminv1.UserInvite {
-	return &adminv1.UserInvite{
+func orgInviteToPB(i *database.OrganizationInviteWithRole) *adminv1.OrganizationInvite {
+	return &adminv1.OrganizationInvite{
 		Email:     i.Email,
-		Role:      i.Role,
+		RoleName:  i.RoleName,
 		InvitedBy: i.InvitedBy,
+	}
+}
+
+func projInviteToPB(i *database.ProjectInviteWithRole) *adminv1.ProjectInvite {
+	return &adminv1.ProjectInvite{
+		Email:       i.Email,
+		RoleName:    i.RoleName,
+		OrgRoleName: i.OrgRoleName,
+		InvitedBy:   i.InvitedBy,
 	}
 }

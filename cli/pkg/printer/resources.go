@@ -70,9 +70,12 @@ func toProjectTable(projects []*adminv1.Project) []*project {
 }
 
 func toProjectRow(o *adminv1.Project) *project {
-	githubURL := o.GithubUrl
-	if o.Subpath != "" {
-		githubURL = filepath.Join(o.GithubUrl, "tree", o.ProdBranch, o.Subpath)
+	var githubURL string
+	if o.ManagedGitId == "" {
+		githubURL = o.GithubUrl
+		if o.Subpath != "" {
+			githubURL = filepath.Join(o.GithubUrl, "tree", o.ProdBranch, o.Subpath)
+		}
 	}
 
 	return &project{
@@ -185,34 +188,48 @@ type memberUserWithRole struct {
 	RoleName string `header:"role" json:"role_name"`
 }
 
-func (p *Printer) PrintInvites(invites []*adminv1.UserInvite) {
+func (p *Printer) PrintOrganizationInvites(invites []*adminv1.OrganizationInvite) {
 	if len(invites) == 0 {
 		return
 	}
-	p.PrintDataWithTitle(toInvitesTable(invites), "Invites pending acceptance")
-}
-
-func toInvitesTable(invites []*adminv1.UserInvite) []*userInvite {
-	allInvites := make([]*userInvite, 0, len(invites))
-
+	rows := make([]*organizationInvite, 0, len(invites))
 	for _, i := range invites {
-		allInvites = append(allInvites, toInviteRow(i))
+		rows = append(rows, &organizationInvite{
+			Email:     i.Email,
+			RoleName:  i.RoleName,
+			InvitedBy: i.InvitedBy,
+		})
 	}
-	return allInvites
+	p.PrintDataWithTitle(rows, "Invites pending acceptance")
 }
 
-func toInviteRow(i *adminv1.UserInvite) *userInvite {
-	return &userInvite{
-		Email:     i.Email,
-		RoleName:  i.Role,
-		InvitedBy: i.InvitedBy,
-	}
-}
-
-type userInvite struct {
+type organizationInvite struct {
 	Email     string `header:"email" json:"email"`
 	RoleName  string `header:"role" json:"role_name"`
 	InvitedBy string `header:"invited_by" json:"invited_by"`
+}
+
+func (p *Printer) PrintProjectInvites(invites []*adminv1.ProjectInvite) {
+	if len(invites) == 0 {
+		return
+	}
+	rows := make([]*projectInvite, 0, len(invites))
+	for _, i := range invites {
+		rows = append(rows, &projectInvite{
+			Email:       i.Email,
+			RoleName:    i.RoleName,
+			OrgRoleName: i.OrgRoleName,
+			InvitedBy:   i.InvitedBy,
+		})
+	}
+	p.PrintDataWithTitle(rows, "Invites pending acceptance")
+}
+
+type projectInvite struct {
+	Email       string `header:"email" json:"email"`
+	RoleName    string `header:"role" json:"role_name"`
+	OrgRoleName string `header:"org_role" json:"org_role_name"`
+	InvitedBy   string `header:"invited_by" json:"invited_by"`
 }
 
 func (p *Printer) PrintServices(svcs []*adminv1.Service) {

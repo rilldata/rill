@@ -34,6 +34,21 @@ func (i informationSchema) All(ctx context.Context, like string) ([]*drivers.Tab
 		args = []any{like, like}
 	}
 
+	var dbFilter string
+	if i.c.config.DatabaseWhitelist != "" {
+		dbs := strings.Split(i.c.config.DatabaseWhitelist, ",")
+		var filter strings.Builder
+		for i, db := range dbs {
+			if i > 0 {
+				filter.WriteString(", ")
+			}
+			filter.WriteString("?")
+			args = append(args, strings.TrimSpace(db))
+		}
+		dbFilter = fmt.Sprintf("T.database IN (%s)", filter.String())
+	} else {
+		dbFilter = " T.database == currentDatabase() OR lower(T.database) NOT IN ('information_schema', 'system') "
+	}
 	// Clickhouse does not have a concept of schemas. Both table_catalog and table_schema refer to the database where table is located.
 	// Given the usual way of querying table in clickhouse is `SELECT * FROM table_name` or `SELECT * FROM database.table_name`.
 	// We map clickhouse database to `database schema` and table_name to `table name`.
@@ -49,10 +64,10 @@ func (i informationSchema) All(ctx context.Context, like string) ([]*drivers.Tab
 		FROM system.tables T
 		JOIN system.columns C ON T.database = C.database AND T.name = C.table
 		-- allow fetching tables from system or information_schema if it is current database
-		WHERE (T.database == currentDatabase() OR lower(T.database) NOT IN ('information_schema', 'system'))
+		WHERE (%s)
 		%s
 		ORDER BY SCHEMA, NAME, TABLE_TYPE, ORDINAL_POSITION
-	`, likeClause)
+	`, dbFilter, likeClause)
 
 	rows, err := conn.QueryxContext(ctx, q, args...)
 	if err != nil {
