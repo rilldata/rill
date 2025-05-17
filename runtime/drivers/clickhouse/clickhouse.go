@@ -156,6 +156,10 @@ type configProperties struct {
 	ReadTimeout string `mapstructure:"read_timeout"`
 }
 
+func (c configProperties) isClickhouseCloud() bool {
+	return strings.Contains(c.DSN, "clickhouse.cloud") || strings.Contains(c.Host, "clickhouse.cloud")
+}
+
 // Open connects to Clickhouse using std API.
 // Connection string format : https://github.com/ClickHouse/clickhouse-go?tab=readme-ov-file#dsn
 func (d driver) Open(instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {

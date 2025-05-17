@@ -3,8 +3,6 @@ package clickhouse
 import (
 	"strconv"
 	"strings"
-
-	"github.com/rilldata/rill/runtime/drivers"
 )
 
 // ParseIntervalToMillis parses a ClickHouse INTERVAL string into milliseconds.
@@ -45,8 +43,4 @@ func ParseIntervalToMillis(s string) (int64, bool) {
 	default:
 		return 0, false
 	}
-}
-
-func safeSQLName(name string) string {
-	return drivers.DialectClickHouse.EscapeIdentifier(name)
 }
