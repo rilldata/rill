@@ -55,10 +55,6 @@ FIXME: In the future, we should also be listening to focus events from the child
     CHILD_REQUESTED_TOOLTIP_SUPPRESSION_CONTEXT_KEY,
     childRequestedTooltipSuppression,
   );
-
-  function handleActive(event: CustomEvent<boolean>) {
-    active = event.detail;
-  }
 </script>
 
 <div class="contents">
@@ -67,7 +63,7 @@ FIXME: In the future, we should also be listening to focus events from the child
     timeout={hoverIntentTimeout}
     {activeDelay}
     {nonActiveDelay}
-    on:active={handleActive}
+    bind:active
   >
     <div bind:this={parent}>
       <slot />

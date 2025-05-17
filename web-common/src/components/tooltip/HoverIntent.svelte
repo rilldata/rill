@@ -1,14 +1,11 @@
 <script lang="ts">
-  import { createEventDispatcher, onDestroy } from "svelte";
+  import { onDestroy } from "svelte";
 
   export let threshold = 5;
   export let timeout = 100;
   export let activeDelay = 200;
   export let nonActiveDelay = 0;
-
-  const dispatch = createEventDispatcher<{
-    active: boolean;
-  }>();
+  export let active = false;
 
   let isHovering = false;
   let mouseMoved = false;
@@ -45,7 +42,7 @@
       hoverIntentTimer = setTimeout(() => {
         if (!mouseMoved && isHovering) {
           waitUntil(() => {
-            dispatch("active", true);
+            active = true;
           });
         }
       }, timeout);
@@ -63,7 +60,7 @@
     hoverIntentTimer = setTimeout(() => {
       if (!mouseMoved && isHovering) {
         waitUntil(() => {
-          dispatch("active", true);
+          active = true;
         });
       }
     }, timeout);
@@ -78,6 +75,7 @@
     if (deltaX > threshold || deltaY > threshold) {
       mouseMoved = true;
       clearAllTimers();
+      active = false;
 
       resetMoveTimer = setTimeout(resetMoveState, timeout);
     }
@@ -91,7 +89,7 @@
     mouseMoved = false;
     clearAllTimers();
     waitUntil(() => {
-      dispatch("active", false);
+      active = false;
     }, nonActiveDelay);
   }
 
