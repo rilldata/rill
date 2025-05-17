@@ -22,11 +22,6 @@ func CheckChain(chain ...PreRunCheck) PreRunCheck {
 
 func CheckAuth(ch *Helper) PreRunCheck {
 	return func(cmd *cobra.Command, args []string) error {
-		// If the command is run in local mode, skip the check.
-		if cmd.Flags().Lookup("local").Changed {
-			return nil
-		}
-
 		// This will just check if token is present in the config
 		if ch.IsAuthenticated() {
 			return nil
