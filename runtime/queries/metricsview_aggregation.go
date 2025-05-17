@@ -197,6 +197,7 @@ func generateHeaderMetadata(opts *runtime.ExportOptions, qry *metricsview.Query)
 		}
 		// Determine Line 1
 		var line1 string
+		// DashboardURL is empty that means user of report is external user so orgazation and project is added to header
 		if opts.DashboardURL != "" {
 			parts := []string{}
 			if opts.Organization != "" {

@@ -18,7 +18,7 @@
   $: token = $page.url.searchParams.get("token");
   $: includeHeader = $page.url.searchParams.get("include_header") === "true";
   $: dashboard = $page.url.searchParams.get("dashboard") ?? "";
-  $: dashboardUrl = $page.url.searchParams.get("dashboard_url") ?? "";
+  $: dashboardUrl = ""; //TODO: populate this not coming in request
 
   const downloadReportMutation = createDownloadReportMutation();
   let downloadOnce = false;
