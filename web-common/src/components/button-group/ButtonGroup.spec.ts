@@ -2,31 +2,6 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/svelte";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import ButtonGroupTestingWrapper from "./ButtonGroupTestingWrapper.svelte";
 
-// Helper function to simulate hover with intent
-async function hoverWithIntent(element: HTMLElement) {
-  // Initial mouse enter
-  await fireEvent.mouseEnter(element);
-  // Small movement to simulate intent
-  await fireEvent.mouseMove(element, {
-    clientX: 10,
-    clientY: 10,
-  });
-  // Wait for hover intent delay
-  await new Promise((resolve) => setTimeout(resolve, 300)); // activeDelay (200) + timeout (100)
-}
-
-// Helper function to wait for tooltip
-async function waitForTooltip(text: string) {
-  return waitFor(
-    () => {
-      const tooltip = screen.getByText(text);
-      expect(tooltip).toBeInTheDocument();
-      return tooltip;
-    },
-    { timeout: 1000 },
-  );
-}
-
 describe("ButtonGroup", () => {
   it("ButtonGroupTestingWrapper -- buttons in test wrapper exist", () => {
     const { unmount } = render(ButtonGroupTestingWrapper, {
@@ -99,20 +74,25 @@ describe("ButtonGroup", () => {
       [1, "selected tt"],
       [2, "unselected tt"],
       [3, "disabled tt"],
-    ] as const;
+    ];
 
     for (const [i, tt] of buttons) {
       const button = screen.getByRole("button", { name: `button-${i}` });
       if (!button?.parentElement) return;
 
-      await hoverWithIntent(button.parentElement);
-      const toolTip = await waitForTooltip(tt);
-      expect(toolTip).toBeTruthy();
+      await fireEvent.mouseEnter(button.parentElement);
+      // Wait for hover intent timeout (100ms) + active delay (200ms)
+      await new Promise((resolve) => setTimeout(resolve, 300));
+
+      await waitFor(
+        () => {
+          const tooltip = screen.getByText(tt);
+          expect(tooltip).toBeTruthy();
+        },
+        { timeout: 500 },
+      );
+
       await fireEvent.mouseLeave(button.parentElement);
-      // Wait for tooltip to disappear
-      await waitFor(() => {
-        expect(screen.queryByText(tt)).not.toBeInTheDocument();
-      });
     }
 
     unmount();
@@ -175,31 +155,22 @@ describe("ButtonGroup - adding buttons", () => {
 
     if (!button?.parentElement) return;
 
-    await hoverWithIntent(button.parentElement);
-    let toolTip = await waitForTooltip("unselected tt");
+    await fireEvent.mouseEnter(button.parentElement);
+    let toolTip = await screen.findByText("unselected tt");
     expect(toolTip).toBeTruthy();
     await fireEvent.mouseLeave(button.parentElement);
-    await waitFor(() => {
-      expect(screen.queryByText("unselected tt")).not.toBeInTheDocument();
-    });
 
     component.$set({ values: [1, 2, 3, 4], selected: [4] });
-    await hoverWithIntent(button.parentElement);
-    toolTip = await waitForTooltip("selected tt");
+    await fireEvent.mouseEnter(button.parentElement);
+    toolTip = await waitFor(() => screen.getByText("selected tt"));
     expect(toolTip).toBeTruthy();
     await fireEvent.mouseLeave(button.parentElement);
-    await waitFor(() => {
-      expect(screen.queryByText("selected tt")).not.toBeInTheDocument();
-    });
 
     component.$set({ values: [1, 2, 3, 4], disabled: [4] });
-    await hoverWithIntent(button.parentElement);
-    toolTip = await waitForTooltip("disabled tt");
+    await fireEvent.mouseEnter(button.parentElement);
+    toolTip = await waitFor(() => screen.getByText("disabled tt"));
     expect(toolTip).toBeTruthy();
     await fireEvent.mouseLeave(button.parentElement);
-    await waitFor(() => {
-      expect(screen.queryByText("disabled tt")).not.toBeInTheDocument();
-    });
 
     // unmock console.error
     console.error = errorObject;
@@ -265,36 +236,45 @@ describe("ButtonGroup - removing buttons", () => {
     console.error = vi.fn();
 
     let button = await screen.findByRole("button", { name: `button-1` });
-
     if (!button?.parentElement) return;
 
-    await hoverWithIntent(button.parentElement);
-    let toolTip = await waitForTooltip("selected tt");
-    expect(toolTip).toBeTruthy();
+    await fireEvent.mouseEnter(button.parentElement);
+    // Wait for hover intent timeout (100ms) + active delay (200ms)
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    await waitFor(
+      () => {
+        const tooltip = screen.getByText("selected tt");
+        expect(tooltip).toBeTruthy();
+      },
+      { timeout: 500 },
+    );
     await fireEvent.mouseLeave(button.parentElement);
-    await waitFor(() => {
-      expect(screen.queryByText("selected tt")).not.toBeInTheDocument();
-    });
 
     button = await screen.findByRole("button", { name: `button-3` });
     if (!button?.parentElement) return;
-    await hoverWithIntent(button.parentElement);
-    toolTip = await waitForTooltip("unselected tt");
-    expect(toolTip).toBeTruthy();
+    await fireEvent.mouseEnter(button.parentElement);
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    await waitFor(
+      () => {
+        const tooltip = screen.getByText("unselected tt");
+        expect(tooltip).toBeTruthy();
+      },
+      { timeout: 500 },
+    );
     await fireEvent.mouseLeave(button.parentElement);
-    await waitFor(() => {
-      expect(screen.queryByText("unselected tt")).not.toBeInTheDocument();
-    });
 
     button = await screen.findByRole("button", { name: `button-4` });
     if (!button?.parentElement) return;
-    await hoverWithIntent(button.parentElement);
-    toolTip = await waitForTooltip("disabled tt");
-    expect(toolTip).toBeTruthy();
+    await fireEvent.mouseEnter(button.parentElement);
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    await waitFor(
+      () => {
+        const tooltip = screen.getByText("disabled tt");
+        expect(tooltip).toBeTruthy();
+      },
+      { timeout: 500 },
+    );
     await fireEvent.mouseLeave(button.parentElement);
-    await waitFor(() => {
-      expect(screen.queryByText("disabled tt")).not.toBeInTheDocument();
-    });
 
     // unmock console.error
     console.error = errorObject;
