@@ -11,7 +11,7 @@ You can set the following parameters:
 - distance: the distance in pixels between the tooltip and the target.
 - pad: the padding in pixels between the tooltip and the target.
 - suppress: a boolean to suppress the tooltip.
-- showDelay: the delay in miliseconds before showing the tooltip once mouse has entered.
+- activeDelay: the delay in miliseconds before activating the tooltip once hover intent is detected.
 - hideDelay: the delay in miliseconds before hiding the tooltip once mouse has left.
 - hoverIntentThreshold: the threshold in pixels for hover intent detection.
 - hoverIntentTimeout: the time in milliseconds to wait for hover intent.
@@ -43,7 +43,7 @@ FIXME: In the future, we should also be listening to focus events from the child
   export let distance = 0;
   export let pad = 8;
   export let suppress = false;
-  export let showDelay = 200;
+  export let activeDelay = 200;
   export let hideDelay = 0;
   export let hoverIntentThreshold = 5;
   export let hoverIntentTimeout = 100;
@@ -61,7 +61,7 @@ FIXME: In the future, we should also be listening to focus events from the child
   <HoverIntent
     threshold={hoverIntentThreshold}
     timeout={hoverIntentTimeout}
-    {showDelay}
+    {activeDelay}
     {hideDelay}
     bind:active
   >

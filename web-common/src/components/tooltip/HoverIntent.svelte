@@ -3,7 +3,7 @@
 
   export let threshold = 5;
   export let timeout = 100;
-  export let showDelay = 200;
+  export let activeDelay = 200;
   export let hideDelay = 0;
   export let active = false;
 
@@ -31,7 +31,7 @@
     }
   }
 
-  function waitUntil(callback: () => void, time = showDelay) {
+  function waitUntil(callback: () => void, time = activeDelay) {
     clearAllTimers();
     waitUntilTimer = setTimeout(callback, time);
   }
