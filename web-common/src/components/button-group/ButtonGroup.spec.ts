@@ -2,6 +2,19 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/svelte";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import ButtonGroupTestingWrapper from "./ButtonGroupTestingWrapper.svelte";
 
+// Helper function to simulate hover with intent
+async function hoverWithIntent(element: HTMLElement) {
+  // Initial mouse enter
+  await fireEvent.mouseEnter(element);
+  // Small movement to simulate intent
+  await fireEvent.mouseMove(element, {
+    clientX: 10,
+    clientY: 10,
+  });
+  // Wait for hover intent delay
+  await new Promise((resolve) => setTimeout(resolve, 300)); // activeDelay (200) + timeout (100)
+}
+
 describe("ButtonGroup", () => {
   it("ButtonGroupTestingWrapper -- buttons in test wrapper exist", () => {
     const { unmount } = render(ButtonGroupTestingWrapper, {
@@ -79,7 +92,8 @@ describe("ButtonGroup", () => {
     for (const [i, tt] of buttons) {
       const button = screen.getByRole("button", { name: `button-${i}` });
       if (!button?.parentElement) return;
-      await fireEvent.mouseEnter(button.parentElement);
+
+      await hoverWithIntent(button.parentElement);
       const toolTip = await waitFor(() => screen.getByText(tt));
       expect(toolTip).toBeTruthy();
       await fireEvent.mouseLeave(button.parentElement);
@@ -145,19 +159,19 @@ describe("ButtonGroup - adding buttons", () => {
 
     if (!button?.parentElement) return;
 
-    await fireEvent.mouseEnter(button.parentElement);
+    await hoverWithIntent(button.parentElement);
     let toolTip = await screen.findByText("unselected tt");
     expect(toolTip).toBeTruthy();
     await fireEvent.mouseLeave(button.parentElement);
 
     component.$set({ values: [1, 2, 3, 4], selected: [4] });
-    await fireEvent.mouseEnter(button.parentElement);
+    await hoverWithIntent(button.parentElement);
     toolTip = await waitFor(() => screen.getByText("selected tt"));
     expect(toolTip).toBeTruthy();
     await fireEvent.mouseLeave(button.parentElement);
 
     component.$set({ values: [1, 2, 3, 4], disabled: [4] });
-    await fireEvent.mouseEnter(button.parentElement);
+    await hoverWithIntent(button.parentElement);
     toolTip = await waitFor(() => screen.getByText("disabled tt"));
     expect(toolTip).toBeTruthy();
     await fireEvent.mouseLeave(button.parentElement);
@@ -229,21 +243,21 @@ describe("ButtonGroup - removing buttons", () => {
 
     if (!button?.parentElement) return;
 
-    await fireEvent.mouseEnter(button.parentElement);
+    await hoverWithIntent(button.parentElement);
     let toolTip = await screen.findByText("selected tt");
     expect(toolTip).toBeTruthy();
     await fireEvent.mouseLeave(button.parentElement);
 
     button = await screen.findByRole("button", { name: `button-3` });
     if (!button?.parentElement) return;
-    await fireEvent.mouseEnter(button.parentElement);
+    await hoverWithIntent(button.parentElement);
     toolTip = await waitFor(() => screen.getByText("unselected tt"));
     expect(toolTip).toBeTruthy();
     await fireEvent.mouseLeave(button.parentElement);
 
     button = await screen.findByRole("button", { name: `button-4` });
     if (!button?.parentElement) return;
-    await fireEvent.mouseEnter(button.parentElement);
+    await hoverWithIntent(button.parentElement);
     toolTip = await waitFor(() => screen.getByText("disabled tt"));
     expect(toolTip).toBeTruthy();
     await fireEvent.mouseLeave(button.parentElement);
