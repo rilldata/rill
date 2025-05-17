@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { createEventDispatcher } from "svelte";
+  import { createEventDispatcher, onDestroy } from "svelte";
 
   export let threshold = 5;
   export let timeout = 100;
@@ -95,7 +95,6 @@
     }, nonActiveDelay);
   }
 
-  import { onDestroy } from "svelte";
   onDestroy(() => {
     clearAllTimers();
   });

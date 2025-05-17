@@ -27,13 +27,16 @@ FIXME: In the future, we should also be listening to focus events from the child
 -->
 <script lang="ts">
   import { setContext } from "svelte";
-  import { writable } from "svelte/store";
   import FloatingElement from "../floating-element/FloatingElement.svelte";
   import type {
     Alignment,
     Location,
   } from "@rilldata/web-common/lib/place-element";
   import HoverIntent from "./HoverIntent.svelte";
+  import {
+    CHILD_REQUESTED_TOOLTIP_SUPPRESSION_CONTEXT_KEY,
+    childRequestedTooltipSuppression,
+  } from "./store";
 
   export let location: Location = "bottom";
   export let alignment: Alignment = "middle";
@@ -48,15 +51,8 @@ FIXME: In the future, we should also be listening to focus events from the child
 
   let parent: HTMLDivElement;
 
-  /** create child-supported suppression.
-   * If a child changes this context store to true, we should
-   * suppress the tooltip.
-   * This enables us to disentangle the tooltip state in certain cases
-   * where it doesn't make sense to have the user deal with the logic of suppression.
-   */
-  const childRequestedTooltipSuppression = writable(false);
   setContext(
-    "rill:app:childRequestedTooltipSuppression",
+    CHILD_REQUESTED_TOOLTIP_SUPPRESSION_CONTEXT_KEY,
     childRequestedTooltipSuppression,
   );
 
