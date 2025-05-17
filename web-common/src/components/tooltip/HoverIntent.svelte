@@ -3,14 +3,15 @@
 
   export let threshold = 5;
   export let timeout = 100;
-  export let activeDelay = 200;
-  export let nonActiveDelay = 0;
+  export let showDelay = 200;
+  export let hideDelay = 0;
   export let active = false;
 
   let isHovering = false;
   let mouseMoved = false;
   let lastMouseX = 0;
   let lastMouseY = 0;
+
   let waitUntilTimer: ReturnType<typeof setTimeout> | undefined;
   let hoverIntentTimer: ReturnType<typeof setTimeout> | undefined;
   let resetMoveTimer: ReturnType<typeof setTimeout> | undefined;
@@ -30,7 +31,7 @@
     }
   }
 
-  function waitUntil(callback: () => void, time = activeDelay) {
+  function waitUntil(callback: () => void, time = showDelay) {
     clearAllTimers();
     waitUntilTimer = setTimeout(callback, time);
   }
@@ -88,9 +89,10 @@
     isHovering = false;
     mouseMoved = false;
     clearAllTimers();
+
     waitUntil(() => {
       active = false;
-    }, nonActiveDelay);
+    }, hideDelay);
   }
 
   onDestroy(() => {
