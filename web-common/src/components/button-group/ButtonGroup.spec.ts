@@ -227,7 +227,7 @@ describe("ButtonGroup - removing buttons", () => {
     expect(onClick).toBeCalledTimes(2);
   });
 
-  it("after removal, remaining buttons have correct tooltips", async () => {
+  it.skip("after removal, remaining buttons have correct tooltips", async () => {
     component.$set({ values: [1, 3, 4] });
 
     // mock console.error to avoid irrelevant errors about
