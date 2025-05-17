@@ -3,7 +3,6 @@ package server
 import (
 	"context"
 	"strings"
-	"time"
 
 	"github.com/go-git/go-git/v5/plumbing/transport"
 	"github.com/rilldata/rill/admin/database"
@@ -15,8 +14,6 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
-
-const gitURLTTL = 30 * time.Minute
 
 func (s *Server) GetRepoMeta(ctx context.Context, req *adminv1.GetRepoMetaRequest) (*adminv1.GetRepoMetaResponse, error) {
 	observability.AddRequestAttributes(ctx,
@@ -64,7 +61,7 @@ func (s *Server) GetRepoMeta(ctx context.Context, req *adminv1.GetRepoMetaReques
 		return nil, err
 	}
 
-	token, err := s.admin.Github.InstallationToken(ctx, *proj.GithubInstallationID, repoID)
+	token, expiresAt, err := s.admin.Github.InstallationToken(ctx, *proj.GithubInstallationID, repoID)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -85,7 +82,7 @@ func (s *Server) GetRepoMeta(ctx context.Context, req *adminv1.GetRepoMetaReques
 
 	return &adminv1.GetRepoMetaResponse{
 		GitUrl:          gitURL,
-		GitUrlExpiresOn: timestamppb.New(time.Now().Add(gitURLTTL)),
+		GitUrlExpiresOn: timestamppb.New(expiresAt),
 		GitSubpath:      proj.Subpath,
 	}, nil
 }

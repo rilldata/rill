@@ -8,6 +8,7 @@ import (
 	"os"
 	"path"
 	"strings"
+	"time"
 
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/config"
@@ -20,6 +21,37 @@ import (
 )
 
 var ErrGitRemoteNotFound = errors.New("no git remotes found")
+
+type Config struct {
+	Remote            string
+	Username          string
+	Password          string
+	PasswordExpiresAt time.Time
+	DefaultBranch     string
+	Subpath           string
+}
+
+func (g *Config) FullyQualifiedRemote() (string, error) {
+	if g.Remote == "" {
+		return "", fmt.Errorf("remote is not set")
+	}
+	u, err := url.Parse(g.Remote)
+	if err != nil {
+		return "", err
+	}
+	if g.Username != "" {
+		if g.Password != "" {
+			u.User = url.UserPassword(g.Username, g.Password)
+		} else {
+			u.User = url.User(g.Username)
+		}
+	}
+	return u.String(), nil
+}
+
+func (g *Config) IsExpired() bool {
+	return g.Password != "" && g.PasswordExpiresAt.Before(time.Now())
+}
 
 func CloneRepo(repoURL string) (string, error) {
 	endpoint, err := transport.NewEndpoint(repoURL)

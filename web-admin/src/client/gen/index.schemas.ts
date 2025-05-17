@@ -278,6 +278,7 @@ export interface V1CreateManagedGitRepoResponse {
   username?: string;
   password?: string;
   defaultBranch?: string;
+  passwordExpiresAt?: string;
 }
 
 export interface V1CreateOrganizationRequest {
@@ -450,6 +451,7 @@ export interface V1GetCloneCredentialsResponse {
   gitRepoUrl?: string;
   gitUsername?: string;
   gitPassword?: string;
+  gitPasswordExpiresAt?: string;
   gitSubpath?: string;
   gitProdBranch?: string;
   archiveDownloadUrl?: string;
