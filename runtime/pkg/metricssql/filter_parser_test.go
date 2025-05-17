@@ -86,7 +86,7 @@ func TestParseSQLFilter(t *testing.T) {
 }
 
 func must(t *testing.T, e *metricsview.Expression) string {
-	str, err := metricsview.ExpressionToString(e)
+	str, err := metricsview.ExpressionToSQL(e)
 	require.NoError(t, err)
 	return str
 }

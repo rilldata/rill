@@ -664,6 +664,8 @@ func (m *ExportRequest) validate(all bool) error {
 
 	// no validation rules for Format
 
+	// no validation rules for IncludeHeader
+
 	if all {
 		switch v := interface{}(m.GetQuery()).(type) {
 		case interface{ ValidateAll() error }:
@@ -694,6 +696,14 @@ func (m *ExportRequest) validate(all bool) error {
 	}
 
 	// no validation rules for BakedQuery
+
+	// no validation rules for Organization
+
+	// no validation rules for Project
+
+	// no validation rules for Dashboard
+
+	// no validation rules for DashboardUrl
 
 	if len(errors) > 0 {
 		return ExportRequestMultiError(errors)
@@ -905,6 +915,8 @@ func (m *ExportReportRequest) validate(all bool) error {
 
 	// no validation rules for Format
 
+	// no validation rules for IncludeHeader
+
 	if all {
 		switch v := interface{}(m.GetExecutionTime()).(type) {
 		case interface{ ValidateAll() error }:
@@ -933,6 +945,14 @@ func (m *ExportReportRequest) validate(all bool) error {
 			}
 		}
 	}
+
+	// no validation rules for Organization
+
+	// no validation rules for Project
+
+	// no validation rules for Dashboard
+
+	// no validation rules for DashboardUrl
 
 	if len(errors) > 0 {
 		return ExportReportRequestMultiError(errors)

@@ -19,6 +19,11 @@ export type DownloadReportRequest = {
   format: V1ExportFormat;
   executionTime: string;
   limit?: string;
+  includeHeader?: boolean;
+  organization: string;
+  project: string;
+  dashboard: string;
+  dashboardUrl: string;
 };
 
 export function createDownloadReportMutation<
@@ -49,6 +54,11 @@ export function createDownloadReportMutation<
         format: data.format,
         executionTime: data.executionTime,
         limit: data.limit,
+        includeHeader: data.includeHeader,
+        organization: data.organization,
+        project: data.project,
+        dashboard: data.dashboard,
+        dashboardUrl: data.dashboardUrl,
       },
     });
     const downloadUrl = `${get(runtime).host}${exportResp.downloadUrlPath}`;

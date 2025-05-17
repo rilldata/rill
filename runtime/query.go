@@ -32,9 +32,14 @@ type QueryResult struct {
 }
 
 type ExportOptions struct {
-	Format       runtimev1.ExportFormat
-	Priority     int
-	PreWriteHook func(filename string) error
+	Format        runtimev1.ExportFormat
+	IncludeHeader bool
+	Organization  string
+	Project       string
+	Dashboard     string
+	DashboardURL  string
+	Priority      int
+	PreWriteHook  func(filename string) error
 }
 
 type Query interface {
