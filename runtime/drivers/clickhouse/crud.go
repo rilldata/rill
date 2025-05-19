@@ -126,7 +126,7 @@ func (c *Connection) insertTableAsSelect(ctx context.Context, name, sql string, 
 			}
 		} else {
 			err = c.Exec(ctx, &drivers.Statement{
-				Query:    fmt.Sprintf("CREATE OR REPLACE TABLE %s %s AS %s", safeSQLName(tempName), onClusterClause, name),
+				Query:    fmt.Sprintf("CREATE OR REPLACE TABLE %s %s AS %s", safeSQLName(tempName), onClusterClause, safeSQLName(name)),
 				Priority: 1,
 			})
 			if err != nil {
