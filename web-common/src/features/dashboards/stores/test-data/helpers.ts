@@ -2,7 +2,7 @@ import { QueryClient } from "@tanstack/svelte-query";
 import { createStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
 import { createAndExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
-import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import {
   AD_BIDS_DEFAULT_TIME_RANGE,
   AD_BIDS_EXPLORE_INIT,
@@ -73,7 +73,7 @@ export function getInitExploreStateForTest(
     exploreSpec,
     defaultExplorePreset,
   );
-  return partialExploreState;
+  return partialExploreState as ExploreState;
 }
 
 export function createAdBidsMirrorInStore({
@@ -149,10 +149,10 @@ export function initStateManagers(metricsViewName?: string) {
 
 export function getPartialDashboard(
   name: string,
-  keys: (keyof MetricsExplorerEntity)[],
+  keys: (keyof ExploreState)[],
 ) {
   const dashboard = get(metricsExplorerStore).entities[name];
-  const partialDashboard = {} as MetricsExplorerEntity;
+  const partialDashboard = {} as ExploreState;
   keys.forEach(
     (key) => ((partialDashboard as any)[key] = deepClone(dashboard[key])),
   );

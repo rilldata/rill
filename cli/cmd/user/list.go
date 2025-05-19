@@ -164,7 +164,7 @@ func listProjectInvites(cmd *cobra.Command, ch *cmdutil.Helper, org, project, pa
 		cmd.Println()
 	}
 
-	ch.PrintInvites(invites.Invites)
+	ch.PrintProjectInvites(invites.Invites)
 
 	if invites.NextPageToken != "" {
 		cmd.Println()
@@ -222,7 +222,7 @@ func listOrgInvites(cmd *cobra.Command, ch *cmdutil.Helper, org, pageToken strin
 		cmd.Println()
 	}
 
-	ch.PrintInvites(invites.Invites)
+	ch.PrintOrganizationInvites(invites.Invites)
 
 	if invites.NextPageToken != "" {
 		cmd.Println()

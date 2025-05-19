@@ -123,8 +123,7 @@ func (s *Server) GetDeploymentCredentials(ctx context.Context, req *adminv1.GetD
 	claims := auth.GetClaims(ctx)
 	permissions := claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID)
 
-	// If the user is not a superuser, they must have ManageProd permissions
-	if !permissions.ManageProd && !claims.Superuser(ctx) {
+	if !permissions.ManageProd {
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to manage deployment")
 	}
 
@@ -218,8 +217,7 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 	claims := auth.GetClaims(ctx)
 	permissions := claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID)
 
-	// If the user is not a superuser, they must have ManageProd permissions
-	if !permissions.ManageProd && !claims.Superuser(ctx) {
+	if !permissions.ManageProd {
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to manage deployment")
 	}
 

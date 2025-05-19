@@ -113,7 +113,12 @@
       />
     </Select.Trigger>
 
-    <Select.Content {sameWidth} align="start" class="max-h-80 overflow-y-auto">
+    <Select.Content
+      {sameWidth}
+      align="start"
+      class="max-h-80 overflow-y-auto"
+      strategy="fixed"
+    >
       {#if enableSearch}
         <div class="px-2 py-1.5">
           <Search bind:value={searchText} showBorderOnFocus={false} />

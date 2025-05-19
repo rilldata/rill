@@ -26,6 +26,7 @@ func (silentLogger) Info(args ...any) {
 var spec = drivers.Spec{
 	DisplayName: "Salesforce",
 	Description: "Connect to Salesforce.",
+	DocsURL:     "https://docs.rilldata.com/reference/connectors/salesforce",
 	ConfigProperties: []*drivers.PropertySpec{
 		{
 			Key:    "username",
@@ -53,6 +54,7 @@ var spec = drivers.Spec{
 			Secret: false,
 		},
 	},
+	// Important: Any edits to the below properties must be accompanied by changes to the client-side form validation schemas.
 	SourceProperties: []*drivers.PropertySpec{
 		{
 			Key:         "soql",

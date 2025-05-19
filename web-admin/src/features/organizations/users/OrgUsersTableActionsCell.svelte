@@ -15,27 +15,45 @@
   import { page } from "$app/stores";
 
   export let email: string;
+  export let role: string;
   export let isCurrentUser: boolean;
+  export let currentUserRole: string;
+  export let isBillingContact: boolean;
+  // Changing billing contact is not an action for this user. So handle it upstream
+  // This also avoids rendering the modal per row.
+  export let onAttemptRemoveBillingContactUser: () => void;
 
   let isDropdownOpen = false;
   let isRemoveConfirmOpen = false;
 
   $: organization = $page.params.organization;
+  $: isAdmin = currentUserRole === "admin";
+  $: isEditor = currentUserRole === "editor";
+  $: canManageUser =
+    !isCurrentUser &&
+    (isAdmin ||
+      (isEditor &&
+        (role === "editor" || role === "viewer" || role === "guest")));
 
   const queryClient = useQueryClient();
   const removeOrganizationMemberUser =
     createAdminServiceRemoveOrganizationMemberUser();
+
+  function onRemoveClick() {
+    if (isBillingContact) {
+      // If the user is a billing contact we cannot remove without update contact to a different user 1st.
+      onAttemptRemoveBillingContactUser();
+    } else {
+      // Else show the confirmation for remove
+      isRemoveConfirmOpen = true;
+    }
+  }
 
   async function handleRemove(email: string) {
     try {
       await $removeOrganizationMemberUser.mutateAsync({
         organization: organization,
         email: email,
-        // Uncomment if `keepProjectRoles` is needed
-        // See: https://github.com/rilldata/rill/pull/2231
-        // params: {
-        //   keepProjectRoles: false,
-        // },
       });
 
       await queryClient.invalidateQueries({
@@ -81,7 +99,7 @@
   }
 </script>
 
-{#if !isCurrentUser}
+{#if canManageUser}
   <DropdownMenu.Root bind:open={isDropdownOpen}>
     <DropdownMenu.Trigger class="flex-none">
       <IconButton rounded active={isDropdownOpen}>
@@ -92,9 +110,7 @@
       <DropdownMenu.Item
         class="font-normal flex items-center"
         type="destructive"
-        on:click={() => {
-          isRemoveConfirmOpen = true;
-        }}
+        on:click={onRemoveClick}
       >
         <Trash2Icon size="12px" />
         <span class="ml-2">Remove</span>

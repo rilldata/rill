@@ -33,6 +33,7 @@ import (
 	_ "github.com/rilldata/rill/runtime/drivers/gcs"
 	_ "github.com/rilldata/rill/runtime/drivers/https"
 	_ "github.com/rilldata/rill/runtime/drivers/postgres"
+	_ "github.com/rilldata/rill/runtime/drivers/redshift"
 	_ "github.com/rilldata/rill/runtime/drivers/s3"
 	_ "github.com/rilldata/rill/runtime/drivers/snowflake"
 	_ "github.com/rilldata/rill/runtime/drivers/sqlite"
@@ -108,7 +109,9 @@ func NewInstanceWithOptions(t TestingT, opts InstanceOptions) (*runtime.Runtime,
 
 	vars := make(map[string]string)
 	maps.Copy(vars, opts.Variables)
-	vars["rill.stage_changes"] = strconv.FormatBool(opts.StageChanges)
+	if vars["rill.stage_changes"] == "" {
+		vars["rill.stage_changes"] = strconv.FormatBool(opts.StageChanges)
+	}
 
 	for _, conn := range opts.TestConnectors {
 		acquire, ok := Connectors[conn]
@@ -147,6 +150,10 @@ func NewInstanceWithOptions(t TestingT, opts InstanceOptions) (*runtime.Runtime,
 		},
 		Variables: vars,
 		WatchRepo: opts.WatchRepo,
+	}
+
+	if _, ok := opts.Files["rill.yaml"]; !ok {
+		opts.Files["rill.yaml"] = ""
 	}
 
 	for path, data := range opts.Files {

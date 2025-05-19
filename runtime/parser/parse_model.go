@@ -12,6 +12,7 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/duckdbsql"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"google.golang.org/protobuf/types/known/structpb"
+	"gopkg.in/yaml.v3"
 )
 
 // ModelYAML is the raw structure of a Model resource defined in YAML (does not include common fields)
@@ -20,6 +21,7 @@ type ModelYAML struct {
 	Refresh               *ScheduleYAML                           `yaml:"refresh"`
 	Timeout               string                                  `yaml:"timeout"`
 	Incremental           bool                                    `yaml:"incremental"`
+	ChangeMode            string                                  `yaml:"change_mode"`
 	State                 *DataYAML                               `yaml:"state"`
 	Partitions            *DataYAML                               `yaml:"partitions"`
 	Splits                *DataYAML                               `yaml:"splits"` // Deprecated: use "partitions" instead
@@ -30,12 +32,40 @@ type ModelYAML struct {
 		Connector  string         `yaml:"connector"`
 		Properties map[string]any `yaml:",inline" mapstructure:",remain"`
 	} `yaml:"stage"`
-	Output struct {
-		Connector  string         `yaml:"connector"`
-		Properties map[string]any `yaml:",inline" mapstructure:",remain"`
-	} `yaml:"output"`
-	Materialize     *bool `yaml:"materialize"`
-	DefinedAsSource bool  `yaml:"defined_as_source"`
+	Output          ModelOutputYAML `yaml:"output"`
+	Materialize     *bool           `yaml:"materialize"`
+	DefinedAsSource bool            `yaml:"defined_as_source"`
+}
+
+// ModelOutputYAML parses the `output:` property of a model.
+// It supports either a string connector name or a mapping with a connector and arbitrary output properties.
+type ModelOutputYAML struct {
+	Connector  string
+	Properties map[string]any
+}
+
+func (y *ModelOutputYAML) UnmarshalYAML(v *yaml.Node) error {
+	if v == nil {
+		return nil
+	}
+	switch v.Kind {
+	case yaml.ScalarNode:
+		y.Connector = v.Value
+	case yaml.MappingNode:
+		tmp := &struct {
+			Connector  string         `yaml:"connector"`
+			Properties map[string]any `yaml:",inline" mapstructure:",remain"`
+		}{}
+		err := v.Decode(tmp)
+		if err != nil {
+			return err
+		}
+		y.Connector = tmp.Connector
+		y.Properties = tmp.Properties
+	default:
+		return fmt.Errorf("expected connector name or mapping of output properties, got type %q", v.Kind)
+	}
+	return nil
 }
 
 // parseModel parses a model definition and adds the resulting resource to p.Resources.
@@ -43,6 +73,12 @@ func (p *Parser) parseModel(ctx context.Context, node *Node) error {
 	// Parse YAML
 	tmp := &ModelYAML{}
 	err := p.decodeNodeYAML(node, false, tmp)
+	if err != nil {
+		return err
+	}
+
+	// Parse the change mode
+	changeMode, err := parseChangeModeYAML(tmp.ChangeMode)
 	if err != nil {
 		return err
 	}
@@ -105,7 +141,7 @@ func (p *Parser) parseModel(ctx context.Context, node *Node) error {
 	// Build output details
 	outputConnector := tmp.Output.Connector
 	if outputConnector == "" {
-		outputConnector = inputConnector
+		outputConnector = p.defaultOLAPConnector()
 	}
 	outputProps := tmp.Output.Properties
 
@@ -177,6 +213,8 @@ func (p *Parser) parseModel(ctx context.Context, node *Node) error {
 	if timeout > 0 {
 		r.ModelSpec.TimeoutSeconds = uint32(timeout.Seconds())
 	}
+
+	r.ModelSpec.ChangeMode = changeMode
 
 	r.ModelSpec.DefinedAsSource = tmp.DefinedAsSource
 
@@ -312,4 +350,22 @@ func findLineNumber(text string, pos int) int {
 	}
 
 	return lineNumber
+}
+
+// parseChangeModeYAML parses the change mode from the YAML file.
+func parseChangeModeYAML(mode string) (runtimev1.ModelChangeMode, error) {
+	if mode == "" {
+		return runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET, nil
+	}
+
+	switch mode {
+	case "reset":
+		return runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET, nil
+	case "manual":
+		return runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_MANUAL, nil
+	case "patch":
+		return runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_PATCH, nil
+	default:
+		return runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_UNSPECIFIED, fmt.Errorf("unsupported change mode: %q (supported values: reset, manual, patch)", mode)
+	}
 }

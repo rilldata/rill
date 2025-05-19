@@ -49,6 +49,7 @@ var spec = drivers.Spec{
 			Description: "Optional external ID to use when assuming an AWS role for cross-account access.",
 		},
 	},
+	// Important: Any edits to the below properties must be accompanied by changes to the client-side form validation schemas.
 	SourceProperties: []*drivers.PropertySpec{
 		{
 			Key:         "path",

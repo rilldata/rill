@@ -1,4 +1,4 @@
-<!-- <script lang="ts">
+<script lang="ts">
   import { page } from "$app/stores";
   import {
     createAdminServiceGetCurrentUser,
@@ -12,21 +12,42 @@
   import CreateUserGroupDialog from "@rilldata/web-admin/features/organizations/users/CreateUserGroupDialog.svelte";
   import { Search } from "@rilldata/web-common/components/search";
 
+  const PAGE_SIZE = 20;
+
   let userGroupName = "";
   let isCreateUserGroupDialogOpen = false;
   let searchText = "";
+  let pageToken = "";
 
   $: organization = $page.params.organization;
   $: listOrganizationMemberUsergroups =
-    createAdminServiceListOrganizationMemberUsergroups(organization);
+    createAdminServiceListOrganizationMemberUsergroups(organization, {
+      pageSize: PAGE_SIZE,
+      pageToken,
+      includeCounts: true,
+    });
   $: listOrganizationMemberUsers =
     createAdminServiceListOrganizationMemberUsers(organization);
 
   const currentUser = createAdminServiceGetCurrentUser();
 
-  $: filteredGroups = $listOrganizationMemberUsergroups.data?.members.filter(
-    (group) => group.groupName.toLowerCase().includes(searchText.toLowerCase()),
+  $: filteredGroups =
+    $listOrganizationMemberUsergroups.data?.members.filter(
+      (group) =>
+        !group.groupManaged &&
+        group.groupName.toLowerCase().includes(searchText.toLowerCase()),
+    ) ?? [];
+
+  $: hasNextPage = Boolean(
+    $listOrganizationMemberUsergroups.data?.nextPageToken,
   );
+  $: isFetchingNextPage = $listOrganizationMemberUsergroups.isFetching;
+
+  function handleLoadMore() {
+    if (hasNextPage) {
+      pageToken = $listOrganizationMemberUsergroups.data?.nextPageToken ?? "";
+    }
+  }
 </script>
 
 <div class="flex flex-col w-full">
@@ -40,7 +61,7 @@
       Error loading organization user groups: {$listOrganizationMemberUsergroups.error}
     </div>
   {:else if $listOrganizationMemberUsergroups.isSuccess && $listOrganizationMemberUsers.isSuccess}
-    <div class="flex flex-col gap-4">
+    <div class="flex flex-col">
       <div class="flex flex-row gap-x-4">
         <Search
           placeholder="Search"
@@ -58,11 +79,25 @@
           <span>Create group</span>
         </Button>
       </div>
-      <OrgGroupsTable
-        data={filteredGroups}
-        currentUserEmail={$currentUser.data?.user.email}
-        searchUsersList={$listOrganizationMemberUsers.data?.members ?? []}
-      />
+      <div class="mt-6">
+        <OrgGroupsTable
+          data={filteredGroups}
+          currentUserEmail={$currentUser.data?.user.email}
+          searchUsersList={$listOrganizationMemberUsers.data?.members ?? []}
+          {hasNextPage}
+          {isFetchingNextPage}
+          onLoadMore={handleLoadMore}
+        />
+      </div>
+      {#if filteredGroups.length > 0}
+        <div class="px-2 py-3">
+          <span class="font-medium text-sm text-gray-500">
+            {filteredGroups.length} total group{filteredGroups.length === 1
+              ? ""
+              : "s"}
+          </span>
+        </div>
+      {/if}
     </div>
   {/if}
 </div>
@@ -70,4 +105,6 @@
 <CreateUserGroupDialog
   bind:open={isCreateUserGroupDialogOpen}
   groupName={userGroupName}
-/> -->
+  organizationUsers={$listOrganizationMemberUsers.data?.members ?? []}
+  currentUserEmail={$currentUser.data?.user.email}
+/>

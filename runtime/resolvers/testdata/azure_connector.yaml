@@ -2,42 +2,41 @@ connectors:
   - clickhouse
   - azure
 project_files:
-  duckdb.yaml:
-    type: connector
-    connector: duckdb
-    init_sql: INSTALL AZURE; LOAD AZURE;
   all_datatypes_clickhouse_csv.yaml:
     type: model
-    connector: clickhouse
     materialize: true
+    connector: clickhouse
+    output: clickhouse
     sql: "SELECT * FROM azureBlobStorage('{{.env.connector.azure.azure_storage_connection_string_ip}}', 'integration-test', 'csv_test/all_datatypes.csv', 'CSVWithNames')"
   all_datatypes_clickhouse_glob.yaml:
     type: model
-    connector: clickhouse
     materialize: true
+    connector: clickhouse
+    output: clickhouse
     sql: "SELECT * FROM azureBlobStorage('{{.env.connector.azure.azure_storage_connection_string_ip}}', 'integration-test', 'glob_test/y=202*/a*.csv', 'CSVWithNames')"
   all_datatypes_clickhouse_parquet.yaml:
     type: model
-    connector: clickhouse
     materialize: true
+    connector: clickhouse
+    output: clickhouse
     sql: "SELECT * FROM azureBlobStorage('{{.env.connector.azure.azure_storage_connection_string_ip}}', 'integration-test', 'parquet_test/all_datatypes.parquet' ,'Parquet')"
   all_datatypes_duckdb_model_csv.yaml:
     type: model
     connector: duckdb
     materialize: true
-    pre_exec: "CREATE SECRET IF NOT EXISTS secret1 (TYPE azure, CONNECTION_STRING '{{.env.connector.azure.azure_storage_connection_string}}')"
+    pre_exec: "CREATE SECRET secret1 (TYPE azure, CONNECTION_STRING '{{.env.connector.azure.azure_storage_connection_string}}')"
     sql: "select * from read_csv('azure://integration-test/csv_test/all_datatypes.csv', auto_detect=true, ignore_errors=1, header=true)"
   all_datatypes_duckdb_model_glob.yaml:
     type: model
     connector: duckdb
     materialize: true
-    pre_exec: "CREATE SECRET IF NOT EXISTS secret1 (TYPE azure, CONNECTION_STRING '{{.env.connector.azure.azure_storage_connection_string}}')"
+    pre_exec: "CREATE SECRET secret1 (TYPE azure, CONNECTION_STRING '{{.env.connector.azure.azure_storage_connection_string}}')"
     sql: "select * from read_csv('azure://integration-test/glob_test/y=202*/a*.csv', auto_detect=true, ignore_errors=1, header=true)"
   all_datatypes_duckdb_model_parquet.yaml:
     type: model
     connector: duckdb
     materialize: true
-    pre_exec: "CREATE SECRET IF NOT EXISTS secret1 (TYPE azure, CONNECTION_STRING '{{.env.connector.azure.azure_storage_connection_string}}')"
+    pre_exec: "CREATE SECRET secret1 (TYPE azure, CONNECTION_STRING '{{.env.connector.azure.azure_storage_connection_string}}')"
     sql: "select * from read_parquet('azure://integration-test/parquet_test/all_datatypes.parquet')"
   all_datatypes_duckdb_source_csv.yaml:
     type: source
@@ -128,8 +127,8 @@ tests:
   - name: query_all_result_clickhouse_csv
     resolver: sql
     properties:
-      sql: "select * from all_datatypes_clickhouse_csv order by id"
       connector: clickhouse
+      sql: "select * from all_datatypes_clickhouse_csv order by id"
       # time is converted to datetime like 2025-01-01T00:02:03.456Z but should be 1970-01-01T00:02:03.456Z, which is wrong.
     result_csv: |
       id,boolean_col,int32_col,int64_col,float_col,double_col,byte_array_col,fixed_len_byte_array_col,string_col,decimal_col,date_col,time_millis_col,time_micros_col,timestamp_millis_col,timestamp_micros_col,uuid_col,list_int_col,list_string_col,map_col,struct_col
@@ -139,9 +138,9 @@ tests:
   - name: query_all_datatypes_clickhouse_csv
     resolver: sql
     properties:
+      connector: clickhouse
       sql: |
         select name, type from system.columns where `table` = 'all_datatypes_clickhouse_csv'
-      connector: clickhouse
     result_csv: |
       name,type
       id,Nullable(Int64)
@@ -167,8 +166,8 @@ tests:
   - name: query_table_type_clickhouse_csv
     resolver: sql
     properties:
-      sql: "select name, engine from system.tables where name = 'all_datatypes_clickhouse_csv'"
       connector: clickhouse
+      sql: "select name, engine from system.tables where name = 'all_datatypes_clickhouse_csv'"
     result_csv: |
       name,engine
       all_datatypes_clickhouse_csv,MergeTree
@@ -245,8 +244,8 @@ tests:
   - name: query_all_result_clickhouse_parquet
     resolver: sql
     properties:
-      sql: "select * from all_datatypes_clickhouse_parquet order by id"
       connector: clickhouse
+      sql: "select * from all_datatypes_clickhouse_parquet order by id"
     result_csv: |
       id,boolean_col,int32_col,int64_col,float_col,double_col,byte_array_col,fixed_len_byte_array_col,string_col,decimal_col,date_col,time_millis_col,time_micros_col,timestamp_millis_col,timestamp_micros_col,uuid_col,list_int_col,list_string_col,map_col,struct_col
       1,true,123,45678901234,1.2300000190734863,3.14159,abcd,1234567890abcdef,hello,123.45,2024-03-06,1970-01-01T00:02:03.456Z,1970-01-01T00:02:03.456789Z,2024-03-06T12:34:56.789Z,2024-03-06T12:34:56.789123Z,uuidabcd1234efgh,"[1,2,3]","[""apple"",""banana"",""cherry""]","{""key1"":10,""key2"":20}","{""FIELD_FLOAT_COL"":null,""FIELD_INT_COL"":null,""FIELD_STRING_COL"":null,""field_float_col"":3.14,""field_int_col"":42,""field_string_col"":""example""}"
@@ -255,9 +254,9 @@ tests:
   - name: query_all_datatypes_clickhouse_parquet
     resolver: sql
     properties:
+      connector: clickhouse
       sql: |
         select name, type from system.columns where `table` = 'all_datatypes_clickhouse_parquet'
-      connector: clickhouse
     result_csv: |
       name,type
       id,Nullable(Int32)
@@ -307,8 +306,8 @@ tests:
   - name: query_all_result_clickhouse_glob
     resolver: sql
     properties:
-      sql: "select * from all_datatypes_clickhouse_glob order by id"
       connector: clickhouse
+      sql: "select * from all_datatypes_clickhouse_glob order by id"
       # time is converted to datetime like 2025-01-01T00:02:03.456Z but should be 1970-01-01T00:02:03.456Z, which is wrong.
     result_csv: |
       id,boolean_col,int32_col,int64_col,float_col,double_col,byte_array_col,fixed_len_byte_array_col,string_col,decimal_col,date_col,time_millis_col,time_micros_col,timestamp_millis_col,timestamp_micros_col,uuid_col,list_int_col,list_string_col,map_col,struct_col

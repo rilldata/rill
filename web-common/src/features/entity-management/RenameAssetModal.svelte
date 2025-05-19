@@ -2,7 +2,7 @@
   import { goto } from "$app/navigation";
   import { page } from "$app/stores";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
-  import * as Dialog from "@rilldata/web-common/components/dialog-v2";
+  import * as Dialog from "@rilldata/web-common/components/dialog";
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import SubmissionError from "@rilldata/web-common/components/forms/SubmissionError.svelte";
   import { splitFolderAndFileName } from "@rilldata/web-common/features/entity-management/file-path-utils";

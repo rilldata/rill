@@ -29,6 +29,7 @@ const (
 	AdminService_ListProjectsForOrganization_FullMethodName           = "/rill.admin.v1.AdminService/ListProjectsForOrganization"
 	AdminService_ListProjectsForOrganizationAndUser_FullMethodName    = "/rill.admin.v1.AdminService/ListProjectsForOrganizationAndUser"
 	AdminService_GetProject_FullMethodName                            = "/rill.admin.v1.AdminService/GetProject"
+	AdminService_ListProjectsForUserByName_FullMethodName             = "/rill.admin.v1.AdminService/ListProjectsForUserByName"
 	AdminService_GetProjectByID_FullMethodName                        = "/rill.admin.v1.AdminService/GetProjectByID"
 	AdminService_SearchProjectNames_FullMethodName                    = "/rill.admin.v1.AdminService/SearchProjectNames"
 	AdminService_CreateProject_FullMethodName                         = "/rill.admin.v1.AdminService/CreateProject"
@@ -80,7 +81,8 @@ const (
 	AdminService_GetGithubUserStatus_FullMethodName                   = "/rill.admin.v1.AdminService/GetGithubUserStatus"
 	AdminService_ListGithubUserRepos_FullMethodName                   = "/rill.admin.v1.AdminService/ListGithubUserRepos"
 	AdminService_ConnectProjectToGithub_FullMethodName                = "/rill.admin.v1.AdminService/ConnectProjectToGithub"
-	AdminService_UploadProjectAssets_FullMethodName                   = "/rill.admin.v1.AdminService/UploadProjectAssets"
+	AdminService_CreateManagedGitRepo_FullMethodName                  = "/rill.admin.v1.AdminService/CreateManagedGitRepo"
+	AdminService_DisconnectProjectFromGithub_FullMethodName           = "/rill.admin.v1.AdminService/DisconnectProjectFromGithub"
 	AdminService_GetCloneCredentials_FullMethodName                   = "/rill.admin.v1.AdminService/GetCloneCredentials"
 	AdminService_CreateWhitelistedDomain_FullMethodName               = "/rill.admin.v1.AdminService/CreateWhitelistedDomain"
 	AdminService_RemoveWhitelistedDomain_FullMethodName               = "/rill.admin.v1.AdminService/RemoveWhitelistedDomain"
@@ -179,6 +181,8 @@ type AdminServiceClient interface {
 	ListProjectsForOrganizationAndUser(ctx context.Context, in *ListProjectsForOrganizationAndUserRequest, opts ...grpc.CallOption) (*ListProjectsForOrganizationAndUserResponse, error)
 	// GetProject returns information about a specific project
 	GetProject(ctx context.Context, in *GetProjectRequest, opts ...grpc.CallOption) (*GetProjectResponse, error)
+	// ListProjectsForUserByName returns projects matching a name accessible by the logged in user
+	ListProjectsForUserByName(ctx context.Context, in *ListProjectsForUserByNameRequest, opts ...grpc.CallOption) (*ListProjectsForUserByNameResponse, error)
 	// GetProject returns information about a specific project
 	GetProjectByID(ctx context.Context, in *GetProjectByIDRequest, opts ...grpc.CallOption) (*GetProjectByIDResponse, error)
 	// SearchProjectNames returns project names matching the pattern
@@ -289,9 +293,10 @@ type AdminServiceClient interface {
 	// Connects a rill managed project to github.
 	// Replaces the contents of the remote repo with the contents of the project.
 	ConnectProjectToGithub(ctx context.Context, in *ConnectProjectToGithubRequest, opts ...grpc.CallOption) (*ConnectProjectToGithubResponse, error)
+	// CreateManagedGitRepo creates a new rill managed git repo for the organization.
+	CreateManagedGitRepo(ctx context.Context, in *CreateManagedGitRepoRequest, opts ...grpc.CallOption) (*CreateManagedGitRepoResponse, error)
 	// Converts a project connected to github to a rill managed project.
-	// Uploads the current project to assets.
-	UploadProjectAssets(ctx context.Context, in *UploadProjectAssetsRequest, opts ...grpc.CallOption) (*UploadProjectAssetsResponse, error)
+	DisconnectProjectFromGithub(ctx context.Context, in *DisconnectProjectFromGithubRequest, opts ...grpc.CallOption) (*DisconnectProjectFromGithubResponse, error)
 	// GetCloneCredentials returns credentials and other details for a project's Git repository or archive path if git repo is not configured.
 	GetCloneCredentials(ctx context.Context, in *GetCloneCredentialsRequest, opts ...grpc.CallOption) (*GetCloneCredentialsResponse, error)
 	// CreateWhitelistedDomain adds a domain to the whitelist
@@ -532,6 +537,16 @@ func (c *adminServiceClient) GetProject(ctx context.Context, in *GetProjectReque
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GetProjectResponse)
 	err := c.cc.Invoke(ctx, AdminService_GetProject_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) ListProjectsForUserByName(ctx context.Context, in *ListProjectsForUserByNameRequest, opts ...grpc.CallOption) (*ListProjectsForUserByNameResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListProjectsForUserByNameResponse)
+	err := c.cc.Invoke(ctx, AdminService_ListProjectsForUserByName_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1048,10 +1063,20 @@ func (c *adminServiceClient) ConnectProjectToGithub(ctx context.Context, in *Con
 	return out, nil
 }
 
-func (c *adminServiceClient) UploadProjectAssets(ctx context.Context, in *UploadProjectAssetsRequest, opts ...grpc.CallOption) (*UploadProjectAssetsResponse, error) {
+func (c *adminServiceClient) CreateManagedGitRepo(ctx context.Context, in *CreateManagedGitRepoRequest, opts ...grpc.CallOption) (*CreateManagedGitRepoResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(UploadProjectAssetsResponse)
-	err := c.cc.Invoke(ctx, AdminService_UploadProjectAssets_FullMethodName, in, out, cOpts...)
+	out := new(CreateManagedGitRepoResponse)
+	err := c.cc.Invoke(ctx, AdminService_CreateManagedGitRepo_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) DisconnectProjectFromGithub(ctx context.Context, in *DisconnectProjectFromGithubRequest, opts ...grpc.CallOption) (*DisconnectProjectFromGithubResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DisconnectProjectFromGithubResponse)
+	err := c.cc.Invoke(ctx, AdminService_DisconnectProjectFromGithub_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1775,6 +1800,8 @@ type AdminServiceServer interface {
 	ListProjectsForOrganizationAndUser(context.Context, *ListProjectsForOrganizationAndUserRequest) (*ListProjectsForOrganizationAndUserResponse, error)
 	// GetProject returns information about a specific project
 	GetProject(context.Context, *GetProjectRequest) (*GetProjectResponse, error)
+	// ListProjectsForUserByName returns projects matching a name accessible by the logged in user
+	ListProjectsForUserByName(context.Context, *ListProjectsForUserByNameRequest) (*ListProjectsForUserByNameResponse, error)
 	// GetProject returns information about a specific project
 	GetProjectByID(context.Context, *GetProjectByIDRequest) (*GetProjectByIDResponse, error)
 	// SearchProjectNames returns project names matching the pattern
@@ -1885,9 +1912,10 @@ type AdminServiceServer interface {
 	// Connects a rill managed project to github.
 	// Replaces the contents of the remote repo with the contents of the project.
 	ConnectProjectToGithub(context.Context, *ConnectProjectToGithubRequest) (*ConnectProjectToGithubResponse, error)
+	// CreateManagedGitRepo creates a new rill managed git repo for the organization.
+	CreateManagedGitRepo(context.Context, *CreateManagedGitRepoRequest) (*CreateManagedGitRepoResponse, error)
 	// Converts a project connected to github to a rill managed project.
-	// Uploads the current project to assets.
-	UploadProjectAssets(context.Context, *UploadProjectAssetsRequest) (*UploadProjectAssetsResponse, error)
+	DisconnectProjectFromGithub(context.Context, *DisconnectProjectFromGithubRequest) (*DisconnectProjectFromGithubResponse, error)
 	// GetCloneCredentials returns credentials and other details for a project's Git repository or archive path if git repo is not configured.
 	GetCloneCredentials(context.Context, *GetCloneCredentialsRequest) (*GetCloneCredentialsResponse, error)
 	// CreateWhitelistedDomain adds a domain to the whitelist
@@ -2064,6 +2092,9 @@ func (UnimplementedAdminServiceServer) ListProjectsForOrganizationAndUser(contex
 func (UnimplementedAdminServiceServer) GetProject(context.Context, *GetProjectRequest) (*GetProjectResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetProject not implemented")
 }
+func (UnimplementedAdminServiceServer) ListProjectsForUserByName(context.Context, *ListProjectsForUserByNameRequest) (*ListProjectsForUserByNameResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListProjectsForUserByName not implemented")
+}
 func (UnimplementedAdminServiceServer) GetProjectByID(context.Context, *GetProjectByIDRequest) (*GetProjectByIDResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetProjectByID not implemented")
 }
@@ -2217,8 +2248,11 @@ func (UnimplementedAdminServiceServer) ListGithubUserRepos(context.Context, *Lis
 func (UnimplementedAdminServiceServer) ConnectProjectToGithub(context.Context, *ConnectProjectToGithubRequest) (*ConnectProjectToGithubResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ConnectProjectToGithub not implemented")
 }
-func (UnimplementedAdminServiceServer) UploadProjectAssets(context.Context, *UploadProjectAssetsRequest) (*UploadProjectAssetsResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method UploadProjectAssets not implemented")
+func (UnimplementedAdminServiceServer) CreateManagedGitRepo(context.Context, *CreateManagedGitRepoRequest) (*CreateManagedGitRepoResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateManagedGitRepo not implemented")
+}
+func (UnimplementedAdminServiceServer) DisconnectProjectFromGithub(context.Context, *DisconnectProjectFromGithubRequest) (*DisconnectProjectFromGithubResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DisconnectProjectFromGithub not implemented")
 }
 func (UnimplementedAdminServiceServer) GetCloneCredentials(context.Context, *GetCloneCredentialsRequest) (*GetCloneCredentialsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetCloneCredentials not implemented")
@@ -2624,6 +2658,24 @@ func _AdminService_GetProject_Handler(srv interface{}, ctx context.Context, dec 
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(AdminServiceServer).GetProject(ctx, req.(*GetProjectRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_ListProjectsForUserByName_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListProjectsForUserByNameRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).ListProjectsForUserByName(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_ListProjectsForUserByName_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).ListProjectsForUserByName(ctx, req.(*ListProjectsForUserByNameRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -3546,20 +3598,38 @@ func _AdminService_ConnectProjectToGithub_Handler(srv interface{}, ctx context.C
 	return interceptor(ctx, in, info, handler)
 }
 
-func _AdminService_UploadProjectAssets_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(UploadProjectAssetsRequest)
+func _AdminService_CreateManagedGitRepo_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateManagedGitRepoRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(AdminServiceServer).UploadProjectAssets(ctx, in)
+		return srv.(AdminServiceServer).CreateManagedGitRepo(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: AdminService_UploadProjectAssets_FullMethodName,
+		FullMethod: AdminService_CreateManagedGitRepo_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AdminServiceServer).UploadProjectAssets(ctx, req.(*UploadProjectAssetsRequest))
+		return srv.(AdminServiceServer).CreateManagedGitRepo(ctx, req.(*CreateManagedGitRepoRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_DisconnectProjectFromGithub_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DisconnectProjectFromGithubRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).DisconnectProjectFromGithub(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_DisconnectProjectFromGithub_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).DisconnectProjectFromGithub(ctx, req.(*DisconnectProjectFromGithubRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -4854,6 +4924,10 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _AdminService_GetProject_Handler,
 		},
 		{
+			MethodName: "ListProjectsForUserByName",
+			Handler:    _AdminService_ListProjectsForUserByName_Handler,
+		},
+		{
 			MethodName: "GetProjectByID",
 			Handler:    _AdminService_GetProjectByID_Handler,
 		},
@@ -5058,8 +5132,12 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _AdminService_ConnectProjectToGithub_Handler,
 		},
 		{
-			MethodName: "UploadProjectAssets",
-			Handler:    _AdminService_UploadProjectAssets_Handler,
+			MethodName: "CreateManagedGitRepo",
+			Handler:    _AdminService_CreateManagedGitRepo_Handler,
+		},
+		{
+			MethodName: "DisconnectProjectFromGithub",
+			Handler:    _AdminService_DisconnectProjectFromGithub_Handler,
 		},
 		{
 			MethodName: "GetCloneCredentials",

@@ -3,37 +3,51 @@
   import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import type { ChartMetadata } from "@rilldata/web-common/features/canvas/components/charts/types";
-  import { chartMetadata } from "@rilldata/web-common/features/canvas/components/charts/util";
-  import type { ChartComponent } from "../../components/charts";
+  import {
+    CHART_CONFIG,
+    VISIBLE_CHART_TYPES,
+    type ChartSpec,
+  } from "@rilldata/web-common/features/canvas/components/charts";
+  import type { BaseChart } from "@rilldata/web-common/features/canvas/components/charts/BaseChart";
+  import type { ChartType } from "@rilldata/web-common/features/canvas/components/charts/types";
 
-  export let component: ChartComponent;
+  export let component: BaseChart<ChartSpec>;
 
-  $: ({ chartType } = component);
+  $: ({
+    parent: {
+      spec: { getMetricsViewFromName },
+    },
+    chartType,
+    specStore,
+  } = component);
+
+  $: _metricViewSpec = getMetricsViewFromName($specStore.metrics_view);
+  $: metricsViewSpec = $_metricViewSpec.metricsView;
 
   $: type = $chartType;
 
-  function selectChartType(chartType: ChartMetadata) {
-    component.updateChartType(chartType.type);
+  function selectChartType(chartType: ChartType) {
+    component.updateChartType(chartType, metricsViewSpec);
   }
 </script>
 
 <div class="section">
   <InputLabel small label="Chart type" id="chart-components" />
   <div class="chart-icons">
-    {#each chartMetadata as chart, i (i)}
+    {#each VISIBLE_CHART_TYPES as chart, i (i)}
       <Tooltip distance={8} location="right">
         <Button
           square
           small
           type="secondary"
-          selected={type === chart.type}
+          label={CHART_CONFIG[chart].title}
+          selected={type === chart}
           on:click={() => selectChartType(chart)}
         >
-          <svelte:component this={chart.icon} size="20px" />
+          <svelte:component this={CHART_CONFIG[chart].icon} size="20px" />
         </Button>
         <TooltipContent slot="tooltip-content">
-          {chart.title}
+          {CHART_CONFIG[chart].title}
         </TooltipContent>
       </Tooltip>
     {/each}

@@ -3048,6 +3048,13 @@ definitions:
         type: boolean
       uri:
         type: string
+      lookupTable:
+        type: string
+        title: Lookup fields for the dimension
+      lookupKeyColumn:
+        type: string
+      lookupValueColumn:
+        type: string
     title: Dimensions are columns to filter and group by
   MetricsViewSpecDimensionSelector:
     type: object
@@ -4066,6 +4073,9 @@ definitions:
       description:
         type: string
         title: Human readable description of the connector
+      docsUrl:
+        type: string
+        title: Docs url for the connector
       implementsRegistry:
         type: boolean
         title: Capabilities supported by the connector
@@ -5529,6 +5539,14 @@ definitions:
         $ref: '#/definitions/v1ModelSpec'
       state:
         $ref: '#/definitions/v1ModelState'
+  v1ModelChangeMode:
+    type: string
+    enum:
+      - MODEL_CHANGE_MODE_UNSPECIFIED
+      - MODEL_CHANGE_MODE_RESET
+      - MODEL_CHANGE_MODE_MANUAL
+      - MODEL_CHANGE_MODE_PATCH
+    default: MODEL_CHANGE_MODE_UNSPECIFIED
   v1ModelPartition:
     type: object
     properties:
@@ -5583,6 +5601,9 @@ definitions:
         type: string
       outputProperties:
         type: object
+      changeMode:
+        $ref: '#/definitions/v1ModelChangeMode'
+        description: change_mode is the mode of change detection to use for the model.
       trigger:
         type: boolean
       triggerFull:

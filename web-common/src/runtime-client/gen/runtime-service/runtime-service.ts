@@ -4,13 +4,20 @@
  * rill/runtime/v1/schema.proto
  * OpenAPI spec version: version not set
  */
-import { createMutation, createQuery } from "@tanstack/svelte-query";
+import {
+  createInfiniteQuery,
+  createMutation,
+  createQuery,
+} from "@tanstack/svelte-query";
 import type {
+  CreateInfiniteQueryOptions,
+  CreateInfiniteQueryResult,
   CreateMutationOptions,
   CreateMutationResult,
   CreateQueryOptions,
   CreateQueryResult,
   DataTag,
+  InfiniteData,
   MutationFunction,
   QueryClient,
   QueryFunction,
@@ -2539,6 +2546,117 @@ export const getRuntimeServiceGetModelPartitionsQueryKey = (
     ...(params ? [params] : []),
   ] as const;
 };
+
+export const getRuntimeServiceGetModelPartitionsInfiniteQueryOptions = <
+  TData = InfiniteData<
+    Awaited<ReturnType<typeof runtimeServiceGetModelPartitions>>,
+    RuntimeServiceGetModelPartitionsParams["pageToken"]
+  >,
+  TError = ErrorType<RpcStatus>,
+>(
+  instanceId: string,
+  model: string,
+  params?: RuntimeServiceGetModelPartitionsParams,
+  options?: {
+    query?: Partial<
+      CreateInfiniteQueryOptions<
+        Awaited<ReturnType<typeof runtimeServiceGetModelPartitions>>,
+        TError,
+        TData,
+        Awaited<ReturnType<typeof runtimeServiceGetModelPartitions>>,
+        QueryKey,
+        RuntimeServiceGetModelPartitionsParams["pageToken"]
+      >
+    >;
+  },
+) => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getRuntimeServiceGetModelPartitionsQueryKey(instanceId, model, params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof runtimeServiceGetModelPartitions>>,
+    QueryKey,
+    RuntimeServiceGetModelPartitionsParams["pageToken"]
+  > = ({ signal, pageParam }) =>
+    runtimeServiceGetModelPartitions(
+      instanceId,
+      model,
+      { ...params, pageToken: pageParam || params?.["pageToken"] },
+      signal,
+    );
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!(instanceId && model),
+    ...queryOptions,
+  } as CreateInfiniteQueryOptions<
+    Awaited<ReturnType<typeof runtimeServiceGetModelPartitions>>,
+    TError,
+    TData,
+    Awaited<ReturnType<typeof runtimeServiceGetModelPartitions>>,
+    QueryKey,
+    RuntimeServiceGetModelPartitionsParams["pageToken"]
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
+
+export type RuntimeServiceGetModelPartitionsInfiniteQueryResult = NonNullable<
+  Awaited<ReturnType<typeof runtimeServiceGetModelPartitions>>
+>;
+export type RuntimeServiceGetModelPartitionsInfiniteQueryError =
+  ErrorType<RpcStatus>;
+
+/**
+ * @summary GetModelPartitions returns the partitions of a model
+ */
+
+export function createRuntimeServiceGetModelPartitionsInfinite<
+  TData = InfiniteData<
+    Awaited<ReturnType<typeof runtimeServiceGetModelPartitions>>,
+    RuntimeServiceGetModelPartitionsParams["pageToken"]
+  >,
+  TError = ErrorType<RpcStatus>,
+>(
+  instanceId: string,
+  model: string,
+  params?: RuntimeServiceGetModelPartitionsParams,
+  options?: {
+    query?: Partial<
+      CreateInfiniteQueryOptions<
+        Awaited<ReturnType<typeof runtimeServiceGetModelPartitions>>,
+        TError,
+        TData,
+        Awaited<ReturnType<typeof runtimeServiceGetModelPartitions>>,
+        QueryKey,
+        RuntimeServiceGetModelPartitionsParams["pageToken"]
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateInfiniteQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+} {
+  const queryOptions = getRuntimeServiceGetModelPartitionsInfiniteQueryOptions(
+    instanceId,
+    model,
+    params,
+    options,
+  );
+
+  const query = createInfiniteQuery(
+    queryOptions,
+    queryClient,
+  ) as CreateInfiniteQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>;
+  };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
 
 export const getRuntimeServiceGetModelPartitionsQueryOptions = <
   TData = Awaited<ReturnType<typeof runtimeServiceGetModelPartitions>>,

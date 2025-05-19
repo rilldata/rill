@@ -183,6 +183,8 @@ func (r *RefreshTriggerReconciler) Reconcile(ctx context.Context, n *runtimev1.R
 	return runtime.ReconcileResult{}
 }
 
+// UpdateTriggerTrue sets the Trigger spec property of the resource to true.
+// NOTE: If you edit this logic, also update the checks in newResourceIfModified in project_parser.go accordingly (they need to incorporate triggers in their modified checks).
 func (r *RefreshTriggerReconciler) UpdateTriggerTrue(ctx context.Context, res *runtimev1.Resource, full bool) error {
 	switch res.Meta.Name.Kind {
 	case runtime.ResourceKindSource:
