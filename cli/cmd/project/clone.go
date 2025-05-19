@@ -18,7 +18,7 @@ func CloneCmd(ch *cmdutil.Helper) *cobra.Command {
 	var path string
 
 	cloneCmd := &cobra.Command{
-		Use:   "clone [<project-name>]",
+		Use:   "clone <project-name>",
 		Args:  cobra.ExactArgs(1),
 		Short: "Clone Project",
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -48,7 +48,7 @@ func CloneCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 			if !empty {
-				ok, err := cmdutil.ConfirmPrompt(fmt.Sprintf("Directory %q is not empty. Do you want to overwrite it?", path), "", false)
+				ok, err := cmdutil.ConfirmPrompt(fmt.Sprintf("There are files at path %q. Do you want to overwrite?", path), "", false)
 				if err != nil {
 					return err
 				}
@@ -139,7 +139,7 @@ func recreateDir(path string) error {
 	// Remove directory and its contents if exists
 	err := os.RemoveAll(path)
 	if err != nil {
-		// NOTE :: does not return an error if the directory does not exist
+		// NOTE: does not return an error if the directory does not exist
 		return fmt.Errorf("failed to remove dir: %w", err)
 	}
 
