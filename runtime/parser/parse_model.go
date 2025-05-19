@@ -12,6 +12,7 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/duckdbsql"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"google.golang.org/protobuf/types/known/structpb"
+	"gopkg.in/yaml.v3"
 )
 
 // ModelYAML is the raw structure of a Model resource defined in YAML (does not include common fields)
@@ -31,12 +32,40 @@ type ModelYAML struct {
 		Connector  string         `yaml:"connector"`
 		Properties map[string]any `yaml:",inline" mapstructure:",remain"`
 	} `yaml:"stage"`
-	Output struct {
-		Connector  string         `yaml:"connector"`
-		Properties map[string]any `yaml:",inline" mapstructure:",remain"`
-	} `yaml:"output"`
-	Materialize     *bool `yaml:"materialize"`
-	DefinedAsSource bool  `yaml:"defined_as_source"`
+	Output          ModelOutputYAML `yaml:"output"`
+	Materialize     *bool           `yaml:"materialize"`
+	DefinedAsSource bool            `yaml:"defined_as_source"`
+}
+
+// ModelOutputYAML parses the `output:` property of a model.
+// It supports either a string connector name or a mapping with a connector and arbitrary output properties.
+type ModelOutputYAML struct {
+	Connector  string
+	Properties map[string]any
+}
+
+func (y *ModelOutputYAML) UnmarshalYAML(v *yaml.Node) error {
+	if v == nil {
+		return nil
+	}
+	switch v.Kind {
+	case yaml.ScalarNode:
+		y.Connector = v.Value
+	case yaml.MappingNode:
+		tmp := &struct {
+			Connector  string         `yaml:"connector"`
+			Properties map[string]any `yaml:",inline" mapstructure:",remain"`
+		}{}
+		err := v.Decode(tmp)
+		if err != nil {
+			return err
+		}
+		y.Connector = tmp.Connector
+		y.Properties = tmp.Properties
+	default:
+		return fmt.Errorf("expected connector name or mapping of output properties, got type %q", v.Kind)
+	}
+	return nil
 }
 
 // parseModel parses a model definition and adds the resulting resource to p.Resources.
@@ -112,7 +141,7 @@ func (p *Parser) parseModel(ctx context.Context, node *Node) error {
 	// Build output details
 	outputConnector := tmp.Output.Connector
 	if outputConnector == "" {
-		outputConnector = inputConnector
+		outputConnector = p.defaultOLAPConnector()
 	}
 	outputProps := tmp.Output.Properties
 

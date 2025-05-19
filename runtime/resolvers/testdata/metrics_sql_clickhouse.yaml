@@ -3,8 +3,9 @@ connectors:
 project_files:
   ad_bids_mini.yaml:
     type: model
-    connector: clickhouse
     materialize: true
+    connector: clickhouse
+    output: clickhouse
     sql: |
       SELECT 0::UInt32 AS id, parseDateTimeBestEffort('2022-01-01T14:49:50.459Z') AS timestamp, NULL::Nullable(varchar) AS publisher, 'msn.com'::varchar AS domain, 2::Float32 AS bid_price, 1::UInt8 AS volume, 2::UInt8 AS impressions, 'cars'::varchar AS ad_words, NULL::Nullable(Float32) AS clicks, 'iphone'::Nullable(varchar) AS device
       UNION ALL
