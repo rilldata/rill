@@ -6,6 +6,8 @@ import (
 	"fmt"
 
 	"github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/sts"
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
@@ -27,6 +29,24 @@ var spec = drivers.Spec{
 			Key:    "aws_secret_access_key",
 			Type:   drivers.StringPropertyType,
 			Secret: true,
+		},
+		{
+			Key:         "aws_role_arn",
+			Type:        drivers.StringPropertyType,
+			Secret:      true,
+			Description: "AWS Role ARN to assume",
+		},
+		{
+			Key:         "aws_role_session_name",
+			Type:        drivers.StringPropertyType,
+			Secret:      true,
+			Description: "Optional session name to use when assuming an AWS role. Defaults to 'rill-session'.",
+		},
+		{
+			Key:         "aws_external_id",
+			Type:        drivers.StringPropertyType,
+			Secret:      true,
+			Description: "Optional external ID to use when assuming an AWS role for cross-account access.",
 		},
 	},
 	SourceProperties: []*drivers.PropertySpec{
@@ -91,6 +111,9 @@ var _ drivers.Driver = driver{}
 type ConfigProperties struct {
 	AccessKeyID     string `mapstructure:"aws_access_key_id"`
 	SecretAccessKey string `mapstructure:"aws_secret_access_key"`
+	RoleARN         string `mapstructure:"aws_role_arn"`
+	RoleSessionName string `mapstructure:"aws_role_session_name"`
+	ExternalID      string `mapstructure:"aws_external_id"`
 	SessionToken    string `mapstructure:"aws_access_token"`
 	Endpoint        string `mapstructure:"endpoint"`
 	Region          string `mapstructure:"region"`
@@ -251,8 +274,16 @@ func (c *Connection) AsNotifier(properties map[string]any) (drivers.Notifier, er
 }
 
 // newCredentials returns credentials for connecting to AWS.
-// If AllowHostAccess is enabled, it looks for credentials in the host machine as well.
 func (c *Connection) newCredentials() (*credentials.Credentials, error) {
+	// If a role ARN is provided, assume the role and return the credentials.
+	if c.config.RoleARN != "" {
+		assumedCreds, err := c.assumeRole()
+		if err != nil {
+			return nil, fmt.Errorf("failed to assume role: %w", err)
+		}
+		return assumedCreds, nil
+	}
+
 	providers := make([]credentials.Provider, 0)
 
 	staticProvider := &credentials.StaticProvider{}
@@ -281,4 +312,64 @@ func (c *Connection) newCredentials() (*credentials.Credentials, error) {
 	}
 
 	return creds, nil
+}
+
+// assumeRole returns a new credentials object that assumes the role specified by the ARN.
+func (c *Connection) assumeRole() (*credentials.Credentials, error) {
+	// Add session name if specified
+	sessionName := c.config.RoleSessionName
+	if sessionName == "" {
+		sessionName = "rill-session"
+	}
+
+	sessOpts := session.Options{
+		SharedConfigState: session.SharedConfigDisable, // Disable shared config to prevent loading default config
+	}
+
+	// Add region if specified
+	if c.config.Region != "" {
+		sessOpts.Config.Region = &c.config.Region
+	}
+
+	// Add credentials if provided
+	if c.config.AccessKeyID != "" && c.config.SecretAccessKey != "" {
+		sessOpts.Config.Credentials = credentials.NewStaticCredentials(
+			c.config.AccessKeyID,
+			c.config.SecretAccessKey,
+			c.config.SessionToken,
+		)
+	}
+
+	// Create session with explicit configuration
+	s, err := session.NewSessionWithOptions(sessOpts)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create AWS session: %w", err)
+	}
+
+	// Create STS client with explicit session
+	stsClient := sts.New(s)
+
+	// Create assume role input with explicit parameters
+	assumeRoleInput := &sts.AssumeRoleInput{
+		RoleArn:         &c.config.RoleARN,
+		RoleSessionName: &sessionName,
+	}
+
+	// Add external ID if provided to mitigate confused deputy problem
+	if c.config.ExternalID != "" {
+		assumeRoleInput.ExternalId = &c.config.ExternalID
+	}
+
+	// Assume the role
+	result, err := stsClient.AssumeRole(assumeRoleInput)
+	if err != nil {
+		return nil, fmt.Errorf("failed to assume role: %w", err)
+	}
+
+	// Return static credentials from the assumed role
+	return credentials.NewStaticCredentials(
+		*result.Credentials.AccessKeyId,
+		*result.Credentials.SecretAccessKey,
+		*result.Credentials.SessionToken,
+	), nil
 }
