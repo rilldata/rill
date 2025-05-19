@@ -11,7 +11,6 @@ import (
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing/object"
-	"github.com/rilldata/rill/admin/client"
 	"github.com/rilldata/rill/cli/pkg/gitutil"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -23,10 +22,11 @@ var (
 	gitignoreHasDotRillCloudRegexp = regexp.MustCompile(`(?m)^\s*\.rillcloud/`)
 )
 
-// GitHelper manages git operations for a project
-// It also caches the git credentials for the project
+// GitHelper manages git operations for a project.
+// It also caches the git credentials for the project.
+// Do not use directly, use cmdutil.Helper to get an instance of GitHelper.
 type GitHelper struct {
-	c         *client.Client
+	h         *Helper
 	org       string
 	project   string
 	localPath string
@@ -36,9 +36,9 @@ type GitHelper struct {
 	gitConfigMu *semaphore.Weighted
 }
 
-func NewGitHelper(adminClient *client.Client, org, project, localPath string) *GitHelper {
+func newGitHelper(h *Helper, org, project, localPath string) *GitHelper {
 	return &GitHelper{
-		c:           adminClient,
+		h:           h,
 		org:         org,
 		project:     project,
 		localPath:   localPath,
@@ -56,7 +56,12 @@ func (g *GitHelper) GitConfig(ctx context.Context) (*gitutil.Config, error) {
 		return g.gitConfig, nil
 	}
 
-	resp, err := g.c.GetCloneCredentials(ctx, &adminv1.GetCloneCredentialsRequest{
+	c, err := g.h.Client()
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := c.GetCloneCredentials(ctx, &adminv1.GetCloneCredentialsRequest{
 		Organization: g.org,
 		Project:      g.project,
 	})
@@ -78,14 +83,19 @@ func (g *GitHelper) GitConfig(ctx context.Context) (*gitutil.Config, error) {
 }
 
 func (g *GitHelper) PushToNewManagedRepo(ctx context.Context) (*adminv1.CreateManagedGitRepoResponse, error) {
-	gitRepo, err := g.c.CreateManagedGitRepo(ctx, &adminv1.CreateManagedGitRepoRequest{
+	c, err := g.h.Client()
+	if err != nil {
+		return nil, err
+	}
+
+	gitRepo, err := c.CreateManagedGitRepo(ctx, &adminv1.CreateManagedGitRepoRequest{
 		Organization: g.org,
 		Name:         g.project,
 	})
 	if err != nil {
 		return nil, err
 	}
-	author, err := AutoCommitGitSignature(ctx, g.c, g.localPath)
+	author, err := AutoCommitGitSignature(ctx, g.h, g.localPath)
 	if err != nil {
 		return nil, err
 	}
@@ -115,7 +125,7 @@ func (g *GitHelper) PushToManagedRepo(ctx context.Context) error {
 		return err
 	}
 
-	author, err := AutoCommitGitSignature(ctx, g.c, g.localPath)
+	author, err := AutoCommitGitSignature(ctx, g.h, g.localPath)
 	if err != nil {
 		return err
 	}
@@ -137,7 +147,7 @@ func (g *GitHelper) setGitConfig(ctx context.Context, c *gitutil.Config) error {
 	return nil
 }
 
-func AutoCommitGitSignature(ctx context.Context, c adminv1.AdminServiceClient, path string) (*object.Signature, error) {
+func AutoCommitGitSignature(ctx context.Context, h *Helper, path string) (*object.Signature, error) {
 	repo, err := git.PlainOpen(path)
 	if err == nil {
 		cfg, err := repo.ConfigScoped(config.SystemScope)
@@ -152,6 +162,10 @@ func AutoCommitGitSignature(ctx context.Context, c adminv1.AdminServiceClient, p
 	}
 
 	// use email of rill user
+	c, err := h.Client()
+	if err != nil {
+		return nil, err
+	}
 	userResp, err := c.GetCurrentUser(ctx, &adminv1.GetCurrentUserRequest{})
 	if err != nil {
 		return nil, err

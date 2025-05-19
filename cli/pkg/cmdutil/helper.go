@@ -48,8 +48,8 @@ type Helper struct {
 	activityClient     *activity.Client
 	activityClientHash string
 
-	gitHelper     *GitHelper
-	gitHelperOnce sync.Once
+	gitHelper   *GitHelper
+	gitHelperMu sync.Mutex
 }
 
 func NewHelper(ver Version, homeDir string) (*Helper, error) {
@@ -443,10 +443,14 @@ func (h *Helper) OpenRuntimeClient(ctx context.Context, org, project string, loc
 	return rt, instanceID, nil
 }
 
-func (h *Helper) GitHelper(client *client.Client, org, project, localPath string) *GitHelper {
-	h.gitHelperOnce.Do(func() {
-		h.gitHelper = NewGitHelper(client, org, project, localPath)
-	})
+func (h *Helper) GitHelper(project, localPath string) *GitHelper {
+	h.gitHelperMu.Lock()
+	defer h.gitHelperMu.Unlock()
+
+	// If the git helper is nil or the org, project, or local path has changed, create a new one.
+	if h.gitHelper == nil || h.gitHelper.project != project || h.gitHelper.localPath != localPath {
+		h.gitHelper = newGitHelper(h, h.Org, project, localPath)
+	}
 	return h.gitHelper
 }
 

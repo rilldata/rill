@@ -4,12 +4,10 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/go-git/go-git/v5"
-	"github.com/go-git/go-git/v5/plumbing"
-	githttp "github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/rilldata/rill/cli/cmd/env"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/dotrillcloud"
+	"github.com/rilldata/rill/cli/pkg/gitutil"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
 )
@@ -64,18 +62,13 @@ func CloneCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			// get config
-			config, err := cmdutil.NewGitHelper(client, ch.Org, name, path).FetchGitConfig(cmd.Context())
+			config, err := ch.GitHelper(name, path).FetchGitConfig(cmd.Context())
 			if err != nil {
 				return err
 			}
 
 			// clone repository
-			_, err = git.PlainCloneContext(cmd.Context(), path, false, &git.CloneOptions{
-				URL:           config.Remote,
-				Auth:          &githttp.BasicAuth{Username: config.Username, Password: config.Password},
-				ReferenceName: plumbing.NewBranchReferenceName(config.DefaultBranch),
-				SingleBranch:  true,
-			})
+			_, err = gitutil.Clone(cmd.Context(), path, config)
 			if err != nil {
 				return err
 			}

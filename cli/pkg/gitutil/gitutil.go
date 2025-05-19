@@ -303,3 +303,12 @@ func CommitAndForcePush(ctx context.Context, projectPath, remote, username, pass
 	}
 	return nil
 }
+
+func Clone(ctx context.Context, path string, c *Config) (*git.Repository, error) {
+	return git.PlainCloneContext(ctx, path, false, &git.CloneOptions{
+		URL:           c.Remote,
+		Auth:          &githttp.BasicAuth{Username: c.Username, Password: c.Password},
+		ReferenceName: plumbing.NewBranchReferenceName(c.DefaultBranch),
+		SingleBranch:  true,
+	})
+}

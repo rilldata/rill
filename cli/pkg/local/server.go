@@ -243,7 +243,7 @@ func (s *Server) PushToGithub(ctx context.Context, r *connect.Request[localv1.Pu
 	}
 
 	// git commit -m
-	author, err := cmdutil.AutoCommitGitSignature(ctx, c, s.app.ProjectPath)
+	author, err := cmdutil.AutoCommitGitSignature(ctx, s.app.ch, s.app.ProjectPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate git commit signature: %w", err)
 	}
@@ -311,7 +311,7 @@ func (s *Server) DeployProject(ctx context.Context, r *connect.Request[localv1.D
 
 	var projRequest *adminv1.CreateProjectRequest
 	if r.Msg.Upload { // upload repo to rill managed storage instead of github
-		ghRepo, err := s.app.ch.GitHelper(c, r.Msg.Org, r.Msg.ProjectName, s.app.ProjectPath).PushToNewManagedRepo(ctx)
+		ghRepo, err := s.app.ch.GitHelper(r.Msg.ProjectName, s.app.ProjectPath).PushToNewManagedRepo(ctx)
 		if err != nil {
 			return nil, err
 		}
@@ -451,7 +451,7 @@ func (s *Server) RedeployProject(ctx context.Context, r *connect.Request[localv1
 	if r.Msg.Reupload {
 		if projResp.Project.ArchiveAssetId != "" {
 			// project was previously deployed using zip and ship
-			ghRepo, err := s.app.ch.GitHelper(c, projResp.Project.OrgName, projResp.Project.Name, s.app.ProjectPath).PushToNewManagedRepo(ctx)
+			ghRepo, err := s.app.ch.GitHelper(projResp.Project.Name, s.app.ProjectPath).PushToNewManagedRepo(ctx)
 			if err != nil {
 				return nil, err
 			}
@@ -464,7 +464,7 @@ func (s *Server) RedeployProject(ctx context.Context, r *connect.Request[localv1
 				return nil, err
 			}
 		} else if projResp.Project.ManagedGitId != "" {
-			err = s.app.ch.GitHelper(c, projResp.Project.OrgName, projResp.Project.Name, s.app.ProjectPath).PushToManagedRepo(ctx)
+			err = s.app.ch.GitHelper(projResp.Project.Name, s.app.ProjectPath).PushToManagedRepo(ctx)
 			if err != nil {
 				return nil, err
 			}
