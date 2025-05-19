@@ -40,7 +40,7 @@ export function getTimeRangeOptionsByGrain(
   );
 
   const lastN = defaultLastNValues[grain].map((v) => {
-    const timeRange = `${v}${primaryGrainAlias}~`;
+    const timeRange = `-${v}${primaryGrainAlias}^ to ${primaryGrainAlias}$`;
     const parsed = parseRillTime(timeRange);
     return {
       string: timeRange,
@@ -49,7 +49,7 @@ export function getTimeRangeOptionsByGrain(
   });
 
   const previous = Array.from({ length: 1 }, (_, i) => {
-    const timeRange = `-${i + 1}${primaryGrainAlias}~`;
+    const timeRange = `-${i + 1}${primaryGrainAlias}^ to ${primaryGrainAlias}$`;
     const parsed = parseRillTime(timeRange);
 
     return {
@@ -73,8 +73,8 @@ export function getTimeRangeOptionsByGrain(
     lastN,
     this: [
       {
-        string: `${primaryGrainAlias}~`,
-        parsed: parseRillTime(`${primaryGrainAlias}~`),
+        string: `${primaryGrainAlias}!`,
+        parsed: parseRillTime(`${primaryGrainAlias}!`),
       },
     ],
     previous,
