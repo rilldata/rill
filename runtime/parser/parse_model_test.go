@@ -55,6 +55,7 @@ output:
 				InputConnector:  "duckdb",
 				InputProperties: must(structpb.NewStruct(map[string]any{"sql": "SELECT 1"})),
 				OutputConnector: "duckdb",
+				ChangeMode:      runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
 			},
 		},
 		// model m2
@@ -66,6 +67,7 @@ output:
 				InputConnector:  "duckdb",
 				InputProperties: must(structpb.NewStruct(map[string]any{"sql": "SELECT 1"})),
 				OutputConnector: "duckdb",
+				ChangeMode:      runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
 			},
 		},
 		// model m3
@@ -77,6 +79,7 @@ output:
 				InputConnector:  "bigquery",
 				InputProperties: must(structpb.NewStruct(map[string]any{"sql": "SELECT 1"})),
 				OutputConnector: "duckdb",
+				ChangeMode:      runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
 			},
 		},
 		// model m4
@@ -91,6 +94,7 @@ output:
 				OutputProperties: must(structpb.NewStruct(map[string]any{
 					"table": "foobar",
 				})),
+				ChangeMode: runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
 			},
 		},
 		// model m5
@@ -102,6 +106,7 @@ output:
 				InputConnector:  "bigquery",
 				InputProperties: must(structpb.NewStruct(map[string]any{"sql": "SELECT 1"})),
 				OutputConnector: "clickhouse",
+				ChangeMode:      runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
 			},
 		},
 		// model m6
@@ -113,6 +118,7 @@ output:
 				InputConnector:  "bigquery",
 				InputProperties: must(structpb.NewStruct(map[string]any{"sql": "SELECT 1"})),
 				OutputConnector: "clickhouse",
+				ChangeMode:      runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
 			},
 		},
 	}
