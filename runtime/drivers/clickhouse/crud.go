@@ -3,6 +3,7 @@ package clickhouse
 import (
 	"context"
 	"crypto/md5"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -64,7 +65,7 @@ type InsertTableOptions struct {
 	Strategy drivers.IncrementalStrategy
 }
 
-func (c *Connection) insertTableAsSelect(ctx context.Context, name, sql string, opts *InsertTableOptions) (*tableWriteMetrics, error) {
+func (c *Connection) insertTableAsSelect(ctx context.Context, name, sql string, opts *InsertTableOptions, outputProps *ModelOutputProperties) (*tableWriteMetrics, error) {
 	ctx = contextWithQueryID(ctx)
 	start := time.Now()
 
@@ -93,10 +94,6 @@ func (c *Connection) insertTableAsSelect(ctx context.Context, name, sql string, 
 		if err != nil {
 			return nil, err
 		}
-		// Distributed table cannot be altered directly, so we need to alter the local table
-		if engine == "Distributed" {
-			name = localTableName(name)
-		}
 		// create temp table with the same schema using a deterministic name
 		tempName := fmt.Sprintf("__rill_temp_%s_%x", name, md5.Sum([]byte(sql)))
 		// clean up the temp table
@@ -107,21 +104,37 @@ func (c *Connection) insertTableAsSelect(ctx context.Context, name, sql string, 
 			// where before the client can trigger query cancel the query succeeds and the view is created but the driver stil reports query cancelled
 			ctx, cancel := graceful.WithMinimumDuration(ctx, 15*time.Second)
 			defer cancel()
-			err = c.Exec(ctx, &drivers.Statement{
-				Query:    fmt.Sprintf("DROP TABLE IF EXISTS %s %s", safeSQLName(tempName), onClusterClause),
-				Priority: 1,
-			})
-			if err != nil {
+
+			err = c.dropTable(ctx, tempName)
+			if err != nil && !errors.Is(err, drivers.ErrNotFound) {
 				c.logger.Warn("clickhouse: failed to drop temp table", zap.String("name", tempName), zap.Error(err), observability.ZapCtx(ctx))
 			}
 		}()
-		err = c.Exec(ctx, &drivers.Statement{
-			Query:    fmt.Sprintf("CREATE OR REPLACE TABLE %s %s AS %s", safeSQLName(tempName), onClusterClause, name),
-			Priority: 1,
-		})
-		if err != nil {
-			return nil, err
+		// create temp table
+		if engine == "Distributed" {
+			// create a local table first
+			err = c.Exec(ctx, &drivers.Statement{
+				Query:    fmt.Sprintf("CREATE OR REPLACE TABLE %s %s AS %s", safeSQLName(localTableName(tempName)), onClusterClause, safeSQLName(localTableName(name))),
+				Priority: 1,
+			})
+			if err != nil {
+				return nil, err
+			}
+			// then create the distributed table
+			err = c.createDistributedTable(ctx, tempName, outputProps)
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			err = c.Exec(ctx, &drivers.Statement{
+				Query:    fmt.Sprintf("CREATE OR REPLACE TABLE %s %s AS %s", safeSQLName(tempName), onClusterClause, safeSQLName(name)),
+				Priority: 1,
+			})
+			if err != nil {
+				return nil, err
+			}
 		}
+
 		// insert into temp table
 		err = c.Exec(ctx, &drivers.Statement{
 			Query:    fmt.Sprintf("INSERT INTO %s %s", safeSQLName(tempName), sql),
@@ -138,11 +151,7 @@ func (c *Connection) insertTableAsSelect(ctx context.Context, name, sql string, 
 		// iterate over partitions and replace them in the main table
 		for _, part := range partitions {
 			// alter the main table to replace the partition
-			err = c.Exec(ctx, &drivers.Statement{
-				Query:    fmt.Sprintf("ALTER TABLE %s %s REPLACE PARTITION ? FROM %s", safeSQLName(name), onClusterClause, safeSQLName(tempName)),
-				Args:     []any{part},
-				Priority: 1,
-			})
+			err = c.replacePartition(ctx, tempName, name, part)
 			if err != nil {
 				return nil, err
 			}
@@ -440,6 +449,16 @@ func (c *Connection) createTable(ctx context.Context, name, sql string, outputPr
 		return nil
 	}
 	// create the distributed table
+	return c.createDistributedTable(ctx, name, outputProps)
+}
+
+// createDistributedTable creates a distributed table by name assuming that a table with `name`_local already exists
+func (c *Connection) createDistributedTable(ctx context.Context, name string, outputProps *ModelOutputProperties) error {
+	if c.config.Cluster == "" {
+		return fmt.Errorf("clickhouse: cannot create distributed table without a cluster")
+	}
+	onClusterClause := "ON CLUSTER " + safeSQLName(c.config.Cluster)
+
 	var distributed strings.Builder
 	database := "currentDatabase()"
 	if c.config.Database != "" {
@@ -581,8 +600,15 @@ func (c *Connection) getTableEngine(ctx context.Context, name string) (string, e
 }
 
 func (c *Connection) getTablePartitions(ctx context.Context, name string) ([]string, error) {
+	var tbl string
+	if c.config.Cluster == "" {
+		tbl = "system.parts"
+	} else {
+		tbl = fmt.Sprint("cluster(", safeSQLString(c.config.Cluster), ", system.parts)")
+		name = localTableName(name)
+	}
 	res, err := c.Query(ctx, &drivers.Statement{
-		Query:    "SELECT DISTINCT partition FROM system.parts WHERE table = ?",
+		Query:    fmt.Sprintf("SELECT DISTINCT partition FROM %s WHERE table = ?", tbl),
 		Args:     []any{name},
 		Priority: 1,
 	})
@@ -604,6 +630,20 @@ func (c *Connection) getTablePartitions(ctx context.Context, name string) ([]str
 		return nil, err
 	}
 	return partitions, nil
+}
+
+func (c *Connection) replacePartition(ctx context.Context, src, dest, part string) error {
+	var onClusterClause string
+	if c.config.Cluster != "" {
+		onClusterClause = "ON CLUSTER " + safeSQLName(c.config.Cluster)
+		dest = localTableName(dest)
+		src = localTableName(src)
+	}
+	return c.Exec(ctx, &drivers.Statement{
+		Query:    fmt.Sprintf("ALTER TABLE %s %s REPLACE PARTITION ? FROM %s", safeSQLName(dest), onClusterClause, safeSQLName(src)),
+		Args:     []any{part},
+		Priority: 1,
+	})
 }
 
 func localTableName(name string) string {
