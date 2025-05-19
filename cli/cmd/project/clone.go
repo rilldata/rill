@@ -27,6 +27,21 @@ func CloneCmd(ch *cmdutil.Helper) *cobra.Command {
 				path = name
 			}
 
+			client, err := ch.Client()
+			if err != nil {
+				return err
+			}
+
+			// get project
+			res, err := client.GetProject(cmd.Context(), &adminv1.GetProjectRequest{OrganizationName: ch.Org, Name: name})
+			if err != nil {
+				return err
+			}
+
+			if res.Project.ArchiveAssetId != "" {
+				return fmt.Errorf("project is not connected to a git repository, please redeploy the project to connect it to a git repository")
+			}
+
 			// check if dir is empty
 			empty, err := isDirAbsentOrEmpty(path)
 			if err != nil {
@@ -46,17 +61,6 @@ func CloneCmd(ch *cmdutil.Helper) *cobra.Command {
 			err = recreateDir(path)
 			if err != nil {
 				return fmt.Errorf("failed to create directory %q: %w", path, err)
-			}
-
-			client, err := ch.Client()
-			if err != nil {
-				return err
-			}
-
-			// get project
-			res, err := client.GetProject(cmd.Context(), &adminv1.GetProjectRequest{OrganizationName: ch.Org, Name: name})
-			if err != nil {
-				return err
 			}
 
 			// get config
