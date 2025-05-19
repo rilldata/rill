@@ -31,24 +31,6 @@ type Config struct {
 	Subpath           string
 }
 
-func (g *Config) FullyQualifiedRemote() (string, error) {
-	if g.Remote == "" {
-		return "", fmt.Errorf("remote is not set")
-	}
-	u, err := url.Parse(g.Remote)
-	if err != nil {
-		return "", err
-	}
-	if g.Username != "" {
-		if g.Password != "" {
-			u.User = url.UserPassword(g.Username, g.Password)
-		} else {
-			u.User = url.User(g.Username)
-		}
-	}
-	return u.String(), nil
-}
-
 func (g *Config) IsExpired() bool {
 	return g.Password != "" && g.PasswordExpiresAt.Before(time.Now())
 }

@@ -23,7 +23,7 @@ type GitHelper struct {
 	project   string
 	localPath string
 
-	// do not access gitConfig directly, use getGitConfig and setGitConfig
+	// do not access gitConfig directly, use FetchGitConfig and setGitConfig
 	gitConfig   *gitutil.Config
 	gitConfigMu *semaphore.Weighted
 }

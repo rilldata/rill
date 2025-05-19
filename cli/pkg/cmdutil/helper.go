@@ -32,8 +32,6 @@ const (
 	telemetryIntakePassword = "lkh8T90ozWJP/KxWnQ81PexRzpdghPdzuB0ly2/86TeUU8q/bKiVug==" // nolint:gosec // secret is safe for public use
 )
 
-var ErrNotConnectedToGit = fmt.Errorf("not connected to git")
-
 type Helper struct {
 	*printer.Printer
 	Version            Version
