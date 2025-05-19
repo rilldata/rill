@@ -3,6 +3,7 @@ package clickhouse
 import (
 	"context"
 	"crypto/md5"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -105,7 +106,7 @@ func (c *Connection) insertTableAsSelect(ctx context.Context, name, sql string, 
 			defer cancel()
 
 			err = c.dropTable(ctx, tempName)
-			if err != nil && !strings.Contains(err.Error(), "doesn't exist") {
+			if err != nil && !errors.Is(err, drivers.ErrNotFound) {
 				c.logger.Warn("clickhouse: failed to drop temp table", zap.String("name", tempName), zap.Error(err), observability.ZapCtx(ctx))
 			}
 		}()
