@@ -46,7 +46,7 @@ func NewGitHelper(adminClient *client.Client, org, project, localPath string) *G
 	}
 }
 
-func (g *GitHelper) FetchGitConfig(ctx context.Context) (*gitutil.Config, error) {
+func (g *GitHelper) GitConfig(ctx context.Context) (*gitutil.Config, error) {
 	err := g.gitConfigMu.Acquire(ctx, 1)
 	if err != nil {
 		return nil, err
