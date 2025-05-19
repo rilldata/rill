@@ -17,10 +17,7 @@ import (
 	"golang.org/x/sync/semaphore"
 )
 
-var (
-	gitignoreHasDotenvRegexp       = regexp.MustCompile(`(?m)^\.env$`)
-	gitignoreHasDotRillCloudRegexp = regexp.MustCompile(`(?m)^\s*\.rillcloud/`)
-)
+var gitignoreHasDotenvRegexp = regexp.MustCompile(`(?m)^\.env$`)
 
 // GitHelper manages git operations for a project.
 // It also caches the git credentials for the project.
@@ -183,10 +180,6 @@ func AutoCommitGitSignature(ctx context.Context, h *Helper, path string) (*objec
 
 func EnsureGitignoreHasDotenv(ctx context.Context, repo drivers.RepoStore) (bool, error) {
 	return ensureGitignoreHas(ctx, repo, gitignoreHasDotenvRegexp, ".env")
-}
-
-func EnsureGitignoreHasDotRillCloud(ctx context.Context, repo drivers.RepoStore) (bool, error) {
-	return ensureGitignoreHas(ctx, repo, gitignoreHasDotRillCloudRegexp, ".rillcloud/")
 }
 
 func ensureGitignoreHas(ctx context.Context, repo drivers.RepoStore, regexp *regexp.Regexp, line string) (bool, error) {

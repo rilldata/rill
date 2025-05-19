@@ -89,15 +89,6 @@ func CloneCmd(ch *cmdutil.Helper) *cobra.Command {
 				return fmt.Errorf("failed to set rill cloud config: %w", err)
 			}
 
-			repo, _, err := cmdutil.RepoForProjectPath(path)
-			if err != nil {
-				return err
-			}
-
-			_, err = cmdutil.EnsureGitignoreHasDotRillCloud(cmd.Context(), repo)
-			if err != nil {
-				return fmt.Errorf("failed to update .gitignore: %w", err)
-			}
 			return nil
 		},
 	}
