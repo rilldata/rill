@@ -120,7 +120,7 @@ func (g *GitHelper) PushToNewManagedRepo(ctx context.Context) (*adminv1.CreateMa
 }
 
 func (g *GitHelper) PushToManagedRepo(ctx context.Context) error {
-	gitConfig, err := g.FetchGitConfig(ctx)
+	gitConfig, err := g.GitConfig(ctx)
 	if err != nil {
 		return err
 	}
