@@ -40,6 +40,10 @@
   }
 
   function handleGoHome() {
+    const newUrl = new URL($page.url);
+    newUrl.search = "";
+    void goto(newUrl);
+    // We need the null check while assigning activeResource a few lines above. So set activeResource to null explicitly here.
     activeResource = null;
   }
 </script>
