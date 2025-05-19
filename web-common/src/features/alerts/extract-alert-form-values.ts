@@ -5,7 +5,7 @@ import {
   type MeasureFilterEntry,
 } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
 import { splitWhereFilter } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
-import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
 import {
   type V1AlertSpec,
@@ -36,7 +36,7 @@ export function extractAlertFormValues(
   queryArgs: V1MetricsViewAggregationRequest,
   metricsViewSpec: V1MetricsViewSpec,
   allTimeRange: V1MetricsViewTimeRangeResponse,
-  partialExploreState: Partial<MetricsExplorerEntity>,
+  partialExploreState: Partial<ExploreState>,
 ): AlertFormValuesSubset {
   if (!queryArgs) return {} as AlertFormValuesSubset;
 

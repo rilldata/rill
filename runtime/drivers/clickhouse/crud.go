@@ -7,7 +7,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
 	"github.com/rilldata/rill/runtime/pkg/observability"
@@ -20,12 +19,9 @@ type tableWriteMetrics struct {
 	duration time.Duration
 }
 
-func (c *Connection) createTableAsSelect(ctx context.Context, name, sql string, tableOpts map[string]any) (*tableWriteMetrics, error) {
+func (c *Connection) createTableAsSelect(ctx context.Context, name, sql string, outputProps *ModelOutputProperties) (*tableWriteMetrics, error) {
 	ctx = contextWithQueryID(ctx)
-	outputProps := &ModelOutputProperties{}
-	if err := mapstructure.WeakDecode(tableOpts, outputProps); err != nil {
-		return nil, fmt.Errorf("failed to parse output properties: %w", err)
-	}
+
 	var onClusterClause string
 	if c.config.Cluster != "" {
 		onClusterClause = "ON CLUSTER " + safeSQLName(c.config.Cluster)
@@ -70,8 +66,9 @@ type InsertTableOptions struct {
 
 func (c *Connection) insertTableAsSelect(ctx context.Context, name, sql string, opts *InsertTableOptions) (*tableWriteMetrics, error) {
 	ctx = contextWithQueryID(ctx)
+	start := time.Now()
+
 	if opts.Strategy == drivers.IncrementalStrategyAppend {
-		t := time.Now()
 		err := c.Exec(ctx, &drivers.Statement{
 			Query:    fmt.Sprintf("INSERT INTO %s %s", safeSQLName(name), sql),
 			Priority: 1,
@@ -79,7 +76,7 @@ func (c *Connection) insertTableAsSelect(ctx context.Context, name, sql string, 
 		if err != nil {
 			return nil, err
 		}
-		return &tableWriteMetrics{duration: time.Since(t)}, nil
+		return &tableWriteMetrics{duration: time.Since(start)}, nil
 	}
 
 	if opts.Strategy == drivers.IncrementalStrategyPartitionOverwrite {
@@ -126,7 +123,6 @@ func (c *Connection) insertTableAsSelect(ctx context.Context, name, sql string, 
 			return nil, err
 		}
 		// insert into temp table
-		t := time.Now()
 		err = c.Exec(ctx, &drivers.Statement{
 			Query:    fmt.Sprintf("INSERT INTO %s %s", safeSQLName(tempName), sql),
 			Priority: 1,
@@ -134,7 +130,6 @@ func (c *Connection) insertTableAsSelect(ctx context.Context, name, sql string, 
 		if err != nil {
 			return nil, err
 		}
-		metrics := &tableWriteMetrics{duration: time.Since(t)}
 		// list partitions from the temp table
 		partitions, err := c.getTablePartitions(ctx, tempName)
 		if err != nil {
@@ -152,7 +147,7 @@ func (c *Connection) insertTableAsSelect(ctx context.Context, name, sql string, 
 				return nil, err
 			}
 		}
-		return metrics, nil
+		return &tableWriteMetrics{duration: time.Since(start)}, nil
 	}
 
 	if opts.Strategy == drivers.IncrementalStrategyMerge {
@@ -173,7 +168,6 @@ func (c *Connection) insertTableAsSelect(ctx context.Context, name, sql string, 
 			return nil, fmt.Errorf("clickhouse: merge strategy requires ReplacingMergeTree engine")
 		}
 
-		t := time.Now()
 		// insert into table using the merge strategy
 		err = c.Exec(ctx, &drivers.Statement{
 			Query:    fmt.Sprintf("INSERT INTO %s %s %s", safeSQLName(name), onClusterClause, sql),
@@ -182,8 +176,9 @@ func (c *Connection) insertTableAsSelect(ctx context.Context, name, sql string, 
 		if err != nil {
 			return nil, err
 		}
-		return &tableWriteMetrics{duration: time.Since(t)}, nil
+		return &tableWriteMetrics{duration: time.Since(start)}, nil
 	}
+
 	return nil, fmt.Errorf("incremental insert strategy %q not supported", opts.Strategy)
 }
 

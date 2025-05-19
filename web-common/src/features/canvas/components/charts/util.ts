@@ -1,16 +1,13 @@
-import { mergeFilters } from "@rilldata/web-common/features/dashboards/pivot/pivot-merge-filters";
-import { createInExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { adjustOffsetForZone } from "@rilldata/web-common/lib/convertTimestampPreview";
 import { timeGrainToDuration } from "@rilldata/web-common/lib/time/grains";
 import {
   V1TimeGrain,
-  type V1Expression,
   type V1MetricsViewAggregationResponseDataItem,
 } from "@rilldata/web-common/runtime-client";
 import merge from "deepmerge";
 import type { Config } from "vega-lite";
 import { CHART_CONFIG, type ChartSpec } from "./";
-import type { ChartDataResult, ChartType, FieldConfig } from "./types";
+import type { ChartDataResult, ChartType } from "./types";
 
 export function generateSpec(
   chartType: ChartType,
@@ -100,18 +97,6 @@ export function getFieldsByType(spec: ChartSpec): FieldsByType {
     dimensions,
     timeDimensions,
   };
-}
-
-export function getFilterWithNullHandling(
-  where: V1Expression | undefined,
-  fieldConfig: FieldConfig | undefined,
-): V1Expression | undefined {
-  if (!fieldConfig || fieldConfig.showNull || fieldConfig.type !== "nominal") {
-    return where;
-  }
-
-  const excludeNullFilter = createInExpression(fieldConfig.field, [null], true);
-  return mergeFilters(where, excludeNullFilter);
 }
 
 export function adjustDataForTimeZone(

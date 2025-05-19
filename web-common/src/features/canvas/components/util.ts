@@ -67,6 +67,7 @@ const CHART_TYPES = [
   "stacked_bar",
   "stacked_bar_normalized",
   "area_chart",
+  "donut_chart",
   "pie_chart",
   "heatmap",
 ] as const;

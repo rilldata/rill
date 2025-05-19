@@ -8770,6 +8770,8 @@ func (m *ConnectorDriver) validate(all bool) error {
 
 	// no validation rules for Description
 
+	// no validation rules for DocsUrl
+
 	// no validation rules for ImplementsRegistry
 
 	// no validation rules for ImplementsCatalog

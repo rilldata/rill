@@ -13,8 +13,8 @@ type slugTester struct {
 func TestValidateSlug(t *testing.T) {
 	require.NoError(t, Validate(&slugTester{Name: "helloworld"}))
 	require.NoError(t, Validate(&slugTester{Name: "_hello-world"}))
+	require.NoError(t, Validate(&slugTester{Name: "ab"}))
+	require.Error(t, Validate(&slugTester{Name: ""}))
 	require.Error(t, Validate(&slugTester{Name: "hello world"}))
 	require.Error(t, Validate(&slugTester{Name: "-hello"}))
-	require.Error(t, Validate(&slugTester{Name: "ab"}))
-	require.Error(t, Validate(&slugTester{Name: ""}))
 }

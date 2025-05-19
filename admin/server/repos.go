@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"strings"
 	"time"
 
 	"github.com/go-git/go-git/v5/plumbing/transport"
@@ -58,12 +59,23 @@ func (s *Server) GetRepoMeta(ctx context.Context, req *adminv1.GetRepoMetaReques
 		return nil, status.Error(codes.FailedPrecondition, "project does not have a github integration")
 	}
 
-	token, err := s.admin.Github.InstallationToken(ctx, *proj.GithubInstallationID)
+	repoID, err := s.githubRepoIDForProject(ctx, proj)
+	if err != nil {
+		return nil, err
+	}
+
+	token, err := s.admin.Github.InstallationToken(ctx, *proj.GithubInstallationID, repoID)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	ep, err := transport.NewEndpoint(*proj.GithubURL + ".git") // TODO: Can the clone URL be different from the HTTP URL of a Github repo?
+	var cloneURL string
+	if strings.HasSuffix(*proj.GithubURL, ".git") {
+		cloneURL = *proj.GithubURL
+	} else {
+		cloneURL = *proj.GithubURL + ".git"
+	}
+	ep, err := transport.NewEndpoint(cloneURL)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "failed to create endpoint from %q: %s", *proj.GithubURL, err.Error())
 	}
@@ -81,7 +93,6 @@ func (s *Server) GetRepoMeta(ctx context.Context, req *adminv1.GetRepoMetaReques
 func (s *Server) PullVirtualRepo(ctx context.Context, req *adminv1.PullVirtualRepoRequest) (*adminv1.PullVirtualRepoResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.project_id", req.ProjectId),
-		attribute.String("args.branch", req.Branch),
 		attribute.Int("args.page_size", int(req.PageSize)),
 		attribute.String("args.page_token", req.PageToken),
 	)
@@ -89,10 +100,6 @@ func (s *Server) PullVirtualRepo(ctx context.Context, req *adminv1.PullVirtualRe
 	proj, err := s.admin.DB.FindProject(ctx, req.ProjectId)
 	if err != nil {
 		return nil, err
-	}
-
-	if proj.ProdBranch != req.Branch {
-		return nil, status.Error(codes.InvalidArgument, "branch not found")
 	}
 
 	permissions := auth.GetClaims(ctx).ProjectPermissions(ctx, proj.OrganizationID, proj.ID)
@@ -106,7 +113,7 @@ func (s *Server) PullVirtualRepo(ctx context.Context, req *adminv1.PullVirtualRe
 	}
 	pageSize := validPageSize(req.PageSize)
 
-	vfs, err := s.admin.DB.FindVirtualFiles(ctx, proj.ID, req.Branch, pageToken.Ts.AsTime(), pageToken.Str, pageSize)
+	vfs, err := s.admin.DB.FindVirtualFiles(ctx, proj.ID, "prod", pageToken.Ts.AsTime(), pageToken.Str, pageSize)
 	if err != nil {
 		return nil, err
 	}
