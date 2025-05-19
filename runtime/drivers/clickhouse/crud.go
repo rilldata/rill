@@ -53,12 +53,8 @@ func (c *Connection) createView(ctx context.Context, name string, inputProps *Mo
 		return fmt.Errorf("clickhouse: no SQL specified for view %q", name)
 	}
 
-	var onClusterClause string
-	if c.config.Cluster != "" {
-		onClusterClause = "ON CLUSTER " + safeSQLName(c.config.Cluster)
-	}
 	return c.Exec(ctx, &drivers.Statement{
-		Query:    fmt.Sprintf("CREATE OR REPLACE VIEW %s %s AS %s", safeSQLName(name), onClusterClause, inputProps.SQL),
+		Query:    fmt.Sprintf("CREATE OR REPLACE VIEW %s %s AS %s", safeSQLName(name), c.onClusterClause(), inputProps.SQL),
 		Priority: _modelQueryPriority,
 	})
 }
@@ -146,7 +142,7 @@ func (c *Connection) createNonDistributedTable(ctx context.Context, name string,
 	// Create the table.
 	return c.Exec(ctx, &drivers.Statement{
 		Query: fmt.Sprintf(
-			"CREATE OR REPLACE %s %s %s %s",
+			"CREATE OR REPLACE TABLE %s %s %s %s",
 			safeSQLName(name),
 			c.onClusterClause(),
 			columnsClause,
