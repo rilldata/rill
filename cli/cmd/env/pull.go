@@ -5,13 +5,10 @@ import (
 	"fmt"
 	"maps"
 	"path/filepath"
-	"regexp"
-	"strings"
 
 	"github.com/joho/godotenv"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
-	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/parser"
 	"github.com/spf13/cobra"
 )
@@ -109,7 +106,7 @@ func PullVars(ctx context.Context, ch *cmdutil.Helper, projectPath, projectName,
 	}
 
 	// Add to gitignore if necessary
-	changed, err := ensureGitignoreHas(ctx, repo, ".env")
+	changed, err := cmdutil.EnsureGitignoreHasDotenv(ctx, repo)
 	if err != nil {
 		return err
 	}
@@ -119,30 +116,4 @@ func PullVars(ctx context.Context, ch *cmdutil.Helper, projectPath, projectName,
 
 	ch.Printf("Updated .env file with cloud credentials from project %q.\n", projectName)
 	return nil
-}
-
-var gitignoreHasDotenvRegexp = regexp.MustCompile(`(?m)^\.env$`)
-
-func ensureGitignoreHas(ctx context.Context, repo drivers.RepoStore, line string) (bool, error) {
-	// Read .gitignore
-	gitignore, _ := repo.Get(ctx, ".gitignore")
-
-	// If .gitignore already has .env, do nothing
-	if gitignoreHasDotenvRegexp.MatchString(gitignore) {
-		return false, nil
-	}
-
-	// Add .env to the end of .gitignore
-	if gitignore != "" {
-		gitignore += "\n"
-	}
-	gitignore += line + "\n"
-
-	// Write .gitignore
-	err := repo.Put(ctx, ".gitignore", strings.NewReader(gitignore))
-	if err != nil {
-		return false, err
-	}
-
-	return true, nil
 }

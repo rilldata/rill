@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"regexp"
+	"strings"
 	"time"
 
 	"github.com/go-git/go-git/v5"
@@ -12,7 +14,13 @@ import (
 	"github.com/rilldata/rill/admin/client"
 	"github.com/rilldata/rill/cli/pkg/gitutil"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
+	"github.com/rilldata/rill/runtime/drivers"
 	"golang.org/x/sync/semaphore"
+)
+
+var (
+	gitignoreHasDotenvRegexp       = regexp.MustCompile(`(?m)^\.env$`)
+	gitignoreHasDotRillCloudRegexp = regexp.MustCompile(`(?m)^\s*\.rillcloud/`)
 )
 
 // GitHelper manages git operations for a project
@@ -157,4 +165,36 @@ func AutoCommitGitSignature(ctx context.Context, c adminv1.AdminServiceClient, p
 		Email: userResp.User.Email,
 		When:  time.Now(),
 	}, nil
+}
+
+func EnsureGitignoreHasDotenv(ctx context.Context, repo drivers.RepoStore) (bool, error) {
+	return ensureGitignoreHas(ctx, repo, gitignoreHasDotenvRegexp, ".env")
+}
+
+func EnsureGitignoreHasDotRillCloud(ctx context.Context, repo drivers.RepoStore) (bool, error) {
+	return ensureGitignoreHas(ctx, repo, gitignoreHasDotRillCloudRegexp, ".rillcloud/")
+}
+
+func ensureGitignoreHas(ctx context.Context, repo drivers.RepoStore, regexp *regexp.Regexp, line string) (bool, error) {
+	// Read .gitignore
+	gitignore, _ := repo.Get(ctx, ".gitignore")
+
+	// If .gitignore already has .env, do nothing
+	if regexp.MatchString(gitignore) {
+		return false, nil
+	}
+
+	// Add .env to the end of .gitignore
+	if gitignore != "" {
+		gitignore += "\n"
+	}
+	gitignore += line + "\n"
+
+	// Write .gitignore
+	err := repo.Put(ctx, ".gitignore", strings.NewReader(gitignore))
+	if err != nil {
+		return false, err
+	}
+
+	return true, nil
 }

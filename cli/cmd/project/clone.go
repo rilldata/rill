@@ -76,6 +76,8 @@ func CloneCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 
+			ch.Printf("Cloned project %q to %q\n", name, path)
+
 			// download variables
 			err = env.PullVars(cmd.Context(), ch, path, name, "prod", false)
 			if err != nil {
@@ -83,9 +85,23 @@ func CloneCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			// set rill cloud
-			return dotrillcloud.SetAll(path, ch.AdminURL(), &dotrillcloud.Config{
+			err = dotrillcloud.SetAll(path, ch.AdminURL(), &dotrillcloud.Config{
 				ProjectID: res.Project.Id,
 			})
+			if err != nil {
+				return fmt.Errorf("failed to set rill cloud config: %w", err)
+			}
+
+			repo, _, err := cmdutil.RepoForProjectPath(path)
+			if err != nil {
+				return err
+			}
+
+			_, err = cmdutil.EnsureGitignoreHasDotRillCloud(cmd.Context(), repo)
+			if err != nil {
+				return fmt.Errorf("failed to update .gitignore: %w", err)
+			}
+			return nil
 		},
 	}
 
