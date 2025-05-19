@@ -23,7 +23,11 @@
   import { parseRillTime } from "../../../url-state/time-ranges/parser";
   import type { RillTime } from "../../../url-state/time-ranges/RillTime";
   import { getTimeRangeOptionsByGrain } from "@rilldata/web-common/lib/time/defaults";
-  import { getAllowedGrains } from "@rilldata/web-common/lib/time/new-grains";
+  import {
+    getAllowedEndingGrains,
+    getAllowedGrains,
+    getGrainAliasFromString,
+  } from "@rilldata/web-common/lib/time/new-grains";
   import * as Popover from "@rilldata/web-common/components/popover";
   import type { TimeGrainOptions } from "@rilldata/web-common/lib/time/defaults";
 
@@ -48,8 +52,14 @@
   let showPanel = false;
   let calendarOpen = false;
   let filter = "";
+  let canShowEndingControl = true;
 
   $: timeGrainOptions = getAllowedGrains(smallestTimeGrain);
+
+  $: allowedEndingGrains = getAllowedEndingGrains(
+    timeString,
+    smallestTimeGrain,
+  );
 
   $: allOptions = timeGrainOptions.map((grain) => {
     return getTimeRangeOptionsByGrain(grain, smallestTimeGrain);
@@ -103,6 +113,7 @@
   import TimeRangeOptionGroup from "./TimeRangeOptionGroup.svelte";
 
   import RangeDisplay from "../components/RangeDisplay.svelte";
+  import EndControl from "./EndControl.svelte";
 
   const now = DateTime.now().toUTC();
 </script>
@@ -134,6 +145,10 @@
     >
       {#if timeString}
         <b class="mr-1 line-clamp-1 flex-none">{getRangeLabel(timeString)}</b>
+      {/if}
+
+      {#if interval.isValid}
+        <RangeDisplay {interval} {grain} />
       {/if}
 
       <span class="flex-none transition-transform" class:-rotate-180={open}>
@@ -217,7 +232,16 @@
   </Popover.Content>
 </Popover.Root>
 
-<Popover.Root
+{#if canShowEndingControl}
+  <EndControl
+    {timeString}
+    {interval}
+    timeGrainOptions={allowedEndingGrains}
+    {smallestTimeGrain}
+  />
+{/if}
+
+<!-- <Popover.Root
   bind:open={calendarOpen}
   onOpenChange={(open) => {
     if (open) {
@@ -257,7 +281,7 @@
       closeMenu={() => (calendarOpen = false)}
     />
   </Popover.Content>
-</Popover.Root>
+</Popover.Root> -->
 
 <style>
   /* The wrapper shrinks to the width of its content */

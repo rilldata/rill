@@ -48,7 +48,7 @@
     {/if}
   </button>
 
-  <div class="flex gap-x-2 overflow-hidden flex-none">
+  <!-- <div class="flex gap-x-2 overflow-hidden flex-none">
     {#if type === "last" || type === "by"}
       <button
         class="sub"
@@ -87,7 +87,7 @@
         so far
       </button>
     {/if}
-  </div>
+  </div> -->
 </div>
 
 <style lang="postcss">
