@@ -31,6 +31,12 @@
       name: resourceName,
       kind: resourceType,
     };
+  } else {
+    // Important! Do not set `activeResource` to `null` here.
+    // In `DashboardStateDataLoader` we are currently clearing the url of non-dashboard params since it will interfere with session storage extraction logic.
+    // So setting `activeResource` to `null` will make the navigation logic in this file to think there is no active resource everytime `DashboardStateDataLoader` cleaned the url.
+    // For going to home we manually set `activeResource` to `null` in `handleGoHome`.
+    // TODO: move to a route based approach to avoid this issues.
   }
 
   function handleSelectResource(event: CustomEvent<V1ResourceName>) {
@@ -43,7 +49,7 @@
     const newUrl = new URL($page.url);
     newUrl.search = "";
     void goto(newUrl);
-    // We need the null check while assigning activeResource a few lines above. So set activeResource to null explicitly here.
+    // To understand why we set `activeResource=null` here, see the comment above
     activeResource = null;
   }
 </script>
