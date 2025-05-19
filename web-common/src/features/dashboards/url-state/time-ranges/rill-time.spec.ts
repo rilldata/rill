@@ -48,10 +48,25 @@ function getSinglePeriodTestCases(): TestCase[] {
   }).flat();
 }
 
+function getMultiPeriodTestCases(n: number): TestCase[] {
+  return GRAINS.map((g) => {
+    const last = `Last ${n} ${GRAIN_TO_LUXON[g]}s`;
+    const next = `Next ${n} ${GRAIN_TO_LUXON[g]}s`;
+    return <TestCase[]>[
+      [`-7${g}$ to ${g}$`, last, false],
+      [`-7${g}^ to ${g}^`, last, true],
+
+      [`${g}^ to +7${g}^`, next, false],
+      [`${g}$ to +7${g}$`, next, false],
+    ];
+  }).flat();
+}
+
 describe("rill time", () => {
   describe("positive cases", () => {
     const Cases: [rillTime: string, label?: string, complete?: boolean][] = [
       ...getSinglePeriodTestCases(),
+      ...getMultiPeriodTestCases(7),
       ["-5W4M3Q2Y to -4W3M2Q1Y", "-5W4M3Q2Y to -4W3M2Q1Y", true],
       ["-5W-4M-3Q-2Y to -4W-3M-2Q-1Y", "-5W-4M-3Q-2Y to -4W-3M-2Q-1Y", true],
     ];

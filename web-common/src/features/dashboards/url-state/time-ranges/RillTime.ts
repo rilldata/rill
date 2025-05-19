@@ -90,7 +90,7 @@ export class RillTimeStartEndInterval implements RillTimeInterval {
     const end = this.end.getSingleGrainAndNum();
     if (!start || !end) return ["", false];
 
-    const numDiff = start.firstPart.diff(start.num, end.firstPart, end.num);
+    const numDiff = Math.abs(start.offset - end.offset);
     if (start.grain !== end.grain) {
       if (numDiff > 1) {
         return ["", false];
@@ -101,30 +101,26 @@ export class RillTimeStartEndInterval implements RillTimeInterval {
       return [`${startLabel} to ${endLabel}`, true];
     }
 
-    const grainPart = grainAliasToDateTimeUnit(start.grain);
+    const grainPart = grainAliasToDateTimeUnit(start.grain as any);
     const grainSuffix = numDiff > 1 ? "s" : "";
     const grainPrefix = numDiff ? numDiff + " " : "";
     const grainLabel = `${grainPrefix}${grainPart}${grainSuffix}`;
 
-    if (!start.firstPart.includesFuture && !end.firstPart.includesFuture) {
-      if (end.num < -1) {
-        return ["", false];
-      }
+    if (start.offset === 0 || start.offset === 1) {
       if (numDiff === 1) {
-        return [`previous ${grainPart}`, true];
+        const prefix = start.offset === 0 ? "this" : "next";
+        return [`${prefix} ${grainPart}`, true];
       }
-      return [`last ${grainLabel}`, true];
-    }
-
-    if (start.firstPart.includesFuture && end.firstPart.includesFuture) {
-      if (end.num > 1) {
-        return ["", false];
-      }
-      if (end.num === 1) return [`next ${grainPart}`, true];
       return [`next ${grainLabel}`, true];
     }
 
-    if (numDiff === 1) return [`this ${grainPart}`, true];
+    if (end.offset === 0 || end.offset === 1) {
+      if (numDiff === 1) {
+        const prefix = end.offset === 1 ? "this" : "previous";
+        return [`${prefix} ${grainPart}`, true];
+      }
+      return [`last ${grainLabel}`, true];
+    }
 
     return ["", false];
   }
@@ -136,7 +132,7 @@ export class RillGrainToInterval implements RillTimeInterval {
   public constructor(public readonly point: RillGrainPointInTime) {
     const first = point.getSingleGrainAndNum();
     if (!first) return;
-    this.includesFuture = first.num >= 0 || first.num === undefined;
+    this.includesFuture = first.offset >= 0 || first.offset === undefined;
   }
 
   public getLabel(): [label: string, supported: boolean] {
@@ -145,11 +141,11 @@ export class RillGrainToInterval implements RillTimeInterval {
 
     const label = grainAliasToDateTimeUnit(grainAndNum.grain as any);
 
-    if (grainAndNum.num === 0) {
+    if (grainAndNum.offset === 0) {
       return [`this ${label}`, true];
-    } else if (grainAndNum.num === 1) {
+    } else if (grainAndNum.offset === 1) {
       return [`next ${label}`, true];
-    } else if (grainAndNum.num === -1) {
+    } else if (grainAndNum.offset === -1) {
       return [`previous ${label}`, true];
     } else {
       return ["", true];
@@ -186,14 +182,19 @@ export class RillGrainPointInTime implements RillPointInTime {
     if (firstPart.grains.length !== 1) return undefined;
     const firstGrain = firstPart.grains[0];
 
-    let num = firstGrain.num ?? 0;
-    if (firstPart.prefix === "-" && num) {
-      num = -num;
+    let offset = firstGrain.num ?? 0;
+    if (firstPart.prefix === "-" && offset) {
+      // Grain doesn't have a `-` inbuilt, make the offset negative.
+      offset = -offset;
+    }
+    if (firstPart.suffix === "$") {
+      // Since xx$ will snap to the end, so add 1 to the offset
+      offset++;
     }
 
     return {
       grain: firstGrain.grain,
-      num,
+      offset,
       firstPart,
       firstGrain,
     };
@@ -226,12 +227,6 @@ export class RillGrainPointInTimePart {
     this.suffix = suffix;
     this.updateAfterCurrent();
     return this;
-  }
-
-  public diff(num1: number, part2: RillGrainPointInTimePart, num2: number) {
-    const offset1 = this.suffix === "$" ? 1 : 0;
-    const offset2 = part2.suffix === "$" ? 1 : 0;
-    return Math.abs(num1 + offset1 - (num2 + offset2));
   }
 
   private updateAfterCurrent() {
