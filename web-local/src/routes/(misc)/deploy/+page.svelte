@@ -50,7 +50,7 @@
       const u = new URL($metadata.data?.loginUrl);
       // Set the redirect to this page so that deploy resumes after a login
       u.searchParams.set("redirect", get(page).url.toString());
-      void goto(u.toString());
+      window.location = u.toString();
     } else {
       // Should not happen if the servers are up. If not, there would be a query error.
       error = {

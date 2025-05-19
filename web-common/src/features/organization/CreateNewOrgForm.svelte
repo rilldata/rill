@@ -44,7 +44,7 @@
         if (!form.valid) return;
         const values = form.data;
 
-        await $orgCreator.mutateAsync({
+        const resp = await $orgCreator.mutateAsync({
           name: values.name,
           displayName: values.displayName,
         });
