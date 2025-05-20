@@ -8,12 +8,15 @@
   import { createRuntimeServiceQueryResolver } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import type { View, VisualizationSpec } from "svelte-vega";
+  import { derived } from "svelte/store";
 
   export let spec: string | undefined = undefined;
-  export let metricsSQL: string;
+  export let metricsSQL: string[] = [];
   export let renderer: "canvas" | "svg" = "svg";
   export let showDataTable = false;
   export let name: string = "Custom Chart";
+
+  const viewOptions = ["Chart", "Table"];
 
   let viewVL: View;
   let parsedSpec: VisualizationSpec | null = null;
@@ -21,18 +24,38 @@
   let rows;
   let tableColumns: VirtualizedTableColumns[];
   let selectedView = 0; // 0 = Chart, 1 = Table
-  const viewOptions = ["Chart", "Table"];
+  let selectedTable = 0; // For switching between tables if multiple queries
 
   $: instanceId = $runtime.instanceId;
 
-  $: dataQuery = createRuntimeServiceQueryResolver(instanceId, {
-    resolver: "metrics_sql",
-    resolverProperties: {
-      sql: metricsSQL,
-    },
-  });
+  $: dataQueries = metricsSQL.map((sql) =>
+    createRuntimeServiceQueryResolver(instanceId, {
+      resolver: "metrics_sql",
+      resolverProperties: {
+        sql,
+      },
+    }),
+  );
 
-  $: data = $dataQuery.data?.data;
+  $: combinedResults = derived(dataQueries, ($dataQueries) =>
+    $dataQueries.map((query) => ({
+      data: query.data?.data,
+      tableSchema: query.data?.schema?.fields?.map((field) => ({
+        name: field.name,
+        type: field.type?.code,
+      })) as VirtualizedTableColumns[],
+      isSuccess: query.isSuccess,
+      isLoading: query.isLoading,
+      error: query.error,
+    })),
+  );
+
+  $: vegaData = $combinedResults.reduce((acc, result, idx) => {
+    acc[`query${idx + 1}`] = result.data;
+    return acc;
+  }, {});
+
+  $: console.log(vegaData);
 
   $: try {
     if (typeof spec === "string") {
@@ -42,22 +65,25 @@
     }
   } catch (e: unknown) {
     error = JSON.stringify(e);
+    console.log(e);
   }
 
-  $: {
-    if ($dataQuery.isSuccess) {
-      rows = $dataQuery.data.data;
-      tableColumns = $dataQuery.data.schema?.fields?.map((field) => ({
-        name: field.name,
-        type: field.type?.code,
-      })) as VirtualizedTableColumns[];
-    }
-  }
+  // Table data for the selected query
+  $: rows = $combinedResults[selectedTable]?.data;
+  $: tableColumns = $combinedResults[selectedTable]?.tableSchema;
 </script>
 
 <div class="flex flex-col gap-2 h-full">
   {#if showDataTable}
-    <div class="flex flex-row justify-end items-center">
+    <div class="flex flex-row justify-end items-center gap-2">
+      {#if metricsSQL.length > 1 && selectedView === 1}
+        <FieldSwitcher
+          fields={metricsSQL.map((_, i) => `Table ${i + 1}`)}
+          selected={selectedTable}
+          onClick={(i) => (selectedTable = i)}
+          small={true}
+        />
+      {/if}
       <FieldSwitcher
         fields={viewOptions}
         selected={selectedView}
@@ -71,27 +97,32 @@
       <div class="flex-1">
         {#if spec && error}
           {error}
-        {:else if data && parsedSpec}
+        {:else if rows && parsedSpec}
           <VegaLiteRenderer
             {renderer}
             spec={parsedSpec}
             config={getRillTheme(true)}
-            data={{ metrics: data }}
+            data={vegaData}
             bind:viewVL
           />
         {/if}
       </div>
     {:else}
       <div class="flex-1 min-h-0 min-w-0">
-        {#if rows}
+        {#if $combinedResults[selectedTable]?.isSuccess && rows}
           <PreviewTable
             {rows}
             columnNames={tableColumns}
             rowHeight={32}
             {name}
           />
-        {:else if $dataQuery.isLoading}
+        {:else if $combinedResults[selectedTable]?.isLoading}
           <ReconcilingSpinner />
+        {:else if $combinedResults[selectedTable]?.error}
+          <div class="text-red-500">
+            {$combinedResults[selectedTable].error?.message ||
+              "Error loading data"}
+          </div>
         {/if}
       </div>
     {/if}

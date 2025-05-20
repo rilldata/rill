@@ -16,7 +16,7 @@ import CanvasCustomChart from "./CanvasCustomChart.svelte";
 export interface CustomChart
   extends ComponentCommonProperties,
     ComponentFilterProperties {
-  metrics_sql: string;
+  metrics_sql: string[];
   vega_spec: string;
 }
 
@@ -29,7 +29,7 @@ export class CustomChartComponent extends BaseCanvasComponent<CustomChart> {
 
   constructor(resource: V1Resource, parent: CanvasEntity, path: ComponentPath) {
     const defaultSpec: CustomChart = {
-      metrics_sql: "",
+      metrics_sql: [""],
       vega_spec: "",
     };
     super(resource, parent, path, defaultSpec);
@@ -37,14 +37,17 @@ export class CustomChartComponent extends BaseCanvasComponent<CustomChart> {
 
   isValid(spec: CustomChart): boolean {
     return (
-      spec.metrics_sql.trim().length > 0 && spec.vega_spec.trim().length > 0
+      Array.isArray(spec.metrics_sql) &&
+      spec.metrics_sql.length > 0 &&
+      spec.metrics_sql.every((q) => q.trim().length > 0) &&
+      spec.vega_spec.trim().length > 0
     );
   }
 
   inputParams(): InputParams<CustomChart> {
     return {
       options: {
-        metrics_sql: { type: "textarea", label: "Metrics SQL" },
+        metrics_sql: { type: "metrics_sql", label: "Metrics SQL" },
         vega_spec: { type: "textarea", label: "Spec" },
         ...commonOptions,
       },
@@ -54,7 +57,7 @@ export class CustomChartComponent extends BaseCanvasComponent<CustomChart> {
 
   static newComponentSpec(): CustomChart {
     return {
-      metrics_sql: "",
+      metrics_sql: [""],
       vega_spec: "",
     };
   }

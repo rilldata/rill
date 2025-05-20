@@ -9,6 +9,7 @@
   import AlignmentInput from "./AlignmentInput.svelte";
   import ChartTypeSelector from "./chart/ChartTypeSelector.svelte";
   import MarkSelector from "./chart/MarkSelector.svelte";
+  import MetricsSQLInput from "./chart/MetricsSQLInput.svelte";
   import PositionalFieldConfig from "./chart/PositionalFieldConfig.svelte";
   import ComparisonInput from "./ComparisonInput.svelte";
   import MetricSelectorDropdown from "./MetricSelectorDropdown.svelte";
@@ -138,6 +139,19 @@
               placeholder={config.label ?? key}
             />
           </div>
+
+          <!-- METRICS SQL -->
+        {:else if config.type === "metrics_sql"}
+          <MetricsSQLInput
+            {key}
+            label={config.label ?? key}
+            description={config?.description}
+            value={localParamValues[key]}
+            onChange={(updatedSQL) => {
+              localParamValues[key] = updatedSQL;
+              component.updateProperty(key, updatedSQL);
+            }}
+          />
 
           <!-- KPI SPARKLINE INPUT -->
         {:else if config.type === "sparkline"}
