@@ -316,7 +316,7 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 		}
 
 		// Run model tests if no partitions are configured
-		testErr := r.runModelTests(ctx, self, execRes)
+		testErr := r.runModelTests(ctx, self)
 		if testErr != nil {
 			execErr = fmt.Errorf("model tests failed: %w", testErr)
 		}
@@ -1132,7 +1132,7 @@ func (r *ModelReconciler) executePartition(ctx context.Context, catalog drivers.
 
 	// Run partition-level tests after each partition is executed
 	if err == nil && mdl.Spec.PartitionsResolver != "" {
-		testErr := r.runModelTests(ctx, self, res)
+		testErr := r.runModelTests(ctx, self)
 		if testErr != nil {
 			return nil, false, testErr
 		}
@@ -1563,7 +1563,7 @@ func (r *ModelReconciler) shouldTrigger(ctx context.Context, self *runtimev1.Res
 }
 
 // runModelTests executes the user defined tests for the model
-func (r *ModelReconciler) runModelTests(ctx context.Context, self *runtimev1.Resource, res *drivers.ModelResult) error {
+func (r *ModelReconciler) runModelTests(ctx context.Context, self *runtimev1.Resource) error {
 	if len(self.GetModel().Spec.Tests) == 0 {
 		r.C.Logger.Debug("No tests defined for model", zap.String("model", self.Meta.Name.Name), observability.ZapCtx(ctx))
 		return nil
