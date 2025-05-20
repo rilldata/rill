@@ -104,3 +104,5 @@ measures:
   - **`include`** - List of dimension or measure names to include in the dashboard. If `include` is defined all other dimensions and measures are excluded _(optional)_.
     - **`if`** - Expression to decide if the column should be included or not. It can leverage templated user attributes. Needs to be a valid SQL expression that evaluates to a boolean _(required)_.
     - **`names`** - List of fields to include. Should match the `name` of one of the dashboard's dimensions or measures _(required)_.
+
+**`ai_context`** - extra context for AI assistants. Any information you add here will be available to AI assistants when they query the metrics view.
