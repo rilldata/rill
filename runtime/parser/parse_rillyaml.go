@@ -25,6 +25,7 @@ type RillYAML struct {
 	Defaults      map[ResourceKind]yaml.Node
 	FeatureFlags  map[string]bool
 	PublicPaths   []string
+	AIContext     string
 }
 
 // ConnectorDef is a subtype of RillYAML, defining connectors required by the project
@@ -102,6 +103,8 @@ type rillYAML struct {
 		Groups     []string       `yaml:"groups"`
 		Attributes map[string]any `yaml:",inline"`
 	} `yaml:"mock_users"`
+	// User-provided context for LLM/AI features
+	AIContext string `yaml:"ai_context"`
 }
 
 // parseRillYAML parses rill.yaml
@@ -270,6 +273,7 @@ func (p *Parser) parseRillYAML(ctx context.Context, path string) error {
 		Defaults:      defaults,
 		FeatureFlags:  featureFlags,
 		PublicPaths:   tmp.PublicPaths,
+		AIContext:     tmp.AIContext,
 	}
 
 	for i, c := range tmp.Connectors {
