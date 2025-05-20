@@ -973,6 +973,11 @@ export class ModelSpec extends Message<ModelSpec> {
   changeMode = ModelChangeMode.UNSPECIFIED;
 
   /**
+   * @generated from field: repeated rill.runtime.v1.ModelTest tests = 25;
+   */
+  tests: ModelTest[] = [];
+
+  /**
    * @generated from field: bool trigger = 9;
    */
   trigger = false;
@@ -1013,6 +1018,7 @@ export class ModelSpec extends Message<ModelSpec> {
     { no: 1, name: "output_connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 12, name: "output_properties", kind: "message", T: Struct },
     { no: 24, name: "change_mode", kind: "enum", T: proto3.getEnumType(ModelChangeMode) },
+    { no: 25, name: "tests", kind: "message", T: ModelTest, repeated: true },
     { no: 9, name: "trigger", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 22, name: "trigger_full", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 23, name: "defined_as_source", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
@@ -1169,6 +1175,61 @@ export class ModelState extends Message<ModelState> {
 
   static equals(a: ModelState | PlainMessage<ModelState> | undefined, b: ModelState | PlainMessage<ModelState> | undefined): boolean {
     return proto3.util.equals(ModelState, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.ModelTest
+ */
+export class ModelTest extends Message<ModelTest> {
+  /**
+   * @generated from field: string name = 1;
+   */
+  name = "";
+
+  /**
+   * @generated from field: string description = 2;
+   */
+  description = "";
+
+  /**
+   * @generated from field: string resolver = 3;
+   */
+  resolver = "";
+
+  /**
+   * @generated from field: google.protobuf.Struct resolver_properties = 4;
+   */
+  resolverProperties?: Struct;
+
+  constructor(data?: PartialMessage<ModelTest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.ModelTest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "resolver", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "resolver_properties", kind: "message", T: Struct },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ModelTest {
+    return new ModelTest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ModelTest {
+    return new ModelTest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ModelTest {
+    return new ModelTest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ModelTest | PlainMessage<ModelTest> | undefined, b: ModelTest | PlainMessage<ModelTest> | undefined): boolean {
+    return proto3.util.equals(ModelTest, a, b);
   }
 }
 

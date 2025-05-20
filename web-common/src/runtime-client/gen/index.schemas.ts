@@ -1567,6 +1567,7 @@ export interface V1ModelSpec {
   outputConnector?: string;
   outputProperties?: V1ModelSpecOutputProperties;
   changeMode?: V1ModelChangeMode;
+  tests?: V1ModelTest[];
   trigger?: boolean;
   triggerFull?: boolean;
   /** defined_as_source is true if it was defined by user as a source but converted internally to a model. */
@@ -1611,6 +1612,15 @@ This is not the time it took to refresh the model which also includes other stuf
   totalExecutionDurationMs?: string;
   /** latest_execution_duration_ms is the time user queries took to execute in the last successful refresh. */
   latestExecutionDurationMs?: string;
+}
+
+export type V1ModelTestResolverProperties = { [key: string]: unknown };
+
+export interface V1ModelTest {
+  name?: string;
+  description?: string;
+  resolver?: string;
+  resolverProperties?: V1ModelTestResolverProperties;
 }
 
 export type V1NotifierProperties = { [key: string]: unknown };

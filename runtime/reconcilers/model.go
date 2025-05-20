@@ -314,6 +314,12 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 		} else {
 			model.State.TotalExecutionDurationMs = model.State.LatestExecutionDurationMs
 		}
+
+		// TODO: Add SQL tests execution here
+		if len(model.Spec.Tests) > 0 {
+			// Run SQL tests against the model's output
+		}
+
 		err := r.updateStateWithResult(ctx, self, execRes)
 		if err != nil {
 			return runtime.ReconcileResult{Err: err}

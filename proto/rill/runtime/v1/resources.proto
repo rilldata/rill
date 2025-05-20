@@ -123,6 +123,7 @@ message ModelSpec {
   google.protobuf.Struct output_properties = 12;
   // change_mode is the mode of change detection to use for the model.
   ModelChangeMode change_mode = 24;
+  repeated ModelTest tests = 25;
   bool trigger = 9;
   bool trigger_full = 22;
   // defined_as_source is true if it was defined by user as a source but converted internally to a model.
@@ -166,6 +167,13 @@ enum ModelChangeMode {
   MODEL_CHANGE_MODE_RESET = 1;
   MODEL_CHANGE_MODE_MANUAL = 2;
   MODEL_CHANGE_MODE_PATCH = 3;
+}
+
+message ModelTest {
+  string name = 1;
+  string description = 2;
+  string resolver = 3;
+  google.protobuf.Struct resolver_properties = 4;
 }
 
 message MetricsView {
