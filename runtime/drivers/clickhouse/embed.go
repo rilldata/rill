@@ -104,10 +104,6 @@ func (e *embedClickHouse) start() (*clickhouse.Options, error) {
 			_ = e.cmd.Process.Kill()
 			return
 		}
-
-		if err := e.cmd.Wait(); err != nil {
-			e.logger.Error("clickhouse server exited with an error", zap.Error(err))
-		}
 	}()
 
 	if err := <-ready; err != nil {
@@ -154,6 +150,7 @@ func (e *embedClickHouse) stop() error {
 	if err != nil {
 		return err
 	}
+	_ = e.cmd.Wait()
 	e.opts = nil
 	e.cmd = nil
 	return nil
