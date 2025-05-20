@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"maps"
 	"net/url"
 	"strings"
 	"time"
@@ -78,10 +77,8 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 				return nil, err
 			}
 			defer release()
-			rawProps := maps.Clone(opts.InputProperties)
-			rawProps["path"] = ast.GetTableRefs()[0].Paths[0]
-			rawProps["batch_size"] = -1
-			deleteFiles, err := rewriteDuckDBSQL(ctx, inputProps, handle, rawProps, ast)
+			path := ast.GetTableRefs()[0].Paths[0]
+			deleteFiles, err := rewriteDuckDBSQL(ctx, inputProps, handle, path, ast)
 			if err != nil {
 				return nil, err
 			}
@@ -295,17 +292,18 @@ func objectStoreRef(ctx context.Context, props *ModelInputProperties, opts *driv
 	return "", "", nil, false
 }
 
-func rewriteDuckDBSQL(ctx context.Context, props *ModelInputProperties, inputHandle drivers.Handle, rawProps map[string]any, ast *duckdbsql.AST) (release func(), retErr error) {
+func rewriteDuckDBSQL(ctx context.Context, props *ModelInputProperties, inputHandle drivers.Handle, path string, ast *duckdbsql.AST) (release func(), retErr error) {
 	fs, ok := inputHandle.AsObjectStore()
 	if !ok {
 		return nil, fmt.Errorf("internal error: expected object store connector")
 	}
 
 	var files []string
-	iter, err := fs.DownloadFiles(ctx, rawProps)
+	iter, err := fs.DownloadFiles(ctx, path)
 	if err != nil {
 		return nil, err
 	}
+	iter.SetKeepFilesUntilClose()
 	defer func() {
 		// closing the iterator deletes the files
 		// only delete the files if there was an error

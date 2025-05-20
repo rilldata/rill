@@ -184,12 +184,7 @@ func (r *globResolver) ResolveInteractive(ctx context.Context) (runtime.Resolver
 		return nil, fmt.Errorf("connector %q is not an object store", r.props.Connector)
 	}
 
-	listObjectsProps := map[string]any{"path": r.props.Path}
-	for k, v := range r.props.AdditionalProps {
-		listObjectsProps[k] = v
-	}
-
-	entries, err := store.ListObjects(ctx, listObjectsProps)
+	entries, err := store.ListObjects(ctx, r.props.Path)
 	if err != nil {
 		return nil, err
 	}

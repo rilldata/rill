@@ -90,20 +90,32 @@ func (c *connection) QueryAsFiles(ctx context.Context, props map[string]any) (dr
 	return job, nil
 }
 
-func (j *bulkJob) Format() string {
-	return "csv"
-}
+var _ drivers.FileIterator = &bulkJob{}
 
 // Close implements drivers.RowIterator.
 func (j *bulkJob) Close() error {
-	if j.tempFilePath != "" {
-		err := os.Remove(j.tempFilePath)
-		j.tempFilePath = ""
+	for _, p := range j.tempFilePaths {
+		err := os.Remove(p)
 		if err != nil {
 			return fmt.Errorf("failed to delete temp file: %w", err)
 		}
 	}
+	j.tempFilePaths = nil
 	return nil
+}
+
+// Format implements drivers.RowIterator.
+func (j *bulkJob) Format() string {
+	return "csv"
+}
+
+// SetKeepFilesUntilClose implements drivers.RowIterator.
+func (j *bulkJob) SetKeepFilesUntilClose() {
+	j.keepFilesUntilClose = true
+}
+
+// SetBatchSizeBytes implements drivers.RowIterator.
+func (j *bulkJob) SetBatchSizeBytes(size int64) {
 }
 
 // Next implements drivers.RowIterator.
@@ -114,12 +126,14 @@ func (j *bulkJob) Next() ([]string, error) {
 	if j.job.NumberRecordsProcessed == 0 {
 		return nil, io.EOF
 	}
-	if j.tempFilePath != "" {
-		err := os.Remove(j.tempFilePath)
-		j.tempFilePath = ""
-		if err != nil {
-			return nil, fmt.Errorf("failed to delete temp file: %w", err)
+	if len(j.tempFilePaths) != 0 && !j.keepFilesUntilClose {
+		for _, p := range j.tempFilePaths {
+			err := os.Remove(p)
+			if err != nil {
+				return nil, fmt.Errorf("failed to delete temp file: %w", err)
+			}
 		}
+		j.tempFilePaths = nil
 	}
 	if j.nextResult == len(j.results) {
 		return nil, io.EOF
@@ -128,9 +142,9 @@ func (j *bulkJob) Next() ([]string, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to retrieve batch: %w", err)
 	}
-	j.tempFilePath = tempFile
+	j.tempFilePaths = append(j.tempFilePaths, tempFile)
 	j.nextResult++
-	return []string{j.tempFilePath}, nil
+	return j.tempFilePaths, nil
 }
 
 type sourceProperties struct {

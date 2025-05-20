@@ -2820,7 +2820,6 @@ export type ConnectorServiceS3ListObjectsParams = {
   connector?: string;
   pageSize?: number;
   pageToken?: string;
-  region?: string;
   prefix?: string;
   startAfter?: string;
   delimiter?: string;

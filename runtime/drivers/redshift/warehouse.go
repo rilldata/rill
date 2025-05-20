@@ -19,9 +19,9 @@ import (
 	"github.com/google/uuid"
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
-	rillblob "github.com/rilldata/rill/runtime/drivers/blob"
+	"github.com/rilldata/rill/runtime/drivers/blob"
 	"go.opentelemetry.io/otel"
-	"gocloud.dev/blob"
+	"go.uber.org/zap"
 	"gocloud.dev/blob/s3blob"
 )
 
@@ -79,19 +79,18 @@ func (c *Connection) QueryAsFiles(ctx context.Context, props map[string]any) (ou
 		}
 	}()
 
-	bucketObj, err := openBucket(ctx, awsConfig, bucketName)
+	bucket, err := openBucket(ctx, awsConfig, bucketName, c.logger)
 	if err != nil {
 		return nil, fmt.Errorf("cannot open bucket %q: %w", bucketName, err)
 	}
 
-	opts := rillblob.Options{
-		GlobPattern: unloadPath + "/**",
+	it, err := bucket.Download(ctx, &blob.DownloadOptions{
+		Glob:        unloadPath + "/**",
 		Format:      "parquet",
-	}
-
-	it, err := rillblob.NewIterator(ctx, bucketObj, opts, c.logger)
+		CloseBucket: true,
+	})
 	if err != nil {
-		return nil, fmt.Errorf("cannot download parquet output %q %w", opts.GlobPattern, err)
+		return nil, fmt.Errorf("cannot download parquet output %q: %w", unloadPath, err)
 	}
 
 	return autoDeleteFileIterator{
@@ -183,9 +182,13 @@ func parseSourceProperties(props map[string]any) (*sourceProperties, error) {
 	return conf, nil
 }
 
-func openBucket(ctx context.Context, cfg aws.Config, bucket string) (*blob.Bucket, error) {
+func openBucket(ctx context.Context, cfg aws.Config, bucket string, logger *zap.Logger) (*blob.Bucket, error) {
 	s3client := s3.NewFromConfig(cfg)
-	return s3blob.OpenBucketV2(ctx, s3client, bucket, nil)
+	s3bucket, err := s3blob.OpenBucketV2(ctx, s3client, bucket, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open bucket %q: %w", bucket, err)
+	}
+	return blob.NewBucket(s3bucket, logger)
 }
 
 func deleteObjectsInPrefix(ctx context.Context, cfg aws.Config, bucketName, prefix string) error {

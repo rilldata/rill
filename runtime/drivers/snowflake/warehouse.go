@@ -134,6 +134,8 @@ type fileIterator struct {
 	parallelFetchLimit int
 }
 
+var _ drivers.FileIterator = &fileIterator{}
+
 // Close implements drivers.FileIterator.
 func (f *fileIterator) Close() error {
 	if f.rows != nil {
@@ -142,6 +144,19 @@ func (f *fileIterator) Close() error {
 		f.db.Close()
 	}
 	return os.RemoveAll(f.tempDir)
+}
+
+// Format implements drivers.FileIterator.
+func (f *fileIterator) Format() string {
+	return ""
+}
+
+// SetKeepFilesUntilClose implements drivers.FileIterator.
+func (f *fileIterator) SetKeepFilesUntilClose() {
+}
+
+// SetBatchSizeBytes implements drivers.FileIterator.
+func (f *fileIterator) SetBatchSizeBytes(size int64) {
 }
 
 // Next implements drivers.FileIterator.
@@ -266,12 +281,6 @@ func (f *fileIterator) Next() ([]string, error) {
 	f.logger.Debug("size of file", zap.String("size", datasize.ByteSize(fileInfo.Size()).HumanReadable()), observability.ZapCtx(f.ctx))
 	return []string{fw.Name()}, nil
 }
-
-func (f *fileIterator) Format() string {
-	return ""
-}
-
-var _ drivers.FileIterator = &fileIterator{}
 
 type sourceProperties struct {
 	SQL string `mapstructure:"sql"`

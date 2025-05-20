@@ -21,27 +21,6 @@ import (
 
 var errGCSUsesNativeCreds = errors.New("GCS uses native credentials")
 
-type objectStoreInputProps struct {
-	Path string `mapstructure:"path"`
-	// URI is renamed to path now. It is kept for backward compatibility.
-	URI    string             `mapstructure:"uri"`
-	Format drivers.FileFormat `mapstructure:"format"`
-	DuckDB map[string]any     `mapstructure:"duckdb"`
-}
-
-func (p *objectStoreInputProps) Validate() error {
-	if p.Path == "" && p.URI == "" {
-		return fmt.Errorf("missing property `path`")
-	}
-	if p.Path != "" && p.URI != "" {
-		return fmt.Errorf("cannot specify both `path` and `uri`")
-	}
-	if p.URI != "" { // Backwards compatibility
-		p.Path = p.URI
-	}
-	return nil
-}
-
 type objectStoreToSelfExecutor struct {
 	c *connection
 }
@@ -75,12 +54,9 @@ func (e *objectStoreToSelfExecutor) Execute(ctx context.Context, opts *drivers.M
 }
 
 func (e *objectStoreToSelfExecutor) modelInputProperties(ctx context.Context, model, inputConnector string, inputHandle drivers.Handle, inputProps map[string]any) (map[string]any, error) {
-	parsed := &objectStoreInputProps{}
-	if err := mapstructure.WeakDecode(inputProps, parsed); err != nil {
+	parsed := &drivers.ObjectStoreModelInputProperties{}
+	if err := mapstructure.Decode(inputProps, parsed); err != nil {
 		return nil, fmt.Errorf("failed to parse input properties: %w", err)
-	}
-	if err := parsed.Validate(); err != nil {
-		return nil, fmt.Errorf("invalid input properties: %w", err)
 	}
 
 	m := &ModelInputProperties{}
@@ -233,12 +209,9 @@ type objectStoreToSelfExecutorNonNative struct {
 }
 
 func (e *objectStoreToSelfExecutorNonNative) Execute(ctx context.Context, opts *drivers.ModelExecuteOptions) (*drivers.ModelResult, error) {
-	parsed := &objectStoreInputProps{}
-	if err := mapstructure.WeakDecode(opts.InputProperties, parsed); err != nil {
+	parsed := &drivers.ObjectStoreModelInputProperties{}
+	if err := mapstructure.Decode(opts.InputProperties, parsed); err != nil {
 		return nil, fmt.Errorf("failed to parse input properties: %w", err)
-	}
-	if err := parsed.Validate(); err != nil {
-		return nil, fmt.Errorf("invalid input properties: %w", err)
 	}
 
 	store, ok := opts.InputHandle.AsObjectStore()
@@ -246,58 +219,44 @@ func (e *objectStoreToSelfExecutorNonNative) Execute(ctx context.Context, opts *
 		return nil, fmt.Errorf("input handle is not an object store")
 	}
 
-	iter, err := store.DownloadFiles(ctx, opts.InputProperties)
+	iter, err := store.DownloadFiles(ctx, parsed.Path)
 	if err != nil {
 		return nil, err
 	}
+	defer iter.Close()
 
-	var (
-		res           *drivers.ModelResult
-		resErr        error
-		appendToTable = false
-	)
-	var format string
-	if parsed.Format != "" {
-		format = fmt.Sprintf(".%s", parsed.Format)
-	} else {
-		format = fileutil.FullExt(parsed.Path)
-	}
+	iter.SetKeepFilesUntilClose()
+	var files []string
 	for {
-		files, err := iter.Next()
+		batch, err := iter.Next()
 		if err != nil {
 			if errors.Is(err, io.EOF) {
 				break
 			}
 			return nil, err
 		}
-		m := &ModelInputProperties{}
-		from, err := sourceReader(files, format, parsed.DuckDB)
-		if err != nil {
-			return nil, err
-		}
-		m.SQL = "SELECT * FROM " + from
-		propsMap := make(map[string]any)
-		if err := mapstructure.Decode(m, &propsMap); err != nil {
-			return nil, err
-		}
-		opts.InputProperties = propsMap
+		files = append(files, batch...)
+	}
 
-		if appendToTable {
-			opts.Incremental = true
-			opts.IncrementalRun = true
-			opts.PreviousResult = res
-		}
-		appendToTable = true
-		executor := &selfToSelfExecutor{c: e.c}
-		res, resErr = executor.Execute(ctx, opts)
-		if resErr != nil {
-			return nil, resErr
-		}
+	var format string
+	if parsed.Format != "" {
+		format = fmt.Sprintf(".%s", parsed.Format)
+	} else {
+		format = fileutil.FullExt(parsed.Path)
 	}
-	if res == nil && resErr == nil {
-		// the iterator returns an error if no files are found
-		// this should never happen
-		return nil, fmt.Errorf("no result")
+
+	fromClause, err := sourceReader(files, format, parsed.DuckDB)
+	if err != nil {
+		return nil, err
 	}
-	return res, resErr
+
+	m := &ModelInputProperties{SQL: "SELECT * FROM " + fromClause}
+	propsMap := make(map[string]any)
+	if err := mapstructure.Decode(m, &propsMap); err != nil {
+		return nil, err
+	}
+	opts.InputProperties = propsMap
+
+	executor := &selfToSelfExecutor{c: e.c}
+	return executor.Execute(ctx, opts)
 }

@@ -186,13 +186,27 @@ type fileIterator struct {
 	ctx context.Context // TODO :: refatcor NextBatch to take context on NextBatch
 }
 
+var _ drivers.FileIterator = &fileIterator{}
+
 // Close implements drivers.FileIterator.
 func (f *fileIterator) Close() error {
 	return os.RemoveAll(f.tempDir)
 }
 
+// Format implements drivers.FileIterator.
+func (f *fileIterator) Format() string {
+	return ""
+}
+
+// SetFormat implements drivers.FileIterator.
+func (f *fileIterator) SetKeepFilesUntilClose() {
+}
+
+// SetBatchSizeBytes implements drivers.FileIterator.
+func (f *fileIterator) SetBatchSizeBytes(size int64) {
+}
+
 // Next implements drivers.FileIterator.
-// TODO :: currently it downloads all records in a single file. Need to check if it is efficient to ingest a single file with size in tens of GBs or more.
 func (f *fileIterator) Next() ([]string, error) {
 	if f.downloaded {
 		return nil, io.EOF
@@ -273,10 +287,6 @@ func (f *fileIterator) Next() ([]string, error) {
 	}
 	f.logger.Debug("parquet file written", zap.String("size", datasize.ByteSize(fileInfo.Size()).HumanReadable()), zap.Int64("rows", rows), observability.ZapCtx(f.ctx))
 	return []string{fw.Name()}, nil
-}
-
-func (f *fileIterator) Format() string {
-	return ""
 }
 
 func (f *fileIterator) downloadAsJSONFile() (string, error) {
@@ -365,5 +375,3 @@ func (f *fileIterator) downloadAsJSONFile() (string, error) {
 		}
 	}
 }
-
-var _ drivers.FileIterator = &fileIterator{}
