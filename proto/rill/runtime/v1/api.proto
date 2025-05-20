@@ -311,6 +311,7 @@ message Instance {
   map<string, string> annotations = 14;
   bool embed_catalog = 6;
   bool watch_repo = 15;
+  string ai_context = 23;
 }
  
 message Connector {

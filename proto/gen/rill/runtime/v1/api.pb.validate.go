@@ -1057,6 +1057,8 @@ func (m *Instance) validate(all bool) error {
 
 	// no validation rules for WatchRepo
 
+	// no validation rules for AiContext
+
 	if len(errors) > 0 {
 		return InstanceMultiError(errors)
 	}

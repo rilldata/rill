@@ -170,6 +170,7 @@ func (s *Server) EditInstance(ctx context.Context, req *runtimev1.EditInstanceRe
 		Annotations:          annotations,
 		EmbedCatalog:         valOrDefault(req.EmbedCatalog, oldInst.EmbedCatalog),
 		WatchRepo:            valOrDefault(req.WatchRepo, oldInst.WatchRepo),
+		AIContext:            oldInst.AIContext,
 	}
 
 	err = s.runtime.EditInstance(ctx, inst, true)
@@ -275,6 +276,7 @@ func instanceToPB(inst *drivers.Instance, sensitive bool) *runtimev1.Instance {
 		CreatedOn:    timestamppb.New(inst.CreatedOn),
 		UpdatedOn:    timestamppb.New(inst.UpdatedOn),
 		FeatureFlags: inst.FeatureFlags,
+		AiContext:    inst.AIContext,
 	}
 
 	if sensitive {
