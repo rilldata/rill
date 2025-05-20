@@ -273,6 +273,13 @@ export interface V1CreateBookmarkResponse {
   bookmark?: V1Bookmark;
 }
 
+export interface V1CreateManagedGitRepoResponse {
+  remote?: string;
+  username?: string;
+  password?: string;
+  defaultBranch?: string;
+}
+
 export interface V1CreateOrganizationRequest {
   name?: string;
   description?: string;
@@ -361,6 +368,10 @@ export const V1DeploymentStatus = {
   DEPLOYMENT_STATUS_OK: "DEPLOYMENT_STATUS_OK",
   DEPLOYMENT_STATUS_ERROR: "DEPLOYMENT_STATUS_ERROR",
 } as const;
+
+export interface V1DisconnectProjectFromGithubResponse {
+  [key: string]: unknown;
+}
 
 export interface V1EditAlertResponse {
   [key: string]: unknown;
@@ -613,7 +624,7 @@ export interface V1ListOrganizationBillingIssuesResponse {
 }
 
 export interface V1ListOrganizationInvitesResponse {
-  invites?: V1UserInvite[];
+  invites?: V1OrganizationInvite[];
   nextPageToken?: string;
 }
 
@@ -633,7 +644,7 @@ export interface V1ListOrganizationsResponse {
 }
 
 export interface V1ListProjectInvitesResponse {
-  invites?: V1UserInvite[];
+  invites?: V1ProjectInvite[];
   nextPageToken?: string;
 }
 
@@ -770,6 +781,12 @@ export interface V1Organization {
   updatedOn?: string;
 }
 
+export interface V1OrganizationInvite {
+  email?: string;
+  roleName?: string;
+  invitedBy?: string;
+}
+
 export interface V1OrganizationMemberUser {
   userId?: string;
   userEmail?: string;
@@ -827,6 +844,8 @@ export interface V1Project {
   createdByUserId?: string;
   provisioner?: string;
   githubUrl?: string;
+  /** managed_git_id is set if the project is connected to a rill-managed git repo. */
+  managedGitId?: string;
   subpath?: string;
   prodBranch?: string;
   archiveAssetId?: string;
@@ -843,12 +862,20 @@ export interface V1Project {
   updatedOn?: string;
 }
 
+export interface V1ProjectInvite {
+  email?: string;
+  roleName?: string;
+  orgRoleName?: string;
+  invitedBy?: string;
+}
+
 export interface V1ProjectMemberUser {
   userId?: string;
   userEmail?: string;
   userName?: string;
   userPhotoUrl?: string;
   roleName?: string;
+  orgRoleName?: string;
   createdOn?: string;
   updatedOn?: string;
 }
@@ -1272,10 +1299,6 @@ export interface V1UpdateUserPreferencesResponse {
   preferences?: V1UserPreferences;
 }
 
-export interface V1UploadProjectAssetsResponse {
-  [key: string]: unknown;
-}
-
 export interface V1User {
   id?: string;
   email?: string;
@@ -1284,12 +1307,6 @@ export interface V1User {
   quotas?: V1UserQuotas;
   createdOn?: string;
   updatedOn?: string;
-}
-
-export interface V1UserInvite {
-  email?: string;
-  role?: string;
-  invitedBy?: string;
 }
 
 export interface V1UserPreferences {
@@ -1338,7 +1355,7 @@ export type AdminServiceUpdateBillingSubscriptionBodyBody = {
 
 export type AdminServiceTriggerReconcileBodyBody = { [key: string]: unknown };
 
-export type AdminServiceSetOrganizationMemberUserRoleBodyBody = {
+export type AdminServiceSetProjectMemberUserRoleBodyBody = {
   role?: string;
 };
 
@@ -1387,6 +1404,10 @@ export type AdminServiceListOrganizationsParams = {
   pageToken?: string;
 };
 
+export type AdminServiceGetOrganizationParams = {
+  superuserForceAccess?: boolean;
+};
+
 export type AdminServiceUpdateOrganizationBody = {
   description?: string;
   newName?: string;
@@ -1397,8 +1418,27 @@ export type AdminServiceUpdateOrganizationBody = {
   billingEmail?: string;
 };
 
+export type AdminServiceListOrganizationBillingIssuesParams = {
+  superuserForceAccess?: boolean;
+};
+
 export type AdminServiceGetPaymentsPortalURLParams = {
   returnUrl?: string;
+  superuserForceAccess?: boolean;
+};
+
+export type AdminServiceGetBillingSubscriptionParams = {
+  superuserForceAccess?: boolean;
+};
+
+export type AdminServiceCancelBillingSubscriptionParams = {
+  superuserForceAccess?: boolean;
+};
+
+export type AdminServiceCreateManagedGitRepoBody = {
+  /** name of the repo to create. 
+Note: The final name will be suffixed with a random string to ensure uniqueness. */
+  name?: string;
 };
 
 export type AdminServiceListOrganizationInvitesParams = {
@@ -1417,10 +1457,16 @@ export type AdminServiceListOrganizationMemberUsersParams = {
   includeCounts?: boolean;
   pageSize?: number;
   pageToken?: string;
+  superuserForceAccess?: boolean;
 };
 
 export type AdminServiceAddOrganizationMemberUserBody = {
   email?: string;
+  role?: string;
+  superuserForceAccess?: boolean;
+};
+
+export type AdminServiceSetOrganizationMemberUserRoleBody = {
   role?: string;
   superuserForceAccess?: boolean;
 };
@@ -1440,6 +1486,10 @@ export type AdminServiceListProjectsForOrganizationAndUserParams = {
   pageToken?: string;
 };
 
+export type AdminServiceGetCloneCredentialsParams = {
+  superuserForceAccess?: boolean;
+};
+
 export type AdminServiceConnectProjectToGithubBody = {
   repo?: string;
   branch?: string;
@@ -1457,6 +1507,10 @@ export type AdminServiceGetDeploymentCredentialsBody = {
   userId?: string;
   userEmail?: string;
   attributes?: AdminServiceGetDeploymentCredentialsBodyAttributes;
+};
+
+export type AdminServiceHibernateProjectParams = {
+  superuserForceAccess?: boolean;
 };
 
 /**
@@ -1511,6 +1565,7 @@ export type AdminServiceListProjectMemberUsersParams = {
   role?: string;
   pageSize?: number;
   pageToken?: string;
+  superuserForceAccess?: boolean;
 };
 
 export type AdminServiceAddProjectMemberUserBody = {
@@ -1656,6 +1711,7 @@ Either github_url or archive_asset_id should be set. */
 
 export type AdminServiceGetProjectParams = {
   accessTokenTtlSeconds?: number;
+  superuserForceAccess?: boolean;
   issueSuperuserToken?: boolean;
 };
 
@@ -1689,7 +1745,6 @@ export type AdminServiceListProjectsForUserByNameParams = {
 export type AdminServiceGetAlertMetaBodyAnnotations = { [key: string]: string };
 
 export type AdminServiceGetAlertMetaBody = {
-  branch?: string;
   alert?: string;
   annotations?: AdminServiceGetAlertMetaBodyAnnotations;
   queryForUserId?: string;
@@ -1701,13 +1756,11 @@ export type AdminServiceGetRepoMetaParams = {
 };
 
 export type AdminServicePullVirtualRepoParams = {
-  branch?: string;
   pageSize?: number;
   pageToken?: string;
 };
 
 export type AdminServiceGetReportMetaBody = {
-  branch?: string;
   report?: string;
   ownerId?: string;
   executionTime?: string;
@@ -1737,6 +1790,10 @@ export type AdminServiceSudoGetResourceParams = {
 
 export type AdminServiceGetUserParams = {
   email?: string;
+};
+
+export type AdminServiceDeleteUserParams = {
+  superuserForceAccess?: boolean;
 };
 
 export type AdminServiceListBookmarksParams = {

@@ -7,6 +7,8 @@ import (
 )
 
 func ListCmd(ch *cmdutil.Helper) *cobra.Command {
+	var force bool
+
 	listCmd := &cobra.Command{
 		Use:   "list",
 		Short: "List subscription for an organization",
@@ -18,7 +20,8 @@ func ListCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			resp, err := client.GetBillingSubscription(cmd.Context(), &adminv1.GetBillingSubscriptionRequest{
-				Organization: ch.Org,
+				Organization:         ch.Org,
+				SuperuserForceAccess: force,
 			})
 			if err != nil {
 				return err
@@ -34,5 +37,9 @@ func ListCmd(ch *cmdutil.Helper) *cobra.Command {
 			return nil
 		},
 	}
+
+	listCmd.Flags().BoolVar(&force, "force", false, "Allows superusers to bypass certain checks")
+	_ = listCmd.Flags().MarkHidden("force")
+
 	return listCmd
 }

@@ -1,5 +1,7 @@
-import { getCompoundQuery } from "@rilldata/web-common/features/compound-query-result";
-import { useMetricsViewTimeRange } from "@rilldata/web-common/features/dashboards/selectors";
+import {
+  type CompoundQueryResult,
+  getCompoundQuery,
+} from "@rilldata/web-common/features/compound-query-result";
 import { getRillDefaultExploreState } from "@rilldata/web-common/features/dashboards/stores/get-rill-default-explore-state";
 import { getTimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import { convertPartialExploreStateToUrlParams } from "@rilldata/web-common/features/dashboards/url-state/convert-partial-explore-state-to-url-params";
@@ -7,6 +9,7 @@ import { useExploreValidSpec } from "@rilldata/web-common/features/explores/sele
 import {
   type V1ExploreSpec,
   type V1MetricsViewSpec,
+  type V1MetricsViewTimeRangeResponse,
   type V1TimeRangeSummary,
 } from "@rilldata/web-common/runtime-client";
 
@@ -35,7 +38,7 @@ export function getRillDefaultExploreUrlParams(
 
 export function createRillDefaultExploreUrlParams(
   validSpecQuery: ReturnType<typeof useExploreValidSpec>,
-  fullTimeRangeQuery: ReturnType<typeof useMetricsViewTimeRange>,
+  fullTimeRangeQuery: CompoundQueryResult<V1MetricsViewTimeRangeResponse>,
 ) {
   return getCompoundQuery(
     [validSpecQuery, fullTimeRangeQuery],

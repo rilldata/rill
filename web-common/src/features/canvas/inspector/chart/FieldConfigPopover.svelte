@@ -1,11 +1,12 @@
 <script lang="ts">
   import IconButton from "@rilldata/web-common/components/button/IconButton.svelte";
-  import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import Select from "@rilldata/web-common/components/forms/Select.svelte";
   import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
   import SettingsSlider from "@rilldata/web-common/components/icons/SettingsSlider.svelte";
+  import * as Popover from "@rilldata/web-common/components/popover";
   import type {
+    ChartLegend,
     ChartSortDirection,
     FieldConfig,
   } from "@rilldata/web-common/features/canvas/components/charts/types";
@@ -31,21 +32,30 @@
     { label: "Y-axis descending", value: "-y" },
   ];
 
+  const legendOptions: { label: string; value: ChartLegend }[] = [
+    { label: "Top", value: "top" },
+    { label: "Right", value: "right" },
+    { label: "Bottom", value: "bottom" },
+    { label: "Left", value: "left" },
+    { label: "None", value: "none" },
+  ];
+
   $: showAxisTitle = chartFieldInput?.axisTitleSelector ?? false;
   $: showOrigin = chartFieldInput?.originSelector ?? false;
   $: showSort = chartFieldInput?.sortSelector ?? false;
   $: showLimit = chartFieldInput?.limitSelector ?? false;
   $: showNull = chartFieldInput?.nullSelector ?? false;
   $: showLabelAngle = chartFieldInput?.labelAngleSelector ?? false;
+  $: showLegend = chartFieldInput?.defaultLegendOrientation ?? false;
 </script>
 
-<DropdownMenu.Root bind:open={isDropdownOpen}>
-  <DropdownMenu.Trigger class="flex-none">
+<Popover.Root bind:open={isDropdownOpen}>
+  <Popover.Trigger class="flex-none">
     <IconButton rounded active={isDropdownOpen}>
       <SettingsSlider size="14px" />
     </IconButton>
-  </DropdownMenu.Trigger>
-  <DropdownMenu.Content align="start" class="w-[280px] p-0">
+  </Popover.Trigger>
+  <Popover.Content align="start" class="w-[280px] p-0 overflow-visible">
     <div class="px-3.5 py-2 border-b border-gray-200">
       <span class="text-xs font-medium">{label} Configuration</span>
     </div>
@@ -76,7 +86,7 @@
           </div>
         {/if}
         {#if showSort}
-          <div class="py-1.5 flex items-center justify-between">
+          <div class="py-1 flex items-center justify-between">
             <span class="text-xs">Sort</span>
             <Select
               size="sm"
@@ -89,7 +99,7 @@
           </div>
         {/if}
         {#if showLimit}
-          <div class="py-1.5 flex items-center justify-between">
+          <div class="py-1 flex items-center justify-between">
             <span class="text-xs">Limit</span>
             <Input
               size="sm"
@@ -120,7 +130,7 @@
         </div>
       {/if}
       {#if showLabelAngle && fieldConfig?.type !== "temporal"}
-        <div class="py-1.5 flex items-center justify-between">
+        <div class="py-1 flex items-center justify-between">
           <span class="text-xs">Label angle</span>
           <Input
             size="sm"
@@ -137,6 +147,20 @@
           />
         </div>
       {/if}
+      {#if showLegend}
+        <div class="py-1 flex items-center justify-between">
+          <span class="text-xs">Legend orientation</span>
+          <Select
+            size="sm"
+            id="legend-orientation-select"
+            width={180}
+            options={legendOptions}
+            value={fieldConfig?.legendOrientation ||
+              chartFieldInput?.defaultLegendOrientation}
+            on:change={(e) => onChange("legendOrientation", e.detail)}
+          />
+        </div>
+      {/if}
     </div>
-  </DropdownMenu.Content>
-</DropdownMenu.Root>
+  </Popover.Content>
+</Popover.Root>

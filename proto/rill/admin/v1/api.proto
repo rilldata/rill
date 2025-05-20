@@ -406,10 +406,18 @@ service AdminService {
     };
   }
 
-  // Converts a project connected to github to a rill managed project.
-  // Uploads the current project to assets.
-  rpc UploadProjectAssets(UploadProjectAssetsRequest) returns (UploadProjectAssetsResponse) {
+  // CreateManagedGitRepo creates a new rill managed git repo for the organization.
+  rpc CreateManagedGitRepo(CreateManagedGitRepoRequest) returns (CreateManagedGitRepoResponse) {
     option (google.api.http) = {
+      put: "/v1/organizations/{organization}/create-managed-git-repo",
+      body: "*"
+    };
+  }
+
+  // Converts a project connected to github to a rill managed project.
+  rpc DisconnectProjectFromGithub(DisconnectProjectFromGithubRequest) returns (DisconnectProjectFromGithubResponse) {
+    option (google.api.http) = {
+      // the path is still called `upload-assets` for backward compatibility
       post: "/v1/organizations/{organization}/projects/{project}/upload-assets",
       body: "*"
     };
@@ -895,6 +903,7 @@ message ListOrganizationsResponse {
 
 message GetOrganizationRequest {
   string name = 1;
+  bool superuser_force_access = 2;
 }
 
 message GetOrganizationResponse {
@@ -968,6 +977,7 @@ message GetProjectRequest {
   string organization_name = 1;
   string name = 2;
   uint32 access_token_ttl_seconds = 3;
+  bool superuser_force_access = 5;
   bool issue_superuser_token = 4;
 }
 
@@ -1255,6 +1265,7 @@ message RedeployProjectResponse {}
 message HibernateProjectRequest {
   string organization = 1;
   string project = 2;
+  bool superuser_force_access = 3;
 }
 
 message HibernateProjectResponse {}
@@ -1312,6 +1323,7 @@ message ListOrganizationMemberUsersRequest {
   bool include_counts = 5; // Optionally include counts
   uint32 page_size = 2 [(validate.rules).uint32 = {ignore_empty: true, lte: 1000}];
   string page_token = 3;
+  bool superuser_force_access = 6;
 }
 
 message ListOrganizationMemberUsersResponse {
@@ -1326,7 +1338,7 @@ message ListOrganizationInvitesRequest {
 }
 
 message ListOrganizationInvitesResponse {
-  repeated UserInvite invites = 1;
+  repeated OrganizationInvite invites = 1;
   string next_page_token = 2;
 }
 
@@ -1358,6 +1370,7 @@ message SetOrganizationMemberUserRoleRequest {
   string organization = 1 [(validate.rules).string.min_len = 1];
   string email = 2 [(validate.rules).string.email = true];
   string role = 3 [(validate.rules).string.min_len = 1];
+  bool superuser_force_access = 4;
 }
 
 message SetOrganizationMemberUserRoleResponse {}
@@ -1483,6 +1496,7 @@ message ListProjectMemberUsersRequest {
   string role = 5; // Optionally filter by role
   uint32 page_size = 3 [(validate.rules).uint32 = {ignore_empty: true, lte: 1000}];
   string page_token = 4;
+  bool superuser_force_access = 6;
 }
 
 message ListProjectMemberUsersResponse {
@@ -1498,7 +1512,7 @@ message ListProjectInvitesRequest {
 }
 
 message ListProjectInvitesResponse {
-  repeated UserInvite invites = 1;
+  repeated ProjectInvite invites = 1;
   string next_page_token = 2;
 }
 
@@ -1718,6 +1732,7 @@ message UpdateUserPreferencesResponse {
 
 message DeleteUserRequest {
   string email = 1 [(validate.rules).string.email = true];
+  bool superuser_force_access = 2;
 }
 
 message DeleteUserResponse {}
@@ -1928,12 +1943,26 @@ message ConnectProjectToGithubRequest {
 
 message ConnectProjectToGithubResponse {}
 
-message UploadProjectAssetsRequest {
+message CreateManagedGitRepoRequest {
+  string organization = 1;
+  // name of the repo to create. 
+  // Note: The final name will be suffixed with a random string to ensure uniqueness.
+  string name = 2;
+}
+
+message CreateManagedGitRepoResponse {
+  string remote = 1;
+  string username = 2;
+  string password = 3;
+  string default_branch = 4;
+}
+
+message DisconnectProjectFromGithubRequest {
   string organization = 1;
   string project = 2;
 }
 
-message UploadProjectAssetsResponse {}
+message DisconnectProjectFromGithubResponse {}
 
 enum GithubPermission {
   GITHUB_PERMISSION_UNSPECIFIED = 0;
@@ -1944,6 +1973,7 @@ enum GithubPermission {
 message GetCloneCredentialsRequest {
   string organization = 1 [(validate.rules).string.min_len = 1];
   string project = 2 [(validate.rules).string.min_len = 1];
+  bool superuser_force_access = 3;
 }
 
 message GetCloneCredentialsResponse {
@@ -2011,20 +2041,20 @@ message GetRepoMetaRequest {
 }
 
 message GetRepoMetaResponse {
-    // If the Git-related fields are set, the archive-related fields will not be set (and vice versa).
-    string git_url = 1;
-    google.protobuf.Timestamp git_url_expires_on = 2;
-    string git_subpath = 3;
-    string archive_download_url = 4;
-    string archive_id = 5;
-    google.protobuf.Timestamp archive_created_on = 6;
+  // If the Git-related fields are set, the archive-related fields will not be set (and vice versa).
+  string git_url = 1;
+  google.protobuf.Timestamp git_url_expires_on = 2;
+  string git_subpath = 3;
+  string archive_download_url = 4;
+  string archive_id = 5;
+  google.protobuf.Timestamp archive_created_on = 6;
 }
 
 message PullVirtualRepoRequest {
   string project_id = 1;
-  string branch = 2;
   uint32 page_size = 3 [(validate.rules).uint32 = {ignore_empty: true, lte: 100}];
   string page_token = 4;
+  reserved 2;
 }
 
 message PullVirtualRepoResponse {
@@ -2034,7 +2064,6 @@ message PullVirtualRepoResponse {
 
 message GetReportMetaRequest {
   string project_id = 1;
-  string branch = 2;
   string report = 3;
   string owner_id = 5;
   google.protobuf.Timestamp execution_time = 6;
@@ -2042,7 +2071,7 @@ message GetReportMetaRequest {
   bool anon_recipients = 8;
   repeated ResourceName resources = 9;
   string web_open_mode = 10;
-  reserved 4;
+  reserved 2, 4;
 }
 
 message GetReportMetaResponse {
@@ -2058,13 +2087,13 @@ message GetReportMetaResponse {
 
 message GetAlertMetaRequest {
   string project_id = 1;
-  string branch = 2;
   string alert = 3;
   map<string, string> annotations = 4;
   oneof query_for {
     string query_for_user_id = 5;
     string query_for_user_email = 6;
   }
+  reserved 2;
 }
 
 message GetAlertMetaResponse {
@@ -2189,6 +2218,7 @@ message GetAlertYAMLResponse {
 
 message GetBillingSubscriptionRequest {
   string organization = 1 [(validate.rules).string.min_len = 1];
+  bool superuser_force_access = 2;
 }
 
 message GetBillingSubscriptionResponse {
@@ -2210,6 +2240,7 @@ message UpdateBillingSubscriptionResponse {
 
 message CancelBillingSubscriptionRequest {
   string organization = 1 [(validate.rules).string.min_len = 1];
+  bool superuser_force_access = 2;
 }
 
 message CancelBillingSubscriptionResponse {}
@@ -2228,6 +2259,7 @@ message RenewBillingSubscriptionResponse {
 message GetPaymentsPortalURLRequest {
   string organization = 1 [(validate.rules).string.min_len = 1];
   string return_url = 2 [(validate.rules).string.min_len = 1];
+  bool superuser_force_access = 3;
 }
 
 message GetPaymentsPortalURLResponse {
@@ -2292,6 +2324,7 @@ message DenyProjectAccessResponse {}
 
 message ListOrganizationBillingIssuesRequest {
   string organization = 1;
+  bool superuser_force_access = 2;
 }
 
 message ListOrganizationBillingIssuesResponse {
@@ -2370,6 +2403,8 @@ message Project {
   string created_by_user_id = 22;
   string provisioner = 7;
   string github_url = 8;
+  // managed_git_id is set if the project is connected to a rill-managed git repo.
+  string managed_git_id = 24;
   string subpath = 17;
   string prod_branch = 9;
   string archive_asset_id = 23;
@@ -2481,6 +2516,7 @@ message ProjectMemberUser {
   string user_name = 2;
   string user_photo_url = 7;
   string role_name = 4;
+  string org_role_name = 8;
   google.protobuf.Timestamp created_on = 5;
   google.protobuf.Timestamp updated_on = 6;
 }
@@ -2494,9 +2530,16 @@ message UsergroupMemberUser {
   google.protobuf.Timestamp updated_on = 6;
 }
 
-message UserInvite {
+message OrganizationInvite {
   string email = 1;
-  string role = 2;
+  string role_name = 2;
+  string invited_by = 3;
+}
+
+message ProjectInvite {
+  string email = 1;
+  string role_name = 2;
+  string org_role_name = 4;
   string invited_by = 3;
 }
 

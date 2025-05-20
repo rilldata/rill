@@ -33,10 +33,21 @@
       void behaviourEvent?.fireDeployEvent(BehaviourEventAction.LoginSuccess);
 
       if ($project.data?.project) {
-        // Project already exists. Run a redeploy
-        void goto(
-          `/deploy/redeploy?org=${$project.data.project.orgName}&projectId=${$project.data.project.id}`,
-        );
+        if (
+          $project.data.project.githubUrl &&
+          !$project.data.project.managedGitId
+        ) {
+          // we do not support pushing to a project already connected to user managed github
+          error = {
+            message: `This project has already been connected to a GitHub repo.
+Please push changes directly to GitHub and the project in Rill Cloud will automatically be updated.`,
+          } as ConnectError;
+        } else {
+          // Project already exists. Run a redeploy
+          void goto(
+            `/deploy/redeploy?org=${$project.data.project.orgName}&projectId=${$project.data.project.id}`,
+          );
+        }
       } else if ($user.data.rillUserOrgs?.length) {
         // If the user has at least one org we show the selector.
         // Note: The selector has the option to create a new org, so we show it even when there is only one org.
@@ -50,7 +61,7 @@
       const u = new URL($metadata.data?.loginUrl);
       // Set the redirect to this page so that deploy resumes after a login
       u.searchParams.set("redirect", get(page).url.toString());
-      window.location = u.toString();
+      window.location.href = u.toString();
     } else {
       // Should not happen if the servers are up. If not, there would be a query error.
       error = {

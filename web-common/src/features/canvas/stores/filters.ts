@@ -26,7 +26,7 @@ import {
   negateExpression,
   sanitiseExpression,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
-import type { DimensionThresholdFilter } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import type { DimensionThresholdFilter } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import {
   convertExpressionToFilterParam,
   convertFilterParamToExpression,

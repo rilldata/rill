@@ -1,5 +1,5 @@
 import { PivotChipType } from "@rilldata/web-common/features/dashboards/pivot/types";
-import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
 import { DashboardState_ActivePage } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import {
@@ -20,7 +20,7 @@ export class AdvancedMeasureCorrector {
   private measuresGrains: Map<string, V1TimeGrain>;
 
   private constructor(
-    private readonly dashboard: MetricsExplorerEntity,
+    private readonly exploreState: ExploreState,
     private readonly metricsViewSpec: V1MetricsViewSpec,
   ) {
     this.measuresMap = getMapFromArray(
@@ -41,10 +41,10 @@ export class AdvancedMeasureCorrector {
   }
 
   public static correct(
-    dashboard: MetricsExplorerEntity,
+    exploreState: ExploreState,
     metricsViewSpec: V1MetricsViewSpec,
   ) {
-    new AdvancedMeasureCorrector(dashboard, metricsViewSpec).correct();
+    new AdvancedMeasureCorrector(exploreState, metricsViewSpec).correct();
   }
 
   private correct() {
@@ -55,22 +55,24 @@ export class AdvancedMeasureCorrector {
   }
 
   private correctFilters() {
-    this.dashboard.dimensionThresholdFilters.forEach((dimensionThreshold) => {
-      dimensionThreshold.filters = dimensionThreshold.filters.filter(
-        (dtf) => !this.measureIsValidForComponent(dtf.measure, false, false),
-      );
-    });
-    this.dashboard.dimensionThresholdFilters =
-      this.dashboard.dimensionThresholdFilters.filter(
+    this.exploreState.dimensionThresholdFilters.forEach(
+      (dimensionThreshold) => {
+        dimensionThreshold.filters = dimensionThreshold.filters.filter(
+          (dtf) => !this.measureIsValidForComponent(dtf.measure, false, false),
+        );
+      },
+    );
+    this.exploreState.dimensionThresholdFilters =
+      this.exploreState.dimensionThresholdFilters.filter(
         (dt) => dt.filters.length,
       );
   }
 
   private correctLeaderboards() {
     if (
-      this.dashboard.leaderboardSortByMeasureName &&
+      this.exploreState.leaderboardSortByMeasureName &&
       !this.measureIsValidForComponent(
-        this.dashboard.leaderboardSortByMeasureName,
+        this.exploreState.leaderboardSortByMeasureName,
         true,
         false,
       )
@@ -78,10 +80,10 @@ export class AdvancedMeasureCorrector {
       return;
     }
 
-    this.dashboard.leaderboardSortByMeasureName = "";
+    this.exploreState.leaderboardSortByMeasureName = "";
     for (const measure of this.metricsViewSpec.measures ?? []) {
       if (!this.measureIsValidForComponent(measure.name ?? "", true, false)) {
-        this.dashboard.leaderboardSortByMeasureName = measure.name ?? "";
+        this.exploreState.leaderboardSortByMeasureName = measure.name ?? "";
         break;
       }
     }
@@ -90,7 +92,7 @@ export class AdvancedMeasureCorrector {
   private correctTimeDimensionDetails() {
     if (
       !this.measureIsValidForComponent(
-        this.dashboard.tdd.expandedMeasureName ?? "",
+        this.exploreState.tdd.expandedMeasureName ?? "",
         true,
         false,
       )
@@ -98,22 +100,22 @@ export class AdvancedMeasureCorrector {
       return;
     }
 
-    this.dashboard.tdd.expandedMeasureName = "";
+    this.exploreState.tdd.expandedMeasureName = "";
     if (
-      this.dashboard.activePage ===
+      this.exploreState.activePage ===
       DashboardState_ActivePage.TIME_DIMENSIONAL_DETAIL
     ) {
-      this.dashboard.activePage = DashboardState_ActivePage.DEFAULT;
+      this.exploreState.activePage = DashboardState_ActivePage.DEFAULT;
     }
   }
 
   private correctPivot() {
-    this.dashboard.pivot.columns = this.dashboard.pivot.columns.filter(
+    this.exploreState.pivot.columns = this.exploreState.pivot.columns.filter(
       (m) =>
         m.type !== PivotChipType.Measure ||
         !this.measureIsValidForComponent(m.id, true, false),
     );
-    this.dashboard.pivot.sorting = this.dashboard.pivot.sorting.filter(
+    this.exploreState.pivot.sorting = this.exploreState.pivot.sorting.filter(
       (s) =>
         !this.measuresMap.has(s.id) ||
         !this.measureIsValidForComponent(s.id, true, false),
@@ -138,7 +140,7 @@ export class AdvancedMeasureCorrector {
     switch (true) {
       // selected grain and measure's grain mismatch
       case grain !== V1TimeGrain.TIME_GRAIN_UNSPECIFIED &&
-        grain !== this.dashboard.selectedTimeRange?.interval:
+        grain !== this.exploreState.selectedTimeRange?.interval:
         return true;
 
       // for comparison measures,
@@ -147,8 +149,8 @@ export class AdvancedMeasureCorrector {
       case measure.type ===
         MetricsViewSpecMeasureType.MEASURE_TYPE_TIME_COMPARISON &&
         ((supportsComparisonMeasure &&
-          (!this.dashboard.showTimeComparison ||
-            !this.dashboard.selectedComparisonTimeRange)) ||
+          (!this.exploreState.showTimeComparison ||
+            !this.exploreState.selectedComparisonTimeRange)) ||
           !supportsComparisonMeasure):
         return true;
 

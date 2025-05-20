@@ -343,6 +343,10 @@ paths:
           in: path
           required: true
           type: string
+        - name: superuserForceAccess
+          in: query
+          required: false
+          type: boolean
       tags:
         - AdminService
     delete:
@@ -421,6 +425,10 @@ paths:
           in: path
           required: true
           type: string
+        - name: superuserForceAccess
+          in: query
+          required: false
+          type: boolean
       tags:
         - AdminService
   /v1/organizations/{organization}/billing/payments/portal-url:
@@ -445,6 +453,10 @@ paths:
           in: query
           required: false
           type: string
+        - name: superuserForceAccess
+          in: query
+          required: false
+          type: boolean
       tags:
         - AdminService
   /v1/organizations/{organization}/billing/subscriptions:
@@ -465,6 +477,10 @@ paths:
           in: path
           required: true
           type: string
+        - name: superuserForceAccess
+          in: query
+          required: false
+          type: boolean
       tags:
         - AdminService
     delete:
@@ -484,6 +500,10 @@ paths:
           in: path
           required: true
           type: string
+        - name: superuserForceAccess
+          in: query
+          required: false
+          type: boolean
       tags:
         - AdminService
     patch:
@@ -543,6 +563,35 @@ paths:
                 type: string
               superuserForceAccess:
                 type: boolean
+      tags:
+        - AdminService
+  /v1/organizations/{organization}/create-managed-git-repo:
+    put:
+      summary: CreateManagedGitRepo creates a new rill managed git repo for the organization.
+      operationId: AdminService_CreateManagedGitRepo
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1CreateManagedGitRepoResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organization
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              name:
+                type: string
+                description: "name of the repo to create. \nNote: The final name will be suffixed with a random string to ensure uniqueness."
       tags:
         - AdminService
   /v1/organizations/{organization}/invites:
@@ -611,6 +660,10 @@ paths:
           in: query
           required: false
           type: string
+        - name: superuserForceAccess
+          in: query
+          required: false
+          type: boolean
       tags:
         - AdminService
     post:
@@ -697,6 +750,8 @@ paths:
             properties:
               role:
                 type: string
+              superuserForceAccess:
+                type: boolean
       tags:
         - AdminService
   /v1/organizations/{organization}/members/current:
@@ -1002,6 +1057,10 @@ paths:
           in: path
           required: true
           type: string
+        - name: superuserForceAccess
+          in: query
+          required: false
+          type: boolean
       tags:
         - AdminService
   /v1/organizations/{organization}/projects/{project}/connect-to-github:
@@ -1107,6 +1166,10 @@ paths:
           in: path
           required: true
           type: string
+        - name: superuserForceAccess
+          in: query
+          required: false
+          type: boolean
       tags:
         - AdminService
   /v1/organizations/{organization}/projects/{project}/iframe:
@@ -1250,6 +1313,10 @@ paths:
           in: query
           required: false
           type: string
+        - name: superuserForceAccess
+          in: query
+          required: false
+          type: boolean
       tags:
         - AdminService
     post:
@@ -1705,15 +1772,13 @@ paths:
         - AdminService
   /v1/organizations/{organization}/projects/{project}/upload-assets:
     post:
-      summary: |-
-        Converts a project connected to github to a rill managed project.
-        Uploads the current project to assets.
-      operationId: AdminService_UploadProjectAssets
+      summary: Converts a project connected to github to a rill managed project.
+      operationId: AdminService_DisconnectProjectFromGithub
       responses:
         "200":
           description: A successful response.
           schema:
-            $ref: '#/definitions/v1UploadProjectAssetsResponse'
+            $ref: '#/definitions/v1DisconnectProjectFromGithubResponse'
         default:
           description: An unexpected error response.
           schema:
@@ -2662,6 +2727,10 @@ paths:
           required: false
           type: integer
           format: int64
+        - name: superuserForceAccess
+          in: query
+          required: false
+          type: boolean
         - name: issueSuperuserToken
           in: query
           required: false
@@ -3068,8 +3137,6 @@ paths:
           schema:
             type: object
             properties:
-              branch:
-                type: string
               alert:
                 type: string
               annotations:
@@ -3124,10 +3191,6 @@ paths:
           in: path
           required: true
           type: string
-        - name: branch
-          in: query
-          required: false
-          type: string
         - name: pageSize
           in: query
           required: false
@@ -3163,8 +3226,6 @@ paths:
           schema:
             type: object
             properties:
-              branch:
-                type: string
               report:
                 type: string
               ownerId:
@@ -3628,6 +3689,10 @@ paths:
           in: path
           required: true
           type: string
+        - name: superuserForceAccess
+          in: query
+          required: false
+          type: boolean
       tags:
         - AdminService
   /v1/users/bookmarks:
@@ -4172,6 +4237,17 @@ definitions:
     properties:
       bookmark:
         $ref: '#/definitions/v1Bookmark'
+  v1CreateManagedGitRepoResponse:
+    type: object
+    properties:
+      remote:
+        type: string
+      username:
+        type: string
+      password:
+        type: string
+      defaultBranch:
+        type: string
   v1CreateOrganizationRequest:
     type: object
     properties:
@@ -4263,6 +4339,8 @@ definitions:
       - DEPLOYMENT_STATUS_OK
       - DEPLOYMENT_STATUS_ERROR
     default: DEPLOYMENT_STATUS_UNSPECIFIED
+  v1DisconnectProjectFromGithubResponse:
+    type: object
   v1EditAlertResponse:
     type: object
   v1EditReportResponse:
@@ -4594,7 +4672,7 @@ definitions:
         type: array
         items:
           type: object
-          $ref: '#/definitions/v1UserInvite'
+          $ref: '#/definitions/v1OrganizationInvite'
       nextPageToken:
         type: string
   v1ListOrganizationMemberUsergroupsResponse:
@@ -4634,7 +4712,7 @@ definitions:
         type: array
         items:
           type: object
-          $ref: '#/definitions/v1UserInvite'
+          $ref: '#/definitions/v1ProjectInvite'
       nextPageToken:
         type: string
   v1ListProjectMemberUsergroupsResponse:
@@ -4886,6 +4964,15 @@ definitions:
       updatedOn:
         type: string
         format: date-time
+  v1OrganizationInvite:
+    type: object
+    properties:
+      email:
+        type: string
+      roleName:
+        type: string
+      invitedBy:
+        type: string
   v1OrganizationMemberUser:
     type: object
     properties:
@@ -4994,6 +5081,9 @@ definitions:
         type: string
       githubUrl:
         type: string
+      managedGitId:
+        type: string
+        description: managed_git_id is set if the project is connected to a rill-managed git repo.
       subpath:
         type: string
       prodBranch:
@@ -5027,6 +5117,17 @@ definitions:
       updatedOn:
         type: string
         format: date-time
+  v1ProjectInvite:
+    type: object
+    properties:
+      email:
+        type: string
+      roleName:
+        type: string
+      orgRoleName:
+        type: string
+      invitedBy:
+        type: string
   v1ProjectMemberUser:
     type: object
     properties:
@@ -5039,6 +5140,8 @@ definitions:
       userPhotoUrl:
         type: string
       roleName:
+        type: string
+      orgRoleName:
         type: string
       createdOn:
         type: string
@@ -5610,8 +5713,6 @@ definitions:
     properties:
       preferences:
         $ref: '#/definitions/v1UserPreferences'
-  v1UploadProjectAssetsResponse:
-    type: object
   v1User:
     type: object
     properties:
@@ -5631,15 +5732,6 @@ definitions:
       updatedOn:
         type: string
         format: date-time
-  v1UserInvite:
-    type: object
-    properties:
-      email:
-        type: string
-      role:
-        type: string
-      invitedBy:
-        type: string
   v1UserPreferences:
     type: object
     properties:
