@@ -49,6 +49,6 @@ func CheckOrganization(ch *Helper) PreRunCheck {
 			return nil
 		}
 
-		return fmt.Errorf("command '%s': %s", cmd.Name(), "no organization is set, pass `--org` or run `rill org switch`")
+		return fmt.Errorf("no organization is set, pass `--org` or run `rill org switch`")
 	}
 }
