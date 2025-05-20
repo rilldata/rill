@@ -315,9 +315,10 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 			model.State.TotalExecutionDurationMs = model.State.LatestExecutionDurationMs
 		}
 
-		// TODO: Add SQL tests execution here
-		if len(model.Spec.Tests) > 0 {
-			// Run SQL tests against the model's output
+		// Run model tests if no partitions are configured
+		testErr := r.runModelTests(ctx, self, execRes)
+		if testErr != nil {
+			execErr = fmt.Errorf("model tests failed: %w", testErr)
 		}
 
 		err := r.updateStateWithResult(ctx, self, execRes)
@@ -1129,6 +1130,14 @@ func (r *ModelReconciler) executePartition(ctx context.Context, catalog drivers.
 		logArgs = append(logArgs, zap.Error(err))
 	}
 
+	// Run partition-level tests after each partition is executed
+	if err == nil && mdl.Spec.PartitionsResolver != "" {
+		testErr := r.runModelTests(ctx, self, res)
+		if testErr != nil {
+			return nil, false, testErr
+		}
+	}
+
 	// Mark the partition as executed
 	now := time.Now()
 	partition.ExecutedOn = &now
@@ -1551,6 +1560,12 @@ func (r *ModelReconciler) shouldTrigger(ctx context.Context, self *runtimev1.Res
 	default:
 		return false, false, fmt.Errorf("unknown change mode %q", model.Spec.ChangeMode)
 	}
+}
+
+// runModelTests executes the user defined tests for the model
+func (r *ModelReconciler) runModelTests(ctx context.Context, self *runtimev1.Resource, res *drivers.ModelResult) error {
+	// TODO: Implement actual test logic
+	return nil
 }
 
 // hashWriteMapOrdered writes the keys and values of a map to the writer in a deterministic order.

@@ -1958,7 +1958,7 @@ measures:
   - name: c
     expression: sum(a)
     per: [foo]
-       requires: [a]
+    requires: [a]
   - name: d
     type: derived
     expression: a/lag(a)
