@@ -31,7 +31,7 @@ func CheckAuth(ch *Helper) PreRunCheck {
 
 		// This will just check if token is present in the config
 		if !ch.IsAuthenticated() {
-			return fmt.Errorf("command '%s': %s", cmd.Name(), "not authenticated, please run 'rill login'")
+			return fmt.Errorf("not authenticated, please run 'rill login'")
 		}
 		return nil
 	}
