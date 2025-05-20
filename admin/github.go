@@ -33,7 +33,7 @@ type Github interface {
 	AppClient() *github.Client
 	InstallationClient(installationID int64, repoID *int64) *github.Client
 	// InstallationToken returns a token for the installation ID limited to the repoID.
-	InstallationToken(ctx context.Context, installationID, repoID int64) (string, error)
+	InstallationToken(ctx context.Context, installationID, repoID int64) (token string, expiresAt time.Time, err error)
 
 	CreateManagedRepo(ctx context.Context, repoPrefix string) (*github.Repository, error)
 	ManagedOrgInstallationID() (int64, error)
@@ -130,13 +130,21 @@ func (g *githubClient) InstallationClient(installationID int64, repoID *int64) *
 	return installationClient
 }
 
-func (g *githubClient) InstallationToken(ctx context.Context, installationID, repoID int64) (string, error) {
+func (g *githubClient) InstallationToken(ctx context.Context, installationID, repoID int64) (string, time.Time, error) {
 	client := g.InstallationClient(installationID, &repoID)
 	tr, ok := client.Client().Transport.(*ghinstallation.Transport)
 	if !ok {
-		return "", fmt.Errorf("transport is not of type *ghinstallation.Transport")
+		return "", time.Time{}, fmt.Errorf("transport is not of type *ghinstallation.Transport")
 	}
-	return tr.Token(ctx)
+	t, err := tr.Token(ctx)
+	if err != nil {
+		return "", time.Time{}, err
+	}
+	_, expiry, err := tr.Expiry()
+	if err != nil {
+		return "", time.Time{}, err
+	}
+	return t, expiry, nil
 }
 
 func (g *githubClient) CreateManagedRepo(ctx context.Context, name string) (*github.Repository, error) {
