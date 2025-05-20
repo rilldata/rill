@@ -9,7 +9,11 @@ type SemanticInputTypes =
   | "multi_fields"
   | "metrics_sql";
 type ChartInputTypes = "positional" | "mark" | "tooltip" | "config";
-type CustomInputTypes = "rill_time" | "sparkline" | "comparison_options";
+type CustomInputTypes =
+  | "rill_time"
+  | "sparkline"
+  | "comparison_options"
+  | "vega_spec";
 type PositionalInputTypes = "alignment";
 
 export type InputType =

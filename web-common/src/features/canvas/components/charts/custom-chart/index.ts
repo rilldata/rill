@@ -48,7 +48,7 @@ export class CustomChartComponent extends BaseCanvasComponent<CustomChart> {
     return {
       options: {
         metrics_sql: { type: "metrics_sql", label: "Metrics SQL" },
-        vega_spec: { type: "textarea", label: "Spec" },
+        vega_spec: { type: "vega_spec", label: "Vega Lite Spec" },
         ...commonOptions,
       },
       filter: {},

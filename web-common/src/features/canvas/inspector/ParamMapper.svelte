@@ -3,6 +3,7 @@
   import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
   import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
   import { BaseChart } from "@rilldata/web-common/features/canvas/components/charts/BaseChart";
+  import VegaSpecInput from "@rilldata/web-common/features/canvas/inspector/chart/VegaSpecInput.svelte";
   import type { BaseCanvasComponent } from "../components/BaseCanvasComponent";
   import { PivotCanvasComponent } from "../components/pivot";
   import type { ComponentSpec } from "../components/types";
@@ -150,6 +151,19 @@
             onChange={(updatedSQL) => {
               localParamValues[key] = updatedSQL;
               component.updateProperty(key, updatedSQL);
+            }}
+          />
+
+          <!-- VEGA SPEC -->
+        {:else if config.type === "vega_spec"}
+          <VegaSpecInput
+            {key}
+            label={config.label ?? key}
+            description={config?.description}
+            value={localParamValues[key]}
+            onChange={(updatedSpec) => {
+              localParamValues[key] = updatedSpec;
+              component.updateProperty(key, updatedSpec);
             }}
           />
 
