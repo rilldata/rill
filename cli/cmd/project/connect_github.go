@@ -395,7 +395,7 @@ func createGithubRepoFlow(ctx context.Context, ch *cmdutil.Helper, localGitPath 
 
 	printer.ColorGreenBold.Printf("\nSuccessfully created repository on %q\n\n", *githubRepository.HTMLURL)
 	ch.Print("Pushing local project to Github\n\n")
-	author, err := cmdutil.AutoCommitGitSignature(ctx, ch, localGitPath)
+	author, err := ch.GitSignature(ctx, localGitPath)
 	if err != nil {
 		return fmt.Errorf("failed to generate git commit signature: %w", err)
 	}

@@ -2,15 +2,10 @@ package cmdutil
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"regexp"
 	"strings"
-	"time"
 
-	"github.com/go-git/go-git/v5"
-	"github.com/go-git/go-git/v5/config"
-	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/rilldata/rill/cli/pkg/gitutil"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -92,7 +87,7 @@ func (g *GitHelper) PushToNewManagedRepo(ctx context.Context) (*adminv1.CreateMa
 	if err != nil {
 		return nil, err
 	}
-	author, err := AutoCommitGitSignature(ctx, g.h, g.localPath)
+	author, err := g.h.GitSignature(ctx, g.localPath)
 	if err != nil {
 		return nil, err
 	}
@@ -122,7 +117,7 @@ func (g *GitHelper) PushToManagedRepo(ctx context.Context) error {
 		return err
 	}
 
-	author, err := AutoCommitGitSignature(ctx, g.h, g.localPath)
+	author, err := g.h.GitSignature(ctx, g.localPath)
 	if err != nil {
 		return err
 	}
@@ -142,40 +137,6 @@ func (g *GitHelper) setGitConfig(ctx context.Context, c *gitutil.Config) error {
 
 	g.gitConfig = c
 	return nil
-}
-
-func AutoCommitGitSignature(ctx context.Context, h *Helper, path string) (*object.Signature, error) {
-	repo, err := git.PlainOpen(path)
-	if err == nil {
-		cfg, err := repo.ConfigScoped(config.SystemScope)
-		if err == nil && cfg.User.Email != "" && cfg.User.Name != "" {
-			// user has git properly configured use that
-			return &object.Signature{
-				Name:  cfg.User.Name,
-				Email: cfg.User.Email,
-				When:  time.Now(),
-			}, nil
-		}
-	}
-
-	// use email of rill user
-	c, err := h.Client()
-	if err != nil {
-		return nil, err
-	}
-	userResp, err := c.GetCurrentUser(ctx, &adminv1.GetCurrentUserRequest{})
-	if err != nil {
-		return nil, err
-	}
-	if userResp.User == nil {
-		return nil, errors.New("failed to get current user")
-	}
-
-	return &object.Signature{
-		Name:  userResp.User.DisplayName,
-		Email: userResp.User.Email,
-		When:  time.Now(),
-	}, nil
 }
 
 func EnsureGitignoreHasDotenv(ctx context.Context, repo drivers.RepoStore) (bool, error) {

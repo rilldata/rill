@@ -24,7 +24,6 @@ import (
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/pkg/urlutil"
 	"github.com/rilldata/rill/cli/cmd/auth"
-	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/dotrillcloud"
 	"github.com/rilldata/rill/cli/pkg/gitutil"
 	"github.com/rilldata/rill/cli/pkg/pkce"
@@ -243,7 +242,7 @@ func (s *Server) PushToGithub(ctx context.Context, r *connect.Request[localv1.Pu
 	}
 
 	// git commit -m
-	author, err := cmdutil.AutoCommitGitSignature(ctx, s.app.ch, s.app.ProjectPath)
+	author, err := s.app.ch.GitSignature(ctx, s.app.ProjectPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate git commit signature: %w", err)
 	}

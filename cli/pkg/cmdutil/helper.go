@@ -4,11 +4,15 @@ import (
 	"context"
 	"crypto/md5"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/config"
+	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/rilldata/rill/admin/client"
 	"github.com/rilldata/rill/cli/pkg/dotrill"
 	"github.com/rilldata/rill/cli/pkg/dotrillcloud"
@@ -452,6 +456,40 @@ func (h *Helper) GitHelper(project, localPath string) *GitHelper {
 		h.gitHelper = newGitHelper(h, h.Org, project, localPath)
 	}
 	return h.gitHelper
+}
+
+func (h *Helper) GitSignature(ctx context.Context, path string) (*object.Signature, error) {
+	repo, err := git.PlainOpen(path)
+	if err == nil {
+		cfg, err := repo.ConfigScoped(config.SystemScope)
+		if err == nil && cfg.User.Email != "" && cfg.User.Name != "" {
+			// user has git properly configured use that
+			return &object.Signature{
+				Name:  cfg.User.Name,
+				Email: cfg.User.Email,
+				When:  time.Now(),
+			}, nil
+		}
+	}
+
+	// use email of rill user
+	c, err := h.Client()
+	if err != nil {
+		return nil, err
+	}
+	userResp, err := c.GetCurrentUser(ctx, &adminv1.GetCurrentUserRequest{})
+	if err != nil {
+		return nil, err
+	}
+	if userResp.User == nil {
+		return nil, errors.New("failed to get current user")
+	}
+
+	return &object.Signature{
+		Name:  userResp.User.DisplayName,
+		Email: userResp.User.Email,
+		When:  time.Now(),
+	}, nil
 }
 
 func hashStr(ss ...string) string {
