@@ -28,8 +28,6 @@ var (
 		// this needs to be after Now and Latest to match to them
 		{"PeriodToGrain", `[sSmhHdDwWqQMyY]T[sSmhHdDwWqQMyY]`},
 		{"Grain", `[sSmhHdDwWqQMyY]`},
-		// this has to be at the end
-		{"TimeZone", `{.+?}`},
 		{"ISOTime", isoTimePattern},
 		{"AnchorPrefix", `[+\-<>]`},
 		{"Current", "[~]"},
@@ -37,6 +35,8 @@ var (
 		{"To", `(?i)to`},
 		{"By", `(?i)by`},
 		{"Of", `(?i)of`},
+		// this has to be at the end
+		{"TimeZone", `[0-9a-zA-Z/+-_]+`},
 		// needed for misc. direct character references used
 		{"Punct", `[-[!@#$%^&*()+_={}\|:;"'<,>.?/]]`},
 		{"Whitespace", `[ \t]+`},
@@ -96,7 +96,7 @@ var (
 		timeutil.TimeGrainHour:    timeutil.TimeGrainMinute,
 		timeutil.TimeGrainDay:     timeutil.TimeGrainHour,
 		timeutil.TimeGrainWeek:    timeutil.TimeGrainDay,
-		timeutil.TimeGrainMonth:   timeutil.TimeGrainWeek,
+		timeutil.TimeGrainMonth:   timeutil.TimeGrainDay,
 		timeutil.TimeGrainQuarter: timeutil.TimeGrainMonth,
 		timeutil.TimeGrainYear:    timeutil.TimeGrainMonth,
 	}
@@ -107,7 +107,7 @@ type Expression struct {
 	To             *Link          `parser:"(To @@)?"`
 	Grain          *string        `parser:"(By @Grain)?"`
 	AnchorOverride *LabeledAnchor `parser:"('@' @@)?"`
-	TimeZone       *string        `parser:"('@' @TimeZone)?"`
+	TimeZone       *string        `parser:"('tz' @Whitespace @TimeZone)?"`
 
 	isNewFormat bool
 	timeZone    *time.Location
@@ -230,7 +230,7 @@ func Parse(from string, parseOpts ParseOptions) (*Expression, error) {
 	if parseOpts.TimeZoneOverride != nil {
 		rt.timeZone = parseOpts.TimeZoneOverride
 	} else if rt.TimeZone != nil {
-		rt.timeZone, err = time.LoadLocation(strings.Trim(*rt.TimeZone, "{}"))
+		rt.timeZone, err = time.LoadLocation(strings.TrimSpace(*rt.TimeZone))
 		if err != nil {
 			return nil, err
 		}
@@ -399,13 +399,13 @@ func (o *Ordinal) eval(evalOpts EvalOptions, start, cur, end time.Time, tz *time
 
 	offset := o.Num - 1
 
-	start = timeutil.OffsetTime(start, o.tg, offset)
+	start = timeutil.OffsetTime(start, o.tg, tz, offset)
 	start = truncateWithCorrection(start, o.tg, tz, evalOpts.FirstDay, evalOpts.FirstMonth)
 
 	// update cur to match the shifted ordinal
 	cur = timeutil.CopyTimeComponentsUntil(start, cur, o.tg)
 
-	updatedEnd := timeutil.OffsetTime(start, o.tg, 1)
+	updatedEnd := timeutil.OffsetTime(start, o.tg, tz, 1)
 
 	return start, cur, updatedEnd
 }
@@ -419,7 +419,9 @@ func (t *TimeAnchor) parse() error {
 	if t.Num != nil {
 		t.offset = *t.Num
 		if t.offset == 0 {
-			// if something like 0D is specified we still offset start by 1
+			// if something like 0D is specified we need to treat it like D~
+			t.IncludeCurrent = true
+			// this is to make sure we still have 1 period of data from end
 			t.offset = 1
 		}
 	} else {
@@ -460,7 +462,7 @@ func (t *TimeAnchor) eval(evalOpts EvalOptions, start, cur, end time.Time, tz *t
 			} else if *t.Prefix == "+" {
 				offset--
 			}
-			start = timeutil.OffsetTime(start, t.from, offset)
+			start = timeutil.OffsetTime(start, t.from, tz, offset)
 		}
 
 		// X-to-week should give buckets in week. Should also follow week rules https://en.wikipedia.org/wiki/ISO_week_date#First_week
@@ -468,7 +470,7 @@ func (t *TimeAnchor) eval(evalOpts EvalOptions, start, cur, end time.Time, tz *t
 
 		end := timeutil.TruncateTime(cur, t.tg, tz, evalOpts.FirstDay, evalOpts.FirstMonth)
 		if t.IncludeCurrent {
-			end = timeutil.OffsetTime(end, t.tg, 1)
+			end = timeutil.OffsetTime(end, t.tg, tz, 1)
 		}
 
 		return start, cur, end
@@ -480,11 +482,11 @@ func (t *TimeAnchor) eval(evalOpts EvalOptions, start, cur, end time.Time, tz *t
 
 		end = timeutil.TruncateTime(cur, t.tg, tz, evalOpts.FirstDay, evalOpts.FirstMonth)
 		if t.IncludeCurrent {
-			end = timeutil.OffsetTime(end, t.tg, 1)
-			cur = timeutil.OffsetTime(cur, t.tg, 1)
+			end = timeutil.OffsetTime(end, t.tg, tz, 1)
+			cur = timeutil.OffsetTime(cur, t.tg, tz, 1)
 		}
 
-		start = timeutil.OffsetTime(end, t.tg, -t.offset)
+		start = timeutil.OffsetTime(end, t.tg, tz, -t.offset)
 
 		return start, cur, end
 	}
@@ -497,19 +499,19 @@ func (t *TimeAnchor) eval(evalOpts EvalOptions, start, cur, end time.Time, tz *t
 		}
 
 		start = timeutil.TruncateTime(cur, t.tg, tz, evalOpts.FirstDay, evalOpts.FirstMonth)
-		start = timeutil.OffsetTime(start, t.tg, -offset)
+		start = timeutil.OffsetTime(start, t.tg, tz, -offset)
 
-		end = timeutil.OffsetTime(start, t.tg, 1)
+		end = timeutil.OffsetTime(start, t.tg, tz, 1)
 
-		cur = timeutil.OffsetTime(cur, t.tg, -offset)
+		cur = timeutil.OffsetTime(cur, t.tg, tz, -offset)
 
 	case "+":
 		start = timeutil.TruncateTime(cur, t.tg, tz, evalOpts.FirstDay, evalOpts.FirstMonth)
-		start = timeutil.OffsetTime(start, t.tg, t.offset)
+		start = timeutil.OffsetTime(start, t.tg, tz, t.offset)
 
-		end = timeutil.OffsetTime(start, t.tg, 1)
+		end = timeutil.OffsetTime(start, t.tg, tz, 1)
 
-		cur = timeutil.OffsetTime(cur, t.tg, t.offset)
+		cur = timeutil.OffsetTime(cur, t.tg, tz, t.offset)
 
 	case "<":
 		// Anchor the range to the beginning of the higher order start
@@ -517,7 +519,7 @@ func (t *TimeAnchor) eval(evalOpts EvalOptions, start, cur, end time.Time, tz *t
 
 		// Anchoring to start should follow week rules https://en.wikipedia.org/wiki/ISO_week_date#First_week
 		start = truncateWithCorrection(start, t.tg, tz, evalOpts.FirstDay, evalOpts.FirstMonth)
-		end = timeutil.OffsetTime(start, t.tg, t.offset)
+		end = timeutil.OffsetTime(start, t.tg, tz, t.offset)
 		end = timeutil.TruncateTime(end, t.tg, tz, evalOpts.FirstDay, evalOpts.FirstMonth)
 
 		cur = start
@@ -527,7 +529,7 @@ func (t *TimeAnchor) eval(evalOpts EvalOptions, start, cur, end time.Time, tz *t
 		// EG: >4d of M : gives last 4 days of the current month regardless of current date.
 		end = timeutil.CeilTime(end, t.tg, tz, evalOpts.FirstDay, evalOpts.FirstMonth)
 		start = timeutil.TruncateTime(end, t.tg, tz, evalOpts.FirstDay, evalOpts.FirstMonth)
-		start = timeutil.OffsetTime(start, t.tg, -t.offset)
+		start = timeutil.OffsetTime(start, t.tg, tz, -t.offset)
 
 		cur = end
 	}
@@ -590,9 +592,9 @@ func (a *AbsoluteTime) parse() error {
 
 func (a *AbsoluteTime) eval(evalOpts EvalOptions, start, cur, end time.Time, tz *time.Location) (time.Time, time.Time, time.Time) {
 	// Since we use this to build a time, month and day cannot be zero, hence the max(1, xx)
-	absStart := time.Date(a.year, time.Month(max(1, a.month)), max(1, a.day), a.hour, a.minute, a.second, 0, tz)
+	absStart := time.Date(a.year, time.Month(max(1, a.month)), max(1, a.day), a.hour, a.minute, a.second, 0, tz).In(time.UTC)
 
-	absEnd := timeutil.OffsetTime(absStart, a.tg, 1)
+	absEnd := timeutil.OffsetTime(absStart, a.tg, tz, 1)
 
 	// update cur to match the absolute time
 	absCur := timeutil.CopyTimeComponentsUntil(absStart, cur, a.tg)
@@ -685,7 +687,7 @@ func truncateWithCorrection(tm time.Time, tg timeutil.TimeGrain, tz *time.Locati
 			weekday = 7
 		}
 		if weekday >= 5 {
-			tm = timeutil.OffsetTime(tm, tg, 1)
+			tm = timeutil.OffsetTime(tm, tg, tz, 1)
 		}
 	}
 

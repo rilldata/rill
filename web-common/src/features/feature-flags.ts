@@ -44,6 +44,7 @@ class FeatureFlags {
   dimensionSearch = new FeatureFlag("user", false);
   clickhouseModeling = new FeatureFlag("user", false);
   twoTieredNavigation = new FeatureFlag("user", false);
+  rillTime = new FeatureFlag("user", false);
   hidePublicUrl = new FeatureFlag("user", false);
   alerts = new FeatureFlag("user", true);
   reports = new FeatureFlag("user", true);
