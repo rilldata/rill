@@ -154,7 +154,6 @@ func (e *embedClickHouse) stop() error {
 	if err != nil {
 		return err
 	}
-	_ = e.cmd.Wait()
 	e.opts = nil
 	e.cmd = nil
 	return nil
