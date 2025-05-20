@@ -447,7 +447,7 @@ func (h *Helper) GitHelper(project, localPath string) *GitHelper {
 	h.gitHelperMu.Lock()
 	defer h.gitHelperMu.Unlock()
 
-	// If the git helper is nil or the org, project, or local path has changed, create a new one.
+	// If the git helper is nil or the project or local path has changed, create a new one.
 	if h.gitHelper == nil || h.gitHelper.project != project || h.gitHelper.localPath != localPath {
 		h.gitHelper = newGitHelper(h, h.Org, project, localPath)
 	}
