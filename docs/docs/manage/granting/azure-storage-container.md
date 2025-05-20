@@ -1,9 +1,13 @@
 ---
-title: "Azure Storage Container"
+title: "Managed Azure Storage Container"
 description: Azure Storage Container
 sidebar_label: "Azure Storage Container"
 sidebar_position: 40
 ---
+:::warning
+Please note that these instructions were made specifically for Rill Managed Pipelines and used by our data engineering team to set up orchestration from object stores/data warehouses into Rill Managed Database Services. While some of the concepts may apply, please refer to your providers documentation on the correct permissions required to connect to your service.
+:::
+
 ## Overview
 
 Rill would need access to the Azure Storage Container to fetch the data. For this Rill needs 
