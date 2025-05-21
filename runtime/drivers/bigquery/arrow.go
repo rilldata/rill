@@ -87,7 +87,7 @@ func (rs *arrowRecordReader) Release() {
 		}
 		rs.records = nil
 	}
-	rs.logger.Debug("next call took", zap.Float64("apinext_seconds", rs.apinext.Seconds()), zap.Float64("ipcread_seconds", rs.apinext.Seconds()), observability.ZapCtx(rs.ctx))
+	rs.logger.Debug("next call took", zap.Float64("apinext_seconds", rs.apinext.Seconds()), zap.Float64("ipcread_seconds", rs.ipcread.Seconds()), observability.ZapCtx(rs.ctx))
 }
 
 // Schema returns the underlying arrow schema

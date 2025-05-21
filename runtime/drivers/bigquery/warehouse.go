@@ -221,7 +221,7 @@ func (f *fileIterator) Next(ctx context.Context) ([]string, error) {
 	// storage API not available so can't read as arrow records. Read results row by row and dump in a json file.
 	if !f.bqIter.IsAccelerated() {
 		f.logger.Debug("downloading results in json file", observability.ZapCtx(ctx))
-		span.SetAttributes(attribute.Bool("use_storage_api", false))
+		span.SetAttributes(attribute.Bool("storage_api", false))
 
 		file, err := f.downloadAsJSONFile(ctx)
 		if err != nil {
@@ -231,7 +231,7 @@ func (f *fileIterator) Next(ctx context.Context) ([]string, error) {
 	}
 
 	f.logger.Debug("downloading results in parquet file", observability.ZapCtx(ctx))
-	span.SetAttributes(attribute.Bool("use_storage_api", true))
+	span.SetAttributes(attribute.Bool("storage_api", true))
 
 	// create a temp file
 	fw, err := os.CreateTemp(f.tempDir, "temp*.parquet")

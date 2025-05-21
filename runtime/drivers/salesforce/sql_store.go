@@ -150,7 +150,7 @@ func (j *bulkJob) Next(ctx context.Context) ([]string, error) {
 	}
 	j.tempFilePaths = append(j.tempFilePaths, tempFile)
 	j.nextResult++
-	return j.tempFilePaths, nil
+	return []string{tempFile}, nil
 }
 
 type sourceProperties struct {

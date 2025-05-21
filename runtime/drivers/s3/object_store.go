@@ -41,7 +41,6 @@ func (c *Connection) DownloadFiles(ctx context.Context, path string) (drivers.Fi
 	if err != nil {
 		return nil, err
 	}
-	defer bucket.Close()
 
 	tempDir, err := c.storage.TempDir()
 	if err != nil {
@@ -49,8 +48,9 @@ func (c *Connection) DownloadFiles(ctx context.Context, path string) (drivers.Fi
 	}
 
 	return bucket.Download(ctx, &blob.DownloadOptions{
-		Glob:    url.Path,
-		TempDir: tempDir,
+		Glob:        url.Path,
+		TempDir:     tempDir,
+		CloseBucket: true,
 	})
 }
 
