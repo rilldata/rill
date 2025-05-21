@@ -96,7 +96,6 @@ func (s *Server) CreateInstance(ctx context.Context, req *runtimev1.CreateInstan
 		Connectors:     req.Connectors,
 		Variables:      req.Variables,
 		Annotations:    req.Annotations,
-		EmbedCatalog:   req.EmbedCatalog,
 		WatchRepo:      req.WatchRepo,
 	}
 
@@ -168,7 +167,6 @@ func (s *Server) EditInstance(ctx context.Context, req *runtimev1.EditInstanceRe
 		ProjectVariables:     oldInst.ProjectVariables,
 		FeatureFlags:         oldInst.FeatureFlags,
 		Annotations:          annotations,
-		EmbedCatalog:         valOrDefault(req.EmbedCatalog, oldInst.EmbedCatalog),
 		WatchRepo:            valOrDefault(req.WatchRepo, oldInst.WatchRepo),
 	}
 
@@ -292,7 +290,6 @@ func instanceToPB(inst *drivers.Instance, sensitive bool) *runtimev1.Instance {
 		pb.Variables = inst.Variables
 		pb.ProjectVariables = inst.ProjectVariables
 		pb.Annotations = inst.Annotations
-		pb.EmbedCatalog = inst.EmbedCatalog
 		pb.WatchRepo = inst.WatchRepo
 	}
 
