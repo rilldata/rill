@@ -41,7 +41,7 @@ type FileIterator interface {
 	SetBatchSizeBytes(size int64)
 	// Next returns a list of file downloaded from external sources
 	// and cleanups file created in previous batch
-	Next() ([]string, error)
+	Next(ctx context.Context) ([]string, error)
 }
 
 // ObjectStoreModelInputProperties contain common input properties for object store models.

@@ -8,7 +8,10 @@ import (
 
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
+	"go.opentelemetry.io/otel"
 )
+
+var tracer = otel.Tracer("github.com/rilldata/rill/runtime/drivers/salesforce")
 
 const defaultClientID = "3MVG9KsVczVNcM8y6w3Kjszy.DW9gMzcYDHT97WIX3NYNYA35UvITypEhtYc6FDY8qqcDEIQc_qJgZErv6Q_d"
 
@@ -16,6 +19,9 @@ var _ drivers.Warehouse = &connection{}
 
 // QueryAsFiles implements drivers.SQLStore
 func (c *connection) QueryAsFiles(ctx context.Context, props map[string]any) (drivers.FileIterator, error) {
+	ctx, span := tracer.Start(ctx, "Connection.QueryAsFiles")
+	defer span.End()
+
 	srcProps, err := parseSourceProperties(props)
 	if err != nil {
 		return nil, err
@@ -119,7 +125,7 @@ func (j *bulkJob) SetBatchSizeBytes(size int64) {
 }
 
 // Next implements drivers.RowIterator.
-func (j *bulkJob) Next() ([]string, error) {
+func (j *bulkJob) Next(ctx context.Context) ([]string, error) {
 	if j.jobID == "" {
 		return nil, fmt.Errorf("invalid job: no job id")
 	}
@@ -138,7 +144,7 @@ func (j *bulkJob) Next() ([]string, error) {
 	if j.nextResult == len(j.results) {
 		return nil, io.EOF
 	}
-	tempFile, err := j.retrieveJobResult(context.Background(), j.nextResult)
+	tempFile, err := j.retrieveJobResult(ctx, j.nextResult)
 	if err != nil {
 		return nil, fmt.Errorf("failed to retrieve batch: %w", err)
 	}

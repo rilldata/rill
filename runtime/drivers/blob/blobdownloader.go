@@ -25,6 +25,7 @@ const _concurrentBlobDownloadLimit = 8
 
 // Metrics
 var (
+	tracer                = otel.Tracer("github.com/rilldata/rill/runtime/drivers/blob")
 	meter                 = otel.Meter("github.com/rilldata/rill/runtime/drivers/blob")
 	downloadTimeHistogram = observability.Must(meter.Float64Histogram("download.time", metric.WithUnit("s")))
 	downloadSizeCounter   = observability.Must(meter.Int64UpDownCounter("download.size", metric.WithUnit("bytes")))
@@ -142,7 +143,24 @@ func (it *blobIterator) Close() error {
 	return closeErr
 }
 
-func (it *blobIterator) Next() ([]string, error) {
+func (it *blobIterator) Format() string {
+	return it.opts.Format
+}
+
+func (it *blobIterator) SetKeepFilesUntilClose() {
+	// Set the flag to keep files until Close() is called.
+	it.opts.KeepFilesUntilClose = true
+}
+
+func (it *blobIterator) SetBatchSizeBytes(size int64) {
+	it.opts.BatchSizeBytes = size
+}
+
+func (it *blobIterator) Next(ctx context.Context) ([]string, error) {
+	// Even though the download happens in a goroutine, adding a trace here is still a good approximation of how long it waits for a download.
+	_, span := tracer.Start(ctx, "blobIterator.Next")
+	defer span.End()
+
 	// Delete files from the previous iteration
 	if !it.opts.KeepFilesUntilClose {
 		fileutil.ForceRemoveFiles(it.lastBatch)
@@ -165,19 +183,6 @@ func (it *blobIterator) Next() ([]string, error) {
 	result := make([]string, len(batch))
 	copy(result, batch)
 	return result, nil
-}
-
-func (it *blobIterator) Format() string {
-	return it.opts.Format
-}
-
-func (it *blobIterator) SetKeepFilesUntilClose() {
-	// Set the flag to keep files until Close() is called.
-	it.opts.KeepFilesUntilClose = true
-}
-
-func (it *blobIterator) SetBatchSizeBytes(size int64) {
-	it.opts.BatchSizeBytes = size
 }
 
 func (it *blobIterator) downloadFiles() {

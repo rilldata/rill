@@ -225,10 +225,12 @@ func (e *objectStoreToSelfExecutorNonNative) Execute(ctx context.Context, opts *
 	}
 	defer iter.Close()
 
+	// We want to batch all the files to avoid issues with schema compatibility and partition_overwrite inserts.
+	// If a user encounters performance issues, we should encourage them to use `partitions:` without `incremental:` to break ingestion into smaller batches.
 	iter.SetKeepFilesUntilClose()
 	var files []string
 	for {
-		batch, err := iter.Next()
+		batch, err := iter.Next(ctx)
 		if err != nil {
 			if errors.Is(err, io.EOF) {
 				break
@@ -236,6 +238,9 @@ func (e *objectStoreToSelfExecutorNonNative) Execute(ctx context.Context, opts *
 			return nil, err
 		}
 		files = append(files, batch...)
+	}
+	if len(files) == 0 {
+		return nil, drivers.ErrNoRows
 	}
 
 	var format string

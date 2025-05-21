@@ -71,9 +71,9 @@ func (c *Connection) openBucket(ctx context.Context, bucket string, anonymous bo
 	var client *container.Client
 	var err error
 	if anonymous {
-		client, err = c.createAnonymousClient(bucket)
+		client, err = c.newAnonymousClient(bucket)
 	} else {
-		client, err = c.createClient(bucket)
+		client, err = c.newClient(bucket)
 	}
 	if err != nil {
 		return nil, err
@@ -87,8 +87,8 @@ func (c *Connection) openBucket(ctx context.Context, bucket string, anonymous bo
 	return blob.NewBucket(azureBucket, c.logger)
 }
 
-// createClient returns a new azure blob client.
-func (c *Connection) createClient(bucket string) (*container.Client, error) {
+// newClient returns a new azure blob client.
+func (c *Connection) newClient(bucket string) (*container.Client, error) {
 	var accountKey, sasToken, connectionString string
 
 	accountName, err := c.accountName()
@@ -179,7 +179,7 @@ func (c *Connection) createClient(bucket string) (*container.Client, error) {
 	return nil, errors.New("can't access remote host without credentials: no credentials provided")
 }
 
-func (c *Connection) createAnonymousClient(bucket string) (*container.Client, error) {
+func (c *Connection) newAnonymousClient(bucket string) (*container.Client, error) {
 	accountName, err := c.accountName()
 	if err != nil {
 		return nil, err

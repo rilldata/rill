@@ -79,7 +79,7 @@ func TestDownload(t *testing.T) {
 
 			var contents []string
 			for {
-				next, err := it.Next()
+				next, err := it.Next(context.Background())
 				if errors.Is(err, io.EOF) {
 					break
 				}

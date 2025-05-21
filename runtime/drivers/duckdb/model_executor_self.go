@@ -298,12 +298,10 @@ func rewriteDuckDBSQL(ctx context.Context, props *ModelInputProperties, inputHan
 		return nil, fmt.Errorf("internal error: expected object store connector")
 	}
 
-	var files []string
 	iter, err := fs.DownloadFiles(ctx, path)
 	if err != nil {
 		return nil, err
 	}
-	iter.SetKeepFilesUntilClose()
 	defer func() {
 		// closing the iterator deletes the files
 		// only delete the files if there was an error
@@ -312,8 +310,13 @@ func rewriteDuckDBSQL(ctx context.Context, props *ModelInputProperties, inputHan
 			_ = iter.Close()
 		}
 	}()
+
+	// We want to batch all the files to avoid issues with schema compatibility and partition_overwrite inserts.
+	// If a user encounters performance issues, we should encourage them to use `partitions:` without `incremental:` to break ingestion into smaller batches.
+	iter.SetKeepFilesUntilClose()
+	var files []string
 	for {
-		localFiles, err := iter.Next()
+		localFiles, err := iter.Next(ctx)
 		if err != nil {
 			if errors.Is(err, io.EOF) {
 				break
@@ -321,6 +324,9 @@ func rewriteDuckDBSQL(ctx context.Context, props *ModelInputProperties, inputHan
 			return nil, err
 		}
 		files = append(files, localFiles...)
+	}
+	if len(files) == 0 {
+		return nil, drivers.ErrNoRows
 	}
 
 	// Rewrite the SQL

@@ -19,10 +19,14 @@ import (
 	"github.com/c2h5oh/datasize"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/observability"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 	"google.golang.org/api/iterator"
 	"google.golang.org/api/option"
 )
+
+var tracer = otel.Tracer("github.com/rilldata/rill/runtime/drivers/bigquery")
 
 // entire data is buffered in memory before its written to disk so keeping it small reduces memory usage
 // but keeping it too small can lead to bad ingestion performance
@@ -38,6 +42,9 @@ var _ drivers.Warehouse = &Connection{}
 
 // QueryAsFiles implements drivers.SQLStore
 func (c *Connection) QueryAsFiles(ctx context.Context, props map[string]any) (drivers.FileIterator, error) {
+	ctx, span := tracer.Start(ctx, "Connection.QueryAsFiles")
+	defer span.End()
+
 	srcProps, err := c.parseSourceProperties(props)
 	if err != nil {
 		return nil, err
@@ -154,12 +161,10 @@ func (c *Connection) QueryAsFiles(ctx context.Context, props map[string]any) (dr
 		return nil, err
 	}
 	return &fileIterator{
-		client:       client,
-		bqIter:       it,
-		logger:       c.logger,
-		totalRecords: int64(it.TotalRows),
-		ctx:          ctx,
-		tempDir:      tempDir,
+		client:  client,
+		bqIter:  it,
+		logger:  c.logger,
+		tempDir: tempDir,
 	}, nil
 }
 
@@ -180,10 +185,7 @@ type fileIterator struct {
 	logger  *zap.Logger
 	tempDir string
 
-	totalRecords int64
-	downloaded   bool
-
-	ctx context.Context // TODO :: refatcor NextBatch to take context on NextBatch
+	downloaded bool
 }
 
 var _ drivers.FileIterator = &fileIterator{}
@@ -200,6 +202,7 @@ func (f *fileIterator) Format() string {
 
 // SetFormat implements drivers.FileIterator.
 func (f *fileIterator) SetKeepFilesUntilClose() {
+	// No-op because it already does this.
 }
 
 // SetBatchSizeBytes implements drivers.FileIterator.
@@ -207,20 +210,28 @@ func (f *fileIterator) SetBatchSizeBytes(size int64) {
 }
 
 // Next implements drivers.FileIterator.
-func (f *fileIterator) Next() ([]string, error) {
+func (f *fileIterator) Next(ctx context.Context) ([]string, error) {
 	if f.downloaded {
 		return nil, io.EOF
 	}
+
+	ctx, span := tracer.Start(ctx, "fileIterator.Next")
+	defer span.End()
+
 	// storage API not available so can't read as arrow records. Read results row by row and dump in a json file.
 	if !f.bqIter.IsAccelerated() {
-		f.logger.Debug("downloading results in json file", observability.ZapCtx(f.ctx))
-		file, err := f.downloadAsJSONFile()
+		f.logger.Debug("downloading results in json file", observability.ZapCtx(ctx))
+		span.SetAttributes(attribute.Bool("use_storage_api", false))
+
+		file, err := f.downloadAsJSONFile(ctx)
 		if err != nil {
 			return nil, err
 		}
 		return []string{file}, nil
 	}
-	f.logger.Debug("downloading results in parquet file", observability.ZapCtx(f.ctx))
+
+	f.logger.Debug("downloading results in parquet file", observability.ZapCtx(ctx))
+	span.SetAttributes(attribute.Bool("use_storage_api", true))
 
 	// create a temp file
 	fw, err := os.CreateTemp(f.tempDir, "temp*.parquet")
@@ -230,7 +241,7 @@ func (f *fileIterator) Next() ([]string, error) {
 	defer fw.Close()
 	f.downloaded = true
 
-	rdr, err := f.AsArrowRecordReader()
+	rdr, err := f.AsArrowRecordReader(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -238,7 +249,7 @@ func (f *fileIterator) Next() ([]string, error) {
 
 	tf := time.Now()
 	defer func() {
-		f.logger.Debug("time taken to write arrow records in parquet file", zap.Duration("duration", time.Since(tf)), observability.ZapCtx(f.ctx))
+		f.logger.Debug("time taken to write arrow records in parquet file", zap.Duration("duration", time.Since(tf)), observability.ZapCtx(ctx))
 	}()
 	writer, err := pqarrow.NewFileWriter(rdr.Schema(), fw,
 		parquet.NewWriterProperties(
@@ -258,8 +269,8 @@ func (f *fileIterator) Next() ([]string, error) {
 	// write arrow records to parquet file
 	for rdr.Next() {
 		select {
-		case <-f.ctx.Done():
-			return nil, f.ctx.Err()
+		case <-ctx.Done():
+			return nil, ctx.Err()
 		default:
 			rec := rdr.Record()
 			if writer.RowGroupTotalBytesWritten() >= rowGroupBufferSize {
@@ -278,21 +289,21 @@ func (f *fileIterator) Next() ([]string, error) {
 	fw.Close()
 
 	if uint64(rows) < f.bqIter.TotalRows {
-		f.logger.Error("not all rows written to parquet file", zap.Int64("rows_written", rows), zap.Uint64("total_rows", f.bqIter.TotalRows), observability.ZapCtx(f.ctx))
+		f.logger.Error("not all rows written to parquet file", zap.Int64("rows_written", rows), zap.Uint64("total_rows", f.bqIter.TotalRows), observability.ZapCtx(ctx))
 	}
 
 	fileInfo, err := os.Stat(fw.Name())
 	if err != nil {
 		return nil, err
 	}
-	f.logger.Debug("parquet file written", zap.String("size", datasize.ByteSize(fileInfo.Size()).HumanReadable()), zap.Int64("rows", rows), observability.ZapCtx(f.ctx))
+	f.logger.Debug("parquet file written", zap.String("size", datasize.ByteSize(fileInfo.Size()).HumanReadable()), zap.Int64("rows", rows), observability.ZapCtx(ctx))
 	return []string{fw.Name()}, nil
 }
 
-func (f *fileIterator) downloadAsJSONFile() (string, error) {
+func (f *fileIterator) downloadAsJSONFile(ctx context.Context) (string, error) {
 	tf := time.Now()
 	defer func() {
-		f.logger.Debug("time taken to write row in json file", zap.Duration("duration", time.Since(tf)), observability.ZapCtx(f.ctx))
+		f.logger.Debug("time taken to write row in json file", zap.Duration("duration", time.Since(tf)), observability.ZapCtx(ctx))
 	}()
 
 	// create a temp file
@@ -324,10 +335,10 @@ func (f *fileIterator) downloadAsJSONFile() (string, error) {
 			}
 
 			if uint64(rows) < f.bqIter.TotalRows {
-				f.logger.Error("not all rows written to json file", zap.Int64("rows_written", rows), zap.Uint64("total_rows", f.bqIter.TotalRows), observability.ZapCtx(f.ctx))
+				f.logger.Error("not all rows written to json file", zap.Int64("rows_written", rows), zap.Uint64("total_rows", f.bqIter.TotalRows), observability.ZapCtx(ctx))
 			}
 
-			f.logger.Debug("json file written", zap.String("size", datasize.ByteSize(fileInfo.Size()).HumanReadable()), zap.Int64("rows", rows), observability.ZapCtx(f.ctx))
+			f.logger.Debug("json file written", zap.String("size", datasize.ByteSize(fileInfo.Size()).HumanReadable()), zap.Int64("rows", rows), observability.ZapCtx(ctx))
 			// all rows written successfully
 			return fw.Name(), nil
 		}

@@ -20,14 +20,20 @@ import (
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/drivers/blob"
+	"github.com/rilldata/rill/runtime/pkg/graceful"
 	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
 	"gocloud.dev/blob/s3blob"
 )
 
+var tracer = otel.Tracer("github.com/rilldata/rill/runtime/drivers/redshift")
+
 var _ drivers.Warehouse = &Connection{}
 
 func (c *Connection) QueryAsFiles(ctx context.Context, props map[string]any) (outIt drivers.FileIterator, outErr error) {
+	ctx, span := tracer.Start(ctx, "Connection.QueryAsFiles")
+	defer span.End()
+
 	conf, err := parseSourceProperties(props)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse config: %w", err)
@@ -57,6 +63,8 @@ func (c *Connection) QueryAsFiles(ctx context.Context, props map[string]any) (ou
 	unloadPath := strings.TrimPrefix(unloadURL.Path, "/")
 
 	cleanupFn := func() error {
+		ctx, cancel := graceful.WithMinimumDuration(ctx, 10*time.Second)
+		defer cancel()
 		return deleteObjectsInPrefix(ctx, awsConfig, bucketName, unloadPath)
 	}
 
