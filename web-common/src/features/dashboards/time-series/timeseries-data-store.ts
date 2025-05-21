@@ -1,3 +1,4 @@
+import { ComparisonDeltaPreviousSuffix } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
 import { mergeDimensionAndMeasureFilters } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
 import { removeSomeAdvancedMeasures } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measures";
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
@@ -13,13 +14,12 @@ import { Period } from "@rilldata/web-common/lib/time/types";
 import {
   type V1MetricsViewAggregationResponse,
   type V1MetricsViewAggregationResponseDataItem,
-  type V1MetricsViewTimeSeriesResponse,
-  createQueryServiceMetricsViewTimeSeries,
+  createQueryServiceMetricsViewAggregation,
 } from "@rilldata/web-common/runtime-client";
 import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
 import {
-  keepPreviousData,
   type CreateQueryResult,
+  keepPreviousData,
 } from "@tanstack/svelte-query";
 import { type Readable, type Writable, derived, writable } from "svelte/store";
 import { DashboardState_ActivePage } from "../../../proto/gen/rill/ui/v1/dashboard_pb";
@@ -52,11 +52,11 @@ export type TimeSeriesDataState = {
 
 export type TimeSeriesDataStore = Readable<TimeSeriesDataState>;
 
-export function createMetricsViewTimeSeries(
+function createMetricsViewTimeSeriesFromAggregation(
   ctx: StateManagers,
-  measures: string[],
-  isComparison = false,
-): CreateQueryResult<V1MetricsViewTimeSeriesResponse, HTTPError> {
+  measureNames: string[],
+  includeTimeComparison = false,
+): CreateQueryResult<V1MetricsViewAggregationResponse, HTTPError> {
   return derived(
     [
       ctx.runtime,
@@ -65,11 +65,31 @@ export function createMetricsViewTimeSeries(
       useTimeControlStore(ctx),
     ],
     ([runtime, metricsViewName, dashboardStore, timeControls], set) => {
-      return createQueryServiceMetricsViewTimeSeries(
+      const timeGrain =
+        timeControls?.selectedTimeRange?.interval ?? timeControls.minTimeGrain;
+      const timeZone = dashboardStore?.selectedTimezone;
+      const timeDimension = timeControls?.timeDimension;
+
+      const measures = measureNames.flatMap((measureName) => {
+        const baseMeasure = { name: measureName };
+        if (!includeTimeComparison) {
+          return [baseMeasure];
+        }
+        return [
+          baseMeasure,
+          {
+            name: measureName + ComparisonDeltaPreviousSuffix,
+            comparisonValue: { measure: measureName },
+          },
+        ];
+      });
+
+      return createQueryServiceMetricsViewAggregation(
         runtime.instanceId,
         metricsViewName,
         {
-          measureNames: measures,
+          measures: measures,
+          dimensions: [{ name: timeDimension, timeGrain, timeZone }],
           where: sanitiseExpression(
             mergeDimensionAndMeasureFilters(
               dashboardStore.whereFilter,
@@ -77,24 +97,29 @@ export function createMetricsViewTimeSeries(
             ),
             undefined,
           ),
-          timeStart: isComparison
-            ? timeControls.comparisonAdjustedStart
-            : timeControls.adjustedStart,
-          timeEnd: isComparison
-            ? timeControls.comparisonAdjustedEnd
-            : timeControls.adjustedEnd,
-          timeGranularity:
-            timeControls.selectedTimeRange?.interval ??
-            timeControls.minTimeGrain,
-          timeZone: dashboardStore.selectedTimezone,
+          sort: [{ name: timeDimension, desc: false }],
+          fillMissing: true,
+          timeRange: {
+            start: timeControls.adjustedStart,
+            end: timeControls.adjustedEnd,
+          },
+          comparisonTimeRange: includeTimeComparison
+            ? {
+                start: timeControls.comparisonAdjustedStart,
+                end: timeControls.comparisonAdjustedEnd,
+              }
+            : undefined,
         },
         {
           query: {
             enabled:
               !!timeControls.ready &&
               !!ctx.dashboardStore &&
+              !!timeDimension &&
+              !!timeGrain &&
               // in case of comparison, we need to wait for the comparison start time to be available
-              (!isComparison || !!timeControls.comparisonAdjustedStart),
+              (!includeTimeComparison ||
+                !!timeControls.comparisonAdjustedStart),
 
             placeholderData: keepPreviousData,
             refetchOnMount: false,
@@ -159,7 +184,11 @@ export function createTimeSeriesDataStore(
 
       const primaryTimeSeries =
         measuresForTimeSeries.length > 0
-          ? createMetricsViewTimeSeries(ctx, measuresForTimeSeries, false)
+          ? createMetricsViewTimeSeriesFromAggregation(
+              ctx,
+              measuresForTimeSeries,
+              showComparison,
+            )
           : writable({
               isFetching: false,
               isError: false,
@@ -188,18 +217,10 @@ export function createTimeSeriesDataStore(
           dashboardStore?.selectedComparisonDimension,
         );
       }
-      let comparisonTimeSeries:
-        | CreateQueryResult<V1MetricsViewTimeSeriesResponse, HTTPError>
-        | Writable<null> = writable(null);
       let comparisonTotals:
         | CreateQueryResult<V1MetricsViewAggregationResponse, HTTPError>
         | Writable<null> = writable(null);
       if (showComparison) {
-        comparisonTimeSeries = createMetricsViewTimeSeries(
-          ctx,
-          measuresForTimeSeries,
-          true,
-        );
         comparisonTotals = createTotalsForMeasure(ctx, measures, true);
       }
 
@@ -217,7 +238,6 @@ export function createTimeSeriesDataStore(
       return derived(
         [
           primaryTimeSeries,
-          comparisonTimeSeries,
           primaryTotals,
           unfilteredTotals,
           comparisonTotals,
@@ -225,7 +245,6 @@ export function createTimeSeriesDataStore(
         ],
         ([
           primary,
-          comparison,
           primaryTotal,
           unfilteredTotal,
           comparisonTotal,
@@ -234,10 +253,11 @@ export function createTimeSeriesDataStore(
           let preparedTimeSeriesData: TimeSeriesDatum[] = [];
 
           if (!primary.isFetching && interval) {
+            console.log("primary.data", primary.data);
             const intervalDuration = TIME_GRAIN[interval]?.duration as Period;
             preparedTimeSeriesData = prepareTimeSeries(
               primary?.data?.data || [],
-              comparison?.data?.data || [],
+              undefined,
               intervalDuration,
               dashboardStore.selectedTimezone,
             );
