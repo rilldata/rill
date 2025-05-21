@@ -15,6 +15,16 @@ service LocalService {
   // GetVersion returns details about the current and latest available Rill versions.
   rpc GetVersion(GetVersionRequest) returns (GetVersionResponse) {}
 
+  // GitStatus returns the status of the current git repo equivalent to `git status` command
+  rpc GitStatus(GitStatusRequest) returns (GitStatusResponse) {}
+
+  // GitPull fetches the latest changes from the remote git repo equivalent to `git pull` command.
+  // If there are any merge conflicts the pull is aborted.
+  // Force can be set to true to force the pull and overwrite any local changes.
+  rpc GitPull(GitPullRequest) returns (GitPullResponse) {}
+  
+  rpc GitPush(GitPushRequest) returns (GitPushResponse) {}
+  
   // PushToGithub create a Git repo from local project and pushed to users git account.
   rpc PushToGithub(PushToGithubRequest) returns (PushToGithubResponse) {}
 
@@ -73,6 +83,36 @@ message GetVersionResponse {
   string current = 1;
   string latest = 2;
 }
+
+message GitStatusRequest {}
+
+message GitStatusResponse {
+  // The current branch of the git repo.
+	string branch = 1;
+  // The remote url of the git repo.
+	string github_url = 2;
+  // If the repo is managed by Rill.
+	bool managed_git = 3;
+	// local_changes returns true if there are changes not pushed to remote yet.
+  // The changes include any committed, staged, or unstaged changes.
+  // It does not include untracked files.
+	bool local_changes = 4;
+	// remote_changes returns true if there are remote commits not pulled yet.
+	bool remote_changes = 5;
+}
+
+message GitPullRequest {
+  bool discard_local = 1;
+}
+
+message GitPullResponse {}
+
+message GitPushRequest {
+  string commit_message = 1;
+  bool force = 2;
+}
+
+message GitPushResponse {}
 
 message PushToGithubRequest {
   string account = 1;
