@@ -19,12 +19,12 @@
   export let project: string;
   export let exploreName: string;
   export let homeBookmark: BookmarkEntry | undefined;
-  export let defaultExploreUrl: string;
+  export let urlForExploreYAMLDefaultState: string;
   export let manageProject: boolean;
   export let onCreate: () => void;
   export let onDelete: (bookmark: BookmarkEntry) => Promise<void>;
 
-  $: homeBookmarkUrl = homeBookmark?.url ?? defaultExploreUrl;
+  $: homeBookmarkUrl = homeBookmark?.url ?? urlForExploreYAMLDefaultState;
   $: isHomeBookmarkActive = homeBookmarkUrl === $page.url.toString();
 
   function goToDashboardHome() {

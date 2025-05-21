@@ -65,7 +65,7 @@
     metricsViewName,
   );
 
-  $: exploreUrlParamsFromYAMLConfig = createYAMLConfigExploreUrlSearch(
+  $: urlForExploreYAMLDefaultState = createYAMLConfigExploreUrlSearch(
     validExploreSpec,
     metricsViewTimeRange,
   );
@@ -132,7 +132,7 @@
   {project}
   {exploreName}
   homeBookmark={categorizedBookmarks.home}
-  defaultExploreUrl={$exploreUrlParamsFromYAMLConfig ?? ""}
+  urlForExploreYAMLDefaultState={$urlForExploreYAMLDefaultState ?? ""}
   onCreate={createHomeBookmark}
   onDelete={deleteBookmark}
   {manageProject}
