@@ -55,7 +55,7 @@ func (e *objectStoreToSelfExecutor) Execute(ctx context.Context, opts *drivers.M
 
 func (e *objectStoreToSelfExecutor) modelInputProperties(ctx context.Context, model, inputConnector string, inputHandle drivers.Handle, inputProps map[string]any) (map[string]any, error) {
 	parsed := &drivers.ObjectStoreModelInputProperties{}
-	if err := mapstructure.Decode(inputProps, parsed); err != nil {
+	if err := parsed.Decode(inputProps); err != nil {
 		return nil, fmt.Errorf("failed to parse input properties: %w", err)
 	}
 
@@ -210,7 +210,7 @@ type objectStoreToSelfExecutorNonNative struct {
 
 func (e *objectStoreToSelfExecutorNonNative) Execute(ctx context.Context, opts *drivers.ModelExecuteOptions) (*drivers.ModelResult, error) {
 	parsed := &drivers.ObjectStoreModelInputProperties{}
-	if err := mapstructure.Decode(opts.InputProperties, parsed); err != nil {
+	if err := parsed.Decode(opts.InputProperties); err != nil {
 		return nil, fmt.Errorf("failed to parse input properties: %w", err)
 	}
 
