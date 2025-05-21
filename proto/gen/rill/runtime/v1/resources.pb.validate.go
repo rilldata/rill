@@ -11672,6 +11672,10 @@ func (m *MetricsViewSpec_Dimension) validate(all bool) error {
 
 	// no validation rules for LookupValueColumn
 
+	if m.LookupDefaultValue != nil {
+		// no validation rules for LookupDefaultValue
+	}
+
 	if len(errors) > 0 {
 		return MetricsViewSpec_DimensionMultiError(errors)
 	}
