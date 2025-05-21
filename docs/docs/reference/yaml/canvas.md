@@ -52,9 +52,9 @@ _[integer]_ - Vertical gap in pixels of the canvas
 
 _[anyOf]_ - Name of the theme to use. Only one of theme and embedded_theme can be set. 
 
-  **&nbsp;&nbsp;&nbsp;&nbsp;option 1** - _[string]_ 
+  - **option 1** - _[string]_ 
 
-  **&nbsp;&nbsp;&nbsp;&nbsp;option 2** - _[object]_ 
+  - **option 2** - _[object]_ 
 
 ### `allow_custom_time_range`
 
@@ -64,21 +64,21 @@ _[boolean]_ - Defaults to true, when set to false it will hide the ability to se
 
 _[array of oneOf]_ - Overrides the list of default time range selections available in the dropdown. It can be string or an object with a 'range' and optional 'comparison_offsets' 
 
-  **&nbsp;&nbsp;&nbsp;&nbsp;option 1** - _[string]_ - a valid [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601#Durations) duration or one of the [Rill ISO 8601 extensions](https://docs.rilldata.com/reference/rill-iso-extensions#extensions) extensions for the selection
+  - **option 1** - _[string]_ - a valid [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601#Durations) duration or one of the [Rill ISO 8601 extensions](https://docs.rilldata.com/reference/rill-iso-extensions#extensions) extensions for the selection
 
-  **&nbsp;&nbsp;&nbsp;&nbsp;option 2** - _[object]_ 
+  - **option 2** - _[object]_ 
 
-  - **`range`** - _[string]_ - a valid [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601#Durations) duration or one of the [Rill ISO 8601 extensions](https://docs.rilldata.com/reference/rill-iso-extensions#extensions) extensions for the selection  _(required)_
+    - **`range`** - _[string]_ - a valid [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601#Durations) duration or one of the [Rill ISO 8601 extensions](https://docs.rilldata.com/reference/rill-iso-extensions#extensions) extensions for the selection  _(required)_
 
-  - **`comparison_offsets`** - _[array of oneOf]_ - list of time comparison options for this time range selection (optional). Must be one of the [Rill ISO 8601 extensions](https://docs.rilldata.com/reference/rill-iso-extensions#extensions) 
+    - **`comparison_offsets`** - _[array of oneOf]_ - list of time comparison options for this time range selection (optional). Must be one of the [Rill ISO 8601 extensions](https://docs.rilldata.com/reference/rill-iso-extensions#extensions) 
 
-    **&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;option 1** - _[string]_ - Offset string only (range is inferred)
+      - **option 1** - _[string]_ - Offset string only (range is inferred)
 
-    **&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;option 2** - _[object]_ 
+      - **option 2** - _[object]_ 
 
-    - **`offset`** - _[string]_  
+        - **`offset`** - _[string]_  
 
-    - **`range`** - _[string]_  
+        - **`range`** - _[string]_  
 
 ### `time_zones`
 
@@ -128,9 +128,9 @@ _[object]_ - Security rules to apply for access to the canvas
 
   - **`access`** - _[oneOf]_ - Expression indicating if the user should be granted access to the dashboard. If not defined, it will resolve to false and the dashboard won't be accessible to anyone. Needs to be a valid SQL expression that evaluates to a boolean. 
 
-    **&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;option 1** - _[string]_ 
+    - **option 1** - _[string]_ 
 
-    **&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;option 2** - _[boolean]_ 
+    - **option 2** - _[boolean]_ 
 
   - **`row_filter`** - _[string]_ - SQL expression to filter the underlying model by. Can leverage templated user attributes to customize the filter for the requesting user. Needs to be a valid SQL expression that can be injected into a WHERE clause 
 
@@ -140,9 +140,9 @@ _[object]_ - Security rules to apply for access to the canvas
 
     - **`names`** - _[anyOf]_ - List of fields to include. Should match the name of one of the dashboard's dimensions or measures  _(required)_
 
-      **&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;option 1** - _[array of string]_ 
+      - **option 1** - _[array of string]_ 
 
-      **&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;option 2** - _[string]_ 
+      - **option 2** - _[string]_ 
 
   - **`exclude`** - _[array of object]_ - List of dimension or measure names to exclude from the dashboard. If exclude is defined all other dimensions and measures are included 
 
@@ -150,9 +150,9 @@ _[object]_ - Security rules to apply for access to the canvas
 
     - **`names`** - _[anyOf]_ - List of fields to exclude. Should match the name of one of the dashboard's dimensions or measures  _(required)_
 
-      **&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;option 1** - _[array of string]_ 
+      - **option 1** - _[array of string]_ 
 
-      **&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;option 2** - _[string]_ 
+      - **option 2** - _[string]_ 
 
   - **`rules`** - _[array of object]_  
 

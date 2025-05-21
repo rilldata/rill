@@ -48,81 +48,93 @@ _[string]_ - Refers to the metrics view resource
 
 _[oneOf]_ - List of dimension names. Use '*' to select all dimensions (default)  
 
-  **&nbsp;&nbsp;&nbsp;&nbsp;option 1** - _[string]_ - Matches all fields
+  - **option 1** - _[string]_ - Matches all fields
 
-  **&nbsp;&nbsp;&nbsp;&nbsp;option 2** - _[array of string]_ - Explicit list of fields
+  - **option 2** - _[array of string]_ - Explicit list of fields
 
-  **&nbsp;&nbsp;&nbsp;&nbsp;option 3** - _[object]_ - Advanced matching using regex, DuckDB expression, or exclusion
+  - **option 3** - _[object]_ - Advanced matching using regex, DuckDB expression, or exclusion
 
-  - **`regex`** - _[string]_ - Select dimensions using a regular expression 
+    - **`regex`** - _[string]_ - Select dimensions using a regular expression 
 
-  - **`expr`** - _[string]_  
+    - **`expr`** - _[string]_  
 
-  - **`exclude`** - _[object]_ - Select all dimensions except those listed here 
+    - **`exclude`** - _[object]_ - Select all dimensions except those listed here 
+
+    - **option 1** 
+
+    - **option 2** 
+
+    - **option 3** 
 
 ### `measures`
 
 _[oneOf]_ -  List of measure names. Use '*' to select all measures (default) 
 
-  **&nbsp;&nbsp;&nbsp;&nbsp;option 1** - _[string]_ - Matches all fields
+  - **option 1** - _[string]_ - Matches all fields
 
-  **&nbsp;&nbsp;&nbsp;&nbsp;option 2** - _[array of string]_ - Explicit list of fields
+  - **option 2** - _[array of string]_ - Explicit list of fields
 
-  **&nbsp;&nbsp;&nbsp;&nbsp;option 3** - _[object]_ - Advanced matching using regex, DuckDB expression, or exclusion
+  - **option 3** - _[object]_ - Advanced matching using regex, DuckDB expression, or exclusion
 
-  - **`regex`** - _[string]_ - Select dimensions using a regular expression 
+    - **`regex`** - _[string]_ - Select dimensions using a regular expression 
 
-  - **`expr`** - _[string]_  
+    - **`expr`** - _[string]_  
 
-  - **`exclude`** - _[object]_ - Select all dimensions except those listed here 
+    - **`exclude`** - _[object]_ - Select all dimensions except those listed here 
+
+    - **option 1** 
+
+    - **option 2** 
+
+    - **option 3** 
 
 ### `theme`
 
 _[oneOf]_ - Name of the theme to use. Only one of theme and embedded_theme can be set. 
 
-  **&nbsp;&nbsp;&nbsp;&nbsp;option 1** - _[string]_ 
+  - **option 1** - _[string]_ 
 
-  **&nbsp;&nbsp;&nbsp;&nbsp;option 2** - _[object]_ 
+  - **option 2** - _[object]_ 
 
-  - **`type`** - _[string]_ - Refers to the resource type and must be `theme`  _(required)_
+    - **`type`** - _[string]_ - Refers to the resource type and must be `theme`  _(required)_
 
-  - **`name`** - _[string]_ - Name is usually inferred from the filename, but can be specified manually. 
+    - **`name`** - _[string]_ - Name is usually inferred from the filename, but can be specified manually. 
 
-  - **`refs`** - _[array of string]_ - List of resource references, each as a string or map. 
+    - **`refs`** - _[array of string]_ - List of resource references, each as a string or map. 
 
-  - **`dev`** - _[object]_ - Overrides properties in development 
+    - **`dev`** - _[object]_ - Overrides properties in development 
 
-  - **`prod`** - _[object]_ - Overrides properties in production 
+    - **`prod`** - _[object]_ - Overrides properties in production 
 
-  - **`colors`** - _[anyOf]_   _(required)_
+    - **`colors`** - _[anyOf]_   _(required)_
 
-    **&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;option 1** - _[object]_ 
+      - **option 1** - _[object]_ 
 
-    - **`primary`** - _[string]_   _(required)_
+        - **`primary`** - _[string]_   _(required)_
 
-    **&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;option 2** - _[object]_ 
+      - **option 2** - _[object]_ 
 
-    - **`secondary`** - _[string]_   _(required)_
+        - **`secondary`** - _[string]_   _(required)_
 
 ### `time_ranges`
 
 _[array of oneOf]_ - Overrides the list of default time range selections available in the dropdown. It can be string or an object with a 'range' and optional 'comparison_offsets' 
 
-  **&nbsp;&nbsp;&nbsp;&nbsp;option 1** - _[string]_ - a valid [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601#Durations) duration or one of the [Rill ISO 8601 extensions](https://docs.rilldata.com/reference/rill-iso-extensions#extensions) extensions for the selection
+  - **option 1** - _[string]_ - a valid [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601#Durations) duration or one of the [Rill ISO 8601 extensions](https://docs.rilldata.com/reference/rill-iso-extensions#extensions) extensions for the selection
 
-  **&nbsp;&nbsp;&nbsp;&nbsp;option 2** - _[object]_ 
+  - **option 2** - _[object]_ 
 
-  - **`range`** - _[string]_ - a valid [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601#Durations) duration or one of the [Rill ISO 8601 extensions](https://docs.rilldata.com/reference/rill-iso-extensions#extensions) extensions for the selection  _(required)_
+    - **`range`** - _[string]_ - a valid [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601#Durations) duration or one of the [Rill ISO 8601 extensions](https://docs.rilldata.com/reference/rill-iso-extensions#extensions) extensions for the selection  _(required)_
 
-  - **`comparison_offsets`** - _[array of oneOf]_ - list of time comparison options for this time range selection (optional). Must be one of the [Rill ISO 8601 extensions](https://docs.rilldata.com/reference/rill-iso-extensions#extensions) 
+    - **`comparison_offsets`** - _[array of oneOf]_ - list of time comparison options for this time range selection (optional). Must be one of the [Rill ISO 8601 extensions](https://docs.rilldata.com/reference/rill-iso-extensions#extensions) 
 
-    **&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;option 1** - _[string]_ - Offset string only (range is inferred)
+      - **option 1** - _[string]_ - Offset string only (range is inferred)
 
-    **&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;option 2** - _[object]_ 
+      - **option 2** - _[object]_ 
 
-    - **`offset`** - _[string]_  
+        - **`offset`** - _[string]_  
 
-    - **`range`** - _[string]_  
+        - **`range`** - _[string]_  
 
 ### `time_zones`
 
@@ -142,31 +154,43 @@ _[object]_ - defines the defaults YAML struct
 
   - **`dimensions`** - _[oneOf]_ - Provides the default dimensions to load on viewing the dashboard 
 
-    **&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;option 1** - _[string]_ - Matches all fields
+    - **option 1** - _[string]_ - Matches all fields
 
-    **&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;option 2** - _[array of string]_ - Explicit list of fields
+    - **option 2** - _[array of string]_ - Explicit list of fields
 
-    **&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;option 3** - _[object]_ - Advanced matching using regex, DuckDB expression, or exclusion
+    - **option 3** - _[object]_ - Advanced matching using regex, DuckDB expression, or exclusion
 
-    - **`regex`** - _[string]_ - Select dimensions using a regular expression 
+      - **`regex`** - _[string]_ - Select dimensions using a regular expression 
 
-    - **`expr`** - _[string]_  
+      - **`expr`** - _[string]_  
 
-    - **`exclude`** - _[object]_ - Select all dimensions except those listed here 
+      - **`exclude`** - _[object]_ - Select all dimensions except those listed here 
+
+      - **option 1** 
+
+      - **option 2** 
+
+      - **option 3** 
 
   - **`measures`** - _[oneOf]_ - Provides the default measures to load on viewing the dashboard 
 
-    **&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;option 1** - _[string]_ - Matches all fields
+    - **option 1** - _[string]_ - Matches all fields
 
-    **&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;option 2** - _[array of string]_ - Explicit list of fields
+    - **option 2** - _[array of string]_ - Explicit list of fields
 
-    **&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;option 3** - _[object]_ - Advanced matching using regex, DuckDB expression, or exclusion
+    - **option 3** - _[object]_ - Advanced matching using regex, DuckDB expression, or exclusion
 
-    - **`regex`** - _[string]_ - Select dimensions using a regular expression 
+      - **`regex`** - _[string]_ - Select dimensions using a regular expression 
 
-    - **`expr`** - _[string]_  
+      - **`expr`** - _[string]_  
 
-    - **`exclude`** - _[object]_ - Select all dimensions except those listed here 
+      - **`exclude`** - _[object]_ - Select all dimensions except those listed here 
+
+      - **option 1** 
+
+      - **option 2** 
+
+      - **option 3** 
 
   - **`time_range`** - _[string]_ - Refers to the default time range shown when a user initially loads the dashboard. The value must be either a valid [ISO 8601 duration](https://en.wikipedia.org/wiki/ISO_8601#Durations) (for example, PT12H for 12 hours, P1M for 1 month, or P26W for 26 weeks) or one of the [Rill ISO 8601 extensions](https://docs.rilldata.com/reference/rill-iso-extensions#extensions) 
 
@@ -186,9 +210,9 @@ _[object]_ - Security rules to apply for access to the explore dashboard
 
   - **`access`** - _[oneOf]_ - Expression indicating if the user should be granted access to the dashboard. If not defined, it will resolve to false and the dashboard won't be accessible to anyone. Needs to be a valid SQL expression that evaluates to a boolean. 
 
-    **&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;option 1** - _[string]_ 
+    - **option 1** - _[string]_ 
 
-    **&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;option 2** - _[boolean]_ 
+    - **option 2** - _[boolean]_ 
 
   - **`row_filter`** - _[string]_ - SQL expression to filter the underlying model by. Can leverage templated user attributes to customize the filter for the requesting user. Needs to be a valid SQL expression that can be injected into a WHERE clause 
 
@@ -198,9 +222,9 @@ _[object]_ - Security rules to apply for access to the explore dashboard
 
     - **`names`** - _[anyOf]_ - List of fields to include. Should match the name of one of the dashboard's dimensions or measures  _(required)_
 
-      **&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;option 1** - _[array of string]_ 
+      - **option 1** - _[array of string]_ 
 
-      **&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;option 2** - _[string]_ 
+      - **option 2** - _[string]_ 
 
   - **`exclude`** - _[array of object]_ - List of dimension or measure names to exclude from the dashboard. If exclude is defined all other dimensions and measures are included 
 
@@ -208,9 +232,9 @@ _[object]_ - Security rules to apply for access to the explore dashboard
 
     - **`names`** - _[anyOf]_ - List of fields to exclude. Should match the name of one of the dashboard's dimensions or measures  _(required)_
 
-      **&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;option 1** - _[array of string]_ 
+      - **option 1** - _[array of string]_ 
 
-      **&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;option 2** - _[string]_ 
+      - **option 2** - _[string]_ 
 
   - **`rules`** - _[array of object]_  
 

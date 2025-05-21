@@ -90,6 +90,10 @@ _[array of object]_ - Relates to exploring segments or dimensions of your data a
 
   - **`uri`** - enable if your dimension is a clickable URL to enable single click navigation (boolean or valid SQL expression)  
 
+  - **option 1** 
+
+  - **option 2** 
+
 ### `measures`
 
 _[array of object]_ - Used to define the numeric aggregates of columns from your data model 
@@ -106,55 +110,55 @@ _[array of object]_ - Used to define the numeric aggregates of columns from your
 
   - **`window`** - _[anyOf]_ - A measure window can be defined as a keyword string (e.g., 'time' or 'all') or an object with detailed window configuration. 
 
-    **&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;option 1** - _[string]_ - Shorthand: 'time' or 'true' means time-partitioned, 'all' means non-partitioned.
+    - **option 1** - _[string]_ - Shorthand: 'time' or 'true' means time-partitioned, 'all' means non-partitioned.
 
-    **&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;option 2** - _[object]_ 
+    - **option 2** - _[object]_ 
 
-    - **`partition`** - _[boolean]_  
+      - **`partition`** - _[boolean]_  
 
-    - **`order`** - _[anyOf]_ - to order the window 
+      - **`order`** - _[anyOf]_ - to order the window 
 
-      **&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;option 1** - _[string]_ 
+        - **option 1** - _[string]_ 
 
-      **&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;option 2** - _[array of anyOf]_ 
+        - **option 2** - _[array of anyOf]_ 
 
-      **&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;option 1** - _[string]_ - Shorthand field selector, interpreted as the name.
+          - **option 1** - _[string]_ - Shorthand field selector, interpreted as the name.
 
-      **&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;option 2** - _[object]_ 
+          - **option 2** - _[object]_ 
 
-      - **`name`** - _[string]_   _(required)_
+            - **`name`** - _[string]_   _(required)_
 
-      - **`time_grain`** - _[string]_ - Time grain for time-based dimensions. 
+            - **`time_grain`** - _[string]_ - Time grain for time-based dimensions. 
 
-    - **`frame`** - _[string]_ - sets the frame of your window 
+      - **`frame`** - _[string]_ - sets the frame of your window 
 
   - **`per`** - _[anyOf]_ - for per dimensions 
 
-    **&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;option 1** - _[string]_ 
+    - **option 1** - _[string]_ 
 
-    **&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;option 2** - _[array of anyOf]_ 
+    - **option 2** - _[array of anyOf]_ 
 
-    **&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;option 1** - _[string]_ - Shorthand field selector, interpreted as the name.
+      - **option 1** - _[string]_ - Shorthand field selector, interpreted as the name.
 
-    **&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;option 2** - _[object]_ 
+      - **option 2** - _[object]_ 
 
-    - **`name`** - _[string]_   _(required)_
+        - **`name`** - _[string]_   _(required)_
 
-    - **`time_grain`** - _[string]_ - Time grain for time-based dimensions. 
+        - **`time_grain`** - _[string]_ - Time grain for time-based dimensions. 
 
   - **`requires`** - _[anyOf]_ - using an available measure or dimension in your metrics view to set a required parameter, cannot be used with simple measures 
 
-    **&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;option 1** - _[string]_ 
+    - **option 1** - _[string]_ 
 
-    **&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;option 2** - _[array of anyOf]_ 
+    - **option 2** - _[array of anyOf]_ 
 
-    **&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;option 1** - _[string]_ - Shorthand field selector, interpreted as the name.
+      - **option 1** - _[string]_ - Shorthand field selector, interpreted as the name.
 
-    **&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;option 2** - _[object]_ 
+      - **option 2** - _[object]_ 
 
-    - **`name`** - _[string]_   _(required)_
+        - **`name`** - _[string]_   _(required)_
 
-    - **`time_grain`** - _[string]_ - Time grain for time-based dimensions. 
+        - **`time_grain`** - _[string]_ - Time grain for time-based dimensions. 
 
   - **`format_preset`** - _[string]_ - Controls the formatting of this measure using a predefined preset. Measures cannot have both `format_preset` and `format_d3`. If neither is supplied, the measure will be formatted using the `humanize` preset by default. Available options:
 - `humanize`: Round numbers into thousands (K), millions (M), billions (B), etc.
@@ -178,9 +182,9 @@ _[object]_ - Defines a security policy for the dashboard
 
   - **`access`** - _[oneOf]_ - Expression indicating if the user should be granted access to the dashboard. If not defined, it will resolve to false and the dashboard won't be accessible to anyone. Needs to be a valid SQL expression that evaluates to a boolean. 
 
-    **&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;option 1** - _[string]_ 
+    - **option 1** - _[string]_ 
 
-    **&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;option 2** - _[boolean]_ 
+    - **option 2** - _[boolean]_ 
 
   - **`row_filter`** - _[string]_ - SQL expression to filter the underlying model by. Can leverage templated user attributes to customize the filter for the requesting user. Needs to be a valid SQL expression that can be injected into a WHERE clause 
 
@@ -190,9 +194,9 @@ _[object]_ - Defines a security policy for the dashboard
 
     - **`names`** - _[anyOf]_ - List of fields to include. Should match the name of one of the dashboard's dimensions or measures  _(required)_
 
-      **&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;option 1** - _[array of string]_ 
+      - **option 1** - _[array of string]_ 
 
-      **&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;option 2** - _[string]_ 
+      - **option 2** - _[string]_ 
 
   - **`exclude`** - _[array of object]_ - List of dimension or measure names to exclude from the dashboard. If exclude is defined all other dimensions and measures are included 
 
@@ -200,9 +204,9 @@ _[object]_ - Defines a security policy for the dashboard
 
     - **`names`** - _[anyOf]_ - List of fields to exclude. Should match the name of one of the dashboard's dimensions or measures  _(required)_
 
-      **&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;option 1** - _[array of string]_ 
+      - **option 1** - _[array of string]_ 
 
-      **&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;option 2** - _[string]_ 
+      - **option 2** - _[string]_ 
 
   - **`rules`** - _[array of object]_  
 

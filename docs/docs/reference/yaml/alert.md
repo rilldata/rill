@@ -69,53 +69,53 @@ _[string]_ - define the timeout of the alert in seconds (optional).
 
 _[oneOf]_ - Specifies one of the options to retrieve or compute the data used by alert  _(required)_
 
-  **&nbsp;&nbsp;&nbsp;&nbsp;option 1** - _[object]_ 
+  - **option 1** - _[object]_ 
 
-  - **`sql`** - _[string]_ - Raw SQL query to run against existing models in the project.  _(required)_
+    - **`sql`** - _[string]_ - Raw SQL query to run against existing models in the project.  _(required)_
 
-  - **`connector`** - _[string]_ - specifies the connector to use when running SQL or glob queries. 
+    - **`connector`** - _[string]_ - specifies the connector to use when running SQL or glob queries. 
 
-  **&nbsp;&nbsp;&nbsp;&nbsp;option 2** - _[object]_ 
+  - **option 2** - _[object]_ 
 
-  - **`metrics_sql`** - _[string]_ - SQL query that targets a metrics view in the project  _(required)_
+    - **`metrics_sql`** - _[string]_ - SQL query that targets a metrics view in the project  _(required)_
 
-  **&nbsp;&nbsp;&nbsp;&nbsp;option 3** - _[object]_ 
+  - **option 3** - _[object]_ 
 
-  - **`api`** - _[string]_ - Name of a custom API defined in the project.  _(required)_
+    - **`api`** - _[string]_ - Name of a custom API defined in the project.  _(required)_
 
-  - **`args`** - _[object]_ - Arguments to pass to the custom API. 
+    - **`args`** - _[object]_ - Arguments to pass to the custom API. 
 
-  **&nbsp;&nbsp;&nbsp;&nbsp;option 4** - _[object]_ 
+  - **option 4** - _[object]_ 
 
-  - **`glob`** - _[anyOf]_ - Defines the file path or pattern to query from the specified connector.  _(required)_
+    - **`glob`** - _[anyOf]_ - Defines the file path or pattern to query from the specified connector.  _(required)_
 
-    **&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;option 1** - _[string]_ 
+      - **option 1** - _[string]_ 
 
-    **&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;option 2** - _[object]_ 
+      - **option 2** - _[object]_ 
 
-  - **`connector`** - _[string]_ - Specifies the connector to use with the glob input. 
+    - **`connector`** - _[string]_ - Specifies the connector to use with the glob input. 
 
-  **&nbsp;&nbsp;&nbsp;&nbsp;option 5** - _[object]_ 
+  - **option 5** - _[object]_ 
 
-  - **`resource_status`** - _[object]_ - Based on resource status  _(required)_
+    - **`resource_status`** - _[object]_ - Based on resource status  _(required)_
 
-    - **`where_error`** - _[boolean]_ - Indicates whether the condition should trigger when the resource is in an error state. 
+      - **`where_error`** - _[boolean]_ - Indicates whether the condition should trigger when the resource is in an error state. 
 
 ### `for`
 
 _[oneOf]_  
 
-  **&nbsp;&nbsp;&nbsp;&nbsp;option 1** - _[object]_ 
+  - **option 1** - _[object]_ 
 
-  - **`user_id`** - _[string]_   _(required)_
+    - **`user_id`** - _[string]_   _(required)_
 
-  **&nbsp;&nbsp;&nbsp;&nbsp;option 2** - _[object]_ 
+  - **option 2** - _[object]_ 
 
-  - **`user_email`** - _[string]_   _(required)_
+    - **`user_email`** - _[string]_   _(required)_
 
-  **&nbsp;&nbsp;&nbsp;&nbsp;option 3** - _[object]_ 
+  - **option 3** - _[object]_ 
 
-  - **`attributes`** - _[object]_   _(required)_
+    - **`attributes`** - _[object]_   _(required)_
 
 ### `on_recover`
 
@@ -141,21 +141,27 @@ _[string]_ - Defines the re-notification interval for the alert (e.g., '10m', '2
 
 _[anyOf]_ - Defines how and where to send notifications. At least one method (email or Slack) is required.  _(required)_
 
-  **&nbsp;&nbsp;&nbsp;&nbsp;option 1** - _[object]_ 
+  - **option 1** - _[object]_ 
 
-  - **`email`** - _[object]_ - Send notifications via email.  _(required)_
+    - **`email`** - _[object]_ - Send notifications via email.  _(required)_
 
-    - **`recipients`** - _[array of string]_ - An array of email addresses to notify.  _(required)_
+      - **`recipients`** - _[array of string]_ - An array of email addresses to notify.  _(required)_
 
-  **&nbsp;&nbsp;&nbsp;&nbsp;option 2** - _[object]_ 
+  - **option 2** - _[object]_ 
 
-  - **`slack`** - _[object]_ - Send notifications via Slack.  _(required)_
+    - **`slack`** - _[anyOf]_ - Send notifications via Slack.  _(required)_
 
-    - **`users`** - _[array of string]_ - An array of Slack user IDs to notify. 
+      - **option 1** - _[object]_ 
 
-    - **`channels`** - _[array of string]_ - An array of Slack channel IDs to notify. 
+        - **`users`** - _[array of string]_ - An array of Slack user IDs to notify.  _(required)_
 
-    - **`webhooks`** - _[array of string]_ - An array of Slack webhook URLs to send notifications to. 
+      - **option 2** - _[object]_ 
+
+        - **`channels`** - _[array of string]_ - An array of Slack channel IDs to notify.  _(required)_
+
+      - **option 3** - _[object]_ 
+
+        - **`webhooks`** - _[array of string]_ - An array of Slack webhook URLs to send notifications to.  _(required)_
 
 ### `annotations`
 
@@ -185,6 +191,4 @@ notify:
     slack:
         channels:
             - '#rill-cloud-alerts'
-
 ```
-

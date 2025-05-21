@@ -4,8 +4,6 @@ title: Component YAML
 sidebar_position: 34
 ---
 
-
-
 ## Properties
 
 ### `type`

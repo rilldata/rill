@@ -4,8 +4,6 @@ title: Model YAML
 sidebar_position: 38
 ---
 
-
-
 ## Properties
 
 ### `type`
@@ -50,73 +48,73 @@ _[string]_ - Configure how changes to the model specifications are applied (opti
 
 _[oneOf]_ - Refers to the explicitly defined state of your model, cannot be used with partitions (optional) 
 
-  **&nbsp;&nbsp;&nbsp;&nbsp;option 1** - _[object]_ 
+  - **option 1** - _[object]_ 
 
-  - **`sql`** - _[string]_ - Raw SQL query to run against existing models in the project.  _(required)_
+    - **`sql`** - _[string]_ - Raw SQL query to run against existing models in the project.  _(required)_
 
-  - **`connector`** - _[string]_ - specifies the connector to use when running SQL or glob queries. 
+    - **`connector`** - _[string]_ - specifies the connector to use when running SQL or glob queries. 
 
-  **&nbsp;&nbsp;&nbsp;&nbsp;option 2** - _[object]_ 
+  - **option 2** - _[object]_ 
 
-  - **`metrics_sql`** - _[string]_ - SQL query that targets a metrics view in the project  _(required)_
+    - **`metrics_sql`** - _[string]_ - SQL query that targets a metrics view in the project  _(required)_
 
-  **&nbsp;&nbsp;&nbsp;&nbsp;option 3** - _[object]_ 
+  - **option 3** - _[object]_ 
 
-  - **`api`** - _[string]_ - Name of a custom API defined in the project.  _(required)_
+    - **`api`** - _[string]_ - Name of a custom API defined in the project.  _(required)_
 
-  - **`args`** - _[object]_ - Arguments to pass to the custom API. 
+    - **`args`** - _[object]_ - Arguments to pass to the custom API. 
 
-  **&nbsp;&nbsp;&nbsp;&nbsp;option 4** - _[object]_ 
+  - **option 4** - _[object]_ 
 
-  - **`glob`** - _[anyOf]_ - Defines the file path or pattern to query from the specified connector.  _(required)_
+    - **`glob`** - _[anyOf]_ - Defines the file path or pattern to query from the specified connector.  _(required)_
 
-    **&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;option 1** - _[string]_ 
+      - **option 1** - _[string]_ 
 
-    **&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;option 2** - _[object]_ 
+      - **option 2** - _[object]_ 
 
-  - **`connector`** - _[string]_ - Specifies the connector to use with the glob input. 
+    - **`connector`** - _[string]_ - Specifies the connector to use with the glob input. 
 
-  **&nbsp;&nbsp;&nbsp;&nbsp;option 5** - _[object]_ 
+  - **option 5** - _[object]_ 
 
-  - **`resource_status`** - _[object]_ - Based on resource status  _(required)_
+    - **`resource_status`** - _[object]_ - Based on resource status  _(required)_
 
-    - **`where_error`** - _[boolean]_ - Indicates whether the condition should trigger when the resource is in an error state. 
+      - **`where_error`** - _[boolean]_ - Indicates whether the condition should trigger when the resource is in an error state. 
 
 ### `partitions`
 
 _[oneOf]_ - Refers to the how your data is partitioned, cannot be used with state. (optional) 
 
-  **&nbsp;&nbsp;&nbsp;&nbsp;option 1** - _[object]_ 
+  - **option 1** - _[object]_ 
 
-  - **`sql`** - _[string]_ - Raw SQL query to run against existing models in the project.  _(required)_
+    - **`sql`** - _[string]_ - Raw SQL query to run against existing models in the project.  _(required)_
 
-  - **`connector`** - _[string]_ - specifies the connector to use when running SQL or glob queries. 
+    - **`connector`** - _[string]_ - specifies the connector to use when running SQL or glob queries. 
 
-  **&nbsp;&nbsp;&nbsp;&nbsp;option 2** - _[object]_ 
+  - **option 2** - _[object]_ 
 
-  - **`metrics_sql`** - _[string]_ - SQL query that targets a metrics view in the project  _(required)_
+    - **`metrics_sql`** - _[string]_ - SQL query that targets a metrics view in the project  _(required)_
 
-  **&nbsp;&nbsp;&nbsp;&nbsp;option 3** - _[object]_ 
+  - **option 3** - _[object]_ 
 
-  - **`api`** - _[string]_ - Name of a custom API defined in the project.  _(required)_
+    - **`api`** - _[string]_ - Name of a custom API defined in the project.  _(required)_
 
-  - **`args`** - _[object]_ - Arguments to pass to the custom API. 
+    - **`args`** - _[object]_ - Arguments to pass to the custom API. 
 
-  **&nbsp;&nbsp;&nbsp;&nbsp;option 4** - _[object]_ 
+  - **option 4** - _[object]_ 
 
-  - **`glob`** - _[anyOf]_ - Defines the file path or pattern to query from the specified connector.  _(required)_
+    - **`glob`** - _[anyOf]_ - Defines the file path or pattern to query from the specified connector.  _(required)_
 
-    **&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;option 1** - _[string]_ 
+      - **option 1** - _[string]_ 
 
-    **&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;option 2** - _[object]_ 
+      - **option 2** - _[object]_ 
 
-  - **`connector`** - _[string]_ - Specifies the connector to use with the glob input. 
+    - **`connector`** - _[string]_ - Specifies the connector to use with the glob input. 
 
-  **&nbsp;&nbsp;&nbsp;&nbsp;option 5** - _[object]_ 
+  - **option 5** - _[object]_ 
 
-  - **`resource_status`** - _[object]_ - Based on resource status  _(required)_
+    - **`resource_status`** - _[object]_ - Based on resource status  _(required)_
 
-    - **`where_error`** - _[boolean]_ - Indicates whether the condition should trigger when the resource is in an error state. 
+      - **`where_error`** - _[boolean]_ - Indicates whether the condition should trigger when the resource is in an error state. 
 
 ### `sql`
 
@@ -159,7 +157,6 @@ _[object]_ - Overrides properties in production
 - [azure](#azure)
 - [bigquery](#bigquery)
 - [clickhouse](#clickhouse)
-- [druid](#druid)
 - [duckdb](#duckdb)
 - [gcs](#gcs)
 - [https](#https)
@@ -174,10 +171,7 @@ _[object]_ - Overrides properties in production
 - [snowflake](#snowflake)
 - [sqlite](#sqlite)
 
-
 ## athena
-
-
 
 ### `connector`
 
@@ -196,8 +190,6 @@ _[string]_ - AWS Athena workgroup to use for queries.
 _[string]_ - AWS region to connect to Athena and the output location. 
 
 ## azure
-
-
 
 ### `connector`
 
@@ -237,8 +229,6 @@ _[string]_ - Size of a batch (e.g., '100MB')
 
 ## bigquery
 
-
-
 ### `connector`
 
 _[string]_   _(required)_
@@ -248,8 +238,6 @@ _[string]_   _(required)_
 _[string]_ - ID of the BigQuery project. 
 
 ## clickhouse
-
-
 
 ### `connector`
 
@@ -263,17 +251,7 @@ _[string]_ - Path to the data source.
 
 _[string]_ - Format of the data source (e.g., csv, json, parquet). 
 
-## druid
-
-
-
-### `connector`
-
-_[string]_   _(required)_
-
 ## duckdb
-
-
 
 ### `connector`
 
@@ -296,8 +274,6 @@ _[string]_ - refers to a SQL queries to run before the main query, available for
 _[string]_ - refers to a SQL query that is run after the main query, available for DuckDB based models 
 
 ## gcs
-
-
 
 ### `connector`
 
@@ -333,15 +309,11 @@ _[string]_ - Size of a batch (e.g., '100MB')
 
 ## https
 
-
-
 ### `connector`
 
 _[string]_   _(required)_
 
 ## local_file
-
-
 
 ### `connector`
 
@@ -357,15 +329,11 @@ _[string]_ - Format of the data source (e.g., csv, json, parquet).
 
 ## motherduck
 
-
-
 ### `connector`
 
 _[string]_   _(required)_
 
 ## mysql
-
-
 
 ### `connector`
 
@@ -373,23 +341,17 @@ _[string]_   _(required)_
 
 ## pinot
 
-
-
 ### `connector`
 
 _[string]_   _(required)_
 
 ## postgres
 
-
-
 ### `connector`
 
 _[string]_   _(required)_
 
 ## redshift
-
-
 
 ### `connector`
 
@@ -420,8 +382,6 @@ _[string]_ - ARN of the IAM role to assume for Redshift access.
 _[string]_ - AWS region of the Redshift deployment. 
 
 ## s3
-
-
 
 ### `connector`
 
@@ -465,8 +425,6 @@ _[string]_ - Size of a batch (e.g., '100MB')
 
 ## salesforce
 
-
-
 ### `connector`
 
 _[string]_   _(required)_
@@ -485,15 +443,11 @@ _[boolean]_ - Whether to include deleted and archived records in the query (uses
 
 ## snowflake
 
-
-
 ### `connector`
 
 _[string]_   _(required)_
 
 ## sqlite
-
-
 
 ### `connector`
 

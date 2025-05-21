@@ -40,9 +40,9 @@ _[object]_ - Defines project-wide default settings for explores. Unless overridd
 
 _[oneOf]_ - Optional feature flags. Can be specified as a map of feature names to booleans, or as a list of enabled feature names. 
 
-  **&nbsp;&nbsp;&nbsp;&nbsp;option 1** - _[object]_ - Map of feature names to booleans.
+  - **option 1** - _[object]_ - Map of feature names to booleans.
 
-  **&nbsp;&nbsp;&nbsp;&nbsp;option 2** - _[array of string]_ - List of enabled feature names.
+  - **option 2** - _[array of string]_ - List of enabled feature names.
 
 ### `public_paths`
 

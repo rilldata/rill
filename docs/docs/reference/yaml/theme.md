@@ -4,8 +4,6 @@ title: Theme YAML
 sidebar_position: 39
 ---
 
-
-
 ## Properties
 
 ### `type`
@@ -32,10 +30,10 @@ _[object]_ - Overrides properties in production
 
 _[anyOf]_   _(required)_
 
-  **&nbsp;&nbsp;&nbsp;&nbsp;option 1** - _[object]_ 
+  - **option 1** - _[object]_ 
 
-  - **`primary`** - _[string]_   _(required)_
+    - **`primary`** - _[string]_   _(required)_
 
-  **&nbsp;&nbsp;&nbsp;&nbsp;option 2** - _[object]_ 
+  - **option 2** - _[object]_ 
 
-  - **`secondary`** - _[string]_   _(required)_
+    - **`secondary`** - _[string]_   _(required)_

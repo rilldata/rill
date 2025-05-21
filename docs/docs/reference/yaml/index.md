@@ -3,6 +3,7 @@ note: GENERATED. DO NOT EDIT.
 title: YAML Syntax
 sidebar_position: 30
 ---
+
 ## Overview
 
 When you create models and dashboards, these objects are represented as object files on the file system. You can find these files in your `models` and `dashboards` folders in your project by default. 
@@ -24,6 +25,7 @@ For more information about using Git or cloning projects locally, please see our
 :::
 
 ## Project files types
+
 
 - [Alert YAML](alert.md)
 - [API YAML](api.md)

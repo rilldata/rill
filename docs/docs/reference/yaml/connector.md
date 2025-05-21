@@ -4,8 +4,6 @@ title: Connector YAML
 sidebar_position: 35
 ---
 
-
-
 ## Properties
 
 ### `type`
@@ -40,7 +38,6 @@ _[array of string]_ - List of resource references, each as a string or map.
 - [slack](#slack)
 - [snowflake](#snowflake)
 - [sqlite](#sqlite)
-
 
 ## athena
 

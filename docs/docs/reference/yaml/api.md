@@ -48,9 +48,9 @@ _[object]_
 
   - **`access`** - _[oneOf]_ - Expression indicating if the user should be granted access to the dashboard. If not defined, it will resolve to false and the dashboard won't be accessible to anyone. Needs to be a valid SQL expression that evaluates to a boolean. 
 
-    **&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;option 1** - _[string]_ 
+    - **option 1** - _[string]_ 
 
-    **&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;option 2** - _[boolean]_ 
+    - **option 2** - _[boolean]_ 
 
   - **`row_filter`** - _[string]_ - SQL expression to filter the underlying model by. Can leverage templated user attributes to customize the filter for the requesting user. Needs to be a valid SQL expression that can be injected into a WHERE clause 
 
@@ -60,9 +60,9 @@ _[object]_
 
     - **`names`** - _[anyOf]_ - List of fields to include. Should match the name of one of the dashboard's dimensions or measures  _(required)_
 
-      **&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;option 1** - _[array of string]_ 
+      - **option 1** - _[array of string]_ 
 
-      **&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;option 2** - _[string]_ 
+      - **option 2** - _[string]_ 
 
   - **`exclude`** - _[array of object]_ - List of dimension or measure names to exclude from the dashboard. If exclude is defined all other dimensions and measures are included 
 
@@ -70,9 +70,9 @@ _[object]_
 
     - **`names`** - _[anyOf]_ - List of fields to exclude. Should match the name of one of the dashboard's dimensions or measures  _(required)_
 
-      **&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;option 1** - _[array of string]_ 
+      - **option 1** - _[array of string]_ 
 
-      **&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;option 2** - _[string]_ 
+      - **option 2** - _[string]_ 
 
   - **`rules`** - _[array of object]_  
 
@@ -99,10 +99,7 @@ _[boolean]_
 - [glob](#glob)
 - [resource_status](#resource_status)
 
-
 ## sql
-
-
 
 ### `sql`
 
@@ -114,15 +111,11 @@ _[string]_ - specifies the connector to use when running SQL or glob queries.
 
 ## metrics_sql
 
-
-
 ### `metrics_sql`
 
 _[string]_ - SQL query that targets a metrics view in the project  _(required)_
 
 ## api
-
-
 
 ### `api`
 
@@ -134,23 +127,19 @@ _[object]_ - Arguments to pass to the custom API.
 
 ## glob
 
-
-
 ### `glob`
 
 _[anyOf]_ - Defines the file path or pattern to query from the specified connector.  _(required)_
 
-  **&nbsp;&nbsp;&nbsp;&nbsp;option 1** - _[string]_ 
+  - **option 1** - _[string]_ 
 
-  **&nbsp;&nbsp;&nbsp;&nbsp;option 2** - _[object]_ 
+  - **option 2** - _[object]_ 
 
 ### `connector`
 
 _[string]_ - Specifies the connector to use with the glob input. 
 
 ## resource_status
-
-
 
 ### `resource_status`
 
@@ -170,6 +159,4 @@ metrics_sql: |-
       where author_date > '{{ .args.date }}'
       order by net_line_changes DESC
       limit 10
-
 ```
-
