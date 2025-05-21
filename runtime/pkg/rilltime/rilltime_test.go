@@ -69,7 +69,7 @@ var (
 	}
 )
 
-func Test_CompletePreviousAndCurrentGrain(t *testing.T) {
+func TestEval_CompletePreviousAndCurrentGrain(t *testing.T) {
 	var testCases []testCase
 
 	expectedGrains := []timeutil.TimeGrain{
@@ -212,7 +212,7 @@ func Test_CompletePreviousAndCurrentGrain(t *testing.T) {
 	runTests(t, testCases, now, minTime, maxTime, watermark, nil)
 }
 
-func Test_FirstAndLastOfPeriod(t *testing.T) {
+func TestEval_FirstAndLastOfPeriod(t *testing.T) {
 	var testCases []testCase
 
 	// Expected timestamps for each grain.
@@ -255,9 +255,6 @@ func Test_FirstAndLastOfPeriod(t *testing.T) {
 			grainParis = append(grainParis, testGrainPair{grain, grains[i+2]})
 		}
 	}
-	// Select tests with higher order grains
-	//grainParis = append(grainParis, testGrainPair{"D", "Y"})
-	//grainParis = append(grainParis, testGrainPair{"W", "Y"})
 
 	for _, grainPair := range grainParis {
 		grainIndex := slices.Index(grains, grainPair.grain)
@@ -337,86 +334,76 @@ func Test_FirstAndLastOfPeriod(t *testing.T) {
 	runTests(t, testCases, now, minTime, maxTime, watermark, nil)
 }
 
-func Test_WeekCorrections(t *testing.T) {
-	monthsForWeekdays := []string{
-		"2024-07-01T00:00:00Z", // monday
-		"2025-04-01T00:00:00Z", // tuesday
-		"2025-01-01T00:00:00Z", // wednesday
-		"2025-05-01T00:00:00Z", // thursday
-		"2024-11-01T00:00:00Z", // friday
-		"2025-03-01T00:00:00Z", // saturday
-		"2024-12-01T00:00:00Z", // sunday
-	}
-	// W-1^, W1^, W2^ for monday as first of week
-	weekBoundaries := [][]string{
-		{"2024-06-24T00:00:00Z", "2024-07-01T00:00:00Z", "2024-07-08T00:00:00Z"},
-		{"2025-03-24T00:00:00Z", "2025-03-31T00:00:00Z", "2025-04-07T00:00:00Z"},
-		{"2024-12-23T00:00:00Z", "2024-12-30T00:00:00Z", "2025-01-06T00:00:00Z"},
-		{"2025-04-21T00:00:00Z", "2025-04-28T00:00:00Z", "2025-05-05T00:00:00Z"},
-		{"2024-10-28T00:00:00Z", "2024-11-04T00:00:00Z", "2024-11-11T00:00:00Z"},
-		{"2025-02-24T00:00:00Z", "2025-03-03T00:00:00Z", "2025-03-10T00:00:00Z"},
-		{"2024-11-25T00:00:00Z", "2024-12-02T00:00:00Z", "2024-12-09T00:00:00Z"},
-	}
-	// W-1^, W1^, W2^ for sunday as first of week
-	weekBoundariesForSunday := [][]string{
-		{"2024-06-23T00:00:00Z", "2024-06-30T00:00:00Z", "2024-07-07T00:00:00Z"},
-		{"2025-03-23T00:00:00Z", "2025-03-30T00:00:00Z", "2025-04-06T00:00:00Z"},
-		{"2024-12-22T00:00:00Z", "2024-12-29T00:00:00Z", "2025-01-05T00:00:00Z"},
-		{"2025-04-27T00:00:00Z", "2025-05-04T00:00:00Z", "2025-05-11T00:00:00Z"},
-		{"2024-10-27T00:00:00Z", "2024-11-03T00:00:00Z", "2024-11-10T00:00:00Z"},
-		{"2025-02-23T00:00:00Z", "2025-03-02T00:00:00Z", "2025-03-09T00:00:00Z"},
-		{"2024-11-24T00:00:00Z", "2024-12-01T00:00:00Z", "2024-12-08T00:00:00Z"},
-	}
+func TestEval_WeekCorrections(t *testing.T) {
+	testCases := []testCase{
+		// Boundary on Monday, week starts on Monday
+		{"W1 as of 2024-07-01T00:00:00Z", "2024-07-01T00:00:00Z", "2024-07-08T00:00:00Z", timeutil.TimeGrainDay, 1, 1},
+		{"<1W as of 2024-07-01T00:00:00Z", "2024-07-01T00:00:00Z", "2024-07-08T00:00:00Z", timeutil.TimeGrainDay, 1, 1},
+		{">1W of -1M! as of 2024-07-01T00:00:00Z", "2024-06-24T00:00:00Z", "2024-07-01T00:00:00Z", timeutil.TimeGrainDay, 1, 1},
+		// Boundary on Monday, week starts on Sunday
+		{"W1 as of 2024-07-01T00:00:00Z", "2024-06-30T00:00:00Z", "2024-07-07T00:00:00Z", timeutil.TimeGrainDay, 7, 1},
+		{"<1W as of 2024-07-01T00:00:00Z", "2024-06-30T00:00:00Z", "2024-07-07T00:00:00Z", timeutil.TimeGrainDay, 7, 1},
+		{">1W of -1M! as of 2024-07-01T00:00:00Z", "2024-06-23T00:00:00Z", "2024-06-30T00:00:00Z", timeutil.TimeGrainDay, 7, 1},
 
-	var testCases []testCase
+		// Boundary on Tuesday, week starts on Monday
+		{"W1 as of 2025-04-01T00:00:00Z", "2025-03-31T00:00:00Z", "2025-04-07T00:00:00Z", timeutil.TimeGrainDay, 1, 1},
+		{"<1W as of 2025-04-01T00:00:00Z", "2025-03-31T00:00:00Z", "2025-04-07T00:00:00Z", timeutil.TimeGrainDay, 1, 1},
+		{">1W of -1M! as of 2025-04-01T00:00:00Z", "2025-03-24T00:00:00Z", "2025-03-31T00:00:00Z", timeutil.TimeGrainDay, 1, 1},
+		// Boundary on Tuesday, week starts on Sunday
+		{"W1 as of 2025-04-01T00:00:00Z", "2025-03-30T00:00:00Z", "2025-04-06T00:00:00Z", timeutil.TimeGrainDay, 7, 1},
+		{"<1W as of 2025-04-01T00:00:00Z", "2025-03-30T00:00:00Z", "2025-04-06T00:00:00Z", timeutil.TimeGrainDay, 7, 1},
+		{">1W of -1M! as of 2025-04-01T00:00:00Z", "2025-03-23T00:00:00Z", "2025-03-30T00:00:00Z", timeutil.TimeGrainDay, 7, 1},
 
-	for i, weekday := range monthsForWeekdays {
-		testCases = append(testCases, testCase{
-			timeRange: fmt.Sprintf("W1 as of %s", weekday),
-			start:     weekBoundaries[i][1],
-			end:       weekBoundaries[i][2],
-			grain:     timeutil.TimeGrainDay,
-		})
-		testCases = append(testCases, testCase{
-			timeRange: fmt.Sprintf("<1W as of %s", weekday),
-			start:     weekBoundaries[i][1],
-			end:       weekBoundaries[i][2],
-			grain:     timeutil.TimeGrainDay,
-		})
-		testCases = append(testCases, testCase{
-			timeRange: fmt.Sprintf(">1W of -1M! as of %s", weekday),
-			start:     weekBoundaries[i][0],
-			end:       weekBoundaries[i][1],
-			grain:     timeutil.TimeGrainDay,
-		})
+		// Boundary on Wednesday, week starts on Monday
+		{"W1 as of 2025-01-01T00:00:00Z", "2024-12-30T00:00:00Z", "2025-01-06T00:00:00Z", timeutil.TimeGrainDay, 1, 1},
+		{"<1W as of 2025-01-01T00:00:00Z", "2024-12-30T00:00:00Z", "2025-01-06T00:00:00Z", timeutil.TimeGrainDay, 1, 1},
+		{">1W of -1M! as of 2025-01-01T00:00:00Z", "2024-12-23T00:00:00Z", "2024-12-30T00:00:00Z", timeutil.TimeGrainDay, 1, 1},
+		// Boundary on Wednesday, week starts on Sunday
+		{"W1 as of 2025-01-01T00:00:00Z", "2024-12-29T00:00:00Z", "2025-01-05T00:00:00Z", timeutil.TimeGrainDay, 7, 1},
+		{"<1W as of 2025-01-01T00:00:00Z", "2024-12-29T00:00:00Z", "2025-01-05T00:00:00Z", timeutil.TimeGrainDay, 7, 1},
+		{">1W of -1M! as of 2025-01-01T00:00:00Z", "2024-12-22T00:00:00Z", "2024-12-29T00:00:00Z", timeutil.TimeGrainDay, 7, 1},
 
-		testCases = append(testCases, testCase{
-			timeRange: fmt.Sprintf("W1 as of %s", weekday),
-			start:     weekBoundariesForSunday[i][1],
-			end:       weekBoundariesForSunday[i][2],
-			grain:     timeutil.TimeGrainDay,
-			FirstDay:  7,
-		})
-		testCases = append(testCases, testCase{
-			timeRange: fmt.Sprintf("<1W as of %s", weekday),
-			start:     weekBoundariesForSunday[i][1],
-			end:       weekBoundariesForSunday[i][2],
-			grain:     timeutil.TimeGrainDay,
-			FirstDay:  7,
-		})
-		testCases = append(testCases, testCase{
-			timeRange: fmt.Sprintf(">1W of -1M! as of %s", weekday),
-			start:     weekBoundariesForSunday[i][0],
-			end:       weekBoundariesForSunday[i][1],
-			grain:     timeutil.TimeGrainDay,
-			FirstDay:  7,
-		})
+		// Boundary on Thursday, week starts on Monday
+		{"W1 as of 2025-05-01T00:00:00Z", "2025-04-28T00:00:00Z", "2025-05-05T00:00:00Z", timeutil.TimeGrainDay, 1, 1},
+		{"<1W as of 2025-05-01T00:00:00Z", "2025-04-28T00:00:00Z", "2025-05-05T00:00:00Z", timeutil.TimeGrainDay, 1, 1},
+		{">1W of -1M! as of 2025-05-01T00:00:00Z", "2025-04-21T00:00:00Z", "2025-04-28T00:00:00Z", timeutil.TimeGrainDay, 1, 1},
+		// Boundary on Thursday, week starts on Sunday
+		{"W1 as of 2025-05-01T00:00:00Z", "2025-05-04T00:00:00Z", "2025-05-11T00:00:00Z", timeutil.TimeGrainDay, 7, 1},
+		{"<1W as of 2025-05-01T00:00:00Z", "2025-05-04T00:00:00Z", "2025-05-11T00:00:00Z", timeutil.TimeGrainDay, 7, 1},
+		{">1W of -1M! as of 2025-05-01T00:00:00Z", "2025-04-27T00:00:00Z", "2025-05-04T00:00:00Z", timeutil.TimeGrainDay, 7, 1},
+
+		// Boundary on Friday, week starts on Monday
+		{"W1 as of 2024-11-01T00:00:00Z", "2024-11-04T00:00:00Z", "2024-11-11T00:00:00Z", timeutil.TimeGrainDay, 1, 1},
+		{"<1W as of 2024-11-01T00:00:00Z", "2024-11-04T00:00:00Z", "2024-11-11T00:00:00Z", timeutil.TimeGrainDay, 1, 1},
+		{">1W of -1M! as of 2024-11-01T00:00:00Z", "2024-10-28T00:00:00Z", "2024-11-04T00:00:00Z", timeutil.TimeGrainDay, 1, 1},
+		// Boundary on Friday, week starts on Sunday
+		{"W1 as of 2024-11-01T00:00:00Z", "2024-11-03T00:00:00Z", "2024-11-10T00:00:00Z", timeutil.TimeGrainDay, 7, 1},
+		{"<1W as of 2024-11-01T00:00:00Z", "2024-11-03T00:00:00Z", "2024-11-10T00:00:00Z", timeutil.TimeGrainDay, 7, 1},
+		{">1W of -1M! as of 2024-11-01T00:00:00Z", "2024-10-27T00:00:00Z", "2024-11-03T00:00:00Z", timeutil.TimeGrainDay, 7, 1},
+
+		// Boundary on Saturday, week starts on Monday
+		{"W1 as of 2025-03-01T00:00:00Z", "2025-03-03T00:00:00Z", "2025-03-10T00:00:00Z", timeutil.TimeGrainDay, 1, 1},
+		{"<1W as of 2025-03-01T00:00:00Z", "2025-03-03T00:00:00Z", "2025-03-10T00:00:00Z", timeutil.TimeGrainDay, 1, 1},
+		{">1W of -1M! as of 2025-03-01T00:00:00Z", "2025-02-24T00:00:00Z", "2025-03-03T00:00:00Z", timeutil.TimeGrainDay, 1, 1},
+		// Boundary on Saturday, week starts on Sunday
+		{"W1 as of 2025-03-01T00:00:00Z", "2025-03-02T00:00:00Z", "2025-03-09T00:00:00Z", timeutil.TimeGrainDay, 7, 1},
+		{"<1W as of 2025-03-01T00:00:00Z", "2025-03-02T00:00:00Z", "2025-03-09T00:00:00Z", timeutil.TimeGrainDay, 7, 1},
+		{">1W of -1M! as of 2025-03-01T00:00:00Z", "2025-02-23T00:00:00Z", "2025-03-02T00:00:00Z", timeutil.TimeGrainDay, 7, 1},
+
+		// Boundary on Sunday, week starts on Monday
+		{"W1 as of 2024-12-01T00:00:00Z", "2024-12-02T00:00:00Z", "2024-12-09T00:00:00Z", timeutil.TimeGrainDay, 1, 1},
+		{"<1W as of 2024-12-01T00:00:00Z", "2024-12-02T00:00:00Z", "2024-12-09T00:00:00Z", timeutil.TimeGrainDay, 1, 1},
+		{">1W of -1M! as of 2024-12-01T00:00:00Z", "2024-11-25T00:00:00Z", "2024-12-02T00:00:00Z", timeutil.TimeGrainDay, 1, 1},
+		// Boundary on Sunday, week starts on Sunday
+		{"W1 as of 2024-12-01T00:00:00Z", "2024-12-01T00:00:00Z", "2024-12-08T00:00:00Z", timeutil.TimeGrainDay, 7, 1},
+		{"<1W as of 2024-12-01T00:00:00Z", "2024-12-01T00:00:00Z", "2024-12-08T00:00:00Z", timeutil.TimeGrainDay, 7, 1},
+		{">1W of -1M! as of 2024-12-01T00:00:00Z", "2024-11-24T00:00:00Z", "2024-12-01T00:00:00Z", timeutil.TimeGrainDay, 7, 1},
 	}
 
 	runTests(t, testCases, now, minTime, maxTime, watermark, nil)
 }
 
-func Test_IsoTimeRanges(t *testing.T) {
+func TestEval_IsoTimeRanges(t *testing.T) {
 	testCases := []testCase{
 		{"2025-02-20T01:23:45Z to 2025-07-15T02:34:50Z", "2025-02-20T01:23:45Z", "2025-07-15T02:34:50Z", timeutil.TimeGrainSecond, 1, 1},
 		{"2025-02-20T01:23:45Z / 2025-07-15T02:34:50Z", "2025-02-20T01:23:45Z", "2025-07-15T02:34:50Z", timeutil.TimeGrainSecond, 1, 1},
@@ -431,7 +418,7 @@ func Test_IsoTimeRanges(t *testing.T) {
 	runTests(t, testCases, now, minTime, maxTime, watermark, nil)
 }
 
-func Test_Eval_watermark_on_boundary(t *testing.T) {
+func TestEval_WatermarkOnBoundary(t *testing.T) {
 	maxTimeOnBoundary := "2025-07-01T00:00:00Z"   // month and quarter boundary
 	watermarkOnBoundary := "2025-05-12T00:00:00Z" // day and week boundary
 	testCases := []testCase{
@@ -478,7 +465,7 @@ func Test_KatmanduTimezone(t *testing.T) {
 	runTests(t, testCases, now, minTime, maxTime, watermark, tz)
 }
 
-func Test_BackwardsCompatibility(t *testing.T) {
+func TestEval_BackwardsCompatibility(t *testing.T) {
 	testCases := []testCase{
 		{"rill-TD", "2025-05-13T00:00:00Z", "2025-05-14T00:00:00Z", timeutil.TimeGrainHour, 1, 1},
 		{"rill-WTD", "2025-05-12T00:00:00Z", "2025-05-14T00:00:00Z", timeutil.TimeGrainDay, 1, 1},
@@ -499,7 +486,7 @@ func Test_BackwardsCompatibility(t *testing.T) {
 	runTests(t, testCases, now, minTime, maxTime, watermark, nil)
 }
 
-func Test_EvalMisc(t *testing.T) {
+func TestEval_Misc(t *testing.T) {
 	testCases := []testCase{
 		// No snapping
 		{"2m ending -2d", "2025-05-11T06:30:36Z", "2025-05-11T06:32:36Z", timeutil.TimeGrainMinute, 1, 1},
@@ -531,6 +518,25 @@ func Test_EvalMisc(t *testing.T) {
 	}
 
 	runTests(t, testCases, now, minTime, maxTime, watermark, nil)
+}
+
+func TestEval_SyntaxErrors(t *testing.T) {
+	testCases := []struct {
+		timeRange string
+		errorMsg  string
+	}{
+		{"D2 of -2Y", `unexpected token "<EOF>" (expected <to> PointInTime)`},
+		{"-4d", `unexpected token "<EOF>" (expected <interval>)`},
+		{"D", `unexpected token "<EOF>" (expected <interval>)`},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.timeRange, func(t *testing.T) {
+			_, err := Parse(testCase.timeRange, ParseOptions{})
+			require.Error(t, err)
+			require.ErrorContains(t, err, testCase.errorMsg)
+		})
+	}
 }
 
 type testCase struct {
