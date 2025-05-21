@@ -503,11 +503,6 @@ export class Instance extends Message<Instance> {
   annotations: { [key: string]: string } = {};
 
   /**
-   * @generated from field: bool embed_catalog = 6;
-   */
-  embedCatalog = false;
-
-  /**
    * @generated from field: bool watch_repo = 15;
    */
   watchRepo = false;
@@ -534,7 +529,6 @@ export class Instance extends Message<Instance> {
     { no: 8, name: "project_variables", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
     { no: 22, name: "feature_flags", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 8 /* ScalarType.BOOL */} },
     { no: 14, name: "annotations", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
-    { no: 6, name: "embed_catalog", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 15, name: "watch_repo", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
@@ -859,11 +853,6 @@ export class CreateInstanceRequest extends Message<CreateInstanceRequest> {
   annotations: { [key: string]: string } = {};
 
   /**
-   * @generated from field: bool embed_catalog = 6;
-   */
-  embedCatalog = false;
-
-  /**
    * @generated from field: bool watch_repo = 11;
    */
   watchRepo = false;
@@ -885,7 +874,6 @@ export class CreateInstanceRequest extends Message<CreateInstanceRequest> {
     { no: 10, name: "connectors", kind: "message", T: Connector, repeated: true },
     { no: 7, name: "variables", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
     { no: 9, name: "annotations", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
-    { no: 6, name: "embed_catalog", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 11, name: "watch_repo", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
@@ -1070,11 +1058,6 @@ export class EditInstanceRequest extends Message<EditInstanceRequest> {
   annotations: { [key: string]: string } = {};
 
   /**
-   * @generated from field: optional bool embed_catalog = 6;
-   */
-  embedCatalog?: boolean;
-
-  /**
    * @generated from field: optional bool watch_repo = 11;
    */
   watchRepo?: boolean;
@@ -1096,7 +1079,6 @@ export class EditInstanceRequest extends Message<EditInstanceRequest> {
     { no: 9, name: "connectors", kind: "message", T: Connector, repeated: true },
     { no: 15, name: "variables", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
     { no: 10, name: "annotations", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
-    { no: 6, name: "embed_catalog", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
     { no: 11, name: "watch_repo", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
   ]);
 

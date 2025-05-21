@@ -57,9 +57,6 @@ type Instance struct {
 	FeatureFlags map[string]bool `db:"feature_flags"`
 	// Annotations to enrich activity events (like usage tracking)
 	Annotations map[string]string
-	// EmbedCatalog tells the runtime to store the instance's catalog in its OLAP store instead
-	// of in the runtime's metadata store. Currently only supported for the duckdb driver.
-	EmbedCatalog bool `db:"embed_catalog"`
 	// WatchRepo indicates whether to watch the repo for file changes and reconcile them automatically.
 	WatchRepo bool `db:"watch_repo"`
 	// Paths to expose over HTTP (defaults to ./public)
