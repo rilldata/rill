@@ -1582,7 +1582,6 @@ func (r *ModelReconciler) runModelTests(ctx context.Context, self *runtimev1.Res
 			errs = append(errs, fmt.Errorf("%s: %w", test.Name, err))
 			continue
 		}
-		defer result.Close() // Ensures cleanup
 
 		var testFailed bool
 		for {
@@ -1603,6 +1602,8 @@ func (r *ModelReconciler) runModelTests(ctx context.Context, self *runtimev1.Res
 				break
 			}
 		}
+		result.Close()
+
 		if testFailed {
 			continue
 		}
