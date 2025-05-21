@@ -318,7 +318,7 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 		// Run model tests if no partitions are configured
 		testErr := r.runModelTests(ctx, self)
 		if testErr != nil {
-			execErr = fmt.Errorf("model tests failed: %w", testErr)
+			execErr = testErr
 		}
 
 		err := r.updateStateWithResult(ctx, self, execRes)
@@ -1579,9 +1579,10 @@ func (r *ModelReconciler) runModelTests(ctx context.Context, self *runtimev1.Res
 		})
 		if err != nil {
 			r.C.Logger.Warn("Model test errored", zap.String("model", self.Meta.Name.Name), zap.String("test", test.Name), zap.Error(err), observability.ZapCtx(ctx))
-			errs = append(errs, fmt.Errorf("test %s: %w", test.Name, err))
+			errs = append(errs, fmt.Errorf("%s: %w", test.Name, err))
 			continue
 		}
+		defer result.Close() // Ensures cleanup
 
 		var testFailed bool
 		for {
@@ -1591,18 +1592,17 @@ func (r *ModelReconciler) runModelTests(ctx context.Context, self *runtimev1.Res
 			}
 			if err != nil {
 				r.C.Logger.Warn("Model test errored reading result", zap.String("model", self.Meta.Name.Name), zap.String("test", test.Name), zap.Error(err), observability.ZapCtx(ctx))
-				errs = append(errs, fmt.Errorf("test %s: %w", test.Name, err))
+				errs = append(errs, fmt.Errorf("model test: %s: %w", test.Name, err))
 				testFailed = true
 				break
 			}
 			if row != nil {
 				r.C.Logger.Warn("Model test failed", zap.String("model", self.Meta.Name.Name), zap.String("test", test.Name), observability.ZapCtx(ctx))
-				errs = append(errs, fmt.Errorf("test %s: failed (returned rows)", test.Name))
+				errs = append(errs, fmt.Errorf("model test: %s: failed (returned rows)", test.Name))
 				testFailed = true
 				break
 			}
 		}
-		result.Close()
 		if testFailed {
 			continue
 		}
