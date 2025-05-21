@@ -2,11 +2,10 @@ package timeutil
 
 import (
 	"time"
-
-	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
-
 	// Load IANA time zone data
 	_ "time/tzdata"
+
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 )
 
 // TimeGrain is extension of std time package with Week and Quarter added
@@ -25,33 +24,33 @@ const (
 	TimeGrainYear
 )
 
-func TruncateTime(start time.Time, tg TimeGrain, tz *time.Location, firstDay, firstMonth int) time.Time {
+func TruncateTime(tm time.Time, tg TimeGrain, tz *time.Location, firstDay, firstMonth int) time.Time {
 	switch tg {
 	case TimeGrainUnspecified:
-		return start
+		return tm
 	case TimeGrainMillisecond:
-		return start.Truncate(time.Millisecond)
+		return tm.Truncate(time.Millisecond)
 	case TimeGrainSecond:
-		return start.Truncate(time.Second)
+		return tm.Truncate(time.Second)
 	case TimeGrainMinute:
-		return start.Truncate(time.Minute)
+		return tm.Truncate(time.Minute)
 	case TimeGrainHour:
-		previousTimestamp := start.Add(-time.Hour)   // DST check, ie in NewYork 1:00am can be equal 2:00am
+		previousTimestamp := tm.Add(-time.Hour)      // DST check, ie in NewYork 1:00am can be equal 2:00am
 		previousTimestamp = previousTimestamp.In(tz) // if it happens then converting back to UTC loses the hour
-		start = start.In(tz)
-		start = time.Date(start.Year(), start.Month(), start.Day(), start.Hour(), 0, 0, 0, tz)
-		utc := start.In(time.UTC)
-		if previousTimestamp.Hour() == start.Hour() {
+		tm = tm.In(tz)
+		tm = time.Date(tm.Year(), tm.Month(), tm.Day(), tm.Hour(), 0, 0, 0, tz)
+		utc := tm.In(time.UTC)
+		if previousTimestamp.Hour() == tm.Hour() {
 			return utc.Add(time.Hour)
 		}
 		return utc
 	case TimeGrainDay:
-		start = start.In(tz)
-		start = time.Date(start.Year(), start.Month(), start.Day(), 0, 0, 0, 0, tz)
-		return start.In(time.UTC)
+		tm = tm.In(tz)
+		tm = time.Date(tm.Year(), tm.Month(), tm.Day(), 0, 0, 0, 0, tz)
+		return tm.In(time.UTC)
 	case TimeGrainWeek:
-		start = start.In(tz)
-		weekday := int(start.Weekday())
+		tm = tm.In(tz)
+		weekday := int(tm.Weekday())
 		if weekday == 0 {
 			weekday = 7
 		}
@@ -66,20 +65,20 @@ func TruncateTime(start time.Time, tg TimeGrain, tz *time.Location, firstDay, fi
 		if weekday < firstDay {
 			daysToSubtract = -7 + daysToSubtract
 		}
-		start = time.Date(start.Year(), start.Month(), start.Day(), 0, 0, 0, 0, tz)
-		start = start.AddDate(0, 0, daysToSubtract)
-		return start.In(time.UTC)
+		tm = time.Date(tm.Year(), tm.Month(), tm.Day(), 0, 0, 0, 0, tz)
+		tm = tm.AddDate(0, 0, daysToSubtract)
+		return tm.In(time.UTC)
 	case TimeGrainMonth:
-		start = start.In(tz)
-		start = time.Date(start.Year(), start.Month(), 1, 0, 0, 0, 0, tz)
-		start = start.In(time.UTC)
-		return start
+		tm = tm.In(tz)
+		tm = time.Date(tm.Year(), tm.Month(), 1, 0, 0, 0, 0, tz)
+		tm = tm.In(time.UTC)
+		return tm
 	case TimeGrainQuarter:
-		monthsToSubtract := (3 + int(start.Month()) - firstMonth%3) % 3
-		start = start.In(tz)
-		start = time.Date(start.Year(), start.Month(), 1, 0, 0, 0, 0, tz)
-		start = start.AddDate(0, -monthsToSubtract, 0)
-		return start.In(time.UTC)
+		monthsToSubtract := (3 + int(tm.Month()) - firstMonth%3) % 3
+		tm = tm.In(tz)
+		tm = time.Date(tm.Year(), tm.Month(), 1, 0, 0, 0, 0, tz)
+		tm = tm.AddDate(0, -monthsToSubtract, 0)
+		return tm.In(time.UTC)
 	case TimeGrainYear:
 		if firstMonth < 1 {
 			firstMonth = 1
@@ -88,47 +87,17 @@ func TruncateTime(start time.Time, tg TimeGrain, tz *time.Location, firstDay, fi
 			firstMonth = 12
 		}
 
-		start = start.In(tz)
-		year := start.Year()
-		if int(start.Month()) < firstMonth {
-			year = start.Year() - 1
+		tm = tm.In(tz)
+		year := tm.Year()
+		if int(tm.Month()) < firstMonth {
+			year = tm.Year() - 1
 		}
 
-		start = time.Date(year, time.Month(firstMonth), 1, 0, 0, 0, 0, tz)
-		return start.In(time.UTC)
+		tm = time.Date(year, time.Month(firstMonth), 1, 0, 0, 0, 0, tz)
+		return tm.In(time.UTC)
 	}
 
-	return start
-}
-
-func CeilTime(start time.Time, tg TimeGrain, tz *time.Location, firstDay, firstMonth int) time.Time {
-	truncated := TruncateTime(start, tg, tz, firstDay, firstMonth)
-	if start.Equal(truncated) {
-		return start
-	}
-
-	switch tg {
-	case TimeGrainUnspecified, TimeGrainMillisecond:
-		return start
-	case TimeGrainSecond:
-		start = start.Add(time.Second)
-	case TimeGrainMinute:
-		start = start.Add(time.Minute)
-	case TimeGrainHour:
-		start = start.Add(time.Hour)
-	case TimeGrainDay:
-		start = start.AddDate(0, 0, 1)
-	case TimeGrainWeek:
-		start = start.AddDate(0, 0, 7)
-	case TimeGrainMonth:
-		start = start.AddDate(0, 1, 0)
-	case TimeGrainQuarter:
-		start = start.AddDate(0, 3, 0)
-	case TimeGrainYear:
-		start = start.AddDate(1, 0, 0)
-	}
-
-	return TruncateTime(start, tg, tz, firstDay, firstMonth)
+	return tm
 }
 
 func ApproximateBins(start, end time.Time, tg TimeGrain) int {
@@ -163,30 +132,29 @@ func AddTimeProto(to time.Time, tg runtimev1.TimeGrain, count int) time.Time {
 	case runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED:
 		return to
 	case runtimev1.TimeGrain_TIME_GRAIN_MILLISECOND:
-		return to.Add(time.Duration(count) * time.Millisecond)
+		return OffsetTime(to, TimeGrainMillisecond, count)
 	case runtimev1.TimeGrain_TIME_GRAIN_SECOND:
-		return to.Add(time.Duration(count) * time.Second)
+		return OffsetTime(to, TimeGrainSecond, count)
 	case runtimev1.TimeGrain_TIME_GRAIN_MINUTE:
-		return to.Add(time.Duration(count) * time.Minute)
+		return OffsetTime(to, TimeGrainMinute, count)
 	case runtimev1.TimeGrain_TIME_GRAIN_HOUR:
-		return to.Add(time.Duration(count) * time.Hour)
+		return OffsetTime(to, TimeGrainHour, count)
 	case runtimev1.TimeGrain_TIME_GRAIN_DAY:
-		return to.AddDate(0, 0, count)
+		return OffsetTime(to, TimeGrainDay, count)
 	case runtimev1.TimeGrain_TIME_GRAIN_WEEK:
-		return to.AddDate(0, 0, count*7)
+		return OffsetTime(to, TimeGrainWeek, count)
 	case runtimev1.TimeGrain_TIME_GRAIN_MONTH:
-		return to.AddDate(0, count, 0)
+		return OffsetTime(to, TimeGrainMonth, count)
 	case runtimev1.TimeGrain_TIME_GRAIN_QUARTER:
-		return to.AddDate(0, count*3, 0)
+		return OffsetTime(to, TimeGrainQuarter, count)
 	case runtimev1.TimeGrain_TIME_GRAIN_YEAR:
-		return to.AddDate(count, 0, 0)
+		return OffsetTime(to, TimeGrainYear, count)
 	}
 
 	return to
 }
 
 func OffsetTime(tm time.Time, tg TimeGrain, n int) time.Time {
-	// TODO: edge case where offsetting by a month to a date that is not valid should snap to the last day of the month
 	switch tg {
 	case TimeGrainUnspecified:
 		return tm
@@ -202,58 +170,44 @@ func OffsetTime(tm time.Time, tg TimeGrain, n int) time.Time {
 		return tm.AddDate(0, 0, n)
 	case TimeGrainWeek:
 		return tm.AddDate(0, 0, n*7)
-	case TimeGrainMonth:
-		return tm.AddDate(0, n, 0)
-	case TimeGrainQuarter:
-		return tm.AddDate(0, n*3, 0)
-	case TimeGrainYear:
-		return tm.AddDate(n, 0, 0)
+	case TimeGrainMonth, TimeGrainQuarter, TimeGrainYear:
+		// Offset with correction for different days in months
+
+		yearOffset := 0
+		monthOffset := 0
+		switch tg {
+		case TimeGrainMonth:
+			monthOffset = n
+		case TimeGrainQuarter:
+			monthOffset = n * 3
+		case TimeGrainYear:
+			yearOffset = n
+		default:
+			// Won't happen since this is an outer switch
+		}
+
+		// `tm` offset as if it were the 1st day of month. Day is applied below based on max days in the month.
+		offsetFirstDay := time.Date(tm.Year(), tm.Month(), 1, tm.Hour(), tm.Minute(), tm.Second(), tm.Nanosecond(), tm.Location()).AddDate(yearOffset, monthOffset, 0)
+
+		// Get the max days possible for the month in the year.
+		maxDays := daysInMonth(offsetFirstDay.Year(), int(offsetFirstDay.Month()))
+		// Take the min of max-days or day from `tm`
+		return offsetFirstDay.AddDate(0, 0, min(maxDays-1, tm.Day()-1))
 	}
 
 	return tm
 }
 
-// CopyTimeComponentsUntil Copies components of `src` into `tar` starting from year and going down all the way to `until` (inclusive).
-func CopyTimeComponentsUntil(src, tar time.Time, until TimeGrain) time.Time {
-	tz := src.Location()
-	if tar.Location() != tz {
-		tar = tar.In(tz)
-	}
+var daysForMonths = []int{31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31}
 
-	year := tar.Year()
-	month := tar.Month()
-	day := tar.Day()
-	hour := tar.Hour()
-	minute := tar.Minute()
-	second := tar.Second()
-
-	g := TimeGrainYear
-	for g >= until {
-		switch g {
-		case TimeGrainUnspecified:
-		case TimeGrainMillisecond:
-		case TimeGrainSecond:
-			second = src.Second()
-		case TimeGrainMinute:
-			minute = src.Minute()
-		case TimeGrainHour:
-			hour = src.Hour()
-		case TimeGrainDay:
-			day = src.Day()
-		case TimeGrainWeek:
-			toWeekday := tar.Weekday()
-			if toWeekday == 0 {
-				toWeekday = 7
-			}
-			day = src.Day() - int(src.Weekday()-toWeekday)
-		case TimeGrainMonth, TimeGrainQuarter:
-			month = src.Month()
-		case TimeGrainYear:
-			year = src.Year()
+func daysInMonth(year, month int) int {
+	if month == 2 {
+		isLeapYear := year%4 == 0 && (year%100 != 0 || year%400 == 0)
+		if isLeapYear {
+			return 29
 		}
-
-		g--
+		return 28
+	} else {
+		return daysForMonths[month-1]
 	}
-
-	return time.Date(year, month, day, hour, minute, second, 0, tz)
 }

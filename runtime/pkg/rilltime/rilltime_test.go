@@ -432,11 +432,12 @@ func Test_IsoTimeRanges(t *testing.T) {
 }
 
 func Test_Eval_watermark_on_boundary(t *testing.T) {
-	now := "2026-05-14T10:32:36Z"
-	minTime := "2020-01-01T00:32:36Z"
-	maxTime := "2025-07-01T00:00:00Z"   // month and quarter boundary
-	watermark := "2025-05-12T00:00:00Z" // day and week boundary
+	maxTimeOnBoundary := "2025-07-01T00:00:00Z"   // month and quarter boundary
+	watermarkOnBoundary := "2025-05-12T00:00:00Z" // day and week boundary
 	testCases := []testCase{
+		{"h^ to h$", "2025-05-12T00:00:00Z", "2025-05-12T01:00:00Z", timeutil.TimeGrainMinute, 1, 1},
+		{"D^ to h$", "2025-05-12T00:00:00Z", "2025-05-12T01:00:00Z", timeutil.TimeGrainMinute, 1, 1},
+
 		{"-2D^ to D^", "2025-05-10T00:00:00Z", "2025-05-12T00:00:00Z", timeutil.TimeGrainDay, 1, 1},
 		{"-2D$ to D$", "2025-05-11T00:00:00Z", "2025-05-13T00:00:00Z", timeutil.TimeGrainDay, 1, 1},
 		{"-4D^ to -2D^", "2025-05-08T00:00:00Z", "2025-05-10T00:00:00Z", timeutil.TimeGrainDay, 1, 1},
@@ -457,7 +458,7 @@ func Test_Eval_watermark_on_boundary(t *testing.T) {
 		{"W2 of -1Y! as of 2024", "2023-01-09T00:00:00Z", "2023-01-16T00:00:00Z", timeutil.TimeGrainDay, 1, 1},
 	}
 
-	runTests(t, testCases, now, minTime, maxTime, watermark, nil)
+	runTests(t, testCases, now, minTime, maxTimeOnBoundary, watermarkOnBoundary, nil)
 }
 
 func Test_KatmanduTimezone(t *testing.T) {
@@ -523,7 +524,7 @@ func Test_EvalMisc(t *testing.T) {
 		{"-2Y/YW^ to -2Y/YW$", "2023-01-02T00:00:00Z", "2024-01-01T00:00:00Z", timeutil.TimeGrainMonth, 1, 1},
 		{"Y/YW^ to W^", "2024-12-30T00:00:00Z", "2025-05-12T00:00:00Z", timeutil.TimeGrainMonth, 1, 1},
 
-		// The follow 2 are different. -5W4M3Q2Y applies together whereas -5W-4M-3Q-2Y applies separately.
+		// The following 2 ranges are different. -5W4M3Q2Y applies together whereas -5W-4M-3Q-2Y applies separately.
 		// This can lead to a slightly different start/end times when weeks are involved.
 		{"-5W4M3Q2Y to -4W3M2Q1Y", "2022-03-09T06:32:36Z", "2023-07-16T06:32:36Z", timeutil.TimeGrainWeek, 1, 1},
 		{"-5W-4M-3Q-2Y to -4W-3M-2Q-1Y", "2022-03-08T06:32:36Z", "2023-07-15T06:32:36Z", timeutil.TimeGrainMonth, 1, 1},
