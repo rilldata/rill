@@ -105,7 +105,7 @@ message RedeployProjectRequest {
   string project_id = 1;
   bool reupload = 2;
   // temporarily used for testing
-  bool rearchive = 5;
+  bool rearchive = 3;
 }
 
 message RedeployProjectResponse {

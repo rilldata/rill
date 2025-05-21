@@ -516,7 +516,7 @@ export class RedeployProjectRequest extends Message<RedeployProjectRequest> {
   /**
    * temporarily used for testing
    *
-   * @generated from field: bool rearchive = 5;
+   * @generated from field: bool rearchive = 3;
    */
   rearchive = false;
 
@@ -530,7 +530,7 @@ export class RedeployProjectRequest extends Message<RedeployProjectRequest> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "project_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "reupload", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 5, name: "rearchive", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 3, name: "rearchive", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): RedeployProjectRequest {
