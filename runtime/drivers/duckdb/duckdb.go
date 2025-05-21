@@ -349,7 +349,7 @@ func (c *connection) AsRegistry() (drivers.RegistryStore, bool) {
 
 // AsCatalogStore Catalog implements drivers.Connection.
 func (c *connection) AsCatalogStore(instanceID string) (drivers.CatalogStore, bool) {
-	return c, true
+	return nil, false
 }
 
 // AsRepoStore Repo implements drivers.Connection.

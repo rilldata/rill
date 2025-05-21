@@ -62,11 +62,10 @@ func (d *MotherDuckDBOptions) bareDB() string {
 }
 
 func (d *MotherDuckDBOptions) dsn() string {
-	var db string
-	if !strings.HasPrefix(d.Database, "md:") {
-		db = "md:" + d.Database
+	if strings.HasPrefix(d.Database, "md:") {
+		return d.Database
 	}
-	return db
+	return "md:" + d.Database
 }
 
 func (d *MotherDuckDBOptions) ValidateSettings() error {
