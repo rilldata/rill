@@ -3055,7 +3055,7 @@ definitions:
         type: string
       lookupValueColumn:
         type: string
-      lookupDefaultValue:
+      lookupDefaultExpression:
         type: string
     title: Dimensions are columns to filter and group by
   MetricsViewSpecDimensionSelector:

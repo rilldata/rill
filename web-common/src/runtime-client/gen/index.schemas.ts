@@ -59,7 +59,7 @@ export interface MetricsViewSpecDimension {
   lookupTable?: string;
   lookupKeyColumn?: string;
   lookupValueColumn?: string;
-  lookupDefaultValue?: string;
+  lookupDefaultExpression?: string;
 }
 
 export interface MetricsViewSpecDimensionSelector {

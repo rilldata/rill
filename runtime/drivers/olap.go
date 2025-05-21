@@ -350,7 +350,7 @@ func (d Dialect) MetricsViewDimensionExpression(dimension *runtimev1.MetricsView
 		} else {
 			return "", fmt.Errorf("dimension %q has a lookup table but no column or expression defined", dimension.Name)
 		}
-		return d.LookupExpr(dimension.LookupTable, dimension.LookupValueColumn, keyExpr, dimension.LookupDefaultValue)
+		return d.LookupExpr(dimension.LookupTable, dimension.LookupValueColumn, keyExpr, dimension.LookupDefaultExpression)
 	}
 
 	if dimension.Expression != "" {
@@ -768,11 +768,11 @@ func (d Dialect) GetTimeExpr(t time.Time) (bool, string) {
 	}
 }
 
-func (d Dialect) LookupExpr(lookupTable, lookupValueColumn, lookupKeyExpr string, lookupDefaultValue *string) (string, error) {
+func (d Dialect) LookupExpr(lookupTable, lookupValueColumn, lookupKeyExpr string, lookupDefaultExpression string) (string, error) {
 	switch d {
 	case DialectClickHouse:
-		if lookupDefaultValue != nil {
-			return fmt.Sprintf("dictGetOrDefault('%s', '%s', %s, %s)", lookupTable, lookupValueColumn, lookupKeyExpr, d.EscapeStringValue(*lookupDefaultValue)), nil
+		if lookupDefaultExpression != "" {
+			return fmt.Sprintf("dictGetOrDefault('%s', '%s', %s, %s)", lookupTable, lookupValueColumn, lookupKeyExpr, lookupDefaultExpression), nil
 		}
 		return fmt.Sprintf("dictGet('%s', '%s', %s)", lookupTable, lookupValueColumn, lookupKeyExpr), nil
 	default:
