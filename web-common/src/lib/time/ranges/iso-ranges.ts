@@ -82,7 +82,7 @@ export function humaniseISODuration(
   toUpper = true,
 ): string {
   if (!isoDuration) return "";
-  const duration = Duration.fromISO(isoDuration, { locale: 'en' });
+  const duration = Duration.fromISO(isoDuration, { locale: "en" });
   let humanISO = duration.toHuman({
     listStyle: "long",
   });
@@ -145,7 +145,7 @@ export function validateISODuration(isoDuration: string) {
 function getStartTimeTransformations(
   isoDuration: string,
 ): Array<RelativeTimeTransformation> {
-  const duration = Duration.fromISO(isoDuration, { locale: 'en' });
+  const duration = Duration.fromISO(isoDuration, { locale: "en" });
   const period = getSmallestUnit(duration);
   if (!period) return [];
 
