@@ -9,7 +9,7 @@ TableCells – the cell contents.
   import type { VirtualizedTableColumns } from "@rilldata/web-common/components/virtualized-table/types";
   import { selectedDimensionValues } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
   import { createVirtualizer } from "@tanstack/svelte-virtual";
-  import { createEventDispatcher, setContext } from "svelte";
+  import { createEventDispatcher, setContext, onMount } from "svelte";
   import { getStateManagers } from "../state-managers/state-managers";
   import type { DimensionTableRow } from "./dimension-table-types";
   import {
@@ -19,6 +19,7 @@ TableCells – the cell contents.
   import DimensionFilterGutter from "./DimensionFilterGutter.svelte";
   import { DIMENSION_TABLE_CONFIG as config } from "./DimensionTableConfig";
   import DimensionValueHeader from "./DimensionValueHeader.svelte";
+  import CellInspector from "@rilldata/web-common/components/cell-inspector/CellInspector.svelte";
 
   const dispatch = createEventDispatcher();
 
@@ -140,12 +141,61 @@ TableCells – the cell contents.
   $: virtualWidth = $columnVirtualizer?.getTotalSize() ?? 0;
 
   let activeIndex;
+  let inspectingCell: { value: string | object; type: string } | null = null;
+
   function setActiveIndex(event) {
     activeIndex = event.detail;
   }
+
   function clearActiveIndex() {
     activeIndex = false;
   }
+
+  function handleCellInspect(
+    value: string | object | number | null,
+    type: string,
+  ) {
+    if (value === null || value === undefined) return;
+    inspectingCell = { value: value.toString(), type };
+  }
+
+  function handleInspectorClose() {
+    inspectingCell = null;
+  }
+
+  function handleKeyDown(event: KeyboardEvent) {
+    if (
+      event.key.toLowerCase() === "i" &&
+      event.shiftKey &&
+      activeIndex !== false
+    ) {
+      event.preventDefault();
+      event.stopPropagation();
+
+      const row = rows[activeIndex];
+      if (!row) return;
+
+      const target = event.target as HTMLElement;
+      const cell = target.closest("td");
+      if (!cell) return;
+
+      if (cell.hasAttribute("data-dimension-cell")) {
+        handleCellInspect(row[dimensionName], "dimension");
+      } else if (cell.hasAttribute("data-measure-cell")) {
+        const measureName = cell.getAttribute("data-measure-name");
+        if (measureName && row[measureName] !== undefined) {
+          handleCellInspect(row[measureName], "measure");
+        }
+      }
+    }
+  }
+
+  onMount(() => {
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  });
 
   /** handle scrolling tooltip suppression */
   let scrolling = false;
@@ -279,4 +329,10 @@ TableCells – the cell contents.
       </div>
     {/if}
   </div>
+  {#if inspectingCell}
+    <CellInspector
+      value={inspectingCell.value}
+      onClose={handleInspectorClose}
+    />
+  {/if}
 </div>

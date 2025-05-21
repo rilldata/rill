@@ -8,6 +8,7 @@
   import { clamp } from "@rilldata/web-common/lib/clamp";
   import { formatMeasurePercentageDifference } from "@rilldata/web-common/lib/number-formatting/percentage-formatter";
   import { slide } from "svelte/transition";
+  import { onMount } from "svelte";
   import { type LeaderboardItemData, makeHref } from "./leaderboard-utils";
   import LeaderboardItemFilterIcon from "./LeaderboardItemFilterIcon.svelte";
   import LeaderboardTooltipContent from "./LeaderboardTooltipContent.svelte";
@@ -19,6 +20,7 @@
     deltaColumn,
   } from "./leaderboard-widths";
   import FloatingElement from "@rilldata/web-common/components/floating-element/FloatingElement.svelte";
+  import CellInspector from "@rilldata/web-common/components/cell-inspector/CellInspector.svelte";
 
   export let itemData: LeaderboardItemData;
   export let dimensionName: string;
@@ -57,6 +59,7 @@
   let valueRect = new DOMRect(0, 0, DEFAULT_COLUMN_WIDTH);
   let deltaRect = new DOMRect(0, 0, COMPARISON_COLUMN_WIDTH);
   let parent: HTMLTableRowElement;
+  let inspectingCell: { value: string | object; type: string } | null = null;
 
   $: ({
     dimensionValue,
@@ -164,6 +167,64 @@
       `copied dimension value "${truncatedLabel}" to clipboard`,
     );
   }
+
+  function handleCellInspect(
+    value: string | object | number | null,
+    type: string,
+  ) {
+    if (value === null || value === undefined) return;
+    inspectingCell = { value: value.toString(), type };
+  }
+
+  function handleInspectorClose() {
+    inspectingCell = null;
+  }
+
+  function handleKeyDown(event: KeyboardEvent) {
+    if (event.key.toLowerCase() === "i" && event.shiftKey && hovered) {
+      event.preventDefault();
+      event.stopPropagation();
+
+      // Get the currently hovered cell
+      const cells = parent.querySelectorAll("td");
+      const hoveredCell = Array.from(cells).find(
+        (cell) =>
+          cell.matches(":hover") || cell.contains(document.activeElement),
+      );
+
+      if (!hoveredCell) return;
+
+      if (hoveredCell.hasAttribute("data-dimension-cell")) {
+        handleCellInspect(dimensionValue, "dimension");
+      } else if (hoveredCell.hasAttribute("data-measure-cell")) {
+        const measureName = hoveredCell.getAttribute("data-measure-name");
+        if (measureName && values[measureName] !== undefined) {
+          handleCellInspect(values[measureName], "measure");
+        }
+      } else if (hoveredCell.hasAttribute("data-comparison-cell")) {
+        const measureName = hoveredCell.getAttribute("data-measure-name");
+        if (!measureName) return;
+
+        if (isValidPercentOfTotal(measureName)) {
+          handleCellInspect(pctOfTotals[measureName], "percentage");
+        } else if (isTimeComparisonActive) {
+          if (hoveredCell.hasAttribute("data-delta-abs")) {
+            handleCellInspect(deltaAbsMap[measureName], "delta");
+          } else if (hoveredCell.hasAttribute("data-delta-rel")) {
+            handleCellInspect(deltaRels[measureName], "delta-relative");
+          }
+        }
+      }
+    }
+  }
+
+  onMount(() => {
+    // Add the event listener to the document to catch keyboard events anywhere
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  });
 </script>
 
 <tr
@@ -201,6 +262,7 @@
     on:click={modified({
       shift: () => shiftClickHandler(dimensionValue),
     })}
+    on:dblclick={() => handleCellInspect(dimensionValue, "dimension")}
     class="relative size-full flex flex-none justify-between items-center leaderboard-label"
     style:background={dimensionGradients}
   >
@@ -231,6 +293,7 @@
   {#each Object.keys(values) as measureName}
     <td
       data-measure-cell
+      data-measure-name={measureName}
       on:click={modified({
         shift: () => shiftClickHandler(values[measureName]?.toString() || ""),
       })}
@@ -255,6 +318,7 @@
     {#if isValidPercentOfTotal(measureName) && shouldShowContextColumns(measureName)}
       <td
         data-comparison-cell
+        data-measure-name={measureName}
         title={pctOfTotals[measureName]?.toString() || ""}
         on:click={modified({
           shift: () =>
@@ -274,6 +338,8 @@
     {#if isTimeComparisonActive && shouldShowContextColumns(measureName)}
       <td
         data-comparison-cell
+        data-measure-name={measureName}
+        data-delta-abs
         title={deltaAbsMap[measureName]?.toString() || ""}
         on:click={modified({
           shift: () =>
@@ -298,6 +364,8 @@
     {#if isTimeComparisonActive && shouldShowContextColumns(measureName)}
       <td
         data-comparison-cell
+        data-measure-name={measureName}
+        data-delta-rel
         title={deltaRels[measureName]?.toString() || ""}
         on:click={modified({
           shift: () =>
@@ -336,6 +404,10 @@
       />
     </FloatingElement>
   {/await}
+{/if}
+
+{#if inspectingCell}
+  <CellInspector value={inspectingCell.value} onClose={handleInspectorClose} />
 {/if}
 
 <style lang="postcss">

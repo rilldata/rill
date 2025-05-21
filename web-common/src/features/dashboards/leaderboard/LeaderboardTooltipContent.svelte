@@ -8,13 +8,7 @@ divider
 see more button
 -->
 <script lang="ts">
-  import MetaKey from "@rilldata/web-common/components/tooltip/MetaKey.svelte";
-  import Shortcut from "@rilldata/web-common/components/tooltip/Shortcut.svelte";
-  import StackingWord from "@rilldata/web-common/components/tooltip/StackingWord.svelte";
-  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import TooltipShortcutContainer from "@rilldata/web-common/components/tooltip/TooltipShortcutContainer.svelte";
-  import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
-  import { isClipboardApiSupported } from "../../../lib/actions/copy-to-clipboard";
+  import TableCellTooltip from "@rilldata/web-common/components/table-cell-tooltip/TableCellTooltip.svelte";
 
   export let label: string | number;
   export let selected: boolean;
@@ -24,44 +18,11 @@ see more button
   export let atLeastOneActive;
 </script>
 
-<TooltipContent>
-  <TooltipTitle>
-    <svelte:fragment slot="name">
-      {label}
-    </svelte:fragment>
-  </TooltipTitle>
-
-  <TooltipShortcutContainer>
-    {#if atLeastOneActive}
-      <div>
-        {excluded ? "Include" : "Exclude"}
-        this dimension value
-      </div>
-    {:else}
-      <div class="text-ellipsis overflow-hidden whitespace-nowrap">
-        Filter {filterExcludeMode ? "out" : "on"}
-        this dimension value
-      </div>
-    {/if}
-    <Shortcut>Click</Shortcut>
-  </TooltipShortcutContainer>
-  {#if isClipboardApiSupported()}
-    <TooltipShortcutContainer>
-      <div>
-        <StackingWord key="shift">Copy</StackingWord>
-        value to clipboard
-      </div>
-      <Shortcut>
-        <span style="font-family: var(--system);">⇧</span> + Click on cell
-      </Shortcut>
-    </TooltipShortcutContainer>
-  {/if}
-  {#if !selected && atLeastOneActive}
-    <TooltipShortcutContainer>
-      <div>Exclusively select this dimension value</div>
-      <Shortcut>
-        <MetaKey />
-      </Shortcut>
-    </TooltipShortcutContainer>
-  {/if}
-</TooltipContent>
+<TableCellTooltip
+  {label}
+  {selected}
+  {excluded}
+  {filterExcludeMode}
+  {atLeastOneActive}
+  cellLabel="dimension value"
+/>
