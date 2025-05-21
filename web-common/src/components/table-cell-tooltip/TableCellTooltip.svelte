@@ -55,7 +55,7 @@
     <TooltipShortcutContainer>
       <div>
         <StackingWord key="shift">Inspect</StackingWord>
-        cell value
+        value
       </div>
       <Shortcut>
         <span style="font-family: var(--system);">⇧</span> + I

@@ -33,6 +33,8 @@
     PivotDataStoreConfig,
     PivotState,
   } from "./types";
+  import CellInspector from "@rilldata/web-common/components/cell-inspector/CellInspector.svelte";
+  import TableCellTooltip from "@rilldata/web-common/components/table-cell-tooltip/TableCellTooltip.svelte";
 
   // Distance threshold (in pixels) for triggering data fetch
   const ROW_THRESHOLD = 200;
@@ -144,11 +146,17 @@
     : [0, 0];
 
   let customShortcuts: { description: string; shortcut: string }[] = [];
-  $: if (canShowDataViewer) {
-    customShortcuts = [
-      { description: "View raw data for aggregated cell", shortcut: "Click" },
-    ];
-  }
+  $: customShortcuts = [
+    { description: "Inspect Value", shortcut: "Shift + I" },
+    ...(canShowDataViewer
+      ? [
+          {
+            description: "View raw data for aggregated cell",
+            shortcut: "Click",
+          },
+        ]
+      : []),
+  ];
 
   const handleScroll = (containerRefElement?: HTMLDivElement | null) => {
     if (containerRefElement) {
@@ -203,7 +211,6 @@
 
   function onTableLeave() {
     clearTimeout(timeout);
-
     hovering = null;
     ignoreInitialTimeout = false;
   }
@@ -254,6 +261,41 @@
       value,
     };
     hoverPosition = e.target.getBoundingClientRect();
+  }
+
+  let inspectingCell: { value: string | object } | null = null;
+
+  // Add global keyboard event listener
+  onMount(() => {
+    const handleGlobalKeyDown = (event: KeyboardEvent) => {
+      if (event.key.toLowerCase() === "i" && event.shiftKey && hovering) {
+        event.preventDefault();
+        event.stopPropagation();
+
+        // Get the currently hovered cell
+        const cells = containerRefElement.querySelectorAll("td");
+        const hoveredCell = Array.from(cells).find(
+          (cell) =>
+            cell.matches(":hover") || cell.contains(document.activeElement),
+        );
+
+        if (!hoveredCell) return;
+
+        const value = hoveredCell.getAttribute("data-value");
+        if (value !== null && value !== undefined) {
+          inspectingCell = { value };
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handleGlobalKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleGlobalKeyDown);
+    };
+  });
+
+  function handleInspectorClose() {
+    inspectingCell = null;
   }
 </script>
 
@@ -321,7 +363,21 @@
     {hoverPosition}
     pinned={false}
     {customShortcuts}
-  />
+  >
+    <TableCellTooltip
+      label={hovering.value ?? ""}
+      selected={false}
+      excluded={false}
+      filterExcludeMode={false}
+      atLeastOneActive={false}
+      showInspect={true}
+      showExclusiveSelect={false}
+    />
+  </VirtualTooltip>
+{/if}
+
+{#if inspectingCell}
+  <CellInspector value={inspectingCell.value} onClose={handleInspectorClose} />
 {/if}
 
 <style lang="postcss">
