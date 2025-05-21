@@ -4248,6 +4248,9 @@ definitions:
         type: string
       defaultBranch:
         type: string
+      passwordExpiresAt:
+        type: string
+        format: date-time
   v1CreateOrganizationRequest:
     type: object
     properties:
@@ -4429,6 +4432,9 @@ definitions:
         type: string
       gitPassword:
         type: string
+      gitPasswordExpiresAt:
+        type: string
+        format: date-time
       gitSubpath:
         type: string
       gitProdBranch:
