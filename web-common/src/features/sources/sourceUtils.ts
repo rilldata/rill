@@ -50,6 +50,14 @@ export function compileSourceYAML(
         )} }}"`;
       }
 
+      if (key === "sql") {
+        // For SQL, we want to use a multi-line string
+        return `${key}: |\n  ${value
+          .split("\n")
+          .map((line) => `${line}`)
+          .join("\n")}`;
+      }
+
       const isStringProperty = stringPropertyKeys.includes(key);
       if (isStringProperty) {
         return `${key}: "${value}"`;

@@ -1,21 +1,39 @@
 package gitutil
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/url"
 	"os"
 	"path"
 	"strings"
+	"time"
 
 	"github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/go-git/go-git/v5/plumbing/transport"
+	githttp "github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	exec "golang.org/x/sys/execabs"
 )
 
 var ErrGitRemoteNotFound = errors.New("no git remotes found")
+
+type Config struct {
+	Remote            string
+	Username          string
+	Password          string
+	PasswordExpiresAt time.Time
+	DefaultBranch     string
+	Subpath           string
+}
+
+func (g *Config) IsExpired() bool {
+	return g.Password != "" && g.PasswordExpiresAt.Before(time.Now())
+}
 
 func CloneRepo(repoURL string) (string, error) {
 	endpoint, err := transport.NewEndpoint(repoURL)
@@ -221,4 +239,76 @@ func GetSyncStatus(repoPath, branch, remote string) (SyncStatus, error) {
 		return SyncStatusAhead, nil
 	}
 	return SyncStatusSynced, nil
+}
+
+func CommitAndForcePush(ctx context.Context, projectPath, remote, username, password, branch string, author *object.Signature) error {
+	// init git repo
+	repo, err := git.PlainInitWithOptions(projectPath, &git.PlainInitOptions{
+		InitOptions: git.InitOptions{
+			DefaultBranch: plumbing.NewBranchReferenceName(branch),
+		},
+		Bare: false,
+	})
+	if err != nil {
+		if !errors.Is(err, git.ErrRepositoryAlreadyExists) {
+			return fmt.Errorf("failed to init git repo: %w", err)
+		}
+		repo, err = git.PlainOpen(projectPath)
+		if err != nil {
+			return fmt.Errorf("failed to open git repo: %w", err)
+		}
+	}
+
+	wt, err := repo.Worktree()
+	if err != nil {
+		return fmt.Errorf("failed to get worktree: %w", err)
+	}
+
+	// git add .
+	if err := wt.AddWithOptions(&git.AddOptions{All: true}); err != nil {
+		return fmt.Errorf("failed to add files to git: %w", err)
+	}
+
+	// git commit -m
+	_, err = wt.Commit("Auto committed by Rill", &git.CommitOptions{All: true, Author: author})
+	if err != nil {
+		if !errors.Is(err, git.ErrEmptyCommit) {
+			return fmt.Errorf("failed to commit files to git: %w", err)
+		}
+		// empty commit - nothing to cmmit
+		return nil
+	}
+
+	// set remote
+	_, err = repo.CreateRemote(&config.RemoteConfig{
+		Name: "origin",
+		URLs: []string{remote},
+	})
+	if err != nil {
+		if !errors.Is(err, git.ErrRemoteExists) {
+			return fmt.Errorf("failed to create remote: %w", err)
+		}
+		// remote already exists do nothing we can override the URL while pushing
+	}
+
+	// push the changes
+	err = repo.PushContext(ctx, &git.PushOptions{
+		RemoteName: "origin",
+		RemoteURL:  remote,
+		Auth:       &githttp.BasicAuth{Username: username, Password: password},
+		Force:      true,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to push to remote : %w", err)
+	}
+	return nil
+}
+
+func Clone(ctx context.Context, path string, c *Config) (*git.Repository, error) {
+	return git.PlainCloneContext(ctx, path, false, &git.CloneOptions{
+		URL:           c.Remote,
+		Auth:          &githttp.BasicAuth{Username: c.Username, Password: c.Password},
+		ReferenceName: plumbing.NewBranchReferenceName(c.DefaultBranch),
+		SingleBranch:  true,
+	})
 }

@@ -13,16 +13,14 @@ import (
 	"net/http"
 	"path/filepath"
 	"strings"
-	"time"
 
 	"connectrpc.com/connect"
 	"github.com/eapache/go-resiliency/retrier"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing"
-	"github.com/go-git/go-git/v5/plumbing/object"
 	githttp "github.com/go-git/go-git/v5/plumbing/transport/http"
-	"github.com/google/go-github/v52/github"
+	"github.com/google/go-github/v71/github"
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/pkg/urlutil"
 	"github.com/rilldata/rill/cli/cmd/auth"
@@ -245,7 +243,7 @@ func (s *Server) PushToGithub(ctx context.Context, r *connect.Request[localv1.Pu
 	}
 
 	// git commit -m
-	author, err := autoCommitGitSignature(ctx, c, repo)
+	author, err := s.app.ch.GitSignature(ctx, s.app.ProjectPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate git commit signature: %w", err)
 	}
@@ -312,7 +310,7 @@ func (s *Server) DeployProject(ctx context.Context, r *connect.Request[localv1.D
 	}
 
 	var projRequest *adminv1.CreateProjectRequest
-	if r.Msg.Upload { // upload repo to rill managed storage instead of github
+	if r.Msg.Archive { // old zip-and-ship, currently used only for testing until we figure out a good way to test using manged github repos
 		repo, release, err := s.app.Runtime.Repo(ctx, s.app.Instance.ID)
 		if err != nil {
 			return nil, err
@@ -336,6 +334,25 @@ func (s *Server) DeployProject(ctx context.Context, r *connect.Request[localv1.D
 			ProdSlots:        int64(DefaultProdSlots(s.app.ch)),
 			Public:           false,
 			ArchiveAssetId:   assetID,
+		}
+	} else if r.Msg.Upload { // upload repo to rill managed storage instead of github
+		ghRepo, err := s.app.ch.GitHelper(r.Msg.ProjectName, s.app.ProjectPath).PushToNewManagedRepo(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		// create project request
+		projRequest = &adminv1.CreateProjectRequest{
+			OrganizationName: r.Msg.Org,
+			Name:             r.Msg.ProjectName,
+			Description:      "Auto created by Rill",
+			Provisioner:      "",
+			ProdVersion:      "",
+			ProdOlapDriver:   "duckdb",
+			ProdOlapDsn:      "",
+			ProdSlots:        int64(DefaultProdSlots(s.app.ch)),
+			Public:           false,
+			GithubUrl:        ghRepo.Remote,
 		}
 	} else {
 		userStatus, err := c.GetGithubUserStatus(ctx, &adminv1.GetGithubUserStatusRequest{})
@@ -456,7 +473,7 @@ func (s *Server) RedeployProject(ctx context.Context, r *connect.Request[localv1
 		return nil, err
 	}
 
-	if r.Msg.Reupload {
+	if r.Msg.Rearchive { // old zip-and-ship, currently used only for testing until we figure out a good way to test using manged github repos
 		repo, release, err := s.app.Runtime.Repo(ctx, s.app.Instance.ID)
 		if err != nil {
 			return nil, err
@@ -474,6 +491,29 @@ func (s *Server) RedeployProject(ctx context.Context, r *connect.Request[localv1
 		})
 		if err != nil {
 			return nil, err
+		}
+	} else if r.Msg.Reupload {
+		if projResp.Project.ArchiveAssetId != "" {
+			// project was previously deployed using zip and ship
+			ghRepo, err := s.app.ch.GitHelper(projResp.Project.Name, s.app.ProjectPath).PushToNewManagedRepo(ctx)
+			if err != nil {
+				return nil, err
+			}
+			_, err = c.UpdateProject(ctx, &adminv1.UpdateProjectRequest{
+				OrganizationName: projResp.Project.OrgName,
+				Name:             projResp.Project.Name,
+				GithubUrl:        &ghRepo.Remote,
+			})
+			if err != nil {
+				return nil, err
+			}
+		} else if projResp.Project.ManagedGitId != "" {
+			err = s.app.ch.GitHelper(projResp.Project.Name, s.app.ProjectPath).PushToManagedRepo(ctx)
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			return nil, fmt.Errorf("to update this deployment, use GitHub")
 		}
 	}
 
@@ -948,30 +988,4 @@ func (s *Server) traceHandler() http.Handler {
 			return
 		}
 	})
-}
-
-func autoCommitGitSignature(ctx context.Context, c adminv1.AdminServiceClient, repo *git.Repository) (*object.Signature, error) {
-	cfg, err := repo.ConfigScoped(config.SystemScope)
-	if err == nil && cfg.User.Email != "" && cfg.User.Name != "" {
-		// user has git properly configured use that
-		return &object.Signature{
-			Name:  cfg.User.Name,
-			Email: cfg.User.Email,
-			When:  time.Now(),
-		}, nil
-	}
-	// use email of rill user
-	userResp, err := c.GetCurrentUser(ctx, &adminv1.GetCurrentUserRequest{})
-	if err != nil {
-		return nil, err
-	}
-	if userResp.User == nil {
-		return nil, errors.New("failed to get current user")
-	}
-
-	return &object.Signature{
-		Name:  userResp.User.DisplayName,
-		Email: userResp.User.Email,
-		When:  time.Now(),
-	}, nil
 }
