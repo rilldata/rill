@@ -40,7 +40,7 @@ func TestExpressionToSQL(t *testing.T) {
 					},
 				},
 			},
-			want: "foo=42",
+			want: "foo = 42",
 		},
 		{
 			name: "and expression",
@@ -130,7 +130,7 @@ func TestExpressionToSQL(t *testing.T) {
 					},
 				},
 			},
-			want: "foo OR (bar IS NULL) OR (baz=42)",
+			want: "foo OR (bar IS NULL) OR (baz = 42)",
 		},
 		{
 			name: "or is not null expression",
@@ -160,7 +160,7 @@ func TestExpressionToSQL(t *testing.T) {
 					},
 				},
 			},
-			want: "foo OR (bar IS NOT NULL) OR (baz=42)",
+			want: "foo OR (bar IS NOT NULL) OR (baz = 42)",
 		},
 	}
 	for _, tt := range tests {
