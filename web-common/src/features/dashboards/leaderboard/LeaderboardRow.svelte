@@ -9,6 +9,7 @@
   import { formatMeasurePercentageDifference } from "@rilldata/web-common/lib/number-formatting/percentage-formatter";
   import { slide } from "svelte/transition";
   import { type LeaderboardItemData, makeHref } from "./leaderboard-utils";
+  import { useCellInspector } from "../hooks/useCellInspector";
   import LeaderboardItemFilterIcon from "./LeaderboardItemFilterIcon.svelte";
   import LeaderboardTooltipContent from "./LeaderboardTooltipContent.svelte";
   import LongBarZigZag from "./LongBarZigZag.svelte";
@@ -70,6 +71,8 @@
   } = itemData);
 
   $: selected = selectedIndex >= 0;
+
+  const { getCellProps } = useCellInspector();
 
   // Super important special case: if there is not at least one "active" (selected) value,
   // we need to set *all* items to be included, because by default if a user has not
@@ -203,8 +206,11 @@
     })}
     class="relative size-full flex flex-none justify-between items-center leaderboard-label"
     style:background={dimensionGradients}
+    {...getCellProps(dimensionValue)}
   >
-    <FormattedDataType value={dimensionValue} truncate />
+    <span class="truncate">
+      <FormattedDataType value={dimensionValue} truncate />
+    </span>
 
     {#if previousValueString && hovered}
       <span
@@ -237,6 +243,7 @@
       style:background={leaderboardMeasureNames.length === 1
         ? measureGradients
         : measureGradientMap?.[measureName]}
+      {...getCellProps(values[measureName]?.toString() || "")}
     >
       <div class="w-fit ml-auto bg-transparent" bind:contentRect={valueRect}>
         <FormattedDataType
