@@ -101,7 +101,7 @@ The main feature-set component for dashboard filters
 <style lang="postcss">
   .scrollable-chips {
     @apply overflow-x-auto whitespace-nowrap;
-    @apply overscroll-x-contain;
+    @apply overscroll-x-contain pr-2;
     scrollbar-width: none;
     -ms-overflow-style: none;
   }

@@ -45,7 +45,9 @@
 </script>
 
 {#if "metrics_view" in $specStore}
-  <div class="flex items-center gap-x-2 w-full max-w-full overflow-x-auto">
+  <div
+    class="flex items-center gap-x-2 w-full max-w-full overflow-x-auto chip-scroll-container"
+  >
     <Filter size="16px" className="text-gray-400" />
     <FilterChipsReadOnly
       metricsViewName={$specStore.metrics_view}
@@ -65,3 +67,14 @@
     />
   </div>
 {/if}
+
+<style>
+  .chip-scroll-container {
+    mask-image: linear-gradient(to right, black 95%, transparent);
+    -webkit-mask-image: linear-gradient(to right, black 95%, transparent);
+    mask-size: 100% 100%;
+    mask-repeat: no-repeat;
+    -webkit-mask-size: 100% 100%;
+    -webkit-mask-repeat: no-repeat;
+  }
+</style>
