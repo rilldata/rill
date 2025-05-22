@@ -26,7 +26,7 @@
   import { useMetricsViewTimeRange } from "@rilldata/web-common/features/dashboards/selectors";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { useExploreState } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
-  import { createYAMLConfigExploreUrlSearch } from "@rilldata/web-common/features/dashboards/stores/get-explore-state-from-yaml-config";
+  import { createUrlForExploreYAMLDefaultState } from "@rilldata/web-common/features/dashboards/stores/get-explore-state-from-yaml-config";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
@@ -65,7 +65,7 @@
     metricsViewName,
   );
 
-  $: urlForExploreYAMLDefaultState = createYAMLConfigExploreUrlSearch(
+  $: urlForExploreYAMLDefaultState = createUrlForExploreYAMLDefaultState(
     validExploreSpec,
     metricsViewTimeRange,
   );

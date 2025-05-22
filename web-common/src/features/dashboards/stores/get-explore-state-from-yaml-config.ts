@@ -37,7 +37,7 @@ export function getExploreStateFromYAMLConfig(
   };
 }
 
-export function createYAMLConfigExploreUrlSearch(
+export function createUrlForExploreYAMLDefaultState(
   validSpecQuery: ReturnType<typeof useExploreValidSpec>,
   fullTimeRangeQuery: CreateQueryResult<V1MetricsViewTimeRangeResponse>,
 ) {
