@@ -61,7 +61,7 @@ tests:
     sql: SELECT 1 FROM m1 WHERE number < 5
 `,
 			expectedTest: 1,
-			expectedErr:  "Number is at least 5",
+			expectedErr:  "number is at least 5",
 		},
 	}
 
@@ -113,6 +113,65 @@ tests:
 	require.Equal(t, 2, len(tests), "Expected 2 tests, got %d", len(tests))
 
 	// Check that the model reconciled without errors
+	modelRes := testruntime.GetResource(t, rt, id, runtime.ResourceKindModel, "m1")
+	reconcileErr := modelRes.Meta.ReconcileError
+	require.Empty(t, reconcileErr, "Model reconciliation failed: %s", reconcileErr)
+}
+
+// TestModelPartitionTests validates that partition-level tests work correctly
+func TestModelPartitionTests(t *testing.T) {
+	files := map[string]string{
+		"rill.yaml": "",
+		"models/m1.yaml": `
+type: model
+sql: SELECT range AS number, range % 2 AS partition_key FROM range(0, 10)
+partitions:
+  sql: SELECT DISTINCT partition_key FROM (SELECT range % 2 AS partition_key FROM range(0, 10))
+partition_tests:
+  - name: Partition has only even or odd numbers
+    sql: SELECT 1 FROM m1 WHERE (partition_key = 0 AND number % 2 != 0) OR (partition_key = 1 AND number % 2 != 1)
+  - name: Partition key is not null
+    sql: SELECT 1 FROM m1 WHERE partition_key IS NULL
+`,
+	}
+	rt, id := testruntime.NewInstance(t)
+	testruntime.PutFiles(t, rt, id, files)
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	res := testruntime.GetResource(t, rt, id, runtime.ResourceKindModel, "m1")
+	partitionTests := res.GetModel().Spec.GetPartitionsTests()
+	require.Equal(t, 2, len(partitionTests), "Expected 2 partition_tests, got %d", len(partitionTests))
+
+	// Check that the model reconciled without errors
+	modelRes := testruntime.GetResource(t, rt, id, runtime.ResourceKindModel, "m1")
+	reconcileErr := modelRes.Meta.ReconcileError
+	require.Empty(t, reconcileErr, "Model reconciliation failed: %s", reconcileErr)
+}
+
+// TestModelTestsWithTemplating validates that model tests work correctly with templating
+func TestModelTestsWithTemplating(t *testing.T) {
+	files := map[string]string{
+		"rill.yaml": `
+env:
+  my_value: 10
+`,
+		"models/m1.yaml": `
+type: model
+sql: |
+  SELECT range AS number FROM range(0, 10)
+tests:
+  - name: Number is less than env var
+    sql: SELECT * FROM m1 WHERE number >= {{ .env.my_value | int64 }}
+`,
+	}
+
+	rt, id := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		Files: files,
+	})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	res := testruntime.GetResource(t, rt, id, runtime.ResourceKindModel, "m1")
+	tests := res.GetModel().Spec.Tests
+	require.Equal(t, 1, len(tests), "Expected 1 test, got %d", len(tests))
+
 	modelRes := testruntime.GetResource(t, rt, id, runtime.ResourceKindModel, "m1")
 	reconcileErr := modelRes.Meta.ReconcileError
 	require.Empty(t, reconcileErr, "Model reconciliation failed: %s", reconcileErr)

@@ -114,6 +114,7 @@ message ModelSpec {
   google.protobuf.Struct partitions_resolver_properties = 19;
   string partitions_watermark_field = 20;
   uint32 partitions_concurrency_limit = 21;
+  repeated ModelTest partitions_tests = 26;
   string input_connector = 10;
   google.protobuf.Struct input_properties = 11;
   // stage_connector is optional.

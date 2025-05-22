@@ -27,8 +27,12 @@ type ModelYAML struct {
 	Splits                *DataYAML                               `yaml:"splits"` // Deprecated: use "partitions" instead
 	PartitionsWatermark   string                                  `yaml:"partitions_watermark"`
 	PartitionsConcurrency uint                                    `yaml:"partitions_concurrency"`
-	InputProperties       map[string]any                          `yaml:",inline" mapstructure:",remain"`
-	Stage                 struct {
+	PartitionsTests       []struct {
+		Name     string `yaml:"name"`
+		DataYAML `yaml:",inline"`
+	} `yaml:"partition_tests"`
+	InputProperties map[string]any `yaml:",inline" mapstructure:",remain"`
+	Stage           struct {
 		Connector  string         `yaml:"connector"`
 		Properties map[string]any `yaml:",inline" mapstructure:",remain"`
 	} `yaml:"stage"`
@@ -181,6 +185,7 @@ func (p *Parser) parseModel(ctx context.Context, node *Node) error {
 	// Parse partitions resolver
 	var partitionsResolver string
 	var partitionsResolverProps *structpb.Struct
+	var partitionsTests []*runtimev1.ModelTest
 	if tmp.Splits != nil { // Backwards compatibility: "splits" is deprecated and has been renamed to "partitions"
 		if tmp.Partitions != nil {
 			return fmt.Errorf(`"partitions" and "splits" are mutually exclusive`)
@@ -201,24 +206,18 @@ func (p *Parser) parseModel(ctx context.Context, node *Node) error {
 				tmp.PartitionsWatermark = "updated_on"
 			}
 		}
+
+		// Parse partition tests
+		partitionsTests, err = p.parseModelTests(tmp.PartitionsTests, inputConnector, node)
+		if err != nil {
+			return err
+		}
 	}
 
 	// Parse model tests
-	var sqlTests []*runtimev1.ModelTest
-	if len(tmp.Tests) > 0 {
-		for i := range tmp.Tests {
-			t := &tmp.Tests[i]
-			resolver, props, refs, err := p.parseDataYAML(&t.DataYAML, outputConnector)
-			if err != nil {
-				return fmt.Errorf(`failed to parse test %q: %w`, t.Name, err)
-			}
-			node.Refs = append(node.Refs, refs...)
-			sqlTests = append(sqlTests, &runtimev1.ModelTest{
-				Name:               t.Name,
-				Resolver:           resolver,
-				ResolverProperties: props,
-			})
-		}
+	sqlTests, err := p.parseModelTests(tmp.Tests, outputConnector, node)
+	if err != nil {
+		return err
 	}
 
 	// Insert the model
@@ -260,8 +259,35 @@ func (p *Parser) parseModel(ctx context.Context, node *Node) error {
 	r.ModelSpec.OutputProperties = outputPropsPB
 
 	r.ModelSpec.Tests = sqlTests
+	r.ModelSpec.PartitionsTests = partitionsTests
 
 	return nil
+}
+
+// parseModelTests parses the model tests from the YAML file
+func (p *Parser) parseModelTests(
+	tests []struct {
+		Name     string `yaml:"name"`
+		DataYAML `yaml:",inline"`
+	},
+	connector string,
+	node *Node,
+) ([]*runtimev1.ModelTest, error) {
+	var result []*runtimev1.ModelTest
+	for i := range tests {
+		t := &tests[i]
+		resolver, props, refs, err := p.parseDataYAML(&t.DataYAML, connector)
+		if err != nil {
+			return nil, fmt.Errorf(`failed to parse test %q: %w`, t.Name, err)
+		}
+		node.Refs = append(node.Refs, refs...)
+		result = append(result, &runtimev1.ModelTest{
+			Name:               t.Name,
+			Resolver:           resolver,
+			ResolverProperties: props,
+		})
+	}
+	return result, nil
 }
 
 // inferSQLRefs attempts to infer table references from the node's SQL.

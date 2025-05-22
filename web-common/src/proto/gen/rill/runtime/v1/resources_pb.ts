@@ -934,6 +934,11 @@ export class ModelSpec extends Message<ModelSpec> {
   partitionsConcurrencyLimit = 0;
 
   /**
+   * @generated from field: repeated rill.runtime.v1.ModelTest partitions_tests = 26;
+   */
+  partitionsTests: ModelTest[] = [];
+
+  /**
    * @generated from field: string input_connector = 10;
    */
   inputConnector = "";
@@ -1011,6 +1016,7 @@ export class ModelSpec extends Message<ModelSpec> {
     { no: 19, name: "partitions_resolver_properties", kind: "message", T: Struct },
     { no: 20, name: "partitions_watermark_field", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 21, name: "partitions_concurrency_limit", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 26, name: "partitions_tests", kind: "message", T: ModelTest, repeated: true },
     { no: 10, name: "input_connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 11, name: "input_properties", kind: "message", T: Struct },
     { no: 16, name: "stage_connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },

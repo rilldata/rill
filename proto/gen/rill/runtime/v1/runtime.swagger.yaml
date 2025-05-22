@@ -5588,6 +5588,11 @@ definitions:
       partitionsConcurrencyLimit:
         type: integer
         format: int64
+      partitionsTests:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1ModelTest'
       inputConnector:
         type: string
       inputProperties:

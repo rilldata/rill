@@ -1559,6 +1559,7 @@ export interface V1ModelSpec {
   partitionsResolverProperties?: V1ModelSpecPartitionsResolverProperties;
   partitionsWatermarkField?: string;
   partitionsConcurrencyLimit?: number;
+  partitionsTests?: V1ModelTest[];
   inputConnector?: string;
   inputProperties?: V1ModelSpecInputProperties;
   /** stage_connector is optional. */
