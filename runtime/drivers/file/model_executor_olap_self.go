@@ -214,7 +214,7 @@ func writeXLSX(res *drivers.Result, fw io.Writer, headerMetadata drivers.FileHea
 			if err != nil {
 				return err
 			}
-			if err := sw.SetRow(cell, row, excelize.RowOpts{Height: 20, Hidden: false}); err != nil {
+			if err := sw.SetRow(cell, row, excelize.RowOpts{Hidden: false}); err != nil {
 				return err
 			}
 			idx++ // Move to the next row
@@ -229,7 +229,7 @@ func writeXLSX(res *drivers.Result, fw io.Writer, headerMetadata drivers.FileHea
 	if err != nil {
 		return err
 	}
-	if err := sw.SetRow(cell, row, excelize.RowOpts{Height: 20, Hidden: false}); err != nil {
+	if err := sw.SetRow(cell, row, excelize.RowOpts{Height: 25, Hidden: false}); err != nil {
 		return err
 	}
 	idx++
