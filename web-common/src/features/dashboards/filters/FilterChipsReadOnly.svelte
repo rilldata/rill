@@ -30,7 +30,9 @@ The main feature-set component for dashboard filters
   export let queryTimeStart: string | undefined = undefined;
   export let queryTimeEnd: string | undefined = undefined;
   export let hasBoldTimeRange: boolean = true;
-  export let wrapChips: boolean = true;
+  export let chipLayout: "wrap" | "scroll" = "wrap";
+
+  let scrollContainer: HTMLDivElement;
 
   $: dimensionIdMap = getMapFromArray(
     dimensions,
@@ -50,13 +52,22 @@ The main feature-set component for dashboard filters
     measureIdMap,
     dimensionThresholdFilters,
   );
+
+  function handleWheel(event: WheelEvent) {
+    if (chipLayout === "scroll" && event.deltaY !== 0) {
+      scrollContainer.scrollLeft += event.deltaY;
+      event.preventDefault();
+    }
+  }
 </script>
 
 <div
   class="relative flex flex-row items-center gap-x-2 gap-y-2 w-full max-w-full"
-  class:scrollable-chips={!wrapChips}
-  class:flex-wrap={wrapChips}
+  class:scrollable-chips={chipLayout === "scroll"}
+  class:flex-wrap={chipLayout === "wrap"}
   aria-label="Readonly Filter Chips"
+  bind:this={scrollContainer}
+  on:wheel={handleWheel}
 >
   {#if displayTimeRange}
     <TimeRangeReadOnly

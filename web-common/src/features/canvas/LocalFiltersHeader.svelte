@@ -63,7 +63,7 @@
       queryTimeStart={$selectedTimeRange?.start?.toISOString()}
       queryTimeEnd={$selectedTimeRange?.end?.toISOString()}
       hasBoldTimeRange={false}
-      wrapChips={false}
+      chipLayout="scroll"
     />
   </div>
 {/if}
