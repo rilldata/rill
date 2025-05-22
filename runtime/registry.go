@@ -112,14 +112,12 @@ func (r *Runtime) DeleteInstance(ctx context.Context, instanceID string) error {
 		r.Logger.Error("could not drop instance data directory", zap.Error(err), zap.String("instance_id", instanceID), observability.ZapCtx(ctx))
 	}
 
-	// If catalog is not embedded, catalog data is in the metastore, and should be cleaned up
-	if !inst.EmbedCatalog {
-		catalog, ok := r.metastore.AsCatalogStore(instanceID)
-		if ok {
-			err = catalog.DeleteResources(ctx)
-			if err != nil {
-				r.Logger.Error("delete instance: error deleting catalog", zap.Error(err), zap.String("instance_id", instanceID), observability.ZapCtx(ctx))
-			}
+	// Cleanup catalog data
+	catalog, ok := r.metastore.AsCatalogStore(instanceID)
+	if ok {
+		err = catalog.DeleteResources(ctx)
+		if err != nil {
+			r.Logger.Error("delete instance: error deleting catalog", zap.Error(err), zap.String("instance_id", instanceID), observability.ZapCtx(ctx))
 		}
 	}
 

@@ -8,6 +8,7 @@ import (
 	"net"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/google/go-github/v71/github"
 	"github.com/rilldata/rill/admin"
@@ -214,8 +215,8 @@ func (m *mockGithub) InstallationClient(installationID int64, repoID *int64) *gi
 	return nil
 }
 
-func (m *mockGithub) InstallationToken(ctx context.Context, installationID, repoID int64) (string, error) {
-	return "", nil
+func (m *mockGithub) InstallationToken(ctx context.Context, installationID, repoID int64) (string, time.Time, error) {
+	return "", time.Time{}, nil
 }
 
 func (m *mockGithub) CreateManagedRepo(ctx context.Context, repoPrefix string) (*github.Repository, error) {
