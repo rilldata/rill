@@ -2,6 +2,7 @@
   import type { BaseCanvasComponent } from "@rilldata/web-common/features/canvas/components/BaseCanvasComponent";
   import type { ComponentFilterProperties } from "@rilldata/web-common/features/canvas/components/types";
   import LocalFiltersHeader from "@rilldata/web-common/features/canvas/LocalFiltersHeader.svelte";
+  import { onDestroy, onMount } from "svelte";
 
   export let title: string | undefined = undefined;
   export let description: string | undefined = undefined;
@@ -9,14 +10,34 @@
   export let faint: boolean = false;
   export let component: BaseCanvasComponent;
 
+  const WIDTH_THRESHOLD = 480;
+
+  let container: HTMLDivElement;
+  let wide = false;
+  let resizeObserver: ResizeObserver;
+
   $: atleastOneFilter = Boolean(
     filters?.time_filters || filters?.dimension_filters,
   );
+
+  onMount(() => {
+    resizeObserver = new ResizeObserver(([entry]) => {
+      wide = entry.contentRect.width >= WIDTH_THRESHOLD;
+    });
+    if (container) resizeObserver.observe(container);
+  });
+
+  onDestroy(() => {
+    if (resizeObserver && container) resizeObserver.unobserve(container);
+  });
 </script>
 
 {#if title || description}
   <div
-    class="component-header-container w-full h-fit flex flex-col bg-white px-4 pt-2 pb-1 items-start"
+    bind:this={container}
+    class="component-header-container w-full h-fit flex flex-col bg-white px-4 pt-2 pb-1 items-start {wide
+      ? 'wide'
+      : ''}"
   >
     {#if title}
       <div class="header-row">
@@ -42,18 +63,12 @@
 {/if}
 
 <style lang="postcss">
-  .component-header-container {
-    container-type: inline-size;
-  }
-
   .header-row {
     @apply flex flex-col items-start gap-y-1 gap-x-2 w-full;
   }
 
-  @container (min-width: 480px) {
-    .header-row {
-      @apply flex-row items-center;
-    }
+  .component-header-container.wide .header-row {
+    @apply flex-row items-center;
   }
 
   .title {
