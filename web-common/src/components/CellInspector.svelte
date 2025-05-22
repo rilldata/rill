@@ -6,27 +6,6 @@
   export let value: string = "";
   export let isOpen: boolean = false;
 
-  // Function to pretty print values
-  function prettyPrint(val: string): string {
-    if (!val) return "";
-
-    try {
-      // Check if it's JSON
-      if (
-        (val.startsWith("{") && val.endsWith("}")) ||
-        (val.startsWith("[") && val.endsWith("]"))
-      ) {
-        const parsed = JSON.parse(val);
-        return JSON.stringify(parsed, null, 2);
-      }
-    } catch (e) {
-      // Not valid JSON, continue with other formatting
-    }
-
-    // Return the original value if no formatting applied
-    return val;
-  }
-
   const dispatch = createEventDispatcher();
   let hovered = false;
   let hoveredValue: string | null = null;
@@ -43,25 +22,6 @@
       event.stopPropagation();
       if (isOpen) {
         dispatch("close");
-      }
-    } else if (event.key === "Tab" && content) {
-      // Handle tab navigation within the inspector
-      const focusable = content.querySelectorAll(
-        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
-      );
-      const firstFocusable = focusable[0] as HTMLElement;
-      const lastFocusable = focusable[focusable.length - 1] as HTMLElement;
-
-      if (event.shiftKey) {
-        if (document.activeElement === firstFocusable) {
-          event.preventDefault();
-          lastFocusable.focus();
-        }
-      } else {
-        if (document.activeElement === lastFocusable) {
-          event.preventDefault();
-          firstFocusable.focus();
-        }
       }
     }
   }
@@ -116,6 +76,19 @@
     e.stopPropagation();
   }
 
+  function copyToClipboard() {
+    if (value) {
+      navigator.clipboard
+        .writeText(value)
+        .then(() => {
+          // Could add a toast notification here if desired
+        })
+        .catch((err) => {
+          console.error("Failed to copy text: ", err);
+        });
+    }
+  }
+
   // Only update the value on hover, but don't open the inspector
   $: if (hovered && hoveredValue && isOpen) {
     cellInspectorStore.open(hoveredValue, { x: 0, y: 0 });
@@ -140,12 +113,12 @@
       bind:this={content}
     >
       <div
-        class="flex items-center justify-between py-2 px-4 border-b border-gray-200 dark:border-gray-700"
+        class="flex items-center justify-between p-0 h-8 border-b border-gray-200 dark:border-gray-700"
       >
-        <div class="flex items-center" id="cell-inspector-title">
+        <div class="flex items-center px-2" id="cell-inspector-title">
           <svg
             xmlns="http://www.w3.org/2000/svg"
-            class="h-5 w-5 text-gray-600 dark:text-gray-300 mr-2"
+            class="h-5 w-5 text-slate-600 dark:text-gray-300 mr-2"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -157,7 +130,7 @@
               d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
             />
           </svg>
-          <span class="text-sm font-medium text-gray-600 dark:text-gray-300"
+          <span class="text-sm font-medium text-slate-600 dark:text-gray-300"
             >Cell Value</span
           >
         </div>
@@ -189,11 +162,11 @@
           </svg>
         </button>
       </div>
-      <div id="cell-inspector-content" class="flex-1 overflow-auto p-4">
-        <pre
-          class="whitespace-pre-wrap break-words font-mono text-sm text-gray-800 dark:text-gray-200">
-          {prettyPrint(value)}
-        </pre>
+      <div id="cell-inspector-content" class="flex-1 overflow-auto p-2">
+        <div class="flex justify-end">
+          <pre
+            class="whitespace-pre-wrap break-words font-mono text-sm text-gray-800 dark:text-gray-200 w-fit ml-auto">{value}</pre>
+        </div>
       </div>
       <div
         class="p-3 bg-gray-50 dark:bg-gray-700/50 text-xs text-gray-500 dark:text-gray-400 border-t border-gray-200 dark:border-gray-700 flex justify-between items-center"
