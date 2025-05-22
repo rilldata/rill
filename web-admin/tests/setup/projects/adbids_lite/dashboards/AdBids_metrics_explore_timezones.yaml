@@ -1,0 +1,24 @@
+# Explore YAML
+# Reference documentation: https://docs.rilldata.com/reference/project-files/explore-dashboards
+
+type: explore
+metrics_view: AdBids_metrics
+
+dimensions: '*'
+measures: '*'
+
+defaults:
+  time_range: P6D
+display_name: Adbids dashboard with timezones
+time_zones:
+  - America/Los_Angeles
+  - America/Chicago
+  - America/New_York
+  - Europe/London
+  - Europe/Paris
+  - Asia/Jerusalem
+  - Europe/Moscow
+  - Asia/Kolkata
+  - Asia/Shanghai
+  - Asia/Tokyo
+  - Australia/Sydney

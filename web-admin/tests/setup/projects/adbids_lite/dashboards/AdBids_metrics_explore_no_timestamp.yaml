@@ -1,0 +1,10 @@
+# Explore YAML
+# Reference documentation: https://docs.rilldata.com/reference/project-files/explore-dashboards
+
+type: explore
+
+title: "Adbids dashboard without timestamp"
+metrics_view: AdBids_metrics_no_timestamp
+
+dimensions: '*'
+measures: '*'

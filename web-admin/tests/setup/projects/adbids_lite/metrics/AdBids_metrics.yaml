@@ -1,0 +1,27 @@
+# Metrics view YAML
+# Reference documentation: https://docs.rilldata.com/reference/project-files/dashboards
+
+version: 1
+type: metrics_view
+
+title: Adbids
+model: AdBids
+timeseries: timestamp
+
+dimensions:
+  - label: Publisher
+    column: publisher
+  - label: Domain
+    column: domain
+
+measures:
+  - name: total_records
+    label: Total records
+    expression: COUNT(*)
+    description: ""
+    format_preset: humanize
+  - expression: AVG(bid_price)
+    name: avg_price_sum
+    label: Avg of Bid Price
+    format_preset: humanize
+    valid_percent_of_total: true

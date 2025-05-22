@@ -1,4 +1,11 @@
 import { test as base, type Page } from "@playwright/test";
+import { getOpenPort } from "@rilldata/web-common/tests/utils/get-open-port";
+import { asyncWaitUntil } from "@rilldata/web-common/lib/waitUtils";
+import axios from "axios";
+import { spawn } from "node:child_process";
+import { cpSync, existsSync, mkdirSync, rmSync } from "node:fs";
+import { join } from "node:path";
+import treeKill from "tree-kill";
 import { ADMIN_STORAGE_STATE, VIEWER_STORAGE_STATE } from "./constants";
 import { cliLogin, cliLogout } from "./fixtures/cli";
 import path from "path";
@@ -11,15 +18,25 @@ import {
 import fs from "fs";
 import { generateEmbed } from "../utils/generate-embed";
 
+export const TestTempDirectory = "playwright";
+const TEST_PROJECTS = "tests/setup/projects";
+
 type MyFixtures = {
   adminPage: Page;
   viewerPage: Page;
   anonPage: Page;
-  cli: void;
   embedPage: Page;
+
+  cli: void;
+  cliHome: string | undefined;
+  rillDevPage: Page;
+  rillDevProject: string | undefined;
 };
 
 export const test = base.extend<MyFixtures>({
+  cliHome: [undefined, { option: true }],
+  rillDevProject: [undefined, { option: true }],
+
   // Note: the `e2e` project uses the admin auth file by default, so it's likely that
   // this fixture won't be used often.
   adminPage: async ({ browser }, use) => {
@@ -53,6 +70,77 @@ export const test = base.extend<MyFixtures>({
     await cliLogin(page);
     await use();
     await cliLogout();
+  },
+
+  rillDevPage: async ({ viewerPage, cliHome, rillDevProject }, use) => {
+    const TEST_PORT = await getOpenPort();
+    const TEST_PORT_GRPC = await getOpenPort();
+    const TEST_PROJECT_DIRECTORY = join(
+      TestTempDirectory,
+      "temp",
+      "" + TEST_PORT,
+    );
+    const TEST_HOME_DIRECTORY = cliHome ?? join(TestTempDirectory, "home");
+
+    rmSync(TEST_PROJECT_DIRECTORY, { force: true, recursive: true });
+
+    if (!existsSync(TEST_PROJECT_DIRECTORY)) {
+      mkdirSync(TEST_PROJECT_DIRECTORY, { recursive: true });
+    }
+
+    if (rillDevProject) {
+      cpSync(join(TEST_PROJECTS, rillDevProject), TEST_PROJECT_DIRECTORY, {
+        recursive: true,
+        force: true,
+      });
+    }
+
+    const cmd = `start --no-open --port ${TEST_PORT} --port-grpc ${TEST_PORT_GRPC} ${TEST_PROJECT_DIRECTORY}`;
+
+    const childProcess = spawn("../rill", cmd.split(" "), {
+      stdio: "inherit",
+      shell: true,
+      env: {
+        ...process.env,
+        // Override home so that running locally doesn't take the dev's user info by mistake.
+        // This could later be used to add login/logout tests.
+        HOME: TEST_HOME_DIRECTORY,
+      },
+    });
+
+    childProcess.on("error", console.log);
+
+    // Ping runtime until it's ready
+    await asyncWaitUntil(async () => {
+      try {
+        const response = await axios.get(
+          `http://localhost:${TEST_PORT}/v1/ping`,
+        );
+        return response.status === 200;
+      } catch {
+        return false;
+      }
+    });
+
+    await viewerPage.goto(`http://localhost:${TEST_PORT}`);
+
+    // Seems to help with issues related to DOM elements not being ready
+    await viewerPage.waitForTimeout(1500);
+
+    await use(viewerPage);
+
+    rmSync(TEST_PROJECT_DIRECTORY, {
+      force: true,
+      recursive: true,
+    });
+
+    const processExit = new Promise((resolve) => {
+      childProcess.on("exit", resolve);
+    });
+
+    if (childProcess.pid) treeKill(childProcess.pid);
+
+    await processExit;
   },
 
   embedPage: [

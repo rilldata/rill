@@ -19,6 +19,7 @@ import {
   RILL_ORG_NAME,
   RILL_PROJECT_NAME,
   RILL_SERVICE_NAME,
+  VIEWER_STORAGE_STATE,
 } from "./constants";
 import { cliLogin } from "./fixtures/cli";
 
@@ -156,6 +157,56 @@ setup.describe("global setup", () => {
     await page.context().storageState({ path: ADMIN_STORAGE_STATE });
   });
 
+  // Use an `anonPage` to setup the viewer account.
+  setup("should log in with the viewer account", async ({ anonPage }) => {
+    // Again, check that the required environment variables are set. This is for type-safety.
+    if (
+      !process.env.RILL_DEVTOOL_E2E_VIEWER_ACCOUNT_EMAIL ||
+      !process.env.RILL_DEVTOOL_E2E_VIEWER_ACCOUNT_PASSWORD
+    ) {
+      throw new Error(
+        "Missing required environment variables for authentication",
+      );
+    }
+
+    // Log in with the viewer account
+    await anonPage.goto("/");
+
+    // Fill in the email
+    const emailInput = anonPage.locator('input[name="username"]');
+    await emailInput.waitFor({ state: "visible" });
+    await emailInput.click();
+    await emailInput.fill(process.env.RILL_DEVTOOL_E2E_VIEWER_ACCOUNT_EMAIL);
+
+    // Click the continue button
+    await anonPage
+      .locator('button[type="submit"][data-action-button-primary="true"]', {
+        hasText: "Continue",
+      })
+      .click();
+
+    // Fill in the password
+    const passwordInput = anonPage.locator('input[name="password"]');
+    await passwordInput.waitFor({ state: "visible" });
+    await passwordInput.click();
+    await passwordInput.fill(
+      process.env.RILL_DEVTOOL_E2E_VIEWER_ACCOUNT_PASSWORD,
+    );
+
+    // Click the continue button
+    await anonPage
+      .locator('button[type="submit"][data-action-button-primary="true"]', {
+        hasText: "Continue",
+      })
+      .click();
+
+    await anonPage.waitForURL("/");
+
+    // Save the admin's Rill auth cookies to file.
+    // Subsequent tests can seed their browser with this state, instead of needing to go through the log-in flow again.
+    await anonPage.context().storageState({ path: VIEWER_STORAGE_STATE });
+  });
+
   setup("should create an organization and service", async ({ adminPage }) => {
     // Create an organization named "e2e"
     await cliLogin(adminPage);
@@ -183,7 +234,7 @@ setup.describe("global setup", () => {
   setup("should deploy the OpenRTB project", async ({ adminPage }) => {
     // Deploy the OpenRTB project
     const { match } = await spawnAndMatch(
-      "rill",
+      "../rill",
       [
         "deploy",
         "--path",

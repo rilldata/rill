@@ -35,7 +35,14 @@ class FeatureFlags {
    */
   rillDevCloudFeatures = new FeatureFlag(
     "rill",
-    !import.meta.env.VITE_PLAYWRIGHT_TEST,
+    !import.meta.env.VITE_PLAYWRIGHT_TEST ||
+      !!import.meta.env.VITE_PLAYWRIGHT_CLOUD_TEST,
+  );
+  // Until we figure out a good way to test managed github we need to use the legacy archive method.
+  // Right now this is true only in an E2E environment.
+  legacyArchiveDeploy = new FeatureFlag(
+    "rill",
+    !!import.meta.env.VITE_PLAYWRIGHT_TEST,
   );
 
   ai = new FeatureFlag("user", !import.meta.env.VITE_PLAYWRIGHT_TEST);
