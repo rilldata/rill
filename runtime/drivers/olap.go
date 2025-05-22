@@ -768,7 +768,7 @@ func (d Dialect) GetTimeExpr(t time.Time) (bool, string) {
 	}
 }
 
-func (d Dialect) LookupExpr(lookupTable, lookupValueColumn, lookupKeyExpr string, lookupDefaultExpression string) (string, error) {
+func (d Dialect) LookupExpr(lookupTable, lookupValueColumn, lookupKeyExpr, lookupDefaultExpression string) (string, error) {
 	switch d {
 	case DialectClickHouse:
 		if lookupDefaultExpression != "" {
