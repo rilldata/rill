@@ -1188,17 +1188,12 @@ export class ModelTest extends Message<ModelTest> {
   name = "";
 
   /**
-   * @generated from field: string description = 2;
-   */
-  description = "";
-
-  /**
-   * @generated from field: string resolver = 3;
+   * @generated from field: string resolver = 2;
    */
   resolver = "";
 
   /**
-   * @generated from field: google.protobuf.Struct resolver_properties = 4;
+   * @generated from field: google.protobuf.Struct resolver_properties = 3;
    */
   resolverProperties?: Struct;
 
@@ -1211,9 +1206,8 @@ export class ModelTest extends Message<ModelTest> {
   static readonly typeName = "rill.runtime.v1.ModelTest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "resolver", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 4, name: "resolver_properties", kind: "message", T: Struct },
+    { no: 2, name: "resolver", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "resolver_properties", kind: "message", T: Struct },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ModelTest {

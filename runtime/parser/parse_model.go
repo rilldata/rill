@@ -17,30 +17,28 @@ import (
 
 // ModelYAML is the raw structure of a Model resource defined in YAML (does not include common fields)
 type ModelYAML struct {
-	commonYAML  `yaml:",inline" mapstructure:",squash"` // Only to avoid loading common fields into InputProperties
-	Refresh     *ScheduleYAML                           `yaml:"refresh"`
-	Timeout     string                                  `yaml:"timeout"`
-	Incremental bool                                    `yaml:"incremental"`
-	ChangeMode  string                                  `yaml:"change_mode"`
-	State       *DataYAML                               `yaml:"state"`
-	Partitions  *DataYAML                               `yaml:"partitions"`
-	// TODO: Consider changing to (data_tests, assertions) in the future
-	Tests []struct {
-		Name        string `yaml:"name"`
-		Description string `yaml:"description"`
-		DataYAML    `yaml:",inline"`
-	} `yaml:"tests"`
-	Splits                *DataYAML      `yaml:"splits"` // Deprecated: use "partitions" instead
-	PartitionsWatermark   string         `yaml:"partitions_watermark"`
-	PartitionsConcurrency uint           `yaml:"partitions_concurrency"`
-	InputProperties       map[string]any `yaml:",inline" mapstructure:",remain"`
+	commonYAML            `yaml:",inline" mapstructure:",squash"` // Only to avoid loading common fields into InputProperties
+	Refresh               *ScheduleYAML                           `yaml:"refresh"`
+	Timeout               string                                  `yaml:"timeout"`
+	Incremental           bool                                    `yaml:"incremental"`
+	ChangeMode            string                                  `yaml:"change_mode"`
+	State                 *DataYAML                               `yaml:"state"`
+	Partitions            *DataYAML                               `yaml:"partitions"`
+	Splits                *DataYAML                               `yaml:"splits"` // Deprecated: use "partitions" instead
+	PartitionsWatermark   string                                  `yaml:"partitions_watermark"`
+	PartitionsConcurrency uint                                    `yaml:"partitions_concurrency"`
+	InputProperties       map[string]any                          `yaml:",inline" mapstructure:",remain"`
 	Stage                 struct {
 		Connector  string         `yaml:"connector"`
 		Properties map[string]any `yaml:",inline" mapstructure:",remain"`
 	} `yaml:"stage"`
-	Output          ModelOutputYAML `yaml:"output"`
-	Materialize     *bool           `yaml:"materialize"`
-	DefinedAsSource bool            `yaml:"defined_as_source"`
+	Output ModelOutputYAML `yaml:"output"`
+	Tests  []struct {
+		Name     string `yaml:"name"`
+		DataYAML `yaml:",inline"`
+	} `yaml:"tests"`
+	Materialize     *bool `yaml:"materialize"`
+	DefinedAsSource bool  `yaml:"defined_as_source"`
 }
 
 // ModelOutputYAML parses the `output:` property of a model.
@@ -205,6 +203,24 @@ func (p *Parser) parseModel(ctx context.Context, node *Node) error {
 		}
 	}
 
+	// Parse model tests
+	var sqlTests []*runtimev1.ModelTest
+	if len(tmp.Tests) > 0 {
+		for i := range tmp.Tests {
+			t := &tmp.Tests[i]
+			resolver, props, refs, err := p.parseDataYAML(&t.DataYAML, outputConnector)
+			if err != nil {
+				return fmt.Errorf(`failed to parse test %q: %w`, t.Name, err)
+			}
+			node.Refs = append(node.Refs, refs...)
+			sqlTests = append(sqlTests, &runtimev1.ModelTest{
+				Name:               t.Name,
+				Resolver:           resolver,
+				ResolverProperties: props,
+			})
+		}
+	}
+
 	// Insert the model
 	r, err := p.insertResource(ResourceKindModel, node.Name, node.Paths, node.Refs...)
 	if err != nil {
@@ -243,24 +259,7 @@ func (p *Parser) parseModel(ctx context.Context, node *Node) error {
 	r.ModelSpec.OutputConnector = outputConnector
 	r.ModelSpec.OutputProperties = outputPropsPB
 
-	if r.ModelSpec != nil && len(tmp.Tests) > 0 {
-		var sqlTests []*runtimev1.ModelTest
-		for i := range tmp.Tests {
-			t := &tmp.Tests[i]
-			resolver, props, refs, err := p.parseDataYAML(&t.DataYAML, outputConnector)
-			if err != nil {
-				return fmt.Errorf(`failed to parse test %q: %w`, t.Name, err)
-			}
-			node.Refs = append(node.Refs, refs...)
-			sqlTests = append(sqlTests, &runtimev1.ModelTest{
-				Name:               t.Name,
-				Description:        t.Description,
-				Resolver:           resolver,
-				ResolverProperties: props,
-			})
-		}
-		r.ModelSpec.Tests = sqlTests
-	}
+	r.ModelSpec.Tests = sqlTests
 
 	return nil
 }

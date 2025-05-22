@@ -171,9 +171,8 @@ enum ModelChangeMode {
 
 message ModelTest {
   string name = 1;
-  string description = 2;
-  string resolver = 3;
-  google.protobuf.Struct resolver_properties = 4;
+  string resolver = 2;
+  google.protobuf.Struct resolver_properties = 3;
 }
 
 message MetricsView {

@@ -2358,7 +2358,6 @@ sql: SELECT * FROM range(5)
 tests:
   - name: Test Row Count
     sql: SELECT count(*) = 5 as ok FROM range(5)
-    description: Should have 5 rows
   - name: Validate 3 is present
     sql: SELECT count(*) = 1 as ok FROM range(5) WHERE column0 = 3
 `,
@@ -2375,12 +2374,10 @@ tests:
 	require.Equal(t, "Test Row Count", modelSpec.Tests[0].Name)
 	require.Equal(t, "sql", modelSpec.Tests[0].Resolver)
 	require.Equal(t, "SELECT count(*) = 5 as ok FROM range(5)", modelSpec.Tests[0].ResolverProperties.Fields["sql"].GetStringValue())
-	require.Equal(t, "Should have 5 rows", modelSpec.Tests[0].Description)
 
 	require.Equal(t, "Validate 3 is present", modelSpec.Tests[1].Name)
 	require.Equal(t, "sql", modelSpec.Tests[1].Resolver)
 	require.Equal(t, "SELECT count(*) = 1 as ok FROM range(5) WHERE column0 = 3", modelSpec.Tests[1].ResolverProperties.Fields["sql"].GetStringValue())
-	require.Equal(t, "", modelSpec.Tests[1].Description)
 }
 
 func requireResourcesAndErrors(t testing.TB, p *Parser, wantResources []*Resource, wantErrors []*runtimev1.ParseError) {

@@ -5669,8 +5669,6 @@ definitions:
     properties:
       name:
         type: string
-      description:
-        type: string
       resolver:
         type: string
       resolverProperties:

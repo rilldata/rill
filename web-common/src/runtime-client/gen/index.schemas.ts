@@ -1618,7 +1618,6 @@ export type V1ModelTestResolverProperties = { [key: string]: unknown };
 
 export interface V1ModelTest {
   name?: string;
-  description?: string;
   resolver?: string;
   resolverProperties?: V1ModelTestResolverProperties;
 }

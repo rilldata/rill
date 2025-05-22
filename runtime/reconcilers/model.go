@@ -315,7 +315,6 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 			model.State.TotalExecutionDurationMs = model.State.LatestExecutionDurationMs
 		}
 
-		// Run model tests if no partitions are configured
 		testErr := r.runModelTests(ctx, self)
 		if testErr != nil {
 			execErr = testErr
@@ -1562,53 +1561,47 @@ func (r *ModelReconciler) shouldTrigger(ctx context.Context, self *runtimev1.Res
 	}
 }
 
+// execModelTest runs a single model test and returns an error if it fails.
+func (r *ModelReconciler) execModelTest(ctx context.Context, self *runtimev1.Resource, test *runtimev1.ModelTest) error {
+	result, err := r.C.Runtime.Resolve(ctx, &runtime.ResolveOptions{
+		InstanceID:         r.C.InstanceID,
+		Resolver:           test.Resolver,
+		ResolverProperties: test.ResolverProperties.AsMap(),
+		Claims:             &runtime.SecurityClaims{SkipChecks: true},
+		Args:               map[string]any{"limit": 1},
+	})
+	if err != nil {
+		r.C.Logger.Warn("Model test errored", zap.String("model", self.Meta.Name.Name), zap.String("test", test.Name), zap.Error(err), observability.ZapCtx(ctx))
+		return fmt.Errorf("%s: %w", test.Name, err)
+	}
+	defer result.Close()
+
+	row, err := result.Next()
+	if errors.Is(err, io.EOF) {
+		return nil
+	}
+	if err != nil {
+		r.C.Logger.Warn("Model test errored reading result", zap.String("model", self.Meta.Name.Name), zap.String("test", test.Name), zap.Error(err), observability.ZapCtx(ctx))
+		return fmt.Errorf("model test errored: '%s': %w", strings.ToLower(test.Name), err)
+	}
+	if row != nil {
+		r.C.Logger.Warn("Model test failed", zap.String("model", self.Meta.Name.Name), zap.String("test", test.Name), observability.ZapCtx(ctx))
+		return fmt.Errorf("model test failed: '%s'", strings.ToLower(test.Name))
+	}
+	return nil
+}
+
 // runModelTests executes the user defined tests for the model
 func (r *ModelReconciler) runModelTests(ctx context.Context, self *runtimev1.Resource) error {
 	if len(self.GetModel().Spec.Tests) == 0 {
-		r.C.Logger.Debug("No tests defined for model", zap.String("model", self.Meta.Name.Name), observability.ZapCtx(ctx))
 		return nil
 	}
 	var errs []error
-
 	for _, test := range self.GetModel().Spec.Tests {
-		result, err := r.C.Runtime.Resolve(ctx, &runtime.ResolveOptions{
-			InstanceID:         r.C.InstanceID,
-			Resolver:           test.Resolver,
-			ResolverProperties: test.ResolverProperties.AsMap(),
-			Claims:             &runtime.SecurityClaims{SkipChecks: true},
-		})
-		if err != nil {
-			r.C.Logger.Warn("Model test errored", zap.String("model", self.Meta.Name.Name), zap.String("test", test.Name), zap.Error(err), observability.ZapCtx(ctx))
-			errs = append(errs, fmt.Errorf("%s: %w", test.Name, err))
-			continue
-		}
-
-		var testFailed bool
-		for {
-			row, err := result.Next()
-			if errors.Is(err, io.EOF) {
-				break
-			}
-			if err != nil {
-				r.C.Logger.Warn("Model test errored reading result", zap.String("model", self.Meta.Name.Name), zap.String("test", test.Name), zap.Error(err), observability.ZapCtx(ctx))
-				errs = append(errs, fmt.Errorf("model test: %s: %w", test.Name, err))
-				testFailed = true
-				break
-			}
-			if row != nil {
-				r.C.Logger.Warn("Model test failed", zap.String("model", self.Meta.Name.Name), zap.String("test", test.Name), observability.ZapCtx(ctx))
-				errs = append(errs, fmt.Errorf("model test: %s: failed (returned rows)", test.Name))
-				testFailed = true
-				break
-			}
-		}
-		result.Close()
-
-		if testFailed {
-			continue
+		if err := r.execModelTest(ctx, self, test); err != nil {
+			errs = append(errs, err)
 		}
 	}
-
 	if len(errs) > 0 {
 		return errors.Join(errs...)
 	}
