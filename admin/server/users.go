@@ -130,7 +130,7 @@ func (s *Server) UpdateUserPreferences(ctx context.Context, req *adminv1.UpdateU
 	if req.Preferences.TimeZone != nil {
 		_, err := time.LoadLocation(*req.Preferences.TimeZone)
 		if err != nil {
-			return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("invalid time zone: %s", *req.Preferences.TimeZone))
+			return nil, status.Errorf(codes.InvalidArgument, "invalid time zone: %s", *req.Preferences.TimeZone)
 		}
 
 		observability.AddRequestAttributes(ctx, attribute.String("preferences_time_zone", *req.Preferences.TimeZone))
@@ -161,6 +161,161 @@ func (s *Server) UpdateUserPreferences(ctx context.Context, req *adminv1.UpdateU
 			TimeZone: &updatedUser.PreferenceTimeZone,
 		},
 	}, nil
+}
+
+func (s *Server) ListUserAuthTokens(ctx context.Context, req *adminv1.ListUserAuthTokensRequest) (*adminv1.ListUserAuthTokensResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.user_id", req.UserId),
+	)
+
+	claims := auth.GetClaims(ctx)
+	forceAccess := claims.Superuser(ctx) && req.SuperuserForceAccess
+
+	userID := req.UserId
+	if userID == "current" { // Special alias for the current user
+		if claims.OwnerType() != auth.OwnerTypeUser {
+			return nil, status.Error(codes.Unauthenticated, "not authenticated as a user")
+		}
+		userID = claims.OwnerID()
+	}
+	if userID != claims.OwnerID() && !forceAccess {
+		return nil, status.Error(codes.PermissionDenied, "not authorized to list auth tokens for other users")
+	}
+
+	pageSize := validPageSize(req.PageSize)
+	pageToken, err := unmarshalPageToken(req.PageToken)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	authTokens, err := s.admin.DB.FindUserAuthTokens(ctx, userID, pageToken.Val, pageSize)
+	if err != nil {
+		return nil, err
+	}
+
+	nextToken := ""
+	if len(authTokens) >= pageSize {
+		nextToken = marshalPageToken(authTokens[len(authTokens)-1].ID)
+	}
+
+	dtos := make([]*adminv1.UserAuthToken, len(authTokens))
+	for i, t := range authTokens {
+		var authClientID, authClientDisplayName, representingUserID string
+		var expiresOn *timestamppb.Timestamp
+		if t.AuthClientID != nil {
+			authClientID = *t.AuthClientID
+		}
+		if t.AuthClientDisplayName != nil {
+			authClientDisplayName = *t.AuthClientDisplayName
+		}
+		if t.RepresentingUserID != nil {
+			representingUserID = *t.RepresentingUserID
+		}
+		if t.ExpiresOn != nil {
+			expiresOn = timestamppb.New(*t.ExpiresOn)
+		}
+
+		dtos[i] = &adminv1.UserAuthToken{
+			Id:                    t.ID,
+			DisplayName:           t.DisplayName,
+			AuthClientId:          authClientID,
+			AuthClientDisplayName: authClientDisplayName,
+			RepresentingUserId:    representingUserID,
+			CreatedOn:             timestamppb.New(t.CreatedOn),
+			ExpiresOn:             expiresOn,
+			UsedOn:                timestamppb.New(t.UsedOn),
+		}
+	}
+
+	return &adminv1.ListUserAuthTokensResponse{
+		Tokens:        dtos,
+		NextPageToken: nextToken,
+	}, nil
+}
+
+func (s *Server) IssueUserAuthToken(ctx context.Context, req *adminv1.IssueUserAuthTokenRequest) (*adminv1.IssueUserAuthTokenResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.user_id", req.UserId),
+		attribute.String("args.client_id", req.ClientId),
+		attribute.String("args.display_name", req.DisplayName),
+		attribute.Int64("args.ttl_minutes", req.TtlMinutes),
+		attribute.Bool("args.has_represent_email", req.RepresentEmail != ""),
+	)
+
+	claims := auth.GetClaims(ctx)
+	forceAccess := claims.Superuser(ctx) && req.SuperuserForceAccess
+
+	userID := req.UserId
+	if userID == "current" { // Special alias for the current user
+		if claims.OwnerType() != auth.OwnerTypeUser {
+			return nil, status.Error(codes.Unauthenticated, "not authenticated as a user")
+		}
+		userID = claims.OwnerID()
+	}
+	if userID != claims.OwnerID() && !forceAccess {
+		return nil, status.Error(codes.PermissionDenied, "not authorized to issue auth tokens for other users")
+	}
+
+	var ttl *time.Duration
+	if req.TtlMinutes > 0 {
+		ttl = new(time.Duration)
+		*ttl = time.Duration(req.TtlMinutes) * time.Minute
+	}
+
+	var representingUserID *string
+	if req.RepresentEmail != "" {
+		if !forceAccess {
+			return nil, status.Error(codes.PermissionDenied, "not authorized to represent other users")
+		}
+		u, err := s.admin.DB.FindUserByEmail(ctx, req.RepresentEmail)
+		if err != nil {
+			return nil, status.Errorf(codes.NotFound, "user with email %q not found", req.RepresentEmail)
+		}
+		if u.ID == userID {
+			return nil, status.Error(codes.InvalidArgument, "cannot represent yourself")
+		}
+		representingUserID = &u.ID
+	}
+
+	authToken, err := s.admin.IssueUserAuthToken(ctx, userID, req.ClientId, req.DisplayName, representingUserID, ttl)
+	if err != nil {
+		return nil, err
+	}
+
+	return &adminv1.IssueUserAuthTokenResponse{
+		Token: authToken.Token().String(),
+	}, nil
+}
+
+func (s *Server) RevokeUserAuthToken(ctx context.Context, req *adminv1.RevokeUserAuthTokenRequest) (*adminv1.RevokeUserAuthTokenResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.token_id", req.TokenId),
+	)
+
+	var tokenID string
+	if req.TokenId == "current" { // Special alias for the current token
+		tokenID = auth.GetClaims(ctx).AuthTokenID()
+	} else {
+		token, err := s.admin.DB.FindUserAuthToken(ctx, req.TokenId)
+		if err != nil {
+			return nil, err
+		}
+
+		claims := auth.GetClaims(ctx)
+		forceAccess := claims.Superuser(ctx) && req.SuperuserForceAccess
+		if token.UserID != claims.OwnerID() && !forceAccess {
+			return nil, status.Error(codes.PermissionDenied, "not authorized to revoke auth tokens for other users")
+		}
+
+		tokenID = token.ID
+	}
+
+	err := s.admin.DB.DeleteUserAuthToken(ctx, tokenID)
+	if err != nil {
+		return nil, err
+	}
+
+	return &adminv1.RevokeUserAuthTokenResponse{}, nil
 }
 
 // IssueRepresentativeAuthToken returns the temporary auth token for representing email
@@ -220,9 +375,7 @@ func (s *Server) RevokeCurrentAuthToken(ctx context.Context, req *adminv1.Revoke
 		return nil, err
 	}
 
-	return &adminv1.RevokeCurrentAuthTokenResponse{
-		TokenId: tokenID,
-	}, nil
+	return &adminv1.RevokeCurrentAuthTokenResponse{}, nil
 }
 
 func (s *Server) SudoGetResource(ctx context.Context, req *adminv1.SudoGetResourceRequest) (*adminv1.SudoGetResourceResponse, error) {
