@@ -309,6 +309,15 @@ func (s *Server) DeployProject(ctx context.Context, r *connect.Request[localv1.D
 		}
 	}
 
+	if s.app.ch.Org != r.Msg.Org {
+		// Switching to passed org
+		s.app.ch.Org = r.Msg.Org
+		err = s.app.ch.DotRill.SetDefaultOrg(s.app.ch.Org)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	var projRequest *adminv1.CreateProjectRequest
 	if r.Msg.Archive { // old zip-and-ship, currently used only for testing until we figure out a good way to test using manged github repos
 		repo, release, err := s.app.Runtime.Repo(ctx, s.app.Instance.ID)
