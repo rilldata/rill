@@ -159,7 +159,7 @@ test.describe("ClickHouse connector", () => {
     await expect(rillYamlEditor).toContainText("olap_connector: clickhouse");
 
     // refresh the page to ensure the file is saved
-    await page.reload();    
+    await page.reload();
 
     // Assert that the connector explorer now has a ClickHouse connector
     await expect(
