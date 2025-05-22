@@ -234,6 +234,9 @@ func (s *Server) HTTPHandler(ctx context.Context, registerAdditionalHandlers fun
 		httpMux.Handle("/metrics", promhttp.Handler())
 	}
 
+	// Add handler for the MCP server
+	observability.MuxHandle(httpMux, "/mcp/", observability.Middleware("runtime", s.logger, auth.HTTPMiddleware(s.aud, s.newMCPHandler("/mcp"))))
+
 	// Build CORS options for runtime server
 
 	// If the AllowedOrigins contains a "*" we want to return the requester's origin instead of "*" in the "Access-Control-Allow-Origin" header.

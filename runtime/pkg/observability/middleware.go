@@ -11,6 +11,7 @@ import (
 
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	"github.com/rilldata/rill/runtime/pkg/activity"
+	"github.com/rilldata/rill/runtime/pkg/httputil"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
@@ -234,15 +235,14 @@ func LoggingMiddleware(logger *zap.Logger, next http.Handler) http.Handler {
 			w.Header().Set(TracingHeader, traceID)
 		}
 
-		wrapped := wrappedResponseWriter{ResponseWriter: w}
+		ww := httputil.WrapResponseWriter(w, r.ProtoMajor)
 
 		defer func() {
 			// Recover panics and handle as internal errors
 			if err := recover(); err != nil {
 				// Write status
-				w.WriteHeader(http.StatusInternalServerError)
-				wrapped.status = http.StatusInternalServerError
-				_, _ = w.Write([]byte(http.StatusText(http.StatusInternalServerError)))
+				ww.WriteHeader(http.StatusInternalServerError)
+				_, _ = ww.Write([]byte(http.StatusText(http.StatusInternalServerError)))
 
 				// Get stacktrace
 				stack := make([]byte, 64<<10)
@@ -254,7 +254,7 @@ func LoggingMiddleware(logger *zap.Logger, next http.Handler) http.Handler {
 			}
 
 			// Get status
-			httpStatus := wrapped.status
+			httpStatus := ww.Status()
 			if httpStatus == 0 {
 				httpStatus = 200
 			}
@@ -273,7 +273,7 @@ func LoggingMiddleware(logger *zap.Logger, next http.Handler) http.Handler {
 		// Print start message
 		logger.Info("http request started", fields...)
 
-		next.ServeHTTP(&wrapped, r)
+		next.ServeHTTP(ww, r)
 	})
 }
 
@@ -290,27 +290,6 @@ func HTTPPeer(r *http.Request) string {
 	}
 
 	return ip
-}
-
-// wrappedResponseWriter wraps a response writer and tracks the response status code
-type wrappedResponseWriter struct {
-	http.ResponseWriter
-	status      int
-	wroteHeader bool
-}
-
-func (rw *wrappedResponseWriter) Status() int {
-	return rw.status
-}
-
-func (rw *wrappedResponseWriter) WriteHeader(code int) {
-	if rw.wroteHeader {
-		return
-	}
-
-	rw.status = code
-	rw.ResponseWriter.WriteHeader(code)
-	rw.wroteHeader = true
 }
 
 // logFieldsContextKey is used to set and get request log fields in the context.
