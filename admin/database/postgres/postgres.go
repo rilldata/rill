@@ -951,20 +951,21 @@ func (c *connection) DeleteManagedUsergroupsMemberUser(ctx context.Context, orgI
 
 func (c *connection) FindUserAuthTokens(ctx context.Context, userID, afterID string, limit int) ([]*database.UserAuthToken, error) {
 	var qry strings.Builder
-	var args []any
 	qry.WriteString(`
 		SELECT
 			t.*,
 			c.display_name AS auth_client_display_name
 		FROM user_auth_tokens t
 		LEFT JOIN auth_clients c ON t.auth_client_id = c.id
+		WHERE t.user_id = $1 AND (t.expires_on IS NULL OR t.expires_on > now())
 	`)
+	args := []any{userID}
 	if afterID != "" {
-		qry.WriteString("WHERE t.id > $1 ORDER BY t.id LIMIT $2")
-		args = []any{afterID, limit}
+		qry.WriteString(" AND t.id > $2 ORDER BY t.id LIMIT $3")
+		args = append(args, afterID, limit)
 	} else {
-		qry.WriteString("ORDER BY t.id LIMIT $1")
-		args = []any{limit}
+		qry.WriteString(" ORDER BY t.id LIMIT $2")
+		args = append(args, limit)
 	}
 
 	var res []*database.UserAuthToken

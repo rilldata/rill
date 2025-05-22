@@ -17,7 +17,7 @@ func RevokeCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 
-			_, err = client.RevokeServiceAuthToken(cmd.Context(), &adminv1.RevokeServiceAuthTokenRequest{
+			_, err = client.RevokeUserAuthToken(cmd.Context(), &adminv1.RevokeUserAuthTokenRequest{
 				TokenId: args[0],
 			})
 			if err != nil {

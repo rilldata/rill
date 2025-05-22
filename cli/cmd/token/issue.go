@@ -39,7 +39,7 @@ func IssueCmd(ch *cmdutil.Helper) *cobra.Command {
 
 	issueCmd.Flags().SortFlags = false
 	issueCmd.Flags().StringVar(&description, "description", "", "Description for the token")
-	issueCmd.Flags().IntVar(&ttlMinutes, "ttl-minutes", 60, "Minutes until the token should expire")
+	issueCmd.Flags().IntVar(&ttlMinutes, "ttl-minutes", 0, "Optional minutes until the token should expire")
 
 	return issueCmd
 }

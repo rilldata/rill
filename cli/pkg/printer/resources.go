@@ -306,17 +306,17 @@ func (p *Printer) PrintUserTokens(uts []*adminv1.UserAuthToken) {
 
 func toUserTokenRow(u *adminv1.UserAuthToken) *userToken {
 	var expiresOn, usedOn string
-	if !u.ExpiresOn.AsTime().IsZero() {
+	if u.ExpiresOn != nil {
 		expiresOn = u.ExpiresOn.AsTime().Local().Format(time.DateTime)
 	}
-	if !u.UsedOn.AsTime().IsZero() {
+	if u.UsedOn != nil {
 		usedOn = u.UsedOn.AsTime().Local().Format(time.DateTime)
 	}
 
 	return &userToken{
 		ID:          u.Id,
-		Description: u.DisplayName,
 		ClientName:  u.AuthClientDisplayName,
+		Description: u.DisplayName,
 		CreatedOn:   u.CreatedOn.AsTime().Local().Format(time.DateTime),
 		ExpiresOn:   expiresOn,
 		UsedOn:      usedOn,
@@ -327,9 +327,9 @@ type userToken struct {
 	ID          string `header:"id" json:"id"`
 	Description string `header:"description" json:"description"`
 	ClientName  string `header:"client" json:"client"`
-	CreatedOn   string `header:"created_on,timestamp(ms|utc|human)" json:"created_on"`
-	ExpiresOn   string `header:"expires_on,timestamp(ms|utc|human)" json:"expires_on"`
-	UsedOn      string `header:"last_used_on,timestamp(ms|utc|human)" json:"last_used_on"`
+	CreatedOn   string `header:"created,timestamp(ms|utc|human)" json:"created_on"`
+	ExpiresOn   string `header:"expires,timestamp(ms|utc|human)" json:"expires_on"`
+	UsedOn      string `header:"last used,timestamp(ms|utc|human)" json:"last_used_on"`
 }
 
 func (p *Printer) PrintMagicAuthTokens(tkns []*adminv1.MagicAuthToken) {

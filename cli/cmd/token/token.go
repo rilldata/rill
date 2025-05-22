@@ -9,7 +9,7 @@ func TokenCmd(ch *cmdutil.Helper) *cobra.Command {
 	tokenCmd := &cobra.Command{
 		Use:               "token",
 		Short:             "Manage personal access tokens",
-		PersistentPreRunE: cmdutil.CheckChain(cmdutil.CheckAuth(ch), cmdutil.CheckOrganization(ch)),
+		PersistentPreRunE: cmdutil.CheckAuth(ch),
 	}
 
 	tokenCmd.AddCommand(ListCmd(ch))
