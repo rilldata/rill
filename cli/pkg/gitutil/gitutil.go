@@ -241,7 +241,7 @@ func GetSyncStatus(repoPath, branch, remote string) (SyncStatus, error) {
 	return SyncStatusSynced, nil
 }
 
-func CommitAndForcePush(ctx context.Context, projectPath, remote, username, password, branch string, author *object.Signature) error {
+func CommitAndForcePush(ctx context.Context, projectPath, remote, username, password, branch string, author *object.Signature, allowEmptyCommits bool) error {
 	// init git repo
 	repo, err := git.PlainInitWithOptions(projectPath, &git.PlainInitOptions{
 		InitOptions: git.InitOptions{
@@ -270,7 +270,7 @@ func CommitAndForcePush(ctx context.Context, projectPath, remote, username, pass
 	}
 
 	// git commit -m
-	_, err = wt.Commit("Auto committed by Rill", &git.CommitOptions{All: true, Author: author})
+	_, err = wt.Commit("Auto committed by Rill", &git.CommitOptions{All: true, Author: author, AllowEmptyCommits: allowEmptyCommits})
 	if err != nil {
 		if !errors.Is(err, git.ErrEmptyCommit) {
 			return fmt.Errorf("failed to commit files to git: %w", err)
