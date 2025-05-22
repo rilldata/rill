@@ -76,8 +76,7 @@ var spec = drivers.Spec{
 			Required:    true,
 		},
 	},
-	ImplementsCatalog: true,
-	ImplementsOLAP:    true,
+	ImplementsOLAP: true,
 }
 
 var motherduckSpec = drivers.Spec{
@@ -429,6 +428,16 @@ func (c *connection) AsWarehouse() (drivers.Warehouse, bool) {
 // AsNotifier implements drivers.Connection.
 func (c *connection) AsNotifier(properties map[string]any) (drivers.Notifier, error) {
 	return nil, drivers.ErrNotNotifier
+}
+
+// Migrate implements drivers.Handle.
+func (c *connection) Migrate(ctx context.Context) error {
+	return nil
+}
+
+// MigrationStatus implements drivers.Handle.
+func (c *connection) MigrationStatus(ctx context.Context) (int, int, error) {
+	return 0, 0, nil
 }
 
 // reopenDB opens the DuckDB handle anew. If c.db is already set, it closes the existing handle first.

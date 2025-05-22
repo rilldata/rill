@@ -8,6 +8,7 @@ import (
 	"os"
 	"path"
 	"strings"
+	"time"
 
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/config"
@@ -20,6 +21,19 @@ import (
 )
 
 var ErrGitRemoteNotFound = errors.New("no git remotes found")
+
+type Config struct {
+	Remote            string
+	Username          string
+	Password          string
+	PasswordExpiresAt time.Time
+	DefaultBranch     string
+	Subpath           string
+}
+
+func (g *Config) IsExpired() bool {
+	return g.Password != "" && g.PasswordExpiresAt.Before(time.Now())
+}
 
 func CloneRepo(repoURL string) (string, error) {
 	endpoint, err := transport.NewEndpoint(repoURL)
@@ -288,4 +302,13 @@ func CommitAndForcePush(ctx context.Context, projectPath, remote, username, pass
 		return fmt.Errorf("failed to push to remote : %w", err)
 	}
 	return nil
+}
+
+func Clone(ctx context.Context, path string, c *Config) (*git.Repository, error) {
+	return git.PlainCloneContext(ctx, path, false, &git.CloneOptions{
+		URL:           c.Remote,
+		Auth:          &githttp.BasicAuth{Username: c.Username, Password: c.Password},
+		ReferenceName: plumbing.NewBranchReferenceName(c.DefaultBranch),
+		SingleBranch:  true,
+	})
 }

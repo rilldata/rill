@@ -1955,6 +1955,7 @@ message CreateManagedGitRepoResponse {
   string username = 2;
   string password = 3;
   string default_branch = 4;
+  google.protobuf.Timestamp password_expires_at = 5; 
 }
 
 message DisconnectProjectFromGithubRequest {
@@ -1980,6 +1981,7 @@ message GetCloneCredentialsResponse {
   string git_repo_url = 1;
   string git_username = 2;
   string git_password = 3;
+  google.protobuf.Timestamp git_password_expires_at = 7; 
   string git_subpath = 4;
   string git_prod_branch = 5;
   // either archive_download_url or git related details will be set

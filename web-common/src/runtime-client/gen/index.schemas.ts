@@ -716,7 +716,6 @@ export interface V1CreateInstanceRequest {
   connectors?: V1Connector[];
   variables?: V1CreateInstanceRequestVariables;
   annotations?: V1CreateInstanceRequestAnnotations;
-  embedCatalog?: boolean;
   watchRepo?: boolean;
 }
 
@@ -1064,7 +1063,6 @@ export interface V1Instance {
   projectVariables?: V1InstanceProjectVariables;
   featureFlags?: V1InstanceFeatureFlags;
   annotations?: V1InstanceAnnotations;
-  embedCatalog?: boolean;
   watchRepo?: boolean;
 }
 
@@ -2282,7 +2280,6 @@ export type RuntimeServiceEditInstanceBody = {
   connectors?: V1Connector[];
   variables?: RuntimeServiceEditInstanceBodyVariables;
   annotations?: RuntimeServiceEditInstanceBodyAnnotations;
-  embedCatalog?: boolean;
   watchRepo?: boolean;
 };
 
