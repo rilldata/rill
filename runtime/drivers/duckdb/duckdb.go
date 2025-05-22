@@ -513,7 +513,6 @@ func (c *connection) reopenDB(ctx context.Context) error {
 			Settings:           settings,
 			DBInitQueries:      dbInitQueries,
 			ConnInitQueries:    connInitQueries,
-			LogQueries:         c.config.LogQueries,
 			Logger:             c.logger,
 			OtelAttributes:     []attribute.KeyValue{attribute.String("instance_id", c.instanceID)},
 		})

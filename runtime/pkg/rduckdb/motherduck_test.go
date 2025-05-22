@@ -2,12 +2,14 @@ package rduckdb
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"os"
 	"path/filepath"
 	"runtime"
 	"testing"
 
+	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 	"github.com/joho/godotenv"
 	"github.com/stretchr/testify/require"
@@ -32,6 +34,7 @@ func TestMotherDuckDB(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping test in short mode")
 	}
+	t.Parallel()
 	db := prepareMotherDuckDB(t)
 	ctx := context.Background()
 	// create table
@@ -92,6 +95,7 @@ func TestMotherDuckCreateTable(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping test in short mode")
 	}
+	t.Parallel()
 	db := prepareMotherDuckDB(t)
 	ctx := context.Background()
 	_, err := db.CreateTableAsSelect(ctx, "test", "SELECT 1 AS id, 'India' AS country", &CreateTableOptions{})
@@ -142,7 +146,8 @@ func TestMotherDuckDropTable(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping test in short mode")
 	}
-	db, _, _ := prepareDB(t)
+	t.Parallel()
+	db := prepareMotherDuckDB(t)
 	ctx := context.Background()
 	// create table
 	_, err := db.CreateTableAsSelect(ctx, "test", "SELECT 1 AS id, 'India' AS country", &CreateTableOptions{})
@@ -171,7 +176,8 @@ func TestMotherDuckMutateTable(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping test in short mode")
 	}
-	db, _, _ := prepareDB(t)
+	t.Parallel()
+	db := prepareMotherDuckDB(t)
 	ctx := context.Background()
 
 	// create table
@@ -191,46 +197,50 @@ func TestMotherDuckMutateTable(t *testing.T) {
 	verifyTable(t, db, "SELECT id, city FROM test", []testData{{ID: 1, City: "Delhi"}, {ID: 2, City: "NY"}})
 
 	// add column and update existing entries in parallel query existing table
-	alterDone := make(chan struct{})
-	queryDone := make(chan struct{})
-	testDone := make(chan struct{})
+	db.MutateTable(ctx, "test", nil, func(ctx context.Context, conn *sqlx.Conn) error {
+		_, err := conn.ExecContext(ctx, "ALTER TABLE test ADD COLUMN country TEXT")
+		require.NoError(t, err)
+		_, err = conn.ExecContext(ctx, "UPDATE test SET country = 'USA' WHERE id = 2")
+		require.NoError(t, err)
+		_, err = conn.ExecContext(ctx, "UPDATE test SET country = 'India' WHERE id = 1")
+		require.NoError(t, err)
+		return nil
+	})
 
-	go func() {
-		db.MutateTable(ctx, "test", nil, func(ctx context.Context, conn *sqlx.Conn) error {
-			_, err := conn.ExecContext(ctx, "ALTER TABLE test ADD COLUMN country TEXT")
-			require.NoError(t, err)
-			_, err = conn.ExecContext(ctx, "UPDATE test SET country = 'USA' WHERE id = 2")
-			require.NoError(t, err)
-			_, err = conn.ExecContext(ctx, "UPDATE test SET country = 'India' WHERE id = 1")
-			require.NoError(t, err)
-
-			close(alterDone)
-			<-queryDone
-			return nil
-		})
-		close(testDone)
-	}()
-
-	go func() {
-		<-alterDone
-		verifyTable(t, db, "SELECT * FROM test", []testData{{ID: 1, City: "Delhi"}, {ID: 2, City: "NY"}})
-		close(queryDone)
-	}()
-
-	<-testDone
 	verifyTable(t, db, "SELECT * FROM test", []testData{{ID: 1, City: "Delhi", Country: "India"}, {ID: 2, City: "NY", Country: "USA"}})
 	require.NoError(t, db.Close())
 }
 
 func prepareMotherDuckDB(t *testing.T) DB {
+	tempDir := t.TempDir()
+	randomDB := provisionDatabase(t)
 	db, err := NewMotherDuck(context.Background(), &MotherDuckDBOptions{
-		Database:           "md:my_db",
+		Database:           randomDB,
 		Token:              os.Getenv("RILL_RUNTIME_MOTHERDUCK_TEST_TOKEN"),
+		LocalPath:          tempDir,
 		LocalMemoryLimitGB: 2,
 		LocalCPU:           1,
 		DBInitQueries:      []string{"SET autoinstall_known_extensions=true", "SET autoload_known_extensions=true"},
 		Logger:             zap.NewNop(),
 	})
 	require.NoError(t, err)
+	// Just to test that connections are closed properly
+	db.(*motherduck).db.SetMaxOpenConns(1)
 	return db
+}
+
+func provisionDatabase(t *testing.T) string {
+	db, err := sql.Open("duckdb", "md:my_db?motherduck_token="+os.Getenv("RILL_RUNTIME_MOTHERDUCK_TEST_TOKEN"))
+	require.NoError(t, err)
+
+	name := "db" + uuid.NewString()[:8]
+	_, err = db.Exec("CREATE DATABASE " + name)
+	require.NoError(t, err)
+
+	t.Cleanup(func() {
+		_, err = db.Exec("DROP DATABASE " + name)
+		require.NoError(t, err)
+		require.NoError(t, db.Close())
+	})
+	return name
 }

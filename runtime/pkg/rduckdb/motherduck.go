@@ -22,8 +22,6 @@ import (
 	"golang.org/x/sync/semaphore"
 )
 
-type acquireConnFn func(ctx context.Context) (conn *sqlx.Conn, rel func() error, err error)
-
 type motherduck struct {
 	db       *sqlx.DB
 	logger   *zap.Logger
@@ -33,7 +31,7 @@ type motherduck struct {
 }
 
 type MotherDuckDBOptions struct {
-	// Database is the name of motherduck database to connect to.
+	// Database is the name of motherduck database to connect to. Accepts both with md: prefix and without.
 	Database string
 	// Token is the token to connect to motherduck.
 	Token string
@@ -44,7 +42,7 @@ type MotherDuckDBOptions struct {
 	LocalCPU int
 	// LocalMemoryLimitGB is the amount of memory available for the local instance of DB.
 	LocalMemoryLimitGB int
-	// Settings are addition query parameters to be passed when creating local DuckDB instance.
+	// Settings are additional query parameters to be passed when creating local DuckDB instance.
 	Settings map[string]string
 
 	// DBInitQueries are run when the database is first created. These are typically global duckdb configurations.
@@ -52,7 +50,6 @@ type MotherDuckDBOptions struct {
 	// ConnInitQueries are run when a new connection is created. These are typically local duckdb configurations.
 	ConnInitQueries []string
 
-	LogQueries     bool
 	Logger         *zap.Logger
 	OtelAttributes []attribute.KeyValue
 }
@@ -68,7 +65,7 @@ func (d *MotherDuckDBOptions) dsn() string {
 	return "md:" + d.Database
 }
 
-func (d *MotherDuckDBOptions) ValidateSettings() error {
+func (d *MotherDuckDBOptions) setDefaultSettings() {
 	if d.Settings == nil {
 		d.Settings = make(map[string]string)
 	}
@@ -78,13 +75,14 @@ func (d *MotherDuckDBOptions) ValidateSettings() error {
 	if d.LocalCPU > 0 {
 		d.Settings["threads"] = strconv.Itoa(d.LocalCPU)
 	}
-	return nil
 }
 
+// NewMotherDuck creates a duckdb database connection with the given motherduck db attached to it.
+// Operations like CreateTableAsSelect, RenameTable, MutateTable are not atomic and can fail in the middle.
 func NewMotherDuck(ctx context.Context, opts *MotherDuckDBOptions) (res DB, dbErr error) {
-	_ = opts.ValidateSettings()
 	opts.Logger.Debug("open motherduck db", observability.ZapCtx(ctx))
 	// open the db
+	opts.setDefaultSettings()
 	dsn, err := url.Parse(filepath.Join(opts.LocalPath, "main.db"))
 	if err != nil {
 		return nil, err
@@ -114,11 +112,6 @@ func NewMotherDuck(ctx context.Context, opts *MotherDuckDBOptions) (res DB, dbEr
 
 	spanOptions := otelsql.SpanOptions{
 		SpanFilter: func(ctx context.Context, method otelsql.Method, query string, args []driver.NamedValue) bool {
-			// if debug is not set do not create spans for queries
-			// we run a lot of metadata queries like attach, detach, drop view etc which can create a lot of spans and clutter the trace
-			if !opts.LogQueries {
-				return false
-			}
 			// log all queries except create secret which can contain sensitive data
 			return !createSecretRegex.MatchString(query)
 		},
@@ -151,9 +144,13 @@ func NewMotherDuck(ctx context.Context, opts *MotherDuckDBOptions) (res DB, dbEr
 	}, nil
 }
 
-// AcquireReadConnection implements DB.
+// AcquireReadConnection implements DB. In practice this does not enforce that the returned connection is read-only.
 func (m *motherduck) AcquireReadConnection(ctx context.Context) (conn *sqlx.Conn, release func() error, err error) {
-	return m.acquireConn(ctx)
+	conn, err = m.acquireConn(ctx)
+	if err != nil {
+		return nil, nil, fmt.Errorf("acquire read connection failed: %w", err)
+	}
+	return conn, conn.Close, nil
 }
 
 // Close implements DB.
@@ -191,18 +188,15 @@ func (m *motherduck) CreateTableAsSelect(ctx context.Context, name, query string
 		typ = "TABLE"
 	}
 
-	conn, rel, err := m.acquireConn(ctx)
+	conn, err := m.acquireConn(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("create: acquire connection failed: %w", err)
 	}
 	defer func() {
-		_ = rel()
+		_ = conn.Close()
 	}()
 
-	acquireConnfn := func(ctx context.Context) (*sqlx.Conn, func() error, error) {
-		return conn, func() error { return nil }, nil
-	}
-	if err := m.dropTableUnsafe(ctx, acquireConnfn, name); err != nil && !errors.Is(err, errNotFound) {
+	if err := m.dropTableUnsafe(ctx, name, conn); err != nil && !errors.Is(err, errNotFound) {
 		return nil, fmt.Errorf("create: drop table %q failed: %w", name, err)
 	}
 
@@ -238,15 +232,7 @@ func (m *motherduck) CreateTableAsSelect(ctx context.Context, name, query string
 
 // DropTable implements DB.
 func (m *motherduck) DropTable(ctx context.Context, name string) (resErr error) {
-	err := m.writeSem.Acquire(ctx, 1)
-	if err != nil {
-		return err
-	}
-	defer m.writeSem.Release(1)
-	return m.dropTableUnsafe(ctx, m.acquireConn, name)
-}
-
-func (m *motherduck) dropTableUnsafe(ctx context.Context, acquire acquireConnFn, name string) (resErr error) {
+	m.logger.Debug("drop motherduck table", zap.String("name", name), observability.ZapCtx(ctx))
 	ctx, span := tracer.Start(ctx, "DropTable", trace.WithAttributes(attribute.String("name", name)))
 	defer func() {
 		if resErr != nil {
@@ -254,19 +240,25 @@ func (m *motherduck) dropTableUnsafe(ctx context.Context, acquire acquireConnFn,
 		}
 		span.End()
 	}()
+	err := m.writeSem.Acquire(ctx, 1)
+	if err != nil {
+		return err
+	}
+	defer m.writeSem.Release(1)
 
-	m.logger.Debug("drop motherduck table", zap.String("name", name), observability.ZapCtx(ctx))
-
-	conn, release, err := acquire(ctx)
+	conn, err := m.acquireConn(ctx)
 	if err != nil {
 		return fmt.Errorf("drop: acquire connection failed: %w", err)
 	}
 	defer func() {
-		_ = release()
+		_ = conn.Close()
 	}()
+	return m.dropTableUnsafe(ctx, name, conn)
+}
 
+func (m *motherduck) dropTableUnsafe(ctx context.Context, name string, conn *sqlx.Conn) (resErr error) {
 	var typ string
-	tbl, err := m.Schema(ctx, "", name)
+	tbl, err := m.schemaUsingConn(ctx, "", name, conn)
 	if err != nil {
 		return err
 	}
@@ -300,12 +292,12 @@ func (m *motherduck) MutateTable(ctx context.Context, name string, initQueries [
 	defer m.writeSem.Release(1)
 
 	t := time.Now()
-	conn, release, err := m.acquireConn(ctx)
+	conn, err := m.acquireConn(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("mutate: acquire connection failed: %w", err)
 	}
 	defer func() {
-		_ = release()
+		_ = conn.Close()
 	}()
 
 	err = mutateFn(ctx, conn)
@@ -319,7 +311,6 @@ func (m *motherduck) MutateTable(ctx context.Context, name string, initQueries [
 }
 
 // RenameTable implements DB.
-// Operation is not atomic and can fail in the middle where newName is dropped but oldName is not renamed.
 func (m *motherduck) RenameTable(ctx context.Context, oldName, newName string) (resErr error) {
 	ctx, span := tracer.Start(ctx, "RenameTable", trace.WithAttributes(attribute.String("old_name", oldName), attribute.String("new_name", newName)))
 	defer func() {
@@ -350,20 +341,16 @@ func (m *motherduck) RenameTable(ctx context.Context, oldName, newName string) (
 	}
 
 	// acquire a connection
-	conn, release, err := m.acquireConn(ctx)
+	conn, err := m.acquireConn(ctx)
 	if err != nil {
 		return fmt.Errorf("rename: acquire connection failed: %w", err)
 	}
 	defer func() {
-		_ = release()
+		_ = conn.Close()
 	}()
 
 	// drop new table
-	acquireConnFn := func(ctx context.Context) (*sqlx.Conn, func() error, error) {
-		return conn, func() error { return nil }, nil
-	}
-
-	err = m.dropTableUnsafe(ctx, acquireConnFn, newName)
+	err = m.dropTableUnsafe(ctx, newName, conn)
 	if err != nil && !errors.Is(err, errNotFound) {
 		return fmt.Errorf("rename: Drop new table %q failed: %w", newName, err)
 	}
@@ -381,16 +368,20 @@ func (m *motherduck) RenameTable(ctx context.Context, oldName, newName string) (
 
 // Schema implements DB.
 func (m *motherduck) Schema(ctx context.Context, ilike, name string) ([]*Table, error) {
-	if ilike != "" && name != "" {
-		return nil, fmt.Errorf("cannot specify both `ilike` and `name`")
-	}
-	conn, release, err := m.acquireConn(ctx)
+	conn, err := m.acquireConn(ctx)
 	if err != nil {
 		return nil, err
 	}
 	defer func() {
-		_ = release()
+		_ = conn.Close()
 	}()
+	return m.schemaUsingConn(ctx, ilike, name, conn)
+}
+
+func (m *motherduck) schemaUsingConn(ctx context.Context, ilike, name string, conn *sqlx.Conn) ([]*Table, error) {
+	if ilike != "" && name != "" {
+		return nil, fmt.Errorf("cannot specify both `ilike` and `name`")
+	}
 
 	var whereClause string
 	var args []any
@@ -422,7 +413,7 @@ func (m *motherduck) Schema(ctx context.Context, ilike, name string) ([]*Table, 
 	`, whereClause)
 
 	var res []*Table
-	err = conn.SelectContext(ctx, &res, q, args...)
+	err := conn.SelectContext(ctx, &res, q, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -436,14 +427,14 @@ func (m *motherduck) Size() int64 {
 	return 0
 }
 
-func (m *motherduck) acquireConn(ctx context.Context) (*sqlx.Conn, func() error, error) {
+func (m *motherduck) acquireConn(ctx context.Context) (*sqlx.Conn, error) {
 	conn, err := m.db.Connx(ctx)
 	if err != nil {
-		return nil, nil, fmt.Errorf("acquire connection failed: %w", err)
+		return nil, fmt.Errorf("acquire connection failed: %w", err)
 	}
 	_, err = conn.ExecContext(ctx, fmt.Sprintf("USE %s", safeSQLString(m.opts.bareDB())))
 	if err != nil {
-		return nil, nil, fmt.Errorf("acquire connection failed: %w", err)
+		return nil, fmt.Errorf("acquire connection failed: %w", err)
 	}
-	return conn, conn.Close, nil
+	return conn, nil
 }
