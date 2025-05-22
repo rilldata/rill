@@ -1,1 +1,1 @@
-ALTER TABLE instances ADD COLUMN ai_context TEXT NOT NULL DEFAULT '';
+ALTER TABLE instances DROP column embed_catalog;

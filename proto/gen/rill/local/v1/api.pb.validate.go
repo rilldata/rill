@@ -944,6 +944,8 @@ func (m *DeployProjectRequest) validate(all bool) error {
 
 	// no validation rules for Upload
 
+	// no validation rules for Archive
+
 	if len(errors) > 0 {
 		return DeployProjectRequestMultiError(errors)
 	}
@@ -1159,6 +1161,8 @@ func (m *RedeployProjectRequest) validate(all bool) error {
 	// no validation rules for ProjectId
 
 	// no validation rules for Reupload
+
+	// no validation rules for Rearchive
 
 	if len(errors) > 0 {
 		return RedeployProjectRequestMultiError(errors)

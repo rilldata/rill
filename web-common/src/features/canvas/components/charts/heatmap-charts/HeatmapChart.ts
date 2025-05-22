@@ -81,7 +81,6 @@ export class HeatmapChartComponent extends BaseChart<HeatmapChartSpec> {
     const config = get(this.specStore);
 
     let measures: V1MetricsViewAggregationMeasure[] = [];
-    let dimensions: V1MetricsViewAggregationDimension[] = [];
 
     if (config.color?.field) {
       measures = [{ name: config.color.field }];
@@ -201,7 +200,7 @@ export class HeatmapChartComponent extends BaseChart<HeatmapChartSpec> {
           combinedWhere = mergeFilters(combinedWhere, yFilterForTopValues);
         }
 
-        dimensions = [
+        let dimensions: V1MetricsViewAggregationDimension[] = [
           ...(config.x?.field ? [{ name: config.x.field }] : []),
           ...(config.y?.field ? [{ name: config.y.field }] : []),
         ];

@@ -458,8 +458,6 @@ paths:
                 type: object
                 additionalProperties:
                   type: string
-              embedCatalog:
-                type: boolean
               watchRepo:
                 type: boolean
             description: |-
@@ -4160,8 +4158,6 @@ definitions:
         type: object
         additionalProperties:
           type: string
-      embedCatalog:
-        type: boolean
       watchRepo:
         type: boolean
     description: |-
@@ -4660,8 +4656,6 @@ definitions:
         type: object
         additionalProperties:
           type: string
-      embedCatalog:
-        type: boolean
       watchRepo:
         type: boolean
       aiContext:

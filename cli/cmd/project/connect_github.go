@@ -11,8 +11,6 @@ import (
 
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/go-git/go-git/v5"
-	"github.com/go-git/go-git/v5/config"
-	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/google/go-github/v71/github"
 	"github.com/rilldata/rill/cli/cmd/org"
 	"github.com/rilldata/rill/cli/pkg/browser"
@@ -397,7 +395,7 @@ func createGithubRepoFlow(ctx context.Context, ch *cmdutil.Helper, localGitPath 
 
 	printer.ColorGreenBold.Printf("\nSuccessfully created repository on %q\n\n", *githubRepository.HTMLURL)
 	ch.Print("Pushing local project to Github\n\n")
-	author, err := autoCommitGitSignature(ctx, c, localGitPath)
+	author, err := ch.GitSignature(ctx, localGitPath)
 	if err != nil {
 		return fmt.Errorf("failed to generate git commit signature: %w", err)
 	}
@@ -625,33 +623,4 @@ func projectNamePrompt(ctx context.Context, ch *cmdutil.Helper, orgName string) 
 	}
 
 	return name, nil
-}
-
-func autoCommitGitSignature(ctx context.Context, c adminv1.AdminServiceClient, path string) (*object.Signature, error) {
-	repo, err := git.PlainOpen(path)
-	if err == nil {
-		cfg, err := repo.ConfigScoped(config.SystemScope)
-		if err == nil && cfg.User.Email != "" && cfg.User.Name != "" {
-			// user has git properly configured use that
-			return &object.Signature{
-				Name:  cfg.User.Name,
-				Email: cfg.User.Email,
-				When:  time.Now(),
-			}, nil
-		}
-	}
-	// use email of rill user
-	userResp, err := c.GetCurrentUser(ctx, &adminv1.GetCurrentUserRequest{})
-	if err != nil {
-		return nil, err
-	}
-	if userResp.User == nil {
-		return nil, errors.New("failed to get current user")
-	}
-
-	return &object.Signature{
-		Name:  userResp.User.DisplayName,
-		Email: userResp.User.Email,
-		When:  time.Now(),
-	}, nil
 }

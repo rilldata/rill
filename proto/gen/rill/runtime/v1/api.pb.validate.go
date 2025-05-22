@@ -1053,8 +1053,6 @@ func (m *Instance) validate(all bool) error {
 
 	// no validation rules for Annotations
 
-	// no validation rules for EmbedCatalog
-
 	// no validation rules for WatchRepo
 
 	// no validation rules for AiContext
@@ -1851,8 +1849,6 @@ func (m *CreateInstanceRequest) validate(all bool) error {
 
 	// no validation rules for Annotations
 
-	// no validation rules for EmbedCatalog
-
 	// no validation rules for WatchRepo
 
 	if len(errors) > 0 {
@@ -2374,10 +2370,6 @@ func (m *EditInstanceRequest) validate(all bool) error {
 
 	if m.AiConnector != nil {
 		// no validation rules for AiConnector
-	}
-
-	if m.EmbedCatalog != nil {
-		// no validation rules for EmbedCatalog
 	}
 
 	if m.WatchRepo != nil {

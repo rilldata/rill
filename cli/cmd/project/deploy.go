@@ -15,7 +15,6 @@ import (
 	"github.com/rilldata/rill/cli/pkg/browser"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/dotrillcloud"
-	"github.com/rilldata/rill/cli/pkg/gitutil"
 	"github.com/rilldata/rill/cli/pkg/local"
 	"github.com/rilldata/rill/cli/pkg/printer"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
@@ -200,18 +199,7 @@ func DeployWithUploadFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployO
 		}
 		req.ArchiveAssetId = assetID
 	} else {
-		gitRepo, err := adminClient.CreateManagedGitRepo(ctx, &adminv1.CreateManagedGitRepoRequest{
-			Organization: ch.Org,
-			Name:         opts.Name,
-		})
-		if err != nil {
-			return err
-		}
-		author, err := autoCommitGitSignature(ctx, adminClient, localProjectPath)
-		if err != nil {
-			return err
-		}
-		err = gitutil.CommitAndForcePush(ctx, localProjectPath, gitRepo.Remote, gitRepo.Username, gitRepo.Password, gitRepo.DefaultBranch, author)
+		gitRepo, err := ch.GitHelper(opts.Name, localProjectPath).PushToNewManagedRepo(ctx)
 		if err != nil {
 			return err
 		}
@@ -277,18 +265,7 @@ func redeployUploadedProject(ctx context.Context, projResp *adminv1.GetProjectRe
 	var updateProjReq *adminv1.UpdateProjectRequest
 	if projResp.Project.GithubUrl != "" {
 		// rill managed git
-		creds, err := adminClient.GetCloneCredentials(ctx, &adminv1.GetCloneCredentialsRequest{
-			Organization: ch.Org,
-			Project:      projResp.Project.Name,
-		})
-		if err != nil {
-			return err
-		}
-		author, err := autoCommitGitSignature(ctx, adminClient, localProjectPath)
-		if err != nil {
-			return err
-		}
-		err = gitutil.CommitAndForcePush(ctx, localProjectPath, projResp.Project.GithubUrl, creds.GitUsername, creds.GitPassword, creds.GitProdBranch, author)
+		err := ch.GitHelper(opts.Name, localProjectPath).PushToManagedRepo(ctx)
 		if err != nil {
 			return err
 		}
@@ -306,18 +283,7 @@ func redeployUploadedProject(ctx context.Context, projResp *adminv1.GetProjectRe
 			}
 		} else {
 			// need to migrate to rill managed git
-			gitRepo, err := adminClient.CreateManagedGitRepo(ctx, &adminv1.CreateManagedGitRepoRequest{
-				Organization: ch.Org,
-				Name:         projResp.Project.Name,
-			})
-			if err != nil {
-				return err
-			}
-			author, err := autoCommitGitSignature(ctx, adminClient, localProjectPath)
-			if err != nil {
-				return err
-			}
-			err = gitutil.CommitAndForcePush(ctx, localProjectPath, gitRepo.Remote, gitRepo.Username, gitRepo.Password, gitRepo.DefaultBranch, author)
+			gitRepo, err := ch.GitHelper(opts.Name, localProjectPath).PushToNewManagedRepo(ctx)
 			if err != nil {
 				return err
 			}
