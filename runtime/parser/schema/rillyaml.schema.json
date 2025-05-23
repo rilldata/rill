@@ -119,6 +119,10 @@
               "email"
             ]
           }
+        },
+        "ai_context": {
+          "type": "string",
+          "description": "Extra context for LLM/AI features. Used to guide natural language question answering and routing."
         }
       }
     }

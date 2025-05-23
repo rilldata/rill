@@ -4658,6 +4658,8 @@ definitions:
           type: string
       watchRepo:
         type: boolean
+      aiContext:
+        type: string
     description: |-
       Instance represents a single data project, meaning one set of code artifacts,
       one connection to an OLAP datastore (DuckDB, Druid), and one catalog of related
@@ -5312,6 +5314,9 @@ definitions:
       cacheKeyTtlSeconds:
         type: string
         format: int64
+      aiContext:
+        type: string
+        description: Extra context for LLM/AI features. Used to guide natural language question answering and routing.
   v1MetricsViewState:
     type: object
     properties:

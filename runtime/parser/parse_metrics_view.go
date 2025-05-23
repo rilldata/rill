@@ -61,7 +61,8 @@ type MetricsViewYAML struct {
 		ValidPercentOfTotal bool           `yaml:"valid_percent_of_total"`
 		TreatNullsAs        string         `yaml:"treat_nulls_as"`
 	}
-	Security *SecurityPolicyYAML
+	Security  *SecurityPolicyYAML
+	AIContext string `yaml:"ai_context"`
 
 	// DEPRECATED FIELDS
 	DefaultTimeRange   string   `yaml:"default_time_range"`
@@ -586,6 +587,7 @@ func (p *Parser) parseMetricsView(node *Node) error {
 		spec.DisplayName = ToDisplayName(node.Name)
 	}
 	spec.Description = tmp.Description
+	spec.AiContext = tmp.AIContext
 	spec.TimeDimension = tmp.TimeDimension
 	spec.WatermarkExpression = tmp.Watermark
 	spec.SmallestTimeGrain = smallestTimeGrain

@@ -2507,6 +2507,10 @@
             "security": {
               "$ref": "#/$defs/security_policy_properties",
               "description": "Defines a security policy for the dashboard"
+            },
+            "ai_context": {
+              "type": "string",
+              "description": "Extra context for LLM/AI features. Used to guide natural language question answering and routing."
             }
           },
           "$defs": {

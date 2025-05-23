@@ -1064,6 +1064,7 @@ export interface V1Instance {
   featureFlags?: V1InstanceFeatureFlags;
   annotations?: V1InstanceAnnotations;
   watchRepo?: boolean;
+  aiContext?: string;
 }
 
 export type V1InstanceHealthMetricsViewErrors = { [key: string]: string };
@@ -1403,6 +1404,8 @@ export interface V1MetricsViewSpec {
   cacheEnabled?: boolean;
   cacheKeySql?: string;
   cacheKeyTtlSeconds?: string;
+  /** Extra context for LLM/AI features. Used to guide natural language question answering and routing. */
+  aiContext?: string;
 }
 
 export interface V1MetricsViewState {

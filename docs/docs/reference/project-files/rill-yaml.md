@@ -23,6 +23,8 @@ The `rill.yaml` file contains metadata about your project.
   - **`name`** — the mock user's name
   - **`admin`** — whether or not the mock user is an admin
 
+**`ai_context`** - extra context for AI assistants. Any information you add here will be available to AI assistants when they interact with your project.
+
 ## Configuring the default OLAP Engine
 
 Rill allows you to specify the default OLAP engine to use in your project via `rill.yaml`. This setting is configurable using the `olap_connector` property (and will otherwise revert to `duckdb` if not specified). 
