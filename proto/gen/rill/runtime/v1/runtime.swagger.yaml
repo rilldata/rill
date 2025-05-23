@@ -5582,6 +5582,11 @@ definitions:
       partitionsConcurrencyLimit:
         type: integer
         format: int64
+      partitionsTests:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1ModelTest'
       inputConnector:
         type: string
       inputProperties:
@@ -5598,6 +5603,11 @@ definitions:
       changeMode:
         $ref: '#/definitions/v1ModelChangeMode'
         description: change_mode is the mode of change detection to use for the model.
+      tests:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1ModelTest'
       trigger:
         type: boolean
       triggerFull:
@@ -5653,6 +5663,15 @@ definitions:
         type: string
         format: int64
         description: latest_execution_duration_ms is the time user queries took to execute in the last successful refresh.
+  v1ModelTest:
+    type: object
+    properties:
+      name:
+        type: string
+      resolver:
+        type: string
+      resolverProperties:
+        type: object
   v1Notifier:
     type: object
     properties:
