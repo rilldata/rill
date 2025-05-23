@@ -34,15 +34,21 @@ _[integer]_ - Vertical gap in pixels of the canvas
 
 ### `theme`
 
-_[anyOf]_ - Name of the theme to use. Only one of theme and embedded_theme can be set. 
+_[oneOf]_ - Name of the theme to use. Only one of theme and embedded_theme can be set. 
 
-  - **option 1** - _[string]_ - (no description)
+  - **option 1** - _[string]_ - Name of an existing theme to apply to the dashboard
 
-  - **option 2** - _[object]_ - (no description)
+  - **option 2** - _[object]_ - Inline theme configuration.
+
+    - **`colors`** - _[object]_ - Used to override the dashboard colors. Either primary or secondary color must be provided. 
+
+      - **`primary`** - _[string]_ - Overrides the primary blue color in the dashboard. Can have any hex (without the '#' character), [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats. Note that the hue of the input colors is used for variants but the saturation and lightness is copied over from the [blue color palette](https://tailwindcss.com/docs/customizing-colors). 
+
+      - **`secondary`** - _[string]_ - Overrides the secondary color in the dashboard. Applies to the loading spinner only as of now. Can have any hex (without the '#' character), [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats. 
 
 ### `allow_custom_time_range`
 
-_[boolean]_ - Defaults to true, when set to false it will hide the ability to set a custom time range for the user.  
+_[boolean]_ - Defaults to true, when set to false it will hide the ability to set a custom time range for the user. 
 
 ### `time_ranges`
 
@@ -50,7 +56,7 @@ _[array of oneOf]_ - Overrides the list of default time range selections availab
 
   - **option 1** - _[string]_ - a valid [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601#Durations) duration or one of the [Rill ISO 8601 extensions](https://docs.rilldata.com/reference/rill-iso-extensions#extensions) extensions for the selection
 
-  - **option 2** - _[object]_ - (no description)
+  - **option 2** - _[object]_ - Object containing time range and comparison configuration
 
     - **`range`** - _[string]_ - a valid [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601#Durations) duration or one of the [Rill ISO 8601 extensions](https://docs.rilldata.com/reference/rill-iso-extensions#extensions) extensions for the selection _(required)_
 
@@ -58,11 +64,11 @@ _[array of oneOf]_ - Overrides the list of default time range selections availab
 
       - **option 1** - _[string]_ - Offset string only (range is inferred)
 
-      - **option 2** - _[object]_ - (no description)
+      - **option 2** - _[object]_ - Object containing offset and range configuration for time comparison
 
-        - **`offset`** - _[string]_ - (no description) 
+        - **`offset`** - _[string]_ - Time offset for comparison (e.g., 'P1D' for one day ago) 
 
-        - **`range`** - _[string]_ - (no description) 
+        - **`range`** - _[string]_ - Custom time range for comparison period 
 
 ### `time_zones`
 
@@ -72,49 +78,49 @@ _[array of string]_ - Refers to the time zones that should be pinned to the top 
 
 _[object]_ - Indicates if filters should be enabled for the canvas. 
 
-  - **`enable`** - _[boolean]_ - (no description) 
+  - **`enable`** - _[boolean]_ - Toggles filtering functionality for the canvas dashboard. 
 
 ### `defaults`
 
 _[object]_ - Preset UI state to show by default 
 
-  - **`time_range`** - _[string]_ - (no description) 
+  - **`time_range`** - _[string]_ - Default time range to display when the dashboard loads 
 
-  - **`comparison_mode`** - _[string]_ - (no description) 
+  - **`comparison_mode`** - _[string]_ - Default comparison mode for metrics (none, time, or dimension) 
 
-  - **`comparison_dimension`** - _[string]_ - (no description) 
+  - **`comparison_dimension`** - _[string]_ - Default dimension to use for comparison when comparison_mode is 'dimension' 
 
 ### `variables`
 
 _[array of object]_ - Variables that can be used in the canvas 
 
-  - **`name`** - _[string]_ - (no description) _(required)_
+  - **`name`** - _[string]_ - Unique identifier for the variable _(required)_
 
-  - **`type`** - _[string]_ - (no description) _(required)_
+  - **`type`** - _[string]_ - Data type of the variable (e.g., string, number, boolean) _(required)_
 
-  - **`value`** - _[string, number, boolean, object, array]_ - The value can be of any type. 
+  - **`value`** - _[string, number, boolean, object, array]_ - Default value for the variable. Can be any valid JSON value type 
 
 ### `rows`
 
 _[array of object]_ - Refers to all of the rows displayed on the Canvas _(required)_
 
-  - **`height`** - _[string]_ - (no description) 
+  - **`height`** - _[string]_ - Height of the row in px 
 
-  - **`items`** - _[array of object]_ - (no description) 
+  - **`items`** - _[array of object]_ - List of components to display in the row 
 
-    - **`width`** - _[string, integer]_ - (no description) 
+    - **`component`** - _[string]_ - Name of the component to display 
 
-    - **`component`** - _[string]_ - (no description) 
+    - **`width`** - _[string, integer]_ - Width of the component (can be a number or string with unit) 
 
 ### `security`
 
-_[object]_ - Security rules to apply for access to the canvas 
+_[object]_ - Defines security rules and access control policies for resources 
 
   - **`access`** - _[oneOf]_ - Expression indicating if the user should be granted access to the dashboard. If not defined, it will resolve to false and the dashboard won't be accessible to anyone. Needs to be a valid SQL expression that evaluates to a boolean. 
 
-    - **option 1** - _[string]_ - (no description)
+    - **option 1** - _[string]_ - SQL expression that evaluates to a boolean to determine access
 
-    - **option 2** - _[boolean]_ - (no description)
+    - **option 2** - _[boolean]_ - Direct boolean value to allow or deny access
 
   - **`row_filter`** - _[string]_ - SQL expression to filter the underlying model by. Can leverage templated user attributes to customize the filter for the requesting user. Needs to be a valid SQL expression that can be injected into a WHERE clause 
 
@@ -124,9 +130,9 @@ _[object]_ - Security rules to apply for access to the canvas
 
     - **`names`** - _[anyOf]_ - List of fields to include. Should match the name of one of the dashboard's dimensions or measures _(required)_
 
-      - **option 1** - _[array of string]_ - (no description)
+      - **option 1** - _[array of string]_ - List of specific field names to include
 
-      - **option 2** - _[string]_ - (no description)
+      - **option 2** - _[string]_ - Wildcard '*' to include all fields
 
   - **`exclude`** - _[array of object]_ - List of dimension or measure names to exclude from the dashboard. If exclude is defined all other dimensions and measures are included 
 
@@ -134,23 +140,23 @@ _[object]_ - Security rules to apply for access to the canvas
 
     - **`names`** - _[anyOf]_ - List of fields to exclude. Should match the name of one of the dashboard's dimensions or measures _(required)_
 
-      - **option 1** - _[array of string]_ - (no description)
+      - **option 1** - _[array of string]_ - List of specific field names to exclude
 
-      - **option 2** - _[string]_ - (no description)
+      - **option 2** - _[string]_ - Wildcard '*' to exclude all fields
 
-  - **`rules`** - _[array of object]_ - (no description) 
+  - **`rules`** - _[array of object]_ - List of detailed security rules that can be used to define complex access control policies 
 
-    - **`type`** - _[string]_ - (no description) _(required)_
+    - **`type`** - _[string]_ - Type of security rule - access (overall access), field_access (field-level access), or row_filter (row-level filtering) _(required)_
 
-    - **`action`** - _[string]_ - (no description) 
+    - **`action`** - _[string]_ - Whether to allow or deny access for this rule 
 
-    - **`if`** - _[string]_ - (no description) 
+    - **`if`** - _[string]_ - Conditional expression that determines when this rule applies. Must be a valid SQL expression that evaluates to a boolean 
 
-    - **`names`** - _[array of string]_ - (no description) 
+    - **`names`** - _[array of string]_ - List of field names this rule applies to (for field_access type rules) 
 
-    - **`all`** - _[boolean]_ - (no description) 
+    - **`all`** - _[boolean]_ - When true, applies the rule to all fields (for field_access type rules) 
 
-    - **`sql`** - _[string]_ - (no description) 
+    - **`sql`** - _[string]_ - SQL expression for row filtering (for row_filter type rules) 
 
 ## Common Properties
 

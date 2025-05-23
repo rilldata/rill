@@ -70,9 +70,9 @@ _[array of object]_ - Relates to exploring segments or dimensions of your data a
 
   - **`expression`** - _[string]_ - a non-aggregate expression such as string_split(domain, '.'). One of column and expression is required but cannot have both at the same time 
 
-  - **`unnest`** - _[boolean]_ - if true, allows multi-valued dimension to be unnested (such as lists) and filters will automatically switch to "contains" instead of exact match  
+  - **`unnest`** - _[boolean]_ - if true, allows multi-valued dimension to be unnested (such as lists) and filters will automatically switch to "contains" instead of exact match 
 
-  - **`uri`** - _[string, boolean]_ - enable if your dimension is a clickable URL to enable single click navigation (boolean or valid SQL expression)  
+  - **`uri`** - _[string, boolean]_ - enable if your dimension is a clickable URL to enable single click navigation (boolean or valid SQL expression) 
 
 ### `measures`
 
@@ -84,59 +84,59 @@ _[array of object]_ - Used to define the numeric aggregates of columns from your
 
   - **`description`** - _[string]_ - a freeform text description of the dimension 
 
-  - **`type`** - _[string]_ - (no description) 
+  - **`type`** - _[string]_ - Measure calculation type: "simple" for basic aggregations, "derived" for calculations using other measures, or "time_comparison" for period-over-period analysis. Defaults to "simple" unless dependencies exist. 
 
   - **`expression`** - _[string]_ - a combination of operators and functions for aggregations 
 
-  - **`window`** - _[anyOf]_ - A measure window can be defined as a keyword string (e.g., 'time' or 'all') or an object with detailed window configuration. 
+  - **`window`** - _[anyOf]_ - A measure window can be defined as a keyword string (e.g. 'time' or 'all') or an object with detailed window configuration. 
 
-    - **option 1** - _[string]_ - Shorthand: 'time' or 'true' means time-partitioned, 'all' means non-partitioned.
+    - **option 1** - _[string]_ - Shorthand: `time` or `true` means time-partitioned, `all` means non-partitioned.
 
-    - **option 2** - _[object]_ - (no description)
+    - **option 2** - _[object]_ - Detailed window configuration for measure calculations, allowing control over partitioning, ordering, and frame definition.
 
-      - **`partition`** - _[boolean]_ - (no description) 
+      - **`partition`** - _[boolean]_ - Controls whether the window is partitioned. When true, calculations are performed within each partition separately. 
 
-      - **`order`** - _[anyOf]_ - to order the window 
+      - **`order`** - _[anyOf]_ - Specifies the fields to order the window by, determining the sequence of rows within each partition. 
 
-        - **option 1** - _[string]_ - (no description)
+        - **option 1** - _[string]_ - Simple field name as a string.
 
-        - **option 2** - _[array of anyOf]_ - (no description)
+        - **option 2** - _[array of anyOf]_ - List of field selectors, each can be a string or an object with detailed configuration.
 
           - **option 1** - _[string]_ - Shorthand field selector, interpreted as the name.
 
-          - **option 2** - _[object]_ - (no description)
+          - **option 2** - _[object]_ - Detailed field selector configuration with name and optional time grain.
 
-            - **`name`** - _[string]_ - (no description) _(required)_
+            - **`name`** - _[string]_ - Name of the field to select. _(required)_
 
             - **`time_grain`** - _[string]_ - Time grain for time-based dimensions. 
 
-      - **`frame`** - _[string]_ - sets the frame of your window 
+      - **`frame`** - _[string]_ - Defines the window frame boundaries for calculations, specifying which rows are included in the window relative to the current row. 
 
   - **`per`** - _[anyOf]_ - for per dimensions 
 
-    - **option 1** - _[string]_ - (no description)
+    - **option 1** - _[string]_ - Simple field name as a string.
 
-    - **option 2** - _[array of anyOf]_ - (no description)
+    - **option 2** - _[array of anyOf]_ - List of field selectors, each can be a string or an object with detailed configuration.
 
       - **option 1** - _[string]_ - Shorthand field selector, interpreted as the name.
 
-      - **option 2** - _[object]_ - (no description)
+      - **option 2** - _[object]_ - Detailed field selector configuration with name and optional time grain.
 
-        - **`name`** - _[string]_ - (no description) _(required)_
+        - **`name`** - _[string]_ - Name of the field to select. _(required)_
 
         - **`time_grain`** - _[string]_ - Time grain for time-based dimensions. 
 
   - **`requires`** - _[anyOf]_ - using an available measure or dimension in your metrics view to set a required parameter, cannot be used with simple measures 
 
-    - **option 1** - _[string]_ - (no description)
+    - **option 1** - _[string]_ - Simple field name as a string.
 
-    - **option 2** - _[array of anyOf]_ - (no description)
+    - **option 2** - _[array of anyOf]_ - List of field selectors, each can be a string or an object with detailed configuration.
 
       - **option 1** - _[string]_ - Shorthand field selector, interpreted as the name.
 
-      - **option 2** - _[object]_ - (no description)
+      - **option 2** - _[object]_ - Detailed field selector configuration with name and optional time grain.
 
-        - **`name`** - _[string]_ - (no description) _(required)_
+        - **`name`** - _[string]_ - Name of the field to select. _(required)_
 
         - **`time_grain`** - _[string]_ - Time grain for time-based dimensions. 
 
@@ -155,19 +155,19 @@ _[array of object]_ - Used to define the numeric aggregates of columns from your
 
   - **`format_d3_locale`** - _[object]_ - locale configuration passed through to D3, enabling changing the currency symbol among other things. For details, see the docs for D3's [formatLocale](https://d3js.org/d3-format#formatLocale) 
 
-  - **`valid_percent_of_total`** - _[boolean]_ - a boolean indicating whether percent-of-total values should be rendered for this measure  
+  - **`valid_percent_of_total`** - _[boolean]_ - a boolean indicating whether percent-of-total values should be rendered for this measure 
 
   - **`treat_nulls_as`** - _[string]_ - used to configure what value to fill in for missing time buckets. This also works generally as COALESCING over non empty time buckets. 
 
 ### `security`
 
-_[object]_ - Defines a security policy for the dashboard 
+_[object]_ - Defines security rules and access control policies for resources 
 
   - **`access`** - _[oneOf]_ - Expression indicating if the user should be granted access to the dashboard. If not defined, it will resolve to false and the dashboard won't be accessible to anyone. Needs to be a valid SQL expression that evaluates to a boolean. 
 
-    - **option 1** - _[string]_ - (no description)
+    - **option 1** - _[string]_ - SQL expression that evaluates to a boolean to determine access
 
-    - **option 2** - _[boolean]_ - (no description)
+    - **option 2** - _[boolean]_ - Direct boolean value to allow or deny access
 
   - **`row_filter`** - _[string]_ - SQL expression to filter the underlying model by. Can leverage templated user attributes to customize the filter for the requesting user. Needs to be a valid SQL expression that can be injected into a WHERE clause 
 
@@ -177,9 +177,9 @@ _[object]_ - Defines a security policy for the dashboard
 
     - **`names`** - _[anyOf]_ - List of fields to include. Should match the name of one of the dashboard's dimensions or measures _(required)_
 
-      - **option 1** - _[array of string]_ - (no description)
+      - **option 1** - _[array of string]_ - List of specific field names to include
 
-      - **option 2** - _[string]_ - (no description)
+      - **option 2** - _[string]_ - Wildcard '*' to include all fields
 
   - **`exclude`** - _[array of object]_ - List of dimension or measure names to exclude from the dashboard. If exclude is defined all other dimensions and measures are included 
 
@@ -187,23 +187,23 @@ _[object]_ - Defines a security policy for the dashboard
 
     - **`names`** - _[anyOf]_ - List of fields to exclude. Should match the name of one of the dashboard's dimensions or measures _(required)_
 
-      - **option 1** - _[array of string]_ - (no description)
+      - **option 1** - _[array of string]_ - List of specific field names to exclude
 
-      - **option 2** - _[string]_ - (no description)
+      - **option 2** - _[string]_ - Wildcard '*' to exclude all fields
 
-  - **`rules`** - _[array of object]_ - (no description) 
+  - **`rules`** - _[array of object]_ - List of detailed security rules that can be used to define complex access control policies 
 
-    - **`type`** - _[string]_ - (no description) _(required)_
+    - **`type`** - _[string]_ - Type of security rule - access (overall access), field_access (field-level access), or row_filter (row-level filtering) _(required)_
 
-    - **`action`** - _[string]_ - (no description) 
+    - **`action`** - _[string]_ - Whether to allow or deny access for this rule 
 
-    - **`if`** - _[string]_ - (no description) 
+    - **`if`** - _[string]_ - Conditional expression that determines when this rule applies. Must be a valid SQL expression that evaluates to a boolean 
 
-    - **`names`** - _[array of string]_ - (no description) 
+    - **`names`** - _[array of string]_ - List of field names this rule applies to (for field_access type rules) 
 
-    - **`all`** - _[boolean]_ - (no description) 
+    - **`all`** - _[boolean]_ - When true, applies the rule to all fields (for field_access type rules) 
 
-    - **`sql`** - _[string]_ - (no description) 
+    - **`sql`** - _[string]_ - SQL expression for row filtering (for row_filter type rules) 
 
 ## Common Properties
 

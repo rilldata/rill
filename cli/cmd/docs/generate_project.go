@@ -382,7 +382,8 @@ func generateDoc(sidebarPosition, level int, node *yaml.Node, indent string, req
 				for _, item := range oneOf.Content {
 					title := getScalarValue(item, "title")
 					if title != "" {
-						doc.WriteString(fmt.Sprintf("\n- [%s](#%s)", title, title))
+						anchor := strings.ToLower(strings.ReplaceAll(title, " ", "-"))
+						doc.WriteString(fmt.Sprintf("\n- [%s](#%s)", title, anchor))
 					}
 				}
 				for _, item := range oneOf.Content {

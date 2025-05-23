@@ -12,7 +12,7 @@ _[string]_ - Refers to the resource type and must be `model` _(required)_
 
 ### `refresh`
 
-_[object]_ - Specifies the refresh schedule that Rill should follow to re-ingest and update the underlying model data  
+_[object]_ - Specifies the refresh schedule that Rill should follow to re-ingest and update the underlying model data 
 
   - **`cron`** - _[string]_ - A cron expression that defines the execution schedule 
 
@@ -40,33 +40,33 @@ _[string]_ - Configure how changes to the model specifications are applied (opti
 
 _[oneOf]_ - Refers to the explicitly defined state of your model, cannot be used with partitions (optional) 
 
-  - **option 1** - _[object]_ - (no description)
+  - **option 1** - _[object]_ - Executes a raw SQL query against the project's data models.
 
     - **`sql`** - _[string]_ - Raw SQL query to run against existing models in the project. _(required)_
 
     - **`connector`** - _[string]_ - specifies the connector to use when running SQL or glob queries. 
 
-  - **option 2** - _[object]_ - (no description)
+  - **option 2** - _[object]_ - Executes a SQL query that targets a defined metrics view.
 
     - **`metrics_sql`** - _[string]_ - SQL query that targets a metrics view in the project _(required)_
 
-  - **option 3** - _[object]_ - (no description)
+  - **option 3** - _[object]_ - Calls a custom API defined in the project to compute data.
 
     - **`api`** - _[string]_ - Name of a custom API defined in the project. _(required)_
 
     - **`args`** - _[object]_ - Arguments to pass to the custom API. 
 
-  - **option 4** - _[object]_ - (no description)
+  - **option 4** - _[object]_ - Uses a file-matching pattern (glob) to query data from a connector.
 
     - **`glob`** - _[anyOf]_ - Defines the file path or pattern to query from the specified connector. _(required)_
 
-      - **option 1** - _[string]_ - (no description)
+      - **option 1** - _[string]_ - A simple file path/glob pattern as a string.
 
-      - **option 2** - _[object]_ - (no description)
+      - **option 2** - _[object]_ - An object-based configuration for specifying a file path/glob pattern with advanced options.
 
     - **`connector`** - _[string]_ - Specifies the connector to use with the glob input. 
 
-  - **option 5** - _[object]_ - (no description)
+  - **option 5** - _[object]_ - Uses the status of a resource as data.
 
     - **`resource_status`** - _[object]_ - Based on resource status _(required)_
 
@@ -76,33 +76,33 @@ _[oneOf]_ - Refers to the explicitly defined state of your model, cannot be used
 
 _[oneOf]_ - Refers to the how your data is partitioned, cannot be used with state. (optional) 
 
-  - **option 1** - _[object]_ - (no description)
+  - **option 1** - _[object]_ - Executes a raw SQL query against the project's data models.
 
     - **`sql`** - _[string]_ - Raw SQL query to run against existing models in the project. _(required)_
 
     - **`connector`** - _[string]_ - specifies the connector to use when running SQL or glob queries. 
 
-  - **option 2** - _[object]_ - (no description)
+  - **option 2** - _[object]_ - Executes a SQL query that targets a defined metrics view.
 
     - **`metrics_sql`** - _[string]_ - SQL query that targets a metrics view in the project _(required)_
 
-  - **option 3** - _[object]_ - (no description)
+  - **option 3** - _[object]_ - Calls a custom API defined in the project to compute data.
 
     - **`api`** - _[string]_ - Name of a custom API defined in the project. _(required)_
 
     - **`args`** - _[object]_ - Arguments to pass to the custom API. 
 
-  - **option 4** - _[object]_ - (no description)
+  - **option 4** - _[object]_ - Uses a file-matching pattern (glob) to query data from a connector.
 
     - **`glob`** - _[anyOf]_ - Defines the file path or pattern to query from the specified connector. _(required)_
 
-      - **option 1** - _[string]_ - (no description)
+      - **option 1** - _[string]_ - A simple file path/glob pattern as a string.
 
-      - **option 2** - _[object]_ - (no description)
+      - **option 2** - _[object]_ - An object-based configuration for specifying a file path/glob pattern with advanced options.
 
     - **`connector`** - _[string]_ - Specifies the connector to use with the glob input. 
 
-  - **option 5** - _[object]_ - (no description)
+  - **option 5** - _[object]_ - Uses the status of a resource as data.
 
     - **`resource_status`** - _[object]_ - Based on resource status _(required)_
 
@@ -110,7 +110,7 @@ _[oneOf]_ - Refers to the how your data is partitioned, cannot be used with stat
 
 ### `sql`
 
-_[string]_ - Raw SQL query to run against source 
+_[string]_ - Raw SQL query to run against source _(required)_
 
 ### `materialize`
 
@@ -177,7 +177,7 @@ _[object]_ - Overrides any properties in production environment.
 
 ### `connector`
 
-_[string]_ - (no description) _(required)_
+_[string]_ - Must be either `athena` or a named Athena connector. _(required)_
 
 ### `output_location`
 
@@ -195,7 +195,7 @@ _[string]_ - AWS region to connect to Athena and the output location.
 
 ### `connector`
 
-_[string]_ - (no description) _(required)_
+_[string]_ - Must be either `azure` or a named Azure connector. _(required)_
 
 ### `path`
 
@@ -233,7 +233,7 @@ _[string]_ - Size of a batch (e.g., '100MB')
 
 ### `connector`
 
-_[string]_ - (no description) _(required)_
+_[string]_ - Must be either `bigquery` or a named BigQuery connector. _(required)_
 
 ### `project_id`
 
@@ -243,7 +243,7 @@ _[string]_ - ID of the BigQuery project.
 
 ### `connector`
 
-_[string]_ - (no description) _(required)_
+_[string]_ - Must be either `clickhouse` or a named ClickHouse connector. _(required)_
 
 ### `path`
 
@@ -257,7 +257,7 @@ _[string]_ - Format of the data source (e.g., csv, json, parquet).
 
 ### `connector`
 
-_[string]_ - (no description) _(required)_
+_[string]_ - Must be either `duckdb` or a named DuckDB connector. _(required)_
 
 ### `path`
 
@@ -279,7 +279,7 @@ _[string]_ - refers to a SQL query that is run after the main query, available f
 
 ### `connector`
 
-_[string]_ - (no description) _(required)_
+_[string]_ - Must be either `gcs` or a named GCS connector. _(required)_
 
 ### `path`
 
@@ -313,13 +313,13 @@ _[string]_ - Size of a batch (e.g., '100MB')
 
 ### `connector`
 
-_[string]_ - (no description) _(required)_
+_[string]_ - Must be either `https` or a named HTTPS connector. _(required)_
 
 ## local_file
 
 ### `connector`
 
-_[string]_ - (no description) _(required)_
+_[string]_ - Must be either `local_file` or a named Local File connector. _(required)_
 
 ### `path`
 
@@ -333,31 +333,31 @@ _[string]_ - Format of the data source (e.g., csv, json, parquet).
 
 ### `connector`
 
-_[string]_ - (no description) _(required)_
+_[string]_ - Must be either `motherduck` or a named MotherDuck connector. _(required)_
 
 ## mysql
 
 ### `connector`
 
-_[string]_ - (no description) _(required)_
+_[string]_ - Must be either `mysql` or a named MySQL connector. _(required)_
 
 ## pinot
 
 ### `connector`
 
-_[string]_ - (no description) _(required)_
+_[string]_ - Must be either `pinot` or a named Pinot connector. _(required)_
 
 ## postgres
 
 ### `connector`
 
-_[string]_ - (no description) _(required)_
+_[string]_ - Must be either `postgres` or a named PostgreSQL connector. _(required)_
 
 ## redshift
 
 ### `connector`
 
-_[string]_ - (no description) _(required)_
+_[string]_ - Must be either `redshift` or a named Redshift connector. _(required)_
 
 ### `output_location`
 
@@ -387,7 +387,7 @@ _[string]_ - AWS region of the Redshift deployment.
 
 ### `connector`
 
-_[string]_ - (no description) _(required)_
+_[string]_ - Must be either `s3` or a named S3 connector. _(required)_
 
 ### `region`
 
@@ -429,7 +429,7 @@ _[string]_ - Size of a batch (e.g., '100MB')
 
 ### `connector`
 
-_[string]_ - (no description) _(required)_
+_[string]_ - Must be either `salesforce` or a named Salesforce connector. _(required)_
 
 ### `soql`
 
@@ -447,10 +447,10 @@ _[boolean]_ - Whether to include deleted and archived records in the query (uses
 
 ### `connector`
 
-_[string]_ - (no description) _(required)_
+_[string]_ - Must be either `snowflake` or a named Snowflake connector. _(required)_
 
 ## sqlite
 
 ### `connector`
 
-_[string]_ - (no description) _(required)_
+_[string]_ - Must be either `sqlite` or a named SQLite connector. _(required)_

@@ -52,33 +52,33 @@ _[string]_ - define the timeout of the alert in seconds (optional).
 
 _[oneOf]_ - Specifies one of the options to retrieve or compute the data used by alert _(required)_
 
-  - **option 1** - _[object]_ - (no description)
+  - **option 1** - _[object]_ - Executes a raw SQL query against the project's data models.
 
     - **`sql`** - _[string]_ - Raw SQL query to run against existing models in the project. _(required)_
 
     - **`connector`** - _[string]_ - specifies the connector to use when running SQL or glob queries. 
 
-  - **option 2** - _[object]_ - (no description)
+  - **option 2** - _[object]_ - Executes a SQL query that targets a defined metrics view.
 
     - **`metrics_sql`** - _[string]_ - SQL query that targets a metrics view in the project _(required)_
 
-  - **option 3** - _[object]_ - (no description)
+  - **option 3** - _[object]_ - Calls a custom API defined in the project to compute data.
 
     - **`api`** - _[string]_ - Name of a custom API defined in the project. _(required)_
 
     - **`args`** - _[object]_ - Arguments to pass to the custom API. 
 
-  - **option 4** - _[object]_ - (no description)
+  - **option 4** - _[object]_ - Uses a file-matching pattern (glob) to query data from a connector.
 
     - **`glob`** - _[anyOf]_ - Defines the file path or pattern to query from the specified connector. _(required)_
 
-      - **option 1** - _[string]_ - (no description)
+      - **option 1** - _[string]_ - A simple file path/glob pattern as a string.
 
-      - **option 2** - _[object]_ - (no description)
+      - **option 2** - _[object]_ - An object-based configuration for specifying a file path/glob pattern with advanced options.
 
     - **`connector`** - _[string]_ - Specifies the connector to use with the glob input. 
 
-  - **option 5** - _[object]_ - (no description)
+  - **option 5** - _[object]_ - Uses the status of a resource as data.
 
     - **`resource_status`** - _[object]_ - Based on resource status _(required)_
 
@@ -86,19 +86,19 @@ _[oneOf]_ - Specifies one of the options to retrieve or compute the data used by
 
 ### `for`
 
-_[oneOf]_ - The user's attributes to use for security policies 
+_[oneOf]_ - Specifies how user identity or attributes should be evaluated for security policy enforcement. 
 
-  - **option 1** - _[object]_ - (no description)
+  - **option 1** - _[object]_ - Specifies a unique user identifier for applying security policies.
 
-    - **`user_id`** - _[string]_ - user id to be used for security policies _(required)_
+    - **`user_id`** - _[string]_ - The unique user ID used to evaluate security policies. _(required)_
 
-  - **option 2** - _[object]_ - (no description)
+  - **option 2** - _[object]_ - Specifies a user's email address for applying security policies.
 
-    - **`user_email`** - _[string]_ - user email to be used for security policies _(required)_
+    - **`user_email`** - _[string]_ - The user's email address used to evaluate security policies. _(required)_
 
-  - **option 3** - _[object]_ - (no description)
+  - **option 3** - _[object]_ - Specifies a set of arbitrary user attributes for applying security policies.
 
-    - **`attributes`** - _[object]_ - user attributes to be used for security policies _(required)_
+    - **`attributes`** - _[object]_ - A dictionary of user attributes used to evaluate security policies. _(required)_
 
 ### `on_recover`
 
@@ -138,7 +138,7 @@ _[object]_ - Defines how and where to send notifications. At least one method (e
 
 ### `annotations`
 
-_[object]_ - (no description) 
+_[object]_ - Key value pair used for annotations 
 
 ## Common Properties
 

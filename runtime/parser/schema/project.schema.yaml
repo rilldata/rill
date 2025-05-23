@@ -98,30 +98,33 @@ definitions:
             description: Specifies one of the options to retrieve or compute the data used by alert
             $ref: '#/definitions/data_properties'
           for:
-            description: "The user's attributes to use for security policies" 
+            description: "Specifies how user identity or attributes should be evaluated for security policy enforcement."
             oneOf:
               - type: object
+                description: Specifies a unique user identifier for applying security policies.
                 properties:
                   user_id:
                     type: string
-                    description: "user id to be used for security policies"
+                    description: "The unique user ID used to evaluate security policies."
                 required:
                   - user_id
                 additionalProperties: false
               - type: object
+                description: Specifies a user's email address for applying security policies.
                 properties:
                   user_email:
                     type: string
-                    description: "user email to be used for security policies"
+                    description: "The user's email address used to evaluate security policies."
                     format: email
                 required:
                   - user_email
                 additionalProperties: false
               - type: object
+                description: Specifies a set of arbitrary user attributes for applying security policies.
                 properties:
                   attributes:
                     type: object
-                    description: "user attributes to be used for security policies"
+                    description: A dictionary of user attributes used to evaluate security policies.
                     additionalProperties: true
                 required:
                   - attributes
@@ -146,6 +149,7 @@ definitions:
             description: Defines how and where to send notifications. At least one method (email or Slack) is required.
           annotations:
             type: object
+            description: Key value pair used for annotations
             additionalProperties:
               type: string
         required:
@@ -178,32 +182,38 @@ definitions:
             description: Refers to the resource type and must be `api`
           openapi:
             type: object
+            description: OpenAPI specification for the API endpoint
             properties:
               summary:
                 type: string
+                description: A brief description of what the API endpoint does
               request:
                 type: object
+                description: Configuration for the API request parameters
                 properties:
                   parameters:
                     type: array
+                    description: List of parameters that the API endpoint accepts
                     items:
                       type: object
                       additionalProperties: true
               response:
                 type: object
+                description: Configuration for the API response structure
                 properties:
                   schema:
                     type: object
+                    description: JSON schema defining the structure of the API response
                     additionalProperties: true
           security:
             $ref: '#/definitions/security_policy_properties'
           skip_nested_security:
             type: boolean
+            description: Flag to control security inheritance
         allOf:
           - $ref: '#/definitions/data_properties'
         required:
-          - type
-      - $ref: '#/definitions/common_properties'          
+          - type       
   canvas:
     type: object
     title: Canvas YAML
@@ -221,9 +231,7 @@ definitions:
             description: Refers to the display name for the canvas
           banner:
             type: string
-            description: >-
-              Refers to the custom banner displayed at the header of an Canvas
-              dashboard
+            description: Refers to the custom banner displayed at the header of an Canvas dashboard
           max_width:
             type: integer
             description: Max width in pixels of the canvas
@@ -237,32 +245,23 @@ definitions:
             description: Vertical gap in pixels of the canvas
             minimum: 0
           theme:
-            anyOf:
+            oneOf:
               - type: string
-              - type: object
-                additionalProperties: true
-            description: >-
-              Name of the theme to use. Only one of theme and embedded_theme can
-              be set.
+                description: Name of an existing theme to apply to the dashboard
+              - $ref: '#/definitions/theme/definitions/theme_properties'
+                description: Inline theme configuration.
+            description: Name of the theme to use. Only one of theme and embedded_theme can be set.
           allow_custom_time_range:
             type: boolean
-            description: >-
-              Defaults to true, when set to false it will hide the ability to
-              set a custom time range for the user. 
+            description: Defaults to true, when set to false it will hide the ability to set a custom time range for the user. 
           time_ranges:
             type: array
-            description: >-
-              Overrides the list of default time range selections available in
-              the dropdown. It can be string or an object with a 'range' and
-              optional 'comparison_offsets'
+            description: Overrides the list of default time range selections available in the dropdown. It can be string or an object with a 'range' and optional 'comparison_offsets'
             items:
               $ref: '#/definitions/explore_time_range_properties'
           time_zones:
             type: array
-            description: >-
-              Refers to the time zones that should be pinned to the top of the
-              time zone selector. It should be a list of [IANA time zone
-              identifiers](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones)
+            description: Refers to the time zones that should be pinned to the top of the time zone selector. It should be a list of [IANA time zone identifiers](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones)
             items:
               type: string
           filters:
@@ -271,6 +270,7 @@ definitions:
             properties:
               enable:
                 type: boolean
+                description: Toggles filtering functionality for the canvas dashboard.
             additionalProperties: false
           defaults:
             type: object
@@ -278,10 +278,13 @@ definitions:
             properties:
               time_range:
                 type: string
+                description: Default time range to display when the dashboard loads
               comparison_mode:
                 type: string
+                description: Default comparison mode for metrics (none, time, or dimension)
               comparison_dimension:
                 type: string
+                description: Default dimension to use for comparison when comparison_mode is 'dimension'
             additionalProperties: false
           variables:
             type: array
@@ -293,23 +296,24 @@ definitions:
             description: Refers to all of the rows displayed on the Canvas
             items:
               type: object
-              description: >-
-                Refers to each row of components, multiple items can be listed
-                in a single items
               properties:
                 height:
                   type: string
+                  description: Height of the row in px
                 items:
                   type: array
+                  description: List of components to display in the row
                   items:
                     type: object
                     properties:
+                      component:
+                        type: string
+                        description: Name of the component to display
                       width:
                         type:
                           - string
                           - integer
-                      component:
-                        type: string
+                        description: Width of the component (can be a number or string with unit) 
                     additionalProperties: true
               additionalProperties: false
           security:
@@ -322,6 +326,7 @@ definitions:
   component:
     type: object
     title: Component YAML
+    description: Defines a reusable dashboard component that can be embedded in canvas dashboards
     allOf:
       - title: Properties
         type: object
@@ -335,11 +340,14 @@ definitions:
             description: Refers to the display name for the component
           description:
             type: string
+            description: Detailed description of the component's purpose and functionality
           input:
             type: array
+            description: List of input variables that can be passed to the component
             items:
               $ref: '#/definitions/component_variable_properties'
           output:
+            description: Output variable that the component produces
             $ref: '#/definitions/component_variable_properties'
         required:
           - type
@@ -400,8 +408,7 @@ definitions:
                 const: athena
             required:
               - driver
-          - $ref: >-
-              #/definitions/connector/definitions/athena/definitions/athena_properties
+          - $ref: '#/definitions/connector/definitions/athena/definitions/athena_properties'
         definitions:
           athena_properties:
             type: object
@@ -440,8 +447,7 @@ definitions:
                 const: azure
             required:
               - driver
-          - $ref: >-
-              #/definitions/connector/definitions/azure/definitions/azure_properties
+          - $ref: '#/definitions/connector/definitions/azure/definitions/azure_properties'
         definitions:
           azure_properties:
             type: object
@@ -474,8 +480,7 @@ definitions:
                 const: bigquery
             required:
               - driver
-          - $ref: >-
-              #/definitions/connector/definitions/bigquery/definitions/bigquery_properties
+          - $ref: '#/definitions/connector/definitions/bigquery/definitions/bigquery_properties'
         definitions:
           bigquery_properties:
             type: object
@@ -499,17 +504,14 @@ definitions:
                 const: clickhouse
             required:
               - driver
-          - $ref: >-
-              #/definitions/connector/definitions/clickhouse/definitions/clickhouse_properties
+          - $ref: '#/definitions/connector/definitions/clickhouse/definitions/clickhouse_properties'
         definitions:
           clickhouse_properties:
             type: object
             properties:
               managed:
                 type: boolean
-                description: >-
-                  `true` means Rill will provision the connector using the
-                  default provisioner. `false` disables automatic provisioning.
+                description: '`true` means Rill will provision the connector using the default provisioner. `false` disables automatic provisioning.'
               dsn:
                 type: string
                 description: DSN(Data Source Name) for the ClickHouse connection
@@ -539,9 +541,7 @@ definitions:
                 description: Controls whether to log raw SQL queries
               settings_override:
                 type: string
-                description: >-
-                  override the default settings used in queries. example
-                  `readonly = 1, session_timezone = 'UTC'`
+                description: override the default settings used in queries. example `readonly = 1, session_timezone = 'UTC'`
               embed_port:
                 type: integer
                 description: Port to run ClickHouse locally (0 for random port)
@@ -576,8 +576,7 @@ definitions:
                 const: druid
             required:
               - driver
-          - $ref: >-
-              #/definitions/connector/definitions/druid/definitions/druid_properties
+          - $ref: '#/definitions/connector/definitions/druid/definitions/druid_properties'
         definitions:
           druid_properties:
             type: object
@@ -605,9 +604,7 @@ definitions:
                 description: Log raw SQL queries sent to Druid
               max_open_conns:
                 type: integer
-                description: >-
-                  Maximum number of open database connections (0 = default, -1 =
-                  unlimited)
+                description: Maximum number of open database connections (0 = default, -1 = unlimited)
               skip_version_check:
                 type: boolean
                 description: Skip checking Druid version compatibility
@@ -624,8 +621,7 @@ definitions:
                 const: duckdb
             required:
               - driver
-          - $ref: >-
-              #/definitions/connector/definitions/duckdb/definitions/duckdb_properties
+          - $ref: '#/definitions/connector/definitions/duckdb/definitions/duckdb_properties'
         definitions:
           duckdb_properties:
             type: object
@@ -635,9 +631,7 @@ definitions:
                 description: Number of concurrent connections and queries allowed
               allow_host_access:
                 type: boolean
-                description: >-
-                  Whether access to the local environment and file system is
-                  allowed
+                description: Whether access to the local environment and file system is allowed
               cpu:
                 type: integer
                 description: Number of CPU cores available to the database
@@ -646,19 +640,13 @@ definitions:
                 description: Amount of memory in GB available to the database
               read_write_ratio:
                 type: number
-                description: >-
-                  Ratio of resources allocated to the read database; used to
-                  divide CPU and memory
+                description: Ratio of resources allocated to the read database; used to divide CPU and memory
               boot_queries:
                 type: string
-                description: >-
-                  SQL to run when initializing a new connection, before
-                  extensions and defaults
+                description: SQL to run when initializing a new connection, before extensions and defaults
               init_sql:
                 type: string
-                description: >-
-                  SQL to run when initializing a new connection, after
-                  extensions and defaults
+                description: SQL to run when initializing a new connection, after extensions and defaults
               log_queries:
                 type: boolean
                 description: Whether to log raw SQL queries executed through OLAP
@@ -705,8 +693,7 @@ definitions:
                 const: https
             required:
               - driver
-          - $ref: >-
-              #/definitions/connector/definitions/https/definitions/https_properties
+          - $ref: '#/definitions/connector/definitions/https/definitions/https_properties'
         definitions:
           https_properties:
             type: object
@@ -732,22 +719,17 @@ definitions:
                 const: local_file
             required:
               - driver
-          - $ref: >-
-              #/definitions/connector/definitions/local_file/definitions/local_file_properties
+          - $ref: '#/definitions/connector/definitions/local_file/definitions/local_file_properties'
         definitions:
           local_file_properties:
             type: object
             properties:
               dsn:
                 type: string
-                description: >-
-                  Data Source Name (DSN) indicating the file path or location of
-                  the local file
+                description: Data Source Name (DSN) indicating the file path or location of the local file
               allow_host_access:
                 type: boolean
-                description: >-
-                  Flag to indicate if access to host-level file paths is
-                  permitted
+                description: Flag to indicate if access to host-level file paths is permitted
       motherduck:
         type: object
         title: motherduck
@@ -761,17 +743,14 @@ definitions:
                 const: motherduck
             required:
               - driver
-          - $ref: >-
-              #/definitions/connector/definitions/motherduck/definitions/motherduck_properties
+          - $ref: '#/definitions/connector/definitions/motherduck/definitions/motherduck_properties'
         definitions:
           motherduck_properties:
             type: object
             properties:
               dsn:
                 type: string
-                description: >-
-                  Data Source Name (DSN) specifying the MotherDuck connection
-                  endpoint
+                description: Data Source Name (DSN) specifying the MotherDuck connection endpoint
               token:
                 type: string
                 description: Authentication token for accessing MotherDuck (secret)
@@ -788,8 +767,7 @@ definitions:
                 const: mysql
             required:
               - driver
-          - $ref: >-
-              #/definitions/connector/definitions/mysql/definitions/mysql_properties
+          - $ref: '#/definitions/connector/definitions/mysql/definitions/mysql_properties'
         definitions:
           mysql_properties:
             type: object
@@ -810,8 +788,7 @@ definitions:
                 const: pinot
             required:
               - driver
-          - $ref: >-
-              #/definitions/connector/definitions/pinot/definitions/pinot_properties
+          - $ref: '#/definitions/connector/definitions/pinot/definitions/pinot_properties'
         definitions:
           pinot_properties:
             type: object
@@ -859,8 +836,7 @@ definitions:
                 const: postgres
             required:
               - driver
-          - $ref: >-
-              #/definitions/connector/definitions/postgres/definitions/postgres_properties
+          - $ref: '#/definitions/connector/definitions/postgres/definitions/postgres_properties'
         definitions:
           postgres_properties:
             type: object
@@ -881,8 +857,7 @@ definitions:
                 const: redshift
             required:
               - driver
-          - $ref: >-
-              #/definitions/connector/definitions/redshift/definitions/redshift_properties
+          - $ref: '#/definitions/connector/definitions/redshift/definitions/redshift_properties'
         definitions:
           redshift_properties:
             type: object
@@ -951,8 +926,7 @@ definitions:
                 const: salesforce
             required:
               - driver
-          - $ref: >-
-              #/definitions/connector/definitions/salesforce/definitions/salesforce_properties
+          - $ref: '#/definitions/connector/definitions/salesforce/definitions/salesforce_properties'
         definitions:
           salesforce_properties:
             type: object
@@ -985,8 +959,7 @@ definitions:
                 const: slack
             required:
               - driver
-          - $ref: >-
-              #/definitions/connector/definitions/slack/definitions/slack_properties
+          - $ref: '#/definitions/connector/definitions/slack/definitions/slack_properties'
         definitions:
           slack_properties:
             type: object
@@ -1007,8 +980,7 @@ definitions:
                 const: snowflake
             required:
               - driver
-          - $ref: >-
-              #/definitions/connector/definitions/snowflake/definitions/snowflake_properties
+          - $ref: '#/definitions/connector/definitions/snowflake/definitions/snowflake_properties'
         definitions:
           snowflake_properties:
             type: object
@@ -1032,8 +1004,7 @@ definitions:
                 const: sqlite
             required:
               - driver
-          - $ref: >-
-              #/definitions/connector/definitions/sqlite/definitions/sqlite_properties
+          - $ref: '#/definitions/connector/definitions/sqlite/definitions/sqlite_properties'
         definitions:
           sqlite_properties:
             type: object
@@ -1061,86 +1032,54 @@ definitions:
             description: Refers to the description of the explore dashboard
           banner:
             type: string
-            description: >-
-              Refers to the custom banner displayed at the header of an explore
-              dashboard
+            description: Refers to the custom banner displayed at the header of an explore dashboard
           metrics_view:
             type: string
             description: Refers to the metrics view resource
           dimensions:
-            description: >-
-              List of dimension names. Use '*' to select all dimensions
-              (default) 
-            $ref: >-
-              #/definitions/explore/definitions/field_selector_properties
+            description: List of dimension names. Use '*' to select all dimensions (default) 
+            $ref: '#/definitions/explore/definitions/field_selector_properties'
           measures:
-            description: ' List of measure names. Use ''*'' to select all measures (default)'
-            $ref: >-
-              #/definitions/explore/definitions/field_selector_properties
+            description: List of measure names. Use ''*'' to select all measures (default)
+            $ref: '#/definitions/explore/definitions/field_selector_properties'
           theme:
             oneOf:
               - type: string
+                description: Name of an existing theme to apply to the dashboard
               - $ref: '#/definitions/theme/definitions/theme_properties'
-            description: >-
-              Name of the theme to use. Only one of theme and embedded_theme can
-              be set.
+                description: Inline theme configuration.
+            description: Name of the theme to use. Only one of theme and embedded_theme can be set.
           time_ranges:
             type: array
-            description: >-
-              Overrides the list of default time range selections available in
-              the dropdown. It can be string or an object with a 'range' and
-              optional 'comparison_offsets'
+            description: Overrides the list of default time range selections available in the dropdown. It can be string or an object with a 'range' and optional 'comparison_offsets'
             items:
               $ref: '#/definitions/explore_time_range_properties'
           time_zones:
             type: array
-            description: >-
-              Refers to the time zones that should be pinned to the top of the
-              time zone selector. It should be a list of [IANA time zone
-              identifiers](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones)
+            description: Refers to the time zones that should be pinned to the top of the time zone selector. It should be a list of [IANA time zone identifiers](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones)
             items:
               type: string
           lock_time_zone:
             type: boolean
-            description: >-
-              When true, the dashboard will be locked to the first time provided
-              in the time_zones list. When no time_zones are provided, the
-              dashboard will be locked to UTC
+            description: When true, the dashboard will be locked to the first time provided in the time_zones list. When no time_zones are provided, the dashboard will be locked to UTC
           allow_custom_time_range:
             type: boolean
-            description: >-
-              Defaults to true, when set to false it will hide the ability to
-              set a custom time range for the user.
+            description: Defaults to true, when set to false it will hide the ability to set a custom time range for the user.
           defaults:
             type: object
             description: defines the defaults YAML struct
             properties:
               dimensions:
-                description: >-
-                  Provides the default dimensions to load on viewing the
-                  dashboard
-                $ref: >-
-                  #/definitions/explore/definitions/field_selector_properties
+                description: Provides the default dimensions to load on viewing the dashboard
+                $ref: '#/definitions/explore/definitions/field_selector_properties'
               measures:
                 description: Provides the default measures to load on viewing the dashboard
-                $ref: >-
-                  #/definitions/explore/definitions/field_selector_properties
+                $ref: '#/definitions/explore/definitions/field_selector_properties'
               time_range:
-                description: >-
-                  Refers to the default time range shown when a user initially
-                  loads the dashboard. The value must be either a valid [ISO
-                  8601
-                  duration](https://en.wikipedia.org/wiki/ISO_8601#Durations)
-                  (for example, PT12H for 12 hours, P1M for 1 month, or P26W for
-                  26 weeks) or one of the [Rill ISO 8601
-                  extensions](https://docs.rilldata.com/reference/rill-iso-extensions#extensions)
+                description: Refers to the default time range shown when a user initially loads the dashboard. The value must be either a valid [ISO 8601 duration](https://en.wikipedia.org/wiki/ISO_8601#Durations) (for example, PT12H for 12 hours, P1M for 1 month, or P26W for 26 weeks) or one of the [Rill ISO 8601 extensions](https://docs.rilldata.com/reference/rill-iso-extensions#extensions)
                 type: string
               comparison_mode:
-                description: >-
-                  Controls how to compare current data with historical or
-                  categorical baselines. Options: 'none' (no comparison), 'time'
-                  (compares with past based on default_time_range), 'dimension'
-                  (compares based on comparison_dimension values)
+                description: 'Controls how to compare current data with historical or categorical baselines. Options: `none` (no comparison), `time` (compares with past based on default_time_range), `dimension` (compares based on comparison_dimension values)'
                 type: string
               comparison_dimension:
                 description: 'for dimension mode, specify the comparison dimension by name'
@@ -1148,9 +1087,11 @@ definitions:
             additionalProperties: false
           embeds:
             type: object
+            description: Configuration options for embedded dashboard views
             properties:
               hide_pivot:
                 type: boolean
+                description: When true, hides the pivot table view in embedded mode
             additionalProperties: false
           security:
             description: Security rules to apply for access to the explore dashboard
@@ -1163,11 +1104,11 @@ definitions:
         oneOf:
           - type: string
             const: '*'
-            description: Matches all fields
+            description: Wildcard(*) selector that includes all available fields in the selection
           - type: array
             items:
               type: string
-            description: Explicit list of fields
+            description: Explicit list of fields to include in the selection
           - type: object
             description: 'Advanced matching using regex, DuckDB expression, or exclusion'
             properties:
@@ -1176,6 +1117,7 @@ definitions:
                 description: Select dimensions using a regular expression
               expr:
                 type: string
+                description: DuckDB SQL expression to select fields based on custom logic
               exclude:
                 type: object
                 description: Select all dimensions except those listed here
@@ -1207,60 +1149,34 @@ definitions:
             description: Refers to the description for the metrics view
           model:
             type: string
-            description: >-
-              Refers to the model powering the dashboard (either model or table
-              is required)
+            description: Refers to the model powering the dashboard (either model or table is required)
           database:
             type: string
-            description: >-
-              Refers to the database to use in the OLAP engine (to be used in
-              conjunction with table). Otherwise, will use the default database
-              or schema if not specified
+            description: Refers to the database to use in the OLAP engine (to be used in conjunction with table). Otherwise, will use the default database or schema if not specified
           database_schema:
             type: string
-            description: >-
-              Refers to the schema to use in the OLAP engine (to be used in
-              conjunction with table). Otherwise, will use the default database
-              or schema if not specified
+            description: Refers to the schema to use in the OLAP engine (to be used in conjunction with table). Otherwise, will use the default database or schema if not specified
           table:
             type: string
-            description: >-
-              Refers to the table powering the dashboard, should be used instead
-              of model for dashboards create from external OLAP tables (either
-              table or model is required)
+            description: Refers to the table powering the dashboard, should be used instead of model for dashboards create from external OLAP tables (either table or model is required)
           timeseries:
             type: string
-            description: >-
-              Refers to the timestamp column from your model that will underlie
-              x-axis data in the line charts. If not specified, the line charts
-              will not appear
+            description: Refers to the timestamp column from your model that will underlie x-axis data in the line charts. If not specified, the line charts will not appear
           watermark:
             type: string
-            description: >-
-              A SQL expression that tells us the max timestamp that the metrics
-              are considered valid for. Usually does not need to be overwritten
+            description: A SQL expression that tells us the max timestamp that the metrics are considered valid for. Usually does not need to be overwritten
           smallest_time_grain:
             type: string
-            description: >-
-              Refers to the smallest time granularity the user is allowed to
-              view. The valid values are: millisecond, second, minute, hour,
-              day, week, month, quarter, year
+            description: 'Refers to the smallest time granularity the user is allowed to view. The valid values are: millisecond, second, minute, hour, day, week, month, quarter, year'
           first_day_of_week:
             type: integer
-            description: >-
-              Refers to the first day of the week for time grain aggregation
-              (for example, Sunday instead of Monday). The valid values are 1
-              through 7 where Monday=1 and Sunday=7
+            description: Refers to the first day of the week for time grain aggregation (for example, Sunday instead of Monday). The valid values are 1 through 7 where Monday=1 and Sunday=7
           first_month_of_year:
             type: integer
-            description: >-
-              Refers to the first month of the year for time grain aggregation.
-              The valid values are 1 through 12 where January=1 and December=12
+            description: Refers to the first month of the year for time grain aggregation. The valid values are 1 through 12 where January=1 and December=12
           dimensions:
             type: array
-            description: >-
-              Relates to exploring segments or dimensions of your data and
-              filtering the dashboard
+            description: Relates to exploring segments or dimensions of your data and filtering the dashboard
             items:
               type: object
               properties:
@@ -1278,23 +1194,15 @@ definitions:
                   description: a categorical column
                 expression:
                   type: string
-                  description: >-
-                    a non-aggregate expression such as string_split(domain,
-                    '.'). One of column and expression is required but cannot
-                    have both at the same time
+                  description: a non-aggregate expression such as string_split(domain, '.'). One of column and expression is required but cannot have both at the same time
                 unnest:
                   type: boolean
-                  description: >-
-                    if true, allows multi-valued dimension to be unnested (such
-                    as lists) and filters will automatically switch to
-                    "contains" instead of exact match 
+                  description: if true, allows multi-valued dimension to be unnested (such as lists) and filters will automatically switch to "contains" instead of exact match 
                 uri:
                   type:
                     - string
                     - boolean
-                  description: >-
-                    enable if your dimension is a clickable URL to enable single
-                    click navigation (boolean or valid SQL expression) 
+                  description: enable if your dimension is a clickable URL to enable single click navigation (boolean or valid SQL expression) 
               anyOf:
                 - required:
                     - column
@@ -1302,9 +1210,7 @@ definitions:
                     - expression
           measures:
             type: array
-            description: >-
-              Used to define the numeric aggregates of columns from your data
-              model
+            description: Used to define the numeric aggregates of columns from your data model
             items:
               type: object
               properties:
@@ -1319,46 +1225,38 @@ definitions:
                   description: a freeform text description of the dimension
                 type:
                   type: string
+                  description: 'Measure calculation type: "simple" for basic aggregations, "derived" for calculations using other measures, or "time_comparison" for period-over-period analysis. Defaults to "simple" unless dependencies exist.'
                 expression:
                   type: string
                   description: a combination of operators and functions for aggregations
                 window:
-                  description: >-
-                    A measure window can be defined as a keyword string (e.g.,
-                    'time' or 'all') or an object with detailed window
-                    configuration.
+                  description: A measure window can be defined as a keyword string (e.g. 'time' or 'all') or an object with detailed window configuration.
                   anyOf:
                     - type: string
                       enum:
                         - time
                         - 'true'
                         - all
-                      description: >-
-                        Shorthand: 'time' or 'true' means time-partitioned,
-                        'all' means non-partitioned.
+                      description: 'Shorthand: `time` or `true` means time-partitioned, `all` means non-partitioned.'
                     - type: object
+                      description: 'Detailed window configuration for measure calculations, allowing control over partitioning, ordering, and frame definition.'
                       properties:
                         partition:
                           type: boolean
+                          description: 'Controls whether the window is partitioned. When true, calculations are performed within each partition separately.'
                         order:
-                          $ref: >-
-                            #/definitions/metrics_view/definitions/field_selectors_properties
-                          description: to order the window
+                          $ref: '#/definitions/metrics_view/definitions/field_selectors_properties'
+                          description: 'Specifies the fields to order the window by, determining the sequence of rows within each partition.'
                         frame:
                           type: string
-                          description: sets the frame of your window
+                          description: 'Defines the window frame boundaries for calculations, specifying which rows are included in the window relative to the current row.'
                       additionalProperties: false
                 per:
-                  $ref: >-
-                    #/definitions/metrics_view/definitions/field_selectors_properties
+                  $ref: '#/definitions/metrics_view/definitions/field_selectors_properties'
                   description: for per dimensions
                 requires:
-                  $ref: >-
-                    #/definitions/metrics_view/definitions/field_selectors_properties
-                  description: >-
-                    using an available measure or dimension in your metrics view
-                    to set a required parameter, cannot be used with simple
-                    measures
+                  $ref: '#/definitions/metrics_view/definitions/field_selectors_properties'
+                  description: using an available measure or dimension in your metrics view to set a required parameter, cannot be used with simple measures
                 format_preset:
                   type: string
                   description: |
@@ -1373,36 +1271,17 @@ definitions:
                         - `interval_ms`: Convert milliseconds into human-readable durations like hours (h), days (d), years (y), etc. (optional)
                 format_d3:
                   type: string
-                  description: >-
-                    Controls the formatting of this measure using a
-                    [d3-format](https://d3js.org/d3-format) string. If an
-                    invalid format string is supplied, the measure will fall
-                    back to `format_preset: humanize`. A measure cannot have
-                    both `format_preset` and `format_d3`. If neither is
-                    provided, the humanize preset is used by default. Example:
-                    `format_d3: ".2f"` formats using fixed-point notation with
-                    two decimal places. Example: `format_d3: ",.2r"` formats
-                    using grouped thousands with two significant digits.
-                    (optional)
+                  description: 'Controls the formatting of this measure using a [d3-format](https://d3js.org/d3-format) string. If an invalid format string is supplied, the measure will fall back to `format_preset: humanize`. A measure cannot have both `format_preset` and `format_d3`. If neither is provided, the humanize preset is used by default. Example: `format_d3: ".2f"` formats using fixed-point notation with two decimal places. Example: `format_d3: ",.2r"` formats using grouped thousands with two significant digits. (optional)'
                 format_d3_locale:
                   type: object
-                  description: >-
-                    locale configuration passed through to D3, enabling changing
-                    the currency symbol among other things. For details, see the
-                    docs for D3's
-                    [formatLocale](https://d3js.org/d3-format#formatLocale)
+                  description: locale configuration passed through to D3, enabling changing the currency symbol among other things. For details, see the docs for D3's [formatLocale](https://d3js.org/d3-format#formatLocale)
                   additionalProperties: true
                 valid_percent_of_total:
                   type: boolean
-                  description: >-
-                    a boolean indicating whether percent-of-total values should
-                    be rendered for this measure 
+                  description: a boolean indicating whether percent-of-total values should be rendered for this measure 
                 treat_nulls_as:
                   type: string
-                  description: >-
-                    used to configure what value to fill in for missing time
-                    buckets. This also works generally as COALESCING over non
-                    empty time buckets.
+                  description: used to configure what value to fill in for missing time buckets. This also works generally as COALESCING over non empty time buckets.
             minItems: 1
           security:
             $ref: '#/definitions/security_policy_properties'
@@ -1414,18 +1293,22 @@ definitions:
       field_selectors_properties:
         anyOf:
           - type: string
+            description: 'Simple field name as a string.'
           - type: array
+            description: 'List of field selectors, each can be a string or an object with detailed configuration.'
             items:
               anyOf:
                 - type: string
                   description: 'Shorthand field selector, interpreted as the name.'
                 - type: object
+                  description: 'Detailed field selector configuration with name and optional time grain.'
                   properties:
                     name:
                       type: string
+                      description: 'Name of the field to select.'
                     time_grain:
                       type: string
-                      description: Time grain for time-based dimensions.
+                      description: 'Time grain for time-based dimensions.'
                       enum:
                         - ''
                         - ms
@@ -1460,9 +1343,61 @@ definitions:
             type: string
             const: model
             description: Refers to the resource type and must be `model`
+          refresh:
+            $ref: '#/definitions/schedule_properties'
+            description: Specifies the refresh schedule that Rill should follow to re-ingest and update the underlying model data 
+          timeout:
+            type: string
+            description: The maximum time to wait for model ingestion
+          incremental:
+            type: boolean
+            description: whether incremental modeling is required (optional)
+          change_mode:
+            type: string
+            enum:
+              - reset
+              - manual
+              - patch
+            description: Configure how changes to the model specifications are applied (optional). 'reset' will drop and recreate the model automatically, 'manual' will require a manual full or incremental refresh to apply changes, and 'patch' will switch to the new logic without re-processing historical data (only applies for incremental models).
+          state:
+            $ref: '#/definitions/data_properties'
+            description: Refers to the explicitly defined state of your model, cannot be used with partitions (optional)
+          partitions:
+            $ref: '#/definitions/data_properties'
+            description: Refers to the how your data is partitioned, cannot be used with state. (optional)
+          sql:
+            type: string
+            description: Raw SQL query to run against source
+          materialize:
+            type: boolean
+            description: models will be materialized in olap
+          partitions_watermark:
+            type: string
+            description: Refers to a customizable timestamp that can be set to check if an object has been updated (optional).
+          partitions_concurrency:
+            type: integer
+            description: Refers to the number of concurrent partitions that can be read at the same time (optional).
+          stage:
+            type: object
+            properties:
+              connector:
+                type: string
+                description: Refers to the connector type for the staging table
+            required:
+              - connector
+            description: in the case of staging models, where an input source does not support direct write to the output and a staging table is required
+            additionalProperties: true
+          output:
+            type: object
+            description: to define the properties of output
+            properties:
+              connector:
+                type: string
+                description: Refers to the connector type for the output table
+            additionalProperties: true
         required:
           - type
-      - $ref: '#/definitions/model/definitions/model_properties'
+          - sql
       - $ref: '#/definitions/common_properties'
       - type: object
         oneOf:
@@ -1484,529 +1419,335 @@ definitions:
           - $ref: '#/definitions/model/definitions/snowflake'
           - $ref: '#/definitions/model/definitions/sqlite'
     definitions:
-      model_properties:
+      athena:
+        title: athena
         type: object
         properties:
-          refresh:
-            $ref: '#/definitions/schedule_properties'
-            description: >-
-              Specifies the refresh schedule that Rill should follow to
-              re-ingest and update the underlying model data 
-          timeout:
+          connector:
             type: string
-            description: The maximum time to wait for model ingestion
-          incremental:
-            type: boolean
-            description: whether incremental modeling is required (optional)
-          change_mode:
+            description: Must be either `athena` or a named Athena connector.
+            const: athena
+          output_location:
             type: string
-            enum:
-              - reset
-              - manual
-              - patch
-            description: >-
-              Configure how changes to the model specifications are applied
-              (optional). 'reset' will drop and recreate the model
-              automatically, 'manual' will require a manual full or incremental
-              refresh to apply changes, and 'patch' will switch to the new logic
-              without re-processing historical data (only applies for
-              incremental models).
-          state:
-            $ref: '#/definitions/data_properties'
-            description: >-
-              Refers to the explicitly defined state of your model, cannot be
-              used with partitions (optional)
-          partitions:
-            $ref: '#/definitions/data_properties'
-            description: >-
-              Refers to the how your data is partitioned, cannot be used with
-              state. (optional)
-          sql:
+            description: Output location for query results in S3.
+          workgroup:
             type: string
-            description: Raw SQL query to run against source
-          materialize:
-            type: boolean
-            description: models will be materialized in olap
-          partitions_watermark:
+            description: AWS Athena workgroup to use for queries.
+          region:
             type: string
-            description: >-
-              Refers to a customizable timestamp that can be set to check if an
-              object has been updated (optional).
-          partitions_concurrency:
-            type: integer
-            description: >-
-              Refers to the number of concurrent partitions that can be read at
-              the same time (optional).
-          stage:
-            type: object
-            properties:
-              connector:
-                type: string
-                description: Refers to the connector type for the staging table
-            required:
-              - connector
-            description: >-
-              in the case of staging models, where an input source does not
-              support direct write to the output and a staging table is required
-            additionalProperties: true
-          output:
-            type: object
-            description: to define the properties of output
-            properties:
-              connector:
-                type: string
-                description: Refers to the connector type for the output table
-            additionalProperties: true
-      athena:
-        type: object
-        title: athena
-        allOf:
-          - type: object
-            properties:
-              connector:
-                type: string
-                const: athena
-            required:
-              - connector
-          - $ref: >-
-              #/definitions/model/definitions/athena/definitions/athena_properties
-        definitions:
-          athena_properties:
-            type: object
-            properties:
-              output_location:
-                type: string
-                description: Output location for query results in S3.
-              workgroup:
-                type: string
-                description: AWS Athena workgroup to use for queries.
-              region:
-                type: string
-                description: AWS region to connect to Athena and the output location.
+            description: AWS region to connect to Athena and the output location.
+        required:
+          - connector
       azure:
-        type: object
         title: azure
-        allOf:
-          - type: object
-            properties:
-              connector:
-                type: string
-                const: azure
-            required:
-              - connector
-          - $ref: '#/definitions/model/definitions/azure/definitions/azure_properties'
-        definitions:
-          azure_properties:
+        type: object
+        properties:
+          connector:
+            type: string
+            description: Must be either `azure` or a named Azure connector.
+            const: azure
+          path:
+            type: string
+            description: Path to the source
+          account:
+            type: string
+            description: Account identifier
+          uri:
+            type: string
+            description: Source URI
+          extract:
             type: object
+            description: Arbitrary key-value pairs for extraction settings
+            additionalProperties: true
+          glob:
+            type: object
+            description: Settings related to glob file matching.
             properties:
-              path:
-                type: string
-                description: Path to the source
-              account:
-                type: string
-                description: Account identifier
-              uri:
-                type: string
-                description: Source URI
-              extract:
-                type: object
-                description: Arbitrary key-value pairs for extraction settings
-                additionalProperties: true
-              glob:
-                type: object
-                description: Settings related to glob file matching.
-                properties:
-                  max_total_size:
-                    type: integer
-                    description: Maximum total size (in bytes) matched by glob
-                  max_objects_matched:
-                    type: integer
-                    description: Maximum number of objects matched by glob
-                  max_objects_listed:
-                    type: integer
-                    description: Maximum number of objects listed in glob
-                  page_size:
-                    type: integer
-                    description: Page size for glob listing
-              batch_size:
-                type: string
-                description: 'Size of a batch (e.g., ''100MB'')'
+              max_total_size:
+                type: integer
+                description: Maximum total size (in bytes) matched by glob
+              max_objects_matched:
+                type: integer
+                description: Maximum number of objects matched by glob
+              max_objects_listed:
+                type: integer
+                description: Maximum number of objects listed in glob
+              page_size:
+                type: integer
+                description: Page size for glob listing
+          batch_size:
+            type: string
+            description: 'Size of a batch (e.g., ''100MB'')'
+        required:
+          - connector
       bigquery:
-        type: object
         title: bigquery
-        allOf:
-          - type: object
-            properties:
-              connector:
-                type: string
-                const: bigquery
-            required:
-              - connector
-          - $ref: >-
-              #/definitions/model/definitions/bigquery/definitions/bigquery_properties
-        definitions:
-          bigquery_properties:
-            type: object
-            properties:
-              project_id:
-                type: string
-                description: ID of the BigQuery project.
+        type: object
+        properties:
+          connector:
+            type: string
+            description: Must be either `bigquery` or a named BigQuery connector.
+            const: bigquery
+          project_id:
+            type: string
+            description: ID of the BigQuery project.
+        required:
+          - connector
       clickhouse:
+        title: clickhouse     
         type: object
-        title: clickhouse
-        allOf:
-          - type: object
-            properties:
-              connector:
-                type: string
-                const: clickhouse
-            required:
-              - connector
-          - $ref: >-
-              #/definitions/model/definitions/clickhouse/definitions/clickhouse_properties
-        definitions:
-          clickhouse_properties:
-            type: object
-            properties:
-              path:
-                type: string
-                description: Path to the data source.
-              format:
-                type: string
-                description: 'Format of the data source (e.g., csv, json, parquet).'
+        properties:
+          connector:
+            type: string
+            description: Must be either `clickhouse` or a named ClickHouse connector.
+            const: clickhouse
+          path:
+            type: string
+            description: Path to the data source.
+          format:
+            type: string
+            description: 'Format of the data source (e.g., csv, json, parquet).'
+        required:
+          - connector
       duckdb:
-        type: object
         title: duckdb
-        allOf:
-          - type: object
-            properties:
-              connector:
-                type: string
-                const: duckdb
-            required:
-              - connector
-          - $ref: >-
-              #/definitions/model/definitions/duckdb/definitions/duckdb_properties
-        definitions:
-          duckdb_properties:
-            type: object
-            properties:
-              path:
-                type: string
-                description: Path to the data source.
-              format:
-                type: string
-                description: 'Format of the data source (e.g., csv, json, parquet).'
-              pre_exec:
-                type: string
-                description: >-
-                  refers to a SQL queries to run before the main query,
-                  available for DuckDB based models
-              post_exec:
-                type: string
-                description: >-
-                  refers to a SQL query that is run after the main query,
-                  available for DuckDB based models
+        type: object
+        properties:
+          connector:
+            type: string
+            description: Must be either `duckdb` or a named DuckDB connector.
+            const: duckdb
+          path:
+            type: string
+            description: Path to the data source.
+          format:
+            type: string
+            description: 'Format of the data source (e.g., csv, json, parquet).'
+          pre_exec:
+            type: string
+            description: refers to a SQL queries to run before the main query, available for DuckDB based models
+          post_exec:
+            type: string
+            description: refers to a SQL query that is run after the main query, available for DuckDB based models
+        required:
+          - connector
       gcs:
-        type: object
         title: gcs
-        allOf:
-          - type: object
-            properties:
-              connector:
-                type: string
-                const: gcs
-            required:
-              - connector
-          - $ref: '#/definitions/model/definitions/gcs/definitions/gcs_properties'
-        definitions:
-          gcs_properties:
+        type: object
+        properties:
+          connector:
+            type: string
+            description: Must be either `gcs` or a named GCS connector.
+            const: gcs
+          path:
+            type: string
+            description: Path to the source
+          uri:
+            type: string
+            description: Source URI
+          extract:
             type: object
+            description: key-value pairs for extraction settings
+            additionalProperties: true
+          glob:
+            type: object
+            description: Settings related to glob file matching.
             properties:
-              path:
-                type: string
-                description: Path to the source
-              uri:
-                type: string
-                description: Source URI
-              extract:
-                type: object
-                description: key-value pairs for extraction settings
-                additionalProperties: true
-              glob:
-                type: object
-                description: Settings related to glob file matching.
-                properties:
-                  max_total_size:
-                    type: integer
-                    description: Maximum total size (in bytes) matched by glob
-                  max_objects_matched:
-                    type: integer
-                    description: Maximum number of objects matched by glob
-                  max_objects_listed:
-                    type: integer
-                    description: Maximum number of objects listed in glob
-                  page_size:
-                    type: integer
-                    description: Page size for glob listing
-              batch_size:
-                type: string
-                description: 'Size of a batch (e.g., ''100MB'')'
+              max_total_size:
+                type: integer
+                description: Maximum total size (in bytes) matched by glob
+              max_objects_matched:
+                type: integer
+                description: Maximum number of objects matched by glob
+              max_objects_listed:
+                type: integer
+                description: Maximum number of objects listed in glob
+              page_size:
+                type: integer
+                description: Page size for glob listing
+          batch_size:
+            type: string
+            description: 'Size of a batch (e.g., ''100MB'')'
+        required:
+          - connector
       https:
-        type: object
         title: https
-        allOf:
-          - type: object
-            properties:
-              connector:
-                type: string
-                const: https
-            required:
-              - connector
-          - $ref: '#/definitions/model/definitions/https/definitions/https_properties'
-        definitions:
-          https_properties:
-            type: object
-            properties: {}
+        type: object
+        properties:
+          connector:
+            type: string
+            description: Must be either `https` or a named HTTPS connector.
+            const: https
+        required:
+          - connector
       local_file:
-        type: object
         title: local_file
-        allOf:
-          - type: object
-            properties:
-              connector:
-                type: string
-                const: local_file
-            required:
-              - connector
-          - $ref: >-
-              #/definitions/model/definitions/local_file/definitions/local_file_properties
-        definitions:
-          local_file_properties:
-            type: object
-            properties:
-              path:
-                type: string
-                description: Path to the data source.
-              format:
-                type: string
-                description: 'Format of the data source (e.g., csv, json, parquet).'
+        type: object
+        properties:
+          connector:
+            type: string
+            description: Must be either `local_file` or a named Local File connector.
+            const: local_file
+          path:
+            type: string
+            description: Path to the data source.
+          format:
+            type: string
+            description: 'Format of the data source (e.g., csv, json, parquet).'
+        required:
+          - connector
       motherduck:
-        type: object
         title: motherduck
-        allOf:
-          - type: object
-            properties:
-              connector:
-                type: string
-                const: motherduck
-            required:
-              - connector
-          - $ref: >-
-              #/definitions/model/definitions/motherduck/definitions/motherduck_properties
-        definitions:
-          motherduck_properties:
-            type: object
-            properties: {}
+        type: object
+        properties:
+          connector:
+            type: string
+            description: Must be either `motherduck` or a named MotherDuck connector.
+            const: motherduck
+        required:
+          - connector
       mysql:
-        type: object
         title: mysql
-        allOf:
-          - type: object
-            properties:
-              connector:
-                type: string
-                const: mysql
-            required:
-              - connector
-          - $ref: '#/definitions/model/definitions/mysql/definitions/mysql_properties'
-        definitions:
-          mysql_properties:
-            type: object
-            properties: {}
+        type: object
+        properties:
+          connector:
+            type: string
+            description: Must be either `mysql` or a named MySQL connector.
+            const: mysql
+        required:
+          - connector
       pinot:
-        type: object
         title: pinot
-        allOf:
-          - type: object
-            properties:
-              connector:
-                type: string
-                const: pinot
-            required:
-              - connector
-          - $ref: '#/definitions/model/definitions/pinot/definitions/pinot_properties'
-        definitions:
-          pinot_properties:
-            type: object
-            properties: {}
+        type: object
+        properties:
+          connector:
+            type: string
+            description: Must be either `pinot` or a named Pinot connector.
+            const: pinot
+        required:
+          - connector
       postgres:
-        type: object
         title: postgres
-        allOf:
-          - type: object
-            properties:
-              connector:
-                type: string
-                const: postgres
-            required:
-              - connector
-          - $ref: >-
-              #/definitions/model/definitions/postgres/definitions/postgres_properties
-        definitions:
-          postgres_properties:
-            type: object
-            properties: {}
+        type: object
+        properties:
+          connector:
+            type: string
+            description: Must be either `postgres` or a named PostgreSQL connector.
+            const: postgres
+        required:
+          - connector
       redshift:
+        title: redshift      
         type: object
-        title: redshift
-        allOf:
-          - type: object
-            properties:
-              connector:
-                type: string
-                const: redshift
-            required:
-              - connector
-          - $ref: >-
-              #/definitions/model/definitions/redshift/definitions/redshift_properties
-        definitions:
-          redshift_properties:
-            type: object
-            properties:
-              output_location:
-                type: string
-                description: S3 location where query results are stored.
-              workgroup:
-                type: string
-                description: Redshift Serverless workgroup to use.
-              database:
-                type: string
-                description: Name of the Redshift database.
-              cluster_identifier:
-                type: string
-                description: Identifier of the Redshift cluster.
-              role_arn:
-                type: string
-                description: ARN of the IAM role to assume for Redshift access.
-              region:
-                type: string
-                description: AWS region of the Redshift deployment.
+        properties:
+          connector:
+            type: string
+            description: Must be either `redshift` or a named Redshift connector.
+            const: redshift
+          output_location:
+            type: string
+            description: S3 location where query results are stored.
+          workgroup:
+            type: string
+            description: Redshift Serverless workgroup to use.
+          database:
+            type: string
+            description: Name of the Redshift database.
+          cluster_identifier:
+            type: string
+            description: Identifier of the Redshift cluster.
+          role_arn:
+            type: string
+            description: ARN of the IAM role to assume for Redshift access.
+          region:
+            type: string
+            description: AWS region of the Redshift deployment.
+        required:
+          - connector
       s3:
-        type: object
         title: s3
-        allOf:
-          - type: object
-            properties:
-              connector:
-                type: string
-                const: s3
-            required:
-              - connector
-          - $ref: '#/definitions/model/definitions/s3/definitions/s3_properties'
-        definitions:
-          s3_properties:
+        type: object
+        properties:
+          connector:
+            type: string
+            description: Must be either `s3` or a named S3 connector.
+            const: s3
+          region:
+            type: string
+            description: AWS region
+          endpoint:
+            type: string
+            description: AWS Endpoint
+          path:
+            type: string
+            description: Path to the source
+          uri:
+            type: string
+            description: Source URI
+          extract:
             type: object
+            description: key-value pairs for extraction settings
+            additionalProperties: true
+          glob:
+            type: object
+            description: Settings related to glob file matching.
             properties:
-              region:
-                type: string
-                description: AWS region
-              endpoint:
-                type: string
-                description: AWS Endpoint
-              path:
-                type: string
-                description: Path to the source
-              uri:
-                type: string
-                description: Source URI
-              extract:
-                type: object
-                description: key-value pairs for extraction settings
-                additionalProperties: true
-              glob:
-                type: object
-                description: Settings related to glob file matching.
-                properties:
-                  max_total_size:
-                    type: integer
-                    description: Maximum total size (in bytes) matched by glob
-                  max_objects_matched:
-                    type: integer
-                    description: Maximum number of objects matched by glob
-                  max_objects_listed:
-                    type: integer
-                    description: Maximum number of objects listed in glob
-                  page_size:
-                    type: integer
-                    description: Page size for glob listing
-              batch_size:
-                type: string
-                description: 'Size of a batch (e.g., ''100MB'')'
+              max_total_size:
+                type: integer
+                description: Maximum total size (in bytes) matched by glob
+              max_objects_matched:
+                type: integer
+                description: Maximum number of objects matched by glob
+              max_objects_listed:
+                type: integer
+                description: Maximum number of objects listed in glob
+              page_size:
+                type: integer
+                description: Page size for glob listing
+          batch_size:
+            type: string
+            description: 'Size of a batch (e.g., ''100MB'')'
+        required:
+          - connector
       salesforce:
-        type: object
         title: salesforce
-        allOf:
-          - type: object
-            properties:
-              connector:
-                type: string
-                const: salesforce
-            required:
-              - connector
-          - $ref: >-
-              #/definitions/model/definitions/salesforce/definitions/salesforce_properties
-        definitions:
-          salesforce_properties:
-            type: object
-            properties:
-              soql:
-                type: string
-                description: SOQL query to execute against the Salesforce instance.
-              sobject:
-                type: string
-                description: >-
-                  Salesforce object (e.g., Account, Contact) targeted by the
-                  query.
-              queryAll:
-                type: boolean
-                description: >-
-                  Whether to include deleted and archived records in the query
-                  (uses queryAll API).
+        type: object
+        properties:
+          connector:
+            type: string
+            description: Must be either `salesforce` or a named Salesforce connector.
+            const: salesforce
+          soql:
+            type: string
+            description: SOQL query to execute against the Salesforce instance.
+          sobject:
+            type: string
+            description: Salesforce object (e.g., Account, Contact) targeted by the query.
+          queryAll:
+            type: boolean
+            description: Whether to include deleted and archived records in the query (uses queryAll API).
+        required:
+          - connector
       snowflake:
-        type: object
         title: snowflake
-        allOf:
-          - type: object
-            properties:
-              connector:
-                type: string
-                const: snowflake
-            required:
-              - connector
-          - $ref: >-
-              #/definitions/model/definitions/snowflake/definitions/snowflake_properties
-        definitions:
-          snowflake_properties:
-            type: object
-            properties: {}
-      sqlite:
         type: object
+        properties:
+          connector:
+            type: string
+            description: Must be either `snowflake` or a named Snowflake connector.
+            const: snowflake
+        required:
+          - connector
+      sqlite:
         title: sqlite
-        allOf:
-          - type: object
-            properties:
-              connector:
-                type: string
-                const: sqlite
-            required:
-              - connector
-          - $ref: >-
-              #/definitions/model/definitions/sqlite/definitions/sqlite_properties
-        definitions:
-          sqlite_properties:
-            type: object
-            properties: {}
+        type: object
+        properties:
+          connector:
+            type: string
+            description: Must be either `sqlite` or a named SQLite connector.
+            const: sqlite
+        required:
+          - connector
   theme:
     type: object
     title: Theme YAML 
@@ -2072,18 +1813,17 @@ definitions:
       prod:
         type: object
         description: Overrides any properties in production environment.
-
-
-
   component_variable_properties:
     type: object
     properties:
       name:
         type: string
+        description: Unique identifier for the variable
       type:
         type: string
+        description: Data type of the variable (e.g., string, number, boolean)
       value:
-        description: The value can be of any type.
+        description: Default value for the variable. Can be any valid JSON value type
         type:
           - string
           - number
@@ -2096,8 +1836,9 @@ definitions:
     additionalProperties: false
   data_properties:
     oneOf:
-      - title: sql
+      - title: SQL Query
         type: object
+        description: Executes a raw SQL query against the project's data models.
         properties:
           sql:
             type: string
@@ -2107,16 +1848,18 @@ definitions:
             description: specifies the connector to use when running SQL or glob queries.
         required:
           - sql
-      - title: metrics_sql
+      - title: Metrics View Query
         type: object
+        description: Executes a SQL query that targets a defined metrics view.
         properties:
           metrics_sql:
             type: string
             description: SQL query that targets a metrics view in the project
         required:
           - metrics_sql
-      - title: api
+      - title: Custom API Call
         type: object
+        description: Calls a custom API defined in the project to compute data.
         properties:
           api:
             type: string
@@ -2127,22 +1870,26 @@ definitions:
             additionalProperties: true
         required:
           - api
-      - title: glob
+      - title: File Glob Query
         type: object
+        description: Uses a file-matching pattern (glob) to query data from a connector.
         properties:
           glob:
+            description:  Defines the file path or pattern to query from the specified connector.
             anyOf:
               - type: string
+                description: A simple file path/glob pattern as a string.
               - type: object
+                description: An object-based configuration for specifying a file path/glob pattern with advanced options.
                 additionalProperties: true
-            description:  Defines the file path or pattern to query from the specified connector.
           connector:
             type: string
             description: Specifies the connector to use with the glob input.
         required:
           - glob
-      - title: resource_status
+      - title: Resource Status Check
         type: object
+        description: Uses the status of a resource as data.
         properties:
           resource_status:
             type: object
@@ -2150,46 +1897,36 @@ definitions:
             properties:
               where_error:
                 type: boolean
-                description: >-
-                  Indicates whether the condition should trigger when the
-                  resource is in an error state.
+                description: Indicates whether the condition should trigger when the resource is in an error state.
             additionalProperties: true
         required:
           - resource_status
   explore_time_range_properties:
     oneOf:
       - type: string
-        description: >-
-          a valid [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601#Durations)
-          duration or one of the [Rill ISO 8601
-          extensions](https://docs.rilldata.com/reference/rill-iso-extensions#extensions)
-          extensions for the selection
+        description: a valid [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601#Durations) duration or one of the [Rill ISO 8601 extensions](https://docs.rilldata.com/reference/rill-iso-extensions#extensions) extensions for the selection
       - type: object
+        description: Object containing time range and comparison configuration
         properties:
           range:
             type: string
-            description: >-
-              a valid [ISO
-              8601](https://en.wikipedia.org/wiki/ISO_8601#Durations) duration
-              or one of the [Rill ISO 8601
-              extensions](https://docs.rilldata.com/reference/rill-iso-extensions#extensions)
-              extensions for the selection
+            description: a valid [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601#Durations) duration or one of the [Rill ISO 8601 extensions](https://docs.rilldata.com/reference/rill-iso-extensions#extensions) extensions for the selection
           comparison_offsets:
             type: array
-            description: >-
-              list of time comparison options for this time range selection
-              (optional). Must be one of the [Rill ISO 8601
-              extensions](https://docs.rilldata.com/reference/rill-iso-extensions#extensions)
+            description: list of time comparison options for this time range selection (optional). Must be one of the [Rill ISO 8601 extensions](https://docs.rilldata.com/reference/rill-iso-extensions#extensions)
             items:
               oneOf:
                 - type: string
                   description: Offset string only (range is inferred)
                 - type: object
+                  description: Object containing offset and range configuration for time comparison
                   properties:
                     offset:
                       type: string
+                      description: Time offset for comparison (e.g., 'P1D' for one day ago)
                     range:
                       type: string
+                      description: Custom time range for comparison period
                   additionalProperties: false
         required:
           - range
@@ -2251,9 +1988,7 @@ definitions:
         description: A cron expression that defines the execution schedule
       time_zone:
         type: string
-        description: >-
-          Time zone to interpret the schedule in (e.g., 'UTC',
-          'America/Los_Angeles').
+        description: Time zone to interpret the schedule in (e.g., 'UTC', 'America/Los_Angeles').
       disable:
         type: boolean
         description: 'If true, disables the resource without deleting it.'
@@ -2265,83 +2000,70 @@ definitions:
         description: 'If true, allows the schedule to run in development mode.'
   security_policy_properties:
     type: object
+    description: Defines security rules and access control policies for resources
     properties:
       access:
         oneOf:
           - type: string
+            description: SQL expression that evaluates to a boolean to determine access
           - type: boolean
-        description: >-
-          Expression indicating if the user should be granted access to the
-          dashboard. If not defined, it will resolve to false and the dashboard
-          won't be accessible to anyone. Needs to be a valid SQL expression that
-          evaluates to a boolean.
+            description: Direct boolean value to allow or deny access
+        description: Expression indicating if the user should be granted access to the dashboard. If not defined, it will resolve to false and the dashboard won't be accessible to anyone. Needs to be a valid SQL expression that evaluates to a boolean.
       row_filter:
         type: string
-        description: >-
-          SQL expression to filter the underlying model by. Can leverage
-          templated user attributes to customize the filter for the requesting
-          user. Needs to be a valid SQL expression that can be injected into a
-          WHERE clause
+        description: SQL expression to filter the underlying model by. Can leverage templated user attributes to customize the filter for the requesting user. Needs to be a valid SQL expression that can be injected into a WHERE clause
       include:
         type: array
-        description: >-
-          List of dimension or measure names to include in the dashboard. If
-          include is defined all other dimensions and measures are excluded
+        description: List of dimension or measure names to include in the dashboard. If include is defined all other dimensions and measures are excluded
         items:
           type: object
           properties:
             if:
               type: string
-              description: >-
-                Expression to decide if the column should be included or not. It
-                can leverage templated user attributes. Needs to be a valid SQL
-                expression that evaluates to a boolean
+              description: Expression to decide if the column should be included or not. It can leverage templated user attributes. Needs to be a valid SQL expression that evaluates to a boolean
             names:
               anyOf:
                 - type: array
+                  description: List of specific field names to include
                   items:
                     type: string
                 - type: string
+                  description: Wildcard '*' to include all fields
                   enum:
                     - '*'
-              description: >-
-                List of fields to include. Should match the name of one of the
-                dashboard's dimensions or measures
+              description: List of fields to include. Should match the name of one of the dashboard's dimensions or measures
           required:
             - if
             - names
       exclude:
         type: array
-        description: >-
-          List of dimension or measure names to exclude from the dashboard. If
-          exclude is defined all other dimensions and measures are included
+        description: List of dimension or measure names to exclude from the dashboard. If exclude is defined all other dimensions and measures are included
         items:
           type: object
           properties:
             if:
               type: string
-              description: >-
-                Expression to decide if the column should be excluded or not. It
-                can leverage templated user attributes. Needs to be a valid SQL
-                expression that evaluates to a boolean
+              description: Expression to decide if the column should be excluded or not. It can leverage templated user attributes. Needs to be a valid SQL expression that evaluates to a boolean
             names:
               anyOf:
                 - type: array
+                  description: List of specific field names to exclude
                   items:
                     type: string
                 - type: string
+                  description: Wildcard '*' to exclude all fields
                   enum:
                     - '*'
-              description: >-
-                List of fields to exclude. Should match the name of one of the
-                dashboard's dimensions or measures
+              description: List of fields to exclude. Should match the name of one of the dashboard's dimensions or measures
           required:
             - if
             - names
       rules:
         type: array
+        description: List of detailed security rules that can be used to define complex access control policies
         items:
           type: object
+          description: Individual security rule definition
           properties:
             type:
               type: string
@@ -2349,20 +2071,26 @@ definitions:
                 - access
                 - field_access
                 - row_filter
+              description: Type of security rule - access (overall access), field_access (field-level access), or row_filter (row-level filtering)
             action:
               type: string
               enum:
                 - allow
                 - deny
+              description: Whether to allow or deny access for this rule
             if:
               type: string
+              description: Conditional expression that determines when this rule applies. Must be a valid SQL expression that evaluates to a boolean
             names:
               type: array
               items:
                 type: string
+              description: List of field names this rule applies to (for field_access type rules)
             all:
               type: boolean
+              description: When true, applies the rule to all fields (for field_access type rules)
             sql:
               type: string
+              description: SQL expression for row filtering (for row_filter type rules)
           required:
             - type
