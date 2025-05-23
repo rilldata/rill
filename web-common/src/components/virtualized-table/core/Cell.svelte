@@ -30,6 +30,7 @@
   export let colSelected = false;
   export let atLeastOneSelected = false;
   export let excludeMode = false;
+  export let positionStatic = false;
   export let label: string | undefined = undefined;
 
   const config: VirtualizedTableConfig = getContext("config");
@@ -105,8 +106,6 @@
     copyToClipboard(exportedValue);
     // update this to set the active animation in the tooltip text
   };
-
-  // No custom click handler needed as we're using the existing spacebar functionality
 </script>
 
 <Tooltip
@@ -116,7 +115,7 @@
 >
   <div
     class="
-      absolute
+      {positionStatic ? 'static' : 'absolute'}
       z-9
       text-ellipsis
       whitespace-nowrap
@@ -151,9 +150,7 @@
           {isDimensionTable ? '' : 'px-4'}
           w-full truncate
           "
-        data-cell-value={value !== null && value !== undefined
-          ? value.toString()
-          : ""}
+        data-cell-value={value?.toString() || ""}
         on:click={modified({
           shift: shiftClick,
         })}
@@ -182,6 +179,5 @@
         <span style="font-family: var(--system);">⇧</span> + Click
       </Shortcut>
     </TooltipShortcutContainer>
-    <!-- Using existing spacebar functionality for cell inspector -->
   </TooltipContent>
 </Tooltip>

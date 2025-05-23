@@ -73,19 +73,6 @@
     };
   });
 
-  function copyToClipboard() {
-    if (value) {
-      navigator.clipboard
-        .writeText(value)
-        .then(() => {
-          // Could add a toast notification here if desired
-        })
-        .catch((err) => {
-          console.error("Failed to copy text: ", err);
-        });
-    }
-  }
-
   // Format number values for display using the tooltip formatter
   function formatValue(value: string): string {
     // Check if the value is a number
