@@ -28,7 +28,7 @@ var (
 		{"Ending", "ending"},
 		// this needs to be after Now and Latest to match to them
 		{"WeekSnapGrain", `[qQMyY][wW]`},
-		{"PeriodToGrain", `[sSmhHdDwWqQMyY]T[sSmhHdDwWqQMyY]`},
+		{"PeriodToGrain", `[sSmhHdDwWqQMyY]TD`},
 		{"Grain", `[sSmhHdDwWqQMyY]`},
 		// this has to be at the end
 		{"TimeZone", `{.+?}`},
@@ -43,6 +43,7 @@ var (
 		{"By", `(?i)by`},
 		{"Of", `(?i)of`},
 		{"As", `(?i)as`},
+		{"In", `(?i)in`},
 		// needed for misc. direct character references used
 		{"Punct", `[-[!@#$%^&*()+_={}\|:;"'<,>.?/]]`},
 		{"Whitespace", `[ \t]+`},
@@ -107,6 +108,16 @@ var (
 		timeutil.TimeGrainQuarter: timeutil.TimeGrainMonth,
 		timeutil.TimeGrainYear:    timeutil.TimeGrainMonth,
 	}
+	simplifiedSnapMap = map[timeutil.TimeGrain]timeutil.TimeGrain{
+		timeutil.TimeGrainSecond:  timeutil.TimeGrainSecond,
+		timeutil.TimeGrainMinute:  timeutil.TimeGrainMinute,
+		timeutil.TimeGrainHour:    timeutil.TimeGrainHour,
+		timeutil.TimeGrainDay:     timeutil.TimeGrainHour,
+		timeutil.TimeGrainWeek:    timeutil.TimeGrainDay,
+		timeutil.TimeGrainMonth:   timeutil.TimeGrainDay,
+		timeutil.TimeGrainQuarter: timeutil.TimeGrainDay,
+		timeutil.TimeGrainYear:    timeutil.TimeGrainDay,
+	}
 )
 
 type Expression struct {
@@ -122,6 +133,8 @@ type Expression struct {
 
 type Interval struct {
 	AnchoredDuration *AnchoredDurationInterval `parser:"( @@"`
+	Shorthand        *ShorthandInterval        `parser:"| @@"`
+	PeriodToGrain    *PeriodToGrainInterval    `parser:"| @@"`
 	Ordinal          *OrdinalInterval          `parser:"| @@"`
 	StartEnd         *StartEndInterval         `parser:"| @@"`
 	Interval         *GrainToInterval          `parser:"| @@"`
@@ -135,6 +148,27 @@ type AnchoredDurationInterval struct {
 	Starting    bool           `parser:"( @Starting"`
 	Ending      bool           `parser:"| @Ending)"`
 	PointInTime *PointInTime   `parser:"@@"`
+}
+
+// ShorthandInterval is a convenience shorthand syntax for the advanced StartEndInterval
+// <num><grain> maps to -<num><grain>/<trunc_grain>$ to <trunc_grain>$, where trunc_grain = max(default_grain(grain), smallest_time_grain)
+// <num><grain> in <snap_grain> maps to -<num><grain>/<trunc_grain>$ to <trunc_grain>$, where trunc_grain = max(snap_grain, smallest_time_grain)
+// <num><grain> in <snap_grain>^ maps to -<num><grain>/<trunc_grain>^ to <trunc_grain>^, where trunc_grain = max(snap_grain, smallest_time_grain)
+type ShorthandInterval struct {
+	Num          int     `parser:"@Number"`
+	Grain        string  `parser:"@Grain"`
+	SnapOverride *string `parser:"(In @Grain)?"`
+	SnapDir      *string `parser:"@Suffix?"`
+}
+
+// PeriodToGrainInterval is a convenience syntax for specifying <grain> to <grain>
+// <grain>TD maps to <grain>^ to <trunc_grain>$, where trunc_grain = max(default_grain(grain), smallest_time_grain)
+// <grain>TD in <snap_grain> maps to <grain>^ to <trunc_grain>$, where trunc_grain = max(snap_grain, smallest_time_grain)
+// <grain>TD in <snap_grain>^ maps to <grain>^ to <trunc_grain>^, where trunc_grain = max(snap_grain, smallest_time_grain)
+type PeriodToGrainInterval struct {
+	PeriodToGrain string  `parser:"@PeriodToGrain"`
+	SnapOverride  *string `parser:"(In @Grain)?"`
+	SnapDir       *string `parser:"@Suffix?"`
 }
 
 // OrdinalInterval is an interval formed with a chain of ordinals ended by an interval.
@@ -256,12 +290,13 @@ type ParseOptions struct {
 }
 
 type EvalOptions struct {
-	Now        time.Time
-	MinTime    time.Time
-	MaxTime    time.Time
-	Watermark  time.Time
-	FirstDay   int
-	FirstMonth int
+	Now           time.Time
+	MinTime       time.Time
+	MaxTime       time.Time
+	Watermark     time.Time
+	FirstDay      int
+	FirstMonth    int
+	SmallestGrain timeutil.TimeGrain // TODO: get from caller
 }
 
 func Parse(from string, parseOpts ParseOptions) (*Expression, error) {
@@ -318,10 +353,16 @@ func (e *Expression) Eval(evalOpts EvalOptions) (time.Time, time.Time, timeutil.
 	if evalOpts.FirstMonth == 0 {
 		evalOpts.FirstMonth = 1
 	}
+	if evalOpts.SmallestGrain == timeutil.TimeGrainUnspecified {
+		evalOpts.SmallestGrain = timeutil.TimeGrainMillisecond
+	}
 
 	start := evalOpts.Watermark
 	if e.AnchorOverride != nil {
 		start = e.AnchorOverride.eval(evalOpts, start, e.timeZone)
+	} else {
+		start = timeutil.OffsetTime(start, evalOpts.SmallestGrain, 1)
+		start = timeutil.TruncateTime(start, evalOpts.SmallestGrain, e.timeZone, evalOpts.FirstDay, evalOpts.FirstMonth)
 	}
 
 	if e.isoDuration != nil {
@@ -392,6 +433,10 @@ func (i *Interval) parse() error {
 func (i *Interval) eval(evalOpts EvalOptions, start time.Time, tz *time.Location) (time.Time, time.Time, timeutil.TimeGrain) {
 	if i.AnchoredDuration != nil {
 		return i.AnchoredDuration.eval(evalOpts, start, tz)
+	} else if i.Shorthand != nil {
+		return i.Shorthand.eval(evalOpts, start, tz)
+	} else if i.PeriodToGrain != nil {
+		return i.PeriodToGrain.eval(evalOpts, start, tz)
 	} else if i.Ordinal != nil {
 		return i.Ordinal.eval(evalOpts, start, tz)
 	} else if i.StartEnd != nil {
@@ -423,6 +468,49 @@ func (o *AnchoredDurationInterval) eval(evalOpts EvalOptions, tm time.Time, tz *
 	return start, end, tg
 }
 
+func (s *ShorthandInterval) eval(evalOpts EvalOptions, tm time.Time, tz *time.Location) (time.Time, time.Time, timeutil.TimeGrain) {
+	tg := grainMap[s.Grain]
+	snapTg := simplifiedSnapMap[tg]
+	if s.SnapOverride != nil {
+		snapTg = grainMap[*s.SnapOverride]
+	}
+	snapTg = max(snapTg, evalOpts.SmallestGrain)
+
+	start := timeutil.OffsetTime(tm, tg, -s.Num)
+	end := tm
+
+	if s.SnapDir == nil || *s.SnapDir == "$" {
+		start = timeutil.CeilTime(start, snapTg, tz, evalOpts.FirstDay, evalOpts.FirstMonth)
+		end = timeutil.CeilTime(end, snapTg, tz, evalOpts.FirstDay, evalOpts.FirstMonth)
+	} else {
+		start = timeutil.TruncateTime(start, snapTg, tz, evalOpts.FirstDay, evalOpts.FirstMonth)
+		end = timeutil.TruncateTime(end, snapTg, tz, evalOpts.FirstDay, evalOpts.FirstMonth)
+	}
+
+	return start, end, tg
+}
+
+func (p *PeriodToGrainInterval) eval(evalOpts EvalOptions, tm time.Time, tz *time.Location) (time.Time, time.Time, timeutil.TimeGrain) {
+	fromTg := grainMap[string(p.PeriodToGrain[0])]
+	toTg := simplifiedSnapMap[fromTg]
+	if p.SnapOverride != nil {
+		toTg = grainMap[*p.SnapOverride]
+	}
+	toTg = max(toTg, evalOpts.SmallestGrain)
+
+	start := tm
+	end := tm
+
+	start = timeutil.TruncateTime(start, fromTg, tz, evalOpts.FirstDay, evalOpts.FirstMonth)
+	if p.SnapDir == nil || *p.SnapDir == "$" {
+		end = timeutil.CeilTime(end, toTg, tz, evalOpts.FirstDay, evalOpts.FirstMonth)
+	} else {
+		end = timeutil.TruncateTime(end, toTg, tz, evalOpts.FirstDay, evalOpts.FirstMonth)
+	}
+
+	return start, end, toTg
+}
+
 func (o *OrdinalInterval) eval(evalOpts EvalOptions, start time.Time, tz *time.Location) (time.Time, time.Time, timeutil.TimeGrain) {
 	end := start
 	if o.End != nil {
@@ -442,10 +530,9 @@ func (o *OrdinalIntervalEnd) eval(evalOpts EvalOptions, start time.Time, tz *tim
 	} else if o.SingleGrain != nil {
 		tg := grainMap[*o.SingleGrain]
 
-		end := timeutil.OffsetTime(start, tg, 1)
-		end = timeutil.TruncateTime(start, tg, tz, evalOpts.FirstDay, evalOpts.FirstMonth)
-
+		end := timeutil.CeilTime(start, tg, tz, evalOpts.FirstDay, evalOpts.FirstMonth)
 		start = truncateWithCorrection(start, tg, tz, evalOpts.FirstDay, evalOpts.FirstMonth)
+
 		return start, end, tg
 	}
 	return start, start, timeutil.TimeGrainUnspecified
@@ -454,10 +541,6 @@ func (o *OrdinalIntervalEnd) eval(evalOpts EvalOptions, start time.Time, tz *tim
 func (o *StartEndInterval) eval(evalOpts EvalOptions, tm time.Time, tz *time.Location) (time.Time, time.Time, timeutil.TimeGrain) {
 	start, startTg := o.Start.eval(evalOpts, tm, tz)
 	end, endTg := o.End.eval(evalOpts, tm, tz)
-	// Correction for labeled ends points. We need to add +1ms to make sure the final point is included as our end time is exclusive.
-	if o.End.Labeled != nil {
-		end = timeutil.OffsetTime(end, timeutil.TimeGrainMillisecond, 1)
-	}
 
 	tg := endTg
 	if endTg == timeutil.TimeGrainUnspecified || startTg > endTg {
@@ -585,11 +668,11 @@ func (g *GrainPointInTimePart) eval(evalOpts EvalOptions, start time.Time, tz *t
 		secondarySnap = grainMap[tgs[1]]
 	}
 
-	// `$` suffix means snap to end. So add 1 to the offset before truncating.
 	if *g.Suffix == "$" {
-		tm = timeutil.OffsetTime(tm, tg, 1)
+		tm = timeutil.CeilTime(tm, tg, tz, evalOpts.FirstDay, evalOpts.FirstMonth)
+	} else {
+		tm = timeutil.TruncateTime(tm, tg, tz, evalOpts.FirstDay, evalOpts.FirstMonth)
 	}
-	tm = timeutil.TruncateTime(tm, tg, tz, evalOpts.FirstDay, evalOpts.FirstMonth)
 
 	if secondarySnap != timeutil.TimeGrainUnspecified {
 		// If there is a secondary snap, then apply it after the primary snap has happened.
@@ -821,7 +904,7 @@ func getMinGrain(d duration.StandardDuration) string {
 }
 
 // truncateWithCorrection truncates time by a grain but corrects for https://en.wikipedia.org/wiki/ISO_week_date#First_week
-// TODO: will adding this directly to timeutil.TruncateTime break anything?
+// In most scenarios we need straight forward truncation. So this is not directly incorporated into timeutil.TruncateTime
 func truncateWithCorrection(tm time.Time, tg timeutil.TimeGrain, tz *time.Location, firstDay, firstMonth int) time.Time {
 	weekday := (7 + int(tm.Weekday()) - (firstDay - 1)) % 7
 	newTm := timeutil.TruncateTime(tm, tg, tz, firstDay, firstMonth)

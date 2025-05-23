@@ -24,6 +24,66 @@ const (
 	TimeGrainYear
 )
 
+func TimeGrainFromAPI(tg runtimev1.TimeGrain) TimeGrain {
+	switch tg {
+	case runtimev1.TimeGrain_TIME_GRAIN_MILLISECOND:
+		return TimeGrainMillisecond
+	case runtimev1.TimeGrain_TIME_GRAIN_SECOND:
+		return TimeGrainSecond
+	case runtimev1.TimeGrain_TIME_GRAIN_MINUTE:
+		return TimeGrainMinute
+	case runtimev1.TimeGrain_TIME_GRAIN_HOUR:
+		return TimeGrainHour
+	case runtimev1.TimeGrain_TIME_GRAIN_DAY:
+		return TimeGrainDay
+	case runtimev1.TimeGrain_TIME_GRAIN_WEEK:
+		return TimeGrainWeek
+	case runtimev1.TimeGrain_TIME_GRAIN_MONTH:
+		return TimeGrainMonth
+	case runtimev1.TimeGrain_TIME_GRAIN_QUARTER:
+		return TimeGrainQuarter
+	case runtimev1.TimeGrain_TIME_GRAIN_YEAR:
+		return TimeGrainYear
+	}
+	return TimeGrainUnspecified
+}
+
+func TimeGrainToAPI(tg TimeGrain) runtimev1.TimeGrain {
+	switch tg {
+	case TimeGrainUnspecified:
+		return runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED
+	case TimeGrainMillisecond:
+		return runtimev1.TimeGrain_TIME_GRAIN_MILLISECOND
+	case TimeGrainSecond:
+		return runtimev1.TimeGrain_TIME_GRAIN_SECOND
+	case TimeGrainMinute:
+		return runtimev1.TimeGrain_TIME_GRAIN_MINUTE
+	case TimeGrainHour:
+		return runtimev1.TimeGrain_TIME_GRAIN_HOUR
+	case TimeGrainDay:
+		return runtimev1.TimeGrain_TIME_GRAIN_DAY
+	case TimeGrainWeek:
+		return runtimev1.TimeGrain_TIME_GRAIN_WEEK
+	case TimeGrainMonth:
+		return runtimev1.TimeGrain_TIME_GRAIN_MONTH
+	case TimeGrainQuarter:
+		return runtimev1.TimeGrain_TIME_GRAIN_QUARTER
+	case TimeGrainYear:
+		return runtimev1.TimeGrain_TIME_GRAIN_YEAR
+	}
+	return runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED
+}
+
+func MinGrain(grain1, grain2 TimeGrain) TimeGrain {
+	if grain1 == TimeGrainUnspecified {
+		return grain2
+	}
+	if grain2 == TimeGrainUnspecified {
+		return grain1
+	}
+	return min(grain1, grain2)
+}
+
 func TruncateTime(tm time.Time, tg TimeGrain, tz *time.Location, firstDay, firstMonth int) time.Time {
 	switch tg {
 	case TimeGrainUnspecified:
@@ -100,6 +160,15 @@ func TruncateTime(tm time.Time, tg TimeGrain, tz *time.Location, firstDay, first
 	return tm
 }
 
+func CeilTime(start time.Time, tg TimeGrain, tz *time.Location, firstDay, firstMonth int) time.Time {
+	truncated := TruncateTime(start, tg, tz, firstDay, firstMonth)
+	if start.Equal(truncated) {
+		return start
+	}
+
+	return OffsetTime(truncated, tg, 1)
+}
+
 func ApproximateBins(start, end time.Time, tg TimeGrain) int {
 	switch tg {
 	case TimeGrainUnspecified:
@@ -125,33 +194,6 @@ func ApproximateBins(start, end time.Time, tg TimeGrain) int {
 	}
 
 	return -1
-}
-
-func AddTimeProto(to time.Time, tg runtimev1.TimeGrain, count int) time.Time {
-	switch tg {
-	case runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED:
-		return to
-	case runtimev1.TimeGrain_TIME_GRAIN_MILLISECOND:
-		return OffsetTime(to, TimeGrainMillisecond, count)
-	case runtimev1.TimeGrain_TIME_GRAIN_SECOND:
-		return OffsetTime(to, TimeGrainSecond, count)
-	case runtimev1.TimeGrain_TIME_GRAIN_MINUTE:
-		return OffsetTime(to, TimeGrainMinute, count)
-	case runtimev1.TimeGrain_TIME_GRAIN_HOUR:
-		return OffsetTime(to, TimeGrainHour, count)
-	case runtimev1.TimeGrain_TIME_GRAIN_DAY:
-		return OffsetTime(to, TimeGrainDay, count)
-	case runtimev1.TimeGrain_TIME_GRAIN_WEEK:
-		return OffsetTime(to, TimeGrainWeek, count)
-	case runtimev1.TimeGrain_TIME_GRAIN_MONTH:
-		return OffsetTime(to, TimeGrainMonth, count)
-	case runtimev1.TimeGrain_TIME_GRAIN_QUARTER:
-		return OffsetTime(to, TimeGrainQuarter, count)
-	case runtimev1.TimeGrain_TIME_GRAIN_YEAR:
-		return OffsetTime(to, TimeGrainYear, count)
-	}
-
-	return to
 }
 
 func OffsetTime(tm time.Time, tg TimeGrain, n int) time.Time {
