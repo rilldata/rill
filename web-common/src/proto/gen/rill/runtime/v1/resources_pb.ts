@@ -4570,14 +4570,19 @@ export class APISpec extends Message<APISpec> {
   openapiSummary = "";
 
   /**
-   * @generated from field: repeated google.protobuf.Struct openapi_parameters = 4;
+   * @generated from field: string openapi_parameters_json = 8;
    */
-  openapiParameters: Struct[] = [];
+  openapiParametersJson = "";
 
   /**
-   * @generated from field: google.protobuf.Struct openapi_response_schema = 5;
+   * @generated from field: string openapi_request_schema_json = 9;
    */
-  openapiResponseSchema?: Struct;
+  openapiRequestSchemaJson = "";
+
+  /**
+   * @generated from field: string openapi_response_schema_json = 10;
+   */
+  openapiResponseSchemaJson = "";
 
   /**
    * @generated from field: repeated rill.runtime.v1.SecurityRule security_rules = 6;
@@ -4600,8 +4605,9 @@ export class APISpec extends Message<APISpec> {
     { no: 1, name: "resolver", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "resolver_properties", kind: "message", T: Struct },
     { no: 3, name: "openapi_summary", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 4, name: "openapi_parameters", kind: "message", T: Struct, repeated: true },
-    { no: 5, name: "openapi_response_schema", kind: "message", T: Struct },
+    { no: 8, name: "openapi_parameters_json", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 9, name: "openapi_request_schema_json", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 10, name: "openapi_response_schema_json", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "security_rules", kind: "message", T: SecurityRule, repeated: true },
     { no: 7, name: "skip_nested_security", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);

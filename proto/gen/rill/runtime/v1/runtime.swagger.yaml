@@ -3304,12 +3304,12 @@ definitions:
         type: object
       openapiSummary:
         type: string
-      openapiParameters:
-        type: array
-        items:
-          type: object
-      openapiResponseSchema:
-        type: object
+      openapiParametersJson:
+        type: string
+      openapiRequestSchemaJson:
+        type: string
+      openapiResponseSchemaJson:
+        type: string
       securityRules:
         type: array
         items:

@@ -210,16 +210,13 @@ export interface V1API {
 
 export type V1APISpecResolverProperties = { [key: string]: unknown };
 
-export type V1APISpecOpenapiParametersItem = { [key: string]: unknown };
-
-export type V1APISpecOpenapiResponseSchema = { [key: string]: unknown };
-
 export interface V1APISpec {
   resolver?: string;
   resolverProperties?: V1APISpecResolverProperties;
   openapiSummary?: string;
-  openapiParameters?: V1APISpecOpenapiParametersItem[];
-  openapiResponseSchema?: V1APISpecOpenapiResponseSchema;
+  openapiParametersJson?: string;
+  openapiRequestSchemaJson?: string;
+  openapiResponseSchemaJson?: string;
   securityRules?: V1SecurityRule[];
   skipNestedSecurity?: boolean;
 }
