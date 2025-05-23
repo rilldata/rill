@@ -358,14 +358,14 @@ const QueryJSONSchema = `
     "dimensions": {
       "type": "array",
       "items": {
-        "$ref": "#/definitions/Dimension"
+        "$ref": "#/$defs/Dimension"
       },
       "description": "List of dimensions to include in the query"
     },
     "measures": {
       "type": "array",
       "items": {
-        "$ref": "#/definitions/Measure"
+        "$ref": "#/$defs/Measure"
       },
       "description": "List of measures to include in the query"
     },
@@ -377,30 +377,30 @@ const QueryJSONSchema = `
       "description": "Dimensions to pivot on"
     },
     "spine": {
-      "$ref": "#/definitions/Spine",
+      "$ref": "#/$defs/Spine",
       "description": "Spine configuration for the query"
     },
     "sort": {
       "type": "array",
       "items": {
-        "$ref": "#/definitions/Sort"
+        "$ref": "#/$defs/Sort"
       },
       "description": "Sort order for the results"
     },
     "time_range": {
-      "$ref": "#/definitions/TimeRange",
+      "$ref": "#/$defs/TimeRange",
       "description": "Time range filter for the query"
     },
     "comparison_time_range": {
-      "$ref": "#/definitions/TimeRange",
+      "$ref": "#/$defs/TimeRange",
       "description": "Time range for comparison"
     },
     "where": {
-      "$ref": "#/definitions/Expression",
+      "$ref": "#/$defs/Expression",
       "description": "WHERE clause expression"
     },
     "having": {
-      "$ref": "#/definitions/Expression",
+      "$ref": "#/$defs/Expression",
       "description": "HAVING clause expression"
     },
     "limit": {
@@ -426,7 +426,7 @@ const QueryJSONSchema = `
       "description": "Whether to return raw rows"
     }
   },
-  "definitions": {
+  "$defs": {
     "Dimension": {
       "type": "object",
       "properties": {
@@ -435,7 +435,7 @@ const QueryJSONSchema = `
           "description": "Name of the dimension"
         },
         "compute": {
-          "$ref": "#/definitions/DimensionCompute",
+          "$ref": "#/$defs/DimensionCompute",
           "description": "Compute configuration for the dimension"
         }
       },
@@ -445,7 +445,7 @@ const QueryJSONSchema = `
       "type": "object",
       "properties": {
         "time_floor": {
-          "$ref": "#/definitions/DimensionComputeTimeFloor"
+          "$ref": "#/$defs/DimensionComputeTimeFloor"
         }
       }
     },
@@ -457,7 +457,7 @@ const QueryJSONSchema = `
           "description": "Dimension to apply time floor to"
         },
         "grain": {
-          "$ref": "#/definitions/TimeGrain",
+          "$ref": "#/$defs/TimeGrain",
           "description": "Time grain for flooring"
         }
       },
@@ -471,7 +471,7 @@ const QueryJSONSchema = `
           "description": "Name of the measure"
         },
         "compute": {
-          "$ref": "#/definitions/MeasureCompute",
+          "$ref": "#/$defs/MeasureCompute",
           "description": "Compute configuration for the measure"
         }
       },
@@ -485,22 +485,22 @@ const QueryJSONSchema = `
           "description": "Whether to compute count"
         },
         "count_distinct": {
-          "$ref": "#/definitions/MeasureComputeCountDistinct"
+          "$ref": "#/$defs/MeasureComputeCountDistinct"
         },
         "comparison_value": {
-          "$ref": "#/definitions/MeasureComputeComparisonValue"
+          "$ref": "#/$defs/MeasureComputeComparisonValue"
         },
         "comparison_delta": {
-          "$ref": "#/definitions/MeasureComputeComparisonDelta"
+          "$ref": "#/$defs/MeasureComputeComparisonDelta"
         },
         "comparison_ratio": {
-          "$ref": "#/definitions/MeasureComputeComparisonRatio"
+          "$ref": "#/$defs/MeasureComputeComparisonRatio"
         },
         "percent_of_total": {
-          "$ref": "#/definitions/MeasureComputePercentOfTotal"
+          "$ref": "#/$defs/MeasureComputePercentOfTotal"
         },
         "uri": {
-          "$ref": "#/definitions/MeasureComputeURI"
+          "$ref": "#/$defs/MeasureComputeURI"
         }
       },
       "oneOf": [
@@ -581,10 +581,10 @@ const QueryJSONSchema = `
       "type": "object",
       "properties": {
         "where": {
-          "$ref": "#/definitions/WhereSpine"
+          "$ref": "#/$defs/WhereSpine"
         },
         "time": {
-          "$ref": "#/definitions/TimeSpine"
+          "$ref": "#/$defs/TimeSpine"
         }
       }
     },
@@ -592,7 +592,7 @@ const QueryJSONSchema = `
       "type": "object",
       "properties": {
         "expr": {
-          "$ref": "#/definitions/Expression"
+          "$ref": "#/$defs/Expression"
         }
       }
     },
@@ -610,7 +610,7 @@ const QueryJSONSchema = `
           "description": "End time"
         },
         "grain": {
-          "$ref": "#/definitions/TimeGrain",
+          "$ref": "#/$defs/TimeGrain",
           "description": "Time grain for the spine"
         }
       },
@@ -656,7 +656,7 @@ const QueryJSONSchema = `
           "description": "ISO 8601 offset"
         },
         "round_to_grain": {
-          "$ref": "#/definitions/TimeGrain",
+          "$ref": "#/$defs/TimeGrain",
           "description": "Time grain to round to"
         }
       }
@@ -672,10 +672,10 @@ const QueryJSONSchema = `
           "description": "Expression value"
         },
         "cond": {
-          "$ref": "#/definitions/Condition"
+          "$ref": "#/$defs/Condition"
         },
         "subquery": {
-          "$ref": "#/definitions/Subquery"
+          "$ref": "#/$defs/Subquery"
         }
       }
     },
@@ -683,13 +683,13 @@ const QueryJSONSchema = `
       "type": "object",
       "properties": {
         "op": {
-          "$ref": "#/definitions/Operator",
+          "$ref": "#/$defs/Operator",
           "description": "Operator for the condition"
         },
         "exprs": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/Expression"
+            "$ref": "#/$defs/Expression"
           },
           "description": "Expressions in the condition"
         }
@@ -700,19 +700,19 @@ const QueryJSONSchema = `
       "type": "object",
       "properties": {
         "dimension": {
-          "$ref": "#/definitions/Dimension"
+          "$ref": "#/$defs/Dimension"
         },
         "measures": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/Measure"
+            "$ref": "#/$defs/Measure"
           }
         },
         "where": {
-          "$ref": "#/definitions/Expression"
+          "$ref": "#/$defs/Expression"
         },
         "having": {
-          "$ref": "#/definitions/Expression"
+          "$ref": "#/$defs/Expression"
         }
       },
       "required": ["dimension", "measures"]
@@ -751,28 +751,6 @@ const QueryJSONSchema = `
         "year"
       ],
       "description": "Time granularity"
-    }
-  },
-  "dependencies": {
-    "rows": {
-      "oneOf": [
-        {
-          "properties": {
-            "rows": {"const": false}
-          }
-        },
-        {
-          "properties": {
-            "rows": {"const": true},
-            "dimensions": {"maxItems": 0},
-            "measures": {"maxItems": 0},
-            "sort": {"maxItems": 0},
-            "comparison_time_range": {"not": {}},
-            "having": {"not": {}},
-            "pivot_on": {"maxItems": 0}
-          }
-        }
-      ]
     }
   }
 }

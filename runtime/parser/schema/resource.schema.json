@@ -259,26 +259,20 @@
                 "summary": {
                   "type": "string"
                 },
-                "request": {
-                  "type": "object",
-                  "properties": {
-                    "parameters": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "additionalProperties": true
-                      }
-                    }
+                "parameters": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": true
                   }
                 },
-                "response": {
+                "request_schema": {
                   "type": "object",
-                  "properties": {
-                    "schema": {
-                      "type": "object",
-                      "additionalProperties": true
-                    }
-                  }
+                  "additionalProperties": true
+                },
+                "response_schema": {
+                  "type": "object",
+                  "additionalProperties": true
                 }
               }
             },
