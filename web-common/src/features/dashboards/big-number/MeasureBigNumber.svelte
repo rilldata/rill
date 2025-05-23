@@ -134,6 +134,7 @@
       class="ui-copy-muted relative w-full h-full overflow-hidden text-ellipsis"
       style:font-size={withTimeseries ? "1.6rem" : "1.8rem"}
       style:font-weight="light"
+      data-cell-value={value?.toString() || ""}
     >
       {#if value !== null && status === EntityStatus.Idle}
         <WithTween {value} tweenProps={{ duration: 500 }} let:output>
