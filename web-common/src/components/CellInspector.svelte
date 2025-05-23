@@ -2,6 +2,7 @@
   import { onMount } from "svelte";
   import { createEventDispatcher } from "svelte";
   import { cellInspectorStore } from "../features/dashboards/stores/cellInspectorStore";
+  import { formatInteger } from "../lib/formatters";
 
   export let value: string = "";
   export let isOpen: boolean = false;
@@ -85,6 +86,16 @@
     }
   }
 
+  // Format number values for display using the tooltip formatter
+  function formatValue(value: string): string {
+    // Check if the value is a number
+    const num = Number(value);
+    if (!isNaN(num)) {
+      return formatInteger(num);
+    }
+    return value;
+  }
+
   // Only update the value on hover, but don't open the inspector
   $: if (hovered && hoveredValue && isOpen) {
     cellInspectorStore.open(hoveredValue, { x: 0, y: 0 });
@@ -94,7 +105,7 @@
 {#if isOpen}
   <div
     bind:this={container}
-    class="fixed top-4 right-4 z-50 transition-opacity shadow-lg rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800"
+    class="fixed top-4 left-[calc(50%+120px)] z-50 transition-opacity shadow-lg rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800"
     class:invisible={!isOpen && !hovered}
     class:opacity-0={!isOpen && !hovered}
     class:opacity-100={isOpen || hovered}
@@ -109,29 +120,17 @@
       bind:this={content}
     >
       <div
-        class="flex items-center justify-between p-0 h-8 border-b border-gray-200 dark:border-gray-700"
+        class="flex items-center justify-between p-2 border-b border-gray-200 dark:border-gray-700"
+        id="cell-inspector-content"
       >
-        <div class="flex items-center px-2" id="cell-inspector-title">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            class="h-5 w-5 text-slate-600 dark:text-gray-300 mr-2"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-            />
-          </svg>
-          <span class="text-sm font-medium text-slate-600 dark:text-gray-300"
-            >Cell Value</span
-          >
+        <div class="flex items-center" id="cell-inspector-title">
+          <pre
+            class="whitespace-pre-wrap break-words font-mono text-sm text-gray-800 dark:text-gray-200 flex-1">{formatValue(
+              value,
+            )}</pre>
         </div>
         <button
-          class="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300 p-1 -mr-1"
+          class="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300 p-1 ml-2"
           on:click|preventDefault={() => dispatch("close")}
           on:keydown={(e) => {
             if (e.key === "Enter" || e.key === " ") {
@@ -158,14 +157,8 @@
           </svg>
         </button>
       </div>
-      <div id="cell-inspector-content" class="flex-1 overflow-auto p-2">
-        <div class="flex justify-end">
-          <pre
-            class="whitespace-pre-wrap break-words font-mono text-sm text-gray-800 dark:text-gray-200 w-fit ml-auto">{value}</pre>
-        </div>
-      </div>
       <div
-        class="p-3 bg-gray-50 dark:bg-gray-700/50 text-xs text-gray-500 dark:text-gray-400 border-t border-gray-200 dark:border-gray-700 flex justify-between items-center"
+        class="p-3 bg-gray-50 dark:bg-gray-700/50 text-xs text-gray-500 dark:text-gray-400 border-t border-gray-200 dark:border-gray-700 flex justify-center items-center"
       >
         <div class="flex space-x-4">
           <span
@@ -181,26 +174,6 @@
             > to copy</span
           >
         </div>
-        <button
-          on:click|preventDefault={(e) =>
-            e.shiftKey ? copyToClipboard() : dispatch("close")}
-          class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            class="h-4 w-4"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M6 18L18 6M6 6l12 12"
-            />
-          </svg>
-        </button>
       </div>
     </div>
   </div>
