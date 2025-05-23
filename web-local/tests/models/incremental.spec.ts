@@ -24,14 +24,29 @@ refresh:
   cron: 0 0 * * *
 partitions:
   sql: SELECT range AS num FROM range(0,10)
-sql: SELECT {{ .partition.num }} AS num, now() AS inserted_on
+sql: >
+  SELECT 
+    {{ .partition.num }} AS num,
+    now() AS inserted_on,
+    CASE WHEN {{ .partition.num }} = 2 THEN error('simulated error') ELSE NULL END as error
 `,
     );
     await waitForProfiling(page, "partitioned_model", ["inserted_on", "num"]);
 
-    // Check that the partitions browser displays the model's partitions
+    // Open the partitions browser
     await page.getByRole("button", { name: "View partitions" }).click();
+
+    // Check that the partitions are displayed
     await expect(page.getByText("num: 0")).toBeVisible();
     await expect(page.getByText("num: 1")).toBeVisible();
+
+    // Filter for the errored partitions
+    await page.getByRole("button", { name: "Filter partitions" }).click();
+    await page.getByRole("option", { name: "errors" }).click();
+
+    // Check that the errored partition is displayed
+    const errorText = page.getByText("failed to incrementally");
+    await expect(errorText).toBeVisible();
+    await expect(errorText).toContainText("simulated error");
   });
 });
