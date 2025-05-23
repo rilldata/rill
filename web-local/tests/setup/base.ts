@@ -3,7 +3,7 @@ import { rmSync, existsSync, mkdirSync, cpSync } from "node:fs";
 import { spawn } from "node:child_process";
 import { join } from "node:path";
 import treeKill from "tree-kill";
-import { getOpenPort } from "web-local/tests/utils/getOpenPort";
+import { getOpenPort } from "@rilldata/web-common/tests/utils/get-open-port";
 import { asyncWaitUntil } from "@rilldata/web-common/lib/waitUtils";
 import axios from "axios";
 
@@ -20,6 +20,7 @@ export const test = base.extend<MyFixtures>({
     const TEST_PORT = await getOpenPort();
     const TEST_PORT_GRPC = await getOpenPort();
     const TEST_PROJECT_DIRECTORY = join(BASE_PROJECT_DIRECTORY, "" + TEST_PORT);
+    const TEST_HOME_DIRECTORY = join(BASE_PROJECT_DIRECTORY, "home");
 
     rmSync(TEST_PROJECT_DIRECTORY, { force: true, recursive: true });
 
@@ -39,6 +40,12 @@ export const test = base.extend<MyFixtures>({
     const childProcess = spawn("../rill", cmd.split(" "), {
       stdio: "inherit",
       shell: true,
+      env: {
+        ...process.env,
+        // Override home so that running locally doesn't take the dev's user info by mistake.
+        // This could later be used to add login/logout tests.
+        HOME: TEST_HOME_DIRECTORY,
+      },
     });
 
     childProcess.on("error", console.log);

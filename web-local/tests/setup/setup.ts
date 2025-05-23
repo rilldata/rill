@@ -3,7 +3,7 @@ import { spawnAndMatch } from "@rilldata/web-common/tests/utils/spawn";
 import { rmSync } from "fs";
 import { join } from "node:path";
 import treeKill from "tree-kill";
-import { getOpenPort } from "web-local/tests/utils/getOpenPort";
+import { getOpenPort } from "@rilldata/web-common/tests/utils/get-open-port";
 import {
   BASE_PROJECT_DIRECTORY,
   test as setup,
