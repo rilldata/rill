@@ -15,6 +15,7 @@
   import { STRING_LIKES } from "@rilldata/web-common/lib/duckdb-data-types";
   import { formatDataTypeAsDuckDbQueryString } from "@rilldata/web-common/lib/formatters";
   import { createEventDispatcher, getContext } from "svelte";
+  import { cellInspectorStore } from "@rilldata/web-common/features/dashboards/stores/cellInspectorStore";
   import BarAndLabel from "../../BarAndLabel.svelte";
   import type { VirtualizedTableConfig } from "../types";
 
@@ -106,6 +107,8 @@
     copyToClipboard(exportedValue);
     // update this to set the active animation in the tooltip text
   };
+
+  // No custom click handler needed as we're using the existing spacebar functionality
 </script>
 
 <Tooltip
@@ -150,6 +153,7 @@
           {isDimensionTable ? '' : 'px-4'}
           w-full truncate
           "
+        data-cell-value={value?.toString() || ""}
         on:click={modified({
           shift: shiftClick,
         })}
@@ -178,5 +182,6 @@
         <span style="font-family: var(--system);">⇧</span> + Click
       </Shortcut>
     </TooltipShortcutContainer>
+    <!-- Using existing spacebar functionality for cell inspector -->
   </TooltipContent>
 </Tooltip>

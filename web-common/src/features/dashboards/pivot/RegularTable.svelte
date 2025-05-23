@@ -109,7 +109,12 @@
     if (typeof x !== "number" || typeof y !== "number") return;
     th.setAttribute("__col", String(x - numFixedCols!));
     th.setAttribute("__row", String(y));
-    if (value?.value) th.setAttribute("title", value?.value);
+
+    // Add data-cell-value attribute for Cell inspector integration
+    if (value?.value !== undefined && value?.value !== null) {
+      th.setAttribute("data-cell-value", String(value.value));
+      th.setAttribute("title", value.value);
+    }
 
     const maybeWidth = getRowHeaderWidth(x);
     if (maybeWidth) {
@@ -144,6 +149,11 @@
     td.setAttribute("__col", String(x));
     td.setAttribute("__row", String(y));
 
+    // Add data-cell-value attribute for Cell inspector integration
+    if (value !== null && value !== undefined) {
+      td.setAttribute("data-cell-value", String(value));
+    }
+
     const maybeWidth = getColumnWidth(x);
     if (maybeWidth) {
       td.style.width = `${maybeWidth}px`;
@@ -151,12 +161,13 @@
       td.style.maxWidth = `${maybeWidth}px`;
     }
 
-    if (typeof value === "string") {
-      td.innerHTML = value;
-    } else if (value === null) {
+    if (value === null) {
       td.innerHTML = NULL_CELL;
     } else if (value === undefined) {
       td.innerHTML = LOADING_CELL;
+    } else if (typeof value === "string") {
+      td.setAttribute("title", value);
+      td.innerHTML = value;
     } else if (typeof value === "number") {
       td.setAttribute("title", value);
       td.innerHTML = formatter(value) ?? "";

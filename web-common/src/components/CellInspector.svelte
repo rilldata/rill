@@ -98,7 +98,7 @@
 {#if isOpen}
   <div
     bind:this={container}
-    class="fixed bottom-4 right-4 z-50 transition-opacity shadow-lg rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800"
+    class="fixed top-4 right-4 z-50 transition-opacity shadow-lg rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800"
     class:invisible={!isOpen && !hovered}
     class:opacity-0={!isOpen && !hovered}
     class:opacity-100={isOpen || hovered}
