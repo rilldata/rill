@@ -53,8 +53,8 @@ func ServeHTTP(ctx context.Context, server *http.Server, options ServeOptions) e
 	case err := <-serveErrCh:
 		return err
 	case <-ctx.Done():
-		// ctx, cancel := context.WithTimeout(context.Background(), httpShutdownTimeout)
-		// defer cancel()
+		ctx, cancel := context.WithTimeout(context.Background(), httpShutdownTimeout)
+		defer cancel()
 
 		return server.Shutdown(ctx)
 	}
