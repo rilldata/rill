@@ -28,7 +28,6 @@
   let numRows = 7;
 
   let parentElement: HTMLDivElement;
-  let suppressTooltip = false;
   let leaderboardWrapperWidth = 0;
 
   $: ({
@@ -146,12 +145,6 @@
       class="grid-wrapper gap-px overflow-x-auto"
       style:grid-template-columns="repeat(auto-fit, minmax({estimatedTableWidth +
         LEADERBOARD_WRAPPER_PADDING}px, 1fr))"
-      on:scroll={() => {
-        suppressTooltip = true;
-      }}
-      on:scrollend={() => {
-        suppressTooltip = false;
-      }}
     >
       {#if parentElement}
         {#each visibleDimensions as dimension (dimension.name)}
@@ -184,7 +177,6 @@
                   : undefined}
                 {dimension}
                 {parentElement}
-                {suppressTooltip}
                 timeControlsReady={true}
                 allowExpandTable={false}
                 allowDimensionComparison={false}
