@@ -1,6 +1,7 @@
 import { test as base, type Page } from "@playwright/test";
 import { getOpenPort } from "@rilldata/web-common/tests/utils/get-open-port";
 import { asyncWaitUntil } from "@rilldata/web-common/lib/waitUtils";
+import { spawnAndMatch } from "@rilldata/web-common/tests/utils/spawn";
 import axios from "axios";
 import { spawn } from "node:child_process";
 import { cpSync, existsSync, mkdirSync, rmSync } from "node:fs";
@@ -72,7 +73,7 @@ export const test = base.extend<MyFixtures>({
     await cliLogout();
   },
 
-  rillDevPage: async ({ viewerPage, cliHome, rillDevProject }, use) => {
+  rillDevPage: async ({ anonPage, cliHome, rillDevProject }, use) => {
     const TEST_PORT = await getOpenPort();
     const TEST_PORT_GRPC = await getOpenPort();
     const TEST_PROJECT_DIRECTORY = join(
@@ -81,6 +82,20 @@ export const test = base.extend<MyFixtures>({
       "" + TEST_PORT,
     );
     const TEST_HOME_DIRECTORY = cliHome ?? join(TestTempDirectory, "home");
+
+    // Switch env to "dev" so that this points to the locally started rill cloud
+    await spawnAndMatch(
+      "../rill",
+      "devtool switch-env dev".split(" "),
+      /Set default env to "dev"/,
+      {
+        additionalEnv: {
+          // Override home so that running locally doesn't take the dev's user info by mistake.
+          // This could later be used to add login/logout tests.
+          HOME: TEST_HOME_DIRECTORY,
+        },
+      },
+    );
 
     rmSync(TEST_PROJECT_DIRECTORY, { force: true, recursive: true });
 
@@ -122,12 +137,12 @@ export const test = base.extend<MyFixtures>({
       }
     });
 
-    await viewerPage.goto(`http://localhost:${TEST_PORT}`);
+    await anonPage.goto(`http://localhost:${TEST_PORT}`);
 
     // Seems to help with issues related to DOM elements not being ready
-    await viewerPage.waitForTimeout(1500);
+    await anonPage.waitForTimeout(1500);
 
-    await use(viewerPage);
+    await use(anonPage);
 
     rmSync(TEST_PROJECT_DIRECTORY, {
       force: true,
