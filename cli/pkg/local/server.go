@@ -482,6 +482,15 @@ func (s *Server) RedeployProject(ctx context.Context, r *connect.Request[localv1
 		return nil, err
 	}
 
+	// if the org is not same as the default org, switch to the org
+	if s.app.ch.Org != projResp.Project.OrgName {
+		s.app.ch.Org = projResp.Project.OrgName
+		err = s.app.ch.DotRill.SetDefaultOrg(s.app.ch.Org)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	if r.Msg.Rearchive { // old zip-and-ship, currently used only for testing until we figure out a good way to test using manged github repos
 		repo, release, err := s.app.Runtime.Repo(ctx, s.app.Instance.ID)
 		if err != nil {
