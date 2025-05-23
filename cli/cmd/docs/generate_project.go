@@ -309,7 +309,7 @@ func generateDoc(sidebarPosition, level int, node *yaml.Node, indent string, req
 
 	var doc strings.Builder
 	nodeType := getScalarValue(node, "type")
-
+	currentLevel := level
 	if nodeType == "object" {
 		title := getScalarValue(node, "title")
 		description := getScalarValue(node, "description")
@@ -417,7 +417,7 @@ func generateDoc(sidebarPosition, level int, node *yaml.Node, indent string, req
 	}
 
 	// Examples
-	if examples := getNodeForKey(node, "examples"); examples != nil && examples.Kind == yaml.SequenceNode && level == 0 {
+	if examples := getNodeForKey(node, "examples"); examples != nil && examples.Kind == yaml.SequenceNode && currentLevel == 0 {
 		doc.WriteString("\n\n## Examples")
 		for _, example := range examples.Content {
 			b, err := yaml.Marshal(example)
