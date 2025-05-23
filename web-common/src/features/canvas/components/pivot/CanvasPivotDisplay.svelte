@@ -1,9 +1,9 @@
 <script lang="ts">
   import type { PivotCanvasComponent } from "@rilldata/web-common/features/canvas/components/pivot";
+  import ComponentHeader from "../../ComponentHeader.svelte";
   import CanvasPivotRenderer from "./CanvasPivotRenderer.svelte";
   import { validateTableSchema } from "./selector";
   import { tableFieldMapper } from "./util";
-  import ComponentHeader from "../../ComponentHeader.svelte";
 
   export let component: PivotCanvasComponent;
 
@@ -58,7 +58,7 @@
   }
 </script>
 
-<ComponentHeader {title} {description} {filters} />
+<ComponentHeader {component} {title} {description} {filters} />
 
 <CanvasPivotRenderer
   {hasHeader}

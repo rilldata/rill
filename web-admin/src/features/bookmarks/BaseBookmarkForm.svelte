@@ -9,7 +9,7 @@
   import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import FilterChipsReadOnly from "@rilldata/web-common/features/dashboards/filters/FilterChipsReadOnly.svelte";
+  import ExploreFilterChipsReadOnly from "@rilldata/web-common/features/dashboards/filters/ExploreFilterChipsReadOnly.svelte";
   import { useExploreState } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import { createTimeControlStoreFromName } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
@@ -77,7 +77,7 @@ Managed bookmarks will be available to all viewers of this dashboard.`;
       <div class="text-gray-800 font-medium">Filters</div>
       <div class="text-gray-500">Inherited from underlying dashboard view.</div>
     </Label>
-    <FilterChipsReadOnly
+    <ExploreFilterChipsReadOnly
       dimensionThresholdFilters={$exploreState.dimensionThresholdFilters}
       dimensionsWithInlistFilter={$exploreState.dimensionsWithInlistFilter}
       filters={$exploreState.whereFilter}
