@@ -34,8 +34,9 @@ type ReportYAML struct {
 		ArgsJSON string         `yaml:"args_json"`
 	} `yaml:"query"`
 	Export struct {
-		Format string `yaml:"format"`
-		Limit  uint   `yaml:"limit"`
+		Format        string `yaml:"format"`
+		IncludeHeader bool   `yaml:"include_header"`
+		Limit         uint   `yaml:"limit"`
 	} `yaml:"export"`
 	Email struct {
 		Recipients []string `yaml:"recipients"`
@@ -202,6 +203,7 @@ func (p *Parser) parseReport(node *Node) error {
 	r.ReportSpec.QueryArgsJson = tmp.Query.ArgsJSON
 	r.ReportSpec.ExportLimit = uint64(tmp.Export.Limit)
 	r.ReportSpec.ExportFormat = exportFormat
+	r.ReportSpec.ExportIncludeHeader = tmp.Export.IncludeHeader
 
 	if isLegacySyntax {
 		// Backwards compatibility

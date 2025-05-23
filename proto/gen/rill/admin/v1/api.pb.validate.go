@@ -38245,6 +38245,8 @@ func (m *ReportOptions) validate(all bool) error {
 
 	// no validation rules for ExportFormat
 
+	// no validation rules for ExportIncludeHeader
+
 	// no validation rules for WebOpenPath
 
 	// no validation rules for WebOpenState
