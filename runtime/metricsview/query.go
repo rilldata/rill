@@ -346,3 +346,434 @@ func TimeGrainFromProto(t runtimev1.TimeGrain) TimeGrain {
 		panic(fmt.Errorf("invalid time grain %q", t))
 	}
 }
+
+const QueryJSONSchema = `
+{
+  "type": "object",
+  "properties": {
+    "metrics_view": {
+      "type": "string",
+      "description": "The metrics view to query"
+    },
+    "dimensions": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/Dimension"
+      },
+      "description": "List of dimensions to include in the query"
+    },
+    "measures": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/Measure"
+      },
+      "description": "List of measures to include in the query"
+    },
+    "pivot_on": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Dimensions to pivot on"
+    },
+    "spine": {
+      "$ref": "#/definitions/Spine",
+      "description": "Spine configuration for the query"
+    },
+    "sort": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/Sort"
+      },
+      "description": "Sort order for the results"
+    },
+    "time_range": {
+      "$ref": "#/definitions/TimeRange",
+      "description": "Time range filter for the query"
+    },
+    "comparison_time_range": {
+      "$ref": "#/definitions/TimeRange",
+      "description": "Time range for comparison"
+    },
+    "where": {
+      "$ref": "#/definitions/Expression",
+      "description": "WHERE clause expression"
+    },
+    "having": {
+      "$ref": "#/definitions/Expression",
+      "description": "HAVING clause expression"
+    },
+    "limit": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Maximum number of rows to return"
+    },
+    "offset": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Number of rows to skip"
+    },
+    "time_zone": {
+      "type": "string",
+      "description": "Time zone for the query"
+    },
+    "use_display_names": {
+      "type": "boolean",
+      "description": "Whether to use display names"
+    },
+    "rows": {
+      "type": "boolean",
+      "description": "Whether to return raw rows"
+    }
+  },
+  "definitions": {
+    "Dimension": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Name of the dimension"
+        },
+        "compute": {
+          "$ref": "#/definitions/DimensionCompute",
+          "description": "Compute configuration for the dimension"
+        }
+      },
+      "required": ["name"]
+    },
+    "DimensionCompute": {
+      "type": "object",
+      "properties": {
+        "time_floor": {
+          "$ref": "#/definitions/DimensionComputeTimeFloor"
+        }
+      }
+    },
+    "DimensionComputeTimeFloor": {
+      "type": "object",
+      "properties": {
+        "dimension": {
+          "type": "string",
+          "description": "Dimension to apply time floor to"
+        },
+        "grain": {
+          "$ref": "#/definitions/TimeGrain",
+          "description": "Time grain for flooring"
+        }
+      },
+      "required": ["dimension", "grain"]
+    },
+    "Measure": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Name of the measure"
+        },
+        "compute": {
+          "$ref": "#/definitions/MeasureCompute",
+          "description": "Compute configuration for the measure"
+        }
+      },
+      "required": ["name"]
+    },
+    "MeasureCompute": {
+      "type": "object",
+      "properties": {
+        "count": {
+          "type": "boolean",
+          "description": "Whether to compute count"
+        },
+        "count_distinct": {
+          "$ref": "#/definitions/MeasureComputeCountDistinct"
+        },
+        "comparison_value": {
+          "$ref": "#/definitions/MeasureComputeComparisonValue"
+        },
+        "comparison_delta": {
+          "$ref": "#/definitions/MeasureComputeComparisonDelta"
+        },
+        "comparison_ratio": {
+          "$ref": "#/definitions/MeasureComputeComparisonRatio"
+        },
+        "percent_of_total": {
+          "$ref": "#/definitions/MeasureComputePercentOfTotal"
+        },
+        "uri": {
+          "$ref": "#/definitions/MeasureComputeURI"
+        }
+      },
+      "oneOf": [
+        {"required": ["count"]},
+        {"required": ["count_distinct"]},
+        {"required": ["comparison_value"]},
+        {"required": ["comparison_delta"]},
+        {"required": ["comparison_ratio"]},
+        {"required": ["percent_of_total"]},
+        {"required": ["uri"]}
+      ]
+    },
+    "MeasureComputeCountDistinct": {
+      "type": "object",
+      "properties": {
+        "dimension": {
+          "type": "string",
+          "description": "Dimension to count distinct values for"
+        }
+      },
+      "required": ["dimension"]
+    },
+    "MeasureComputeComparisonValue": {
+      "type": "object",
+      "properties": {
+        "measure": {
+          "type": "string",
+          "description": "Measure to compare"
+        }
+      },
+      "required": ["measure"]
+    },
+    "MeasureComputeComparisonDelta": {
+      "type": "object",
+      "properties": {
+        "measure": {
+          "type": "string",
+          "description": "Measure to compute delta for"
+        }
+      },
+      "required": ["measure"]
+    },
+    "MeasureComputeComparisonRatio": {
+      "type": "object",
+      "properties": {
+        "measure": {
+          "type": "string",
+          "description": "Measure to compute ratio for"
+        }
+      },
+      "required": ["measure"]
+    },
+    "MeasureComputePercentOfTotal": {
+      "type": "object",
+      "properties": {
+        "measure": {
+          "type": "string",
+          "description": "Measure to compute percentage for"
+        },
+        "total": {
+          "type": "number",
+          "description": "Total value to use for percentage calculation"
+        }
+      },
+      "required": ["measure"]
+    },
+    "MeasureComputeURI": {
+      "type": "object",
+      "properties": {
+        "dimension": {
+          "type": "string",
+          "description": "Dimension to generate URI for"
+        }
+      },
+      "required": ["dimension"]
+    },
+    "Spine": {
+      "type": "object",
+      "properties": {
+        "where": {
+          "$ref": "#/definitions/WhereSpine"
+        },
+        "time": {
+          "$ref": "#/definitions/TimeSpine"
+        }
+      }
+    },
+    "WhereSpine": {
+      "type": "object",
+      "properties": {
+        "expr": {
+          "$ref": "#/definitions/Expression"
+        }
+      }
+    },
+    "TimeSpine": {
+      "type": "object",
+      "properties": {
+        "start": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Start time"
+        },
+        "end": {
+          "type": "string",
+          "format": "date-time",
+          "description": "End time"
+        },
+        "grain": {
+          "$ref": "#/definitions/TimeGrain",
+          "description": "Time grain for the spine"
+        }
+      },
+      "required": ["start", "end", "grain"]
+    },
+    "Sort": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Field name to sort by"
+        },
+        "desc": {
+          "type": "boolean",
+          "description": "Whether to sort in descending order"
+        }
+      },
+      "required": ["name"]
+    },
+    "TimeRange": {
+      "type": "object",
+      "properties": {
+        "start": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Start time"
+        },
+        "end": {
+          "type": "string",
+          "format": "date-time",
+          "description": "End time"
+        },
+        "expression": {
+          "type": "string",
+          "description": "Time range expression"
+        },
+        "iso_duration": {
+          "type": "string",
+          "description": "ISO 8601 duration"
+        },
+        "iso_offset": {
+          "type": "string",
+          "description": "ISO 8601 offset"
+        },
+        "round_to_grain": {
+          "$ref": "#/definitions/TimeGrain",
+          "description": "Time grain to round to"
+        }
+      }
+    },
+    "Expression": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Expression name"
+        },
+        "val": {
+          "description": "Expression value"
+        },
+        "cond": {
+          "$ref": "#/definitions/Condition"
+        },
+        "subquery": {
+          "$ref": "#/definitions/Subquery"
+        }
+      }
+    },
+    "Condition": {
+      "type": "object",
+      "properties": {
+        "op": {
+          "$ref": "#/definitions/Operator",
+          "description": "Operator for the condition"
+        },
+        "exprs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Expression"
+          },
+          "description": "Expressions in the condition"
+        }
+      },
+      "required": ["op"]
+    },
+    "Subquery": {
+      "type": "object",
+      "properties": {
+        "dimension": {
+          "$ref": "#/definitions/Dimension"
+        },
+        "measures": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Measure"
+          }
+        },
+        "where": {
+          "$ref": "#/definitions/Expression"
+        },
+        "having": {
+          "$ref": "#/definitions/Expression"
+        }
+      },
+      "required": ["dimension", "measures"]
+    },
+    "Operator": {
+      "type": "string",
+      "enum": [
+        "",
+        "eq",
+        "neq",
+        "lt",
+        "lte",
+        "gt",
+        "gte",
+        "in",
+        "nin",
+        "ilike",
+        "nilike",
+        "or",
+        "and"
+      ],
+      "description": "Comparison or logical operator"
+    },
+    "TimeGrain": {
+      "type": "string",
+      "enum": [
+        "",
+        "millisecond",
+        "second",
+        "minute",
+        "hour",
+        "day",
+        "week",
+        "month",
+        "quarter",
+        "year"
+      ],
+      "description": "Time granularity"
+    }
+  },
+  "dependencies": {
+    "rows": {
+      "oneOf": [
+        {
+          "properties": {
+            "rows": {"const": false}
+          }
+        },
+        {
+          "properties": {
+            "rows": {"const": true},
+            "dimensions": {"maxItems": 0},
+            "measures": {"maxItems": 0},
+            "sort": {"maxItems": 0},
+            "comparison_time_range": {"not": {}},
+            "having": {"not": {}},
+            "pivot_on": {"maxItems": 0}
+          }
+        }
+      ]
+    }
+  }
+}
+`
