@@ -10,6 +10,7 @@ import {
   type V1AlertSpec,
 } from "@rilldata/web-common/runtime-client";
 import { readable } from "svelte/store";
+import { refetchIntervalStore } from "../shared/refetch-interval";
 
 export function useAlerts(instanceId: string, enabled = true) {
   return createRuntimeServiceListResources(
@@ -21,6 +22,7 @@ export function useAlerts(instanceId: string, enabled = true) {
       query: {
         enabled: enabled && !!instanceId,
         refetchOnMount: true,
+        refetchInterval: refetchIntervalStore.calculatePollingInterval,
       },
     },
   );
@@ -50,9 +52,9 @@ export function useAlertDashboardName(instanceId: string, name: string) {
             return getExploreName(alertSpec.annotations.web_open_path);
 
           const queryArgsJson = JSON.parse(
-            alertSpec.resolverProperties.query_args_json ||
+            (alertSpec.resolverProperties?.query_args_json ||
               alertSpec.queryArgsJson ||
-              "{}",
+              "{}") as string,
           );
 
           return (
