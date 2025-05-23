@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount, onDestroy } from "svelte";
+  import { onMount } from "svelte";
   import { createEventDispatcher } from "svelte";
   import { cellInspectorStore } from "../features/dashboards/stores/cellInspectorStore";
 
@@ -71,10 +71,6 @@
       document.removeEventListener("mousemove", handleHover);
     };
   });
-
-  function stopPropagation(e: Event) {
-    e.stopPropagation();
-  }
 
   function copyToClipboard() {
     if (value) {

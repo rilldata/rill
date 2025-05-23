@@ -15,7 +15,6 @@
   import { STRING_LIKES } from "@rilldata/web-common/lib/duckdb-data-types";
   import { formatDataTypeAsDuckDbQueryString } from "@rilldata/web-common/lib/formatters";
   import { createEventDispatcher, getContext } from "svelte";
-  import { cellInspectorStore } from "@rilldata/web-common/features/dashboards/stores/cellInspectorStore";
   import BarAndLabel from "../../BarAndLabel.svelte";
   import type { VirtualizedTableConfig } from "../types";
 
@@ -31,7 +30,6 @@
   export let colSelected = false;
   export let atLeastOneSelected = false;
   export let excludeMode = false;
-  export let positionStatic = false;
   export let label: string | undefined = undefined;
 
   const config: VirtualizedTableConfig = getContext("config");
@@ -118,7 +116,7 @@
 >
   <div
     class="
-      {positionStatic ? 'static' : 'absolute'}
+      absolute
       z-9
       text-ellipsis
       whitespace-nowrap
