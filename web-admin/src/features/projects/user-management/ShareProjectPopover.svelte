@@ -10,7 +10,7 @@
     createAdminServiceListUsergroupMemberUsers,
   } from "@rilldata/web-admin/client";
   import CopyInviteLinkButton from "@rilldata/web-admin/features/projects/user-management/CopyInviteLinkButton.svelte";
-  import UserInviteForm from "@rilldata/web-admin/features/projects/user-management/UserInviteForm.svelte";
+  import UserAndGroupInviteForm from "@rilldata/web-admin/features/projects/user-management/UserAndGroupInviteForm.svelte";
   import { Button } from "@rilldata/web-common/components/button";
   import {
     Popover,
@@ -25,17 +25,18 @@
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import Avatar from "@rilldata/web-common/components/avatar/Avatar.svelte";
   import { getRandomBgColor } from "@rilldata/web-common/features/themes/color-config";
-
+  import { cn } from "@rilldata/web-common/lib/shadcn";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import CaretUpIcon from "@rilldata/web-common/components/icons/CaretUpIcon.svelte";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import Lock from "@rilldata/web-common/components/icons/Lock.svelte";
-  import UsergroupSetRole from "./UsergroupSetRole.svelte";
-  import { cn } from "@rilldata/web-common/lib/shadcn";
+  import ProjectUserGroupItem from "./ProjectUserGroupItem.svelte";
 
   export let organization: string;
   export let project: string;
   export let manageProjectAdmins: boolean;
+  export let manageOrgAdmins: boolean;
+  export let manageOrgMembers: boolean;
 
   let open = false;
   let accessDropdownOpen = false;
@@ -182,6 +183,11 @@
     return 0;
   });
 
+  // FIXME: low priority - investigate if the usersCount is correct
+  $: projectUserGroups = projectMemberUserGroupsList.filter(
+    (group) => !group.groupManaged,
+  );
+
   $: hasAutogroupMembers = projectMemberUserGroupsList.some(
     (group) => group.groupName === "autogroup:members",
   );
@@ -203,7 +209,7 @@
         <div class="text-sm font-medium">Share project: {project}</div>
         <div class="grow"></div>
       </div>
-      <UserInviteForm {organization} {project} />
+      <UserAndGroupInviteForm {organization} {project} />
       <!-- 52 * 8 = 416px -->
       <div class="flex flex-col gap-y-1 overflow-y-auto max-h-[416px]">
         <div class="mt-4">
@@ -225,6 +231,15 @@
               orgRole={user.orgRoleName}
               {manageProjectAdmins}
               manageProjectMembers={true}
+            />
+          {/each}
+          {#each projectUserGroups as group}
+            <ProjectUserGroupItem
+              {organization}
+              {group}
+              {project}
+              {manageOrgAdmins}
+              {manageOrgMembers}
             />
           {/each}
         </div>
@@ -354,14 +369,6 @@
                   </DropdownMenu.Item>
                 </DropdownMenu.Content>
               </DropdownMenu.Root>
-
-              {#if hasAutogroupMembers}
-                {#each projectMemberUserGroupsList as group}
-                  {#if group.groupName === "autogroup:members"}
-                    <UsergroupSetRole {organization} {project} {group} />
-                  {/if}
-                {/each}
-              {/if}
             </div>
 
             <TooltipContent slot="tooltip-content">
