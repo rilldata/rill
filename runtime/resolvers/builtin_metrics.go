@@ -4,11 +4,17 @@ import (
 	"context"
 
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/metricsview"
 )
 
 func init() {
 	runtime.RegisterResolverInitializer("builtin_metrics", newBuiltinMetrics)
-	runtime.RegisterBuiltinAPI("metrics", "builtin_metrics", nil)
+	runtime.RegisterBuiltinAPI(&runtime.BuiltinAPIOptions{
+		Name:                 "metrics",
+		Resolver:             "builtin_metrics",
+		OpenAPISummary:       "The main API for querying metrics",
+		OpenAPIRequestSchema: metricsview.QueryJSONSchema,
+	})
 }
 
 // newBuiltinMetrics is a resolver for the built-in /metrics API.

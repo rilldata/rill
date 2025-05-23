@@ -1,10 +1,10 @@
 package parser
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"github.com/rilldata/rill/runtime/pkg/openapiutil"
-	"google.golang.org/protobuf/types/known/structpb"
 )
 
 // APIYAML is the raw structure of a API resource defined in YAML (does not include common fields)
@@ -16,13 +16,10 @@ type APIYAML struct {
 }
 
 type OpenAPIYAML struct {
-	Summary string `yaml:"summary"`
-	Request struct {
-		Parameters []map[string]any `yaml:"parameters"`
-	} `yaml:"request"`
-	Response struct {
-		Schema map[string]any `yaml:"schema"`
-	} `yaml:"response"`
+	Summary        string           `yaml:"summary"`
+	Parameters     []map[string]any `yaml:"parameters"`
+	RequestSchema  map[string]any   `yaml:"request_schema"`
+	ResponseSchema map[string]any   `yaml:"response_schema"`
 }
 
 // parseAPI parses an API definition and adds the resulting resource to p.Resources.
@@ -35,32 +32,39 @@ func (p *Parser) parseAPI(node *Node) error {
 	}
 
 	// Validate
-	var openapiSummary string
-	var openapiParams []*structpb.Struct
-	var openapiSchema *structpb.Struct
+	var openapiSummary, openapiParams, openapiRequestSchema, openapiResponseSchema string
 	if tmp.OpenAPI != nil {
 		openapiSummary = tmp.OpenAPI.Summary
 
-		_, err := openapiutil.MapToParameters(tmp.OpenAPI.Request.Parameters)
+		paramsJSON, err := json.Marshal(tmp.OpenAPI.Parameters)
 		if err != nil {
-			return fmt.Errorf("encountered invalid parameter type: %w", err)
+			return fmt.Errorf("invalid openapi.parameters: %w", err)
 		}
-		for _, param := range tmp.OpenAPI.Request.Parameters {
-			paramPB, err := structpb.NewStruct(param)
-			if err != nil {
-				return fmt.Errorf("encountered invalid parameter type: %w", err)
-			}
-			openapiParams = append(openapiParams, paramPB)
+		_, err = openapiutil.ParseJSONParameters(string(paramsJSON))
+		if err != nil {
+			return fmt.Errorf("invalid openapi.parameters: %w", err)
 		}
+		openapiParams = string(paramsJSON)
 
-		_, err = openapiutil.MapToSchema(tmp.OpenAPI.Response.Schema)
+		requestSchemaJSON, err := json.Marshal(tmp.OpenAPI.RequestSchema)
 		if err != nil {
-			return fmt.Errorf("encountered invalid schema type: %w", err)
+			return fmt.Errorf("invalid openapi.request_schema: %w", err)
 		}
-		openapiSchema, err = structpb.NewStruct(tmp.OpenAPI.Response.Schema)
+		_, _, err = openapiutil.ParseJSONSchema(node.Name, string(requestSchemaJSON))
 		if err != nil {
-			return fmt.Errorf("encountered invalid schema type: %w", err)
+			return fmt.Errorf("invalid openapi.request_schema: %w", err)
 		}
+		openapiRequestSchema = string(requestSchemaJSON)
+
+		responseSchemaJSON, err := json.Marshal(tmp.OpenAPI.ResponseSchema)
+		if err != nil {
+			return fmt.Errorf("invalid openapi.response_schema: %w", err)
+		}
+		_, _, err = openapiutil.ParseJSONSchema(node.Name, string(responseSchemaJSON))
+		if err != nil {
+			return fmt.Errorf("invalid openapi.response_schema: %w", err)
+		}
+		openapiResponseSchema = string(responseSchemaJSON)
 	}
 
 	// Map common node properties to DataYAML
@@ -97,8 +101,9 @@ func (p *Parser) parseAPI(node *Node) error {
 	r.APISpec.Resolver = resolver
 	r.APISpec.ResolverProperties = resolverProps
 	r.APISpec.OpenapiSummary = openapiSummary
-	r.APISpec.OpenapiParameters = openapiParams
-	r.APISpec.OpenapiResponseSchema = openapiSchema
+	r.APISpec.OpenapiParametersJson = openapiParams
+	r.APISpec.OpenapiRequestSchemaJson = openapiRequestSchema
+	r.APISpec.OpenapiResponseSchemaJson = openapiResponseSchema
 	r.APISpec.SecurityRules = securityRules
 	r.APISpec.SkipNestedSecurity = tmp.SkipNestedSecurity
 
