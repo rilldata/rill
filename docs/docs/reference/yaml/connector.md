@@ -4,11 +4,22 @@ title: Connector YAML
 sidebar_position: 35
 ---
 
+When you add olap_connector to your rill.yaml file, you will need to set up a `<connector_name>.yaml` file in the 'connectors' directory. This file requires the following parameters,type and driver (see below for more parameter options). Rill will automatically test the connectivity to the OLAP engine upon saving the file. This can be viewed in the connectors tab in the UI.
+
+:::tip Did you know?
+
+Starting from Rill 0.46, you can directly create OLAP engines from the UI! Select + Add -> Data -> Connect an OLAP engine
+
+:::
+
+
 ## Properties
 
 ### `type`
 
-_[string]_ - Refers to the resource type and must be `connector`  _(required)_
+_[string]_ - Refers to the resource type and must be `connector` _(required)_
+
+## Common Properties
 
 ### `name`
 
@@ -16,7 +27,15 @@ _[string]_ - Name is usually inferred from the filename, but can be specified ma
 
 ### `refs`
 
-_[array of string]_ - List of resource references, each as a string or map. 
+_[array of string]_ - List of resource references 
+
+### `dev`
+
+_[object]_ - Overrides any properties in development environment. 
+
+### `prod`
+
+_[object]_ - Overrides any properties in production environment. 
 
 ## One of Properties Options
 - [athena](#athena)
@@ -45,7 +64,7 @@ Configuration properties specific to the athena
 
 ### `driver`
 
-_[string]_ - Refers to the driver type and must be driver `athena`  _(required)_
+_[string]_ - Refers to the driver type and must be driver `athena` _(required)_
 
 ### `aws_access_key_id`
 
@@ -75,21 +94,13 @@ _[string]_ - Optional Session name when assuming the role
 
 _[boolean]_ - Allow access to host environment configuration 
 
-### `dev`
-
-_[object]_ - Overrides properties in development 
-
-### `prod`
-
-_[object]_ - Overrides properties in production 
-
 ## azure
 
 Configuration properties specific to the azure
 
 ### `driver`
 
-_[string]_ - Refers to the driver type and must be driver `azure`  _(required)_
+_[string]_ - Refers to the driver type and must be driver `azure` _(required)_
 
 ### `azure_storage_account`
 
@@ -111,21 +122,13 @@ _[string]_ - Optional azure connection string for storage account
 
 _[boolean]_ - Allow access to host environment configuration 
 
-### `dev`
-
-_[object]_ - Overrides properties in development 
-
-### `prod`
-
-_[object]_ - Overrides properties in production 
-
 ## bigquery
 
 Configuration properties specific to the bigquery
 
 ### `driver`
 
-_[string]_ - Refers to the driver type and must be driver `bigquery`  _(required)_
+_[string]_ - Refers to the driver type and must be driver `bigquery` _(required)_
 
 ### `google_application_credentials`
 
@@ -135,21 +138,13 @@ _[string]_ - Path to the Google Cloud credentials JSON file
 
 _[boolean]_ - Allow access to host environment configuration 
 
-### `dev`
-
-_[object]_ - Overrides properties in development 
-
-### `prod`
-
-_[object]_ - Overrides properties in production 
-
 ## clickhouse
 
 Configuration properties specific to the clickhouse
 
 ### `driver`
 
-_[string]_ - Refers to the driver type and must be driver `clickhouse`  _(required)_
+_[string]_ - Refers to the driver type and must be driver `clickhouse` _(required)_
 
 ### `managed`
 
@@ -223,21 +218,13 @@ _[string]_ - Maximum time a connection may be reused
 
 _[string]_ - Maximum time for a connection to read data 
 
-### `dev`
-
-_[object]_ - Overrides properties in development 
-
-### `prod`
-
-_[object]_ - Overrides properties in production 
-
 ## druid
 
 Configuration properties specific to the druid
 
 ### `driver`
 
-_[string]_ - Refers to the driver type and must be driver `druid`  _(required)_
+_[string]_ - Refers to the driver type and must be driver `druid` _(required)_
 
 ### `dsn`
 
@@ -275,21 +262,13 @@ _[integer]_ - Maximum number of open database connections (0 = default, -1 = unl
 
 _[boolean]_ - Skip checking Druid version compatibility 
 
-### `dev`
-
-_[object]_ - Overrides properties in development 
-
-### `prod`
-
-_[object]_ - Overrides properties in production 
-
 ## duckdb
 
 Configuration properties specific to the duckdb
 
 ### `driver`
 
-_[string]_ - Refers to the driver type and must be driver `duckdb`  _(required)_
+_[string]_ - Refers to the driver type and must be driver `duckdb` _(required)_
 
 ### `pool_size`
 
@@ -323,21 +302,13 @@ _[string]_ - SQL to run when initializing a new connection, after extensions and
 
 _[boolean]_ - Whether to log raw SQL queries executed through OLAP 
 
-### `dev`
-
-_[object]_ - Overrides properties in development 
-
-### `prod`
-
-_[object]_ - Overrides properties in production 
-
 ## gcs
 
 Configuration properties specific to the gcs
 
 ### `driver`
 
-_[string]_ - Refers to the driver type and must be driver `gcs`  _(required)_
+_[string]_ - Refers to the driver type and must be driver `gcs` _(required)_
 
 ### `google_application_credentials`
 
@@ -355,21 +326,13 @@ _[string]_ - Optional S3-compatible Key ID when used in compatibility mode
 
 _[string]_ - Optional S3-compatible Secret when used in compatibility mode 
 
-### `dev`
-
-_[object]_ - Overrides properties in development 
-
-### `prod`
-
-_[object]_ - Overrides properties in production 
-
 ## https
 
 Configuration properties specific to the https
 
 ### `driver`
 
-_[string]_ - Refers to the driver type and must be driver `https`  _(required)_
+_[string]_ - Refers to the driver type and must be driver `https` _(required)_
 
 ### `path`
 
@@ -379,21 +342,13 @@ _[string]_ - The full HTTPS URI to fetch data from
 
 _[object]_ - HTTP headers to include in the request 
 
-### `dev`
-
-_[object]_ - Overrides properties in development 
-
-### `prod`
-
-_[object]_ - Overrides properties in production 
-
 ## local_file
 
 Configuration properties specific to the local_file
 
 ### `driver`
 
-_[string]_ - Refers to the driver type and must be driver `local_file`  _(required)_
+_[string]_ - Refers to the driver type and must be driver `local_file` _(required)_
 
 ### `dsn`
 
@@ -403,21 +358,13 @@ _[string]_ - Data Source Name (DSN) indicating the file path or location of the 
 
 _[boolean]_ - Flag to indicate if access to host-level file paths is permitted 
 
-### `dev`
-
-_[object]_ - Overrides properties in development 
-
-### `prod`
-
-_[object]_ - Overrides properties in production 
-
 ## motherduck
 
 Configuration properties specific to the motherduck
 
 ### `driver`
 
-_[string]_ - Refers to the driver type and must be driver `motherduck`  _(required)_
+_[string]_ - Refers to the driver type and must be driver `motherduck` _(required)_
 
 ### `dsn`
 
@@ -427,33 +374,17 @@ _[string]_ - Data Source Name (DSN) specifying the MotherDuck connection endpoin
 
 _[string]_ - Authentication token for accessing MotherDuck (secret) 
 
-### `dev`
-
-_[object]_ - Overrides properties in development 
-
-### `prod`
-
-_[object]_ - Overrides properties in production 
-
 ## mysql
 
 Configuration properties specific to the mysql
 
 ### `driver`
 
-_[string]_ - Refers to the driver type and must be driver `mysql`  _(required)_
+_[string]_ - Refers to the driver type and must be driver `mysql` _(required)_
 
 ### `dsn`
 
 _[string]_ - DSN(Data Source Name) for the mysql connection 
-
-### `dev`
-
-_[object]_ - Overrides properties in development 
-
-### `prod`
-
-_[object]_ - Overrides properties in production 
 
 ## pinot
 
@@ -461,7 +392,7 @@ Configuration properties specific to the pinot
 
 ### `driver`
 
-_[string]_ - Refers to the driver type and must be driver `pinot`  _(required)_
+_[string]_ - Refers to the driver type and must be driver `pinot` _(required)_
 
 ### `dsn`
 
@@ -503,33 +434,17 @@ _[boolean]_ - Log raw SQL queries executed through Pinot
 
 _[integer]_ - Maximum number of open connections to the Pinot database 
 
-### `dev`
-
-_[object]_ - Overrides properties in development 
-
-### `prod`
-
-_[object]_ - Overrides properties in production 
-
 ## postgres
 
 Configuration properties specific to the postgres
 
 ### `driver`
 
-_[string]_ - Refers to the driver type and must be driver `postgres`  _(required)_
+_[string]_ - Refers to the driver type and must be driver `postgres` _(required)_
 
 ### `dsn`
 
 _[string]_ - DSN(Data Source Name) for the postgres connection 
-
-### `dev`
-
-_[object]_ - Overrides properties in development 
-
-### `prod`
-
-_[object]_ - Overrides properties in production 
 
 ## redshift
 
@@ -537,7 +452,7 @@ Configuration properties specific to the redshift
 
 ### `driver`
 
-_[string]_ - Refers to the driver type and must be driver `redshift`  _(required)_
+_[string]_ - Refers to the driver type and must be driver `redshift` _(required)_
 
 ### `aws_access_key_id`
 
@@ -555,21 +470,13 @@ _[string]_ - AWS session token for temporary credentials (optional)
 
 _[boolean]_ - Allow access to host environment configuration 
 
-### `dev`
-
-_[object]_ - Overrides properties in development 
-
-### `prod`
-
-_[object]_ - Overrides properties in production 
-
 ## s3
 
 Configuration properties specific to the s3
 
 ### `driver`
 
-_[string]_ - Refers to the driver type and must be driver `s3`  _(required)_
+_[string]_ - Refers to the driver type and must be driver `s3` _(required)_
 
 ### `aws_access_key_id`
 
@@ -599,21 +506,13 @@ _[boolean]_ - Allow access to host environment configuration
 
 _[boolean]_ - Whether to retain intermediate files after processing 
 
-### `dev`
-
-_[object]_ - Overrides properties in development 
-
-### `prod`
-
-_[object]_ - Overrides properties in production 
-
 ## salesforce
 
 Configuration properties specific to the salesforce
 
 ### `driver`
 
-_[string]_ - Refers to the driver type and must be driver `salesforce`  _(required)_
+_[string]_ - Refers to the driver type and must be driver `salesforce` _(required)_
 
 ### `username`
 
@@ -635,33 +534,17 @@ _[string]_ - Salesforce API endpoint URL
 
 _[string]_ - Client ID used for Salesforce OAuth authentication 
 
-### `dev`
-
-_[object]_ - Overrides properties in development 
-
-### `prod`
-
-_[object]_ - Overrides properties in production 
-
 ## slack
 
 Configuration properties specific to the slack
 
 ### `driver`
 
-_[string]_ - Refers to the driver type and must be driver `slack`  _(required)_
+_[string]_ - Refers to the driver type and must be driver `slack` _(required)_
 
 ### `bot_token`
 
 _[string]_ - Bot token used for authenticating Slack API requests 
-
-### `dev`
-
-_[object]_ - Overrides properties in development 
-
-### `prod`
-
-_[object]_ - Overrides properties in production 
 
 ## snowflake
 
@@ -669,7 +552,7 @@ Configuration properties specific to the snowflake
 
 ### `driver`
 
-_[string]_ - Refers to the driver type and must be driver `snowflake`  _(required)_
+_[string]_ - Refers to the driver type and must be driver `snowflake` _(required)_
 
 ### `dsn`
 
@@ -679,30 +562,14 @@ _[string]_ - DSN (Data Source Name) for the Snowflake connection
 
 _[integer]_ - Maximum number of concurrent fetches during query execution 
 
-### `dev`
-
-_[object]_ - Overrides properties in development 
-
-### `prod`
-
-_[object]_ - Overrides properties in production 
-
 ## sqlite
 
 Configuration properties specific to the sqlite
 
 ### `driver`
 
-_[string]_ - Refers to the driver type and must be driver `sqlite`  _(required)_
+_[string]_ - Refers to the driver type and must be driver `sqlite` _(required)_
 
 ### `dsn`
 
 _[string]_ - DSN(Data Source Name) for the sqlite connection 
-
-### `dev`
-
-_[object]_ - Overrides properties in development 
-
-### `prod`
-
-_[object]_ - Overrides properties in production 

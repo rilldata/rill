@@ -10,23 +10,7 @@ In your Rill project directory, create a explore dashboard, `<dashboard_name>.ya
 
 ### `type`
 
-_[string]_ - Refers to the resource type and must be `explore`  _(required)_
-
-### `name`
-
-_[string]_ - Name is usually inferred from the filename, but can be specified manually. 
-
-### `refs`
-
-_[array of string]_ - List of resource references, each as a string or map. 
-
-### `dev`
-
-_[object]_ - Overrides properties in development 
-
-### `prod`
-
-_[object]_ - Overrides properties in production 
+_[string]_ - Refers to the resource type and must be `explore` _(required)_
 
 ### `display_name`
 
@@ -56,15 +40,9 @@ _[oneOf]_ - List of dimension names. Use '*' to select all dimensions (default)
 
     - **`regex`** - _[string]_ - Select dimensions using a regular expression 
 
-    - **`expr`** - _[string]_  
+    - **`expr`** - _[string]_ - (no description) 
 
     - **`exclude`** - _[object]_ - Select all dimensions except those listed here 
-
-    - **option 1** 
-
-    - **option 2** 
-
-    - **option 3** 
 
 ### `measures`
 
@@ -78,43 +56,23 @@ _[oneOf]_ -  List of measure names. Use '*' to select all measures (default)
 
     - **`regex`** - _[string]_ - Select dimensions using a regular expression 
 
-    - **`expr`** - _[string]_  
+    - **`expr`** - _[string]_ - (no description) 
 
     - **`exclude`** - _[object]_ - Select all dimensions except those listed here 
-
-    - **option 1** 
-
-    - **option 2** 
-
-    - **option 3** 
 
 ### `theme`
 
 _[oneOf]_ - Name of the theme to use. Only one of theme and embedded_theme can be set. 
 
-  - **option 1** - _[string]_ 
+  - **option 1** - _[string]_ - (no description)
 
-  - **option 2** - _[object]_ 
+  - **option 2** - _[object]_ - (no description)
 
-    - **`type`** - _[string]_ - Refers to the resource type and must be `theme`  _(required)_
+    - **`colors`** - _[object]_ - Used to override the dashboard colors. Either primary or secondary color must be provided. 
 
-    - **`name`** - _[string]_ - Name is usually inferred from the filename, but can be specified manually. 
+      - **`primary`** - _[string]_ - Overrides the primary blue color in the dashboard. Can have any hex (without the '#' character), [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats. Note that the hue of the input colors is used for variants but the saturation and lightness is copied over from the [blue color palette](https://tailwindcss.com/docs/customizing-colors). 
 
-    - **`refs`** - _[array of string]_ - List of resource references, each as a string or map. 
-
-    - **`dev`** - _[object]_ - Overrides properties in development 
-
-    - **`prod`** - _[object]_ - Overrides properties in production 
-
-    - **`colors`** - _[anyOf]_   _(required)_
-
-      - **option 1** - _[object]_ 
-
-        - **`primary`** - _[string]_   _(required)_
-
-      - **option 2** - _[object]_ 
-
-        - **`secondary`** - _[string]_   _(required)_
+      - **`secondary`** - _[string]_ - Overrides the secondary color in the dashboard. Applies to the loading spinner only as of now. Can have any hex (without the '#' character), [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats. 
 
 ### `time_ranges`
 
@@ -122,19 +80,19 @@ _[array of oneOf]_ - Overrides the list of default time range selections availab
 
   - **option 1** - _[string]_ - a valid [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601#Durations) duration or one of the [Rill ISO 8601 extensions](https://docs.rilldata.com/reference/rill-iso-extensions#extensions) extensions for the selection
 
-  - **option 2** - _[object]_ 
+  - **option 2** - _[object]_ - (no description)
 
-    - **`range`** - _[string]_ - a valid [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601#Durations) duration or one of the [Rill ISO 8601 extensions](https://docs.rilldata.com/reference/rill-iso-extensions#extensions) extensions for the selection  _(required)_
+    - **`range`** - _[string]_ - a valid [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601#Durations) duration or one of the [Rill ISO 8601 extensions](https://docs.rilldata.com/reference/rill-iso-extensions#extensions) extensions for the selection _(required)_
 
     - **`comparison_offsets`** - _[array of oneOf]_ - list of time comparison options for this time range selection (optional). Must be one of the [Rill ISO 8601 extensions](https://docs.rilldata.com/reference/rill-iso-extensions#extensions) 
 
       - **option 1** - _[string]_ - Offset string only (range is inferred)
 
-      - **option 2** - _[object]_ 
+      - **option 2** - _[object]_ - (no description)
 
-        - **`offset`** - _[string]_  
+        - **`offset`** - _[string]_ - (no description) 
 
-        - **`range`** - _[string]_  
+        - **`range`** - _[string]_ - (no description) 
 
 ### `time_zones`
 
@@ -162,15 +120,9 @@ _[object]_ - defines the defaults YAML struct
 
       - **`regex`** - _[string]_ - Select dimensions using a regular expression 
 
-      - **`expr`** - _[string]_  
+      - **`expr`** - _[string]_ - (no description) 
 
       - **`exclude`** - _[object]_ - Select all dimensions except those listed here 
-
-      - **option 1** 
-
-      - **option 2** 
-
-      - **option 3** 
 
   - **`measures`** - _[oneOf]_ - Provides the default measures to load on viewing the dashboard 
 
@@ -182,15 +134,9 @@ _[object]_ - defines the defaults YAML struct
 
       - **`regex`** - _[string]_ - Select dimensions using a regular expression 
 
-      - **`expr`** - _[string]_  
+      - **`expr`** - _[string]_ - (no description) 
 
       - **`exclude`** - _[object]_ - Select all dimensions except those listed here 
-
-      - **option 1** 
-
-      - **option 2** 
-
-      - **option 3** 
 
   - **`time_range`** - _[string]_ - Refers to the default time range shown when a user initially loads the dashboard. The value must be either a valid [ISO 8601 duration](https://en.wikipedia.org/wiki/ISO_8601#Durations) (for example, PT12H for 12 hours, P1M for 1 month, or P26W for 26 weeks) or one of the [Rill ISO 8601 extensions](https://docs.rilldata.com/reference/rill-iso-extensions#extensions) 
 
@@ -200,9 +146,9 @@ _[object]_ - defines the defaults YAML struct
 
 ### `embeds`
 
-_[object]_  
+_[object]_ - (no description) 
 
-  - **`hide_pivot`** - _[boolean]_  
+  - **`hide_pivot`** - _[boolean]_ - (no description) 
 
 ### `security`
 
@@ -210,42 +156,60 @@ _[object]_ - Security rules to apply for access to the explore dashboard
 
   - **`access`** - _[oneOf]_ - Expression indicating if the user should be granted access to the dashboard. If not defined, it will resolve to false and the dashboard won't be accessible to anyone. Needs to be a valid SQL expression that evaluates to a boolean. 
 
-    - **option 1** - _[string]_ 
+    - **option 1** - _[string]_ - (no description)
 
-    - **option 2** - _[boolean]_ 
+    - **option 2** - _[boolean]_ - (no description)
 
   - **`row_filter`** - _[string]_ - SQL expression to filter the underlying model by. Can leverage templated user attributes to customize the filter for the requesting user. Needs to be a valid SQL expression that can be injected into a WHERE clause 
 
   - **`include`** - _[array of object]_ - List of dimension or measure names to include in the dashboard. If include is defined all other dimensions and measures are excluded 
 
-    - **`if`** - _[string]_ - Expression to decide if the column should be included or not. It can leverage templated user attributes. Needs to be a valid SQL expression that evaluates to a boolean  _(required)_
+    - **`if`** - _[string]_ - Expression to decide if the column should be included or not. It can leverage templated user attributes. Needs to be a valid SQL expression that evaluates to a boolean _(required)_
 
-    - **`names`** - _[anyOf]_ - List of fields to include. Should match the name of one of the dashboard's dimensions or measures  _(required)_
+    - **`names`** - _[anyOf]_ - List of fields to include. Should match the name of one of the dashboard's dimensions or measures _(required)_
 
-      - **option 1** - _[array of string]_ 
+      - **option 1** - _[array of string]_ - (no description)
 
-      - **option 2** - _[string]_ 
+      - **option 2** - _[string]_ - (no description)
 
   - **`exclude`** - _[array of object]_ - List of dimension or measure names to exclude from the dashboard. If exclude is defined all other dimensions and measures are included 
 
-    - **`if`** - _[string]_ - Expression to decide if the column should be excluded or not. It can leverage templated user attributes. Needs to be a valid SQL expression that evaluates to a boolean  _(required)_
+    - **`if`** - _[string]_ - Expression to decide if the column should be excluded or not. It can leverage templated user attributes. Needs to be a valid SQL expression that evaluates to a boolean _(required)_
 
-    - **`names`** - _[anyOf]_ - List of fields to exclude. Should match the name of one of the dashboard's dimensions or measures  _(required)_
+    - **`names`** - _[anyOf]_ - List of fields to exclude. Should match the name of one of the dashboard's dimensions or measures _(required)_
 
-      - **option 1** - _[array of string]_ 
+      - **option 1** - _[array of string]_ - (no description)
 
-      - **option 2** - _[string]_ 
+      - **option 2** - _[string]_ - (no description)
 
-  - **`rules`** - _[array of object]_  
+  - **`rules`** - _[array of object]_ - (no description) 
 
-    - **`type`** - _[string]_   _(required)_
+    - **`type`** - _[string]_ - (no description) _(required)_
 
-    - **`action`** - _[string]_  
+    - **`action`** - _[string]_ - (no description) 
 
-    - **`if`** - _[string]_  
+    - **`if`** - _[string]_ - (no description) 
 
-    - **`names`** - _[array of string]_  
+    - **`names`** - _[array of string]_ - (no description) 
 
-    - **`all`** - _[boolean]_  
+    - **`all`** - _[boolean]_ - (no description) 
 
-    - **`sql`** - _[string]_  
+    - **`sql`** - _[string]_ - (no description) 
+
+## Common Properties
+
+### `name`
+
+_[string]_ - Name is usually inferred from the filename, but can be specified manually. 
+
+### `refs`
+
+_[array of string]_ - List of resource references 
+
+### `dev`
+
+_[object]_ - Overrides any properties in development environment. 
+
+### `prod`
+
+_[object]_ - Overrides any properties in production environment. 

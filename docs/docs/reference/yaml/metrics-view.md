@@ -10,23 +10,7 @@ In your Rill project directory, create a metrics view, `<metrics_view>.yaml`, fi
 
 ### `type`
 
-_[string]_ - Refers to the resource type and must be `metrics_view`  _(required)_
-
-### `name`
-
-_[string]_ - Name is usually inferred from the filename, but can be specified manually. 
-
-### `refs`
-
-_[array of string]_ - List of resource references, each as a string or map. 
-
-### `dev`
-
-_[object]_ - Overrides properties in development 
-
-### `prod`
-
-_[object]_ - Overrides properties in production 
+_[string]_ - Refers to the resource type and must be `metrics_view` _(required)_
 
 ### `display_name`
 
@@ -88,11 +72,7 @@ _[array of object]_ - Relates to exploring segments or dimensions of your data a
 
   - **`unnest`** - _[boolean]_ - if true, allows multi-valued dimension to be unnested (such as lists) and filters will automatically switch to "contains" instead of exact match  
 
-  - **`uri`** - enable if your dimension is a clickable URL to enable single click navigation (boolean or valid SQL expression)  
-
-  - **option 1** 
-
-  - **option 2** 
+  - **`uri`** - _[string, boolean]_ - enable if your dimension is a clickable URL to enable single click navigation (boolean or valid SQL expression)  
 
 ### `measures`
 
@@ -104,7 +84,7 @@ _[array of object]_ - Used to define the numeric aggregates of columns from your
 
   - **`description`** - _[string]_ - a freeform text description of the dimension 
 
-  - **`type`** - _[string]_  
+  - **`type`** - _[string]_ - (no description) 
 
   - **`expression`** - _[string]_ - a combination of operators and functions for aggregations 
 
@@ -112,21 +92,21 @@ _[array of object]_ - Used to define the numeric aggregates of columns from your
 
     - **option 1** - _[string]_ - Shorthand: 'time' or 'true' means time-partitioned, 'all' means non-partitioned.
 
-    - **option 2** - _[object]_ 
+    - **option 2** - _[object]_ - (no description)
 
-      - **`partition`** - _[boolean]_  
+      - **`partition`** - _[boolean]_ - (no description) 
 
       - **`order`** - _[anyOf]_ - to order the window 
 
-        - **option 1** - _[string]_ 
+        - **option 1** - _[string]_ - (no description)
 
-        - **option 2** - _[array of anyOf]_ 
+        - **option 2** - _[array of anyOf]_ - (no description)
 
           - **option 1** - _[string]_ - Shorthand field selector, interpreted as the name.
 
-          - **option 2** - _[object]_ 
+          - **option 2** - _[object]_ - (no description)
 
-            - **`name`** - _[string]_   _(required)_
+            - **`name`** - _[string]_ - (no description) _(required)_
 
             - **`time_grain`** - _[string]_ - Time grain for time-based dimensions. 
 
@@ -134,39 +114,42 @@ _[array of object]_ - Used to define the numeric aggregates of columns from your
 
   - **`per`** - _[anyOf]_ - for per dimensions 
 
-    - **option 1** - _[string]_ 
+    - **option 1** - _[string]_ - (no description)
 
-    - **option 2** - _[array of anyOf]_ 
+    - **option 2** - _[array of anyOf]_ - (no description)
 
       - **option 1** - _[string]_ - Shorthand field selector, interpreted as the name.
 
-      - **option 2** - _[object]_ 
+      - **option 2** - _[object]_ - (no description)
 
-        - **`name`** - _[string]_   _(required)_
+        - **`name`** - _[string]_ - (no description) _(required)_
 
         - **`time_grain`** - _[string]_ - Time grain for time-based dimensions. 
 
   - **`requires`** - _[anyOf]_ - using an available measure or dimension in your metrics view to set a required parameter, cannot be used with simple measures 
 
-    - **option 1** - _[string]_ 
+    - **option 1** - _[string]_ - (no description)
 
-    - **option 2** - _[array of anyOf]_ 
+    - **option 2** - _[array of anyOf]_ - (no description)
 
       - **option 1** - _[string]_ - Shorthand field selector, interpreted as the name.
 
-      - **option 2** - _[object]_ 
+      - **option 2** - _[object]_ - (no description)
 
-        - **`name`** - _[string]_   _(required)_
+        - **`name`** - _[string]_ - (no description) _(required)_
 
         - **`time_grain`** - _[string]_ - Time grain for time-based dimensions. 
 
-  - **`format_preset`** - _[string]_ - Controls the formatting of this measure using a predefined preset. Measures cannot have both `format_preset` and `format_d3`. If neither is supplied, the measure will be formatted using the `humanize` preset by default. Available options:
-- `humanize`: Round numbers into thousands (K), millions (M), billions (B), etc.
-- `none`: Raw output.
-- `currency_usd`: Round to 2 decimal points with a dollar sign ($).
-- `currency_eur`: Round to 2 decimal points with a euro sign (€).
-- `percentage`: Convert a rate into a percentage with a % sign.
-- `interval_ms`: Convert milliseconds into human-readable durations like hours (h), days (d), years (y), etc. (optional) 
+  - **`format_preset`** - _[string]_ - Controls the formatting of this measure using a predefined preset. Measures cannot have both `format_preset` and `format_d3`. If neither is supplied, the measure will be formatted using the `humanize` preset by default. 
+
+    Available options:
+    - `humanize`: Round numbers into thousands (K), millions(M), billions (B), etc.
+    - `none`: Raw output.
+    - `currency_usd`: Round to 2 decimal points with a dollar sign ($).
+    - `currency_eur`: Round to 2 decimal points with a euro sign (€).
+    - `percentage`: Convert a rate into a percentage with a % sign.
+    - `interval_ms`: Convert milliseconds into human-readable durations like hours (h), days (d), years (y), etc. (optional)
+ 
 
   - **`format_d3`** - _[string]_ - Controls the formatting of this measure using a [d3-format](https://d3js.org/d3-format) string. If an invalid format string is supplied, the measure will fall back to `format_preset: humanize`. A measure cannot have both `format_preset` and `format_d3`. If neither is provided, the humanize preset is used by default. Example: `format_d3: ".2f"` formats using fixed-point notation with two decimal places. Example: `format_d3: ",.2r"` formats using grouped thousands with two significant digits. (optional) 
 
@@ -182,42 +165,60 @@ _[object]_ - Defines a security policy for the dashboard
 
   - **`access`** - _[oneOf]_ - Expression indicating if the user should be granted access to the dashboard. If not defined, it will resolve to false and the dashboard won't be accessible to anyone. Needs to be a valid SQL expression that evaluates to a boolean. 
 
-    - **option 1** - _[string]_ 
+    - **option 1** - _[string]_ - (no description)
 
-    - **option 2** - _[boolean]_ 
+    - **option 2** - _[boolean]_ - (no description)
 
   - **`row_filter`** - _[string]_ - SQL expression to filter the underlying model by. Can leverage templated user attributes to customize the filter for the requesting user. Needs to be a valid SQL expression that can be injected into a WHERE clause 
 
   - **`include`** - _[array of object]_ - List of dimension or measure names to include in the dashboard. If include is defined all other dimensions and measures are excluded 
 
-    - **`if`** - _[string]_ - Expression to decide if the column should be included or not. It can leverage templated user attributes. Needs to be a valid SQL expression that evaluates to a boolean  _(required)_
+    - **`if`** - _[string]_ - Expression to decide if the column should be included or not. It can leverage templated user attributes. Needs to be a valid SQL expression that evaluates to a boolean _(required)_
 
-    - **`names`** - _[anyOf]_ - List of fields to include. Should match the name of one of the dashboard's dimensions or measures  _(required)_
+    - **`names`** - _[anyOf]_ - List of fields to include. Should match the name of one of the dashboard's dimensions or measures _(required)_
 
-      - **option 1** - _[array of string]_ 
+      - **option 1** - _[array of string]_ - (no description)
 
-      - **option 2** - _[string]_ 
+      - **option 2** - _[string]_ - (no description)
 
   - **`exclude`** - _[array of object]_ - List of dimension or measure names to exclude from the dashboard. If exclude is defined all other dimensions and measures are included 
 
-    - **`if`** - _[string]_ - Expression to decide if the column should be excluded or not. It can leverage templated user attributes. Needs to be a valid SQL expression that evaluates to a boolean  _(required)_
+    - **`if`** - _[string]_ - Expression to decide if the column should be excluded or not. It can leverage templated user attributes. Needs to be a valid SQL expression that evaluates to a boolean _(required)_
 
-    - **`names`** - _[anyOf]_ - List of fields to exclude. Should match the name of one of the dashboard's dimensions or measures  _(required)_
+    - **`names`** - _[anyOf]_ - List of fields to exclude. Should match the name of one of the dashboard's dimensions or measures _(required)_
 
-      - **option 1** - _[array of string]_ 
+      - **option 1** - _[array of string]_ - (no description)
 
-      - **option 2** - _[string]_ 
+      - **option 2** - _[string]_ - (no description)
 
-  - **`rules`** - _[array of object]_  
+  - **`rules`** - _[array of object]_ - (no description) 
 
-    - **`type`** - _[string]_   _(required)_
+    - **`type`** - _[string]_ - (no description) _(required)_
 
-    - **`action`** - _[string]_  
+    - **`action`** - _[string]_ - (no description) 
 
-    - **`if`** - _[string]_  
+    - **`if`** - _[string]_ - (no description) 
 
-    - **`names`** - _[array of string]_  
+    - **`names`** - _[array of string]_ - (no description) 
 
-    - **`all`** - _[boolean]_  
+    - **`all`** - _[boolean]_ - (no description) 
 
-    - **`sql`** - _[string]_  
+    - **`sql`** - _[string]_ - (no description) 
+
+## Common Properties
+
+### `name`
+
+_[string]_ - Name is usually inferred from the filename, but can be specified manually. 
+
+### `refs`
+
+_[array of string]_ - List of resource references 
+
+### `dev`
+
+_[object]_ - Overrides any properties in development environment. 
+
+### `prod`
+
+_[object]_ - Overrides any properties in production environment. 

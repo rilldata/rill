@@ -10,23 +10,7 @@ In your Rill project directory, create a explore dashboard, `<dashboard_name>.ya
 
 ### `type`
 
-_[string]_ - Refers to the resource type and must be `canvas`  _(required)_
-
-### `name`
-
-_[string]_ - Name is usually inferred from the filename, but can be specified manually. 
-
-### `refs`
-
-_[array of string]_ - List of resource references, each as a string or map. 
-
-### `dev`
-
-_[object]_ - Overrides properties in development 
-
-### `prod`
-
-_[object]_ - Overrides properties in production 
+_[string]_ - Refers to the resource type and must be `canvas` _(required)_
 
 ### `display_name`
 
@@ -52,9 +36,9 @@ _[integer]_ - Vertical gap in pixels of the canvas
 
 _[anyOf]_ - Name of the theme to use. Only one of theme and embedded_theme can be set. 
 
-  - **option 1** - _[string]_ 
+  - **option 1** - _[string]_ - (no description)
 
-  - **option 2** - _[object]_ 
+  - **option 2** - _[object]_ - (no description)
 
 ### `allow_custom_time_range`
 
@@ -66,19 +50,19 @@ _[array of oneOf]_ - Overrides the list of default time range selections availab
 
   - **option 1** - _[string]_ - a valid [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601#Durations) duration or one of the [Rill ISO 8601 extensions](https://docs.rilldata.com/reference/rill-iso-extensions#extensions) extensions for the selection
 
-  - **option 2** - _[object]_ 
+  - **option 2** - _[object]_ - (no description)
 
-    - **`range`** - _[string]_ - a valid [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601#Durations) duration or one of the [Rill ISO 8601 extensions](https://docs.rilldata.com/reference/rill-iso-extensions#extensions) extensions for the selection  _(required)_
+    - **`range`** - _[string]_ - a valid [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601#Durations) duration or one of the [Rill ISO 8601 extensions](https://docs.rilldata.com/reference/rill-iso-extensions#extensions) extensions for the selection _(required)_
 
     - **`comparison_offsets`** - _[array of oneOf]_ - list of time comparison options for this time range selection (optional). Must be one of the [Rill ISO 8601 extensions](https://docs.rilldata.com/reference/rill-iso-extensions#extensions) 
 
       - **option 1** - _[string]_ - Offset string only (range is inferred)
 
-      - **option 2** - _[object]_ 
+      - **option 2** - _[object]_ - (no description)
 
-        - **`offset`** - _[string]_  
+        - **`offset`** - _[string]_ - (no description) 
 
-        - **`range`** - _[string]_  
+        - **`range`** - _[string]_ - (no description) 
 
 ### `time_zones`
 
@@ -88,39 +72,39 @@ _[array of string]_ - Refers to the time zones that should be pinned to the top 
 
 _[object]_ - Indicates if filters should be enabled for the canvas. 
 
-  - **`enable`** - _[boolean]_  
+  - **`enable`** - _[boolean]_ - (no description) 
 
 ### `defaults`
 
 _[object]_ - Preset UI state to show by default 
 
-  - **`time_range`** - _[string]_  
+  - **`time_range`** - _[string]_ - (no description) 
 
-  - **`comparison_mode`** - _[string]_  
+  - **`comparison_mode`** - _[string]_ - (no description) 
 
-  - **`comparison_dimension`** - _[string]_  
+  - **`comparison_dimension`** - _[string]_ - (no description) 
 
 ### `variables`
 
 _[array of object]_ - Variables that can be used in the canvas 
 
-  - **`name`** - _[string]_   _(required)_
+  - **`name`** - _[string]_ - (no description) _(required)_
 
-  - **`type`** - _[string]_   _(required)_
+  - **`type`** - _[string]_ - (no description) _(required)_
 
-  - **`value`** - The value can be of any type. 
+  - **`value`** - _[string, number, boolean, object, array]_ - The value can be of any type. 
 
 ### `rows`
 
-_[array of object]_ - Refers to all of the rows displayed on the Canvas  _(required)_
+_[array of object]_ - Refers to all of the rows displayed on the Canvas _(required)_
 
-  - **`height`** - _[string]_  
+  - **`height`** - _[string]_ - (no description) 
 
-  - **`items`** - _[array of object]_  
+  - **`items`** - _[array of object]_ - (no description) 
 
-    - **`width`**  
+    - **`width`** - _[string, integer]_ - (no description) 
 
-    - **`component`** - _[string]_  
+    - **`component`** - _[string]_ - (no description) 
 
 ### `security`
 
@@ -128,42 +112,60 @@ _[object]_ - Security rules to apply for access to the canvas
 
   - **`access`** - _[oneOf]_ - Expression indicating if the user should be granted access to the dashboard. If not defined, it will resolve to false and the dashboard won't be accessible to anyone. Needs to be a valid SQL expression that evaluates to a boolean. 
 
-    - **option 1** - _[string]_ 
+    - **option 1** - _[string]_ - (no description)
 
-    - **option 2** - _[boolean]_ 
+    - **option 2** - _[boolean]_ - (no description)
 
   - **`row_filter`** - _[string]_ - SQL expression to filter the underlying model by. Can leverage templated user attributes to customize the filter for the requesting user. Needs to be a valid SQL expression that can be injected into a WHERE clause 
 
   - **`include`** - _[array of object]_ - List of dimension or measure names to include in the dashboard. If include is defined all other dimensions and measures are excluded 
 
-    - **`if`** - _[string]_ - Expression to decide if the column should be included or not. It can leverage templated user attributes. Needs to be a valid SQL expression that evaluates to a boolean  _(required)_
+    - **`if`** - _[string]_ - Expression to decide if the column should be included or not. It can leverage templated user attributes. Needs to be a valid SQL expression that evaluates to a boolean _(required)_
 
-    - **`names`** - _[anyOf]_ - List of fields to include. Should match the name of one of the dashboard's dimensions or measures  _(required)_
+    - **`names`** - _[anyOf]_ - List of fields to include. Should match the name of one of the dashboard's dimensions or measures _(required)_
 
-      - **option 1** - _[array of string]_ 
+      - **option 1** - _[array of string]_ - (no description)
 
-      - **option 2** - _[string]_ 
+      - **option 2** - _[string]_ - (no description)
 
   - **`exclude`** - _[array of object]_ - List of dimension or measure names to exclude from the dashboard. If exclude is defined all other dimensions and measures are included 
 
-    - **`if`** - _[string]_ - Expression to decide if the column should be excluded or not. It can leverage templated user attributes. Needs to be a valid SQL expression that evaluates to a boolean  _(required)_
+    - **`if`** - _[string]_ - Expression to decide if the column should be excluded or not. It can leverage templated user attributes. Needs to be a valid SQL expression that evaluates to a boolean _(required)_
 
-    - **`names`** - _[anyOf]_ - List of fields to exclude. Should match the name of one of the dashboard's dimensions or measures  _(required)_
+    - **`names`** - _[anyOf]_ - List of fields to exclude. Should match the name of one of the dashboard's dimensions or measures _(required)_
 
-      - **option 1** - _[array of string]_ 
+      - **option 1** - _[array of string]_ - (no description)
 
-      - **option 2** - _[string]_ 
+      - **option 2** - _[string]_ - (no description)
 
-  - **`rules`** - _[array of object]_  
+  - **`rules`** - _[array of object]_ - (no description) 
 
-    - **`type`** - _[string]_   _(required)_
+    - **`type`** - _[string]_ - (no description) _(required)_
 
-    - **`action`** - _[string]_  
+    - **`action`** - _[string]_ - (no description) 
 
-    - **`if`** - _[string]_  
+    - **`if`** - _[string]_ - (no description) 
 
-    - **`names`** - _[array of string]_  
+    - **`names`** - _[array of string]_ - (no description) 
 
-    - **`all`** - _[boolean]_  
+    - **`all`** - _[boolean]_ - (no description) 
 
-    - **`sql`** - _[string]_  
+    - **`sql`** - _[string]_ - (no description) 
+
+## Common Properties
+
+### `name`
+
+_[string]_ - Name is usually inferred from the filename, but can be specified manually. 
+
+### `refs`
+
+_[array of string]_ - List of resource references 
+
+### `dev`
+
+_[object]_ - Overrides any properties in development environment. 
+
+### `prod`
+
+_[object]_ - Overrides any properties in production environment. 

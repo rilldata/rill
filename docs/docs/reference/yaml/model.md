@@ -8,15 +8,7 @@ sidebar_position: 38
 
 ### `type`
 
-_[string]_ - Refers to the resource type and must be `model`  _(required)_
-
-### `name`
-
-_[string]_ - Name is usually inferred from the filename, but can be specified manually. 
-
-### `refs`
-
-_[array of string]_ - List of resource references, each as a string or map. 
+_[string]_ - Refers to the resource type and must be `model` _(required)_
 
 ### `refresh`
 
@@ -48,35 +40,35 @@ _[string]_ - Configure how changes to the model specifications are applied (opti
 
 _[oneOf]_ - Refers to the explicitly defined state of your model, cannot be used with partitions (optional) 
 
-  - **option 1** - _[object]_ 
+  - **option 1** - _[object]_ - (no description)
 
-    - **`sql`** - _[string]_ - Raw SQL query to run against existing models in the project.  _(required)_
+    - **`sql`** - _[string]_ - Raw SQL query to run against existing models in the project. _(required)_
 
     - **`connector`** - _[string]_ - specifies the connector to use when running SQL or glob queries. 
 
-  - **option 2** - _[object]_ 
+  - **option 2** - _[object]_ - (no description)
 
-    - **`metrics_sql`** - _[string]_ - SQL query that targets a metrics view in the project  _(required)_
+    - **`metrics_sql`** - _[string]_ - SQL query that targets a metrics view in the project _(required)_
 
-  - **option 3** - _[object]_ 
+  - **option 3** - _[object]_ - (no description)
 
-    - **`api`** - _[string]_ - Name of a custom API defined in the project.  _(required)_
+    - **`api`** - _[string]_ - Name of a custom API defined in the project. _(required)_
 
     - **`args`** - _[object]_ - Arguments to pass to the custom API. 
 
-  - **option 4** - _[object]_ 
+  - **option 4** - _[object]_ - (no description)
 
-    - **`glob`** - _[anyOf]_ - Defines the file path or pattern to query from the specified connector.  _(required)_
+    - **`glob`** - _[anyOf]_ - Defines the file path or pattern to query from the specified connector. _(required)_
 
-      - **option 1** - _[string]_ 
+      - **option 1** - _[string]_ - (no description)
 
-      - **option 2** - _[object]_ 
+      - **option 2** - _[object]_ - (no description)
 
     - **`connector`** - _[string]_ - Specifies the connector to use with the glob input. 
 
-  - **option 5** - _[object]_ 
+  - **option 5** - _[object]_ - (no description)
 
-    - **`resource_status`** - _[object]_ - Based on resource status  _(required)_
+    - **`resource_status`** - _[object]_ - Based on resource status _(required)_
 
       - **`where_error`** - _[boolean]_ - Indicates whether the condition should trigger when the resource is in an error state. 
 
@@ -84,35 +76,35 @@ _[oneOf]_ - Refers to the explicitly defined state of your model, cannot be used
 
 _[oneOf]_ - Refers to the how your data is partitioned, cannot be used with state. (optional) 
 
-  - **option 1** - _[object]_ 
+  - **option 1** - _[object]_ - (no description)
 
-    - **`sql`** - _[string]_ - Raw SQL query to run against existing models in the project.  _(required)_
+    - **`sql`** - _[string]_ - Raw SQL query to run against existing models in the project. _(required)_
 
     - **`connector`** - _[string]_ - specifies the connector to use when running SQL or glob queries. 
 
-  - **option 2** - _[object]_ 
+  - **option 2** - _[object]_ - (no description)
 
-    - **`metrics_sql`** - _[string]_ - SQL query that targets a metrics view in the project  _(required)_
+    - **`metrics_sql`** - _[string]_ - SQL query that targets a metrics view in the project _(required)_
 
-  - **option 3** - _[object]_ 
+  - **option 3** - _[object]_ - (no description)
 
-    - **`api`** - _[string]_ - Name of a custom API defined in the project.  _(required)_
+    - **`api`** - _[string]_ - Name of a custom API defined in the project. _(required)_
 
     - **`args`** - _[object]_ - Arguments to pass to the custom API. 
 
-  - **option 4** - _[object]_ 
+  - **option 4** - _[object]_ - (no description)
 
-    - **`glob`** - _[anyOf]_ - Defines the file path or pattern to query from the specified connector.  _(required)_
+    - **`glob`** - _[anyOf]_ - Defines the file path or pattern to query from the specified connector. _(required)_
 
-      - **option 1** - _[string]_ 
+      - **option 1** - _[string]_ - (no description)
 
-      - **option 2** - _[object]_ 
+      - **option 2** - _[object]_ - (no description)
 
     - **`connector`** - _[string]_ - Specifies the connector to use with the glob input. 
 
-  - **option 5** - _[object]_ 
+  - **option 5** - _[object]_ - (no description)
 
-    - **`resource_status`** - _[object]_ - Based on resource status  _(required)_
+    - **`resource_status`** - _[object]_ - Based on resource status _(required)_
 
       - **`where_error`** - _[boolean]_ - Indicates whether the condition should trigger when the resource is in an error state. 
 
@@ -136,7 +128,7 @@ _[integer]_ - Refers to the number of concurrent partitions that can be read at 
 
 _[object]_ - in the case of staging models, where an input source does not support direct write to the output and a staging table is required 
 
-  - **`connector`** - _[string]_ - Refers to the connector type for the staging table  _(required)_
+  - **`connector`** - _[string]_ - Refers to the connector type for the staging table _(required)_
 
 ### `output`
 
@@ -144,13 +136,23 @@ _[object]_ - to define the properties of output
 
   - **`connector`** - _[string]_ - Refers to the connector type for the output table 
 
+## Common Properties
+
+### `name`
+
+_[string]_ - Name is usually inferred from the filename, but can be specified manually. 
+
+### `refs`
+
+_[array of string]_ - List of resource references 
+
 ### `dev`
 
-_[object]_ - Overrides properties in development 
+_[object]_ - Overrides any properties in development environment. 
 
 ### `prod`
 
-_[object]_ - Overrides properties in production 
+_[object]_ - Overrides any properties in production environment. 
 
 ## One of Properties Options
 - [athena](#athena)
@@ -175,7 +177,7 @@ _[object]_ - Overrides properties in production
 
 ### `connector`
 
-_[string]_   _(required)_
+_[string]_ - (no description) _(required)_
 
 ### `output_location`
 
@@ -193,7 +195,7 @@ _[string]_ - AWS region to connect to Athena and the output location.
 
 ### `connector`
 
-_[string]_   _(required)_
+_[string]_ - (no description) _(required)_
 
 ### `path`
 
@@ -231,7 +233,7 @@ _[string]_ - Size of a batch (e.g., '100MB')
 
 ### `connector`
 
-_[string]_   _(required)_
+_[string]_ - (no description) _(required)_
 
 ### `project_id`
 
@@ -241,7 +243,7 @@ _[string]_ - ID of the BigQuery project.
 
 ### `connector`
 
-_[string]_   _(required)_
+_[string]_ - (no description) _(required)_
 
 ### `path`
 
@@ -255,7 +257,7 @@ _[string]_ - Format of the data source (e.g., csv, json, parquet).
 
 ### `connector`
 
-_[string]_   _(required)_
+_[string]_ - (no description) _(required)_
 
 ### `path`
 
@@ -277,7 +279,7 @@ _[string]_ - refers to a SQL query that is run after the main query, available f
 
 ### `connector`
 
-_[string]_   _(required)_
+_[string]_ - (no description) _(required)_
 
 ### `path`
 
@@ -311,13 +313,13 @@ _[string]_ - Size of a batch (e.g., '100MB')
 
 ### `connector`
 
-_[string]_   _(required)_
+_[string]_ - (no description) _(required)_
 
 ## local_file
 
 ### `connector`
 
-_[string]_   _(required)_
+_[string]_ - (no description) _(required)_
 
 ### `path`
 
@@ -331,31 +333,31 @@ _[string]_ - Format of the data source (e.g., csv, json, parquet).
 
 ### `connector`
 
-_[string]_   _(required)_
+_[string]_ - (no description) _(required)_
 
 ## mysql
 
 ### `connector`
 
-_[string]_   _(required)_
+_[string]_ - (no description) _(required)_
 
 ## pinot
 
 ### `connector`
 
-_[string]_   _(required)_
+_[string]_ - (no description) _(required)_
 
 ## postgres
 
 ### `connector`
 
-_[string]_   _(required)_
+_[string]_ - (no description) _(required)_
 
 ## redshift
 
 ### `connector`
 
-_[string]_   _(required)_
+_[string]_ - (no description) _(required)_
 
 ### `output_location`
 
@@ -385,7 +387,7 @@ _[string]_ - AWS region of the Redshift deployment.
 
 ### `connector`
 
-_[string]_   _(required)_
+_[string]_ - (no description) _(required)_
 
 ### `region`
 
@@ -427,7 +429,7 @@ _[string]_ - Size of a batch (e.g., '100MB')
 
 ### `connector`
 
-_[string]_   _(required)_
+_[string]_ - (no description) _(required)_
 
 ### `soql`
 
@@ -445,10 +447,10 @@ _[boolean]_ - Whether to include deleted and archived records in the query (uses
 
 ### `connector`
 
-_[string]_   _(required)_
+_[string]_ - (no description) _(required)_
 
 ## sqlite
 
 ### `connector`
 
-_[string]_   _(required)_
+_[string]_ - (no description) _(required)_

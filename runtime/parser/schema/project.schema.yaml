@@ -1,8 +1,25 @@
 $schema: 'http://json-schema.org/draft-07/schema#'
-$id: project.schema.json
+$id: project.schema.yaml
 title: YAML Syntax
-description: "When you create models and dashboards, these objects are represented as object files on the file system. You can find these files in your `models` and `dashboards` folders in your project by default. \r\n\r\n:::info Working with resources outside their native folders\r\n\r\nIt is possible to define resources (such as [models](model.md), [metrics-views](metrics-view.md), [dashboards](explore.md), [custom APIs](api.md), or [themes](theme.md)) within <u>any</u> nested folder within your Rill project directory. However, for any YAML configuration file, it is then imperative that the `type` property is then appropriately defined within the underlying resource configuration or Rill will not able to resolve the resource type correctly!\r\n\r\n:::\r\n\r\nProjects can simply be rehydrated from Rill project files into an explorable data application as long as there is sufficient access and credentials to the source data - figuring out the dependencies, pulling down data, & validating your model queries and metrics configurations. The result is a set of functioning exploratory dashboards.\r\n\r\nYou can see a few different example projects by visiting our [example github repository](https://github.com/rilldata/rill-examples).\r\n\r\n:::tip\r\n\r\nFor more information about using Git or cloning projects locally, please see our page on [GitHub Basics](/deploy/deploy-dashboard/github-101).\r\n\r\n:::"
 type: object
+description: |
+  When you create models and dashboards, these objects are represented as object files on the file system. You can find these files in your `models` and `dashboards` folders in your project by default. 
+
+  :::info Working with resources outside their native folders
+
+  It is possible to define resources (such as [models](model.md), [metrics-views](metrics-view.md), [dashboards](explore.md), [custom APIs](api.md), or [themes](theme.md)) within <u>any</u> nested folder within your Rill project directory. However, for any YAML configuration file, it is then imperative that the `type` property is then appropriately defined within the underlying resource configuration or Rill will not able to resolve the resource type correctly!
+
+  :::
+
+  Projects can simply be rehydrated from Rill project files into an explorable data application as long as there is sufficient access and credentials to the source data - figuring out the dependencies, pulling down data, & validating your model queries and metrics configurations. The result is a set of functioning exploratory dashboards.
+
+  You can see a few different example projects by visiting our [example github repository](https://github.com/rilldata/rill-examples).
+
+  :::tip
+
+  For more information about using Git or cloning projects locally, please see our page on [GitHub Basics](/deploy/deploy-dashboard/github-101).
+
+  :::
 oneOf:
   - $ref: '#/definitions/alert'
   - $ref: '#/definitions/api'
@@ -17,11 +34,7 @@ definitions:
   alert:
     type: object
     title: Alert YAML
-    description: >-
-      Along with alertings at the dashboard level and can be created via the UI,
-      there might be more extensive alerting that you might want to develop and
-      can be done so the an alert.yaml. When creating an alert via a YAML file,
-      you'll see this denoted in the UI as `Created through code`.
+    description: Along with alertings at the dashboard level and can be created via the UI, there might be more extensive alerting that you might want to develop and can be done so the an alert.yaml. When creating an alert via a YAML file, you'll see this denoted in the UI as `Created through code`.
     examples:
       - # Example: To send alert when data lags by more than 1 day to slack channel #rill-cloud-alerts
         type: alert
@@ -44,44 +57,20 @@ definitions:
           slack:
             channels:
               - '#rill-cloud-alerts'
-
     allOf:
-      - type: object
+      - title: Properties
+        type: object
         properties:
           type:
             type: string
             const: alert
             description: Refers to the resource type and must be `alert`
-        required:
-          - type
-      - $ref: '#/definitions/common_properties'
-      - type: object
-        properties:
-          dev:
-            type: object
-            description: Overrides properties in development
-            $ref: '#/definitions/alert/definitions/alert_properties'
-          prod:
-            type: object
-            description: Overrides properties in production
-            $ref: '#/definitions/alert/definitions/alert_properties'
-      - $ref: '#/definitions/alert/definitions/alert_properties'
-        required:
-          - refresh
-          - data
-          - notify
-    definitions:
-      alert_properties:
-        type: object
-        properties:
           display_name:
             type: string
             description: Refers to the display name for the alert
           refresh:
             $ref: '#/definitions/schedule_properties'
-            description: >-
-              Specifies the refresh schedule that Rill should follow to
-              re-ingest and update the underlying data
+            description: Specifies the refresh schedule that Rill should follow to re-ingest and update the underlying data
           intervals:
             type: object
             description: define the interval of the alert to check
@@ -101,26 +90,21 @@ definitions:
             enum:
               - trigger_time
               - inherit
-            description: >-
-              Specifies how the watermark is determined for incremental
-              processing.
-
-              Use 'trigger_time' to set it at runtime or 'inherit' to use the
-              upstream model's watermark.
+            description: Specifies how the watermark is determined for incremental processing.  Use 'trigger_time' to set it at runtime or 'inherit' to use the upstream model's watermark.
           timeout:
             type: string
             description: define the timeout of the alert in seconds (optional).
           data:
-            description: >-
-              Specifies one of the options to retrieve or compute the data used
-              by alert
+            description: Specifies one of the options to retrieve or compute the data used by alert
             $ref: '#/definitions/data_properties'
           for:
+            description: "The user's attributes to use for security policies" 
             oneOf:
               - type: object
                 properties:
                   user_id:
                     type: string
+                    description: "user id to be used for security policies"
                 required:
                   - user_id
                 additionalProperties: false
@@ -128,6 +112,7 @@ definitions:
                 properties:
                   user_email:
                     type: string
+                    description: "user email to be used for security policies"
                     format: email
                 required:
                   - user_email
@@ -136,50 +121,43 @@ definitions:
                 properties:
                   attributes:
                     type: object
+                    description: "user attributes to be used for security policies"
                     additionalProperties: true
                 required:
                   - attributes
                 additionalProperties: false
           on_recover:
             type: boolean
-            description: >-
-              Send an alert when a previously failing alert recovers. Defaults
-              to false.
+            description: Send an alert when a previously failing alert recovers. Defaults to false.
           on_fail:
             type: boolean
             description: Send an alert when a failure occurs. Defaults to true.
           on_error:
             type: boolean
-            description: >-
-              Send an alert when an error occurs during evaluation. Defaults to
-              false.
+            description: Send an alert when an error occurs during evaluation. Defaults to false.
           renotify:
             type: boolean
-            description: >-
-              Enable repeated notifications for unresolved alerts. Defaults to
-              false.
+            description: Enable repeated notifications for unresolved alerts. Defaults to false.
           renotify_after:
             type: string
-            description: >-
-              Defines the re-notification interval for the alert (e.g., '10m',
-              '24h'), equivalent to snooze duration in UI, defaults to 'Off'
+            description: Defines the re-notification interval for the alert (e.g., '10m','24h'), equivalent to snooze duration in UI, defaults to 'Off'
           notify:
             $ref: '#/definitions/notify_properties'
-            description: >-
-              Defines how and where to send notifications. At least one method
-              (email or Slack) is required.
+            description: Defines how and where to send notifications. At least one method (email or Slack) is required.
           annotations:
             type: object
             additionalProperties:
               type: string
+        required:
+          - type
+          - refresh
+          - data
+          - notify  
+      - $ref: '#/definitions/common_properties'
   api:
     type: object
     title: API YAML
-    description: >-
-      In your Rill project directory, create a new file name `<api-name>.yaml`
-      in the `apis` directory containing a custom API definition. See
-      comprehensive documentation on how to define and use [custom
-      APIs](/integrate/custom-apis/index.md)
+    description: In your Rill project directory, create a new file name `<api-name>.yaml` in the `apis` directory containing a custom API definition. See comprehensive documentation on how to define and use [custom APIs](/integrate/custom-apis/index.md)
     examples:
       - # Example: This api returns the top 10 authors by net line changes since the specified date provided in the arguments.
         type: api
@@ -191,30 +169,13 @@ definitions:
             order by net_line_changes DESC
             limit 10
     allOf:
-      - type: object
+      - title: Properties
+        type: object
         properties:
           type:
             type: string
             const: api
             description: Refers to the resource type and must be `api`
-        required:
-          - type
-      - $ref: '#/definitions/common_properties'
-      - type: object
-        properties:
-          dev:
-            type: object
-            description: Overrides properties in development
-            $ref: '#/definitions/api/definitions/api_properties'
-          prod:
-            type: object
-            description: Overrides properties in production
-            $ref: '#/definitions/api/definitions/api_properties'
-      - $ref: '#/definitions/api/definitions/api_properties'
-    definitions:
-      api_properties:
-        type: object
-        properties:
           openapi:
             type: object
             properties:
@@ -238,42 +199,23 @@ definitions:
             $ref: '#/definitions/security_policy_properties'
           skip_nested_security:
             type: boolean
-        oneOf:
+        allOf:
           - $ref: '#/definitions/data_properties'
+        required:
+          - type
+      - $ref: '#/definitions/common_properties'          
   canvas:
     type: object
     title: Canvas YAML
-    description: >-
-      In your Rill project directory, create a explore dashboard,
-      `<dashboard_name>.yaml`, file in the `dashboards` directory. Rill will
-      ingest the dashboard definition next time you run `rill start`.
+    description: In your Rill project directory, create a explore dashboard, `<dashboard_name>.yaml`, file in the `dashboards` directory. Rill will ingest the dashboard definition next time you run `rill start`.
     allOf:
-      - type: object
+      - title: Properties
+        type: object
         properties:
           type:
             type: string
             const: canvas
             description: Refers to the resource type and must be `canvas`
-        required:
-          - type
-      - $ref: '#/definitions/common_properties'
-      - type: object
-        properties:
-          dev:
-            type: object
-            description: Overrides properties in development
-            $ref: '#/definitions/canvas/definitions/canvas_properties'
-          prod:
-            type: object
-            description: Overrides properties in production
-            $ref: '#/definitions/canvas/definitions/canvas_properties'
-      - $ref: '#/definitions/canvas/definitions/canvas_properties'
-        required:
-          - rows
-    definitions:
-      canvas_properties:
-        type: object
-        properties:
           display_name:
             type: string
             description: Refers to the display name for the canvas
@@ -373,35 +315,21 @@ definitions:
           security:
             $ref: '#/definitions/security_policy_properties'
             description: Security rules to apply for access to the canvas
+        required:
+          - type
+          - rows
+      - $ref: '#/definitions/common_properties'          
   component:
     type: object
     title: Component YAML
-    description: ''
     allOf:
-      - type: object
+      - title: Properties
+        type: object
         properties:
           type:
             type: string
             const: component
             description: Refers to the resource type and must be `component`
-        required:
-          - type
-      - $ref: '#/definitions/common_properties'
-      - type: object
-        properties:
-          dev:
-            type: object
-            description: Overrides properties in development
-            $ref: '#/definitions/component/definitions/component_properties'
-          prod:
-            type: object
-            description: Overrides properties in production
-            $ref: '#/definitions/component/definitions/component_properties'
-      - $ref: '#/definitions/component/definitions/component_properties'
-    definitions:
-      component_properties:
-        type: object
-        properties:
           display_name:
             type: string
             description: Refers to the display name for the component
@@ -413,11 +341,23 @@ definitions:
               $ref: '#/definitions/component_variable_properties'
           output:
             $ref: '#/definitions/component_variable_properties'
+        required:
+          - type
+      - $ref: '#/definitions/common_properties' 
   connector:
     type: object
     title: Connector YAML
+    description: |
+      When you add olap_connector to your rill.yaml file, you will need to set up a `<connector_name>.yaml` file in the 'connectors' directory. This file requires the following parameters,type and driver (see below for more parameter options). Rill will automatically test the connectivity to the OLAP engine upon saving the file. This can be viewed in the connectors tab in the UI.
+
+      :::tip Did you know?
+
+      Starting from Rill 0.46, you can directly create OLAP engines from the UI! Select + Add -> Data -> Connect an OLAP engine
+
+      :::
     allOf:
-      - type: object
+      - title: Properties
+        type: object
         properties:
           type:
             type: string
@@ -462,18 +402,6 @@ definitions:
               - driver
           - $ref: >-
               #/definitions/connector/definitions/athena/definitions/athena_properties
-          - type: object
-            properties:
-              dev:
-                type: object
-                description: Overrides properties in development
-                $ref: >-
-                  #/definitions/connector/definitions/athena/definitions/athena_properties
-              prod:
-                type: object
-                description: Overrides properties in production
-                $ref: >-
-                  #/definitions/connector/definitions/athena/definitions/athena_properties
         definitions:
           athena_properties:
             type: object
@@ -514,18 +442,6 @@ definitions:
               - driver
           - $ref: >-
               #/definitions/connector/definitions/azure/definitions/azure_properties
-          - type: object
-            properties:
-              dev:
-                type: object
-                description: Overrides properties in development
-                $ref: >-
-                  #/definitions/connector/definitions/azure/definitions/azure_properties
-              prod:
-                type: object
-                description: Overrides properties in production
-                $ref: >-
-                  #/definitions/connector/definitions/azure/definitions/azure_properties
         definitions:
           azure_properties:
             type: object
@@ -560,18 +476,6 @@ definitions:
               - driver
           - $ref: >-
               #/definitions/connector/definitions/bigquery/definitions/bigquery_properties
-          - type: object
-            properties:
-              dev:
-                type: object
-                description: Overrides properties in development
-                $ref: >-
-                  #/definitions/connector/definitions/bigquery/definitions/bigquery_properties
-              prod:
-                type: object
-                description: Overrides properties in production
-                $ref: >-
-                  #/definitions/connector/definitions/bigquery/definitions/bigquery_properties
         definitions:
           bigquery_properties:
             type: object
@@ -597,18 +501,6 @@ definitions:
               - driver
           - $ref: >-
               #/definitions/connector/definitions/clickhouse/definitions/clickhouse_properties
-          - type: object
-            properties:
-              dev:
-                type: object
-                description: Overrides properties in development
-                $ref: >-
-                  #/definitions/connector/definitions/clickhouse/definitions/clickhouse_properties
-              prod:
-                type: object
-                description: Overrides properties in production
-                $ref: >-
-                  #/definitions/connector/definitions/clickhouse/definitions/clickhouse_properties
         definitions:
           clickhouse_properties:
             type: object
@@ -686,18 +578,6 @@ definitions:
               - driver
           - $ref: >-
               #/definitions/connector/definitions/druid/definitions/druid_properties
-          - type: object
-            properties:
-              dev:
-                type: object
-                description: Overrides properties in development
-                $ref: >-
-                  #/definitions/connector/definitions/druid/definitions/druid_properties
-              prod:
-                type: object
-                description: Overrides properties in production
-                $ref: >-
-                  #/definitions/connector/definitions/druid/definitions/druid_properties
         definitions:
           druid_properties:
             type: object
@@ -746,18 +626,6 @@ definitions:
               - driver
           - $ref: >-
               #/definitions/connector/definitions/duckdb/definitions/duckdb_properties
-          - type: object
-            properties:
-              dev:
-                type: object
-                description: Overrides properties in development
-                $ref: >-
-                  #/definitions/connector/definitions/duckdb/definitions/duckdb_properties
-              prod:
-                type: object
-                description: Overrides properties in production
-                $ref: >-
-                  #/definitions/connector/definitions/duckdb/definitions/duckdb_properties
         definitions:
           duckdb_properties:
             type: object
@@ -808,18 +676,6 @@ definitions:
             required:
               - driver
           - $ref: '#/definitions/connector/definitions/gcs/definitions/gcs_properties'
-          - type: object
-            properties:
-              dev:
-                type: object
-                description: Overrides properties in development
-                $ref: >-
-                  #/definitions/connector/definitions/gcs/definitions/gcs_properties
-              prod:
-                type: object
-                description: Overrides properties in production
-                $ref: >-
-                  #/definitions/connector/definitions/gcs/definitions/gcs_properties
         definitions:
           gcs_properties:
             type: object
@@ -851,18 +707,6 @@ definitions:
               - driver
           - $ref: >-
               #/definitions/connector/definitions/https/definitions/https_properties
-          - type: object
-            properties:
-              dev:
-                type: object
-                description: Overrides properties in development
-                $ref: >-
-                  #/definitions/connector/definitions/https/definitions/https_properties
-              prod:
-                type: object
-                description: Overrides properties in production
-                $ref: >-
-                  #/definitions/connector/definitions/https/definitions/https_properties
         definitions:
           https_properties:
             type: object
@@ -890,18 +734,6 @@ definitions:
               - driver
           - $ref: >-
               #/definitions/connector/definitions/local_file/definitions/local_file_properties
-          - type: object
-            properties:
-              dev:
-                type: object
-                description: Overrides properties in development
-                $ref: >-
-                  #/definitions/connector/definitions/local_file/definitions/local_file_properties
-              prod:
-                type: object
-                description: Overrides properties in production
-                $ref: >-
-                  #/definitions/connector/definitions/local_file/definitions/local_file_properties
         definitions:
           local_file_properties:
             type: object
@@ -931,18 +763,6 @@ definitions:
               - driver
           - $ref: >-
               #/definitions/connector/definitions/motherduck/definitions/motherduck_properties
-          - type: object
-            properties:
-              dev:
-                type: object
-                description: Overrides properties in development
-                $ref: >-
-                  #/definitions/connector/definitions/motherduck/definitions/motherduck_properties
-              prod:
-                type: object
-                description: Overrides properties in production
-                $ref: >-
-                  #/definitions/connector/definitions/motherduck/definitions/motherduck_properties
         definitions:
           motherduck_properties:
             type: object
@@ -970,18 +790,6 @@ definitions:
               - driver
           - $ref: >-
               #/definitions/connector/definitions/mysql/definitions/mysql_properties
-          - type: object
-            properties:
-              dev:
-                type: object
-                description: Overrides properties in development
-                $ref: >-
-                  #/definitions/connector/definitions/mysql/definitions/mysql_properties
-              prod:
-                type: object
-                description: Overrides properties in production
-                $ref: >-
-                  #/definitions/connector/definitions/mysql/definitions/mysql_properties
         definitions:
           mysql_properties:
             type: object
@@ -1004,18 +812,6 @@ definitions:
               - driver
           - $ref: >-
               #/definitions/connector/definitions/pinot/definitions/pinot_properties
-          - type: object
-            properties:
-              dev:
-                type: object
-                description: Overrides properties in development
-                $ref: >-
-                  #/definitions/connector/definitions/pinot/definitions/pinot_properties
-              prod:
-                type: object
-                description: Overrides properties in production
-                $ref: >-
-                  #/definitions/connector/definitions/pinot/definitions/pinot_properties
         definitions:
           pinot_properties:
             type: object
@@ -1065,18 +861,6 @@ definitions:
               - driver
           - $ref: >-
               #/definitions/connector/definitions/postgres/definitions/postgres_properties
-          - type: object
-            properties:
-              dev:
-                type: object
-                description: Overrides properties in development
-                $ref: >-
-                  #/definitions/connector/definitions/postgres/definitions/postgres_properties
-              prod:
-                type: object
-                description: Overrides properties in production
-                $ref: >-
-                  #/definitions/connector/definitions/postgres/definitions/postgres_properties
         definitions:
           postgres_properties:
             type: object
@@ -1099,18 +883,6 @@ definitions:
               - driver
           - $ref: >-
               #/definitions/connector/definitions/redshift/definitions/redshift_properties
-          - type: object
-            properties:
-              dev:
-                type: object
-                description: Overrides properties in development
-                $ref: >-
-                  #/definitions/connector/definitions/redshift/definitions/redshift_properties
-              prod:
-                type: object
-                description: Overrides properties in production
-                $ref: >-
-                  #/definitions/connector/definitions/redshift/definitions/redshift_properties
         definitions:
           redshift_properties:
             type: object
@@ -1141,18 +913,6 @@ definitions:
             required:
               - driver
           - $ref: '#/definitions/connector/definitions/s3/definitions/s3_properties'
-          - type: object
-            properties:
-              dev:
-                type: object
-                description: Overrides properties in development
-                $ref: >-
-                  #/definitions/connector/definitions/s3/definitions/s3_properties
-              prod:
-                type: object
-                description: Overrides properties in production
-                $ref: >-
-                  #/definitions/connector/definitions/s3/definitions/s3_properties
         definitions:
           s3_properties:
             type: object
@@ -1193,18 +953,6 @@ definitions:
               - driver
           - $ref: >-
               #/definitions/connector/definitions/salesforce/definitions/salesforce_properties
-          - type: object
-            properties:
-              dev:
-                type: object
-                description: Overrides properties in development
-                $ref: >-
-                  #/definitions/connector/definitions/salesforce/definitions/salesforce_properties
-              prod:
-                type: object
-                description: Overrides properties in production
-                $ref: >-
-                  #/definitions/connector/definitions/salesforce/definitions/salesforce_properties
         definitions:
           salesforce_properties:
             type: object
@@ -1239,18 +987,6 @@ definitions:
               - driver
           - $ref: >-
               #/definitions/connector/definitions/slack/definitions/slack_properties
-          - type: object
-            properties:
-              dev:
-                type: object
-                description: Overrides properties in development
-                $ref: >-
-                  #/definitions/connector/definitions/slack/definitions/slack_properties
-              prod:
-                type: object
-                description: Overrides properties in production
-                $ref: >-
-                  #/definitions/connector/definitions/slack/definitions/slack_properties
         definitions:
           slack_properties:
             type: object
@@ -1273,18 +1009,6 @@ definitions:
               - driver
           - $ref: >-
               #/definitions/connector/definitions/snowflake/definitions/snowflake_properties
-          - type: object
-            properties:
-              dev:
-                type: object
-                description: Overrides properties in development
-                $ref: >-
-                  #/definitions/connector/definitions/snowflake/definitions/snowflake_properties
-              prod:
-                type: object
-                description: Overrides properties in production
-                $ref: >-
-                  #/definitions/connector/definitions/snowflake/definitions/snowflake_properties
         definitions:
           snowflake_properties:
             type: object
@@ -1310,18 +1034,6 @@ definitions:
               - driver
           - $ref: >-
               #/definitions/connector/definitions/sqlite/definitions/sqlite_properties
-          - type: object
-            properties:
-              dev:
-                type: object
-                description: Overrides properties in development
-                $ref: >-
-                  #/definitions/connector/definitions/sqlite/definitions/sqlite_properties
-              prod:
-                type: object
-                description: Overrides properties in production
-                $ref: >-
-                  #/definitions/connector/definitions/sqlite/definitions/sqlite_properties
         definitions:
           sqlite_properties:
             type: object
@@ -1332,35 +1044,15 @@ definitions:
   explore:
     type: object
     title: Explore YAML
-    description: >-
-      In your Rill project directory, create a explore dashboard,
-      `<dashboard_name>.yaml`, file in the `dashboards` directory. Rill will
-      ingest the dashboard definition next time you run `rill start`.
+    description: In your Rill project directory, create a explore dashboard, `<dashboard_name>.yaml`, file in the `dashboards` directory. Rill will ingest the dashboard definition next time you run `rill start`.
     allOf:
-      - type: object
+      - title: Properties
+        type: object
         properties:
           type:
             type: string
             const: explore
             description: Refers to the resource type and must be `explore`
-        required:
-          - type
-      - $ref: '#/definitions/common_properties'
-      - type: object
-        properties:
-          dev:
-            type: object
-            description: Overrides properties in development
-            $ref: '#/definitions/explore/definitions/explore_properties'
-          prod:
-            type: object
-            description: Overrides properties in production
-            $ref: '#/definitions/explore/definitions/explore_properties'
-      - $ref: '#/definitions/explore/definitions/explore_properties'
-    definitions:
-      explore_properties:
-        type: object
-        properties:
           display_name:
             type: string
             description: Refers to the display name for the explore dashboard
@@ -1380,15 +1072,15 @@ definitions:
               List of dimension names. Use '*' to select all dimensions
               (default) 
             $ref: >-
-              #/definitions/explore/definitions/explore_properties/definitions/field_selector_properties
+              #/definitions/explore/definitions/field_selector_properties
           measures:
             description: ' List of measure names. Use ''*'' to select all measures (default)'
             $ref: >-
-              #/definitions/explore/definitions/explore_properties/definitions/field_selector_properties
+              #/definitions/explore/definitions/field_selector_properties
           theme:
             oneOf:
               - type: string
-              - $ref: '#/definitions/theme'
+              - $ref: '#/definitions/theme/definitions/theme_properties'
             description: >-
               Name of the theme to use. Only one of theme and embedded_theme can
               be set.
@@ -1428,11 +1120,11 @@ definitions:
                   Provides the default dimensions to load on viewing the
                   dashboard
                 $ref: >-
-                  #/definitions/explore/definitions/explore_properties/definitions/field_selector_properties
+                  #/definitions/explore/definitions/field_selector_properties
               measures:
                 description: Provides the default measures to load on viewing the dashboard
                 $ref: >-
-                  #/definitions/explore/definitions/explore_properties/definitions/field_selector_properties
+                  #/definitions/explore/definitions/field_selector_properties
               time_range:
                 description: >-
                   Refers to the default time range shown when a user initially
@@ -1463,67 +1155,50 @@ definitions:
           security:
             description: Security rules to apply for access to the explore dashboard
             $ref: '#/definitions/security_policy_properties'
-        definitions:
-          field_selector_properties:
+        required:
+          - type       
+      - $ref: '#/definitions/common_properties'  
+    definitions:
+      field_selector_properties:
+        oneOf:
+          - type: string
+            const: '*'
+            description: Matches all fields
+          - type: array
+            items:
+              type: string
+            description: Explicit list of fields
+          - type: object
+            description: 'Advanced matching using regex, DuckDB expression, or exclusion'
+            properties:
+              regex:
+                type: string
+                description: Select dimensions using a regular expression
+              expr:
+                type: string
+              exclude:
+                type: object
+                description: Select all dimensions except those listed here
+            additionalProperties: false
             oneOf:
-              - type: string
-                const: '*'
-                description: Matches all fields
-              - type: array
-                items:
-                  type: string
-                description: Explicit list of fields
-              - type: object
-                description: 'Advanced matching using regex, DuckDB expression, or exclusion'
-                properties:
-                  regex:
-                    type: string
-                    description: Select dimensions using a regular expression
-                  expr:
-                    type: string
-                  exclude:
-                    type: object
-                    description: Select all dimensions except those listed here
-                additionalProperties: false
-                oneOf:
-                  - required:
-                      - regex
-                  - required:
-                      - expr
-                  - required:
-                      - exclude
+              - required:
+                  - regex
+              - required:
+                  - expr
+              - required:
+                  - exclude 
   metrics_view:
     type: object
     title: Metrics View YAML
-    description: >-
-      In your Rill project directory, create a metrics view,
-      `<metrics_view>.yaml`, file in the `metrics` directory. Rill will ingest
-      the metric view definition next time you run `rill start`.
+    description: In your Rill project directory, create a metrics view, `<metrics_view>.yaml`, file in the `metrics` directory. Rill will ingest the metric view definition next time you run `rill start`.
     allOf:
-      - type: object
+      - title: Properties
+        type: object
         properties:
           type:
             type: string
             const: metrics_view
             description: Refers to the resource type and must be `metrics_view`
-        required:
-          - type
-      - $ref: '#/definitions/common_properties'
-      - type: object
-        properties:
-          dev:
-            type: object
-            description: Overrides properties in development
-            $ref: '#/definitions/metrics_view/definitions/metrics_view_properties'
-          prod:
-            type: object
-            description: Overrides properties in production
-            $ref: '#/definitions/metrics_view/definitions/metrics_view_properties'
-      - $ref: '#/definitions/metrics_view/definitions/metrics_view_properties'
-    definitions:
-      metrics_view_properties:
-        type: object
-        properties:
           display_name:
             type: string
             description: Refers to the display name for the metrics view
@@ -1667,7 +1342,7 @@ definitions:
                           type: boolean
                         order:
                           $ref: >-
-                            #/definitions/metrics_view/definitions/metrics_view_properties/definitions/field_selectors_properties
+                            #/definitions/metrics_view/definitions/field_selectors_properties
                           description: to order the window
                         frame:
                           type: string
@@ -1675,41 +1350,27 @@ definitions:
                       additionalProperties: false
                 per:
                   $ref: >-
-                    #/definitions/metrics_view/definitions/metrics_view_properties/definitions/field_selectors_properties
+                    #/definitions/metrics_view/definitions/field_selectors_properties
                   description: for per dimensions
                 requires:
                   $ref: >-
-                    #/definitions/metrics_view/definitions/metrics_view_properties/definitions/field_selectors_properties
+                    #/definitions/metrics_view/definitions/field_selectors_properties
                   description: >-
                     using an available measure or dimension in your metrics view
                     to set a required parameter, cannot be used with simple
                     measures
                 format_preset:
                   type: string
-                  description: >-
-                    Controls the formatting of this measure using a predefined
-                    preset. Measures cannot have both `format_preset` and
-                    `format_d3`. If neither is supplied, the measure will be
-                    formatted using the `humanize` preset by default. Available
-                    options:
-
-                    - `humanize`: Round numbers into thousands (K), millions
-                    (M), billions (B), etc.
-
-                    - `none`: Raw output.
-
-                    - `currency_usd`: Round to 2 decimal points with a dollar
-                    sign ($).
-
-                    - `currency_eur`: Round to 2 decimal points with a euro sign
-                    (€).
-
-                    - `percentage`: Convert a rate into a percentage with a %
-                    sign.
-
-                    - `interval_ms`: Convert milliseconds into human-readable
-                    durations like hours (h), days (d), years (y), etc.
-                    (optional)
+                  description: |
+                    Controls the formatting of this measure using a predefined preset. Measures cannot have both `format_preset` and `format_d3`. If neither is supplied, the measure will be formatted using the `humanize` preset by default. 
+                    
+                        Available options:
+                        - `humanize`: Round numbers into thousands (K), millions(M), billions (B), etc.
+                        - `none`: Raw output.
+                        - `currency_usd`: Round to 2 decimal points with a dollar sign ($).
+                        - `currency_eur`: Round to 2 decimal points with a euro sign (€).
+                        - `percentage`: Convert a rate into a percentage with a % sign.
+                        - `interval_ms`: Convert milliseconds into human-readable durations like hours (h), days (d), years (y), etc. (optional)
                 format_d3:
                   type: string
                   description: >-
@@ -1746,51 +1407,54 @@ definitions:
           security:
             $ref: '#/definitions/security_policy_properties'
             description: Defines a security policy for the dashboard
-        definitions:
-          field_selectors_properties:
-            anyOf:
-              - type: string
-              - type: array
-                items:
-                  anyOf:
-                    - type: string
-                      description: 'Shorthand field selector, interpreted as the name.'
-                    - type: object
-                      properties:
-                        name:
-                          type: string
-                        time_grain:
-                          type: string
-                          description: Time grain for time-based dimensions.
-                          enum:
-                            - ''
-                            - ms
-                            - millisecond
-                            - s
-                            - second
-                            - min
-                            - minute
-                            - h
-                            - hour
-                            - d
-                            - day
-                            - w
-                            - week
-                            - month
-                            - q
-                            - quarter
-                            - 'y'
-                            - year
-                      required:
-                        - name
-                      additionalProperties: false
-                minItems: 1
+        required:
+          - type
+      - $ref: '#/definitions/common_properties' 
+    definitions:
+      field_selectors_properties:
+        anyOf:
+          - type: string
+          - type: array
+            items:
+              anyOf:
+                - type: string
+                  description: 'Shorthand field selector, interpreted as the name.'
+                - type: object
+                  properties:
+                    name:
+                      type: string
+                    time_grain:
+                      type: string
+                      description: Time grain for time-based dimensions.
+                      enum:
+                        - ''
+                        - ms
+                        - millisecond
+                        - s
+                        - second
+                        - min
+                        - minute
+                        - h
+                        - hour
+                        - d
+                        - day
+                        - w
+                        - week
+                        - month
+                        - q
+                        - quarter
+                        - 'y'
+                        - year
+                  required:
+                    - name
+                  additionalProperties: false
+            minItems: 1
   model:
     type: object
     title: Model YAML
-    description: ''
     allOf:
-      - type: object
+      - title: Properties
+        type: object
         properties:
           type:
             type: string
@@ -1798,18 +1462,8 @@ definitions:
             description: Refers to the resource type and must be `model`
         required:
           - type
-      - $ref: '#/definitions/common_properties'
       - $ref: '#/definitions/model/definitions/model_properties'
-      - type: object
-        properties:
-          dev:
-            type: object
-            description: Overrides properties in development
-            $ref: '#/definitions/model/definitions/model_properties'
-          prod:
-            type: object
-            description: Overrides properties in production
-            $ref: '#/definitions/model/definitions/model_properties'
+      - $ref: '#/definitions/common_properties'
       - type: object
         oneOf:
           - $ref: '#/definitions/model/definitions/athena'
@@ -2355,9 +2009,20 @@ definitions:
             properties: {}
   theme:
     type: object
-    title: Theme YAML
+    title: Theme YAML 
+    description: | 
+      In your Rill project directory, create a `<theme_name>.yaml` file in any directory containing `type: theme`. Rill will automatically ingest the theme next time you run `rill start` or deploy to Rill Cloud.
+      
+      To apply that theme to a dashboard, add `default_theme: <name of theme>` to the yaml file for that dashboard. Alternatively, you can add this to the end of the URL in your browser: `?theme=<name of theme>`
+    examples:
+      - # Example: You can copy this directly into your <theme_name>.yaml file
+        type: theme
+        colors:
+          primary: plum 
+          secondary: violet 
     allOf:
-      - type: object
+      - title: Properties
+        type: object
         properties:
           type:
             type: string
@@ -2365,52 +2030,51 @@ definitions:
             description: Refers to the resource type and must be `theme`
         required:
           - type
-      - $ref: '#/definitions/common_properties'
-      - type: object
-        properties:
-          dev:
-            type: object
-            description: Overrides properties in development
-            $ref: '#/definitions/theme/definitions/theme_properties'
-          prod:
-            type: object
-            description: Overrides properties in production
-            $ref: '#/definitions/theme/definitions/theme_properties'
       - $ref: '#/definitions/theme/definitions/theme_properties'
         required:
           - colors
+      - $ref: '#/definitions/common_properties'  
     definitions:
       theme_properties:
         type: object
         properties:
           colors:
+            type: object
+            description: Used to override the dashboard colors. Either primary or secondary color must be provided.
+            properties:
+              primary:
+                type: string
+                description: Overrides the primary blue color in the dashboard. Can have any hex (without the '#' character), [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats. Note that the hue of the input colors is used for variants but the saturation and lightness is copied over from the [blue color palette](https://tailwindcss.com/docs/customizing-colors).
+              secondary:
+                type: string
+                description: Overrides the secondary color in the dashboard. Applies to the loading spinner only as of now. Can have any hex (without the '#' character), [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats.
             anyOf:
-              - type: object
-                properties:
-                  primary:
-                    type: string
-                required:
+              - required:
                   - primary
-              - type: object
-                properties:
-                  secondary:
-                    type: string
-                required:
+              - required:
                   - secondary
   common_properties:
     type: object
+    title: "Common Properties"
     properties:
       name:
         type: string
-        description: >-
-          Name is usually inferred from the filename, but can be specified
-          manually.
+        description: Name is usually inferred from the filename, but can be specified manually.
       refs:
         type: array
+        description: 'List of resource references'
         items:
           type: string
           description: A string reference like `<resource-name>` or `<type/resource-name>`.
-        description: 'List of resource references, each as a string or map.'
+      dev:
+        type: object
+        description: Overrides any properties in development environment.
+      prod:
+        type: object
+        description: Overrides any properties in production environment.
+
+
+
   component_variable_properties:
     type: object
     properties:
@@ -2426,7 +2090,6 @@ definitions:
           - boolean
           - object
           - array
-          - 'null'
     required:
       - name
       - type
@@ -2472,9 +2135,7 @@ definitions:
               - type: string
               - type: object
                 additionalProperties: true
-            description: >-
-              Defines the file path or pattern to query from the specified
-              connector.
+            description:  Defines the file path or pattern to query from the specified connector.
           connector:
             type: string
             description: Specifies the connector to use with the glob input.
@@ -2534,61 +2195,54 @@ definitions:
           - range
         additionalProperties: false
   notify_properties:
+    type: object
+    properties:
+      email:
+        type: object
+        description: Send notifications via email.
+        properties:
+          recipients:
+            type: array
+            description: An array of email addresses to notify.
+            items:
+              type: string
+            minItems: 1
+        required:
+          - recipients
+      slack:
+        type: object
+        description: Send notifications via Slack.
+        properties:
+          users:
+            type: array
+            description: An array of Slack user IDs to notify.
+            items:
+              type: string
+            minItems: 1
+          channels:
+            type: array
+            description: An array of Slack channel IDs to notify.
+            items:
+              type: string
+            minItems: 1
+          webhooks:
+            type: array
+            description: An array of Slack webhook URLs to send notifications to.
+            items:
+              type: string
+            minItems: 1
+        anyOf:
+          - required:
+              - channels
+          - required:
+              - users
+          - required:
+              - webhooks
     anyOf:
-      - type: object
-        properties:
-          email:
-            type: object
-            description: Send notifications via email.
-            properties:
-              recipients:
-                type: array
-                description: An array of email addresses to notify.
-                items:
-                  type: string
-                minItems: 1
-            required:
-              - recipients
-            additionalProperties: false
-        required:
-          - email
-      - type: object
-        properties:
-          slack:
-            description: Send notifications via Slack.
-            anyOf:
-              - type: object
-                properties:
-                  users:
-                    type: array
-                    description: An array of Slack user IDs to notify.
-                    items:
-                      type: string
-                    minItems: 1
-                required:
-                  - users
-              - type: object
-                properties:
-                  channels:
-                    type: array
-                    description: An array of Slack channel IDs to notify.
-                    items:
-                      type: string
-                    minItems: 1
-                required:
-                  - channels
-              - type: object
-                properties:
-                  webhooks:
-                    type: array
-                    description: An array of Slack webhook URLs to send notifications to.
-                    items:
-                      type: string
-                    minItems: 1
-                required:
-                  - webhooks
-        required:
+        - required:
           - slack
+        - required:
+          - email
   schedule_properties:
     type: object
     properties:

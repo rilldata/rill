@@ -10,23 +10,7 @@ Along with alertings at the dashboard level and can be created via the UI, there
 
 ### `type`
 
-_[string]_ - Refers to the resource type and must be `alert`  _(required)_
-
-### `name`
-
-_[string]_ - Name is usually inferred from the filename, but can be specified manually. 
-
-### `refs`
-
-_[array of string]_ - List of resource references, each as a string or map. 
-
-### `dev`
-
-_[object]_ - Overrides properties in development 
-
-### `prod`
-
-_[object]_ - Overrides properties in production 
+_[string]_ - Refers to the resource type and must be `alert` _(required)_
 
 ### `display_name`
 
@@ -34,7 +18,7 @@ _[string]_ - Refers to the display name for the alert
 
 ### `refresh`
 
-_[object]_ - Specifies the refresh schedule that Rill should follow to re-ingest and update the underlying data  _(required)_
+_[object]_ - Specifies the refresh schedule that Rill should follow to re-ingest and update the underlying data _(required)_
 
   - **`cron`** - _[string]_ - A cron expression that defines the execution schedule 
 
@@ -58,8 +42,7 @@ _[object]_ - define the interval of the alert to check
 
 ### `watermark`
 
-_[string]_ - Specifies how the watermark is determined for incremental processing.
-Use 'trigger_time' to set it at runtime or 'inherit' to use the upstream model's watermark. 
+_[string]_ - Specifies how the watermark is determined for incremental processing.  Use 'trigger_time' to set it at runtime or 'inherit' to use the upstream model's watermark. 
 
 ### `timeout`
 
@@ -67,55 +50,55 @@ _[string]_ - define the timeout of the alert in seconds (optional).
 
 ### `data`
 
-_[oneOf]_ - Specifies one of the options to retrieve or compute the data used by alert  _(required)_
+_[oneOf]_ - Specifies one of the options to retrieve or compute the data used by alert _(required)_
 
-  - **option 1** - _[object]_ 
+  - **option 1** - _[object]_ - (no description)
 
-    - **`sql`** - _[string]_ - Raw SQL query to run against existing models in the project.  _(required)_
+    - **`sql`** - _[string]_ - Raw SQL query to run against existing models in the project. _(required)_
 
     - **`connector`** - _[string]_ - specifies the connector to use when running SQL or glob queries. 
 
-  - **option 2** - _[object]_ 
+  - **option 2** - _[object]_ - (no description)
 
-    - **`metrics_sql`** - _[string]_ - SQL query that targets a metrics view in the project  _(required)_
+    - **`metrics_sql`** - _[string]_ - SQL query that targets a metrics view in the project _(required)_
 
-  - **option 3** - _[object]_ 
+  - **option 3** - _[object]_ - (no description)
 
-    - **`api`** - _[string]_ - Name of a custom API defined in the project.  _(required)_
+    - **`api`** - _[string]_ - Name of a custom API defined in the project. _(required)_
 
     - **`args`** - _[object]_ - Arguments to pass to the custom API. 
 
-  - **option 4** - _[object]_ 
+  - **option 4** - _[object]_ - (no description)
 
-    - **`glob`** - _[anyOf]_ - Defines the file path or pattern to query from the specified connector.  _(required)_
+    - **`glob`** - _[anyOf]_ - Defines the file path or pattern to query from the specified connector. _(required)_
 
-      - **option 1** - _[string]_ 
+      - **option 1** - _[string]_ - (no description)
 
-      - **option 2** - _[object]_ 
+      - **option 2** - _[object]_ - (no description)
 
     - **`connector`** - _[string]_ - Specifies the connector to use with the glob input. 
 
-  - **option 5** - _[object]_ 
+  - **option 5** - _[object]_ - (no description)
 
-    - **`resource_status`** - _[object]_ - Based on resource status  _(required)_
+    - **`resource_status`** - _[object]_ - Based on resource status _(required)_
 
       - **`where_error`** - _[boolean]_ - Indicates whether the condition should trigger when the resource is in an error state. 
 
 ### `for`
 
-_[oneOf]_  
+_[oneOf]_ - The user's attributes to use for security policies 
 
-  - **option 1** - _[object]_ 
+  - **option 1** - _[object]_ - (no description)
 
-    - **`user_id`** - _[string]_   _(required)_
+    - **`user_id`** - _[string]_ - user id to be used for security policies _(required)_
 
-  - **option 2** - _[object]_ 
+  - **option 2** - _[object]_ - (no description)
 
-    - **`user_email`** - _[string]_   _(required)_
+    - **`user_email`** - _[string]_ - user email to be used for security policies _(required)_
 
-  - **option 3** - _[object]_ 
+  - **option 3** - _[object]_ - (no description)
 
-    - **`attributes`** - _[object]_   _(required)_
+    - **`attributes`** - _[object]_ - user attributes to be used for security policies _(required)_
 
 ### `on_recover`
 
@@ -135,60 +118,42 @@ _[boolean]_ - Enable repeated notifications for unresolved alerts. Defaults to f
 
 ### `renotify_after`
 
-_[string]_ - Defines the re-notification interval for the alert (e.g., '10m', '24h'), equivalent to snooze duration in UI, defaults to 'Off' 
+_[string]_ - Defines the re-notification interval for the alert (e.g., '10m','24h'), equivalent to snooze duration in UI, defaults to 'Off' 
 
 ### `notify`
 
-_[anyOf]_ - Defines how and where to send notifications. At least one method (email or Slack) is required.  _(required)_
+_[object]_ - Defines how and where to send notifications. At least one method (email or Slack) is required. _(required)_
 
-  - **option 1** - _[object]_ 
+  - **`email`** - _[object]_ - Send notifications via email. 
 
-    - **`email`** - _[object]_ - Send notifications via email.  _(required)_
+    - **`recipients`** - _[array of string]_ - An array of email addresses to notify. _(required)_
 
-      - **`recipients`** - _[array of string]_ - An array of email addresses to notify.  _(required)_
+  - **`slack`** - _[object]_ - Send notifications via Slack. 
 
-  - **option 2** - _[object]_ 
+    - **`users`** - _[array of string]_ - An array of Slack user IDs to notify. 
 
-    - **`slack`** - _[anyOf]_ - Send notifications via Slack.  _(required)_
+    - **`channels`** - _[array of string]_ - An array of Slack channel IDs to notify. 
 
-      - **option 1** - _[object]_ 
-
-        - **`users`** - _[array of string]_ - An array of Slack user IDs to notify.  _(required)_
-
-      - **option 2** - _[object]_ 
-
-        - **`channels`** - _[array of string]_ - An array of Slack channel IDs to notify.  _(required)_
-
-      - **option 3** - _[object]_ 
-
-        - **`webhooks`** - _[array of string]_ - An array of Slack webhook URLs to send notifications to.  _(required)_
+    - **`webhooks`** - _[array of string]_ - An array of Slack webhook URLs to send notifications to. 
 
 ### `annotations`
 
-_[object]_  
+_[object]_ - (no description) 
 
-## Examples
+## Common Properties
 
-```yaml
-# Example: To send alert when data lags by more than 1 day to slack channel #rill-cloud-alerts
-type: alert
-display_name: Data lags by more than 1 day
-# Check the alert every hour.
-refresh:
-    cron: 0 * * * *
-# Query that returns non-empty results if the metrics lag by more than 1 day.
-data:
-    sql: |-
-        SELECT  *
-        FROM
-        (
-          SELECT  MAX(event_time) AS max_time
-          FROM rill_metrics_model
-        )
-        WHERE max_time < NOW() - INTERVAL '1 day'
-# Send notifications in Slack.
-notify:
-    slack:
-        channels:
-            - '#rill-cloud-alerts'
-```
+### `name`
+
+_[string]_ - Name is usually inferred from the filename, but can be specified manually. 
+
+### `refs`
+
+_[array of string]_ - List of resource references 
+
+### `dev`
+
+_[object]_ - Overrides any properties in development environment. 
+
+### `prod`
+
+_[object]_ - Overrides any properties in production environment. 
