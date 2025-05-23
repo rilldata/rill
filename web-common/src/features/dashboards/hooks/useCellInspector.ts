@@ -25,8 +25,6 @@ export function useCellInspector() {
   };
 
   const handleMouseEnter = (value: string, e: MouseEvent) => {
-    const target = e.currentTarget as HTMLElement;
-
     // Clear any existing timeout
     if (hoverTimeout) {
       clearTimeout(hoverTimeout);
