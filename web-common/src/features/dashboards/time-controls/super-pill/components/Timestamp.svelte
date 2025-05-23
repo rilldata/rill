@@ -23,6 +23,7 @@
         .filter(([, value]) => value !== 0)
         .slice(0, 2),
     ),
+    { locale: "en" },
   ).toHuman({
     listStyle: "narrow",
     maximumFractionDigits: 0,
