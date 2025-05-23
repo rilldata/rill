@@ -309,6 +309,7 @@
             class:interactive-cell={canShowDataViewer}
             class:border-r={shouldShowRightBorder(i)}
             data-value={cell.getValue()}
+            data-cell-value={cell.getValue()}
             data-rowid={cell.row.id}
             data-columnid={cell.column.id}
             data-rowheader={i === 0 || undefined}

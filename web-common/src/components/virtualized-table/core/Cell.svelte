@@ -150,6 +150,7 @@
           {isDimensionTable ? '' : 'px-4'}
           w-full truncate
           "
+        data-cell-value={value?.toString() || ""}
         on:click={modified({
           shift: shiftClick,
         })}

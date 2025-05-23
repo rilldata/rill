@@ -20,6 +20,7 @@
   class:selected
   class:!justify-start={type === "VARCHAR" || type === "CODE_STRING"}
   class=" px-6 size-full flex items-center"
+  data-cell-value={value?.toString() || ""}
 >
   <p
     class="w-full truncate text-right"
