@@ -12,7 +12,13 @@ import (
 const _defaultConcurrentInserts = 1
 
 type ModelInputProperties struct {
+	// SQL is the main entrypoint for models.
+	// It is usually a SELECT statement that usually is templated into `CREATE TABLE tbl AS %s` or `INSERT INTO tbl %s`.
+	// While often set, it is optional because tables may also be defined with InsertSQLs or purely using the output properties (e.g. for external tables or some dictionaries).
 	SQL string `mapstructure:"sql"`
+	// InsertSQLs is a list of partial SQL clauses that are templated into `INSERT INTO tbl %s` statements.
+	// This enables non-SELECT inserts like `INSERT INTO tbl FORMAT ...`, which can be useful in some cases.
+	InsertSQLs []string `mapstructure:"insert_sqls"`
 }
 
 type ModelOutputProperties struct {
@@ -64,16 +70,48 @@ type ModelOutputProperties struct {
 	DictionarySourceUser string `mapstructure:"dictionary_source_user"`
 	// DictionarySourcePassword is the password for the user that can access the source dictionary table. Only used when typ is DICTIONARY.
 	DictionarySourcePassword string `mapstructure:"dictionary_source_password"`
+	// DictionaryColumns is the column schema to be used in the dictionary. Only used when typ is DICTIONARY.
+	// The normal 'columns' property is still used for the dictionary's underlying table.
+	// The 'dictionary_columns' property enables specifying dictionary-specific column attributes, such as INJECTIVE.
+	DictionaryColumns string `mapstructure:"dictionary_columns"`
 }
 
-// validateAndApplyDefaults validates the model input and output properties and applies defaults.
+// parsePropertiesAndApplyDefaults parses and validates the model input and output properties and applies defaults.
 // The inputProps may optionally be nil to allow for connectors that don't use the base SQL-centric input properties.
 // The outputProps may not be nil.
-func (c *Connection) validateAndApplyDefaults(opts *drivers.ModelExecuteOptions, ip *ModelInputProperties, op *ModelOutputProperties) error {
+func (c *Connection) parsePropertiesAndApplyDefaults(opts *drivers.ModelExecuteOptions) (*ModelInputProperties, *ModelOutputProperties, error) {
+	// Parse the input and output properties
+	im := &mapstructure.Metadata{}
+	ip := &ModelInputProperties{}
+	if err := mapstructure.WeakDecodeMetadata(opts.InputProperties, opts.InputProperties, im); err != nil {
+		return nil, nil, fmt.Errorf("failed to parse input properties: %w", err)
+	}
+	if len(im.Unused) > 0 {
+		return nil, nil, fmt.Errorf("unknown input properties: %s", strings.Join(im.Unused, ", "))
+	}
+
+	// Parse the output properties
+	om := &mapstructure.Metadata{}
+	op := &ModelOutputProperties{}
+	if err := mapstructure.WeakDecodeMetadata(opts.OutputProperties, opts.OutputProperties, om); err != nil {
+		return nil, nil, fmt.Errorf("failed to parse output properties: %w", err)
+	}
+	if len(om.Unused) > 0 {
+		return nil, nil, fmt.Errorf("unknown output properties: %s", strings.Join(om.Unused, ", "))
+	}
+
+	// Check there's a valid SQL query.
+	if ip.SQL == "" && len(ip.InsertSQLs) == 0 && op.Typ != "DICTIONARY" {
+		return nil, nil, fmt.Errorf("input SQL is required")
+	}
+	if ip.SQL != "" && len(ip.InsertSQLs) > 0 {
+		return nil, nil, fmt.Errorf("cannot use both sql and insert_sqls")
+	}
+
 	// EngineFull is not compatible with most other individual properties.
 	if op.EngineFull != "" {
 		if op.Engine != "" || op.OrderBy != "" || op.PartitionBy != "" || op.PrimaryKey != "" || op.SampleBy != "" || op.TTL != "" || op.TableSettings != "" || op.DictionarySourceUser != "" || op.DictionarySourcePassword != "" {
-			return fmt.Errorf("`engine_full` property cannot be used with individual properties")
+			return nil, nil, fmt.Errorf("`engine_full` property cannot be used with individual properties")
 		}
 	}
 
@@ -83,7 +121,7 @@ func (c *Connection) validateAndApplyDefaults(opts *drivers.ModelExecuteOptions,
 	if op.Materialize != nil {
 		if *op.Materialize {
 			if op.Typ == "VIEW" {
-				return fmt.Errorf("the `type` and `materialize` properties contradict each other")
+				return nil, nil, fmt.Errorf("the `type` and `materialize` properties contradict each other")
 			} else if op.Typ == "" {
 				op.Typ = "TABLE"
 			}
@@ -91,33 +129,45 @@ func (c *Connection) validateAndApplyDefaults(opts *drivers.ModelExecuteOptions,
 			if op.Typ == "" {
 				op.Typ = "VIEW"
 			} else if op.Typ != "VIEW" {
-				return fmt.Errorf("the `type` and `materialize` properties contradict each other")
+				return nil, nil, fmt.Errorf("the `type` and `materialize` properties contradict each other")
 			}
 		}
 	}
 	if opts.Incremental || opts.PartitionRun { // Incremental or partitioned models default to TABLE.
 		if op.Typ != "" && op.Typ != "TABLE" {
-			return fmt.Errorf("incremental or partitioned models must be materialized as a table")
+			return nil, nil, fmt.Errorf("incremental or partitioned models must be materialized as a table")
 		}
 		op.Typ = "TABLE"
 	}
-	if op.Typ == "" { // Apply default for plain unannotated models.
-		if opts.Env.DefaultMaterialize {
-			op.Typ = "TABLE"
-		} else {
+	if op.Typ == "" && len(ip.InsertSQLs) > 0 { // If InsertSQLs are set, default to TABLE.
+		op.Typ = "TABLE"
+	}
+	if op.Typ == "" { // Apply default for unannotated models.
+		if !opts.Env.DefaultMaterialize { // Only apply DefaultMaterialize for SQL models.
 			op.Typ = "VIEW"
+		} else {
+			op.Typ = "TABLE"
 		}
 	}
 	if op.Typ != "TABLE" && op.Typ != "VIEW" && op.Typ != "DICTIONARY" {
-		return fmt.Errorf("invalid type %q, must be one of TABLE, VIEW or DICTIONARY", op.Typ)
+		return nil, nil, fmt.Errorf("invalid type %q, must be one of TABLE, VIEW or DICTIONARY", op.Typ)
+	}
+
+	// If InsertSQLs are set, we need to ensure it did not resolve to a view.
+	if len(ip.InsertSQLs) > 0 && op.Typ != "TABLE" && op.Typ != "DICTIONARY" {
+		return nil, nil, fmt.Errorf("can only use insert_sqls with table or dictionary types")
 	}
 
 	// For tables, apply a default table engine.
 	if op.Engine == "" && (op.Typ == "TABLE" || op.Typ == "DICTIONARY") {
-		if c.config.Cluster != "" {
-			op.Engine = "ReplicatedMergeTree"
-		} else {
+		if c.config.Cluster == "" || c.config.isClickhouseCloud() {
+			// NOTE: Clickhouse Cloud automatically map MergeTree to SharedMergeTree.
 			op.Engine = "MergeTree"
+		} else {
+			// NOTE: Since we're not passing the replica path or name here (we don't know it),
+			// this REQUIRES the 'default_replica_path' and 'default_replica_name' properties to be configured on the server.
+			// See this page for details: https://clickhouse.com/docs/engines/table-engines/mergetree-family/replication.
+			op.Engine = "ReplicatedMergeTree"
 		}
 	}
 
@@ -125,26 +175,41 @@ func (c *Connection) validateAndApplyDefaults(opts *drivers.ModelExecuteOptions,
 	switch op.IncrementalStrategy {
 	case drivers.IncrementalStrategyUnspecified, drivers.IncrementalStrategyAppend, drivers.IncrementalStrategyPartitionOverwrite, drivers.IncrementalStrategyMerge:
 	default:
-		return fmt.Errorf("invalid incremental strategy %q", op.IncrementalStrategy)
+		return nil, nil, fmt.Errorf("invalid incremental strategy %q", op.IncrementalStrategy)
 	}
 
 	// partition_by is required for the partition_overwrite incremental strategy.
 	if op.IncrementalStrategy == drivers.IncrementalStrategyPartitionOverwrite && op.PartitionBy == "" {
-		return fmt.Errorf(`must specify a "partition_by" when "incremental_strategy" is %q`, op.IncrementalStrategy)
+		return nil, nil, fmt.Errorf(`must specify a "partition_by" when "incremental_strategy" is %q`, op.IncrementalStrategy)
 	}
 
-	// ClickHouse enforces the requirement of either a primary key or an ORDER BY clause for the ReplacingMergeTree engine.
-	// When using the incremental strategy as 'merge', the engine must be ReplacingMergeTree.
-	// This ensures that duplicate rows are eventually replaced, maintaining data consistency.
-	if op.IncrementalStrategy == drivers.IncrementalStrategyMerge && !(strings.Contains(op.Engine, "ReplacingMergeTree") || strings.Contains(op.EngineFull, "ReplacingMergeTree")) {
-		return fmt.Errorf(`must use "ReplacingMergeTree" engine when "incremental_strategy" is %q`, op.IncrementalStrategy)
+	// When the incremental strategy is "merge", we rewrite it to "append" and use the ReplacingMergeTree engine with the unique key as the ORDER BY.
+	if op.IncrementalStrategy == drivers.IncrementalStrategyMerge {
+		if len(op.UniqueKey) == 0 {
+			return nil, nil, fmt.Errorf("must specify a 'unique_key' when using the 'merge' incremental strategy")
+		}
+		if op.Engine != "" || op.OrderBy != "" {
+			return nil, nil, fmt.Errorf("cannot set 'engine' or 'order_by' when using the 'merge' incremental strategy")
+		}
+
+		var orderBy string
+		for _, col := range op.UniqueKey {
+			if orderBy != "" {
+				orderBy += ", "
+			}
+			orderBy += safeSQLName(col)
+		}
+
+		op.IncrementalStrategy = drivers.IncrementalStrategyAppend
+		op.Engine = "ReplacingMergeTree"
+		op.OrderBy = fmt.Sprintf("(%s)", orderBy)
 	}
 
 	// We want to use partition_overwrite as the default incremental strategy for models with partitions.
 	// This requires us to inject the partition key into the SQL query, so this only works for SQL models.
-	if op.IncrementalStrategy == drivers.IncrementalStrategyUnspecified && opts.PartitionRun && ip != nil && ip.SQL != "" {
+	if op.IncrementalStrategy == drivers.IncrementalStrategyUnspecified && opts.PartitionRun && ip.SQL != "" {
 		if op.EngineFull != "" {
-			return fmt.Errorf("you must provide an explicit `incremental_strategy` when using `engine_full` with a partitioned model")
+			return nil, nil, fmt.Errorf("you must provide an explicit `incremental_strategy` when using `engine_full` with a partitioned model")
 		}
 		ip.SQL = fmt.Sprintf("SELECT %s AS __rill_partition, * FROM (%s\n)", safeSQLString(opts.PartitionKey), ip.SQL)
 		op.IncrementalStrategy = drivers.IncrementalStrategyPartitionOverwrite
@@ -156,23 +221,16 @@ func (c *Connection) validateAndApplyDefaults(opts *drivers.ModelExecuteOptions,
 		op.IncrementalStrategy = drivers.IncrementalStrategyAppend
 	}
 
-	// The input props are optional, but if set, check there's a valid SQL query.
-	if ip != nil {
-		if ip.SQL == "" && op.Typ != "DICTIONARY" {
-			return fmt.Errorf("input SQL is required")
-		}
-	}
-
 	// Add query settings to the SQL query.
 	// We do this last since the SQL query may be modified in some of the above steps.
 	if op.QuerySettings != "" {
-		if ip == nil || ip.SQL == "" {
-			return fmt.Errorf("cannot set query_settings without a SQL query")
+		if ip.SQL == "" {
+			return nil, nil, fmt.Errorf("cannot set query_settings without a SQL query")
 		}
 		ip.SQL = ip.SQL + " SETTINGS " + op.QuerySettings
 	}
 
-	return nil
+	return ip, op, nil
 }
 
 func (p *ModelOutputProperties) tblConfig() string {
@@ -284,14 +342,14 @@ func (c *Connection) Delete(ctx context.Context, res *drivers.ModelResult) error
 		return fmt.Errorf("connector is not an OLAP")
 	}
 
-	_ = c.dropTable(ctx, stagingTableNameFor(res.Table))
+	_ = c.dropEntity(ctx, stagingTableNameFor(res.Table))
 
 	table, err := olap.InformationSchema().Lookup(ctx, c.config.Database, "", res.Table)
 	if err != nil {
 		return err
 	}
 
-	return c.dropTable(ctx, table.Name)
+	return c.dropEntity(ctx, table.Name)
 }
 
 func (c *Connection) MergePartitionResults(a, b *drivers.ModelResult) (*drivers.ModelResult, error) {
