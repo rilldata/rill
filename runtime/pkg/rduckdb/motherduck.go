@@ -123,13 +123,31 @@ func NewMotherDuck(ctx context.Context, opts *MotherDuckDBOptions) (res DB, dbEr
 		}
 	}()
 
-	// run init queries and attach motherduck
-	opts.DBInitQueries = append(opts.DBInitQueries, fmt.Sprintf("INSTALL 'motherduck'; LOAD 'motherduck'; SET motherduck_token=%s; ATTACH %s;", safeSQLString(opts.Token), safeSQLString(opts.dsn())))
+	// run init queries
 	for _, qry := range opts.DBInitQueries {
 		_, err := db.ExecContext(ctx, qry)
 		if err != nil {
 			return nil, err
 		}
+	}
+
+	// install and load motherduck database
+	_, err = db.ExecContext(ctx, "INSTALL 'motherduck'; LOAD 'motherduck';")
+	if err != nil {
+		return nil, fmt.Errorf("unable to install motherduck extension: %w", err)
+	}
+	// set the token
+	_, err = db.ExecContext(ctx, fmt.Sprintf("SET motherduck_token=%s;", safeSQLString(opts.Token)))
+	if err != nil && !strings.Contains(err.Error(), "can only be set during initialization") {
+		// ignore `can only be set during initialization` error
+		// it is also returned when database is reopened
+		// looks like the driver or the extension is caching some state
+		return nil, fmt.Errorf("unable to set motherduck token: %w", err)
+	}
+	// attach the database
+	_, err = db.ExecContext(ctx, fmt.Sprintf("ATTACH %s", safeSQLString(opts.dsn())))
+	if err != nil && !strings.Contains(err.Error(), "already exists") {
+		return nil, fmt.Errorf("unable to attach motherduck database: %w", err)
 	}
 
 	err = otelsql.RegisterDBStatsMetrics(db.DB, otelsql.WithAttributes(opts.OtelAttributes...))
