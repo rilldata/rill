@@ -104,6 +104,21 @@ func (h *Helper) Close() error {
 	return grp.Wait()
 }
 
+func (h *Helper) SetOrg(org string) error {
+	if h.Org == org {
+		return nil
+	}
+	h.Org = org
+	err := h.DotRill.SetDefaultOrg(org)
+	if err != nil {
+		return fmt.Errorf("failed to set default org: %w", err)
+	}
+	h.gitHelperMu.Lock()
+	defer h.gitHelperMu.Unlock()
+	h.gitHelper = nil // Invalidate the git helper since the org has changed.
+	return nil
+}
+
 func (h *Helper) IsDev() bool {
 	return h.Version.IsDev()
 }

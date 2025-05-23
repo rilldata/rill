@@ -311,8 +311,7 @@ func (s *Server) DeployProject(ctx context.Context, r *connect.Request[localv1.D
 
 	if s.app.ch.Org != r.Msg.Org {
 		// Switching to passed org
-		s.app.ch.Org = r.Msg.Org
-		err = s.app.ch.DotRill.SetDefaultOrg(s.app.ch.Org)
+		err = s.app.ch.SetOrg(r.Msg.Org)
 		if err != nil {
 			return nil, err
 		}
@@ -484,8 +483,7 @@ func (s *Server) RedeployProject(ctx context.Context, r *connect.Request[localv1
 
 	// if the org is not same as the default org, switch to the org
 	if s.app.ch.Org != projResp.Project.OrgName {
-		s.app.ch.Org = projResp.Project.OrgName
-		err = s.app.ch.DotRill.SetDefaultOrg(s.app.ch.Org)
+		err = s.app.ch.SetOrg(projResp.Project.OrgName)
 		if err != nil {
 			return nil, err
 		}
