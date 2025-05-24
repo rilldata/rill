@@ -15,6 +15,8 @@
   import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { runTests } from "@rilldata/web-local/lib/time-ranges-test";
+  import { onMount } from "svelte";
   import type { PageData } from "./$types";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 
@@ -65,6 +67,10 @@
     if (hasBanner && changedDashboard) {
       eventBus.emit("remove-banner", DashboardBannerID);
     }
+  });
+
+  onMount(() => {
+    void runTests(metricsViewName);
   });
 </script>
 
