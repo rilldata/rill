@@ -44,7 +44,7 @@ func Logout(ctx context.Context, ch *cmdutil.Helper) error {
 		return err
 	}
 
-	_, err = client.RevokeCurrentAuthToken(ctx, &adminv1.RevokeCurrentAuthTokenRequest{})
+	_, err = client.RevokeUserAuthToken(ctx, &adminv1.RevokeUserAuthTokenRequest{TokenId: "current"})
 	if err != nil {
 		ch.Printf("Failed to revoke token (did you revoke it manually?). Clearing local token anyway.\n")
 	}
