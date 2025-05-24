@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/rilldata/rill/cli/pkg/version"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/parser"
@@ -29,6 +30,7 @@ type Options struct {
 	ControllerLogBufferCapacity  int
 	ControllerLogBufferSizeBytes int64
 	AllowHostAccess              bool
+	Version                      version.Version
 }
 
 type Runtime struct {
@@ -82,6 +84,10 @@ func New(ctx context.Context, opts *Options, logger *zap.Logger, st *storage.Cli
 
 func (r *Runtime) AllowHostAccess() bool {
 	return r.opts.AllowHostAccess
+}
+
+func (r *Runtime) Version() version.Version {
+	return r.opts.Version
 }
 
 func (r *Runtime) Close() error {

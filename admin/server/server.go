@@ -217,13 +217,13 @@ func (s *Server) HTTPHandler(ctx context.Context) (http.Handler, error) {
 	mux.Handle("/v1/", gwMux)
 
 	// Add runtime proxy
-	observability.MuxHandle(mux, "/v1/orgs/{org}/projects/{project}/runtime/{path...}",
-		observability.Middleware(
-			"runtime-proxy",
-			s.logger,
-			s.authenticator.HTTPMiddlewareLenient(httputil.Handler(s.runtimeProxyForOrgAndProject)),
-		),
+	proxyHandler := observability.Middleware(
+		"runtime-proxy",
+		s.logger,
+		s.authenticator.HTTPMiddlewareLenient(httputil.Handler(s.runtimeProxyForOrgAndProject)),
 	)
+	observability.MuxHandle(mux, "/v1/orgs/{org}/projects/{project}/runtime/{path...}", proxyHandler) // Backwards compatibility
+	observability.MuxHandle(mux, "/v1/organizations/{org}/projects/{project}/runtime/{path...}", proxyHandler)
 
 	// Add Prometheus
 	if s.opts.ServePrometheus {
