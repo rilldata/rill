@@ -40,8 +40,9 @@ const (
 	LocalServiceGetMetadataProcedure = "/rill.local.v1.LocalService/GetMetadata"
 	// LocalServiceGetVersionProcedure is the fully-qualified name of the LocalService's GetVersion RPC.
 	LocalServiceGetVersionProcedure = "/rill.local.v1.LocalService/GetVersion"
-	// LocalServiceGitStatusProcedure is the fully-qualified name of the LocalService's GitStatus RPC.
-	LocalServiceGitStatusProcedure = "/rill.local.v1.LocalService/GitStatus"
+	// LocalServiceWatchGitStatusProcedure is the fully-qualified name of the LocalService's
+	// WatchGitStatus RPC.
+	LocalServiceWatchGitStatusProcedure = "/rill.local.v1.LocalService/WatchGitStatus"
 	// LocalServiceGitPullProcedure is the fully-qualified name of the LocalService's GitPull RPC.
 	LocalServiceGitPullProcedure = "/rill.local.v1.LocalService/GitPull"
 	// LocalServiceGitPushProcedure is the fully-qualified name of the LocalService's GitPush RPC.
@@ -81,7 +82,7 @@ var (
 	localServicePingMethodDescriptor                                = localServiceServiceDescriptor.Methods().ByName("Ping")
 	localServiceGetMetadataMethodDescriptor                         = localServiceServiceDescriptor.Methods().ByName("GetMetadata")
 	localServiceGetVersionMethodDescriptor                          = localServiceServiceDescriptor.Methods().ByName("GetVersion")
-	localServiceGitStatusMethodDescriptor                           = localServiceServiceDescriptor.Methods().ByName("GitStatus")
+	localServiceWatchGitStatusMethodDescriptor                      = localServiceServiceDescriptor.Methods().ByName("WatchGitStatus")
 	localServiceGitPullMethodDescriptor                             = localServiceServiceDescriptor.Methods().ByName("GitPull")
 	localServiceGitPushMethodDescriptor                             = localServiceServiceDescriptor.Methods().ByName("GitPush")
 	localServicePushToGithubMethodDescriptor                        = localServiceServiceDescriptor.Methods().ByName("PushToGithub")
@@ -103,12 +104,15 @@ type LocalServiceClient interface {
 	GetMetadata(context.Context, *connect.Request[v1.GetMetadataRequest]) (*connect.Response[v1.GetMetadataResponse], error)
 	// GetVersion returns details about the current and latest available Rill versions.
 	GetVersion(context.Context, *connect.Request[v1.GetVersionRequest]) (*connect.Response[v1.GetVersionResponse], error)
-	// GitStatus returns the status of the current git repo equivalent to `git status` command
-	GitStatus(context.Context, *connect.Request[v1.GitStatusRequest]) (*connect.Response[v1.GitStatusResponse], error)
+	// WatchGitStatus watches for status changes in the git repo.
+	WatchGitStatus(context.Context, *connect.Request[v1.GitStatusRequest]) (*connect.ServerStreamForClient[v1.GitStatusResponse], error)
 	// GitPull fetches the latest changes from the remote git repo equivalent to `git pull` command.
 	// If there are any merge conflicts the pull is aborted.
 	// Force can be set to true to force the pull and overwrite any local changes.
 	GitPull(context.Context, *connect.Request[v1.GitPullRequest]) (*connect.Response[v1.GitPullResponse], error)
+	// GitPush pushes the local changes to the remote git repo equivalent to `git push` command.
+	// The difference between this and PushTiGithub is that this does not create a new repo.
+	// It only pushes the changes to the existing remote repo.
 	GitPush(context.Context, *connect.Request[v1.GitPushRequest]) (*connect.Response[v1.GitPushResponse], error)
 	// PushToGithub create a Git repo from local project and pushed to users git account.
 	PushToGithub(context.Context, *connect.Request[v1.PushToGithubRequest]) (*connect.Response[v1.PushToGithubResponse], error)
@@ -158,10 +162,10 @@ func NewLocalServiceClient(httpClient connect.HTTPClient, baseURL string, opts .
 			connect.WithSchema(localServiceGetVersionMethodDescriptor),
 			connect.WithClientOptions(opts...),
 		),
-		gitStatus: connect.NewClient[v1.GitStatusRequest, v1.GitStatusResponse](
+		watchGitStatus: connect.NewClient[v1.GitStatusRequest, v1.GitStatusResponse](
 			httpClient,
-			baseURL+LocalServiceGitStatusProcedure,
-			connect.WithSchema(localServiceGitStatusMethodDescriptor),
+			baseURL+LocalServiceWatchGitStatusProcedure,
+			connect.WithSchema(localServiceWatchGitStatusMethodDescriptor),
 			connect.WithClientOptions(opts...),
 		),
 		gitPull: connect.NewClient[v1.GitPullRequest, v1.GitPullResponse](
@@ -238,7 +242,7 @@ type localServiceClient struct {
 	ping                                *connect.Client[v1.PingRequest, v1.PingResponse]
 	getMetadata                         *connect.Client[v1.GetMetadataRequest, v1.GetMetadataResponse]
 	getVersion                          *connect.Client[v1.GetVersionRequest, v1.GetVersionResponse]
-	gitStatus                           *connect.Client[v1.GitStatusRequest, v1.GitStatusResponse]
+	watchGitStatus                      *connect.Client[v1.GitStatusRequest, v1.GitStatusResponse]
 	gitPull                             *connect.Client[v1.GitPullRequest, v1.GitPullResponse]
 	gitPush                             *connect.Client[v1.GitPushRequest, v1.GitPushResponse]
 	pushToGithub                        *connect.Client[v1.PushToGithubRequest, v1.PushToGithubResponse]
@@ -267,9 +271,9 @@ func (c *localServiceClient) GetVersion(ctx context.Context, req *connect.Reques
 	return c.getVersion.CallUnary(ctx, req)
 }
 
-// GitStatus calls rill.local.v1.LocalService.GitStatus.
-func (c *localServiceClient) GitStatus(ctx context.Context, req *connect.Request[v1.GitStatusRequest]) (*connect.Response[v1.GitStatusResponse], error) {
-	return c.gitStatus.CallUnary(ctx, req)
+// WatchGitStatus calls rill.local.v1.LocalService.WatchGitStatus.
+func (c *localServiceClient) WatchGitStatus(ctx context.Context, req *connect.Request[v1.GitStatusRequest]) (*connect.ServerStreamForClient[v1.GitStatusResponse], error) {
+	return c.watchGitStatus.CallServerStream(ctx, req)
 }
 
 // GitPull calls rill.local.v1.LocalService.GitPull.
@@ -336,12 +340,15 @@ type LocalServiceHandler interface {
 	GetMetadata(context.Context, *connect.Request[v1.GetMetadataRequest]) (*connect.Response[v1.GetMetadataResponse], error)
 	// GetVersion returns details about the current and latest available Rill versions.
 	GetVersion(context.Context, *connect.Request[v1.GetVersionRequest]) (*connect.Response[v1.GetVersionResponse], error)
-	// GitStatus returns the status of the current git repo equivalent to `git status` command
-	GitStatus(context.Context, *connect.Request[v1.GitStatusRequest]) (*connect.Response[v1.GitStatusResponse], error)
+	// WatchGitStatus watches for status changes in the git repo.
+	WatchGitStatus(context.Context, *connect.Request[v1.GitStatusRequest], *connect.ServerStream[v1.GitStatusResponse]) error
 	// GitPull fetches the latest changes from the remote git repo equivalent to `git pull` command.
 	// If there are any merge conflicts the pull is aborted.
 	// Force can be set to true to force the pull and overwrite any local changes.
 	GitPull(context.Context, *connect.Request[v1.GitPullRequest]) (*connect.Response[v1.GitPullResponse], error)
+	// GitPush pushes the local changes to the remote git repo equivalent to `git push` command.
+	// The difference between this and PushTiGithub is that this does not create a new repo.
+	// It only pushes the changes to the existing remote repo.
 	GitPush(context.Context, *connect.Request[v1.GitPushRequest]) (*connect.Response[v1.GitPushResponse], error)
 	// PushToGithub create a Git repo from local project and pushed to users git account.
 	PushToGithub(context.Context, *connect.Request[v1.PushToGithubRequest]) (*connect.Response[v1.PushToGithubResponse], error)
@@ -387,10 +394,10 @@ func NewLocalServiceHandler(svc LocalServiceHandler, opts ...connect.HandlerOpti
 		connect.WithSchema(localServiceGetVersionMethodDescriptor),
 		connect.WithHandlerOptions(opts...),
 	)
-	localServiceGitStatusHandler := connect.NewUnaryHandler(
-		LocalServiceGitStatusProcedure,
-		svc.GitStatus,
-		connect.WithSchema(localServiceGitStatusMethodDescriptor),
+	localServiceWatchGitStatusHandler := connect.NewServerStreamHandler(
+		LocalServiceWatchGitStatusProcedure,
+		svc.WatchGitStatus,
+		connect.WithSchema(localServiceWatchGitStatusMethodDescriptor),
 		connect.WithHandlerOptions(opts...),
 	)
 	localServiceGitPullHandler := connect.NewUnaryHandler(
@@ -467,8 +474,8 @@ func NewLocalServiceHandler(svc LocalServiceHandler, opts ...connect.HandlerOpti
 			localServiceGetMetadataHandler.ServeHTTP(w, r)
 		case LocalServiceGetVersionProcedure:
 			localServiceGetVersionHandler.ServeHTTP(w, r)
-		case LocalServiceGitStatusProcedure:
-			localServiceGitStatusHandler.ServeHTTP(w, r)
+		case LocalServiceWatchGitStatusProcedure:
+			localServiceWatchGitStatusHandler.ServeHTTP(w, r)
 		case LocalServiceGitPullProcedure:
 			localServiceGitPullHandler.ServeHTTP(w, r)
 		case LocalServiceGitPushProcedure:
@@ -512,8 +519,8 @@ func (UnimplementedLocalServiceHandler) GetVersion(context.Context, *connect.Req
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("rill.local.v1.LocalService.GetVersion is not implemented"))
 }
 
-func (UnimplementedLocalServiceHandler) GitStatus(context.Context, *connect.Request[v1.GitStatusRequest]) (*connect.Response[v1.GitStatusResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("rill.local.v1.LocalService.GitStatus is not implemented"))
+func (UnimplementedLocalServiceHandler) WatchGitStatus(context.Context, *connect.Request[v1.GitStatusRequest], *connect.ServerStream[v1.GitStatusResponse]) error {
+	return connect.NewError(connect.CodeUnimplemented, errors.New("rill.local.v1.LocalService.WatchGitStatus is not implemented"))
 }
 
 func (UnimplementedLocalServiceHandler) GitPull(context.Context, *connect.Request[v1.GitPullRequest]) (*connect.Response[v1.GitPullResponse], error) {

@@ -15,14 +15,17 @@ service LocalService {
   // GetVersion returns details about the current and latest available Rill versions.
   rpc GetVersion(GetVersionRequest) returns (GetVersionResponse) {}
 
-  // GitStatus returns the status of the current git repo equivalent to `git status` command
-  rpc GitStatus(GitStatusRequest) returns (GitStatusResponse) {}
+  // WatchGitStatus watches for status changes in the git repo.
+  rpc WatchGitStatus(GitStatusRequest) returns (stream GitStatusResponse) {}
 
   // GitPull fetches the latest changes from the remote git repo equivalent to `git pull` command.
   // If there are any merge conflicts the pull is aborted.
   // Force can be set to true to force the pull and overwrite any local changes.
   rpc GitPull(GitPullRequest) returns (GitPullResponse) {}
   
+  // GitPush pushes the local changes to the remote git repo equivalent to `git push` command.
+  // The difference between this and PushTiGithub is that this does not create a new repo.
+  // It only pushes the changes to the existing remote repo.
   rpc GitPush(GitPushRequest) returns (GitPushResponse) {}
   
   // PushToGithub create a Git repo from local project and pushed to users git account.

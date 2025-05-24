@@ -7,35 +7,46 @@ import (
 	"connectrpc.com/connect"
 	"github.com/rilldata/rill/cli/pkg/gitutil"
 	localv1 "github.com/rilldata/rill/proto/gen/rill/local/v1"
+	"go.uber.org/zap"
 )
 
-func (s *Server) GitStatus(ctx context.Context, r *connect.Request[localv1.GitStatusRequest]) (*connect.Response[localv1.GitStatusResponse], error) {
+func (s *Server) WatchGitStatus(ctx context.Context, r *connect.Request[localv1.GitStatusRequest], stream *connect.ServerStream[localv1.GitStatusResponse]) error {
 	// Get authenticated admin client
 	if !s.app.ch.IsAuthenticated() {
-		return nil, errors.New("must authenticate before performing this action")
+		return errors.New("must authenticate before performing this action")
 	}
 
 	project, err := s.app.ch.LoadProject(ctx, s.app.ProjectPath)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	err = gitutil.GitFetch(ctx, s.app.ProjectPath)
+	config, err := s.app.ch.GitHelper(project.OrgName, project.Name, s.app.ProjectPath).GitConfig(ctx)
 	if err != nil {
-		return nil, err
+		return err
 	}
-
-	status, err := gitutil.RunGitStatus(s.app.ProjectPath)
+	remote, err := config.FullyQualifiedRemote()
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	return connect.NewResponse(&localv1.GitStatusResponse{
-		Branch:        status.Branch,
-		ManagedGit:    project.ManagedGitId != "",
-		LocalChanges:  status.LocalChanges,
-		RemoteChanges: status.RemoteChanges,
-	}), nil
+	err = gitutil.GitFetch(ctx, s.app.ProjectPath, remote)
+	if err != nil {
+		return err
+	}
+
+	return gitutil.PollGitStatus(ctx, s.app.ProjectPath, remote, func(gs *gitutil.GitStatus) {
+		err = stream.Send(&localv1.GitStatusResponse{
+			Branch:        gs.Branch,
+			GithubUrl:     config.Remote,
+			ManagedGit:    project.ManagedGitId != "",
+			LocalChanges:  gs.LocalChanges,
+			RemoteChanges: gs.RemoteChanges,
+		})
+		if err != nil {
+			s.logger.Error("failed to send git status", zap.Error(err))
+		}
+	})
 }
 
 func (s *Server) GitPull(ctx context.Context, r *connect.Request[localv1.GitPullRequest]) (*connect.Response[localv1.GitPullResponse], error) {
@@ -49,7 +60,7 @@ func (s *Server) GitPull(ctx context.Context, r *connect.Request[localv1.GitPull
 		return nil, err
 	}
 
-	config, err := s.app.ch.GitHelper(project.Name, s.app.ProjectPath).GitConfig(ctx)
+	config, err := s.app.ch.GitHelper(project.OrgName, project.Name, s.app.ProjectPath).GitConfig(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -72,12 +83,17 @@ func (s *Server) GitPush(ctx context.Context, r *connect.Request[localv1.GitPush
 		return nil, err
 	}
 
-	config, err := s.app.ch.GitHelper(project.Name, s.app.ProjectPath).GitConfig(ctx)
+	helper := s.app.ch.GitHelper(project.OrgName, project.Name, s.app.ProjectPath)
+	config, err := helper.GitConfig(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	err = gitutil.CommitAndForcePush(ctx, s.app.ProjectPath, config.Remote, config.Username, config.Password, config.DefaultBranch, nil)
+	author, err := s.app.ch.GitSignature(ctx, s.app.ProjectPath)
+	if err != nil {
+		return nil, err
+	}
+	err = gitutil.CommitAndForcePush(ctx, s.app.ProjectPath, config.Remote, config.Username, config.Password, config.DefaultBranch, author, false)
 	if err != nil {
 		return nil, err
 	}

@@ -1,3 +1,7 @@
+// gitutil package provides utility functions for working with git repositories.
+// To execute git operations we use the go-git library.
+// However the library does not support all git operations and in those cases we directly run git commands.
+// The utility functions in this file directly run git commands.
 package gitutil
 
 import (
@@ -13,6 +17,10 @@ type GitStatus struct {
 	Branch        string
 	LocalChanges  bool
 	RemoteChanges bool
+}
+
+func (s *GitStatus) Equal(v *GitStatus) bool {
+	return s.Branch == v.Branch && s.LocalChanges == v.LocalChanges && s.RemoteChanges == v.RemoteChanges
 }
 
 func RunGitStatus(path string) (*GitStatus, error) {
@@ -66,9 +74,8 @@ func RunGitStatus(path string) (*GitStatus, error) {
 	return status, nil
 }
 
-func GitFetch(ctx context.Context, path string) error {
-	args := []string{"-C", path, "fetch"}
-	cmd := exec.CommandContext(ctx, "git", args...)
+func GitFetch(ctx context.Context, path, remote string) error {
+	cmd := exec.CommandContext(ctx, "git", "-C", path, "fetch", remote)
 	_, err := cmd.Output()
 	if err != nil {
 		return err

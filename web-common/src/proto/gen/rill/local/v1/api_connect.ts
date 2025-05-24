@@ -46,15 +46,15 @@ export const LocalService = {
       kind: MethodKind.Unary,
     },
     /**
-     * GitStatus returns the status of the current git repo equivalent to `git status` command
+     * WatchGitStatus watches for status changes in the git repo.
      *
-     * @generated from rpc rill.local.v1.LocalService.GitStatus
+     * @generated from rpc rill.local.v1.LocalService.WatchGitStatus
      */
-    gitStatus: {
-      name: "GitStatus",
+    watchGitStatus: {
+      name: "WatchGitStatus",
       I: GitStatusRequest,
       O: GitStatusResponse,
-      kind: MethodKind.Unary,
+      kind: MethodKind.ServerStreaming,
     },
     /**
      * GitPull fetches the latest changes from the remote git repo equivalent to `git pull` command.
@@ -70,6 +70,10 @@ export const LocalService = {
       kind: MethodKind.Unary,
     },
     /**
+     * GitPush pushes the local changes to the remote git repo equivalent to `git push` command.
+     * The difference between this and PushTiGithub is that this does not create a new repo.
+     * It only pushes the changes to the existing remote repo.
+     *
      * @generated from rpc rill.local.v1.LocalService.GitPush
      */
     gitPush: {

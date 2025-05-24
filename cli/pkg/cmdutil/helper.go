@@ -13,6 +13,7 @@ import (
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing/object"
+	"github.com/hashicorp/golang-lru/simplelru"
 	"github.com/rilldata/rill/admin/client"
 	"github.com/rilldata/rill/cli/pkg/dotrill"
 	"github.com/rilldata/rill/cli/pkg/dotrillcloud"
@@ -52,21 +53,28 @@ type Helper struct {
 	activityClient     *activity.Client
 	activityClientHash string
 
-	gitHelper   *GitHelper
-	gitHelperMu sync.Mutex
+	gitHelperCache   simplelru.LRUCache
+	gitHelperCacheMu sync.Mutex
 }
 
 func NewHelper(ver Version, homeDir string) (*Helper, error) {
+	gitHelperCache, err := simplelru.NewLRU(100, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create git helper cache: %w", err)
+	}
+
 	// Create it
 	ch := &Helper{
-		Printer:     printer.NewPrinter(printer.FormatHuman),
-		DotRill:     dotrill.New(homeDir),
-		Version:     ver,
-		Interactive: true,
+		Printer:          printer.NewPrinter(printer.FormatHuman),
+		DotRill:          dotrill.New(homeDir),
+		Version:          ver,
+		Interactive:      true,
+		gitHelperCache:   gitHelperCache,
+		gitHelperCacheMu: sync.Mutex{},
 	}
 
 	// Load base admin config from ~/.rill
-	err := ch.ReloadAdminConfig()
+	err = ch.ReloadAdminConfig()
 	if err != nil {
 		return nil, err
 	}
@@ -113,9 +121,6 @@ func (h *Helper) SetOrg(org string) error {
 	if err != nil {
 		return fmt.Errorf("failed to set default org: %w", err)
 	}
-	h.gitHelperMu.Lock()
-	defer h.gitHelperMu.Unlock()
-	h.gitHelper = nil // Invalidate the git helper since the org has changed.
 	return nil
 }
 
@@ -462,15 +467,22 @@ func (h *Helper) OpenRuntimeClient(ctx context.Context, org, project string, loc
 	return rt, instanceID, nil
 }
 
-func (h *Helper) GitHelper(project, localPath string) *GitHelper {
-	h.gitHelperMu.Lock()
-	defer h.gitHelperMu.Unlock()
+func (h *Helper) GitHelper(org, project, localPath string) *GitHelper {
+	h.gitHelperCacheMu.Lock()
+	defer h.gitHelperCacheMu.Unlock()
 
-	// If the git helper is nil or the org, project or local path has changed, create a new one.
-	if h.gitHelper == nil || h.gitHelper.org != h.Org || h.gitHelper.project != project || h.gitHelper.localPath != localPath {
-		h.gitHelper = newGitHelper(h, h.Org, project, localPath)
+	key := gitHelperCacheKey{
+		org:       org,
+		project:   project,
+		localPath: localPath,
 	}
-	return h.gitHelper
+	val, ok := h.gitHelperCache.Get(key)
+	if ok {
+		return val.(*GitHelper)
+	}
+	gh := newGitHelper(h, org, project, localPath)
+	h.gitHelperCache.Add(key, gh)
+	return gh
 }
 
 func (h *Helper) GitSignature(ctx context.Context, path string) (*object.Signature, error) {
@@ -516,4 +528,10 @@ func hashStr(ss ...string) string {
 		}
 	}
 	return hex.EncodeToString(hash.Sum(nil))
+}
+
+type gitHelperCacheKey struct {
+	org       string
+	project   string
+	localPath string
 }
