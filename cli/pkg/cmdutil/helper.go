@@ -18,6 +18,7 @@ import (
 	"github.com/rilldata/rill/cli/pkg/dotrillcloud"
 	"github.com/rilldata/rill/cli/pkg/gitutil"
 	"github.com/rilldata/rill/cli/pkg/printer"
+	"github.com/rilldata/rill/cli/pkg/version"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	runtimeclient "github.com/rilldata/rill/runtime/client"
 	"github.com/rilldata/rill/runtime/pkg/activity"
@@ -38,7 +39,7 @@ const (
 
 type Helper struct {
 	*printer.Printer
-	Version            Version
+	Version            version.Version
 	DotRill            dotrill.DotRill
 	Interactive        bool
 	Org                string
@@ -56,7 +57,7 @@ type Helper struct {
 	gitHelperMu sync.Mutex
 }
 
-func NewHelper(ver Version, homeDir string) (*Helper, error) {
+func NewHelper(ver version.Version, homeDir string) (*Helper, error) {
 	// Create it
 	ch := &Helper{
 		Printer:     printer.NewPrinter(printer.FormatHuman),

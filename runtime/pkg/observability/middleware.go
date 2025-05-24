@@ -10,6 +10,8 @@ import (
 	"time"
 
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
+	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/mark3labs/mcp-go/server"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/httputil"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
@@ -323,4 +325,38 @@ func AddRequestAttributes(ctx context.Context, attrs ...attribute.KeyValue) {
 
 	// Add attributes for emitted events
 	activity.SetAttributes(ctx, attrs...)
+}
+
+// MCPToolHandlerMiddleware is a middleware for MCP tool handlers that adds MCP-related observability attributes.
+// It is expected to run on an MCP server that has already been wrapped with observability.Middleware(...).
+func MCPToolHandlerMiddleware() server.ToolHandlerMiddleware {
+	return func(next server.ToolHandlerFunc) server.ToolHandlerFunc {
+		return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+			// Tool name attribute
+			AddRequestAttributes(ctx, attribute.String("mcp.tool", req.Params.Name))
+
+			// Process and add error attributes
+			res, err := next(ctx, req)
+			if err != nil {
+				AddRequestAttributes(ctx, attribute.String("mcp.error", err.Error()))
+			}
+			if res != nil && res.IsError {
+				var msg string
+				if len(res.Content) > 0 {
+					txt, ok := res.Content[0].(mcp.TextContent)
+					if ok {
+						msg = txt.Text
+					} else {
+						msg = fmt.Sprintf("unknown error with content type %T", res.Content[0])
+					}
+				} else {
+					msg = "unknown error with no content"
+				}
+
+				AddRequestAttributes(ctx, attribute.String("mcp.error", msg))
+			}
+
+			return res, err
+		}
+	}
 }

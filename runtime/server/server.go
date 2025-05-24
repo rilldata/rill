@@ -113,7 +113,7 @@ func (s *Server) Close() error {
 // Ping implements RuntimeService
 func (s *Server) Ping(ctx context.Context, req *runtimev1.PingRequest) (*runtimev1.PingResponse, error) {
 	resp := &runtimev1.PingResponse{
-		Version: "", // TODO: Return version
+		Version: s.runtime.Version().String(),
 		Time:    timestamppb.New(time.Now()),
 	}
 	return resp, nil
@@ -234,8 +234,16 @@ func (s *Server) HTTPHandler(ctx context.Context, registerAdditionalHandlers fun
 		httpMux.Handle("/metrics", promhttp.Handler())
 	}
 
-	// Add handler for the MCP server
-	observability.MuxHandle(httpMux, "/mcp/", observability.Middleware("runtime", s.logger, auth.HTTPMiddleware(s.aud, s.newMCPHandler("/mcp"))))
+	// Add handlers for the MCP server.
+	// The path without an instance ID is a convenience path intended for Rill Developer (localhost). In this case, the implementation falls back to using the default instance ID.
+	// NOTE: This can be simplified when we switch to Streamable HTTP instead of SSE because then `newMCPServer` can return a single handler for ".../mcp".
+	mcpServer := s.newMCPServer()
+	mcpSSEHandler := observability.Middleware("runtime", s.logger, auth.HTTPMiddleware(s.aud, mcpServer.SSEHandler()))
+	mcpMessageHandler := observability.Middleware("runtime", s.logger, auth.HTTPMiddleware(s.aud, mcpServer.MessageHandler()))
+	observability.MuxHandle(httpMux, "/mcp/sse", mcpSSEHandler)
+	observability.MuxHandle(httpMux, "/mcp/message", mcpMessageHandler)
+	observability.MuxHandle(httpMux, "/v1/instances/{instance_id}/mcp/sse", mcpSSEHandler)
+	observability.MuxHandle(httpMux, "/v1/instances/{instance_id}/mcp/message", mcpMessageHandler)
 
 	// Build CORS options for runtime server
 

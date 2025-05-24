@@ -30,6 +30,7 @@ import (
 	versioncmd "github.com/rilldata/rill/cli/cmd/version"
 	"github.com/rilldata/rill/cli/cmd/whoami"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
+	"github.com/rilldata/rill/cli/pkg/version"
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc/status"
 )
@@ -41,7 +42,7 @@ func init() {
 // Run initializes the root command and executes it.
 // It also handles errors and prints them in a user-friendly way.
 // NOTE: If you change this function, also check if you need to update testcli.Fixture.Run.
-func Run(ctx context.Context, ver cmdutil.Version) {
+func Run(ctx context.Context, ver version.Version) {
 	ch, err := cmdutil.NewHelper(ver, "")
 	if err != nil {
 		fmt.Printf("Error: %v\n", err)

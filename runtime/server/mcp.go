@@ -5,12 +5,17 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
+	"path"
+	"time"
 
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/metricsview"
+	"github.com/rilldata/rill/runtime/pkg/middleware"
+	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/server/auth"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -29,10 +34,23 @@ This server exposes APIs for querying **metrics views** (Rill's analytical units
 In the workflow, do not proceed with the next step until the previous step has been completed. If the information from the previous step is already known (let's say for subsequent queries), you can skip it.
 `
 
-func (s *Server) newMCPHandler(basePath string) http.Handler {
-	mcpServer := server.NewMCPServer("rill", "0.1.0", // TODO: Correct version
+func (s *Server) newMCPServer() *server.SSEServer {
+	version := s.runtime.Version().Number
+	if version == "" {
+		version = "0.0.1"
+	}
+
+	mcpServer := server.NewMCPServer("rill", version,
+		server.WithToolHandlerMiddleware(observability.MCPToolHandlerMiddleware()),
+		server.WithToolHandlerMiddleware(middleware.TimeoutMCPToolHandlerMiddleware(func(tool string) time.Duration {
+			switch tool {
+			case "get_metrics_view_time_range_summary", "get_metrics_view_aggregation":
+				return 120 * time.Second
+			default:
+				return 20 * time.Second
+			}
+		})),
 		server.WithRecovery(),
-		// TODO: Observability: hooks, error logger
 		server.WithToolCapabilities(true),
 		server.WithInstructions(mcpInstructions),
 	)
@@ -45,8 +63,38 @@ func (s *Server) newMCPHandler(basePath string) http.Handler {
 
 	sseServer := server.NewSSEServer(
 		mcpServer,
-		server.WithStaticBasePath(basePath),
+		server.WithHTTPContextFunc(s.mcpHTTPContextFunc),
 		server.WithUseFullURLForMessageEndpoint(false),
+		server.WithDynamicBasePath(func(r *http.Request, sessionID string) string {
+			// We don't know the base path because the MCP handler can be served from three base URLs:
+			//   1. <runtime>/mcp
+			//   2. <runtime>/v1/instances/{instance_id}/mcp
+			//   3. <admin>/<runtime proxy path>/mcp
+
+			// Get the base path.
+			basePath := r.URL.Path
+
+			// If the call was proxied from the admin runtime proxy, use the original base path.
+			if originalURI := r.Header.Get("X-Original-URI"); originalURI != "" {
+				parsedURL, err := url.Parse(originalURI)
+				if err == nil {
+					basePath = parsedURL.Path
+				}
+			}
+
+			// We know the path ends with /mcp/sse or /mcp/message and we want to return the path up to /mcp.
+			// So we keep cutting off the last segment until the path ends with "mcp".
+			// Just to be extra safe, we limit the lookback to five iterations.
+			basePath = path.Clean(basePath)
+			for i := 0; i < 5; i++ {
+				if path.Base(basePath) == "mcp" || len(basePath) <= 1 {
+					break
+				}
+				basePath = path.Dir(basePath) // Cut off the last path segment
+			}
+
+			return basePath
+		}),
 	)
 
 	return sseServer
@@ -76,7 +124,7 @@ func (s *Server) mcpListMetricsViews() (mcp.Tool, server.ToolHandlerFunc) {
 
 	handler := func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 		resp, err := s.ListResources(ctx, &runtimev1.ListResourcesRequest{
-			InstanceId: "default", // TODO: Dynamic
+			InstanceId: mcpInstanceIDFromContext(ctx),
 			Kind:       runtime.ResourceKindMetricsView,
 		})
 		if err != nil {
@@ -115,7 +163,7 @@ func (s *Server) mcpGetMetricsView() (mcp.Tool, server.ToolHandlerFunc) {
 		}
 
 		resp, err := s.GetResource(ctx, &runtimev1.GetResourceRequest{
-			InstanceId: "default", // TODO: Dynamic
+			InstanceId: mcpInstanceIDFromContext(ctx),
 			Name: &runtimev1.ResourceName{
 				Kind: runtime.ResourceKindMetricsView,
 				Name: name,
@@ -155,7 +203,7 @@ func (s *Server) mcpGetMetricsViewTimeRangeSummary() (mcp.Tool, server.ToolHandl
 		}
 
 		resp, err := s.MetricsViewTimeRange(ctx, &runtimev1.MetricsViewTimeRangeRequest{
-			InstanceId:      "default", // TODO: Dynamic
+			InstanceId:      mcpInstanceIDFromContext(ctx),
 			MetricsViewName: name,
 		})
 		if err != nil {
@@ -232,7 +280,7 @@ Example: Get the total revenue by country, grouped by month:
 	tool := mcp.NewToolWithRawSchema("get_metrics_view_aggregation", description, json.RawMessage(metricsview.QueryJSONSchema))
 
 	handler := func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-		instanceID := "default" // TODO: Dynamic
+		instanceID := mcpInstanceIDFromContext(ctx)
 		metricsProps, ok := req.GetRawArguments().(map[string]any)
 		if !ok {
 			return mcpNewToolErrorf("invalid arguments: expected an object")
@@ -263,6 +311,31 @@ Example: Get the total revenue by country, grouped by month:
 	}
 
 	return tool, handler
+}
+
+// mcpHTTPContextFunc is an MCP server middleware that adds the current instance ID to the context.
+func (s *Server) mcpHTTPContextFunc(ctx context.Context, r *http.Request) context.Context {
+	// Extract instance ID from the request path
+	instanceID := r.PathValue("instance_id")
+	if instanceID == "" {
+		// We also mount the MCP server on <root>/mcp to make it easier to use in Rill Developer (on localhost).
+		// In those settings, we pick the default instance ID.
+		// This is safe because if there is no default instance, it'll just be the empty string and requests will error with "not found".
+		instanceID, _ = s.runtime.DefaultInstanceID()
+	}
+
+	// Store instance ID in context for later use
+	return context.WithValue(ctx, mcpInstanceIDKey{}, instanceID)
+}
+
+// mcpInstanceIDKey is a context key used to store the instance ID for the current MCP server request.
+type mcpInstanceIDKey struct{}
+
+// mcpInstanceIDFromContext retrieves the instance ID from the context.
+// Only works for MCP server contexts (i.e. requests wrapped with mcpHTTPContextFunc).
+func mcpInstanceIDFromContext(ctx context.Context) string {
+	instanceID, _ := ctx.Value(mcpInstanceIDKey{}).(string)
+	return instanceID
 }
 
 func mcpNewToolResultJSON(val any) (*mcp.CallToolResult, error) {
