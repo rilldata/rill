@@ -437,8 +437,6 @@ func (m *S3ListObjectsRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
-	// no validation rules for Region
-
 	// no validation rules for Prefix
 
 	// no validation rules for StartAfter

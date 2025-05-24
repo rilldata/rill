@@ -31,6 +31,24 @@ var spec = drivers.Spec{
 			Secret: true,
 		},
 		{
+			Key:         "region",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "Region",
+			Description: "AWS Region for the bucket.",
+			Placeholder: "us-east-1",
+			Required:    false,
+			Hint:        "Rill will use the default region in your local AWS config, unless set here.",
+		},
+		{
+			Key:         "endpoint",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "Endpoint",
+			Description: "Override S3 endpoint URL",
+			Placeholder: "https://s3.example.com",
+			Required:    false,
+			Hint:        "Overrides the S3 endpoint to connect to. This should only be used to connect to S3 compatible services, such as Cloudflare R2 or MinIO.",
+		},
+		{
 			Key:         "aws_role_arn",
 			Type:        drivers.StringPropertyType,
 			Secret:      true,
@@ -49,7 +67,6 @@ var spec = drivers.Spec{
 			Description: "Optional external ID to use when assuming an AWS role for cross-account access.",
 		},
 	},
-	// Important: Any edits to the below properties must be accompanied by changes to the client-side form validation schemas.
 	SourceProperties: []*drivers.PropertySpec{
 		{
 			Key:         "path",
@@ -61,38 +78,12 @@ var spec = drivers.Spec{
 			Hint:        "Glob patterns are supported",
 		},
 		{
-			Key:         "region",
-			Type:        drivers.StringPropertyType,
-			DisplayName: "AWS region",
-			Description: "AWS Region for the bucket.",
-			Placeholder: "us-east-1",
-			Required:    false,
-			Hint:        "Rill will use the default region in your local AWS config, unless set here.",
-		},
-		{
-			Key:         "endpoint",
-			Type:        drivers.StringPropertyType,
-			DisplayName: "Endpoint URL",
-			Description: "Override S3 Endpoint URL",
-			Placeholder: "https://my.s3.server.com",
-			Required:    false,
-			Hint:        "Overrides the S3 endpoint to connect to. This should only be used to connect to S3-compatible services, such as Cloudflare R2 or MinIO.",
-		},
-		{
 			Key:         "name",
 			Type:        drivers.StringPropertyType,
 			DisplayName: "Source name",
 			Description: "The name of the source",
 			Placeholder: "my_new_source",
 			Required:    true,
-		},
-		{
-			Key:         "aws.credentials",
-			Type:        drivers.InformationalPropertyType,
-			DisplayName: "AWS credentials",
-			Description: "AWS credentials inferred from your local environment.",
-			Hint:        "Set your local credentials: <code>aws configure</code> Click to learn more.",
-			DocsURL:     "https://docs.rilldata.com/reference/connectors/s3#local-credentials",
 		},
 	},
 	ImplementsObjectStore: true,
@@ -112,14 +103,13 @@ var _ drivers.Driver = driver{}
 type ConfigProperties struct {
 	AccessKeyID     string `mapstructure:"aws_access_key_id"`
 	SecretAccessKey string `mapstructure:"aws_secret_access_key"`
+	SessionToken    string `mapstructure:"aws_access_token"`
+	Region          string `mapstructure:"region"`
+	Endpoint        string `mapstructure:"endpoint"`
 	RoleARN         string `mapstructure:"aws_role_arn"`
 	RoleSessionName string `mapstructure:"aws_role_session_name"`
 	ExternalID      string `mapstructure:"aws_external_id"`
-	SessionToken    string `mapstructure:"aws_access_token"`
-	Endpoint        string `mapstructure:"endpoint"`
-	Region          string `mapstructure:"region"`
 	AllowHostAccess bool   `mapstructure:"allow_host_access"`
-	RetainFiles     bool   `mapstructure:"retain_files"`
 }
 
 // Open implements drivers.Driver
@@ -147,23 +137,7 @@ func (d driver) Spec() drivers.Spec {
 }
 
 func (d driver) HasAnonymousSourceAccess(ctx context.Context, props map[string]any, logger *zap.Logger) (bool, error) {
-	conf, err := parseSourceProperties(props)
-	if err != nil {
-		return false, fmt.Errorf("failed to parse config: %w", err)
-	}
-
-	conn := &Connection{
-		config: &ConfigProperties{},
-		logger: logger,
-	}
-
-	bucketObj, err := conn.openBucket(ctx, conf, conf.url.Host, credentials.AnonymousCredentials)
-	if err != nil {
-		return false, fmt.Errorf("failed to open bucket %q, %w", conf.url.Host, err)
-	}
-	defer bucketObj.Close()
-
-	return bucketObj.IsAccessible(ctx)
+	return false, nil
 }
 
 func (d driver) TertiarySourceConnectors(ctx context.Context, src map[string]any, logger *zap.Logger) ([]string, error) {
@@ -171,7 +145,6 @@ func (d driver) TertiarySourceConnectors(ctx context.Context, src map[string]any
 }
 
 type Connection struct {
-	// config is input configs passed to driver.Open
 	config  *ConfigProperties
 	storage *storage.Client
 	logger  *zap.Logger
