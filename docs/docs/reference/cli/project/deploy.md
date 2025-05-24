@@ -4,7 +4,7 @@ title: rill project deploy
 ---
 ## rill project deploy
 
-Deploy project to Rill Cloud by uploading the project files
+Deploy project to Rill Cloud by using a Rill Managed Git repo
 
 ```
 rill project deploy [<path>] [flags]

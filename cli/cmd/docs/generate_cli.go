@@ -14,9 +14,9 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func GenerateCmd(rootCmd *cobra.Command, ch *cmdutil.Helper) *cobra.Command {
+func GenerateCliDocsCmd(rootCmd *cobra.Command, ch *cmdutil.Helper) *cobra.Command {
 	docsCmd := &cobra.Command{
-		Use:    "generate",
+		Use:    "generate-cli",
 		Short:  "Generate CLI documentation",
 		Args:   cobra.ExactArgs(1),
 		Hidden: !ch.IsDev(),

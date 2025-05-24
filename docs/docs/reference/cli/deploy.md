@@ -23,7 +23,7 @@ rill deploy [<path>] [flags]
       --provisioner string    Project provisioner
       --prod-version string   Rill version (default: the latest release version) (default "latest")
       --prod-branch string    Git branch to deploy from (default: the default Git branch)
-      --upload                Create project using rill managed repo
+      --managed               Create project using rill managed repo
       --github                Use github repo to create the project
 ```
 
