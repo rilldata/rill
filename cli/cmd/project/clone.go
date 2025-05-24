@@ -62,7 +62,7 @@ func CloneCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			// get config
-			config, err := ch.GitHelper(name, path).GitConfig(cmd.Context())
+			config, err := ch.GitHelper(ch.Org, name, path).GitConfig(cmd.Context())
 			if err != nil {
 				return err
 			}

@@ -22,6 +22,9 @@ const (
 	LocalService_Ping_FullMethodName                                = "/rill.local.v1.LocalService/Ping"
 	LocalService_GetMetadata_FullMethodName                         = "/rill.local.v1.LocalService/GetMetadata"
 	LocalService_GetVersion_FullMethodName                          = "/rill.local.v1.LocalService/GetVersion"
+	LocalService_WatchGitStatus_FullMethodName                      = "/rill.local.v1.LocalService/WatchGitStatus"
+	LocalService_GitPull_FullMethodName                             = "/rill.local.v1.LocalService/GitPull"
+	LocalService_GitPush_FullMethodName                             = "/rill.local.v1.LocalService/GitPush"
 	LocalService_PushToGithub_FullMethodName                        = "/rill.local.v1.LocalService/PushToGithub"
 	LocalService_DeployProject_FullMethodName                       = "/rill.local.v1.LocalService/DeployProject"
 	LocalService_RedeployProject_FullMethodName                     = "/rill.local.v1.LocalService/RedeployProject"
@@ -43,6 +46,16 @@ type LocalServiceClient interface {
 	GetMetadata(ctx context.Context, in *GetMetadataRequest, opts ...grpc.CallOption) (*GetMetadataResponse, error)
 	// GetVersion returns details about the current and latest available Rill versions.
 	GetVersion(ctx context.Context, in *GetVersionRequest, opts ...grpc.CallOption) (*GetVersionResponse, error)
+	// WatchGitStatus watches for status changes in the git repo.
+	WatchGitStatus(ctx context.Context, in *GitStatusRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[GitStatusResponse], error)
+	// GitPull fetches the latest changes from the remote git repo equivalent to `git pull` command.
+	// If there are any merge conflicts the pull is aborted.
+	// Force can be set to true to force the pull and overwrite any local changes.
+	GitPull(ctx context.Context, in *GitPullRequest, opts ...grpc.CallOption) (*GitPullResponse, error)
+	// GitPush pushes the local changes to the remote git repo equivalent to `git push` command.
+	// The difference between this and PushTiGithub is that this does not create a new repo.
+	// It only pushes the changes to the existing remote repo.
+	GitPush(ctx context.Context, in *GitPushRequest, opts ...grpc.CallOption) (*GitPushResponse, error)
 	// PushToGithub create a Git repo from local project and pushed to users git account.
 	PushToGithub(ctx context.Context, in *PushToGithubRequest, opts ...grpc.CallOption) (*PushToGithubResponse, error)
 	// DeployProject deploys the local project to the Rill cloud.
@@ -95,6 +108,45 @@ func (c *localServiceClient) GetVersion(ctx context.Context, in *GetVersionReque
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GetVersionResponse)
 	err := c.cc.Invoke(ctx, LocalService_GetVersion_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *localServiceClient) WatchGitStatus(ctx context.Context, in *GitStatusRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[GitStatusResponse], error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	stream, err := c.cc.NewStream(ctx, &LocalService_ServiceDesc.Streams[0], LocalService_WatchGitStatus_FullMethodName, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &grpc.GenericClientStream[GitStatusRequest, GitStatusResponse]{ClientStream: stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type LocalService_WatchGitStatusClient = grpc.ServerStreamingClient[GitStatusResponse]
+
+func (c *localServiceClient) GitPull(ctx context.Context, in *GitPullRequest, opts ...grpc.CallOption) (*GitPullResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GitPullResponse)
+	err := c.cc.Invoke(ctx, LocalService_GitPull_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *localServiceClient) GitPush(ctx context.Context, in *GitPushRequest, opts ...grpc.CallOption) (*GitPushResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GitPushResponse)
+	err := c.cc.Invoke(ctx, LocalService_GitPush_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -201,6 +253,16 @@ type LocalServiceServer interface {
 	GetMetadata(context.Context, *GetMetadataRequest) (*GetMetadataResponse, error)
 	// GetVersion returns details about the current and latest available Rill versions.
 	GetVersion(context.Context, *GetVersionRequest) (*GetVersionResponse, error)
+	// WatchGitStatus watches for status changes in the git repo.
+	WatchGitStatus(*GitStatusRequest, grpc.ServerStreamingServer[GitStatusResponse]) error
+	// GitPull fetches the latest changes from the remote git repo equivalent to `git pull` command.
+	// If there are any merge conflicts the pull is aborted.
+	// Force can be set to true to force the pull and overwrite any local changes.
+	GitPull(context.Context, *GitPullRequest) (*GitPullResponse, error)
+	// GitPush pushes the local changes to the remote git repo equivalent to `git push` command.
+	// The difference between this and PushTiGithub is that this does not create a new repo.
+	// It only pushes the changes to the existing remote repo.
+	GitPush(context.Context, *GitPushRequest) (*GitPushResponse, error)
 	// PushToGithub create a Git repo from local project and pushed to users git account.
 	PushToGithub(context.Context, *PushToGithubRequest) (*PushToGithubResponse, error)
 	// DeployProject deploys the local project to the Rill cloud.
@@ -237,6 +299,15 @@ func (UnimplementedLocalServiceServer) GetMetadata(context.Context, *GetMetadata
 }
 func (UnimplementedLocalServiceServer) GetVersion(context.Context, *GetVersionRequest) (*GetVersionResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetVersion not implemented")
+}
+func (UnimplementedLocalServiceServer) WatchGitStatus(*GitStatusRequest, grpc.ServerStreamingServer[GitStatusResponse]) error {
+	return status.Errorf(codes.Unimplemented, "method WatchGitStatus not implemented")
+}
+func (UnimplementedLocalServiceServer) GitPull(context.Context, *GitPullRequest) (*GitPullResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GitPull not implemented")
+}
+func (UnimplementedLocalServiceServer) GitPush(context.Context, *GitPushRequest) (*GitPushResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GitPush not implemented")
 }
 func (UnimplementedLocalServiceServer) PushToGithub(context.Context, *PushToGithubRequest) (*PushToGithubResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method PushToGithub not implemented")
@@ -336,6 +407,53 @@ func _LocalService_GetVersion_Handler(srv interface{}, ctx context.Context, dec 
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(LocalServiceServer).GetVersion(ctx, req.(*GetVersionRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _LocalService_WatchGitStatus_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(GitStatusRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(LocalServiceServer).WatchGitStatus(m, &grpc.GenericServerStream[GitStatusRequest, GitStatusResponse]{ServerStream: stream})
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type LocalService_WatchGitStatusServer = grpc.ServerStreamingServer[GitStatusResponse]
+
+func _LocalService_GitPull_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GitPullRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(LocalServiceServer).GitPull(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: LocalService_GitPull_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(LocalServiceServer).GitPull(ctx, req.(*GitPullRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _LocalService_GitPush_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GitPushRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(LocalServiceServer).GitPush(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: LocalService_GitPush_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(LocalServiceServer).GitPush(ctx, req.(*GitPushRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -522,6 +640,14 @@ var LocalService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _LocalService_GetVersion_Handler,
 		},
 		{
+			MethodName: "GitPull",
+			Handler:    _LocalService_GitPull_Handler,
+		},
+		{
+			MethodName: "GitPush",
+			Handler:    _LocalService_GitPush_Handler,
+		},
+		{
 			MethodName: "PushToGithub",
 			Handler:    _LocalService_PushToGithub_Handler,
 		},
@@ -558,6 +684,12 @@ var LocalService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _LocalService_ListProjectsForOrg_Handler,
 		},
 	},
-	Streams:  []grpc.StreamDesc{},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "WatchGitStatus",
+			Handler:       _LocalService_WatchGitStatus_Handler,
+			ServerStreams: true,
+		},
+	},
 	Metadata: "rill/local/v1/api.proto",
 }
