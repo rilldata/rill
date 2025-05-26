@@ -39,12 +39,13 @@
   const exportDash = createQueryServiceExport();
   const { reports } = featureFlags;
 
-  async function handleExport(format: V1ExportFormat) {
+  async function handleExport(format: V1ExportFormat, includeHeader = false) {
     const result = await $exportDash.mutateAsync({
       instanceId: get(runtime).instanceId,
       data: {
         query: exportQuery,
         format,
+        includeHeader,
       },
     });
     const downloadUrl = `${get(runtime).host}${result.downloadUrlPath}`;
@@ -92,6 +93,12 @@
       Export as CSV
     </DropdownMenu.Item>
     <DropdownMenu.Item
+      on:click={() => handleExport(V1ExportFormat.EXPORT_FORMAT_CSV, true)}
+      disabled={!exportQuery}
+    >
+      Export as CSV with metadata
+    </DropdownMenu.Item>
+    <DropdownMenu.Item
       on:click={() => handleExport(V1ExportFormat.EXPORT_FORMAT_PARQUET)}
       disabled={!exportQuery}
     >
@@ -103,6 +110,12 @@
       disabled={!exportQuery}
     >
       Export as XLSX
+    </DropdownMenu.Item>
+    <DropdownMenu.Item
+      on:click={() => handleExport(V1ExportFormat.EXPORT_FORMAT_XLSX, true)}
+      disabled={!exportQuery}
+    >
+      Export as XLSX with metadata
     </DropdownMenu.Item>
 
     {#if includeScheduledReport && $reports && exploreName}
