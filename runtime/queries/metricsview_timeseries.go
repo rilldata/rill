@@ -36,6 +36,7 @@ type MetricsViewTimeSeries struct {
 	TimeGranularity runtimev1.TimeGrain          `json:"time_granularity,omitempty"`
 	TimeZone        string                       `json:"time_zone,omitempty"`
 	SecurityClaims  *runtime.SecurityClaims      `json:"security_claims,omitempty"`
+	TimeColumn      string                       `json:"time_column,omitempty"`
 
 	Result *runtimev1.MetricsViewTimeSeriesResponse `json:"-"`
 }
@@ -87,7 +88,7 @@ func (q *MetricsViewTimeSeries) Resolve(ctx context.Context, rt *runtime.Runtime
 		return fmt.Errorf("error rewriting to metrics query: %w", err)
 	}
 
-	e, err := metricsview.NewExecutor(ctx, rt, instanceID, mv.ValidSpec, mv.Streaming, security, priority)
+	e, err := metricsview.NewExecutor(ctx, rt, instanceID, mv.ValidSpec, mv.Streaming, security, priority, q.TimeColumn)
 	if err != nil {
 		return err
 	}

@@ -1379,6 +1379,9 @@ paths:
               rows:
                 type: boolean
                 title: Optional. Defaults to false. Used to fetch rows from underlying model
+              timeColumn:
+                type: string
+                title: Optional. If not specified, falls back to the primary time dimension in the metrics view spec
       tags:
         - QueryService
   /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/compare-toplist:
@@ -1572,6 +1575,9 @@ paths:
               filter:
                 $ref: '#/definitions/v1MetricsViewFilter'
                 title: Deprecated. should be removed once UI is moved to use new filters
+              timeColumn:
+                type: string
+                title: Optional. If not specified, falls back to the primary time dimension in the metrics view spec
       tags:
         - QueryService
   /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/schema:
@@ -1653,6 +1659,9 @@ paths:
               priority:
                 type: integer
                 format: int32
+              timeColumn:
+                type: string
+                title: Optional. If not specified, falls back to the primary time dimension in the metrics view spec
       tags:
         - QueryService
   /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/time-range-summary:
@@ -1686,6 +1695,9 @@ paths:
               priority:
                 type: integer
                 format: int32
+              timeColumn:
+                type: string
+                title: Optional. If not specified, falls back to the primary time dimension in the metrics view spec
       tags:
         - QueryService
   /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/time-ranges:
@@ -1725,6 +1737,9 @@ paths:
               timeZone:
                 type: string
                 title: Optional timezone param to easily override time-range expressions
+              timeColumn:
+                type: string
+                title: Optional. If not specified, falls back to the primary time dimension in the metrics view spec
       tags:
         - QueryService
   /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/timeseries:
@@ -1793,6 +1808,9 @@ paths:
               filter:
                 $ref: '#/definitions/v1MetricsViewFilter'
                 title: Deprecated. should be removed once UI is moved to use new filters
+              timeColumn:
+                type: string
+                title: Optional. If not specified, falls back to the primary time dimension in the metrics view spec
       tags:
         - QueryService
   /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/toplist:
@@ -3053,6 +3071,9 @@ definitions:
         type: string
       lookupValueColumn:
         type: string
+      type:
+        $ref: '#/definitions/runtimev1Type'
+        title: The data type of the dimension
     title: Dimensions are columns to filter and group by
   MetricsViewSpecDimensionSelector:
     type: object
@@ -4968,6 +4989,9 @@ definitions:
       rows:
         type: boolean
         title: Optional. Defaults to false. Used to fetch rows from underlying model
+      timeColumn:
+        type: string
+        title: Optional. If not specified, falls back to the primary time dimension in the metrics view spec
   v1MetricsViewAggregationResponse:
     type: object
     properties:
@@ -5207,6 +5231,9 @@ definitions:
       filter:
         $ref: '#/definitions/v1MetricsViewFilter'
         title: Deprecated. should be removed once UI is moved to use new filters
+      timeColumn:
+        type: string
+        title: Optional. If not specified, falls back to the primary time dimension in the metrics view spec
   v1MetricsViewRowsResponse:
     type: object
     properties:
@@ -5386,6 +5413,9 @@ definitions:
       filter:
         $ref: '#/definitions/v1MetricsViewFilter'
         title: Deprecated. should be removed once UI is moved to use new filters
+      timeColumn:
+        type: string
+        title: Optional. If not specified, falls back to the primary time dimension in the metrics view spec
   v1MetricsViewTimeSeriesResponse:
     type: object
     properties:

@@ -28,7 +28,8 @@ type metricsViewTimeRangeResolver struct {
 }
 
 type metricsViewTimeRangeResolverArgs struct {
-	Priority int `mapstructure:"priority"`
+	TimeColumn string `mapstructure:"time_column"`
+	Priority   int    `mapstructure:"priority"`
 }
 
 type metricsViewTimeRange struct {
@@ -79,7 +80,7 @@ func newMetricsViewTimeRangeResolver(ctx context.Context, opts *runtime.Resolver
 		return nil, runtime.ErrForbidden
 	}
 
-	ex, err := metricsview.NewExecutor(ctx, opts.Runtime, opts.InstanceID, mv, false, security, args.Priority)
+	ex, err := metricsview.NewExecutor(ctx, opts.Runtime, opts.InstanceID, mv, false, security, args.Priority, args.TimeColumn)
 	if err != nil {
 		return nil, err
 	}

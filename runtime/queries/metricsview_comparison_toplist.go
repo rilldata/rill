@@ -96,7 +96,8 @@ func (q *MetricsViewComparison) Resolve(ctx context.Context, rt *runtime.Runtime
 		return fmt.Errorf("error rewriting to metrics query: %w", err)
 	}
 
-	e, err := metricsview.NewExecutor(ctx, rt, instanceID, mv.ValidSpec, mv.Streaming, security, priority)
+	// alternate timeColumn not supported as the query is deprecated
+	e, err := metricsview.NewExecutor(ctx, rt, instanceID, mv.ValidSpec, mv.Streaming, security, priority, "")
 	if err != nil {
 		return err
 	}
@@ -187,7 +188,8 @@ func (q *MetricsViewComparison) Export(ctx context.Context, rt *runtime.Runtime,
 		return fmt.Errorf("error rewriting to metrics query: %w", err)
 	}
 
-	e, err := metricsview.NewExecutor(ctx, rt, instanceID, mv.ValidSpec, mv.Streaming, security, opts.Priority)
+	// alternate timeColumn not supported as the query is deprecated
+	e, err := metricsview.NewExecutor(ctx, rt, instanceID, mv.ValidSpec, mv.Streaming, security, opts.Priority, "")
 	if err != nil {
 		return err
 	}

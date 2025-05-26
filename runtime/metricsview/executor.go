@@ -30,6 +30,7 @@ type Executor struct {
 	streaming   bool
 	security    *runtime.ResolvedSecurity
 	priority    int
+	timeColumn  string
 
 	olap        drivers.OLAPStore
 	olapRelease func()
@@ -46,7 +47,7 @@ type TimestampsResult struct {
 }
 
 // NewExecutor creates a new Executor for the provided metrics view.
-func NewExecutor(ctx context.Context, rt *runtime.Runtime, instanceID string, mv *runtimev1.MetricsViewSpec, streaming bool, sec *runtime.ResolvedSecurity, priority int) (*Executor, error) {
+func NewExecutor(ctx context.Context, rt *runtime.Runtime, instanceID string, mv *runtimev1.MetricsViewSpec, streaming bool, sec *runtime.ResolvedSecurity, priority int, timeColumn string) (*Executor, error) {
 	olap, release, err := rt.OLAP(ctx, instanceID, mv.Connector)
 	if err != nil {
 		return nil, fmt.Errorf("failed to acquire connector for metrics view: %w", err)
@@ -64,6 +65,7 @@ func NewExecutor(ctx context.Context, rt *runtime.Runtime, instanceID string, mv
 		streaming:   streaming,
 		security:    sec,
 		priority:    priority,
+		timeColumn:  timeColumn,
 		olap:        olap,
 		olapRelease: release,
 		instanceCfg: instanceCfg,
@@ -172,6 +174,7 @@ func (e *Executor) Schema(ctx context.Context) (*runtimev1.StructType, error) {
 	// Build a query that selects all dimensions and measures
 	qry := &Query{}
 
+	// TODO fix this when we start supporting time dimension expression and using that column as time dimension of mv
 	if e.metricsView.TimeDimension != "" {
 		qry.Dimensions = append(qry.Dimensions, Dimension{
 			Name: e.metricsView.TimeDimension,
@@ -214,7 +217,7 @@ func (e *Executor) Schema(ctx context.Context) (*runtimev1.StructType, error) {
 	qry.Limit = &zero
 
 	// Execute the query to get the schema
-	ast, err := NewAST(e.metricsView, e.security, qry, e.olap.Dialect())
+	ast, err := NewAST(e.metricsView, e.security, qry, e.olap.Dialect(), "")
 	if err != nil {
 		return nil, err
 	}
@@ -274,7 +277,7 @@ func (e *Executor) Query(ctx context.Context, qry *Query, executionTime *time.Ti
 		return nil, err
 	}
 
-	ast, err := NewAST(e.metricsView, e.security, qry, e.olap.Dialect())
+	ast, err := NewAST(e.metricsView, e.security, qry, e.olap.Dialect(), e.timeColumn)
 	if err != nil {
 		return nil, err
 	}
@@ -390,7 +393,7 @@ func (e *Executor) Export(ctx context.Context, qry *Query, executionTime *time.T
 		return "", err
 	}
 
-	ast, err := NewAST(e.metricsView, e.security, qry, e.olap.Dialect())
+	ast, err := NewAST(e.metricsView, e.security, qry, e.olap.Dialect(), e.timeColumn)
 	if err != nil {
 		return "", err
 	}
@@ -479,6 +482,7 @@ func (e *Executor) Search(ctx context.Context, qry *SearchQuery, executionTime *
 			TimeZone:            "",
 			UseDisplayNames:     false,
 			Rows:                false,
+			TimeColumn:          e.timeColumn,
 		} //exhaustruct:enforce
 		q.Where = whereExprForSearch(qry.Where, d, qry.Search)
 
@@ -491,7 +495,7 @@ func (e *Executor) Search(ctx context.Context, qry *SearchQuery, executionTime *
 			return nil, err
 		}
 
-		ast, err := NewAST(e.metricsView, e.security, q, e.olap.Dialect())
+		ast, err := NewAST(e.metricsView, e.security, q, e.olap.Dialect(), e.timeColumn)
 		if err != nil {
 			return nil, err
 		}
@@ -566,7 +570,7 @@ func (e *Executor) executeSearchInDruid(ctx context.Context, qry *SearchQuery, e
 		return nil, err
 	}
 
-	a, err := NewAST(e.metricsView, e.security, q, e.olap.Dialect())
+	a, err := NewAST(e.metricsView, e.security, q, e.olap.Dialect(), e.timeColumn)
 	if err != nil {
 		return nil, err
 	}

@@ -11672,6 +11672,35 @@ func (m *MetricsViewSpec_Dimension) validate(all bool) error {
 
 	// no validation rules for LookupValueColumn
 
+	if all {
+		switch v := interface{}(m.GetType()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, MetricsViewSpec_DimensionValidationError{
+					field:  "Type",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, MetricsViewSpec_DimensionValidationError{
+					field:  "Type",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetType()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return MetricsViewSpec_DimensionValidationError{
+				field:  "Type",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
 	if len(errors) > 0 {
 		return MetricsViewSpec_DimensionMultiError(errors)
 	}

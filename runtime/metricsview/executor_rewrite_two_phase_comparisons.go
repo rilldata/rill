@@ -59,7 +59,8 @@ func (e *Executor) rewriteTwoPhaseComparisons(ctx context.Context, qry *Query, a
 		Offset:              qry.Offset,
 		TimeZone:            qry.TimeZone,
 		UseDisplayNames:     false,
-	}
+		TimeColumn:          qry.TimeColumn,
+	} //exhaustruct:enforce
 
 	// Execute the query for the base time range
 	baseRes, err := e.Query(ctx, baseQry, nil)

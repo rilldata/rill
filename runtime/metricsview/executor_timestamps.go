@@ -19,7 +19,13 @@ func (e *Executor) resolveDuckDBClickHouseAndPinot(ctx context.Context) (Timesta
 	if filter != "" {
 		filter = fmt.Sprintf(" WHERE %s", filter)
 	}
-	timeDim := e.olap.Dialect().EscapeIdentifier(e.metricsView.TimeDimension)
+
+	// Use timeColumn if provided, otherwise fall back to TimeDimension
+	timeDim := e.timeColumn
+	if timeDim == "" {
+		timeDim = e.metricsView.TimeDimension
+	}
+	timeDim = e.olap.Dialect().EscapeIdentifier(timeDim)
 	escapedTableName := e.olap.Dialect().EscapeTable(e.metricsView.Database, e.metricsView.DatabaseSchema, e.metricsView.Table)
 
 	var watermarkExpr string
@@ -86,7 +92,13 @@ func (e *Executor) resolveDruid(ctx context.Context) (TimestampsResult, error) {
 	if filter != "" {
 		filter = fmt.Sprintf(" WHERE %s", filter)
 	}
-	timeDim := e.olap.Dialect().EscapeIdentifier(e.metricsView.TimeDimension)
+
+	// Use timeColumn if provided, otherwise fall back to TimeDimension
+	timeDim := e.timeColumn
+	if timeDim == "" {
+		timeDim = e.metricsView.TimeDimension
+	}
+	timeDim = e.olap.Dialect().EscapeIdentifier(timeDim)
 	escapedTableName := e.olap.Dialect().EscapeTable(e.metricsView.Database, e.metricsView.DatabaseSchema, e.metricsView.Table)
 
 	var ts TimestampsResult

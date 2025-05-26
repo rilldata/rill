@@ -75,7 +75,8 @@ func newMetrics(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Res
 		return nil, runtime.ErrForbidden
 	}
 
-	executor, err := metricsview.NewExecutor(ctx, opts.Runtime, opts.InstanceID, mv, res.GetMetricsView().State.Streaming, security, args.Priority)
+	// not setting timeColumn as a relevant time filter if needed will be part of the query
+	executor, err := metricsview.NewExecutor(ctx, opts.Runtime, opts.InstanceID, mv, res.GetMetricsView().State.Streaming, security, args.Priority, "")
 	if err != nil {
 		return nil, err
 	}

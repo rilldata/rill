@@ -187,6 +187,8 @@ message MetricsViewSpec {
     string lookup_table = 8;
     string lookup_key_column = 9;
     string lookup_value_column = 10;
+    // The data type of the dimension
+    Type type = 11;
   }
   // Selector for a dimension
   message DimensionSelector {

@@ -74,6 +74,7 @@ func (e *Executor) ValidateMetricsView(ctx context.Context) (*ValidateMetricsVie
 
 	// Check time dimension exists
 	if mv.TimeDimension != "" {
+		// TODO fix this when we start supporting time dimension expression in metrics views
 		f, ok := cols[strings.ToLower(mv.TimeDimension)]
 		if !ok {
 			res.TimeDimensionErr = fmt.Errorf("timeseries %q is not a column in table %q", mv.TimeDimension, mv.Table)
@@ -138,7 +139,7 @@ func (e *Executor) ValidateMetricsView(ctx context.Context) (*ValidateMetricsVie
 
 	// Validate the metrics view schema.
 	if res.IsZero() { // All dimensions and measures need to be valid to compute the schema.
-		err = e.validateSchema(ctx, res)
+		err = e.validateSchemaAndPopulateDimTypes(ctx, res)
 		if err != nil {
 			res.OtherErrs = append(res.OtherErrs, fmt.Errorf("failed to validate metrics view schema: %w", err))
 		}
@@ -311,8 +312,8 @@ func (e *Executor) validateMeasure(ctx context.Context, t *drivers.Table, m *run
 	return err
 }
 
-// validateSchema validates that the metrics view's measures are numeric.
-func (e *Executor) validateSchema(ctx context.Context, res *ValidateMetricsViewResult) error {
+// validateSchemaAndPopulateDimTypes validates that the metrics view's measures are numeric. Populates the dimension types based on the metrics view schema.
+func (e *Executor) validateSchemaAndPopulateDimTypes(ctx context.Context, res *ValidateMetricsViewResult) error {
 	// Resolve the schema of the metrics view's dimensions and measures
 	schema, err := e.Schema(ctx)
 	if err != nil {
@@ -336,6 +337,18 @@ func (e *Executor) validateSchema(ctx context.Context, res *ValidateMetricsViewR
 			res.MeasureErrs = append(res.MeasureErrs, IndexErr{
 				Idx: i,
 				Err: fmt.Errorf("measure %q is of type %s, but must be a numeric type", m.Name, typ.Code),
+			})
+		}
+	}
+
+	// populate dimension types based on the schema
+	for _, d := range e.metricsView.Dimensions {
+		if typ, ok := types[d.Name]; ok {
+			d.Type = typ
+		} else {
+			res.DimensionErrs = append(res.DimensionErrs, IndexErr{
+				Idx: -1, // -1 indicates no specific index for dimensions without a column
+				Err: fmt.Errorf("dimension %q not found in schema", d.Name),
 			})
 		}
 	}

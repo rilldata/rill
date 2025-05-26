@@ -1,6 +1,7 @@
 package metricsview
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"strings"
@@ -26,6 +27,7 @@ type AST struct {
 	comparisonDimFields []FieldNode
 	unnests             []string
 	nextIdentifier      int
+	timeColumn          string
 
 	// Contextual info for building the AST
 	metricsView *runtimev1.MetricsViewSpec
@@ -121,7 +123,7 @@ const (
 // This is due to NewAST not being able (or intended) to resolve external time anchors such as watermarks.
 //
 // The qry's PivotOn must be empty. Pivot queries must be rewritten/handled upstream of NewAST.
-func NewAST(mv *runtimev1.MetricsViewSpec, sec *runtime.ResolvedSecurity, qry *Query, dialect drivers.Dialect) (*AST, error) {
+func NewAST(mv *runtimev1.MetricsViewSpec, sec *runtime.ResolvedSecurity, qry *Query, dialect drivers.Dialect, timeColumn string) (*AST, error) {
 	// Validation
 	if len(qry.PivotOn) > 0 {
 		return nil, errors.New("cannot build AST for pivot queries")
@@ -130,12 +132,19 @@ func NewAST(mv *runtimev1.MetricsViewSpec, sec *runtime.ResolvedSecurity, qry *Q
 		return nil, fmt.Errorf("must specify at least one dimension or measure")
 	}
 
+	// Use provided time column if available, otherwise fall back to TimeDimension
+	timeDim := timeColumn
+	if timeDim == "" {
+		timeDim = mv.TimeDimension
+	}
+
 	// Init
 	ast := &AST{
 		metricsView: mv,
 		security:    sec,
 		query:       qry,
 		dialect:     dialect,
+		timeColumn:  timeDim,
 	}
 
 	// Determine the minimum time grain for the time dimension in the query.
@@ -144,7 +153,7 @@ func NewAST(mv *runtimev1.MetricsViewSpec, sec *runtime.ResolvedSecurity, qry *Q
 		if qd.Compute == nil || qd.Compute.TimeFloor == nil {
 			continue
 		}
-		if !strings.EqualFold(qd.Compute.TimeFloor.Dimension, ast.metricsView.TimeDimension) {
+		if !strings.EqualFold(qd.Compute.TimeFloor.Dimension, ast.timeColumn) {
 			continue
 		}
 		tg := qd.Compute.TimeFloor.Grain
@@ -205,7 +214,7 @@ func NewAST(mv *runtimev1.MetricsViewSpec, sec *runtime.ResolvedSecurity, qry *Q
 		// Also note that the comparison time range currently always targets a.metricsView.TimeDimension, so we only apply the correction for that dimension.
 		cf := f // Clone
 		if ast.query.ComparisonTimeRange != nil && qd.Compute != nil && qd.Compute.TimeFloor != nil {
-			if strings.EqualFold(qd.Compute.TimeFloor.Dimension, ast.metricsView.TimeDimension) {
+			if strings.EqualFold(qd.Compute.TimeFloor.Dimension, ast.timeColumn) {
 				cf.Expr, err = ast.sqlForExpressionAdjustedByComparisonTimeRangeOffset(f.Expr, qd.Compute.TimeFloor.Grain, minGrain)
 				if err != nil {
 					return nil, err
@@ -483,6 +492,12 @@ func (a *AST) lookupDimension(name string, visible bool) (*runtimev1.MetricsView
 	}
 
 	if name == a.metricsView.TimeDimension {
+		// check if its defined in the dimensions list otherwise return a default dimension spec
+		for _, dim := range a.metricsView.Dimensions {
+			if dim.Name == name {
+				return dim, nil
+			}
+		}
 		return &runtimev1.MetricsViewSpec_Dimension{
 			Name:   name,
 			Column: name,
@@ -717,9 +732,9 @@ func (a *AST) buildSpineSelect(alias string, spine *Spine, tr *TimeRange) (*Sele
 			return nil, errors.New("failed to apply time spine: time range has more than 1000 bins")
 		}
 
-		tf, ok := a.findFieldForComputedTimeDimension(a.dimFields, a.metricsView.TimeDimension)
+		tf, ok := a.findFieldForComputedTimeDimension(a.dimFields, a.timeColumn)
 		if !ok {
-			return nil, fmt.Errorf("failed to find computed time dimension %q", a.metricsView.TimeDimension)
+			return nil, fmt.Errorf("failed to find computed time dimension %q", a.timeColumn)
 		}
 		timeAlias := tf.Name
 
@@ -784,7 +799,7 @@ func (a *AST) buildSpineSelect(alias string, spine *Spine, tr *TimeRange) (*Sele
 
 // addTimeRange adds a time range to the given SelectNode's WHERE clause.
 func (a *AST) addTimeRange(n *SelectNode, tr *TimeRange) {
-	if tr == nil || tr.IsZero() || a.metricsView.TimeDimension == "" {
+	if tr == nil || tr.IsZero() || a.timeColumn == "" {
 		return
 	}
 
@@ -793,7 +808,7 @@ func (a *AST) addTimeRange(n *SelectNode, tr *TimeRange) {
 		panic("ast received a non-empty, unresolved time range")
 	}
 
-	expr, args := a.sqlForTimeRange(a.metricsView.TimeDimension, tr.Start, tr.End)
+	expr, args := a.sqlForTimeRange(a.timeColumn, tr.Start, tr.End)
 	n.TimeWhere = &ExprNode{
 		Expr: expr,
 		Args: args,
@@ -1385,4 +1400,30 @@ func hasMeasure(n *SelectNode, name string) bool {
 		}
 	}
 	return false
+}
+
+func (a *AST) resolveTimeRange(ctx context.Context, timeRange *TimeRange) (time.Time, time.Time, error) {
+	if timeRange == nil {
+		return time.Time{}, time.Time{}, nil
+	}
+
+	// Use the time column for resolving time ranges
+	timeDim := a.timeColumn
+	if timeDim == "" {
+		timeDim = a.metricsView.TimeDimension
+	}
+
+	// ... rest of the existing code ...
+	return timeRange.Start, timeRange.End, nil
+}
+
+func (a *AST) resolveTimeGrain(ctx context.Context, grain TimeGrain) (string, error) {
+	// Use the time column for resolving time grains
+	timeDim := a.timeColumn
+	if timeDim == "" {
+		timeDim = a.metricsView.TimeDimension
+	}
+
+	// ... rest of the existing code ...
+	return "", nil
 }

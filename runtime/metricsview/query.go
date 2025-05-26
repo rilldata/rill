@@ -26,6 +26,7 @@ type Query struct {
 	TimeZone            string      `mapstructure:"time_zone"`
 	UseDisplayNames     bool        `mapstructure:"use_display_names"`
 	Rows                bool        `mapstructure:"rows"`
+	TimeColumn          string      `mapstructure:"time_column"`
 }
 
 type Dimension struct {

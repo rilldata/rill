@@ -27,6 +27,7 @@ type MetricsViewRows struct {
 	MetricsView        *runtimev1.MetricsViewSpec   `json:"-"`
 	ResolvedMVSecurity *runtime.ResolvedSecurity    `json:"security"`
 	Streaming          bool                         `json:"streaming,omitempty"`
+	TimeColumn         string                       `json:"time_column,omitempty"` // if empty, the default time column in mv is used
 
 	// backwards compatibility
 	Filter *runtimev1.MetricsViewFilter `json:"filter,omitempty"`
@@ -67,7 +68,7 @@ func (q *MetricsViewRows) UnmarshalResult(v any) error {
 }
 
 func (q *MetricsViewRows) Resolve(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int) error {
-	if q.MetricsView.TimeDimension == "" && (q.TimeStart != nil || q.TimeEnd != nil) {
+	if q.MetricsView.TimeDimension == "" && q.TimeColumn == "" && (q.TimeStart != nil || q.TimeEnd != nil) {
 		return fmt.Errorf("metrics view '%s' does not have a time dimension", q.MetricsViewName)
 	}
 
@@ -76,7 +77,7 @@ func (q *MetricsViewRows) Resolve(ctx context.Context, rt *runtime.Runtime, inst
 		return fmt.Errorf("error rewriting to metrics query: %w", err)
 	}
 
-	e, err := metricsview.NewExecutor(ctx, rt, instanceID, q.MetricsView, q.Streaming, q.ResolvedMVSecurity, priority)
+	e, err := metricsview.NewExecutor(ctx, rt, instanceID, q.MetricsView, q.Streaming, q.ResolvedMVSecurity, priority, q.TimeColumn)
 	if err != nil {
 		return err
 	}
@@ -104,7 +105,7 @@ func (q *MetricsViewRows) Resolve(ctx context.Context, rt *runtime.Runtime, inst
 }
 
 func (q *MetricsViewRows) Export(ctx context.Context, rt *runtime.Runtime, instanceID string, w io.Writer, opts *runtime.ExportOptions) error {
-	if q.MetricsView.TimeDimension == "" && (q.TimeStart != nil || q.TimeEnd != nil) {
+	if q.MetricsView.TimeDimension == "" && q.TimeColumn == "" && (q.TimeStart != nil || q.TimeEnd != nil) {
 		return fmt.Errorf("metrics view '%s' does not have a time dimension", q.MetricsViewName)
 	}
 
@@ -114,7 +115,7 @@ func (q *MetricsViewRows) Export(ctx context.Context, rt *runtime.Runtime, insta
 	}
 	qry.Rows = true
 
-	e, err := metricsview.NewExecutor(ctx, rt, instanceID, q.MetricsView, q.Streaming, q.ResolvedMVSecurity, opts.Priority)
+	e, err := metricsview.NewExecutor(ctx, rt, instanceID, q.MetricsView, q.Streaming, q.ResolvedMVSecurity, opts.Priority, q.TimeColumn)
 	if err != nil {
 		return err
 	}
@@ -208,6 +209,7 @@ func (q *MetricsViewRows) rewriteToMetricsViewQuery() (*metricsview.Query, error
 
 	qry.TimeZone = q.TimeZone
 	qry.Rows = true
+	qry.TimeColumn = q.TimeColumn
 
 	return qry, nil
 }
