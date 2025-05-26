@@ -7,6 +7,7 @@
   export let resizable = true;
   export let fixedWidth: number | undefined = undefined;
   export let minWidth = 320;
+  export let maxWidth = 420;
 
   let resizing = false;
 
@@ -30,7 +31,7 @@
       direction="EW"
       side="left"
       min={fixedWidth ?? minWidth}
-      max={fixedWidth ?? 420}
+      max={fixedWidth ?? maxWidth}
       dimension={fixedWidth ?? width}
       onUpdate={(newWidth) => {
         widthStore.set(newWidth);

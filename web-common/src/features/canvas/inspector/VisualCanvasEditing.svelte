@@ -21,6 +21,8 @@
   $: parsedDocument = parseDocument($editorContent ?? "");
   $: component = components.get($selectedComponent ?? "");
 
+  $: isCustomChartComponent = component?.type === "custom_chart";
+
   async function updateProperties(
     newRecord: Record<string, unknown>,
     removeProperties?: Array<string | string[]>,
@@ -57,7 +59,11 @@
   }
 </script>
 
-<Inspector minWidth={320} filePath={path}>
+<Inspector
+  minWidth={320}
+  filePath={path}
+  maxWidth={isCustomChartComponent ? 600 : 420}
+>
   {#if component}
     <ComponentsEditor {component} />
   {:else}

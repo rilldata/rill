@@ -16,14 +16,14 @@
   export let showDataTable = false;
   export let name: string = "Custom Chart";
 
-  const viewOptions = ["Chart", "Table"];
+  const viewOptions = ["Chart", "Data"];
 
   let viewVL: View;
   let parsedSpec: VisualizationSpec | null = null;
   let error: string | null = null;
   let rows;
   let tableColumns: VirtualizedTableColumns[];
-  let selectedView = 0; // 0 = Chart, 1 = Table
+  let selectedView = 0; // 0 = Chart, 1 = Data
   let selectedTable = 0; // For switching between tables if multiple queries
 
   $: instanceId = $runtime.instanceId;
@@ -55,8 +55,6 @@
     return acc;
   }, {});
 
-  $: console.log(vegaData);
-
   $: try {
     if (typeof spec === "string") {
       parsedSpec = JSON.parse(spec) as VisualizationSpec;
@@ -75,21 +73,21 @@
 
 <div class="flex flex-col gap-2 h-full">
   {#if showDataTable}
-    <div class="flex flex-row justify-end items-center gap-2">
-      {#if metricsSQL.length > 1 && selectedView === 1}
-        <FieldSwitcher
-          fields={metricsSQL.map((_, i) => `Table ${i + 1}`)}
-          selected={selectedTable}
-          onClick={(i) => (selectedTable = i)}
-          small={true}
-        />
-      {/if}
+    <div class="flex flex-row items-center gap-2 p-1">
       <FieldSwitcher
         fields={viewOptions}
         selected={selectedView}
         onClick={(i) => (selectedView = i)}
         small={true}
       />
+      {#if metricsSQL.length > 1 && selectedView === 1}
+        <FieldSwitcher
+          fields={metricsSQL.map((_, i) => `Query ${i + 1}`)}
+          selected={selectedTable}
+          onClick={(i) => (selectedTable = i)}
+          small={true}
+        />
+      {/if}
     </div>
   {/if}
   <div class="flex-1 flex flex-col min-h-0 min-w-0">
@@ -101,6 +99,7 @@
           <VegaLiteRenderer
             {renderer}
             spec={parsedSpec}
+            canvasDashboard
             config={getRillTheme(true)}
             data={vegaData}
             bind:viewVL
