@@ -1266,9 +1266,19 @@ paths:
                 format: int64
               format:
                 $ref: '#/definitions/v1ExportFormat'
+              includeHeader:
+                type: boolean
               query:
                 $ref: '#/definitions/v1Query'
               bakedQuery:
+                type: string
+              organization:
+                type: string
+              project:
+                type: string
+              dashboard:
+                type: string
+              dashboardUrl:
                 type: string
       tags:
         - QueryService
@@ -2552,9 +2562,19 @@ paths:
                 format: int64
               format:
                 $ref: '#/definitions/v1ExportFormat'
+              includeHeader:
+                type: boolean
               executionTime:
                 type: string
                 format: date-time
+              organization:
+                type: string
+              project:
+                type: string
+              dashboard:
+                type: string
+              dashboardUrl:
+                type: string
       tags:
         - QueryService
   /v1/instances/{instanceId}/resource:
@@ -6031,6 +6051,8 @@ definitions:
         format: uint64
       exportFormat:
         $ref: '#/definitions/v1ExportFormat'
+      exportIncludeHeader:
+        type: boolean
       notifiers:
         type: array
         items:

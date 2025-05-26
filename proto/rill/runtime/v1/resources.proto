@@ -494,6 +494,7 @@ message ReportSpec {
   string query_args_json = 6;
   uint64 export_limit = 7;
   ExportFormat export_format = 8;
+  bool export_include_header = 16;
   repeated Notifier notifiers = 11;
   map<string, string> annotations = 10;
   bool watermark_inherit = 12; // If true, will use the lowest watermark of its refs instead of the trigger time.
