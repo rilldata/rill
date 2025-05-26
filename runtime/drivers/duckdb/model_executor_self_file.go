@@ -144,7 +144,7 @@ func supportsExportFormat(format drivers.FileFormat, headerMetadata *drivers.Fil
 	case drivers.FileFormatParquet, drivers.FileFormatCSV, drivers.FileFormatJSON:
 		// Avoid using model_executor_self_file if headermetadata is present because DuckDB's Prefix options require header=false and suffix.
 		// Also, DuckDB XLSX(currently we are not using it) writer doesn't support headermetadata.
-		if headerMetadata == nil {
+		if len(headerMetadata) == 0 {
 			return true
 		}
 	}
