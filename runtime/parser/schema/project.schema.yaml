@@ -399,619 +399,501 @@ definitions:
         type: object
         title: athena
         description: Configuration properties specific to the athena
-        allOf:
-          - type: object
-            properties:
-              driver:
-                type: string
-                description: Refers to the driver type and must be driver `athena`
-                const: athena
-            required:
-              - driver
-          - $ref: '#/definitions/connector/definitions/athena/definitions/athena_properties'
-        definitions:
-          athena_properties:
-            type: object
-            properties:
-              aws_access_key_id:
-                type: string
-                description: AWS Access Key ID for Athena access
-              aws_secret_access_key:
-                type: string
-                description: AWS Secret Access Key for Athena access
-              aws_access_token:
-                type: string
-                description: Optional AWS session token for temporary credentials
-              external_id:
-                type: string
-                description: Optional External ID for assuming a role
-              role_arn:
-                type: string
-                description: Optional AWS Role ARN to assume when accessing Athena
-              role_session_name:
-                type: string
-                description: Optional Session name when assuming the role
-              allow_host_access:
-                type: boolean
-                description: Allow access to host environment configuration
+        properties:
+          driver:
+            type: string
+            description: Refers to the driver type and must be driver `athena`
+            const: athena
+          aws_access_key_id:
+            type: string
+            description: AWS Access Key ID for Athena access
+          aws_secret_access_key:
+            type: string
+            description: AWS Secret Access Key for Athena access
+          aws_access_token:
+            type: string
+            description: Optional AWS session token for temporary credentials
+          external_id:
+            type: string
+            description: Optional External ID for assuming a role
+          role_arn:
+            type: string
+            description: Optional AWS Role ARN to assume when accessing Athena
+          role_session_name:
+            type: string
+            description: Optional Session name when assuming the role
+          allow_host_access:
+            type: boolean
+            description: Allow access to host environment configuration
+        required:
+          - driver
       azure:
         type: object
         title: azure
         description: Configuration properties specific to the azure
-        allOf:
-          - type: object
-            properties:
-              driver:
-                type: string
-                description: Refers to the driver type and must be driver `azure`
-                const: azure
-            required:
-              - driver
-          - $ref: '#/definitions/connector/definitions/azure/definitions/azure_properties'
-        definitions:
-          azure_properties:
-            type: object
-            properties:
-              azure_storage_account:
-                type: string
-                description: Azure storage account name
-              azure_storage_key:
-                type: string
-                description: Azure storage access key
-              azure_storage_sas_token:
-                type: string
-                description: Optional azure SAS token for authentication
-              azure_storage_connection_string:
-                type: string
-                description: Optional azure connection string for storage account
-              allow_host_access:
-                type: boolean
-                description: Allow access to host environment configuration
+        properties:
+          driver:
+            type: string
+            description: Refers to the driver type and must be driver `azure`
+            const: azure
+          azure_storage_account:
+            type: string
+            description: Azure storage account name
+          azure_storage_key:
+            type: string
+            description: Azure storage access key
+          azure_storage_sas_token:
+            type: string
+            description: Optional azure SAS token for authentication
+          azure_storage_connection_string:
+            type: string
+            description: Optional azure connection string for storage account
+          allow_host_access:
+            type: boolean
+            description: Allow access to host environment configuration
+        required:
+          - driver
       bigquery:
         type: object
         title: bigquery
         description: Configuration properties specific to the bigquery
-        allOf:
-          - type: object
-            properties:
-              driver:
-                type: string
-                description: Refers to the driver type and must be driver `bigquery`
-                const: bigquery
-            required:
-              - driver
-          - $ref: '#/definitions/connector/definitions/bigquery/definitions/bigquery_properties'
-        definitions:
-          bigquery_properties:
-            type: object
-            properties:
-              google_application_credentials:
-                type: string
-                description: Path to the Google Cloud credentials JSON file
-              allow_host_access:
-                type: boolean
-                description: Allow access to host environment configuration
+        properties:
+          driver:
+            type: string
+            description: Refers to the driver type and must be driver `bigquery`
+            const: bigquery
+          google_application_credentials:
+            type: string
+            description: Path to the Google Cloud credentials JSON file
+          allow_host_access:
+            type: boolean
+            description: Allow access to host environment configuration
+        required:
+          - driver
       clickhouse:
         type: object
         title: clickhouse
         description: Configuration properties specific to the clickhouse
-        allOf:
-          - type: object
-            properties:
-              driver:
-                type: string
-                description: Refers to the driver type and must be driver `clickhouse`
-                const: clickhouse
-            required:
-              - driver
-          - $ref: '#/definitions/connector/definitions/clickhouse/definitions/clickhouse_properties'
-        definitions:
-          clickhouse_properties:
-            type: object
-            properties:
-              managed:
-                type: boolean
-                description: '`true` means Rill will provision the connector using the default provisioner. `false` disables automatic provisioning.'
-              dsn:
-                type: string
-                description: DSN(Data Source Name) for the ClickHouse connection
-              username:
-                type: string
-                description: Username for authentication
-              password:
-                type: string
-                description: Password for authentication
-              host:
-                type: string
-                description: Host where the ClickHouse instance is running
-              port:
-                type: integer
-                description: Port where the ClickHouse instance is accessible
-              database:
-                type: string
-                description: Name of the ClickHouse database within the cluster
-              ssl:
-                type: boolean
-                description: Indicates whether a secured SSL connection is required
-              cluster:
-                type: string
-                description: 'Cluster name, required for running distributed queries'
-              log_queries:
-                type: boolean
-                description: Controls whether to log raw SQL queries
-              settings_override:
-                type: string
-                description: override the default settings used in queries. example `readonly = 1, session_timezone = 'UTC'`
-              embed_port:
-                type: integer
-                description: Port to run ClickHouse locally (0 for random port)
-              can_scale_to_zero:
-                type: boolean
-                description: Indicates if the database can scale to zero
-              max_open_conns:
-                type: integer
-                description: Maximum number of open connections to the database
-              max_idle_conns:
-                type: integer
-                description: Maximum number of idle connections in the pool
-              dial_timeout:
-                type: string
-                description: Timeout for dialing the ClickHouse server
-              conn_max_lifetime:
-                type: string
-                description: Maximum time a connection may be reused
-              read_timeout:
-                type: string
-                description: Maximum time for a connection to read data
+        properties:
+          driver:
+            type: string
+            description: Refers to the driver type and must be driver `clickhouse`
+            const: clickhouse
+          managed:
+            type: boolean
+            description: '`true` means Rill will provision the connector using the default provisioner. `false` disables automatic provisioning.'
+          dsn:
+            type: string
+            description: DSN(Data Source Name) for the ClickHouse connection
+          username:
+            type: string
+            description: Username for authentication
+          password:
+            type: string
+            description: Password for authentication
+          host:
+            type: string
+            description: Host where the ClickHouse instance is running
+          port:
+            type: integer
+            description: Port where the ClickHouse instance is accessible
+          database:
+            type: string
+            description: Name of the ClickHouse database within the cluster
+          ssl:
+            type: boolean
+            description: Indicates whether a secured SSL connection is required
+          cluster:
+            type: string
+            description: 'Cluster name, required for running distributed queries'
+          log_queries:
+            type: boolean
+            description: Controls whether to log raw SQL queries
+          settings_override:
+            type: string
+            description: override the default settings used in queries. example `readonly = 1, session_timezone = 'UTC'`
+          embed_port:
+            type: integer
+            description: Port to run ClickHouse locally (0 for random port)
+          can_scale_to_zero:
+            type: boolean
+            description: Indicates if the database can scale to zero
+          max_open_conns:
+            type: integer
+            description: Maximum number of open connections to the database
+          max_idle_conns:
+            type: integer
+            description: Maximum number of idle connections in the pool
+          dial_timeout:
+            type: string
+            description: Timeout for dialing the ClickHouse server
+          conn_max_lifetime:
+            type: string
+            description: Maximum time a connection may be reused
+          read_timeout:
+            type: string
+            description: Maximum time for a connection to read data
+        required:
+          - driver
       druid:
         type: object
         title: druid
         description: Configuration properties specific to the druid
-        allOf:
-          - type: object
-            properties:
-              driver:
-                type: string
-                description: Refers to the driver type and must be driver `druid`
-                const: druid
-            required:
-              - driver
-          - $ref: '#/definitions/connector/definitions/druid/definitions/druid_properties'
-        definitions:
-          druid_properties:
-            type: object
-            properties:
-              dsn:
-                type: string
-                description: Data Source Name (DSN) for connecting to Druid
-              username:
-                type: string
-                description: Username for authenticating with Druid
-              password:
-                type: string
-                description: Password for authenticating with Druid
-              host:
-                type: string
-                description: Hostname of the Druid coordinator or broker
-              port:
-                type: integer
-                description: Port number of the Druid service
-              ssl:
-                type: boolean
-                description: Enable SSL for secure connection
-              log_queries:
-                type: boolean
-                description: Log raw SQL queries sent to Druid
-              max_open_conns:
-                type: integer
-                description: Maximum number of open database connections (0 = default, -1 = unlimited)
-              skip_version_check:
-                type: boolean
-                description: Skip checking Druid version compatibility
+        properties:
+          driver:
+            type: string
+            description: Refers to the driver type and must be driver `druid`
+            const: druid
+          dsn:
+            type: string
+            description: Data Source Name (DSN) for connecting to Druid
+          username:
+            type: string
+            description: Username for authenticating with Druid
+          password:
+            type: string
+            description: Password for authenticating with Druid
+          host:
+            type: string
+            description: Hostname of the Druid coordinator or broker
+          port:
+            type: integer
+            description: Port number of the Druid service
+          ssl:
+            type: boolean
+            description: Enable SSL for secure connection
+          log_queries:
+            type: boolean
+            description: Log raw SQL queries sent to Druid
+          max_open_conns:
+            type: integer
+            description: Maximum number of open database connections (0 = default, -1 = unlimited)
+          skip_version_check:
+            type: boolean
+            description: Skip checking Druid version compatibility
+        required:
+          - driver
+          - dsn
       duckdb:
         type: object
         title: duckdb
         description: Configuration properties specific to the duckdb
-        allOf:
-          - type: object
-            properties:
-              driver:
-                type: string
-                description: Refers to the driver type and must be driver `duckdb`
-                const: duckdb
-            required:
-              - driver
-          - $ref: '#/definitions/connector/definitions/duckdb/definitions/duckdb_properties'
-        definitions:
-          duckdb_properties:
-            type: object
-            properties:
-              pool_size:
-                type: integer
-                description: Number of concurrent connections and queries allowed
-              allow_host_access:
-                type: boolean
-                description: Whether access to the local environment and file system is allowed
-              cpu:
-                type: integer
-                description: Number of CPU cores available to the database
-              memory_limit_gb:
-                type: integer
-                description: Amount of memory in GB available to the database
-              read_write_ratio:
-                type: number
-                description: Ratio of resources allocated to the read database; used to divide CPU and memory
-              boot_queries:
-                type: string
-                description: SQL to run when initializing a new connection, before extensions and defaults
-              init_sql:
-                type: string
-                description: SQL to run when initializing a new connection, after extensions and defaults
-              log_queries:
-                type: boolean
-                description: Whether to log raw SQL queries executed through OLAP
+        properties:
+          driver:
+            type: string
+            description: Refers to the driver type and must be driver `duckdb`
+            const: duckdb
+          pool_size:
+            type: integer
+            description: Number of concurrent connections and queries allowed
+          allow_host_access:
+            type: boolean
+            description: Whether access to the local environment and file system is allowed
+          cpu:
+            type: integer
+            description: Number of CPU cores available to the database
+          memory_limit_gb:
+            type: integer
+            description: Amount of memory in GB available to the database
+          read_write_ratio:
+            type: number
+            description: Ratio of resources allocated to the read database; used to divide CPU and memory
+          boot_queries:
+            type: string
+            description: SQL to run when initializing a new connection, before extensions and defaults
+          init_sql:
+            type: string
+            description: SQL to run when initializing a new connection, after extensions and defaults
+          log_queries:
+            type: boolean
+            description: Whether to log raw SQL queries executed through OLAP
+        required:
+          - driver
       gcs:
         type: object
         title: gcs
         description: Configuration properties specific to the gcs
-        allOf:
-          - type: object
-            properties:
-              driver:
-                type: string
-                description: Refers to the driver type and must be driver `gcs`
-                const: gcs
-            required:
-              - driver
-          - $ref: '#/definitions/connector/definitions/gcs/definitions/gcs_properties'
-        definitions:
-          gcs_properties:
-            type: object
-            properties:
-              google_application_credentials:
-                type: string
-                description: Google Cloud credentials JSON string
-              allow_host_access:
-                type: boolean
-                description: Allow access to host environment configuration
-              key_id:
-                type: string
-                description: Optional S3-compatible Key ID when used in compatibility mode
-              secret:
-                type: string
-                description: Optional S3-compatible Secret when used in compatibility mode
+        properties:
+          driver:
+            type: string
+            description: Refers to the driver type and must be driver `gcs`
+            const: gcs
+          google_application_credentials:
+            type: string
+            description: Google Cloud credentials JSON string
+          allow_host_access:
+            type: boolean
+            description: Allow access to host environment configuration
+          key_id:
+            type: string
+            description: Optional S3-compatible Key ID when used in compatibility mode
+          secret:
+            type: string
+            description: Optional S3-compatible Secret when used in compatibility mode
+        required:
+          - driver
       https:
         type: object
         title: https
         description: Configuration properties specific to the https
-        allOf:
-          - type: object
-            properties:
-              driver:
-                type: string
-                description: Refers to the driver type and must be driver `https`
-                const: https
-            required:
-              - driver
-          - $ref: '#/definitions/connector/definitions/https/definitions/https_properties'
-        definitions:
-          https_properties:
+        properties:
+          driver:
+            type: string
+            description: Refers to the driver type and must be driver `https`
+            const: https
+          path:
+            type: string
+            description: The full HTTPS URI to fetch data from
+          headers:
             type: object
-            properties:
-              path:
-                type: string
-                description: The full HTTPS URI to fetch data from
-              headers:
-                type: object
-                description: HTTP headers to include in the request
-                additionalProperties:
-                  type: string
+            description: HTTP headers to include in the request
+            additionalProperties:
+              type: string
+        required:
+          - driver
+          - path
       local_file:
         type: object
         title: local_file
         description: Configuration properties specific to the local_file
-        allOf:
-          - type: object
-            properties:
-              driver:
-                type: string
-                description: Refers to the driver type and must be driver `local_file`
-                const: local_file
-            required:
-              - driver
-          - $ref: '#/definitions/connector/definitions/local_file/definitions/local_file_properties'
-        definitions:
-          local_file_properties:
-            type: object
-            properties:
-              dsn:
-                type: string
-                description: Data Source Name (DSN) indicating the file path or location of the local file
-              allow_host_access:
-                type: boolean
-                description: Flag to indicate if access to host-level file paths is permitted
+        properties:
+          driver:
+            type: string
+            description: Refers to the driver type and must be driver `local_file`
+            const: local_file
+          dsn:
+            type: string
+            description: Data Source Name (DSN) indicating the file path or location of the local file
+          allow_host_access:
+            type: boolean
+            description: Flag to indicate if access to host-level file paths is permitted
+        required:
+          - driver
+          - dsn
       motherduck:
         type: object
         title: motherduck
         description: Configuration properties specific to the motherduck
-        allOf:
-          - type: object
-            properties:
-              driver:
-                type: string
-                description: Refers to the driver type and must be driver `motherduck`
-                const: motherduck
-            required:
-              - driver
-          - $ref: '#/definitions/connector/definitions/motherduck/definitions/motherduck_properties'
-        definitions:
-          motherduck_properties:
-            type: object
-            properties:
-              dsn:
-                type: string
-                description: Data Source Name (DSN) specifying the MotherDuck connection endpoint
-              token:
-                type: string
-                description: Authentication token for accessing MotherDuck (secret)
+        properties:
+          driver:
+            type: string
+            description: Refers to the driver type and must be driver `motherduck`
+            const: motherduck
+          dsn:
+            type: string
+            description: Data Source Name (DSN) specifying the MotherDuck connection endpoint
+          token:
+            type: string
+            description: Authentication token for accessing MotherDuck (secret)
+        required:
+          - driver
+          - dsn
+          - token
       mysql:
         type: object
         title: mysql
         description: Configuration properties specific to the mysql
-        allOf:
-          - type: object
-            properties:
-              driver:
-                type: string
-                description: Refers to the driver type and must be driver `mysql`
-                const: mysql
-            required:
-              - driver
-          - $ref: '#/definitions/connector/definitions/mysql/definitions/mysql_properties'
-        definitions:
-          mysql_properties:
-            type: object
-            properties:
-              dsn:
-                type: string
-                description: DSN(Data Source Name) for the mysql connection
+        properties:
+          driver:
+            type: string
+            description: Refers to the driver type and must be driver `mysql`
+            const: mysql
+          dsn:
+            type: string
+            description: DSN(Data Source Name) for the mysql connection
+        required:
+          - driver
+          - dsn
       pinot:
         type: object
         title: pinot
         description: Configuration properties specific to the pinot
-        allOf:
-          - type: object
-            properties:
-              driver:
-                type: string
-                description: Refers to the driver type and must be driver `pinot`
-                const: pinot
-            required:
-              - driver
-          - $ref: '#/definitions/connector/definitions/pinot/definitions/pinot_properties'
-        definitions:
-          pinot_properties:
-            type: object
-            properties:
-              dsn:
-                type: string
-                description: DSN(Data Source Name) for the Pinot connection
-              username:
-                type: string
-                description: Username for authenticating with Pinot
-              password:
-                type: string
-                description: Password for authenticating with Pinot
-              broker_host:
-                type: string
-                description: Hostname of the Pinot broker
-              broker_port:
-                type: integer
-                description: Port number for the Pinot broker
-              controller_host:
-                type: string
-                description: Hostname of the Pinot controller
-              controller_port:
-                type: integer
-                description: Port number for the Pinot controller
-              ssl:
-                type: boolean
-                description: Enable SSL connection to Pinot
-              log_queries:
-                type: boolean
-                description: Log raw SQL queries executed through Pinot
-              max_open_conns:
-                type: integer
-                description: Maximum number of open connections to the Pinot database
+        properties:
+          driver:
+            type: string
+            description: Refers to the driver type and must be driver `pinot`
+            const: pinot
+          dsn:
+            type: string
+            description: DSN(Data Source Name) for the Pinot connection
+          username:
+            type: string
+            description: Username for authenticating with Pinot
+          password:
+            type: string
+            description: Password for authenticating with Pinot
+          broker_host:
+            type: string
+            description: Hostname of the Pinot broker
+          broker_port:
+            type: integer
+            description: Port number for the Pinot broker
+          controller_host:
+            type: string
+            description: Hostname of the Pinot controller
+          controller_port:
+            type: integer
+            description: Port number for the Pinot controller
+          ssl:
+            type: boolean
+            description: Enable SSL connection to Pinot
+          log_queries:
+            type: boolean
+            description: Log raw SQL queries executed through Pinot
+          max_open_conns:
+            type: integer
+            description: Maximum number of open connections to the Pinot database
+        required:
+          - driver
+          - dsn
+          - broker_host
+          - controller_host
       postgres:
         type: object
         title: postgres
         description: Configuration properties specific to the postgres
-        allOf:
-          - type: object
-            properties:
-              driver:
-                type: string
-                description: Refers to the driver type and must be driver `postgres`
-                const: postgres
-            required:
-              - driver
-          - $ref: '#/definitions/connector/definitions/postgres/definitions/postgres_properties'
-        definitions:
-          postgres_properties:
-            type: object
-            properties:
-              dsn:
-                type: string
-                description: DSN(Data Source Name) for the postgres connection
+        properties:
+          driver:
+            type: string
+            description: Refers to the driver type and must be driver `postgres`
+            const: postgres
+          dsn:
+            type: string
+            description: DSN(Data Source Name) for the postgres connection
+        required:
+          - driver
+          - dsn
       redshift:
         type: object
         title: redshift
         description: Configuration properties specific to the redshift
-        allOf:
-          - type: object
-            properties:
-              driver:
-                type: string
-                description: Refers to the driver type and must be driver `redshift`
-                const: redshift
-            required:
-              - driver
-          - $ref: '#/definitions/connector/definitions/redshift/definitions/redshift_properties'
-        definitions:
-          redshift_properties:
-            type: object
-            properties:
-              aws_access_key_id:
-                type: string
-                description: AWS access key ID for authentication
-              aws_secret_access_key:
-                type: string
-                description: AWS secret access key for authentication
-              aws_access_token:
-                type: string
-                description: AWS session token for temporary credentials (optional)
-              allow_host_access:
-                type: boolean
-                description: Allow access to host environment configuration
+        properties:
+          driver:
+            type: string
+            description: Refers to the driver type and must be driver `redshift`
+            const: redshift
+          aws_access_key_id:
+            type: string
+            description: AWS access key ID for authentication
+          aws_secret_access_key:
+            type: string
+            description: AWS secret access key for authentication
+          aws_access_token:
+            type: string
+            description: AWS session token for temporary credentials (optional)
+          allow_host_access:
+            type: boolean
+            description: Allow access to host environment configuration
+        required:
+          - driver
       s3:
         type: object
         title: s3
         description: Configuration properties specific to the s3
-        allOf:
-          - type: object
-            properties:
-              driver:
-                type: string
-                description: Refers to the driver type and must be driver `s3`
-                const: s3
-            required:
-              - driver
-          - $ref: '#/definitions/connector/definitions/s3/definitions/s3_properties'
-        definitions:
-          s3_properties:
-            type: object
-            properties:
-              aws_access_key_id:
-                type: string
-                description: AWS Access Key ID used for authentication
-              aws_secret_access_key:
-                type: string
-                description: AWS Secret Access Key used for authentication
-              aws_access_token:
-                type: string
-                description: Optional AWS session token for temporary credentials
-              endpoint:
-                type: string
-                description: Optional custom endpoint URL for S3-compatible storage
-              region:
-                type: string
-                description: AWS region of the S3 bucket
-              allow_host_access:
-                type: boolean
-                description: Allow access to host environment configuration
-              retain_files:
-                type: boolean
-                description: Whether to retain intermediate files after processing
+        properties:
+          driver:
+            type: string
+            description: Refers to the driver type and must be driver `s3`
+            const: s3
+          aws_access_key_id:
+            type: string
+            description: AWS Access Key ID used for authentication
+          aws_secret_access_key:
+            type: string
+            description: AWS Secret Access Key used for authentication
+          aws_access_token:
+            type: string
+            description: Optional AWS session token for temporary credentials
+          endpoint:
+            type: string
+            description: Optional custom endpoint URL for S3-compatible storage
+          region:
+            type: string
+            description: AWS region of the S3 bucket
+          allow_host_access:
+            type: boolean
+            description: Allow access to host environment configuration
+          retain_files:
+            type: boolean
+            description: Whether to retain intermediate files after processing
+        required:
+          - driver
       salesforce:
         type: object
         title: salesforce
         description: Configuration properties specific to the salesforce
-        allOf:
-          - type: object
-            properties:
-              driver:
-                type: string
-                description: Refers to the driver type and must be driver `salesforce`
-                const: salesforce
-            required:
-              - driver
-          - $ref: '#/definitions/connector/definitions/salesforce/definitions/salesforce_properties'
-        definitions:
-          salesforce_properties:
-            type: object
-            properties:
-              username:
-                type: string
-                description: Salesforce account username
-              password:
-                type: string
-                description: Salesforce account password (secret)
-              key:
-                type: string
-                description: Authentication key for Salesforce (secret)
-              endpoint:
-                type: string
-                description: Salesforce API endpoint URL
-              client_id:
-                type: string
-                description: Client ID used for Salesforce OAuth authentication
+        properties:
+          driver:
+            type: string
+            description: Refers to the driver type and must be driver `salesforce`
+            const: salesforce
+          username:
+            type: string
+            description: Salesforce account username
+          password:
+            type: string
+            description: Salesforce account password (secret)
+          key:
+            type: string
+            description: Authentication key for Salesforce (secret)
+          endpoint:
+            type: string
+            description: Salesforce API endpoint URL
+          client_id:
+            type: string
+            description: Client ID used for Salesforce OAuth authentication
+        required:
+          - driver
+          - username
+          - endpoint
       slack:
         type: object
         title: slack
         description: Configuration properties specific to the slack
-        allOf:
-          - type: object
-            properties:
-              driver:
-                type: string
-                description: Refers to the driver type and must be driver `slack`
-                const: slack
-            required:
-              - driver
-          - $ref: '#/definitions/connector/definitions/slack/definitions/slack_properties'
-        definitions:
-          slack_properties:
-            type: object
-            properties:
-              bot_token:
-                type: string
-                description: Bot token used for authenticating Slack API requests
+        properties:
+          driver:
+            type: string
+            description: Refers to the driver type and must be driver `slack`
+            const: slack
+          bot_token:
+            type: string
+            description: Bot token used for authenticating Slack API requests
+        required:
+          - driver
+          - bot_token
       snowflake:
         type: object
         title: snowflake
         description: Configuration properties specific to the snowflake
-        allOf:
-          - type: object
-            properties:
-              driver:
-                type: string
-                description: Refers to the driver type and must be driver `snowflake`
-                const: snowflake
-            required:
-              - driver
-          - $ref: '#/definitions/connector/definitions/snowflake/definitions/snowflake_properties'
-        definitions:
-          snowflake_properties:
-            type: object
-            properties:
-              dsn:
-                type: string
-                description: DSN (Data Source Name) for the Snowflake connection
-              parallel_fetch_limit:
-                type: integer
-                description: Maximum number of concurrent fetches during query execution
+        properties:
+          driver:
+            type: string
+            description: Refers to the driver type and must be driver `snowflake`
+            const: snowflake
+          dsn:
+            type: string
+            description: DSN (Data Source Name) for the Snowflake connection
+          parallel_fetch_limit:
+            type: integer
+            description: Maximum number of concurrent fetches during query execution
+        required:
+          - driver
+          - dsn
       sqlite:
         type: object
         title: sqlite
         description: Configuration properties specific to the sqlite
-        allOf:
-          - type: object
-            properties:
-              driver:
-                type: string
-                description: Refers to the driver type and must be driver `sqlite`
-                const: sqlite
-            required:
-              - driver
-          - $ref: '#/definitions/connector/definitions/sqlite/definitions/sqlite_properties'
-        definitions:
-          sqlite_properties:
-            type: object
-            properties:
-              dsn:
-                type: string
-                description: DSN(Data Source Name) for the sqlite connection
+        properties:
+          driver:
+            type: string
+            description: Refers to the driver type and must be driver `sqlite`
+            const: sqlite
+          dsn:
+            type: string
+            description: DSN(Data Source Name) for the sqlite connection
+        required:
+          - driver
+          - dsn
   explore:
     type: object
     title: Explore YAML
@@ -1394,7 +1276,90 @@ definitions:
               connector:
                 type: string
                 description: Refers to the connector type for the output table
-            additionalProperties: true
+            allOf:
+              - if:
+                  properties:
+                    connector:
+                      const: duckdb
+                  required:
+                    - connector
+                then:
+                  properties:
+                    table:
+                      type: string
+                      description: Name of the output table. If not specified, the model name is used.
+                    materialize:
+                      type: boolean
+                      description: Whether to materialize the model as a table or view
+                    incremental_strategy:
+                      type: string
+                      enum:
+                        - append
+                        - merge
+                        - partition_overwrite
+                      description: Strategy to use for incremental updates
+                    unique_key:
+                      type: array
+                      items:
+                        type: string
+                      description: List of columns that uniquely identify a row for merge strategy
+                    partition_by:
+                      type: string
+                      description: Column or expression to partition the table by
+              - if:
+                  properties:
+                    connector:
+                      const: clickhouse
+                  required:
+                    - connector
+                then:
+                  properties:
+                    table:
+                      type: string
+                      description: Name of the output table. If not specified, the model name is used.
+                    type:
+                      type: string
+                      enum:
+                        - TABLE
+                        - VIEW
+                        - DICTIONARY
+                      description: Type of the output object
+                    engine:
+                      type: string
+                      description: ClickHouse table engine to use
+                    engine_full:
+                      type: string
+                      description: Full engine configuration in SQL format
+                    order_by:
+                      type: string
+                      description: ORDER BY clause for the table
+                    partition_by:
+                      type: string
+                      description: PARTITION BY clause for the table
+                    primary_key:
+                      type: string
+                      description: PRIMARY KEY clause for the table
+                    incremental_strategy:
+                      type: string
+                      enum:
+                        - append
+                        - merge
+                        - partition_overwrite
+                      description: Strategy to use for incremental updates
+                    unique_key:
+                      type: array
+                      items:
+                        type: string
+                      description: List of columns that uniquely identify a row for merge strategy
+                    columns:
+                      type: string
+                      description: Column definitions with data types and indexes
+                    table_settings:
+                      type: string
+                      description: Table-specific settings
+                    query_settings:
+                      type: string
+                      description: Settings to apply to the query
         required:
           - type
           - sql
@@ -1501,12 +1466,6 @@ definitions:
             type: string
             description: Must be either `clickhouse` or a named ClickHouse connector.
             const: clickhouse
-          path:
-            type: string
-            description: Path to the data source.
-          format:
-            type: string
-            description: 'Format of the data source (e.g., csv, json, parquet).'
         required:
           - connector
       duckdb:
@@ -1637,7 +1596,7 @@ definitions:
         required:
           - connector
       redshift:
-        title: redshift      
+        title: redshift
         type: object
         properties:
           connector:

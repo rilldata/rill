@@ -308,66 +308,61 @@ func generateDoc(sidebarPosition, level int, node *yaml.Node, indent string, req
 	}
 
 	var doc strings.Builder
-	nodeType := getScalarValue(node, "type")
 	currentLevel := level
-	if nodeType == "object" {
-		title := getScalarValue(node, "title")
-		description := getScalarValue(node, "description")
-		if level == 0 {
-			doc.WriteString("---\n")
-			doc.WriteString("note: GENERATED. DO NOT EDIT.\n")
-			doc.WriteString(fmt.Sprintf("title: %s\n", title))
-			doc.WriteString(fmt.Sprintf("sidebar_position: %d\n", sidebarPosition))
-			doc.WriteString("---")
-			if description != "" {
-				doc.WriteString(fmt.Sprintf("\n\n%s", description))
-			}
-			level++ // level zero is to print base level info and its only onetime for a page so increasing level
-		} else if level == 1 {
-			if title != "" {
-				doc.WriteString(fmt.Sprintf("\n\n## %s", title))
-			}
-			if description != "" {
-				doc.WriteString(fmt.Sprintf("\n\n%s", description))
-			}
+	title := getScalarValue(node, "title")
+	description := getScalarValue(node, "description")
+	if level == 0 {
+		doc.WriteString("---\n")
+		doc.WriteString("note: GENERATED. DO NOT EDIT.\n")
+		doc.WriteString(fmt.Sprintf("title: %s\n", title))
+		doc.WriteString(fmt.Sprintf("sidebar_position: %d\n", sidebarPosition))
+		doc.WriteString("---")
+		if description != "" {
+			doc.WriteString(fmt.Sprintf("\n\n%s", description))
 		}
-		props := getNodeForKey(node, "properties")
-		if props != nil && props.Kind == yaml.MappingNode {
-			for i := 0; i < len(props.Content); i += 2 {
-				propName := props.Content[i].Value
-				propNode := props.Content[i+1]
-				required := ""
-				if requiredFields[propName] {
-					required = "_(required)_"
-				}
+		level++ // level zero is to print base level info and its only onetime for a page so increasing level
+	} else if level == 1 {
+		if title != "" {
+			doc.WriteString(fmt.Sprintf("\n\n## %s", title))
+		}
+		if description != "" {
+			doc.WriteString(fmt.Sprintf("\n\n%s", description))
+		}
+	}
 
-				propType := getScalarValue(node, "type")
+	// Properties
+	if properties := getNodeForKey(node, "properties"); properties != nil && properties.Kind == yaml.MappingNode {
+		for i := 0; i < len(properties.Content); i += 2 {
+			propertiesName := properties.Content[i].Value
+			propertiesValueNode := properties.Content[i+1]
+			required := ""
+			if requiredFields[propertiesName] {
+				required = "_(required)_"
+			}
+			if level == 1 {
+				doc.WriteString(fmt.Sprintf("\n\n### `%s`", propertiesName))
+				doc.WriteString(fmt.Sprintf("\n\n%s - %s %s", getPrintableType(propertiesValueNode), getPrintableDescription(propertiesValueNode), required))
+			} else {
+				doc.WriteString(fmt.Sprintf("\n\n%s- **`%s`** - %s - %s %s", indent, propertiesName, getPrintableType(propertiesValueNode), getPrintableDescription(propertiesValueNode), required))
+			}
 
-				if level == 1 {
-					doc.WriteString(fmt.Sprintf("\n\n### `%s`", propName))
-					doc.WriteString(fmt.Sprintf("\n\n%s - %s %s", getPrintableType(propNode), getPrintableDescription(propNode), required))
-				} else {
-					doc.WriteString(fmt.Sprintf("\n\n%s- **`%s`** - %s - %s %s", indent, propName, getPrintableType(propNode), getPrintableDescription(propNode), required))
-				}
-				if propType == "object" && propName != "dev" && propName != "prod" {
-					newlevel := level + 1
-					doc.WriteString(generateDoc(sidebarPosition, newlevel, propNode, indent+"  ", getRequiredMapFromNode(propNode)))
-				} else if propType == "array" || propType == "" {
-					newlevel := level + 1
-					doc.WriteString(generateDoc(sidebarPosition, newlevel, getNodeForKey(propNode, "items"), indent+"  ", getRequiredMapFromNode(propNode)))
-				}
-				if examples := getNodeForKey(propNode, "examples"); examples != nil && examples.Kind == yaml.SequenceNode {
-					for _, example := range examples.Content {
-						b, err := yaml.Marshal(example)
-						if err != nil {
-							panic(err)
-						}
-						doc.WriteString(fmt.Sprintf("\n\n```yaml\n%s```", string(b)))
+			propType := getScalarValue(propertiesValueNode, "type")
+			if propType == "object" || propType == "array" || hasCombinators(propertiesValueNode) {
+				newlevel := level + 1
+				doc.WriteString(generateDoc(sidebarPosition, newlevel, propertiesValueNode, indent+"  ", getRequiredMapFromNode(propertiesValueNode)))
+			}
+
+			if examples := getNodeForKey(propertiesValueNode, "examples"); examples != nil && examples.Kind == yaml.SequenceNode {
+				for _, example := range examples.Content {
+					b, err := yaml.Marshal(example)
+					if err != nil {
+						panic(err)
 					}
+					doc.WriteString(fmt.Sprintf("\n\n```yaml\n%s```", string(b)))
 				}
 			}
 		}
-	} else if nodeType == "array" {
+	} else if items := getNodeForKey(node, "items"); items != nil && items.Kind == yaml.MappingNode {
 		items := getNodeForKey(node, "items")
 		doc.WriteString(generateDoc(sidebarPosition, level, items, indent, getRequiredMapFromNode(items)))
 	}
@@ -413,7 +408,9 @@ func generateDoc(sidebarPosition, level int, node *yaml.Node, indent string, req
 	// AllOf
 	if allOf := getNodeForKey(node, "allOf"); allOf != nil && allOf.Kind == yaml.SequenceNode {
 		for _, item := range allOf.Content {
-			doc.WriteString(generateDoc(sidebarPosition, level, item, indent, getRequiredMapFromNode(item)))
+			if !hasIf(item) {
+				doc.WriteString(generateDoc(sidebarPosition, level, item, indent, getRequiredMapFromNode(item)))
+			}
 		}
 	}
 
@@ -430,6 +427,10 @@ func generateDoc(sidebarPosition, level int, node *yaml.Node, indent string, req
 	}
 
 	return doc.String()
+}
+
+func hasIf(node *yaml.Node) bool {
+	return getNodeForKey(node, "if") != nil
 }
 
 func hasType(node *yaml.Node) bool {

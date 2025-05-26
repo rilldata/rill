@@ -245,14 +245,6 @@ _[string]_ - ID of the BigQuery project.
 
 _[string]_ - Must be either `clickhouse` or a named ClickHouse connector. _(required)_
 
-### `path`
-
-_[string]_ - Path to the data source. 
-
-### `format`
-
-_[string]_ - Format of the data source (e.g., csv, json, parquet). 
-
 ## duckdb
 
 ### `connector`

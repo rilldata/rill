@@ -228,7 +228,7 @@ _[string]_ - Refers to the driver type and must be driver `druid` _(required)_
 
 ### `dsn`
 
-_[string]_ - Data Source Name (DSN) for connecting to Druid 
+_[string]_ - Data Source Name (DSN) for connecting to Druid _(required)_
 
 ### `username`
 
@@ -336,7 +336,7 @@ _[string]_ - Refers to the driver type and must be driver `https` _(required)_
 
 ### `path`
 
-_[string]_ - The full HTTPS URI to fetch data from 
+_[string]_ - The full HTTPS URI to fetch data from _(required)_
 
 ### `headers`
 
@@ -352,7 +352,7 @@ _[string]_ - Refers to the driver type and must be driver `local_file` _(require
 
 ### `dsn`
 
-_[string]_ - Data Source Name (DSN) indicating the file path or location of the local file 
+_[string]_ - Data Source Name (DSN) indicating the file path or location of the local file _(required)_
 
 ### `allow_host_access`
 
@@ -368,11 +368,11 @@ _[string]_ - Refers to the driver type and must be driver `motherduck` _(require
 
 ### `dsn`
 
-_[string]_ - Data Source Name (DSN) specifying the MotherDuck connection endpoint 
+_[string]_ - Data Source Name (DSN) specifying the MotherDuck connection endpoint _(required)_
 
 ### `token`
 
-_[string]_ - Authentication token for accessing MotherDuck (secret) 
+_[string]_ - Authentication token for accessing MotherDuck (secret) _(required)_
 
 ## mysql
 
@@ -384,7 +384,7 @@ _[string]_ - Refers to the driver type and must be driver `mysql` _(required)_
 
 ### `dsn`
 
-_[string]_ - DSN(Data Source Name) for the mysql connection 
+_[string]_ - DSN(Data Source Name) for the mysql connection _(required)_
 
 ## pinot
 
@@ -396,7 +396,7 @@ _[string]_ - Refers to the driver type and must be driver `pinot` _(required)_
 
 ### `dsn`
 
-_[string]_ - DSN(Data Source Name) for the Pinot connection 
+_[string]_ - DSN(Data Source Name) for the Pinot connection _(required)_
 
 ### `username`
 
@@ -408,7 +408,7 @@ _[string]_ - Password for authenticating with Pinot
 
 ### `broker_host`
 
-_[string]_ - Hostname of the Pinot broker 
+_[string]_ - Hostname of the Pinot broker _(required)_
 
 ### `broker_port`
 
@@ -416,7 +416,7 @@ _[integer]_ - Port number for the Pinot broker
 
 ### `controller_host`
 
-_[string]_ - Hostname of the Pinot controller 
+_[string]_ - Hostname of the Pinot controller _(required)_
 
 ### `controller_port`
 
@@ -444,7 +444,7 @@ _[string]_ - Refers to the driver type and must be driver `postgres` _(required)
 
 ### `dsn`
 
-_[string]_ - DSN(Data Source Name) for the postgres connection 
+_[string]_ - DSN(Data Source Name) for the postgres connection _(required)_
 
 ## redshift
 
@@ -516,7 +516,7 @@ _[string]_ - Refers to the driver type and must be driver `salesforce` _(require
 
 ### `username`
 
-_[string]_ - Salesforce account username 
+_[string]_ - Salesforce account username _(required)_
 
 ### `password`
 
@@ -528,7 +528,7 @@ _[string]_ - Authentication key for Salesforce (secret)
 
 ### `endpoint`
 
-_[string]_ - Salesforce API endpoint URL 
+_[string]_ - Salesforce API endpoint URL _(required)_
 
 ### `client_id`
 
@@ -544,7 +544,7 @@ _[string]_ - Refers to the driver type and must be driver `slack` _(required)_
 
 ### `bot_token`
 
-_[string]_ - Bot token used for authenticating Slack API requests 
+_[string]_ - Bot token used for authenticating Slack API requests _(required)_
 
 ## snowflake
 
@@ -556,7 +556,7 @@ _[string]_ - Refers to the driver type and must be driver `snowflake` _(required
 
 ### `dsn`
 
-_[string]_ - DSN (Data Source Name) for the Snowflake connection 
+_[string]_ - DSN (Data Source Name) for the Snowflake connection _(required)_
 
 ### `parallel_fetch_limit`
 
@@ -572,4 +572,4 @@ _[string]_ - Refers to the driver type and must be driver `sqlite` _(required)_
 
 ### `dsn`
 
-_[string]_ - DSN(Data Source Name) for the sqlite connection 
+_[string]_ - DSN(Data Source Name) for the sqlite connection _(required)_
