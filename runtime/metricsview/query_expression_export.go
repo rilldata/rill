@@ -8,22 +8,8 @@ import (
 	"strings"
 )
 
-func ExpressionToSQL(e *Expression) (string, error) {
-	b := exprBuilder{
-		Builder: &strings.Builder{},
-	}
-	err := b.writeExpression(e, "")
-	if err != nil {
-		return "", err
-	}
-	return b.String(), nil
-}
-
-func ExpressionToExportString(e *Expression) (string, error) {
-	b := exprBuilder{
-		Builder:   &strings.Builder{},
-		forExport: true,
-	}
+func ExpressionToExport(e *Expression) (string, error) {
+	b := exprExportBuilder{Builder: &strings.Builder{}}
 	err := b.writeExpression(e, ", ")
 	if err != nil {
 		return "", err
@@ -31,12 +17,11 @@ func ExpressionToExportString(e *Expression) (string, error) {
 	return b.String(), nil
 }
 
-type exprBuilder struct {
-	forExport bool
+type exprExportBuilder struct {
 	*strings.Builder
 }
 
-func (b exprBuilder) writeExpression(e *Expression, joiner string) error {
+func (b exprExportBuilder) writeExpression(e *Expression, joiner string) error {
 	if e == nil {
 		return nil
 	}
@@ -55,7 +40,7 @@ func (b exprBuilder) writeExpression(e *Expression, joiner string) error {
 	return errors.New("invalid expression")
 }
 
-func (b exprBuilder) writeName(name string) error {
+func (b exprExportBuilder) writeName(name string) error {
 	if strings.Contains(name, `"`) {
 		_, err := strings.NewReplacer(`"`, `""`).WriteString(b.Builder, name)
 		return err
@@ -64,9 +49,9 @@ func (b exprBuilder) writeName(name string) error {
 	return nil
 }
 
-func (b exprBuilder) writeValue(val any) error {
-	// In case of Non SQL for array for more the 10 values we need  print 10 values + N-10 More
-	if arr, ok := val.([]any); ok && b.forExport {
+func (b exprExportBuilder) writeValue(val any) error {
+	// In case of array has more the 10 values we need print 10 values + N-10 More
+	if arr, ok := val.([]any); ok {
 		limit := 10
 		n := len(arr)
 		count := n
@@ -104,32 +89,22 @@ func (b exprBuilder) writeValue(val any) error {
 	return err
 }
 
-func (b exprBuilder) writeSubquery(subquery *Subquery) error {
-	if b.forExport {
-		// for Export String we have to write like measure_abc > 0 measure_abc < 1 by dim_xyz so joiner is space
-		err := b.writeCondition(subquery.Having.Condition, " ")
-		if err != nil {
-			return err
-		}
-		_, err = b.WriteString(" by " + subquery.Dimension.Name)
+func (b exprExportBuilder) writeSubquery(subquery *Subquery) error {
+	// we have to write like measure_abc > 0 measure_abc < 1 by dim_xyz so joiner is space
+	err := b.writeCondition(subquery.Having.Condition, " ")
+	if err != nil {
 		return err
 	}
-	_, err := b.WriteString("<subquery>")
+	_, err = b.WriteString(" by " + subquery.Dimension.Name)
 	return err
 }
 
-func (b exprBuilder) writeCondition(cond *Condition, joiner string) error {
+func (b exprExportBuilder) writeCondition(cond *Condition, joiner string) error {
 	switch cond.Operator {
 	case OperatorOr:
-		if b.forExport {
-			return b.writeJoinedExpressions(cond.Expressions, joiner)
-		}
-		return b.writeJoinedExpressions(cond.Expressions, " OR ")
+		return b.writeJoinedExpressions(cond.Expressions, joiner)
 	case OperatorAnd:
-		if b.forExport {
-			return b.writeJoinedExpressions(cond.Expressions, joiner)
-		}
-		return b.writeJoinedExpressions(cond.Expressions, " AND ")
+		return b.writeJoinedExpressions(cond.Expressions, joiner)
 	default:
 		if !cond.Operator.Valid() {
 			return fmt.Errorf("invalid expression operator %q", cond.Operator)
@@ -138,7 +113,7 @@ func (b exprBuilder) writeCondition(cond *Condition, joiner string) error {
 	}
 }
 
-func (b exprBuilder) writeJoinedExpressions(exprs []*Expression, joiner string) error {
+func (b exprExportBuilder) writeJoinedExpressions(exprs []*Expression, joiner string) error {
 	if len(exprs) == 0 {
 		return nil
 	}
@@ -147,7 +122,7 @@ func (b exprBuilder) writeJoinedExpressions(exprs []*Expression, joiner string) 
 		if i > 0 {
 			b.writeString(joiner)
 		}
-		err := b.writeWrappedExpression(e, joiner)
+		err := b.writeExpression(e, joiner)
 		if err != nil {
 			return err
 		}
@@ -156,7 +131,7 @@ func (b exprBuilder) writeJoinedExpressions(exprs []*Expression, joiner string) 
 	return nil
 }
 
-func (b exprBuilder) writeBinaryCondition(exprs []*Expression, op Operator, joiner string) error {
+func (b exprExportBuilder) writeBinaryCondition(exprs []*Expression, op Operator, joiner string) error {
 	// Backwards compatibility: For IN and NIN, the right hand side may be a flattened list of values, not a single list.
 	if op == OperatorIn || op == OperatorNin {
 		if len(exprs) == 2 {
@@ -191,12 +166,12 @@ func (b exprBuilder) writeBinaryCondition(exprs []*Expression, op Operator, join
 		return fmt.Errorf("right expression is nil")
 	}
 
-	// For Export String if right is Subquery just print the subquery and return
-	if b.forExport && right.Subquery != nil {
+	// if right is Subquery just print the subquery and return
+	if right.Subquery != nil {
 		return b.writeSubquery(right.Subquery)
 	}
 
-	err := b.writeWrappedExpression(left, joiner)
+	err := b.writeExpression(left, joiner)
 	if err != nil {
 		return err
 	}
@@ -205,22 +180,14 @@ func (b exprBuilder) writeBinaryCondition(exprs []*Expression, op Operator, join
 	case OperatorEq:
 		// Special case: "dim = NULL" should be written as "dim IS NULL"
 		if hasNilValue(right) {
-			if b.forExport {
-				b.writeString(" = NULL")
-				return nil
-			}
-			b.writeString(" IS NULL")
+			b.writeString(" = NULL")
 			return nil
 		}
 		b.writeString(" = ")
 	case OperatorNeq:
 		// Special case: "dim != NULL" should be written as "dim IS NOT NULL"
 		if hasNilValue(right) {
-			if b.forExport {
-				b.writeString(" != NULL")
-				return nil
-			}
-			b.writeString(" IS NOT NULL")
+			b.writeString(" != NULL")
 			return nil
 		}
 		b.writeString(" != ")
@@ -233,34 +200,18 @@ func (b exprBuilder) writeBinaryCondition(exprs []*Expression, op Operator, join
 	case OperatorGte:
 		b.writeString(" >= ")
 	case OperatorIn:
-		if b.forExport {
-			b.writeString(" = ")
-		} else {
-			b.writeString(" IN ")
-		}
+		b.writeString(" = ")
 	case OperatorNin:
-		if b.forExport {
-			b.writeString(" != ")
-		} else {
-			b.writeString(" NOT IN ")
-		}
+		b.writeString(" != ")
 	case OperatorIlike:
-		if b.forExport {
-			b.writeString(" = ")
-		} else {
-			b.writeString(" ILIKE ")
-		}
+		b.writeString(" = ")
 	case OperatorNilike:
-		if b.forExport {
-			b.writeString(" != ")
-		} else {
-			b.writeString(" NOT ILIKE ")
-		}
+		b.writeString(" != ")
 	default:
 		return fmt.Errorf("invalid binary condition operator %q", op)
 	}
 
-	err = b.writeWrappedExpression(right, joiner)
+	err = b.writeExpression(right, joiner)
 	if err != nil {
 		return err
 	}
@@ -268,31 +219,10 @@ func (b exprBuilder) writeBinaryCondition(exprs []*Expression, op Operator, join
 	return nil
 }
 
-func (b exprBuilder) writeWrappedExpression(e *Expression, joiner string) error {
-	if b.forExport {
-		return b.writeExpression(e, joiner)
-	}
-	if e.Condition != nil {
-		b.writeByte('(')
-	}
-	err := b.writeExpression(e, joiner)
-	if err != nil {
-		return err
-	}
-	if e.Condition != nil {
-		b.writeByte(')')
-	}
-	return nil
-}
-
-func (b exprBuilder) writeByte(v byte) {
+func (b exprExportBuilder) writeByte(v byte) {
 	_ = b.WriteByte(v)
 }
 
-func (b exprBuilder) writeString(s string) {
+func (b exprExportBuilder) writeString(s string) {
 	_, _ = b.WriteString(s)
-}
-
-func hasNilValue(expr *Expression) bool {
-	return expr != nil && expr.Value == nil && expr.Condition == nil && expr.Subquery == nil
 }

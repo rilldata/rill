@@ -557,14 +557,6 @@ func createExportURL(inURL string, spec *runtimev1.ReportSpec, executionTime tim
 	if exportLimit > 0 {
 		exportURLQry.Set("limit", strconv.Itoa(exportLimit))
 	}
-	if spec.ExportIncludeHeader {
-		if e, ok := spec.Annotations["explore"]; ok {
-			exportURLQry.Set("dashboard", e)
-		}
-		if c, ok := spec.Annotations["canvas"]; ok {
-			exportURLQry.Set("dashboard", c)
-		}
-	}
 	exportURL.RawQuery = exportURLQry.Encode()
 	return exportURL, nil
 }

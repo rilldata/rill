@@ -17,7 +17,7 @@
   $: executionTime = $page.url.searchParams.get("execution_time");
   $: token = $page.url.searchParams.get("token");
   $: includeHeader = $page.url.searchParams.get("include_header") === "true";
-  $: dashboard = $page.url.searchParams.get("dashboard") ?? "";
+  $: dashboard =  ""; //TODO: populate this not coming in request
   $: dashboardUrl = ""; //TODO: populate this not coming in request
 
   const downloadReportMutation = createDownloadReportMutation();
