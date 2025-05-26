@@ -7,10 +7,10 @@ import (
 )
 
 type ModelOutputProperties struct {
-	Path               string                     `mapstructure:"path"`
-	Format             drivers.FileFormat         `mapstructure:"format"`
-	FileSizeLimitBytes int64                      `mapstructure:"file_size_limit_bytes"`
-	FileHeaderMetadata drivers.FileHeaderMetaData `mapstructure:"file_header_metadata"`
+	Path               string                      `mapstructure:"path"`
+	Format             drivers.FileFormat          `mapstructure:"format"`
+	FileSizeLimitBytes int64                       `mapstructure:"file_size_limit_bytes"`
+	FileHeaderMetadata *drivers.FileHeaderMetaData `mapstructure:"file_header_metadata"`
 }
 
 func (p *ModelOutputProperties) Validate() error {

@@ -191,7 +191,7 @@ func (q *MetricsViewAggregation) Export(ctx context.Context, rt *runtime.Runtime
 func generateHeaderMetadata(opts *runtime.ExportOptions, qry *metricsview.Query) ([]string, error) {
 	var headerMetadata []string
 	if opts.IncludeHeader {
-		expStr, err := metricsview.ExpressionToString(qry.Where)
+		expStr, err := metricsview.ExpressionToExportString(qry.Where)
 		if err != nil {
 			return nil, err
 		}

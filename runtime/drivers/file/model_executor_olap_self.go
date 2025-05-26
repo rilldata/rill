@@ -116,12 +116,12 @@ func (e *olapToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 	}, nil
 }
 
-func writeCSV(res *drivers.Result, fw io.Writer, headerMetadata drivers.FileHeaderMetaData) error {
+func writeCSV(res *drivers.Result, fw io.Writer, headerMetadata *drivers.FileHeaderMetaData) error {
 	w := csv.NewWriter(fw)
 
 	// Write headerMetadata first if it's provided
-	if len(headerMetadata) > 0 {
-		for _, line := range headerMetadata {
+	if headerMetadata != nil {
+		for _, line := range *headerMetadata {
 			// Keep empty lines as-is
 			err := w.Write([]string{line})
 			if err != nil {
@@ -196,7 +196,7 @@ func writeCSV(res *drivers.Result, fw io.Writer, headerMetadata drivers.FileHead
 	return nil
 }
 
-func writeXLSX(res *drivers.Result, fw io.Writer, headerMetadata drivers.FileHeaderMetaData) error {
+func writeXLSX(res *drivers.Result, fw io.Writer, headerMetadata *drivers.FileHeaderMetaData) error {
 	xf := excelize.NewFile()
 	defer func() { _ = xf.Close() }()
 
@@ -207,8 +207,8 @@ func writeXLSX(res *drivers.Result, fw io.Writer, headerMetadata drivers.FileHea
 	idx := 1
 
 	// Write headerMetadata first if it's provided
-	if len(headerMetadata) > 0 {
-		for _, line := range headerMetadata {
+	if headerMetadata != nil {
+		for _, line := range *headerMetadata {
 			row := []any{line} // Each line is a separate row
 			cell, err := excelize.CoordinatesToCellName(1, idx)
 			if err != nil {
