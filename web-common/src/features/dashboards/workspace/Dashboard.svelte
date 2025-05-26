@@ -6,11 +6,12 @@
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { navigationOpen } from "@rilldata/web-common/layout/navigation/Navigation.svelte";
   import Resizer from "@rilldata/web-common/layout/Resizer.svelte";
-  import { onMount, tick } from "svelte";
+  import { onMount, tick, onDestroy } from "svelte";
   import { useExploreState } from "web-common/src/features/dashboards/stores/dashboard-stores";
   import { DashboardState_ActivePage } from "../../../proto/gen/rill/ui/v1/dashboard_pb";
   import { runtime } from "../../../runtime-client/runtime-store";
   import CellInspector from "../components/CellInspector.svelte";
+  import { cellInspectorStore } from "../stores/cellInspectorStore";
   import MeasuresContainer from "../big-number/MeasuresContainer.svelte";
   import DimensionDisplay from "../dimension-table/DimensionDisplay.svelte";
   import Filters from "../filters/Filters.svelte";
@@ -109,7 +110,30 @@
   let initEmbedPublicAPI;
 
   // Hacky solution to ensure that the embed public API is initialized after the dashboard is fully loaded
+  // Global keyboard event handler for toggling cell inspector visibility
+  function handleGlobalKeyDown(event: KeyboardEvent) {
+    // Only handle Space key when not in an input, textarea, or other form element
+    const target = event.target as HTMLElement;
+    const tagName = target.tagName.toLowerCase();
+    const isFormElement =
+      tagName === "input" || tagName === "textarea" || tagName === "select";
+
+    if (event.code === "Space" && !event.repeat && !isFormElement) {
+      event.preventDefault();
+      event.stopPropagation();
+
+      // Toggle the cell inspector visibility
+      cellInspectorStore.toggle("", { x: 0, y: 0 });
+    } else if (event.key === "Escape") {
+      // Close the cell inspector
+      cellInspectorStore.close();
+    }
+  }
+
   onMount(async () => {
+    // Add global keyboard event listener
+    window.addEventListener("keydown", handleGlobalKeyDown, true);
+
     if (isEmbedded) {
       initEmbedPublicAPI = (
         await import(
@@ -118,6 +142,11 @@
       ).default;
     }
     await tick();
+  });
+
+  onDestroy(() => {
+    // Remove global keyboard event listener
+    window.removeEventListener("keydown", handleGlobalKeyDown, true);
   });
 
   $: if (initEmbedPublicAPI) {

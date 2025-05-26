@@ -13,6 +13,7 @@
   } from "@rilldata/web-common/features/dashboards/pivot/pivot-column-width-utils";
   import Resizer from "@rilldata/web-common/layout/Resizer.svelte";
   import { modified } from "@rilldata/web-common/lib/actions/modified-click";
+  import { cellInspectorStore } from "../stores/cellInspectorStore";
   import type { Cell, Column, HeaderGroup, Row } from "@tanstack/svelte-table";
   import { flexRender } from "@tanstack/svelte-table";
   import type { PivotDataRow } from "./types";
@@ -198,9 +199,47 @@
             class:text-right={getMeasureColumn(cell.column)}
             class:border-r={hasBorderRight(cell.column.id)}
             data-value={cell.getValue()}
-            data-cell-value={cell.getValue()}
             data-rowid={cell.row.id}
             data-columnid={cell.column.id}
+            on:mouseover={(e) => {
+              const value = cell.getValue();
+              if (value !== undefined && value !== null) {
+                // Always update the value in the store, but don't change visibility
+                cellInspectorStore.updateValue(String(value));
+              }
+            }}
+            on:focus={() => {
+              const value = cell.getValue();
+              if (value !== undefined && value !== null) {
+                // Always update the value in the store, but don't change visibility
+                cellInspectorStore.updateValue(String(value));
+              }
+            }}
+            on:keydown={(e) => {
+              const value = cell.getValue();
+              if (
+                value !== undefined &&
+                value !== null &&
+                (e.code === "Space" || e.code === "Enter")
+              ) {
+                e.preventDefault();
+                e.stopPropagation();
+
+                // Toggle the cell inspector
+                const isOpen = $cellInspectorStore.isOpen;
+                if (!isOpen) {
+                  cellInspectorStore.open(String(value));
+                } else {
+                  cellInspectorStore.close();
+                }
+              } else if (e.key === "Escape" && $cellInspectorStore.isOpen) {
+                e.preventDefault();
+                e.stopPropagation();
+                cellInspectorStore.close();
+              }
+            }}
+            role="cell"
+            tabindex="0"
           >
             {#if result?.component && result?.props}
               <svelte:component

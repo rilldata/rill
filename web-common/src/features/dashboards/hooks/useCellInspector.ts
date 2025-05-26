@@ -1,54 +1,18 @@
 import { cellInspectorStore } from "../stores/cellInspectorStore";
 
 export function useCellInspector() {
-  let hoverTimeout: number | null = null;
-  let lastHoveredValue: string | null = null;
-  let isOpen = false;
-
-  const inspectCell = (value: string, event: MouseEvent, persist = false) => {
+  const inspectCell = (value: string, persist = false) => {
     if (!value) return;
 
     const stringValue = String(value);
 
     if (persist) {
-      isOpen = true;
-      cellInspectorStore.open(stringValue, {
-        x: event.clientX,
-        y: event.clientY,
-      });
-    } else if (!isOpen) {
-      cellInspectorStore.open(stringValue, {
-        x: event.clientX,
-        y: event.clientY,
-      });
+      // For double-click, we still want to open the inspector directly
+      cellInspectorStore.open(stringValue);
+    } else {
+      // Just update the value in the store, visibility is controlled at the dashboard level
+      cellInspectorStore.updateValue(stringValue);
     }
-  };
-
-  const handleMouseEnter = (value: string, e: MouseEvent) => {
-    // Clear any existing timeout
-    if (hoverTimeout) {
-      clearTimeout(hoverTimeout);
-      hoverTimeout = null;
-    }
-
-    // Only track the hovered value but don't open the inspector
-    hoverTimeout = window.setTimeout(() => {
-      if (value !== lastHoveredValue) {
-        lastHoveredValue = value;
-        // Store the value but don't open the inspector
-        if (isOpen) {
-          inspectCell(value, e, true);
-        }
-      }
-    }, 100); // Small delay to prevent flickering
-  };
-
-  const handleMouseLeave = () => {
-    if (hoverTimeout) {
-      clearTimeout(hoverTimeout);
-      hoverTimeout = null;
-    }
-    lastHoveredValue = null;
   };
 
   const getCellProps = (value: string) => {
@@ -65,37 +29,23 @@ export function useCellInspector() {
         ) {
           target.title = stringValue;
         }
-        handleMouseEnter(stringValue, e);
+
+        // Just update the value in the store, visibility is controlled at the dashboard level
+        cellInspectorStore.updateValue(stringValue);
       },
-      onMouseLeave: handleMouseLeave,
       onDblClick: (e: MouseEvent) => {
         e.preventDefault();
         e.stopPropagation();
-        inspectCell(stringValue, e, true);
+        inspectCell(stringValue, true);
       },
-      onKeyDown: (e: KeyboardEvent) => {
-        if (e.code === "Space" || e.code === "Enter") {
-          e.preventDefault();
-          e.stopPropagation();
-          isOpen = !isOpen;
-          inspectCell(stringValue, e as unknown as MouseEvent, isOpen);
-        } else if (e.key === "Escape" && isOpen) {
-          e.preventDefault();
-          e.stopPropagation();
-          isOpen = false;
-          cellInspectorStore.close();
-        }
-      },
+      // Add tabindex for keyboard accessibility
       tabIndex: 0,
-      role: "button",
-      "aria-label": "Inspect cell",
-      "data-cell-value": stringValue,
+      role: "cell",
     };
   };
 
   return {
-    inspectCell: (value: string, event: MouseEvent) =>
-      inspectCell(value, event, true),
+    inspectCell: (value: string) => inspectCell(value, true),
     getCellProps,
   };
 }

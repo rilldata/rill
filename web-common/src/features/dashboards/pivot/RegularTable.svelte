@@ -3,6 +3,7 @@
   import "regular-table";
   import type { RegularTableElement } from "regular-table";
   import { createEventDispatcher, onMount } from "svelte";
+  import { cellInspectorStore } from "../stores/cellInspectorStore";
   import "./regular-table-style.css";
   import { isEmptyPos, range } from "./regular-table-utils";
   import type { PivotPos, PivotRenderCallback } from "./types";
@@ -110,11 +111,59 @@
     th.setAttribute("__col", String(x - numFixedCols!));
     th.setAttribute("__row", String(y));
 
-    // Add data-cell-value attribute for Cell inspector integration
+    // Set title for tooltip
     if (value?.value !== undefined && value?.value !== null) {
-      th.setAttribute("data-cell-value", String(value.value));
       th.setAttribute("title", value.value);
     }
+
+    let isOpen = false;
+
+    // Add mouseover event to update the value in the store without changing visibility
+    th.onmouseover = (e) => {
+      if (value?.value !== undefined && value?.value !== null) {
+        // Always update the value in the store, but don't change visibility
+        cellInspectorStore.updateValue(String(value.value));
+      }
+    };
+
+    // Add focus event to update the value in the store without changing visibility
+    th.onfocus = () => {
+      if (value?.value !== undefined && value?.value !== null) {
+        // Always update the value in the store, but don't change visibility
+        cellInspectorStore.updateValue(String(value.value));
+      }
+    };
+
+    // Add keydown event to toggle the cell inspector with spacebar
+    th.onkeydown = (e) => {
+      if (
+        value?.value !== undefined &&
+        value?.value !== null &&
+        (e.code === "Space" || e.code === "Enter")
+      ) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        // Toggle the cell inspector
+        isOpen = !isOpen;
+        if (isOpen) {
+          // Only open the inspector when spacebar is pressed
+          cellInspectorStore.open(String(value));
+        } else {
+          // Close the inspector
+          cellInspectorStore.close();
+        }
+      } else if (e.key === "Escape" && isOpen) {
+        e.preventDefault();
+        e.stopPropagation();
+        isOpen = false;
+        cellInspectorStore.close();
+      }
+    };
+
+    // Add tabindex and role for accessibility
+    th.setAttribute("tabindex", "0");
+    th.setAttribute("role", "cell");
 
     const maybeWidth = getRowHeaderWidth(x);
     if (maybeWidth) {
@@ -149,10 +198,53 @@
     td.setAttribute("__col", String(x));
     td.setAttribute("__row", String(y));
 
-    // Add data-cell-value attribute for Cell inspector integration
-    if (value !== null && value !== undefined) {
-      td.setAttribute("data-cell-value", String(value));
-    }
+    let isOpen = false;
+
+    // Add mouseover event to update the value in the store without changing visibility
+    td.onmouseover = (e) => {
+      if (value !== undefined && value !== null) {
+        // Always update the value in the store, but don't change visibility
+        cellInspectorStore.updateValue(String(value));
+      }
+    };
+
+    td.onfocus = () => {
+      if (value !== undefined && value !== null) {
+        // Always update the value in the store, but don't change visibility
+        cellInspectorStore.updateValue(String(value));
+      }
+    };
+
+    // Add keydown event to toggle the cell inspector with spacebar
+    td.onkeydown = (e) => {
+      if (
+        value !== undefined &&
+        value !== null &&
+        (e.code === "Space" || e.code === "Enter")
+      ) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        // Toggle the cell inspector
+        isOpen = !isOpen;
+        if (isOpen) {
+          // Only open the inspector when spacebar is pressed
+          cellInspectorStore.open(String(value));
+        } else {
+          // Close the inspector
+          cellInspectorStore.close();
+        }
+      } else if (e.key === "Escape" && isOpen) {
+        e.preventDefault();
+        e.stopPropagation();
+        isOpen = false;
+        cellInspectorStore.close();
+      }
+    };
+
+    // Add tabindex and role for accessibility
+    td.setAttribute("tabindex", "0");
+    td.setAttribute("role", "cell");
 
     const maybeWidth = getColumnWidth(x);
     if (maybeWidth) {

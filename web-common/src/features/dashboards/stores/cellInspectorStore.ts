@@ -3,36 +3,38 @@ import { writable } from "svelte/store";
 interface CellInspectorState {
   isOpen: boolean;
   value: string;
-  position: { x: number; y: number } | null;
 }
 
 function createCellInspectorStore() {
   const { subscribe, update } = writable<CellInspectorState>({
     isOpen: false,
     value: "",
-    position: null,
   });
 
   return {
     subscribe,
-    open: (value: string, position: { x: number; y: number }) =>
+    open: (value: string) =>
       update((state) => ({
         ...state,
         isOpen: true,
         value,
-        position,
       })),
     close: () =>
       update((state) => ({
         ...state,
         isOpen: false,
       })),
-    toggle: (value: string, position: { x: number; y: number }) =>
+    // Update the value without changing visibility
+    updateValue: (value: string) =>
+      update((state) => ({
+        ...state,
+        value,
+      })),
+    toggle: (value: string) =>
       update((state) => ({
         ...state,
         isOpen: !state.isOpen,
         value: state.isOpen ? state.value : value,
-        position: state.isOpen ? state.position : position,
       })),
   };
 }

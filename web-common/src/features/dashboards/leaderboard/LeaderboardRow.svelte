@@ -9,7 +9,7 @@
   import { formatMeasurePercentageDifference } from "@rilldata/web-common/lib/number-formatting/percentage-formatter";
   import { slide } from "svelte/transition";
   import { type LeaderboardItemData, makeHref } from "./leaderboard-utils";
-  import { useCellInspector } from "../hooks/useCellInspector";
+  import { cellInspectorStore } from "../stores/cellInspectorStore";
   import LeaderboardItemFilterIcon from "./LeaderboardItemFilterIcon.svelte";
   import LeaderboardTooltipContent from "./LeaderboardTooltipContent.svelte";
   import LongBarZigZag from "./LongBarZigZag.svelte";
@@ -71,8 +71,6 @@
   } = itemData);
 
   $: selected = selectedIndex >= 0;
-
-  const { getCellProps } = useCellInspector();
 
   // Super important special case: if there is not at least one "active" (selected) value,
   // we need to set *all* items to be included, because by default if a user has not
@@ -204,9 +202,44 @@
     on:click={modified({
       shift: () => shiftClickHandler(dimensionValue),
     })}
+    on:mouseover={(e) => {
+      if (dimensionValue) {
+        // Always update the value in the store, but don't change visibility
+        cellInspectorStore.updateValue(dimensionValue.toString(), {
+          x: e.clientX,
+          y: e.clientY,
+        });
+      }
+    }}
+    on:focus={() => {
+      if (dimensionValue) {
+        // Always update the value in the store, but don't change visibility
+        cellInspectorStore.updateValue(dimensionValue.toString(), {
+          x: 0,
+          y: 0,
+        });
+      }
+    }}
+    on:keydown={(e) => {
+      if (dimensionValue && (e.code === "Space" || e.code === "Enter")) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        // Toggle the cell inspector
+        const isOpen = $cellInspectorStore.isOpen;
+        if (!isOpen) {
+          cellInspectorStore.open(dimensionValue.toString());
+        } else {
+          cellInspectorStore.close();
+        }
+      } else if (e.key === "Escape" && $cellInspectorStore.isOpen) {
+        e.preventDefault();
+        e.stopPropagation();
+        cellInspectorStore.close();
+      }
+    }}
     class="relative size-full flex flex-none justify-between items-center leaderboard-label"
     style:background={dimensionGradients}
-    {...getCellProps(dimensionValue)}
   >
     <span class="truncate">
       <FormattedDataType value={dimensionValue} truncate />
@@ -243,7 +276,42 @@
       style:background={leaderboardMeasureNames.length === 1
         ? measureGradients
         : measureGradientMap?.[measureName]}
-      {...getCellProps(values[measureName]?.toString() || "")}
+      on:mouseover={(e) => {
+        const value = values[measureName]?.toString() || "";
+        if (value) {
+          cellInspectorStore.updateValue(value, {
+            x: e.clientX,
+            y: e.clientY,
+          });
+        }
+      }}
+      on:focus={() => {
+        const value = values[measureName]?.toString() || "";
+        if (value) {
+          cellInspectorStore.updateValue(value, { x: 0, y: 0 });
+        }
+      }}
+      on:keydown={(e) => {
+        const value = values[measureName]?.toString() || "";
+        if (value && (e.code === "Space" || e.code === "Enter")) {
+          e.preventDefault();
+          e.stopPropagation();
+
+          // Toggle the cell inspector
+          const isOpen = $cellInspectorStore.isOpen;
+          if (!isOpen) {
+            cellInspectorStore.open(value);
+          } else {
+            cellInspectorStore.close();
+          }
+        } else if (e.key === "Escape" && $cellInspectorStore.isOpen) {
+          e.preventDefault();
+          e.stopPropagation();
+          cellInspectorStore.close();
+        }
+      }}
+      tabindex="0"
+      role="cell"
     >
       <div class="w-fit ml-auto bg-transparent" bind:contentRect={valueRect}>
         <FormattedDataType
@@ -267,6 +335,42 @@
           shift: () =>
             shiftClickHandler(pctOfTotals[measureName]?.toString() || ""),
         })}
+        on:mouseover={(e) => {
+          const value = pctOfTotals[measureName]?.toString() || "";
+          if (value) {
+            cellInspectorStore.updateValue(value, {
+              x: e.clientX,
+              y: e.clientY,
+            });
+          }
+        }}
+        on:focus={() => {
+          const value = pctOfTotals[measureName]?.toString() || "";
+          if (value) {
+            cellInspectorStore.updateValue(value, { x: 0, y: 0 });
+          }
+        }}
+        on:keydown={(e) => {
+          const value = pctOfTotals[measureName]?.toString() || "";
+          if (value && (e.code === "Space" || e.code === "Enter")) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            // Toggle the cell inspector
+            const isOpen = $cellInspectorStore.isOpen;
+            if (!isOpen) {
+              cellInspectorStore.open(value);
+            } else {
+              cellInspectorStore.close();
+            }
+          } else if (e.key === "Escape" && $cellInspectorStore.isOpen) {
+            e.preventDefault();
+            e.stopPropagation();
+            cellInspectorStore.close();
+          }
+        }}
+        tabindex="0"
+        role="cell"
       >
         <PercentageChange
           value={pctOfTotals[measureName]}
@@ -286,6 +390,42 @@
           shift: () =>
             shiftClickHandler(deltaAbsMap[measureName]?.toString() || ""),
         })}
+        on:mouseover={(e) => {
+          const value = deltaAbsMap[measureName]?.toString() || "";
+          if (value) {
+            cellInspectorStore.updateValue(value, {
+              x: e.clientX,
+              y: e.clientY,
+            });
+          }
+        }}
+        on:focus={() => {
+          const value = deltaAbsMap[measureName]?.toString() || "";
+          if (value) {
+            cellInspectorStore.updateValue(value, { x: 0, y: 0 });
+          }
+        }}
+        on:keydown={(e) => {
+          const value = deltaAbsMap[measureName]?.toString() || "";
+          if (value && (e.code === "Space" || e.code === "Enter")) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            // Toggle the cell inspector
+            const isOpen = $cellInspectorStore.isOpen;
+            if (!isOpen) {
+              cellInspectorStore.open(value);
+            } else {
+              cellInspectorStore.close();
+            }
+          } else if (e.key === "Escape" && $cellInspectorStore.isOpen) {
+            e.preventDefault();
+            e.stopPropagation();
+            cellInspectorStore.close();
+          }
+        }}
+        tabindex="0"
+        role="cell"
       >
         <FormattedDataType
           color="text-gray-500"
@@ -310,6 +450,42 @@
           shift: () =>
             shiftClickHandler(deltaRels[measureName]?.toString() || ""),
         })}
+        on:mouseover={(e) => {
+          const value = deltaRels[measureName]?.toString() || "";
+          if (value) {
+            cellInspectorStore.updateValue(value, {
+              x: e.clientX,
+              y: e.clientY,
+            });
+          }
+        }}
+        on:focus={() => {
+          const value = deltaRels[measureName]?.toString() || "";
+          if (value) {
+            cellInspectorStore.updateValue(value, { x: 0, y: 0 });
+          }
+        }}
+        on:keydown={(e) => {
+          const value = deltaRels[measureName]?.toString() || "";
+          if (value && (e.code === "Space" || e.code === "Enter")) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            // Toggle the cell inspector
+            const isOpen = $cellInspectorStore.isOpen;
+            if (!isOpen) {
+              cellInspectorStore.open(value);
+            } else {
+              cellInspectorStore.close();
+            }
+          } else if (e.key === "Escape" && $cellInspectorStore.isOpen) {
+            e.preventDefault();
+            e.stopPropagation();
+            cellInspectorStore.close();
+          }
+        }}
+        tabindex="0"
+        role="cell"
       >
         <PercentageChange
           value={deltaRels[measureName]
