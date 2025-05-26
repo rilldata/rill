@@ -597,6 +597,11 @@ export interface V1IssueServiceAuthTokenResponse {
   token?: string;
 }
 
+export interface V1IssueUserAuthTokenResponse {
+  /** Newly issued auth token. */
+  token?: string;
+}
+
 export interface V1LeaveOrganizationResponse {
   [key: string]: unknown;
 }
@@ -690,6 +695,13 @@ export interface V1ListServicesResponse {
 
 export interface V1ListSuperusersResponse {
   users?: V1User[];
+}
+
+export interface V1ListUserAuthTokensResponse {
+  /** List of auth tokens for the user. */
+  tokens?: V1UserAuthToken[];
+  /** Page token for the next page of results. If empty, there are no more pages. */
+  nextPageToken?: string;
 }
 
 export interface V1ListUsergroupMemberUsersResponse {
@@ -1041,7 +1053,7 @@ export interface V1ResourceName {
 }
 
 export interface V1RevokeCurrentAuthTokenResponse {
-  tokenId?: string;
+  [key: string]: unknown;
 }
 
 export interface V1RevokeMagicAuthTokenResponse {
@@ -1049,6 +1061,10 @@ export interface V1RevokeMagicAuthTokenResponse {
 }
 
 export interface V1RevokeServiceAuthTokenResponse {
+  [key: string]: unknown;
+}
+
+export interface V1RevokeUserAuthTokenResponse {
   [key: string]: unknown;
 }
 
@@ -1304,6 +1320,17 @@ export interface V1User {
   quotas?: V1UserQuotas;
   createdOn?: string;
   updatedOn?: string;
+}
+
+export interface V1UserAuthToken {
+  id?: string;
+  displayName?: string;
+  authClientId?: string;
+  authClientDisplayName?: string;
+  representingUserId?: string;
+  createdOn?: string;
+  expiresOn?: string;
+  usedOn?: string;
 }
 
 export interface V1UserPreferences {
@@ -1789,7 +1816,43 @@ export type AdminServiceGetUserParams = {
   email?: string;
 };
 
+export type AdminServiceRevokeUserAuthTokenParams = {
+  /**
+   * Flag for superusers to override normal access checks.
+   */
+  superuserForceAccess?: boolean;
+};
+
 export type AdminServiceDeleteUserParams = {
+  superuserForceAccess?: boolean;
+};
+
+export type AdminServiceListUserAuthTokensParams = {
+  /**
+   * Page size for pagination. If not set, a default page size will be used.
+   */
+  pageSize?: number;
+  /**
+   * Page token for pagination. If set, the first page of results will be returned.
+   */
+  pageToken?: string;
+  /**
+   * Flag for superusers to override normal access checks.
+   */
+  superuserForceAccess?: boolean;
+};
+
+export type AdminServiceIssueUserAuthTokenBody = {
+  /** Client ID to issue the token for. */
+  clientId?: string;
+  /** Optional display name for the auth token. */
+  displayName?: string;
+  /** Optional TTL for the auth token in minutes. Set to 0 for no expiry. Defaults to no expiry. */
+  ttlMinutes?: string;
+  /** Optional email of another user to assume the identity of.
+This is only allowed for superusers. */
+  representEmail?: string;
+  /** Flag for superusers to override normal access checks. */
   superuserForceAccess?: boolean;
 };
 

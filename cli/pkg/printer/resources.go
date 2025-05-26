@@ -264,36 +264,69 @@ func (p *Printer) PrintServiceTokens(sts []*adminv1.ServiceToken) {
 	if len(sts) == 0 {
 		return
 	}
-	p.PrintData(toServiceTokensTable(sts))
-}
-
-func toServiceTokensTable(tkns []*adminv1.ServiceToken) []*token {
-	tokens := make([]*token, 0, len(tkns))
-
-	for _, t := range tkns {
-		tokens = append(tokens, toServiceTokenRow(t))
+	table := make([]*serviceToken, 0, len(sts))
+	for _, t := range sts {
+		table = append(table, toServiceTokenRow(t))
 	}
-
-	return tokens
+	p.PrintData(table)
 }
 
-func toServiceTokenRow(s *adminv1.ServiceToken) *token {
+func toServiceTokenRow(s *adminv1.ServiceToken) *serviceToken {
 	var expiresOn string
 	if !s.ExpiresOn.AsTime().IsZero() {
 		expiresOn = s.ExpiresOn.AsTime().Local().Format(time.DateTime)
 	}
 
-	return &token{
+	return &serviceToken{
 		ID:        s.Id,
 		CreatedOn: s.CreatedOn.AsTime().Local().Format(time.DateTime),
 		ExpiresOn: expiresOn,
 	}
 }
 
-type token struct {
+type serviceToken struct {
 	ID        string `header:"id" json:"id"`
 	CreatedOn string `header:"created_on,timestamp(ms|utc|human)" json:"created_on"`
 	ExpiresOn string `header:"expires_on,timestamp(ms|utc|human)" json:"expires_on"`
+}
+
+func (p *Printer) PrintUserTokens(uts []*adminv1.UserAuthToken) {
+	if len(uts) == 0 {
+		return
+	}
+	table := make([]*userToken, 0, len(uts))
+	for _, t := range uts {
+		table = append(table, toUserTokenRow(t))
+	}
+	p.PrintData(table)
+}
+
+func toUserTokenRow(u *adminv1.UserAuthToken) *userToken {
+	var expiresOn, usedOn string
+	if u.ExpiresOn != nil {
+		expiresOn = u.ExpiresOn.AsTime().Local().Format(time.DateTime)
+	}
+	if u.UsedOn != nil {
+		usedOn = u.UsedOn.AsTime().Local().Format(time.DateTime)
+	}
+
+	return &userToken{
+		ID:          u.Id,
+		ClientName:  u.AuthClientDisplayName,
+		Description: u.DisplayName,
+		CreatedOn:   u.CreatedOn.AsTime().Local().Format(time.DateTime),
+		ExpiresOn:   expiresOn,
+		UsedOn:      usedOn,
+	}
+}
+
+type userToken struct {
+	ID          string `header:"id" json:"id"`
+	Description string `header:"description" json:"description"`
+	ClientName  string `header:"client" json:"client"`
+	CreatedOn   string `header:"created,timestamp(ms|utc|human)" json:"created_on"`
+	ExpiresOn   string `header:"expires,timestamp(ms|utc|human)" json:"expires_on"`
+	UsedOn      string `header:"last used,timestamp(ms|utc|human)" json:"last_used_on"`
 }
 
 func (p *Printer) PrintMagicAuthTokens(tkns []*adminv1.MagicAuthToken) {

@@ -23,6 +23,7 @@ import (
 	"github.com/rilldata/rill/cli/cmd/start"
 	"github.com/rilldata/rill/cli/cmd/sudo"
 	sudouser "github.com/rilldata/rill/cli/cmd/sudo/user"
+	"github.com/rilldata/rill/cli/cmd/token"
 	"github.com/rilldata/rill/cli/cmd/uninstall"
 	"github.com/rilldata/rill/cli/cmd/upgrade"
 	"github.com/rilldata/rill/cli/cmd/user"
@@ -134,6 +135,7 @@ func RootCmd(ch *cmdutil.Helper) *cobra.Command {
 		auth.LoginCmd(ch),
 		auth.LogoutCmd(ch),
 		whoami.WhoamiCmd(ch),
+		token.TokenCmd(ch),
 	)
 
 	// Internal commands

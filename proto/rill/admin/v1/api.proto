@@ -356,6 +356,11 @@ service AdminService {
     option (google.api.http) = {delete: "/v1/organizations/{organization}/usergroups/{usergroup}/members/{email}"};
   }
 
+  // GetUser returns user by email
+  rpc GetUser(GetUserRequest) returns (GetUserResponse) {
+    option (google.api.http) = {get: "/v1/users"};
+  }
+
   // GetCurrentUser returns the currently authenticated user (if any)
   rpc GetCurrentUser(GetCurrentUserRequest) returns (GetCurrentUserResponse) {
     option (google.api.http) = {
@@ -368,7 +373,29 @@ service AdminService {
     option (google.api.http) = {delete: "/v1/users/{email}"};
   }
 
-  // IssueRepresentativeAuthToken returns the temporary token for given email
+  // ListUserAuthTokens lists the current user's auth tokens.
+  // You can optionally pass "current" instead of the user ID to list the current user's tokens.
+  rpc ListUserAuthTokens(ListUserAuthTokensRequest) returns (ListUserAuthTokensResponse) {
+    option (google.api.http) = {get: "/v1/users/{user_id}/tokens"};
+  }
+
+  // IssueUserAuthToken issues an access token for the current user.
+  // You can optionally pass "current" instead of the user ID to issue a token for the current user.
+  rpc IssueUserAuthToken(IssueUserAuthTokenRequest) returns (IssueUserAuthTokenResponse) {
+    option (google.api.http) = {
+      post: "/v1/users/{user_id}/tokens",
+      body: "*"
+    };
+  }
+
+  // RevokeUserAuthToken revokes a user access token.
+  // You can optionally pass "current" instead of the token ID to revoke the current token.
+  rpc RevokeUserAuthToken(RevokeUserAuthTokenRequest) returns (RevokeUserAuthTokenResponse) {
+    option (google.api.http) = {delete: "/v1/users/-/tokens/{token_id}"};
+  }
+
+  // IssueRepresentativeAuthToken returns the temporary token for given email.
+  // Deprecated: Use IssueUserAuthToken with the represent_email option instead.
   rpc IssueRepresentativeAuthToken(IssueRepresentativeAuthTokenRequest) returns (IssueRepresentativeAuthTokenResponse) {
     option (google.api.http) = {
       post: "/v1/tokens/represent",
@@ -376,7 +403,8 @@ service AdminService {
     };
   }
 
-  // RevokeCurrentAuthToken revoke the current auth token
+  // RevokeCurrentAuthToken revoke the current auth token.
+  // Deprecated: Use RevokeUserAuthToken with ID set to "current" instead.
   rpc RevokeCurrentAuthToken(RevokeCurrentAuthTokenRequest) returns (RevokeCurrentAuthTokenResponse) {
     option (google.api.http) = {delete: "/v1/tokens/current"};
   }
@@ -444,11 +472,6 @@ service AdminService {
   // ListWhitelistedDomains lists all the whitelisted domains for the organization
   rpc ListWhitelistedDomains(ListWhitelistedDomainsRequest) returns (ListWhitelistedDomainsResponse) {
     option (google.api.http) = {get: "/v1/organizations/{organization}/whitelisted"};
-  }
-
-  // GetUser returns user by email
-  rpc GetUser(GetUserRequest) returns (GetUserResponse) {
-    option (google.api.http) = {get: "/v1/users"};
   }
 
   // GetUsersByEmail returns users by email
@@ -617,7 +640,7 @@ service AdminService {
     option (google.api.http) = {get: "/v1/organizations/{organization_name}/services/{service_name}/tokens"};
   }
 
-  // IssueServiceAuthToken returns the temporary token for given service account
+  // IssueServiceAuthToken issues an access token for a service
   rpc IssueServiceAuthToken(IssueServiceAuthTokenRequest) returns (IssueServiceAuthTokenResponse) {
     option (google.api.http) = {
       post: "/v1/organizations/{organization_name}/services/{service_name}/tokens",
@@ -625,7 +648,7 @@ service AdminService {
     };
   }
 
-  // RevokeServiceAuthToken revoke the service auth token
+  // RevokeServiceAuthToken revoke a service's access token
   rpc RevokeServiceAuthToken(RevokeServiceAuthTokenRequest) returns (RevokeServiceAuthTokenResponse) {
     option (google.api.http) = {delete: "/v1/services/tokens/{token_id}"};
   }
@@ -1703,21 +1726,6 @@ message RemoveUsergroupMemberUserRequest {
 
 message RemoveUsergroupMemberUserResponse {}
 
-message GetCurrentUserRequest {}
-
-message GetCurrentUserResponse {
-  User user = 1;
-  UserPreferences preferences = 2;
-}
-
-message GetUserRequest {
-  string email = 1 [(validate.rules).string.email = true];
-}
-
-message GetUserResponse {
-  User user = 1;
-}
-
 message UserPreferences {
   optional string time_zone = 1;
 }
@@ -1730,12 +1738,92 @@ message UpdateUserPreferencesResponse {
   UserPreferences preferences = 1;
 }
 
+message GetUserRequest {
+  string email = 1 [(validate.rules).string.email = true];
+}
+
+message GetUserResponse {
+  User user = 1;
+}
+
+message GetCurrentUserRequest {}
+
+message GetCurrentUserResponse {
+  User user = 1;
+  UserPreferences preferences = 2;
+}
+
 message DeleteUserRequest {
   string email = 1 [(validate.rules).string.email = true];
   bool superuser_force_access = 2;
 }
 
 message DeleteUserResponse {}
+
+message ListUserAuthTokensRequest {
+  // User ID to list auth tokens for. Set to "current" to list auth tokens for the current user.
+  string user_id = 1 [(validate.rules).string.min_len = 1];
+  // Page size for pagination. If not set, a default page size will be used.
+  uint32 page_size = 2 [(validate.rules).uint32 = {ignore_empty: true, lte: 1000}];
+  // Page token for pagination. If set, the first page of results will be returned.
+  string page_token = 3;
+  // Flag for superusers to override normal access checks.
+  bool superuser_force_access = 4;
+}
+
+message ListUserAuthTokensResponse {
+  // List of auth tokens for the user.
+  repeated UserAuthToken tokens = 1;
+  // Page token for the next page of results. If empty, there are no more pages.
+  string next_page_token = 2;
+}
+
+message IssueUserAuthTokenRequest {
+  // User ID to issue the auth token for.
+  // Set to "current" to issue an auth token for the current user.
+  string user_id = 1 [(validate.rules).string.min_len = 1];
+  // Client ID to issue the token for. 
+  string client_id = 2 [(validate.rules).string.min_len = 1];
+  // Optional display name for the auth token.
+  string display_name = 3;
+  // Optional TTL for the auth token in minutes. Set to 0 for no expiry. Defaults to no expiry.
+  int64 ttl_minutes = 4;
+  // Optional email of another user to assume the identity of.
+  // This is only allowed for superusers.
+  string represent_email = 5 [(validate.rules).string = {ignore_empty: true, email: true}];
+  // Flag for superusers to override normal access checks.
+  bool superuser_force_access = 6;
+}
+
+message IssueUserAuthTokenResponse {
+  // Newly issued auth token.
+  string token = 1;
+}
+
+message RevokeUserAuthTokenRequest {
+  // ID of the auth token to revoke.
+  // Set to "current" to revoke the current auth token.
+  string token_id = 1;
+  // Flag for superusers to override normal access checks.
+  bool superuser_force_access = 2;
+}
+
+message RevokeUserAuthTokenResponse {
+}
+
+message IssueRepresentativeAuthTokenRequest {
+  string email = 1 [(validate.rules).string.email = true];
+  int64 ttl_minutes = 2;
+}
+
+message IssueRepresentativeAuthTokenResponse {
+  string token = 1;
+}
+
+message RevokeCurrentAuthTokenRequest {}
+
+message RevokeCurrentAuthTokenResponse {
+}
 
 message ListBookmarksRequest {
   string project_id = 1;
@@ -1796,21 +1884,6 @@ message SearchUsersRequest {
 message SearchUsersResponse {
   repeated User users = 1;
   string next_page_token = 2;
-}
-
-message RevokeCurrentAuthTokenRequest {}
-
-message RevokeCurrentAuthTokenResponse {
-  string token_id = 1;
-}
-
-message IssueRepresentativeAuthTokenRequest {
-  string email = 1 [(validate.rules).string.email = true];
-  int64 ttl_minutes = 2;
-}
-
-message IssueRepresentativeAuthTokenResponse {
-  string token = 1;
 }
 
 message RevokeServiceAuthTokenRequest {
@@ -2564,6 +2637,17 @@ message ServiceToken {
   string id = 1;
   google.protobuf.Timestamp created_on = 2;
   google.protobuf.Timestamp expires_on = 3;
+}
+
+message UserAuthToken {
+  string id = 1;
+  string display_name = 2;
+  string auth_client_id = 3;
+  string auth_client_display_name = 4;
+  string representing_user_id = 5;
+  google.protobuf.Timestamp created_on = 6;
+  google.protobuf.Timestamp expires_on = 7;
+  google.protobuf.Timestamp used_on = 8;
 }
 
 message MagicAuthToken {
