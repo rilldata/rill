@@ -153,22 +153,22 @@ type AnchoredDurationInterval struct {
 // ShorthandInterval is a convenience shorthand syntax for the advanced StartEndInterval
 // <num><grain> maps to -<num><grain>/<trunc_grain>$ to <trunc_grain>$, where trunc_grain = max(default_grain(grain), smallest_time_grain)
 // <num><grain> in <snap_grain> maps to -<num><grain>/<trunc_grain>$ to <trunc_grain>$, where trunc_grain = max(snap_grain, smallest_time_grain)
-// <num><grain> in <snap_grain>^ maps to -<num><grain>/<trunc_grain>^ to <trunc_grain>^, where trunc_grain = max(snap_grain, smallest_time_grain)
+// <num><grain> in <snap_grain>! maps to -<num><grain>/<trunc_grain>^ to <trunc_grain>^, where trunc_grain = max(snap_grain, smallest_time_grain)
 type ShorthandInterval struct {
 	Num          int     `parser:"@Number"`
 	Grain        string  `parser:"@Grain"`
 	SnapOverride *string `parser:"(In @Grain)?"`
-	SnapDir      *string `parser:"@Suffix?"`
+	SnapDir      *string `parser:"@Interval?"`
 }
 
 // PeriodToGrainInterval is a convenience syntax for specifying <grain> to <grain>
 // <grain>TD maps to <grain>^ to <trunc_grain>$, where trunc_grain = max(default_grain(grain), smallest_time_grain)
 // <grain>TD in <snap_grain> maps to <grain>^ to <trunc_grain>$, where trunc_grain = max(snap_grain, smallest_time_grain)
-// <grain>TD in <snap_grain>^ maps to <grain>^ to <trunc_grain>^, where trunc_grain = max(snap_grain, smallest_time_grain)
+// <grain>TD in <snap_grain>! maps to <grain>^ to <trunc_grain>^, where trunc_grain = max(snap_grain, smallest_time_grain)
 type PeriodToGrainInterval struct {
 	PeriodToGrain string  `parser:"@PeriodToGrain"`
 	SnapOverride  *string `parser:"(In @Grain)?"`
-	SnapDir       *string `parser:"@Suffix?"`
+	SnapDir       *string `parser:"@Interval?"`
 }
 
 // OrdinalInterval is an interval formed with a chain of ordinals ended by an interval.
@@ -230,11 +230,11 @@ type GrainPointInTime struct {
 type GrainPointInTimePart struct {
 	Prefix   *string        `parser:"@Prefix?"`
 	Duration *GrainDuration `parser:"@@"`
-	Snap     *string        `parser:"( Snap @Grain"`
-	// Snap by a primary grain and then by week. This allows specifying a time range bucketed by week but snapped by a higher order grain.
+	Snap     *string        `parser:"(Snap @Grain"`
+	// A secondary snap after the above snap. This allows specifying a time range bucketed by week but snapped by a higher order grain.
 	// EG: `Y/YW^` or `Y/YW$` snaps to the beginning of the 1st week of the year or the beginning of the 1st week of next year (to include the last week of the year)
 	//     `Y/Y^` or `Y/Y$` instead gives 1st day of the year or 1st day of next year.
-	WeekSnapGrain *string `parser:"| Snap @WeekSnapGrain)?"`
+	SecondarySnap *string `parser:"(Snap @Grain)?)?"`
 	Suffix        *string `parser:"@Suffix?"`
 }
 
@@ -358,11 +358,10 @@ func (e *Expression) Eval(evalOpts EvalOptions) (time.Time, time.Time, timeutil.
 	}
 
 	start := evalOpts.Watermark
+	start = timeutil.OffsetTime(start, evalOpts.SmallestGrain, 1)
+	start = timeutil.TruncateTime(start, evalOpts.SmallestGrain, e.timeZone, evalOpts.FirstDay, evalOpts.FirstMonth)
 	if e.AnchorOverride != nil {
 		start = e.AnchorOverride.eval(evalOpts, start, e.timeZone)
-	} else {
-		start = timeutil.OffsetTime(start, evalOpts.SmallestGrain, 1)
-		start = timeutil.TruncateTime(start, evalOpts.SmallestGrain, e.timeZone, evalOpts.FirstDay, evalOpts.FirstMonth)
 	}
 
 	if e.isoDuration != nil {
@@ -479,12 +478,12 @@ func (s *ShorthandInterval) eval(evalOpts EvalOptions, tm time.Time, tz *time.Lo
 	start := timeutil.OffsetTime(tm, tg, -s.Num)
 	end := tm
 
-	if s.SnapDir == nil || *s.SnapDir == "$" {
-		start = timeutil.CeilTime(start, snapTg, tz, evalOpts.FirstDay, evalOpts.FirstMonth)
-		end = timeutil.CeilTime(end, snapTg, tz, evalOpts.FirstDay, evalOpts.FirstMonth)
-	} else {
+	if s.SnapDir != nil && *s.SnapDir == "!" {
 		start = timeutil.TruncateTime(start, snapTg, tz, evalOpts.FirstDay, evalOpts.FirstMonth)
 		end = timeutil.TruncateTime(end, snapTg, tz, evalOpts.FirstDay, evalOpts.FirstMonth)
+	} else {
+		start = timeutil.CeilTime(start, snapTg, tz, evalOpts.FirstDay, evalOpts.FirstMonth)
+		end = timeutil.CeilTime(end, snapTg, tz, evalOpts.FirstDay, evalOpts.FirstMonth)
 	}
 
 	return start, end, tg
@@ -502,10 +501,10 @@ func (p *PeriodToGrainInterval) eval(evalOpts EvalOptions, tm time.Time, tz *tim
 	end := tm
 
 	start = timeutil.TruncateTime(start, fromTg, tz, evalOpts.FirstDay, evalOpts.FirstMonth)
-	if p.SnapDir == nil || *p.SnapDir == "$" {
-		end = timeutil.CeilTime(end, toTg, tz, evalOpts.FirstDay, evalOpts.FirstMonth)
-	} else {
+	if p.SnapDir != nil && *p.SnapDir == "!" {
 		end = timeutil.TruncateTime(end, toTg, tz, evalOpts.FirstDay, evalOpts.FirstMonth)
+	} else {
+		end = timeutil.CeilTime(end, toTg, tz, evalOpts.FirstDay, evalOpts.FirstMonth)
 	}
 
 	return start, end, toTg
@@ -597,7 +596,7 @@ func (a *AnchorOverride) eval(evalOpts EvalOptions, tm time.Time, tz *time.Locat
 	if a.Grain != nil {
 		tm, _ = a.Grain.eval(evalOpts, tm, tz)
 	} else if a.Label != nil {
-		tm = a.Label.eval(evalOpts)
+		tm = a.Label.eval(evalOpts, tm)
 	} else if a.Abs != nil {
 		tm, _, _ = a.Abs.eval(tz)
 	}
@@ -613,7 +612,7 @@ func (p *PointInTime) eval(evalOpts EvalOptions, start time.Time, tz *time.Locat
 	} else if p.Grain != nil {
 		return p.Grain.eval(evalOpts, start, tz)
 	} else if p.Labeled != nil {
-		return p.Labeled.eval(evalOpts), timeutil.TimeGrainUnspecified
+		return p.Labeled.eval(evalOpts, start), timeutil.TimeGrainUnspecified
 	}
 	return start, timeutil.TimeGrainUnspecified
 }
@@ -661,11 +660,11 @@ func (g *GrainPointInTimePart) eval(evalOpts EvalOptions, start time.Time, tz *t
 	if g.Snap != nil {
 		// If the snap grain is overridden, use that over the duration's grain.
 		tg = grainMap[*g.Snap]
-	} else if g.WeekSnapGrain != nil {
-		// WeekSnapGrain is a special case, allows snap by a grain and then by a week.
-		tgs := strings.Split(*g.WeekSnapGrain, "")
-		tg = grainMap[tgs[0]]
-		secondarySnap = grainMap[tgs[1]]
+	}
+	if g.SecondarySnap != nil {
+		// SecondarySnap is a special case, allows snap by a grain and then by another grain.
+		// The only case where this will be different is when weeks are involved.
+		secondarySnap = grainMap[*g.SecondarySnap]
 	}
 
 	if *g.Suffix == "$" {
@@ -687,11 +686,11 @@ func (g *GrainPointInTimePart) eval(evalOpts EvalOptions, start time.Time, tz *t
 	return tm, tg
 }
 
-func (l *LabeledPointInTime) eval(evalOpts EvalOptions) time.Time {
+func (l *LabeledPointInTime) eval(evalOpts EvalOptions, ref time.Time) time.Time {
 	if l.Earliest {
 		return evalOpts.MinTime
 	} else if l.Now {
-		return evalOpts.Now
+		return ref
 	} else if l.Latest {
 		return evalOpts.MaxTime
 	} else if l.Watermark {
@@ -844,7 +843,7 @@ func parseISO(from string, parseOpts ParseOptions) (*Expression, error) {
 					},
 					End: &PointInTime{
 						Labeled: &LabeledPointInTime{
-							Latest: true,
+							Now: true,
 						},
 					},
 				},
