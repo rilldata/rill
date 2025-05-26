@@ -3,6 +3,7 @@
   import type { CustomChartComponent } from "./index";
 
   export let component: CustomChartComponent;
+  export let editable: boolean = false;
 
   $: ({ specStore } = component);
 
@@ -13,5 +14,5 @@
   name={component.id}
   spec={vega_spec}
   metricsSQL={metrics_sql}
-  showDataTable
+  showDataTable={editable}
 />

@@ -21,7 +21,6 @@
   let viewVL: View;
   let parsedSpec: VisualizationSpec | null = null;
   let error: string | null = null;
-  let rows;
   let tableColumns: VirtualizedTableColumns[];
   let selectedView = 0; // 0 = Chart, 1 = Data
   let selectedTable = 0; // For switching between tables if multiple queries
@@ -76,7 +75,7 @@
   $: tableColumns = $combinedResults[selectedTable]?.tableSchema;
 </script>
 
-<div class="flex flex-col gap-2 h-full">
+<div class="flex flex-col gap-2 h-full pt-1">
   {#if showDataTable}
     <div class="flex flex-row items-center gap-2 p-1">
       <FieldSwitcher

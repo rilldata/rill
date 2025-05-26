@@ -6,12 +6,12 @@
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import SidebarWrapper from "@rilldata/web-common/features/visual-editing/SidebarWrapper.svelte";
+  import type { BaseCanvasComponent } from "../components/BaseCanvasComponent";
   import VegaConfigInput from "./chart/VegaConfigInput.svelte";
   import ComponentTabs from "./ComponentTabs.svelte";
   import FiltersMapper from "./filters/FiltersMapper.svelte";
   import ParamMapper from "./ParamMapper.svelte";
   import { hasComponentFilters } from "./util";
-  import type { BaseCanvasComponent } from "../components/BaseCanvasComponent";
 
   export let component: BaseCanvasComponent;
 
@@ -43,7 +43,9 @@
 
   {#if componentType && component && rendererProperties}
     {#if currentTab === "options"}
-      <ParamMapper {component} />
+      {#key component}
+        <ParamMapper {component} />
+      {/key}
     {:else if currentTab === "filters"}
       <FiltersMapper {component} />
     {:else if currentTab === "config"}
