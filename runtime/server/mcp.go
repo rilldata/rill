@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -42,6 +43,7 @@ func (s *Server) newMCPServer() *server.SSEServer {
 
 	mcpServer := server.NewMCPServer("rill", version,
 		server.WithToolHandlerMiddleware(observability.MCPToolHandlerMiddleware()),
+		server.WithToolHandlerMiddleware(mcpErrorMappingMiddleware),
 		server.WithToolHandlerMiddleware(middleware.TimeoutMCPToolHandlerMiddleware(func(tool string) time.Duration {
 			switch tool {
 			case "get_metrics_view_time_range_summary", "get_metrics_view_aggregation":
@@ -55,7 +57,6 @@ func (s *Server) newMCPServer() *server.SSEServer {
 		server.WithInstructions(mcpInstructions),
 	)
 
-	mcpServer.AddTool(s.mcpEcho())
 	mcpServer.AddTool(s.mcpListMetricsViews())
 	mcpServer.AddTool(s.mcpGetMetricsView())
 	mcpServer.AddTool(s.mcpGetMetricsViewTimeRangeSummary())
@@ -100,23 +101,6 @@ func (s *Server) newMCPServer() *server.SSEServer {
 	return sseServer
 }
 
-func (s *Server) mcpEcho() (mcp.Tool, server.ToolHandlerFunc) {
-	tool := mcp.NewTool("echo",
-		mcp.WithDescription("Echoes the message back to the caller"),
-		mcp.WithString("message",
-			mcp.Required(),
-			mcp.Description("The message to echo"),
-		),
-	)
-
-	handler := func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-		claims := auth.GetClaims(ctx)
-		return mcp.NewToolResultText(fmt.Sprintf("Echo to subject %q: %v", claims.Subject(), req.GetArguments()["message"])), nil
-	}
-
-	return tool, handler
-}
-
 func (s *Server) mcpListMetricsViews() (mcp.Tool, server.ToolHandlerFunc) {
 	tool := mcp.NewTool("list_metrics_views",
 		mcp.WithDescription("List all metrics views in the current project"),
@@ -128,7 +112,7 @@ func (s *Server) mcpListMetricsViews() (mcp.Tool, server.ToolHandlerFunc) {
 			Kind:       runtime.ResourceKindMetricsView,
 		})
 		if err != nil {
-			return mcpErrorFromGRPC(err)
+			return nil, err
 		}
 
 		var names []string
@@ -159,7 +143,7 @@ func (s *Server) mcpGetMetricsView() (mcp.Tool, server.ToolHandlerFunc) {
 	handler := func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 		name, err := req.RequireString("metrics_view")
 		if err != nil {
-			return mcpNewToolError(err)
+			return nil, err
 		}
 
 		resp, err := s.GetResource(ctx, &runtimev1.GetResourceRequest{
@@ -170,12 +154,12 @@ func (s *Server) mcpGetMetricsView() (mcp.Tool, server.ToolHandlerFunc) {
 			},
 		})
 		if err != nil {
-			return mcpErrorFromGRPC(err)
+			return nil, err
 		}
 
 		mv := resp.Resource.GetMetricsView()
 		if mv == nil || mv.State.ValidSpec == nil {
-			return mcpNewToolErrorf("metrics view %q not valid", name)
+			return nil, fmt.Errorf("metrics view %q not valid", name)
 		}
 
 		return mcpNewToolResultJSON(mv.State.ValidSpec)
@@ -200,12 +184,12 @@ func (s *Server) mcpGetMetricsViewTimeRangeSummary() (mcp.Tool, server.ToolHandl
 		instanceID := mcpInstanceIDFromContext(ctx)
 		name, err := req.RequireString("metrics_view")
 		if err != nil {
-			return mcpNewToolError(err)
+			return nil, err
 		}
 
 		claims := auth.GetClaims(ctx)
 		if !claims.CanInstance(instanceID, auth.ReadMetrics) {
-			return mcpErrorFromGRPC(ErrForbidden)
+			return nil, ErrForbidden
 		}
 
 		res, err := s.runtime.Resolve(ctx, &runtime.ResolveOptions{
@@ -217,13 +201,13 @@ func (s *Server) mcpGetMetricsViewTimeRangeSummary() (mcp.Tool, server.ToolHandl
 			Claims: claims.SecurityClaims(),
 		})
 		if err != nil {
-			return mcpErrorFromGRPC(err)
+			return nil, err
 		}
 		defer res.Close()
 
 		data, err := res.MarshalJSON()
 		if err != nil {
-			return mcpNewToolError(err)
+			return nil, err
 		}
 
 		return mcp.NewToolResultText(string(data)), nil
@@ -299,12 +283,12 @@ Example: Get the total revenue by country, grouped by month:
 		instanceID := mcpInstanceIDFromContext(ctx)
 		metricsProps, ok := req.GetRawArguments().(map[string]any)
 		if !ok {
-			return mcpNewToolErrorf("invalid arguments: expected an object")
+			return nil, errors.New("invalid arguments: expected an object")
 		}
 
 		claims := auth.GetClaims(ctx)
 		if !claims.CanInstance(instanceID, auth.ReadMetrics) {
-			return mcpErrorFromGRPC(ErrForbidden)
+			return nil, ErrForbidden
 		}
 
 		res, err := s.runtime.Resolve(ctx, &runtime.ResolveOptions{
@@ -314,13 +298,13 @@ Example: Get the total revenue by country, grouped by month:
 			Claims:             claims.SecurityClaims(),
 		})
 		if err != nil {
-			return mcpErrorFromGRPC(err)
+			return nil, err
 		}
 		defer res.Close()
 
 		data, err := res.MarshalJSON()
 		if err != nil {
-			return mcpNewToolError(err)
+			return nil, err
 		}
 
 		return mcp.NewToolResultText(string(data)), nil
@@ -363,34 +347,51 @@ func mcpNewToolResultJSON(val any) (*mcp.CallToolResult, error) {
 		data, err = json.Marshal(val)
 	}
 	if err != nil {
-		return nil, fmt.Errorf("internal: failed to marshal metrics view names: %w", err)
+		return nil, mcpNewInternalError(fmt.Errorf("internal: failed to marshal metrics view names: %w", err))
 	}
 	return mcp.NewToolResultText(string(data)), nil
 }
 
-func mcpNewToolError(err error) (*mcp.CallToolResult, error) {
-	return mcp.NewToolResultError(err.Error()), nil
-}
-
-func mcpNewToolErrorf(format string, args ...any) (*mcp.CallToolResult, error) {
-	return mcp.NewToolResultError(fmt.Sprintf(format, args...)), nil
-}
-
-func mcpErrorFromGRPC(err error) (*mcp.CallToolResult, error) {
-	if err == nil {
-		return nil, fmt.Errorf("mcpErrorFromGRPC: nil error")
-	}
-
-	err = mapGRPCError(err)
-
-	if s, ok := status.FromError(err); ok {
-		if s.Code() == codes.Internal {
-			return nil, fmt.Errorf("internal: %s", s.Message())
+func mcpErrorMappingMiddleware(next server.ToolHandlerFunc) server.ToolHandlerFunc {
+	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		res, err := next(ctx, req)
+		if err == nil {
+			return res, nil
 		}
-		msg := fmt.Sprintf("%s: %s", s.Code(), s.Message())
+
+		// Handle internal MCP errors.
+		var internalErr mcpInternalError
+		if errors.As(err, &internalErr) {
+			return nil, internalErr.err
+		}
+
+		// Leverage our gRPC error mapper to avoid duplicating mapping of common errors.
+		err = mapGRPCError(err)
+		if s, ok := status.FromError(err); ok {
+			if s.Code() == codes.Internal {
+				return nil, fmt.Errorf("internal: %s", s.Message())
+			}
+			msg := fmt.Sprintf("%s: %s", s.Code(), s.Message())
+			return mcp.NewToolResultError(msg), nil
+		}
+
+		// Default to returning as a user error.
+		msg := err.Error()
 		return mcp.NewToolResultError(msg), nil
 	}
+}
 
-	msg := err.Error()
-	return mcp.NewToolResultError(msg), nil
+type mcpInternalError struct {
+	err error
+}
+
+func mcpNewInternalError(err error) error {
+	if err == nil {
+		err = fmt.Errorf("internal: nil error")
+	}
+	return mcpInternalError{err: err}
+}
+
+func (e mcpInternalError) Error() string {
+	return fmt.Sprintf("internal: %s", e.err.Error())
 }

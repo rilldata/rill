@@ -2,7 +2,6 @@ package middleware
 
 import (
 	"context"
-	"errors"
 	"time"
 
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
@@ -63,13 +62,7 @@ func TimeoutMCPToolHandlerMiddleware(fn func(tool string) time.Duration) server.
 			ctx, cancel := context.WithTimeout(ctx, duration)
 			defer cancel()
 
-			res, err := next(ctx, req)
-			if err != nil && errors.Is(ctx.Err(), context.DeadlineExceeded) {
-				// In MCP, caller errors should be returned as results, and only internal errors should be returned as errors.
-				// We want to return timeouts as a result error so the client can handle it gracefully.
-				return mcp.NewToolResultError("request timeout"), nil
-			}
-			return res, err
+			return next(ctx, req)
 		}
 	}
 }
