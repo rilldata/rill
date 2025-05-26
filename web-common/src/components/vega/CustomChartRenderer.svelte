@@ -29,12 +29,20 @@
   $: instanceId = $runtime.instanceId;
 
   $: dataQueries = metricsSQL.map((sql) =>
-    createRuntimeServiceQueryResolver(instanceId, {
-      resolver: "metrics_sql",
-      resolverProperties: {
-        sql,
+    createRuntimeServiceQueryResolver(
+      instanceId,
+      {
+        resolver: "metrics_sql",
+        resolverProperties: {
+          sql,
+        },
       },
-    }),
+      {
+        query: {
+          enabled: !!sql,
+        },
+      },
+    ),
   );
 
   $: combinedResults = derived(dataQueries, ($dataQueries) =>
@@ -56,14 +64,11 @@
   }, {});
 
   $: try {
-    if (typeof spec === "string") {
+    if (typeof spec === "string" && spec !== "") {
       parsedSpec = JSON.parse(spec) as VisualizationSpec;
-    } else {
-      parsedSpec = spec ?? null;
     }
   } catch (e: unknown) {
     error = JSON.stringify(e);
-    console.log(e);
   }
 
   // Table data for the selected query
@@ -93,8 +98,12 @@
   <div class="flex-1 flex flex-col min-h-0 min-w-0">
     {#if selectedView === 0}
       <div class="flex-1">
-        {#if error}
-          <div class="text-red-500">
+        {#if !spec}
+          <div class="text-red-500 items-center justify-center">
+            No spec provided
+          </div>
+        {:else if error}
+          <div class="text-red-500 items-center justify-center">
             {error}
           </div>
         {:else if rows && parsedSpec}
