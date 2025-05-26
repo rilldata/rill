@@ -294,6 +294,9 @@ func (s *Server) RevokeUserAuthToken(ctx context.Context, req *adminv1.RevokeUse
 
 	var tokenID string
 	if req.TokenId == "current" { // Special alias for the current token
+		if auth.GetClaims(ctx).OwnerType() != auth.OwnerTypeUser {
+			return nil, status.Error(codes.PermissionDenied, "not authenticated with a user token")
+		}
 		tokenID = auth.GetClaims(ctx).AuthTokenID()
 	} else {
 		token, err := s.admin.DB.FindUserAuthToken(ctx, req.TokenId)
