@@ -30,19 +30,20 @@ type MetricsViewYAML struct {
 	FirstDayOfWeek    uint32           `yaml:"first_day_of_week"`
 	FirstMonthOfYear  uint32           `yaml:"first_month_of_year"`
 	Dimensions        []*struct {
-		Name              string
-		DisplayName       string `yaml:"display_name"`
-		Label             string // Deprecated: use display_name
-		Description       string
-		Column            string
-		Expression        string
-		Property          string // For backwards compatibility
-		Ignore            bool   `yaml:"ignore"` // Deprecated
-		Unnest            bool
-		URI               string
-		LookupTable       string `yaml:"lookup_table"`
-		LookupKeyColumn   string `yaml:"lookup_key_column"`
-		LookupValueColumn string `yaml:"lookup_value_column"`
+		Name                    string
+		DisplayName             string `yaml:"display_name"`
+		Label                   string // Deprecated: use display_name
+		Description             string
+		Column                  string
+		Expression              string
+		Property                string // For backwards compatibility
+		Ignore                  bool   `yaml:"ignore"` // Deprecated
+		Unnest                  bool
+		URI                     string
+		LookupTable             string `yaml:"lookup_table"`
+		LookupKeyColumn         string `yaml:"lookup_key_column"`
+		LookupValueColumn       string `yaml:"lookup_value_column"`
+		LookupDefaultExpression string `yaml:"lookup_default_expression"`
 	}
 	Measures []*struct {
 		Name                string
@@ -598,16 +599,17 @@ func (p *Parser) parseMetricsView(node *Node) error {
 		}
 
 		spec.Dimensions = append(spec.Dimensions, &runtimev1.MetricsViewSpec_Dimension{
-			Name:              dim.Name,
-			DisplayName:       dim.DisplayName,
-			Description:       dim.Description,
-			Column:            dim.Column,
-			Expression:        dim.Expression,
-			Unnest:            dim.Unnest,
-			Uri:               dim.URI,
-			LookupTable:       dim.LookupTable,
-			LookupKeyColumn:   dim.LookupKeyColumn,
-			LookupValueColumn: dim.LookupValueColumn,
+			Name:                    dim.Name,
+			DisplayName:             dim.DisplayName,
+			Description:             dim.Description,
+			Column:                  dim.Column,
+			Expression:              dim.Expression,
+			Unnest:                  dim.Unnest,
+			Uri:                     dim.URI,
+			LookupTable:             dim.LookupTable,
+			LookupKeyColumn:         dim.LookupKeyColumn,
+			LookupValueColumn:       dim.LookupValueColumn,
+			LookupDefaultExpression: dim.LookupDefaultExpression,
 		})
 	}
 
