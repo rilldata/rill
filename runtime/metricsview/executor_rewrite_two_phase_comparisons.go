@@ -59,6 +59,7 @@ func (e *Executor) rewriteTwoPhaseComparisons(ctx context.Context, qry *Query, a
 		Offset:              qry.Offset,
 		TimeZone:            qry.TimeZone,
 		UseDisplayNames:     false,
+		Rows:                false,
 		TimeColumn:          qry.TimeColumn,
 	} //exhaustruct:enforce
 

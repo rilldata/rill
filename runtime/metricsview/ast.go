@@ -1,7 +1,6 @@
 package metricsview
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"strings"
@@ -1400,30 +1399,4 @@ func hasMeasure(n *SelectNode, name string) bool {
 		}
 	}
 	return false
-}
-
-func (a *AST) resolveTimeRange(ctx context.Context, timeRange *TimeRange) (time.Time, time.Time, error) {
-	if timeRange == nil {
-		return time.Time{}, time.Time{}, nil
-	}
-
-	// Use the time column for resolving time ranges
-	timeDim := a.timeColumn
-	if timeDim == "" {
-		timeDim = a.metricsView.TimeDimension
-	}
-
-	// ... rest of the existing code ...
-	return timeRange.Start, timeRange.End, nil
-}
-
-func (a *AST) resolveTimeGrain(ctx context.Context, grain TimeGrain) (string, error) {
-	// Use the time column for resolving time grains
-	timeDim := a.timeColumn
-	if timeDim == "" {
-		timeDim = a.metricsView.TimeDimension
-	}
-
-	// ... rest of the existing code ...
-	return "", nil
 }

@@ -564,6 +564,7 @@ func (e *Executor) executeSearchInDruid(ctx context.Context, qry *SearchQuery, e
 		TimeZone:            "",
 		UseDisplayNames:     false,
 		Rows:                false,
+		TimeColumn:          e.timeColumn,
 	} //exhaustruct:enforce
 
 	if err := e.rewriteQueryTimeRanges(ctx, q, executionTime); err != nil {
