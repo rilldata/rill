@@ -220,6 +220,7 @@ func (s *Server) mcpQueryMetricsView() (mcp.Tool, server.ToolHandlerFunc) {
 	description := `
 Perform an arbitrary aggregation on a metrics view.
 Tip: Use the 'sort' and 'limit' parameters for best results and to avoid large, unbounded result sets.
+Important note: The 'time_range' parameter is inclusive of the start time and exclusive of the end time.
 
 Example: Get the total revenue by country and product category for 2024:
     {

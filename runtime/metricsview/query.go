@@ -389,7 +389,7 @@ const QueryJSONSchema = `
     },
     "time_range": {
       "$ref": "#/$defs/TimeRange",
-      "description": "Time range filter for the query. Note that for large datasets, querying shorter and/or more recent time ranges has significant performance benefits."
+      "description": "Time range filter for the query. Time ranges are inclusive of start time and exclusive of end time. Note that for large datasets, querying shorter and/or more recent time ranges has significant performance benefits."
     },
     "comparison_time_range": {
       "$ref": "#/$defs/TimeRange",
