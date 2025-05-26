@@ -67,7 +67,9 @@ email:
 	testruntime.ReconcileParserAndWait(t, rt, id)
 	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
 
-	_, metricsRes := newMetricsView("mv1", "bar", "__time", []string{"count(*)"}, []string{"country"})
+	_, metricsRes := newMetricsView("mv1", "bar", "__time", []string{"count(*)"}, []dimWithType{
+		{Name: "country", Type: &runtimev1.Type{Code: runtimev1.Type_CODE_STRING, Nullable: true}},
+	})
 	testruntime.RequireResource(t, rt, id, metricsRes)
 
 	a1 := &runtimev1.Resource{
@@ -228,7 +230,9 @@ notify:
 	testruntime.ReconcileParserAndWait(t, rt, id)
 	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
 
-	_, metricsRes := newMetricsView("mv1", "bar", "__time", []string{"count(*)"}, []string{"country"})
+	_, metricsRes := newMetricsView("mv1", "bar", "__time", []string{"count(*)"}, []dimWithType{
+		{Name: "country", Type: &runtimev1.Type{Code: runtimev1.Type_CODE_STRING, Nullable: true}},
+	})
 	testruntime.RequireResource(t, rt, id, metricsRes)
 
 	a1 := &runtimev1.Resource{
@@ -499,7 +503,9 @@ notify:
 	testruntime.ReconcileParserAndWait(t, rt, id)
 	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
 
-	_, metricsRes := newMetricsView("mv1", "bar", "__time", []string{"count(*)"}, []string{"country"})
+	_, metricsRes := newMetricsView("mv1", "bar", "__time", []string{"count(*)"}, []dimWithType{
+		{Name: "country", Type: &runtimev1.Type{Code: runtimev1.Type_CODE_STRING, Nullable: true}},
+	})
 	testruntime.RequireResource(t, rt, id, metricsRes)
 
 	a1 := &runtimev1.Resource{
@@ -573,7 +579,7 @@ SELECT '2024-01-02T00:00:00Z'::TIMESTAMP as __time, 'Sweden' as country
 	require.Contains(t, emails[0].Body, "measure_0")
 }
 
-func newMetricsView(name, model, timeDim string, measures, dimensions []string) (*runtimev1.MetricsView, *runtimev1.Resource) {
+func newMetricsView(name, model, timeDim string, measures []string, dimensions []dimWithType) (*runtimev1.MetricsView, *runtimev1.Resource) {
 	metrics := &runtimev1.MetricsView{
 		Spec: &runtimev1.MetricsViewSpec{
 			Connector:     "duckdb",
@@ -612,14 +618,15 @@ func newMetricsView(name, model, timeDim string, measures, dimensions []string) 
 	}
 	for i, dimension := range dimensions {
 		metrics.Spec.Dimensions[i] = &runtimev1.MetricsViewSpec_Dimension{
-			Name:        dimension,
-			DisplayName: parser.ToDisplayName(dimension),
-			Column:      dimension,
+			Name:        dimension.Name,
+			DisplayName: parser.ToDisplayName(dimension.Name),
+			Column:      dimension.Name,
 		}
 		metrics.State.ValidSpec.Dimensions[i] = &runtimev1.MetricsViewSpec_Dimension{
-			Name:        dimension,
-			DisplayName: parser.ToDisplayName(dimension),
-			Column:      dimension,
+			Name:        dimension.Name,
+			DisplayName: parser.ToDisplayName(dimension.Name),
+			Column:      dimension.Name,
+			Type:        dimension.Type,
 		}
 	}
 	metricsRes := &runtimev1.Resource{
@@ -641,4 +648,9 @@ func must[T any](v T, err error) T {
 		panic(err)
 	}
 	return v
+}
+
+type dimWithType struct {
+	Name string
+	Type *runtimev1.Type
 }
