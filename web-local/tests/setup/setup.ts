@@ -1,13 +1,11 @@
 import type { V1ListResourcesResponse } from "@rilldata/web-common/runtime-client";
 import { spawnAndMatch } from "@rilldata/web-common/tests/utils/spawn";
+import { TestTempDirectory } from "@rilldata/web-common/tests/utils/start-rill-dev";
 import { rmSync } from "fs";
 import { join } from "node:path";
 import treeKill from "tree-kill";
 import { getOpenPort } from "@rilldata/web-common/tests/utils/get-open-port";
-import {
-  BASE_PROJECT_DIRECTORY,
-  test as setup,
-} from "web-local/tests/setup/base";
+import { test as setup } from "web-local/tests/setup/base";
 import { cpSync, readdirSync } from "node:fs";
 import { expect } from "@playwright/test";
 
@@ -22,7 +20,7 @@ setup("should prep projects", async () => {
  */
 async function prepProject(name: string) {
   const TEST_PROJECT_SRC_DIRECTORY = join(TEST_PROJECTS, name);
-  const TEST_PROJECT_DIRECTORY = join(BASE_PROJECT_DIRECTORY, name);
+  const TEST_PROJECT_DIRECTORY = join(TestTempDirectory, "projects", name);
   const TEST_PORT = await getOpenPort();
   const TEST_PORT_GRPC = await getOpenPort();
 

@@ -18,7 +18,6 @@ measures:
   - name: total_records
     label: Total records
     expression: COUNT(*)
-    description: ""
     format_preset: humanize
   - expression: AVG(bid_price)
     name: avg_price_sum
