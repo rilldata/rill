@@ -81,6 +81,8 @@ export const test = base.extend<MyFixtures>({
       "temp",
       "" + TEST_PORT,
     );
+    // Add a default home if cliHome is not provided so that tests always have a different home than the user's home.
+    // This will make sure that login status won't conflicts with dev's login status when run locally.
     const TEST_HOME_DIRECTORY = cliHome ?? join(TestTempDirectory, "home");
 
     // Switch env to "dev" so that this points to the locally started rill cloud
@@ -90,8 +92,7 @@ export const test = base.extend<MyFixtures>({
       /Set default env to "dev"/,
       {
         additionalEnv: {
-          // Override home so that running locally doesn't take the dev's user info by mistake.
-          // This could later be used to add login/logout tests.
+          // Override home so that the instance is isolated for the provided cliHome.
           HOME: TEST_HOME_DIRECTORY,
         },
       },
@@ -117,8 +118,8 @@ export const test = base.extend<MyFixtures>({
       shell: true,
       env: {
         ...process.env,
-        // Override home so that running locally doesn't take the dev's user info by mistake.
-        // This could later be used to add login/logout tests.
+        // Override home so that the instance is isolated for the provided cliHome.
+        // Login status will be siloed for tests using the same cliHome.
         HOME: TEST_HOME_DIRECTORY,
       },
     });
