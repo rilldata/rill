@@ -13,7 +13,7 @@ import (
 
 // rewriteQueryTimeRanges rewrites the time ranges in the query to fixed start/end timestamps.
 func (e *Executor) rewriteQueryTimeRanges(ctx context.Context, qry *Query, executionTime *time.Time) error {
-	if e.metricsView.TimeDimension == "" || e.timeColumn == "" {
+	if e.metricsView.TimeDimension == "" && e.timeColumn == "" {
 		return nil
 	}
 
