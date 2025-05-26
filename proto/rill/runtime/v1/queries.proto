@@ -292,8 +292,13 @@ message ExportRequest {
   string instance_id = 1;
   int64 limit = 2;
   ExportFormat format = 3;
+  bool include_header = 6;
   Query query = 4;
   string baked_query = 5 [deprecated = true];
+  string organization = 7;
+  string project = 8;
+  string dashboard = 9;
+  string dashboard_url = 10;
 }
 
 message ExportResponse {
@@ -305,7 +310,12 @@ message ExportReportRequest {
   string report = 2;
   int64 limit = 3;
   ExportFormat format = 4;
+  bool include_header = 6;
   google.protobuf.Timestamp execution_time = 5;
+  string organization = 7;
+  string project = 8;
+  string dashboard = 9;
+  string dashboard_url = 10;
 }
 
 message ExportReportResponse {

@@ -5340,6 +5340,8 @@ definitions:
         format: uint64
       exportFormat:
         $ref: '#/definitions/v1ExportFormat'
+      exportIncludeHeader:
+        type: boolean
       emailRecipients:
         type: array
         items:

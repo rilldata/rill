@@ -1026,6 +1026,7 @@ export interface V1ReportOptions {
   queryArgsJson?: string;
   exportLimit?: string;
   exportFormat?: V1ExportFormat;
+  exportIncludeHeader?: boolean;
   emailRecipients?: string[];
   slackUsers?: string[];
   slackChannels?: string[];

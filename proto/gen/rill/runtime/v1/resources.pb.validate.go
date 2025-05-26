@@ -5903,6 +5903,8 @@ func (m *ReportSpec) validate(all bool) error {
 
 	// no validation rules for ExportFormat
 
+	// no validation rules for ExportIncludeHeader
+
 	for idx, item := range m.GetNotifiers() {
 		_, _ = idx, item
 
@@ -11671,6 +11673,8 @@ func (m *MetricsViewSpec_Dimension) validate(all bool) error {
 	// no validation rules for LookupKeyColumn
 
 	// no validation rules for LookupValueColumn
+
+	// no validation rules for LookupDefaultExpression
 
 	if all {
 		switch v := interface{}(m.GetType()).(type) {

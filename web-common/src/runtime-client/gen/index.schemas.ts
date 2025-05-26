@@ -59,6 +59,7 @@ export interface MetricsViewSpecDimension {
   lookupTable?: string;
   lookupKeyColumn?: string;
   lookupValueColumn?: string;
+  lookupDefaultExpression?: string;
   type?: Runtimev1Type;
 }
 
@@ -1851,6 +1852,7 @@ export interface V1ReportSpec {
   queryArgsJson?: string;
   exportLimit?: string;
   exportFormat?: V1ExportFormat;
+  exportIncludeHeader?: boolean;
   notifiers?: V1Notifier[];
   annotations?: V1ReportSpecAnnotations;
   /** If true, will use the lowest watermark of its refs instead of the trigger time. */
@@ -2472,8 +2474,13 @@ export type QueryServiceColumnDescriptiveStatisticsParams = {
 export type QueryServiceExportBody = {
   limit?: string;
   format?: V1ExportFormat;
+  includeHeader?: boolean;
   query?: V1Query;
   bakedQuery?: string;
+  organization?: string;
+  project?: string;
+  dashboard?: string;
+  dashboardUrl?: string;
 };
 
 export type QueryServiceMetricsViewAggregationBody = {
@@ -2747,7 +2754,12 @@ export type RuntimeServiceQueryResolverBody = {
 export type QueryServiceExportReportBody = {
   limit?: string;
   format?: V1ExportFormat;
+  includeHeader?: boolean;
   executionTime?: string;
+  organization?: string;
+  project?: string;
+  dashboard?: string;
+  dashboardUrl?: string;
 };
 
 export type RuntimeServiceGetResourceParams = {
