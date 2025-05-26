@@ -28,6 +28,16 @@ var GlobalProjectParserName = &runtimev1.ResourceName{Kind: ResourceKindProjectP
 // instanceHeartbeatInterval is the interval at which instance heartbeat events are emitted.
 const instanceHeartbeatInterval = time.Minute
 
+// DefaultInstanceID returns the instance ID for the default instance.
+// It returns false on runtimes with none or multiple instances.
+func (r *Runtime) DefaultInstanceID() (string, bool) {
+	inst, ok := r.registryCache.getDefault()
+	if !ok {
+		return "", false
+	}
+	return inst.ID, true
+}
+
 // Instances returns all instances managed by the runtime.
 func (r *Runtime) Instances(ctx context.Context) ([]*drivers.Instance, error) {
 	return r.registryCache.list()
@@ -250,6 +260,19 @@ func (r *registryCache) get(instanceID string) (*drivers.Instance, error) {
 	}
 
 	return iwc.instance, nil
+}
+
+func (r *registryCache) getDefault() (*drivers.Instance, bool) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	if len(r.instances) == 1 {
+		for _, iwc := range r.instances {
+			return iwc.instance, true
+		}
+	}
+
+	return nil, false
 }
 
 func (r *registryCache) getController(ctx context.Context, instanceID string) (*Controller, error) {
