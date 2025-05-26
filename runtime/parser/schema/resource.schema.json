@@ -268,10 +268,12 @@
                 },
                 "request_schema": {
                   "type": "object",
+                  "description": "JSON schema for the request body (use nested YAML instead of a JSON string)",
                   "additionalProperties": true
                 },
                 "response_schema": {
                   "type": "object",
+                  "description": "JSON schema for the response body (use nested YAML instead of a JSON string)",
                   "additionalProperties": true
                 }
               }

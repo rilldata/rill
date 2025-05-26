@@ -26,7 +26,7 @@ func ParseJSONParameters(jsonData string) (openapi3.Parameters, error) {
 // Where JSON schema uses `$defs` inside the schema, OpenAPI uses a global `components.schemas` section that is shared by all schemas in the document.
 // We therefore need to extract the `$defs` into independent OpenAPI schemas, and then rewrite the `$ref` paths in the JSON schema to reference `#/components/schemas“ instead of `#/$defs`.
 //
-// Since the OpenAPI definitions have global scope, we also prefix the definition names a `namePrefix` to avoid collisions.
+// Since the OpenAPI definitions have global scope, we also prefix the definition names with `namePrefix` to avoid collisions.
 func ParseJSONSchema(namePrefix, jsonSchema string) (*openapi3.Schema, map[string]*openapi3.SchemaRef, error) {
 	// Validate it is a valid JSON schema
 	_, err := jsonschema.CompileString("schema", jsonSchema)

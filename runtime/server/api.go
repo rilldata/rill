@@ -224,14 +224,14 @@ func (s *Server) generateOpenAPISpec(ctx context.Context, instanceID string, api
 	}
 
 	for name, api := range apis {
-		pathItem, pathComponents, err := s.generatePathItemSpec(name, api)
+		pathItem, componentsForPath, err := s.generatePathItemSpec(name, api)
 		if err != nil {
 			return nil, err
 		}
 
 		spec.Paths.Set(fmt.Sprintf("/%s", name), pathItem)
 
-		for k, v := range pathComponents {
+		for k, v := range componentsForPath {
 			if spec.Components == nil {
 				spec.Components = &openapi3.Components{}
 			}
@@ -283,7 +283,7 @@ func (s *Server) generatePathItemSpec(name string, api *runtimev1.API) (*openapi
 		}
 	}
 
-	var schema *openapi3.Schema
+	var responseSchema *openapi3.Schema
 	if api.Spec.OpenapiResponseSchemaJson != "" {
 		s, cs, err := openapiutil.ParseJSONSchema(toPascalCase(name), api.Spec.OpenapiRequestSchemaJson)
 		if err != nil {
@@ -294,9 +294,9 @@ func (s *Server) generatePathItemSpec(name string, api *runtimev1.API) (*openapi
 			components[k] = v
 		}
 
-		schema = s
+		responseSchema = s
 	} else {
-		schema = &openapi3.Schema{
+		responseSchema = &openapi3.Schema{
 			Type: &openapi3.Types{"object"},
 		}
 	}
@@ -313,7 +313,7 @@ func (s *Server) generatePathItemSpec(name string, api *runtimev1.API) (*openapi
 					openapi3.NewContentWithJSONSchema(&openapi3.Schema{
 						Type: &openapi3.Types{"array"},
 						Items: &openapi3.SchemaRef{
-							Value: schema,
+							Value: responseSchema,
 						},
 					}),
 				),
