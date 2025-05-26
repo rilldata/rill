@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { page } from "$app/stores";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
@@ -14,6 +15,7 @@
   import { onMount } from "svelte";
   import { get } from "svelte/store";
   import { runtime } from "../../runtime-client/runtime-store";
+  import { getStateManagers } from "../dashboards/state-managers/state-managers";
   import type TScheduledReportDialog from "../scheduled-reports/ScheduledReportDialog.svelte";
 
   export let disabled: boolean = false;
@@ -37,7 +39,12 @@
   }
 
   const exportDash = createQueryServiceExport();
-  const { reports } = featureFlags;
+  const { reports, readOnly } = featureFlags;
+
+  $: ({ organization, project } = $page.params);
+
+  const StateManagers = getStateManagers();
+  const { validSpecStore } = StateManagers;
 
   async function handleExport(format: V1ExportFormat, includeHeader = false) {
     const result = await $exportDash.mutateAsync({
@@ -46,6 +53,14 @@
         query: exportQuery,
         format,
         includeHeader,
+        // Include metadata for CSV/XLSX exports in Cloud context.
+        ...(includeHeader &&
+          $readOnly && {
+            project,
+            organization,
+            dashboard: $validSpecStore.data?.explore?.displayName,
+            dashboardUrl: window.location.href,
+          }),
       },
     });
     const downloadUrl = `${get(runtime).host}${result.downloadUrlPath}`;
@@ -92,12 +107,14 @@
     >
       Export as CSV
     </DropdownMenu.Item>
-    <DropdownMenu.Item
-      on:click={() => handleExport(V1ExportFormat.EXPORT_FORMAT_CSV, true)}
-      disabled={!exportQuery}
-    >
-      Export as CSV with metadata
-    </DropdownMenu.Item>
+    {#if !workspace}
+      <DropdownMenu.Item
+        on:click={() => handleExport(V1ExportFormat.EXPORT_FORMAT_CSV, true)}
+        disabled={!exportQuery}
+      >
+        Export as CSV with metadata
+      </DropdownMenu.Item>
+    {/if}
     <DropdownMenu.Item
       on:click={() => handleExport(V1ExportFormat.EXPORT_FORMAT_PARQUET)}
       disabled={!exportQuery}
@@ -111,13 +128,14 @@
     >
       Export as XLSX
     </DropdownMenu.Item>
-    <DropdownMenu.Item
-      on:click={() => handleExport(V1ExportFormat.EXPORT_FORMAT_XLSX, true)}
-      disabled={!exportQuery}
-    >
-      Export as XLSX with metadata
-    </DropdownMenu.Item>
-
+    {#if !workspace}
+      <DropdownMenu.Item
+        on:click={() => handleExport(V1ExportFormat.EXPORT_FORMAT_XLSX, true)}
+        disabled={!exportQuery}
+      >
+        Export as XLSX with metadata
+      </DropdownMenu.Item>
+    {/if}
     {#if includeScheduledReport && $reports && exploreName}
       <DropdownMenu.Item
         on:click={() => (showScheduledReportDialog = true)}
