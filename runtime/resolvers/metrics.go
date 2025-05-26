@@ -33,6 +33,7 @@ type metricsResolver struct {
 type metricsResolverArgs struct {
 	Priority      int        `mapstructure:"priority"`
 	ExecutionTime *time.Time `mapstructure:"execution_time"`
+	TimeColumn    string     `mapstructure:"time_column"` // if empty, the default time column in mv is used
 }
 
 func newMetrics(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolver, error) {
@@ -75,8 +76,7 @@ func newMetrics(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Res
 		return nil, runtime.ErrForbidden
 	}
 
-	// not setting timeColumn as a relevant time filter if needed will be part of the query
-	executor, err := metricsview.NewExecutor(ctx, opts.Runtime, opts.InstanceID, mv, res.GetMetricsView().State.Streaming, security, args.Priority, "")
+	executor, err := metricsview.NewExecutor(ctx, opts.Runtime, opts.InstanceID, mv, res.GetMetricsView().State.Streaming, security, args.Priority, args.TimeColumn)
 	if err != nil {
 		return nil, err
 	}
@@ -88,7 +88,7 @@ func newMetrics(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Res
 		query:          qry,
 		args:           args,
 		claims:         opts.Claims,
-		metricsHasTime: mv.TimeDimension != "",
+		metricsHasTime: mv.TimeDimension != "" || args.TimeColumn != "",
 	}, nil
 }
 
@@ -128,7 +128,7 @@ func (r *metricsResolver) Validate(ctx context.Context) error {
 
 func (r *metricsResolver) ResolveInteractive(ctx context.Context) (runtime.ResolverResult, error) {
 	if r.metricsHasTime {
-		tsRes, err := resolveTimestampResult(ctx, r.runtime, r.instanceID, r.query.MetricsView, r.claims, r.args.Priority)
+		tsRes, err := resolveTimestampResult(ctx, r.runtime, r.instanceID, r.query.MetricsView, r.args.TimeColumn, r.claims, r.args.Priority)
 		if err != nil {
 			return nil, err
 		}
