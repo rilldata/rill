@@ -219,10 +219,6 @@ func (b exprExportBuilder) writeBinaryCondition(exprs []*Expression, op Operator
 	return nil
 }
 
-func (b exprExportBuilder) writeByte(v byte) {
-	_ = b.WriteByte(v)
-}
-
 func (b exprExportBuilder) writeString(s string) {
 	_, _ = b.WriteString(s)
 }
