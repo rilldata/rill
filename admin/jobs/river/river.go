@@ -90,6 +90,9 @@ func New(ctx context.Context, dsn string, adm *admin.Service) (jobs.Client, erro
 	river.AddWorker(workers, &DeleteOrgWorker{admin: adm, logger: billingLogger})
 	river.AddWorker(workers, &HibernateInactiveOrgsWorker{admin: adm, logger: billingLogger})
 
+	// managed github repo cleanup
+	river.AddWorker(workers, &deleteUnusedGithubReposWorker{admin: adm, logger: adm.Logger})
+
 	periodicJobs := []*river.PeriodicJob{
 		// NOTE: Add new periodic jobs here
 		newPeriodicJob(&ValidateDeploymentsArgs{}, "*/30 * * * *", true),         // half-hourly
@@ -98,6 +101,7 @@ func New(ctx context.Context, dsn string, adm *admin.Service) (jobs.Client, erro
 		newPeriodicJob(&TrialEndCheckArgs{}, "10 1 * * *", true),                 // daily at 1:10am UTC
 		newPeriodicJob(&TrialGracePeriodCheckArgs{}, "15 1 * * *", true),         // daily at 1:15am UTC
 		newPeriodicJob(&SubscriptionCancellationCheckArgs{}, "20 1 * * *", true), // daily at 1:20am UTC
+		newPeriodicJob(&deleteUnusedGithubReposArgs{}, "0 */6 * * *", true),      // every 6 hours
 		newPeriodicJob(&HibernateInactiveOrgsArgs{}, "0 7 * * 1", true),          // Monday at 7:00am UTC
 	}
 

@@ -2492,6 +2492,8 @@ func (m *ModelSpec) validate(all bool) error {
 		}
 	}
 
+	// no validation rules for ChangeMode
+
 	// no validation rules for Trigger
 
 	// no validation rules for TriggerFull
@@ -11669,6 +11671,8 @@ func (m *MetricsViewSpec_Dimension) validate(all bool) error {
 	// no validation rules for LookupKeyColumn
 
 	// no validation rules for LookupValueColumn
+
+	// no validation rules for LookupDefaultExpression
 
 	if len(errors) > 0 {
 		return MetricsViewSpec_DimensionMultiError(errors)

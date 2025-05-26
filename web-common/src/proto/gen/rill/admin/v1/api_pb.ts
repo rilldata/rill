@@ -3944,6 +3944,11 @@ export class SetOrganizationMemberUserRoleRequest extends Message<SetOrganizatio
    */
   role = "";
 
+  /**
+   * @generated from field: bool superuser_force_access = 4;
+   */
+  superuserForceAccess = false;
+
   constructor(data?: PartialMessage<SetOrganizationMemberUserRoleRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -3955,6 +3960,7 @@ export class SetOrganizationMemberUserRoleRequest extends Message<SetOrganizatio
     { no: 1, name: "organization", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "email", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "role", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "superuser_force_access", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SetOrganizationMemberUserRoleRequest {
@@ -9068,9 +9074,116 @@ export class ConnectProjectToGithubResponse extends Message<ConnectProjectToGith
 }
 
 /**
- * @generated from message rill.admin.v1.UploadProjectAssetsRequest
+ * @generated from message rill.admin.v1.CreateManagedGitRepoRequest
  */
-export class UploadProjectAssetsRequest extends Message<UploadProjectAssetsRequest> {
+export class CreateManagedGitRepoRequest extends Message<CreateManagedGitRepoRequest> {
+  /**
+   * @generated from field: string organization = 1;
+   */
+  organization = "";
+
+  /**
+   * name of the repo to create. 
+   * Note: The final name will be suffixed with a random string to ensure uniqueness.
+   *
+   * @generated from field: string name = 2;
+   */
+  name = "";
+
+  constructor(data?: PartialMessage<CreateManagedGitRepoRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.CreateManagedGitRepoRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "organization", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateManagedGitRepoRequest {
+    return new CreateManagedGitRepoRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): CreateManagedGitRepoRequest {
+    return new CreateManagedGitRepoRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): CreateManagedGitRepoRequest {
+    return new CreateManagedGitRepoRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: CreateManagedGitRepoRequest | PlainMessage<CreateManagedGitRepoRequest> | undefined, b: CreateManagedGitRepoRequest | PlainMessage<CreateManagedGitRepoRequest> | undefined): boolean {
+    return proto3.util.equals(CreateManagedGitRepoRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.CreateManagedGitRepoResponse
+ */
+export class CreateManagedGitRepoResponse extends Message<CreateManagedGitRepoResponse> {
+  /**
+   * @generated from field: string remote = 1;
+   */
+  remote = "";
+
+  /**
+   * @generated from field: string username = 2;
+   */
+  username = "";
+
+  /**
+   * @generated from field: string password = 3;
+   */
+  password = "";
+
+  /**
+   * @generated from field: string default_branch = 4;
+   */
+  defaultBranch = "";
+
+  /**
+   * @generated from field: google.protobuf.Timestamp password_expires_at = 5;
+   */
+  passwordExpiresAt?: Timestamp;
+
+  constructor(data?: PartialMessage<CreateManagedGitRepoResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.CreateManagedGitRepoResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "remote", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "username", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "password", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "default_branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "password_expires_at", kind: "message", T: Timestamp },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateManagedGitRepoResponse {
+    return new CreateManagedGitRepoResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): CreateManagedGitRepoResponse {
+    return new CreateManagedGitRepoResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): CreateManagedGitRepoResponse {
+    return new CreateManagedGitRepoResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: CreateManagedGitRepoResponse | PlainMessage<CreateManagedGitRepoResponse> | undefined, b: CreateManagedGitRepoResponse | PlainMessage<CreateManagedGitRepoResponse> | undefined): boolean {
+    return proto3.util.equals(CreateManagedGitRepoResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.DisconnectProjectFromGithubRequest
+ */
+export class DisconnectProjectFromGithubRequest extends Message<DisconnectProjectFromGithubRequest> {
   /**
    * @generated from field: string organization = 1;
    */
@@ -9081,63 +9194,63 @@ export class UploadProjectAssetsRequest extends Message<UploadProjectAssetsReque
    */
   project = "";
 
-  constructor(data?: PartialMessage<UploadProjectAssetsRequest>) {
+  constructor(data?: PartialMessage<DisconnectProjectFromGithubRequest>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.admin.v1.UploadProjectAssetsRequest";
+  static readonly typeName = "rill.admin.v1.DisconnectProjectFromGithubRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "organization", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "project", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UploadProjectAssetsRequest {
-    return new UploadProjectAssetsRequest().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DisconnectProjectFromGithubRequest {
+    return new DisconnectProjectFromGithubRequest().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): UploadProjectAssetsRequest {
-    return new UploadProjectAssetsRequest().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): DisconnectProjectFromGithubRequest {
+    return new DisconnectProjectFromGithubRequest().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): UploadProjectAssetsRequest {
-    return new UploadProjectAssetsRequest().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): DisconnectProjectFromGithubRequest {
+    return new DisconnectProjectFromGithubRequest().fromJsonString(jsonString, options);
   }
 
-  static equals(a: UploadProjectAssetsRequest | PlainMessage<UploadProjectAssetsRequest> | undefined, b: UploadProjectAssetsRequest | PlainMessage<UploadProjectAssetsRequest> | undefined): boolean {
-    return proto3.util.equals(UploadProjectAssetsRequest, a, b);
+  static equals(a: DisconnectProjectFromGithubRequest | PlainMessage<DisconnectProjectFromGithubRequest> | undefined, b: DisconnectProjectFromGithubRequest | PlainMessage<DisconnectProjectFromGithubRequest> | undefined): boolean {
+    return proto3.util.equals(DisconnectProjectFromGithubRequest, a, b);
   }
 }
 
 /**
- * @generated from message rill.admin.v1.UploadProjectAssetsResponse
+ * @generated from message rill.admin.v1.DisconnectProjectFromGithubResponse
  */
-export class UploadProjectAssetsResponse extends Message<UploadProjectAssetsResponse> {
-  constructor(data?: PartialMessage<UploadProjectAssetsResponse>) {
+export class DisconnectProjectFromGithubResponse extends Message<DisconnectProjectFromGithubResponse> {
+  constructor(data?: PartialMessage<DisconnectProjectFromGithubResponse>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.admin.v1.UploadProjectAssetsResponse";
+  static readonly typeName = "rill.admin.v1.DisconnectProjectFromGithubResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UploadProjectAssetsResponse {
-    return new UploadProjectAssetsResponse().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DisconnectProjectFromGithubResponse {
+    return new DisconnectProjectFromGithubResponse().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): UploadProjectAssetsResponse {
-    return new UploadProjectAssetsResponse().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): DisconnectProjectFromGithubResponse {
+    return new DisconnectProjectFromGithubResponse().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): UploadProjectAssetsResponse {
-    return new UploadProjectAssetsResponse().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): DisconnectProjectFromGithubResponse {
+    return new DisconnectProjectFromGithubResponse().fromJsonString(jsonString, options);
   }
 
-  static equals(a: UploadProjectAssetsResponse | PlainMessage<UploadProjectAssetsResponse> | undefined, b: UploadProjectAssetsResponse | PlainMessage<UploadProjectAssetsResponse> | undefined): boolean {
-    return proto3.util.equals(UploadProjectAssetsResponse, a, b);
+  static equals(a: DisconnectProjectFromGithubResponse | PlainMessage<DisconnectProjectFromGithubResponse> | undefined, b: DisconnectProjectFromGithubResponse | PlainMessage<DisconnectProjectFromGithubResponse> | undefined): boolean {
+    return proto3.util.equals(DisconnectProjectFromGithubResponse, a, b);
   }
 }
 
@@ -9155,6 +9268,11 @@ export class GetCloneCredentialsRequest extends Message<GetCloneCredentialsReque
    */
   project = "";
 
+  /**
+   * @generated from field: bool superuser_force_access = 3;
+   */
+  superuserForceAccess = false;
+
   constructor(data?: PartialMessage<GetCloneCredentialsRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -9165,6 +9283,7 @@ export class GetCloneCredentialsRequest extends Message<GetCloneCredentialsReque
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "organization", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "project", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "superuser_force_access", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetCloneCredentialsRequest {
@@ -9204,6 +9323,11 @@ export class GetCloneCredentialsResponse extends Message<GetCloneCredentialsResp
   gitPassword = "";
 
   /**
+   * @generated from field: google.protobuf.Timestamp git_password_expires_at = 7;
+   */
+  gitPasswordExpiresAt?: Timestamp;
+
+  /**
    * @generated from field: string git_subpath = 4;
    */
   gitSubpath = "";
@@ -9231,6 +9355,7 @@ export class GetCloneCredentialsResponse extends Message<GetCloneCredentialsResp
     { no: 1, name: "git_repo_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "git_username", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "git_password", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 7, name: "git_password_expires_at", kind: "message", T: Timestamp },
     { no: 4, name: "git_subpath", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "git_prod_branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "archive_download_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
@@ -9849,11 +9974,6 @@ export class PullVirtualRepoRequest extends Message<PullVirtualRepoRequest> {
   projectId = "";
 
   /**
-   * @generated from field: string branch = 2;
-   */
-  branch = "";
-
-  /**
    * @generated from field: uint32 page_size = 3;
    */
   pageSize = 0;
@@ -9872,7 +9992,6 @@ export class PullVirtualRepoRequest extends Message<PullVirtualRepoRequest> {
   static readonly typeName = "rill.admin.v1.PullVirtualRepoRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "project_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "page_size", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 4, name: "page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
@@ -9947,11 +10066,6 @@ export class GetReportMetaRequest extends Message<GetReportMetaRequest> {
   projectId = "";
 
   /**
-   * @generated from field: string branch = 2;
-   */
-  branch = "";
-
-  /**
    * @generated from field: string report = 3;
    */
   report = "";
@@ -9995,7 +10109,6 @@ export class GetReportMetaRequest extends Message<GetReportMetaRequest> {
   static readonly typeName = "rill.admin.v1.GetReportMetaRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "project_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "report", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "owner_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "execution_time", kind: "message", T: Timestamp },
@@ -10124,11 +10237,6 @@ export class GetAlertMetaRequest extends Message<GetAlertMetaRequest> {
   projectId = "";
 
   /**
-   * @generated from field: string branch = 2;
-   */
-  branch = "";
-
-  /**
    * @generated from field: string alert = 3;
    */
   alert = "";
@@ -10164,7 +10272,6 @@ export class GetAlertMetaRequest extends Message<GetAlertMetaRequest> {
   static readonly typeName = "rill.admin.v1.GetAlertMetaRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "project_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "alert", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "annotations", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
     { no: 5, name: "query_for_user_id", kind: "scalar", T: 9 /* ScalarType.STRING */, oneof: "query_for" },
@@ -12807,6 +12914,13 @@ export class Project extends Message<Project> {
   githubUrl = "";
 
   /**
+   * managed_git_id is set if the project is connected to a rill-managed git repo.
+   *
+   * @generated from field: string managed_git_id = 24;
+   */
+  managedGitId = "";
+
+  /**
    * @generated from field: string subpath = 17;
    */
   subpath = "";
@@ -12890,6 +13004,7 @@ export class Project extends Message<Project> {
     { no: 22, name: "created_by_user_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 7, name: "provisioner", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 8, name: "github_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 24, name: "managed_git_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 17, name: "subpath", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 9, name: "prod_branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 23, name: "archive_asset_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },

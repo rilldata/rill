@@ -76,8 +76,7 @@ var spec = drivers.Spec{
 			Required:    true,
 		},
 	},
-	ImplementsCatalog: true,
-	ImplementsOLAP:    true,
+	ImplementsOLAP: true,
 }
 
 var motherduckSpec = drivers.Spec{
@@ -431,6 +430,16 @@ func (c *connection) AsNotifier(properties map[string]any) (drivers.Notifier, er
 	return nil, drivers.ErrNotNotifier
 }
 
+// Migrate implements drivers.Handle.
+func (c *connection) Migrate(ctx context.Context) error {
+	return nil
+}
+
+// MigrationStatus implements drivers.Handle.
+func (c *connection) MigrationStatus(ctx context.Context) (int, int, error) {
+	return 0, 0, nil
+}
+
 // reopenDB opens the DuckDB handle anew. If c.db is already set, it closes the existing handle first.
 func (c *connection) reopenDB(ctx context.Context) error {
 	// If c.db is already open, close it first
@@ -464,7 +473,6 @@ func (c *connection) reopenDB(ctx context.Context) error {
 		"LOAD 'httpfs'",
 		"SET GLOBAL timezone='UTC'",
 		"SET GLOBAL old_implicit_casting = true", // Implicit Cast to VARCHAR
-		"SET GLOBAL allow_community_extensions = false", // This locks the configuration, so it can't later be enabled.
 	)
 
 	dataDir, err := c.storage.DataDir()

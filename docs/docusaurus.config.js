@@ -6,6 +6,8 @@ const { themes } = require('prism-react-renderer');
 const lightCodeTheme = themes.github;
 const darkCodeTheme = themes.dracula;
 
+const llmsTxtPlugin = require('./plugins/llms-txt-plugin');
+
 const def = require("redocusaurus");
 def;
 
@@ -44,7 +46,7 @@ const config = {
           editUrl:
             "https://github.com/rilldata/rill/blob/main/docs/",
         },
-  
+
         blog: {
           routeBasePath: 'notes',
           blogTitle: 'Release Notes',
@@ -114,7 +116,7 @@ const config = {
             position: "left",
             label: "Reference",
           },
-         
+
           {
             label: "Release Notes",
             to: "notes",
@@ -154,6 +156,8 @@ const config = {
     }),
 
   plugins: [
+    // @ts-ignore
+    llmsTxtPlugin,
     'docusaurus-plugin-sass',
     [
       require.resolve('docusaurus-gtm-plugin'),

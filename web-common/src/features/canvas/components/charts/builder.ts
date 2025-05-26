@@ -16,7 +16,7 @@ import type { Config } from "vega-lite";
 import type {
   ColorDef,
   Field,
-  PositionDef,
+  PositionFieldDef,
 } from "vega-lite/build/src/channeldef";
 import type { Encoding } from "vega-lite/build/src/encoding";
 import type { TopLevelParameter } from "vega-lite/build/src/spec/toplevel";
@@ -51,7 +51,7 @@ export function createSingleLayerBaseSpec(
 export function createPositionEncoding(
   field: FieldConfig | undefined,
   data: ChartDataResult,
-): PositionDef<Field> {
+): PositionFieldDef<Field> {
   if (!field) return {};
   const metaData = data.fields[field.field];
   return {

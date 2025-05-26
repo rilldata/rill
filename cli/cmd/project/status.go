@@ -44,12 +44,17 @@ func StatusCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 
+			var githubURL string
+			if proj.Project.ManagedGitId == "" {
+				githubURL = proj.Project.GithubUrl
+			}
+
 			// 1. Print project info
 			ch.PrintfSuccess("Project info\n\n")
 			fmt.Printf("  Name: %s\n", proj.Project.Name)
 			fmt.Printf("  Organization: %v\n", proj.Project.OrgName)
 			fmt.Printf("  Public: %v\n", proj.Project.Public)
-			fmt.Printf("  Github: %v\n", proj.Project.GithubUrl)
+			fmt.Printf("  Github: %v\n", githubURL)
 			fmt.Printf("  Created: %s\n", proj.Project.CreatedOn.AsTime().Local().Format(time.RFC3339))
 			fmt.Printf("  Updated: %s\n", proj.Project.UpdatedOn.AsTime().Local().Format(time.RFC3339))
 

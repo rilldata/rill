@@ -349,7 +349,7 @@ func (d Dialect) MetricsViewDimensionExpression(dimension *runtimev1.MetricsView
 		} else {
 			return "", fmt.Errorf("dimension %q has a lookup table but no column or expression defined", dimension.Name)
 		}
-		return d.LookupExpr(dimension.LookupTable, dimension.LookupValueColumn, keyExpr)
+		return d.LookupExpr(dimension.LookupTable, dimension.LookupValueColumn, keyExpr, dimension.LookupDefaultExpression)
 	}
 
 	if dimension.Expression != "" {
@@ -767,9 +767,12 @@ func (d Dialect) GetTimeExpr(t time.Time) (bool, string) {
 	}
 }
 
-func (d Dialect) LookupExpr(lookupTable, lookupValueColumn, lookupKeyExpr string) (string, error) {
+func (d Dialect) LookupExpr(lookupTable, lookupValueColumn, lookupKeyExpr, lookupDefaultExpression string) (string, error) {
 	switch d {
 	case DialectClickHouse:
+		if lookupDefaultExpression != "" {
+			return fmt.Sprintf("dictGetOrDefault('%s', '%s', %s, %s)", lookupTable, lookupValueColumn, lookupKeyExpr, lookupDefaultExpression), nil
+		}
 		return fmt.Sprintf("dictGet('%s', '%s', %s)", lookupTable, lookupValueColumn, lookupKeyExpr), nil
 	default:
 		// Druid already does reverse lookup inherently so defining lookup expression directly as dimension expression should be ok.

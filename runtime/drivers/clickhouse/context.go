@@ -45,6 +45,7 @@ func (c *Connection) sessionAwareContext(ctx context.Context) context.Context {
 	return ctx
 }
 
+// contextWithQueryID adds the current trace ID as a query ID to the context.
 func contextWithQueryID(ctx context.Context) context.Context {
 	traceID := observability.TraceID(ctx)
 	if traceID == "" {
