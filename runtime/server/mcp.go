@@ -26,12 +26,12 @@ import (
 
 const mcpInstructions = `
 ## Rill MCP Server
-This server exposes APIs for querying **metrics views** (Rill's analytical units).
+This server exposes APIs for querying **metrics views**, which represent Rill's metrics layer.
 ### Workflow Overview
-1. **List Metrics Views:** Use "list_metrics_views" to discover available metrics views in a project.
-2. **Get Metrics View Spec:** Use "get_metrics_view" to fetch a metrics view's spec. This is important to understand all the dimensions and measures in the metrics view.
-3. **Get Time Range:** Use "get_metrics_view_time_range_summary" to obtain the available time range for a metrics view. This is important to understand what time range the data spans.
-4. **Query Aggregations:** Use "get_metrics_view_aggregation" to run queries.
+1. **List metrics views:** Use "list_metrics_views" to discover available metrics views in the project.
+2. **Get metrics view spec:** Use "get_metrics_view" to fetch a metrics view's specification. This is important to understand all the dimensions and measures in a metrics view.
+3. **Query the time range:** Use "query_metrics_view_time_range" to obtain the available time range for a metrics view. This is important to understand what time range the data spans.
+4. **Query the metrics:** Use "query_metrics_view" to run queries to get aggregated results.
 In the workflow, do not proceed with the next step until the previous step has been completed. If the information from the previous step is already known (let's say for subsequent queries), you can skip it.
 `
 
@@ -46,7 +46,7 @@ func (s *Server) newMCPServer() *server.SSEServer {
 		server.WithToolHandlerMiddleware(mcpErrorMappingMiddleware),
 		server.WithToolHandlerMiddleware(middleware.TimeoutMCPToolHandlerMiddleware(func(tool string) time.Duration {
 			switch tool {
-			case "get_metrics_view_time_range_summary", "get_metrics_view_aggregation":
+			case "query_metrics_view_time_range", "query_metrics_view":
 				return 120 * time.Second
 			default:
 				return 20 * time.Second
@@ -59,8 +59,8 @@ func (s *Server) newMCPServer() *server.SSEServer {
 
 	mcpServer.AddTool(s.mcpListMetricsViews())
 	mcpServer.AddTool(s.mcpGetMetricsView())
-	mcpServer.AddTool(s.mcpGetMetricsViewTimeRangeSummary())
-	mcpServer.AddTool(s.mcpGetMetricsViewAggregation())
+	mcpServer.AddTool(s.mcpQueryMetricsViewTimeRange())
+	mcpServer.AddTool(s.mcpQueryMetricsView())
 
 	sseServer := server.NewSSEServer(
 		mcpServer,
@@ -133,10 +133,10 @@ func (s *Server) mcpListMetricsViews() (mcp.Tool, server.ToolHandlerFunc) {
 
 func (s *Server) mcpGetMetricsView() (mcp.Tool, server.ToolHandlerFunc) {
 	tool := mcp.NewTool("get_metrics_view",
-		mcp.WithDescription("Retrieve the specification for a given metrics view, including available measures and dimensions"),
+		mcp.WithDescription("Get the specification for a given metrics view, including available measures and dimensions"),
 		mcp.WithString("metrics_view",
 			mcp.Required(),
-			mcp.Description("The name of the metrics view"),
+			mcp.Description("Name of the metrics view"),
 		),
 	)
 
@@ -168,15 +168,15 @@ func (s *Server) mcpGetMetricsView() (mcp.Tool, server.ToolHandlerFunc) {
 	return tool, handler
 }
 
-func (s *Server) mcpGetMetricsViewTimeRangeSummary() (mcp.Tool, server.ToolHandlerFunc) {
-	tool := mcp.NewTool("get_metrics_view_time_range_summary",
+func (s *Server) mcpQueryMetricsViewTimeRange() (mcp.Tool, server.ToolHandlerFunc) {
+	tool := mcp.NewTool("query_metrics_view_time_range",
 		mcp.WithDescription(`
             Retrieve the total time range available for a given metrics view.
             Note: All subsequent queries of the metrics view should be constrained to this time range to ensure accurate results.
         `),
 		mcp.WithString("metrics_view",
 			mcp.Required(),
-			mcp.Description("The name of the metrics view"),
+			mcp.Description("Name of the metrics view"),
 		),
 	)
 
@@ -216,37 +216,38 @@ func (s *Server) mcpGetMetricsViewTimeRangeSummary() (mcp.Tool, server.ToolHandl
 	return tool, handler
 }
 
-func (s *Server) mcpGetMetricsViewAggregation() (mcp.Tool, server.ToolHandlerFunc) {
+func (s *Server) mcpQueryMetricsView() (mcp.Tool, server.ToolHandlerFunc) {
 	description := `
 Perform an arbitrary aggregation on a metrics view.
 Tip: Use the 'sort' and 'limit' parameters for best results and to avoid large, unbounded result sets.
-Example: Get the total revenue by country and product category:
+
+Example: Get the total revenue by country and product category for 2024:
     {
         "metrics_view": "ecommerce_financials",
-        "measures": [{"name": "total_revenue"}, {"name": "total_orders"}],
         "dimensions": [{"name": "country"}, {"name": "product_category"}],
+        "measures": [{"name": "total_revenue"}, {"name": "total_orders"}],
         "time_range": {
             "start": "2024-01-01T00:00:00Z",
-            "end": "2024-12-31T23:59:59Z"
+            "end": "2025-01-01T00:00:00Z"
         },
         "where": {
             "cond": {
-                "op": "OPERATION_AND",
+                "op": "and",
                 "exprs": [
                     {
                         "cond": {
-                            "op": "OPERATION_IN",
+                            "op": "in",
                             "exprs": [
-                                {"ident": "country"},
+                                {"name": "country"},
                                 {"val": ["US", "CA", "GB"]}
                             ]
                         }
                     },
                     {
                         "cond": {
-                            "op": "OPERATION_EQ",
+                            "op": "eq",
                             "exprs": [
-                                {"ident": "product_category"},
+                                {"name": "product_category"},
                                 {"val": "Electronics"}
                             ]
                         }
@@ -255,29 +256,29 @@ Example: Get the total revenue by country and product category:
             },
         },
         "sort": [{"name": "total_revenue", "desc": true}],
-        "limit": "10"
+        "limit": 10
     }
     
-Example: Get the total revenue by country, grouped by month:
+Example: Get the total revenue by country and month for 2024:
     {
         "metrics_view": "ecommerce_financials",
-        "measures": [{"name": "total_revenue"}],
         "dimensions": [
-            {"name": "transaction_timestamp", "time_grain": "TIME_GRAIN_MONTH"}
+            {"name": "event_time", "compute": {"time_floor": {"dimension": "event_time", "grain": "month"}}},
             {"name": "country"},
         ],
+        "measures": [{"name": "total_revenue"}],
         "time_range": {
             "start": "2024-01-01T00:00:00Z",
-            "end": "2024-12-31T23:59:59Z"
+            "end": "2025-01-01T00:00:00Z"
         },
         "sort": [
-            {"name": "transaction_timestamp"},
+            {"name": "event_time"},
             {"name": "total_revenue", "desc": true},
         ],
     }
 `
 
-	tool := mcp.NewToolWithRawSchema("get_metrics_view_aggregation", description, json.RawMessage(metricsview.QueryJSONSchema))
+	tool := mcp.NewToolWithRawSchema("query_metrics_view", description, json.RawMessage(metricsview.QueryJSONSchema))
 
 	handler := func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 		instanceID := mcpInstanceIDFromContext(ctx)

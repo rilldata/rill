@@ -353,77 +353,77 @@ const QueryJSONSchema = `
   "properties": {
     "metrics_view": {
       "type": "string",
-      "description": "The metrics view to query"
+      "description": "The metrics view to query."
     },
     "dimensions": {
       "type": "array",
       "items": {
         "$ref": "#/$defs/Dimension"
       },
-      "description": "List of dimensions to include in the query"
+      "description": "List of dimensions to include in the query. The result will be grouped by these."
     },
     "measures": {
       "type": "array",
       "items": {
         "$ref": "#/$defs/Measure"
       },
-      "description": "List of measures to include in the query"
+      "description": "List of measures to include in the query. These will be aggregated based on the dimensions."
     },
     "pivot_on": {
       "type": "array",
       "items": {
         "type": "string"
       },
-      "description": "Dimensions to pivot on"
+      "description": "Optional dimensions to pivot on. The provided dimensions must be present in the query. If not provided, the query will return a flat result set. Note that pivoting can have poor performance on large result sets."
     },
     "spine": {
       "$ref": "#/$defs/Spine",
-      "description": "Spine configuration for the query"
+      "description": "Optionallay configure a 'spine' of dimension values that should be present in the result regardless of whether they have data. This is for example useful for generating a time series with zero values for missing dates."
     },
     "sort": {
       "type": "array",
       "items": {
         "$ref": "#/$defs/Sort"
       },
-      "description": "Sort order for the results"
+      "description": "Sort order for the results."
     },
     "time_range": {
       "$ref": "#/$defs/TimeRange",
-      "description": "Time range filter for the query"
+      "description": "Time range filter for the query. Note that for large datasets, querying shorter and/or more recent time ranges has significant performance benefits."
     },
     "comparison_time_range": {
       "$ref": "#/$defs/TimeRange",
-      "description": "Time range for comparison"
+      "description": "Time range filter to use for comparison measures."
     },
     "where": {
       "$ref": "#/$defs/Expression",
-      "description": "WHERE clause expression"
+      "description": "Optional expression for filtering the underlying data before aggregation. This is the recommended way to filter data."
     },
     "having": {
       "$ref": "#/$defs/Expression",
-      "description": "HAVING clause expression"
+      "description": "Optional expression for filtering the results after aggregation. This is useful for filtering based on the aggregated measure values."
     },
     "limit": {
       "type": "integer",
       "minimum": 0,
-      "description": "Maximum number of rows to return"
+      "description": "Maximum number of rows to return. It is required for interactive queries."
     },
     "offset": {
       "type": "integer",
       "minimum": 0,
-      "description": "Number of rows to skip"
+      "description": "Optional offset for the query results. This is useful for pagination together with 'limit'."
     },
     "time_zone": {
       "type": "string",
-      "description": "Time zone for the query"
+      "description": "Optional time zone for time_floor operations and dynamic time ranges. Defaults to UTC."
     },
     "use_display_names": {
       "type": "boolean",
-      "description": "Whether to use display names"
+      "description": "Optional flag to return results using display names for dimensions and measures instead of their unique names. Defaults to false."
     },
     "rows": {
       "type": "boolean",
-      "description": "Whether to return raw rows"
+      "description": "Optional flag to return the underlying rows instead of aggregated results. This is useful for debugging or exploring the data. Setting it to true is incompatible with the following options: dimensions, measures, sort, comparison_time_range, having, pivot_on."
     }
   },
   "$defs": {
@@ -436,7 +436,7 @@ const QueryJSONSchema = `
         },
         "compute": {
           "$ref": "#/$defs/DimensionCompute",
-          "description": "Compute configuration for the dimension"
+          "description": "Optionally configure a derived dimension, such as a time floor."
         }
       },
       "required": ["name"]
@@ -472,7 +472,7 @@ const QueryJSONSchema = `
         },
         "compute": {
           "$ref": "#/$defs/MeasureCompute",
-          "description": "Compute configuration for the measure"
+          "description": "Optionally configure a derived measure, such as a comparison."
         }
       },
       "required": ["name"]
@@ -636,12 +636,12 @@ const QueryJSONSchema = `
         "start": {
           "type": "string",
           "format": "date-time",
-          "description": "Start time"
+          "description": "Start time (inclusive)"
         },
         "end": {
           "type": "string",
           "format": "date-time",
-          "description": "End time"
+          "description": "End time (exclusive)"
         },
         "expression": {
           "type": "string",
