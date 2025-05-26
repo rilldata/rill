@@ -353,7 +353,7 @@ func toMagicAuthTokensTable(tkns []*adminv1.MagicAuthToken) []*magicAuthToken {
 
 func toMagicAuthTokenRow(t *adminv1.MagicAuthToken) *magicAuthToken {
 	expr := metricsview.NewExpressionFromProto(t.Filter)
-	filter, err := metricsview.ExpressionToString(expr)
+	filter, err := metricsview.ExpressionToSQL(expr)
 	if err != nil {
 		panic(err)
 	}
