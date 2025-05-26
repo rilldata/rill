@@ -197,20 +197,36 @@ func (s *Server) mcpGetMetricsViewTimeRangeSummary() (mcp.Tool, server.ToolHandl
 	)
 
 	handler := func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		instanceID := mcpInstanceIDFromContext(ctx)
 		name, err := req.RequireString("metrics_view")
 		if err != nil {
 			return mcpNewToolError(err)
 		}
 
-		resp, err := s.MetricsViewTimeRange(ctx, &runtimev1.MetricsViewTimeRangeRequest{
-			InstanceId:      mcpInstanceIDFromContext(ctx),
-			MetricsViewName: name,
+		claims := auth.GetClaims(ctx)
+		if !claims.CanInstance(instanceID, auth.ReadMetrics) {
+			return mcpErrorFromGRPC(ErrForbidden)
+		}
+
+		res, err := s.runtime.Resolve(ctx, &runtime.ResolveOptions{
+			InstanceID: instanceID,
+			Resolver:   "metrics_time_range",
+			ResolverProperties: map[string]any{
+				"metrics_view": name,
+			},
+			Claims: claims.SecurityClaims(),
 		})
 		if err != nil {
 			return mcpErrorFromGRPC(err)
 		}
+		defer res.Close()
 
-		return mcpNewToolResultJSON(resp.TimeRangeSummary)
+		data, err := res.MarshalJSON()
+		if err != nil {
+			return mcpNewToolError(err)
+		}
+
+		return mcp.NewToolResultText(string(data)), nil
 	}
 
 	return tool, handler
