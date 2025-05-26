@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/go-git/go-git/v5/plumbing/transport"
+	"github.com/rilldata/rill/admin"
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/server/auth"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
@@ -76,7 +77,7 @@ func (s *Server) GetRepoMeta(ctx context.Context, req *adminv1.GetRepoMetaReques
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "failed to create endpoint from %q: %s", *proj.GithubURL, err.Error())
 	}
-	ep.User = "x-access-token"
+	ep.User = admin.GithubUsernameForAccessToken
 	ep.Password = token
 	gitURL := ep.String()
 

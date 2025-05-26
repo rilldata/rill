@@ -1253,7 +1253,7 @@ func (s *Server) GetCloneCredentials(ctx context.Context, req *adminv1.GetCloneC
 
 	return &adminv1.GetCloneCredentialsResponse{
 		GitRepoUrl:           cloneURL,
-		GitUsername:          "x-access-token",
+		GitUsername:          admin.GithubUsernameForAccessToken,
 		GitPassword:          token,
 		GitPasswordExpiresAt: timestamppb.New(expiresAt),
 		GitSubpath:           proj.Subpath,

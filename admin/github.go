@@ -26,6 +26,8 @@ import (
 var (
 	ErrUserIsNotCollaborator      = fmt.Errorf("user is not a collaborator for the repository")
 	ErrGithubInstallationNotFound = fmt.Errorf("github installation not found")
+
+	GithubUsernameForAccessToken = "x-access-token"
 )
 
 // Github exposes the features we require from the Github API.
@@ -189,33 +191,33 @@ func (g *githubClient) ManagedOrgInstallationID() (int64, error) {
 	return g.managedOrgInstallationID, g.managedOrgFetchError
 }
 
-func (s *Service) CreateManagedGitRepo(ctx context.Context, org *database.Organization, name, ownerID string) (*github.Repository, error) {
+func (s *Service) CreateManagedGitRepo(ctx context.Context, org *database.Organization, name, ownerID string) (*database.ManagedGitRepo, *github.Repository, error) {
 	if org.QuotaProjects >= 0 {
 		count, err := s.DB.CountManagedGitRepos(ctx, org.ID)
 		if err != nil {
-			return nil, fmt.Errorf("failed to count managed repos: %w", err)
+			return nil, nil, fmt.Errorf("failed to count managed repos: %w", err)
 		}
 
 		quota := quotaManagedRepos(org)
 		if count >= quota {
-			return nil, fmt.Errorf("managed repo quota exceeded: %d/%d", count, quota)
+			return nil, nil, fmt.Errorf("managed repo quota exceeded: %d/%d", count, quota)
 		}
 	}
 
 	repo, err := s.Github.CreateManagedRepo(ctx, fmt.Sprintf("%s-%s", org.Name, name))
 	if err != nil {
-		return nil, fmt.Errorf("failed to create managed repo: %w", err)
+		return nil, nil, fmt.Errorf("failed to create managed repo: %w", err)
 	}
-	_, err = s.DB.InsertManagedGitRepo(ctx, &database.InsertManagedGitRepoOptions{
+	mgdRepo, err := s.DB.InsertManagedGitRepo(ctx, &database.InsertManagedGitRepoOptions{
 		OrgID:   org.ID,
 		Remote:  repo.GetCloneURL(),
 		OwnerID: ownerID,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to insert managed repo meta: %w", err)
+		return nil, nil, fmt.Errorf("failed to insert managed repo meta: %w", err)
 	}
 
-	return repo, nil
+	return mgdRepo, repo, nil
 }
 
 // GetGithubInstallation returns a non zero Github installation ID if the Github App is installed on the repository
