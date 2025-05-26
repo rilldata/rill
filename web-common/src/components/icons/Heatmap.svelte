@@ -1,5 +1,5 @@
 <script lang="ts">
-  export let size = "24";
+  export let size = "18px";
   export let color = "currentColor";
 </script>
 

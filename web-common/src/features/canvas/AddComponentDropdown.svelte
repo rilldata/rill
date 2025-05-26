@@ -1,33 +1,24 @@
 <script lang="ts">
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
+  import type { ChartType } from "@rilldata/web-common/features/canvas/components/charts/types";
   import { Plus, PlusCircle } from "lucide-svelte";
   import type { ComponentType, SvelteComponent } from "svelte";
-  import { CHART_TYPES } from "./components/charts";
-  import type { ChartType } from "./components/charts/types";
+  import { CHART_CONFIG, VISIBLE_CHART_TYPES } from "./components/charts";
   import type { CanvasComponentType } from "./components/types";
   import BigNumberIcon from "./icons/BigNumberIcon.svelte";
   import ChartIcon from "./icons/ChartIcon.svelte";
   import LeaderboardIcon from "./icons/LeaderboardIcon.svelte";
   import TableIcon from "./icons/TableIcon.svelte";
   import TextIcon from "./icons/TextIcon.svelte";
-  type MenuItem = {
-    id: CanvasComponentType;
+  type MainMenuItem = {
+    id: Exclude<CanvasComponentType, ChartType> | "chart_submenu";
     label: string;
     icon: ComponentType<SvelteComponent>;
   };
 
-  // Function to get a random chart type
-  function getRandomChartType(): ChartType {
-    const chartTypes = CHART_TYPES.filter(
-      (t) => t !== "stacked_bar_normalized",
-    );
-    const randomIndex = Math.floor(Math.random() * chartTypes.length);
-    return chartTypes[randomIndex] as ChartType;
-  }
-
   // Create menu items with a function to get random chart type when clicked
-  export const menuItems: MenuItem[] = [
-    { id: "bar_chart", label: "Chart", icon: ChartIcon }, // Default value, will be replaced with random type when clicked
+  export const menuItems: MainMenuItem[] = [
+    { id: "chart_submenu", label: "Chart", icon: ChartIcon },
     { id: "table", label: "Table", icon: TableIcon },
     { id: "markdown", label: "Text", icon: TextIcon },
     { id: "kpi_grid", label: "KPI", icon: BigNumberIcon },
@@ -45,11 +36,9 @@
   export let onMouseEnter: () => void = () => {};
   export let onOpenChange: (isOpen: boolean) => void = () => {};
 
-  // Wrapper function to handle chart item click with randomization
-  function handleChartItemClick() {
-    const randomChartType = getRandomChartType();
-    onItemClick(randomChartType);
-  }
+  const ADD_DROPDOWN_CHART_TYPES = VISIBLE_CHART_TYPES.filter((type) => {
+    return type !== "stacked_bar" && type !== "stacked_bar_normalized";
+  });
 
   function getAriaLabel(row: number | undefined, column: number | undefined) {
     return `Insert widget${row !== undefined ? ` in row ${row + 1}` : ""}${
@@ -78,7 +67,6 @@
         class="shadow-lg flex group hover:rounded-3xl w-fit gap-x-1 p-2 hover:pr-3.5 absolute bottom-3 right-3 items-center justify-center z-50 rounded-full bg-primary-600 text-white hover:bg-primary-500"
       >
         <Plus size="20px" />
-
         <span
           class:not-sr-only={open}
           class="sr-only group-hover:not-sr-only font-semibold w-fit"
@@ -107,19 +95,45 @@
   >
     <div class="flex flex-col" role="presentation" on:mouseenter={onMouseEnter}>
       {#each menuItems as { id, label, icon } (id)}
-        <DropdownMenu.Item
-          class="flex flex-row gap-x-2"
-          on:click={() => {
-            if (id === "bar_chart") {
-              handleChartItemClick();
-            } else {
-              onItemClick(id);
-            }
-          }}
-        >
-          <svelte:component this={icon} />
-          {label}
-        </DropdownMenu.Item>
+        {#if id === "chart_submenu"}
+          <DropdownMenu.Sub>
+            <DropdownMenu.SubTrigger class="flex flex-row gap-x-2">
+              <svelte:component this={icon} />
+              {label}
+            </DropdownMenu.SubTrigger>
+            <DropdownMenu.SubContent class="min-w-[160px]">
+              {#each ADD_DROPDOWN_CHART_TYPES as chartType}
+                <DropdownMenu.Item
+                  class="flex flex-row gap-x-2"
+                  on:click={() => onItemClick(chartType)}
+                >
+                  <svelte:component
+                    this={CHART_CONFIG[chartType].icon}
+                    primaryColor="#111827"
+                    secondaryColor="#9ca3af"
+                  />
+                  {CHART_CONFIG[chartType].title}
+                </DropdownMenu.Item>
+              {/each}
+              <DropdownMenu.Separator />
+              <DropdownMenu.Item
+                class="flex flex-row gap-x-2"
+                on:click={() => onItemClick("custom_chart")}
+              >
+                <ChartIcon />
+                Custom Chart
+              </DropdownMenu.Item>
+            </DropdownMenu.SubContent>
+          </DropdownMenu.Sub>
+        {:else}
+          <DropdownMenu.Item
+            class="flex flex-row gap-x-2"
+            on:click={() => onItemClick(id)}
+          >
+            <svelte:component this={icon} />
+            {label}
+          </DropdownMenu.Item>
+        {/if}
       {/each}
     </div>
   </DropdownMenu.Content>

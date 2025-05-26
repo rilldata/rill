@@ -81,7 +81,7 @@ export const CHART_CONFIG: Record<ChartType, ChartMetadataConfig> = {
     generateSpec: generateVLLineChartSpec,
   },
   area_chart: {
-    title: "Stacked Area",
+    title: "Area",
     icon: StackedArea,
     component: CartesianChartComponent,
     generateSpec: generateVLAreaChartSpec,

@@ -93,8 +93,10 @@
   <div class="flex-1 flex flex-col min-h-0 min-w-0">
     {#if selectedView === 0}
       <div class="flex-1">
-        {#if spec && error}
-          {error}
+        {#if error}
+          <div class="text-red-500">
+            {error}
+          </div>
         {:else if rows && parsedSpec}
           <VegaLiteRenderer
             {renderer}
