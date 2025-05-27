@@ -38,7 +38,8 @@ var (
 		{"SnapPrefix", `[<>]`},
 		{"Number", `\d+`},
 		{"Snap", `[/]`},
-		{"Interval", `[!]`},
+		{"Interval", `[#]`},
+		{"Ceil", `[!]`},
 		{"To", `(?i)to`},
 		{"By", `(?i)by`},
 		{"Of", `(?i)of`},
@@ -158,7 +159,7 @@ type ShorthandInterval struct {
 	Num          int     `parser:"@Number"`
 	Grain        string  `parser:"@Grain"`
 	SnapOverride *string `parser:"(In @Grain)?"`
-	SnapDir      *string `parser:"@Interval?"`
+	SnapDir      *string `parser:"@Ceil?"`
 }
 
 // PeriodToGrainInterval is a convenience syntax for specifying <grain> to <grain>
@@ -168,7 +169,7 @@ type ShorthandInterval struct {
 type PeriodToGrainInterval struct {
 	PeriodToGrain string  `parser:"@PeriodToGrain"`
 	SnapOverride  *string `parser:"(In @Grain)?"`
-	SnapDir       *string `parser:"@Interval?"`
+	SnapDir       *string `parser:"@Ceil?"`
 }
 
 // OrdinalInterval is an interval formed with a chain of ordinals ended by an interval.
@@ -192,8 +193,8 @@ type StartEndInterval struct {
 	End   *PointInTime `parser:"To @@"`
 }
 
-// GrainToInterval is a convenience syntax to easily convert a grain point in time to an interval. Uses the character `!`.
-// EG: Convert -2D to interval using: `-2D!`
+// GrainToInterval is a convenience syntax to easily convert a grain point in time to an interval. Uses the character `#`.
+// EG: Convert -2D to interval using: `-2D#`
 type GrainToInterval struct {
 	Interval *GrainPointInTime `parser:"@@ Interval"`
 }
@@ -296,7 +297,9 @@ type EvalOptions struct {
 	Watermark     time.Time
 	FirstDay      int
 	FirstMonth    int
-	SmallestGrain timeutil.TimeGrain // TODO: get from caller
+	SmallestGrain timeutil.TimeGrain
+
+	ref time.Time
 }
 
 func Parse(from string, parseOpts ParseOptions) (*Expression, error) {
@@ -314,11 +317,33 @@ func Parse(from string, parseOpts ParseOptions) (*Expression, error) {
 			return nil, err
 		}
 		rt.isNewFormat = true
+
+		if rt.Interval != nil {
+			err := rt.Interval.parse()
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		if rt.AnchorOverride != nil {
+			err := rt.AnchorOverride.parse()
+			if err != nil {
+				return nil, err
+			}
+		}
 	}
 
-	err = rt.parse(parseOpts)
-	if err != nil {
-		return nil, err
+	rt.timeZone = time.UTC
+	if parseOpts.TimeZoneOverride != nil {
+		rt.timeZone = parseOpts.TimeZoneOverride
+	} else if rt.TimeZone != nil {
+		var err error
+		rt.timeZone, err = time.LoadLocation(strings.Trim(*rt.TimeZone, "{}"))
+		if err != nil {
+			return nil, err
+		}
+	} else if parseOpts.DefaultTimeZone != nil {
+		rt.timeZone = parseOpts.DefaultTimeZone
 	}
 
 	return rt, nil
@@ -360,9 +385,13 @@ func (e *Expression) Eval(evalOpts EvalOptions) (time.Time, time.Time, timeutil.
 	start := evalOpts.Watermark
 	start = timeutil.OffsetTime(start, evalOpts.SmallestGrain, 1)
 	start = timeutil.TruncateTime(start, evalOpts.SmallestGrain, e.timeZone, evalOpts.FirstDay, evalOpts.FirstMonth)
+	// Update the ref so that anchor override can use it if needed. (EG: `-2Y^ to Y^ as of now`)
+	evalOpts.ref = start
 	if e.AnchorOverride != nil {
 		start = e.AnchorOverride.eval(evalOpts, start, e.timeZone)
 	}
+	// Update again to take AnchorOverride into account.
+	evalOpts.ref = start
 
 	if e.isoDuration != nil {
 		// handling for old iso format
@@ -387,37 +416,6 @@ func (e *Expression) Eval(evalOpts EvalOptions) (time.Time, time.Time, timeutil.
 	}
 
 	return start, end, tg
-}
-
-func (e *Expression) parse(parseOpts ParseOptions) error {
-	e.timeZone = time.UTC
-	if parseOpts.TimeZoneOverride != nil {
-		e.timeZone = parseOpts.TimeZoneOverride
-	} else if e.TimeZone != nil {
-		var err error
-		e.timeZone, err = time.LoadLocation(strings.Trim(*e.TimeZone, "{}"))
-		if err != nil {
-			return err
-		}
-	} else if parseOpts.DefaultTimeZone != nil {
-		e.timeZone = parseOpts.DefaultTimeZone
-	}
-
-	if e.Interval != nil {
-		err := e.Interval.parse()
-		if err != nil {
-			return err
-		}
-	}
-
-	if e.AnchorOverride != nil {
-		err := e.AnchorOverride.parse()
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
 }
 
 /* Intervals */
@@ -596,7 +594,7 @@ func (a *AnchorOverride) eval(evalOpts EvalOptions, tm time.Time, tz *time.Locat
 	if a.Grain != nil {
 		tm, _ = a.Grain.eval(evalOpts, tm, tz)
 	} else if a.Label != nil {
-		tm = a.Label.eval(evalOpts, tm)
+		tm = a.Label.eval(evalOpts)
 	} else if a.Abs != nil {
 		tm, _, _ = a.Abs.eval(tz)
 	}
@@ -612,7 +610,7 @@ func (p *PointInTime) eval(evalOpts EvalOptions, start time.Time, tz *time.Locat
 	} else if p.Grain != nil {
 		return p.Grain.eval(evalOpts, start, tz)
 	} else if p.Labeled != nil {
-		return p.Labeled.eval(evalOpts, start), timeutil.TimeGrainUnspecified
+		return p.Labeled.eval(evalOpts), timeutil.TimeGrainUnspecified
 	}
 	return start, timeutil.TimeGrainUnspecified
 }
@@ -686,11 +684,11 @@ func (g *GrainPointInTimePart) eval(evalOpts EvalOptions, start time.Time, tz *t
 	return tm, tg
 }
 
-func (l *LabeledPointInTime) eval(evalOpts EvalOptions, ref time.Time) time.Time {
+func (l *LabeledPointInTime) eval(evalOpts EvalOptions) time.Time {
 	if l.Earliest {
 		return evalOpts.MinTime
 	} else if l.Now {
-		return ref
+		return evalOpts.ref
 	} else if l.Latest {
 		return evalOpts.MaxTime
 	} else if l.Watermark {
