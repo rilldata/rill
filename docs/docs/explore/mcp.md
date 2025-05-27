@@ -50,7 +50,7 @@ By default, the JSON is found in the following directories:
 
 - Windows: `C:\Users\{USER}\AppData\Roaming\Claude\claude_desktop_config.json`
 
-### Platforms
+### config.json
 Depending on which Rill instance you are trygin to connect to (locally running Rill Developer, Public Rill project on Rill Cloud, Private Rill Project on Rill Cloud (default)) the configuration will vary.
 
 
@@ -110,14 +110,17 @@ __*Locally Running Rill Developer*__
 Restart Claude Desktop for the changes to take effect.
 
 ### Troubleshooting:
-If Claude Desktop cannot connect to the MCP server:
+If Claude Desktop cannot connect to the MCP server, check that Rill is running (local) or that your able to connect to your [Rill project](https://ui.rilldata.com) from your browser. If your project is private, you need to check that the service token is valid via the CLI.
 
-In Claude Desktop, click on Developer → Open MCP Log File and check the logs for any errors.
-Double-check the Docker path is correct.
-Ensure all required environment variables are set in the `env` parameter.
-Make sure Docker is running.
+```bash
+rill service list
+```
 
-## Using MCP Server in Claude
+If you're still experiencing the issue, check the logs in Claude Desktop.
+Click on Developer → Open MCP Log File and check the logs for any errors.
+
+
+## Using Rill MCP Server in Claude
 
 <img src ='/img/explore/mcp/mcp-main.gif' class='rounded-gif'/>
 <br />
