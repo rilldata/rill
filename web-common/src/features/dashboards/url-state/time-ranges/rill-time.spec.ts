@@ -1,4 +1,6 @@
 import { parseRillTime } from "@rilldata/web-common/features/dashboards/url-state/time-ranges/parser";
+import { GrainAliasToV1TimeGrain } from "@rilldata/web-common/lib/time/new-grains";
+import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import type { DateTimeUnit } from "luxon";
 import { describe, expect, it } from "vitest";
 import grammar from "./rill-time.cjs";
@@ -16,63 +18,152 @@ const GRAIN_TO_LUXON: Record<string, DateTimeUnit> = {
   Y: "year",
 };
 
-type TestCase = [syntax: string, label?: string, complete?: boolean];
+type TestCase = [
+  syntax: string,
+  label: string,
+  complete: boolean,
+  rangeGrain: V1TimeGrain | undefined,
+  inGrain: V1TimeGrain | undefined,
+  byGrain: V1TimeGrain | undefined,
+];
+
+function getDefaultInGrainForGrain(grain: string) {
+  if (grain === "D") {
+    return V1TimeGrain.TIME_GRAIN_HOUR;
+  } else if (grain === "W" || grain === "M" || grain === "Q" || grain === "Y") {
+    return V1TimeGrain.TIME_GRAIN_DAY;
+  }
+  return GrainAliasToV1TimeGrain[grain];
+}
 
 function getSinglePeriodTestCases(): TestCase[] {
   return GRAINS.map((g) => {
+    const protoGrain = GrainAliasToV1TimeGrain[g];
+    const inGrain = getDefaultInGrainForGrain(g);
+
     const current = `This ${GRAIN_TO_LUXON[g]}`;
     const previous = `Previous ${GRAIN_TO_LUXON[g]}`;
     const next = `Next ${GRAIN_TO_LUXON[g]}`;
+
     return <TestCase[]>[
-      [`${g}^ to ${g}$`, current, false],
-      [`-${g}^ to +${g}$`, current, false],
-      [`-0${g}^ to +0${g}$`, current, false],
-      [`-1${g}$ to +1${g}^`, current, false],
-      [`-0${g}/${g}^ to +0${g}/${g}$`, current, false],
-      [`1${g} starting ${g}^`, `1${g} starting ${g}^`, false],
-      [`1${g} ending ${g}$`, `1${g} ending ${g}$`, false],
-      [`${g}!`, current, false],
+      [`${g}^ to ${g}$`, current, false, protoGrain, undefined, undefined],
+      [`-${g}^ to +${g}$`, current, false, protoGrain, undefined, undefined],
+      [`-0${g}^ to +0${g}$`, current, false, protoGrain, undefined, undefined],
+      [`-1${g}$ to +1${g}^`, current, false, protoGrain, undefined, undefined],
+      [
+        `-0${g}/${g}^ to +0${g}/${g}$`,
+        current,
+        false,
+        protoGrain,
+        undefined,
+        undefined,
+      ],
+      [
+        `1${g} starting ${g}^`,
+        `1${g} starting ${g}^`,
+        false,
+        protoGrain,
+        undefined,
+        undefined,
+      ],
+      [
+        `1${g} ending ${g}$`,
+        `1${g} ending ${g}$`,
+        false,
+        protoGrain,
+        undefined,
+        undefined,
+      ],
+      [`${g}#`, current, false, protoGrain, undefined, undefined],
+      [`1${g}`, current, false, protoGrain, inGrain, undefined],
 
-      [`-1${g}^ to ${g}^`, previous, true],
-      [`-1${g}^ to -1${g}$`, previous, true],
-      [`-2${g}$ to -1${g}$`, previous, true],
-      [`-1${g}/${g}^ to ${g}/${g}^`, previous, true],
-      [`1${g} starting -1${g}^`, `1${g} starting -1${g}^`, false], // TODO: this should be complete
-      [`1${g} ending -1${g}$`, `1${g} ending -1${g}$`, true],
-      [`-1${g}!`, previous, true],
+      [`-1${g}^ to ${g}^`, previous, true, protoGrain, undefined, undefined],
+      [`-1${g}^ to -1${g}$`, previous, true, protoGrain, undefined, undefined],
+      [`-2${g}$ to -1${g}$`, previous, true, protoGrain, undefined, undefined],
+      [
+        `-1${g}/${g}^ to ${g}/${g}^`,
+        previous,
+        true,
+        protoGrain,
+        undefined,
+        undefined,
+      ],
+      [
+        `1${g} starting -1${g}^`,
+        `1${g} starting -1${g}^`,
+        false,
+        protoGrain,
+        undefined,
+        undefined,
+      ], // TODO: this should be complete
+      [
+        `1${g} ending -1${g}$`,
+        `1${g} ending -1${g}$`,
+        true,
+        protoGrain,
+        undefined,
+        undefined,
+      ],
+      [`-1${g}#`, previous, true, protoGrain, undefined, undefined],
+      [`1${g}!`, previous, true, protoGrain, inGrain, undefined],
 
-      [`${g}$ to +1${g}$`, next, false],
-      [`+1${g}^ to +1${g}$`, next, false],
-      [`+1${g}!`, next, false],
+      [`${g}$ to +1${g}$`, next, false, protoGrain, undefined, undefined],
+      [`+1${g}^ to +1${g}$`, next, false, protoGrain, undefined, undefined],
+      [`+1${g}#`, next, false, protoGrain, undefined, undefined],
     ];
   }).flat();
 }
 
 function getMultiPeriodTestCases(n: number): TestCase[] {
   return GRAINS.map((g) => {
+    const protoGrain = GrainAliasToV1TimeGrain[g];
+    const inGrain = getDefaultInGrainForGrain(g);
     const last = `Last ${n} ${GRAIN_TO_LUXON[g]}s`;
     const next = `Next ${n} ${GRAIN_TO_LUXON[g]}s`;
     return <TestCase[]>[
-      [`-7${g}$ to ${g}$`, last, false],
-      [`-7${g}^ to ${g}^`, last, true],
+      [`-7${g}$ to ${g}$`, last, false, protoGrain, undefined, undefined],
+      [`-7${g}^ to ${g}^`, last, true, protoGrain, undefined, undefined],
+      [`7${g}`, last, false, protoGrain, inGrain, undefined],
+      [`7${g}!`, last, true, protoGrain, inGrain, undefined],
 
-      [`${g}^ to +7${g}^`, next, false],
-      [`${g}$ to +7${g}$`, next, false],
+      [`${g}^ to +7${g}^`, next, false, protoGrain, undefined, undefined],
+      [`${g}$ to +7${g}$`, next, false, protoGrain, undefined, undefined],
     ];
   }).flat();
 }
 
 describe("rill time", () => {
   describe("positive cases", () => {
-    const Cases: [rillTime: string, label?: string, complete?: boolean][] = [
+    const Cases: TestCase[] = [
       ...getSinglePeriodTestCases(),
       ...getMultiPeriodTestCases(7),
-      ["-5W4M3Q2Y to -4W3M2Q1Y", "-5W4M3Q2Y to -4W3M2Q1Y", true],
-      ["-5W-4M-3Q-2Y to -4W-3M-2Q-1Y", "-5W-4M-3Q-2Y to -4W-3M-2Q-1Y", true],
+      [
+        "-5W4M3Q2Y to -4W3M2Q1Y",
+        "-5W4M3Q2Y to -4W3M2Q1Y",
+        true,
+        V1TimeGrain.TIME_GRAIN_WEEK,
+        undefined,
+        undefined,
+      ],
+      [
+        "-5W-4M-3Q-2Y to -4W-3M-2Q-1Y",
+        "-5W-4M-3Q-2Y to -4W-3M-2Q-1Y",
+        true,
+        V1TimeGrain.TIME_GRAIN_WEEK,
+        undefined,
+        undefined,
+      ],
     ];
 
     const compiledGrammar = nearley.Grammar.fromCompiled(grammar);
-    for (const [rillTime, label, complete] of Cases) {
+    for (const [
+      rillTime,
+      label,
+      complete,
+      rangeGrain,
+      inGrain,
+      byGrain,
+    ] of Cases) {
       it(rillTime, () => {
         const parser = new nearley.Parser(compiledGrammar);
         parser.feed(rillTime);
@@ -82,10 +173,11 @@ describe("rill time", () => {
         const rt = parseRillTime(rillTime);
         expect(rt.getLabel()).toEqual(label);
         expect(rt.isComplete).toEqual(complete);
-
-        // const convertedRillTime = rt.toString();
-        // const convertedRillTimeParsed = parseRillTime(convertedRillTime);
-        // expect(convertedRillTimeParsed.toString()).toEqual(convertedRillTime);
+        expect(rt.rangeGrain).toEqual(rangeGrain);
+        expect(rt.getCorrectInGrain(V1TimeGrain.TIME_GRAIN_SECOND)).toEqual(
+          inGrain,
+        );
+        expect(rt.byGrain).toEqual(byGrain);
       });
     }
   });

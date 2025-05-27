@@ -7,6 +7,8 @@
     RillTime,
 
     RillTimeAnchoredDurationInterval,
+    RillShorthandInterval,
+    RillPeriodToGrainInterval,
     RillTimeStartEndInterval,
     RillGrainToInterval,
 
@@ -17,7 +19,7 @@
 %}
 
 rill_time => full_interval                            {% id %}
-           | full_interval _ "tz" _ timezone_modifier {% id %}
+           | full_interval _ "tz" _ timezone_modifier {% ([rt, , , , tz]) => rt.withTimezone(tz) %}
 
 full_interval => interval_with_grain _ "as"i _ "of"i _ anchor_override {% id %}
                | interval_with_grain                                   {% id %}
@@ -26,6 +28,8 @@ interval_with_grain => interval _ "by"i _ grain {% ([interval, , , , grain]) => 
                      | interval                 {% ([interval]) => new RillTime(interval) %}
 
 interval => anchored_duration_interval {% id %}
+          | shorthand_interval         {% id %}
+          | period_to_grain_interval   {% id %}
           | ordinal_interval           {% id %}
           | start_end_interval         {% id %}
           | grain_to_interval          {% id %}
@@ -33,6 +37,16 @@ interval => anchored_duration_interval {% id %}
 
 anchored_duration_interval => grain_duration _ "starting"i _ point_in_time {% ([grains, , , , point]) => new RillTimeAnchoredDurationInterval(grains, true, point) %}
                             | grain_duration _ "ending"i _ point_in_time   {% ([grains, , , , point]) => new RillTimeAnchoredDurationInterval(grains, false, point) %}
+
+shorthand_interval => num grain _ "in"i _ grain "!" {% ([num, grain, , , , inGrain]) => new RillShorthandInterval(num, grain, inGrain, false) %}
+                    | num grain _ "in"i _ grain     {% ([num, grain, , , , inGrain]) => new RillShorthandInterval(num, grain, inGrain, true) %}
+                    | num grain "!"                 {% ([num, grain]) => new RillShorthandInterval(num, grain, undefined, false) %}
+                    | num grain                     {% ([num, grain]) => new RillShorthandInterval(num, grain, undefined, true) %}
+
+period_to_grain_interval => period_to_grain _ "in"i _ grain "!" {% ([grain, , , , inGrain]) => new RillPeriodToGrainInterval(grain, inGrain, false) %}
+                          | period_to_grain _ "in"i _ grain     {% ([grain, , , , inGrain]) => new RillPeriodToGrainInterval(grain, inGrain, true) %}
+                          | period_to_grain "!"                 {% ([grain]) => new RillPeriodToGrainInterval(grain, undefined, false) %}
+                          | period_to_grain                     {% ([grain]) => new RillPeriodToGrainInterval(grain, undefined, true) %}
 
 ordinal_interval => ordinal_duration _ "of"i _ ordinal_interval_end
                   | ordinal_duration
@@ -42,7 +56,7 @@ ordinal_interval_end => grain_to_interval
 
 start_end_interval => point_in_time _ "to"i _ point_in_time {% ([start, , , , end]) => new RillTimeStartEndInterval(start, end) %}
 
-grain_to_interval => grain_point_in_time _ "!" {% ([point]) => new RillGrainToInterval(point) %}
+grain_to_interval => grain_point_in_time _ "#" {% ([point]) => new RillGrainToInterval(point) %}
 
 iso_interval => abs_time _ "to"i _ abs_time
               | abs_time _ "/" _ abs_time
@@ -83,6 +97,8 @@ ordinal => grain num
 grain_duration      => grain_duration_part (_ grain_duration_part):* {% ([part, rest]) => ([part, ...rest.map(([, p]) => p)]) %}
 grain_duration_part => num grain                                     {% ([num, grain]) => ({num, grain}) %}
                      | grain                                         {% ([grain]) => ({grain}) %}
+
+period_to_grain => [sSmhHdDwWqQMyY] "TD" {% ([grain]) => grain %}
 
 abs_time => [\d] [\d] [\d] [\d] [\-] [\d] [\d] [\-] [\d] [\d] "T" [\d] [\d] [:] [\d] [\d] [:] [\d] [\d] "Z" {% RillAbsoluteTime.postProcessor %}
           | [\d] [\d] [\d] [\d] [\-] [\d] [\d] [\-] [\d] [\d] "T" [\d] [\d] [:] [\d] [\d]                   {% RillAbsoluteTime.postProcessor %}
