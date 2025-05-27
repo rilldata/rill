@@ -5291,6 +5291,9 @@ definitions:
       description:
         type: string
         title: User-facing description
+      aiContext:
+        type: string
+        description: Extra context for LLM/AI features. Used to guide natural language question answering and routing.
       timeDimension:
         type: string
         title: Name of the primary time dimension, used for rendering time series
@@ -5336,9 +5339,6 @@ definitions:
       cacheKeyTtlSeconds:
         type: string
         format: int64
-      aiContext:
-        type: string
-        description: Extra context for LLM/AI features. Used to guide natural language question answering and routing.
   v1MetricsViewState:
     type: object
     properties:
