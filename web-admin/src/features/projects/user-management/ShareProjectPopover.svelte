@@ -32,6 +32,7 @@
   import Lock from "@rilldata/web-common/components/icons/Lock.svelte";
   import OrgUserGroupSetRole from "./OrgUserGroupSetRole.svelte";
   import ProjectUserGroupItem from "./ProjectUserGroupItem.svelte";
+  import UsergroupSetRole from "./UsergroupSetRole.svelte";
 
   export let organization: string;
   export let project: string;
@@ -374,11 +375,7 @@
               {#if hasAutogroupMembers}
                 {#each projectMemberUserGroupsList as group}
                   {#if group.groupName === "autogroup:members"}
-                    <OrgUserGroupSetRole
-                      {organization}
-                      {group}
-                      {manageOrgAdmins}
-                    />
+                    <UsergroupSetRole {organization} {project} {group} />
                   {/if}
                 {/each}
               {/if}
