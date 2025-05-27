@@ -1094,6 +1094,20 @@ export class ModelState extends Message<ModelState> {
   refsHash = "";
 
   /**
+   * test_hash is a hash of the model's tests current state. It is used to determine if the model's tests have changed.
+   *
+   * @generated from field: string test_hash = 27;
+   */
+  testHash = "";
+
+  /**
+   * test_errors contains the results of the model's tests.
+   *
+   * @generated from field: repeated string test_errors = 28;
+   */
+  testErrors: string[] = [];
+
+  /**
    * refreshed_on is the time the model was last executed.
    *
    * @generated from field: google.protobuf.Timestamp refreshed_on = 4;
@@ -1158,6 +1172,8 @@ export class ModelState extends Message<ModelState> {
     { no: 2, name: "result_table", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "spec_hash", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 9, name: "refs_hash", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 27, name: "test_hash", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 28, name: "test_errors", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 4, name: "refreshed_on", kind: "message", T: Timestamp },
     { no: 7, name: "incremental_state", kind: "message", T: Struct },
     { no: 8, name: "incremental_state_schema", kind: "message", T: StructType },

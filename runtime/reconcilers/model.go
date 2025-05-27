@@ -315,12 +315,23 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 			model.State.TotalExecutionDurationMs = model.State.LatestExecutionDurationMs
 		}
 
-		testErr := r.runModelTests(ctx, self)
-		if testErr != nil {
-			execErr = testErr
+		testHash, err := r.testSpecHash(model.Spec)
+		if err != nil {
+			return runtime.ReconcileResult{Err: fmt.Errorf("failed to compute test hash: %w", err)}
 		}
 
-		err := r.updateStateWithResult(ctx, self, execRes)
+		// If the test hash has changed or there are no test errors, run the tests
+		if model.State.TestHash != testHash || len(model.State.TestErrors) == 0 {
+			testErr := r.runModelTests(ctx, self)
+			if testErr != nil {
+				model.State.TestErrors = []string{testErr.Error()}
+			} else {
+				model.State.TestErrors = nil
+			}
+			model.State.TestHash = testHash
+		}
+
+		err = r.updateStateWithResult(ctx, self, execRes)
 		if err != nil {
 			return runtime.ReconcileResult{Err: err}
 		}
@@ -368,6 +379,11 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 	// Show if any partitions errored
 	if model.State.PartitionsHaveErrors {
 		return runtime.ReconcileResult{Err: errPartitionsHaveErrors, Retrigger: refreshOn}
+	}
+
+	// Show if the model has tests that failed
+	if len(model.State.TestErrors) > 0 {
+		return runtime.ReconcileResult{Err: fmt.Errorf("model tests failed: %s", strings.Join(model.State.TestErrors, ", ")), Retrigger: refreshOn}
 	}
 
 	// Return the next refresh time
@@ -551,6 +567,23 @@ func (r *ModelReconciler) refsStateHash(ctx context.Context, refs []*runtimev1.R
 			return "", err
 		}
 		err = binary.Write(hash, binary.BigEndian, stateUpdatedOn)
+		if err != nil {
+			return "", err
+		}
+	}
+
+	return hex.EncodeToString(hash.Sum(nil)), nil
+}
+
+// Compute a hash of the test spec
+func (r *ModelReconciler) testSpecHash(spec *runtimev1.ModelSpec) (string, error) {
+	hash := md5.New()
+	for _, test := range spec.Tests {
+		_, err := hash.Write([]byte(test.Name))
+		if err != nil {
+			return "", err
+		}
+		_, err = hash.Write([]byte(test.Resolver))
 		if err != nil {
 			return "", err
 		}

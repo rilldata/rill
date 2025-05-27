@@ -1598,6 +1598,10 @@ export interface V1ModelState {
   specHash?: string;
   /** refs_hash is a hash of the model's refs current state. It is used to determine if the model's refs have changed. */
   refsHash?: string;
+  /** test_hash is a hash of the model's tests current state. It is used to determine if the model's tests have changed. */
+  testHash?: string;
+  /** test_errors contains the results of the model's tests. */
+  testErrors?: string[];
   /** refreshed_on is the time the model was last executed. */
   refreshedOn?: string;
   /** incremental_state contains the result of the most recent invocation of the model's incremental state resolver. */

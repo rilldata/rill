@@ -145,6 +145,10 @@ message ModelState {
   string spec_hash = 3;
   // refs_hash is a hash of the model's refs current state. It is used to determine if the model's refs have changed.
   string refs_hash = 9;
+  // test_hash is a hash of the model's tests current state. It is used to determine if the model's tests have changed.
+  string test_hash = 27;
+  // test_errors contains the results of the model's tests.
+  repeated string test_errors = 28;
   // refreshed_on is the time the model was last executed.
   google.protobuf.Timestamp refreshed_on = 4;
   // incremental_state contains the result of the most recent invocation of the model's incremental state resolver.

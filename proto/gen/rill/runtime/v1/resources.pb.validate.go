@@ -2706,6 +2706,8 @@ func (m *ModelState) validate(all bool) error {
 
 	// no validation rules for RefsHash
 
+	// no validation rules for TestHash
+
 	if all {
 		switch v := interface{}(m.GetRefreshedOn()).(type) {
 		case interface{ ValidateAll() error }:
