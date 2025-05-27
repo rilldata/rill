@@ -9,7 +9,7 @@
   import { cellInspectorStore } from "../features/dashboards/stores/cell-inspector-store";
   import { cubicOut } from "svelte/easing";
 
-  export let value: string = "";
+  export let value: any = "";
   export let isOpen: boolean = false;
 
   let hovered = false;
@@ -74,14 +74,23 @@
     unsubscribe();
   });
 
-  // Format number values for display using the tooltip formatter
+  // TODO: Consider using a dedicated JSON pretty printing package like:
+  // - json-stringify-pretty-compact: For compact but readable JSON output
+  // - pretty-format: For more customizable formatting options
+  // This would provide better control over formatting options and edge cases
   function formatValue(value: string): string {
-    // Check if the value is a number
-    const num = Number(value);
-    if (!isNaN(num)) {
-      return formatInteger(num);
+    // Try to parse as JSON first
+    try {
+      const parsed = JSON.parse(value);
+      return JSON.stringify(parsed, null, 2);
+    } catch (e) {
+      // If not JSON, check if it's a number
+      const num = Number(value);
+      if (!isNaN(num)) {
+        return formatInteger(num);
+      }
+      return value;
     }
-    return value;
   }
 
   // Only update the value on hover, but don't open the inspector
