@@ -9,8 +9,8 @@ import (
 type ModelOutputProperties struct {
 	Path               string             `mapstructure:"path"`
 	Format             drivers.FileFormat `mapstructure:"format"`
-	FileSizeLimitBytes int64              `mapstructure:"file_size_limit_bytes"`
 	Headers            []string           `mapstructure:"headers"`
+	FileSizeLimitBytes int64              `mapstructure:"file_size_limit_bytes"`
 }
 
 func (p *ModelOutputProperties) Validate() error {

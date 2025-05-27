@@ -1252,6 +1252,7 @@ paths:
             $ref: '#/definitions/rpcStatus'
       parameters:
         - name: instanceId
+          description: Instance ID to run the query against.
           in: path
           required: true
           type: string
@@ -1264,22 +1265,29 @@ paths:
               limit:
                 type: string
                 format: int64
+                description: Optional limit on the number of rows to export. It is applied in addition to any limit specified in the query.
               format:
                 $ref: '#/definitions/v1ExportFormat'
-              includeHeader:
-                type: boolean
+                description: Format of the export.
               query:
                 $ref: '#/definitions/v1Query'
+                description: Query to export.
               bakedQuery:
                 type: string
-              organization:
+                description: Deprecated. Use query instead.
+              includeHeader:
+                type: boolean
+                description: If true, the export will include header comments with metadata about the export.
+              originDashboard:
+                $ref: '#/definitions/v1ResourceName'
+                description: |-
+                  Optional name of the dashboard the export originates from.
+                  Only used if include_header is true.
+              originUrl:
                 type: string
-              project:
-                type: string
-              dashboard:
-                type: string
-              dashboardUrl:
-                type: string
+                description: |-
+                  Optional UI URL that the export originates from.
+                  Only used if include_header is true.
       tags:
         - QueryService
   /v1/instances/{instanceId}/queries/metrics-views/{metricsView}/aggregation:
@@ -2544,10 +2552,12 @@ paths:
             $ref: '#/definitions/rpcStatus'
       parameters:
         - name: instanceId
+          description: Instance ID that contains the report.
           in: path
           required: true
           type: string
         - name: report
+          description: Name of the report to export.
           in: path
           required: true
           type: string
@@ -2557,24 +2567,17 @@ paths:
           schema:
             type: object
             properties:
-              limit:
-                type: string
-                format: int64
-              format:
-                $ref: '#/definitions/v1ExportFormat'
-              includeHeader:
-                type: boolean
               executionTime:
                 type: string
                 format: date-time
-              organization:
+                description: |-
+                  The execution time to evaluate the report relative to.
+                  This is provided by the report implementation when sending a report.
+              originBaseUrl:
                 type: string
-              project:
-                type: string
-              dashboard:
-                type: string
-              dashboardUrl:
-                type: string
+                description: |-
+                  Contextual information about the base URL of the UI that initiated the export.
+                  This is used to generate header comments in the exported file when include_header is true in the report spec.
       tags:
         - QueryService
   /v1/instances/{instanceId}/resource:

@@ -119,7 +119,7 @@ func (e *olapToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 func writeCSV(res *drivers.Result, fw io.Writer, headers []string) error {
 	w := csv.NewWriter(fw)
 
-	// Write headerMetadata first if it's provided
+	// Write headers first if they're provided
 	for _, line := range headers {
 		err := w.Write([]string{line})
 		if err != nil {
@@ -203,7 +203,7 @@ func writeXLSX(res *drivers.Result, fw io.Writer, headers []string) error {
 	}
 	idx := 1
 
-	// Write headerMetadata first if it's provided
+	// Write headers first if they're provided
 	for _, line := range headers {
 		row := []any{line} // Each line is a separate row
 		cell, err := excelize.CoordinatesToCellName(1, idx)

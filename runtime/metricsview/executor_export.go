@@ -47,8 +47,8 @@ func (e *Executor) executeExport(ctx context.Context, format drivers.FileFormat,
 	outputProps := map[string]any{
 		"path":                  tempPath,
 		"format":                format,
-		"file_size_limit_bytes": e.instanceCfg.DownloadLimitBytes,
 		"headers":               headers,
+		"file_size_limit_bytes": e.instanceCfg.DownloadLimitBytes,
 	}
 
 	opts := &drivers.ModelExecutorOptions{

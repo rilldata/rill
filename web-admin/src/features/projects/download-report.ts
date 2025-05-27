@@ -16,14 +16,8 @@ import { get } from "svelte/store";
 export type DownloadReportRequest = {
   instanceId: string;
   reportId: string;
-  format: V1ExportFormat;
   executionTime: string;
-  limit?: string;
-  includeHeader?: boolean;
-  organization: string;
-  project: string;
-  dashboard: string;
-  dashboardUrl: string;
+  originBaseUrl: string;
 };
 
 export function createDownloadReportMutation<
@@ -51,14 +45,8 @@ export function createDownloadReportMutation<
       instanceId: data.instanceId,
       report: data.reportId,
       data: {
-        format: data.format,
         executionTime: data.executionTime,
-        limit: data.limit,
-        includeHeader: data.includeHeader,
-        organization: data.organization,
-        project: data.project,
-        dashboard: data.dashboard,
-        dashboardUrl: data.dashboardUrl,
+        originBaseUrl: data.originBaseUrl,
       },
     });
     const downloadUrl = `${get(runtime).host}${exportResp.downloadUrlPath}`;
