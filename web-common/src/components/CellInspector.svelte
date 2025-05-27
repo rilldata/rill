@@ -23,7 +23,7 @@
   // Subscribe to the cellInspectorStore to keep the component in sync
   const unsubscribe = cellInspectorStore.subscribe((state) => {
     isOpen = state.isOpen;
-    if (state.value) {
+    if (state.value && state.isOpen) {
       value = state.value;
     }
   });
@@ -108,7 +108,7 @@
   }
 
   // Parse the value as JSON if it is a valid JSON string
-  $: {
+  $: if (isOpen) {
     try {
       parsedJson = JSON.parse(value);
       isJson = typeof parsedJson === "object" && parsedJson !== null;
@@ -143,7 +143,7 @@
         class:items-center={!isJson}
         id="cell-inspector-content"
       >
-        <div class="flex items-center" id="cell-inspector-title">
+        <div class="flex items-center gap-4" id="cell-inspector-title">
           <span
             class="whitespace-pre-wrap break-words text-xs text-gray-800 dark:text-gray-200 flex-1"
             >{formatValue(value)}</span
