@@ -1,16 +1,28 @@
-<script lang="ts">
-  import { onDestroy } from "svelte";
+import type { Action } from "svelte/action";
 
-  export let threshold = 5;
-  export let timeout = 100;
-  export let activeDelay = 200;
-  export let hideDelay = 0;
-  export let active = false;
+interface HoverIntentParams {
+  threshold?: number;
+  timeout?: number;
+  activeDelay?: number;
+  hideDelay?: number;
+  onActiveChange?: (active: boolean) => void;
+}
+
+export const hoverIntent: Action<HTMLElement, HoverIntentParams> = (
+  node,
+  params = {},
+) => {
+  const {
+    threshold = 5,
+    timeout = 100,
+    activeDelay = 200,
+    hideDelay = 0,
+    onActiveChange = () => {},
+  } = params;
 
   let isHovering = false;
   let isMouseMoved = false;
   let isPointerMoving = false;
-
   let lastMouseX = 0;
   let lastMouseY = 0;
 
@@ -51,7 +63,7 @@
       hoverIntentTimer = setTimeout(() => {
         if (!isMouseMoved && isHovering) {
           waitUntil(() => {
-            active = true;
+            onActiveChange(true);
           });
         }
       }, timeout);
@@ -70,7 +82,7 @@
     hoverIntentTimer = setTimeout(() => {
       if (!isMouseMoved && isHovering) {
         waitUntil(() => {
-          active = true;
+          onActiveChange(true);
         });
       }
     }, timeout);
@@ -90,7 +102,7 @@
     if (deltaX > threshold || deltaY > threshold) {
       isMouseMoved = true;
       clearAllTimers();
-      active = false;
+      onActiveChange(false);
 
       resetMoveTimer = setTimeout(resetMoveState, timeout);
     }
@@ -106,20 +118,23 @@
     clearAllTimers();
 
     waitUntil(() => {
-      active = false;
+      onActiveChange(false);
     }, hideDelay);
   }
 
-  onDestroy(() => {
-    clearAllTimers();
-  });
-</script>
+  node.addEventListener("pointerenter", handlePointerEnter);
+  node.addEventListener("pointermove", handlePointerMove);
+  node.addEventListener("pointerleave", handlePointerLeave);
 
-<div
-  class="contents"
-  on:pointerenter={handlePointerEnter}
-  on:pointermove={handlePointerMove}
-  on:pointerleave={handlePointerLeave}
->
-  <slot />
-</div>
+  return {
+    update(newParams: HoverIntentParams) {
+      Object.assign(params, newParams);
+    },
+    destroy() {
+      clearAllTimers();
+      node.removeEventListener("pointerenter", handlePointerEnter);
+      node.removeEventListener("pointermove", handlePointerMove);
+      node.removeEventListener("pointerleave", handlePointerLeave);
+    },
+  };
+};

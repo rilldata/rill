@@ -32,7 +32,7 @@ FIXME: In the future, we should also be listening to focus events from the child
     Alignment,
     Location,
   } from "@rilldata/web-common/lib/place-element";
-  import HoverIntent from "./HoverIntent.svelte";
+  import { hoverIntent } from "./hoverIntent";
   import {
     CHILD_REQUESTED_TOOLTIP_SUPPRESSION_CONTEXT_KEY,
     childRequestedTooltipSuppression,
@@ -58,17 +58,18 @@ FIXME: In the future, we should also be listening to focus events from the child
 </script>
 
 <div class="contents">
-  <HoverIntent
-    threshold={hoverIntentThreshold}
-    timeout={hoverIntentTimeout}
-    {activeDelay}
-    {hideDelay}
-    bind:active
+  <div
+    bind:this={parent}
+    use:hoverIntent={{
+      threshold: hoverIntentThreshold,
+      timeout: hoverIntentTimeout,
+      activeDelay,
+      hideDelay,
+      onActiveChange: (value) => (active = value),
+    }}
   >
-    <div bind:this={parent}>
-      <slot />
-    </div>
-  </HoverIntent>
+    <slot />
+  </div>
   {#if active && !suppress && !$childRequestedTooltipSuppression}
     <FloatingElement target={parent} {location} {alignment} {distance} {pad}>
       <slot name="tooltip-content" />
