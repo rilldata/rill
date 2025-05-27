@@ -11,15 +11,22 @@ The server can also generate VegaLite-backed visualizations from natural languag
 Not all MCP clients yet support the Image datatype.
 Some clients may offer their own visualization systems you may prefer.
 
-## Why use MCP?
+## Why use MCP with Rill?
+Instead of blindly exposing your entire data warehouse to external platforms in hopes of uncovering trends, Rill's MCP server provides a **structured and governed** alternative. By querying data that already has **pre-defined measures and dimensions**, the responses you get are guaranteed to be as **accurate and consistent** as the metrics displayed in your Rill dashboards.
+
+
+This ensures **trustworthy, governed analytics** while empowering users to **self-serve answers** to everyday business questions—without delays caused by email chains or ticket requests. The result: greater team productivity, clearer data ownership, and faster, more confident decision-making across your organization.
 
 
 ## Installation
 
 ### Prerequisites
-In order to use Rill MCP server, you'll need a MCP Client (Recommendation: Claude, see [below](#configure-claude-desktop), but you can use whatever existing client that you might already be using) and a running Rill project (locally or on Rill Cloud).
 
-Before you can use Rill MCP server, you'll also need to install Node.js. You can download it from [nodejs.org](https://nodejs.org/en)
+To use the Rill MCP server, you'll need:
+
+- An **MCP client** (we recommend [Claude Desktop](#configure-claude-desktop), but you can use any compatible client).
+- A **running Rill project** (locally or hosted on Rill Cloud).
+- **Node.js**, which can be downloaded from [nodejs.org](https://nodejs.org/en).
 
 ### Create a Rill service token (if your project is on Rill Cloud)
 ```
@@ -117,26 +124,29 @@ Make sure Docker is running.
 
 ### Supported Actions
 
-- __*Action1*__ -
-- __*Action2*__ -
-- __*Action3*__ -
-- __*Action4*__ -
-- __*Action5*__ -
+- __*List metrics views*__ - Use "list_metrics_views" to discover available metrics views in the project.
+- __*Get metrics view spec*__ -  Use "get_metrics_view" to fetch a metrics view's specification. This is important to understand all the dimensions and measures in a metrics view.
+- __*Query the time range*__ -  Use "query_metrics_view_time_range" to obtain the available time range for a metrics view. This is important to understand what time range the data spans.
+- __*Query the metrics*__ - Use "query_metrics_view" to run queries to get aggregated results.
+
 
 ### Usage Examples
 
-__*Example Interactions*__
-- __*Example1*__ -
-- __*Example2*__ -
-- __*Example3*__ -
-- __*Example4*__ -
+
+- __*What are my available metrics views?*__ - Provides a list of existing metrics views in your project.
+- __*What are the avaialble metrics and dimensions in XXX metrics view?*__ - Provides the list of pre-defined measures and dimensions that have been defined in the metrics_view.yaml.
+- __*What is the available time range of my data?*__ - Provides a overview of your data's time range, earliest/latest date, etc.
+- __*Provide me a TIME_RANGE broken by TIME_GRAIN analysis of XXX measure.*__ - Builds on the previous queries to give you an actual analysis of your data in dimensions and measures based on the time range provided. 
+
+Using all the above concepts, you can ask the Rill MCP server questions like:
+- What are my *week on week* __increase or decreases in sales__ of `XYZ service`?
+- During the *current year*, do I have any __outliers in website views__? What might this correlate to? 
+- In the *previous quarter*, compared to the current ongoing quarter, what are the __trends for customer access__?
 
 
 ## Conclusion
-
-
-## Resources
+While [Explore dashboards](./dashboard-101/dashboard-101.md) are a great way to slice-and-dice to find insights, sometimes you just need a quick, overall summary of your data via a text conversation and MCP servers are the easiest way to do so! Since Rill MCP is built on top of your existing metrics, you can be confident that the returning data will be correct.
 
 
 ## Need help? 
-Contact our team through our [various forms of communication](/contact) such as email, Chat, and on Discord! 
+[Contact our team](/contact) if you've got any questions, comments, or concerns!
