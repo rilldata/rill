@@ -109,7 +109,7 @@ func newGlob(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolv
 		ExtraProps: map[string]any{
 			"table": tmpTableName,
 		},
-	}, false)
+	}, true)
 	if err != nil {
 		return nil, fmt.Errorf("glob resolver: failed to resolve templating: %w", err)
 	}

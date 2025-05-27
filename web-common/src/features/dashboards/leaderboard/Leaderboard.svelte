@@ -26,7 +26,7 @@
     isExpressionUnsupported,
     sanitiseExpression,
   } from "../stores/filter-utils";
-  import type { DimensionThresholdFilter } from "../stores/metrics-explorer-entity";
+  import type { DimensionThresholdFilter } from "web-common/src/features/dashboards/stores/explore-state";
   import DelayedLoadingRows from "./DelayedLoadingRows.svelte";
   import LeaderboardHeader from "./LeaderboardHeader.svelte";
   import LeaderboardRow from "./LeaderboardRow.svelte";
@@ -105,12 +105,7 @@
   $: queryLimit = slice + 1;
   $: maxValuesToShow = slice * 2;
 
-  $: ({
-    name: dimensionName = "",
-    description = "",
-    displayName = "",
-    uri,
-  } = dimension);
+  $: ({ name: dimensionName = "", displayName = "", uri } = dimension);
 
   $: atLeastOneActive = Boolean($selectedValues.data?.length);
 
@@ -328,7 +323,6 @@
       {allowExpandTable}
       {hovered}
       displayName={displayName || dimensionName}
-      dimensionDescription={description}
       {dimensionName}
       {isBeingCompared}
       isFetching={isLoading}

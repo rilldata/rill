@@ -458,8 +458,6 @@ paths:
                 type: object
                 additionalProperties:
                   type: string
-              embedCatalog:
-                type: boolean
               watchRepo:
                 type: boolean
             description: |-
@@ -1268,9 +1266,19 @@ paths:
                 format: int64
               format:
                 $ref: '#/definitions/v1ExportFormat'
+              includeHeader:
+                type: boolean
               query:
                 $ref: '#/definitions/v1Query'
               bakedQuery:
+                type: string
+              organization:
+                type: string
+              project:
+                type: string
+              dashboard:
+                type: string
+              dashboardUrl:
                 type: string
       tags:
         - QueryService
@@ -2554,9 +2562,19 @@ paths:
                 format: int64
               format:
                 $ref: '#/definitions/v1ExportFormat'
+              includeHeader:
+                type: boolean
               executionTime:
                 type: string
                 format: date-time
+              organization:
+                type: string
+              project:
+                type: string
+              dashboard:
+                type: string
+              dashboardUrl:
+                type: string
       tags:
         - QueryService
   /v1/instances/{instanceId}/resource:
@@ -3047,6 +3065,15 @@ definitions:
       unnest:
         type: boolean
       uri:
+        type: string
+      lookupTable:
+        type: string
+        title: Lookup fields for the dimension
+      lookupKeyColumn:
+        type: string
+      lookupValueColumn:
+        type: string
+      lookupDefaultExpression:
         type: string
     title: Dimensions are columns to filter and group by
   MetricsViewSpecDimensionSelector:
@@ -4066,6 +4093,9 @@ definitions:
       description:
         type: string
         title: Human readable description of the connector
+      docsUrl:
+        type: string
+        title: Docs url for the connector
       implementsRegistry:
         type: boolean
         title: Capabilities supported by the connector
@@ -4150,8 +4180,6 @@ definitions:
         type: object
         additionalProperties:
           type: string
-      embedCatalog:
-        type: boolean
       watchRepo:
         type: boolean
     description: |-
@@ -4650,8 +4678,6 @@ definitions:
         type: object
         additionalProperties:
           type: string
-      embedCatalog:
-        type: boolean
       watchRepo:
         type: boolean
     description: |-
@@ -5529,6 +5555,14 @@ definitions:
         $ref: '#/definitions/v1ModelSpec'
       state:
         $ref: '#/definitions/v1ModelState'
+  v1ModelChangeMode:
+    type: string
+    enum:
+      - MODEL_CHANGE_MODE_UNSPECIFIED
+      - MODEL_CHANGE_MODE_RESET
+      - MODEL_CHANGE_MODE_MANUAL
+      - MODEL_CHANGE_MODE_PATCH
+    default: MODEL_CHANGE_MODE_UNSPECIFIED
   v1ModelPartition:
     type: object
     properties:
@@ -5583,6 +5617,9 @@ definitions:
         type: string
       outputProperties:
         type: object
+      changeMode:
+        $ref: '#/definitions/v1ModelChangeMode'
+        description: change_mode is the mode of change detection to use for the model.
       trigger:
         type: boolean
       triggerFull:
@@ -6014,6 +6051,8 @@ definitions:
         format: uint64
       exportFormat:
         $ref: '#/definitions/v1ExportFormat'
+      exportIncludeHeader:
+        type: boolean
       notifiers:
         type: array
         items:

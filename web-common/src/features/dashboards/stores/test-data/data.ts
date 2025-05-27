@@ -3,7 +3,7 @@ import {
   createAndExpression,
   createInExpression,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
-import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import { getDefaultExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/getDefaultExplorePreset";
 import { getLocalIANA } from "@rilldata/web-common/lib/time/timezone";
 import {
@@ -380,7 +380,7 @@ export const CUSTOM_TEST_CONTROLS = {
   end: TestTimeConstants.LAST_12_HOURS,
 } as DashboardTimeControls;
 
-export const AD_BIDS_PIVOT_ENTITY: Partial<MetricsExplorerEntity> = {
+export const AD_BIDS_PIVOT_ENTITY: Partial<ExploreState> = {
   activePage: DashboardState_ActivePage.PIVOT,
   pivot: {
     rows: [

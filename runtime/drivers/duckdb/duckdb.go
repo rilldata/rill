@@ -76,8 +76,7 @@ var spec = drivers.Spec{
 			Required:    true,
 		},
 	},
-	ImplementsCatalog: true,
-	ImplementsOLAP:    true,
+	ImplementsOLAP: true,
 }
 
 var motherduckSpec = drivers.Spec{
@@ -404,7 +403,7 @@ func (c *connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecu
 			if err := mapstructure.WeakDecode(opts.PreliminaryOutputProperties, outputProps); err != nil {
 				return nil, false
 			}
-			if supportsExportFormat(outputProps.Format) {
+			if supportsExportFormat(outputProps.Format, outputProps.FileHeaderMetadata) {
 				return &selfToFileExecutor{c}, true
 			}
 		}
@@ -429,6 +428,16 @@ func (c *connection) AsWarehouse() (drivers.Warehouse, bool) {
 // AsNotifier implements drivers.Connection.
 func (c *connection) AsNotifier(properties map[string]any) (drivers.Notifier, error) {
 	return nil, drivers.ErrNotNotifier
+}
+
+// Migrate implements drivers.Handle.
+func (c *connection) Migrate(ctx context.Context) error {
+	return nil
+}
+
+// MigrationStatus implements drivers.Handle.
+func (c *connection) MigrationStatus(ctx context.Context) (int, int, error) {
+	return 0, 0, nil
 }
 
 // reopenDB opens the DuckDB handle anew. If c.db is already set, it closes the existing handle first.
@@ -464,7 +473,6 @@ func (c *connection) reopenDB(ctx context.Context) error {
 		"LOAD 'httpfs'",
 		"SET GLOBAL timezone='UTC'",
 		"SET GLOBAL old_implicit_casting = true", // Implicit Cast to VARCHAR
-		"SET GLOBAL allow_community_extensions = false", // This locks the configuration, so it can't later be enabled.
 	)
 
 	dataDir, err := c.storage.DataDir()
@@ -651,7 +659,7 @@ func (c *connection) triggerReopen() {
 	go func() {
 		c.dbCond.L.Lock()
 		defer c.dbCond.L.Unlock()
-		if !c.dbReopen || c.dbConnCount == 0 {
+		if !c.dbReopen || c.dbConnCount != 0 {
 			c.logger.Error("triggerReopen called but should not reopen", zap.Bool("dbReopen", c.dbReopen), zap.Int("dbConnCount", c.dbConnCount))
 			return
 		}

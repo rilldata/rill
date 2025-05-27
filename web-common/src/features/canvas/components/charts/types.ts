@@ -12,6 +12,7 @@ import {
 } from "@rilldata/web-common/runtime-client";
 import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
 import type { CreateQueryResult } from "@tanstack/svelte-query";
+import type { TimeUnit } from "vega-lite/build/src/timeunit";
 
 export type ChartType =
   | "bar_chart"
@@ -19,6 +20,7 @@ export type ChartType =
   | "area_chart"
   | "stacked_bar"
   | "stacked_bar_normalized"
+  | "donut_chart"
   | "pie_chart"
   | "heatmap";
 
@@ -44,22 +46,33 @@ export type ChartDataResult = {
 export interface TimeDimensionDefinition {
   field: string;
   displayName: string;
-  timeUnit?: string;
+  timeUnit?: TimeUnit;
   format?: string;
 }
 
 export type ChartSortDirection = "x" | "y" | "-x" | "-y";
 
-export interface FieldConfig {
-  field: string;
-  showAxisTitle?: boolean; // Default is false
-  zeroBasedOrigin?: boolean; // Default is false
-  type: "quantitative" | "ordinal" | "nominal" | "temporal";
-  timeUnit?: string; // For temporal fields
+export type ChartLegend = "none" | "top" | "bottom" | "left" | "right";
+
+interface NominalFieldConfig {
   sort?: ChartSortDirection;
   limit?: number;
   showNull?: boolean;
   labelAngle?: number;
+  legendOrientation?: ChartLegend;
+}
+
+interface QuantitativeFieldConfig {
+  zeroBasedOrigin?: boolean; // Default is false
+}
+
+export interface FieldConfig
+  extends NominalFieldConfig,
+    QuantitativeFieldConfig {
+  field: string;
+  type: "quantitative" | "ordinal" | "nominal" | "temporal";
+  showAxisTitle?: boolean; // Default is false
+  timeUnit?: string; // For temporal fields
 }
 
 export interface CommonChartProperties {

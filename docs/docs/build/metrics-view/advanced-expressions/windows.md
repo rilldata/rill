@@ -14,7 +14,7 @@ Please review the reference documentation, [here.](/reference/project-files/metr
 In the below example, bids is another measure defined in the metrics view, and we are getting the previous week and current date's values and averaging them. This allows us to remove any short term trends to detect real patterns. You'll need to add the [`requires`](./referencing) array parameter to use reference another measure.
 
 <img src = '/img/build/metrics-view/examples/explore-percent.png' class='rounded-gif' />
-<br /> update this photo
+<br />  
 
 ```yaml
   - name: bids_7day_rolling_avg

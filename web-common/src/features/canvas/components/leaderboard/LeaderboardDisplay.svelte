@@ -77,9 +77,11 @@
   $: allDimensions = getDimensionsForMetricView(metricsViewName);
   $: allMeasures = getMeasuresForMetricView(metricsViewName);
 
-  $: visibleDimensions = $allDimensions.filter((d) =>
-    dimensionNames.includes(d.name || (d.column as string)),
-  );
+  $: visibleDimensions = dimensionNames
+    .map((name) =>
+      $allDimensions.find((d) => (d.name || (d.column as string)) === name),
+    )
+    .filter((d) => d !== undefined);
 
   $: visibleMeasures = $allMeasures.filter((m) =>
     leaderboardMeasureNames.includes(m.name as string),

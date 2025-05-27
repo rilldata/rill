@@ -28,7 +28,7 @@ import { describe, expect, it } from "vitest";
 
 describe("toProto/fromProto", () => {
   it("backwards compatibility for time controls", () => {
-    const metricsExplorer = getFullInitExploreState(
+    const exploreState = getFullInitExploreState(
       AD_BIDS_NAME,
       getInitExploreStateForTest(
         AD_BIDS_METRICS_INIT_WITH_TIME,
@@ -41,12 +41,12 @@ describe("toProto/fromProto", () => {
         },
       ),
     );
-    metricsExplorer.selectedTimeRange = {
+    exploreState.selectedTimeRange = {
       name: "LAST_SIX_HOURS",
       interval: V1TimeGrain.TIME_GRAIN_HOUR,
     } as any;
     const newState = getDashboardStateFromUrl(
-      getProtoFromDashboardState(metricsExplorer, AD_BIDS_EXPLORE_INIT),
+      getProtoFromDashboardState(exploreState, AD_BIDS_EXPLORE_INIT),
       AD_BIDS_METRICS_INIT_WITH_TIME,
       AD_BIDS_EXPLORE_INIT,
       AD_BIDS_SCHEMA,

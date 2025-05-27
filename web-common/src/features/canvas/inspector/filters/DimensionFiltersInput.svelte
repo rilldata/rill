@@ -171,6 +171,7 @@
                   timeEnd={new Date().toISOString()}
                   timeControlsReady
                   excludeMode={$isFilterExcludeMode(name)}
+                  whereFilter={$whereFilter}
                   onRemove={() => removeDimensionFilter(name)}
                   onToggleFilterMode={() => toggleDimensionFilterMode(name)}
                   onSelect={(value) =>

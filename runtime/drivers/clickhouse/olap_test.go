@@ -30,13 +30,13 @@ func TestClickhouseSingle(t *testing.T) {
 	t.Run("WithConnection", func(t *testing.T) { testWithConnection(t, olap) })
 	t.Run("RenameView", func(t *testing.T) { testRenameView(t, c, olap) })
 	t.Run("RenameTable", func(t *testing.T) { testRenameTable(t, c, olap) })
-	t.Run("CreateTableAsSelect", func(t *testing.T) { testCreateTableAsSelect(t, c, olap) })
+	t.Run("CreateTableAsSelect", func(t *testing.T) { testCreateTableAsSelect(t, c) })
 	t.Run("InsertTableAsSelect_WithAppend", func(t *testing.T) { testInsertTableAsSelect_WithAppend(t, c, olap) })
 	t.Run("InsertTableAsSelect_WithMerge", func(t *testing.T) { testInsertTableAsSelect_WithMerge(t, c, olap) })
 	t.Run("InsertTableAsSelect_WithPartitionOverwrite", func(t *testing.T) { testInsertTableAsSelect_WithPartitionOverwrite(t, c, olap) })
 	t.Run("InsertTableAsSelect_WithPartitionOverwrite_DatePartition", func(t *testing.T) { testInsertTableAsSelect_WithPartitionOverwrite_DatePartition(t, c, olap) })
 	t.Run("TestDictionary", func(t *testing.T) { testDictionary(t, c, olap) })
-	t.Run("TestIntervalType", func(t *testing.T) { testIntervalType(t, c, olap) })
+	t.Run("TestIntervalType", func(t *testing.T) { testIntervalType(t, olap) })
 }
 
 func TestClickhouseCluster(t *testing.T) {
@@ -59,7 +59,7 @@ func TestClickhouseCluster(t *testing.T) {
 	t.Run("WithConnection", func(t *testing.T) { testWithConnection(t, olap) })
 	t.Run("RenameView", func(t *testing.T) { testRenameView(t, c, olap) })
 	t.Run("RenameTable", func(t *testing.T) { testRenameTable(t, c, olap) })
-	t.Run("CreateTableAsSelect", func(t *testing.T) { testCreateTableAsSelect(t, c, olap) })
+	t.Run("CreateTableAsSelect", func(t *testing.T) { testCreateTableAsSelect(t, c) })
 	t.Run("InsertTableAsSelect_WithAppend", func(t *testing.T) { testInsertTableAsSelect_WithAppend(t, c, olap) })
 	t.Run("InsertTableAsSelect_WithMerge", func(t *testing.T) { testInsertTableAsSelect_WithMerge(t, c, olap) })
 	t.Run("InsertTableAsSelect_WithPartitionOverwrite", func(t *testing.T) { testInsertTableAsSelect_WithPartitionOverwrite(t, c, olap) })
@@ -96,7 +96,7 @@ func testWithConnection(t *testing.T, olap drivers.OLAPStore) {
 
 func testRenameView(t *testing.T, c *Connection, olap drivers.OLAPStore) {
 	ctx := context.Background()
-	opts := map[string]any{"type": "VIEW"}
+	opts := &ModelOutputProperties{Typ: "VIEW"}
 	_, err := c.createTableAsSelect(ctx, "foo_view", "SELECT 1 AS id", opts)
 	require.NoError(t, err)
 
@@ -148,24 +148,28 @@ func notExists(t *testing.T, c *Connection, olap drivers.OLAPStore, tbl string) 
 	require.NoError(t, result.Close())
 }
 
-func testCreateTableAsSelect(t *testing.T, c *Connection, olap drivers.OLAPStore) {
-	opts := map[string]any{"engine": "MergeTree", "table": "tbl", "distributed.sharding_key": "rand()"}
-	_, err := c.createTableAsSelect(context.Background(), "tbl", "SELECT 1 AS id, 'Earth' AS planet", opts)
+func testCreateTableAsSelect(t *testing.T, c *Connection) {
+	_, err := c.createTableAsSelect(context.Background(), "tbl", "SELECT 1 AS id, 'Earth' AS planet", &ModelOutputProperties{
+		Engine:                 "MergeTree",
+		Table:                  "tbl",
+		DistributedShardingKey: "rand()",
+	})
 	require.NoError(t, err)
 }
 
 func testInsertTableAsSelect_WithAppend(t *testing.T, c *Connection, olap drivers.OLAPStore) {
-	opts := map[string]any{
-		"engine":                   "MergeTree",
-		"table":                    "tbl",
-		"distributed.sharding_key": "rand()",
-		"incremental_strategy":     drivers.IncrementalStrategyAppend,
+	props := &ModelOutputProperties{
+		Engine:                 "MergeTree",
+		Table:                  "append_tbl",
+		DistributedShardingKey: "rand()",
+		IncrementalStrategy:    drivers.IncrementalStrategyAppend,
 	}
-	_, err := c.createTableAsSelect(context.Background(), "append_tbl", "SELECT 1 AS id, 'Earth' AS planet", opts)
+
+	_, err := c.createTableAsSelect(context.Background(), "append_tbl", "SELECT 1 AS id, 'Earth' AS planet", props)
 	require.NoError(t, err)
 
 	insertOpts := &InsertTableOptions{Strategy: drivers.IncrementalStrategyAppend}
-	_, err = c.insertTableAsSelect(context.Background(), "append_tbl", "SELECT 2 AS id, 'Mars' AS planet", insertOpts)
+	_, err = c.insertTableAsSelect(context.Background(), "append_tbl", "SELECT 2 AS id, 'Mars' AS planet", insertOpts, props)
 	require.NoError(t, err)
 
 	res, err := olap.Query(context.Background(), &drivers.Statement{Query: "SELECT id, planet FROM append_tbl ORDER BY id"})
@@ -210,19 +214,19 @@ func testInsertTableAsSelect_WithAppend(t *testing.T, c *Connection, olap driver
 }
 
 func testInsertTableAsSelect_WithMerge(t *testing.T, c *Connection, olap drivers.OLAPStore) {
-	opts := map[string]any{
-		"typs":                     "TABLE",
-		"engine":                   "ReplacingMergeTree",
-		"table":                    "tbl",
-		"distributed.sharding_key": "rand()",
-		"incremental_strategy":     drivers.IncrementalStrategyMerge,
-		"order_by":                 "id",
+	props := &ModelOutputProperties{
+		Typ:                    "TABLE",
+		Engine:                 "ReplacingMergeTree",
+		Table:                  "tbl",
+		DistributedShardingKey: "rand()",
+		IncrementalStrategy:    drivers.IncrementalStrategyMerge,
+		OrderBy:                "id",
 	}
-	_, err := c.createTableAsSelect(context.Background(), "merge_tbl", "SELECT generate_series AS id, 'insert' AS value FROM generate_series(0, 4)", opts)
+	_, err := c.createTableAsSelect(context.Background(), "merge_tbl", "SELECT generate_series AS id, 'insert' AS value FROM generate_series(0, 4)", props)
 	require.NoError(t, err)
 
 	insertOpts := &InsertTableOptions{Strategy: drivers.IncrementalStrategyMerge}
-	_, err = c.insertTableAsSelect(context.Background(), "merge_tbl", "SELECT generate_series AS id, 'merge' AS value FROM generate_series(2, 5)", insertOpts)
+	_, err = c.insertTableAsSelect(context.Background(), "merge_tbl", "SELECT generate_series AS id, 'merge' AS value FROM generate_series(2, 5)", insertOpts, props)
 	require.NoError(t, err)
 
 	var result []struct {
@@ -274,22 +278,22 @@ func testInsertTableAsSelect_WithMerge(t *testing.T, c *Connection, olap drivers
 }
 
 func testInsertTableAsSelect_WithPartitionOverwrite(t *testing.T, c *Connection, olap drivers.OLAPStore) {
-	opts := map[string]any{
-		"engine":                   "MergeTree",
-		"table":                    "tbl",
-		"distributed.sharding_key": "rand()",
-		"incremental_strategy":     drivers.IncrementalStrategyPartitionOverwrite,
-		"partition_by":             "id",
-		"order_by":                 "value",
-		"primary_key":              "value",
+	props := &ModelOutputProperties{
+		Engine:                 "MergeTree",
+		Table:                  "tbl",
+		DistributedShardingKey: "rand()",
+		IncrementalStrategy:    drivers.IncrementalStrategyPartitionOverwrite,
+		OrderBy:                "id",
+		PartitionBy:            "id",
+		PrimaryKey:             "id",
 	}
-	_, err := c.createTableAsSelect(context.Background(), "replace_tbl", "SELECT generate_series AS id, 'insert' AS value FROM generate_series(0, 4)", opts)
+	_, err := c.createTableAsSelect(context.Background(), "replace_tbl", "SELECT generate_series AS id, 'insert' AS value FROM generate_series(0, 4)", props)
 	require.NoError(t, err)
 
 	insertOpts := &InsertTableOptions{
 		Strategy: drivers.IncrementalStrategyPartitionOverwrite,
 	}
-	_, err = c.insertTableAsSelect(context.Background(), "replace_tbl", "SELECT generate_series AS id, 'replace' AS value FROM generate_series(2, 5)", insertOpts)
+	_, err = c.insertTableAsSelect(context.Background(), "replace_tbl", "SELECT generate_series AS id, 'replace' AS value FROM generate_series(2, 5)", insertOpts, props)
 	require.NoError(t, err)
 
 	res, err := olap.Query(context.Background(), &drivers.Statement{Query: "SELECT id, value FROM replace_tbl ORDER BY id"})
@@ -337,22 +341,22 @@ func testInsertTableAsSelect_WithPartitionOverwrite(t *testing.T, c *Connection,
 }
 
 func testInsertTableAsSelect_WithPartitionOverwrite_DatePartition(t *testing.T, c *Connection, olap drivers.OLAPStore) {
-	opts := map[string]any{
-		"engine":                   "MergeTree",
-		"table":                    "tbl",
-		"distributed.sharding_key": "rand()",
-		"incremental_strategy":     drivers.IncrementalStrategyPartitionOverwrite,
-		"partition_by":             "dt",
-		"order_by":                 "value",
-		"primary_key":              "value",
+	props := &ModelOutputProperties{
+		Engine:                 "MergeTree",
+		Table:                  "tbl",
+		DistributedShardingKey: "rand()",
+		IncrementalStrategy:    drivers.IncrementalStrategyPartitionOverwrite,
+		OrderBy:                "dt",
+		PartitionBy:            "dt",
+		PrimaryKey:             "dt",
 	}
-	_, err := c.createTableAsSelect(context.Background(), "replace_tbl", "SELECT date_add(hour, generate_series, toDate('2024-12-01')) AS dt, 'insert' AS value FROM generate_series(0, 4)", opts)
+	_, err := c.createTableAsSelect(context.Background(), "replace_tbl", "SELECT date_add(hour, generate_series, toDate('2024-12-01')) AS dt, 'insert' AS value FROM generate_series(0, 4)", props)
 	require.NoError(t, err)
 
 	insertOpts := &InsertTableOptions{
 		Strategy: drivers.IncrementalStrategyPartitionOverwrite,
 	}
-	_, err = c.insertTableAsSelect(context.Background(), "replace_tbl", "SELECT date_add(hour, generate_series, toDate('2024-12-01')) AS dt, 'replace' AS value FROM generate_series(2, 5)", insertOpts)
+	_, err = c.insertTableAsSelect(context.Background(), "replace_tbl", "SELECT date_add(hour, generate_series, toDate('2024-12-01')) AS dt, 'replace' AS value FROM generate_series(2, 5)", insertOpts, props)
 	require.NoError(t, err)
 
 	res, err := olap.Query(context.Background(), &drivers.Statement{Query: "SELECT dt, value FROM replace_tbl ORDER BY dt"})
@@ -400,8 +404,12 @@ func testInsertTableAsSelect_WithPartitionOverwrite_DatePartition(t *testing.T, 
 }
 
 func testDictionary(t *testing.T, c *Connection, olap drivers.OLAPStore) {
-	opts := map[string]any{"table": "Dictionary", "primary_key": "id"}
-	_, err := c.createTableAsSelect(context.Background(), "dict", "SELECT 1 AS id, 'Earth' AS planet", opts)
+	_, err := c.createTableAsSelect(context.Background(), "dict", "SELECT 1 AS id, 'Earth' AS planet", &ModelOutputProperties{
+		Typ:                      "DICTIONARY",
+		PrimaryKey:               "id",
+		DictionarySourceUser:     "clickhouse",
+		DictionarySourcePassword: "clickhouse",
+	})
 	require.NoError(t, err)
 
 	err = c.renameEntity(context.Background(), "dict", "dict1")
@@ -421,7 +429,7 @@ func testDictionary(t *testing.T, c *Connection, olap drivers.OLAPStore) {
 	require.NoError(t, c.dropTable(context.Background(), "dict1"))
 }
 
-func testIntervalType(t *testing.T, c *Connection, olap drivers.OLAPStore) {
+func testIntervalType(t *testing.T, olap drivers.OLAPStore) {
 	cases := []struct {
 		query string
 		ms    int64

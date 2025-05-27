@@ -56,6 +56,10 @@ export interface MetricsViewSpecDimension {
   expression?: string;
   unnest?: boolean;
   uri?: string;
+  lookupTable?: string;
+  lookupKeyColumn?: string;
+  lookupValueColumn?: string;
+  lookupDefaultExpression?: string;
 }
 
 export interface MetricsViewSpecDimensionSelector {
@@ -656,6 +660,7 @@ export interface V1ConnectorDriver {
   sourceProperties?: ConnectorDriverProperty[];
   displayName?: string;
   description?: string;
+  docsUrl?: string;
   implementsRegistry?: boolean;
   implementsCatalog?: boolean;
   implementsRepo?: boolean;
@@ -712,7 +717,6 @@ export interface V1CreateInstanceRequest {
   connectors?: V1Connector[];
   variables?: V1CreateInstanceRequestVariables;
   annotations?: V1CreateInstanceRequestAnnotations;
-  embedCatalog?: boolean;
   watchRepo?: boolean;
 }
 
@@ -1060,7 +1064,6 @@ export interface V1Instance {
   projectVariables?: V1InstanceProjectVariables;
   featureFlags?: V1InstanceFeatureFlags;
   annotations?: V1InstanceAnnotations;
-  embedCatalog?: boolean;
   watchRepo?: boolean;
 }
 
@@ -1509,6 +1512,17 @@ export interface V1Model {
   state?: V1ModelState;
 }
 
+export type V1ModelChangeMode =
+  (typeof V1ModelChangeMode)[keyof typeof V1ModelChangeMode];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const V1ModelChangeMode = {
+  MODEL_CHANGE_MODE_UNSPECIFIED: "MODEL_CHANGE_MODE_UNSPECIFIED",
+  MODEL_CHANGE_MODE_RESET: "MODEL_CHANGE_MODE_RESET",
+  MODEL_CHANGE_MODE_MANUAL: "MODEL_CHANGE_MODE_MANUAL",
+  MODEL_CHANGE_MODE_PATCH: "MODEL_CHANGE_MODE_PATCH",
+} as const;
+
 export type V1ModelPartitionData = { [key: string]: unknown };
 
 export interface V1ModelPartition {
@@ -1551,6 +1565,7 @@ export interface V1ModelSpec {
   stageProperties?: V1ModelSpecStageProperties;
   outputConnector?: string;
   outputProperties?: V1ModelSpecOutputProperties;
+  changeMode?: V1ModelChangeMode;
   trigger?: boolean;
   triggerFull?: boolean;
   /** defined_as_source is true if it was defined by user as a source but converted internally to a model. */
@@ -1833,6 +1848,7 @@ export interface V1ReportSpec {
   queryArgsJson?: string;
   exportLimit?: string;
   exportFormat?: V1ExportFormat;
+  exportIncludeHeader?: boolean;
   notifiers?: V1Notifier[];
   annotations?: V1ReportSpecAnnotations;
   /** If true, will use the lowest watermark of its refs instead of the trigger time. */
@@ -2265,7 +2281,6 @@ export type RuntimeServiceEditInstanceBody = {
   connectors?: V1Connector[];
   variables?: RuntimeServiceEditInstanceBodyVariables;
   annotations?: RuntimeServiceEditInstanceBodyAnnotations;
-  embedCatalog?: boolean;
   watchRepo?: boolean;
 };
 
@@ -2455,8 +2470,13 @@ export type QueryServiceColumnDescriptiveStatisticsParams = {
 export type QueryServiceExportBody = {
   limit?: string;
   format?: V1ExportFormat;
+  includeHeader?: boolean;
   query?: V1Query;
   bakedQuery?: string;
+  organization?: string;
+  project?: string;
+  dashboard?: string;
+  dashboardUrl?: string;
 };
 
 export type QueryServiceMetricsViewAggregationBody = {
@@ -2724,7 +2744,12 @@ export type RuntimeServiceQueryResolverBody = {
 export type QueryServiceExportReportBody = {
   limit?: string;
   format?: V1ExportFormat;
+  includeHeader?: boolean;
   executionTime?: string;
+  organization?: string;
+  project?: string;
+  dashboard?: string;
+  dashboardUrl?: string;
 };
 
 export type RuntimeServiceGetResourceParams = {

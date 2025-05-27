@@ -73,7 +73,7 @@ You can verify the current value of your state in the left hand panel under Incr
 
 When you are testing with incremental models in Rill Developer, you will notice a change in the refresh functionality. Instead of a full refresh, you are given the option for `incremental refresh`.
 
-<img src = '/img/tutorials/302/now-incremental.png' class='rounded-gif' />
+<img src = '/img/tutorials/advanced-models/now-incremental.png' class='rounded-gif' />
 <br />
 
 :::tip What's the difference?
@@ -94,5 +94,15 @@ Kind in mind that if you select `Full refresh` this will start the ingestion of 
  rill project refresh --local --model <model_name> --full
 ```
 
+## Model Change Modes
 
+Configure how changes to your model specifications are applied:
 
+```yaml
+# model.yaml
+change_mode: reset  # Options: reset (default), manual, patch
+```
+
+- `reset`: changing the model automatically leads to a full refresh (default)
+- `manual`: changing the model stops refreshes until a manual incremental or full refresh is run
+- `patch`: changing the model automatically changes to the new logic without a reset (only works for models with `incremental: true`)

@@ -25,12 +25,12 @@ Rill's modeling layer provides open-ended SQL compatibility for complex SQL quer
 Measure expressions can take any SQL numeric function, a set of aggregates and apply filters to create derived metrics. Reminder on basic expressions are available in the [create metrics view definition](../metrics-view.md#measures).
 
 See our dedicated examples and pages for the following advanced measures!
-- **[Metric Formatting](./metric-formatting)**
-- **[Case Statements and Filters](./case-statements)**
-- **[Referencing Measures](./referencing)**
-- **[Quantiles](./quantiles)**
-- **[Fixed Metrics](./fixed-metrics)**
-- **[Window Functions](./windows)**
+- **[Metric Formatting](/build/metrics-view/advanced-expressions/metric-formatting)**
+- **[Case Statements and Filters](/build/metrics-view/advanced-expressions/case-statements)**
+- **[Referencing Measures](/build/metrics-view/advanced-expressions/referencing)**
+- **[Quantiles](/build/metrics-view/advanced-expressions/quantiles)**
+- **[Fixed Metrics](/build/metrics-view/advanced-expressions/fixed-metrics)**
+- **[Window Functions](/build/metrics-view/advanced-expressions/windows)**
 
   
 
@@ -48,7 +48,7 @@ To utilize an expression, replace the `column` property with `expression` and ap
 ```
 See our dedicated examples and pages for the following advanced dimensions!
 
-- **[Unnest Dimensions](./unnesting)**
+- **[Unnest Dimensions](/build/metrics-view/advanced-expressions/unnesting)**
 
 ## Druid Lookups
 

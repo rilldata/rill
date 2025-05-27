@@ -1,5 +1,5 @@
+import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import { createInExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
-import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import { getTimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import { PreviousCompleteRangeMap } from "@rilldata/web-common/features/dashboards/time-controls/time-range-mappers";
 import { convertPartialExploreStateToUrlParams } from "@rilldata/web-common/features/dashboards/url-state/convert-partial-explore-state-to-url-params";
@@ -37,14 +37,14 @@ for (const preset in PreviousCompleteRangeMap) {
 }
 
 export function fillTimeRange(
-  dashboard: MetricsExplorerEntity,
+  exploreState: ExploreState,
   reqTimeRange: V1TimeRange | undefined,
   reqComparisonTimeRange: V1TimeRange | undefined,
   timeRangeSummary: V1TimeRangeSummary,
   executionTime: string,
 ) {
   if (reqTimeRange) {
-    dashboard.selectedTimeRange = getSelectedTimeRange(
+    exploreState.selectedTimeRange = getSelectedTimeRange(
       reqTimeRange,
       timeRangeSummary,
       reqTimeRange.isoDuration ?? "",
@@ -59,13 +59,13 @@ export function fillTimeRange(
       (reqComparisonTimeRange.isoOffset &&
         reqComparisonTimeRange.isoOffset === reqComparisonTimeRange.isoDuration)
     ) {
-      dashboard.selectedComparisonTimeRange = {
+      exploreState.selectedComparisonTimeRange = {
         name: TimeComparisonOption.CONTIGUOUS,
         start: undefined as unknown as Date,
         end: undefined as unknown as Date,
       };
     } else {
-      dashboard.selectedComparisonTimeRange = getSelectedTimeRange(
+      exploreState.selectedComparisonTimeRange = getSelectedTimeRange(
         reqComparisonTimeRange,
         timeRangeSummary,
         reqComparisonTimeRange.isoOffset,
@@ -74,18 +74,19 @@ export function fillTimeRange(
       // temporary fix to not lead to an uncaught error.
       // TODO: we should a single custom label when we move to rill-time syntax
       if (
-        dashboard.selectedComparisonTimeRange?.name === TimeRangePreset.CUSTOM
+        exploreState.selectedComparisonTimeRange?.name ===
+        TimeRangePreset.CUSTOM
       ) {
-        dashboard.selectedComparisonTimeRange.name =
+        exploreState.selectedComparisonTimeRange.name =
           TimeComparisonOption.CUSTOM;
       }
     }
 
-    if (dashboard.selectedComparisonTimeRange) {
-      dashboard.selectedComparisonTimeRange.interval =
-        dashboard.selectedTimeRange?.interval;
+    if (exploreState.selectedComparisonTimeRange) {
+      exploreState.selectedComparisonTimeRange.interval =
+        exploreState.selectedTimeRange?.interval;
     }
-    dashboard.showTimeComparison = true;
+    exploreState.showTimeComparison = true;
   }
 }
 
@@ -114,6 +115,11 @@ export function getSelectedTimeRange(
       new Date(timeRangeSummary.min),
       new Date(executionTime),
     );
+    // Convert the range to a custom one with resolved start and end.
+    // This retains the resolved range with `executionTime` incorporated into the range.
+    // TODO: Once we have rill-time do `<syntax> as of <executionTime>` as time range.
+    //       Note we need to have the new drop down out of feature flag as well.
+    selectedTimeRange.name = TimeRangePreset.CUSTOM;
   } else {
     return undefined;
   }
@@ -156,7 +162,7 @@ export async function convertQueryFilterToToplistQuery(
 
 export async function getExplorePageUrlSearchParams(
   exploreName: string,
-  exploreState: MetricsExplorerEntity,
+  exploreState: ExploreState,
 ): Promise<URLSearchParams> {
   const instanceId = get(runtime).instanceId;
   const { explore, metricsView } = await queryClient.fetchQuery({

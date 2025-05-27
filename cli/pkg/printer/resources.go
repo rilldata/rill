@@ -70,9 +70,12 @@ func toProjectTable(projects []*adminv1.Project) []*project {
 }
 
 func toProjectRow(o *adminv1.Project) *project {
-	githubURL := o.GithubUrl
-	if o.Subpath != "" {
-		githubURL = filepath.Join(o.GithubUrl, "tree", o.ProdBranch, o.Subpath)
+	var githubURL string
+	if o.ManagedGitId == "" {
+		githubURL = o.GithubUrl
+		if o.Subpath != "" {
+			githubURL = filepath.Join(o.GithubUrl, "tree", o.ProdBranch, o.Subpath)
+		}
 	}
 
 	return &project{
@@ -185,34 +188,48 @@ type memberUserWithRole struct {
 	RoleName string `header:"role" json:"role_name"`
 }
 
-func (p *Printer) PrintInvites(invites []*adminv1.UserInvite) {
+func (p *Printer) PrintOrganizationInvites(invites []*adminv1.OrganizationInvite) {
 	if len(invites) == 0 {
 		return
 	}
-	p.PrintDataWithTitle(toInvitesTable(invites), "Invites pending acceptance")
-}
-
-func toInvitesTable(invites []*adminv1.UserInvite) []*userInvite {
-	allInvites := make([]*userInvite, 0, len(invites))
-
+	rows := make([]*organizationInvite, 0, len(invites))
 	for _, i := range invites {
-		allInvites = append(allInvites, toInviteRow(i))
+		rows = append(rows, &organizationInvite{
+			Email:     i.Email,
+			RoleName:  i.RoleName,
+			InvitedBy: i.InvitedBy,
+		})
 	}
-	return allInvites
+	p.PrintDataWithTitle(rows, "Invites pending acceptance")
 }
 
-func toInviteRow(i *adminv1.UserInvite) *userInvite {
-	return &userInvite{
-		Email:     i.Email,
-		RoleName:  i.Role,
-		InvitedBy: i.InvitedBy,
-	}
-}
-
-type userInvite struct {
+type organizationInvite struct {
 	Email     string `header:"email" json:"email"`
 	RoleName  string `header:"role" json:"role_name"`
 	InvitedBy string `header:"invited_by" json:"invited_by"`
+}
+
+func (p *Printer) PrintProjectInvites(invites []*adminv1.ProjectInvite) {
+	if len(invites) == 0 {
+		return
+	}
+	rows := make([]*projectInvite, 0, len(invites))
+	for _, i := range invites {
+		rows = append(rows, &projectInvite{
+			Email:       i.Email,
+			RoleName:    i.RoleName,
+			OrgRoleName: i.OrgRoleName,
+			InvitedBy:   i.InvitedBy,
+		})
+	}
+	p.PrintDataWithTitle(rows, "Invites pending acceptance")
+}
+
+type projectInvite struct {
+	Email       string `header:"email" json:"email"`
+	RoleName    string `header:"role" json:"role_name"`
+	OrgRoleName string `header:"org_role" json:"org_role_name"`
+	InvitedBy   string `header:"invited_by" json:"invited_by"`
 }
 
 func (p *Printer) PrintServices(svcs []*adminv1.Service) {
@@ -250,36 +267,69 @@ func (p *Printer) PrintServiceTokens(sts []*adminv1.ServiceToken) {
 	if len(sts) == 0 {
 		return
 	}
-	p.PrintData(toServiceTokensTable(sts))
-}
-
-func toServiceTokensTable(tkns []*adminv1.ServiceToken) []*token {
-	tokens := make([]*token, 0, len(tkns))
-
-	for _, t := range tkns {
-		tokens = append(tokens, toServiceTokenRow(t))
+	table := make([]*serviceToken, 0, len(sts))
+	for _, t := range sts {
+		table = append(table, toServiceTokenRow(t))
 	}
-
-	return tokens
+	p.PrintData(table)
 }
 
-func toServiceTokenRow(s *adminv1.ServiceToken) *token {
+func toServiceTokenRow(s *adminv1.ServiceToken) *serviceToken {
 	var expiresOn string
 	if !s.ExpiresOn.AsTime().IsZero() {
 		expiresOn = s.ExpiresOn.AsTime().Local().Format(time.DateTime)
 	}
 
-	return &token{
+	return &serviceToken{
 		ID:        s.Id,
 		CreatedOn: s.CreatedOn.AsTime().Local().Format(time.DateTime),
 		ExpiresOn: expiresOn,
 	}
 }
 
-type token struct {
+type serviceToken struct {
 	ID        string `header:"id" json:"id"`
 	CreatedOn string `header:"created_on,timestamp(ms|utc|human)" json:"created_on"`
 	ExpiresOn string `header:"expires_on,timestamp(ms|utc|human)" json:"expires_on"`
+}
+
+func (p *Printer) PrintUserTokens(uts []*adminv1.UserAuthToken) {
+	if len(uts) == 0 {
+		return
+	}
+	table := make([]*userToken, 0, len(uts))
+	for _, t := range uts {
+		table = append(table, toUserTokenRow(t))
+	}
+	p.PrintData(table)
+}
+
+func toUserTokenRow(u *adminv1.UserAuthToken) *userToken {
+	var expiresOn, usedOn string
+	if u.ExpiresOn != nil {
+		expiresOn = u.ExpiresOn.AsTime().Local().Format(time.DateTime)
+	}
+	if u.UsedOn != nil {
+		usedOn = u.UsedOn.AsTime().Local().Format(time.DateTime)
+	}
+
+	return &userToken{
+		ID:          u.Id,
+		ClientName:  u.AuthClientDisplayName,
+		Description: u.DisplayName,
+		CreatedOn:   u.CreatedOn.AsTime().Local().Format(time.DateTime),
+		ExpiresOn:   expiresOn,
+		UsedOn:      usedOn,
+	}
+}
+
+type userToken struct {
+	ID          string `header:"id" json:"id"`
+	Description string `header:"description" json:"description"`
+	ClientName  string `header:"client" json:"client"`
+	CreatedOn   string `header:"created,timestamp(ms|utc|human)" json:"created_on"`
+	ExpiresOn   string `header:"expires,timestamp(ms|utc|human)" json:"expires_on"`
+	UsedOn      string `header:"last used,timestamp(ms|utc|human)" json:"last_used_on"`
 }
 
 func (p *Printer) PrintMagicAuthTokens(tkns []*adminv1.MagicAuthToken) {
@@ -303,7 +353,7 @@ func toMagicAuthTokensTable(tkns []*adminv1.MagicAuthToken) []*magicAuthToken {
 
 func toMagicAuthTokenRow(t *adminv1.MagicAuthToken) *magicAuthToken {
 	expr := metricsview.NewExpressionFromProto(t.Filter)
-	filter, err := metricsview.ExpressionToString(expr)
+	filter, err := metricsview.ExpressionToSQL(expr)
 	if err != nil {
 		panic(err)
 	}

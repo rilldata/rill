@@ -77,7 +77,7 @@ func (e *Executor) ValidateMetricsView(ctx context.Context) (*ValidateMetricsVie
 		f, ok := cols[strings.ToLower(mv.TimeDimension)]
 		if !ok {
 			res.TimeDimensionErr = fmt.Errorf("timeseries %q is not a column in table %q", mv.TimeDimension, mv.Table)
-		} else if f.Type.Code != runtimev1.Type_CODE_TIMESTAMP && f.Type.Code != runtimev1.Type_CODE_DATE {
+		} else if f.Type.Code != runtimev1.Type_CODE_TIMESTAMP && f.Type.Code != runtimev1.Type_CODE_DATE && !(e.olap.Dialect() == drivers.DialectPinot && f.Type.Code == runtimev1.Type_CODE_INT64) {
 			res.TimeDimensionErr = fmt.Errorf("timeseries %q is not a TIMESTAMP column", mv.TimeDimension)
 		}
 	}
@@ -160,7 +160,10 @@ func (e *Executor) validateAllDimensionsAndMeasures(ctx context.Context, t *driv
 	var unnestClauses []string
 	var groupIndexes []string
 	for idx, d := range mv.Dimensions {
-		dimExpr, unnestClause := dialect.DimensionSelect(t.Database, t.DatabaseSchema, t.Name, d)
+		dimExpr, unnestClause, err := dialect.DimensionSelect(t.Database, t.DatabaseSchema, t.Name, d)
+		if err != nil {
+			return fmt.Errorf("failed to validate dimension %q: %w", d.Name, err)
+		}
 		dimExprs = append(dimExprs, dimExpr)
 		if unnestClause != "" {
 			unnestClauses = append(unnestClauses, unnestClause)
@@ -283,10 +286,13 @@ func (e *Executor) validateDimension(ctx context.Context, t *drivers.Table, d *r
 	}
 
 	dialect := e.olap.Dialect()
-	expr, unnestClause := dialect.DimensionSelect(t.Database, t.DatabaseSchema, t.Name, d)
+	expr, unnestClause, err := dialect.DimensionSelect(t.Database, t.DatabaseSchema, t.Name, d)
+	if err != nil {
+		return fmt.Errorf("failed to validate dimension %q: %w", d.Name, err)
+	}
 
 	// Validate with a query if it's an expression
-	err := e.olap.Exec(ctx, &drivers.Statement{
+	err = e.olap.Exec(ctx, &drivers.Statement{
 		Query:  fmt.Sprintf("SELECT %s FROM %s %s GROUP BY 1", expr, dialect.EscapeTable(t.Database, t.DatabaseSchema, t.Name), unnestClause),
 		DryRun: true,
 	})
