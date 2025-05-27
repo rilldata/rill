@@ -77,6 +77,7 @@ var spec = drivers.Spec{
 			Required:    true,
 		},
 	},
+	ImplementsOLAP: true,
 }
 
 var motherduckSpec = drivers.Spec{
@@ -128,7 +129,6 @@ var motherduckSpec = drivers.Spec{
 			Required:    true,
 		},
 	},
-	ImplementsOLAP: true,
 }
 
 type Driver struct {
@@ -525,6 +525,7 @@ func (c *connection) reopenDB(ctx context.Context) error {
 			os.RemoveAll(tempDir) // Clean up temp dir if we fail to open the DB
 			return err
 		}
+		return nil
 	}
 	c.db, err = rduckdb.NewDB(ctx, &rduckdb.DBOptions{
 		LocalPath:       dataDir,
