@@ -5,7 +5,6 @@
 
   let isOpen = false;
   let value = "";
-  // We don't need position in this component
 
   const unsubscribe = cellInspectorStore.subscribe((state) => {
     isOpen = state.isOpen;
@@ -19,8 +18,6 @@
   function handleToggle() {
     cellInspectorStore.toggle(value);
   }
-
-  // No need for keyboard event handler here - it's handled in the base CellInspector component
 
   onDestroy(unsubscribe);
 </script>

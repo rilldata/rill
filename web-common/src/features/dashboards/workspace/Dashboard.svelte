@@ -235,7 +235,6 @@
     </div>
   {/if}
 
-  <!-- Cell Inspector for viewing large content -->
   <CellInspector />
 </article>
 
