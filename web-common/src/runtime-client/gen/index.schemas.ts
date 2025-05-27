@@ -1559,7 +1559,6 @@ export interface V1ModelSpec {
   partitionsResolverProperties?: V1ModelSpecPartitionsResolverProperties;
   partitionsWatermarkField?: string;
   partitionsConcurrencyLimit?: number;
-  partitionsTests?: V1ModelTest[];
   inputConnector?: string;
   inputProperties?: V1ModelSpecInputProperties;
   /** stage_connector is optional. */
@@ -1569,6 +1568,7 @@ export interface V1ModelSpec {
   outputProperties?: V1ModelSpecOutputProperties;
   changeMode?: V1ModelChangeMode;
   tests?: V1ModelTest[];
+  partitionsTests?: V1ModelTest[];
   trigger?: boolean;
   triggerFull?: boolean;
   /** defined_as_source is true if it was defined by user as a source but converted internally to a model. */

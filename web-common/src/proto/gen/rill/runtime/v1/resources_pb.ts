@@ -934,11 +934,6 @@ export class ModelSpec extends Message<ModelSpec> {
   partitionsConcurrencyLimit = 0;
 
   /**
-   * @generated from field: repeated rill.runtime.v1.ModelTest partitions_tests = 26;
-   */
-  partitionsTests: ModelTest[] = [];
-
-  /**
    * @generated from field: string input_connector = 10;
    */
   inputConnector = "";
@@ -983,6 +978,11 @@ export class ModelSpec extends Message<ModelSpec> {
   tests: ModelTest[] = [];
 
   /**
+   * @generated from field: repeated rill.runtime.v1.ModelTest partitions_tests = 26;
+   */
+  partitionsTests: ModelTest[] = [];
+
+  /**
    * @generated from field: bool trigger = 9;
    */
   trigger = false;
@@ -1016,7 +1016,6 @@ export class ModelSpec extends Message<ModelSpec> {
     { no: 19, name: "partitions_resolver_properties", kind: "message", T: Struct },
     { no: 20, name: "partitions_watermark_field", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 21, name: "partitions_concurrency_limit", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
-    { no: 26, name: "partitions_tests", kind: "message", T: ModelTest, repeated: true },
     { no: 10, name: "input_connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 11, name: "input_properties", kind: "message", T: Struct },
     { no: 16, name: "stage_connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
@@ -1025,6 +1024,7 @@ export class ModelSpec extends Message<ModelSpec> {
     { no: 12, name: "output_properties", kind: "message", T: Struct },
     { no: 24, name: "change_mode", kind: "enum", T: proto3.getEnumType(ModelChangeMode) },
     { no: 25, name: "tests", kind: "message", T: ModelTest, repeated: true },
+    { no: 26, name: "partitions_tests", kind: "message", T: ModelTest, repeated: true },
     { no: 9, name: "trigger", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 22, name: "trigger_full", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 23, name: "defined_as_source", kind: "scalar", T: 8 /* ScalarType.BOOL */ },

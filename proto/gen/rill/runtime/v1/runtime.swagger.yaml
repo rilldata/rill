@@ -5588,11 +5588,6 @@ definitions:
       partitionsConcurrencyLimit:
         type: integer
         format: int64
-      partitionsTests:
-        type: array
-        items:
-          type: object
-          $ref: '#/definitions/v1ModelTest'
       inputConnector:
         type: string
       inputProperties:
@@ -5610,6 +5605,11 @@ definitions:
         $ref: '#/definitions/v1ModelChangeMode'
         description: change_mode is the mode of change detection to use for the model.
       tests:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1ModelTest'
+      partitionsTests:
         type: array
         items:
           type: object

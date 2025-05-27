@@ -1566,7 +1566,6 @@ func (r *ModelReconciler) execModelTest(ctx context.Context, self *runtimev1.Res
 	args := map[string]any{"limit": 1}
 	if partitionData != nil {
 		args["partition"] = partitionData
-		args["split"] = partitionData // Deprecated: use "partition" instead
 	}
 	result, err := r.C.Runtime.Resolve(ctx, &runtime.ResolveOptions{
 		InstanceID:         r.C.InstanceID,
@@ -1598,30 +1597,24 @@ func (r *ModelReconciler) execModelTest(ctx context.Context, self *runtimev1.Res
 
 // runModelTests executes the user defined model-level tests for the model (global, not partition-level)
 func (r *ModelReconciler) runModelTests(ctx context.Context, self *runtimev1.Resource) error {
-	if len(self.GetModel().Spec.Tests) == 0 {
-		return nil
-	}
-	var errs []error
-	for _, test := range self.GetModel().Spec.Tests {
-		if err := r.execModelTest(ctx, self, test, nil); err != nil {
-			errs = append(errs, err)
-		}
-	}
-	if len(errs) > 0 {
-		return errors.Join(errs...)
-	}
-	return nil
+	return r.runTests(ctx, self, self.GetModel().Spec.Tests, nil)
 }
 
 // runPartitionTests executes the user defined partition-level tests for the model, passing partitionData for templating
 func (r *ModelReconciler) runPartitionTests(ctx context.Context, self *runtimev1.Resource, partitionData map[string]any) error {
-	if len(self.GetModel().Spec.GetPartitionsTests()) == 0 {
+	return r.runTests(ctx, self, self.GetModel().Spec.GetPartitionsTests(), partitionData)
+}
+
+// runTestsHelper executes a slice of model tests, optionally with partition data, and logs errors.
+func (r *ModelReconciler) runTests(ctx context.Context, self *runtimev1.Resource, tests []*runtimev1.ModelTest, partitionData map[string]any) error {
+	if len(tests) == 0 {
 		return nil
 	}
 	var errs []error
-	for _, test := range self.GetModel().Spec.GetPartitionsTests() {
+	for _, test := range tests {
 		if err := r.execModelTest(ctx, self, test, partitionData); err != nil {
 			errs = append(errs, err)
+			r.C.Logger.Error("Model test failed", zap.String("model", self.Meta.Name.Name), zap.Error(err))
 		}
 	}
 	if len(errs) > 0 {

@@ -114,7 +114,6 @@ message ModelSpec {
   google.protobuf.Struct partitions_resolver_properties = 19;
   string partitions_watermark_field = 20;
   uint32 partitions_concurrency_limit = 21;
-  repeated ModelTest partitions_tests = 26;
   string input_connector = 10;
   google.protobuf.Struct input_properties = 11;
   // stage_connector is optional.
@@ -125,6 +124,7 @@ message ModelSpec {
   // change_mode is the mode of change detection to use for the model.
   ModelChangeMode change_mode = 24;
   repeated ModelTest tests = 25;
+  repeated ModelTest partitions_tests = 26;
   bool trigger = 9;
   bool trigger_full = 22;
   // defined_as_source is true if it was defined by user as a source but converted internally to a model.
