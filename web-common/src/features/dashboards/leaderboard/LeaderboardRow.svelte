@@ -195,6 +195,8 @@
     />
   </td>
   <td
+    role="button"
+    tabindex="0"
     data-dimension-cell
     class:ui-copy={!atLeastOneActive}
     class:ui-copy-disabled={excluded}
@@ -245,6 +247,8 @@
 
   {#each Object.keys(values) as measureName}
     <td
+      role="button"
+      tabindex="0"
       data-measure-cell
       on:click={modified({
         shift: () => shiftClickHandler(values[measureName]?.toString() || ""),
@@ -281,6 +285,8 @@
 
     {#if isValidPercentOfTotal(measureName) && shouldShowContextColumns(measureName)}
       <td
+        role="button"
+        tabindex="0"
         data-comparison-cell
         title={pctOfTotals[measureName]?.toString() || ""}
         on:click={modified({
@@ -312,6 +318,8 @@
 
     {#if isTimeComparisonActive && shouldShowContextColumns(measureName)}
       <td
+        role="button"
+        tabindex="0"
         data-comparison-cell
         title={deltaAbsMap[measureName]?.toString() || ""}
         on:click={modified({

@@ -146,11 +146,13 @@
       {name}
     </h2>
     <div
+      role="presentation"
       class="ui-copy-muted relative w-full h-full overflow-hidden text-ellipsis"
       style:font-size={withTimeseries ? "1.6rem" : "1.8rem"}
       style:font-weight="light"
       on:mouseover={handleMouseOver}
       on:focus={handleFocus}
+      tabindex="0"
     >
       {#if value !== null && status === EntityStatus.Idle}
         <WithTween {value} tweenProps={{ duration: 500 }} let:output>
