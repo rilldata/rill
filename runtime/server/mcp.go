@@ -277,6 +277,27 @@ Example: Get the total revenue by country and month for 2024:
             {"name": "total_revenue", "desc": true},
         ],
     }
+
+Example: Get the top 10 demographic segments (by country, gender, and age group) with the largest absolute revenue difference comparing May 2025 (base period) to April 2025 (comparison period):
+		{
+			"metrics_view": "ecommerce_financials",
+			"measures": [
+				{"name": "total_revenue"},
+				{"name": "total_revenue__delta_abs", "compute": {"comparison_delta": {"measure": "total_revenue"}}},
+				{"name": "total_revenue__delta_rel", "compute": {"comparison_ratio": {"measure": "total_revenue"}}},
+			],
+			"dimensions": [{"name": "country"}, {"name": "gender"}, {"name": "age_group"}],
+			"time_range": {
+				"start": "2025-05-01T00:00:00Z",
+				"end": "2025-05-31T23:59:59Z"
+			},
+			"comparison_time_range": {
+				"start": "2025-04-01T00:00:00Z",
+				"end": "2025-04-30T23:59:59Z"
+			},
+			"sort": [{"name": "total_revenue__delta_abs", "desc": true}],
+			"limit": 10
+		}
 `
 
 	tool := mcp.NewToolWithRawSchema("query_metrics_view", description, json.RawMessage(metricsview.QueryJSONSchema))

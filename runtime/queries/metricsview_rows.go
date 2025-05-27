@@ -132,7 +132,7 @@ func (q *MetricsViewRows) Export(ctx context.Context, rt *runtime.Runtime, insta
 		return fmt.Errorf("unsupported format: %s", opts.Format.String())
 	}
 
-	path, err := e.Export(ctx, qry, nil, format, drivers.FileHeaderMetaData{})
+	path, err := e.Export(ctx, qry, nil, format, nil)
 	if err != nil {
 		return err
 	}

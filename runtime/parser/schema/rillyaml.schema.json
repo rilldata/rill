@@ -42,6 +42,10 @@
           "type": "string",
           "description": "A brief description of the project"
         },
+        "ai_context": {
+          "type": "string",
+          "description": "Extra context for LLM/AI features. Used to guide natural language question answering and routing."
+        },
         "olap_connector": {
           "type": "string",
           "description": "Specifies the default OLAP engine for the project. Defaults to duckdb if not set"
