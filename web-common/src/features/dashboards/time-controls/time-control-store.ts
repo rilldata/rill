@@ -137,7 +137,7 @@ export function getTimeControlState(
   metricsViewSpec: V1MetricsViewSpec,
   exploreSpec: V1ExploreSpec,
   timeRangeSummary: V1TimeRangeSummary | undefined,
-  exploreState: ExploreState,
+  exploreState: Partial<ExploreState>,
 ) {
   const hasTimeSeries = Boolean(metricsViewSpec.timeDimension);
   const timeDimension = metricsViewSpec.timeDimension;
@@ -185,7 +185,7 @@ export function getTimeControlState(
     selectedComparisonTimeRange,
     selectedTimezone,
     lastDefinedScrubRange,
-    showTimeComparison,
+    !!showTimeComparison,
     timeRangeState,
   );
 
@@ -250,7 +250,7 @@ export function calculateTimeRangePartial(
   allTimeRange: DashboardTimeControls,
   currentSelectedTimeRange: DashboardTimeControls | undefined,
   lastDefinedScrubRange: ScrubRange | undefined,
-  selectedTimezone: string,
+  selectedTimezone: string | undefined,
   defaultTimeRange: DashboardTimeControls,
   minTimeGrain: V1TimeGrain,
 ): TimeRangeState | undefined {
@@ -304,7 +304,7 @@ export function calculateComparisonTimeRangePartial(
   timeRanges: V1ExploreTimeRange[] | undefined,
   allTimeRange: DashboardTimeControls,
   currentComparisonTimeRange: DashboardTimeControls | undefined,
-  selectedTimezone: string,
+  selectedTimezone: string | undefined,
   lastDefinedScrubRange: ScrubRange | undefined,
   showTimeComparison: boolean,
   timeRangeState: TimeRangeState,
@@ -365,7 +365,7 @@ export function calculateComparisonTimeRangePartial(
 
 export function getTimeRange(
   selectedTimeRange: DashboardTimeControls | undefined,
-  selectedTimezone: string,
+  selectedTimezone: string | undefined,
   allTimeRange: DashboardTimeControls,
   defaultTimeRange: DashboardTimeControls,
 ) {
