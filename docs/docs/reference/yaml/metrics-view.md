@@ -20,6 +20,10 @@ _[string]_ - Refers to the display name for the metrics view
 
 _[string]_ - Refers to the description for the metrics view 
 
+### `ai_context`
+
+_[string]_ - Extra context for LLM/AI features. Used to guide natural language question answering and routing. 
+
 ### `model`
 
 _[string]_ - Refers to the model powering the dashboard (either model or table is required) 
