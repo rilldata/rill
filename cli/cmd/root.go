@@ -23,6 +23,7 @@ import (
 	"github.com/rilldata/rill/cli/cmd/start"
 	"github.com/rilldata/rill/cli/cmd/sudo"
 	sudouser "github.com/rilldata/rill/cli/cmd/sudo/user"
+	"github.com/rilldata/rill/cli/cmd/token"
 	"github.com/rilldata/rill/cli/cmd/uninstall"
 	"github.com/rilldata/rill/cli/cmd/upgrade"
 	"github.com/rilldata/rill/cli/cmd/user"
@@ -30,6 +31,7 @@ import (
 	versioncmd "github.com/rilldata/rill/cli/cmd/version"
 	"github.com/rilldata/rill/cli/cmd/whoami"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
+	"github.com/rilldata/rill/cli/pkg/version"
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc/status"
 )
@@ -41,7 +43,7 @@ func init() {
 // Run initializes the root command and executes it.
 // It also handles errors and prints them in a user-friendly way.
 // NOTE: If you change this function, also check if you need to update testcli.Fixture.Run.
-func Run(ctx context.Context, ver cmdutil.Version) {
+func Run(ctx context.Context, ver version.Version) {
 	ch, err := cmdutil.NewHelper(ver, "")
 	if err != nil {
 		fmt.Printf("Error: %v\n", err)
@@ -133,6 +135,7 @@ func RootCmd(ch *cmdutil.Helper) *cobra.Command {
 		auth.LoginCmd(ch),
 		auth.LogoutCmd(ch),
 		whoami.WhoamiCmd(ch),
+		token.TokenCmd(ch),
 	)
 
 	// Internal commands
