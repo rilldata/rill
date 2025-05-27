@@ -3003,6 +3003,8 @@ func (m *MetricsViewSpec) validate(all bool) error {
 
 	// no validation rules for Description
 
+	// no validation rules for AiContext
+
 	// no validation rules for TimeDimension
 
 	// no validation rules for SmallestTimeGrain
@@ -5902,6 +5904,8 @@ func (m *ReportSpec) validate(all bool) error {
 	// no validation rules for ExportLimit
 
 	// no validation rules for ExportFormat
+
+	// no validation rules for ExportIncludeHeader
 
 	for idx, item := range m.GetNotifiers() {
 		_, _ = idx, item
@@ -11671,6 +11675,8 @@ func (m *MetricsViewSpec_Dimension) validate(all bool) error {
 	// no validation rules for LookupKeyColumn
 
 	// no validation rules for LookupValueColumn
+
+	// no validation rules for LookupDefaultExpression
 
 	if len(errors) > 0 {
 		return MetricsViewSpec_DimensionMultiError(errors)
