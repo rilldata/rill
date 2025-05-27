@@ -3,6 +3,9 @@
   import { createEventDispatcher } from "svelte";
   import { cellInspectorStore } from "../features/dashboards/stores/cellInspectorStore";
   import { formatInteger } from "../lib/formatters";
+  import CopyIcon from "@rilldata/web-common/components/icons/CopyIcon.svelte";
+  import Check from "@rilldata/web-common/components/icons/Check.svelte";
+  import { copyToClipboard } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
 
   export let value: string = "";
   export let isOpen: boolean = false;
@@ -11,6 +14,7 @@
   let hoveredValue: string | null = null;
   let container: HTMLElement;
   let content: HTMLElement;
+  let copied = false;
 
   // Subscribe to the cellInspectorStore to keep the component in sync
   const unsubscribe = cellInspectorStore.subscribe((state) => {
@@ -21,6 +25,8 @@
   });
 
   const dispatch = createEventDispatcher();
+
+  const iconColor = "#15141A";
 
   // Handle keyboard events for toggling the cell inspector
   function handleKeyDown(event: KeyboardEvent) {
@@ -80,12 +86,21 @@
   $: if (hovered && hoveredValue && isOpen) {
     cellInspectorStore.open(hoveredValue);
   }
+
+  function onCopy() {
+    copyToClipboard(value, undefined, false);
+    copied = true;
+
+    setTimeout(() => {
+      copied = false;
+    }, 2_000);
+  }
 </script>
 
 {#if isOpen}
   <div
     bind:this={container}
-    class="fixed top-4 left-[calc(50%+120px)] z-50 transition-opacity shadow-lg rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800"
+    class="cell-inspector fixed top-4 left-[calc(50%+120px)] z-50 transition-opacity shadow-lg rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800"
     class:invisible={!isOpen && !hovered}
     class:opacity-0={!isOpen && !hovered}
     class:opacity-100={isOpen || hovered}
@@ -100,7 +115,7 @@
       bind:this={content}
     >
       <div
-        class="flex items-center justify-between p-2 border-b border-gray-200 dark:border-gray-700"
+        class="flex items-center justify-between p-2 border-gray-200 dark:border-gray-700 gap-1"
         id="cell-inspector-content"
       >
         <div class="flex items-center" id="cell-inspector-title">
@@ -109,18 +124,16 @@
               value,
             )}</pre>
         </div>
-      </div>
-      <div
-        class="p-3 bg-gray-50 dark:bg-gray-700/50 text-xs text-gray-500 dark:text-gray-400 dark:border-gray-700 flex justify-center items-center"
-      >
-        <div class="flex space-x-4">
-          <span
-            >Press <kbd
-              class="px-2 py-1 bg-gray-200 dark:bg-gray-600 text-xs font-mono"
-              >Space</kbd
-            > to close</span
-          >
-        </div>
+        <button
+          class="hover:bg-slate-100 rounded p-1 active:bg-slate-200 group"
+          on:click={onCopy}
+        >
+          {#if copied}
+            <Check size="14px" color={iconColor} />
+          {:else}
+            <CopyIcon size="14px" className="text-gray-500" />
+          {/if}
+        </button>
       </div>
     </div>
   </div>

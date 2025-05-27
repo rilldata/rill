@@ -146,7 +146,7 @@
       {name}
     </h2>
     <div
-      role="presentation"
+      role="button"
       class="ui-copy-muted relative w-full h-full overflow-hidden text-ellipsis"
       style:font-size={withTimeseries ? "1.6rem" : "1.8rem"}
       style:font-weight="light"
