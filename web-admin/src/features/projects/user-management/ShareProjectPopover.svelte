@@ -30,7 +30,6 @@
   import CaretUpIcon from "@rilldata/web-common/components/icons/CaretUpIcon.svelte";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import Lock from "@rilldata/web-common/components/icons/Lock.svelte";
-  import OrgUserGroupSetRole from "./OrgUserGroupSetRole.svelte";
   import ProjectUserGroupItem from "./ProjectUserGroupItem.svelte";
   import UsergroupSetRole from "./UsergroupSetRole.svelte";
 
