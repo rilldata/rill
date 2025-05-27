@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onDestroy, onMount } from "svelte";
+  import { onDestroy } from "svelte";
   import { cellInspectorStore } from "../stores/cellInspectorStore";
   import CellInspector from "../../../components/CellInspector.svelte";
 

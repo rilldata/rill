@@ -92,6 +92,20 @@
     }
   };
   $: useDiv = isMeasureExpanded || !withTimeseries;
+
+  function handleMouseOver() {
+    if (value !== undefined && value !== null) {
+      // Always update the value in the store, but don't change visibility
+      cellInspectorStore.updateValue(value.toString());
+    }
+  }
+
+  function handleFocus() {
+    if (value !== undefined && value !== null) {
+      // Always update the value in the store, but don't change visibility
+      cellInspectorStore.updateValue(value.toString());
+    }
+  }
 </script>
 
 <Tooltip
@@ -135,44 +149,8 @@
       class="ui-copy-muted relative w-full h-full overflow-hidden text-ellipsis"
       style:font-size={withTimeseries ? "1.6rem" : "1.8rem"}
       style:font-weight="light"
-      on:mouseover={(e) => {
-        if (value !== null) {
-          const displayValue =
-            measureValueFormatterUnabridged(value) ?? "no data";
-          // Always update the value in the store, but don't change visibility
-          cellInspectorStore.updateValue(displayValue);
-        }
-      }}
-      on:focus={() => {
-        if (value !== null) {
-          const displayValue =
-            measureValueFormatterUnabridged(value) ?? "no data";
-          // Always update the value in the store, but don't change visibility
-          cellInspectorStore.updateValue(displayValue);
-        }
-      }}
-      on:keydown={(e) => {
-        if (value !== null && (e.code === "Space" || e.code === "Enter")) {
-          e.preventDefault();
-          e.stopPropagation();
-
-          // Toggle the cell inspector
-          const isOpen = $cellInspectorStore.isOpen;
-          if (!isOpen) {
-            const displayValue =
-              measureValueFormatterUnabridged(value) ?? "no data";
-            cellInspectorStore.open(displayValue);
-          } else {
-            cellInspectorStore.close();
-          }
-        } else if (e.key === "Escape" && $cellInspectorStore.isOpen) {
-          e.preventDefault();
-          e.stopPropagation();
-          cellInspectorStore.close();
-        }
-      }}
-      role="cell"
-      tabindex="0"
+      on:mouseover={handleMouseOver}
+      on:focus={handleFocus}
     >
       {#if value !== null && status === EntityStatus.Idle}
         <WithTween {value} tweenProps={{ duration: 500 }} let:output>

@@ -202,40 +202,16 @@
     on:click={modified({
       shift: () => shiftClickHandler(dimensionValue),
     })}
-    on:mouseover={(e) => {
+    on:mouseover={() => {
       if (dimensionValue) {
         // Always update the value in the store, but don't change visibility
-        cellInspectorStore.updateValue(dimensionValue.toString(), {
-          x: e.clientX,
-          y: e.clientY,
-        });
+        cellInspectorStore.updateValue(dimensionValue.toString());
       }
     }}
     on:focus={() => {
       if (dimensionValue) {
         // Always update the value in the store, but don't change visibility
-        cellInspectorStore.updateValue(dimensionValue.toString(), {
-          x: 0,
-          y: 0,
-        });
-      }
-    }}
-    on:keydown={(e) => {
-      if (dimensionValue && (e.code === "Space" || e.code === "Enter")) {
-        e.preventDefault();
-        e.stopPropagation();
-
-        // Toggle the cell inspector
-        const isOpen = $cellInspectorStore.isOpen;
-        if (!isOpen) {
-          cellInspectorStore.open(dimensionValue.toString());
-        } else {
-          cellInspectorStore.close();
-        }
-      } else if (e.key === "Escape" && $cellInspectorStore.isOpen) {
-        e.preventDefault();
-        e.stopPropagation();
-        cellInspectorStore.close();
+        cellInspectorStore.updateValue(dimensionValue.toString());
       }
     }}
     class="relative size-full flex flex-none justify-between items-center leaderboard-label"
@@ -276,42 +252,18 @@
       style:background={leaderboardMeasureNames.length === 1
         ? measureGradients
         : measureGradientMap?.[measureName]}
-      on:mouseover={(e) => {
+      on:mouseover={() => {
         const value = values[measureName]?.toString() || "";
         if (value) {
-          cellInspectorStore.updateValue(value, {
-            x: e.clientX,
-            y: e.clientY,
-          });
+          cellInspectorStore.updateValue(value);
         }
       }}
       on:focus={() => {
         const value = values[measureName]?.toString() || "";
         if (value) {
-          cellInspectorStore.updateValue(value, { x: 0, y: 0 });
+          cellInspectorStore.updateValue(value);
         }
       }}
-      on:keydown={(e) => {
-        const value = values[measureName]?.toString() || "";
-        if (value && (e.code === "Space" || e.code === "Enter")) {
-          e.preventDefault();
-          e.stopPropagation();
-
-          // Toggle the cell inspector
-          const isOpen = $cellInspectorStore.isOpen;
-          if (!isOpen) {
-            cellInspectorStore.open(value);
-          } else {
-            cellInspectorStore.close();
-          }
-        } else if (e.key === "Escape" && $cellInspectorStore.isOpen) {
-          e.preventDefault();
-          e.stopPropagation();
-          cellInspectorStore.close();
-        }
-      }}
-      tabindex="0"
-      role="cell"
     >
       <div class="w-fit ml-auto bg-transparent" bind:contentRect={valueRect}>
         <FormattedDataType
@@ -335,42 +287,18 @@
           shift: () =>
             shiftClickHandler(pctOfTotals[measureName]?.toString() || ""),
         })}
-        on:mouseover={(e) => {
+        on:mouseover={() => {
           const value = pctOfTotals[measureName]?.toString() || "";
           if (value) {
-            cellInspectorStore.updateValue(value, {
-              x: e.clientX,
-              y: e.clientY,
-            });
+            cellInspectorStore.updateValue(value);
           }
         }}
         on:focus={() => {
           const value = pctOfTotals[measureName]?.toString() || "";
           if (value) {
-            cellInspectorStore.updateValue(value, { x: 0, y: 0 });
+            cellInspectorStore.updateValue(value);
           }
         }}
-        on:keydown={(e) => {
-          const value = pctOfTotals[measureName]?.toString() || "";
-          if (value && (e.code === "Space" || e.code === "Enter")) {
-            e.preventDefault();
-            e.stopPropagation();
-
-            // Toggle the cell inspector
-            const isOpen = $cellInspectorStore.isOpen;
-            if (!isOpen) {
-              cellInspectorStore.open(value);
-            } else {
-              cellInspectorStore.close();
-            }
-          } else if (e.key === "Escape" && $cellInspectorStore.isOpen) {
-            e.preventDefault();
-            e.stopPropagation();
-            cellInspectorStore.close();
-          }
-        }}
-        tabindex="0"
-        role="cell"
       >
         <PercentageChange
           value={pctOfTotals[measureName]}
@@ -390,42 +318,18 @@
           shift: () =>
             shiftClickHandler(deltaAbsMap[measureName]?.toString() || ""),
         })}
-        on:mouseover={(e) => {
+        on:mouseover={() => {
           const value = deltaAbsMap[measureName]?.toString() || "";
           if (value) {
-            cellInspectorStore.updateValue(value, {
-              x: e.clientX,
-              y: e.clientY,
-            });
+            cellInspectorStore.updateValue(value);
           }
         }}
         on:focus={() => {
           const value = deltaAbsMap[measureName]?.toString() || "";
           if (value) {
-            cellInspectorStore.updateValue(value, { x: 0, y: 0 });
+            cellInspectorStore.updateValue(value);
           }
         }}
-        on:keydown={(e) => {
-          const value = deltaAbsMap[measureName]?.toString() || "";
-          if (value && (e.code === "Space" || e.code === "Enter")) {
-            e.preventDefault();
-            e.stopPropagation();
-
-            // Toggle the cell inspector
-            const isOpen = $cellInspectorStore.isOpen;
-            if (!isOpen) {
-              cellInspectorStore.open(value);
-            } else {
-              cellInspectorStore.close();
-            }
-          } else if (e.key === "Escape" && $cellInspectorStore.isOpen) {
-            e.preventDefault();
-            e.stopPropagation();
-            cellInspectorStore.close();
-          }
-        }}
-        tabindex="0"
-        role="cell"
       >
         <FormattedDataType
           color="text-gray-500"
@@ -450,42 +354,18 @@
           shift: () =>
             shiftClickHandler(deltaRels[measureName]?.toString() || ""),
         })}
-        on:mouseover={(e) => {
+        on:mouseover={() => {
           const value = deltaRels[measureName]?.toString() || "";
           if (value) {
-            cellInspectorStore.updateValue(value, {
-              x: e.clientX,
-              y: e.clientY,
-            });
+            cellInspectorStore.updateValue(value);
           }
         }}
         on:focus={() => {
           const value = deltaRels[measureName]?.toString() || "";
           if (value) {
-            cellInspectorStore.updateValue(value, { x: 0, y: 0 });
+            cellInspectorStore.updateValue(value);
           }
         }}
-        on:keydown={(e) => {
-          const value = deltaRels[measureName]?.toString() || "";
-          if (value && (e.code === "Space" || e.code === "Enter")) {
-            e.preventDefault();
-            e.stopPropagation();
-
-            // Toggle the cell inspector
-            const isOpen = $cellInspectorStore.isOpen;
-            if (!isOpen) {
-              cellInspectorStore.open(value);
-            } else {
-              cellInspectorStore.close();
-            }
-          } else if (e.key === "Escape" && $cellInspectorStore.isOpen) {
-            e.preventDefault();
-            e.stopPropagation();
-            cellInspectorStore.close();
-          }
-        }}
-        tabindex="0"
-        role="cell"
       >
         <PercentageChange
           value={deltaRels[measureName]

@@ -42,19 +42,12 @@
 
   const dispatch = createEventDispatcher();
 
-  function onFocus(e) {
+  function onFocus() {
     dispatch("inspect", row.index);
     cellActive = true;
-
     // Update the cell inspector store with the cell value
     if (value !== undefined && value !== null) {
-      // Use mouse position from mouseover event if available
-      if (e instanceof MouseEvent) {
-        cellInspectorStore.updateValue(value.toString());
-      } else {
-        // For focus events, use a default position
-        cellInspectorStore.open(value.toString());
-      }
+      cellInspectorStore.updateValue(value.toString());
     }
   }
 

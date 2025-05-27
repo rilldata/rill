@@ -110,16 +110,12 @@
     if (typeof x !== "number" || typeof y !== "number") return;
     th.setAttribute("__col", String(x - numFixedCols!));
     th.setAttribute("__row", String(y));
-
-    // Set title for tooltip
     if (value?.value !== undefined && value?.value !== null) {
       th.setAttribute("title", value.value);
     }
 
-    let isOpen = false;
-
     // Add mouseover event to update the value in the store without changing visibility
-    th.onmouseover = (e) => {
+    th.onmouseover = () => {
       if (value?.value !== undefined && value?.value !== null) {
         // Always update the value in the store, but don't change visibility
         cellInspectorStore.updateValue(String(value.value));
@@ -133,38 +129,6 @@
         cellInspectorStore.updateValue(String(value.value));
       }
     };
-
-    // Add keydown event to toggle the cell inspector with spacebar
-    th.onkeydown = (e) => {
-      if (
-        value?.value !== undefined &&
-        value?.value !== null &&
-        (e.code === "Space" || e.code === "Enter")
-      ) {
-        e.preventDefault();
-        e.stopPropagation();
-
-        // Toggle the cell inspector
-        isOpen = !isOpen;
-        if (isOpen) {
-          // Only open the inspector when spacebar is pressed
-          cellInspectorStore.open(String(value));
-        } else {
-          // Close the inspector
-          cellInspectorStore.close();
-        }
-      } else if (e.key === "Escape" && isOpen) {
-        e.preventDefault();
-        e.stopPropagation();
-        isOpen = false;
-        cellInspectorStore.close();
-      }
-    };
-
-    // Add tabindex and role for accessibility
-    th.setAttribute("tabindex", "0");
-    th.setAttribute("role", "cell");
-
     const maybeWidth = getRowHeaderWidth(x);
     if (maybeWidth) {
       th.style.width = `${maybeWidth}px`;
@@ -198,10 +162,8 @@
     td.setAttribute("__col", String(x));
     td.setAttribute("__row", String(y));
 
-    let isOpen = false;
-
     // Add mouseover event to update the value in the store without changing visibility
-    td.onmouseover = (e) => {
+    td.onmouseover = () => {
       if (value !== undefined && value !== null) {
         // Always update the value in the store, but don't change visibility
         cellInspectorStore.updateValue(String(value));
@@ -214,37 +176,6 @@
         cellInspectorStore.updateValue(String(value));
       }
     };
-
-    // Add keydown event to toggle the cell inspector with spacebar
-    td.onkeydown = (e) => {
-      if (
-        value !== undefined &&
-        value !== null &&
-        (e.code === "Space" || e.code === "Enter")
-      ) {
-        e.preventDefault();
-        e.stopPropagation();
-
-        // Toggle the cell inspector
-        isOpen = !isOpen;
-        if (isOpen) {
-          // Only open the inspector when spacebar is pressed
-          cellInspectorStore.open(String(value));
-        } else {
-          // Close the inspector
-          cellInspectorStore.close();
-        }
-      } else if (e.key === "Escape" && isOpen) {
-        e.preventDefault();
-        e.stopPropagation();
-        isOpen = false;
-        cellInspectorStore.close();
-      }
-    };
-
-    // Add tabindex and role for accessibility
-    td.setAttribute("tabindex", "0");
-    td.setAttribute("role", "cell");
 
     const maybeWidth = getColumnWidth(x);
     if (maybeWidth) {

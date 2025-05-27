@@ -15,9 +15,7 @@
     | null
     | undefined;
 
-  let isOpen = false;
-
-  function handleMouseOver(e) {
+  function handleMouseOver() {
     if (value !== undefined && value !== null) {
       // Always update the value in the store, but don't change visibility
       cellInspectorStore.updateValue(value.toString());
@@ -30,27 +28,6 @@
       cellInspectorStore.updateValue(value.toString());
     }
   }
-
-  function handleKeyDown(e) {
-    if (e.code === "Space" || e.code === "Enter") {
-      e.preventDefault();
-      e.stopPropagation();
-      isOpen = !isOpen;
-
-      if (isOpen && value !== undefined && value !== null) {
-        // Only open the inspector when spacebar is pressed
-        cellInspectorStore.open(value.toString());
-      } else {
-        // Close the inspector
-        cellInspectorStore.close();
-      }
-    } else if (e.key === "Escape" && isOpen) {
-      e.preventDefault();
-      e.stopPropagation();
-      isOpen = false;
-      cellInspectorStore.close();
-    }
-  }
 </script>
 
 <div
@@ -60,9 +37,6 @@
   class=" px-6 size-full flex items-center"
   on:mouseover={handleMouseOver}
   on:focus={handleFocus}
-  on:keydown={handleKeyDown}
-  role="cell"
-  tabindex="0"
 >
   <p
     class="w-full truncate text-right"
