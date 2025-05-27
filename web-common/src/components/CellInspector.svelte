@@ -7,6 +7,11 @@
   export let value: string = "";
   export let isOpen: boolean = false;
 
+  let hovered = false;
+  let hoveredValue: string | null = null;
+  let container: HTMLElement;
+  let content: HTMLElement;
+
   // Subscribe to the cellInspectorStore to keep the component in sync
   const unsubscribe = cellInspectorStore.subscribe((state) => {
     isOpen = state.isOpen;
@@ -16,10 +21,6 @@
   });
 
   const dispatch = createEventDispatcher();
-  let hovered = false;
-  let hoveredValue: string | null = null;
-  let container: HTMLElement;
-  let content: HTMLElement;
 
   // Handle keyboard events for toggling the cell inspector
   function handleKeyDown(event: KeyboardEvent) {
@@ -94,7 +95,7 @@
     aria-modal="true"
   >
     <div
-      class="w-full max-w-2xl max-h-[80vh] overflow-hidden flex flex-col"
+      class="w-full max-w-2xl max-h-[80vh] overflow-hidden flex flex-col rounded-lg"
       role="document"
       bind:this={content}
     >
@@ -108,49 +109,16 @@
               value,
             )}</pre>
         </div>
-        <button
-          class="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300 p-1 ml-2"
-          on:click|preventDefault={() => dispatch("close")}
-          on:keydown={(e) => {
-            if (e.key === "Enter" || e.key === " ") {
-              e.preventDefault();
-              dispatch("close");
-            }
-          }}
-          aria-label="Close inspector"
-          aria-controls="cell-inspector-content"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            class="h-5 w-5"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M6 18L18 6M6 6l12 12"
-            />
-          </svg>
-        </button>
       </div>
       <div
-        class="p-3 bg-gray-50 dark:bg-gray-700/50 text-xs text-gray-500 dark:text-gray-400 border-t border-gray-200 dark:border-gray-700 flex justify-center items-center"
+        class="p-3 bg-gray-50 dark:bg-gray-700/50 text-xs text-gray-500 dark:text-gray-400 dark:border-gray-700 flex justify-center items-center"
       >
         <div class="flex space-x-4">
           <span
             >Press <kbd
-              class="px-2 py-1 bg-gray-200 dark:bg-gray-600 rounded text-xs font-mono"
+              class="px-2 py-1 bg-gray-200 dark:bg-gray-600 text-xs font-mono"
               >Space</kbd
             > to close</span
-          >
-          <span
-            ><kbd
-              class="px-2 py-1 bg-gray-200 dark:bg-gray-600 rounded text-xs font-mono"
-              >Shift + Click</kbd
-            > to copy</span
           >
         </div>
       </div>
