@@ -6,12 +6,17 @@
   import CreateNewOrgForm from "@rilldata/web-common/features/organization/CreateNewOrgForm.svelte";
   import { CreateNewOrgFormId } from "@rilldata/web-common/features/organization/CreateNewOrgForm.svelte";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
+  import { createLocalServiceGetCurrentUser } from "@rilldata/web-common/runtime-client/local-service";
 
-  export let orgs: string[];
-  // As a convenience for user with only one org, we select auto select it.
-  export let selectedOrg = orgs.length === 1 ? orgs[0] : "";
+  const user = createLocalServiceGetCurrentUser();
 
+  let selectedOrg = "";
   let isNewOrgDialogOpen = false;
+
+  $: deployUrl = `/deploy/fresh-deploy?org=${selectedOrg}`;
+
+  $: orgOptions =
+    $user.data?.rillUserOrgs?.map((o) => ({ value: o, label: o })) ?? [];
 
   function handleCreateOrg(orgName: string) {
     selectedOrg = orgName;
@@ -29,13 +34,14 @@
     target="_blank">See docs</a
   >
 </div>
+
 <!-- w-[400px] Needed for tailwind to compile for this -->
 <Select
   bind:value={selectedOrg}
   id="deploy-target-org"
   label=""
   placeholder="Select organization"
-  options={orgs.map((o) => ({ value: o, label: o }))}
+  options={orgOptions}
   width={400}
   sameWidth
 >
@@ -53,14 +59,18 @@
   </div>
 </Select>
 
+<Button wide type="primary" href={deployUrl} disabled={!selectedOrg}>
+  Continue
+</Button>
+
 <Dialog.Root bind:open={isNewOrgDialogOpen}>
   <Dialog.Trigger asChild>
     <div class="hidden"></div>
   </Dialog.Trigger>
-  <Dialog.Content>
+  <Dialog.Content noClose>
     <Dialog.Title>Create a new organization</Dialog.Title>
 
-    <CreateNewOrgForm onCreate={handleCreateOrg} />
+    <CreateNewOrgForm onCreate={handleCreateOrg} size="lg" />
 
     <Dialog.Footer class="gap-x-2">
       <Button large type="text" on:click={() => (isNewOrgDialogOpen = false)}>
