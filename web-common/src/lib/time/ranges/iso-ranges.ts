@@ -82,7 +82,7 @@ export function humaniseISODuration(
   toUpper = true,
 ): string {
   if (!isoDuration) return "";
-  const duration = Duration.fromISO(isoDuration, { locale: "en" });
+  const duration = Duration.fromISO(isoDuration);
   let humanISO = duration.toHuman({
     listStyle: "long",
   });

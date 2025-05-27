@@ -210,6 +210,7 @@ export class DashboardStateDataLoader {
           weekend: [6, 7],
           minimalDays: 4,
         };
+        Settings.defaultLocale = "en";
 
         return getQueryServiceMetricsViewTimeRangeQueryOptions(
           instanceId,

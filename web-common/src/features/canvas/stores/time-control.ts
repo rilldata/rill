@@ -160,6 +160,7 @@ export class TimeControls {
           weekend: [6, 7],
           minimalDays: 4,
         };
+        Settings.defaultLocale = "en";
 
         const { defaultPreset } = spec.data?.canvas || {};
         const defaultTimeRange = isoDurationToFullTimeRange(
