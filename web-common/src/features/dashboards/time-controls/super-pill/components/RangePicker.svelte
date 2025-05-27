@@ -29,6 +29,8 @@
   let firstVisibleMonth: DateTime<true> = interval.start;
   let open = false;
   let showSelector = false;
+
+  $: console.log({ ranges });
 </script>
 
 <DropdownMenu.Root
