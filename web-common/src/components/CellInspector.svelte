@@ -17,6 +17,8 @@
   let container: HTMLElement;
   let content: HTMLElement;
   let copied = false;
+  let isJson = false;
+  let parsedJson: any = null;
 
   // Subscribe to the cellInspectorStore to keep the component in sync
   const unsubscribe = cellInspectorStore.subscribe((state) => {
@@ -57,6 +59,7 @@
     }
   }
 
+  // FIXME: Hoist the keyboard event listener to the top level; centralize the hotkeys
   onMount(() => {
     // Handle click outside events
     document.addEventListener("click", handleClickOutside, true);
@@ -77,20 +80,17 @@
   // TODO: Consider using a dedicated JSON pretty printing package like:
   // - json-stringify-pretty-compact: For compact but readable JSON output
   // - pretty-format: For more customizable formatting options
-  // This would provide better control over formatting options and edge cases
   function formatValue(value: string): string {
-    // Try to parse as JSON first
-    try {
-      const parsed = JSON.parse(value);
-      return JSON.stringify(parsed, null, 2);
-    } catch (e) {
-      // If not JSON, check if it's a number
-      const num = Number(value);
-      if (!isNaN(num)) {
-        return formatInteger(num);
-      }
-      return value;
+    // If the value is JSON, pretty print it
+    if (isJson && parsedJson !== null) {
+      return JSON.stringify(parsedJson, null, 2);
     }
+    // If not JSON, check if it's a number
+    const num = Number(value);
+    if (!isNaN(num)) {
+      return formatInteger(num);
+    }
+    return value;
   }
 
   // Only update the value on hover, but don't open the inspector
@@ -105,6 +105,17 @@
     setTimeout(() => {
       copied = false;
     }, 2_000);
+  }
+
+  // Parse the value as JSON if it is a valid JSON string
+  $: {
+    try {
+      parsedJson = JSON.parse(value);
+      isJson = typeof parsedJson === "object" && parsedJson !== null;
+    } catch {
+      parsedJson = null;
+      isJson = false;
+    }
   }
 </script>
 
@@ -127,7 +138,9 @@
       bind:this={content}
     >
       <div
-        class="flex items-center justify-between p-2 border-gray-200 dark:border-gray-700 gap-1"
+        class="flex justify-between p-2 border-gray-200 dark:border-gray-700 gap-1"
+        class:items-start={isJson}
+        class:items-center={!isJson}
         id="cell-inspector-content"
       >
         <div class="flex items-center" id="cell-inspector-title">
