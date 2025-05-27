@@ -43,13 +43,19 @@
     if (event.code === "Space" && !event.repeat && !isFormElement) {
       event.preventDefault();
       event.stopPropagation();
-
-      // Toggle the cell inspector visibility
       cellInspectorStore.toggle(value);
     } else if (event.key === "Escape" && isOpen) {
       event.preventDefault();
       event.stopPropagation();
       cellInspectorStore.close();
+    } else if (
+      (event.metaKey || event.ctrlKey) &&
+      event.key === "c" &&
+      isOpen
+    ) {
+      event.preventDefault();
+      event.stopPropagation();
+      onCopy();
     }
   }
 
