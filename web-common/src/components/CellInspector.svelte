@@ -1,11 +1,13 @@
 <script lang="ts">
   import { onMount, onDestroy } from "svelte";
   import { createEventDispatcher } from "svelte";
+  import { fly } from "svelte/transition";
   import { formatInteger } from "../lib/formatters";
   import CopyIcon from "@rilldata/web-common/components/icons/CopyIcon.svelte";
   import Check from "@rilldata/web-common/components/icons/Check.svelte";
   import { copyToClipboard } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
   import { cellInspectorStore } from "../features/dashboards/stores/cell-inspector-store";
+  import { cubicOut } from "svelte/easing";
 
   export let value: string = "";
   export let isOpen: boolean = false;
@@ -108,6 +110,7 @@
     aria-labelledby="cell-inspector-title"
     aria-describedby="cell-inspector-content"
     aria-modal="true"
+    transition:fly={{ duration: 200, x: 200, easing: cubicOut }}
   >
     <div
       class="w-full max-w-2xl max-h-[80vh] overflow-hidden flex flex-col rounded-lg"
