@@ -245,7 +245,7 @@ func (p *Parser) parseModel(ctx context.Context, node *Node) error {
 func (p *Parser) inferSQLRefs(node *Node) ([]ResourceName, error) {
 	// Currently only supports DuckDB.
 	driver, _, _ := p.driverForConnector(node.Connector)
-	if driver != "duckdb" && driver != "motherduck" {
+	if driver != "duckdb" {
 		return nil, nil
 	}
 

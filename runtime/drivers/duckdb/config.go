@@ -30,11 +30,8 @@ type config struct {
 	// LogQueries controls whether to log the raw SQL passed to OLAP.Execute. (Internal queries will not be logged.)
 	LogQueries bool `mapstructure:"log_queries"`
 
-	// motherduck specific configs will be ignored if not using motherduck
-	// DB is the motherduck database name where the models will be created
-	DB string `mapstructure:"db"`
-	// Token is the motherduck token used to authenticate with the database
-	Token string `mapstructure:"token"`
+	// DSN, if set, then the driver switches to a generic rduckdb implementation backed by the db used in the DSN
+	DSN string `mapstructure:"dsn"`
 }
 
 func newConfig(cfgMap map[string]any) (*config, error) {

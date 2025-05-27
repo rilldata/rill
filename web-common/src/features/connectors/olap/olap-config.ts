@@ -12,7 +12,6 @@ export function makeFullyQualifiedTableName(
     case "druid":
       return `${databaseSchema}.${table}`;
     case "duckdb":
-    case "motherduck":
       return `${database}.${databaseSchema}.${table}`;
     case "pinot":
       return table;
@@ -39,7 +38,6 @@ export function makeSufficientlyQualifiedTableName(
       // TODO
       return table;
     case "duckdb":
-    case "motherduck":
       if (database === "main_db" || database === "") {
         if (databaseSchema === "main" || databaseSchema === "") return table;
         return `${databaseSchema}.${table}`;
@@ -67,8 +65,6 @@ export function makeTablePreviewHref(
       return `/connector/druid/${connectorName}/${databaseSchema}/${table}`;
     case "duckdb":
       return `/connector/duckdb/${connectorName}/${database}/${databaseSchema}/${table}`;
-    case "motherduck":
-      return `/connector/motherduck/${connectorName}/${database}/${databaseSchema}/${table}`;
     case "pinot":
       return `/connector/pinot/${connectorName}/${table}`;
     default:

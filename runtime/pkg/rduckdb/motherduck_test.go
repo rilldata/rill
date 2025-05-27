@@ -214,18 +214,16 @@ func TestMotherDuckMutateTable(t *testing.T) {
 func prepareMotherDuckDB(t *testing.T) DB {
 	tempDir := t.TempDir()
 	randomDB := provisionDatabase(t)
-	db, err := NewMotherDuck(context.Background(), &MotherDuckDBOptions{
-		Database:           randomDB,
-		Token:              os.Getenv("RILL_RUNTIME_MOTHERDUCK_TEST_TOKEN"),
-		LocalPath:          tempDir,
+	db, err := NewGeneric(context.Background(), &GenericDBOptions{
+		DSN:                fmt.Sprintf("md:%s?motherduck_token=%s", randomDB, os.Getenv("RILL_RUNTIME_MOTHERDUCK_TEST_TOKEN")),
+		LocalTempDir:       tempDir,
 		LocalMemoryLimitGB: 2,
 		LocalCPU:           1,
-		DBInitQueries:      []string{"SET autoinstall_known_extensions=true", "SET autoload_known_extensions=true"},
 		Logger:             zap.NewNop(),
 	})
 	require.NoError(t, err)
 	// Just to test that connections are closed properly
-	db.(*motherduck).db.SetMaxOpenConns(1)
+	db.(*generic).db.SetMaxOpenConns(1)
 	return db
 }
 

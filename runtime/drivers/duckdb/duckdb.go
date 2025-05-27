@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"maps"
 	"net/url"
+	"os"
 	"strings"
 	"sync"
 	"time"
@@ -76,7 +77,6 @@ var spec = drivers.Spec{
 			Required:    true,
 		},
 	},
-	ImplementsOLAP: true,
 }
 
 var motherduckSpec = drivers.Spec{
@@ -502,14 +502,17 @@ func (c *connection) reopenDB(ctx context.Context) error {
 	connInitQueries = append(connInitQueries, "SET max_expression_depth TO 250")
 
 	// Create new DB
-	if c.driverName == "motherduck" {
+	if c.config.DSN != "" {
+		tempDir, err := c.storage.RandomTempDir("duckdb")
+		if err != nil {
+			return err
+		}
 		settings := make(map[string]string)
 		maps.Copy(settings, c.config.readSettings())
 		maps.Copy(settings, c.config.writeSettings())
-		c.db, err = rduckdb.NewMotherDuck(ctx, &rduckdb.MotherDuckDBOptions{
-			Database:           c.config.DB,
-			Token:              c.config.Token,
-			LocalPath:          dataDir,
+		c.db, err = rduckdb.NewGeneric(ctx, &rduckdb.GenericDBOptions{
+			DSN:                c.config.DSN,
+			LocalTempDir:       tempDir,
 			LocalCPU:           c.config.CPU,
 			LocalMemoryLimitGB: c.config.MemoryLimitGB,
 			Settings:           settings,
@@ -518,7 +521,10 @@ func (c *connection) reopenDB(ctx context.Context) error {
 			Logger:             c.logger,
 			OtelAttributes:     []attribute.KeyValue{attribute.String("instance_id", c.instanceID)},
 		})
-		return err
+		if err != nil {
+			os.RemoveAll(tempDir) // Clean up temp dir if we fail to open the DB
+			return err
+		}
 	}
 	c.db, err = rduckdb.NewDB(ctx, &rduckdb.DBOptions{
 		LocalPath:       dataDir,
