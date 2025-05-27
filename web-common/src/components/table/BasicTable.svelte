@@ -58,6 +58,7 @@
     onSortingChange: setSorting,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
+    enableSortingRemoval: false,
   });
 
   const table = createSvelteTable(options);

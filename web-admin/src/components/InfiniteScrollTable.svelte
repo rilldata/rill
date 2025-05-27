@@ -64,6 +64,7 @@
     onSortingChange: setSorting,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
+    enableSortingRemoval: false,
   });
 
   $: table = createSvelteTable(options);
