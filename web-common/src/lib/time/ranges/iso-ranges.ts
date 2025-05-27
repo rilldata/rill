@@ -145,7 +145,7 @@ export function validateISODuration(isoDuration: string) {
 function getStartTimeTransformations(
   isoDuration: string,
 ): Array<RelativeTimeTransformation> {
-  const duration = Duration.fromISO(isoDuration, { locale: "en" });
+  const duration = Duration.fromISO(isoDuration);
   const period = getSmallestUnit(duration);
   if (!period) return [];
 
