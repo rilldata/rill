@@ -1065,6 +1065,7 @@ export interface V1Instance {
   featureFlags?: V1InstanceFeatureFlags;
   annotations?: V1InstanceAnnotations;
   watchRepo?: boolean;
+  aiContext?: string;
 }
 
 export type V1InstanceHealthMetricsViewErrors = { [key: string]: string };
@@ -1389,6 +1390,8 @@ export interface V1MetricsViewSpec {
   model?: string;
   displayName?: string;
   description?: string;
+  /** Extra context for LLM/AI features. Used to guide natural language question answering and routing. */
+  aiContext?: string;
   timeDimension?: string;
   smallestTimeGrain?: V1TimeGrain;
   /** Expression to evaluate a watermark for the metrics view. If not set, the watermark defaults to max(time_dimension). */
