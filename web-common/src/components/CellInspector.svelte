@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount } from "svelte";
+  import { onMount, onDestroy } from "svelte";
   import { createEventDispatcher } from "svelte";
   import { cellInspectorStore } from "../features/dashboards/stores/cellInspectorStore";
   import { formatInteger } from "../lib/formatters";
@@ -7,13 +7,40 @@
   export let value: string = "";
   export let isOpen: boolean = false;
 
+  // Subscribe to the cellInspectorStore to keep the component in sync
+  const unsubscribe = cellInspectorStore.subscribe((state) => {
+    isOpen = state.isOpen;
+    if (state.value) {
+      value = state.value;
+    }
+  });
+
   const dispatch = createEventDispatcher();
   let hovered = false;
   let hoveredValue: string | null = null;
   let container: HTMLElement;
   let content: HTMLElement;
 
-  // Keyboard events are now handled at the dashboard level
+  // Handle keyboard events for toggling the cell inspector
+  function handleKeyDown(event: KeyboardEvent) {
+    // Only handle Space key when not in an input, textarea, or other form element
+    const target = event.target as HTMLElement;
+    const tagName = target.tagName.toLowerCase();
+    const isFormElement =
+      tagName === "input" || tagName === "textarea" || tagName === "select";
+
+    if (event.code === "Space" && !event.repeat && !isFormElement) {
+      event.preventDefault();
+      event.stopPropagation();
+
+      // Toggle the cell inspector visibility
+      cellInspectorStore.toggle(value);
+    } else if (event.key === "Escape" && isOpen) {
+      event.preventDefault();
+      event.stopPropagation();
+      cellInspectorStore.close();
+    }
+  }
 
   function handleClickOutside(event: MouseEvent) {
     if (isOpen && container && !container.contains(event.target as Node)) {
@@ -22,12 +49,20 @@
   }
 
   onMount(() => {
-    // Only handle click outside events, keyboard events are now handled at the dashboard level
+    // Handle click outside events
     document.addEventListener("click", handleClickOutside, true);
+    // Add keyboard event listener for spacebar toggle
+    window.addEventListener("keydown", handleKeyDown, true);
 
     return () => {
       document.removeEventListener("click", handleClickOutside, true);
+      window.removeEventListener("keydown", handleKeyDown, true);
     };
+  });
+
+  onDestroy(() => {
+    // Clean up the subscription
+    unsubscribe();
   });
 
   // Format number values for display using the tooltip formatter

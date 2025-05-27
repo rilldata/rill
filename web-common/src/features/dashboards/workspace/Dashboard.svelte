@@ -110,30 +110,8 @@
   let initEmbedPublicAPI;
 
   // Hacky solution to ensure that the embed public API is initialized after the dashboard is fully loaded
-  // Global keyboard event handler for toggling cell inspector visibility
-  function handleGlobalKeyDown(event: KeyboardEvent) {
-    // Only handle Space key when not in an input, textarea, or other form element
-    const target = event.target as HTMLElement;
-    const tagName = target.tagName.toLowerCase();
-    const isFormElement =
-      tagName === "input" || tagName === "textarea" || tagName === "select";
-
-    if (event.code === "Space" && !event.repeat && !isFormElement) {
-      event.preventDefault();
-      event.stopPropagation();
-
-      // Toggle the cell inspector visibility
-      cellInspectorStore.toggle("", { x: 0, y: 0 });
-    } else if (event.key === "Escape") {
-      // Close the cell inspector
-      cellInspectorStore.close();
-    }
-  }
 
   onMount(async () => {
-    // Add global keyboard event listener
-    window.addEventListener("keydown", handleGlobalKeyDown, true);
-
     if (isEmbedded) {
       initEmbedPublicAPI = (
         await import(
@@ -142,11 +120,6 @@
       ).default;
     }
     await tick();
-  });
-
-  onDestroy(() => {
-    // Remove global keyboard event listener
-    window.removeEventListener("keydown", handleGlobalKeyDown, true);
   });
 
   $: if (initEmbedPublicAPI) {
