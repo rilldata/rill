@@ -1,6 +1,6 @@
 <script lang="ts">
   import FormattedDataType from "../../components/data-types/FormattedDataType.svelte";
-  import { cellInspectorStore } from "../../features/dashboards/stores/cellInspectorStore";
+  import { cellInspectorStore } from "../../features/dashboards/stores/cell-inspector-store";
 
   export let value: unknown;
   export let type: string | undefined;

@@ -12,7 +12,7 @@
   import { formatMeasurePercentageDifference } from "@rilldata/web-common/lib/number-formatting/percentage-formatter";
   import { numberPartsToString } from "@rilldata/web-common/lib/number-formatting/utils/number-parts-utils";
   import { type MetricsViewSpecMeasure } from "@rilldata/web-common/runtime-client";
-  import { cellInspectorStore } from "../stores/cellInspectorStore";
+  import { cellInspectorStore } from "../stores/cell-inspector-store";
   import {
     crossfade,
     fly,

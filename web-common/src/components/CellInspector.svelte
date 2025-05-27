@@ -1,11 +1,11 @@
 <script lang="ts">
   import { onMount, onDestroy } from "svelte";
   import { createEventDispatcher } from "svelte";
-  import { cellInspectorStore } from "../features/dashboards/stores/cellInspectorStore";
   import { formatInteger } from "../lib/formatters";
   import CopyIcon from "@rilldata/web-common/components/icons/CopyIcon.svelte";
   import Check from "@rilldata/web-common/components/icons/Check.svelte";
   import { copyToClipboard } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
+  import { cellInspectorStore } from "../features/dashboards/stores/cell-inspector-store";
 
   export let value: string = "";
   export let isOpen: boolean = false;
