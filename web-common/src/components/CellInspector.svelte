@@ -102,7 +102,7 @@
 {#if isOpen}
   <div
     bind:this={container}
-    class="cell-inspector fixed top-4 right-4 z-50 transition-opacity shadow-lg rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800"
+    class="cell-inspector fixed top-12 right-4 z-50 transition-opacity shadow-lg rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800"
     class:invisible={!isOpen && !hovered}
     class:opacity-0={!isOpen && !hovered}
     class:opacity-100={isOpen || hovered}
@@ -122,10 +122,10 @@
         id="cell-inspector-content"
       >
         <div class="flex items-center" id="cell-inspector-title">
-          <pre
-            class="whitespace-pre-wrap break-words font-mono text-sm text-gray-800 dark:text-gray-200 flex-1">{formatValue(
-              value,
-            )}</pre>
+          <span
+            class="whitespace-pre-wrap break-words text-xs text-gray-800 dark:text-gray-200 flex-1"
+            >{formatValue(value)}</span
+          >
         </div>
         <button
           class="hover:bg-slate-100 rounded p-1 active:bg-slate-200 group"
