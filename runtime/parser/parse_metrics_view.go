@@ -20,6 +20,7 @@ type MetricsViewYAML struct {
 	DisplayName       string           `yaml:"display_name"`
 	Title             string           `yaml:"title"` // Deprecated: use display_name
 	Description       string           `yaml:"description"`
+	AIContext         string           `yaml:"ai_context"`
 	Model             string           `yaml:"model"`
 	Database          string           `yaml:"database"`
 	DatabaseSchema    string           `yaml:"database_schema"`
@@ -62,8 +63,7 @@ type MetricsViewYAML struct {
 		ValidPercentOfTotal bool           `yaml:"valid_percent_of_total"`
 		TreatNullsAs        string         `yaml:"treat_nulls_as"`
 	}
-	Security  *SecurityPolicyYAML
-	AIContext string `yaml:"ai_context"`
+	Security *SecurityPolicyYAML
 
 	// DEPRECATED FIELDS
 	DefaultTimeRange   string   `yaml:"default_time_range"`

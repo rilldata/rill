@@ -2327,6 +2327,10 @@
               "type": "string",
               "description": "Refers to the description for the metrics view"
             },
+            "ai_context": {
+              "type": "string",
+              "description": "Extra context for LLM/AI features. Used to guide natural language question answering and routing."
+            },
             "model": {
               "type": "string",
               "description": "Refers to the model powering the dashboard (either model or table is required)"
@@ -2507,10 +2511,6 @@
             "security": {
               "$ref": "#/$defs/security_policy_properties",
               "description": "Defines a security policy for the dashboard"
-            },
-            "ai_context": {
-              "type": "string",
-              "description": "Extra context for LLM/AI features. Used to guide natural language question answering and routing."
             }
           },
           "$defs": {

@@ -19,13 +19,13 @@ var ErrRillYAMLNotFound = errors.New("rill.yaml not found")
 type RillYAML struct {
 	DisplayName   string
 	Description   string
+	AIContext     string
 	OLAPConnector string
 	Connectors    []*ConnectorDef
 	Variables     []*VariableDef
 	Defaults      map[ResourceKind]yaml.Node
 	FeatureFlags  map[string]bool
 	PublicPaths   []string
-	AIContext     string
 }
 
 // ConnectorDef is a subtype of RillYAML, defining connectors required by the project
@@ -55,6 +55,8 @@ type rillYAML struct {
 	Name string `yaml:"name"` // Deprecated: use display_name
 	// Description of the project
 	Description string `yaml:"description"`
+	// User-provided context for LLM/AI features
+	AIContext string `yaml:"ai_context"`
 	// The project's default OLAP connector to use (can be overridden in the individual resources)
 	OLAPConnector string `yaml:"olap_connector"`
 	// Connectors required by the project
@@ -103,8 +105,6 @@ type rillYAML struct {
 		Groups     []string       `yaml:"groups"`
 		Attributes map[string]any `yaml:",inline"`
 	} `yaml:"mock_users"`
-	// User-provided context for LLM/AI features
-	AIContext string `yaml:"ai_context"`
 }
 
 // parseRillYAML parses rill.yaml
@@ -267,13 +267,13 @@ func (p *Parser) parseRillYAML(ctx context.Context, path string) error {
 	res := &RillYAML{
 		DisplayName:   tmp.DisplayName,
 		Description:   tmp.Description,
+		AIContext:     tmp.AIContext,
 		OLAPConnector: tmp.OLAPConnector,
 		Connectors:    make([]*ConnectorDef, len(tmp.Connectors)),
 		Variables:     make([]*VariableDef, len(vars)),
 		Defaults:      defaults,
 		FeatureFlags:  featureFlags,
 		PublicPaths:   tmp.PublicPaths,
-		AIContext:     tmp.AIContext,
 	}
 
 	for i, c := range tmp.Connectors {
