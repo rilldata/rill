@@ -4,6 +4,10 @@
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { deploymentChipDisplays } from "./display-utils";
   import { useProjectDeployment } from "./selectors";
+  import { ADMIN_URL } from "@rilldata/web-admin/client/http-client";
+  import IconButton from "@rilldata/web-common/components/button/IconButton.svelte";
+  import CopyIcon from "@rilldata/web-common/components/icons/CopyIcon.svelte";
+  import { copyToClipboard } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
 
   export let organization: string;
   export let project: string;
@@ -16,6 +20,12 @@
     deploymentChipDisplays[
       deployment?.status || V1DeploymentStatus.DEPLOYMENT_STATUS_UNSPECIFIED
     ];
+
+  $: mcpUrl = `${ADMIN_URL}/v1/organizations/${organization}/projects/${project}/runtime/mcp/sse`;
+
+  function copyToClipboardAndNotify() {
+    copyToClipboard(mcpUrl, "MCP URL copied to clipboard");
+  }
 </script>
 
 <section class="deployment-status">
@@ -44,6 +54,33 @@
       {deployment.statusMessage}
     {/if}
   {/if}
+</section>
+
+<section class="deployment-status">
+  <h3 class="deployment-label">MCP URL</h3>
+  <div
+    class="deployment-status-tag-wrapper bg-gray-50 border-gray-300 flex justify-between items-center"
+  >
+    <span class="text-gray-600 flex-grow">
+      {mcpUrl}
+    </span>
+    <IconButton
+      on:click={copyToClipboardAndNotify}
+      ariaLabel="Copy MCP URL"
+      disableHover={true}
+      marginClasses="p-0 ml-1"
+    >
+      <CopyIcon size="16px" />
+    </IconButton>
+  </div>
+  <a
+    href="https://docs.rilldata.com"
+    target="_blank"
+    rel="noopener noreferrer"
+    class="text-xs text-blue-600 hover:text-blue-800 mt-1"
+  >
+    View MCP configuration instructions →
+  </a>
 </section>
 
 <style lang="postcss">
