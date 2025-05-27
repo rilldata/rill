@@ -3,7 +3,6 @@
   import { Chip } from "@rilldata/web-common/components/chip";
   import { getRandomBgColor } from "@rilldata/web-common/features/themes/color-config";
   import { cn } from "@rilldata/web-common/lib/shadcn";
-  import { goto } from "$app/navigation";
   import { page } from "$app/stores";
 
   export let name: string;
