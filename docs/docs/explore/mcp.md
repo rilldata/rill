@@ -1,6 +1,6 @@
 ---
 title: "Rill MCP Server"
-description: How to connect to Rill MCP and query your deployment
+description: How to connect to Rill MCP and query your metrics views
 sidebar_label: "Rill MCP Server"
 sidebar_position: 1
 ---
