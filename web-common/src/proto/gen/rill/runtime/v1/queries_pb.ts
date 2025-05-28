@@ -514,7 +514,7 @@ export class ExportReportRequest extends Message<ExportReportRequest> {
    * Contextual information about the base URL of the UI that initiated the export.
    * This is used to generate header comments in the exported file when include_header is true in the report spec.
    *
-   * @generated from field: string origin_base_url = 8;
+   * @generated from field: string origin_base_url = 6;
    */
   originBaseUrl = "";
 
@@ -529,7 +529,7 @@ export class ExportReportRequest extends Message<ExportReportRequest> {
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "report", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "execution_time", kind: "message", T: Timestamp },
-    { no: 8, name: "origin_base_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 6, name: "origin_base_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ExportReportRequest {

@@ -18,13 +18,11 @@ _[object]_ - OpenAPI specification for the API endpoint
 
   - **`summary`** - _[string]_ - A brief description of what the API endpoint does 
 
-  - **`request`** - _[object]_ - Configuration for the API request parameters 
+  - **`parameters`** - _[array of object]_ - List of parameters that the API endpoint accepts 
 
-    - **`parameters`** - _[array of object]_ - List of parameters that the API endpoint accepts 
+  - **`request_schema`** - _[object]_ - JSON schema for the request body (use nested YAML instead of a JSON string) 
 
-  - **`response`** - _[object]_ - Configuration for the API response structure 
-
-    - **`schema`** - _[object]_ - JSON schema defining the structure of the API response 
+  - **`response_schema`** - _[object]_ - JSON schema for the response body (use nested YAML instead of a JSON string) 
 
 ### `security`
 

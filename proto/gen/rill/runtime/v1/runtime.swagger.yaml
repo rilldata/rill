@@ -2898,10 +2898,6 @@ paths:
           in: query
           required: false
           type: string
-        - name: region
-          in: query
-          required: false
-          type: string
         - name: prefix
           in: query
           required: false
@@ -3307,12 +3303,12 @@ definitions:
         type: object
       openapiSummary:
         type: string
-      openapiParameters:
-        type: array
-        items:
-          type: object
-      openapiResponseSchema:
-        type: object
+      openapiParametersJson:
+        type: string
+      openapiRequestSchemaJson:
+        type: string
+      openapiResponseSchemaJson:
+        type: string
       securityRules:
         type: array
         items:

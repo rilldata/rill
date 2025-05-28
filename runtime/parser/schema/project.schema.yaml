@@ -187,24 +187,20 @@ definitions:
               summary:
                 type: string
                 description: A brief description of what the API endpoint does
-              request:
+              parameters:
+                type: array
+                description: List of parameters that the API endpoint accepts
+                items:
+                  type: object
+                  additionalProperties: true
+              request_schema:
                 type: object
-                description: Configuration for the API request parameters
-                properties:
-                  parameters:
-                    type: array
-                    description: List of parameters that the API endpoint accepts
-                    items:
-                      type: object
-                      additionalProperties: true
-              response:
+                description: JSON schema for the request body (use nested YAML instead of a JSON string)
+                additionalProperties: true
+              response_schema:
                 type: object
-                description: Configuration for the API response structure
-                properties:
-                  schema:
-                    type: object
-                    description: JSON schema defining the structure of the API response
-                    additionalProperties: true
+                description: JSON schema for the response body (use nested YAML instead of a JSON string)
+                additionalProperties: true
           security:
             $ref: '#/definitions/security_policy_properties'
           skip_nested_security:
