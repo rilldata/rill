@@ -117,7 +117,6 @@
   <BigNumberTooltipContent
     slot="tooltip-content"
     {measure}
-    isMeasureExpanded={useDiv}
     value={tooltipValue}
   />
 

@@ -28,9 +28,9 @@ measures:
 
 dimensions:
   - name: app_site_name
-    display_name: App Site Name
+    display_name: App Site Name App Site Name App Site Name App Site Name App Site Name App Site Name
     column: app_site_name
-    description: ""
+    description: "testing"
   - display_name: App Site Domain
     column: app_site_domain
     description: ""

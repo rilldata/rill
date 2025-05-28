@@ -10,6 +10,8 @@
   import PercentOfTotal from "../dimension-table/PercentOfTotal.svelte";
   import { SortType } from "../proto-state/derived-types";
   import DimensionCompareMenu from "./DimensionCompareMenu.svelte";
+  import TooltipShortcutContainer from "@rilldata/web-common/components/tooltip/TooltipShortcutContainer.svelte";
+  import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
 
   export let dimensionName: string;
   export let isFetching: boolean;
@@ -18,6 +20,7 @@
   export let isBeingCompared: boolean;
   export let sortedAscending: boolean;
   export let displayName: string;
+  export let dimensionDescription: string;
   export let hovered: boolean;
   export let sortType: SortType;
   export let allowDimensionComparison: boolean;
@@ -78,13 +81,28 @@
             >{displayName}</span
           >
         </button>
-        <TooltipContent slot="tooltip-content">
+        <TooltipContent slot="tooltip-content" maxWidth="280px">
           <div
             class="pointer-events-none items-baseline"
             aria-label="tooltip-name"
           >
             {displayName}
           </div>
+          {#if dimensionDescription}
+            <div
+              class="grid gap-x-2 pointer-events-none pt-1 pb-1 items-baseline"
+              style="grid-template-columns: auto max-content"
+              style:min-width="200px"
+            >
+              <div
+                class="text-gray-300 justify-self-start"
+                style:max-width="280px"
+                aria-label="tooltip-name-description"
+              >
+                {dimensionDescription}
+              </div>
+            </div>
+          {/if}
         </TooltipContent>
       </Tooltip>
     </th>
