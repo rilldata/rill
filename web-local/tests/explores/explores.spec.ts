@@ -159,7 +159,10 @@ time_ranges:
     // Start waiting for download before clicking. Note no await.
     const downloadXLSXPromise = page.waitForEvent("download");
     await page.getByLabel("Export model data").click();
-    await page.getByRole("menuitem", { name: "Export as XLSX" }).first().click();
+    await page
+      .getByRole("menuitem", { name: "Export as XLSX" })
+      .first()
+      .click();
     const downloadXLSX = await downloadXLSXPromise;
     await downloadXLSX.saveAs("temp/" + downloadXLSX.suggestedFilename());
     const xlsxRegex = /^AdBids_model_filtered_.*\.xlsx$/;
