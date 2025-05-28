@@ -619,7 +619,9 @@ test.describe("pivot run through", () => {
     const timeMonth = page.getByLabel("month pivot chip", { exact: true });
     await timeMonth.dragTo(rowZone);
 
-    const addRowField = page.getByRole('button', { name: 'Add filter button' }).nth(1);
+    const addRowField = page
+      .getByRole("button", { name: "Add filter button" })
+      .nth(1);
     await addRowField.click();
     await clickMenuButton(page, "Publisher");
 
