@@ -15,8 +15,8 @@
   import { onMount } from "svelte";
   import { get } from "svelte/store";
   import { runtime } from "../../runtime-client/runtime-store";
-  import { getStateManagers } from "../dashboards/state-managers/state-managers";
   import type TScheduledReportDialog from "../scheduled-reports/ScheduledReportDialog.svelte";
+  import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
 
   export let disabled: boolean = false;
   export let workspace = false;
@@ -41,11 +41,6 @@
   const exportDash = createQueryServiceExport();
   const { reports, readOnly } = featureFlags;
 
-  $: ({ organization, project } = $page.params);
-
-  const StateManagers = getStateManagers();
-  const { validSpecStore } = StateManagers;
-
   async function handleExport(format: V1ExportFormat, includeHeader = false) {
     const result = await $exportDash.mutateAsync({
       instanceId: get(runtime).instanceId,
@@ -56,10 +51,8 @@
         // Include metadata for CSV/XLSX exports in Cloud context.
         ...(includeHeader &&
           $readOnly && {
-            project,
-            organization,
-            dashboard: $validSpecStore.data?.explore?.displayName,
-            dashboardUrl: window.location.href,
+            originDashboard: { name: exploreName, kind: ResourceKind.Explore },
+            origin_url: window.location.href,
           }),
       },
     });
