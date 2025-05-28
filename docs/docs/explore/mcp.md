@@ -31,8 +31,8 @@ To use the Rill MCP server, you'll need:
 # Install the Rill CLI if you haven't already
 curl https://rill.sh | sh
 
-# Create a service token
-rill service create mcp-server
+# Create a token
+rill token issue
 ```
 
 ### Configure Claude Desktop
@@ -116,7 +116,7 @@ Restart Claude Desktop for any changes to your JSON to take effect.
 If Claude Desktop cannot connect to the MCP server, check that Rill is running (local) or that your able to connect to your [Rill project](https://ui.rilldata.com) from your browser. If your project is private, you need to check that the service token is valid via the CLI.
 
 ```bash
-rill service list
+rill token list
 ```
 
 If you're still experiencing the issue, check the logs in Claude Desktop.
