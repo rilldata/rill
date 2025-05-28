@@ -35,7 +35,7 @@ func (s *Server) WatchGitStatus(ctx context.Context, r *connect.Request[localv1.
 		return err
 	}
 
-	return gitutil.PollGitSt atus(ctx, s.app.ProjectPath, remote, func(gs gitutil.GitStatus) {
+	return gitutil.PollGitStatus(ctx, s.app.ProjectPath, remote, func(gs gitutil.GitStatus) {
 		err = stream.Send(&localv1.WatchGitStatusResponse{
 			Branch:        gs.Branch,
 			GithubUrl:     config.Remote,
