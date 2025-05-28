@@ -2898,10 +2898,6 @@ paths:
           in: query
           required: false
           type: string
-        - name: region
-          in: query
-          required: false
-          type: string
         - name: prefix
           in: query
           required: false

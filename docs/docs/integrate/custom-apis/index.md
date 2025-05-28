@@ -46,7 +46,7 @@ type: api
 metrics_sql: >
   SELECT product, total_sales
   FROM sales_metrics
-  WHERE country = {{ .args.country }}
+  WHERE country = '{{ .args.country }}'
   {{ if hasKey .args "limit" }} LIMIT {{ .args.limit }} {{ end }}
   {{ if hasKey .args "offset" }} OFFSET {{ .args.offset }} {{ end }}
 
