@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/rilldata/rill/runtime/drivers"
-	"github.com/rilldata/rill/runtime/drivers/blob"
+	"github.com/rilldata/rill/runtime/pkg/blob"
 	"github.com/rilldata/rill/runtime/pkg/globutil"
 	"gocloud.dev/blob/gcsblob"
 )
