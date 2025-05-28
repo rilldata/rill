@@ -1231,6 +1231,13 @@ definitions:
           refresh:
             $ref: '#/definitions/schedule_properties'
             description: Specifies the refresh schedule that Rill should follow to re-ingest and update the underlying model data 
+          connector:
+            type: string
+            description: |
+              Refers to the connector type  or [named connector](./connector.md#name) for the source.
+          sql:
+            type: string
+            description: Raw SQL query to run against source
           timeout:
             type: string
             description: The maximum time to wait for model ingestion
@@ -1250,9 +1257,6 @@ definitions:
           partitions:
             $ref: '#/definitions/data_properties'
             description: Refers to the how your data is partitioned, cannot be used with state. (optional)
-          sql:
-            type: string
-            description: Raw SQL query to run against source
           materialize:
             type: boolean
             description: models will be materialized in olap
@@ -1276,40 +1280,33 @@ definitions:
             type: object
             description: to define the properties of output
             properties:
+              table:
+                type: string
+                description: Name of the output table. If not specified, the model name is used.
+              materialize:
+                type: boolean
+                description: Whether to materialize the model as a table or view
               connector:
                 type: string
-                description: Refers to the connector type for the output table
+                description: Refers to the connector type for the output table. Can be `clickhouse` or `duckdb` and their named connector 
+              incremental_strategy:
+                type: string
+                enum:
+                  - append
+                  - merge
+                  - partition_overwrite
+                description: Strategy to use for incremental updates. Can be 'append', 'merge' or 'partition_overwrite'
+              unique_key:
+                type: array
+                items:
+                  type: string
+                description: List of columns that uniquely identify a row for merge strategy
+              partition_by:
+                type: string
+                description: Column or expression to partition the table by
             allOf:
               - if:
-                  properties:
-                    connector:
-                      const: duckdb
-                  required:
-                    - connector
-                then:
-                  properties:
-                    table:
-                      type: string
-                      description: Name of the output table. If not specified, the model name is used.
-                    materialize:
-                      type: boolean
-                      description: Whether to materialize the model as a table or view
-                    incremental_strategy:
-                      type: string
-                      enum:
-                        - append
-                        - merge
-                        - partition_overwrite
-                      description: Strategy to use for incremental updates
-                    unique_key:
-                      type: array
-                      items:
-                        type: string
-                      description: List of columns that uniquely identify a row for merge strategy
-                    partition_by:
-                      type: string
-                      description: Column or expression to partition the table by
-              - if:
+                  title: Additional properties for `output` when `connector` is `clickhouse`
                   properties:
                     connector:
                       const: clickhouse
@@ -1317,84 +1314,146 @@ definitions:
                     - connector
                 then:
                   properties:
-                    table:
-                      type: string
-                      description: Name of the output table. If not specified, the model name is used.
                     type:
                       type: string
+                      description: Type to materialize the model into. Can be 'TABLE', 'VIEW' or 'DICTIONARY'
                       enum:
                         - TABLE
                         - VIEW
                         - DICTIONARY
-                      description: Type of the output object
-                    engine:
-                      type: string
-                      description: ClickHouse table engine to use
-                    engine_full:
-                      type: string
-                      description: Full engine configuration in SQL format
-                    order_by:
-                      type: string
-                      description: ORDER BY clause for the table
-                    partition_by:
-                      type: string
-                      description: PARTITION BY clause for the table
-                    primary_key:
-                      type: string
-                      description: PRIMARY KEY clause for the table
-                    incremental_strategy:
-                      type: string
-                      enum:
-                        - append
-                        - merge
-                        - partition_overwrite
-                      description: Strategy to use for incremental updates
-                    unique_key:
-                      type: array
-                      items:
-                        type: string
-                      description: List of columns that uniquely identify a row for merge strategy
                     columns:
                       type: string
-                      description: Column definitions with data types and indexes
+                      description: Column names and types. Can also include indexes. If unspecified, detected from the query.
+                    engine_full:
+                      type: string
+                      description: Full engine definition in SQL format. Can include partition keys, order, TTL, etc.
+                    engine:
+                      type: string
+                      description: Table engine to use. Default is MergeTree
+                    order_by:
+                      type: string
+                      description: ORDER BY clause.
+                    partition_by:
+                      type: string
+                      description: Partition BY clause.
+                    primary_key:
+                      type: string
+                      description: PRIMARY KEY clause.
+                    sample_by:
+                      type: string
+                      description: SAMPLE BY clause.
+                    ttl:
+                      type: string
+                      description: TTL settings for the table or columns.
                     table_settings:
                       type: string
-                      description: Table-specific settings
+                      description: Table-specific settings.
                     query_settings:
                       type: string
-                      description: Settings to apply to the query
+                      description: Settings used in insert/create table as select queries.
+                    distributed_settings:
+                      type: string
+                      description: Settings for distributed table.
+                    distributed_sharding_key:
+                      type: string
+                      description: Sharding key for distributed table.
+                    dictionary_source_user:
+                      type: string
+                      description: User for accessing the source dictionary table (used if type is DICTIONARY).
+                    dictionary_source_password:
+                      type: string
+                      description: Password for the dictionary source user.
         required:
           - type
           - sql
       - $ref: '#/definitions/common_properties'
       - type: object
-        oneOf:
-          - $ref: '#/definitions/model/definitions/athena'
-          - $ref: '#/definitions/model/definitions/azure'
-          - $ref: '#/definitions/model/definitions/bigquery'
-          - $ref: '#/definitions/model/definitions/clickhouse'
-          - $ref: '#/definitions/model/definitions/duckdb'
-          - $ref: '#/definitions/model/definitions/gcs'
-          - $ref: '#/definitions/model/definitions/https'
-          - $ref: '#/definitions/model/definitions/local_file'
-          - $ref: '#/definitions/model/definitions/motherduck'
-          - $ref: '#/definitions/model/definitions/mysql'
-          - $ref: '#/definitions/model/definitions/pinot'
-          - $ref: '#/definitions/model/definitions/postgres'
-          - $ref: '#/definitions/model/definitions/redshift'
-          - $ref: '#/definitions/model/definitions/s3'
-          - $ref: '#/definitions/model/definitions/salesforce'
-          - $ref: '#/definitions/model/definitions/snowflake'
-          - $ref: '#/definitions/model/definitions/sqlite'
+        allOf:
+          - if:
+              title: Additional properties when `connector` is `athena` or [named connector](./connector.md#name) for athena
+              properties:
+                connector:
+                  const: athena
+              required:
+                - connector
+            then:
+              $ref: '#/definitions/model/definitions/athena'
+          - if:
+              title: Additional properties when `connector` is `azure` or [named connector](./connector.md#name) of azure
+              properties:
+                connector:
+                  const: azure
+              required:
+                - connector
+            then:
+              $ref: '#/definitions/model/definitions/azure'
+          - if:
+              title: Additional properties when `connector` is `bigquery` or [named connector](./connector.md#name) of bigquery
+              properties:
+                connector:
+                  const: bigquery
+              required:
+                - connector
+            then:
+              $ref: '#/definitions/model/definitions/bigquery'
+          - if:
+              title: Additional properties when `connector` is `duckdb` or [named connector](./connector.md#name) of duckdb
+              properties:
+                connector:
+                  const: duckdb
+              required:
+                - connector
+            then:
+              $ref: '#/definitions/model/definitions/duckdb'
+          - if:
+              title: Additional properties when `connector` is `gcs` or [named connector](./connector.md#name) of gcs
+              properties:
+                connector:
+                  const: gcs
+              required:
+                - connector
+            then:
+              $ref: '#/definitions/model/definitions/gcs'
+          - if:
+              title: Additional properties when `connector` is `local_file` or [named connector](./connector.md#name) of local_file
+              properties:
+                connector:
+                  const: local_file
+              required:
+                - connector
+            then:
+              $ref: '#/definitions/model/definitions/local_file'
+          - if:
+              title: Additional properties when `connector` is `redshift` or [named connector](./connector.md#name) of redshift
+              properties:
+                connector:
+                  const: redshift
+              required:
+                - connector
+            then:
+              $ref: '#/definitions/model/definitions/redshift'
+          - if:
+              title: Additional properties when `connector` is `s3` or [named connector](./connector.md#name) of s3
+              properties:
+                connector:
+                  const: s3
+              required:
+                - connector
+            then:
+              $ref: '#/definitions/model/definitions/s3'
+          - if:
+              title: Additional properties when `connector` is `salesforce` or [named connector](./connector.md#name) of salesforce
+              properties:
+                connector:
+                  const: salesforce
+              required:
+                - connector
+            then:
+              $ref: '#/definitions/model/definitions/salesforce'
     definitions:
       athena:
-        title: athena
         type: object
         properties:
-          connector:
-            type: string
-            description: Must be either `athena` or a named Athena connector.
-            const: athena
           output_location:
             type: string
             description: Output location for query results in S3.
@@ -1404,16 +1463,9 @@ definitions:
           region:
             type: string
             description: AWS region to connect to Athena and the output location.
-        required:
-          - connector
       azure:
-        title: azure
         type: object
         properties:
-          connector:
-            type: string
-            description: Must be either `azure` or a named Azure connector.
-            const: azure
           path:
             type: string
             description: Path to the source
@@ -1446,39 +1498,15 @@ definitions:
           batch_size:
             type: string
             description: 'Size of a batch (e.g., ''100MB'')'
-        required:
-          - connector
       bigquery:
-        title: bigquery
         type: object
         properties:
-          connector:
-            type: string
-            description: Must be either `bigquery` or a named BigQuery connector.
-            const: bigquery
           project_id:
             type: string
             description: ID of the BigQuery project.
-        required:
-          - connector
-      clickhouse:
-        title: clickhouse     
-        type: object
-        properties:
-          connector:
-            type: string
-            description: Must be either `clickhouse` or a named ClickHouse connector.
-            const: clickhouse
-        required:
-          - connector
       duckdb:
-        title: duckdb
         type: object
         properties:
-          connector:
-            type: string
-            description: Must be either `duckdb` or a named DuckDB connector.
-            const: duckdb
           path:
             type: string
             description: Path to the data source.
@@ -1491,16 +1519,9 @@ definitions:
           post_exec:
             type: string
             description: refers to a SQL query that is run after the main query, available for DuckDB based models
-        required:
-          - connector
       gcs:
-        title: gcs
         type: object
         properties:
-          connector:
-            type: string
-            description: Must be either `gcs` or a named GCS connector.
-            const: gcs
           path:
             type: string
             description: Path to the source
@@ -1530,82 +1551,18 @@ definitions:
           batch_size:
             type: string
             description: 'Size of a batch (e.g., ''100MB'')'
-        required:
-          - connector
-      https:
-        title: https
-        type: object
-        properties:
-          connector:
-            type: string
-            description: Must be either `https` or a named HTTPS connector.
-            const: https
-        required:
-          - connector
       local_file:
-        title: local_file
         type: object
         properties:
-          connector:
-            type: string
-            description: Must be either `local_file` or a named Local File connector.
-            const: local_file
           path:
             type: string
             description: Path to the data source.
           format:
             type: string
             description: 'Format of the data source (e.g., csv, json, parquet).'
-        required:
-          - connector
-      motherduck:
-        title: motherduck
-        type: object
-        properties:
-          connector:
-            type: string
-            description: Must be either `motherduck` or a named MotherDuck connector.
-            const: motherduck
-        required:
-          - connector
-      mysql:
-        title: mysql
-        type: object
-        properties:
-          connector:
-            type: string
-            description: Must be either `mysql` or a named MySQL connector.
-            const: mysql
-        required:
-          - connector
-      pinot:
-        title: pinot
-        type: object
-        properties:
-          connector:
-            type: string
-            description: Must be either `pinot` or a named Pinot connector.
-            const: pinot
-        required:
-          - connector
-      postgres:
-        title: postgres
-        type: object
-        properties:
-          connector:
-            type: string
-            description: Must be either `postgres` or a named PostgreSQL connector.
-            const: postgres
-        required:
-          - connector
       redshift:
-        title: redshift
         type: object
         properties:
-          connector:
-            type: string
-            description: Must be either `redshift` or a named Redshift connector.
-            const: redshift
           output_location:
             type: string
             description: S3 location where query results are stored.
@@ -1624,16 +1581,9 @@ definitions:
           region:
             type: string
             description: AWS region of the Redshift deployment.
-        required:
-          - connector
       s3:
-        title: s3
         type: object
         properties:
-          connector:
-            type: string
-            description: Must be either `s3` or a named S3 connector.
-            const: s3
           region:
             type: string
             description: AWS region
@@ -1669,16 +1619,9 @@ definitions:
           batch_size:
             type: string
             description: 'Size of a batch (e.g., ''100MB'')'
-        required:
-          - connector
       salesforce:
-        title: salesforce
         type: object
         properties:
-          connector:
-            type: string
-            description: Must be either `salesforce` or a named Salesforce connector.
-            const: salesforce
           soql:
             type: string
             description: SOQL query to execute against the Salesforce instance.
@@ -1688,28 +1631,7 @@ definitions:
           queryAll:
             type: boolean
             description: Whether to include deleted and archived records in the query (uses queryAll API).
-        required:
-          - connector
-      snowflake:
-        title: snowflake
-        type: object
-        properties:
-          connector:
-            type: string
-            description: Must be either `snowflake` or a named Snowflake connector.
-            const: snowflake
-        required:
-          - connector
-      sqlite:
-        title: sqlite
-        type: object
-        properties:
-          connector:
-            type: string
-            description: Must be either `sqlite` or a named SQLite connector.
-            const: sqlite
-        required:
-          - connector
+
   theme:
     type: object
     title: Theme YAML 

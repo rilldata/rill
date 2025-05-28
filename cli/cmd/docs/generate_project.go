@@ -408,7 +408,17 @@ func generateDoc(sidebarPosition, level int, node *yaml.Node, indent string, req
 	// AllOf
 	if allOf := getNodeForKey(node, "allOf"); allOf != nil && allOf.Kind == yaml.SequenceNode {
 		for _, item := range allOf.Content {
-			if !hasIf(item) {
+			if hasIf(item) {
+				ifNode := getNodeForKey(item, "if")
+				title := getScalarValue(ifNode, "title")
+				if level == 1 {
+					doc.WriteString(fmt.Sprintf("\n\n## %s", title))
+				} else {
+					doc.WriteString(fmt.Sprintf("\n\n%s**%s**", indent, title))
+				}
+				thenNode := getNodeForKey(item, "then")
+				doc.WriteString(generateDoc(sidebarPosition, level, thenNode, indent, getRequiredMapFromNode(item)))
+			} else {
 				doc.WriteString(generateDoc(sidebarPosition, level, item, indent, getRequiredMapFromNode(item)))
 			}
 		}

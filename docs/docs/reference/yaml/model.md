@@ -24,6 +24,15 @@ _[object]_ - Specifies the refresh schedule that Rill should follow to re-ingest
 
   - **`run_in_dev`** - _[boolean]_ - If true, allows the schedule to run in development mode. 
 
+### `connector`
+
+_[string]_ - Refers to the connector type  or [named connector](./connector.md#name) for the source.
+ 
+
+### `sql`
+
+_[string]_ - Raw SQL query to run against source _(required)_
+
 ### `timeout`
 
 _[string]_ - The maximum time to wait for model ingestion 
@@ -108,10 +117,6 @@ _[oneOf]_ - Refers to the how your data is partitioned, cannot be used with stat
 
       - **`where_error`** - _[boolean]_ - Indicates whether the condition should trigger when the resource is in an error state. 
 
-### `sql`
-
-_[string]_ - Raw SQL query to run against source _(required)_
-
 ### `materialize`
 
 _[boolean]_ - models will be materialized in olap 
@@ -134,7 +139,49 @@ _[object]_ - in the case of staging models, where an input source does not suppo
 
 _[object]_ - to define the properties of output 
 
-  - **`connector`** - _[string]_ - Refers to the connector type for the output table 
+  - **`table`** - _[string]_ - Name of the output table. If not specified, the model name is used. 
+
+  - **`materialize`** - _[boolean]_ - Whether to materialize the model as a table or view 
+
+  - **`connector`** - _[string]_ - Refers to the connector type for the output table. Can be `clickhouse` or `duckdb` and their named connector 
+
+  - **`incremental_strategy`** - _[string]_ - Strategy to use for incremental updates. Can be 'append', 'merge' or 'partition_overwrite' 
+
+  - **`unique_key`** - _[array of string]_ - List of columns that uniquely identify a row for merge strategy 
+
+  - **`partition_by`** - _[string]_ - Column or expression to partition the table by 
+
+  **Additional properties for `output` when `connector` is `clickhouse`**
+
+  - **`type`** - _[string]_ - Type to materialize the model into. Can be 'TABLE', 'VIEW' or 'DICTIONARY' 
+
+  - **`columns`** - _[string]_ - Column names and types. Can also include indexes. If unspecified, detected from the query. 
+
+  - **`engine_full`** - _[string]_ - Full engine definition in SQL format. Can include partition keys, order, TTL, etc. 
+
+  - **`engine`** - _[string]_ - Table engine to use. Default is MergeTree 
+
+  - **`order_by`** - _[string]_ - ORDER BY clause. 
+
+  - **`partition_by`** - _[string]_ - Partition BY clause. 
+
+  - **`primary_key`** - _[string]_ - PRIMARY KEY clause. 
+
+  - **`sample_by`** - _[string]_ - SAMPLE BY clause. 
+
+  - **`ttl`** - _[string]_ - TTL settings for the table or columns. 
+
+  - **`table_settings`** - _[string]_ - Table-specific settings. 
+
+  - **`query_settings`** - _[string]_ - Settings used in insert/create table as select queries. 
+
+  - **`distributed_settings`** - _[string]_ - Settings for distributed table. 
+
+  - **`distributed_sharding_key`** - _[string]_ - Sharding key for distributed table. 
+
+  - **`dictionary_source_user`** - _[string]_ - User for accessing the source dictionary table (used if type is DICTIONARY). 
+
+  - **`dictionary_source_password`** - _[string]_ - Password for the dictionary source user. 
 
 ## Common Properties
 
@@ -154,30 +201,7 @@ _[object]_ - Overrides any properties in development environment.
 
 _[object]_ - Overrides any properties in production environment. 
 
-## One of Properties Options
-- [athena](#athena)
-- [azure](#azure)
-- [bigquery](#bigquery)
-- [clickhouse](#clickhouse)
-- [duckdb](#duckdb)
-- [gcs](#gcs)
-- [https](#https)
-- [local_file](#local_file)
-- [motherduck](#motherduck)
-- [mysql](#mysql)
-- [pinot](#pinot)
-- [postgres](#postgres)
-- [redshift](#redshift)
-- [s3](#s3)
-- [salesforce](#salesforce)
-- [snowflake](#snowflake)
-- [sqlite](#sqlite)
-
-## athena
-
-### `connector`
-
-_[string]_ - Must be either `athena` or a named Athena connector. _(required)_
+## Additional properties when `connector` is `athena` or [named connector](./connector.md#name) for athena
 
 ### `output_location`
 
@@ -191,11 +215,7 @@ _[string]_ - AWS Athena workgroup to use for queries.
 
 _[string]_ - AWS region to connect to Athena and the output location. 
 
-## azure
-
-### `connector`
-
-_[string]_ - Must be either `azure` or a named Azure connector. _(required)_
+## Additional properties when `connector` is `azure` or [named connector](./connector.md#name) of azure
 
 ### `path`
 
@@ -229,27 +249,13 @@ _[object]_ - Settings related to glob file matching.
 
 _[string]_ - Size of a batch (e.g., '100MB') 
 
-## bigquery
-
-### `connector`
-
-_[string]_ - Must be either `bigquery` or a named BigQuery connector. _(required)_
+## Additional properties when `connector` is `bigquery` or [named connector](./connector.md#name) of bigquery
 
 ### `project_id`
 
 _[string]_ - ID of the BigQuery project. 
 
-## clickhouse
-
-### `connector`
-
-_[string]_ - Must be either `clickhouse` or a named ClickHouse connector. _(required)_
-
-## duckdb
-
-### `connector`
-
-_[string]_ - Must be either `duckdb` or a named DuckDB connector. _(required)_
+## Additional properties when `connector` is `duckdb` or [named connector](./connector.md#name) of duckdb
 
 ### `path`
 
@@ -267,11 +273,7 @@ _[string]_ - refers to a SQL queries to run before the main query, available for
 
 _[string]_ - refers to a SQL query that is run after the main query, available for DuckDB based models 
 
-## gcs
-
-### `connector`
-
-_[string]_ - Must be either `gcs` or a named GCS connector. _(required)_
+## Additional properties when `connector` is `gcs` or [named connector](./connector.md#name) of gcs
 
 ### `path`
 
@@ -301,17 +303,7 @@ _[object]_ - Settings related to glob file matching.
 
 _[string]_ - Size of a batch (e.g., '100MB') 
 
-## https
-
-### `connector`
-
-_[string]_ - Must be either `https` or a named HTTPS connector. _(required)_
-
-## local_file
-
-### `connector`
-
-_[string]_ - Must be either `local_file` or a named Local File connector. _(required)_
+## Additional properties when `connector` is `local_file` or [named connector](./connector.md#name) of local_file
 
 ### `path`
 
@@ -321,35 +313,7 @@ _[string]_ - Path to the data source.
 
 _[string]_ - Format of the data source (e.g., csv, json, parquet). 
 
-## motherduck
-
-### `connector`
-
-_[string]_ - Must be either `motherduck` or a named MotherDuck connector. _(required)_
-
-## mysql
-
-### `connector`
-
-_[string]_ - Must be either `mysql` or a named MySQL connector. _(required)_
-
-## pinot
-
-### `connector`
-
-_[string]_ - Must be either `pinot` or a named Pinot connector. _(required)_
-
-## postgres
-
-### `connector`
-
-_[string]_ - Must be either `postgres` or a named PostgreSQL connector. _(required)_
-
-## redshift
-
-### `connector`
-
-_[string]_ - Must be either `redshift` or a named Redshift connector. _(required)_
+## Additional properties when `connector` is `redshift` or [named connector](./connector.md#name) of redshift
 
 ### `output_location`
 
@@ -375,11 +339,7 @@ _[string]_ - ARN of the IAM role to assume for Redshift access.
 
 _[string]_ - AWS region of the Redshift deployment. 
 
-## s3
-
-### `connector`
-
-_[string]_ - Must be either `s3` or a named S3 connector. _(required)_
+## Additional properties when `connector` is `s3` or [named connector](./connector.md#name) of s3
 
 ### `region`
 
@@ -417,11 +377,7 @@ _[object]_ - Settings related to glob file matching.
 
 _[string]_ - Size of a batch (e.g., '100MB') 
 
-## salesforce
-
-### `connector`
-
-_[string]_ - Must be either `salesforce` or a named Salesforce connector. _(required)_
+## Additional properties when `connector` is `salesforce` or [named connector](./connector.md#name) of salesforce
 
 ### `soql`
 
@@ -434,15 +390,3 @@ _[string]_ - Salesforce object (e.g., Account, Contact) targeted by the query.
 ### `queryAll`
 
 _[boolean]_ - Whether to include deleted and archived records in the query (uses queryAll API). 
-
-## snowflake
-
-### `connector`
-
-_[string]_ - Must be either `snowflake` or a named Snowflake connector. _(required)_
-
-## sqlite
-
-### `connector`
-
-_[string]_ - Must be either `sqlite` or a named SQLite connector. _(required)_
