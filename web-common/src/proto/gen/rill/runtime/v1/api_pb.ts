@@ -507,6 +507,11 @@ export class Instance extends Message<Instance> {
    */
   watchRepo = false;
 
+  /**
+   * @generated from field: string ai_context = 23;
+   */
+  aiContext = "";
+
   constructor(data?: PartialMessage<Instance>) {
     super();
     proto3.util.initPartial(data, this);
@@ -530,6 +535,7 @@ export class Instance extends Message<Instance> {
     { no: 22, name: "feature_flags", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 8 /* ScalarType.BOOL */} },
     { no: 14, name: "annotations", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
     { no: 15, name: "watch_repo", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 23, name: "ai_context", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Instance {

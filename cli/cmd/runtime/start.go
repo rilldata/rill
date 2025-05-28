@@ -235,6 +235,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 						Config: map[string]string{"dsn": conf.MetastoreURL},
 					},
 				},
+				Version: ch.Version,
 			}
 			rt, err := runtime.New(ctx, opts, logger, storage, activityClient, emailClient)
 			if err != nil {

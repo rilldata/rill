@@ -24,9 +24,10 @@ Manage projects
 ### SEE ALSO
 
 * [rill](../cli.md)	 - A CLI for Rill
+* [rill project clone](clone.md)	 - Clone Project
 * [rill project connect-github](connect-github.md)	 - Deploy project to Rill Cloud by pulling project files from a git repository
 * [rill project delete](delete.md)	 - Delete the project
-* [rill project deploy](deploy.md)	 - Deploy project to Rill Cloud by uploading the project files
+* [rill project deploy](deploy.md)	 - Deploy project to Rill Cloud by using a Rill Managed Git repo
 * [rill project describe](describe.md)	 - Retrieve detailed state for a resource
 * [rill project edit](edit.md)	 - Edit the project details
 * [rill project hibernate](hibernate.md)	 - Hibernate project
