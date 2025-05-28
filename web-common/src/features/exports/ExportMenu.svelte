@@ -38,7 +38,7 @@
   }
 
   const exportDash = createQueryServiceExport();
-  const { reports, adminServer } = featureFlags;
+  const { reports, adminServer, exportMetadata } = featureFlags;
 
   async function handleExport(format: V1ExportFormat, includeHeader = false) {
     const result = await $exportDash.mutateAsync({
@@ -99,7 +99,7 @@
     >
       Export as CSV
     </DropdownMenu.Item>
-    {#if !workspace}
+    {#if !workspace && exportMetadata}
       <DropdownMenu.Item
         on:click={() => handleExport(V1ExportFormat.EXPORT_FORMAT_CSV, true)}
         disabled={!exportQuery}
@@ -120,7 +120,7 @@
     >
       Export as XLSX
     </DropdownMenu.Item>
-    {#if !workspace}
+    {#if !workspace && exportMetadata}
       <DropdownMenu.Item
         on:click={() => handleExport(V1ExportFormat.EXPORT_FORMAT_XLSX, true)}
         disabled={!exportQuery}
