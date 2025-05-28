@@ -38,7 +38,7 @@
   }
 
   const exportDash = createQueryServiceExport();
-  const { reports, readOnly } = featureFlags;
+  const { reports, adminServer } = featureFlags;
 
   async function handleExport(format: V1ExportFormat, includeHeader = false) {
     const result = await $exportDash.mutateAsync({
@@ -49,7 +49,7 @@
         includeHeader,
         // Include metadata for CSV/XLSX exports in Cloud context.
         ...(includeHeader &&
-          $readOnly && {
+          $adminServer && {
             originDashboard: { name: exploreName, kind: ResourceKind.Explore },
             origin_url: window.location.href,
           }),
