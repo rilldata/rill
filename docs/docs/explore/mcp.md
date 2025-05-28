@@ -4,11 +4,10 @@ description: How to connect to Rill MCP and query your deployment
 sidebar_label: "Rill MCP Server"
 sidebar_position: 1
 ---
+
 The Rill Model Context Protocol (MCP) server exposes Rill's most essential APIs to LLMs. It's designed primarily for data analysts, not data engineers, and focuses on consuming Rill metric views—not creating them.
 
-The server can also generate VegaLite-backed visualizations from natural language prompts and data tables. This feature uses OpenAI to translate prompts into chart specs. However:
-
-Not all MCP clients yet support the Image datatype.
+The server can also generate VegaLite-backed visualizations from natural language prompts and data tables. However, not all MCP clients support the Image datatype.
 Some clients may offer their own visualization systems you may prefer.
 
 ## Why use MCP with Rill?
@@ -16,7 +15,6 @@ Instead of blindly exposing your entire data warehouse to external platforms in 
 
 
 This ensures **trustworthy, governed analytics** while empowering users to **self-serve answers** to everyday business questions—without delays caused by email chains or ticket requests. The result: greater team productivity, clearer data ownership, and faster, more confident decision-making across your organization.
-
 
 ## Installation
 
@@ -55,6 +53,8 @@ Depending on which Rill instance you are trygin to connect to (locally running R
 
 
 __*Private Rill Project on Rill Cloud*__
+
+Replace `org` and `project` with the ID of your organization and project.
 ```
 {
     "mcpServers": {
@@ -62,7 +62,7 @@ __*Private Rill Project on Rill Cloud*__
             "command": "npx",
             "args": [
                 "mcp-remote",
-                "https://api.rilldata.com/v1/organizations/demo/projects/rill-openrtb-prog-ads/runtime/mcp/sse",
+                "https://api.rilldata.com/v1/organizations/{org}/projects/{project}/runtime/mcp/sse",
                 "--header",
                 "Authorization:${AUTH_HEADER}"
             ],
@@ -75,6 +75,8 @@ __*Private Rill Project on Rill Cloud*__
 ```
 
 __*Public Rill project on Rill Cloud*__
+
+See [our demo page](https://ui.rilldata.com/demo) for public projects to test.
 
 ```
 {
@@ -106,8 +108,9 @@ __*Locally Running Rill Developer*__
 }
 ```
 
-
-Restart Claude Desktop for the changes to take effect.
+:::tip Reset Claude!
+Restart Claude Desktop for any changes to your JSON to take effect.
+:::
 
 ### Troubleshooting:
 If Claude Desktop cannot connect to the MCP server, check that Rill is running (local) or that your able to connect to your [Rill project](https://ui.rilldata.com) from your browser. If your project is private, you need to check that the service token is valid via the CLI.
