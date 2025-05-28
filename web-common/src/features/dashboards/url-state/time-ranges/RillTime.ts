@@ -141,11 +141,13 @@ export class RillShorthandInterval implements RillTimeInterval {
     inGrain: V1TimeGrain | undefined,
   ] {
     const rangeGrain = GrainAliasToV1TimeGrain[this.grain];
+    console.log("INGRAIN", this.inGrain);
     return [
       rangeGrain,
-      simplifiedSnapMap[
-        this.inGrain ? GrainAliasToV1TimeGrain[this.inGrain] : rangeGrain
-      ],
+
+      this.inGrain
+        ? GrainAliasToV1TimeGrain[this.inGrain]
+        : simplifiedSnapMap[rangeGrain],
     ];
   }
 }
@@ -285,7 +287,10 @@ export class RillTimeStartEndInterval implements RillTimeInterval {
     inGrain: V1TimeGrain | undefined,
   ] {
     const startRangeGrain = this.start.getGrain();
-    const endRangeGrain = this.end.getGrain();
+    const endRangeGrain =
+      typeof this.end?.getGrain === "function"
+        ? this.end.getGrain()
+        : "TIME_GRAIN_DAY";
     const rangeGrain = getMinGrain(startRangeGrain, endRangeGrain);
     return [rangeGrain, undefined];
   }

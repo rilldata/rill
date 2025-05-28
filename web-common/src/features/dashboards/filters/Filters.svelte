@@ -198,6 +198,7 @@
   }
 
   async function onSelectRange(alias: string) {
+    console.log({ alias });
     // If we don't have a valid time range, early return
     if (!allTimeRange?.end) return;
 
@@ -373,6 +374,7 @@
           </Tooltip.Trigger>
           <Tooltip.Content side="bottom" sideOffset={10}>
             <Metadata
+              smallestTimeGrain={minTimeGrain}
               timeZone={activeTimeZone}
               timeStart={allTimeRange?.start}
               timeEnd={allTimeRange?.end}

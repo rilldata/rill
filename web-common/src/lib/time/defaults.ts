@@ -1,6 +1,5 @@
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import {
-  getToDateExcludeOptions,
   V1TimeGrainToAlias,
   V1TimeGrainToDateTimeUnit,
 } from "@rilldata/web-common/lib/time/new-grains";
@@ -45,25 +44,32 @@ export function getTimeRangeOptionsByGrain(
   // const allowedGrains = getAllowedGrains(smallestTimeGrain);
 
   const lastN: TimeRangeMenuOption[] = defaultLastNValues[grain].map((v) => {
-    const timeRange = `-${v}${primaryGrainAlias}$ to ${primaryGrainAlias}$`;
-    const parsed = parseRillTime(timeRange);
-    return {
-      string: timeRange,
-      label: parsed.getLabel(),
-    };
+    const timeRange = `${v}${primaryGrainAlias}`;
+
+    try {
+      const parsed = parseRillTime(timeRange);
+      return {
+        string: timeRange,
+        label: parsed.getLabel(),
+      };
+    } catch {
+      // no-op
+    }
   });
 
   const previous: TimeRangeMenuOption[] = Array.from({ length: 1 }, (_, i) => {
     const timeRange = `-${i + 1}${primaryGrainAlias}^ to ${primaryGrainAlias}^`;
-    const parsed = parseRillTime(timeRange);
 
-    return {
-      string: timeRange,
-      label: parsed.getLabel(),
-    };
+    try {
+      const parsed = parseRillTime(timeRange);
+      return {
+        string: timeRange,
+        label: parsed.getLabel(),
+      };
+    } catch {
+      // no-op
+    }
   });
-
-  const allowedGrains = getToDateExcludeOptions(grain, smallestTimeGrain);
 
   if (grain === V1TimeGrain.TIME_GRAIN_MINUTE) {
     return {
@@ -75,25 +81,11 @@ export function getTimeRangeOptionsByGrain(
 
   const thisOption = [
     {
-      string: `${primaryGrainAlias}!`,
-      label: parseRillTime(`${primaryGrainAlias}!`).getLabel(),
-      // alts: allowedGrains.map((g) => {
-      //   if (g === grain) {
-      //     return {
-      //       string: `${primaryGrainAlias}^ to ${primaryGrainAlias}$`,
-      //       label: `in full`,
-      //     };
-      //   }
-
-      //   const grainAlias = V1TimeGrainToAlias[g];
-      //   const unit = V1TimeGrainToDateTimeUnit[g];
-      //   return {
-      //     string: `${primaryGrainAlias}^ to ${grainAlias}^`,
-      //     label: `excluding this ${unit}`,
-      //   };
-      // }),
+      string: `${primaryGrainAlias}TD`,
+      label: parseRillTime(`${primaryGrainAlias}TD`).getLabel(),
     },
   ];
+
   return {
     lastN,
     this: thisOption,

@@ -218,11 +218,11 @@ export function getLargerGrainsFromOrder(order: Order) {
   return allowedGrains.slice(order + 1);
 }
 
-export function getToDateExcludeOptions(
-  referenceTimeGrain: V1TimeGrain,
+export function getOptionsFromSmallestToLargest(
+  largestTimeGrain: V1TimeGrain,
   smallestTimeGrain?: V1TimeGrain,
 ) {
-  const orderOfReferenceTimeGrain = getGrainOrder(referenceTimeGrain);
+  const orderOfReferenceTimeGrain = getGrainOrder(largestTimeGrain);
   const orderOfSmallestTimeGrain = getGrainOrder(smallestTimeGrain);
 
   if (

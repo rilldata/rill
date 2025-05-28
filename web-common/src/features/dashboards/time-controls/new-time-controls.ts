@@ -349,7 +349,7 @@ export async function deriveInterval(
       DateTime.fromISO(timeRange.start),
       DateTime.fromISO(timeRange.end),
     ),
-    grain: timeRange.roundToGrain,
+    grain: parsed.inGrain,
   };
 }
 

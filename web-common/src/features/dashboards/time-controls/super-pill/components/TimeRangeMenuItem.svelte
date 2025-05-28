@@ -1,4 +1,6 @@
 <script lang="ts">
+  import SyntaxElement from "./SyntaxElement.svelte";
+
   export let range: string;
   export let label: string;
   export let selected: boolean;
@@ -18,4 +20,8 @@
   >
     {label}
   </button>
+
+  <div class="sr-only group-hover:not-sr-only">
+    <SyntaxElement {range} />
+  </div>
 </div>

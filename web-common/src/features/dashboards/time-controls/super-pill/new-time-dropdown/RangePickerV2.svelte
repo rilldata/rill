@@ -26,14 +26,13 @@
   import {
     getAllowedEndingGrains,
     getAllowedGrains,
-    getGrainAliasFromString,
+    V1TimeGrainToAlias,
   } from "@rilldata/web-common/lib/time/new-grains";
   import * as Popover from "@rilldata/web-common/components/popover";
   import type { TimeGrainOptions } from "@rilldata/web-common/lib/time/defaults";
   import TimeRangeOptionGroup from "./TimeRangeOptionGroup.svelte";
   import RangeDisplay from "../components/RangeDisplay.svelte";
   import InControl from "./InControl.svelte";
-  import TimeRangeMenuItem from "../components/TimeRangeMenuItem.svelte";
 
   export let timeString: string | undefined;
   export let timeRanges: V1ExploreTimeRange[];
@@ -59,8 +58,6 @@
   let parsedTime: RillTime | undefined = undefined;
   let showCustomSelector = false;
 
-  let isShortHandSyntax = true;
-
   $: if (timeString) {
     try {
       parsedTime = parseRillTime(timeString);
@@ -69,9 +66,11 @@
     }
   }
 
+  $: console.log({ parsedTime });
+
   $: selectedLabel = timeString && getRangeLabel(timeString);
 
-  $: meta = parsedTime?.getMeta();
+  $: isShortHandSyntax = parsedTime?.isShorthandSyntax;
 
   $: canShowEndingControl = parsedTime && selectedLabel !== timeString;
 
@@ -87,6 +86,8 @@
   $: allOptions = timeGrainOptions.map((grain) => {
     return getTimeRangeOptionsByGrain(grain, smallestTimeGrain);
   });
+
+  // $: console.log({ groups });
 
   $: groups = allOptions.reduce(
     (acc, options) => {
@@ -266,13 +267,26 @@
   </Popover.Content>
 </Popover.Root>
 
-{#if isShortHandSyntax && parsedTime}
+{#if isShortHandSyntax && parsedTime?.inGrain && parsedTime.rangeGrain}
   <InControl
     {parsedTime}
+    inGrain={parsedTime.getCorrectInGrain(smallestTimeGrain)}
+    rangeGrain={parsedTime.rangeGrain}
+    isComplete={parsedTime.isComplete}
     {smallestTimeGrain}
     onSelectEnding={(grain, complete) => {
       console.log(grain, complete);
-      // onSelectRange(grain);
+
+      if (!timeString) return;
+
+      // ??= grain;
+
+      const [firstPart] = timeString.split("in");
+      const newString =
+        firstPart.trim() +
+        ` in ${V1TimeGrainToAlias[grain]}${complete ? "!" : ""}`;
+      console.log({ newString });
+      onSelectRange(newString, true);
     }}
   />
 {/if}
