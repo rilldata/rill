@@ -1,17 +1,23 @@
 import {
   queryServiceMetricsViewTimeRanges,
   queryServiceMetricsViewTimeRange,
+  V1TimeGrain,
 } from "@rilldata/web-common/runtime-client";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import { get } from "svelte/store";
-import { Interval, DateTime, type DateTimeUnit } from "luxon";
+import {
+  Interval,
+  DateTime,
+  type DateTimeUnit,
+  type DurationLike,
+} from "luxon";
 
 const GRAINS = ["Y", "Q", "M", "W", "D", "H", "m", "s"] as const;
 
 const START_CHARACTER = "^";
 const END_CHARACTER = "$";
 const LITERAL_CHARACTER = "";
-const INTERVAL_CHARACTER = "!";
+const INTERVAL_CHARACTER = "#";
 const ENDING = "ending";
 const STARTING = "starting";
 
@@ -26,6 +32,18 @@ const GRAIN_TO_LUXON: Record<string, DateTimeUnit> = {
   M: "month",
   Q: "quarter",
   Y: "year",
+};
+const PROTO_GRAIN_TO_LUXON: Record<V1TimeGrain, DateTimeUnit> = {
+  [V1TimeGrain.TIME_GRAIN_UNSPECIFIED]: "millisecond",
+  [V1TimeGrain.TIME_GRAIN_MILLISECOND]: "millisecond",
+  [V1TimeGrain.TIME_GRAIN_SECOND]: "second",
+  [V1TimeGrain.TIME_GRAIN_MINUTE]: "minute",
+  [V1TimeGrain.TIME_GRAIN_HOUR]: "hour",
+  [V1TimeGrain.TIME_GRAIN_DAY]: "day",
+  [V1TimeGrain.TIME_GRAIN_WEEK]: "week",
+  [V1TimeGrain.TIME_GRAIN_MONTH]: "month",
+  [V1TimeGrain.TIME_GRAIN_QUARTER]: "quarter",
+  [V1TimeGrain.TIME_GRAIN_YEAR]: "year",
 };
 
 interface Test {
@@ -99,7 +117,12 @@ function generateEndTests(now: DateTime, n1?: number, n2?: number): Test[] {
   return tests;
 }
 
-function generateLiteralTests(now: DateTime, n1?: number, n2?: number): Test[] {
+function generateLiteralTests(
+  now: DateTime,
+  smallestTimeGrain: DateTimeUnit,
+  n1?: number,
+  n2?: number,
+): Test[] {
   if (!n1 || !n2) {
     n1 = Math.floor(Math.random() * 100);
     n2 = Math.floor(n1 * Math.random());
@@ -121,8 +144,8 @@ function generateLiteralTests(now: DateTime, n1?: number, n2?: number): Test[] {
         description: `${n1} ${unit1}(s) ago to ${n2} ${unit2}(s) ago`,
 
         interval: Interval.fromDateTimes(
-          now.minus({ [unit1]: n1 }),
-          now.minus({ [unit2]: n2 }),
+          now.minus({ [unit1]: n1 }).plus({ [smallestTimeGrain]: 1 }),
+          now.minus({ [unit2]: n2 }).plus({ [smallestTimeGrain]: 1 }),
         ),
       });
     });
@@ -176,7 +199,10 @@ function lastNPeriodExcludingCurrentPeriod(now: DateTime, upTo: number = 100) {
   return tests;
 }
 
-export function generateStartingAndEndingTests(now: DateTime) {
+export function generateStartingAndEndingTests(
+  now: DateTime,
+  smallestTimeGrain: DateTimeUnit,
+) {
   return GRAINS.map((periodGrain) => {
     const periodUnit = GRAIN_TO_LUXON[periodGrain];
     const periodInteger = Math.floor(Math.random() * 100);
@@ -190,8 +216,11 @@ export function generateStartingAndEndingTests(now: DateTime) {
           syntax: `${periodInteger}${periodGrain} ${STARTING} -${offsetInteger}${offsetGrain}`,
           description: `The ${periodInteger} ${periodUnit} period starting exactly -${offsetInteger} ${offsetUnit}(s) ago`,
           interval: Interval.fromDateTimes(
-            now.minus({ [offsetUnit]: offsetInteger }),
             now
+              .plus({ [smallestTimeGrain]: 1 })
+              .minus({ [offsetUnit]: offsetInteger }),
+            now
+              .plus({ [smallestTimeGrain]: 1 })
               .minus({ [offsetUnit]: offsetInteger })
               .plus({ [periodUnit]: periodInteger }),
           ),
@@ -201,17 +230,24 @@ export function generateStartingAndEndingTests(now: DateTime) {
           description: `The ${periodInteger} ${periodUnit} period ending exactly -${offsetInteger} ${offsetUnit}(s) ago`,
           interval: Interval.fromDateTimes(
             now
+              .plus({ [smallestTimeGrain]: 1 })
               .minus({ [offsetUnit]: offsetInteger })
               .minus({ [periodUnit]: periodInteger }),
-            now.minus({ [offsetUnit]: offsetInteger }),
+            now
+              .plus({ [smallestTimeGrain]: 1 })
+              .minus({ [offsetUnit]: offsetInteger }),
           ),
         },
         <Test>{
           syntax: `${periodInteger}${periodGrain} ${STARTING} -${offsetInteger}${offsetGrain}/${periodGrain}${START_CHARACTER}`,
           description: `The ${periodInteger} ${periodUnit} period starting exactly -${offsetInteger} ${offsetUnit}(s) ago rounded to the ${periodUnit} start`,
           interval: Interval.fromDateTimes(
-            now.minus({ [offsetUnit]: offsetInteger }).startOf(periodUnit),
             now
+              .plus({ [smallestTimeGrain]: 1 })
+              .minus({ [offsetUnit]: offsetInteger })
+              .startOf(periodUnit),
+            now
+              .plus({ [smallestTimeGrain]: 1 })
               .minus({ [offsetUnit]: offsetInteger })
               .startOf(periodUnit)
               .plus({ [periodUnit]: periodInteger }),
@@ -278,7 +314,7 @@ function lastNPeriodToNow(now: DateTime, upTo: number = 100) {
 
       const interval = Interval.fromDateTimes(
         now.minus({ [unit]: i }).startOf(unit),
-        now.plus({ millisecond: 1 }),
+        now,
       );
 
       // Short
@@ -321,13 +357,10 @@ function generateCurrentAndPreviousPeriods(now: DateTime) {
       now.startOf(unit),
     );
 
-    const toNow = Interval.fromDateTimes(
-      now.startOf(unit),
-      now.plus({ millisecond: 1 }),
-    );
+    const toNow = Interval.fromDateTimes(now.startOf(unit), now);
 
     tests.push({
-      syntax: `${grain}!`,
+      syntax: `${grain}#`,
       description: `The full current ${unit}`,
       interval: current,
     });
@@ -393,13 +426,13 @@ function generateFirstNPeriodTests(now: DateTime, n: number = 3) {
       }
 
       tests.push({
-        syntax: `${higherOrderGrain}/${higherOrderGrain}W${START_CHARACTER} to ${higherOrderGrain}/${higherOrderGrain}W${START_CHARACTER}+${n}${grain}`,
+        syntax: `${higherOrderGrain}/${higherOrderGrain}/W${START_CHARACTER} to ${higherOrderGrain}/${higherOrderGrain}/W${START_CHARACTER}+${n}${grain}`,
         description: `First ${n} ${unit}(s) of the current ${higherOrderUnit}`,
         interval: Interval.fromDateTimes(start, start.plus({ [unit]: n })),
       });
 
       tests.push({
-        syntax: `${n}${grain} starting ${higherOrderGrain}/${higherOrderGrain}W${START_CHARACTER}`,
+        syntax: `${n}${grain} starting ${higherOrderGrain}/${higherOrderGrain}/W${START_CHARACTER}`,
         description: `First ${n} ${unit}(s) of the current ${higherOrderUnit} using starting terminology`,
         interval: Interval.fromDateTimes(start, start.plus({ [unit]: n })),
       });
@@ -421,7 +454,10 @@ function generateFirstNPeriodTests(now: DateTime, n: number = 3) {
   return tests;
 }
 
-export async function runTests(metricsViewName: string) {
+export async function runTests(
+  metricsViewName: string,
+  smallestTimeGrain: V1TimeGrain | undefined,
+) {
   const instanceId = get(runtime).instanceId;
 
   let failures = 1;
@@ -454,7 +490,12 @@ export async function runTests(metricsViewName: string) {
 
   console.log(allTime.toLocaleString(DateTime.DATETIME_FULL_WITH_SECONDS));
 
-  const testCases = generateTestCases(allTime.end?.setZone("UTC"));
+  const testCases = generateTestCases(
+    allTime.end?.setZone("UTC"),
+    PROTO_GRAIN_TO_LUXON[
+      smallestTimeGrain ?? V1TimeGrain.TIME_GRAIN_MILLISECOND
+    ],
+  );
 
   const expressions = testCases.map((testCase) => testCase.syntax);
 
@@ -570,7 +611,10 @@ export function generateIntervalTestCases(reference: DateTime): Test[] {
 
 export const forceTestImport = "test";
 
-function generateTestCases(now: DateTime): Test[] {
+function generateTestCases(
+  now: DateTime,
+  smallestTimeGrain: DateTimeUnit,
+): Test[] {
   return [
     ...generateToTests(now, 6, 3),
     ...generateToTests(now, 4, 1),
@@ -579,11 +623,11 @@ function generateTestCases(now: DateTime): Test[] {
     ...lastNPeriodExcludingCurrentPeriod(now),
     ...lastNPeriodIncludingCurrentPeriod(now),
     ...generateFirstNPeriodTests(now),
-    ...generateLiteralTests(now),
+    ...generateLiteralTests(now, smallestTimeGrain),
     ...generateEndTests(now),
     ...generateCurrentAndPreviousPeriods(now),
     ...lastNPeriodToNow(now),
-    ...generateStartingAndEndingTests(now),
+    ...generateStartingAndEndingTests(now, smallestTimeGrain),
     ...generateISOTests(),
 
     {
@@ -608,6 +652,7 @@ function generateTestCases(now: DateTime): Test[] {
       description: "Stacking offsets",
       interval: Interval.fromDateTimes(
         now
+          .plus({ [smallestTimeGrain]: 1 })
           .minus({
             second: 2,
           })
@@ -634,6 +679,7 @@ function generateTestCases(now: DateTime): Test[] {
           }),
 
         now
+          .plus({ [smallestTimeGrain]: 1 })
           .minus({
             second: 1,
           })
@@ -664,7 +710,7 @@ function generateTestCases(now: DateTime): Test[] {
       syntax: `-2s3m4h5d6w7M8Q9Y to -1s2m3h4d5w6M7Q8Y`,
       description: "Offsetting by compound duration",
       interval: Interval.fromDateTimes(
-        now.minus({
+        now.plus({ [smallestTimeGrain]: 1 }).minus({
           second: 2,
           minute: 3,
           hour: 4,
@@ -674,7 +720,7 @@ function generateTestCases(now: DateTime): Test[] {
           quarter: 8,
           year: 9,
         }),
-        now.minus({
+        now.plus({ [smallestTimeGrain]: 1 }).minus({
           second: 1,
           minute: 2,
           hour: 3,
@@ -748,10 +794,11 @@ function generateTestCases(now: DateTime): Test[] {
       description:
         "The three week, 18 day, and 23 hour period starting exactly three years ago",
       interval: Interval.fromDateTimes(
-        now.minus({
+        now.plus({ [smallestTimeGrain]: 1 }).minus({
           year: 3,
         }),
         now
+          .plus({ [smallestTimeGrain]: 1 })
           .minus({
             year: 3,
           })
@@ -767,10 +814,11 @@ function generateTestCases(now: DateTime): Test[] {
       syntax: `2h ${STARTING} -4h${LITERAL_CHARACTER}`,
       description: "The two hour period starting exactly four hours ago",
       interval: Interval.fromDateTimes(
-        now.minus({
+        now.plus({ [smallestTimeGrain]: 1 }).minus({
           hour: 4,
         }),
         now
+          .plus({ [smallestTimeGrain]: 1 })
           .minus({
             hour: 4,
           })
@@ -784,12 +832,10 @@ function generateTestCases(now: DateTime): Test[] {
       syntax: `-2h to latest`,
       description: "The two hour period ending at the latest data point",
       interval: Interval.fromDateTimes(
-        now.minus({
+        now.plus({ [smallestTimeGrain]: 1 }).minus({
           hour: 2,
         }),
-        now.plus({
-          millisecond: 1,
-        }),
+        now,
       ),
     },
 
@@ -799,6 +845,7 @@ function generateTestCases(now: DateTime): Test[] {
         "The three week, 18 day, and 23 hour period ending exactly three years ago",
       interval: Interval.fromDateTimes(
         now
+          .plus({ [smallestTimeGrain]: 1 })
           .minus({
             year: 3,
           })
@@ -807,7 +854,7 @@ function generateTestCases(now: DateTime): Test[] {
             day: 18,
             hour: 23,
           }),
-        now.minus({
+        now.plus({ [smallestTimeGrain]: 1 }).minus({
           year: 3,
         }),
       ),
@@ -1139,7 +1186,7 @@ function generateTestCases(now: DateTime): Test[] {
     },
 
     {
-      syntax: `Y/YW${START_CHARACTER} to W${START_CHARACTER}`,
+      syntax: `Y/Y/W${START_CHARACTER} to W${START_CHARACTER}`,
       description:
         "All weeks of the current year, excluding the current incomplete one",
       interval: Interval.fromDateTimes(
@@ -1175,7 +1222,7 @@ function generateTestCases(now: DateTime): Test[] {
     },
 
     {
-      syntax: `-2Y/YW${START_CHARACTER} to -2Y/W${START_CHARACTER}`,
+      syntax: `-2Y/Y/W${START_CHARACTER} to -2Y/W${START_CHARACTER}`,
       description: "All weeks of the current year, offset into two years ago",
       interval: Interval.fromDateTimes(
         DateTime.fromObject(
@@ -1189,7 +1236,7 @@ function generateTestCases(now: DateTime): Test[] {
       ),
     },
     {
-      syntax: `-2Y/YW${START_CHARACTER} to -2Y/YW${END_CHARACTER}`,
+      syntax: `-2Y/Y/W${START_CHARACTER} to -2Y/Y/W${END_CHARACTER}`,
       description: "The year two years ago by ISO week rules",
       interval: Interval.fromDateTimes(
         DateTime.fromObject(
@@ -1237,8 +1284,11 @@ function generateTestCases(now: DateTime): Test[] {
       syntax: `94m ${STARTING} -9d`,
       description: "The 94 minute period starting exactly 9 days ago",
       interval: Interval.fromDateTimes(
-        now.minus({ day: 9 }),
-        now.minus({ day: 9 }).plus({ minute: 94 }),
+        now.plus({ [smallestTimeGrain]: 1 }).minus({ day: 9 }),
+        now
+          .plus({ [smallestTimeGrain]: 1 })
+          .minus({ day: 9 })
+          .plus({ minute: 94 }),
       ),
     },
 
@@ -1246,8 +1296,11 @@ function generateTestCases(now: DateTime): Test[] {
       syntax: `94Q ${STARTING} -9d`,
       description: "The 94 quarter period starting exactly 9 days ago",
       interval: Interval.fromDateTimes(
-        now.minus({ day: 9 }),
-        now.minus({ day: 9 }).plus({ quarter: 94 }),
+        now.plus({ [smallestTimeGrain]: 1 }).minus({ day: 9 }),
+        now
+          .plus({ [smallestTimeGrain]: 1 })
+          .minus({ day: 9 })
+          .plus({ quarter: 94 }),
       ),
     },
 

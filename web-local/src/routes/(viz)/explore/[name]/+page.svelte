@@ -70,7 +70,7 @@
   });
 
   onMount(() => {
-    void runTests(metricsViewName);
+    void runTests(metricsViewName, metricsView.metricsView?.state?.validSpec?.smallestTimeGrain);
   });
 </script>
 

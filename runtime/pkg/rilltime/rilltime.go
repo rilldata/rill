@@ -52,7 +52,7 @@ var (
 	rillTimeParser = participle.MustBuild[Expression](
 		participle.Lexer(rillTimeLexer),
 		participle.Elide("Whitespace"),
-		participle.UseLookahead(25), // We need this to disambiguate certain cases. Mainly for something like `-4d!`
+		participle.UseLookahead(25), // We need this to disambiguate certain cases. Mainly for something like `-4d#`
 	)
 	daxNotations = map[string]string{
 		// Mapping for our old rill-<DAX> syntax
@@ -136,8 +136,8 @@ type Interval struct {
 	AnchoredDuration *AnchoredDurationInterval `parser:"( @@"`
 	Shorthand        *ShorthandInterval        `parser:"| @@"`
 	PeriodToGrain    *PeriodToGrainInterval    `parser:"| @@"`
-	Ordinal          *OrdinalInterval          `parser:"| @@"`
 	StartEnd         *StartEndInterval         `parser:"| @@"`
+	Ordinal          *OrdinalInterval          `parser:"| @@"`
 	Interval         *GrainToInterval          `parser:"| @@"`
 	Iso              *IsoInterval              `parser:"| @@)"`
 }
@@ -219,9 +219,17 @@ type PointInTime struct {
 }
 
 type OrdinalPointInTime struct {
-	Ordinal *Ordinal         `parser:"@@"`
-	Suffix  string           `parser:"@Suffix"`
-	Rest    *OrdinalDuration `parser:"@@?"`
+	Ordinal *Ordinal               `parser:"@@"`
+	Suffix  string                 `parser:"@Suffix"`
+	Rest    *OrdinalDuration       `parser:"(Of @@)?"`
+	End     *OrdinalPointInTimeEnd `parser:"(Of @@)?"`
+}
+
+// OrdinalPointInTimeEnd marks the end of OrdinalPointInTime with a non-ordinal interval.
+type OrdinalPointInTimeEnd struct {
+	Grains *GrainToInterval `parser:"( @@"`
+	// `SingleGrain` supports simplified syntax like W1 of Y for getting an ordinal of the current period.
+	SingleGrain *string `parser:"| @Grain)"`
 }
 
 type GrainPointInTime struct {
@@ -312,6 +320,21 @@ func Parse(from string, parseOpts ParseOptions) (*Expression, error) {
 	}
 
 	if rt == nil {
+		//tokens, err := rillTimeParser.Lex("", strings.NewReader(from))
+		//if err != nil {
+		//	return nil, err
+		//}
+		//for _, token := range tokens {
+		//	name := token.String()
+		//	for tokenName, tokenType := range rillTimeLexer.Symbols() {
+		//		if tokenType == token.Type {
+		//			name = tokenName
+		//			break
+		//		}
+		//	}
+		//	fmt.Println(name, token.Value)
+		//}
+
 		rt, err = rillTimeParser.ParseString("", from)
 		if err != nil {
 			return nil, err
@@ -616,9 +639,16 @@ func (p *PointInTime) eval(evalOpts EvalOptions, start time.Time, tz *time.Locat
 }
 
 func (o *OrdinalPointInTime) eval(evalOpts EvalOptions, start time.Time, tz *time.Location) (time.Time, timeutil.TimeGrain) {
+	end := start
+	if o.End != nil {
+		start, _, _ = o.End.eval(evalOpts, start, tz)
+	}
+
 	if o.Rest != nil {
-		start, _, _ = o.Rest.eval(evalOpts, start, start, tz)
-	} else {
+		start, _, _ = o.Rest.eval(evalOpts, start, end, tz)
+	}
+
+	if o.End == nil && o.Rest == nil {
 		tg := higherOrderMap[grainMap[o.Ordinal.Grain]]
 		start = truncateWithCorrection(start, tg, tz, evalOpts.FirstDay, evalOpts.FirstMonth)
 	}
@@ -630,6 +660,20 @@ func (o *OrdinalPointInTime) eval(evalOpts EvalOptions, start time.Time, tz *tim
 	}
 
 	return start, tg
+}
+
+func (o *OrdinalPointInTimeEnd) eval(evalOpts EvalOptions, start time.Time, tz *time.Location) (time.Time, time.Time, timeutil.TimeGrain) {
+	if o.Grains != nil {
+		return o.Grains.eval(evalOpts, start, tz)
+	} else if o.SingleGrain != nil {
+		tg := grainMap[*o.SingleGrain]
+
+		end := timeutil.CeilTime(start, tg, tz, evalOpts.FirstDay, evalOpts.FirstMonth)
+		start = truncateWithCorrection(start, tg, tz, evalOpts.FirstDay, evalOpts.FirstMonth)
+
+		return start, end, tg
+	}
+	return start, start, timeutil.TimeGrainUnspecified
 }
 
 func (g *GrainPointInTime) eval(evalOpts EvalOptions, start time.Time, tz *time.Location) (time.Time, timeutil.TimeGrain) {

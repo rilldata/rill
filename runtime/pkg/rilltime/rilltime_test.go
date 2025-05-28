@@ -394,6 +394,29 @@ func TestEval_FirstAndLastOfPeriod(t *testing.T) {
 	runTests(t, testCases, now, minTime, maxTime, watermark, nil, timeutil.TimeGrainUnspecified)
 }
 
+func TestEval_OrdinalVariations(t *testing.T) {
+	testCases := []testCase{
+		{"W1 of M", "2025-04-28T00:00:00Z", "2025-05-05T00:00:00Z", timeutil.TimeGrainDay, 1, 1},
+		{"W1 of -2M^ to -2M$", "2025-03-03T00:00:00Z", "2025-03-10T00:00:00Z", timeutil.TimeGrainDay, 1, 1},
+		{"W1 of -2M#", "2025-03-03T00:00:00Z", "2025-03-10T00:00:00Z", timeutil.TimeGrainDay, 1, 1},
+
+		{"<6H of D25 as of -3M", "2025-02-25T00:00:00Z", "2025-02-25T06:00:00Z", timeutil.TimeGrainHour, 1, 1},
+		{"6h starting D25^ as of -3M", "2025-02-25T00:00:00Z", "2025-02-25T06:00:00Z", timeutil.TimeGrainHour, 1, 1},
+
+		// Ordinal chaining variations
+		{">3s of m4 of H2 of D4 of -1M#", "2025-04-04T01:03:57Z", "2025-04-04T01:04:00Z", timeutil.TimeGrainSecond, 1, 1},
+		{"<6h of W4 of Q2", "2025-04-21T00:00:00Z", "2025-04-21T06:00:00Z", timeutil.TimeGrainHour, 1, 1},
+		{"m30 of H12 of D5 of >1W of Q3 as of -2Y", "2023-09-29T11:29:00Z", "2023-09-29T11:30:00Z", timeutil.TimeGrainSecond, 1, 1},
+
+		// Ordinal points in time
+		{"M^ to W3^ of M", "2025-05-01T00:00:00Z", "2025-05-12T00:00:00Z", timeutil.TimeGrainDay, 1, 1},
+		{"W1^ of M to M$", "2025-04-28T00:00:00Z", "2025-06-01T00:00:00Z", timeutil.TimeGrainDay, 1, 1},
+		{"W1^ of M to W3^ of M", "2025-04-28T00:00:00Z", "2025-05-12T00:00:00Z", timeutil.TimeGrainWeek, 1, 1},
+	}
+
+	runTests(t, testCases, now, minTime, maxTime, watermark, nil, timeutil.TimeGrainUnspecified)
+}
+
 func TestEval_WeekCorrections(t *testing.T) {
 	testCases := []testCase{
 		// Boundary on Monday, week starts on Monday
