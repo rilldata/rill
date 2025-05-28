@@ -27,6 +27,11 @@ To use the Rill MCP server, you'll need:
 - **Node.js**, which can be downloaded from [nodejs.org](https://nodejs.org/en).
 
 ### Create a Rill service token (if your project is on Rill Cloud)
+You can navigate to the AI tab in your project to retrieve both the JSON and create Rill service token.
+<img src ='/img/explore/mcp/project-ai.png' class='rounded-gif'/>
+<br />
+
+Alternatively, if you want to create the token via the CLI:
 ```
 # Install the Rill CLI if you haven't already
 curl https://rill.sh | sh
@@ -49,7 +54,7 @@ By default, the JSON is found in the following directories:
 - Windows: `C:\Users\{USER}\AppData\Roaming\Claude\claude_desktop_config.json`
 
 ### config.json
-Depending on which Rill instance you are trygin to connect to (locally running Rill Developer, Public Rill project on Rill Cloud, Private Rill Project on Rill Cloud (default)) the configuration will vary.
+Depending on which Rill instance you are truing to connect to (locally running Rill Developer, Public Rill project on Rill Cloud, Private Rill Project on Rill Cloud (default)) the configuration will vary. For Rill Cloud deployed project, you can navigate to the AI page to retrieve the config.json.
 
 
 __*Private Rill Project on Rill Cloud*__
