@@ -75,6 +75,10 @@ func GitFetch(ctx context.Context, path, remote string) error {
 	cmd := exec.CommandContext(ctx, "git", "-C", path, "fetch", remote)
 	_, err := cmd.Output()
 	if err != nil {
+		var execErr *exec.ExitError
+		if errors.As(err, &execErr) {
+			return fmt.Errorf("git fetch failed: %s", string(execErr.Stderr))
+		}
 		return err
 	}
 	return nil
@@ -89,14 +93,17 @@ func GitPull(ctx context.Context, path string, discardLocal bool, g *Config) (st
 		}
 	}
 
+	// git -C <path> pull <remote> <branch>
 	args := []string{"-C", path, "pull"}
-	if g.Remote != "" {
-		u, err := g.FullyQualifiedRemote()
-		if err != nil {
-			return "", err
-		}
-		args = append(args, u)
+	u, err := g.FullyQualifiedRemote()
+	if err != nil {
+		return "", err
 	}
+	st, err := RunGitStatus(path)
+	if err != nil {
+		return "", err
+	}
+	args = append(args, u, st.Branch)
 
 	cmd := exec.CommandContext(ctx, "git", args...)
 	out, err := cmd.Output()
