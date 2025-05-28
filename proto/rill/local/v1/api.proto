@@ -91,17 +91,17 @@ message WatchGitStatusRequest {}
 
 message WatchGitStatusResponse {
   // The current branch of the git repo.
-	string branch = 1;
+  string branch = 1;
   // The remote url of the git repo.
-	string github_url = 2;
+  string github_url = 2;
   // If the repo is managed by Rill.
-	bool managed_git = 3;
+  bool managed_git = 3;
   // local_changes returns true if there are any staged, unstaged, or untracked changes in the local git repo.
   bool local_changes = 4;
-	// local_commits returns number of local commits that are not pushed to the remote git repo.
-	int32 local_commits = 5;
-	// remote_commits returns number of remote commits not pulled yet.
-	int32 remote_commits = 6;
+  // local_commits returns number of local commits that are not pushed to the remote git repo.
+  int32 local_commits = 5;
+  // remote_commits returns number of remote commits not pulled yet.
+  int32 remote_commits = 6;
 }
 
 message GitPullRequest {
