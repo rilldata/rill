@@ -378,7 +378,7 @@ const QueryJSONSchema = `
     },
     "spine": {
       "$ref": "#/$defs/Spine",
-      "description": "Optionallay configure a 'spine' of dimension values that should be present in the result regardless of whether they have data. This is for example useful for generating a time series with zero values for missing dates."
+      "description": "Optionally configure a 'spine' of dimension values that should be present in the result regardless of whether they have data. This is for example useful for generating a time series with zero values for missing dates."
     },
     "sort": {
       "type": "array",
