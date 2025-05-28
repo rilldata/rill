@@ -138,7 +138,7 @@
       bind:this={content}
     >
       <div
-        class="flex justify-between p-2 border-gray-200 dark:border-gray-700 gap-1"
+        class="flex justify-between p-2 border-gray-200 dark:border-gray-700 gap-1 overflow-y-auto"
         class:items-start={isJson}
         class:items-center={!isJson}
       >
