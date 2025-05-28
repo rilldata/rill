@@ -150,11 +150,16 @@
       <div
         class="flex justify-between p-2 border-t border-gray-200 gap-1 text-[11px] text-gray-500"
       >
-        <span
-          ><kbd class="px-2 py-1 bg-gray-200 dark:bg-gray-600 rounded font-mono"
-            >{isMac ? "⌘" : "Ctrl"}+C</kbd
-          > to copy</span
-        >
+        {#if !copied}
+          <span
+            ><kbd
+              class="px-2 py-1 bg-gray-200 dark:bg-gray-600 rounded font-mono"
+              >{isMac ? "⌘" : "Ctrl"}+C</kbd
+            > to copy</span
+          >
+        {:else}
+          <span>Copied</span>
+        {/if}
         <span
           ><kbd class="px-2 py-1 bg-gray-200 dark:bg-gray-600 rounded font-mono"
             >Space</kbd
