@@ -33,6 +33,37 @@
     }
   }
 
+  $: {
+    const sortDescFirstColumn = columns.find((col) => col.sortDescFirst);
+    if (sortDescFirstColumn && sorting.length === 0) {
+      const columnId =
+        "id" in sortDescFirstColumn
+          ? sortDescFirstColumn.id
+          : "accessorKey" in sortDescFirstColumn
+            ? sortDescFirstColumn.accessorKey
+            : "accessorFn" in sortDescFirstColumn
+              ? (sortDescFirstColumn.header as string)
+              : Object.keys(sortDescFirstColumn)[0];
+
+      // Set the sorting state to the column with sortDescFirst
+      sorting = [
+        {
+          id: columnId as string,
+          desc: true,
+        },
+      ];
+
+      // Update the sorting state
+      options.update((old) => ({
+        ...old,
+        state: {
+          ...old.state,
+          sorting,
+        },
+      }));
+    }
+  }
+
   const setSorting: OnChangeFn<SortingState> = (updater) => {
     if (updater instanceof Function) {
       sorting = updater(sorting);
@@ -93,13 +124,12 @@
                 )}
               />
             </span>
-            {#if header.column.getIsSorted().toString() === "asc"}
+            {#if header.column.getIsSorted()}
               <span>
-                <ArrowDown flip size="12px" />
-              </span>
-            {:else if header.column.getIsSorted().toString() === "desc"}
-              <span>
-                <ArrowDown size="12px" />
+                <ArrowDown
+                  flip={header.column.getIsSorted().toString() === "asc"}
+                  size="12px"
+                />
               </span>
             {/if}
           {/if}
