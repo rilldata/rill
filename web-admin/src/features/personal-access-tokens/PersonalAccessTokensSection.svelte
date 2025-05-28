@@ -44,11 +44,12 @@
   }
 </script>
 
-<div class="mb-8">
+<div class="mb-2">
   <h2 class="text-xl font-semibold mb-2">Personal Access Token</h2>
   <p class="mb-4 text-gray-600">
-    You need a <span class="font-medium">personal access token</span> to use in your
-    MCP configuration for private projects. This token authenticates your requests.
+    Because this project is <span class="font-medium">private</span>, you need a
+    <span class="font-medium">personal access token</span> to use in your MCP configuration.
+    This token authenticates your requests.
   </p>
   <Button type="primary" on:click={issueToken} disabled={issuing}>
     {issuing ? "Issuing..." : "Create token"}

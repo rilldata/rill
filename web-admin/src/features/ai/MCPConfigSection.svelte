@@ -33,23 +33,17 @@
         "Authorization:\${AUTH_HEADER}"
       ],
       "env": {
-        "AUTH_HEADER": "Bearer <Rill access token>"
+        "AUTH_HEADER": "Bearer <Rill personal access token>"
       }
     }
   }
 }`;
 </script>
 
-<div class="mb-8">
-  <h2 class="text-xl font-semibold mb-2">Connect your MCP Client</h2>
+<div class="mb-2">
+  <h2 class="text-xl font-semibold mb-2">Configure your MCP client</h2>
   <p class="mb-4 text-gray-600">
-    {#if isPublic}
-      This project is <span class="font-medium">public</span>. Use the following
-      configuration to connect your MCP-compatible client (e.g., Claude):
-    {:else}
-      This project is <span class="font-medium">private</span>. You will need a
-      personal access token. Use the following configuration:
-    {/if}
+    Use the below snippet to configure your AI client.
   </p>
   <CodeBlock code={isPublic ? publicConfig : privateConfig} language="json" />
 </div>
