@@ -32,6 +32,9 @@ type config struct {
 
 	// Path switches the implementation to use a generic rduckdb implementation backed by the db used in the Path
 	Path string `mapstructure:"path"`
+	// DBName is the name of the attached DuckDB database specified in the Path.
+	// This is usually not required but can be set if our auto detection of name fails.
+	DBName string `mapstructure:"db_name"`
 }
 
 func newConfig(cfgMap map[string]any) (*config, error) {

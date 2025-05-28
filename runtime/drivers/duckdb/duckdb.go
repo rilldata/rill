@@ -505,6 +505,7 @@ func (c *connection) reopenDB(ctx context.Context) error {
 		maps.Copy(settings, c.config.writeSettings())
 		c.db, err = rduckdb.NewGeneric(ctx, &rduckdb.GenericDBOptions{
 			Path:               c.config.Path,
+			DBName:             c.config.DBName,
 			LocalDataDir:       dataDir,
 			LocalCPU:           c.config.CPU,
 			LocalMemoryLimitGB: c.config.MemoryLimitGB,

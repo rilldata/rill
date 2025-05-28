@@ -36,8 +36,8 @@ type generic struct {
 type GenericDBOptions struct {
 	// Path to the external DuckDB database.
 	Path string
-	// dbName is set to the name of the database identified by the Path.
-	dbName string
+	// DBName is set to the name of the database identified by the Path.
+	DBName string
 
 	// LocalDataDir is the path to the local DuckDB database file.
 	LocalDataDir string
@@ -141,17 +141,19 @@ func NewGeneric(ctx context.Context, opts *GenericDBOptions) (res DB, dbErr erro
 			return nil, fmt.Errorf("error attaching external db: %w", err)
 		}
 
-		// find the attached database name
-		err = db.QueryRowxContext(
-			ctx,
-			`SELECT database_name
+		if opts.DBName == "" {
+			// find the attached database name
+			err = db.QueryRowxContext(
+				ctx,
+				`SELECT database_name
 			 FROM duckdb_databases()
 			 WHERE internal = false -- ignore internal information_schema databases
 			   AND (path IS NOT NULL OR database_name = 'memory') -- all databases except the in-memory one should have a path 
 			   AND database_name != current_database()`,
-		).Scan(&opts.dbName)
-		if err != nil {
-			return nil, fmt.Errorf("error getting attached database name: %w", err)
+			).Scan(&opts.DBName)
+			if err != nil {
+				return nil, fmt.Errorf("error getting attached database name: %w. Set property `db_name` in the corresponding connector.yaml", err)
+			}
 		}
 	}
 
@@ -457,11 +459,11 @@ func (m *generic) acquireConn(ctx context.Context) (*sqlx.Conn, error) {
 	if err != nil {
 		return nil, fmt.Errorf("acquire connection failed: %w", err)
 	}
-	if m.opts.dbName == "" {
+	if m.opts.DBName == "" {
 		// if dbName is not set, we are using the default database
 		return conn, nil
 	}
-	_, err = conn.ExecContext(ctx, fmt.Sprintf("USE %s", safeSQLString(m.opts.dbName)))
+	_, err = conn.ExecContext(ctx, fmt.Sprintf("USE %s", safeSQLString(m.opts.DBName)))
 	if err != nil {
 		return nil, fmt.Errorf("acquire connection failed: %w", err)
 	}
