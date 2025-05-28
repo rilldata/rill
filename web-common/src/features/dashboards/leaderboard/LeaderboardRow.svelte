@@ -288,7 +288,6 @@
         role="button"
         tabindex="0"
         data-comparison-cell
-        title={pctOfTotals[measureName]?.toString() || ""}
         on:click={modified({
           shift: () =>
             shiftClickHandler(pctOfTotals[measureName]?.toString() || ""),
@@ -321,7 +320,6 @@
         role="button"
         tabindex="0"
         data-comparison-cell
-        title={deltaAbsMap[measureName]?.toString() || ""}
         on:click={modified({
           shift: () =>
             shiftClickHandler(deltaAbsMap[measureName]?.toString() || ""),
@@ -357,7 +355,6 @@
     {#if isTimeComparisonActive && shouldShowContextColumns(measureName)}
       <td
         data-comparison-cell
-        title={deltaRels[measureName]?.toString() || ""}
         on:click={modified({
           shift: () =>
             shiftClickHandler(deltaRels[measureName]?.toString() || ""),
