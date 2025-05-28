@@ -118,22 +118,23 @@ func GitPull(ctx context.Context, path string, discardLocal bool, g *Config) (st
 }
 
 func GitPush(ctx context.Context, path string, force bool, g Config) error {
+	// git -C <path> push --set-upstream <remote> <branch>
 	args := []string{"-C", path, "push", "--set-upstream"}
 	if force {
 		args = append(args, "--force")
 	}
-	if g.Remote != "" {
-		u, err := g.FullyQualifiedRemote()
-		if err != nil {
-			return err
-		}
-		args = append(args, u)
+
+	u, err := g.FullyQualifiedRemote()
+	if err != nil {
+		return err
 	}
+	args = append(args, u)
+
 	st, err := RunGitStatus(path)
 	if err != nil {
 		return err
 	}
-	// TODO :: handle detached state
+	// TODO : handle detached state
 	args = append(args, st.Branch)
 
 	cmd := exec.CommandContext(ctx, "git", args...)
