@@ -1,10 +1,7 @@
 <script lang="ts">
   import { onMount, onDestroy } from "svelte";
-  import { createEventDispatcher } from "svelte";
   import { fly } from "svelte/transition";
   import { formatInteger } from "../lib/formatters";
-  import CopyIcon from "@rilldata/web-common/components/icons/CopyIcon.svelte";
-  import Check from "@rilldata/web-common/components/icons/Check.svelte";
   import { copyToClipboard } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
   import { cellInspectorStore } from "../features/dashboards/stores/cell-inspector-store";
   import { cubicOut } from "svelte/easing";
@@ -20,6 +17,8 @@
   let isJson = false;
   let parsedJson: any = null;
 
+  const isMac = window.navigator.userAgent.includes("Macintosh");
+
   // Subscribe to the cellInspectorStore to keep the component in sync
   const unsubscribe = cellInspectorStore.subscribe((state) => {
     isOpen = state.isOpen;
@@ -28,11 +27,6 @@
     }
   });
 
-  const dispatch = createEventDispatcher();
-
-  const iconColor = "#15141A";
-
-  // Handle keyboard events for toggling the cell inspector
   function handleKeyDown(event: KeyboardEvent) {
     // Only handle Space key when not in an input, textarea, or other form element
     const target = event.target as HTMLElement;
@@ -61,7 +55,7 @@
 
   function handleClickOutside(event: MouseEvent) {
     if (isOpen && container && !container.contains(event.target as Node)) {
-      dispatch("close");
+      cellInspectorStore.close();
     }
   }
 
@@ -78,8 +72,8 @@
     };
   });
 
+  // Clean up the subscription
   onDestroy(() => {
-    // Clean up the subscription
     unsubscribe();
   });
 
@@ -139,7 +133,7 @@
     transition:fly={{ duration: 200, x: 200, easing: cubicOut }}
   >
     <div
-      class="w-full max-w-2xl max-h-[80vh] overflow-hidden flex flex-col rounded-lg"
+      class="w-full min-w-64 max-w-2xl max-h-[80vh] overflow-hidden flex flex-col rounded-lg"
       role="document"
       bind:this={content}
     >
@@ -147,24 +141,25 @@
         class="flex justify-between p-2 border-gray-200 dark:border-gray-700 gap-1"
         class:items-start={isJson}
         class:items-center={!isJson}
-        id="cell-inspector-content"
       >
-        <div class="flex items-center gap-4" id="cell-inspector-title">
-          <span
-            class="whitespace-pre-wrap break-words text-xs text-gray-800 dark:text-gray-200 flex-1"
-            >{formatValue(value)}</span
-          >
-        </div>
-        <button
-          class="hover:bg-slate-100 rounded p-1 active:bg-slate-200 group"
-          on:click={onCopy}
+        <span
+          class="whitespace-pre-wrap break-words text-sm text-gray-800 dark:text-gray-200 flex-1"
+          >{formatValue(value)}</span
         >
-          {#if copied}
-            <Check size="14px" color={iconColor} />
-          {:else}
-            <CopyIcon size="14px" className="text-gray-500" />
-          {/if}
-        </button>
+      </div>
+      <div
+        class="flex justify-between p-2 border-t border-gray-200 gap-1 text-[11px] text-gray-500"
+      >
+        <span
+          ><kbd class="px-2 py-1 bg-gray-200 dark:bg-gray-600 rounded font-mono"
+            >{isMac ? "⌘" : "Ctrl"}+C</kbd
+          > to copy</span
+        >
+        <span
+          ><kbd class="px-2 py-1 bg-gray-200 dark:bg-gray-600 rounded font-mono"
+            >Space</kbd
+          > to close</span
+        >
       </div>
     </div>
   </div>
