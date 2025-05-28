@@ -144,7 +144,7 @@
       >
         <span
           class="whitespace-pre-wrap break-words text-sm text-gray-800 dark:text-gray-200 flex-1"
-          >{formatValue(value)}</span
+          class:font-mono={isJson}>{formatValue(value)}</span
         >
       </div>
       <div
