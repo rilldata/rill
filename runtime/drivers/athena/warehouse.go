@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"math"
 	"net/url"
 	"strings"
 	"time"
@@ -22,15 +21,27 @@ import (
 	"github.com/google/uuid"
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
-	rillblob "github.com/rilldata/rill/runtime/drivers/blob"
+	"github.com/rilldata/rill/runtime/pkg/blob"
+	"github.com/rilldata/rill/runtime/pkg/graceful"
 	"go.opentelemetry.io/otel"
-	"gocloud.dev/blob"
+	"go.opentelemetry.io/otel/codes"
+	"go.uber.org/zap"
 	"gocloud.dev/blob/s3blob"
 )
+
+var tracer = otel.Tracer("github.com/rilldata/rill/runtime/drivers/athena")
 
 var _ drivers.Warehouse = &Connection{}
 
 func (c *Connection) QueryAsFiles(ctx context.Context, props map[string]any) (outIt drivers.FileIterator, outErr error) {
+	ctx, span := tracer.Start(ctx, "Connection.QueryAsFiles")
+	defer func() {
+		if outErr != nil {
+			span.SetStatus(codes.Error, outErr.Error())
+		}
+		span.End()
+	}()
+
 	conf, err := parseSourceProperties(props)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse config: %w", err)
@@ -64,6 +75,8 @@ func (c *Connection) QueryAsFiles(ctx context.Context, props map[string]any) (ou
 	unloadPath := strings.TrimPrefix(unloadURL.Path, "/")
 
 	cleanupFn := func() error {
+		ctx, cancel := graceful.WithMinimumDuration(ctx, 10*time.Second)
+		defer cancel()
 		return deleteObjectsInPrefix(ctx, awsConfig, bucketName, unloadPath)
 	}
 
@@ -86,24 +99,24 @@ func (c *Connection) QueryAsFiles(ctx context.Context, props map[string]any) (ou
 		}
 	}()
 
-	bucketObj, err := openBucket(ctx, awsConfig, bucketName)
+	bucket, err := openBucket(ctx, awsConfig, bucketName, c.logger)
 	if err != nil {
 		return nil, fmt.Errorf("cannot open bucket %q: %w", bucketName, err)
 	}
 
-	opts := rillblob.Options{
-		GlobPattern: unloadPath + "/**",
-		Format:      "parquet",
-		// All the glob limits are set to max values since these files are created by Rill.
-		// Limits if any on data imported by connector should be imposed before these files are created.
-		GlobMaxTotalSize:      math.MaxInt64,
-		GlobMaxObjectsMatched: math.MaxInt,
-		GlobMaxObjectsListed:  math.MaxInt64,
+	tempDir, err := c.storage.TempDir()
+	if err != nil {
+		return nil, err
 	}
 
-	it, err := rillblob.NewIterator(ctx, bucketObj, opts, c.logger)
+	it, err := bucket.Download(ctx, &blob.DownloadOptions{
+		Glob:        unloadPath + "/**",
+		Format:      "parquet",
+		TempDir:     tempDir,
+		CloseBucket: true,
+	})
 	if err != nil {
-		return nil, fmt.Errorf("cannot download parquet output %q %w", opts.GlobPattern, err)
+		return nil, fmt.Errorf("cannot download parquet output %q: %w", unloadPath, err)
 	}
 
 	return autoDeleteFileIterator{
@@ -240,9 +253,13 @@ func resolveOutputLocation(ctx context.Context, client *athena.Client, conf *sou
 	return "", fmt.Errorf("either output_location or workgroup with an output location must be set")
 }
 
-func openBucket(ctx context.Context, cfg aws.Config, bucket string) (*blob.Bucket, error) {
+func openBucket(ctx context.Context, cfg aws.Config, bucket string, logger *zap.Logger) (*blob.Bucket, error) {
 	s3client := s3.NewFromConfig(cfg)
-	return s3blob.OpenBucketV2(ctx, s3client, bucket, nil)
+	s3bucket, err := s3blob.OpenBucketV2(ctx, s3client, bucket, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open bucket %q: %w", bucket, err)
+	}
+	return blob.NewBucket(s3bucket, logger)
 }
 
 func deleteObjectsInPrefix(ctx context.Context, cfg aws.Config, bucketName, prefix string) error {

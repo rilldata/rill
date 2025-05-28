@@ -19,6 +19,7 @@ var ErrRillYAMLNotFound = errors.New("rill.yaml not found")
 type RillYAML struct {
 	DisplayName   string
 	Description   string
+	AIContext     string
 	OLAPConnector string
 	Connectors    []*ConnectorDef
 	Variables     []*VariableDef
@@ -54,6 +55,8 @@ type rillYAML struct {
 	Name string `yaml:"name"` // Deprecated: use display_name
 	// Description of the project
 	Description string `yaml:"description"`
+	// User-provided context for LLM/AI features
+	AIContext string `yaml:"ai_context"`
 	// The project's default OLAP connector to use (can be overridden in the individual resources)
 	OLAPConnector string `yaml:"olap_connector"`
 	// Connectors required by the project
@@ -264,6 +267,7 @@ func (p *Parser) parseRillYAML(ctx context.Context, path string) error {
 	res := &RillYAML{
 		DisplayName:   tmp.DisplayName,
 		Description:   tmp.Description,
+		AIContext:     tmp.AIContext,
 		OLAPConnector: tmp.OLAPConnector,
 		Connectors:    make([]*ConnectorDef, len(tmp.Connectors)),
 		Variables:     make([]*VariableDef, len(vars)),

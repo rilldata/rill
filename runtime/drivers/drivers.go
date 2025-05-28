@@ -140,16 +140,3 @@ type Handle interface {
 	// Examples: email notifier, slack notifier.
 	AsNotifier(properties map[string]any) (Notifier, error)
 }
-
-// PermissionDeniedError is returned when a driver cannot access some data due to insufficient permissions.
-type PermissionDeniedError struct {
-	msg string
-}
-
-func NewPermissionDeniedError(msg string) error {
-	return &PermissionDeniedError{msg: msg}
-}
-
-func (e *PermissionDeniedError) Error() string {
-	return e.msg
-}

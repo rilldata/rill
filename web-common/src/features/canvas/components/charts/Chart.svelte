@@ -91,6 +91,7 @@
         title={title || component.chartTitle($chartQuery?.fields)}
         {description}
         {filters}
+        {component}
       />
       {#if hasNoData}
         <div

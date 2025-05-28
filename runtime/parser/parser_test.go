@@ -1249,6 +1249,7 @@ query:
 
 export:
   format: csv
+  include_header: true
   limit: 10000
 
 email:
@@ -1308,10 +1309,11 @@ annotations:
 					Cron:      "0 * * * *",
 					TimeZone:  "America/Los_Angeles",
 				},
-				QueryName:     "MetricsViewToplist",
-				QueryArgsJson: `{"metrics_view":"mv1"}`,
-				ExportFormat:  runtimev1.ExportFormat_EXPORT_FORMAT_CSV,
-				ExportLimit:   10000,
+				QueryName:           "MetricsViewToplist",
+				QueryArgsJson:       `{"metrics_view":"mv1"}`,
+				ExportFormat:        runtimev1.ExportFormat_EXPORT_FORMAT_CSV,
+				ExportIncludeHeader: true,
+				ExportLimit:         10000,
 				Notifiers: []*runtimev1.Notifier{{
 					Connector:  "email",
 					Properties: must(structpb.NewStruct(map[string]any{"recipients": []any{"benjamin@example.com"}})),
@@ -1332,10 +1334,11 @@ annotations:
 					Cron:      "0 * * * *",
 					TimeZone:  "America/Los_Angeles",
 				},
-				QueryName:     "MetricsViewToplist",
-				QueryArgsJson: `{"metrics_view":"mv1"}`,
-				ExportFormat:  runtimev1.ExportFormat_EXPORT_FORMAT_CSV,
-				ExportLimit:   10000,
+				QueryName:           "MetricsViewToplist",
+				QueryArgsJson:       `{"metrics_view":"mv1"}`,
+				ExportFormat:        runtimev1.ExportFormat_EXPORT_FORMAT_CSV,
+				ExportIncludeHeader: false,
+				ExportLimit:         10000,
 				Notifiers: []*runtimev1.Notifier{
 					{Connector: "email", Properties: must(structpb.NewStruct(map[string]any{"recipients": []any{"user_1@example.com"}}))},
 					{Connector: "slack", Properties: must(structpb.NewStruct(map[string]any{"users": []any{"user_2@example.com"}, "channels": []any{"reports"}, "webhooks": []any{}}))},

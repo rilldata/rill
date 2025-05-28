@@ -10,7 +10,19 @@ import (
 
 func init() {
 	runtime.RegisterResolverInitializer("builtin_metrics_sql", newBuiltinMetricsSQL)
-	runtime.RegisterBuiltinAPI("metrics-sql", "builtin_metrics_sql", nil)
+	runtime.RegisterBuiltinAPI(&runtime.BuiltinAPIOptions{
+		Name:               "metrics-sql",
+		Resolver:           "builtin_metrics_sql",
+		ResolverProperties: nil,
+		OpenAPISummary:     "Query metrics with SQL",
+		OpenAPIRequestSchema: `{
+			"type":"object",
+			"properties": {
+				"sql": {"type":"string"}
+			},
+			"required":["sql"]
+		}`,
+	})
 }
 
 type builtinMetricsSQLArgs struct {

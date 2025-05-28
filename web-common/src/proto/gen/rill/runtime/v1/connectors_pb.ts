@@ -190,11 +190,6 @@ export class S3ListObjectsRequest extends Message<S3ListObjectsRequest> {
   bucket = "";
 
   /**
-   * @generated from field: string region = 6;
-   */
-  region = "";
-
-  /**
    * @generated from field: string prefix = 7;
    */
   prefix = "";
@@ -222,7 +217,6 @@ export class S3ListObjectsRequest extends Message<S3ListObjectsRequest> {
     { no: 3, name: "page_size", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 4, name: "page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "bucket", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 6, name: "region", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 7, name: "prefix", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 8, name: "start_after", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 9, name: "delimiter", kind: "scalar", T: 9 /* ScalarType.STRING */ },

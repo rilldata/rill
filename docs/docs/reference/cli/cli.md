@@ -35,6 +35,7 @@ Work with Rill projects directly from the command line.
 * [rill query](query.md)	 - Query a resolver within a project
 * [rill service](service/service.md)	 - Manage service accounts
 * [rill start](start.md)	 - Build project and start web app
+* [rill token](token/token.md)	 - Manage personal access tokens
 * [rill uninstall](uninstall.md)	 - Uninstall the Rill binary
 * [rill upgrade](upgrade.md)	 - Upgrade Rill to the latest version
 * [rill user](user/user.md)	 - Manage users

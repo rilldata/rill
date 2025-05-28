@@ -6,6 +6,6 @@ INSERT DESCRIPTION HERE
 - [ ] Reviewed the diff before requesting a review
 - [ ] Checked for unhandled edge cases
 - [ ] Linked the issues it closes
-- [ ] Checked if the docs need to be updated
+- [ ] Checked if the docs need to be updated. If so, create a separate Linear DOCS issue
 - [ ] Intend to cherry-pick into the release branch
 - [ ] I'm proud of this work!

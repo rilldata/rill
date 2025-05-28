@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
-	"strconv"
 	"strings"
 	"time"
 
@@ -475,7 +474,7 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 					return false, fmt.Errorf("failed to get recipient URLs for %q", recipient)
 				}
 				opts.OpenLink = urls.OpenURL
-				u, err := createExportURL(urls.ExportURL, rep.Spec.ExportFormat.String(), t, int(rep.Spec.ExportLimit))
+				u, err := createExportURL(urls.ExportURL, t)
 				if err != nil {
 					return false, err
 				}
@@ -503,7 +502,7 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 				if !ok {
 					return fmt.Errorf("failed to get recipient URLs for anon user")
 				}
-				u, err := createExportURL(urls.ExportURL, rep.Spec.ExportFormat.String(), t, int(rep.Spec.ExportLimit))
+				u, err := createExportURL(urls.ExportURL, t)
 				if err != nil {
 					return err
 				}
@@ -543,20 +542,15 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 	return false, nil
 }
 
-func createExportURL(inURL, format string, executionTime time.Time, exportLimit int) (*url.URL, error) {
+func createExportURL(inURL string, executionTime time.Time) (*url.URL, error) {
 	exportURL, err := url.Parse(inURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse export URL %q: %w", inURL, err)
 	}
 
 	exportURLQry := exportURL.Query()
-	exportURLQry.Set("format", format)
 	exportURLQry.Set("execution_time", executionTime.Format(time.RFC3339))
-	if exportLimit > 0 {
-		exportURLQry.Set("limit", strconv.Itoa(exportLimit))
-	}
 	exportURL.RawQuery = exportURLQry.Encode()
-
 	return exportURL, nil
 }
 

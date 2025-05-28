@@ -10,7 +10,10 @@ import (
 	"time"
 
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
+	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/mark3labs/mcp-go/server"
 	"github.com/rilldata/rill/runtime/pkg/activity"
+	"github.com/rilldata/rill/runtime/pkg/httputil"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
@@ -234,15 +237,14 @@ func LoggingMiddleware(logger *zap.Logger, next http.Handler) http.Handler {
 			w.Header().Set(TracingHeader, traceID)
 		}
 
-		wrapped := wrappedResponseWriter{ResponseWriter: w}
+		ww := httputil.WrapResponseWriter(w, r.ProtoMajor)
 
 		defer func() {
 			// Recover panics and handle as internal errors
 			if err := recover(); err != nil {
 				// Write status
-				w.WriteHeader(http.StatusInternalServerError)
-				wrapped.status = http.StatusInternalServerError
-				_, _ = w.Write([]byte(http.StatusText(http.StatusInternalServerError)))
+				ww.WriteHeader(http.StatusInternalServerError)
+				_, _ = ww.Write([]byte(http.StatusText(http.StatusInternalServerError)))
 
 				// Get stacktrace
 				stack := make([]byte, 64<<10)
@@ -254,7 +256,7 @@ func LoggingMiddleware(logger *zap.Logger, next http.Handler) http.Handler {
 			}
 
 			// Get status
-			httpStatus := wrapped.status
+			httpStatus := ww.Status()
 			if httpStatus == 0 {
 				httpStatus = 200
 			}
@@ -273,7 +275,7 @@ func LoggingMiddleware(logger *zap.Logger, next http.Handler) http.Handler {
 		// Print start message
 		logger.Info("http request started", fields...)
 
-		next.ServeHTTP(&wrapped, r)
+		next.ServeHTTP(ww, r)
 	})
 }
 
@@ -290,27 +292,6 @@ func HTTPPeer(r *http.Request) string {
 	}
 
 	return ip
-}
-
-// wrappedResponseWriter wraps a response writer and tracks the response status code
-type wrappedResponseWriter struct {
-	http.ResponseWriter
-	status      int
-	wroteHeader bool
-}
-
-func (rw *wrappedResponseWriter) Status() int {
-	return rw.status
-}
-
-func (rw *wrappedResponseWriter) WriteHeader(code int) {
-	if rw.wroteHeader {
-		return
-	}
-
-	rw.status = code
-	rw.ResponseWriter.WriteHeader(code)
-	rw.wroteHeader = true
 }
 
 // logFieldsContextKey is used to set and get request log fields in the context.
@@ -344,4 +325,38 @@ func AddRequestAttributes(ctx context.Context, attrs ...attribute.KeyValue) {
 
 	// Add attributes for emitted events
 	activity.SetAttributes(ctx, attrs...)
+}
+
+// MCPToolHandlerMiddleware is a middleware for MCP tool handlers that adds MCP-related observability attributes.
+// It is expected to run on an MCP server that has already been wrapped with observability.Middleware(...).
+func MCPToolHandlerMiddleware() server.ToolHandlerMiddleware {
+	return func(next server.ToolHandlerFunc) server.ToolHandlerFunc {
+		return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+			// Tool name attribute
+			AddRequestAttributes(ctx, attribute.String("mcp.tool", req.Params.Name))
+
+			// Process and add error attributes
+			res, err := next(ctx, req)
+			if err != nil {
+				AddRequestAttributes(ctx, attribute.String("mcp.error", err.Error()))
+			}
+			if res != nil && res.IsError {
+				var msg string
+				if len(res.Content) > 0 {
+					txt, ok := res.Content[0].(mcp.TextContent)
+					if ok {
+						msg = txt.Text
+					} else {
+						msg = fmt.Sprintf("unknown error with content type %T", res.Content[0])
+					}
+				} else {
+					msg = "unknown error with no content"
+				}
+
+				AddRequestAttributes(ctx, attribute.String("mcp.error", msg))
+			}
+
+			return res, err
+		}
+	}
 }

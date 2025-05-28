@@ -104,7 +104,7 @@ func (e *Executor) rewriteQueryForPivot(qry *Query) (*pivotAST, bool, error) {
 }
 
 // executePivotExport executes a PIVOT query prepared using rewriteQueryForPivot, and exports the result to a file in the given format.
-func (e *Executor) executePivotExport(ctx context.Context, ast *AST, pivot *pivotAST, format drivers.FileFormat) (string, error) {
+func (e *Executor) executePivotExport(ctx context.Context, ast *AST, pivot *pivotAST, format drivers.FileFormat, headers []string) (string, error) {
 	ctx, cancel := context.WithTimeout(ctx, defaultPivotExportTimeout)
 	defer cancel()
 
@@ -121,7 +121,7 @@ func (e *Executor) executePivotExport(ctx context.Context, ast *AST, pivot *pivo
 		path, err := e.executeExport(ctx, "parquet", e.metricsView.Connector, map[string]any{
 			"sql":  underlyingSQL,
 			"args": args,
-		})
+		}, headers)
 		if err != nil {
 			return "", fmt.Errorf("failed to execute pre-pivot export: %w", err)
 		}
@@ -182,7 +182,7 @@ func (e *Executor) executePivotExport(ctx context.Context, ast *AST, pivot *pivo
 		// Execute the pivot export
 		path, err = e.executeExport(wrappedCtx, format, pivotConnector, map[string]any{
 			"sql": pivotSQL,
-		})
+		}, headers)
 		if err != nil {
 			return fmt.Errorf("failed to execute pivot export: %w", err)
 		}

@@ -19,3 +19,7 @@ Either one of the following:
 
 - _**`metrics_sql`**_ — SQL query referring metrics definition and dimensions defined in the [metrics view](/build/dashboards/dashboards.md) _(required)_.
 
+_**`skip_nested_security`**_ (boolean) - Ignore any security on referenced metrics views. Default `false` _(optional)_
+
+_**`security`**_
+  - **`access`** - access policy to access the API endpoint

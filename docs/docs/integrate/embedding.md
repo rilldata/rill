@@ -23,7 +23,7 @@ When embedding Rill, a service token for the backend will need to be generated t
 sequenceDiagram
   participant A as ui.ezcommerce.com
   participant B as api.ezcommerce.com
-  participant C as admin.rilldata.com
+  participant C as api.rilldata.com
   participant D as ui.rilldata.com/-/embed
   participant E as node-4.us-east1.runtime.rilldata.com
   A ->> B: Get iframe URL
@@ -54,7 +54,7 @@ The service account _provides admin-level access to your organization_ and shoul
 :::
 
 ### Backend: Build an iframe URL
-You should implement an API on your backend that uses the service token to retrieve and return an iframe URL from Rill's API (which is hosted on `admin.rilldata.com`).
+You should implement an API on your backend that uses the service token to retrieve and return an iframe URL from Rill's API (which is hosted on `api.rilldata.com`).
 
 There are multiple reasons why the iframe URL <u>must</u> be constructed on your backend:
 - To avoid leaking your master Rill service token in the browser
@@ -67,7 +67,7 @@ Here are examples of how to get an iframe URL using different languages:
   <TabItem value="curl" label="Curl" default>
 
 ```bash
-curl -X POST --location 'https://admin.rilldata.com/v1/organizations/<org-name>/projects/<project-name>/iframe' \
+curl -X POST --location 'https://api.rilldata.com/v1/organizations/<org-name>/projects/<project-name>/iframe' \
 --header 'Content-Type: application/json' \
 --header 'Authorization: Bearer <rill-svc-token>' \
 --data-raw '{
@@ -93,7 +93,7 @@ app.use(express.json());
 app.post('/api/rill/iframe', async (req, res) => {
   const dashboardName = req.body.resource;
   try {
-    const response = await fetch(`https://admin.rilldata.com/v1/organizations/${rillOrg}/projects/${rillProject}/iframe`, {
+    const response = await fetch(`https://api.rilldata.com/v1/organizations/${rillOrg}/projects/${rillProject}/iframe`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -137,7 +137,7 @@ def get_rill_iframe():
     dashboard_name = request.json.get('resource')
     try:
         response = requests.post(
-            'https://admin.rilldata.com/v1/organizations/<org-name>/projects/<project-name>/iframe',
+            'https://api.rilldata.com/v1/organizations/<org-name>/projects/<project-name>/iframe',
             headers={
                 'Content-Type': 'application/json',
                 'Authorization': 'Bearer <rill-svc-token>',
@@ -189,7 +189,7 @@ func getRillIframe(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp, err := http.Post("https://admin.rilldata.com/v1/organizations/<org-name>/projects/<project-name>/iframe", "application/json", bytes.NewBuffer(requestBody))
+	resp, err := http.Post("https://api.rilldata.com/v1/organizations/<org-name>/projects/<project-name>/iframe", "application/json", bytes.NewBuffer(requestBody))
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -256,7 +256,7 @@ public class DashboardController {
 
         HttpEntity<Map<String, Object>> entity = new HttpEntity<>(request, headers);
         RestTemplate restTemplate = new RestTemplate();
-        ResponseEntity<Map> response = restTemplate.postForEntity("https://admin.rilldata.com/v1/organizations/<org-name>/projects/<project-name>/iframe", entity, Map.class);
+        ResponseEntity<Map> response = restTemplate.postForEntity("https://api.rilldata.com/v1/organizations/<org-name>/projects/<project-name>/iframe", entity, Map.class);
 
         Map<String, Object> resp = (Map<String, Object>) response.getBody().get("resp");
         Map<String, String> responseBody = Map.of("iframeResp", (String) ((Map<String, Object>) resp.get("body")));

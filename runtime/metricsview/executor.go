@@ -335,7 +335,7 @@ func (e *Executor) Query(ctx context.Context, qry *Query, executionTime *time.Ti
 		}
 
 		// Execute the pivot export
-		path, err := e.executePivotExport(ctx, ast, pivotAST, "parquet")
+		path, err := e.executePivotExport(ctx, ast, pivotAST, "parquet", nil)
 		if err != nil {
 			return nil, err
 		}
@@ -368,7 +368,7 @@ func (e *Executor) Query(ctx context.Context, qry *Query, executionTime *time.Ti
 
 // Export executes and exports the provided query against the metrics view.
 // It returns a path to a temporary file containing the export. The caller is responsible for cleaning up the file.
-func (e *Executor) Export(ctx context.Context, qry *Query, executionTime *time.Time, format drivers.FileFormat) (string, error) {
+func (e *Executor) Export(ctx context.Context, qry *Query, executionTime *time.Time, format drivers.FileFormat, headers []string) (string, error) {
 	if !e.security.CanAccess() {
 		return "", runtime.ErrForbidden
 	}
@@ -406,7 +406,7 @@ func (e *Executor) Export(ctx context.Context, qry *Query, executionTime *time.T
 	}
 
 	if pivoting {
-		return e.executePivotExport(ctx, ast, pivotAST, format)
+		return e.executePivotExport(ctx, ast, pivotAST, format, headers)
 	}
 
 	sql, args, err := ast.SQL()
@@ -417,7 +417,7 @@ func (e *Executor) Export(ctx context.Context, qry *Query, executionTime *time.T
 	return e.executeExport(ctx, format, e.metricsView.Connector, map[string]any{
 		"sql":  sql,
 		"args": args,
-	})
+	}, headers)
 }
 
 type SearchQuery struct {

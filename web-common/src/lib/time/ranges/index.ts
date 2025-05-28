@@ -140,7 +140,7 @@ export function convertTimeRangePreset(
   timeRangePreset: TimeRangePreset | TimeComparisonOption,
   start: Date,
   end: Date,
-  zone: string,
+  zone: string | undefined,
 ): TimeRange {
   if (timeRangePreset === TimeRangePreset.ALL_TIME) {
     return {
@@ -330,7 +330,7 @@ export const prettyFormatTimeRange = (
 export function getAdjustedFetchTime(
   startTime: Date,
   endTime: Date,
-  zone: string,
+  zone: string | undefined,
   interval: V1TimeGrain | undefined,
 ) {
   if (!startTime || !endTime || !interval)

@@ -150,7 +150,7 @@ type DB interface {
 	InsertManagedUsergroupsMemberUser(ctx context.Context, orgID, userID, roleID string) error
 	DeleteManagedUsergroupsMemberUser(ctx context.Context, orgID, userID string) error
 
-	FindUserAuthTokens(ctx context.Context, userID string) ([]*UserAuthToken, error)
+	FindUserAuthTokens(ctx context.Context, userID, afterID string, limit int) ([]*UserAuthToken, error)
 	FindUserAuthToken(ctx context.Context, id string) (*UserAuthToken, error)
 	InsertUserAuthToken(ctx context.Context, opts *InsertUserAuthTokenOptions) (*UserAuthToken, error)
 	UpdateUserAuthTokenUsedOn(ctx context.Context, ids []string) error
@@ -631,15 +631,16 @@ const (
 
 // UserAuthToken is a persistent API token for a user.
 type UserAuthToken struct {
-	ID                 string
-	SecretHash         []byte     `db:"secret_hash"`
-	UserID             string     `db:"user_id"`
-	DisplayName        string     `db:"display_name"`
-	AuthClientID       *string    `db:"auth_client_id"`
-	RepresentingUserID *string    `db:"representing_user_id"`
-	CreatedOn          time.Time  `db:"created_on"`
-	ExpiresOn          *time.Time `db:"expires_on"`
-	UsedOn             time.Time  `db:"used_on"`
+	ID                    string
+	SecretHash            []byte     `db:"secret_hash"`
+	UserID                string     `db:"user_id"`
+	DisplayName           string     `db:"display_name"`
+	AuthClientID          *string    `db:"auth_client_id"`
+	AuthClientDisplayName *string    `db:"auth_client_display_name"`
+	RepresentingUserID    *string    `db:"representing_user_id"`
+	CreatedOn             time.Time  `db:"created_on"`
+	ExpiresOn             *time.Time `db:"expires_on"`
+	UsedOn                time.Time  `db:"used_on"`
 }
 
 // InsertUserAuthTokenOptions defines options for creating a UserAuthToken.
@@ -772,6 +773,7 @@ const (
 	AuthClientIDRillCLI      = "12345678-0000-0000-0000-000000000002"
 	AuthClientIDRillSupport  = "12345678-0000-0000-0000-000000000003"
 	AuthClientIDRillWebLocal = "12345678-0000-0000-0000-000000000004"
+	AuthClientIDRillManual   = "12345678-0000-0000-0000-000000000005"
 )
 
 // DeviceAuthCodeState is an enum representing the approval state of a DeviceAuthCode

@@ -8,14 +8,26 @@ import (
 
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/codes"
 )
+
+var tracer = otel.Tracer("github.com/rilldata/rill/runtime/drivers/salesforce")
 
 const defaultClientID = "3MVG9KsVczVNcM8y6w3Kjszy.DW9gMzcYDHT97WIX3NYNYA35UvITypEhtYc6FDY8qqcDEIQc_qJgZErv6Q_d"
 
 var _ drivers.Warehouse = &connection{}
 
 // QueryAsFiles implements drivers.SQLStore
-func (c *connection) QueryAsFiles(ctx context.Context, props map[string]any) (drivers.FileIterator, error) {
+func (c *connection) QueryAsFiles(ctx context.Context, props map[string]any) (outIt drivers.FileIterator, outErr error) {
+	ctx, span := tracer.Start(ctx, "Connection.QueryAsFiles")
+	defer func() {
+		if outErr != nil {
+			span.SetStatus(codes.Error, outErr.Error())
+		}
+		span.End()
+	}()
+
 	srcProps, err := parseSourceProperties(props)
 	if err != nil {
 		return nil, err
@@ -90,47 +102,57 @@ func (c *connection) QueryAsFiles(ctx context.Context, props map[string]any) (dr
 	return job, nil
 }
 
-func (j *bulkJob) Format() string {
-	return "csv"
-}
+var _ drivers.FileIterator = &bulkJob{}
 
 // Close implements drivers.RowIterator.
 func (j *bulkJob) Close() error {
-	if j.tempFilePath != "" {
-		err := os.Remove(j.tempFilePath)
-		j.tempFilePath = ""
+	for _, p := range j.tempFilePaths {
+		err := os.Remove(p)
 		if err != nil {
 			return fmt.Errorf("failed to delete temp file: %w", err)
 		}
 	}
+	j.tempFilePaths = nil
 	return nil
 }
 
+// Format implements drivers.RowIterator.
+func (j *bulkJob) Format() string {
+	return "csv"
+}
+
+// SetKeepFilesUntilClose implements drivers.RowIterator.
+func (j *bulkJob) SetKeepFilesUntilClose() {
+	j.keepFilesUntilClose = true
+}
+
 // Next implements drivers.RowIterator.
-func (j *bulkJob) Next() ([]string, error) {
+func (j *bulkJob) Next(ctx context.Context) ([]string, error) {
 	if j.jobID == "" {
 		return nil, fmt.Errorf("invalid job: no job id")
 	}
 	if j.job.NumberRecordsProcessed == 0 {
 		return nil, io.EOF
 	}
-	if j.tempFilePath != "" {
-		err := os.Remove(j.tempFilePath)
-		j.tempFilePath = ""
-		if err != nil {
-			return nil, fmt.Errorf("failed to delete temp file: %w", err)
+	if len(j.tempFilePaths) != 0 && !j.keepFilesUntilClose {
+		for _, p := range j.tempFilePaths {
+			err := os.Remove(p)
+			if err != nil {
+				return nil, fmt.Errorf("failed to delete temp file: %w", err)
+			}
 		}
+		j.tempFilePaths = nil
 	}
 	if j.nextResult == len(j.results) {
 		return nil, io.EOF
 	}
-	tempFile, err := j.retrieveJobResult(context.Background(), j.nextResult)
+	tempFile, err := j.retrieveJobResult(ctx, j.nextResult)
 	if err != nil {
 		return nil, fmt.Errorf("failed to retrieve batch: %w", err)
 	}
-	j.tempFilePath = tempFile
+	j.tempFilePaths = append(j.tempFilePaths, tempFile)
 	j.nextResult++
-	return []string{j.tempFilePath}, nil
+	return []string{tempFile}, nil
 }
 
 type sourceProperties struct {

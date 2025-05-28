@@ -64,7 +64,12 @@
     {#if options.size > 1}
       <DropdownMenu.Root>
         <DropdownMenu.Trigger asChild let:builder>
-          <button use:builder.action {...builder} class="trigger">
+          <button
+            use:builder.action
+            {...builder}
+            class="trigger"
+            aria-label="Breadcrumb dropdown"
+          >
             <CaretDownIcon size="14px" />
           </button>
         </DropdownMenu.Trigger>

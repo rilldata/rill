@@ -1,9 +1,13 @@
 ---
-title: "Google BigQuery"
+title: "Managed Google BigQuery"
 description: Setting up BigQuery access
 sidebar_label: "Google BigQuery"
 sidebar_position: 30
 ---
+
+:::warning
+Please note that these instructions were made specifically for Rill Managed Pipelines and used by our data engineering team to set up orchestration from object stores/data warehouses into Rill Managed Database Services. While some of the concepts may apply, please refer to your providers documentation on the correct permissions required to connect to your service.
+:::
 
 ## Setup instructions
 Follow the instructions below to grant Rill access to your Google BigQuery datasets.

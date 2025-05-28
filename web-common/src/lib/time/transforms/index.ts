@@ -106,7 +106,7 @@ export function relativePointInTimeToAbsolute(
   referenceTime: Date,
   start: string | RelativePointInTime,
   end: string | RelativePointInTime,
-  zone: string,
+  zone: string | undefined,
 ) {
   let startDate: Date;
   let endDate: Date;

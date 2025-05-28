@@ -102,8 +102,9 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 	}
 
 	conn := &Connection{
-		config: conf,
-		logger: logger,
+		config:  conf,
+		logger:  logger,
+		storage: st,
 	}
 	return conn, nil
 }
@@ -121,8 +122,9 @@ func (d driver) TertiarySourceConnectors(ctx context.Context, src map[string]any
 }
 
 type Connection struct {
-	config *configProperties
-	logger *zap.Logger
+	config  *configProperties
+	logger  *zap.Logger
+	storage *storage.Client
 }
 
 var _ drivers.Handle = &Connection{}

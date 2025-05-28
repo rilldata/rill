@@ -20,6 +20,8 @@ In your Rill project directory, create a metrics view, `<metrics_view>.yaml`, fi
 
 **`description`** - A description for the project. _(optional)_.
 
+**`ai_context`** - extra context for AI assistants. Any information you add here will be available to AI assistants when they query the metrics view.
+
 **`database`** - Refers to the database to use in the OLAP engine (to be used in conjunction with `table`). Otherwise, will use the default database or schema if not specified _(optional)_.
 
 **`database_schema`** — Refers to the schema to use in the OLAP engine (to be used in conjunction with `table`). Otherwise, will use the default database or schema if not specified _(optional)_.

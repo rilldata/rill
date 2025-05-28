@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { goto } from "$app/navigation";
   import { page } from "$app/stores";
   import ContentContainer from "@rilldata/web-admin/components/layout/ContentContainer.svelte";
   import DashboardsTable from "@rilldata/web-admin/features/dashboards/listing/DashboardsTable.svelte";
@@ -15,8 +16,8 @@
   featureFlags.set(false, "adminServer");
 
   const instanceId = $page.url.searchParams.get("instance_id");
-  const initialResourceName = $page.url.searchParams.get("resource");
-  const initialResourceType =
+  $: resourceName = $page.url.searchParams.get("resource");
+  $: resourceType =
     $page.url.searchParams.get("type") ?? $page.url.searchParams.get("kind"); // "kind" is for backwards compatibility
   const navigation = $page.url.searchParams.get("navigation");
   // Ignoring state and theme params for now
@@ -25,18 +26,30 @@
 
   // Manage active resource
   let activeResource: V1ResourceName | null = null;
-  if (initialResourceName && initialResourceType) {
+  $: if (resourceName && resourceType) {
     activeResource = {
-      name: initialResourceName,
-      kind: initialResourceType,
+      name: resourceName,
+      kind: resourceType,
     };
+  } else {
+    // Important! Do not set `activeResource` to `null` here.
+    // In `DashboardStateDataLoader` we are currently clearing the url of non-dashboard params since it will interfere with session storage extraction logic.
+    // So setting `activeResource` to `null` will make the navigation logic in this file to think there is no active resource everytime `DashboardStateDataLoader` cleaned the url.
+    // For going to home we manually set `activeResource` to `null` in `handleGoHome`.
+    // TODO: move to a route based approach to avoid this issues.
   }
 
   function handleSelectResource(event: CustomEvent<V1ResourceName>) {
-    activeResource = event.detail;
+    const newUrl = new URL($page.url);
+    newUrl.search = `resource=${event.detail.name}&type=${event.detail.kind}`;
+    void goto(newUrl);
   }
 
   function handleGoHome() {
+    const newUrl = new URL($page.url);
+    newUrl.search = "";
+    void goto(newUrl);
+    // To understand why we set `activeResource=null` here, see the comment above
     activeResource = null;
   }
 </script>

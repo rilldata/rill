@@ -1,8 +1,10 @@
 package user
 
 import (
+	"fmt"
 	"time"
 
+	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/cli/cmd/auth"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
@@ -40,9 +42,15 @@ func AssumeCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 
-			res, err := client.IssueRepresentativeAuthToken(ctx, &adminv1.IssueRepresentativeAuthTokenRequest{
-				Email:      args[0],
-				TtlMinutes: int64(ttlMinutes),
+			// Issue a new token for the *current* user that *represents* the user we want to assume.
+			// The token will still show up in the current user's token listings, but will be consumed as if it were the user we are assuming.
+			res, err := client.IssueUserAuthToken(ctx, &adminv1.IssueUserAuthTokenRequest{
+				UserId:               "current",
+				ClientId:             database.AuthClientIDRillSupport,
+				DisplayName:          fmt.Sprintf("Support for %s", args[0]),
+				TtlMinutes:           int64(ttlMinutes),
+				RepresentEmail:       args[0],
+				SuperuserForceAccess: true,
 			})
 			if err != nil {
 				return err

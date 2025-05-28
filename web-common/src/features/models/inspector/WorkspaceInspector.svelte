@@ -165,7 +165,7 @@
 
   $: columnDelta = profileColumnsCount - $sourceColumns;
   $: isIncremental = model?.spec?.incremental;
-  $: isPartition = !!model?.state?.partitionsModelId;
+  $: isPartitioned = !!model?.state?.partitionsModelId;
 </script>
 
 <Inspector {filePath}>
@@ -178,8 +178,6 @@
       <div class="size-full flex items-center justify-center">
         <ReconcilingSpinner />
       </div>
-    {:else if hasErrors}
-      <SimpleMessage message="Fix the errors in the file to continue." />
     {:else if !!resource && !!connector && !!tableName}
       <InspectorHeaderGrid>
         <svelte:fragment slot="top-left">
@@ -288,7 +286,7 @@
       </div>
 
       {#if model}
-        {#if isPartition}
+        {#if isPartitioned}
           <hr />
           <PartitionsBrowser {resource} />
         {:else if isIncremental}
@@ -296,6 +294,8 @@
           <IncrementalProcessing {resource} />
         {/if}
       {/if}
+    {:else if hasErrors}
+      <SimpleMessage message="Fix the errors in the file to continue." />
     {/if}
   </div>
 </Inspector>

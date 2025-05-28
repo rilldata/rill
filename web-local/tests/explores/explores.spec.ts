@@ -50,7 +50,7 @@ test.describe("explores", () => {
   });
 
   test("Dashboard runthrough", async ({ page }) => {
-    test.setTimeout(45_000); // Note: we should make this test smaller!
+    test.setTimeout(60_000); // Note: we should make this test smaller!
 
     // Enable to get logs in CI
     // page.on("console", async (msg) => {

@@ -30,11 +30,10 @@
     startDay.plus({ day: i + 1 - weekDayOfFirstDay }),
   );
 
-  $: weekdays = Array.from({ length: 7 }, (_, i) =>
-    new Date(0, 0, i + firstDayOfWeek).toLocaleString("default", {
-      weekday: "short",
-    }),
-  );
+  $: weekdays = Array.from({ length: 7 }, (_, i) => {
+    return startDay.startOf("week").plus({ day: i + (firstDayOfWeek - 1) })
+      .weekdayShort;
+  });
 
   function resetPotentialDates() {
     potentialEnd = undefined;

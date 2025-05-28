@@ -193,7 +193,6 @@ func (s *Service) createDeploymentInner(ctx context.Context, d *database.Deploym
 		Connectors:     connectors,
 		Variables:      opts.Variables,
 		Annotations:    opts.Annotations.ToMap(),
-		EmbedCatalog:   false,
 	})
 	if err != nil {
 		return err

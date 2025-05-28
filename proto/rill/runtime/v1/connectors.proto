@@ -88,7 +88,6 @@ message S3ListObjectsRequest {
   uint32 page_size = 3 [(validate.rules).uint32 = {ignore_empty: true, lte: 100}];
   string page_token = 4;
   string bucket = 5 [(validate.rules).string.min_len = 1];
-  string region = 6;
   string prefix = 7;
   string start_after = 8;
   string delimiter = 9;

@@ -259,26 +259,22 @@
                 "summary": {
                   "type": "string"
                 },
-                "request": {
-                  "type": "object",
-                  "properties": {
-                    "parameters": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "additionalProperties": true
-                      }
-                    }
+                "parameters": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": true
                   }
                 },
-                "response": {
+                "request_schema": {
                   "type": "object",
-                  "properties": {
-                    "schema": {
-                      "type": "object",
-                      "additionalProperties": true
-                    }
-                  }
+                  "description": "JSON schema for the request body (use nested YAML instead of a JSON string)",
+                  "additionalProperties": true
+                },
+                "response_schema": {
+                  "type": "object",
+                  "description": "JSON schema for the response body (use nested YAML instead of a JSON string)",
+                  "additionalProperties": true
                 }
               }
             },
@@ -2326,6 +2322,10 @@
             "description": {
               "type": "string",
               "description": "Refers to the description for the metrics view"
+            },
+            "ai_context": {
+              "type": "string",
+              "description": "Extra context for LLM/AI features. Used to guide natural language question answering and routing."
             },
             "model": {
               "type": "string",

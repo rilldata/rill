@@ -1,9 +1,14 @@
 ---
-title: "AWS S3 Bucket"
+title: "Managed AWS S3 Bucket"
 description: Setting up s3 access
 sidebar_label: "AWS S3 Bucket"
 sidebar_position: 10
 ---
+
+
+:::warning
+Please note that these instructions were made specifically for Rill Managed Pipelines and used by our data engineering team to set up orchestration from object stores/data warehouses into Rill Managed Database Services. While some of the concepts may apply, please refer to your providers documentation on the correct permissions required to connect to your service.
+:::
 
 ## Setup instructions
 

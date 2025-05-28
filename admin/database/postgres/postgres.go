@@ -949,9 +949,27 @@ func (c *connection) DeleteManagedUsergroupsMemberUser(ctx context.Context, orgI
 	return nil
 }
 
-func (c *connection) FindUserAuthTokens(ctx context.Context, userID string) ([]*database.UserAuthToken, error) {
+func (c *connection) FindUserAuthTokens(ctx context.Context, userID, afterID string, limit int) ([]*database.UserAuthToken, error) {
+	var qry strings.Builder
+	qry.WriteString(`
+		SELECT
+			t.*,
+			c.display_name AS auth_client_display_name
+		FROM user_auth_tokens t
+		LEFT JOIN auth_clients c ON t.auth_client_id = c.id
+		WHERE t.user_id = $1 AND (t.expires_on IS NULL OR t.expires_on > now())
+	`)
+	args := []any{userID}
+	if afterID != "" {
+		qry.WriteString(" AND t.id > $2 ORDER BY t.id LIMIT $3")
+		args = append(args, afterID, limit)
+	} else {
+		qry.WriteString(" ORDER BY t.id LIMIT $2")
+		args = append(args, limit)
+	}
+
 	var res []*database.UserAuthToken
-	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT t.* FROM user_auth_tokens t WHERE t.user_id=$1", userID)
+	err := c.getDB(ctx).SelectContext(ctx, &res, qry.String(), args...)
 	if err != nil {
 		return nil, parseErr("auth tokens", err)
 	}
