@@ -53,7 +53,6 @@ export class RillTime {
   }
 
   public getLabel() {
-    console.log("GETTING LABEL");
     const [label, supported] = this.interval.getLabel();
     return capitalizeFirstChar(supported ? label : this.timeRange);
   }
@@ -221,6 +220,24 @@ export class RillTimeStartEndInterval implements RillTimeInterval {
       !(this.start instanceof RillGrainPointInTime) ||
       !(this.end instanceof RillGrainPointInTime)
     ) {
+      if (
+        this.start instanceof RillGrainPointInTime &&
+        typeof this.end === "string"
+      ) {
+        if (this.end === "latest" || this.end === "watermark") {
+          const start = this.start.getSingleGrainAndNum();
+          if (!start) return ["", false];
+          const numDiff = Math.abs(start.offset);
+
+          const grainPart = grainAliasToDateTimeUnit(start.grain as any);
+          const grainSuffix = numDiff > 1 ? "s" : "";
+          const grainPrefix = numDiff ? numDiff + " " : "";
+          const grainLabel = `${grainPrefix}${grainPart}${grainSuffix}`;
+
+          return [`last ${grainLabel}`, true];
+        }
+      }
+
       return ["", false];
     }
 

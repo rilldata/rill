@@ -113,19 +113,17 @@
       {onSelectTimeZone}
     />
   {/if}
-  <!-- 
-  {#if !showPivot && minTimeGrain}
+
+  {#if !$newPicker && !showPivot && minTimeGrain}
     <TimeGrainSelector
-      {usingRillTime}
       {activeTimeGrain}
       {minTimeGrain}
       {timeStart}
       {timeEnd}
       {complete}
-      {toggleComplete}
       {onTimeGrainSelect}
     />
-  {/if} -->
+  {/if}
 </div>
 
 <style lang="postcss">

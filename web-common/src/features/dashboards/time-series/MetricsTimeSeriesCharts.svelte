@@ -336,9 +336,7 @@
             <div
               class="flex items-center gap-x-0.5 px-1 text-gray-700 hover:text-inherit"
             >
-              Aggregated by <strong>
-                {TIME_GRAIN[activeTimeGrain].label}</strong
-              >
+              by <strong> {TIME_GRAIN[activeTimeGrain].label}</strong>
               <span
                 class="transition-transform"
                 class:hidden={false}

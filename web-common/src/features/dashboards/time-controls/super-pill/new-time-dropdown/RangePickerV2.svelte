@@ -23,12 +23,20 @@
   import { parseRillTime } from "../../../url-state/time-ranges/parser";
   import type { RillTime } from "../../../url-state/time-ranges/RillTime";
   import { getTimeRangeOptionsByGrain } from "@rilldata/web-common/lib/time/defaults";
-  import { getAllowedGrains } from "@rilldata/web-common/lib/time/new-grains";
+  import {
+    getAllowedEndingGrains,
+    getAllowedGrains,
+    getGrainAliasFromString,
+  } from "@rilldata/web-common/lib/time/new-grains";
   import * as Popover from "@rilldata/web-common/components/popover";
   import type { TimeGrainOptions } from "@rilldata/web-common/lib/time/defaults";
+  import TimeRangeOptionGroup from "./TimeRangeOptionGroup.svelte";
+  import RangeDisplay from "../components/RangeDisplay.svelte";
+  import InControl from "./InControl.svelte";
+  import TimeRangeMenuItem from "../components/TimeRangeMenuItem.svelte";
 
-  export let timeRanges: V1ExploreTimeRange[];
   export let timeString: string | undefined;
+  export let timeRanges: V1ExploreTimeRange[];
   export let interval: Interval<true>;
   export let zone: string;
   export let showDefaultItem: boolean;
@@ -38,6 +46,7 @@
   export let maxDate: DateTime;
   export let smallestTimeGrain: V1TimeGrain | undefined;
   export let defaultTimeRange: NamedRange | ISODurationString | undefined;
+  export let allowCustomTimeRange = true;
   export let onSelectRange: (range: string, syntax?: boolean) => void;
   export let applyCustomRange: (range: Interval<true>) => void;
 
@@ -46,10 +55,34 @@
   let allTimeAllowed = true;
   let searchComponent: TimeRangeSearch;
   let showPanel = false;
-  let calendarOpen = false;
   let filter = "";
+  let parsedTime: RillTime | undefined = undefined;
+  let showCustomSelector = false;
+
+  let isShortHandSyntax = true;
+
+  $: if (timeString) {
+    try {
+      parsedTime = parseRillTime(timeString);
+    } catch {
+      // no op
+    }
+  }
+
+  $: selectedLabel = timeString && getRangeLabel(timeString);
+
+  $: meta = parsedTime?.getMeta();
+
+  $: canShowEndingControl = parsedTime && selectedLabel !== timeString;
+
+  $: hasCustomSelected = !parsedTime;
 
   $: timeGrainOptions = getAllowedGrains(smallestTimeGrain);
+
+  $: allowedEndingGrains = getAllowedEndingGrains(
+    timeString,
+    smallestTimeGrain,
+  );
 
   $: allOptions = timeGrainOptions.map((grain) => {
     return getTimeRangeOptionsByGrain(grain, smallestTimeGrain);
@@ -71,17 +104,7 @@
     } as TimeGrainOptions,
   );
 
-  let parsedTime: RillTime | undefined = undefined;
-
-  $: isComplete = parsedTime?.isComplete ?? false;
-
-  $: if (timeString) {
-    try {
-      parsedTime = parseRillTime(timeString);
-    } catch {
-      // no op
-    }
-  }
+  $: console.log({ groups });
 
   $: selectedMeta = timeString?.startsWith("P")
     ? LATEST_WINDOW_TIME_RANGES[timeString]
@@ -99,12 +122,6 @@
   function closeMenu() {
     open = false;
   }
-
-  import TimeRangeOptionGroup from "./TimeRangeOptionGroup.svelte";
-
-  import RangeDisplay from "../components/RangeDisplay.svelte";
-
-  const now = DateTime.now().toUTC();
 </script>
 
 <svelte:window
@@ -133,7 +150,11 @@
       data-state={open ? "open" : "closed"}
     >
       {#if timeString}
-        <b class="mr-1 line-clamp-1 flex-none">{getRangeLabel(timeString)}</b>
+        <b class="mr-1 line-clamp-1 flex-none">{selectedLabel}</b>
+      {/if}
+
+      {#if interval.isValid}
+        <RangeDisplay {interval} {grain} />
       {/if}
 
       <span class="flex-none transition-transform" class:-rotate-180={open}>
@@ -147,7 +168,7 @@
     class="p-0 w-fit overflow-hidden flex flex-col"
   >
     <TimeRangeSearch
-      width={showPanel ? 540 : 280}
+      width={showCustomSelector ? 456 : 224}
       bind:this={searchComponent}
       {context}
       onSelectRange={(range, syntax) => {
@@ -156,11 +177,15 @@
       }}
     />
 
-    <div class="flex w-[280px] max-h-fit pb-1" style:height="500px">
+    <div
+      class="flex w-56 max-h-fit"
+      class:!w-[456px]={showCustomSelector}
+      style:height="500px"
+    >
       <div
-        class="flex flex-col w-full overflow-y-auto overflow-x-hidden flex-none pt-1"
+        class="flex flex-col w-56 overflow-y-auto overflow-x-hidden flex-none py-1"
       >
-        <div class="overflow-x-hidden px-1">
+        <div class="overflow-x-hidden">
           {#if showDefaultItem && defaultTimeRange}
             <DropdownMenu.Item
               on:click={() => {
@@ -178,7 +203,6 @@
           <TimeRangeOptionGroup
             {filter}
             {timeString}
-            type="last"
             options={groups.lastN}
             onClick={handleRangeSelect}
           />
@@ -186,7 +210,6 @@
           <TimeRangeOptionGroup
             {filter}
             {timeString}
-            type="this"
             options={groups.this}
             onClick={handleRangeSelect}
           />
@@ -194,30 +217,67 @@
           <TimeRangeOptionGroup
             {filter}
             {timeString}
-            type="ago"
             options={groups.previous}
             onClick={handleRangeSelect}
           />
 
-          {#if allTimeAllowed}
-            <button
-              class="group h-7 px-2 overflow-hidden hover:bg-gray-100 rounded-sm w-full select-none flex items-center"
-              on:click={() => {
-                handleRangeSelect(ALL_TIME_RANGE_ALIAS);
+          {#if allowCustomTimeRange}
+            <TimeRangeOptionGroup
+              {filter}
+              timeString={hasCustomSelected ? "custom" : ""}
+              options={[{ label: "Custom", string: "custom" }]}
+              onClick={() => {
+                showCustomSelector = !showCustomSelector;
               }}
-            >
-              <span class:font-bold={timeString === ALL_TIME_RANGE_ALIAS}>
-                {RILL_TO_LABEL[ALL_TIME_RANGE_ALIAS]}
-              </span>
-            </button>
+            />
+          {/if}
+
+          {#if allTimeAllowed}
+            <div class="w-full h-fit px-1">
+              <button
+                class="group h-7 px-2 overflow-hidden hover:bg-gray-100 rounded-sm w-full select-none flex items-center"
+                on:click={() => {
+                  handleRangeSelect(ALL_TIME_RANGE_ALIAS);
+                }}
+              >
+                <span class:font-bold={timeString === ALL_TIME_RANGE_ALIAS}>
+                  {RILL_TO_LABEL[ALL_TIME_RANGE_ALIAS]}
+                </span>
+              </button>
+            </div>
           {/if}
         </div>
       </div>
+
+      {#if showCustomSelector}
+        <div class="bg-slate-50 border-l p-3 size-full">
+          <CalendarPlusDateInput
+            {firstVisibleMonth}
+            {interval}
+            {zone}
+            {maxDate}
+            {minDate}
+            applyRange={applyCustomRange}
+            closeMenu={() => (open = false)}
+          />
+        </div>
+      {/if}
     </div>
   </Popover.Content>
 </Popover.Root>
 
-<Popover.Root
+{#if isShortHandSyntax && parsedTime}
+  <InControl
+    {parsedTime}
+    {smallestTimeGrain}
+    onSelectEnding={(grain, complete) => {
+      console.log(grain, complete);
+      // onSelectRange(grain);
+    }}
+  />
+{/if}
+
+<!-- <Popover.Root
   bind:open={calendarOpen}
   onOpenChange={(open) => {
     if (open) {
@@ -257,7 +317,7 @@
       closeMenu={() => (calendarOpen = false)}
     />
   </Popover.Content>
-</Popover.Root>
+</Popover.Root> -->
 
 <style>
   /* The wrapper shrinks to the width of its content */

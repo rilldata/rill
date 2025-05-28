@@ -73,7 +73,7 @@
 <style lang="postcss">
   .day {
     @apply font-medium;
-    @apply w-full aspect-[10/9];
+    @apply w-full aspect-square;
     @apply p-0.5 bg-transparent;
     @apply flex items-center justify-center;
     @apply border border-transparent border-l-0 border-r-0;
