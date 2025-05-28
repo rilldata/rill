@@ -10,8 +10,6 @@
   import PercentOfTotal from "../dimension-table/PercentOfTotal.svelte";
   import { SortType } from "../proto-state/derived-types";
   import DimensionCompareMenu from "./DimensionCompareMenu.svelte";
-  import TooltipShortcutContainer from "@rilldata/web-common/components/tooltip/TooltipShortcutContainer.svelte";
-  import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
 
   export let dimensionName: string;
   export let isFetching: boolean;
