@@ -154,7 +154,11 @@
           <span
             ><kbd
               class="px-2 py-1 bg-gray-200 dark:bg-gray-600 rounded font-mono"
-              >{isMac ? "⌘" : "Ctrl"}+C</kbd
+              >{isMac ? "⌘" : "Ctrl"}</kbd
+            >
+            <kbd
+              class="px-2 py-1 bg-gray-200 dark:bg-gray-600 rounded font-mono"
+              >C</kbd
             > to copy</span
           >
         {:else}
