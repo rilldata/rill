@@ -700,22 +700,22 @@ var _ interface {
 	ErrorName() string
 } = GetVersionResponseValidationError{}
 
-// Validate checks the field values on GitStatusRequest with the rules defined
-// in the proto definition for this message. If any rules are violated, the
-// first error encountered is returned, or nil if there are no violations.
-func (m *GitStatusRequest) Validate() error {
+// Validate checks the field values on WatchGitStatusRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *WatchGitStatusRequest) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on GitStatusRequest with the rules
+// ValidateAll checks the field values on WatchGitStatusRequest with the rules
 // defined in the proto definition for this message. If any rules are
 // violated, the result is a list of violation errors wrapped in
-// GitStatusRequestMultiError, or nil if none found.
-func (m *GitStatusRequest) ValidateAll() error {
+// WatchGitStatusRequestMultiError, or nil if none found.
+func (m *WatchGitStatusRequest) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *GitStatusRequest) validate(all bool) error {
+func (m *WatchGitStatusRequest) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -723,19 +723,19 @@ func (m *GitStatusRequest) validate(all bool) error {
 	var errors []error
 
 	if len(errors) > 0 {
-		return GitStatusRequestMultiError(errors)
+		return WatchGitStatusRequestMultiError(errors)
 	}
 
 	return nil
 }
 
-// GitStatusRequestMultiError is an error wrapping multiple validation errors
-// returned by GitStatusRequest.ValidateAll() if the designated constraints
-// aren't met.
-type GitStatusRequestMultiError []error
+// WatchGitStatusRequestMultiError is an error wrapping multiple validation
+// errors returned by WatchGitStatusRequest.ValidateAll() if the designated
+// constraints aren't met.
+type WatchGitStatusRequestMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m GitStatusRequestMultiError) Error() string {
+func (m WatchGitStatusRequestMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -744,11 +744,11 @@ func (m GitStatusRequestMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m GitStatusRequestMultiError) AllErrors() []error { return m }
+func (m WatchGitStatusRequestMultiError) AllErrors() []error { return m }
 
-// GitStatusRequestValidationError is the validation error returned by
-// GitStatusRequest.Validate if the designated constraints aren't met.
-type GitStatusRequestValidationError struct {
+// WatchGitStatusRequestValidationError is the validation error returned by
+// WatchGitStatusRequest.Validate if the designated constraints aren't met.
+type WatchGitStatusRequestValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -756,22 +756,24 @@ type GitStatusRequestValidationError struct {
 }
 
 // Field function returns field value.
-func (e GitStatusRequestValidationError) Field() string { return e.field }
+func (e WatchGitStatusRequestValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e GitStatusRequestValidationError) Reason() string { return e.reason }
+func (e WatchGitStatusRequestValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e GitStatusRequestValidationError) Cause() error { return e.cause }
+func (e WatchGitStatusRequestValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e GitStatusRequestValidationError) Key() bool { return e.key }
+func (e WatchGitStatusRequestValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e GitStatusRequestValidationError) ErrorName() string { return "GitStatusRequestValidationError" }
+func (e WatchGitStatusRequestValidationError) ErrorName() string {
+	return "WatchGitStatusRequestValidationError"
+}
 
 // Error satisfies the builtin error interface
-func (e GitStatusRequestValidationError) Error() string {
+func (e WatchGitStatusRequestValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -783,14 +785,14 @@ func (e GitStatusRequestValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sGitStatusRequest.%s: %s%s",
+		"invalid %sWatchGitStatusRequest.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = GitStatusRequestValidationError{}
+var _ error = WatchGitStatusRequestValidationError{}
 
 var _ interface {
 	Field() string
@@ -798,24 +800,24 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = GitStatusRequestValidationError{}
+} = WatchGitStatusRequestValidationError{}
 
-// Validate checks the field values on GitStatusResponse with the rules defined
-// in the proto definition for this message. If any rules are violated, the
-// first error encountered is returned, or nil if there are no violations.
-func (m *GitStatusResponse) Validate() error {
+// Validate checks the field values on WatchGitStatusResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *WatchGitStatusResponse) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on GitStatusResponse with the rules
+// ValidateAll checks the field values on WatchGitStatusResponse with the rules
 // defined in the proto definition for this message. If any rules are
 // violated, the result is a list of violation errors wrapped in
-// GitStatusResponseMultiError, or nil if none found.
-func (m *GitStatusResponse) ValidateAll() error {
+// WatchGitStatusResponseMultiError, or nil if none found.
+func (m *WatchGitStatusResponse) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *GitStatusResponse) validate(all bool) error {
+func (m *WatchGitStatusResponse) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -830,22 +832,24 @@ func (m *GitStatusResponse) validate(all bool) error {
 
 	// no validation rules for LocalChanges
 
-	// no validation rules for RemoteChanges
+	// no validation rules for LocalCommits
+
+	// no validation rules for RemoteCommits
 
 	if len(errors) > 0 {
-		return GitStatusResponseMultiError(errors)
+		return WatchGitStatusResponseMultiError(errors)
 	}
 
 	return nil
 }
 
-// GitStatusResponseMultiError is an error wrapping multiple validation errors
-// returned by GitStatusResponse.ValidateAll() if the designated constraints
-// aren't met.
-type GitStatusResponseMultiError []error
+// WatchGitStatusResponseMultiError is an error wrapping multiple validation
+// errors returned by WatchGitStatusResponse.ValidateAll() if the designated
+// constraints aren't met.
+type WatchGitStatusResponseMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m GitStatusResponseMultiError) Error() string {
+func (m WatchGitStatusResponseMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -854,11 +858,11 @@ func (m GitStatusResponseMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m GitStatusResponseMultiError) AllErrors() []error { return m }
+func (m WatchGitStatusResponseMultiError) AllErrors() []error { return m }
 
-// GitStatusResponseValidationError is the validation error returned by
-// GitStatusResponse.Validate if the designated constraints aren't met.
-type GitStatusResponseValidationError struct {
+// WatchGitStatusResponseValidationError is the validation error returned by
+// WatchGitStatusResponse.Validate if the designated constraints aren't met.
+type WatchGitStatusResponseValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -866,24 +870,24 @@ type GitStatusResponseValidationError struct {
 }
 
 // Field function returns field value.
-func (e GitStatusResponseValidationError) Field() string { return e.field }
+func (e WatchGitStatusResponseValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e GitStatusResponseValidationError) Reason() string { return e.reason }
+func (e WatchGitStatusResponseValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e GitStatusResponseValidationError) Cause() error { return e.cause }
+func (e WatchGitStatusResponseValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e GitStatusResponseValidationError) Key() bool { return e.key }
+func (e WatchGitStatusResponseValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e GitStatusResponseValidationError) ErrorName() string {
-	return "GitStatusResponseValidationError"
+func (e WatchGitStatusResponseValidationError) ErrorName() string {
+	return "WatchGitStatusResponseValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e GitStatusResponseValidationError) Error() string {
+func (e WatchGitStatusResponseValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -895,14 +899,14 @@ func (e GitStatusResponseValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sGitStatusResponse.%s: %s%s",
+		"invalid %sWatchGitStatusResponse.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = GitStatusResponseValidationError{}
+var _ error = WatchGitStatusResponseValidationError{}
 
 var _ interface {
 	Field() string
@@ -910,7 +914,7 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = GitStatusResponseValidationError{}
+} = WatchGitStatusResponseValidationError{}
 
 // Validate checks the field values on GitPullRequest with the rules defined in
 // the proto definition for this message. If any rules are violated, the first

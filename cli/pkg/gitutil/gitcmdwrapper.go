@@ -15,12 +15,13 @@ import (
 
 type GitStatus struct {
 	Branch        string
-	LocalChanges  bool
-	RemoteChanges bool
+	LocalChanges  bool // true if there are local changes (staged, unstaged, or untracked)
+	LocalCommits  int
+	RemoteCommits int
 }
 
 func (s *GitStatus) Equal(v *GitStatus) bool {
-	return s.Branch == v.Branch && s.LocalChanges == v.LocalChanges && s.RemoteChanges == v.RemoteChanges
+	return s.Branch == v.Branch && s.LocalCommits == v.LocalCommits && s.RemoteCommits == v.RemoteCommits && s.LocalChanges == v.LocalChanges
 }
 
 func RunGitStatus(path string) (*GitStatus, error) {
@@ -54,17 +55,13 @@ func RunGitStatus(path string) (*GitStatus, error) {
 			if err != nil {
 				return nil, err
 			}
-			if ahead != 0 {
-				status.LocalChanges = true
-			}
+			status.LocalCommits = ahead
 
 			behind, err := strconv.Atoi(s[3])
 			if err != nil {
 				return nil, err
 			}
-			if behind != 0 {
-				status.RemoteChanges = true
-			}
+			status.RemoteCommits = behind
 		default:
 			// any non header line means staged, unstaged or untracked changes
 			status.LocalChanges = true

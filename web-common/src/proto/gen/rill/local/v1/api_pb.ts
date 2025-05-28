@@ -290,40 +290,40 @@ export class GetVersionResponse extends Message<GetVersionResponse> {
 }
 
 /**
- * @generated from message rill.local.v1.GitStatusRequest
+ * @generated from message rill.local.v1.WatchGitStatusRequest
  */
-export class GitStatusRequest extends Message<GitStatusRequest> {
-  constructor(data?: PartialMessage<GitStatusRequest>) {
+export class WatchGitStatusRequest extends Message<WatchGitStatusRequest> {
+  constructor(data?: PartialMessage<WatchGitStatusRequest>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.local.v1.GitStatusRequest";
+  static readonly typeName = "rill.local.v1.WatchGitStatusRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GitStatusRequest {
-    return new GitStatusRequest().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): WatchGitStatusRequest {
+    return new WatchGitStatusRequest().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GitStatusRequest {
-    return new GitStatusRequest().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): WatchGitStatusRequest {
+    return new WatchGitStatusRequest().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GitStatusRequest {
-    return new GitStatusRequest().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): WatchGitStatusRequest {
+    return new WatchGitStatusRequest().fromJsonString(jsonString, options);
   }
 
-  static equals(a: GitStatusRequest | PlainMessage<GitStatusRequest> | undefined, b: GitStatusRequest | PlainMessage<GitStatusRequest> | undefined): boolean {
-    return proto3.util.equals(GitStatusRequest, a, b);
+  static equals(a: WatchGitStatusRequest | PlainMessage<WatchGitStatusRequest> | undefined, b: WatchGitStatusRequest | PlainMessage<WatchGitStatusRequest> | undefined): boolean {
+    return proto3.util.equals(WatchGitStatusRequest, a, b);
   }
 }
 
 /**
- * @generated from message rill.local.v1.GitStatusResponse
+ * @generated from message rill.local.v1.WatchGitStatusResponse
  */
-export class GitStatusResponse extends Message<GitStatusResponse> {
+export class WatchGitStatusResponse extends Message<WatchGitStatusResponse> {
   /**
    * The current branch of the git repo.
    *
@@ -346,50 +346,56 @@ export class GitStatusResponse extends Message<GitStatusResponse> {
   managedGit = false;
 
   /**
-   * local_changes returns true if there are changes not pushed to remote yet.
-   * The changes include any committed, staged, or unstaged changes.
-   * It does not include untracked files.
+   * local_changes returns true if there are any staged, unstaged, or untracked changes in the local git repo.
    *
    * @generated from field: bool local_changes = 4;
    */
   localChanges = false;
 
   /**
-   * remote_changes returns true if there are remote commits not pulled yet.
+   * local_commits returns number of local commits that are not pushed to the remote git repo.
    *
-   * @generated from field: bool remote_changes = 5;
+   * @generated from field: int32 local_commits = 5;
    */
-  remoteChanges = false;
+  localCommits = 0;
 
-  constructor(data?: PartialMessage<GitStatusResponse>) {
+  /**
+   * remote_commits returns number of remote commits not pulled yet.
+   *
+   * @generated from field: int32 remote_commits = 6;
+   */
+  remoteCommits = 0;
+
+  constructor(data?: PartialMessage<WatchGitStatusResponse>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.local.v1.GitStatusResponse";
+  static readonly typeName = "rill.local.v1.WatchGitStatusResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "github_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "managed_git", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 4, name: "local_changes", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 5, name: "remote_changes", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 5, name: "local_commits", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 6, name: "remote_commits", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GitStatusResponse {
-    return new GitStatusResponse().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): WatchGitStatusResponse {
+    return new WatchGitStatusResponse().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GitStatusResponse {
-    return new GitStatusResponse().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): WatchGitStatusResponse {
+    return new WatchGitStatusResponse().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GitStatusResponse {
-    return new GitStatusResponse().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): WatchGitStatusResponse {
+    return new WatchGitStatusResponse().fromJsonString(jsonString, options);
   }
 
-  static equals(a: GitStatusResponse | PlainMessage<GitStatusResponse> | undefined, b: GitStatusResponse | PlainMessage<GitStatusResponse> | undefined): boolean {
-    return proto3.util.equals(GitStatusResponse, a, b);
+  static equals(a: WatchGitStatusResponse | PlainMessage<WatchGitStatusResponse> | undefined, b: WatchGitStatusResponse | PlainMessage<WatchGitStatusResponse> | undefined): boolean {
+    return proto3.util.equals(WatchGitStatusResponse, a, b);
   }
 }
 

@@ -10,7 +10,7 @@ import (
 	"go.uber.org/zap"
 )
 
-func (s *Server) WatchGitStatus(ctx context.Context, r *connect.Request[localv1.GitStatusRequest], stream *connect.ServerStream[localv1.GitStatusResponse]) error {
+func (s *Server) WatchGitStatus(ctx context.Context, r *connect.Request[localv1.WatchGitStatusRequest], stream *connect.ServerStream[localv1.WatchGitStatusResponse]) error {
 	// Get authenticated admin client
 	if !s.app.ch.IsAuthenticated() {
 		return errors.New("must authenticate before performing this action")
@@ -36,12 +36,13 @@ func (s *Server) WatchGitStatus(ctx context.Context, r *connect.Request[localv1.
 	}
 
 	return gitutil.PollGitStatus(ctx, s.app.ProjectPath, remote, func(gs *gitutil.GitStatus) {
-		err = stream.Send(&localv1.GitStatusResponse{
+		err = stream.Send(&localv1.WatchGitStatusResponse{
 			Branch:        gs.Branch,
 			GithubUrl:     config.Remote,
 			ManagedGit:    project.ManagedGitId != "",
 			LocalChanges:  gs.LocalChanges,
-			RemoteChanges: gs.RemoteChanges,
+			LocalCommits:  int32(gs.LocalCommits),
+			RemoteCommits: int32(gs.RemoteCommits),
 		})
 		if err != nil {
 			s.logger.Error("failed to send git status", zap.Error(err))

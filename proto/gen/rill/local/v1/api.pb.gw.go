@@ -110,7 +110,7 @@ func local_request_LocalService_GetVersion_0(ctx context.Context, marshaler runt
 }
 
 func request_LocalService_WatchGitStatus_0(ctx context.Context, marshaler runtime.Marshaler, client LocalServiceClient, req *http.Request, pathParams map[string]string) (LocalService_WatchGitStatusClient, runtime.ServerMetadata, error) {
-	var protoReq GitStatusRequest
+	var protoReq WatchGitStatusRequest
 	var metadata runtime.ServerMetadata
 
 	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && err != io.EOF {

@@ -16,7 +16,7 @@ service LocalService {
   rpc GetVersion(GetVersionRequest) returns (GetVersionResponse) {}
 
   // WatchGitStatus watches for status changes in the git repo.
-  rpc WatchGitStatus(GitStatusRequest) returns (stream GitStatusResponse) {}
+  rpc WatchGitStatus(WatchGitStatusRequest) returns (stream WatchGitStatusResponse) {}
 
   // GitPull fetches the latest changes from the remote git repo equivalent to `git pull` command.
   // If there are any merge conflicts the pull is aborted.
@@ -87,21 +87,21 @@ message GetVersionResponse {
   string latest = 2;
 }
 
-message GitStatusRequest {}
+message WatchGitStatusRequest {}
 
-message GitStatusResponse {
+message WatchGitStatusResponse {
   // The current branch of the git repo.
 	string branch = 1;
   // The remote url of the git repo.
 	string github_url = 2;
   // If the repo is managed by Rill.
 	bool managed_git = 3;
-	// local_changes returns true if there are changes not pushed to remote yet.
-  // The changes include any committed, staged, or unstaged changes.
-  // It does not include untracked files.
-	bool local_changes = 4;
-	// remote_changes returns true if there are remote commits not pulled yet.
-	bool remote_changes = 5;
+  // local_changes returns true if there are any staged, unstaged, or untracked changes in the local git repo.
+  bool local_changes = 4;
+	// local_commits returns number of local commits that are not pushed to the remote git repo.
+	int32 local_commits = 5;
+	// remote_commits returns number of remote commits not pulled yet.
+	int32 remote_commits = 6;
 }
 
 message GitPullRequest {
