@@ -5,6 +5,7 @@
   import { copyToClipboard } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
   import { cellInspectorStore } from "../features/dashboards/stores/cell-inspector-store";
   import { cubicOut } from "svelte/easing";
+  import Kbd from "./Kbd.svelte";
 
   export let value: any = "";
   export let isOpen: boolean = false;
@@ -151,23 +152,17 @@
         class="flex justify-between p-2 border-t border-gray-200 gap-1 text-[11px] text-gray-500"
       >
         {#if !copied}
-          <span
-            ><kbd
-              class="px-2 py-1 bg-gray-200 dark:bg-gray-600 rounded font-mono"
-              >{isMac ? "⌘" : "Ctrl"}</kbd
-            >
-            <kbd
-              class="px-2 py-1 bg-gray-200 dark:bg-gray-600 rounded font-mono"
-              >C</kbd
-            > to copy</span
+          <span>
+            <Kbd>{isMac ? "⌘" : "Ctrl"}</Kbd>
+            <Kbd>C</Kbd>
+            to copy</span
           >
         {:else}
           <span>Copied</span>
         {/if}
-        <span
-          ><kbd class="px-2 py-1 bg-gray-200 dark:bg-gray-600 rounded font-mono"
-            >Space</kbd
-          > to close</span
+        <span>
+          <Kbd>Space</Kbd>
+          to close</span
         >
       </div>
     </div>
