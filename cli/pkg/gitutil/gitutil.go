@@ -335,18 +335,22 @@ func Clone(ctx context.Context, path string, c *Config) (*git.Repository, error)
 // It calls the provided function with the latest status whenever it changes.
 // Ideally the fetch should run externally so that multiple calls to PollGitStatus do not call duplicate fetches.
 // But it is fine to assume that the local UI will only call this once per project.
-func PollGitStatus(ctx context.Context, path, remote string, fn func(*GitStatus)) error {
-	var lastStatus *GitStatus
+func PollGitStatus(ctx context.Context, path, remote string, fn func(GitStatus)) error {
+	var lastStatus GitStatus
 	fetchAndCheckStatus := func() error {
 		err := GitFetch(ctx, path, remote)
 		if err != nil {
 			return err
 		}
-		lastStatus, err = RunGitStatus(path)
+		status, err := RunGitStatus(path)
 		if err != nil {
 			return err
 		}
-		fn(lastStatus)
+
+		if !lastStatus.Equal(status) {
+			fn(status)
+		}
+		lastStatus = status
 		return nil
 	}
 
@@ -358,20 +362,11 @@ func PollGitStatus(ctx context.Context, path, remote string, fn func(*GitStatus)
 
 	for {
 		select {
-		case <-time.After(time.Minute):
-			err := GitFetch(ctx, path, remote)
+		case <-time.After(time.Second * 5):
+			err = fetchAndCheckStatus()
 			if err != nil {
 				return err
 			}
-			st, err := RunGitStatus(path)
-			if err != nil {
-				return err
-			}
-			if lastStatus.Equal(st) {
-				continue
-			}
-			lastStatus = st
-			fn(st)
 		case <-ctx.Done():
 			return ctx.Err()
 		}

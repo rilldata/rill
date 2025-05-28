@@ -35,7 +35,7 @@ func (s *Server) WatchGitStatus(ctx context.Context, r *connect.Request[localv1.
 		return err
 	}
 
-	return gitutil.PollGitStatus(ctx, s.app.ProjectPath, remote, func(gs *gitutil.GitStatus) {
+	return gitutil.PollGitSt atus(ctx, s.app.ProjectPath, remote, func(gs gitutil.GitStatus) {
 		err = stream.Send(&localv1.WatchGitStatusResponse{
 			Branch:        gs.Branch,
 			GithubUrl:     config.Remote,
@@ -84,8 +84,7 @@ func (s *Server) GitPush(ctx context.Context, r *connect.Request[localv1.GitPush
 		return nil, err
 	}
 
-	helper := s.app.ch.GitHelper(project.OrgName, project.Name, s.app.ProjectPath)
-	config, err := helper.GitConfig(ctx)
+	config, err := s.app.ch.GitHelper(project.OrgName, project.Name, s.app.ProjectPath).GitConfig(ctx)
 	if err != nil {
 		return nil, err
 	}

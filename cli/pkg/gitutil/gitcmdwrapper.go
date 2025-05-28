@@ -20,15 +20,15 @@ type GitStatus struct {
 	RemoteCommits int
 }
 
-func (s *GitStatus) Equal(v *GitStatus) bool {
+func (s GitStatus) Equal(v GitStatus) bool {
 	return s.Branch == v.Branch && s.LocalCommits == v.LocalCommits && s.RemoteCommits == v.RemoteCommits && s.LocalChanges == v.LocalChanges
 }
 
-func RunGitStatus(path string) (*GitStatus, error) {
+func RunGitStatus(path string) (GitStatus, error) {
 	cmd := exec.Command("git", "-C", path, "status", "--porcelain=v2", "--branch")
 	data, err := cmd.CombinedOutput()
 	if err != nil {
-		return nil, err
+		return GitStatus{}, err
 	}
 
 	// parse the output
@@ -38,7 +38,7 @@ func RunGitStatus(path string) (*GitStatus, error) {
 	// # branch.upstream origin/mgd_repo_poc
 	// # branch.ab +0 -0
 	// lines describing the status of the working tree
-	status := &GitStatus{}
+	status := GitStatus{}
 	lines := strings.SplitSeq(strings.TrimSpace(string(data)), "\n")
 	for line := range lines {
 		switch {
@@ -53,13 +53,16 @@ func RunGitStatus(path string) (*GitStatus, error) {
 
 			ahead, err := strconv.Atoi(s[2])
 			if err != nil {
-				return nil, err
+				return status, err
 			}
 			status.LocalCommits = ahead
 
 			behind, err := strconv.Atoi(s[3])
 			if err != nil {
-				return nil, err
+				return status, err
+			}
+			if behind < 0 {
+				behind = 0 - behind // git status reports negative behind if there are remote commits
 			}
 			status.RemoteCommits = behind
 		default:
