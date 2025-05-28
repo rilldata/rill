@@ -50,13 +50,6 @@
   );
 
   $: selectableGroups = [
-    <SearchableFilterSelectableGroup>{
-      name: "DIMENSIONS",
-      items: $dimensions?.map((d) => ({
-        name: d.id,
-        label: d.title,
-      })),
-    },
     ...(zone === "columns"
       ? [
           <SearchableFilterSelectableGroup>{
@@ -68,6 +61,13 @@
           },
         ]
       : []),
+    <SearchableFilterSelectableGroup>{
+      name: "DIMENSIONS",
+      items: $dimensions?.map((d) => ({
+        name: d.id,
+        label: d.title,
+      })),
+    },
     <SearchableFilterSelectableGroup>{
       name: "TIME",
       items: timeGrainOptions.map((tgo) => ({
