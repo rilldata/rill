@@ -451,15 +451,8 @@ export function getRangeLabel(range: string): string {
 
   try {
     const rt = parseRillTime(range);
-    console.log("Getting label in new-time-controls.ts");
 
-    console.log(rt);
     const label = rt.getLabel();
-
-    console.log("what");
-    if (rt.isComplete) {
-      return label + ", complete";
-    }
 
     return label;
   } catch (e) {

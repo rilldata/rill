@@ -21,6 +21,8 @@ type TimeGrainAlias =
 
 export const grainAliasRegex = /(ms|s|S|m|h|H|d|D|w|W|M|q|Q|y|Y)/;
 
+const GRAINS = ["Y", "Q", "M", "W", "d", "h", "m", "s"] as const;
+
 export function getGrainAliasFromString(
   range: string,
 ): TimeGrainAlias | undefined {
@@ -216,9 +218,27 @@ export function getLargerGrainsFromOrder(order: Order) {
   return allowedGrains.slice(order + 1);
 }
 
-export function getSmallerGrainsFromOrders(order: Order, minOrder = 0) {
-  console.log({ order, minOrder });
-  return allowedGrains.slice(minOrder, order + 1);
+export function getToDateExcludeOptions(
+  referenceTimeGrain: V1TimeGrain,
+  smallestTimeGrain?: V1TimeGrain,
+) {
+  const orderOfReferenceTimeGrain = getGrainOrder(referenceTimeGrain);
+  const orderOfSmallestTimeGrain = getGrainOrder(smallestTimeGrain);
+
+  if (
+    orderOfReferenceTimeGrain === undefined ||
+    orderOfSmallestTimeGrain === undefined
+  ) {
+    return [];
+  }
+  return getSmallerGrainsFromOrders(
+    orderOfReferenceTimeGrain,
+    orderOfSmallestTimeGrain,
+  );
+}
+
+export function getSmallerGrainsFromOrders(maxOrder: Order, minOrder = 0) {
+  return allowedGrains.slice(minOrder, maxOrder + 1);
 }
 
 export function getLargerGrains(grain: V1TimeGrain | TimeGrainAlias) {

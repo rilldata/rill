@@ -1,88 +1,102 @@
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import {
-  getAllowedGrains,
-  getGrainOrder,
+  getToDateExcludeOptions,
   V1TimeGrainToAlias,
+  V1TimeGrainToDateTimeUnit,
 } from "@rilldata/web-common/lib/time/new-grains";
-import type { RillTime } from "@rilldata/web-common/features/dashboards/url-state/time-ranges/RillTime";
 import { parseRillTime } from "@rilldata/web-common/features/dashboards/url-state/time-ranges/parser";
 
 const defaultLastNValues: Record<V1TimeGrain, number[]> = {
   [V1TimeGrain.TIME_GRAIN_MILLISECOND]: [],
   [V1TimeGrain.TIME_GRAIN_SECOND]: [],
-  [V1TimeGrain.TIME_GRAIN_MINUTE]: [15, 30, 60],
+  [V1TimeGrain.TIME_GRAIN_MINUTE]: [30, 60, 90],
   [V1TimeGrain.TIME_GRAIN_HOUR]: [3, 6, 12, 24],
-  [V1TimeGrain.TIME_GRAIN_DAY]: [2, 7, 14, 30],
-  [V1TimeGrain.TIME_GRAIN_WEEK]: [4],
-  [V1TimeGrain.TIME_GRAIN_MONTH]: [3, 6],
+  [V1TimeGrain.TIME_GRAIN_DAY]: [3, 7, 14, 30],
+  [V1TimeGrain.TIME_GRAIN_WEEK]: [],
+  [V1TimeGrain.TIME_GRAIN_MONTH]: [3, 6, 12],
   [V1TimeGrain.TIME_GRAIN_QUARTER]: [],
-  [V1TimeGrain.TIME_GRAIN_YEAR]: [1, 2, 5],
+  [V1TimeGrain.TIME_GRAIN_YEAR]: [2, 5],
   [V1TimeGrain.TIME_GRAIN_UNSPECIFIED]: [],
 };
+
+export interface TimeRangeMenuOption {
+  string: string;
+  label: string;
+  // alts: TimeRangeAlt[];
+}
+
+export interface TimeRangeAlt {
+  string: string;
+  label: string;
+}
 
 export interface TimeGrainOptions {
   lastN: TimeRangeMenuOption[];
   previous: TimeRangeMenuOption[];
   this: TimeRangeMenuOption[];
-  // grainBy: TimeRangeMenuOption[];
 }
 
 export function getTimeRangeOptionsByGrain(
   grain: V1TimeGrain,
-  smallestTimeGrain: V1TimeGrain = V1TimeGrain.TIME_GRAIN_SECOND,
+  smallestTimeGrain: V1TimeGrain,
 ): TimeGrainOptions {
   const primaryGrainAlias = V1TimeGrainToAlias[grain];
-  const grainOrder = getGrainOrder(grain);
+  const primaryGrainUnit = V1TimeGrainToDateTimeUnit[grain];
+  // const allowedGrains = getAllowedGrains(smallestTimeGrain);
 
-  const allowedGrains = getAllowedGrains(smallestTimeGrain);
-  const smallerGrains = allowedGrains.filter(
-    (g) => getGrainOrder(g) < grainOrder,
-  );
-
-  const lastN = defaultLastNValues[grain].map((v) => {
-    const timeRange = `-${v}${primaryGrainAlias}^ to ${primaryGrainAlias}$`;
+  const lastN: TimeRangeMenuOption[] = defaultLastNValues[grain].map((v) => {
+    const timeRange = `-${v}${primaryGrainAlias}$ to ${primaryGrainAlias}$`;
     const parsed = parseRillTime(timeRange);
     return {
       string: timeRange,
-      parsed,
+      label: parsed.getLabel(),
     };
   });
 
-  const previous = Array.from({ length: 1 }, (_, i) => {
-    const timeRange = `-${i + 1}${primaryGrainAlias}^ to ${primaryGrainAlias}$`;
+  const previous: TimeRangeMenuOption[] = Array.from({ length: 1 }, (_, i) => {
+    const timeRange = `-${i + 1}${primaryGrainAlias}^ to ${primaryGrainAlias}^`;
     const parsed = parseRillTime(timeRange);
 
     return {
       string: timeRange,
-      parsed,
+      label: parsed.getLabel(),
     };
   });
 
-  // const grainBy = smallerGrains.map((g) => {
-  //   const secondaryGrainAlias = V1TimeGrainToAlias[g];
-  //   const timeRange = `${primaryGrainAlias}T${secondaryGrainAlias}~`;
-  //   const parsed = parseRillTime(timeRange);
+  const allowedGrains = getToDateExcludeOptions(grain, smallestTimeGrain);
 
-  //   return {
-  //     string: timeRange,
-  //     parsed,
-  //   };
-  // });
+  if (grain === V1TimeGrain.TIME_GRAIN_MINUTE) {
+    return {
+      lastN,
+      this: [],
+      previous: [],
+    };
+  }
 
+  const thisOption = [
+    {
+      string: `${primaryGrainAlias}!`,
+      label: parseRillTime(`${primaryGrainAlias}!`).getLabel(),
+      // alts: allowedGrains.map((g) => {
+      //   if (g === grain) {
+      //     return {
+      //       string: `${primaryGrainAlias}^ to ${primaryGrainAlias}$`,
+      //       label: `in full`,
+      //     };
+      //   }
+
+      //   const grainAlias = V1TimeGrainToAlias[g];
+      //   const unit = V1TimeGrainToDateTimeUnit[g];
+      //   return {
+      //     string: `${primaryGrainAlias}^ to ${grainAlias}^`,
+      //     label: `excluding this ${unit}`,
+      //   };
+      // }),
+    },
+  ];
   return {
     lastN,
-    this: [
-      {
-        string: `${primaryGrainAlias}!`,
-        parsed: parseRillTime(`${primaryGrainAlias}!`),
-      },
-    ],
+    this: thisOption,
     previous,
-    // grainBy,
   };
-}
-
-export interface TimeRangeMenuOption {
-  string: string;
-  parsed: RillTime;
 }

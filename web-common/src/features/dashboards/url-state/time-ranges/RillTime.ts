@@ -1,9 +1,16 @@
 import { DateTime } from "luxon";
 import type { DateObjectUnits } from "luxon/src/datetime";
 import { grainAliasToDateTimeUnit } from "@rilldata/web-common/lib/time/new-grains";
+import type { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 
 const absTimeRegex =
   /(?<year>\d{4})(-(?<month>\d{2})(-(?<day>\d{2})(T(?<hour>\d{2})(:(?<minute>\d{2})(:(?<second>\d{2})Z)?)?)?)?)?/;
+
+export interface RillTimeMeta {
+  type: "lastN" | "toDate" | "other";
+  grain?: V1TimeGrain;
+  integer?: number;
+}
 
 export class RillTime {
   public timeRange: string;
@@ -26,9 +33,12 @@ export class RillTime {
   }
 
   public getLabel() {
-    console.log("GETTING LABEL");
     const [label, supported] = this.interval.getLabel();
     return capitalizeFirstChar(supported ? label : this.timeRange);
+  }
+
+  public getMeta() {
+    return this.interval.getMeta();
   }
 
   public toString() {
@@ -40,6 +50,7 @@ interface RillTimeInterval {
   includesFuture: boolean;
 
   getLabel(): [label: string, supported: boolean];
+  getMeta(): RillTimeMeta;
 }
 
 export class RillTimeAnchoredDurationInterval implements RillTimeInterval {
@@ -58,6 +69,10 @@ export class RillTimeAnchoredDurationInterval implements RillTimeInterval {
   public getLabel(): [label: string, supported: boolean] {
     return ["", false];
   }
+
+  public getMeta(): RillTimeMeta {
+    return { type: "other" };
+  }
 }
 
 export class RillTimeOrdinalInterval implements RillTimeInterval {
@@ -65,6 +80,10 @@ export class RillTimeOrdinalInterval implements RillTimeInterval {
 
   public getLabel(): [label: string, supported: boolean] {
     return ["", false];
+  }
+
+  public getMeta(): RillTimeMeta {
+    return { type: "other" };
   }
 }
 
@@ -83,6 +102,24 @@ export class RillTimeStartEndInterval implements RillTimeInterval {
       !(this.start instanceof RillGrainPointInTime) ||
       !(this.end instanceof RillGrainPointInTime)
     ) {
+      if (
+        this.start instanceof RillGrainPointInTime &&
+        typeof this.end === "string"
+      ) {
+        if (this.end === "latest" || this.end === "watermark") {
+          const start = this.start.getSingleGrainAndNum();
+          if (!start) return ["", false];
+          const numDiff = Math.abs(start.offset);
+
+          const grainPart = grainAliasToDateTimeUnit(start.grain as any);
+          const grainSuffix = numDiff > 1 ? "s" : "";
+          const grainPrefix = numDiff ? numDiff + " " : "";
+          const grainLabel = `${grainPrefix}${grainPart}${grainSuffix}`;
+
+          return [`last ${grainLabel}`, true];
+        }
+      }
+
       return ["", false];
     }
 
@@ -124,6 +161,73 @@ export class RillTimeStartEndInterval implements RillTimeInterval {
 
     return ["", false];
   }
+
+  public getMeta(): RillTimeMeta {
+    if (
+      !(this.start instanceof RillGrainPointInTime) ||
+      !(this.end instanceof RillGrainPointInTime)
+    ) {
+      if (
+        this.start instanceof RillGrainPointInTime &&
+        typeof this.end === "string"
+      ) {
+        if (
+          this.end === "latest" ||
+          this.end === "watermark" ||
+          this.end === "now"
+        ) {
+          const start = this.start.getSingleGrainAndNum();
+          if (!start) return { type: "other" };
+          const numDiff = Math.abs(start.offset);
+
+          return {
+            type: "lastN",
+            grain: start.grain as V1TimeGrain,
+            integer: numDiff,
+          };
+        }
+      }
+
+      return { type: "other" };
+    }
+
+    const start = this.start.getSingleGrainAndNum();
+    const end = this.end.getSingleGrainAndNum();
+    if (!start || !end) return { type: "other" };
+
+    const numDiff = Math.abs(start.offset - end.offset);
+    if (start.grain !== end.grain) {
+      if (numDiff > 1) {
+        return { type: "other" };
+      }
+
+      return { type: "other" };
+    }
+
+    if (start.offset === 0 || start.offset === 1) {
+      if (numDiff === 1) {
+        if (start.offset === 0) {
+          return { type: "toDate", grain: start.grain as V1TimeGrain };
+        }
+      }
+      return { type: "other" };
+    }
+
+    if (end.offset === 0 || end.offset === 1) {
+      if (numDiff === 1) {
+        if (end.offset === 0) {
+          return { type: "toDate", grain: start.grain as V1TimeGrain };
+        }
+      }
+      return {
+        type: "lastN",
+        grain: start.grain as V1TimeGrain,
+        integer: numDiff,
+      };
+    }
+
+    return { type: "other" };
+  }
 }
 
 export class RillGrainToInterval implements RillTimeInterval {
@@ -151,6 +255,17 @@ export class RillGrainToInterval implements RillTimeInterval {
       return ["", true];
     }
   }
+
+  public getMeta(): RillTimeMeta {
+    const grainAndNum = this.point.getSingleGrainAndNum();
+    if (!grainAndNum) return { type: "other" };
+
+    return {
+      type: "lastN",
+      grain: grainAndNum.grain as V1TimeGrain,
+      integer: Math.abs(grainAndNum.offset),
+    };
+  }
 }
 
 export class RillIsoInterval implements RillTimeInterval {
@@ -158,6 +273,10 @@ export class RillIsoInterval implements RillTimeInterval {
 
   public getLabel(): [label: string, supported: boolean] {
     return ["", false];
+  }
+
+  public getMeta(): RillTimeMeta {
+    return { type: "other" };
   }
 }
 

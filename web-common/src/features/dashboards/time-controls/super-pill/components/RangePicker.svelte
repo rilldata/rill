@@ -93,9 +93,8 @@
           onSelectCustomOption={() => (showSelector = !showSelector)}
         />
       </div>
-
       {#if showSelector}
-        <div class="bg-slate-50 border-l p-3">
+        <div class="bg-slate-50 border-l flex flex-col w-64 p-3">
           <CalendarPlusDateInput
             {firstVisibleMonth}
             {interval}
