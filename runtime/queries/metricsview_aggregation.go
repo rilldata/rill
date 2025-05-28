@@ -158,12 +158,12 @@ func (q *MetricsViewAggregation) Export(ctx context.Context, rt *runtime.Runtime
 		return fmt.Errorf("unsupported format: %s", opts.Format.String())
 	}
 
-	headerMetadata, err := generateHeaderMetadata(opts, qry)
+	headers, err := q.generateExportHeaders(ctx, rt, instanceID, opts, qry)
 	if err != nil {
 		return err
 	}
 
-	path, err := e.Export(ctx, qry, nil, format, drivers.FileHeaderMetaData(headerMetadata))
+	path, err := e.Export(ctx, qry, nil, format, headers)
 	if err != nil {
 		return err
 	}
@@ -186,55 +186,6 @@ func (q *MetricsViewAggregation) Export(ctx context.Context, rt *runtime.Runtime
 	}
 
 	return nil
-}
-
-func generateHeaderMetadata(opts *runtime.ExportOptions, qry *metricsview.Query) ([]string, error) {
-	var headerMetadata []string
-	if opts.IncludeHeader {
-		expStr, err := metricsview.ExpressionToExportString(qry.Where)
-		if err != nil {
-			return nil, err
-		}
-		// Determine Line 1
-		var line1 string
-		// DashboardURL is empty that means user of report is external user so orgazation and project is added to header
-		if opts.DashboardURL != "" {
-			parts := []string{}
-			if opts.Organization != "" {
-				parts = append(parts, opts.Organization)
-			}
-			if opts.Project != "" {
-				parts = append(parts, opts.Project)
-			}
-			if opts.Dashboard != "" {
-				parts = append(parts, opts.Dashboard)
-			}
-			if len(parts) > 0 {
-				line1 = fmt.Sprintf("Report by Rill Data - %s", strings.Join(parts, " / "))
-			} else {
-				line1 = "Report by Rill Data"
-			}
-		} else if opts.Dashboard != "" {
-			line1 = fmt.Sprintf("Report by Rill Data - %s", opts.Dashboard)
-		} else {
-			line1 = "Report by Rill Data"
-		}
-
-		// Always present lines
-		headerMetadata = append(headerMetadata,
-			line1,
-			fmt.Sprintf("Date range: %s to %s", qry.TimeRange.Start, qry.TimeRange.End),
-			fmt.Sprintf("Filters: %s", expStr))
-
-		// add dashboard URL
-		if opts.DashboardURL != "" {
-			headerMetadata = append(headerMetadata, fmt.Sprintf("Go to dashboard: %s", opts.DashboardURL))
-		}
-
-		// Always add blank line at end
-		headerMetadata = append(headerMetadata, "")
-	}
-	return headerMetadata, nil
 }
 
 func ResolveTimestampResult(ctx context.Context, rt *runtime.Runtime, instanceID, metricsViewName string, security *runtime.SecurityClaims, priority int) (metricsview.TimestampsResult, error) {
@@ -470,6 +421,62 @@ func (q *MetricsViewAggregation) rewriteToMetricsViewQuery(export bool) (*metric
 	qry.Rows = q.Rows
 
 	return qry, nil
+}
+
+func (q *MetricsViewAggregation) generateExportHeaders(ctx context.Context, rt *runtime.Runtime, instanceID string, opts *runtime.ExportOptions, qry *metricsview.Query) ([]string, error) {
+	if !opts.IncludeHeader {
+		return nil, nil
+	}
+
+	// Get org and project name from instance annotations.
+	var org, project string
+	inst, err := rt.Instance(ctx, instanceID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get instance: %w", err)
+	}
+	if inst.Annotations != nil {
+		org = inst.Annotations["organization_name"]
+		project = inst.Annotations["project_name"]
+	}
+
+	var headers []string
+
+	// Build title
+	var parts []string
+	if org != "" && project != "" {
+		parts = append(parts, org, project)
+	}
+	if opts.OriginDashboard != nil {
+		parts = append(parts, opts.OriginDashboard.Name)
+	}
+	title := "Report by Rill Data"
+	if len(parts) > 0 {
+		title += " – " + strings.Join(parts, " / ")
+	}
+	headers = append(headers, title)
+
+	// Build date range
+	if !qry.TimeRange.Start.IsZero() || !qry.TimeRange.End.IsZero() {
+		timeRange := fmt.Sprintf("Date range: %s to %s", qry.TimeRange.Start.Format(time.RFC3339), qry.TimeRange.End.Format(time.RFC3339))
+		headers = append(headers, timeRange)
+	}
+
+	// Build filters
+	expStr, err := metricsview.ExpressionToExport(qry.Where)
+	if err != nil {
+		return nil, err
+	}
+	headers = append(headers, fmt.Sprintf("Filters: %s", expStr))
+
+	// Add URL to dashboard
+	if opts.OriginURL != "" {
+		headers = append(headers, fmt.Sprintf("Go to dashboard: %s", opts.OriginURL))
+	}
+
+	// Always add blank line at end
+	headers = append(headers, "")
+
+	return headers, nil
 }
 
 func metricViewExpression(expr *runtimev1.Expression, sql string) (*metricsview.Expression, error) {
