@@ -153,6 +153,32 @@ describe("rill time", () => {
         undefined,
         undefined,
       ],
+
+      // Ordinal point in time variations
+      [
+        "M^ to W3^ of M",
+        "M^ to W3^ of M",
+        true,
+        V1TimeGrain.TIME_GRAIN_WEEK,
+        undefined,
+        undefined,
+      ],
+      [
+        "W1^ of M to M$",
+        "W1^ of M to M$",
+        false,
+        V1TimeGrain.TIME_GRAIN_WEEK,
+        undefined,
+        undefined,
+      ],
+      [
+        "W1^ of M to W3^ of M",
+        "W1^ of M to W3^ of M",
+        true,
+        V1TimeGrain.TIME_GRAIN_WEEK,
+        undefined,
+        undefined,
+      ],
     ];
 
     const compiledGrammar = nearley.Grammar.fromCompiled(grammar);
@@ -171,6 +197,7 @@ describe("rill time", () => {
         expect(parser.results).length(1);
 
         const rt = parseRillTime(rillTime);
+        console.log(rt);
         expect(rt.getLabel()).toEqual(label);
         expect(rt.isComplete).toEqual(complete);
         expect(rt.rangeGrain).toEqual(rangeGrain);

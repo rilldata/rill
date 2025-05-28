@@ -10,8 +10,13 @@
     RillShorthandInterval,
     RillPeriodToGrainInterval,
     RillTimeStartEndInterval,
+    RillTimeOrdinalInterval,
     RillGrainToInterval,
+    RillIsoInterval,
 
+    RillOrdinalPointInTime,
+    RillOrdinalPart,
+    RillOrdinalPartEnd,
     RillGrainPointInTime,
     RillGrainPointInTimePart,
     RillAbsoluteTime,
@@ -30,8 +35,8 @@ interval_with_grain => interval _ "by"i _ grain {% ([interval, , , , grain]) => 
 interval => anchored_duration_interval {% id %}
           | shorthand_interval         {% id %}
           | period_to_grain_interval   {% id %}
-          | ordinal_interval           {% id %}
           | start_end_interval         {% id %}
+          | ordinal_interval           {% id %}
           | grain_to_interval          {% id %}
           | iso_interval               {% id %}
 
@@ -48,19 +53,20 @@ period_to_grain_interval => period_to_grain _ "in"i _ grain "!" {% ([grain, , , 
                           | period_to_grain "!"                 {% ([grain]) => new RillPeriodToGrainInterval(grain, undefined, false) %}
                           | period_to_grain                     {% ([grain]) => new RillPeriodToGrainInterval(grain, undefined, true) %}
 
-ordinal_interval => ordinal_duration _ "of"i _ ordinal_interval_end
-                  | ordinal_duration
-ordinal_interval_end => grain_to_interval
-                      | start_end_interval
-                      | grain
+ordinal_interval => ordinal_duration _ "of"i _ ordinal_interval_end {% ([parts, , , , end]) => new RillTimeOrdinalInterval(parts, end) %}
+                  | ordinal_duration                                {% ([parts, , , , end]) => new RillTimeOrdinalInterval(parts, undefined) %}
+
+ordinal_interval_end => grain_to_interval  {% ([grainToInterval]) => new RillOrdinalPartEnd().withGrainToInterval(grainToInterval) %}
+                      | start_end_interval {% ([startEndInterval]) => new RillOrdinalPartEnd().withStartEndInterval(startEndInterval) %}
+                      | grain              {% ([grain]) => new RillOrdinalPartEnd().withSingleGrain(grain) %}
 
 start_end_interval => point_in_time _ "to"i _ point_in_time {% ([start, , , , end]) => new RillTimeStartEndInterval(start, end) %}
 
 grain_to_interval => grain_point_in_time _ "#" {% ([point]) => new RillGrainToInterval(point) %}
 
-iso_interval => abs_time _ "to"i _ abs_time
-              | abs_time _ "/" _ abs_time
-              | abs_time
+iso_interval => abs_time _ "to"i _ abs_time {% ([start, , , , end]) => new RillIsoInterval(start, end) %}
+              | abs_time _ "/" _ abs_time   {% ([start, , , , end]) => new RillIsoInterval(start, end) %}
+              | abs_time                    {% ([start]) => new RillIsoInterval(start, undefined) %}
 
 anchor_override => grain_point_in_time
                  | labeled_point_in_time
@@ -70,8 +76,15 @@ point_in_time => ordinal_point_in_time {% id %}
                | grain_point_in_time   {% id %}
                | labeled_point_in_time {% id %}
 
-ordinal_point_in_time => ordinal _ suffix _ ordinal_duration
-                       | ordinal _ suffix
+ordinal_point_in_time     => ordinal_point_in_time_start _ "of"i _ ordinal_duration _ "of"i _ ordinal_point_in_time_end {% ([start, , , , parts, , , ,end]) => start.withRestOfParts(parts).withEnd(end) %}
+                           | ordinal_point_in_time_start _ "of"i _ ordinal_duration                                     {% ([start, , , , parts]) => start.withRestOfParts(parts) %}
+                           | ordinal_point_in_time_start _ "of"i _ ordinal_point_in_time_end                            {% ([start, , , , end]) => start.withEnd(end) %}
+                           | ordinal_point_in_time_start                                                                {% id %}
+
+ordinal_point_in_time_start => ordinal_part _ suffix {% ([ordinal, suffix]) => new RillOrdinalPointInTime(ordinal, suffix) %}
+
+ordinal_point_in_time_end => grain_to_interval {% ([grainToInterval]) => new RillOrdinalPartEnd().withGrainToInterval(grainToInterval) %}
+                           | grain             {% ([grain]) => new RillOrdinalPartEnd().withSingleGrain(grain) %}
 
 grain_point_in_time => grain_point_in_time_part (_ prefixed_grain_point_in_time_part):* {% ([part, rest]) => new RillGrainPointInTime([part, ...rest.map(([, p]) => p)]) %}
 
@@ -88,11 +101,11 @@ labeled_point_in_time => "earliest"  {% id %}
                        | "now"       {% id %}
                        | "watermark" {% id %}
 
-ordinal_duration      => ordinal_duration_part (_ "of"i _ ordinal_duration_part):*
-ordinal_duration_part => ordinal
-                       | snap_prefix _ grain_duration_part
+ordinal_duration => ordinal_part (_ "of"i _ ordinal_part):* {% ([part, rest]) => ([part, ...rest.map(([, , , p]) => p)]) %}
 
-ordinal => grain num
+ordinal_part => ordinal                            {% ([{num, grain}]) => new RillOrdinalPart(grain, num, undefined) %}
+              | snap_prefix _ grain_duration_part  {% ([snap, , {num, grain}]) => new RillOrdinalPart(grain, num, snap) %}
+ordinal      => grain num                          {% ([grain, num]) => ({num, grain}) %}
 
 grain_duration      => grain_duration_part (_ grain_duration_part):* {% ([part, rest]) => ([part, ...rest.map(([, p]) => p)]) %}
 grain_duration_part => num grain                                     {% ([num, grain]) => ({num, grain}) %}
