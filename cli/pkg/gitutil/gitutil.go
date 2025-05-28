@@ -362,7 +362,7 @@ func PollGitStatus(ctx context.Context, path, remote string, fn func(GitStatus))
 
 	for {
 		select {
-		case <-time.After(time.Second * 5):
+		case <-time.After(time.Minute):
 			err = fetchAndCheckStatus()
 			if err != nil {
 				return err
