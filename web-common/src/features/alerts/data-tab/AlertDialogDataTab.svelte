@@ -7,7 +7,7 @@
   import FormSection from "../../../components/forms/FormSection.svelte";
   import Select from "../../../components/forms/Select.svelte";
   import { runtime } from "../../../runtime-client/runtime-store";
-  import FilterChipsReadOnly from "../../dashboards/filters/FilterChipsReadOnly.svelte";
+  import ExploreFilterChipsReadOnly from "../../dashboards/filters/ExploreFilterChipsReadOnly.svelte";
   import { useMetricsViewValidSpec } from "../../dashboards/selectors";
 
   export let formState: ReturnType<typeof createForm<AlertFormValues>>;
@@ -57,7 +57,7 @@
     description="These are inherited from the underlying dashboard view."
     title="Filters"
   >
-    <FilterChipsReadOnly
+    <ExploreFilterChipsReadOnly
       dimensionThresholdFilters={$form["dimensionThresholdFilters"]}
       filters={$form["whereFilter"]}
       dimensionsWithInlistFilter={$form["dimensionsWithInlistFilter"]}
