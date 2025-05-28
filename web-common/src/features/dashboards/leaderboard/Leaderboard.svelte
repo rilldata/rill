@@ -62,6 +62,7 @@
   export let filterExcludeMode: boolean;
   export let isBeingCompared: boolean;
   export let parentElement: HTMLElement;
+  export let suppressTooltip = false;
   export let allowExpandTable = true;
   export let allowDimensionComparison = true;
   export let formatters: Record<
@@ -348,6 +349,7 @@
       >
         {#each aboveTheFold as itemData (itemData.dimensionValue)}
           <LeaderboardRow
+            {suppressTooltip}
             {tableWidth}
             {isBeingCompared}
             {filterExcludeMode}
@@ -368,6 +370,7 @@
 
       {#each belowTheFoldRows as itemData, i (itemData.dimensionValue)}
         <LeaderboardRow
+          {suppressTooltip}
           {itemData}
           {tableWidth}
           {dimensionName}

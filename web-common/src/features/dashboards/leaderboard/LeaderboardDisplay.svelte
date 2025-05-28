@@ -44,6 +44,7 @@
   } = StateManagers;
 
   let parentElement: HTMLDivElement;
+  let suppressTooltip = false;
 
   $: ({ instanceId } = $runtime);
 
@@ -73,7 +74,16 @@
   <div class="pl-2.5 pb-3">
     <LeaderboardControls exploreName={$exploreName} />
   </div>
-  <div bind:this={parentElement} class="overflow-y-auto leaderboard-display">
+  <div
+    bind:this={parentElement}
+    class="overflow-y-auto leaderboard-display"
+    on:scroll={() => {
+      suppressTooltip = true;
+    }}
+    on:scrollend={() => {
+      suppressTooltip = false;
+    }}
+  >
     {#if parentElement}
       <div class="leaderboard-grid overflow-hidden pb-4">
         {#each $visibleDimensions as dimension (dimension.name)}
@@ -96,6 +106,7 @@
               {comparisonTimeRange}
               {dimension}
               {parentElement}
+              {suppressTooltip}
               {timeControlsReady}
               selectedValues={selectedDimensionValues(
                 $runtime.instanceId,
