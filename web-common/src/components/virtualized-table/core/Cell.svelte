@@ -6,6 +6,7 @@
   import { STRING_LIKES } from "@rilldata/web-common/lib/duckdb-data-types";
   import { formatDataTypeAsDuckDbQueryString } from "@rilldata/web-common/lib/formatters";
   import { createEventDispatcher, getContext } from "svelte";
+  import { cellInspectorStore } from "@rilldata/web-common/features/dashboards/stores/cell-inspector-store";
   import BarAndLabel from "../../BarAndLabel.svelte";
   import type { VirtualizedTableConfig } from "../types";
 
@@ -35,6 +36,10 @@
   function onFocus() {
     dispatch("inspect", row.index);
     cellActive = true;
+    // Update the cell inspector store with the cell value
+    if (value !== undefined && value !== null) {
+      cellInspectorStore.updateValue(value.toString());
+    }
   }
 
   function onSelectItem(e: MouseEvent) {
