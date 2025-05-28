@@ -2255,7 +2255,6 @@ metrics_view: missing
 				MetricsView:          "missing",
 				DimensionsSelector:   &runtimev1.FieldSelector{Selector: &runtimev1.FieldSelector_All{All: true}},
 				MeasuresSelector:     &runtimev1.FieldSelector{Selector: &runtimev1.FieldSelector_All{All: true}},
-				Theme:                "t1",
 				AllowCustomTimeRange: true,
 			},
 		},
