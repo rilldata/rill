@@ -1,5 +1,4 @@
 <script lang="ts" context="module">
-  import Button from "@rilldata/web-common/components/button/Button.svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu/";
   import Add from "@rilldata/web-common/components/icons/Add.svelte";
   import { getStateManagers } from "../state-managers/state-managers";
@@ -17,7 +16,6 @@
 
   import { PivotChipType } from "./types";
   import type { PivotChipData } from "./types";
-  import Search from "@rilldata/web-common/components/icons/Search.svelte";
 </script>
 
 <script lang="ts">
