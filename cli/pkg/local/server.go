@@ -24,6 +24,7 @@ import (
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/pkg/urlutil"
 	"github.com/rilldata/rill/cli/cmd/auth"
+	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/dotrillcloud"
 	"github.com/rilldata/rill/cli/pkg/gitutil"
 	"github.com/rilldata/rill/cli/pkg/pkce"
@@ -308,8 +309,41 @@ func (s *Server) DeployProject(ctx context.Context, r *connect.Request[localv1.D
 		}
 	}
 
+	if s.app.ch.Org != r.Msg.Org {
+		// Switching to passed org
+		err = s.app.ch.SetOrg(r.Msg.Org)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	var projRequest *adminv1.CreateProjectRequest
-	if r.Msg.Upload { // upload repo to rill managed storage instead of github
+	if r.Msg.Archive { // old zip-and-ship, currently used only for testing until we figure out a good way to test using manged github repos
+		repo, release, err := s.app.Runtime.Repo(ctx, s.app.Instance.ID)
+		if err != nil {
+			return nil, err
+		}
+		defer release()
+
+		assetID, err := cmdutil.UploadRepo(ctx, repo, s.app.ch, r.Msg.Org, r.Msg.ProjectName)
+		if err != nil {
+			return nil, err
+		}
+
+		// create project request
+		projRequest = &adminv1.CreateProjectRequest{
+			OrganizationName: r.Msg.Org,
+			Name:             r.Msg.ProjectName,
+			Description:      "Auto created by Rill",
+			Provisioner:      "",
+			ProdVersion:      "",
+			ProdOlapDriver:   "duckdb",
+			ProdOlapDsn:      "",
+			ProdSlots:        int64(DefaultProdSlots(s.app.ch)),
+			Public:           false,
+			ArchiveAssetId:   assetID,
+		}
+	} else if r.Msg.Upload { // upload repo to rill managed storage instead of github
 		ghRepo, err := s.app.ch.GitHelper(r.Msg.ProjectName, s.app.ProjectPath).PushToNewManagedRepo(ctx)
 		if err != nil {
 			return nil, err
@@ -447,7 +481,34 @@ func (s *Server) RedeployProject(ctx context.Context, r *connect.Request[localv1
 		return nil, err
 	}
 
-	if r.Msg.Reupload {
+	// if the org is not same as the default org, switch to the org
+	if s.app.ch.Org != projResp.Project.OrgName {
+		err = s.app.ch.SetOrg(projResp.Project.OrgName)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if r.Msg.Rearchive { // old zip-and-ship, currently used only for testing until we figure out a good way to test using manged github repos
+		repo, release, err := s.app.Runtime.Repo(ctx, s.app.Instance.ID)
+		if err != nil {
+			return nil, err
+		}
+		defer release()
+
+		assetID, err := cmdutil.UploadRepo(ctx, repo, s.app.ch, projResp.Project.OrgName, projResp.Project.Name)
+		if err != nil {
+			return nil, err
+		}
+		_, err = c.UpdateProject(ctx, &adminv1.UpdateProjectRequest{
+			ArchiveAssetId:   &assetID,
+			OrganizationName: projResp.Project.OrgName,
+			Name:             projResp.Project.Name,
+		})
+		if err != nil {
+			return nil, err
+		}
+	} else if r.Msg.Reupload {
 		if projResp.Project.ArchiveAssetId != "" {
 			// project was previously deployed using zip and ship
 			ghRepo, err := s.app.ch.GitHelper(projResp.Project.Name, s.app.ProjectPath).PushToNewManagedRepo(ctx)

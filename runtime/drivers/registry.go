@@ -57,15 +57,14 @@ type Instance struct {
 	FeatureFlags map[string]bool `db:"feature_flags"`
 	// Annotations to enrich activity events (like usage tracking)
 	Annotations map[string]string
-	// EmbedCatalog tells the runtime to store the instance's catalog in its OLAP store instead
-	// of in the runtime's metadata store. Currently only supported for the duckdb driver.
-	EmbedCatalog bool `db:"embed_catalog"`
 	// WatchRepo indicates whether to watch the repo for file changes and reconcile them automatically.
 	WatchRepo bool `db:"watch_repo"`
 	// Paths to expose over HTTP (defaults to ./public)
 	PublicPaths []string `db:"public_paths"`
 	// IgnoreInitialInvalidProjectError indicates whether to ignore an invalid project error when the instance is initially created.
 	IgnoreInitialInvalidProjectError bool `db:"-"`
+	// AIContext is extra context for LLM/AI features. Used to guide natural language question answering and routing.
+	AIContext string `db:"ai_context"`
 }
 
 // InstanceConfig contains dynamic configuration for an instance.

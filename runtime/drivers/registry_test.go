@@ -53,7 +53,6 @@ func testRegistry(t *testing.T, reg drivers.RegistryStore) {
 	require.Equal(t, inst.OLAPConnector, res.OLAPConnector)
 	require.Equal(t, inst.RepoConnector, res.RepoConnector)
 	require.Equal(t, inst.CatalogConnector, res.CatalogConnector)
-	require.Equal(t, inst.EmbedCatalog, res.EmbedCatalog)
 	require.ElementsMatch(t, inst.Connectors, res.Connectors)
 
 	err = reg.CreateInstance(ctx, &drivers.Instance{OLAPConnector: "druid"})

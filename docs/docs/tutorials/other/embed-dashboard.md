@@ -32,7 +32,7 @@ We will be using the [demo dashboard](https://ui.rilldata.com/demo/rill-openrtb-
 
 To test whether we are able to generate a iframe URL, please run the following from the CLI. Please replace the `org-name`, `project-name`, `rill-svc-token`, `dashboard-name` and your `user-email`.
 ```bash
-curl -X POST --location 'https://admin.rilldata.com/v1/organizations/<org-name>/projects/<project-name>/iframe' \
+curl -X POST --location 'https://api.rilldata.com/v1/organizations/<org-name>/projects/<project-name>/iframe' \
 --header 'Content-Type: application/json' \
 --header 'Authorization: Bearer <rill-svc-token>' \
 --data-raw '{
@@ -92,7 +92,7 @@ const rillDashboard = "bids";
 // Iframe URLs must be requested from the backend to prevent exposing the Rill service token to the browser.
 export default async function handler(req, res) {
     try {
-        const url = `https://admin.rilldata.com/v1/organizations/${rillOrg}/projects/${rillProject}/iframe`;
+        const url = `https://api.rilldata.com/v1/organizations/${rillOrg}/projects/${rillProject}/iframe`;
         const response = await fetch(url, {
             method: 'POST',
             headers: {

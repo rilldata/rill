@@ -4,8 +4,8 @@
   import { EditorView, placeholder } from "@codemirror/view";
   import { base as baseExtensions } from "@rilldata/web-common/components/editor/presets/base";
   import { onDestroy, onMount } from "svelte";
-  import type { BaseCanvasComponent } from "../../components/BaseCanvasComponent";
   import { get } from "svelte/store";
+  import type { BaseCanvasComponent } from "../../components/BaseCanvasComponent";
 
   export let component: BaseCanvasComponent;
 
@@ -16,12 +16,15 @@
 
   const placeholderConfig = `Your config should look like this:
 {
-  legend: {
-    orient: "top",
+  "axisX": {
+    "grid": false,
   },
-  axisX: {
-    grid: false,
-  },
+  "range": {
+    "category": [
+      "#ff7f0e",
+      "#2ca02c",
+    ]
+  }
   ...
 }`;
 
