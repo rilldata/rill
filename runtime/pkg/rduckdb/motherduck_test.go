@@ -215,8 +215,9 @@ func prepareMotherDuckDB(t *testing.T) DB {
 	tempDir := t.TempDir()
 	randomDB := provisionDatabase(t)
 	db, err := NewGeneric(context.Background(), &GenericDBOptions{
-		DSN:                fmt.Sprintf("md:%s?motherduck_token=%s", randomDB, os.Getenv("RILL_RUNTIME_MOTHERDUCK_TEST_TOKEN")),
-		LocalTempDir:       tempDir,
+		DBInitQueries:      []string{"INSTALL motherduck; LOAD motherduck; SET motherduck_token = '" + os.Getenv("RILL_RUNTIME_MOTHERDUCK_TEST_TOKEN") + "'"},
+		Path:               fmt.Sprintf("md:%s", randomDB),
+		LocalDataDir:       tempDir,
 		LocalMemoryLimitGB: 2,
 		LocalCPU:           1,
 		Logger:             zap.NewNop(),

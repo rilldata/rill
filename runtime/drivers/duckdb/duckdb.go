@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"maps"
 	"net/url"
-	"os"
 	"strings"
 	"sync"
 	"time"
@@ -502,17 +501,13 @@ func (c *connection) reopenDB(ctx context.Context) error {
 	connInitQueries = append(connInitQueries, "SET max_expression_depth TO 250")
 
 	// Create new DB
-	if c.config.DSN != "" {
-		tempDir, err := c.storage.RandomTempDir("duckdb")
-		if err != nil {
-			return err
-		}
+	if c.config.Path != "" {
 		settings := make(map[string]string)
 		maps.Copy(settings, c.config.readSettings())
 		maps.Copy(settings, c.config.writeSettings())
 		c.db, err = rduckdb.NewGeneric(ctx, &rduckdb.GenericDBOptions{
-			DSN:                c.config.DSN,
-			LocalTempDir:       tempDir,
+			Path:               c.config.Path,
+			LocalDataDir:       dataDir,
 			LocalCPU:           c.config.CPU,
 			LocalMemoryLimitGB: c.config.MemoryLimitGB,
 			Settings:           settings,
@@ -522,7 +517,6 @@ func (c *connection) reopenDB(ctx context.Context) error {
 			OtelAttributes:     []attribute.KeyValue{attribute.String("instance_id", c.instanceID)},
 		})
 		if err != nil {
-			os.RemoveAll(tempDir) // Clean up temp dir if we fail to open the DB
 			return err
 		}
 		return nil

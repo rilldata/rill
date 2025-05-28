@@ -7,11 +7,13 @@ import (
 	"fmt"
 	"net/url"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/XSAM/otelsql"
+	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 	"github.com/marcboeker/go-duckdb/v2"
 	"github.com/rilldata/rill/runtime/pkg/observability"
@@ -23,19 +25,22 @@ import (
 )
 
 type generic struct {
-	db       *sqlx.DB
-	logger   *zap.Logger
-	writeSem *semaphore.Weighted
+	db            *sqlx.DB
+	localFileName string // localFileName is the name of the local DuckDB file, used for cleanup.
+	logger        *zap.Logger
+	writeSem      *semaphore.Weighted
 
 	opts *GenericDBOptions
 }
 
 type GenericDBOptions struct {
-	// DSN is the DuckDB connection string
-	DSN string
+	// Path to the external DuckDB database.
+	Path string
+	// dbName is set to the name of the database identified by the Path.
+	dbName string
 
-	// LocalTempDir is the path to the local DuckDB database file.
-	LocalTempDir string
+	// LocalDataDir is the path to the local DuckDB database file.
+	LocalDataDir string
 	// LocalCPU cores available for the local instance of DB.
 	LocalCPU int
 	// LocalMemoryLimitGB is the amount of memory available for the local instance of DB.
@@ -64,14 +69,19 @@ func (d *GenericDBOptions) setDefaultSettings() {
 	}
 }
 
-// NewGeneric creates a duckdb database connection with the given DSN.
-// It can be used to create an external local DuckDB database or a duckdb service like MotherDuck.
+// NewGeneric creates a duckdb database connection with the given Path.
+// It can be used to run OLAP queries on an external local DuckDB database or a duckdb service like MotherDuck.
 // Operations like CreateTableAsSelect, RenameTable, MutateTable are not atomic and can fail in the middle.
 func NewGeneric(ctx context.Context, opts *GenericDBOptions) (res DB, dbErr error) {
 	opts.Logger.Debug("open generic db", observability.ZapCtx(ctx))
 	// open the db
+	//
+	// we create a ephemeral local DuckDB instance and then attach the external database if Path is set.
+	// This is to control where wal and tmp files are created.
+	// An ephemeral local DuckDB instance is used since the go-duckdb driver caches some state wrt same database path
+	// and attaching same motherduck instance leads to issues.
 	opts.setDefaultSettings()
-	dsn, err := url.Parse(opts.DSN)
+	dsn, err := url.Parse("")
 	if err != nil {
 		return nil, err
 	}
@@ -83,7 +93,8 @@ func NewGeneric(ctx context.Context, opts *GenericDBOptions) (res DB, dbErr erro
 	// Rebuild DuckDB DSN (which should be "path?key=val&...")
 	// this is required since spaces and other special characters are valid in db file path but invalid and hence encoded in URL
 	dsn.RawQuery = ""
-	connector, err := duckdb.NewConnector(generateDSN(dsn.String(), query.Encode()), func(execer driver.ExecerContext) error {
+	localFileName := filepath.Join(opts.LocalDataDir, "main"+uuid.NewString()[:8]+".db")
+	connector, err := duckdb.NewConnector(generateDSN(localFileName, query.Encode()), func(execer driver.ExecerContext) error {
 		for _, qry := range opts.ConnInitQueries {
 			_, err := execer.ExecContext(ctx, qry, nil)
 			if err != nil && strings.Contains(err.Error(), "Failed to download extension") {
@@ -121,21 +132,43 @@ func NewGeneric(ctx context.Context, opts *GenericDBOptions) (res DB, dbErr erro
 		}
 	}
 
+	// attach the passed external db
+	if opts.Path != "" {
+		_, err = db.ExecContext(ctx, fmt.Sprintf("ATTACH %s", safeSQLString(opts.Path)))
+		if err != nil {
+			return nil, fmt.Errorf("error attaching external db: %w", err)
+		}
+
+		// find the attached database name
+		err = db.QueryRowxContext(
+			ctx,
+			`SELECT database_name
+			 FROM duckdb_databases()
+			 WHERE internal = false -- ignore internal information_schema databases
+			   AND (path IS NOT NULL OR database_name = 'memory') -- all databases except the in-memory one should have a path 
+			   AND database_name != current_database()`,
+		).Scan(&opts.dbName)
+		if err != nil {
+			return nil, fmt.Errorf("error getting attached database name: %w", err)
+		}
+	}
+
 	err = otelsql.RegisterDBStatsMetrics(db.DB, otelsql.WithAttributes(opts.OtelAttributes...))
 	if err != nil {
 		return nil, fmt.Errorf("registering db stats metrics: %w", err)
 	}
 	return &generic{
-		db:       db,
-		logger:   opts.Logger,
-		writeSem: semaphore.NewWeighted(1),
-		opts:     opts,
+		db:            db,
+		localFileName: localFileName,
+		logger:        opts.Logger,
+		writeSem:      semaphore.NewWeighted(1),
+		opts:          opts,
 	}, nil
 }
 
 // AcquireReadConnection implements DB. In practice this does not enforce that the returned connection is read-only.
 func (m *generic) AcquireReadConnection(ctx context.Context) (conn *sqlx.Conn, release func() error, err error) {
-	conn, err = m.db.Connx(ctx)
+	conn, err = m.acquireConn(ctx)
 	if err != nil {
 		return nil, nil, fmt.Errorf("acquire read connection failed: %w", err)
 	}
@@ -144,7 +177,7 @@ func (m *generic) AcquireReadConnection(ctx context.Context) (conn *sqlx.Conn, r
 
 // Close implements DB.
 func (m *generic) Close() error {
-	_ = os.RemoveAll(m.opts.LocalTempDir)
+	_ = os.RemoveAll(m.localFileName)
 	return m.db.Close()
 }
 
@@ -178,7 +211,7 @@ func (m *generic) CreateTableAsSelect(ctx context.Context, name, query string, o
 		typ = "TABLE"
 	}
 
-	conn, err := m.db.Connx(ctx)
+	conn, err := m.acquireConn(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("create: acquire connection failed: %w", err)
 	}
@@ -236,7 +269,7 @@ func (m *generic) DropTable(ctx context.Context, name string) (resErr error) {
 	}
 	defer m.writeSem.Release(1)
 
-	conn, err := m.db.Connx(ctx)
+	conn, err := m.acquireConn(ctx)
 	if err != nil {
 		return fmt.Errorf("drop: acquire connection failed: %w", err)
 	}
@@ -282,7 +315,7 @@ func (m *generic) MutateTable(ctx context.Context, name string, initQueries []st
 	defer m.writeSem.Release(1)
 
 	t := time.Now()
-	conn, err := m.db.Connx(ctx)
+	conn, err := m.acquireConn(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("mutate: acquire connection failed: %w", err)
 	}
@@ -331,7 +364,7 @@ func (m *generic) RenameTable(ctx context.Context, oldName, newName string) (res
 	}
 
 	// acquire a connection
-	conn, err := m.db.Connx(ctx)
+	conn, err := m.acquireConn(ctx)
 	if err != nil {
 		return fmt.Errorf("rename: acquire connection failed: %w", err)
 	}
@@ -358,7 +391,7 @@ func (m *generic) RenameTable(ctx context.Context, oldName, newName string) (res
 
 // Schema implements DB.
 func (m *generic) Schema(ctx context.Context, ilike, name string) ([]*Table, error) {
-	conn, err := m.db.Connx(ctx)
+	conn, err := m.acquireConn(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -415,4 +448,20 @@ func (m *generic) Size() int64 {
 	// todo: What is the size of the generic database? How to ignore tables which were not created within this project ?
 	// Do we even need to track this for generic?
 	return 0
+}
+
+func (m *generic) acquireConn(ctx context.Context) (*sqlx.Conn, error) {
+	conn, err := m.db.Connx(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("acquire connection failed: %w", err)
+	}
+	if m.opts.dbName == "" {
+		// if dbName is not set, we are using the default database
+		return conn, nil
+	}
+	_, err = conn.ExecContext(ctx, fmt.Sprintf("USE %s", safeSQLString(m.opts.dbName)))
+	if err != nil {
+		return nil, fmt.Errorf("acquire connection failed: %w", err)
+	}
+	return conn, nil
 }
