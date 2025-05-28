@@ -33,19 +33,11 @@
   ) => void;
   export let measureLabel: (measureName: string) => string;
 
-  let dimensionHeaderSpan: HTMLSpanElement;
-  let isTruncated = false;
-
   function shouldShowContextColumns(measureName: string): boolean {
     return (
       leaderboardShowContextForAllMeasures ||
       measureName === leaderboardSortByMeasureName
     );
-  }
-
-  $: if (dimensionHeaderSpan) {
-    isTruncated =
-      dimensionHeaderSpan.scrollHeight > dimensionHeaderSpan.clientHeight;
   }
 </script>
 
@@ -66,7 +58,7 @@
     </th>
 
     <th data-dimension-header>
-      <Tooltip location="top" suppress={!isTruncated}>
+      <Tooltip location="top">
         <button
           disabled={!allowExpandTable}
           class="text-slate-600 text-left {allowExpandTable
@@ -75,9 +67,7 @@
           aria-label="Open dimension details"
           on:click={() => setPrimaryDimension(dimensionName)}
         >
-          <span bind:this={dimensionHeaderSpan} class="line-clamp-2"
-            >{displayName}</span
-          >
+          <span class="line-clamp-2">{displayName}</span>
         </button>
         <TooltipContent slot="tooltip-content" maxWidth="280px">
           <div

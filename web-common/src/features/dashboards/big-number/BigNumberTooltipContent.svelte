@@ -13,14 +13,23 @@
 </script>
 
 <TooltipContent maxWidth="280px">
-  <TooltipTitle>
-    <svelte:fragment slot="name">
+  <div
+    class="grid gap-x-2 pointer-events-none pt-1 pb-1 items-baseline"
+    style="grid-template-columns: auto max-content"
+    style:min-width="200px"
+  >
+    <div class="font-normal truncate" aria-label="tooltip-name">
       {name}
-    </svelte:fragment>
-    <svelte:fragment slot="description">
+    </div>
+    <div
+      class="text-gray-300 justify-self-end pl-3"
+      style:max-width="280px"
+      aria-label="tooltip-name-description"
+    >
       {value}
-    </svelte:fragment>
-  </TooltipTitle>
+    </div>
+  </div>
+
   <TooltipDescription>
     {description}
   </TooltipDescription>
