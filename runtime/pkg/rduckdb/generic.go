@@ -134,7 +134,9 @@ func NewGeneric(ctx context.Context, opts *GenericDBOptions) (res DB, dbErr erro
 
 	// attach the passed external db
 	if opts.Path != "" {
-		_, err = db.ExecContext(ctx, fmt.Sprintf("ATTACH %s", safeSQLString(opts.Path)))
+		// NOTE: This does not wrap with safeSQLString to allow user to pass a path with other properties.
+		// Example: path: "'ducklake:metadata.ducklake' AS my_ducklake (DATA_PATH 'gs://my-bucket/data_files/')"
+		_, err = db.ExecContext(ctx, fmt.Sprintf("ATTACH %s", opts.Path))
 		if err != nil {
 			return nil, fmt.Errorf("error attaching external db: %w", err)
 		}
