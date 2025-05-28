@@ -17,6 +17,8 @@
 <ContentContainer maxWidth={1100}>
   <div class="flex flex-col gap-y-4 size-full">
     <MCPConfigSection {organization} {project} {isPublic} />
-    <PersonalAccessTokensSection />
+    {#if !isPublic}
+      <PersonalAccessTokensSection />
+    {/if}
   </div>
 </ContentContainer>
