@@ -37,8 +37,6 @@ type FileIterator interface {
 	Format() string
 	// SetKeepFilesUntilClose configures the iterator to keep all files until Close() is called.
 	SetKeepFilesUntilClose()
-	// SetBatchSizeBytes sets the batch size for downloading files.
-	SetBatchSizeBytes(size int64)
 	// Next returns a list of file downloaded from external sources
 	// and cleanups file created in previous batch
 	Next(ctx context.Context) ([]string, error)

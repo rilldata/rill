@@ -21,6 +21,7 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	sf "github.com/snowflakedb/gosnowflake"
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/codes"
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
 )
@@ -36,9 +37,14 @@ const rowGroupBufferSize = int64(datasize.MB) * 64
 // Fetches query result in arrow batches.
 // As an alternative (or in case of memory issues) consider utilizing Snowflake "COPY INTO <location>" feature,
 // see https://docs.snowflake.com/en/sql-reference/sql/copy-into-location
-func (c *connection) QueryAsFiles(ctx context.Context, props map[string]any) (iter drivers.FileIterator, resErr error) {
+func (c *connection) QueryAsFiles(ctx context.Context, props map[string]any) (outIt drivers.FileIterator, outErr error) {
 	ctx, span := tracer.Start(ctx, "Connection.QueryAsFiles")
-	defer span.End()
+	defer func() {
+		if outErr != nil {
+			span.SetStatus(codes.Error, outErr.Error())
+		}
+		span.End()
+	}()
 
 	srcProps, err := parseSourceProperties(props)
 	if err != nil {
@@ -64,7 +70,7 @@ func (c *connection) QueryAsFiles(ctx context.Context, props map[string]any) (it
 		return nil, err
 	}
 	defer func() {
-		if resErr != nil {
+		if outErr != nil {
 			db.Close()
 		}
 	}()
@@ -76,7 +82,7 @@ func (c *connection) QueryAsFiles(ctx context.Context, props map[string]any) (it
 		return nil, err
 	}
 	defer func() {
-		if resErr != nil {
+		if outErr != nil {
 			conn.Close()
 		}
 	}()
@@ -90,7 +96,7 @@ func (c *connection) QueryAsFiles(ctx context.Context, props map[string]any) (it
 		return nil, err
 	}
 	defer func() {
-		if resErr != nil {
+		if outErr != nil {
 			rows.Close()
 		}
 	}()
@@ -158,10 +164,6 @@ func (f *fileIterator) Format() string {
 // SetKeepFilesUntilClose implements drivers.FileIterator.
 func (f *fileIterator) SetKeepFilesUntilClose() {
 	// No-op because it already does this.
-}
-
-// SetBatchSizeBytes implements drivers.FileIterator.
-func (f *fileIterator) SetBatchSizeBytes(size int64) {
 }
 
 // Next implements drivers.FileIterator.

@@ -21,6 +21,7 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
 	"go.uber.org/zap"
 	"google.golang.org/api/iterator"
 	"google.golang.org/api/option"
@@ -41,9 +42,14 @@ var selectQueryRegex = regexp.MustCompile("(?i)^\\s*SELECT\\s+\\*\\s+FROM\\s+(`?
 var _ drivers.Warehouse = &Connection{}
 
 // QueryAsFiles implements drivers.SQLStore
-func (c *Connection) QueryAsFiles(ctx context.Context, props map[string]any) (drivers.FileIterator, error) {
+func (c *Connection) QueryAsFiles(ctx context.Context, props map[string]any) (outIt drivers.FileIterator, outErr error) {
 	ctx, span := tracer.Start(ctx, "Connection.QueryAsFiles")
-	defer span.End()
+	defer func() {
+		if outErr != nil {
+			span.SetStatus(codes.Error, outErr.Error())
+		}
+		span.End()
+	}()
 
 	srcProps, err := c.parseSourceProperties(props)
 	if err != nil {
@@ -203,10 +209,6 @@ func (f *fileIterator) Format() string {
 // SetFormat implements drivers.FileIterator.
 func (f *fileIterator) SetKeepFilesUntilClose() {
 	// No-op because it already does this.
-}
-
-// SetBatchSizeBytes implements drivers.FileIterator.
-func (f *fileIterator) SetBatchSizeBytes(size int64) {
 }
 
 // Next implements drivers.FileIterator.

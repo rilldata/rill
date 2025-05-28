@@ -14,6 +14,7 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
@@ -22,6 +23,9 @@ import (
 // Number of concurrent file downloads.
 // 23-11-13: Experimented with increasing the value to 16. It caused network saturation errors on macOS.
 const _concurrentBlobDownloadLimit = 8
+
+// Default batch size
+const _defaultBatchSizeBytes = 1024 * 1024 * 1024 // 1 GB
 
 // Metrics
 var (
@@ -52,20 +56,24 @@ type DownloadOptions struct {
 // The downloaded objects will be stored in a temporary directory with the same file hierarchy the bucket, enabling parsing of hive partitioning on the downloaded files.
 // The client should call Close() once done to release all resources.
 // Calling Close() on the iterator will also close the bucket.
-func (b *Bucket) Download(ctx context.Context, opts *DownloadOptions) (drivers.FileIterator, error) {
-	tempDir, err := os.MkdirTemp(opts.TempDir, "blob_ingestion")
-	if err != nil {
-		if opts.CloseBucket {
+func (b *Bucket) Download(ctx context.Context, opts *DownloadOptions) (res drivers.FileIterator, resErr error) {
+	defer func() {
+		if resErr != nil && opts.CloseBucket {
 			_ = b.Close()
 		}
+	}()
+
+	if opts.BatchSizeBytes <= 0 {
+		opts.BatchSizeBytes = _defaultBatchSizeBytes
+	}
+
+	tempDir, err := os.MkdirTemp(opts.TempDir, "blob_ingestion")
+	if err != nil {
 		return nil, err
 	}
 
 	entries, err := b.ListObjects(ctx, opts.Glob)
 	if err != nil {
-		if opts.CloseBucket {
-			_ = b.Close()
-		}
 		return nil, err
 	}
 
@@ -152,14 +160,15 @@ func (it *blobIterator) SetKeepFilesUntilClose() {
 	it.opts.KeepFilesUntilClose = true
 }
 
-func (it *blobIterator) SetBatchSizeBytes(size int64) {
-	it.opts.BatchSizeBytes = size
-}
-
-func (it *blobIterator) Next(ctx context.Context) ([]string, error) {
+func (it *blobIterator) Next(ctx context.Context) (res []string, resErr error) {
 	// Even though the download happens in a goroutine, adding a trace here is still a good approximation of how long it waits for a download.
 	_, span := tracer.Start(ctx, "blobIterator.Next")
-	defer span.End()
+	defer func() {
+		if resErr != nil {
+			span.SetStatus(codes.Error, resErr.Error())
+		}
+		span.End()
+	}()
 
 	// Delete files from the previous iteration
 	if !it.opts.KeepFilesUntilClose {
@@ -225,7 +234,7 @@ func (it *blobIterator) downloadFiles() {
 		// NOTE: Errors returned here will be assigned to it.downloadErr after the loop.
 		g.Go(func() error {
 			startTime := time.Now()
-			err := retry(5, 10*time.Second, func() error {
+			err := retry(ctx, 5, 10*time.Second, func() error {
 				file, err := os.OpenFile(filename, os.O_RDWR|os.O_CREATE|os.O_TRUNC, os.ModePerm)
 				if err != nil {
 					return err
@@ -307,16 +316,20 @@ type downloadResult struct {
 	bytes int64
 }
 
-func retry(maxRetries int, delay time.Duration, fn func() error) error {
+func retry(ctx context.Context, maxRetries int, delay time.Duration, fn func() error) error {
 	var err error
 	for i := 0; i < maxRetries; i++ {
 		err = fn()
 		if err == nil {
 			return nil // success
-		} else if strings.Contains(err.Error(), "stream error: stream ID") {
-			time.Sleep(delay) // retry
-		} else {
-			break // return error
+		} else if !strings.Contains(err.Error(), "stream error: stream ID") {
+			break // break and return error
+		}
+
+		select {
+		case <-ctx.Done():
+			return ctx.Err() // return on context cancellation
+		case <-time.After(delay):
 		}
 	}
 	return err

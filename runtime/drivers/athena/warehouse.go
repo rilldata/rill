@@ -24,6 +24,7 @@ import (
 	"github.com/rilldata/rill/runtime/drivers/blob"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/codes"
 	"go.uber.org/zap"
 	"gocloud.dev/blob/s3blob"
 )
@@ -34,7 +35,12 @@ var _ drivers.Warehouse = &Connection{}
 
 func (c *Connection) QueryAsFiles(ctx context.Context, props map[string]any) (outIt drivers.FileIterator, outErr error) {
 	ctx, span := tracer.Start(ctx, "Connection.QueryAsFiles")
-	defer span.End()
+	defer func() {
+		if outErr != nil {
+			span.SetStatus(codes.Error, outErr.Error())
+		}
+		span.End()
+	}()
 
 	conf, err := parseSourceProperties(props)
 	if err != nil {
@@ -98,9 +104,15 @@ func (c *Connection) QueryAsFiles(ctx context.Context, props map[string]any) (ou
 		return nil, fmt.Errorf("cannot open bucket %q: %w", bucketName, err)
 	}
 
+	tempDir, err := c.storage.TempDir()
+	if err != nil {
+		return nil, err
+	}
+
 	it, err := bucket.Download(ctx, &blob.DownloadOptions{
 		Glob:        unloadPath + "/**",
 		Format:      "parquet",
+		TempDir:     tempDir,
 		CloseBucket: true,
 	})
 	if err != nil {

@@ -9,6 +9,7 @@ import (
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/codes"
 )
 
 var tracer = otel.Tracer("github.com/rilldata/rill/runtime/drivers/salesforce")
@@ -18,9 +19,14 @@ const defaultClientID = "3MVG9KsVczVNcM8y6w3Kjszy.DW9gMzcYDHT97WIX3NYNYA35UvITyp
 var _ drivers.Warehouse = &connection{}
 
 // QueryAsFiles implements drivers.SQLStore
-func (c *connection) QueryAsFiles(ctx context.Context, props map[string]any) (drivers.FileIterator, error) {
+func (c *connection) QueryAsFiles(ctx context.Context, props map[string]any) (outIt drivers.FileIterator, outErr error) {
 	ctx, span := tracer.Start(ctx, "Connection.QueryAsFiles")
-	defer span.End()
+	defer func() {
+		if outErr != nil {
+			span.SetStatus(codes.Error, outErr.Error())
+		}
+		span.End()
+	}()
 
 	srcProps, err := parseSourceProperties(props)
 	if err != nil {
@@ -118,10 +124,6 @@ func (j *bulkJob) Format() string {
 // SetKeepFilesUntilClose implements drivers.RowIterator.
 func (j *bulkJob) SetKeepFilesUntilClose() {
 	j.keepFilesUntilClose = true
-}
-
-// SetBatchSizeBytes implements drivers.RowIterator.
-func (j *bulkJob) SetBatchSizeBytes(size int64) {
 }
 
 // Next implements drivers.RowIterator.
