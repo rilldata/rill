@@ -1,33 +1,53 @@
+import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import { DateTime } from "luxon";
 import type { DateObjectUnits } from "luxon/src/datetime";
-import { grainAliasToDateTimeUnit } from "@rilldata/web-common/lib/time/new-grains";
-import type { V1TimeGrain } from "@rilldata/web-common/runtime-client";
+import {
+  getMaxGrain,
+  getMinGrain,
+  grainAliasToDateTimeUnit,
+  GrainAliasToV1TimeGrain,
+} from "@rilldata/web-common/lib/time/new-grains";
 
 const absTimeRegex =
   /(?<year>\d{4})(-(?<month>\d{2})(-(?<day>\d{2})(T(?<hour>\d{2})(:(?<minute>\d{2})(:(?<second>\d{2})Z)?)?)?)?)?/;
-
-export interface RillTimeMeta {
-  type: "lastN" | "toDate" | "other";
-  grain?: V1TimeGrain;
-  integer?: number;
-}
+const simplifiedSnapMap: Record<V1TimeGrain, V1TimeGrain> = {
+  [V1TimeGrain.TIME_GRAIN_UNSPECIFIED]: V1TimeGrain.TIME_GRAIN_UNSPECIFIED,
+  [V1TimeGrain.TIME_GRAIN_MILLISECOND]: V1TimeGrain.TIME_GRAIN_MILLISECOND,
+  [V1TimeGrain.TIME_GRAIN_SECOND]: V1TimeGrain.TIME_GRAIN_SECOND,
+  [V1TimeGrain.TIME_GRAIN_MINUTE]: V1TimeGrain.TIME_GRAIN_MINUTE,
+  [V1TimeGrain.TIME_GRAIN_HOUR]: V1TimeGrain.TIME_GRAIN_HOUR,
+  [V1TimeGrain.TIME_GRAIN_DAY]: V1TimeGrain.TIME_GRAIN_HOUR,
+  [V1TimeGrain.TIME_GRAIN_WEEK]: V1TimeGrain.TIME_GRAIN_DAY,
+  [V1TimeGrain.TIME_GRAIN_MONTH]: V1TimeGrain.TIME_GRAIN_DAY,
+  [V1TimeGrain.TIME_GRAIN_QUARTER]: V1TimeGrain.TIME_GRAIN_DAY,
+  [V1TimeGrain.TIME_GRAIN_YEAR]: V1TimeGrain.TIME_GRAIN_DAY,
+};
 
 export class RillTime {
   public timeRange: string;
   public readonly isComplete: boolean = false;
-  public timeRangeGrain: string | undefined;
   public timezone: string | undefined;
+
+  public readonly rangeGrain: V1TimeGrain | undefined;
+  public readonly inGrain: V1TimeGrain | undefined;
+  public byGrain: V1TimeGrain | undefined;
+  public readonly isShorthandSyntax: boolean;
 
   public constructor(public readonly interval: RillTimeInterval) {
     this.isComplete = !this.interval.includesFuture;
+
+    this.isShorthandSyntax =
+      interval instanceof RillShorthandInterval ||
+      interval instanceof RillPeriodToGrainInterval;
+    [this.rangeGrain, this.inGrain] = this.interval.getGrains();
   }
 
   public withGrain(grain: string) {
-    this.timeRangeGrain = grain;
+    this.byGrain = GrainAliasToV1TimeGrain[grain];
     return this;
   }
 
-  public withTimeZone(timezone: string) {
+  public withTimezone(timezone: string) {
     this.timezone = timezone;
     return this;
   }
@@ -37,8 +57,10 @@ export class RillTime {
     return capitalizeFirstChar(supported ? label : this.timeRange);
   }
 
-  public getMeta() {
-    return this.interval.getMeta();
+  public getCorrectInGrain(smallestTimeGrain: V1TimeGrain | undefined) {
+    if (!this.inGrain) return undefined;
+    if (!smallestTimeGrain) return this.inGrain;
+    return getMaxGrain(this.inGrain, smallestTimeGrain);
   }
 
   public toString() {
@@ -50,7 +72,10 @@ interface RillTimeInterval {
   includesFuture: boolean;
 
   getLabel(): [label: string, supported: boolean];
-  getMeta(): RillTimeMeta;
+  getGrains(): [
+    rangeGrain: V1TimeGrain | undefined,
+    inGrain: V1TimeGrain | undefined,
+  ];
 }
 
 export class RillTimeAnchoredDurationInterval implements RillTimeInterval {
@@ -70,20 +95,113 @@ export class RillTimeAnchoredDurationInterval implements RillTimeInterval {
     return ["", false];
   }
 
-  public getMeta(): RillTimeMeta {
-    return { type: "other" };
+  public getGrains(): [
+    rangeGrain: V1TimeGrain | undefined,
+    inGrain: V1TimeGrain | undefined,
+  ] {
+    let rangeGrain: V1TimeGrain | undefined = this.point?.getGrain();
+
+    this.grains.forEach((grain) => {
+      rangeGrain = getMinGrain(
+        rangeGrain,
+        GrainAliasToV1TimeGrain[grain.grain],
+      );
+    });
+
+    return [rangeGrain, undefined];
+  }
+}
+
+export class RillShorthandInterval implements RillTimeInterval {
+  public constructor(
+    private readonly num: number,
+    private readonly grain: string,
+    private readonly inGrain: string | undefined,
+    public readonly includesFuture: boolean,
+  ) {}
+
+  public getLabel(): [label: string, supported: boolean] {
+    const grainPart = grainAliasToDateTimeUnit(this.grain as any);
+
+    if (this.num === 1) {
+      return [
+        `${this.includesFuture ? "this" : "previous"} ${grainPart}`,
+        true,
+      ];
+    }
+
+    const grainSuffix = this.num > 1 ? "s" : "";
+    const grainLabel = `${this.num} ${grainPart}${grainSuffix}`;
+
+    return [`last ${grainLabel}`, true];
+  }
+
+  public getGrains(): [
+    rangeGrain: V1TimeGrain | undefined,
+    inGrain: V1TimeGrain | undefined,
+  ] {
+    const rangeGrain = GrainAliasToV1TimeGrain[this.grain];
+    return [
+      rangeGrain,
+      simplifiedSnapMap[
+        this.inGrain ? GrainAliasToV1TimeGrain[this.inGrain] : rangeGrain
+      ],
+    ];
+  }
+}
+
+export class RillPeriodToGrainInterval implements RillTimeInterval {
+  public constructor(
+    private readonly grain: string,
+    private readonly inGrain: string | undefined,
+    public readonly includesFuture: boolean,
+  ) {}
+
+  public getLabel(): [label: string, supported: boolean] {
+    return ["", false];
+  }
+
+  public getGrains(): [
+    rangeGrain: V1TimeGrain | undefined,
+    inGrain: V1TimeGrain | undefined,
+  ] {
+    const rangeGrain = GrainAliasToV1TimeGrain[this.grain];
+    return [
+      rangeGrain,
+      simplifiedSnapMap[
+        this.inGrain ? GrainAliasToV1TimeGrain[this.inGrain] : rangeGrain
+      ],
+    ];
   }
 }
 
 export class RillTimeOrdinalInterval implements RillTimeInterval {
   public includesFuture = false; // TODO: anything snapped to end before current should be true here
 
+  public constructor(
+    private readonly parts: RillOrdinalPart[],
+    private readonly end: RillOrdinalPartEnd | undefined,
+  ) {}
+
   public getLabel(): [label: string, supported: boolean] {
     return ["", false];
   }
 
-  public getMeta(): RillTimeMeta {
-    return { type: "other" };
+  public getGrains(): [
+    rangeGrain: V1TimeGrain | undefined,
+    inGrain: V1TimeGrain | undefined,
+  ] {
+    let rangeGrain: V1TimeGrain | undefined = undefined;
+
+    this.parts.forEach((part) => {
+      rangeGrain = getMinGrain(rangeGrain, GrainAliasToV1TimeGrain[part.grain]);
+    });
+
+    if (this.end) {
+      rangeGrain = getMinGrain(rangeGrain, this.end.getGrain());
+    }
+
+    return [rangeGrain, undefined];
   }
 }
 
@@ -162,71 +280,14 @@ export class RillTimeStartEndInterval implements RillTimeInterval {
     return ["", false];
   }
 
-  public getMeta(): RillTimeMeta {
-    if (
-      !(this.start instanceof RillGrainPointInTime) ||
-      !(this.end instanceof RillGrainPointInTime)
-    ) {
-      if (
-        this.start instanceof RillGrainPointInTime &&
-        typeof this.end === "string"
-      ) {
-        if (
-          this.end === "latest" ||
-          this.end === "watermark" ||
-          this.end === "now"
-        ) {
-          const start = this.start.getSingleGrainAndNum();
-          if (!start) return { type: "other" };
-          const numDiff = Math.abs(start.offset);
-
-          return {
-            type: "lastN",
-            grain: start.grain as V1TimeGrain,
-            integer: numDiff,
-          };
-        }
-      }
-
-      return { type: "other" };
-    }
-
-    const start = this.start.getSingleGrainAndNum();
-    const end = this.end.getSingleGrainAndNum();
-    if (!start || !end) return { type: "other" };
-
-    const numDiff = Math.abs(start.offset - end.offset);
-    if (start.grain !== end.grain) {
-      if (numDiff > 1) {
-        return { type: "other" };
-      }
-
-      return { type: "other" };
-    }
-
-    if (start.offset === 0 || start.offset === 1) {
-      if (numDiff === 1) {
-        if (start.offset === 0) {
-          return { type: "toDate", grain: start.grain as V1TimeGrain };
-        }
-      }
-      return { type: "other" };
-    }
-
-    if (end.offset === 0 || end.offset === 1) {
-      if (numDiff === 1) {
-        if (end.offset === 0) {
-          return { type: "toDate", grain: start.grain as V1TimeGrain };
-        }
-      }
-      return {
-        type: "lastN",
-        grain: start.grain as V1TimeGrain,
-        integer: numDiff,
-      };
-    }
-
-    return { type: "other" };
+  public getGrains(): [
+    rangeGrain: V1TimeGrain | undefined,
+    inGrain: V1TimeGrain | undefined,
+  ] {
+    const startRangeGrain = this.start.getGrain();
+    const endRangeGrain = this.end.getGrain();
+    const rangeGrain = getMinGrain(startRangeGrain, endRangeGrain);
+    return [rangeGrain, undefined];
   }
 }
 
@@ -256,36 +317,121 @@ export class RillGrainToInterval implements RillTimeInterval {
     }
   }
 
-  public getMeta(): RillTimeMeta {
-    const grainAndNum = this.point.getSingleGrainAndNum();
-    if (!grainAndNum) return { type: "other" };
-
-    return {
-      type: "lastN",
-      grain: grainAndNum.grain as V1TimeGrain,
-      integer: Math.abs(grainAndNum.offset),
-    };
+  public getGrains(): [
+    rangeGrain: V1TimeGrain | undefined,
+    inGrain: V1TimeGrain | undefined,
+  ] {
+    return [this.point.getGrain(), undefined];
   }
 }
 
 export class RillIsoInterval implements RillTimeInterval {
   public includesFuture = false;
 
+  public constructor(
+    private readonly start: RillAbsoluteTime,
+    private readonly end: RillAbsoluteTime | undefined,
+  ) {}
+
   public getLabel(): [label: string, supported: boolean] {
     return ["", false];
   }
 
-  public getMeta(): RillTimeMeta {
-    return { type: "other" };
+  public getGrains(): [
+    rangeGrain: V1TimeGrain | undefined,
+    inGrain: V1TimeGrain | undefined,
+  ] {
+    return [undefined, undefined];
   }
 }
 
 interface RillPointInTime {
   includesFuture: boolean;
+  getGrain(): V1TimeGrain | undefined;
 }
 
 export class RillOrdinalPointInTime implements RillPointInTime {
   public includesFuture = false;
+
+  private restOfParts: RillOrdinalPart[] = [];
+  private end: RillOrdinalPartEnd | undefined = undefined;
+  private readonly ceil: boolean;
+
+  public constructor(
+    private readonly ordinal: RillOrdinalPart,
+    suffix: string,
+  ) {
+    this.ceil = suffix === "$";
+  }
+
+  public withRestOfParts(restOfParts: RillOrdinalPart[]) {
+    this.restOfParts = restOfParts;
+    return this;
+  }
+
+  public withEnd(end: RillOrdinalPartEnd) {
+    this.end = end;
+    return this;
+  }
+
+  public getGrain(): V1TimeGrain | undefined {
+    let rangeGrain = GrainAliasToV1TimeGrain[this.ordinal.grain] as
+      | V1TimeGrain
+      | undefined;
+
+    this.restOfParts.forEach((part) => {
+      rangeGrain = getMinGrain(rangeGrain, GrainAliasToV1TimeGrain[part.grain]);
+    });
+
+    if (this.end) {
+      rangeGrain = getMinGrain(rangeGrain, this.end.getGrain());
+    }
+
+    return rangeGrain;
+  }
+}
+
+export class RillOrdinalPart {
+  public constructor(
+    public readonly grain: string,
+    public readonly num: number | undefined,
+    public readonly snap: string | undefined,
+  ) {}
+}
+
+export class RillOrdinalPartEnd {
+  private grainToInterval: RillGrainToInterval | undefined = undefined;
+  private startEndInterval: RillTimeStartEndInterval | undefined = undefined;
+  private singleGrain: string | undefined = undefined;
+
+  public withGrainToInterval(grainToInterval: RillGrainToInterval) {
+    this.grainToInterval = grainToInterval;
+    return this;
+  }
+
+  public withStartEndInterval(startEndInterval: RillTimeStartEndInterval) {
+    this.startEndInterval = startEndInterval;
+    return this;
+  }
+
+  public withSingleGrain(singleGrain: string) {
+    this.singleGrain = singleGrain;
+    return this;
+  }
+
+  public getGrain(): V1TimeGrain | undefined {
+    let rangeGrain: V1TimeGrain | undefined = undefined;
+
+    if (this.grainToInterval) {
+      [rangeGrain] = this.grainToInterval.getGrains();
+    } else if (this.startEndInterval) {
+      [rangeGrain] = this.startEndInterval.getGrains();
+    } else if (this.singleGrain) {
+      rangeGrain = GrainAliasToV1TimeGrain[this.singleGrain];
+    }
+
+    return rangeGrain;
+  }
 }
 
 export class RillGrainPointInTime implements RillPointInTime {
@@ -318,7 +464,23 @@ export class RillGrainPointInTime implements RillPointInTime {
       firstGrain,
     };
   }
+
+  public getGrain(): V1TimeGrain | undefined {
+    let rangeGrain: V1TimeGrain | undefined = undefined;
+
+    this.parts.forEach((part) => {
+      part.grains.forEach((grain) => {
+        rangeGrain = getMinGrain(
+          rangeGrain,
+          GrainAliasToV1TimeGrain[grain.grain],
+        );
+      });
+    });
+
+    return rangeGrain;
+  }
 }
+
 export class RillGrainPointInTimePart {
   public prefix: string;
   public snap: string;

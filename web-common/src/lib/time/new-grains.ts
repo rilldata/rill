@@ -249,6 +249,36 @@ export function getLargerGrains(grain: V1TimeGrain | TimeGrainAlias) {
   return getLargerGrainsFromOrder(order);
 }
 
+export function getMinGrain(
+  grain1: V1TimeGrain | undefined,
+  grain2: V1TimeGrain | undefined,
+) {
+  if (grain1 === undefined) {
+    return grain2;
+  }
+  if (grain2 === undefined) {
+    return grain1;
+  }
+  const order1 = getGrainOrder(grain1);
+  const order2 = getGrainOrder(grain2);
+  return order1 <= order2 ? grain1 : grain2;
+}
+
+export function getMaxGrain(
+  grain1: V1TimeGrain | undefined,
+  grain2: V1TimeGrain | undefined,
+) {
+  if (grain1 === undefined) {
+    return grain2;
+  }
+  if (grain2 === undefined) {
+    return grain1;
+  }
+  const order1 = getGrainOrder(grain1);
+  const order2 = getGrainOrder(grain2);
+  return order1 > order2 ? grain1 : grain2;
+}
+
 export function getAllowedGrains(
   grain: V1TimeGrain | TimeGrainAlias | DateTimeUnit | undefined,
 ) {
