@@ -83,6 +83,7 @@
     {
       accessorKey: "usedOn",
       header: "Last acccesed",
+      sortDescFirst: true,
       cell: (info) => {
         if (!info.getValue()) return "-";
         const date = formatDate(info.getValue() as string);

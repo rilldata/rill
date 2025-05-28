@@ -54,6 +54,7 @@
     {
       accessorFn: (row) => row.meta.stateUpdatedOn,
       header: "Last refresh",
+      sortDescFirst: true,
       cell: (info) =>
         flexRender(RefreshCell, {
           date: info.getValue() as string,

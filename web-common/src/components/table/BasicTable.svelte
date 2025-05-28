@@ -33,6 +33,7 @@
     }
   }
 
+  // Set the sorting state to the column with sortDescFirst
   $: {
     const sortDescFirstColumn = columns.find((col) => col.sortDescFirst);
     if (sortDescFirstColumn && sorting.length === 0) {
