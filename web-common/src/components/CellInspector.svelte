@@ -78,7 +78,8 @@
     unsubscribe();
   });
 
-  function formatValue(value: any): string {
+  export function formatValue(value: any): string {
+    // If the value is null or undefined, return an empty string
     if (value === null || value === undefined) {
       return "";
     }
@@ -88,12 +89,21 @@
       return JSON.stringify(parsedJson, null, 2);
     }
 
-    // Only format as number if the value is actually a number type
+    // Handle both number type and string numbers
     if (typeof value === "number") {
       return formatInteger(value);
     }
 
-    // For all other types, return as string
+    // For strings, check if it's a valid number without leading zeros
+    if (typeof value === "string") {
+      const num = Number(value);
+      // Only format if it's a valid number and doesn't have leading zeros
+      if (!isNaN(num) && value.trim() === String(num)) {
+        return formatInteger(num);
+      }
+    }
+
+    // For all other cases, return as string
     return String(value);
   }
 
