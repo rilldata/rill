@@ -22,7 +22,7 @@ This ensures **trustworthy, governed analytics** while empowering users to **sel
 
 To use the Rill MCP server, you'll need:
 
-- An **MCP client** (we recommend [Claude Desktop](#configure-claude-desktop), but you can use any compatible client).
+- An **MCP client** (we recommend [Claude Desktop](https://claude.ai/download), but you can use any compatible client. [Why?](#configure-claude-desktop)).
 - A **running Rill project** (locally or hosted on Rill Cloud).
 - **Node.js**, which can be downloaded from [nodejs.org](https://nodejs.org/en).
 
@@ -42,7 +42,7 @@ rill token issue
 
 ### Configure Claude Desktop
 :::warning
-As of 2025/05/08, it's recommended to use Claude Desktop as your MCP client. Cursor currently struggles to compose complex structured payloads (see issue), and Windsurf often thinks it can find the answer in your current code project. Other MCP clients have not yet been tested.
+As of 2025/05/08, it's recommended to use Claude Desktop as your MCP client. Cursor currently struggles to compose complex structured payloads (see [issue](https://forum.cursor.com/t/issue-with-mcp-server-and-pydantic-model-object-as-tool-parameter-in-cursor/77110/5)), and Windsurf often thinks it can find the answer in your current code project. Other MCP clients have not yet been tested.
 :::
 
 Edit your claude_desktop_config.json file. 
@@ -118,7 +118,7 @@ Restart Claude Desktop for any changes to your JSON to take effect.
 :::
 
 ### Troubleshooting:
-If Claude Desktop cannot connect to the MCP server, check that Rill is running (local) or that your able to connect to your [Rill project](https://ui.rilldata.com) from your browser. If your project is private, you need to check that the service token is valid via the CLI.
+If Claude Desktop cannot connect to the MCP server, check that Rill is running (local) or that your able to connect to your [Rill project](https://ui.rilldata.com) from your browser. If your project is private, you need to check that the token is valid via the CLI or create a new one in the UI and edit the config.json file.
 
 ```bash
 rill token list
