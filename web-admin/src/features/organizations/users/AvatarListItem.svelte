@@ -3,6 +3,7 @@
   import { Chip } from "@rilldata/web-common/components/chip";
   import { getRandomBgColor } from "@rilldata/web-common/features/themes/color-config";
   import { cn } from "@rilldata/web-common/lib/shadcn";
+  import { page } from "$app/stores";
 
   export let name: string;
   export let email: string | null = null;
@@ -14,9 +15,18 @@
   export let role: string | null = null;
   export let leftSpacing: boolean = true;
   export let showGuestChip: boolean = false;
+  export let showManage: boolean = false;
 
   function getInitials(name: string) {
     return name.charAt(0).toUpperCase();
+  }
+
+  function handleManageClick() {
+    const organization = $page.params.organization;
+    window.open(
+      `/${organization}/-/users/groups?action=open-edit-user-group-dialog&groupName=${name}`,
+      "_blank",
+    );
   }
 </script>
 
@@ -64,6 +74,13 @@
         <span class="text-xs text-gray-500">
           {count} user{count > 1 ? "s" : ""}
         </span>
+      {/if}
+      {#if showManage}
+        <button
+          type="button"
+          class="text-xs text-primary-600 font-medium cursor-pointer hover:text-primary-700"
+          on:click={handleManageClick}>Manage</button
+        >
       {/if}
     </div>
   </div>

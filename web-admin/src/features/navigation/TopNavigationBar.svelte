@@ -37,6 +37,8 @@
   export let createMagicAuthTokens: boolean;
   export let manageProjectAdmins: boolean;
   export let manageProjectMembers: boolean;
+  export let manageOrgAdmins: boolean;
+  export let manageOrgMembers: boolean;
   export let organizationLogoUrl: string | undefined = undefined;
   export let planDisplayName: string | undefined;
 
@@ -213,7 +215,13 @@
     <!-- NOTE: only project admin and editor can manage project members -->
     <!-- https://docs.rilldata.com/manage/roles-permissions#project-level-permissions -->
     {#if onProjectPage && manageProjectMembers}
-      <ShareProjectPopover {organization} {project} {manageProjectAdmins} />
+      <ShareProjectPopover
+        {organization}
+        {project}
+        {manageProjectAdmins}
+        {manageOrgAdmins}
+        {manageOrgMembers}
+      />
     {/if}
     {#if onMetricsExplorerPage && isDashboardValid}
       {#if exploreSpec}
