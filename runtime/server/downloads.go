@@ -85,7 +85,7 @@ func (s *Server) ExportReport(ctx context.Context, req *runtimev1.ExportReportRe
 			resName := &runtimev1.ResourceName{Kind: runtime.ResourceKindCanvas, Name: canvas}
 			originDashboard = s.getDisplayName(ctx, c, req.InstanceId, resName)
 		}
-		if openPath, ok := rep.Spec.Annotations["web_open_path"]; ok && openPath != "" {
+		if openPath, ok := rep.Spec.Annotations["web_open_path"]; ok && openPath != "" && originDashboard != "" {
 			var err error
 			originURL, err = url.JoinPath(req.OriginBaseUrl, openPath)
 			if err != nil {
@@ -439,5 +439,5 @@ func (s *Server) getDisplayName(ctx context.Context, c *runtime.Controller, inst
 			return canvas.Spec.DisplayName
 		}
 	}
-	return resourceName.Name
+	return ""
 }
