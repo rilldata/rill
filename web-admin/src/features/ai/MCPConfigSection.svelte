@@ -37,6 +37,7 @@
         "AUTH_HEADER": "Bearer ${issuedToken ? issuedToken : "<Rill personal access token>"}"
       }
     }
+  }
 }`;
 </script>
 
