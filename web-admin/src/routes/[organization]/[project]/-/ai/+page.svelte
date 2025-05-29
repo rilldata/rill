@@ -28,9 +28,7 @@
         client that supports the Model Context Protocol (MCP). <a
           href="https://docs.rilldata.com/explore/mcp"
           target="_blank"
-          rel="noopener"
-          class="text-blue-600 underline mb-4 w-fit"
-          >Learn more about MCP in the Rill docs</a
+          rel="noopener">Learn more about MCP in the Rill docs</a
         >
       </p>
     </div>
