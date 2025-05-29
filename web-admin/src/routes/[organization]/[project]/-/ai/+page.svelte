@@ -4,7 +4,6 @@
   import ContentContainer from "@rilldata/web-admin/components/layout/ContentContainer.svelte";
   import MCPConfigSection from "@rilldata/web-admin/features/ai/MCPConfigSection.svelte";
   import PersonalAccessTokensSection from "@rilldata/web-admin/features/personal-access-tokens/PersonalAccessTokensSection.svelte";
-  import { writable } from "svelte/store";
 
   $: organization = $page.params.organization;
   $: project = $page.params.project;
@@ -14,7 +13,7 @@
     project: { public: isPublic },
   } = $proj.data);
 
-  export const issuedToken = writable<string | null>(null);
+  let issuedToken: string | null = null;
 </script>
 
 <ContentContainer maxWidth={1100}>
@@ -33,13 +32,8 @@
       </p>
     </div>
     {#if !isPublic}
-      <PersonalAccessTokensSection bind:issuedToken={$issuedToken} />
+      <PersonalAccessTokensSection bind:issuedToken />
     {/if}
-    <MCPConfigSection
-      {organization}
-      {project}
-      {isPublic}
-      issuedToken={$issuedToken}
-    />
+    <MCPConfigSection {organization} {project} {isPublic} {issuedToken} />
   </div>
 </ContentContainer>
