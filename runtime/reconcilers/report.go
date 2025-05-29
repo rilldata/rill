@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
-	"strconv"
 	"strings"
 	"time"
 
@@ -475,7 +474,7 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 					return false, fmt.Errorf("failed to get recipient URLs for %q", recipient)
 				}
 				opts.OpenLink = urls.OpenURL
-				u, err := createExportURL(urls.ExportURL, rep.Spec, t)
+				u, err := createExportURL(urls.ExportURL, t)
 				if err != nil {
 					return false, err
 				}
@@ -503,7 +502,7 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 				if !ok {
 					return fmt.Errorf("failed to get recipient URLs for anon user")
 				}
-				u, err := createExportURL(urls.ExportURL, rep.Spec, t)
+				u, err := createExportURL(urls.ExportURL, t)
 				if err != nil {
 					return err
 				}
@@ -543,28 +542,14 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 	return false, nil
 }
 
-func createExportURL(inURL string, spec *runtimev1.ReportSpec, executionTime time.Time) (*url.URL, error) {
+func createExportURL(inURL string, executionTime time.Time) (*url.URL, error) {
 	exportURL, err := url.Parse(inURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse export URL %q: %w", inURL, err)
 	}
 
 	exportURLQry := exportURL.Query()
-	exportURLQry.Set("format", spec.ExportFormat.String())
-	exportURLQry.Set("include_header", strconv.FormatBool(spec.ExportIncludeHeader))
 	exportURLQry.Set("execution_time", executionTime.Format(time.RFC3339))
-	exportLimit := int(spec.ExportLimit)
-	if exportLimit > 0 {
-		exportURLQry.Set("limit", strconv.Itoa(exportLimit))
-	}
-	if spec.ExportIncludeHeader {
-		if e, ok := spec.Annotations["explore"]; ok {
-			exportURLQry.Set("dashboard", e)
-		}
-		if c, ok := spec.Annotations["canvas"]; ok {
-			exportURLQry.Set("dashboard", c)
-		}
-	}
 	exportURL.RawQuery = exportURLQry.Encode()
 	return exportURL, nil
 }

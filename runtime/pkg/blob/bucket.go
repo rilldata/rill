@@ -35,6 +35,11 @@ func (b *Bucket) Close() error {
 	return b.bucket.Close()
 }
 
+// Underlying returns the underlying *blob.Bucket.
+func (b *Bucket) Underlying() *blob.Bucket {
+	return b.bucket
+}
+
 // ListObjects lists objects in the bucket that match the given glob pattern.
 // The glob pattern should be a valid path *without* scheme or bucket name.
 // E.g. to list gs://my-bucket/path/to/files/*, the glob pattern should be "path/to/files/*".
@@ -50,6 +55,7 @@ func (b *Bucket) ListObjects(ctx context.Context, glob string) ([]drivers.Object
 		return []drivers.ObjectStoreEntry{{
 			Path:      glob,
 			IsDir:     false,
+			Size:      attrs.Size,
 			UpdatedOn: attrs.ModTime,
 		}}, nil
 	}
@@ -100,6 +106,7 @@ func (b *Bucket) ListObjects(ctx context.Context, glob string) ([]drivers.Object
 		entries = append(entries, drivers.ObjectStoreEntry{
 			Path:      obj.Key,
 			IsDir:     obj.IsDir,
+			Size:      obj.Size,
 			UpdatedOn: obj.ModTime,
 		})
 	}

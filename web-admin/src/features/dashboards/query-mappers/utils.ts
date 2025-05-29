@@ -1,5 +1,5 @@
-import { createInExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
+import { createInExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { getTimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import { PreviousCompleteRangeMap } from "@rilldata/web-common/features/dashboards/time-controls/time-range-mappers";
 import { convertPartialExploreStateToUrlParams } from "@rilldata/web-common/features/dashboards/url-state/convert-partial-explore-state-to-url-params";
@@ -115,6 +115,11 @@ export function getSelectedTimeRange(
       new Date(timeRangeSummary.min),
       new Date(executionTime),
     );
+    // Convert the range to a custom one with resolved start and end.
+    // This retains the resolved range with `executionTime` incorporated into the range.
+    // TODO: Once we have rill-time do `<syntax> as of <executionTime>` as time range.
+    //       Note we need to have the new drop down out of feature flag as well.
+    selectedTimeRange.name = TimeRangePreset.CUSTOM;
   } else {
     return undefined;
   }

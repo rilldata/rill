@@ -1,20 +1,12 @@
 <script lang="ts">
   import { FormattedDataType } from "@rilldata/web-common/components/data-types";
-  import Shortcut from "@rilldata/web-common/components/tooltip/Shortcut.svelte";
-  import StackingWord from "@rilldata/web-common/components/tooltip/StackingWord.svelte";
-  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
-  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import TooltipShortcutContainer from "@rilldata/web-common/components/tooltip/TooltipShortcutContainer.svelte";
-  import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
   import { TOOLTIP_STRING_LIMIT } from "@rilldata/web-common/layout/config";
-  import {
-    copyToClipboard,
-    isClipboardApiSupported,
-  } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
+  import { copyToClipboard } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
   import { modified } from "@rilldata/web-common/lib/actions/modified-click";
   import { STRING_LIKES } from "@rilldata/web-common/lib/duckdb-data-types";
   import { formatDataTypeAsDuckDbQueryString } from "@rilldata/web-common/lib/formatters";
   import { createEventDispatcher, getContext } from "svelte";
+  import { cellInspectorStore } from "@rilldata/web-common/features/dashboards/stores/cell-inspector-store";
   import BarAndLabel from "../../BarAndLabel.svelte";
   import type { VirtualizedTableConfig } from "../types";
 
@@ -44,6 +36,10 @@
   function onFocus() {
     dispatch("inspect", row.index);
     cellActive = true;
+    // Update the cell inspector store with the cell value
+    if (value !== undefined && value !== null) {
+      cellInspectorStore.updateValue(value.toString());
+    }
   }
 
   function onSelectItem(e: MouseEvent) {
@@ -104,79 +100,60 @@
   const shiftClick = async () => {
     let exportedValue = formatDataTypeAsDuckDbQueryString(value, type);
     copyToClipboard(exportedValue);
-    // update this to set the active animation in the tooltip text
   };
 </script>
 
-<Tooltip
-  distance={16}
-  location="top"
-  suppress={suppressTooltip || !isClipboardApiSupported()}
+<div
+  class="
+    {positionStatic ? 'static' : 'absolute'}
+    z-9
+    text-ellipsis
+    whitespace-nowrap
+    {isDimensionTable ? '' : 'border-r border-b'}
+    {activityStatus}
+    "
+  on:blur={onBlur}
+  on:click={onSelectItem}
+  on:focus={onFocus}
+  on:keydown
+  on:mouseout={onBlur}
+  on:mouseover={onFocus}
+  role="gridcell"
+  style:height="{row.size}px"
+  style:left="{column.start}px"
+  style:top="{row.start}px"
+  style:width="{column.size}px"
+  tabindex="0"
+  title={!suppressTooltip ? tooltipValue : undefined}
 >
-  <div
-    class="
-      {positionStatic ? 'static' : 'absolute'}
-      z-9
-      text-ellipsis
-      whitespace-nowrap
-      {isDimensionTable ? '' : 'border-r border-b'}
-      {activityStatus}
-      "
-    on:blur={onBlur}
-    on:click={onSelectItem}
-    on:focus={onFocus}
-    on:keydown
-    on:mouseout={onBlur}
-    on:mouseover={onFocus}
-    role="gridcell"
-    style:height="{row.size}px"
-    style:left="{column.start}px"
-    style:top="{row.start}px"
-    style:width="{column.size}px"
-    tabindex="0"
+  <BarAndLabel
+    color={barColor}
+    customBackgroundColor="rgba(0,0,0,0)"
+    justify="left"
+    showBackground={false}
+    value={barValue}
+    compact={true}
   >
-    <BarAndLabel
-      color={barColor}
-      customBackgroundColor="rgba(0,0,0,0)"
-      justify="left"
-      showBackground={false}
-      value={barValue}
-      compact={true}
+    <button
+      aria-label={label}
+      class="
+        {isTextColumn ? 'text-left' : 'text-right'}
+        {isDimensionTable ? '' : 'px-4'}
+        w-full truncate
+        "
+      on:click={modified({
+        shift: shiftClick,
+      })}
+      style:height="{row.size}px"
     >
-      <button
-        aria-label={label}
-        class="
-          {isTextColumn ? 'text-left' : 'text-right'}
-          {isDimensionTable ? '' : 'px-4'}
-          w-full truncate
-          "
-        on:click={modified({
-          shift: shiftClick,
-        })}
-        style:height="{row.size}px"
-      >
-        <FormattedDataType
-          customStyle={formattedDataTypeStyle}
-          inTable
-          isNull={value === null || value === undefined}
-          {type}
-          value={formattedValue || value}
-          color="text-gray-500"
-        />
-      </button>
-    </BarAndLabel>
-  </div>
-  <TooltipContent maxWidth="360px" slot="tooltip-content">
-    <TooltipTitle>
-      <FormattedDataType dark slot="name" value={tooltipValue} />
-    </TooltipTitle>
-    <TooltipShortcutContainer>
-      <div>
-        <StackingWord key="shift">Copy</StackingWord> this value to clipboard
-      </div>
-      <Shortcut>
-        <span style="font-family: var(--system);">⇧</span> + Click
-      </Shortcut>
-    </TooltipShortcutContainer>
-  </TooltipContent>
-</Tooltip>
+      <FormattedDataType
+        customStyle={formattedDataTypeStyle}
+        inTable
+        isNull={value === null || value === undefined}
+        {type}
+        value={formattedValue || value}
+        color="text-gray-500"
+      />
+    </button>
+  </BarAndLabel>
+</div>

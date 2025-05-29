@@ -1,5 +1,6 @@
 <script lang="ts">
   import FormattedDataType from "../../components/data-types/FormattedDataType.svelte";
+  import { cellInspectorStore } from "../../features/dashboards/stores/cell-inspector-store";
 
   export let value: unknown;
   export let type: string | undefined;
@@ -13,13 +14,31 @@
     | number
     | null
     | undefined;
+
+  function handleMouseOver() {
+    if (value !== undefined && value !== null) {
+      // Always update the value in the store, but don't change visibility
+      cellInspectorStore.updateValue(value.toString());
+    }
+  }
+
+  function handleFocus() {
+    if (value !== undefined && value !== null) {
+      // Always update the value in the store, but don't change visibility
+      cellInspectorStore.updateValue(value.toString());
+    }
+  }
 </script>
 
 <div
+  role="cell"
   class:sorted
   class:selected
   class:!justify-start={type === "VARCHAR" || type === "CODE_STRING"}
-  class=" px-6 size-full flex items-center"
+  class="px-6 size-full flex items-center"
+  on:mouseover={handleMouseOver}
+  on:focus={handleFocus}
+  tabindex="0"
 >
   <p
     class="w-full truncate text-right"

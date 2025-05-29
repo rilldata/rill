@@ -244,6 +244,8 @@ message MetricsViewSpec {
   string display_name = 3;
   // User-facing description
   string description = 4;
+  // Extra context for LLM/AI features. Used to guide natural language question answering and routing.
+  string ai_context = 28;
   // Name of the primary time dimension, used for rendering time series
   string time_dimension = 5;
   // The smallest time grain that can be queried for.
@@ -745,8 +747,9 @@ message APISpec {
   string resolver = 1;
   google.protobuf.Struct resolver_properties = 2;
   string openapi_summary = 3;
-  repeated google.protobuf.Struct openapi_parameters = 4;
-  google.protobuf.Struct openapi_response_schema = 5;
+  string openapi_parameters_json = 8;
+  string openapi_request_schema_json = 9;
+  string openapi_response_schema_json = 10;
   repeated SecurityRule security_rules = 6;
   bool skip_nested_security = 7;
 }

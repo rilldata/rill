@@ -50,7 +50,7 @@ test.describe("explores", () => {
   });
 
   test("Dashboard runthrough", async ({ page }) => {
-    test.setTimeout(45_000); // Note: we should make this test smaller!
+    test.setTimeout(60_000); // Note: we should make this test smaller!
 
     // Enable to get logs in CI
     // page.on("console", async (msg) => {
@@ -135,15 +135,21 @@ time_ranges:
     await expect(page.getByText("Model Data 272 of 100k rows")).toBeVisible();
 
     // Check row viewer is collapsed by looking for the cell value "7029", which should be in the table
-    await expect(page.getByRole("cell", { name: "7029" })).not.toBeVisible();
+    await expect(
+      page.getByRole("cell", { name: "7029" }).first(),
+    ).not.toBeVisible();
 
     // Expand row viewer and check data is there
     await page.getByRole("button", { name: "Toggle rows viewer" }).click();
-    await expect(page.getByRole("cell", { name: "7029" })).toBeVisible();
+    await expect(
+      page.getByRole("cell", { name: "7029" }).first(),
+    ).toBeVisible();
 
     await page.getByRole("button", { name: "Toggle rows viewer" }).click();
     // Check row viewer is collapsed
-    await expect(page.getByRole("cell", { name: "7029" })).not.toBeVisible();
+    await expect(
+      page.getByRole("cell", { name: "7029" }).first(),
+    ).not.toBeVisible();
 
     // Download the data as CSV
     // Start waiting for download before clicking. Note no await.

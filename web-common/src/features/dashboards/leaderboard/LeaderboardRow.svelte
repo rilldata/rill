@@ -9,8 +9,8 @@
   import { formatMeasurePercentageDifference } from "@rilldata/web-common/lib/number-formatting/percentage-formatter";
   import { slide } from "svelte/transition";
   import { type LeaderboardItemData, makeHref } from "./leaderboard-utils";
+  import { cellInspectorStore } from "../stores/cell-inspector-store";
   import LeaderboardItemFilterIcon from "./LeaderboardItemFilterIcon.svelte";
-  import LeaderboardTooltipContent from "./LeaderboardTooltipContent.svelte";
   import LongBarZigZag from "./LongBarZigZag.svelte";
   import {
     COMPARISON_COLUMN_WIDTH,
@@ -18,7 +18,6 @@
     valueColumn,
     deltaColumn,
   } from "./leaderboard-widths";
-  import FloatingElement from "@rilldata/web-common/components/floating-element/FloatingElement.svelte";
 
   export let itemData: LeaderboardItemData;
   export let dimensionName: string;
@@ -30,7 +29,6 @@
   export let atLeastOneActive: boolean;
   export let isTimeComparisonActive: boolean;
   export let leaderboardMeasureNames: string[] = [];
-  export let suppressTooltip: boolean;
   export let leaderboardShowContextForAllMeasures: boolean;
   export let leaderboardSortByMeasureName: string | null;
   export let isValidPercentOfTotal: (measureName: string) => boolean;
@@ -53,7 +51,6 @@
     );
   }
 
-  let hovered = false;
   let valueRect = new DOMRect(0, 0, DEFAULT_COLUMN_WIDTH);
   let deltaRect = new DOMRect(0, 0, COMPARISON_COLUMN_WIDTH);
   let parent: HTMLTableRowElement;
@@ -95,6 +92,45 @@
   $: valueColumn.update(valueElementWith);
   $: deltaColumn.update(deltaElementWidth);
 
+  $: formattedPctOfTotalTitles = Object.fromEntries(
+    Object.entries(pctOfTotals).map(([name, value]) => [
+      name,
+      value !== null ? formatMeasurePercentageDifference(value) : null,
+    ]),
+  );
+
+  $: formattedPctOfTotalStrings = Object.fromEntries(
+    Object.entries(formattedPctOfTotalTitles).map(([name, parts]) => [
+      name,
+      parts
+        ? `${parts.neg || ""}${parts.int}${parts.dot}${parts.frac}${parts.suffix}%`
+        : null,
+    ]),
+  );
+
+  $: formattedDeltaAbsTitles = Object.fromEntries(
+    Object.entries(deltaAbsMap).map(([name, value]) => [
+      name,
+      value !== null ? formatters[name]?.(value)?.toString() : null,
+    ]),
+  );
+
+  $: formattedDeltaRelTitles = Object.fromEntries(
+    Object.entries(deltaRels).map(([name, value]) => [
+      name,
+      value !== null ? formatMeasurePercentageDifference(value) : null,
+    ]),
+  );
+
+  $: formattedDeltaRelStrings = Object.fromEntries(
+    Object.entries(formattedDeltaRelTitles).map(([name, parts]) => [
+      name,
+      parts
+        ? `${parts.neg || ""}${parts.int}${parts.dot}${parts.frac}${parts.suffix}%`
+        : null,
+    ]),
+  );
+
   $: barLengths = Object.fromEntries(
     Object.entries(pctOfTotals).map(([name, pct]) => [
       name,
@@ -123,7 +159,7 @@
 
   $: barColor = excluded
     ? "rgb(243 244 246)"
-    : selected || hovered
+    : selected
       ? "var(--color-primary-200)"
       : "var(--color-primary-100)";
 
@@ -152,8 +188,6 @@
           }),
         );
 
-  $: showTooltip = hovered && !suppressTooltip;
-
   function shiftClickHandler(label: string) {
     let truncatedLabel = label?.toString();
     if (truncatedLabel?.length > TOOLTIP_STRING_LIMIT) {
@@ -174,8 +208,6 @@
   style:background={leaderboardMeasureNames.length === 1
     ? dimensionGradients
     : undefined}
-  on:mouseenter={() => (hovered = true)}
-  on:mouseleave={() => (hovered = false)}
   on:click={(e) => {
     if (e.shiftKey) return;
     toggleDimensionValueSelection(
@@ -194,6 +226,8 @@
     />
   </td>
   <td
+    role="button"
+    tabindex="0"
     data-dimension-cell
     class:ui-copy={!atLeastOneActive}
     class:ui-copy-disabled={excluded}
@@ -201,12 +235,29 @@
     on:click={modified({
       shift: () => shiftClickHandler(dimensionValue),
     })}
+    on:mouseover={() => {
+      if (dimensionValue) {
+        // Always update the value in the store, but don't change visibility
+        cellInspectorStore.updateValue(dimensionValue.toString());
+      }
+    }}
+    on:focus={() => {
+      if (dimensionValue) {
+        // Always update the value in the store, but don't change visibility
+        cellInspectorStore.updateValue(dimensionValue.toString());
+      }
+    }}
     class="relative size-full flex flex-none justify-between items-center leaderboard-label"
     style:background={dimensionGradients}
+    title={!selected && atLeastOneActive
+      ? `Exclusively select ${dimensionValue}`
+      : dimensionValue}
   >
-    <FormattedDataType value={dimensionValue} truncate />
+    <span class="truncate">
+      <FormattedDataType value={dimensionValue} truncate />
+    </span>
 
-    {#if previousValueString && hovered}
+    {#if previousValueString && selected}
       <span
         class="opacity-50 whitespace-nowrap font-normal"
         transition:slide={{ axis: "x", duration: 200 }}
@@ -215,7 +266,7 @@
       </span>
     {/if}
 
-    {#if hovered && href}
+    {#if selected && href}
       <a
         target="_blank"
         rel="noopener noreferrer"
@@ -230,13 +281,28 @@
 
   {#each Object.keys(values) as measureName}
     <td
+      role="button"
+      tabindex="0"
       data-measure-cell
       on:click={modified({
         shift: () => shiftClickHandler(values[measureName]?.toString() || ""),
       })}
+      title={values[measureName]?.toString()}
       style:background={leaderboardMeasureNames.length === 1
         ? measureGradients
         : measureGradientMap?.[measureName]}
+      on:mouseover={() => {
+        const value = values[measureName]?.toString() || "";
+        if (value) {
+          cellInspectorStore.updateValue(value);
+        }
+      }}
+      on:focus={() => {
+        const value = values[measureName]?.toString() || "";
+        if (value) {
+          cellInspectorStore.updateValue(value);
+        }
+      }}
     >
       <div class="w-fit ml-auto bg-transparent" bind:contentRect={valueRect}>
         <FormattedDataType
@@ -254,12 +320,26 @@
 
     {#if isValidPercentOfTotal(measureName) && shouldShowContextColumns(measureName)}
       <td
+        role="button"
+        tabindex="0"
         data-comparison-cell
-        title={pctOfTotals[measureName]?.toString() || ""}
+        title={formattedPctOfTotalStrings[measureName]}
         on:click={modified({
           shift: () =>
-            shiftClickHandler(pctOfTotals[measureName]?.toString() || ""),
+            shiftClickHandler(formattedPctOfTotalStrings[measureName] || ""),
         })}
+        on:mouseover={() => {
+          const value = pctOfTotals[measureName]?.toString() || "";
+          if (value) {
+            cellInspectorStore.updateValue(value);
+          }
+        }}
+        on:focus={() => {
+          const value = pctOfTotals[measureName]?.toString() || "";
+          if (value) {
+            cellInspectorStore.updateValue(value);
+          }
+        }}
       >
         <PercentageChange
           value={pctOfTotals[measureName]}
@@ -273,12 +353,26 @@
 
     {#if isTimeComparisonActive && shouldShowContextColumns(measureName)}
       <td
+        role="button"
+        tabindex="0"
         data-comparison-cell
-        title={deltaAbsMap[measureName]?.toString() || ""}
+        title={formattedDeltaAbsTitles[measureName]}
         on:click={modified({
           shift: () =>
-            shiftClickHandler(deltaAbsMap[measureName]?.toString() || ""),
+            shiftClickHandler(formattedDeltaAbsTitles[measureName] || ""),
         })}
+        on:mouseover={() => {
+          const value = deltaAbsMap[measureName]?.toString() || "";
+          if (value) {
+            cellInspectorStore.updateValue(value);
+          }
+        }}
+        on:focus={() => {
+          const value = deltaAbsMap[measureName]?.toString() || "";
+          if (value) {
+            cellInspectorStore.updateValue(value);
+          }
+        }}
       >
         <FormattedDataType
           color="text-gray-500"
@@ -298,16 +392,26 @@
     {#if isTimeComparisonActive && shouldShowContextColumns(measureName)}
       <td
         data-comparison-cell
-        title={deltaRels[measureName]?.toString() || ""}
+        title={formattedDeltaRelStrings[measureName]}
         on:click={modified({
           shift: () =>
-            shiftClickHandler(deltaRels[measureName]?.toString() || ""),
+            shiftClickHandler(formattedDeltaRelStrings[measureName] || ""),
         })}
+        on:mouseover={() => {
+          const value = deltaRels[measureName]?.toString() || "";
+          if (value) {
+            cellInspectorStore.updateValue(value);
+          }
+        }}
+        on:focus={() => {
+          const value = deltaRels[measureName]?.toString() || "";
+          if (value) {
+            cellInspectorStore.updateValue(value);
+          }
+        }}
       >
         <PercentageChange
-          value={deltaRels[measureName]
-            ? formatMeasurePercentageDifference(deltaRels[measureName])
-            : null}
+          value={deltaRels[measureName]}
           color="text-gray-500"
         />
         {#if showZigZags[measureName]}
@@ -317,26 +421,6 @@
     {/if}
   {/each}
 </tr>
-
-{#if showTooltip}
-  {#await new Promise((r) => setTimeout(r, 600)) then}
-    <FloatingElement
-      target={parent}
-      location="left"
-      alignment="middle"
-      distance={0}
-      pad={0}
-    >
-      <LeaderboardTooltipContent
-        {atLeastOneActive}
-        {excluded}
-        {filterExcludeMode}
-        label={dimensionValue}
-        {selected}
-      />
-    </FloatingElement>
-  {/await}
-{/if}
 
 <style lang="postcss">
   td {

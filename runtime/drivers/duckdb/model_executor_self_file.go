@@ -139,12 +139,14 @@ func exportSQL(qry, path string, format drivers.FileFormat) (string, error) {
 	}
 }
 
-func supportsExportFormat(format drivers.FileFormat, headerMetadata drivers.FileHeaderMetaData) bool {
+func supportsExportFormat(format drivers.FileFormat, headers []string) bool {
 	switch format {
-	case drivers.FileFormatParquet, drivers.FileFormatCSV, drivers.FileFormatJSON:
-		// Avoid using model_executor_self_file if headermetadata is present because DuckDB's Prefix options require header=false and suffix.
-		// Also, DuckDB XLSX(currently we are not using it) writer doesn't support headermetadata.
-		if len(headerMetadata) == 0 {
+	case drivers.FileFormatParquet, drivers.FileFormatJSON:
+		return true
+	case drivers.FileFormatCSV:
+		// Avoid using model_executor_self_file when headers are present,because DuckDB's Prefix option requires header=false and suffix.
+		// Also, DuckDB XLSX (currently we are not using it) writer doesn't support headers.
+		if len(headers) == 0 {
 			return true
 		}
 	}
