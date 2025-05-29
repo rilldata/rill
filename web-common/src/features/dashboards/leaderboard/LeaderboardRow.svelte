@@ -18,7 +18,6 @@
     valueColumn,
     deltaColumn,
   } from "./leaderboard-widths";
-  import FloatingElement from "@rilldata/web-common/components/floating-element/FloatingElement.svelte";
 
   export let itemData: LeaderboardItemData;
   export let dimensionName: string;
