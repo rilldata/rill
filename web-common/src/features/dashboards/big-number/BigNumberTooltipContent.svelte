@@ -1,7 +1,6 @@
 <script lang="ts">
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import TooltipDescription from "@rilldata/web-common/components/tooltip/TooltipDescription.svelte";
-  import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
   import type { MetricsViewSpecMeasure } from "@rilldata/web-common/runtime-client";
 
   export let measure: MetricsViewSpecMeasure;
