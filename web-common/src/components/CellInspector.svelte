@@ -88,16 +88,13 @@
       return JSON.stringify(parsedJson, null, 2);
     }
 
-    // Convert to string first to handle all types
-    const stringValue = String(value);
-
-    // If not JSON, check if it's a number
-    const num = Number(stringValue);
-    if (!isNaN(num) && stringValue.trim() !== "") {
-      return formatInteger(num);
+    // Only format as number if the value is actually a number type
+    if (typeof value === "number") {
+      return formatInteger(value);
     }
 
-    return stringValue;
+    // For all other types, return as string
+    return String(value);
   }
 
   // Only update the value on hover, but don't open the inspector
