@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { ADMIN_URL } from "@rilldata/web-admin/client/http-client";
+  import { CANONICAL_ADMIN_API_URL } from "@rilldata/web-admin/client/http-client";
   import CodeBlock from "@rilldata/web-common/components/code-block/CodeBlock.svelte";
 
   export let organization: string;
@@ -7,7 +7,7 @@
   export let isPublic: boolean;
 
   // Construct the API URL for the MCP server
-  $: apiUrl = `${ADMIN_URL}/v1/organizations/${organization}/projects/${project}/runtime/mcp/sse`;
+  $: apiUrl = `${CANONICAL_ADMIN_API_URL}/v1/organizations/${organization}/projects/${project}/runtime/mcp/sse`;
 
   // Config snippets with exact formatting
   $: publicConfig = `{
