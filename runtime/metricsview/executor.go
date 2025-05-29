@@ -174,7 +174,6 @@ func (e *Executor) Schema(ctx context.Context) (*runtimev1.StructType, error) {
 	// Build a query that selects all dimensions and measures
 	qry := &Query{}
 
-	// TODO fix this when we start supporting time dimension expression and using that column as time dimension of mv
 	if e.metricsView.TimeDimension != "" {
 		qry.Dimensions = append(qry.Dimensions, Dimension{
 			Name: e.metricsView.TimeDimension,

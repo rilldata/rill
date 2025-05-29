@@ -74,7 +74,6 @@ func (e *Executor) ValidateMetricsView(ctx context.Context) (*ValidateMetricsVie
 
 	// Check time dimension exists
 	if mv.TimeDimension != "" {
-		// TODO fix this when we start supporting time dimension expression in metrics views
 		f, ok := cols[strings.ToLower(mv.TimeDimension)]
 		if !ok {
 			res.TimeDimensionErr = fmt.Errorf("timeseries %q is not a column in table %q", mv.TimeDimension, mv.Table)

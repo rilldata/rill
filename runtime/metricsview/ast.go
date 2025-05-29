@@ -26,7 +26,7 @@ type AST struct {
 	comparisonDimFields []FieldNode
 	unnests             []string
 	nextIdentifier      int
-	timeColumn          string
+	timeField           *FieldNode
 
 	// Contextual info for building the AST
 	metricsView *runtimev1.MetricsViewSpec
@@ -143,7 +143,6 @@ func NewAST(mv *runtimev1.MetricsViewSpec, sec *runtime.ResolvedSecurity, qry *Q
 		security:    sec,
 		query:       qry,
 		dialect:     dialect,
-		timeColumn:  timeDim,
 	}
 
 	// Determine the minimum time grain for the time dimension in the query.
@@ -152,7 +151,7 @@ func NewAST(mv *runtimev1.MetricsViewSpec, sec *runtime.ResolvedSecurity, qry *Q
 		if qd.Compute == nil || qd.Compute.TimeFloor == nil {
 			continue
 		}
-		if !strings.EqualFold(qd.Compute.TimeFloor.Dimension, ast.timeColumn) {
+		if !strings.EqualFold(qd.Compute.TimeFloor.Dimension, timeDim) {
 			continue
 		}
 		tg := qd.Compute.TimeFloor.Grain
@@ -165,6 +164,22 @@ func NewAST(mv *runtimev1.MetricsViewSpec, sec *runtime.ResolvedSecurity, qry *Q
 		}
 		if tg.ToTimeutil() < minGrain.ToTimeutil() {
 			minGrain = tg
+		}
+	}
+
+	// lookup time dimension in the metrics view
+	if timeDim != "" {
+		// If the time dimension is not defined in the metrics view, we create a default dimension spec.
+		// This is necessary to ensure that the time dimension can be used in the query.
+		t, err := ast.lookupDimension(timeDim, true)
+		if err != nil {
+			return nil, fmt.Errorf("time dimension %q not found: %w", timeDim, err)
+		}
+
+		ast.timeField = &FieldNode{
+			Name:        t.Column, // use actual column name instead of dim name as the time dim may not be present in the select clause, so using alias won't work
+			DisplayName: t.DisplayName,
+			Expr:        t.Expression,
 		}
 	}
 
@@ -213,7 +228,7 @@ func NewAST(mv *runtimev1.MetricsViewSpec, sec *runtime.ResolvedSecurity, qry *Q
 		// Also note that the comparison time range currently always targets a.metricsView.TimeDimension, so we only apply the correction for that dimension.
 		cf := f // Clone
 		if ast.query.ComparisonTimeRange != nil && qd.Compute != nil && qd.Compute.TimeFloor != nil {
-			if strings.EqualFold(qd.Compute.TimeFloor.Dimension, ast.timeColumn) {
+			if strings.EqualFold(qd.Compute.TimeFloor.Dimension, ast.timeField.Name) {
 				cf.Expr, err = ast.sqlForExpressionAdjustedByComparisonTimeRangeOffset(f.Expr, qd.Compute.TimeFloor.Grain, minGrain)
 				if err != nil {
 					return nil, err
@@ -226,7 +241,7 @@ func NewAST(mv *runtimev1.MetricsViewSpec, sec *runtime.ResolvedSecurity, qry *Q
 	}
 
 	if qry.Rows {
-		// when Rows is set that means we want underlying rows from the model that why adding * as dim field which will also avoid using AS clause
+		// when Rows is set we want underlying rows from the model, that's why adding only * as the dim field
 		ast.dimFields = append(ast.dimFields, FieldNode{
 			Name: "*",
 			Expr: "*",
@@ -731,9 +746,9 @@ func (a *AST) buildSpineSelect(alias string, spine *Spine, tr *TimeRange) (*Sele
 			return nil, errors.New("failed to apply time spine: time range has more than 1000 bins")
 		}
 
-		tf, ok := a.findFieldForComputedTimeDimension(a.dimFields, a.timeColumn)
+		tf, ok := a.findFieldForComputedTimeDimension(a.dimFields, a.timeField.Name)
 		if !ok {
-			return nil, fmt.Errorf("failed to find computed time dimension %q", a.timeColumn)
+			return nil, fmt.Errorf("failed to find computed time dimension %q", a.timeField.Name)
 		}
 		timeAlias := tf.Name
 
@@ -798,7 +813,7 @@ func (a *AST) buildSpineSelect(alias string, spine *Spine, tr *TimeRange) (*Sele
 
 // addTimeRange adds a time range to the given SelectNode's WHERE clause.
 func (a *AST) addTimeRange(n *SelectNode, tr *TimeRange) {
-	if tr == nil || tr.IsZero() || a.timeColumn == "" {
+	if tr == nil || tr.IsZero() || a.timeField == nil {
 		return
 	}
 
@@ -807,7 +822,7 @@ func (a *AST) addTimeRange(n *SelectNode, tr *TimeRange) {
 		panic("ast received a non-empty, unresolved time range")
 	}
 
-	expr, args := a.sqlForTimeRange(a.timeColumn, tr.Start, tr.End)
+	expr, args := a.sqlForTimeRange(a.timeField, tr.Start, tr.End)
 	n.TimeWhere = &ExprNode{
 		Expr: expr,
 		Args: args,
@@ -1196,18 +1211,21 @@ func (a *AST) generateIdentifier() string {
 }
 
 // sqlForTimeRange builds a SQL expression and query args for filtering by a time range.
-func (a *AST) sqlForTimeRange(timeCol string, start, end time.Time) (string, []any) {
+func (a *AST) sqlForTimeRange(timeCol *FieldNode, start, end time.Time) (string, []any) {
+	col := a.dialect.EscapeIdentifier(timeCol.Name)
+	if timeCol.Expr != "" {
+		col = timeCol.Expr
+	}
 	var where string
 	var args []any
 	if !start.IsZero() && !end.IsZero() {
-		col := a.dialect.EscapeIdentifier(timeCol)
 		where = fmt.Sprintf("%s >= ? AND %s < ?", col, col)
 		args = []any{start, end}
 	} else if !start.IsZero() {
-		where = fmt.Sprintf("%s >= ?", a.dialect.EscapeIdentifier(timeCol))
+		where = fmt.Sprintf("%s >= ?", col)
 		args = []any{start}
 	} else if !end.IsZero() {
-		where = fmt.Sprintf("%s < ?", a.dialect.EscapeIdentifier(timeCol))
+		where = fmt.Sprintf("%s < ?", col)
 		args = []any{end}
 	} else {
 		return "", nil
