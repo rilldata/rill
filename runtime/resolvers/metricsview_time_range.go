@@ -28,12 +28,12 @@ type metricsViewTimeRangeResolver struct {
 }
 
 type metricsViewTimeRangeResolverArgs struct {
-	Priority   int    `mapstructure:"priority"`
-	TimeColumn string `mapstructure:"time_column"` // if empty, the default time column in mv is used
+	Priority int `mapstructure:"priority"`
 }
 
 type metricsViewTimeRange struct {
 	MetricsView string `mapstructure:"metrics_view"`
+	TimeColumn  string `mapstructure:"time_column"` // if empty, the default time column in mv is used
 }
 
 func newMetricsViewTimeRangeResolver(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolver, error) {
@@ -80,7 +80,7 @@ func newMetricsViewTimeRangeResolver(ctx context.Context, opts *runtime.Resolver
 		return nil, runtime.ErrForbidden
 	}
 
-	ex, err := metricsview.NewExecutor(ctx, opts.Runtime, opts.InstanceID, mv, false, security, args.Priority, args.TimeColumn)
+	ex, err := metricsview.NewExecutor(ctx, opts.Runtime, opts.InstanceID, mv, false, security, args.Priority, tr.TimeColumn)
 	if err != nil {
 		return nil, err
 	}
@@ -147,10 +147,10 @@ func resolveTimestampResult(ctx context.Context, rt *runtime.Runtime, instanceID
 		Resolver:   "metrics_time_range",
 		ResolverProperties: map[string]any{
 			"metrics_view": metricsViewName,
+			"time_column":  timeColumn,
 		},
 		Args: map[string]any{
-			"priority":    priority,
-			"time_column": timeColumn,
+			"priority": priority,
 		},
 		Claims: security,
 	})

@@ -244,10 +244,10 @@ func ResolveTimestampResult(ctx context.Context, rt *runtime.Runtime, instanceID
 		Resolver:   "metrics_time_range",
 		ResolverProperties: map[string]any{
 			"metrics_view": metricsViewName,
+			"time_column":  timeColumn,
 		},
 		Args: map[string]any{
-			"priority":    priority,
-			"time_column": timeColumn,
+			"priority": priority,
 		},
 		Claims: security,
 	})

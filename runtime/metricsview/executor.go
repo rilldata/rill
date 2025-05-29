@@ -30,7 +30,7 @@ type Executor struct {
 	streaming   bool
 	security    *runtime.ResolvedSecurity
 	priority    int
-	timeColumn  string
+	timeColumn  string // it's needed here mainly to resolve Timestamps
 
 	olap        drivers.OLAPStore
 	olapRelease func()
