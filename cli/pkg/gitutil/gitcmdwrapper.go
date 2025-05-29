@@ -13,6 +13,8 @@ import (
 	"strings"
 )
 
+var errDetachedHead = errors.New("detached HEAD state detected, please checkout a branch")
+
 type GitStatus struct {
 	Branch        string
 	LocalChanges  bool // true if there are local changes (staged, unstaged, or untracked)
@@ -41,10 +43,14 @@ func RunGitStatus(path string) (GitStatus, error) {
 	status := GitStatus{}
 	lines := strings.SplitSeq(strings.TrimSpace(string(data)), "\n")
 	for line := range lines {
+		line = strings.TrimSpace(line)
 		switch {
 		// standard headers - all may not be present
 		case strings.HasPrefix(line, "# branch.oid "):
 		case strings.HasPrefix(line, "# branch.head "):
+			if strings.HasSuffix(line, "(detached)") {
+				return status, errDetachedHead
+			}
 			// Should handle detached state ?
 			status.Branch = strings.TrimPrefix(line, "# branch.head ")
 		case strings.HasPrefix(line, "# branch.upstream "):
@@ -137,7 +143,6 @@ func GitPush(ctx context.Context, path string, force bool, g Config) error {
 	if err != nil {
 		return err
 	}
-	// TODO : handle detached state
 	args = append(args, st.Branch)
 
 	cmd := exec.CommandContext(ctx, "git", args...)

@@ -22,7 +22,7 @@ const (
 	LocalService_Ping_FullMethodName                                = "/rill.local.v1.LocalService/Ping"
 	LocalService_GetMetadata_FullMethodName                         = "/rill.local.v1.LocalService/GetMetadata"
 	LocalService_GetVersion_FullMethodName                          = "/rill.local.v1.LocalService/GetVersion"
-	LocalService_WatchGitStatus_FullMethodName                      = "/rill.local.v1.LocalService/WatchGitStatus"
+	LocalService_GitStatus_FullMethodName                           = "/rill.local.v1.LocalService/GitStatus"
 	LocalService_GitPull_FullMethodName                             = "/rill.local.v1.LocalService/GitPull"
 	LocalService_GitPush_FullMethodName                             = "/rill.local.v1.LocalService/GitPush"
 	LocalService_PushToGithub_FullMethodName                        = "/rill.local.v1.LocalService/PushToGithub"
@@ -46,8 +46,8 @@ type LocalServiceClient interface {
 	GetMetadata(ctx context.Context, in *GetMetadataRequest, opts ...grpc.CallOption) (*GetMetadataResponse, error)
 	// GetVersion returns details about the current and latest available Rill versions.
 	GetVersion(ctx context.Context, in *GetVersionRequest, opts ...grpc.CallOption) (*GetVersionResponse, error)
-	// WatchGitStatus watches for status changes in the git repo.
-	WatchGitStatus(ctx context.Context, in *WatchGitStatusRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[WatchGitStatusResponse], error)
+	// GitStatus returns the curren status of the local git repo. This is equivalent to doing a `git fetch` followed by running `git status`.
+	GitStatus(ctx context.Context, in *GitStatusRequest, opts ...grpc.CallOption) (*GitStatusResponse, error)
 	// GitPull fetches the latest changes from the remote git repo equivalent to `git pull` command.
 	// If there are any merge conflicts the pull is aborted.
 	// Force can be set to true to force the pull and overwrite any local changes.
@@ -114,24 +114,15 @@ func (c *localServiceClient) GetVersion(ctx context.Context, in *GetVersionReque
 	return out, nil
 }
 
-func (c *localServiceClient) WatchGitStatus(ctx context.Context, in *WatchGitStatusRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[WatchGitStatusResponse], error) {
+func (c *localServiceClient) GitStatus(ctx context.Context, in *GitStatusRequest, opts ...grpc.CallOption) (*GitStatusResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	stream, err := c.cc.NewStream(ctx, &LocalService_ServiceDesc.Streams[0], LocalService_WatchGitStatus_FullMethodName, cOpts...)
+	out := new(GitStatusResponse)
+	err := c.cc.Invoke(ctx, LocalService_GitStatus_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &grpc.GenericClientStream[WatchGitStatusRequest, WatchGitStatusResponse]{ClientStream: stream}
-	if err := x.ClientStream.SendMsg(in); err != nil {
-		return nil, err
-	}
-	if err := x.ClientStream.CloseSend(); err != nil {
-		return nil, err
-	}
-	return x, nil
+	return out, nil
 }
-
-// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type LocalService_WatchGitStatusClient = grpc.ServerStreamingClient[WatchGitStatusResponse]
 
 func (c *localServiceClient) GitPull(ctx context.Context, in *GitPullRequest, opts ...grpc.CallOption) (*GitPullResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
@@ -253,8 +244,8 @@ type LocalServiceServer interface {
 	GetMetadata(context.Context, *GetMetadataRequest) (*GetMetadataResponse, error)
 	// GetVersion returns details about the current and latest available Rill versions.
 	GetVersion(context.Context, *GetVersionRequest) (*GetVersionResponse, error)
-	// WatchGitStatus watches for status changes in the git repo.
-	WatchGitStatus(*WatchGitStatusRequest, grpc.ServerStreamingServer[WatchGitStatusResponse]) error
+	// GitStatus returns the curren status of the local git repo. This is equivalent to doing a `git fetch` followed by running `git status`.
+	GitStatus(context.Context, *GitStatusRequest) (*GitStatusResponse, error)
 	// GitPull fetches the latest changes from the remote git repo equivalent to `git pull` command.
 	// If there are any merge conflicts the pull is aborted.
 	// Force can be set to true to force the pull and overwrite any local changes.
@@ -300,8 +291,8 @@ func (UnimplementedLocalServiceServer) GetMetadata(context.Context, *GetMetadata
 func (UnimplementedLocalServiceServer) GetVersion(context.Context, *GetVersionRequest) (*GetVersionResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetVersion not implemented")
 }
-func (UnimplementedLocalServiceServer) WatchGitStatus(*WatchGitStatusRequest, grpc.ServerStreamingServer[WatchGitStatusResponse]) error {
-	return status.Errorf(codes.Unimplemented, "method WatchGitStatus not implemented")
+func (UnimplementedLocalServiceServer) GitStatus(context.Context, *GitStatusRequest) (*GitStatusResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GitStatus not implemented")
 }
 func (UnimplementedLocalServiceServer) GitPull(context.Context, *GitPullRequest) (*GitPullResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GitPull not implemented")
@@ -411,16 +402,23 @@ func _LocalService_GetVersion_Handler(srv interface{}, ctx context.Context, dec 
 	return interceptor(ctx, in, info, handler)
 }
 
-func _LocalService_WatchGitStatus_Handler(srv interface{}, stream grpc.ServerStream) error {
-	m := new(WatchGitStatusRequest)
-	if err := stream.RecvMsg(m); err != nil {
-		return err
+func _LocalService_GitStatus_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GitStatusRequest)
+	if err := dec(in); err != nil {
+		return nil, err
 	}
-	return srv.(LocalServiceServer).WatchGitStatus(m, &grpc.GenericServerStream[WatchGitStatusRequest, WatchGitStatusResponse]{ServerStream: stream})
+	if interceptor == nil {
+		return srv.(LocalServiceServer).GitStatus(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: LocalService_GitStatus_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(LocalServiceServer).GitStatus(ctx, req.(*GitStatusRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
-
-// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type LocalService_WatchGitStatusServer = grpc.ServerStreamingServer[WatchGitStatusResponse]
 
 func _LocalService_GitPull_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GitPullRequest)
@@ -640,6 +638,10 @@ var LocalService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _LocalService_GetVersion_Handler,
 		},
 		{
+			MethodName: "GitStatus",
+			Handler:    _LocalService_GitStatus_Handler,
+		},
+		{
 			MethodName: "GitPull",
 			Handler:    _LocalService_GitPull_Handler,
 		},
@@ -684,12 +686,6 @@ var LocalService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _LocalService_ListProjectsForOrg_Handler,
 		},
 	},
-	Streams: []grpc.StreamDesc{
-		{
-			StreamName:    "WatchGitStatus",
-			Handler:       _LocalService_WatchGitStatus_Handler,
-			ServerStreams: true,
-		},
-	},
+	Streams:  []grpc.StreamDesc{},
 	Metadata: "rill/local/v1/api.proto",
 }

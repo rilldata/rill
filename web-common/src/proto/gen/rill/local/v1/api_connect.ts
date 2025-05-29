@@ -3,7 +3,7 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import { CreateOrganizationRequest, CreateOrganizationResponse, DeployProjectRequest, DeployProjectResponse, GetCurrentProjectRequest, GetCurrentProjectResponse, GetCurrentUserRequest, GetCurrentUserResponse, GetMetadataRequest, GetMetadataResponse, GetVersionRequest, GetVersionResponse, GitPullRequest, GitPullResponse, GitPushRequest, GitPushResponse, ListMatchingProjectsRequest, ListMatchingProjectsResponse, ListOrganizationsAndBillingMetadataRequest, ListOrganizationsAndBillingMetadataResponse, ListProjectsForOrgRequest, ListProjectsForOrgResponse, PingRequest, PingResponse, PushToGithubRequest, PushToGithubResponse, RedeployProjectRequest, RedeployProjectResponse, WatchGitStatusRequest, WatchGitStatusResponse } from "./api_pb.js";
+import { CreateOrganizationRequest, CreateOrganizationResponse, DeployProjectRequest, DeployProjectResponse, GetCurrentProjectRequest, GetCurrentProjectResponse, GetCurrentUserRequest, GetCurrentUserResponse, GetMetadataRequest, GetMetadataResponse, GetVersionRequest, GetVersionResponse, GitPullRequest, GitPullResponse, GitPushRequest, GitPushResponse, GitStatusRequest, GitStatusResponse, ListMatchingProjectsRequest, ListMatchingProjectsResponse, ListOrganizationsAndBillingMetadataRequest, ListOrganizationsAndBillingMetadataResponse, ListProjectsForOrgRequest, ListProjectsForOrgResponse, PingRequest, PingResponse, PushToGithubRequest, PushToGithubResponse, RedeployProjectRequest, RedeployProjectResponse } from "./api_pb.js";
 import { MethodKind } from "@bufbuild/protobuf";
 
 /**
@@ -46,15 +46,15 @@ export const LocalService = {
       kind: MethodKind.Unary,
     },
     /**
-     * WatchGitStatus watches for status changes in the git repo.
+     * GitStatus returns the curren status of the local git repo. This is equivalent to doing a `git fetch` followed by running `git status`.
      *
-     * @generated from rpc rill.local.v1.LocalService.WatchGitStatus
+     * @generated from rpc rill.local.v1.LocalService.GitStatus
      */
-    watchGitStatus: {
-      name: "WatchGitStatus",
-      I: WatchGitStatusRequest,
-      O: WatchGitStatusResponse,
-      kind: MethodKind.ServerStreaming,
+    gitStatus: {
+      name: "GitStatus",
+      I: GitStatusRequest,
+      O: GitStatusResponse,
+      kind: MethodKind.Unary,
     },
     /**
      * GitPull fetches the latest changes from the remote git repo equivalent to `git pull` command.

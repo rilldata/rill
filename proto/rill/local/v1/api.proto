@@ -15,8 +15,8 @@ service LocalService {
   // GetVersion returns details about the current and latest available Rill versions.
   rpc GetVersion(GetVersionRequest) returns (GetVersionResponse) {}
 
-  // WatchGitStatus watches for status changes in the git repo.
-  rpc WatchGitStatus(WatchGitStatusRequest) returns (stream WatchGitStatusResponse) {}
+  // GitStatus returns the curren status of the local git repo. This is equivalent to doing a `git fetch` followed by running `git status`.
+  rpc GitStatus(GitStatusRequest) returns (GitStatusResponse) {}
 
   // GitPull fetches the latest changes from the remote git repo equivalent to `git pull` command.
   // If there are any merge conflicts the pull is aborted.
@@ -87,9 +87,9 @@ message GetVersionResponse {
   string latest = 2;
 }
 
-message WatchGitStatusRequest {}
+message GitStatusRequest {}
 
-message WatchGitStatusResponse {
+message GitStatusResponse {
   // The current branch of the git repo.
   string branch = 1;
   // The remote url of the git repo.
