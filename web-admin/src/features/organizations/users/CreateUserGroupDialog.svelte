@@ -146,7 +146,7 @@
         .min(3, "Name must be at least 3 characters")
         .matches(
           /^[a-zA-Z0-9]+(-[a-zA-Z0-9]+)*$/,
-          "Name must contain only letters, numbers, and hyphens (slug)",
+          "Name can only include letters, numbers, and hyphens — no spaces or special characters",
         ),
     }),
   );
