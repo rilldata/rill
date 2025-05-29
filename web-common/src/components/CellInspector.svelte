@@ -7,7 +7,7 @@
   import { cubicOut } from "svelte/easing";
   import Kbd from "./Kbd.svelte";
 
-  export let value: any = "";
+  export let value: any = null;
   export let isOpen: boolean = false;
 
   let hovered = false;
@@ -78,20 +78,26 @@
     unsubscribe();
   });
 
-  // TODO: Consider using a dedicated JSON pretty printing package like:
-  // - json-stringify-pretty-compact: For compact but readable JSON output
-  // - pretty-format: For more customizable formatting options
-  function formatValue(value: string): string {
+  function formatValue(value: any): string {
+    if (value === null || value === undefined) {
+      return "";
+    }
+
     // If the value is JSON, pretty print it
     if (isJson && parsedJson !== null) {
       return JSON.stringify(parsedJson, null, 2);
     }
+
+    // Convert to string first to handle all types
+    const stringValue = String(value);
+
     // If not JSON, check if it's a number
-    const num = Number(value);
-    if (!isNaN(num)) {
+    const num = Number(stringValue);
+    if (!isNaN(num) && stringValue.trim() !== "") {
       return formatInteger(num);
     }
-    return value;
+
+    return stringValue;
   }
 
   // Only update the value on hover, but don't open the inspector
@@ -143,10 +149,16 @@
         class:items-start={isJson}
         class:items-center={!isJson}
       >
-        <span
-          class="whitespace-pre-wrap break-words text-sm text-gray-800 dark:text-gray-200 flex-1"
-          class:font-mono={isJson}>{formatValue(value)}</span
-        >
+        {#if value === null}
+          <span class="text-sm text-gray-500 dark:text-gray-400 italic"
+            >No value</span
+          >
+        {:else}
+          <span
+            class="whitespace-pre-wrap break-words text-sm text-gray-800 dark:text-gray-200 flex-1"
+            class:font-mono={isJson}>{formatValue(value)}</span
+          >
+        {/if}
       </div>
       <div
         class="flex justify-between p-2 border-t border-gray-200 gap-1 text-[11px] text-gray-500"
