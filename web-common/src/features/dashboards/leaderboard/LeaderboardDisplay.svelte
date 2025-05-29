@@ -106,7 +106,6 @@
               {comparisonTimeRange}
               {dimension}
               {parentElement}
-              {suppressTooltip}
               {timeControlsReady}
               selectedValues={selectedDimensionValues(
                 $runtime.instanceId,

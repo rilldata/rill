@@ -11,7 +11,6 @@
   import { type LeaderboardItemData, makeHref } from "./leaderboard-utils";
   import { cellInspectorStore } from "../stores/cell-inspector-store";
   import LeaderboardItemFilterIcon from "./LeaderboardItemFilterIcon.svelte";
-  import LeaderboardTooltipContent from "./LeaderboardTooltipContent.svelte";
   import LongBarZigZag from "./LongBarZigZag.svelte";
   import {
     COMPARISON_COLUMN_WIDTH,
@@ -31,7 +30,6 @@
   export let atLeastOneActive: boolean;
   export let isTimeComparisonActive: boolean;
   export let leaderboardMeasureNames: string[] = [];
-  export let suppressTooltip: boolean;
   export let leaderboardShowContextForAllMeasures: boolean;
   export let leaderboardSortByMeasureName: string | null;
   export let isValidPercentOfTotal: (measureName: string) => boolean;
@@ -152,8 +150,6 @@
             ];
           }),
         );
-
-  $: showTooltip = hovered && !suppressTooltip;
 
   function shiftClickHandler(label: string) {
     let truncatedLabel = label?.toString();
@@ -385,26 +381,6 @@
     {/if}
   {/each}
 </tr>
-
-{#if showTooltip}
-  {#await new Promise((r) => setTimeout(r, 600)) then}
-    <FloatingElement
-      target={parent}
-      location="left"
-      alignment="middle"
-      distance={0}
-      pad={0}
-    >
-      <LeaderboardTooltipContent
-        {atLeastOneActive}
-        {excluded}
-        {filterExcludeMode}
-        label={dimensionValue}
-        {selected}
-      />
-    </FloatingElement>
-  {/await}
-{/if}
 
 <style lang="postcss">
   td {
