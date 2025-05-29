@@ -146,7 +146,7 @@
     <button
       {...builder}
       use:builder.action
-      class="flex"
+      class="flex gap-x-1"
       aria-label="Select time range"
       data-state={open ? "open" : "closed"}
     >

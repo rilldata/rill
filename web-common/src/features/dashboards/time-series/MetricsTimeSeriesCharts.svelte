@@ -302,6 +302,8 @@
       measures,
     );
   }
+
+  let open = false;
 </script>
 
 <TimeSeriesChartContainer
@@ -330,18 +332,14 @@
         selectedItems={visibleMeasureNames}
       />
 
-      <DropdownMenu.Root>
+      <DropdownMenu.Root bind:open>
         <DropdownMenu.Trigger asChild let:builder>
           <Button builders={[builder]} type="text">
             <div
               class="flex items-center gap-x-0.5 px-1 text-gray-700 hover:text-inherit"
             >
               by <strong> {TIME_GRAIN[activeTimeGrain].label}</strong>
-              <span
-                class="transition-transform"
-                class:hidden={false}
-                class:-rotate-180={false}
-              >
+              <span class="transition-transform" class:-rotate-180={open}>
                 <CaretDownIcon />
               </span>
             </div>
