@@ -1,6 +1,7 @@
 <script lang="ts">
   import Prism from "prismjs";
   import "prismjs/components/prism-json";
+  import "prismjs/themes/prism.css";
   import { onMount } from "svelte";
   import Button from "../button/Button.svelte";
 
