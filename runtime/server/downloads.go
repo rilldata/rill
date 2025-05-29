@@ -409,7 +409,7 @@ func gzipDecompress(v []byte) ([]byte, error) {
 }
 
 // getDisplayName returns the display name of a resource or an empty string if there's an error
-func (s *Server) getDisplayName(ctx context.Context, c *runtime.Controller, instanceId string, resourceName *runtimev1.ResourceName) string {
+func (s *Server) getDisplayName(ctx context.Context, c *runtime.Controller, instanceID string, resourceName *runtimev1.ResourceName) string {
 	res, err := c.Get(ctx, resourceName, false)
 	if err != nil {
 		s.logger.Error("getDisplayName: failed to get resource", zap.Error(err), zap.String("instance_id", instanceId), zap.String("resource_name", resourceName.Name), zap.String("resource_kind", resourceName.Kind), observability.ZapCtx(ctx))
@@ -423,7 +423,7 @@ func (s *Server) getDisplayName(ctx context.Context, c *runtime.Controller, inst
 	}
 
 	if !access {
-		s.logger.Error("getDisplayName: access denied", zap.String("instance_id", instanceId), zap.String("resource_name", resourceName.Name), zap.String("resource_kind", resourceName.Kind), observability.ZapCtx(ctx))
+		s.logger.Error("getDisplayName: access denied", zap.String("instance_id", instanceID), zap.String("resource_name", resourceName.Name), zap.String("resource_kind", resourceName.Kind), observability.ZapCtx(ctx))
 		return ""
 	}
 	// Try to get DisplayName for known resource types
