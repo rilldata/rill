@@ -961,10 +961,10 @@ func (c *connection) FindUserAuthTokens(ctx context.Context, userID, afterID str
 	`)
 	args := []any{userID}
 	if afterID != "" {
-		qry.WriteString(" AND t.id > $2 ORDER BY t.id LIMIT $3")
+		qry.WriteString(" AND t.id > $2 ORDER BY t.created_on DESC, t.id DESC LIMIT $3")
 		args = append(args, afterID, limit)
 	} else {
-		qry.WriteString(" ORDER BY t.id LIMIT $2")
+		qry.WriteString(" ORDER BY t.created_on DESC LIMIT $2")
 		args = append(args, limit)
 	}
 

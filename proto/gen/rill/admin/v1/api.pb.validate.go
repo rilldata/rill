@@ -38583,6 +38583,8 @@ func (m *UserAuthToken) validate(all bool) error {
 
 	// no validation rules for RepresentingUserId
 
+	// no validation rules for TokenPrefix
+
 	if all {
 		switch v := interface{}(m.GetCreatedOn()).(type) {
 		case interface{ ValidateAll() error }:

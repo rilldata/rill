@@ -2650,6 +2650,7 @@ message UserAuthToken {
   string auth_client_id = 3;
   string auth_client_display_name = 4;
   string representing_user_id = 5;
+  string token_prefix = 9;
   google.protobuf.Timestamp created_on = 6;
   google.protobuf.Timestamp expires_on = 7;
   google.protobuf.Timestamp used_on = 8;

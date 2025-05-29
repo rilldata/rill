@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/rilldata/rill/admin/database"
+	"github.com/rilldata/rill/admin/pkg/authtoken"
 	"github.com/rilldata/rill/admin/server/auth"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/rilldata/rill/runtime/pkg/observability"
@@ -215,6 +217,13 @@ func (s *Server) ListUserAuthTokens(ctx context.Context, req *adminv1.ListUserAu
 			expiresOn = timestamppb.New(*t.ExpiresOn)
 		}
 
+		id, err := uuid.Parse(t.ID)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "invalid token ID %q: %v", t.ID, err)
+		}
+
+		token := &authtoken.Token{Type: authtoken.TypeUser, ID: id}
+
 		dtos[i] = &adminv1.UserAuthToken{
 			Id:                    t.ID,
 			DisplayName:           t.DisplayName,
@@ -224,6 +233,7 @@ func (s *Server) ListUserAuthTokens(ctx context.Context, req *adminv1.ListUserAu
 			CreatedOn:             timestamppb.New(t.CreatedOn),
 			ExpiresOn:             expiresOn,
 			UsedOn:                timestamppb.New(t.UsedOn),
+			TokenPrefix:           token.Prefix(),
 		}
 	}
 
