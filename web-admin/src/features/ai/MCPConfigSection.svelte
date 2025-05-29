@@ -5,6 +5,7 @@
   export let organization: string;
   export let project: string;
   export let isPublic: boolean;
+  export let issuedToken: string | null = null;
 
   // Construct the API URL for the MCP server
   $: apiUrl = `${CANONICAL_ADMIN_API_URL}/v1/organizations/${organization}/projects/${project}/runtime/mcp/sse`;
@@ -33,10 +34,9 @@
         "Authorization:\${AUTH_HEADER}"
       ],
       "env": {
-        "AUTH_HEADER": "Bearer <Rill personal access token>"
+        "AUTH_HEADER": "Bearer ${issuedToken ? issuedToken : "<Rill personal access token>"}"
       }
     }
-  }
 }`;
 </script>
 
