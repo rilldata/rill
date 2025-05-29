@@ -29,6 +29,26 @@
   let virtualListEl: HTMLDivElement;
   let sorting: SortingState = [];
 
+  // Initialize sorting for sortDescFirst column
+  const sortDescFirstColumn = columns.find((col) => col.sortDescFirst);
+  if (sortDescFirstColumn) {
+    const columnId =
+      "id" in sortDescFirstColumn
+        ? sortDescFirstColumn.id
+        : "accessorKey" in sortDescFirstColumn
+          ? sortDescFirstColumn.accessorKey
+          : "accessorFn" in sortDescFirstColumn
+            ? (sortDescFirstColumn.header as string)
+            : Object.keys(sortDescFirstColumn)[0];
+
+    sorting = [
+      {
+        id: columnId as string,
+        desc: true,
+      },
+    ];
+  }
+
   $: safeData = Array.isArray(data) ? data : [];
   $: {
     if (safeData) {
@@ -64,6 +84,7 @@
     onSortingChange: setSorting,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
+    enableSortingRemoval: false,
   });
 
   $: table = createSvelteTable(options);
@@ -142,13 +163,13 @@
                         />
                       </a>
                     {/if}
-                    {#if header.column.getIsSorted().toString() === "asc"}
+                    {#if header.column.getIsSorted()}
                       <span>
-                        <ArrowDown flip size="12px" />
-                      </span>
-                    {:else if header.column.getIsSorted().toString() === "desc"}
-                      <span>
-                        <ArrowDown size="12px" />
+                        <ArrowDown
+                          flip={header.column.getIsSorted().toString() ===
+                            "asc"}
+                          size="12px"
+                        />
                       </span>
                     {/if}
                   </div>
