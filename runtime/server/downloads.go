@@ -74,14 +74,16 @@ func (s *Server) ExportReport(ctx context.Context, req *runtimev1.ExportReportRe
 	}
 
 	// Parse contextual information from the report annotations.
-	var originDashboard *runtimev1.ResourceName
+	var originDashboard string
 	var originURL string
 	if rep.Spec.Annotations != nil {
 		if explore, ok := rep.Spec.Annotations["explore"]; ok && explore != "" {
-			originDashboard = &runtimev1.ResourceName{Kind: runtime.ResourceKindExplore, Name: explore}
+			resName := &runtimev1.ResourceName{Kind: runtime.ResourceKindExplore, Name: explore}
+			originDashboard = s.getDisplayName(ctx, c, req.InstanceId, resName)
 		}
 		if canvas, ok := rep.Spec.Annotations["canvas"]; ok && canvas != "" {
-			originDashboard = &runtimev1.ResourceName{Kind: runtime.ResourceKindCanvas, Name: canvas}
+			resName := &runtimev1.ResourceName{Kind: runtime.ResourceKindCanvas, Name: canvas}
+			originDashboard = s.getDisplayName(ctx, c, req.InstanceId, resName)
 		}
 		if openPath, ok := rep.Spec.Annotations["web_open_path"]; ok && openPath != "" {
 			var err error
@@ -404,4 +406,38 @@ func gzipDecompress(v []byte) ([]byte, error) {
 	}
 	defer r.Close()
 	return io.ReadAll(r)
+}
+
+// getDisplayName returns the display name of a resource or an empty string if there's an error
+func (s *Server) getDisplayName(ctx context.Context, c *runtime.Controller, instanceId string, resourceName *runtimev1.ResourceName) string {
+	res, err := c.Get(ctx, resourceName, false)
+	if err != nil {
+		s.logger.Error("getDisplayName: failed to get resource", zap.Error(err), zap.String("instance_id", instanceId), zap.String("resource_name", resourceName.Name), zap.String("resource_kind", resourceName.Kind), observability.ZapCtx(ctx))
+		return ""
+	}
+
+	r, access, err := s.applySecurityPolicy(ctx, instanceId, res)
+	if err != nil {
+		s.logger.Error("getDisplayName: failed to apply security policy", zap.Error(err), zap.String("instance_id", instanceId), zap.String("resource_name", resourceName.Name), zap.String("resource_kind", resourceName.Kind), observability.ZapCtx(ctx))
+		return ""
+	}
+
+	if !access {
+		s.logger.Error("getDisplayName: access denied", zap.String("instance_id", instanceId), zap.String("resource_name", resourceName.Name), zap.String("resource_kind", resourceName.Kind), observability.ZapCtx(ctx))
+		return ""
+	}
+	// Try to get DisplayName for known resource types
+	switch resourceName.Kind {
+	case runtime.ResourceKindExplore:
+		explore := r.GetExplore()
+		if explore != nil && explore.Spec != nil {
+			return explore.Spec.DisplayName
+		}
+	case runtime.ResourceKindCanvas:
+		canvas := r.GetCanvas()
+		if canvas != nil && canvas.Spec != nil {
+			return canvas.Spec.DisplayName
+		}
+	}
+	return resourceName.Name
 }

@@ -7,9 +7,9 @@ import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialM
 import { Message, proto3, protoInt64, Struct, Timestamp, Value } from "@bufbuild/protobuf";
 import { StructType } from "./schema_pb.js";
 import { ExportFormat } from "./export_format_pb.js";
-import { Resource, ResourceName } from "./resources_pb.js";
 import { Expression } from "./expression_pb.js";
 import { TimeGrain } from "./time_grain_pb.js";
+import { Resource } from "./resources_pb.js";
 
 /**
  * @generated from enum rill.runtime.v1.BuiltinMeasure
@@ -397,12 +397,12 @@ export class ExportRequest extends Message<ExportRequest> {
   includeHeader = false;
 
   /**
-   * Optional name of the dashboard the export originates from.
+   * Optional display name of the dashboard the export originates from.
    * Only used if include_header is true.
    *
-   * @generated from field: rill.runtime.v1.ResourceName origin_dashboard = 7;
+   * @generated from field: string origin_dashboard = 7;
    */
-  originDashboard?: ResourceName;
+  originDashboard = "";
 
   /**
    * Optional UI URL that the export originates from.
@@ -426,7 +426,7 @@ export class ExportRequest extends Message<ExportRequest> {
     { no: 4, name: "query", kind: "message", T: Query },
     { no: 5, name: "baked_query", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "include_header", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 7, name: "origin_dashboard", kind: "message", T: ResourceName },
+    { no: 7, name: "origin_dashboard", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 8, name: "origin_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
