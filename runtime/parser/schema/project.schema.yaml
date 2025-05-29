@@ -1141,15 +1141,15 @@ definitions:
                 format_preset:
                   type: string
                   description: |
-                    Controls the formatting of this measure using a predefined preset. Measures cannot have both `format_preset` and `format_d3`. If neither is supplied, the measure will be formatted using the `humanize` preset by default. 
+                    Controls the formatting of this measure using a predefined preset. Measures cannot have both `format_preset` and `format_d3`. If neither is supplied, the measure will be formatted using the `humanize` preset by default.
                     
-                        Available options:
-                        - `humanize`: Round numbers into thousands (K), millions(M), billions (B), etc.
-                        - `none`: Raw output.
-                        - `currency_usd`: Round to 2 decimal points with a dollar sign ($).
-                        - `currency_eur`: Round to 2 decimal points with a euro sign (€).
-                        - `percentage`: Convert a rate into a percentage with a % sign.
-                        - `interval_ms`: Convert milliseconds into human-readable durations like hours (h), days (d), years (y), etc. (optional)
+                      Available options:
+                      - `humanize`: Round numbers into thousands (K), millions(M), billions (B), etc.
+                      - `none`: Raw output.
+                      - `currency_usd`: Round to 2 decimal points with a dollar sign ($).
+                      - `currency_eur`: Round to 2 decimal points with a euro sign (€).
+                      - `percentage`: Convert a rate into a percentage with a % sign.
+                      - `interval_ms`: Convert milliseconds into human-readable durations like hours (h), days (d), years (y), etc. (optional)
                 format_d3:
                   type: string
                   description: 'Controls the formatting of this measure using a [d3-format](https://d3js.org/d3-format) string. If an invalid format string is supplied, the measure will fall back to `format_preset: humanize`. A measure cannot have both `format_preset` and `format_d3`. If neither is provided, the humanize preset is used by default. Example: `format_d3: ".2f"` formats using fixed-point notation with two decimal places. Example: `format_d3: ",.2r"` formats using grouped thousands with two significant digits. (optional)'

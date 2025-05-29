@@ -53,7 +53,7 @@ func GenerateProjectDocsCmd(rootCmd *cobra.Command, ch *cmdutil.Helper) *cobra.C
 			sidebarPosition := 30
 
 			title := getScalarValue(projectFilesSchema, "title")
-			desc := getScalarValue(projectFilesSchema, "description")
+			desc := getPrintableDescription(projectFilesSchema, "", "")
 
 			projectFilesbuf.WriteString("---\n")
 			projectFilesbuf.WriteString("note: GENERATED. DO NOT EDIT.\n")
@@ -291,13 +291,22 @@ func getRequiredMapFromNode(node *yaml.Node) map[string]bool {
 	return req
 }
 
-func getPrintableDescription(node *yaml.Node) string {
+func getPrintableDescription(node *yaml.Node, indentation, defaultValue string) string {
 	if node == nil || node.Kind != yaml.MappingNode {
-		return "(no description)"
+		return defaultValue
 	}
 	desc := getScalarValue(node, "description")
 	if desc == "" {
-		return "(no description)"
+		return defaultValue
+	}
+
+	lines := strings.Split(desc, "\n")
+	if len(lines) > 1 {
+		// Add indentation to all lines except the first one
+		for i := 1; i < len(lines)-1; i++ {
+			lines[i] = indentation + lines[i]
+		}
+		return strings.Join(lines, "\n")
 	}
 	return desc
 }
@@ -310,7 +319,7 @@ func generateDoc(sidebarPosition, level int, node *yaml.Node, indent string, req
 	var doc strings.Builder
 	currentLevel := level
 	title := getScalarValue(node, "title")
-	description := getScalarValue(node, "description")
+	description := getPrintableDescription(node, indent, "")
 	if level == 0 {
 		doc.WriteString("---\n")
 		doc.WriteString("note: GENERATED. DO NOT EDIT.\n")
@@ -341,9 +350,9 @@ func generateDoc(sidebarPosition, level int, node *yaml.Node, indent string, req
 			}
 			if level == 1 {
 				doc.WriteString(fmt.Sprintf("\n\n### `%s`", propertiesName))
-				doc.WriteString(fmt.Sprintf("\n\n%s - %s %s", getPrintableType(propertiesValueNode), getPrintableDescription(propertiesValueNode), required))
+				doc.WriteString(fmt.Sprintf("\n\n%s - %s %s", getPrintableType(propertiesValueNode), getPrintableDescription(propertiesValueNode, indent, "(no description)"), required))
 			} else {
-				doc.WriteString(fmt.Sprintf("\n\n%s- **`%s`** - %s - %s %s", indent, propertiesName, getPrintableType(propertiesValueNode), getPrintableDescription(propertiesValueNode), required))
+				doc.WriteString(fmt.Sprintf("\n\n%s- **`%s`** - %s - %s %s", indent, propertiesName, getPrintableType(propertiesValueNode), getPrintableDescription(propertiesValueNode, indent, "(no description)"), required))
 			}
 
 			propType := getScalarValue(propertiesValueNode, "type")
@@ -387,7 +396,7 @@ func generateDoc(sidebarPosition, level int, node *yaml.Node, indent string, req
 			} else {
 				for i, item := range oneOf.Content {
 					if hasType(item) || hasProperties(item) || hasCombinators(item) {
-						doc.WriteString(fmt.Sprintf("\n\n%s- **option %d** - %s - %s", indent, i+1, getPrintableType(item), getPrintableDescription(item)))
+						doc.WriteString(fmt.Sprintf("\n\n%s- **option %d** - %s - %s", indent, i+1, getPrintableType(item), getPrintableDescription(item, indent, "(no description)")))
 						doc.WriteString(generateDoc(sidebarPosition, level, item, indent+"  ", getRequiredMapFromNode(item)))
 					}
 				}
@@ -399,7 +408,7 @@ func generateDoc(sidebarPosition, level int, node *yaml.Node, indent string, req
 	if anyOf := getNodeForKey(node, "anyOf"); anyOf != nil && anyOf.Kind == yaml.SequenceNode {
 		for i, item := range anyOf.Content {
 			if hasType(item) || hasProperties(item) || hasCombinators(item) {
-				doc.WriteString(fmt.Sprintf("\n\n%s- **option %d** - %s - %s", indent, i+1, getPrintableType(item), getPrintableDescription(item)))
+				doc.WriteString(fmt.Sprintf("\n\n%s- **option %d** - %s - %s", indent, i+1, getPrintableType(item), getPrintableDescription(item, indent, "(no description)")))
 				doc.WriteString(generateDoc(sidebarPosition, level, item, indent+"  ", getRequiredMapFromNode(item)))
 			}
 		}
