@@ -43,8 +43,8 @@ func (s *Server) GitStatus(ctx context.Context, r *connect.Request[localv1.GitSt
 		GithubUrl:     config.Remote,
 		ManagedGit:    project.ManagedGitId != "",
 		LocalChanges:  gs.LocalChanges,
-		LocalCommits:  int32(gs.LocalCommits),
-		RemoteCommits: int32(gs.RemoteCommits),
+		LocalCommits:  gs.LocalCommits,
+		RemoteCommits: gs.RemoteCommits,
 	}), nil
 }
 

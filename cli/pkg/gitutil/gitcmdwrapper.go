@@ -18,8 +18,8 @@ var errDetachedHead = errors.New("detached HEAD state detected, please checkout 
 type GitStatus struct {
 	Branch        string
 	LocalChanges  bool // true if there are local changes (staged, unstaged, or untracked)
-	LocalCommits  int
-	RemoteCommits int
+	LocalCommits  int32
+	RemoteCommits int32
 }
 
 func (s GitStatus) Equal(v GitStatus) bool {
@@ -57,20 +57,20 @@ func RunGitStatus(path string) (GitStatus, error) {
 		case strings.HasPrefix(line, "# branch.ab "):
 			s := strings.Split(line, " ")
 
-			ahead, err := strconv.Atoi(s[2])
+			ahead, err := strconv.ParseInt(s[2], 10, 32)
 			if err != nil {
 				return status, err
 			}
-			status.LocalCommits = ahead
+			status.LocalCommits = int32(ahead)
 
-			behind, err := strconv.Atoi(s[3])
+			behind, err := strconv.ParseInt(s[3], 10, 32)
 			if err != nil {
 				return status, err
 			}
 			if behind < 0 {
 				behind = 0 - behind // git status reports negative behind if there are remote commits
 			}
-			status.RemoteCommits = behind
+			status.RemoteCommits = int32(behind)
 		default:
 			// any non header line means staged, unstaged or untracked changes
 			status.LocalChanges = true
