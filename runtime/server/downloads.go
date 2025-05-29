@@ -412,13 +412,13 @@ func gzipDecompress(v []byte) ([]byte, error) {
 func (s *Server) getDisplayName(ctx context.Context, c *runtime.Controller, instanceID string, resourceName *runtimev1.ResourceName) string {
 	res, err := c.Get(ctx, resourceName, false)
 	if err != nil {
-		s.logger.Error("getDisplayName: failed to get resource", zap.Error(err), zap.String("instance_id", instanceId), zap.String("resource_name", resourceName.Name), zap.String("resource_kind", resourceName.Kind), observability.ZapCtx(ctx))
+		s.logger.Error("getDisplayName: failed to get resource", zap.Error(err), zap.String("instance_id", instanceID), zap.String("resource_name", resourceName.Name), zap.String("resource_kind", resourceName.Kind), observability.ZapCtx(ctx))
 		return ""
 	}
 
-	r, access, err := s.applySecurityPolicy(ctx, instanceId, res)
+	r, access, err := s.applySecurityPolicy(ctx, instanceID, res)
 	if err != nil {
-		s.logger.Error("getDisplayName: failed to apply security policy", zap.Error(err), zap.String("instance_id", instanceId), zap.String("resource_name", resourceName.Name), zap.String("resource_kind", resourceName.Kind), observability.ZapCtx(ctx))
+		s.logger.Error("getDisplayName: failed to apply security policy", zap.Error(err), zap.String("instance_id", instanceID), zap.String("resource_name", resourceName.Name), zap.String("resource_kind", resourceName.Kind), observability.ZapCtx(ctx))
 		return ""
 	}
 
