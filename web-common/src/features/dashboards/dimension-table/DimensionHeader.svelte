@@ -178,7 +178,7 @@
 
       <LeaderboardAdvancedActions
         isOpen={isLeaderboardActionsOpen}
-        {toggleLeaderboardShowContextForAllMeasures}
+        toggle={toggleLeaderboardShowContextForAllMeasures}
       />
     </div>
   </div>
