@@ -23,44 +23,32 @@
 
   let sorting: SortingState = [];
 
+  // Initialize sorting for sortDescFirst column
+  const sortDescFirstColumn = columns.find((col) => col.sortDescFirst);
+  if (sortDescFirstColumn) {
+    const columnId =
+      "id" in sortDescFirstColumn
+        ? sortDescFirstColumn.id
+        : "accessorKey" in sortDescFirstColumn
+          ? sortDescFirstColumn.accessorKey
+          : "accessorFn" in sortDescFirstColumn
+            ? (sortDescFirstColumn.header as string)
+            : Object.keys(sortDescFirstColumn)[0];
+
+    sorting = [
+      {
+        id: columnId as string,
+        desc: true,
+      },
+    ];
+  }
+
   $: safeData = Array.isArray(data) ? data : [];
   $: {
     if (safeData) {
       options.update((old) => ({
         ...old,
         data: safeData,
-      }));
-    }
-  }
-
-  // Set the sorting state to the column with sortDescFirst
-  $: {
-    const sortDescFirstColumn = columns.find((col) => col.sortDescFirst);
-    if (sortDescFirstColumn && sorting.length === 0) {
-      const columnId =
-        "id" in sortDescFirstColumn
-          ? sortDescFirstColumn.id
-          : "accessorKey" in sortDescFirstColumn
-            ? sortDescFirstColumn.accessorKey
-            : "accessorFn" in sortDescFirstColumn
-              ? (sortDescFirstColumn.header as string)
-              : Object.keys(sortDescFirstColumn)[0];
-
-      // Set the sorting state to the column with sortDescFirst
-      sorting = [
-        {
-          id: columnId as string,
-          desc: true,
-        },
-      ];
-
-      // Update the sorting state
-      options.update((old) => ({
-        ...old,
-        state: {
-          ...old.state,
-          sorting,
-        },
       }));
     }
   }
@@ -82,7 +70,7 @@
   };
 
   const options = writable<TableOptions<any>>({
-    data: data,
+    data: safeData,
     columns: columns,
     state: {
       sorting,

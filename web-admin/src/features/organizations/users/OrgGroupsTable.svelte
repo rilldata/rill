@@ -28,6 +28,7 @@
       accessorKey: "groupName",
       header: "Group",
       enableSorting: true,
+      sortDescFirst: true,
       cell: ({ row }) =>
         flexRender(OrgGroupsTableGroupCompositeCell, {
           name: row.original.groupName?.startsWith("autogroup:")
