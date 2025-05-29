@@ -7,9 +7,6 @@ sidebar_position: 1
 
 The Rill Model Context Protocol (MCP) server exposes Rill's most essential APIs to LLMs. It's designed primarily for data analysts, not data engineers, and focuses on consuming Rill metric views—not creating them.
 
-The server can also generate VegaLite-backed visualizations from natural language prompts and data tables. However, not all MCP clients support the Image datatype.
-Some clients may offer their own visualization systems you may prefer.
-
 ## Why use MCP with Rill?
 Instead of blindly exposing your entire data warehouse to external platforms in hopes of uncovering trends, Rill's MCP server provides a **structured and governed** alternative. By querying data that already has **pre-defined measures and dimensions**, the responses you get are guaranteed to be as **accurate and consistent** as the metrics displayed in your Rill dashboards.
 
