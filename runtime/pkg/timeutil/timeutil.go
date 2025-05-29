@@ -185,31 +185,31 @@ func AddTimeProto(to time.Time, tg runtimev1.TimeGrain, count int) time.Time {
 	return to
 }
 
-func OffsetTime(tm time.Time, tg TimeGrain, n int) time.Time {
+func OffsetTime(tm time.Time, tg TimeGrain, tz *time.Location, n int) time.Time {
+	tm = tm.In(tz)
 	switch tg {
 	case TimeGrainUnspecified:
-		return tm
 	case TimeGrainMillisecond:
-		return tm.Add(time.Duration(n) * time.Millisecond)
+		tm = tm.Add(time.Duration(n) * time.Millisecond)
 	case TimeGrainSecond:
-		return tm.Add(time.Duration(n) * time.Second)
+		tm = tm.Add(time.Duration(n) * time.Second)
 	case TimeGrainMinute:
-		return tm.Add(time.Duration(n) * time.Minute)
+		tm = tm.Add(time.Duration(n) * time.Minute)
 	case TimeGrainHour:
-		return tm.Add(time.Duration(n) * time.Hour)
+		tm = tm.Add(time.Duration(n) * time.Hour)
 	case TimeGrainDay:
-		return tm.AddDate(0, 0, n)
+		tm = tm.AddDate(0, 0, n)
 	case TimeGrainWeek:
-		return tm.AddDate(0, 0, n*7)
+		tm = tm.AddDate(0, 0, n*7)
 	case TimeGrainMonth:
-		return tm.AddDate(0, n, 0)
+		tm = tm.AddDate(0, n, 0)
 	case TimeGrainQuarter:
-		return tm.AddDate(0, n*3, 0)
+		tm = tm.AddDate(0, n*3, 0)
 	case TimeGrainYear:
-		return tm.AddDate(n, 0, 0)
+		tm = tm.AddDate(n, 0, 0)
 	}
 
-	return tm
+	return tm.In(time.UTC)
 }
 
 // CopyTimeComponentsUntil Copies components of `src` into `tar` starting from year and going down all the way to `until` (inclusive).

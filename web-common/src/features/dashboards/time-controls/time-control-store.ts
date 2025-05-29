@@ -4,6 +4,7 @@ import { useExploreState } from "@rilldata/web-common/features/dashboards/stores
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import { getValidComparisonOption } from "@rilldata/web-common/features/dashboards/time-controls/time-range-store";
 import { getOrderedStartEnd } from "@rilldata/web-common/features/dashboards/time-series/utils";
+import { normaliseRillTime } from "@rilldata/web-common/features/dashboards/url-state/time-ranges/parser";
 import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
 import {
   getComparionRangeForScrub,
@@ -35,6 +36,7 @@ import {
   type V1MetricsViewSpec,
   type V1MetricsViewTimeRangeResponse,
   V1TimeGrain,
+  type V1TimeRange,
   type V1TimeRangeSummary,
 } from "@rilldata/web-common/runtime-client";
 import type { QueryObserverResult } from "@tanstack/svelte-query";
@@ -389,6 +391,13 @@ export function getTimeRange(
         allTimeRange.end,
         selectedTimezone,
       );
+    } else if (selectedTimeRange.start) {
+      timeRange = {
+        name: selectedTimeRange.name,
+        start: selectedTimeRange.start,
+        end: selectedTimeRange.end,
+        interval: selectedTimeRange.interval,
+      };
     } else {
       timeRange = isoDurationToFullTimeRange(
         selectedTimeRange?.name,
@@ -531,4 +540,18 @@ export function selectedTimeRangeSelector([
     allTimeRange,
     defaultTimeRange,
   );
+}
+
+export function findTimeRange(
+  name: string,
+  timeRanges: V1TimeRange[],
+): DashboardTimeControls | undefined {
+  const normalisedName = normaliseRillTime(name);
+  const tr = timeRanges.find((tr) => tr.expression === normalisedName);
+  if (!tr) return undefined;
+  return {
+    name: name as TimeRangePreset,
+    start: new Date(tr.start ?? ""),
+    end: new Date(tr.end ?? ""),
+  };
 }
