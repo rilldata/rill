@@ -20,12 +20,7 @@ func (e *Executor) resolveDuckDBClickHouseAndPinot(ctx context.Context) (Timesta
 		filter = fmt.Sprintf(" WHERE %s", filter)
 	}
 
-	// Use timeColumn if provided, otherwise fall back to TimeDimension
-	timeDim := e.timeColumn
-	if timeDim == "" {
-		timeDim = e.metricsView.TimeDimension
-	}
-	timeDim = e.olap.Dialect().EscapeIdentifier(timeDim)
+	timeDim := e.timeColumnOrExpr()
 	escapedTableName := e.olap.Dialect().EscapeTable(e.metricsView.Database, e.metricsView.DatabaseSchema, e.metricsView.Table)
 
 	var watermarkExpr string
@@ -93,11 +88,7 @@ func (e *Executor) resolveDruid(ctx context.Context) (TimestampsResult, error) {
 		filter = fmt.Sprintf(" WHERE %s", filter)
 	}
 
-	// Use timeColumn if provided, otherwise fall back to TimeDimension
-	timeDim := e.timeColumn
-	if timeDim == "" {
-		timeDim = e.metricsView.TimeDimension
-	}
+	timeDim := e.timeColumnOrExpr()
 	timeDim = e.olap.Dialect().EscapeIdentifier(timeDim)
 	escapedTableName := e.olap.Dialect().EscapeTable(e.metricsView.Database, e.metricsView.DatabaseSchema, e.metricsView.Table)
 
@@ -227,6 +218,24 @@ func (e *Executor) resolveDruid(ctx context.Context) (TimestampsResult, error) {
 	}
 
 	return ts, nil
+}
+
+// timeColumnOrExpr returns the time column or expression to use for the metrics view. ues time column if provided, otherwise fall back to the metrics view TimeDimension.
+func (e *Executor) timeColumnOrExpr() string {
+	timeDim := e.timeColumn
+	if timeDim == "" {
+		timeDim = e.metricsView.TimeDimension
+	}
+	// figure out the time column or expression to use from the dimension list
+	for _, dim := range e.metricsView.Dimensions {
+		if dim.Name == timeDim {
+			if dim.Expression != "" {
+				return dim.Expression
+			}
+			return e.olap.Dialect().EscapeIdentifier(dim.Column)
+		}
+	}
+	return e.olap.Dialect().EscapeIdentifier(timeDim) // fallback to the time dimension if not found in dimensions
 }
 
 func safeTime(tm *time.Time) time.Time {
