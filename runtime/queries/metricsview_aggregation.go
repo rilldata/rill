@@ -446,8 +446,8 @@ func (q *MetricsViewAggregation) generateExportHeaders(ctx context.Context, rt *
 	if org != "" && project != "" {
 		parts = append(parts, org, project)
 	}
-	if opts.OriginDashboard != nil {
-		parts = append(parts, opts.OriginDashboard.Name)
+	if opts.OriginDashboard != "" {
+		parts = append(parts, opts.OriginDashboard)
 	}
 	title := "Report by Rill Data"
 	if len(parts) > 0 {

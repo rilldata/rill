@@ -301,9 +301,9 @@ message ExportRequest {
   string baked_query = 5 [deprecated = true];
   // If true, the export will include header comments with metadata about the export.
   bool include_header = 6;
-  // Optional name of the dashboard the export originates from.
+  // Optional display name of the dashboard the export originates from.
   // Only used if include_header is true.
-  ResourceName origin_dashboard = 7;
+  string origin_dashboard = 7;
   // Optional UI URL that the export originates from.
   // Only used if include_header is true.
   string origin_url = 8;

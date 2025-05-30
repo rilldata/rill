@@ -43,7 +43,7 @@ type ExportOptions struct {
 	IncludeHeader bool
 	// OriginDashboard is the dashboard that the export originated from (optional).
 	// It is only used if IncludeHeader is true.
-	OriginDashboard *runtimev1.ResourceName
+	OriginDashboard string
 	// OriginURL is the UI URL that the export originated from (optional).
 	// It is only used if IncludeHeader is true.
 	OriginURL string
