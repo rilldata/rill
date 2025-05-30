@@ -25,7 +25,7 @@
   async function handleInput(e: Event) {
     input = (e.target as HTMLInputElement).value;
     error = "";
-    if (input.length < 2) {
+    if (!input) {
       searchResults = [];
       showDropdown = false;
       return;
