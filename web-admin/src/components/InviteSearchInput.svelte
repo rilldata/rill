@@ -11,6 +11,7 @@
   export let initialRole: string = "viewer";
   export let searchList: any[] | undefined = undefined;
   export let searchKeys: string[] = [];
+  export let autoFocusInput: -1 | 0 | 1 = 0;
 
   const dispatch = createEventDispatcher();
 
@@ -152,6 +153,7 @@
       on:blur={handleBlur}
       class:error={!!error}
       autocomplete="off"
+      tabindex={autoFocusInput}
     />
     {#if roleSelect}
       <UserRoleSelect bind:value={role} />
@@ -247,8 +249,5 @@
   }
   .dropdown li.highlighted {
     background: #f3f4f6;
-  }
-  .dropdown li.invite-new {
-    color: #4caf50;
   }
 </style>
