@@ -228,23 +228,23 @@
     padding: 0 0 0 4px;
     flex: 1;
   }
-  .input-with-role :global(.dropdown-menu-trigger) {
-    border: none;
-    background: transparent;
-    margin-right: 4px;
-    min-width: 90px;
-  }
   .input-with-role input[type="text"] {
     border: none;
     outline: none;
     flex: 1;
-    padding: 8px 8px 8px 0;
+    padding: 8px 8px;
     background: transparent;
     color: #222;
   }
   .input-with-role input[type="text"].error {
     border: none;
     box-shadow: 0 0 0 1px #e74c3c;
+  }
+  .input-with-role :global(.dropdown-menu-trigger) {
+    border: none;
+    background: transparent;
+    margin-left: 4px;
+    min-width: 90px;
   }
   .error {
     color: #e74c3c;
