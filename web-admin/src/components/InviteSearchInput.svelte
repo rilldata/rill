@@ -167,40 +167,45 @@
 
 <div class="invite-search-input">
   <div class="input-row">
-    <div class="input-with-role">
-      {#each selected as email (email)}
-        <span class="chip"
-          >{email}<button type="button" on:click={() => removeSelected(email)}
-            >&times;</button
-          ></span
-        >
-      {/each}
-      <input
-        type="text"
-        bind:value={input}
-        {placeholder}
-        on:input={handleInput}
-        on:keydown={handleInputKeydown}
-        on:focus={handleFocus}
-        on:blur={handleBlur}
-        on:paste={(e) => {
-          const pasted = e.clipboardData?.getData("text") ?? "";
-          if (pasted.includes(",")) {
-            processCommaSeparatedInput(pasted);
-            input = "";
-            e.preventDefault();
-          }
-        }}
-        class:error={!!error}
-        autocomplete="off"
-        tabindex={autoFocusInput}
-      />
+    <div class="input-with-role p-1">
+      <div class="chips-and-input flex flex-wrap gap-1 w-full min-h-[24px]">
+        {#each selected as email (email)}
+          <span class="chip"
+            >{email}<button type="button" on:click={() => removeSelected(email)}
+              >&times;</button
+            ></span
+          >
+        {/each}
+        <input
+          type="text"
+          bind:value={input}
+          placeholder={selected.length === 0 ? placeholder : ""}
+          on:input={handleInput}
+          on:keydown={handleInputKeydown}
+          on:focus={handleFocus}
+          on:blur={handleBlur}
+          on:paste={(e) => {
+            const pasted = e.clipboardData?.getData("text") ?? "";
+            if (pasted.includes(",")) {
+              processCommaSeparatedInput(pasted);
+              input = "";
+              e.preventDefault();
+            }
+          }}
+          class:error={!!error}
+          autocomplete="off"
+          tabindex={autoFocusInput}
+          class="outline outline-primary-500 px-1"
+        />
+      </div>
       {#if roleSelect}
-        <UserRoleSelect bind:value={role} />
+        <div class="role-select-container">
+          <UserRoleSelect bind:value={role} />
+        </div>
       {/if}
     </div>
     <Button
-      type="secondary"
+      type="primary"
       on:click={handleInvite}
       disabled={selected.length === 0}
       forcedStyle="height: 32px !important; padding-left: 20px; padding-right: 20px;"
@@ -238,24 +243,32 @@
   .input-with-role {
     display: flex;
     align-items: center;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     background: #fff;
     border: 1px solid #d1d5db;
     border-radius: 6px;
-    padding: 2px 4px;
     min-height: 40px;
-    gap: 4px;
+    gap: 8px;
     flex: 1;
+  }
+
+  .role-select-container {
+    min-width: 71px;
+    max-width: 71px;
+    flex: 0 0 71px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
   }
   .input-with-role input[type="text"] {
     border: none;
     outline: none;
     flex: 1 0 120px;
     min-width: 120px;
-    padding: 8px 8px;
+    padding: 0;
     background: transparent;
     color: #222;
-    margin: 2px 0;
+    margin: 0;
   }
   .chip {
     background: #f3f4f6;
@@ -266,7 +279,6 @@
     display: flex;
     align-items: center;
     border: 1px solid #e5e7eb;
-    margin: 2px 0;
   }
   .chip button {
     background: none;
