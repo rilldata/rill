@@ -38,9 +38,13 @@
   }
 
   const exportDash = createQueryServiceExport();
-  const { reports, adminServer, exportMetadata } = featureFlags;
+  const { reports, adminServer, exportHeader } = featureFlags;
 
-  async function handleExport(format: V1ExportFormat, includeHeader = false) {
+  async function handleExport(options: {
+    format: V1ExportFormat;
+    includeHeader?: boolean;
+  }) {
+    const { format, includeHeader = false } = options;
     const result = await $exportDash.mutateAsync({
       instanceId: get(runtime).instanceId,
       data: {
@@ -94,35 +98,35 @@
 
   <DropdownMenu.Content align="start">
     <DropdownMenu.Item
-      on:click={() => handleExport(V1ExportFormat.EXPORT_FORMAT_CSV)}
+      on:click={() => handleExport({ format: V1ExportFormat.EXPORT_FORMAT_CSV })}
       disabled={!exportQuery}
     >
       Export as CSV
     </DropdownMenu.Item>
-    {#if !workspace && exportMetadata}
+    {#if !workspace && exportHeader}
       <DropdownMenu.Item
-        on:click={() => handleExport(V1ExportFormat.EXPORT_FORMAT_CSV, true)}
+        on:click={() => handleExport({ format: V1ExportFormat.EXPORT_FORMAT_CSV, includeHeader: true });}
         disabled={!exportQuery}
       >
         Export as CSV with metadata
       </DropdownMenu.Item>
     {/if}
     <DropdownMenu.Item
-      on:click={() => handleExport(V1ExportFormat.EXPORT_FORMAT_PARQUET)}
+      on:click={() => handleExport({ format: V1ExportFormat.EXPORT_FORMAT_PARQUET })}
       disabled={!exportQuery}
     >
       Export as Parquet
     </DropdownMenu.Item>
 
     <DropdownMenu.Item
-      on:click={() => handleExport(V1ExportFormat.EXPORT_FORMAT_XLSX)}
+      on:click={() => handleExport({ format: V1ExportFormat.EXPORT_FORMAT_XLSX })}
       disabled={!exportQuery}
     >
       Export as XLSX
     </DropdownMenu.Item>
-    {#if !workspace && exportMetadata}
+    {#if !workspace && exportHeader}
       <DropdownMenu.Item
-        on:click={() => handleExport(V1ExportFormat.EXPORT_FORMAT_XLSX, true)}
+        on:click={() => handleExport({ format: V1ExportFormat.EXPORT_FORMAT_XLSX, includeHeader: true })}
         disabled={!exportQuery}
       >
         Export as XLSX with metadata
