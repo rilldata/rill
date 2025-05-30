@@ -98,35 +98,46 @@
 
   <DropdownMenu.Content align="start">
     <DropdownMenu.Item
-      on:click={() => handleExport({ format: V1ExportFormat.EXPORT_FORMAT_CSV })}
+      on:click={() =>
+        handleExport({ format: V1ExportFormat.EXPORT_FORMAT_CSV })}
       disabled={!exportQuery}
     >
       Export as CSV
     </DropdownMenu.Item>
     {#if !workspace && exportHeader}
       <DropdownMenu.Item
-        on:click={() => handleExport({ format: V1ExportFormat.EXPORT_FORMAT_CSV, includeHeader: true });}
+        on:click={() =>
+          handleExport({
+            format: V1ExportFormat.EXPORT_FORMAT_CSV,
+            includeHeader: true,
+          })}
         disabled={!exportQuery}
       >
         Export as CSV with metadata
       </DropdownMenu.Item>
     {/if}
     <DropdownMenu.Item
-      on:click={() => handleExport({ format: V1ExportFormat.EXPORT_FORMAT_PARQUET })}
+      on:click={() =>
+        handleExport({ format: V1ExportFormat.EXPORT_FORMAT_PARQUET })}
       disabled={!exportQuery}
     >
       Export as Parquet
     </DropdownMenu.Item>
 
     <DropdownMenu.Item
-      on:click={() => handleExport({ format: V1ExportFormat.EXPORT_FORMAT_XLSX })}
+      on:click={() =>
+        handleExport({ format: V1ExportFormat.EXPORT_FORMAT_XLSX })}
       disabled={!exportQuery}
     >
       Export as XLSX
     </DropdownMenu.Item>
     {#if !workspace && exportHeader}
       <DropdownMenu.Item
-        on:click={() => handleExport({ format: V1ExportFormat.EXPORT_FORMAT_XLSX, includeHeader: true })}
+        on:click={() =>
+          handleExport({
+            format: V1ExportFormat.EXPORT_FORMAT_XLSX,
+            includeHeader: true,
+          })}
         disabled={!exportQuery}
       >
         Export as XLSX with metadata
