@@ -2746,6 +2746,38 @@
                 "connector"
               ],
               "additionalProperties": true
+            },
+            "tests": {
+              "type": "array",
+              "description": "Model-level tests to run after execution.",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "name"
+                ],
+                "additionalProperties": true
+              }
+            },
+            "partition_tests": {
+              "type": "array",
+              "description": "Parition-=level tests to run after execution.",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "name"
+                ],
+                "additionalProperties": true
+              }
             }
           }
         },

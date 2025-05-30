@@ -240,6 +240,8 @@ schema: default
 				RefreshSchedule:  &runtimev1.Schedule{RefUpdate: true},
 				DefinedAsSource:  true,
 				ChangeMode:       runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
+				Tests:            []*runtimev1.ModelTest{},
+				PartitionsTests:  nil,
 			},
 		},
 		// source s2
@@ -254,6 +256,8 @@ schema: default
 				RefreshSchedule:  &runtimev1.Schedule{RefUpdate: true, Cron: "0 0 * * *"},
 				DefinedAsSource:  true,
 				ChangeMode:       runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
+				Tests:            []*runtimev1.ModelTest{},
+				PartitionsTests:  nil,
 			},
 		},
 		// model m1
@@ -266,6 +270,8 @@ schema: default
 				InputProperties: must(structpb.NewStruct(map[string]any{"sql": strings.TrimSpace(files["models/m1.sql"])})),
 				OutputConnector: "duckdb",
 				ChangeMode:      runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
+				Tests:           []*runtimev1.ModelTest{},
+				PartitionsTests: nil,
 			},
 		},
 		// model m2
@@ -280,6 +286,8 @@ schema: default
 				OutputConnector:  "duckdb",
 				OutputProperties: must(structpb.NewStruct(map[string]any{"materialize": true})),
 				ChangeMode:       runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
+				Tests:            []*runtimev1.ModelTest{},
+				PartitionsTests:  nil,
 			},
 		},
 		// dashboard d1
@@ -362,6 +370,8 @@ schema: default
 				OutputConnector:  "duckdb",
 				OutputProperties: must(structpb.NewStruct(map[string]any{"materialize": true})),
 				ChangeMode:       runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
+				Tests:            []*runtimev1.ModelTest{},
+				PartitionsTests:  nil,
 			},
 		},
 		// postgres
@@ -463,6 +473,8 @@ path: hello
 			RefreshSchedule:  &runtimev1.Schedule{RefUpdate: true},
 			DefinedAsSource:  true,
 			ChangeMode:       runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
+			Tests:            []*runtimev1.ModelTest{},
+			PartitionsTests:  nil,
 		},
 	}
 	diff, err := p.Reparse(ctx, s1.Paths)
@@ -487,6 +499,8 @@ SELECT * FROM foo
 			InputProperties: must(structpb.NewStruct(map[string]any{"sql": "SELECT * FROM foo"})),
 			OutputConnector: "duckdb",
 			ChangeMode:      runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
+			Tests:           []*runtimev1.ModelTest{},
+			PartitionsTests: nil,
 		},
 	}
 	diff, err = p.Reparse(ctx, m1.Paths)
@@ -597,6 +611,8 @@ SELECT 10
 			InputProperties: must(structpb.NewStruct(map[string]any{"sql": "SELECT 10"})),
 			OutputConnector: "duckdb",
 			ChangeMode:      runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
+			Tests:           []*runtimev1.ModelTest{},
+			PartitionsTests: nil,
 		},
 	}
 	p, err := Parse(ctx, repo, "", "", "duckdb")
@@ -662,6 +678,8 @@ SELECT * FROM m1
 			InputProperties: must(structpb.NewStruct(map[string]any{"sql": "SELECT 10"})),
 			OutputConnector: "duckdb",
 			ChangeMode:      runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
+			Tests:           []*runtimev1.ModelTest{},
+			PartitionsTests: nil,
 		},
 	}
 	m1Nested := &Resource{
@@ -673,6 +691,8 @@ SELECT * FROM m1
 			InputProperties: must(structpb.NewStruct(map[string]any{"sql": "SELECT 20"})),
 			OutputConnector: "duckdb",
 			ChangeMode:      runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
+			Tests:           []*runtimev1.ModelTest{},
+			PartitionsTests: nil,
 		},
 	}
 	m2 := &Resource{
@@ -685,6 +705,8 @@ SELECT * FROM m1
 			InputProperties: must(structpb.NewStruct(map[string]any{"sql": "SELECT * FROM m1"})),
 			OutputConnector: "duckdb",
 			ChangeMode:      runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
+			Tests:           []*runtimev1.ModelTest{},
+			PartitionsTests: nil,
 		},
 	}
 	p, err := Parse(ctx, repo, "", "", "duckdb")
@@ -720,6 +742,8 @@ func TestReparseRillYAML(t *testing.T) {
 			InputProperties: must(structpb.NewStruct(map[string]any{"sql": "SELECT 10"})),
 			OutputConnector: "duckdb",
 			ChangeMode:      runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
+			Tests:           []*runtimev1.ModelTest{},
+			PartitionsTests: nil,
 		},
 	}
 	perr := &runtimev1.ParseError{
@@ -781,6 +805,8 @@ func TestRefInferrence(t *testing.T) {
 			InputProperties: must(structpb.NewStruct(map[string]any{"sql": "SELECT * FROM bar"})),
 			OutputConnector: "duckdb",
 			ChangeMode:      runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
+			Tests:           []*runtimev1.ModelTest{},
+			PartitionsTests: nil,
 		},
 	}
 	ctx := context.Background()
@@ -805,6 +831,8 @@ func TestRefInferrence(t *testing.T) {
 			InputProperties: must(structpb.NewStruct(map[string]any{"sql": "SELECT * FROM baz"})),
 			OutputConnector: "duckdb",
 			ChangeMode:      runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
+			Tests:           []*runtimev1.ModelTest{},
+			PartitionsTests: nil,
 		},
 	}
 	putRepo(t, repo, map[string]string{
@@ -858,6 +886,8 @@ materialize: true
 				InputProperties: must(structpb.NewStruct(map[string]any{"sql": strings.TrimSpace(files["models/m1.sql"])})),
 				OutputConnector: "duckdb",
 				ChangeMode:      runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
+				Tests:           []*runtimev1.ModelTest{},
+				PartitionsTests: nil,
 			},
 		},
 		// m2
@@ -872,6 +902,8 @@ materialize: true
 				OutputConnector:  "duckdb",
 				OutputProperties: must(structpb.NewStruct(map[string]any{"materialize": true})),
 				ChangeMode:       runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
+				Tests:            []*runtimev1.ModelTest{},
+				PartitionsTests:  nil,
 			},
 		},
 	}
@@ -921,6 +953,8 @@ SELECT * FROM t2
 				OutputConnector:  "duckdb",
 				OutputProperties: must(structpb.NewStruct(map[string]any{"materialize": true})),
 				ChangeMode:       runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
+				Tests:            []*runtimev1.ModelTest{},
+				PartitionsTests:  nil,
 			},
 		},
 		// m2
@@ -934,6 +968,8 @@ SELECT * FROM t2
 				OutputConnector:  "duckdb",
 				OutputProperties: must(structpb.NewStruct(map[string]any{"materialize": false})),
 				ChangeMode:       runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
+				Tests:            []*runtimev1.ModelTest{},
+				PartitionsTests:  nil,
 			},
 		},
 	}
@@ -1074,6 +1110,8 @@ dev:
 			RefreshSchedule:  &runtimev1.Schedule{RefUpdate: true},
 			DefinedAsSource:  true,
 			ChangeMode:       runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
+			Tests:            []*runtimev1.ModelTest{},
+			PartitionsTests:  nil,
 		},
 	}
 
@@ -1088,6 +1126,8 @@ dev:
 			RefreshSchedule:  &runtimev1.Schedule{RefUpdate: true, Cron: "0 0 * * *"},
 			DefinedAsSource:  true,
 			ChangeMode:       runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
+			Tests:            []*runtimev1.ModelTest{},
+			PartitionsTests:  nil,
 		},
 	}
 
@@ -1370,6 +1410,8 @@ annotations:
 				InputProperties: must(structpb.NewStruct(map[string]any{"sql": `SELECT 1`})),
 				OutputConnector: "duckdb",
 				ChangeMode:      runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
+				Tests:           []*runtimev1.ModelTest{},
+				PartitionsTests: nil,
 			},
 		},
 		{
@@ -1739,6 +1781,125 @@ rows:
 	requireResourcesAndErrors(t, p, resources, nil)
 }
 
+func TestAPI(t *testing.T) {
+	ctx := context.Background()
+	repo := makeRepo(t, map[string]string{
+		`rill.yaml`: ``,
+		// model m1
+		`models/m1.sql`: `SELECT 1`,
+		// api a1
+		`apis/a1.yaml`: `
+type: api
+sql: select * from m1
+`,
+		// api a2
+		`apis/a2.yaml`: `
+type: api
+metrics_sql: select * from m1
+`,
+		// api a3 with security rules
+		`apis/a3.yaml`: `
+type: api
+sql: select * from m1
+security:
+  access: true
+`,
+		// api a4
+		`apis/a4.yaml`: `
+type: api
+metrics_sql: select * from m1
+security:
+  access: '{{ .user.admin }}'
+`,
+		// api a5
+		`apis/a5.yaml`: `
+type: api
+metrics_sql: select * from m1
+skip_nested_security: true
+security:
+  access: '{{ .user.admin }}'
+`,
+	})
+
+	resources := []*Resource{
+		{
+			Name:  ResourceName{Kind: ResourceKindModel, Name: "m1"},
+			Paths: []string{"/models/m1.sql"},
+			ModelSpec: &runtimev1.ModelSpec{
+				RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
+				InputConnector:  "duckdb",
+				InputProperties: must(structpb.NewStruct(map[string]any{"sql": `SELECT 1`})),
+				OutputConnector: "duckdb",
+				ChangeMode:      runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
+				Tests:           []*runtimev1.ModelTest{},
+				PartitionsTests: nil,
+			},
+		},
+		{
+			Name:  ResourceName{Kind: ResourceKindAPI, Name: "a1"},
+			Paths: []string{"/apis/a1.yaml"},
+			APISpec: &runtimev1.APISpec{
+				Resolver:           "sql",
+				ResolverProperties: must(structpb.NewStruct(map[string]any{"connector": "duckdb", "sql": "select * from m1"})),
+			},
+		},
+		{
+			Name:  ResourceName{Kind: ResourceKindAPI, Name: "a2"},
+			Paths: []string{"/apis/a2.yaml"},
+			APISpec: &runtimev1.APISpec{
+				Resolver:           "metrics_sql",
+				ResolverProperties: must(structpb.NewStruct(map[string]any{"sql": "select * from m1"})),
+			},
+		},
+		{
+			Name:  ResourceName{Kind: ResourceKindAPI, Name: "a3"},
+			Paths: []string{"/apis/a3.yaml"},
+			APISpec: &runtimev1.APISpec{
+				Resolver:           "sql",
+				ResolverProperties: must(structpb.NewStruct(map[string]any{"connector": "duckdb", "sql": "select * from m1"})),
+				SecurityRules: []*runtimev1.SecurityRule{
+					{Rule: &runtimev1.SecurityRule_Access{Access: &runtimev1.SecurityRuleAccess{
+						Condition: "true",
+						Allow:     true,
+					}}},
+				},
+			},
+		},
+		{
+			Name:  ResourceName{Kind: ResourceKindAPI, Name: "a4"},
+			Paths: []string{"/apis/a4.yaml"},
+			APISpec: &runtimev1.APISpec{
+				Resolver:           "metrics_sql",
+				ResolverProperties: must(structpb.NewStruct(map[string]any{"sql": "select * from m1"})),
+				SecurityRules: []*runtimev1.SecurityRule{
+					{Rule: &runtimev1.SecurityRule_Access{Access: &runtimev1.SecurityRuleAccess{
+						Condition: "{{ .user.admin }}",
+						Allow:     true,
+					}}},
+				},
+			},
+		},
+		{
+			Name:  ResourceName{Kind: ResourceKindAPI, Name: "a5"},
+			Paths: []string{"/apis/a5.yaml"},
+			APISpec: &runtimev1.APISpec{
+				Resolver:           "metrics_sql",
+				ResolverProperties: must(structpb.NewStruct(map[string]any{"sql": "select * from m1"})),
+				SecurityRules: []*runtimev1.SecurityRule{
+					{Rule: &runtimev1.SecurityRule_Access{Access: &runtimev1.SecurityRuleAccess{
+						Condition: "{{ .user.admin }}",
+						Allow:     true,
+					}}},
+				},
+				SkipNestedSecurity: true,
+			},
+		},
+	}
+	p, err := Parse(ctx, repo, "", "", "duckdb")
+	require.NoError(t, err)
+	requireResourcesAndErrors(t, p, resources, nil)
+}
+
 func TestKindBackwardsCompatibility(t *testing.T) {
 	files := map[string]string{
 		// rill.yaml
@@ -1782,6 +1943,8 @@ select 3
 				RefreshSchedule:  &runtimev1.Schedule{RefUpdate: true},
 				DefinedAsSource:  true,
 				ChangeMode:       runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
+				Tests:            []*runtimev1.ModelTest{},
+				PartitionsTests:  nil,
 			},
 		},
 		// a1
@@ -1948,6 +2111,8 @@ refresh:
 			InputProperties: must(structpb.NewStruct(map[string]any{"sql": `SELECT 1`})),
 			OutputConnector: "duckdb",
 			ChangeMode:      runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
+			Tests:           []*runtimev1.ModelTest{},
+			PartitionsTests: nil,
 		},
 	}
 
@@ -1960,6 +2125,8 @@ refresh:
 			InputProperties: must(structpb.NewStruct(map[string]any{"sql": `SELECT 1`})),
 			OutputConnector: "duckdb",
 			ChangeMode:      runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
+			Tests:           []*runtimev1.ModelTest{},
+			PartitionsTests: nil,
 		},
 	}
 
@@ -2075,6 +2242,8 @@ metrics_view: missing
 				InputProperties: must(structpb.NewStruct(map[string]any{"sql": `SELECT 1`})),
 				OutputConnector: "duckdb",
 				ChangeMode:      runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
+				Tests:           []*runtimev1.ModelTest{},
+				PartitionsTests: nil,
 			},
 		},
 		{
@@ -2129,6 +2298,8 @@ security:
 				InputProperties: must(structpb.NewStruct(map[string]any{"sql": "SELECT * FROM domain_mappings"})),
 				OutputConnector: "duckdb",
 				ChangeMode:      runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
+				Tests:           []*runtimev1.ModelTest{},
+				PartitionsTests: nil,
 			},
 		},
 		{
@@ -2232,6 +2403,38 @@ change_mode: patch
 			require.Equal(t, modelSpec.ChangeMode.String(), tt.wantMode, "expected change mode to be %s, got %s", tt.wantMode, modelSpec.ChangeMode.String())
 		})
 	}
+}
+
+func TestModelAssertions(t *testing.T) {
+	ctx := context.Background()
+	repo := makeRepo(t, map[string]string{
+		`rill.yaml`: ``,
+		`models/m1.yaml`: `
+type: model
+sql: SELECT * FROM range(5)
+tests:
+  - name: Test Row Count
+    sql: SELECT count(*) = 5 as ok FROM range(5)
+  - name: Validate 3 is present
+    sql: SELECT count(*) = 1 as ok FROM range(5) WHERE column0 = 3
+`,
+	})
+
+	p, err := Parse(ctx, repo, "", "", "duckdb")
+	require.NoError(t, err)
+	resource := p.Resources[ResourceName{Kind: ResourceKindModel, Name: "m1"}]
+	require.NotNil(t, resource)
+	modelSpec := resource.ModelSpec
+	require.NotNil(t, modelSpec)
+	require.Len(t, modelSpec.Tests, 2)
+
+	require.Equal(t, "Test Row Count", modelSpec.Tests[0].Name)
+	require.Equal(t, "sql", modelSpec.Tests[0].Resolver)
+	require.Equal(t, "SELECT count(*) = 5 as ok FROM range(5)", modelSpec.Tests[0].ResolverProperties.Fields["sql"].GetStringValue())
+
+	require.Equal(t, "Validate 3 is present", modelSpec.Tests[1].Name)
+	require.Equal(t, "sql", modelSpec.Tests[1].Resolver)
+	require.Equal(t, "SELECT count(*) = 1 as ok FROM range(5) WHERE column0 = 3", modelSpec.Tests[1].ResolverProperties.Fields["sql"].GetStringValue())
 }
 
 func requireResourcesAndErrors(t testing.TB, p *Parser, wantResources []*Resource, wantErrors []*runtimev1.ParseError) {
