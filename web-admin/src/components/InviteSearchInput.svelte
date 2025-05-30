@@ -141,6 +141,10 @@
         }
         e.preventDefault();
       }
+    } else if (e.key === "Backspace" && input === "" && selected.length > 0) {
+      // Remove the last selected chip when backspace is pressed and input is empty
+      selected = selected.slice(0, -1);
+      e.preventDefault();
     }
   }
 
