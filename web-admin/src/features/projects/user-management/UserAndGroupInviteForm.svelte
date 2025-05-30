@@ -300,6 +300,7 @@
     roleSelect={true}
     initialRole="viewer"
     searchKeys={["email", "userEmail", "name", "userName"]}
+    autoFocusInput={-1}
     {searchList}
   />
 </form>
