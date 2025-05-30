@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -309,7 +310,7 @@ func (s *Server) RevokeUserAuthToken(ctx context.Context, req *adminv1.RevokeUse
 		}
 		tokenID = auth.GetClaims(ctx).AuthTokenID()
 	} else {
-		token, err := s.admin.DB.FindUserAuthToken(ctx, req.TokenId)
+		token, err := s.findUserAuthTokenFuzzy(ctx, req.TokenId)
 		if err != nil {
 			return nil, err
 		}
@@ -329,6 +330,48 @@ func (s *Server) RevokeUserAuthToken(ctx context.Context, req *adminv1.RevokeUse
 	}
 
 	return &adminv1.RevokeUserAuthTokenResponse{}, nil
+}
+
+// findUserAuthTokenFuzzy attempts to find a user auth token by exact ID, full token string, or unique prefix.
+func (s *Server) findUserAuthTokenFuzzy(ctx context.Context, input string) (*database.UserAuthToken, error) {
+	token, err := s.admin.DB.FindUserAuthToken(ctx, input)
+	if err == nil {
+		return token, nil
+	}
+
+	parsed, err := authtoken.FromString(input)
+	if err == nil {
+		token, err := s.admin.DB.FindUserAuthToken(ctx, parsed.ID.String())
+		if err == nil {
+			return token, nil
+		}
+	}
+
+	if len(input) < 6 {
+		return nil, status.Error(codes.InvalidArgument, "token prefix too short (min 6 chars)")
+	}
+
+	tokens, err := s.admin.DB.FindUserAuthTokens(ctx, "", "", 100)
+	if err != nil {
+		return nil, err
+	}
+
+	var matches []*database.UserAuthToken
+	for _, t := range tokens {
+		if strings.HasPrefix(t.ID, input) || strings.HasPrefix(t.ID, strings.TrimPrefix(input, "rill_usr_")) {
+			matches = append(matches, t)
+		}
+	}
+
+	if len(matches) == 1 {
+		return matches[0], nil
+	}
+
+	if len(matches) > 1 {
+		return nil, status.Error(codes.InvalidArgument, "multiple tokens match the given prefix")
+	}
+
+	return nil, status.Error(codes.NotFound, "token not found")
 }
 
 // IssueRepresentativeAuthToken returns the temporary auth token for representing email
