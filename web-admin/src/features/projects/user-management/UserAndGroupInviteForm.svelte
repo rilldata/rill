@@ -6,6 +6,8 @@
     getAdminServiceListProjectInvitesQueryKey,
     getAdminServiceListProjectMemberUsersQueryKey,
     getAdminServiceListProjectMemberUsergroupsQueryKey,
+    createAdminServiceListOrganizationInvitesInfinite,
+    createAdminServiceListOrganizationMemberUsersInfinite,
   } from "@rilldata/web-admin/client";
   import UserRoleSelect from "@rilldata/web-admin/features/projects/user-management/UserRoleSelect.svelte";
   import { Button } from "@rilldata/web-common/components/button";
@@ -16,6 +18,7 @@
   import { defaults, superForm } from "sveltekit-superforms";
   import { yup } from "sveltekit-superforms/adapters";
   import { array, object, string } from "yup";
+  import InviteSearchInput from "@rilldata/web-admin/components/InviteSearchInput.svelte";
 
   export let organization: string;
   export let project: string;
@@ -178,33 +181,197 @@
   $: hasInvalidInputs = $form.inputs.some(
     (e, i) => e.length > 0 && $errors.inputs?.[i] !== undefined,
   );
+
+  function emailOrGroupValidator(value: string) {
+    if (!value) return true;
+    return (
+      RFC5322EmailRegex.test(value) ||
+      /^[a-zA-Z0-9]+(-[a-zA-Z0-9]+)*$/.test(value) ||
+      "Must be a valid email or group name"
+    );
+  }
+
+  async function handleSearch(query: string) {
+    if (!query || query.length < 3) return [];
+
+    // Combine and filter both member users and invites
+    const allUsers = [
+      ...allOrgMemberUsersRows.map((member) => ({
+        email: member.userEmail,
+        isMember: true,
+      })),
+      ...allOrgInvitesRows.map((invite) => ({
+        email: invite.email,
+        isMember: false,
+      })),
+    ];
+
+    // Filter users based on email or display name
+    return allUsers
+      .filter((user) => user.email.toLowerCase().includes(query.toLowerCase()))
+      .slice(0, 5); // Limit to 5 results to match previous behavior
+  }
+
+  const PAGE_SIZE = 12;
+
+  $: orgMemberUsersInfiniteQuery =
+    createAdminServiceListOrganizationMemberUsersInfinite(
+      organization,
+      {
+        pageSize: PAGE_SIZE,
+      },
+      {
+        query: {
+          getNextPageParam: (lastPage) => {
+            if (lastPage.nextPageToken !== "") {
+              return lastPage.nextPageToken;
+            }
+            return undefined;
+          },
+        },
+      },
+    );
+  $: orgInvitesInfiniteQuery =
+    createAdminServiceListOrganizationInvitesInfinite(
+      organization,
+      {
+        pageSize: PAGE_SIZE,
+      },
+      {
+        query: {
+          getNextPageParam: (lastPage) => {
+            if (lastPage.nextPageToken !== "") {
+              return lastPage.nextPageToken;
+            }
+            return undefined;
+          },
+        },
+      },
+    );
+
+  $: allOrgMemberUsersRows =
+    $orgMemberUsersInfiniteQuery.data?.pages.flatMap(
+      (page) => page.members ?? [],
+    ) ?? [];
+  $: allOrgInvitesRows =
+    $orgInvitesInfiniteQuery.data?.pages.flatMap(
+      (page) => page.invites ?? [],
+    ) ?? [];
+
+  $: console.log("SearchList data updated:", {
+    memberUsers: allOrgMemberUsersRows,
+    invites: allOrgInvitesRows,
+  });
+
+  async function onInviteHandler(inputs: string[], role: string) {
+    const succeededEmails = [];
+    const succeededGroups = [];
+    const failedEmails = [];
+    const failedGroups = [];
+
+    await Promise.all(
+      inputs.map(async (input) => {
+        if (RFC5322EmailRegex.test(input)) {
+          try {
+            await $userInvite.mutateAsync({
+              organization,
+              project,
+              data: { email: input, role },
+            });
+            succeededEmails.push(input);
+          } catch {
+            failedEmails.push(input);
+          }
+        } else {
+          try {
+            await $addUsergroup.mutateAsync({
+              organization,
+              project,
+              usergroup: input,
+              data: { role },
+            });
+            succeededGroups.push(input);
+          } catch {
+            failedGroups.push(input);
+          }
+        }
+      }),
+    );
+
+    await queryClient.invalidateQueries({
+      queryKey: getAdminServiceListProjectMemberUsersQueryKey(
+        organization,
+        project,
+      ),
+    });
+    await queryClient.invalidateQueries({
+      queryKey: getAdminServiceListProjectInvitesQueryKey(
+        organization,
+        project,
+      ),
+    });
+    await queryClient.invalidateQueries({
+      queryKey: getAdminServiceListProjectMemberUsergroupsQueryKey(
+        organization,
+        project,
+      ),
+    });
+    await queryClient.invalidateQueries({
+      queryKey:
+        getAdminServiceListOrganizationMemberUsersQueryKey(organization),
+      type: "all",
+    });
+
+    let successMessage = "";
+    if (succeededEmails.length > 0) {
+      successMessage += `Invited ${succeededEmails.length} ${succeededEmails.length === 1 ? "person" : "people"}`;
+    }
+    if (succeededGroups.length > 0) {
+      if (successMessage) successMessage += " and ";
+      successMessage += `Added ${succeededGroups.length} ${succeededGroups.length === 1 ? "group" : "groups"}`;
+    }
+    if (successMessage) {
+      successMessage += ` as ${role}`;
+      eventBus.emit("notification", {
+        type: "success",
+        message: successMessage,
+      });
+    }
+    if (failedGroups.length > 0) {
+      const groupsText = failedGroups.join(", ");
+      eventBus.emit("notification", {
+        type: "error",
+        message: `Failed to add group${failedGroups.length > 1 ? "s" : ""}: ${groupsText}`,
+      });
+    }
+    if (failedEmails.length > 0) {
+      const emailsText = failedEmails.join(", ");
+      eventBus.emit("notification", {
+        type: "error",
+        message: `Failed to invite user${failedEmails.length > 1 ? "s" : ""}: ${emailsText}`,
+      });
+    }
+    onInvite();
+  }
 </script>
 
-<form id={formId} on:submit|preventDefault={submit} class="w-full" use:enhance>
-  <MultiInput
-    id="inputs"
-    placeholder="Add emails and groups, separated by commas"
-    contentClassName="relative"
-    bind:values={$form.inputs}
-    errors={$errors.inputs}
-    singular="input"
-    plural="inputs"
-    preventFocus={true}
-  >
-    <div slot="within-input" class="h-full items-center flex">
-      <UserRoleSelect bind:value={$form.role} />
-    </div>
-    <svelte:fragment slot="beside-input" let:hasSomeValue>
-      <Button
-        submitForm
-        type="primary"
-        form={formId}
-        loading={$submitting}
-        disabled={hasInvalidInputs || !hasSomeValue}
-        forcedStyle="height: 32px !important; padding-left: 20px; padding-right: 20px;"
-      >
-        Invite
-      </Button>
-    </svelte:fragment>
-  </MultiInput>
+<form class="w-full">
+  <InviteSearchInput
+    onSearch={handleSearch}
+    onInvite={onInviteHandler}
+    placeholder="Email or group, separated by commas"
+    validators={[emailOrGroupValidator]}
+    roleSelect={true}
+    initialRole="viewer"
+    searchList={[
+      ...allOrgMemberUsersRows.map((member) => ({
+        email: member.userEmail,
+        isMember: true,
+      })),
+      ...allOrgInvitesRows.map((invite) => ({
+        email: invite.email,
+        isMember: false,
+      })),
+    ]}
+  />
 </form>
