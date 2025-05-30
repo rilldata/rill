@@ -2,6 +2,7 @@ package activity
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -9,6 +10,8 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 )
+
+const maxSize = 1048576 // 1MB in bytes
 
 // Client constructs telemetry events and sends them to a sink.
 type Client struct {
@@ -245,8 +248,28 @@ func (c *Client) RecordRaw(data map[string]any) error {
 	return nil
 }
 
+func truncateEvent(e *Event) {
+	if e == nil || e.Data == nil {
+		return
+	}
+
+	b, err := json.Marshal(e)
+	if err != nil {
+		return
+	}
+	if len(b) <= maxSize {
+		return
+	}
+
+	e.Data = map[string]any{
+		"truncated": true,
+		"reason":    "event data exceeded 1MB and was truncated",
+	}
+}
+
 // emitRaw sends an event to the sink.
 func (c *Client) emitRaw(e Event) {
+	truncateEvent(&e)
 	err := c.sink.Emit(e)
 	if err != nil {
 		c.logger.Error("Failed to emit event", zap.Error(err))
