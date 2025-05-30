@@ -5,6 +5,7 @@ import {
   createRuntimeServiceGetResource,
   createRuntimeServiceListResources,
 } from "@rilldata/web-common/runtime-client";
+import { refetchIntervalStore } from "../shared/refetch-interval";
 
 export function useReports(instanceId: string, enabled = true) {
   return createRuntimeServiceListResources(
@@ -16,6 +17,7 @@ export function useReports(instanceId: string, enabled = true) {
       query: {
         enabled: enabled && !!instanceId,
         refetchOnMount: true,
+        refetchInterval: refetchIntervalStore.calculatePollingInterval,
       },
     },
   );
