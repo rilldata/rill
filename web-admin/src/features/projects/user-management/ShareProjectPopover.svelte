@@ -8,6 +8,8 @@
     createAdminServiceAddProjectMemberUsergroup,
     createAdminServiceGetCurrentUser,
     createAdminServiceListUsergroupMemberUsers,
+    createAdminServiceListOrganizationInvitesInfinite,
+    createAdminServiceListOrganizationMemberUsersInfinite,
   } from "@rilldata/web-admin/client";
   import CopyInviteLinkButton from "@rilldata/web-admin/features/projects/user-management/CopyInviteLinkButton.svelte";
   import UserAndGroupInviteForm from "@rilldata/web-admin/features/projects/user-management/UserAndGroupInviteForm.svelte";
@@ -49,6 +51,79 @@
   const addProjectMemberUsergroup =
     createAdminServiceAddProjectMemberUsergroup();
   const currentUser = createAdminServiceGetCurrentUser();
+
+  const PAGE_SIZE = 12;
+
+  $: orgMemberUsersInfiniteQuery =
+    createAdminServiceListOrganizationMemberUsersInfinite(
+      organization,
+      {
+        pageSize: PAGE_SIZE,
+      },
+      {
+        query: {
+          getNextPageParam: (lastPage) => {
+            if (lastPage.nextPageToken !== "") {
+              return lastPage.nextPageToken;
+            }
+            return undefined;
+          },
+        },
+      },
+    );
+  $: orgInvitesInfiniteQuery =
+    createAdminServiceListOrganizationInvitesInfinite(
+      organization,
+      {
+        pageSize: PAGE_SIZE,
+      },
+      {
+        query: {
+          getNextPageParam: (lastPage) => {
+            if (lastPage.nextPageToken !== "") {
+              return lastPage.nextPageToken;
+            }
+            return undefined;
+          },
+        },
+      },
+    );
+
+  $: allOrgMemberUsersRows =
+    $orgMemberUsersInfiniteQuery?.data?.pages?.flatMap(
+      (page) => page?.members ?? [],
+    ) ?? [];
+  $: allOrgInvitesRows =
+    $orgInvitesInfiniteQuery?.data?.pages?.flatMap(
+      (page) => page?.invites ?? [],
+    ) ?? [];
+
+  $: searchList = [
+    ...(allOrgMemberUsersRows ?? [])
+      .filter(
+        (member) =>
+          !projectMemberUsersList.some(
+            (pm) => pm.userEmail === member.userEmail,
+          ) &&
+          !projectInvitesList.some(
+            (invite) => invite.email === member.userEmail,
+          ),
+      )
+      .map((member) => ({
+        email: member.userEmail,
+        isMember: true,
+      })),
+    ...(allOrgInvitesRows ?? [])
+      .filter(
+        (invite) =>
+          !projectMemberUsersList.some((pm) => pm.userEmail === invite.email) &&
+          !projectInvitesList.some((pi) => pi.email === invite.email),
+      )
+      .map((invite) => ({
+        email: invite.email,
+        isMember: false,
+      })),
+  ];
 
   async function setAccessInviteOnly() {
     if (accessType === "invite-only") return;
@@ -174,8 +249,8 @@
 
   $: projectMemberUserGroupsList =
     $listProjectMemberUsergroups.data?.members ?? [];
-  $: projectMemberUsersList = $listProjectMemberUsers.data?.members ?? [];
-  $: projectInvitesList = $listProjectInvites.data?.invites ?? [];
+  $: projectMemberUsersList = $listProjectMemberUsers?.data?.members ?? [];
+  $: projectInvitesList = $listProjectInvites?.data?.invites ?? [];
 
   // Sort the list to prioritize the current user
   $: sortedProjectMemberUsersList = projectMemberUsersList.sort((a, b) => {
@@ -210,7 +285,7 @@
         <div class="text-sm font-medium">Share project: {project}</div>
         <div class="grow"></div>
       </div>
-      <UserAndGroupInviteForm {organization} {project} />
+      <UserAndGroupInviteForm {organization} {project} {searchList} />
       <!-- 52 * 8 = 416px -->
       <div class="flex flex-col gap-y-1 overflow-y-auto max-h-[416px]">
         <div class="mt-4">
