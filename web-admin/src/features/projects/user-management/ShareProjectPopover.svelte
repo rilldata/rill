@@ -98,6 +98,7 @@
       (page) => page?.invites ?? [],
     ) ?? [];
 
+  // TODO: include user groups
   $: searchList = [
     ...(allOrgMemberUsersRows ?? [])
       .filter(
