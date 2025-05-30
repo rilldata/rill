@@ -178,11 +178,10 @@ func (s *Server) HTTPHandler(ctx context.Context, registerAdditionalHandlers fun
 	httpMux := http.NewServeMux()
 
 	// Register the Vanguard handler for gRPC transcoding
-	if local {
-		httpMux.Handle("/v1/", transcoder)
-	} else {
-		httpMux.Handle("/", transcoder)
-	}
+	httpMux.Handle("/v1/", transcoder)
+	httpMux.Handle("/rill.runtime.v1.RuntimeService/", transcoder)
+	httpMux.Handle("/rill.runtime.v1.QueryService/", transcoder)
+	httpMux.Handle("/rill.runtime.v1.ConnectorService/", transcoder)
 
 	// Call callback to register additional paths
 	// NOTE: This is so ugly, but not worth refactoring it properly right now.
