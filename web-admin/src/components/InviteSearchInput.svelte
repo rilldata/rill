@@ -26,11 +26,6 @@
   async function handleInput(e: Event) {
     input = (e.target as HTMLInputElement).value;
     error = "";
-    if (!input) {
-      searchResults = [];
-      showDropdown = false;
-      return;
-    }
     loading = true;
     try {
       if (searchList) {
@@ -40,11 +35,10 @@
             (key) => item[key] && item[key].toLowerCase().includes(lower),
           ),
         );
-        showDropdown = true;
       } else {
         searchResults = await onSearch(input);
-        showDropdown = true;
       }
+      showDropdown = searchResults.length > 0;
     } catch (err) {
       searchResults = [];
       showDropdown = false;
@@ -115,6 +109,22 @@
     }
   }
 
+  function handleFocus() {
+    if (searchList) {
+      const lower = input.toLowerCase();
+      searchResults = searchList.filter((item) =>
+        searchKeys.some(
+          (key) => item[key] && item[key].toLowerCase().includes(lower),
+        ),
+      );
+      showDropdown = searchResults.length > 0;
+    }
+  }
+
+  function handleBlur() {
+    showDropdown = false;
+  }
+
   function removeSelected(email: string) {
     selected = selected.filter((e) => e !== email);
   }
@@ -138,7 +148,8 @@
       {placeholder}
       on:input={handleInput}
       on:keydown={handleInputKeydown}
-      on:focus={() => (showDropdown = searchResults.length > 0)}
+      on:focus={handleFocus}
+      on:blur={handleBlur}
       class:error={!!error}
       autocomplete="off"
     />
