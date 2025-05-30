@@ -5587,6 +5587,8 @@ definitions:
     properties:
       id:
         type: string
+      tokenPrefix:
+        type: string
       createdOn:
         type: string
         format: date-time

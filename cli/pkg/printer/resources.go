@@ -281,16 +281,18 @@ func toServiceTokenRow(s *adminv1.ServiceToken) *serviceToken {
 	}
 
 	return &serviceToken{
-		ID:        s.Id,
-		CreatedOn: s.CreatedOn.AsTime().Local().Format(time.DateTime),
-		ExpiresOn: expiresOn,
+		ID:          s.Id,
+		TokenPrefix: s.TokenPrefix,
+		CreatedOn:   s.CreatedOn.AsTime().Local().Format(time.DateTime),
+		ExpiresOn:   expiresOn,
 	}
 }
 
 type serviceToken struct {
-	ID        string `header:"id" json:"id"`
-	CreatedOn string `header:"created_on,timestamp(ms|utc|human)" json:"created_on"`
-	ExpiresOn string `header:"expires_on,timestamp(ms|utc|human)" json:"expires_on"`
+	ID          string `header:"id" json:"id"`
+	TokenPrefix string `header:"token" json:"token_prefix"`
+	CreatedOn   string `header:"created_on,timestamp(ms|utc|human)" json:"created_on"`
+	ExpiresOn   string `header:"expires_on,timestamp(ms|utc|human)" json:"expires_on"`
 }
 
 func (p *Printer) PrintUserTokens(uts []*adminv1.UserAuthToken) {

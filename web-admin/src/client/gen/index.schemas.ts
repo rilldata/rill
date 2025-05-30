@@ -1104,6 +1104,7 @@ export interface V1Service {
 
 export interface V1ServiceToken {
   id?: string;
+  tokenPrefix?: string;
   createdOn?: string;
   expiresOn?: string;
 }

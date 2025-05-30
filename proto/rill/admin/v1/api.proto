@@ -2640,6 +2640,7 @@ message Bookmark {
 
 message ServiceToken {
   string id = 1;
+  string token_prefix = 4;
   google.protobuf.Timestamp created_on = 2;
   google.protobuf.Timestamp expires_on = 3;
 }
