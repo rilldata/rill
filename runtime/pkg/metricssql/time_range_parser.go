@@ -9,6 +9,7 @@ import (
 	"github.com/pingcap/tidb/pkg/parser/ast"
 	"github.com/rilldata/rill/runtime/metricsview"
 	"github.com/rilldata/rill/runtime/pkg/rilltime"
+	"github.com/rilldata/rill/runtime/pkg/timeutil"
 )
 
 func (q *query) parseTimeRangeStart(ctx context.Context, node *ast.FuncCallExpr) (*metricsview.Expression, error) {
@@ -23,12 +24,13 @@ func (q *query) parseTimeRangeStart(ctx context.Context, node *ast.FuncCallExpr)
 	}
 
 	watermark, _, _ := rillTime.Eval(rilltime.EvalOptions{
-		Now:        time.Now(),
-		MinTime:    ts.Min,
-		MaxTime:    ts.Max,
-		Watermark:  ts.Watermark,
-		FirstDay:   int(q.metricsViewSpec.FirstDayOfWeek),
-		FirstMonth: int(q.metricsViewSpec.FirstMonthOfYear),
+		Now:           time.Now(),
+		MinTime:       ts.Min,
+		MaxTime:       ts.Max,
+		Watermark:     ts.Watermark,
+		FirstDay:      int(q.metricsViewSpec.FirstDayOfWeek),
+		FirstMonth:    int(q.metricsViewSpec.FirstMonthOfYear),
+		SmallestGrain: timeutil.TimeGrainFromAPI(q.metricsViewSpec.SmallestTimeGrain),
 	})
 
 	return &metricsview.Expression{
@@ -48,12 +50,13 @@ func (q *query) parseTimeRangeEnd(ctx context.Context, node *ast.FuncCallExpr) (
 	}
 
 	_, watermark, _ := rillTime.Eval(rilltime.EvalOptions{
-		Now:        time.Now(),
-		MinTime:    ts.Min,
-		MaxTime:    ts.Max,
-		Watermark:  ts.Watermark,
-		FirstDay:   int(q.metricsViewSpec.FirstDayOfWeek),
-		FirstMonth: int(q.metricsViewSpec.FirstMonthOfYear),
+		Now:           time.Now(),
+		MinTime:       ts.Min,
+		MaxTime:       ts.Max,
+		Watermark:     ts.Watermark,
+		FirstDay:      int(q.metricsViewSpec.FirstDayOfWeek),
+		FirstMonth:    int(q.metricsViewSpec.FirstMonthOfYear),
+		SmallestGrain: timeutil.TimeGrainFromAPI(q.metricsViewSpec.SmallestTimeGrain),
 	})
 
 	return &metricsview.Expression{
