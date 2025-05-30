@@ -143,22 +143,29 @@
     {/each}
   </div>
   <div class="input-row">
-    <input
-      type="text"
-      bind:value={input}
-      {placeholder}
-      on:input={handleInput}
-      on:keydown={handleInputKeydown}
-      on:focus={handleFocus}
-      on:blur={handleBlur}
-      class:error={!!error}
-      autocomplete="off"
-      tabindex={autoFocusInput}
-    />
-    {#if roleSelect}
-      <UserRoleSelect bind:value={role} />
-    {/if}
-    <Button on:click={handleInvite} disabled={selected.length === 0}>
+    <div class="input-with-role">
+      <input
+        type="text"
+        bind:value={input}
+        {placeholder}
+        on:input={handleInput}
+        on:keydown={handleInputKeydown}
+        on:focus={handleFocus}
+        on:blur={handleBlur}
+        class:error={!!error}
+        autocomplete="off"
+        tabindex={autoFocusInput}
+      />
+      {#if roleSelect}
+        <UserRoleSelect bind:value={role} />
+      {/if}
+    </div>
+    <Button
+      type="primary"
+      on:click={handleInvite}
+      disabled={selected.length === 0}
+      forcedStyle="height: 32px !important; padding-left: 20px; padding-right: 20px;"
+    >
       Invite
     </Button>
   </div>
@@ -212,16 +219,32 @@
     align-items: center;
     gap: 8px;
   }
-  input[type="text"] {
-    flex: 1;
-    padding: 8px;
-    border-radius: 6px;
-    border: 1px solid #d1d5db;
+  .input-with-role {
+    display: flex;
+    align-items: center;
     background: #fff;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    padding: 0 0 0 4px;
+    flex: 1;
+  }
+  .input-with-role :global(.dropdown-menu-trigger) {
+    border: none;
+    background: transparent;
+    margin-right: 4px;
+    min-width: 90px;
+  }
+  .input-with-role input[type="text"] {
+    border: none;
+    outline: none;
+    flex: 1;
+    padding: 8px 8px 8px 0;
+    background: transparent;
     color: #222;
   }
-  input[type="text"].error {
-    border-color: #e74c3c;
+  .input-with-role input[type="text"].error {
+    border: none;
+    box-shadow: 0 0 0 1px #e74c3c;
   }
   .error {
     color: #e74c3c;
