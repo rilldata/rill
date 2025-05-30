@@ -8,7 +8,7 @@ import (
 )
 
 func IssueCmd(ch *cmdutil.Helper) *cobra.Command {
-	var description string
+	var displayName string
 	var ttlMinutes int
 
 	issueCmd := &cobra.Command{
@@ -21,10 +21,17 @@ func IssueCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 
+			if displayName == "" {
+				displayName, err = cmdutil.InputPrompt("Please enter a display name for the token", "")
+				if err != nil {
+					return err
+				}
+			}
+
 			res, err := client.IssueUserAuthToken(cmd.Context(), &adminv1.IssueUserAuthTokenRequest{
 				UserId:      "current",
 				ClientId:    database.AuthClientIDRillManual,
-				DisplayName: description,
+				DisplayName: displayName,
 				TtlMinutes:  int64(ttlMinutes),
 			})
 			if err != nil {
@@ -38,7 +45,7 @@ func IssueCmd(ch *cmdutil.Helper) *cobra.Command {
 	}
 
 	issueCmd.Flags().SortFlags = false
-	issueCmd.Flags().StringVar(&description, "description", "", "Description for the token")
+	issueCmd.Flags().StringVar(&displayName, "display-name", "", "Display name for the token")
 	issueCmd.Flags().IntVar(&ttlMinutes, "ttl-minutes", 0, "Optional minutes until the token should expire")
 
 	return issueCmd

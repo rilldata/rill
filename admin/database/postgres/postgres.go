@@ -961,10 +961,10 @@ func (c *connection) FindUserAuthTokens(ctx context.Context, userID, afterID str
 	`)
 	args := []any{userID}
 	if afterID != "" {
-		qry.WriteString(" AND t.id > $2 ORDER BY t.id LIMIT $3")
+		qry.WriteString(" AND t.id > $2 ORDER BY t.created_on DESC, t.id DESC LIMIT $3")
 		args = append(args, afterID, limit)
 	} else {
-		qry.WriteString(" ORDER BY t.id LIMIT $2")
+		qry.WriteString(" ORDER BY t.created_on DESC LIMIT $2")
 		args = append(args, limit)
 	}
 
@@ -1017,6 +1017,12 @@ func (c *connection) DeleteUserAuthToken(ctx context.Context, id string) error {
 
 func (c *connection) DeleteExpiredUserAuthTokens(ctx context.Context, retention time.Duration) error {
 	_, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM user_auth_tokens WHERE expires_on IS NOT NULL AND expires_on + $1 < now()", retention)
+	return parseErr("auth token", err)
+}
+
+// DeleteInactiveUserAuthTokens deletes user authentication tokens that have not been used within the specified retention period.
+func (c *connection) DeleteInactiveUserAuthTokens(ctx context.Context, retention time.Duration) error {
+	_, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM user_auth_tokens WHERE used_on IS NULL OR used_on < now() - $1", retention)
 	return parseErr("auth token", err)
 }
 
@@ -1159,6 +1165,12 @@ func (c *connection) DeleteServiceAuthToken(ctx context.Context, id string) erro
 // DeleteExpiredServiceAuthTokens deletes expired service auth tokens.
 func (c *connection) DeleteExpiredServiceAuthTokens(ctx context.Context, retention time.Duration) error {
 	_, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM service_auth_tokens WHERE expires_on IS NOT NULL AND expires_on + $1 < now()", retention)
+	return parseErr("service auth token", err)
+}
+
+// DeleteInactiveServiceAuthTokens deletes service authentication tokens that have not been used within the specified retention period.
+func (c *connection) DeleteInactiveServiceAuthTokens(ctx context.Context, retention time.Duration) error {
+	_, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM service_auth_tokens WHERE used_on IS NULL OR used_on < now() - $1", retention)
 	return parseErr("service auth token", err)
 }
 

@@ -1,6 +1,7 @@
 package authtoken
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/google/uuid"
@@ -97,4 +98,11 @@ func TestMany(t *testing.T) {
 		_, err := FromString(str)
 		require.NoError(t, err)
 	}
+}
+
+func TestPrefix(t *testing.T) {
+	tkn := NewRandom(TypeUser)
+	require.Equal(t, TypeUser, tkn.Type)
+	require.True(t, strings.HasPrefix(tkn.String(), tkn.Prefix()), "Full token should start with prefix")
+	require.NotEqual(t, tkn.Prefix(), tkn.String(), "Prefix should not match the full token string")
 }
