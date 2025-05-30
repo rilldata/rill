@@ -10,6 +10,7 @@
   export let roleSelect: boolean = false;
   export let initialRole: string = "viewer";
   export let searchList: any[] | undefined = undefined;
+  export let searchKeys: string[] = [];
 
   const dispatch = createEventDispatcher();
 
@@ -33,16 +34,12 @@
     loading = true;
     try {
       if (searchList) {
-        console.log("SearchList:", searchList);
         const lower = input.toLowerCase();
-        searchResults = searchList.filter(
-          (u) =>
-            (u.email && u.email.toLowerCase().includes(lower)) ||
-            (u.userEmail && u.userEmail.toLowerCase().includes(lower)) ||
-            (u.name && u.name.toLowerCase().includes(lower)) ||
-            (u.userName && u.userName.toLowerCase().includes(lower)),
+        searchResults = searchList.filter((item) =>
+          searchKeys.some(
+            (key) => item[key] && item[key].toLowerCase().includes(lower),
+          ),
         );
-        console.log("Filtered searchList results:", searchResults);
         showDropdown = true;
       } else {
         searchResults = await onSearch(input);
