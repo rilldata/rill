@@ -20,8 +20,8 @@
 
   export let organization: string;
   export let project: string;
-  export let onInvite: () => void = () => {};
   export let searchList: any[] = [];
+  export let onInvite: () => void = () => {};
 
   const queryClient = useQueryClient();
   const userInvite = createAdminServiceAddProjectMemberUser();
@@ -299,6 +299,7 @@
     validators={[emailOrGroupValidator]}
     roleSelect={true}
     initialRole="viewer"
+    searchKeys={["email", "userEmail", "name", "userName"]}
     {searchList}
   />
 </form>
