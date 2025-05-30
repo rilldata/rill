@@ -166,18 +166,15 @@
 </script>
 
 <div class="invite-search-input">
-  <div class="selected-list">
-    {#each selected as email (email)}
-      <span class="chip"
-        >{email}
-        <button type="button" on:click={() => removeSelected(email)}
-          >&times;</button
-        ></span
-      >
-    {/each}
-  </div>
   <div class="input-row">
     <div class="input-with-role">
+      {#each selected as email (email)}
+        <span class="chip"
+          >{email}<button type="button" on:click={() => removeSelected(email)}
+            >&times;</button
+          ></span
+        >
+      {/each}
       <input
         type="text"
         bind:value={input}
@@ -233,29 +230,6 @@
     width: 100%;
     position: relative;
   }
-  .selected-list {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    margin-bottom: 4px;
-  }
-  .chip {
-    background: #f3f4f6; /* light gray */
-    color: #222;
-    border-radius: 12px;
-    padding: 2px 10px;
-    font-size: 0.95em;
-    display: flex;
-    align-items: center;
-    border: 1px solid #e5e7eb;
-  }
-  .chip button {
-    background: none;
-    border: none;
-    color: #888;
-    margin-left: 4px;
-    cursor: pointer;
-  }
   .input-row {
     display: flex;
     align-items: center;
@@ -264,24 +238,43 @@
   .input-with-role {
     display: flex;
     align-items: center;
+    flex-wrap: wrap;
     background: #fff;
     border: 1px solid #d1d5db;
     border-radius: 6px;
-    padding: 0 4px 0 4px;
+    padding: 2px 4px;
+    min-height: 40px;
+    gap: 4px;
     flex: 1;
   }
   .input-with-role input[type="text"] {
     border: none;
     outline: none;
-    flex: 1;
+    flex: 1 0 120px;
+    min-width: 120px;
     padding: 8px 8px;
     background: transparent;
     color: #222;
+    margin: 2px 0;
   }
-  /* .input-with-role input[type="text"].error {
+  .chip {
+    background: #f3f4f6;
+    color: #222;
+    border-radius: 12px;
+    padding: 2px 10px;
+    font-size: 0.95em;
+    display: flex;
+    align-items: center;
+    border: 1px solid #e5e7eb;
+    margin: 2px 0;
+  }
+  .chip button {
+    background: none;
     border: none;
-    box-shadow: 0 0 0 1px #e74c3c;
-  } */
+    color: #888;
+    margin-left: 4px;
+    cursor: pointer;
+  }
   .input-with-role :global(.dropdown-menu-trigger) {
     border: none;
     background: transparent;
@@ -289,11 +282,6 @@
 
     min-width: 90px;
   }
-  /* .error {
-    color: #e74c3c;
-    margin-top: 4px;
-    font-size: 0.95em;
-  } */
   .dropdown {
     position: absolute;
     left: 0;
