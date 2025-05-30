@@ -191,7 +191,7 @@
   }
 
   async function handleSearch(query: string) {
-    if (!query || query.length < 3) return [];
+    if (!query) return [];
 
     const lower = query.toLowerCase();
     return searchList
