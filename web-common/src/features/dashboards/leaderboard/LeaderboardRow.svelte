@@ -51,6 +51,7 @@
     );
   }
 
+  let hovered = false;
   let valueRect = new DOMRect(0, 0, DEFAULT_COLUMN_WIDTH);
   let deltaRect = new DOMRect(0, 0, COMPARISON_COLUMN_WIDTH);
   let parent: HTMLTableRowElement;
@@ -92,45 +93,6 @@
   $: valueColumn.update(valueElementWith);
   $: deltaColumn.update(deltaElementWidth);
 
-  $: formattedPctOfTotalTitles = Object.fromEntries(
-    Object.entries(pctOfTotals).map(([name, value]) => [
-      name,
-      value !== null ? formatMeasurePercentageDifference(value) : null,
-    ]),
-  );
-
-  $: formattedPctOfTotalStrings = Object.fromEntries(
-    Object.entries(formattedPctOfTotalTitles).map(([name, parts]) => [
-      name,
-      parts
-        ? `${parts.neg || ""}${parts.int}${parts.dot}${parts.frac}${parts.suffix}%`
-        : null,
-    ]),
-  );
-
-  $: formattedDeltaAbsTitles = Object.fromEntries(
-    Object.entries(deltaAbsMap).map(([name, value]) => [
-      name,
-      value !== null ? formatters[name]?.(value)?.toString() : null,
-    ]),
-  );
-
-  $: formattedDeltaRelTitles = Object.fromEntries(
-    Object.entries(deltaRels).map(([name, value]) => [
-      name,
-      value !== null ? formatMeasurePercentageDifference(value) : null,
-    ]),
-  );
-
-  $: formattedDeltaRelStrings = Object.fromEntries(
-    Object.entries(formattedDeltaRelTitles).map(([name, parts]) => [
-      name,
-      parts
-        ? `${parts.neg || ""}${parts.int}${parts.dot}${parts.frac}${parts.suffix}%`
-        : null,
-    ]),
-  );
-
   $: barLengths = Object.fromEntries(
     Object.entries(pctOfTotals).map(([name, pct]) => [
       name,
@@ -159,7 +121,7 @@
 
   $: barColor = excluded
     ? "rgb(243 244 246)"
-    : selected
+    : selected || hovered
       ? "var(--color-primary-200)"
       : "var(--color-primary-100)";
 
@@ -208,6 +170,8 @@
   style:background={leaderboardMeasureNames.length === 1
     ? dimensionGradients
     : undefined}
+  on:mouseenter={() => (hovered = true)}
+  on:mouseleave={() => (hovered = false)}
   on:click={(e) => {
     if (e.shiftKey) return;
     toggleDimensionValueSelection(
@@ -249,15 +213,12 @@
     }}
     class="relative size-full flex flex-none justify-between items-center leaderboard-label"
     style:background={dimensionGradients}
-    title={!selected && atLeastOneActive
-      ? `Exclusively select ${dimensionValue}`
-      : dimensionValue}
   >
     <span class="truncate">
       <FormattedDataType value={dimensionValue} truncate />
     </span>
 
-    {#if previousValueString && selected}
+    {#if previousValueString && hovered}
       <span
         class="opacity-50 whitespace-nowrap font-normal"
         transition:slide={{ axis: "x", duration: 200 }}
@@ -266,7 +227,7 @@
       </span>
     {/if}
 
-    {#if selected && href}
+    {#if hovered && href}
       <a
         target="_blank"
         rel="noopener noreferrer"
@@ -287,7 +248,6 @@
       on:click={modified({
         shift: () => shiftClickHandler(values[measureName]?.toString() || ""),
       })}
-      title={values[measureName]?.toString()}
       style:background={leaderboardMeasureNames.length === 1
         ? measureGradients
         : measureGradientMap?.[measureName]}
@@ -323,10 +283,9 @@
         role="button"
         tabindex="0"
         data-comparison-cell
-        title={formattedPctOfTotalStrings[measureName]}
         on:click={modified({
           shift: () =>
-            shiftClickHandler(formattedPctOfTotalStrings[measureName] || ""),
+            shiftClickHandler(pctOfTotals[measureName]?.toString() || ""),
         })}
         on:mouseover={() => {
           const value = pctOfTotals[measureName]?.toString() || "";
@@ -356,10 +315,9 @@
         role="button"
         tabindex="0"
         data-comparison-cell
-        title={formattedDeltaAbsTitles[measureName]}
         on:click={modified({
           shift: () =>
-            shiftClickHandler(formattedDeltaAbsTitles[measureName] || ""),
+            shiftClickHandler(deltaAbsMap[measureName]?.toString() || ""),
         })}
         on:mouseover={() => {
           const value = deltaAbsMap[measureName]?.toString() || "";
@@ -392,10 +350,9 @@
     {#if isTimeComparisonActive && shouldShowContextColumns(measureName)}
       <td
         data-comparison-cell
-        title={formattedDeltaRelStrings[measureName]}
         on:click={modified({
           shift: () =>
-            shiftClickHandler(formattedDeltaRelStrings[measureName] || ""),
+            shiftClickHandler(deltaRels[measureName]?.toString() || ""),
         })}
         on:mouseover={() => {
           const value = deltaRels[measureName]?.toString() || "";
@@ -411,7 +368,9 @@
         }}
       >
         <PercentageChange
-          value={deltaRels[measureName]}
+          value={deltaRels[measureName]
+            ? formatMeasurePercentageDifference(deltaRels[measureName])
+            : null}
           color="text-gray-500"
         />
         {#if showZigZags[measureName]}
