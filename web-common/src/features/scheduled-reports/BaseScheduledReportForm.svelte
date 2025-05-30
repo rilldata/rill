@@ -10,6 +10,7 @@
   import type { SuperFormErrors } from "sveltekit-superforms/client";
   import Input from "../../components/forms/Input.svelte";
   import Select from "../../components/forms/Select.svelte";
+  import Checkbox from "../../components/forms/Checkbox.svelte";
   import { runtime } from "../../runtime-client/runtime-store";
   import { makeTimeZoneOptions, ReportFrequency } from "./time-utils";
 
@@ -31,7 +32,7 @@
 
 <form
   autocomplete="off"
-  class="flex flex-col gap-y-6"
+  class="flex flex-col gap-y-3"
   id={formId}
   on:submit|preventDefault={submit}
   use:enhance
@@ -44,7 +45,7 @@
     label="Report title"
     placeholder="My report"
   />
-  <div class="flex gap-x-2">
+  <div class="flex gap-x-1">
     <Select
       bind:value={$data["frequency"]}
       id="frequency"
@@ -107,6 +108,16 @@
     label="Row limit"
     optional
     placeholder="1000"
+  />
+  <Checkbox
+    bind:checked={$data["exportIncludeHeader"]}
+    id="exportIncludeHeader"
+    onCheckedChange={(checked) => {
+      $data["exportIncludeHeader"] = checked;
+    }}
+    inverse
+    disabled={$data["exportFormat"] === V1ExportFormat.EXPORT_FORMAT_PARQUET}
+    label="Include metadata"
   />
   <MultiInput
     id="emailRecipients"
