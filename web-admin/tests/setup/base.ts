@@ -1,4 +1,6 @@
 import { test as base, type Page } from "@playwright/test";
+import { startRillDev } from "@rilldata/web-common/tests/utils/start-rill-dev";
+import { join } from "node:path";
 import { ADMIN_STORAGE_STATE, VIEWER_STORAGE_STATE } from "./constants";
 import { cliLogin, cliLogout } from "./fixtures/cli";
 import path from "path";
@@ -11,15 +13,25 @@ import {
 import fs from "fs";
 import { generateEmbed } from "../utils/generate-embed";
 
+export const TestTempDirectory = "playwright";
+const TEST_PROJECTS = "tests/setup/projects";
+
 type MyFixtures = {
   adminPage: Page;
   viewerPage: Page;
   anonPage: Page;
-  cli: void;
   embedPage: Page;
+
+  cli: void;
+  cliHome: string | undefined;
+  rillDevPage: Page;
+  rillDevProject: string | undefined;
 };
 
 export const test = base.extend<MyFixtures>({
+  cliHome: [undefined, { option: true }],
+  rillDevProject: [undefined, { option: true }],
+
   // Note: the `e2e` project uses the admin auth file by default, so it's likely that
   // this fixture won't be used often.
   adminPage: async ({ browser }, use) => {
@@ -53,6 +65,16 @@ export const test = base.extend<MyFixtures>({
     await cliLogin(page);
     await use();
     await cliLogout();
+  },
+
+  rillDevPage: async ({ anonPage, cliHome, rillDevProject }, use) => {
+    await startRillDev(anonPage, use, {
+      cliHome,
+      switchEnv: true,
+      projectDir: rillDevProject
+        ? join(TEST_PROJECTS, rillDevProject)
+        : undefined,
+    });
   },
 
   embedPage: [

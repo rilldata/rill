@@ -183,7 +183,7 @@ setup.describe("global setup", () => {
   setup("should deploy the OpenRTB project", async ({ adminPage }) => {
     // Deploy the OpenRTB project
     const { match } = await spawnAndMatch(
-      "rill",
+      "../rill",
       [
         "deploy",
         "--path",
