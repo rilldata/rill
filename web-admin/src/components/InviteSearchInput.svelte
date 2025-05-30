@@ -24,9 +24,35 @@
   let role = initialRole;
   let highlightedIndex = -1;
 
+  function processCommaSeparatedInput(raw: string) {
+    // Split by comma, trim, filter out empty, and deduplicate
+    const parts = raw
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+    const newEntries = parts.filter((entry) => !selected.includes(entry));
+    // Validate each entry
+    for (const entry of newEntries) {
+      const valid = validate(entry);
+      if (valid === true) {
+        selected = [...selected, entry];
+      } else {
+        error = valid as string;
+        // Optionally: skip adding invalid, or add anyway and show error
+      }
+    }
+  }
+
   async function handleInput(e: Event) {
     input = (e.target as HTMLInputElement).value;
     error = "";
+    // If input contains a comma, process it
+    if (input.includes(",")) {
+      processCommaSeparatedInput(input);
+      // Only keep the last (possibly incomplete) part in the input
+      const lastPart = input.split(",").pop() ?? "";
+      input = lastPart.trim();
+    }
     loading = true;
     try {
       if (searchList) {
@@ -85,7 +111,15 @@
   }
 
   function handleInputKeydown(e: KeyboardEvent) {
-    if (!showDropdown || searchResults.length === 0) return;
+    if (!showDropdown || searchResults.length === 0) {
+      // If input contains a comma, process it on Enter
+      if (e.key === "Enter" && input.includes(",")) {
+        processCommaSeparatedInput(input);
+        input = "";
+        e.preventDefault();
+        return;
+      }
+    }
     if (e.key === "ArrowDown") {
       highlightedIndex = (highlightedIndex + 1) % searchResults.length;
       e.preventDefault();
@@ -152,6 +186,14 @@
         on:keydown={handleInputKeydown}
         on:focus={handleFocus}
         on:blur={handleBlur}
+        on:paste={(e) => {
+          const pasted = e.clipboardData?.getData("text") ?? "";
+          if (pasted.includes(",")) {
+            processCommaSeparatedInput(pasted);
+            input = "";
+            e.preventDefault();
+          }
+        }}
         class:error={!!error}
         autocomplete="off"
         tabindex={autoFocusInput}
@@ -161,7 +203,7 @@
       {/if}
     </div>
     <Button
-      type="primary"
+      type="secondary"
       on:click={handleInvite}
       disabled={selected.length === 0}
       forcedStyle="height: 32px !important; padding-left: 20px; padding-right: 20px;"
@@ -225,7 +267,7 @@
     background: #fff;
     border: 1px solid #d1d5db;
     border-radius: 6px;
-    padding: 0 0 0 4px;
+    padding: 0 4px 0 4px;
     flex: 1;
   }
   .input-with-role input[type="text"] {
@@ -236,21 +278,22 @@
     background: transparent;
     color: #222;
   }
-  .input-with-role input[type="text"].error {
+  /* .input-with-role input[type="text"].error {
     border: none;
     box-shadow: 0 0 0 1px #e74c3c;
-  }
+  } */
   .input-with-role :global(.dropdown-menu-trigger) {
     border: none;
     background: transparent;
     margin-left: 4px;
+
     min-width: 90px;
   }
-  .error {
+  /* .error {
     color: #e74c3c;
     margin-top: 4px;
     font-size: 0.95em;
-  }
+  } */
   .dropdown {
     position: absolute;
     left: 0;
