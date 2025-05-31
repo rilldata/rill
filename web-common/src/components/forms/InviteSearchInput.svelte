@@ -71,13 +71,18 @@
     try {
       if (searchList) {
         const lower = input.toLowerCase();
-        searchResults = searchList.filter((item) =>
-          searchKeys.some(
-            (key) => item[key] && item[key].toLowerCase().includes(lower),
-          ),
-        );
+        searchResults = searchList
+          .filter((item) =>
+            searchKeys.some(
+              (key) => item[key] && item[key].toLowerCase().includes(lower),
+            ),
+          )
+          .filter((item) => !selected.includes(item.identifier));
       } else {
-        searchResults = await onSearch(input);
+        const results = await onSearch(input);
+        searchResults = results.filter(
+          (item) => !selected.includes(item.identifier),
+        );
       }
       showDropdown = searchResults.length > 0;
     } catch (err) {
@@ -165,11 +170,13 @@
   function handleFocus() {
     if (searchList) {
       const lower = input.toLowerCase();
-      searchResults = searchList.filter((item) =>
-        searchKeys.some(
-          (key) => item[key] && item[key].toLowerCase().includes(lower),
-        ),
-      );
+      searchResults = searchList
+        .filter((item) =>
+          searchKeys.some(
+            (key) => item[key] && item[key].toLowerCase().includes(lower),
+          ),
+        )
+        .filter((item) => !selected.includes(item.identifier));
       showDropdown = searchResults.length > 0;
     }
   }
