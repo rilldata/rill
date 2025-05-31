@@ -89,7 +89,7 @@
           square
           small
           type="ghost"
-          on:click={() => {
+          onClick={() => {
             editing = !editing;
           }}
         >
