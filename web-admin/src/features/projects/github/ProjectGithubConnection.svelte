@@ -104,7 +104,7 @@
             <DropdownMenu.Content align="start">
               <!-- Disabling for now, until we figure out how to do this  -->
               <!--              <DropdownMenu.Item class="px-1 py-1">-->
-              <!--                <Button on:click={editGithubConnection} type="text" compact>-->
+              <!--                <Button onClick={editGithubConnection} type="text" compact>-->
               <!--                  <div class="flex flex-row items-center gap-x-2">-->
               <!--                    <EditIcon size="14px" />-->
               <!--                    <span class="text-xs">Edit</span>-->
@@ -112,7 +112,7 @@
               <!--                </Button>-->
               <!--              </DropdownMenu.Item>-->
               <DropdownMenu.Item class="px-1 py-1">
-                <Button on:click={disconnectGithubConnect} type="text" compact>
+                <Button onClick={disconnectGithubConnect} type="text" compact>
                   <div class="flex flex-row items-center gap-x-2">
                     <DisconnectIcon size="14px" />
                     <span class="text-xs">Disconnect</span>

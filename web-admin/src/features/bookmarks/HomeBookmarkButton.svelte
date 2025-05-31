@@ -5,10 +5,10 @@
   import { Button } from "@rilldata/web-common/components/button";
   import {
     DropdownMenu,
-    DropdownMenuTrigger,
     DropdownMenuContent,
     DropdownMenuItem,
     DropdownMenuSeparator,
+    DropdownMenuTrigger,
   } from "@rilldata/web-common/components/dropdown-menu";
   import HomeBookmark from "@rilldata/web-common/components/icons/HomeBookmark.svelte";
   import HomeBookmarkPlus from "@rilldata/web-common/components/icons/HomeBookmarkPlus.svelte";
@@ -103,7 +103,7 @@
         compact
         preload={false}
         href={homeBookmarkUrl}
-        on:click={goToDashboardHome}
+        onClick={goToDashboardHome}
         class="border border-primary-300"
         builders={[builder]}
         label="Go to home bookmark"
