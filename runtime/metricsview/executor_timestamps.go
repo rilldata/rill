@@ -89,7 +89,6 @@ func (e *Executor) resolveDruid(ctx context.Context) (TimestampsResult, error) {
 	}
 
 	timeDim := e.timeColumnOrExpr()
-	timeDim = e.olap.Dialect().EscapeIdentifier(timeDim)
 	escapedTableName := e.olap.Dialect().EscapeTable(e.metricsView.Database, e.metricsView.DatabaseSchema, e.metricsView.Table)
 
 	var ts TimestampsResult

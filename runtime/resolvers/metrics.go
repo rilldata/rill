@@ -87,7 +87,7 @@ func newMetrics(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Res
 		query:          qry,
 		args:           args,
 		claims:         opts.Claims,
-		metricsHasTime: mv.TimeDimension != "",
+		metricsHasTime: mv.TimeDimension != "", // TODO we should always enforce a primary time dimension is specified is any time column will be used for APIs or not
 	}, nil
 }
 
