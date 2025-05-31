@@ -13,7 +13,7 @@
   import { defaults, superForm } from "sveltekit-superforms";
   import { yup } from "sveltekit-superforms/adapters";
   import { array, object, string } from "yup";
-  import InviteSearchInput from "@rilldata/web-admin/components/InviteSearchInput.svelte";
+  import InviteSearchInput from "@rilldata/web-common/components/forms/InviteSearchInput.svelte";
 
   export let organization: string;
   export let project: string;
