@@ -57,6 +57,7 @@ export class CartesianChartComponent extends BaseChart<CartesianChartSpec> {
           type: "measure",
           axisTitleSelector: true,
           originSelector: true,
+          axisRangeSelector: true,
         },
       },
     },
