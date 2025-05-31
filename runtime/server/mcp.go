@@ -187,6 +187,9 @@ func (s *Server) mcpQueryMetricsViewTimeRange() (mcp.Tool, server.ToolHandlerFun
 			return nil, err
 		}
 
+		// optional time column to use for resolving time range
+		timeCol := req.GetString("time_column", "")
+
 		claims := auth.GetClaims(ctx)
 		if !claims.CanInstance(instanceID, auth.ReadMetrics) {
 			return nil, ErrForbidden
@@ -197,6 +200,9 @@ func (s *Server) mcpQueryMetricsViewTimeRange() (mcp.Tool, server.ToolHandlerFun
 			Resolver:   "metrics_time_range",
 			ResolverProperties: map[string]any{
 				"metrics_view": name,
+			},
+			Args: map[string]any{
+				"time_column": timeCol,
 			},
 			Claims: claims.SecurityClaims(),
 		})
@@ -221,6 +227,8 @@ func (s *Server) mcpQueryMetricsView() (mcp.Tool, server.ToolHandlerFunc) {
 Perform an arbitrary aggregation on a metrics view.
 Tip: Use the 'sort' and 'limit' parameters for best results and to avoid large, unbounded result sets.
 Important note: The 'time_range' parameter is inclusive of the start time and exclusive of the end time.
+Note: 'time_column' is an optional parameter that can be used to specify the time column to use for the time range. 
+If not provided, the default time column of the metrics view will be used.
 
 Example: Get the total revenue by country and product category for 2024:
     {
@@ -276,6 +284,25 @@ Example: Get the total revenue by country and month for 2024:
             {"name": "event_time"},
             {"name": "total_revenue", "desc": true},
         ],
+    }
+
+Example: Get the total revenue by country and month for order shipped in 2024:
+    {
+        "metrics_view": "ecommerce_financials",
+        "dimensions": [
+            {"name": "event_time", "compute": {"time_floor": {"dimension": "event_time", "grain": "month"}}},
+            {"name": "country"},
+        ],
+        "measures": [{"name": "total_revenue"}],
+        "time_range": {
+            "start": "2024-01-01T00:00:00Z",
+            "end": "2025-01-01T00:00:00Z"
+        },
+        "sort": [
+            {"name": "event_time"},
+            {"name": "total_revenue", "desc": true},
+        ],
+		time_column: "order_shipped_time",
     }
 
 Example: Get the top 10 demographic segments (by country, gender, and age group) with the largest absolute revenue difference comparing May 2025 (base period) to April 2025 (comparison period):

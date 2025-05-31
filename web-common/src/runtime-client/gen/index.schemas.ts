@@ -60,6 +60,7 @@ export interface MetricsViewSpecDimension {
   lookupKeyColumn?: string;
   lookupValueColumn?: string;
   lookupDefaultExpression?: string;
+  type?: Runtimev1Type;
 }
 
 export interface MetricsViewSpecDimensionSelector {
@@ -1229,6 +1230,7 @@ export interface V1MetricsViewAggregationRequest {
   exact?: boolean;
   fillMissing?: boolean;
   rows?: boolean;
+  timeColumn?: string;
 }
 
 export type V1MetricsViewAggregationResponseDataItem = {
@@ -1356,6 +1358,7 @@ export interface V1MetricsViewRowsRequest {
   priority?: number;
   timeZone?: string;
   filter?: V1MetricsViewFilter;
+  timeColumn?: string;
 }
 
 export type V1MetricsViewRowsResponseDataItem = { [key: string]: unknown };
@@ -1440,6 +1443,7 @@ export interface V1MetricsViewTimeSeriesRequest {
   timeZone?: string;
   priority?: number;
   filter?: V1MetricsViewFilter;
+  timeColumn?: string;
 }
 
 export interface V1MetricsViewTimeSeriesResponse {
@@ -2505,6 +2509,7 @@ export type QueryServiceMetricsViewAggregationBody = {
   exact?: boolean;
   fillMissing?: boolean;
   rows?: boolean;
+  timeColumn?: string;
 };
 
 export type QueryServiceMetricsViewComparisonBody = {
@@ -2539,6 +2544,7 @@ export type QueryServiceMetricsViewRowsBody = {
   priority?: number;
   timeZone?: string;
   filter?: V1MetricsViewFilter;
+  timeColumn?: string;
 };
 
 export type QueryServiceMetricsViewSchemaParams = {
@@ -2553,16 +2559,19 @@ export type QueryServiceMetricsViewSearchBody = {
   having?: V1Expression;
   limit?: number;
   priority?: number;
+  timeColumn?: string;
 };
 
 export type QueryServiceMetricsViewTimeRangeBody = {
   priority?: number;
+  timeColumn?: string;
 };
 
 export type QueryServiceMetricsViewTimeRangesBody = {
   expressions?: string[];
   priority?: number;
   timeZone?: string;
+  timeColumn?: string;
 };
 
 export type QueryServiceMetricsViewTimeSeriesBody = {
@@ -2579,6 +2588,7 @@ export type QueryServiceMetricsViewTimeSeriesBody = {
   timeZone?: string;
   priority?: number;
   filter?: V1MetricsViewFilter;
+  timeColumn?: string;
 };
 
 export type QueryServiceMetricsViewToplistBody = {

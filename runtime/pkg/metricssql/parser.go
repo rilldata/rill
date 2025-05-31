@@ -171,7 +171,8 @@ func (q *query) parseFrom(ctx context.Context, node *ast.TableRefsClause) error 
 		return fmt.Errorf("metrics sql: failed to resolve security: %w", err)
 	}
 
-	ex, err := metricsview.NewExecutor(ctx, q.controller.Runtime, q.instanceID, q.metricsViewSpec, false, security, q.priority)
+	// not setting timeColumn here as the metrics_sql query should itself specify the time filter on the relevant dimension if needed
+	ex, err := metricsview.NewExecutor(ctx, q.controller.Runtime, q.instanceID, q.metricsViewSpec, false, security, q.priority, "")
 	if err != nil {
 		return fmt.Errorf("metrics sql: failed to create executor: %w", err)
 	}

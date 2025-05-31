@@ -46,6 +46,7 @@ func (e *Executor) rewriteQueryDruidExactify(ctx context.Context, qry *Query) er
 		TimeZone:            qry.TimeZone,
 		UseDisplayNames:     false,
 		Rows:                false,
+		TimeColumn:          qry.TimeColumn,
 	} //exhaustruct:enforce
 
 	// A TopN query can sort by a dimension or a measure.
@@ -59,7 +60,7 @@ func (e *Executor) rewriteQueryDruidExactify(ctx context.Context, qry *Query) er
 	}
 
 	// Build an AST for the inner query.
-	ast, err := NewAST(e.metricsView, e.security, inner, e.olap.Dialect())
+	ast, err := NewAST(e.metricsView, e.security, inner, e.olap.Dialect(), e.timeColumn)
 	if err != nil {
 		return fmt.Errorf("druid exactify: failed to build inner query AST: %w", err)
 	}
