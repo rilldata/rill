@@ -83,8 +83,8 @@
   }
 
   function handleSelect(result: any) {
-    if (!selected.includes(result.email)) {
-      selected = [...selected, result.email];
+    if (!selected.includes(result.identifier)) {
+      selected = [...selected, result.identifier];
       input = "";
       showDropdown = false;
       highlightedIndex = -1;
@@ -164,8 +164,8 @@
     showDropdown = false;
   }
 
-  function removeSelected(email: string) {
-    selected = selected.filter((e) => e !== email);
+  function removeSelected(identifier: string) {
+    selected = selected.filter((e) => e !== identifier);
   }
 </script>
 
@@ -175,10 +175,11 @@
       <div
         class="chips-and-input flex flex-wrap gap-1 w-full min-h-[24px] px-1"
       >
-        {#each selected as email (email)}
+        {#each selected as identifier (identifier)}
           <span class="chip"
-            >{email}<button type="button" on:click={() => removeSelected(email)}
-              >&times;</button
+            >{identifier}<button
+              type="button"
+              on:click={() => removeSelected(identifier)}>&times;</button
             ></span
           >
         {/each}
@@ -229,7 +230,7 @@
           class:highlighted={i === highlightedIndex}
           on:mousedown={() => handleSelect(result)}
         >
-          {result.email}
+          {result.identifier}
         </li>
       {/each}
     </ul>
