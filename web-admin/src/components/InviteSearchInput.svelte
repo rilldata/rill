@@ -172,7 +172,9 @@
 <div class="invite-search-input">
   <div class="input-row">
     <div class="input-with-role p-1">
-      <div class="chips-and-input flex flex-wrap gap-1 w-full min-h-[24px]">
+      <div
+        class="chips-and-input flex flex-wrap gap-1 w-full min-h-[24px] px-1"
+      >
         {#each selected as email (email)}
           <span class="chip"
             >{email}<button type="button" on:click={() => removeSelected(email)}
@@ -199,7 +201,7 @@
           class:error={!!error}
           autocomplete="off"
           tabindex={autoFocusInput}
-          class="outline outline-primary-500 px-1"
+          class="outline outline-1 outline-primary-500 px-1"
         />
       </div>
       {#if roleSelect}
