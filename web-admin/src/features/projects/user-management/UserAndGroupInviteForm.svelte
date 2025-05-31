@@ -7,25 +7,22 @@
     getAdminServiceListProjectMemberUsersQueryKey,
     getAdminServiceListProjectMemberUsergroupsQueryKey,
   } from "@rilldata/web-admin/client";
-  import UserRoleSelect from "@rilldata/web-admin/features/projects/user-management/UserRoleSelect.svelte";
-  import { Button } from "@rilldata/web-common/components/button";
-  import MultiInput from "@rilldata/web-common/components/forms/MultiInput.svelte";
   import { RFC5322EmailRegex } from "@rilldata/web-common/components/forms/validation";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { defaults, superForm } from "sveltekit-superforms";
   import { yup } from "sveltekit-superforms/adapters";
   import { array, object, string } from "yup";
+  import InviteSearchInput from "@rilldata/web-common/components/forms/InviteSearchInput.svelte";
 
   export let organization: string;
   export let project: string;
+  export let searchList: any[] = [];
   export let onInvite: () => void = () => {};
 
   const queryClient = useQueryClient();
   const userInvite = createAdminServiceAddProjectMemberUser();
   const addUsergroup = createAdminServiceAddProjectMemberUsergroup();
-
-  const formId = "user-and-group-invite-form";
 
   const initialValues: {
     inputs: string[];
@@ -178,33 +175,125 @@
   $: hasInvalidInputs = $form.inputs.some(
     (e, i) => e.length > 0 && $errors.inputs?.[i] !== undefined,
   );
+
+  function emailOrGroupValidator(value: string) {
+    if (!value) return true;
+    return (
+      RFC5322EmailRegex.test(value) ||
+      /^[a-zA-Z0-9]+(-[a-zA-Z0-9]+)*$/.test(value) ||
+      "Must be a valid email or group name"
+    );
+  }
+
+  async function handleSearch(query: string) {
+    if (!query) return [];
+
+    const lower = query.toLowerCase();
+    return searchList
+      .filter((user) => user.identifier.toLowerCase().includes(lower))
+      .slice(0, 5); // Limit to 5 results to match previous behavior
+  }
+
+  async function onInviteHandler(inputs: string[], role: string) {
+    const succeededEmails = [];
+    const succeededGroups = [];
+    const failedEmails = [];
+    const failedGroups = [];
+
+    await Promise.all(
+      inputs.map(async (input) => {
+        if (RFC5322EmailRegex.test(input)) {
+          try {
+            await $userInvite.mutateAsync({
+              organization,
+              project,
+              data: { email: input, role },
+            });
+            succeededEmails.push(input);
+          } catch {
+            failedEmails.push(input);
+          }
+        } else {
+          try {
+            await $addUsergroup.mutateAsync({
+              organization,
+              project,
+              usergroup: input,
+              data: { role },
+            });
+            succeededGroups.push(input);
+          } catch {
+            failedGroups.push(input);
+          }
+        }
+      }),
+    );
+
+    await queryClient.invalidateQueries({
+      queryKey: getAdminServiceListProjectMemberUsersQueryKey(
+        organization,
+        project,
+      ),
+    });
+    await queryClient.invalidateQueries({
+      queryKey: getAdminServiceListProjectInvitesQueryKey(
+        organization,
+        project,
+      ),
+    });
+    await queryClient.invalidateQueries({
+      queryKey: getAdminServiceListProjectMemberUsergroupsQueryKey(
+        organization,
+        project,
+      ),
+    });
+    await queryClient.invalidateQueries({
+      queryKey:
+        getAdminServiceListOrganizationMemberUsersQueryKey(organization),
+      type: "all",
+    });
+
+    let successMessage = "";
+    if (succeededEmails.length > 0) {
+      successMessage += `Invited ${succeededEmails.length} ${succeededEmails.length === 1 ? "person" : "people"}`;
+    }
+    if (succeededGroups.length > 0) {
+      if (successMessage) successMessage += " and ";
+      successMessage += `Added ${succeededGroups.length} ${succeededGroups.length === 1 ? "group" : "groups"}`;
+    }
+    if (successMessage) {
+      successMessage += ` as ${role}`;
+      eventBus.emit("notification", {
+        type: "success",
+        message: successMessage,
+      });
+    }
+    if (failedGroups.length > 0) {
+      const groupsText = failedGroups.join(", ");
+      eventBus.emit("notification", {
+        type: "error",
+        message: `Failed to add group${failedGroups.length > 1 ? "s" : ""}: ${groupsText}`,
+      });
+    }
+    if (failedEmails.length > 0) {
+      const emailsText = failedEmails.join(", ");
+      eventBus.emit("notification", {
+        type: "error",
+        message: `Failed to invite user${failedEmails.length > 1 ? "s" : ""}: ${emailsText}`,
+      });
+    }
+    onInvite();
+  }
 </script>
 
-<form id={formId} on:submit|preventDefault={submit} class="w-full" use:enhance>
-  <MultiInput
-    id="inputs"
-    placeholder="Add emails and groups, separated by commas"
-    contentClassName="relative"
-    bind:values={$form.inputs}
-    errors={$errors.inputs}
-    singular="input"
-    plural="inputs"
-    preventFocus={true}
-  >
-    <div slot="within-input" class="h-full items-center flex">
-      <UserRoleSelect bind:value={$form.role} />
-    </div>
-    <svelte:fragment slot="beside-input" let:hasSomeValue>
-      <Button
-        submitForm
-        type="primary"
-        form={formId}
-        loading={$submitting}
-        disabled={hasInvalidInputs || !hasSomeValue}
-        forcedStyle="height: 32px !important; padding-left: 20px; padding-right: 20px;"
-      >
-        Invite
-      </Button>
-    </svelte:fragment>
-  </MultiInput>
-</form>
+<InviteSearchInput
+  onSearch={handleSearch}
+  onInvite={onInviteHandler}
+  placeholder="Email or group, separated by commas"
+  validators={[emailOrGroupValidator]}
+  roleSelect={true}
+  initialRole="viewer"
+  searchKeys={["identifier"]}
+  autoFocusInput={-1}
+  {searchList}
+/>

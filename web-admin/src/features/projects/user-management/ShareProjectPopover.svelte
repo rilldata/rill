@@ -8,6 +8,9 @@
     createAdminServiceAddProjectMemberUsergroup,
     createAdminServiceGetCurrentUser,
     createAdminServiceListUsergroupMemberUsers,
+    createAdminServiceListOrganizationInvitesInfinite,
+    createAdminServiceListOrganizationMemberUsersInfinite,
+    createAdminServiceListOrganizationMemberUsergroups,
   } from "@rilldata/web-admin/client";
   import CopyInviteLinkButton from "@rilldata/web-admin/features/projects/user-management/CopyInviteLinkButton.svelte";
   import UserAndGroupInviteForm from "@rilldata/web-admin/features/projects/user-management/UserAndGroupInviteForm.svelte";
@@ -42,6 +45,7 @@
   let open = false;
   let accessDropdownOpen = false;
   let accessType: "everyone" | "invite-only" = "everyone";
+  let isHovered = false;
 
   const queryClient = useQueryClient();
   const removeProjectMemberUsergroup =
@@ -49,6 +53,147 @@
   const addProjectMemberUsergroup =
     createAdminServiceAddProjectMemberUsergroup();
   const currentUser = createAdminServiceGetCurrentUser();
+
+  const PAGE_SIZE = 12;
+
+  $: orgMemberUsersInfiniteQuery =
+    createAdminServiceListOrganizationMemberUsersInfinite(
+      organization,
+      {
+        pageSize: PAGE_SIZE,
+      },
+      {
+        query: {
+          getNextPageParam: (lastPage) => {
+            if (lastPage.nextPageToken !== "") {
+              return lastPage.nextPageToken;
+            }
+            return undefined;
+          },
+        },
+      },
+    );
+  $: orgInvitesInfiniteQuery =
+    createAdminServiceListOrganizationInvitesInfinite(
+      organization,
+      {
+        pageSize: PAGE_SIZE,
+      },
+      {
+        query: {
+          getNextPageParam: (lastPage) => {
+            if (lastPage.nextPageToken !== "") {
+              return lastPage.nextPageToken;
+            }
+            return undefined;
+          },
+        },
+      },
+    );
+  $: listOrganizationMemberUsergroups =
+    createAdminServiceListOrganizationMemberUsergroups(organization, {
+      pageSize: PAGE_SIZE,
+    });
+  $: listProjectMemberUsergroups =
+    createAdminServiceListProjectMemberUsergroups(
+      organization,
+      project,
+      undefined,
+      {
+        query: {
+          refetchOnMount: true,
+          refetchOnWindowFocus: true,
+        },
+      },
+    );
+  $: listProjectMemberUsers = createAdminServiceListProjectMemberUsers(
+    organization,
+    project,
+    undefined,
+    {
+      query: {
+        refetchOnMount: true,
+        refetchOnWindowFocus: true,
+      },
+    },
+  );
+  $: listProjectInvites = createAdminServiceListProjectInvites(
+    organization,
+    project,
+    undefined,
+    {
+      query: {
+        refetchOnMount: true,
+        refetchOnWindowFocus: true,
+      },
+    },
+  );
+  $: listUsergroupMemberUsers = createAdminServiceListUsergroupMemberUsers(
+    organization,
+    "autogroup:members",
+    undefined,
+    {
+      query: {
+        refetchOnMount: true,
+        refetchOnWindowFocus: true,
+      },
+    },
+  );
+
+  $: allOrgMemberUsersRows =
+    $orgMemberUsersInfiniteQuery?.data?.pages?.flatMap(
+      (page) => page?.members ?? [],
+    ) ?? [];
+  $: allOrgInvitesRows =
+    $orgInvitesInfiniteQuery?.data?.pages?.flatMap(
+      (page) => page?.invites ?? [],
+    ) ?? [];
+  $: orgMemberUsergroups =
+    $listOrganizationMemberUsergroups?.data?.members ?? [];
+  $: userGroupMemberUsers = $listUsergroupMemberUsers?.data?.members ?? [];
+  $: userGroupMemberUsersCount = userGroupMemberUsers?.length ?? 0;
+  $: projectMemberUserGroupsList =
+    $listProjectMemberUsergroups.data?.members ?? [];
+  $: projectMemberUsersList = $listProjectMemberUsers?.data?.members ?? [];
+  $: projectInvitesList = $listProjectInvites?.data?.invites ?? [];
+
+  $: searchList = [
+    ...(allOrgMemberUsersRows ?? [])
+      .filter(
+        (member) =>
+          !projectMemberUsersList.some(
+            (pm) => pm.userEmail === member.userEmail,
+          ) &&
+          !projectInvitesList.some(
+            (invite) => invite.email === member.userEmail,
+          ),
+      )
+      .map((member) => ({
+        identifier: member.userEmail,
+        isMember: true,
+      })),
+    ...(allOrgInvitesRows ?? [])
+      .filter(
+        (invite) =>
+          !projectMemberUsersList.some((pm) => pm.userEmail === invite.email) &&
+          !projectInvitesList.some((pi) => pi.email === invite.email),
+      )
+      .map((invite) => ({
+        identifier: invite.email,
+        isMember: false,
+      })),
+    ...(orgMemberUsergroups ?? [])
+      .filter(
+        (group) =>
+          !group.groupManaged &&
+          !projectUserGroups.some((pg) => pg.groupName === group.groupName),
+      )
+      .map((group) => ({
+        identifier: group.groupName,
+        isMember: false,
+        isGroup: true,
+      })),
+  ];
 
   async function setAccessInviteOnly() {
     if (accessType === "invite-only") return;
@@ -115,68 +260,6 @@
 
   $: copyLink = `${$page.url.protocol}//${$page.url.host}/${organization}/${project}`;
 
-  // NOTE: viewer: "not allowed to list project user groups"
-  $: listProjectMemberUsergroups =
-    createAdminServiceListProjectMemberUsergroups(
-      organization,
-      project,
-      undefined,
-      {
-        query: {
-          refetchOnMount: true,
-          refetchOnWindowFocus: true,
-        },
-      },
-    );
-
-  $: listProjectMemberUsers = createAdminServiceListProjectMemberUsers(
-    organization,
-    project,
-    undefined,
-    {
-      query: {
-        refetchOnMount: true,
-        refetchOnWindowFocus: true,
-      },
-    },
-  );
-
-  // NOTE: viewer: "not authorized to read project members"
-  $: listProjectInvites = createAdminServiceListProjectInvites(
-    organization,
-    project,
-    undefined,
-    {
-      query: {
-        refetchOnMount: true,
-        refetchOnWindowFocus: true,
-      },
-    },
-  );
-
-  let isHovered = false;
-
-  // NOTE: editor: "not allowed to list user group members"
-  $: listUsergroupMemberUsers = createAdminServiceListUsergroupMemberUsers(
-    organization,
-    "autogroup:members",
-    undefined,
-    {
-      query: {
-        refetchOnMount: true,
-        refetchOnWindowFocus: true,
-      },
-    },
-  );
-
-  $: userGroupMemberUsers = $listUsergroupMemberUsers?.data?.members ?? [];
-  $: userGroupMemberUsersCount = userGroupMemberUsers?.length ?? 0;
-
-  $: projectMemberUserGroupsList =
-    $listProjectMemberUsergroups.data?.members ?? [];
-  $: projectMemberUsersList = $listProjectMemberUsers.data?.members ?? [];
-  $: projectInvitesList = $listProjectInvites.data?.invites ?? [];
-
   // Sort the list to prioritize the current user
   $: sortedProjectMemberUsersList = projectMemberUsersList.sort((a, b) => {
     if (a.userEmail === $currentUser.data?.user?.email) return -1;
@@ -184,7 +267,6 @@
     return 0;
   });
 
-  // FIXME: low priority - investigate if the usersCount is correct
   $: projectUserGroups = projectMemberUserGroupsList.filter(
     (group) => !group.groupManaged,
   );
@@ -210,7 +292,7 @@
         <div class="text-sm font-medium">Share project: {project}</div>
         <div class="grow"></div>
       </div>
-      <UserAndGroupInviteForm {organization} {project} />
+      <UserAndGroupInviteForm {organization} {project} {searchList} />
       <!-- 52 * 8 = 416px -->
       <div class="flex flex-col gap-y-1 overflow-y-auto max-h-[416px]">
         <div class="mt-4">
