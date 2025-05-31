@@ -10,6 +10,7 @@
     createAdminServiceListUsergroupMemberUsers,
     createAdminServiceListOrganizationInvitesInfinite,
     createAdminServiceListOrganizationMemberUsersInfinite,
+    createAdminServiceListOrganizationMemberUsergroups,
   } from "@rilldata/web-admin/client";
   import CopyInviteLinkButton from "@rilldata/web-admin/features/projects/user-management/CopyInviteLinkButton.svelte";
   import UserAndGroupInviteForm from "@rilldata/web-admin/features/projects/user-management/UserAndGroupInviteForm.svelte";
@@ -44,6 +45,7 @@
   let open = false;
   let accessDropdownOpen = false;
   let accessType: "everyone" | "invite-only" = "everyone";
+  let isHovered = false;
 
   const queryClient = useQueryClient();
   const removeProjectMemberUsergroup =
@@ -88,6 +90,10 @@
         },
       },
     );
+  $: listOrganizationMemberUsergroups =
+    createAdminServiceListOrganizationMemberUsergroups(organization, {
+      pageSize: PAGE_SIZE,
+    });
 
   $: allOrgMemberUsersRows =
     $orgMemberUsersInfiniteQuery?.data?.pages?.flatMap(
@@ -97,8 +103,9 @@
     $orgInvitesInfiniteQuery?.data?.pages?.flatMap(
       (page) => page?.invites ?? [],
     ) ?? [];
+  $: orgMemberUsergroups =
+    $listOrganizationMemberUsergroups?.data?.members ?? [];
 
-  // TODO: include user groups
   $: searchList = [
     ...(allOrgMemberUsersRows ?? [])
       .filter(
@@ -123,6 +130,13 @@
       .map((invite) => ({
         email: invite.email,
         isMember: false,
+      })),
+    ...(orgMemberUsergroups ?? [])
+      .filter((group) => !group.groupManaged)
+      .map((group) => ({
+        email: group.groupName,
+        isMember: false,
+        isGroup: true,
       })),
   ];
 
@@ -229,8 +243,6 @@
       },
     },
   );
-
-  let isHovered = false;
 
   // NOTE: editor: "not allowed to list user group members"
   $: listUsergroupMemberUsers = createAdminServiceListUsergroupMemberUsers(
