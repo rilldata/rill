@@ -286,16 +286,14 @@
   }
 </script>
 
-<form class="w-full">
-  <InviteSearchInput
-    onSearch={handleSearch}
-    onInvite={onInviteHandler}
-    placeholder="Email or group, separated by commas"
-    validators={[emailOrGroupValidator]}
-    roleSelect={true}
-    initialRole="viewer"
-    searchKeys={["email", "userEmail", "name", "userName"]}
-    autoFocusInput={-1}
-    {searchList}
-  />
-</form>
+<InviteSearchInput
+  onSearch={handleSearch}
+  onInvite={onInviteHandler}
+  placeholder="Email or group, separated by commas"
+  validators={[emailOrGroupValidator]}
+  roleSelect={true}
+  initialRole="viewer"
+  searchKeys={["email", "userEmail", "name", "userName"]}
+  autoFocusInput={-1}
+  {searchList}
+/>
