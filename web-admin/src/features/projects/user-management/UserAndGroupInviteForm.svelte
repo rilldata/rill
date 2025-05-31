@@ -190,7 +190,7 @@
 
     const lower = query.toLowerCase();
     return searchList
-      .filter((user) => user.email.toLowerCase().includes(lower))
+      .filter((user) => user.identifier.toLowerCase().includes(lower))
       .slice(0, 5); // Limit to 5 results to match previous behavior
   }
 
@@ -293,7 +293,7 @@
   validators={[emailOrGroupValidator]}
   roleSelect={true}
   initialRole="viewer"
-  searchKeys={["email", "userEmail", "name", "userName"]}
+  searchKeys={["identifier"]}
   autoFocusInput={-1}
   {searchList}
 />

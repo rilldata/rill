@@ -169,7 +169,7 @@
           ),
       )
       .map((member) => ({
-        email: member.userEmail,
+        identifier: member.userEmail,
         isMember: true,
       })),
     ...(allOrgInvitesRows ?? [])
@@ -179,7 +179,7 @@
           !projectInvitesList.some((pi) => pi.email === invite.email),
       )
       .map((invite) => ({
-        email: invite.email,
+        identifier: invite.email,
         isMember: false,
       })),
     ...(orgMemberUsergroups ?? [])
@@ -189,7 +189,7 @@
           !projectUserGroups.some((pg) => pg.groupName === group.groupName),
       )
       .map((group) => ({
-        email: group.groupName,
+        identifier: group.groupName,
         isMember: false,
         isGroup: true,
       })),
