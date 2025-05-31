@@ -66,6 +66,10 @@
     ]);
   }
 
+  function blurCurrentTarget(e: MouseEvent) {
+    (e.currentTarget as HTMLButtonElement | null)?.blur();
+  }
+
   // function expandVisible() {
   //   // const lowestVisibleRow = 0;
   //   const nestedLevels = 4;
@@ -103,7 +107,7 @@
     selected={showPanels}
     onClick={(e) => {
       showPanels = !showPanels;
-      e.detail.currentTarget.blur();
+      blurCurrentTarget(e);
     }}
   >
     <PivotPanel size="18px" open={showPanels} />
