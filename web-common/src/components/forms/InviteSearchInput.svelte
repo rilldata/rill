@@ -23,6 +23,20 @@
   let error: string = "";
   let role = initialRole;
   let highlightedIndex = -1;
+  let dropdownList: HTMLElement;
+
+  function scrollToHighlighted() {
+    if (highlightedIndex >= 0 && dropdownList) {
+      const items = dropdownList.getElementsByTagName("li");
+      if (items[highlightedIndex]) {
+        items[highlightedIndex].scrollIntoView({ block: "nearest" });
+      }
+    }
+  }
+
+  $: if (highlightedIndex >= 0) {
+    scrollToHighlighted();
+  }
 
   function processCommaSeparatedInput(raw: string) {
     // Split by comma, trim, filter out empty, and deduplicate
@@ -224,13 +238,19 @@
     <div class="error">{error}</div>
   {/if}
   {#if showDropdown && searchResults.length > 0}
-    <ul class="dropdown">
+    <ul class="dropdown" bind:this={dropdownList}>
       {#each searchResults as result, i}
         <li
           class:highlighted={i === highlightedIndex}
-          on:mousedown={() => handleSelect(result)}
+          class="hover:bg-slate-100"
         >
-          {result.identifier}
+          <button
+            type="button"
+            class="w-full text-left"
+            on:pointerdown={() => handleSelect(result)}
+          >
+            {result.identifier}
+          </button>
         </li>
       {/each}
     </ul>
@@ -319,8 +339,10 @@
   .dropdown li {
     padding: 8px 12px;
     cursor: pointer;
+    scroll-margin: 8px;
   }
   .dropdown li.highlighted {
-    background: #f3f4f6;
+    @apply bg-slate-100;
+    scroll-snap-align: start;
   }
 </style>
