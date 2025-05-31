@@ -94,6 +94,51 @@
     createAdminServiceListOrganizationMemberUsergroups(organization, {
       pageSize: PAGE_SIZE,
     });
+  $: listProjectMemberUsergroups =
+    createAdminServiceListProjectMemberUsergroups(
+      organization,
+      project,
+      undefined,
+      {
+        query: {
+          refetchOnMount: true,
+          refetchOnWindowFocus: true,
+        },
+      },
+    );
+  $: listProjectMemberUsers = createAdminServiceListProjectMemberUsers(
+    organization,
+    project,
+    undefined,
+    {
+      query: {
+        refetchOnMount: true,
+        refetchOnWindowFocus: true,
+      },
+    },
+  );
+  $: listProjectInvites = createAdminServiceListProjectInvites(
+    organization,
+    project,
+    undefined,
+    {
+      query: {
+        refetchOnMount: true,
+        refetchOnWindowFocus: true,
+      },
+    },
+  );
+  $: listUsergroupMemberUsers = createAdminServiceListUsergroupMemberUsers(
+    organization,
+    "autogroup:members",
+    undefined,
+    {
+      query: {
+        refetchOnMount: true,
+        refetchOnWindowFocus: true,
+      },
+    },
+  );
 
   $: allOrgMemberUsersRows =
     $orgMemberUsersInfiniteQuery?.data?.pages?.flatMap(
@@ -105,6 +150,12 @@
     ) ?? [];
   $: orgMemberUsergroups =
     $listOrganizationMemberUsergroups?.data?.members ?? [];
+  $: userGroupMemberUsers = $listUsergroupMemberUsers?.data?.members ?? [];
+  $: userGroupMemberUsersCount = userGroupMemberUsers?.length ?? 0;
+  $: projectMemberUserGroupsList =
+    $listProjectMemberUsergroups.data?.members ?? [];
+  $: projectMemberUsersList = $listProjectMemberUsers?.data?.members ?? [];
+  $: projectInvitesList = $listProjectInvites?.data?.invites ?? [];
 
   $: searchList = [
     ...(allOrgMemberUsersRows ?? [])
@@ -132,7 +183,11 @@
         isMember: false,
       })),
     ...(orgMemberUsergroups ?? [])
-      .filter((group) => !group.groupManaged)
+      .filter(
+        (group) =>
+          !group.groupManaged &&
+          !projectUserGroups.some((pg) => pg.groupName === group.groupName),
+      )
       .map((group) => ({
         email: group.groupName,
         isMember: false,
@@ -205,66 +260,6 @@
 
   $: copyLink = `${$page.url.protocol}//${$page.url.host}/${organization}/${project}`;
 
-  // NOTE: viewer: "not allowed to list project user groups"
-  $: listProjectMemberUsergroups =
-    createAdminServiceListProjectMemberUsergroups(
-      organization,
-      project,
-      undefined,
-      {
-        query: {
-          refetchOnMount: true,
-          refetchOnWindowFocus: true,
-        },
-      },
-    );
-
-  $: listProjectMemberUsers = createAdminServiceListProjectMemberUsers(
-    organization,
-    project,
-    undefined,
-    {
-      query: {
-        refetchOnMount: true,
-        refetchOnWindowFocus: true,
-      },
-    },
-  );
-
-  // NOTE: viewer: "not authorized to read project members"
-  $: listProjectInvites = createAdminServiceListProjectInvites(
-    organization,
-    project,
-    undefined,
-    {
-      query: {
-        refetchOnMount: true,
-        refetchOnWindowFocus: true,
-      },
-    },
-  );
-
-  // NOTE: editor: "not allowed to list user group members"
-  $: listUsergroupMemberUsers = createAdminServiceListUsergroupMemberUsers(
-    organization,
-    "autogroup:members",
-    undefined,
-    {
-      query: {
-        refetchOnMount: true,
-        refetchOnWindowFocus: true,
-      },
-    },
-  );
-
-  $: userGroupMemberUsers = $listUsergroupMemberUsers?.data?.members ?? [];
-  $: userGroupMemberUsersCount = userGroupMemberUsers?.length ?? 0;
-
-  $: projectMemberUserGroupsList =
-    $listProjectMemberUsergroups.data?.members ?? [];
-  $: projectMemberUsersList = $listProjectMemberUsers?.data?.members ?? [];
-  $: projectInvitesList = $listProjectInvites?.data?.invites ?? [];
-
   // Sort the list to prioritize the current user
   $: sortedProjectMemberUsersList = projectMemberUsersList.sort((a, b) => {
     if (a.userEmail === $currentUser.data?.user?.email) return -1;
@@ -272,7 +267,6 @@
     return 0;
   });
 
-  // FIXME: low priority - investigate if the usersCount is correct
   $: projectUserGroups = projectMemberUserGroupsList.filter(
     (group) => !group.groupManaged,
   );
