@@ -1279,9 +1279,9 @@ paths:
                 type: boolean
                 description: If true, the export will include header comments with metadata about the export.
               originDashboard:
-                type: string
+                $ref: '#/definitions/v1ResourceName'
                 description: |-
-                  Optional display name of the dashboard the export originates from.
+                  Optional name of the dashboard the export originates from.
                   Only used if include_header is true.
               originUrl:
                 type: string

@@ -2476,9 +2476,7 @@ export type QueryServiceExportBody = {
   bakedQuery?: string;
   /** If true, the export will include header comments with metadata about the export. */
   includeHeader?: boolean;
-  /** Optional display name of the dashboard the export originates from.
-Only used if include_header is true. */
-  originDashboard?: string;
+  originDashboard?: V1ResourceName;
   /** Optional UI URL that the export originates from.
 Only used if include_header is true. */
   originUrl?: string;

@@ -15,6 +15,8 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/metricsview"
 	metricssqlparser "github.com/rilldata/rill/runtime/pkg/metricssql"
+	"github.com/rilldata/rill/runtime/pkg/observability"
+	"go.uber.org/zap"
 )
 
 type MetricsViewAggregation struct {
@@ -446,8 +448,9 @@ func (q *MetricsViewAggregation) generateExportHeaders(ctx context.Context, rt *
 	if org != "" && project != "" {
 		parts = append(parts, org, project)
 	}
-	if opts.OriginDashboard != "" {
-		parts = append(parts, opts.OriginDashboard)
+	dashboardDisplayName := q.getDisplayName(ctx, rt, instanceID, opts.OriginDashboard)
+	if dashboardDisplayName != "" {
+		parts = append(parts, dashboardDisplayName)
 	}
 	title := "Report by Rill Data"
 	if len(parts) > 0 {
@@ -469,7 +472,7 @@ func (q *MetricsViewAggregation) generateExportHeaders(ctx context.Context, rt *
 	headers = append(headers, fmt.Sprintf("Filters: %s", expStr))
 
 	// Add URL to dashboard
-	if opts.OriginURL != "" {
+	if opts.OriginURL != "" && dashboardDisplayName != "" {
 		headers = append(headers, fmt.Sprintf("Go to dashboard: %s", opts.OriginURL))
 	}
 
@@ -477,6 +480,35 @@ func (q *MetricsViewAggregation) generateExportHeaders(ctx context.Context, rt *
 	headers = append(headers, "")
 
 	return headers, nil
+}
+
+// getDisplayName returns the display name of a resource or an empty string if there's an error
+func (q *MetricsViewAggregation) getDisplayName(ctx context.Context, rt *runtime.Runtime, instanceID string, resourceName *runtimev1.ResourceName) string {
+	c, err := rt.Controller(ctx, instanceID)
+	if err != nil {
+		rt.Logger.Warn("getDisplayName: failed to get controller", zap.Error(err), zap.String("instance_id", instanceID), observability.ZapCtx(ctx))
+		return ""
+	}
+
+	res, err := c.Get(ctx, resourceName, false)
+	if err != nil {
+		rt.Logger.Warn("getDisplayName: failed to get resource", zap.Error(err), zap.String("instance_id", instanceID), zap.String("resource_name", resourceName.Name), zap.String("resource_kind", resourceName.Kind), observability.ZapCtx(ctx))
+		return ""
+	}
+	// Try to get DisplayName for known resource types
+	switch resourceName.Kind {
+	case runtime.ResourceKindExplore:
+		explore := res.GetExplore()
+		if explore != nil && explore.Spec != nil {
+			return explore.Spec.DisplayName
+		}
+	case runtime.ResourceKindCanvas:
+		canvas := res.GetCanvas()
+		if canvas != nil && canvas.Spec != nil {
+			return canvas.Spec.DisplayName
+		}
+	}
+	return ""
 }
 
 func metricViewExpression(expr *runtimev1.Expression, sql string) (*metricsview.Expression, error) {
