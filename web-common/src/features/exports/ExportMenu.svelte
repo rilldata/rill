@@ -104,7 +104,7 @@
     >
       Export as CSV
     </DropdownMenu.Item>
-    {#if !workspace && exportHeader}
+    {#if !workspace && $exportHeader}
       <DropdownMenu.Item
         on:click={() =>
           handleExport({
@@ -131,7 +131,7 @@
     >
       Export as XLSX
     </DropdownMenu.Item>
-    {#if !workspace && exportHeader}
+    {#if !workspace && $exportHeader}
       <DropdownMenu.Item
         on:click={() =>
           handleExport({

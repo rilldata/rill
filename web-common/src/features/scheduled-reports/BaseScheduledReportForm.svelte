@@ -6,6 +6,9 @@
   import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
   import type { ReportValues } from "@rilldata/web-common/features/scheduled-reports/utils";
   import { V1ExportFormat } from "@rilldata/web-common/runtime-client";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import InfoCircle from "@rilldata/web-common/components/icons/InfoCircle.svelte";
   import type { Readable } from "svelte/store";
   import type { SuperFormErrors } from "sveltekit-superforms/client";
   import Input from "../../components/forms/Input.svelte";
@@ -109,16 +112,27 @@
     optional
     placeholder="1000"
   />
-  <Checkbox
-    bind:checked={$data["exportIncludeHeader"]}
-    id="exportIncludeHeader"
-    onCheckedChange={(checked) => {
-      $data["exportIncludeHeader"] = checked;
-    }}
-    inverse
-    disabled={$data["exportFormat"] === V1ExportFormat.EXPORT_FORMAT_PARQUET}
-    label="Include metadata"
-  />
+  <div class="flex items-center gap-x-1">
+    <Checkbox
+      bind:checked={$data["exportIncludeHeader"]}
+      id="exportIncludeHeader"
+      onCheckedChange={(checked) => {
+        $data["exportIncludeHeader"] = checked;
+      }}
+      inverse
+      disabled={$data["exportFormat"] === V1ExportFormat.EXPORT_FORMAT_PARQUET}
+      label="Include metadata"
+    />
+    <Tooltip location="right" alignment="middle" distance={8}>
+      <div class="text-gray-500" style="transform:translateY(-.5px)">
+        <InfoCircle size="13px" />
+      </div>
+      <TooltipContent maxWidth="400px" slot="tooltip-content">
+        Adds a header to the file that includes filters, time range, and other
+        metadata.
+      </TooltipContent>
+    </Tooltip>
+  </div>
   <MultiInput
     id="emailRecipients"
     label="Email Recipients"
