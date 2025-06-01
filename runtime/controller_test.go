@@ -9,6 +9,7 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/parser"
 	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
@@ -62,6 +63,7 @@ measures:
 					OutputProperties: must(structpb.NewStruct(map[string]any{"materialize": true})),
 					RefreshSchedule:  &runtimev1.Schedule{RefUpdate: true},
 					DefinedAsSource:  true,
+					ChangeMode:       runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
 				},
 				State: &runtimev1.ModelState{
 					ExecutorConnector: "duckdb",
@@ -90,6 +92,7 @@ measures:
 					InputConnector:  "duckdb",
 					InputProperties: must(structpb.NewStruct(map[string]any{"sql": "SELECT * FROM foo"})),
 					OutputConnector: "duckdb",
+					ChangeMode:      runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
 				},
 				State: &runtimev1.ModelState{
 					ExecutorConnector: "duckdb",
@@ -160,6 +163,7 @@ path
 					InputConnector:  "duckdb",
 					InputProperties: must(structpb.NewStruct(map[string]any{"sql": "SELECT * FROM foo"})),
 					OutputConnector: "duckdb",
+					ChangeMode:      runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
 				},
 				State: &runtimev1.ModelState{},
 			},
@@ -226,6 +230,7 @@ path: data/foo.csv
 					OutputProperties: must(structpb.NewStruct(map[string]any{"materialize": true})),
 					RefreshSchedule:  &runtimev1.Schedule{RefUpdate: true},
 					DefinedAsSource:  true,
+					ChangeMode:       runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
 				},
 				State: &runtimev1.ModelState{
 					ExecutorConnector: "duckdb",
@@ -250,10 +255,24 @@ path: data/foo.csv
 	testruntime.RequireOLAPTable(t, rt, id, "foo")
 	testruntime.RequireOLAPTableCount(t, rt, id, "foo", 1)
 
-	// Delete the underlying table
-	olap, release, err := rt.OLAP(context.Background(), id, "")
+	// Get the model and the ModelManager for its output
+	ctrl, err := rt.Controller(context.Background(), id)
 	require.NoError(t, err)
-	err = olap.DropTable(context.Background(), "foo")
+	r, err := ctrl.Get(context.Background(), &runtimev1.ResourceName{Kind: runtime.ResourceKindModel, Name: "foo"}, false)
+	require.NoError(t, err)
+	fooModel := r.GetModel()
+	h, release, err := rt.AcquireHandle(context.Background(), id, fooModel.State.ResultConnector)
+	require.NoError(t, err)
+	defer release()
+	modelManager, ok := h.AsModelManager(id)
+	require.True(t, ok)
+
+	// Delete the underlying table
+	modelManager.Delete(context.Background(), &drivers.ModelResult{
+		Connector:  fooModel.State.ResultConnector,
+		Properties: fooModel.State.ResultProperties.AsMap(),
+		Table:      fooModel.State.ResultTable,
+	})
 	require.NoError(t, err)
 	release()
 	testruntime.RequireNoOLAPTable(t, rt, id, "foo")
@@ -299,6 +318,7 @@ path: data/foo.csv
 					OutputProperties: must(structpb.NewStruct(map[string]any{"materialize": true})),
 					RefreshSchedule:  &runtimev1.Schedule{RefUpdate: true},
 					DefinedAsSource:  true,
+					ChangeMode:       runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
 				},
 				State: &runtimev1.ModelState{
 					ExecutorConnector: "duckdb",
@@ -1158,6 +1178,7 @@ func newSource(name, path, localFileHash string) (*runtimev1.Model, *runtimev1.R
 			OutputProperties: must(structpb.NewStruct(map[string]any{"materialize": true})),
 			RefreshSchedule:  &runtimev1.Schedule{RefUpdate: true},
 			DefinedAsSource:  true,
+			ChangeMode:       runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
 		},
 		State: &runtimev1.ModelState{
 			ExecutorConnector: "duckdb",
@@ -1186,6 +1207,7 @@ func newModel(query, name, source string) (*runtimev1.Model, *runtimev1.Resource
 			InputConnector:  "duckdb",
 			InputProperties: must(structpb.NewStruct(map[string]any{"sql": query})),
 			OutputConnector: "duckdb",
+			ChangeMode:      runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
 		},
 		State: &runtimev1.ModelState{
 			ExecutorConnector: "duckdb",

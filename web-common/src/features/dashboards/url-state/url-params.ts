@@ -1,3 +1,5 @@
+import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
+
 export enum ExploreStateURLParams {
   WebView = "view",
 
@@ -19,8 +21,7 @@ export enum ExploreStateURLParams {
   SortType = "sort_type",
   SortDirection = "sort_dir",
 
-  LeaderboardMeasureCount = "leaderboard_measure_count",
-
+  LeaderboardMeasures = "leaderboard_measures",
   ExpandedMeasure = "measure",
   ChartType = "chart_type",
   Pin = "pin",
@@ -31,3 +32,18 @@ export enum ExploreStateURLParams {
 
   GzippedParams = "gzipped_state",
 }
+
+export const ExploreStateKeyToURLParamMap: Partial<
+  Record<keyof ExploreState, ExploreStateURLParams>
+> = {
+  activePage: ExploreStateURLParams.WebView,
+
+  selectedTimezone: ExploreStateURLParams.TimeZone,
+  selectedComparisonDimension: ExploreStateURLParams.ComparisonDimension,
+
+  selectedDimensionName: ExploreStateURLParams.ExpandedDimension,
+  leaderboardSortByMeasureName: ExploreStateURLParams.SortBy,
+  dashboardSortType: ExploreStateURLParams.SortType,
+  sortDirection: ExploreStateURLParams.SortDirection,
+  leaderboardMeasureNames: ExploreStateURLParams.LeaderboardMeasures,
+};

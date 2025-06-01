@@ -50,7 +50,7 @@ test.describe("explores", () => {
   });
 
   test("Dashboard runthrough", async ({ page }) => {
-    test.setTimeout(45_000); // Note: we should make this test smaller!
+    test.setTimeout(60_000); // Note: we should make this test smaller!
 
     // Enable to get logs in CI
     // page.on("console", async (msg) => {
@@ -135,15 +135,21 @@ time_ranges:
     await expect(page.getByText("Model Data 272 of 100k rows")).toBeVisible();
 
     // Check row viewer is collapsed by looking for the cell value "7029", which should be in the table
-    await expect(page.getByRole("cell", { name: "7029" })).not.toBeVisible();
+    await expect(
+      page.getByRole("cell", { name: "7029" }).first(),
+    ).not.toBeVisible();
 
     // Expand row viewer and check data is there
     await page.getByRole("button", { name: "Toggle rows viewer" }).click();
-    await expect(page.getByRole("cell", { name: "7029" })).toBeVisible();
+    await expect(
+      page.getByRole("cell", { name: "7029" }).first(),
+    ).toBeVisible();
 
     await page.getByRole("button", { name: "Toggle rows viewer" }).click();
     // Check row viewer is collapsed
-    await expect(page.getByRole("cell", { name: "7029" })).not.toBeVisible();
+    await expect(
+      page.getByRole("cell", { name: "7029" }).first(),
+    ).not.toBeVisible();
 
     // Download the data as CSV
     // Start waiting for download before clicking. Note no await.
@@ -428,10 +434,17 @@ dimensions:
     await expect(page.getByText("Avg Bid Price $3.01")).toBeVisible();
 
     // Change the leaderboard metric
-    await page
-      .getByRole("button", { name: "Select a measure to filter by" })
-      .click();
-    await page.getByRole("option", { name: "Avg Bid Price" }).click();
+    await page.getByTestId("leaderboard-measure-names-dropdown").click();
+
+    // Wait for the menu to be visible
+    await page.getByRole("menu").waitFor({ state: "visible" });
+
+    // Wait for and click the Avg Bid Price menu item
+    const avgBidPriceMenuItem = page
+      .getByRole("menuitem", { name: "Avg Bid Price" })
+      .filter({ has: page.getByText("Avg Bid Price") });
+    await avgBidPriceMenuItem.waitFor({ state: "visible" });
+    await avgBidPriceMenuItem.click();
 
     // Check domain and sample value in leaderboard
     await expect(page.getByText("Domain Name")).toBeVisible();
@@ -471,7 +484,10 @@ dimensions:
       page.getByLabel("publisher filter").getByText("Publisher Microsoft"),
     ).toBeVisible();
 
-    // go back to the leaderboards.
+    // Move mouse to clear the "Microsoft" tooltip that blocks the "All dimensions" button
+    await page.mouse.move(0, 0);
+
+    // Go back to the leaderboards
     await page.getByText("All dimensions").click();
     // clear all filters
     await page.getByText("Clear filters").click();

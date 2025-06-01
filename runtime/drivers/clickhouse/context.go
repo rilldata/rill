@@ -30,7 +30,7 @@ func connFromContext(ctx context.Context) *sqlx.Conn {
 
 // sessionAwareContext sets a session_id in context which is used to tie queries to a certain session.
 // This is used to use certain session aware features like temporary tables.
-func (c *connection) sessionAwareContext(ctx context.Context) context.Context {
+func (c *Connection) sessionAwareContext(ctx context.Context) context.Context {
 	if c.opts.Protocol == clickhouse.HTTP {
 		var settings map[string]any
 		if len(c.opts.Settings) == 0 {
@@ -45,6 +45,7 @@ func (c *connection) sessionAwareContext(ctx context.Context) context.Context {
 	return ctx
 }
 
+// contextWithQueryID adds the current trace ID as a query ID to the context.
 func contextWithQueryID(ctx context.Context) context.Context {
 	traceID := observability.TraceID(ctx)
 	if traceID == "" {

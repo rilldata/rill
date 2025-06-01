@@ -9,11 +9,13 @@
   import GlobalDimensionSearch from "@rilldata/web-common/features/dashboards/dimension-search/GlobalDimensionSearch.svelte";
   import StateManagersProvider from "@rilldata/web-common/features/dashboards/state-managers/StateManagersProvider.svelte";
   import { useExplore } from "@rilldata/web-common/features/explores/selectors";
+  import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import {
     createAdminServiceGetCurrentUser,
     createAdminServiceListOrganizations as listOrgs,
     createAdminServiceListProjectsForOrganization as listProjects,
+    type V1Organization,
   } from "../../client";
   import ViewAsUserChip from "../../features/view-as-user/ViewAsUserChip.svelte";
   import { viewAsUserStore } from "../../features/view-as-user/viewAsUserStore";
@@ -31,10 +33,12 @@
     isProjectPage,
     isPublicURLPage,
   } from "./nav-utils";
-  import { featureFlags } from "@rilldata/web-common/features/feature-flags";
 
   export let createMagicAuthTokens: boolean;
+  export let manageProjectAdmins: boolean;
   export let manageProjectMembers: boolean;
+  export let manageOrgAdmins: boolean;
+  export let manageOrgMembers: boolean;
   export let organizationLogoUrl: string | undefined = undefined;
   export let planDisplayName: string | undefined;
 
@@ -88,23 +92,43 @@
   $: alertsQuery = useAlerts(instanceId, onAlertPage);
   $: reportsQuery = useReports(instanceId, onReportPage);
 
-  $: organizations =
-    $organizationQuery.data?.organizations ??
-    // handle case when visiting root cloud page directly (ui.rilldata.com)
-    (organization ? [{ name: organization, id: organization }] : []);
+  $: organizations = $organizationQuery.data?.organizations ?? [];
   $: projects = $projectsQuery.data?.projects ?? [];
   $: visualizations = $visualizationsQuery.data ?? [];
   $: alerts = $alertsQuery.data?.resources ?? [];
   $: reports = $reportsQuery.data?.resources ?? [];
 
-  $: organizationPaths = organizations.reduce(
-    (map, { name, displayName }) =>
-      map.set(name.toLowerCase(), {
+  $: organizationPaths = createOrgPaths(
+    organizations,
+    organization,
+    planDisplayName,
+  );
+
+  function createOrgPaths(
+    organizations: V1Organization[],
+    viewingOrg: string | undefined,
+    planDisplayName: string,
+  ) {
+    const pathMap = new Map<string, PathOption>();
+
+    organizations.forEach(({ name, displayName }) => {
+      pathMap.set(name.toLowerCase(), {
         label: displayName || name,
         pill: planDisplayName,
-      }),
-    new Map<string, PathOption>(),
-  );
+      });
+    });
+
+    if (!viewingOrg) return pathMap;
+
+    if (!pathMap.has(viewingOrg.toLowerCase())) {
+      pathMap.set(viewingOrg.toLowerCase(), {
+        label: viewingOrg,
+        pill: planDisplayName,
+      });
+    }
+
+    return pathMap;
+  }
 
   $: projectPaths = projects.reduce(
     (map, { name }) =>
@@ -188,8 +212,16 @@
     {#if $viewAsUserStore}
       <ViewAsUserChip />
     {/if}
+    <!-- NOTE: only project admin and editor can manage project members -->
+    <!-- https://docs.rilldata.com/manage/roles-permissions#project-level-permissions -->
     {#if onProjectPage && manageProjectMembers}
-      <ShareProjectPopover {organization} {project} />
+      <ShareProjectPopover
+        {organization}
+        {project}
+        {manageProjectAdmins}
+        {manageOrgAdmins}
+        {manageOrgMembers}
+      />
     {/if}
     {#if onMetricsExplorerPage && isDashboardValid}
       {#if exploreSpec}
@@ -203,13 +235,13 @@
               <GlobalDimensionSearch />
             {/if}
             {#if $user.isSuccess && $user.data.user && !onPublicURLPage}
-              {#if $alertsFlag}
-                <CreateAlert />
-              {/if}
               <Bookmarks
                 metricsViewName={exploreSpec.metricsView}
                 exploreName={dashboard}
               />
+              {#if $alertsFlag}
+                <CreateAlert />
+              {/if}
               <ShareDashboardPopover {createMagicAuthTokens} />
             {/if}
           </StateManagersProvider>

@@ -1,28 +1,34 @@
 import type {
-  V1CanvasRow as APIV1CanvasRow,
   V1CanvasItem,
+  V1CanvasRow,
+  V1ComponentSpecRendererProperties,
   V1MetricsViewSpec,
+  V1ResolveCanvasResponseResolvedComponents,
+  V1Resource,
 } from "@rilldata/web-common/runtime-client";
-import { YAMLMap, YAMLSeq } from "yaml";
-import type { CanvasComponentType } from "./components/types";
-import { getComponentRegistry } from "./components/util";
 import { writable } from "svelte/store";
+import { YAMLMap, YAMLSeq } from "yaml";
+import { ResourceKind } from "../entity-management/resource-selectors";
+import type { CanvasComponentType } from "./components/types";
+import { COMPONENT_CLASS_MAP } from "./components/util";
 
+// TODO: Move this individual component class
 export const initialHeights: Record<CanvasComponentType, number> = {
   line_chart: 320,
   bar_chart: 320,
   area_chart: 320,
   stacked_bar: 320,
   stacked_bar_normalized: 320,
+  donut_chart: 320,
+  pie_chart: 320,
+  heatmap: 320,
   markdown: 40,
-  kpi: 128,
   kpi_grid: 128,
   image: 80,
   table: 300,
   pivot: 300,
+  leaderboard: 300,
 };
-
-const componentRegistry = getComponentRegistry();
 
 export const MIN_HEIGHT = 40;
 export const MIN_WIDTH = 3;
@@ -46,13 +52,8 @@ type YAMLItem = Record<string, unknown> & {
 };
 
 export type YAMLRow = {
-  items: (YAMLItem | null)[];
+  items: YAMLItem[];
   height?: string;
-};
-
-// Items are nulled out when removed from the canvas
-type V1CanvasRow = Omit<APIV1CanvasRow, "items"> & {
-  items: (V1CanvasItem | null)[];
 };
 
 export type DragItem = {
@@ -86,143 +87,341 @@ export function mapGuard(value: unknown[]): Array<YAMLRow> {
   });
 }
 
-export function moveToRow<T extends YAMLRow | V1CanvasRow>(
-  rows: Array<T | null>,
-  items: DragItem[],
-  dropPosition?: {
-    column?: number;
-    row: number;
-    copy?: boolean;
-  },
-  defaultMetrics?: {
-    metricsViewName: string;
-    metricsViewSpec: V1MetricsViewSpec | undefined;
-  },
-): Array<T> {
-  const rowsClone = structuredClone(rows);
+interface Position {
+  row: number;
+  col: number;
+}
 
-  let height = MIN_HEIGHT;
+interface BaseTransaction {
+  insertRow?: boolean;
+}
 
-  const stringHeight =
-    defaultMetrics ||
-    (dropPosition && typeof rowsClone[dropPosition.row]?.height === "string") ||
-    typeof rowsClone[items?.[0]?.position?.row ?? 0]?.height === "string";
+interface MoveItemTransaction extends BaseTransaction {
+  type: "move";
+  source: Position;
+  destination: Position;
+}
 
-  const baseRow = {
-    items: [] as T["items"],
-    height: stringHeight ? MIN_HEIGHT + "px" : MIN_HEIGHT,
-  } as T;
+interface CopyItemTransaction extends BaseTransaction {
+  type: "copy";
+  source: Position;
+  destination: Position;
+  insertRow: true;
+}
 
-  const destinationRow: T =
-    dropPosition?.column === undefined
-      ? baseRow
-      : (rowsClone[dropPosition.row] ?? baseRow);
+interface DeleteItemTransaction {
+  type: "delete";
+  target: Position;
+}
 
-  const existingNumericHeight = stringHeight
-    ? isNaN(parseInt(String(destinationRow?.height).split("px")[0]))
-      ? MIN_HEIGHT
-      : parseInt(String(destinationRow?.height).split("px")[0])
-    : ((destinationRow?.height as number) ?? MIN_HEIGHT);
+interface AddItemTransaction extends BaseTransaction {
+  type: "add";
+  componentType: CanvasComponentType;
+  destination: Position;
+}
 
-  const touchedRows = new Set(
-    items.map((el) => el.position?.row).filter(itemExists),
-  );
+export type TransactionOperation =
+  | MoveItemTransaction
+  | CopyItemTransaction
+  | DeleteItemTransaction
+  | AddItemTransaction;
 
-  if (!destinationRow?.items) return [];
+export interface Transaction {
+  operations: TransactionOperation[];
+}
 
-  const movedComponents: (YAMLItem | V1CanvasItem)[] = [];
-
-  items.forEach((item) => {
-    if (!item.position && item.type) {
-      movedComponents.push(
-        defaultMetrics
-          ? {
-              ...createComponent(
-                item.type as CanvasComponentType,
-                defaultMetrics,
-              ),
-              width: 0,
-            }
-          : {
-              component: undefined,
-              width: 0,
-              widthUnit: "px",
-              definedInCanvas: true,
-            },
-      );
-    } else if (dropPosition?.copy && item.position) {
-      const row = rowsClone[item.position.row];
-      if (!row) return;
-      const component = row.items?.[item.position.column];
-      if (!component) return;
-
-      movedComponents.push(structuredClone(component));
-    } else if (item.position) {
-      const row = rowsClone[item.position.row];
-      if (!row) return;
-      const component = row.items?.[item.position.column];
-      if (!component) return;
-
-      movedComponents.push(structuredClone(component));
-      row.items[item.position.column] = null;
-    }
-
-    height = Math.max(existingNumericHeight, getInitialHeight(item.type));
-  });
-
-  if (dropPosition) {
-    destinationRow.items.splice(
-      dropPosition.column ?? 0,
-      0,
-      ...movedComponents.filter((i) => i !== null),
+export function generateArrayRearrangeFunction(transaction: Transaction) {
+  return <I, R extends { items?: I[] }>(
+    array: R[],
+    newItemGenerator: (pos: Position, type: CanvasComponentType) => I,
+    rowUpdater: (row: R, index: number, touched: boolean) => R,
+  ) => {
+    const newArray = structuredClone(array);
+    const touchedRows: Array<boolean | null> = Array.from(
+      { length: newArray.length },
+      () => false,
     );
 
-    destinationRow.height = stringHeight ? height + "px" : height;
+    for (const op of transaction.operations) {
+      switch (op.type) {
+        case "delete": {
+          const { row, col } = op.target;
+          const targetRow = newArray[row];
+          if (targetRow && targetRow?.items?.[col] !== undefined) {
+            targetRow.items.splice(col, 1);
+            touchedRows[row] = true;
+          }
+          break;
+        }
 
-    if (destinationRow.items?.filter(itemExists).length > 4) {
-      return [];
+        case "move": {
+          const { source, destination, insertRow } = op;
+          const sourceRow = newArray[source.row];
+          const rowIndex = destination.row;
+
+          if (insertRow) {
+            newArray.splice(rowIndex, 0, { items: [] } as unknown as R);
+          }
+
+          const destinationRow = newArray[rowIndex];
+
+          if (!sourceRow || !destinationRow) break;
+
+          const item = sourceRow.items?.[source.col];
+
+          if (item === undefined) break;
+
+          if (
+            sourceRow !== destinationRow &&
+            (destinationRow.items?.length ?? 0) >= 4
+          ) {
+            throw new Error("Maximum number of items reached");
+          }
+
+          sourceRow.items?.splice(source.col, 1);
+
+          const insertIndex =
+            sourceRow === destinationRow && destination.col > source.col
+              ? destination.col - 1
+              : destination.col;
+
+          destinationRow.items?.splice(insertIndex, 0, item);
+
+          touchedRows[source.row] = true;
+          touchedRows[rowIndex] = true;
+
+          break;
+        }
+
+        case "copy": {
+          const { source, destination, insertRow } = op;
+
+          const rowIndex = destination.row;
+          if (insertRow) {
+            newArray.splice(rowIndex, 0, { items: [] } as unknown as R);
+          }
+
+          const sourceRow = newArray[source.row];
+          const destinationRow = newArray[rowIndex];
+          if (!sourceRow || !destinationRow) break;
+
+          const itemCount = destinationRow.items?.length ?? 0;
+
+          if (itemCount >= 4) {
+            throw new Error("Maximum number of items reached");
+          }
+
+          const item = sourceRow.items?.[source.col];
+          if (item === undefined) break;
+
+          const copy = structuredClone(item);
+          destinationRow?.items?.splice(destination.col, 0, copy);
+          touchedRows[rowIndex] = true;
+          break;
+        }
+
+        case "add": {
+          const { destination, componentType, insertRow } = op;
+
+          const rowIndex = destination.row;
+          if (insertRow) {
+            newArray.splice(rowIndex, 0, { items: [] } as unknown as R);
+          }
+
+          const row = newArray[rowIndex];
+          if (!row) break;
+
+          const itemCount = row.items?.length ?? 0;
+
+          if (itemCount >= 4) {
+            throw new Error("Maximum number of items reached");
+          }
+
+          const newItem = newItemGenerator(destination, componentType);
+          row.items?.splice(destination.col, 0, newItem);
+          touchedRows[rowIndex] = true;
+          break;
+        }
+      }
     }
 
-    const baseWidth = COLUMN_COUNT / destinationRow.items.length;
-
-    destinationRow.items.forEach((_, i) => {
-      if (!destinationRow.items[i]) return;
-      destinationRow.items[i].width = baseWidth;
+    const cleaned = newArray.filter((row, index) => {
+      if (row.items?.length === 0) {
+        touchedRows[index] = null;
+        return false;
+      }
+      return true;
     });
-  }
+    const cleanedTouched = touchedRows.filter((row) => row !== null);
 
-  touchedRows.forEach((rowIndex) => {
-    const row = rowsClone[rowIndex];
+    return cleaned.map((row, index) =>
+      rowUpdater(row, index, cleanedTouched[index] ?? false),
+    );
+  };
+}
 
-    if (!row?.items) return;
+function generateId(
+  row: number | undefined,
+  column: number | undefined,
+  canvasName: string,
+) {
+  return `${canvasName}--component-${row ?? 0}-${column ?? 0}`;
+}
 
-    const validItemsLeft = row.items.filter((i) => i !== null);
+export function generateNewAssets(params: {
+  transaction: Transaction;
+  yamlRows: YAMLRow[];
+  specRows: V1CanvasRow[];
+  resolvedComponents: V1ResolveCanvasResponseResolvedComponents | undefined;
+  canvasName: string;
+  defaultMetrics: {
+    metricsViewName: string;
+    metricsViewSpec: V1MetricsViewSpec | undefined;
+  };
+}) {
+  const {
+    yamlRows,
+    specRows,
+    defaultMetrics,
+    canvasName,
+    resolvedComponents,
+    transaction,
+  } = params;
 
-    if (!validItemsLeft.length) {
-      rowsClone[rowIndex] = null;
-    } else {
-      const baseWidth = COLUMN_COUNT / validItemsLeft.length;
+  const mover = generateArrayRearrangeFunction(transaction);
 
-      validItemsLeft.forEach((_, i) => {
-        if (!validItemsLeft[i]) return;
-        validItemsLeft[i].width = baseWidth;
-      });
-
-      row.items = validItemsLeft;
-    }
+  const resolvedComponentsArray = specRows.map((row) => {
+    const items =
+      row.items?.map((item) => {
+        return resolvedComponents?.[item?.component ?? ""];
+      }) ?? [];
+    return { ...row, items: items.filter(itemExists) };
   });
 
-  if (dropPosition) {
-    if (dropPosition?.column === undefined) {
-      rowsClone.splice(dropPosition?.row, 0, destinationRow);
-    } else {
-      rowsClone[dropPosition.row] = destinationRow;
-    }
-  }
+  const updatedYamlRows = mover<YAMLItem, YAMLRow>(
+    yamlRows,
+    (_, type) => {
+      return {
+        ...initComponentSpec(type, defaultMetrics),
+        width: 0,
+      };
+    },
+    (row, _, touched) => {
+      if (!touched) return row;
+      const updatedItems = row.items.map((item) => {
+        return {
+          ...item,
+          width: touched ? COLUMN_COUNT / row.items.length : item.width,
+        };
+      });
 
-  const filtered = rowsClone.filter((row) => row !== null);
+      return {
+        ...row,
+        items: updatedItems,
+      };
+    },
+  );
 
-  return filtered;
+  const updatedSpecRows = mover<V1CanvasItem, V1CanvasRow>(
+    specRows,
+    () => {
+      return {
+        component: undefined,
+        width: 0,
+        widthUnit: "px",
+        definedInCanvas: true,
+      };
+    },
+    (row, index, touched) => {
+      const updatedItems = row.items?.map((item, col) => {
+        item.component = generateId(index, col, canvasName);
+
+        return {
+          ...item,
+          width: touched ? COLUMN_COUNT / (row.items?.length ?? 1) : item.width,
+        };
+      });
+
+      return {
+        ...row,
+        items: updatedItems,
+      };
+    },
+  );
+
+  const updatedResolvedComponents = mover<V1Resource, { items: V1Resource[] }>(
+    resolvedComponentsArray,
+    (pos, type) => {
+      return createOptimisticResource({
+        type,
+        ...defaultMetrics,
+      });
+    },
+    (row, index) => {
+      const updatedItems = row.items.map((item, col) => {
+        if (!item?.meta?.name) return item;
+        item.meta.name.name = generateId(index, col, canvasName);
+        return item;
+      });
+      return {
+        ...row,
+        items: updatedItems,
+      };
+    },
+  );
+
+  const resolvedComponentsMap: Record<string, V1Resource> = {};
+
+  updatedResolvedComponents.forEach((row) => {
+    row.items.forEach((item) => {
+      if (item?.meta?.name?.name) {
+        resolvedComponentsMap[item?.meta?.name?.name] = item;
+      }
+    });
+  });
+
+  return {
+    newSpecRows: updatedSpecRows,
+    newYamlRows: updatedYamlRows,
+    newResolvedComponents: resolvedComponentsMap,
+    mover,
+  };
+}
+
+function createOptimisticResource(options: {
+  type: CanvasComponentType;
+  metricsViewName: string;
+  metricsViewSpec: V1MetricsViewSpec | undefined;
+}): V1Resource {
+  const { type, metricsViewName, metricsViewSpec } = options;
+
+  const spec = COMPONENT_CLASS_MAP[type].newComponentSpec(
+    metricsViewName,
+    metricsViewSpec,
+  );
+
+  return {
+    meta: {
+      name: {
+        name: undefined,
+        kind: ResourceKind.Component,
+      },
+    },
+    component: {
+      state: {
+        validSpec: {
+          renderer: type,
+          rendererProperties:
+            spec as unknown as V1ComponentSpecRendererProperties,
+        },
+      },
+      spec: {
+        renderer: type,
+        rendererProperties:
+          spec as unknown as V1ComponentSpecRendererProperties,
+      },
+    },
+  };
 }
 
 function itemExists<T>(item: T | null | undefined): item is T {
@@ -233,14 +432,14 @@ export function getInitialHeight(id: string | undefined) {
   return initialHeights[id as CanvasComponentType] ?? MIN_HEIGHT;
 }
 
-function createComponent(
+export function initComponentSpec(
   componentType: CanvasComponentType,
   defaultMetrics: {
     metricsViewName: string;
     metricsViewSpec: V1MetricsViewSpec | undefined;
   },
 ) {
-  const newSpec = componentRegistry[componentType].newComponentSpec(
+  const newSpec = COMPONENT_CLASS_MAP[componentType].newComponentSpec(
     defaultMetrics.metricsViewName,
     defaultMetrics.metricsViewSpec,
   );

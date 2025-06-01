@@ -1,11 +1,10 @@
 package parser
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"github.com/rilldata/rill/runtime/pkg/openapiutil"
-	"google.golang.org/protobuf/types/known/structpb"
-	"gopkg.in/yaml.v3"
 )
 
 // APIYAML is the raw structure of a API resource defined in YAML (does not include common fields)
@@ -17,13 +16,10 @@ type APIYAML struct {
 }
 
 type OpenAPIYAML struct {
-	Summary string `yaml:"summary"`
-	Request struct {
-		Parameters []map[string]any `yaml:"parameters"`
-	} `yaml:"request"`
-	Response struct {
-		Schema map[string]any `yaml:"schema"`
-	} `yaml:"response"`
+	Summary        string           `yaml:"summary"`
+	Parameters     []map[string]any `yaml:"parameters"`
+	RequestSchema  map[string]any   `yaml:"request_schema"`
+	ResponseSchema map[string]any   `yaml:"response_schema"`
 }
 
 // parseAPI parses an API definition and adds the resulting resource to p.Resources.
@@ -36,32 +32,39 @@ func (p *Parser) parseAPI(node *Node) error {
 	}
 
 	// Validate
-	var openapiSummary string
-	var openapiParams []*structpb.Struct
-	var openapiSchema *structpb.Struct
+	var openapiSummary, openapiParams, openapiRequestSchema, openapiResponseSchema string
 	if tmp.OpenAPI != nil {
 		openapiSummary = tmp.OpenAPI.Summary
 
-		_, err := openapiutil.MapToParameters(tmp.OpenAPI.Request.Parameters)
+		paramsJSON, err := json.Marshal(tmp.OpenAPI.Parameters)
 		if err != nil {
-			return fmt.Errorf("encountered invalid parameter type: %w", err)
+			return fmt.Errorf("invalid openapi.parameters: %w", err)
 		}
-		for _, param := range tmp.OpenAPI.Request.Parameters {
-			paramPB, err := structpb.NewStruct(param)
-			if err != nil {
-				return fmt.Errorf("encountered invalid parameter type: %w", err)
-			}
-			openapiParams = append(openapiParams, paramPB)
+		_, err = openapiutil.ParseJSONParameters(string(paramsJSON))
+		if err != nil {
+			return fmt.Errorf("invalid openapi.parameters: %w", err)
 		}
+		openapiParams = string(paramsJSON)
 
-		_, err = openapiutil.MapToSchema(tmp.OpenAPI.Response.Schema)
+		requestSchemaJSON, err := json.Marshal(tmp.OpenAPI.RequestSchema)
 		if err != nil {
-			return fmt.Errorf("encountered invalid schema type: %w", err)
+			return fmt.Errorf("invalid openapi.request_schema: %w", err)
 		}
-		openapiSchema, err = structpb.NewStruct(tmp.OpenAPI.Response.Schema)
+		_, _, err = openapiutil.ParseJSONSchema(node.Name, string(requestSchemaJSON))
 		if err != nil {
-			return fmt.Errorf("encountered invalid schema type: %w", err)
+			return fmt.Errorf("invalid openapi.request_schema: %w", err)
 		}
+		openapiRequestSchema = string(requestSchemaJSON)
+
+		responseSchemaJSON, err := json.Marshal(tmp.OpenAPI.ResponseSchema)
+		if err != nil {
+			return fmt.Errorf("invalid openapi.response_schema: %w", err)
+		}
+		_, _, err = openapiutil.ParseJSONSchema(node.Name, string(responseSchemaJSON))
+		if err != nil {
+			return fmt.Errorf("invalid openapi.response_schema: %w", err)
+		}
+		openapiResponseSchema = string(responseSchemaJSON)
 	}
 
 	// Map common node properties to DataYAML
@@ -98,105 +101,11 @@ func (p *Parser) parseAPI(node *Node) error {
 	r.APISpec.Resolver = resolver
 	r.APISpec.ResolverProperties = resolverProps
 	r.APISpec.OpenapiSummary = openapiSummary
-	r.APISpec.OpenapiParameters = openapiParams
-	r.APISpec.OpenapiResponseSchema = openapiSchema
+	r.APISpec.OpenapiParametersJson = openapiParams
+	r.APISpec.OpenapiRequestSchemaJson = openapiRequestSchema
+	r.APISpec.OpenapiResponseSchemaJson = openapiResponseSchema
 	r.APISpec.SecurityRules = securityRules
 	r.APISpec.SkipNestedSecurity = tmp.SkipNestedSecurity
 
 	return nil
-}
-
-// DataYAML is the raw YAML structure of a sub-property for defining a data resolver and properties.
-// It is used across multiple resources, usually under "data:", but inlined for APIs.
-type DataYAML struct {
-	Connector      string         `yaml:"connector"`
-	SQL            string         `yaml:"sql"`
-	MetricsSQL     string         `yaml:"metrics_sql"`
-	API            string         `yaml:"api"`
-	Args           map[string]any `yaml:"args"`
-	Glob           yaml.Node      `yaml:"glob"` // Path (string) or properties (map[string]any)
-	ResourceStatus map[string]any `yaml:"resource_status"`
-}
-
-// parseDataYAML parses a data resolver and its properties from a DataYAML.
-// The contextualConnector argument is optional; if provided and the resolver supports a connector, it becomes the default connector for the resolver.
-// It returns the resolver name, its properties, and refs found in the resolver props.
-func (p *Parser) parseDataYAML(raw *DataYAML, contextualConnector string) (string, *structpb.Struct, []ResourceName, error) {
-	// Parse the resolver and its properties
-	var count int
-	var resolver string
-	var refs []ResourceName
-	resolverProps := make(map[string]any)
-
-	// Handle basic SQL resolver
-	if raw.SQL != "" {
-		count++
-		resolver = "sql"
-		resolverProps["sql"] = raw.SQL
-		if raw.Connector != "" {
-			resolverProps["connector"] = raw.Connector
-		} else if contextualConnector != "" {
-			resolverProps["connector"] = contextualConnector
-		}
-	}
-
-	// Handle metrics SQL resolver
-	if raw.MetricsSQL != "" {
-		count++
-		resolver = "metrics_sql"
-		resolverProps["sql"] = raw.MetricsSQL
-	}
-
-	// Handle API resolver
-	if raw.API != "" {
-		count++
-		resolver = "api"
-		resolverProps["api"] = raw.API
-		refs = append(refs, ResourceName{Kind: ResourceKindAPI, Name: raw.API})
-		if raw.Args != nil {
-			resolverProps["args"] = raw.Args
-		}
-	}
-
-	// Handle glob resolver
-	if !raw.Glob.IsZero() {
-		var props map[string]any
-		switch raw.Glob.Kind {
-		case yaml.ScalarNode:
-			props = map[string]any{"path": raw.Glob.Value}
-		default:
-			props = make(map[string]any)
-			err := raw.Glob.Decode(props)
-			if err != nil {
-				return "", nil, nil, fmt.Errorf("failed to parse glob properties: %w", err)
-			}
-		}
-
-		count++
-		resolver = "glob"
-		resolverProps = props
-	}
-
-	// Handle resource_status resolver
-	if raw.ResourceStatus != nil {
-		count++
-		resolver = "resource_status"
-		resolverProps = raw.ResourceStatus
-	}
-
-	// Validate there was exactly one resolver
-	if count == 0 {
-		return "", nil, nil, fmt.Errorf(`the API definition does not specify a resolver (for example, "sql:", "metrics_sql:", ...)`)
-	}
-	if count > 1 {
-		return "", nil, nil, fmt.Errorf(`the API definition specifies more than one resolver`)
-	}
-
-	// Convert resolver properties to structpb.Struct
-	resolverPropsPB, err := structpb.NewStruct(resolverProps)
-	if err != nil {
-		return "", nil, nil, fmt.Errorf("encountered invalid property type: %w", err)
-	}
-
-	return resolver, resolverPropsPB, refs, nil
 }

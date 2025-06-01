@@ -26,6 +26,7 @@ func (silentLogger) Info(args ...any) {
 var spec = drivers.Spec{
 	DisplayName: "Salesforce",
 	Description: "Connect to Salesforce.",
+	DocsURL:     "https://docs.rilldata.com/reference/connectors/salesforce",
 	ConfigProperties: []*drivers.PropertySpec{
 		{
 			Key:    "username",
@@ -53,6 +54,7 @@ var spec = drivers.Spec{
 			Secret: false,
 		},
 	},
+	// Important: Any edits to the below properties must be accompanied by changes to the client-side form validation schemas.
 	SourceProperties: []*drivers.PropertySpec{
 		{
 			Key:         "soql",
@@ -91,6 +93,7 @@ var spec = drivers.Spec{
 			DisplayName: "Salesforce Password",
 			Required:    false,
 			Hint:        "Either set this or pass --env connector.salesforce.password=... to rill start",
+			Secret:      true,
 		},
 		{
 			Key:         "key",
@@ -98,6 +101,7 @@ var spec = drivers.Spec{
 			DisplayName: "JWT Key for Authentication",
 			Required:    false,
 			Hint:        "Either set this or pass --env connector.salesforce.key=... to rill start",
+			Secret:      true,
 		},
 		{
 			Key:         "endpoint",

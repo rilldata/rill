@@ -3,6 +3,7 @@
   import SimpleDataGraphic from "@rilldata/web-common/components/data-graphic/elements/SimpleDataGraphic.svelte";
   import { Axis } from "@rilldata/web-common/components/data-graphic/guides";
   import { bisectData } from "@rilldata/web-common/components/data-graphic/utils";
+  import DashboardMetricsDraggableList from "@rilldata/web-common/components/menu/DashboardMetricsDraggableList.svelte";
   import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
   import ReplacePivotDialog from "@rilldata/web-common/features/dashboards/pivot/ReplacePivotDialog.svelte";
   import { splitPivotChips } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils";
@@ -33,8 +34,11 @@
     TimeRangePreset,
     type AvailableTimeGrain,
   } from "@rilldata/web-common/lib/time/types";
+  import { Button } from "../../../components/button";
+  import Pivot from "../../../components/icons/Pivot.svelte";
   import type { MetricsViewSpecMeasure } from "@rilldata/web-common/runtime-client";
   import { TIME_GRAIN } from "../../../lib/time/config";
+  import { DashboardState_ActivePage } from "../../../proto/gen/rill/ui/v1/dashboard_pb";
   import Spinner from "../../entity-management/Spinner.svelte";
   import MeasureBigNumber from "../big-number/MeasureBigNumber.svelte";
   import ChartInteractions from "./ChartInteractions.svelte";
@@ -46,7 +50,6 @@
     getOrderedStartEnd,
     updateChartInteractionStore,
   } from "./utils";
-  import DashboardMetricsDraggableList from "@rilldata/web-common/components/menu/DashboardMetricsDraggableList.svelte";
 
   export let exploreName: string;
   export let workspaceWidth: number;
@@ -84,8 +87,11 @@
 
   $: exploreState = useExploreState(exploreName);
 
+  $: activePage = $exploreState?.activePage;
+  $: showTimeDimensionDetail = Boolean(
+    activePage === DashboardState_ActivePage.TIME_DIMENSIONAL_DETAIL,
+  );
   $: expandedMeasureName = $exploreState?.tdd?.expandedMeasureName;
-  $: isInTimeDimensionView = Boolean(expandedMeasureName);
 
   $: comparisonDimension = $exploreState?.selectedComparisonDimension;
   $: showComparison = Boolean($timeControlsStore.showTimeComparison);
@@ -108,7 +114,10 @@
   $: expandedMeasure = $getMeasureByName(expandedMeasureName);
   let renderedMeasures: MetricsViewSpecMeasure[];
   $: {
-    renderedMeasures = expandedMeasure ? [expandedMeasure] : $visibleMeasures;
+    renderedMeasures =
+      showTimeDimensionDetail && expandedMeasure
+        ? [expandedMeasure]
+        : $visibleMeasures;
   }
 
   $: totals = $timeSeriesDataStore.total as { [key: string]: number };
@@ -211,7 +220,7 @@
   }
 
   $: if (
-    isInTimeDimensionView &&
+    showTimeDimensionDetail &&
     formattedData &&
     $timeControlsStore.selectedTimeRange &&
     !isScrubbing
@@ -286,14 +295,14 @@
 </script>
 
 <TimeSeriesChartContainer
-  enableFullWidth={isInTimeDimensionView}
+  enableFullWidth={showTimeDimensionDetail}
   end={endValue}
   start={startValue}
   {workspaceWidth}
   {timeSeriesWidth}
 >
   <div class:mb-6={isAlternateChart} class="flex items-center gap-x-1 px-2.5">
-    {#if isInTimeDimensionView}
+    {#if showTimeDimensionDetail}
       <BackToExplore />
       <ChartTypeSelector
         hasComparison={Boolean(
@@ -312,14 +321,16 @@
       />
 
       {#if !hideStartPivotButton}
-        <button
-          class="h-6 px-1.5 py-px rounded-sm hover:bg-gray-200 text-gray-700 ml-auto"
+        <div class="grow" />
+        <Button
+          type="toolbar"
           on:click={() => {
             startPivotForTimeseries();
           }}
         >
+          <Pivot size="16px" />
           Start Pivot
-        </button>
+        </Button>
       {/if}
     {/if}
   </div>
@@ -335,7 +346,7 @@
               overflowHidden={false}
               top={29}
               bottom={0}
-              right={isInTimeDimensionView ? 10 : 25}
+              right={showTimeDimensionDetail ? 10 : 25}
               xMin={startValue}
               xMax={endValue}
             >
@@ -349,7 +360,7 @@
 
   {#if renderedMeasures}
     <div
-      class:pb-4={!isInTimeDimensionView}
+      class:pb-4={!showTimeDimensionDetail}
       class="flex flex-col gap-y-2 overflow-y-scroll h-full max-h-fit"
     >
       <!-- FIXME: this is pending the remaining state work for show/hide measures and dimensions -->
@@ -368,7 +379,7 @@
           <MeasureBigNumber
             {measure}
             value={bigNum}
-            isMeasureExpanded={isInTimeDimensionView}
+            isMeasureExpanded={showTimeDimensionDetail}
             {showComparison}
             {comparisonValue}
             errorMessage={$timeSeriesDataStore?.error?.totals}
@@ -391,7 +402,7 @@
                 <span>Unable to fetch data from the API</span>
               {/if}
             </div>
-          {:else if expandedMeasureName && tddChartType != TDDChart.DEFAULT}
+          {:else if showTimeDimensionDetail && expandedMeasureName && tddChartType != TDDChart.DEFAULT}
             <TDDAlternateChart
               timeGrain={interval}
               chartType={tddChartType}
@@ -452,7 +463,7 @@
             <MeasureChart
               bind:mouseoverValue
               {measure}
-              {isInTimeDimensionView}
+              {showTimeDimensionDetail}
               {isScrubbing}
               {scrubStart}
               {scrubEnd}

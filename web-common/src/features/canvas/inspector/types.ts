@@ -1,3 +1,4 @@
+import type { ChartLegend } from "@rilldata/web-common/features/canvas/components/charts/types";
 import type { ComponentAlignment } from "@rilldata/web-common/features/canvas/components/types";
 
 type NativeInputTypes = "text" | "number" | "boolean" | "textArea";
@@ -17,6 +18,22 @@ export type FilterInputTypes = "time_filters" | "dimension_filters";
 
 export type FieldType = "measure" | "dimension" | "time";
 
+export type ChartFieldInput = {
+  type: FieldType;
+  axisTitleSelector?: boolean;
+  hideTimeDimension?: boolean;
+  originSelector?: boolean;
+  sortSelector?: boolean;
+  limitSelector?: boolean;
+  nullSelector?: boolean;
+  labelAngleSelector?: boolean;
+  /**
+   * The default legend position for the chart.
+   * If this key is not specified, legend selector will not be shown.
+   */
+  defaultLegendOrientation?: ChartLegend;
+};
+
 export interface ComponentInputParam {
   type: InputType;
   label?: string;
@@ -26,6 +43,7 @@ export interface ComponentInputParam {
   meta?: {
     allowedTypes?: FieldType[]; // Specify which field types are allowed for multi-field selection
     defaultAlignment?: ComponentAlignment;
+    chartFieldInput?: ChartFieldInput;
     [key: string]: any;
   };
 }
@@ -35,7 +53,9 @@ export interface FilterInputParam {
   meta?: Record<string, any>;
 }
 
+export type AllKeys<T> = T extends any ? keyof T : never;
+
 export interface InputParams<T> {
-  options: Partial<Record<keyof T, ComponentInputParam>>;
+  options: Partial<Record<AllKeys<T>, ComponentInputParam>>;
   filter: Partial<Record<FilterInputTypes, FilterInputParam>> | [];
 }

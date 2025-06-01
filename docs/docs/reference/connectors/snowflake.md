@@ -7,6 +7,12 @@ sidebar_position: 11
 
 <!-- WARNING: There are links to this page in source code. If you move it, find and replace the links and consider adding a redirect in docusaurus.config.js. -->
 
+:::info Deprecation of password authentication
+
+Snowflake has issued a [deprecation notice](https://www.snowflake.com/en/blog/blocking-single-factor-password-authentification/) for single-factor password authentication. Rill supports and recommends you use private key authentication to avoid any disruption of your service.
+
+:::
+
 ## Overview
 
 [Snowflake](https://docs.snowflake.com/en/user-guide-intro) is a cloud-based data platform designed to facilitate data warehousing, data lakes, data engineering, data science, data application development, and data sharing. It separates compute and storage, enabling users to scale up or down instantly without downtime, providing a cost-effective solution for data management. With its unique architecture and support for multi-cloud environments, including AWS, Azure, and Google Cloud Platform, Snowflake offers seamless data integration, secure data sharing across organizations, and real-time access to data insights, making it a common choice to power many busienss intelligence applications or use cases. Rill supports natively connecting to and reading from Snowflake as a source using the [Go Snowflake Driver](https://pkg.go.dev/github.com/snowflakedb/gosnowflake).
@@ -29,11 +35,12 @@ Outside of local development, it is generally not recommended to specify / save 
 
 :::
 
-Rill uses the following [syntax](https://pkg.go.dev/github.com/snowflakedb/gosnowflake#hdr-Connection_String) when defining the Snowflake connection string:
+Rill uses the following syntax when defining a connection string using private key:
 
 ```sql
-<username>:<password>@<account_identifier>/<database>/<schema>?warehouse=<warehouse>&role=<role>
+<username>@<account_identifier>/<database>/<schema>?warehouse=<warehouse>&role=<role>&authenticator=SNOWFLAKE_JWT&privateKey=<privateKey_base64_url_encoded>
 ```
+See the full documentation to setup [private key authentication](#using-keypair-authentication)
 
 <img src = '/img/reference/connectors/snowflake/snowflake_conn_strings.png' class='rounded-gif' />
 <br />
@@ -76,6 +83,10 @@ If you've configured credentials locally already (in your `<RILL_PROJECT_DIRECTO
 
 Rill supports using keypair authentication for enhanced authentication security to Snowflake as an alternative to basic authentication. Per the [Snowflake Go Driver](https://pkg.go.dev/github.com/snowflakedb/gosnowflake#hdr-JWT_authentication) specifications, this will imply the following changes to the `dsn` being used (note the `authenticator` and `privateKey` key-value pairs):
 
+:::info
+Snowflake currently does not support encrypted keys for their Snowflake driver.
+:::
+
 ```sql
 <username>@<account_identifier>/<database>/<schema>?warehouse=<warehouse>&role=<role>&authenticator=SNOWFLAKE_JWT&privateKey=<privateKey_base64_url_encoded>
 ```
@@ -88,82 +99,7 @@ If using keypair authentication, you may want to consider rotating your public k
 
 #### Generate a private key
 
-You will first want to generate a 2048-bit PKCS#8 encoded RSA private key:
-
-```bash
-
-openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 -pkeyopt rsa_keygen_pubexp:65537 | openssl pkcs8 -topk8 -outform der -nocrypt > rsa_key.p8
-
-```
-
-:::info
-
-This will create a private key called `rsa_key.p8` in your current working directory.
-
-:::
-
-#### Generate a public key
-
-You will next want to extract a 2048-bit PKI encoded RSA public key from the private key:
-
-```bash
-
-openssl pkey -pubout -inform der -outform der -in rsa_key.p8 -out rsa_key.pub
-
-```
-
-:::info
-
-This will create a public key called `rsa_key.pub` in your current working directory.
-
-:::
-
-
-#### Store the private and public keys securely
-
-It is recommended to copy the public and private key files to a local directory for storage (and record the path to these files). Please note that the private key is stored using the PKCS#8 (Public Key Crypotgraphy Standards) format. 
-
-:::note Securing your keys
-
-To ensure best practices, please make sure to secure these key files when they is not being used and to protect these files from unauthorized access by using the appropriate file permission mechanisms provided by your operating system.
-
-:::
-
-#### Generate a Base64 URL-safe encoded version of your public key
-
-Before assigning your public key to your user in Snowflake, we will need to generate a Base64 URL-safe encoded version of the public key using the following command:
-
-```bash
-
-cat rsa_key.pub | base64 | tr -d '\n'
-
-```
-
-:::info Check your OS version
-
-Depending on the OS version, the command to generate a Base64 URL-safe encoded version of your key may slightly differ. Please check your OS reference manual for the correct syntax.
-
-:::
-
-:::tip Check if the encoded output ends with %
-
-Before copying this output (for the next step), please make sure the resulting string does not end with a `%`. To double check, you can try writing the results to a text file and manually checking: `cat rsa_key.pub | base64 | tr -d '\n' > public_key.txt`.
-
-:::
-
-#### Assign the encoded public key to a Snowflake user
-
-Taking the output from the previous step, you can follow the steps described in Snowflake's documentation [**here**](https://docs.snowflake.com/user-guide/key-pair-auth#assign-the-public-key-to-a-snowflake-user) to assign the public key to an appropriate Snowflake user. 
-
-#### Verify the user's public key fingerprint
-
-Follow Snowflake's documentation [**here**](https://docs.snowflake.com/user-guide/key-pair-auth#verify-the-user-s-public-key-fingerprint) to verify the public key fingerprint and ensure the public key has been configured properly for the user.
-
-:::info
-
-You can use the same commands provided by Snowflake with minimal changes. You will only need to update the name of the user and public key (if different from `rsa_key.pub`)
-
-:::
+Please refer to the [Snowflake documentation](https://docs.snowflake.com/en/user-guide/key-pair-auth) on how to configure a unencrypted private key to use in Rill.
 
 #### Generate a Base64 URL-safe encoded version of your private key
 

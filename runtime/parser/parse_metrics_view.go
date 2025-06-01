@@ -20,6 +20,7 @@ type MetricsViewYAML struct {
 	DisplayName       string           `yaml:"display_name"`
 	Title             string           `yaml:"title"` // Deprecated: use display_name
 	Description       string           `yaml:"description"`
+	AIContext         string           `yaml:"ai_context"`
 	Model             string           `yaml:"model"`
 	Database          string           `yaml:"database"`
 	DatabaseSchema    string           `yaml:"database_schema"`
@@ -30,16 +31,20 @@ type MetricsViewYAML struct {
 	FirstDayOfWeek    uint32           `yaml:"first_day_of_week"`
 	FirstMonthOfYear  uint32           `yaml:"first_month_of_year"`
 	Dimensions        []*struct {
-		Name        string
-		DisplayName string `yaml:"display_name"`
-		Label       string // Deprecated: use display_name
-		Description string
-		Column      string
-		Expression  string
-		Property    string // For backwards compatibility
-		Ignore      bool   `yaml:"ignore"` // Deprecated
-		Unnest      bool
-		URI         string
+		Name                    string
+		DisplayName             string `yaml:"display_name"`
+		Label                   string // Deprecated: use display_name
+		Description             string
+		Column                  string
+		Expression              string
+		Property                string // For backwards compatibility
+		Ignore                  bool   `yaml:"ignore"` // Deprecated
+		Unnest                  bool
+		URI                     string
+		LookupTable             string `yaml:"lookup_table"`
+		LookupKeyColumn         string `yaml:"lookup_key_column"`
+		LookupValueColumn       string `yaml:"lookup_value_column"`
+		LookupDefaultExpression string `yaml:"lookup_default_expression"`
 	}
 	Measures []*struct {
 		Name                string
@@ -201,260 +206,6 @@ func (f *MetricsViewMeasureWindow) UnmarshalYAML(v *yaml.Node) error {
 	return nil
 }
 
-type SecurityPolicyYAML struct {
-	Access    string `yaml:"access"`
-	RowFilter string `yaml:"row_filter"`
-	Include   []*struct {
-		Condition string    `yaml:"if"`
-		Names     yaml.Node // []string or "*" (will be parsed with parseNamesYAML)
-	}
-	Exclude []*struct {
-		Condition string    `yaml:"if"`
-		Names     yaml.Node // []string or "*" (will be parsed with parseNamesYAML)
-	}
-	Rules []*SecurityRuleYAML `yaml:"rules"`
-}
-
-func (p *SecurityPolicyYAML) Proto() ([]*runtimev1.SecurityRule, error) {
-	var rules []*runtimev1.SecurityRule
-	if p == nil {
-		return rules, nil
-	}
-
-	if p.Access != "" {
-		tmp, err := ResolveTemplate(p.Access, validationTemplateData, false)
-		if err != nil {
-			return nil, fmt.Errorf(`invalid 'security': 'access' templating is not valid: %w`, err)
-		}
-		_, err = EvaluateBoolExpression(tmp)
-		if err != nil {
-			return nil, fmt.Errorf(`invalid 'security': 'access' expression error: %w`, err)
-		}
-
-		rules = append(rules, &runtimev1.SecurityRule{
-			Rule: &runtimev1.SecurityRule_Access{
-				Access: &runtimev1.SecurityRuleAccess{
-					Condition: p.Access,
-					Allow:     true,
-				},
-			},
-		})
-	} else {
-		// If "security:" is present, but "access:" is not, default to deny all
-		rules = append(rules, &runtimev1.SecurityRule{
-			Rule: &runtimev1.SecurityRule_Access{
-				Access: &runtimev1.SecurityRuleAccess{
-					Allow: false,
-				},
-			},
-		})
-	}
-
-	if p.RowFilter != "" {
-		_, err := ResolveTemplate(p.RowFilter, validationTemplateData, false)
-		if err != nil {
-			return nil, fmt.Errorf(`invalid 'security': 'row_filter' templating is not valid: %w`, err)
-		}
-
-		rules = append(rules, &runtimev1.SecurityRule{
-			Rule: &runtimev1.SecurityRule_RowFilter{
-				RowFilter: &runtimev1.SecurityRuleRowFilter{
-					Sql: p.RowFilter,
-				},
-			},
-		})
-	}
-
-	for _, inc := range p.Include {
-		if inc == nil {
-			continue
-		}
-
-		tmp, err := ResolveTemplate(inc.Condition, validationTemplateData, false)
-		if err != nil {
-			return nil, fmt.Errorf(`invalid 'security': 'if' condition templating is not valid: %w`, err)
-		}
-		_, err = EvaluateBoolExpression(tmp)
-		if err != nil {
-			return nil, fmt.Errorf(`invalid 'security': 'if' condition expression error: %w`, err)
-		}
-
-		names, all, err := parseNamesYAML(inc.Names)
-		if err != nil {
-			return nil, fmt.Errorf(`invalid 'security': 'include' names: %w`, err)
-		}
-
-		if all && len(names) > 0 {
-			return nil, fmt.Errorf(`invalid 'security': 'include' cannot have both 'all: true' and specific 'names' fields`)
-		} else if !all && len(names) == 0 {
-			return nil, fmt.Errorf(`invalid 'security': 'include' must have 'all: true' or a valid 'names' list`)
-		}
-
-		rules = append(rules, &runtimev1.SecurityRule{
-			Rule: &runtimev1.SecurityRule_FieldAccess{
-				FieldAccess: &runtimev1.SecurityRuleFieldAccess{
-					Condition: inc.Condition,
-					Allow:     true,
-					Fields:    names,
-					AllFields: all,
-				},
-			},
-		})
-	}
-
-	if len(p.Include) == 0 && len(p.Exclude) > 0 {
-		rules = append(rules, &runtimev1.SecurityRule{
-			Rule: &runtimev1.SecurityRule_FieldAccess{
-				FieldAccess: &runtimev1.SecurityRuleFieldAccess{
-					Allow:     true,
-					AllFields: true,
-				},
-			},
-		})
-	}
-
-	for _, exc := range p.Exclude {
-		if exc == nil {
-			continue
-		}
-
-		tmp, err := ResolveTemplate(exc.Condition, validationTemplateData, false)
-		if err != nil {
-			return nil, fmt.Errorf(`invalid 'security': 'if' condition templating is not valid: %w`, err)
-		}
-		_, err = EvaluateBoolExpression(tmp)
-		if err != nil {
-			return nil, fmt.Errorf(`invalid 'security': 'if' condition expression error: %w`, err)
-		}
-
-		names, all, err := parseNamesYAML(exc.Names)
-		if err != nil {
-			return nil, fmt.Errorf(`invalid 'security': 'exclude' names: %w`, err)
-		}
-
-		if all && len(names) > 0 {
-			return nil, fmt.Errorf(`invalid 'security': 'exclude' cannot have both 'all: true' and specific 'names' fields`)
-		} else if !all && len(names) == 0 {
-			return nil, fmt.Errorf(`invalid 'security': 'exclude' must have 'all: true' or a valid 'names' list`)
-		}
-
-		rules = append(rules, &runtimev1.SecurityRule{
-			Rule: &runtimev1.SecurityRule_FieldAccess{
-				FieldAccess: &runtimev1.SecurityRuleFieldAccess{
-					Condition: exc.Condition,
-					Allow:     false,
-					Fields:    names,
-					AllFields: all,
-				},
-			},
-		})
-	}
-
-	for _, r := range p.Rules {
-		if r == nil {
-			continue
-		}
-
-		rule, err := r.Proto()
-		if err != nil {
-			return nil, err
-		}
-		rules = append(rules, rule)
-	}
-
-	return rules, nil
-}
-
-type SecurityRuleYAML struct {
-	Type   string
-	Action string
-	If     string
-	Names  []string
-	All    bool
-	SQL    string
-}
-
-func (r *SecurityRuleYAML) Proto() (*runtimev1.SecurityRule, error) {
-	condition := r.If
-	if condition != "" {
-		tmp, err := ResolveTemplate(condition, validationTemplateData, false)
-		if err != nil {
-			return nil, fmt.Errorf(`invalid 'if': templating is not valid: %w`, err)
-		}
-		_, err = EvaluateBoolExpression(tmp)
-		if err != nil {
-			return nil, fmt.Errorf(`invalid 'if': expression error: %w`, err)
-		}
-	}
-
-	var allow *bool
-	switch r.Action {
-	case "allow":
-		tmp := true
-		allow = &tmp
-	case "deny":
-		tmp := false
-		allow = &tmp
-	default:
-		if r.Action != "" {
-			return nil, fmt.Errorf("invalid security rule action %q", r.Action)
-		}
-	}
-
-	switch r.Type {
-	case "access":
-		if allow == nil {
-			return nil, fmt.Errorf("invalid security rule of type %q: must specify an action", r.Type)
-		}
-		return &runtimev1.SecurityRule{
-			Rule: &runtimev1.SecurityRule_Access{
-				Access: &runtimev1.SecurityRuleAccess{
-					Condition: condition,
-					Allow:     *allow,
-				},
-			},
-		}, nil
-	case "field_access":
-		if allow == nil {
-			return nil, fmt.Errorf("invalid security rule of type %q: must specify an action", r.Type)
-		}
-
-		if r.All && len(r.Names) > 0 {
-			return nil, fmt.Errorf(`invalid security rule of type %q: cannot have both 'all: true' and specific 'names' fields`, r.Type)
-		} else if !r.All && len(r.Names) == 0 {
-			return nil, fmt.Errorf(`invalid security rule of type %q: must have 'all: true' or a valid 'names' list`, r.Type)
-		}
-
-		return &runtimev1.SecurityRule{
-			Rule: &runtimev1.SecurityRule_FieldAccess{
-				FieldAccess: &runtimev1.SecurityRuleFieldAccess{
-					Condition: condition,
-					Allow:     *allow,
-					Fields:    r.Names,
-					AllFields: r.All,
-				},
-			},
-		}, nil
-	case "row_filter":
-		if allow != nil {
-			return nil, fmt.Errorf("invalid security rule of type %q: cannot specify an action", r.Type)
-		}
-		if r.SQL == "" {
-			return nil, fmt.Errorf("invalid security rule of type %q: must provide a 'sql' property", r.Type)
-		}
-		return &runtimev1.SecurityRule{
-			Rule: &runtimev1.SecurityRule_RowFilter{
-				RowFilter: &runtimev1.SecurityRuleRowFilter{
-					Condition: condition,
-					Sql:       r.SQL,
-				},
-			},
-		}, nil
-	default:
-		return nil, fmt.Errorf("invalid security rule type %q", r.Type)
-	}
-}
-
 var comparisonModesMap = map[string]runtimev1.ExploreComparisonMode{
 	"":          runtimev1.ExploreComparisonMode_EXPLORE_COMPARISON_MODE_UNSPECIFIED,
 	"none":      runtimev1.ExploreComparisonMode_EXPLORE_COMPARISON_MODE_NONE,
@@ -542,6 +293,16 @@ func (p *Parser) parseMetricsView(node *Node) error {
 
 		if (dim.Column == "" && dim.Expression == "") || (dim.Column != "" && dim.Expression != "") {
 			return fmt.Errorf("exactly one of column or expression should be set for dimension: %q", dim.Name)
+		}
+
+		// Validate the lookup table fields
+		if dim.LookupTable != "" || dim.LookupKeyColumn != "" || dim.LookupValueColumn != "" {
+			if dim.LookupTable == "" || dim.LookupKeyColumn == "" || dim.LookupValueColumn == "" {
+				return fmt.Errorf("all lookup fields should be defined (lookup_table, lookup_key_column and lookup_value_column should be defined")
+			}
+			if strings.Contains(dim.Expression, "dictGet") {
+				return fmt.Errorf("dictGet expression and lookup fields cannot be used together")
+			}
 		}
 
 		lower := strings.ToLower(dim.Name)
@@ -758,6 +519,17 @@ func (p *Parser) parseMetricsView(node *Node) error {
 		}
 	}
 
+	// Gather all lookup table names
+	var lookupTableNames map[string]bool
+	for _, dim := range tmp.Dimensions {
+		if dim != nil && dim.LookupTable != "" {
+			if lookupTableNames == nil {
+				lookupTableNames = make(map[string]bool)
+			}
+			lookupTableNames[dim.LookupTable] = true
+		}
+	}
+
 	securityRules, err := tmp.Security.Proto()
 	if err != nil {
 		return err
@@ -772,6 +544,13 @@ func (p *Parser) parseMetricsView(node *Node) error {
 		// We may want to remove this at some point, but the cases where it would not be desired are very rare.
 		// Not setting Kind so that inference kicks in.
 		node.Refs = append(node.Refs, ResourceName{Name: tmp.Table})
+	}
+
+	// Attempt to link the lookup tables in the DAG in case they are models.
+	// If they are not models, the upstream logic for refs will filter them out.
+	for lookupTable := range lookupTableNames {
+		// Not setting Kind so that inference kicks in.
+		node.Refs = append(node.Refs, ResourceName{Name: lookupTable})
 	}
 
 	if tmp.DefaultTheme != "" {
@@ -809,6 +588,7 @@ func (p *Parser) parseMetricsView(node *Node) error {
 		spec.DisplayName = ToDisplayName(node.Name)
 	}
 	spec.Description = tmp.Description
+	spec.AiContext = tmp.AIContext
 	spec.TimeDimension = tmp.TimeDimension
 	spec.WatermarkExpression = tmp.Watermark
 	spec.SmallestTimeGrain = smallestTimeGrain
@@ -821,13 +601,17 @@ func (p *Parser) parseMetricsView(node *Node) error {
 		}
 
 		spec.Dimensions = append(spec.Dimensions, &runtimev1.MetricsViewSpec_Dimension{
-			Name:        dim.Name,
-			DisplayName: dim.DisplayName,
-			Description: dim.Description,
-			Column:      dim.Column,
-			Expression:  dim.Expression,
-			Unnest:      dim.Unnest,
-			Uri:         dim.URI,
+			Name:                    dim.Name,
+			DisplayName:             dim.DisplayName,
+			Description:             dim.Description,
+			Column:                  dim.Column,
+			Expression:              dim.Expression,
+			Unnest:                  dim.Unnest,
+			Uri:                     dim.URI,
+			LookupTable:             dim.LookupTable,
+			LookupKeyColumn:         dim.LookupKeyColumn,
+			LookupValueColumn:       dim.LookupValueColumn,
+			LookupDefaultExpression: dim.LookupDefaultExpression,
 		})
 	}
 
@@ -902,6 +686,9 @@ func (p *Parser) parseMetricsView(node *Node) error {
 		ComparisonMode:      comparisonModesMap[tmp.DefaultComparison.Mode],
 		ComparisonDimension: compareDim,
 	}
+	// Backwards compatibility: explore parser will default to true so also emit true on the emitted explore spec
+	e.ExploreSpec.AllowCustomTimeRange = true
+	e.ExploreSpec.DefinedInMetricsView = true
 
 	return nil
 }

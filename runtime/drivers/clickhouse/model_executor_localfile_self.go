@@ -9,26 +9,22 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/marcboeker/go-duckdb"
+	"github.com/marcboeker/go-duckdb/v2"
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 )
 
-type localFileToSelfExecutor struct {
-	fileStore drivers.Handle
-	c         *connection
-}
-
-var _ drivers.ModelExecutor = &selfToSelfExecutor{}
-
 type localInputProps struct {
 	Format string `mapstructure:"format"`
 }
 
-func (p *localInputProps) Validate() error {
-	return nil
+type localFileToSelfExecutor struct {
+	fileStore drivers.Handle
+	c         *Connection
 }
+
+var _ drivers.ModelExecutor = &selfToSelfExecutor{}
 
 func (e *localFileToSelfExecutor) Concurrency(desired int) (int, bool) {
 	if desired > 1 {
@@ -43,26 +39,33 @@ func (e *localFileToSelfExecutor) Execute(ctx context.Context, opts *drivers.Mod
 		return nil, fmt.Errorf("input handle %q does not implement filestore", opts.InputHandle.Driver())
 	}
 
-	// parse and validate input properties
+	if opts.IncrementalRun {
+		return nil, fmt.Errorf("clickhouse: incremental models are not supported for local_file connector")
+	}
+
+	// Parse the input and output properties
 	inputProps := &localInputProps{}
 	if err := mapstructure.WeakDecode(opts.InputProperties, inputProps); err != nil {
 		return nil, fmt.Errorf("failed to parse input properties: %w", err)
 	}
-	if err := inputProps.Validate(); err != nil {
-		return nil, fmt.Errorf("invalid input properties: %w", err)
-	}
-
-	// parse and validate output properties
 	outputProps := &ModelOutputProperties{}
 	if err := mapstructure.WeakDecode(opts.OutputProperties, outputProps); err != nil {
 		return nil, fmt.Errorf("failed to parse output properties: %w", err)
 	}
-	if outputProps.Typ == "" && outputProps.Materialize == nil {
-		outputProps.Materialize = boolptr(true)
+
+	// Require materialization for local_file
+	if outputProps.Materialize != nil && !*outputProps.Materialize {
+		return nil, fmt.Errorf("models with input connector `local_file` must be materialized")
 	}
-	if err := outputProps.Validate(opts); err != nil {
-		return nil, fmt.Errorf("invalid output properties: %w", err)
+	outputProps.Materialize = boolptr(true)
+
+	// Validate the output properties
+	err := e.c.validateAndApplyDefaults(opts, nil, outputProps)
+	if err != nil {
+		return nil, fmt.Errorf("invalid model properties: %w", err)
 	}
+
+	// Extra validation: the model should be a table or dictionary
 	if outputProps.Typ != "TABLE" && outputProps.Typ != "DICTIONARY" {
 		return nil, fmt.Errorf("models with input connector `local_file` must be materialized as `TABLE` or `DICTIONARY`")
 	}
@@ -76,6 +79,7 @@ func (e *localFileToSelfExecutor) Execute(ctx context.Context, opts *drivers.Mod
 		return nil, fmt.Errorf("no files to ingest")
 	}
 
+	// Infer the format if not provided
 	if inputProps.Format == "" {
 		inputProps.Format, err = fileExtToFormat(fileutil.FullExt(localPaths[0]))
 		if err != nil {
@@ -83,6 +87,7 @@ func (e *localFileToSelfExecutor) Execute(ctx context.Context, opts *drivers.Mod
 		}
 	}
 
+	// Infer the schema if not provided
 	if outputProps.Columns == "" {
 		outputProps.Columns, err = e.inferColumns(ctx, opts, inputProps.Format, localPaths)
 		if err != nil {
@@ -103,12 +108,12 @@ func (e *localFileToSelfExecutor) Execute(ctx context.Context, opts *drivers.Mod
 	if opts.Env.StageChanges || outputProps.Typ == "DICTIONARY" {
 		stagingTableName = stagingTableNameFor(tableName)
 	}
-	_ = e.c.DropTable(ctx, stagingTableName)
+	_ = e.c.dropTable(ctx, stagingTableName)
 
 	// create the table
 	err = e.c.createTable(ctx, stagingTableName, "", outputProps)
 	if err != nil {
-		_ = e.c.DropTable(ctx, stagingTableName)
+		_ = e.c.dropTable(ctx, stagingTableName)
 		return nil, fmt.Errorf("failed to create model: %w", err)
 	}
 
@@ -129,13 +134,13 @@ func (e *localFileToSelfExecutor) Execute(ctx context.Context, opts *drivers.Mod
 	if outputProps.Typ == "DICTIONARY" {
 		err = e.c.createDictionary(ctx, tableName, fmt.Sprintf("SELECT * FROM %s", safeSQLName(stagingTableName)), outputProps)
 		// drop the temp table
-		_ = e.c.DropTable(ctx, stagingTableName)
+		_ = e.c.dropTable(ctx, stagingTableName)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create dictionary: %w", err)
 		}
 	} else if stagingTableName != tableName {
 		// Rename the staging table to the final table name
-		err = olapForceRenameTable(ctx, e.c, stagingTableName, false, tableName)
+		err = e.c.forceRenameTable(ctx, stagingTableName, false, tableName)
 		if err != nil {
 			return nil, fmt.Errorf("failed to rename staged model: %w", err)
 		}
@@ -146,6 +151,7 @@ func (e *localFileToSelfExecutor) Execute(ctx context.Context, opts *drivers.Mod
 	err = mapstructure.WeakDecode(&ModelResultProperties{
 		Table:         tableName,
 		View:          false,
+		Typ:           outputProps.Typ,
 		UsedModelName: usedModelName,
 	}, &resultPropsMap)
 	if err != nil {

@@ -1,15 +1,15 @@
 <script lang="ts">
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
-  import { chartMetadata } from "@rilldata/web-common/features/canvas/components/charts/util";
   import { Plus, PlusCircle } from "lucide-svelte";
   import type { ComponentType, SvelteComponent } from "svelte";
+  import { CHART_TYPES } from "./components/charts";
   import type { ChartType } from "./components/charts/types";
   import type { CanvasComponentType } from "./components/types";
   import BigNumberIcon from "./icons/BigNumberIcon.svelte";
   import ChartIcon from "./icons/ChartIcon.svelte";
+  import LeaderboardIcon from "./icons/LeaderboardIcon.svelte";
   import TableIcon from "./icons/TableIcon.svelte";
   import TextIcon from "./icons/TextIcon.svelte";
-
   type MenuItem = {
     id: CanvasComponentType;
     label: string;
@@ -18,11 +18,11 @@
 
   // Function to get a random chart type
   function getRandomChartType(): ChartType {
-    const chartTypes = chartMetadata
-      .map((chart) => chart.type)
-      .filter((t) => t !== "stacked_bar_normalized");
+    const chartTypes = CHART_TYPES.filter(
+      (t) => t !== "stacked_bar_normalized",
+    );
     const randomIndex = Math.floor(Math.random() * chartTypes.length);
-    return chartTypes[randomIndex];
+    return chartTypes[randomIndex] as ChartType;
   }
 
   // Create menu items with a function to get random chart type when clicked
@@ -31,6 +31,7 @@
     { id: "table", label: "Table", icon: TableIcon },
     { id: "markdown", label: "Text", icon: TextIcon },
     { id: "kpi_grid", label: "KPI", icon: BigNumberIcon },
+    { id: "leaderboard", label: "Leaderboard", icon: LeaderboardIcon },
     { id: "image", label: "Image", icon: ChartIcon },
   ];
 

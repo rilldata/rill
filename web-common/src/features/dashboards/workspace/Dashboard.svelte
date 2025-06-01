@@ -8,7 +8,9 @@
   import Resizer from "@rilldata/web-common/layout/Resizer.svelte";
   import { onMount, tick } from "svelte";
   import { useExploreState } from "web-common/src/features/dashboards/stores/dashboard-stores";
+  import { DashboardState_ActivePage } from "../../../proto/gen/rill/ui/v1/dashboard_pb";
   import { runtime } from "../../../runtime-client/runtime-store";
+  import CellInspector from "@rilldata/web-common/components/CellInspector.svelte";
   import MeasuresContainer from "../big-number/MeasuresContainer.svelte";
   import DimensionDisplay from "../dimension-table/DimensionDisplay.svelte";
   import Filters from "../filters/Filters.svelte";
@@ -29,30 +31,18 @@
   const StateManagers = getStateManagers();
   const {
     selectors: {
-      measures: {
-        visibleMeasures,
-        leaderboardSortByMeasureName,
-        activeMeasuresFromMeasureCount,
-      },
+      measures: { visibleMeasures },
       dimensions: { getDimensionByName },
       pivot: { showPivot },
     },
     dashboardStore,
   } = StateManagers;
 
-  const {
-    cloudDataViewer,
-    readOnly,
-    leaderboardMeasureCount: leaderboardMeasureCountFeatureFlag,
-  } = featureFlags;
+  const { cloudDataViewer, readOnly } = featureFlags;
 
   const timeControlsStore = useTimeControlStore(StateManagers);
 
   let exploreContainerWidth: number;
-
-  $: leaderboardMeasureNames = $leaderboardMeasureCountFeatureFlag
-    ? $activeMeasuresFromMeasureCount
-    : [$leaderboardSortByMeasureName];
 
   $: ({ instanceId } = $runtime);
 
@@ -61,6 +51,14 @@
   $: extraLeftPadding = !$navigationOpen;
 
   $: exploreState = useExploreState(exploreName);
+
+  $: activePage = $exploreState?.activePage;
+  $: showTimeDimensionDetail = Boolean(
+    activePage === DashboardState_ActivePage.TIME_DIMENSIONAL_DETAIL,
+  );
+  $: showDimensionTable = Boolean(
+    activePage === DashboardState_ActivePage.DIMENSION_TABLE,
+  );
 
   $: selectedDimensionName = $exploreState?.selectedDimensionName;
   $: selectedDimension =
@@ -124,7 +122,7 @@
 
   $: if (initEmbedPublicAPI) {
     try {
-      initEmbedPublicAPI(instanceId);
+      initEmbedPublicAPI();
     } catch (error) {
       console.error("Error running initEmbedPublicAPI:", error);
     }
@@ -166,13 +164,13 @@
   {:else}
     <div
       class="flex gap-x-1 gap-y-2 size-full overflow-hidden pl-4 slide bg-surface"
-      class:flex-col={expandedMeasureName}
-      class:flex-row={!expandedMeasureName}
+      class:flex-col={showTimeDimensionDetail}
+      class:flex-row={!showTimeDimensionDetail}
       class:left-shift={extraLeftPadding}
     >
       <div
         class="pt-2 flex-none"
-        style:width={expandedMeasureName ? "auto" : `${metricsWidth}px`}
+        style:width={showTimeDimensionDetail ? "auto" : `${metricsWidth}px`}
       >
         {#key exploreName}
           {#if hasTimeSeries}
@@ -188,7 +186,7 @@
         {/key}
       </div>
 
-      {#if expandedMeasureName}
+      {#if showTimeDimensionDetail && expandedMeasureName}
         <hr class="border-t border-gray-200 -ml-4" />
         <TimeDimensionDisplay
           {exploreName}
@@ -210,7 +208,7 @@
           />
         </div>
         <div class="pt-2 pl-1 overflow-auto w-full">
-          {#if selectedDimension}
+          {#if showDimensionTable && selectedDimension}
             <DimensionDisplay
               dimension={selectedDimension}
               {metricsViewName}
@@ -218,7 +216,6 @@
               {dimensionThresholdFilters}
               {timeRange}
               {comparisonTimeRange}
-              activeMeasureName={$leaderboardSortByMeasureName}
               {timeControlsReady}
               {visibleMeasureNames}
               hideStartPivotButton={hidePivot}
@@ -226,8 +223,6 @@
           {:else}
             <LeaderboardDisplay
               {metricsViewName}
-              activeMeasureName={$leaderboardSortByMeasureName}
-              {leaderboardMeasureNames}
               {whereFilter}
               {dimensionThresholdFilters}
               {timeRange}
@@ -239,9 +234,11 @@
       {/if}
     </div>
   {/if}
+
+  <CellInspector />
 </article>
 
-{#if (isRillDeveloper || $cloudDataViewer) && !expandedMeasureName && !mockUserHasNoAccess}
+{#if (isRillDeveloper || $cloudDataViewer) && !showTimeDimensionDetail && !mockUserHasNoAccess}
   <RowsViewerAccordion {metricsViewName} {exploreName} />
 {/if}
 

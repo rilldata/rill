@@ -6,6 +6,8 @@ import (
 	"fmt"
 
 	"github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/sts"
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
@@ -28,6 +30,42 @@ var spec = drivers.Spec{
 			Type:   drivers.StringPropertyType,
 			Secret: true,
 		},
+		{
+			Key:         "region",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "Region",
+			Description: "AWS Region for the bucket.",
+			Placeholder: "us-east-1",
+			Required:    false,
+			Hint:        "Rill will use the default region in your local AWS config, unless set here.",
+		},
+		{
+			Key:         "endpoint",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "Endpoint",
+			Description: "Override S3 endpoint URL",
+			Placeholder: "https://s3.example.com",
+			Required:    false,
+			Hint:        "Overrides the S3 endpoint to connect to. This should only be used to connect to S3 compatible services, such as Cloudflare R2 or MinIO.",
+		},
+		{
+			Key:         "aws_role_arn",
+			Type:        drivers.StringPropertyType,
+			Secret:      true,
+			Description: "AWS Role ARN to assume",
+		},
+		{
+			Key:         "aws_role_session_name",
+			Type:        drivers.StringPropertyType,
+			Secret:      true,
+			Description: "Optional session name to use when assuming an AWS role. Defaults to 'rill-session'.",
+		},
+		{
+			Key:         "aws_external_id",
+			Type:        drivers.StringPropertyType,
+			Secret:      true,
+			Description: "Optional external ID to use when assuming an AWS role for cross-account access.",
+		},
 	},
 	SourceProperties: []*drivers.PropertySpec{
 		{
@@ -40,38 +78,12 @@ var spec = drivers.Spec{
 			Hint:        "Glob patterns are supported",
 		},
 		{
-			Key:         "region",
-			Type:        drivers.StringPropertyType,
-			DisplayName: "AWS region",
-			Description: "AWS Region for the bucket.",
-			Placeholder: "us-east-1",
-			Required:    false,
-			Hint:        "Rill will use the default region in your local AWS config, unless set here.",
-		},
-		{
-			Key:         "endpoint",
-			Type:        drivers.StringPropertyType,
-			DisplayName: "Endpoint URL",
-			Description: "Override S3 Endpoint URL",
-			Placeholder: "https://my.s3.server.com",
-			Required:    false,
-			Hint:        "Overrides the S3 endpoint to connect to. This should only be used to connect to S3-compatible services, such as Cloudflare R2 or MinIO.",
-		},
-		{
 			Key:         "name",
 			Type:        drivers.StringPropertyType,
 			DisplayName: "Source name",
 			Description: "The name of the source",
 			Placeholder: "my_new_source",
 			Required:    true,
-		},
-		{
-			Key:         "aws.credentials",
-			Type:        drivers.InformationalPropertyType,
-			DisplayName: "AWS credentials",
-			Description: "AWS credentials inferred from your local environment.",
-			Hint:        "Set your local credentials: <code>aws configure</code> Click to learn more.",
-			DocsURL:     "https://docs.rilldata.com/reference/connectors/s3#local-credentials",
 		},
 	},
 	ImplementsObjectStore: true,
@@ -92,10 +104,12 @@ type ConfigProperties struct {
 	AccessKeyID     string `mapstructure:"aws_access_key_id"`
 	SecretAccessKey string `mapstructure:"aws_secret_access_key"`
 	SessionToken    string `mapstructure:"aws_access_token"`
-	Endpoint        string `mapstructure:"endpoint"`
 	Region          string `mapstructure:"region"`
+	Endpoint        string `mapstructure:"endpoint"`
+	RoleARN         string `mapstructure:"aws_role_arn"`
+	RoleSessionName string `mapstructure:"aws_role_session_name"`
+	ExternalID      string `mapstructure:"aws_external_id"`
 	AllowHostAccess bool   `mapstructure:"allow_host_access"`
-	RetainFiles     bool   `mapstructure:"retain_files"`
 }
 
 // Open implements drivers.Driver
@@ -123,23 +137,7 @@ func (d driver) Spec() drivers.Spec {
 }
 
 func (d driver) HasAnonymousSourceAccess(ctx context.Context, props map[string]any, logger *zap.Logger) (bool, error) {
-	conf, err := parseSourceProperties(props)
-	if err != nil {
-		return false, fmt.Errorf("failed to parse config: %w", err)
-	}
-
-	conn := &Connection{
-		config: &ConfigProperties{},
-		logger: logger,
-	}
-
-	bucketObj, err := conn.openBucket(ctx, conf, conf.url.Host, credentials.AnonymousCredentials)
-	if err != nil {
-		return false, fmt.Errorf("failed to open bucket %q, %w", conf.url.Host, err)
-	}
-	defer bucketObj.Close()
-
-	return bucketObj.IsAccessible(ctx)
+	return false, nil
 }
 
 func (d driver) TertiarySourceConnectors(ctx context.Context, src map[string]any, logger *zap.Logger) ([]string, error) {
@@ -147,7 +145,6 @@ func (d driver) TertiarySourceConnectors(ctx context.Context, src map[string]any
 }
 
 type Connection struct {
-	// config is input configs passed to driver.Open
 	config  *ConfigProperties
 	storage *storage.Client
 	logger  *zap.Logger
@@ -251,8 +248,16 @@ func (c *Connection) AsNotifier(properties map[string]any) (drivers.Notifier, er
 }
 
 // newCredentials returns credentials for connecting to AWS.
-// If AllowHostAccess is enabled, it looks for credentials in the host machine as well.
 func (c *Connection) newCredentials() (*credentials.Credentials, error) {
+	// If a role ARN is provided, assume the role and return the credentials.
+	if c.config.RoleARN != "" {
+		assumedCreds, err := c.assumeRole()
+		if err != nil {
+			return nil, fmt.Errorf("failed to assume role: %w", err)
+		}
+		return assumedCreds, nil
+	}
+
 	providers := make([]credentials.Provider, 0)
 
 	staticProvider := &credentials.StaticProvider{}
@@ -281,4 +286,64 @@ func (c *Connection) newCredentials() (*credentials.Credentials, error) {
 	}
 
 	return creds, nil
+}
+
+// assumeRole returns a new credentials object that assumes the role specified by the ARN.
+func (c *Connection) assumeRole() (*credentials.Credentials, error) {
+	// Add session name if specified
+	sessionName := c.config.RoleSessionName
+	if sessionName == "" {
+		sessionName = "rill-session"
+	}
+
+	sessOpts := session.Options{
+		SharedConfigState: session.SharedConfigDisable, // Disable shared config to prevent loading default config
+	}
+
+	// Add region if specified
+	if c.config.Region != "" {
+		sessOpts.Config.Region = &c.config.Region
+	}
+
+	// Add credentials if provided
+	if c.config.AccessKeyID != "" && c.config.SecretAccessKey != "" {
+		sessOpts.Config.Credentials = credentials.NewStaticCredentials(
+			c.config.AccessKeyID,
+			c.config.SecretAccessKey,
+			c.config.SessionToken,
+		)
+	}
+
+	// Create session with explicit configuration
+	s, err := session.NewSessionWithOptions(sessOpts)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create AWS session: %w", err)
+	}
+
+	// Create STS client with explicit session
+	stsClient := sts.New(s)
+
+	// Create assume role input with explicit parameters
+	assumeRoleInput := &sts.AssumeRoleInput{
+		RoleArn:         &c.config.RoleARN,
+		RoleSessionName: &sessionName,
+	}
+
+	// Add external ID if provided to mitigate confused deputy problem
+	if c.config.ExternalID != "" {
+		assumeRoleInput.ExternalId = &c.config.ExternalID
+	}
+
+	// Assume the role
+	result, err := stsClient.AssumeRole(assumeRoleInput)
+	if err != nil {
+		return nil, fmt.Errorf("failed to assume role: %w", err)
+	}
+
+	// Return static credentials from the assumed role
+	return credentials.NewStaticCredentials(
+		*result.Credentials.AccessKeyId,
+		*result.Credentials.SecretAccessKey,
+		*result.Credentials.SessionToken,
+	), nil
 }

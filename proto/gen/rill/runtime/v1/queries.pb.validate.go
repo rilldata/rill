@@ -695,6 +695,39 @@ func (m *ExportRequest) validate(all bool) error {
 
 	// no validation rules for BakedQuery
 
+	// no validation rules for IncludeHeader
+
+	if all {
+		switch v := interface{}(m.GetOriginDashboard()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, ExportRequestValidationError{
+					field:  "OriginDashboard",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, ExportRequestValidationError{
+					field:  "OriginDashboard",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetOriginDashboard()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return ExportRequestValidationError{
+				field:  "OriginDashboard",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	// no validation rules for OriginUrl
+
 	if len(errors) > 0 {
 		return ExportRequestMultiError(errors)
 	}
@@ -901,10 +934,6 @@ func (m *ExportReportRequest) validate(all bool) error {
 
 	// no validation rules for Report
 
-	// no validation rules for Limit
-
-	// no validation rules for Format
-
 	if all {
 		switch v := interface{}(m.GetExecutionTime()).(type) {
 		case interface{ ValidateAll() error }:
@@ -933,6 +962,8 @@ func (m *ExportReportRequest) validate(all bool) error {
 			}
 		}
 	}
+
+	// no validation rules for OriginBaseUrl
 
 	if len(errors) > 0 {
 		return ExportReportRequestMultiError(errors)
@@ -3288,6 +3319,8 @@ func (m *MetricsViewAggregationRequest) validate(all bool) error {
 	// no validation rules for Exact
 
 	// no validation rules for FillMissing
+
+	// no validation rules for Rows
 
 	if len(errors) > 0 {
 		return MetricsViewAggregationRequestMultiError(errors)
@@ -9614,6 +9647,8 @@ func (m *MetricsViewTimeRangesRequest) validate(all bool) error {
 	}
 
 	// no validation rules for Priority
+
+	// no validation rules for TimeZone
 
 	if len(errors) > 0 {
 		return MetricsViewTimeRangesRequestMultiError(errors)

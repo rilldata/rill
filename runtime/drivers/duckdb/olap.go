@@ -7,11 +7,8 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/jmoiron/sqlx"
-	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/observability"
-	"github.com/rilldata/rill/runtime/pkg/rduckdb"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
@@ -32,14 +29,18 @@ func (c *connection) Dialect() drivers.Dialect {
 	return drivers.DialectDuckDB
 }
 
-func (c *connection) WithConnection(ctx context.Context, priority int, longRunning bool, fn drivers.WithConnectionFunc) error {
+func (c *connection) MayBeScaledToZero(ctx context.Context) bool {
+	return false
+}
+
+func (c *connection) WithConnection(ctx context.Context, priority int, fn drivers.WithConnectionFunc) error {
 	// Check not nested
 	if connFromContext(ctx) != nil {
 		panic("nested WithConnection")
 	}
 
 	// Acquire connection
-	conn, release, err := c.acquireOLAPConn(ctx, priority, longRunning)
+	conn, release, err := c.acquireOLAPConn(ctx, priority, false)
 	if err != nil {
 		return err
 	}
@@ -52,7 +53,7 @@ func (c *connection) WithConnection(ctx context.Context, priority int, longRunni
 }
 
 func (c *connection) Exec(ctx context.Context, stmt *drivers.Statement) error {
-	res, err := c.Execute(ctx, stmt)
+	res, err := c.Query(ctx, stmt)
 	if err != nil {
 		return err
 	}
@@ -63,7 +64,7 @@ func (c *connection) Exec(ctx context.Context, stmt *drivers.Statement) error {
 	return c.checkErr(err)
 }
 
-func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (res *drivers.Result, outErr error) {
+func (c *connection) Query(ctx context.Context, stmt *drivers.Statement) (res *drivers.Result, outErr error) {
 	// Log query if enabled (usually disabled)
 	if c.config.LogQueries {
 		c.logger.Info("duckdb query", zap.String("sql", stmt.Query), zap.Any("args", stmt.Args), observability.ZapCtx(ctx))
@@ -123,7 +124,7 @@ func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (res 
 	}()
 
 	// Acquire connection
-	conn, release, err := c.acquireOLAPConn(ctx, stmt.Priority, stmt.LongRunning)
+	conn, release, err := c.acquireOLAPConn(ctx, stmt.Priority, false)
 	acquiredTime = time.Now()
 	if err != nil {
 		return nil, err
@@ -150,7 +151,7 @@ func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (res 
 		return nil, err
 	}
 
-	schema, err := RowsToSchema(rows)
+	schema, err := rowsToSchema(rows)
 	if err != nil {
 		if cancelFunc != nil {
 			cancelFunc()
@@ -183,245 +184,4 @@ func (c *connection) estimateSize() int64 {
 	size := db.Size()
 	_ = release()
 	return size
-}
-
-// AddTableColumn implements drivers.OLAPStore.
-func (c *connection) AddTableColumn(ctx context.Context, tableName, columnName, typ string) error {
-	db, release, err := c.acquireDB()
-	if err != nil {
-		return err
-	}
-	defer func() {
-		_ = release()
-	}()
-
-	_, err = db.MutateTable(ctx, tableName, nil, func(ctx context.Context, conn *sqlx.Conn) error {
-		_, err := conn.ExecContext(ctx, fmt.Sprintf("ALTER TABLE %s ADD COLUMN %s %s", safeSQLName(tableName), safeSQLName(columnName), typ))
-		return err
-	})
-	return c.checkErr(err)
-}
-
-// AlterTableColumn implements drivers.OLAPStore.
-func (c *connection) AlterTableColumn(ctx context.Context, tableName, columnName, newType string) error {
-	db, release, err := c.acquireDB()
-	if err != nil {
-		return err
-	}
-	defer func() {
-		_ = release()
-	}()
-
-	_, err = db.MutateTable(ctx, tableName, nil, func(ctx context.Context, conn *sqlx.Conn) error {
-		_, err := conn.ExecContext(ctx, fmt.Sprintf("ALTER TABLE %s ALTER %s TYPE %s", safeSQLName(tableName), safeSQLName(columnName), newType))
-		return err
-	})
-	return c.checkErr(err)
-}
-
-// CreateTableAsSelect implements drivers.OLAPStore.
-// We add a \n at the end of the any user query to ensure any comment at the end of model doesn't make the query incomplete.
-func (c *connection) CreateTableAsSelect(ctx context.Context, name, sql string, opts *drivers.CreateTableOptions) (*drivers.TableWriteMetrics, error) {
-	db, release, err := c.acquireDB()
-	if err != nil {
-		return nil, err
-	}
-	defer func() {
-		_ = release()
-	}()
-	var beforeCreateFn, afterCreateFn func(ctx context.Context, conn *sqlx.Conn) error
-	if opts.BeforeCreate != "" {
-		beforeCreateFn = func(ctx context.Context, conn *sqlx.Conn) error {
-			_, err := conn.ExecContext(ctx, opts.BeforeCreate)
-			return err
-		}
-	}
-	if opts.AfterCreate != "" {
-		afterCreateFn = func(ctx context.Context, conn *sqlx.Conn) error {
-			_, err := conn.ExecContext(ctx, opts.AfterCreate)
-			return err
-		}
-	}
-	res, err := db.CreateTableAsSelect(ctx, name, sql, &rduckdb.CreateTableOptions{
-		View:           opts.View,
-		InitQueries:    opts.InitQueries,
-		BeforeCreateFn: beforeCreateFn,
-		AfterCreateFn:  afterCreateFn,
-	})
-	if err != nil {
-		return nil, c.checkErr(err)
-	}
-	return &drivers.TableWriteMetrics{
-		Duration: res.Duration,
-	}, nil
-}
-
-// InsertTableAsSelect implements drivers.OLAPStore.
-func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, opts *drivers.InsertTableOptions) (*drivers.TableWriteMetrics, error) {
-	db, release, err := c.acquireDB()
-	if err != nil {
-		return nil, err
-	}
-	defer func() {
-		_ = release()
-	}()
-	var byNameClause string
-	if opts.ByName {
-		byNameClause = "BY NAME"
-	}
-
-	if opts.Strategy == drivers.IncrementalStrategyAppend {
-		res, err := db.MutateTable(ctx, name, opts.InitQueries, func(ctx context.Context, conn *sqlx.Conn) error {
-			if opts.BeforeInsert != "" {
-				_, err := conn.ExecContext(ctx, opts.BeforeInsert)
-				if err != nil {
-					return err
-				}
-			}
-			_, err := conn.ExecContext(ctx, fmt.Sprintf("INSERT INTO %s %s (%s\n)", safeSQLName(name), byNameClause, sql))
-			if opts.AfterInsert != "" {
-				_, afterInsertExecErr := conn.ExecContext(ctx, opts.AfterInsert)
-				return errors.Join(err, afterInsertExecErr)
-			}
-			return err
-		})
-		if err != nil {
-			return nil, c.checkErr(err)
-		}
-		return &drivers.TableWriteMetrics{
-			Duration: res.Duration,
-		}, nil
-	}
-
-	if opts.Strategy == drivers.IncrementalStrategyMerge {
-		res, err := db.MutateTable(ctx, name, opts.InitQueries, func(ctx context.Context, conn *sqlx.Conn) (mutate error) {
-			// Execute the pre-init SQL first
-			if opts.BeforeInsert != "" {
-				_, err := conn.ExecContext(ctx, opts.BeforeInsert)
-				if err != nil {
-					return err
-				}
-			}
-			defer func() {
-				if opts.AfterInsert != "" {
-					_, err := conn.ExecContext(ctx, opts.AfterInsert)
-					mutate = errors.Join(mutate, err)
-				}
-			}()
-			// Create a temporary table with the new data
-			tmp := uuid.New().String()
-			_, err := conn.ExecContext(ctx, fmt.Sprintf("CREATE TEMPORARY TABLE %s AS (%s\n)", safeSQLName(tmp), sql))
-			if err != nil {
-				return err
-			}
-
-			// check the count of the new data
-			// skip if the count is 0
-			// if there was no data in the empty file then the detected schema can be different from the current schema which leads to errors or performance issues
-			var empty bool
-			err = conn.QueryRowxContext(ctx, fmt.Sprintf("SELECT COUNT(*) == 0 FROM %s", safeSQLName(tmp))).Scan(&empty)
-			if err != nil {
-				return err
-			}
-			if empty {
-				return nil
-			}
-
-			// Drop the rows from the target table where the unique key is present in the temporary table
-			where := ""
-			for i, key := range opts.UniqueKey {
-				key = safeSQLName(key)
-				if i != 0 {
-					where += " AND "
-				}
-				where += fmt.Sprintf("base.%s IS NOT DISTINCT FROM tmp.%s", key, key)
-			}
-			_, err = conn.ExecContext(ctx, fmt.Sprintf("DELETE FROM %s base WHERE EXISTS (SELECT 1 FROM %s tmp WHERE %s)", safeSQLName(name), safeSQLName(tmp), where))
-			if err != nil {
-				return err
-			}
-
-			// Insert the new data into the target table
-			_, err = conn.ExecContext(ctx, fmt.Sprintf("INSERT INTO %s %s SELECT * FROM %s", safeSQLName(name), byNameClause, safeSQLName(tmp)))
-			return err
-		})
-		if err != nil {
-			return nil, c.checkErr(err)
-		}
-		return &drivers.TableWriteMetrics{
-			Duration: res.Duration,
-		}, nil
-	}
-
-	return nil, fmt.Errorf("incremental insert strategy %q not supported", opts.Strategy)
-}
-
-// DropTable implements drivers.OLAPStore.
-func (c *connection) DropTable(ctx context.Context, name string) error {
-	db, release, err := c.acquireDB()
-	if err != nil {
-		return err
-	}
-	defer func() {
-		_ = release()
-	}()
-	err = db.DropTable(ctx, name)
-	return c.checkErr(err)
-}
-
-// RenameTable implements drivers.OLAPStore.
-func (c *connection) RenameTable(ctx context.Context, oldName, newName string) error {
-	db, release, err := c.acquireDB()
-	if err != nil {
-		return err
-	}
-	defer func() {
-		_ = release()
-	}()
-	err = db.RenameTable(ctx, oldName, newName)
-	return c.checkErr(err)
-}
-
-func (c *connection) MayBeScaledToZero(ctx context.Context) bool {
-	return false
-}
-
-func RowsToSchema(r *sqlx.Rows) (*runtimev1.StructType, error) {
-	if r == nil {
-		return nil, nil
-	}
-
-	cts, err := r.ColumnTypes()
-	if err != nil {
-		return nil, err
-	}
-
-	fields := make([]*runtimev1.StructType_Field, len(cts))
-	for i, ct := range cts {
-		nullable, ok := ct.Nullable()
-		if !ok {
-			nullable = true
-		}
-
-		t, err := databaseTypeToPB(ct.DatabaseTypeName(), nullable)
-		if err != nil {
-			return nil, err
-		}
-
-		fields[i] = &runtimev1.StructType_Field{
-			Name: ct.Name(),
-			Type: t,
-		}
-	}
-
-	return &runtimev1.StructType{Fields: fields}, nil
-}
-
-// safeSQLName returns a quoted SQL identifier.
-func safeSQLName(name string) string {
-	return safeName(name)
-}
-
-func safeSQLString(name string) string {
-	return drivers.DialectDuckDB.EscapeStringValue(name)
 }

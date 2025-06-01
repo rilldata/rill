@@ -6,11 +6,26 @@ import (
 
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 )
 
 func init() {
 	runtime.RegisterResolverInitializer("builtin_sql", newBuiltinSQL)
-	runtime.RegisterBuiltinAPI("sql", "builtin_sql", nil)
+	runtime.RegisterBuiltinAPI(&runtime.BuiltinAPIOptions{
+		Name:               "sql",
+		Resolver:           "builtin_sql",
+		ResolverProperties: nil,
+		OpenAPISummary:     "Execute a raw SQL query. Access is restricted to admins.",
+		OpenAPIRequestSchema: `{
+			"type":"object",
+			"properties": {
+				"sql": {"type":"string"},
+				"connector": {"type":"string"}
+			},
+			"required":["sql"]
+		}`,
+	})
 }
 
 type builtinSQLArgs struct {
@@ -32,6 +47,15 @@ func newBuiltinSQL(ctx context.Context, opts *runtime.ResolverOptions) (runtime.
 	args := &builtinSQLArgs{}
 	if err := mapstructure.Decode(opts.Args, args); err != nil {
 		return nil, err
+	}
+
+	// Set the span attributes
+	span := trace.SpanFromContext(ctx)
+	if span.SpanContext().IsValid() {
+		span.SetAttributes(
+			attribute.String("sql", args.SQL),
+			attribute.String("connector", args.Connector),
+		)
 	}
 
 	// Rewrite to the regular SQL resolver

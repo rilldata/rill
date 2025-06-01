@@ -1,16 +1,15 @@
 import {
   mapExprToMeasureFilter,
   mapMeasureFilterToExpr,
-  type MeasureFilterEntry,
 } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
 import {
   createAndExpression,
   createSubQueryExpression,
   filterExpressions,
   isExpressionUnsupported,
-  isJoinerExpression,
+  removeWrapperAndOrExpression,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
-import type { DimensionThresholdFilter } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import type { DimensionThresholdFilter } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import type { V1Expression } from "@rilldata/web-common/runtime-client";
 
 export function mergeDimensionAndMeasureFilters(
@@ -39,21 +38,22 @@ export function splitWhereFilter(whereFilter: V1Expression | undefined) {
   const dimensionThresholdFilters: DimensionThresholdFilter[] = [];
   whereFilter?.cond?.exprs?.filter((e) => {
     const subqueryExpr = e.cond?.exprs?.[1];
-    if (subqueryExpr?.subquery) {
-      const filters = isJoinerExpression(subqueryExpr.subquery.having)
-        ? (subqueryExpr.subquery.having?.cond?.exprs
-            ?.map(mapExprToMeasureFilter)
-            .filter(Boolean) as MeasureFilterEntry[])
-        : [mapExprToMeasureFilter(subqueryExpr.subquery.having)];
 
+    // While all the types support multiple measure filters per dimension our UI doesn't allow this right now.
+    // So unwrap while trying to validate a measure filter.
+    const unwrappedHavingFilter = removeWrapperAndOrExpression(
+      subqueryExpr?.subquery?.having,
+    );
+    const mappedMeasureFilter = mapExprToMeasureFilter(unwrappedHavingFilter);
+    // If there is no valid measure filter at level one then we do not support it right now.
+    if (!mappedMeasureFilter) {
+      dimensionFilters.cond?.exprs?.push(e);
+    } else {
       dimensionThresholdFilters.push({
-        name: subqueryExpr.subquery.dimension ?? "",
-        filters: filters.filter(Boolean) as MeasureFilterEntry[],
+        name: subqueryExpr?.subquery?.dimension ?? "",
+        filters: [mappedMeasureFilter],
       });
-      return;
     }
-
-    dimensionFilters.cond?.exprs?.push(e);
   });
 
   return { dimensionFilters, dimensionThresholdFilters };

@@ -1,0 +1,48 @@
+expensive: true
+connectors:
+  - redshift
+project_files:
+  all_datatypes_duckdb.yaml:
+    type: model
+    connector: redshift
+    database: "test_db"
+    output_location: "s3://integration-test.rilldata.com/redshift_temp/"
+    workgroup: "integration-test-wg"
+    role_arn: "arn:aws:iam::248432388601:role/system/integration-test-rilldata-com"
+    region: "us-east-1"
+    sql: "select * from all_datatypes"
+    output:
+      connector: duckdb
+tests:
+  - name: query_all_results_duckdb
+    resolver: sql
+    properties:
+      sql: "select * from all_datatypes_duckdb order by id"
+    result_csv: |
+      id,boolean_col,int32_col,int64_col,float_col,double_col,string_col,decimal_col,date_col,timestamp_col,timestamptz_col,interval_year_month,interval_day_second,list_int_col,list_string_col,map_col,struct_col
+      1,true,123,1234567890,1.2300000190734863,123.456,"Hello, world!",99.99,2023-01-01,2023-01-01T12:34:56Z,2023-01-01T12:34:56Z,2 years 6 mons,10 days 12:30:15,"[1,2,3]","[""a"",""b"",""c""]","{""key1"":""value1"",""key2"":""value2""}","{""field1"":10,""field2"":""value""}"
+      2,false,0,0,0,0,,0,1970-01-01,1970-01-01T00:00:00Z,1970-01-01T00:00:00Z,00:00:00,00:00:00,[],[],{},{}
+      3,,,,,,,,,,,,,,,,
+  - name: describe_all_datatypes_duckdb
+    resolver: sql
+    properties:
+      sql: "describe all_datatypes_duckdb"
+    result_csv: |
+      column_name,column_type,null,key,default,extra
+      id,INTEGER,YES,,,
+      boolean_col,BOOLEAN,YES,,,
+      int32_col,INTEGER,YES,,,
+      int64_col,BIGINT,YES,,,
+      float_col,FLOAT,YES,,,
+      double_col,DOUBLE,YES,,,
+      string_col,VARCHAR,YES,,,
+      decimal_col,"DECIMAL(10,2)",YES,,,
+      date_col,DATE,YES,,,
+      timestamp_col,TIMESTAMP,YES,,,
+      timestamptz_col,TIMESTAMP,YES,,,
+      interval_year_month,VARCHAR,YES,,,
+      interval_day_second,VARCHAR,YES,,,
+      list_int_col,JSON,YES,,,
+      list_string_col,JSON,YES,,,
+      map_col,JSON,YES,,,
+      struct_col,JSON,YES,,,

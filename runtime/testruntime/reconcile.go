@@ -1,7 +1,10 @@
 package testruntime
 
 import (
+	"bytes"
 	"context"
+	"encoding/csv"
+	"encoding/json"
 	"fmt"
 	"strings"
 	"testing"
@@ -245,9 +248,128 @@ func RequireParseErrors(t testing.TB, rt *runtime.Runtime, id string, expectedPa
 	}
 }
 
+type RequireResolveOptions struct {
+	Resolver           string
+	Properties         map[string]any
+	Args               map[string]any
+	UserAttributes     map[string]any
+	SkipSecurityChecks bool
+
+	Result        []map[string]any
+	ResultCSV     string
+	ErrorContains string
+	Update        bool
+}
+
+func RequireResolve(t testing.TB, rt *runtime.Runtime, id string, opts *RequireResolveOptions) {
+	// Run the resolver.
+	ctx := context.Background()
+	res, err := rt.Resolve(ctx, &runtime.ResolveOptions{
+		InstanceID:         id,
+		Resolver:           opts.Resolver,
+		ResolverProperties: opts.Properties,
+		Args:               opts.Args,
+		Claims: &runtime.SecurityClaims{
+			UserAttributes: opts.UserAttributes,
+			SkipChecks:     opts.SkipSecurityChecks,
+		},
+	})
+
+	// If it succeeded, get the result rows.
+	// Does a JSON roundtrip to coerce to simple types (easier to compare).
+	var rows []map[string]any
+	if err == nil {
+		data, err2 := res.MarshalJSON()
+		if err2 != nil {
+			err = err2
+		} else {
+			err = json.Unmarshal(data, &rows)
+		}
+	}
+
+	// If the Update flag is set, update the results in opts instead of checking them.
+	// The caller can then access the updated values.
+	if opts.Update {
+		opts.Result = rows
+		opts.ResultCSV = resultToCSV(t, rows, res.Schema())
+		opts.ErrorContains = ""
+		if err != nil {
+			opts.ErrorContains = err.Error()
+		}
+		return
+	}
+
+	// Check if an error was expected.
+	if opts.ErrorContains != "" {
+		require.Error(t, err)
+		require.Contains(t, err.Error(), opts.ErrorContains)
+		return
+	}
+	require.NoError(t, err)
+
+	// We support expressing the expected result as a CSV string, which is more compact.
+	// Serialize the result to CSV and compare.
+	if opts.ResultCSV != "" {
+		actual := resultToCSV(t, rows, res.Schema())
+		require.Equal(t, strings.TrimSpace(opts.ResultCSV), strings.TrimSpace(actual))
+		return
+	}
+
+	// Compare the result rows to the expected result.
+	// Like for rows, we do a JSON roundtrip on the expected result (parsed from YAML) to coerce to simple types.
+	var expected []map[string]any
+	data, err := json.Marshal(opts.Result)
+	require.NoError(t, err)
+	err = json.Unmarshal(data, &expected)
+	require.NoError(t, err)
+	if len(expected) != 0 || len(rows) != 0 {
+		require.EqualValues(t, expected, rows)
+	}
+}
+
 func Must[T any](v T, err error) T {
 	if err != nil {
 		panic(err)
 	}
 	return v
+}
+
+// resultToCSV serializes the rows to a CSV formatted string.
+// It is derived from runtime/drivers/file/model_executor_olap_self.go#writeCSV.
+func resultToCSV(t testing.TB, rows []map[string]any, schema *runtimev1.StructType) string {
+	buf := &bytes.Buffer{}
+	w := csv.NewWriter(buf)
+
+	strs := make([]string, len(schema.Fields))
+	for i, f := range schema.Fields {
+		strs[i] = f.Name
+	}
+	err := w.Write(strs)
+	require.NoError(t, err)
+
+	for _, row := range rows {
+		for i, f := range schema.Fields {
+			v, ok := row[f.Name]
+			require.True(t, ok, "missing field %q", f.Name)
+
+			var s string
+			if v != nil {
+				if v2, ok := v.(string); ok {
+					s = v2
+				} else {
+					tmp, err := json.Marshal(v)
+					require.NoError(t, err)
+					s = string(tmp)
+				}
+			}
+
+			strs[i] = s
+		}
+
+		err = w.Write(strs)
+		require.NoError(t, err)
+	}
+
+	w.Flush()
+	return buf.String()
 }

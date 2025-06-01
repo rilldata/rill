@@ -10,13 +10,16 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"reflect"
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/queries"
 	"github.com/rilldata/rill/runtime/server/auth"
+	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
@@ -70,12 +73,34 @@ func (s *Server) ExportReport(ctx context.Context, req *runtimev1.ExportReportRe
 		return nil, fmt.Errorf("failed to build export request: %w", err)
 	}
 
+	// Parse contextual information from the report annotations.
+	var originDashboard *runtimev1.ResourceName
+	var originURL string
+	if rep.Spec.Annotations != nil {
+		if explore, ok := rep.Spec.Annotations["explore"]; ok && explore != "" {
+			originDashboard = &runtimev1.ResourceName{Kind: runtime.ResourceKindExplore, Name: explore}
+		}
+		if canvas, ok := rep.Spec.Annotations["canvas"]; ok && canvas != "" {
+			originDashboard = &runtimev1.ResourceName{Kind: runtime.ResourceKindCanvas, Name: canvas}
+		}
+		if openPath, ok := rep.Spec.Annotations["web_open_path"]; ok && openPath != "" {
+			var err error
+			originURL, err = url.JoinPath(req.OriginBaseUrl, openPath)
+			if err != nil {
+				s.logger.Error("ExportReport: failed to join origin URL path", zap.Error(err), zap.String("open_path", openPath), zap.String("origin_base_url", req.OriginBaseUrl), zap.String("report", req.Report), observability.ZapCtx(ctx))
+			}
+		}
+	}
+
 	// Note - We are passing caller's user attributes to generateDownloadToken which may not always be the creator's attributes in case of external user's magic token. This is different from the alerts use case.
 	tkn, err := s.generateDownloadToken(&runtimev1.ExportRequest{
-		InstanceId: req.InstanceId,
-		Limit:      req.Limit,
-		Format:     req.Format,
-		Query:      qry,
+		InstanceId:      req.InstanceId,
+		Limit:           int64(rep.Spec.ExportLimit),
+		Format:          rep.Spec.ExportFormat,
+		Query:           qry,
+		IncludeHeader:   rep.Spec.ExportIncludeHeader,
+		OriginDashboard: originDashboard,
+		OriginUrl:       originURL,
 	}, &runtime.SecurityClaims{UserAttributes: auth.GetClaims(ctx).SecurityClaims().UserAttributes})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to generate download token: %s", err.Error())
@@ -131,6 +156,7 @@ func (s *Server) downloadHandler(w http.ResponseWriter, req *http.Request) {
 			SecurityClaims:      claims,
 			Aliases:             r.Aliases,
 			Exact:               r.Exact,
+			Rows:                r.Rows,
 		}
 	case *runtimev1.Query_MetricsViewToplistRequest:
 		r := v.MetricsViewToplistRequest
@@ -183,6 +209,7 @@ func (s *Server) downloadHandler(w http.ResponseWriter, req *http.Request) {
 			TimeZone:           r.TimeZone,
 			MetricsView:        mv.ValidSpec,
 			ResolvedMVSecurity: security,
+			Streaming:          mv.Streaming,
 		}
 	case *runtimev1.Query_MetricsViewTimeSeriesRequest:
 		r := v.MetricsViewTimeSeriesRequest
@@ -223,9 +250,11 @@ func (s *Server) downloadHandler(w http.ResponseWriter, req *http.Request) {
 		}
 
 		q = &queries.TableHead{
-			TableName: r.TableName,
-			Limit:     int(r.Limit),
-			Result:    nil,
+			Connector:      r.Connector,
+			Database:       r.Database,
+			DatabaseSchema: r.DatabaseSchema,
+			TableName:      r.TableName,
+			Limit:          int(r.Limit),
 		}
 	default:
 		http.Error(w, fmt.Sprintf("unsupported request type: %s", reflect.TypeOf(v).Name()), http.StatusBadRequest)
@@ -255,6 +284,9 @@ func (s *Server) downloadHandler(w http.ResponseWriter, req *http.Request) {
 			}
 			return nil
 		},
+		IncludeHeader:   request.IncludeHeader,
+		OriginDashboard: request.OriginDashboard,
+		OriginURL:       request.OriginUrl,
 	})
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)

@@ -9,7 +9,7 @@ import (
 )
 
 type selfToSelfExecutor struct {
-	c *connection
+	c *Connection
 }
 
 var _ drivers.ModelExecutor = &selfToSelfExecutor{}
@@ -22,26 +22,20 @@ func (e *selfToSelfExecutor) Concurrency(desired int) (int, bool) {
 }
 
 func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExecuteOptions) (*drivers.ModelResult, error) {
+	// Parse the input and output properties
 	inputProps := &ModelInputProperties{}
 	if err := mapstructure.WeakDecode(opts.InputProperties, inputProps); err != nil {
 		return nil, fmt.Errorf("failed to parse input properties: %w", err)
 	}
-	if err := inputProps.Validate(); err != nil {
-		return nil, fmt.Errorf("invalid input properties: %w", err)
-	}
-
 	outputProps := &ModelOutputProperties{}
 	if err := mapstructure.WeakDecode(opts.OutputProperties, outputProps); err != nil {
 		return nil, fmt.Errorf("failed to parse output properties: %w", err)
 	}
-	if outputProps.Typ == "" && outputProps.Materialize == nil {
-		outputProps.Materialize = &opts.Env.DefaultMaterialize
-	}
-	if err := outputProps.Validate(opts); err != nil {
-		return nil, fmt.Errorf("invalid output properties: %w", err)
-	}
-	if outputProps.Typ != "DICTIONARY" && inputProps.SQL == "" {
-		return nil, fmt.Errorf("input SQL is required")
+
+	// Validate the output properties
+	err := e.c.validateAndApplyDefaults(opts, inputProps, outputProps)
+	if err != nil {
+		return nil, fmt.Errorf("invalid model properties: %w", err)
 	}
 
 	usedModelName := false
@@ -52,15 +46,8 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 
 	asView := outputProps.Typ == "VIEW"
 	tableName := outputProps.Table
-	if outputProps.QuerySettings != "" {
-		// Note: This will lead to failures if user sets settings both in query and output properties
-		inputProps.SQL = inputProps.SQL + " SETTINGS " + outputProps.QuerySettings
-	}
 
-	var (
-		metrics *drivers.TableWriteMetrics
-		err     error
-	)
+	var metrics *tableWriteMetrics
 	if !opts.IncrementalRun {
 		stagingTableName := tableName
 		if opts.Env.StageChanges {
@@ -69,35 +56,29 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 
 		// Drop the staging view/table if it exists.
 		// NOTE: This intentionally drops the end table if not staging changes.
-		_ = e.c.DropTable(ctx, stagingTableName)
+		_ = e.c.dropTable(ctx, stagingTableName)
 
 		// Create the table
-		opts := &drivers.CreateTableOptions{
-			View:      asView,
-			TableOpts: mustToMap(outputProps),
-		}
-		metrics, err = e.c.CreateTableAsSelect(ctx, stagingTableName, inputProps.SQL, opts)
+		var err error
+		metrics, err = e.c.createTableAsSelect(ctx, stagingTableName, inputProps.SQL, outputProps)
 		if err != nil {
-			_ = e.c.DropTable(ctx, stagingTableName)
+			_ = e.c.dropTable(ctx, stagingTableName)
 			return nil, fmt.Errorf("failed to create model: %w", err)
 		}
 
 		// Rename the staging table to the final table name
 		if stagingTableName != tableName {
-			err = olapForceRenameTable(ctx, e.c, stagingTableName, asView, tableName)
+			err = e.c.forceRenameTable(ctx, stagingTableName, asView, tableName)
 			if err != nil {
 				return nil, fmt.Errorf("failed to rename staged model: %w", err)
 			}
 		}
 	} else {
 		// Insert into the table
-		opts := &drivers.InsertTableOptions{
-			ByName:    false,
-			InPlace:   true,
-			Strategy:  outputProps.IncrementalStrategy,
-			UniqueKey: outputProps.UniqueKey,
-		}
-		metrics, err = e.c.InsertTableAsSelect(ctx, tableName, inputProps.SQL, opts)
+		var err error
+		metrics, err = e.c.insertTableAsSelect(ctx, tableName, inputProps.SQL, &InsertTableOptions{
+			Strategy: outputProps.IncrementalStrategy,
+		}, outputProps)
 		if err != nil {
 			return nil, fmt.Errorf("failed to incrementally insert into table: %w", err)
 		}
@@ -107,6 +88,7 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 	resultProps := &ModelResultProperties{
 		Table:         tableName,
 		View:          asView,
+		Typ:           outputProps.Typ,
 		UsedModelName: usedModelName,
 	}
 	resultPropsMap := map[string]interface{}{}
@@ -120,15 +102,6 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 		Connector:    opts.OutputConnector,
 		Properties:   resultPropsMap,
 		Table:        tableName,
-		ExecDuration: metrics.Duration,
+		ExecDuration: metrics.duration,
 	}, nil
-}
-
-func mustToMap(o *ModelOutputProperties) map[string]any {
-	m := make(map[string]any)
-	err := mapstructure.WeakDecode(o, &m)
-	if err != nil {
-		panic(fmt.Errorf("failed to encode output properties: %w", err))
-	}
-	return m
 }

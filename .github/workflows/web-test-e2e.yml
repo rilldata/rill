@@ -7,7 +7,6 @@ on:
       - "cli/**"
       - "runtime/**"
       - "web-admin/**"
-      - "web-auth/**"
       - "web-common/**"
       - "web-local/**"
   workflow_dispatch:
@@ -43,9 +42,6 @@ jobs:
               - "cli/**"
               - "runtime/**"
               - "web-admin/**"
-            auth:
-              - ".github/workflows/web-test-e2e.yml"
-              - "web-auth/**"
             local:
               - ".github/workflows/web-test-e2e.yml"
               - "cli/**"
@@ -83,7 +79,7 @@ jobs:
       - name: Set up NodeJS
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version-file: '.nvmrc'
 
       - name: NPM Install
         run: npm install
@@ -94,7 +90,7 @@ jobs:
       - name: Set up go for E2E
         uses: actions/setup-go@v5
         with:
-          go-version: 1.23
+          go-version: 1.24
 
       - name: Build and embed static UI
         if: matrix.name == 'web-local'

@@ -23,7 +23,7 @@ import {
   forEachIdentifier,
   getAllIdentifiers,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
-import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
 import { DashboardState_ActivePage } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import {
@@ -178,7 +178,7 @@ function exprHasComparison(expr: V1Expression) {
 async function mergeDashboardFromUrlState(
   queryClient: QueryClient,
   instanceId: string,
-  dashboard: MetricsExplorerEntity,
+  exploreState: ExploreState,
   metricsViewSpec: V1MetricsViewSpec,
   exploreSpec: V1ExploreSpec,
   urlState: string,
@@ -186,9 +186,9 @@ async function mergeDashboardFromUrlState(
   const schemaResp = await queryClient.fetchQuery({
     queryKey: getQueryServiceMetricsViewSchemaQueryKey(
       instanceId,
-      dashboard.name,
+      exploreState.name,
     ),
-    queryFn: () => queryServiceMetricsViewSchema(instanceId, dashboard.name),
+    queryFn: () => queryServiceMetricsViewSchema(instanceId, exploreState.name),
   });
   if (!schemaResp.schema) return;
 
@@ -199,6 +199,6 @@ async function mergeDashboardFromUrlState(
     schemaResp.schema,
   );
   for (const k in parsedDashboard) {
-    dashboard[k] = parsedDashboard[k];
+    exploreState[k] = parsedDashboard[k];
   }
 }

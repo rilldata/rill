@@ -32,7 +32,18 @@ var spec = drivers.Spec{
 	DisplayName: "ClickHouse",
 	Description: "Connect to ClickHouse.",
 	DocsURL:     "https://docs.rilldata.com/reference/olap-engines/clickhouse",
+	// Important: Any edits to the below properties must be accompanied by changes to the client-side form validation schemas.
 	ConfigProperties: []*drivers.PropertySpec{
+		{
+			Key:         "managed",
+			Type:        drivers.BooleanPropertyType,
+			Required:    false,
+			DisplayName: "Managed",
+			Description: "Use a managed ClickHouse instance. This will start an embedded ClickHouse server in development.",
+			Placeholder: "false",
+			Default:     "false",
+			NoPrompt:    true,
+		},
 		{
 			Key:         "dsn",
 			Type:        drivers.StringPropertyType,
@@ -76,6 +87,14 @@ var spec = drivers.Spec{
 			Secret:      true,
 		},
 		{
+			Key:         "database",
+			Type:        drivers.StringPropertyType,
+			Required:    false,
+			DisplayName: "Database",
+			Description: "Name of the ClickHouse database to connect to",
+			Placeholder: "default",
+		},
+		{
 			Key:         "ssl",
 			Type:        drivers.BooleanPropertyType,
 			Required:    true,
@@ -95,26 +114,37 @@ type configProperties struct {
 	// (In practice, this gets set on local and means we should start an embedded Clickhouse server).
 	Provision bool `mapstructure:"provision"`
 	// DSN is the connection string. Either DSN can be passed or the individual properties below can be set.
-	DSN      string `mapstructure:"dsn"`
+	DSN string `mapstructure:"dsn"`
+	// Host configuration. Should not be set if DSN is set.
+	Host string `mapstructure:"host"`
+	// Port configuration. Should not be set if DSN is set.
+	Port int `mapstructure:"port"`
+	// Username configuration. Should not be set if DSN is set.
 	Username string `mapstructure:"username"`
+	// Password configuration. Should not be set if DSN is set.
 	Password string `mapstructure:"password"`
-	Host     string `mapstructure:"host"`
-	Port     int    `mapstructure:"port"`
-	// Database specifies the name of the ClickHouse database within the cluster.
+	// Database configuration. Should not be set if DSN is set.
 	Database string `mapstructure:"database"`
-	// SSL determines whether secured connection need to be established. To be set when setting individual fields.
+	// DatabaseWhitelist is a comma separated list of databases to fetch in information_schema all calls.
+	// This is just a *quick hack* to avoid fetching all databases in the table list till we have a better solution.
+	// This does not list queries to other databases.
+	DatabaseWhitelist string `mapstructure:"database_whitelist"`
+	// SSL determines whether secured connection need to be established. Should not be set if DSN is set.
 	SSL bool `mapstructure:"ssl"`
-	// Cluster name. Required for running distributed queries.
+	// Cluster name. If a cluster is configured, Rill will create all models in the cluster as distributed tables.
 	Cluster string `mapstructure:"cluster"`
 	// LogQueries controls whether to log the raw SQL passed to OLAP.Execute.
 	LogQueries bool `mapstructure:"log_queries"`
-	// SettingsOverride override the default settings used in queries. One use case is to disable settings and set `readonly = 1` when using read-only user.
-	SettingsOverride string `mapstructure:"settings_override"`
+	// QuerySettingsOverride overrides the default query settings used for OLAP SELECT queries.
+	// Use cases include disabling settings or setting `readonly = 1` when using read-only user.
+	QuerySettingsOverride string `mapstructure:"query_settings_override"`
 	// EmbedPort is the port to run Clickhouse locally (0 is random port).
-	EmbedPort      int  `mapstructure:"embed_port"`
+	EmbedPort int `mapstructure:"embed_port"`
+	// CanScaleToZero indicates if the underlying Clickhouse service may scale to zero when idle.
+	// When set to true, we try to avoid too frequent non-user queries to the database (such as alert checks and fetching metrics).
 	CanScaleToZero bool `mapstructure:"can_scale_to_zero"`
 	// MaxOpenConns is the maximum number of open connections to the database.
-	// https://github.com/ClickHouse/clickhouse-go/blob/main/clickhouse_options.go
+	// See https://github.com/ClickHouse/clickhouse-go/blob/main/clickhouse_options.go
 	MaxOpenConns int `mapstructure:"max_open_conns"`
 	// MaxIdleConns is the maximum number of connections in the idle connection pool. Default is 5s.
 	MaxIdleConns int `mapstructure:"max_idle_conns"`
@@ -144,7 +174,6 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 	// build clickhouse options
 	var opts *clickhouse.Options
 	var embed *embedClickHouse
-	maxOpenConnections := 20 // based on observations
 	if conf.DSN != "" {
 		opts, err = clickhouse.ParseDSN(conf.DSN)
 		if err != nil {
@@ -170,54 +199,11 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 		}
 
 		// username password
-		if conf.Password != "" {
-			opts.Auth.Username = conf.Username
-			opts.Auth.Password = conf.Password
-		} else if conf.Username != "" {
-			opts.Auth.Username = conf.Username
-		}
+		opts.Auth.Username = conf.Username
+		opts.Auth.Password = conf.Password
 
 		// database
-		if conf.Database != "" {
-			opts.Auth.Database = conf.Database
-		}
-
-		// max_open_conns
-		if conf.MaxOpenConns != 0 {
-			maxOpenConnections = conf.MaxOpenConns
-		}
-
-		// max_idle_conns
-		if conf.MaxIdleConns != 0 {
-			opts.MaxIdleConns = conf.MaxIdleConns
-		}
-
-		// dial_timeout
-		if conf.DialTimeout != "" {
-			d, err := time.ParseDuration(conf.DialTimeout)
-			if err != nil {
-				return nil, fmt.Errorf("failed to parse dial_timeout: %w", err)
-			}
-			opts.DialTimeout = d
-		}
-
-		// conn_max_lifetime
-		if conf.ConnMaxLifetime != "" {
-			d, err := time.ParseDuration(conf.ConnMaxLifetime)
-			if err != nil {
-				return nil, fmt.Errorf("failed to parse conn_max_lifetime: %w", err)
-			}
-			opts.ConnMaxLifetime = d
-		}
-
-		// read_timeout
-		if conf.ReadTimeout != "" {
-			d, err := time.ParseDuration(conf.ReadTimeout)
-			if err != nil {
-				return nil, fmt.Errorf("failed to parse read_timeout: %w", err)
-			}
-			opts.ReadTimeout = d
-		}
+		opts.Auth.Database = conf.Database
 	} else if conf.Provision {
 		// run clickhouse locally
 		dataDir, err := st.DataDir(instanceID)
@@ -241,16 +227,42 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 		return nil, errors.New("no clickhouse connection configured: 'dsn', 'host' or 'managed: true' must be set")
 	}
 
-	// Apply our own defaults for the options.
-	// We increase timeouts to decrease the chance of dropped connections with scaled-to-zero ClickHouse.
-	if opts.DialTimeout == 0 {
+	// max_idle_conns
+	if conf.MaxIdleConns != 0 {
+		opts.MaxIdleConns = conf.MaxIdleConns
+	}
+
+	// conn_max_lifetime
+	if conf.ConnMaxLifetime != "" {
+		d, err := time.ParseDuration(conf.ConnMaxLifetime)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse conn_max_lifetime: %w", err)
+		}
+		opts.ConnMaxLifetime = d
+	}
+
+	// dial_timeout
+	if conf.DialTimeout != "" {
+		d, err := time.ParseDuration(conf.DialTimeout)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse dial_timeout: %w", err)
+		}
+		opts.DialTimeout = d
+	}
+	if opts.DialTimeout == 0 { // Apply an increased default to reduce the chance of dropped connections with scaled-to-zero ClickHouse.
 		opts.DialTimeout = time.Second * 60
 	}
-	if opts.ReadTimeout == 0 {
-		opts.ReadTimeout = time.Second * 300
+
+	// read_timeout
+	if conf.ReadTimeout != "" {
+		d, err := time.ParseDuration(conf.ReadTimeout)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse read_timeout: %w", err)
+		}
+		opts.ReadTimeout = d
 	}
-	if opts.ConnMaxLifetime == 0 {
-		opts.ConnMaxLifetime = time.Hour
+	if opts.ReadTimeout == 0 { // Apply an increased default to reduce the chance of dropped connections with scaled-to-zero ClickHouse.
+		opts.ReadTimeout = time.Second * 300
 	}
 
 	db := sqlx.NewDb(otelsql.OpenDB(clickhouse.Connector(opts)), "clickhouse")
@@ -270,10 +282,16 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 			return nil, err
 		}
 		// connection with http protocol is successful
-		logger.Warn("clickHouse connection is established with HTTP protocol. Use native port for better performance")
+		logger.Warn("ClickHouse connection was established with the HTTP protocol, consider using the native port for better performance")
 	}
-	db.SetMaxOpenConns(maxOpenConnections)
 
+	// Limit the number of concurrent connections
+	if conf.MaxOpenConns == 0 {
+		conf.MaxOpenConns = 20 // based on observations
+	}
+	db.SetMaxOpenConns(conf.MaxOpenConns)
+
+	// Capture database stats with OpenTelemetry
 	err = otelsql.RegisterDBStatsMetrics(db.DB, otelsql.WithAttributes(semconv.DBSystemClickhouse, attribute.String("instance_id", instanceID)))
 	if err != nil {
 		return nil, fmt.Errorf("registering db stats metrics: %w", err)
@@ -281,11 +299,11 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 
 	// group by positional args are supported post 22.7 and we use them heavily in our queries
 	row := db.QueryRow(`
-	WITH
-    	splitByChar('.', version()) AS parts,
-    	toInt32(parts[1]) AS major,
-    	toInt32(parts[2]) AS minor
-	SELECT (major > 22) OR ((major = 22) AND (minor >= 7)) AS is_supported
+		WITH
+			splitByChar('.', version()) AS parts,
+			toInt32(parts[1]) AS major,
+			toInt32(parts[2]) AS minor
+		SELECT (major > 22) OR ((major = 22) AND (minor >= 7)) AS is_supported
 `)
 	var isSupported bool
 	if err := row.Scan(&isSupported); err != nil {
@@ -296,7 +314,7 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
-	c := &connection{
+	c := &Connection{
 		db:         db,
 		config:     conf,
 		logger:     logger,
@@ -305,7 +323,7 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 		ctx:        ctx,
 		cancel:     cancel,
 		metaSem:    semaphore.NewWeighted(1),
-		olapSem:    priorityqueue.NewSemaphore(maxOpenConnections - 1),
+		olapSem:    priorityqueue.NewSemaphore(conf.MaxOpenConns - 1),
 		opts:       opts,
 		embed:      embed,
 	}
@@ -328,7 +346,7 @@ func (d driver) TertiarySourceConnectors(ctx context.Context, src map[string]any
 	return nil, fmt.Errorf("not implemented")
 }
 
-type connection struct {
+type Connection struct {
 	db         *sqlx.DB
 	config     *configProperties
 	logger     *zap.Logger
@@ -360,26 +378,26 @@ type connection struct {
 }
 
 // Ping implements drivers.Handle.
-func (c *connection) Ping(ctx context.Context) error {
+func (c *Connection) Ping(ctx context.Context) error {
 	err := c.db.PingContext(ctx)
 	c.used()
 	return err
 }
 
 // Driver implements drivers.Connection.
-func (c *connection) Driver() string {
+func (c *Connection) Driver() string {
 	return "clickhouse"
 }
 
 // Config used to open the Connection
-func (c *connection) Config() map[string]any {
+func (c *Connection) Config() map[string]any {
 	m := make(map[string]any, 0)
 	_ = mapstructure.Decode(c.config, &m)
 	return m
 }
 
 // Close implements drivers.Connection.
-func (c *connection) Close() error {
+func (c *Connection) Close() error {
 	c.cancel()
 
 	errDB := c.db.Close()
@@ -393,53 +411,53 @@ func (c *connection) Close() error {
 }
 
 // Registry implements drivers.Connection.
-func (c *connection) AsRegistry() (drivers.RegistryStore, bool) {
+func (c *Connection) AsRegistry() (drivers.RegistryStore, bool) {
 	return nil, false
 }
 
 // Catalog implements drivers.Connection.
-func (c *connection) AsCatalogStore(instanceID string) (drivers.CatalogStore, bool) {
+func (c *Connection) AsCatalogStore(instanceID string) (drivers.CatalogStore, bool) {
 	return nil, false
 }
 
 // Repo implements drivers.Connection.
-func (c *connection) AsRepoStore(instanceID string) (drivers.RepoStore, bool) {
+func (c *Connection) AsRepoStore(instanceID string) (drivers.RepoStore, bool) {
 	return nil, false
 }
 
 // AsAdmin implements drivers.Handle.
-func (c *connection) AsAdmin(instanceID string) (drivers.AdminService, bool) {
+func (c *Connection) AsAdmin(instanceID string) (drivers.AdminService, bool) {
 	return nil, false
 }
 
 // AsAI implements drivers.Handle.
-func (c *connection) AsAI(instanceID string) (drivers.AIService, bool) {
+func (c *Connection) AsAI(instanceID string) (drivers.AIService, bool) {
 	return nil, false
 }
 
 // OLAP implements drivers.Connection.
-func (c *connection) AsOLAP(instanceID string) (drivers.OLAPStore, bool) {
+func (c *Connection) AsOLAP(instanceID string) (drivers.OLAPStore, bool) {
 	c.instanceID = instanceID
 	return c, true
 }
 
 // Migrate implements drivers.Connection.
-func (c *connection) Migrate(ctx context.Context) (err error) {
+func (c *Connection) Migrate(ctx context.Context) (err error) {
 	return nil
 }
 
 // MigrationStatus implements drivers.Connection.
-func (c *connection) MigrationStatus(ctx context.Context) (current, desired int, err error) {
+func (c *Connection) MigrationStatus(ctx context.Context) (current, desired int, err error) {
 	return 0, 0, nil
 }
 
 // AsObjectStore implements drivers.Connection.
-func (c *connection) AsObjectStore() (drivers.ObjectStore, bool) {
+func (c *Connection) AsObjectStore() (drivers.ObjectStore, bool) {
 	return nil, false
 }
 
 // AsModelExecutor implements drivers.Handle.
-func (c *connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorOptions) (drivers.ModelExecutor, bool) {
+func (c *Connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorOptions) (drivers.ModelExecutor, bool) {
 	if opts.OutputHandle != c {
 		return nil, false
 	}
@@ -456,45 +474,41 @@ func (c *connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecu
 }
 
 // AsModelManager implements drivers.Handle.
-func (c *connection) AsModelManager(instanceID string) (drivers.ModelManager, bool) {
+func (c *Connection) AsModelManager(instanceID string) (drivers.ModelManager, bool) {
 	return c, true
 }
 
 // AsFileStore implements drivers.Connection.
-func (c *connection) AsFileStore() (drivers.FileStore, bool) {
+func (c *Connection) AsFileStore() (drivers.FileStore, bool) {
 	return nil, false
 }
 
 // AsWarehouse implements drivers.Handle.
-func (c *connection) AsWarehouse() (drivers.Warehouse, bool) {
+func (c *Connection) AsWarehouse() (drivers.Warehouse, bool) {
 	return nil, false
 }
 
 // AsNotifier implements drivers.Connection.
-func (c *connection) AsNotifier(properties map[string]any) (drivers.Notifier, error) {
+func (c *Connection) AsNotifier(properties map[string]any) (drivers.Notifier, error) {
 	return nil, drivers.ErrNotNotifier
-}
-
-func (c *connection) AcquireLongRunning(ctx context.Context) (func(), error) {
-	return nil, fmt.Errorf("not implemented")
 }
 
 // used should be called after a query to the database completes.
 // It bumps the result of lastUsedOn(), which can be used to guess if the DB may currently be scaled to zero.
 //
 // Periodic background jobs that rely on lastUsedOn should not call this function since it will lead to the database never scaling to zero.
-func (c *connection) used() {
+func (c *Connection) used() {
 	c.lastUsedUnixTime.Store(time.Now().Unix())
 }
 
 // lastUsedOn returns the time we last queried the connection.
 // This can be used to guess if the DB may currently be scaled to zero.
-func (c *connection) lastUsedOn() time.Time {
+func (c *Connection) lastUsedOn() time.Time {
 	return time.Unix(c.lastUsedUnixTime.Load(), 0)
 }
 
 // Periodically collects stats about the database and emit them as activity events.
-func (c *connection) periodicallyEmitStats(d time.Duration) {
+func (c *Connection) periodicallyEmitStats(d time.Duration) {
 	if c.activity == nil {
 		// Activity client isn't set, there is no need to report stats
 		return
@@ -530,7 +544,7 @@ func (c *connection) periodicallyEmitStats(d time.Duration) {
 }
 
 // estimateSize returns the estimated combined disk size of all resources in the database in bytes.
-func (c *connection) estimateSize(ctx context.Context) (int64, error) {
+func (c *Connection) estimateSize(ctx context.Context) (int64, error) {
 	var size int64
 	err := c.db.QueryRowxContext(ctx, `SELECT sum(bytes_on_disk) AS size FROM system.parts WHERE (active = 1) AND lower(database) NOT IN ('information_schema', 'system')`).Scan(&size)
 	if err != nil {

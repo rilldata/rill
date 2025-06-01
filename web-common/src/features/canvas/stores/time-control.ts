@@ -8,7 +8,7 @@ import {
   type ComparisonTimeRangeState,
   type TimeRangeState,
 } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
-import { toTimeRangeParam } from "@rilldata/web-common/features/dashboards/url-state/convertExploreStateToURLSearchParams";
+import { toTimeRangeParam } from "@rilldata/web-common/features/dashboards/url-state/convert-partial-explore-state-to-url-params";
 import { fromTimeRangeUrlParam } from "@rilldata/web-common/features/dashboards/url-state/convertPresetToExploreState";
 import { fromTimeRangesParams } from "@rilldata/web-common/features/dashboards/url-state/convertURLToExplorePreset";
 import {
@@ -33,6 +33,7 @@ import {
   runtime,
   type Runtime,
 } from "@rilldata/web-common/runtime-client/runtime-store";
+import { Settings } from "luxon";
 import {
   derived,
   get,
@@ -40,6 +41,7 @@ import {
   type Readable,
   type Writable,
 } from "svelte/store";
+import { normalizeWeekday } from "../../dashboards/time-controls/new-time-controls";
 
 type AllTimeRange = TimeRange & { isFetching: boolean };
 
@@ -146,6 +148,19 @@ export class TimeControls {
         if (!spec?.data || !selectedTimeRange) {
           return undefined;
         }
+
+        // TODO: figure out a better way of handling this property
+        // when it's not consistent across all metrics views - bgh
+        const firstMetricsView = Object.values(spec.data.metricsViews)?.[0];
+        const firstDayOfWeekOfFirstMetricsView =
+          firstMetricsView?.state?.validSpec?.firstDayOfWeek;
+
+        Settings.defaultWeekSettings = {
+          firstDay: normalizeWeekday(firstDayOfWeekOfFirstMetricsView),
+          weekend: [6, 7],
+          minimalDays: 4,
+        };
+
         const { defaultPreset } = spec.data?.canvas || {};
         const defaultTimeRange = isoDurationToFullTimeRange(
           defaultPreset?.timeRange,
@@ -246,6 +261,8 @@ export class TimeControls {
           return;
         }
 
+        const isLocalComponentControl = Boolean(this.componentName);
+
         const selectedTimezone = get(this.selectedTimezone);
         const comparisonTimeRange = get(this.selectedComparisonTimeRange);
 
@@ -271,21 +288,21 @@ export class TimeControls {
           V1TimeGrain.TIME_GRAIN_UNSPECIFIED,
         );
 
+        const newComparisonRange = getComparisonTimeRange(
+          timeRanges,
+          allTimeRange,
+          newTimeRange,
+          comparisonTimeRange,
+        );
+
+        this.selectedComparisonTimeRange.set(newComparisonRange);
+
         if (
           defaultPreset?.comparisonMode ===
-          V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_TIME
+            V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_TIME &&
+          !isLocalComponentControl
         ) {
-          const newComparisonRange = getComparisonTimeRange(
-            timeRanges,
-            allTimeRange,
-            newTimeRange,
-            comparisonTimeRange,
-          );
-          this.selectedComparisonTimeRange.set(newComparisonRange);
-
-          if (!this.componentName) {
-            this.showTimeComparison.set(true);
-          }
+          this.showTimeComparison.set(true);
         }
 
         this.selectedTimeRange.set(newTimeRange);
@@ -428,50 +445,64 @@ export class TimeControls {
   };
 
   setTimeFiltersFromText = (timeFilter: string) => {
-    const urlParams = new URLSearchParams(timeFilter);
-    const { preset, errors } = fromTimeRangesParams(urlParams, new Map());
-
-    if (errors?.length) {
-      console.warn(errors);
-      return;
-    }
-    let selectedTimeRange: DashboardTimeControls | undefined;
-    let selectedComparisonTimeRange: DashboardTimeControls | undefined;
-    let showTimeComparison = false;
-
-    if (preset.timeRange) {
-      selectedTimeRange = fromTimeRangeUrlParam(preset.timeRange);
-    }
-
-    if (preset.timeGrain && selectedTimeRange) {
-      selectedTimeRange.interval = FromURLParamTimeGrainMap[preset.timeGrain];
-    }
-
-    if (preset.compareTimeRange) {
-      selectedComparisonTimeRange = fromTimeRangeUrlParam(
-        preset.compareTimeRange,
-      );
-      showTimeComparison = true;
-    } else if (
-      preset.comparisonMode ===
-      V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_TIME
-    ) {
-      showTimeComparison = true;
-    }
-
-    if (
-      preset.comparisonMode ===
-      V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_NONE
-    ) {
-      // unset all comparison setting if mode is none
-      selectedComparisonTimeRange = undefined;
-      showTimeComparison = false;
-    }
+    const {
+      selectedTimeRange,
+      selectedComparisonTimeRange,
+      showTimeComparison,
+    } = getTimeRangeFromText(timeFilter);
 
     this.selectedTimeRange.set(selectedTimeRange);
-    this.selectedComparisonTimeRange.set(selectedComparisonTimeRange);
+    if (selectedComparisonTimeRange)
+      this.selectedComparisonTimeRange.set(selectedComparisonTimeRange);
     this.showTimeComparison.set(showTimeComparison);
 
     this.isInitialStateSet = true;
   };
+}
+
+export function getTimeRangeFromText(timeFilter: string) {
+  const urlParams = new URLSearchParams(timeFilter);
+  const { preset, errors } = fromTimeRangesParams(urlParams, new Map());
+
+  if (errors?.length) {
+    console.warn(errors);
+    return {
+      selectedTimeRange: undefined,
+      selectedComparisonTimeRange: undefined,
+      showTimeComparison: false,
+    };
+  }
+  let selectedTimeRange: DashboardTimeControls | undefined;
+  let selectedComparisonTimeRange: DashboardTimeControls | undefined;
+  let showTimeComparison = false;
+
+  if (preset.timeRange) {
+    selectedTimeRange = fromTimeRangeUrlParam(preset.timeRange);
+  }
+
+  if (preset.timeGrain && selectedTimeRange) {
+    selectedTimeRange.interval = FromURLParamTimeGrainMap[preset.timeGrain];
+  }
+
+  if (preset.compareTimeRange) {
+    selectedComparisonTimeRange = fromTimeRangeUrlParam(
+      preset.compareTimeRange,
+    );
+    showTimeComparison = true;
+  } else if (
+    preset.comparisonMode ===
+    V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_TIME
+  ) {
+    showTimeComparison = true;
+  }
+
+  if (
+    preset.comparisonMode ===
+    V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_NONE
+  ) {
+    // unset all comparison setting if mode is none
+    selectedComparisonTimeRange = undefined;
+    showTimeComparison = false;
+  }
+  return { selectedTimeRange, selectedComparisonTimeRange, showTimeComparison };
 }

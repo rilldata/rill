@@ -15,6 +15,7 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/drivers/clickhouse/testclickhouse"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/email"
 	"github.com/rilldata/rill/runtime/storage"
@@ -32,7 +33,9 @@ import (
 	_ "github.com/rilldata/rill/runtime/drivers/gcs"
 	_ "github.com/rilldata/rill/runtime/drivers/https"
 	_ "github.com/rilldata/rill/runtime/drivers/postgres"
+	_ "github.com/rilldata/rill/runtime/drivers/redshift"
 	_ "github.com/rilldata/rill/runtime/drivers/s3"
+	_ "github.com/rilldata/rill/runtime/drivers/snowflake"
 	_ "github.com/rilldata/rill/runtime/drivers/sqlite"
 	_ "github.com/rilldata/rill/runtime/reconcilers"
 )
@@ -106,7 +109,9 @@ func NewInstanceWithOptions(t TestingT, opts InstanceOptions) (*runtime.Runtime,
 
 	vars := make(map[string]string)
 	maps.Copy(vars, opts.Variables)
-	vars["rill.stage_changes"] = strconv.FormatBool(opts.StageChanges)
+	if vars["rill.stage_changes"] == "" {
+		vars["rill.stage_changes"] = strconv.FormatBool(opts.StageChanges)
+	}
 
 	for _, conn := range opts.TestConnectors {
 		acquire, ok := Connectors[conn]
@@ -145,6 +150,10 @@ func NewInstanceWithOptions(t TestingT, opts InstanceOptions) (*runtime.Runtime,
 		},
 		Variables: vars,
 		WatchRepo: opts.WatchRepo,
+	}
+
+	if _, ok := opts.Files["rill.yaml"]; !ok {
+		opts.Files["rill.yaml"] = ""
 	}
 
 	for path, data := range opts.Files {
@@ -205,10 +214,6 @@ func NewInstanceForProject(t TestingT, name string) (*runtime.Runtime, string) {
 	if olapDSN == "" {
 		olapDSN = ":memory:"
 	}
-	embedCatalog := true
-	if olapDriver == "clickhouse" {
-		embedCatalog = false
-	}
 
 	inst := &drivers.Instance{
 		Environment:      "test",
@@ -234,7 +239,6 @@ func NewInstanceForProject(t TestingT, name string) (*runtime.Runtime, string) {
 				Config: map[string]string{"dsn": fmt.Sprintf("file:%s?mode=memory&cache=shared", t.Name())},
 			},
 		},
-		EmbedCatalog: embedCatalog,
 	}
 
 	err := rt.CreateInstance(context.Background(), inst)
@@ -275,7 +279,6 @@ func NewInstanceForDruidProject(t *testing.T) (*runtime.Runtime, string, error) 
 		OLAPConnector:    "druid",
 		RepoConnector:    "repo",
 		CatalogConnector: "catalog",
-		EmbedCatalog:     false,
 		Connectors: []*runtimev1.Connector{
 			{
 				Type:   "file",
@@ -295,7 +298,6 @@ func NewInstanceForDruidProject(t *testing.T) (*runtime.Runtime, string, error) 
 				Config: map[string]string{"dsn": fmt.Sprintf("file:%s?mode=memory&cache=shared", t.Name())},
 			},
 		},
-		// EmbedCatalog: true,
 	}
 
 	err = rt.CreateInstance(context.Background(), inst)
@@ -312,4 +314,58 @@ func NewInstanceForDruidProject(t *testing.T) (*runtime.Runtime, string, error) 
 	require.NoError(t, err)
 
 	return rt, inst.ID, nil
+}
+
+func NewInstanceWithClickhouseProject(t TestingT, withCluster bool) (*runtime.Runtime, string) {
+	dsn, cluster := testclickhouse.StartCluster(t)
+	rt := New(t)
+	_, currentFile, _, _ := goruntime.Caller(0)
+	projectPath := filepath.Join(currentFile, "..", "testdata", "ad_bids_clickhouse")
+
+	olapConfig := map[string]string{"dsn": dsn}
+	if withCluster {
+		olapConfig["cluster"] = cluster
+		olapConfig["log_queries"] = "true"
+	}
+	inst := &drivers.Instance{
+		Environment:      "test",
+		OLAPConnector:    "duckdb",
+		RepoConnector:    "repo",
+		CatalogConnector: "catalog",
+		Connectors: []*runtimev1.Connector{
+			{
+				Type:   "file",
+				Name:   "repo",
+				Config: map[string]string{"dsn": projectPath},
+			},
+			{
+				Type:   "clickhouse",
+				Name:   "clickhouse",
+				Config: olapConfig,
+			},
+			{
+				Type: "sqlite",
+				Name: "catalog",
+				// Setting a test-specific name ensures a unique connection when "cache=shared" is enabled.
+				// "cache=shared" is needed to prevent threading problems.
+				Config: map[string]string{"dsn": fmt.Sprintf("file:%s?mode=memory&cache=shared", t.Name())},
+			},
+		},
+		Variables: map[string]string{"rill.stage_changes": "false"},
+	}
+
+	err := rt.CreateInstance(context.Background(), inst)
+	require.NoError(t, err)
+	require.NotEmpty(t, inst.ID)
+
+	ctrl, err := rt.Controller(context.Background(), inst.ID)
+	require.NoError(t, err)
+
+	_, err = ctrl.Get(context.Background(), runtime.GlobalProjectParserName, false)
+	require.NoError(t, err)
+
+	err = ctrl.WaitUntilIdle(context.Background(), false)
+	require.NoError(t, err)
+
+	return rt, inst.ID
 }

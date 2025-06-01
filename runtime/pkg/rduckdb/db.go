@@ -20,15 +20,22 @@ import (
 
 	"github.com/XSAM/otelsql"
 	"github.com/jmoiron/sqlx"
-	"github.com/marcboeker/go-duckdb"
+	"github.com/marcboeker/go-duckdb/v2"
 	"github.com/rilldata/rill/runtime/pkg/observability"
+	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"gocloud.dev/blob"
 	"golang.org/x/sync/semaphore"
 )
 
-var errNotFound = errors.New("rduckdb: not found")
+var (
+	errNotFound       = errors.New("rduckdb: not found")
+	createSecretRegex = regexp.MustCompile(`(?i)\bcreate\b(?:\s+\w+)*\s+\bsecret\b`)
+	tracer            = otel.Tracer("github.com/rilldata/rill/runtime/pkg/rduckdb")
+)
 
 type DB interface {
 	// Close closes the database.
@@ -83,6 +90,7 @@ type DBOptions struct {
 	DBInitQueries []string
 	// ConnInitQueries are run when a new connection is created. These are typically local duckdb configurations.
 	ConnInitQueries []string
+	LogQueries      bool
 
 	Logger         *zap.Logger
 	OtelAttributes []attribute.KeyValue
@@ -338,6 +346,18 @@ func (d *db) AcquireReadConnection(ctx context.Context) (*sqlx.Conn, func() erro
 }
 
 func (d *db) CreateTableAsSelect(ctx context.Context, name, query string, opts *CreateTableOptions) (res *TableWriteMetrics, createErr error) {
+	ctx, span := tracer.Start(ctx, "CreateTableAsSelect", trace.WithAttributes(
+		attribute.String("name", name),
+		attribute.String("query", query),
+		attribute.Bool("view", opts.View),
+	))
+	defer func() {
+		if createErr != nil {
+			span.SetStatus(codes.Error, createErr.Error())
+		}
+		span.End()
+	}()
+
 	d.logger.Debug("create: create table", zap.String("name", name), zap.Bool("view", opts.View), observability.ZapCtx(ctx))
 	err := d.writeSem.Acquire(ctx, 1)
 	if err != nil {
@@ -385,16 +405,18 @@ func (d *db) CreateTableAsSelect(ctx context.Context, name, query string, opts *
 		}()
 	}
 
+	t := time.Now()
 	// need to attach existing table so that any views dependent on this table are correctly attached
 	conn, release, err := d.acquireWriteConn(ctx, dsn, name, opts.InitQueries, true)
 	if err != nil {
 		return nil, err
 	}
+	span.SetAttributes(attribute.Float64("acquire_write_conn_duration", time.Since(t).Seconds()))
 	defer func() {
 		_ = release()
 	}()
 
-	t := time.Now()
+	t = time.Now()
 	safeName := safeSQLName(name)
 	var typ string
 	if opts.View {
@@ -429,6 +451,7 @@ func (d *db) CreateTableAsSelect(ctx context.Context, name, query string, opts *
 		return nil, err
 	}
 	duration := time.Since(t)
+	span.SetAttributes(attribute.Float64("query_duration", duration.Seconds()))
 
 	// close write handle before syncing local so that temp files or wal files are removed
 	err = release()
@@ -455,7 +478,15 @@ func (d *db) CreateTableAsSelect(ctx context.Context, name, query string, opts *
 	return &TableWriteMetrics{Duration: duration}, nil
 }
 
-func (d *db) MutateTable(ctx context.Context, name string, initQueries []string, mutateFn func(ctx context.Context, conn *sqlx.Conn) error) (*TableWriteMetrics, error) {
+func (d *db) MutateTable(ctx context.Context, name string, initQueries []string, mutateFn func(ctx context.Context, conn *sqlx.Conn) error) (res *TableWriteMetrics, resErr error) {
+	ctx, span := tracer.Start(ctx, "MutateTable", trace.WithAttributes(attribute.String("name", name)))
+	defer func() {
+		if resErr != nil {
+			span.SetStatus(codes.Error, resErr.Error())
+		}
+		span.End()
+	}()
+
 	d.logger.Debug("mutate table", zap.String("name", name), observability.ZapCtx(ctx))
 	err := d.writeSem.Acquire(ctx, 1)
 	if err != nil {
@@ -488,13 +519,15 @@ func (d *db) MutateTable(ctx context.Context, name string, initQueries []string,
 
 	// acquire write connection
 	// need to ignore attaching table since it is already present in the db file
+	t := time.Now()
 	conn, release, err := d.acquireWriteConn(ctx, d.localDBPath(name, newVersion), name, initQueries, false)
 	if err != nil {
 		_ = os.RemoveAll(newDir)
 		return nil, err
 	}
+	span.SetAttributes(attribute.Float64("acquire_write_conn_duration", time.Since(t).Seconds()))
 
-	t := time.Now()
+	t = time.Now()
 	err = mutateFn(ctx, conn)
 	if err != nil {
 		_ = os.RemoveAll(newDir)
@@ -503,6 +536,7 @@ func (d *db) MutateTable(ctx context.Context, name string, initQueries []string,
 	}
 
 	duration := time.Since(t)
+	span.SetAttributes(attribute.Float64("query_duration", duration.Seconds()))
 
 	// push to remote
 	err = release()
@@ -537,7 +571,19 @@ func (d *db) MutateTable(ctx context.Context, name string, initQueries []string,
 }
 
 // DropTable implements DB.
-func (d *db) DropTable(ctx context.Context, name string) error {
+func (d *db) DropTable(ctx context.Context, name string) (resErr error) {
+	ctx, span := tracer.Start(ctx, "DropTable", trace.WithAttributes(attribute.String("name", name)))
+	defer func() {
+		if resErr != nil {
+			span.SetAttributes(attribute.String("error", resErr.Error()))
+			if !strings.Contains(resErr.Error(), "not found") {
+				// not found error is an expected error in various cases so best to not mark status as error
+				span.SetStatus(codes.Error, resErr.Error())
+			}
+		}
+		span.End()
+	}()
+
 	d.logger.Debug("drop table", zap.String("name", name), observability.ZapCtx(ctx))
 	err := d.writeSem.Acquire(ctx, 1)
 	if err != nil {
@@ -573,7 +619,15 @@ func (d *db) DropTable(ctx context.Context, name string) error {
 	return nil
 }
 
-func (d *db) RenameTable(ctx context.Context, oldName, newName string) error {
+func (d *db) RenameTable(ctx context.Context, oldName, newName string) (resErr error) {
+	ctx, span := tracer.Start(ctx, "RenameTable", trace.WithAttributes(attribute.String("old_name", oldName), attribute.String("new_name", newName)))
+	defer func() {
+		if resErr != nil {
+			span.SetStatus(codes.Error, resErr.Error())
+		}
+		span.End()
+	}()
+
 	d.logger.Debug("rename table", zap.String("from", oldName), zap.String("to", newName), observability.ZapCtx(ctx))
 	if strings.EqualFold(oldName, newName) {
 		return fmt.Errorf("rename: Table with name %q already exists", newName)
@@ -739,11 +793,85 @@ func (d *db) acquireWriteConn(ctx context.Context, dsn, table string, initQuerie
 		}
 	}
 
-	return conn, func() error {
-		_ = conn.Close()
-		err = db.Close()
+	// We can leave the attached databases and views in the db but we don't need them once data has been ingested in the table.
+	// This can lead to performance issues when running catalog queries across whole database.
+	// So it is better to drop all views and detach all databases before closing the write handle.
+	dropViews := func() error {
+		// remove all views created on top of attached table
+		rows, err := conn.QueryxContext(ctx, "SELECT view_name FROM duckdb_views WHERE database_name = current_database() AND internal = false")
+		if err != nil {
+			return err
+		}
+
+		var names []string
+		for rows.Next() {
+			var name string
+			err = rows.Scan(&name)
+			if err != nil {
+				rows.Close()
+				return err
+			}
+			names = append(names, name)
+		}
+		rows.Close()
+		if err := rows.Err(); err != nil {
+			return err
+		}
+		for _, name := range names {
+			_, err = conn.ExecContext(ctx, "DROP VIEW "+safeSQLName(name))
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+
+	detach := func() error {
+		// detach all attached databases
+		rows, err := conn.QueryxContext(ctx, "SELECT database_name FROM duckdb_databases() WHERE database_name != current_database() AND internal = false AND type NOT LIKE 'motherduck%'")
+		if err != nil {
+			return err
+		}
+
+		var names []string
+		for rows.Next() {
+			var name string
+			err = rows.Scan(&name)
+			if err != nil {
+				rows.Close()
+				return err
+			}
+			names = append(names, name)
+		}
+		rows.Close()
+		if err := rows.Err(); err != nil {
+			return err
+		}
+		for _, name := range names {
+			_, err = conn.ExecContext(ctx, "DETACH DATABASE "+safeSQLName(name))
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+
+	release := func() (err error) {
+		defer func() {
+			// close the connection and db handle
+			err = errors.Join(err, conn.Close(), db.Close())
+		}()
+		err = dropViews()
+		if err != nil {
+			return err
+		}
+		err = detach()
+		if err != nil {
+			return err
+		}
 		return err
-	}, nil
+	}
+	return conn, release, nil
 }
 
 func (d *db) openDBAndAttach(ctx context.Context, uri, ignoreTable string, initQueries []string, read bool) (db *sqlx.DB, dbErr error) {
@@ -782,7 +910,23 @@ func (d *db) openDBAndAttach(ctx context.Context, uri, ignoreTable string, initQ
 		return nil, err
 	}
 
-	db = sqlx.NewDb(otelsql.OpenDB(connector), "duckdb")
+	var spanOptions otelsql.SpanOptions
+	if read {
+		spanOptions = otelsql.SpanOptions{}
+	} else {
+		spanOptions = otelsql.SpanOptions{
+			SpanFilter: func(ctx context.Context, method otelsql.Method, query string, args []driver.NamedValue) bool {
+				// if debug is not set do not create spans for queries
+				// we run a lot of metadata queries like attach, detach, drop view etc which can create a lot of spans and clutter the trace
+				if !d.opts.LogQueries {
+					return false
+				}
+				// log all queries except create secret which can contain sensitive data
+				return !createSecretRegex.MatchString(query)
+			},
+		}
+	}
+	db = sqlx.NewDb(otelsql.OpenDB(connector, otelsql.WithSpanOptions(spanOptions)), "duckdb")
 	defer func() {
 		// there are too many error paths after this so closing the db in a defer seems better
 		// but the dbErr can be non nil even before function reaches this point so need to check for db is non nil
@@ -801,13 +945,6 @@ func (d *db) openDBAndAttach(ctx context.Context, uri, ignoreTable string, initQ
 	// Run init queries specific to this table
 	for _, qry := range initQueries {
 		_, err := db.ExecContext(ctx, qry)
-		if err != nil {
-			return nil, err
-		}
-	}
-	if !read {
-		// at the end disable any more configuration changes on the write handle via pre_exec sql
-		_, err = db.ExecContext(ctx, "SET lock_configuration TO true", nil)
 		if err != nil {
 			return nil, err
 		}
@@ -884,7 +1021,7 @@ func (d *db) attachTables(ctx context.Context, conn *sqlx.Conn, tables []*tableM
 		}
 		safeTable := safeSQLName(table.Name)
 		if table.Type == "VIEW" {
-			_, err := conn.ExecContext(ctx, fmt.Sprintf("CREATE OR REPLACE VIEW %s AS %s", safeTable, table.SQL))
+			_, err := conn.ExecContext(ctx, fmt.Sprintf("CREATE OR REPLACE VIEW %s AS (%s\n)", safeTable, table.SQL))
 			if err != nil {
 				if errors.Is(err, context.Canceled) {
 					return err

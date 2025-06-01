@@ -458,8 +458,6 @@ paths:
                 type: object
                 additionalProperties:
                   type: string
-              embedCatalog:
-                type: boolean
               watchRepo:
                 type: boolean
             description: |-
@@ -1254,6 +1252,7 @@ paths:
             $ref: '#/definitions/rpcStatus'
       parameters:
         - name: instanceId
+          description: Instance ID to run the query against.
           in: path
           required: true
           type: string
@@ -1266,12 +1265,29 @@ paths:
               limit:
                 type: string
                 format: int64
+                description: Optional limit on the number of rows to export. It is applied in addition to any limit specified in the query.
               format:
                 $ref: '#/definitions/v1ExportFormat'
+                description: Format of the export.
               query:
                 $ref: '#/definitions/v1Query'
+                description: Query to export.
               bakedQuery:
                 type: string
+                description: Deprecated. Use query instead.
+              includeHeader:
+                type: boolean
+                description: If true, the export will include header comments with metadata about the export.
+              originDashboard:
+                $ref: '#/definitions/v1ResourceName'
+                description: |-
+                  Optional name of the dashboard the export originates from.
+                  Only used if include_header is true.
+              originUrl:
+                type: string
+                description: |-
+                  Optional UI URL that the export originates from.
+                  Only used if include_header is true.
       tags:
         - QueryService
   /v1/instances/{instanceId}/queries/metrics-views/{metricsView}/aggregation:
@@ -1378,6 +1394,9 @@ paths:
                 type: boolean
               fillMissing:
                 type: boolean
+              rows:
+                type: boolean
+                title: Optional. Defaults to false. Used to fetch rows from underlying model
       tags:
         - QueryService
   /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/compare-toplist:
@@ -1721,6 +1740,9 @@ paths:
               priority:
                 type: integer
                 format: int32
+              timeZone:
+                type: string
+                title: Optional timezone param to easily override time-range expressions
       tags:
         - QueryService
   /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/timeseries:
@@ -2530,10 +2552,12 @@ paths:
             $ref: '#/definitions/rpcStatus'
       parameters:
         - name: instanceId
+          description: Instance ID that contains the report.
           in: path
           required: true
           type: string
         - name: report
+          description: Name of the report to export.
           in: path
           required: true
           type: string
@@ -2543,14 +2567,17 @@ paths:
           schema:
             type: object
             properties:
-              limit:
-                type: string
-                format: int64
-              format:
-                $ref: '#/definitions/v1ExportFormat'
               executionTime:
                 type: string
                 format: date-time
+                description: |-
+                  The execution time to evaluate the report relative to.
+                  This is provided by the report implementation when sending a report.
+              originBaseUrl:
+                type: string
+                description: |-
+                  Contextual information about the base URL of the UI that initiated the export.
+                  This is used to generate header comments in the exported file when include_header is true in the report spec.
       tags:
         - QueryService
   /v1/instances/{instanceId}/resource:
@@ -2727,14 +2754,17 @@ paths:
                 description: |-
                   Parser is a convenience flag to trigger the global project parser.
                   Triggering the project parser ensures a pull of the repository and a full parse of all files.
-              allSourcesModels:
-                type: boolean
-                description: Convenience flag to trigger all sources and models.
-              allSourcesModelsFull:
+              all:
                 type: boolean
                 description: |-
-                  Convenience flag to trigger all sources and models.
-                  Will trigger models with RefreshModelTrigger.full set to true.
+                  Convenience flag to trigger all resources.
+                  Note: Despite the name, it does not currently trigger alerts and reports.
+              allFull:
+                type: boolean
+                description: |-
+                  Convenience flag to trigger all resources with full refreshes for resources that support it.
+                  Currently, only models support full refreshes. It's equivalent to passing RefreshModelTrigger.full for those models.
+                  Note: Despite the name, it does not currently trigger alerts and reports.
       tags:
         - RuntimeService
   /v1/instances/{instanceId}/variables/analyze:
@@ -2865,10 +2895,6 @@ paths:
           type: integer
           format: int64
         - name: pageToken
-          in: query
-          required: false
-          type: string
-        - name: region
           in: query
           required: false
           type: string
@@ -3038,6 +3064,15 @@ definitions:
       unnest:
         type: boolean
       uri:
+        type: string
+      lookupTable:
+        type: string
+        title: Lookup fields for the dimension
+      lookupKeyColumn:
+        type: string
+      lookupValueColumn:
+        type: string
+      lookupDefaultExpression:
         type: string
     title: Dimensions are columns to filter and group by
   MetricsViewSpecDimensionSelector:
@@ -3268,12 +3303,12 @@ definitions:
         type: object
       openapiSummary:
         type: string
-      openapiParameters:
-        type: array
-        items:
-          type: object
-      openapiResponseSchema:
-        type: object
+      openapiParametersJson:
+        type: string
+      openapiRequestSchemaJson:
+        type: string
+      openapiResponseSchemaJson:
+        type: string
       securityRules:
         type: array
         items:
@@ -4057,6 +4092,9 @@ definitions:
       description:
         type: string
         title: Human readable description of the connector
+      docsUrl:
+        type: string
+        title: Docs url for the connector
       implementsRegistry:
         type: boolean
         title: Capabilities supported by the connector
@@ -4141,8 +4179,6 @@ definitions:
         type: object
         additionalProperties:
           type: string
-      embedCatalog:
-        type: boolean
       watchRepo:
         type: boolean
     description: |-
@@ -4270,6 +4306,13 @@ definitions:
       exploreLeaderboardMeasureCount:
         type: integer
         format: int64
+        title: Deprecated
+      exploreLeaderboardMeasures:
+        type: array
+        items:
+          type: string
+      exploreLeaderboardShowContextForAllMeasures:
+        type: boolean
       timeDimensionMeasure:
         type: string
       timeDimensionChartType:
@@ -4372,6 +4415,11 @@ definitions:
       allowCustomTimeRange:
         type: boolean
         title: Allow custom time range
+      definedInMetricsView:
+        type: boolean
+        description: |-
+          When true, it indicates that the explore was defined in a metrics view.
+          This currently happens for legacy metrics views (that don't have `version: 1`), which also emits explores.
   v1ExploreState:
     type: object
     properties:
@@ -4629,10 +4677,10 @@ definitions:
         type: object
         additionalProperties:
           type: string
-      embedCatalog:
-        type: boolean
       watchRepo:
         type: boolean
+      aiContext:
+        type: string
     description: |-
       Instance represents a single data project, meaning one set of code artifacts,
       one connection to an OLAP datastore (DuckDB, Druid), and one catalog of related
@@ -4940,6 +4988,9 @@ definitions:
         type: boolean
       fillMissing:
         type: boolean
+      rows:
+        type: boolean
+        title: Optional. Defaults to false. Used to fetch rows from underlying model
   v1MetricsViewAggregationResponse:
     type: object
     properties:
@@ -5239,6 +5290,9 @@ definitions:
       description:
         type: string
         title: User-facing description
+      aiContext:
+        type: string
+        description: Extra context for LLM/AI features. Used to guide natural language question answering and routing.
       timeDimension:
         type: string
         title: Name of the primary time dimension, used for rendering time series
@@ -5505,6 +5559,14 @@ definitions:
         $ref: '#/definitions/v1ModelSpec'
       state:
         $ref: '#/definitions/v1ModelState'
+  v1ModelChangeMode:
+    type: string
+    enum:
+      - MODEL_CHANGE_MODE_UNSPECIFIED
+      - MODEL_CHANGE_MODE_RESET
+      - MODEL_CHANGE_MODE_MANUAL
+      - MODEL_CHANGE_MODE_PATCH
+    default: MODEL_CHANGE_MODE_UNSPECIFIED
   v1ModelPartition:
     type: object
     properties:
@@ -5559,6 +5621,9 @@ definitions:
         type: string
       outputProperties:
         type: object
+      changeMode:
+        $ref: '#/definitions/v1ModelChangeMode'
+        description: change_mode is the mode of change detection to use for the model.
       trigger:
         type: boolean
       triggerFull:
@@ -5990,6 +6055,8 @@ definitions:
         format: uint64
       exportFormat:
         $ref: '#/definitions/v1ExportFormat'
+      exportIncludeHeader:
+        type: boolean
       notifiers:
         type: array
         items:

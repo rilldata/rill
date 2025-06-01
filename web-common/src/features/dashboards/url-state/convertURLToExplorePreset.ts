@@ -125,7 +125,8 @@ export function convertURLToExplorePreset(
   // only extract params if the view is explicitly set to the relevant one
   switch (preset.view) {
     case V1ExploreWebView.EXPLORE_WEB_VIEW_EXPLORE:
-    case V1ExploreWebView.EXPLORE_WEB_VIEW_UNSPECIFIED: {
+    case V1ExploreWebView.EXPLORE_WEB_VIEW_UNSPECIFIED:
+    case undefined: {
       const { preset: ovPreset, errors: ovErrors } = fromExploreUrlParams(
         searchParams,
         measures,
@@ -157,17 +158,26 @@ export function convertURLToExplorePreset(
     }
   }
 
-  if (searchParams.has(ExploreStateURLParams.LeaderboardMeasureCount)) {
-    const count = searchParams.get(
-      ExploreStateURLParams.LeaderboardMeasureCount,
+  // Validate that the measures here are actually present and visible.
+  // Unset if any are invalid.
+  if (searchParams.has(ExploreStateURLParams.LeaderboardMeasures)) {
+    const leaderboardMeasures = searchParams.get(
+      ExploreStateURLParams.LeaderboardMeasures,
+    ) as string;
+    const measuresList = leaderboardMeasures.split(",");
+
+    // Check if all measures exist and are visible
+    const allMeasuresValid = measuresList.every(
+      (measure) =>
+        measures.has(measure) &&
+        (!preset.measures || preset.measures.includes(measure)),
     );
-    const parsedCount = parseInt(count ?? "", 10);
-    if (!isNaN(parsedCount) && parsedCount > 0) {
-      preset.exploreLeaderboardMeasureCount = parsedCount;
+
+    if (allMeasuresValid) {
+      preset.exploreLeaderboardMeasures = measuresList;
     } else {
-      errors.push(
-        getSingleFieldError("leaderboard measure count", count ?? ""),
-      );
+      // Unset leaderboard measures if any are invalid
+      preset.exploreLeaderboardMeasures = [];
     }
   }
 
@@ -335,8 +345,13 @@ export function fromTimeRangesParams(
         V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_NONE;
     } else if (dimensions.has(comparisonDimension)) {
       preset.comparisonDimension = comparisonDimension;
-      preset.comparisonMode ??=
-        V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_DIMENSION;
+      if (
+        preset.comparisonMode !==
+        V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_TIME
+      ) {
+        preset.comparisonMode =
+          V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_DIMENSION;
+      }
     } else {
       errors.push(
         getSingleFieldError("compare dimension", comparisonDimension),
@@ -451,20 +466,6 @@ function fromExploreUrlParams(
       preset.exploreSortType = FromURLParamsSortTypeMap[sortType];
     } else {
       errors.push(getSingleFieldError("sort type", sortType));
-    }
-  }
-
-  if (searchParams.has(ExploreStateURLParams.LeaderboardMeasureCount)) {
-    const count = searchParams.get(
-      ExploreStateURLParams.LeaderboardMeasureCount,
-    );
-    const parsedCount = parseInt(count ?? "", 10);
-    if (!isNaN(parsedCount) && parsedCount > 0) {
-      preset.exploreLeaderboardMeasureCount = parsedCount;
-    } else {
-      errors.push(
-        getSingleFieldError("leaderboard measure count", count ?? ""),
-      );
     }
   }
 

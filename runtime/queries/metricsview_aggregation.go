@@ -37,6 +37,7 @@ type MetricsViewAggregation struct {
 	Aliases             []*runtimev1.MetricsViewComparisonMeasureAlias `json:"aliases,omitempty"`
 	Exact               bool                                           `json:"exact,omitempty"`
 	FillMissing         bool                                           `json:"fill_missing,omitempty"`
+	Rows                bool                                           `json:"rows,omitempty"`
 
 	Result    *runtimev1.MetricsViewAggregationResponse `json:"-"`
 	Exporting bool                                      `json:"-"` // Deprecated: Remove when tests call Export directly
@@ -157,7 +158,12 @@ func (q *MetricsViewAggregation) Export(ctx context.Context, rt *runtime.Runtime
 		return fmt.Errorf("unsupported format: %s", opts.Format.String())
 	}
 
-	path, err := e.Export(ctx, qry, nil, format)
+	headers, err := q.generateExportHeaders(ctx, rt, instanceID, opts, qry)
+	if err != nil {
+		return err
+	}
+
+	path, err := e.Export(ctx, qry, nil, format, headers)
 	if err != nil {
 		return err
 	}
@@ -227,6 +233,7 @@ func ResolveTimestampResult(ctx context.Context, rt *runtime.Runtime, instanceID
 
 func (q *MetricsViewAggregation) rewriteToMetricsViewQuery(export bool) (*metricsview.Query, error) {
 	qry := &metricsview.Query{MetricsView: q.MetricsViewName}
+
 	for _, d := range q.Dimensions {
 		res := metricsview.Dimension{Name: d.Name}
 		if d.Alias != "" {
@@ -411,8 +418,65 @@ func (q *MetricsViewAggregation) rewriteToMetricsViewQuery(export bool) (*metric
 	}
 
 	qry.UseDisplayNames = export
+	qry.Rows = q.Rows
 
 	return qry, nil
+}
+
+func (q *MetricsViewAggregation) generateExportHeaders(ctx context.Context, rt *runtime.Runtime, instanceID string, opts *runtime.ExportOptions, qry *metricsview.Query) ([]string, error) {
+	if !opts.IncludeHeader {
+		return nil, nil
+	}
+
+	// Get org and project name from instance annotations.
+	var org, project string
+	inst, err := rt.Instance(ctx, instanceID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get instance: %w", err)
+	}
+	if inst.Annotations != nil {
+		org = inst.Annotations["organization_name"]
+		project = inst.Annotations["project_name"]
+	}
+
+	var headers []string
+
+	// Build title
+	var parts []string
+	if org != "" && project != "" {
+		parts = append(parts, org, project)
+	}
+	if opts.OriginDashboard != nil {
+		parts = append(parts, opts.OriginDashboard.Name)
+	}
+	title := "Report by Rill Data"
+	if len(parts) > 0 {
+		title += " – " + strings.Join(parts, " / ")
+	}
+	headers = append(headers, title)
+
+	// Build date range
+	if !qry.TimeRange.Start.IsZero() || !qry.TimeRange.End.IsZero() {
+		timeRange := fmt.Sprintf("Date range: %s to %s", qry.TimeRange.Start.Format(time.RFC3339), qry.TimeRange.End.Format(time.RFC3339))
+		headers = append(headers, timeRange)
+	}
+
+	// Build filters
+	expStr, err := metricsview.ExpressionToExport(qry.Where)
+	if err != nil {
+		return nil, err
+	}
+	headers = append(headers, fmt.Sprintf("Filters: %s", expStr))
+
+	// Add URL to dashboard
+	if opts.OriginURL != "" {
+		headers = append(headers, fmt.Sprintf("Go to dashboard: %s", opts.OriginURL))
+	}
+
+	// Always add blank line at end
+	headers = append(headers, "")
+
+	return headers, nil
 }
 
 func metricViewExpression(expr *runtimev1.Expression, sql string) (*metricsview.Expression, error) {

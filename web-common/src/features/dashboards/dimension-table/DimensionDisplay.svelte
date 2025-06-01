@@ -5,6 +5,7 @@
    * Create a table with the selected dimension and measures
    * to be displayed in explore
    */
+  import { selectedDimensionValues } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import {
@@ -19,19 +20,16 @@
   import { mergeDimensionAndMeasureFilters } from "../filters/measure-filters/measure-filter-utils";
   import { getSort } from "../leaderboard/leaderboard-utils";
   import { getFiltersForOtherDimensions } from "../selectors";
-  import { getMeasuresForDimensionTable } from "../state-managers/selectors/dashboard-queries";
+  import { getMeasuresForDimensionOrLeaderboardDisplay } from "../state-managers/selectors/dashboard-queries";
   import { dimensionSearchText } from "../stores/dashboard-stores";
   import { sanitiseExpression } from "../stores/filter-utils";
-  import type { DimensionThresholdFilter } from "../stores/metrics-explorer-entity";
+  import type { DimensionThresholdFilter } from "web-common/src/features/dashboards/stores/explore-state";
   import DimensionHeader from "./DimensionHeader.svelte";
   import DimensionTable from "./DimensionTable.svelte";
   import { getDimensionFilterWithSearch } from "./dimension-table-utils";
-  import { featureFlags } from "../../feature-flags";
-  import { selectedDimensionValuesV2 } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
 
   const queryLimit = 250;
 
-  export let activeMeasureName: string;
   export let timeRange: V1TimeRange;
   export let comparisonTimeRange: V1TimeRange | undefined;
   export let whereFilter: V1Expression;
@@ -45,12 +43,12 @@
   const {
     selectors: {
       dimensionFilters: { unselectedDimensionValues },
-      dimensionTable: {
-        virtualizedTableColumns,
-        selectedDimensionValueNames,
-        prepareDimTableRows,
-      },
+      dimensionTable: { virtualizedTableColumns, prepareDimTableRows },
       sorting: { sortedAscending, sortType },
+      leaderboard: {
+        leaderboardShowContextForAllMeasures,
+        leaderboardSortByMeasureName,
+      },
     },
     actions: {
       dimensionsFilter: {
@@ -62,12 +60,18 @@
     dashboardStore,
   } = getStateManagers();
 
-  const { leaderboardMeasureCount: leaderboardMeasureCountFeatureFlag } =
-    featureFlags;
-
   $: ({ name: dimensionName = "" } = dimension);
 
   $: ({ instanceId } = $runtime);
+
+  $: selectedValues = selectedDimensionValues(
+    $runtime.instanceId,
+    [metricsViewName],
+    $dashboardStore.whereFilter,
+    dimensionName,
+    timeRange.start,
+    timeRange.end,
+  );
 
   $: filterSet = getDimensionFilterWithSearch(
     whereFilter,
@@ -99,7 +103,7 @@
     },
   );
 
-  $: unfilteredTotal = $leaderboardMeasureCountFeatureFlag
+  $: unfilteredTotal = $leaderboardShowContextForAllMeasures
     ? visibleMeasureNames.reduce(
         (acc, measureName) => {
           acc[measureName] =
@@ -108,26 +112,29 @@
         },
         {} as { [key: string]: number },
       )
-    : (($totalsQuery?.data?.data?.[0]?.[activeMeasureName] as number) ?? 0);
+    : (($totalsQuery?.data?.data?.[0]?.[
+        $leaderboardSortByMeasureName
+      ] as number) ?? 0);
 
   $: columns = $virtualizedTableColumns(
     $totalsQuery,
-    $leaderboardMeasureCountFeatureFlag ? visibleMeasureNames : undefined,
+    $leaderboardShowContextForAllMeasures ? visibleMeasureNames : undefined,
   );
 
   $: measures = [
-    // Get base measures
-    ...getMeasuresForDimensionTable(
-      $leaderboardMeasureCountFeatureFlag ? null : activeMeasureName,
+    ...getMeasuresForDimensionOrLeaderboardDisplay(
+      $leaderboardShowContextForAllMeasures
+        ? null
+        : $leaderboardSortByMeasureName,
       dimensionThresholdFilters,
       visibleMeasureNames,
     ).map((name) => ({ name }) as V1MetricsViewAggregationMeasure),
 
     // Add comparison measures if comparison time range exists
     ...(comparisonTimeRange
-      ? ($leaderboardMeasureCountFeatureFlag
+      ? ($leaderboardShowContextForAllMeasures
           ? visibleMeasureNames
-          : [activeMeasureName]
+          : [$leaderboardSortByMeasureName]
         ).flatMap((name) => getComparisonRequestMeasures(name))
       : []),
   ];
@@ -135,7 +142,7 @@
   $: sort = getSort(
     $sortedAscending,
     $sortType,
-    activeMeasureName,
+    $leaderboardSortByMeasureName,
     dimensionName,
     !!comparisonTimeRange,
   );
@@ -168,7 +175,7 @@
   $: tableRows = $prepareDimTableRows($sortedQuery, unfilteredTotal);
 
   $: areAllTableRowsSelected = tableRows.every((row) =>
-    $selectedDimensionValueNames.includes(row[dimensionName] as string),
+    $selectedValues.data?.includes(row[dimensionName] as string),
   );
 
   function onSelectItem(event) {
@@ -225,17 +232,14 @@
     style:min-width="365px"
     aria-label="Dimension Display"
   >
-    <div class="flex-none" style:height="50px">
-      <DimensionHeader
-        {dimensionName}
-        {areAllTableRowsSelected}
-        isRowsEmpty={!tableRows.length}
-        isFetching={$sortedQuery?.isFetching}
-        {hideStartPivotButton}
-        bind:searchText={$dimensionSearchText}
-        onToggleSearchItems={toggleAllSearchItems}
-      />
-    </div>
+    <DimensionHeader
+      {dimensionName}
+      {areAllTableRowsSelected}
+      isRowsEmpty={!tableRows.length}
+      {hideStartPivotButton}
+      bind:searchText={$dimensionSearchText}
+      onToggleSearchItems={toggleAllSearchItems}
+    />
 
     {#if tableRows && columns.length && dimensionName}
       <div class="grow" style="overflow-y: hidden;">
@@ -244,14 +248,7 @@
           isFetching={$sortedQuery?.isFetching}
           {dimensionName}
           {columns}
-          selectedValues={selectedDimensionValuesV2(
-            $runtime.instanceId,
-            [metricsViewName],
-            $dashboardStore.whereFilter,
-            dimensionName,
-            timeRange.start,
-            timeRange.end,
-          )}
+          {selectedValues}
           rows={tableRows}
         />
       </div>

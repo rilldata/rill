@@ -163,6 +163,7 @@ func NewApp(ctx context.Context, opts *AppOptions) (*App, error) {
 		SecurityEngineCacheSize:      1000,
 		ControllerLogBufferCapacity:  10000,
 		ControllerLogBufferSizeBytes: int64(datasize.MB * 16),
+		Version:                      opts.Ch.Version,
 	}
 	st, err := storage.New(dbDirPath, nil)
 	if err != nil {
@@ -201,6 +202,9 @@ func NewApp(ctx context.Context, opts *AppOptions) (*App, error) {
 		}
 		// Set default DuckDB pool size to 4
 		olapCfg["pool_size"] = "4"
+	}
+	if opts.Debug {
+		olapCfg["log_queries"] = "true"
 	}
 
 	// Add OLAP connector

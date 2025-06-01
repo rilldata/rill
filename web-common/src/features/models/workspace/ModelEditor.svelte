@@ -3,17 +3,17 @@
   import {
     keywordCompletionSource,
     schemaCompletionSource,
-    sql,
   } from "@codemirror/lang-sql";
   import { Compartment } from "@codemirror/state";
   import { EditorView } from "@codemirror/view";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { DuckDBSQL } from "../../../components/editor/presets/duckDBDialect";
   import { runtime } from "../../../runtime-client/runtime-store";
+  import Editor from "../../editor/Editor.svelte";
+  import { getExtensionsForFile } from "../../editor/getExtensionsForFile";
+  import { FileArtifact } from "../../entity-management/file-artifact";
   import { useAllSourceColumns } from "../../sources/selectors";
   import { useAllModelColumns } from "../selectors";
-  import Editor from "../../editor/Editor.svelte";
-  import { FileArtifact } from "../../entity-management/file-artifact";
 
   const schema: { [table: string]: string[] } = {};
 
@@ -40,7 +40,7 @@
     }
   }
 
-  //Auto complete: model tables
+  // Autocomplete: model tables
   $: allModelColumns = useAllModelColumns(queryClient, instanceId);
   $: if ($allModelColumns?.length) {
     for (const modelTable of $allModelColumns) {
@@ -110,6 +110,6 @@
   {fileArtifact}
   extensions={[
     autocompleteCompartment.of(makeAutocompleteConfig(schema, defaultTable)),
-    sql({ dialect: DuckDBSQL }),
+    ...getExtensionsForFile(fileArtifact.path),
   ]}
 />

@@ -8,8 +8,9 @@ import (
 	"net"
 	"strings"
 	"testing"
+	"time"
 
-	"github.com/google/go-github/v50/github"
+	"github.com/google/go-github/v71/github"
 	"github.com/rilldata/rill/admin"
 	"github.com/rilldata/rill/admin/ai"
 	"github.com/rilldata/rill/admin/billing"
@@ -213,12 +214,20 @@ func (m *mockGithub) AppClient() *github.Client {
 	return nil
 }
 
-func (m *mockGithub) InstallationClient(installationID int64) (*github.Client, error) {
-	return nil, nil
+func (m *mockGithub) InstallationClient(installationID int64, repoID *int64) *github.Client {
+	return nil
 }
 
-func (m *mockGithub) InstallationToken(ctx context.Context, installationID int64) (string, error) {
-	return "", nil
+func (m *mockGithub) InstallationToken(ctx context.Context, installationID, repoID int64) (string, time.Time, error) {
+	return "", time.Time{}, nil
+}
+
+func (m *mockGithub) CreateManagedRepo(ctx context.Context, repoPrefix string) (*github.Repository, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+
+func (m *mockGithub) ManagedOrgInstallationID() (int64, error) {
+	return 0, fmt.Errorf("not implemented")
 }
 
 func findPort(t *testing.T) int {

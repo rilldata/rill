@@ -287,7 +287,23 @@ func (h *Handle) cloneOrPull(ctx context.Context) error {
 		defer cancel()
 
 		r := retrier.New(retrier.ExponentialBackoff(pullRetryN, pullRetryWait), retryErrClassifier{})
-		h.syncErr = r.Run(func() error { return h.cloneOrPullInner(ctx) })
+		h.syncErr = r.Run(func() error {
+			err := h.cloneOrPullInner(ctx)
+			if err != nil {
+				h.cloned = false
+				h.repoPath = ""
+				h.projPath = ""
+				h.virtualNextPageToken = ""
+				h.virtualStashPath = ""
+				h.ignorePaths = nil
+				h.gitURL = ""
+				h.gitURLExpiresOn = time.Time{}
+				h.archiveDownloadURL = ""
+				h.archiveID = ""
+				h.archiveCreatedOn = time.Time{}
+			}
+			return err
+		})
 		if h.syncErr != nil {
 			return nil, h.syncErr
 		}
@@ -315,7 +331,7 @@ func (h *Handle) cloneOrPull(ctx context.Context) error {
 
 // cloneOrPullUnsafe pulls changes from the repo. Also clones the repo if it hasn't been cloned already.
 // Unsafe for concurrent use.
-func (h *Handle) cloneOrPullInner(ctx context.Context) (err error) {
+func (h *Handle) cloneOrPullInner(ctx context.Context) (resErr error) {
 	if h.cloned {
 		if h.archiveDownloadURL != "" {
 			// in case of one-time uploads we edit instance and close handle when artifacts are updated
@@ -329,11 +345,12 @@ func (h *Handle) cloneOrPullInner(ctx context.Context) (err error) {
 			return err
 		}
 		defer func() {
-			err = h.unstashVirtual()
+			err := h.unstashVirtual()
+			resErr = errors.Join(resErr, err)
 		}()
 	}
 
-	err = h.checkHandshake(ctx)
+	err := h.checkHandshake(ctx)
 	if err != nil {
 		return fmt.Errorf("repo handshake failed: %w", err)
 	}
@@ -343,7 +360,12 @@ func (h *Handle) cloneOrPullInner(ctx context.Context) (err error) {
 		if err := h.download(); err != nil {
 			return err
 		}
-		return h.pullVirtual(ctx)
+		err := h.pullVirtual(ctx)
+		if err != nil {
+			return err
+		}
+		h.cloned = true
+		return nil
 	}
 
 	if !h.cloned {
@@ -367,6 +389,7 @@ func (h *Handle) cloneOrPullInner(ctx context.Context) (err error) {
 	if err != nil {
 		return err
 	}
+
 	return nil
 }
 
@@ -504,7 +527,6 @@ func (h *Handle) pullVirtual(ctx context.Context) error {
 	for i = 0; i < n; i++ { // Just a failsafe to avoid infinite loops
 		res, err := h.admin.PullVirtualRepo(ctx, &adminv1.PullVirtualRepoRequest{
 			ProjectId: h.config.ProjectID,
-			Branch:    h.config.Branch,
 			PageSize:  pullVirtualPageSize,
 			PageToken: h.virtualNextPageToken,
 		})
@@ -633,9 +655,8 @@ func (h *Handle) download() error {
 
 	err = archive.Download(ctx, h.archiveDownloadURL, downloadDst, h.projPath, true, false)
 	if err != nil {
-		return err
+		return fmt.Errorf("download: %w", err)
 	}
-	h.cloned = true
 	return nil
 }
 

@@ -1,4 +1,4 @@
-import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import {
   MetricsViewSpecMeasureType,
   type MetricsViewSpecMeasure,
@@ -26,33 +26,6 @@ export const allMeasures = ({
           validExplore.measures!.indexOf(b.name!),
       )
   );
-};
-
-// FIXME: to consolidate web-common/src/features/dashboards/state-managers/selectors/active-measure.ts
-export const leaderboardSortByMeasureName = ({
-  dashboard,
-}: DashboardDataSources) => {
-  return dashboard.leaderboardSortByMeasureName;
-};
-
-export const leaderboardMeasureCount = ({
-  dashboard,
-}: DashboardDataSources) => {
-  return dashboard.leaderboardMeasureCount ?? 1;
-};
-
-export const activeMeasuresFromMeasureCount = (
-  dashboardDataSources: DashboardDataSources,
-): string[] => {
-  const { validMetricsView, validExplore, dashboard } = dashboardDataSources;
-  if (!validMetricsView?.measures || !validExplore?.measures) return [];
-
-  const visibleMeasureSpecs = visibleMeasures(dashboardDataSources);
-
-  return visibleMeasureSpecs
-    .slice(0, dashboard.leaderboardMeasureCount ?? 1)
-    .map(({ name }) => name)
-    .filter((name): name is string => name !== undefined);
 };
 
 export const visibleMeasures = ({
@@ -129,7 +102,7 @@ export const filteredSimpleMeasures = ({
  * 3. Window measures if includeWindowMeasures=false. Right now totals query does not support these.
  */
 export const removeSomeAdvancedMeasures = (
-  exploreState: MetricsExplorerEntity,
+  exploreState: ExploreState,
   metricsViewSpec: V1MetricsViewSpec,
   measureNames: string[],
   includeWindowMeasures: boolean,
@@ -206,10 +179,4 @@ export const measureSelectors = {
   isMeasureValidPercentOfTotal,
 
   filteredSimpleMeasures,
-
-  leaderboardSortByMeasureName,
-
-  leaderboardMeasureCount,
-
-  activeMeasuresFromMeasureCount,
 };

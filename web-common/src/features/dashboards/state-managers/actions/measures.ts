@@ -8,11 +8,23 @@ export const toggleMeasureVisibility = (
   const index = dashboard.visibleMeasures.indexOf(measureName);
   if (index > -1) {
     dashboard.visibleMeasures.splice(index, 1);
+    // If we're hiding the current sort measure or it's the only visible measure, select a new one
     if (
-      dashboard.leaderboardSortByMeasureName === measureName &&
-      dashboard.visibleMeasures.length > 1
+      (dashboard.leaderboardSortByMeasureName === measureName ||
+        dashboard.visibleMeasures.length === 0) &&
+      dashboard.visibleMeasures.length > 0
     ) {
-      dashboard.leaderboardSortByMeasureName = dashboard.visibleMeasures[0];
+      // Find the next visible measure in leaderboardMeasureNames order
+      const nextMeasure = dashboard.leaderboardMeasureNames?.find(
+        (name) =>
+          name !== measureName && dashboard.visibleMeasures.includes(name),
+      );
+      if (nextMeasure) {
+        dashboard.leaderboardSortByMeasureName = nextMeasure;
+      } else {
+        // Fallback to first visible measure if no leaderboard measure is available
+        dashboard.leaderboardSortByMeasureName = dashboard.visibleMeasures[0];
+      }
     }
   } else {
     dashboard.visibleMeasures.push(measureName);
@@ -43,10 +55,26 @@ export const setMeasureVisibility = (
 
   // If the current leaderboard measure is hidden, select a new one from visible measures
   if (
-    measures.length > 0 &&
-    !measures.includes(dashboard.leaderboardSortByMeasureName)
+    !measures.includes(dashboard.leaderboardSortByMeasureName) &&
+    measures.length > 0
   ) {
-    dashboard.leaderboardSortByMeasureName = measures[0];
+    // Find the next visible measure in leaderboardMeasureNames order
+    const nextMeasure = dashboard.leaderboardMeasureNames?.find((name) =>
+      measures.includes(name),
+    );
+    if (nextMeasure) {
+      dashboard.leaderboardSortByMeasureName = nextMeasure;
+    } else {
+      // Fallback to first visible measure if no leaderboard measure is available
+      dashboard.leaderboardSortByMeasureName = measures[0];
+    }
+  }
+
+  // Update leaderboard measure names to only include visible measures, maintaining their order
+  if (dashboard.leaderboardMeasureNames) {
+    dashboard.leaderboardMeasureNames = dashboard.leaderboardMeasureNames
+      .filter((name) => measures.includes(name))
+      .sort((a, b) => measures.indexOf(a) - measures.indexOf(b));
   }
 
   dashboard.allMeasuresVisible =

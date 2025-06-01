@@ -22,6 +22,7 @@ func init() {
 var spec = drivers.Spec{
 	DisplayName: "Snowflake",
 	Description: "Connect to Snowflake.",
+	DocsURL:     "https://docs.rilldata.com/reference/connectors/snowflake",
 	ConfigProperties: []*drivers.PropertySpec{
 		{
 			Key:    "dsn",
@@ -29,6 +30,7 @@ var spec = drivers.Spec{
 			Secret: true,
 		},
 	},
+	// Important: Any edits to the below properties must be accompanied by changes to the client-side form validation schemas.
 	SourceProperties: []*drivers.PropertySpec{
 		{
 			Key:         "sql",
@@ -43,9 +45,10 @@ var spec = drivers.Spec{
 			Type:        drivers.StringPropertyType,
 			DisplayName: "Snowflake Connection String",
 			Required:    false,
-			DocsURL:     "https://pkg.go.dev/github.com/snowflakedb/gosnowflake#hdr-Connection_String",
-			Placeholder: "my_user_name:my_password@ac123456/my_database/my_schema?warehouse=my_warehouse&role=my_user_role",
+			DocsURL:     "https://docs.rilldata.com/reference/connectors/snowflake",
+			Placeholder: "<username>@<account_identifier>/<database>/<schema>?warehouse=<warehouse>&role=<role>&authenticator=SNOWFLAKE_JWT&privateKey=<privateKey_base64_url_encoded>",
 			Hint:        "Can be configured here or by setting the 'connector.snowflake.dsn' environment variable (using '.env' or '--env')",
+			Secret:      true,
 		},
 		{
 			Key:         "name",

@@ -1,118 +1,120 @@
-import BarChart from "@rilldata/web-common/components/icons/BarChart.svelte";
-import LineChart from "@rilldata/web-common/components/icons/LineChart.svelte";
-import StackedArea from "@rilldata/web-common/components/icons/StackedArea.svelte";
-import StackedBar from "@rilldata/web-common/components/icons/StackedBar.svelte";
-import StackedBarFull from "@rilldata/web-common/components/icons/StackedBarFull.svelte";
-import { getRillTheme } from "@rilldata/web-common/components/vega/vega-config";
-import { sanitizeValueForVega } from "@rilldata/web-common/features/templates/charts/utils";
-import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
+import { adjustOffsetForZone } from "@rilldata/web-common/lib/convertTimestampPreview";
+import { timeGrainToDuration } from "@rilldata/web-common/lib/time/grains";
+import {
+  V1TimeGrain,
+  type V1MetricsViewAggregationResponseDataItem,
+} from "@rilldata/web-common/runtime-client";
 import merge from "deepmerge";
 import type { Config } from "vega-lite";
-import { generateVLAreaChartSpec } from "./area/spec";
-import { generateVLBarChartSpec } from "./bar-chart/spec";
-import { generateVLLineChartSpec } from "./line-chart/spec";
-import type { ChartDataResult } from "./selector";
-import { generateVLStackedBarChartSpec } from "./stacked-bar/default";
-import { generateVLStackedBarNormalizedSpec } from "./stacked-bar/normalized";
-import type { ChartConfig, ChartMetadata, ChartType } from "./types";
+import { CHART_CONFIG, type ChartSpec } from "./";
+import type { ChartDataResult, ChartType } from "./types";
 
 export function generateSpec(
   chartType: ChartType,
-  chartConfig: ChartConfig,
+  rillChartSpec: ChartSpec,
   data: ChartDataResult,
 ) {
   if (data.isFetching || data.error) return {};
-  switch (chartType) {
-    case "bar_chart":
-      return generateVLBarChartSpec(chartConfig, data);
-    case "stacked_bar":
-      return generateVLStackedBarChartSpec(chartConfig, data);
-    case "stacked_bar_normalized":
-      return generateVLStackedBarNormalizedSpec(chartConfig, data);
-    case "line_chart":
-      return generateVLLineChartSpec(chartConfig, data);
-    case "area_chart":
-      return generateVLAreaChartSpec(chartConfig, data);
-  }
+  return CHART_CONFIG[chartType]?.generateSpec(rillChartSpec, data);
 }
-
-export const chartMetadata: ChartMetadata[] = [
-  { type: "line_chart", title: "Line", icon: LineChart },
-  { type: "bar_chart", title: "Bar", icon: BarChart },
-  { type: "stacked_bar", title: "Stacked Bar", icon: StackedBar },
-  {
-    type: "stacked_bar_normalized",
-    title: "Stacked Bar Normalized",
-    icon: StackedBarFull,
-  },
-  { type: "area_chart", title: "Stacked Area", icon: StackedArea },
-];
 
 export function isChartLineLike(chartType: ChartType) {
   return chartType === "line_chart" || chartType === "area_chart";
 }
 
-export function mergedVlConfig(config: string): Config {
-  const defaultConfig = getRillTheme(true);
+export function mergedVlConfig(
+  userProvidedConfig: string | undefined,
+  specConfig: Config | undefined,
+): Config | undefined {
+  if (!userProvidedConfig) return specConfig;
+
+  const validSpecConfig = specConfig || {};
   let parsedConfig: Config;
 
   try {
-    parsedConfig = JSON.parse(config) as Config;
+    parsedConfig = JSON.parse(userProvidedConfig) as Config;
   } catch {
     console.warn("Invalid JSON config");
-    return defaultConfig;
+    return specConfig;
   }
 
-  const reverseArrayMerge = (
+  const replaceByClonedSource = (
     destinationArray: unknown[],
     sourceArray: unknown[],
-  ) => [...sourceArray, ...destinationArray];
+  ) => sourceArray;
 
-  return merge(defaultConfig, parsedConfig, { arrayMerge: reverseArrayMerge });
+  return merge(validSpecConfig, parsedConfig, {
+    arrayMerge: replaceByClonedSource,
+  });
 }
 
-export function getChartTitle(config: ChartConfig, data: ChartDataResult) {
-  const xLabel = config.x?.field
-    ? data.fields[config.x.field]?.displayName || config.x.field
-    : "";
-
-  const yLabel = config.y?.field
-    ? data.fields[config.y.field]?.displayName || config.y.field
-    : "";
-
-  const colorLabel =
-    typeof config.color === "object" && config.color?.field
-      ? data.fields[config.color.field]?.displayName || config.color.field
-      : "";
-
-  const preposition = xLabel === "Time" ? "over" : "per";
-
-  return colorLabel
-    ? `${yLabel} ${preposition} ${xLabel} split by ${colorLabel}`
-    : `${yLabel} ${preposition} ${xLabel}`;
+export interface FieldsByType {
+  measures: string[];
+  dimensions: string[];
+  timeDimensions: string[];
 }
 
-export const timeGrainToVegaTimeUnitMap: Record<V1TimeGrain, string> = {
-  [V1TimeGrain.TIME_GRAIN_MILLISECOND]: "yearmonthdatehoursminutesseconds",
-  [V1TimeGrain.TIME_GRAIN_SECOND]: "yearmonthdatehoursminutesseconds",
-  [V1TimeGrain.TIME_GRAIN_MINUTE]: "yearmonthdatehoursminutes",
-  [V1TimeGrain.TIME_GRAIN_HOUR]: "yearmonthdatehours",
-  [V1TimeGrain.TIME_GRAIN_DAY]: "yearmonthdate",
-  [V1TimeGrain.TIME_GRAIN_WEEK]: "yearweek",
-  [V1TimeGrain.TIME_GRAIN_MONTH]: "yearmonth",
-  [V1TimeGrain.TIME_GRAIN_QUARTER]: "yearquarter",
-  [V1TimeGrain.TIME_GRAIN_YEAR]: "year",
-  [V1TimeGrain.TIME_GRAIN_UNSPECIFIED]: "yearmonthdate",
-};
+export function getFieldsByType(spec: ChartSpec): FieldsByType {
+  const measures: string[] = [];
+  const dimensions: string[] = [];
+  const timeDimensions: string[] = [];
 
-export function sanitizeFieldName(fieldName: string) {
-  const specialCharactersRemoved = sanitizeValueForVega(fieldName);
-  const sanitizedFieldName = specialCharactersRemoved.replace(" ", "__");
+  // Recursively check all properties for FieldConfig objects
+  const checkFields = (obj: unknown): void => {
+    if (!obj || typeof obj !== "object") {
+      return;
+    }
 
-  /**
-   * Add a prefix to the beginning of the field
-   * name to avoid variables starting with a special
-   * character or number.
-   */
-  return `rill_${sanitizedFieldName}`;
+    // Check if current object is a FieldConfig with type and field
+    if ("type" in obj && "field" in obj && typeof obj.field === "string") {
+      const type = obj.type as string;
+      const field = obj.field;
+
+      switch (type) {
+        case "quantitative":
+          measures.push(field);
+          break;
+        case "nominal":
+          dimensions.push(field);
+          break;
+        case "temporal":
+          timeDimensions.push(field);
+          break;
+      }
+      return;
+    }
+
+    Object.values(obj).forEach((value) => {
+      if (typeof value === "object" && value !== null) {
+        checkFields(value);
+      }
+    });
+  };
+
+  checkFields(spec);
+  return {
+    measures,
+    dimensions,
+    timeDimensions,
+  };
+}
+
+export function adjustDataForTimeZone(
+  data: V1MetricsViewAggregationResponseDataItem[] | undefined,
+  timeFields: string[],
+  timeGrain: V1TimeGrain,
+  selectedTimezone: string,
+) {
+  if (!data) return data;
+
+  return data.map((datum) => {
+    timeFields.forEach((timeField) => {
+      datum[timeField] = adjustOffsetForZone(
+        datum[timeField] as string,
+        selectedTimezone,
+        timeGrainToDuration(timeGrain),
+      );
+    });
+    return datum;
+  });
 }

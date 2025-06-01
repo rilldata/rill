@@ -15,7 +15,6 @@ export const activeMeasure = (
   return activeMeasure;
 };
 
-// FIXME: to consolidate web-common/src/features/dashboards/state-managers/selectors/measures.ts
 export const activeMeasureName = (dashData: DashboardDataSources): string => {
   return dashData.dashboard.leaderboardSortByMeasureName;
 };

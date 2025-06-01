@@ -1,4 +1,5 @@
-import type { QueryObserverResult } from "@tanstack/svelte-query";
+import { getChartComponent } from "@rilldata/web-common/features/canvas/components/charts";
+import { CartesianChartComponent } from "@rilldata/web-common/features/canvas/components/charts/cartesian-charts/CartesianChart";
 import { KPIGridComponent } from "@rilldata/web-common/features/canvas/components/kpi-grid";
 import type {
   ComponentInputParam,
@@ -6,20 +7,22 @@ import type {
   FilterInputTypes,
 } from "@rilldata/web-common/features/canvas/inspector/types";
 import type { CanvasResponse } from "@rilldata/web-common/features/canvas/selector";
-import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
 import type {
   RpcStatus,
-  V1ComponentSpecRendererProperties,
+  V1MetricsViewSpec,
+  V1Resource,
 } from "@rilldata/web-common/runtime-client";
-import { ChartComponent } from "./charts";
+import type { QueryObserverResult } from "@tanstack/svelte-query";
+import type { CanvasEntity, ComponentPath } from "../stores/canvas-entity";
+import type { BaseCanvasComponent } from "./BaseCanvasComponent";
 import { ImageComponent } from "./image";
+import { LeaderboardComponent } from "./leaderboard";
 import { MarkdownCanvasComponent } from "./markdown";
 import { PivotCanvasComponent } from "./pivot";
-import { TableCanvasComponent } from "./table";
 import type {
   CanvasComponentType,
   ComponentCommonProperties,
-  ComponentFilterProperties,
+  ComponentSpec,
 } from "./types";
 
 export const commonOptions: Record<
@@ -63,6 +66,9 @@ const CHART_TYPES = [
   "stacked_bar",
   "stacked_bar_normalized",
   "area_chart",
+  "donut_chart",
+  "pie_chart",
+  "heatmap",
 ] as const;
 const NON_CHART_TYPES = [
   "markdown",
@@ -71,51 +77,81 @@ const NON_CHART_TYPES = [
   "image",
   "table",
   "pivot",
+  "leaderboard",
 ] as const;
 const ALL_COMPONENT_TYPES = [...CHART_TYPES, ...NON_CHART_TYPES] as const;
 
 type ChartType = (typeof CHART_TYPES)[number];
 type TableType = (typeof TABLE_TYPES)[number];
 
+export interface BaseCanvasComponentConstructor<
+  T extends ComponentSpec = ComponentSpec,
+> {
+  new (
+    resource: V1Resource,
+    parent: CanvasEntity,
+    path: ComponentPath,
+  ): BaseCanvasComponent<T>;
+
+  chartInputParams?: Record<string, ComponentInputParam>;
+
+  newComponentSpec(
+    metricsViewName: string,
+    metricsViewSpec?: V1MetricsViewSpec,
+  ): T;
+}
+
 // Component type to class mapping
-const COMPONENT_CLASS_MAP = {
+const baseComponentMap = {
   markdown: MarkdownCanvasComponent,
   kpi_grid: KPIGridComponent,
   image: ImageComponent,
-  table: TableCanvasComponent,
+  leaderboard: LeaderboardComponent,
+  table: PivotCanvasComponent,
   pivot: PivotCanvasComponent,
 } as const;
 
+const chartComponentMap = Object.fromEntries(
+  CHART_TYPES.map((type) => [type, getChartComponent(type)]),
+) as Record<ChartType, BaseCanvasComponentConstructor>;
+
+export const COMPONENT_CLASS_MAP = {
+  ...baseComponentMap,
+  ...chartComponentMap,
+} as const;
+
 // Component display names mapping
-const DISPLAY_MAP: Record<CanvasComponentType, string> = {
-  kpi: "KPI",
+const baseDisplayMap = {
   kpi_grid: "KPI Grid",
   markdown: "Markdown",
   table: "Table",
   pivot: "Pivot",
   image: "Image",
-  bar_chart: "Chart",
-  line_chart: "Chart",
-  stacked_bar: "Chart",
-  stacked_bar_normalized: "Chart",
-  area_chart: "Chart",
+  leaderboard: "Leaderboard",
 } as const;
 
-export const getComponentObj = (
-  fileArtifact: FileArtifact,
-  path: (string | number)[],
-  type: CanvasComponentType,
-  params: Record<string, unknown>,
-) => {
+const chartDisplayMap = Object.fromEntries(
+  CHART_TYPES.map((type) => [type, "Chart"]),
+) as Record<ChartType, string>;
+
+const DISPLAY_MAP = {
+  ...baseDisplayMap,
+  ...chartDisplayMap,
+} as const;
+
+export function createComponent(
+  resource: V1Resource,
+  parent: CanvasEntity,
+  path: ComponentPath,
+) {
+  const type = resource.component?.spec?.renderer as CanvasComponentType;
   const ComponentClass =
     COMPONENT_CLASS_MAP[type as keyof typeof COMPONENT_CLASS_MAP];
   if (ComponentClass) {
-    return new ComponentClass(fileArtifact, path, params);
+    return new ComponentClass(resource, parent, path);
   }
-  return new ChartComponent(fileArtifact, path, params);
-};
-
-export type CanvasComponentObj = ReturnType<typeof getComponentObj>;
+  return new CartesianChartComponent(resource, parent, path);
+}
 
 export function isCanvasComponentType(
   value: string | undefined,
@@ -136,30 +172,6 @@ export function isTableComponentType(
 ): value is TableType {
   if (!value) return false;
   return TABLE_TYPES.includes(value as TableType);
-}
-
-export function getComponentFilterProperties(
-  rendererProperties: V1ComponentSpecRendererProperties | undefined,
-): ComponentFilterProperties {
-  return {
-    dimension_filters: rendererProperties?.dimension_filters as
-      | string
-      | undefined,
-    time_filters: rendererProperties?.time_filters as string | undefined,
-  };
-}
-
-export function getComponentRegistry(): Record<
-  CanvasComponentType,
-  CanvasComponentObj
-> {
-  return Object.fromEntries([
-    ...Object.entries(COMPONENT_CLASS_MAP).map(([type, Class]) => [
-      type,
-      new Class(),
-    ]),
-    ...CHART_TYPES.map((type) => [type, new ChartComponent()]),
-  ]) as Record<CanvasComponentType, CanvasComponentObj>;
 }
 
 export function getHeaderForComponent(

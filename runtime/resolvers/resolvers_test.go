@@ -2,18 +2,14 @@ package resolvers
 
 import (
 	"bytes"
-	"context"
-	"encoding/csv"
-	"encoding/json"
 	"flag"
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
+	goruntime "runtime"
 	"testing"
 
-	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
-	"github.com/rilldata/rill/runtime"
+	"github.com/joho/godotenv"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
@@ -27,6 +23,8 @@ import (
 // Each test in the file will be run in sequence against that runtime instance.
 // The available connectors are defined in runtime/testruntime/connectors.go.
 type TestFileYAML struct {
+	Skip         bool                 `yaml:"skip,omitempty"`
+	Expensive    bool                 `yaml:"expensive,omitempty"`
 	Connectors   []string             `yaml:"connectors,omitempty"`
 	Variables    map[string]string    `yaml:"variables,omitempty"`
 	DataFiles    map[string]string    `yaml:"data_files,omitempty"`
@@ -79,6 +77,13 @@ func TestResolvers(t *testing.T) {
 	files, err := filepath.Glob("./testdata/*.yaml")
 	require.NoError(t, err)
 
+	// Load .env file at the repo root (if any)
+	_, currentFile, _, _ := goruntime.Caller(0)
+	envPath := filepath.Join(currentFile, "..", "..", "..", ".env")
+	_, err = os.Stat(envPath)
+	if err == nil {
+		require.NoError(t, godotenv.Load(envPath))
+	}
 	// Run each test file as a subtest.
 	for _, f := range files {
 		t.Run(fileutil.Stem(f), func(t *testing.T) {
@@ -88,6 +93,14 @@ func TestResolvers(t *testing.T) {
 			var tf TestFileYAML
 			err = yaml.Unmarshal(data, &tf)
 			require.NoError(t, err)
+
+			// Handle skip and expensive
+			if tf.Skip {
+				t.Skip("skipping test because it is marked skip: true")
+			}
+			if testing.Short() && tf.Expensive {
+				t.Skip("skipping test in short mode because it is marked expensive: true")
+			}
 
 			// Create a map of project files for the runtime instance.
 			projectFiles := make(map[string]string)
@@ -144,72 +157,32 @@ func TestResolvers(t *testing.T) {
 					require.NoError(t, err, "failed to decode user_attributes into map[string]any")
 
 					// Run the resolver.
-					ctx := context.Background()
-					res, err := rt.Resolve(ctx, &runtime.ResolveOptions{
-						InstanceID:         instanceID,
+					opts := &testruntime.RequireResolveOptions{
 						Resolver:           tc.Resolver,
-						ResolverProperties: properties,
+						Properties:         properties,
 						Args:               args,
-						Claims: &runtime.SecurityClaims{
-							UserAttributes: userAttributes,
-							SkipChecks:     tc.SkipSecurityChecks,
-						},
-					})
-
-					// If it succeeded, get the result rows.
-					// Does a JSON roundtrip to coerce to simple types (easier to compare).
-					var rows []map[string]any
-					if err == nil {
-						data, err2 := res.MarshalJSON()
-						if err2 != nil {
-							err = err2
-						} else {
-							err = json.Unmarshal(data, &rows)
-						}
+						UserAttributes:     userAttributes,
+						SkipSecurityChecks: tc.SkipSecurityChecks,
+						Result:             tc.Result,
+						ResultCSV:          tc.ResultCSV,
+						ErrorContains:      tc.ErrorContains,
+						Update:             update,
 					}
+					testruntime.RequireResolve(t, rt, instanceID, opts)
 
 					// If the -update flag is set, update the test case results instead of checking them.
 					// The updated test case will be written back to the test file later.
 					if update {
-						if tc.ResultCSV != "" {
-							tc.Result = nil
-							tc.ResultCSV = resultToCSV(t, rows, res.Schema())
-						} else {
-							tc.Result = rows
-						}
-
 						tc.ErrorContains = ""
 						if err != nil {
 							tc.ErrorContains = err.Error()
+						} else if tc.ResultCSV != "" {
+							tc.Result = nil
+							tc.ResultCSV = opts.ResultCSV
+						} else {
+							tc.Result = opts.Result
 						}
 						return
-					}
-
-					// Check if an error was expected.
-					if tc.ErrorContains != "" {
-						require.Error(t, err)
-						require.Contains(t, err.Error(), tc.ErrorContains)
-						return
-					}
-					require.NoError(t, err)
-
-					// We support expressing the expected result as a CSV string, which is more compact.
-					// Serialize the result to CSV and compare.
-					if tc.ResultCSV != "" {
-						actual := resultToCSV(t, rows, res.Schema())
-						require.Equal(t, strings.TrimSpace(tc.ResultCSV), strings.TrimSpace(actual))
-						return
-					}
-
-					// Compare the result rows to the expected result.
-					// Like for rows, we do a JSON roundtrip on the expected result (parsed from YAML) to coerce to simple types.
-					var expected []map[string]any
-					data, err := json.Marshal(tc.Result)
-					require.NoError(t, err)
-					err = json.Unmarshal(data, &expected)
-					require.NoError(t, err)
-					if len(expected) != 0 || len(rows) != 0 {
-						require.EqualValues(t, expected, rows)
 					}
 				})
 			}
@@ -227,44 +200,4 @@ func TestResolvers(t *testing.T) {
 		})
 	}
 
-}
-
-// resultToCSV serializes the rows to a CSV formatted string.
-// It is derived from runtime/drivers/file/model_executor_olap_self.go#writeCSV.
-func resultToCSV(t *testing.T, rows []map[string]any, schema *runtimev1.StructType) string {
-	buf := &bytes.Buffer{}
-	w := csv.NewWriter(buf)
-
-	strs := make([]string, len(schema.Fields))
-	for i, f := range schema.Fields {
-		strs[i] = f.Name
-	}
-	err := w.Write(strs)
-	require.NoError(t, err)
-
-	for _, row := range rows {
-		for i, f := range schema.Fields {
-			v, ok := row[f.Name]
-			require.True(t, ok, "missing field %q", f.Name)
-
-			var s string
-			if v != nil {
-				if v2, ok := v.(string); ok {
-					s = v2
-				} else {
-					tmp, err := json.Marshal(v)
-					require.NoError(t, err)
-					s = string(tmp)
-				}
-			}
-
-			strs[i] = s
-		}
-
-		err = w.Write(strs)
-		require.NoError(t, err)
-	}
-
-	w.Flush()
-	return buf.String()
 }

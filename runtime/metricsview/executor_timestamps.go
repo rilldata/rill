@@ -37,7 +37,7 @@ func (e *Executor) resolveDuckDBClickHouseAndPinot(ctx context.Context) (Timesta
 		filter,
 	)
 
-	rows, err := e.olap.Execute(ctx, &drivers.Statement{
+	rows, err := e.olap.Query(ctx, &drivers.Statement{
 		Query:            rangeSQL,
 		Priority:         e.priority,
 		ExecutionTimeout: defaultExecutionTimeout,
@@ -51,6 +51,19 @@ func (e *Executor) resolveDuckDBClickHouseAndPinot(ctx context.Context) (Timesta
 		var minTime, maxTime, watermark *time.Time
 		err = rows.Scan(&minTime, &maxTime, &watermark)
 		if err != nil {
+			if e.olap.Dialect() == drivers.DialectPinot {
+				// retry again with long type as pinot supports timestamp columns with long type
+				var minTime, maxTime, watermark int64
+				innerErr := rows.Scan(&minTime, &maxTime, &watermark)
+				if innerErr != nil {
+					return TimestampsResult{}, err
+				}
+				return TimestampsResult{
+					Min:       time.UnixMilli(minTime),
+					Max:       time.UnixMilli(maxTime),
+					Watermark: time.UnixMilli(watermark),
+				}, nil
+			}
 			return TimestampsResult{}, err
 		}
 		return TimestampsResult{
@@ -91,7 +104,7 @@ func (e *Executor) resolveDruid(ctx context.Context) (TimestampsResult, error) {
 			filter,
 		)
 
-		rows, err := e.olap.Execute(ctx, &drivers.Statement{
+		rows, err := e.olap.Query(ctx, &drivers.Statement{
 			Query:            minSQL,
 			Priority:         e.priority,
 			ExecutionTimeout: defaultExecutionTimeout,
@@ -127,7 +140,7 @@ func (e *Executor) resolveDruid(ctx context.Context) (TimestampsResult, error) {
 			filter,
 		)
 
-		rows, err := e.olap.Execute(ctx, &drivers.Statement{
+		rows, err := e.olap.Query(ctx, &drivers.Statement{
 			Query:            maxSQL,
 			Priority:         e.priority,
 			ExecutionTimeout: defaultExecutionTimeout,
@@ -163,7 +176,7 @@ func (e *Executor) resolveDruid(ctx context.Context) (TimestampsResult, error) {
 				filter,
 			)
 
-			rows, err := e.olap.Execute(ctx, &drivers.Statement{
+			rows, err := e.olap.Query(ctx, &drivers.Statement{
 				Query:            maxSQL,
 				Priority:         e.priority,
 				ExecutionTimeout: defaultExecutionTimeout,

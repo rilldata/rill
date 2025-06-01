@@ -5,7 +5,7 @@ import type {
   QueryRequests,
 } from "@rilldata/web-admin/features/dashboards/query-mappers/types";
 import { getFullInitExploreState } from "@rilldata/web-common/features/dashboards/stores/dashboard-store-defaults";
-import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import { convertPresetToExploreState } from "@rilldata/web-common/features/dashboards/url-state/convertPresetToExploreState";
 import { getDefaultExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/getDefaultExplorePreset";
 import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
@@ -32,7 +32,7 @@ export function mapQueryToDashboard(
   isFetching: boolean;
   isLoading: boolean;
   error: Error;
-  data?: { exploreState: MetricsExplorerEntity; exploreName: string };
+  data?: { exploreState: ExploreState; exploreName: string };
 }> {
   if (!queryName || !queryArgsJson || !executionTime)
     return readable({
@@ -47,7 +47,7 @@ export function mapQueryToDashboard(
   );
   let getDashboardState: (
     args: QueryMapperArgs<QueryRequests>,
-  ) => Promise<MetricsExplorerEntity>;
+  ) => Promise<ExploreState>;
 
   // get metrics view name and the query mapper function based on the query name.
   switch (queryName) {
@@ -145,7 +145,7 @@ export function mapQueryToDashboard(
       const defaultExplorePreset = getDefaultExplorePreset(
         validSpecResp.data.explore,
         validSpecResp.data.metricsView,
-        timeRangeSummary.data,
+        timeRangeSummary.data?.timeRangeSummary,
       );
       const { partialExploreState } = convertPresetToExploreState(
         validSpecResp.data.metricsView,

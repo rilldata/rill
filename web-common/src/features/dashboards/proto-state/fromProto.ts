@@ -8,6 +8,7 @@ import {
   type PivotChipData,
   PivotChipType,
   type PivotState,
+  type PivotTableMode,
 } from "@rilldata/web-common/features/dashboards/pivot/types";
 import {
   FromProtoOperationMap,
@@ -19,7 +20,7 @@ import {
   createAndExpression,
   filterIdentifiers,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
-import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
 import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
 import {
@@ -84,7 +85,7 @@ export function getDashboardStateFromUrl(
   metricsView: V1MetricsViewSpec,
   explore: V1ExploreSpec,
   schema: V1StructType,
-): Partial<MetricsExplorerEntity> {
+): Partial<ExploreState> {
   // backwards compatibility for older urls that had encoded state
   urlState = urlState.includes("%") ? decodeURIComponent(urlState) : urlState;
   return getDashboardStateFromProto(
@@ -100,9 +101,9 @@ export function getDashboardStateFromProto(
   metricsView: V1MetricsViewSpec,
   explore: V1ExploreSpec,
   schema: V1StructType,
-): Partial<MetricsExplorerEntity> {
+): Partial<ExploreState> {
   const dashboard = DashboardState.fromBinary(binary);
-  const entity: Partial<MetricsExplorerEntity> = {};
+  const entity: Partial<ExploreState> = {};
 
   if (dashboard.filters) {
     // backwards compatibility for our older filter format
@@ -191,7 +192,9 @@ export function getDashboardStateFromProto(
     };
   }
 
-  entity.selectedTimezone = dashboard.selectedTimezone ?? "UTC";
+  if (dashboard.selectedTimezone !== undefined) {
+    entity.selectedTimezone = dashboard.selectedTimezone;
+  }
 
   if (dashboard.allMeasuresVisible) {
     entity.allMeasuresVisible = true;
@@ -220,12 +223,18 @@ export function getDashboardStateFromProto(
   if (dashboard.leaderboardSortType) {
     entity.dashboardSortType = dashboard.leaderboardSortType;
   }
-  if (dashboard.leaderboardMeasureCount) {
-    entity.leaderboardMeasureCount = dashboard.leaderboardMeasureCount;
+  if (dashboard.leaderboardShowContextForAllMeasures) {
+    entity.leaderboardShowContextForAllMeasures =
+      dashboard.leaderboardShowContextForAllMeasures;
+  }
+  if (dashboard.leaderboardMeasures?.length) {
+    entity.leaderboardMeasureNames = dashboard.leaderboardMeasures;
   }
 
-  if (dashboard.pivotIsActive !== undefined) {
+  if (dashboard.activePage === DashboardState_ActivePage.PIVOT) {
     entity.pivot = fromPivotProto(dashboard, metricsView);
+  } else if (dashboard.activePage !== DashboardState_ActivePage.UNSPECIFIED) {
+    entity.pivot = blankPivotState();
   }
 
   Object.assign(entity, fromActivePageProto(dashboard));
@@ -417,7 +426,6 @@ function fromPivotProto(
   }
 
   return {
-    active: dashboard.pivotIsActive ?? false,
     rows: rowDimensions,
     columns: [
       ...colDimensions,
@@ -433,6 +441,20 @@ function fromPivotProto(
       FromProtoPivotTableModeMap[
         dashboard.pivotTableMode || DashboardState_PivotTableMode.NEST
       ],
+  };
+}
+
+function blankPivotState(): PivotState {
+  return {
+    rows: [],
+    columns: [],
+    expanded: {},
+    sorting: [],
+    columnPage: 1,
+    rowPage: 1,
+    enableComparison: true,
+    activeCell: null,
+    tableMode: "nest" as PivotTableMode,
   };
 }
 
@@ -467,9 +489,7 @@ function fromTimeProto(timestamp: Timestamp) {
 
 function fromActivePageProto(
   dashboard: DashboardState,
-): Partial<
-  Pick<MetricsExplorerEntity, "activePage" | "selectedDimensionName">
-> {
+): Partial<Pick<ExploreState, "activePage" | "selectedDimensionName">> {
   switch (dashboard.activePage) {
     case DashboardState_ActivePage.UNSPECIFIED:
       // backwards compatibility

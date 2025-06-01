@@ -26,6 +26,9 @@ import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import { error, redirect, type Page } from "@sveltejs/kit";
 import { isAxiosError } from "axios";
 import { getOrgWithBearerToken } from "@rilldata/web-admin/features/public-urls/get-org-with-bearer-token";
+import { Settings } from "luxon";
+
+Settings.defaultLocale = "en";
 
 export const load = async ({ params, url, route, depends }) => {
   depends("app:root");

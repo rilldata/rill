@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"regexp"
 	"strings"
 	"time"
 
@@ -23,6 +24,8 @@ var (
 	ErrUnsupportedConnector = errors.New("drivers: connector not supported")
 	// ErrOptimizationFailure is returned when an optimization fails.
 	ErrOptimizationFailure = errors.New("drivers: optimization failure")
+
+	dictPwdRegex = regexp.MustCompile(`PASSWORD\s+'[^']*'`)
 )
 
 // WithConnectionFunc is a callback function that provides a context to be used in further OLAP store calls to enforce affinity to a single connection.
@@ -31,60 +34,42 @@ var (
 // and ensuredCtx wraps a background context (ensuring it can never be cancelled).
 type WithConnectionFunc func(wrappedCtx context.Context, ensuredCtx context.Context, conn *sql.Conn) error
 
-type CreateTableOptions struct {
-	View         bool
-	InitQueries  []string
-	BeforeCreate string
-	AfterCreate  string
-	TableOpts    map[string]any
-}
-
-// TableWriteMetrics reports metrics for an execution that mutates table data.
-type TableWriteMetrics struct {
-	// Duration is the time taken to run user queries only.
-	Duration time.Duration
-}
-
-type InsertTableOptions struct {
-	InitQueries  []string
-	BeforeInsert string
-	AfterInsert  string
-	ByName       bool
-	InPlace      bool
-	Strategy     IncrementalStrategy
-	UniqueKey    []string
-}
-
 // OLAPStore is implemented by drivers that are capable of storing, transforming and serving analytical queries.
-// NOTE crud APIs are not safe to be called with `WithConnection`
 type OLAPStore interface {
+	// Dialect is the SQL dialect that the driver uses.
 	Dialect() Dialect
-	WithConnection(ctx context.Context, priority int, longRunning bool, fn WithConnectionFunc) error
-	Exec(ctx context.Context, stmt *Statement) error
-	Execute(ctx context.Context, stmt *Statement) (*Result, error)
-	InformationSchema() InformationSchema
-
-	CreateTableAsSelect(ctx context.Context, name, sql string, opts *CreateTableOptions) (*TableWriteMetrics, error)
-	InsertTableAsSelect(ctx context.Context, name, sql string, opts *InsertTableOptions) (*TableWriteMetrics, error)
-	DropTable(ctx context.Context, name string) error
-	RenameTable(ctx context.Context, name, newName string) error
-	AddTableColumn(ctx context.Context, tableName, columnName string, typ string) error
-	AlterTableColumn(ctx context.Context, tableName, columnName string, newType string) error
-
+	// MayBeScaledToZero returns true if the driver might currently be scaled to zero.
 	MayBeScaledToZero(ctx context.Context) bool
+	// WithConnection acquires a connection from the pool and keeps it open until the callback returns.
+	WithConnection(ctx context.Context, priority int, fn WithConnectionFunc) error
+	// Exec executes a query against the OLAP driver.
+	Exec(ctx context.Context, stmt *Statement) error
+	// Query executes a query against the OLAP driver and returns an iterator for the resulting rows and schema.
+	// The result MUST be closed after use.
+	Query(ctx context.Context, stmt *Statement) (*Result, error)
+	// InformationSchema enables introspecting the tables and views available in the OLAP driver.
+	InformationSchema() InformationSchema
 }
 
 // Statement wraps a query to execute against an OLAP driver.
 type Statement struct {
-	Query       string
-	Args        []any
-	DryRun      bool
-	Priority    int
-	LongRunning bool
-	// *Cache configs are used to send olap specific cache configs to underlying drivers on per query basis. For example,
-	// both Druid and ClickHouse supports specifying if cache should be used for the query or not and if the query results should be populated in cache or not.
-	UseCache         *bool // can be used to enable/disable cache for the query
-	PopulateCache    *bool // can be used to enable/disable cache population for the query results
+	// Query is the SQL query to execute.
+	Query string
+	// Args are positional arguments to bind to the query.
+	Args []any
+	// DryRun indicates if the query should be parsed and validated, but not actually executed.
+	DryRun bool
+	// Priority provides a query priority if the driver supports it (a higher value indicates a higher priority).
+	Priority int
+	// UseCache explicitly enables/disables reading from database-level caches (if supported by the driver).
+	// If not set, the driver will use its default behavior.
+	UseCache *bool
+	// PopulateCache explicitly enables/disables writing to database-level caches (if supported by the driver).
+	// If not set, the driver will use its default behavior.
+	PopulateCache *bool
+	// ExecutionTimeout provides a timeout for query execution.
+	// Unlike a timeout on ctx, it will be enforced only for query execution, not for time spent waiting in queues.
+	// It may not be supported by all drivers.
 	ExecutionTimeout time.Duration
 }
 
@@ -169,9 +154,12 @@ func (r *Result) Close() error {
 // InformationSchema contains information about existing tables in an OLAP driver.
 // Table lookups should be case insensitive.
 type InformationSchema interface {
+	// All returns metadata about all tables and views.
+	// The like argument can optionally be passed to filter the tables by name.
 	All(ctx context.Context, like string) ([]*Table, error)
+	// Lookup returns metadata about a specific tables and views.
 	Lookup(ctx context.Context, db, schema, name string) (*Table, error)
-	// LoadPhysicalSize populates the PhysicalSizeBytes field of the tables.
+	// LoadPhysicalSize populates the PhysicalSizeBytes field of table metadata.
 	// It should be called after All or Lookup and not on manually created tables.
 	LoadPhysicalSize(ctx context.Context, tables []*Table) error
 }
@@ -188,16 +176,6 @@ type Table struct {
 	UnsupportedCols         map[string]string
 	PhysicalSizeBytes       int64
 }
-
-// IncrementalStrategy is a strategy to use for incrementally inserting data into a SQL table.
-type IncrementalStrategy string
-
-const (
-	IncrementalStrategyUnspecified        IncrementalStrategy = ""
-	IncrementalStrategyAppend             IncrementalStrategy = "append"
-	IncrementalStrategyMerge              IncrementalStrategy = "merge"
-	IncrementalStrategyPartitionOverwrite IncrementalStrategy = "partition_overwrite"
-)
 
 // Dialect enumerates OLAP query languages.
 type Dialect int
@@ -299,13 +277,21 @@ func (d Dialect) EscapeTable(db, schema, table string) string {
 	return sb.String()
 }
 
-func (d Dialect) DimensionSelect(db, dbSchema, table string, dim *runtimev1.MetricsViewSpec_Dimension) (dimSelect, unnestClause string) {
+func (d Dialect) DimensionSelect(db, dbSchema, table string, dim *runtimev1.MetricsViewSpec_Dimension) (dimSelect, unnestClause string, err error) {
 	colName := d.EscapeIdentifier(dim.Name)
 	if !dim.Unnest || d == DialectDruid {
-		return fmt.Sprintf(`(%s) as %s`, d.MetricsViewDimensionExpression(dim), colName), ""
+		expr, err := d.MetricsViewDimensionExpression(dim)
+		if err != nil {
+			return "", "", fmt.Errorf("failed to get dimension expression: %w", err)
+		}
+		return fmt.Sprintf(`(%s) as %s`, expr, colName), "", nil
 	}
 	if dim.Unnest && d == DialectClickHouse {
-		return fmt.Sprintf(`arrayJoin(%s) as %s`, d.MetricsViewDimensionExpression(dim), colName), ""
+		expr, err := d.MetricsViewDimensionExpression(dim)
+		if err != nil {
+			return "", "", fmt.Errorf("failed to get dimension expression: %w", err)
+		}
+		return fmt.Sprintf(`arrayJoin(%s) as %s`, expr, colName), "", nil
 	}
 
 	unnestColName := d.EscapeIdentifier(tempName(fmt.Sprintf("%s_%s_", "unnested", dim.Name)))
@@ -313,26 +299,30 @@ func (d Dialect) DimensionSelect(db, dbSchema, table string, dim *runtimev1.Metr
 	sel := fmt.Sprintf(`%s as %s`, unnestColName, colName)
 	if dim.Expression == "" {
 		// select "unnested_colName" as "colName" ... FROM "mv_table", LATERAL UNNEST("mv_table"."colName") tbl_name("unnested_colName") ...
-		return sel, fmt.Sprintf(`, LATERAL UNNEST(%s.%s) %s(%s)`, d.EscapeTable(db, dbSchema, table), colName, unnestTableName, unnestColName)
+		return sel, fmt.Sprintf(`, LATERAL UNNEST(%s.%s) %s(%s)`, d.EscapeTable(db, dbSchema, table), colName, unnestTableName, unnestColName), nil
 	}
 
-	return sel, fmt.Sprintf(`, LATERAL UNNEST(%s) %s(%s)`, dim.Expression, unnestTableName, unnestColName)
+	return sel, fmt.Sprintf(`, LATERAL UNNEST(%s) %s(%s)`, dim.Expression, unnestTableName, unnestColName), nil
 }
 
-func (d Dialect) DimensionSelectPair(db, dbSchema, table string, dim *runtimev1.MetricsViewSpec_Dimension) (expr, alias, unnestClause string) {
+func (d Dialect) DimensionSelectPair(db, dbSchema, table string, dim *runtimev1.MetricsViewSpec_Dimension) (expr, alias, unnestClause string, err error) {
 	colName := d.EscapeIdentifier(dim.Name)
 	if !dim.Unnest || d == DialectDruid {
-		return d.MetricsViewDimensionExpression(dim), colName, ""
+		ex, err := d.MetricsViewDimensionExpression(dim)
+		if err != nil {
+			return "", "", "", fmt.Errorf("failed to get dimension expression: %w", err)
+		}
+		return ex, colName, "", nil
 	}
 
 	unnestColName := d.EscapeIdentifier(tempName(fmt.Sprintf("%s_%s_", "unnested", dim.Name)))
 	unnestTableName := tempName("tbl")
 	if dim.Expression == "" {
 		// select "unnested_colName" as "colName" ... FROM "mv_table", LATERAL UNNEST("mv_table"."colName") tbl_name("unnested_colName") ...
-		return unnestColName, colName, fmt.Sprintf(`, LATERAL UNNEST(%s.%s) %s(%s)`, d.EscapeTable(db, dbSchema, table), colName, unnestTableName, unnestColName)
+		return unnestColName, colName, fmt.Sprintf(`, LATERAL UNNEST(%s.%s) %s(%s)`, d.EscapeTable(db, dbSchema, table), colName, unnestTableName, unnestColName), nil
 	}
 
-	return unnestColName, colName, fmt.Sprintf(`, LATERAL UNNEST(%s) %s(%s)`, dim.Expression, unnestTableName, unnestColName)
+	return unnestColName, colName, fmt.Sprintf(`, LATERAL UNNEST(%s) %s(%s)`, dim.Expression, unnestTableName, unnestColName), nil
 }
 
 func (d Dialect) LateralUnnest(expr, tableAlias, colName string) (tbl string, auto bool, err error) {
@@ -350,16 +340,28 @@ func (d Dialect) AutoUnnest(expr string) string {
 	return expr
 }
 
-func (d Dialect) MetricsViewDimensionExpression(dimension *runtimev1.MetricsViewSpec_Dimension) string {
+func (d Dialect) MetricsViewDimensionExpression(dimension *runtimev1.MetricsViewSpec_Dimension) (string, error) {
+	if dimension.LookupTable != "" {
+		var keyExpr string
+		if dimension.Column != "" {
+			keyExpr = d.EscapeIdentifier(dimension.Column)
+		} else if dimension.Expression != "" {
+			keyExpr = dimension.Expression
+		} else {
+			return "", fmt.Errorf("dimension %q has a lookup table but no column or expression defined", dimension.Name)
+		}
+		return d.LookupExpr(dimension.LookupTable, dimension.LookupValueColumn, keyExpr, dimension.LookupDefaultExpression)
+	}
+
 	if dimension.Expression != "" {
-		return dimension.Expression
+		return dimension.Expression, nil
 	}
 	if dimension.Column != "" {
-		return d.EscapeIdentifier(dimension.Column)
+		return d.EscapeIdentifier(dimension.Column), nil
 	}
 	// Backwards compatibility for older projects that have not run reconcile on this metrics view.
 	// In that case `column` will not be present.
-	return d.EscapeIdentifier(dimension.Name)
+	return d.EscapeIdentifier(dimension.Name), nil
 }
 
 func (d Dialect) SafeDivideExpression(numExpr, denExpr string) string {
@@ -764,6 +766,37 @@ func (d Dialect) GetTimeExpr(t time.Time) (bool, string) {
 	default:
 		return false, ""
 	}
+}
+
+func (d Dialect) LookupExpr(lookupTable, lookupValueColumn, lookupKeyExpr, lookupDefaultExpression string) (string, error) {
+	switch d {
+	case DialectClickHouse:
+		if lookupDefaultExpression != "" {
+			return fmt.Sprintf("dictGetOrDefault('%s', '%s', %s, %s)", lookupTable, lookupValueColumn, lookupKeyExpr, lookupDefaultExpression), nil
+		}
+		return fmt.Sprintf("dictGet('%s', '%s', %s)", lookupTable, lookupValueColumn, lookupKeyExpr), nil
+	default:
+		// Druid already does reverse lookup inherently so defining lookup expression directly as dimension expression should be ok.
+		// For Duckdb I think we should just avoid going into this complexity as it should not matter much at that scale.
+		return "", fmt.Errorf("lookup tables are not supported for dialect %q", d)
+	}
+}
+
+func (d Dialect) LookupSelectExpr(lookupTable, lookupKeyColumn string) (string, error) {
+	switch d {
+	case DialectClickHouse:
+		return fmt.Sprintf("SELECT %s FROM dictionary(%s)", d.EscapeIdentifier(lookupKeyColumn), d.EscapeIdentifier(lookupTable)), nil
+	default:
+		return "", fmt.Errorf("unsupported dialect %q", d)
+	}
+}
+
+func (d Dialect) SanitizeQueryForLogging(sql string) string {
+	if d == DialectClickHouse {
+		// replace inline "PASSWORD 'pwd'" for dict source with "PASSWORD '***'"
+		sql = dictPwdRegex.ReplaceAllString(sql, "PASSWORD '***'")
+	}
+	return sql
 }
 
 func (d Dialect) checkTypeCompatibility(f *runtimev1.StructType_Field) bool {

@@ -11,7 +11,6 @@
     V1ExportFormat,
     type V1Query,
   } from "@rilldata/web-common/runtime-client";
-  import { builderActions, getAttrs } from "bits-ui";
   import { onMount } from "svelte";
   import { get } from "svelte/store";
   import { runtime } from "../../runtime-client/runtime-store";
@@ -74,17 +73,14 @@
         <TooltipContent slot="tooltip-content">Export model</TooltipContent>
       </Tooltip>
     {:else}
-      <button
-        aria-label={label}
-        use:builderActions={{ builders: [builder] }}
-        {...getAttrs([builder])}
-      >
+      <Button {label} {disabled} type="toolbar" builders={[builder]}>
+        <Export size="15px" />
         Export
         <CaretDownIcon
           className="transition-transform {open && '-rotate-180'}"
           size="10px"
         />
-      </button>
+      </Button>
     {/if}
   </DropdownMenu.Trigger>
 
@@ -131,13 +127,3 @@
     }}
   />
 {/if}
-
-<style lang="postcss">
-  button {
-    @apply h-6 px-1.5 py-px flex items-center gap-[3px] rounded-sm text-gray-700 pointer-events-auto;
-  }
-
-  button:hover {
-    @apply bg-gray-200;
-  }
-</style>

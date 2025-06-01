@@ -44,6 +44,38 @@ proto3.util.setEnumType(ReconcileStatus, "rill.runtime.v1.ReconcileStatus", [
 ]);
 
 /**
+ * @generated from enum rill.runtime.v1.ModelChangeMode
+ */
+export enum ModelChangeMode {
+  /**
+   * @generated from enum value: MODEL_CHANGE_MODE_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: MODEL_CHANGE_MODE_RESET = 1;
+   */
+  RESET = 1,
+
+  /**
+   * @generated from enum value: MODEL_CHANGE_MODE_MANUAL = 2;
+   */
+  MANUAL = 2,
+
+  /**
+   * @generated from enum value: MODEL_CHANGE_MODE_PATCH = 3;
+   */
+  PATCH = 3,
+}
+// Retrieve enum metadata with: proto3.getEnumType(ModelChangeMode)
+proto3.util.setEnumType(ModelChangeMode, "rill.runtime.v1.ModelChangeMode", [
+  { no: 0, name: "MODEL_CHANGE_MODE_UNSPECIFIED" },
+  { no: 1, name: "MODEL_CHANGE_MODE_RESET" },
+  { no: 2, name: "MODEL_CHANGE_MODE_MANUAL" },
+  { no: 3, name: "MODEL_CHANGE_MODE_PATCH" },
+]);
+
+/**
  * @generated from enum rill.runtime.v1.ExploreComparisonMode
  */
 export enum ExploreComparisonMode {
@@ -934,6 +966,13 @@ export class ModelSpec extends Message<ModelSpec> {
   outputProperties?: Struct;
 
   /**
+   * change_mode is the mode of change detection to use for the model.
+   *
+   * @generated from field: rill.runtime.v1.ModelChangeMode change_mode = 24;
+   */
+  changeMode = ModelChangeMode.UNSPECIFIED;
+
+  /**
    * @generated from field: bool trigger = 9;
    */
   trigger = false;
@@ -973,6 +1012,7 @@ export class ModelSpec extends Message<ModelSpec> {
     { no: 17, name: "stage_properties", kind: "message", T: Struct },
     { no: 1, name: "output_connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 12, name: "output_properties", kind: "message", T: Struct },
+    { no: 24, name: "change_mode", kind: "enum", T: proto3.getEnumType(ModelChangeMode) },
     { no: 9, name: "trigger", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 22, name: "trigger_full", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 23, name: "defined_as_source", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
@@ -1229,6 +1269,13 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
   description = "";
 
   /**
+   * Extra context for LLM/AI features. Used to guide natural language question answering and routing.
+   *
+   * @generated from field: string ai_context = 28;
+   */
+  aiContext = "";
+
+  /**
    * Name of the primary time dimension, used for rendering time series
    *
    * @generated from field: string time_dimension = 5;
@@ -1317,6 +1364,7 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
     { no: 24, name: "model", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 28, name: "ai_context", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "time_dimension", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 8, name: "smallest_time_grain", kind: "enum", T: proto3.getEnumType(TimeGrain) },
     { no: 20, name: "watermark_expression", kind: "scalar", T: 9 /* ScalarType.STRING */ },
@@ -1422,6 +1470,28 @@ export class MetricsViewSpec_Dimension extends Message<MetricsViewSpec_Dimension
    */
   uri = "";
 
+  /**
+   * Lookup fields for the dimension
+   *
+   * @generated from field: string lookup_table = 8;
+   */
+  lookupTable = "";
+
+  /**
+   * @generated from field: string lookup_key_column = 9;
+   */
+  lookupKeyColumn = "";
+
+  /**
+   * @generated from field: string lookup_value_column = 10;
+   */
+  lookupValueColumn = "";
+
+  /**
+   * @generated from field: string lookup_default_expression = 11;
+   */
+  lookupDefaultExpression = "";
+
   constructor(data?: PartialMessage<MetricsViewSpec_Dimension>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1437,6 +1507,10 @@ export class MetricsViewSpec_Dimension extends Message<MetricsViewSpec_Dimension
     { no: 6, name: "expression", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "unnest", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 7, name: "uri", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 8, name: "lookup_table", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 9, name: "lookup_key_column", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 10, name: "lookup_value_column", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 11, name: "lookup_default_expression", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewSpec_Dimension {
@@ -2118,6 +2192,14 @@ export class ExploreSpec extends Message<ExploreSpec> {
    */
   allowCustomTimeRange = false;
 
+  /**
+   * When true, it indicates that the explore was defined in a metrics view.
+   * This currently happens for legacy metrics views (that don't have `version: 1`), which also emits explores.
+   *
+   * @generated from field: bool defined_in_metrics_view = 21;
+   */
+  definedInMetricsView = false;
+
   constructor(data?: PartialMessage<ExploreSpec>) {
     super();
     proto3.util.initPartial(data, this);
@@ -2143,6 +2225,7 @@ export class ExploreSpec extends Message<ExploreSpec> {
     { no: 18, name: "banner", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 19, name: "lock_time_zone", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 20, name: "allow_custom_time_range", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 21, name: "defined_in_metrics_view", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ExploreSpec {
@@ -2407,9 +2490,21 @@ export class ExplorePreset extends Message<ExplorePreset> {
   exploreExpandedDimension?: string;
 
   /**
+   * Deprecated
+   *
    * @generated from field: optional uint32 explore_leaderboard_measure_count = 30;
    */
   exploreLeaderboardMeasureCount?: number;
+
+  /**
+   * @generated from field: repeated string explore_leaderboard_measures = 31;
+   */
+  exploreLeaderboardMeasures: string[] = [];
+
+  /**
+   * @generated from field: optional bool explore_leaderboard_show_context_for_all_measures = 32;
+   */
+  exploreLeaderboardShowContextForAllMeasures?: boolean;
 
   /**
    * @generated from field: optional string time_dimension_measure = 21;
@@ -2478,6 +2573,8 @@ export class ExplorePreset extends Message<ExplorePreset> {
     { no: 19, name: "explore_sort_type", kind: "enum", T: proto3.getEnumType(ExploreSortType), opt: true },
     { no: 20, name: "explore_expanded_dimension", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 30, name: "explore_leaderboard_measure_count", kind: "scalar", T: 13 /* ScalarType.UINT32 */, opt: true },
+    { no: 31, name: "explore_leaderboard_measures", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 32, name: "explore_leaderboard_show_context_for_all_measures", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
     { no: 21, name: "time_dimension_measure", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 22, name: "time_dimension_chart_type", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 23, name: "time_dimension_pin", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
@@ -2842,6 +2939,11 @@ export class ReportSpec extends Message<ReportSpec> {
   exportFormat = ExportFormat.UNSPECIFIED;
 
   /**
+   * @generated from field: bool export_include_header = 16;
+   */
+  exportIncludeHeader = false;
+
+  /**
    * @generated from field: repeated rill.runtime.v1.Notifier notifiers = 11;
    */
   notifiers: Notifier[] = [];
@@ -2889,6 +2991,7 @@ export class ReportSpec extends Message<ReportSpec> {
     { no: 6, name: "query_args_json", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 7, name: "export_limit", kind: "scalar", T: 4 /* ScalarType.UINT64 */ },
     { no: 8, name: "export_format", kind: "enum", T: proto3.getEnumType(ExportFormat) },
+    { no: 16, name: "export_include_header", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 11, name: "notifiers", kind: "message", T: Notifier, repeated: true },
     { no: 10, name: "annotations", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
     { no: 12, name: "watermark_inherit", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
@@ -4475,14 +4578,19 @@ export class APISpec extends Message<APISpec> {
   openapiSummary = "";
 
   /**
-   * @generated from field: repeated google.protobuf.Struct openapi_parameters = 4;
+   * @generated from field: string openapi_parameters_json = 8;
    */
-  openapiParameters: Struct[] = [];
+  openapiParametersJson = "";
 
   /**
-   * @generated from field: google.protobuf.Struct openapi_response_schema = 5;
+   * @generated from field: string openapi_request_schema_json = 9;
    */
-  openapiResponseSchema?: Struct;
+  openapiRequestSchemaJson = "";
+
+  /**
+   * @generated from field: string openapi_response_schema_json = 10;
+   */
+  openapiResponseSchemaJson = "";
 
   /**
    * @generated from field: repeated rill.runtime.v1.SecurityRule security_rules = 6;
@@ -4505,8 +4613,9 @@ export class APISpec extends Message<APISpec> {
     { no: 1, name: "resolver", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "resolver_properties", kind: "message", T: Struct },
     { no: 3, name: "openapi_summary", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 4, name: "openapi_parameters", kind: "message", T: Struct, repeated: true },
-    { no: 5, name: "openapi_response_schema", kind: "message", T: Struct },
+    { no: 8, name: "openapi_parameters_json", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 9, name: "openapi_request_schema_json", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 10, name: "openapi_response_schema_json", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "security_rules", kind: "message", T: SecurityRule, repeated: true },
     { no: 7, name: "skip_nested_security", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);

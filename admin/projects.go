@@ -114,6 +114,8 @@ func (s *Service) CreateProject(ctx context.Context, org *database.Organization,
 		ArchiveAssetID:       proj.ArchiveAssetID,
 		GithubURL:            proj.GithubURL,
 		GithubInstallationID: proj.GithubInstallationID,
+		GithubRepoID:         proj.GithubRepoID,
+		ManagedGitRepoID:     proj.ManagedGitRepoID,
 		Provisioner:          proj.Provisioner,
 		ProdVersion:          proj.ProdVersion,
 		ProdBranch:           proj.ProdBranch,
@@ -197,25 +199,15 @@ func (s *Service) UpdateProject(ctx context.Context, proj *database.Project, opt
 	}
 	annotations := s.NewDeploymentAnnotations(org, proj)
 
-	ds, err := s.DB.FindDeploymentsForProject(ctx, proj.ID)
+	err = s.UpdateDeploymentsForProject(ctx, proj, &UpdateDeploymentOptions{
+		Annotations:     annotations,
+		Branch:          opts.ProdBranch,
+		Version:         opts.ProdVersion,
+		Variables:       nil,
+		EvictCachedRepo: true,
+	})
 	if err != nil {
 		return nil, err
-	}
-
-	// NOTE: This assumes every deployment (almost always, there's just one) deploys the prod branch.
-	// It needs to be refactored when implementing preview deploys.
-	for _, d := range ds {
-		err := s.UpdateDeployment(ctx, d, &UpdateDeploymentOptions{
-			Annotations:     annotations,
-			Branch:          opts.ProdBranch,
-			Version:         opts.ProdVersion,
-			Variables:       nil,
-			EvictCachedRepo: true,
-		})
-		if err != nil {
-			// TODO: This may leave things in an inconsistent state. (Although presently, there's almost never multiple deployments.)
-			return nil, err
-		}
 	}
 
 	return proj, nil
@@ -266,30 +258,20 @@ func (s *Service) UpdateProjectVariables(ctx context.Context, project *database.
 
 	annotations := s.NewDeploymentAnnotations(org, project)
 
-	ds, err := s.DB.FindDeploymentsForProject(ctx, project.ID)
-	if err != nil {
-		return err
-	}
-
 	vars, err = s.ResolveVariables(ctx, project.ID, "prod", true)
 	if err != nil {
 		return err
 	}
 
-	// NOTE: This assumes every deployment (almost always, there's just one) deploys the prod branch.
-	// It needs to be refactored when implementing preview deploys.
-	for _, d := range ds {
-		err := s.UpdateDeployment(ctx, d, &UpdateDeploymentOptions{
-			Annotations:     annotations,
-			Branch:          project.ProdBranch,
-			Version:         project.ProdVersion,
-			Variables:       vars,
-			EvictCachedRepo: true,
-		})
-		if err != nil {
-			// TODO: This may leave things in an inconsistent state. (Although presently, there's almost never multiple deployments.)
-			return err
-		}
+	err = s.UpdateDeploymentsForProject(ctx, project, &UpdateDeploymentOptions{
+		Annotations:     annotations,
+		Branch:          project.ProdBranch,
+		Version:         project.ProdVersion,
+		Variables:       vars,
+		EvictCachedRepo: true,
+	})
+	if err != nil {
+		return err
 	}
 
 	return nil
@@ -308,22 +290,15 @@ func (s *Service) UpdateOrgDeploymentAnnotations(ctx context.Context, org *datab
 		}
 
 		for _, proj := range projs {
-			ds, err := s.DB.FindDeploymentsForProject(ctx, proj.ID)
+			err := s.UpdateDeploymentsForProject(ctx, proj, &UpdateDeploymentOptions{
+				Annotations:     s.NewDeploymentAnnotations(org, proj),
+				Branch:          proj.ProdBranch,
+				Version:         proj.ProdVersion,
+				Variables:       nil,
+				EvictCachedRepo: false,
+			})
 			if err != nil {
 				return err
-			}
-
-			for _, d := range ds {
-				err := s.UpdateDeployment(ctx, d, &UpdateDeploymentOptions{
-					Annotations:     s.NewDeploymentAnnotations(org, proj),
-					Branch:          proj.ProdBranch,
-					Version:         proj.ProdVersion,
-					Variables:       nil,
-					EvictCachedRepo: false,
-				})
-				if err != nil {
-					return err
-				}
 			}
 
 			afterProjectName = proj.Name
@@ -374,6 +349,8 @@ func (s *Service) RedeployProject(ctx context.Context, proj *database.Project, p
 		ArchiveAssetID:       proj.ArchiveAssetID,
 		GithubURL:            proj.GithubURL,
 		GithubInstallationID: proj.GithubInstallationID,
+		GithubRepoID:         proj.GithubRepoID,
+		ManagedGitRepoID:     proj.ManagedGitRepoID,
 		ProdVersion:          proj.ProdVersion,
 		ProdBranch:           proj.ProdBranch,
 		Subpath:              proj.Subpath,
@@ -420,6 +397,8 @@ func (s *Service) HibernateProject(ctx context.Context, proj *database.Project) 
 		ArchiveAssetID:       proj.ArchiveAssetID,
 		GithubURL:            proj.GithubURL,
 		GithubInstallationID: proj.GithubInstallationID,
+		GithubRepoID:         proj.GithubRepoID,
+		ManagedGitRepoID:     proj.ManagedGitRepoID,
 		ProdVersion:          proj.ProdVersion,
 		ProdBranch:           proj.ProdBranch,
 		Subpath:              proj.Subpath,

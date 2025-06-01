@@ -72,6 +72,9 @@ type ModelExecuteOptions struct {
 	IncrementalRun bool
 	// PartitionRun is true if the execution is a partition run.
 	PartitionRun bool
+	// PartitionKey is the unique key for the partition currently being run.
+	// It is empty when PartitionRun is false.
+	PartitionKey string
 	// PreviousResult is the result of a previous execution.
 	// For concurrent partition execution, it may not be the most recent previous result.
 	PreviousResult *ModelResult
@@ -96,6 +99,17 @@ type ModelResult struct {
 	ExecDuration time.Duration
 }
 
+// IncrementalStrategy is a strategy to use for incrementally inserting data into a SQL table.
+type IncrementalStrategy string
+
+const (
+	IncrementalStrategyUnspecified        IncrementalStrategy = ""
+	IncrementalStrategyAppend             IncrementalStrategy = "append"
+	IncrementalStrategyMerge              IncrementalStrategy = "merge"
+	IncrementalStrategyPartitionOverwrite IncrementalStrategy = "partition_overwrite"
+)
+
+// FileFormat is a file format for importing or exporting data.
 type FileFormat string
 
 const (

@@ -11,10 +11,7 @@ import (
 
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/go-git/go-git/v5"
-	"github.com/go-git/go-git/v5/config"
-	"github.com/go-git/go-git/v5/plumbing"
-	githttp "github.com/go-git/go-git/v5/plumbing/transport/http"
-	"github.com/google/go-github/v50/github"
+	"github.com/google/go-github/v71/github"
 	"github.com/rilldata/rill/cli/cmd/org"
 	"github.com/rilldata/rill/cli/pkg/browser"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
@@ -398,50 +395,19 @@ func createGithubRepoFlow(ctx context.Context, ch *cmdutil.Helper, localGitPath 
 
 	printer.ColorGreenBold.Printf("\nSuccessfully created repository on %q\n\n", *githubRepository.HTMLURL)
 	ch.Print("Pushing local project to Github\n\n")
-	// init git repo
-	repo, err := git.PlainInitWithOptions(localGitPath, &git.PlainInitOptions{
-		InitOptions: git.InitOptions{
-			DefaultBranch: plumbing.NewBranchReferenceName("main"),
-		},
-		Bare: false,
-	})
+	author, err := ch.GitSignature(ctx, localGitPath)
 	if err != nil {
-		if !errors.Is(err, git.ErrRepositoryAlreadyExists) {
-			return fmt.Errorf("failed to init git repo: %w", err)
-		}
-		repo, err = git.PlainOpen(localGitPath)
-		if err != nil {
-			return fmt.Errorf("failed to open git repo: %w", err)
-		}
+		return fmt.Errorf("failed to generate git commit signature: %w", err)
 	}
-
-	wt, err := repo.Worktree()
+	var branch string
+	if githubRepository.DefaultBranch != nil {
+		branch = *githubRepository.DefaultBranch
+	} else {
+		branch = "main"
+	}
+	err = gitutil.CommitAndForcePush(ctx, localGitPath, *githubRepository.CloneURL, "x-access-token", pollRes.AccessToken, branch, author, true)
 	if err != nil {
-		return fmt.Errorf("failed to get worktree: %w", err)
-	}
-
-	// git add .
-	if err := wt.AddWithOptions(&git.AddOptions{All: true}); err != nil {
-		return fmt.Errorf("failed to add files to git: %w", err)
-	}
-
-	// git commit -m
-	_, err = wt.Commit("Auto committed by Rill", &git.CommitOptions{All: true})
-	if err != nil {
-		if !errors.Is(err, git.ErrEmptyCommit) {
-			return fmt.Errorf("failed to commit files to git: %w", err)
-		}
-	}
-
-	// Create the remote
-	_, err = repo.CreateRemote(&config.RemoteConfig{Name: "origin", URLs: []string{*githubRepository.HTMLURL}})
-	if err != nil {
-		return fmt.Errorf("failed to create remote: %w", err)
-	}
-
-	// push the changes
-	if err := repo.PushContext(ctx, &git.PushOptions{Auth: &githttp.BasicAuth{Username: "x-access-token", Password: pollRes.AccessToken}}); err != nil {
-		return fmt.Errorf("failed to push to remote %q : %w", *githubRepository.HTMLURL, err)
+		return fmt.Errorf("failed to push local project to Github: %w", err)
 	}
 
 	ch.Print("Successfully pushed your local project to Github\n\n")
@@ -633,8 +599,8 @@ func projectNamePrompt(ctx context.Context, ch *cmdutil.Helper, orgName string) 
 			Prompt: &survey.Input{
 				Message: "Enter a project name",
 			},
-			Validate: func(any interface{}) error {
-				name := any.(string)
+			Validate: func(v any) error {
+				name := v.(string)
 				if name == "" {
 					return fmt.Errorf("empty name")
 				}

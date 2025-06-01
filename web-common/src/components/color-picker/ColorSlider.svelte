@@ -53,8 +53,8 @@
 <style lang="postcss">
   * {
     --focus: rgba(255, 255, 255, 1) 0 0 0 2.5px, var(--color) 0 0 0 4.5px;
-    --hover: rgba(255, 255, 255, 1) 0 0 0 2.5px,
-      rgba(0, 0, 0, 0.2) 0 0 3px 3.5px;
+    --hover:
+      rgba(255, 255, 255, 1) 0 0 0 2.5px, rgba(0, 0, 0, 0.2) 0 0 3px 3.5px;
   }
 
   input:focus {

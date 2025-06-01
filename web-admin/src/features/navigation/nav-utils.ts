@@ -18,6 +18,7 @@ export function isProjectPage(page: Page): boolean {
     page.route.id === "/[organization]/[project]" ||
     page.route.id === "/[organization]/[project]/-/reports" ||
     page.route.id === "/[organization]/[project]/-/alerts" ||
+    page.route.id === "/[organization]/[project]/-/ai" ||
     page.route.id === "/[organization]/[project]/-/status" ||
     page.route.id === "/[organization]/[project]/-/settings" ||
     page.route.id === "/[organization]/[project]/-/settings/public-urls" ||

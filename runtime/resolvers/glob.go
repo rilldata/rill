@@ -23,6 +23,8 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/globutil"
 	"github.com/rilldata/rill/runtime/pkg/mapstructureutil"
 	"github.com/rilldata/rill/runtime/pkg/typepb"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"golang.org/x/exp/maps"
 )
@@ -70,8 +72,6 @@ type globProps struct {
 	// TransformSQL is an optional SQL statement to transform the results.
 	// The SQL statement should be a DuckDB SQL statement that queries a table templated into the query with "{{ .table }}".
 	TransformSQL string `mapstructure:"transform_sql"`
-	// AdditionalProps is a map of additional properties to pass to the connector when calling its ObjectStore functions.
-	AdditionalProps map[string]any `mapstructure:",remain"`
 }
 
 // globArgs declares the arguments for a "glob" resolver.
@@ -107,7 +107,7 @@ func newGlob(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolv
 		ExtraProps: map[string]any{
 			"table": tmpTableName,
 		},
-	}, false)
+	}, true)
 	if err != nil {
 		return nil, fmt.Errorf("glob resolver: failed to resolve templating: %w", err)
 	}
@@ -115,6 +115,18 @@ func newGlob(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolv
 	props := &globProps{}
 	if err := mapstructureutil.WeakDecode(propsMap, props); err != nil {
 		return nil, err
+	}
+
+	// set props to span attributes
+	span := trace.SpanFromContext(ctx)
+	if span.SpanContext().IsValid() {
+		span.SetAttributes(
+			attribute.String("connector", props.Connector),
+			attribute.String("path", props.Path),
+			attribute.String("partition", string(props.Partition)),
+			attribute.Bool("rollup_files", props.RollupFiles),
+			attribute.String("transform_sql", props.TransformSQL),
+		)
 	}
 
 	// Parse the bucket URI without the path (e.g. for "s3://bucket/path", it is "s3://bucket")
@@ -126,7 +138,11 @@ func newGlob(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolv
 
 	// If connector is not specified outright, infer it from the path (e.g. for "s3://bucket/path", the connector becomes "s3").
 	if props.Connector == "" {
-		props.Connector = bucketURI.Scheme
+		if bucketURI.Scheme == "gs" {
+			props.Connector = "gcs"
+		} else {
+			props.Connector = bucketURI.Scheme
+		}
 	}
 
 	return &globResolver{
@@ -166,12 +182,7 @@ func (r *globResolver) ResolveInteractive(ctx context.Context) (runtime.Resolver
 		return nil, fmt.Errorf("connector %q is not an object store", r.props.Connector)
 	}
 
-	listObjectsProps := map[string]any{"path": r.props.Path}
-	for k, v := range r.props.AdditionalProps {
-		listObjectsProps[k] = v
-	}
-
-	entries, err := store.ListObjects(ctx, listObjectsProps)
+	entries, err := store.ListObjects(ctx, r.props.Path)
 	if err != nil {
 		return nil, err
 	}
@@ -312,7 +323,7 @@ func (r *globResolver) transformResult(ctx context.Context, rows []map[string]an
 	defer os.Remove(jsonFile)
 
 	var result []map[string]any
-	err = olap.WithConnection(ctx, 0, false, func(wrappedCtx context.Context, ensuredCtx context.Context, _ *databasesql.Conn) error {
+	err = olap.WithConnection(ctx, 0, func(wrappedCtx context.Context, ensuredCtx context.Context, _ *databasesql.Conn) error {
 		// Load the JSON file into a temporary table
 		err = olap.Exec(wrappedCtx, &drivers.Statement{
 			Query: fmt.Sprintf("CREATE TEMPORARY TABLE %s AS (SELECT * FROM read_ndjson_auto(%s))", olap.Dialect().EscapeIdentifier(r.tmpTableName), olap.Dialect().EscapeStringValue(jsonFile)),
@@ -335,7 +346,7 @@ func (r *globResolver) transformResult(ctx context.Context, rows []map[string]an
 		}()
 
 		// Execute the transform SQL
-		rows, err := olap.Execute(wrappedCtx, &drivers.Statement{
+		rows, err := olap.Query(wrappedCtx, &drivers.Statement{
 			Query: sql,
 		})
 		if err != nil {

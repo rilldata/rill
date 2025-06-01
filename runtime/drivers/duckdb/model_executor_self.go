@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"maps"
 	"net/url"
 	"strings"
 	"time"
@@ -32,11 +31,6 @@ func (e *selfToSelfExecutor) Concurrency(desired int) (int, bool) {
 }
 
 func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExecuteOptions) (*drivers.ModelResult, error) {
-	olap, ok := e.c.AsOLAP(e.c.instanceID)
-	if !ok {
-		return nil, fmt.Errorf("output connector is not OLAP")
-	}
-
 	inputProps := &ModelInputProperties{}
 	if err := mapstructure.WeakDecode(opts.InputProperties, inputProps); err != nil {
 		return nil, fmt.Errorf("failed to parse input properties: %w", err)
@@ -83,10 +77,8 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 				return nil, err
 			}
 			defer release()
-			rawProps := maps.Clone(opts.InputProperties)
-			rawProps["path"] = ast.GetTableRefs()[0].Paths[0]
-			rawProps["batch_size"] = -1
-			deleteFiles, err := rewriteDuckDBSQL(ctx, inputProps, handle, rawProps, ast)
+			path := ast.GetTableRefs()[0].Paths[0]
+			deleteFiles, err := rewriteDuckDBSQL(ctx, inputProps, handle, path, ast)
 			if err != nil {
 				return nil, err
 			}
@@ -108,7 +100,7 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 		if opts.Env.StageChanges {
 			stagingTableName = stagingTableNameFor(tableName)
 		}
-		_ = olap.DropTable(ctx, stagingTableName)
+		_ = e.c.dropTable(ctx, stagingTableName)
 
 		// Create the table
 		if inputProps.Database != "" {
@@ -125,52 +117,52 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 			}
 			res, err := e.createFromExternalDuckDB(ctx, inputProps, stagingTableName)
 			if err != nil {
-				_ = olap.DropTable(ctx, stagingTableName)
+				_ = e.c.dropTable(ctx, stagingTableName)
 				return nil, fmt.Errorf("failed to create model: %w", err)
 			}
 			duration = res.Duration
 		} else {
-			createTableOpts := &drivers.CreateTableOptions{
-				View:         asView,
-				BeforeCreate: inputProps.PreExec,
-				AfterCreate:  inputProps.PostExec,
+			createTableOpts := &createTableOptions{
+				view:         asView,
+				beforeCreate: inputProps.PreExec,
+				afterCreate:  inputProps.PostExec,
 			}
 			if inputProps.InitQueries != "" {
-				createTableOpts.InitQueries = []string{inputProps.InitQueries}
+				createTableOpts.initQueries = []string{inputProps.InitQueries}
 			}
-			res, err := olap.CreateTableAsSelect(ctx, stagingTableName, inputProps.SQL, createTableOpts)
+			res, err := e.c.createTableAsSelect(ctx, stagingTableName, inputProps.SQL, createTableOpts)
 			if err != nil {
-				_ = olap.DropTable(ctx, stagingTableName)
+				_ = e.c.dropTable(ctx, stagingTableName)
 				return nil, fmt.Errorf("failed to create model: %w", err)
 			}
-			duration = res.Duration
+			duration = res.duration
 		}
 
 		// Rename the staging table to the final table name
 		if stagingTableName != tableName {
-			err := olapForceRenameTable(ctx, olap, stagingTableName, asView, tableName)
+			err := e.c.forceRenameTable(ctx, stagingTableName, asView, tableName)
 			if err != nil {
 				return nil, fmt.Errorf("failed to rename staged model: %w", err)
 			}
 		}
 	} else {
 		// Insert into the table
-		insertTableOpts := &drivers.InsertTableOptions{
+		insertTableOpts := &InsertTableOptions{
 			BeforeInsert: inputProps.PreExec,
 			AfterInsert:  inputProps.PostExec,
 			ByName:       false,
-			InPlace:      true,
 			Strategy:     outputProps.IncrementalStrategy,
 			UniqueKey:    outputProps.UniqueKey,
+			PartitionBy:  outputProps.PartitionBy,
 		}
 		if inputProps.InitQueries != "" {
 			insertTableOpts.InitQueries = []string{inputProps.InitQueries}
 		}
-		res, err := olap.InsertTableAsSelect(ctx, tableName, inputProps.SQL, insertTableOpts)
+		res, err := e.c.insertTableAsSelect(ctx, tableName, inputProps.SQL, insertTableOpts)
 		if err != nil {
 			return nil, fmt.Errorf("failed to incrementally insert into table: %w", err)
 		}
-		duration = res.Duration
+		duration = res.duration
 	}
 
 	// Build result props
@@ -300,14 +292,13 @@ func objectStoreRef(ctx context.Context, props *ModelInputProperties, opts *driv
 	return "", "", nil, false
 }
 
-func rewriteDuckDBSQL(ctx context.Context, props *ModelInputProperties, inputHandle drivers.Handle, rawProps map[string]any, ast *duckdbsql.AST) (release func(), retErr error) {
+func rewriteDuckDBSQL(ctx context.Context, props *ModelInputProperties, inputHandle drivers.Handle, path string, ast *duckdbsql.AST) (release func(), retErr error) {
 	fs, ok := inputHandle.AsObjectStore()
 	if !ok {
 		return nil, fmt.Errorf("internal error: expected object store connector")
 	}
 
-	var files []string
-	iter, err := fs.DownloadFiles(ctx, rawProps)
+	iter, err := fs.DownloadFiles(ctx, path)
 	if err != nil {
 		return nil, err
 	}
@@ -319,8 +310,13 @@ func rewriteDuckDBSQL(ctx context.Context, props *ModelInputProperties, inputHan
 			_ = iter.Close()
 		}
 	}()
+
+	// We want to batch all the files to avoid issues with schema compatibility and partition_overwrite inserts.
+	// If a user encounters performance issues, we should encourage them to use `partitions:` without `incremental:` to break ingestion into smaller batches.
+	iter.SetKeepFilesUntilClose()
+	var files []string
 	for {
-		localFiles, err := iter.Next()
+		localFiles, err := iter.Next(ctx)
 		if err != nil {
 			if errors.Is(err, io.EOF) {
 				break
@@ -328,6 +324,9 @@ func rewriteDuckDBSQL(ctx context.Context, props *ModelInputProperties, inputHan
 			return nil, err
 		}
 		files = append(files, localFiles...)
+	}
+	if len(files) == 0 {
+		return nil, drivers.ErrNoRows
 	}
 
 	// Rewrite the SQL

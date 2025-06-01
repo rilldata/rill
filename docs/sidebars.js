@@ -49,11 +49,11 @@ const sidebars = {
 
         {
           type: 'category',
-          label: "Rill's Advanced Features",
+          label: "Rill Advanced Features",
           description: 'Advanced Features and beyond',
           link: {
             type: 'doc',
-            id: 'tutorials/rill_advanced_features/overview',
+            id: 'tutorials/rill_developer_advanced_features/overview',
 
           },
 
@@ -61,12 +61,22 @@ const sidebars = {
 
             {
               type: 'category',
-              label: 'Back to Rill Developer',
+              label: 'Pushing Changes from Rill Developer to Rill Cloud',
               description: 'Make some changes to our SQL model and Dashboard',
               items: [
-                'tutorials/rill_advanced_features/advanced_developer/advanced-modeling',
-                'tutorials/rill_advanced_features/advanced_developer/advanced-dashboard',
-                'tutorials/rill_advanced_features/advanced_developer/update-rill-cloud',
+                'tutorials/rill_developer_advanced_features/advanced_developer/advanced-sources',
+                'tutorials/rill_developer_advanced_features/advanced_developer/advanced-modeling',
+                {
+                  type: 'category',
+                  label: 'Advanced Measures and Dimensions',
+                  description: "Advanced Measures and Dimensions",
+                  items: [
+                    'tutorials/rill_developer_advanced_features/advanced_developer/advanced-metrics/new-metrics-view',
+                    'tutorials/rill_developer_advanced_features/advanced_developer/advanced-metrics/advanced-measures',
+
+                  ]
+                },
+                'tutorials/rill_developer_advanced_features/advanced_developer/update-rill-cloud',
 
               ]
             },
@@ -74,64 +84,43 @@ const sidebars = {
             {
               type: 'category',
               label: 'Advanced Models',
-
+              description: "Partitioned, Incremental and Staging Models",
               items: [
-                'tutorials/rill_advanced_features/incremental_models/introduction',
+                'tutorials/rill_developer_advanced_features/incremental_models/introduction',
                 {
                   type: 'category',
                   label: 'Basic Incremental and Partitions Model Examples',
                   items: [
-                    'tutorials/rill_advanced_features/incremental_models/simple-examples/incremental_now',
-                    'tutorials/rill_advanced_features/incremental_models/simple-examples/partitions_now',
+                    'tutorials/rill_developer_advanced_features/incremental_models/simple-examples/incremental_now',
+                    'tutorials/rill_developer_advanced_features/incremental_models/simple-examples/partitions_now',
                   ]
                 },
-                'tutorials/rill_advanced_features/incremental_models/cloud-storage-partitions',
-                'tutorials/rill_advanced_features/incremental_models/data-warehouse-partitions',
-
-                'tutorials/rill_advanced_features/incremental_models/staging-connectors'
-
+                'tutorials/rill_developer_advanced_features/incremental_models/cloud-storage-partitions',
+                'tutorials/rill_developer_advanced_features/incremental_models/data-warehouse-partitions',
+                'tutorials/rill_developer_advanced_features/incremental_models/staging-connectors'
               ]
             },
+
 
             {
               type: 'category',
               label: 'Custom APIs',
+              description: "Create, Deploy and Test Custom APIs",
               items: [
-                'tutorials/rill_advanced_features/custom_api/getting-started',
-                'tutorials/rill_advanced_features/custom_api/create-api',
-                'tutorials/rill_advanced_features/custom_api/test-api',
-              ]
-            },
-          ]
-        },
-        {
-          type: 'category',
-          label: 'Administration Topics',
-          description: 'Rill Administration Topics',
-          link: {
-            type: 'doc',
-            id: 'tutorials/administration/index',
-
-          },
-          items: [
-            {
-              type: 'category',
-              label: 'User Management',
-              items: [
-                'tutorials/administration/user/user-management',
-                'tutorials/administration/user/user-group-management',
+                'tutorials/rill_developer_advanced_features/custom_api/getting-started',
+                'tutorials/rill_developer_advanced_features/custom_api/create-api',
+                'tutorials/rill_developer_advanced_features/custom_api/test-api',
               ]
             },
             {
               type: 'category',
-              label: 'Project Management',
+              label: 'Alerts',
+              description: "Create Alerts to monitor your Project",
               items: [
-                'tutorials/administration/project/project-maintanence',
-                'tutorials/administration/project/alerts',
-                'tutorials/administration/project/credentials-env-variable-management',
-                'tutorials/administration/project/github',
+                'tutorials/rill_developer_advanced_features/alerts/create-alert',
+                'tutorials/rill_developer_advanced_features/alerts/data-accuracy-check',
               ]
-            },
+            }
 
           ]
         },
@@ -165,9 +154,40 @@ const sidebars = {
         },
         {
           type: 'category',
+          label: 'Administration Topics',
+          description: 'Rill Administration Topics',
+          link: {
+            type: 'doc',
+            id: 'tutorials/administration/index',
+
+          },
+          items: [
+            {
+              type: 'category',
+              label: 'User Management',
+              items: [
+                'tutorials/administration/user/user-management',
+                'tutorials/administration/user/user-group-management',
+              ]
+            },
+            {
+              type: 'category',
+              label: 'Project Management',
+              items: [
+                'tutorials/administration/project/project-maintanence',
+                'tutorials/administration/project/credentials-env-variable-management',
+                'tutorials/administration/project/github',
+              ]
+            },
+
+          ]
+        },
+        {
+          type: 'category',
           label: "Other Concepts and How-to's",
           description: 'For guides that are not quite Rill related but needs consideration',
           items: [
+            'tutorials/other/resolvers',
             'tutorials/other/add-column-dimension',
             'tutorials/other/dashboard-row-policies',
             'tutorials/other/embed-dashboard',
