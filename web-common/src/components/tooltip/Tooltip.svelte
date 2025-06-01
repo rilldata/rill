@@ -57,22 +57,22 @@ FIXME: In the future, we should also be listening to focus events from the child
   );
 </script>
 
-<div class="contents">
-  <div
-    bind:this={parent}
-    use:hoverIntent={{
-      threshold: hoverIntentThreshold,
-      timeout: hoverIntentTimeout,
-      activeDelay,
-      hideDelay,
-      onActiveChange: (value) => (active = value),
-    }}
-  >
-    <slot />
-  </div>
-  {#if active && !suppress && !$childRequestedTooltipSuppression}
-    <FloatingElement target={parent} {location} {alignment} {distance} {pad}>
-      <slot name="tooltip-content" />
-    </FloatingElement>
-  {/if}
+<div
+  role="tooltip"
+  class="contents"
+  bind:this={parent}
+  use:hoverIntent={{
+    threshold: hoverIntentThreshold,
+    timeout: hoverIntentTimeout,
+    activeDelay,
+    hideDelay,
+    onActiveChange: (value) => (active = value),
+  }}
+>
+  <slot />
 </div>
+{#if active && !suppress && !$childRequestedTooltipSuppression}
+  <FloatingElement target={parent} {location} {alignment} {distance} {pad}>
+    <slot name="tooltip-content" />
+  </FloatingElement>
+{/if}
