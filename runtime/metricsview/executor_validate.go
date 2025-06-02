@@ -143,11 +143,7 @@ func (e *Executor) ValidateMetricsView(ctx context.Context) (*ValidateMetricsVie
 					})
 				}
 			}
-			// validate time types
-			err = e.validateTimeTypes(cols, mvSchema, res)
-			if err != nil {
-				res.OtherErrs = append(res.OtherErrs, fmt.Errorf("failed to validate time types: %w", err))
-			}
+			e.validateTimeTypes(cols, mvSchema, res)
 		}
 	}
 
@@ -279,10 +275,11 @@ func (e *Executor) validateIndividualDimensionsAndMeasures(ctx context.Context, 
 	slices.SortFunc(res.MeasureErrs, func(a, b IndexErr) int { return a.Idx - b.Idx })
 }
 
-func (e *Executor) validateTimeTypes(tableSchema map[string]*runtimev1.StructType_Field, mvSchema map[string]*runtimev1.Type, res *ValidateMetricsViewResult) error {
+// validateTimeTypes validates the time dimension and dimensions of type timestamp or date in the metrics view.
+func (e *Executor) validateTimeTypes(tableSchema map[string]*runtimev1.StructType_Field, mvSchema map[string]*runtimev1.Type, res *ValidateMetricsViewResult) {
 	// Check if the time dimension is set, if primary time dim not set then other time types can be used while querying the metrics view, but that check will be done in the query executor
 	if e.metricsView.TimeDimension == "" {
-		return nil
+		return
 	}
 
 	// Time dimension should either exist in table schema if referring to a column or defined in the metics view
@@ -293,7 +290,7 @@ func (e *Executor) validateTimeTypes(tableSchema map[string]*runtimev1.StructTyp
 		timeType, ok := mvSchema[e.metricsView.TimeDimension]
 		if !ok {
 			res.TimeDimensionErr = fmt.Errorf("timeseries %q is not a column in table %q or defined in metrics view", e.metricsView.TimeDimension, e.metricsView.Table)
-			return nil
+			return
 		}
 		timeTypeCode = timeType.Code
 	} else {
@@ -302,7 +299,7 @@ func (e *Executor) validateTimeTypes(tableSchema map[string]*runtimev1.StructTyp
 
 	if timeTypeCode != runtimev1.Type_CODE_TIMESTAMP && timeTypeCode != runtimev1.Type_CODE_DATE && !(e.olap.Dialect() == drivers.DialectPinot && timeTypeCode == runtimev1.Type_CODE_INT64) {
 		res.TimeDimensionErr = fmt.Errorf("timeseries %q is not a TIMESTAMP column", e.metricsView.TimeDimension)
-		return nil
+		return
 	}
 
 	// check all dimension of type timestamp or date - if they are referring to a column then needs to use same name as column as the column name can be used in the where time filter without selecting the dimension
@@ -317,8 +314,6 @@ func (e *Executor) validateTimeTypes(tableSchema map[string]*runtimev1.StructTyp
 			})
 		}
 	}
-
-	return nil
 }
 
 // validateDimension validates a metrics view dimension.
