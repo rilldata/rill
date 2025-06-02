@@ -4,6 +4,8 @@
   import UserRoleSelect from "@rilldata/web-admin/features/projects/user-management/UserRoleSelect.svelte";
   import Close from "../icons/Close.svelte";
   import { cn } from "@rilldata/web-common/lib/shadcn";
+  import Check from "@rilldata/web-common/components/icons/Check.svelte";
+  import { onMount, onDestroy } from "svelte";
 
   export let onSearch: (query: string) => Promise<any[]>;
   export let onInvite: (emails: string[], role?: string) => Promise<void>;
@@ -19,6 +21,7 @@
    * 1: auto focus on blur
    */
   export let autoFocusInput: -1 | 0 | 1 = 0;
+  export let multiSelect: boolean = false;
 
   const dispatch = createEventDispatcher();
 
@@ -31,6 +34,7 @@
   let role = initialRole;
   let highlightedIndex = -1;
   let dropdownList: HTMLElement;
+  let inputElement: HTMLInputElement;
 
   const DROPDOWN_WIDTH = 406.62;
 
@@ -115,16 +119,22 @@
   }
 
   function handleSelect(result: any) {
-    // TODO: Modify selection logic to:
-    // 1. Toggle selection state instead of just adding
-    // 2. Keep item in dropdown but mark as selected
-    // 3. Update visual state of item in dropdown
-    if (!selected.includes(result.identifier)) {
-      selected = [...selected, result.identifier];
-      input = "";
-      showDropdown = false;
-      highlightedIndex = -1;
+    if (multiSelect) {
+      // Multi-select mode: toggle selection
+      if (selected.includes(result.identifier)) {
+        selected = selected.filter((id) => id !== result.identifier);
+      } else {
+        selected = [...selected, result.identifier];
+      }
+      // Keep dropdown open and input focused in multi-select mode
+      showDropdown = true;
+      inputElement?.focus();
+    } else {
+      // Single-select mode: replace selection
+      selected = [result.identifier];
+      showDropdown = false; // Close dropdown after selection in single-select mode
     }
+    highlightedIndex = -1;
   }
 
   function handleInvite() {
@@ -151,15 +161,32 @@
       // Handle Tab key to separate values
       if (e.key === "Tab" && input.trim()) {
         e.preventDefault();
-        if (validate(input) === true && !selected.includes(input)) {
-          selected = [...selected, input];
+        if (validate(input) === true) {
+          if (multiSelect) {
+            if (!selected.includes(input)) {
+              selected = [...selected, input];
+            }
+          } else {
+            selected = [input];
+          }
           input = "";
         }
         return;
       }
       // If input contains a comma, process it on Enter
       if (e.key === "Enter" && input.includes(",")) {
-        processCommaSeparatedInput(input);
+        if (multiSelect) {
+          processCommaSeparatedInput(input);
+        } else {
+          // In single-select mode, only take the first valid input
+          const firstValid = input
+            .split(",")
+            .map((s) => s.trim())
+            .find((entry) => validate(entry) === true);
+          if (firstValid) {
+            selected = [firstValid];
+          }
+        }
         input = "";
         e.preventDefault();
         return;
@@ -174,23 +201,42 @@
     if (e.key === "ArrowDown") {
       highlightedIndex = (highlightedIndex + 1) % searchResults.length;
       e.preventDefault();
+      showDropdown = true;
     } else if (e.key === "ArrowUp") {
       highlightedIndex =
         (highlightedIndex - 1 + searchResults.length) % searchResults.length;
       e.preventDefault();
+      showDropdown = true;
     } else if (e.key === "Enter") {
       if (highlightedIndex >= 0 && highlightedIndex < searchResults.length) {
         handleSelect(searchResults[highlightedIndex]);
         e.preventDefault();
+        // In multi-select mode, keep dropdown open and input focused
+        if (multiSelect) {
+          showDropdown = true;
+          inputElement?.focus();
+        }
       } else if (input && validate(input) === true) {
         // Allow inviting a new email
-        if (!selected.includes(input)) {
-          selected = [...selected, input];
-          input = "";
-          showDropdown = false;
-          highlightedIndex = -1;
+        if (multiSelect) {
+          if (!selected.includes(input)) {
+            selected = [...selected, input];
+          }
+        } else {
+          selected = [input];
         }
+        input = "";
+        showDropdown = true;
+        highlightedIndex = -1;
         e.preventDefault();
+      }
+    } else if (e.key === "Space" && highlightedIndex >= 0) {
+      // Add space key support for multi-select
+      if (multiSelect) {
+        handleSelect(searchResults[highlightedIndex]);
+        e.preventDefault();
+        showDropdown = true;
+        inputElement?.focus();
       }
     } else if (e.key === "Backspace" && input === "" && selected.length > 0) {
       // Remove the last selected chip when backspace is pressed and input is empty
@@ -249,6 +295,7 @@
         <input
           type="text"
           bind:value={input}
+          bind:this={inputElement}
           placeholder={selected.length === 0 ? placeholder : ""}
           on:input={handleInput}
           on:keydown={handleInputKeydown}
@@ -295,16 +342,16 @@
       {#each searchResults as result, i}
         <li
           class:highlighted={i === highlightedIndex}
-          class="hover:bg-slate-100"
+          class:selected={selected.includes(result.identifier)}
+          class="hover:bg-slate-100 flex items-center justify-between px-3 py-2 cursor-pointer"
+          on:pointerdown={() => handleSelect(result)}
         >
-          <!-- TODO: Add checkbox or other visual indicator for selection state -->
-          <button
-            type="button"
-            class="w-full text-left"
-            on:pointerdown={() => handleSelect(result)}
-          >
+          <div class="w-full text-left">
             {result.identifier}
-          </button>
+          </div>
+          {#if selected.includes(result.identifier)}
+            <Check size="16px" className="ui-copy-icon" />
+          {/if}
         </li>
       {/each}
     </ul>
@@ -396,10 +443,30 @@
     padding: 8px 12px;
     cursor: pointer;
     scroll-margin: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    transition: background-color 150ms ease-in-out;
+  }
+  .dropdown li:hover {
+    @apply bg-slate-100;
   }
   .dropdown li.highlighted {
     @apply bg-slate-100;
     scroll-snap-align: start;
+  }
+  .dropdown li.selected {
+    @apply bg-slate-50;
+    position: relative;
+  }
+  .dropdown li.selected::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    @apply bg-primary-500;
   }
   .dropdown.loading {
     display: flex;
