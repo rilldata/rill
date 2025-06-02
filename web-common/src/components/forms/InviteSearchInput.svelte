@@ -139,6 +139,15 @@
 
   function handleInputKeydown(e: KeyboardEvent) {
     if (!showDropdown || searchResults.length === 0) {
+      // Handle Tab key to separate values
+      if (e.key === "Tab" && input.trim()) {
+        e.preventDefault();
+        if (validate(input) === true && !selected.includes(input)) {
+          selected = [...selected, input];
+          input = "";
+        }
+        return;
+      }
       // If input contains a comma, process it on Enter
       if (e.key === "Enter" && input.includes(",")) {
         processCommaSeparatedInput(input);
