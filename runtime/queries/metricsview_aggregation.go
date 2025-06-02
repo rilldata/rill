@@ -135,7 +135,7 @@ func (q *MetricsViewAggregation) Export(ctx context.Context, rt *runtime.Runtime
 	}
 	defer e.Close()
 
-	if mv.ValidSpec.TimeDimension != "" || q.TimeColumn != "" {
+	if mv.ValidSpec.TimeDimension != "" {
 		tsRes, err := ResolveTimestampResult(ctx, rt, instanceID, q.MetricsViewName, q.TimeColumn, q.SecurityClaims, opts.Priority)
 		if err != nil {
 			return err
