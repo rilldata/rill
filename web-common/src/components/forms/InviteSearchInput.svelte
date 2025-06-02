@@ -5,7 +5,6 @@
   import Close from "../icons/Close.svelte";
   import { cn } from "@rilldata/web-common/lib/shadcn";
   import Check from "@rilldata/web-common/components/icons/Check.svelte";
-  import { onMount, onDestroy } from "svelte";
 
   export let onSearch: (query: string) => Promise<any[]>;
   export let onInvite: (emails: string[], role?: string) => Promise<void>;
