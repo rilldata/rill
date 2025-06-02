@@ -90,7 +90,7 @@ type rillYAML struct {
 	// Default YAML values for canvases
 	Canvases yaml.Node `yaml:"canvases"`
 	// Default YAML values for custom apis
-	CustomAPIs yaml.Node `yaml:"custom_apis"`
+	APIs yaml.Node `yaml:"apis"`
 	// Default YAML values for migrations
 	Migrations yaml.Node `yaml:"migrations"`
 	// Feature flags (preferably a map[string]bool, but can also be a []string for backwards compatibility)
@@ -229,8 +229,8 @@ func (p *Parser) parseRillYAML(ctx context.Context, path string) error {
 			return newYAMLError(err)
 		}
 	}
-	if !tmp.CustomAPIs.IsZero() {
-		if err := tmp.CustomAPIs.Decode(&APIYAML{}); err != nil {
+	if !tmp.APIs.IsZero() {
+		if err := tmp.APIs.Decode(&APIYAML{}); err != nil {
 			return newYAMLError(err)
 		}
 	}
@@ -274,7 +274,7 @@ func (p *Parser) parseRillYAML(ctx context.Context, path string) error {
 		ResourceKindExplore:     tmp.Explores,
 		ResourceKindMigration:   tmp.Migrations,
 		ResourceKindCanvas:      tmp.Canvases,
-		ResourceKindAPI:         tmp.CustomAPIs,
+		ResourceKindAPI:         tmp.APIs,
 	}
 	if !tmp.MetricsViewsLegacy.IsZero() {
 		defaults[ResourceKindMetricsView] = tmp.MetricsViewsLegacy
