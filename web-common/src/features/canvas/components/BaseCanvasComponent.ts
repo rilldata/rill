@@ -186,7 +186,7 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
     );
   }
 
-  private updateYAML(newSpec: T) {
+  private updateYAML(newSpec: T, debounce = false) {
     if (!this.parent.fileArtifact) return;
     const parseDocumentStore = this.parent.parsedContent;
     const parsedDocument = get(parseDocumentStore);
@@ -195,7 +195,7 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
 
     parsedDocument.setIn(this.pathInYAML, newSpec);
 
-    updateEditorContent(parsedDocument.toString(), false, true);
+    updateEditorContent(parsedDocument.toString(), debounce, true);
   }
 
   setSpec(newSpec: T) {
@@ -205,12 +205,12 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
     this.specStore.set(newSpec);
   }
 
-  updateProperty(key: AllKeys<T>, value: T[AllKeys<T>]) {
+  updateProperty(key: AllKeys<T>, value: T[AllKeys<T>], debounce = false) {
     const currentSpec = get(this.specStore);
 
     const newSpec = { ...currentSpec, [key]: value };
 
-    if (value === undefined || value == "") {
+    if (value === undefined || value === "") {
       delete newSpec[key];
     }
 
@@ -230,7 +230,7 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
     }
 
     if (this.isValid(newSpec)) {
-      this.updateYAML(newSpec);
+      this.updateYAML(newSpec, debounce);
     }
     this.specStore.set(newSpec);
   }

@@ -1,100 +1,101 @@
 <script lang="ts">
-  import DOMPurify from "dompurify";
-  import { marked } from "marked";
   import type { MarkdownCanvasComponent } from "./";
   import { getPositionClasses } from "./util";
+  import { gfm } from "@milkdown/kit/preset/gfm";
+  import {
+    Editor,
+    rootCtx,
+    defaultValueCtx,
+    editorViewCtx,
+    editorViewOptionsCtx,
+    EditorStatus,
+  } from "@milkdown/kit/core";
+  import { listener, listenerCtx } from "@milkdown/kit/plugin/listener";
+  import { commonmark } from "@milkdown/kit/preset/commonmark";
+  import { nord } from "@milkdown/theme-nord";
+  import { history } from "@milkdown/plugin-history";
+  import { replaceAll } from "@milkdown/kit/utils";
+  import "./markdown.css";
+  import { placeholderCtx, placeholder } from "./placeholder";
+  import { onMount } from "svelte";
+  import { get } from "svelte/store";
 
   export let component: MarkdownCanvasComponent;
+  export let editable = false;
+
+  let element: HTMLElement;
+  let editor: Editor;
+
+  onMount(() => {
+    const specStore = get(component.specStore);
+
+    const initialContent = specStore.content;
+
+    editor = Editor.make()
+      .config((ctx) => {
+        // Mount the editor to the DOM
+        ctx.set(rootCtx, element);
+
+        // Set the initial content
+        ctx.set(defaultValueCtx, initialContent);
+
+        // Disable/enable readonly mode
+        ctx.set(editorViewOptionsCtx, { editable: () => editable });
+
+        // Listen for changes in the editor
+        ctx.get(listenerCtx).markdownUpdated((ctx, newMarkdown) => {
+          if (ctx.get(editorViewCtx).hasFocus()) {
+            component.updateProperty("content", newMarkdown, true);
+          }
+        });
+
+        ctx.set(placeholderCtx, "Text");
+      })
+      .config(nord)
+      .use(commonmark)
+      .use(placeholder)
+      .use(gfm)
+      .use(history)
+      .use(listener);
+
+    editor.create().catch((error) => {
+      console.error("Error creating editor:", error);
+    });
+
+    return async () => {
+      await editor.destroy();
+    };
+  });
 
   $: ({ specStore } = component);
   $: markdownProperties = $specStore;
 
+  $: yamlMarkdownContent = markdownProperties.content;
+
   $: positionClasses = getPositionClasses(markdownProperties.alignment);
+
+  $: if (editor?.status === EditorStatus.Created)
+    updateEditor(yamlMarkdownContent);
+
+  function updateEditor(newYamlContent: string) {
+    if (editor.ctx.get(editorViewCtx).hasFocus()) {
+      return;
+    }
+
+    editor.action(replaceAll(newYamlContent));
+  }
 </script>
 
-<div class="size-full px-2 bg-white overflow-y-auto">
-  <div class="canvas-markdown {positionClasses} h-full flex flex-col min-h-min">
-    {#await marked(markdownProperties.content) then content}
-      {@html DOMPurify.sanitize(content)}
-    {/await}
-  </div>
+<div class="size-full px-2 bg-surface pointer-events-none">
+  <div
+    role="presentation"
+    class="{positionClasses} h-full flex flex-col min-h-min pointer-events-auto"
+    class:cursor-text={editable}
+    bind:this={element}
+    on:click={() => {
+      if (editable && editor?.status === EditorStatus.Created) {
+        editor.ctx.get(editorViewCtx).focus();
+      }
+    }}
+  ></div>
 </div>
-
-<style lang="postcss">
-  :global(.canvas-markdown) {
-    @apply text-gray-800;
-  }
-  :global(.canvas-markdown h1) {
-    font-size: 24px;
-    @apply font-medium;
-  }
-  :global(.canvas-markdown h2) {
-    font-size: 20px;
-    @apply font-medium;
-  }
-  :global(.canvas-markdown h3) {
-    font-size: 18px;
-    @apply font-medium;
-  }
-  :global(.canvas-markdown h4) {
-    font-size: 16px;
-    @apply font-medium;
-  }
-  :global(.canvas-markdown p) {
-    font-size: 14px;
-    @apply my-2;
-  }
-
-  :global(.canvas-markdown.items-center p) {
-    @apply text-center w-full;
-  }
-
-  :global(.canvas-markdown.items-end p) {
-    @apply text-right w-full;
-  }
-  :global(.canvas-markdown table) {
-    @apply w-full border-collapse my-4;
-  }
-  :global(.canvas-markdown th) {
-    @apply bg-gray-50 border border-gray-200 px-4 py-2 text-left text-sm font-medium;
-  }
-  :global(.canvas-markdown td) {
-    @apply border border-gray-200 px-4 py-2 text-sm;
-  }
-  :global(.canvas-markdown tr:nth-child(even)) {
-    @apply bg-gray-50;
-  }
-  :global(.canvas-markdown tr:hover) {
-    @apply bg-gray-100;
-  }
-  :global(.canvas-markdown a) {
-    @apply text-blue-600;
-  }
-  :global(.canvas-markdown ul) {
-    @apply list-disc pl-6 my-3;
-  }
-  :global(.canvas-markdown ol) {
-    @apply list-decimal pl-6 my-3;
-  }
-  :global(.canvas-markdown li) {
-    @apply text-sm my-1;
-  }
-  :global(.canvas-markdown blockquote) {
-    @apply border-l-4 border-gray-300 pl-4 py-1 my-3 italic text-gray-600;
-  }
-  :global(.canvas-markdown code) {
-    @apply bg-gray-100 px-1 py-0.5 rounded text-sm font-mono;
-  }
-  :global(.canvas-markdown pre) {
-    @apply bg-gray-100 p-3 rounded my-3 overflow-x-auto;
-  }
-  :global(.canvas-markdown pre code) {
-    @apply bg-transparent p-0 text-sm;
-  }
-  :global(.canvas-markdown hr) {
-    @apply my-3 border-t border-gray-300 w-full;
-  }
-  :global(.canvas-markdown img) {
-    @apply max-w-full h-auto my-3;
-  }
-</style>
