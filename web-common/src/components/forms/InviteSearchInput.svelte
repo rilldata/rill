@@ -71,6 +71,10 @@
     try {
       if (searchList) {
         const lower = input.toLowerCase();
+        // TODO: Modify search logic to:
+        // 1. Keep selected items in the search results but mark them as selected
+        // 2. Add visual indicator (e.g. checkbox or different styling) for selected items
+        // 3. Allow toggling selection state of items in the dropdown
         searchResults = searchList
           .filter((item) =>
             searchKeys.some(
@@ -85,7 +89,7 @@
         );
       }
       showDropdown = searchResults.length > 0;
-    } catch (err) {
+    } catch {
       searchResults = [];
       showDropdown = false;
     } finally {
@@ -102,6 +106,10 @@
   }
 
   function handleSelect(result: any) {
+    // TODO: Modify selection logic to:
+    // 1. Toggle selection state instead of just adding
+    // 2. Keep item in dropdown but mark as selected
+    // 3. Update visual state of item in dropdown
     if (!selected.includes(result.identifier)) {
       selected = [...selected, result.identifier];
       input = "";
@@ -251,6 +259,7 @@
           class:highlighted={i === highlightedIndex}
           class="hover:bg-slate-100"
         >
+          <!-- TODO: Add checkbox or other visual indicator for selection state -->
           <button
             type="button"
             class="w-full text-left"
@@ -261,6 +270,11 @@
         </li>
       {/each}
     </ul>
+  {:else if loading}
+    <div class="dropdown loading">
+      <div class="loading-spinner"></div>
+      <span>Searching...</span>
+    </div>
   {/if}
 </div>
 
@@ -351,5 +365,28 @@
   .dropdown li.highlighted {
     @apply bg-slate-100;
     scroll-snap-align: start;
+  }
+  .dropdown.loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 16px;
+  }
+  .loading-spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid #f3f4f6;
+    border-top: 2px solid #3b82f6;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+  @keyframes spin {
+    0% {
+      transform: rotate(0deg);
+    }
+    100% {
+      transform: rotate(360deg);
+    }
   }
 </style>
