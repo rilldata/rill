@@ -133,8 +133,8 @@
       // Single-select mode: replace selection
       selected = [result.identifier];
       showDropdown = false; // Close dropdown after selection in single-select mode
+      highlightedIndex = -1; // Only reset highlightedIndex in single-select mode
     }
-    highlightedIndex = -1;
   }
 
   function handleInvite() {
@@ -199,10 +199,20 @@
       }
     }
     if (e.key === "ArrowDown") {
+      // If we're at the end of the list, stay at the end instead of wrapping
+      if (highlightedIndex === searchResults.length - 1) {
+        e.preventDefault();
+        return;
+      }
       highlightedIndex = (highlightedIndex + 1) % searchResults.length;
       e.preventDefault();
       showDropdown = true;
     } else if (e.key === "ArrowUp") {
+      // If we're at the start of the list, stay at the start instead of wrapping
+      if (highlightedIndex === 0) {
+        e.preventDefault();
+        return;
+      }
       highlightedIndex =
         (highlightedIndex - 1 + searchResults.length) % searchResults.length;
       e.preventDefault();
@@ -343,7 +353,7 @@
         <li
           class:highlighted={i === highlightedIndex}
           class:selected={selected.includes(result.identifier)}
-          class="hover:bg-slate-100 flex items-center justify-between px-3 py-2 cursor-pointer"
+          class="flex items-center justify-between px-3 py-2 cursor-pointer"
           on:pointerdown={() => handleSelect(result)}
         >
           <div class="w-full text-left">
@@ -452,22 +462,16 @@
     @apply bg-slate-100;
   }
   .dropdown li.highlighted {
-    @apply bg-slate-100;
+    @apply bg-slate-200;
     scroll-snap-align: start;
   }
   .dropdown li.selected {
-    @apply bg-slate-50;
-    position: relative;
+    @apply bg-slate-100;
   }
-  .dropdown li.selected::after {
-    content: "";
-    position: absolute;
-    left: 0;
-    top: 0;
-    bottom: 0;
-    width: 2px;
-    @apply bg-primary-500;
+  .dropdown li.selected:hover {
+    @apply bg-slate-200;
   }
+
   .dropdown.loading {
     display: flex;
     align-items: center;
