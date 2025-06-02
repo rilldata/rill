@@ -51,7 +51,7 @@
     }),
   );
 
-  const { form: _form } = superForm(defaults(initialValues, schema), {
+  superForm(defaults(initialValues, schema), {
     SPA: true,
     validators: schema,
     async onUpdate({ form }) {
@@ -288,5 +288,6 @@
   initialRole="viewer"
   searchKeys={["identifier"]}
   autoFocusInput={-1}
+  multiSelect={true}
   {searchList}
 />
