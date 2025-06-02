@@ -109,8 +109,9 @@ func (s *Server) mcpListMetricsViews() (mcp.Tool, server.ToolHandlerFunc) {
 			}
 
 			metricsViews = append(metricsViews, map[string]any{
-				"name":        r.Meta.Name.Name,
-				"description": mv.State.ValidSpec.Description,
+				"name":         r.Meta.Name.Name,
+				"display_name": mv.State.ValidSpec.DisplayName,
+				"description":  mv.State.ValidSpec.Description,
 			})
 		}
 
