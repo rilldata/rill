@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { createEventDispatcher } from "svelte";
+  import { createEventDispatcher, onMount } from "svelte";
   import { Button } from "@rilldata/web-common/components/button";
   import UserRoleSelect from "@rilldata/web-admin/features/projects/user-management/UserRoleSelect.svelte";
 
@@ -24,6 +24,8 @@
   let role = initialRole;
   let highlightedIndex = -1;
   let dropdownList: HTMLElement;
+
+  const DROPDOWN_WIDTH = 406.62;
 
   function scrollToHighlighted() {
     if (highlightedIndex >= 0 && dropdownList) {
@@ -262,7 +264,11 @@
     <div class="error">{error}</div>
   {/if}
   {#if showDropdown && searchResults.length > 0}
-    <ul class="dropdown" bind:this={dropdownList}>
+    <ul
+      class="dropdown"
+      bind:this={dropdownList}
+      style="width: {DROPDOWN_WIDTH}px; left: 0;"
+    >
       {#each searchResults as result, i}
         <li
           class:highlighted={i === highlightedIndex}
@@ -280,7 +286,7 @@
       {/each}
     </ul>
   {:else if loading}
-    <div class="dropdown loading">
+    <div class="dropdown loading" style="width: {DROPDOWN_WIDTH}px; left: 0;">
       <div class="loading-spinner"></div>
       <span>Searching...</span>
     </div>
@@ -348,13 +354,10 @@
     border: none;
     background: transparent;
     margin-left: 4px;
-
     min-width: 90px;
   }
   .dropdown {
     position: absolute;
-    left: 0;
-    right: 0;
     background: #fff;
     border: 1px solid #d1d5db;
     border-radius: 6px;
