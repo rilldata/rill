@@ -155,7 +155,7 @@ time_ranges:
     // Start waiting for download before clicking. Note no await.
     const downloadCSVPromise = page.waitForEvent("download");
     await page.getByLabel("Export model data").click();
-    await page.getByRole("menuitem", { name: "Export as CSV" }).click();
+    await page.getByRole("menuitem", { name: "Export as CSV" }).first().click();
     const downloadCSV = await downloadCSVPromise;
     await downloadCSV.saveAs("temp/" + downloadCSV.suggestedFilename());
     const csvRegex = /^AdBids_model_filtered_.*\.csv$/;
@@ -165,7 +165,10 @@ time_ranges:
     // Start waiting for download before clicking. Note no await.
     const downloadXLSXPromise = page.waitForEvent("download");
     await page.getByLabel("Export model data").click();
-    await page.getByRole("menuitem", { name: "Export as XLSX" }).click();
+    await page
+      .getByRole("menuitem", { name: "Export as XLSX" })
+      .first()
+      .click();
     const downloadXLSX = await downloadXLSXPromise;
     await downloadXLSX.saveAs("temp/" + downloadXLSX.suggestedFilename());
     const xlsxRegex = /^AdBids_model_filtered_.*\.xlsx$/;
