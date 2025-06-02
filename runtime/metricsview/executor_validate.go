@@ -72,16 +72,6 @@ func (e *Executor) ValidateMetricsView(ctx context.Context) (*ValidateMetricsVie
 		cols[strings.ToLower(f.Name)] = f
 	}
 
-	// Check time dimension exists
-	if mv.TimeDimension != "" {
-		f, ok := cols[strings.ToLower(mv.TimeDimension)]
-		if !ok {
-			res.TimeDimensionErr = fmt.Errorf("timeseries %q is not a column in table %q", mv.TimeDimension, mv.Table)
-		} else if f.Type.Code != runtimev1.Type_CODE_TIMESTAMP && f.Type.Code != runtimev1.Type_CODE_DATE && !(e.olap.Dialect() == drivers.DialectPinot && f.Type.Code == runtimev1.Type_CODE_INT64) {
-			res.TimeDimensionErr = fmt.Errorf("timeseries %q is not a TIMESTAMP column", mv.TimeDimension)
-		}
-	}
-
 	// Check security policy rules apply to fields that exist
 	fields := make(map[string]bool, len(mv.Dimensions)+len(mv.Measures))
 	for _, d := range mv.Dimensions {
@@ -138,9 +128,26 @@ func (e *Executor) ValidateMetricsView(ctx context.Context) (*ValidateMetricsVie
 
 	// Validate the metrics view schema.
 	if res.IsZero() { // All dimensions and measures need to be valid to compute the schema.
-		err = e.validateSchemaAndPopulateDimTypes(ctx, res)
+		mvSchema, err := e.validateAndGetSchema(ctx, res)
 		if err != nil {
 			res.OtherErrs = append(res.OtherErrs, fmt.Errorf("failed to validate metrics view schema: %w", err))
+		} else if mvSchema != nil {
+			// populate dimension types based on the schema
+			for _, d := range e.metricsView.Dimensions {
+				if typ, ok := mvSchema[d.Name]; ok {
+					d.Type = typ
+				} else {
+					res.DimensionErrs = append(res.DimensionErrs, IndexErr{
+						Idx: -1, // -1 indicates no specific index for dimensions without a column
+						Err: fmt.Errorf("dimension %q not found in schema", d.Name),
+					})
+				}
+			}
+			// validate time types
+			err = e.validateTimeTypes(cols, mvSchema, res)
+			if err != nil {
+				res.OtherErrs = append(res.OtherErrs, fmt.Errorf("failed to validate time types: %w", err))
+			}
 		}
 	}
 
@@ -272,6 +279,48 @@ func (e *Executor) validateIndividualDimensionsAndMeasures(ctx context.Context, 
 	slices.SortFunc(res.MeasureErrs, func(a, b IndexErr) int { return a.Idx - b.Idx })
 }
 
+func (e *Executor) validateTimeTypes(tableSchema map[string]*runtimev1.StructType_Field, mvSchema map[string]*runtimev1.Type, res *ValidateMetricsViewResult) error {
+	// Check if the time dimension is set, if primary time dim not set then other time types can be used while querying the metrics view, but that check will be done in the query executor
+	if e.metricsView.TimeDimension == "" {
+		return nil
+	}
+
+	// Time dimension should either exist in table schema if referring to a column or defined in the metics view
+	var timeTypeCode runtimev1.Type_Code
+	f, ok := tableSchema[strings.ToLower(e.metricsView.TimeDimension)]
+	if !ok {
+		// check if the time dimension is defined in the metrics view schema
+		timeType, ok := mvSchema[e.metricsView.TimeDimension]
+		if !ok {
+			res.TimeDimensionErr = fmt.Errorf("timeseries %q is not a column in table %q or defined in metrics view", e.metricsView.TimeDimension, e.metricsView.Table)
+			return nil
+		}
+		timeTypeCode = timeType.Code
+	} else {
+		timeTypeCode = f.Type.Code
+	}
+
+	if timeTypeCode != runtimev1.Type_CODE_TIMESTAMP && timeTypeCode != runtimev1.Type_CODE_DATE && !(e.olap.Dialect() == drivers.DialectPinot && timeTypeCode == runtimev1.Type_CODE_INT64) {
+		res.TimeDimensionErr = fmt.Errorf("timeseries %q is not a TIMESTAMP column", e.metricsView.TimeDimension)
+		return nil
+	}
+
+	// check all dimension of type timestamp or date - if they are referring to a column then needs to use same name as column as the column name can be used in the where time filter without selecting the dimension
+	for i, d := range e.metricsView.Dimensions {
+		if d.Type == nil || (d.Type.Code != runtimev1.Type_CODE_TIMESTAMP && d.Type.Code != runtimev1.Type_CODE_DATE) {
+			continue
+		}
+		if d.Column != "" && d.Column != d.Name {
+			res.DimensionErrs = append(res.DimensionErrs, IndexErr{
+				Idx: i,
+				Err: fmt.Errorf("dimension %q must have the same name as the column as it is of type %s", d.Name, d.Type.Code),
+			})
+		}
+	}
+
+	return nil
+}
+
 // validateDimension validates a metrics view dimension.
 func (e *Executor) validateDimension(ctx context.Context, t *drivers.Table, d *runtimev1.MetricsViewSpec_Dimension, fields map[string]*runtimev1.StructType_Field) error {
 	// Validate with a simple check if it's a column
@@ -311,12 +360,12 @@ func (e *Executor) validateMeasure(ctx context.Context, t *drivers.Table, m *run
 	return err
 }
 
-// validateSchemaAndPopulateDimTypes validates that the metrics view's measures are numeric. Populates the dimension types based on the metrics view schema.
-func (e *Executor) validateSchemaAndPopulateDimTypes(ctx context.Context, res *ValidateMetricsViewResult) error {
+// validateAndGetSchema validates that the metrics view's measures are numeric. Populates the dimension types based on the metrics view schema.
+func (e *Executor) validateAndGetSchema(ctx context.Context, res *ValidateMetricsViewResult) (map[string]*runtimev1.Type, error) {
 	// Resolve the schema of the metrics view's dimensions and measures
 	schema, err := e.Schema(ctx)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	types := make(map[string]*runtimev1.Type, len(schema.Fields))
 	for _, f := range schema.Fields {
@@ -340,17 +389,5 @@ func (e *Executor) validateSchemaAndPopulateDimTypes(ctx context.Context, res *V
 		}
 	}
 
-	// populate dimension types based on the schema
-	for _, d := range e.metricsView.Dimensions {
-		if typ, ok := types[d.Name]; ok {
-			d.Type = typ
-		} else {
-			res.DimensionErrs = append(res.DimensionErrs, IndexErr{
-				Idx: -1, // -1 indicates no specific index for dimensions without a column
-				Err: fmt.Errorf("dimension %q not found in schema", d.Name),
-			})
-		}
-	}
-
-	return nil
+	return types, nil
 }
