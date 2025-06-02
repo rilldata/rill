@@ -3,6 +3,7 @@
   import { Button } from "@rilldata/web-common/components/button";
   import UserRoleSelect from "@rilldata/web-admin/features/projects/user-management/UserRoleSelect.svelte";
   import Close from "../icons/Close.svelte";
+  import { cn } from "@rilldata/web-common/lib/shadcn";
 
   export let onSearch: (query: string) => Promise<any[]>;
   export let onInvite: (emails: string[], role?: string) => Promise<void>;
@@ -218,7 +219,12 @@
 <div class="invite-search-input">
   <div class="input-row">
     <div
-      class="input-with-role p-1 border border-gray-200 focus-within:border-transparent focus-within:outline focus-within:outline-1 focus-within:outline-primary-500"
+      class={cn(
+        "input-with-role p-1 border border-gray-200 outline-transparent",
+        showDropdown
+          ? "border-transparent outline outline-1 outline-primary-500"
+          : "",
+      )}
     >
       <div
         class="chips-and-input flex flex-wrap gap-1 w-full min-h-[20px] px-1"
@@ -323,6 +329,9 @@
     min-height: 40px;
     gap: 8px;
     flex: 1;
+    transition:
+      outline 150ms ease-in-out,
+      border-color 150ms ease-in-out;
   }
 
   .role-select-container {
@@ -340,7 +349,6 @@
     min-width: 120px;
     padding: 0;
     background: transparent;
-    color: #222;
     margin: 0;
   }
   .chip {
