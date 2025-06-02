@@ -51,7 +51,7 @@
     }),
   );
 
-  const { form, errors } = superForm(defaults(initialValues, schema), {
+  const { form: _form } = superForm(defaults(initialValues, schema), {
     SPA: true,
     validators: schema,
     async onUpdate({ form }) {
