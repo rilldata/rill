@@ -68,7 +68,7 @@ func (q *MetricsViewRows) UnmarshalResult(v any) error {
 }
 
 func (q *MetricsViewRows) Resolve(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int) error {
-	if q.MetricsView.TimeDimension == "" && q.TimeColumn == "" && (q.TimeStart != nil || q.TimeEnd != nil) {
+	if q.MetricsView.TimeDimension == "" && (q.TimeStart != nil || q.TimeEnd != nil) {
 		return fmt.Errorf("metrics view '%s' does not have a time dimension", q.MetricsViewName)
 	}
 
@@ -105,7 +105,7 @@ func (q *MetricsViewRows) Resolve(ctx context.Context, rt *runtime.Runtime, inst
 }
 
 func (q *MetricsViewRows) Export(ctx context.Context, rt *runtime.Runtime, instanceID string, w io.Writer, opts *runtime.ExportOptions) error {
-	if q.MetricsView.TimeDimension == "" && q.TimeColumn == "" && (q.TimeStart != nil || q.TimeEnd != nil) {
+	if q.MetricsView.TimeDimension == "" && (q.TimeStart != nil || q.TimeEnd != nil) {
 		return fmt.Errorf("metrics view '%s' does not have a time dimension", q.MetricsViewName)
 	}
 

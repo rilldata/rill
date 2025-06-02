@@ -277,7 +277,7 @@ func (e *Executor) validateIndividualDimensionsAndMeasures(ctx context.Context, 
 
 // validateTimeTypes validates the time dimension and dimensions of type timestamp or date in the metrics view.
 func (e *Executor) validateTimeTypes(tableSchema map[string]*runtimev1.StructType_Field, mvSchema map[string]*runtimev1.Type, res *ValidateMetricsViewResult) {
-	// Check if the time dimension is set, if primary time dim not set then other time types can be used while querying the metrics view, but that check will be done in the query executor
+	// Check if the time dimension is set, if primary time dim not set then other time types cannot be used while querying the metrics view, but that check will be done in the query executor
 	if e.metricsView.TimeDimension == "" {
 		return
 	}
