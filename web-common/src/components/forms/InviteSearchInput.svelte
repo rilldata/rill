@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { createEventDispatcher, onMount } from "svelte";
+  import { createEventDispatcher } from "svelte";
   import { Button } from "@rilldata/web-common/components/button";
   import UserRoleSelect from "@rilldata/web-admin/features/projects/user-management/UserRoleSelect.svelte";
   import Close from "../icons/Close.svelte";
@@ -12,6 +12,11 @@
   export let initialRole: string = "viewer";
   export let searchList: any[] | undefined = undefined;
   export let searchKeys: string[] = [];
+  /**
+   * -1: no auto focus
+   * 0: auto focus on mount
+   * 1: auto focus on blur
+   */
   export let autoFocusInput: -1 | 0 | 1 = 0;
 
   const dispatch = createEventDispatcher();
@@ -212,7 +217,9 @@
 
 <div class="invite-search-input">
   <div class="input-row">
-    <div class="input-with-role p-1">
+    <div
+      class="input-with-role p-1 border border-gray-200 focus-within:border-transparent focus-within:outline focus-within:outline-1 focus-within:outline-primary-500"
+    >
       <div
         class="chips-and-input flex flex-wrap gap-1 w-full min-h-[20px] px-1"
       >
@@ -246,7 +253,7 @@
           class:error={!!error}
           autocomplete="off"
           tabindex={autoFocusInput}
-          class="outline outline-1 outline-primary-500 px-1"
+          class="px-1"
         />
       </div>
       {#if roleSelect}
@@ -297,7 +304,7 @@
   {/if}
 </div>
 
-<style>
+<style lang="postcss">
   .invite-search-input {
     width: 100%;
     position: relative;
@@ -312,7 +319,6 @@
     align-items: center;
     flex-wrap: nowrap;
     background: #fff;
-    border: 1px solid #d1d5db;
     border-radius: 6px;
     min-height: 40px;
     gap: 8px;
