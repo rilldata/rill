@@ -87,6 +87,10 @@ type rillYAML struct {
 	MetricsViewsLegacy yaml.Node `yaml:"dashboards"`
 	// Default YAML values for explores
 	Explores yaml.Node `yaml:"explores"`
+	// Default YAML values for canvases
+	Canvases yaml.Node `yaml:"canvases"`
+	// Default YAML values for custom apis
+	APIs yaml.Node `yaml:"apis"`
 	// Default YAML values for migrations
 	Migrations yaml.Node `yaml:"migrations"`
 	// Feature flags (preferably a map[string]bool, but can also be a []string for backwards compatibility)
@@ -220,6 +224,16 @@ func (p *Parser) parseRillYAML(ctx context.Context, path string) error {
 			return newYAMLError(err)
 		}
 	}
+	if !tmp.Canvases.IsZero() {
+		if err := tmp.Canvases.Decode(&CanvasYAML{}); err != nil {
+			return newYAMLError(err)
+		}
+	}
+	if !tmp.APIs.IsZero() {
+		if err := tmp.APIs.Decode(&APIYAML{}); err != nil {
+			return newYAMLError(err)
+		}
+	}
 	if !tmp.Migrations.IsZero() {
 		if err := tmp.Migrations.Decode(&MigrationYAML{}); err != nil {
 			return newYAMLError(err)
@@ -259,6 +273,8 @@ func (p *Parser) parseRillYAML(ctx context.Context, path string) error {
 		ResourceKindMetricsView: tmp.MetricsViews,
 		ResourceKindExplore:     tmp.Explores,
 		ResourceKindMigration:   tmp.Migrations,
+		ResourceKindCanvas:      tmp.Canvases,
+		ResourceKindAPI:         tmp.APIs,
 	}
 	if !tmp.MetricsViewsLegacy.IsZero() {
 		defaults[ResourceKindMetricsView] = tmp.MetricsViewsLegacy
