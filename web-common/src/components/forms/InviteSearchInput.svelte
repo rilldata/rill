@@ -164,6 +164,12 @@
         e.preventDefault();
         return;
       }
+      // If input is empty and there are selected items, Enter should submit (invite)
+      if (e.key === "Enter" && input.trim() === "" && selected.length > 0) {
+        handleInvite();
+        e.preventDefault();
+        return;
+      }
     }
     if (e.key === "ArrowDown") {
       highlightedIndex = (highlightedIndex + 1) % searchResults.length;
