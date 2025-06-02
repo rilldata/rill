@@ -2,6 +2,7 @@
   import { createEventDispatcher, onMount } from "svelte";
   import { Button } from "@rilldata/web-common/components/button";
   import UserRoleSelect from "@rilldata/web-admin/features/projects/user-management/UserRoleSelect.svelte";
+  import Close from "../icons/Close.svelte";
 
   export let onSearch: (query: string) => Promise<any[]>;
   export let onInvite: (emails: string[], role?: string) => Promise<void>;
@@ -213,15 +214,18 @@
   <div class="input-row">
     <div class="input-with-role p-1">
       <div
-        class="chips-and-input flex flex-wrap gap-1 w-full min-h-[24px] px-1"
+        class="chips-and-input flex flex-wrap gap-1 w-full min-h-[20px] px-1"
       >
         {#each selected as identifier (identifier)}
-          <span class="chip"
-            >{identifier}<button
-              type="button"
-              on:click={() => removeSelected(identifier)}>&times;</button
-            ></span
-          >
+          <span class="chip text-sm w-fit h-5 overflow-hidden text-ellipsis"
+            >{identifier}
+            <button
+              on:click={() => removeSelected(identifier)}
+              class="ml-1 rounded hover:bg-gray-100 transition-colors"
+            >
+              <Close size="12px" />
+            </button>
+          </span>
         {/each}
         <input
           type="text"
@@ -267,7 +271,7 @@
     <ul
       class="dropdown"
       bind:this={dropdownList}
-      style="width: {DROPDOWN_WIDTH}px; left: 0;"
+      style="width: {DROPDOWN_WIDTH}px; left: 0; overflow-y: auto;"
     >
       {#each searchResults as result, i}
         <li
@@ -338,7 +342,6 @@
     color: #222;
     border-radius: 12px;
     padding: 2px 10px;
-    font-size: 0.95em;
     display: flex;
     align-items: center;
     border: 1px solid #e5e7eb;
