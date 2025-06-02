@@ -15,13 +15,9 @@
   export let initialRole: string = "viewer";
   export let searchList: any[] | undefined = undefined;
   export let searchKeys: string[] = [];
-  /**
-   * -1: no auto focus
-   * 0: auto focus on mount
-   * 1: auto focus on blur
-   */
-  export let autoFocusInput: -1 | 0 | 1 = 0;
+  export let loop: boolean = false;
   export let multiSelect: boolean = false;
+  export let autoFocusInput: -1 | 0 | 1 = 0; // -1: no auto focus, 0: auto focus on mount, 1: auto focus on blur
 
   const dispatch = createEventDispatcher();
 
@@ -199,22 +195,29 @@
       }
     }
     if (e.key === "ArrowDown") {
-      // If we're at the end of the list, stay at the end instead of wrapping
       if (highlightedIndex === searchResults.length - 1) {
-        e.preventDefault();
-        return;
+        if (loop) {
+          highlightedIndex = 0;
+        } else {
+          e.preventDefault();
+          return;
+        }
+      } else {
+        highlightedIndex = highlightedIndex + 1;
       }
-      highlightedIndex = (highlightedIndex + 1) % searchResults.length;
       e.preventDefault();
       showDropdown = true;
     } else if (e.key === "ArrowUp") {
-      // If we're at the start of the list, stay at the start instead of wrapping
       if (highlightedIndex === 0) {
-        e.preventDefault();
-        return;
+        if (loop) {
+          highlightedIndex = searchResults.length - 1;
+        } else {
+          e.preventDefault();
+          return;
+        }
+      } else {
+        highlightedIndex = highlightedIndex - 1;
       }
-      highlightedIndex =
-        (highlightedIndex - 1 + searchResults.length) % searchResults.length;
       e.preventDefault();
       showDropdown = true;
     } else if (e.key === "Enter") {
