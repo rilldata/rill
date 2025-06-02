@@ -234,16 +234,15 @@ func (s *Server) HTTPHandler(ctx context.Context, registerAdditionalHandlers fun
 		httpMux.Handle("/metrics", promhttp.Handler())
 	}
 
-	// Add handlers for the MCP server.
+	// Adds the MCP server handlers.
 	// The path without an instance ID is a convenience path intended for Rill Developer (localhost). In this case, the implementation falls back to using the default instance ID.
-	// NOTE: This can be simplified when we switch to Streamable HTTP instead of SSE because then `newMCPServer` can return a single handler for ".../mcp".
-	mcpServer := s.newMCPServer()
-	mcpSSEHandler := observability.Middleware("runtime", s.logger, auth.HTTPMiddleware(s.aud, mcpServer.SSEHandler()))
-	mcpMessageHandler := observability.Middleware("runtime", s.logger, auth.HTTPMiddleware(s.aud, mcpServer.MessageHandler()))
-	observability.MuxHandle(httpMux, "/mcp/sse", mcpSSEHandler)
-	observability.MuxHandle(httpMux, "/mcp/message", mcpMessageHandler)
-	observability.MuxHandle(httpMux, "/v1/instances/{instance_id}/mcp/sse", mcpSSEHandler)
-	observability.MuxHandle(httpMux, "/v1/instances/{instance_id}/mcp/message", mcpMessageHandler)
+	mcpHandler := observability.Middleware("runtime", s.logger, auth.HTTPMiddleware(s.aud, s.newMCPHandler()))
+	observability.MuxHandle(httpMux, "/mcp", mcpHandler)                                    // Routes to the default instance ID (for Rill Developer on localhost)
+	observability.MuxHandle(httpMux, "/v1/instances/{instance_id}/mcp", mcpHandler)         // The MCP handler will extract the instance ID from the request path.
+	observability.MuxHandle(httpMux, "/mcp/sse", mcpHandler)                                // Backwards compatibility
+	observability.MuxHandle(httpMux, "/mcp/message", mcpHandler)                            // Backwards compatibility
+	observability.MuxHandle(httpMux, "/v1/instances/{instance_id}/mcp/sse", mcpHandler)     // Backwards compatibility
+	observability.MuxHandle(httpMux, "/v1/instances/{instance_id}/mcp/message", mcpHandler) // Backwards compatibility
 
 	// Build CORS options for runtime server
 

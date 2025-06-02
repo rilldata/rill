@@ -6,18 +6,18 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"net/url"
-	"path"
 	"time"
 
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
+	mcputil "github.com/mark3labs/mcp-go/util"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/metricsview"
 	"github.com/rilldata/rill/runtime/pkg/middleware"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/server/auth"
+	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -35,7 +35,7 @@ This server exposes APIs for querying **metrics views**, which represent Rill's 
 In the workflow, do not proceed with the next step until the previous step has been completed. If the information from the previous step is already known (let's say for subsequent queries), you can skip it.
 `
 
-func (s *Server) newMCPServer() *server.SSEServer {
+func (s *Server) newMCPHandler() http.Handler {
 	version := s.runtime.Version().Number
 	if version == "" {
 		version = "0.0.1"
@@ -62,43 +62,29 @@ func (s *Server) newMCPServer() *server.SSEServer {
 	mcpServer.AddTool(s.mcpQueryMetricsViewTimeRange())
 	mcpServer.AddTool(s.mcpQueryMetricsView())
 
-	sseServer := server.NewSSEServer(
+	httpServer := server.NewStreamableHTTPServer(
 		mcpServer,
+		server.WithHeartbeatInterval(30*time.Second),
 		server.WithHTTPContextFunc(s.mcpHTTPContextFunc),
-		server.WithUseFullURLForMessageEndpoint(false),
-		server.WithDynamicBasePath(func(r *http.Request, sessionID string) string {
-			// We don't know the base path because the MCP handler can be served from three base URLs:
-			//   1. <runtime>/mcp
-			//   2. <runtime>/v1/instances/{instance_id}/mcp
-			//   3. <admin>/<runtime proxy path>/mcp
-
-			// Get the base path.
-			basePath := r.URL.Path
-
-			// If the call was proxied from the admin runtime proxy, use the original base path.
-			if originalURI := r.Header.Get("X-Original-URI"); originalURI != "" {
-				parsedURL, err := url.Parse(originalURI)
-				if err == nil {
-					basePath = parsedURL.Path
-				}
-			}
-
-			// We know the path ends with /mcp/sse or /mcp/message and we want to return the path up to /mcp.
-			// So we keep cutting off the last segment until the path ends with "mcp".
-			// Just to be extra safe, we limit the lookback to five iterations.
-			basePath = path.Clean(basePath)
-			for i := 0; i < 5; i++ {
-				if path.Base(basePath) == "mcp" || len(basePath) <= 1 {
-					break
-				}
-				basePath = path.Dir(basePath) // Cut off the last path segment
-			}
-
-			return basePath
-		}),
+		server.WithStateLess(true), // NOTE: Need to change if we start using notifications.
+		server.WithLogger(mcpLogger{s.logger}),
 	)
 
-	return sseServer
+	return httpServer
+}
+
+type mcpLogger struct {
+	logger *zap.Logger
+}
+
+var _ mcputil.Logger = mcpLogger{}
+
+func (l mcpLogger) Infof(msg string, args ...any) {
+	l.logger.Info("mcp: info log", zap.String("msg", fmt.Sprintf(msg, args...)))
+}
+
+func (l mcpLogger) Errorf(msg string, args ...any) {
+	l.logger.Warn("mcp: error log", zap.String("msg", fmt.Sprintf(msg, args...)))
 }
 
 func (s *Server) mcpListMetricsViews() (mcp.Tool, server.ToolHandlerFunc) {
@@ -115,17 +101,20 @@ func (s *Server) mcpListMetricsViews() (mcp.Tool, server.ToolHandlerFunc) {
 			return nil, err
 		}
 
-		var names []string
+		var metricsViews []map[string]any
 		for _, r := range resp.Resources {
 			mv := r.GetMetricsView()
 			if mv == nil || mv.State.ValidSpec == nil {
 				continue
 			}
 
-			names = append(names, r.Meta.Name.Name)
+			metricsViews = append(metricsViews, map[string]any{
+				"name":        r.Meta.Name.Name,
+				"description": mv.State.ValidSpec.Description,
+			})
 		}
 
-		return mcpNewToolResultJSON(names)
+		return mcpNewToolResultJSON(metricsViews)
 	}
 
 	return tool, handler
