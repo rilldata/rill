@@ -48,6 +48,10 @@ type TimestampsResult struct {
 
 // NewExecutor creates a new Executor for the provided metrics view.
 func NewExecutor(ctx context.Context, rt *runtime.Runtime, instanceID string, mv *runtimev1.MetricsViewSpec, streaming bool, sec *runtime.ResolvedSecurity, priority int, timeColumn string) (*Executor, error) {
+	if timeColumn != "" && mv.TimeDimension == "" {
+		return nil, fmt.Errorf("time_column cannot be used with metrics views that does not have a primary timeseries defined")
+	}
+
 	olap, release, err := rt.OLAP(ctx, instanceID, mv.Connector)
 	if err != nil {
 		return nil, fmt.Errorf("failed to acquire connector for metrics view: %w", err)
