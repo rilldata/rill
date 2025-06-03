@@ -98,7 +98,7 @@ jobs:
 
       - name: Build rill cli with rill-dev
         if: matrix.name == 'web-admin'
-        run: PLAYWRIGHT_TEST=true PLAYWRIGHT_CLOUD_TEST=true make cli
+        run: PLAYWRIGHT_TEST=true make cli
 
       - name: Install duckdb extensions
         run: ./rill runtime install-duckdb-extensions

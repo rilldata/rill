@@ -1,3 +1,4 @@
+import { execAsync } from "@rilldata/web-common/tests/utils/spawn";
 import dotenv from "dotenv";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -9,6 +10,22 @@ test.describe("Deploy journey", () => {
   test.use({
     cliHome: join(TestTempDirectory, "deploy_home"),
     rillDevProject: "adbids_lite",
+  });
+
+  test.afterAll(async () => {
+    await execAsync(
+      // We need to set the home to get the correct creds
+      `HOME=${join(TestTempDirectory, "deploy_home")} rill org delete e2e-viewer --interactive=false`,
+    );
+
+    // Wait for the organization to be deleted
+    // This includes deleting the org from Orb and Stripe, which we'd like to do to keep those environments clean.
+    await expect
+      .poll(async () => await isOrgDeleted("e2e-viewer"), {
+        intervals: [1_000],
+        timeout: 15_000,
+      })
+      .toBeTruthy();
   });
 
   // Note: This uses the viewer account to avoid conflicts with the admin account that would already have an org and project.
