@@ -93,6 +93,7 @@
   $: listOrganizationMemberUsergroups =
     createAdminServiceListOrganizationMemberUsergroups(organization, {
       pageSize: PAGE_SIZE,
+      includeCounts: true,
     });
   $: listProjectMemberUsergroups =
     createAdminServiceListProjectMemberUsergroups(
@@ -190,6 +191,7 @@
       )
       .map((group) => ({
         identifier: group.groupName,
+        groupCount: group.usersCount,
         type: "group",
       })),
   ];
