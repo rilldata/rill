@@ -41,4 +41,4 @@
 
 
 # fix metrics view redirect
-/reference/project-files/metrics-view reference/project-files/metrics-views
+/reference/project-files/metrics-view /reference/project-files/metrics-views
