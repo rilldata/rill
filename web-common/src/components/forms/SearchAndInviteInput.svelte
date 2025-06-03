@@ -613,6 +613,7 @@
     border: 1px solid #d1d5db;
     border-radius: 6px;
     z-index: 50;
+    min-height: 60px;
     max-height: 320px;
     overflow-y: auto;
     list-style: none;
