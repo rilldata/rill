@@ -6,6 +6,7 @@
   import Check from "@rilldata/web-common/components/icons/Check.svelte";
   import Avatar from "@rilldata/web-common/components/avatar/Avatar.svelte";
   import { getRandomBgColor } from "@rilldata/web-common/features/themes/color-config";
+  import { onMount, onDestroy } from "svelte";
 
   export let placeholder: string = "Search or invite by email";
   export let validators: ((value: string) => boolean | string)[] = [];
@@ -29,8 +30,21 @@
   let highlightedIndex = -1;
   let dropdownList: HTMLElement;
   let inputElement: HTMLInputElement;
+  let dropdownTop = 0;
+  let dropdownLeft = 0;
+  let dropdownWidth = 0;
 
-  const DROPDOWN_WIDTH = 406.62;
+  function updateDropdownPosition() {
+    if (inputElement) {
+      const rect = inputElement.getBoundingClientRect();
+      const inputContainer = inputElement.closest(".input-with-role");
+      const containerRect = inputContainer?.getBoundingClientRect();
+
+      dropdownLeft = containerRect?.left || rect.left;
+      dropdownTop = (containerRect?.bottom || rect.bottom) + 2;
+      dropdownWidth = containerRect?.width || rect.width;
+    }
+  }
 
   function scrollToHighlighted() {
     if (highlightedIndex >= 0 && dropdownList) {
@@ -89,6 +103,9 @@
         searchResults = results;
       }
       showDropdown = searchResults.length > 0;
+      if (showDropdown) {
+        updateDropdownPosition();
+      }
     } catch {
       searchResults = [];
       showDropdown = false;
@@ -200,6 +217,7 @@
       }
       e.preventDefault();
       showDropdown = true;
+      updateDropdownPosition();
     } else if (e.key === "ArrowUp") {
       if (highlightedIndex === 0) {
         if (loop) {
@@ -213,6 +231,7 @@
       }
       e.preventDefault();
       showDropdown = true;
+      updateDropdownPosition();
     } else if (e.key === "Enter") {
       if (highlightedIndex >= 0 && highlightedIndex < allResults.length) {
         handleSelect(allResults[highlightedIndex]);
@@ -260,6 +279,9 @@
         ),
       );
       showDropdown = searchResults.length > 0;
+      if (showDropdown) {
+        updateDropdownPosition();
+      }
     }
   }
 
@@ -299,6 +321,32 @@
   function getInitials(name: string) {
     return name.charAt(0).toUpperCase();
   }
+
+  onMount(() => {
+    const handleResize = () => {
+      if (showDropdown) {
+        updateDropdownPosition();
+      }
+    };
+
+    const handleScroll = () => {
+      if (showDropdown) {
+        updateDropdownPosition();
+      }
+    };
+
+    window.addEventListener("resize", handleResize);
+    window.addEventListener("scroll", handleScroll, true);
+
+    return () => {
+      window.removeEventListener("resize", handleResize);
+      window.removeEventListener("scroll", handleScroll, true);
+    };
+  });
+
+  onDestroy(() => {
+    // Cleanup is handled by onMount return function
+  });
 </script>
 
 <div class="invite-search-input">
@@ -370,7 +418,7 @@
     <div
       class="dropdown"
       bind:this={dropdownList}
-      style="width: {DROPDOWN_WIDTH}px; left: 0; overflow-y: auto;"
+      style="width: {dropdownWidth}px; top: {dropdownTop}px; left: {dropdownLeft}px;"
     >
       {#if categorizedResults.groups.length > 0}
         <div class="section-header">GROUPS</div>
@@ -486,7 +534,10 @@
       {/if}
     </div>
   {:else if loading}
-    <div class="dropdown loading" style="width: {DROPDOWN_WIDTH}px; left: 0;">
+    <div
+      class="dropdown loading"
+      style="width: {dropdownWidth}px; top: {dropdownTop}px; left: {dropdownLeft}px;"
+    >
       <div class="loading-spinner"></div>
       <span>Searching...</span>
     </div>
@@ -557,13 +608,12 @@
     min-width: 90px;
   }
   .dropdown {
-    position: absolute;
+    position: fixed;
     background: #fff;
     border: 1px solid #d1d5db;
     border-radius: 6px;
-    margin-top: 2px;
-    z-index: 10;
-    max-height: 180px;
+    z-index: 50;
+    max-height: 320px;
     overflow-y: auto;
     list-style: none;
     padding: 0;
