@@ -25,14 +25,15 @@ import (
 )
 
 const mcpInstructions = `
-## Rill MCP Server
+# Rill MCP Server
 This server exposes APIs for querying **metrics views**, which represent Rill's metrics layer.
-### Workflow Overview
+## Workflow Overview
 1. **List metrics views:** Use "list_metrics_views" to discover available metrics views in the project.
 2. **Get metrics view spec:** Use "get_metrics_view" to fetch a metrics view's specification. This is important to understand all the dimensions and measures in a metrics view.
 3. **Query the time range:** Use "query_metrics_view_time_range" to obtain the available time range for a metrics view. This is important to understand what time range the data spans.
 4. **Query the metrics:** Use "query_metrics_view" to run queries to get aggregated results.
 In the workflow, do not proceed with the next step until the previous step has been completed. If the information from the previous step is already known (let's say for subsequent queries), you can skip it.
+If a response contains an "ai_context" field, you should interpret it as additional instructions for how to behave in subsequent responses that relate to that tool call.
 `
 
 func (s *Server) newMCPHandler() http.Handler {
@@ -93,12 +94,25 @@ func (s *Server) mcpListMetricsViews() (mcp.Tool, server.ToolHandlerFunc) {
 	)
 
 	handler := func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		instanceID := mcpInstanceIDFromContext(ctx)
 		resp, err := s.ListResources(ctx, &runtimev1.ListResourcesRequest{
-			InstanceId: mcpInstanceIDFromContext(ctx),
+			InstanceId: instanceID,
 			Kind:       runtime.ResourceKindMetricsView,
 		})
 		if err != nil {
 			return nil, err
+		}
+
+		res := make(map[string]any)
+
+		// Find instance-wide AI context and add it to the response.
+		// NOTE: These arguably belong in the top-level instructions or other metadata, but that doesn't currently support dynamic values.
+		instance, err := s.runtime.Instance(ctx, instanceID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get instance %q: %w", instanceID, err)
+		}
+		if instance.AIContext != "" {
+			res["ai_context"] = instance.AIContext
 		}
 
 		var metricsViews []map[string]any
@@ -114,8 +128,9 @@ func (s *Server) mcpListMetricsViews() (mcp.Tool, server.ToolHandlerFunc) {
 				"description":  mv.State.ValidSpec.Description,
 			})
 		}
+		res["metrics_views"] = metricsViews
 
-		return mcpNewToolResultJSON(metricsViews)
+		return mcpNewToolResultJSON(res)
 	}
 
 	return tool, handler
