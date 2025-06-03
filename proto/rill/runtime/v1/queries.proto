@@ -289,11 +289,24 @@ message QueryBatchResponse {
 }
 
 message ExportRequest {
+  // Instance ID to run the query against.
   string instance_id = 1;
+  // Optional limit on the number of rows to export. It is applied in addition to any limit specified in the query.
   int64 limit = 2;
+  // Format of the export.
   ExportFormat format = 3;
+  // Query to export.
   Query query = 4;
+  // Deprecated. Use query instead.
   string baked_query = 5 [deprecated = true];
+  // If true, the export will include header comments with metadata about the export.
+  bool include_header = 6;
+  // Optional name of the dashboard the export originates from.
+  // Only used if include_header is true.
+  ResourceName origin_dashboard = 7;
+  // Optional UI URL that the export originates from.
+  // Only used if include_header is true.
+  string origin_url = 8;
 }
 
 message ExportResponse {
@@ -301,11 +314,16 @@ message ExportResponse {
 }
 
 message ExportReportRequest {
+  // Instance ID that contains the report.
   string instance_id = 1;
+  // Name of the report to export.
   string report = 2;
-  int64 limit = 3;
-  ExportFormat format = 4;
+  // The execution time to evaluate the report relative to.
+  // This is provided by the report implementation when sending a report.
   google.protobuf.Timestamp execution_time = 5;
+  // Contextual information about the base URL of the UI that initiated the export.
+  // This is used to generate header comments in the exported file when include_header is true in the report spec.
+  string origin_base_url = 6;
 }
 
 message ExportReportResponse {

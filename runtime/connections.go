@@ -158,21 +158,6 @@ func (r *Runtime) Catalog(ctx context.Context, instanceID string) (drivers.Catal
 		return nil, nil, err
 	}
 
-	if inst.EmbedCatalog {
-		conn, release, err := r.AcquireHandle(ctx, instanceID, inst.ResolveOLAPConnector())
-		if err != nil {
-			return nil, nil, err
-		}
-
-		store, ok := conn.AsCatalogStore(instanceID)
-		if !ok {
-			release()
-			return nil, nil, fmt.Errorf("can't embed catalog because it is not supported by the connector %q", inst.ResolveOLAPConnector())
-		}
-
-		return store, release, nil
-	}
-
 	if inst.CatalogConnector == "" {
 		store, ok := r.metastore.AsCatalogStore(instanceID)
 		if !ok {

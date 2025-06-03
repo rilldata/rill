@@ -46,9 +46,9 @@
       eventBus.emit("notification", {
         message: "User group role updated",
       });
-    } catch {
+    } catch (error) {
       eventBus.emit("notification", {
-        message: "Error updating user group role",
+        message: `Error: ${error.response.data.message}`,
         type: "error",
       });
     }
@@ -72,9 +72,9 @@
       eventBus.emit("notification", {
         message: "User group removed",
       });
-    } catch {
+    } catch (error) {
       eventBus.emit("notification", {
-        message: "Error removing user group",
+        message: `Error: ${error.response.data.message}`,
         type: "error",
       });
     }

@@ -37,7 +37,7 @@ sql: |
     {{ if ( .user.admin ) }} group by 2 {{ end }}
 ```
 
-will expose an API endpoint like `https://admin.rilldata.com/v1/organizations/<org-name>/projects/<project-name>/runtime/api/my-api?date=2021-01-01`.
+will expose an API endpoint like `https://api.rilldata.com/v1/organizations/<org-name>/projects/<project-name>/runtime/api/my-api?date=2021-01-01`.
 If the user is an admin, the API will return the count of `measure` by `dim` for the given date. If the user is not an admin, the API will return the count of `measure` for the given date.
 
 
