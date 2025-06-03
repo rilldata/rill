@@ -114,12 +114,16 @@
       } else {
         selected = [...selected, result.identifier];
       }
+      // Clear input after selection
+      input = "";
       // Keep dropdown open and input focused in multi-select mode
       showDropdown = true;
       inputElement?.focus();
     } else {
       // Single-select mode: replace selection
       selected = [result.identifier];
+      // Clear input after selection
+      input = "";
       showDropdown = false;
       highlightedIndex = -1; // Only reset highlightedIndex in single-select mode
     }
