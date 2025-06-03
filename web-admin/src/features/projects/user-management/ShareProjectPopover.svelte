@@ -170,7 +170,7 @@
       )
       .map((member) => ({
         identifier: member.userEmail,
-        isMember: true,
+        type: "user",
       })),
     ...(allOrgInvitesRows ?? [])
       .filter(
@@ -180,7 +180,7 @@
       )
       .map((invite) => ({
         identifier: invite.email,
-        isMember: false,
+        type: "user",
       })),
     ...(orgMemberUsergroups ?? [])
       .filter(
@@ -190,8 +190,7 @@
       )
       .map((group) => ({
         identifier: group.groupName,
-        isMember: false,
-        isGroup: true,
+        type: "group",
       })),
   ];
 
