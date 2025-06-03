@@ -13,7 +13,7 @@
   import { defaults, superForm } from "sveltekit-superforms";
   import { yup } from "sveltekit-superforms/adapters";
   import { array, object, string } from "yup";
-  import InviteSearchInput from "@rilldata/web-common/components/forms/InviteSearchInput.svelte";
+  import SearchAndInviteInput from "@rilldata/web-common/components/forms/SearchAndInviteInput.svelte";
 
   export let organization: string;
   export let project: string;
@@ -279,7 +279,7 @@
   }
 </script>
 
-<InviteSearchInput
+<SearchAndInviteInput
   onSearch={handleSearch}
   onInvite={onInviteHandler}
   placeholder="Email or group, separated by commas"
