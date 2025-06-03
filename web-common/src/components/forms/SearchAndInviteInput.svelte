@@ -6,7 +6,7 @@
   import Check from "@rilldata/web-common/components/icons/Check.svelte";
   import Avatar from "@rilldata/web-common/components/avatar/Avatar.svelte";
   import { getRandomBgColor } from "@rilldata/web-common/features/themes/color-config";
-  import { onMount, onDestroy } from "svelte";
+  import { onMount } from "svelte";
 
   export let placeholder: string = "Search or invite by email";
   export let validators: ((value: string) => boolean | string)[] = [];
@@ -342,10 +342,6 @@
       window.removeEventListener("resize", handleResize);
       window.removeEventListener("scroll", handleScroll, true);
     };
-  });
-
-  onDestroy(() => {
-    // Cleanup is handled by onMount return function
   });
 </script>
 
