@@ -201,7 +201,7 @@
 
   function handleLeave() {
     showTooltip = false;
-    hovering = null;
+    // hovering = null;
   }
 
   function handleMouseDown(
@@ -398,7 +398,7 @@
   }
 
   .table-wrapper {
-    @apply overflow-scroll w-fit max-w-full h-fit max-h-full relative bg-white;
+    @apply overflow-scroll w-fit max-w-full h-fit max-h-full relative bg-surface;
   }
 
   .has-selection tbody {

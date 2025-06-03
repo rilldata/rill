@@ -93,6 +93,12 @@
   $: valueColumn.update(valueElementWith);
   $: deltaColumn.update(deltaElementWidth);
 
+  $: barColor = excluded
+    ? "var(--color-gray-100)"
+    : selected || hovered
+      ? "var(--color-theme-200)"
+      : "var(--color-theme-100)";
+
   $: barLengths = Object.fromEntries(
     Object.entries(pctOfTotals).map(([name, pct]) => [
       name,
@@ -118,12 +124,6 @@
       clamp(0, length, $valueColumn),
     ]),
   );
-
-  $: barColor = excluded
-    ? "rgb(243 244 246)"
-    : selected || hovered
-      ? "var(--color-primary-200)"
-      : "var(--color-primary-100)";
 
   $: dimensionGradients =
     leaderboardMeasureNames.length === 1

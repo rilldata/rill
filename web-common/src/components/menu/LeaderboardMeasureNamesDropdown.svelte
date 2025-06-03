@@ -128,6 +128,7 @@
       <Button
         builders={[builder]}
         type="text"
+        theme
         dataAttributes={{
           "data-testid": "leaderboard-measure-names-dropdown",
           "data-leaderboard-measures-count":
@@ -150,7 +151,7 @@
 
       <DropdownMenu.Content
         align="start"
-        class="flex flex-col w-72 p-0"
+        class="flex flex-col w-72 p-0 overflow-hidden"
         strategy="absolute"
         fitViewport={true}
       >
@@ -193,6 +194,7 @@
           <footer>
             <div class="flex items-center space-x-2">
               <Switch
+                theme
                 checked={multiSelect}
                 id="multi-measure-select"
                 small
@@ -222,14 +224,9 @@
 <style lang="postcss">
   footer {
     height: 42px;
-    @apply border-t border-slate-300;
+    @apply border-t;
     @apply bg-slate-100;
     @apply flex flex-row flex-none items-center justify-start;
     @apply gap-x-2 p-2 px-3.5;
-  }
-
-  footer:is(.dark) {
-    @apply bg-gray-800;
-    @apply border-gray-700;
   }
 </style>

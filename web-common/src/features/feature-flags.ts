@@ -48,6 +48,7 @@ class FeatureFlags {
   exportHeader = new FeatureFlag("user", false);
   alerts = new FeatureFlag("user", true);
   reports = new FeatureFlag("user", true);
+  darkMode = new FeatureFlag("user", false);
 
   constructor() {
     const updateFlags = (userFlags: V1InstanceFeatureFlags) => {

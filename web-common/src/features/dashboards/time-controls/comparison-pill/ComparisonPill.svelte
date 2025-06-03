@@ -98,6 +98,7 @@
         checked={showTimeComparison}
         id="comparing"
         small
+        theme
         disabled={disabled ?? false}
       />
 
@@ -140,7 +141,7 @@
 
   :global(.wrapper > button) {
     @apply border;
-    @apply px-2 flex items-center justify-center bg-white;
+    @apply px-2 flex items-center justify-center bg-surface;
   }
 
   :global(.wrapper > button:first-child) {

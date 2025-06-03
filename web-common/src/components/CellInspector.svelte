@@ -136,7 +136,7 @@
 {#if isOpen}
   <div
     bind:this={container}
-    class="cell-inspector fixed top-12 right-4 z-50 transition-opacity shadow-lg rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800"
+    class="cell-inspector fixed top-12 right-4 z-50 transition-opacity shadow-lg rounded-lg border border-gray-200 dark:border-gray-700 bg-surface dark:bg-gray-800"
     class:invisible={!isOpen && !hovered}
     class:opacity-0={!isOpen && !hovered}
     class:opacity-100={isOpen || hovered}
