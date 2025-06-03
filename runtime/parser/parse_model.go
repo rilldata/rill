@@ -35,10 +35,12 @@ type ModelYAML struct {
 	Output ModelOutputYAML `yaml:"output"`
 	Tests  []struct {
 		Name     string `yaml:"name"`
+		Where    string `yaml:"where"`
 		DataYAML `yaml:",inline"`
 	} `yaml:"tests"`
 	PartitionsTests []struct {
 		Name     string `yaml:"name"`
+		Where    string `yaml:"where"`
 		DataYAML `yaml:",inline"`
 	} `yaml:"partition_tests"`
 	Materialize     *bool `yaml:"materialize"`
@@ -211,10 +213,11 @@ func (p *Parser) parseModel(ctx context.Context, node *Node) error {
 
 		for i := range tmp.PartitionsTests {
 			test := &tmp.PartitionsTests[i]
-			modelTest, refs, err := p.parseModelTest(test.Name, &test.DataYAML, inputConnector)
+			modelTest, refs, err := p.parseModelTest(test.Name, &test.DataYAML, outputConnector, node.Name, test.Where)
 			if err != nil {
 				return fmt.Errorf(`failed to parse partition test %q: %w`, test.Name, err)
 			}
+			modelTest.Where = test.Where
 			partitionsTests = append(partitionsTests, modelTest)
 			partitionsTestsRefs = append(partitionsTestsRefs, refs...)
 		}
@@ -225,7 +228,7 @@ func (p *Parser) parseModel(ctx context.Context, node *Node) error {
 	sqlTestsRefs := []ResourceName{}
 	for i := range tmp.Tests {
 		test := &tmp.Tests[i]
-		modelTest, refs, err := p.parseModelTest(test.Name, &test.DataYAML, outputConnector)
+		modelTest, refs, err := p.parseModelTest(test.Name, &test.DataYAML, outputConnector, node.Name, test.Where)
 		if err != nil {
 			return fmt.Errorf(`failed to parse test %q: %w`, test.Name, err)
 		}
@@ -279,13 +282,18 @@ func (p *Parser) parseModel(ctx context.Context, node *Node) error {
 }
 
 // parseModelTests parses the model tests from the YAML file
-func (p *Parser) parseModelTest(name string, data *DataYAML, connector string) (*runtimev1.ModelTest, []ResourceName, error) {
+func (p *Parser) parseModelTest(name string, data *DataYAML, connector string, modelName string, where string) (*runtimev1.ModelTest, []ResourceName, error) {
+	// Syntactic sugar: if where is set and sql is not, synthesize SQL
+	if where != "" && data.SQL == "" {
+		data.SQL = fmt.Sprintf("SELECT 1 FROM %s WHERE %s LIMIT 1", modelName, where)
+	}
 	resolver, props, refs, err := p.parseDataYAML(data, connector)
 	if err != nil {
 		return nil, nil, err
 	}
 	return &runtimev1.ModelTest{
 		Name:               name,
+		Where:              where,
 		Resolver:           resolver,
 		ResolverProperties: props,
 	}, refs, nil

@@ -2904,6 +2904,8 @@ func (m *ModelTest) validate(all bool) error {
 
 	// no validation rules for Name
 
+	// no validation rules for Where
+
 	// no validation rules for Resolver
 
 	if all {

@@ -63,12 +63,76 @@ tests:
 			expectedTest: 1,
 			expectedErr:  "number is at least 5",
 		},
+		{
+			name: "single WHERE test (syntactic sugar)",
+			modelYAML: `
+type: model
+sql: SELECT range AS number FROM range(0, 10)
+tests:
+  - name: Number is lower than 10
+    where: number >= 10
+`,
+			expectedTest: 1,
+			expectedErr:  "",
+		},
+		{
+			name: "multiple WHERE tests (syntactic sugar)",
+			modelYAML: `
+type: model
+sql: SELECT range AS number FROM range(0, 10)
+tests:
+  - name: Number is lower than 10
+    where: number >= 10
+  - name: Number is at least 0
+    where: number < 0
+`,
+			expectedTest: 2,
+			expectedErr:  "",
+		},
+		{
+			name: "failing WHERE test (syntactic sugar)",
+			modelYAML: `
+type: model
+sql: SELECT range AS number FROM range(0, 10)
+tests:
+  - name: Number is at least 5
+    where: number < 5
+`,
+			expectedTest: 1,
+			expectedErr:  "number is at least 5",
+		},
+		{
+			name: "mixed SQL and WHERE tests",
+			modelYAML: `
+type: model
+sql: SELECT range AS number FROM range(0, 10)
+tests:
+  - name: Number is lower than 10
+    sql: SELECT 1 FROM m1 WHERE number >= 10
+  - name: Number is at least 0
+    where: number < 0
+`,
+			expectedTest: 2,
+			expectedErr:  "",
+		},
+		{
+			name: "WHERE test with templating",
+			modelYAML: `
+type: model
+sql: SELECT range AS number FROM range(0, 10)
+tests:
+  - name: Number is less than env var
+    where: number >= {{ .env.my_value | int64 }}
+`,
+			expectedTest: 1,
+			expectedErr:  "",
+		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			files := map[string]string{
-				"rill.yaml":      "",
+				"rill.yaml":      "env:\n  my_value: 10\n",
 				"models/m1.yaml": tc.modelYAML,
 			}
 			rt, id := testruntime.NewInstance(t)

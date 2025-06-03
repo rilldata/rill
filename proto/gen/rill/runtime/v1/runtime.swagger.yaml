@@ -5702,10 +5702,15 @@ definitions:
     properties:
       name:
         type: string
+      where:
+        type: string
       resolver:
         type: string
       resolverProperties:
         type: object
+        title: |-
+          TODO: Consider test types - (e.g. "assertion", "row_count", "row_content", etc.)
+           ModelTestType type = 5;
   v1Notifier:
     type: object
     properties:

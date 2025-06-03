@@ -176,8 +176,10 @@ enum ModelChangeMode {
 
 message ModelTest {
   string name = 1;
-  string resolver = 2;
-  google.protobuf.Struct resolver_properties = 3;
+  string where = 2;
+  string resolver = 3;
+  google.protobuf.Struct resolver_properties = 4;
+  // ModelTestType type = 5; // Consider test types - (e.g. "assertion", "row_count", "row_content", etc.)
 }
 
 message MetricsView {

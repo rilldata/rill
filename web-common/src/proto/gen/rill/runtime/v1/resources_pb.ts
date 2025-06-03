@@ -1210,12 +1210,20 @@ export class ModelTest extends Message<ModelTest> {
   name = "";
 
   /**
-   * @generated from field: string resolver = 2;
+   * @generated from field: string where = 2;
+   */
+  where = "";
+
+  /**
+   * @generated from field: string resolver = 3;
    */
   resolver = "";
 
   /**
-   * @generated from field: google.protobuf.Struct resolver_properties = 3;
+   * TODO: Consider test types - (e.g. "assertion", "row_count", "row_content", etc.)
+   * ModelTestType type = 5;
+   *
+   * @generated from field: google.protobuf.Struct resolver_properties = 4;
    */
   resolverProperties?: Struct;
 
@@ -1228,8 +1236,9 @@ export class ModelTest extends Message<ModelTest> {
   static readonly typeName = "rill.runtime.v1.ModelTest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "resolver", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "resolver_properties", kind: "message", T: Struct },
+    { no: 2, name: "where", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "resolver", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "resolver_properties", kind: "message", T: Struct },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ModelTest {
