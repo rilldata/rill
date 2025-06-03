@@ -36,7 +36,7 @@
   }
 
   function onRetry() {
-    void redeploy(orgParam!);
+    void redeploy(projectId!);
   }
 
   function onBack() {
