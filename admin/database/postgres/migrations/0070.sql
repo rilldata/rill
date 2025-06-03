@@ -1,5 +1,3 @@
--- We stored HTML URL earlier, but now we are using clone URL
-UPDATE projects 
-SET github_url = concat(github_url, '.git') 
-WHERE github_url IS NOT NULL 
-  AND github_url NOT LIKE '%.git';
+-- Hard-coded first-party auth client
+INSERT INTO auth_clients (id, display_name)
+VALUES ('12345678-0000-0000-0000-000000000005', 'Created manually');
