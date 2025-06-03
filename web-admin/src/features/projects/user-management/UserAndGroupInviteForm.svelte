@@ -137,7 +137,7 @@
       }
       if (succeededGroups.length > 0) {
         if (successMessage) successMessage += " and ";
-        successMessage += `Added ${succeededGroups.length} ${succeededGroups.length === 1 ? "group" : "groups"}`;
+        successMessage += `${successMessage ? "added" : "Added"} ${succeededGroups.length} ${succeededGroups.length === 1 ? "group" : "groups"}`;
       }
       if (successMessage) {
         successMessage += ` as ${values.role}`;
@@ -252,7 +252,7 @@
     }
     if (succeededGroups.length > 0) {
       if (successMessage) successMessage += " and ";
-      successMessage += `Added ${succeededGroups.length} ${succeededGroups.length === 1 ? "group" : "groups"}`;
+      successMessage += `${successMessage ? "added" : "Added"} ${succeededGroups.length} ${succeededGroups.length === 1 ? "group" : "groups"}`;
     }
     if (successMessage) {
       successMessage += ` as ${role}`;
