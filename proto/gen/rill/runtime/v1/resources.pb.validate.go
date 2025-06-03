@@ -2492,6 +2492,8 @@ func (m *ModelSpec) validate(all bool) error {
 		}
 	}
 
+	// no validation rules for ChangeMode
+
 	// no validation rules for Trigger
 
 	// no validation rules for TriggerFull
@@ -3000,6 +3002,8 @@ func (m *MetricsViewSpec) validate(all bool) error {
 	// no validation rules for DisplayName
 
 	// no validation rules for Description
+
+	// no validation rules for AiContext
 
 	// no validation rules for TimeDimension
 
@@ -5900,6 +5904,8 @@ func (m *ReportSpec) validate(all bool) error {
 	// no validation rules for ExportLimit
 
 	// no validation rules for ExportFormat
+
+	// no validation rules for ExportIncludeHeader
 
 	for idx, item := range m.GetNotifiers() {
 		_, _ = idx, item
@@ -10307,68 +10313,11 @@ func (m *APISpec) validate(all bool) error {
 
 	// no validation rules for OpenapiSummary
 
-	for idx, item := range m.GetOpenapiParameters() {
-		_, _ = idx, item
+	// no validation rules for OpenapiParametersJson
 
-		if all {
-			switch v := interface{}(item).(type) {
-			case interface{ ValidateAll() error }:
-				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, APISpecValidationError{
-						field:  fmt.Sprintf("OpenapiParameters[%v]", idx),
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			case interface{ Validate() error }:
-				if err := v.Validate(); err != nil {
-					errors = append(errors, APISpecValidationError{
-						field:  fmt.Sprintf("OpenapiParameters[%v]", idx),
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			}
-		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
-			if err := v.Validate(); err != nil {
-				return APISpecValidationError{
-					field:  fmt.Sprintf("OpenapiParameters[%v]", idx),
-					reason: "embedded message failed validation",
-					cause:  err,
-				}
-			}
-		}
+	// no validation rules for OpenapiRequestSchemaJson
 
-	}
-
-	if all {
-		switch v := interface{}(m.GetOpenapiResponseSchema()).(type) {
-		case interface{ ValidateAll() error }:
-			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, APISpecValidationError{
-					field:  "OpenapiResponseSchema",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		case interface{ Validate() error }:
-			if err := v.Validate(); err != nil {
-				errors = append(errors, APISpecValidationError{
-					field:  "OpenapiResponseSchema",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		}
-	} else if v, ok := interface{}(m.GetOpenapiResponseSchema()).(interface{ Validate() error }); ok {
-		if err := v.Validate(); err != nil {
-			return APISpecValidationError{
-				field:  "OpenapiResponseSchema",
-				reason: "embedded message failed validation",
-				cause:  err,
-			}
-		}
-	}
+	// no validation rules for OpenapiResponseSchemaJson
 
 	for idx, item := range m.GetSecurityRules() {
 		_, _ = idx, item
@@ -11669,6 +11618,8 @@ func (m *MetricsViewSpec_Dimension) validate(all bool) error {
 	// no validation rules for LookupKeyColumn
 
 	// no validation rules for LookupValueColumn
+
+	// no validation rules for LookupDefaultExpression
 
 	if len(errors) > 0 {
 		return MetricsViewSpec_DimensionMultiError(errors)

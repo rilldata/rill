@@ -30,11 +30,28 @@ export function generateVLHeatmapSpec(
     "right",
   );
 
+  const xEncoding = createPositionEncoding(config.x, data);
+  const yEncoding = createPositionEncoding(config.y, data);
+
+  if (config.x?.type === "nominal" && config.color?.field) {
+    xEncoding.sort = {
+      op: "sum",
+      field: config.color.field,
+      order: "descending",
+    };
+  } else if (config.y?.type === "nominal" && config.color?.field) {
+    yEncoding.sort = {
+      op: "sum",
+      field: config.color.field,
+      order: "descending",
+    };
+  }
+
   return {
     ...spec,
     encoding: {
-      x: createPositionEncoding(config.x, data),
-      y: createPositionEncoding(config.y, data),
+      x: xEncoding,
+      y: yEncoding,
       color: createColorEncoding(config.color, data),
       tooltip: createDefaultTooltipEncoding(
         [config.x, config.y, config.color],

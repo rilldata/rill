@@ -150,7 +150,7 @@ type DB interface {
 	InsertManagedUsergroupsMemberUser(ctx context.Context, orgID, userID, roleID string) error
 	DeleteManagedUsergroupsMemberUser(ctx context.Context, orgID, userID string) error
 
-	FindUserAuthTokens(ctx context.Context, userID string) ([]*UserAuthToken, error)
+	FindUserAuthTokens(ctx context.Context, userID, afterID string, limit int) ([]*UserAuthToken, error)
 	FindUserAuthToken(ctx context.Context, id string) (*UserAuthToken, error)
 	InsertUserAuthToken(ctx context.Context, opts *InsertUserAuthTokenOptions) (*UserAuthToken, error)
 	UpdateUserAuthTokenUsedOn(ctx context.Context, ids []string) error
@@ -358,7 +358,7 @@ type Organization struct {
 
 // InsertOrganizationOptions defines options for inserting a new org
 type InsertOrganizationOptions struct {
-	Name                                string `validate:"slug"`
+	Name                                string `validate:"min=2,max=40,slug"`
 	DisplayName                         string
 	Description                         string
 	LogoAssetID                         *string
@@ -379,7 +379,7 @@ type InsertOrganizationOptions struct {
 
 // UpdateOrganizationOptions defines options for updating an existing org
 type UpdateOrganizationOptions struct {
-	Name                                string `validate:"slug"`
+	Name                                string `validate:"min=2,max=40,slug"`
 	DisplayName                         string
 	Description                         string
 	LogoAssetID                         *string
@@ -435,7 +435,7 @@ type Project struct {
 // InsertProjectOptions defines options for inserting a new Project.
 type InsertProjectOptions struct {
 	OrganizationID       string `validate:"required"`
-	Name                 string `validate:"slug"`
+	Name                 string `validate:"min=1,max=40,slug"`
 	Description          string
 	Public               bool
 	CreatedByUserID      *string
@@ -456,7 +456,7 @@ type InsertProjectOptions struct {
 
 // UpdateProjectOptions defines options for updating a Project.
 type UpdateProjectOptions struct {
-	Name                 string `validate:"slug"`
+	Name                 string `validate:"min=1,max=40,slug"`
 	Description          string
 	Public               bool
 	Provisioner          string
@@ -584,8 +584,8 @@ type UpdateUserOptions struct {
 // Service accounts may belong to single organization
 type Service struct {
 	ID        string
-	OrgID     string    `db:"org_id"`
-	Name      string    `validate:"slug"`
+	OrgID     string `db:"org_id"`
+	Name      string
 	CreatedOn time.Time `db:"created_on"`
 	UpdatedOn time.Time `db:"updated_on"`
 	ActiveOn  time.Time `db:"active_on"`
@@ -594,19 +594,19 @@ type Service struct {
 // InsertServiceOptions defines options for inserting a new service
 type InsertServiceOptions struct {
 	OrgID string
-	Name  string `validate:"slug"`
+	Name  string `validate:"min=1,max=40,slug"`
 }
 
 // UpdateServiceOptions defines options for updating an existing service
 type UpdateServiceOptions struct {
-	Name string `validate:"slug"`
+	Name string `validate:"min=1,max=40,slug"`
 }
 
 // Usergroup represents a group of org members
 type Usergroup struct {
 	ID          string    `db:"id"`
 	OrgID       string    `db:"org_id"`
-	Name        string    `db:"name" validate:"slug"`
+	Name        string    `db:"name"`
 	Managed     bool      `db:"managed"`
 	Description string    `db:"description"`
 	CreatedOn   time.Time `db:"created_on"`
@@ -616,7 +616,7 @@ type Usergroup struct {
 // InsertUsergroupOptions defines options for inserting a new usergroup
 type InsertUsergroupOptions struct {
 	OrgID   string
-	Name    string `validate:"slug"`
+	Name    string `validate:"min=1,max=40,slug"`
 	Managed bool
 }
 
@@ -631,15 +631,16 @@ const (
 
 // UserAuthToken is a persistent API token for a user.
 type UserAuthToken struct {
-	ID                 string
-	SecretHash         []byte     `db:"secret_hash"`
-	UserID             string     `db:"user_id"`
-	DisplayName        string     `db:"display_name"`
-	AuthClientID       *string    `db:"auth_client_id"`
-	RepresentingUserID *string    `db:"representing_user_id"`
-	CreatedOn          time.Time  `db:"created_on"`
-	ExpiresOn          *time.Time `db:"expires_on"`
-	UsedOn             time.Time  `db:"used_on"`
+	ID                    string
+	SecretHash            []byte     `db:"secret_hash"`
+	UserID                string     `db:"user_id"`
+	DisplayName           string     `db:"display_name"`
+	AuthClientID          *string    `db:"auth_client_id"`
+	AuthClientDisplayName *string    `db:"auth_client_display_name"`
+	RepresentingUserID    *string    `db:"representing_user_id"`
+	CreatedOn             time.Time  `db:"created_on"`
+	ExpiresOn             *time.Time `db:"expires_on"`
+	UsedOn                time.Time  `db:"used_on"`
 }
 
 // InsertUserAuthTokenOptions defines options for creating a UserAuthToken.
@@ -772,6 +773,7 @@ const (
 	AuthClientIDRillCLI      = "12345678-0000-0000-0000-000000000002"
 	AuthClientIDRillSupport  = "12345678-0000-0000-0000-000000000003"
 	AuthClientIDRillWebLocal = "12345678-0000-0000-0000-000000000004"
+	AuthClientIDRillManual   = "12345678-0000-0000-0000-000000000005"
 )
 
 // DeviceAuthCodeState is an enum representing the approval state of a DeviceAuthCode
@@ -905,7 +907,7 @@ type UsergroupMemberUser struct {
 // MemberUsergroup is a convenience type used for display-friendly representation of an org or project member that is a usergroup.
 type MemberUsergroup struct {
 	ID         string    `db:"id"`
-	Name       string    `db:"name" validate:"slug"`
+	Name       string    `db:"name"`
 	Managed    bool      `db:"managed"`
 	RoleName   string    `db:"role_name"`
 	UsersCount int       `db:"users_count"`

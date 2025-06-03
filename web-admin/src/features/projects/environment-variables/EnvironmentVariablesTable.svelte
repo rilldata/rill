@@ -35,6 +35,7 @@
     },
     {
       header: "Activity",
+      sortDescFirst: true,
       accessorFn: (row) => row.createdOn,
       cell: ({ row }) => {
         return flexRender(ActivityCell, {

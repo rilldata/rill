@@ -14,7 +14,7 @@ Now that we have deployed the API to Rill Cloud, we can test the APIs with the t
 Let's use the following to return the results from the CLI:
 
 ```bash
-curl https://admin.rilldata.com/v1/orgs/Rill_Learn/projects/my-rill-tutorial/runtime/api/SQL_api \
+curl https://api.rilldata.com/v1/organizations/Rill_Learn/projects/my-rill-tutorial/runtime/api/SQL_api \
 -H "Authorization: Bearer <your_service_token>"
 ```
 
@@ -32,14 +32,14 @@ Based on the access policy, we expect that the API does not work as the user doe
 
 Dashboard API: (metrics_view_api)
 ```bash
-curl https://admin.rilldata.com/v1/orgs/Rill_Learn/projects/my-rill-tutorial/runtime/api/metrics_view_api \  ...
+curl https://api.rilldata.com/v1/organizations/Rill_Learn/projects/my-rill-tutorial/runtime/api/metrics_view_api \  ...
 
 {"error":"action not allowed"}
 ```
 
 Underlying SQL table: (SQL_api)
 ```bash
-curl https://admin.rilldata.com/v1/orgs/Rill_Learn/projects/my-rill-tutorial/runtime/api/SQL_api \ ...
+curl https://api.rilldata.com/v1/organizations/Rill_Learn/projects/my-rill-tutorial/runtime/api/SQL_api \ ...
 
 [{"author_name":"avogar","net_line_changes":16331},{"author_name":"Sema Checherinda","net_line_changes":8118},{"author_name":"Blargian","net_line_changes":5629},{"author_name":"Max K","net_line_changes":1904},{"author_name":"robot-clickhouse","net_line_changes":1899},{"author_name":"Raúl Marín","net_line_changes":1434},{"author_name":"János Benjamin Antal","net_line_changes":1168},{"author_name":"yariks5s","net_line_changes":1078},{"author_name":"Nikita Taranov","net_line_changes":1035},{"author_name":"Antonio Andelic","net_line_changes":1032}]%  
 ```

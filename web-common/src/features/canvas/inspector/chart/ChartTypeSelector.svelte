@@ -5,7 +5,7 @@
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import {
     CHART_CONFIG,
-    CHART_TYPES,
+    VISIBLE_CHART_TYPES,
     type ChartSpec,
   } from "@rilldata/web-common/features/canvas/components/charts";
   import type { BaseChart } from "@rilldata/web-common/features/canvas/components/charts/BaseChart";
@@ -34,7 +34,7 @@
 <div class="section">
   <InputLabel small label="Chart type" id="chart-components" />
   <div class="chart-icons">
-    {#each CHART_TYPES as chart, i (i)}
+    {#each VISIBLE_CHART_TYPES as chart, i (i)}
       <Tooltip distance={8} location="right">
         <Button
           square

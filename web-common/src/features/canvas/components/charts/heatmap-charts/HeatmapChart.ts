@@ -18,8 +18,8 @@ import type {
   ComponentPath,
 } from "../../../stores/canvas-entity";
 import { BaseChart, type BaseChartConfig } from "../BaseChart";
+import { getFilterWithNullHandling } from "../query-utils";
 import type { ChartDataQuery, ChartFieldsMap, FieldConfig } from "../types";
-import { getFilterWithNullHandling } from "../util";
 
 export type HeatmapChartSpec = BaseChartConfig & {
   x?: FieldConfig;
@@ -81,7 +81,6 @@ export class HeatmapChartComponent extends BaseChart<HeatmapChartSpec> {
     const config = get(this.specStore);
 
     let measures: V1MetricsViewAggregationMeasure[] = [];
-    let dimensions: V1MetricsViewAggregationDimension[] = [];
 
     if (config.color?.field) {
       measures = [{ name: config.color.field }];
@@ -93,12 +92,15 @@ export class HeatmapChartComponent extends BaseChart<HeatmapChartSpec> {
       ([runtime, $timeAndFilterStore]) => {
         const { timeRange, where } = $timeAndFilterStore;
         const enabled =
-          !!timeRange?.start && !!timeRange?.end && !!config.x?.field;
+          !!timeRange?.start &&
+          !!timeRange?.end &&
+          !!config.x?.field &&
+          config?.x?.type !== "temporal";
 
         const xWhere = getFilterWithNullHandling(where, config.x);
 
         let limit = "100";
-        if (config.x?.limit && config.x.type !== "temporal") {
+        if (config.x?.limit) {
           limit = config.x.limit.toString();
         }
 
@@ -108,10 +110,9 @@ export class HeatmapChartComponent extends BaseChart<HeatmapChartSpec> {
           {
             measures,
             dimensions: [{ name: config.x?.field }],
-            sort:
-              config.x?.type === "nominal"
-                ? [{ name: config.x?.field, desc: true }]
-                : [],
+            sort: config.color?.field
+              ? [{ name: config.color.field, desc: true }]
+              : [{ name: config.x?.field, desc: false }],
             where: xWhere,
             timeRange,
             limit,
@@ -132,12 +133,15 @@ export class HeatmapChartComponent extends BaseChart<HeatmapChartSpec> {
       ([runtime, $timeAndFilterStore]) => {
         const { timeRange, where } = $timeAndFilterStore;
         const enabled =
-          !!timeRange?.start && !!timeRange?.end && !!config.y?.field;
+          !!timeRange?.start &&
+          !!timeRange?.end &&
+          !!config.y?.field &&
+          config?.y?.type !== "temporal";
 
         const yWhere = getFilterWithNullHandling(where, config.y);
 
         let limit = "100";
-        if (config.y?.limit && config.y.type !== "temporal") {
+        if (config.y?.limit) {
           limit = config.y.limit.toString();
         }
 
@@ -147,10 +151,9 @@ export class HeatmapChartComponent extends BaseChart<HeatmapChartSpec> {
           {
             measures,
             dimensions: [{ name: config.y?.field }],
-            sort:
-              config.y?.type === "nominal"
-                ? [{ name: config.y?.field, desc: true }]
-                : [],
+            sort: config.color?.field
+              ? [{ name: config.color.field, desc: true }]
+              : [{ name: config.y?.field, desc: false }],
             where: yWhere,
             timeRange,
             limit,
@@ -171,15 +174,15 @@ export class HeatmapChartComponent extends BaseChart<HeatmapChartSpec> {
     const queryOptionsStore = derived(
       [ctx.runtime, timeAndFilterStore, xAxisQuery, yAxisQuery],
       ([runtime, $timeAndFilterStore, $xAxisQuery, $yAxisQuery]) => {
-        const { timeRange, where } = $timeAndFilterStore;
+        const { timeRange, where, timeGrain } = $timeAndFilterStore;
         const xTopNData = $xAxisQuery?.data?.data;
         const yTopNData = $yAxisQuery?.data?.data;
 
         const enabled =
           !!timeRange?.start &&
           !!timeRange?.end &&
-          !!xTopNData?.length &&
-          !!yTopNData?.length;
+          (config.x?.type === "nominal" ? !!xTopNData?.length : true) &&
+          (config.y?.type === "nominal" ? !!yTopNData?.length : true);
 
         let combinedWhere: V1Expression | undefined = where;
 
@@ -197,12 +200,22 @@ export class HeatmapChartComponent extends BaseChart<HeatmapChartSpec> {
           combinedWhere = mergeFilters(combinedWhere, yFilterForTopValues);
         }
 
-        if (config.x?.field) {
-          dimensions = [...dimensions, { name: config.x.field }];
-        }
+        let dimensions: V1MetricsViewAggregationDimension[] = [
+          ...(config.x?.field ? [{ name: config.x.field }] : []),
+          ...(config.y?.field ? [{ name: config.y.field }] : []),
+        ];
 
-        if (config.y?.field) {
-          dimensions = [...dimensions, { name: config.y.field }];
+        // Update dimensions with timeGrain if temporal
+        if (timeGrain) {
+          dimensions = dimensions.map((d) => {
+            if (
+              (config.x?.type === "temporal" && d.name === config.x?.field) ||
+              (config.y?.type === "temporal" && d.name === config.y?.field)
+            ) {
+              return { ...d, timeGrain };
+            }
+            return d;
+          });
         }
 
         return getQueryServiceMetricsViewAggregationQueryOptions(

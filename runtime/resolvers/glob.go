@@ -72,8 +72,6 @@ type globProps struct {
 	// TransformSQL is an optional SQL statement to transform the results.
 	// The SQL statement should be a DuckDB SQL statement that queries a table templated into the query with "{{ .table }}".
 	TransformSQL string `mapstructure:"transform_sql"`
-	// AdditionalProps is a map of additional properties to pass to the connector when calling its ObjectStore functions.
-	AdditionalProps map[string]any `mapstructure:",remain"`
 }
 
 // globArgs declares the arguments for a "glob" resolver.
@@ -184,12 +182,7 @@ func (r *globResolver) ResolveInteractive(ctx context.Context) (runtime.Resolver
 		return nil, fmt.Errorf("connector %q is not an object store", r.props.Connector)
 	}
 
-	listObjectsProps := map[string]any{"path": r.props.Path}
-	for k, v := range r.props.AdditionalProps {
-		listObjectsProps[k] = v
-	}
-
-	entries, err := store.ListObjects(ctx, listObjectsProps)
+	entries, err := store.ListObjects(ctx, r.props.Path)
 	if err != nil {
 		return nil, err
 	}

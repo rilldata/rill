@@ -49,7 +49,7 @@ func TestValidateMetricsViewClickHouseNames(t *testing.T) {
 	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
 		TestConnectors: []string{"clickhouse"},
 		Files: map[string]string{
-			"rill.yaml": "",
+			"rill.yaml": "olap_connector: clickhouse",
 			"model.sql": `
 -- @connector: clickhouse
 select parseDateTimeBestEffort('2024-01-01T00:00:00Z') as time, 'DK' as country, 1 as val union all

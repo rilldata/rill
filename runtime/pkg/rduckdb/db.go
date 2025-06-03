@@ -949,13 +949,6 @@ func (d *db) openDBAndAttach(ctx context.Context, uri, ignoreTable string, initQ
 			return nil, err
 		}
 	}
-	if !read {
-		// at the end disable any more configuration changes on the write handle via pre_exec sql
-		_, err = db.ExecContext(ctx, "SET lock_configuration TO true", nil)
-		if err != nil {
-			return nil, err
-		}
-	}
 
 	err = otelsql.RegisterDBStatsMetrics(db.DB, otelsql.WithAttributes(d.opts.OtelAttributes...))
 	if err != nil {

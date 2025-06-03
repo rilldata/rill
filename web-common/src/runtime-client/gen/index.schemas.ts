@@ -59,6 +59,7 @@ export interface MetricsViewSpecDimension {
   lookupTable?: string;
   lookupKeyColumn?: string;
   lookupValueColumn?: string;
+  lookupDefaultExpression?: string;
 }
 
 export interface MetricsViewSpecDimensionSelector {
@@ -209,16 +210,13 @@ export interface V1API {
 
 export type V1APISpecResolverProperties = { [key: string]: unknown };
 
-export type V1APISpecOpenapiParametersItem = { [key: string]: unknown };
-
-export type V1APISpecOpenapiResponseSchema = { [key: string]: unknown };
-
 export interface V1APISpec {
   resolver?: string;
   resolverProperties?: V1APISpecResolverProperties;
   openapiSummary?: string;
-  openapiParameters?: V1APISpecOpenapiParametersItem[];
-  openapiResponseSchema?: V1APISpecOpenapiResponseSchema;
+  openapiParametersJson?: string;
+  openapiRequestSchemaJson?: string;
+  openapiResponseSchemaJson?: string;
   securityRules?: V1SecurityRule[];
   skipNestedSecurity?: boolean;
 }
@@ -716,7 +714,6 @@ export interface V1CreateInstanceRequest {
   connectors?: V1Connector[];
   variables?: V1CreateInstanceRequestVariables;
   annotations?: V1CreateInstanceRequestAnnotations;
-  embedCatalog?: boolean;
   watchRepo?: boolean;
 }
 
@@ -1064,8 +1061,8 @@ export interface V1Instance {
   projectVariables?: V1InstanceProjectVariables;
   featureFlags?: V1InstanceFeatureFlags;
   annotations?: V1InstanceAnnotations;
-  embedCatalog?: boolean;
   watchRepo?: boolean;
+  aiContext?: string;
 }
 
 export type V1InstanceHealthMetricsViewErrors = { [key: string]: string };
@@ -1390,6 +1387,8 @@ export interface V1MetricsViewSpec {
   model?: string;
   displayName?: string;
   description?: string;
+  /** Extra context for LLM/AI features. Used to guide natural language question answering and routing. */
+  aiContext?: string;
   timeDimension?: string;
   smallestTimeGrain?: V1TimeGrain;
   /** Expression to evaluate a watermark for the metrics view. If not set, the watermark defaults to max(time_dimension). */
@@ -1513,6 +1512,17 @@ export interface V1Model {
   state?: V1ModelState;
 }
 
+export type V1ModelChangeMode =
+  (typeof V1ModelChangeMode)[keyof typeof V1ModelChangeMode];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const V1ModelChangeMode = {
+  MODEL_CHANGE_MODE_UNSPECIFIED: "MODEL_CHANGE_MODE_UNSPECIFIED",
+  MODEL_CHANGE_MODE_RESET: "MODEL_CHANGE_MODE_RESET",
+  MODEL_CHANGE_MODE_MANUAL: "MODEL_CHANGE_MODE_MANUAL",
+  MODEL_CHANGE_MODE_PATCH: "MODEL_CHANGE_MODE_PATCH",
+} as const;
+
 export type V1ModelPartitionData = { [key: string]: unknown };
 
 export interface V1ModelPartition {
@@ -1555,6 +1565,7 @@ export interface V1ModelSpec {
   stageProperties?: V1ModelSpecStageProperties;
   outputConnector?: string;
   outputProperties?: V1ModelSpecOutputProperties;
+  changeMode?: V1ModelChangeMode;
   trigger?: boolean;
   triggerFull?: boolean;
   /** defined_as_source is true if it was defined by user as a source but converted internally to a model. */
@@ -1837,6 +1848,7 @@ export interface V1ReportSpec {
   queryArgsJson?: string;
   exportLimit?: string;
   exportFormat?: V1ExportFormat;
+  exportIncludeHeader?: boolean;
   notifiers?: V1Notifier[];
   annotations?: V1ReportSpecAnnotations;
   /** If true, will use the lowest watermark of its refs instead of the trigger time. */
@@ -2269,7 +2281,6 @@ export type RuntimeServiceEditInstanceBody = {
   connectors?: V1Connector[];
   variables?: RuntimeServiceEditInstanceBodyVariables;
   annotations?: RuntimeServiceEditInstanceBodyAnnotations;
-  embedCatalog?: boolean;
   watchRepo?: boolean;
 };
 
@@ -2457,10 +2468,18 @@ export type QueryServiceColumnDescriptiveStatisticsParams = {
 };
 
 export type QueryServiceExportBody = {
+  /** Optional limit on the number of rows to export. It is applied in addition to any limit specified in the query. */
   limit?: string;
   format?: V1ExportFormat;
   query?: V1Query;
+  /** Deprecated. Use query instead. */
   bakedQuery?: string;
+  /** If true, the export will include header comments with metadata about the export. */
+  includeHeader?: boolean;
+  originDashboard?: V1ResourceName;
+  /** Optional UI URL that the export originates from.
+Only used if include_header is true. */
+  originUrl?: string;
 };
 
 export type QueryServiceMetricsViewAggregationBody = {
@@ -2726,9 +2745,12 @@ export type RuntimeServiceQueryResolverBody = {
 };
 
 export type QueryServiceExportReportBody = {
-  limit?: string;
-  format?: V1ExportFormat;
+  /** The execution time to evaluate the report relative to.
+This is provided by the report implementation when sending a report. */
   executionTime?: string;
+  /** Contextual information about the base URL of the UI that initiated the export.
+This is used to generate header comments in the exported file when include_header is true in the report spec. */
+  originBaseUrl?: string;
 };
 
 export type RuntimeServiceGetResourceParams = {
@@ -2808,7 +2830,6 @@ export type ConnectorServiceS3ListObjectsParams = {
   connector?: string;
   pageSize?: number;
   pageToken?: string;
-  region?: string;
   prefix?: string;
   startAfter?: string;
   delimiter?: string;

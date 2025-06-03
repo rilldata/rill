@@ -11,13 +11,13 @@ Our [custom APIs](https://docs.rilldata.com/integrate/custom-api#accessing-custo
 
 GET:
 ```bash
-curl https://admin.rilldata.com/v1/orgs/<org-name>/projects/<project-name>/runtime/api/<api-name>[?query-args] \
+curl https://api.rilldata.com/v1/organizations/<org-name>/projects/<project-name>/runtime/api/<api-name>[?query-args] \
 -H "Authorization: Bearer <token>"
 ```
 
 POST:
 ```bash
-curl -X POST https://admin.rilldata.com/v1/orgs/<org-name>/projects/<project-name>/runtime/api/<api-name>[?query-args] \
+curl -X POST https://api.rilldata.com/v1/organizations/<org-name>/projects/<project-name>/runtime/api/<api-name>[?query-args] \
 -H "Authorization: Bearer <token>"
 ```
 
@@ -46,7 +46,7 @@ security:
 This access policy gives access to the dashboard for admins who's email domain is rilldata.com. For the user token below, please select an email for a user that is [a viewer](https://docs.rilldata.com/tutorials/administration/user-management) to the project, `my-rill-tutorial`.
 
 ```bash
-curl -X POST https://admin.rilldata.com/v1/organizations/<ORG_NAME>/projects/<PROJECT_NAME>/credentials \
+curl -X POST https://api.rilldata.com/v1/organizations/<ORG_NAME>/projects/<PROJECT_NAME>/credentials \
 -H "Authorization: Bearer rill_svc_<RANDOM_STRING>" --data-raw '{
   "user_email": "email@domaim.com"
 }'

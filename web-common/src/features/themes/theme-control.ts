@@ -1,5 +1,6 @@
 import { get, writable } from "svelte/store";
 import { localStorageStore } from "@rilldata/web-common/lib/store-utils";
+import { featureFlags } from "../feature-flags";
 
 class ThemeControl {
   private preferenceStore = localStorageStore<"light" | "dark" | "system">(
@@ -54,6 +55,7 @@ class ThemeControl {
   };
 
   private setDark() {
+    if (get(featureFlags.darkMode) === false) return;
     this.current.set("dark");
     document.documentElement.classList.add("dark");
   }

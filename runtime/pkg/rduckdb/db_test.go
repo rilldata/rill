@@ -479,18 +479,6 @@ func TestViews(t *testing.T) {
 	require.NoError(t, testDB.Close())
 }
 
-func TestNoConfigUpdate(t *testing.T) {
-	db, _, _ := prepareDB(t)
-	ctx := context.Background()
-	_, err := db.CreateTableAsSelect(ctx, "test", "SELECT 1 AS id, 'India' AS country", &CreateTableOptions{
-		BeforeCreateFn: func(ctx context.Context, conn *sqlx.Conn) error {
-			_, err := conn.ExecContext(ctx, "SET secret_directory = '/tmp'")
-			return err
-		},
-	})
-	require.Error(t, err, "the configuration has been locked")
-}
-
 func prepareDB(t *testing.T) (db DB, localDir, remoteDir string) {
 	localDir = t.TempDir()
 	ctx := context.Background()

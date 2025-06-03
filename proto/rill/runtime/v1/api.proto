@@ -309,8 +309,8 @@ message Instance {
   map<string, string> project_variables = 8;
   map<string, bool> feature_flags = 22;
   map<string, string> annotations = 14;
-  bool embed_catalog = 6;
   bool watch_repo = 15;
+  string ai_context = 23;
 }
  
 message Connector {
@@ -365,7 +365,6 @@ message CreateInstanceRequest {
   repeated Connector connectors = 10;
   map<string, string> variables = 7;
   map<string, string> annotations = 9;
-  bool embed_catalog = 6;
   bool watch_repo = 11;
 }
 
@@ -394,7 +393,6 @@ message EditInstanceRequest {
   repeated Connector connectors = 9;
   map<string, string> variables = 15;
   map<string, string> annotations = 10;
-  optional bool embed_catalog = 6;
   optional bool watch_repo = 11;
 }
 

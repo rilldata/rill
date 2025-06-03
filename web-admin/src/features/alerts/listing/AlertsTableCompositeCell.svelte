@@ -33,9 +33,9 @@
   </div>
   <div class="flex gap-x-1 text-gray-500 text-xs font-normal">
     {#if !lastTrigger}
-      <span>Hasn't triggered yet</span>
+      <span>Hasn't been checked yet</span>
     {:else}
-      <span>Last triggered {timeAgo(new Date(lastTrigger))}</span>
+      <span>Last checked {timeAgo(new Date(lastTrigger))}</span>
     {/if}
     <ProjectAccessControls {organization} {project}>
       <svelte:fragment slot="manage-project">
