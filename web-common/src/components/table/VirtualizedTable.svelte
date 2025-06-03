@@ -23,6 +23,7 @@
   export let rowPadding = "py-3";
   export let rowHeight = 46;
   export let containerHeight = 400;
+  export let overscan = 25;
 
   let containerElement: HTMLDivElement;
   let sorting: SortingState = [];
@@ -95,7 +96,7 @@
     count: rows.length,
     getScrollElement: () => containerElement,
     estimateSize: () => rowHeight,
-    overscan: 5,
+    overscan: overscan,
     initialOffset: rowScrollOffset,
   });
 
