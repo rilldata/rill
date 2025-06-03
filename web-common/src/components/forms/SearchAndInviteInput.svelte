@@ -35,7 +35,7 @@
 
   function scrollToHighlighted() {
     if (highlightedIndex >= 0 && dropdownList) {
-      const items = dropdownList.getElementsByTagName("li");
+      const items = dropdownList.getElementsByTagName("button");
       if (items[highlightedIndex]) {
         items[highlightedIndex].scrollIntoView({ block: "nearest" });
       }
@@ -127,7 +127,7 @@
     } else {
       // Single-select mode: replace selection
       selected = [result.identifier];
-      showDropdown = false; // Close dropdown after selection in single-select mode
+      showDropdown = false;
       highlightedIndex = -1; // Only reset highlightedIndex in single-select mode
     }
   }
@@ -271,7 +271,16 @@
     }
   }
 
-  function handleBlur() {
+  function handleBlur(e: FocusEvent) {
+    // In multi-select mode, only close dropdown if focus moves completely outside the component
+    if (multiSelect) {
+      // Check if the new focus target is within our component
+      const relatedTarget = e.relatedTarget as Element;
+      if (relatedTarget && dropdownList?.contains(relatedTarget)) {
+        return; // Don't close if focus is moving to dropdown
+      }
+    }
+    // Close dropdown in single-select mode or when focus moves outside component
     showDropdown = false;
   }
 
@@ -346,17 +355,31 @@
     <div class="error">{error}</div>
   {/if}
   {#if showDropdown && searchResults.length > 0}
-    <ul
+    <div
       class="dropdown"
       bind:this={dropdownList}
       style="width: {DROPDOWN_WIDTH}px; left: 0; overflow-y: auto;"
     >
       {#each searchResults as result, i}
-        <li
+        <button
+          type="button"
           class:highlighted={i === highlightedIndex}
           class:selected={selected.includes(result.identifier)}
-          class="flex items-center justify-between px-3 py-2 cursor-pointer"
-          on:pointerdown={() => handleSelect(result)}
+          class="flex items-center justify-between px-3 py-2 cursor-pointer w-full text-left border-none bg-transparent"
+          on:click={(e) => {
+            e.preventDefault();
+            handleSelect(result);
+          }}
+          on:keydown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              handleSelect(result);
+            }
+          }}
+          on:mousedown={(e) => {
+            // Prevent input from losing focus when clicking dropdown items
+            e.preventDefault();
+          }}
         >
           <div class="w-full text-left">
             {result.identifier}
@@ -364,9 +387,9 @@
           {#if selected.includes(result.identifier)}
             <Check size="16px" className="ui-copy-icon" />
           {/if}
-        </li>
+        </button>
       {/each}
-    </ul>
+    </div>
   {:else if loading}
     <div class="dropdown loading" style="width: {DROPDOWN_WIDTH}px; left: 0;">
       <div class="loading-spinner"></div>
@@ -451,7 +474,7 @@
     padding: 0;
     color: #222;
   }
-  .dropdown li {
+  .dropdown button {
     padding: 8px 12px;
     cursor: pointer;
     scroll-margin: 8px;
@@ -460,17 +483,17 @@
     justify-content: space-between;
     transition: background-color 150ms ease-in-out;
   }
-  .dropdown li:hover {
+  .dropdown button:hover {
     @apply bg-slate-100;
   }
-  .dropdown li.highlighted {
+  .dropdown button.highlighted {
     @apply bg-slate-200;
     scroll-snap-align: start;
   }
-  .dropdown li.selected {
+  .dropdown button.selected {
     @apply bg-slate-100;
   }
-  .dropdown li.selected:hover {
+  .dropdown button.selected:hover {
     @apply bg-slate-200;
   }
 
