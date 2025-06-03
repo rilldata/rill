@@ -2,6 +2,7 @@ package duckdb
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/mitchellh/mapstructure"
 )
@@ -29,6 +30,9 @@ type config struct {
 	InitSQL string `mapstructure:"init_sql"`
 	// LogQueries controls whether to log the raw SQL passed to OLAP.Execute. (Internal queries will not be logged.)
 	LogQueries bool `mapstructure:"log_queries"`
+	// Secrets is a comma-separated list of connector names to create temporary secrets for before executing models.
+	// The secrets are not created for read queries.
+	Secrets string `mapstructure:"secrets"`
 }
 
 func newConfig(cfgMap map[string]any) (*config, error) {
@@ -47,6 +51,7 @@ func newConfig(cfgMap map[string]any) (*config, error) {
 	}
 	poolSize = max(poolSizeMin, poolSize) // Always enforce min pool size
 	cfg.PoolSize = poolSize
+
 	return cfg, nil
 }
 
@@ -60,4 +65,15 @@ func (c *config) writeSettings() map[string]string {
 	// useful for motherduck but safe to pass at initial connect
 	writeSettings["custom_user_agent"] = "rill"
 	return writeSettings
+}
+
+func (c *config) secretConnectors() []string {
+	if c.Secrets == "" {
+		return nil
+	}
+	res := strings.Split(c.Secrets, ",")
+	for i, s := range res {
+		res[i] = strings.TrimSpace(s)
+	}
+	return res
 }

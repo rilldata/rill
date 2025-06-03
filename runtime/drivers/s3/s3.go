@@ -172,6 +172,12 @@ func (c *Connection) Config() map[string]any {
 	return m
 }
 
+// ParsedConfig returns the parsed S3 configuration.
+func (c *Connection) ParsedConfig() *ConfigProperties {
+	cpy := *c.config
+	return &cpy
+}
+
 // Close implements drivers.Connection.
 func (c *Connection) Close() error {
 	return nil
