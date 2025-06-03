@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { createVirtualizer } from "@tanstack/svelte-virtual";
+  import ArrowDown from "@rilldata/web-common/components/icons/ArrowDown.svelte";
   import type {
     ColumnDef,
     OnChangeFn,
@@ -12,8 +12,8 @@
     getCoreRowModel,
     getSortedRowModel,
   } from "@tanstack/svelte-table";
+  import { createVirtualizer } from "@tanstack/svelte-virtual";
   import { writable } from "svelte/store";
-  import ArrowDown from "@rilldata/web-common/components/icons/ArrowDown.svelte";
 
   export let data: any[];
   export let columns: ColumnDef<any, any>[];
@@ -23,7 +23,7 @@
   export let rowPadding = "py-3";
   export let rowHeight = 46;
   export let containerHeight = 400;
-  export let overscan = 25;
+  export let overscan = 1;
 
   let containerElement: HTMLDivElement;
   let sorting: SortingState = [];
