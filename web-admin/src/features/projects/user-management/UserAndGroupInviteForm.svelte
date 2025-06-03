@@ -10,9 +10,6 @@
   import { RFC5322EmailRegex } from "@rilldata/web-common/components/forms/validation";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { useQueryClient } from "@tanstack/svelte-query";
-  import { defaults, superForm } from "sveltekit-superforms";
-  import { yup } from "sveltekit-superforms/adapters";
-  import { array, object, string } from "yup";
   import SearchAndInviteInput from "@rilldata/web-common/components/forms/SearchAndInviteInput.svelte";
 
   export let organization: string;
@@ -24,150 +21,112 @@
   const userInvite = createAdminServiceAddProjectMemberUser();
   const addUsergroup = createAdminServiceAddProjectMemberUsergroup();
 
-  const initialValues: {
-    inputs: string[];
-    role: string;
-  } = {
-    inputs: [""],
-    role: "viewer",
-  };
-  const schema = yup(
-    object({
-      inputs: array(
-        string().test({
-          name: "emailOrGroupname",
-          message: "Must be a valid email or group name",
-          test: (value) => {
-            if (!value) return true;
-            // Either a valid email or a valid group name (must be at least 3 chars and alphanumeric with hyphens)
-            return (
-              RFC5322EmailRegex.test(value) ||
-              /^[a-zA-Z0-9]+(-[a-zA-Z0-9]+)*$/.test(value)
-            );
-          },
-        }),
-      ),
-      role: string().required(),
-    }),
-  );
+  async function processInvitations(inputs: string[], role: string) {
+    const succeededEmails = [];
+    const succeededGroups = [];
+    const failedEmails = [];
+    const failedGroups = [];
 
-  superForm(defaults(initialValues, schema), {
-    SPA: true,
-    validators: schema,
-    async onUpdate({ form }) {
-      if (!form.valid) return;
-      const values = form.data;
-      const inputs = values.inputs.map((e) => e.trim()).filter(Boolean);
-      if (inputs.length === 0) return;
-
-      const succeededEmails = [];
-      const succeededGroups = [];
-      const failedEmails = [];
-      const failedGroups = [];
-
-      await Promise.all(
-        inputs.map(async (input) => {
-          // Check if input is an email or a group name
-          if (RFC5322EmailRegex.test(input)) {
-            // Handle as email
-            try {
-              await $userInvite.mutateAsync({
-                organization,
-                project,
-                data: {
-                  email: input,
-                  role: values.role,
-                },
-              });
-              succeededEmails.push(input);
-            } catch {
-              failedEmails.push(input);
-            }
-          } else {
-            // Handle as group name
-            try {
-              await $addUsergroup.mutateAsync({
-                organization,
-                project,
-                usergroup: input,
-                data: {
-                  role: values.role,
-                },
-              });
-              succeededGroups.push(input);
-            } catch {
-              failedGroups.push(input);
-            }
+    await Promise.all(
+      inputs.map(async (input) => {
+        // Check if input is an email or a group name
+        if (RFC5322EmailRegex.test(input)) {
+          // Handle as email
+          try {
+            await $userInvite.mutateAsync({
+              organization,
+              project,
+              data: {
+                email: input,
+                role: role,
+              },
+            });
+            succeededEmails.push(input);
+          } catch {
+            failedEmails.push(input);
           }
-        }),
-      );
+        } else {
+          // Handle as group name
+          try {
+            await $addUsergroup.mutateAsync({
+              organization,
+              project,
+              usergroup: input,
+              data: {
+                role: role,
+              },
+            });
+            succeededGroups.push(input);
+          } catch {
+            failedGroups.push(input);
+          }
+        }
+      }),
+    );
 
-      // Invalidate queries to refresh data
-      await queryClient.invalidateQueries({
+    // Batch invalidate queries in parallel for better performance
+    await Promise.all([
+      queryClient.invalidateQueries({
         queryKey: getAdminServiceListProjectMemberUsersQueryKey(
           organization,
           project,
         ),
-      });
-
-      await queryClient.invalidateQueries({
+      }),
+      queryClient.invalidateQueries({
         queryKey: getAdminServiceListProjectInvitesQueryKey(
           organization,
           project,
         ),
-      });
-
-      await queryClient.invalidateQueries({
+      }),
+      queryClient.invalidateQueries({
         queryKey: getAdminServiceListProjectMemberUsergroupsQueryKey(
           organization,
           project,
         ),
-      });
-
-      await queryClient.invalidateQueries({
+      }),
+      queryClient.invalidateQueries({
         queryKey:
           getAdminServiceListOrganizationMemberUsersQueryKey(organization),
         type: "all", // Clear regular and inactive queries
+      }),
+    ]);
+
+    // Generate success notification message
+    let successMessage = "";
+    if (succeededEmails.length > 0) {
+      successMessage += `Invited ${succeededEmails.length} ${succeededEmails.length === 1 ? "person" : "people"}`;
+    }
+    if (succeededGroups.length > 0) {
+      if (successMessage) successMessage += " and ";
+      successMessage += `${successMessage ? "added" : "Added"} ${succeededGroups.length} ${succeededGroups.length === 1 ? "group" : "groups"}`;
+    }
+    if (successMessage) {
+      successMessage += ` as ${role}`;
+      eventBus.emit("notification", {
+        type: "success",
+        message: successMessage,
       });
+    }
 
-      // Generate success notification message
-      let successMessage = "";
-      if (succeededEmails.length > 0) {
-        successMessage += `Invited ${succeededEmails.length} ${succeededEmails.length === 1 ? "person" : "people"}`;
-      }
-      if (succeededGroups.length > 0) {
-        if (successMessage) successMessage += " and ";
-        successMessage += `${successMessage ? "added" : "Added"} ${succeededGroups.length} ${succeededGroups.length === 1 ? "group" : "groups"}`;
-      }
-      if (successMessage) {
-        successMessage += ` as ${values.role}`;
-        eventBus.emit("notification", {
-          type: "success",
-          message: successMessage,
-        });
-      }
+    // Handle error notifications
+    if (failedGroups.length > 0) {
+      const groupsText = failedGroups.join(", ");
+      eventBus.emit("notification", {
+        type: "error",
+        message: `Failed to add group${failedGroups.length > 1 ? "s" : ""}: ${groupsText}`,
+      });
+    }
 
-      // TODO: improve error message
-      if (failedGroups.length > 0) {
-        const groupsText = failedGroups.join(", ");
-        eventBus.emit("notification", {
-          type: "error",
-          message: `Failed to add group${failedGroups.length > 1 ? "s" : ""}: ${groupsText}`,
-        });
-      }
+    if (failedEmails.length > 0) {
+      const emailsText = failedEmails.join(", ");
+      eventBus.emit("notification", {
+        type: "error",
+        message: `Failed to invite user${failedEmails.length > 1 ? "s" : ""}: ${emailsText}`,
+      });
+    }
 
-      if (failedEmails.length > 0) {
-        const emailsText = failedEmails.join(", ");
-        eventBus.emit("notification", {
-          type: "error",
-          message: `Failed to invite user${failedEmails.length > 1 ? "s" : ""}: ${emailsText}`,
-        });
-      }
-
-      onInvite();
-    },
-    validationMethod: "oninput",
-  });
+    return { succeededEmails, succeededGroups, failedEmails, failedGroups };
+  }
 
   function emailOrGroupValidator(value: string) {
     if (!value) return true;
@@ -188,93 +147,7 @@
   }
 
   async function onInviteHandler(inputs: string[], role: string) {
-    const succeededEmails = [];
-    const succeededGroups = [];
-    const failedEmails = [];
-    const failedGroups = [];
-
-    await Promise.all(
-      inputs.map(async (input) => {
-        if (RFC5322EmailRegex.test(input)) {
-          try {
-            await $userInvite.mutateAsync({
-              organization,
-              project,
-              data: { email: input, role },
-            });
-            succeededEmails.push(input);
-          } catch {
-            failedEmails.push(input);
-          }
-        } else {
-          try {
-            await $addUsergroup.mutateAsync({
-              organization,
-              project,
-              usergroup: input,
-              data: { role },
-            });
-            succeededGroups.push(input);
-          } catch {
-            failedGroups.push(input);
-          }
-        }
-      }),
-    );
-
-    await queryClient.invalidateQueries({
-      queryKey: getAdminServiceListProjectMemberUsersQueryKey(
-        organization,
-        project,
-      ),
-    });
-    await queryClient.invalidateQueries({
-      queryKey: getAdminServiceListProjectInvitesQueryKey(
-        organization,
-        project,
-      ),
-    });
-    await queryClient.invalidateQueries({
-      queryKey: getAdminServiceListProjectMemberUsergroupsQueryKey(
-        organization,
-        project,
-      ),
-    });
-    await queryClient.invalidateQueries({
-      queryKey:
-        getAdminServiceListOrganizationMemberUsersQueryKey(organization),
-      type: "all",
-    });
-
-    let successMessage = "";
-    if (succeededEmails.length > 0) {
-      successMessage += `Invited ${succeededEmails.length} ${succeededEmails.length === 1 ? "person" : "people"}`;
-    }
-    if (succeededGroups.length > 0) {
-      if (successMessage) successMessage += " and ";
-      successMessage += `${successMessage ? "added" : "Added"} ${succeededGroups.length} ${succeededGroups.length === 1 ? "group" : "groups"}`;
-    }
-    if (successMessage) {
-      successMessage += ` as ${role}`;
-      eventBus.emit("notification", {
-        type: "success",
-        message: successMessage,
-      });
-    }
-    if (failedGroups.length > 0) {
-      const groupsText = failedGroups.join(", ");
-      eventBus.emit("notification", {
-        type: "error",
-        message: `Failed to add group${failedGroups.length > 1 ? "s" : ""}: ${groupsText}`,
-      });
-    }
-    if (failedEmails.length > 0) {
-      const emailsText = failedEmails.join(", ");
-      eventBus.emit("notification", {
-        type: "error",
-        message: `Failed to invite user${failedEmails.length > 1 ? "s" : ""}: ${emailsText}`,
-      });
-    }
+    await processInvitations(inputs, role);
     onInvite();
   }
 </script>
