@@ -57,7 +57,7 @@
 
   async function gotoExplorePage() {
     const url = new URL(
-      `/${organization}/${project}/explore/${exploreName}`,
+      `/${organization}/${project}/explore/${encodeURIComponent(exploreName)}`,
       window.location.origin,
     );
     url.search = (
