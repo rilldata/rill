@@ -55,7 +55,10 @@ While we install a set of core libraries and extensions with our embed DuckDB, t
 Take the example of [`gsheets` community extension](https://duckdb.org/community_extensions/extensions/gsheets.html). In order to use this extension in Rill, you'll need to install and load the plugin. Once that's done you can define the secret and finally run the SQL. 
 
 ```yaml
-pre_exec: INSTALL gsheets FROM community; LOAD gsheets; CREATE SECRET (TYPE gsheet, PROVIDER access_token, TOKEN '<your_token>');
+pre_exec: |
+    INSTALL gsheets FROM community; 
+    LOAD gsheets; 
+    CREATE TEMPORARY SECRET IF NOT EXISTS secret (TYPE gsheet, PROVIDER access_token, TOKEN '<your_token>');
 
 sql: SELECT * FROM read_gsheet('https://docs.google.com/spreadsheets/d/<your_unique_ID>', headers=false);
 
@@ -69,11 +72,15 @@ Like any SQL query, you can divide the queries with a semicolon to run multiple 
 Another example is attaching a database to DuckDB, running some queries against it then detaching said database. 
 
 ```yaml
-pre_exec: ATTACH 'dbname=postgres host=localhost port=5432 user=postgres password=postgres' AS postgres_db (TYPE POSTGRES);
+pre_exec: ATTACH IF NOT EXISTS 'dbname=postgres host=localhost port=5432 user=postgres password=postgres' AS postgres_db (TYPE POSTGRES);
 sql: SELECT * FROM postgres_query('postgres_db', 'SELECT * FROM USERS')
 post_exec: DETACH postgres_db # Note : this is not mandatory but nice to have 
 ```
 
 ## Similar Considerations to Note
 
-As with normal SQL models, materialization will be disabled by default and depending on your use-case setting this parameter to true may improve performance. For more information, check out [our model materialization notes.](../../reference/project-files/models#model-materialization)
+1. As with normal SQL models, materialization will be disabled by default and depending on your use-case setting this parameter to true may improve performance. For more information, check out [our model materialization notes.](../../reference/project-files/models#model-materialization)
+
+
+2. The `pre_exec` and `post_exec` statements are run for every model execution and thus should be made idempotent.
+A typical way is to use `IF NOT EXISTS` clauses for CREATE statements. Please refer to duckDB docs for exact definitions and verify if the statements are idempotent.

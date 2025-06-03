@@ -83,32 +83,32 @@ export class TimeControls {
 
     this.minTimeGrain = derived(specStore, (spec) => {
       let metricsViews = spec?.data?.metricsViews || {};
-      const metricsViewName = getComponentMetricsViewFromSpec(
-        componentName,
-        spec,
-      );
-      if (metricsViewName && metricsViews[metricsViewName]) {
-        metricsViews = {
-          [metricsViewName]: metricsViews[metricsViewName],
-        };
+
+      if (componentName) {
+        const metricsViewName = getComponentMetricsViewFromSpec(
+          componentName,
+          spec,
+        );
+
+        if (metricsViewName && metricsViews[metricsViewName]) {
+          metricsViews = {
+            [metricsViewName]: metricsViews[metricsViewName],
+          };
+        }
       }
+      const minTimeGrain = Object.values(metricsViews).reduce<V1TimeGrain>(
+        (min: V1TimeGrain, metricsView) => {
+          const timeGrain = metricsView?.state?.validSpec?.smallestTimeGrain;
 
-      const minTimeGrain = Object.keys(metricsViews).reduce<V1TimeGrain>(
-        (min: V1TimeGrain, metricView) => {
-          const metricsViewSpec = metricsViews[metricView]?.state?.validSpec;
-
-          if (
-            !metricsViewSpec?.smallestTimeGrain ||
-            metricsViewSpec.smallestTimeGrain ===
-              V1TimeGrain.TIME_GRAIN_UNSPECIFIED
-          )
+          if (!timeGrain || timeGrain === V1TimeGrain.TIME_GRAIN_UNSPECIFIED) {
             return min;
-          const timeGrain = metricsViewSpec.smallestTimeGrain;
+          }
 
-          return !isGrainBigger(min, timeGrain) ? timeGrain : min;
+          return isGrainBigger(min, timeGrain) ? timeGrain : min;
         },
-        V1TimeGrain.TIME_GRAIN_UNSPECIFIED,
+        V1TimeGrain.TIME_GRAIN_YEAR, // Use max time grain as starting point
       );
+
       return minTimeGrain;
     });
 

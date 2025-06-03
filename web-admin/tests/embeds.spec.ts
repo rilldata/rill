@@ -23,7 +23,7 @@ test.describe("Embeds", () => {
     const frame = embedPage.frameLocator("iframe");
 
     await expect(
-      frame.getByRole("button", { name: "Advertising Spend Overall $3,900" }),
+      frame.getByRole("button", { name: "Advertising Spend Overall $20,603" }),
     ).toBeVisible();
   });
 
@@ -32,12 +32,12 @@ test.describe("Embeds", () => {
     await waitForReadyMessage(embedPage, logMessages);
     const frame = embedPage.frameLocator("iframe");
 
-    await frame.getByRole("row", { name: "Instacart $1.1k" }).click();
+    await frame.getByRole("row", { name: "Instacart $2.1k" }).click();
     await embedPage.waitForTimeout(500);
 
     expect(
       logMessages.some((msg) =>
-        msg.includes("f=advertiser_name+IN+('Instacart')"),
+        msg.includes("tr=P7D&grain=day&f=advertiser_name+IN+('Instacart')"),
       ),
     ).toBeTruthy();
   });
@@ -47,7 +47,7 @@ test.describe("Embeds", () => {
     await waitForReadyMessage(embedPage, logMessages);
     const frame = embedPage.frameLocator("iframe");
 
-    await frame.getByRole("row", { name: "Instacart $1.1k" }).click();
+    await frame.getByRole("row", { name: "Instacart $2.1k" }).click();
     await embedPage.waitForTimeout(500);
 
     await embedPage.evaluate(() => {
@@ -59,7 +59,7 @@ test.describe("Embeds", () => {
     expect(
       logMessages.some((msg) =>
         msg.includes(
-          `{"id":1337,"result":{"state":"f=advertiser_name+IN+('Instacart')"}}`,
+          `{"id":1337,"result":{"state":"tr=P7D&grain=day&f=advertiser_name+IN+('Instacart')"}}`,
         ),
       ),
     ).toBeTruthy();
@@ -76,14 +76,14 @@ test.describe("Embeds", () => {
         {
           id: 1337,
           method: "setState",
-          params: "f=advertiser_name+IN+('Instacart')",
+          params: "tr=P7D&grain=day&f=advertiser_name+IN+('Instacart')",
         },
         "*",
       );
     });
 
     await expect(
-      frame.getByRole("row", { name: "Instacart $1.1k" }),
+      frame.getByRole("row", { name: "Instacart $2.1k" }),
     ).toBeVisible();
     expect(
       logMessages.some((msg) => msg.includes(`{"id":1337,"result":true}`)),
@@ -95,7 +95,10 @@ test.describe("Embeds", () => {
     await waitForReadyMessage(embedPage, logMessages);
     const frame = embedPage.frameLocator("iframe");
 
-    // Select "Last 6 Hours" as time range
+    // Time range is the default
+    await expect(frame.getByText("Last 7 Days")).toBeVisible();
+
+    // Select "Last 14 Days" as time range
     // Open the menu
     // (Note we cannot use the `interactWithTimeRangeMenu` helper here since its interface is to check the full page)
     await frame.getByLabel("Select time range").click();

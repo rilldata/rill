@@ -13,6 +13,7 @@
   } from "@rilldata/web-common/features/dashboards/pivot/pivot-column-width-utils";
   import Resizer from "@rilldata/web-common/layout/Resizer.svelte";
   import { modified } from "@rilldata/web-common/lib/actions/modified-click";
+  import { cellInspectorStore } from "../stores/cell-inspector-store";
   import type { Cell, Column, HeaderGroup, Row } from "@tanstack/svelte-table";
   import { flexRender } from "@tanstack/svelte-table";
   import type { PivotDataRow } from "./types";
@@ -200,6 +201,20 @@
             data-value={cell.getValue()}
             data-rowid={cell.row.id}
             data-columnid={cell.column.id}
+            on:mouseover={() => {
+              const value = cell.getValue();
+              if (value !== undefined && value !== null) {
+                // Always update the value in the store, but don't change visibility
+                cellInspectorStore.updateValue(String(value));
+              }
+            }}
+            on:focus={() => {
+              const value = cell.getValue();
+              if (value !== undefined && value !== null) {
+                // Always update the value in the store, but don't change visibility
+                cellInspectorStore.updateValue(String(value));
+              }
+            }}
           >
             {#if result?.component && result?.props}
               <svelte:component

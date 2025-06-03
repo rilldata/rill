@@ -594,8 +594,8 @@ test.describe("pivot run through", () => {
     // add second measure using menu and add column dimension
     await domain.dragTo(columnZone);
     const addColumnField = page
-      .getByRole("button", { name: "add-field" })
-      .nth(1);
+      .getByRole("button", { name: "Add filter button" })
+      .nth(2);
     await addColumnField.click();
     await clickMenuButton(page, "Sum of Bid Price");
     await expect(page.locator(".status.running")).toHaveCount(0);
@@ -619,7 +619,9 @@ test.describe("pivot run through", () => {
     const timeMonth = page.getByLabel("month pivot chip", { exact: true });
     await timeMonth.dragTo(rowZone);
 
-    const addRowField = page.getByRole("button", { name: "add-field" }).nth(0);
+    const addRowField = page
+      .getByRole("button", { name: "Add filter button" })
+      .nth(1);
     await addRowField.click();
     await clickMenuButton(page, "Publisher");
 

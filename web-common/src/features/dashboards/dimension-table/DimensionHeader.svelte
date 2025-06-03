@@ -31,17 +31,14 @@
       dimensions: { getDimensionDisplayName },
       dimensionFilters: { isFilterExcludeMode },
       measures: { visibleMeasures },
-      leaderboard: {
-        leaderboardShowContextForAllMeasures,
-        leaderboardMeasureNames,
-      },
+      leaderboard: { leaderboardMeasureNames },
     },
     actions: {
       sorting: { toggleSort },
       dimensions: { setPrimaryDimension },
       dimensionsFilter: { toggleDimensionFilterMode },
       leaderboard: {
-        setLeaderboardShowContextForAllMeasures,
+        toggleLeaderboardShowContextForAllMeasures,
         setLeaderboardSortByMeasureName,
       },
     },
@@ -181,8 +178,7 @@
 
       <LeaderboardAdvancedActions
         isOpen={isLeaderboardActionsOpen}
-        leaderboardShowContextForAllMeasures={$leaderboardShowContextForAllMeasures}
-        {setLeaderboardShowContextForAllMeasures}
+        toggle={toggleLeaderboardShowContextForAllMeasures}
       />
     </div>
   </div>

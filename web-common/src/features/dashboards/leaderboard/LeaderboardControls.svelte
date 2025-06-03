@@ -12,11 +12,7 @@
   const {
     selectors: {
       measures: { getMeasureByName, visibleMeasures },
-      leaderboard: {
-        leaderboardSortByMeasureName,
-        leaderboardMeasureNames,
-        leaderboardShowContextForAllMeasures,
-      },
+      leaderboard: { leaderboardSortByMeasureName, leaderboardMeasureNames },
       dimensions: { visibleDimensions, allDimensions },
     },
     actions: {
@@ -25,7 +21,7 @@
       leaderboard: {
         setLeaderboardSortByMeasureName,
         setLeaderboardMeasureNames,
-        setLeaderboardShowContextForAllMeasures,
+        toggleLeaderboardShowContextForAllMeasures,
       },
     },
   } = StateManagers;
@@ -81,7 +77,6 @@
   />
   <LeaderboardAdvancedActions
     isOpen={isLeaderboardActionsOpen}
-    leaderboardShowContextForAllMeasures={$leaderboardShowContextForAllMeasures}
-    {setLeaderboardShowContextForAllMeasures}
+    toggle={toggleLeaderboardShowContextForAllMeasures}
   />
 </div>

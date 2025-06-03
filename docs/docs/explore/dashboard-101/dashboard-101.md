@@ -2,7 +2,7 @@
 title: "Dashboard Quickstart"
 description: Dashboard Quickstart
 sidebar_label: "Dashboard Quickstart"
-sidebar_position: 00
+sidebar_position: 03
 ---
 
 
@@ -63,8 +63,9 @@ The main screen of any Rill dashboard is called the _Explore_ page. As seen abov
 
 After drilling into a leaderboard (or what we sometimes refer to as a _toplist_ chart), rather than scrolling and finding an individual attribute (especially if the list is very long), you can also quickly search for a value and select / apply it to your dashboard by using the upper-right search box.
 
-![Using the search box within a leaderboard](/img/explore/dashboard101/search-box.png)
 
+<img src = '/img/explore/dashboard101/search-box.png' class='rounded-gif' />
+<br />
 
 :::
 
@@ -77,6 +78,17 @@ If you want to get hands on and see what interacting with a Rill dashboard feels
 
 
 For more details about additional capabilities and/or how to utilize more advanced functionality within Rill dashboards, please see the [reference](#reference) section.
+
+
+### Keyboard shortcuts
+Whether you need to see the full value of a long JSON, or copy a value, there are some available keyboard shortcuts in the Rill Cloud Dashboards. More coming soon!
+
+List of commands:
+- __*Copy values*__ ( ``shift + click`` ) - Copy the value of the row value. 
+- __*Value previewer*__ ( ``space`` ) - See the full text value of the row value.
+
+<img src = '/img/explore/dashboard101/preview-value.png' class='rounded-gif' />
+<br />
 
 
 ## Banners!

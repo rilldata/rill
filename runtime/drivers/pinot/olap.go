@@ -45,7 +45,7 @@ func (c *connection) Exec(ctx context.Context, stmt *drivers.Statement) error {
 
 func (c *connection) Query(ctx context.Context, stmt *drivers.Statement) (*drivers.Result, error) {
 	if c.logQueries {
-		c.logger.Info("pinot query", zap.String("sql", stmt.Query), zap.Any("args", stmt.Args), observability.ZapCtx(ctx))
+		c.logger.Info("pinot query", zap.String("sql", stmt.Query), zap.Any("args", stmt.Args), zap.Int64("timeoutMS", c.timeoutMS), observability.ZapCtx(ctx))
 	}
 	if stmt.DryRun {
 		rows, err := c.db.QueryxContext(ctx, "EXPLAIN PLAN FOR "+stmt.Query, stmt.Args...)
@@ -59,6 +59,11 @@ func (c *connection) Query(ctx context.Context, stmt *drivers.Statement) (*drive
 	var cancelFunc context.CancelFunc
 	if stmt.ExecutionTimeout != 0 {
 		ctx, cancelFunc = context.WithTimeout(ctx, stmt.ExecutionTimeout)
+	}
+
+	// add timeout if configured to the sql to propagate it to the Pinot server to override the cluster timeout
+	if c.timeoutMS > 0 {
+		stmt.Query = fmt.Sprintf("SET timeoutMS=%d; %s", c.timeoutMS, stmt.Query)
 	}
 
 	rows, err := c.db.QueryxContext(ctx, stmt.Query, stmt.Args...)

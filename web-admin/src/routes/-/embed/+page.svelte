@@ -4,9 +4,12 @@
   import ContentContainer from "@rilldata/web-admin/components/layout/ContentContainer.svelte";
   import DashboardsTable from "@rilldata/web-admin/features/dashboards/listing/DashboardsTable.svelte";
   import CanvasEmbed from "@rilldata/web-admin/features/embeds/CanvasEmbed.svelte";
-  import ExploreEmbed from "@rilldata/web-admin/features/embeds/ExploreEmbed.svelte";
+  import ExploreEmbed, {
+    EmbedStorageNamespacePrefix,
+  } from "@rilldata/web-admin/features/embeds/ExploreEmbed.svelte";
   import TopNavigationBarEmbed from "@rilldata/web-admin/features/embeds/TopNavigationBarEmbed.svelte";
   import UnsupportedKind from "@rilldata/web-admin/features/embeds/UnsupportedKind.svelte";
+  import { clearExploreSessionStore } from "@rilldata/web-common/features/dashboards/state-managers/loaders/explore-web-view-store";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import type { V1ResourceName } from "@rilldata/web-common/runtime-client";
@@ -27,6 +30,7 @@
   // Manage active resource
   let activeResource: V1ResourceName | null = null;
   $: if (resourceName && resourceType) {
+    cleanSessionStorageForResource(resourceType, resourceName);
     activeResource = {
       name: resourceName,
       kind: resourceType,
@@ -37,6 +41,18 @@
     // So setting `activeResource` to `null` will make the navigation logic in this file to think there is no active resource everytime `DashboardStateDataLoader` cleaned the url.
     // For going to home we manually set `activeResource` to `null` in `handleGoHome`.
     // TODO: move to a route based approach to avoid this issues.
+  }
+
+  const resourcesSeen = new Set<string>();
+  // Clean session storage for dashboards that are navigated to for the 1st time.
+  // This way once the page is loaded, the dashboard state is persisted.
+  // But the moment the user moves away to another page within the parent page, then it will be cleared next time the user comes back to the dashboard.
+  function cleanSessionStorageForResource(type: string, name: string) {
+    if (type !== ResourceKind.Explore.toString()) return;
+
+    if (resourcesSeen.has(name)) return;
+    clearExploreSessionStore(name, EmbedStorageNamespacePrefix);
+    resourcesSeen.add(name);
   }
 
   function handleSelectResource(event: CustomEvent<V1ResourceName>) {

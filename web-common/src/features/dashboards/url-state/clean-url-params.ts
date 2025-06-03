@@ -57,6 +57,7 @@ export function cleanEmbedUrlParams(searchParams: URLSearchParams) {
     "resource",
     "runtime_host",
     "type",
+    "navigation",
   ].forEach((p) => cleanedParams.delete(p));
   return cleanedParams;
 }

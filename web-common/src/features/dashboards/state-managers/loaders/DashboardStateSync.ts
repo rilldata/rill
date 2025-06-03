@@ -122,12 +122,14 @@ export class DashboardStateSync {
       exploreSpec,
       timeControlsState,
     );
-    // Update "most recent explore state" with the initial state
-    saveMostRecentPartialExploreState(
-      this.exploreName,
-      this.extraPrefix,
-      initExploreState,
-    );
+    if (!this.dataLoader.disableMostRecentDashboardState) {
+      // Update "most recent explore state" with the initial state
+      saveMostRecentPartialExploreState(
+        this.exploreName,
+        this.extraPrefix,
+        initExploreState,
+      );
+    }
 
     // If the current url same as the new url then there is no need to do anything
     if (redirectUrl.search === pageState.url.search) {
@@ -208,12 +210,14 @@ export class DashboardStateSync {
       exploreSpec,
       timeControlsState,
     );
-    // Update "most recent explore state" with updated state from url
-    saveMostRecentPartialExploreState(
-      this.exploreName,
-      this.extraPrefix,
-      updatedExploreState,
-    );
+    if (!this.dataLoader.disableMostRecentDashboardState) {
+      // Update "most recent explore state" with updated state from url
+      saveMostRecentPartialExploreState(
+        this.exploreName,
+        this.extraPrefix,
+        updatedExploreState,
+      );
+    }
 
     this.updating = false;
     // If the url doesn't need to be changed further then we can skip the goto
@@ -271,13 +275,15 @@ export class DashboardStateSync {
       exploreSpec,
       timeControlsState,
     );
-    // Update "most recent explore state" with updated state.
-    // Since we do not update the state per action we do it here as blanket update.
-    saveMostRecentPartialExploreState(
-      this.exploreName,
-      this.extraPrefix,
-      exploreState,
-    );
+    if (!this.dataLoader.disableMostRecentDashboardState) {
+      // Update "most recent explore state" with updated state.
+      // Since we do not update the state per action we do it here as blanket update.
+      saveMostRecentPartialExploreState(
+        this.exploreName,
+        this.extraPrefix,
+        exploreState,
+      );
+    }
 
     this.updating = false;
     // If the state didnt result in a new url then skip goto.

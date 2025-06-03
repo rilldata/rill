@@ -38,3 +38,7 @@
 /docs/aws-encryption	https://enterprise.rilldata.com/aws-encryption
 /docs/faq	https://enterprise.rilldata.com/faq
 /docs/contact-support	https://enterprise.rilldata.com/contact-support
+
+
+# fix metrics view redirect
+/reference/project-files/metrics-view /reference/project-files/metrics-views

@@ -45,6 +45,7 @@ class FeatureFlags {
   clickhouseModeling = new FeatureFlag("user", false);
   twoTieredNavigation = new FeatureFlag("user", false);
   hidePublicUrl = new FeatureFlag("user", false);
+  exportHeader = new FeatureFlag("user", false);
   alerts = new FeatureFlag("user", true);
   reports = new FeatureFlag("user", true);
 

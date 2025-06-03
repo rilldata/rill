@@ -150,7 +150,7 @@
                 : undefined,
               renotify: !!values.snooze,
               renotifyAfterSeconds: values.snooze ? Number(values.snooze) : 0,
-              webOpenPath: `/explore/${$exploreName}`,
+              webOpenPath: `/explore/${encodeURIComponent($exploreName)}`,
               webOpenState: getProtoFromDashboardState(
                 $dashboardStore,
                 exploreSpec,

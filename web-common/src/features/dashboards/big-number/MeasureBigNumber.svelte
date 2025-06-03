@@ -12,6 +12,7 @@
   import { formatMeasurePercentageDifference } from "@rilldata/web-common/lib/number-formatting/percentage-formatter";
   import { numberPartsToString } from "@rilldata/web-common/lib/number-formatting/utils/number-parts-utils";
   import { type MetricsViewSpecMeasure } from "@rilldata/web-common/runtime-client";
+  import { cellInspectorStore } from "../stores/cell-inspector-store";
   import {
     crossfade,
     fly,
@@ -91,6 +92,20 @@
     }
   };
   $: useDiv = isMeasureExpanded || !withTimeseries;
+
+  function handleMouseOver() {
+    if (value !== undefined && value !== null) {
+      // Always update the value in the store, but don't change visibility
+      cellInspectorStore.updateValue(value.toString());
+    }
+  }
+
+  function handleFocus() {
+    if (value !== undefined && value !== null) {
+      // Always update the value in the store, but don't change visibility
+      cellInspectorStore.updateValue(value.toString());
+    }
+  }
 </script>
 
 <Tooltip
@@ -131,9 +146,13 @@
       {name}
     </h2>
     <div
+      role="button"
       class="ui-copy-muted relative w-full h-full overflow-hidden text-ellipsis"
       style:font-size={withTimeseries ? "1.6rem" : "1.8rem"}
       style:font-weight="light"
+      on:mouseover={handleMouseOver}
+      on:focus={handleFocus}
+      tabindex="0"
     >
       {#if value !== null && status === EntityStatus.Idle}
         <WithTween {value} tweenProps={{ duration: 500 }} let:output>

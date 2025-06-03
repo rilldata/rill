@@ -9,7 +9,7 @@
   import { getResourceKindTagColor } from "./display-utils";
   import { flexRender } from "@tanstack/svelte-table";
   import type { ColumnDef } from "@tanstack/svelte-table";
-  import BasicTable from "@rilldata/web-common/components/table/BasicTable.svelte";
+  import VirtualizedTable from "@rilldata/web-common/components/table/VirtualizedTable.svelte";
   import RefreshCell from "./RefreshCell.svelte";
   import NameCell from "./NameCell.svelte";
   import ActionsCell from "./ActionsCell.svelte";
@@ -54,6 +54,7 @@
     {
       accessorFn: (row) => row.meta.stateUpdatedOn,
       header: "Last refresh",
+      sortDescFirst: true,
       cell: (info) =>
         flexRender(RefreshCell, {
           date: info.getValue() as string,
@@ -87,12 +88,14 @@
       },
     },
   ];
+
+  $: tableData = data.filter(
+    (resource) => resource.meta.name.kind !== ResourceKind.Component,
+  );
 </script>
 
-<BasicTable
-  data={data.filter(
-    (resource) => resource.meta.name.kind !== ResourceKind.Component,
-  )}
+<VirtualizedTable
+  data={tableData}
   {columns}
   columnLayout="minmax(95px, 108px) minmax(100px, 3fr) 48px minmax(80px, 2fr) minmax(100px, 2fr) 56px"
 />
