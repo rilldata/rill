@@ -135,21 +135,27 @@ time_ranges:
     await expect(page.getByText("Model Data 272 of 100k rows")).toBeVisible();
 
     // Check row viewer is collapsed by looking for the cell value "7029", which should be in the table
-    await expect(page.getByRole("cell", { name: "7029" })).not.toBeVisible();
+    await expect(
+      page.getByRole("cell", { name: "7029" }).first(),
+    ).not.toBeVisible();
 
     // Expand row viewer and check data is there
     await page.getByRole("button", { name: "Toggle rows viewer" }).click();
-    await expect(page.getByRole("cell", { name: "7029" })).toBeVisible();
+    await expect(
+      page.getByRole("cell", { name: "7029" }).first(),
+    ).toBeVisible();
 
     await page.getByRole("button", { name: "Toggle rows viewer" }).click();
     // Check row viewer is collapsed
-    await expect(page.getByRole("cell", { name: "7029" })).not.toBeVisible();
+    await expect(
+      page.getByRole("cell", { name: "7029" }).first(),
+    ).not.toBeVisible();
 
     // Download the data as CSV
     // Start waiting for download before clicking. Note no await.
     const downloadCSVPromise = page.waitForEvent("download");
     await page.getByLabel("Export model data").click();
-    await page.getByRole("menuitem", { name: "Export as CSV" }).click();
+    await page.getByRole("menuitem", { name: "Export as CSV" }).first().click();
     const downloadCSV = await downloadCSVPromise;
     await downloadCSV.saveAs("temp/" + downloadCSV.suggestedFilename());
     const csvRegex = /^AdBids_model_filtered_.*\.csv$/;
@@ -159,7 +165,10 @@ time_ranges:
     // Start waiting for download before clicking. Note no await.
     const downloadXLSXPromise = page.waitForEvent("download");
     await page.getByLabel("Export model data").click();
-    await page.getByRole("menuitem", { name: "Export as XLSX" }).click();
+    await page
+      .getByRole("menuitem", { name: "Export as XLSX" })
+      .first()
+      .click();
     const downloadXLSX = await downloadXLSXPromise;
     await downloadXLSX.saveAs("temp/" + downloadXLSX.suggestedFilename());
     const xlsxRegex = /^AdBids_model_filtered_.*\.xlsx$/;

@@ -17,6 +17,7 @@
   export let bookmarkOrTokenExploreState:
     | CompoundQueryResult<Partial<ExploreState> | null>
     | undefined = undefined;
+  export let disableMostRecentDashboardState: boolean = false;
 
   $: ({ instanceId } = $runtime);
   $: exploreSpecQuery = useExploreValidSpec(instanceId, exploreName);
@@ -29,6 +30,7 @@
     exploreName,
     storageNamespacePrefix,
     bookmarkOrTokenExploreState,
+    disableMostRecentDashboardState,
   );
 
   let stateSync: DashboardStateSync | undefined;

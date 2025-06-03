@@ -7,7 +7,7 @@
   import type { ColumnDef } from "@tanstack/svelte-table";
   import OrgGroupsTableActionsCell from "./OrgGroupsTableActionsCell.svelte";
   import OrgGroupsTableGroupCompositeCell from "./OrgGroupsTableGroupCompositeCell.svelte";
-  import InfiniteScrollTable from "@rilldata/web-admin/components/InfiniteScrollTable.svelte";
+  import InfiniteScrollTable from "@rilldata/web-common/components/table/InfiniteScrollTable.svelte";
 
   export let data: V1MemberUsergroup[];
   export let currentUserEmail: string;
@@ -28,6 +28,7 @@
       accessorKey: "groupName",
       header: "Group",
       enableSorting: true,
+      sortDescFirst: true,
       cell: ({ row }) =>
         flexRender(OrgGroupsTableGroupCompositeCell, {
           name: row.original.groupName?.startsWith("autogroup:")
