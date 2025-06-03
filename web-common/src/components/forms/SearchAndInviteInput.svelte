@@ -4,6 +4,9 @@
   import Close from "../icons/Close.svelte";
   import { cn } from "@rilldata/web-common/lib/shadcn";
   import Check from "@rilldata/web-common/components/icons/Check.svelte";
+  import Avatar from "@rilldata/web-common/components/avatar/Avatar.svelte";
+  import { Chip } from "@rilldata/web-common/components/chip";
+  import { getRandomBgColor } from "@rilldata/web-common/features/themes/color-config";
 
   export let placeholder: string = "Search or invite by email";
   export let validators: ((value: string) => boolean | string)[] = [];
@@ -32,7 +35,7 @@
 
   function scrollToHighlighted() {
     if (highlightedIndex >= 0 && dropdownList) {
-      const items = dropdownList.getElementsByTagName("button");
+      const items = dropdownList.querySelectorAll(".dropdown-item");
       if (items[highlightedIndex]) {
         items[highlightedIndex].scrollIntoView({ block: "nearest" });
       }
@@ -182,7 +185,7 @@
       }
     }
     if (e.key === "ArrowDown") {
-      if (highlightedIndex === searchResults.length - 1) {
+      if (highlightedIndex === allResults.length - 1) {
         if (loop) {
           highlightedIndex = 0;
         } else {
@@ -197,7 +200,7 @@
     } else if (e.key === "ArrowUp") {
       if (highlightedIndex === 0) {
         if (loop) {
-          highlightedIndex = searchResults.length - 1;
+          highlightedIndex = allResults.length - 1;
         } else {
           e.preventDefault();
           return;
@@ -208,8 +211,8 @@
       e.preventDefault();
       showDropdown = true;
     } else if (e.key === "Enter") {
-      if (highlightedIndex >= 0 && highlightedIndex < searchResults.length) {
-        handleSelect(searchResults[highlightedIndex]);
+      if (highlightedIndex >= 0 && highlightedIndex < allResults.length) {
+        handleSelect(allResults[highlightedIndex]);
         e.preventDefault();
         // In multi-select mode, keep dropdown open and input focused
         if (multiSelect) {
@@ -233,7 +236,7 @@
     } else if (e.key === "Space" && highlightedIndex >= 0) {
       // Add space key support for multi-select
       if (multiSelect) {
-        handleSelect(searchResults[highlightedIndex]);
+        handleSelect(allResults[highlightedIndex]);
         e.preventDefault();
         showDropdown = true;
         inputElement?.focus();
@@ -272,6 +275,37 @@
 
   function removeSelected(identifier: string) {
     selected = selected.filter((e) => e !== identifier);
+  }
+
+  // Categorize search results into groups, members, and guests
+  $: categorizedResults = (() => {
+    const groups = searchResults.filter((result) => result.isGroup);
+    const members = searchResults.filter(
+      (result) => result.isMember && !result.isGroup,
+    );
+    const guests = searchResults.filter(
+      (result) => !result.isMember && !result.isGroup,
+    );
+
+    return {
+      groups,
+      members,
+      guests,
+    };
+  })();
+
+  $: allResults = [
+    ...categorizedResults.groups,
+    ...categorizedResults.members,
+    ...categorizedResults.guests,
+  ];
+
+  function getResultIndex(result: any): number {
+    return allResults.indexOf(result);
+  }
+
+  function getInitials(name: string) {
+    return name.charAt(0).toUpperCase();
   }
 </script>
 
@@ -346,41 +380,182 @@
       bind:this={dropdownList}
       style="width: {DROPDOWN_WIDTH}px; left: 0; overflow-y: auto;"
     >
-      {#each searchResults as result, i}
-        <button
-          type="button"
-          class:highlighted={i === highlightedIndex}
-          class:selected={selected.includes(result.identifier)}
-          class="flex items-center justify-between px-3 py-2 cursor-pointer w-full text-left border-none bg-transparent"
-          on:click={(e) => {
-            e.preventDefault();
-            handleSelect(result);
-          }}
-          on:keydown={(e) => {
-            if (e.key === "Enter" || e.key === " ") {
+      {#if categorizedResults.groups.length > 0}
+        <div class="section-header">GROUPS</div>
+        {#each categorizedResults.groups as result}
+          {@const resultIndex = getResultIndex(result)}
+          <button
+            type="button"
+            class:highlighted={resultIndex === highlightedIndex}
+            class:selected={selected.includes(result.identifier)}
+            class="dropdown-item"
+            on:click={(e) => {
               e.preventDefault();
               handleSelect(result);
-            }
-          }}
-          on:pointerdown={(e) => {
-            // Prevent input from losing focus when clicking dropdown items
-            e.preventDefault();
-          }}
-          on:pointerenter={() => {
-            highlightedIndex = i;
-          }}
-          on:pointerleave={() => {
-            highlightedIndex = -1;
-          }}
-        >
-          <div class="w-full text-left">
-            {result.identifier}
-          </div>
-          {#if selected.includes(result.identifier)}
-            <Check size="16px" className="ui-copy-icon" />
-          {/if}
-        </button>
-      {/each}
+            }}
+            on:keydown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                handleSelect(result);
+              }
+            }}
+            on:pointerdown={(e) => {
+              e.preventDefault();
+            }}
+            on:pointerenter={() => {
+              highlightedIndex = resultIndex;
+            }}
+            on:pointerleave={() => {
+              highlightedIndex = -1;
+            }}
+          >
+            <div class="flex items-center gap-2">
+              <div
+                class={cn(
+                  "h-7 w-7 rounded-sm flex items-center justify-center",
+                  getRandomBgColor(result.identifier),
+                )}
+              >
+                <span class="text-sm text-white font-semibold"
+                  >{getInitials(result.identifier)}</span
+                >
+              </div>
+              <div class="flex flex-col text-left">
+                <span class="text-sm font-medium text-gray-900"
+                  >{result.identifier}</span
+                >
+                {#if result.usersCount !== undefined}
+                  <span class="text-xs text-gray-500">
+                    Group of {result.usersCount} member{result.usersCount !== 1
+                      ? "s"
+                      : ""}
+                  </span>
+                {:else}
+                  <span class="text-xs text-gray-500">Group</span>
+                {/if}
+              </div>
+            </div>
+            {#if selected.includes(result.identifier)}
+              <Check size="16px" className="ui-copy-icon" />
+            {/if}
+          </button>
+        {/each}
+
+        {#if categorizedResults.members.length > 0 || categorizedResults.guests.length > 0}
+          <div class="section-divider"></div>
+        {/if}
+      {/if}
+
+      {#if categorizedResults.members.length > 0}
+        <div class="section-header">MEMBERS</div>
+        {#each categorizedResults.members as result}
+          {@const resultIndex = getResultIndex(result)}
+          <button
+            type="button"
+            class:highlighted={resultIndex === highlightedIndex}
+            class:selected={selected.includes(result.identifier)}
+            class="dropdown-item"
+            on:click={(e) => {
+              e.preventDefault();
+              handleSelect(result);
+            }}
+            on:keydown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                handleSelect(result);
+              }
+            }}
+            on:pointerdown={(e) => {
+              e.preventDefault();
+            }}
+            on:pointerenter={() => {
+              highlightedIndex = resultIndex;
+            }}
+            on:pointerleave={() => {
+              highlightedIndex = -1;
+            }}
+          >
+            <div class="flex items-center gap-2">
+              <Avatar
+                avatarSize="h-7 w-7"
+                fontSize="text-xs"
+                src={result.photoUrl}
+                alt={result.displayName || result.identifier}
+                bgColor={getRandomBgColor(result.identifier)}
+              />
+              <div class="flex flex-col text-left">
+                <span class="text-sm font-medium text-gray-900">
+                  {result.displayName || result.identifier}
+                </span>
+                <span class="text-xs text-gray-500">{result.identifier}</span>
+              </div>
+            </div>
+            {#if selected.includes(result.identifier)}
+              <Check size="16px" className="ui-copy-icon" />
+            {/if}
+          </button>
+        {/each}
+
+        {#if categorizedResults.guests.length > 0}
+          <div class="section-divider"></div>
+        {/if}
+      {/if}
+
+      {#if categorizedResults.guests.length > 0}
+        <div class="section-header">GUESTS</div>
+        {#each categorizedResults.guests as result}
+          {@const resultIndex = getResultIndex(result)}
+          <button
+            type="button"
+            class:highlighted={resultIndex === highlightedIndex}
+            class:selected={selected.includes(result.identifier)}
+            class="dropdown-item"
+            on:click={(e) => {
+              e.preventDefault();
+              handleSelect(result);
+            }}
+            on:keydown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                handleSelect(result);
+              }
+            }}
+            on:pointerdown={(e) => {
+              e.preventDefault();
+            }}
+            on:pointerenter={() => {
+              highlightedIndex = resultIndex;
+            }}
+            on:pointerleave={() => {
+              highlightedIndex = -1;
+            }}
+          >
+            <div class="flex items-center gap-2">
+              <Avatar
+                avatarSize="h-7 w-7"
+                fontSize="text-xs"
+                src={result.photoUrl}
+                alt={result.displayName || result.identifier}
+                bgColor={getRandomBgColor(result.identifier)}
+              />
+              <div class="flex flex-col text-left">
+                <span
+                  class="text-sm font-medium text-gray-900 flex items-center gap-1"
+                >
+                  {result.displayName || result.identifier}
+                  <Chip type="amber" label="Guest" compact readOnly>
+                    <svelte:fragment slot="body">Guest</svelte:fragment>
+                  </Chip>
+                </span>
+                <span class="text-xs text-gray-500">{result.identifier}</span>
+              </div>
+            </div>
+            {#if selected.includes(result.identifier)}
+              <Check size="16px" className="ui-copy-icon" />
+            {/if}
+          </button>
+        {/each}
+      {/if}
     </div>
   {:else if loading}
     <div class="dropdown loading" style="width: {DROPDOWN_WIDTH}px; left: 0;">
@@ -511,5 +686,41 @@
     100% {
       transform: rotate(360deg);
     }
+  }
+
+  .section-header {
+    @apply text-xs font-semibold text-gray-500 uppercase tracking-wide px-3 py-2 bg-gray-50;
+    border-top: 1px solid #f3f4f6;
+  }
+
+  .section-header:first-child {
+    border-top: none;
+  }
+
+  .section-divider {
+    @apply border-t border-gray-200;
+  }
+
+  .dropdown-item {
+    @apply flex items-center justify-between px-3 py-2 cursor-pointer w-full text-left border-none bg-transparent;
+    scroll-margin: 8px;
+    transition: background-color 150ms ease-in-out;
+  }
+
+  .dropdown-item:hover {
+    @apply bg-slate-100;
+  }
+
+  .dropdown-item.highlighted {
+    @apply bg-slate-200;
+    scroll-snap-align: start;
+  }
+
+  .dropdown-item.selected {
+    @apply bg-slate-100;
+  }
+
+  .dropdown-item.selected:hover {
+    @apply bg-slate-200;
   }
 </style>
