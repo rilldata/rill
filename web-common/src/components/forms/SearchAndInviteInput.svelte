@@ -415,7 +415,7 @@
                 >
                 {#if result.groupCount !== undefined}
                   <span class="text-xs text-gray-500">
-                    Group of {result.groupCount} user{result.groupCount !== 0
+                    Group of {result.groupCount} user{result.groupCount > 1
                       ? "s"
                       : ""}
                   </span>
@@ -467,14 +467,14 @@
                 avatarSize="h-7 w-7"
                 fontSize="text-xs"
                 src={result.photoUrl}
-                alt={result.displayName || result.identifier}
+                alt={result.name || result.identifier}
                 bgColor={getRandomBgColor(result.identifier)}
               />
               <div class="flex flex-col text-left">
                 <span class="text-sm font-medium text-gray-900">
-                  {result.displayName || result.identifier}
+                  {result.identifier}
                 </span>
-                <span class="text-xs text-gray-500">{result.identifier}</span>
+                <span class="text-xs text-gray-500">{result.name}</span>
               </div>
             </div>
             {#if selected.includes(result.identifier)}
