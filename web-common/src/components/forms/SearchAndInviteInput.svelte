@@ -277,28 +277,17 @@
     selected = selected.filter((e) => e !== identifier);
   }
 
-  // Categorize search results into groups, members, and guests
   $: categorizedResults = (() => {
-    const groups = searchResults.filter((result) => result.isGroup);
-    const members = searchResults.filter(
-      (result) => result.isMember && !result.isGroup,
-    );
-    const guests = searchResults.filter(
-      (result) => !result.isMember && !result.isGroup,
-    );
+    const groups = searchResults.filter((result) => result.type === "group");
+    const members = searchResults.filter((result) => result.type === "user");
 
     return {
       groups,
       members,
-      guests,
     };
   })();
 
-  $: allResults = [
-    ...categorizedResults.groups,
-    ...categorizedResults.members,
-    ...categorizedResults.guests,
-  ];
+  $: allResults = [...categorizedResults.groups, ...categorizedResults.members];
 
   function getResultIndex(result: any): number {
     return allResults.indexOf(result);
@@ -441,7 +430,7 @@
           </button>
         {/each}
 
-        {#if categorizedResults.members.length > 0 || categorizedResults.guests.length > 0}
+        {#if categorizedResults.members.length > 0}
           <div class="section-divider"></div>
         {/if}
       {/if}
@@ -486,66 +475,6 @@
               <div class="flex flex-col text-left">
                 <span class="text-sm font-medium text-gray-900">
                   {result.displayName || result.identifier}
-                </span>
-                <span class="text-xs text-gray-500">{result.identifier}</span>
-              </div>
-            </div>
-            {#if selected.includes(result.identifier)}
-              <Check size="16px" className="ui-copy-icon" />
-            {/if}
-          </button>
-        {/each}
-
-        {#if categorizedResults.guests.length > 0}
-          <div class="section-divider"></div>
-        {/if}
-      {/if}
-
-      {#if categorizedResults.guests.length > 0}
-        <div class="section-header">GUESTS</div>
-        {#each categorizedResults.guests as result}
-          {@const resultIndex = getResultIndex(result)}
-          <button
-            type="button"
-            class:highlighted={resultIndex === highlightedIndex}
-            class:selected={selected.includes(result.identifier)}
-            class="dropdown-item"
-            on:click={(e) => {
-              e.preventDefault();
-              handleSelect(result);
-            }}
-            on:keydown={(e) => {
-              if (e.key === "Enter" || e.key === " ") {
-                e.preventDefault();
-                handleSelect(result);
-              }
-            }}
-            on:pointerdown={(e) => {
-              e.preventDefault();
-            }}
-            on:pointerenter={() => {
-              highlightedIndex = resultIndex;
-            }}
-            on:pointerleave={() => {
-              highlightedIndex = -1;
-            }}
-          >
-            <div class="flex items-center gap-2">
-              <Avatar
-                avatarSize="h-7 w-7"
-                fontSize="text-xs"
-                src={result.photoUrl}
-                alt={result.displayName || result.identifier}
-                bgColor={getRandomBgColor(result.identifier)}
-              />
-              <div class="flex flex-col text-left">
-                <span
-                  class="text-sm font-medium text-gray-900 flex items-center gap-1"
-                >
-                  {result.displayName || result.identifier}
-                  <Chip type="amber" label="Guest" compact readOnly>
-                    <svelte:fragment slot="body">Guest</svelte:fragment>
-                  </Chip>
                 </span>
                 <span class="text-xs text-gray-500">{result.identifier}</span>
               </div>
@@ -689,7 +618,7 @@
   }
 
   .section-header {
-    @apply text-xs font-semibold text-gray-500 uppercase tracking-wide px-3 py-2 bg-gray-50;
+    @apply text-xs font-semibold text-gray-500 uppercase tracking-wide px-3 py-2;
     border-top: 1px solid #f3f4f6;
   }
 
