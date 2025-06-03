@@ -76,22 +76,15 @@
     try {
       if (searchList) {
         const lower = input.toLowerCase();
-        // TODO: Modify search logic to:
-        // 1. Keep selected items in the search results but mark them as selected
-        // 2. Add visual indicator (e.g. checkbox or different styling) for selected items
-        // 3. Allow toggling selection state of items in the dropdown
-        searchResults = searchList
-          .filter((item) =>
-            searchKeys.some(
-              (key) => item[key] && item[key].toLowerCase().includes(lower),
-            ),
-          )
-          .filter((item) => !selected.includes(item.identifier));
+        // Keep selected items in the search results but mark them as selected
+        searchResults = searchList.filter((item) =>
+          searchKeys.some(
+            (key) => item[key] && item[key].toLowerCase().includes(lower),
+          ),
+        );
       } else {
         const results = await onSearch(input);
-        searchResults = results.filter(
-          (item) => !selected.includes(item.identifier),
-        );
+        searchResults = results;
       }
       showDropdown = searchResults.length > 0;
     } catch {
@@ -255,13 +248,11 @@
   function handleFocus() {
     if (searchList) {
       const lower = input.toLowerCase();
-      searchResults = searchList
-        .filter((item) =>
-          searchKeys.some(
-            (key) => item[key] && item[key].toLowerCase().includes(lower),
-          ),
-        )
-        .filter((item) => !selected.includes(item.identifier));
+      searchResults = searchList.filter((item) =>
+        searchKeys.some(
+          (key) => item[key] && item[key].toLowerCase().includes(lower),
+        ),
+      );
       showDropdown = searchResults.length > 0;
     }
   }
