@@ -413,14 +413,12 @@
                 <span class="text-sm font-medium text-gray-900"
                   >{result.identifier}</span
                 >
-                {#if result.usersCount !== undefined}
+                {#if result.groupCount !== undefined}
                   <span class="text-xs text-gray-500">
-                    Group of {result.usersCount} member{result.usersCount !== 1
+                    Group of {result.groupCount} user{result.groupCount !== 0
                       ? "s"
                       : ""}
                   </span>
-                {:else}
-                  <span class="text-xs text-gray-500">Group</span>
                 {/if}
               </div>
             </div>
