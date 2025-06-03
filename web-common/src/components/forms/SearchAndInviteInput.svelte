@@ -1,13 +1,10 @@
 <script lang="ts">
-  import { createEventDispatcher } from "svelte";
   import { Button } from "@rilldata/web-common/components/button";
   import UserRoleSelect from "@rilldata/web-admin/features/projects/user-management/UserRoleSelect.svelte";
   import Close from "../icons/Close.svelte";
   import { cn } from "@rilldata/web-common/lib/shadcn";
   import Check from "@rilldata/web-common/components/icons/Check.svelte";
 
-  export let onSearch: (query: string) => Promise<any[]>;
-  export let onInvite: (emails: string[], role?: string) => Promise<void>;
   export let placeholder: string = "Search or invite by email";
   export let validators: ((value: string) => boolean | string)[] = [];
   export let roleSelect: boolean = false;
@@ -17,8 +14,8 @@
   export let loop: boolean = false;
   export let multiSelect: boolean = false;
   export let autoFocusInput: -1 | 0 | 1 = 0; // -1: no auto focus, 0: auto focus on mount, 1: auto focus on blur
-
-  const dispatch = createEventDispatcher();
+  export let onSearch: (query: string) => Promise<any[]>;
+  export let onInvite: (emails: string[], role?: string) => Promise<void>;
 
   let input = "";
   let searchResults: any[] = [];
@@ -140,14 +137,12 @@
     }
     onInvite(selected, role)
       .then(() => {
-        dispatch("inviteSuccess", { emails: selected });
         selected = [];
         input = "";
         error = "";
       })
       .catch((err) => {
         error = err.message || "Failed to invite.";
-        dispatch("inviteError", { error });
       });
   }
 
