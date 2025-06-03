@@ -5,7 +5,6 @@
   import { cn } from "@rilldata/web-common/lib/shadcn";
   import Check from "@rilldata/web-common/components/icons/Check.svelte";
   import Avatar from "@rilldata/web-common/components/avatar/Avatar.svelte";
-  import { Chip } from "@rilldata/web-common/components/chip";
   import { getRandomBgColor } from "@rilldata/web-common/features/themes/color-config";
 
   export let placeholder: string = "Search or invite by email";
@@ -419,9 +418,7 @@
                 >
                 {#if result.groupCount !== undefined}
                   <span class="text-xs text-gray-500">
-                    Group of {result.groupCount} user{result.groupCount > 1
-                      ? "s"
-                      : ""}
+                    {result.groupCount} user{result.groupCount > 1 ? "s" : ""}
                   </span>
                 {/if}
               </div>
@@ -471,7 +468,7 @@
                 avatarSize="h-7 w-7"
                 fontSize="text-xs"
                 src={result.photoUrl}
-                alt={result.name || result.identifier}
+                alt={result.name}
                 bgColor={getRandomBgColor(result.identifier)}
               />
               <div class="flex flex-col text-left">
