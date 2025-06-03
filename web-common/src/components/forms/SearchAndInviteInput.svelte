@@ -376,9 +376,15 @@
               handleSelect(result);
             }
           }}
-          on:mousedown={(e) => {
+          on:pointerdown={(e) => {
             // Prevent input from losing focus when clicking dropdown items
             e.preventDefault();
+          }}
+          on:pointerenter={() => {
+            highlightedIndex = i;
+          }}
+          on:pointerleave={() => {
+            highlightedIndex = -1;
           }}
         >
           <div class="w-full text-left">
