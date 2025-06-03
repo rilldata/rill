@@ -101,6 +101,9 @@
 
   $: virtualRows = $virtualizer.getVirtualItems();
   $: rowScrollOffset = $virtualizer?.scrollOffset || 0;
+
+  $: dynamicContainerHeight =
+    rows.length <= 10 ? rowHeight * rows.length : containerHeight;
 </script>
 
 <div
@@ -144,7 +147,7 @@
   <div
     bind:this={containerElement}
     class="relative overflow-auto"
-    style="height: {containerHeight}px;"
+    style="height: {dynamicContainerHeight}px;"
   >
     {#if !rows || rows.length === 0}
       <div class="flex flex-col items-center gap-y-1 py-10">
