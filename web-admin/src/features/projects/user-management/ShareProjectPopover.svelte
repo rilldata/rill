@@ -172,6 +172,8 @@
       .map((member) => ({
         identifier: member.userEmail,
         type: "user",
+        name: member.userName,
+        photoUrl: member.userPhotoUrl,
       })),
     ...(allOrgInvitesRows ?? [])
       .filter(
@@ -182,6 +184,8 @@
       .map((invite) => ({
         identifier: invite.email,
         type: "user",
+        name: "Pending invitation",
+        photoUrl: undefined,
       })),
     ...(orgMemberUsergroups ?? [])
       .filter(
