@@ -96,6 +96,12 @@
     typeof window !== "undefined" &&
     /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
 
+  // Constants for table sizing
+  const EMPTY_TABLE_MIN_HEIGHT = 100;
+  const SAFARI_EXTRA_PADDING = 50;
+
+  let totalSize: number;
+
   $: virtualizer = createVirtualizer<HTMLDivElement, HTMLDivElement>({
     count: 0,
     getScrollElement: () => virtualListEl,
@@ -122,15 +128,24 @@
   }
 
   // Calculate total size, ensuring it updates when data changes
-  $: totalSize =
-    safeData.length === 0
-      ? 100
-      : isSafari
-        ? Math.max(
-            $virtualizer.getTotalSize() + 50,
-            safeData.length * rowHeight,
-          )
-        : Math.max($virtualizer.getTotalSize(), safeData.length * rowHeight);
+  $: {
+    if (safeData.length === 0) {
+      totalSize = EMPTY_TABLE_MIN_HEIGHT;
+    } else {
+      const virtualizerSize = $virtualizer.getTotalSize();
+      const minContentSize = safeData.length * rowHeight;
+
+      if (isSafari) {
+        // Safari needs extra padding to prevent scrolling issues
+        totalSize = Math.max(
+          virtualizerSize + SAFARI_EXTRA_PADDING,
+          minContentSize,
+        );
+      } else {
+        totalSize = Math.max(virtualizerSize, minContentSize);
+      }
+    }
+  }
 
   // Auto scroll to top when scrollToTopTrigger changes
   $: if (scrollToTopTrigger !== null && virtualListEl) {
