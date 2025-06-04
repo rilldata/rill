@@ -6,6 +6,7 @@
   import Check from "@rilldata/web-common/components/icons/Check.svelte";
   import Avatar from "@rilldata/web-common/components/avatar/Avatar.svelte";
   import { getRandomBgColor } from "@rilldata/web-common/features/themes/color-config";
+  import { tick, onMount, onDestroy } from "svelte";
 
   export let placeholder: string = "Search or invite by email";
   export let validators: ((value: string) => boolean | string)[] = [];
@@ -57,6 +58,13 @@
   // Only scroll when dropdown is visible and highlighted index changes
   $: if (highlightedIndex >= 0 && showDropdown && dropdownList) {
     scrollToHighlighted();
+  }
+
+  // Update dropdown position when selected items change (for multi-row chip wrapping)
+  $: if (selected && showDropdown) {
+    requestAnimationFrame(() => {
+      updateDropdownPosition();
+    });
   }
 
   function processCommaSeparatedInput(raw: string) {
