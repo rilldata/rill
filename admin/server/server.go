@@ -332,8 +332,14 @@ func (s *Server) AwaitServing(ctx context.Context) error {
 
 // Ping implements AdminService
 func (s *Server) Ping(ctx context.Context, req *adminv1.PingRequest) (*adminv1.PingResponse, error) {
+	var version string
+	if s.admin.VersionNumber == "" {
+		version = "unknown (built from source)"
+	} else {
+		version = fmt.Sprintf("%s (build commit: %s)", s.admin.VersionNumber, s.admin.VersionCommit)
+	}
 	resp := &adminv1.PingResponse{
-		Version: "", // TODO: Return version
+		Version: version,
 		Time:    timestamppb.New(time.Now()),
 	}
 	return resp, nil
