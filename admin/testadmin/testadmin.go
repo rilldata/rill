@@ -76,20 +76,18 @@ func New(t *testing.T) *Fixture {
 	require.NoError(t, err)
 
 	// Ports and external URLs
-	httpPort := findPort(t)
-	grpcPort := findPort(t)
-	externalURL := fmt.Sprintf("http://localhost:%d", grpcPort)
-	externalHTTPURL := fmt.Sprintf("http://localhost:%d", httpPort)
+	port := findPort(t)
+	externalURL := fmt.Sprintf("http://localhost:%d", port)
 	frontendURL := "http://frontend.mock"
 
 	// JWT issuer
-	issuer, err := runtimeauth.NewEphemeralIssuer(externalHTTPURL)
+	issuer, err := runtimeauth.NewEphemeralIssuer(externalURL)
 	require.NoError(t, err)
 
 	// Runtime provisioner.
 	// NOTE: Only gives the appearance of a static runtime, but does not actually start one.
 	// TODO: Support actually starting a runtime.
-	runtimeExternalURL := "http://localhost:9091"
+	runtimeExternalURL := "http://localhost:8081"
 	runtimeAudienceURL := "http://localhost:8081"
 	defaultProvisioner := "static"
 	provisionerSetJSON := must(json.Marshal(map[string]any{
@@ -134,8 +132,8 @@ func New(t *testing.T) *Fixture {
 
 	// Server
 	srvOpts := &server.Options{
-		HTTPPort:         httpPort,
-		GRPCPort:         grpcPort,
+		HTTPPort:         port,
+		GRPCPort:         port,
 		AllowedOrigins:   []string{"*"},
 		SessionKeyPairs:  [][]byte{randomBytes(16), randomBytes(16)},
 		ServePrometheus:  true,
@@ -150,7 +148,6 @@ func New(t *testing.T) *Fixture {
 	ctx, cancel := context.WithCancel(ctx)
 	t.Cleanup(cancel)
 	group, ctx := errgroup.WithContext(ctx)
-	group.Go(func() error { return srv.ServeGRPC(ctx) })
 	group.Go(func() error { return srv.ServeHTTP(ctx) })
 	require.NoError(t, srv.AwaitServing(ctx))
 
