@@ -31,6 +31,7 @@ const (
 	LocalService_CreateOrganization_FullMethodName                  = "/rill.local.v1.LocalService/CreateOrganization"
 	LocalService_ListMatchingProjects_FullMethodName                = "/rill.local.v1.LocalService/ListMatchingProjects"
 	LocalService_ListProjectsForOrg_FullMethodName                  = "/rill.local.v1.LocalService/ListProjectsForOrg"
+	LocalService_GetProject_FullMethodName                          = "/rill.local.v1.LocalService/GetProject"
 )
 
 // LocalServiceClient is the client API for LocalService service.
@@ -61,6 +62,8 @@ type LocalServiceClient interface {
 	ListMatchingProjects(ctx context.Context, in *ListMatchingProjectsRequest, opts ...grpc.CallOption) (*ListMatchingProjectsResponse, error)
 	// ListProjectsForOrg returns all projects within an org
 	ListProjectsForOrg(ctx context.Context, in *ListProjectsForOrgRequest, opts ...grpc.CallOption) (*ListProjectsForOrgResponse, error)
+	// GetProject returns information about a specific project
+	GetProject(ctx context.Context, in *GetProjectRequest, opts ...grpc.CallOption) (*GetProjectResponse, error)
 }
 
 type localServiceClient struct {
@@ -191,6 +194,16 @@ func (c *localServiceClient) ListProjectsForOrg(ctx context.Context, in *ListPro
 	return out, nil
 }
 
+func (c *localServiceClient) GetProject(ctx context.Context, in *GetProjectRequest, opts ...grpc.CallOption) (*GetProjectResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetProjectResponse)
+	err := c.cc.Invoke(ctx, LocalService_GetProject_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // LocalServiceServer is the server API for LocalService service.
 // All implementations must embed UnimplementedLocalServiceServer
 // for forward compatibility.
@@ -219,6 +232,8 @@ type LocalServiceServer interface {
 	ListMatchingProjects(context.Context, *ListMatchingProjectsRequest) (*ListMatchingProjectsResponse, error)
 	// ListProjectsForOrg returns all projects within an org
 	ListProjectsForOrg(context.Context, *ListProjectsForOrgRequest) (*ListProjectsForOrgResponse, error)
+	// GetProject returns information about a specific project
+	GetProject(context.Context, *GetProjectRequest) (*GetProjectResponse, error)
 	mustEmbedUnimplementedLocalServiceServer()
 }
 
@@ -264,6 +279,9 @@ func (UnimplementedLocalServiceServer) ListMatchingProjects(context.Context, *Li
 }
 func (UnimplementedLocalServiceServer) ListProjectsForOrg(context.Context, *ListProjectsForOrgRequest) (*ListProjectsForOrgResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListProjectsForOrg not implemented")
+}
+func (UnimplementedLocalServiceServer) GetProject(context.Context, *GetProjectRequest) (*GetProjectResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetProject not implemented")
 }
 func (UnimplementedLocalServiceServer) mustEmbedUnimplementedLocalServiceServer() {}
 func (UnimplementedLocalServiceServer) testEmbeddedByValue()                      {}
@@ -502,6 +520,24 @@ func _LocalService_ListProjectsForOrg_Handler(srv interface{}, ctx context.Conte
 	return interceptor(ctx, in, info, handler)
 }
 
+func _LocalService_GetProject_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetProjectRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(LocalServiceServer).GetProject(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: LocalService_GetProject_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(LocalServiceServer).GetProject(ctx, req.(*GetProjectRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // LocalService_ServiceDesc is the grpc.ServiceDesc for LocalService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -556,6 +592,10 @@ var LocalService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ListProjectsForOrg",
 			Handler:    _LocalService_ListProjectsForOrg_Handler,
+		},
+		{
+			MethodName: "GetProject",
+			Handler:    _LocalService_GetProject_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

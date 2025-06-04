@@ -11,11 +11,11 @@ The `rill.yaml` file contains metadata about your project.
 
 **`compiler`** — the Rill project compiler version compatible with your project files (currently defaults to: `rillv1`)
 
-**`title`** — the name of your project which will be displayed in the upper left hand corner [deprecated, use `display_name`] _(required)_.
+**`display_name`** - Refers to the display name for the project _(required)_.
 
-**`display_name`** - Refers to the display name for the metrics view _(required)_.
+**`description`** - Description of your project.
 
-**`ai_context`** - extra context for AI assistants. Any information you add here will be available to AI assistants when they interact with your project.
+**`ai_context`** - extra context for AI assistants. Any information you add here will be available to AI assistants when they interact with your project
 
 **`olap_connector`** - the default OLAP engine to use in your project
 
@@ -24,6 +24,21 @@ The `rill.yaml` file contains metadata about your project.
   - **`email`** — the mock user's email _(required)_
   - **`name`** — the mock user's name
   - **`admin`** — whether or not the mock user is an admin
+
+**`models`** - See [project wide defaults](/reference/project-files/rill-yaml#project-wide-defaults)
+
+**`metrics_views`** - See [project wide defaults](/reference/project-files/rill-yaml#project-wide-defaults)
+
+**`explores`** - See [project wide defaults](/reference/project-files/rill-yaml#project-wide-defaults)
+
+**`canvases`** - See [project wide defaults](/reference/project-files/rill-yaml#project-wide-defaults)
+
+**`apis`** - See [project wide defaults](/reference/project-files/rill-yaml#project-wide-defaults)
+
+**`ignorepath`** (array) - See [ignoring files](/reference/project-files/rill-yaml#ignoring-files-and-directories-within-rill)
+
+**`public_paths`** (array) - Makes assets available over http, useful if you need to include images in Canvas dashboards (defaults to `./public`)
+
 
 ## Configuring the default OLAP Engine
 

@@ -135,6 +135,7 @@
             queryName: queryName,
             queryArgsJson: queryArgsJson,
             exportLimit: values.exportLimit || undefined,
+            exportIncludeHeader: values.exportIncludeHeader || false,
             exportFormat: values.exportFormat,
             emailRecipients: values.emailRecipients.filter(Boolean),
             slackChannels: values.enableSlackNotification

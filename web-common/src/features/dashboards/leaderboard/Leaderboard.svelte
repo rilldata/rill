@@ -104,7 +104,12 @@
   $: queryLimit = slice + 1;
   $: maxValuesToShow = slice * 2;
 
-  $: ({ name: dimensionName = "", displayName = "", uri } = dimension);
+  $: ({
+    name: dimensionName = "",
+    description = "",
+    displayName = "",
+    uri,
+  } = dimension);
 
   $: atLeastOneActive = Boolean($selectedValues.data?.length);
 
@@ -322,6 +327,7 @@
       {allowExpandTable}
       {hovered}
       displayName={displayName || dimensionName}
+      dimensionDescription={description}
       {dimensionName}
       {isBeingCompared}
       isFetching={isLoading}
