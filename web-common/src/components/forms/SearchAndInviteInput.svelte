@@ -528,14 +528,16 @@
                 avatarSize="h-7 w-7"
                 fontSize="text-xs"
                 src={result.photoUrl}
-                alt={result.name}
+                alt={result.invitedBy ? undefined : result.name}
                 bgColor={getRandomBgColor(result.identifier)}
               />
               <div class="flex flex-col text-left">
                 <span class="text-sm font-medium text-gray-900">
                   {result.identifier}
                 </span>
-                <span class="text-xs text-gray-500">{result.name}</span>
+                <span class="text-xs text-gray-500"
+                  >{result.invitedBy ? "Pending invitation" : result.name}</span
+                >
               </div>
             </div>
             {#if isSelected}
@@ -585,6 +587,7 @@
                 avatarSize="h-7 w-7"
                 fontSize="text-xs"
                 src={result.photoUrl}
+                alt={result.invitedBy ? undefined : result.name}
                 bgColor={getRandomBgColor(result.identifier)}
               />
               <div class="flex flex-col text-left">
@@ -596,7 +599,9 @@
                     <svelte:fragment slot="body">Guest</svelte:fragment>
                   </Chip>
                 </span>
-                <span class="text-xs text-gray-500">{result.name}</span>
+                <span class="text-xs text-gray-500"
+                  >{result.invitedBy ? "Pending invitation" : result.name}</span
+                >
               </div>
             </div>
             {#if isSelected}
