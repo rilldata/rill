@@ -600,6 +600,9 @@ definitions:
           init_sql:
             type: string
             description: SQL to run when initializing a new connection, after extensions and defaults
+          secrets:
+            type: string
+            description: Comma-separated list of other connector names to create temporary secrets for in DuckDB before executing a model.
           log_queries:
             type: boolean
             description: Whether to log raw SQL queries executed through OLAP

@@ -5,18 +5,10 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"maps"
-	"net/url"
-	"os"
-	"strings"
 
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
-	"github.com/rilldata/rill/runtime/drivers/azure"
-	"github.com/rilldata/rill/runtime/drivers/gcs"
-	"github.com/rilldata/rill/runtime/drivers/s3"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
-	"github.com/rilldata/rill/runtime/pkg/globutil"
 )
 
 var errGCSUsesNativeCreds = errors.New("GCS uses native credentials")
@@ -37,7 +29,7 @@ func (e *objectStoreToSelfExecutor) Concurrency(desired int) (int, bool) {
 func (e *objectStoreToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExecuteOptions) (*drivers.ModelResult, error) {
 	// Build the model executor options with updated input properties
 	clone := *opts
-	newInputProps, err := e.modelInputProperties(ctx, opts.ModelName, opts.InputConnector, opts.InputHandle, opts.InputProperties)
+	newInputProps, err := e.modelInputProperties(ctx, opts)
 	if err != nil {
 		if errors.Is(err, errGCSUsesNativeCreds) {
 			e := &objectStoreToSelfExecutorNonNative{c: e.c}
@@ -53,9 +45,9 @@ func (e *objectStoreToSelfExecutor) Execute(ctx context.Context, opts *drivers.M
 	return executor.Execute(ctx, newOpts)
 }
 
-func (e *objectStoreToSelfExecutor) modelInputProperties(ctx context.Context, model, inputConnector string, inputHandle drivers.Handle, inputProps map[string]any) (map[string]any, error) {
+func (e *objectStoreToSelfExecutor) modelInputProperties(ctx context.Context, opts *drivers.ModelExecuteOptions) (map[string]any, error) {
 	parsed := &drivers.ObjectStoreModelInputProperties{}
-	if err := parsed.Decode(inputProps); err != nil {
+	if err := parsed.Decode(opts.InputProperties); err != nil {
 		return nil, fmt.Errorf("failed to parse input properties: %w", err)
 	}
 
@@ -69,7 +61,7 @@ func (e *objectStoreToSelfExecutor) modelInputProperties(ctx context.Context, mo
 
 	// Generate secret SQL to access the service and set as pre_exec_query
 	var err error
-	m.PreExec, err = objectStoreSecretSQL(ctx, parsed.Path, model, inputConnector, inputHandle, inputProps)
+	m.PreExec, err = objectStoreSecretSQL(ctx, opts, opts.InputConnector, parsed.Path, opts.InputProperties)
 	if err != nil {
 		return nil, err
 	}
@@ -86,120 +78,6 @@ func (e *objectStoreToSelfExecutor) modelInputProperties(ctx context.Context, mo
 		return nil, err
 	}
 	return propsMap, nil
-}
-
-func objectStoreSecretSQL(ctx context.Context, path, model, inputConnector string, inputHandle drivers.Handle, inputProps map[string]any) (string, error) {
-	config := inputHandle.Config()
-	// config properties can also be set as input properties
-	maps.Copy(config, inputProps)
-	safeSecretName := safeName(fmt.Sprintf("%s__%s__secret", model, inputConnector))
-	switch inputHandle.Driver() {
-	case "s3":
-		s3Config := &s3.ConfigProperties{}
-		err := mapstructure.WeakDecode(config, s3Config)
-		if err != nil {
-			return "", fmt.Errorf("failed to parse s3 config properties: %w", err)
-		}
-		var sb strings.Builder
-		sb.WriteString("CREATE OR REPLACE TEMPORARY SECRET ")
-		sb.WriteString(safeSecretName)
-		sb.WriteString(" (TYPE S3")
-		if s3Config.AllowHostAccess {
-			sb.WriteString(", PROVIDER CREDENTIAL_CHAIN")
-		}
-		if s3Config.AccessKeyID != "" {
-			fmt.Fprintf(&sb, ", KEY_ID %s, SECRET %s", safeSQLString(s3Config.AccessKeyID), safeSQLString(s3Config.SecretAccessKey))
-		}
-		if s3Config.SessionToken != "" {
-			fmt.Fprintf(&sb, ", SESSION_TOKEN %s", safeSQLString(s3Config.SessionToken))
-		}
-		if s3Config.Endpoint != "" {
-			uri, err := url.Parse(s3Config.Endpoint)
-			if err == nil && uri.Scheme != "" { // let duckdb raise an error if the endpoint is invalid
-				// for duckdb the endpoint should not have a scheme
-				s3Config.Endpoint = strings.TrimPrefix(s3Config.Endpoint, uri.Scheme+"://")
-				if uri.Scheme == "http" {
-					sb.WriteString(", USE_SSL false")
-				}
-			}
-			sb.WriteString(", ENDPOINT ")
-			sb.WriteString(safeSQLString(s3Config.Endpoint))
-			sb.WriteString(", URL_STYLE path")
-		}
-		if s3Config.Region != "" {
-			sb.WriteString(", REGION ")
-			sb.WriteString(safeSQLString(s3Config.Region))
-		} else {
-			// duckdb is unable to resolve region as of 1.2.0 so we need to detect and set region
-			conn, ok := inputHandle.(*s3.Connection)
-			if !ok {
-				return "", fmt.Errorf("internal error: invalid input handle type")
-			}
-			uri, err := globutil.ParseBucketURL(path)
-			if err != nil {
-				return "", fmt.Errorf("failed to parse path %q, %w", path, err)
-			}
-			reg, err := conn.GetBucketRegion(ctx, uri.Host)
-			if err != nil {
-				return "", fmt.Errorf("failed to get bucket region: %w. Set `region` in model yaml", err)
-			}
-			sb.WriteString(", REGION ")
-			sb.WriteString(safeSQLString(reg))
-		}
-		sb.WriteRune(')')
-		return sb.String(), nil
-	case "gcs":
-		// GCS works via S3 compatibility mode
-		gcsConfig, err := gcs.NewConfigProperties(config)
-		if err != nil {
-			return "", err
-		}
-		// If no credentials are provided we assume that the user wants to use the native credentials
-		if gcsConfig.SecretJSON != "" || (gcsConfig.KeyID == "" && gcsConfig.Secret == "" && gcsConfig.SecretJSON == "") {
-			return "", errGCSUsesNativeCreds
-		}
-		var sb strings.Builder
-		sb.WriteString("CREATE OR REPLACE TEMPORARY SECRET ")
-		sb.WriteString(safeSecretName)
-		sb.WriteString(" (TYPE GCS")
-		if gcsConfig.AllowHostAccess {
-			sb.WriteString(", PROVIDER CREDENTIAL_CHAIN")
-		}
-		if gcsConfig.KeyID != "" {
-			fmt.Fprintf(&sb, ", KEY_ID %s, SECRET %s", safeSQLString(gcsConfig.KeyID), safeSQLString(gcsConfig.Secret))
-		}
-		sb.WriteRune(')')
-		return sb.String(), nil
-	case "azure":
-		azureConfig := &azure.ConfigProperties{}
-		err := mapstructure.WeakDecode(config, azureConfig)
-		if err != nil {
-			return "", fmt.Errorf("failed to parse s3 config properties: %w", err)
-		}
-		var sb strings.Builder
-		sb.WriteString("CREATE OR REPLACE TEMPORARY SECRET ")
-		sb.WriteString(safeSecretName)
-		sb.WriteString(" (TYPE AZURE")
-		// if connection string is set then use that and fall back to env credentials only if host access is allowed and connection string is not set
-		if azureConfig.ConnectionString != "" {
-			fmt.Fprintf(&sb, ", CONNECTION_STRING %s", safeSQLString(azureConfig.ConnectionString))
-		} else if azureConfig.AllowHostAccess {
-			// backwards compatibility for allowing azure_storage_connection_string to be set as env variable which duckdb does not (keys are different)
-			connectionString := os.Getenv("AZURE_STORAGE_CONNECTION_STRING")
-			if connectionString != "" {
-				fmt.Fprintf(&sb, ", CONNECTION_STRING %s", safeSQLString(connectionString))
-			} else {
-				sb.WriteString(", PROVIDER CREDENTIAL_CHAIN")
-			}
-		}
-		if azureConfig.Account != "" {
-			fmt.Fprintf(&sb, ", ACCOUNT_NAME %s", safeSQLString(azureConfig.Account))
-		}
-		sb.WriteRune(')')
-		return sb.String(), nil
-	default:
-		return "", fmt.Errorf("internal error: unsupported object store: %s", inputHandle.Driver())
-	}
 }
 
 // objectStoreToSelfExecutorNonNative is a non-native implementation of objectStoreToSelfExecutor.
