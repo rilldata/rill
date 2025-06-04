@@ -12,6 +12,7 @@ import (
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/jobs"
 	"github.com/rilldata/rill/admin/provisioner"
+	"github.com/rilldata/rill/cli/pkg/version"
 	"github.com/rilldata/rill/runtime/pkg/email"
 	"github.com/rilldata/rill/runtime/server/auth"
 	"go.uber.org/zap"
@@ -26,8 +27,7 @@ type Options struct {
 	ProvisionerSetJSON        string
 	ProvisionerMaxConcurrency int
 	DefaultProvisioner        string
-	VersionNumber             string
-	VersionCommit             string
+	Version                   version.Version
 	MetricsProjectOrg         string
 	MetricsProjectName        string
 	AutoscalerCron            string
@@ -48,8 +48,7 @@ type Service struct {
 	Logger                    *zap.Logger
 	opts                      *Options
 	issuer                    *auth.Issuer
-	VersionNumber             string
-	VersionCommit             string
+	Version                   version.Version
 	MetricsProjectID          string
 	AutoscalerCron            string
 	ScaleDownConstraint       int
@@ -126,8 +125,7 @@ func New(ctx context.Context, opts *Options, logger *zap.Logger, issuer *auth.Is
 		Logger:                    logger,
 		opts:                      opts,
 		issuer:                    issuer,
-		VersionNumber:             opts.VersionNumber,
-		VersionCommit:             opts.VersionCommit,
+		Version:                   opts.Version,
 		MetricsProjectID:          metricsProjectID,
 		AutoscalerCron:            opts.AutoscalerCron,
 		ScaleDownConstraint:       opts.ScaleDownConstraint,

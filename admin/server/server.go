@@ -333,7 +333,7 @@ func (s *Server) AwaitServing(ctx context.Context) error {
 // Ping implements AdminService
 func (s *Server) Ping(ctx context.Context, req *adminv1.PingRequest) (*adminv1.PingResponse, error) {
 	resp := &adminv1.PingResponse{
-		Version: "", // TODO: Return version
+		Version: s.admin.Version.String(),
 		Time:    timestamppb.New(time.Now()),
 	}
 	return resp, nil
