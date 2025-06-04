@@ -6,7 +6,6 @@
   import Check from "@rilldata/web-common/components/icons/Check.svelte";
   import Avatar from "@rilldata/web-common/components/avatar/Avatar.svelte";
   import { getRandomBgColor } from "@rilldata/web-common/features/themes/color-config";
-  import { onMount } from "svelte";
 
   export let placeholder: string = "Search or invite by email";
   export let validators: ((value: string) => boolean | string)[] = [];
@@ -321,28 +320,6 @@
   function getInitials(name: string) {
     return name.charAt(0).toUpperCase();
   }
-
-  onMount(() => {
-    const handleResize = () => {
-      if (showDropdown) {
-        updateDropdownPosition();
-      }
-    };
-
-    const handleScroll = () => {
-      if (showDropdown) {
-        updateDropdownPosition();
-      }
-    };
-
-    window.addEventListener("resize", handleResize);
-    window.addEventListener("scroll", handleScroll, true);
-
-    return () => {
-      window.removeEventListener("resize", handleResize);
-      window.removeEventListener("scroll", handleScroll, true);
-    };
-  });
 </script>
 
 <div class="invite-search-input">
