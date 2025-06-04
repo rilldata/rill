@@ -54,7 +54,8 @@
     }
   }
 
-  $: if (highlightedIndex >= 0) {
+  // Only scroll when dropdown is visible and highlighted index changes
+  $: if (highlightedIndex >= 0 && showDropdown && dropdownList) {
     scrollToHighlighted();
   }
 
@@ -64,7 +65,7 @@
       .split(",")
       .map((s) => s.trim())
       .filter(Boolean);
-    const newEntries = parts.filter((entry) => !selected.includes(entry));
+    const newEntries = parts.filter((entry) => !selectedSet.has(entry));
     // Validate each entry
     for (const entry of newEntries) {
       const valid = validate(entry);
@@ -124,7 +125,7 @@
   function handleSelect(result: any) {
     if (multiSelect) {
       // Multi-select mode: toggle selection
-      if (selected.includes(result.identifier)) {
+      if (selectedSet.has(result.identifier)) {
         selected = selected.filter((id) => id !== result.identifier);
       } else {
         selected = [...selected, result.identifier];
@@ -168,7 +169,7 @@
         e.preventDefault();
         if (validate(input) === true) {
           if (multiSelect) {
-            if (!selected.includes(input)) {
+            if (!selectedSet.has(input)) {
               selected = [...selected, input];
             }
           } else {
@@ -204,7 +205,7 @@
       }
     }
     if (e.key === "ArrowDown") {
-      if (highlightedIndex === allResults.length - 1) {
+      if (highlightedIndex === categorizedResults.allResults.length - 1) {
         if (loop) {
           highlightedIndex = 0;
         } else {
@@ -220,7 +221,7 @@
     } else if (e.key === "ArrowUp") {
       if (highlightedIndex === 0) {
         if (loop) {
-          highlightedIndex = allResults.length - 1;
+          highlightedIndex = categorizedResults.allResults.length - 1;
         } else {
           e.preventDefault();
           return;
@@ -232,8 +233,11 @@
       showDropdown = true;
       updateDropdownPosition();
     } else if (e.key === "Enter") {
-      if (highlightedIndex >= 0 && highlightedIndex < allResults.length) {
-        handleSelect(allResults[highlightedIndex]);
+      if (
+        highlightedIndex >= 0 &&
+        highlightedIndex < categorizedResults.allResults.length
+      ) {
+        handleSelect(categorizedResults.allResults[highlightedIndex]);
         e.preventDefault();
         // In multi-select mode, keep dropdown open and input focused
         if (multiSelect) {
@@ -243,7 +247,7 @@
       } else if (input && validate(input) === true) {
         // Allow inviting a new email
         if (multiSelect) {
-          if (!selected.includes(input)) {
+          if (!selectedSet.has(input)) {
             selected = [...selected, input];
           }
         } else {
@@ -257,7 +261,7 @@
     } else if (e.key === "Space" && highlightedIndex >= 0) {
       // Add space key support for multi-select
       if (multiSelect) {
-        handleSelect(allResults[highlightedIndex]);
+        handleSelect(categorizedResults.allResults[highlightedIndex]);
         e.preventDefault();
         showDropdown = true;
         inputElement?.focus();
@@ -302,19 +306,33 @@
   }
 
   $: categorizedResults = (() => {
+    if (!searchResults.length) {
+      return {
+        groups: [],
+        members: [],
+        allResults: [],
+        resultIndexMap: new Map(),
+      };
+    }
+
     const groups = searchResults.filter((result) => result.type === "group");
     const members = searchResults.filter((result) => result.type === "user");
+    const allResults = [...groups, ...members];
 
-    return {
-      groups,
-      members,
-    };
+    // Create index map for O(1) lookups instead of O(n) indexOf calls
+    const resultIndexMap = new Map();
+    allResults.forEach((result, index) => {
+      resultIndexMap.set(result, index);
+    });
+
+    return { groups, members, allResults, resultIndexMap };
   })();
 
-  $: allResults = [...categorizedResults.groups, ...categorizedResults.members];
+  // Create a Set for O(1) selected lookups instead of O(n) includes() calls
+  $: selectedSet = new Set(selected);
 
   function getResultIndex(result: any): number {
-    return allResults.indexOf(result);
+    return categorizedResults.resultIndexMap.get(result) ?? -1;
   }
 
   function getInitials(name: string) {
@@ -397,10 +415,11 @@
         <div class="section-header">GROUPS</div>
         {#each categorizedResults.groups as result}
           {@const resultIndex = getResultIndex(result)}
+          {@const isSelected = selectedSet.has(result.identifier)}
           <button
             type="button"
             class:highlighted={resultIndex === highlightedIndex}
-            class:selected={selected.includes(result.identifier)}
+            class:selected={isSelected}
             class="dropdown-item"
             on:click={(e) => {
               e.preventDefault();
@@ -444,7 +463,7 @@
                 {/if}
               </div>
             </div>
-            {#if selected.includes(result.identifier)}
+            {#if isSelected}
               <Check size="16px" className="ui-copy-icon" />
             {/if}
           </button>
@@ -459,10 +478,11 @@
         <div class="section-header">MEMBERS</div>
         {#each categorizedResults.members as result}
           {@const resultIndex = getResultIndex(result)}
+          {@const isSelected = selectedSet.has(result.identifier)}
           <button
             type="button"
             class:highlighted={resultIndex === highlightedIndex}
-            class:selected={selected.includes(result.identifier)}
+            class:selected={isSelected}
             class="dropdown-item"
             on:click={(e) => {
               e.preventDefault();
@@ -499,7 +519,7 @@
                 <span class="text-xs text-gray-500">{result.name}</span>
               </div>
             </div>
-            {#if selected.includes(result.identifier)}
+            {#if isSelected}
               <Check size="16px" className="ui-copy-icon" />
             {/if}
           </button>
