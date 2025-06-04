@@ -416,7 +416,7 @@
           class="px-1"
         />
       </div>
-      {#if roleSelect}
+      {#if roleSelect && (selected.length > 0 || input.trim())}
         <div class="role-select-container">
           <UserRoleSelect bind:value={role} />
         </div>
@@ -544,7 +544,7 @@
     flex-wrap: nowrap;
     background: #fff;
     border-radius: 6px;
-    min-height: 40px;
+    min-height: 32px;
     gap: 8px;
     flex: 1;
     transition:
