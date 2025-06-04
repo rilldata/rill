@@ -5,6 +5,7 @@
   import { cn } from "@rilldata/web-common/lib/shadcn";
   import Check from "@rilldata/web-common/components/icons/Check.svelte";
   import Avatar from "@rilldata/web-common/components/avatar/Avatar.svelte";
+  import { Chip } from "@rilldata/web-common/components/chip";
   import { getRandomBgColor } from "@rilldata/web-common/features/themes/color-config";
   import { tick, onMount, onDestroy } from "svelte";
 
@@ -584,12 +585,16 @@
                 avatarSize="h-7 w-7"
                 fontSize="text-xs"
                 src={result.photoUrl}
-                alt={result.name}
                 bgColor={getRandomBgColor(result.identifier)}
               />
               <div class="flex flex-col text-left">
-                <span class="text-sm font-medium text-gray-900">
+                <span
+                  class="text-sm font-medium text-gray-900 flex flex-row items-center gap-x-1"
+                >
                   {result.identifier}
+                  <Chip type="amber" label="Guest" compact readOnly>
+                    <svelte:fragment slot="body">Guest</svelte:fragment>
+                  </Chip>
                 </span>
                 <span class="text-xs text-gray-500">{result.name}</span>
               </div>
