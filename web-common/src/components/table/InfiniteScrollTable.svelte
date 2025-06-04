@@ -93,6 +93,8 @@
     getScrollElement: () => virtualListEl,
     estimateSize: () => rowHeight,
     overscan,
+    // Safari-specific fix: ensure proper measurement
+    measureElement: (el) => el?.getBoundingClientRect()?.height ?? rowHeight,
   });
 
   // Memoize virtual items to avoid repeated computations
@@ -102,14 +104,21 @@
   $: virtualCount = hasNextPage ? rows.length + 1 : rows.length;
   $: $virtualizer.setOptions({ count: virtualCount });
 
+  // Safari-specific height adjustment
+  $: totalSize = isSafari
+    ? $virtualizer.getTotalSize() + 50
+    : $virtualizer.getTotalSize();
+
   // Optimize infinite scroll trigger - avoid array spread
   $: {
     if (virtualItems.length > 0) {
       const lastItem = virtualItems[virtualItems.length - 1];
+      // More aggressive loading for Safari
+      const safariOffset = isSafari ? 5 : 2;
 
       if (
         lastItem &&
-        lastItem.index > rows.length - 1 &&
+        lastItem.index >= rows.length - safariOffset &&
         hasNextPage &&
         !isFetchingNextPage
       ) {
@@ -123,16 +132,24 @@
 
   // Memoize empty state check
   $: isEmpty = rows.length === 0;
+
+  // Safari detection
+  const isSafari =
+    typeof window !== "undefined" &&
+    /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
 </script>
 
 <div
-  class={`list scroll-container`}
+  class="scroll-container"
   bind:this={virtualListEl}
-  style:max-height={maxHeight}
+  style="max-height: {maxHeight};"
 >
-  <div class="table-wrapper" style="position: relative;">
+  <div
+    class="table-wrapper"
+    style="height: {totalSize}px; width: 100%; position: relative;"
+  >
     <table>
-      <thead>
+      <thead class:safari-header={isSafari}>
         {#each headerGroups as headerGroup}
           <tr class="h-10">
             {#each headerGroup.headers as header (header.id)}
@@ -236,9 +253,17 @@
   table td {
     @apply border-b border-gray-200;
   }
+
   thead {
     @apply sticky top-0 z-30 bg-white;
   }
+
+  /* Safari-specific header positioning */
+  thead.safari-header {
+    position: relative;
+    @apply z-30 bg-white;
+  }
+
   thead tr th {
     @apply border-t border-gray-200;
   }
@@ -253,6 +278,7 @@
   thead tr:last-child th {
     @apply border-b;
   }
+
   tbody tr:first-child {
     @apply border-t-0;
   }
@@ -268,8 +294,21 @@
   tbody tr:last-child td:last-child {
     @apply rounded-br-sm;
   }
+
   .scroll-container {
     width: 100%;
     overflow-y: auto;
+    overflow-x: hidden;
+    /* Safari-specific optimizations */
+    -webkit-overflow-scrolling: touch;
+    transform: translateZ(0);
+    will-change: scroll-position;
+    contain: layout style paint;
+  }
+
+  .table-wrapper {
+    /* Ensure proper positioning context for Safari */
+    transform: translateZ(0);
+    will-change: contents;
   }
 </style>
