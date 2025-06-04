@@ -7,7 +7,6 @@
   import Avatar from "@rilldata/web-common/components/avatar/Avatar.svelte";
   import { Chip } from "@rilldata/web-common/components/chip";
   import { getRandomBgColor } from "@rilldata/web-common/features/themes/color-config";
-  import { tick, onMount, onDestroy } from "svelte";
 
   export let placeholder: string = "Search or invite by email";
   export let validators: ((value: string) => boolean | string)[] = [];
