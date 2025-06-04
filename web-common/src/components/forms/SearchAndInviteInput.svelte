@@ -138,6 +138,24 @@
       }
       // Clear input after selection
       input = "";
+      // Refresh search results to show all options when input is empty
+      if (searchList) {
+        searchResults = searchList; // Show all items when input is empty
+      } else {
+        // Trigger search with empty input to get all results
+        onSearch("")
+          .then((results) => {
+            searchResults = results;
+            showDropdown = searchResults.length > 0;
+            if (showDropdown) {
+              updateDropdownPosition();
+            }
+          })
+          .catch(() => {
+            searchResults = [];
+            showDropdown = false;
+          });
+      }
       // Keep dropdown open and input focused in multi-select mode
       showDropdown = true;
       inputElement?.focus();
