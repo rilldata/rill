@@ -172,22 +172,23 @@
   }
 
   function handleInputKeydown(e: KeyboardEvent) {
-    if (!showDropdown || searchResults.length === 0) {
-      // Handle Tab key to separate values
-      if (e.key === "Tab" && input.trim()) {
-        e.preventDefault();
-        if (validate(input) === true) {
-          if (multiSelect) {
-            if (!selectedSet.has(input)) {
-              selected = [...selected, input];
-            }
-          } else {
-            selected = [input];
+    // Handle Tab key to separate values - should work regardless of dropdown state
+    if (e.key === "Tab" && input.trim()) {
+      e.preventDefault();
+      if (validate(input) === true) {
+        if (multiSelect) {
+          if (!selectedSet.has(input)) {
+            selected = [...selected, input];
           }
-          input = "";
+        } else {
+          selected = [input];
         }
-        return;
+        input = "";
       }
+      return;
+    }
+
+    if (!showDropdown || searchResults.length === 0) {
       // If input contains a comma, process it on Enter
       if (e.key === "Enter" && input.includes(",")) {
         if (multiSelect) {
