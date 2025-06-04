@@ -201,9 +201,10 @@
         result.push({
           identifier: invite.email,
           type: "user",
-          name: "Pending invitation",
+          name: invite.email,
           photoUrl: undefined,
           orgRoleName: invite.roleName,
+          invitedBy: invite.invitedBy,
         });
       }
     }
