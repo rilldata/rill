@@ -158,47 +158,70 @@
   $: projectMemberUsersList = $listProjectMemberUsers?.data?.members ?? [];
   $: projectInvitesList = $listProjectInvites?.data?.invites ?? [];
 
-  $: searchList = [
-    ...(allOrgMemberUsersRows ?? [])
-      .filter(
-        (member) =>
-          !projectMemberUsersList.some(
-            (pm) => pm.userEmail === member.userEmail,
-          ) &&
-          !projectInvitesList.some(
-            (invite) => invite.email === member.userEmail,
-          ),
-      )
-      .map((member) => ({
-        identifier: member.userEmail,
-        type: "user",
-        name: member.userName,
-        photoUrl: member.userPhotoUrl,
-      })),
-    ...(allOrgInvitesRows ?? [])
-      .filter(
-        (invite) =>
-          !projectMemberUsersList.some((pm) => pm.userEmail === invite.email) &&
-          !projectInvitesList.some((pi) => pi.email === invite.email),
-      )
-      .map((invite) => ({
-        identifier: invite.email,
-        type: "user",
-        name: "Pending invitation",
-        photoUrl: undefined,
-      })),
-    ...(orgMemberUsergroups ?? [])
-      .filter(
-        (group) =>
-          !group.groupManaged &&
-          !projectUserGroups.some((pg) => pg.groupName === group.groupName),
-      )
-      .map((group) => ({
-        identifier: group.groupName,
-        groupCount: group.usersCount,
-        type: "group",
-      })),
-  ];
+  // Memoized Sets for efficient O(1) lookups instead of expensive O(n) .some() operations
+  $: projectMemberEmailSet = new Set(
+    projectMemberUsersList.map((pm) => pm.userEmail),
+  );
+  $: projectInviteEmailSet = new Set(
+    projectInvitesList.map((invite) => invite.email),
+  );
+  $: projectUserGroups = projectMemberUserGroupsList.filter(
+    (group) => !group.groupManaged,
+  );
+  $: projectUserGroupNameSet = new Set(
+    projectUserGroups.map((pg) => pg.groupName),
+  );
+
+  // Optimized searchList computation with memoization and O(1) lookups
+  $: searchList = (() => {
+    const result = [];
+
+    // Process org member users
+    for (const member of allOrgMemberUsersRows) {
+      if (
+        !projectMemberEmailSet.has(member.userEmail) &&
+        !projectInviteEmailSet.has(member.userEmail)
+      ) {
+        result.push({
+          identifier: member.userEmail,
+          type: "user",
+          name: member.userName,
+          photoUrl: member.userPhotoUrl,
+        });
+      }
+    }
+
+    // Process org invites
+    for (const invite of allOrgInvitesRows) {
+      if (
+        !projectMemberEmailSet.has(invite.email) &&
+        !projectInviteEmailSet.has(invite.email)
+      ) {
+        result.push({
+          identifier: invite.email,
+          type: "user",
+          name: "Pending invitation",
+          photoUrl: undefined,
+        });
+      }
+    }
+
+    // Process org member usergroups
+    for (const group of orgMemberUsergroups) {
+      if (
+        !group.groupManaged &&
+        !projectUserGroupNameSet.has(group.groupName)
+      ) {
+        result.push({
+          identifier: group.groupName,
+          groupCount: group.usersCount,
+          type: "group",
+        });
+      }
+    }
+
+    return result;
+  })();
 
   async function setAccessInviteOnly() {
     if (accessType === "invite-only") return;
@@ -271,10 +294,6 @@
     if (b.userEmail === $currentUser.data?.user?.email) return 1;
     return 0;
   });
-
-  $: projectUserGroups = projectMemberUserGroupsList.filter(
-    (group) => !group.groupManaged,
-  );
 
   $: hasAutogroupMembers = projectMemberUserGroupsList.some(
     (group) => group.groupName === "autogroup:members",
