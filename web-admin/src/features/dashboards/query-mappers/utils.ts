@@ -129,11 +129,14 @@ export function getSelectedTimeRange(
   return selectedTimeRange;
 }
 
-const ExploreNameRegex = /\/explore\/((?:\w|-)+)/;
+const ExploreNameRegex = /\/explore\/((?:[\w-]|%[0-9A-Fa-f]{2})+)/;
+
 export function getExploreName(webOpenPath: string) {
   const matches = ExploreNameRegex.exec(webOpenPath);
+
   if (!matches || matches.length < 1) return "";
-  return matches[1];
+
+  return decodeURIComponent(matches[1]);
 }
 
 export async function convertQueryFilterToToplistQuery(
