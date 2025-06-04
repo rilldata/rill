@@ -343,8 +343,6 @@
     return { groups, members, guests, allResults, resultIndexMap };
   })();
 
-  $: console.log(categorizedResults);
-
   // Create a Set for O(1) selected lookups instead of O(n) includes() calls
   $: selectedSet = new Set(selected);
 
