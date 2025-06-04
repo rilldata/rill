@@ -148,6 +148,10 @@ func marshalBase62(val []byte) string {
 	return i.Text(62)
 }
 
+func UnmarshalBase62(s string) ([]byte, bool) {
+	return unmarshalBase62(s)
+}
+
 // unmarshalBase62 unmarshals a byte slice encoded with marshalBase62.
 func unmarshalBase62(s string) ([]byte, bool) {
 	var i big.Int

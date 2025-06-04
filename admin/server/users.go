@@ -632,42 +632,63 @@ func projInviteToPB(i *database.ProjectInviteWithRole) *adminv1.ProjectInvite {
 
 // findUserAuthTokenFuzzy attempts to find a user auth token by exact ID, full token string, or unique prefix.
 func (s *Server) findUserAuthTokenFuzzy(ctx context.Context, input string) (*database.UserAuthToken, error) {
+	claims := auth.GetClaims(ctx)
+	userID := claims.OwnerID()
+
+	// Try exact ID match
 	token, err := s.admin.DB.FindUserAuthToken(ctx, input)
 	if err == nil {
 		return token, nil
 	}
 
-	parsed, err := authtoken.FromString(input)
+	// Try full token string
+	tokenStr, err := authtoken.FromString(input)
 	if err == nil {
-		token, err := s.admin.DB.FindUserAuthToken(ctx, parsed.ID.String())
+		token, err := s.admin.DB.FindUserAuthToken(ctx, tokenStr.ID.String())
 		if err == nil {
 			return token, nil
 		}
 	}
 
-	if len(input) < 6 {
-		return nil, status.Error(codes.InvalidArgument, "token prefix too short (min 6 chars)")
+	// Validate input length and prefix
+	if len(input) < 10 || !strings.HasPrefix(input, "rill_usr_") {
+		return nil, status.Error(codes.InvalidArgument, "invalid token ID (must be at least 10 characters and start with 'rill_usr_')")
 	}
 
-	tokens, err := s.admin.DB.FindUserAuthTokens(ctx, "", "", 100)
+	// Try matching by prefix
+	tokens, err := s.admin.DB.FindUserAuthTokens(ctx, userID, "", 1000)
 	if err != nil {
 		return nil, err
 	}
 
 	var matches []*database.UserAuthToken
 	for _, t := range tokens {
-		if strings.HasPrefix(t.ID, input) || strings.HasPrefix(t.ID, strings.TrimPrefix(input, "rill_usr_")) {
+		if strings.HasPrefix(t.ID, input) {
 			matches = append(matches, t)
+			continue
+		}
+
+		const prefix = "rill_usr_"
+		if strings.HasPrefix(input, prefix) {
+			base62 := strings.TrimPrefix(input, prefix)
+			// Base62-encoded UUIDs are always 22 characters long.
+			// This allows us to match tokens by their base62 prefix.
+			if len(base62) >= 22 {
+				if uuidBytes, ok := authtoken.UnmarshalBase62(base62[:22]); ok && len(uuidBytes) == 16 {
+					uuidStr := uuid.Must(uuid.FromBytes(uuidBytes)).String()
+					if t.ID == uuidStr {
+						matches = append(matches, t)
+					}
+				}
+			}
 		}
 	}
 
 	if len(matches) == 1 {
 		return matches[0], nil
 	}
-
 	if len(matches) > 1 {
-		return nil, status.Error(codes.InvalidArgument, "multiple tokens match the given prefix")
+		return nil, status.Error(codes.InvalidArgument, "multiple tokens match the given prefix (please use a more specific prefix)")
 	}
-
 	return nil, status.Error(codes.NotFound, "token not found")
 }
