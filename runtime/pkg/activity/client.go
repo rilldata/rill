@@ -11,8 +11,6 @@ import (
 	"go.uber.org/zap"
 )
 
-const maxSize = 1048576 // 1MB in bytes
-
 // Client constructs telemetry events and sends them to a sink.
 type Client struct {
 	logger    *zap.Logger
