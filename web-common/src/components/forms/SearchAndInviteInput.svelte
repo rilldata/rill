@@ -3,10 +3,7 @@
   import UserRoleSelect from "@rilldata/web-admin/features/projects/user-management/UserRoleSelect.svelte";
   import Close from "../icons/Close.svelte";
   import { cn } from "@rilldata/web-common/lib/shadcn";
-  import Check from "@rilldata/web-common/components/icons/Check.svelte";
-  import Avatar from "@rilldata/web-common/components/avatar/Avatar.svelte";
-  import { Chip } from "@rilldata/web-common/components/chip";
-  import { getRandomBgColor } from "@rilldata/web-common/features/themes/color-config";
+  import SearchAndInviteListItem from "./SearchAndInviteListItem.svelte";
 
   export let placeholder: string = "Search or invite by email";
   export let validators: ((value: string) => boolean | string)[] = [];
@@ -352,10 +349,6 @@
   function getResultIndex(result: any): number {
     return categorizedResults.resultIndexMap.get(result) ?? -1;
   }
-
-  function getInitials(name: string) {
-    return name.charAt(0).toUpperCase();
-  }
 </script>
 
 <div class="invite-search-input">
@@ -432,67 +425,25 @@
         keyboardNavigationActive = false;
       }}
     >
-      <!-- TODO: hoist item -->
       {#if categorizedResults.groups.length > 0}
         <div class="section-header">GROUPS</div>
         {#each categorizedResults.groups as result}
           {@const resultIndex = getResultIndex(result)}
           {@const isSelected = selectedSet.has(result.identifier)}
-          <button
-            type="button"
-            class:highlighted={resultIndex === highlightedIndex}
-            class:selected={isSelected}
-            class="dropdown-item"
-            on:click={(e) => {
-              e.preventDefault();
-              handleSelect(result);
+          <SearchAndInviteListItem
+            {result}
+            {resultIndex}
+            {isSelected}
+            {highlightedIndex}
+            {keyboardNavigationActive}
+            onSelect={handleSelect}
+            onHighlight={(index) => {
+              highlightedIndex = index;
             }}
-            on:keydown={(e) => {
-              if (e.key === "Enter" || e.key === " ") {
-                e.preventDefault();
-                handleSelect(result);
-              }
+            onClearHighlight={() => {
+              highlightedIndex = -1;
             }}
-            on:pointerdown={(e) => {
-              e.preventDefault();
-            }}
-            on:pointerenter={() => {
-              if (!keyboardNavigationActive) {
-                highlightedIndex = resultIndex;
-              }
-            }}
-            on:pointerleave={() => {
-              if (!keyboardNavigationActive) {
-                highlightedIndex = -1;
-              }
-            }}
-          >
-            <div class="flex items-center gap-2">
-              <div
-                class={cn(
-                  "h-7 w-7 rounded-sm flex items-center justify-center",
-                  getRandomBgColor(result.identifier),
-                )}
-              >
-                <span class="text-sm text-white font-semibold"
-                  >{getInitials(result.identifier)}</span
-                >
-              </div>
-              <div class="flex flex-col text-left">
-                <span class="text-sm font-medium text-gray-900"
-                  >{result.identifier}</span
-                >
-                {#if result.groupCount !== undefined}
-                  <span class="text-xs text-gray-500">
-                    {result.groupCount} user{result.groupCount > 1 ? "s" : ""}
-                  </span>
-                {/if}
-              </div>
-            </div>
-            {#if isSelected}
-              <Check size="16px" className="ui-copy-icon" />
-            {/if}
-          </button>
+          />
         {/each}
 
         {#if categorizedResults.members.length > 0}
@@ -500,62 +451,25 @@
         {/if}
       {/if}
 
-      <!-- TODO: hoist item -->
       {#if categorizedResults.members.length > 0}
         <div class="section-header">MEMBERS</div>
         {#each categorizedResults.members as result}
           {@const resultIndex = getResultIndex(result)}
           {@const isSelected = selectedSet.has(result.identifier)}
-          <button
-            type="button"
-            class:highlighted={resultIndex === highlightedIndex}
-            class:selected={isSelected}
-            class="dropdown-item"
-            on:click={(e) => {
-              e.preventDefault();
-              handleSelect(result);
+          <SearchAndInviteListItem
+            {result}
+            {resultIndex}
+            {isSelected}
+            {highlightedIndex}
+            {keyboardNavigationActive}
+            onSelect={handleSelect}
+            onHighlight={(index) => {
+              highlightedIndex = index;
             }}
-            on:keydown={(e) => {
-              if (e.key === "Enter" || e.key === " ") {
-                e.preventDefault();
-                handleSelect(result);
-              }
+            onClearHighlight={() => {
+              highlightedIndex = -1;
             }}
-            on:pointerdown={(e) => {
-              e.preventDefault();
-            }}
-            on:pointerenter={() => {
-              if (!keyboardNavigationActive) {
-                highlightedIndex = resultIndex;
-              }
-            }}
-            on:pointerleave={() => {
-              if (!keyboardNavigationActive) {
-                highlightedIndex = -1;
-              }
-            }}
-          >
-            <div class="flex items-center gap-2">
-              <Avatar
-                avatarSize="h-7 w-7"
-                fontSize="text-xs"
-                src={result.photoUrl}
-                alt={result.invitedBy ? undefined : result.name}
-                bgColor={getRandomBgColor(result.identifier)}
-              />
-              <div class="flex flex-col text-left">
-                <span class="text-sm font-medium text-gray-900">
-                  {result.identifier}
-                </span>
-                <span class="text-xs text-gray-500"
-                  >{result.invitedBy ? "Pending invitation" : result.name}</span
-                >
-              </div>
-            </div>
-            {#if isSelected}
-              <Check size="16px" className="ui-copy-icon" />
-            {/if}
-          </button>
+          />
         {/each}
 
         {#if categorizedResults.guests.length > 0}
@@ -563,67 +477,25 @@
         {/if}
       {/if}
 
-      <!-- TODO: hoist item -->
       {#if categorizedResults.guests.length > 0}
         <div class="section-header">GUESTS</div>
         {#each categorizedResults.guests as result}
           {@const resultIndex = getResultIndex(result)}
           {@const isSelected = selectedSet.has(result.identifier)}
-          <button
-            type="button"
-            class:highlighted={resultIndex === highlightedIndex}
-            class:selected={isSelected}
-            class="dropdown-item"
-            on:click={(e) => {
-              e.preventDefault();
-              handleSelect(result);
+          <SearchAndInviteListItem
+            {result}
+            {resultIndex}
+            {isSelected}
+            {highlightedIndex}
+            {keyboardNavigationActive}
+            onSelect={handleSelect}
+            onHighlight={(index) => {
+              highlightedIndex = index;
             }}
-            on:keydown={(e) => {
-              if (e.key === "Enter" || e.key === " ") {
-                e.preventDefault();
-                handleSelect(result);
-              }
+            onClearHighlight={() => {
+              highlightedIndex = -1;
             }}
-            on:pointerdown={(e) => {
-              e.preventDefault();
-            }}
-            on:pointerenter={() => {
-              if (!keyboardNavigationActive) {
-                highlightedIndex = resultIndex;
-              }
-            }}
-            on:pointerleave={() => {
-              if (!keyboardNavigationActive) {
-                highlightedIndex = -1;
-              }
-            }}
-          >
-            <div class="flex items-center gap-2">
-              <Avatar
-                avatarSize="h-7 w-7"
-                fontSize="text-xs"
-                src={result.photoUrl}
-                alt={result.invitedBy ? undefined : result.name}
-                bgColor={getRandomBgColor(result.identifier)}
-              />
-              <div class="flex flex-col text-left">
-                <span
-                  class="text-sm font-medium text-gray-900 flex flex-row items-center gap-x-1"
-                >
-                  {result.identifier}
-                  <Chip type="amber" label="Guest" compact readOnly>
-                    <svelte:fragment slot="body">Guest</svelte:fragment>
-                  </Chip>
-                </span>
-                <span class="text-xs text-gray-500"
-                  >{result.invitedBy ? "Pending invitation" : result.name}</span
-                >
-              </div>
-            </div>
-            {#if isSelected}
-              <Check size="16px" className="ui-copy-icon" />
-            {/if}
-          </button>
+          />
         {/each}
       {/if}
     </div>
