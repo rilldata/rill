@@ -33,6 +33,7 @@
   let dropdownTop = 0;
   let dropdownLeft = 0;
   let dropdownWidth = 0;
+  let keyboardNavigationActive = false;
 
   function updateDropdownPosition() {
     if (inputElement) {
@@ -214,6 +215,7 @@
       }
     }
     if (e.key === "ArrowDown") {
+      keyboardNavigationActive = true;
       if (highlightedIndex === categorizedResults.allResults.length - 1) {
         if (loop) {
           highlightedIndex = 0;
@@ -228,6 +230,7 @@
       showDropdown = true;
       updateDropdownPosition();
     } else if (e.key === "ArrowUp") {
+      keyboardNavigationActive = true;
       if (highlightedIndex === 0) {
         if (loop) {
           highlightedIndex = categorizedResults.allResults.length - 1;
@@ -425,6 +428,9 @@
       class="dropdown"
       bind:this={dropdownList}
       style="width: {dropdownWidth}px; top: {dropdownTop}px; left: {dropdownLeft}px;"
+      on:pointermove={() => {
+        keyboardNavigationActive = false;
+      }}
     >
       <!-- TODO: hoist item -->
       {#if categorizedResults.groups.length > 0}
@@ -451,10 +457,14 @@
               e.preventDefault();
             }}
             on:pointerenter={() => {
-              highlightedIndex = resultIndex;
+              if (!keyboardNavigationActive) {
+                highlightedIndex = resultIndex;
+              }
             }}
             on:pointerleave={() => {
-              highlightedIndex = -1;
+              if (!keyboardNavigationActive) {
+                highlightedIndex = -1;
+              }
             }}
           >
             <div class="flex items-center gap-2">
@@ -515,10 +525,14 @@
               e.preventDefault();
             }}
             on:pointerenter={() => {
-              highlightedIndex = resultIndex;
+              if (!keyboardNavigationActive) {
+                highlightedIndex = resultIndex;
+              }
             }}
             on:pointerleave={() => {
-              highlightedIndex = -1;
+              if (!keyboardNavigationActive) {
+                highlightedIndex = -1;
+              }
             }}
           >
             <div class="flex items-center gap-2">
@@ -574,10 +588,14 @@
               e.preventDefault();
             }}
             on:pointerenter={() => {
-              highlightedIndex = resultIndex;
+              if (!keyboardNavigationActive) {
+                highlightedIndex = resultIndex;
+              }
             }}
             on:pointerleave={() => {
-              highlightedIndex = -1;
+              if (!keyboardNavigationActive) {
+                highlightedIndex = -1;
+              }
             }}
           >
             <div class="flex items-center gap-2">
