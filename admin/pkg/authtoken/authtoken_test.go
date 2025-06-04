@@ -106,3 +106,14 @@ func TestPrefix(t *testing.T) {
 	require.True(t, strings.HasPrefix(tkn.String(), tkn.Prefix()), "Full token should start with prefix")
 	require.NotEqual(t, tkn.Prefix(), tkn.String(), "Prefix should not match the full token string")
 }
+
+func TestPrefixWithEmptySecret(t *testing.T) {
+	for i := 0; i < 100; i++ {
+		tkn := NewRandom(TypeUser)
+		tkn.Secret = [24]byte{}
+		prefix := tkn.Prefix()
+		require.True(t, strings.HasPrefix(prefix, "rill_usr_"), "Prefix should start with 'rill_usr_'")
+		require.Len(t, prefix, len("rill_usr_")+10, "Prefix length should be correct")
+		require.True(t, strings.HasPrefix(tkn.String(), prefix), "Full token should start with prefix")
+	}
+}

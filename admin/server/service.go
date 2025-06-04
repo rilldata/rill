@@ -179,10 +179,10 @@ func (s *Server) ListServiceAuthTokens(ctx context.Context, req *adminv1.ListSer
 		t := authtoken.Token{Type: authtoken.TypeService, ID: id}
 
 		dtos[i] = &adminv1.ServiceToken{
-			Id:          token.ID,
-			CreatedOn:   timestamppb.New(token.CreatedOn),
-			ExpiresOn:   timestamppb.New(safeTime(token.ExpiresOn)),
-			TokenPrefix: t.Prefix(),
+			Id:        token.ID,
+			CreatedOn: timestamppb.New(token.CreatedOn),
+			ExpiresOn: timestamppb.New(safeTime(token.ExpiresOn)),
+			Prefix:    t.Prefix(),
 		}
 	}
 

@@ -2640,7 +2640,7 @@ message Bookmark {
 
 message ServiceToken {
   string id = 1;
-  string token_prefix = 4;
+  string prefix = 4;
   google.protobuf.Timestamp created_on = 2;
   google.protobuf.Timestamp expires_on = 3;
 }
@@ -2651,7 +2651,7 @@ message UserAuthToken {
   string auth_client_id = 3;
   string auth_client_display_name = 4;
   string representing_user_id = 5;
-  string token_prefix = 9;
+  string prefix = 9;
   google.protobuf.Timestamp created_on = 6;
   google.protobuf.Timestamp expires_on = 7;
   google.protobuf.Timestamp used_on = 8;

@@ -5587,7 +5587,7 @@ definitions:
     properties:
       id:
         type: string
-      tokenPrefix:
+      prefix:
         type: string
       createdOn:
         type: string
@@ -5893,7 +5893,7 @@ definitions:
         type: string
       representingUserId:
         type: string
-      tokenPrefix:
+      prefix:
         type: string
       createdOn:
         type: string

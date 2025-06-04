@@ -21,7 +21,7 @@ func IssueCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 
-			if displayName == "" {
+			if ch.Interactive && displayName == "" {
 				displayName, err = cmdutil.InputPrompt("Please enter a display name for the token", "")
 				if err != nil {
 					return err

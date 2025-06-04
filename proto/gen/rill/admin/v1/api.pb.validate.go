@@ -38416,7 +38416,7 @@ func (m *ServiceToken) validate(all bool) error {
 
 	// no validation rules for Id
 
-	// no validation rules for TokenPrefix
+	// no validation rules for Prefix
 
 	if all {
 		switch v := interface{}(m.GetCreatedOn()).(type) {
@@ -38585,7 +38585,7 @@ func (m *UserAuthToken) validate(all bool) error {
 
 	// no validation rules for RepresentingUserId
 
-	// no validation rules for TokenPrefix
+	// no validation rules for Prefix
 
 	if all {
 		switch v := interface{}(m.GetCreatedOn()).(type) {

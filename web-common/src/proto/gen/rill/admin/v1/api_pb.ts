@@ -14335,9 +14335,9 @@ export class ServiceToken extends Message<ServiceToken> {
   id = "";
 
   /**
-   * @generated from field: string token_prefix = 4;
+   * @generated from field: string prefix = 4;
    */
-  tokenPrefix = "";
+  prefix = "";
 
   /**
    * @generated from field: google.protobuf.Timestamp created_on = 2;
@@ -14358,7 +14358,7 @@ export class ServiceToken extends Message<ServiceToken> {
   static readonly typeName = "rill.admin.v1.ServiceToken";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 4, name: "token_prefix", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "prefix", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "created_on", kind: "message", T: Timestamp },
     { no: 3, name: "expires_on", kind: "message", T: Timestamp },
   ]);
@@ -14410,9 +14410,9 @@ export class UserAuthToken extends Message<UserAuthToken> {
   representingUserId = "";
 
   /**
-   * @generated from field: string token_prefix = 9;
+   * @generated from field: string prefix = 9;
    */
-  tokenPrefix = "";
+  prefix = "";
 
   /**
    * @generated from field: google.protobuf.Timestamp created_on = 6;
@@ -14442,7 +14442,7 @@ export class UserAuthToken extends Message<UserAuthToken> {
     { no: 3, name: "auth_client_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "auth_client_display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "representing_user_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 9, name: "token_prefix", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 9, name: "prefix", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "created_on", kind: "message", T: Timestamp },
     { no: 7, name: "expires_on", kind: "message", T: Timestamp },
     { no: 8, name: "used_on", kind: "message", T: Timestamp },
