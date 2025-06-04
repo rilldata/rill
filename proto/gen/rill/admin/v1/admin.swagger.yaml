@@ -2702,11 +2702,6 @@ paths:
           in: query
           required: false
           type: boolean
-        - name: skipDeployment
-          description: Skips fetching deployment and jwt related to querying deployment
-          in: query
-          required: false
-          type: boolean
       tags:
         - AdminService
     delete:

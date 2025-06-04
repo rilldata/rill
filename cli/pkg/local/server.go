@@ -692,8 +692,6 @@ func (s *Server) GetProject(ctx context.Context, r *connect.Request[localv1.GetP
 	projResp, err := c.GetProject(ctx, &adminv1.GetProjectRequest{
 		OrganizationName: r.Msg.OrganizationName,
 		Name:             r.Msg.Name,
-		// We dont need deployment or jwt so skip fetching it.
-		SkipDeployment: true,
 	})
 	if err != nil {
 		return nil, err

@@ -995,13 +995,6 @@ export class GetProjectRequest extends Message<GetProjectRequest> {
    */
   issueSuperuserToken = false;
 
-  /**
-   * Skips fetching deployment and jwt related to querying deployment
-   *
-   * @generated from field: bool skip_deployment = 6;
-   */
-  skipDeployment = false;
-
   constructor(data?: PartialMessage<GetProjectRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1015,7 +1008,6 @@ export class GetProjectRequest extends Message<GetProjectRequest> {
     { no: 3, name: "access_token_ttl_seconds", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 5, name: "superuser_force_access", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 4, name: "issue_superuser_token", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 6, name: "skip_deployment", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetProjectRequest {

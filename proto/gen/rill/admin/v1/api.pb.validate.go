@@ -2395,8 +2395,6 @@ func (m *GetProjectRequest) validate(all bool) error {
 
 	// no validation rules for IssueSuperuserToken
 
-	// no validation rules for SkipDeployment
-
 	if len(errors) > 0 {
 		return GetProjectRequestMultiError(errors)
 	}
