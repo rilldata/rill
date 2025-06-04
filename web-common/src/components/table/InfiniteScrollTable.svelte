@@ -25,6 +25,7 @@
   export let overscan = 5;
   export let maxHeight = "auto";
   export let headerIcons: Record<string, { icon: any; href: string }> = {};
+  export let scrollToTopTrigger: any = null;
 
   let virtualListEl: HTMLDivElement;
   let sorting: SortingState = [];
@@ -130,6 +131,14 @@
             safeData.length * rowHeight,
           )
         : Math.max($virtualizer.getTotalSize(), safeData.length * rowHeight);
+
+  // Auto scroll to top when scrollToTopTrigger changes
+  $: if (scrollToTopTrigger !== null && virtualListEl) {
+    virtualListEl.scrollTo({
+      top: 0,
+      behavior: "smooth",
+    });
+  }
 </script>
 
 <div
