@@ -1022,7 +1022,7 @@ func (c *connection) DeleteExpiredUserAuthTokens(ctx context.Context, retention 
 
 // DeleteInactiveUserAuthTokens deletes user authentication tokens that have not been used within the specified retention period.
 func (c *connection) DeleteInactiveUserAuthTokens(ctx context.Context, retention time.Duration) error {
-	_, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM user_auth_tokens WHERE used_on IS NULL OR used_on < now() - $1", retention)
+	_, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM user_auth_tokens WHERE used_on IS NULL OR used_on < (now() - $1)", retention)
 	return parseErr("auth token", err)
 }
 
@@ -1170,7 +1170,7 @@ func (c *connection) DeleteExpiredServiceAuthTokens(ctx context.Context, retenti
 
 // DeleteInactiveServiceAuthTokens deletes service authentication tokens that have not been used within the specified retention period.
 func (c *connection) DeleteInactiveServiceAuthTokens(ctx context.Context, retention time.Duration) error {
-	_, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM service_auth_tokens WHERE used_on IS NULL OR used_on < now() - $1", retention)
+	_, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM service_auth_tokens WHERE used_on IS NULL OR used_on < (now() - $1)", retention)
 	return parseErr("service auth token", err)
 }
 
