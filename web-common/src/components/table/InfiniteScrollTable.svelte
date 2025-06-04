@@ -19,12 +19,12 @@
   export let columns: ColumnDef<any, any>[];
   export let hasNextPage: boolean;
   export let isFetchingNextPage: boolean;
-  export let onLoadMore: () => void;
   export let emptyStateMessage = "No items found";
   export let rowHeight = 69;
   export let overscan = 5;
   export let maxHeight = "auto";
   export let headerIcons: Record<string, { icon: any; href: string }> = {};
+  export let onLoadMore: () => void;
 
   let virtualListEl: HTMLDivElement;
   let sorting: SortingState = [];
@@ -49,15 +49,8 @@
     ];
   }
 
+  // Optimize data handling
   $: safeData = Array.isArray(data) ? data : [];
-  $: {
-    if (safeData) {
-      options.update((old) => ({
-        ...old,
-        data: safeData,
-      }));
-    }
-  }
 
   const setSorting: OnChangeFn<SortingState> = (updater) => {
     if (updater instanceof Function) {
@@ -65,17 +58,10 @@
     } else {
       sorting = updater;
     }
-
-    options.update((old) => ({
-      ...old,
-      state: {
-        ...old.state,
-        sorting,
-      },
-    }));
   };
 
-  $: options = writable<TableOptions<any>>({
+  // Create table options store once and update it reactively
+  const options = writable<TableOptions<any>>({
     data: safeData,
     columns,
     state: {
@@ -87,10 +73,21 @@
     enableSortingRemoval: false,
   });
 
-  $: table = createSvelteTable(options);
+  // Update options only when necessary
+  $: options.update((old) => ({
+    ...old,
+    data: safeData,
+    columns,
+    state: {
+      ...old.state,
+      sorting,
+    },
+  }));
 
+  $: table = createSvelteTable(options);
   $: rows = $table.getRowModel().rows;
 
+  // Create virtualizer once and update options separately
   $: virtualizer = createVirtualizer<HTMLDivElement, HTMLDivElement>({
     count: 0,
     getScrollElement: () => virtualListEl,
@@ -98,22 +95,34 @@
     overscan,
   });
 
+  // Memoize virtual items to avoid repeated computations
+  $: virtualItems = $virtualizer.getVirtualItems();
+
+  // Optimize virtualizer count updates
+  $: virtualCount = hasNextPage ? rows.length + 1 : rows.length;
+  $: $virtualizer.setOptions({ count: virtualCount });
+
+  // Optimize infinite scroll trigger - avoid array spread
   $: {
-    $virtualizer.setOptions({
-      count: hasNextPage ? safeData.length + 1 : safeData.length,
-    });
+    if (virtualItems.length > 0) {
+      const lastItem = virtualItems[virtualItems.length - 1];
 
-    const [lastItem] = [...$virtualizer.getVirtualItems()].reverse();
-
-    if (
-      lastItem &&
-      lastItem.index > safeData.length - 1 &&
-      hasNextPage &&
-      !isFetchingNextPage
-    ) {
-      onLoadMore();
+      if (
+        lastItem &&
+        lastItem.index > rows.length - 1 &&
+        hasNextPage &&
+        !isFetchingNextPage
+      ) {
+        onLoadMore();
+      }
     }
   }
+
+  // Memoize header groups to avoid repeated calls
+  $: headerGroups = $table.getHeaderGroups();
+
+  // Memoize empty state check
+  $: isEmpty = rows.length === 0;
 </script>
 
 <div
@@ -124,22 +133,24 @@
   <div class="table-wrapper" style="position: relative;">
     <table>
       <thead>
-        {#each $table.getHeaderGroups() as headerGroup}
+        {#each headerGroups as headerGroup}
           <tr class="h-10">
             {#each headerGroup.headers as header (header.id)}
               {@const widthPercent = header.column.columnDef.meta?.widthPercent}
               {@const marginLeft = header.column.columnDef.meta?.marginLeft}
+              {@const canSort = header.column.getCanSort()}
+              {@const isSorted = header.column.getIsSorted()}
               <th
                 colSpan={header.colSpan}
-                style={`width: ${widthPercent}%;`}
+                style={widthPercent ? `width: ${widthPercent}%;` : ""}
                 class="px-4 py-2 text-left"
                 on:click={header.column.getToggleSortingHandler()}
               >
                 {#if !header.isPlaceholder}
                   <div
-                    style={`margin-left: ${marginLeft};`}
-                    class:cursor-pointer={header.column.getCanSort()}
-                    class:select-none={header.column.getCanSort()}
+                    style={marginLeft ? `margin-left: ${marginLeft};` : ""}
+                    class:cursor-pointer={canSort}
+                    class:select-none={canSort}
                     class="font-semibold text-gray-500 flex flex-row items-center gap-x-1 text-sm"
                   >
                     <svelte:component
@@ -163,11 +174,10 @@
                         />
                       </a>
                     {/if}
-                    {#if header.column.getIsSorted()}
+                    {#if isSorted}
                       <span>
                         <ArrowDown
-                          flip={header.column.getIsSorted().toString() ===
-                            "asc"}
+                          flip={isSorted.toString() === "asc"}
                           size="12px"
                         />
                       </span>
@@ -180,7 +190,7 @@
         {/each}
       </thead>
       <tbody>
-        {#if $table.getRowModel().rows.length === 0}
+        {#if isEmpty}
           <tr>
             <td
               colspan={columns.length}
@@ -190,14 +200,16 @@
             </td>
           </tr>
         {:else}
-          {#each $virtualizer.getVirtualItems() as virtualRow, idx (virtualRow.index)}
+          {#each virtualItems as virtualRow, idx (virtualRow.index)}
+            {@const rowData = rows[virtualRow.index]}
+            {@const transformY = virtualRow.start - idx * virtualRow.size}
             <tr
-              style="height: {virtualRow.size}px; transform: translateY({virtualRow.start -
-                idx * virtualRow.size}px);"
+              style="height: {virtualRow.size}px; transform: translateY({transformY}px);"
             >
-              {#each rows[virtualRow.index]?.getVisibleCells() ?? [] as cell (cell.id)}
+              {#each rowData?.getVisibleCells() ?? [] as cell (cell.id)}
+                {@const isActionsColumn = cell.column.id === "actions"}
                 <td
-                  class={`px-4 py-2 max-w-[200px] truncate ${cell.column.id === "actions" ? "w-1" : ""}`}
+                  class={`px-4 py-2 max-w-[200px] truncate ${isActionsColumn ? "w-1" : ""}`}
                   data-label={cell.column.columnDef.header}
                 >
                   <svelte:component
