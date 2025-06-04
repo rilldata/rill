@@ -5,18 +5,21 @@ connectors:
 project_files:
   all_datatypes_clickhouse_csv.yaml:
     type: model
-    connector: clickhouse
     materialize: true
+    connector: clickhouse
+    output: clickhouse
     sql: "SELECT * FROM gcs('gs://integration-test.rilldata.com/csv_test/all_datatypes.csv', '{{.env.connector.gcs_s3_compat.key_id}}', '{{.env.connector.gcs_s3_compat.secret}}', 'CSVWithNames')"
   all_datatypes_clickhouse_glob.yaml:
     type: model
-    connector: clickhouse
     materialize: true
+    connector: clickhouse
+    output: clickhouse
     sql: "SELECT * FROM gcs('gs://integration-test.rilldata.com/glob_test/y=202*/a*.csv', '{{.env.connector.gcs_s3_compat.key_id}}', '{{.env.connector.gcs_s3_compat.secret}}', 'CSVWithNames')"
   all_datatypes_clickhouse_parquet.yaml:
     type: model
-    connector: clickhouse
     materialize: true
+    connector: clickhouse
+    output: clickhouse
     sql: "SELECT * FROM gcs('gs://integration-test.rilldata.com/parquet_test/all_datatypes.parquet', '{{.env.connector.gcs_s3_compat.key_id}}', '{{.env.connector.gcs_s3_compat.secret}}', 'Parquet')"
   all_datatypes_duckdb_model_csv.yaml:
     type: model

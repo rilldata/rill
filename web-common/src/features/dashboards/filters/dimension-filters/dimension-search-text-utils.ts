@@ -1,3 +1,7 @@
+import { createAndExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
+import { convertFilterParamToExpression } from "@rilldata/web-common/features/dashboards/url-state/filters/converters";
+import { V1Operation } from "@rilldata/web-common/runtime-client";
+
 const SPLIT_DIMENSION_BY_NEW_LINE = /\s*\n\s*/g;
 const SPLIT_DIMENSION_BY_COMMA = /\s*,\s*/g;
 
@@ -26,4 +30,19 @@ export function splitDimensionSearchText(searchText: string) {
 export function mergeDimensionSearchValues(values: string[]) {
   const someValueHasComma = values.some((value) => value.includes(","));
   return someValueHasComma ? values.join("\n") : values.join(",");
+}
+
+export function getFiltersFromText(filterText: string) {
+  const { expr, dimensionsWithInlistFilter } =
+    convertFilterParamToExpression(filterText);
+  let sanitisedExpr = expr;
+  if (!sanitisedExpr) {
+    sanitisedExpr = createAndExpression([]);
+  } else if (
+    sanitisedExpr.cond?.op !== V1Operation.OPERATION_AND &&
+    sanitisedExpr.cond?.op !== V1Operation.OPERATION_OR
+  ) {
+    sanitisedExpr = createAndExpression([sanitisedExpr]);
+  }
+  return { expr: sanitisedExpr, dimensionsWithInlistFilter };
 }

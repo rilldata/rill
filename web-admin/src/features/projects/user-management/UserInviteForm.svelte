@@ -125,6 +125,7 @@
     errors={$errors.emails}
     singular="email"
     plural="emails"
+    preventFocus={true}
   >
     <div slot="within-input" class="h-full items-center flex">
       <UserRoleSelect bind:value={$form.role} />

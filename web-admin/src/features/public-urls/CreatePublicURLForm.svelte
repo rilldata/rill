@@ -15,7 +15,7 @@
     PopoverContent,
     PopoverTrigger,
   } from "@rilldata/web-common/components/popover";
-  import FilterChipsReadOnly from "@rilldata/web-common/features/dashboards/filters/FilterChipsReadOnly.svelte";
+  import ExploreFilterChipsReadOnly from "@rilldata/web-common/features/dashboards/filters/ExploreFilterChipsReadOnly.svelte";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
@@ -30,7 +30,7 @@
   import {
     convertDateToMinutes,
     getExploreFields,
-    getSanitizedDashboardStateParam,
+    getSanitizedExploreStateParam,
     hasDashboardDimensionThresholdFilter,
     hasDashboardWhereFilter,
   } from "./form-utils";
@@ -60,7 +60,7 @@
     $visibleMeasures,
   );
 
-  $: sanitizedState = getSanitizedDashboardStateParam(
+  $: sanitizedState = getSanitizedExploreStateParam(
     $dashboardStore,
     exploreFields,
     $validSpecStore.data?.explore,
@@ -193,7 +193,7 @@
                   <Pencil size="14px" class="text-primary-600" />
                 </IconButton>
               </PopoverTrigger>
-              <PopoverContent align="end" class="p-0">
+              <PopoverContent align="end" class="p-0" strategy="fixed">
                 <Calendar
                   selection={DateTime.fromISO($form.expiresAt)}
                   singleDaySelection
@@ -247,7 +247,7 @@
             The following filters will be locked and hidden:
           </p>
           <div class="flex flex-row gap-1 mt-2">
-            <FilterChipsReadOnly
+            <ExploreFilterChipsReadOnly
               exploreName={$exploreName}
               filters={$dashboardStore.whereFilter}
               dimensionsWithInlistFilter={$dashboardStore.dimensionsWithInlistFilter}

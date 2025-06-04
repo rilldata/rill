@@ -4,7 +4,7 @@
   import SingleFieldInput from "@rilldata/web-common/features/canvas/inspector/SingleFieldInput.svelte";
   import type { ComponentInputParam } from "@rilldata/web-common/features/canvas/inspector/types";
   import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
-  import FieldConfigDropdown from "./FieldConfigDropdown.svelte";
+  import FieldConfigPopover from "./FieldConfigPopover.svelte";
 
   export let key: string;
   export let config: ComponentInputParam;
@@ -61,14 +61,12 @@
   <div class="flex justify-between items-center">
     <InputLabel small label={config.label ?? key} id={key} />
     {#if Object.keys(chartFieldInput ?? {}).length > 1}
-      {#key fieldConfig}
-        <FieldConfigDropdown
-          {fieldConfig}
-          label={config.label ?? key}
-          onChange={updateFieldProperty}
-          {chartFieldInput}
-        />
-      {/key}
+      <FieldConfigPopover
+        {fieldConfig}
+        label={config.label ?? key}
+        onChange={updateFieldProperty}
+        {chartFieldInput}
+      />
     {/if}
   </div>
 

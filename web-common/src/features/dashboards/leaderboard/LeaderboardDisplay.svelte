@@ -6,7 +6,7 @@
     V1TimeRange,
   } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import type { DimensionThresholdFilter } from "../stores/metrics-explorer-entity";
+  import type { DimensionThresholdFilter } from "web-common/src/features/dashboards/stores/explore-state";
   import Leaderboard from "./Leaderboard.svelte";
   import LeaderboardControls from "./LeaderboardControls.svelte";
   import { COMPARISON_COLUMN_WIDTH, valueColumn } from "./leaderboard-widths";
@@ -44,7 +44,6 @@
   } = StateManagers;
 
   let parentElement: HTMLDivElement;
-  let suppressTooltip = false;
 
   $: ({ instanceId } = $runtime);
 
@@ -74,16 +73,7 @@
   <div class="pl-2.5 pb-3">
     <LeaderboardControls exploreName={$exploreName} />
   </div>
-  <div
-    bind:this={parentElement}
-    class="overflow-y-auto leaderboard-display"
-    on:scroll={() => {
-      suppressTooltip = true;
-    }}
-    on:scrollend={() => {
-      suppressTooltip = false;
-    }}
-  >
+  <div bind:this={parentElement} class="overflow-y-auto leaderboard-display">
     {#if parentElement}
       <div class="leaderboard-grid overflow-hidden pb-4">
         {#each $visibleDimensions as dimension (dimension.name)}
@@ -106,7 +96,6 @@
               {comparisonTimeRange}
               {dimension}
               {parentElement}
-              {suppressTooltip}
               {timeControlsReady}
               selectedValues={selectedDimensionValues(
                 $runtime.instanceId,

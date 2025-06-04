@@ -5,7 +5,7 @@
   import { DashboardStateDataLoader } from "@rilldata/web-common/features/dashboards/state-managers/loaders/DashboardStateDataLoader";
   import { DashboardStateSync } from "@rilldata/web-common/features/dashboards/state-managers/loaders/DashboardStateSync";
   import { useExploreState } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
-  import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+  import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
   import DashboardLoading from "@rilldata/web-common/features/dashboards/state-managers/loaders/DashboardLoading.svelte";
   import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
   import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
@@ -15,8 +15,9 @@
   export let exploreName: string;
   export let storageNamespacePrefix: string | undefined = undefined;
   export let bookmarkOrTokenExploreState:
-    | CompoundQueryResult<Partial<MetricsExplorerEntity> | null>
+    | CompoundQueryResult<Partial<ExploreState> | null>
     | undefined = undefined;
+  export let disableMostRecentDashboardState: boolean = false;
 
   $: ({ instanceId } = $runtime);
   $: exploreSpecQuery = useExploreValidSpec(instanceId, exploreName);
@@ -24,16 +25,13 @@
   $: metricsViewName = exploreSpec?.metricsView ?? "";
   $: exploreStore = useExploreState(exploreName);
 
-  let dataLoader: DashboardStateDataLoader | undefined;
-  $: if (metricsViewName) {
-    dataLoader = new DashboardStateDataLoader(
-      instanceId,
-      metricsViewName,
-      exploreName,
-      storageNamespacePrefix,
-      bookmarkOrTokenExploreState,
-    );
-  }
+  $: dataLoader = new DashboardStateDataLoader(
+    instanceId,
+    exploreName,
+    storageNamespacePrefix,
+    bookmarkOrTokenExploreState,
+    disableMostRecentDashboardState,
+  );
 
   let stateSync: DashboardStateSync | undefined;
   $: if (dataLoader) {
@@ -48,7 +46,7 @@
   }
 
   let initExploreState:
-    | CompoundQueryResult<MetricsExplorerEntity | undefined>
+    | CompoundQueryResult<ExploreState | undefined>
     | undefined;
   $: if (dataLoader) ({ initExploreState } = dataLoader);
 
@@ -77,7 +75,7 @@
 {:else if error}
   <ErrorPage
     statusCode={error.response?.status}
-    header={"Failed to load dashboard."}
+    header="Failed to load dashboard"
     detail={error.response?.data?.message ?? error.message}
   />
 {:else if $exploreStore}

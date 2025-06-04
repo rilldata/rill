@@ -1,6 +1,6 @@
 import { mergeDimensionAndMeasureFilters } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
 import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
-import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import { mapSelectedTimeRangeToV1TimeRange } from "@rilldata/web-common/features/dashboards/time-controls/time-range-mappers";
 import { type TimeRangeString } from "@rilldata/web-common/lib/time/types";
@@ -81,7 +81,7 @@ export function getPivotExportQuery(ctx: StateManagers, isScheduled: boolean) {
 function getPivotAggregationRequest(
   metricsView: string,
   timeDimension: string,
-  dashboardState: MetricsExplorerEntity,
+  exploreState: ExploreState,
   timeRange: V1TimeRange,
   rows: PivotChipData[],
   columns: { dimension: PivotChipData[]; measure: PivotChipData[] },
@@ -109,7 +109,7 @@ function getPivotAggregationRequest(
       ? {
           name: timeDimension,
           timeGrain: d.id as V1TimeGrain,
-          timeZone: dashboardState.selectedTimezone,
+          timeZone: exploreState.selectedTimezone,
           alias: isFlat ? `${timeDimension}_rill_${d.id}` : `Time ${d.title}`,
         }
       : {
@@ -128,7 +128,7 @@ function getPivotAggregationRequest(
       ? {
           name: timeDimension,
           timeGrain: d.id as V1TimeGrain,
-          timeZone: dashboardState.selectedTimezone,
+          timeZone: exploreState.selectedTimezone,
           alias: `Time ${d.title}`,
         }
       : {
@@ -175,8 +175,8 @@ function getPivotAggregationRequest(
     dimensions: allDimensions,
     where: sanitiseExpression(
       mergeDimensionAndMeasureFilters(
-        dashboardState.whereFilter,
-        dashboardState.dimensionThresholdFilters,
+        exploreState.whereFilter,
+        exploreState.dimensionThresholdFilters,
       ),
       undefined,
     ),

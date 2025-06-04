@@ -3,8 +3,10 @@
   import CTALayoutContainer from "@rilldata/web-common/components/calls-to-action/CTALayoutContainer.svelte";
 </script>
 
-<CTALayoutContainer>
-  <CTAContentContainer>
-    <slot />
-  </CTAContentContainer>
-</CTALayoutContainer>
+<div class="bg-white h-full">
+  <CTALayoutContainer>
+    <CTAContentContainer>
+      <slot />
+    </CTAContentContainer>
+  </CTALayoutContainer>
+</div>

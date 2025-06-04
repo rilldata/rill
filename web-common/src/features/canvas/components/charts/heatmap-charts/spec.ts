@@ -2,7 +2,7 @@ import type { Field } from "vega-lite/build/src/channeldef";
 import type { TopLevelUnitSpec } from "vega-lite/build/src/spec/unit";
 import {
   createColorEncoding,
-  createConfig,
+  createConfigWithLegend,
   createDefaultTooltipEncoding,
   createPositionEncoding,
   createSingleLayerBaseSpec,
@@ -16,23 +16,42 @@ export function generateVLHeatmapSpec(
 ): TopLevelUnitSpec<Field> {
   const spec = createSingleLayerBaseSpec("rect");
 
-  const vegaConfig = createConfig(config, {
-    legend: {
-      orient: "bottom",
+  const vegaConfig = createConfigWithLegend(
+    config,
+    config.color,
+    {
+      axis: { grid: true, tickBand: "extent" },
+      axisX: {
+        grid: true,
+        gridDash: [],
+        tickBand: "extent",
+      },
     },
-    axis: { grid: true, tickBand: "extent" },
-    axisX: {
-      grid: true,
-      gridDash: [],
-      tickBand: "extent",
-    },
-  });
+    "right",
+  );
+
+  const xEncoding = createPositionEncoding(config.x, data);
+  const yEncoding = createPositionEncoding(config.y, data);
+
+  if (config.x?.type === "nominal" && config.color?.field) {
+    xEncoding.sort = {
+      op: "sum",
+      field: config.color.field,
+      order: "descending",
+    };
+  } else if (config.y?.type === "nominal" && config.color?.field) {
+    yEncoding.sort = {
+      op: "sum",
+      field: config.color.field,
+      order: "descending",
+    };
+  }
 
   return {
     ...spec,
     encoding: {
-      x: createPositionEncoding(config.x, data),
-      y: createPositionEncoding(config.y, data),
+      x: xEncoding,
+      y: yEncoding,
       color: createColorEncoding(config.color, data),
       tooltip: createDefaultTooltipEncoding(
         [config.x, config.y, config.color],

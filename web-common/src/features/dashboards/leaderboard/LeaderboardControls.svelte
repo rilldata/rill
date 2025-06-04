@@ -12,11 +12,7 @@
   const {
     selectors: {
       measures: { getMeasureByName, visibleMeasures },
-      leaderboard: {
-        leaderboardSortByMeasureName,
-        leaderboardMeasureNames,
-        leaderboardShowContextForAllMeasures,
-      },
+      leaderboard: { leaderboardSortByMeasureName, leaderboardMeasureNames },
       dimensions: { visibleDimensions, allDimensions },
     },
     actions: {
@@ -25,14 +21,14 @@
       leaderboard: {
         setLeaderboardSortByMeasureName,
         setLeaderboardMeasureNames,
-        setLeaderboardShowContextForAllMeasures,
+        toggleLeaderboardShowContextForAllMeasures,
       },
     },
   } = StateManagers;
 
   let isLeaderboardActionsOpen = false;
 
-  $: metricsExplorer = $metricsExplorerStore.entities[exploreName];
+  $: exploreState = $metricsExplorerStore.entities[exploreName];
 
   $: activeLeaderboardMeasure = $getMeasureByName(
     $leaderboardSortByMeasureName,
@@ -51,8 +47,7 @@
   // but it is not valid for this measure, then turn it off
   $: if (
     !validPercentOfTotal &&
-    metricsExplorer?.leaderboardContextColumn ===
-      LeaderboardContextColumn.PERCENT
+    exploreState?.leaderboardContextColumn === LeaderboardContextColumn.PERCENT
   ) {
     setContextColumn(LeaderboardContextColumn.HIDDEN);
   }
@@ -82,7 +77,6 @@
   />
   <LeaderboardAdvancedActions
     isOpen={isLeaderboardActionsOpen}
-    leaderboardShowContextForAllMeasures={$leaderboardShowContextForAllMeasures}
-    {setLeaderboardShowContextForAllMeasures}
+    toggle={toggleLeaderboardShowContextForAllMeasures}
   />
 </div>

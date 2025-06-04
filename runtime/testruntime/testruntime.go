@@ -33,6 +33,7 @@ import (
 	_ "github.com/rilldata/rill/runtime/drivers/gcs"
 	_ "github.com/rilldata/rill/runtime/drivers/https"
 	_ "github.com/rilldata/rill/runtime/drivers/postgres"
+	_ "github.com/rilldata/rill/runtime/drivers/redshift"
 	_ "github.com/rilldata/rill/runtime/drivers/s3"
 	_ "github.com/rilldata/rill/runtime/drivers/snowflake"
 	_ "github.com/rilldata/rill/runtime/drivers/sqlite"
@@ -151,6 +152,10 @@ func NewInstanceWithOptions(t TestingT, opts InstanceOptions) (*runtime.Runtime,
 		WatchRepo: opts.WatchRepo,
 	}
 
+	if _, ok := opts.Files["rill.yaml"]; !ok {
+		opts.Files["rill.yaml"] = ""
+	}
+
 	for path, data := range opts.Files {
 		abs := filepath.Join(tmpDir, path)
 		require.NoError(t, os.MkdirAll(filepath.Dir(abs), os.ModePerm))
@@ -209,10 +214,6 @@ func NewInstanceForProject(t TestingT, name string) (*runtime.Runtime, string) {
 	if olapDSN == "" {
 		olapDSN = ":memory:"
 	}
-	embedCatalog := true
-	if olapDriver == "clickhouse" {
-		embedCatalog = false
-	}
 
 	inst := &drivers.Instance{
 		Environment:      "test",
@@ -238,7 +239,6 @@ func NewInstanceForProject(t TestingT, name string) (*runtime.Runtime, string) {
 				Config: map[string]string{"dsn": fmt.Sprintf("file:%s?mode=memory&cache=shared", t.Name())},
 			},
 		},
-		EmbedCatalog: embedCatalog,
 	}
 
 	err := rt.CreateInstance(context.Background(), inst)
@@ -279,7 +279,6 @@ func NewInstanceForDruidProject(t *testing.T) (*runtime.Runtime, string, error) 
 		OLAPConnector:    "druid",
 		RepoConnector:    "repo",
 		CatalogConnector: "catalog",
-		EmbedCatalog:     false,
 		Connectors: []*runtimev1.Connector{
 			{
 				Type:   "file",
@@ -299,7 +298,6 @@ func NewInstanceForDruidProject(t *testing.T) (*runtime.Runtime, string, error) 
 				Config: map[string]string{"dsn": fmt.Sprintf("file:%s?mode=memory&cache=shared", t.Name())},
 			},
 		},
-		// EmbedCatalog: true,
 	}
 
 	err = rt.CreateInstance(context.Background(), inst)

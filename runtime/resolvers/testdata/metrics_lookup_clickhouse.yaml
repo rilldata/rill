@@ -1,3 +1,4 @@
+skip: true # TODO: Remove skip when this issue is resolved: https://github.com/rilldata/rill-private-issues/issues/1674
 connectors:
   - clickhouse
 project_files:

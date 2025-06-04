@@ -66,6 +66,8 @@ type InsertTableOptions struct {
 	ByName       bool
 	Strategy     drivers.IncrementalStrategy
 	UniqueKey    []string
+	// PartitionBy is a SQL expression to use for dropping/replacing partitions with the partition_overwrite incremental strategy.
+	PartitionBy string
 }
 
 func (c *connection) insertTableAsSelect(ctx context.Context, name, sql string, opts *InsertTableOptions) (*tableWriteMetrics, error) {
@@ -82,18 +84,22 @@ func (c *connection) insertTableAsSelect(ctx context.Context, name, sql string, 
 	}
 
 	if opts.Strategy == drivers.IncrementalStrategyAppend {
-		res, err := db.MutateTable(ctx, name, opts.InitQueries, func(ctx context.Context, conn *sqlx.Conn) error {
+		res, err := db.MutateTable(ctx, name, opts.InitQueries, func(ctx context.Context, conn *sqlx.Conn) (retErr error) {
+			// Execute the pre SQL and defer execute the post SQL
 			if opts.BeforeInsert != "" {
 				_, err := conn.ExecContext(ctx, opts.BeforeInsert)
 				if err != nil {
 					return err
 				}
 			}
-			_, err := conn.ExecContext(ctx, fmt.Sprintf("INSERT INTO %s %s (%s\n)", safeSQLName(name), byNameClause, sql))
 			if opts.AfterInsert != "" {
-				_, afterInsertExecErr := conn.ExecContext(ctx, opts.AfterInsert)
-				return errors.Join(err, afterInsertExecErr)
+				defer func() {
+					_, afterInsertErr := conn.ExecContext(ctx, opts.AfterInsert)
+					retErr = errors.Join(retErr, afterInsertErr)
+				}()
 			}
+
+			_, err := conn.ExecContext(ctx, fmt.Sprintf("INSERT INTO %s %s (%s\n)", safeSQLName(name), byNameClause, sql))
 			return err
 		})
 		if err != nil {
@@ -105,20 +111,21 @@ func (c *connection) insertTableAsSelect(ctx context.Context, name, sql string, 
 	}
 
 	if opts.Strategy == drivers.IncrementalStrategyMerge {
-		res, err := db.MutateTable(ctx, name, opts.InitQueries, func(ctx context.Context, conn *sqlx.Conn) (mutate error) {
-			// Execute the pre-init SQL first
+		res, err := db.MutateTable(ctx, name, opts.InitQueries, func(ctx context.Context, conn *sqlx.Conn) (retErr error) {
+			// Execute the pre SQL and defer execute the post SQL
 			if opts.BeforeInsert != "" {
 				_, err := conn.ExecContext(ctx, opts.BeforeInsert)
 				if err != nil {
 					return err
 				}
 			}
-			defer func() {
-				if opts.AfterInsert != "" {
-					_, err := conn.ExecContext(ctx, opts.AfterInsert)
-					mutate = errors.Join(mutate, err)
-				}
-			}()
+			if opts.AfterInsert != "" {
+				defer func() {
+					_, afterInsertErr := conn.ExecContext(ctx, opts.AfterInsert)
+					retErr = errors.Join(retErr, afterInsertErr)
+				}()
+			}
+
 			// Create a temporary table with the new data
 			tmp := uuid.New().String()
 			_, err := conn.ExecContext(ctx, fmt.Sprintf("CREATE TEMPORARY TABLE %s AS (%s\n)", safeSQLName(tmp), sql))
@@ -150,6 +157,64 @@ func (c *connection) insertTableAsSelect(ctx context.Context, name, sql string, 
 			_, err = conn.ExecContext(ctx, fmt.Sprintf("DELETE FROM %s base WHERE EXISTS (SELECT 1 FROM %s tmp WHERE %s)", safeSQLName(name), safeSQLName(tmp), where))
 			if err != nil {
 				return err
+			}
+
+			// Insert the new data into the target table
+			_, err = conn.ExecContext(ctx, fmt.Sprintf("INSERT INTO %s %s SELECT * FROM %s", safeSQLName(name), byNameClause, safeSQLName(tmp)))
+			return err
+		})
+		if err != nil {
+			return nil, c.checkErr(err)
+		}
+		return &tableWriteMetrics{
+			duration: res.Duration,
+		}, nil
+	}
+
+	if opts.Strategy == drivers.IncrementalStrategyPartitionOverwrite {
+		res, err := db.MutateTable(ctx, name, opts.InitQueries, func(ctx context.Context, conn *sqlx.Conn) (retErr error) {
+			// Execute the pre SQL and defer execute the post SQL
+			if opts.BeforeInsert != "" {
+				_, err := conn.ExecContext(ctx, opts.BeforeInsert)
+				if err != nil {
+					return err
+				}
+			}
+			if opts.AfterInsert != "" {
+				defer func() {
+					_, afterInsertErr := conn.ExecContext(ctx, opts.AfterInsert)
+					retErr = errors.Join(retErr, afterInsertErr)
+				}()
+			}
+
+			// Create a temporary table with the new data
+			tmp := uuid.New().String()
+			_, err := conn.ExecContext(ctx, fmt.Sprintf("CREATE TEMPORARY TABLE %s AS (%s\n)", safeSQLName(tmp), sql))
+			if err != nil {
+				return err
+			}
+
+			// Check the count of the new data
+			// Skip if the count is 0
+			var empty bool
+			err = conn.QueryRowxContext(ctx, fmt.Sprintf("SELECT COUNT(*) == 0 FROM %s", safeSQLName(tmp))).Scan(&empty)
+			if err != nil {
+				return err
+			}
+			if empty {
+				return nil
+			}
+
+			// Drop the rows from the target table where the partition expression overlaps with the temporary table
+			_, err = conn.ExecContext(ctx, fmt.Sprintf(
+				"DELETE FROM %s WHERE %s IN (SELECT DISTINCT %s FROM %s)",
+				safeSQLName(name),
+				opts.PartitionBy,
+				opts.PartitionBy,
+				safeSQLName(tmp),
+			))
+			if err != nil {
+				return fmt.Errorf("failed to delete old partitions: %w", err)
 			}
 
 			// Insert the new data into the target table

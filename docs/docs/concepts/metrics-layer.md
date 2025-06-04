@@ -32,6 +32,14 @@ It is possible to develop the metrics layer in a traditional BI-as-code manner a
 
 A metrics view on its own does not have any visualization capabilities. Instead, the metrics view is the building block for all the visualization and components within Rill. Please see below for the currently available and soon to be released features of Rill!
 
-<img src = '/img/concepts/metrics-view/metrics-view-components.png' class='rounded-gif' />
-<br />
+<div style={{ textAlign: 'center' }}>
+  <img src="/img/concepts/metrics-view/metrics-view-components.png" width="100%" style={{ borderRadius: '15px', padding: '20px' }} />
+</div>
 
+
+## Next Steps
+
+- [Learn about Rill's Architecture](/concepts/architecture)
+- [Get started with Rill](/home/install)
+- [Explore the Reference](/reference/connectors/)
+- [Step by step Tutorial](/tutorials)

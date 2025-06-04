@@ -273,6 +273,14 @@ export interface V1CreateBookmarkResponse {
   bookmark?: V1Bookmark;
 }
 
+export interface V1CreateManagedGitRepoResponse {
+  remote?: string;
+  username?: string;
+  password?: string;
+  defaultBranch?: string;
+  passwordExpiresAt?: string;
+}
+
 export interface V1CreateOrganizationRequest {
   name?: string;
   description?: string;
@@ -362,6 +370,10 @@ export const V1DeploymentStatus = {
   DEPLOYMENT_STATUS_ERROR: "DEPLOYMENT_STATUS_ERROR",
 } as const;
 
+export interface V1DisconnectProjectFromGithubResponse {
+  [key: string]: unknown;
+}
+
 export interface V1EditAlertResponse {
   [key: string]: unknown;
 }
@@ -439,6 +451,7 @@ export interface V1GetCloneCredentialsResponse {
   gitRepoUrl?: string;
   gitUsername?: string;
   gitPassword?: string;
+  gitPasswordExpiresAt?: string;
   gitSubpath?: string;
   gitProdBranch?: string;
   archiveDownloadUrl?: string;
@@ -591,6 +604,11 @@ export interface V1IssueServiceAuthTokenResponse {
   token?: string;
 }
 
+export interface V1IssueUserAuthTokenResponse {
+  /** Newly issued auth token. */
+  token?: string;
+}
+
 export interface V1LeaveOrganizationResponse {
   [key: string]: unknown;
 }
@@ -613,7 +631,7 @@ export interface V1ListOrganizationBillingIssuesResponse {
 }
 
 export interface V1ListOrganizationInvitesResponse {
-  invites?: V1UserInvite[];
+  invites?: V1OrganizationInvite[];
   nextPageToken?: string;
 }
 
@@ -633,7 +651,7 @@ export interface V1ListOrganizationsResponse {
 }
 
 export interface V1ListProjectInvitesResponse {
-  invites?: V1UserInvite[];
+  invites?: V1ProjectInvite[];
   nextPageToken?: string;
 }
 
@@ -684,6 +702,13 @@ export interface V1ListServicesResponse {
 
 export interface V1ListSuperusersResponse {
   users?: V1User[];
+}
+
+export interface V1ListUserAuthTokensResponse {
+  /** List of auth tokens for the user. */
+  tokens?: V1UserAuthToken[];
+  /** Page token for the next page of results. If empty, there are no more pages. */
+  nextPageToken?: string;
 }
 
 export interface V1ListUsergroupMemberUsersResponse {
@@ -770,6 +795,12 @@ export interface V1Organization {
   updatedOn?: string;
 }
 
+export interface V1OrganizationInvite {
+  email?: string;
+  roleName?: string;
+  invitedBy?: string;
+}
+
 export interface V1OrganizationMemberUser {
   userId?: string;
   userEmail?: string;
@@ -827,6 +858,8 @@ export interface V1Project {
   createdByUserId?: string;
   provisioner?: string;
   githubUrl?: string;
+  /** managed_git_id is set if the project is connected to a rill-managed git repo. */
+  managedGitId?: string;
   subpath?: string;
   prodBranch?: string;
   archiveAssetId?: string;
@@ -843,12 +876,20 @@ export interface V1Project {
   updatedOn?: string;
 }
 
+export interface V1ProjectInvite {
+  email?: string;
+  roleName?: string;
+  orgRoleName?: string;
+  invitedBy?: string;
+}
+
 export interface V1ProjectMemberUser {
   userId?: string;
   userEmail?: string;
   userName?: string;
   userPhotoUrl?: string;
   roleName?: string;
+  orgRoleName?: string;
   createdOn?: string;
   updatedOn?: string;
 }
@@ -997,6 +1038,7 @@ export interface V1ReportOptions {
   queryArgsJson?: string;
   exportLimit?: string;
   exportFormat?: V1ExportFormat;
+  exportIncludeHeader?: boolean;
   emailRecipients?: string[];
   slackUsers?: string[];
   slackChannels?: string[];
@@ -1021,7 +1063,7 @@ export interface V1ResourceName {
 }
 
 export interface V1RevokeCurrentAuthTokenResponse {
-  tokenId?: string;
+  [key: string]: unknown;
 }
 
 export interface V1RevokeMagicAuthTokenResponse {
@@ -1029,6 +1071,10 @@ export interface V1RevokeMagicAuthTokenResponse {
 }
 
 export interface V1RevokeServiceAuthTokenResponse {
+  [key: string]: unknown;
+}
+
+export interface V1RevokeUserAuthTokenResponse {
   [key: string]: unknown;
 }
 
@@ -1272,10 +1318,6 @@ export interface V1UpdateUserPreferencesResponse {
   preferences?: V1UserPreferences;
 }
 
-export interface V1UploadProjectAssetsResponse {
-  [key: string]: unknown;
-}
-
 export interface V1User {
   id?: string;
   email?: string;
@@ -1286,10 +1328,15 @@ export interface V1User {
   updatedOn?: string;
 }
 
-export interface V1UserInvite {
-  email?: string;
-  role?: string;
-  invitedBy?: string;
+export interface V1UserAuthToken {
+  id?: string;
+  displayName?: string;
+  authClientId?: string;
+  authClientDisplayName?: string;
+  representingUserId?: string;
+  createdOn?: string;
+  expiresOn?: string;
+  usedOn?: string;
 }
 
 export interface V1UserPreferences {
@@ -1338,7 +1385,7 @@ export type AdminServiceUpdateBillingSubscriptionBodyBody = {
 
 export type AdminServiceTriggerReconcileBodyBody = { [key: string]: unknown };
 
-export type AdminServiceSetOrganizationMemberUserRoleBodyBody = {
+export type AdminServiceSetProjectMemberUserRoleBodyBody = {
   role?: string;
 };
 
@@ -1387,6 +1434,10 @@ export type AdminServiceListOrganizationsParams = {
   pageToken?: string;
 };
 
+export type AdminServiceGetOrganizationParams = {
+  superuserForceAccess?: boolean;
+};
+
 export type AdminServiceUpdateOrganizationBody = {
   description?: string;
   newName?: string;
@@ -1397,8 +1448,27 @@ export type AdminServiceUpdateOrganizationBody = {
   billingEmail?: string;
 };
 
+export type AdminServiceListOrganizationBillingIssuesParams = {
+  superuserForceAccess?: boolean;
+};
+
 export type AdminServiceGetPaymentsPortalURLParams = {
   returnUrl?: string;
+  superuserForceAccess?: boolean;
+};
+
+export type AdminServiceGetBillingSubscriptionParams = {
+  superuserForceAccess?: boolean;
+};
+
+export type AdminServiceCancelBillingSubscriptionParams = {
+  superuserForceAccess?: boolean;
+};
+
+export type AdminServiceCreateManagedGitRepoBody = {
+  /** name of the repo to create. 
+Note: The final name will be suffixed with a random string to ensure uniqueness. */
+  name?: string;
 };
 
 export type AdminServiceListOrganizationInvitesParams = {
@@ -1417,10 +1487,16 @@ export type AdminServiceListOrganizationMemberUsersParams = {
   includeCounts?: boolean;
   pageSize?: number;
   pageToken?: string;
+  superuserForceAccess?: boolean;
 };
 
 export type AdminServiceAddOrganizationMemberUserBody = {
   email?: string;
+  role?: string;
+  superuserForceAccess?: boolean;
+};
+
+export type AdminServiceSetOrganizationMemberUserRoleBody = {
   role?: string;
   superuserForceAccess?: boolean;
 };
@@ -1440,6 +1516,10 @@ export type AdminServiceListProjectsForOrganizationAndUserParams = {
   pageToken?: string;
 };
 
+export type AdminServiceGetCloneCredentialsParams = {
+  superuserForceAccess?: boolean;
+};
+
 export type AdminServiceConnectProjectToGithubBody = {
   repo?: string;
   branch?: string;
@@ -1457,6 +1537,10 @@ export type AdminServiceGetDeploymentCredentialsBody = {
   userId?: string;
   userEmail?: string;
   attributes?: AdminServiceGetDeploymentCredentialsBodyAttributes;
+};
+
+export type AdminServiceHibernateProjectParams = {
+  superuserForceAccess?: boolean;
 };
 
 /**
@@ -1511,6 +1595,7 @@ export type AdminServiceListProjectMemberUsersParams = {
   role?: string;
   pageSize?: number;
   pageToken?: string;
+  superuserForceAccess?: boolean;
 };
 
 export type AdminServiceAddProjectMemberUserBody = {
@@ -1656,6 +1741,7 @@ Either github_url or archive_asset_id should be set. */
 
 export type AdminServiceGetProjectParams = {
   accessTokenTtlSeconds?: number;
+  superuserForceAccess?: boolean;
   issueSuperuserToken?: boolean;
 };
 
@@ -1689,7 +1775,6 @@ export type AdminServiceListProjectsForUserByNameParams = {
 export type AdminServiceGetAlertMetaBodyAnnotations = { [key: string]: string };
 
 export type AdminServiceGetAlertMetaBody = {
-  branch?: string;
   alert?: string;
   annotations?: AdminServiceGetAlertMetaBodyAnnotations;
   queryForUserId?: string;
@@ -1701,13 +1786,11 @@ export type AdminServiceGetRepoMetaParams = {
 };
 
 export type AdminServicePullVirtualRepoParams = {
-  branch?: string;
   pageSize?: number;
   pageToken?: string;
 };
 
 export type AdminServiceGetReportMetaBody = {
-  branch?: string;
   report?: string;
   ownerId?: string;
   executionTime?: string;
@@ -1737,6 +1820,46 @@ export type AdminServiceSudoGetResourceParams = {
 
 export type AdminServiceGetUserParams = {
   email?: string;
+};
+
+export type AdminServiceRevokeUserAuthTokenParams = {
+  /**
+   * Flag for superusers to override normal access checks.
+   */
+  superuserForceAccess?: boolean;
+};
+
+export type AdminServiceDeleteUserParams = {
+  superuserForceAccess?: boolean;
+};
+
+export type AdminServiceListUserAuthTokensParams = {
+  /**
+   * Page size for pagination. If not set, a default page size will be used.
+   */
+  pageSize?: number;
+  /**
+   * Page token for pagination. If set, the first page of results will be returned.
+   */
+  pageToken?: string;
+  /**
+   * Flag for superusers to override normal access checks.
+   */
+  superuserForceAccess?: boolean;
+};
+
+export type AdminServiceIssueUserAuthTokenBody = {
+  /** Client ID to issue the token for. */
+  clientId?: string;
+  /** Optional display name for the auth token. */
+  displayName?: string;
+  /** Optional TTL for the auth token in minutes. Set to 0 for no expiry. Defaults to no expiry. */
+  ttlMinutes?: string;
+  /** Optional email of another user to assume the identity of.
+This is only allowed for superusers. */
+  representEmail?: string;
+  /** Flag for superusers to override normal access checks. */
+  superuserForceAccess?: boolean;
 };
 
 export type AdminServiceListBookmarksParams = {

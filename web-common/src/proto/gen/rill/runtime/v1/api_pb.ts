@@ -503,14 +503,14 @@ export class Instance extends Message<Instance> {
   annotations: { [key: string]: string } = {};
 
   /**
-   * @generated from field: bool embed_catalog = 6;
-   */
-  embedCatalog = false;
-
-  /**
    * @generated from field: bool watch_repo = 15;
    */
   watchRepo = false;
+
+  /**
+   * @generated from field: string ai_context = 23;
+   */
+  aiContext = "";
 
   constructor(data?: PartialMessage<Instance>) {
     super();
@@ -534,8 +534,8 @@ export class Instance extends Message<Instance> {
     { no: 8, name: "project_variables", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
     { no: 22, name: "feature_flags", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 8 /* ScalarType.BOOL */} },
     { no: 14, name: "annotations", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
-    { no: 6, name: "embed_catalog", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 15, name: "watch_repo", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 23, name: "ai_context", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Instance {
@@ -859,11 +859,6 @@ export class CreateInstanceRequest extends Message<CreateInstanceRequest> {
   annotations: { [key: string]: string } = {};
 
   /**
-   * @generated from field: bool embed_catalog = 6;
-   */
-  embedCatalog = false;
-
-  /**
    * @generated from field: bool watch_repo = 11;
    */
   watchRepo = false;
@@ -885,7 +880,6 @@ export class CreateInstanceRequest extends Message<CreateInstanceRequest> {
     { no: 10, name: "connectors", kind: "message", T: Connector, repeated: true },
     { no: 7, name: "variables", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
     { no: 9, name: "annotations", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
-    { no: 6, name: "embed_catalog", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 11, name: "watch_repo", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
@@ -1070,11 +1064,6 @@ export class EditInstanceRequest extends Message<EditInstanceRequest> {
   annotations: { [key: string]: string } = {};
 
   /**
-   * @generated from field: optional bool embed_catalog = 6;
-   */
-  embedCatalog?: boolean;
-
-  /**
    * @generated from field: optional bool watch_repo = 11;
    */
   watchRepo?: boolean;
@@ -1096,7 +1085,6 @@ export class EditInstanceRequest extends Message<EditInstanceRequest> {
     { no: 9, name: "connectors", kind: "message", T: Connector, repeated: true },
     { no: 15, name: "variables", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
     { no: 10, name: "annotations", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
-    { no: 6, name: "embed_catalog", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
     { no: 11, name: "watch_repo", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
   ]);
 
@@ -3515,6 +3503,13 @@ export class ConnectorDriver extends Message<ConnectorDriver> {
   description = "";
 
   /**
+   * Docs url for the connector
+   *
+   * @generated from field: string docs_url = 21;
+   */
+  docsUrl = "";
+
+  /**
    * Capabilities supported by the connector
    *
    * @generated from field: bool implements_registry = 10;
@@ -3584,6 +3579,7 @@ export class ConnectorDriver extends Message<ConnectorDriver> {
     { no: 3, name: "source_properties", kind: "message", T: ConnectorDriver_Property, repeated: true },
     { no: 4, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 21, name: "docs_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 10, name: "implements_registry", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 11, name: "implements_catalog", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 12, name: "implements_repo", kind: "scalar", T: 8 /* ScalarType.BOOL */ },

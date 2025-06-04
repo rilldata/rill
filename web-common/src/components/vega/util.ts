@@ -1,6 +1,7 @@
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
+import type { TimeUnit } from "vega-lite/build/src/timeunit";
 
-export const timeGrainToVegaTimeUnitMap: Record<V1TimeGrain, string> = {
+export const timeGrainToVegaTimeUnitMap: Record<V1TimeGrain, TimeUnit> = {
   [V1TimeGrain.TIME_GRAIN_MILLISECOND]: "yearmonthdatehoursminutesseconds",
   [V1TimeGrain.TIME_GRAIN_SECOND]: "yearmonthdatehoursminutesseconds",
   [V1TimeGrain.TIME_GRAIN_MINUTE]: "yearmonthdatehoursminutes",

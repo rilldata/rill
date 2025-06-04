@@ -29,39 +29,51 @@
   $: error = $user.error ?? $metadata.error ?? $matchingProjects.error;
 
   $: if (!loading && !error) {
-    if ($user.data?.user) {
-      // User is logged in already.
-      void behaviourEvent?.fireDeployEvent(BehaviourEventAction.LoginSuccess);
+    void handleDeploy();
+  }
 
-      if ($matchingProjects.data?.projects?.length) {
-        if ($matchingProjects.data.projects.length === 1) {
-          const singleProject = $matchingProjects.data.projects[0];
-          // Project already exists. Run a redeploy
-          void goto(
-            `/deploy/redeploy?org=${singleProject.orgName}&projectId=${singleProject.id}`,
-          );
-        } else {
-          void goto(`/deploy/matching-projects`);
-        }
-      } else if ($user.data.rillUserOrgs?.length) {
-        // If the user has at least one org we show the selector.
-        // Note: The selector has the option to create a new org, so we show it even when there is only one org.
-        void goto(`/deploy/select-org`);
-      } else {
-        void goto(`/deploy/create-org`);
-      }
-    } else if ($metadata.data?.loginUrl) {
+  function handleDeploy() {
+    // Should not happen if the servers are up. If not, there should be a query error.
+    if (!$user.data || !$metadata.data?.loginUrl) {
+      error = {
+        message: "Failed to fetch login URL.",
+      } as ConnectError;
+      return;
+    }
+
+    if (!$user.data?.user) {
       // User is not logged in, redirect to login url provided from metadata query.
       void behaviourEvent?.fireDeployEvent(BehaviourEventAction.LoginStart);
       const u = new URL($metadata.data?.loginUrl);
       // Set the redirect to this page so that deploy resumes after a login
       u.searchParams.set("redirect", get(page).url.toString());
-      void goto(u.toString());
+      window.location.href = u.toString();
+      return;
+    }
+
+    // User is logged in already.
+
+    void behaviourEvent?.fireDeployEvent(BehaviourEventAction.LoginSuccess);
+
+    // No matching cloud project(s) exist.
+    if (!$matchingProjects.data?.projects?.length) {
+      if ($user.data.rillUserOrgs?.length) {
+        // If the user has at least one org we show the selector.
+        // Note: The selector has the option to create a new org, so we show it even when there is only one org.
+        return goto(`/deploy/select-org`);
+      } else {
+        return goto(`/deploy/create-org`);
+      }
+    }
+
+    if ($matchingProjects.data.projects.length === 1) {
+      const singleProject = $matchingProjects.data.projects[0];
+      // Project already exists. Run a redeploy
+      return goto(
+        `/deploy/redeploy?org=${singleProject.orgName}&projectId=${singleProject.id}`,
+      );
     } else {
-      // Should not happen if the servers are up. If not, there would be a query error.
-      error = {
-        message: "Failed to fetch login URL.",
-      } as ConnectError;
+      return goto(`/deploy/matching-projects`);
     }
   }
 </script>

@@ -49,6 +49,7 @@ export function getChartComponent(
     case "stacked_bar":
     case "stacked_bar_normalized":
       return CartesianChartComponent;
+    case "donut_chart":
     case "pie_chart":
       return CircularChartComponent;
     case "heatmap":
@@ -63,6 +64,7 @@ export interface ChartMetadataConfig {
   icon: ComponentType<SvelteComponent>;
   component: BaseCanvasComponentConstructor;
   generateSpec: (config: ChartSpec, data: ChartDataResult) => VisualizationSpec;
+  hideFromSelector?: boolean;
 }
 
 export const CHART_CONFIG: Record<ChartType, ChartMetadataConfig> = {
@@ -96,11 +98,18 @@ export const CHART_CONFIG: Record<ChartType, ChartMetadataConfig> = {
     component: CartesianChartComponent,
     generateSpec: generateVLStackedBarNormalizedSpec,
   },
+  donut_chart: {
+    title: "Donut",
+    icon: Donut,
+    component: CircularChartComponent,
+    generateSpec: generateVLPieChartSpec,
+  },
   pie_chart: {
     title: "Pie",
     icon: Donut,
     component: CircularChartComponent,
     generateSpec: generateVLPieChartSpec,
+    hideFromSelector: true,
   },
   heatmap: {
     title: "Heatmap",
@@ -111,3 +120,7 @@ export const CHART_CONFIG: Record<ChartType, ChartMetadataConfig> = {
 };
 
 export const CHART_TYPES = Object.keys(CHART_CONFIG) as ChartType[];
+
+export const VISIBLE_CHART_TYPES = CHART_TYPES.filter(
+  (type) => !CHART_CONFIG[type].hideFromSelector,
+);

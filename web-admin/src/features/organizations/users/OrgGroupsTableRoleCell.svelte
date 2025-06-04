@@ -1,7 +1,5 @@
 <script lang="ts">
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
-  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
-  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import CaretUpIcon from "@rilldata/web-common/components/icons/CaretUpIcon.svelte";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import { page } from "$app/stores";
@@ -13,10 +11,12 @@
     getAdminServiceListOrganizationMemberUsergroupsQueryKey,
   } from "@rilldata/web-admin/client";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
+  import { capitalize } from "@rilldata/web-common/components/table/utils";
+  import { ORG_ROLES_DESCRIPTION_MAP } from "../constants";
 
   export let name: string;
-  export let managed: boolean;
   export let role: string | undefined = undefined;
+  export let manageOrgAdmins: boolean;
 
   let isDropdownOpen = false;
 
@@ -70,8 +70,7 @@
       });
 
       eventBus.emit("notification", { message: "User group role updated" });
-    } catch (error) {
-      console.error("Error updating user group role", error);
+    } catch {
       eventBus.emit("notification", {
         message: "Error updating user group role",
         type: "error",
@@ -92,8 +91,7 @@
       });
 
       eventBus.emit("notification", { message: "User group role revoked" });
-    } catch (error) {
-      console.error("Error revoking user group role", error);
+    } catch {
       eventBus.emit("notification", {
         message: "Error revoking user group role",
         type: "error",
@@ -102,25 +100,25 @@
   }
 </script>
 
-<!-- For managed groups, show "cannot add role for system managed group" -->
-{#if !managed}
-  <DropdownMenu.Root bind:open={isDropdownOpen}>
-    <DropdownMenu.Trigger
-      class="w-18 flex flex-row gap-1 items-center rounded-sm {isDropdownOpen
-        ? 'bg-slate-200'
-        : 'hover:bg-slate-100'} px-2 py-1"
-    >
-      {role ? `Org ${role}` : "-"}
-      {#if isDropdownOpen}
-        <CaretUpIcon size="12px" />
-      {:else}
-        <CaretDownIcon size="12px" />
-      {/if}
-    </DropdownMenu.Trigger>
-    <DropdownMenu.Content align="start">
-      <DropdownMenu.CheckboxItem
-        class="font-normal flex items-center"
-        checked={role === "admin"}
+<DropdownMenu.Root bind:open={isDropdownOpen}>
+  <DropdownMenu.Trigger
+    class="w-18 flex flex-row gap-1 items-center rounded-sm {isDropdownOpen
+      ? 'bg-slate-200'
+      : 'hover:bg-slate-100'} px-2 py-1"
+  >
+    {role ? `${capitalize(role)}` : "-"}
+    {#if isDropdownOpen}
+      <CaretUpIcon size="12px" />
+    {:else}
+      <CaretDownIcon size="12px" />
+    {/if}
+  </DropdownMenu.Trigger>
+  <DropdownMenu.Content align="start" strategy="fixed" class="w-[200px]">
+    {#if manageOrgAdmins}
+      <DropdownMenu.Item
+        class="font-normal flex flex-col items-start py-2 {role === 'admin'
+          ? 'bg-slate-100'
+          : ''}"
         on:click={() => {
           if (role) {
             handleSetRole("admin");
@@ -129,52 +127,54 @@
           }
         }}
       >
-        <span>Admin</span>
-      </DropdownMenu.CheckboxItem>
-      <DropdownMenu.CheckboxItem
-        class="font-normal flex items-center"
-        checked={role === "editor"}
-        on:click={() => {
-          if (role) {
-            handleSetRole("editor");
-          } else {
-            handleAddRole("editor");
-          }
-        }}
-      >
-        <span>Editor</span>
-      </DropdownMenu.CheckboxItem>
-      <DropdownMenu.CheckboxItem
-        class="font-normal flex items-center"
-        checked={role === "viewer"}
-        on:click={() => {
-          if (role) {
-            handleSetRole("viewer");
-          } else {
-            handleAddRole("viewer");
-          }
-        }}
-      >
-        <span>Viewer</span>
-      </DropdownMenu.CheckboxItem>
-      {#if role}
-        <DropdownMenu.Separator />
-        <DropdownMenu.Item
-          class="font-normal flex items-center"
-          on:click={handleRevokeRole}
+        <span class="font-medium">Admin</span>
+        <span class="text-xs text-gray-600"
+          >{ORG_ROLES_DESCRIPTION_MAP.admin}</span
         >
-          <span class="ml-6">Remove</span>
-        </DropdownMenu.Item>
-      {/if}
-    </DropdownMenu.Content>
-  </DropdownMenu.Root>
-{:else}
-  <Tooltip location="top" alignment="start" distance={8}>
-    <div class="w-18 rounded-sm px-2 py-1">
-      <span class="cursor-help">-</span>
-    </div>
-    <TooltipContent maxWidth="400px" slot="tooltip-content">
-      Cannot add role for system-managed group
-    </TooltipContent>
-  </Tooltip>
-{/if}
+      </DropdownMenu.Item>
+    {/if}
+    <DropdownMenu.Item
+      class="font-normal flex flex-col items-start py-2 {role === 'editor'
+        ? 'bg-slate-100'
+        : ''}"
+      on:click={() => {
+        if (role) {
+          handleSetRole("editor");
+        } else {
+          handleAddRole("editor");
+        }
+      }}
+    >
+      <span class="font-medium">Editor</span>
+      <span class="text-xs text-gray-600"
+        >{ORG_ROLES_DESCRIPTION_MAP.editor}</span
+      >
+    </DropdownMenu.Item>
+    <DropdownMenu.Item
+      class="font-normal flex flex-col items-start py-2 {role === 'viewer'
+        ? 'bg-slate-100'
+        : ''}"
+      on:click={() => {
+        if (role) {
+          handleSetRole("viewer");
+        } else {
+          handleAddRole("viewer");
+        }
+      }}
+    >
+      <span class="font-medium">Viewer</span>
+      <span class="text-xs text-gray-600"
+        >{ORG_ROLES_DESCRIPTION_MAP.viewer}</span
+      >
+    </DropdownMenu.Item>
+    {#if role}
+      <DropdownMenu.Separator />
+      <DropdownMenu.Item
+        class="font-normal flex items-center"
+        on:click={handleRevokeRole}
+      >
+        <span>Remove</span>
+      </DropdownMenu.Item>
+    {/if}
+  </DropdownMenu.Content>
+</DropdownMenu.Root>
