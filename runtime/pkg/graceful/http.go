@@ -2,6 +2,7 @@ package graceful
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net"
 	"net/http"
@@ -9,7 +10,7 @@ import (
 	"time"
 )
 
-const httpShutdownTimeout = 15 * time.Second
+const httpShutdownTimeout = 5 * time.Second
 
 type ServeOptions struct {
 	Port     int
@@ -56,6 +57,11 @@ func ServeHTTP(ctx context.Context, server *http.Server, options ServeOptions) e
 		ctx, cancel := context.WithTimeout(context.Background(), httpShutdownTimeout)
 		defer cancel()
 
-		return server.Shutdown(ctx)
+		err := server.Shutdown(ctx)
+		if err != nil && !errors.Is(err, ctx.Err()) {
+			// Ignoring context errors because they are quite frequent with MCP streaming connections, which don't stop gracefully.
+			return err
+		}
+		return nil
 	}
 }
