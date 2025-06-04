@@ -28,46 +28,59 @@
   $: error = $user.error ?? $metadata.error ?? $project.error;
 
   $: if (!loading && !error) {
-    if ($user.data?.user) {
-      // User is logged in already.
-      void behaviourEvent?.fireDeployEvent(BehaviourEventAction.LoginSuccess);
+    handleDeploy();
+  }
 
-      if ($project.data?.project) {
-        if (
-          $project.data.project.githubUrl &&
-          !$project.data.project.managedGitId
-        ) {
-          // we do not support pushing to a project already connected to user managed github
-          error = {
-            message: `This project has already been connected to a GitHub repo.
-Please push changes directly to GitHub and the project in Rill Cloud will automatically be updated.`,
-          } as ConnectError;
-        } else {
-          // Project already exists. Run a redeploy
-          void goto(
-            `/deploy/redeploy?org=${$project.data.project.orgName}&projectId=${$project.data.project.id}`,
-          );
-        }
-      } else if ($user.data.rillUserOrgs?.length) {
-        // If the user has at least one org we show the selector.
-        // Note: The selector has the option to create a new org, so we show it even when there is only one org.
-        void goto(`/deploy/select-org`);
-      } else {
-        void goto(`/deploy/create-org`);
-      }
-    } else if ($metadata.data?.loginUrl) {
+  function handleDeploy() {
+    // Should not happen if the servers are up. If not, there should be a query error.
+    if (!$user.data || !$metadata.data?.loginUrl) {
+      error = {
+        message: "Failed to fetch login URL.",
+      } as ConnectError;
+      return;
+    }
+
+    if (!$user.data?.user) {
       // User is not logged in, redirect to login url provided from metadata query.
       void behaviourEvent?.fireDeployEvent(BehaviourEventAction.LoginStart);
       const u = new URL($metadata.data?.loginUrl);
       // Set the redirect to this page so that deploy resumes after a login
       u.searchParams.set("redirect", get(page).url.toString());
       window.location.href = u.toString();
-    } else {
-      // Should not happen if the servers are up. If not, there would be a query error.
-      error = {
-        message: "Failed to fetch login URL.",
-      } as ConnectError;
+      return;
     }
+
+    // User is logged in already.
+
+    void behaviourEvent?.fireDeployEvent(BehaviourEventAction.LoginSuccess);
+
+    // Cloud project doest exist.
+    if (!$project.data?.project) {
+      if ($user.data.rillUserOrgs?.length) {
+        // If the user has at least one org we show the selector.
+        // Note: The selector has the option to create a new org, so we show it even when there is only one org.
+        void goto(`/deploy/select-org`);
+      } else {
+        void goto(`/deploy/create-org`);
+      }
+      return;
+    }
+
+    if (
+      $project.data.project.githubUrl &&
+      !$project.data.project.managedGitId
+    ) {
+      // we do not support pushing to a project already connected to user managed github
+      error = {
+        message: `This project has already been connected to a GitHub repo.
+Please push changes directly to GitHub and the project in Rill Cloud will automatically be updated.`,
+      } as ConnectError;
+      return;
+    }
+    // Cloud project already exists. Run a redeploy
+    void goto(
+      `/deploy/redeploy?org=${$project.data.project.orgName}&projectId=${$project.data.project.id}`,
+    );
   }
 </script>
 
