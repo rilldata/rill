@@ -570,6 +570,7 @@
     justify-content: flex-end;
   }
   .input-with-role input[type="text"] {
+    @apply text-sm;
     border: none;
     outline: none;
     flex: 1 0 120px;
