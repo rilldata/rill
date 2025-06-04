@@ -155,7 +155,7 @@
 <SearchAndInviteInput
   onSearch={handleSearch}
   onInvite={onInviteHandler}
-  placeholder="Search users, groups, or add emails, separated by commas"
+  placeholder="Email or group, separated by commas"
   validators={[emailOrGroupValidator]}
   roleSelect={true}
   initialRole="viewer"
