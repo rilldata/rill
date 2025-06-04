@@ -187,6 +187,7 @@
           type: "user",
           name: member.userName,
           photoUrl: member.userPhotoUrl,
+          orgRoleName: member.roleName,
         });
       }
     }
@@ -202,6 +203,7 @@
           type: "user",
           name: "Pending invitation",
           photoUrl: undefined,
+          orgRoleName: invite.roleName,
         });
       }
     }

@@ -318,14 +318,20 @@
       return {
         groups: [],
         members: [],
+        guests: [],
         allResults: [],
         resultIndexMap: new Map(),
       };
     }
 
     const groups = searchResults.filter((result) => result.type === "group");
-    const members = searchResults.filter((result) => result.type === "user");
-    const allResults = [...groups, ...members];
+    const members = searchResults.filter(
+      (result) => result.type === "user" && result.orgRoleName !== "guest",
+    );
+    const guests = searchResults.filter(
+      (result) => result.type === "user" && result.orgRoleName === "guest",
+    );
+    const allResults = [...groups, ...members, ...guests];
 
     // Create index map for O(1) lookups instead of O(n) indexOf calls
     const resultIndexMap = new Map();
@@ -333,8 +339,10 @@
       resultIndexMap.set(result, index);
     });
 
-    return { groups, members, allResults, resultIndexMap };
+    return { groups, members, guests, allResults, resultIndexMap };
   })();
+
+  $: console.log(categorizedResults);
 
   // Create a Set for O(1) selected lookups instead of O(n) includes() calls
   $: selectedSet = new Set(selected);
@@ -419,6 +427,7 @@
       bind:this={dropdownList}
       style="width: {dropdownWidth}px; top: {dropdownTop}px; left: {dropdownLeft}px;"
     >
+      <!-- TODO: hoist item -->
       {#if categorizedResults.groups.length > 0}
         <div class="section-header">GROUPS</div>
         {#each categorizedResults.groups as result}
@@ -482,9 +491,67 @@
         {/if}
       {/if}
 
+      <!-- TODO: hoist item -->
       {#if categorizedResults.members.length > 0}
         <div class="section-header">MEMBERS</div>
         {#each categorizedResults.members as result}
+          {@const resultIndex = getResultIndex(result)}
+          {@const isSelected = selectedSet.has(result.identifier)}
+          <button
+            type="button"
+            class:highlighted={resultIndex === highlightedIndex}
+            class:selected={isSelected}
+            class="dropdown-item"
+            on:click={(e) => {
+              e.preventDefault();
+              handleSelect(result);
+            }}
+            on:keydown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                handleSelect(result);
+              }
+            }}
+            on:pointerdown={(e) => {
+              e.preventDefault();
+            }}
+            on:pointerenter={() => {
+              highlightedIndex = resultIndex;
+            }}
+            on:pointerleave={() => {
+              highlightedIndex = -1;
+            }}
+          >
+            <div class="flex items-center gap-2">
+              <Avatar
+                avatarSize="h-7 w-7"
+                fontSize="text-xs"
+                src={result.photoUrl}
+                alt={result.name}
+                bgColor={getRandomBgColor(result.identifier)}
+              />
+              <div class="flex flex-col text-left">
+                <span class="text-sm font-medium text-gray-900">
+                  {result.identifier}
+                </span>
+                <span class="text-xs text-gray-500">{result.name}</span>
+              </div>
+            </div>
+            {#if isSelected}
+              <Check size="16px" className="ui-copy-icon" />
+            {/if}
+          </button>
+        {/each}
+
+        {#if categorizedResults.guests.length > 0}
+          <div class="section-divider"></div>
+        {/if}
+      {/if}
+
+      <!-- TODO: hoist item -->
+      {#if categorizedResults.guests.length > 0}
+        <div class="section-header">GUESTS</div>
+        {#each categorizedResults.guests as result}
           {@const resultIndex = getResultIndex(result)}
           {@const isSelected = selectedSet.has(result.identifier)}
           <button
