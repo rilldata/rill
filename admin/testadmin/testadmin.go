@@ -20,6 +20,7 @@ import (
 	"github.com/rilldata/rill/admin/jobs/river"
 	"github.com/rilldata/rill/admin/pkg/pgtestcontainer"
 	"github.com/rilldata/rill/admin/server"
+	"github.com/rilldata/rill/cli/pkg/version"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/email"
 	"github.com/rilldata/rill/runtime/pkg/ratelimit"
@@ -115,8 +116,7 @@ func New(t *testing.T) *Fixture {
 		FrontendURL:               frontendURL,
 		ProvisionerSetJSON:        string(provisionerSetJSON),
 		DefaultProvisioner:        defaultProvisioner,
-		VersionNumber:             "",
-		VersionCommit:             "",
+		Version:                   version.Version{},
 		MetricsProjectOrg:         "",
 		MetricsProjectName:        "",
 		AutoscalerCron:            "",
