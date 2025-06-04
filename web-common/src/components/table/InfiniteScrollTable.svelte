@@ -91,11 +91,16 @@
 
   $: rows = $table.getRowModel().rows;
 
+  const isSafari =
+    typeof window !== "undefined" &&
+    /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+
   $: virtualizer = createVirtualizer<HTMLDivElement, HTMLDivElement>({
     count: 0,
     getScrollElement: () => virtualListEl,
     estimateSize: () => rowHeight,
     overscan,
+    measureElement: (el) => el?.getBoundingClientRect()?.height ?? rowHeight,
   });
 
   $: {
@@ -114,6 +119,17 @@
       onLoadMore();
     }
   }
+
+  // Calculate total size, ensuring it updates when data changes
+  $: totalSize =
+    safeData.length === 0
+      ? 100
+      : isSafari
+        ? Math.max(
+            $virtualizer.getTotalSize() + 50,
+            safeData.length * rowHeight,
+          )
+        : Math.max($virtualizer.getTotalSize(), safeData.length * rowHeight);
 </script>
 
 <div
@@ -121,7 +137,12 @@
   bind:this={virtualListEl}
   style:max-height={maxHeight}
 >
-  <div class="table-wrapper" style="position: relative;">
+  <div
+    class="table-wrapper"
+    style="min-height: {safeData.length === 0
+      ? '100'
+      : totalSize}px; width: 100%; position: relative;"
+  >
     <table>
       <thead>
         {#each $table.getHeaderGroups() as headerGroup}
