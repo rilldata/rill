@@ -67,6 +67,8 @@ const (
 	// LocalServiceListProjectsForOrgProcedure is the fully-qualified name of the LocalService's
 	// ListProjectsForOrg RPC.
 	LocalServiceListProjectsForOrgProcedure = "/rill.local.v1.LocalService/ListProjectsForOrg"
+	// LocalServiceGetProjectProcedure is the fully-qualified name of the LocalService's GetProject RPC.
+	LocalServiceGetProjectProcedure = "/rill.local.v1.LocalService/GetProject"
 )
 
 // These variables are the protoreflect.Descriptor objects for the RPCs defined in this package.
@@ -84,6 +86,7 @@ var (
 	localServiceCreateOrganizationMethodDescriptor                  = localServiceServiceDescriptor.Methods().ByName("CreateOrganization")
 	localServiceListMatchingProjectsMethodDescriptor                = localServiceServiceDescriptor.Methods().ByName("ListMatchingProjects")
 	localServiceListProjectsForOrgMethodDescriptor                  = localServiceServiceDescriptor.Methods().ByName("ListProjectsForOrg")
+	localServiceGetProjectMethodDescriptor                          = localServiceServiceDescriptor.Methods().ByName("GetProject")
 )
 
 // LocalServiceClient is a client for the rill.local.v1.LocalService service.
@@ -112,6 +115,8 @@ type LocalServiceClient interface {
 	ListMatchingProjects(context.Context, *connect.Request[v1.ListMatchingProjectsRequest]) (*connect.Response[v1.ListMatchingProjectsResponse], error)
 	// ListProjectsForOrg returns all projects within an org
 	ListProjectsForOrg(context.Context, *connect.Request[v1.ListProjectsForOrgRequest]) (*connect.Response[v1.ListProjectsForOrgResponse], error)
+	// GetProject returns information about a specific project
+	GetProject(context.Context, *connect.Request[v1.GetProjectRequest]) (*connect.Response[v1.GetProjectResponse], error)
 }
 
 // NewLocalServiceClient constructs a client for the rill.local.v1.LocalService service. By default,
@@ -196,6 +201,12 @@ func NewLocalServiceClient(httpClient connect.HTTPClient, baseURL string, opts .
 			connect.WithSchema(localServiceListProjectsForOrgMethodDescriptor),
 			connect.WithClientOptions(opts...),
 		),
+		getProject: connect.NewClient[v1.GetProjectRequest, v1.GetProjectResponse](
+			httpClient,
+			baseURL+LocalServiceGetProjectProcedure,
+			connect.WithSchema(localServiceGetProjectMethodDescriptor),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
@@ -213,6 +224,7 @@ type localServiceClient struct {
 	createOrganization                  *connect.Client[v1.CreateOrganizationRequest, v1.CreateOrganizationResponse]
 	listMatchingProjects                *connect.Client[v1.ListMatchingProjectsRequest, v1.ListMatchingProjectsResponse]
 	listProjectsForOrg                  *connect.Client[v1.ListProjectsForOrgRequest, v1.ListProjectsForOrgResponse]
+	getProject                          *connect.Client[v1.GetProjectRequest, v1.GetProjectResponse]
 }
 
 // Ping calls rill.local.v1.LocalService.Ping.
@@ -276,6 +288,11 @@ func (c *localServiceClient) ListProjectsForOrg(ctx context.Context, req *connec
 	return c.listProjectsForOrg.CallUnary(ctx, req)
 }
 
+// GetProject calls rill.local.v1.LocalService.GetProject.
+func (c *localServiceClient) GetProject(ctx context.Context, req *connect.Request[v1.GetProjectRequest]) (*connect.Response[v1.GetProjectResponse], error) {
+	return c.getProject.CallUnary(ctx, req)
+}
+
 // LocalServiceHandler is an implementation of the rill.local.v1.LocalService service.
 type LocalServiceHandler interface {
 	// Ping returns the current time.
@@ -302,6 +319,8 @@ type LocalServiceHandler interface {
 	ListMatchingProjects(context.Context, *connect.Request[v1.ListMatchingProjectsRequest]) (*connect.Response[v1.ListMatchingProjectsResponse], error)
 	// ListProjectsForOrg returns all projects within an org
 	ListProjectsForOrg(context.Context, *connect.Request[v1.ListProjectsForOrgRequest]) (*connect.Response[v1.ListProjectsForOrgResponse], error)
+	// GetProject returns information about a specific project
+	GetProject(context.Context, *connect.Request[v1.GetProjectRequest]) (*connect.Response[v1.GetProjectResponse], error)
 }
 
 // NewLocalServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -382,6 +401,12 @@ func NewLocalServiceHandler(svc LocalServiceHandler, opts ...connect.HandlerOpti
 		connect.WithSchema(localServiceListProjectsForOrgMethodDescriptor),
 		connect.WithHandlerOptions(opts...),
 	)
+	localServiceGetProjectHandler := connect.NewUnaryHandler(
+		LocalServiceGetProjectProcedure,
+		svc.GetProject,
+		connect.WithSchema(localServiceGetProjectMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/rill.local.v1.LocalService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case LocalServicePingProcedure:
@@ -408,6 +433,8 @@ func NewLocalServiceHandler(svc LocalServiceHandler, opts ...connect.HandlerOpti
 			localServiceListMatchingProjectsHandler.ServeHTTP(w, r)
 		case LocalServiceListProjectsForOrgProcedure:
 			localServiceListProjectsForOrgHandler.ServeHTTP(w, r)
+		case LocalServiceGetProjectProcedure:
+			localServiceGetProjectHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -463,4 +490,8 @@ func (UnimplementedLocalServiceHandler) ListMatchingProjects(context.Context, *c
 
 func (UnimplementedLocalServiceHandler) ListProjectsForOrg(context.Context, *connect.Request[v1.ListProjectsForOrgRequest]) (*connect.Response[v1.ListProjectsForOrgResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("rill.local.v1.LocalService.ListProjectsForOrg is not implemented"))
+}
+
+func (UnimplementedLocalServiceHandler) GetProject(context.Context, *connect.Request[v1.GetProjectRequest]) (*connect.Response[v1.GetProjectResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("rill.local.v1.LocalService.GetProject is not implemented"))
 }

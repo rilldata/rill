@@ -293,8 +293,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				ProvisionerSetJSON:        conf.ProvisionerSetJSON,
 				ProvisionerMaxConcurrency: conf.ProvisionerMaxConcurrency,
 				DefaultProvisioner:        conf.DefaultProvisioner,
-				VersionNumber:             ch.Version.Number,
-				VersionCommit:             ch.Version.Commit,
+				Version:                   ch.Version,
 				MetricsProjectOrg:         metricsProjectOrg,
 				MetricsProjectName:        metricsProjectName,
 				AutoscalerCron:            conf.AutoscalerCron,
@@ -368,7 +367,6 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				if err != nil {
 					logger.Fatal("error creating server", zap.Error(err))
 				}
-				group.Go(func() error { return srv.ServeGRPC(cctx) })
 				group.Go(func() error { return srv.ServeHTTP(cctx) })
 				if conf.DebugPort != 0 {
 					group.Go(func() error { return debugserver.ServeHTTP(cctx, conf.DebugPort) })
