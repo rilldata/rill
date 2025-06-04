@@ -1,5 +1,7 @@
 <script lang="ts">
   import { page } from "$app/stores";
+  import { waitUntil } from "@rilldata/web-common/lib/waitUtils";
+  import { get } from "svelte/store";
   import type { ConnectError } from "@connectrpc/connect";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import {
@@ -14,7 +16,7 @@
     createLocalServiceDeploy,
     createLocalServiceGetCurrentProject,
   } from "@rilldata/web-common/runtime-client/local-service";
-  import DeployError from "@rilldata/web-common/features/project/DeployError.svelte";
+  import DeployError from "@rilldata/web-common/features/project/deploy/DeployError.svelte";
   import CTAHeader from "@rilldata/web-common/components/calls-to-action/CTAHeader.svelte";
   import CTANeedHelp from "@rilldata/web-common/components/calls-to-action/CTANeedHelp.svelte";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
@@ -32,7 +34,9 @@
   $: orgIsOnTrial = getOrgIsOnTrial(orgParam ?? "");
 
   async function freshDeploy(orgName: string) {
-    const projectResp = $project.data as GetCurrentProjectResponse;
+    await waitUntil(() => !get(project).isLoading);
+
+    const projectResp = get(project).data as GetCurrentProjectResponse;
 
     const resp = await $deployMutation.mutateAsync({
       org: orgName,

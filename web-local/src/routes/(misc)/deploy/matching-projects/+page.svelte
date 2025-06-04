@@ -2,7 +2,7 @@
   import { Button } from "@rilldata/web-common/components/button";
   import type { Project } from "@rilldata/web-common/proto/gen/rill/admin/v1/api_pb";
   import { createLocalServiceListMatchingProjectsRequest } from "@rilldata/web-common/runtime-client/local-service";
-  import ProjectSelector from "@rilldata/web-common/features/project/ProjectSelector.svelte";
+  import ProjectSelector from "@rilldata/web-common/features/project/deploy/ProjectSelector.svelte";
 
   const matchingProjects = createLocalServiceListMatchingProjectsRequest();
 
@@ -14,10 +14,12 @@
   <div class="text-sm text-gray-500">
     These all have matching project name with your Rill Developer project.
   </div>
-  <ProjectSelector
-    bind:selectedProject
-    projects={$matchingProjects.data?.projects}
-  />
+  <div class="w-[500px]">
+    <ProjectSelector
+      bind:selectedProject
+      projects={$matchingProjects.data?.projects}
+    />
+  </div>
 </div>
 
 <Button

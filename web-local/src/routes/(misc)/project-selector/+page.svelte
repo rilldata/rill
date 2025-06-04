@@ -1,7 +1,7 @@
 <script lang="ts">
   import CTAContentContainer from "@rilldata/web-common/components/calls-to-action/CTAContentContainer.svelte";
   import CTALayoutContainer from "@rilldata/web-common/components/calls-to-action/CTALayoutContainer.svelte";
-  import ProjectSelector from "@rilldata/web-common/features/project/ProjectSelector.svelte";
+  import ProjectSelector from "@rilldata/web-common/features/project/deploy/ProjectSelector.svelte";
 </script>
 
 <CTALayoutContainer>

@@ -3,7 +3,7 @@
   import { Button } from "@rilldata/web-common/components/button";
   import type { Project } from "@rilldata/web-common/proto/gen/rill/admin/v1/api_pb";
   import { createLocalServiceListProjectsForOrgRequest } from "@rilldata/web-common/runtime-client/local-service";
-  import ProjectSelector from "@rilldata/web-common/features/project/ProjectSelector.svelte";
+  import ProjectSelector from "@rilldata/web-common/features/project/deploy/ProjectSelector.svelte";
 
   $: orgParam = $page.url.searchParams.get("org") ?? "";
 
@@ -21,10 +21,12 @@
   <div class="text-sm text-gray-500">
     These are all the projects listed under the selected org <b>{orgParam}</b>.
   </div>
-  <ProjectSelector
-    bind:selectedProject
-    projects={$projectsForOrg.data?.projects}
-  />
+  <div class="w-[500px]">
+    <ProjectSelector
+      bind:selectedProject
+      projects={$projectsForOrg.data?.projects}
+    />
+  </div>
 </div>
 
 <Button

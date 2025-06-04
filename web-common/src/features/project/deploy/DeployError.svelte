@@ -10,7 +10,7 @@
   import {
     DeployErrorType,
     getPrettyDeployError,
-  } from "@rilldata/web-common/features/project/deploy-errors";
+  } from "@rilldata/web-common/features/project/deploy/deploy-errors";
 
   export let error: ConnectError;
   export let orgIsOnTrial: boolean;
