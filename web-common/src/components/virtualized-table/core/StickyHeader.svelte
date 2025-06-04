@@ -55,7 +55,8 @@
   on:blur={blur}
   on:click={modified({ shift: onShiftClick, click: onClick })}
   style:transform="translate{position === 'left' ? 'Y' : 'X'}({header.start}px)"
-  style:width="{header.size}px"
+  style:padding-right={position === "left" ? "0px" : "10px"}
+  style:width="{position === 'top-left' ? header.size + 1 : header.size}px"
   style:height="{position === 'left'
     ? config.rowHeight
     : config.columnHeaderHeight}px"
@@ -66,7 +67,7 @@
     class="
     ui-copy
     text-ellipsis overflow-hidden
-    {isDimensionTable ? (position === 'left' ? '' : 'px-1') : 'px-4'}
+    {isDimensionTable ? (position === 'left' ? '' : '') : 'px-4'}
     {borderClassesInnerDiv}
     {position === 'top' && `text-left`}
     {position === 'top-left' &&
