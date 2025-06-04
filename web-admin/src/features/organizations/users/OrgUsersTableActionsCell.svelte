@@ -54,11 +54,6 @@
       await $removeOrganizationMemberUser.mutateAsync({
         organization: organization,
         email: email,
-        // Uncomment if `keepProjectRoles` is needed
-        // See: https://github.com/rilldata/rill/pull/2231
-        // params: {
-        //   keepProjectRoles: false,
-        // },
       });
 
       await queryClient.invalidateQueries({

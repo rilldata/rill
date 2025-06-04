@@ -565,6 +565,35 @@ paths:
                 type: boolean
       tags:
         - AdminService
+  /v1/organizations/{organization}/create-managed-git-repo:
+    put:
+      summary: CreateManagedGitRepo creates a new rill managed git repo for the organization.
+      operationId: AdminService_CreateManagedGitRepo
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1CreateManagedGitRepoResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organization
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              name:
+                type: string
+                description: "name of the repo to create. \nNote: The final name will be suffixed with a random string to ensure uniqueness."
+      tags:
+        - AdminService
   /v1/organizations/{organization}/invites:
     get:
       summary: ListOrganizationInvites lists all the org invites
@@ -721,6 +750,8 @@ paths:
             properties:
               role:
                 type: string
+              superuserForceAccess:
+                type: boolean
       tags:
         - AdminService
   /v1/organizations/{organization}/members/current:
@@ -1026,6 +1057,10 @@ paths:
           in: path
           required: true
           type: string
+        - name: superuserForceAccess
+          in: query
+          required: false
+          type: boolean
       tags:
         - AdminService
   /v1/organizations/{organization}/projects/{project}/connect-to-github:
@@ -1737,15 +1772,13 @@ paths:
         - AdminService
   /v1/organizations/{organization}/projects/{project}/upload-assets:
     post:
-      summary: |-
-        Converts a project connected to github to a rill managed project.
-        Uploads the current project to assets.
-      operationId: AdminService_UploadProjectAssets
+      summary: Converts a project connected to github to a rill managed project.
+      operationId: AdminService_DisconnectProjectFromGithub
       responses:
         "200":
           description: A successful response.
           schema:
-            $ref: '#/definitions/v1UploadProjectAssetsResponse'
+            $ref: '#/definitions/v1DisconnectProjectFromGithubResponse'
         default:
           description: An unexpected error response.
           schema:
@@ -2905,7 +2938,7 @@ paths:
       tags:
         - AdminService
     post:
-      summary: IssueServiceAuthToken returns the temporary token for given service account
+      summary: IssueServiceAuthToken issues an access token for a service
       operationId: AdminService_IssueServiceAuthToken
       responses:
         "200":
@@ -3104,8 +3137,6 @@ paths:
           schema:
             type: object
             properties:
-              branch:
-                type: string
               alert:
                 type: string
               annotations:
@@ -3160,10 +3191,6 @@ paths:
           in: path
           required: true
           type: string
-        - name: branch
-          in: query
-          required: false
-          type: string
         - name: pageSize
           in: query
           required: false
@@ -3199,8 +3226,6 @@ paths:
           schema:
             type: object
             properties:
-              branch:
-                type: string
               report:
                 type: string
               ownerId:
@@ -3240,7 +3265,7 @@ paths:
         - AdminService
   /v1/services/tokens/{tokenId}:
     delete:
-      summary: RevokeServiceAuthToken revoke the service auth token
+      summary: RevokeServiceAuthToken revoke a service's access token
       operationId: AdminService_RevokeServiceAuthToken
       responses:
         "200":
@@ -3592,7 +3617,9 @@ paths:
         - TelemetryService
   /v1/tokens/current:
     delete:
-      summary: RevokeCurrentAuthToken revoke the current auth token
+      summary: |-
+        RevokeCurrentAuthToken revoke the current auth token.
+        Deprecated: Use RevokeUserAuthToken with ID set to "current" instead.
       operationId: AdminService_RevokeCurrentAuthToken
       responses:
         "200":
@@ -3607,7 +3634,9 @@ paths:
         - AdminService
   /v1/tokens/represent:
     post:
-      summary: IssueRepresentativeAuthToken returns the temporary token for given email
+      summary: |-
+        IssueRepresentativeAuthToken returns the temporary token for given email.
+        Deprecated: Use IssueUserAuthToken with the represent_email option instead.
       operationId: AdminService_IssueRepresentativeAuthToken
       responses:
         "200":
@@ -3646,6 +3675,36 @@ paths:
           type: string
       tags:
         - AdminService
+  /v1/users/-/tokens/{tokenId}:
+    delete:
+      summary: |-
+        RevokeUserAuthToken revokes a user access token.
+        You can optionally pass "current" instead of the token ID to revoke the current token.
+      operationId: AdminService_RevokeUserAuthToken
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1RevokeUserAuthTokenResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: tokenId
+          description: |-
+            ID of the auth token to revoke.
+            Set to "current" to revoke the current auth token.
+          in: path
+          required: true
+          type: string
+        - name: superuserForceAccess
+          description: Flag for superusers to override normal access checks.
+          in: query
+          required: false
+          type: boolean
+      tags:
+        - AdminService
   /v1/users/{email}:
     delete:
       summary: DeleteUser deletes the user from the organization by email
@@ -3668,6 +3727,93 @@ paths:
           in: query
           required: false
           type: boolean
+      tags:
+        - AdminService
+  /v1/users/{userId}/tokens:
+    get:
+      summary: |-
+        ListUserAuthTokens lists the current user's auth tokens.
+        You can optionally pass "current" instead of the user ID to list the current user's tokens.
+      operationId: AdminService_ListUserAuthTokens
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ListUserAuthTokensResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: userId
+          description: User ID to list auth tokens for. Set to "current" to list auth tokens for the current user.
+          in: path
+          required: true
+          type: string
+        - name: pageSize
+          description: Page size for pagination. If not set, a default page size will be used.
+          in: query
+          required: false
+          type: integer
+          format: int64
+        - name: pageToken
+          description: Page token for pagination. If set, the first page of results will be returned.
+          in: query
+          required: false
+          type: string
+        - name: superuserForceAccess
+          description: Flag for superusers to override normal access checks.
+          in: query
+          required: false
+          type: boolean
+      tags:
+        - AdminService
+    post:
+      summary: |-
+        IssueUserAuthToken issues an access token for the current user.
+        You can optionally pass "current" instead of the user ID to issue a token for the current user.
+      operationId: AdminService_IssueUserAuthToken
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1IssueUserAuthTokenResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: userId
+          description: |-
+            User ID to issue the auth token for.
+            Set to "current" to issue an auth token for the current user.
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              clientId:
+                type: string
+                description: Client ID to issue the token for.
+              displayName:
+                type: string
+                description: Optional display name for the auth token.
+              ttlMinutes:
+                type: string
+                format: int64
+                description: Optional TTL for the auth token in minutes. Set to 0 for no expiry. Defaults to no expiry.
+              representEmail:
+                type: string
+                description: |-
+                  Optional email of another user to assume the identity of.
+                  This is only allowed for superusers.
+              superuserForceAccess:
+                type: boolean
+                description: Flag for superusers to override normal access checks.
       tags:
         - AdminService
   /v1/users/bookmarks:
@@ -4212,6 +4358,20 @@ definitions:
     properties:
       bookmark:
         $ref: '#/definitions/v1Bookmark'
+  v1CreateManagedGitRepoResponse:
+    type: object
+    properties:
+      remote:
+        type: string
+      username:
+        type: string
+      password:
+        type: string
+      defaultBranch:
+        type: string
+      passwordExpiresAt:
+        type: string
+        format: date-time
   v1CreateOrganizationRequest:
     type: object
     properties:
@@ -4303,6 +4463,8 @@ definitions:
       - DEPLOYMENT_STATUS_OK
       - DEPLOYMENT_STATUS_ERROR
     default: DEPLOYMENT_STATUS_UNSPECIFIED
+  v1DisconnectProjectFromGithubResponse:
+    type: object
   v1EditAlertResponse:
     type: object
   v1EditReportResponse:
@@ -4391,6 +4553,9 @@ definitions:
         type: string
       gitPassword:
         type: string
+      gitPasswordExpiresAt:
+        type: string
+        format: date-time
       gitSubpath:
         type: string
       gitProdBranch:
@@ -4591,6 +4756,12 @@ definitions:
     properties:
       token:
         type: string
+  v1IssueUserAuthTokenResponse:
+    type: object
+    properties:
+      token:
+        type: string
+        description: Newly issued auth token.
   v1LeaveOrganizationResponse:
     type: object
   v1ListBookmarksResponse:
@@ -4778,6 +4949,18 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1User'
+  v1ListUserAuthTokensResponse:
+    type: object
+    properties:
+      tokens:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1UserAuthToken'
+        description: List of auth tokens for the user.
+      nextPageToken:
+        type: string
+        description: Page token for the next page of results. If empty, there are no more pages.
   v1ListUsergroupMemberUsersResponse:
     type: object
     properties:
@@ -5043,6 +5226,9 @@ definitions:
         type: string
       githubUrl:
         type: string
+      managedGitId:
+        type: string
+        description: managed_git_id is set if the project is connected to a rill-managed git repo.
       subpath:
         type: string
       prodBranch:
@@ -5293,6 +5479,8 @@ definitions:
         format: uint64
       exportFormat:
         $ref: '#/definitions/v1ExportFormat'
+      exportIncludeHeader:
+        type: boolean
       emailRecipients:
         type: array
         items:
@@ -5342,12 +5530,11 @@ definitions:
         type: string
   v1RevokeCurrentAuthTokenResponse:
     type: object
-    properties:
-      tokenId:
-        type: string
   v1RevokeMagicAuthTokenResponse:
     type: object
   v1RevokeServiceAuthTokenResponse:
+    type: object
+  v1RevokeUserAuthTokenResponse:
     type: object
   v1SearchProjectNamesResponse:
     type: object
@@ -5672,8 +5859,6 @@ definitions:
     properties:
       preferences:
         $ref: '#/definitions/v1UserPreferences'
-  v1UploadProjectAssetsResponse:
-    type: object
   v1User:
     type: object
     properties:
@@ -5691,6 +5876,28 @@ definitions:
         type: string
         format: date-time
       updatedOn:
+        type: string
+        format: date-time
+  v1UserAuthToken:
+    type: object
+    properties:
+      id:
+        type: string
+      displayName:
+        type: string
+      authClientId:
+        type: string
+      authClientDisplayName:
+        type: string
+      representingUserId:
+        type: string
+      createdOn:
+        type: string
+        format: date-time
+      expiresOn:
+        type: string
+        format: date-time
+      usedOn:
         type: string
         format: date-time
   v1UserPreferences:

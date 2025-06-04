@@ -7,7 +7,7 @@ import type {
 } from "@rilldata/web-common/runtime-client";
 import type { QueryClient, QueryObserverResult } from "@tanstack/svelte-query";
 import { derived, type Readable } from "svelte/store";
-import type { MetricsExplorerEntity } from "../../stores/metrics-explorer-entity";
+import type { ExploreState } from "web-common/src/features/dashboards/stores/explore-state";
 import { activeMeasureSelectors } from "./active-measure";
 import { comparisonSelectors } from "./comparisons";
 import { contextColSelectors } from "./context-column";
@@ -23,7 +23,7 @@ import type { ReadablesObj, SelectorFnsObj } from "./types";
 import { leaderboardSelectors } from "./leaderboard";
 
 export type DashboardDataReadables = {
-  dashboardStore: Readable<MetricsExplorerEntity>;
+  dashboardStore: Readable<ExploreState>;
   validSpecStore: Readable<
     QueryObserverResult<ExploreValidSpecResponse, RpcStatus>
   >;

@@ -405,6 +405,13 @@ export class DeployProjectRequest extends Message<DeployProjectRequest> {
    */
   upload = false;
 
+  /**
+   * temporarily used for testing
+   *
+   * @generated from field: bool archive = 5;
+   */
+  archive = false;
+
   constructor(data?: PartialMessage<DeployProjectRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -417,6 +424,7 @@ export class DeployProjectRequest extends Message<DeployProjectRequest> {
     { no: 4, name: "new_org_display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "project_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "upload", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 5, name: "archive", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DeployProjectRequest {
@@ -505,6 +513,13 @@ export class RedeployProjectRequest extends Message<RedeployProjectRequest> {
    */
   reupload = false;
 
+  /**
+   * temporarily used for testing
+   *
+   * @generated from field: bool rearchive = 3;
+   */
+  rearchive = false;
+
   constructor(data?: PartialMessage<RedeployProjectRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -515,6 +530,7 @@ export class RedeployProjectRequest extends Message<RedeployProjectRequest> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "project_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "reupload", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 3, name: "rearchive", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): RedeployProjectRequest {

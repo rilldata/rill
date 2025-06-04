@@ -1,4 +1,4 @@
-import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import type {
   V1ExploreSpec,
   V1MetricsViewAggregationRequest,
@@ -21,7 +21,7 @@ export type QueryRequests =
 export type QueryMapperArgs<R extends QueryRequests> = {
   queryClient: QueryClient;
   instanceId: string;
-  dashboard: MetricsExplorerEntity;
+  dashboard: ExploreState;
   req: R;
   metricsView: V1MetricsViewSpec;
   explore: V1ExploreSpec;

@@ -93,6 +93,8 @@ message DeployProjectRequest {
   string new_org_display_name = 4;
   string project_name = 2;
   bool upload = 3;
+  // temporarily used for testing
+  bool archive = 5;
 }
 
 message DeployProjectResponse {
@@ -105,6 +107,8 @@ message DeployProjectResponse {
 message RedeployProjectRequest {
   string project_id = 1;
   bool reupload = 2;
+  // temporarily used for testing
+  bool rearchive = 3;
 }
 
 message RedeployProjectResponse {

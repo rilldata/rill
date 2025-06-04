@@ -26,7 +26,7 @@
     isExpressionUnsupported,
     sanitiseExpression,
   } from "../stores/filter-utils";
-  import type { DimensionThresholdFilter } from "../stores/metrics-explorer-entity";
+  import type { DimensionThresholdFilter } from "web-common/src/features/dashboards/stores/explore-state";
   import DelayedLoadingRows from "./DelayedLoadingRows.svelte";
   import LeaderboardHeader from "./LeaderboardHeader.svelte";
   import LeaderboardRow from "./LeaderboardRow.svelte";
@@ -62,7 +62,6 @@
   export let filterExcludeMode: boolean;
   export let isBeingCompared: boolean;
   export let parentElement: HTMLElement;
-  export let suppressTooltip = false;
   export let allowExpandTable = true;
   export let allowDimensionComparison = true;
   export let formatters: Record<
@@ -355,7 +354,6 @@
       >
         {#each aboveTheFold as itemData (itemData.dimensionValue)}
           <LeaderboardRow
-            {suppressTooltip}
             {tableWidth}
             {isBeingCompared}
             {filterExcludeMode}
@@ -376,7 +374,6 @@
 
       {#each belowTheFoldRows as itemData, i (itemData.dimensionValue)}
         <LeaderboardRow
-          {suppressTooltip}
           {itemData}
           {tableWidth}
           {dimensionName}

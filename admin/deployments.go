@@ -193,7 +193,6 @@ func (s *Service) createDeploymentInner(ctx context.Context, d *database.Deploym
 		Connectors:     connectors,
 		Variables:      opts.Variables,
 		Annotations:    opts.Annotations.ToMap(),
-		EmbedCatalog:   false,
 	})
 	if err != nil {
 		return err
@@ -568,11 +567,11 @@ func (s *Service) findProvisionedRuntimeResource(ctx context.Context, deployment
 }
 
 func (s *Service) resolveRillVersion() string {
-	if s.VersionNumber != "" {
-		return s.VersionNumber
+	if s.Version.Number != "" {
+		return s.Version.Number
 	}
-	if s.VersionCommit != "" {
-		return s.VersionCommit
+	if s.Version.Commit != "" {
+		return s.Version.Commit
 	}
 	return "latest"
 }

@@ -179,6 +179,17 @@ export const AD_BIDS_SET_PREVIOUS_WEEK_COMPARE_TIME_RANGE_FILTER: TestDashboardM
 export const AD_BIDS_DISABLE_COMPARE_TIME_RANGE_FILTER: TestDashboardMutation =
   () => metricsExplorerStore.displayTimeComparison(AD_BIDS_EXPLORE_NAME, false);
 
+export const AD_BIDS_SET_MINUTE_TIME_GRAIN: TestDashboardMutation = ({
+  dashboard,
+}) =>
+  metricsExplorerStore.selectTimeRange(
+    AD_BIDS_EXPLORE_NAME,
+    dashboard.selectedTimeRange!,
+    V1TimeGrain.TIME_GRAIN_MINUTE,
+    undefined,
+    AD_BIDS_METRICS_INIT,
+  );
+
 export const AD_BIDS_SET_PUBLISHER_COMPARE_DIMENSION: TestDashboardMutation =
   () =>
     metricsExplorerStore.setComparisonDimension(

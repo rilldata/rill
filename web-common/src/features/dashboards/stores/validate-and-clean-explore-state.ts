@@ -1,4 +1,4 @@
-import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import {
   getMultiFieldError,
   getSingleFieldError,
@@ -29,7 +29,7 @@ import type {
 export function validateAndCleanExploreState(
   metricsViewSpec: V1MetricsViewSpec,
   exploreSpec: V1ExploreSpec,
-  exploreState: Partial<MetricsExplorerEntity>,
+  exploreState: Partial<ExploreState>,
 ) {
   const errors: Error[] = [];
 
@@ -68,7 +68,7 @@ function validateAndCleanExploreViewState(
   measures: Map<string, MetricsViewSpecMeasure>,
   dimensions: Map<string, MetricsViewSpecDimension>,
   exploreSpec: V1ExploreSpec,
-  exploreState: Partial<MetricsExplorerEntity>,
+  exploreState: Partial<ExploreState>,
 ) {
   const errors: Error[] = [];
 
@@ -117,7 +117,7 @@ function validateAndCleanExploreViewState(
 function validateAndCleanMeasureRelatedExploreState(
   measures: Map<string, MetricsViewSpecMeasure>,
   exploreSpec: V1ExploreSpec,
-  exploreState: Partial<MetricsExplorerEntity>,
+  exploreState: Partial<ExploreState>,
 ) {
   if (!exploreState.visibleMeasures) {
     // Each source is meant to have relevant fields.

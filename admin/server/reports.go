@@ -31,7 +31,6 @@ import (
 func (s *Server) GetReportMeta(ctx context.Context, req *adminv1.GetReportMetaRequest) (*adminv1.GetReportMetaResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.project_id", req.ProjectId),
-		attribute.String("args.branch", req.Branch),
 		attribute.String("args.report", req.Report),
 		attribute.StringSlice("args.email_recipients", req.EmailRecipients),
 		attribute.String("args.execution_time", req.ExecutionTime.String()),
@@ -48,10 +47,6 @@ func (s *Server) GetReportMeta(ctx context.Context, req *adminv1.GetReportMetaRe
 	permissions := auth.GetClaims(ctx).ProjectPermissions(ctx, proj.OrganizationID, proj.ID)
 	if !permissions.ReadProdStatus {
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to read report meta")
-	}
-
-	if proj.ProdBranch != req.Branch {
-		return nil, status.Error(codes.InvalidArgument, "branch not found")
 	}
 
 	webOpenMode := WebOpenMode(req.WebOpenMode)
@@ -173,10 +168,10 @@ func (s *Server) CreateReport(ctx context.Context, req *adminv1.CreateReportRequ
 	}
 
 	err = s.admin.DB.UpsertVirtualFile(ctx, &database.InsertVirtualFileOptions{
-		ProjectID: proj.ID,
-		Branch:    proj.ProdBranch,
-		Path:      virtualFilePathForManagedReport(name),
-		Data:      data,
+		ProjectID:   proj.ID,
+		Environment: "prod",
+		Path:        virtualFilePathForManagedReport(name),
+		Data:        data,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to insert virtual file: %w", err)
@@ -240,10 +235,10 @@ func (s *Server) EditReport(ctx context.Context, req *adminv1.EditReportRequest)
 	}
 
 	err = s.admin.DB.UpsertVirtualFile(ctx, &database.InsertVirtualFileOptions{
-		ProjectID: proj.ID,
-		Branch:    proj.ProdBranch,
-		Path:      virtualFilePathForManagedReport(req.Name),
-		Data:      data,
+		ProjectID:   proj.ID,
+		Environment: "prod",
+		Path:        virtualFilePathForManagedReport(req.Name),
+		Data:        data,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to update virtual file: %w", err)
@@ -356,7 +351,7 @@ func (s *Server) UnsubscribeReport(ctx context.Context, req *adminv1.Unsubscribe
 	}
 
 	if len(opts.EmailRecipients) == 0 && len(opts.SlackUsers) == 0 && len(opts.SlackChannels) == 0 && len(opts.SlackWebhooks) == 0 {
-		err = s.admin.DB.UpdateVirtualFileDeleted(ctx, proj.ID, proj.ProdBranch, virtualFilePathForManagedReport(req.Name))
+		err = s.admin.DB.UpdateVirtualFileDeleted(ctx, proj.ID, "prod", virtualFilePathForManagedReport(req.Name))
 		if err != nil {
 			return nil, fmt.Errorf("failed to update virtual file: %w", err)
 		}
@@ -367,10 +362,10 @@ func (s *Server) UnsubscribeReport(ctx context.Context, req *adminv1.Unsubscribe
 		}
 
 		err = s.admin.DB.UpsertVirtualFile(ctx, &database.InsertVirtualFileOptions{
-			ProjectID: proj.ID,
-			Branch:    proj.ProdBranch,
-			Path:      virtualFilePathForManagedReport(req.Name),
-			Data:      data,
+			ProjectID:   proj.ID,
+			Environment: "prod",
+			Path:        virtualFilePathForManagedReport(req.Name),
+			Data:        data,
 		})
 		if err != nil {
 			return nil, fmt.Errorf("failed to update virtual file: %w", err)
@@ -427,7 +422,7 @@ func (s *Server) DeleteReport(ctx context.Context, req *adminv1.DeleteReportRequ
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to edit report")
 	}
 
-	err = s.admin.DB.UpdateVirtualFileDeleted(ctx, proj.ID, proj.ProdBranch, virtualFilePathForManagedReport(req.Name))
+	err = s.admin.DB.UpdateVirtualFileDeleted(ctx, proj.ID, "prod", virtualFilePathForManagedReport(req.Name))
 	if err != nil {
 		return nil, fmt.Errorf("failed to delete virtual file: %w", err)
 	}
@@ -513,6 +508,7 @@ func (s *Server) yamlForManagedReport(opts *adminv1.ReportOptions, ownerUserID s
 	res.Query.Name = opts.QueryName
 	res.Query.ArgsJSON = opts.QueryArgsJson
 	res.Export.Format = opts.ExportFormat.String()
+	res.Export.IncludeHeader = opts.ExportIncludeHeader
 	res.Export.Limit = uint(opts.ExportLimit)
 	res.Notify.Email.Recipients = opts.EmailRecipients
 	res.Notify.Slack.Channels = opts.SlackChannels
@@ -571,6 +567,7 @@ func (s *Server) yamlForCommittedReport(opts *adminv1.ReportOptions) ([]byte, er
 	res.Query.Name = opts.QueryName
 	res.Query.Args = args
 	res.Export.Format = exportFormat
+	res.Export.IncludeHeader = opts.ExportIncludeHeader
 	res.Export.Limit = uint(opts.ExportLimit)
 	res.Notify.Email.Recipients = opts.EmailRecipients
 	res.Notify.Slack.Channels = opts.SlackChannels
@@ -732,6 +729,7 @@ func recreateReportOptionsFromSpec(spec *runtimev1.ReportSpec) (*adminv1.ReportO
 	opts.QueryArgsJson = spec.QueryArgsJson
 	opts.ExportLimit = spec.ExportLimit
 	opts.ExportFormat = spec.ExportFormat
+	opts.ExportIncludeHeader = spec.ExportIncludeHeader
 	for _, notifier := range spec.Notifiers {
 		switch notifier.Connector {
 		case "email":
@@ -784,8 +782,9 @@ type reportYAML struct {
 		ArgsJSON string         `yaml:"args_json,omitempty"`
 	} `yaml:"query"`
 	Export struct {
-		Format string `yaml:"format"`
-		Limit  uint   `yaml:"limit"`
+		Format        string `yaml:"format"`
+		IncludeHeader bool   `yaml:"include_header"`
+		Limit         uint   `yaml:"limit"`
 	} `yaml:"export"`
 	Notify struct {
 		Email struct {
