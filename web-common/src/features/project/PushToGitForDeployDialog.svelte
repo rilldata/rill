@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { getRepoNameFromGithubUrl } from "@rilldata/web-common/features/project/github-utils";
   import {
     AlertDialog,
     AlertDialogContent,
@@ -11,6 +10,7 @@
   } from "@rilldata/web-common/components/alert-dialog";
   import { Button } from "@rilldata/web-common/components/button";
   import Github from "@rilldata/web-common/components/icons/Github.svelte";
+  import { getRepoNameFromGithubUrl } from "@rilldata/web-common/features/project/github-utils";
 
   export let open = false;
   export let githubUrl: string;
@@ -62,7 +62,7 @@
       </AlertDialogDescription>
     </AlertDialogHeader>
     <AlertDialogFooter>
-      <Button on:click={() => (open = false)} type="secondary">Close</Button>
+      <Button onClick={() => (open = false)} type="secondary">Close</Button>
     </AlertDialogFooter>
   </AlertDialogContent>
 </AlertDialog>

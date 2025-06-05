@@ -33,7 +33,7 @@
       <KeyboardKey label="Control" /> + <KeyboardKey label="C" /> in the CLI to cancel
       the connect request.)
     </CtaMessage>
-    <CtaButton variant="primary" on:click={() => redirectToGithubLogin(remote)}>
+    <CtaButton variant="primary" onClick={() => redirectToGithubLogin(remote)}>
       Connect to GitHub
     </CtaButton>
   </CtaContentContainer>

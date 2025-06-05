@@ -181,13 +181,13 @@
     <DialogFooter class="mt-3">
       <!-- temporarily show this only during edit. in the long run we will not have edit -->
       {#if $githubUrl}
-        <Button type="link" on:click={() => githubData.reselectRepos()}>
+        <Button type="link" onClick={() => githubData.reselectRepos()}>
           Choose other repos
         </Button>
       {/if}
       <Button
         type="secondary"
-        on:click={() => {
+        onClick={() => {
           open = false;
           handleDialogClose();
         }}>Cancel</Button
@@ -196,7 +196,7 @@
         type="primary"
         loading={$connectToGithubMutation.isPending}
         disabled={disableContinue}
-        on:click={() => updateGithubUrl(false)}>Continue</Button
+        onClick={() => updateGithubUrl(false)}>Continue</Button
       >
     </DialogFooter>
   </DialogContent>
