@@ -85,12 +85,7 @@ export const load = async ({ params, url, route, depends }) => {
     };
   }
 
-  // Get organization permissions
-  let organizationPermissions: V1OrganizationPermissions = {};
-  let organizationLogoUrl: string | undefined = undefined;
-  let organizationFaviconUrl: string | undefined = undefined;
-  let planDisplayName: string | undefined = undefined;
-
+  // Get organization
   let organizationResp: V1GetOrganizationResponse | undefined;
   const getOrganizationPromise = token
     ? getOrgWithBearerToken(organization, token)
@@ -112,10 +107,11 @@ export const load = async ({ params, url, route, depends }) => {
     }
   }
 
-  organizationPermissions = organizationResp.permissions ?? {};
-  organizationLogoUrl = organizationResp.organization?.logoUrl;
-  organizationFaviconUrl = organizationResp.organization?.faviconUrl;
-  planDisplayName = organizationResp.organization?.billingPlanDisplayName;
+  const organizationPermissions = organizationResp?.permissions ?? {};
+  const organizationLogoUrl = organizationResp?.organization?.logoUrl;
+  const organizationFaviconUrl = organizationResp?.organization?.faviconUrl;
+  const planDisplayName =
+    organizationResp?.organization?.billingPlanDisplayName;
 
   if (!project) {
     return {
