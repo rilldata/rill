@@ -395,20 +395,25 @@
                         <Lock size="28px" color="#374151" />
                       {/if}
                       <div class="flex flex-col text-left">
-                        <span
-                          class="flex flex-row items-center gap-x-1 text-sm font-medium text-gray-900 hover:bg-gray-100 rounded-sm px-1 py-0.5 -mx-1 -my-0.5"
-                        >
-                          {#if accessType === "everyone"}
-                            Everyone at {organization}
-                          {:else}
-                            Invite only
-                          {/if}
-                          {#if accessDropdownOpen}
-                            <CaretUpIcon size="12px" color="text-gray-700" />
-                          {:else}
-                            <CaretDownIcon size="12px" color="text-gray-700" />
-                          {/if}
-                        </span>
+                        <div class="flex">
+                          <div
+                            class="inline-flex flex-row items-center gap-x-1 text-sm font-medium text-gray-900 hover:bg-gray-100 rounded-sm px-1 py-0.5 -mx-1 -my-0.5"
+                          >
+                            {#if accessType === "everyone"}
+                              Everyone at {organization}
+                            {:else}
+                              Invite only
+                            {/if}
+                            {#if accessDropdownOpen}
+                              <CaretUpIcon size="12px" color="text-gray-700" />
+                            {:else}
+                              <CaretDownIcon
+                                size="12px"
+                                color="text-gray-700"
+                              />
+                            {/if}
+                          </div>
+                        </div>
 
                         {#if accessType === "everyone"}
                           <div class="flex flex-row items-center gap-x-1">
