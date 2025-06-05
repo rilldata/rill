@@ -5,7 +5,7 @@
 
 import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialMessage, PlainMessage } from "@bufbuild/protobuf";
 import { Message, proto3, protoInt64, Struct, Timestamp, Value } from "@bufbuild/protobuf";
-import { StructType } from "./schema_pb.js";
+import { StructType, Type } from "./schema_pb.js";
 import { TimeGrain } from "./time_grain_pb.js";
 import { Expression } from "./expression_pb.js";
 import { ExportFormat } from "./export_format_pb.js";
@@ -1492,6 +1492,13 @@ export class MetricsViewSpec_Dimension extends Message<MetricsViewSpec_Dimension
    */
   lookupDefaultExpression = "";
 
+  /**
+   * The data type of the dimension
+   *
+   * @generated from field: rill.runtime.v1.Type type = 12;
+   */
+  type?: Type;
+
   constructor(data?: PartialMessage<MetricsViewSpec_Dimension>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1511,6 +1518,7 @@ export class MetricsViewSpec_Dimension extends Message<MetricsViewSpec_Dimension
     { no: 9, name: "lookup_key_column", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 10, name: "lookup_value_column", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 11, name: "lookup_default_expression", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 12, name: "type", kind: "message", T: Type },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewSpec_Dimension {

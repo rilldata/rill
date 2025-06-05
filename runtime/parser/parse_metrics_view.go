@@ -307,7 +307,10 @@ func (p *Parser) parseMetricsView(node *Node) error {
 
 		lower := strings.ToLower(dim.Name)
 		if _, ok := names[lower]; ok {
-			return fmt.Errorf("found duplicate dimension or measure name %q", dim.Name)
+			// allow time dimension to be defined in the dimensions list
+			if !strings.EqualFold(lower, tmp.TimeDimension) {
+				return fmt.Errorf("found duplicate dimension or measure name %q", dim.Name)
+			}
 		}
 		names[lower] = nameIsDimension
 	}

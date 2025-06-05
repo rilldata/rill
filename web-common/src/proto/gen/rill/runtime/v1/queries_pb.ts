@@ -1078,6 +1078,13 @@ export class MetricsViewAggregationRequest extends Message<MetricsViewAggregatio
    */
   rows = false;
 
+  /**
+   * Optional. If not specified, falls back to the primary time dimension in the metrics view spec
+   *
+   * @generated from field: string time_dimension = 23;
+   */
+  timeDimension = "";
+
   constructor(data?: PartialMessage<MetricsViewAggregationRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1108,6 +1115,7 @@ export class MetricsViewAggregationRequest extends Message<MetricsViewAggregatio
     { no: 17, name: "exact", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 21, name: "fill_missing", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 22, name: "rows", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 23, name: "time_dimension", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewAggregationRequest {
@@ -2444,6 +2452,13 @@ export class MetricsViewTimeSeriesRequest extends Message<MetricsViewTimeSeriesR
    */
   filter?: MetricsViewFilter;
 
+  /**
+   * Optional. If not specified, falls back to the primary time dimension in the metrics view spec
+   *
+   * @generated from field: string time_dimension = 15;
+   */
+  timeDimension = "";
+
   constructor(data?: PartialMessage<MetricsViewTimeSeriesRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -2465,6 +2480,7 @@ export class MetricsViewTimeSeriesRequest extends Message<MetricsViewTimeSeriesR
     { no: 10, name: "time_zone", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 8, name: "priority", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
     { no: 12, name: "filter", kind: "message", T: MetricsViewFilter },
+    { no: 15, name: "time_dimension", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewTimeSeriesRequest {
@@ -2755,6 +2771,13 @@ export class MetricsViewRowsRequest extends Message<MetricsViewRowsRequest> {
    */
   filter?: MetricsViewFilter;
 
+  /**
+   * Optional. If not specified, falls back to the primary time dimension in the metrics view spec
+   *
+   * @generated from field: string time_dimension = 13;
+   */
+  timeDimension = "";
+
   constructor(data?: PartialMessage<MetricsViewRowsRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -2775,6 +2798,7 @@ export class MetricsViewRowsRequest extends Message<MetricsViewRowsRequest> {
     { no: 9, name: "priority", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
     { no: 11, name: "time_zone", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 12, name: "filter", kind: "message", T: MetricsViewFilter },
+    { no: 13, name: "time_dimension", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewRowsRequest {
@@ -3101,6 +3125,13 @@ export class MetricsViewTimeRangeRequest extends Message<MetricsViewTimeRangeReq
    */
   priority = 0;
 
+  /**
+   * Optional. If not specified, falls back to the primary time dimension in the metrics view spec
+   *
+   * @generated from field: string time_dimension = 4;
+   */
+  timeDimension = "";
+
   constructor(data?: PartialMessage<MetricsViewTimeRangeRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -3112,6 +3143,7 @@ export class MetricsViewTimeRangeRequest extends Message<MetricsViewTimeRangeReq
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "metrics_view_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "priority", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 4, name: "time_dimension", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewTimeRangeRequest {
@@ -3313,6 +3345,13 @@ export class MetricsViewSearchRequest extends Message<MetricsViewSearchRequest> 
    */
   priority = 0;
 
+  /**
+   * Optional. If not specified, falls back to the primary time dimension in the metrics view spec
+   *
+   * @generated from field: string time_dimension = 10;
+   */
+  timeDimension = "";
+
   constructor(data?: PartialMessage<MetricsViewSearchRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -3330,6 +3369,7 @@ export class MetricsViewSearchRequest extends Message<MetricsViewSearchRequest> 
     { no: 7, name: "having", kind: "message", T: Expression },
     { no: 8, name: "limit", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
     { no: 9, name: "priority", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 10, name: "time_dimension", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewSearchRequest {
@@ -3460,6 +3500,13 @@ export class MetricsViewTimeRangesRequest extends Message<MetricsViewTimeRangesR
    */
   timeZone = "";
 
+  /**
+   * Optional. If not specified, falls back to the primary time dimension in the metrics view spec
+   *
+   * @generated from field: string time_dimension = 6;
+   */
+  timeDimension = "";
+
   constructor(data?: PartialMessage<MetricsViewTimeRangesRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -3473,6 +3520,7 @@ export class MetricsViewTimeRangesRequest extends Message<MetricsViewTimeRangesR
     { no: 3, name: "expressions", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 4, name: "priority", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
     { no: 5, name: "time_zone", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 6, name: "time_dimension", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewTimeRangesRequest {

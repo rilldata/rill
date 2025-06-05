@@ -38,6 +38,7 @@ type MetricsViewAggregation struct {
 	Exact               bool                                           `json:"exact,omitempty"`
 	FillMissing         bool                                           `json:"fill_missing,omitempty"`
 	Rows                bool                                           `json:"rows,omitempty"`
+	TimeDimension       string                                         `json:"time_dimension,omitempty"`
 
 	Result    *runtimev1.MetricsViewAggregationResponse `json:"-"`
 	Exporting bool                                      `json:"-"` // Deprecated: Remove when tests call Export directly
@@ -86,7 +87,7 @@ func (q *MetricsViewAggregation) Resolve(ctx context.Context, rt *runtime.Runtim
 		return fmt.Errorf("error rewriting to metrics query: %w", err)
 	}
 
-	e, err := metricsview.NewExecutor(ctx, rt, instanceID, mv.ValidSpec, mv.Streaming, security, priority)
+	e, err := metricsview.NewExecutor(ctx, rt, instanceID, mv.ValidSpec, mv.Streaming, security, priority, q.TimeDimension)
 	if err != nil {
 		return err
 	}
@@ -128,14 +129,14 @@ func (q *MetricsViewAggregation) Export(ctx context.Context, rt *runtime.Runtime
 		return fmt.Errorf("error rewriting to metrics query: %w", err)
 	}
 
-	e, err := metricsview.NewExecutor(ctx, rt, instanceID, mv.ValidSpec, mv.Streaming, security, opts.Priority)
+	e, err := metricsview.NewExecutor(ctx, rt, instanceID, mv.ValidSpec, mv.Streaming, security, opts.Priority, q.TimeDimension)
 	if err != nil {
 		return err
 	}
 	defer e.Close()
 
 	if mv.ValidSpec.TimeDimension != "" {
-		tsRes, err := ResolveTimestampResult(ctx, rt, instanceID, q.MetricsViewName, q.SecurityClaims, opts.Priority)
+		tsRes, err := ResolveTimestampResult(ctx, rt, instanceID, q.MetricsViewName, q.TimeDimension, q.SecurityClaims, opts.Priority)
 		if err != nil {
 			return err
 		}
@@ -188,7 +189,7 @@ func (q *MetricsViewAggregation) Export(ctx context.Context, rt *runtime.Runtime
 	return nil
 }
 
-func ResolveTimestampResult(ctx context.Context, rt *runtime.Runtime, instanceID, metricsViewName string, security *runtime.SecurityClaims, priority int) (metricsview.TimestampsResult, error) {
+func ResolveTimestampResult(ctx context.Context, rt *runtime.Runtime, instanceID, metricsViewName, timeDimension string, security *runtime.SecurityClaims, priority int) (metricsview.TimestampsResult, error) {
 	res, err := rt.Resolve(ctx, &runtime.ResolveOptions{
 		InstanceID: instanceID,
 		Resolver:   "metrics_time_range",
@@ -196,7 +197,8 @@ func ResolveTimestampResult(ctx context.Context, rt *runtime.Runtime, instanceID
 			"metrics_view": metricsViewName,
 		},
 		Args: map[string]any{
-			"priority": priority,
+			"priority":       priority,
+			"time_dimension": timeDimension,
 		},
 		Claims: security,
 	})
@@ -419,6 +421,7 @@ func (q *MetricsViewAggregation) rewriteToMetricsViewQuery(export bool) (*metric
 
 	qry.UseDisplayNames = export
 	qry.Rows = q.Rows
+	qry.TimeDimension = q.TimeDimension
 
 	return qry, nil
 }
