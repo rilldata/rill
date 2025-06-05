@@ -11,6 +11,7 @@ import {
   getAdminServiceGetCurrentUserQueryKey,
   type RpcStatus,
   type V1GetCurrentUserResponse,
+  type V1GetOrganizationResponse,
   type V1OrganizationPermissions,
   type V1ProjectPermissions,
   type V1User,
@@ -19,13 +20,13 @@ import { redirectToLogin } from "@rilldata/web-admin/client/redirect-utils";
 import { redirectToLoginOrRequestAccess } from "@rilldata/web-admin/features/authentication/checkUserAccess";
 import { getFetchOrganizationQueryOptions } from "@rilldata/web-admin/features/organizations/selectors";
 import { fetchProjectDeploymentDetails } from "@rilldata/web-admin/features/projects/selectors";
+import { getOrgWithBearerToken } from "@rilldata/web-admin/features/public-urls/get-org-with-bearer-token";
 import { initPosthog } from "@rilldata/web-common/lib/analytics/posthog";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.js";
 import { fixLocalhostRuntimePort } from "@rilldata/web-common/runtime-client/fix-localhost-runtime-port";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import { error, redirect, type Page } from "@sveltejs/kit";
 import { isAxiosError } from "axios";
-import { getOrgWithBearerToken } from "@rilldata/web-admin/features/public-urls/get-org-with-bearer-token";
 import { Settings } from "luxon";
 
 Settings.defaultLocale = "en";
@@ -90,10 +91,13 @@ export const load = async ({ params, url, route, depends }) => {
   let organizationFaviconUrl: string | undefined = undefined;
   let planDisplayName: string | undefined = undefined;
 
+  let organizationResp: V1GetOrganizationResponse | undefined;
   const getOrganizationPromise = token
     ? getOrgWithBearerToken(organization, token)
     : queryClient.fetchQuery(getFetchOrganizationQueryOptions(organization));
-  getOrganizationPromise.catch((e: unknown) => {
+  try {
+    organizationResp = await getOrganizationPromise;
+  } catch (e) {
     if (!isAxiosError<RpcStatus>(e) || !e.response) {
       throw error(500, "Error fetching organization");
     }
@@ -106,9 +110,7 @@ export const load = async ({ params, url, route, depends }) => {
     } else {
       throw error(e.response.status, e.response.data.message);
     }
-  });
-
-  const organizationResp = await getOrganizationPromise;
+  }
 
   organizationPermissions = organizationResp.permissions ?? {};
   organizationLogoUrl = organizationResp.organization?.logoUrl;
