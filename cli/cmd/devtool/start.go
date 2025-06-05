@@ -32,7 +32,7 @@ const (
 	minGoVersion   = "1.24"
 	minNodeVersion = "18"
 	stateDirLocal  = "dev-project"
-	rillGithubURL  = "https://github.com/rilldata/rill"
+	rillGitRemote  = "https://github.com/rilldata/rill.git"
 )
 
 var (
@@ -165,13 +165,14 @@ func checkRillRepo() error {
 		return fmt.Errorf("you must run `rill devtool` from the root of the rill repository")
 	}
 
-	_, githubURL, err := gitutil.ExtractGitRemote("", "", false)
+	remote, err := gitutil.ExtractGitRemote("", "", false)
 	if err != nil {
 		return fmt.Errorf("error extracting git remote: %w", err)
 	}
+	githubRemote, _ := remote.Github()
 
-	if githubURL != rillGithubURL {
-		return fmt.Errorf("you must run `rill devtool` from the rill repository (expected remote %q, got %q)", rillGithubURL, githubURL)
+	if githubRemote != rillGitRemote {
+		return fmt.Errorf("you must run `rill devtool` from the rill repository (expected remote %q, got %q)", rillGitRemote, remote.URL)
 	}
 
 	return nil

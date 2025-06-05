@@ -1,13 +1,13 @@
 <script lang="ts">
-  import { getRepoNameFromGithubUrl } from "@rilldata/web-common/features/project/github-utils";
+  import { getRepoNameFromGitRemote } from "@rilldata/web-common/features/project/github-utils";
 
-  export let githubUrl: string;
+  export let gitRemote: string;
 
-  const repoName = getRepoNameFromGithubUrl(githubUrl);
+  const repoName = getRepoNameFromGitRemote(gitRemote);
 </script>
 
 <a
-  href={githubUrl}
+  href={gitRemote?.replace(/\.git$/, "")}
   target="_blank"
   class="font-semibold font-mono text-gray-800 text-[16px] leading-5"
   rel="noreferrer noopener"

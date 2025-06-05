@@ -25,7 +25,7 @@
     <CtaHeader>Could not connect to GitHub</CtaHeader>
     <CtaMessage>
       Your authorized GitHub account <GithubUserInline {githubUsername} />
-      does not have access to <GithubRepoInline githubUrl={remote} />.
+      does not have access to <GithubRepoInline gitRemote={remote} />.
     </CtaMessage>
     <CtaMessage>
       Click the button below to re-authorize/authorize another account.

@@ -25,7 +25,7 @@
     <CtaHeader>Could not connect to GitHub</CtaHeader>
     <CtaMessage>
       It looks like you did not grant access to the desired repository at <GithubRepoInline
-        githubUrl={remote}
+        gitRemote={remote}
       />.
     </CtaMessage>
     <CtaMessage>

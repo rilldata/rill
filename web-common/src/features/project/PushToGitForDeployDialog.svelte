@@ -10,13 +10,13 @@
   } from "@rilldata/web-common/components/alert-dialog";
   import { Button } from "@rilldata/web-common/components/button";
   import Github from "@rilldata/web-common/components/icons/Github.svelte";
-  import { getRepoNameFromGithubUrl } from "@rilldata/web-common/features/project/github-utils";
+  import { getRepoNameFromGitRemote } from "@rilldata/web-common/features/project/github-utils";
 
   export let open = false;
-  export let githubUrl: string;
+  export let gitRemote: string;
   export let subpath: string;
 
-  $: repoName = getRepoNameFromGithubUrl(githubUrl);
+  $: repoName = getRepoNameFromGitRemote(gitRemote);
 </script>
 
 <AlertDialog bind:open>
@@ -42,7 +42,7 @@
           <div class="flex flex-row gap-x-1 items-center">
             <Github className="w-4 h-4" />
             <a
-              href={githubUrl}
+              href={gitRemote?.replace(/\.git$/, "")}
               class="text-gray-800 text-[12px] font-semibold font-mono leading-5 truncate"
               target="_blank"
               rel="noreferrer noopener"

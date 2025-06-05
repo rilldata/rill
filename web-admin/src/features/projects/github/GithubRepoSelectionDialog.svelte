@@ -35,7 +35,7 @@
   export let open = false;
   export let organization: string;
   export let project: string;
-  export let currentUrl: string;
+  export let currentGithubRemote: string;
   export let currentSubpath: string;
   export let currentBranch: string;
 
@@ -48,7 +48,7 @@
 
   $: repoSelections =
     $userRepos.data?.repos?.map((r) => ({
-      value: r.url,
+      value: r.remote,
       label: `${r.owner}/${r.name}`,
     })) ?? [];
 
@@ -56,7 +56,7 @@
   $: githubConnectionUpdater = new ProjectGithubConnectionUpdater(
     organization,
     project,
-    currentUrl,
+    currentGithubRemote,
     currentSubpath,
     currentBranch,
   );
@@ -64,18 +64,18 @@
   $: connectToGithubMutation = githubConnectionUpdater.connectToGithubMutation;
   $: showOverwriteConfirmation =
     githubConnectionUpdater.showOverwriteConfirmation;
-  $: githubUrl = githubConnectionUpdater.githubUrl;
+  $: githubRemote = githubConnectionUpdater.githubRemote;
   $: subpath = githubConnectionUpdater.subpath;
   $: branch = githubConnectionUpdater.branch;
-  $: disableContinue = !$githubUrl || !$branch || $status.isFetching;
+  $: disableContinue = !$githubRemote || !$branch || $status.isFetching;
 
-  function onSelectedRepoChange(newUrl: string) {
-    const repo = $userRepos.data?.repos?.find((r) => r.url === newUrl);
+  function onSelectedRepoChange(newRemote: string) {
+    const repo = $userRepos.data?.repos?.find((r) => r.remote === newRemote);
     if (!repo) return; // shouldnt happen
 
     githubConnectionUpdater.onSelectedRepoChange(repo);
   }
-  $: if (!$githubUrl && $userRepos.data?.repos?.length) {
+  $: if (!$githubRemote && $userRepos.data?.repos?.length) {
     githubConnectionUpdater.onSelectedRepoChange($userRepos.data.repos[0]);
   }
 
@@ -85,7 +85,7 @@
   }
 
   async function updateGithubUrl(force: boolean) {
-    let url = $githubUrl;
+    let url = $githubRemote;
     const updateSucceeded = await githubConnectionUpdater.update({
       instanceId: $projectQuery.data?.prodDeployment?.runtimeInstanceId ?? "",
       force,
@@ -141,9 +141,9 @@
         <Select
           id="emails"
           label="Repo"
-          bind:value={$githubUrl}
+          bind:value={$githubRemote}
           options={repoSelections}
-          on:change={({ detail: newUrl }) => onSelectedRepoChange(newUrl)}
+          on:change={({ detail: newRemote }) => onSelectedRepoChange(newRemote)}
         />
         <span class="text-gray-500 mt-1">
           <span class="font-semibold">Note:</span> This current project will replace
@@ -180,7 +180,7 @@
     </DialogHeader>
     <DialogFooter class="mt-3">
       <!-- temporarily show this only during edit. in the long run we will not have edit -->
-      {#if $githubUrl}
+      {#if $githubRemote}
         <Button type="link" onClick={() => githubData.reselectRepos()}>
           Choose other repos
         </Button>
@@ -206,7 +206,7 @@
   bind:open={$showOverwriteConfirmation}
   loading={$connectToGithubMutation.isPending}
   {error}
-  githubUrl={$githubUrl}
+  githubRemote={$githubRemote}
   subpath={$subpath}
   onConfirm={() => updateGithubUrl(true)}
   onCancel={() => (open = true)}

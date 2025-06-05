@@ -1,5 +1,8 @@
-export function getRepoNameFromGithubUrl(githubUrl: string) {
-  const repoName = githubUrl.split("github.com/")[1];
+export function getRepoNameFromGitRemote(gitRemote: string) {
+  let repoName = gitRemote.split("github.com/")[1];
   // remove trailing forwards slash if present
-  return repoName?.replace(/\/$/, "") ?? "";
+  repoName = repoName?.replace(/\/$/, "") ?? "";
+  // remote .git suffix
+  repoName = repoName?.replace(/\.git$/, "") ?? "";
+  return repoName;
 }

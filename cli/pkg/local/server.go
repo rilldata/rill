@@ -142,7 +142,7 @@ func (s *Server) PushToGithub(ctx context.Context, r *connect.Request[localv1.Pu
 
 	initGit := false
 	// check if project has a git repo
-	remote, _, err := gitutil.ExtractGitRemote(s.app.ProjectPath, "", false)
+	remote, err := gitutil.ExtractGitRemote(s.app.ProjectPath, "", false)
 	if err != nil {
 		if errors.Is(err, git.ErrRepositoryNotExists) {
 			initGit = true
@@ -150,7 +150,7 @@ func (s *Server) PushToGithub(ctx context.Context, r *connect.Request[localv1.Pu
 			return nil, err
 		}
 	}
-	if remote != nil {
+	if remote.Name != "" {
 		return nil, errors.New("git repository is already initialized with a remote")
 	}
 
@@ -255,14 +255,14 @@ func (s *Server) PushToGithub(ctx context.Context, r *connect.Request[localv1.Pu
 	}
 
 	// Create the remote
-	_, err = repo.CreateRemote(&config.RemoteConfig{Name: "origin", URLs: []string{*githubRepo.HTMLURL}})
+	_, err = repo.CreateRemote(&config.RemoteConfig{Name: "origin", URLs: []string{*githubRepo.CloneURL}})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create remote: %w", err)
 	}
 
 	// push the changes
 	if err := repo.PushContext(ctx, &git.PushOptions{Auth: &githttp.BasicAuth{Username: "x-access-token", Password: gitStatus.AccessToken}}); err != nil {
-		return nil, fmt.Errorf("failed to push to remote %q : %w", *githubRepo.HTMLURL, err)
+		return nil, fmt.Errorf("failed to push to remote %q : %w", *githubRepo.CloneURL, err)
 	}
 
 	account := githubAccount
@@ -271,9 +271,9 @@ func (s *Server) PushToGithub(ctx context.Context, r *connect.Request[localv1.Pu
 	}
 
 	return connect.NewResponse(&localv1.PushToGithubResponse{
-		GithubUrl: *githubRepo.HTMLURL,
-		Account:   account,
-		Repo:      name,
+		Remote:  *githubRepo.CloneURL,
+		Account: account,
+		Repo:    name,
 	}), nil
 }
 
@@ -360,7 +360,7 @@ func (s *Server) DeployProject(ctx context.Context, r *connect.Request[localv1.D
 			ProdOlapDsn:      "",
 			ProdSlots:        int64(DefaultProdSlots(s.app.ch)),
 			Public:           false,
-			GithubUrl:        ghRepo.Remote,
+			GitRemote:        ghRepo.Remote,
 		}
 	} else {
 		userStatus, err := c.GetGithubUserStatus(ctx, &adminv1.GetGithubUserStatusRequest{})
@@ -373,12 +373,16 @@ func (s *Server) DeployProject(ctx context.Context, r *connect.Request[localv1.D
 		}
 
 		// check if project is a git repo
-		remote, ghURL, err := gitutil.ExtractGitRemote(s.app.ProjectPath, "", false)
+		remote, err := gitutil.ExtractGitRemote(s.app.ProjectPath, "", false)
 		if err != nil {
 			if errors.Is(err, gitutil.ErrGitRemoteNotFound) || errors.Is(err, git.ErrRepositoryNotExists) {
 				return nil, errors.New("project is not a valid git repository or not connected to a remote")
 			}
 			return nil, err
+		}
+		githubRemote, err := remote.Github()
+		if err != nil {
+			return nil, fmt.Errorf("failed to get github remote: %w", err)
 		}
 
 		// check if there are uncommitted changes
@@ -390,7 +394,7 @@ func (s *Server) DeployProject(ctx context.Context, r *connect.Request[localv1.D
 
 		// Get github repo status
 		repoStatus, err := c.GetGithubRepoStatus(ctx, &adminv1.GetGithubRepoStatusRequest{
-			GithubUrl: ghURL,
+			Remote: githubRemote,
 		})
 		if err != nil {
 			return nil, err
@@ -409,7 +413,7 @@ func (s *Server) DeployProject(ctx context.Context, r *connect.Request[localv1.D
 			ProdOlapDsn:      "",
 			ProdSlots:        int64(DefaultProdSlots(s.app.ch)),
 			Public:           false,
-			GithubUrl:        ghURL,
+			GitRemote:        githubRemote,
 			Subpath:          "",
 			ProdBranch:       repoStatus.DefaultBranch,
 		}
@@ -518,7 +522,7 @@ func (s *Server) RedeployProject(ctx context.Context, r *connect.Request[localv1
 			_, err = c.UpdateProject(ctx, &adminv1.UpdateProjectRequest{
 				OrganizationName: projResp.Project.OrgName,
 				Name:             projResp.Project.Name,
-				GithubUrl:        &ghRepo.Remote,
+				GitRemote:        &ghRepo.Remote,
 			})
 			if err != nil {
 				return nil, err

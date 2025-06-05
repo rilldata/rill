@@ -7,8 +7,9 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/transport"
 )
 
-func SplitGithubURL(githubURL string) (account, repo string, ok bool) {
-	githubURL = strings.TrimSuffix(githubURL, ".git")
+// SplitGithubRemote takes a GitHub HTTPS remote URL and extracts the Github account and repository name.
+func SplitGithubRemote(remote string) (account, repo string, ok bool) {
+	githubURL := strings.TrimSuffix(remote, ".git")
 	ep, err := transport.NewEndpoint(githubURL)
 	if err != nil {
 		return "", "", false
