@@ -1,8 +1,8 @@
 import { expect } from "@playwright/test";
-import { execAsync } from "@rilldata/web-common/tests/utils/spawn";
+import { isOrgDeleted } from "@rilldata/web-integration/tests/utils/is-org-deleted";
+import { execAsync } from "@rilldata/web-integration/tests/utils/spawn";
 import fs from "fs";
-import { join } from "node:path";
-import { test as teardown, TestTempDirectory } from "./base";
+import { test as teardown } from "./base";
 import { RILL_DEVTOOL_BACKGROUND_PROCESS_PID_FILE } from "./constants";
 
 teardown.describe("global teardown", () => {
@@ -12,14 +12,10 @@ teardown.describe("global teardown", () => {
     // Wait for the organization to be deleted
     // This includes deleting the org from Orb and Stripe, which we'd like to do to keep those environments clean.
     await expect
-      .poll(
-        async () =>
-          (await isOrgDeleted("e2e")) || (await isOrgDeleted("e2e-viewer")),
-        {
-          intervals: [1_000],
-          timeout: 15_000,
-        },
-      )
+      .poll(async () => await isOrgDeleted("e2e-viewer"), {
+        intervals: [1_000],
+        timeout: 15_000,
+      })
       .toBeTruthy();
   });
 
@@ -45,14 +41,3 @@ teardown.describe("global teardown", () => {
     );
   });
 });
-
-async function isOrgDeleted(orgName: string): Promise<boolean> {
-  try {
-    // This command throws an exit code of 1 along with the "Org not found." message when the org is not found.
-    await execAsync(`rill org show ${orgName}`);
-    // If it doesn't throw, the org still exists.
-    return false;
-  } catch (error: any) {
-    return error.stdout.includes("Org not found.");
-  }
-}

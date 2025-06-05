@@ -1,21 +1,24 @@
-import { execAsync } from "@rilldata/web-common/tests/utils/spawn";
+import { makeTempDir } from "web-integration/tests/utils/make-temp-dir";
+import { execAsync } from "web-integration/tests/utils/spawn";
 import dotenv from "dotenv";
 import path from "path";
 import { fileURLToPath } from "url";
-import { test, TestTempDirectory } from "./setup/base";
+import { test } from "./setup/base";
 import { expect } from "@playwright/test";
-import { join } from "node:path";
+import { isOrgDeleted } from "./utils/is-org-deleted";
 
 test.describe("Deploy journey", () => {
+  const cliHomeDir = makeTempDir("deploy_home");
+
   test.use({
-    cliHome: join(TestTempDirectory, "deploy_home"),
-    rillDevProject: "adbids_lite",
+    cliHomeDir,
+    project: "AdBids",
   });
 
   test.afterAll(async () => {
     await execAsync(
       // We need to set the home to get the correct creds
-      `HOME=${join(TestTempDirectory, "deploy_home")} rill org delete e2e-viewer --interactive=false`,
+      `HOME=${cliHomeDir} rill org delete e2e-viewer --interactive=false`,
     );
 
     // Wait for the organization to be deleted

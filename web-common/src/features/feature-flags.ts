@@ -29,16 +29,6 @@ type FeatureFlagKey = keyof Omit<FeatureFlags, "set">;
 class FeatureFlags {
   adminServer = new FeatureFlag("rill", false);
   readOnly = new FeatureFlag("rill", false);
-  /**
-   * We make some calls to cloud for fetching user related stats. But this is not needed in web-local playwright tests.
-   * While there wont be token in CI there could be one when running on a dev's laptop.
-   */
-  rillDevCloudFeatures = new FeatureFlag(
-    "rill",
-    !import.meta.env.VITE_PLAYWRIGHT_TEST ||
-      // We need the cloud features when actually testing rill-dev to rill-cloud interactions.
-      !!import.meta.env.VITE_PLAYWRIGHT_CLOUD_TEST,
-  );
   // Until we figure out a good way to test managed github we need to use the legacy archive method.
   // Right now this is true only in an E2E environment.
   legacyArchiveDeploy = new FeatureFlag(

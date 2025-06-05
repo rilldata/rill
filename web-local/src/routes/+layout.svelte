@@ -30,8 +30,6 @@
 
   export let data: LayoutData;
 
-  const { rillDevCloudFeatures } = featureFlags;
-
   queryClient.getQueryCache().config.onError = (
     error: AxiosError,
     query: Query,
@@ -83,9 +81,7 @@
       >
         {#if data.initialized}
           <BannerCenter />
-          {#if $rillDevCloudFeatures}
-            <RepresentingUserBanner />
-          {/if}
+          <RepresentingUserBanner />
           <ApplicationHeader {mode} />
         {/if}
 

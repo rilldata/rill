@@ -24,14 +24,10 @@ export async function spawnAndMatch(
     const processForCommand = spawn(command, args, {
       stdio: ["inherit", "pipe", "inherit"],
       cwd: options.cwd,
-      ...(options.additionalEnv
-        ? {
-            env: {
-              ...process.env,
-              ...options.additionalEnv,
-            },
-          }
-        : {}),
+      env: {
+        ...process.env,
+        ...(options.additionalEnv ?? {}),
+      },
     });
 
     const timeout = setTimeout(() => {

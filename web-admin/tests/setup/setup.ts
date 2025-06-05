@@ -1,8 +1,5 @@
 import { expect } from "@playwright/test";
-import {
-  execAsync,
-  spawnAndMatch,
-} from "@rilldata/web-common/tests/utils/spawn";
+import { execAsync, spawnAndMatch } from "web-integration/tests/utils/spawn";
 import axios from "axios";
 import { spawn } from "child_process";
 import dotenv from "dotenv";
@@ -20,7 +17,7 @@ import {
   RILL_PROJECT_NAME,
   RILL_SERVICE_NAME,
 } from "./constants";
-import { cliLogin } from "./fixtures/cli";
+import { cliLogin } from "web-integration/tests/fixtures/cli";
 
 setup.describe("global setup", () => {
   setup.describe.configure({

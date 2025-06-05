@@ -11,7 +11,6 @@
   } from "@rilldata/web-common/features/dashboards/selectors.js";
   import DeployProjectCTA from "@rilldata/web-common/features/dashboards/workspace/DeployProjectCTA.svelte";
   import ExplorePreviewCTAs from "@rilldata/web-common/features/explores/ExplorePreviewCTAs.svelte";
-  import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { useProjectTitle } from "@rilldata/web-common/features/project/selectors";
   import { isDeployPage } from "@rilldata/web-common/layout/navigation/route-utils";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
@@ -28,8 +27,6 @@
     params: { name: dashboardName },
     route,
   } = $page);
-
-  const { rillDevCloudFeatures } = featureFlags;
 
   $: ({ unsavedFiles } = fileArtifacts);
   $: ({ size: unsavedFileCount } = $unsavedFiles);
@@ -116,12 +113,10 @@
         <ExplorePreviewCTAs exploreName={dashboardName} />
       {/if}
     {/if}
-    {#if $rillDevCloudFeatures}
-      {#if !onDeployPage}
-        <DeployProjectCTA {hasValidDashboard} />
-      {/if}
-      <LocalAvatarButton />
+    {#if !onDeployPage}
+      <DeployProjectCTA {hasValidDashboard} />
     {/if}
+    <LocalAvatarButton />
   </div>
 </header>
 
