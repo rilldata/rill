@@ -126,3 +126,27 @@ func TestPolicyMetricsSQLAPI(t *testing.T) {
 	require.Equal(t, "msn.com", resp[0]["domain"])
 	require.Equal(t, nil, resp[0]["publisher"])
 }
+
+func TestMetricsSQL_AdditionalWhere(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
+
+	api, err := rt.APIForName(context.Background(), instanceID, "simple_mv_sql_api_global")
+	require.NoError(t, err)
+
+	res, err := rt.Resolve(context.Background(), &runtime.ResolveOptions{
+		InstanceID:         instanceID,
+		Resolver:           api.Spec.Resolver,
+		ResolverProperties: api.Spec.ResolverProperties.AsMap(),
+		Args:               nil,
+		Claims:             &runtime.SecurityClaims{},
+	})
+	require.NoError(t, err)
+	defer res.Close()
+
+	require.NotNil(t, res)
+	var rows []map[string]interface{}
+	require.NoError(t, json.Unmarshal(must(res.MarshalJSON()), &rows))
+	for _, row := range rows {
+		require.NotEqual(t, "google.com", row["dom"])
+	}
+}

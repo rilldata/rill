@@ -10,13 +10,14 @@ import (
 // DataYAML is the raw YAML structure of a sub-property for defining a data resolver and properties.
 // It is used across multiple resources, usually under "data:", but inlined for APIs.
 type DataYAML struct {
-	Connector      string         `yaml:"connector"`
-	SQL            string         `yaml:"sql"`
-	MetricsSQL     string         `yaml:"metrics_sql"`
-	API            string         `yaml:"api"`
-	Args           map[string]any `yaml:"args"`
-	Glob           yaml.Node      `yaml:"glob"` // Path (string) or properties (map[string]any)
-	ResourceStatus map[string]any `yaml:"resource_status"`
+	Connector       string         `yaml:"connector"`
+	SQL             string         `yaml:"sql"`
+	MetricsSQL      string         `yaml:"metrics_sql"`
+	AdditionalWhere string         `yaml:"additional_where"` // Optional additional WHERE clause for metrics SQL
+	API             string         `yaml:"api"`
+	Args            map[string]any `yaml:"args"`
+	Glob            yaml.Node      `yaml:"glob"` // Path (string) or properties (map[string]any)
+	ResourceStatus  map[string]any `yaml:"resource_status"`
 }
 
 // parseDataYAML parses a data resolver and its properties from a DataYAML.
@@ -46,6 +47,13 @@ func (p *Parser) parseDataYAML(raw *DataYAML, contextualConnector string) (strin
 		count++
 		resolver = "metrics_sql"
 		resolverProps["sql"] = raw.MetricsSQL
+	}
+
+	// Handle additional where for metrics SQL
+	if raw.AdditionalWhere != "" {
+		if resolver == "metrics_sql" {
+			resolverProps["additional_where"] = raw.AdditionalWhere
+		}
 	}
 
 	// Handle API resolver
