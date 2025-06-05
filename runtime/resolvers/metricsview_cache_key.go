@@ -80,7 +80,7 @@ func newMetricsViewCacheKeyResolver(ctx context.Context, opts *runtime.ResolverO
 		return nil, runtime.ErrForbidden
 	}
 
-	// not setting timeColumn as all cache resolutions will be done against the primary time dimension specified in the metrics view
+	// not setting timeDimension as all cache resolutions will be done against the primary time dimension specified in the metrics view
 	executor, err := metricsview.NewExecutor(ctx, opts.Runtime, opts.InstanceID, mv, res.GetMetricsView().State.Streaming, security, args.Priority, "")
 	if err != nil {
 		return nil, err

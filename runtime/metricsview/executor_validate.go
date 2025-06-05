@@ -303,7 +303,7 @@ func (e *Executor) validateTimeTypes(tableSchema map[string]*runtimev1.StructTyp
 	}
 
 	// check all dimension of type timestamp or date - if they are referring to a column then needs to use same name as column as the column name can be used in the where time filter without selecting the dimension
-	for i, d := range e.metricsView.Dimensions {
+	/*for i, d := range e.metricsView.Dimensions {
 		if d.Type == nil || (d.Type.Code != runtimev1.Type_CODE_TIMESTAMP && d.Type.Code != runtimev1.Type_CODE_DATE) {
 			continue
 		}
@@ -313,7 +313,7 @@ func (e *Executor) validateTimeTypes(tableSchema map[string]*runtimev1.StructTyp
 				Err: fmt.Errorf("dimension %q must have the same name as the column as it is of type %s", d.Name, d.Type.Code),
 			})
 		}
-	}
+	}*/
 }
 
 // validateDimension validates a metrics view dimension.

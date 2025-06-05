@@ -26,7 +26,7 @@ type Query struct {
 	TimeZone            string      `mapstructure:"time_zone"`
 	UseDisplayNames     bool        `mapstructure:"use_display_names"`
 	Rows                bool        `mapstructure:"rows"`
-	TimeColumn          string      `mapstructure:"time_column"` // optional time column to use for time-based operations, if not specified, the default time column in the metrics view is used
+	TimeDimension       string      `mapstructure:"time_dimension"` // optional time dimension to use for time-based operations, if not specified, the default time dimension in the metrics view is used
 }
 
 type Dimension struct {

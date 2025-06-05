@@ -36,7 +36,7 @@ type MetricsViewTimeSeries struct {
 	TimeGranularity runtimev1.TimeGrain          `json:"time_granularity,omitempty"`
 	TimeZone        string                       `json:"time_zone,omitempty"`
 	SecurityClaims  *runtime.SecurityClaims      `json:"security_claims,omitempty"`
-	TimeColumn      string                       `json:"time_column,omitempty"`
+	TimeDimension   string                       `json:"time_dimension,omitempty"`
 
 	Result *runtimev1.MetricsViewTimeSeriesResponse `json:"-"`
 }
@@ -84,8 +84,8 @@ func (q *MetricsViewTimeSeries) Resolve(ctx context.Context, rt *runtime.Runtime
 	}
 
 	timeDim := mv.ValidSpec.TimeDimension
-	if q.TimeColumn != "" {
-		timeDim = q.TimeColumn
+	if q.TimeDimension != "" {
+		timeDim = q.TimeDimension
 	}
 
 	qry, err := q.rewriteToMetricsViewQuery(timeDim)
@@ -94,7 +94,7 @@ func (q *MetricsViewTimeSeries) Resolve(ctx context.Context, rt *runtime.Runtime
 	}
 
 	// no need to set alternate time dimension as query already will be adjusted to use the time column if specified
-	e, err := metricsview.NewExecutor(ctx, rt, instanceID, mv.ValidSpec, mv.Streaming, security, priority, q.TimeColumn)
+	e, err := metricsview.NewExecutor(ctx, rt, instanceID, mv.ValidSpec, mv.Streaming, security, priority, q.TimeDimension)
 	if err != nil {
 		return err
 	}
@@ -367,7 +367,7 @@ func (q *MetricsViewTimeSeries) rewriteToMetricsViewQuery(timeDimension string) 
 	})
 
 	qry.TimeZone = q.TimeZone
-	qry.TimeColumn = q.TimeColumn
+	qry.TimeDimension = q.TimeDimension
 
 	return qry, nil
 }

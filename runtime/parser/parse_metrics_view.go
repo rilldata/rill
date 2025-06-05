@@ -307,12 +307,9 @@ func (p *Parser) parseMetricsView(node *Node) error {
 
 		lower := strings.ToLower(dim.Name)
 		if _, ok := names[lower]; ok {
-			// allow time dimension to be defined in the dimensions list if it refers to a column then the name should be equal to the column name
+			// allow time dimension to be defined in the dimensions list
 			if !strings.EqualFold(lower, tmp.TimeDimension) {
 				return fmt.Errorf("found duplicate dimension or measure name %q", dim.Name)
-			}
-			if dim.Expression == "" && dim.Column != dim.Name {
-				return fmt.Errorf("cannot use alias for time dimension, use same name as column name")
 			}
 		}
 		names[lower] = nameIsDimension

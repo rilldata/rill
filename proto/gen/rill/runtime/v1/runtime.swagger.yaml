@@ -1397,7 +1397,7 @@ paths:
               rows:
                 type: boolean
                 title: Optional. Defaults to false. Used to fetch rows from underlying model
-              timeColumn:
+              timeDimension:
                 type: string
                 title: Optional. If not specified, falls back to the primary time dimension in the metrics view spec
       tags:
@@ -1593,7 +1593,7 @@ paths:
               filter:
                 $ref: '#/definitions/v1MetricsViewFilter'
                 title: Deprecated. should be removed once UI is moved to use new filters
-              timeColumn:
+              timeDimension:
                 type: string
                 title: Optional. If not specified, falls back to the primary time dimension in the metrics view spec
       tags:
@@ -1677,7 +1677,7 @@ paths:
               priority:
                 type: integer
                 format: int32
-              timeColumn:
+              timeDimension:
                 type: string
                 title: Optional. If not specified, falls back to the primary time dimension in the metrics view spec
       tags:
@@ -1713,7 +1713,7 @@ paths:
               priority:
                 type: integer
                 format: int32
-              timeColumn:
+              timeDimension:
                 type: string
                 title: Optional. If not specified, falls back to the primary time dimension in the metrics view spec
       tags:
@@ -1755,7 +1755,7 @@ paths:
               timeZone:
                 type: string
                 title: Optional timezone param to easily override time-range expressions
-              timeColumn:
+              timeDimension:
                 type: string
                 title: Optional. If not specified, falls back to the primary time dimension in the metrics view spec
       tags:
@@ -1826,7 +1826,7 @@ paths:
               filter:
                 $ref: '#/definitions/v1MetricsViewFilter'
                 title: Deprecated. should be removed once UI is moved to use new filters
-              timeColumn:
+              timeDimension:
                 type: string
                 title: Optional. If not specified, falls back to the primary time dimension in the metrics view spec
       tags:
@@ -5012,7 +5012,7 @@ definitions:
       rows:
         type: boolean
         title: Optional. Defaults to false. Used to fetch rows from underlying model
-      timeColumn:
+      timeDimension:
         type: string
         title: Optional. If not specified, falls back to the primary time dimension in the metrics view spec
   v1MetricsViewAggregationResponse:
@@ -5254,7 +5254,7 @@ definitions:
       filter:
         $ref: '#/definitions/v1MetricsViewFilter'
         title: Deprecated. should be removed once UI is moved to use new filters
-      timeColumn:
+      timeDimension:
         type: string
         title: Optional. If not specified, falls back to the primary time dimension in the metrics view spec
   v1MetricsViewRowsResponse:
@@ -5439,7 +5439,7 @@ definitions:
       filter:
         $ref: '#/definitions/v1MetricsViewFilter'
         title: Deprecated. should be removed once UI is moved to use new filters
-      timeColumn:
+      timeDimension:
         type: string
         title: Optional. If not specified, falls back to the primary time dimension in the metrics view spec
   v1MetricsViewTimeSeriesResponse:

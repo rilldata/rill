@@ -68,7 +68,7 @@ func (q *MetricsViewTotals) Resolve(ctx context.Context, rt *runtime.Runtime, in
 		return fmt.Errorf("error rewriting to metrics query: %w", err)
 	}
 
-	// alternate timeColumn not supported as the query is deprecated
+	// alternate timeDimension not supported as the query is deprecated
 	e, err := metricsview.NewExecutor(ctx, rt, instanceID, mv.ValidSpec, mv.Streaming, security, priority, "")
 	if err != nil {
 		return err

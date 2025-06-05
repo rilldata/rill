@@ -38,7 +38,7 @@ func ProtoToQuery(q *runtimev1.Query, claims *runtime.SecurityClaims) (runtime.Q
 			Offset:              req.Offset,
 			PivotOn:             req.PivotOn,
 			SecurityClaims:      claims,
-			TimeColumn:          req.TimeColumn,
+			TimeDimension:       req.TimeDimension,
 		}, nil
 	case *runtimev1.Query_MetricsViewComparisonRequest:
 		req := r.MetricsViewComparisonRequest

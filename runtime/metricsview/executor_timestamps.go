@@ -221,7 +221,7 @@ func (e *Executor) resolveDruid(ctx context.Context) (TimestampsResult, error) {
 
 // timeColumnOrExpr returns the time column or expression to use for the metrics view. ues time column if provided, otherwise fall back to the metrics view TimeDimension.
 func (e *Executor) timeColumnOrExpr() string {
-	timeDim := e.timeColumn
+	timeDim := e.timeDimension
 	if timeDim == "" {
 		timeDim = e.metricsView.TimeDimension
 	}

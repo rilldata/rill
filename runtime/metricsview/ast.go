@@ -122,7 +122,7 @@ const (
 // This is due to NewAST not being able (or intended) to resolve external time anchors such as watermarks.
 //
 // The qry's PivotOn must be empty. Pivot queries must be rewritten/handled upstream of NewAST.
-func NewAST(mv *runtimev1.MetricsViewSpec, sec *runtime.ResolvedSecurity, qry *Query, dialect drivers.Dialect, timeColumn string) (*AST, error) {
+func NewAST(mv *runtimev1.MetricsViewSpec, sec *runtime.ResolvedSecurity, qry *Query, dialect drivers.Dialect, timeDimension string) (*AST, error) {
 	// Validation
 	if len(qry.PivotOn) > 0 {
 		return nil, errors.New("cannot build AST for pivot queries")
@@ -132,7 +132,7 @@ func NewAST(mv *runtimev1.MetricsViewSpec, sec *runtime.ResolvedSecurity, qry *Q
 	}
 
 	// Use provided time column if available, otherwise fall back to TimeDimension
-	timeDim := timeColumn
+	timeDim := timeDimension
 	if timeDim == "" {
 		timeDim = mv.TimeDimension
 	}
@@ -176,10 +176,15 @@ func NewAST(mv *runtimev1.MetricsViewSpec, sec *runtime.ResolvedSecurity, qry *Q
 			return nil, fmt.Errorf("time dimension %q not found: %w", timeDim, err)
 		}
 
+		expr, err := ast.dialect.MetricsViewDimensionExpression(t)
+		if err != nil {
+			return nil, fmt.Errorf("failed to compile time dimension %q expression: %w", t.Name, err)
+		}
+
 		ast.timeField = &FieldNode{
-			Name:        t.Column, // use actual column name instead of dim name as the time dim may not be present in the select clause, so using alias won't work
+			Name:        t.Name,
 			DisplayName: t.DisplayName,
-			Expr:        t.Expression,
+			Expr:        expr,
 		}
 	}
 
@@ -1211,21 +1216,17 @@ func (a *AST) generateIdentifier() string {
 }
 
 // sqlForTimeRange builds a SQL expression and query args for filtering by a time range.
-func (a *AST) sqlForTimeRange(timeCol *FieldNode, start, end time.Time) (string, []any) {
-	col := a.dialect.EscapeIdentifier(timeCol.Name)
-	if timeCol.Expr != "" {
-		col = timeCol.Expr
-	}
+func (a *AST) sqlForTimeRange(timeDim *FieldNode, start, end time.Time) (string, []any) {
 	var where string
 	var args []any
 	if !start.IsZero() && !end.IsZero() {
-		where = fmt.Sprintf("%s >= ? AND %s < ?", col, col)
+		where = fmt.Sprintf("%s >= ? AND %s < ?", timeDim.Expr, timeDim.Expr)
 		args = []any{start, end}
 	} else if !start.IsZero() {
-		where = fmt.Sprintf("%s >= ?", col)
+		where = fmt.Sprintf("%s >= ?", timeDim.Expr)
 		args = []any{start}
 	} else if !end.IsZero() {
-		where = fmt.Sprintf("%s < ?", col)
+		where = fmt.Sprintf("%s < ?", timeDim.Expr)
 		args = []any{end}
 	} else {
 		return "", nil

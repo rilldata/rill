@@ -22,7 +22,7 @@ type MetricsViewSearch struct {
 	Priority        int32                   `json:"priority,omitempty"`
 	Limit           *int64                  `json:"limit,omitempty"`
 	SecurityClaims  *runtime.SecurityClaims `json:"security_claims,omitempty"`
-	TimeColumn      string                  `json:"time_column,omitempty"` // if empty, the default time column in mv is used
+	TimeDimension   string                  `json:"time_dimension,omitempty"` // if empty, the default time dimension in mv is used
 
 	Result *runtimev1.MetricsViewSearchResponse
 }
@@ -63,7 +63,7 @@ func (q *MetricsViewSearch) Resolve(ctx context.Context, rt *runtime.Runtime, in
 		return err
 	}
 
-	exec, err := metricsview.NewExecutor(ctx, rt, instanceID, mv.ValidSpec, mv.Streaming, sec, priority, q.TimeColumn)
+	exec, err := metricsview.NewExecutor(ctx, rt, instanceID, mv.ValidSpec, mv.Streaming, sec, priority, q.TimeDimension)
 	if err != nil {
 		return err
 	}
