@@ -170,6 +170,19 @@
   }
 
   function handleInvite() {
+    // First validate the current input if it exists
+    if (input.trim()) {
+      const inputValid = validate(input);
+      if (inputValid === true) {
+        // Add the input to selected items if it's valid
+        selected = [...selected, input];
+        input = "";
+      } else {
+        error = inputValid as string;
+        return;
+      }
+    }
+
     const invalids = selected.map(validate).filter((v) => v !== true);
     if (invalids.length > 0) {
       error = invalids[0] as string;
@@ -425,7 +438,7 @@
     <Button
       type="primary"
       on:click={handleInvite}
-      disabled={selected.length === 0}
+      disabled={selected.length === 0 && !input.trim()}
       forcedStyle="height: 32px !important; padding-left: 20px; padding-right: 20px;"
     >
       Invite
