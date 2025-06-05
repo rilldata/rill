@@ -21,7 +21,6 @@ import { getFetchOrganizationQueryOptions } from "@rilldata/web-admin/features/o
 import { fetchProjectDeploymentDetails } from "@rilldata/web-admin/features/projects/selectors";
 import { initPosthog } from "@rilldata/web-common/lib/analytics/posthog";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.js";
-import { fixLocalhostRuntimePort } from "@rilldata/web-common/runtime-client/fix-localhost-runtime-port";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import { error, redirect, type Page } from "@sveltejs/kit";
 import { isAxiosError } from "axios";
@@ -135,7 +134,7 @@ export const load = async ({ params, url, route, depends }) => {
 
     await runtime.setRuntime(
       queryClient,
-      fixLocalhostRuntimePort(runtimeData.host ?? ""),
+      runtimeData.host ?? "",
       runtimeData.instanceId,
       runtimeData.jwt?.token,
       runtimeData.jwt?.authContext,
