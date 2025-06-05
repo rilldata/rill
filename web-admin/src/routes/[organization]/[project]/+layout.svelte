@@ -111,7 +111,7 @@
         query: {
           enabled: !!mockedUserId,
         },
-      }
+      },
     );
   $: ({ data: mockedUserDeploymentCredentials } =
     $mockedUserDeploymentCredentialsQuery);
