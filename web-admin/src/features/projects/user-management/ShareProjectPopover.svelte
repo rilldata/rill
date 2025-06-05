@@ -321,8 +321,8 @@
       </div>
       <UserAndGroupInviteForm {organization} {project} {searchList} />
       <!-- 52 * 8 = 416px -->
-      <div class="flex flex-col gap-y-1 overflow-y-auto max-h-[416px]">
-        <div class="mt-4">
+      <div class="flex flex-col gap-y-1 overflow-y-auto max-h-[416px] mt-2">
+        <div class="mt-2">
           {#each sortedProjectMemberUsersList as user}
             <UserItem
               {organization}
@@ -353,7 +353,9 @@
             />
           {/each}
         </div>
-        <div class="mt-2">
+        <div
+          class="mt-2 general-access-container sticky bottom-0 bg-white pt-2"
+        >
           <div class="text-xs text-gray-500 font-semibold uppercase">
             General Access
           </div>
@@ -518,7 +520,8 @@
       <a
         href="https://docs.rilldata.com/manage/roles-permissions#project-level-permissions"
         target="_blank"
-        class="text-xs text-primary-600">Learn more about sharing</a
+        class="text-xs text-primary-600 hover::text-primary-700"
+        >Learn more about sharing</a
       >
       <div class="grow"></div>
       <CopyInviteLinkButton {copyLink} />
