@@ -199,9 +199,30 @@ type generateMetricsViewYAMLWithres struct {
 // It validates that the result is a valid metrics view. Due to the unpredictable nature of AI (and chance of downtime), this function may error non-deterministically.
 func (s *Server) generateMetricsViewYAMLWithAI(ctx context.Context, instanceID, dialect, connector string, tbl *drivers.Table, isDefaultConnector, isModel bool) (*generateMetricsViewYAMLWithres, error) {
 	// Build messages
+	systemPrompt := metricsViewYAMLSystemPrompt()
+	userPrompt := metricsViewYAMLUserPrompt(dialect, tbl.Name, tbl.Schema)
+
 	msgs := []*drivers.CompletionMessage{
-		{Role: "system", Data: metricsViewYAMLSystemPrompt()},
-		{Role: "user", Data: metricsViewYAMLUserPrompt(dialect, tbl.Name, tbl.Schema)},
+		{
+			Role: "system",
+			Content: []*runtimev1.ContentBlock{
+				{
+					BlockType: &runtimev1.ContentBlock_Text{
+						Text: systemPrompt,
+					},
+				},
+			},
+		},
+		{
+			Role: "user",
+			Content: []*runtimev1.ContentBlock{
+				{
+					BlockType: &runtimev1.ContentBlock_Text{
+						Text: userPrompt,
+					},
+				},
+			},
+		},
 	}
 
 	// Connect to the AI service configured for the instance
@@ -216,19 +237,27 @@ func (s *Server) generateMetricsViewYAMLWithAI(ctx context.Context, instanceID, 
 	defer cancel()
 
 	// Call AI service to infer a metrics view YAML
-	res, err := ai.Complete(ctx, msgs)
+	res, err := ai.Complete(ctx, msgs, drivers.BuildConfig())
 	if err != nil {
 		return nil, err
 	}
 
+	// Extract text from content blocks
+	var responseText string
+	for _, block := range res.Content {
+		if text := block.GetText(); text != "" {
+			responseText += text
+		}
+	}
+
 	// The AI may produce Markdown output. Remove the code tags around the YAML.
-	res.Data = strings.TrimPrefix(res.Data, "```yaml")
-	res.Data = strings.TrimPrefix(res.Data, "```")
-	res.Data = strings.TrimSuffix(res.Data, "```")
+	responseText = strings.TrimPrefix(responseText, "```yaml")
+	responseText = strings.TrimPrefix(responseText, "```")
+	responseText = strings.TrimSuffix(responseText, "```")
 
 	// Parse the YAML structure
 	var doc metricsViewYAML
-	if err := yaml.Unmarshal([]byte(res.Data), &doc); err != nil {
+	if err := yaml.Unmarshal([]byte(responseText), &doc); err != nil {
 		return nil, fmt.Errorf("invalid metrics view YAML: %w", err)
 	}
 

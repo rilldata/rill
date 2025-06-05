@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 )
 
@@ -227,4 +228,24 @@ func (c *connection) FindInstanceHealth(ctx context.Context, instanceID string) 
 
 func (c *connection) UpsertInstanceHealth(ctx context.Context, h *drivers.InstanceHealth) error {
 	return drivers.ErrNotImplemented
+}
+
+func (c *connection) ListConversations(ctx context.Context) ([]*runtimev1.Conversation, error) {
+	return nil, drivers.ErrNotImplemented
+}
+
+func (c *connection) GetConversation(ctx context.Context, conversationID string) (*runtimev1.Conversation, error) {
+	return nil, drivers.ErrNotImplemented
+}
+
+func (c *connection) CreateConversation(ctx context.Context, title string) (string, error) {
+	return "", drivers.ErrNotImplemented
+}
+
+func (c *connection) ListMessages(ctx context.Context, conversationID string) ([]*runtimev1.Message, error) {
+	return nil, drivers.ErrNotImplemented
+}
+
+func (c *connection) AddMessage(ctx context.Context, conversationID, role string, content []*runtimev1.ContentBlock, parentMessageID *string) (string, error) {
+	return "", drivers.ErrNotImplemented
 }

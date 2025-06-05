@@ -2,6 +2,7 @@ syntax = "proto3";
 package rill.admin.v1;
 
 import "google/api/annotations.proto";
+import "google/protobuf/struct.proto";
 
 service AIService {
   // Complete sends the messages of a chat to the AI and asks it to generate a new message.
@@ -15,6 +16,8 @@ service AIService {
 
 message CompleteRequest {
   repeated CompletionMessage messages = 1;
+  // Optional list of tools that the AI can use during completion
+  repeated Tool tools = 2;
 }
 
 message CompleteResponse {
@@ -23,5 +26,38 @@ message CompleteResponse {
 
 message CompletionMessage {
   string role = 1;
-  string data = 2;
+  repeated ContentBlock content = 2;
+}
+
+// Content block within a message
+message ContentBlock {
+  oneof block_type {
+    string text = 1;
+    ToolCall tool_call = 2;
+    ToolResult tool_result = 3;
+  }
+}
+
+// Tool call specification
+message ToolCall {
+  string id = 1;
+  string name = 2;
+  google.protobuf.Struct input = 3;
+}
+
+// Tool execution result
+message ToolResult {
+  string id = 1;
+  string content = 2;
+  bool is_error = 3;
+}
+
+// Tool represents a tool definition for AI usage
+message Tool {
+  // The name of the tool
+  string name = 1;
+  // A human-readable description of the tool
+  string description = 2;
+  // JSON Schema defining the expected parameters for the tool (as JSON string)
+  string input_schema = 3;
 }

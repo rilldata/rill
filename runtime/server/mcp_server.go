@@ -36,7 +36,7 @@ In the workflow, do not proceed with the next step until the previous step has b
 If a response contains an "ai_context" field, you should interpret it as additional instructions for how to behave in subsequent responses that relate to that tool call.
 `
 
-func (s *Server) newMCPHandler() http.Handler {
+func (s *Server) createMCPServer() *server.MCPServer {
 	version := s.runtime.Version().Number
 	if version == "" {
 		version = "0.0.1"
@@ -63,6 +63,10 @@ func (s *Server) newMCPHandler() http.Handler {
 	mcpServer.AddTool(s.mcpQueryMetricsViewTimeRange())
 	mcpServer.AddTool(s.mcpQueryMetricsView())
 
+	return mcpServer
+}
+
+func (s *Server) createMCPHTTPHandler(mcpServer *server.MCPServer) http.Handler {
 	httpServer := server.NewStreamableHTTPServer(
 		mcpServer,
 		server.WithHeartbeatInterval(30*time.Second),

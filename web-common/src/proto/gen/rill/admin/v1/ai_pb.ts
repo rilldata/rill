@@ -4,7 +4,7 @@
 // @ts-nocheck
 
 import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialMessage, PlainMessage } from "@bufbuild/protobuf";
-import { Message, proto3 } from "@bufbuild/protobuf";
+import { Message, proto3, Struct } from "@bufbuild/protobuf";
 
 /**
  * @generated from message rill.admin.v1.CompleteRequest
@@ -15,6 +15,13 @@ export class CompleteRequest extends Message<CompleteRequest> {
    */
   messages: CompletionMessage[] = [];
 
+  /**
+   * Optional list of tools that the AI can use during completion
+   *
+   * @generated from field: repeated rill.admin.v1.Tool tools = 2;
+   */
+  tools: Tool[] = [];
+
   constructor(data?: PartialMessage<CompleteRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -24,6 +31,7 @@ export class CompleteRequest extends Message<CompleteRequest> {
   static readonly typeName = "rill.admin.v1.CompleteRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "messages", kind: "message", T: CompletionMessage, repeated: true },
+    { no: 2, name: "tools", kind: "message", T: Tool, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CompleteRequest {
@@ -90,9 +98,9 @@ export class CompletionMessage extends Message<CompletionMessage> {
   role = "";
 
   /**
-   * @generated from field: string data = 2;
+   * @generated from field: repeated rill.admin.v1.ContentBlock content = 2;
    */
-  data = "";
+  content: ContentBlock[] = [];
 
   constructor(data?: PartialMessage<CompletionMessage>) {
     super();
@@ -103,7 +111,7 @@ export class CompletionMessage extends Message<CompletionMessage> {
   static readonly typeName = "rill.admin.v1.CompletionMessage";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "role", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "data", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "content", kind: "message", T: ContentBlock, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CompletionMessage {
@@ -120,6 +128,224 @@ export class CompletionMessage extends Message<CompletionMessage> {
 
   static equals(a: CompletionMessage | PlainMessage<CompletionMessage> | undefined, b: CompletionMessage | PlainMessage<CompletionMessage> | undefined): boolean {
     return proto3.util.equals(CompletionMessage, a, b);
+  }
+}
+
+/**
+ * Content block within a message
+ *
+ * @generated from message rill.admin.v1.ContentBlock
+ */
+export class ContentBlock extends Message<ContentBlock> {
+  /**
+   * @generated from oneof rill.admin.v1.ContentBlock.block_type
+   */
+  blockType: {
+    /**
+     * @generated from field: string text = 1;
+     */
+    value: string;
+    case: "text";
+  } | {
+    /**
+     * @generated from field: rill.admin.v1.ToolCall tool_call = 2;
+     */
+    value: ToolCall;
+    case: "toolCall";
+  } | {
+    /**
+     * @generated from field: rill.admin.v1.ToolResult tool_result = 3;
+     */
+    value: ToolResult;
+    case: "toolResult";
+  } | { case: undefined; value?: undefined } = { case: undefined };
+
+  constructor(data?: PartialMessage<ContentBlock>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.ContentBlock";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "text", kind: "scalar", T: 9 /* ScalarType.STRING */, oneof: "block_type" },
+    { no: 2, name: "tool_call", kind: "message", T: ToolCall, oneof: "block_type" },
+    { no: 3, name: "tool_result", kind: "message", T: ToolResult, oneof: "block_type" },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ContentBlock {
+    return new ContentBlock().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ContentBlock {
+    return new ContentBlock().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ContentBlock {
+    return new ContentBlock().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ContentBlock | PlainMessage<ContentBlock> | undefined, b: ContentBlock | PlainMessage<ContentBlock> | undefined): boolean {
+    return proto3.util.equals(ContentBlock, a, b);
+  }
+}
+
+/**
+ * Tool call specification
+ *
+ * @generated from message rill.admin.v1.ToolCall
+ */
+export class ToolCall extends Message<ToolCall> {
+  /**
+   * @generated from field: string id = 1;
+   */
+  id = "";
+
+  /**
+   * @generated from field: string name = 2;
+   */
+  name = "";
+
+  /**
+   * @generated from field: google.protobuf.Struct input = 3;
+   */
+  input?: Struct;
+
+  constructor(data?: PartialMessage<ToolCall>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.ToolCall";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "input", kind: "message", T: Struct },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ToolCall {
+    return new ToolCall().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ToolCall {
+    return new ToolCall().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ToolCall {
+    return new ToolCall().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ToolCall | PlainMessage<ToolCall> | undefined, b: ToolCall | PlainMessage<ToolCall> | undefined): boolean {
+    return proto3.util.equals(ToolCall, a, b);
+  }
+}
+
+/**
+ * Tool execution result
+ *
+ * @generated from message rill.admin.v1.ToolResult
+ */
+export class ToolResult extends Message<ToolResult> {
+  /**
+   * @generated from field: string id = 1;
+   */
+  id = "";
+
+  /**
+   * @generated from field: string content = 2;
+   */
+  content = "";
+
+  /**
+   * @generated from field: bool is_error = 3;
+   */
+  isError = false;
+
+  constructor(data?: PartialMessage<ToolResult>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.ToolResult";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "content", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "is_error", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ToolResult {
+    return new ToolResult().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ToolResult {
+    return new ToolResult().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ToolResult {
+    return new ToolResult().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ToolResult | PlainMessage<ToolResult> | undefined, b: ToolResult | PlainMessage<ToolResult> | undefined): boolean {
+    return proto3.util.equals(ToolResult, a, b);
+  }
+}
+
+/**
+ * Tool represents a tool definition for AI usage
+ *
+ * @generated from message rill.admin.v1.Tool
+ */
+export class Tool extends Message<Tool> {
+  /**
+   * The name of the tool
+   *
+   * @generated from field: string name = 1;
+   */
+  name = "";
+
+  /**
+   * A human-readable description of the tool
+   *
+   * @generated from field: string description = 2;
+   */
+  description = "";
+
+  /**
+   * JSON Schema defining the expected parameters for the tool (as JSON string)
+   *
+   * @generated from field: string input_schema = 3;
+   */
+  inputSchema = "";
+
+  constructor(data?: PartialMessage<Tool>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.Tool";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "input_schema", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Tool {
+    return new Tool().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): Tool {
+    return new Tool().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): Tool {
+    return new Tool().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: Tool | PlainMessage<Tool> | undefined, b: Tool | PlainMessage<Tool> | undefined): boolean {
+    return proto3.util.equals(Tool, a, b);
   }
 }
 

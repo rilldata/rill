@@ -48,6 +48,7 @@ class FeatureFlags {
   exportHeader = new FeatureFlag("user", false);
   alerts = new FeatureFlag("user", true);
   reports = new FeatureFlag("user", true);
+  chat = new FeatureFlag("user", true); // TODO: set this to false before merging
 
   constructor() {
     const updateFlags = (userFlags: V1InstanceFeatureFlags) => {
