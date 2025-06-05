@@ -70,7 +70,7 @@
       const singleProject = $matchingProjects.data.projects[0];
       // Project already exists. Run a redeploy
       return goto(
-        `/deploy/redeploy?org=${singleProject.orgName}&projectId=${singleProject.id}`,
+        `/deploy/redeploy?org=${singleProject.orgName}&project_id=${singleProject.id}`,
       );
     } else {
       return goto(`/deploy/matching-projects`);

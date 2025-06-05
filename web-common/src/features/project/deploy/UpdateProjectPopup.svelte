@@ -39,7 +39,9 @@
     <div class="text-sm text-slate-500">Push local changes to Rill Cloud?</div>
 
     {#if matchingProjects.length === 1 && selectedProject}
-      <ProjectSelectorItem project={selectedProject} />
+      <div class="border rounded-sm border-gray-300">
+        <ProjectSelectorItem project={selectedProject} />
+      </div>
     {:else}
       <ProjectSelector bind:selectedProject projects={matchingProjects} />
     {/if}

@@ -8,7 +8,7 @@
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import TrialDetailsDialog from "@rilldata/web-common/features/billing/TrialDetailsDialog.svelte";
-  import UpdateProjectDropdown from "@rilldata/web-common/features/project/deploy/UpdateProjectDropdown.svelte";
+  import UpdateProjectPopup from "@rilldata/web-common/features/project/deploy/UpdateProjectPopup.svelte";
   import { copyWithAdditionalArguments } from "@rilldata/web-common/lib/url-utils";
   import { waitUntil } from "@rilldata/web-common/lib/waitUtils";
   import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
@@ -86,7 +86,7 @@
 </script>
 
 {#if isDeployed}
-  <UpdateProjectDropdown
+  <UpdateProjectPopup
     bind:open={updateProjectDropdownOpen}
     matchingProjects={$matchingProjectsQuery.data?.projects ?? []}
   />

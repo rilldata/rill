@@ -35,13 +35,18 @@
     <span class="w-full">{project.orgName}/{project.name}</span>
   </div>
   {#if hovered}
-    <a
-      target="_blank"
-      rel="noopener noreferrer"
-      href={project.frontendUrl}
-      class="justify-end"
-    >
-      <ExternalLink className="fill-primary-600" />
-    </a>
+    <Tooltip.Root portal="body">
+      <Tooltip.Trigger>
+        <a
+          target="_blank"
+          rel="noopener noreferrer"
+          href={project.frontendUrl}
+          class="justify-end"
+        >
+          <ExternalLink className="fill-gray-700" />
+        </a>
+      </Tooltip.Trigger>
+      <Tooltip.Content side="bottom">Open Rill Cloud project</Tooltip.Content>
+    </Tooltip.Root>
   {/if}
 </button>
