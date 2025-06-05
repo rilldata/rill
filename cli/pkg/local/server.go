@@ -858,11 +858,7 @@ func (s *Server) logoutHandler() http.Handler {
 		}
 
 		// Get URL for cloud auth.
-		// NOTE: This is temporary until we migrate to a server that can host HTTP and gRPC on the same port.
 		authURL := s.app.ch.AdminURL()
-		if strings.Contains(authURL, "http://localhost:9090") {
-			authURL = "http://localhost:8080"
-		}
 
 		// Logout on cloud as well
 		var qry map[string]string
