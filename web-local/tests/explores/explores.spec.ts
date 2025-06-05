@@ -1,5 +1,5 @@
 import { expect } from "@playwright/test";
-import { interactWithTimeRangeMenu } from "@rilldata/web-common/tests/utils/explore-interactions";
+import { interactWithTimeRangeMenu } from "web-integration/tests/utils/explore-interactions";
 import { test } from "../setup/base";
 import { updateCodeEditor, wrapRetryAssertion } from "../utils/commonHelpers";
 import {

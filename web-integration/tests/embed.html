@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Iframe Example</title>
+</head>
+<body>
+    <iframe id="rill-frame" src="http://localhost:3000/-/embed?access_token=eyJhbGciOiJSUzI1NiIsImtpZCI6IlNRMWo1RzRQMnkwWlB5dWRkX0tCd29qZXkxbXFJWFlQbDJ2cFMwRkwwakk9IiwidHlwIjoiSldUIn0.eyJpc3MiOiJodHRwOi8vbG9jYWxob3N0OjgwODAiLCJzdWIiOiIwNjUwYWJlNy1lMTNmLTQ0NWYtYTg1NC05MjQ0MzhlNzU2YTYiLCJhdWQiOlsiaHR0cDovL2xvY2FsaG9zdDo4MDgxIl0sImV4cCI6MTc0OTIwOTIyMiwibmJmIjoxNzQ5MTIyODIyLCJpYXQiOjE3NDkxMjI4MjIsImlucyI6eyJhOWVkYWU0MjIzYTQ0ZmE2ODk5YjY1NzUxNGIyYjk5NSI6WzIxLDIzLDI1XX19.rpnWsXVudeytB_YmQrBoR3xdl1fTxWw2IpvAkdhT2okp9hPMWl90BzYaHYWoj29YFBDbcoWjEgJd7hmJcuX37GNtQ_AM9xDxEV59_OgVEeVqwnQedhsjt9hjhXnyFfuew5N1eRRXkvVyojTfEtCjw2O5DUL2jSR9DqTt7pnMilNHkIySSMEWdFAr20xvbIm9nQC3WdE8MrbKRrxfavY-rVPhe-fYvT69yXhQOPxkesjydrtjfVshIzPU8rwF_LuPaCYlcaX_vb6Z2PDmYhBNE4eVgF0p9xqnMBJc5xGaLvJxm1zVvPrX8pMK-LOiLYyczUTxHFVQlgjSsKi7krOFKA&instance_id=a9edae4223a44fa6899b657514b2b995&kind=rill.runtime.v1.Explore&navigation=true&resource=bids_explore&runtime_host=http%3A%2F%2Flocalhost%3A9091&type=rill.runtime.v1.Explore" height="600px" width="100%"></iframe>
+    <script>
+        window.addEventListener('message', (event) => {
+            console.log(event.data);
+        });
+    </script>
+</body>
+</html>

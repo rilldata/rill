@@ -1,8 +1,5 @@
 import { expect } from "@playwright/test";
-import {
-  execAsync,
-  spawnAndMatch,
-} from "@rilldata/web-common/tests/utils/spawn";
+import { execAsync, spawnAndMatch } from "web-integration/tests/utils/spawn";
 import axios from "axios";
 import { spawn } from "child_process";
 import dotenv from "dotenv";
@@ -11,7 +8,7 @@ import { mkdir } from "fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
 import { writeFileEnsuringDir } from "../utils/fs";
-import { test as setup } from "./base";
+import { test as setup, TestTempDirectory } from "./base";
 import {
   ADMIN_STORAGE_STATE,
   RILL_DEVTOOL_BACKGROUND_PROCESS_PID_FILE,
@@ -20,7 +17,7 @@ import {
   RILL_PROJECT_NAME,
   RILL_SERVICE_NAME,
 } from "./constants";
-import { cliLogin } from "./fixtures/cli";
+import { cliLogin } from "web-integration/tests/fixtures/cli";
 
 setup.describe("global setup", () => {
   setup.describe.configure({
@@ -183,7 +180,7 @@ setup.describe("global setup", () => {
   setup("should deploy the OpenRTB project", async ({ adminPage }) => {
     // Deploy the OpenRTB project
     const { match } = await spawnAndMatch(
-      "rill",
+      "../rill",
       [
         "deploy",
         "--path",
