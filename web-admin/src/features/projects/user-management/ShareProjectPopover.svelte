@@ -396,7 +396,7 @@
                       {/if}
                       <div class="flex flex-col text-left">
                         <span
-                          class="flex flex-row items-center gap-x-1 text-sm font-medium text-gray-900"
+                          class="flex flex-row items-center gap-x-1 text-sm font-medium text-gray-900 hover:bg-gray-100 rounded-sm px-1 py-0.5 -mx-1 -my-0.5"
                         >
                           {#if accessType === "everyone"}
                             Everyone at {organization}
