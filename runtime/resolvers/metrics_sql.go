@@ -2,6 +2,7 @@ package resolvers
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 
 	"github.com/mitchellh/mapstructure"
@@ -81,5 +82,55 @@ func newMetricsSQL(ctx context.Context, opts *runtime.ResolverOptions) (runtime.
 		Claims:     opts.Claims,
 		ForExport:  opts.ForExport,
 	}
-	return newMetrics(ctx, resolverOpts)
+	res, err := newMetrics(ctx, resolverOpts)
+	if err != nil {
+		return nil, err
+	}
+
+	// If the resolver is a metricsResolver, wrap it to include meta in the result
+	if mr, ok := res.(*metricsResolver); ok {
+		return &metaResolver{
+			Resolver: res,
+			meta:     mr.Meta(),
+		}, nil
+	}
+
+	return res, nil
+}
+
+// metaResolver wraps a runtime.Resolver and injects meta into the ResolverResult's JSON output.
+type metaResolver struct {
+	runtime.Resolver
+	meta any
+}
+
+func (r *metaResolver) ResolveInteractive(ctx context.Context) (runtime.ResolverResult, error) {
+	res, err := r.Resolver.ResolveInteractive(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return &metaResolverResult{
+		ResolverResult: res,
+		meta:           r.meta,
+	}, nil
+}
+
+type metaResolverResult struct {
+	runtime.ResolverResult
+	meta any
+}
+
+func (r *metaResolverResult) MarshalJSON() ([]byte, error) {
+	data, err := r.ResolverResult.MarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	var dataVal any
+	if err := json.Unmarshal(data, &dataVal); err != nil {
+		return nil, err
+	}
+	return json.Marshal(map[string]any{
+		"data": dataVal,
+		"meta": r.meta,
+	})
 }
