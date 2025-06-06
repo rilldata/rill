@@ -2,6 +2,7 @@ package activity
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -245,8 +246,28 @@ func (c *Client) RecordRaw(data map[string]any) error {
 	return nil
 }
 
+func truncateEvent(e *Event) {
+	if e == nil || e.Data == nil {
+		return
+	}
+
+	b, err := json.Marshal(e)
+	if err != nil {
+		return
+	}
+	if len(b) <= maxSize {
+		return
+	}
+
+	e.Data = map[string]any{
+		"truncated": true,
+		"reason":    "event data exceeded 1MB and was truncated",
+	}
+}
+
 // emitRaw sends an event to the sink.
 func (c *Client) emitRaw(e Event) {
+	truncateEvent(&e)
 	err := c.sink.Emit(e)
 	if err != nil {
 		c.logger.Error("Failed to emit event", zap.Error(err))

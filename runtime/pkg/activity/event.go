@@ -5,6 +5,8 @@ import (
 	"time"
 )
 
+const maxSize = 1048576 // 1MB in bytes
+
 // Event is a telemetry event. It consists of a few required fields that are common to all events and a payload of type-specific data.
 // All the common fields are prefixed with "event_" to avoid conflicts with the payload data.
 type Event struct {
@@ -16,17 +18,33 @@ type Event struct {
 }
 
 func (e Event) MarshalJSON() ([]byte, error) {
-	// Add the common fields to the map.
-	if e.Data == nil {
-		e.Data = make(map[string]any)
+	data := make(map[string]any, len(e.Data)+4)
+	for k, v := range e.Data {
+		data[k] = v
 	}
-	e.Data["event_id"] = e.EventID
-	e.Data["event_time"] = e.EventTime.UTC().Format(time.RFC3339Nano)
-	e.Data["event_type"] = e.EventType
-	e.Data["event_name"] = e.EventName
+	data["event_id"] = e.EventID
+	data["event_time"] = e.EventTime.UTC().Format(time.RFC3339Nano)
+	data["event_type"] = e.EventType
+	data["event_name"] = e.EventName
 
-	// Then serialize it.
-	return json.Marshal(e.Data)
+	b, err := json.Marshal(data)
+	if err != nil {
+		return nil, err
+	}
+	if len(b) <= maxSize {
+		return b, nil
+	}
+
+	// Truncate if too large
+	truncated := map[string]any{
+		"event_id":   e.EventID,
+		"event_time": e.EventTime.UTC().Format(time.RFC3339Nano),
+		"event_type": e.EventType,
+		"event_name": e.EventName,
+		"truncated":  true,
+		"reason":     "event data exceeded 1MB and was truncated",
+	}
+	return json.Marshal(truncated)
 }
 
 // Constants for common event types.
