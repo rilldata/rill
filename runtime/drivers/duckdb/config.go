@@ -29,6 +29,12 @@ type config struct {
 	InitSQL string `mapstructure:"init_sql"`
 	// LogQueries controls whether to log the raw SQL passed to OLAP.Execute. (Internal queries will not be logged.)
 	LogQueries bool `mapstructure:"log_queries"`
+
+	// Path switches the implementation to use a generic rduckdb implementation backed by the db used in the Path
+	Path string `mapstructure:"path"`
+	// DBName is the name of the attached DuckDB database specified in the Path.
+	// This is usually not required but can be set if our auto detection of name fails.
+	DBName string `mapstructure:"db_name"`
 }
 
 func newConfig(cfgMap map[string]any) (*config, error) {
