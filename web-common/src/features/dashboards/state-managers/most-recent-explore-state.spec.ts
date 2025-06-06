@@ -1,3 +1,4 @@
+import { onNavigate } from "$app/navigation";
 import { DashboardFetchMocks } from "@rilldata/web-common/features/dashboards/dashboard-fetch-mocks";
 import DashboardStateManagerTest from "@rilldata/web-common/features/dashboards/state-managers/loaders/test/DashboardStateManagerTest.svelte";
 import {
@@ -42,6 +43,7 @@ vi.mock("$app/navigation", () => {
   return {
     goto: (url, opts) => hoistedPage.goto(url, opts),
     afterNavigate: (cb) => hoistedPage.afterNavigate(cb),
+    onNavigate: () => {},
   };
 });
 vi.mock("$app/stores", () => {

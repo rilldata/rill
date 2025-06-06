@@ -311,6 +311,8 @@
     dimensionName: string,
     values: string[],
   ) {
+    if (!dashboardStateSync) return false;
+
     const exploreState = structuredClone($dashboardStore);
     applyDimensionInListModeDirectly(
       { dashboard: exploreState },
