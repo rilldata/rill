@@ -140,8 +140,8 @@ func (s *Server) PushToGithub(ctx context.Context, r *connect.Request[localv1.Pu
 		return nil, err
 	}
 
+	// Check if the project already has a Git repo
 	initGit := false
-	// check if project has a git repo
 	remote, err := gitutil.ExtractGitRemote(s.app.ProjectPath, "", false)
 	if err != nil {
 		if errors.Is(err, git.ErrRepositoryNotExists) {
