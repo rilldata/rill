@@ -172,7 +172,7 @@ func checkRillRepo() error {
 	githubRemote, _ := remote.Github()
 
 	if githubRemote != rillGitRemote {
-		return fmt.Errorf("you must run `rill devtool` from the rill repository (expected remote %q, got %q)", rillGitRemote, remote.URL)
+		return fmt.Errorf("you must run `rill devtool` from the rill repository (expected remote %q, got %q)", rillGitRemote, githubRemote)
 	}
 
 	return nil

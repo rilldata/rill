@@ -50,7 +50,7 @@ func NormalizeGithubRemote(remote string) (string, error) {
 
 	// The .git suffix is not always required (e.g. Github has redirects if its missing), so we add it for consistency.
 	if !strings.HasSuffix(ep.Path, ".git") {
-		ep.Path = path.Join(ep.Path, repo+".git")
+		ep.Path += ".git"
 	}
 
 	githubRemote := &url.URL{
