@@ -331,7 +331,7 @@ func (c *connection) FindPublicProjectsInOrganization(ctx context.Context, orgID
 
 func (c *connection) FindProjectsByGitRemote(ctx context.Context, remote string) ([]*database.Project, error) {
 	var res []*projectDTO
-	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT p.* FROM projects p WHERE lower(p.git_remote)=lower($1) ", remote)
+	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT p.* FROM projects p WHERE lower(p.git_remote)=lower($1)", remote)
 	if err != nil {
 		return nil, parseErr("projects", err)
 	}

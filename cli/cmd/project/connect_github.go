@@ -179,7 +179,7 @@ func ConnectGithubFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts
 		}
 
 		// Set the gitRemote to the normalized Github URL.
-		gitRemote, err = gitutil.NormalizeGithubRemote(remote.URL)
+		gitRemote, err = remote.Github()
 		if err != nil {
 			return err
 		}
