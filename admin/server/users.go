@@ -3,9 +3,12 @@ package server
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/rilldata/rill/admin/database"
+	"github.com/rilldata/rill/admin/pkg/authtoken"
 	"github.com/rilldata/rill/admin/server/auth"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/rilldata/rill/runtime/pkg/observability"
@@ -215,6 +218,13 @@ func (s *Server) ListUserAuthTokens(ctx context.Context, req *adminv1.ListUserAu
 			expiresOn = timestamppb.New(*t.ExpiresOn)
 		}
 
+		id, err := uuid.Parse(t.ID)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "invalid token ID %q: %v", t.ID, err)
+		}
+
+		token := &authtoken.Token{Type: authtoken.TypeUser, ID: id}
+
 		dtos[i] = &adminv1.UserAuthToken{
 			Id:                    t.ID,
 			DisplayName:           t.DisplayName,
@@ -224,6 +234,7 @@ func (s *Server) ListUserAuthTokens(ctx context.Context, req *adminv1.ListUserAu
 			CreatedOn:             timestamppb.New(t.CreatedOn),
 			ExpiresOn:             expiresOn,
 			UsedOn:                timestamppb.New(t.UsedOn),
+			Prefix:                token.Prefix(),
 		}
 	}
 
@@ -299,7 +310,7 @@ func (s *Server) RevokeUserAuthToken(ctx context.Context, req *adminv1.RevokeUse
 		}
 		tokenID = auth.GetClaims(ctx).AuthTokenID()
 	} else {
-		token, err := s.admin.DB.FindUserAuthToken(ctx, req.TokenId)
+		token, err := s.findUserAuthTokenFuzzy(ctx, req.TokenId)
 		if err != nil {
 			return nil, err
 		}
@@ -617,4 +628,67 @@ func projInviteToPB(i *database.ProjectInviteWithRole) *adminv1.ProjectInvite {
 		OrgRoleName: i.OrgRoleName,
 		InvitedBy:   i.InvitedBy,
 	}
+}
+
+// findUserAuthTokenFuzzy attempts to find a user auth token by exact ID, full token string, or unique prefix.
+func (s *Server) findUserAuthTokenFuzzy(ctx context.Context, input string) (*database.UserAuthToken, error) {
+	claims := auth.GetClaims(ctx)
+	userID := claims.OwnerID()
+
+	// Try exact ID match
+	token, err := s.admin.DB.FindUserAuthToken(ctx, input)
+	if err == nil {
+		return token, nil
+	}
+
+	// Try full token string
+	tokenStr, err := authtoken.FromString(input)
+	if err == nil {
+		token, err := s.admin.DB.FindUserAuthToken(ctx, tokenStr.ID.String())
+		if err == nil {
+			return token, nil
+		}
+	}
+
+	// Validate input length and prefix
+	if len(input) < 10 || !strings.HasPrefix(input, "rill_usr_") {
+		return nil, status.Error(codes.InvalidArgument, "invalid token ID (must be at least 10 characters and start with 'rill_usr_')")
+	}
+
+	// Try matching by prefix
+	tokens, err := s.admin.DB.FindUserAuthTokens(ctx, userID, "", 1000)
+	if err != nil {
+		return nil, err
+	}
+
+	var matches []*database.UserAuthToken
+	for _, t := range tokens {
+		if strings.HasPrefix(t.ID, input) {
+			matches = append(matches, t)
+			continue
+		}
+
+		const prefix = "rill_usr_"
+		if strings.HasPrefix(input, prefix) {
+			base62 := strings.TrimPrefix(input, prefix)
+			// Base62-encoded UUIDs are always 22 characters long.
+			// This allows us to match tokens by their base62 prefix.
+			if len(base62) >= 22 {
+				if uuidBytes, ok := authtoken.UnmarshalBase62(base62[:22]); ok && len(uuidBytes) == 16 {
+					uuidStr := uuid.Must(uuid.FromBytes(uuidBytes)).String()
+					if t.ID == uuidStr {
+						matches = append(matches, t)
+					}
+				}
+			}
+		}
+	}
+
+	if len(matches) == 1 {
+		return matches[0], nil
+	}
+	if len(matches) > 1 {
+		return nil, status.Error(codes.InvalidArgument, "multiple tokens match the given prefix (please use a more specific prefix)")
+	}
+	return nil, status.Error(codes.NotFound, "token not found")
 }

@@ -5588,6 +5588,8 @@ definitions:
     properties:
       id:
         type: string
+      prefix:
+        type: string
       createdOn:
         type: string
         format: date-time
@@ -5891,6 +5893,8 @@ definitions:
       authClientDisplayName:
         type: string
       representingUserId:
+        type: string
+      prefix:
         type: string
       createdOn:
         type: string

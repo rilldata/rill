@@ -13,7 +13,7 @@ rill token list [flags]
 ### Flags
 
 ```
-      --page-size uint32    Number of projects to return per page (default 50)
+      --page-size uint32    Number of tokens to return per page (default 1000)
       --page-token string   Pagination token
 ```
 
