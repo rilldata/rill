@@ -10,10 +10,10 @@
   import { getOrganizationBillingContactUser } from "@rilldata/web-admin/features/billing/contact/selectors";
   import AddUsersDialog from "@rilldata/web-admin/features/organizations/users/AddUsersDialog.svelte";
   import ChangingBillingContactRoleDialog from "@rilldata/web-admin/features/organizations/users/ChangingBillingContactRoleDialog.svelte";
+  import OrgUsersFilters from "@rilldata/web-admin/features/organizations/users/OrgUsersFilters.svelte";
   import OrgUsersTable from "@rilldata/web-admin/features/organizations/users/OrgUsersTable.svelte";
   import RemovingBillingContactDialog from "@rilldata/web-admin/features/organizations/users/RemovingBillingContactDialog.svelte";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
-  import OrgUsersFilters from "@rilldata/web-admin/features/organizations/users/OrgUsersFilters.svelte";
   import { Search } from "@rilldata/web-common/components/search";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import { Plus } from "lucide-svelte";
@@ -164,7 +164,7 @@
         <Button
           type="primary"
           large
-          on:click={() => (isAddUserDialogOpen = true)}
+          onClick={() => (isAddUserDialogOpen = true)}
         >
           <Plus size="16px" />
           <span>Add users</span>

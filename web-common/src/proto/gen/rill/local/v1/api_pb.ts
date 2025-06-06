@@ -337,9 +337,9 @@ export class PushToGithubRequest extends Message<PushToGithubRequest> {
  */
 export class PushToGithubResponse extends Message<PushToGithubResponse> {
   /**
-   * @generated from field: string github_url = 1;
+   * @generated from field: string remote = 1;
    */
-  githubUrl = "";
+  remote = "";
 
   /**
    * @generated from field: string account = 2;
@@ -359,7 +359,7 @@ export class PushToGithubResponse extends Message<PushToGithubResponse> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.local.v1.PushToGithubResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "github_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 1, name: "remote", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "account", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "repo", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);

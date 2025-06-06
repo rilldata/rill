@@ -40,11 +40,11 @@
     <AlertDialogFooter>
       <Button
         type="plain"
-        on:click={() => {
+        onClick={() => {
           open = false;
         }}>Cancel</Button
       >
-      <Button type="primary" status="error" on:click={handleDelete}
+      <Button type="primary" status="error" onClick={handleDelete}
         >Yes, delete</Button
       >
     </AlertDialogFooter>

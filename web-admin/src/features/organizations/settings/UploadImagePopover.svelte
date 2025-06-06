@@ -1,16 +1,16 @@
 <script lang="ts">
   import { createAdminServiceCreateAsset } from "@rilldata/web-admin/client";
   import { CANONICAL_ADMIN_URL } from "@rilldata/web-admin/client/http-client";
+  import { Button } from "@rilldata/web-common/components/button/index.js";
+  import FileInput from "@rilldata/web-common/components/forms/FileInput.svelte";
+  import EditIcon from "@rilldata/web-common/components/icons/EditIcon.svelte";
   import {
     Popover,
     PopoverContent,
     PopoverTrigger,
   } from "@rilldata/web-common/components/popover/index.js";
-  import { Button } from "@rilldata/web-common/components/button/index.js";
-  import FileInput from "@rilldata/web-common/components/forms/FileInput.svelte";
-  import EditIcon from "@rilldata/web-common/components/icons/EditIcon.svelte";
   import { extractFileExtension } from "@rilldata/web-common/features/entity-management/file-path-utils";
-  import { getAttrs, builderActions } from "bits-ui";
+  import { builderActions, getAttrs } from "bits-ui";
 
   export let imageUrl: string;
   export let accept: string;
@@ -114,11 +114,11 @@
       </div>
     {/if}
     <div class="flex flex-row justify-end gap-x-2">
-      <Button type="secondary" on:click={onCancel}>Cancel</Button>
+      <Button type="secondary" onClick={onCancel}>Cancel</Button>
       {#if imageUrl}
         <Button
           type="secondary"
-          on:click={handleRemove}
+          onClick={handleRemove}
           {loading}
           disabled={loading}
         >
@@ -127,7 +127,7 @@
       {/if}
       <Button
         type="primary"
-        on:click={handleSave}
+        onClick={handleSave}
         {loading}
         disabled={loading || !assetId}
       >

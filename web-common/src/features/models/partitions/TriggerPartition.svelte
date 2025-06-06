@@ -41,7 +41,7 @@
 
 <Button
   type="secondary"
-  on:click={trigger}
+  onClick={trigger}
   disabled={resource?.meta?.reconcileStatus ===
     V1ReconcileStatus.RECONCILE_STATUS_RUNNING}
   noWrap
