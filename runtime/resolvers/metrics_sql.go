@@ -74,7 +74,7 @@ func newMetricsSQL(ctx context.Context, opts *runtime.ResolverOptions) (runtime.
 	if props.AdditionalWhere != "" {
 		expr, err := metricssqlparser.ParseSQLFilter(props.AdditionalWhere)
 		if err != nil {
-			return nil, err
+			return nil, errors.New("invalid additional_where filter: '" + props.AdditionalWhere + "': " + err.Error())
 		}
 		// Merge with existing WHERE clause if present
 		if query.Where != nil {

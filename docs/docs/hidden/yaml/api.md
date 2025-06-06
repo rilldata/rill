@@ -101,6 +101,17 @@ Executes a SQL query that targets a defined metrics view.
 
 _[string]_ - SQL query that targets a metrics view in the project _(required)_
 
+### `additional_where`
+
+_[string]_ - (Optional) An additional SQL filter expression to be injected as an AND clause into the metrics SQL query's WHERE clause. This allows you to apply global or dynamic filters to all results returned by the metrics SQL.
+
+**Example:**
+```yaml
+type: api
+metrics_sql: SELECT publisher, total_records FROM my_metrics
+additional_where: publisher != 'Google'
+```
+
 ## Custom API Call
 
 Calls a custom API defined in the project to compute data.
