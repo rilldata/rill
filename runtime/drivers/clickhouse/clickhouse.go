@@ -437,7 +437,6 @@ func (c *Connection) AsAI(instanceID string) (drivers.AIService, bool) {
 
 // OLAP implements drivers.Connection.
 func (c *Connection) AsOLAP(instanceID string) (drivers.OLAPStore, bool) {
-	c.instanceID = instanceID
 	return c, true
 }
 
