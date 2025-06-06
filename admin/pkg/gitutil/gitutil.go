@@ -9,8 +9,7 @@ import (
 
 // SplitGithubRemote takes a GitHub HTTPS remote URL and extracts the Github account and repository name.
 func SplitGithubRemote(remote string) (account, repo string, ok bool) {
-	githubURL := strings.TrimSuffix(remote, ".git")
-	ep, err := transport.NewEndpoint(githubURL)
+	ep, err := transport.NewEndpoint(remote)
 	if err != nil {
 		return "", "", false
 	}
@@ -21,6 +20,7 @@ func SplitGithubRemote(remote string) (account, repo string, ok bool) {
 
 	account, repo = path.Split(ep.Path)
 	account = strings.Trim(account, "/")
+	repo = strings.TrimSuffix(repo, ".git")
 	if account == "" || repo == "" || strings.Contains(account, "/") {
 		return "", "", false
 	}
