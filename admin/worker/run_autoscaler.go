@@ -107,7 +107,7 @@ func (w *Worker) runAutoscaler(ctx context.Context) error {
 			Description:          targetProject.Description,
 			Public:               targetProject.Public,
 			ArchiveAssetID:       targetProject.ArchiveAssetID,
-			GithubURL:            targetProject.GithubURL,
+			GitRemote:            targetProject.GitRemote,
 			GithubInstallationID: targetProject.GithubInstallationID,
 			GithubRepoID:         targetProject.GithubRepoID,
 			ManagedGitRepoID:     targetProject.ManagedGitRepoID,
