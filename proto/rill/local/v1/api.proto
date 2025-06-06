@@ -80,7 +80,7 @@ message PushToGithubRequest {
 }
 
 message PushToGithubResponse {
-  string github_url = 1;
+  string remote = 1;
   string account = 2;
   string repo = 3;
 }

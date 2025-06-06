@@ -64,7 +64,7 @@
     void behaviourEvent?.fireDeployEvent(BehaviourEventAction.DeployIntent);
 
     await waitUntil(() => !get(currentProject).isFetching);
-    if (get(currentProject).data?.project?.githubUrl && !managedGit) {
+    if (get(currentProject).data?.project?.gitRemote && !managedGit) {
       pushThroughGitOpen = true;
       return;
     }
@@ -111,6 +111,6 @@
 
 <PushToGitForDeployDialog
   bind:open={pushThroughGitOpen}
-  githubUrl={$currentProject.data?.project?.githubUrl ?? ""}
+  gitRemote={$currentProject.data?.project?.gitRemote ?? ""}
   subpath={$currentProject.data?.project?.subpath ?? ""}
 />

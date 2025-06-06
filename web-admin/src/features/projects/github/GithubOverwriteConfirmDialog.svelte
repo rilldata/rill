@@ -1,6 +1,5 @@
 <script lang="ts">
   import type { extractGithubConnectError } from "@rilldata/web-admin/features/projects/github/github-errors";
-  import { getRepoNameFromGithubUrl } from "@rilldata/web-common/features/project/github-utils";
   import {
     AlertDialog,
     AlertDialogContent,
@@ -13,6 +12,7 @@
   import { Button } from "@rilldata/web-common/components/button/index.js";
   import AlertCircleOutline from "@rilldata/web-common/components/icons/AlertCircleOutline.svelte";
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
+  import { getRepoNameFromGitRemote } from "@rilldata/web-common/features/project/github-utils";
 
   export let open = false;
   export let loading: boolean;
@@ -20,13 +20,13 @@
 
   export let onConfirm: () => Promise<void>;
   export let onCancel: () => void;
-  export let githubUrl: string;
+  export let githubRemote: string;
   export let subpath: string;
 
   let confirmInput = "";
   $: confirmed = confirmInput === "overwrite";
 
-  $: path = `${getRepoNameFromGithubUrl(githubUrl)}/${subpath}`;
+  $: path = `${getRepoNameFromGitRemote(githubRemote)}/${subpath}`;
 
   function close() {
     onCancel();

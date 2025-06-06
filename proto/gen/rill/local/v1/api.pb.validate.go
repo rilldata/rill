@@ -828,7 +828,7 @@ func (m *PushToGithubResponse) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for GithubUrl
+	// no validation rules for Remote
 
 	// no validation rules for Account
 
