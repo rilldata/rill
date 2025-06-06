@@ -14,6 +14,7 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/mapstructureutil"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
+	"google.golang.org/protobuf/types/known/structpb"
 )
 
 func init() {
@@ -28,6 +29,7 @@ type metricsResolver struct {
 	args           *metricsResolverArgs
 	claims         *runtime.SecurityClaims
 	metricsHasTime bool
+	meta           []*structpb.Struct // Details about the metrics view, such as measures and dimensions
 }
 
 type metricsResolverArgs struct {
@@ -88,6 +90,7 @@ func newMetrics(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Res
 		args:           args,
 		claims:         opts.Claims,
 		metricsHasTime: mv.TimeDimension != "",
+		meta:           buildMetricsViewMeta(mv),
 	}, nil
 }
 
@@ -147,4 +150,40 @@ func (r *metricsResolver) ResolveInteractive(ctx context.Context) (runtime.Resol
 
 func (r *metricsResolver) ResolveExport(ctx context.Context, w io.Writer, opts *runtime.ResolverExportOptions) error {
 	return errors.New("not implemented")
+}
+
+func (r *metricsResolver) Meta() []*structpb.Struct {
+	return r.meta
+}
+
+// buildMetricsViewMeta extracts metadata from the measures and dimensions defined in the MetricsViewSpec.
+func buildMetricsViewMeta(spec *runtimev1.MetricsViewSpec) []*structpb.Struct {
+	if spec == nil {
+		return nil
+	}
+
+	details := make([]*structpb.Struct, 0)
+	for _, m := range spec.Measures {
+		details = append(details, &structpb.Struct{
+			Fields: map[string]*structpb.Value{
+				"type":          structpb.NewStringValue("measure"),
+				"name":          structpb.NewStringValue(m.Name),
+				"display_name":  structpb.NewStringValue(m.DisplayName),
+				"expression":    structpb.NewStringValue(m.Expression),
+				"format_preset": structpb.NewStringValue(m.FormatPreset),
+			},
+		})
+	}
+	for _, d := range spec.Dimensions {
+		details = append(details, &structpb.Struct{
+			Fields: map[string]*structpb.Value{
+				"type":         structpb.NewStringValue("dimension"),
+				"name":         structpb.NewStringValue(d.Name),
+				"display_name": structpb.NewStringValue(d.DisplayName),
+				"column":       structpb.NewStringValue(d.Column),
+			},
+		})
+	}
+
+	return details
 }
