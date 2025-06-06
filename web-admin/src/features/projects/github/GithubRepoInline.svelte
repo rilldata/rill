@@ -1,5 +1,8 @@
 <script lang="ts">
-  import { getRepoNameFromGitRemote } from "@rilldata/web-common/features/project/github-utils";
+  import {
+    getGitUrlFromRemote,
+    getRepoNameFromGitRemote,
+  } from "@rilldata/web-common/features/project/github-utils";
 
   export let gitRemote: string;
 
@@ -7,7 +10,7 @@
 </script>
 
 <a
-  href={gitRemote?.replace(/\.git$/, "")}
+  href={getGitUrlFromRemote(gitRemote)}
   target="_blank"
   class="font-semibold font-mono text-gray-800 text-[16px] leading-5"
   rel="noreferrer noopener"

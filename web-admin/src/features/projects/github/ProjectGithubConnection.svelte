@@ -14,7 +14,10 @@
   import DisconnectIcon from "@rilldata/web-common/components/icons/DisconnectIcon.svelte";
   import Github from "@rilldata/web-common/components/icons/Github.svelte";
   import ThreeDot from "@rilldata/web-common/components/icons/ThreeDot.svelte";
-  import { getRepoNameFromGitRemote } from "@rilldata/web-common/features/project/github-utils";
+  import {
+    getGitUrlFromRemote,
+    getRepoNameFromGitRemote,
+  } from "@rilldata/web-common/features/project/github-utils";
   import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
   import { BehaviourEventAction } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
@@ -86,7 +89,7 @@
         <div class="flex flex-row gap-x-1 items-center">
           <Github className="w-4 h-4" />
           <a
-            href={$proj.data?.project?.gitRemote?.replace(/\.git$/, "")}
+            href={getGitUrlFromRemote($proj.data?.project?.gitRemote)}
             class="text-gray-800 text-[12px] font-semibold font-mono leading-5 truncate"
             target="_blank"
             rel="noreferrer noopener"
