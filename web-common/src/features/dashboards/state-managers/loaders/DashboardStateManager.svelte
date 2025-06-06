@@ -1,5 +1,9 @@
 <script lang="ts">
-  import { afterNavigate } from "$app/navigation";
+  import { afterNavigate, onNavigate } from "$app/navigation";
+  import {
+    ExploreUrlLimitWarningBannerID,
+    ExploreUrlLimitWarningBannerPriority,
+  } from "@rilldata/web-common/components/banner/constants";
   import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
   import type { CompoundQueryResult } from "@rilldata/web-common/features/compound-query-result";
   import { DashboardStateDataLoader } from "@rilldata/web-common/features/dashboards/state-managers/loaders/DashboardStateDataLoader";
@@ -7,7 +11,9 @@
   import { useExploreState } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
   import DashboardLoading from "@rilldata/web-common/features/dashboards/state-managers/loaders/DashboardLoading.svelte";
+  import { isUrlTooLong } from "@rilldata/web-common/features/dashboards/url-state/url-length-limits";
   import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
+  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { onDestroy } from "svelte";
@@ -59,10 +65,36 @@
     });
   }
 
+  let hasBanner = false;
   afterNavigate(({ from, to, type }) => {
     if (!from?.url || !to?.url || !stateSync) return;
 
     void stateSync.handleURLChange(to.url.searchParams, type);
+
+    if (isUrlTooLong(to.url)) {
+      hasBanner = true;
+      eventBus.emit("add-banner", {
+        id: ExploreUrlLimitWarningBannerID,
+        priority: ExploreUrlLimitWarningBannerPriority,
+        message: {
+          type: "warning",
+          message: "URL is too long. Some features like export will not work.",
+          iconType: "alert",
+        },
+      });
+    } else if (hasBanner) {
+      hasBanner = false;
+      eventBus.emit("remove-banner", ExploreUrlLimitWarningBannerID);
+    }
+  });
+
+  onNavigate(({ from, to }) => {
+    const changedDashboard =
+      !from || !to || from.params?.dashboard !== to.params?.dashboard;
+    // Clear out any dashboard banners
+    if (hasBanner && changedDashboard) {
+      eventBus.emit("remove-banner", ExploreUrlLimitWarningBannerID);
+    }
   });
 
   onDestroy(() => {
