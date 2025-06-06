@@ -6,6 +6,7 @@ import (
 
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/metricsview"
 	metricssqlparser "github.com/rilldata/rill/runtime/pkg/metricssql"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
@@ -16,7 +17,8 @@ func init() {
 }
 
 type metricsSQLProps struct {
-	SQL string `mapstructure:"sql"`
+	SQL             string `mapstructure:"sql"`              // SQL is the metrics SQL to evaluate.
+	AdditionalWhere string `mapstructure:"additional_where"` // AdditionalWhere is a filter to apply to the metrics SQL. (additional WHERE clause)
 }
 
 type metricsSQLArgs struct {
@@ -39,6 +41,7 @@ func newMetricsSQL(ctx context.Context, opts *runtime.ResolverOptions) (runtime.
 	span := trace.SpanFromContext(ctx)
 	if span.SpanContext().IsValid() {
 		span.SetAttributes(attribute.String("metrics_sql", props.SQL))
+		span.SetAttributes(attribute.String("metrics_sql.additional_where", props.AdditionalWhere))
 	}
 
 	instance, err := opts.Runtime.Instance(ctx, opts.InstanceID)
@@ -46,7 +49,6 @@ func newMetricsSQL(ctx context.Context, opts *runtime.ResolverOptions) (runtime.
 		return nil, err
 	}
 
-	// todo handle refs
 	props.SQL, _, err = resolveTemplate(props.SQL, opts.Args, instance, opts.Claims.UserAttributes, opts.ForExport)
 	if err != nil {
 		return nil, err
@@ -66,6 +68,25 @@ func newMetricsSQL(ctx context.Context, opts *runtime.ResolverOptions) (runtime.
 	query, err := compiler.Rewrite(ctx, props.SQL)
 	if err != nil {
 		return nil, err
+	}
+
+	// Inject the additional where clause if provided
+	if props.AdditionalWhere != "" {
+		expr, err := metricssqlparser.ParseSQLFilter(props.AdditionalWhere)
+		if err != nil {
+			return nil, errors.New("invalid additional_where filter: '" + props.AdditionalWhere + "': " + err.Error())
+		}
+		// Merge with existing WHERE clause if present
+		if query.Where != nil {
+			query.Where = &metricsview.Expression{
+				Condition: &metricsview.Condition{
+					Operator:    metricsview.OperatorAnd,
+					Expressions: []*metricsview.Expression{query.Where, expr},
+				},
+			}
+		} else {
+			query.Where = expr
+		}
 	}
 
 	// Build the options for the metrics resolver

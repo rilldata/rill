@@ -1,0 +1,4 @@
+kind : api
+
+metrics_sql: select dom from ad_bids_metrics LIMIT 10
+additional_where: dom != 'google.com'
