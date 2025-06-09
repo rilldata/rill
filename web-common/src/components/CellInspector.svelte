@@ -162,7 +162,7 @@
           >
         {:else}
           <span
-            class="whitespace-pre-wrap break-words text-sm text-gray-700 dark:text-gray-200 flex-1"
+            class="whitespace-pre-wrap break-words text-sm text-gray-800 dark:text-gray-200 flex-1"
             class:font-mono={isJson}>{formatValue(value)}</span
           >
         {/if}

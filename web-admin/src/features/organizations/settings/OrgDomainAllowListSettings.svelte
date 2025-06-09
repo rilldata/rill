@@ -53,7 +53,7 @@
   <div slot="body" class="mt-1">
     <div class="flex flex-row items-center gap-x-2">
       {#if !$isPublicDomain.data}
-        <Label for="allow-domain" class="font-normal text-gray-700 text-sm">
+        <Label for="allow-domain" class="font-normal text-gray-800 text-sm">
           Allow existing and new Rill users with a <b>@{$userDomain.data}</b>
           email address to join this org as a <b>Viewer</b>.
           <a

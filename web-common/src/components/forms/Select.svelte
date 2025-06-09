@@ -57,7 +57,7 @@
 <div class="flex flex-col gap-y-2 max-w-full" class:w-full={full}>
   {#if label?.length}
     <label for={id} class="text-sm flex items-center gap-x-1">
-      <span class="text-gray-700 font-medium">
+      <span class="text-gray-800 font-medium">
         {label}
       </span>
       {#if optional}

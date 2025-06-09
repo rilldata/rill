@@ -324,7 +324,7 @@
   /* TEXT STYLES */
 
   .text {
-    @apply text-gray-700 p-0;
+    @apply text-gray-800 p-0;
   }
 
   .text:hover {
@@ -356,7 +356,7 @@
   /* TOOLBAR STYLES */
 
   .toolbar {
-    @apply font-normal text-gray-700;
+    @apply font-normal text-gray-800;
     @apply h-6 px-1.5 rounded-sm;
     @apply gap-x-1.5;
   }

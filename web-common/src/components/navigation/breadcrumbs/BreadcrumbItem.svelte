@@ -97,7 +97,7 @@
                 }
               }}
             >
-              <span class="text-xs text-gray-700 flex-grow">
+              <span class="text-xs text-gray-800 flex-grow">
                 {option.label}
               </span>
             </DropdownMenu.CheckboxItem>
@@ -110,7 +110,7 @@
 
 <style lang="postcss">
   .current {
-    @apply text-gray-700 font-medium;
+    @apply text-gray-800 font-medium;
   }
 
   .trigger {

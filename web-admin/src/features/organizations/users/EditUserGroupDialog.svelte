@@ -259,7 +259,7 @@
         <div class="flex flex-col gap-y-1">
           <label
             for="user-group-users"
-            class="line-clamp-1 text-sm font-medium text-gray-700"
+            class="line-clamp-1 text-sm font-medium text-gray-800"
           >
             Users
           </label>

@@ -41,7 +41,7 @@
     </div>
   {:else}
     <Button
-      class="flex items-center gap-x-2 p-1.5 text-gray-700"
+      class="flex items-center gap-x-2 p-1.5 text-gray-800"
       on:click={() => (searchBarOpen = !searchBarOpen)}
       type="secondary"
       compact

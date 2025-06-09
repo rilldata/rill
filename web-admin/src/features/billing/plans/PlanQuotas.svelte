@@ -74,6 +74,6 @@
   }
 
   .quota-entry-body {
-    @apply text-gray-700 text-xs;
+    @apply text-gray-800 text-xs;
   }
 </style>

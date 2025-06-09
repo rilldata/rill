@@ -78,7 +78,7 @@
         href="https://docs.rilldata.com"
         target="_blank"
         rel="noreferrer noopener"
-        class="text-gray-700 font-normal"
+        class="text-gray-800 font-normal"
       >
         Documentation
       </DropdownMenu.Item>
@@ -88,7 +88,7 @@
         href="https://discord.com/invite/ngVV4KzEGv?utm_source=rill&utm_medium=rill-cloud-avatar-menu"
         target="_blank"
         rel="noreferrer noopener"
-        class="text-gray-700 font-normal"
+        class="text-gray-800 font-normal"
       >
         Join us on Discord
       </DropdownMenu.Item>
@@ -101,7 +101,7 @@
         <DropdownMenu.Item
           href={logoutUrl}
           rel="external"
-          class="text-gray-700 font-normal"
+          class="text-gray-800 font-normal"
         >
           Logout
         </DropdownMenu.Item>
@@ -110,7 +110,7 @@
         <DropdownMenu.Item
           href={loginUrl}
           rel="external"
-          class="text-gray-700 font-normal"
+          class="text-gray-800 font-normal"
         >
           Log in / Sign up
         </DropdownMenu.Item>

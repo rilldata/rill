@@ -48,7 +48,7 @@
   }
 
   label {
-    @apply font-medium text-gray-700;
+    @apply font-medium text-gray-800;
   }
 
   label.faint {

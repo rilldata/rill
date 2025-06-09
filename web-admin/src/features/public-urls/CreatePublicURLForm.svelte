@@ -158,7 +158,7 @@
 
 {#if !url}
   <form id={formId} on:submit|preventDefault={submit} use:enhance>
-    <h3 class="text-xs text-gray-700 font-normal">
+    <h3 class="text-xs text-gray-800 font-normal">
       Create a shareable public URL for this view.
     </h3>
 
@@ -243,7 +243,7 @@
         <hr class="mt-4 mb-4" />
 
         <div class="flex flex-col gap-y-1">
-          <p class="text-xs text-gray-700 font-normal">
+          <p class="text-xs text-gray-800 font-normal">
             The following filters will be locked and hidden:
           </p>
           <div class="flex flex-row gap-1 mt-2">
@@ -260,7 +260,7 @@
           </div>
         </div>
 
-        <p class="text-xs text-gray-700 font-normal mt-4 mb-4">
+        <p class="text-xs text-gray-800 font-normal mt-4 mb-4">
           Measures and dimensions will be limited to current visible set.
         </p>
       {/if}

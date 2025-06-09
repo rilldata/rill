@@ -87,7 +87,7 @@
           <Github className="w-4 h-4" />
           <a
             href={$proj.data?.project?.githubUrl}
-            class="text-gray-700 text-[12px] font-semibold font-mono leading-5 truncate"
+            class="text-gray-800 text-[12px] font-semibold font-mono leading-5 truncate"
             target="_blank"
             rel="noreferrer noopener"
           >
@@ -125,14 +125,14 @@
         {#if subpath}
           <div class="flex items-center">
             <span class="font-mono">subpath</span>
-            <span class="text-gray-700">
+            <span class="text-gray-800">
               : /{subpath}
             </span>
           </div>
         {/if}
         <div class="flex items-center">
           <span class="font-mono">branch</span>
-          <span class="text-gray-700">
+          <span class="text-gray-800">
             : {prodBranch}
           </span>
         </div>

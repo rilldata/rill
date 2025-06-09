@@ -33,7 +33,7 @@
   {#each lineItems as lineItem, i (i)}
     <a href={lineItem.href} target="_blank" rel="noreferrer noopener"
       ><div
-        class="flex flex-row items-center px-4 py-1 gap-x-2 text-gray-700 font-normal hover:bg-gray-200"
+        class="flex flex-row items-center px-4 py-1 gap-x-2 text-gray-800 font-normal hover:bg-gray-200"
       >
         <!-- workaround to resize the github and discord icons to match -->
         <div

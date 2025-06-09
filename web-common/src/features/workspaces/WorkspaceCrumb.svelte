@@ -162,7 +162,7 @@
 <style lang="postcss">
   a:hover,
   button:hover {
-    @apply text-gray-700;
+    @apply text-gray-800;
   }
 
   .selected {
@@ -170,6 +170,6 @@
   }
 
   .open {
-    @apply bg-slate-200 rounded-[2px] text-gray-700;
+    @apply bg-slate-200 rounded-[2px] text-gray-800;
   }
 </style>

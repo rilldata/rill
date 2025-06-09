@@ -74,7 +74,7 @@ Managed bookmarks will be available to all viewers of this dashboard.`;
   />
   <div class="flex flex-col gap-y-2">
     <Label class="flex flex-col gap-y-1 text-sm">
-      <div class="text-gray-700 font-medium">Filters</div>
+      <div class="text-gray-800 font-medium">Filters</div>
       <div class="text-gray-500">Inherited from underlying dashboard view.</div>
     </Label>
     <ExploreFilterChipsReadOnly

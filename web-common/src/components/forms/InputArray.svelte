@@ -51,7 +51,7 @@
 <div class="flex flex-col gap-y-2.5">
   {#if label}
     <div class="flex items-center gap-x-1">
-      <label for={id} class="text-gray-700 text-sm font-medium">{label}</label>
+      <label for={id} class="text-gray-800 text-sm font-medium">{label}</label>
       {#if hint}
         <Tooltip location="right" alignment="middle" distance={8}>
           <div class="text-gray-500" style="transform:translateY(-.5px)">
@@ -96,7 +96,7 @@
     {/each}
     <Button on:click={handleAddItem} type="dashed">
       <div class="flex gap-x-2">
-        <Add className="text-gray-700" />
+        <Add className="text-gray-800" />
         {addItemLabel}
       </div>
     </Button>

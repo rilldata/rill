@@ -104,7 +104,7 @@
 <div class="flex flex-col w-full">
   {#if label}
     <div class="flex items-center gap-x-1">
-      <label for={id} class="text-gray-700 text-sm font-medium">{label}</label>
+      <label for={id} class="text-gray-800 text-sm font-medium">{label}</label>
       {#if hint}
         <Tooltip location="right" alignment="middle" distance={8}>
           <div class="text-gray-500" style="transform:translateY(-.5px)">

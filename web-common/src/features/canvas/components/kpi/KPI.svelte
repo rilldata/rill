@@ -231,7 +231,7 @@
 
   .measure-name {
     @apply w-full truncate flex-none;
-    @apply text-center font-medium text-sm text-gray-700;
+    @apply text-center font-medium text-sm text-gray-800;
   }
 
   :global(.dark) .measure-name {
@@ -243,7 +243,7 @@
   }
 
   .big-number {
-    @apply text-3xl font-medium text-gray-700;
+    @apply text-3xl font-medium text-gray-800;
   }
 
   :global(.dark) .big-number {

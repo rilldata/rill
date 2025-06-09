@@ -33,7 +33,7 @@
   <div class="main-section">
     <div class="message-container" class:font-medium={detail}>
       {#if type === "success"}
-        <Check size="18px" className="text-gray-700" />
+        <Check size="18px" className="text-gray-800" />
       {:else if type === "loading"}
         <LoadingSpinner size="18px" />
       {:else if type == "error"}
@@ -75,7 +75,7 @@
 
   aside {
     @apply absolute w-fit z-50 flex flex-col text-sm;
-    @apply bg-popover text-gray-700 p-0 rounded-md shadow-lg;
+    @apply bg-popover text-gray-800 p-0 rounded-md shadow-lg;
   }
 
   .main-section {
