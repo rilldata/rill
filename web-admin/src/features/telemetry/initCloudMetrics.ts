@@ -44,7 +44,7 @@ export async function initCloudMetrics() {
 
   // --- Flush telemetry on unload/visibilitychange ---
   const flushTelemetry = () => {
-    telemetryClient.flush();
+    telemetryClient.flush(true);
   };
   window.addEventListener("beforeunload", flushTelemetry);
   document.addEventListener("visibilitychange", () => {
