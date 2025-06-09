@@ -19,6 +19,8 @@
     deltaColumn,
   } from "./leaderboard-widths";
 
+  const DOMAIN_REGEX = /^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+
   export let itemData: LeaderboardItemData;
   export let dimensionName: string;
   export let tableWidth: number;
@@ -85,7 +87,11 @@
         )
       : undefined;
 
-  $: href = makeHref(uri, dimensionValue);
+  $: href = uri
+    ? makeHref(uri, dimensionValue)
+    : DOMAIN_REGEX.test(dimensionValue)
+      ? makeHref(true, dimensionValue)
+      : undefined;
 
   $: deltaElementWidth = deltaRect?.width;
   $: valueElementWith = valueRect?.width;
@@ -227,7 +233,7 @@
       </span>
     {/if}
 
-    {#if hovered && href}
+    {#if selected && href}
       <a
         target="_blank"
         rel="noopener noreferrer"
