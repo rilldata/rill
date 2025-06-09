@@ -60,7 +60,7 @@ func (e *Executor) rewriteQueryDruidExactify(ctx context.Context, qry *Query) er
 	}
 
 	// Build an AST for the inner query.
-	ast, err := NewAST(e.metricsView, e.security, inner, e.olap.Dialect(), e.timeDimension)
+	ast, err := NewAST(e.metricsView, e.security, inner, e.olap.Dialect())
 	if err != nil {
 		return fmt.Errorf("druid exactify: failed to build inner query AST: %w", err)
 	}

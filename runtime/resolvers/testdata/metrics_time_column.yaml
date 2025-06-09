@@ -54,7 +54,7 @@ tests:
         start: 2024-01-10T00:00:00Z
       sort:
         - name: time__day
-      time_column: time_7d
+      time_dimension: time_7d
     result:
       - sum: 3
         time__day: "2024-01-03T00:00:00Z"
@@ -84,7 +84,7 @@ tests:
         start: 2024-01-08T00:00:00Z
       sort:
         - name: time_7d__day
-      time_column: time_7d
+      time_dimension: time_7d
     result:
       - sum: 3
         sum_prev: 1
@@ -109,7 +109,7 @@ tests:
         start: 2024-01-10T00:00:00Z
       sort:
         - name: time__day
-      time_column: time_7d
+      time_dimension: time_7d
     result:
       - sum: 3
         time__day: "2024-01-03T00:00:00Z"

@@ -24,19 +24,18 @@ const (
 
 // Executor is capable of executing queries and other operations against a metrics view.
 type Executor struct {
-	rt            *runtime.Runtime
-	instanceID    string
-	metricsView   *runtimev1.MetricsViewSpec
-	streaming     bool
-	security      *runtime.ResolvedSecurity
-	priority      int
-	timeDimension string // it's needed here mainly to resolve Timestamps
+	rt          *runtime.Runtime
+	instanceID  string
+	metricsView *runtimev1.MetricsViewSpec
+	streaming   bool
+	security    *runtime.ResolvedSecurity
+	priority    int
 
 	olap        drivers.OLAPStore
 	olapRelease func()
 	instanceCfg drivers.InstanceConfig
 
-	timestamps TimestampsResult
+	timestamps map[string]TimestampsResult
 }
 
 type TimestampsResult struct {
@@ -48,6 +47,7 @@ type TimestampsResult struct {
 
 // NewExecutor creates a new Executor for the provided metrics view.
 func NewExecutor(ctx context.Context, rt *runtime.Runtime, instanceID string, mv *runtimev1.MetricsViewSpec, streaming bool, sec *runtime.ResolvedSecurity, priority int, timeDimension string) (*Executor, error) {
+	// timeDimension is needed here just for validation purposes so that we don't need to repeat check in all queries and resolvers.
 	if timeDimension != "" && mv.TimeDimension == "" {
 		return nil, fmt.Errorf("time_dimension cannot be used with metrics views that does not have a primary timeseries defined")
 	}
@@ -63,16 +63,16 @@ func NewExecutor(ctx context.Context, rt *runtime.Runtime, instanceID string, mv
 	}
 
 	return &Executor{
-		rt:            rt,
-		instanceID:    instanceID,
-		metricsView:   mv,
-		streaming:     streaming,
-		security:      sec,
-		priority:      priority,
-		timeDimension: timeDimension,
-		olap:          olap,
-		olapRelease:   release,
-		instanceCfg:   instanceCfg,
+		rt:          rt,
+		instanceID:  instanceID,
+		metricsView: mv,
+		streaming:   streaming,
+		security:    sec,
+		priority:    priority,
+		olap:        olap,
+		olapRelease: release,
+		instanceCfg: instanceCfg,
+		timestamps:  make(map[string]TimestampsResult),
 	}, nil
 }
 
@@ -96,8 +96,8 @@ func (e *Executor) CacheKey(ctx context.Context) ([]byte, bool, error) {
 			// (until the metrics view is refreshed/edited, which always leads to cache invalidations)
 			return []byte(""), true, nil
 		}
-		// watermark is the default cache key for streaming metrics views
-		ts, err := e.Timestamps(ctx)
+		// watermark is the default cache key for streaming metrics views, use default mv time dimension
+		ts, err := e.Timestamps(ctx, "")
 		if err != nil {
 			return nil, false, err
 		}
@@ -141,17 +141,23 @@ func (e *Executor) ValidateQuery(qry *Query) error {
 }
 
 // Timestamps queries min, max and watermark for the metrics view
-func (e *Executor) Timestamps(ctx context.Context) (TimestampsResult, error) {
-	if !e.timestamps.Min.IsZero() {
-		return e.timestamps, nil
+func (e *Executor) Timestamps(ctx context.Context, timeDim string) (TimestampsResult, error) {
+	if res, ok := e.timestamps[timeDim]; ok && !res.Min.IsZero() {
+		return res, nil
+	}
+
+	timeExpr := e.timeColumnOrExpr(timeDim)
+	if timeExpr == "" {
+		return TimestampsResult{}, fmt.Errorf("no time dimension found in metrics view '%s'", timeDim)
 	}
 
 	var err error
+	var res TimestampsResult
 	switch e.olap.Dialect() {
 	case drivers.DialectDuckDB, drivers.DialectClickHouse, drivers.DialectPinot:
-		e.timestamps, err = e.resolveDuckDBClickHouseAndPinot(ctx)
+		res, err = e.resolveDuckDBClickHouseAndPinot(ctx, timeExpr)
 	case drivers.DialectDruid:
-		e.timestamps, err = e.resolveDruid(ctx)
+		res, err = e.resolveDruid(ctx, timeExpr)
 	default:
 		return TimestampsResult{}, fmt.Errorf("not available for dialect '%s'", e.olap.Dialect())
 	}
@@ -159,13 +165,19 @@ func (e *Executor) Timestamps(ctx context.Context) (TimestampsResult, error) {
 		return TimestampsResult{}, err
 	}
 
-	e.timestamps.Now = time.Now()
-	return e.timestamps, nil
+	res.Now = time.Now()
+	e.timestamps[timeDim] = res
+
+	return res, nil
 }
 
 // BindQuery allows to set min, max and watermark from a cache.
 func (e *Executor) BindQuery(ctx context.Context, qry *Query, timestamps TimestampsResult) error {
-	e.timestamps = timestamps
+	if qry.TimeDimension != "" {
+		e.timestamps[qry.TimeDimension] = timestamps
+	} else if e.metricsView.TimeDimension != "" {
+		e.timestamps[e.metricsView.TimeDimension] = timestamps
+	}
 	return e.rewriteQueryTimeRanges(ctx, qry, nil)
 }
 
@@ -220,7 +232,7 @@ func (e *Executor) Schema(ctx context.Context) (*runtimev1.StructType, error) {
 	qry.Limit = &zero
 
 	// Execute the query to get the schema
-	ast, err := NewAST(e.metricsView, e.security, qry, e.olap.Dialect(), "")
+	ast, err := NewAST(e.metricsView, e.security, qry, e.olap.Dialect())
 	if err != nil {
 		return nil, err
 	}
@@ -280,7 +292,7 @@ func (e *Executor) Query(ctx context.Context, qry *Query, executionTime *time.Ti
 		return nil, err
 	}
 
-	ast, err := NewAST(e.metricsView, e.security, qry, e.olap.Dialect(), e.timeDimension)
+	ast, err := NewAST(e.metricsView, e.security, qry, e.olap.Dialect())
 	if err != nil {
 		return nil, err
 	}
@@ -396,7 +408,7 @@ func (e *Executor) Export(ctx context.Context, qry *Query, executionTime *time.T
 		return "", err
 	}
 
-	ast, err := NewAST(e.metricsView, e.security, qry, e.olap.Dialect(), e.timeDimension)
+	ast, err := NewAST(e.metricsView, e.security, qry, e.olap.Dialect())
 	if err != nil {
 		return "", err
 	}
@@ -485,7 +497,7 @@ func (e *Executor) Search(ctx context.Context, qry *SearchQuery, executionTime *
 			TimeZone:            "",
 			UseDisplayNames:     false,
 			Rows:                false,
-			TimeDimension:       e.timeDimension,
+			TimeDimension:       "",
 		} //exhaustruct:enforce
 		q.Where = whereExprForSearch(qry.Where, d, qry.Search)
 
@@ -498,7 +510,7 @@ func (e *Executor) Search(ctx context.Context, qry *SearchQuery, executionTime *
 			return nil, err
 		}
 
-		ast, err := NewAST(e.metricsView, e.security, q, e.olap.Dialect(), e.timeDimension)
+		ast, err := NewAST(e.metricsView, e.security, q, e.olap.Dialect())
 		if err != nil {
 			return nil, err
 		}
@@ -567,14 +579,14 @@ func (e *Executor) executeSearchInDruid(ctx context.Context, qry *SearchQuery, e
 		TimeZone:            "",
 		UseDisplayNames:     false,
 		Rows:                false,
-		TimeDimension:       e.timeDimension,
+		TimeDimension:       "",
 	} //exhaustruct:enforce
 
 	if err := e.rewriteQueryTimeRanges(ctx, q, executionTime); err != nil {
 		return nil, err
 	}
 
-	a, err := NewAST(e.metricsView, e.security, q, e.olap.Dialect(), e.timeDimension)
+	a, err := NewAST(e.metricsView, e.security, q, e.olap.Dialect())
 	if err != nil {
 		return nil, err
 	}
@@ -682,6 +694,23 @@ func (e *Executor) executeSearchInDruid(ctx context.Context, qry *SearchQuery, e
 		}
 	}
 	return result, nil
+}
+
+// timeColumnOrExpr returns the time column or expression to use for the metrics view. ues time column if provided, otherwise fall back to the metrics view TimeDimension.
+func (e *Executor) timeColumnOrExpr(timeDim string) string {
+	if timeDim == "" {
+		timeDim = e.metricsView.TimeDimension
+	}
+	// figure out the time column or expression to use from the dimension list
+	for _, dim := range e.metricsView.Dimensions {
+		if dim.Name == timeDim {
+			if dim.Expression != "" {
+				return dim.Expression
+			}
+			return e.olap.Dialect().EscapeIdentifier(dim.Column)
+		}
+	}
+	return e.olap.Dialect().EscapeIdentifier(timeDim) // fallback to the time dimension if not found in dimensions
 }
 
 func whereExprForSearch(where *Expression, dimension, search string) *Expression {

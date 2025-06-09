@@ -112,7 +112,7 @@ func (r *metricsViewTimeRangeResolver) Validate(ctx context.Context) error {
 }
 
 func (r *metricsViewTimeRangeResolver) ResolveInteractive(ctx context.Context) (runtime.ResolverResult, error) {
-	ts, err := r.executor.Timestamps(ctx)
+	ts, err := r.executor.Timestamps(ctx, r.args.TimeDimension)
 	if err != nil {
 		return nil, err
 	}

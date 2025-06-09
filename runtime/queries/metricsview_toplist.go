@@ -77,8 +77,7 @@ func (q *MetricsViewToplist) Resolve(ctx context.Context, rt *runtime.Runtime, i
 		return fmt.Errorf("error rewriting to metrics query: %w", err)
 	}
 
-	// alternate timeDimension not supported as the query is deprecated
-	e, err := metricsview.NewExecutor(ctx, rt, instanceID, mv.ValidSpec, mv.Streaming, security, priority, "")
+	e, err := metricsview.NewExecutor(ctx, rt, instanceID, mv.ValidSpec, mv.Streaming, security, priority, qry.TimeDimension)
 	if err != nil {
 		return err
 	}
@@ -113,8 +112,7 @@ func (q *MetricsViewToplist) Export(ctx context.Context, rt *runtime.Runtime, in
 		return fmt.Errorf("error rewriting to metrics query: %w", err)
 	}
 
-	// alternate timeDimension not supported as the query is deprecated
-	e, err := metricsview.NewExecutor(ctx, rt, instanceID, mv.ValidSpec, mv.Streaming, security, opts.Priority, "")
+	e, err := metricsview.NewExecutor(ctx, rt, instanceID, mv.ValidSpec, mv.Streaming, security, opts.Priority, qry.TimeDimension)
 	if err != nil {
 		return err
 	}

@@ -291,7 +291,7 @@ func parseTimeUnitValueExpr(in ast.Node) (string, error) {
 
 func parseFuncCallInFilter(ctx context.Context, node *ast.FuncCallExpr, q *query) (*metricsview.Expression, error) {
 	switch node.FnName.L {
-	case "time_range_start":
+	case "time_range_start": // TODO: figure out which time dimension this refers to
 		if q == nil {
 			return nil, fmt.Errorf("metrics sql: time_range_start function is only supported for metrics_sql")
 		}

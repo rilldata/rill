@@ -17,7 +17,7 @@ func (q *query) parseTimeRangeStart(ctx context.Context, node *ast.FuncCallExpr)
 		return nil, err
 	}
 
-	ts, err := q.executor.Timestamps(ctx)
+	ts, err := q.executor.Timestamps(ctx, "") // TODO: fix this once we figure out which time dimension it refers to
 	if err != nil {
 		return nil, err
 	}
@@ -42,7 +42,7 @@ func (q *query) parseTimeRangeEnd(ctx context.Context, node *ast.FuncCallExpr) (
 		return nil, err
 	}
 
-	ts, err := q.executor.Timestamps(ctx)
+	ts, err := q.executor.Timestamps(ctx, "") // TODO: fix this once we figure out which time dimension it refers to
 	if err != nil {
 		return nil, err
 	}

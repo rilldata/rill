@@ -44,7 +44,7 @@ func (e *Executor) rewritePercentOfTotals(ctx context.Context, qry *Query) error
 	} //exhaustruct:enforce
 
 	// Build an AST for the totals query.
-	ast, err := NewAST(e.metricsView, e.security, totalsQry, e.olap.Dialect(), e.timeDimension)
+	ast, err := NewAST(e.metricsView, e.security, totalsQry, e.olap.Dialect())
 	if err != nil {
 		return fmt.Errorf("percent of totals: failed to build the totals query AST: %w", err)
 	}

@@ -26,12 +26,12 @@ func (e *Executor) rewriteQueryTimeRanges(ctx context.Context, qry *Query, execu
 		}
 	}
 
-	err := e.resolveTimeRange(ctx, qry.TimeRange, tz, executionTime)
+	err := e.resolveTimeRange(ctx, qry.TimeRange, tz, executionTime, qry.TimeDimension)
 	if err != nil {
 		return fmt.Errorf("failed to resolve time range: %w", err)
 	}
 
-	err = e.resolveTimeRange(ctx, qry.ComparisonTimeRange, tz, executionTime)
+	err = e.resolveTimeRange(ctx, qry.ComparisonTimeRange, tz, executionTime, qry.TimeDimension)
 	if err != nil {
 		return fmt.Errorf("failed to resolve comparison time range: %w", err)
 	}
@@ -58,20 +58,20 @@ func (e *Executor) rewriteQueryTimeRanges(ctx context.Context, qry *Query, execu
 }
 
 // resolveTimeRange resolves the given time range, ensuring only its Start and End properties are populated.
-func (e *Executor) resolveTimeRange(ctx context.Context, tr *TimeRange, tz *time.Location, executionTime *time.Time) error {
+func (e *Executor) resolveTimeRange(ctx context.Context, tr *TimeRange, tz *time.Location, executionTime *time.Time, timeDim string) error {
 	if tr == nil || tr.IsZero() {
 		return nil
 	}
 
 	if tr.Expression == "" {
-		return e.resolveISOTimeRange(ctx, tr, tz, executionTime)
+		return e.resolveISOTimeRange(ctx, tr, tz, executionTime, timeDim)
 	}
 	if !tr.Start.IsZero() || !tr.End.IsZero() || tr.IsoDuration != "" || tr.IsoOffset != "" || tr.RoundToGrain != TimeGrainUnspecified {
 		return errors.New("other fields are not supported when expression is provided")
 	}
 
 	// TODO: Implement lazy evaluation where we only evaluate timestamps if required for the time expression.
-	ts, err := e.Timestamps(ctx)
+	ts, err := e.Timestamps(ctx, timeDim)
 	if err != nil {
 		return fmt.Errorf("failed to fetch timestamps: %w", err)
 	}
@@ -107,10 +107,10 @@ func (e *Executor) resolveTimeRange(ctx context.Context, tr *TimeRange, tz *time
 }
 
 // resolveISOTimeRange resolves the given time range where either only start/end is specified along with ISO duration/offset, ensuring only its Start and End properties are populated.
-func (e *Executor) resolveISOTimeRange(ctx context.Context, tr *TimeRange, tz *time.Location, executionTime *time.Time) error {
+func (e *Executor) resolveISOTimeRange(ctx context.Context, tr *TimeRange, tz *time.Location, executionTime *time.Time, timeDim string) error {
 	if tr.Start.IsZero() && tr.End.IsZero() {
 		if executionTime == nil {
-			ts, err := e.Timestamps(ctx)
+			ts, err := e.Timestamps(ctx, timeDim)
 			if err != nil {
 				return fmt.Errorf("failed to fetch timestamps: %w", err)
 			}

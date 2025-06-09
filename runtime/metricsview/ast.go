@@ -122,7 +122,7 @@ const (
 // This is due to NewAST not being able (or intended) to resolve external time anchors such as watermarks.
 //
 // The qry's PivotOn must be empty. Pivot queries must be rewritten/handled upstream of NewAST.
-func NewAST(mv *runtimev1.MetricsViewSpec, sec *runtime.ResolvedSecurity, qry *Query, dialect drivers.Dialect, timeDimension string) (*AST, error) {
+func NewAST(mv *runtimev1.MetricsViewSpec, sec *runtime.ResolvedSecurity, qry *Query, dialect drivers.Dialect) (*AST, error) {
 	// Validation
 	if len(qry.PivotOn) > 0 {
 		return nil, errors.New("cannot build AST for pivot queries")
@@ -132,7 +132,7 @@ func NewAST(mv *runtimev1.MetricsViewSpec, sec *runtime.ResolvedSecurity, qry *Q
 	}
 
 	// Use provided time column if available, otherwise fall back to TimeDimension
-	timeDim := timeDimension
+	timeDim := qry.TimeDimension
 	if timeDim == "" {
 		timeDim = mv.TimeDimension
 	}

@@ -101,7 +101,7 @@ func (b *sqlExprBuilder) writeSubquery(sub *Subquery) error {
 	} //exhaustruct:enforce
 
 	// Generate SQL for the subquery
-	innerAST, err := NewAST(b.ast.metricsView, b.ast.security, inner, b.ast.dialect, b.ast.timeField.Name)
+	innerAST, err := NewAST(b.ast.metricsView, b.ast.security, inner, b.ast.dialect)
 	if err != nil {
 		return fmt.Errorf("failed to create AST for subquery: %w", err)
 	}

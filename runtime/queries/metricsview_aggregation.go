@@ -87,7 +87,7 @@ func (q *MetricsViewAggregation) Resolve(ctx context.Context, rt *runtime.Runtim
 		return fmt.Errorf("error rewriting to metrics query: %w", err)
 	}
 
-	e, err := metricsview.NewExecutor(ctx, rt, instanceID, mv.ValidSpec, mv.Streaming, security, priority, q.TimeDimension)
+	e, err := metricsview.NewExecutor(ctx, rt, instanceID, mv.ValidSpec, mv.Streaming, security, priority, qry.TimeDimension)
 	if err != nil {
 		return err
 	}
@@ -129,7 +129,7 @@ func (q *MetricsViewAggregation) Export(ctx context.Context, rt *runtime.Runtime
 		return fmt.Errorf("error rewriting to metrics query: %w", err)
 	}
 
-	e, err := metricsview.NewExecutor(ctx, rt, instanceID, mv.ValidSpec, mv.Streaming, security, opts.Priority, q.TimeDimension)
+	e, err := metricsview.NewExecutor(ctx, rt, instanceID, mv.ValidSpec, mv.Streaming, security, opts.Priority, qry.TimeDimension)
 	if err != nil {
 		return err
 	}

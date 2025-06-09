@@ -14,25 +14,23 @@ const (
 	defaultExecutionTimeout = time.Minute * 3
 )
 
-func (e *Executor) resolveDuckDBClickHouseAndPinot(ctx context.Context) (TimestampsResult, error) {
+func (e *Executor) resolveDuckDBClickHouseAndPinot(ctx context.Context, timeExpr string) (TimestampsResult, error) {
 	filter := e.security.RowFilter()
 	if filter != "" {
 		filter = fmt.Sprintf(" WHERE %s", filter)
 	}
-
-	timeDim := e.timeColumnOrExpr()
 	escapedTableName := e.olap.Dialect().EscapeTable(e.metricsView.Database, e.metricsView.DatabaseSchema, e.metricsView.Table)
 
 	var watermarkExpr string
 	if e.metricsView.WatermarkExpression != "" {
 		watermarkExpr = e.metricsView.WatermarkExpression
 	} else {
-		watermarkExpr = fmt.Sprintf("max(%s)", timeDim)
+		watermarkExpr = fmt.Sprintf("max(%s)", timeExpr)
 	}
 
 	rangeSQL := fmt.Sprintf(
 		"SELECT min(%[1]s) as \"min\", max(%[1]s) as \"max\", %[2]s as \"watermark\" FROM %[3]s %[4]s",
-		timeDim,
+		timeExpr,
 		watermarkExpr,
 		escapedTableName,
 		filter,
@@ -82,13 +80,11 @@ func (e *Executor) resolveDuckDBClickHouseAndPinot(ctx context.Context) (Timesta
 	return TimestampsResult{}, errors.New("no rows returned")
 }
 
-func (e *Executor) resolveDruid(ctx context.Context) (TimestampsResult, error) {
+func (e *Executor) resolveDruid(ctx context.Context, timeExpr string) (TimestampsResult, error) {
 	filter := e.security.RowFilter()
 	if filter != "" {
 		filter = fmt.Sprintf(" WHERE %s", filter)
 	}
-
-	timeDim := e.timeColumnOrExpr()
 	escapedTableName := e.olap.Dialect().EscapeTable(e.metricsView.Database, e.metricsView.DatabaseSchema, e.metricsView.Table)
 
 	var ts TimestampsResult
@@ -101,7 +97,7 @@ func (e *Executor) resolveDruid(ctx context.Context) (TimestampsResult, error) {
 	group.Go(func() error {
 		minSQL := fmt.Sprintf(
 			"SELECT min(%[1]s) as \"min\" FROM %[2]s %[3]s",
-			timeDim,
+			timeExpr,
 			escapedTableName,
 			filter,
 		)
@@ -137,7 +133,7 @@ func (e *Executor) resolveDruid(ctx context.Context) (TimestampsResult, error) {
 	group.Go(func() error {
 		maxSQL := fmt.Sprintf(
 			"SELECT max(%[1]s) as \"max\" FROM %[2]s %[3]s",
-			timeDim,
+			timeExpr,
 			escapedTableName,
 			filter,
 		)
@@ -217,24 +213,6 @@ func (e *Executor) resolveDruid(ctx context.Context) (TimestampsResult, error) {
 	}
 
 	return ts, nil
-}
-
-// timeColumnOrExpr returns the time column or expression to use for the metrics view. ues time column if provided, otherwise fall back to the metrics view TimeDimension.
-func (e *Executor) timeColumnOrExpr() string {
-	timeDim := e.timeDimension
-	if timeDim == "" {
-		timeDim = e.metricsView.TimeDimension
-	}
-	// figure out the time column or expression to use from the dimension list
-	for _, dim := range e.metricsView.Dimensions {
-		if dim.Name == timeDim {
-			if dim.Expression != "" {
-				return dim.Expression
-			}
-			return e.olap.Dialect().EscapeIdentifier(dim.Column)
-		}
-	}
-	return e.olap.Dialect().EscapeIdentifier(timeDim) // fallback to the time dimension if not found in dimensions
 }
 
 func safeTime(tm *time.Time) time.Time {
