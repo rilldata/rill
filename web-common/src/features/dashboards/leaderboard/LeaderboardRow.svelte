@@ -233,17 +233,18 @@
       </span>
     {/if}
 
-    {#if selected && href}
+    <span class="external-link-wrapper">
       <a
         target="_blank"
         rel="noopener noreferrer"
         {href}
         title={href}
         on:click|stopPropagation
+        class:hovered={hovered && href}
       >
         <ExternalLink className="fill-primary-600" />
       </a>
-    {/if}
+    </span>
   </td>
 
   {#each Object.keys(values) as measureName}
@@ -416,13 +417,22 @@
     @apply bg-gray-100;
   }
 
-  a {
-    @apply absolute right-0 z-50 h-[22px] w-[32px];
-    @apply bg-surface flex items-center justify-center shadow-md rounded-sm;
+  .external-link-wrapper a {
+    opacity: 0;
+    position: absolute;
+    right: 0;
+    top: 0;
+    height: 20px;
+    width: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
-
-  a:hover {
-    @apply bg-primary-100;
+  .external-link-wrapper a.hovered {
+    opacity: 0.7;
+    pointer-events: auto;
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
   }
 
   td {
