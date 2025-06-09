@@ -3,11 +3,22 @@ package athena
 import (
 	"context"
 	"errors"
+	"fmt"
+	"time"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/credentials"
+	"github.com/aws/aws-sdk-go-v2/credentials/stscreds"
+	"github.com/aws/aws-sdk-go-v2/service/athena"
+	types2 "github.com/aws/aws-sdk-go-v2/service/athena/types"
+	"github.com/aws/aws-sdk-go-v2/service/sts"
+	"github.com/aws/smithy-go/tracing/smithyoteltracing"
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/storage"
+	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
 )
 
@@ -82,12 +93,15 @@ type driver struct{}
 
 type configProperties struct {
 	AccessKeyID     string `mapstructure:"aws_access_key_id"`
-	AllowHostAccess bool   `mapstructure:"allow_host_access"`
-	ExternalID      string `mapstructure:"external_id"`
-	RoleARN         string `mapstructure:"role_arn"`
-	RoleSessionName string `mapstructure:"role_session_name"`
 	SecretAccessKey string `mapstructure:"aws_secret_access_key"`
 	SessionToken    string `mapstructure:"aws_access_token"`
+	RoleARN         string `mapstructure:"role_arn"`
+	RoleSessionName string `mapstructure:"role_session_name"`
+	ExternalID      string `mapstructure:"external_id"`
+	AWSRegion       string `mapstructure:"region"`
+	Workgroup       string `mapstructure:"workgroup"`
+	OutputLocation  string `mapstructure:"output_location"`
+	AllowHostAccess bool   `mapstructure:"allow_host_access"`
 }
 
 func (d driver) Open(instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
@@ -131,7 +145,19 @@ var _ drivers.Handle = &Connection{}
 
 // Ping implements drivers.Handle.
 func (c *Connection) Ping(ctx context.Context) error {
-	return drivers.ErrNotImplemented
+	// Get AWS config with configured region
+	awsConfig, err := c.awsConfig(ctx, c.config.AWSRegion)
+	if err != nil {
+		return fmt.Errorf("failed to get AWS config: %w", err)
+	}
+
+	// Create Athena client
+	client := athena.NewFromConfig(awsConfig, func(o *athena.Options) {
+		o.TracerProvider = smithyoteltracing.Adapt(otel.GetTracerProvider())
+	})
+
+	// Execute a simple query to verify connection
+	return c.executeQuery(ctx, client, "SELECT 1", c.config.Workgroup, c.config.OutputLocation)
 }
 
 // Driver implements drivers.Connection.
@@ -218,4 +244,94 @@ func (c *Connection) AsWarehouse() (drivers.Warehouse, bool) {
 // AsNotifier implements drivers.Handle.
 func (c *Connection) AsNotifier(properties map[string]any) (drivers.Notifier, error) {
 	return nil, drivers.ErrNotNotifier
+}
+
+func (c *Connection) awsConfig(ctx context.Context, awsRegion string) (aws.Config, error) {
+	loadOptions := []func(*config.LoadOptions) error{
+		// Setting the default region to an empty string, will result in the default region value being ignored
+		config.WithDefaultRegion("us-east-1"),
+		// Setting the region to an empty string, will result in the region value being ignored
+		config.WithRegion(awsRegion),
+	}
+
+	// If one of the static properties is specified: access key, secret key, or session token, use static credentials,
+	// Else fallback to the SDK's default credential chain (environment, instance, etc) unless AllowHostAccess is false
+	if c.config.AccessKeyID != "" || c.config.SecretAccessKey != "" || c.config.SessionToken != "" {
+		p := credentials.NewStaticCredentialsProvider(c.config.AccessKeyID, c.config.SecretAccessKey, c.config.SessionToken)
+		loadOptions = append(loadOptions, config.WithCredentialsProvider(p))
+	} else if !c.config.AllowHostAccess {
+		return aws.Config{}, fmt.Errorf("static creds are not provided, and host access is not allowed")
+	}
+
+	awsConfig, err := config.LoadDefaultConfig(ctx, loadOptions...)
+	if err != nil {
+		return aws.Config{}, err
+	}
+
+	if c.config.RoleARN != "" {
+		stsClient := sts.NewFromConfig(awsConfig)
+		assumeRoleOptions := []func(*stscreds.AssumeRoleOptions){}
+		if c.config.RoleSessionName != "" {
+			assumeRoleOptions = append(assumeRoleOptions, func(o *stscreds.AssumeRoleOptions) {
+				o.RoleSessionName = c.config.RoleSessionName
+			})
+		}
+		if c.config.ExternalID != "" {
+			assumeRoleOptions = append(assumeRoleOptions, func(o *stscreds.AssumeRoleOptions) {
+				o.ExternalID = &c.config.ExternalID
+			})
+		}
+		provider := stscreds.NewAssumeRoleProvider(stsClient, c.config.RoleARN, assumeRoleOptions...)
+		awsConfig.Credentials = aws.NewCredentialsCache(provider)
+	}
+
+	return awsConfig, nil
+}
+
+func (c *Connection) executeQuery(ctx context.Context, client *athena.Client, sql, workgroup, outputLocation string) error {
+	executeParams := &athena.StartQueryExecutionInput{
+		QueryString: aws.String(sql),
+	}
+
+	if outputLocation != "" {
+		executeParams.ResultConfiguration = &types2.ResultConfiguration{
+			OutputLocation: aws.String(outputLocation),
+		}
+	}
+
+	if workgroup != "" { // primary is used if nothing is set
+		executeParams.WorkGroup = aws.String(workgroup)
+	}
+
+	queryExecutionOutput, err := client.StartQueryExecution(ctx, executeParams)
+	if err != nil {
+		return err
+	}
+
+	for {
+		select {
+		case <-ctx.Done():
+			_, err = client.StopQueryExecution(ctx, &athena.StopQueryExecutionInput{
+				QueryExecutionId: queryExecutionOutput.QueryExecutionId,
+			})
+			return errors.Join(ctx.Err(), err)
+		default:
+			status, err := client.GetQueryExecution(ctx, &athena.GetQueryExecutionInput{
+				QueryExecutionId: queryExecutionOutput.QueryExecutionId,
+			})
+			if err != nil {
+				return err
+			}
+
+			switch status.QueryExecution.Status.State {
+			case types2.QueryExecutionStateSucceeded:
+				return nil
+			case types2.QueryExecutionStateCancelled:
+				return fmt.Errorf("Athena query execution cancelled")
+			case types2.QueryExecutionStateFailed:
+				return fmt.Errorf("Athena query execution failed %s", *status.QueryExecution.Status.AthenaError.ErrorMessage)
+			}
+		}
+		time.Sleep(time.Second)
+	}
 }

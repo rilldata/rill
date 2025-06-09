@@ -56,6 +56,28 @@ func (r *Runtime) AcquireHandle(ctx context.Context, instanceID, connector strin
 	})
 }
 
+// AcquireHandleFromConnector returns an instance-specific handle for a given connector.
+// This is similar to AcquireHandle but takes a connector directly instead of looking it up by name.
+func (r *Runtime) AcquireHandleFromConnector(ctx context.Context, instanceID string, connector *runtimev1.Connector) (drivers.Handle, func(), error) {
+	cfg, err := r.ConnectorConfigFromConnector(ctx, instanceID, connector)
+	if err != nil {
+		return nil, nil, err
+	}
+	if ctx.Err() != nil {
+		// Many code paths around connection acquisition leverage caches that won't actually touch the ctx.
+		// So we take this moment to make sure the ctx gets checked for cancellation at least every once in a while.
+		return nil, nil, ctx.Err()
+	}
+	return r.getConnection(ctx, cachedConnectionConfig{
+		instanceID:    instanceID,
+		name:          connector.Name,
+		driver:        cfg.Driver,
+		config:        cfg.Resolve(),
+		provision:     cfg.Provision,
+		provisionArgs: cfg.ProvisionArgs,
+	})
+}
+
 func (r *Runtime) Repo(ctx context.Context, instanceID string) (drivers.RepoStore, func(), error) {
 	inst, err := r.Instance(ctx, instanceID)
 	if err != nil {
@@ -180,6 +202,37 @@ func (r *Runtime) Catalog(ctx context.Context, instanceID string) (drivers.Catal
 	return store, release, nil
 }
 
+// ConnectorConfigFromConnector creates a ConnectorConfig from a runtimev1.Connector.
+// This is similar to ConnectorConfig but takes a connector directly instead of looking it up by name.
+func (r *Runtime) ConnectorConfigFromConnector(ctx context.Context, instanceID string, connector *runtimev1.Connector) (*ConnectorConfig, error) {
+	inst, err := r.Instance(ctx, instanceID)
+	if err != nil {
+		return nil, err
+	}
+
+	res := &ConnectorConfig{
+		Driver: connector.Type,
+	}
+
+	res.Project, err = ResolveConnectorProperties(inst.Environment, inst.ResolveVariables(false), connector)
+	if err != nil {
+		return nil, err
+	}
+
+	if connector.Provision {
+		res.Provision = connector.Provision
+		res.ProvisionArgs = connector.ProvisionArgs.AsMap()
+	}
+
+	// Apply common configuration
+	err = r.applyConnectorConfig(ctx, inst, connector.Name, res)
+	if err != nil {
+		return nil, err
+	}
+
+	return res, nil
+}
+
 func (r *Runtime) ConnectorConfig(ctx context.Context, instanceID, name string) (*ConnectorConfig, error) {
 	inst, err := r.Instance(ctx, instanceID)
 	if err != nil {
@@ -233,6 +286,18 @@ func (r *Runtime) ConnectorConfig(ctx context.Context, instanceID, name string) 
 		return nil, fmt.Errorf("unknown connector %q", name)
 	}
 
+	// Apply common configuration
+	err = r.applyConnectorConfig(ctx, inst, name, res)
+	if err != nil {
+		return nil, err
+	}
+
+	return res, nil
+}
+
+// applyConnectorConfig applies common configuration to a ConnectorConfig.
+// This includes environment variables and special case handling for certain connector types.
+func (r *Runtime) applyConnectorConfig(ctx context.Context, inst *drivers.Instance, name string, res *ConnectorConfig) error {
 	// Build res.Env config based on instance variables matching the format "connector.name.var"
 	vars := inst.ResolveVariables(true)
 	prefix := fmt.Sprintf("connector.%s.", name)
@@ -268,14 +333,14 @@ func (r *Runtime) ConnectorConfig(ctx context.Context, instanceID, name string) 
 		// The "local_file" connector needs to know the repo root.
 		// TODO: This is an ugly hack. But how can we get rid of it?
 		if inst.RepoConnector != "local_file" { // The RepoConnector shouldn't be named "local_file", but let's still try to avoid infinite recursion
-			repo, release, err := r.Repo(ctx, instanceID)
+			repo, release, err := r.Repo(ctx, inst.ID)
 			if err != nil {
-				return nil, err
+				return err
 			}
 			rootPath, err := repo.Root(ctx)
 			if err != nil {
 				release()
-				return nil, fmt.Errorf("failed to get root path: %w", err)
+				return fmt.Errorf("failed to get root path: %w", err)
 			}
 			res.setPreset("dsn", rootPath, true)
 			release()
@@ -285,8 +350,7 @@ func (r *Runtime) ConnectorConfig(ctx context.Context, instanceID, name string) 
 	// Apply built-in system-wide config
 	res.setPreset("allow_host_access", strconv.FormatBool(r.opts.AllowHostAccess), true)
 
-	// Done
-	return res, nil
+	return nil
 }
 
 // ResolveConnectorProperties resolves templating in the provided connector's properties.
