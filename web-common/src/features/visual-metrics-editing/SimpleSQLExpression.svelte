@@ -158,7 +158,7 @@
   }
 
   label {
-    @apply text-sm font-medium text-gray-800;
+    @apply text-sm font-medium text-gray-700;
   }
 
   .option-wrapper > .selected {

@@ -15,7 +15,7 @@
   }
 </script>
 
-<div class="flex flex-row text-gray-800 my-1 {className}">
+<div class="flex flex-row text-gray-700 my-1 {className}">
   <div class="p-0.5 border rounded-bl-sm rounded-tl-sm bg-gray-50 command-text">
     {command}
   </div>

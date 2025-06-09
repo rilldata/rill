@@ -78,7 +78,7 @@
 <CtaLayoutContainer>
   <CtaContentContainer>
     <RillLogoSquareNegative size="84px" />
-    <h1 class="text-xl font-normal text-gray-800">Authorize Rill CLI</h1>
+    <h1 class="text-xl font-normal text-gray-700">Authorize Rill CLI</h1>
     <p class="text-base text-gray-500 text-center">
       You are authenticating into Rill as <span
         class="font-medium text-gray-600">{user.email}</span

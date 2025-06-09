@@ -9,7 +9,7 @@
   }
 
   .ui-copy-muted {
-    @apply text-gray-700 dark:text-gray-800;
+    @apply text-gray-700 dark:text-gray-700;
   }
 
   .ui-copy-strong {

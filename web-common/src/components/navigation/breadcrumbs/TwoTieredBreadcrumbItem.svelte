@@ -65,7 +65,7 @@
                       class="cursor-pointer"
                       on:click={() => handleSelect(subItem.key)}
                     >
-                      <span class="text-xs text-gray-800 flex-grow">
+                      <span class="text-xs text-gray-700 flex-grow">
                         {subItem.label}
                       </span>
                     </DropdownMenu.Item>
@@ -78,7 +78,7 @@
                 class="cursor-pointer"
                 on:click={() => handleSelect(subItems.key)}
               >
-                <span class="text-xs text-gray-800 flex-grow">
+                <span class="text-xs text-gray-700 flex-grow">
                   {subItems.label}
                 </span>
               </DropdownMenu.Item>
@@ -92,7 +92,7 @@
 
 <style lang="postcss">
   .current {
-    @apply text-gray-800 font-medium;
+    @apply text-gray-700 font-medium;
   }
 
   .trigger {

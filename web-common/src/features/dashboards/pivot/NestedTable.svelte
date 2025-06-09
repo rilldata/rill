@@ -410,12 +410,12 @@
   .header-cell {
     @apply px-2 size-full;
     @apply flex items-center gap-x-1 w-full truncate;
-    @apply text-gray-800 font-medium;
+    @apply text-gray-700 font-medium;
     height: var(--header-height);
   }
 
   .cell {
-    @apply size-full p-1 px-2 text-gray-800;
+    @apply size-full p-1 px-2 text-gray-700;
   }
 
   /* The leftmost header cells have no bottom border unless they're the last row */

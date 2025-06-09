@@ -27,15 +27,28 @@ function generatePalette(
       .gamma(1)
       .colors(102, null);
 
-    const darkestDark = findContrast(spectrum, BLACK, 1.12) ?? spectrum[0];
-    const lightestDark = findContrast(spectrum, darkestDark, 18) ?? spectrum[0];
+    const darkestDark = findContrast(spectrum, BLACK, 1.06) ?? spectrum[0];
+    const lightestDark =
+      findContrast(spectrum, darkestDark, 18.5) ?? spectrum[0];
+
+    const middleValue = findContrast(spectrum, darkestDark, 5) ?? spectrum[50];
 
     return {
-      dark: chroma
-        .scale([darkestDark, lightestDark])
-        .mode(MODE)
-        .gamma(1)
-        .colors(stepCount, null),
+      dark: [
+        ...chroma
+          .scale([darkestDark, middleValue])
+          .mode(MODE)
+          .gamma(1.15)
+          .colors(6, null)
+          .slice(0, -1),
+        middleValue,
+        ...chroma
+          .scale([middleValue, lightestDark])
+          .mode(MODE)
+          .gamma(0.7)
+          .colors(6, null)
+          .slice(1),
+      ],
       light: chroma
         .scale([chroma("white"), chroma("black")])
         .mode(MODE)

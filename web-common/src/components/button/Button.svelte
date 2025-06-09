@@ -324,7 +324,7 @@
   /* TEXT STYLES */
 
   .text {
-    @apply text-gray-800 p-0;
+    @apply text-gray-700 p-0;
   }
 
   .text:hover {

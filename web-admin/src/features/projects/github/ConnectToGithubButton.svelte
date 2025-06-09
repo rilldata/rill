@@ -72,7 +72,7 @@
             id="create-github-repo"
             bind:checked={githubRepoCreated}
           />
-          <label for="create-github-repo" class="text-gray-800"
+          <label for="create-github-repo" class="text-gray-700"
             >I’ve created a GitHub repo</label
           >
         </div>

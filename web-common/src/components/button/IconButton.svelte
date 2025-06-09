@@ -34,7 +34,7 @@
     class:rounded
     class="{marginClasses} grid place-items-center {disabled
       ? 'text-gray-400'
-      : 'text-gray-800'}
+      : 'text-gray-700'}
 {disableHover || disabled
       ? ''
       : bgDark

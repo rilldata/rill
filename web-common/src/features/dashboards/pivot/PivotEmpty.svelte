@@ -12,7 +12,7 @@
 <div class="flex flex-col items-center w-full h-full justify-center gap-y-6">
   {#if isFetching}
     <Spinner size="64px" status={EntityStatus.Running} />
-    <div class="font-semibold text-gray-800 mt-1 text-lg">
+    <div class="font-semibold text-gray-700 mt-1 text-lg">
       Hang tight! We're building your table...
     </div>
     <div class="text-gray-600">
@@ -25,7 +25,7 @@
   {:else if hasColumnAndNoMeasure}
     <EmptyMeasureIcon />
     <div class="flex flex-col items-center gap-y-2">
-      <div class="font-semibold text-gray-800 mt-1 text-lg">Keep it up!</div>
+      <div class="font-semibold text-gray-700 mt-1 text-lg">Keep it up!</div>
       <div class="text-gray-600 text-base">
         Add a measure to complete your table.
       </div>
@@ -45,7 +45,7 @@
   {:else}
     <EmptyTableIcon />
     <div class="flex flex-col items-center gap-y-2">
-      <div class="font-semibold text-gray-800 mt-1 text-lg">
+      <div class="font-semibold text-gray-700 mt-1 text-lg">
         Your table looks lonely
       </div>
       <div class="text-gray-600 text-base">
