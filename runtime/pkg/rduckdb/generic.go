@@ -91,14 +91,8 @@ func NewGeneric(ctx context.Context, opts *GenericOptions) (res DB, dbErr error)
 		return nil, err
 	}
 
-	// Rebuild DuckDB DSN (which should be "path?key=val&...")
-	// this is required since spaces and other special characters are valid in db file path but invalid and hence encoded in URL
-	qry := make(url.Values)
-	for k, v := range opts.Settings {
-		qry.Set(k, v)
-	}
 	localFileName := filepath.Join(opts.LocalDataDir, "main"+uuid.NewString()[:8]+".db")
-	connector, err := duckdb.NewConnector(generateDSN(localFileName, qry.Encode()), func(execer driver.ExecerContext) error {
+	connector, err := duckdb.NewConnector(dsnForLocalDuckDB(localFileName, opts.Settings), func(execer driver.ExecerContext) error {
 		for _, qry := range opts.ConnInitQueries {
 			_, err := execer.ExecContext(ctx, qry, nil)
 			if err != nil && strings.Contains(err.Error(), "Failed to download extension") {
@@ -470,4 +464,16 @@ func (m *generic) acquireConn(ctx context.Context) (*sqlx.Conn, error) {
 		return nil, fmt.Errorf("acquire connection failed: %w", err)
 	}
 	return conn, nil
+}
+
+func dsnForLocalDuckDB(path string, settings map[string]string) string {
+	if len(settings) == 0 {
+		return path
+	}
+	// Build DuckDB DSN (which should be "path?key=val&...")
+	qry := make(url.Values)
+	for k, v := range settings {
+		qry.Set(k, v)
+	}
+	return path + "?" + qry.Encode()
 }
