@@ -28,6 +28,19 @@ export async function initCloudMetrics() {
   ]);
   setMetricsService(metricsService);
 
+  // --- Flush telemetry on unload/visibilitychange ---
+  const flushTelemetry = () => {
+    telemetryClient.flush(true);
+  };
+  window.addEventListener("beforeunload", flushTelemetry);
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "hidden") flushTelemetry();
+  });
+  onDestroy(() => {
+    window.removeEventListener("beforeunload", flushTelemetry);
+    document.removeEventListener("visibilitychange", flushTelemetry);
+  });
+
   const commonUserMetrics = await collectCommonUserFields();
   setBehaviourEvent(
     new BehaviourEventHandler(metricsService, commonUserMetrics),
@@ -41,17 +54,4 @@ export async function initCloudMetrics() {
     ),
   );
   // TODO: add other handlers and callers
-
-  // --- Flush telemetry on unload/visibilitychange ---
-  const flushTelemetry = () => {
-    telemetryClient.flush(true);
-  };
-  window.addEventListener("beforeunload", flushTelemetry);
-  document.addEventListener("visibilitychange", () => {
-    if (document.visibilityState === "hidden") flushTelemetry();
-  });
-  onDestroy(() => {
-    window.removeEventListener("beforeunload", flushTelemetry);
-    document.removeEventListener("visibilitychange", flushTelemetry);
-  });
 }
