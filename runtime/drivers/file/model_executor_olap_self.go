@@ -85,11 +85,11 @@ func (e *olapToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 	case drivers.FileFormatParquet:
 		err = writeParquet(res, fw)
 	case drivers.FileFormatCSV:
-		err = writeCSV(res, fw, outputProps.FileHeaderMetadata)
+		err = writeCSV(res, fw, outputProps.Headers)
 	case drivers.FileFormatJSON:
 		return nil, errors.New("json file output not currently supported")
 	case drivers.FileFormatXLSX:
-		err = writeXLSX(res, fw, outputProps.FileHeaderMetadata)
+		err = writeXLSX(res, fw, outputProps.Headers)
 	default:
 		return nil, fmt.Errorf("unsupported output format %q", outputProps.Format)
 	}
@@ -116,17 +116,14 @@ func (e *olapToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 	}, nil
 }
 
-func writeCSV(res *drivers.Result, fw io.Writer, headerMetadata drivers.FileHeaderMetaData) error {
+func writeCSV(res *drivers.Result, fw io.Writer, headers []string) error {
 	w := csv.NewWriter(fw)
 
-	// Write headerMetadata first if it's provided
-	if len(headerMetadata) > 0 {
-		for _, line := range headerMetadata {
-			// Keep empty lines as-is
-			err := w.Write([]string{line})
-			if err != nil {
-				return err
-			}
+	// Write headers first if they're provided
+	for _, line := range headers {
+		err := w.Write([]string{line})
+		if err != nil {
+			return err
 		}
 	}
 
@@ -196,7 +193,7 @@ func writeCSV(res *drivers.Result, fw io.Writer, headerMetadata drivers.FileHead
 	return nil
 }
 
-func writeXLSX(res *drivers.Result, fw io.Writer, headerMetadata drivers.FileHeaderMetaData) error {
+func writeXLSX(res *drivers.Result, fw io.Writer, headers []string) error {
 	xf := excelize.NewFile()
 	defer func() { _ = xf.Close() }()
 
@@ -206,19 +203,17 @@ func writeXLSX(res *drivers.Result, fw io.Writer, headerMetadata drivers.FileHea
 	}
 	idx := 1
 
-	// Write headerMetadata first if it's provided
-	if len(headerMetadata) > 0 {
-		for _, line := range headerMetadata {
-			row := []any{line} // Each line is a separate row
-			cell, err := excelize.CoordinatesToCellName(1, idx)
-			if err != nil {
-				return err
-			}
-			if err := sw.SetRow(cell, row, excelize.RowOpts{Hidden: false}); err != nil {
-				return err
-			}
-			idx++ // Move to the next row
+	// Write headers first if they're provided
+	for _, line := range headers {
+		row := []any{line} // Each line is a separate row
+		cell, err := excelize.CoordinatesToCellName(1, idx)
+		if err != nil {
+			return err
 		}
+		if err := sw.SetRow(cell, row, excelize.RowOpts{Hidden: false}); err != nil {
+			return err
+		}
+		idx++ // Move to the next row
 	}
 
 	row := make([]any, len(res.Schema.Fields))

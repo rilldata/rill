@@ -664,8 +664,6 @@ func (m *ExportRequest) validate(all bool) error {
 
 	// no validation rules for Format
 
-	// no validation rules for IncludeHeader
-
 	if all {
 		switch v := interface{}(m.GetQuery()).(type) {
 		case interface{ ValidateAll() error }:
@@ -697,13 +695,38 @@ func (m *ExportRequest) validate(all bool) error {
 
 	// no validation rules for BakedQuery
 
-	// no validation rules for Organization
+	// no validation rules for IncludeHeader
 
-	// no validation rules for Project
+	if all {
+		switch v := interface{}(m.GetOriginDashboard()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, ExportRequestValidationError{
+					field:  "OriginDashboard",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, ExportRequestValidationError{
+					field:  "OriginDashboard",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetOriginDashboard()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return ExportRequestValidationError{
+				field:  "OriginDashboard",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
 
-	// no validation rules for Dashboard
-
-	// no validation rules for DashboardUrl
+	// no validation rules for OriginUrl
 
 	if len(errors) > 0 {
 		return ExportRequestMultiError(errors)
@@ -911,12 +934,6 @@ func (m *ExportReportRequest) validate(all bool) error {
 
 	// no validation rules for Report
 
-	// no validation rules for Limit
-
-	// no validation rules for Format
-
-	// no validation rules for IncludeHeader
-
 	if all {
 		switch v := interface{}(m.GetExecutionTime()).(type) {
 		case interface{ ValidateAll() error }:
@@ -946,13 +963,7 @@ func (m *ExportReportRequest) validate(all bool) error {
 		}
 	}
 
-	// no validation rules for Organization
-
-	// no validation rules for Project
-
-	// no validation rules for Dashboard
-
-	// no validation rules for DashboardUrl
+	// no validation rules for OriginBaseUrl
 
 	if len(errors) > 0 {
 		return ExportReportRequestMultiError(errors)

@@ -18,7 +18,7 @@
       loadingCopy="Saving"
       danger={!!errorMessage && !saving}
       disabled={saving}
-      on:click={onAcceptCurrent}
+      onClick={onAcceptCurrent}
     >
       {#if errorMessage}
         <Alert size="14px" />
@@ -31,7 +31,7 @@
 
   <div>
     <h2>Incoming content</h2>
-    <Button type="primary" on:click={onAcceptIncoming}>Accept incoming</Button>
+    <Button type="primary" onClick={onAcceptIncoming}>Accept incoming</Button>
   </div>
 </header>
 

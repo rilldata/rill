@@ -15,7 +15,7 @@ import (
 // executeExport works by simulating a model that outputs to a file.
 // This means it creates a ModelExecutor with the provided input connector and props as input,
 // and with the "file" driver as the output connector targeting a temporary output path.
-func (e *Executor) executeExport(ctx context.Context, format drivers.FileFormat, inputConnector string, inputProps map[string]any, headerMetadata drivers.FileHeaderMetaData) (string, error) {
+func (e *Executor) executeExport(ctx context.Context, format drivers.FileFormat, inputConnector string, inputProps map[string]any, headers []string) (string, error) {
 	ctx, cancel := context.WithTimeout(ctx, defaultExportTimeout)
 	defer cancel()
 
@@ -47,8 +47,8 @@ func (e *Executor) executeExport(ctx context.Context, format drivers.FileFormat,
 	outputProps := map[string]any{
 		"path":                  tempPath,
 		"format":                format,
+		"headers":               headers,
 		"file_size_limit_bytes": e.instanceCfg.DownloadLimitBytes,
-		"file_header_metadata":  headerMetadata,
 	}
 
 	opts := &drivers.ModelExecutorOptions{

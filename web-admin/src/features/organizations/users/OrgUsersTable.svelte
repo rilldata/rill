@@ -15,7 +15,7 @@
     InfiniteQueryObserverResult,
   } from "@tanstack/svelte-query";
   import { ExternalLinkIcon } from "lucide-svelte";
-  import InfiniteScrollTable from "@rilldata/web-admin/components/InfiniteScrollTable.svelte";
+  import InfiniteScrollTable from "@rilldata/web-common/components/table/InfiniteScrollTable.svelte";
 
   interface OrgUser extends V1OrganizationMemberUser, V1OrganizationInvite {
     invitedBy?: string;
@@ -33,6 +33,7 @@
   export let currentUserEmail: string;
   export let currentUserRole: string;
   export let billingContact: string | undefined;
+  export let scrollToTopTrigger: any = null;
 
   export let onAttemptRemoveBillingContactUser: () => void;
   export let onAttemptChangeBillingContactUserRole: () => void;
@@ -123,4 +124,5 @@
   maxHeight={dynamicTableMaxHeight}
   emptyStateMessage="No users found"
   {headerIcons}
+  {scrollToTopTrigger}
 />
