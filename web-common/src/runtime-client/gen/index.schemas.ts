@@ -1230,7 +1230,6 @@ export interface V1MetricsViewAggregationRequest {
   exact?: boolean;
   fillMissing?: boolean;
   rows?: boolean;
-  timeDimension?: string;
 }
 
 export type V1MetricsViewAggregationResponseDataItem = {
@@ -1487,6 +1486,7 @@ export interface V1MetricsViewTotalsRequest {
   whereSql?: string;
   priority?: number;
   filter?: V1MetricsViewFilter;
+  timeDimension?: string;
 }
 
 export type V1MetricsViewTotalsResponseData = { [key: string]: unknown };
@@ -2153,6 +2153,7 @@ export interface V1TimeRange {
   /** Optional. Rill format time range. Should only be used for alerts and reports.
 For dashboard call ResolveTimeRanges. */
   expression?: string;
+  timeDimension?: string;
 }
 
 export interface V1TimeRangeSummary {
@@ -2509,7 +2510,6 @@ export type QueryServiceMetricsViewAggregationBody = {
   exact?: boolean;
   fillMissing?: boolean;
   rows?: boolean;
-  timeDimension?: string;
 };
 
 export type QueryServiceMetricsViewComparisonBody = {
@@ -2559,7 +2559,6 @@ export type QueryServiceMetricsViewSearchBody = {
   having?: V1Expression;
   limit?: number;
   priority?: number;
-  timeDimension?: string;
 };
 
 export type QueryServiceMetricsViewTimeRangeBody = {
@@ -2616,6 +2615,7 @@ export type QueryServiceMetricsViewTotalsBody = {
   whereSql?: string;
   priority?: number;
   filter?: V1MetricsViewFilter;
+  timeDimension?: string;
 };
 
 export type QueryServiceColumnNullCountParams = {

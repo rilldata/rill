@@ -96,7 +96,7 @@ func (q *MetricsViewComparison) Resolve(ctx context.Context, rt *runtime.Runtime
 		return fmt.Errorf("error rewriting to metrics query: %w", err)
 	}
 
-	e, err := metricsview.NewExecutor(ctx, rt, instanceID, mv.ValidSpec, mv.Streaming, security, priority, qry.TimeDimension)
+	e, err := metricsview.NewExecutor(ctx, rt, instanceID, mv.ValidSpec, mv.Streaming, security, priority)
 	if err != nil {
 		return err
 	}
@@ -188,7 +188,7 @@ func (q *MetricsViewComparison) Export(ctx context.Context, rt *runtime.Runtime,
 	}
 
 	// alternate timeDimension not supported as the query is deprecated
-	e, err := metricsview.NewExecutor(ctx, rt, instanceID, mv.ValidSpec, mv.Streaming, security, opts.Priority, qry.TimeDimension)
+	e, err := metricsview.NewExecutor(ctx, rt, instanceID, mv.ValidSpec, mv.Streaming, security, opts.Priority)
 	if err != nil {
 		return err
 	}
@@ -322,6 +322,7 @@ func (q *MetricsViewComparison) rewriteToMetricsViewQuery(export bool) (*metrics
 		res.IsoDuration = q.TimeRange.IsoDuration
 		res.IsoOffset = q.TimeRange.IsoOffset
 		res.RoundToGrain = metricsview.TimeGrainFromProto(q.TimeRange.RoundToGrain)
+		res.TimeDimension = q.TimeRange.TimeDimension
 		qry.TimeRange = res
 		qry.TimeZone = q.TimeRange.TimeZone
 	}
@@ -337,6 +338,7 @@ func (q *MetricsViewComparison) rewriteToMetricsViewQuery(export bool) (*metrics
 		res.IsoDuration = q.ComparisonTimeRange.IsoDuration
 		res.IsoOffset = q.ComparisonTimeRange.IsoOffset
 		res.RoundToGrain = metricsview.TimeGrainFromProto(q.ComparisonTimeRange.RoundToGrain)
+		res.TimeDimension = q.ComparisonTimeRange.TimeDimension
 		qry.ComparisonTimeRange = res
 	}
 

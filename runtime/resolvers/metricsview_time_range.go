@@ -80,7 +80,7 @@ func newMetricsViewTimeRangeResolver(ctx context.Context, opts *runtime.Resolver
 		return nil, runtime.ErrForbidden
 	}
 
-	ex, err := metricsview.NewExecutor(ctx, opts.Runtime, opts.InstanceID, mv, false, security, args.Priority, args.TimeDimension)
+	ex, err := metricsview.NewExecutor(ctx, opts.Runtime, opts.InstanceID, mv, false, security, args.Priority)
 	if err != nil {
 		return nil, err
 	}

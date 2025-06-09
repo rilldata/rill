@@ -77,7 +77,7 @@ func (q *MetricsViewRows) Resolve(ctx context.Context, rt *runtime.Runtime, inst
 		return fmt.Errorf("error rewriting to metrics query: %w", err)
 	}
 
-	e, err := metricsview.NewExecutor(ctx, rt, instanceID, q.MetricsView, q.Streaming, q.ResolvedMVSecurity, priority, q.TimeDimension)
+	e, err := metricsview.NewExecutor(ctx, rt, instanceID, q.MetricsView, q.Streaming, q.ResolvedMVSecurity, priority)
 	if err != nil {
 		return err
 	}
@@ -115,7 +115,7 @@ func (q *MetricsViewRows) Export(ctx context.Context, rt *runtime.Runtime, insta
 	}
 	qry.Rows = true
 
-	e, err := metricsview.NewExecutor(ctx, rt, instanceID, q.MetricsView, q.Streaming, q.ResolvedMVSecurity, opts.Priority, q.TimeDimension)
+	e, err := metricsview.NewExecutor(ctx, rt, instanceID, q.MetricsView, q.Streaming, q.ResolvedMVSecurity, opts.Priority)
 	if err != nil {
 		return err
 	}
@@ -175,6 +175,7 @@ func (q *MetricsViewRows) rewriteToMetricsViewQuery() (*metricsview.Query, error
 	if q.TimeEnd != nil {
 		res.End = q.TimeEnd.AsTime()
 	}
+	res.TimeDimension = q.TimeDimension
 	qry.TimeRange = res
 
 	qry.Limit = q.Limit
@@ -209,7 +210,6 @@ func (q *MetricsViewRows) rewriteToMetricsViewQuery() (*metricsview.Query, error
 
 	qry.TimeZone = q.TimeZone
 	qry.Rows = true
-	qry.TimeDimension = q.TimeDimension
 
 	return qry, nil
 }

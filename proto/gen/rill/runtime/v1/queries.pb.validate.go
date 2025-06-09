@@ -3322,8 +3322,6 @@ func (m *MetricsViewAggregationRequest) validate(all bool) error {
 
 	// no validation rules for Rows
 
-	// no validation rules for TimeDimension
-
 	if len(errors) > 0 {
 		return MetricsViewAggregationRequestMultiError(errors)
 	}
@@ -6217,6 +6215,8 @@ func (m *TimeRange) validate(all bool) error {
 
 	// no validation rules for Expression
 
+	// no validation rules for TimeDimension
+
 	if len(errors) > 0 {
 		return TimeRangeMultiError(errors)
 	}
@@ -7542,6 +7542,8 @@ func (m *MetricsViewTotalsRequest) validate(all bool) error {
 			}
 		}
 	}
+
+	// no validation rules for TimeDimension
 
 	if len(errors) > 0 {
 		return MetricsViewTotalsRequestMultiError(errors)
@@ -9402,8 +9404,6 @@ func (m *MetricsViewSearchRequest) validate(all bool) error {
 	}
 
 	// no validation rules for Priority
-
-	// no validation rules for TimeDimension
 
 	if len(errors) > 0 {
 		return MetricsViewSearchRequestMultiError(errors)

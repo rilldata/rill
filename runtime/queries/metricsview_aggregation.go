@@ -38,7 +38,6 @@ type MetricsViewAggregation struct {
 	Exact               bool                                           `json:"exact,omitempty"`
 	FillMissing         bool                                           `json:"fill_missing,omitempty"`
 	Rows                bool                                           `json:"rows,omitempty"`
-	TimeDimension       string                                         `json:"time_dimension,omitempty"`
 
 	Result    *runtimev1.MetricsViewAggregationResponse `json:"-"`
 	Exporting bool                                      `json:"-"` // Deprecated: Remove when tests call Export directly
@@ -87,7 +86,7 @@ func (q *MetricsViewAggregation) Resolve(ctx context.Context, rt *runtime.Runtim
 		return fmt.Errorf("error rewriting to metrics query: %w", err)
 	}
 
-	e, err := metricsview.NewExecutor(ctx, rt, instanceID, mv.ValidSpec, mv.Streaming, security, priority, qry.TimeDimension)
+	e, err := metricsview.NewExecutor(ctx, rt, instanceID, mv.ValidSpec, mv.Streaming, security, priority)
 	if err != nil {
 		return err
 	}
@@ -129,14 +128,14 @@ func (q *MetricsViewAggregation) Export(ctx context.Context, rt *runtime.Runtime
 		return fmt.Errorf("error rewriting to metrics query: %w", err)
 	}
 
-	e, err := metricsview.NewExecutor(ctx, rt, instanceID, mv.ValidSpec, mv.Streaming, security, opts.Priority, qry.TimeDimension)
+	e, err := metricsview.NewExecutor(ctx, rt, instanceID, mv.ValidSpec, mv.Streaming, security, opts.Priority)
 	if err != nil {
 		return err
 	}
 	defer e.Close()
 
 	if mv.ValidSpec.TimeDimension != "" {
-		tsRes, err := ResolveTimestampResult(ctx, rt, instanceID, q.MetricsViewName, q.TimeDimension, q.SecurityClaims, opts.Priority)
+		tsRes, err := ResolveTimestampResult(ctx, rt, instanceID, q.MetricsViewName, q.TimeRange.TimeDimension, q.SecurityClaims, opts.Priority)
 		if err != nil {
 			return err
 		}
@@ -327,6 +326,7 @@ func (q *MetricsViewAggregation) rewriteToMetricsViewQuery(export bool) (*metric
 		if q.TimeRange.TimeZone != "" {
 			qry.TimeZone = q.TimeRange.TimeZone
 		}
+		res.TimeDimension = q.TimeRange.TimeDimension
 		qry.TimeRange = res
 	}
 
@@ -348,6 +348,7 @@ func (q *MetricsViewAggregation) rewriteToMetricsViewQuery(export bool) (*metric
 			}
 			qry.TimeZone = q.ComparisonTimeRange.TimeZone
 		}
+		res.TimeDimension = q.ComparisonTimeRange.TimeDimension
 		qry.ComparisonTimeRange = res
 	}
 
@@ -421,7 +422,6 @@ func (q *MetricsViewAggregation) rewriteToMetricsViewQuery(export bool) (*metric
 
 	qry.UseDisplayNames = export
 	qry.Rows = q.Rows
-	qry.TimeDimension = q.TimeDimension
 
 	return qry, nil
 }

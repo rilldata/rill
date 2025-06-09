@@ -46,12 +46,7 @@ type TimestampsResult struct {
 }
 
 // NewExecutor creates a new Executor for the provided metrics view.
-func NewExecutor(ctx context.Context, rt *runtime.Runtime, instanceID string, mv *runtimev1.MetricsViewSpec, streaming bool, sec *runtime.ResolvedSecurity, priority int, timeDimension string) (*Executor, error) {
-	// timeDimension is needed here just for validation purposes so that we don't need to repeat check in all queries and resolvers.
-	if timeDimension != "" && mv.TimeDimension == "" {
-		return nil, fmt.Errorf("time_dimension cannot be used with metrics views that does not have a primary timeseries defined")
-	}
-
+func NewExecutor(ctx context.Context, rt *runtime.Runtime, instanceID string, mv *runtimev1.MetricsViewSpec, streaming bool, sec *runtime.ResolvedSecurity, priority int) (*Executor, error) {
 	olap, release, err := rt.OLAP(ctx, instanceID, mv.Connector)
 	if err != nil {
 		return nil, fmt.Errorf("failed to acquire connector for metrics view: %w", err)
@@ -136,7 +131,7 @@ func (e *Executor) CacheKey(ctx context.Context) ([]byte, bool, error) {
 
 // ValidateQuery validates the provided query against the executor's metrics view.
 func (e *Executor) ValidateQuery(qry *Query) error {
-	// TODO: Implement it
+	// TODO: Implement it, build on e.validateQuery as it does only time dimension validation as of now
 	panic("not implemented")
 }
 
@@ -146,12 +141,14 @@ func (e *Executor) Timestamps(ctx context.Context, timeDim string) (TimestampsRe
 		return res, nil
 	}
 
-	timeExpr := e.timeColumnOrExpr(timeDim)
+	timeExpr, err := e.timeColumnOrExpr(timeDim)
+	if err != nil {
+		return TimestampsResult{}, fmt.Errorf("failed to resolve time column or expression: %w", err)
+	}
 	if timeExpr == "" {
 		return TimestampsResult{}, fmt.Errorf("no time dimension found in metrics view '%s'", timeDim)
 	}
 
-	var err error
 	var res TimestampsResult
 	switch e.olap.Dialect() {
 	case drivers.DialectDuckDB, drivers.DialectClickHouse, drivers.DialectPinot:
@@ -173,8 +170,13 @@ func (e *Executor) Timestamps(ctx context.Context, timeDim string) (TimestampsRe
 
 // BindQuery allows to set min, max and watermark from a cache.
 func (e *Executor) BindQuery(ctx context.Context, qry *Query, timestamps TimestampsResult) error {
-	if qry.TimeDimension != "" {
-		e.timestamps[qry.TimeDimension] = timestamps
+	err := e.validateQuery(qry)
+	if err != nil {
+		return err
+	}
+
+	if qry.TimeRange != nil && qry.TimeRange.TimeDimension != "" {
+		e.timestamps[qry.TimeRange.TimeDimension] = timestamps
 	} else if e.metricsView.TimeDimension != "" {
 		e.timestamps[e.metricsView.TimeDimension] = timestamps
 	}
@@ -262,7 +264,7 @@ func (e *Executor) Query(ctx context.Context, qry *Query, executionTime *time.Ti
 		return nil, runtime.ErrForbidden
 	}
 
-	err := qry.Validate()
+	err := e.validateQuery(qry)
 	if err != nil {
 		return nil, err
 	}
@@ -391,6 +393,11 @@ func (e *Executor) Export(ctx context.Context, qry *Query, executionTime *time.T
 		return "", runtime.ErrForbidden
 	}
 
+	err := e.validateQuery(qry)
+	if err != nil {
+		return "", err
+	}
+
 	pivotAST, pivoting, err := e.rewriteQueryForPivot(qry)
 	if err != nil {
 		return "", err
@@ -497,7 +504,6 @@ func (e *Executor) Search(ctx context.Context, qry *SearchQuery, executionTime *
 			TimeZone:            "",
 			UseDisplayNames:     false,
 			Rows:                false,
-			TimeDimension:       "",
 		} //exhaustruct:enforce
 		q.Where = whereExprForSearch(qry.Where, d, qry.Search)
 
@@ -579,7 +585,6 @@ func (e *Executor) executeSearchInDruid(ctx context.Context, qry *SearchQuery, e
 		TimeZone:            "",
 		UseDisplayNames:     false,
 		Rows:                false,
-		TimeDimension:       "",
 	} //exhaustruct:enforce
 
 	if err := e.rewriteQueryTimeRanges(ctx, q, executionTime); err != nil {
@@ -696,21 +701,35 @@ func (e *Executor) executeSearchInDruid(ctx context.Context, qry *SearchQuery, e
 	return result, nil
 }
 
+func (e *Executor) validateQuery(qry *Query) error {
+	err := qry.Validate()
+	if err != nil {
+		return err
+	}
+
+	if e.metricsView.TimeDimension == "" && qry.TimeRange != nil && qry.TimeRange.TimeDimension != "" {
+		return fmt.Errorf("time_dimension cannot be used with metrics views that does not have a primary timeseries defined")
+	}
+
+	return nil
+}
+
 // timeColumnOrExpr returns the time column or expression to use for the metrics view. ues time column if provided, otherwise fall back to the metrics view TimeDimension.
-func (e *Executor) timeColumnOrExpr(timeDim string) string {
+func (e *Executor) timeColumnOrExpr(timeDim string) (string, error) {
 	if timeDim == "" {
 		timeDim = e.metricsView.TimeDimension
 	}
 	// figure out the time column or expression to use from the dimension list
 	for _, dim := range e.metricsView.Dimensions {
 		if dim.Name == timeDim {
-			if dim.Expression != "" {
-				return dim.Expression
+			expr, err := e.olap.Dialect().MetricsViewDimensionExpression(dim)
+			if err != nil {
+				return "", fmt.Errorf("failed to get time dimension expression for '%s': %w", timeDim, err)
 			}
-			return e.olap.Dialect().EscapeIdentifier(dim.Column)
+			return expr, nil
 		}
 	}
-	return e.olap.Dialect().EscapeIdentifier(timeDim) // fallback to the time dimension if not found in dimensions
+	return e.olap.Dialect().EscapeIdentifier(timeDim), nil // fallback to the time dimension if not found in dimensions
 }
 
 func whereExprForSearch(where *Expression, dimension, search string) *Expression {

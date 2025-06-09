@@ -31,7 +31,6 @@ func (s *Server) MetricsViewAggregation(ctx context.Context, req *runtimev1.Metr
 		attribute.Int64("args.limit", req.Limit),
 		attribute.Int64("args.offset", req.Offset),
 		attribute.Int("args.priority", int(req.Priority)),
-		attribute.String("args.time_dimension", req.TimeDimension),
 	)
 	s.addInstanceRequestAttributes(ctx, req.InstanceId)
 
@@ -67,7 +66,6 @@ func (s *Server) MetricsViewAggregation(ctx context.Context, req *runtimev1.Metr
 		Aliases:             req.Aliases,
 		FillMissing:         req.FillMissing,
 		Rows:                req.Rows,
-		TimeDimension:       req.TimeDimension,
 	}
 	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {
@@ -260,6 +258,7 @@ func (s *Server) MetricsViewTotals(ctx context.Context, req *runtimev1.MetricsVi
 		WhereSQL:        req.WhereSql,
 		Filter:          req.Filter,
 		SecurityClaims:  auth.GetClaims(ctx).SecurityClaims(),
+		TimeDimension:   req.TimeDimension,
 	}
 	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {
@@ -385,7 +384,6 @@ func (s *Server) MetricsViewSearch(ctx context.Context, req *runtimev1.MetricsVi
 		attribute.String("args.search", req.Search),
 		attribute.Int("args.filter_count", filterCount(req.Where)),
 		attribute.Int("args.priority", int(req.Priority)),
-		attribute.String("args.time_dimension", req.TimeDimension),
 	)
 
 	s.addInstanceRequestAttributes(ctx, req.InstanceId)
@@ -405,7 +403,6 @@ func (s *Server) MetricsViewSearch(ctx context.Context, req *runtimev1.MetricsVi
 		Priority:        req.Priority,
 		Limit:           &limit,
 		SecurityClaims:  auth.GetClaims(ctx).SecurityClaims(),
-		TimeDimension:   req.TimeDimension,
 	}
 	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {
@@ -471,7 +468,7 @@ func (s *Server) MetricsViewTimeRanges(ctx context.Context, req *runtimev1.Metri
 			End:          timestamppb.New(end),
 			RoundToGrain: queries.TimeGrainToAPI(grain),
 			// for a reference
-			Expression: tr,
+			Expression: tr, // TODO populate time dimension here
 		}
 	}
 

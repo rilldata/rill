@@ -1397,9 +1397,6 @@ paths:
               rows:
                 type: boolean
                 title: Optional. Defaults to false. Used to fetch rows from underlying model
-              timeDimension:
-                type: string
-                title: Optional. If not specified, falls back to the primary time dimension in the metrics view spec
       tags:
         - QueryService
   /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/compare-toplist:
@@ -1677,9 +1674,6 @@ paths:
               priority:
                 type: integer
                 format: int32
-              timeDimension:
-                type: string
-                title: Optional. If not specified, falls back to the primary time dimension in the metrics view spec
       tags:
         - QueryService
   /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/time-range-summary:
@@ -1956,6 +1950,9 @@ paths:
               filter:
                 $ref: '#/definitions/v1MetricsViewFilter'
                 title: Deprecated. should be removed once UI is moved to use new filters
+              timeDimension:
+                type: string
+                title: Optional. If not specified, falls back to the primary time dimension in the metrics view spec
       tags:
         - QueryService
   /v1/instances/{instanceId}/queries/null-count/tables/{tableName}:
@@ -5012,9 +5009,6 @@ definitions:
       rows:
         type: boolean
         title: Optional. Defaults to false. Used to fetch rows from underlying model
-      timeDimension:
-        type: string
-        title: Optional. If not specified, falls back to the primary time dimension in the metrics view spec
   v1MetricsViewAggregationResponse:
     type: object
     properties:
@@ -5547,6 +5541,9 @@ definitions:
       filter:
         $ref: '#/definitions/v1MetricsViewFilter'
         title: Deprecated. should be removed once UI is moved to use new filters
+      timeDimension:
+        type: string
+        title: Optional. If not specified, falls back to the primary time dimension in the metrics view spec
   v1MetricsViewTotalsResponse:
     type: object
     properties:
@@ -6569,6 +6566,9 @@ definitions:
         description: |-
           Optional. Rill format time range. Should only be used for alerts and reports.
           For dashboard call ResolveTimeRanges.
+      timeDimension:
+        type: string
+        title: Optional. If not specified, falls back to the primary time dimension in the metrics view spec
     title: 2 of the (start, end, iso_duration) should be set
   v1TimeRangeSummary:
     type: object

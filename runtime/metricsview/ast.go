@@ -131,10 +131,10 @@ func NewAST(mv *runtimev1.MetricsViewSpec, sec *runtime.ResolvedSecurity, qry *Q
 		return nil, fmt.Errorf("must specify at least one dimension or measure")
 	}
 
-	// Use provided time column if available, otherwise fall back to TimeDimension
-	timeDim := qry.TimeDimension
-	if timeDim == "" {
-		timeDim = mv.TimeDimension
+	// Use provided time column if available, otherwise fall back to TimeDimension // TODO cross check again
+	timeDim := mv.TimeDimension
+	if qry.TimeRange != nil && qry.TimeRange.TimeDimension != "" {
+		timeDim = qry.TimeRange.TimeDimension
 	}
 
 	// Init

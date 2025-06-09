@@ -94,7 +94,7 @@ func (q *MetricsViewTimeSeries) Resolve(ctx context.Context, rt *runtime.Runtime
 	}
 
 	// no need to set alternate time dimension as query already will be adjusted to use the time column if specified
-	e, err := metricsview.NewExecutor(ctx, rt, instanceID, mv.ValidSpec, mv.Streaming, security, priority, q.TimeDimension)
+	e, err := metricsview.NewExecutor(ctx, rt, instanceID, mv.ValidSpec, mv.Streaming, security, priority)
 	if err != nil {
 		return err
 	}
@@ -314,6 +314,7 @@ func (q *MetricsViewTimeSeries) rewriteToMetricsViewQuery(timeDimension string) 
 	if q.TimeEnd != nil {
 		res.End = q.TimeEnd.AsTime()
 	}
+	res.TimeDimension = timeDimension
 	qry.TimeRange = res
 
 	if q.Limit != 0 {
@@ -367,7 +368,6 @@ func (q *MetricsViewTimeSeries) rewriteToMetricsViewQuery(timeDimension string) 
 	})
 
 	qry.TimeZone = q.TimeZone
-	qry.TimeDimension = q.TimeDimension
 
 	return qry, nil
 }

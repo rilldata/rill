@@ -21,6 +21,7 @@ type MetricsViewTotals struct {
 	WhereSQL        string                       `json:"where_sql,omitempty"`
 	Filter          *runtimev1.MetricsViewFilter `json:"filter,omitempty"` // backwards compatibility
 	SecurityClaims  *runtime.SecurityClaims      `json:"security_claims,omitempty"`
+	TimeDimension   string                       `json:"time_dimension,omitempty"` // optional
 
 	Result *runtimev1.MetricsViewTotalsResponse `json:"-"`
 }
@@ -68,7 +69,7 @@ func (q *MetricsViewTotals) Resolve(ctx context.Context, rt *runtime.Runtime, in
 		return fmt.Errorf("error rewriting to metrics query: %w", err)
 	}
 
-	e, err := metricsview.NewExecutor(ctx, rt, instanceID, mv.ValidSpec, mv.Streaming, security, priority, qry.TimeDimension)
+	e, err := metricsview.NewExecutor(ctx, rt, instanceID, mv.ValidSpec, mv.Streaming, security, priority)
 	if err != nil {
 		return err
 	}
@@ -116,6 +117,7 @@ func (q *MetricsViewTotals) rewriteToMetricsViewQuery(exporting bool) (*metricsv
 		if q.TimeEnd != nil {
 			res.End = q.TimeEnd.AsTime()
 		}
+		res.TimeDimension = q.TimeDimension
 		qry.TimeRange = res
 	}
 

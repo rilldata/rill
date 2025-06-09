@@ -426,8 +426,6 @@ message MetricsViewAggregationRequest {
   bool fill_missing = 21;
   // Optional. Defaults to false. Used to fetch rows from underlying model
   bool rows = 22;
-  // Optional. If not specified, falls back to the primary time dimension in the metrics view spec
-  string time_dimension = 23;
 }
 
 message MetricsViewAggregationResponse {
@@ -593,6 +591,7 @@ message TimeRange {
   // Optional. Rill format time range. Should only be used for alerts and reports.
   // For dashboard call ResolveTimeRanges.
   string expression = 7;
+  string time_dimension = 8; // Optional. If not specified, falls back to the primary time dimension in the metrics view spec
 }
 
 // Present for backwards compatibility
@@ -695,6 +694,7 @@ message MetricsViewTotalsRequest {
   string where_sql = 11;
   int32 priority = 8;
   MetricsViewFilter filter = 10; // Deprecated. should be removed once UI is moved to use new filters
+  string time_dimension = 12; // Optional. If not specified, falls back to the primary time dimension in the metrics view spec
 }
 
 message MetricsViewTotalsResponse {
@@ -806,8 +806,6 @@ message MetricsViewSearchRequest {
   // Optional
   int32 limit = 8 [(validate.rules).int32.gte = 0];
   int32 priority = 9;
-  // Optional. If not specified, falls back to the primary time dimension in the metrics view spec
-  string time_dimension = 10;
 }
 
 message MetricsViewSearchResponse {
