@@ -20,7 +20,8 @@
   $: isDimension = fieldConfig?.type === "nominal";
   $: isMeasure = fieldConfig?.type === "quantitative";
 
-  let limit = fieldConfig?.limit || 5000;
+  let limit =
+    fieldConfig?.limit || chartFieldInput?.limitSelector?.defaultLimit || 5000;
   let labelAngle =
     fieldConfig?.labelAngle ?? (fieldConfig?.type === "temporal" ? 0 : -90);
   let isDropdownOpen = false;
@@ -60,6 +61,20 @@
       <span class="text-xs font-medium">{label} Configuration</span>
     </div>
     <div class="px-3.5 pb-1.5">
+      {#if showLegend}
+        <div class="py-1 flex items-center justify-between">
+          <span class="text-xs">Legend orientation</span>
+          <Select
+            size="sm"
+            id="legend-orientation-select"
+            width={180}
+            options={legendOptions}
+            value={fieldConfig?.legendOrientation ||
+              chartFieldInput?.defaultLegendOrientation}
+            on:change={(e) => onChange("legendOrientation", e.detail)}
+          />
+        </div>
+      {/if}
       {#if showAxisTitle}
         <div class="py-1.5 flex items-center justify-between">
           <span class="text-xs">Show axis title</span>
@@ -144,20 +159,6 @@
             onEnter={() => {
               onChange("labelAngle", labelAngle);
             }}
-          />
-        </div>
-      {/if}
-      {#if showLegend}
-        <div class="py-1 flex items-center justify-between">
-          <span class="text-xs">Legend orientation</span>
-          <Select
-            size="sm"
-            id="legend-orientation-select"
-            width={180}
-            options={legendOptions}
-            value={fieldConfig?.legendOrientation ||
-              chartFieldInput?.defaultLegendOrientation}
-            on:change={(e) => onChange("legendOrientation", e.detail)}
           />
         </div>
       {/if}
