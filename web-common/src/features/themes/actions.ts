@@ -45,7 +45,7 @@ function generatePalette(
         ...chroma
           .scale([middleValue, lightestDark])
           .mode(MODE)
-          .gamma(0.7)
+          .gamma(0.6)
           .colors(6, null)
           .slice(1),
       ],

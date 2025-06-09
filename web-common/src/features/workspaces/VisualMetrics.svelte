@@ -548,7 +548,7 @@
                 {#if !hasValidOLAPTableSelected}
                   <span class="text-gray-400 truncate">Select table</span>
                 {:else}
-                  <span class="text-gray-800 truncate">
+                  <span class="text-gray-700 truncate">
                     {modelOrSourceOrTableName}
                   </span>
                 {/if}
@@ -663,7 +663,7 @@
 
       {#if totalSelected}
         <div
-          class="bg-surface rounded-[2px] z-20 shadow-md flex gap-x-0 h-8 text-gray-800 border border-slate-100 absolute right-0"
+          class="bg-surface rounded-[2px] z-20 shadow-md flex gap-x-0 h-8 text-gray-700 border border-slate-100 absolute right-0"
         >
           <div class="px-2 flex items-center">
             {totalSelected}

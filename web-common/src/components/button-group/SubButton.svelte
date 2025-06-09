@@ -36,7 +36,7 @@
 
   $: textStyle = disabled
     ? "text-gray-400"
-    : "text-gray-800 hover:text-gray-900 ";
+    : "text-gray-700 hover:text-gray-900 ";
 
   $: bgStyle = disabled
     ? "bg-surface"

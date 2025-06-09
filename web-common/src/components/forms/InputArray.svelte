@@ -96,7 +96,7 @@
     {/each}
     <Button on:click={handleAddItem} type="dashed">
       <div class="flex gap-x-2">
-        <Add className="text-gray-800" />
+        <Add className="text-gray-700" />
         {addItemLabel}
       </div>
     </Button>

@@ -22,11 +22,11 @@
   </DropdownMenu.Trigger>
   <DropdownMenu.Content class="flex flex-col gap-y-1 ">
     <DropdownMenu.Group>
-      {#each menuItems as item}
+      {#each menuItems as item, i (i)}
         <DropdownMenu.Item on:click={() => addComponent(item.id)}>
           <div class="flex flex-row gap-x-2">
             <svelte:component this={item.icon} />
-            <span class="text-gray-800 text-xs font-normal">{item.label}</span>
+            <span class="text-gray-700 text-xs font-normal">{item.label}</span>
           </div>
         </DropdownMenu.Item>
       {/each}

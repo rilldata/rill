@@ -85,7 +85,7 @@
       >.<br />Please confirm this is the code displayed in the Rill CLI.
     </p>
     <div
-      class="px-2 py-1 rounded-sm text-4xl tracking-widest bg-gray-100 text-gray-800 mb-5 font-mono"
+      class="px-2 py-1 rounded-sm text-4xl tracking-widest bg-gray-100 text-gray-700 mb-5 font-mono"
     >
       {userCode}
     </div>

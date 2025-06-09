@@ -35,7 +35,7 @@
       ? position === "left"
         ? ""
         : "border-b"
-      : "border-b border-b-1 border-r border-r-1 border   border-t-0 border-l-0 bg-gray-100");
+      : "border-b border-b-1 border-r border-r-1 border border-t-0 border-l-0 bg-gray-100");
 
   const borderClassesInnerDiv = isDimensionTable ? "" : "whitespace-nowrap";
 
@@ -91,7 +91,7 @@
         <!-- <div
           style:width="2px"
           style:height="34px"
-          class="border border-l  "
+          class="border border-l"
         /> -->
       </div>
     {/if}

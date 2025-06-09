@@ -153,7 +153,7 @@
                         href={headerIcons[header.column.id].href}
                         target="_blank"
                         rel="noopener noreferrer"
-                        class="hover:text-gray-800"
+                        class="hover:text-gray-700"
                       >
                         <svelte:component
                           this={headerIcons[header.column.id].icon}
