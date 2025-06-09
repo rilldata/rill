@@ -30,12 +30,14 @@ type generic struct {
 	logger        *zap.Logger
 	writeSem      *semaphore.Weighted
 
-	opts *GenericDBOptions
+	opts *GenericOptions
 }
 
-type GenericDBOptions struct {
+type GenericOptions struct {
 	// Path to the external DuckDB database.
 	Path string
+	// Attach string allows user to directly pass a DuckDB attach string.
+	Attach string
 	// DBName is set to the name of the database identified by the Path.
 	DBName string
 
@@ -57,7 +59,10 @@ type GenericDBOptions struct {
 	OtelAttributes []attribute.KeyValue
 }
 
-func (d *GenericDBOptions) setDefaultSettings() {
+func (d *GenericOptions) validateAndApplyDefaults() error {
+	if d.Path != "" && d.Attach != "" {
+		return fmt.Errorf("cannot specify both `path` and `attach`")
+	}
 	if d.Settings == nil {
 		d.Settings = make(map[string]string)
 	}
@@ -67,34 +72,33 @@ func (d *GenericDBOptions) setDefaultSettings() {
 	if d.LocalCPU > 0 {
 		d.Settings["threads"] = strconv.Itoa(d.LocalCPU)
 	}
+	return nil
 }
 
 // NewGeneric creates a duckdb database connection with the given Path.
 // It can be used to run OLAP queries on an external local DuckDB database or a duckdb service like MotherDuck.
 // Operations like CreateTableAsSelect, RenameTable, MutateTable are not atomic and can fail in the middle.
-func NewGeneric(ctx context.Context, opts *GenericDBOptions) (res DB, dbErr error) {
-	opts.Logger.Debug("open generic db", observability.ZapCtx(ctx))
+func NewGeneric(ctx context.Context, opts *GenericOptions) (res DB, dbErr error) {
+	opts.Logger.Debug("duckdb: open generic db", observability.ZapCtx(ctx))
 	// open the db
 	//
 	// we create a ephemeral local DuckDB instance and then attach the external database if Path is set.
 	// This is to control where wal and tmp files are created.
 	// An ephemeral local DuckDB instance is used since the go-duckdb driver caches some state wrt same database path
 	// and attaching same motherduck instance leads to issues.
-	opts.setDefaultSettings()
-	dsn, err := url.Parse("")
+	err := opts.validateAndApplyDefaults()
 	if err != nil {
 		return nil, err
-	}
-	query := dsn.Query()
-	for k, v := range opts.Settings {
-		query.Set(k, v)
 	}
 
 	// Rebuild DuckDB DSN (which should be "path?key=val&...")
 	// this is required since spaces and other special characters are valid in db file path but invalid and hence encoded in URL
-	dsn.RawQuery = ""
+	qry := make(url.Values)
+	for k, v := range opts.Settings {
+		qry.Set(k, v)
+	}
 	localFileName := filepath.Join(opts.LocalDataDir, "main"+uuid.NewString()[:8]+".db")
-	connector, err := duckdb.NewConnector(generateDSN(localFileName, query.Encode()), func(execer driver.ExecerContext) error {
+	connector, err := duckdb.NewConnector(generateDSN(localFileName, qry.Encode()), func(execer driver.ExecerContext) error {
 		for _, qry := range opts.ConnInitQueries {
 			_, err := execer.ExecContext(ctx, qry, nil)
 			if err != nil && strings.Contains(err.Error(), "Failed to download extension") {
@@ -134,26 +138,29 @@ func NewGeneric(ctx context.Context, opts *GenericDBOptions) (res DB, dbErr erro
 
 	// attach the passed external db
 	if opts.Path != "" {
-		// NOTE: This does not wrap with safeSQLString to allow user to pass a path with other properties.
-		// Example: path: "'ducklake:metadata.ducklake' AS my_ducklake (DATA_PATH 'gs://my-bucket/data_files/')"
-		_, err = db.ExecContext(ctx, fmt.Sprintf("ATTACH %s", opts.Path))
+		_, err = db.ExecContext(ctx, fmt.Sprintf("ATTACH %s", safeSQLString(opts.Path)))
 		if err != nil {
 			return nil, fmt.Errorf("error attaching external db: %w", err)
 		}
-
-		if opts.DBName == "" {
-			// find the attached database name
-			err = db.QueryRowxContext(
-				ctx,
-				`SELECT database_name
+	} else if opts.Attach != "" {
+		// attach the database using the attach string
+		_, err = db.ExecContext(ctx, fmt.Sprintf("ATTACH '%s'", opts.Attach))
+		if err != nil {
+			return nil, fmt.Errorf("error attaching external db using attach string: %w", err)
+		}
+	}
+	if opts.DBName == "" {
+		// find the attached database name
+		err = db.QueryRowxContext(
+			ctx,
+			`SELECT database_name
 			 FROM duckdb_databases()
 			 WHERE internal = false -- ignore internal information_schema databases
 			   AND (path IS NOT NULL OR database_name = 'memory') -- all databases except the in-memory one should have a path 
 			   AND database_name != current_database()`,
-			).Scan(&opts.DBName)
-			if err != nil {
-				return nil, fmt.Errorf("error getting attached database name: %w. Set property `db_name` in the corresponding connector.yaml", err)
-			}
+		).Scan(&opts.DBName)
+		if err != nil {
+			return nil, fmt.Errorf("error getting attached database name: %w. Set property `db_name` in the corresponding connector.yaml", err)
 		}
 	}
 
@@ -198,8 +205,6 @@ func (m *generic) CreateTableAsSelect(ctx context.Context, name, query string, o
 		}
 		span.End()
 	}()
-
-	m.logger.Debug("GenericDuckDB: creating table", zap.String("name", name), zap.Bool("view", opts.View), observability.ZapCtx(ctx))
 
 	err = m.writeSem.Acquire(ctx, 1)
 	if err != nil {
@@ -259,7 +264,6 @@ func (m *generic) CreateTableAsSelect(ctx context.Context, name, query string, o
 
 // DropTable implements DB.
 func (m *generic) DropTable(ctx context.Context, name string) (resErr error) {
-	m.logger.Debug("GenericDuckDB: creating table", zap.String("name", name), observability.ZapCtx(ctx))
 	ctx, span := tracer.Start(ctx, "DropTable", trace.WithAttributes(attribute.String("name", name)))
 	defer func() {
 		if resErr != nil {
@@ -311,7 +315,6 @@ func (m *generic) MutateTable(ctx context.Context, name string, initQueries []st
 		span.End()
 	}()
 
-	m.logger.Debug("GenericDuckDB: mutating table", zap.String("name", name), observability.ZapCtx(ctx))
 	err := m.writeSem.Acquire(ctx, 1)
 	if err != nil {
 		return nil, err
@@ -347,7 +350,6 @@ func (m *generic) RenameTable(ctx context.Context, oldName, newName string) (res
 		span.End()
 	}()
 
-	m.logger.Debug("GenericDuckDB: renaming table", zap.String("from", oldName), zap.String("to", newName), observability.ZapCtx(ctx))
 	if strings.EqualFold(oldName, newName) {
 		return fmt.Errorf("rename: Table with name %q already exists", newName)
 	}

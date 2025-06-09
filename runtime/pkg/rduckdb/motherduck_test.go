@@ -214,7 +214,7 @@ func TestMotherDuckMutateTable(t *testing.T) {
 func prepareMotherDuckDB(t *testing.T) DB {
 	tempDir := t.TempDir()
 	randomDB := provisionDatabase(t)
-	db, err := NewGeneric(context.Background(), &GenericDBOptions{
+	db, err := NewGeneric(context.Background(), &GenericOptions{
 		DBInitQueries:      []string{"INSTALL motherduck; LOAD motherduck; SET motherduck_token = '" + os.Getenv("RILL_RUNTIME_MOTHERDUCK_TEST_TOKEN") + "'"},
 		Path:               fmt.Sprintf("md:%s", randomDB),
 		LocalDataDir:       tempDir,
