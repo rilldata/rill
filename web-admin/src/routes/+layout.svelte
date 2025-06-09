@@ -103,23 +103,22 @@
   {/if}
 </svelte:head>
 
-<RillTheme>
-  <QueryClientProvider client={queryClient}>
-    <main class="flex flex-col min-h-screen h-screen bg-surface">
-      <BannerCenter />
-      {#if !hideBillingManager}
-        <BillingBannerManager {organization} {organizationPermissions} />
-      {/if}
-      {#if !isEmbed && !hideTopBar}
-        <TopNavigationBar
-          createMagicAuthTokens={projectPermissions?.createMagicAuthTokens}
-          manageProjectMembers={projectPermissions?.manageProjectMembers}
-          manageProjectAdmins={projectPermissions?.manageProjectAdmins}
-          manageOrgAdmins={organizationPermissions?.manageOrgAdmins}
-          manageOrgMembers={organizationPermissions?.manageOrgMembers}
-          {organizationLogoUrl}
-          {planDisplayName}
-        />
+<QueryClientProvider client={queryClient}>
+  <main class="flex flex-col min-h-screen h-screen bg-surface">
+    <BannerCenter />
+    {#if !hideBillingManager}
+      <BillingBannerManager {organization} {organizationPermissions} />
+    {/if}
+    {#if !isEmbed && !hideTopBar}
+      <TopNavigationBar
+        createMagicAuthTokens={projectPermissions?.createMagicAuthTokens}
+        manageProjectMembers={projectPermissions?.manageProjectMembers}
+        manageProjectAdmins={projectPermissions?.manageProjectAdmins}
+        manageOrgAdmins={organizationPermissions?.manageOrgAdmins}
+        manageOrgMembers={organizationPermissions?.manageOrgMembers}
+        {organizationLogoUrl}
+        {planDisplayName}
+      />
 
       {#if withinOnlyOrg}
         <OrganizationTabs {organization} {organizationPermissions} {pathname} />
