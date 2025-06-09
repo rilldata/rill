@@ -23,7 +23,7 @@
   <Card href="/{organization}/{project}">
     <!-- Project name -->
     <h2
-      class="text-gray-800 font-medium text-lg text-center px-4 {doesProjectNameIncludeUnderscores(
+      class="text-gray-700 font-medium text-lg text-center px-4 {doesProjectNameIncludeUnderscores(
         project,
       )
         ? 'break-all'

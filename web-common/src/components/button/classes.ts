@@ -1,4 +1,4 @@
-export const disabledClasses = `disabled:cursor-not-allowed disabled:text-gray-800 disabled:bg-gray-200 disabled:border disabled:border-gray-400 disabled:opacity-50`;
+export const disabledClasses = `disabled:cursor-not-allowed disabled:text-gray-700 disabled:bg-gray-200 disabled:border disabled:border-gray-400 disabled:opacity-50`;
 
 export const levels = {
   info: {

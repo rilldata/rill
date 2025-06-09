@@ -293,9 +293,9 @@
                             Invite only
                           {/if}
                           {#if accessDropdownOpen}
-                            <CaretUpIcon size="12px" color="text-gray-800" />
+                            <CaretUpIcon size="12px" color="text-gray-700" />
                           {:else}
-                            <CaretDownIcon size="12px" color="text-gray-800" />
+                            <CaretDownIcon size="12px" color="text-gray-700" />
                           {/if}
                         </span>
 
@@ -331,7 +331,7 @@
                   >
                     <div class="flex items-start gap-2">
                       <Lock size="20px" color="#374151" />
-                      <span class="text-xs font-medium text-gray-800"
+                      <span class="text-xs font-medium text-gray-700"
                         >Invite only</span
                       >
                     </div>
@@ -357,7 +357,7 @@
                           >{organization[0].toUpperCase()}</span
                         >
                       </div>
-                      <span class="text-xs font-medium text-gray-800"
+                      <span class="text-xs font-medium text-gray-700"
                         >Everyone at {organization}</span
                       >
                     </div>
