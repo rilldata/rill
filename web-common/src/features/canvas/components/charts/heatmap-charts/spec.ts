@@ -96,7 +96,10 @@ export function generateVLHeatmapSpec(
         ),
       },
     },
-    {
+  ];
+
+  if (config.show_data_labels === true) {
+    spec.layer.push({
       mark: {
         type: "text",
         fontSize: 11,
@@ -128,8 +131,8 @@ export function generateVLHeatmapSpec(
           },
         },
       },
-    },
-  ];
+    });
+  }
 
   return {
     ...spec,

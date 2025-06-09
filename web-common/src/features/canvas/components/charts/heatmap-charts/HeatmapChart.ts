@@ -25,6 +25,7 @@ export type HeatmapChartSpec = BaseChartConfig & {
   x?: FieldConfig;
   y?: FieldConfig;
   color?: FieldConfig;
+  show_data_labels?: boolean;
 };
 
 export class HeatmapChartComponent extends BaseChart<HeatmapChartSpec> {
@@ -63,6 +64,10 @@ export class HeatmapChartComponent extends BaseChart<HeatmapChartSpec> {
           defaultLegendOrientation: "right",
         },
       },
+    },
+    show_data_labels: {
+      type: "boolean",
+      label: "Data labels",
     },
   };
 

@@ -116,7 +116,13 @@
               id={key}
               faint={!localParamValues[key]}
             />
-            <Switch bind:checked={$specStore[key]} small />
+            <Switch
+              checked={$specStore[key]}
+              on:click={() => {
+                component.updateProperty(key, !localParamValues[key]);
+              }}
+              small
+            />
           </div>
 
           <!-- TEXT AREA -->
