@@ -5,13 +5,13 @@
     createAdminServiceListOrganizationMemberUsergroups,
     createAdminServiceListOrganizationMemberUsers,
   } from "@rilldata/web-admin/client";
-  import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
+  import CreateUserGroupDialog from "@rilldata/web-admin/features/organizations/users/CreateUserGroupDialog.svelte";
+  import EditUserGroupDialog from "@rilldata/web-admin/features/organizations/users/EditUserGroupDialog.svelte";
   import OrgGroupsTable from "@rilldata/web-admin/features/organizations/users/OrgGroupsTable.svelte";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
-  import { Plus } from "lucide-svelte";
-  import CreateUserGroupDialog from "@rilldata/web-admin/features/organizations/users/CreateUserGroupDialog.svelte";
   import { Search } from "@rilldata/web-common/components/search";
-  import EditUserGroupDialog from "@rilldata/web-admin/features/organizations/users/EditUserGroupDialog.svelte";
+  import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
+  import { Plus } from "lucide-svelte";
 
   const PAGE_SIZE = 20;
 
@@ -90,7 +90,7 @@
         <Button
           type="primary"
           large
-          on:click={() => (isCreateUserGroupDialogOpen = true)}
+          onClick={() => (isCreateUserGroupDialogOpen = true)}
         >
           <Plus size="16px" />
           <span>Create group</span>

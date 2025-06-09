@@ -64,6 +64,8 @@ interface NominalFieldConfig {
 
 interface QuantitativeFieldConfig {
   zeroBasedOrigin?: boolean; // Default is false
+  min?: number;
+  max?: number;
 }
 
 export interface FieldConfig

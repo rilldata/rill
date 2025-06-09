@@ -1,13 +1,13 @@
 <script lang="ts">
-  import { scale } from "svelte/transition";
   import { portal } from "@rilldata/web-common/lib/actions/portal";
   import type { NotificationMessage } from "@rilldata/web-common/lib/event-bus/events";
-  import Close from "../icons/Close.svelte";
-  import Check from "../icons/Check.svelte";
-  import Button from "../button/Button.svelte";
   import { onMount } from "svelte";
-  import WarningIcon from "../icons/WarningIcon.svelte";
+  import { scale } from "svelte/transition";
+  import Button from "../button/Button.svelte";
+  import Check from "../icons/Check.svelte";
+  import Close from "../icons/Close.svelte";
   import LoadingSpinner from "../icons/LoadingSpinner.svelte";
+  import WarningIcon from "../icons/WarningIcon.svelte";
   import { NOTIFICATION_TIMEOUT } from "./constants";
 
   export let location: "top" | "bottom" | "middle" = "bottom";
@@ -53,7 +53,7 @@
 
     {#if options?.persisted && type !== "loading"}
       <div class="px-2 py-2 border-l">
-        <Button on:click={onClose} square>
+        <Button onClick={onClose} square>
           <Close size="18px" color="#fff" />
         </Button>
       </div>
