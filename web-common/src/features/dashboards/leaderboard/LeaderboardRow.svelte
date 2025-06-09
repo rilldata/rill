@@ -170,8 +170,8 @@
   style:background={leaderboardMeasureNames.length === 1
     ? dimensionGradients
     : undefined}
-  on:mouseenter={() => (hovered = true)}
-  on:mouseleave={() => (hovered = false)}
+  on:pointerover={() => (hovered = true)}
+  on:pointerout={() => (hovered = false)}
   on:click={(e) => {
     if (e.shiftKey) return;
     toggleDimensionValueSelection(
@@ -199,7 +199,7 @@
     on:click={modified({
       shift: () => shiftClickHandler(dimensionValue),
     })}
-    on:mouseover={() => {
+    on:pointerover={() => {
       if (dimensionValue) {
         // Always update the value in the store, but don't change visibility
         cellInspectorStore.updateValue(dimensionValue.toString());
@@ -251,7 +251,7 @@
       style:background={leaderboardMeasureNames.length === 1
         ? measureGradients
         : measureGradientMap?.[measureName]}
-      on:mouseover={() => {
+      on:pointerover={() => {
         const value = values[measureName]?.toString() || "";
         if (value) {
           cellInspectorStore.updateValue(value);
@@ -287,7 +287,7 @@
           shift: () =>
             shiftClickHandler(pctOfTotals[measureName]?.toString() || ""),
         })}
-        on:mouseover={() => {
+        on:pointerover={() => {
           const value = pctOfTotals[measureName]?.toString() || "";
           if (value) {
             cellInspectorStore.updateValue(value);
@@ -319,7 +319,7 @@
           shift: () =>
             shiftClickHandler(deltaAbsMap[measureName]?.toString() || ""),
         })}
-        on:mouseover={() => {
+        on:pointerover={() => {
           const value = deltaAbsMap[measureName]?.toString() || "";
           if (value) {
             cellInspectorStore.updateValue(value);
@@ -354,7 +354,7 @@
           shift: () =>
             shiftClickHandler(deltaRels[measureName]?.toString() || ""),
         })}
-        on:mouseover={() => {
+        on:pointerover={() => {
           const value = deltaRels[measureName]?.toString() || "";
           if (value) {
             cellInspectorStore.updateValue(value);
