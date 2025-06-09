@@ -27,6 +27,7 @@ export type ChartFieldInput = {
   limitSelector?: boolean;
   nullSelector?: boolean;
   labelAngleSelector?: boolean;
+  axisRangeSelector?: boolean;
   /**
    * The default legend position for the chart.
    * If this key is not specified, legend selector will not be shown.

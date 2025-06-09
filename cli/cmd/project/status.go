@@ -44,9 +44,9 @@ func StatusCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 
-			var githubURL string
+			var gitRemote string
 			if proj.Project.ManagedGitId == "" {
-				githubURL = proj.Project.GithubUrl
+				gitRemote = proj.Project.GitRemote
 			}
 
 			// 1. Print project info
@@ -54,7 +54,7 @@ func StatusCmd(ch *cmdutil.Helper) *cobra.Command {
 			fmt.Printf("  Name: %s\n", proj.Project.Name)
 			fmt.Printf("  Organization: %v\n", proj.Project.OrgName)
 			fmt.Printf("  Public: %v\n", proj.Project.Public)
-			fmt.Printf("  Github: %v\n", githubURL)
+			fmt.Printf("  Git: %v\n", gitRemote)
 			fmt.Printf("  Created: %s\n", proj.Project.CreatedOn.AsTime().Local().Format(time.RFC3339))
 			fmt.Printf("  Updated: %s\n", proj.Project.UpdatedOn.AsTime().Local().Format(time.RFC3339))
 

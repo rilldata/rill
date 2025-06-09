@@ -8,6 +8,7 @@
   import { getStateManagers } from "../state-managers/state-managers";
   import { metricsExplorerStore } from "../stores/dashboard-stores";
   import AddField from "./AddField.svelte";
+  import PivotChip from "./PivotChip.svelte";
   import PivotPortalItem from "./PivotPortalItem.svelte";
   import { swapListener } from "./swapListener";
   import {
@@ -15,7 +16,6 @@
     PivotChipType,
     type PivotTableMode,
   } from "./types";
-  import PivotChip from "./PivotChip.svelte";
 
   export type Zone = "rows" | "columns" | "Time" | "Measures" | "Dimensions";
 
@@ -282,7 +282,7 @@
     {#if items.length}
       <Button
         type="text"
-        on:click={() => {
+        onClick={() => {
           onUpdate([]);
         }}
       >

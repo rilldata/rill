@@ -6,8 +6,8 @@
   } from "@rilldata/web-admin/client";
   import AccessRequestContainer from "@rilldata/web-admin/features/access-request/AccessRequestContainer.svelte";
   import { Button } from "@rilldata/web-common/components/button";
-  import Lock from "@rilldata/web-common/components/icons/Lock.svelte";
   import Check from "@rilldata/web-common/components/icons/Check.svelte";
+  import Lock from "@rilldata/web-common/components/icons/Lock.svelte";
   import type { AxiosError } from "axios";
 
   $: organization = $page.url.searchParams.get("organization");
@@ -51,7 +51,7 @@
   <Button
     type="primary"
     wide
-    on:click={onRequestAccess}
+    onClick={onRequestAccess}
     loading={isPending}
     disabled={requested}
   >

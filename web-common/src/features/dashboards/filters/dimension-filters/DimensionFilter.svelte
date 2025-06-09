@@ -1,11 +1,10 @@
 <script lang="ts">
   import { Button } from "@rilldata/web-common/components/button";
   import { Chip } from "@rilldata/web-common/components/chip";
+  import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import Label from "@rilldata/web-common/components/forms/Label.svelte";
   import Select from "@rilldata/web-common/components/forms/Select.svelte";
   import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
-  import DimensionFilterChipBody from "@rilldata/web-common/features/dashboards/filters/dimension-filters/DimensionFilterChipBody.svelte";
-  import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import LoadingSpinner from "@rilldata/web-common/components/icons/LoadingSpinner.svelte";
   import { Search } from "@rilldata/web-common/components/search";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
@@ -19,16 +18,17 @@
     mergeDimensionSearchValues,
     splitDimensionSearchText,
   } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/dimension-search-text-utils";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { fly } from "svelte/transition";
-  import {
-    useDimensionSearch,
-    useAllSearchResultsCount,
-  } from "web-common/src/features/dashboards/filters/dimension-filters/dimension-filter-values";
+  import DimensionFilterChipBody from "@rilldata/web-common/features/dashboards/filters/dimension-filters/DimensionFilterChipBody.svelte";
   import { mergeDimensionAndMeasureFilters } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
   import { getFiltersForOtherDimensions } from "@rilldata/web-common/features/dashboards/selectors";
   import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
   import type { V1Expression } from "@rilldata/web-common/runtime-client";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { fly } from "svelte/transition";
+  import {
+    useAllSearchResultsCount,
+    useDimensionSearch,
+  } from "web-common/src/features/dashboards/filters/dimension-filters/dimension-filter-values";
 
   export let name: string;
   export let metricsViewNames: string[];
@@ -444,7 +444,7 @@
         <Label class="font-normal text-xs" for="include-exclude">Exclude</Label>
       </div>
       {#if curMode === DimensionFilterMode.Select}
-        <Button on:click={onToggleSelectAll} type="plain" class="justify-end">
+        <Button onClick={onToggleSelectAll} type="plain" class="justify-end">
           {#if allSelected}
             Deselect all
           {:else}
@@ -453,7 +453,7 @@
         </Button>
       {:else}
         <Button
-          on:click={onApply}
+          onClick={onApply}
           type="primary"
           class="justify-end"
           disabled={!enableSearchCountQuery}

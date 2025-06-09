@@ -105,7 +105,7 @@
   {/if}
   <Button
     type="primary"
-    on:click={onContinue}
+    onClick={onContinue}
     loading={$addToAllowlist.isPending}
     wide
     class="mx-auto"

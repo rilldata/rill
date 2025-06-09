@@ -59,7 +59,7 @@ type Config struct {
 	MetricsExporter           observability.Exporter `default:"prometheus" split_words:"true"`
 	TracesExporter            observability.Exporter `default:"" split_words:"true"`
 	HTTPPort                  int                    `default:"8080" split_words:"true"`
-	GRPCPort                  int                    `default:"9090" split_words:"true"`
+	GRPCPort                  int                    `default:"8080" split_words:"true"`
 	DebugPort                 int                    `split_words:"true"`
 	ExternalURL               string                 `default:"http://localhost:8080" split_words:"true"`
 	ExternalGRPCURL           string                 `envconfig:"external_grpc_url"`
@@ -132,13 +132,8 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			// Let ExternalGRPCURL default to ExternalURL, unless ExternalURL is itself the default.
-			// NOTE: This is temporary until we migrate to a server that can host HTTP and gRPC on the same port.
 			if conf.ExternalGRPCURL == "" {
-				if conf.ExternalURL == "http://localhost:8080" {
-					conf.ExternalGRPCURL = "http://localhost:9090"
-				} else {
-					conf.ExternalGRPCURL = conf.ExternalURL
-				}
+				conf.ExternalGRPCURL = conf.ExternalURL
 			}
 
 			// Validate frontend and external URLs
@@ -293,8 +288,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				ProvisionerSetJSON:        conf.ProvisionerSetJSON,
 				ProvisionerMaxConcurrency: conf.ProvisionerMaxConcurrency,
 				DefaultProvisioner:        conf.DefaultProvisioner,
-				VersionNumber:             ch.Version.Number,
-				VersionCommit:             ch.Version.Commit,
+				Version:                   ch.Version,
 				MetricsProjectOrg:         metricsProjectOrg,
 				MetricsProjectName:        metricsProjectName,
 				AutoscalerCron:            conf.AutoscalerCron,
@@ -368,7 +362,6 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				if err != nil {
 					logger.Fatal("error creating server", zap.Error(err))
 				}
-				group.Go(func() error { return srv.ServeGRPC(cctx) })
 				group.Go(func() error { return srv.ServeHTTP(cctx) })
 				if conf.DebugPort != 0 {
 					group.Go(func() error { return debugserver.ServeHTTP(cctx, conf.DebugPort) })

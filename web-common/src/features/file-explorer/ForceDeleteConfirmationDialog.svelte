@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { Button } from "@rilldata/web-common/components/button";
   import * as AlertDialog from "@rilldata/web-common/components/alert-dialog/index";
+  import { Button } from "@rilldata/web-common/components/button";
 
   export let open: boolean;
   export let onDelete: () => void;
@@ -32,7 +32,7 @@
         <Button
           large
           builders={[builder]}
-          on:click={() => {
+          onClick={() => {
             handleClose();
             onDelete();
           }}
@@ -44,7 +44,7 @@
       </AlertDialog.Action>
 
       <AlertDialog.Cancel asChild let:builder>
-        <Button large builders={[builder]} on:click={handleClose} type="plain">
+        <Button large builders={[builder]} onClick={handleClose} type="plain">
           Cancel
         </Button>
       </AlertDialog.Cancel>

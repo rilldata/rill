@@ -174,13 +174,13 @@
           name={id}
           class={size}
           {disabled}
-          value={value ?? (inputType === "number" ? 0 : "")}
+          value={value ?? (inputType === "number" ? null : "")}
           autocomplete={autocomplete ? "on" : "off"}
           bind:this={inputElement}
           on:input={(e) => {
             if (inputType === "number") {
               if (e.currentTarget.value === "") {
-                value = "";
+                value = undefined;
               } else {
                 value = e.currentTarget.valueAsNumber;
               }

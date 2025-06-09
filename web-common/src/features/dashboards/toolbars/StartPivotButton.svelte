@@ -5,7 +5,7 @@
   export let onClick: () => void;
 </script>
 
-<Button compact type="toolbar" on:click={onClick}>
+<Button compact type="toolbar" {onClick}>
   <Pivot size="16px" />
   Start Pivot
 </Button>

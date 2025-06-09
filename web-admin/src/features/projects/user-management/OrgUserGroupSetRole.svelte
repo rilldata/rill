@@ -105,7 +105,7 @@
 
 <DropdownMenu.Root bind:open={isOpen}>
   <DropdownMenu.Trigger
-    class="w-18 flex flex-row gap-1 items-center rounded-sm mr-[10px] {isOpen
+    class="w-18 flex flex-row gap-1 items-center rounded-sm mr-[10px] w-[72px] text-right {isOpen
       ? 'bg-slate-200'
       : 'hover:bg-slate-100'} px-2 py-1"
     disabled={!manageOrgAdmins && group.roleName === "admin"}
