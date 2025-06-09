@@ -138,7 +138,7 @@ func NewGeneric(ctx context.Context, opts *GenericOptions) (res DB, dbErr error)
 		}
 	} else if opts.Attach != "" {
 		// attach the database using the attach string
-		_, err = db.ExecContext(ctx, fmt.Sprintf("ATTACH '%s'", opts.Attach))
+		_, err = db.ExecContext(ctx, fmt.Sprintf("ATTACH %s", opts.Attach))
 		if err != nil {
 			return nil, fmt.Errorf("error attaching external db using attach string: %w", err)
 		}
