@@ -204,9 +204,7 @@
 <Popover.Root bind:open={active}>
   <Popover.Trigger asChild let:builder>
     <Button builders={[builder]} type="text" theme label={tooltipText} on:click>
-      <div
-        class="flex items-center gap-x-0.5 px-1 text-gray-700 dark:text-gray-900 hover:text-inherit"
-      >
+      <div class="flex items-center gap-x-0.5 px-1">
         <strong
           >{`${numShownString} ${type === "measure" ? "Measures" : "Dimensions"}`}</strong
         >

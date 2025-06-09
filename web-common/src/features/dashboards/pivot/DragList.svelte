@@ -316,9 +316,9 @@
   }
 
   .horizontal {
-    @apply flex flex-row flex-wrap bg-slate-50 w-full p-1 px-2 gap-x-2 h-fit;
+    @apply flex flex-row flex-wrap bg-gray-50 w-full p-1 px-2 gap-x-2 h-fit;
     @apply items-center;
-    @apply border border-slate-50;
+    @apply border;
   }
 
   .valid {

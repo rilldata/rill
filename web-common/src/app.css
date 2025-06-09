@@ -73,11 +73,11 @@
   }
 
   .ui-measure-bar-included {
-    @apply bg-primary-100;
+    @apply bg-theme-100;
   }
 
   .ui-measure-bar-included-selected {
-    @apply bg-primary-200;
+    @apply bg-theme-200;
   }
 
   .ui-measure-bar-excluded {
@@ -218,10 +218,10 @@
     color-scheme: dark;
     color: var(--color-gray-900);
 
-    --surface: oklch(0.1 0.0194 248.34);
+    --surface: var(--color-gray-50);
 
     /* SHADCN VARIABLES */
-    --background: var(--color-gray-50);
+    --background: var(--color-gray-100);
     /* --foreground: var(--color-gray-900); */
     /* --card: var(--surface); */
     /* --card-foreground: var(--color-gray-900); */
@@ -233,7 +233,7 @@
     /* --secondary-foreground: var(--color-secondary-950); */
     --muted: var(--color-gray-200);
     /* --muted-foreground: var(--color-gray-500); */
-    --accent: var(--color-gray-200);
+    --accent: var(--color-gray-300);
     /* --accent-foreground: var(--color-gray-900); */
     /* --destructive: var(--color-red-600); */
     /* --destructive-foreground: var(--color-gray-50); */

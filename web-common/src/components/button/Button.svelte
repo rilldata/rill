@@ -324,7 +324,7 @@
   /* TEXT STYLES */
 
   .text {
-    @apply text-slate-600 p-0;
+    @apply text-gray-800 p-0;
   }
 
   .text:hover {
@@ -342,6 +342,15 @@
 
   .text:disabled {
     @apply text-slate-400;
+  }
+
+  .text.theme:hover {
+    @apply text-green-700;
+  }
+
+  .text.theme:active,
+  .text.theme.selected {
+    @apply text-theme-800;
   }
 
   /* TOOLBAR STYLES */

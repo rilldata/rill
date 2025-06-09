@@ -34,7 +34,7 @@ function generatePalette(
       dark: chroma
         .scale([darkestDark, lightestDark])
         .mode(MODE)
-        .gamma(1.12)
+        .gamma(1)
         .colors(stepCount, null),
       light: chroma
         .scale([chroma("white"), chroma("black")])

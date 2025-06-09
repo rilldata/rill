@@ -75,7 +75,7 @@
     type="text"
     autocomplete="off"
     class:focus={showBorderOnFocus}
-    class:bg-slate-50={background}
+    class:bg-gray-50={background}
     class:border
     class="outline-none rounded-[2px] block w-full pl-8 p-1 {forcedInputStyle} resize-none"
     class:h-full={large}
