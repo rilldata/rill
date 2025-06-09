@@ -78,7 +78,8 @@
         priority: ExploreUrlLimitWarningBannerPriority,
         message: {
           type: "warning",
-          message: "URL is too long. Some features like export will not work.",
+          message:
+            "URL is too long. Some features like export will not work. Please remove some filters.",
           iconType: "alert",
         },
       });

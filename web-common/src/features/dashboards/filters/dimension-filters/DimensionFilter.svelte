@@ -162,7 +162,10 @@
       ? selectedValues
       : (correctedSearchResults ?? []);
 
-  $: disableApplyButton = !enableSearchCountQuery || inListTooLong;
+  $: disableApplyButton =
+    curMode !== DimensionFilterMode.Select
+      ? !enableSearchCountQuery || inListTooLong
+      : true;
 
   /**
    * Reset filter settings based on params to the component.
@@ -253,6 +256,7 @@
   }
 
   function onApply() {
+    if (disableApplyButton) return;
     switch (curMode) {
       case DimensionFilterMode.Select:
         onToggleSelectAll();
