@@ -100,7 +100,7 @@
         </ProjectAccessControls>
       </div>
       <div class="flex gap-x-2 items-center">
-        <h1 class="text-gray-800 text-lg font-bold">
+        <h1 class="text-gray-700 text-lg font-bold">
           {alertSpec.displayName}
         </h1>
         <div class="grow" />

@@ -83,10 +83,10 @@
       class="flex flex-row gap-x-2 w-full min-h-7"
       on:click={onClick}
     >
-      <svelte:component this={icon} size="16px" className="text-gray-800" />
+      <svelte:component this={icon} size="16px" className="text-gray-700" />
       <div class="flex flex-col gap-y-0.5">
         <div
-          class="text-xs font-medium text-gray-800 h-4 text-ellipsis overflow-hidden"
+          class="text-xs font-medium text-gray-700 h-4 text-ellipsis overflow-hidden"
         >
           {bookmark.resource.displayName}
         </div>

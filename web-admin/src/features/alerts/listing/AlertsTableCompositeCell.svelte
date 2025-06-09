@@ -19,7 +19,7 @@
   <div class="flex gap-x-2 items-center text-slate-500">
     <BellIcon size="14px" />
     <div
-      class="text-gray-800 text-sm font-semibold group-hover:text-primary-600"
+      class="text-gray-700 text-sm font-semibold group-hover:text-primary-600"
     >
       {title}
     </div>

@@ -57,7 +57,7 @@
   }
 
   a:hover {
-    @apply bg-slate-100 text-gray-800;
+    @apply bg-slate-100 text-gray-700;
   }
 
   p {
