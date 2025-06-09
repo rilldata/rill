@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-const maxSize = 1048576 // 1MB in bytes
+const maxSize = 32 * 1024 // 32 KB
 
 // Event is a telemetry event. It consists of a few required fields that are common to all events and a payload of type-specific data.
 // All the common fields are prefixed with "event_" to avoid conflicts with the payload data.
@@ -18,16 +18,17 @@ type Event struct {
 }
 
 func (e Event) MarshalJSON() ([]byte, error) {
-	data := make(map[string]any, len(e.Data)+4)
-	for k, v := range e.Data {
-		data[k] = v
+	// Add the common fields to the map.
+	if e.Data == nil {
+		e.Data = make(map[string]any)
 	}
-	data["event_id"] = e.EventID
-	data["event_time"] = e.EventTime.UTC().Format(time.RFC3339Nano)
-	data["event_type"] = e.EventType
-	data["event_name"] = e.EventName
 
-	b, err := json.Marshal(data)
+	e.Data["event_id"] = e.EventID
+	e.Data["event_time"] = e.EventTime.UTC().Format(time.RFC3339Nano)
+	e.Data["event_type"] = e.EventType
+	e.Data["event_name"] = e.EventName
+
+	b, err := json.Marshal(e.Data)
 	if err != nil {
 		return nil, err
 	}
