@@ -176,13 +176,13 @@ func (s *Server) ListServiceAuthTokens(ctx context.Context, req *adminv1.ListSer
 			return nil, status.Error(codes.Internal, "invalid token ID format")
 		}
 
-		t := authtoken.Token{Type: authtoken.TypeService, ID: id}
+		prefix := authtoken.FromID(authtoken.TypeService, id).Prefix()
 
 		dtos[i] = &adminv1.ServiceToken{
 			Id:        token.ID,
+			Prefix:    prefix,
 			CreatedOn: timestamppb.New(token.CreatedOn),
 			ExpiresOn: timestamppb.New(safeTime(token.ExpiresOn)),
-			Prefix:    t.Prefix(),
 		}
 	}
 

@@ -105,8 +105,8 @@ func New(ctx context.Context, dsn string, adm *admin.Service) (jobs.Client, erro
 		newPeriodicJob(&TrialEndCheckArgs{}, "10 1 * * *", true),                 // daily at 1:10am UTC
 		newPeriodicJob(&TrialGracePeriodCheckArgs{}, "15 1 * * *", true),         // daily at 1:15am UTC
 		newPeriodicJob(&SubscriptionCancellationCheckArgs{}, "20 1 * * *", true), // daily at 1:20am UTC
-		newPeriodicJob(&DeleteUnusedUserTokenArgs{}, "25 1 * * *", true),         // daily at 1:25am UTC
-		newPeriodicJob(&DeleteUnusedServiceTokenArgs{}, "30 1 * * *", true),      // daily at 1:30am UTC
+		newPeriodicJob(&DeleteUnusedUserTokenArgs{}, "0 */12 * * *", true),       // every 12 hours
+		newPeriodicJob(&DeleteUnusedServiceTokenArgs{}, "0 */12 * * *", true),    // every 12 hours
 		newPeriodicJob(&deleteUnusedGithubReposArgs{}, "0 */6 * * *", true),      // every 6 hours
 		newPeriodicJob(&HibernateInactiveOrgsArgs{}, "0 7 * * 1", true),          // Monday at 7:00am UTC
 	}

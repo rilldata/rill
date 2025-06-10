@@ -37,7 +37,7 @@ func ListCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			// If the result set is smaller than the page size, sort by creation time (newest first).
-			if uint32(len(res.Tokens)) < pageSize {
+			if pageToken == "" && uint32(len(res.Tokens)) < pageSize {
 				sort.Slice(res.Tokens, func(i, j int) bool {
 					return res.Tokens[i].CreatedOn.AsTime().After(res.Tokens[j].CreatedOn.AsTime())
 				})

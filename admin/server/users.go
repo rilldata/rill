@@ -223,7 +223,7 @@ func (s *Server) ListUserAuthTokens(ctx context.Context, req *adminv1.ListUserAu
 			return nil, status.Errorf(codes.Internal, "invalid token ID %q: %v", t.ID, err)
 		}
 
-		token := &authtoken.Token{Type: authtoken.TypeUser, ID: id}
+		prefix := authtoken.FromID(authtoken.TypeUser, id).Prefix()
 
 		dtos[i] = &adminv1.UserAuthToken{
 			Id:                    t.ID,
@@ -234,7 +234,7 @@ func (s *Server) ListUserAuthTokens(ctx context.Context, req *adminv1.ListUserAu
 			CreatedOn:             timestamppb.New(t.CreatedOn),
 			ExpiresOn:             expiresOn,
 			UsedOn:                timestamppb.New(t.UsedOn),
-			Prefix:                token.Prefix(),
+			Prefix:                prefix,
 		}
 	}
 
@@ -637,6 +637,9 @@ func (s *Server) findUserAuthTokenFuzzy(ctx context.Context, input string) (*dat
 
 	// Try exact ID match
 	token, err := s.admin.DB.FindUserAuthToken(ctx, input)
+	if err != nil && status.Code(err) != codes.NotFound {
+		return nil, err
+	}
 	if err == nil {
 		return token, nil
 	}
@@ -645,6 +648,9 @@ func (s *Server) findUserAuthTokenFuzzy(ctx context.Context, input string) (*dat
 	tokenStr, err := authtoken.FromString(input)
 	if err == nil {
 		token, err := s.admin.DB.FindUserAuthToken(ctx, tokenStr.ID.String())
+		if err != nil && status.Code(err) != codes.NotFound {
+			return nil, err
+		}
 		if err == nil {
 			return token, nil
 		}
@@ -655,40 +661,36 @@ func (s *Server) findUserAuthTokenFuzzy(ctx context.Context, input string) (*dat
 		return nil, status.Error(codes.InvalidArgument, "invalid token ID (must be at least 10 characters and start with 'rill_usr_')")
 	}
 
-	// Try matching by prefix
-	tokens, err := s.admin.DB.FindUserAuthTokens(ctx, userID, "", 1000)
-	if err != nil {
+	// Find all tokens for the user and match by prefix
+	dbTokens, err := s.admin.DB.FindUserAuthTokens(ctx, userID, "", 1000)
+	if err != nil && status.Code(err) != codes.NotFound {
 		return nil, err
 	}
 
-	var matches []*database.UserAuthToken
-	for _, t := range tokens {
-		if strings.HasPrefix(t.ID, input) {
-			matches = append(matches, t)
-			continue
+	tokens := make([]authtoken.Token, len(dbTokens))
+	for i, dbToken := range dbTokens {
+		id, err := uuid.Parse(dbToken.ID)
+		if err != nil {
+			continue // skip invalid UUIDs
 		}
+		tokens[i] = *authtoken.FromID(authtoken.TypeUser, id)
+	}
 
-		const prefix = "rill_usr_"
-		if strings.HasPrefix(input, prefix) {
-			base62 := strings.TrimPrefix(input, prefix)
-			// Base62-encoded UUIDs are always 22 characters long.
-			// This allows us to match tokens by their base62 prefix.
-			if len(base62) >= 22 {
-				if uuidBytes, ok := authtoken.UnmarshalBase62(base62[:22]); ok && len(uuidBytes) == 16 {
-					uuidStr := uuid.Must(uuid.FromBytes(uuidBytes)).String()
-					if t.ID == uuidStr {
-						matches = append(matches, t)
-					}
-				}
+	matches := authtoken.MatchByPrefix(input, tokens)
+
+	if len(matches) > 1 {
+		return nil, status.Error(codes.InvalidArgument, "multiple tokens match the given prefix (please use the full ID)")
+	}
+	if len(matches) == 1 {
+		for _, dbToken := range dbTokens {
+			id, err := uuid.Parse(dbToken.ID)
+			if err != nil {
+				continue
+			}
+			if id == matches[0].ID {
+				return dbToken, nil
 			}
 		}
-	}
-
-	if len(matches) == 1 {
-		return matches[0], nil
-	}
-	if len(matches) > 1 {
-		return nil, status.Error(codes.InvalidArgument, "multiple tokens match the given prefix (please use a more specific prefix)")
 	}
 	return nil, status.Error(codes.NotFound, "token not found")
 }

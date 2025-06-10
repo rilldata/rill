@@ -2,12 +2,10 @@ package river
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"time"
 
 	"github.com/rilldata/rill/admin"
-	"github.com/rilldata/rill/admin/database"
 	"github.com/riverqueue/river"
 	"go.uber.org/zap"
 )
@@ -30,10 +28,6 @@ type DeleteUnusedUserTokenWorker struct {
 func (w *DeleteUnusedUserTokenWorker) Work(ctx context.Context, job *river.Job[DeleteUnusedUserTokenArgs]) error {
 	err := w.admin.DB.DeleteInactiveUserAuthTokens(ctx, tokenRetentionPeriod)
 	if err != nil {
-		if errors.Is(err, database.ErrNotFound) {
-			// No tokens to delete, this is not an error.
-			return nil
-		}
 		return fmt.Errorf("failed to delete unused user tokens: %w", err)
 	}
 	return nil
@@ -55,10 +49,6 @@ type DeleteUnusedServiceTokenWorker struct {
 func (w *DeleteUnusedServiceTokenWorker) Work(ctx context.Context, job *river.Job[DeleteUnusedServiceTokenArgs]) error {
 	err := w.admin.DB.DeleteInactiveServiceAuthTokens(ctx, tokenRetentionPeriod)
 	if err != nil {
-		if errors.Is(err, database.ErrNotFound) {
-			// No tokens to delete, this is not an error.
-			return nil
-		}
 		return fmt.Errorf("failed to delete unused service tokens: %w", err)
 	}
 	return nil

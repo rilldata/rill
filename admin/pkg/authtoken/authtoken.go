@@ -117,6 +117,15 @@ func FromParts(typ Type, id uuid.UUID, secret []byte) (*Token, error) {
 	}, nil
 }
 
+// FromID returns a Token with the given type and id, and a zero secret.
+func FromID(typ Type, id uuid.UUID) *Token {
+	return &Token{
+		Type:   typ,
+		ID:     id,
+		Secret: [24]byte{},
+	}
+}
+
 // String canonically encodes the token as string.
 func (t *Token) String() string {
 	payload := make([]byte, 40)
@@ -141,15 +150,25 @@ func (t *Token) Prefix() string {
 	return fmt.Sprintf("%s_%s_%s", Prefix, t.Type, marshalBase62(payload)[:10])
 }
 
+// MatchByPrefix attempts to match a decoded token by its prefix.
+func MatchByPrefix(input string, tokens []Token) []*Token {
+	if len(input) < 10 || !strings.HasPrefix(input, Prefix+"_") {
+		return nil
+	}
+	var matches []*Token
+	for _, t := range tokens {
+		if strings.HasPrefix(t.Prefix(), input) {
+			matches = append(matches, &t)
+		}
+	}
+	return matches
+}
+
 // marshalBase62 marshals a byte slice to a string of [0-9A-Za-z] characters.
 func marshalBase62(val []byte) string {
 	var i big.Int
 	i.SetBytes(val)
 	return i.Text(62)
-}
-
-func UnmarshalBase62(s string) ([]byte, bool) {
-	return unmarshalBase62(s)
 }
 
 // unmarshalBase62 unmarshals a byte slice encoded with marshalBase62.
