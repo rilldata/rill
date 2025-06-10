@@ -93,7 +93,7 @@ func GitFetch(ctx context.Context, path, remote string) error {
 	return nil
 }
 
-func GitPull(ctx context.Context, path string, discardLocal bool, g *Config) (string, error) {
+func GitPull(ctx context.Context, path string, discardLocal bool, remote string) (string, error) {
 	if discardLocal {
 		// instead of doing a hard clean, do a stash instead
 		cmd := exec.CommandContext(ctx, "git", "-C", path, "stash", "--include-untracked")
@@ -104,15 +104,11 @@ func GitPull(ctx context.Context, path string, discardLocal bool, g *Config) (st
 
 	// git -C <path> pull <remote> <branch>
 	args := []string{"-C", path, "pull"}
-	u, err := g.FullyQualifiedRemote()
-	if err != nil {
-		return "", err
-	}
 	st, err := RunGitStatus(path)
 	if err != nil {
 		return "", err
 	}
-	args = append(args, u, st.Branch)
+	args = append(args, remote, st.Branch)
 
 	cmd := exec.CommandContext(ctx, "git", args...)
 	out, err := cmd.Output()
@@ -124,35 +120,4 @@ func GitPull(ctx context.Context, path string, discardLocal bool, g *Config) (st
 		return "", err
 	}
 	return string(out), nil
-}
-
-func GitPush(ctx context.Context, path string, force bool, g Config) error {
-	// git -C <path> push --set-upstream <remote> <branch>
-	args := []string{"-C", path, "push", "--set-upstream"}
-	if force {
-		args = append(args, "--force")
-	}
-
-	u, err := g.FullyQualifiedRemote()
-	if err != nil {
-		return err
-	}
-	args = append(args, u)
-
-	st, err := RunGitStatus(path)
-	if err != nil {
-		return err
-	}
-	args = append(args, st.Branch)
-
-	cmd := exec.CommandContext(ctx, "git", args...)
-	_, err = cmd.Output()
-	if err != nil {
-		var execErr *exec.ExitError
-		if errors.As(err, &execErr) {
-			return fmt.Errorf("git push failed: %s", string(execErr.Stderr))
-		}
-		return err
-	}
-	return nil
 }

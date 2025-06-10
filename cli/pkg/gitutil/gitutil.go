@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/go-git/go-git/v5"
-	"github.com/go-git/go-git/v5/config"
+	gitConfig "github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/go-git/go-git/v5/plumbing/transport"
@@ -209,11 +209,11 @@ func GetSyncStatus(repoPath, branch, remote string) (SyncStatus, error) {
 	return SyncStatusSynced, nil
 }
 
-func CommitAndForcePush(ctx context.Context, projectPath, remote, username, password, branch string, author *object.Signature, allowEmptyCommits bool) error {
+func CommitAndPush(ctx context.Context, projectPath string, config *Config, commitMsg string, author *object.Signature, allowEmptyCommits, forcePush bool) error {
 	// init git repo
 	repo, err := git.PlainInitWithOptions(projectPath, &git.PlainInitOptions{
 		InitOptions: git.InitOptions{
-			DefaultBranch: plumbing.NewBranchReferenceName(branch),
+			DefaultBranch: plumbing.NewBranchReferenceName(config.DefaultBranch),
 		},
 		Bare: false,
 	})
@@ -238,7 +238,10 @@ func CommitAndForcePush(ctx context.Context, projectPath, remote, username, pass
 	}
 
 	// git commit -m
-	_, err = wt.Commit("Auto committed by Rill", &git.CommitOptions{All: true, Author: author, AllowEmptyCommits: allowEmptyCommits})
+	if commitMsg == "" {
+		commitMsg = "Auto committed by Rill"
+	}
+	_, err = wt.Commit(commitMsg, &git.CommitOptions{All: true, Author: author, AllowEmptyCommits: allowEmptyCommits})
 	if err != nil {
 		if !errors.Is(err, git.ErrEmptyCommit) {
 			return fmt.Errorf("failed to commit files to git: %w", err)
@@ -248,9 +251,9 @@ func CommitAndForcePush(ctx context.Context, projectPath, remote, username, pass
 	}
 
 	// set remote
-	_, err = repo.CreateRemote(&config.RemoteConfig{
+	_, err = repo.CreateRemote(&gitConfig.RemoteConfig{
 		Name: "origin",
-		URLs: []string{remote},
+		URLs: []string{config.Remote},
 	})
 	if err != nil {
 		if !errors.Is(err, git.ErrRemoteExists) {
@@ -260,12 +263,18 @@ func CommitAndForcePush(ctx context.Context, projectPath, remote, username, pass
 	}
 
 	// push the changes
-	err = repo.PushContext(ctx, &git.PushOptions{
+	pushOpts := &git.PushOptions{
 		RemoteName: "origin",
-		RemoteURL:  remote,
-		Auth:       &githttp.BasicAuth{Username: username, Password: password},
-		Force:      true,
-	})
+		RemoteURL:  config.Remote,
+		Force:      forcePush,
+	}
+	if config.Username != "" && config.Password != "" {
+		pushOpts.Auth = &githttp.BasicAuth{
+			Username: config.Username,
+			Password: config.Password,
+		}
+	}
+	err = repo.PushContext(ctx, pushOpts)
 	if err != nil {
 		return fmt.Errorf("failed to push to remote : %w", err)
 	}

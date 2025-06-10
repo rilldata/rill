@@ -410,7 +410,13 @@ func createGithubRepoFlow(ctx context.Context, ch *cmdutil.Helper, localGitPath 
 	} else {
 		branch = "main"
 	}
-	err = gitutil.CommitAndForcePush(ctx, localGitPath, *githubRepository.CloneURL, "x-access-token", pollRes.AccessToken, branch, author, true)
+	config := &gitutil.Config{
+		Remote:        *githubRepository.CloneURL,
+		Username:      "x-access-token",
+		Password:      pollRes.AccessToken,
+		DefaultBranch: branch,
+	}
+	err = gitutil.CommitAndPush(ctx, localGitPath, config, "", author, true, true)
 	if err != nil {
 		return fmt.Errorf("failed to push local project to Github: %w", err)
 	}
