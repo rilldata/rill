@@ -127,7 +127,7 @@ func (r *metricsResolver) Validate(ctx context.Context) error {
 
 func (r *metricsResolver) ResolveInteractive(ctx context.Context) (runtime.ResolverResult, error) {
 	if r.metricsHasTime {
-		timeDim := "" // TODO validate this
+		timeDim := ""
 		if r.query.TimeRange != nil && r.query.TimeRange.TimeDimension != "" {
 			timeDim = r.query.TimeRange.TimeDimension
 		}

@@ -131,7 +131,7 @@ func NewAST(mv *runtimev1.MetricsViewSpec, sec *runtime.ResolvedSecurity, qry *Q
 		return nil, fmt.Errorf("must specify at least one dimension or measure")
 	}
 
-	// Use provided time column if available, otherwise fall back to TimeDimension // TODO cross check again
+	// Use provided time column if available, otherwise fall back to TimeDimension
 	timeDim := mv.TimeDimension
 	if qry.TimeRange != nil && qry.TimeRange.TimeDimension != "" {
 		timeDim = qry.TimeRange.TimeDimension
@@ -167,10 +167,8 @@ func NewAST(mv *runtimev1.MetricsViewSpec, sec *runtime.ResolvedSecurity, qry *Q
 		}
 	}
 
-	// lookup time dimension in the metrics view
 	if timeDim != "" {
-		// If the time dimension is not defined in the metrics view, we create a default dimension spec.
-		// This is necessary to ensure that the time dimension can be used in the query.
+		// lookup time dimension in the metrics view
 		t, err := ast.lookupDimension(timeDim, true)
 		if err != nil {
 			return nil, fmt.Errorf("time dimension %q not found: %w", timeDim, err)

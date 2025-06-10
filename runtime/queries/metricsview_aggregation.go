@@ -188,6 +188,8 @@ func (q *MetricsViewAggregation) Export(ctx context.Context, rt *runtime.Runtime
 	return nil
 }
 
+// ResolveTimestampResult resolves the time range for a metrics view and returns the min, max, and watermark timestamps.
+// timeDimension is optional and can be used to specify which time dimension to use for the time range query otherwise it will use the default time dimension of the metrics view.
 func ResolveTimestampResult(ctx context.Context, rt *runtime.Runtime, instanceID, metricsViewName, timeDimension string, security *runtime.SecurityClaims, priority int) (metricsview.TimestampsResult, error) {
 	res, err := rt.Resolve(ctx, &runtime.ResolveOptions{
 		InstanceID: instanceID,

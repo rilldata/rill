@@ -295,7 +295,7 @@ func (q *query) parseColumnNameExpr(in ast.Node) (string, string, error) {
 
 func (q *query) parseFuncCallExpr(node *ast.FuncCallExpr) (*metricsview.DimensionCompute, error) {
 	fncName := node.FnName
-	if fncName.L != "date_trunc" {
+	if fncName.L != "date_trunc" { // TODO might need to support CAST and other timestamp/date functions here but we are missing support for functions in general anyways
 		return nil, fmt.Errorf("metrics sql: function `%s` not supported in select field", fncName.L)
 	}
 

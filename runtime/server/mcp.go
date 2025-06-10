@@ -178,6 +178,9 @@ func (s *Server) mcpQueryMetricsViewTimeRange() (mcp.Tool, server.ToolHandlerFun
 			mcp.Required(),
 			mcp.Description("Name of the metrics view"),
 		),
+		mcp.WithString("time_dimension",
+			mcp.Description("Optional time dimension to use for resolving the time range. If not provided, the default time dimension defined under timeseries field of the metrics view will be used."),
+		),
 	)
 
 	handler := func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
@@ -187,8 +190,8 @@ func (s *Server) mcpQueryMetricsViewTimeRange() (mcp.Tool, server.ToolHandlerFun
 			return nil, err
 		}
 
-		// optional time column to use for resolving time range
-		timeCol := req.GetString("time_column", "")
+		// optional time dimension to use for resolving time range
+		timeDim := req.GetString("time_dimension", "")
 
 		claims := auth.GetClaims(ctx)
 		if !claims.CanInstance(instanceID, auth.ReadMetrics) {
@@ -202,7 +205,7 @@ func (s *Server) mcpQueryMetricsViewTimeRange() (mcp.Tool, server.ToolHandlerFun
 				"metrics_view": name,
 			},
 			Args: map[string]any{
-				"time_column": timeCol,
+				"time_dimension": timeDim,
 			},
 			Claims: claims.SecurityClaims(),
 		})
@@ -227,7 +230,7 @@ func (s *Server) mcpQueryMetricsView() (mcp.Tool, server.ToolHandlerFunc) {
 Perform an arbitrary aggregation on a metrics view.
 Tip: Use the 'sort' and 'limit' parameters for best results and to avoid large, unbounded result sets.
 Important note: The 'time_range' parameter is inclusive of the start time and exclusive of the end time.
-Note: 'time_column' is an optional parameter that can be used to specify the time column to use for the time range. 
+Note: 'time_dimension' is an optional parameter under "time_range" that can be used to specify the time dimension to use for the time range. 
 If not provided, the default time column of the metrics view will be used.
 
 Example: Get the total revenue by country and product category for 2024:
@@ -291,18 +294,18 @@ Example: Get the total revenue by country and month for order shipped in 2024:
         "metrics_view": "ecommerce_financials",
         "dimensions": [
             {"name": "event_time", "compute": {"time_floor": {"dimension": "event_time", "grain": "month"}}},
-            {"name": "country"},
+            {"name": "country"}
         ],
         "measures": [{"name": "total_revenue"}],
         "time_range": {
             "start": "2024-01-01T00:00:00Z",
-            "end": "2025-01-01T00:00:00Z"
+            "end": "2025-01-01T00:00:00Z",
+			"time_dimension"": "order_shipped_time",
         },
         "sort": [
             {"name": "event_time"},
             {"name": "total_revenue", "desc": true},
         ],
-		time_column: "order_shipped_time",
     }
 
 Example: Get the top 10 demographic segments (by country, gender, and age group) with the largest absolute revenue difference comparing May 2025 (base period) to April 2025 (comparison period):

@@ -37,7 +37,7 @@ project_files:
       - name: sum
         expression: sum(val)
 tests:
-  - name: timeseries_time_column_duckdb
+  - name: timeseries_time_dim_duckdb
     resolver: metrics
     properties:
       metrics_view: duckdb_metrics
@@ -60,7 +60,7 @@ tests:
         time__day: "2024-01-03T00:00:00Z"
       - sum: 4
         time__day: "2024-01-04T00:00:00Z"
-  - name: compare_time_column_duckdb
+  - name: compare_time_dim_duckdb
     resolver: metrics
     properties:
       metrics_view: duckdb_metrics
