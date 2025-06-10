@@ -30,13 +30,6 @@ export async function testOLAPConnector(
     await queryClient.fetchQuery({ queryKey, queryFn });
     return { success: true };
   } catch (e) {
-    // // UNCOMMENT TO DEBUG
-    // console.error(`${newConnectorName} connection error:`, {
-    //   code: e?.response?.data?.code,
-    //   message: e?.response?.data?.message,
-    //   error: e,
-    // });
-
     return {
       success: false,
       error: humanReadableErrorMessage(
