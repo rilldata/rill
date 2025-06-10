@@ -207,7 +207,7 @@
       transition:slide={{ duration: FORM_TRANSITION_DURATION }}
     >
       {#if paramsError}
-        <SubmissionError message={paramsError} />
+        <SubmissionError message={paramsError} details={"paramsError"} />
       {/if}
 
       {#each properties as property (property.key)}
@@ -258,7 +258,7 @@
       transition:slide={{ duration: FORM_TRANSITION_DURATION }}
     >
       {#if dsnError}
-        <SubmissionError message={dsnError} />
+        <SubmissionError message={dsnError} details={"dsbError"} />
       {/if}
 
       {#each dsnProperties as property (property.key)}
