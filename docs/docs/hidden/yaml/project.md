@@ -24,9 +24,9 @@ _[string]_ - A brief description of the project
 
 _[object]_ - Optional feature flags. Can be specified as a map of feature names to booleans. 
 
-### `ai_context`
+### `ai_instructions`
 
-_[string]_ - Extra context for LLM/AI features. Used to guide natural language question answering and routing. 
+_[string]_ - Extra instructions for LLM/AI features. Used to guide natural language question answering and routing. 
 
 ## Configuring the default OLAP Engine
 
