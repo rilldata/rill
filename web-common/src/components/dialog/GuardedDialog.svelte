@@ -67,10 +67,10 @@
       </AlertDialogDescription>
     </AlertDialogHeader>
     <AlertDialogFooter>
-      <Button type="secondary" on:click={() => (showCancelDialog = false)}>
+      <Button type="secondary" onClick={() => (showCancelDialog = false)}>
         {cancelLabel}
       </Button>
-      <Button type="primary" on:click={onConfirmCancel}>
+      <Button type="primary" onClick={onConfirmCancel}>
         {confirmLabel}
       </Button>
     </AlertDialogFooter>
