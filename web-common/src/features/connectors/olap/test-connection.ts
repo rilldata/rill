@@ -3,7 +3,7 @@ import {
   connectorServiceOLAPListTables,
   getConnectorServiceOLAPListTablesQueryKey,
 } from "../../../runtime-client";
-import { humanReadableErrorMessage } from "../../sources/modal/errors";
+import { humanReadableErrorMessage } from "../../sources/errors/errors";
 
 interface TestConnectorResult {
   success: boolean;

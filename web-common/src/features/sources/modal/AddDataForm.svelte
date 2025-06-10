@@ -19,7 +19,7 @@
   import { yup } from "sveltekit-superforms/adapters";
   import { ButtonGroup, SubButton } from "../../../components/button-group";
   import { inferSourceName } from "../sourceUtils";
-  import { humanReadableErrorMessage } from "./errors";
+  import { humanReadableErrorMessage } from "../errors/errors";
   import {
     submitAddOLAPConnectorForm,
     submitAddSourceForm,

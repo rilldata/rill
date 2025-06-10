@@ -1,4 +1,5 @@
 import { SourceErrorCodes } from "../../../metrics/service/SourceEventTypes";
+import { GRPC_ERROR_CODES } from "./constants";
 
 export function hasDuckDBUnicodeError(message: string) {
   return message.match(
@@ -6,25 +7,40 @@ export function hasDuckDBUnicodeError(message: string) {
   );
 }
 
+const clickhouseErrorMap = {
+  "connection refused":
+    "Could not connect to ClickHouse server. Please check if the server is running and the host/port are correct.",
+  "context deadline exceeded":
+    "Connection to ClickHouse server timed out. Please check your network connection and server status.",
+};
+
 export function humanReadableErrorMessage(
   connectorName: string | undefined,
   code: number | undefined,
   message: string | undefined,
 ) {
-  const unknownErrorStr =
-    "An unknown error occurred. If the error persists, please reach out for help on <a href=https://bit.ly/3unvA05 target=_blank>Discord</a>.";
+  const unknownErrorStr = "An unknown error occurred.";
 
   const serverError = message;
   if (serverError === undefined) return unknownErrorStr;
 
+  // gRPC error codes
+  // https://pkg.go.dev/google.golang.org/grpc@v1.49.0/codes
   switch (code) {
-    // gRPC error codes: https://pkg.go.dev/google.golang.org/grpc@v1.49.0/codes
-    // Unknown
-    case 2: {
+    case GRPC_ERROR_CODES.Unknown: {
+      // ClickHouse errors
+      // source: errors reported by users
+      if (connectorName === "clickhouse") {
+        if (serverError.includes("connection refused")) {
+          return clickhouseErrorMap["connection refused"];
+        } else if (serverError.includes("context deadline exceeded")) {
+          return clickhouseErrorMap["context deadline exceeded"];
+        }
+      }
+
       return serverError;
     }
-    // InvalidArgument
-    case 3: {
+    case GRPC_ERROR_CODES.InvalidArgument: {
       // Rill errors
       if (
         serverError.match(/an existing object with name '.*' already exists/)
@@ -86,11 +102,7 @@ export function humanReadableErrorMessage(
       // Fallback to raw server error
       return serverError;
     }
-    // DeadlineExceeded
-    case 4: {
-      if (connectorName === "clickhouse") {
-        return "The request timed out. This can happen if your ClickHouse instance has been idle. Please ensure your instance is running and try again.";
-      }
+    case GRPC_ERROR_CODES.DeadlineExceeded: {
       return "The request timed out. Please ensure your service is running and try again.";
     }
     default:
