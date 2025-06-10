@@ -86,11 +86,11 @@ func (e *sqlStoreToSelfExecutor) modelInputProperties(modelName, inputConnector 
 			if err := mapstructure.Decode(inputHandle.Config(), &config); err != nil {
 				return nil, err
 			}
-			dsn = rewriteMySQLDSN(config.DSN)
 		}
 		if dsn == "" {
 			return nil, fmt.Errorf("must set `dsn` for models that transfer data from `mysql` to `duckdb`")
 		}
+		dsn = rewriteMySQLDSN(dsn)
 		m.PreExec = fmt.Sprintf("INSTALL 'MYSQL'; LOAD 'MYSQL'; ATTACH %s AS %s (TYPE mysql, READ_ONLY)", safeSQLString(dsn), safeDBName)
 		m.SQL = fmt.Sprintf("SELECT * FROM mysql_query(%s, %s)", safeSQLString(dbName), safeSQLString(userQuery))
 	case "postgres":
