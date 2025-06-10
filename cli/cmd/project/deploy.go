@@ -203,7 +203,7 @@ func DeployWithUploadFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployO
 		if err != nil {
 			return err
 		}
-		req.GithubUrl = gitRepo.Remote
+		req.GitRemote = gitRepo.Remote
 	}
 	printer.ColorGreenBold.Printf("All files uploaded successfully.\n\n")
 
@@ -256,14 +256,14 @@ func DeployWithUploadFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployO
 }
 
 func redeployUploadedProject(ctx context.Context, projResp *adminv1.GetProjectResponse, ch *cmdutil.Helper, adminClient *client.Client, localProjectPath string, opts *DeployOpts, repo drivers.RepoStore) error {
-	if projResp.Project.GithubUrl != "" && projResp.Project.ManagedGitId == "" {
+	if projResp.Project.GitRemote != "" && projResp.Project.ManagedGitId == "" {
 		// connected to user managed github
-		ch.PrintfError("Found existing project. But it is connected to a github repo.\nPush any changes to %q to deploy.\n", projResp.Project.GithubUrl)
+		ch.PrintfError("Found existing project. But it is already connected to a Github repository.\nPush changes to %q to deploy.\n", projResp.Project.GitRemote)
 		return nil
 	}
 	ch.Printer.Println("Found existing project. Starting re-upload.")
 	var updateProjReq *adminv1.UpdateProjectRequest
-	if projResp.Project.GithubUrl != "" {
+	if projResp.Project.GitRemote != "" {
 		// rill managed git
 		err := ch.GitHelper(ch.Org, opts.Name, localProjectPath).PushToManagedRepo(ctx)
 		if err != nil {
@@ -290,7 +290,7 @@ func redeployUploadedProject(ctx context.Context, projResp *adminv1.GetProjectRe
 			updateProjReq = &adminv1.UpdateProjectRequest{
 				OrganizationName: ch.Org,
 				Name:             opts.Name,
-				GithubUrl:        &gitRepo.Remote,
+				GitRemote:        &gitRepo.Remote,
 			}
 		}
 	}

@@ -58,7 +58,10 @@ export class DashboardStateDataLoader {
     instanceId: string,
     private readonly exploreName: string,
     private readonly storageNamespacePrefix: string | undefined,
-    private readonly bookmarkOrTokenExploreState?: CompoundQueryResult<Partial<ExploreState> | null>,
+    private readonly bookmarkOrTokenExploreState:
+      | CompoundQueryResult<Partial<ExploreState> | null>
+      | undefined,
+    public readonly disableMostRecentDashboardState: boolean,
   ) {
     this.validSpecQuery = useExploreValidSpec(instanceId, exploreName);
     this.fullTimeRangeQuery = this.useFullTimeRangeQuery(
@@ -334,7 +337,9 @@ export class DashboardStateDataLoader {
       exploreStateFromSessionStorage ??
         (urlSearchParams.size > 0 ? partialExploreStateFromUrl : null),
       // Next priority is the most recent state user had visited. This is a small subset of the full state.
-      shouldSkipOtherSources ? null : mostRecentPartialExploreState,
+      shouldSkipOtherSources || this.disableMostRecentDashboardState
+        ? null
+        : mostRecentPartialExploreState,
       // Next priority is one of the other source defined.
       // For cloud dashboard it would be home bookmark if present.
       // For shared url it would be the saved state in token

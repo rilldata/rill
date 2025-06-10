@@ -363,7 +363,7 @@ func (h *Helper) LoadProject(ctx context.Context, path string) (*adminv1.Project
 	return res.Project, nil
 }
 
-func (h *Helper) ProjectNamesByGithubURL(ctx context.Context, org, githubURL, subPath string) ([]string, error) {
+func (h *Helper) ProjectNamesByGitRemote(ctx context.Context, org, remote, subPath string) ([]string, error) {
 	c, err := h.Client()
 	if err != nil {
 		return nil, err
@@ -378,13 +378,13 @@ func (h *Helper) ProjectNamesByGithubURL(ctx context.Context, org, githubURL, su
 
 	names := make([]string, 0)
 	for _, p := range resp.Projects {
-		if strings.EqualFold(p.GithubUrl, githubURL) && (subPath == "" || strings.EqualFold(p.Subpath, subPath)) {
+		if strings.EqualFold(p.GitRemote, remote) && (subPath == "" || strings.EqualFold(p.Subpath, subPath)) {
 			names = append(names, p.Name)
 		}
 	}
 
 	if len(names) == 0 {
-		return nil, fmt.Errorf("no project with github URL %q exists in org %q", githubURL, org)
+		return nil, fmt.Errorf("no project with Git remote %q exists in the org %q", remote, org)
 	}
 
 	return names, nil
@@ -401,13 +401,17 @@ func (h *Helper) InferProjectName(ctx context.Context, org, path string) (string
 	}
 
 	// Verify projectPath is a Git repo with remote on Github
-	_, githubURL, err := gitutil.ExtractGitRemote(path, "", true)
+	remote, err := gitutil.ExtractGitRemote(path, "", true)
+	if err != nil {
+		return "", err
+	}
+	githubRemote, err := remote.Github()
 	if err != nil {
 		return "", err
 	}
 
 	// Fetch project names matching the Github URL
-	names, err := h.ProjectNamesByGithubURL(ctx, org, githubURL, "")
+	names, err := h.ProjectNamesByGitRemote(ctx, org, githubRemote, "")
 	if err != nil {
 		return "", err
 	}

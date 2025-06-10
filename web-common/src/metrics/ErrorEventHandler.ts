@@ -48,7 +48,13 @@ export class ErrorEventHandler {
   }
 
   public addJavascriptErrorListeners() {
+    const isExtensionError = (filename: string | undefined) =>
+      filename?.startsWith("chrome-extension://") ||
+      filename?.startsWith("moz-extension://");
+
     const errorHandler = (errorEvt: ErrorEvent) => {
+      // Ignore errors originating from browser extensions to avoid reporting issues outside our control
+      if (isExtensionError(errorEvt.filename)) return;
       this.fireJavascriptErrorBoundaryEvent(
         errorEvt.error?.stack ?? "",
         errorEvt.message,
@@ -56,6 +62,7 @@ export class ErrorEventHandler {
         get(page).url.toString(),
       )?.catch(console.error);
     };
+
     const unhandledRejectionHandler = (
       rejectionEvent: PromiseRejectionEvent,
     ) => {

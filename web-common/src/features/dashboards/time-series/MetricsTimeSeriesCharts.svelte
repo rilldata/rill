@@ -34,9 +34,9 @@
     TimeRangePreset,
     type AvailableTimeGrain,
   } from "@rilldata/web-common/lib/time/types";
+  import type { MetricsViewSpecMeasure } from "@rilldata/web-common/runtime-client";
   import { Button } from "../../../components/button";
   import Pivot from "../../../components/icons/Pivot.svelte";
-  import type { MetricsViewSpecMeasure } from "@rilldata/web-common/runtime-client";
   import { TIME_GRAIN } from "../../../lib/time/config";
   import { DashboardState_ActivePage } from "../../../proto/gen/rill/ui/v1/dashboard_pb";
   import Spinner from "../../entity-management/Spinner.svelte";
@@ -324,7 +324,7 @@
         <div class="grow" />
         <Button
           type="toolbar"
-          on:click={() => {
+          onClick={() => {
             startPivotForTimeseries();
           }}
         >

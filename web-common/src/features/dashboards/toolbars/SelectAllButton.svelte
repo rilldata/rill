@@ -28,7 +28,7 @@
   </TooltipContent>
   <Button
     type="toolbar"
-    on:click={() => dispatch("toggle-all-search-items")}
+    onClick={() => dispatch("toggle-all-search-items")}
     {disabled}
   >
     <div class="ui-copy-icon">
