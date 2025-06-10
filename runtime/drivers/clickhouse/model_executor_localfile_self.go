@@ -15,7 +15,7 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 )
 
-type localInputProps struct {
+type localFileInputProps struct {
 	Format string `mapstructure:"format"`
 }
 
@@ -34,43 +34,28 @@ func (e *localFileToSelfExecutor) Concurrency(desired int) (int, bool) {
 }
 
 func (e *localFileToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExecuteOptions) (*drivers.ModelResult, error) {
-	from, ok := e.fileStore.AsFileStore()
-	if !ok {
-		return nil, fmt.Errorf("input handle %q does not implement filestore", opts.InputHandle.Driver())
-	}
-
-	if opts.IncrementalRun {
-		return nil, fmt.Errorf("clickhouse: incremental models are not supported for local_file connector")
-	}
-
 	// Parse the input and output properties
-	inputProps := &localInputProps{}
+	inputProps := &localFileInputProps{}
 	if err := mapstructure.WeakDecode(opts.InputProperties, inputProps); err != nil {
 		return nil, fmt.Errorf("failed to parse input properties: %w", err)
 	}
+
+	// We need to check a few things from the output properties, so we parse them here.
+	// However, we don't do full validation yet, which is delayed until we call into the self executor at the end of this function.
 	outputProps := &ModelOutputProperties{}
 	if err := mapstructure.WeakDecode(opts.OutputProperties, outputProps); err != nil {
 		return nil, fmt.Errorf("failed to parse output properties: %w", err)
 	}
-
-	// Require materialization for local_file
 	if outputProps.Materialize != nil && !*outputProps.Materialize {
 		return nil, fmt.Errorf("models with input connector `local_file` must be materialized")
 	}
-	outputProps.Materialize = boolptr(true)
+	// NOTE: We don't need to set the default materialize here because the self executor materializes as a table by default when InsertSQLs are used.
 
-	// Validate the output properties
-	err := e.c.validateAndApplyDefaults(opts, nil, outputProps)
-	if err != nil {
-		return nil, fmt.Errorf("invalid model properties: %w", err)
+	// Get the local file path(s)
+	from, ok := e.fileStore.AsFileStore()
+	if !ok {
+		return nil, fmt.Errorf("input handle %q does not implement filestore", opts.InputHandle.Driver())
 	}
-
-	// Extra validation: the model should be a table or dictionary
-	if outputProps.Typ != "TABLE" && outputProps.Typ != "DICTIONARY" {
-		return nil, fmt.Errorf("models with input connector `local_file` must be materialized as `TABLE` or `DICTIONARY`")
-	}
-
-	// get the local file path
 	localPaths, err := from.FilePaths(ctx, opts.InputProperties)
 	if err != nil {
 		return nil, err
@@ -87,7 +72,8 @@ func (e *localFileToSelfExecutor) Execute(ctx context.Context, opts *drivers.Mod
 		}
 	}
 
-	// Infer the schema if not provided
+	// Infer the output schema if not provided.
+	// The self executor does not support using InsertSQLs without an explicit schema.
 	if outputProps.Columns == "" {
 		outputProps.Columns, err = e.inferColumns(ctx, opts, inputProps.Format, localPaths)
 		if err != nil {
@@ -95,75 +81,33 @@ func (e *localFileToSelfExecutor) Execute(ctx context.Context, opts *drivers.Mod
 		}
 	}
 
-	usedModelName := false
-	if outputProps.Table == "" {
-		outputProps.Table = opts.ModelName
-		usedModelName = true
-	}
-	tableName := outputProps.Table
-
-	// Prepare for ingesting into the staging view/table.
-	// NOTE: This intentionally drops the end table if not staging changes.
-	stagingTableName := tableName
-	if opts.Env.StageChanges || outputProps.Typ == "DICTIONARY" {
-		stagingTableName = stagingTableNameFor(tableName)
-	}
-	_ = e.c.dropTable(ctx, stagingTableName)
-
-	// create the table
-	err = e.c.createTable(ctx, stagingTableName, "", outputProps)
-	if err != nil {
-		_ = e.c.dropTable(ctx, stagingTableName)
-		return nil, fmt.Errorf("failed to create model: %w", err)
-	}
-
-	// ingest the data
-	for _, path := range localPaths {
+	// Create insert statements
+	insertSQLs := make([]string, len(localPaths))
+	for i, path := range localPaths {
 		contents, err := os.ReadFile(path)
 		if err != nil {
 			return nil, fmt.Errorf("failed to read file %q: %w", path, err)
 		}
 
-		query := fmt.Sprintf("INSERT INTO %s FORMAT %s\n", safeSQLName(stagingTableName), inputProps.Format) + string(contents)
-		_, err = e.c.db.DB.ExecContext(ctx, query)
-		if err != nil {
-			return nil, fmt.Errorf("failed to insert data: %w", err)
-		}
+		sql := fmt.Sprintf("FORMAT %s\n", inputProps.Format) + string(contents)
+		insertSQLs[i] = sql
 	}
 
-	if outputProps.Typ == "DICTIONARY" {
-		err = e.c.createDictionary(ctx, tableName, fmt.Sprintf("SELECT * FROM %s", safeSQLName(stagingTableName)), outputProps)
-		// drop the temp table
-		_ = e.c.dropTable(ctx, stagingTableName)
-		if err != nil {
-			return nil, fmt.Errorf("failed to create dictionary: %w", err)
-		}
-	} else if stagingTableName != tableName {
-		// Rename the staging table to the final table name
-		err = e.c.forceRenameTable(ctx, stagingTableName, false, tableName)
-		if err != nil {
-			return nil, fmt.Errorf("failed to rename staged model: %w", err)
-		}
+	// Build input properties for the self executor
+	newInputProps := &ModelInputProperties{InsertSQLs: insertSQLs}
+	newInputPropsMap := make(map[string]any)
+	if err := mapstructure.Decode(newInputProps, &newInputPropsMap); err != nil {
+		return nil, err
 	}
 
-	// Build result props
-	resultPropsMap := map[string]interface{}{}
-	err = mapstructure.WeakDecode(&ModelResultProperties{
-		Table:         tableName,
-		View:          false,
-		Typ:           outputProps.Typ,
-		UsedModelName: usedModelName,
-	}, &resultPropsMap)
-	if err != nil {
-		return nil, fmt.Errorf("failed to encode result properties: %w", err)
-	}
+	// Build the model executor options with updated input and output properties
+	clone := *opts
+	clone.InputProperties = newInputPropsMap
+	newOpts := &clone
 
-	// Done
-	return &drivers.ModelResult{
-		Connector:  opts.OutputConnector,
-		Properties: resultPropsMap,
-		Table:      tableName,
-	}, nil
+	// execute
+	executor := &selfToSelfExecutor{c: e.c}
+	return executor.Execute(ctx, newOpts)
 }
 
 func (e *localFileToSelfExecutor) inferColumns(ctx context.Context, opts *drivers.ModelExecuteOptions, format string, localPaths []string) (string, error) {
@@ -281,8 +225,4 @@ func fileExtToFormat(ext string) (string, error) {
 	default:
 		return "", fmt.Errorf("unsupported file extension: %s, must be one of ['.csv', '.tsv', '.txt', '.parquet', '.json', '.ndjson'] for models that ingest from 'local_file' into 'clickhouse'", ext)
 	}
-}
-
-func boolptr(b bool) *bool {
-	return &b
 }

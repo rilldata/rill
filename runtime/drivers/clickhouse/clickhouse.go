@@ -142,7 +142,8 @@ type configProperties struct {
 	EmbedPort int `mapstructure:"embed_port"`
 	// CanScaleToZero indicates if the underlying Clickhouse service may scale to zero when idle.
 	// When set to true, we try to avoid too frequent non-user queries to the database (such as alert checks and fetching metrics).
-	CanScaleToZero bool `mapstructure:"can_scale_to_zero"`
+	// If not set, it defaults to true for Clickhouse Cloud and false otherwise.
+	CanScaleToZero *bool `mapstructure:"can_scale_to_zero"`
 	// MaxOpenConns is the maximum number of open connections to the database.
 	// See https://github.com/ClickHouse/clickhouse-go/blob/main/clickhouse_options.go
 	MaxOpenConns int `mapstructure:"max_open_conns"`
@@ -156,6 +157,10 @@ type configProperties struct {
 	ReadTimeout string `mapstructure:"read_timeout"`
 }
 
+func (c configProperties) isClickhouseCloud() bool {
+	return strings.Contains(c.DSN, "clickhouse.cloud") || strings.Contains(c.Host, "clickhouse.cloud")
+}
+
 // Open connects to Clickhouse using std API.
 // Connection string format : https://github.com/ClickHouse/clickhouse-go?tab=readme-ov-file#dsn
 func (d driver) Open(instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
@@ -163,12 +168,16 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 		return nil, errors.New("clickhouse driver can't be shared")
 	}
 
-	conf := &configProperties{
-		CanScaleToZero: true,
-	}
+	conf := &configProperties{}
 	err := mapstructure.WeakDecode(config, conf)
 	if err != nil {
 		return nil, err
+	}
+
+	// CanScaleToZero should default to true for Clickhouse Cloud and false otherwise.
+	if conf.CanScaleToZero == nil {
+		conf.CanScaleToZero = new(bool)
+		*conf.CanScaleToZero = conf.isClickhouseCloud()
 	}
 
 	// build clickhouse options
@@ -520,7 +529,7 @@ func (c *Connection) periodicallyEmitStats(d time.Duration) {
 		select {
 		case <-ticker.C:
 			// Skip if it hasn't been used recently and may be scaled to zero.
-			if c.config.CanScaleToZero && time.Since(c.lastUsedOn()) > 2*d {
+			if c.config.CanScaleToZero != nil && *c.config.CanScaleToZero && time.Since(c.lastUsedOn()) > 2*d {
 				continue
 			}
 
