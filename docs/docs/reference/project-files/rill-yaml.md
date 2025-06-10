@@ -15,7 +15,7 @@ The `rill.yaml` file contains metadata about your project.
 
 **`description`** - Description of your project.
 
-**`ai_context`** - extra context for AI assistants. Any information you add here will be available to AI assistants when they interact with your project
+**`ai_instructions`** - extra instructions for AI assistants. Any information you add here will be added to the system prompt for AI assistants when they interact with your project.
 
 **`olap_connector`** - the default OLAP engine to use in your project
 
