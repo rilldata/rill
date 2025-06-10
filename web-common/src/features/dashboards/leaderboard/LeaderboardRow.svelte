@@ -19,8 +19,6 @@
     deltaColumn,
   } from "./leaderboard-widths";
 
-  const DOMAIN_REGEX = /^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-
   export let itemData: LeaderboardItemData;
   export let dimensionName: string;
   export let tableWidth: number;
@@ -87,11 +85,7 @@
         )
       : undefined;
 
-  $: href = uri
-    ? makeHref(uri, dimensionValue)
-    : DOMAIN_REGEX.test(dimensionValue)
-      ? makeHref(true, dimensionValue)
-      : undefined;
+  $: href = makeHref(uri, dimensionValue);
 
   $: deltaElementWidth = deltaRect?.width;
   $: valueElementWith = valueRect?.width;
@@ -233,18 +227,20 @@
       </span>
     {/if}
 
-    <span class="external-link-wrapper">
-      <a
-        target="_blank"
-        rel="noopener noreferrer"
-        {href}
-        title={href}
-        on:click|stopPropagation
-        class:hovered={hovered && href}
-      >
-        <ExternalLink className="fill-primary-600" />
-      </a>
-    </span>
+    {#if href}
+      <span class="external-link-wrapper">
+        <a
+          target="_blank"
+          rel="noopener noreferrer"
+          {href}
+          title={href}
+          on:click|stopPropagation
+          class:hovered
+        >
+          <ExternalLink className="fill-primary-600" />
+        </a>
+      </span>
+    {/if}
   </td>
 
   {#each Object.keys(values) as measureName}
