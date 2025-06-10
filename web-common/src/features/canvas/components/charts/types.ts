@@ -50,7 +50,7 @@ export interface TimeDimensionDefinition {
   format?: string;
 }
 
-export type ChartSortDirection = "x" | "y" | "-x" | "-y";
+export type ChartSortDirection = "x" | "y" | "-x" | "-y" | "color" | "-color";
 
 export type ChartLegend = "none" | "top" | "bottom" | "left" | "right";
 
