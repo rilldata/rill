@@ -11,7 +11,6 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
-	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/pbutil"
 	"golang.org/x/exp/maps"
 	"google.golang.org/protobuf/types/known/structpb"
@@ -179,10 +178,5 @@ func (r *ConnectorReconciler) testConnector(ctx context.Context, connector *runt
 	}
 	defer release()
 
-	// Try to ping the connector, but ignore ErrNotImplemented
-	err = handle.Ping(ctx)
-	if err != nil && !errors.Is(err, drivers.ErrNotImplemented) {
-		return err
-	}
-	return nil
+	return handle.Ping(ctx)
 }

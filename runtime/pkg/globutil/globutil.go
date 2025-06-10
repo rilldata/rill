@@ -1,12 +1,9 @@
 package globutil
 
 import (
-	"errors"
 	"fmt"
 	"strings"
 )
-
-var ErrMissingScheme = errors.New("Missing URL Scheme")
 
 type URL struct {
 	Scheme string
@@ -36,7 +33,7 @@ func (u *URL) String() string {
 func ParseBucketURL(path string) (*URL, error) {
 	scheme, path, ok := strings.Cut(path, "://")
 	if !ok {
-		return nil, fmt.Errorf("%w: failed to parse URL '%s'", ErrMissingScheme, path)
+		return nil, fmt.Errorf("failed to parse URL '%q'", path)
 	}
 
 	host, path, ok := strings.Cut(path, "/")

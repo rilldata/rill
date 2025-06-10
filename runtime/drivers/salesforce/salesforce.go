@@ -3,6 +3,7 @@ package salesforce
 import (
 	"context"
 	"errors"
+	"fmt"
 	"maps"
 
 	force "github.com/ForceCLI/force/lib"
@@ -164,7 +165,52 @@ type connection struct {
 
 // Ping implements drivers.Handle.
 func (c *connection) Ping(ctx context.Context) error {
-	return drivers.ErrNotImplemented
+	var username, password, endpoint, key, clientID string
+
+	if u, ok := c.config["username"].(string); ok && u != "" {
+		username = u
+	} else {
+		return fmt.Errorf("the property 'username' is required for Salesforce. Provide 'username' in the YAML properties or pass '--env connector.salesforce.username=...' to 'rill start'")
+	}
+
+	if e, ok := c.config["endpoint"].(string); ok && e != "" {
+		endpoint = e
+	} else {
+		return fmt.Errorf("the property 'endpoint' is required for Salesforce. Provide 'endpoint' in the YAML properties or pass '--env connector.salesforce.endpoint=...' to 'rill start'")
+	}
+
+	if c, ok := c.config["client_id"].(string); ok && c != "" {
+		clientID = c
+	} else {
+		clientID = defaultClientID
+	}
+
+	if p, ok := c.config["password"].(string); ok && p != "" {
+		password = p
+	}
+
+	if k, ok := c.config["key"].(string); ok && k != "" {
+		key = k
+	}
+
+	if password == "" && key == "" {
+		return fmt.Errorf("the property 'password' or property 'key' is required for Salesforce. Provide 'password' or 'key' in the YAML properties or pass '--env connector.salesforce.password=...' or '--env connector.salesforce.key=...' to 'rill start'")
+	}
+
+	authOptions := authenticationOptions{
+		Username:     username,
+		Password:     password,
+		JWT:          key,
+		Endpoint:     endpoint,
+		ConnectedApp: clientID,
+	}
+
+	_, err := authenticate(authOptions)
+	if err != nil {
+		return fmt.Errorf("authentication failed: %w", err)
+	}
+
+	return nil
 }
 
 // Migrate implements drivers.Connection.

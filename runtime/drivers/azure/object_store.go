@@ -2,7 +2,6 @@ package azure
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	"github.com/rilldata/rill/runtime/drivers"
@@ -53,14 +52,6 @@ func (c *Connection) DownloadFiles(ctx context.Context, path string) (drivers.Fi
 func (c *Connection) parseBucketURL(path string) (*globutil.URL, error) {
 	url, err := globutil.ParseBucketURL(path)
 	if err != nil {
-		if errors.Is(err, globutil.ErrMissingScheme) {
-			// Missing schema means its only path and use the default bucket from connector config
-			return &globutil.URL{
-				Scheme: "azure",
-				Host:   c.config.Bucket,
-				Path:   path,
-			}, nil
-		}
 		return nil, fmt.Errorf("failed to parse path %q: %w", path, err)
 	}
 	if url.Scheme != "az" && url.Scheme != "azure" {

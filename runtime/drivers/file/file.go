@@ -148,7 +148,7 @@ type connection struct {
 
 // Ping implements drivers.Handle.
 func (c *connection) Ping(ctx context.Context) error {
-	return drivers.ErrNotImplemented
+	return c.checkRoot()
 }
 
 // Config implements drivers.Connection.

@@ -7,7 +7,6 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/blob"
 	"github.com/rilldata/rill/runtime/pkg/globutil"
-	"gocloud.dev/blob/gcsblob"
 )
 
 // ListObjects implements drivers.ObjectStore.
@@ -61,18 +60,4 @@ func (c *Connection) parseBucketURL(path string) (*globutil.URL, error) {
 		return nil, fmt.Errorf("invalid GCS path %q: should start with gs://", path)
 	}
 	return url, nil
-}
-
-func (c *Connection) openBucket(ctx context.Context, bucket string) (*blob.Bucket, error) {
-	client, err := c.newClient(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	gcsBucket, err := gcsblob.OpenBucket(ctx, client, bucket, nil)
-	if err != nil {
-		return nil, fmt.Errorf("failed to open bucket %q: %w", bucket, err)
-	}
-
-	return blob.NewBucket(gcsBucket, c.logger)
 }

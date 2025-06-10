@@ -86,6 +86,7 @@ func (e *sqlStoreToSelfExecutor) modelInputProperties(modelName, inputConnector 
 			if err := mapstructure.Decode(inputHandle.Config(), &config); err != nil {
 				return nil, err
 			}
+			dsn = config.DSN
 		}
 		if dsn == "" {
 			return nil, fmt.Errorf("must set `dsn` for models that transfer data from `mysql` to `duckdb`")

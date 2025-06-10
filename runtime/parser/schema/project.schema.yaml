@@ -453,11 +453,15 @@ definitions:
           azure_storage_connection_string:
             type: string
             description: Optional azure connection string for storage account
+          azure_storage_bucket:
+            type: string
+            description: Name of the Azure Blob Storage container (equivalent to an S3 bucket)
           allow_host_access:
             type: boolean
             description: Allow access to host environment configuration
         required:
           - driver
+          - azure_storage_bucket
       bigquery:
         type: object
         title: bigquery
@@ -629,6 +633,9 @@ definitions:
           google_application_credentials:
             type: string
             description: Google Cloud credentials JSON string
+          bucket:
+            type: string
+            description: Name of gcs bucket
           allow_host_access:
             type: boolean
             description: Allow access to host environment configuration
@@ -640,6 +647,7 @@ definitions:
             description: Optional S3-compatible Secret when used in compatibility mode
         required:
           - driver
+          - bucket
       https:
         type: object
         title: https
@@ -824,6 +832,9 @@ definitions:
           aws_access_token:
             type: string
             description: Optional AWS session token for temporary credentials
+          bucket:
+            type: string
+            description: Name of s3 bucket 
           endpoint:
             type: string
             description: Optional custom endpoint URL for S3-compatible storage
@@ -838,6 +849,7 @@ definitions:
             description: Whether to retain intermediate files after processing
         required:
           - driver
+          - bucket
       salesforce:
         type: object
         title: salesforce
