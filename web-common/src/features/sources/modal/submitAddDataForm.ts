@@ -176,7 +176,10 @@ export async function submitAddOLAPConnectorForm(
       newConnectorFilePath,
       originalEnvBlob,
     );
-    throw new Error(result.error || "Unable to establish a connection");
+    throw {
+      message: result.error || "Unable to establish a connection",
+      details: result.details,
+    };
   }
 
   /**

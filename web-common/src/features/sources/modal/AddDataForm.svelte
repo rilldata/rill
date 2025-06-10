@@ -61,6 +61,7 @@
     resetForm: false,
   });
   let paramsError: string | null = null;
+  let paramsErrorDetails: string | undefined = undefined;
 
   // Form 2: DSN
   // SuperForms are not meant to have dynamic schemas, so we use a different form instance for the DSN form
@@ -87,6 +88,7 @@
     resetForm: false,
   });
   let dsnError: string | null = null;
+  let dsnErrorDetails: string | undefined = undefined;
 
   // Active form
   $: formId = useDsn ? dsnFormId : paramsFormId;
@@ -146,25 +148,35 @@
       onClose();
     } catch (e) {
       let error: string;
+      let details: string | undefined = undefined;
 
       // Handle different error types
       if (e instanceof Error) {
         error = e.message;
+        details = e.message;
+      } else if (e?.message && e?.details) {
+        error = e.message;
+        details = e.details;
       } else if (e?.response?.data) {
+        const originalMessage = e.response.data.message;
         error = humanReadableErrorMessage(
           connector.name,
           e.response.data.code,
-          e.response.data.message,
+          originalMessage,
         );
+        details = originalMessage;
       } else {
         error = "Unknown error";
+        details = "Unknown error";
       }
 
       // Keep error state for each form
       if (useDsn) {
         dsnError = error;
+        dsnErrorDetails = details;
       } else {
         paramsError = error;
+        paramsErrorDetails = details;
       }
     }
   }
@@ -207,7 +219,7 @@
       transition:slide={{ duration: FORM_TRANSITION_DURATION }}
     >
       {#if paramsError}
-        <SubmissionError message={paramsError} details={"paramsError"} />
+        <SubmissionError message={paramsError} details={paramsErrorDetails} />
       {/if}
 
       {#each properties as property (property.key)}
@@ -258,7 +270,7 @@
       transition:slide={{ duration: FORM_TRANSITION_DURATION }}
     >
       {#if dsnError}
-        <SubmissionError message={dsnError} details={"dsbError"} />
+        <SubmissionError message={dsnError} details={dsnErrorDetails} />
       {/if}
 
       {#each dsnProperties as property (property.key)}

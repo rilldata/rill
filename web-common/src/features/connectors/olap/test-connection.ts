@@ -8,6 +8,7 @@ import { humanReadableErrorMessage } from "../../sources/errors/errors";
 interface TestConnectorResult {
   success: boolean;
   error?: string;
+  details?: string;
 }
 
 export async function testOLAPConnector(
@@ -30,13 +31,15 @@ export async function testOLAPConnector(
     await queryClient.fetchQuery({ queryKey, queryFn });
     return { success: true };
   } catch (e) {
+    const originalMessage = e?.response?.data?.message;
     return {
       success: false,
       error: humanReadableErrorMessage(
         newConnectorName,
         e?.response?.data?.code,
-        e?.response?.data?.message,
+        originalMessage,
       ),
+      details: originalMessage,
     };
   }
 }
