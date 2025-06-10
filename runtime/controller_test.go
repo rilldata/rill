@@ -1291,3 +1291,21 @@ func newMetricsView(name, model string, measures, dimensions []string) (*runtime
 	}
 	return metrics, metricsRes
 }
+
+func must[T any](v T, err error) T {
+	if err != nil {
+		panic(err)
+	}
+	return v
+}
+
+func localFileHash(t *testing.T, rt *runtime.Runtime, id string, paths []string) string {
+	repo, release, err := rt.Repo(context.Background(), id)
+	require.NoError(t, err)
+	defer func() {
+		release()
+	}()
+	localFileHash, err := repo.FileHash(context.Background(), paths)
+	require.NoError(t, err)
+	return localFileHash
+}
