@@ -35,6 +35,50 @@
   let dropdownWidth = 0;
   let keyboardNavigationActive = false;
 
+  // Only scroll when dropdown is visible and highlighted index changes
+  $: if (highlightedIndex >= 0 && showDropdown && dropdownList) {
+    scrollToHighlighted();
+  }
+
+  // Update dropdown position when selected items change (for multi-row chip wrapping)
+  $: if (selected && showDropdown) {
+    requestAnimationFrame(() => {
+      updateDropdownPosition();
+    });
+  }
+
+  $: categorizedResults = (() => {
+    if (!searchResults.length) {
+      return {
+        groups: [],
+        members: [],
+        guests: [],
+        allResults: [],
+        resultIndexMap: new Map(),
+      };
+    }
+
+    const groups = searchResults.filter((result) => result.type === "group");
+    const members = searchResults.filter(
+      (result) => result.type === "user" && result.orgRoleName !== "guest",
+    );
+    const guests = searchResults.filter(
+      (result) => result.type === "user" && result.orgRoleName === "guest",
+    );
+    const allResults = [...groups, ...members, ...guests];
+
+    // Create index map for O(1) lookups instead of O(n) indexOf calls
+    const resultIndexMap = new Map();
+    allResults.forEach((result, index) => {
+      resultIndexMap.set(result, index);
+    });
+
+    return { groups, members, guests, allResults, resultIndexMap };
+  })();
+
+  // Create a Set for O(1) selected lookups instead of O(n) includes() calls
+  $: selectedSet = new Set(selected);
+
   function updateDropdownPosition() {
     if (inputElement) {
       const rect = inputElement.getBoundingClientRect();
@@ -54,18 +98,6 @@
         items[highlightedIndex].scrollIntoView({ block: "nearest" });
       }
     }
-  }
-
-  // Only scroll when dropdown is visible and highlighted index changes
-  $: if (highlightedIndex >= 0 && showDropdown && dropdownList) {
-    scrollToHighlighted();
-  }
-
-  // Update dropdown position when selected items change (for multi-row chip wrapping)
-  $: if (selected && showDropdown) {
-    requestAnimationFrame(() => {
-      updateDropdownPosition();
-    });
   }
 
   function processCommaSeparatedInput(raw: string) {
@@ -347,38 +379,6 @@
   function removeSelected(identifier: string) {
     selected = selected.filter((e) => e !== identifier);
   }
-
-  $: categorizedResults = (() => {
-    if (!searchResults.length) {
-      return {
-        groups: [],
-        members: [],
-        guests: [],
-        allResults: [],
-        resultIndexMap: new Map(),
-      };
-    }
-
-    const groups = searchResults.filter((result) => result.type === "group");
-    const members = searchResults.filter(
-      (result) => result.type === "user" && result.orgRoleName !== "guest",
-    );
-    const guests = searchResults.filter(
-      (result) => result.type === "user" && result.orgRoleName === "guest",
-    );
-    const allResults = [...groups, ...members, ...guests];
-
-    // Create index map for O(1) lookups instead of O(n) indexOf calls
-    const resultIndexMap = new Map();
-    allResults.forEach((result, index) => {
-      resultIndexMap.set(result, index);
-    });
-
-    return { groups, members, guests, allResults, resultIndexMap };
-  })();
-
-  // Create a Set for O(1) selected lookups instead of O(n) includes() calls
-  $: selectedSet = new Set(selected);
 
   function getResultIndex(result: any): number {
     return categorizedResults.resultIndexMap.get(result) ?? -1;
