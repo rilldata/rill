@@ -58,6 +58,8 @@ type ResolverResult interface {
 	Next() (map[string]any, error)
 	// MarshalJSON is a convenience method to serialize the result to JSON.
 	MarshalJSON() ([]byte, error)
+	// Meta returns metadata for the result fields (labels, formatting, etc).
+	Meta() []map[string]any
 }
 
 // ResolverExportOptions are the options passed to a resolver's ResolveExport method.
@@ -229,13 +231,15 @@ func (r *Runtime) Resolve(ctx context.Context, opts *ResolveOptions) (res Resolv
 }
 
 // NewDriverResolverResult creates a ResolverResult from a drivers.Result.
-func NewDriverResolverResult(result *drivers.Result) ResolverResult {
+func NewDriverResolverResult(result *drivers.Result, meta []map[string]any) ResolverResult {
 	return &driverResolverResult{
 		rows: result,
+		meta: meta,
 	}
 }
 
 type driverResolverResult struct {
+	meta     []map[string]any
 	rows     *drivers.Result
 	closeErr error
 }
@@ -290,7 +294,6 @@ func (r *driverResolverResult) MarshalJSON() ([]byte, error) {
 		}
 		row, ok := ret.(map[string]any)
 		if !ok {
-			// this should never happen
 			return nil, fmt.Errorf("Resolver.MarshalJSON unexpected type %T", ret)
 		}
 		out = append(out, row)
@@ -304,6 +307,34 @@ func (r *driverResolverResult) MarshalJSON() ([]byte, error) {
 	return json.Marshal(out)
 }
 
+// Meta implements ResolverResult.
+func (r *driverResolverResult) Meta() []map[string]any {
+	if r.meta == nil {
+		return nil
+	}
+
+	// Build a set of schema field names
+	fieldNames := make(map[string]struct{})
+	if r.rows != nil && r.rows.Schema != nil {
+		for _, f := range r.rows.Schema.Fields {
+			fieldNames[f.Name] = struct{}{}
+		}
+	}
+
+	// Filter meta to only include entries for fields present in the schema
+	var filtered []map[string]any
+	for _, m := range r.meta {
+		name, ok := m["name"].(string)
+		if !ok {
+			continue
+		}
+		if _, exists := fieldNames[name]; exists {
+			filtered = append(filtered, m)
+		}
+	}
+	return filtered
+}
+
 // NewMapsResolverResult creates a ResolverResult from a slice of maps.
 func NewMapsResolverResult(result []map[string]any, schema *runtimev1.StructType) ResolverResult {
 	return &mapsResolverResult{
@@ -314,6 +345,7 @@ func NewMapsResolverResult(result []map[string]any, schema *runtimev1.StructType
 
 type mapsResolverResult struct {
 	rows   []map[string]any
+	meta   []map[string]any
 	schema *runtimev1.StructType
 	idx    int
 }
@@ -345,6 +377,31 @@ func (r *mapsResolverResult) MarshalJSON() ([]byte, error) {
 	return json.Marshal(r.rows)
 }
 
+// Meta implements ResolverResult.
+func (r *mapsResolverResult) Meta() []map[string]any {
+	if r.meta == nil {
+		return nil
+	}
+	// Build a set of schema field names
+	fieldNames := make(map[string]struct{})
+	if r.schema != nil {
+		for _, f := range r.schema.Fields {
+			fieldNames[f.Name] = struct{}{}
+		}
+	}
+	var filtered []map[string]any
+	for _, m := range r.meta {
+		name, ok := m["name"].(string)
+		if !ok {
+			continue
+		}
+		if _, exists := fieldNames[name]; exists {
+			filtered = append(filtered, m)
+		}
+	}
+	return filtered
+}
+
 // newCachedResolverResult wraps a ResolverResult such that it is cacheable.
 // Unlike other ResolverResult implementations, it can be kept in memory for a long time and read multiple times.
 // When used multiple times, call .copy() to get a copy with a reset iteration cursor.
@@ -356,6 +413,7 @@ func newCachedResolverResult(res ResolverResult) (*cachedResolverResult, error) 
 
 	return &cachedResolverResult{
 		data:   data,
+		meta:   res.Meta(),
 		schema: res.Schema(),
 	}, nil
 }
@@ -366,6 +424,7 @@ type cachedResolverResult struct {
 
 	// Iterator fields. Should only be populated on short-lived copies obtained via copy().
 	rows []map[string]any
+	meta []map[string]any
 	idx  int
 }
 
@@ -404,10 +463,16 @@ func (r *cachedResolverResult) MarshalJSON() ([]byte, error) {
 	return r.data, nil
 }
 
+// Meta implements ResolverResult.
+func (r *cachedResolverResult) Meta() []map[string]any {
+	return r.meta
+}
+
 func (r *cachedResolverResult) copy() *cachedResolverResult {
 	return &cachedResolverResult{
 		data:   r.data,
 		schema: r.schema,
+		meta:   r.meta,
 		rows:   nil,
 		idx:    0,
 	}
