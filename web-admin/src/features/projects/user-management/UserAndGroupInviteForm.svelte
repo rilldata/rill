@@ -10,7 +10,7 @@
   import { RFC5322EmailRegex } from "@rilldata/web-common/components/forms/validation";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { useQueryClient } from "@tanstack/svelte-query";
-  import SearchAndInviteInput from "@rilldata/web-common/components/forms/SearchAndInviteInput.svelte";
+  import SearchAndInviteInput from "@rilldata/web-admin/features/projects/user-management/SearchAndInviteInput.svelte";
 
   export let organization: string;
   export let project: string;
