@@ -45,6 +45,10 @@ In your Rill project directory, create a metrics view, `<metrics_view>.yaml`, fi
   - **`description`** — a freeform text description of the dimension  _(optional)_
   - **`unnest`** - if true, allows multi-valued dimension to be unnested (such as lists) and filters will automatically switch to "contains" instead of exact match _(optional)_
   - **`uri`** - enable if your dimension is a clickable URL to enable single click navigation _(boolean or valid SQL expression)_   _(optional)_
+  - **`lookup_table`** - _[string]_ - name of a lookup table being used to enrich the metrics view's table with additional fields
+  - **`lookup_key_column`** - _[string]_ - name of the column in the lookup table that will be matched to this dimension's `column` 
+  - **`lookup_value_column`** - _[string]_ - name of the column in the lookup table whose value will be returned, replacing the dimension's `column`
+  - **`lookup_default_expression`** - _[string]_ - value that will be returned if the lookup returns a null value. A non-aggregate expressions, typically a string such as "N/A" or "Unknown"
 
 **`measures`** — Used to define the numeric [aggregates](/build/metrics-view/metrics-view.md#measures) of columns from your data model  _(required)_.
   - **`expression`** — a combination of operators and functions for aggregations _(required)_ 

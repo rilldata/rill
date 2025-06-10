@@ -78,6 +78,14 @@ _[array of object]_ - Relates to exploring segments or dimensions of your data a
 
   - **`uri`** - _[string, boolean]_ - enable if your dimension is a clickable URL to enable single click navigation (boolean or valid SQL expression) 
 
+  - **`lookup_table`** - _[string]_ - name of a lookup table being used to enrich the metrics view's table with additional fields
+
+  - **`lookup_key_column`** - _[string]_ - name of the column in the lookup table that will be matched to this dimension's `column` 
+
+  - **`lookup_value_column`** - _[string]_ - name of the column in the lookup table whose value will be returned, replacing the dimension's `column`
+
+  - **`lookup_default_expression`** - _[string]_ - value that will be returned if the lookup returns a null value. A non-aggregate expressions, typically a string such as "N/A" or "Unknown"
+
 ### `measures`
 
 _[array of object]_ - Used to define the numeric aggregates of columns from your data model 
