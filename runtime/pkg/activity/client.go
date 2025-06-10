@@ -248,7 +248,6 @@ func (c *Client) RecordRaw(data map[string]any) error {
 
 // emitRaw sends an event to the sink.
 func (c *Client) emitRaw(e Event) {
-	truncateEvent(&e)
 	err := c.sink.Emit(e)
 	if err != nil {
 		c.logger.Error("Failed to emit event", zap.Error(err))

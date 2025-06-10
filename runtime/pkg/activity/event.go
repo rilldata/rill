@@ -43,7 +43,7 @@ func (e Event) MarshalJSON() ([]byte, error) {
 		"event_type": e.EventType,
 		"event_name": e.EventName,
 		"truncated":  true,
-		"reason":     "event data exceeded 1MB and was truncated",
+		"reason":     "event data exceeded 32KB and was truncated",
 	}
 	return json.Marshal(truncated)
 }
