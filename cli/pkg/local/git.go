@@ -37,7 +37,7 @@ func (s *Server) GitStatus(ctx context.Context, r *connect.Request[localv1.GitSt
 			return nil, err
 		}
 
-		remote, err := s.gitRemoteForProject(ctx, project, false)
+		remote, err := s.gitRemoteForProject(ctx, project)
 		if err != nil {
 			return nil, err
 		}
@@ -79,26 +79,13 @@ func (s *Server) GitPull(ctx context.Context, r *connect.Request[localv1.GitPull
 		return nil, err
 	}
 
-	remote, err := s.gitRemoteForProject(ctx, project, false)
+	remote, err := s.gitRemoteForProject(ctx, project)
 	if err != nil {
 		return nil, err
 	}
-
 	_, err = gitutil.GitPull(ctx, s.app.ProjectPath, r.Msg.DiscardLocal, remote)
 	if err != nil {
-		if project.ManagedGitId != "" {
-			return nil, err
-		}
-		// retry with ephemeral token
-		// the user may not have native git credentials set up
-		remote, err = s.gitRemoteForProject(ctx, project, true)
-		if err != nil {
-			return nil, err
-		}
-		_, err = gitutil.GitPull(ctx, s.app.ProjectPath, r.Msg.DiscardLocal, remote)
-		if err != nil {
-			return nil, err
-		}
+		return nil, err
 	}
 	return connect.NewResponse(&localv1.GitPullResponse{}), nil
 }
@@ -112,7 +99,7 @@ func (s *Server) GitPush(ctx context.Context, r *connect.Request[localv1.GitPush
 		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.New("cannot push with remote commits present, please pull first"))
 	}
 
-	// get authenticated git signature
+	// generate git signature
 	author, err := gitutil.NativeGitSignature(ctx, s.app.ProjectPath)
 	if err == nil {
 		err = gitutil.CommitAndForcePush(ctx, s.app.ProjectPath, &gitutil.Config{Remote: st.RemoteURL, DefaultBranch: st.Branch}, r.Msg.CommitMessage, author, true)
@@ -150,17 +137,12 @@ func (s *Server) GitPush(ctx context.Context, r *connect.Request[localv1.GitPush
 	return connect.NewResponse(&localv1.GitPushResponse{}), nil
 }
 
-func (s *Server) gitRemoteForProject(ctx context.Context, project *adminv1.Project, fullQualified bool) (string, error) {
-	var remote string
-	if project.ManagedGitId == "" && !fullQualified {
-		return project.GitRemote, nil
-	}
-
+func (s *Server) gitRemoteForProject(ctx context.Context, project *adminv1.Project) (string, error) {
 	config, err := s.app.ch.GitHelper(project.OrgName, project.Name, s.app.ProjectPath).GitConfig(ctx)
 	if err != nil {
 		return "", err
 	}
-	remote, err = config.FullyQualifiedRemote()
+	remote, err := config.FullyQualifiedRemote()
 	if err != nil {
 		return "", err
 	}
