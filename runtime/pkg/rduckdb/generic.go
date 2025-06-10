@@ -37,6 +37,7 @@ type GenericOptions struct {
 	// Path to the external DuckDB database.
 	Path string
 	// Attach string allows user to directly pass a DuckDB attach string.
+	//  Example syntax : "'ducklake:metadata.ducklake' AS my_ducklake(DATA_PATH 'datafiles1')"
 	Attach string
 	// DBName is set to the name of the database identified by the Path.
 	DBName string
