@@ -82,7 +82,7 @@
       <Button type="secondary" on:click={() => (open = false)}>Cancel</Button>
       <Button
         type="primary"
-        onClick={handleContinue}
+        on:click={handleContinue}
         disabled={!githubRepoCreated}
       >
         Continue
