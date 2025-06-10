@@ -21,14 +21,14 @@
   const userInvite = createAdminServiceAddProjectMemberUser();
   const addUsergroup = createAdminServiceAddProjectMemberUsergroup();
 
-  async function processInvitations(inputs: string[], role: string) {
+  async function processInvitations(emailsAndGroups: string[], role: string) {
     const succeededEmails = [];
     const succeededGroups = [];
     const failedEmails = [];
     const failedGroups = [];
 
     await Promise.all(
-      inputs.map(async (input) => {
+      emailsAndGroups.map(async (input) => {
         // Check if input is an email or a group name
         if (RFC5322EmailRegex.test(input)) {
           // Handle as email
@@ -146,8 +146,8 @@
       .slice(0, 5); // Limit to 5 results to match previous behavior
   }
 
-  async function onInviteHandler(inputs: string[], role: string) {
-    await processInvitations(inputs, role);
+  async function onInviteHandler(emailsAndGroups: string[], role: string) {
+    await processInvitations(emailsAndGroups, role);
     onInvite();
   }
 </script>

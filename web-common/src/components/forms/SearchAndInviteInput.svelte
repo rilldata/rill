@@ -15,7 +15,10 @@
   export let multiSelect: boolean = false;
   export let autoFocusInput: -1 | 0 | 1 = 0; // -1: no auto focus, 0: auto focus on mount, 1: auto focus on blur
   export let onSearch: (query: string) => Promise<any[]>;
-  export let onInvite: (emails: string[], role?: string) => Promise<void>;
+  export let onInvite: (
+    emailsAndGroups: string[],
+    role?: string,
+  ) => Promise<void>;
 
   let input = "";
   let searchResults: any[] = [];
