@@ -17,6 +17,7 @@ var errDetachedHead = errors.New("detached HEAD state detected, please checkout 
 
 type GitStatus struct {
 	Branch        string
+	RemoteURL     string
 	LocalChanges  bool // true if there are local changes (staged, unstaged, or untracked)
 	LocalCommits  int32
 	RemoteCommits int32
@@ -77,11 +78,23 @@ func RunGitStatus(path string) (GitStatus, error) {
 			return status, nil
 		}
 	}
+
+	// get the remote URL
+	data, err = exec.Command("git", "-C", path, "remote", "get-url", "origin").CombinedOutput()
+	if err != nil {
+		return status, fmt.Errorf("failed to get remote URL: %w", err)
+	}
+	status.RemoteURL = strings.TrimSpace(string(data))
 	return status, nil
 }
 
 func GitFetch(ctx context.Context, path, remote string) error {
-	cmd := exec.CommandContext(ctx, "git", "-C", path, "fetch", remote)
+	args := []string{"-C", path, "fetch"}
+	if remote != "" {
+		// if remote is specified, fetch from that remote
+		args = append(args, remote)
+	}
+	cmd := exec.CommandContext(ctx, "git", args...)
 	_, err := cmd.Output()
 	if err != nil {
 		var execErr *exec.ExitError
@@ -104,11 +117,14 @@ func GitPull(ctx context.Context, path string, discardLocal bool, remote string)
 
 	// git -C <path> pull <remote> <branch>
 	args := []string{"-C", path, "pull"}
-	st, err := RunGitStatus(path)
-	if err != nil {
-		return "", err
+
+	if remote != "" {
+		st, err := RunGitStatus(path)
+		if err != nil {
+			return "", err
+		}
+		args = append(args, remote, st.Branch)
 	}
-	args = append(args, remote, st.Branch)
 
 	cmd := exec.CommandContext(ctx, "git", args...)
 	out, err := cmd.Output()

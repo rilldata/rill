@@ -11,32 +11,27 @@ import (
 )
 
 func (s *Server) GitStatus(ctx context.Context, r *connect.Request[localv1.GitStatusRequest]) (*connect.Response[localv1.GitStatusResponse], error) {
-	// Get authenticated admin client
-	if !s.app.ch.IsAuthenticated() {
-		return nil, errors.New("must authenticate before performing this action")
-	}
-
-	project, err := s.app.ch.LoadProject(ctx, s.app.ProjectPath)
+	// try with native git configurations
+	nativeCreds := true
+	err := gitutil.GitFetch(ctx, s.app.ProjectPath, "")
 	if err != nil {
-		return nil, err
-	}
-
-	remote, err := s.gitRemoteForProject(ctx, project, false)
-	if err != nil {
-		return nil, err
-	}
-
-	err = gitutil.GitFetch(ctx, s.app.ProjectPath, remote)
-	if err != nil {
-		if project.ManagedGitId != "" {
-			return nil, err
+		// if native git fetch fails, try with ephemeral token - this may be a managed git project
+		nativeCreds = false
+		// Get authenticated admin client
+		if !s.app.ch.IsAuthenticated() {
+			return nil, errors.New("must authenticate before performing this action")
 		}
-		// retry with ephemeral token
-		// the user may not have native git credentials set up
-		remote, err = s.gitRemoteForProject(ctx, project, true)
+
+		project, err := s.app.ch.LoadProject(ctx, s.app.ProjectPath)
 		if err != nil {
 			return nil, err
 		}
+
+		remote, err := s.gitRemoteForProject(ctx, project, false)
+		if err != nil {
+			return nil, err
+		}
+
 		err = gitutil.GitFetch(ctx, s.app.ProjectPath, remote)
 		if err != nil {
 			return nil, err
@@ -49,8 +44,8 @@ func (s *Server) GitStatus(ctx context.Context, r *connect.Request[localv1.GitSt
 	}
 	return connect.NewResponse(&localv1.GitStatusResponse{
 		Branch:        gs.Branch,
-		GithubUrl:     remote,
-		ManagedGit:    project.ManagedGitId != "",
+		GithubUrl:     gs.RemoteURL,
+		ManagedGit:    !nativeCreds, // if it works with native git credentials, then it's not managed git
 		LocalChanges:  gs.LocalChanges,
 		LocalCommits:  gs.LocalCommits,
 		RemoteCommits: gs.RemoteCommits,
@@ -58,6 +53,12 @@ func (s *Server) GitStatus(ctx context.Context, r *connect.Request[localv1.GitSt
 }
 
 func (s *Server) GitPull(ctx context.Context, r *connect.Request[localv1.GitPullRequest]) (*connect.Response[localv1.GitPullResponse], error) {
+	_, err := gitutil.GitPull(ctx, s.app.ProjectPath, r.Msg.DiscardLocal, "")
+	if err == nil {
+		return connect.NewResponse(&localv1.GitPullResponse{}), nil
+	}
+	// if native git pull fails, try with ephemeral token - this may be a managed git project
+
 	// Get authenticated admin client
 	if !s.app.ch.IsAuthenticated() {
 		return nil, errors.New("must authenticate before performing this action")
@@ -93,6 +94,24 @@ func (s *Server) GitPull(ctx context.Context, r *connect.Request[localv1.GitPull
 }
 
 func (s *Server) GitPush(ctx context.Context, r *connect.Request[localv1.GitPushRequest]) (*connect.Response[localv1.GitPushResponse], error) {
+	st, err := gitutil.RunGitStatus(s.app.ProjectPath)
+	if err != nil {
+		return nil, err
+	}
+	if st.RemoteCommits > 0 && !r.Msg.Force {
+		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.New("cannot push with remote commits present, please pull first"))
+	}
+
+	// get authenticated git signature
+	author, err := gitutil.NativeGitSignature(ctx, s.app.ProjectPath)
+	if err == nil {
+		err = gitutil.CommitAndForcePush(ctx, s.app.ProjectPath, &gitutil.Config{Remote: st.RemoteURL, DefaultBranch: st.Branch}, r.Msg.CommitMessage, nil, false)
+		if err == nil {
+			return connect.NewResponse(&localv1.GitPushResponse{}), nil
+		}
+	}
+	// if native git push fails, try with ephemeral token - this may be a managed git project
+
 	// Get authenticated admin client
 	if !s.app.ch.IsAuthenticated() {
 		return nil, errors.New("must authenticate before performing this action")
@@ -103,12 +122,12 @@ func (s *Server) GitPush(ctx context.Context, r *connect.Request[localv1.GitPush
 		return nil, err
 	}
 
-	author, err := s.app.ch.GitSignature(ctx, s.app.ProjectPath)
+	author, err = s.app.ch.GitSignature(ctx, s.app.ProjectPath)
 	if err != nil {
 		return nil, err
 	}
 
-	err = gitutil.CommitAndPush(ctx, s.app.ProjectPath, &gitutil.Config{Remote: project.GitRemote}, r.Msg.CommitMessage, author, false, r.Msg.Force)
+	err = gitutil.CommitAndForcePush(ctx, s.app.ProjectPath, &gitutil.Config{Remote: project.GitRemote}, r.Msg.CommitMessage, author, false)
 	if err != nil {
 		if project.ManagedGitId != "" {
 			return nil, err
@@ -119,7 +138,7 @@ func (s *Server) GitPush(ctx context.Context, r *connect.Request[localv1.GitPush
 			return nil, err
 		}
 
-		err = gitutil.CommitAndPush(ctx, s.app.ProjectPath, config, r.Msg.CommitMessage, author, false, r.Msg.Force)
+		err = gitutil.CommitAndForcePush(ctx, s.app.ProjectPath, config, r.Msg.CommitMessage, author, false)
 		if err != nil {
 			return nil, err
 		}

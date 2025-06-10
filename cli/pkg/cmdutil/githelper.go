@@ -98,7 +98,7 @@ func (g *GitHelper) PushToNewManagedRepo(ctx context.Context) (*adminv1.CreateMa
 		PasswordExpiresAt: gitRepo.PasswordExpiresAt.AsTime(),
 		DefaultBranch:     gitRepo.DefaultBranch,
 	}
-	err = gitutil.CommitAndPush(ctx, g.localPath, config, "", author, true, true)
+	err = gitutil.CommitAndForcePush(ctx, g.localPath, config, "", author, true)
 	if err != nil {
 		return nil, err
 	}
@@ -128,7 +128,7 @@ func (g *GitHelper) PushToManagedRepo(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	err = gitutil.CommitAndPush(ctx, g.localPath, gitConfig, "", author, false, true)
+	err = gitutil.CommitAndForcePush(ctx, g.localPath, gitConfig, "", author, false)
 	if err != nil {
 		return err
 	}

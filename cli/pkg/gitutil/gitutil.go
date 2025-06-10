@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/config"
 	gitConfig "github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/object"
@@ -209,7 +210,7 @@ func GetSyncStatus(repoPath, branch, remote string) (SyncStatus, error) {
 	return SyncStatusSynced, nil
 }
 
-func CommitAndPush(ctx context.Context, projectPath string, config *Config, commitMsg string, author *object.Signature, allowEmptyCommits, forcePush bool) error {
+func CommitAndForcePush(ctx context.Context, projectPath string, config *Config, commitMsg string, author *object.Signature, allowEmptyCommits bool) error {
 	// init git repo
 	repo, err := git.PlainInitWithOptions(projectPath, &git.PlainInitOptions{
 		InitOptions: git.InitOptions{
@@ -266,7 +267,7 @@ func CommitAndPush(ctx context.Context, projectPath string, config *Config, comm
 	pushOpts := &git.PushOptions{
 		RemoteName: "origin",
 		RemoteURL:  config.Remote,
-		Force:      forcePush,
+		Force:      true,
 	}
 	if config.Username != "" && config.Password != "" {
 		pushOpts.Auth = &githttp.BasicAuth{
@@ -288,4 +289,24 @@ func Clone(ctx context.Context, path string, c *Config) (*git.Repository, error)
 		ReferenceName: plumbing.NewBranchReferenceName(c.DefaultBranch),
 		SingleBranch:  true,
 	})
+}
+
+func NativeGitSignature(ctx context.Context, path string) (*object.Signature, error) {
+	repo, err := git.PlainOpen(path)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open git repository: %w", err)
+	}
+	cfg, err := repo.ConfigScoped(config.SystemScope)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get git config: %w", err)
+	}
+	if cfg.User.Email != "" && cfg.User.Name != "" {
+		// user has git properly configured use that
+		return &object.Signature{
+			Name:  cfg.User.Name,
+			Email: cfg.User.Email,
+			When:  time.Now(),
+		}, nil
+	}
+	return nil, fmt.Errorf("git user email or name is not set in git config")
 }
