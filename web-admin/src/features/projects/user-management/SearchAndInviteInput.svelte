@@ -399,7 +399,8 @@
         class="chips-and-input flex flex-wrap gap-1 w-full min-h-[24px] px-1"
       >
         {#each selected as identifier (identifier)}
-          <span class="chip text-sm w-fit h-5 overflow-hidden text-ellipsis"
+          <span
+            class="chip text-sm w-fit h-[24px] overflow-hidden text-ellipsis"
             >{identifier}
             <button
               on:click={() => removeSelected(identifier)}
