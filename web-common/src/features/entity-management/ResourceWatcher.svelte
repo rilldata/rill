@@ -12,15 +12,19 @@
   const { retryAttempts: fileAttempts, closed: fileWatcherClosed } =
     fileWatcher;
   const { retryAttempts: resourceAttempts, closed: resourceWatcherClosed } =
-    fileWatcher;
+    resourceWatcher;
 
   export let host: string;
   export let instanceId: string;
 
-  $: fileWatcher.watch(`${host}/v1/instances/${instanceId}/files/watch`);
+  $: fileWatcher.watch(
+    `${host}/v1/instances/${instanceId}/files/watch?stream=files`,
+    true,
+  );
 
   $: resourceWatcher.watch(
-    `${host}/v1/instances/${instanceId}/resources/-/watch`,
+    `${host}/v1/instances/${instanceId}/resources/-/watch?stream=resources`,
+    true,
   );
 
   $: failed = $fileAttempts >= 2 || $resourceAttempts >= 2;

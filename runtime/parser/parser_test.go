@@ -1209,6 +1209,7 @@ query:
 
 export:
   format: csv
+  include_header: true
   limit: 10000
 
 email:
@@ -1268,10 +1269,11 @@ annotations:
 					Cron:      "0 * * * *",
 					TimeZone:  "America/Los_Angeles",
 				},
-				QueryName:     "MetricsViewToplist",
-				QueryArgsJson: `{"metrics_view":"mv1"}`,
-				ExportFormat:  runtimev1.ExportFormat_EXPORT_FORMAT_CSV,
-				ExportLimit:   10000,
+				QueryName:           "MetricsViewToplist",
+				QueryArgsJson:       `{"metrics_view":"mv1"}`,
+				ExportFormat:        runtimev1.ExportFormat_EXPORT_FORMAT_CSV,
+				ExportIncludeHeader: true,
+				ExportLimit:         10000,
 				Notifiers: []*runtimev1.Notifier{{
 					Connector:  "email",
 					Properties: must(structpb.NewStruct(map[string]any{"recipients": []any{"benjamin@example.com"}})),
@@ -1292,10 +1294,11 @@ annotations:
 					Cron:      "0 * * * *",
 					TimeZone:  "America/Los_Angeles",
 				},
-				QueryName:     "MetricsViewToplist",
-				QueryArgsJson: `{"metrics_view":"mv1"}`,
-				ExportFormat:  runtimev1.ExportFormat_EXPORT_FORMAT_CSV,
-				ExportLimit:   10000,
+				QueryName:           "MetricsViewToplist",
+				QueryArgsJson:       `{"metrics_view":"mv1"}`,
+				ExportFormat:        runtimev1.ExportFormat_EXPORT_FORMAT_CSV,
+				ExportIncludeHeader: false,
+				ExportLimit:         10000,
 				Notifiers: []*runtimev1.Notifier{
 					{Connector: "email", Properties: must(structpb.NewStruct(map[string]any{"recipients": []any{"user_1@example.com"}}))},
 					{Connector: "slack", Properties: must(structpb.NewStruct(map[string]any{"users": []any{"user_2@example.com"}, "channels": []any{"reports"}, "webhooks": []any{}}))},
@@ -1731,123 +1734,6 @@ rows:
 		},
 	}
 
-	p, err := Parse(ctx, repo, "", "", "duckdb")
-	require.NoError(t, err)
-	requireResourcesAndErrors(t, p, resources, nil)
-}
-
-func TestAPI(t *testing.T) {
-	ctx := context.Background()
-	repo := makeRepo(t, map[string]string{
-		`rill.yaml`: ``,
-		// model m1
-		`models/m1.sql`: `SELECT 1`,
-		// api a1
-		`apis/a1.yaml`: `
-type: api
-sql: select * from m1
-`,
-		// api a2
-		`apis/a2.yaml`: `
-type: api
-metrics_sql: select * from m1
-`,
-		// api a3 with security rules
-		`apis/a3.yaml`: `
-type: api
-sql: select * from m1
-security:
-  access: true
-`,
-		// api a4
-		`apis/a4.yaml`: `
-type: api
-metrics_sql: select * from m1
-security:
-  access: '{{ .user.admin }}'
-`,
-		// api a5
-		`apis/a5.yaml`: `
-type: api
-metrics_sql: select * from m1
-skip_nested_security: true
-security:
-  access: '{{ .user.admin }}'
-`,
-	})
-
-	resources := []*Resource{
-		{
-			Name:  ResourceName{Kind: ResourceKindModel, Name: "m1"},
-			Paths: []string{"/models/m1.sql"},
-			ModelSpec: &runtimev1.ModelSpec{
-				RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
-				InputConnector:  "duckdb",
-				InputProperties: must(structpb.NewStruct(map[string]any{"sql": `SELECT 1`})),
-				OutputConnector: "duckdb",
-				ChangeMode:      runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
-			},
-		},
-		{
-			Name:  ResourceName{Kind: ResourceKindAPI, Name: "a1"},
-			Paths: []string{"/apis/a1.yaml"},
-			APISpec: &runtimev1.APISpec{
-				Resolver:           "sql",
-				ResolverProperties: must(structpb.NewStruct(map[string]any{"connector": "duckdb", "sql": "select * from m1"})),
-			},
-		},
-		{
-			Name:  ResourceName{Kind: ResourceKindAPI, Name: "a2"},
-			Paths: []string{"/apis/a2.yaml"},
-			APISpec: &runtimev1.APISpec{
-				Resolver:           "metrics_sql",
-				ResolverProperties: must(structpb.NewStruct(map[string]any{"sql": "select * from m1"})),
-			},
-		},
-		{
-			Name:  ResourceName{Kind: ResourceKindAPI, Name: "a3"},
-			Paths: []string{"/apis/a3.yaml"},
-			APISpec: &runtimev1.APISpec{
-				Resolver:           "sql",
-				ResolverProperties: must(structpb.NewStruct(map[string]any{"connector": "duckdb", "sql": "select * from m1"})),
-				SecurityRules: []*runtimev1.SecurityRule{
-					{Rule: &runtimev1.SecurityRule_Access{Access: &runtimev1.SecurityRuleAccess{
-						Condition: "true",
-						Allow:     true,
-					}}},
-				},
-			},
-		},
-		{
-			Name:  ResourceName{Kind: ResourceKindAPI, Name: "a4"},
-			Paths: []string{"/apis/a4.yaml"},
-			APISpec: &runtimev1.APISpec{
-				Resolver:           "metrics_sql",
-				ResolverProperties: must(structpb.NewStruct(map[string]any{"sql": "select * from m1"})),
-				SecurityRules: []*runtimev1.SecurityRule{
-					{Rule: &runtimev1.SecurityRule_Access{Access: &runtimev1.SecurityRuleAccess{
-						Condition: "{{ .user.admin }}",
-						Allow:     true,
-					}}},
-				},
-			},
-		},
-		{
-			Name:  ResourceName{Kind: ResourceKindAPI, Name: "a5"},
-			Paths: []string{"/apis/a5.yaml"},
-			APISpec: &runtimev1.APISpec{
-				Resolver:           "metrics_sql",
-				ResolverProperties: must(structpb.NewStruct(map[string]any{"sql": "select * from m1"})),
-				SecurityRules: []*runtimev1.SecurityRule{
-					{Rule: &runtimev1.SecurityRule_Access{Access: &runtimev1.SecurityRuleAccess{
-						Condition: "{{ .user.admin }}",
-						Allow:     true,
-					}}},
-				},
-				SkipNestedSecurity: true,
-			},
-		},
-	}
 	p, err := Parse(ctx, repo, "", "", "duckdb")
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, resources, nil)

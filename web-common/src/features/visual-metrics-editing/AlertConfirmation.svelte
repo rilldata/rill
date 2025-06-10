@@ -1,7 +1,7 @@
 <script lang="ts">
   import * as AlertDialog from "@rilldata/web-common/components/alert-dialog";
-  import type { Confirmation } from "./lib";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
+  import type { Confirmation } from "./lib";
 
   export let confirmation: Confirmation;
   export let onCancel: () => void;
@@ -45,7 +45,7 @@
           type="secondary"
           large
           gray={confirmation.action === "delete"}
-          on:click={onCancel}
+          onClick={onCancel}
         >
           {#if confirmation.action === "cancel"}Keep editing{:else}Cancel{/if}
         </Button>
@@ -57,7 +57,7 @@
           builders={[builder]}
           status={confirmation.action === "delete" ? "error" : "info"}
           type="primary"
-          on:click={onConfirm}
+          onClick={onConfirm}
         >
           {#if confirmation.action === "delete"}
             Yes, delete

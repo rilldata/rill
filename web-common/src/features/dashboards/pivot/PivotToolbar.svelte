@@ -66,6 +66,10 @@
     ]);
   }
 
+  function blurCurrentTarget(e: MouseEvent) {
+    (e.currentTarget as HTMLButtonElement | null)?.blur();
+  }
+
   // function expandVisible() {
   //   // const lowestVisibleRow = 0;
   //   const nestedLevels = 4;
@@ -101,9 +105,9 @@
     square
     type="secondary"
     selected={showPanels}
-    on:click={(e) => {
+    onClick={(e) => {
       showPanels = !showPanels;
-      e.detail.currentTarget.blur();
+      blurCurrentTarget(e);
     }}
   >
     <PivotPanel size="18px" open={showPanels} />
@@ -113,7 +117,7 @@
     <Tooltip location="bottom" alignment="start" distance={8}>
       <Button
         type="toolbar"
-        on:click={() => togglePivotType($isFlat ? "nest" : "flat")}
+        onClick={() => togglePivotType($isFlat ? "nest" : "flat")}
       >
         {#if $isFlat}
           <TableIcon size="16px" />
@@ -130,7 +134,7 @@
     <!-- <Button
     compact
     type="text"
-    on:click={() => {
+    onClick={() => {
       expandVisible();
     }}
   >
@@ -138,7 +142,7 @@
   </Button> -->
     <Button
       type="toolbar"
-      on:click={() => {
+      onClick={() => {
         metricsExplorerStore.setPivotExpanded($exploreName, {});
       }}
       disabled={Object.keys(expanded).length === 0}

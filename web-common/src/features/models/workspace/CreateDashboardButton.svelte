@@ -6,13 +6,13 @@
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { BehaviourEventMedium } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
   import { MetricsEventSpace } from "@rilldata/web-common/metrics/service/MetricsTypes";
+  import { Wand } from "lucide-svelte";
   import { V1ReconcileStatus } from "../../../runtime-client";
   import { runtime } from "../../../runtime-client/runtime-store";
+  import { allowPrimary } from "../../dashboards/workspace/DeployProjectCTA.svelte";
   import { featureFlags } from "../../feature-flags";
   import { useCreateMetricsViewFromTableUIAction } from "../../metrics-views/ai-generation/generateMetricsView";
   import { useModel } from "../selectors";
-  import { Wand } from "lucide-svelte";
-  import { allowPrimary } from "../../dashboards/workspace/DeployProjectCTA.svelte";
 
   export let modelName: string;
   export let hasError = false;
@@ -43,7 +43,7 @@
 <Tooltip distance={8} location="bottom">
   <Button
     disabled={!modelIsIdle || hasError}
-    on:click={createMetricsViewFromModel}
+    onClick={createMetricsViewFromModel}
     type={$allowPrimary ? "primary" : "secondary"}
   >
     <IconSpaceFixer pullLeft pullRight={collapse}>

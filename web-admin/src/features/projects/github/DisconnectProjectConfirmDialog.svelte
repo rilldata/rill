@@ -87,12 +87,12 @@
     <AlertDialogFooter>
       <Button
         type="secondary"
-        on:click={() => (open = false)}
+        onClick={() => (open = false)}
         disabled={isPending}>Cancel</Button
       >
       <Button
         type="primary"
-        on:click={onDisconnect}
+        onClick={onDisconnect}
         loading={isPending}
         disabled={isPending}
       >

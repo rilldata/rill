@@ -51,7 +51,7 @@
     <ContactUs />
   </svelte:fragment>
 
-  <Button type="primary" slot="action" on:click={() => (open = true)}>
+  <Button type="primary" slot="action" onClick={() => (open = true)}>
     Renew Team plan
   </Button>
 </SettingsContainer>

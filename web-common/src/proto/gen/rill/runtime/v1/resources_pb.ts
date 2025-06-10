@@ -1269,6 +1269,13 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
   description = "";
 
   /**
+   * Extra context for LLM/AI features. Used to guide natural language question answering and routing.
+   *
+   * @generated from field: string ai_context = 28;
+   */
+  aiContext = "";
+
+  /**
    * Name of the primary time dimension, used for rendering time series
    *
    * @generated from field: string time_dimension = 5;
@@ -1357,6 +1364,7 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
     { no: 24, name: "model", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 28, name: "ai_context", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "time_dimension", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 8, name: "smallest_time_grain", kind: "enum", T: proto3.getEnumType(TimeGrain) },
     { no: 20, name: "watermark_expression", kind: "scalar", T: 9 /* ScalarType.STRING */ },
@@ -2931,6 +2939,11 @@ export class ReportSpec extends Message<ReportSpec> {
   exportFormat = ExportFormat.UNSPECIFIED;
 
   /**
+   * @generated from field: bool export_include_header = 16;
+   */
+  exportIncludeHeader = false;
+
+  /**
    * @generated from field: repeated rill.runtime.v1.Notifier notifiers = 11;
    */
   notifiers: Notifier[] = [];
@@ -2978,6 +2991,7 @@ export class ReportSpec extends Message<ReportSpec> {
     { no: 6, name: "query_args_json", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 7, name: "export_limit", kind: "scalar", T: 4 /* ScalarType.UINT64 */ },
     { no: 8, name: "export_format", kind: "enum", T: proto3.getEnumType(ExportFormat) },
+    { no: 16, name: "export_include_header", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 11, name: "notifiers", kind: "message", T: Notifier, repeated: true },
     { no: 10, name: "annotations", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
     { no: 12, name: "watermark_inherit", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
@@ -4564,14 +4578,19 @@ export class APISpec extends Message<APISpec> {
   openapiSummary = "";
 
   /**
-   * @generated from field: repeated google.protobuf.Struct openapi_parameters = 4;
+   * @generated from field: string openapi_parameters_json = 8;
    */
-  openapiParameters: Struct[] = [];
+  openapiParametersJson = "";
 
   /**
-   * @generated from field: google.protobuf.Struct openapi_response_schema = 5;
+   * @generated from field: string openapi_request_schema_json = 9;
    */
-  openapiResponseSchema?: Struct;
+  openapiRequestSchemaJson = "";
+
+  /**
+   * @generated from field: string openapi_response_schema_json = 10;
+   */
+  openapiResponseSchemaJson = "";
 
   /**
    * @generated from field: repeated rill.runtime.v1.SecurityRule security_rules = 6;
@@ -4594,8 +4613,9 @@ export class APISpec extends Message<APISpec> {
     { no: 1, name: "resolver", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "resolver_properties", kind: "message", T: Struct },
     { no: 3, name: "openapi_summary", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 4, name: "openapi_parameters", kind: "message", T: Struct, repeated: true },
-    { no: 5, name: "openapi_response_schema", kind: "message", T: Struct },
+    { no: 8, name: "openapi_parameters_json", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 9, name: "openapi_request_schema_json", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 10, name: "openapi_response_schema_json", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "security_rules", kind: "message", T: SecurityRule, repeated: true },
     { no: 7, name: "skip_nested_security", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);

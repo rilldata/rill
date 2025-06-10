@@ -1,5 +1,8 @@
 <script lang="ts">
   export let kind: string;
+  export let error: Error;
+
+  $: console.error(`error loading ${kind}s:`, error);
 </script>
 
 <div
