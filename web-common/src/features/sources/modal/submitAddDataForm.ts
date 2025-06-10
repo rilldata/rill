@@ -169,7 +169,7 @@ export async function submitAddOLAPConnectorForm(
 
   // Test the connection to the OLAP database
   // If the connection test fails, rollback the changes
-  const result = await testOLAPConnector(instanceId, newConnectorName);
+  const result = await testOLAPConnector(instanceId, connector.name as string);
   if (!result.success) {
     await rollbackConnectorChanges(
       instanceId,
