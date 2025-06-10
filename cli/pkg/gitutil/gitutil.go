@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/go-git/go-git/v5"
-	"github.com/go-git/go-git/v5/config"
 	gitConfig "github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/object"
@@ -296,7 +295,7 @@ func NativeGitSignature(ctx context.Context, path string) (*object.Signature, er
 	if err != nil {
 		return nil, fmt.Errorf("failed to open git repository: %w", err)
 	}
-	cfg, err := repo.ConfigScoped(config.SystemScope)
+	cfg, err := repo.ConfigScoped(gitConfig.SystemScope)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get git config: %w", err)
 	}
