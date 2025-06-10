@@ -9,56 +9,6 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/timeutil"
 )
 
-func TimeGrainFromAPI(tg runtimev1.TimeGrain) timeutil.TimeGrain {
-	switch tg {
-	case runtimev1.TimeGrain_TIME_GRAIN_MILLISECOND:
-		return timeutil.TimeGrainMillisecond
-	case runtimev1.TimeGrain_TIME_GRAIN_SECOND:
-		return timeutil.TimeGrainSecond
-	case runtimev1.TimeGrain_TIME_GRAIN_MINUTE:
-		return timeutil.TimeGrainMinute
-	case runtimev1.TimeGrain_TIME_GRAIN_HOUR:
-		return timeutil.TimeGrainHour
-	case runtimev1.TimeGrain_TIME_GRAIN_DAY:
-		return timeutil.TimeGrainDay
-	case runtimev1.TimeGrain_TIME_GRAIN_WEEK:
-		return timeutil.TimeGrainWeek
-	case runtimev1.TimeGrain_TIME_GRAIN_MONTH:
-		return timeutil.TimeGrainMonth
-	case runtimev1.TimeGrain_TIME_GRAIN_QUARTER:
-		return timeutil.TimeGrainQuarter
-	case runtimev1.TimeGrain_TIME_GRAIN_YEAR:
-		return timeutil.TimeGrainYear
-	}
-	return timeutil.TimeGrainUnspecified
-}
-
-func TimeGrainToAPI(tg timeutil.TimeGrain) runtimev1.TimeGrain {
-	switch tg {
-	case timeutil.TimeGrainUnspecified:
-		return runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED
-	case timeutil.TimeGrainMillisecond:
-		return runtimev1.TimeGrain_TIME_GRAIN_MILLISECOND
-	case timeutil.TimeGrainSecond:
-		return runtimev1.TimeGrain_TIME_GRAIN_SECOND
-	case timeutil.TimeGrainMinute:
-		return runtimev1.TimeGrain_TIME_GRAIN_MINUTE
-	case timeutil.TimeGrainHour:
-		return runtimev1.TimeGrain_TIME_GRAIN_HOUR
-	case timeutil.TimeGrainDay:
-		return runtimev1.TimeGrain_TIME_GRAIN_DAY
-	case timeutil.TimeGrainWeek:
-		return runtimev1.TimeGrain_TIME_GRAIN_WEEK
-	case timeutil.TimeGrainMonth:
-		return runtimev1.TimeGrain_TIME_GRAIN_MONTH
-	case timeutil.TimeGrainQuarter:
-		return runtimev1.TimeGrain_TIME_GRAIN_QUARTER
-	case timeutil.TimeGrainYear:
-		return runtimev1.TimeGrain_TIME_GRAIN_YEAR
-	}
-	return runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED
-}
-
 func timeGrainToDuration(tg runtimev1.TimeGrain) duration.Duration {
 	switch tg {
 	// not supported
@@ -167,10 +117,10 @@ func ResolveTimeRange(tr *runtimev1.TimeRange, mv *runtimev1.MetricsViewSpec) (t
 			fmoy = 1
 		}
 		if !start.IsZero() {
-			start = timeutil.TruncateTime(start, TimeGrainFromAPI(tr.RoundToGrain), tz, fdow, fmoy)
+			start = timeutil.TruncateTime(start, timeutil.TimeGrainFromAPI(tr.RoundToGrain), tz, fdow, fmoy)
 		}
 		if !end.IsZero() {
-			end = timeutil.TruncateTime(end, TimeGrainFromAPI(tr.RoundToGrain), tz, fdow, fmoy)
+			end = timeutil.TruncateTime(end, timeutil.TimeGrainFromAPI(tr.RoundToGrain), tz, fdow, fmoy)
 		}
 	}
 
