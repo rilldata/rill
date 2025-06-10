@@ -24,11 +24,12 @@
   $: canvasName = $page.params.dashboard;
 
   $: canvasQuery = useResource(instanceId, canvasName, ResourceKind.Canvas, {
-    refetchInterval: (data) => {
-      if (!data) return false;
-      if (isCanvasReconcilingForFirstTime(data))
+    refetchInterval: (query) => {
+      const resource = query.state.data.resource;
+      if (!resource) return false;
+      if (isCanvasReconcilingForFirstTime(resource))
         return PollIntervalWhenDashboardFirstReconciling;
-      if (isCanvasErrored(data)) return PollIntervalWhenDashboardErrored;
+      if (isCanvasErrored(resource)) return PollIntervalWhenDashboardErrored;
       return false;
     },
   });
