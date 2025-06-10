@@ -396,7 +396,7 @@
       )}
     >
       <div
-        class="chips-and-input flex flex-wrap gap-1 w-full min-h-[20px] px-1"
+        class="chips-and-input flex flex-wrap gap-1 w-full min-h-[24px] px-1"
       >
         {#each selected as identifier (identifier)}
           <span class="chip text-sm w-fit h-5 overflow-hidden text-ellipsis"
@@ -433,9 +433,7 @@
         />
       </div>
       {#if roleSelect && (selected.length > 0 || input.trim())}
-        <div class="role-select-container">
-          <UserRoleSelect bind:value={role} />
-        </div>
+        <UserRoleSelect bind:value={role} />
       {/if}
     </div>
     <Button
@@ -568,14 +566,6 @@
       border-color 150ms ease-in-out;
   }
 
-  .role-select-container {
-    min-width: 71px;
-    max-width: 71px;
-    flex: 0 0 71px;
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-  }
   .input-with-role input[type="text"] {
     @apply text-sm;
     border: none;
@@ -632,16 +622,6 @@
   }
   .dropdown button:hover {
     @apply bg-slate-100;
-  }
-  .dropdown button.highlighted {
-    @apply bg-slate-200;
-    scroll-snap-align: start;
-  }
-  .dropdown button.selected {
-    @apply bg-slate-100;
-  }
-  .dropdown button.selected:hover {
-    @apply bg-slate-200;
   }
 
   .dropdown.loading {
