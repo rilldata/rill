@@ -19,7 +19,17 @@ func (s *Server) GitStatus(ctx context.Context, r *connect.Request[localv1.GitSt
 		nativeCreds = false
 		// Get authenticated admin client
 		if !s.app.ch.IsAuthenticated() {
-			return nil, errors.New("must authenticate before performing this action")
+			// if the user is not authenticated, we cannot fetch the project
+			// return the best effort status
+			gs, err := gitutil.RunGitStatus(s.app.ProjectPath)
+			if err != nil {
+				return nil, err
+			}
+			return connect.NewResponse(&localv1.GitStatusResponse{
+				Branch:     gs.Branch,
+				GithubUrl:  gs.RemoteURL,
+				ManagedGit: true, // We assumed managed git but it can also be a native git project
+			}), nil
 		}
 
 		project, err := s.app.ch.LoadProject(ctx, s.app.ProjectPath)
@@ -45,7 +55,7 @@ func (s *Server) GitStatus(ctx context.Context, r *connect.Request[localv1.GitSt
 	return connect.NewResponse(&localv1.GitStatusResponse{
 		Branch:        gs.Branch,
 		GithubUrl:     gs.RemoteURL,
-		ManagedGit:    !nativeCreds, // if it works with native git credentials, then it's not managed git
+		ManagedGit:    !nativeCreds,
 		LocalChanges:  gs.LocalChanges,
 		LocalCommits:  gs.LocalCommits,
 		RemoteCommits: gs.RemoteCommits,
@@ -105,7 +115,7 @@ func (s *Server) GitPush(ctx context.Context, r *connect.Request[localv1.GitPush
 	// get authenticated git signature
 	author, err := gitutil.NativeGitSignature(ctx, s.app.ProjectPath)
 	if err == nil {
-		err = gitutil.CommitAndForcePush(ctx, s.app.ProjectPath, &gitutil.Config{Remote: st.RemoteURL, DefaultBranch: st.Branch}, r.Msg.CommitMessage, nil, false)
+		err = gitutil.CommitAndForcePush(ctx, s.app.ProjectPath, &gitutil.Config{Remote: st.RemoteURL, DefaultBranch: st.Branch}, r.Msg.CommitMessage, author, true)
 		if err == nil {
 			return connect.NewResponse(&localv1.GitPushResponse{}), nil
 		}
@@ -127,21 +137,14 @@ func (s *Server) GitPush(ctx context.Context, r *connect.Request[localv1.GitPush
 		return nil, err
 	}
 
-	err = gitutil.CommitAndForcePush(ctx, s.app.ProjectPath, &gitutil.Config{Remote: project.GitRemote}, r.Msg.CommitMessage, author, false)
+	config, err := s.app.ch.GitHelper(project.OrgName, project.Name, s.app.ProjectPath).GitConfig(ctx)
 	if err != nil {
-		if project.ManagedGitId != "" {
-			return nil, err
-		}
-		// retry with ephemeral token
-		config, err := s.app.ch.GitHelper(project.OrgName, project.Name, s.app.ProjectPath).GitConfig(ctx)
-		if err != nil {
-			return nil, err
-		}
+		return nil, err
+	}
 
-		err = gitutil.CommitAndForcePush(ctx, s.app.ProjectPath, config, r.Msg.CommitMessage, author, false)
-		if err != nil {
-			return nil, err
-		}
+	err = gitutil.CommitAndForcePush(ctx, s.app.ProjectPath, config, r.Msg.CommitMessage, author, true)
+	if err != nil {
+		return nil, err
 	}
 
 	return connect.NewResponse(&localv1.GitPushResponse{}), nil
