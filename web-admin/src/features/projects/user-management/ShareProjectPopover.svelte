@@ -64,6 +64,7 @@
       },
       {
         query: {
+          enabled: open,
           getNextPageParam: (lastPage) => {
             if (lastPage.nextPageToken !== "") {
               return lastPage.nextPageToken;
@@ -81,6 +82,7 @@
       },
       {
         query: {
+          enabled: open,
           getNextPageParam: (lastPage) => {
             if (lastPage.nextPageToken !== "") {
               return lastPage.nextPageToken;
@@ -91,10 +93,18 @@
       },
     );
   $: listOrganizationMemberUsergroups =
-    createAdminServiceListOrganizationMemberUsergroups(organization, {
-      pageSize: PAGE_SIZE,
-      includeCounts: true,
-    });
+    createAdminServiceListOrganizationMemberUsergroups(
+      organization,
+      {
+        pageSize: PAGE_SIZE,
+        includeCounts: true,
+      },
+      {
+        query: {
+          enabled: open,
+        },
+      },
+    );
   $: listProjectMemberUsergroups =
     createAdminServiceListProjectMemberUsergroups(
       organization,
@@ -102,6 +112,7 @@
       undefined,
       {
         query: {
+          enabled: open,
           refetchOnMount: true,
           refetchOnWindowFocus: true,
         },
@@ -113,6 +124,7 @@
     undefined,
     {
       query: {
+        enabled: open,
         refetchOnMount: true,
         refetchOnWindowFocus: true,
       },
@@ -124,6 +136,7 @@
     undefined,
     {
       query: {
+        enabled: open,
         refetchOnMount: true,
         refetchOnWindowFocus: true,
       },
@@ -135,6 +148,7 @@
     undefined,
     {
       query: {
+        enabled: open,
         refetchOnMount: true,
         refetchOnWindowFocus: true,
       },
