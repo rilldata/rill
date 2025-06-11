@@ -16,8 +16,7 @@ func init() {
 }
 
 type metricsSQLProps struct {
-	SQL           string `mapstructure:"sql"`
-	TimeDimension string `mapstructure:"time_dimension"`
+	SQL string `mapstructure:"sql"`
 }
 
 type metricsSQLArgs struct {
@@ -64,7 +63,7 @@ func newMetricsSQL(ctx context.Context, opts *runtime.ResolverOptions) (runtime.
 	}
 
 	compiler := metricssqlparser.New(ctrl, opts.InstanceID, opts.Claims, sqlArgs.Priority)
-	query, err := compiler.Rewrite(ctx, props.SQL, props.TimeDimension)
+	query, err := compiler.Rewrite(ctx, props.SQL)
 	if err != nil {
 		return nil, err
 	}
