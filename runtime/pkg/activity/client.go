@@ -2,7 +2,6 @@ package activity
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"time"
 
@@ -287,24 +286,4 @@ func (c *Client) resolveAttrs(ctx context.Context, extraAttrs []attribute.KeyVal
 	}
 
 	return data
-}
-
-// truncateEvent truncates the event data if it exceeds maxSize.
-func truncateEvent(e *Event) {
-	if e == nil || e.Data == nil {
-		return
-	}
-
-	b, err := json.Marshal(e)
-	if err != nil {
-		return
-	}
-	if len(b) <= maxSize {
-		return
-	}
-
-	e.Data = map[string]any{
-		"truncated": true,
-		"reason":    "event data exceeded 1MB and was truncated",
-	}
 }

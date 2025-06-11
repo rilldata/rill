@@ -40,7 +40,7 @@ func TestEventMarshalJSON_Truncate(t *testing.T) {
 		assert.Equal(t, activity.EventTypeLog, result["event_type"])
 		assert.Equal(t, "test_event", result["event_name"])
 		assert.True(t, result["truncated"].(bool))
-		assert.Equal(t, "event data exceeded 1MB and was truncated", result["reason"])
+		assert.Equal(t, "event data exceeded 32KB and was truncated", result["reason"])
 
 		// {"event_id":"12345","event_name":"test_event","event_time":"2023-10-01T12:00:00Z","event_type":"log","reason":"event data exceeded 1MB and was truncated","truncated":true}
 	})
