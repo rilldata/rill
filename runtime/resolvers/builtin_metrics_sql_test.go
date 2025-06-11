@@ -14,13 +14,16 @@ func TestBuiltinMetricsSQL(t *testing.T) {
 	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
 		Files: map[string]string{
 			`rill.yaml`:      ``,
-			`models/foo.sql`: `SELECT 10 AS a`,
+			`models/foo.sql`: `SELECT 10 AS a, '2024-01-01T00:00:00Z'::TIMESTAMP as time`,
 			`metrics/bar.yaml`: `
 version: 1
 type: metrics_view
 model: foo
+timeseries: time
 dimensions:
 - column: a
+- name: time_7d
+  expression: time + INTERVAL 7 DAYS
 measures:
 - name: count
   expression: count(*)
@@ -48,6 +51,21 @@ measures:
 			args:  map[string]any{"sql": "SELECT count FROM bar"},
 			attrs: map[string]any{"admin": true},
 			want:  `[{"count":1}]`,
+		},
+		{
+			args:  map[string]any{"sql": "SELECT count FROM bar where time >= '2024-01-01T00:00:00Z' and time < '2024-01-05T00:00:00Z'"},
+			attrs: map[string]any{"admin": true},
+			want:  `[{"count":1}]`,
+		},
+		{
+			args:  map[string]any{"sql": "SELECT count FROM bar where time_7d >= '2024-01-10T00:00:00Z' OR time_7d < '2024-01-10T00:00:00Z'"},
+			attrs: map[string]any{"admin": true},
+			want:  `[{"count":1}]`,
+		},
+		{
+			args:  map[string]any{"sql": "SELECT count FROM bar where time >= '2024-01-01T00:00:00Z' and time_7d < '2024-01-05T00:00:00Z'"},
+			attrs: map[string]any{"admin": true},
+			want:  `[{"count":0}]`,
 		},
 		{
 			args:    map[string]any{"sql": "SELECT count FROM bar"},

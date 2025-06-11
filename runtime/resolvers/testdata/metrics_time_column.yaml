@@ -27,7 +27,7 @@ project_files:
     timeseries: time_7d
     dimensions:
       - column: country
-      - name: time
+      - name: primary_time
         column: time
       - name: time_7d
         expression: time + INTERVAL 7 DAYS
@@ -98,10 +98,10 @@ tests:
     properties:
       metrics_view: duckdb_metrics_expr
       dimensions:
-        - name: time__day
+        - name: primary_time__day
           compute:
             time_floor:
-              dimension: time
+              dimension: primary_time
               grain: day
       measures:
         - name: sum
@@ -110,9 +110,9 @@ tests:
         start: 2024-01-10T00:00:00Z
         time_dimension: time_7d
       sort:
-        - name: time__day
+        - name: primary_time__day
     result:
       - sum: 3
-        time__day: "2024-01-03T00:00:00Z"
+        primary_time__day: "2024-01-03T00:00:00Z"
       - sum: 4
-        time__day: "2024-01-04T00:00:00Z"
+        primary_time__day: "2024-01-04T00:00:00Z"
