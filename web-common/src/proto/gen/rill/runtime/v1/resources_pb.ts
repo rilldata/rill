@@ -1220,8 +1220,7 @@ export class ModelTest extends Message<ModelTest> {
   resolver = "";
 
   /**
-   * TODO: Consider test types - (e.g. "assertion", "row_count", "row_content", etc.)
-   * ModelTestType type = 5;
+   * ModelTestType type = 5; // Consider test types - (e.g. "assertion", "row_count", "row_content", etc.)
    *
    * @generated from field: google.protobuf.Struct resolver_properties = 4;
    */

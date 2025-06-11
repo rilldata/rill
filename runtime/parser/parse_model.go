@@ -282,7 +282,7 @@ func (p *Parser) parseModel(ctx context.Context, node *Node) error {
 }
 
 // parseModelTests parses the model tests from the YAML file
-func (p *Parser) parseModelTest(name string, data *DataYAML, connector string, modelName string, where string) (*runtimev1.ModelTest, []ResourceName, error) {
+func (p *Parser) parseModelTest(name string, data *DataYAML, connector, modelName, where string) (*runtimev1.ModelTest, []ResourceName, error) {
 	// Syntactic sugar: if where is set and sql is not, synthesize SQL
 	if where != "" && data.SQL == "" {
 		data.SQL = fmt.Sprintf("SELECT 1 FROM %s WHERE %s LIMIT 1", modelName, where)

@@ -5708,9 +5708,7 @@ definitions:
         type: string
       resolverProperties:
         type: object
-        title: |-
-          TODO: Consider test types - (e.g. "assertion", "row_count", "row_content", etc.)
-           ModelTestType type = 5;
+        title: ModelTestType type = 5; // Consider test types - (e.g. "assertion", "row_count", "row_content", etc.)
   v1Notifier:
     type: object
     properties:
