@@ -237,7 +237,7 @@ func (s *Server) generateMetricsViewYAMLWithAI(ctx context.Context, instanceID, 
 	defer cancel()
 
 	// Call AI service to infer a metrics view YAML
-	res, err := ai.Complete(ctx, msgs, drivers.BuildConfig())
+	res, err := ai.Complete(ctx, msgs, []drivers.Tool{})
 	if err != nil {
 		return nil, err
 	}

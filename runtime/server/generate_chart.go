@@ -74,22 +74,26 @@ func (s *Server) GenerateRenderer(ctx context.Context, req *runtimev1.GenerateRe
 // It currently only supports generating a Vega lite render.
 func (s *Server) generateRendererWithAI(ctx context.Context, instanceID, userPrompt string, schema *runtimev1.StructType) (string, map[string]any, error) {
 	// Build messages
-	prompt := fmt.Sprintf(`
-Prompt provided by the user: %s:
+	systemPrompt := vegaSpecSystemPrompt()
+	userPrompt = vegaSpecUserPrompt(userPrompt, schema)
 
-Based on a table with schema:
-`, userPrompt)
-	for _, field := range schema.Fields {
-		prompt += fmt.Sprintf("- column=%s, type=%s\n", field.Name, field.Type.Code.String())
-	}
-
-	msg := []*drivers.CompletionMessage{
+	msgs := []*drivers.CompletionMessage{
+		{
+			Role: "system",
+			Content: []*runtimev1.ContentBlock{
+				{
+					BlockType: &runtimev1.ContentBlock_Text{
+						Text: systemPrompt,
+					},
+				},
+			},
+		},
 		{
 			Role: "user",
 			Content: []*runtimev1.ContentBlock{
 				{
 					BlockType: &runtimev1.ContentBlock_Text{
-						Text: prompt,
+						Text: userPrompt,
 					},
 				},
 			},
@@ -108,7 +112,7 @@ Based on a table with schema:
 	defer cancel()
 
 	// Call AI service to infer a metrics view YAML
-	res, err := ai.Complete(ctx, msg, drivers.BuildConfig())
+	res, err := ai.Complete(ctx, msgs, []drivers.Tool{})
 	if err != nil {
 		return "", nil, err
 	}

@@ -211,8 +211,6 @@ func (r *Runtime) executeAICompletion(ctx context.Context, instanceID string, al
 		}
 	}
 
-	config := drivers.BuildConfig(drivers.WithTools(driverTools))
-
 	// Tool calling loop - accumulate all content blocks for a single assistant message
 	var contentBlocks []*runtimev1.ContentBlock
 	iteration := 0
@@ -222,7 +220,7 @@ func (r *Runtime) executeAICompletion(ctx context.Context, instanceID string, al
 		logger.Debug("starting tool calling iteration", zap.Int("iteration", iteration), observability.ZapCtx(ctx))
 
 		// Call the AI service - returns structured ContentBlocks
-		res, err := ai.Complete(ctx, allMessages, config)
+		res, err := ai.Complete(ctx, allMessages, driverTools)
 		if err != nil {
 			logger.Error("AI completion call failed", zap.Error(err), zap.Int("iteration", iteration), observability.ZapCtx(ctx))
 			return nil, err
@@ -343,8 +341,7 @@ func (r *Runtime) executeAICompletion(ctx context.Context, instanceID string, al
 	allMessages = append(allMessages, limitMessage)
 
 	// Get final response from AI without tools
-	config = drivers.BuildConfig() // No tools provided
-	res, err := ai.Complete(ctx, allMessages, config)
+	res, err := ai.Complete(ctx, allMessages, []drivers.Tool{}) // No tools provided
 	if err != nil {
 		logger.Error("final AI completion call failed after tool limit", zap.Error(err), observability.ZapCtx(ctx))
 		return nil, err

@@ -155,7 +155,7 @@ func (c *connection) AsNotifier(properties map[string]any) (drivers.Notifier, er
 }
 
 // Complete implements drivers.AIService.
-func (c *connection) Complete(ctx context.Context, msgs []*drivers.CompletionMessage, config *drivers.CompletionConfig) (*drivers.CompletionMessage, error) {
+func (c *connection) Complete(ctx context.Context, msgs []*drivers.CompletionMessage, tools []drivers.Tool) (*drivers.CompletionMessage, error) {
 	if c.toolCallingMode {
 		return c.handleToolCalling()
 	}

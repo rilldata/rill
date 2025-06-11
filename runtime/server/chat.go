@@ -1,4 +1,3 @@
-// Package server implements the Rill runtime server, including conversation and message API handlers.
 package server
 
 import (

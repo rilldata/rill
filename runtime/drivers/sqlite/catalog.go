@@ -357,10 +357,9 @@ func (c *catalogStore) FindInstanceHealth(ctx context.Context, instanceID string
 }
 
 func (c *catalogStore) UpsertInstanceHealth(ctx context.Context, h *drivers.InstanceHealth) error {
-	now := time.Now().Format("2006-01-02T15:04:05.000000Z07:00")
-	_, err := c.db.ExecContext(ctx, `INSERT INTO instance_health(instance_id, health_json, updated_on) Values (?, ?, ?)
+	_, err := c.db.ExecContext(ctx, `INSERT INTO instance_health(instance_id, health_json, updated_on) Values (?, ?, CURRENT_TIMESTAMP)
 		ON CONFLICT(instance_id) DO UPDATE SET health_json=excluded.health_json, updated_on=excluded.updated_on;
-	`, h.InstanceID, h.HealthJSON, now)
+	`, h.InstanceID, h.HealthJSON)
 	return err
 }
 
@@ -385,22 +384,14 @@ func (c *catalogStore) ListConversations(ctx context.Context) ([]*runtimev1.Conv
 			return nil, err
 		}
 
-		// Parse timestamps - try microsecond format first, then fall back to RFC3339
-		createdOn, err := time.Parse("2006-01-02T15:04:05.000000Z07:00", createdOnStr)
+		// Parse timestamps
+		createdOn, err := parseMicrosecondTimestamp(createdOnStr)
 		if err != nil {
-			// Try RFC3339 format as fallback for compatibility
-			createdOn, err = time.Parse(time.RFC3339, createdOnStr)
-			if err != nil {
-				return nil, fmt.Errorf("failed to parse created_on timestamp %q: %w", createdOnStr, err)
-			}
+			return nil, fmt.Errorf("failed to parse created_on timestamp %q: %w", createdOnStr, err)
 		}
-		updatedOn, err := time.Parse("2006-01-02T15:04:05.000000Z07:00", updatedOnStr)
+		updatedOn, err := parseMicrosecondTimestamp(updatedOnStr)
 		if err != nil {
-			// Try RFC3339 format as fallback for compatibility
-			updatedOn, err = time.Parse(time.RFC3339, updatedOnStr)
-			if err != nil {
-				return nil, fmt.Errorf("failed to parse updated_on timestamp %q: %w", updatedOnStr, err)
-			}
+			return nil, fmt.Errorf("failed to parse updated_on timestamp %q: %w", updatedOnStr, err)
 		}
 
 		conv.CreatedOn = createdOn.Format(time.RFC3339)
@@ -433,22 +424,14 @@ func (c *catalogStore) GetConversation(ctx context.Context, conversationID strin
 		return nil, err
 	}
 
-	// Parse timestamps - try microsecond format first, then fall back to RFC3339
-	createdOn, err := time.Parse("2006-01-02T15:04:05.000000Z07:00", createdOnStr)
+	// Parse timestamps
+	createdOn, err := parseMicrosecondTimestamp(createdOnStr)
 	if err != nil {
-		// Try RFC3339 format as fallback for compatibility
-		createdOn, err = time.Parse(time.RFC3339, createdOnStr)
-		if err != nil {
-			return nil, fmt.Errorf("failed to parse created_on timestamp %q: %w", createdOnStr, err)
-		}
+		return nil, fmt.Errorf("failed to parse created_on timestamp %q: %w", createdOnStr, err)
 	}
-	updatedOn, err := time.Parse("2006-01-02T15:04:05.000000Z07:00", updatedOnStr)
+	updatedOn, err := parseMicrosecondTimestamp(updatedOnStr)
 	if err != nil {
-		// Try RFC3339 format as fallback for compatibility
-		updatedOn, err = time.Parse(time.RFC3339, updatedOnStr)
-		if err != nil {
-			return nil, fmt.Errorf("failed to parse updated_on timestamp %q: %w", updatedOnStr, err)
-		}
+		return nil, fmt.Errorf("failed to parse updated_on timestamp %q: %w", updatedOnStr, err)
 	}
 
 	conv.CreatedOn = createdOn.Format(time.RFC3339)
@@ -506,22 +489,14 @@ func (c *catalogStore) ListMessages(ctx context.Context, conversationID string) 
 			msg.Content = tempMsg.Content
 		}
 
-		// Parse timestamps - try microsecond format first, then fall back to RFC3339
-		createdOn, err := time.Parse("2006-01-02T15:04:05.000000Z07:00", createdOnStr)
+		// Parse timestamps
+		createdOn, err := parseMicrosecondTimestamp(createdOnStr)
 		if err != nil {
-			// Try RFC3339 format as fallback for compatibility
-			createdOn, err = time.Parse(time.RFC3339, createdOnStr)
-			if err != nil {
-				return nil, fmt.Errorf("failed to parse created_on timestamp %q: %w", createdOnStr, err)
-			}
+			return nil, fmt.Errorf("failed to parse created_on timestamp %q: %w", createdOnStr, err)
 		}
-		updatedOn, err := time.Parse("2006-01-02T15:04:05.000000Z07:00", updatedOnStr)
+		updatedOn, err := parseMicrosecondTimestamp(updatedOnStr)
 		if err != nil {
-			// Try RFC3339 format as fallback for compatibility
-			updatedOn, err = time.Parse(time.RFC3339, updatedOnStr)
-			if err != nil {
-				return nil, fmt.Errorf("failed to parse updated_on timestamp %q: %w", updatedOnStr, err)
-			}
+			return nil, fmt.Errorf("failed to parse updated_on timestamp %q: %w", updatedOnStr, err)
 		}
 
 		msg.CreatedOn = createdOn.Format(time.RFC3339)
@@ -559,4 +534,9 @@ func (c *catalogStore) AddMessage(ctx context.Context, conversationID, role stri
         VALUES (?, ?, ?, ?, ?, ?, ?)
     `, c.instanceID, conversationID, messageID, role, string(contentOnlyJSON), now, now)
 	return messageID, err
+}
+
+// parseMicrosecondTimestamp parses a timestamp string in the microsecond format used by the catalog
+func parseMicrosecondTimestamp(timestampStr string) (time.Time, error) {
+	return time.Parse("2006-01-02T15:04:05.000000Z07:00", timestampStr)
 }

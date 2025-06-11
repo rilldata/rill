@@ -8,7 +8,7 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 )
 
-func (h *Handle) Complete(ctx context.Context, msgs []*drivers.CompletionMessage, config *drivers.CompletionConfig) (*drivers.CompletionMessage, error) {
+func (h *Handle) Complete(ctx context.Context, msgs []*drivers.CompletionMessage, tools []drivers.Tool) (*drivers.CompletionMessage, error) {
 	// Convert input to admin format
 	reqMsgs := make([]*adminv1.CompletionMessage, len(msgs))
 	for i, msg := range msgs {
@@ -16,9 +16,9 @@ func (h *Handle) Complete(ctx context.Context, msgs []*drivers.CompletionMessage
 	}
 
 	var reqTools []*adminv1.Tool
-	if config != nil && len(config.Tools) > 0 {
-		reqTools = make([]*adminv1.Tool, len(config.Tools))
-		for i, tool := range config.Tools {
+	if len(tools) > 0 {
+		reqTools = make([]*adminv1.Tool, len(tools))
+		for i, tool := range tools {
 			reqTools[i] = convertRuntimeToolToAdminTool(tool)
 		}
 	}
