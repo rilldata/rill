@@ -16,6 +16,8 @@ export function generateVLHeatmapSpec(
 ): VisualizationSpec {
   const spec = createMultiLayerBaseSpec();
 
+  spec.description = "A heatmap chart with embedded data.";
+
   const vegaConfig = createConfigWithLegend(
     config,
     config.color,

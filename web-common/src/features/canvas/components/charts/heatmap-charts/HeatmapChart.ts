@@ -23,12 +23,14 @@ import type { ChartDataQuery, ChartFieldsMap, FieldConfig } from "../types";
 
 const DEFAULT_NOMINAL_LIMIT = 40;
 
-export type HeatmapChartSpec = BaseChartConfig & {
+type HeatmapChartEncoding = {
   x?: FieldConfig;
   y?: FieldConfig;
   color?: FieldConfig;
   show_data_labels?: boolean;
 };
+
+export type HeatmapChartSpec = BaseChartConfig & HeatmapChartEncoding;
 
 export class HeatmapChartComponent extends BaseChart<HeatmapChartSpec> {
   static chartInputParams: Record<string, ComponentInputParam> = {
