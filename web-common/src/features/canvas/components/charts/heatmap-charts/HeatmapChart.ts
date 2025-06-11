@@ -21,6 +21,8 @@ import { BaseChart, type BaseChartConfig } from "../BaseChart";
 import { getFilterWithNullHandling } from "../query-utils";
 import type { ChartDataQuery, ChartFieldsMap, FieldConfig } from "../types";
 
+const DEFAULT_NOMINAL_LIMIT = 40;
+
 export type HeatmapChartSpec = BaseChartConfig & {
   x?: FieldConfig;
   y?: FieldConfig;
@@ -36,7 +38,7 @@ export class HeatmapChartComponent extends BaseChart<HeatmapChartSpec> {
       meta: {
         chartFieldInput: {
           type: "dimension",
-          limitSelector: true,
+          limitSelector: { defaultLimit: DEFAULT_NOMINAL_LIMIT },
           axisTitleSelector: true,
           nullSelector: true,
           labelAngleSelector: true,
@@ -49,8 +51,7 @@ export class HeatmapChartComponent extends BaseChart<HeatmapChartSpec> {
       meta: {
         chartFieldInput: {
           type: "dimension",
-          limitSelector: true,
-          axisTitleSelector: true,
+          limitSelector: { defaultLimit: DEFAULT_NOMINAL_LIMIT },
           nullSelector: true,
         },
       },
@@ -104,7 +105,7 @@ export class HeatmapChartComponent extends BaseChart<HeatmapChartSpec> {
 
         const xWhere = getFilterWithNullHandling(where, config.x);
 
-        let limit = "100";
+        let limit = DEFAULT_NOMINAL_LIMIT.toString();
         if (config.x?.limit) {
           limit = config.x.limit.toString();
         }
@@ -145,7 +146,7 @@ export class HeatmapChartComponent extends BaseChart<HeatmapChartSpec> {
 
         const yWhere = getFilterWithNullHandling(where, config.y);
 
-        let limit = "100";
+        let limit = DEFAULT_NOMINAL_LIMIT.toString();
         if (config.y?.limit) {
           limit = config.y.limit.toString();
         }
@@ -276,12 +277,12 @@ export class HeatmapChartComponent extends BaseChart<HeatmapChartSpec> {
       x: {
         type: "nominal",
         field: randomDimension1,
-        limit: 20,
+        limit: DEFAULT_NOMINAL_LIMIT,
       },
       y: {
         type: "nominal",
         field: randomDimension2,
-        limit: 20,
+        limit: DEFAULT_NOMINAL_LIMIT,
       },
       color: {
         type: "quantitative",
