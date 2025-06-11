@@ -63,6 +63,16 @@ measures:
 			want:  `[{"count":1}]`,
 		},
 		{
+			args:  map[string]any{"sql": "SELECT count FROM bar where time_7d >= time_range_start('P1D') AND time_7d < time_range_start('P3D')"},
+			attrs: map[string]any{"admin": true},
+			want:  `[{"count":0}]`,
+		},
+		{
+			args:  map[string]any{"sql": "SELECT count FROM bar where time_7d BETWEEN time_range_start('P14D') AND '2024-01-05T00:00:00Z'"},
+			attrs: map[string]any{"admin": true},
+			want:  `[{"count":0}]`, // this time range falls in range of time but not time_7d
+		},
+		{
 			args:  map[string]any{"sql": "SELECT count FROM bar where time >= '2024-01-01T00:00:00Z' and time_7d < '2024-01-05T00:00:00Z'"},
 			attrs: map[string]any{"admin": true},
 			want:  `[{"count":0}]`,
