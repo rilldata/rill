@@ -17,6 +17,7 @@ type DataYAML struct {
 	Args           map[string]any `yaml:"args"`
 	Glob           yaml.Node      `yaml:"glob"` // Path (string) or properties (map[string]any)
 	ResourceStatus map[string]any `yaml:"resource_status"`
+	TimeDimension  string         `yaml:"time_dimension"` // Optional, used for metrics SQL when other than default time dimension needs to be used
 }
 
 // parseDataYAML parses a data resolver and its properties from a DataYAML.
@@ -46,6 +47,7 @@ func (p *Parser) parseDataYAML(raw *DataYAML, contextualConnector string) (strin
 		count++
 		resolver = "metrics_sql"
 		resolverProps["sql"] = raw.MetricsSQL
+		resolverProps["time_dimension"] = raw.TimeDimension
 	}
 
 	// Handle API resolver

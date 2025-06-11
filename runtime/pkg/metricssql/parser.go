@@ -59,6 +59,7 @@ type query struct {
 	executor        *metricsview.Executor
 	dims            map[string]any
 	measures        map[string]any
+	timeDimension   string // optional time dimension to be used for resolving time ranges, if not set then metrics view's time dimension is used
 }
 
 // Rewrite parses a metrics SQL query and compiles it to a metricview.Query.
@@ -66,7 +67,7 @@ type query struct {
 // We use MySQL's ANSI sql Mode to conform more closely to standard SQL.
 //
 // Whenever adding transform method over new node type also look at its `Restore` method to get an idea how it can be parsed into a SQL query.
-func (c *Compiler) Rewrite(ctx context.Context, sql string) (*metricsview.Query, error) {
+func (c *Compiler) Rewrite(ctx context.Context, sql, timeDimension string) (*metricsview.Query, error) {
 	stmtNodes, _, err := c.p.ParseSQL(sql)
 	if err != nil {
 		return nil, err
@@ -82,11 +83,12 @@ func (c *Compiler) Rewrite(ctx context.Context, sql string) (*metricsview.Query,
 	}
 
 	q := &query{
-		q:          &metricsview.Query{},
-		controller: c.controller,
-		claims:     c.claims,
-		instanceID: c.instanceID,
-		priority:   c.priority,
+		q:             &metricsview.Query{},
+		controller:    c.controller,
+		claims:        c.claims,
+		instanceID:    c.instanceID,
+		priority:      c.priority,
+		timeDimension: timeDimension,
 	}
 
 	// parse from clause
