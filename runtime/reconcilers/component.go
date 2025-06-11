@@ -115,6 +115,7 @@ func (r *ComponentReconciler) checkMetricsViews(ctx context.Context, refs []*run
 		if ref.Kind != runtime.ResourceKindMetricsView {
 			continue
 		}
+
 		res, err := r.C.Get(ctx, ref, false)
 		if err != nil {
 			if errors.Is(err, drivers.ErrResourceNotFound) {
@@ -125,12 +126,15 @@ func (r *ComponentReconciler) checkMetricsViews(ctx context.Context, refs []*run
 		if res.GetMetricsView().State.ValidSpec == nil {
 			return false, nil, nil
 		}
-		if dataRefreshedOn == nil {
-			dataRefreshedOn = res.GetMetricsView().State.DataRefreshedOn
-		} else if res.GetMetricsView().State.DataRefreshedOn != nil && dataRefreshedOn.AsTime().Before(res.GetMetricsView().State.DataRefreshedOn.AsTime()) {
-			dataRefreshedOn = res.GetMetricsView().State.DataRefreshedOn
-		}
+
 		n++
+
+		t := res.GetMetricsView().State.DataRefreshedOn
+		if dataRefreshedOn == nil {
+			dataRefreshedOn = t
+		} else if t != nil && t.AsTime().After(dataRefreshedOn.AsTime()) {
+			dataRefreshedOn = t
+		}
 	}
 	return n > 0, dataRefreshedOn, nil
 }

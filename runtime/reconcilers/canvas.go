@@ -99,11 +99,12 @@ func (r *CanvasReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceN
 		if c == nil {
 			continue
 		}
-		if c.GetComponent().State.DataRefreshedOn == nil {
+		t := c.GetComponent().State.DataRefreshedOn
+		if t == nil {
 			continue
 		}
-		if dataRefreshedOn == nil || c.GetComponent().State.DataRefreshedOn.AsTime().After(dataRefreshedOn.AsTime()) {
-			dataRefreshedOn = c.GetComponent().State.DataRefreshedOn
+		if dataRefreshedOn == nil || t.AsTime().After(dataRefreshedOn.AsTime()) {
+			dataRefreshedOn = t
 		}
 	}
 
