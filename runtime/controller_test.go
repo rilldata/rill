@@ -997,9 +997,9 @@ measures:
 	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
 	testruntime.RequireResource(t, rt, id, metricsRes)
 
-	// Since RequireResource doesn't check that State.ModelRefreshedOn is set, we add a manual check for it here.
+	// Since RequireResource doesn't check that State.DataRefreshedOn is set, we add a manual check for it here.
 	mv := testruntime.GetResource(t, rt, id, metricsRes.Meta.Name.Kind, metricsRes.Meta.Name.Name)
-	require.NotNil(t, mv.GetMetricsView().State.ModelRefreshedOn)
+	require.NotNil(t, mv.GetMetricsView().State.DataRefreshedOn)
 
 	// Model has error, dashboard has error as well
 	testruntime.PutFiles(t, rt, id, map[string]string{

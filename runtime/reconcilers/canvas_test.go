@@ -2,7 +2,9 @@ package reconcilers_test
 
 import (
 	"testing"
+	"time"
 
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
@@ -236,4 +238,62 @@ first_month_of_year: 3
 	c1 = testruntime.GetResource(t, rt, id, runtime.ResourceKindCanvas, "c1")
 	require.NotNil(t, c1.GetCanvas().State.ValidSpec)
 	require.Empty(t, c1.Meta.ReconcileError)
+}
+
+func TestCanvasDataRefreshedOn(t *testing.T) {
+	// Create an instance with StageChanges==true
+	rt, id := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		Files:        map[string]string{"rill.yaml": ""},
+		StageChanges: true,
+	})
+
+	// Create basic model + metrics_view + canvas
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"m1.sql": `
+-- @materialize: true
+SELECT 'foo' as foo, 1 as x
+`,
+		"mv1.yaml": `
+version: 1
+type: metrics_view
+model: m1
+dimensions:
+- column: foo
+measures:
+- name: x
+  expression: sum(x)
+`,
+		"c1.yaml": `
+type: canvas
+rows:
+  - items:
+    - kpi_grid:
+        metrics_view: mv1
+        measures:
+          - x
+`,
+	})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 5, 0, 0)
+
+	getAndCheckRefreshedOn := func() time.Time {
+		c1 := testruntime.GetResource(t, rt, id, runtime.ResourceKindCanvas, "c1")
+		require.NotNil(t, c1.GetCanvas().State.DataRefreshedOn)
+
+		comp1 := testruntime.GetResource(t, rt, id, runtime.ResourceKindComponent, c1.Meta.Refs[0].Name)
+		require.NotNil(t, comp1.GetComponent().State.DataRefreshedOn)
+
+		mv1 := testruntime.GetResource(t, rt, id, runtime.ResourceKindMetricsView, "mv1")
+		require.NotNil(t, mv1.GetMetricsView().State.DataRefreshedOn)
+
+		require.Equal(t, c1.GetCanvas().State.DataRefreshedOn, comp1.GetComponent().State.DataRefreshedOn)
+		require.Equal(t, c1.GetCanvas().State.DataRefreshedOn, mv1.GetMetricsView().State.DataRefreshedOn)
+
+		return c1.GetCanvas().State.DataRefreshedOn.AsTime()
+	}
+
+	refreshedOn1 := getAndCheckRefreshedOn()
+	testruntime.RefreshAndWait(t, rt, id, &runtimev1.ResourceName{Kind: runtime.ResourceKindModel, Name: "m1"})
+	refreshedOn2 := getAndCheckRefreshedOn()
+	require.Greater(t, refreshedOn2, refreshedOn1)
 }
