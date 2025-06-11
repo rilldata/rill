@@ -32,6 +32,12 @@
   let searchText = "";
   let filterSelection: "all" | "members" | "guests" | "pending" = "all";
 
+  let scrollToTopTrigger = null;
+  $: {
+    // Update trigger when filter selection changes to scroll to top
+    scrollToTopTrigger = filterSelection;
+  }
+
   $: organization = $page.params.organization;
 
   $: orgMemberUsersInfiniteQuery =
@@ -178,6 +184,7 @@
           currentUserEmail={$currentUser.data?.user.email}
           {currentUserRole}
           billingContact={$billingContactUser?.email}
+          {scrollToTopTrigger}
           onAttemptRemoveBillingContactUser={() =>
             (isRemovingBillingContactDialogOpen = true)}
           onAttemptChangeBillingContactUserRole={() =>

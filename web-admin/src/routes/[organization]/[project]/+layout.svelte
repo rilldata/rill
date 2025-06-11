@@ -22,14 +22,6 @@
     refetchOnMount: true,
     refetchOnReconnect: true,
     refetchOnWindowFocus: true,
-    select: (data: V1GetProjectResponse) => {
-      if (data?.prodDeployment?.runtimeHost) {
-        data.prodDeployment.runtimeHost = fixLocalhostRuntimePort(
-          data.prodDeployment.runtimeHost,
-        );
-      }
-      return data;
-    },
   };
 </script>
 
@@ -59,7 +51,6 @@
   import RuntimeProvider from "@rilldata/web-common/runtime-client/RuntimeProvider.svelte";
   import { RUNTIME_ACCESS_TOKEN_DEFAULT_TTL } from "@rilldata/web-common/runtime-client/constants";
   import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
-  import { fixLocalhostRuntimePort } from "@rilldata/web-common/runtime-client/fix-localhost-runtime-port";
   import type { AuthContext } from "@rilldata/web-common/runtime-client/runtime-store";
   import type { CreateQueryOptions } from "@tanstack/svelte-query";
 
@@ -115,18 +106,10 @@
     createAdminServiceGetDeploymentCredentials(
       organization,
       project,
-      {
-        userId: mockedUserId,
-      },
+      { userId: mockedUserId },
       {
         query: {
           enabled: !!mockedUserId,
-          select: (data) => {
-            if (data?.runtimeHost) {
-              data.runtimeHost = fixLocalhostRuntimePort(data.runtimeHost);
-            }
-            return data;
-          },
         },
       },
     );

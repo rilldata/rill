@@ -243,7 +243,7 @@ message MetricsViewSpec {
   // User-facing description
   string description = 4;
   // Extra context for LLM/AI features. Used to guide natural language question answering and routing.
-  string ai_context = 28;
+  string ai_instructions = 28;
   // Name of the primary time dimension, used for rendering time series
   string time_dimension = 5;
   // The smallest time grain that can be queried for.

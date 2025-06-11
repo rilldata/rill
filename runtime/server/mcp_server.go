@@ -33,7 +33,7 @@ This server exposes APIs for querying **metrics views**, which represent Rill's 
 3. **Query the time range:** Use "query_metrics_view_time_range" to obtain the available time range for a metrics view. This is important to understand what time range the data spans.
 4. **Query the metrics:** Use "query_metrics_view" to run queries to get aggregated results.
 In the workflow, do not proceed with the next step until the previous step has been completed. If the information from the previous step is already known (let's say for subsequent queries), you can skip it.
-If a response contains an "ai_context" field, you should interpret it as additional instructions for how to behave in subsequent responses that relate to that tool call.
+If a response contains an "ai_instructions" field, you should interpret it as additional instructions for how to behave in subsequent responses that relate to that tool call.
 `
 
 func (s *Server) createMCPServer() *server.MCPServer {
@@ -115,8 +115,8 @@ func (s *Server) mcpListMetricsViews() (mcp.Tool, server.ToolHandlerFunc) {
 		if err != nil {
 			return nil, fmt.Errorf("failed to get instance %q: %w", instanceID, err)
 		}
-		if instance.AIContext != "" {
-			res["ai_context"] = instance.AIContext
+		if instance.AIInstructions != "" {
+			res["ai_instructions"] = instance.AIInstructions
 		}
 
 		var metricsViews []map[string]any

@@ -90,7 +90,7 @@ func getProject(ctx context.Context, c *client.Client, projectID string) error {
 	fmt.Printf("Public: %t\n", project.Public)
 	fmt.Printf("Created by user ID: %s\n", project.CreatedByUserId)
 	fmt.Printf("Provisioner: %s\n", project.Provisioner)
-	fmt.Printf("Github URL: %s\n", project.GithubUrl)
+	fmt.Printf("Git remote: %s\n", project.GitRemote)
 	fmt.Printf("Subpath: %s\n", project.Subpath)
 	fmt.Printf("Prod version: %s\n", project.ProdVersion)
 	fmt.Printf("Prod branch: %s\n", project.ProdBranch)
