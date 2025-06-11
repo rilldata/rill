@@ -104,7 +104,7 @@ func (c *Compiler) Rewrite(ctx context.Context, sql string) (*metricsview.Query,
 
 	// parse where clause
 	if stmt.Where != nil {
-		expr, err := parseFilter(ctx, stmt.Where, q)
+		expr, err := parseFilter(ctx, stmt.Where, nil, q)
 		if err != nil {
 			return nil, err
 		}
@@ -262,7 +262,7 @@ func (q *query) parseOrderBy(node *ast.OrderByClause) error {
 }
 
 func (q *query) parseHaving(ctx context.Context, node *ast.HavingClause) error {
-	expr, err := parseFilter(ctx, node.Expr, q)
+	expr, err := parseFilter(ctx, node.Expr, nil, q)
 	if err != nil {
 		return err
 	}
