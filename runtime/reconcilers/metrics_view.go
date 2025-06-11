@@ -133,10 +133,10 @@ func (r *MetricsViewReconciler) Reconcile(ctx context.Context, n *runtimev1.Reso
 	}
 
 	// If the validation was successful, update the data types in the spec.
-	e.NormalizeMetricsView(mvSchema)
+	normalizedMVSpec := e.NormalizeMetricsView(mvSchema)
 
 	// Capture the spec, which we now know to be valid.
-	mv.State.ValidSpec = mv.Spec
+	mv.State.ValidSpec = normalizedMVSpec
 	// If there's no internal ref, we assume the metrics view is based on an externally managed table and set the streaming state to true.
 	mv.State.Streaming = !hasInternalRef
 	// We copy the underlying model's refreshed_on timestamp to the metrics view state since dashboard users may not have access to the underlying model resource.

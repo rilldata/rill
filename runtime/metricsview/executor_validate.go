@@ -12,6 +12,7 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"golang.org/x/sync/errgroup"
+	"google.golang.org/protobuf/proto"
 )
 
 const validateConcurrencyLimit = 10
@@ -152,19 +153,24 @@ func (e *Executor) ValidateMetricsView(ctx context.Context) (*ValidateMetricsVie
 	return res, mvSchema, nil
 }
 
-// NormalizeMetricsView add types to the dimensions and measures in place. Be aware that this modifies the metrics view in place, so it should be cloned first if you want to keep the original intact.
-func (e *Executor) NormalizeMetricsView(mvSchema map[string]*runtimev1.Type) {
-	for _, d := range e.metricsView.Dimensions {
+// NormalizeMetricsView clones the metrics view and updates the data types of dimensions and measures based on the provided schema.
+func (e *Executor) NormalizeMetricsView(mvSchema map[string]*runtimev1.Type) *runtimev1.MetricsViewSpec {
+	// clone the metrics view to avoid modifying the original
+	mv := proto.Clone(e.metricsView).(*runtimev1.MetricsViewSpec)
+
+	for _, d := range mv.Dimensions {
 		if typ, ok := mvSchema[d.Name]; ok {
 			d.DataType = typ
 		} // ignore dimensions that don't have a type in the schema
 	}
 
-	for _, m := range e.metricsView.Measures {
+	for _, m := range mv.Measures {
 		if typ, ok := mvSchema[m.Name]; ok {
 			m.DataType = typ
 		} // ignore measures that don't have a type in the schema
 	}
+
+	return mv
 }
 
 // validateAllDimensionsAndMeasures validates all dimensions and measures with one query. It returns an error if any of the expressions are invalid.
