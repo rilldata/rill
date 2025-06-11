@@ -20,3 +20,9 @@ declare namespace svelteHTML {
     "on:scrolling"?: (event: CustomEvent) => void;
   }
 }
+declare module "svelte/elements" {
+  interface HTMLAttributes<> {
+    onresize?: (event: CustomEvent<{ size: number }>) => void;
+    onresizeend?: (event: CustomEvent<null>) => void;
+  }
+}

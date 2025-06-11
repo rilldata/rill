@@ -94,7 +94,6 @@
     <slot />
     {#if enableResize}
       <!-- svelte-ignore a11y-click-events-have-key-events -->
-      <!-- @ts-expect-error: resizeend is a custom event dispatched by the dragTableCell action -->
       <div
         role="columnheader"
         tabindex="0"
