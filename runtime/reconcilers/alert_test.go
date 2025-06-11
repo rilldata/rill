@@ -535,7 +535,7 @@ notify:
 					WatermarkInherit:     true,
 					IntervalsIsoDuration: "P1D",
 					Resolver:             "metrics_sql",
-					ResolverProperties:   must(structpb.NewStruct(map[string]any{"sql": "select measure_0 from mv1 where country <> 'Denmark' having measure_0 > 0", "time_dimension": ""})),
+					ResolverProperties:   must(structpb.NewStruct(map[string]any{"sql": "select measure_0 from mv1 where country <> 'Denmark' having measure_0 > 0"})),
 					NotifyOnRecover:      false,
 					NotifyOnFail:         true,
 					NotifyOnError:        false,
