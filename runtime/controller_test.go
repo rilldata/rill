@@ -130,7 +130,7 @@ measures:
 						Table:       "bar",
 						Model:       "bar",
 						DisplayName: "Foobar",
-						Dimensions:  []*runtimev1.MetricsViewSpec_Dimension{{Name: "a", DisplayName: "A", Column: "a", Type: &runtimev1.Type{Code: runtimev1.Type_CODE_INT64, Nullable: true}}},
+						Dimensions:  []*runtimev1.MetricsViewSpec_Dimension{{Name: "a", DisplayName: "A", Column: "a", DataType: &runtimev1.Type{Code: runtimev1.Type_CODE_INT64, Nullable: true}}},
 						Measures:    []*runtimev1.MetricsViewSpec_Measure{{Name: "b", DisplayName: "B", Expression: "count(*)", Type: runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE}},
 					},
 				},
@@ -1295,7 +1295,7 @@ func newMetricsView(name, model string, measures []string, dimensions []dimWithT
 			Name:        dimension.Name,
 			DisplayName: parser.ToDisplayName(dimension.Name),
 			Column:      dimension.Name,
-			Type:        dimension.Type,
+			DataType:    dimension.Type,
 		}
 	}
 	metricsRes := &runtimev1.Resource{

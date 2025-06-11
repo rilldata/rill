@@ -626,7 +626,7 @@ func newMetricsView(name, model, timeDim string, measures []string, dimensions [
 			Name:        dimension.Name,
 			DisplayName: parser.ToDisplayName(dimension.Name),
 			Column:      dimension.Name,
-			Type:        dimension.Type,
+			DataType:    dimension.Type,
 		}
 	}
 	metricsRes := &runtimev1.Resource{
