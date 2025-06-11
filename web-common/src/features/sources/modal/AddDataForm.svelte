@@ -213,6 +213,9 @@
 
   {#if !useDsn}
     <!-- Form 1: Individual parameters -->
+    {#if paramsError}
+      <SubmissionError message={paramsError} details={paramsErrorDetails} />
+    {/if}
     <form
       id={paramsFormId}
       class="pb-5 flex-grow overflow-y-auto"
@@ -220,10 +223,6 @@
       on:submit|preventDefault={paramsSubmit}
       transition:slide={{ duration: FORM_TRANSITION_DURATION }}
     >
-      {#if paramsError}
-        <SubmissionError message={paramsError} details={paramsErrorDetails} />
-      {/if}
-
       {#each properties as property (property.key)}
         {@const propertyKey = property.key ?? ""}
         {@const label =
@@ -264,6 +263,9 @@
     </form>
   {:else}
     <!-- Form 2: DSN -->
+    {#if dsnError}
+      <SubmissionError message={dsnError} details={dsnErrorDetails} />
+    {/if}
     <form
       id={dsnFormId}
       class="pb-5 flex-grow overflow-y-auto"
@@ -271,10 +273,6 @@
       on:submit|preventDefault={dsnSubmit}
       transition:slide={{ duration: FORM_TRANSITION_DURATION }}
     >
-      {#if dsnError}
-        <SubmissionError message={dsnError} details={dsnErrorDetails} />
-      {/if}
-
       {#each dsnProperties as property (property.key)}
         {@const propertyKey = property.key ?? ""}
         <div class="py-1.5">
