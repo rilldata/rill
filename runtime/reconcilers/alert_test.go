@@ -67,9 +67,13 @@ email:
 	testruntime.ReconcileParserAndWait(t, rt, id)
 	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
 
-	_, metricsRes := newMetricsView("mv1", "bar", "__time", []string{"count(*)"}, []dimWithType{
-		{Name: "country", Type: &runtimev1.Type{Code: runtimev1.Type_CODE_STRING, Nullable: true}},
-	})
+	_, metricsRes := newMetricsView("mv1", "bar", "__time",
+		[]fieldWithType{
+			{Name: "count(*)", Type: &runtimev1.Type{Code: runtimev1.Type_CODE_INT64, Nullable: true}},
+		},
+		[]fieldWithType{
+			{Name: "country", Type: &runtimev1.Type{Code: runtimev1.Type_CODE_STRING, Nullable: true}},
+		})
 	testruntime.RequireResource(t, rt, id, metricsRes)
 
 	a1 := &runtimev1.Resource{
@@ -230,9 +234,13 @@ notify:
 	testruntime.ReconcileParserAndWait(t, rt, id)
 	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
 
-	_, metricsRes := newMetricsView("mv1", "bar", "__time", []string{"count(*)"}, []dimWithType{
-		{Name: "country", Type: &runtimev1.Type{Code: runtimev1.Type_CODE_STRING, Nullable: true}},
-	})
+	_, metricsRes := newMetricsView("mv1", "bar", "__time",
+		[]fieldWithType{
+			{Name: "count(*)", Type: &runtimev1.Type{Code: runtimev1.Type_CODE_INT64, Nullable: true}},
+		},
+		[]fieldWithType{
+			{Name: "country", Type: &runtimev1.Type{Code: runtimev1.Type_CODE_STRING, Nullable: true}},
+		})
 	testruntime.RequireResource(t, rt, id, metricsRes)
 
 	a1 := &runtimev1.Resource{
@@ -503,9 +511,13 @@ notify:
 	testruntime.ReconcileParserAndWait(t, rt, id)
 	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
 
-	_, metricsRes := newMetricsView("mv1", "bar", "__time", []string{"count(*)"}, []dimWithType{
-		{Name: "country", Type: &runtimev1.Type{Code: runtimev1.Type_CODE_STRING, Nullable: true}},
-	})
+	_, metricsRes := newMetricsView("mv1", "bar", "__time",
+		[]fieldWithType{
+			{Name: "count(*)", Type: &runtimev1.Type{Code: runtimev1.Type_CODE_INT64, Nullable: true}},
+		},
+		[]fieldWithType{
+			{Name: "country", Type: &runtimev1.Type{Code: runtimev1.Type_CODE_STRING, Nullable: true}},
+		})
 	testruntime.RequireResource(t, rt, id, metricsRes)
 
 	a1 := &runtimev1.Resource{
@@ -523,7 +535,7 @@ notify:
 					WatermarkInherit:     true,
 					IntervalsIsoDuration: "P1D",
 					Resolver:             "metrics_sql",
-					ResolverProperties:   must(structpb.NewStruct(map[string]any{"sql": "select measure_0 from mv1 where country <> 'Denmark' having measure_0 > 0"})),
+					ResolverProperties:   must(structpb.NewStruct(map[string]any{"sql": "select measure_0 from mv1 where country <> 'Denmark' having measure_0 > 0", "time_dimension": ""})),
 					NotifyOnRecover:      false,
 					NotifyOnFail:         true,
 					NotifyOnError:        false,
@@ -579,7 +591,7 @@ SELECT '2024-01-02T00:00:00Z'::TIMESTAMP as __time, 'Sweden' as country
 	require.Contains(t, emails[0].Body, "measure_0")
 }
 
-func newMetricsView(name, model, timeDim string, measures []string, dimensions []dimWithType) (*runtimev1.MetricsView, *runtimev1.Resource) {
+func newMetricsView(name, model, timeDim string, measures, dimensions []fieldWithType) (*runtimev1.MetricsView, *runtimev1.Resource) {
 	metrics := &runtimev1.MetricsView{
 		Spec: &runtimev1.MetricsViewSpec{
 			Connector:     "duckdb",
@@ -606,14 +618,15 @@ func newMetricsView(name, model, timeDim string, measures []string, dimensions [
 		metrics.Spec.Measures[i] = &runtimev1.MetricsViewSpec_Measure{
 			Name:        name,
 			DisplayName: parser.ToDisplayName(name),
-			Expression:  measure,
+			Expression:  measure.Name,
 			Type:        runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE,
 		}
 		metrics.State.ValidSpec.Measures[i] = &runtimev1.MetricsViewSpec_Measure{
 			Name:        name,
 			DisplayName: parser.ToDisplayName(name),
-			Expression:  measure,
+			Expression:  measure.Name,
 			Type:        runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE,
+			DataType:    measure.Type,
 		}
 	}
 	for i, dimension := range dimensions {
@@ -650,7 +663,7 @@ func must[T any](v T, err error) T {
 	return v
 }
 
-type dimWithType struct {
+type fieldWithType struct {
 	Name string
 	Type *runtimev1.Type
 }

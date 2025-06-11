@@ -131,7 +131,7 @@ measures:
 						Model:       "bar",
 						DisplayName: "Foobar",
 						Dimensions:  []*runtimev1.MetricsViewSpec_Dimension{{Name: "a", DisplayName: "A", Column: "a", DataType: &runtimev1.Type{Code: runtimev1.Type_CODE_INT64, Nullable: true}}},
-						Measures:    []*runtimev1.MetricsViewSpec_Measure{{Name: "b", DisplayName: "B", Expression: "count(*)", Type: runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE}},
+						Measures:    []*runtimev1.MetricsViewSpec_Measure{{Name: "b", DisplayName: "B", Expression: "count(*)", Type: runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE, DataType: &runtimev1.Type{Code: runtimev1.Type_CODE_INT64, Nullable: true}}},
 					},
 				},
 			},
@@ -690,10 +690,15 @@ measures:
 - expression: avg(a)
 `,
 	})
-	metrics, metricsRes := newMetricsView("dash", "bar3", []string{"count(*)", "avg(a)"}, []dimWithType{
-		{Name: "b", Type: &runtimev1.Type{Code: runtimev1.Type_CODE_INT64, Nullable: true}},
-		{Name: "c", Type: &runtimev1.Type{Code: runtimev1.Type_CODE_INT64, Nullable: true}},
-	})
+	metrics, metricsRes := newMetricsView("dash", "bar3",
+		[]fieldWithType{
+			{Name: "count(*)", Type: &runtimev1.Type{Code: runtimev1.Type_CODE_INT64, Nullable: true}},
+			{Name: "avg(a)", Type: &runtimev1.Type{Code: runtimev1.Type_CODE_FLOAT64, Nullable: true}},
+		},
+		[]fieldWithType{
+			{Name: "b", Type: &runtimev1.Type{Code: runtimev1.Type_CODE_INT64, Nullable: true}},
+			{Name: "c", Type: &runtimev1.Type{Code: runtimev1.Type_CODE_INT64, Nullable: true}},
+		})
 	testruntime.ReconcileParserAndWait(t, rt, id)
 	testruntime.RequireReconcileState(t, rt, id, 6, 0, 0)
 	testruntime.RequireOLAPTableCount(t, rt, id, "bar1", 3)
@@ -845,10 +850,15 @@ measures:
 `,
 	})
 
-	_, metricsRes := newMetricsView("dash", "bar", []string{"count(*)", "avg(a)"}, []dimWithType{
-		{Name: "b", Type: &runtimev1.Type{Code: runtimev1.Type_CODE_INT64, Nullable: true}},
-		{Name: "c", Type: &runtimev1.Type{Code: runtimev1.Type_CODE_INT64, Nullable: true}},
-	})
+	_, metricsRes := newMetricsView("dash", "bar",
+		[]fieldWithType{
+			{Name: "count(*)", Type: &runtimev1.Type{Code: runtimev1.Type_CODE_INT64, Nullable: true}},
+			{Name: "avg(a)", Type: &runtimev1.Type{Code: runtimev1.Type_CODE_FLOAT64, Nullable: true}},
+		},
+		[]fieldWithType{
+			{Name: "b", Type: &runtimev1.Type{Code: runtimev1.Type_CODE_INT64, Nullable: true}},
+			{Name: "c", Type: &runtimev1.Type{Code: runtimev1.Type_CODE_INT64, Nullable: true}},
+		})
 	testruntime.ReconcileParserAndWait(t, rt, id)
 	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
 	testruntime.RequireResource(t, rt, id, metricsRes)
@@ -870,9 +880,13 @@ measures:
   ignore: true
 `,
 	})
-	_, metricsRes = newMetricsView("dash", "bar", []string{"count(*)"}, []dimWithType{
-		{Name: "b", Type: &runtimev1.Type{Code: runtimev1.Type_CODE_INT64, Nullable: true}},
-	})
+	_, metricsRes = newMetricsView("dash", "bar",
+		[]fieldWithType{
+			{Name: "count(*)", Type: &runtimev1.Type{Code: runtimev1.Type_CODE_INT64, Nullable: true}},
+		},
+		[]fieldWithType{
+			{Name: "b", Type: &runtimev1.Type{Code: runtimev1.Type_CODE_INT64, Nullable: true}},
+		})
 	testruntime.ReconcileParserAndWait(t, rt, id)
 	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
 	testruntime.RequireResource(t, rt, id, metricsRes)
@@ -917,7 +931,11 @@ measures:
   ignore: true
 `,
 	})
-	_, metricsRes = newMetricsView("dash", "bar", []string{"count(*)"}, []dimWithType{})
+	_, metricsRes = newMetricsView("dash", "bar",
+		[]fieldWithType{
+			{Name: "count(*)", Type: &runtimev1.Type{Code: runtimev1.Type_CODE_INT64, Nullable: true}},
+		},
+		[]fieldWithType{})
 	testruntime.ReconcileParserAndWait(t, rt, id)
 	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
 	testruntime.RequireResource(t, rt, id, metricsRes)
@@ -1000,10 +1018,15 @@ measures:
 - expression: avg(a)
 `,
 	})
-	metrics, metricsRes := newMetricsView("dash", "bar", []string{"count(*)", "avg(a)"}, []dimWithType{
-		{Name: "b", Type: &runtimev1.Type{Code: runtimev1.Type_CODE_INT64, Nullable: true}},
-		{Name: "c", Type: &runtimev1.Type{Code: runtimev1.Type_CODE_INT64, Nullable: true}},
-	})
+	metrics, metricsRes := newMetricsView("dash", "bar",
+		[]fieldWithType{
+			{Name: "count(*)", Type: &runtimev1.Type{Code: runtimev1.Type_CODE_INT64, Nullable: true}},
+			{Name: "avg(a)", Type: &runtimev1.Type{Code: runtimev1.Type_CODE_FLOAT64, Nullable: true}},
+		},
+		[]fieldWithType{
+			{Name: "b", Type: &runtimev1.Type{Code: runtimev1.Type_CODE_INT64, Nullable: true}},
+			{Name: "c", Type: &runtimev1.Type{Code: runtimev1.Type_CODE_INT64, Nullable: true}},
+		})
 	testruntime.ReconcileParserAndWait(t, rt, id)
 	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
 	testruntime.RequireResource(t, rt, id, metricsRes)
@@ -1054,10 +1077,15 @@ measures:
 `,
 	})
 	_, modelRes := newModel("SELECT * FROM foo", "bar", "foo")
-	_, metricsRes := newMetricsView("dash", "bar", []string{"count(*)", "avg(a)"}, []dimWithType{
-		{Name: "b", Type: &runtimev1.Type{Code: runtimev1.Type_CODE_INT64, Nullable: true}},
-		{Name: "c", Type: &runtimev1.Type{Code: runtimev1.Type_CODE_INT64, Nullable: true}},
-	})
+	_, metricsRes := newMetricsView("dash", "bar",
+		[]fieldWithType{
+			{Name: "count(*)", Type: &runtimev1.Type{Code: runtimev1.Type_CODE_INT64, Nullable: true}},
+			{Name: "avg(a)", Type: &runtimev1.Type{Code: runtimev1.Type_CODE_FLOAT64, Nullable: true}},
+		},
+		[]fieldWithType{
+			{Name: "b", Type: &runtimev1.Type{Code: runtimev1.Type_CODE_INT64, Nullable: true}},
+			{Name: "c", Type: &runtimev1.Type{Code: runtimev1.Type_CODE_INT64, Nullable: true}},
+		})
 	testruntime.ReconcileParserAndWait(t, rt, id)
 	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
 	testruntime.RequireResource(t, rt, id, modelRes)
@@ -1150,10 +1178,15 @@ measures:
 	})
 	awaitIdle()
 	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
-	_, metricsRes := newMetricsView("dash", "bar", []string{"count(*)", "avg(a)"}, []dimWithType{
-		{Name: "b", Type: &runtimev1.Type{Code: runtimev1.Type_CODE_INT64, Nullable: true}},
-		{Name: "c", Type: &runtimev1.Type{Code: runtimev1.Type_CODE_INT64, Nullable: true}},
-	})
+	_, metricsRes := newMetricsView("dash", "bar",
+		[]fieldWithType{
+			{Name: "count(*)", Type: &runtimev1.Type{Code: runtimev1.Type_CODE_INT64, Nullable: true}},
+			{Name: "avg(a)", Type: &runtimev1.Type{Code: runtimev1.Type_CODE_FLOAT64, Nullable: true}},
+		},
+		[]fieldWithType{
+			{Name: "b", Type: &runtimev1.Type{Code: runtimev1.Type_CODE_INT64, Nullable: true}},
+			{Name: "c", Type: &runtimev1.Type{Code: runtimev1.Type_CODE_INT64, Nullable: true}},
+		})
 	testruntime.RequireResource(t, rt, id, metricsRes)
 }
 
@@ -1182,9 +1215,13 @@ measures:
 	testruntime.ReconcileParserAndWait(t, rt, id)
 	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
 
-	_, metricsRes := newMetricsView("dash", "bar", []string{"count(*)"}, []dimWithType{
-		{Name: "country", Type: &runtimev1.Type{Code: runtimev1.Type_CODE_STRING, Nullable: true}},
-	})
+	_, metricsRes := newMetricsView("dash", "bar",
+		[]fieldWithType{
+			{Name: "count(*)", Type: &runtimev1.Type{Code: runtimev1.Type_CODE_INT64, Nullable: true}},
+		},
+		[]fieldWithType{
+			{Name: "country", Type: &runtimev1.Type{Code: runtimev1.Type_CODE_STRING, Nullable: true}},
+		})
 	testruntime.RequireResource(t, rt, id, metricsRes)
 }
 
@@ -1249,7 +1286,7 @@ func newModel(query, name, source string) (*runtimev1.Model, *runtimev1.Resource
 	return model, modelRes
 }
 
-func newMetricsView(name, model string, measures []string, dimensions []dimWithType) (*runtimev1.MetricsView, *runtimev1.Resource) {
+func newMetricsView(name, model string, measures, dimensions []fieldWithType) (*runtimev1.MetricsView, *runtimev1.Resource) {
 	metrics := &runtimev1.MetricsView{
 		Spec: &runtimev1.MetricsViewSpec{
 			Connector:   "duckdb",
@@ -1275,14 +1312,15 @@ func newMetricsView(name, model string, measures []string, dimensions []dimWithT
 		metrics.Spec.Measures[i] = &runtimev1.MetricsViewSpec_Measure{
 			Name:        name,
 			DisplayName: parser.ToDisplayName(name),
-			Expression:  measure,
+			Expression:  measure.Name,
 			Type:        runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE,
 		}
 		metrics.State.ValidSpec.Measures[i] = &runtimev1.MetricsViewSpec_Measure{
 			Name:        name,
 			DisplayName: parser.ToDisplayName(name),
-			Expression:  measure,
+			Expression:  measure.Name,
 			Type:        runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE,
+			DataType:    measure.Type,
 		}
 	}
 	for i, dimension := range dimensions {
@@ -1383,7 +1421,7 @@ func localFileHash(t *testing.T, rt *runtime.Runtime, id string, paths []string)
 	return localFileHash
 }
 
-type dimWithType struct {
+type fieldWithType struct {
 	Name string
 	Type *runtimev1.Type
 }
