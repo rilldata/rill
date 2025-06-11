@@ -10,6 +10,7 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func init() {
@@ -74,29 +75,56 @@ func (r *CanvasReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceN
 		return runtime.ReconcileResult{Err: err}
 	}
 
+	// Get all referenced components.
+	// If a referenced component is not found, we still add it to the map with a nil value.
+	components := make(map[string]*runtimev1.Resource)
+	for _, ref := range self.Meta.Refs {
+		if ref.Kind != runtime.ResourceKindComponent {
+			continue
+		}
+		res, err := r.C.Get(ctx, ref, false)
+		if err != nil {
+			if !errors.Is(err, drivers.ErrResourceNotFound) {
+				return runtime.ReconcileResult{Err: err}
+			}
+			components[ref.Name] = nil // Component not found, add it to the map with nil value
+		} else {
+			components[ref.Name] = res
+		}
+	}
+
+	// Find most recent data refresh time across all components.
+	var dataRefreshedOn *timestamppb.Timestamp
+	for _, c := range components {
+		if c == nil {
+			continue
+		}
+		if c.GetComponent().State.DataRefreshedOn == nil {
+			continue
+		}
+		if dataRefreshedOn == nil || c.GetComponent().State.DataRefreshedOn.AsTime().After(dataRefreshedOn.AsTime()) {
+			dataRefreshedOn = c.GetComponent().State.DataRefreshedOn
+		}
+	}
+
 	// Validate refs
 	validateErr := checkRefs(ctx, r.C, self.Meta.Refs)
 	if validateErr == nil {
-		validateErr = r.validateMetricsViewTimeConsistency(ctx, self.Meta.Refs)
+		validateErr = r.validateMetricsViewTimeConsistency(ctx, components)
 	}
 
 	// Capture the valid spec in the state
 	if validateErr == nil {
 		c.State.ValidSpec = c.Spec
-	} else if !cfg.StageChanges {
-		c.State.ValidSpec = nil
-	} else {
+		c.State.DataRefreshedOn = dataRefreshedOn
+	} else if cfg.StageChanges && r.checkAnyComponentHasValidSpec(components) {
 		// When StageChanges is enabled, we want to make a best effort to serve the canvas anyway.
 		// If any of the components referenced by the spec have a ValidSpec, we'll try to serve the canvas.
-		validComponents, err := r.checkAnyComponentHasValidSpec(ctx, self.Meta.Refs)
-		if err != nil {
-			return runtime.ReconcileResult{Err: err}
-		}
-		if validComponents {
-			c.State.ValidSpec = c.Spec
-		} else {
-			c.State.ValidSpec = nil
-		}
+		c.State.ValidSpec = c.Spec
+		c.State.DataRefreshedOn = dataRefreshedOn
+	} else {
+		c.State.ValidSpec = nil
+		c.State.DataRefreshedOn = nil
 	}
 
 	// Update state. Even if the validation result is unchanged, we always update the state to ensure the state version is incremented.
@@ -108,40 +136,28 @@ func (r *CanvasReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceN
 	return runtime.ReconcileResult{Err: validateErr}
 }
 
-func (r *CanvasReconciler) checkAnyComponentHasValidSpec(ctx context.Context, refs []*runtimev1.ResourceName) (bool, error) {
-	for _, ref := range refs {
-		if ref.Kind != runtime.ResourceKindComponent {
+// checkAnyComponentHasValidSpec returns true if one or more components have a valid spec.
+func (r *CanvasReconciler) checkAnyComponentHasValidSpec(components map[string]*runtimev1.Resource) bool {
+	for _, res := range components {
+		if res == nil {
+			// Component not found, skip it
 			continue
-		}
-		res, err := r.C.Get(ctx, ref, false)
-		if err != nil {
-			if errors.Is(err, drivers.ErrResourceNotFound) {
-				return false, nil
-			}
-			return false, err
 		}
 		if res.GetComponent().State.ValidSpec != nil {
 			// Found component ref with a valid spec
-			return true, nil
+			return true
 		}
 	}
-	return false, nil
+	return false
 }
 
 // validateMetricsViewTimeConsistency checks that all the metrics views referenced by the canvas' components have the same first_day_of_week and first_month_of_year.
-func (r *CanvasReconciler) validateMetricsViewTimeConsistency(ctx context.Context, refs []*runtimev1.ResourceName) error {
+func (r *CanvasReconciler) validateMetricsViewTimeConsistency(ctx context.Context, components map[string]*runtimev1.Resource) error {
 	metricsViews := make(map[string]*runtimev1.Resource)
-	for _, ref := range refs {
-		// Skip non-component refs
-		if ref.Kind != runtime.ResourceKindComponent {
+	for _, component := range components {
+		if component == nil {
+			// Component not found, skip it
 			continue
-		}
-		component, err := r.C.Get(ctx, ref, false)
-		if err != nil {
-			if errors.Is(err, drivers.ErrResourceNotFound) {
-				continue
-			}
-			return err
 		}
 
 		// Skip non-metrics view refs
