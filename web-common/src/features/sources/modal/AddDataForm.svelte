@@ -159,12 +159,14 @@
         details = e.details;
       } else if (e?.response?.data) {
         const originalMessage = e.response.data.message;
-        error = humanReadableErrorMessage(
+        const humanReadable = humanReadableErrorMessage(
           connector.name,
           e.response.data.code,
           originalMessage,
         );
-        details = originalMessage;
+        error = humanReadable;
+        details =
+          humanReadable !== originalMessage ? originalMessage : undefined;
       } else {
         error = "Unknown error";
         details = "Unknown error";
