@@ -10,6 +10,8 @@ declare namespace svelteHTML {
     // Used for DragList actions
     "on:consider"?: (event: CustomEvent) => void;
     "on:finalize"?: (event: CustomEvent) => void;
+    "on:resize"?: (event: CustomEvent<{ size: number }>) => void;
+    "on:resizeend"?: (event: CustomEvent<null>) => void;
   }
 
   interface SVGAttributes {
@@ -18,11 +20,5 @@ declare namespace svelteHTML {
     "on:scrub-end"?: (event: CustomEvent) => void;
     "on:scrub-move"?: (event: CustomEvent) => void;
     "on:scrolling"?: (event: CustomEvent) => void;
-  }
-}
-declare module "svelte/elements" {
-  interface HTMLAttributes<> {
-    onresize?: (event: CustomEvent<{ size: number }>) => void;
-    onresizeend?: (event: CustomEvent<null>) => void;
   }
 }
