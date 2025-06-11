@@ -36,7 +36,7 @@ func ParseSQLFilter(sql string) (*metricsview.Expression, error) {
 }
 
 // note - context is optional, it is used to resolve time functions like time_range_start and time_range_end as they require context in which they are executed
-func parseFilter(ctx context.Context, node ast.ExprNode, context ast.ExprNode, q *query) (*metricsview.Expression, error) {
+func parseFilter(ctx context.Context, node, context ast.ExprNode, q *query) (*metricsview.Expression, error) {
 	switch node := node.(type) {
 	case *ast.ColumnNameExpr:
 		col, err := parseColumnNameExpr(node)

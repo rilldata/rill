@@ -318,6 +318,8 @@ func (e *Executor) validateTimeDimension(ctx context.Context, t *drivers.Table, 
 			res.TimeDimensionErr = fmt.Errorf("failed to validate time dimension %q: %w", e.metricsView.TimeDimension, err)
 			return
 		}
+		rows.Close() // Close rows immediately
+
 		typeCode := rows.Schema.Fields[0].Type.Code
 		if typeCode != runtimev1.Type_CODE_TIMESTAMP && typeCode != runtimev1.Type_CODE_DATE && !(e.olap.Dialect() == drivers.DialectPinot && typeCode == runtimev1.Type_CODE_INT64) {
 			res.TimeDimensionErr = fmt.Errorf("time dimension %q is not a TIMESTAMP column, got %s", e.metricsView.TimeDimension, typeCode)
