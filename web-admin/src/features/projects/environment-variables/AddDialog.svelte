@@ -313,7 +313,7 @@
           type="secondary"
           small
           class="w-fit flex flex-row items-center gap-x-2"
-          on:click={() => fileInput.click()}
+          onClick={() => fileInput.click()}
         >
           <UploadIcon size="14px" />
           <span>Import .env</span>
@@ -395,7 +395,7 @@
               </div>
             {/each}
           </div>
-          <Button type="dashed" class="w-full mt-4" on:click={handleAdd}>
+          <Button type="dashed" class="w-full mt-4" onClick={handleAdd}>
             <Plus size="16px" />
             <span>Add variable</span>
           </Button>

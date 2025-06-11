@@ -27,7 +27,7 @@
   <Button
     slot="action"
     type="secondary"
-    on:click={() => (isUpdateBillingContactDialogOpen = true)}
+    onClick={() => (isUpdateBillingContactDialogOpen = true)}
   >
     Change billing contact
   </Button>

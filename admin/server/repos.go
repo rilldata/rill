@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-	"strings"
 
 	"github.com/go-git/go-git/v5/plumbing/transport"
 	"github.com/rilldata/rill/admin/database"
@@ -52,7 +51,7 @@ func (s *Server) GetRepoMeta(ctx context.Context, req *adminv1.GetRepoMetaReques
 		}, nil
 	}
 
-	if proj.GithubURL == nil || proj.GithubInstallationID == nil {
+	if proj.GitRemote == nil || proj.GithubInstallationID == nil {
 		return nil, status.Error(codes.FailedPrecondition, "project does not have a github integration")
 	}
 
@@ -66,15 +65,9 @@ func (s *Server) GetRepoMeta(ctx context.Context, req *adminv1.GetRepoMetaReques
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	var cloneURL string
-	if strings.HasSuffix(*proj.GithubURL, ".git") {
-		cloneURL = *proj.GithubURL
-	} else {
-		cloneURL = *proj.GithubURL + ".git"
-	}
-	ep, err := transport.NewEndpoint(cloneURL)
+	ep, err := transport.NewEndpoint(*proj.GitRemote)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "failed to create endpoint from %q: %s", *proj.GithubURL, err.Error())
+		return nil, status.Errorf(codes.InvalidArgument, "failed to create endpoint from %q: %s", *proj.GitRemote, err.Error())
 	}
 	ep.User = "x-access-token"
 	ep.Password = token

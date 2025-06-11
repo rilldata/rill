@@ -362,7 +362,7 @@
     <DialogFooter>
       <Button
         type="plain"
-        on:click={() => {
+        onClick={() => {
           open = false;
           handleReset();
         }}>Cancel</Button

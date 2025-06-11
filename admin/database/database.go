@@ -81,7 +81,7 @@ type DB interface {
 	// FindProjectsForOrgAndUser lists the public projects in the org and the projects where user is added as an external user
 	FindProjectsForOrgAndUser(ctx context.Context, orgID, userID string, includePublic bool, afterProjectName string, limit int) ([]*Project, error)
 	FindPublicProjectsInOrganization(ctx context.Context, orgID, afterProjectName string, limit int) ([]*Project, error)
-	FindProjectsByGithubURL(ctx context.Context, githubURL string) ([]*Project, error)
+	FindProjectsByGitRemote(ctx context.Context, remote string) ([]*Project, error)
 	FindProjectsByGithubInstallationID(ctx context.Context, id int64) ([]*Project, error)
 	FindProject(ctx context.Context, id string) (*Project, error)
 	FindProjectByName(ctx context.Context, orgName string, name string) (*Project, error)
@@ -413,7 +413,7 @@ type Project struct {
 	// ArchiveAssetID is set when project files are managed by Rill instead of maintained in Git.
 	// If ArchiveAssetID is set all git related fields will be empty.
 	ArchiveAssetID               *string           `db:"archive_asset_id"`
-	GithubURL                    *string           `db:"github_url"`
+	GitRemote                    *string           `db:"git_remote"`
 	GithubInstallationID         *int64            `db:"github_installation_id"`
 	GithubRepoID                 *int64            `db:"github_repo_id"`
 	ManagedGitRepoID             *string           `db:"managed_git_repo_id"`
@@ -441,7 +441,7 @@ type InsertProjectOptions struct {
 	CreatedByUserID      *string
 	Provisioner          string
 	ArchiveAssetID       *string
-	GithubURL            *string `validate:"omitempty,http_url"`
+	GitRemote            *string `validate:"omitempty,http_url,endswith=.git"`
 	GithubInstallationID *int64  `validate:"omitempty,ne=0"`
 	GithubRepoID         *int64
 	ManagedGitRepoID     *string
@@ -461,7 +461,7 @@ type UpdateProjectOptions struct {
 	Public               bool
 	Provisioner          string
 	ArchiveAssetID       *string
-	GithubURL            *string `validate:"omitempty,http_url"`
+	GitRemote            *string `validate:"omitempty,http_url,endswith=.git"`
 	GithubInstallationID *int64  `validate:"omitempty,ne=0"`
 	GithubRepoID         *int64
 	ManagedGitRepoID     *string

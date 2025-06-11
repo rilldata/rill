@@ -42,10 +42,10 @@
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter class="mt-5">
-          <Button on:click={() => (open = false)} type="secondary">Back</Button>
+          <Button onClick={() => (open = false)} type="secondary">Back</Button>
           {#if deployCTAUrl}
             <Button
-              on:click={() => (open = false)}
+              onClick={() => (open = false)}
               type="primary"
               href={deployCTAUrl}
               target="_blank"
@@ -54,7 +54,7 @@
             </Button>
           {:else}
             <Button
-              on:click={() => {
+              onClick={() => {
                 open = false;
                 onContinue();
               }}

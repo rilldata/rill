@@ -84,7 +84,7 @@ func (s *Service) CreateProject(ctx context.Context, org *database.Organization,
 
 	// Check if the project has an archive or git info
 	hasArchive := opts.ArchiveAssetID != nil
-	hasGitInfo := opts.GithubURL != nil && opts.GithubInstallationID != nil && opts.ProdBranch != ""
+	hasGitInfo := opts.GitRemote != nil && opts.GithubInstallationID != nil && opts.ProdBranch != ""
 	if !hasArchive && !hasGitInfo {
 		return nil, fmt.Errorf("failed to deploy project: either an archive or git info must be provided")
 	}
@@ -112,7 +112,7 @@ func (s *Service) CreateProject(ctx context.Context, org *database.Organization,
 		Description:          proj.Description,
 		Public:               proj.Public,
 		ArchiveAssetID:       proj.ArchiveAssetID,
-		GithubURL:            proj.GithubURL,
+		GitRemote:            proj.GitRemote,
 		GithubInstallationID: proj.GithubInstallationID,
 		GithubRepoID:         proj.GithubRepoID,
 		ManagedGitRepoID:     proj.ManagedGitRepoID,
@@ -164,7 +164,7 @@ func (s *Service) UpdateProject(ctx context.Context, proj *database.Project, opt
 		(proj.Subpath != opts.Subpath) ||
 		(proj.ProdBranch != opts.ProdBranch) ||
 		!reflect.DeepEqual(proj.Annotations, opts.Annotations) ||
-		!reflect.DeepEqual(proj.GithubURL, opts.GithubURL) ||
+		!reflect.DeepEqual(proj.GitRemote, opts.GitRemote) ||
 		!reflect.DeepEqual(proj.GithubInstallationID, opts.GithubInstallationID) ||
 		!reflect.DeepEqual(proj.ArchiveAssetID, opts.ArchiveAssetID)
 
@@ -347,7 +347,7 @@ func (s *Service) RedeployProject(ctx context.Context, proj *database.Project, p
 		Public:               proj.Public,
 		Provisioner:          proj.Provisioner,
 		ArchiveAssetID:       proj.ArchiveAssetID,
-		GithubURL:            proj.GithubURL,
+		GitRemote:            proj.GitRemote,
 		GithubInstallationID: proj.GithubInstallationID,
 		GithubRepoID:         proj.GithubRepoID,
 		ManagedGitRepoID:     proj.ManagedGitRepoID,
@@ -395,7 +395,7 @@ func (s *Service) HibernateProject(ctx context.Context, proj *database.Project) 
 		Public:               proj.Public,
 		Provisioner:          proj.Provisioner,
 		ArchiveAssetID:       proj.ArchiveAssetID,
-		GithubURL:            proj.GithubURL,
+		GitRemote:            proj.GitRemote,
 		GithubInstallationID: proj.GithubInstallationID,
 		GithubRepoID:         proj.GithubRepoID,
 		ManagedGitRepoID:     proj.ManagedGitRepoID,

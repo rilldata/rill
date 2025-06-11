@@ -48,7 +48,15 @@ export class ErrorEventHandler {
   }
 
   public addJavascriptErrorListeners() {
+    // Helper to detect errors originating from browser extensions
+    const isExtensionError = (value: string | undefined) =>
+      value?.includes("chrome-extension://") ||
+      value?.includes("moz-extension://");
+
     const errorHandler = (errorEvt: ErrorEvent) => {
+      // Ignore errors originating from browser extensions to avoid reporting issues outside our control
+      if (isExtensionError(errorEvt.filename)) return;
+
       this.fireJavascriptErrorBoundaryEvent(
         errorEvt.error?.stack ?? "",
         errorEvt.message,
@@ -56,11 +64,13 @@ export class ErrorEventHandler {
         get(page).url.toString(),
       )?.catch(console.error);
     };
+
     const unhandledRejectionHandler = (
       rejectionEvent: PromiseRejectionEvent,
     ) => {
       let stack = "";
       let message = "";
+
       if (typeof rejectionEvent.reason === "string") {
         message = rejectionEvent.reason;
       } else if (rejectionEvent.reason instanceof Error) {
@@ -69,6 +79,10 @@ export class ErrorEventHandler {
       } else {
         message = String.toString.apply(rejectionEvent.reason);
       }
+
+      // Ignore errors originating from browser extensions
+      if (isExtensionError(stack)) return;
+
       this.fireJavascriptErrorBoundaryEvent(
         stack,
         message,

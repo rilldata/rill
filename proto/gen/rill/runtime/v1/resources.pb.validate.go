@@ -3207,7 +3207,7 @@ func (m *MetricsViewSpec) validate(all bool) error {
 
 	// no validation rules for Description
 
-	// no validation rules for AiContext
+	// no validation rules for AiInstructions
 
 	// no validation rules for TimeDimension
 

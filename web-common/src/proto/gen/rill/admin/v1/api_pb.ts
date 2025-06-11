@@ -2470,12 +2470,13 @@ export class CreateProjectRequest extends Message<CreateProjectRequest> {
   prodBranch = "";
 
   /**
-   * github_url is set for projects whose project files are stored in github. This is set to a github repo url.
-   * Either github_url or archive_asset_id should be set.
+   * git_remote is set for projects whose project files are stored in Git.
+   * It currently only supports Github remotes. It should be a HTTPS remote ending in .git for github.com.
+   * Either git_remote or archive_asset_id should be set.
    *
-   * @generated from field: string github_url = 10;
+   * @generated from field: string git_remote = 10;
    */
-  githubUrl = "";
+  gitRemote = "";
 
   /**
    * archive_asset_id is set for projects whose project files are not stored in github but are managed by rill.
@@ -2512,7 +2513,7 @@ export class CreateProjectRequest extends Message<CreateProjectRequest> {
     { no: 8, name: "prod_slots", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
     { no: 12, name: "subpath", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 9, name: "prod_branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 10, name: "github_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 10, name: "git_remote", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 14, name: "archive_asset_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 13, name: "prod_version", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 15, name: "skip_deploy", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
@@ -2682,9 +2683,9 @@ export class UpdateProjectRequest extends Message<UpdateProjectRequest> {
   prodBranch?: string;
 
   /**
-   * @generated from field: optional string github_url = 6;
+   * @generated from field: optional string git_remote = 6;
    */
-  githubUrl?: string;
+  gitRemote?: string;
 
   /**
    * @generated from field: optional string subpath = 13;
@@ -2739,7 +2740,7 @@ export class UpdateProjectRequest extends Message<UpdateProjectRequest> {
     { no: 3, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 4, name: "public", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
     { no: 5, name: "prod_branch", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
-    { no: 6, name: "github_url", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 6, name: "git_remote", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 13, name: "subpath", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 12, name: "archive_asset_id", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 7, name: "prod_slots", kind: "scalar", T: 3 /* ScalarType.INT64 */, opt: true },
@@ -8961,9 +8962,9 @@ export class RevokeMagicAuthTokenResponse extends Message<RevokeMagicAuthTokenRe
  */
 export class GetGithubRepoStatusRequest extends Message<GetGithubRepoStatusRequest> {
   /**
-   * @generated from field: string github_url = 1;
+   * @generated from field: string remote = 1;
    */
-  githubUrl = "";
+  remote = "";
 
   constructor(data?: PartialMessage<GetGithubRepoStatusRequest>) {
     super();
@@ -8973,7 +8974,7 @@ export class GetGithubRepoStatusRequest extends Message<GetGithubRepoStatusReque
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.admin.v1.GetGithubRepoStatusRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "github_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 1, name: "remote", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetGithubRepoStatusRequest {
@@ -9237,9 +9238,9 @@ export class ListGithubUserReposResponse_Repo extends Message<ListGithubUserRepo
   description = "";
 
   /**
-   * @generated from field: string url = 4;
+   * @generated from field: string remote = 4;
    */
-  url = "";
+  remote = "";
 
   /**
    * @generated from field: string default_branch = 5;
@@ -9257,7 +9258,7 @@ export class ListGithubUserReposResponse_Repo extends Message<ListGithubUserRepo
     { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "owner", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 4, name: "url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "remote", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "default_branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
@@ -9293,9 +9294,9 @@ export class ConnectProjectToGithubRequest extends Message<ConnectProjectToGithu
   project = "";
 
   /**
-   * @generated from field: string repo = 3;
+   * @generated from field: string remote = 3;
    */
-  repo = "";
+  remote = "";
 
   /**
    * @generated from field: string branch = 4;
@@ -9322,7 +9323,7 @@ export class ConnectProjectToGithubRequest extends Message<ConnectProjectToGithu
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "organization", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "project", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "repo", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "remote", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "subpath", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "force", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
@@ -13212,9 +13213,9 @@ export class Project extends Message<Project> {
   provisioner = "";
 
   /**
-   * @generated from field: string github_url = 8;
+   * @generated from field: string git_remote = 8;
    */
-  githubUrl = "";
+  gitRemote = "";
 
   /**
    * managed_git_id is set if the project is connected to a rill-managed git repo.
@@ -13306,7 +13307,7 @@ export class Project extends Message<Project> {
     { no: 6, name: "public", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 22, name: "created_by_user_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 7, name: "provisioner", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 8, name: "github_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 8, name: "git_remote", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 24, name: "managed_git_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 17, name: "subpath", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 9, name: "prod_branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },

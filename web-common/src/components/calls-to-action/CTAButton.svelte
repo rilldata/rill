@@ -2,6 +2,7 @@
   import Button from "../button/Button.svelte";
 
   export let variant: "primary" | "secondary" = "primary";
+  export let onClick: ((event: MouseEvent) => void) | undefined = undefined;
   export let href: string | null = null;
   export let rel: string | undefined = undefined;
   export let disabled = false;
@@ -17,7 +18,7 @@
   wide
   {gray}
   {submitForm}
-  on:click
+  {onClick}
 >
   <slot />
 </Button>

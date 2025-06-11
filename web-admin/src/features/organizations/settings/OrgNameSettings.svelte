@@ -10,6 +10,7 @@
   import { parseUpdateOrgError } from "@rilldata/web-admin/features/organizations/settings/errors";
   import SettingsContainer from "@rilldata/web-admin/features/organizations/settings/SettingsContainer.svelte";
   import { Button } from "@rilldata/web-common/components/button";
+  import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import { sanitizeOrgName } from "@rilldata/web-common/features/organization/sanitizeOrgName";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
@@ -17,7 +18,6 @@
   import { defaults, superForm } from "sveltekit-superforms";
   import { yup } from "sveltekit-superforms/adapters";
   import { object, string } from "yup";
-  import Input from "@rilldata/web-common/components/forms/Input.svelte";
 
   export let organization: string;
 
@@ -137,7 +137,7 @@
     </div>
   {/if}
   <Button
-    on:click={submit}
+    onClick={submit}
     type="primary"
     loading={$updateOrgMutation.isPending}
     disabled={!changed}

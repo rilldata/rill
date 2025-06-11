@@ -1,5 +1,9 @@
 <script lang="ts">
   import { page } from "$app/stores";
+  import {
+    createAdminServiceRenewBillingSubscription,
+    createAdminServiceUpdateBillingSubscription,
+  } from "@rilldata/web-admin/client/index.js";
   import { mergedQueryStatus } from "@rilldata/web-admin/client/utils";
   import { invalidateBillingInfo } from "@rilldata/web-admin/features/billing/invalidations";
   import {
@@ -12,7 +16,6 @@
     getSubscriptionResumedText,
     showWelcomeToRillDialog,
   } from "@rilldata/web-admin/features/billing/plans/utils";
-  import PricingDetails from "@rilldata/web-common/features/billing/PricingDetails.svelte";
   import { useCategorisedOrganizationBillingIssues } from "@rilldata/web-admin/features/billing/selectors";
   import {
     AlertDialog,
@@ -24,10 +27,7 @@
     AlertDialogTrigger,
   } from "@rilldata/web-common/components/alert-dialog/index.js";
   import { Button } from "@rilldata/web-common/components/button/index.js";
-  import {
-    createAdminServiceRenewBillingSubscription,
-    createAdminServiceUpdateBillingSubscription,
-  } from "@rilldata/web-admin/client/index.js";
+  import PricingDetails from "@rilldata/web-common/features/billing/PricingDetails.svelte";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
 
   export let organization: string;
@@ -156,10 +156,10 @@
       {/if}
     </AlertDialogHeader>
     <AlertDialogFooter class="mt-3">
-      <Button type="secondary" on:click={() => (open = false)}>Close</Button>
+      <Button type="secondary" onClick={() => (open = false)}>Close</Button>
       <Button
         type="primary"
-        on:click={handleUpgradePlan}
+        onClick={handleUpgradePlan}
         loading={loading || $allStatus.isLoading}
       >
         {buttonText}

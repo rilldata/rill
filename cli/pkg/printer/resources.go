@@ -72,9 +72,9 @@ func toProjectTable(projects []*adminv1.Project) []*project {
 func toProjectRow(o *adminv1.Project) *project {
 	var githubURL string
 	if o.ManagedGitId == "" {
-		githubURL = o.GithubUrl
+		githubURL = strings.TrimSuffix(o.GitRemote, ".git")
 		if o.Subpath != "" {
-			githubURL = filepath.Join(o.GithubUrl, "tree", o.ProdBranch, o.Subpath)
+			githubURL = filepath.Join(githubURL, "tree", o.ProdBranch, o.Subpath)
 		}
 	}
 

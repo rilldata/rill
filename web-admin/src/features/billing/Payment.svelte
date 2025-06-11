@@ -45,7 +45,7 @@
         Your payment method is valid and good to go.
       {/if}
     </div>
-    <Button slot="action" type="secondary" on:click={handleManagePayment}>
+    <Button slot="action" type="secondary" onClick={handleManagePayment}>
       Manage
     </Button>
   </SettingsContainer>

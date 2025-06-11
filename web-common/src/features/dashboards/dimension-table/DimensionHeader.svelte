@@ -141,7 +141,7 @@
     <Button
       type="link"
       forcedStyle="padding: 0; gap: 4px;"
-      on:click={() => goBackToLeaderboard()}
+      onClick={() => goBackToLeaderboard()}
     >
       <Back size="16px" />
       <span>All Dimensions</span>

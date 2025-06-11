@@ -24,15 +24,15 @@ _[string]_ - A brief description of the project
 
 _[object]_ - Optional feature flags. Can be specified as a map of feature names to booleans. 
 
-### `ai_context`
+### `ai_instructions`
 
-_[string]_ - Extra context for LLM/AI features. Used to guide natural language question answering and routing. 
+_[string]_ - Extra instructions for LLM/AI features. Used to guide natural language question answering and routing. 
 
 ## Configuring the default OLAP Engine
 
 Rill allows you to specify the default OLAP engine to use in your project via `rill.yaml`.
 :::info Curious about OLAP Engines?
-Please see our reference documentation on [OLAP Engines](../olap-engines/olap-engines.md).
+Please see our reference documentation on [OLAP Engines](/docs/reference/olap-engines/olap-engines.md).
 :::
 
 

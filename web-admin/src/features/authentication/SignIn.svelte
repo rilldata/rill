@@ -3,4 +3,4 @@
   import { Button } from "@rilldata/web-common/components/button";
 </script>
 
-<Button type="primary" on:click={redirectToLogin}>Log In / Sign Up</Button>
+<Button type="primary" onClick={redirectToLogin}>Log In / Sign Up</Button>

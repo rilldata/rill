@@ -24,6 +24,10 @@ func (h *Helper) CheckVersion(ctx context.Context) error {
 		return nil
 	}
 
+	// Add a timeout
+	ctx, cancel := context.WithTimeout(ctx, 15*time.Second)
+	defer cancel()
+
 	latestVersion, err := h.LatestVersion(ctx)
 	if err != nil {
 		return err

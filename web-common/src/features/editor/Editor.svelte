@@ -1,22 +1,22 @@
 <script lang="ts">
+  import type { Extension } from "@codemirror/state";
+  import { EditorView } from "@codemirror/view";
+  import * as AlertDialog from "@rilldata/web-common/components/alert-dialog/";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import Label from "@rilldata/web-common/components/forms/Label.svelte";
   import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
+  import Alert from "@rilldata/web-common/components/icons/Alert.svelte";
   import Check from "@rilldata/web-common/components/icons/Check.svelte";
   import UndoIcon from "@rilldata/web-common/components/icons/UndoIcon.svelte";
-  import type { Extension } from "@codemirror/state";
-  import { EditorView } from "@codemirror/view";
+  import MetaKey from "@rilldata/web-common/components/tooltip/MetaKey.svelte";
+  import Shortcut from "@rilldata/web-common/components/tooltip/Shortcut.svelte";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import TooltipShortcutContainer from "@rilldata/web-common/components/tooltip/TooltipShortcutContainer.svelte";
   import { debounce } from "../../lib/create-debouncer";
-  import { FILE_SAVE_DEBOUNCE_TIME } from "./config";
   import { FileArtifact } from "../entity-management/file-artifact";
   import Codespace from "./Codespace.svelte";
-  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
-  import TooltipShortcutContainer from "@rilldata/web-common/components/tooltip/TooltipShortcutContainer.svelte";
-  import Shortcut from "@rilldata/web-common/components/tooltip/Shortcut.svelte";
-  import MetaKey from "@rilldata/web-common/components/tooltip/MetaKey.svelte";
-  import * as AlertDialog from "@rilldata/web-common/components/alert-dialog/";
-  import Alert from "@rilldata/web-common/components/icons/Alert.svelte";
+  import { FILE_SAVE_DEBOUNCE_TIME } from "./config";
   import DiffBar from "./DiffBar.svelte";
 
   export let fileArtifact: FileArtifact;
@@ -104,7 +104,7 @@
               danger={!!$error && !$saving}
               loadingCopy="Saving"
               {disabled}
-              on:click={() => save()}
+              onClick={() => save()}
             >
               {#if $error}
                 <Alert size="14px" />
@@ -128,7 +128,7 @@
             </TooltipContent>
           </Tooltip>
 
-          <Button type="text" {disabled} on:click={revertContent}>
+          <Button type="text" {disabled} onClick={revertContent}>
             <UndoIcon size="14px" />
             Revert changes
           </Button>
@@ -167,7 +167,7 @@
             builders={[builder]}
             type="primary"
             large
-            on:click={() => {
+            onClick={() => {
               merging.set(true);
             }}
           >
@@ -178,7 +178,7 @@
             builders={[builder]}
             type="secondary"
             large
-            on:click={revertContent}
+            onClick={revertContent}
           >
             Overwrite
           </Button>

@@ -63,8 +63,8 @@ type Instance struct {
 	PublicPaths []string `db:"public_paths"`
 	// IgnoreInitialInvalidProjectError indicates whether to ignore an invalid project error when the instance is initially created.
 	IgnoreInitialInvalidProjectError bool `db:"-"`
-	// AIContext is extra context for LLM/AI features. Used to guide natural language question answering and routing.
-	AIContext string `db:"ai_context"`
+	// AIInstructions is extra context for LLM/AI features. Used to guide natural language question answering and routing.
+	AIInstructions string `db:"ai_instructions"`
 }
 
 // InstanceConfig contains dynamic configuration for an instance.

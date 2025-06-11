@@ -1,10 +1,10 @@
 <script lang="ts">
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
-  import Pencil from "svelte-radix/Pencil1.svelte";
   import Check from "@rilldata/web-common/components/icons/Check.svelte";
-  import { scale } from "svelte/transition";
+  import Pencil from "svelte-radix/Pencil1.svelte";
   import { cubicOut } from "svelte/easing";
+  import { scale } from "svelte/transition";
 
   export let value: string | undefined = "";
   export let onConfirm: (newValue: string) => void | Promise<void> = () => {};
@@ -64,7 +64,7 @@
       small
       square
       label="Save title"
-      on:click={triggerConfirm}
+      onClick={triggerConfirm}
     >
       <Check size="16px" />
     </Button>
@@ -89,7 +89,7 @@
           square
           small
           type="ghost"
-          on:click={() => {
+          onClick={() => {
             editing = !editing;
           }}
         >

@@ -1,17 +1,17 @@
 <script lang="ts">
-  import * as Popover from "@rilldata/web-common/components/popover";
+  import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import DragHandle from "@rilldata/web-common/components/icons/DragHandle.svelte";
+  import EyeIcon from "@rilldata/web-common/components/icons/Eye.svelte";
+  import EyeOffIcon from "@rilldata/web-common/components/icons/EyeInvisible.svelte";
+  import * as Popover from "@rilldata/web-common/components/popover";
   import { clamp } from "@rilldata/web-common/lib/clamp";
   import type {
-    MetricsViewSpecMeasure,
     MetricsViewSpecDimension,
+    MetricsViewSpecMeasure,
   } from "@rilldata/web-common/runtime-client";
-  import { Button } from "../button";
-  import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
-  import EyeOffIcon from "@rilldata/web-common/components/icons/EyeInvisible.svelte";
-  import EyeIcon from "@rilldata/web-common/components/icons/Eye.svelte";
-  import Search from "../search/Search.svelte";
   import { Tooltip } from "bits-ui";
+  import { Button } from "../button";
+  import Search from "../search/Search.svelte";
 
   const UPPER_BOUND = 12 + 28 + 25;
   const ITEM_HEIGHT = 28;
@@ -203,7 +203,7 @@
 
 <Popover.Root bind:open={active}>
   <Popover.Trigger asChild let:builder>
-    <Button builders={[builder]} type="text" label={tooltipText} on:click>
+    <Button builders={[builder]} type="text" label={tooltipText}>
       <div
         class="flex items-center gap-x-0.5 px-1 text-gray-700 hover:text-inherit"
       >

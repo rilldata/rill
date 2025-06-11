@@ -35,7 +35,7 @@
   {#if showCopyButton}
     <Button
       type="secondary"
-      on:click={copyCode}
+      onClick={copyCode}
       small
       class="absolute top-2 right-2"
     >

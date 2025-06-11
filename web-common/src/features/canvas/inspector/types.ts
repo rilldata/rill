@@ -24,9 +24,10 @@ export type ChartFieldInput = {
   hideTimeDimension?: boolean;
   originSelector?: boolean;
   sortSelector?: boolean;
-  limitSelector?: boolean;
+  limitSelector?: { defaultLimit: number };
   nullSelector?: boolean;
   labelAngleSelector?: boolean;
+  axisRangeSelector?: boolean;
   /**
    * The default legend position for the chart.
    * If this key is not specified, legend selector will not be shown.

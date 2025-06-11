@@ -106,7 +106,7 @@
     <footer>
       {#if excludable}
         <Button
-          on:click={() => {
+          onClick={() => {
             setItems(Array.from(selectedItems), !excludeMode);
           }}
           type="secondary"
@@ -120,7 +120,7 @@
       {/if}
 
       <Button
-        on:click={() => {
+        onClick={() => {
           if (selectedItems.size === allItems.size) {
             setItems([]);
           } else {

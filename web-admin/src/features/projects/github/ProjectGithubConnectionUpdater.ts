@@ -16,7 +16,7 @@ export class ProjectGithubConnectionUpdater {
   public readonly connectToGithubMutation =
     createAdminServiceConnectProjectToGithub();
 
-  public readonly githubUrl = writable("");
+  public readonly githubRemote = writable("");
   public readonly subpath = writable("");
   public readonly branch = writable("");
 
@@ -26,14 +26,14 @@ export class ProjectGithubConnectionUpdater {
   public constructor(
     private readonly organization: string,
     private readonly project: string,
-    private readonly currentGithubUrl: string,
+    private readonly currentGithubRemote: string,
     private readonly currentSubpath: string,
     private readonly currentBranch: string,
   ) {
-    this.githubUrl.set(currentGithubUrl);
+    this.githubRemote.set(currentGithubRemote);
     this.subpath.set(currentSubpath);
     this.branch.set(currentBranch);
-    this.isConnected = !!currentGithubUrl;
+    this.isConnected = !!currentGithubRemote;
   }
 
   public onSelectedRepoChange(repo: ListGithubUserReposResponseRepo) {
@@ -43,7 +43,7 @@ export class ProjectGithubConnectionUpdater {
   }
 
   public reset() {
-    this.githubUrl.set(this.currentGithubUrl);
+    this.githubRemote.set(this.currentGithubRemote);
     this.subpath.set(this.currentSubpath);
     this.branch.set(this.currentBranch);
   }
@@ -55,7 +55,7 @@ export class ProjectGithubConnectionUpdater {
     instanceId: string;
     force: boolean;
   }) {
-    const githubUrl = get(this.githubUrl);
+    const githubRemote = get(this.githubRemote);
     const subpath = get(this.subpath);
     const branch = get(this.branch);
     const hasSubpath = !!subpath;
@@ -66,7 +66,7 @@ export class ProjectGithubConnectionUpdater {
         organization: this.organization,
         project: this.project,
         data: {
-          repo: githubUrl,
+          remote: githubRemote,
           subpath,
           branch,
           force,

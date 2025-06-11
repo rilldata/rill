@@ -92,7 +92,7 @@
               <p>{step.description}</p>
             </div>
             {#if step.id === "source"}
-              <Button type="secondary" on:click={addSourceModal.open}>
+              <Button type="secondary" onClick={addSourceModal.open}>
                 <IconSpaceFixer pullLeft><Add /></IconSpaceFixer>
                 <span>Add data</span>
               </Button>

@@ -1,10 +1,9 @@
 <script context="module" lang="ts">
-  import { Interval } from "luxon";
-  import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu/";
-  import Calendar from "@rilldata/web-common/components/date-picker/Calendar.svelte";
-  import { DateTime } from "luxon";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
+  import Calendar from "@rilldata/web-common/components/date-picker/Calendar.svelte";
   import DateInput from "@rilldata/web-common/components/date-picker/DateInput.svelte";
+  import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu/";
+  import { DateTime, Interval } from "luxon";
 </script>
 
 <script lang="ts">
@@ -99,7 +98,7 @@
     fit
     compact
     type="primary"
-    on:click={() => {
+    onClick={() => {
       const mapped = calendarInterval?.set({
         end: calendarInterval.end?.plus({ day: 1 }).startOf("day"),
       });

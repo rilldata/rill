@@ -349,12 +349,12 @@
     </p>
     <div class="flex justify-{editing ? 'between' : 'end'}">
       {#if editing}
-        <Button type="text" on:click={onDelete}>Delete</Button>
+        <Button type="text" onClick={onDelete}>Delete</Button>
       {/if}
       <div class="flex gap-x-2 self-end">
         <Button
           type="secondary"
-          on:click={() => {
+          onClick={() => {
             onCancel(unsavedChanges);
           }}
         >
@@ -367,7 +367,7 @@
         >
           <Button
             type="primary"
-            on:click={saveChanges}
+            onClick={saveChanges}
             disabled={requiredPropertiesUnfilled.length > 0 || !unsavedChanges}
           >
             {editing ? "Save changes" : "Add " + type.slice(0, -1)}

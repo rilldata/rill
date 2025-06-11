@@ -48,7 +48,7 @@
     {loading}
     {href}
     {disabled}
-    on:click={viewDashboard}
+    onClick={viewDashboard}
   >
     <div class="flex gap-x-1 items-center">
       <Play size="14px" />

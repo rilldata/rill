@@ -1,18 +1,18 @@
 <script lang="ts">
   import ContentContainer from "@rilldata/web-admin/components/layout/ContentContainer.svelte";
-  import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import NoResourceCTA from "@rilldata/web-admin/features/projects/NoResourceCTA.svelte";
   import ResourceError from "@rilldata/web-admin/features/projects/ResourceError.svelte";
-  import type { CreateQueryResult, QueryKey } from "@tanstack/svelte-query";
+  import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import type { V1ListResourcesResponse } from "@rilldata/web-common/runtime-client";
   import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
+  import type { CreateQueryResult, QueryKey } from "@tanstack/svelte-query";
 
   export let kind: "report" | "dashboard" | "alert";
   export let query: CreateQueryResult<V1ListResourcesResponse, HTTPError> & {
     queryKey: QueryKey;
   };
 
-  $: ({ data, isLoading, isError, isSuccess } = $query);
+  $: ({ data, isLoading, isError, isSuccess, error } = $query);
 
   $: resources = data?.resources ?? [];
 </script>
@@ -24,7 +24,7 @@
         <DelayedSpinner isLoading size="24px" />
       </div>
     {:else if isError}
-      <ResourceError {kind} />
+      <ResourceError {kind} {error} />
     {:else if isSuccess}
       {#if !resources?.length}
         <NoResourceCTA {kind}>

@@ -25,7 +25,7 @@
     <Alert.Footer>
       <Button
         type="plain"
-        on:click={() => {
+        onClick={() => {
           open = false;
         }}
       >
@@ -33,7 +33,7 @@
       </Button>
       <Button
         type="primary"
-        on:click={() => {
+        onClick={() => {
           open = false;
           onChange();
         }}

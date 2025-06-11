@@ -706,7 +706,7 @@
               square
               gray
               noStroke
-              on:click={() => {
+              onClick={() => {
                 collapsed[type] = !collapsed[type];
               }}
             >
@@ -728,7 +728,7 @@
               gray
               noStroke
               label="Add new {type.slice(0, -1)}"
-              on:click={() => {
+              onClick={() => {
                 editingItemData.set({
                   type,
                   index: -1,

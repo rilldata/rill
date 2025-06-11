@@ -43,11 +43,11 @@
     <AlertDialogFooter>
       <Button
         type="plain"
-        on:click={() => {
+        onClick={() => {
           open = false;
         }}>Cancel</Button
       >
-      <Button type="primary" on:click={handleUpgrade}>Yes, upgrade</Button>
+      <Button type="primary" onClick={handleUpgrade}>Yes, upgrade</Button>
     </AlertDialogFooter>
   </AlertDialogContent>
 </AlertDialog>

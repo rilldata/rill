@@ -3,12 +3,12 @@
   import type { V1OrganizationMemberUser } from "@rilldata/web-admin/client";
   import {
     createAdminServiceAddUsergroupMemberUser,
+    createAdminServiceListUsergroupMemberUsers,
+    createAdminServiceRemoveUsergroupMemberUser,
+    createAdminServiceRenameUsergroup,
     getAdminServiceListOrganizationMemberUsergroupsQueryKey,
     getAdminServiceListOrganizationMemberUsersQueryKey,
     getAdminServiceListUsergroupMemberUsersQueryKey,
-    createAdminServiceRemoveUsergroupMemberUser,
-    createAdminServiceRenameUsergroup,
-    createAdminServiceListUsergroupMemberUsers,
   } from "@rilldata/web-admin/client";
   import Avatar from "@rilldata/web-common/components/avatar/Avatar.svelte";
   import { Button } from "@rilldata/web-common/components/button/index.js";
@@ -328,7 +328,7 @@
               <Button
                 type="text"
                 danger
-                on:click={() => handleRemove(user.userEmail)}
+                onClick={() => handleRemove(user.userEmail)}
               >
                 Remove
               </Button>
@@ -339,7 +339,7 @@
     </div>
 
     <DialogFooter>
-      <Button type="plain" on:click={handleClose}>Cancel</Button>
+      <Button type="plain" onClick={handleClose}>Cancel</Button>
       <Button
         type="primary"
         disabled={$submitting || $form.newName.trim() === ""}

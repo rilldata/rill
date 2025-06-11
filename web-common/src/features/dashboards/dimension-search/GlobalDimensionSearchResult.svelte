@@ -2,8 +2,8 @@
   import { Button } from "@rilldata/web-common/components/button";
   import {
     DropdownMenuGroup,
-    DropdownMenuLabel,
     DropdownMenuItem,
+    DropdownMenuLabel,
   } from "@rilldata/web-common/components/dropdown-menu";
 
   export let dimension: string;
@@ -40,7 +40,7 @@
       <Button
         type="link"
         noStroke
-        on:click={() => (expanded = !expanded)}
+        onClick={() => (expanded = !expanded)}
         class="justify-items-start"
       >
         {expanded ? "See less" : "See more"}

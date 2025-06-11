@@ -9,17 +9,23 @@ See comprehensive documentation on how to define and use [custom APIs](/integrat
 
 ## Properties
 
-_**`type`**_ — Refers to the resource type and must be `api` _(required)_.
+**`type`** — Refers to the resource type and must be `api` _(required)_.
 
-_**`connector`**_ — Refers to the OLAP engine if not already set in rill.yaml or if using [multiple OLAP connectors](../olap-engines/multiple-olap.md) in a single project. Only applies when using `sql` _(optional)_.
+**`connector`** — Refers to the OLAP engine if not already set in rill.yaml or if using [multiple OLAP connectors](../olap-engines/multiple-olap.md) in a single project. Only applies when using `sql` _(optional)_.
 
 Either one of the following:
 
-- _**`sql`**_ — General SQL query referring a [model](/build/models/models.md) _(required)_.
+- **`sql`** — General SQL query referring a [model](/build/models/models.md) _(required)_.
 
-- _**`metrics_sql`**_ — SQL query referring metrics definition and dimensions defined in the [metrics view](/build/dashboards/dashboards.md) _(required)_.
+- **`metrics_sql`** — SQL query referring metrics definition and dimensions defined in the [metrics view](/build/dashboards/dashboards.md) _(required)_.
 
-_**`skip_nested_security`**_ (boolean) - Ignore any security on referenced metrics views. Default `false` _(optional)_
+**`skip_nested_security`** (boolean) - Ignore any security on referenced metrics views. Default `false` _(optional)_
 
-_**`security`**_
+**`openapi`** - Provide a OpenAPI specification for your endpoint _(optional)_
+  - **`summary`** - Summary of your api
+  - **`parameters`** - Accepted parameters, see [the parameters specification](https://swagger.io/specification/#parameter-object)
+  - **`request_schema`** - Request schema, see the [request schema specification](https://swagger.io/specification/#request-body-object)
+  - **`response_schema`** - Response schema, see the [response schema specification](https://swagger.io/specification/#response-object)
+
+**`security`**
   - **`access`** - access policy to access the API endpoint

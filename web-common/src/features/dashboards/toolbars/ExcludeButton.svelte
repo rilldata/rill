@@ -14,7 +14,7 @@
 </script>
 
 <Tooltip distance={8} location="top">
-  <Button type="toolbar" on:click={onClick}>
+  <Button type="toolbar" {onClick}>
     <Switch checked={excludeMode}>Exclude</Switch>
   </Button>
   <TooltipContent slot="tooltip-content">

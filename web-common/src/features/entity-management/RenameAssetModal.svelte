@@ -150,7 +150,7 @@
       />
     </form>
     <Dialog.Footer class="gap-x-2">
-      <Button large type="text" on:click={closeModal}>Cancel</Button>
+      <Button large type="text" onClick={closeModal}>Cancel</Button>
       <Button large type="primary" submitForm form="rename-asset-form">
         Change Name
       </Button>

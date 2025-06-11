@@ -280,7 +280,7 @@
   {/if}
 
   <div class="flex items-center space-x-2 ml-auto">
-    <Button on:click={onBack} type="secondary">Back</Button>
+    <Button onClick={onBack} type="secondary">Back</Button>
     <Button disabled={submitting} form={formId} submitForm type="primary">
       {#if isConnectorForm}
         {#if submitting}

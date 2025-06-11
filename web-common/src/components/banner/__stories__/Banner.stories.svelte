@@ -1,14 +1,14 @@
 <script lang="ts">
+  import BannerCenter from "@rilldata/web-common/components/banner/BannerCenter.svelte";
   import {
     BillingBannerID,
     BillingBannerPriority,
   } from "@rilldata/web-common/components/banner/constants";
-  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
-  import { Story, Template } from "@storybook/addon-svelte-csf";
-  import BannerCenter from "@rilldata/web-common/components/banner/BannerCenter.svelte";
   import { Button } from "@rilldata/web-common/components/button/index.js";
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import Select from "@rilldata/web-common/components/forms/Select.svelte";
+  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
+  import { Story, Template } from "@storybook/addon-svelte-csf";
 
   let message: string;
   let type: string;
@@ -62,7 +62,7 @@
       options={iconTypeOptions}
       bind:value={iconType}
     />
-    <Button type="primary" on:click={showBanner}>Show</Button>
+    <Button type="primary" onClick={showBanner}>Show</Button>
   </div>
 </Template>
 

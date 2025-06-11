@@ -60,7 +60,7 @@
           <Button
             type="link"
             href="#"
-            on:click={openGithubRepoCreator}
+            onClick={openGithubRepoCreator}
             forcedStyle="display:inline-block !important; padding: 0px !important; min-height:12px !important; height: 12px !important;"
           >
             <span class="text-sm">Create GitHub repo -></span>
@@ -79,10 +79,10 @@
       </AlertDialogDescription>
     </AlertDialogHeader>
     <AlertDialogFooter class="mt-3">
-      <Button type="secondary" on:click={() => (open = false)}>Cancel</Button>
+      <Button type="secondary" onClick={() => (open = false)}>Cancel</Button>
       <Button
         type="primary"
-        on:click={handleContinue}
+        onClick={handleContinue}
         disabled={!githubRepoCreated}
       >
         Continue

@@ -38,7 +38,7 @@ type InstanceHealthMetricsViewError struct {
 	Version int64  `json:"version"`
 }
 
-func (r *Runtime) Health(ctx context.Context) (*Health, error) {
+func (r *Runtime) Health(ctx context.Context, fullStatus bool) (*Health, error) {
 	instances, err := r.registryCache.list()
 	if err != nil {
 		return nil, err
@@ -51,7 +51,7 @@ func (r *Runtime) Health(ctx context.Context) (*Health, error) {
 			return nil, err
 		}
 		// if there is a single instance hosted on this runtime then instead of returning error msgs throw error if OLAP/repo/controller are in error state
-		if len(instances) == 1 {
+		if len(instances) == 1 && !fullStatus {
 			h := ih[inst.ID]
 			if h.OLAP != "" {
 				return nil, errors.New(h.OLAP)

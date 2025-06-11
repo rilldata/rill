@@ -35,7 +35,7 @@
       </AlertDialogHeader>
       <div class="grow"></div>
       <AlertDialogFooter class="mt-3">
-        <Button type="primary" on:click={() => (open = false)}>Got it</Button>
+        <Button type="primary" onClick={() => (open = false)}>Got it</Button>
       </AlertDialogFooter>
     </div>
   </AlertDialogContent>

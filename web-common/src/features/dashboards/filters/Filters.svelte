@@ -7,40 +7,40 @@
   import type { MeasureFilterEntry } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
   import { isExpressionUnsupported } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
   import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
-  import { flip } from "svelte/animate";
-  import { fly } from "svelte/transition";
-  import { getStateManagers } from "../state-managers/state-managers";
-  import ComparisonPill from "../time-controls/comparison-pill/ComparisonPill.svelte";
-  import SuperPill from "../time-controls/super-pill/SuperPill.svelte";
-  import { useTimeControlStore } from "../time-controls/time-control-store";
-  import FilterButton from "./FilterButton.svelte";
-  import DimensionFilter from "./dimension-filters/DimensionFilter.svelte";
-  import type {
-    V1ExploreTimeRange,
-    V1TimeGrain,
-  } from "@rilldata/web-common/runtime-client";
-  import {
-    ALL_TIME_RANGE_ALIAS,
-    CUSTOM_TIME_RANGE_ALIAS,
-    deriveInterval,
-  } from "../time-controls/new-time-controls";
+  import type { TimeRange } from "@rilldata/web-common/lib/time/types";
   import {
     TimeComparisonOption,
     TimeRangePreset,
     type DashboardTimeControls,
   } from "@rilldata/web-common/lib/time/types";
+  import type {
+    V1ExploreTimeRange,
+    V1TimeGrain,
+  } from "@rilldata/web-common/runtime-client";
+  import { DateTime, Interval } from "luxon";
+  import { flip } from "svelte/animate";
+  import { fly } from "svelte/transition";
+  import { getStateManagers } from "../state-managers/state-managers";
   import {
     metricsExplorerStore,
     useExploreState,
   } from "../stores/dashboard-stores";
-  import type { TimeRange } from "@rilldata/web-common/lib/time/types";
-  import { DateTime, Interval } from "luxon";
+  import ComparisonPill from "../time-controls/comparison-pill/ComparisonPill.svelte";
+  import {
+    ALL_TIME_RANGE_ALIAS,
+    CUSTOM_TIME_RANGE_ALIAS,
+    deriveInterval,
+  } from "../time-controls/new-time-controls";
+  import SuperPill from "../time-controls/super-pill/SuperPill.svelte";
+  import { useTimeControlStore } from "../time-controls/time-control-store";
+  import FilterButton from "./FilterButton.svelte";
+  import DimensionFilter from "./dimension-filters/DimensionFilter.svelte";
 
-  import { getDefaultTimeGrain } from "@rilldata/web-common/lib/time/grains";
-  import { getValidComparisonOption } from "../time-controls/time-range-store";
-  import { Tooltip } from "bits-ui";
   import Timestamp from "@rilldata/web-common/features/dashboards/time-controls/super-pill/components/Timestamp.svelte";
+  import { getDefaultTimeGrain } from "@rilldata/web-common/lib/time/grains";
+  import { Tooltip } from "bits-ui";
   import Metadata from "../time-controls/super-pill/components/Metadata.svelte";
+  import { getValidComparisonOption } from "../time-controls/time-range-store";
   import { getPinnedTimeZones } from "../url-state/getDefaultExplorePreset";
 
   export let readOnly = false;
@@ -443,7 +443,7 @@
         <!-- if filters are present, place a chip at the end of the flex container 
       that enables clearing all filters -->
         {#if hasFilters}
-          <Button type="text" on:click={clearAllFilters}>Clear filters</Button>
+          <Button type="text" onClick={clearAllFilters}>Clear filters</Button>
         {/if}
       {/if}
     </div>

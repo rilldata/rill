@@ -69,7 +69,7 @@
       disabled={hasUnsavedChanges}
       type="secondary"
       label="Refresh Model"
-      on:click={() => refreshModel(true)}
+      onClick={() => refreshModel(true)}
     >
       <RefreshIcon size="14px" />
     </Button>

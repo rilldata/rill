@@ -1,10 +1,10 @@
 <script lang="ts">
   import { createAdminServiceTriggerReport } from "@rilldata/web-admin/client";
   import { Button } from "@rilldata/web-common/components/button";
-  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
+  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { getRuntimeServiceGetResourceQueryKey } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { useQueryClient } from "@tanstack/svelte-query";
@@ -55,7 +55,7 @@
 <Tooltip distance={8}>
   <Button
     type="primary"
-    on:click={handleRunNow}
+    onClick={handleRunNow}
     disabled={$triggerReport.isPending}
   >
     Run now

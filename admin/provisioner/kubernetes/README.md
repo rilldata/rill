@@ -70,7 +70,7 @@ spec:
         - rill
         env:
         - name: RILL_RUNTIME_GRPC_PORT
-          value: "9090"
+          value: "8080"
         - name: RILL_RUNTIME_HTTP_PORT
           value: "8080"
 
@@ -93,7 +93,7 @@ spec:
         ports:
         - containerPort: 8080
           protocol: TCP
-        - containerPort: 9090
+        - containerPort: 8080
           protocol: TCP
         resources:
           limits:
@@ -128,8 +128,8 @@ spec:
     port: 8080
     targetPort: 8080
   - name: grpc
-    port: 9090
-    targetPort: 9090
+    port: 8080
+    targetPort: 8080
   selector:
     app.kubernetes.io/name: {{ .Names.Deployment }}
 ```
@@ -151,7 +151,7 @@ spec:
           service:
             name: {{ .Names.Service }}
             port:
-              number: 9090
+              number: 8080
         path: /
         pathType: Prefix
 ```

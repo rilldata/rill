@@ -69,7 +69,7 @@
     <ContactUs />
   </svelte:fragment>
 
-  <Button type="primary" slot="action" on:click={() => (open = true)}>
+  <Button type="primary" slot="action" onClick={() => (open = true)}>
     {#if trialEnded}
       Start Team plan
     {:else}

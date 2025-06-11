@@ -56,7 +56,7 @@ func (w *deleteUnusedGithubReposWorker) deleteUnusedGithubRepos(ctx context.Cont
 			repo := repo
 			ids = append(ids, repo.ID)
 			group.Go(func() error {
-				account, name, ok := gitutil.SplitGithubURL(repo.Remote)
+				account, name, ok := gitutil.SplitGithubRemote(repo.Remote)
 				if !ok {
 					w.logger.Error("invalid github url", zap.String("remote", repo.Remote), zap.String("repo_id", repo.ID))
 				}

@@ -4,8 +4,8 @@
     createAdminServiceUpdateOrganization,
     getAdminServiceGetOrganizationQueryKey,
   } from "@rilldata/web-admin/client";
-  import * as Dialog from "@rilldata/web-common/components/dialog";
   import { Button } from "@rilldata/web-common/components/button";
+  import * as Dialog from "@rilldata/web-common/components/dialog";
   import Select from "@rilldata/web-common/components/forms/Select.svelte";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
@@ -87,10 +87,10 @@
       </Dialog.Description>
     </Dialog.Header>
     <Dialog.Footer class="mt-3">
-      <Button type="secondary" on:click={() => (open = false)}>Cancel</Button>
+      <Button type="secondary" onClick={() => (open = false)}>Cancel</Button>
       <Button
         type="primary"
-        on:click={handleAssignAsBillingContact}
+        onClick={handleAssignAsBillingContact}
         loading={$updateOrg.isPending}
         disabled={!selectedDifferntBillingContact}
       >
