@@ -84,7 +84,7 @@
     class="
     ui-copy
     text-ellipsis overflow-hidden
-    {isDimensionTable ? (position === 'left' ? '' : '') : 'px-4'}
+    {isDimensionTable ? '' : 'px-4'}
     {borderClassesInnerDiv}
     {position === 'top' && `text-left`}
     {position === 'top-left' &&
