@@ -215,7 +215,7 @@ func (s *Server) HTTPHandler(ctx context.Context, registerAdditionalHandlers fun
 	httpMux.Handle("/v1/", gwMux)
 
 	// Add HTTP handler for health check
-	observability.MuxHandle(httpMux, "/v1/health", observability.Middleware("runtime", s.logger, http.HandlerFunc(s.healthCheckHandler)))
+	observability.MuxHandle(httpMux, "/v1/health", observability.Middleware("runtime", s.logger, httputil.Handler(s.healthCheckHandler)))
 
 	// Add HTTP handler for query export downloads
 	observability.MuxHandle(httpMux, "/v1/download", observability.Middleware("runtime", s.logger, auth.HTTPMiddleware(s.aud, http.HandlerFunc(s.downloadHandler))))
