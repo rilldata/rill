@@ -1,12 +1,12 @@
 <script lang="ts">
   import Button from "@rilldata/web-common/components/button/Button.svelte";
-  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import {
-    ArrowUpToLineIcon,
     ArrowDownToLineIcon,
-    Pen,
+    ArrowUpToLineIcon,
     CopyIcon,
+    Pen,
     Trash2Icon,
   } from "lucide-svelte";
 
@@ -32,7 +32,7 @@
     noStroke
     gray={!selected}
     square
-    on:click={onEdit}
+    onClick={onEdit}
     label="Edit {singularType} {name}"
   >
     <Pen size="14px" />
@@ -48,7 +48,7 @@
     noStroke
     square
     gray={!selected}
-    on:click={onDelete}
+    onClick={onDelete}
     label="Delete {singularType} {name}"
   >
     <Trash2Icon size="14px" />
@@ -64,7 +64,7 @@
     noStroke
     square
     gray={!selected}
-    on:click={onDuplicate}
+    onClick={onDuplicate}
     label="Duplicate {singularType} {name}"
   >
     <CopyIcon size="14px" />
@@ -82,7 +82,7 @@
     gray={!selected}
     disabled={first}
     label="Move {singularType} {name} to top"
-    on:click={() => onMoveTo(true)}
+    onClick={() => onMoveTo(true)}
   >
     <ArrowUpToLineIcon size="14px" />
   </Button>
@@ -99,7 +99,7 @@
     gray={!selected}
     disabled={last}
     label="Move {singularType} {name} to bottom"
-    on:click={() => onMoveTo(false)}
+    onClick={() => onMoveTo(false)}
   >
     <ArrowDownToLineIcon size="14px" />
   </Button>

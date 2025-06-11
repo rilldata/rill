@@ -207,7 +207,7 @@
       </div>
       <div class="ml-auto">
         {#if hasFilters}
-          <Button type="text" on:click={clearAllFilters}>Clear filters</Button>
+          <Button type="text" onClick={clearAllFilters}>Clear filters</Button>
         {/if}
       </div>
     </div>

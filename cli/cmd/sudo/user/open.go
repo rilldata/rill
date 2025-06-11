@@ -2,7 +2,6 @@ package user
 
 import (
 	"net/url"
-	"strings"
 
 	"github.com/rilldata/rill/admin/pkg/urlutil"
 	"github.com/rilldata/rill/cli/pkg/browser"
@@ -16,12 +15,7 @@ func OpenCmd(ch *cmdutil.Helper) *cobra.Command {
 		Args:  cobra.NoArgs,
 		Short: "Open browser as the current user",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			// NOTE: This is temporary until we migrate to a server that can host HTTP and gRPC on the same port.
 			authURL := ch.AdminURL()
-			if strings.Contains(authURL, "http://localhost:9090") {
-				authURL = "http://localhost:8080"
-			}
-
 			withTokenURI, err := url.JoinPath(authURL, "auth", "with-token")
 			if err != nil {
 				return err

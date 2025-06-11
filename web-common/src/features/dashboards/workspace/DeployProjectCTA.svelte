@@ -64,7 +64,7 @@
     void behaviourEvent?.fireDeployEvent(BehaviourEventAction.DeployIntent);
 
     await waitUntil(() => !get(currentProject).isFetching);
-    if (get(currentProject).data?.project?.githubUrl && !managedGit) {
+    if (get(currentProject).data?.project?.gitRemote && !managedGit) {
       pushThroughGitOpen = true;
       return;
     }
@@ -94,7 +94,7 @@
   <Tooltip distance={8}>
     <Button
       loading={$currentProject.isLoading}
-      on:click={onShowDeploy}
+      onClick={onShowDeploy}
       type={hasValidDashboard ? "primary" : "secondary"}
     >
       <Rocket size="16px" />
@@ -111,6 +111,6 @@
 
 <PushToGitForDeployDialog
   bind:open={pushThroughGitOpen}
-  githubUrl={$currentProject.data?.project?.githubUrl ?? ""}
+  gitRemote={$currentProject.data?.project?.gitRemote ?? ""}
   subpath={$currentProject.data?.project?.subpath ?? ""}
 />

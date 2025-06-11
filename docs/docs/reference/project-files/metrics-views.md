@@ -14,13 +14,11 @@ In your Rill project directory, create a metrics view, `<metrics_view>.yaml`, fi
 
 **`type`** — Refers to the resource type and must be `metrics_view` _(required)_. 
 
-**`title`** — Refers to the display name for the metrics view [deprecated, use `display_name`] _(required)_.
-
 **`display_name`** - Refers to the display name for the metrics view _(required)_.
 
 **`description`** - A description for the project. _(optional)_.
 
-**`ai_context`** - extra context for AI assistants. Any information you add here will be available to AI assistants when they query the metrics view.
+**`ai_instructions`** - extra instructions for AI assistants. Any information you add here will be added to the system prompt for AI assistants when they query the metrics view.
 
 **`database`** - Refers to the database to use in the OLAP engine (to be used in conjunction with `table`). Otherwise, will use the default database or schema if not specified _(optional)_.
 

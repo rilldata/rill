@@ -4700,7 +4700,7 @@ definitions:
           type: string
       watchRepo:
         type: boolean
-      aiContext:
+      aiInstructions:
         type: string
     description: |-
       Instance represents a single data project, meaning one set of code artifacts,
@@ -5314,7 +5314,7 @@ definitions:
       description:
         type: string
         title: User-facing description
-      aiContext:
+      aiInstructions:
         type: string
         description: Extra context for LLM/AI features. Used to guide natural language question answering and routing.
       timeDimension:

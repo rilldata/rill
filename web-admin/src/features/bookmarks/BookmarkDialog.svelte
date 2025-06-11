@@ -121,8 +121,8 @@
 
     <div class="flex flex-row mt-4 gap-2">
       <div class="grow" />
-      <Button on:click={onClose} type="secondary">Cancel</Button>
-      <Button on:click={handleSubmit} type="primary">Save</Button>
+      <Button onClick={onClose} type="secondary">Cancel</Button>
+      <Button onClick={handleSubmit} type="primary">Save</Button>
     </div>
   </Dialog.Content>
 </Dialog.Root>

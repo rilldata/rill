@@ -20,7 +20,7 @@ type MetricsViewYAML struct {
 	DisplayName       string           `yaml:"display_name"`
 	Title             string           `yaml:"title"` // Deprecated: use display_name
 	Description       string           `yaml:"description"`
-	AIContext         string           `yaml:"ai_context"`
+	AIInstructions    string           `yaml:"ai_instructions"`
 	Model             string           `yaml:"model"`
 	Database          string           `yaml:"database"`
 	DatabaseSchema    string           `yaml:"database_schema"`
@@ -591,7 +591,7 @@ func (p *Parser) parseMetricsView(node *Node) error {
 		spec.DisplayName = ToDisplayName(node.Name)
 	}
 	spec.Description = tmp.Description
-	spec.AiContext = tmp.AIContext
+	spec.AiInstructions = tmp.AIInstructions
 	spec.TimeDimension = tmp.TimeDimension
 	spec.WatermarkExpression = tmp.Watermark
 	spec.SmallestTimeGrain = smallestTimeGrain

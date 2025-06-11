@@ -1,9 +1,6 @@
 <script lang="ts">
   import { builderActions, getAttrs, type Builder } from "bits-ui";
-  import { createEventDispatcher } from "svelte";
   import LoadingSpinner from "../icons/LoadingSpinner.svelte";
-
-  const dispatch = createEventDispatcher();
 
   type ButtonType =
     | "primary"
@@ -18,6 +15,7 @@
     | "toolbar";
 
   export let type: ButtonType = "plain";
+  export let onClick: ((event: MouseEvent) => void) | undefined = undefined;
   export let status: "info" | "error" = "info";
   export let disabled = false;
   export let compact = false;
@@ -52,8 +50,8 @@
   export { className as class };
 
   const handleClick = (event: MouseEvent) => {
-    if (!disabled) {
-      dispatch("click", event);
+    if (!disabled && onClick) {
+      onClick(event);
     }
   };
 </script>

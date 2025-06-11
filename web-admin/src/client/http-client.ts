@@ -8,6 +8,8 @@ import Axios from "axios";
 export const CANONICAL_ADMIN_URL =
   import.meta.env.RILL_UI_PUBLIC_RILL_ADMIN_URL || "http://localhost:8080";
 
+export const CANONICAL_ADMIN_API_URL = `${CANONICAL_ADMIN_URL.replace("https://admin", "https://api")}`;
+
 /**
  * The URL of the admin server.
  *
