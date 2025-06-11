@@ -1495,9 +1495,9 @@ export class MetricsViewSpec_Dimension extends Message<MetricsViewSpec_Dimension
   /**
    * The data type of the dimension
    *
-   * @generated from field: rill.runtime.v1.Type type = 12;
+   * @generated from field: rill.runtime.v1.Type data_type = 12;
    */
-  type?: Type;
+  dataType?: Type;
 
   constructor(data?: PartialMessage<MetricsViewSpec_Dimension>) {
     super();
@@ -1518,7 +1518,7 @@ export class MetricsViewSpec_Dimension extends Message<MetricsViewSpec_Dimension
     { no: 9, name: "lookup_key_column", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 10, name: "lookup_value_column", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 11, name: "lookup_default_expression", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 12, name: "type", kind: "message", T: Type },
+    { no: 12, name: "data_type", kind: "message", T: Type },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewSpec_Dimension {
@@ -1726,6 +1726,13 @@ export class MetricsViewSpec_Measure extends Message<MetricsViewSpec_Measure> {
    */
   treatNullsAs = "";
 
+  /**
+   * The data type of the measure
+   *
+   * @generated from field: rill.runtime.v1.Type data_type = 15;
+   */
+  dataType?: Type;
+
   constructor(data?: PartialMessage<MetricsViewSpec_Measure>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1748,6 +1755,7 @@ export class MetricsViewSpec_Measure extends Message<MetricsViewSpec_Measure> {
     { no: 13, name: "format_d3_locale", kind: "message", T: Struct },
     { no: 6, name: "valid_percent_of_total", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 14, name: "treat_nulls_as", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 15, name: "data_type", kind: "message", T: Type },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewSpec_Measure {

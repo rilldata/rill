@@ -189,7 +189,7 @@ message MetricsViewSpec {
     string lookup_value_column = 10;
     string lookup_default_expression = 11;
     // The data type of the dimension
-    Type type = 12;
+    Type data_type = 12;
   }
   // Selector for a dimension
   message DimensionSelector {
@@ -229,6 +229,8 @@ message MetricsViewSpec {
     google.protobuf.Struct format_d3_locale = 13;
     bool valid_percent_of_total = 6;
     string treat_nulls_as = 14;
+    // The data type of the measure
+    Type data_type = 15;
   }
   // Connector containing the table
   string connector = 1;

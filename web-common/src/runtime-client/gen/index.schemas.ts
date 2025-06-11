@@ -60,7 +60,7 @@ export interface MetricsViewSpecDimension {
   lookupKeyColumn?: string;
   lookupValueColumn?: string;
   lookupDefaultExpression?: string;
-  type?: Runtimev1Type;
+  dataType?: Runtimev1Type;
 }
 
 export interface MetricsViewSpecDimensionSelector {
@@ -86,6 +86,7 @@ export interface MetricsViewSpecMeasure {
   formatD3Locale?: MetricsViewSpecMeasureFormatD3Locale;
   validPercentOfTotal?: boolean;
   treatNullsAs?: string;
+  dataType?: Runtimev1Type;
 }
 
 export type MetricsViewSpecMeasureType =

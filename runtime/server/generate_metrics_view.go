@@ -289,7 +289,7 @@ func (s *Server) generateMetricsViewYAMLWithAI(ctx context.Context, instanceID, 
 		return nil, err
 	}
 	defer e.Close()
-	validateResult, err := e.ValidateMetricsView(ctx)
+	validateResult, _, err := e.ValidateMetricsView(ctx)
 	if err != nil {
 		return nil, err
 	}

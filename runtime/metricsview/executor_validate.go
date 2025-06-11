@@ -52,8 +52,8 @@ func (r *ValidateMetricsViewResult) Error() error {
 	return errors.Join(errs...)
 }
 
-// ValidateMetricsView validates the dimensions and measures in the executor's metrics view.
-func (e *Executor) ValidateMetricsView(ctx context.Context) (*ValidateMetricsViewResult, error) {
+// ValidateMetricsView validates the dimensions and measures in the executor's metrics view and returns a ValidateMetricsViewResult and the schema of the metrics view.
+func (e *Executor) ValidateMetricsView(ctx context.Context) (*ValidateMetricsViewResult, map[string]*runtimev1.Type, error) {
 	// Create the result
 	res := &ValidateMetricsViewResult{}
 
@@ -63,14 +63,17 @@ func (e *Executor) ValidateMetricsView(ctx context.Context) (*ValidateMetricsVie
 	if err != nil {
 		if errors.Is(err, drivers.ErrNotFound) {
 			res.OtherErrs = append(res.OtherErrs, fmt.Errorf("table %q does not exist", mv.Table))
-			return res, nil
+			return res, nil, nil
 		}
-		return nil, fmt.Errorf("could not find table %q: %w", mv.Table, err)
+		return nil, nil, fmt.Errorf("could not find table %q: %w", mv.Table, err)
 	}
 	cols := make(map[string]*runtimev1.StructType_Field, len(t.Schema.Fields))
 	for _, f := range t.Schema.Fields {
 		cols[strings.ToLower(f.Name)] = f
 	}
+
+	// First check time dimension is valid type if exists
+	e.validateTimeDimension(ctx, t, cols, res)
 
 	// Check security policy rules apply to fields that exist
 	fields := make(map[string]bool, len(mv.Dimensions)+len(mv.Measures))
@@ -126,25 +129,18 @@ func (e *Executor) ValidateMetricsView(ctx context.Context) (*ValidateMetricsVie
 		res.OtherErrs = append(res.OtherErrs, fmt.Errorf("time shift not supported for Pinot dialect, so FirstDayOfWeek and FirstMonthOfYear should be 1"))
 	}
 
+	mvSchema := make(map[string]*runtimev1.Type)
 	// Validate the metrics view schema.
 	if res.IsZero() { // All dimensions and measures need to be valid to compute the schema.
-		mvSchema, err := e.validateAndGetSchema(ctx, res)
+		schema, err := e.Schema(ctx)
 		if err != nil {
-			res.OtherErrs = append(res.OtherErrs, fmt.Errorf("failed to validate metrics view schema: %w", err))
-		} else if mvSchema != nil {
-			// populate dimension types based on the schema
-			for _, d := range e.metricsView.Dimensions {
-				if typ, ok := mvSchema[d.Name]; ok {
-					d.Type = typ
-				} else {
-					res.DimensionErrs = append(res.DimensionErrs, IndexErr{
-						Idx: -1, // -1 indicates no specific index for dimensions without a column
-						Err: fmt.Errorf("dimension %q not found in schema", d.Name),
-					})
-				}
-			}
-			e.validateTimeTypes(cols, mvSchema, res)
+			return nil, nil, fmt.Errorf("failed to resolve metrics view schema: %w", err)
 		}
+		for _, f := range schema.Fields {
+			mvSchema[f.Name] = f.Type
+		}
+
+		e.validateSchema(mvSchema, res)
 	}
 
 	// Validate the cache key can be resolved
@@ -153,7 +149,22 @@ func (e *Executor) ValidateMetricsView(ctx context.Context) (*ValidateMetricsVie
 		res.OtherErrs = append(res.OtherErrs, fmt.Errorf("failed to get cache key: %w", err))
 	}
 
-	return res, nil
+	return res, mvSchema, nil
+}
+
+// NormalizeMetricsView add types to the dimensions and measures in place. Be aware that this modifies the metrics view in place, so it should be cloned first if you want to keep the original intact.
+func (e *Executor) NormalizeMetricsView(mvSchema map[string]*runtimev1.Type) {
+	for _, d := range e.metricsView.Dimensions {
+		if typ, ok := mvSchema[d.Name]; ok {
+			d.DataType = typ
+		} // ignore dimensions that don't have a type in the schema
+	}
+
+	for _, m := range e.metricsView.Measures {
+		if typ, ok := mvSchema[m.Name]; ok {
+			m.DataType = typ
+		} // ignore measures that don't have a type in the schema
+	}
 }
 
 // validateAllDimensionsAndMeasures validates all dimensions and measures with one query. It returns an error if any of the expressions are invalid.
@@ -275,30 +286,46 @@ func (e *Executor) validateIndividualDimensionsAndMeasures(ctx context.Context, 
 	slices.SortFunc(res.MeasureErrs, func(a, b IndexErr) int { return a.Idx - b.Idx })
 }
 
-// validateTimeTypes validates the time dimension and dimensions of type timestamp or date in the metrics view.
-func (e *Executor) validateTimeTypes(tableSchema map[string]*runtimev1.StructType_Field, mvSchema map[string]*runtimev1.Type, res *ValidateMetricsViewResult) {
-	// Check if the time dimension is set, if primary time dim not set then other time types cannot be used while querying the metrics view, but that check will be done in the query executor
+// validateTimeDimension validates the time dimension in the metrics view.
+func (e *Executor) validateTimeDimension(ctx context.Context, t *drivers.Table, tableSchema map[string]*runtimev1.StructType_Field, res *ValidateMetricsViewResult) {
 	if e.metricsView.TimeDimension == "" {
 		return
 	}
 
-	// Time dimension should either exist in table schema if referring to a column or defined in the metics view
-	var timeTypeCode runtimev1.Type_Code
-	f, ok := tableSchema[strings.ToLower(e.metricsView.TimeDimension)]
-	if !ok {
-		// check if the time dimension is defined in the metrics view schema
-		timeType, ok := mvSchema[e.metricsView.TimeDimension]
-		if !ok {
-			res.TimeDimensionErr = fmt.Errorf("timeseries %q is not a column in table %q or defined in metrics view", e.metricsView.TimeDimension, e.metricsView.Table)
+	// Time dimension should either be defined in the metrics view or exist in the table schema if referring to a model column directly
+	for _, d := range e.metricsView.Dimensions {
+		if !strings.EqualFold(d.Name, e.metricsView.TimeDimension) {
+			continue
+		}
+
+		dialect := e.olap.Dialect()
+		expr, err := dialect.MetricsViewDimensionExpression(d)
+		if err != nil {
+			res.TimeDimensionErr = fmt.Errorf("failed to validate time dimension %q: %w", e.metricsView.TimeDimension, err)
 			return
 		}
-		timeTypeCode = timeType.Code
-	} else {
-		timeTypeCode = f.Type.Code
+		// Validate time dimension type with a query
+		rows, err := e.olap.Query(ctx, &drivers.Statement{
+			Query: fmt.Sprintf("SELECT %s FROM %s LIMIT 0", expr, dialect.EscapeTable(t.Database, t.DatabaseSchema, t.Name)),
+		})
+		if err != nil {
+			res.TimeDimensionErr = fmt.Errorf("failed to validate time dimension %q: %w", e.metricsView.TimeDimension, err)
+			return
+		}
+		typeCode := rows.Schema.Fields[0].Type.Code
+		if typeCode != runtimev1.Type_CODE_TIMESTAMP && typeCode != runtimev1.Type_CODE_DATE && !(e.olap.Dialect() == drivers.DialectPinot && typeCode == runtimev1.Type_CODE_INT64) {
+			res.TimeDimensionErr = fmt.Errorf("time dimension %q is not a TIMESTAMP column, got %s", e.metricsView.TimeDimension, typeCode)
+		}
+		return
 	}
 
-	if timeTypeCode != runtimev1.Type_CODE_TIMESTAMP && timeTypeCode != runtimev1.Type_CODE_DATE && !(e.olap.Dialect() == drivers.DialectPinot && timeTypeCode == runtimev1.Type_CODE_INT64) {
-		res.TimeDimensionErr = fmt.Errorf("timeseries %q is not a TIMESTAMP column", e.metricsView.TimeDimension)
+	// If the time dimension is not defined in the metrics view dimensions, check if it exists in the table schema
+	f, ok := tableSchema[strings.ToLower(e.metricsView.TimeDimension)]
+	if !ok {
+		res.TimeDimensionErr = fmt.Errorf("timeseries %q is not a column in table %q or defined in metrics view", e.metricsView.TimeDimension, e.metricsView.Table)
+		return
+	} else if f.Type.Code != runtimev1.Type_CODE_TIMESTAMP && f.Type.Code != runtimev1.Type_CODE_DATE && !(e.olap.Dialect() == drivers.DialectPinot && f.Type.Code == runtimev1.Type_CODE_INT64) {
+		res.TimeDimensionErr = fmt.Errorf("time dimension %q is not a TIMESTAMP column, got %s", e.metricsView.TimeDimension, f.Type.Code)
 		return
 	}
 }
@@ -342,21 +369,11 @@ func (e *Executor) validateMeasure(ctx context.Context, t *drivers.Table, m *run
 	return err
 }
 
-// validateAndGetSchema validates that the metrics view's measures are numeric. Populates the dimension types based on the metrics view schema.
-func (e *Executor) validateAndGetSchema(ctx context.Context, res *ValidateMetricsViewResult) (map[string]*runtimev1.Type, error) {
-	// Resolve the schema of the metrics view's dimensions and measures
-	schema, err := e.Schema(ctx)
-	if err != nil {
-		return nil, err
-	}
-	types := make(map[string]*runtimev1.Type, len(schema.Fields))
-	for _, f := range schema.Fields {
-		types[f.Name] = f.Type
-	}
-
+// validateSchema validates that the metrics view's measures are numeric.
+func (e *Executor) validateSchema(mvTypes map[string]*runtimev1.Type, res *ValidateMetricsViewResult) {
 	// Check that the measures are not strings
 	for i, m := range e.metricsView.Measures {
-		typ, ok := types[m.Name]
+		typ, ok := mvTypes[m.Name]
 		if !ok {
 			// Don't error: schemas are not always reliable
 			continue
@@ -370,6 +387,4 @@ func (e *Executor) validateAndGetSchema(ctx context.Context, res *ValidateMetric
 			})
 		}
 	}
-
-	return types, nil
 }

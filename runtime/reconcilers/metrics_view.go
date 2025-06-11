@@ -108,7 +108,7 @@ func (r *MetricsViewReconciler) Reconcile(ctx context.Context, n *runtimev1.Reso
 		return runtime.ReconcileResult{Err: fmt.Errorf("failed to create metrics view executor: %w", err)}
 	}
 	defer e.Close()
-	validateResult, validateErr := e.ValidateMetricsView(ctx)
+	validateResult, mvSchema, validateErr := e.ValidateMetricsView(ctx)
 	if validateErr == nil {
 		validateErr = validateResult.Error()
 	}
@@ -131,6 +131,9 @@ func (r *MetricsViewReconciler) Reconcile(ctx context.Context, n *runtimev1.Reso
 		// Return the validation error
 		return runtime.ReconcileResult{Err: validateErr}
 	}
+
+	// If the validation was successful, update the data types in the spec.
+	e.NormalizeMetricsView(mvSchema)
 
 	// Capture the spec, which we now know to be valid.
 	mv.State.ValidSpec = mv.Spec

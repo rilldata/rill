@@ -1,9 +1,10 @@
 package server
 
 import (
+	"strings"
+
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"google.golang.org/protobuf/types/known/timestamppb"
-	"strings"
 )
 
 func safeTimeStr(t *timestamppb.Timestamp) string {

@@ -3089,7 +3089,7 @@ definitions:
         type: string
       lookupDefaultExpression:
         type: string
-      type:
+      dataType:
         $ref: '#/definitions/runtimev1Type'
         title: The data type of the dimension
     title: Dimensions are columns to filter and group by
@@ -3144,6 +3144,9 @@ definitions:
         type: boolean
       treatNullsAs:
         type: string
+      dataType:
+        $ref: '#/definitions/runtimev1Type'
+        title: The data type of the measure
     title: Measures are aggregated computed values
   MetricsViewSpecMeasureType:
     type: string
