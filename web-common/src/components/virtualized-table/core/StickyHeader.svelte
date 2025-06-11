@@ -26,7 +26,7 @@
     clearTimeout(resizeSuppressTimeout);
     resizeSuppressTimeout = setTimeout(() => {
       isResizing = false;
-    }, 100); // Adjust duration to taste
+    }, 100);
   }
 
   let positionClasses: string;
