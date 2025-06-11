@@ -83,7 +83,7 @@ func (s *Server) healthCheckHandler(w http.ResponseWriter, req *http.Request) er
 	}
 
 	// runtime health
-	// we don't return 5xx on olap errors and hanging connections
+	// we don't return 5xx on hanging connections
 	status, err := s.runtime.Health(ctx, false)
 	if err != nil {
 		return httputil.Error(http.StatusInternalServerError, err)
