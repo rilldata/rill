@@ -107,11 +107,31 @@ func GitFetch(ctx context.Context, path, remote string) error {
 }
 
 func GitPull(ctx context.Context, path string, discardLocal bool, remote string) (string, error) {
+	st, err := RunGitStatus(path)
+	if err != nil {
+		return "", err
+	}
+
 	if discardLocal {
 		// instead of doing a hard clean, do a stash instead
-		cmd := exec.CommandContext(ctx, "git", "-C", path, "stash", "--include-untracked")
-		if err := cmd.Run(); err != nil {
-			return "", fmt.Errorf("failed to remove local changes: %w", err)
+		if st.LocalChanges {
+			cmd := exec.CommandContext(ctx, "git", "-C", path, "stash", "--include-untracked")
+			if err := cmd.Run(); err != nil {
+				return "", fmt.Errorf("failed to remove local changes: %w", err)
+			}
+		}
+
+		if st.LocalCommits > 0 {
+			// reset the local commits and stash the changes
+			cmd := exec.CommandContext(ctx, "git", "-C", path, "reset", "--mixed", fmt.Sprintf("HEAD~%d", st.LocalCommits))
+			if err := cmd.Run(); err != nil {
+				return "", fmt.Errorf("failed to reset local commits: %w", err)
+			}
+			// stash the changes
+			cmd = exec.CommandContext(ctx, "git", "-C", path, "stash", "--include-untracked")
+			if err := cmd.Run(); err != nil {
+				return "", fmt.Errorf("failed to remove local changes: %w", err)
+			}
 		}
 	}
 
@@ -119,21 +139,19 @@ func GitPull(ctx context.Context, path string, discardLocal bool, remote string)
 	args := []string{"-C", path, "pull"}
 
 	if remote != "" {
-		st, err := RunGitStatus(path)
-		if err != nil {
-			return "", err
-		}
 		args = append(args, remote, st.Branch)
 	}
 
 	cmd := exec.CommandContext(ctx, "git", args...)
-	out, err := cmd.Output()
+	_, err = cmd.Output()
 	if err != nil {
 		var execErr *exec.ExitError
 		if errors.As(err, &execErr) {
-			return "", fmt.Errorf("git pull failed: %s", string(execErr.Stderr))
+			// This is error msg returned by git when pull fails
+			return string(execErr.Stderr), nil
 		}
 		return "", err
 	}
-	return string(out), nil
+	// Skip the normal output of git pull, just return an empty string
+	return "", nil
 }

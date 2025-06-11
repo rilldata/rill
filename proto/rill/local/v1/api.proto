@@ -111,7 +111,10 @@ message GitPullRequest {
   bool discard_local = 1;
 }
 
-message GitPullResponse {}
+message GitPullResponse {
+  // The output of the git pull command. Only set for unsuccessful pulls.
+  string output = 1; 
+}
 
 message GitPushRequest {
   string commit_message = 1;

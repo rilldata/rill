@@ -36,6 +36,17 @@ func (s *Server) GitStatus(ctx context.Context, r *connect.Request[localv1.GitSt
 		if err != nil {
 			return nil, err
 		}
+		if project == nil {
+			// If the project is not found return the best effort status
+			gs, err := gitutil.RunGitStatus(s.app.ProjectPath)
+			if err != nil {
+				return nil, err
+			}
+			return connect.NewResponse(&localv1.GitStatusResponse{
+				Branch:    gs.Branch,
+				GithubUrl: gs.RemoteURL,
+			}), nil
+		}
 
 		remote, err := s.gitRemoteForProject(ctx, project)
 		if err != nil {
@@ -63,9 +74,11 @@ func (s *Server) GitStatus(ctx context.Context, r *connect.Request[localv1.GitSt
 }
 
 func (s *Server) GitPull(ctx context.Context, r *connect.Request[localv1.GitPullRequest]) (*connect.Response[localv1.GitPullResponse], error) {
-	_, err := gitutil.GitPull(ctx, s.app.ProjectPath, r.Msg.DiscardLocal, "")
+	out, err := gitutil.GitPull(ctx, s.app.ProjectPath, r.Msg.DiscardLocal, "")
 	if err == nil {
-		return connect.NewResponse(&localv1.GitPullResponse{}), nil
+		return connect.NewResponse(&localv1.GitPullResponse{
+			Output: out,
+		}), nil
 	}
 	// if native git pull fails, try with ephemeral token - this may be a managed git project
 
@@ -78,16 +91,21 @@ func (s *Server) GitPull(ctx context.Context, r *connect.Request[localv1.GitPull
 	if err != nil {
 		return nil, err
 	}
+	if project == nil {
+		return nil, errors.New("git credentials not set and repo is not connected to a project")
+	}
 
 	remote, err := s.gitRemoteForProject(ctx, project)
 	if err != nil {
 		return nil, err
 	}
-	_, err = gitutil.GitPull(ctx, s.app.ProjectPath, r.Msg.DiscardLocal, remote)
+	out, err = gitutil.GitPull(ctx, s.app.ProjectPath, r.Msg.DiscardLocal, remote)
 	if err != nil {
 		return nil, err
 	}
-	return connect.NewResponse(&localv1.GitPullResponse{}), nil
+	return connect.NewResponse(&localv1.GitPullResponse{
+		Output: out,
+	}), nil
 }
 
 func (s *Server) GitPush(ctx context.Context, r *connect.Request[localv1.GitPushRequest]) (*connect.Response[localv1.GitPushResponse], error) {
@@ -117,6 +135,9 @@ func (s *Server) GitPush(ctx context.Context, r *connect.Request[localv1.GitPush
 	project, err := s.app.ch.LoadProject(ctx, s.app.ProjectPath)
 	if err != nil {
 		return nil, err
+	}
+	if project == nil {
+		return nil, errors.New("git credentials not set and repo is not connected to a project")
 	}
 
 	author, err = s.app.ch.GitSignature(ctx, s.app.ProjectPath)

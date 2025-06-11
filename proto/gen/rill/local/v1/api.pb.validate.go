@@ -1038,6 +1038,8 @@ func (m *GitPullResponse) validate(all bool) error {
 
 	var errors []error
 
+	// no validation rules for Output
+
 	if len(errors) > 0 {
 		return GitPullResponseMultiError(errors)
 	}
