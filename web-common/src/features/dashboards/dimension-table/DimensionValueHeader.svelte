@@ -71,7 +71,7 @@
     header={{ size: width, start: 0 }}
     enableResize={true}
     position="top-left"
-    borderRight={horizontalScrolling}
+    borderRight={true}
     bgClass="bg-surface"
     onClick={sortByDimensionValue}
     on:keydown={sortByDimensionValue}

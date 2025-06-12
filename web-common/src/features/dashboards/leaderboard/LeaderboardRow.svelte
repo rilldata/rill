@@ -170,8 +170,8 @@
   style:background={leaderboardMeasureNames.length === 1
     ? dimensionGradients
     : undefined}
-  on:mouseenter={() => (hovered = true)}
-  on:mouseleave={() => (hovered = false)}
+  on:pointerover={() => (hovered = true)}
+  on:pointerout={() => (hovered = false)}
   on:click={(e) => {
     if (e.shiftKey) return;
     toggleDimensionValueSelection(
@@ -199,7 +199,7 @@
     on:click={modified({
       shift: () => shiftClickHandler(dimensionValue),
     })}
-    on:mouseover={() => {
+    on:pointerover={() => {
       if (dimensionValue) {
         // Always update the value in the store, but don't change visibility
         cellInspectorStore.updateValue(dimensionValue.toString());
@@ -227,16 +227,19 @@
       </span>
     {/if}
 
-    {#if hovered && href}
-      <a
-        target="_blank"
-        rel="noopener noreferrer"
-        {href}
-        title={href}
-        on:click|stopPropagation
-      >
-        <ExternalLink className="fill-primary-600" />
-      </a>
+    {#if href}
+      <span class="external-link-wrapper">
+        <a
+          target="_blank"
+          rel="noopener noreferrer"
+          {href}
+          title={href}
+          on:click|stopPropagation
+          class:hovered
+        >
+          <ExternalLink className="fill-primary-600" />
+        </a>
+      </span>
     {/if}
   </td>
 
@@ -251,7 +254,7 @@
       style:background={leaderboardMeasureNames.length === 1
         ? measureGradients
         : measureGradientMap?.[measureName]}
-      on:mouseover={() => {
+      on:pointerover={() => {
         const value = values[measureName]?.toString() || "";
         if (value) {
           cellInspectorStore.updateValue(value);
@@ -287,7 +290,7 @@
           shift: () =>
             shiftClickHandler(pctOfTotals[measureName]?.toString() || ""),
         })}
-        on:mouseover={() => {
+        on:pointerover={() => {
           const value = pctOfTotals[measureName]?.toString() || "";
           if (value) {
             cellInspectorStore.updateValue(value);
@@ -319,7 +322,7 @@
           shift: () =>
             shiftClickHandler(deltaAbsMap[measureName]?.toString() || ""),
         })}
-        on:mouseover={() => {
+        on:pointerover={() => {
           const value = deltaAbsMap[measureName]?.toString() || "";
           if (value) {
             cellInspectorStore.updateValue(value);
@@ -354,7 +357,7 @@
           shift: () =>
             shiftClickHandler(deltaRels[measureName]?.toString() || ""),
         })}
-        on:mouseover={() => {
+        on:pointerover={() => {
           const value = deltaRels[measureName]?.toString() || "";
           if (value) {
             cellInspectorStore.updateValue(value);
@@ -410,13 +413,22 @@
     @apply bg-gray-100;
   }
 
-  a {
-    @apply absolute right-0 z-50 h-[22px] w-[32px];
-    @apply bg-surface flex items-center justify-center shadow-md rounded-sm;
+  .external-link-wrapper a {
+    opacity: 0;
+    position: absolute;
+    right: 0;
+    top: 0;
+    height: 20px;
+    width: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
-
-  a:hover {
-    @apply bg-primary-100;
+  .external-link-wrapper a.hovered {
+    opacity: 0.7;
+    pointer-events: auto;
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
   }
 
   td {
