@@ -47,74 +47,9 @@ const connectorErrorMap = {
       "We could not connect to the provided URL. Please check your path and try again.",
     "file type not supported": "The provided file type is not supported.",
   },
-} as const;
+};
 
 const CONNECTORS_WITH_CUSTOM_HANDLING = new Set(Object.keys(connectorErrorMap));
-
-export function humanReadableErrorMessage(
-  connectorName: string | undefined,
-  code: number | undefined,
-  message: string | undefined,
-) {
-  const unknownErrorStr = "An unknown error occurred.";
-
-  const serverError = message;
-  if (serverError === undefined) return unknownErrorStr;
-
-  if (connectorName && !CONNECTORS_WITH_CUSTOM_HANDLING.has(connectorName)) {
-    return `We got the following error when trying to connect to ${connectorName}. Please check your connection details and user permissions, then try again.`;
-  }
-
-  // gRPC error codes
-  // https://pkg.go.dev/google.golang.org/grpc@v1.49.0/codes
-  switch (code) {
-    case GRPC_ERROR_CODES.Unknown: {
-      // ClickHouse errors
-      if (connectorName === "clickhouse") {
-        for (const [key, value] of Object.entries(
-          connectorErrorMap.clickhouse,
-        )) {
-          if (serverError.includes(key)) {
-            return value;
-          }
-        }
-      }
-      return serverError;
-    }
-    case GRPC_ERROR_CODES.InvalidArgument: {
-      // Rill errors
-      if (
-        serverError.match(/an existing object with name '.*' already exists/)
-      ) {
-        return "A source with this name already exists. Please choose a different name.";
-      }
-
-      // Handle connector-specific errors
-      if (connectorName && connectorName in connectorErrorMap) {
-        const errorMap =
-          connectorErrorMap[connectorName as keyof typeof connectorErrorMap];
-        for (const [key, value] of Object.entries(errorMap)) {
-          if (serverError.includes(key)) {
-            return value;
-          }
-        }
-      }
-
-      // DuckDB errors
-      if (serverError.match(/expected \d* values per row, but got \d*/)) {
-        return "Malformed CSV file: number of columns does not match header.";
-      }
-
-      // Fallback to raw server error
-      return serverError;
-    }
-    case GRPC_ERROR_CODES.DeadlineExceeded: {
-      return "The request timed out. Please ensure your service is running and try again.";
-    }
-    default:
-      return unknownErrorStr;
-  }
-}
 
 const errorTelemetryMap = {
   // AWS Errors
@@ -145,6 +80,97 @@ const errorTelemetryMap = {
   "context deadline exceeded": SourceErrorCodes.RuntimeError,
   timeout: SourceErrorCodes.RuntimeError,
 };
+
+const DEFAULT_CONNECTOR_ERROR_TEMPLATE =
+  "We got the following error when trying to connect to CONNECTOR_NAME. Please check your connection details and user permissions, then try again.";
+
+export function humanReadableErrorMessage(
+  connectorName: string | undefined,
+  code: number | undefined,
+  message: string | undefined,
+) {
+  const unknownErrorStr = "An unknown error occurred.";
+
+  const serverError = message;
+  if (serverError === undefined) return unknownErrorStr;
+
+  // For connectors without custom handling, use the generic template
+  if (connectorName && !CONNECTORS_WITH_CUSTOM_HANDLING.has(connectorName)) {
+    return DEFAULT_CONNECTOR_ERROR_TEMPLATE.replace(
+      "CONNECTOR_NAME",
+      connectorName,
+    );
+  }
+
+  // gRPC error codes
+  // https://pkg.go.dev/google.golang.org/grpc@v1.49.0/codes
+  switch (code) {
+    case GRPC_ERROR_CODES.Unknown: {
+      // ClickHouse errors
+      if (connectorName === "clickhouse") {
+        for (const [key, value] of Object.entries(
+          connectorErrorMap.clickhouse,
+        )) {
+          if (serverError.includes(key)) {
+            return value;
+          }
+        }
+      }
+      // For custom-handled connectors with no matching error, use the default template
+      if (connectorName && CONNECTORS_WITH_CUSTOM_HANDLING.has(connectorName)) {
+        return DEFAULT_CONNECTOR_ERROR_TEMPLATE.replace(
+          "CONNECTOR_NAME",
+          connectorName,
+        );
+      }
+      return serverError;
+    }
+    case GRPC_ERROR_CODES.InvalidArgument: {
+      // Rill errors
+      if (
+        serverError.match(/an existing object with name '.*' already exists/)
+      ) {
+        return "A source with this name already exists. Please choose a different name.";
+      }
+
+      // Handle connector-specific errors
+      if (connectorName && connectorName in connectorErrorMap) {
+        const errorMap =
+          connectorErrorMap[connectorName as keyof typeof connectorErrorMap];
+        for (const [key, value] of Object.entries(errorMap)) {
+          if (serverError.includes(key)) {
+            return value;
+          }
+        }
+        // For custom-handled connectors with no matching error, use the default template
+        return DEFAULT_CONNECTOR_ERROR_TEMPLATE.replace(
+          "CONNECTOR_NAME",
+          connectorName,
+        );
+      }
+
+      // DuckDB errors
+      if (serverError.match(/expected \d* values per row, but got \d*/)) {
+        return "Malformed CSV file: number of columns does not match header.";
+      }
+
+      // Fallback to raw server error
+      return serverError;
+    }
+    case GRPC_ERROR_CODES.DeadlineExceeded: {
+      return "The request timed out. Please ensure your service is running and try again.";
+    }
+    default:
+      // For custom-handled connectors with other error codes, use the default template
+      if (connectorName && CONNECTORS_WITH_CUSTOM_HANDLING.has(connectorName)) {
+        return DEFAULT_CONNECTOR_ERROR_TEMPLATE.replace(
+          "CONNECTOR_NAME",
+          connectorName,
+        );
+      }
+      return unknownErrorStr;
+  }
+}
 
 export function categorizeSourceError(errorMessage: string) {
   // check for connector errors
