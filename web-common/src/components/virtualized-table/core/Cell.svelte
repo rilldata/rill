@@ -138,6 +138,7 @@
     style:left="{column.start}px"
     style:top="{row.start}px"
     style:width="{column.size}px"
+    style:padding-right="10px"
     tabindex="0"
   >
     <BarAndLabel
