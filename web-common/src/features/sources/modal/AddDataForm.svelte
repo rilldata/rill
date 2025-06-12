@@ -153,10 +153,10 @@
       // Handle different error types
       if (e instanceof Error) {
         error = e.message;
-        details = e.message;
+        details = undefined;
       } else if (e?.message && e?.details) {
         error = e.message;
-        details = e.details;
+        details = e.details !== e.message ? e.details : undefined;
       } else if (e?.response?.data) {
         const originalMessage = e.response.data.message;
         const humanReadable = humanReadableErrorMessage(
@@ -169,7 +169,7 @@
           humanReadable !== originalMessage ? originalMessage : undefined;
       } else {
         error = "Unknown error";
-        details = "Unknown error";
+        details = undefined;
       }
 
       // Keep error state for each form

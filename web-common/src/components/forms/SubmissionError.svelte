@@ -24,7 +24,7 @@
           on:click={toggleDetails}
         >
           <span class="text-xs font-semibold text-gray-500 uppercase"
-            >Details</span
+            >Connection error</span
           >
           <div class="icon-wrapper ml-1">
             <svg
@@ -53,7 +53,7 @@
           </div>
         </button>
         {#if showDetails}
-          <div class="details-section border-l border-gray-300">
+          <div class="details-section border-l-2 border-gray-300">
             <pre class="details whitespace-pre-wrap break-words">{details}</pre>
           </div>
         {/if}
@@ -64,7 +64,7 @@
 
 <style lang="postcss">
   .error-container {
-    @apply border-red-600;
+    @apply border-red-600 bg-red-50;
     @apply p-2 flex border rounded mb-3;
   }
 
