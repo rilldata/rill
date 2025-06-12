@@ -1,10 +1,4 @@
-import type { Query } from "@tanstack/svelte-query";
-import type {
-  V1ListResourcesResponse,
-  V1Resource,
-} from "@rilldata/web-common/runtime-client";
-import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
-import { refetchInterval, resetRefetchInterval } from "./refetchIntervalStore";
+import type { V1Resource } from "@rilldata/web-common/runtime-client";
 
 export const INITIAL_REFETCH_INTERVAL = 200; // Start at 200ms for immediate feedback
 export const MAX_REFETCH_INTERVAL = 2_000; // Cap at 2s
