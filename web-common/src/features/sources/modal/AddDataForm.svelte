@@ -172,15 +172,6 @@
 
 <div class="add-data-layout">
   <div class="add-data-form-panel">
-    <div class="pb-1 text-slate-500">
-      Need help? Refer to our
-      <a
-        href={connector.docsUrl || "https://docs.rilldata.com/build/connect/"}
-        rel="noreferrer noopener"
-        target="_blank">docs</a
-      > for more information.
-    </div>
-
     {#if hasDsnFormOption}
       <div class="py-3">
         <div class="text-sm font-medium mb-2">Connection method</div>
