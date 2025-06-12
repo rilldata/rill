@@ -4,12 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/url"
 	"os"
 	"strings"
 	"time"
 
 	"github.com/go-git/go-git/v5"
-	"github.com/go-git/go-git/v5/config"
+	gitConfig "github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/go-git/go-git/v5/plumbing/transport"
@@ -31,6 +32,24 @@ type Config struct {
 
 func (g *Config) IsExpired() bool {
 	return g.Password != "" && g.PasswordExpiresAt.Before(time.Now())
+}
+
+func (g *Config) FullyQualifiedRemote() (string, error) {
+	if g.Remote == "" {
+		return "", fmt.Errorf("remote is not set")
+	}
+	u, err := url.Parse(g.Remote)
+	if err != nil {
+		return "", err
+	}
+	if g.Username != "" {
+		if g.Password != "" {
+			u.User = url.UserPassword(g.Username, g.Password)
+		} else {
+			u.User = url.User(g.Username)
+		}
+	}
+	return u.String(), nil
 }
 
 func CloneRepo(repoURL string) (string, error) {
@@ -190,11 +209,11 @@ func GetSyncStatus(repoPath, branch, remote string) (SyncStatus, error) {
 	return SyncStatusSynced, nil
 }
 
-func CommitAndForcePush(ctx context.Context, projectPath, remote, username, password, branch string, author *object.Signature, allowEmptyCommits bool) error {
+func CommitAndForcePush(ctx context.Context, projectPath string, config *Config, commitMsg string, author *object.Signature, allowEmptyCommits bool) error {
 	// init git repo
 	repo, err := git.PlainInitWithOptions(projectPath, &git.PlainInitOptions{
 		InitOptions: git.InitOptions{
-			DefaultBranch: plumbing.NewBranchReferenceName(branch),
+			DefaultBranch: plumbing.NewBranchReferenceName(config.DefaultBranch),
 		},
 		Bare: false,
 	})
@@ -219,7 +238,10 @@ func CommitAndForcePush(ctx context.Context, projectPath, remote, username, pass
 	}
 
 	// git commit -m
-	_, err = wt.Commit("Auto committed by Rill", &git.CommitOptions{All: true, Author: author, AllowEmptyCommits: allowEmptyCommits})
+	if commitMsg == "" {
+		commitMsg = "Auto committed by Rill"
+	}
+	_, err = wt.Commit(commitMsg, &git.CommitOptions{All: true, Author: author, AllowEmptyCommits: allowEmptyCommits})
 	if err != nil {
 		if !errors.Is(err, git.ErrEmptyCommit) {
 			return fmt.Errorf("failed to commit files to git: %w", err)
@@ -229,9 +251,9 @@ func CommitAndForcePush(ctx context.Context, projectPath, remote, username, pass
 	}
 
 	// set remote
-	_, err = repo.CreateRemote(&config.RemoteConfig{
+	_, err = repo.CreateRemote(&gitConfig.RemoteConfig{
 		Name: "origin",
-		URLs: []string{remote},
+		URLs: []string{config.Remote},
 	})
 	if err != nil {
 		if !errors.Is(err, git.ErrRemoteExists) {
@@ -241,12 +263,18 @@ func CommitAndForcePush(ctx context.Context, projectPath, remote, username, pass
 	}
 
 	// push the changes
-	err = repo.PushContext(ctx, &git.PushOptions{
+	pushOpts := &git.PushOptions{
 		RemoteName: "origin",
-		RemoteURL:  remote,
-		Auth:       &githttp.BasicAuth{Username: username, Password: password},
+		RemoteURL:  config.Remote,
 		Force:      true,
-	})
+	}
+	if config.Username != "" && config.Password != "" {
+		pushOpts.Auth = &githttp.BasicAuth{
+			Username: config.Username,
+			Password: config.Password,
+		}
+	}
+	err = repo.PushContext(ctx, pushOpts)
 	if err != nil {
 		return fmt.Errorf("failed to push to remote : %w", err)
 	}
@@ -260,4 +288,24 @@ func Clone(ctx context.Context, path string, c *Config) (*git.Repository, error)
 		ReferenceName: plumbing.NewBranchReferenceName(c.DefaultBranch),
 		SingleBranch:  true,
 	})
+}
+
+func NativeGitSignature(ctx context.Context, path string) (*object.Signature, error) {
+	repo, err := git.PlainOpen(path)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open git repository: %w", err)
+	}
+	cfg, err := repo.ConfigScoped(gitConfig.SystemScope)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get git config: %w", err)
+	}
+	if cfg.User.Email != "" && cfg.User.Name != "" {
+		// user has git properly configured use that
+		return &object.Signature{
+			Name:  cfg.User.Name,
+			Email: cfg.User.Email,
+			When:  time.Now(),
+		}, nil
+	}
+	return nil, fmt.Errorf("git user email or name is not set in git config")
 }
