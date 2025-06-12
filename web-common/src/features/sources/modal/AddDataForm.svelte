@@ -316,7 +316,6 @@
         Connection preview
       </div>
       <pre
-        class="bg-slate-50 p-3 rounded text-xs border border-slate-100"
         style="white-space: pre-wrap; overflow-x: visible;">{yamlPreview}</pre>
     </div>
     <div>
@@ -350,10 +349,10 @@
     @apply flex-1 flex flex-col pr-6 min-w-0;
   }
   .add-data-side-panel {
-    @apply w-96 min-w-[320px] max-w-[400px] border-l border-slate-200 pl-6 flex flex-col gap-6 bg-white;
+    @apply w-96 min-w-[320px] max-w-[400px] border-l border-gray-200 pl-6 flex flex-col gap-6 bg-white;
   }
   .add-data-side-panel pre {
-    @apply bg-slate-50 p-3 rounded text-xs border border-slate-100;
+    @apply bg-slate-50 p-4 rounded-md text-xs border border-gray-200 font-medium;
     white-space: pre-wrap;
     overflow-x: visible;
   }
