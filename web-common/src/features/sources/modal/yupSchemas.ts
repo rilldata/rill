@@ -4,6 +4,7 @@ import {
   VALID_NAME_PATTERN,
 } from "../../entity-management/name-utils";
 
+// FIXME: ideally we deprecate this and rely on the json response from the template API
 export const getYupSchema = {
   s3: yup.object().shape({
     path: yup
