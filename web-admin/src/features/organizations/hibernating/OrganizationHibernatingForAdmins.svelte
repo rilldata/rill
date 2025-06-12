@@ -85,7 +85,7 @@
       <Button
         type="secondary"
         wide
-        on:click={() => billingCTAHandler.handle(issueForHibernation)}
+        onClick={() => billingCTAHandler.handle(issueForHibernation)}
       >
         {issueForHibernation.cta.text}
       </Button>

@@ -168,7 +168,7 @@ func (s *Server) EditInstance(ctx context.Context, req *runtimev1.EditInstanceRe
 		FeatureFlags:         oldInst.FeatureFlags,
 		Annotations:          annotations,
 		WatchRepo:            valOrDefault(req.WatchRepo, oldInst.WatchRepo),
-		AIContext:            oldInst.AIContext,
+		AIInstructions:       oldInst.AIInstructions,
 	}
 
 	err = s.runtime.EditInstance(ctx, inst, true)
@@ -270,11 +270,11 @@ func (s *Server) WatchLogs(req *runtimev1.WatchLogsRequest, srv runtimev1.Runtim
 
 func instanceToPB(inst *drivers.Instance, sensitive bool) *runtimev1.Instance {
 	pb := &runtimev1.Instance{
-		InstanceId:   inst.ID,
-		CreatedOn:    timestamppb.New(inst.CreatedOn),
-		UpdatedOn:    timestamppb.New(inst.UpdatedOn),
-		FeatureFlags: inst.FeatureFlags,
-		AiContext:    inst.AIContext,
+		InstanceId:     inst.ID,
+		CreatedOn:      timestamppb.New(inst.CreatedOn),
+		UpdatedOn:      timestamppb.New(inst.UpdatedOn),
+		FeatureFlags:   inst.FeatureFlags,
+		AiInstructions: inst.AIInstructions,
 	}
 
 	if sensitive {

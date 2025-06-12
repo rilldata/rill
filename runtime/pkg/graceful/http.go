@@ -2,14 +2,18 @@ package graceful
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net"
 	"net/http"
 	"strings"
 	"time"
+
+	"golang.org/x/net/http2"
+	"golang.org/x/net/http2/h2c"
 )
 
-const httpShutdownTimeout = 15 * time.Second
+const httpShutdownTimeout = 5 * time.Second
 
 type ServeOptions struct {
 	Port     int
@@ -19,6 +23,10 @@ type ServeOptions struct {
 
 // ServeHTTP serves a HTTP server and performs a graceful shutdown if/when ctx is cancelled.
 func ServeHTTP(ctx context.Context, server *http.Server, options ServeOptions) error {
+	// Wrap handler with h2c to support HTTP/2 cleartext
+	h2s := &http2.Server{}
+	server.Handler = h2c.NewHandler(server.Handler, h2s)
+
 	// Calling net.Listen("tcp", ...) will succeed if the port is blocked on IPv4 but not on IPv6.
 	// This workaround ensures we get the port on IPv4 (and most likely also on IPv6).
 	lis, err := net.Listen("tcp4", fmt.Sprintf(":%d", options.Port))
@@ -39,10 +47,15 @@ func ServeHTTP(ctx context.Context, server *http.Server, options ServeOptions) e
 	go func() {
 		if options.CertPath != "" && options.KeyPath != "" {
 			// Use HTTPS if cert and key are provided
+			// Configure HTTP/2 for TLS
+			if err := http2.ConfigureServer(server, &http2.Server{}); err != nil {
+				serveErrCh <- err
+				return
+			}
 			err := server.ServeTLS(lis, options.CertPath, options.KeyPath)
 			serveErrCh <- err
 		} else {
-			// Otherwise use HTTP
+			// Otherwise use HTTP with h2c support
 			err := server.Serve(lis)
 			serveErrCh <- err
 		}
@@ -56,6 +69,11 @@ func ServeHTTP(ctx context.Context, server *http.Server, options ServeOptions) e
 		ctx, cancel := context.WithTimeout(context.Background(), httpShutdownTimeout)
 		defer cancel()
 
-		return server.Shutdown(ctx)
+		err := server.Shutdown(ctx)
+		if err != nil && !errors.Is(err, ctx.Err()) {
+			// Ignoring context errors because they are quite frequent with MCP streaming connections, which don't stop gracefully.
+			return err
+		}
+		return nil
 	}
 }

@@ -141,7 +141,7 @@
               </div>
             {:else}
               <a
-                href={`/${organization}/${project}/explore/${$dashboardName.data}`}
+                href={`/${organization}/${project}/explore/${encodeURIComponent($dashboardName.data)}`}
               >
                 {dashboardTitle}
               </a>

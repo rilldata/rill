@@ -33,6 +33,15 @@ type config struct {
 	// Secrets is a comma-separated list of connector names to create temporary secrets for before executing models.
 	// The secrets are not created for read queries.
 	Secrets string `mapstructure:"secrets"`
+
+	// Path switches the implementation to use a generic rduckdb implementation backed by the db used in the Path
+	Path string `mapstructure:"path"`
+	// Attach allows user to pass a full ATTACH statement to attach a DuckDB database.
+	// Example YAML syntax : attach: "'ducklake:metadata.ducklake' AS my_ducklake(DATA_PATH 'datafiles1')"
+	Attach string `mapstructure:"attach"`
+	// DatabaseName is the name of the attached DuckDB database specified in the Path.
+	// This is usually not required but can be set if our auto detection of name fails.
+	DatabaseName string `mapstructure:"database_name"`
 }
 
 func newConfig(cfgMap map[string]any) (*config, error) {
