@@ -439,7 +439,7 @@
     </div>
     <Button
       type="primary"
-      on:click={handleInvite}
+      onClick={handleInvite}
       disabled={selected.length === 0 && !input.trim()}
       forcedStyle="height: 32px !important; padding-left: 20px; padding-right: 20px;"
     >
