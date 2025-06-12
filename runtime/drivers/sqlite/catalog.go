@@ -2,10 +2,15 @@ package sqlite
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
+	"google.golang.org/protobuf/encoding/protojson"
 )
 
 type catalogStore struct {
@@ -356,4 +361,182 @@ func (c *catalogStore) UpsertInstanceHealth(ctx context.Context, h *drivers.Inst
 		ON CONFLICT(instance_id) DO UPDATE SET health_json=excluded.health_json, updated_on=excluded.updated_on;
 	`, h.InstanceID, h.HealthJSON)
 	return err
+}
+
+// ListConversations fetches all conversations for an instance.
+func (c *catalogStore) ListConversations(ctx context.Context) ([]*runtimev1.Conversation, error) {
+	rows, err := c.db.QueryContext(ctx, `
+        SELECT conversation_id, title, created_on, updated_on
+        FROM conversations
+        WHERE instance_id = ?
+        ORDER BY updated_on DESC
+    `, c.instanceID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var result []*runtimev1.Conversation
+	for rows.Next() {
+		var conv runtimev1.Conversation
+		var createdOnStr, updatedOnStr string
+		if err := rows.Scan(&conv.Id, &conv.Title, &createdOnStr, &updatedOnStr); err != nil {
+			return nil, err
+		}
+
+		// Parse timestamps
+		createdOn, err := parseMicrosecondTimestamp(createdOnStr)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse created_on timestamp %q: %w", createdOnStr, err)
+		}
+		updatedOn, err := parseMicrosecondTimestamp(updatedOnStr)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse updated_on timestamp %q: %w", updatedOnStr, err)
+		}
+
+		conv.CreatedOn = createdOn.Format(time.RFC3339)
+		conv.UpdatedOn = updatedOn.Format(time.RFC3339)
+		result = append(result, &conv)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	// Ensure we return an empty slice instead of nil
+	if result == nil {
+		result = []*runtimev1.Conversation{}
+	}
+
+	return result, nil
+}
+
+// GetConversation fetches a conversation by ID.
+func (c *catalogStore) GetConversation(ctx context.Context, conversationID string) (*runtimev1.Conversation, error) {
+	row := c.db.QueryRowContext(ctx, `
+        SELECT conversation_id, title, created_on, updated_on
+        FROM conversations
+        WHERE instance_id = ? AND conversation_id = ?
+    `, c.instanceID, conversationID)
+	var conv runtimev1.Conversation
+	var createdOnStr, updatedOnStr string
+	if err := row.Scan(&conv.Id, &conv.Title, &createdOnStr, &updatedOnStr); err != nil {
+		return nil, err
+	}
+
+	// Parse timestamps
+	createdOn, err := parseMicrosecondTimestamp(createdOnStr)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse created_on timestamp %q: %w", createdOnStr, err)
+	}
+	updatedOn, err := parseMicrosecondTimestamp(updatedOnStr)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse updated_on timestamp %q: %w", updatedOnStr, err)
+	}
+
+	conv.CreatedOn = createdOn.Format(time.RFC3339)
+	conv.UpdatedOn = updatedOn.Format(time.RFC3339)
+
+	// Fetch messages for this conversation
+	messages, err := c.ListMessages(ctx, conversationID)
+	if err != nil {
+		return nil, err
+	}
+	conv.Messages = messages
+
+	return &conv, nil
+}
+
+// CreateConversation inserts a new conversation.
+func (c *catalogStore) CreateConversation(ctx context.Context, title string) (string, error) {
+	conversationID := uuid.NewString()
+	now := time.Now().Format("2006-01-02T15:04:05.000000Z07:00")
+	_, err := c.db.ExecContext(ctx, `
+        INSERT INTO conversations (instance_id, conversation_id, title, created_on, updated_on)
+        VALUES (?, ?, ?, ?, ?)
+    `, c.instanceID, conversationID, title, now, now)
+	return conversationID, err
+}
+
+// ListMessages fetches all messages for a conversation, ordered by created_on.
+func (c *catalogStore) ListMessages(ctx context.Context, conversationID string) ([]*runtimev1.Message, error) {
+	rows, err := c.db.QueryContext(ctx, `
+        SELECT message_id, role, content_json, created_on, updated_on
+        FROM messages
+        WHERE instance_id = ? AND conversation_id = ?
+        ORDER BY created_on ASC
+    `, c.instanceID, conversationID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var result []*runtimev1.Message
+	for rows.Next() {
+		var msg runtimev1.Message
+		var contentJSONStr, createdOnStr, updatedOnStr string
+		if err := rows.Scan(&msg.Id, &msg.Role, &contentJSONStr, &createdOnStr, &updatedOnStr); err != nil {
+			return nil, err
+		}
+
+		// Parse content JSON into ContentBlock array using protojson
+		if contentJSONStr != "" {
+			// Create a temporary message with the content array wrapped
+			wrappedJSON := fmt.Sprintf(`{"content": %s}`, contentJSONStr)
+			tempMsg := &runtimev1.Message{}
+			if err := protojson.Unmarshal([]byte(wrappedJSON), tempMsg); err != nil {
+				return nil, fmt.Errorf("failed to unmarshal content JSON: %w", err)
+			}
+			msg.Content = tempMsg.Content
+		}
+
+		// Parse timestamps
+		createdOn, err := parseMicrosecondTimestamp(createdOnStr)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse created_on timestamp %q: %w", createdOnStr, err)
+		}
+		updatedOn, err := parseMicrosecondTimestamp(updatedOnStr)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse updated_on timestamp %q: %w", updatedOnStr, err)
+		}
+
+		msg.CreatedOn = createdOn.Format(time.RFC3339)
+		msg.UpdatedOn = updatedOn.Format(time.RFC3339)
+		result = append(result, &msg)
+	}
+	return result, nil
+}
+
+// AddMessage inserts a new message into a conversation.
+func (c *catalogStore) AddMessage(ctx context.Context, conversationID, role string, content []*runtimev1.ContentBlock, parentMessageID *string) (string, error) {
+	messageID := uuid.NewString()
+	now := time.Now().Format("2006-01-02T15:04:05.000000Z07:00")
+
+	// Serialize content to JSON using protojson
+	tempMsg := &runtimev1.Message{Content: content}
+	contentJSON, err := protojson.Marshal(tempMsg)
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal content: %w", err)
+	}
+
+	// Extract just the content field from the JSON
+	var tempObj map[string]interface{}
+	if err := json.Unmarshal(contentJSON, &tempObj); err != nil {
+		return "", fmt.Errorf("failed to parse temp JSON: %w", err)
+	}
+
+	contentOnlyJSON, err := json.Marshal(tempObj["content"])
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal content only: %w", err)
+	}
+
+	_, err = c.db.ExecContext(ctx, `
+        INSERT INTO messages (instance_id, conversation_id, message_id, role, content_json, created_on, updated_on)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+    `, c.instanceID, conversationID, messageID, role, string(contentOnlyJSON), now, now)
+	return messageID, err
+}
+
+// parseMicrosecondTimestamp parses a timestamp string in the microsecond format used by the catalog
+func parseMicrosecondTimestamp(timestampStr string) (time.Time, error) {
+	return time.Parse("2006-01-02T15:04:05.000000Z07:00", timestampStr)
 }

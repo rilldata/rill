@@ -13,6 +13,8 @@ import (
 	grpc_auth "github.com/grpc-ecosystem/go-grpc-middleware/auth"
 	grpc_validator "github.com/grpc-ecosystem/go-grpc-middleware/validator"
 	gateway "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	"github.com/mark3labs/mcp-go/client"
+	"github.com/mark3labs/mcp-go/server"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
@@ -60,6 +62,9 @@ type Server struct {
 	codec    *securetoken.Codec
 	limiter  ratelimit.Limiter
 	activity *activity.Client
+	// MCP server and client for tool calling and API functionality
+	mcpServer *server.MCPServer
+	mcpClient *client.Client
 }
 
 var (
@@ -97,6 +102,10 @@ func NewServer(ctx context.Context, opts *Options, rt *runtime.Runtime, logger *
 		srv.aud = aud
 	}
 
+	// Initialize MCP server and client for shared use across the runtime
+	srv.mcpServer = srv.createMCPServer()
+	srv.mcpClient = srv.newMCPClient(srv.mcpServer)
+
 	return srv, nil
 }
 
@@ -106,6 +115,10 @@ func (s *Server) Close() error {
 
 	if s.aud != nil {
 		s.aud.Close()
+	}
+
+	if s.mcpClient != nil {
+		s.mcpClient.Close()
 	}
 
 	return nil
@@ -220,7 +233,7 @@ func (s *Server) HTTPHandler(ctx context.Context, registerAdditionalHandlers fun
 
 	// Adds the MCP server handlers.
 	// The path without an instance ID is a convenience path intended for Rill Developer (localhost). In this case, the implementation falls back to using the default instance ID.
-	mcpHandler := observability.Middleware("runtime", s.logger, auth.HTTPMiddleware(s.aud, s.newMCPHandler()))
+	mcpHandler := observability.Middleware("runtime", s.logger, auth.HTTPMiddleware(s.aud, s.createMCPHTTPHandler(s.mcpServer)))
 	observability.MuxHandle(httpMux, "/mcp", mcpHandler)                                    // Routes to the default instance ID (for Rill Developer on localhost)
 	observability.MuxHandle(httpMux, "/v1/instances/{instance_id}/mcp", mcpHandler)         // The MCP handler will extract the instance ID from the request path.
 	observability.MuxHandle(httpMux, "/mcp/sse", mcpHandler)                                // Backwards compatibility

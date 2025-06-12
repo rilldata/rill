@@ -74,9 +74,30 @@ func (s *Server) GenerateRenderer(ctx context.Context, req *runtimev1.GenerateRe
 // It currently only supports generating a Vega lite render.
 func (s *Server) generateRendererWithAI(ctx context.Context, instanceID, userPrompt string, schema *runtimev1.StructType) (string, map[string]any, error) {
 	// Build messages
+	systemPrompt := vegaSpecSystemPrompt()
+	userPrompt = vegaSpecUserPrompt(userPrompt, schema)
+
 	msgs := []*drivers.CompletionMessage{
-		{Role: "system", Data: vegaSpecSystemPrompt()},
-		{Role: "user", Data: vegaSpecUserPrompt(userPrompt, schema)},
+		{
+			Role: "system",
+			Content: []*runtimev1.ContentBlock{
+				{
+					BlockType: &runtimev1.ContentBlock_Text{
+						Text: systemPrompt,
+					},
+				},
+			},
+		},
+		{
+			Role: "user",
+			Content: []*runtimev1.ContentBlock{
+				{
+					BlockType: &runtimev1.ContentBlock_Text{
+						Text: userPrompt,
+					},
+				},
+			},
+		},
 	}
 
 	// Connect to the AI service configured for the instance
@@ -91,17 +112,25 @@ func (s *Server) generateRendererWithAI(ctx context.Context, instanceID, userPro
 	defer cancel()
 
 	// Call AI service to infer a metrics view YAML
-	res, err := ai.Complete(ctx, msgs)
+	res, err := ai.Complete(ctx, msgs, []drivers.Tool{})
 	if err != nil {
 		return "", nil, err
 	}
 
-	// The AI may produce Markdown output. Remove the code tags around the JSON.
-	res.Data = strings.TrimPrefix(res.Data, "```json")
-	res.Data = strings.TrimPrefix(res.Data, "```")
-	res.Data = strings.TrimSuffix(res.Data, "```")
+	// Extract text from content blocks
+	var responseText string
+	for _, block := range res.Content {
+		if text := block.GetText(); text != "" {
+			responseText += text
+		}
+	}
 
-	return "vega_lite", map[string]any{"spec": res.Data}, nil
+	// The AI may produce Markdown output. Remove the code tags around the JSON.
+	responseText = strings.TrimPrefix(responseText, "```json")
+	responseText = strings.TrimPrefix(responseText, "```")
+	responseText = strings.TrimSuffix(responseText, "```")
+
+	return "vega_lite", map[string]any{"spec": responseText}, nil
 }
 
 // vegaSpecSystemPrompt returns the static system prompt for the Vega spec generation AI.

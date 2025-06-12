@@ -227,6 +227,28 @@ service RuntimeService {
     option (google.api.http) = {get: "/v1/instances/{instance_id}/connectors/notifiers"};
   }
 
+  // AI
+
+  // Complete runs a language model completion (LLM chat) using the configured AI connector.
+  rpc Complete(CompleteRequest) returns (CompleteResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/ai/complete",
+      body: "*"
+    };
+  }
+
+  // ListConversations lists all AI chat conversations for an instance.
+  rpc ListConversations(ListConversationsRequest) returns (ListConversationsResponse) {
+    option (google.api.http) = {get: "/v1/instances/{instance_id}/ai/conversations"};
+  }
+
+  // GetConversation returns a specific AI chat conversation.
+  rpc GetConversation(GetConversationRequest) returns (GetConversationResponse) {
+    option (google.api.http) = {get: "/v1/instances/{instance_id}/ai/conversations/{conversation_id}"};
+  }
+
+
+
   // Access management
 
   // IssueDevJWT issues a JWT for mimicking a user in local development.
@@ -865,6 +887,90 @@ message ListNotifierConnectorsResponse {
   // Note: In this list, the Connector.config property will always be empty.
   repeated Connector connectors = 1;
 }
+
+// **********
+// AI
+// **********
+
+// Message exchanged in a conversation
+message Message {
+  string id = 1;
+  string role = 2;
+  repeated ContentBlock content = 3;
+  string created_on = 4;
+  string updated_on = 5;
+}
+
+// Content block within a message
+message ContentBlock {
+  oneof block_type {
+    string text = 1;
+    ToolCall tool_call = 2;
+    ToolResult tool_result = 3;
+  }
+}
+
+// Tool call specification
+message ToolCall {
+  string id = 1;
+  string name = 2;
+  google.protobuf.Struct input = 3;
+}
+
+// Tool execution result
+message ToolResult {
+  string id = 1;
+  string content = 2;
+  bool is_error = 3;
+}
+
+// Conversation metadata and messages
+message Conversation {
+  string id = 1;
+  string title = 2;
+  string created_on = 3;
+  string updated_on = 4;
+  repeated Message messages = 5;
+}
+
+// Request message for RuntimeService.Complete
+message CompleteRequest {
+  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+  optional string conversation_id = 2; // If not provided, creates a new conversation
+  repeated Message messages = 3;
+  repeated string tool_names = 4;
+}
+
+// Response message for RuntimeService.Complete
+message CompleteResponse {
+  string conversation_id = 1;
+  repeated Message messages = 2;
+}
+
+// Request message for RuntimeService.ListConversations
+message ListConversationsRequest {
+  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+}
+
+// Response message for RuntimeService.ListConversations
+message ListConversationsResponse {
+  repeated Conversation conversations = 1;
+}
+
+// Request message for RuntimeService.GetConversation
+message GetConversationRequest {
+  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+  string conversation_id = 2;
+}
+
+// Response message for RuntimeService.GetConversation
+message GetConversationResponse {
+  Conversation conversation = 1;
+}
+
+// **********
+// Access management
+// **********
 
 // Request message for RuntimeService.IssueDevJWT
 message IssueDevJWTRequest {
