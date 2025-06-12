@@ -7,7 +7,11 @@ import {
   type V1ListResourcesResponse,
 } from "@rilldata/web-common/runtime-client";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
-import { calculateRefetchInterval } from "../../shared/refetch-interval";
+import {
+  refetchInterval,
+  updateSmartRefetchInterval,
+} from "../../shared/refetchIntervalStore";
+import { get } from "svelte/store";
 
 export function useProjectDeployment(orgName: string, projName: string) {
   return createAdminServiceGetProject<V1Deployment | undefined>(
@@ -31,16 +35,19 @@ export function useResources(instanceId: string) {
     {},
     {
       query: {
-        select: (data: V1ListResourcesResponse) => ({
-          ...data,
-          // Filter out project parser and refresh triggers
-          resources: data?.resources?.filter(
+        select: (data: V1ListResourcesResponse) => {
+          const filtered = data?.resources?.filter(
             (resource) =>
               resource?.meta?.name?.kind !== ResourceKind.ProjectParser &&
               resource?.meta?.name?.kind !== ResourceKind.RefreshTrigger,
-          ),
-        }),
-        refetchInterval: calculateRefetchInterval,
+          );
+          updateSmartRefetchInterval(filtered);
+          return {
+            ...data,
+            resources: filtered,
+          };
+        },
+        refetchInterval: () => get(refetchInterval),
       },
     },
   );

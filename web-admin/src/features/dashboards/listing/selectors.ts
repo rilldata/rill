@@ -4,8 +4,11 @@ import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
 import type { V1Resource } from "@rilldata/web-common/runtime-client";
 import { createRuntimeServiceListResources } from "@rilldata/web-common/runtime-client";
 import type { CreateQueryResult } from "@tanstack/svelte-query";
-import { derived } from "svelte/store";
-import { calculateRefetchInterval } from "../../shared/refetch-interval";
+import { derived, get } from "svelte/store";
+import {
+  refetchInterval,
+  updateSmartRefetchInterval,
+} from "../../shared/refetchIntervalStore";
 import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
 
 export function useDashboardsLastUpdated(
@@ -55,6 +58,7 @@ export function useDashboardsV2(
   return createRuntimeServiceListResources(instanceId, undefined, {
     query: {
       select: (data) => {
+        updateSmartRefetchInterval(data?.resources);
         // create a map since we are potentially looking up twice per explore
         const allResources = getMapFromArray(
           data.resources,
@@ -81,7 +85,7 @@ export function useDashboardsV2(
         );
         return allDashboards;
       },
-      refetchInterval: calculateRefetchInterval,
+      refetchInterval: () => get(refetchInterval),
     },
   });
 }
