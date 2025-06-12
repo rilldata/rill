@@ -444,7 +444,7 @@
       {columnWidth}
       {dragComponent}
       {selectedComponent}
-      zIndex={50 - rowIndex * 2}
+      zIndex={layoutRows.length - rowIndex * 2}
       {onDrop}
       {addItems}
       {spreadEvenly}
