@@ -39,19 +39,7 @@ type AutoscalerSlotsRecommendation struct {
 
 // AutoscalerSlotsRecommendations invokes the "autoscaler-slots-recommendations" API endpoint to get a list of recommendations for the number of slots to use for projects.
 func (c *Client) AutoscalerSlotsRecommendations(ctx context.Context, limit, offset int) ([]AutoscalerSlotsRecommendation, error) {
-	// Create the URL for the request
-	var runtimeHost string
-
-	// In production, the REST and gRPC endpoints are the same, but in development, they're served on different ports.
-	// TODO: move to http and grpc to the same c.RuntimeHost for local development.
-	// Until we make that change, this is a convenient hack for local development (assumes REST on port 8081).
-	if strings.Contains(c.RuntimeHost, "localhost") {
-		runtimeHost = "http://localhost:8081"
-	} else {
-		runtimeHost = c.RuntimeHost
-	}
-
-	uri, err := url.Parse(runtimeHost)
+	uri, err := url.Parse(c.RuntimeHost)
 	if err != nil {
 		return nil, err
 	}
