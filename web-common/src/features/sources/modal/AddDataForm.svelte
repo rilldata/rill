@@ -26,6 +26,7 @@
   } from "./submitAddDataForm";
   import type { AddDataFormType } from "./types";
   import { dsnSchema, getYupSchema } from "./yupSchemas";
+  import yaml from "js-yaml";
 
   const FORM_TRANSITION_DURATION = 150;
   const dispatch = createEventDispatcher();
@@ -103,6 +104,27 @@
 
   // Emit the submitting state to the parent
   $: dispatch("submitting", { submitting });
+
+  // Generate YAML preview from form state
+  $: yamlPreview = (() => {
+    let values = useDsn ? $dsnForm : $paramsForm;
+    let props = useDsn ? dsnProperties : properties;
+    let out = {};
+    for (const property of props) {
+      const key = property.key;
+      if (!key) continue;
+      let value = values[key];
+      if (property.secret && value) {
+        value = "********";
+      }
+      if (value !== undefined && value !== null && value !== "") {
+        out[key] = value;
+      }
+    }
+    const title = `# ${connector.displayName} Connector\n\nConfiguration`;
+    if (Object.keys(out).length === 0) return title;
+    return `${title}\n${yaml.dump(out, { lineWidth: 80 })}`;
+  })();
 
   function handleConnectionTypeChange(e: CustomEvent<any>): void {
     useDsn = e.detail === "dsn";
@@ -304,15 +326,9 @@
   <div class="add-data-side-panel">
     <div>
       <div class="font-semibold mb-2">Connection preview</div>
-      <pre class="bg-slate-50 p-3 rounded text-xs overflow-x-auto">
-# Example YAML preview
-host: your-clickhouse-server.com
-port: 9000
-ssl: false
-username: default
-password: ********
-database: default
-      </pre>
+      <pre
+        class="bg-slate-50 p-3 rounded text-xs border border-slate-100"
+        style="white-space: pre-wrap; overflow-x: visible;">{yamlPreview}</pre>
     </div>
     <div>
       <div class="font-semibold mb-2">Help</div>
@@ -346,7 +362,9 @@ database: default
     @apply text-base;
   }
   .add-data-side-panel pre {
-    @apply bg-slate-50 p-3 rounded text-xs overflow-x-auto border border-slate-100;
+    @apply bg-slate-50 p-3 rounded text-xs border border-slate-100;
+    white-space: pre-wrap;
+    overflow-x: visible;
   }
   .add-data-side-panel .text-slate-500 {
     @apply text-sm;
