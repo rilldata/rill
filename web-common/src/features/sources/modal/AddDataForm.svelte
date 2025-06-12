@@ -27,6 +27,31 @@
   import type { AddDataFormType } from "./types";
   import { dsnSchema, getYupSchema } from "./yupSchemas";
 
+  type PropertyValidation = {
+    pattern: string;
+    patternMessage: string;
+  };
+
+  type BaseProperty = {
+    key: string;
+    type: "string" | "number" | "boolean";
+    displayName: string;
+    required: boolean;
+    hint: string;
+    docsUrl: string;
+    secret: boolean;
+    placeholder?: string;
+    validation?: PropertyValidation;
+    description?: string;
+  };
+
+  type Property = BaseProperty;
+
+  type TemplateAPIResponse = {
+    properties: Property[];
+    dsn?: Property;
+  };
+
   const FORM_TRANSITION_DURATION = 150;
   const dispatch = createEventDispatcher();
 
@@ -38,14 +63,109 @@
   const isSourceForm = formType === "source";
   const isConnectorForm = formType === "connector";
 
+  // TODO: remove this mocked json response
+  const mockedTemplateAPIResponse: TemplateAPIResponse = {
+    properties: [
+      {
+        key: "host",
+        type: "string",
+        displayName: "Host",
+        placeholder: "localhost",
+        required: true,
+        hint: "Hostname or IP address of the database server",
+        docsUrl: "https://docs.rilldata.com/reference/connectors/clickhouse",
+        secret: false,
+        validation: {
+          pattern: "^(?!https?://)[a-zA-Z0-9.-]+$",
+          patternMessage: "Do not prefix the host with `http(s)://`",
+        },
+      },
+      {
+        key: "port",
+        type: "number",
+        displayName: "Port",
+        placeholder: "9000",
+        required: false,
+        hint: "Port number of the database server",
+        docsUrl: "https://docs.rilldata.com/reference/connectors/clickhouse",
+        secret: false,
+        validation: {
+          pattern: "^\\d+$",
+          patternMessage: "Port must be a number",
+        },
+      },
+      {
+        key: "username",
+        type: "string",
+        displayName: "Username",
+        placeholder: "default",
+        required: false,
+        hint: "Username to connect to the database",
+        docsUrl: "https://docs.rilldata.com/reference/connectors/clickhouse",
+        secret: false,
+      },
+      {
+        key: "password",
+        type: "string",
+        displayName: "Password",
+        placeholder: "password",
+        required: false,
+        hint: "Password to connect to the database",
+        docsUrl: "https://docs.rilldata.com/reference/connectors/clickhouse",
+        secret: true,
+      },
+      {
+        key: "ssl",
+        type: "boolean",
+        displayName: "SSL",
+        required: true,
+        hint: "Use SSL to connect to the database server",
+        docsUrl: "https://docs.rilldata.com/reference/connectors/clickhouse",
+        secret: false,
+      },
+      {
+        key: "database",
+        type: "string",
+        displayName: "Database",
+        placeholder: "default",
+        required: false,
+        hint: "Name of the database to connect to",
+        docsUrl: "https://docs.rilldata.com/reference/connectors/clickhouse",
+        secret: false,
+      },
+      {
+        key: "connection_info",
+        type: "string",
+        displayName: "Connection Information",
+        description:
+          "Make sure your database server is accessible and the credentials are correct.",
+        hint: "You can find more information about connecting to ClickHouse in our documentation.",
+        docsUrl: "https://docs.rilldata.com/reference/connectors/clickhouse",
+        secret: false,
+        required: false,
+      },
+    ],
+    dsn: {
+      key: "dsn",
+      type: "string",
+      displayName: "Connection String",
+      placeholder:
+        "clickhouse://localhost:9000?username=default&password=password",
+      required: true,
+      hint: "Full connection string for the database",
+      docsUrl: "https://docs.rilldata.com/reference/connectors/clickhouse",
+      secret: true,
+    },
+  };
+
+  let useDsn = false;
+
   // Form 1: Individual parameters
   const paramsFormId = `add-data-${connector.name}-form`;
   const properties =
-    (isSourceForm
-      ? connector.sourceProperties
-      : connector.configProperties?.filter(
-          (property) => property.key !== "dsn",
-        )) ?? [];
+    useDsn && mockedTemplateAPIResponse.dsn
+      ? [mockedTemplateAPIResponse.dsn]
+      : mockedTemplateAPIResponse.properties;
   const schema = yup(getYupSchema[connector.name as keyof typeof getYupSchema]);
   const {
     form: paramsForm,
@@ -65,14 +185,9 @@
 
   // Form 2: DSN
   // SuperForms are not meant to have dynamic schemas, so we use a different form instance for the DSN form
-  let useDsn = false;
-  const hasDsnFormOption =
-    isConnectorForm &&
-    connector.configProperties?.some((property) => property.key === "dsn");
+  const hasDsnFormOption = mockedTemplateAPIResponse.dsn !== undefined;
   const dsnFormId = `add-data-${connector.name}-dsn-form`;
-  const dsnProperties =
-    connector.configProperties?.filter((property) => property.key === "dsn") ??
-    [];
+  const dsnProperties = [mockedTemplateAPIResponse.dsn];
   const dsnYupSchema = yup(dsnSchema);
   const {
     form: dsnForm,
@@ -226,23 +341,29 @@
       {#each properties as property (property.key)}
         {@const propertyKey = property.key ?? ""}
         {@const label =
-          property.displayName + (property.required ? "" : " (optional)")}
+          property?.displayName + (property?.required ? "" : " (optional)")}
         <div class="py-1.5">
-          {#if property.type === ConnectorDriverPropertyType.TYPE_STRING || property.type === ConnectorDriverPropertyType.TYPE_NUMBER}
+          {#if property?.description}
+            <InformationalField
+              description={property.description}
+              hint={property?.hint}
+              href={property?.docsUrl}
+            />
+          {:else if property?.type === "string" || property?.type === "number"}
             <Input
               id={propertyKey}
-              label={property.displayName}
-              placeholder={property.placeholder}
-              optional={!property.required}
-              secret={property.secret}
-              hint={property.hint}
+              label={property?.displayName ?? ""}
+              placeholder={property?.placeholder}
+              optional={!property?.required}
+              secret={property?.secret}
+              hint={property?.hint}
               errors={$paramsErrors[propertyKey]}
               bind:value={$paramsForm[propertyKey]}
               onInput={(_, e) => onStringInputChange(e)}
               alwaysShowError
             />
-          {:else if property.type === ConnectorDriverPropertyType.TYPE_BOOLEAN}
-            <label for={property.key} class="flex items-center">
+          {:else if property?.type === "boolean"}
+            <label for={propertyKey} class="flex items-center">
               <input
                 id={propertyKey}
                 type="checkbox"
@@ -251,12 +372,6 @@
               />
               <span class="ml-2 text-sm">{label}</span>
             </label>
-          {:else if property.type === ConnectorDriverPropertyType.TYPE_INFORMATIONAL}
-            <InformationalField
-              description={property.description}
-              hint={property.hint}
-              href={property.docsUrl}
-            />
           {/if}
         </div>
       {/each}
@@ -278,10 +393,10 @@
         <div class="py-1.5">
           <Input
             id={propertyKey}
-            label={property.displayName}
-            placeholder={property.placeholder}
-            secret={property.secret}
-            hint={property.hint}
+            label={property?.displayName ?? ""}
+            placeholder={property?.placeholder}
+            secret={property?.secret}
+            hint={property?.hint}
             errors={$dsnErrors[propertyKey]}
             bind:value={$dsnForm[propertyKey]}
             alwaysShowError
