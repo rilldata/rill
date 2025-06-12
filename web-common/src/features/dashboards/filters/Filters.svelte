@@ -320,7 +320,7 @@
       values,
     );
     const url = dashboardStateSync.getUrlForExploreState(exploreState);
-    return url ? isUrlTooLong(url) : false;
+    return isUrlTooLong(url);
   }
 </script>
 

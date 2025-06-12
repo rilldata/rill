@@ -1,5 +1,6 @@
 <script lang="ts">
   import { afterNavigate, onNavigate } from "$app/navigation";
+  import { page } from "$app/stores";
   import {
     ExploreUrlLimitWarningBannerID,
     ExploreUrlLimitWarningBannerPriority,
@@ -65,35 +66,33 @@
     });
   }
 
-  let hasBanner = false;
+  $: showUrlWarning = isUrlTooLong($page.url);
+  $: if (showUrlWarning) {
+    eventBus.emit("add-banner", {
+      id: ExploreUrlLimitWarningBannerID,
+      priority: ExploreUrlLimitWarningBannerPriority,
+      message: {
+        type: "warning",
+        message:
+          "URL is too long. Some features like export will not work. Please remove some filters.",
+        iconType: "alert",
+      },
+    });
+  } else {
+    eventBus.emit("remove-banner", ExploreUrlLimitWarningBannerID);
+  }
+
   afterNavigate(({ from, to, type }) => {
     if (!from?.url || !to?.url || !stateSync) return;
 
     void stateSync.handleURLChange(to.url.searchParams, type);
-
-    if (isUrlTooLong(to.url)) {
-      hasBanner = true;
-      eventBus.emit("add-banner", {
-        id: ExploreUrlLimitWarningBannerID,
-        priority: ExploreUrlLimitWarningBannerPriority,
-        message: {
-          type: "warning",
-          message:
-            "URL is too long. Some features like export will not work. Please remove some filters.",
-          iconType: "alert",
-        },
-      });
-    } else if (hasBanner) {
-      hasBanner = false;
-      eventBus.emit("remove-banner", ExploreUrlLimitWarningBannerID);
-    }
   });
 
   onNavigate(({ from, to }) => {
     const changedDashboard =
       !from || !to || from.params?.dashboard !== to.params?.dashboard;
     // Clear out any dashboard banners
-    if (hasBanner && changedDashboard) {
+    if (changedDashboard) {
       eventBus.emit("remove-banner", ExploreUrlLimitWarningBannerID);
     }
   });

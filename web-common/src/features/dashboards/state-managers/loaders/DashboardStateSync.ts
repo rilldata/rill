@@ -94,13 +94,14 @@ export class DashboardStateSync {
   public getUrlForExploreState(exploreState: ExploreState) {
     const { data: validSpecData } = get(this.dataLoader.validSpecQuery);
     const exploreSpec = validSpecData?.explore ?? {};
+    const pageState = get(page);
     const { data: rillDefaultExploreURLParams } = get(
       this.rillDefaultExploreURLParams,
     );
-    if (!rillDefaultExploreURLParams) return undefined;
+    // Type-safety
+    if (!rillDefaultExploreURLParams) return pageState.url;
 
     const timeControlsState = get(this.timeControlStore);
-    const pageState = get(page);
 
     const redirectUrl = new URL(pageState.url);
     const exploreStateParams = getCleanedUrlParamsForGoto(
@@ -139,8 +140,6 @@ export class DashboardStateSync {
     const timeControlsState = get(this.timeControlStore);
     // Get the updated url params. If we merged state other than the url we would need to navigate to it.
     const redirectUrl = this.getUrlForExploreState(initExploreState);
-    // Type-safety
-    if (!redirectUrl) return;
 
     // Update session storage with the initial state
     updateExploreSessionStore(
@@ -219,7 +218,6 @@ export class DashboardStateSync {
     // Get the updated URL, this could be different from the page url if we added extra state.
     // The extra state could come from session storage, home bookmark or yaml defaults
     const redirectUrl = this.getUrlForExploreState(partialExplore);
-    if (!redirectUrl) return;
 
     // Get the full updated state and save to session storage
     const updatedExploreState =
@@ -274,7 +272,6 @@ export class DashboardStateSync {
 
     // Get the new url params for the updated state
     const newUrl = this.getUrlForExploreState(exploreState);
-    if (!newUrl) return;
 
     // Update the session storage with the new explore state.
     updateExploreSessionStore(

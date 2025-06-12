@@ -163,9 +163,9 @@
       : (correctedSearchResults ?? []);
 
   $: disableApplyButton =
-    curMode !== DimensionFilterMode.Select
-      ? !enableSearchCountQuery || inListTooLong
-      : true;
+    curMode === DimensionFilterMode.Select ||
+    !enableSearchCountQuery ||
+    inListTooLong;
 
   /**
    * Reset filter settings based on params to the component.
@@ -409,7 +409,7 @@
         <div class="min-h-9 p-3 text-center text-red-600 text-xs">error</div>
       {:else if inListTooLong}
         <div class="min-h-9 p-3 text-center text-red-600 text-xs">
-          Selected in list is too long. Please trim some values.
+          List is too long. Please remove some values.
         </div>
       {:else if correctedSearchResults}
         <DropdownMenu.Group class="px-1" aria-label={`${name} results`}>
