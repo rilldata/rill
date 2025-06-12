@@ -86,6 +86,21 @@ func (r *ConnectorReconciler) Reconcile(ctx context.Context, n *runtimev1.Resour
 		return runtime.ReconcileResult{}
 	}
 
+	connector := &runtimev1.Connector{
+		Name:                self.Meta.Name.Name,
+		Type:                t.Spec.Driver,
+		Config:              t.Spec.Properties,
+		TemplatedProperties: t.Spec.TemplatedProperties,
+		Provision:           t.Spec.Provision,
+		ProvisionArgs:       t.Spec.ProvisionArgs,
+	}
+
+	// Test the connector configuration
+	err = r.testConnector(ctx, connector)
+	if err != nil {
+		return runtime.ReconcileResult{Err: err}
+	}
+
 	// Update instance connectors
 	err = r.C.Runtime.UpdateInstanceConnector(ctx, r.C.InstanceID, self.Meta.Name.Name, t.Spec)
 	if err != nil {
@@ -153,4 +168,15 @@ func (r *ConnectorReconciler) executionSpecHash(ctx context.Context, spec *runti
 	}
 
 	return hex.EncodeToString(hash.Sum(nil)), nil
+}
+
+func (r *ConnectorReconciler) testConnector(ctx context.Context, connector *runtimev1.Connector) error {
+	// Get the connector configuration
+	handle, release, err := r.C.Runtime.AcquireHandleFromConnector(ctx, r.C.InstanceID, connector)
+	if err != nil {
+		return err
+	}
+	defer release()
+
+	return handle.Ping(ctx)
 }

@@ -122,7 +122,8 @@ var _ drivers.Handle = &connection{}
 
 // Ping implements drivers.Handle.
 func (c *connection) Ping(ctx context.Context) error {
-	return drivers.ErrNotImplemented
+	// no properties to define in connector so ping always return true.
+	return nil
 }
 
 // Driver implements drivers.Connection.

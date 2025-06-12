@@ -3,7 +3,9 @@ package snowflake
 import (
 	"context"
 	"errors"
+	"fmt"
 
+	"github.com/jmoiron/sqlx"
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
@@ -80,8 +82,18 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 		return nil, err
 	}
 
-	// actual db connection is opened during query
+	if conf.DSN == "" {
+		return nil, fmt.Errorf("dsn not provided")
+	}
+
+	// Open DB handle
+	db, err := sqlx.Open("snowflake", conf.DSN)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open connection: %w", err)
+	}
+
 	return &connection{
+		db:               db,
 		configProperties: conf,
 		storage:          st,
 		logger:           logger,
@@ -101,6 +113,7 @@ func (d driver) TertiarySourceConnectors(ctx context.Context, src map[string]any
 }
 
 type connection struct {
+	db               *sqlx.DB
 	configProperties *configProperties
 	storage          *storage.Client
 	logger           *zap.Logger
@@ -108,7 +121,7 @@ type connection struct {
 
 // Ping implements drivers.Handle.
 func (c *connection) Ping(ctx context.Context) error {
-	return drivers.ErrNotImplemented
+	return c.db.PingContext(ctx)
 }
 
 // Migrate implements drivers.Connection.
@@ -135,7 +148,7 @@ func (c *connection) Config() map[string]any {
 
 // Close implements drivers.Connection.
 func (c *connection) Close() error {
-	return nil
+	return c.db.Close()
 }
 
 // AsRegistry implements drivers.Connection.

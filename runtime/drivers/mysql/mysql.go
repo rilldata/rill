@@ -3,12 +3,18 @@ package mysql
 import (
 	"context"
 	"errors"
+	"fmt"
 	"maps"
 
+	"github.com/jmoiron/sqlx"
+	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/storage"
 	"go.uber.org/zap"
+
+	// Load mysql driver
+	_ "github.com/go-sql-driver/mysql"
 )
 
 func init() {
@@ -70,8 +76,24 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 	if instanceID == "" {
 		return nil, errors.New("mysql driver can't be shared")
 	}
-	// actual db connection is opened during query
+
+	conf := &ConfigProperties{}
+	if err := mapstructure.WeakDecode(config, conf); err != nil {
+		return nil, fmt.Errorf("failed to decode config: %w", err)
+	}
+
+	if conf.DSN == "" {
+		return nil, fmt.Errorf("dsn not provided")
+	}
+
+	// Open DB handle
+	db, err := sqlx.Open("mysql", conf.DSN)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open connection: %w", err)
+	}
+
 	return &connection{
+		db:     db,
 		config: config,
 	}, nil
 }
@@ -89,12 +111,13 @@ func (d driver) TertiarySourceConnectors(ctx context.Context, src map[string]any
 }
 
 type connection struct {
+	db     *sqlx.DB
 	config map[string]any
 }
 
 // Ping implements drivers.Handle.
 func (c *connection) Ping(ctx context.Context) error {
-	return drivers.ErrNotImplemented
+	return c.db.PingContext(ctx)
 }
 
 // Migrate implements drivers.Connection.
@@ -119,7 +142,7 @@ func (c *connection) Config() map[string]any {
 
 // Close implements drivers.Connection.
 func (c *connection) Close() error {
-	return nil
+	return c.db.Close()
 }
 
 // AsRegistry implements drivers.Connection.
