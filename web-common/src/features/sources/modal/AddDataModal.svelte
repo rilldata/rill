@@ -183,7 +183,7 @@
     closeOnEscape={!isSubmittingForm}
     closeOnOutsideClick={!isSubmittingForm}
   >
-    <Dialog.Content noClose>
+    <Dialog.Content class={step === 2 ? "max-w-4xl" : ""} noClose>
       {#if step === 1}
         {#if $isModelingSupportedForDefaultOlapDriver}
           <Dialog.Title>Add a source</Dialog.Title>
