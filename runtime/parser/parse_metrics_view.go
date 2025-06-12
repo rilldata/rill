@@ -262,6 +262,7 @@ func (p *Parser) parseMetricsView(node *Node) error {
 
 	names := make(map[string]uint8)
 	names[strings.ToLower(tmp.TimeDimension)] = nameIsDimension
+	timeSeen := false
 
 	for i, dim := range tmp.Dimensions {
 		if dim == nil || dim.Ignore {
@@ -307,8 +308,15 @@ func (p *Parser) parseMetricsView(node *Node) error {
 
 		lower := strings.ToLower(dim.Name)
 		if _, ok := names[lower]; ok {
-			// allow time dimension to be defined in the dimensions list
-			if !strings.EqualFold(lower, tmp.TimeDimension) {
+			// allow time dimension to be defined in the dimensions list once
+			if lower == strings.ToLower(tmp.TimeDimension) {
+				if timeSeen {
+					return fmt.Errorf("time dimension %q defined multiple times", tmp.TimeDimension)
+				} else if dim.Name != tmp.TimeDimension {
+					return fmt.Errorf("dimension name %q does not match the case of time dimension %q", dim.Name, tmp.TimeDimension)
+				}
+				timeSeen = true
+			} else {
 				return fmt.Errorf("found duplicate dimension or measure name %q", dim.Name)
 			}
 		}
