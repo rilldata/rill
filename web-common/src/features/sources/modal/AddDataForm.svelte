@@ -27,6 +27,7 @@
   import type { AddDataFormType } from "./types";
   import { dsnSchema, getYupSchema } from "./yupSchemas";
   import yaml from "js-yaml";
+  import { ExternalLinkIcon } from "lucide-svelte";
 
   const FORM_TRANSITION_DURATION = 150;
   const dispatch = createEventDispatcher();
@@ -325,25 +326,32 @@
 
   <div class="add-data-side-panel">
     <div>
-      <div class="font-semibold mb-2">Connection preview</div>
+      <div class="text-sm leading-none font-medium mb-4">
+        Connection preview
+      </div>
       <pre
         class="bg-slate-50 p-3 rounded text-xs border border-slate-100"
         style="white-space: pre-wrap; overflow-x: visible;">{yamlPreview}</pre>
     </div>
     <div>
-      <div class="font-semibold mb-2">Help</div>
-      <div class="text-slate-500 mb-2">
+      <div class="text-sm leading-none font-medium mb-4">Help</div>
+      <div
+        class="text-sm leading-normal font-medium text-muted-foreground mb-2"
+      >
         Need help connecting to {connector.displayName}? Check out our
         documentation for detailed instructions.
       </div>
-      <a
-        href={connector.docsUrl || "https://docs.rilldata.com/build/connect/"}
-        rel="noreferrer noopener"
-        target="_blank"
-        class="text-primary-500 hover:text-primary-600 font-medium"
-      >
-        How to connect to {connector.displayName}
-      </a>
+      <span class="flex flex-row items-center gap-2 group">
+        <a
+          href={connector.docsUrl || "https://docs.rilldata.com/build/connect/"}
+          rel="noreferrer noopener"
+          target="_blank"
+          class="text-sm leading-normal text-primary-500 hover:text-primary-600 font-medium group-hover:underline"
+        >
+          How to connect to {connector.displayName}
+        </a>
+        <ExternalLinkIcon size="16px" color="#6366F1" />
+      </span>
     </div>
   </div>
 </div>
@@ -358,16 +366,10 @@
   .add-data-side-panel {
     @apply w-96 min-w-[320px] max-w-[400px] border-l border-slate-200 pl-6 flex flex-col gap-6 bg-white;
   }
-  .add-data-side-panel .font-semibold {
-    @apply text-base;
-  }
   .add-data-side-panel pre {
     @apply bg-slate-50 p-3 rounded text-xs border border-slate-100;
     white-space: pre-wrap;
     overflow-x: visible;
-  }
-  .add-data-side-panel .text-slate-500 {
-    @apply text-sm;
   }
   .add-data-side-panel a {
     @apply text-primary-500 font-medium break-all;
