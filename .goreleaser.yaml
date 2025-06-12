@@ -53,7 +53,7 @@ builds:
     goarch:
       - amd64
     env:
-      - CC=x86_64-linux-gnu-gcc
+      - CC=x86_64-linux-gnu-g++
       - CXX=x86_64-linux-gnu-g++
       - CGO_CFLAGS=--sysroot=/sysroot/linux/amd64
       - CGO_LDFLAGS=--sysroot=/sysroot/linux/amd64 -lstdc++
@@ -72,10 +72,10 @@ builds:
     goarch:
       - arm64
     env:
-      - CC=aarch64-linux-gnu-gcc
+      - CC=aarch64-linux-gnu-g++
       - CXX=aarch64-linux-gnu-g++
       - CGO_CFLAGS=--sysroot=/sysroot/linux/arm64
-      - CGO_LDFLAGS=--sysroot=/sysroot/linux/arm64 -Wl,--verbose -lstdc++
+      - CGO_LDFLAGS=--sysroot=/sysroot/linux/arm64 -lstdc++
       - PKG_CONFIG_SYSROOT_DIR=/sysroot/linux/arm64
       - PKG_CONFIG_PATH=/sysroot/linux/arm64/usr/local/lib/pkgconfig
     flags:
