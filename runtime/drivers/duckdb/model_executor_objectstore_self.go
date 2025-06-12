@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"maps"
 	"net/url"
 	"os"
 	"strings"
@@ -37,7 +36,7 @@ func (e *objectStoreToSelfExecutor) Concurrency(desired int) (int, bool) {
 func (e *objectStoreToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExecuteOptions) (*drivers.ModelResult, error) {
 	// Build the model executor options with updated input properties
 	clone := *opts
-	newInputProps, err := e.modelInputProperties(ctx, opts.ModelName, opts.InputConnector, opts.InputHandle, opts.InputProperties)
+	newInputProps, err := e.modelInputProperties(ctx, opts)
 	if err != nil {
 		if errors.Is(err, errGCSUsesNativeCreds) {
 			e := &objectStoreToSelfExecutorNonNative{c: e.c}
@@ -53,9 +52,9 @@ func (e *objectStoreToSelfExecutor) Execute(ctx context.Context, opts *drivers.M
 	return executor.Execute(ctx, newOpts)
 }
 
-func (e *objectStoreToSelfExecutor) modelInputProperties(ctx context.Context, model, inputConnector string, inputHandle drivers.Handle, inputProps map[string]any) (map[string]any, error) {
+func (e *objectStoreToSelfExecutor) modelInputProperties(ctx context.Context, opts *drivers.ModelExecuteOptions) (map[string]any, error) {
 	parsed := &drivers.ObjectStoreModelInputProperties{}
-	if err := parsed.Decode(inputProps); err != nil {
+	if err := parsed.Decode(opts.InputProperties); err != nil {
 		return nil, fmt.Errorf("failed to parse input properties: %w", err)
 	}
 
@@ -69,7 +68,7 @@ func (e *objectStoreToSelfExecutor) modelInputProperties(ctx context.Context, mo
 
 	// Generate secret SQL to access the service and set as pre_exec_query
 	var err error
-	m.PreExec, err = objectStoreSecretSQL(ctx, parsed.Path, model, inputConnector, inputHandle, inputProps)
+	m.PreExec, err = objectStoreSecretSQL(ctx, opts, opts.InputConnector, parsed.Path, opts.InputProperties)
 	if err != nil {
 		return nil, err
 	}
@@ -88,15 +87,28 @@ func (e *objectStoreToSelfExecutor) modelInputProperties(ctx context.Context, mo
 	return propsMap, nil
 }
 
-func objectStoreSecretSQL(ctx context.Context, path, model, inputConnector string, inputHandle drivers.Handle, inputProps map[string]any) (string, error) {
-	config := inputHandle.Config()
-	// config properties can also be set as input properties
-	maps.Copy(config, inputProps)
-	safeSecretName := safeName(fmt.Sprintf("%s__%s__secret", model, inputConnector))
-	switch inputHandle.Driver() {
+func objectStoreSecretSQL(ctx context.Context, opts *drivers.ModelExecuteOptions, connector, optionalBucketURL string, optionalAdditionalConfig map[string]any) (string, error) {
+	handle, release, err := opts.Env.AcquireConnector(ctx, connector)
+	if err != nil {
+		return "", err
+	}
+	defer release()
+
+	_, ok := handle.AsObjectStore()
+	if !ok {
+		return "", fmt.Errorf("can only create secrets for object store connectors %q", connector)
+	}
+
+	safeSecretName := safeName(fmt.Sprintf("%s__%s__secret", opts.ModelName, connector))
+
+	switch handle.Driver() {
 	case "s3":
-		s3Config := &s3.ConfigProperties{}
-		err := mapstructure.WeakDecode(config, s3Config)
+		conn, ok := handle.(*s3.Connection)
+		if !ok {
+			return "", fmt.Errorf("internal error: expected s3 connector handle")
+		}
+		s3Config := conn.ParsedConfig()
+		err := mapstructure.WeakDecode(optionalAdditionalConfig, s3Config)
 		if err != nil {
 			return "", fmt.Errorf("failed to parse s3 config properties: %w", err)
 		}
@@ -129,19 +141,15 @@ func objectStoreSecretSQL(ctx context.Context, path, model, inputConnector strin
 		if s3Config.Region != "" {
 			sb.WriteString(", REGION ")
 			sb.WriteString(safeSQLString(s3Config.Region))
-		} else {
-			// duckdb is unable to resolve region as of 1.2.0 so we need to detect and set region
-			conn, ok := inputHandle.(*s3.Connection)
-			if !ok {
-				return "", fmt.Errorf("internal error: invalid input handle type")
-			}
-			uri, err := globutil.ParseBucketURL(path)
+		} else if optionalBucketURL != "" {
+			// DuckDB does not automatically resolve the region as of 1.2.0 so we try to detect and set the region.
+			uri, err := globutil.ParseBucketURL(optionalBucketURL)
 			if err != nil {
-				return "", fmt.Errorf("failed to parse path %q, %w", path, err)
+				return "", fmt.Errorf("failed to parse path %q: %w", optionalBucketURL, err)
 			}
-			reg, err := conn.GetBucketRegion(ctx, uri.Host)
+			reg, err := conn.BucketRegion(ctx, uri.Host)
 			if err != nil {
-				return "", fmt.Errorf("failed to get bucket region: %w. Set `region` in model yaml", err)
+				return "", fmt.Errorf("failed to get bucket region (set `region` in s3.yaml): %w", err)
 			}
 			sb.WriteString(", REGION ")
 			sb.WriteString(safeSQLString(reg))
@@ -149,10 +157,16 @@ func objectStoreSecretSQL(ctx context.Context, path, model, inputConnector strin
 		sb.WriteRune(')')
 		return sb.String(), nil
 	case "gcs":
-		// GCS works via S3 compatibility mode
-		gcsConfig, err := gcs.NewConfigProperties(config)
+		// GCS works via S3 compatibility mode.
+		// This means we that gcsConfig.KeyID and gcsConfig.Secret should be set instead of gcsConfig.SecretJSON.
+		conn, ok := handle.(*gcs.Connection)
+		if !ok {
+			return "", fmt.Errorf("internal error: expected gcs connector handle")
+		}
+		gcsConfig := conn.ParsedConfig()
+		err := mapstructure.WeakDecode(optionalAdditionalConfig, gcsConfig)
 		if err != nil {
-			return "", err
+			return "", fmt.Errorf("failed to parse gcs config properties: %w", err)
 		}
 		// If no credentials are provided we assume that the user wants to use the native credentials
 		if gcsConfig.SecretJSON != "" || (gcsConfig.KeyID == "" && gcsConfig.Secret == "" && gcsConfig.SecretJSON == "") {
@@ -171,10 +185,14 @@ func objectStoreSecretSQL(ctx context.Context, path, model, inputConnector strin
 		sb.WriteRune(')')
 		return sb.String(), nil
 	case "azure":
-		azureConfig := &azure.ConfigProperties{}
-		err := mapstructure.WeakDecode(config, azureConfig)
+		conn, ok := handle.(*azure.Connection)
+		if !ok {
+			return "", fmt.Errorf("internal error: expected azure connector handle")
+		}
+		azureConfig := conn.ParsedConfig()
+		err := mapstructure.WeakDecode(optionalAdditionalConfig, azureConfig)
 		if err != nil {
-			return "", fmt.Errorf("failed to parse s3 config properties: %w", err)
+			return "", fmt.Errorf("failed to parse azure config properties: %w", err)
 		}
 		var sb strings.Builder
 		sb.WriteString("CREATE OR REPLACE TEMPORARY SECRET ")
@@ -198,7 +216,7 @@ func objectStoreSecretSQL(ctx context.Context, path, model, inputConnector strin
 		sb.WriteRune(')')
 		return sb.String(), nil
 	default:
-		return "", fmt.Errorf("internal error: unsupported object store: %s", inputHandle.Driver())
+		return "", fmt.Errorf("internal error: unsupported object store connector %q", handle.Driver())
 	}
 }
 

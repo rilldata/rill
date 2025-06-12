@@ -92,6 +92,19 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 		}
 	}
 
+	// Add PreExec statements that create temporary secrets for object store connectors.
+	for _, connector := range e.c.config.secretConnectors() {
+		secretSQL, err := objectStoreSecretSQL(ctx, opts, connector, "", nil)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create secret for connector %q: %w", connector, err)
+		}
+		if inputProps.PreExec == "" {
+			inputProps.PreExec = secretSQL
+		} else {
+			inputProps.PreExec += ";" + secretSQL
+		}
+	}
+
 	var duration time.Duration
 	if !opts.IncrementalRun {
 		// Prepare for ingesting into the staging view/table.
@@ -271,12 +284,7 @@ func objectStoreRef(ctx context.Context, props *ModelInputProperties, opts *driv
 			uri.Scheme = "gcs"
 		}
 		// for s3 and azure we can just set a duckdb secret and ingest data using duckdb's native support for s3 and azure
-		handle, release, err := opts.Env.AcquireConnector(ctx, uri.Scheme)
-		if err != nil {
-			return "", "", nil, false
-		}
-		defer release()
-		secretSQL, err := objectStoreSecretSQL(ctx, ref.Paths[0], opts.ModelName, opts.InputConnector, handle, opts.InputProperties)
+		secretSQL, err := objectStoreSecretSQL(ctx, opts, uri.Scheme, ref.Paths[0], opts.InputProperties)
 		if err != nil {
 			if errors.Is(err, errGCSUsesNativeCreds) {
 				return uri.Scheme, "", ast, true
