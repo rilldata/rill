@@ -7,12 +7,49 @@ export function hasDuckDBUnicodeError(message: string) {
   );
 }
 
-const clickhouseErrorMap = {
-  "connection refused":
-    "Could not connect to ClickHouse server. Please check if the server is running and the host/port are correct.",
-  "context deadline exceeded":
-    "Connection to ClickHouse server timed out. Please check your network connection and server status.",
-};
+const connectorErrorMap = {
+  clickhouse: {
+    "connection refused":
+      "Could not connect to ClickHouse server. Please check if the server is running and the host/port are correct.",
+    "context deadline exceeded":
+      "Connection to ClickHouse server timed out. Please check your network connection and server status.",
+  },
+  // AWS errors (ref: https://docs.aws.amazon.com/AmazonS3/latest/API/ErrorResponses.html)
+  s3: {
+    MissingRegion: "Region not detected. Please enter a region.",
+    NoCredentialProviders:
+      "No credentials found. Please see the docs for how to configure AWS credentials.",
+    InvalidAccessKey: "Invalid AWS access key. Please check your credentials.",
+    SignatureDoesNotMatch:
+      "Invalid AWS secret key. Please check your credentials.",
+    BucketRegionError:
+      "Bucket is not in the provided region. Please check your region.",
+    AccessDenied:
+      "Access denied. Please ensure you have the correct permissions.",
+    NoSuchKey: "Invalid path. Please check your path.",
+    NoSuchBucket: "Invalid bucket. Please check your bucket name.",
+    AuthorizationHeaderMalformed:
+      "Invalid authorization header. Please check your credentials.",
+  },
+  // GCP errors (ref: https://cloud.google.com/storage/docs/json_api/v1/status-codes)
+  gcs: {
+    "could not find default credentials":
+      "No credentials found. Please see the docs for how to configure GCP credentials.",
+    Unauthorized: "Unauthorized. Please check your credentials.",
+    AccessDenied:
+      "Access denied. Please ensure you have the correct permissions.",
+    "object doesn't exist": "Invalid path. Please check your path.",
+  },
+  https: {
+    "invalid file":
+      "The provided URL does not appear to have a valid dataset. Please check your path and try again.",
+    "failed to fetch url":
+      "We could not connect to the provided URL. Please check your path and try again.",
+    "file type not supported": "The provided file type is not supported.",
+  },
+} as const;
+
+const CONNECTORS_WITH_CUSTOM_HANDLING = new Set(Object.keys(connectorErrorMap));
 
 export function humanReadableErrorMessage(
   connectorName: string | undefined,
@@ -24,20 +61,24 @@ export function humanReadableErrorMessage(
   const serverError = message;
   if (serverError === undefined) return unknownErrorStr;
 
+  if (connectorName && !CONNECTORS_WITH_CUSTOM_HANDLING.has(connectorName)) {
+    return `We got the following error when trying to connect to ${connectorName}. Please check your connection details and user permissions, then try again.`;
+  }
+
   // gRPC error codes
   // https://pkg.go.dev/google.golang.org/grpc@v1.49.0/codes
   switch (code) {
     case GRPC_ERROR_CODES.Unknown: {
       // ClickHouse errors
-      // source: errors reported by users
       if (connectorName === "clickhouse") {
-        if (serverError.includes("connection refused")) {
-          return clickhouseErrorMap["connection refused"];
-        } else if (serverError.includes("context deadline exceeded")) {
-          return clickhouseErrorMap["context deadline exceeded"];
+        for (const [key, value] of Object.entries(
+          connectorErrorMap.clickhouse,
+        )) {
+          if (serverError.includes(key)) {
+            return value;
+          }
         }
       }
-
       return serverError;
     }
     case GRPC_ERROR_CODES.InvalidArgument: {
@@ -48,49 +89,14 @@ export function humanReadableErrorMessage(
         return "A source with this name already exists. Please choose a different name.";
       }
 
-      // AWS errors (ref: https://docs.aws.amazon.com/AmazonS3/latest/API/ErrorResponses.html)
-      if (connectorName === "s3") {
-        if (serverError.includes("MissingRegion")) {
-          return "Region not detected. Please enter a region.";
-        } else if (serverError.includes("NoCredentialProviders")) {
-          return "No credentials found. Please see the docs for how to configure AWS credentials.";
-        } else if (serverError.includes("InvalidAccessKey")) {
-          return "Invalid AWS access key. Please check your credentials.";
-        } else if (serverError.includes("SignatureDoesNotMatch")) {
-          return "Invalid AWS secret key. Please check your credentials.";
-        } else if (serverError.includes("BucketRegionError")) {
-          return "Bucket is not in the provided region. Please check your region.";
-        } else if (serverError.includes("AccessDenied")) {
-          return "Access denied. Please ensure you have the correct permissions.";
-        } else if (serverError.includes("NoSuchKey")) {
-          return "Invalid path. Please check your path.";
-        } else if (serverError.includes("NoSuchBucket")) {
-          return "Invalid bucket. Please check your bucket name.";
-        } else if (serverError.includes("AuthorizationHeaderMalformed")) {
-          return "Invalid authorization header. Please check your credentials.";
-        }
-      }
-
-      // GCP errors (ref: https://cloud.google.com/storage/docs/json_api/v1/status-codes)
-      if (connectorName === "gcs") {
-        if (serverError.includes("could not find default credentials")) {
-          return "No credentials found. Please see the docs for how to configure GCP credentials.";
-        } else if (serverError.includes("Unauthorized")) {
-          return "Unauthorized. Please check your credentials.";
-        } else if (serverError.includes("AccessDenied")) {
-          return "Access denied. Please ensure you have the correct permissions.";
-        } else if (serverError.includes("object doesn't exist")) {
-          return "Invalid path. Please check your path.";
-        }
-      }
-
-      if (connectorName === "https") {
-        if (serverError.includes("invalid file")) {
-          return "The provided URL does not appear to have a valid dataset. Please check your path and try again.";
-        } else if (serverError.includes("failed to fetch url")) {
-          return "We could not connect to the provided URL. Please check your path and try again.";
-        } else if (serverError.includes("file type not supported")) {
-          return "Provided " + serverError;
+      // Handle connector-specific errors
+      if (connectorName && connectorName in connectorErrorMap) {
+        const errorMap =
+          connectorErrorMap[connectorName as keyof typeof connectorErrorMap];
+        for (const [key, value] of Object.entries(errorMap)) {
+          if (serverError.includes(key)) {
+            return value;
+          }
         }
       }
 
