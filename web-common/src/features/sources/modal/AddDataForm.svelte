@@ -308,7 +308,7 @@
       </form>
     {/if}
 
-    <div class="flex items-center space-x-2 ml-auto">
+    <div class="flex items-center justify-between space-x-2">
       <Button onClick={onBack} type="secondary">Back</Button>
       <Button disabled={submitting} form={formId} submitForm type="primary">
         {#if isConnectorForm}
@@ -329,8 +329,7 @@
       <div class="text-sm leading-none font-medium mb-4">
         Connection preview
       </div>
-      <pre
-        style="white-space: pre-wrap; overflow-x: visible;">{yamlPreview}</pre>
+      <pre>{yamlPreview}</pre>
     </div>
     <div>
       <div class="text-sm leading-none font-medium mb-4">Help</div>
@@ -363,12 +362,13 @@
     @apply flex-1 flex flex-col pr-6 min-w-0;
   }
   .add-data-side-panel {
-    @apply w-96 min-w-[320px] max-w-[400px] border-l border-gray-200 pl-6 flex flex-col gap-6 bg-white;
+    @apply w-96 min-w-[320px] max-w-[400px] border-l border-gray-200 pl-6 flex flex-col gap-6;
+    /* FIXME: bg-sidebar-background */
+    @apply bg-[#FAFAFA];
   }
   .add-data-side-panel pre {
     @apply bg-slate-50 p-4 rounded-md text-xs border border-gray-200 font-medium;
-    white-space: pre-wrap;
-    overflow-x: visible;
+    @apply whitespace-pre-wrap overflow-x-visible;
   }
   .add-data-side-panel a {
     @apply text-primary-500 font-medium break-all;
