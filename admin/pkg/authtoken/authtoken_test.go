@@ -111,10 +111,10 @@ func TestMatchByPrefix(t *testing.T) {
 	t1 := NewRandom(TypeUser)
 	t2 := NewRandom(TypeUser)
 	t3 := NewRandom(TypeService)
-	tokens := []Token{
-		*t1,
-		*t2,
-		*t3,
+	tokens := []*Token{
+		t1,
+		t2,
+		t3,
 	}
 
 	// Should match only t1 by its full prefix

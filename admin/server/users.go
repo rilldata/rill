@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -637,7 +638,7 @@ func (s *Server) findUserAuthTokenFuzzy(ctx context.Context, input string) (*dat
 
 	// Try exact ID match
 	token, err := s.admin.DB.FindUserAuthToken(ctx, input)
-	if err != nil && status.Code(err) != codes.NotFound {
+	if err != nil && !errors.Is(err, database.ErrNotFound) {
 		return nil, err
 	}
 	if err == nil {
@@ -648,7 +649,7 @@ func (s *Server) findUserAuthTokenFuzzy(ctx context.Context, input string) (*dat
 	tokenStr, err := authtoken.FromString(input)
 	if err == nil {
 		token, err := s.admin.DB.FindUserAuthToken(ctx, tokenStr.ID.String())
-		if err != nil && status.Code(err) != codes.NotFound {
+		if err != nil && !errors.Is(err, database.ErrNotFound) {
 			return nil, err
 		}
 		if err == nil {
@@ -663,17 +664,17 @@ func (s *Server) findUserAuthTokenFuzzy(ctx context.Context, input string) (*dat
 
 	// Find all tokens for the user and match by prefix
 	dbTokens, err := s.admin.DB.FindUserAuthTokens(ctx, userID, "", 1000)
-	if err != nil && status.Code(err) != codes.NotFound {
+	if err != nil && !errors.Is(err, database.ErrNotFound) {
 		return nil, err
 	}
 
-	tokens := make([]authtoken.Token, len(dbTokens))
+	tokens := make([]*authtoken.Token, len(dbTokens))
 	for i, dbToken := range dbTokens {
 		id, err := uuid.Parse(dbToken.ID)
 		if err != nil {
 			continue // skip invalid UUIDs
 		}
-		tokens[i] = *authtoken.FromID(authtoken.TypeUser, id)
+		tokens[i] = authtoken.FromID(authtoken.TypeUser, id)
 	}
 
 	matches := authtoken.MatchByPrefix(input, tokens)

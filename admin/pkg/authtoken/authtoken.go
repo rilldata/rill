@@ -146,19 +146,19 @@ func (t *Token) Prefix() string {
 	payload := make([]byte, 40)
 	copy(payload[0:16], t.ID[:])
 
-	// The remaining 24 bytes are already zero-initialized (Go default for slices)
-	return fmt.Sprintf("%s_%s_%s", Prefix, t.Type, marshalBase62(payload)[:10])
+	n := len(Prefix) + len(t.Type) + 12
+	return t.String()[0:n]
 }
 
 // MatchByPrefix attempts to match a decoded token by its prefix.
-func MatchByPrefix(input string, tokens []Token) []*Token {
+func MatchByPrefix(input string, tokens []*Token) []*Token {
 	if len(input) < 10 || !strings.HasPrefix(input, Prefix+"_") {
 		return nil
 	}
 	var matches []*Token
 	for _, t := range tokens {
 		if strings.HasPrefix(t.Prefix(), input) {
-			matches = append(matches, &t)
+			matches = append(matches, t)
 		}
 	}
 	return matches
