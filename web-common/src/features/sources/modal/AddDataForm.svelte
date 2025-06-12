@@ -209,106 +209,109 @@
 
 <div class="add-data-layout">
   <div class="add-data-form-panel">
-    {#if hasDsnFormOption}
-      <div class="pb-3">
-        <div class="text-sm font-medium mb-2">Connection method</div>
-        <ButtonGroup
-          selected={[useDsn ? "dsn" : "parameters"]}
-          on:subbutton-click={handleConnectionTypeChange}
+    <div class="p-6 flex flex-col flex-grow">
+      {#if hasDsnFormOption}
+        <div class="pb-3">
+          <div class="text-sm font-medium mb-2">Connection method</div>
+          <ButtonGroup
+            selected={[useDsn ? "dsn" : "parameters"]}
+            on:subbutton-click={handleConnectionTypeChange}
+          >
+            <SubButton value="parameters" ariaLabel="Enter parameters">
+              <span class="px-2">Enter parameters</span>
+            </SubButton>
+            <SubButton value="dsn" ariaLabel="Use connection string">
+              <span class="px-2">Enter connection string</span>
+            </SubButton>
+          </ButtonGroup>
+        </div>
+      {/if}
+
+      {#if !useDsn}
+        <!-- Form 1: Individual parameters -->
+        <form
+          id={paramsFormId}
+          class="flex-grow overflow-y-auto"
+          use:paramsEnhance
+          on:submit|preventDefault={paramsSubmit}
+          transition:slide={{ duration: FORM_TRANSITION_DURATION }}
         >
-          <SubButton value="parameters" ariaLabel="Enter parameters">
-            <span class="px-2">Enter parameters</span>
-          </SubButton>
-          <SubButton value="dsn" ariaLabel="Use connection string">
-            <span class="px-2">Enter connection string</span>
-          </SubButton>
-        </ButtonGroup>
-      </div>
-    {/if}
+          {#if paramsError}
+            <SubmissionError message={paramsError} />
+          {/if}
 
-    {#if !useDsn}
-      <!-- Form 1: Individual parameters -->
-      <form
-        id={paramsFormId}
-        class="pb-5 flex-grow overflow-y-auto"
-        use:paramsEnhance
-        on:submit|preventDefault={paramsSubmit}
-        transition:slide={{ duration: FORM_TRANSITION_DURATION }}
-      >
-        {#if paramsError}
-          <SubmissionError message={paramsError} />
-        {/if}
+          {#each properties as property (property.key)}
+            {@const propertyKey = property.key ?? ""}
+            {@const label =
+              property.displayName + (property.required ? "" : " (optional)")}
+            <div class="py-1.5 first:pt-0 last:pb-0">
+              {#if property.type === ConnectorDriverPropertyType.TYPE_STRING || property.type === ConnectorDriverPropertyType.TYPE_NUMBER}
+                <Input
+                  id={propertyKey}
+                  label={property.displayName}
+                  placeholder={property.placeholder}
+                  optional={!property.required}
+                  secret={property.secret}
+                  hint={property.hint}
+                  errors={$paramsErrors[propertyKey]}
+                  bind:value={$paramsForm[propertyKey]}
+                  onInput={(_, e) => onStringInputChange(e)}
+                  alwaysShowError
+                />
+              {:else if property.type === ConnectorDriverPropertyType.TYPE_BOOLEAN}
+                <label for={property.key} class="flex items-center">
+                  <input
+                    id={propertyKey}
+                    type="checkbox"
+                    bind:checked={$paramsForm[propertyKey]}
+                    class="h-5 w-5"
+                  />
+                  <span class="ml-2 text-sm">{label}</span>
+                </label>
+              {:else if property.type === ConnectorDriverPropertyType.TYPE_INFORMATIONAL}
+                <InformationalField
+                  description={property.description}
+                  hint={property.hint}
+                  href={property.docsUrl}
+                />
+              {/if}
+            </div>
+          {/each}
+        </form>
+      {:else}
+        <!-- Form 2: DSN -->
+        <form
+          id={dsnFormId}
+          class="flex-grow overflow-y-auto"
+          use:dsnEnhance
+          on:submit|preventDefault={dsnSubmit}
+          transition:slide={{ duration: FORM_TRANSITION_DURATION }}
+        >
+          {#if dsnError}
+            <SubmissionError message={dsnError} />
+          {/if}
 
-        {#each properties as property (property.key)}
-          {@const propertyKey = property.key ?? ""}
-          {@const label =
-            property.displayName + (property.required ? "" : " (optional)")}
-          <div class="py-1.5">
-            {#if property.type === ConnectorDriverPropertyType.TYPE_STRING || property.type === ConnectorDriverPropertyType.TYPE_NUMBER}
+          {#each dsnProperties as property (property.key)}
+            {@const propertyKey = property.key ?? ""}
+            <div class="py-1.5">
               <Input
                 id={propertyKey}
                 label={property.displayName}
                 placeholder={property.placeholder}
-                optional={!property.required}
                 secret={property.secret}
                 hint={property.hint}
-                errors={$paramsErrors[propertyKey]}
-                bind:value={$paramsForm[propertyKey]}
-                onInput={(_, e) => onStringInputChange(e)}
+                errors={$dsnErrors[propertyKey]}
+                bind:value={$dsnForm[propertyKey]}
                 alwaysShowError
               />
-            {:else if property.type === ConnectorDriverPropertyType.TYPE_BOOLEAN}
-              <label for={property.key} class="flex items-center">
-                <input
-                  id={propertyKey}
-                  type="checkbox"
-                  bind:checked={$paramsForm[propertyKey]}
-                  class="h-5 w-5"
-                />
-                <span class="ml-2 text-sm">{label}</span>
-              </label>
-            {:else if property.type === ConnectorDriverPropertyType.TYPE_INFORMATIONAL}
-              <InformationalField
-                description={property.description}
-                hint={property.hint}
-                href={property.docsUrl}
-              />
-            {/if}
-          </div>
-        {/each}
-      </form>
-    {:else}
-      <!-- Form 2: DSN -->
-      <form
-        id={dsnFormId}
-        class="pb-5 flex-grow overflow-y-auto"
-        use:dsnEnhance
-        on:submit|preventDefault={dsnSubmit}
-        transition:slide={{ duration: FORM_TRANSITION_DURATION }}
-      >
-        {#if dsnError}
-          <SubmissionError message={dsnError} />
-        {/if}
-
-        {#each dsnProperties as property (property.key)}
-          {@const propertyKey = property.key ?? ""}
-          <div class="py-1.5">
-            <Input
-              id={propertyKey}
-              label={property.displayName}
-              placeholder={property.placeholder}
-              secret={property.secret}
-              hint={property.hint}
-              errors={$dsnErrors[propertyKey]}
-              bind:value={$dsnForm[propertyKey]}
-              alwaysShowError
-            />
-          </div>
-        {/each}
-      </form>
-    {/if}
-
-    <div class="flex items-center justify-between space-x-2">
+            </div>
+          {/each}
+        </form>
+      {/if}
+    </div>
+    <div
+      class="flex items-center justify-between space-x-2 px-6 py-4 border-t border-gray-200"
+    >
       <Button onClick={onBack} type="secondary">Back</Button>
       <Button disabled={submitting} form={formId} submitForm type="primary">
         {#if isConnectorForm}
@@ -359,7 +362,7 @@
     @apply flex flex-row h-full w-full;
   }
   .add-data-form-panel {
-    @apply flex-1 flex flex-col pr-6 min-w-0 p-6;
+    @apply flex-1 flex flex-col min-w-0;
   }
   .add-data-side-panel {
     @apply w-96 min-w-[320px] max-w-[400px] border-l border-gray-200 pl-6 flex flex-col gap-6 p-6;
