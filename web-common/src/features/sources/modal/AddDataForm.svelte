@@ -356,8 +356,10 @@
     @apply bg-[#FAFAFA];
   }
   .add-data-side-panel pre {
-    @apply bg-slate-50 p-4 rounded-md text-xs border border-gray-200 font-medium;
+    @apply p-4 rounded-md text-xs border border-gray-200 font-medium;
     @apply whitespace-pre-wrap overflow-x-visible;
+    /* FIXME: bg-base-muted */
+    @apply bg-[#F4F4F5];
   }
   .add-data-side-panel a {
     @apply text-primary-500 font-medium break-all;
