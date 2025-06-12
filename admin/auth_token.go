@@ -239,6 +239,11 @@ func (s *Service) RevokeAuthToken(ctx context.Context, token string) error {
 	}
 }
 
+// PurgeAuthTokenCache purges the short-term in-memory auth token cache.
+func (s *Service) PurgeAuthTokenCache() {
+	s.authCache.Purge()
+}
+
 // ValidateAuthToken validates an auth token against persistent storage.
 // It includes a short-term in-memory cache to prevent
 func (s *Service) ValidateAuthToken(ctx context.Context, token string) (AuthToken, error) {
