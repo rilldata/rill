@@ -88,12 +88,7 @@ export class Grid {
     canvasRows.forEach((canvasRow, i) => {
       const row = currentRows[i] ?? this.addRow();
 
-      if (
-        canvasRow.height !== undefined &&
-        get(row.height) !== canvasRow.height
-      ) {
-        row.height.set(canvasRow.height);
-      }
+      row.height.set(canvasRow.height ?? 0);
 
       if (Array.isArray(canvasRow.items)) {
         const existingItemIds = get(row.items);

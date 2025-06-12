@@ -487,6 +487,14 @@
 
         openSidebarAfterSelection = true;
 
+        if (
+          event?.target instanceof HTMLElement &&
+          component.type === "markdown" &&
+          !event.target?.classList.contains("component-body")
+        ) {
+          return;
+        }
+
         dragTimeout = setTimeout(() => {
           openSidebarAfterSelection = false;
           handleDragStart(component);

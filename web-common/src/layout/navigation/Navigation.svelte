@@ -65,6 +65,12 @@
   on:keydown={(e) => {
     const isMac = window.navigator.userAgent.includes("Macintosh");
 
+    if (
+      e.target instanceof HTMLElement &&
+      e.target?.classList.contains("ProseMirror")
+    )
+      return;
+
     if (e[isMac ? "metaKey" : "ctrlkey"] && e.key === "b") {
       navigationOpen.toggle();
     }

@@ -25,7 +25,7 @@ test.describe("canvas", () => {
     await page.getByRole("menuitem", { name: "Text" }).click();
 
     await expect(
-      page.getByRole("heading", { name: "H1 Markdown Text" }),
+      page.locator('div.milkdown div[role="textbox"]'),
     ).toBeVisible();
   });
 
@@ -57,10 +57,12 @@ test.describe("canvas", () => {
       })
       .click();
 
+    // await page.waitForTimeout(100000);
+
     await page.getByRole("menuitem", { name: "Text" }).click();
 
     await expect(
-      page.getByRole("heading", { name: "H1 Markdown Text" }),
+      page.locator('div.milkdown div[role="textbox"]'),
     ).toBeVisible();
   });
 });
