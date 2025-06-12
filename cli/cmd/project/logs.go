@@ -2,8 +2,12 @@ package project
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
+	"net/http"
+	"net/url"
 	"strings"
 
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
@@ -68,37 +72,81 @@ func LogsCmd(ch *cmdutil.Helper) *cobra.Command {
 			if lvl == runtimev1.LogLevel_LOG_LEVEL_UNSPECIFIED {
 				return fmt.Errorf("invalid log level: %s", level)
 			}
+			level = printLogLevel(lvl)
 
 			if follow {
 				ctx, cancel := context.WithCancelCause(cmd.Context())
 				defer cancel(nil)
 
-				go func() {
-					logs, err := rt.WatchLogs(ctx, &runtimev1.WatchLogsRequest{InstanceId: depl.RuntimeInstanceId, Replay: true, ReplayLimit: int32(tail), Level: lvl})
-					if err != nil {
-						cancel(fmt.Errorf("failed to watch logs: %w", err))
-						return
-					}
-
-					for {
-						res, err := logs.Recv()
-						if err != nil {
-							cancel(fmt.Errorf("failed to receive logs: %w", err))
-							return
-						}
-
-						printLog(res.Log)
-					}
-				}()
-
-				// keep on receiving logs util context is cancelled
-				<-ctx.Done()
-				err := context.Cause(ctx)
-				if errors.Is(err, context.Canceled) {
-					// Since user cancellation is expected for --follow, don't return an error if the cause was a context cancellation.
-					return nil
+				// Build the SSE URL for the logs endpoint using net/url
+				baseURL := fmt.Sprintf("%s/v1/instances/%s/logs/watch", depl.RuntimeHost, depl.RuntimeInstanceId)
+				u, err := url.Parse(baseURL)
+				if err != nil {
+					return fmt.Errorf("failed to parse logs base URL: %w", err)
 				}
-				return context.Cause(ctx)
+				q := u.Query()
+				q.Set("stream", "logs")
+				q.Set("replay", "true")
+				q.Set("replay_limit", fmt.Sprintf("%d", tail))
+				q.Set("level", level)
+				u.RawQuery = q.Encode()
+				logsURL := u.String()
+
+				req, err := http.NewRequestWithContext(ctx, http.MethodGet, logsURL, http.NoBody)
+				if err != nil {
+					return fmt.Errorf("failed to create logs SSE request: %w", err)
+				}
+				// Add auth header if needed
+				if proj.Jwt != "" {
+					req.Header.Set("Authorization", "Bearer "+proj.Jwt)
+				}
+
+				resp, err := http.DefaultClient.Do(req)
+				if err != nil {
+					return fmt.Errorf("failed to connect to logs SSE endpoint: %w", err)
+				}
+				defer resp.Body.Close()
+
+				if resp.StatusCode != http.StatusOK {
+					return fmt.Errorf("logs SSE endpoint returned status: %s", resp.Status)
+				}
+
+				dec := newSSEDecoder(resp.Body)
+				for {
+					select {
+					case <-ctx.Done():
+						if errors.Is(context.Cause(ctx), context.Canceled) {
+							return nil
+						}
+						return context.Cause(ctx)
+					default:
+						event, err := dec.Decode()
+						if err != nil {
+							if errors.Is(err, io.EOF) {
+								return nil
+							}
+							if errors.Is(err, context.Canceled) || errors.Is(context.Cause(ctx), context.Canceled) {
+								return nil
+							}
+							if errors.Is(err, io.ErrClosedPipe) {
+								return nil
+							}
+							if strings.Contains(err.Error(), "use of closed network connection") || strings.Contains(err.Error(), "connection reset by peer") {
+								return nil
+							}
+							return fmt.Errorf("failed to decode SSE log event: %w", err)
+						}
+						if event != nil && event.Data != nil {
+							var resp runtimev1.WatchLogsResponse
+							err := json.Unmarshal(event.Data, &resp)
+							if err == nil && resp.Log != nil {
+								printLog(resp.Log)
+								continue
+							}
+							fmt.Printf("%s\n", event.Data)
+						}
+					}
+				}
 			}
 
 			res, err := rt.GetLogs(cmd.Context(), &runtimev1.GetLogsRequest{InstanceId: depl.RuntimeInstanceId, Ascending: true, Limit: int32(tail), Level: lvl})
@@ -162,5 +210,55 @@ func toRuntimeLogLevel(lvl string) runtimev1.LogLevel {
 		return runtimev1.LogLevel_LOG_LEVEL_FATAL
 	default:
 		return runtimev1.LogLevel_LOG_LEVEL_UNSPECIFIED
+	}
+}
+
+// Replace sseEvent, sseDecoder, and newSSEDecoder with a line-oriented SSE parser
+
+type sseEvent struct {
+	Data json.RawMessage
+}
+
+type sseDecoder struct {
+	r io.Reader
+}
+
+func newSSEDecoder(r io.Reader) *sseDecoder {
+	return &sseDecoder{r: r}
+}
+
+// Decode reads the next SSE event, extracting the JSON payload from 'data: ' lines.
+func (d *sseDecoder) Decode() (*sseEvent, error) {
+	var dataLines []string
+	buf := make([]byte, 4096)
+	var lineBuf string
+	for {
+		n, err := d.r.Read(buf)
+		if n > 0 {
+			lineBuf += string(buf[:n])
+			for {
+				idx := strings.Index(lineBuf, "\n")
+				if idx == -1 {
+					break
+				}
+				line := lineBuf[:idx]
+				lineBuf = lineBuf[idx+1:]
+				line = strings.TrimRight(line, "\r")
+				if strings.HasPrefix(line, "data: ") {
+					dataLines = append(dataLines, line[len("data: "):])
+				} else if line == "" && len(dataLines) > 0 {
+					// End of event
+					joined := strings.Join(dataLines, "\n")
+					return &sseEvent{Data: json.RawMessage(joined)}, nil
+				}
+			}
+		}
+		if err != nil {
+			if err == io.EOF && len(dataLines) > 0 {
+				joined := strings.Join(dataLines, "\n")
+				return &sseEvent{Data: json.RawMessage(joined)}, nil
+			}
+			return nil, err
+		}
 	}
 }

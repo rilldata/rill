@@ -454,6 +454,94 @@ func (s *Server) WatchResourcesHandler(w http.ResponseWriter, r *http.Request) {
 	eventServer.ServeHTTP(w, r)
 }
 
+// WatchLogsHandler implements an HTTP handler for runtimev1.RuntimeServiceServer
+func (s *Server) WatchLogsHandler(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	// Parse log level from query string
+	levelStr := r.URL.Query().Get("level")
+	var minLvl runtimev1.LogLevel
+	if levelStr != "" {
+		switch strings.ToUpper(levelStr) {
+		case "DEBUG":
+			minLvl = runtimev1.LogLevel_LOG_LEVEL_DEBUG
+		case "INFO":
+			minLvl = runtimev1.LogLevel_LOG_LEVEL_INFO
+		case "WARN":
+			minLvl = runtimev1.LogLevel_LOG_LEVEL_WARN
+		case "ERROR":
+			minLvl = runtimev1.LogLevel_LOG_LEVEL_ERROR
+		case "FATAL":
+			minLvl = runtimev1.LogLevel_LOG_LEVEL_FATAL
+		default:
+			minLvl = runtimev1.LogLevel_LOG_LEVEL_INFO
+		}
+	} else {
+		minLvl = runtimev1.LogLevel_LOG_LEVEL_INFO
+	}
+
+	// Set headers for SSE
+	w.Header().Set("Content-Type", "text/event-stream")
+	w.Header().Set("Cache-Control", "no-cache")
+	w.Header().Set("Connection", "keep-alive")
+	w.Header().Set("X-Accel-Buffering", "no")
+
+	flusher, ok := w.(http.Flusher)
+	if !ok {
+		http.Error(w, "streaming unsupported", http.StatusInternalServerError)
+		return
+	}
+
+	// Get instance ID from URL
+	parts := strings.Split(r.URL.Path, "/")
+	var instanceID string
+	for i, part := range parts {
+		if part == "instances" && i+1 < len(parts) {
+			instanceID = parts[i+1]
+			break
+		}
+	}
+	if instanceID == "" {
+		http.Error(w, "missing instance ID", http.StatusBadRequest)
+		return
+	}
+
+	// Stream logs as SSE
+	marshaler := protojson.MarshalOptions{UseEnumNumbers: false, EmitUnpopulated: true}
+	logFn := func(log *runtimev1.Log) {
+		data, err := marshaler.Marshal(log)
+		if err != nil {
+			s.logger.Warn("failed to marshal log for SSE", zap.Error(err))
+			return
+		}
+		// Write as SSE event
+		if _, err := w.Write([]byte("data: ")); err != nil {
+			s.logger.Warn("failed to write SSE data prefix", zap.Error(err))
+			return
+		}
+		if _, err := w.Write(data); err != nil {
+			s.logger.Warn("failed to write SSE data", zap.Error(err))
+			return
+		}
+		if _, err := w.Write([]byte("\n\n")); err != nil {
+			s.logger.Warn("failed to write SSE newline", zap.Error(err))
+			return
+		}
+		flusher.Flush()
+	}
+
+	logBuffer, err := s.runtime.InstanceLogs(ctx, instanceID)
+	if err != nil {
+		http.Error(w, "failed to get log buffer", http.StatusInternalServerError)
+		return
+	}
+	err = logBuffer.WatchLogs(ctx, logFn, minLvl)
+	if err != nil && !errors.Is(err, context.Canceled) {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+}
+
 // applySecurityPolicy applies relevant security policies to the resource.
 // The input resource will not be modified in-place (so no need to set clone=true when obtaining it from the catalog).
 func (s *Server) applySecurityPolicy(ctx context.Context, instID string, r *runtimev1.Resource) (*runtimev1.Resource, bool, error) {

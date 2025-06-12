@@ -213,6 +213,9 @@ func (s *Server) HTTPHandler(ctx context.Context, registerAdditionalHandlers fun
 	// Add HTTP handler for watching resources
 	httpMux.Handle("/v1/instances/{instance_id}/resources/-/watch", auth.HTTPMiddleware(s.aud, http.HandlerFunc(s.WatchResourcesHandler)))
 
+	// Add HTTP handler for watching logs
+	httpMux.Handle("/v1/instances/{instance_id}/logs/watch", auth.HTTPMiddleware(s.aud, http.HandlerFunc(s.WatchLogsHandler)))
+
 	// Add Prometheus
 	if s.opts.ServePrometheus {
 		httpMux.Handle("/metrics", promhttp.Handler())
