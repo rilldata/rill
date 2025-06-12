@@ -23,7 +23,7 @@
           class="flex items-center mt-2 cursor-pointer select-none"
           on:click={toggleDetails}
         >
-          <span class="text-xs font-semibold text-gray-500 uppercase"
+          <span class="text-xs font-semibold text-gray-500 capitalize"
             >Connection error</span
           >
           <div class="icon-wrapper ml-1">
