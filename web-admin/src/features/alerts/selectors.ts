@@ -9,8 +9,11 @@ import {
   createRuntimeServiceListResources,
   type V1AlertSpec,
 } from "@rilldata/web-common/runtime-client";
-import { readable } from "svelte/store";
-import { calculateRefetchInterval } from "../shared/refetch-interval";
+import { readable, get } from "svelte/store";
+import {
+  refetchInterval,
+  updateSmartRefetchInterval,
+} from "../shared/refetchIntervalStore";
 
 export function useAlerts(instanceId: string, enabled = true) {
   return createRuntimeServiceListResources(
@@ -22,7 +25,11 @@ export function useAlerts(instanceId: string, enabled = true) {
       query: {
         enabled: enabled && !!instanceId,
         refetchOnMount: true,
-        refetchInterval: calculateRefetchInterval,
+        select: (data) => {
+          updateSmartRefetchInterval(data?.resources);
+          return data;
+        },
+        refetchInterval: () => get(refetchInterval),
       },
     },
   );
