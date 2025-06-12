@@ -4,10 +4,7 @@
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import SubmissionError from "@rilldata/web-common/components/forms/SubmissionError.svelte";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
-  import {
-    ConnectorDriverPropertyType,
-    type V1ConnectorDriver,
-  } from "@rilldata/web-common/runtime-client";
+  import { type V1ConnectorDriver } from "@rilldata/web-common/runtime-client";
   import type { ActionResult } from "@sveltejs/kit";
   import { createEventDispatcher } from "svelte";
   import { slide } from "svelte/transition";
@@ -60,7 +57,7 @@
   export let onBack: () => void;
   export let onClose: () => void;
 
-  const isSourceForm = formType === "source";
+  // FIXME: do we still need formType?
   const isConnectorForm = formType === "connector";
 
   // TODO: remove this mocked json response
