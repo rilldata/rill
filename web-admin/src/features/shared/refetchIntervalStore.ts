@@ -13,10 +13,6 @@ export const refetchInterval = writable<number | false>(
 
 // Helper to reset the interval
 export function resetRefetchInterval() {
-  console.log(
-    "[refetchInterval] Reset to initial interval:",
-    INITIAL_REFETCH_INTERVAL,
-  );
   refetchInterval.set(INITIAL_REFETCH_INTERVAL);
 }
 
@@ -26,31 +22,20 @@ export function resetRefetchInterval() {
  */
 export function updateSmartRefetchInterval(resources: any[] | undefined) {
   if (!resources) {
-    console.log("[refetchInterval] No resources, stopping polling.");
     refetchInterval.set(false);
     return;
   }
   const hasReconciling = resources.some(isResourceReconciling);
   if (!hasReconciling) {
-    console.log(
-      "[refetchInterval] No reconciling resources, stopping polling.",
-    );
     refetchInterval.set(false);
     return;
   }
   // Backoff logic: update the interval, but reset if a new cycle starts
   refetchInterval.update((current) => {
     if (typeof current !== "number") {
-      console.log(
-        "[refetchInterval] New cycle detected, resetting to initial interval:",
-        INITIAL_REFETCH_INTERVAL,
-      );
       return INITIAL_REFETCH_INTERVAL;
     }
     const next = Math.min(current * BACKOFF_FACTOR, MAX_REFETCH_INTERVAL);
-    console.log(
-      `[refetchInterval] Backing off: current=${current}, next=${next}`,
-    );
     return next;
   });
 }
