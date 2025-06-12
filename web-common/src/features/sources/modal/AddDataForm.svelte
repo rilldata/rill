@@ -210,7 +210,7 @@
 <div class="add-data-layout">
   <div class="add-data-form-panel">
     {#if hasDsnFormOption}
-      <div class="py-3">
+      <div class="pb-3">
         <div class="text-sm font-medium mb-2">Connection method</div>
         <ButtonGroup
           selected={[useDsn ? "dsn" : "parameters"]}
@@ -359,10 +359,10 @@
     @apply flex flex-row h-full w-full;
   }
   .add-data-form-panel {
-    @apply flex-1 flex flex-col pr-6 min-w-0;
+    @apply flex-1 flex flex-col pr-6 min-w-0 p-6;
   }
   .add-data-side-panel {
-    @apply w-96 min-w-[320px] max-w-[400px] border-l border-gray-200 pl-6 flex flex-col gap-6;
+    @apply w-96 min-w-[320px] max-w-[400px] border-l border-gray-200 pl-6 flex flex-col gap-6 p-6;
     /* FIXME: bg-sidebar-background */
     @apply bg-[#FAFAFA];
   }
