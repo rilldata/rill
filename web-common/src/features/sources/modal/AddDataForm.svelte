@@ -298,7 +298,7 @@
         {#if submitting}
           Testing connection...
         {:else}
-          Connect
+          Test and Connect
         {/if}
       {:else}
         Add data
