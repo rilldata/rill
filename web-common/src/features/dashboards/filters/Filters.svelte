@@ -5,7 +5,9 @@
   import AdvancedFilter from "@rilldata/web-common/features/dashboards/filters/AdvancedFilter.svelte";
   import MeasureFilter from "@rilldata/web-common/features/dashboards/filters/measure-filters/MeasureFilter.svelte";
   import type { MeasureFilterEntry } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
+  import { DashboardStateSync } from "@rilldata/web-common/features/dashboards/state-managers/loaders/DashboardStateSync";
   import { isExpressionUnsupported } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
+  import { isUrlTooLong } from "@rilldata/web-common/features/dashboards/url-state/url-length-limits";
   import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
   import type { TimeRange } from "@rilldata/web-common/lib/time/types";
   import {
@@ -21,6 +23,7 @@
   import { flip } from "svelte/animate";
   import { fly } from "svelte/transition";
   import { getStateManagers } from "../state-managers/state-managers";
+  import { applyDimensionInListMode as applyDimensionInListModeDirectly } from "../state-managers/actions/dimension-filters";
   import {
     metricsExplorerStore,
     useExploreState,
@@ -88,6 +91,8 @@
   } = StateManagers;
 
   const timeControlsStore = useTimeControlStore(StateManagers);
+
+  const dashboardStateSync = DashboardStateSync.getFromContext();
 
   let showDefaultItem = false;
 
@@ -301,6 +306,22 @@
       );
     }
   }
+
+  function isUrlTooLongAfterInListFilter(
+    dimensionName: string,
+    values: string[],
+  ) {
+    if (!dashboardStateSync) return false;
+
+    const exploreState = structuredClone($dashboardStore);
+    applyDimensionInListModeDirectly(
+      { dashboard: exploreState },
+      dimensionName,
+      values,
+    );
+    const url = dashboardStateSync.getUrlForExploreState(exploreState);
+    return isUrlTooLong(url);
+  }
 </script>
 
 <div class="flex flex-col gap-y-2 size-full">
@@ -412,6 +433,8 @@
                   applyDimensionInListMode(name, values)}
                 onApplyContainsMode={(searchText) =>
                   applyDimensionContainsMode(name, searchText)}
+                isUrlTooLongAfterInListFilter={(values) =>
+                  isUrlTooLongAfterInListFilter(name, values)}
               />
             {/if}
           </div>

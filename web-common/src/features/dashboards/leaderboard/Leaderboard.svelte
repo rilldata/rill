@@ -253,10 +253,12 @@
 
   $: belowTheFoldData = data?.data?.length
     ? data?.data
-    : belowTheFoldValues.map((value) => ({
-        [dimensionName]: value,
-        [leaderboardSortByMeasureName]: null,
-      }));
+    : belowTheFoldValues
+        .map((value) => ({
+          [dimensionName]: value,
+          [leaderboardSortByMeasureName]: null,
+        }))
+        .slice(0, belowTheFoldDataLimit);
 
   $: belowTheFoldRows = belowTheFoldData.map((item) =>
     cleanUpComparisonValue(
