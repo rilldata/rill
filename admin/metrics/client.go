@@ -97,7 +97,7 @@ type Usage struct {
 	EndTime           time.Time `json:"end_time"`
 	EventName         string    `json:"event_name"`
 	MaxValue          float64   `json:"max_value"`
-	Service           string    `json:"service"`
+	BillingService    string    `json:"billing_service"`
 }
 
 func (c *Client) GetUsageMetrics(ctx context.Context, startTime, endTime, afterTime time.Time, afterOrgID, afterProjectID, afterEventName, grain string, limit int) ([]*Usage, error) {
@@ -124,7 +124,7 @@ func (c *Client) GetUsageMetrics(ctx context.Context, startTime, endTime, afterT
 	    org_id,
 	    project_id,
 	    event_name,
-		service,
+		billing_service,
 	    max(value) as max_value,
 		<sum(value) as sum_value>
 		...

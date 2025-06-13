@@ -530,7 +530,7 @@ func (c *Connection) periodicallyEmitStats(sensitive, regular time.Duration) {
 				latestRCU, err := c.latestRCUPerService(c.ctx)
 				if err == nil {
 					for service, value := range latestRCU {
-						c.activity.RecordMetric(c.ctx, "clickhouse_rcu", value, attribute.String("service", service))
+						c.activity.RecordMetric(c.ctx, "clickhouse_rcu", value, attribute.String("billing_service", service))
 					}
 					if len(latestRCU) == 0 {
 						c.logger.Warn("no RCU data found for any service", zap.String("clickhouse_host", c.config.Host))
@@ -588,9 +588,9 @@ func (c *Connection) estimateSize(ctx context.Context) (int64, error) {
 func (c *Connection) latestRCUPerService(ctx context.Context) (map[string]float64, error) {
 	var query string
 	if c.config.Cluster == "" {
-		query = "SELECT service, anyLast(value) as latest_value from billing.events group by service"
+		query = "SELECT service as billing_service, anyLast(value) as latest_value from billing.events event_name = 'rcu' GROUP BY service"
 	} else {
-		query = fmt.Sprintf(`SELECT service, sum(value) AS latest_value FROM (SELECT service, anyLast(value) as value FROM clusterAllReplicas('%s', billing.events) GROUP BY hostName(), service) GROUP BY service`, c.config.Cluster)
+		query = fmt.Sprintf(`SELECT service as billing_service, sum(value) AS latest_value FROM (SELECT service, anyLast(value) as value FROM clusterAllReplicas('%s', billing.events) event_name = 'rcu' GROUP BY hostName(), service) GROUP BY billing_service`, c.config.Cluster)
 	}
 	rows, err := c.db.QueryxContext(ctx, query)
 	if err != nil {
