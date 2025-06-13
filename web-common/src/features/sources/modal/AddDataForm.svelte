@@ -168,9 +168,8 @@
         out[key] = value;
       }
     }
-    const title = `# ${connector.displayName} Connector\n\nConfiguration`;
-    if (Object.keys(out).length === 0) return title;
-    return `${title}\n${yaml.dump(out, { lineWidth: 80 })}`;
+    if (Object.keys(out).length === 0) return "";
+    return `${yaml.dump(out, { lineWidth: 80 })}`;
   })();
 
   function handleConnectionTypeChange(e: CustomEvent<any>): void {
