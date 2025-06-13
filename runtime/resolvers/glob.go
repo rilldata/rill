@@ -117,6 +117,8 @@ func newGlob(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolv
 		return nil, err
 	}
 
+	props.Path = strings.TrimSpace(props.Path)
+
 	// set props to span attributes
 	span := trace.SpanFromContext(ctx)
 	if span.SpanContext().IsValid() {
