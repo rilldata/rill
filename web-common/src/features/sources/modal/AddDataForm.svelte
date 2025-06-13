@@ -19,7 +19,7 @@
   import { yup } from "sveltekit-superforms/adapters";
   import { ButtonGroup, SubButton } from "../../../components/button-group";
   import { inferSourceName } from "../sourceUtils";
-  import { humanReadableErrorMessage } from "./errors";
+  import { humanReadableErrorMessage } from "../errors/errors";
   import {
     submitAddOLAPConnectorForm,
     submitAddSourceForm,
@@ -61,6 +61,7 @@
     resetForm: false,
   });
   let paramsError: string | null = null;
+  let paramsErrorDetails: string | undefined = undefined;
 
   // Form 2: DSN
   // SuperForms are not meant to have dynamic schemas, so we use a different form instance for the DSN form
@@ -87,6 +88,7 @@
     resetForm: false,
   });
   let dsnError: string | null = null;
+  let dsnErrorDetails: string | undefined = undefined;
 
   // Active form
   $: formId = useDsn ? dsnFormId : paramsFormId;
@@ -146,25 +148,37 @@
       onClose();
     } catch (e) {
       let error: string;
+      let details: string | undefined = undefined;
 
       // Handle different error types
       if (e instanceof Error) {
         error = e.message;
+        details = undefined;
+      } else if (e?.message && e?.details) {
+        error = e.message;
+        details = e.details !== e.message ? e.details : undefined;
       } else if (e?.response?.data) {
-        error = humanReadableErrorMessage(
+        const originalMessage = e.response.data.message;
+        const humanReadable = humanReadableErrorMessage(
           connector.name,
           e.response.data.code,
-          e.response.data.message,
+          originalMessage,
         );
+        error = humanReadable;
+        details =
+          humanReadable !== originalMessage ? originalMessage : undefined;
       } else {
         error = "Unknown error";
+        details = undefined;
       }
 
       // Keep error state for each form
       if (useDsn) {
         dsnError = error;
+        dsnErrorDetails = details;
       } else {
         paramsError = error;
+        paramsErrorDetails = details;
       }
     }
   }
@@ -199,6 +213,9 @@
 
   {#if !useDsn}
     <!-- Form 1: Individual parameters -->
+    {#if paramsError}
+      <SubmissionError message={paramsError} details={paramsErrorDetails} />
+    {/if}
     <form
       id={paramsFormId}
       class="pb-5 flex-grow overflow-y-auto"
@@ -206,10 +223,6 @@
       on:submit|preventDefault={paramsSubmit}
       transition:slide={{ duration: FORM_TRANSITION_DURATION }}
     >
-      {#if paramsError}
-        <SubmissionError message={paramsError} />
-      {/if}
-
       {#each properties as property (property.key)}
         {@const propertyKey = property.key ?? ""}
         {@const label =
@@ -250,6 +263,9 @@
     </form>
   {:else}
     <!-- Form 2: DSN -->
+    {#if dsnError}
+      <SubmissionError message={dsnError} details={dsnErrorDetails} />
+    {/if}
     <form
       id={dsnFormId}
       class="pb-5 flex-grow overflow-y-auto"
@@ -257,10 +273,6 @@
       on:submit|preventDefault={dsnSubmit}
       transition:slide={{ duration: FORM_TRANSITION_DURATION }}
     >
-      {#if dsnError}
-        <SubmissionError message={dsnError} />
-      {/if}
-
       {#each dsnProperties as property (property.key)}
         {@const propertyKey = property.key ?? ""}
         <div class="py-1.5">
