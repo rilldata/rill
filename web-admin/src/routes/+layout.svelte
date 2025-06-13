@@ -33,6 +33,7 @@
     organizationPermissions,
     organizationLogoUrl,
     organizationFaviconUrl,
+    organizationThumbnailUrl,
     planDisplayName,
   } = data);
   $: ({
@@ -100,6 +101,15 @@
     <link rel="icon" href={organizationFaviconUrl} />
   {:else}
     <link rel="icon" href="/favicon.png" />
+  {/if}
+  {#if organizationThumbnailUrl}
+    <meta property="og:image" content={organizationThumbnailUrl} />
+  {:else}
+    <!-- Set the og image for thumbnail previews -->
+    <meta
+      property="og:image"
+      content="https://storage.googleapis.com/prod-cdn.rilldata.com/images/rill-admin.png"
+    />
   {/if}
 </svelte:head>
 
