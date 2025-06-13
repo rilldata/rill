@@ -135,8 +135,12 @@ func (e *Executor) ValidateQuery(qry *Query) error {
 	panic("not implemented")
 }
 
-// Timestamps queries min, max and watermark for the metrics view
+// Timestamps queries min, max and watermark for the metrics view.
 func (e *Executor) Timestamps(ctx context.Context, timeDim string) (TimestampsResult, error) {
+	if timeDim == "" {
+		timeDim = e.metricsView.TimeDimension
+	}
+
 	if res, ok := e.timestamps[timeDim]; ok && !res.Min.IsZero() {
 		return res, nil
 	}
@@ -716,9 +720,6 @@ func (e *Executor) validateQuery(qry *Query) error {
 
 // timeColumnOrExpr returns the time column or expression to use for the metrics view. ues time column if provided, otherwise fall back to the metrics view TimeDimension.
 func (e *Executor) timeColumnOrExpr(timeDim string) (string, error) {
-	if timeDim == "" {
-		timeDim = e.metricsView.TimeDimension
-	}
 	// figure out the time column or expression to use from the dimension list
 	for _, dim := range e.metricsView.Dimensions {
 		if dim.Name == timeDim {

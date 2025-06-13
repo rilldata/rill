@@ -1493,7 +1493,7 @@ export class MetricsViewSpec_Dimension extends Message<MetricsViewSpec_Dimension
   lookupDefaultExpression = "";
 
   /**
-   * The data type of the dimension
+   * The data type of the dimension. Only populated in ValidSpec.
    *
    * @generated from field: rill.runtime.v1.Type data_type = 12;
    */
@@ -1727,7 +1727,7 @@ export class MetricsViewSpec_Measure extends Message<MetricsViewSpec_Measure> {
   treatNullsAs = "";
 
   /**
-   * The data type of the measure
+   * The data type of the measure. Only populated in ValidSpec.
    *
    * @generated from field: rill.runtime.v1.Type data_type = 15;
    */

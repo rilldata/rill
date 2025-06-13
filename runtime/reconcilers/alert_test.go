@@ -67,13 +67,7 @@ email:
 	testruntime.ReconcileParserAndWait(t, rt, id)
 	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
 
-	_, metricsRes := newMetricsView("mv1", "bar", "__time",
-		[]fieldWithType{
-			{Name: "count(*)", Type: &runtimev1.Type{Code: runtimev1.Type_CODE_INT64, Nullable: true}},
-		},
-		[]fieldWithType{
-			{Name: "country", Type: &runtimev1.Type{Code: runtimev1.Type_CODE_STRING, Nullable: true}},
-		})
+	_, metricsRes := newMetricsView("mv1", "bar", "__time", []any{"count(*)", runtimev1.Type_CODE_INT64}, []any{"country", runtimev1.Type_CODE_STRING})
 	testruntime.RequireResource(t, rt, id, metricsRes)
 
 	a1 := &runtimev1.Resource{
@@ -234,13 +228,7 @@ notify:
 	testruntime.ReconcileParserAndWait(t, rt, id)
 	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
 
-	_, metricsRes := newMetricsView("mv1", "bar", "__time",
-		[]fieldWithType{
-			{Name: "count(*)", Type: &runtimev1.Type{Code: runtimev1.Type_CODE_INT64, Nullable: true}},
-		},
-		[]fieldWithType{
-			{Name: "country", Type: &runtimev1.Type{Code: runtimev1.Type_CODE_STRING, Nullable: true}},
-		})
+	_, metricsRes := newMetricsView("mv1", "bar", "__time", []any{"count(*)", runtimev1.Type_CODE_INT64}, []any{"country", runtimev1.Type_CODE_STRING})
 	testruntime.RequireResource(t, rt, id, metricsRes)
 
 	a1 := &runtimev1.Resource{
@@ -511,13 +499,7 @@ notify:
 	testruntime.ReconcileParserAndWait(t, rt, id)
 	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
 
-	_, metricsRes := newMetricsView("mv1", "bar", "__time",
-		[]fieldWithType{
-			{Name: "count(*)", Type: &runtimev1.Type{Code: runtimev1.Type_CODE_INT64, Nullable: true}},
-		},
-		[]fieldWithType{
-			{Name: "country", Type: &runtimev1.Type{Code: runtimev1.Type_CODE_STRING, Nullable: true}},
-		})
+	_, metricsRes := newMetricsView("mv1", "bar", "__time", []any{"count(*)", runtimev1.Type_CODE_INT64}, []any{"country", runtimev1.Type_CODE_STRING})
 	testruntime.RequireResource(t, rt, id, metricsRes)
 
 	a1 := &runtimev1.Resource{
@@ -591,15 +573,15 @@ SELECT '2024-01-02T00:00:00Z'::TIMESTAMP as __time, 'Sweden' as country
 	require.Contains(t, emails[0].Body, "measure_0")
 }
 
-func newMetricsView(name, model, timeDim string, measures, dimensions []fieldWithType) (*runtimev1.MetricsView, *runtimev1.Resource) {
+func newMetricsView(name, model, timeDim string, measures, dimensions []any) (*runtimev1.MetricsView, *runtimev1.Resource) {
 	metrics := &runtimev1.MetricsView{
 		Spec: &runtimev1.MetricsViewSpec{
 			Connector:     "duckdb",
 			Model:         model,
 			DisplayName:   parser.ToDisplayName(name),
 			TimeDimension: timeDim,
-			Measures:      make([]*runtimev1.MetricsViewSpec_Measure, len(measures)),
-			Dimensions:    make([]*runtimev1.MetricsViewSpec_Dimension, len(dimensions)),
+			Measures:      make([]*runtimev1.MetricsViewSpec_Measure, len(measures)/2),
+			Dimensions:    make([]*runtimev1.MetricsViewSpec_Dimension, len(dimensions)/2),
 		},
 		State: &runtimev1.MetricsViewState{
 			ValidSpec: &runtimev1.MetricsViewSpec{
@@ -608,38 +590,42 @@ func newMetricsView(name, model, timeDim string, measures, dimensions []fieldWit
 				Model:         model,
 				DisplayName:   parser.ToDisplayName(name),
 				TimeDimension: timeDim,
-				Measures:      make([]*runtimev1.MetricsViewSpec_Measure, len(measures)),
-				Dimensions:    make([]*runtimev1.MetricsViewSpec_Dimension, len(dimensions)),
+				Measures:      make([]*runtimev1.MetricsViewSpec_Measure, len(measures)/2),
+				Dimensions:    make([]*runtimev1.MetricsViewSpec_Dimension, len(dimensions)/2),
 			},
 		},
 	}
-	for i, measure := range measures {
+	for i := range len(measures) / 2 {
 		name := fmt.Sprintf("measure_%d", i)
+		idx := i * 2
+		expr := measures[idx].(string)
 		metrics.Spec.Measures[i] = &runtimev1.MetricsViewSpec_Measure{
 			Name:        name,
 			DisplayName: parser.ToDisplayName(name),
-			Expression:  measure.Name,
+			Expression:  expr,
 			Type:        runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE,
 		}
 		metrics.State.ValidSpec.Measures[i] = &runtimev1.MetricsViewSpec_Measure{
 			Name:        name,
 			DisplayName: parser.ToDisplayName(name),
-			Expression:  measure.Name,
+			Expression:  expr,
 			Type:        runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE,
-			DataType:    measure.Type,
+			DataType:    &runtimev1.Type{Code: measures[idx+1].(runtimev1.Type_Code), Nullable: true},
 		}
 	}
-	for i, dimension := range dimensions {
+	for i := range len(dimensions) / 2 {
+		idx := i * 2
+		name := dimensions[idx].(string)
 		metrics.Spec.Dimensions[i] = &runtimev1.MetricsViewSpec_Dimension{
-			Name:        dimension.Name,
-			DisplayName: parser.ToDisplayName(dimension.Name),
-			Column:      dimension.Name,
+			Name:        name,
+			DisplayName: parser.ToDisplayName(name),
+			Column:      name,
 		}
 		metrics.State.ValidSpec.Dimensions[i] = &runtimev1.MetricsViewSpec_Dimension{
-			Name:        dimension.Name,
-			DisplayName: parser.ToDisplayName(dimension.Name),
-			Column:      dimension.Name,
-			DataType:    dimension.Type,
+			Name:        name,
+			DisplayName: parser.ToDisplayName(name),
+			Column:      name,
+			DataType:    &runtimev1.Type{Code: dimensions[idx+1].(runtimev1.Type_Code), Nullable: true},
 		}
 	}
 	metricsRes := &runtimev1.Resource{
@@ -661,9 +647,4 @@ func must[T any](v T, err error) T {
 		panic(err)
 	}
 	return v
-}
-
-type fieldWithType struct {
-	Name string
-	Type *runtimev1.Type
 }

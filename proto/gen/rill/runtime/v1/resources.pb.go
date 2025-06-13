@@ -6192,7 +6192,7 @@ type MetricsViewSpec_Dimension struct {
 	LookupKeyColumn         string `protobuf:"bytes,9,opt,name=lookup_key_column,json=lookupKeyColumn,proto3" json:"lookup_key_column,omitempty"`
 	LookupValueColumn       string `protobuf:"bytes,10,opt,name=lookup_value_column,json=lookupValueColumn,proto3" json:"lookup_value_column,omitempty"`
 	LookupDefaultExpression string `protobuf:"bytes,11,opt,name=lookup_default_expression,json=lookupDefaultExpression,proto3" json:"lookup_default_expression,omitempty"`
-	// The data type of the dimension
+	// The data type of the dimension. Only populated in ValidSpec.
 	DataType *Type `protobuf:"bytes,12,opt,name=data_type,json=dataType,proto3" json:"data_type,omitempty"`
 }
 
@@ -6463,7 +6463,7 @@ type MetricsViewSpec_Measure struct {
 	FormatD3Locale      *structpb.Struct                     `protobuf:"bytes,13,opt,name=format_d3_locale,json=formatD3Locale,proto3" json:"format_d3_locale,omitempty"`
 	ValidPercentOfTotal bool                                 `protobuf:"varint,6,opt,name=valid_percent_of_total,json=validPercentOfTotal,proto3" json:"valid_percent_of_total,omitempty"`
 	TreatNullsAs        string                               `protobuf:"bytes,14,opt,name=treat_nulls_as,json=treatNullsAs,proto3" json:"treat_nulls_as,omitempty"`
-	// The data type of the measure
+	// The data type of the measure. Only populated in ValidSpec.
 	DataType *Type `protobuf:"bytes,15,opt,name=data_type,json=dataType,proto3" json:"data_type,omitempty"`
 }
 

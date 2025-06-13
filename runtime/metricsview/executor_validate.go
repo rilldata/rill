@@ -54,7 +54,7 @@ func (r *ValidateMetricsViewResult) Error() error {
 }
 
 // ValidateMetricsView validates the dimensions and measures in the executor's metrics view and returns a ValidateMetricsViewResult and the schema of the metrics view.
-func (e *Executor) ValidateMetricsView(ctx context.Context) (*ValidateMetricsViewResult, map[string]*runtimev1.Type, error) {
+func (e *Executor) ValidateMetricsView(ctx context.Context) (*ValidateMetricsViewResult, *runtimev1.StructType, error) {
 	// Create the result
 	res := &ValidateMetricsViewResult{}
 
@@ -130,18 +130,13 @@ func (e *Executor) ValidateMetricsView(ctx context.Context) (*ValidateMetricsVie
 		res.OtherErrs = append(res.OtherErrs, fmt.Errorf("time shift not supported for Pinot dialect, so FirstDayOfWeek and FirstMonthOfYear should be 1"))
 	}
 
-	mvSchema := make(map[string]*runtimev1.Type)
+	var schema *runtimev1.StructType
 	// Validate the metrics view schema.
 	if res.IsZero() { // All dimensions and measures need to be valid to compute the schema.
-		schema, err := e.Schema(ctx)
+		schema, err = e.validateSchema(ctx, res)
 		if err != nil {
-			return nil, nil, fmt.Errorf("failed to resolve metrics view schema: %w", err)
+			res.OtherErrs = append(res.OtherErrs, fmt.Errorf("failed to validate metrics view schema: %w", err))
 		}
-		for _, f := range schema.Fields {
-			mvSchema[f.Name] = f.Type
-		}
-
-		e.validateSchema(mvSchema, res)
 	}
 
 	// Validate the cache key can be resolved
@@ -150,22 +145,27 @@ func (e *Executor) ValidateMetricsView(ctx context.Context) (*ValidateMetricsVie
 		res.OtherErrs = append(res.OtherErrs, fmt.Errorf("failed to get cache key: %w", err))
 	}
 
-	return res, mvSchema, nil
+	return res, schema, nil
 }
 
 // NormalizeMetricsView clones the metrics view and updates the data types of dimensions and measures based on the provided schema.
-func (e *Executor) NormalizeMetricsView(mvSchema map[string]*runtimev1.Type) *runtimev1.MetricsViewSpec {
+func (e *Executor) NormalizeMetricsView(mvSchema *runtimev1.StructType) *runtimev1.MetricsViewSpec {
 	// clone the metrics view to avoid modifying the original
 	mv := proto.Clone(e.metricsView).(*runtimev1.MetricsViewSpec)
 
+	types := make(map[string]*runtimev1.Type, len(mvSchema.Fields))
+	for _, f := range mvSchema.Fields {
+		types[f.Name] = f.Type
+	}
+
 	for _, d := range mv.Dimensions {
-		if typ, ok := mvSchema[d.Name]; ok {
+		if typ, ok := types[d.Name]; ok {
 			d.DataType = typ
 		} // ignore dimensions that don't have a type in the schema
 	}
 
 	for _, m := range mv.Measures {
-		if typ, ok := mvSchema[m.Name]; ok {
+		if typ, ok := types[m.Name]; ok {
 			m.DataType = typ
 		} // ignore measures that don't have a type in the schema
 	}
@@ -378,10 +378,20 @@ func (e *Executor) validateMeasure(ctx context.Context, t *drivers.Table, m *run
 }
 
 // validateSchema validates that the metrics view's measures are numeric.
-func (e *Executor) validateSchema(mvTypes map[string]*runtimev1.Type, res *ValidateMetricsViewResult) {
+func (e *Executor) validateSchema(ctx context.Context, res *ValidateMetricsViewResult) (*runtimev1.StructType, error) {
+	// Resolve the schema of the metrics view's dimensions and measures
+	schema, err := e.Schema(ctx)
+	if err != nil {
+		return nil, err
+	}
+	types := make(map[string]*runtimev1.Type, len(schema.Fields))
+	for _, f := range schema.Fields {
+		types[f.Name] = f.Type
+	}
+
 	// Check that the measures are not strings
 	for i, m := range e.metricsView.Measures {
-		typ, ok := mvTypes[m.Name]
+		typ, ok := types[m.Name]
 		if !ok {
 			// Don't error: schemas are not always reliable
 			continue
@@ -395,4 +405,6 @@ func (e *Executor) validateSchema(mvTypes map[string]*runtimev1.Type, res *Valid
 			})
 		}
 	}
+
+	return schema, nil
 }
