@@ -32,9 +32,19 @@ type ModelYAML struct {
 		Connector  string         `yaml:"connector"`
 		Properties map[string]any `yaml:",inline" mapstructure:",remain"`
 	} `yaml:"stage"`
-	Output          ModelOutputYAML `yaml:"output"`
-	Materialize     *bool           `yaml:"materialize"`
-	DefinedAsSource bool            `yaml:"defined_as_source"`
+	Output ModelOutputYAML `yaml:"output"`
+	Tests  []struct {
+		Name     string `yaml:"name"`
+		Where    string `yaml:"where"`
+		DataYAML `yaml:",inline"`
+	} `yaml:"tests"`
+	PartitionsTests []struct {
+		Name     string `yaml:"name"`
+		Where    string `yaml:"where"`
+		DataYAML `yaml:",inline"`
+	} `yaml:"partition_tests"`
+	Materialize     *bool `yaml:"materialize"`
+	DefinedAsSource bool  `yaml:"defined_as_source"`
 }
 
 // ModelOutputYAML parses the `output:` property of a model.
@@ -183,6 +193,9 @@ func (p *Parser) parseModel(ctx context.Context, node *Node) error {
 		}
 		tmp.Partitions = tmp.Splits
 	}
+
+	var partitionsTests []*runtimev1.ModelTest
+	var partitionsTestsRefs []ResourceName
 	if tmp.Partitions != nil {
 		var refs []ResourceName
 		partitionsResolver, partitionsResolverProps, refs, err = p.parseDataYAML(tmp.Partitions, inputConnector)
@@ -197,7 +210,32 @@ func (p *Parser) parseModel(ctx context.Context, node *Node) error {
 				tmp.PartitionsWatermark = "updated_on"
 			}
 		}
+
+		for i := range tmp.PartitionsTests {
+			test := &tmp.PartitionsTests[i]
+			modelTest, refs, err := p.parseModelTest(test.Name, &test.DataYAML, outputConnector, node.Name, test.Where)
+			if err != nil {
+				return fmt.Errorf(`failed to parse partition test %q: %w`, test.Name, err)
+			}
+			modelTest.Where = test.Where
+			partitionsTests = append(partitionsTests, modelTest)
+			partitionsTestsRefs = append(partitionsTestsRefs, refs...)
+		}
+		node.Refs = append(node.Refs, partitionsTestsRefs...)
 	}
+
+	sqlTests := []*runtimev1.ModelTest{}
+	sqlTestsRefs := []ResourceName{}
+	for i := range tmp.Tests {
+		test := &tmp.Tests[i]
+		modelTest, refs, err := p.parseModelTest(test.Name, &test.DataYAML, outputConnector, node.Name, test.Where)
+		if err != nil {
+			return fmt.Errorf(`failed to parse test %q: %w`, test.Name, err)
+		}
+		sqlTests = append(sqlTests, modelTest)
+		sqlTestsRefs = append(sqlTestsRefs, refs...)
+	}
+	node.Refs = append(node.Refs, sqlTestsRefs...)
 
 	// Insert the model
 	r, err := p.insertResource(ResourceKindModel, node.Name, node.Paths, node.Refs...)
@@ -237,7 +275,28 @@ func (p *Parser) parseModel(ctx context.Context, node *Node) error {
 	r.ModelSpec.OutputConnector = outputConnector
 	r.ModelSpec.OutputProperties = outputPropsPB
 
+	r.ModelSpec.Tests = sqlTests
+	r.ModelSpec.PartitionsTests = partitionsTests
+
 	return nil
+}
+
+// parseModelTests parses the model tests from the YAML file
+func (p *Parser) parseModelTest(name string, data *DataYAML, connector, modelName, where string) (*runtimev1.ModelTest, []ResourceName, error) {
+	// Syntactic sugar: if where is set and sql is not, synthesize SQL
+	if where != "" && data.SQL == "" {
+		data.SQL = fmt.Sprintf("SELECT 1 FROM %s WHERE %s LIMIT 1", modelName, where)
+	}
+	resolver, props, refs, err := p.parseDataYAML(data, connector)
+	if err != nil {
+		return nil, nil, err
+	}
+	return &runtimev1.ModelTest{
+		Name:               name,
+		Where:              where,
+		Resolver:           resolver,
+		ResolverProperties: props,
+	}, refs, nil
 }
 
 // inferSQLRefs attempts to infer table references from the node's SQL.
