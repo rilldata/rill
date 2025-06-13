@@ -11,7 +11,6 @@
   } from "@rilldata/web-common/runtime-client";
   import type { ActionResult } from "@sveltejs/kit";
   import { createEventDispatcher } from "svelte";
-  import { slide } from "svelte/transition";
   import {
     defaults,
     superForm,
@@ -257,7 +256,9 @@
 
 <div class="add-data-layout">
   <div class="add-data-form-panel">
-    <div class="p-6 flex flex-col flex-grow max-h-[400px] overflow-y-auto">
+    <div
+      class="p-6 flex flex-col flex-grow max-h-[552px] min-h-[552px] overflow-y-auto"
+    >
       {#if hasDsnFormOption}
         <div class="pb-3">
           <div class="text-sm font-medium mb-2">Connection method</div>
@@ -281,7 +282,6 @@
           id={paramsFormId}
           use:paramsEnhance
           on:submit|preventDefault={paramsSubmit}
-          transition:slide={{ duration: FORM_TRANSITION_DURATION }}
         >
           {#if paramsError}
             <SubmissionError message={paramsError} />
@@ -376,7 +376,6 @@
           id={dsnFormId}
           use:dsnEnhance
           on:submit|preventDefault={dsnSubmit}
-          transition:slide={{ duration: FORM_TRANSITION_DURATION }}
         >
           {#if dsnError}
             <SubmissionError message={dsnError} />
