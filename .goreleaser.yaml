@@ -56,6 +56,8 @@ builds:
       - CC=x86_64-linux-gnu-gcc
       - CXX=x86_64-linux-gnu-g++
       - CGO_CFLAGS=--sysroot=/sysroot/linux/amd64
+      - CGO_CXXFLAGS=--sysroot=/sysroot/linux/amd64
+      - CGO_LDFLAGS=--sysroot=/sysroot/linux/amd64 -L/sysroot/linux/amd64/usr/lib/x86_64-linux-gnu
       - CGO_LDFLAGS=--sysroot=/sysroot/linux/amd64
       - PKG_CONFIG_SYSROOT_DIR=/sysroot/linux/amd64
       - PKG_CONFIG_PATH=/sysroot/linux/amd64/usr/local/lib/pkgconfig
