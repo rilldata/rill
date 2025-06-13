@@ -186,7 +186,10 @@
     closeOnOutsideClick={!isSubmittingForm}
   >
     <Dialog.Content
-      class={cn("", step === 2 ? "max-w-4xl p-0 gap-0" : "p-6 gap-4")}
+      class={cn(
+        "overflow-hidden",
+        step === 2 ? "max-w-4xl p-0 gap-0" : "p-6 gap-4",
+      )}
       noClose={step === 1}
     >
       {#if step === 1}
