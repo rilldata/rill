@@ -100,17 +100,7 @@ type Usage struct {
 }
 
 func (c *Client) GetUsageMetrics(ctx context.Context, startTime, endTime, afterTime time.Time, afterOrgID, afterProjectID, afterEventName, grain string, limit int) ([]*Usage, error) {
-	// Create the URL for the request
-	var runtimeHost string
-
-	// In production, the REST and gRPC endpoints are the same, but in development, they're served on different ports.
-	if strings.Contains(c.RuntimeHost, "localhost") {
-		runtimeHost = "http://localhost:8081"
-	} else {
-		runtimeHost = c.RuntimeHost
-	}
-
-	uri, err := url.Parse(runtimeHost)
+	uri, err := url.Parse(c.RuntimeHost)
 	if err != nil {
 		return nil, err
 	}
