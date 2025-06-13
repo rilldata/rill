@@ -590,7 +590,7 @@ func (c *Connection) latestRCUPerService(ctx context.Context) (map[string]float6
 	if c.config.Cluster == "" {
 		query = "SELECT service, anyLast(value) as latest_value from billing.events group by service"
 	} else {
-		query = fmt.Sprintf(`SELECT service, sum(value) AS latest_value FROM (SELECT service, anyLast(value) as value FROM clusterAllReplicas('%s', billing.events) GROUP BY service) GROUP BY service`, c.config.Cluster)
+		query = fmt.Sprintf(`SELECT service, sum(value) AS latest_value FROM (SELECT service, anyLast(value) as value FROM clusterAllReplicas('%s', billing.events) GROUP BY hostName(), service) GROUP BY service`, c.config.Cluster)
 	}
 	rows, err := c.db.QueryxContext(ctx, query)
 	if err != nil {
