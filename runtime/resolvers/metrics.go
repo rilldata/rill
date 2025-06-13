@@ -27,8 +27,8 @@ type metricsResolver struct {
 	query          *metricsview.Query
 	args           *metricsResolverArgs
 	claims         *runtime.SecurityClaims
-	meta           []map[string]any
 	metricsHasTime bool
+	mv             *runtimev1.MetricsViewSpec
 }
 
 type metricsResolverArgs struct {
@@ -67,8 +67,6 @@ func newMetrics(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Res
 		return nil, fmt.Errorf("metrics view %q is invalid", res.Meta.Name.Name)
 	}
 
-	meta := metaFromMetricsView(mv)
-
 	security, err := opts.Runtime.ResolveSecurity(opts.InstanceID, opts.Claims, res)
 	if err != nil {
 		return nil, err
@@ -90,8 +88,8 @@ func newMetrics(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Res
 		query:          qry,
 		args:           args,
 		claims:         opts.Claims,
-		meta:           meta,
 		metricsHasTime: mv.TimeDimension != "",
+		mv:             mv,
 	}, nil
 }
 
@@ -142,41 +140,61 @@ func (r *metricsResolver) ResolveInteractive(ctx context.Context) (runtime.Resol
 		}
 	}
 
+	meta := metaFromQuery(r.mv, r.query)
+
 	res, err := r.executor.Query(ctx, r.query, r.args.ExecutionTime)
 	if err != nil {
 		return nil, err
 	}
-	return runtime.NewDriverResolverResult(res, r.meta), nil
+
+	return runtime.NewDriverResolverResult(res, meta), nil
 }
 
 func (r *metricsResolver) ResolveExport(ctx context.Context, w io.Writer, opts *runtime.ResolverExportOptions) error {
 	return errors.New("not implemented")
 }
 
-// metaFromMetricsView extracts metadata from the metrics view.
-func metaFromMetricsView(spec *runtimev1.MetricsViewSpec) []map[string]any {
-	if spec == nil {
+// metaFromQuery returns meta details for only those dimensions and measures present in the query, preserving query order.
+func metaFromQuery(spec *runtimev1.MetricsViewSpec, q *metricsview.Query) []map[string]any {
+	if q == nil || spec == nil {
 		return nil
 	}
 
-	details := make([]map[string]any, 0)
-	for _, m := range spec.Measures {
-		details = append(details, map[string]any{
-			"type":          "measure",
-			"name":          m.Name,
-			"display_name":  m.DisplayName,
-			"expression":    m.Expression,
-			"format_preset": m.FormatPreset,
-		})
-	}
+	dimDetails := make(map[string]*runtimev1.MetricsViewSpec_Dimension, len(spec.Dimensions))
 	for _, d := range spec.Dimensions {
-		details = append(details, map[string]any{
-			"type":         "dimension",
-			"name":         d.Name,
-			"display_name": d.DisplayName,
-			"column":       d.Column,
-		})
+		dimDetails[d.Name] = d
+	}
+	measDetails := make(map[string]*runtimev1.MetricsViewSpec_Measure, len(spec.Measures))
+	for _, m := range spec.Measures {
+		measDetails[m.Name] = m
 	}
 
-	return details
+	meta := make([]map[string]any, 0, len(q.Dimensions)+len(q.Measures))
+
+	// Add dimensions in query order
+	for _, dim := range q.Dimensions {
+		if d, ok := dimDetails[dim.Name]; ok {
+			meta = append(meta, map[string]any{
+				"type":         "dimension",
+				"name":         d.Name,
+				"display_name": d.DisplayName,
+				"column":       d.Column,
+			})
+		}
+	}
+
+	// Add measures in query order
+	for _, m := range q.Measures {
+		if meas, ok := measDetails[m.Name]; ok {
+			meta = append(meta, map[string]any{
+				"type":          "measure",
+				"name":          meas.Name,
+				"display_name":  meas.DisplayName,
+				"expression":    meas.Expression,
+				"format_preset": meas.FormatPreset,
+			})
+		}
+	}
+
+	return meta
 }

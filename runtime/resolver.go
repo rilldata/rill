@@ -309,30 +309,7 @@ func (r *driverResolverResult) MarshalJSON() ([]byte, error) {
 
 // Meta implements ResolverResult.
 func (r *driverResolverResult) Meta() []map[string]any {
-	if r.meta == nil {
-		return nil
-	}
-
-	// Build a set of schema field names
-	fieldNames := make(map[string]struct{})
-	if r.rows != nil && r.rows.Schema != nil {
-		for _, f := range r.rows.Schema.Fields {
-			fieldNames[f.Name] = struct{}{}
-		}
-	}
-
-	// Filter meta to only include entries for fields present in the schema
-	var filtered []map[string]any
-	for _, m := range r.meta {
-		name, ok := m["name"].(string)
-		if !ok {
-			continue
-		}
-		if _, exists := fieldNames[name]; exists {
-			filtered = append(filtered, m)
-		}
-	}
-	return filtered
+	return r.meta
 }
 
 // NewMapsResolverResult creates a ResolverResult from a slice of maps.
@@ -379,27 +356,7 @@ func (r *mapsResolverResult) MarshalJSON() ([]byte, error) {
 
 // Meta implements ResolverResult.
 func (r *mapsResolverResult) Meta() []map[string]any {
-	if r.meta == nil {
-		return nil
-	}
-	// Build a set of schema field names
-	fieldNames := make(map[string]struct{})
-	if r.schema != nil {
-		for _, f := range r.schema.Fields {
-			fieldNames[f.Name] = struct{}{}
-		}
-	}
-	var filtered []map[string]any
-	for _, m := range r.meta {
-		name, ok := m["name"].(string)
-		if !ok {
-			continue
-		}
-		if _, exists := fieldNames[name]; exists {
-			filtered = append(filtered, m)
-		}
-	}
-	return filtered
+	return r.meta
 }
 
 // newCachedResolverResult wraps a ResolverResult such that it is cacheable.
@@ -420,11 +377,11 @@ func newCachedResolverResult(res ResolverResult) (*cachedResolverResult, error) 
 
 type cachedResolverResult struct {
 	data   []byte
+	meta   []map[string]any
 	schema *runtimev1.StructType
 
 	// Iterator fields. Should only be populated on short-lived copies obtained via copy().
 	rows []map[string]any
-	meta []map[string]any
 	idx  int
 }
 
