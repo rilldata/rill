@@ -75,7 +75,8 @@ builds:
       - CC=aarch64-linux-gnu-gcc
       - CXX=aarch64-linux-gnu-g++
       - CGO_CFLAGS=--sysroot=/sysroot/linux/arm64v8
-      - CGO_LDFLAGS=--sysroot=/sysroot/linux/arm64v8
+      - CGO_CXXFLAGS=--sysroot=/sysroot/linux/arm64v8
+      - CGO_LDFLAGS=--sysroot=/sysroot/linux/arm64v8 -L/sysroot/linux/arm64v8/usr/lib/aarch64-linux-gnu
       - PKG_CONFIG_SYSROOT_DIR=/sysroot/linux/arm64v8
       - PKG_CONFIG_PATH=/sysroot/linux/arm64v8/usr/lib/pkgconfig
     flags:
