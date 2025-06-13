@@ -29,7 +29,6 @@
   import yaml from "js-yaml";
   import { ExternalLinkIcon } from "lucide-svelte";
 
-  const FORM_TRANSITION_DURATION = 150;
   const dispatch = createEventDispatcher();
 
   type ClickHouseDeploymentType = "cloud" | "self-hosted" | "local";
