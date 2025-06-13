@@ -28,6 +28,7 @@ type metricsResolver struct {
 	args           *metricsResolverArgs
 	claims         *runtime.SecurityClaims
 	metricsHasTime bool
+	mv             *runtimev1.MetricsViewSpec
 }
 
 type metricsResolverArgs struct {
@@ -88,6 +89,7 @@ func newMetrics(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Res
 		args:           args,
 		claims:         opts.Claims,
 		metricsHasTime: mv.TimeDimension != "",
+		mv:             mv,
 	}, nil
 }
 
@@ -138,13 +140,61 @@ func (r *metricsResolver) ResolveInteractive(ctx context.Context) (runtime.Resol
 		}
 	}
 
+	meta := metaFromQuery(r.mv, r.query)
+
 	res, err := r.executor.Query(ctx, r.query, r.args.ExecutionTime)
 	if err != nil {
 		return nil, err
 	}
-	return runtime.NewDriverResolverResult(res), nil
+
+	return runtime.NewDriverResolverResult(res, meta), nil
 }
 
 func (r *metricsResolver) ResolveExport(ctx context.Context, w io.Writer, opts *runtime.ResolverExportOptions) error {
 	return errors.New("not implemented")
+}
+
+// metaFromQuery returns meta details for only those dimensions and measures present in the query, preserving query order.
+func metaFromQuery(spec *runtimev1.MetricsViewSpec, q *metricsview.Query) []map[string]any {
+	if q == nil || spec == nil {
+		return nil
+	}
+
+	dimDetails := make(map[string]*runtimev1.MetricsViewSpec_Dimension, len(spec.Dimensions))
+	for _, d := range spec.Dimensions {
+		dimDetails[d.Name] = d
+	}
+	measDetails := make(map[string]*runtimev1.MetricsViewSpec_Measure, len(spec.Measures))
+	for _, m := range spec.Measures {
+		measDetails[m.Name] = m
+	}
+
+	meta := make([]map[string]any, 0, len(q.Dimensions)+len(q.Measures))
+
+	// Add dimensions in query order
+	for _, dim := range q.Dimensions {
+		if d, ok := dimDetails[dim.Name]; ok {
+			meta = append(meta, map[string]any{
+				"type":         "dimension",
+				"name":         d.Name,
+				"display_name": d.DisplayName,
+				"column":       d.Column,
+			})
+		}
+	}
+
+	// Add measures in query order
+	for _, m := range q.Measures {
+		if meas, ok := measDetails[m.Name]; ok {
+			meta = append(meta, map[string]any{
+				"type":          "measure",
+				"name":          meas.Name,
+				"display_name":  meas.DisplayName,
+				"expression":    meas.Expression,
+				"format_preset": meas.FormatPreset,
+			})
+		}
+	}
+
+	return meta
 }
