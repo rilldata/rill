@@ -59,7 +59,11 @@
       {onSave}
       {onRemove}
     >
-      <img src="/thumbnail.png" alt="thumbnail" class="h-10" />
+      <img
+        src="https://cdn.rilldata.com/images/rill-admin.png"
+        alt="thumbnail"
+        class="h-10"
+      />
     </UploadImagePopover>
   </div>
   <svelte:fragment slot="action">
