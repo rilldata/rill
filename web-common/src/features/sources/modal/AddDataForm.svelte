@@ -2,6 +2,7 @@
   import { Button } from "@rilldata/web-common/components/button";
   import InformationalField from "@rilldata/web-common/components/forms/InformationalField.svelte";
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
+  import Select from "@rilldata/web-common/components/forms/Select.svelte";
   import SubmissionError from "@rilldata/web-common/components/forms/SubmissionError.svelte";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import {
@@ -32,6 +33,14 @@
   const FORM_TRANSITION_DURATION = 150;
   const dispatch = createEventDispatcher();
 
+  type ClickHouseDeploymentType = "cloud" | "self-hosted" | "local";
+
+  const DEPLOYMENT_TYPE_OPTIONS = [
+    { value: "cloud", label: "ClickHouse Cloud" },
+    { value: "self-hosted", label: "Self-Hosted ClickHouse" },
+    { value: "local", label: "Local Development" },
+  ];
+
   export let connector: V1ConnectorDriver;
   export let formType: AddDataFormType;
   export let onBack: () => void;
@@ -39,6 +48,32 @@
 
   const isSourceForm = formType === "source";
   const isConnectorForm = formType === "connector";
+  const isClickHouse = connector.name === "clickhouse";
+  let deploymentType: ClickHouseDeploymentType = "cloud";
+
+  const CLICKHOUSE_DEFAULTS = {
+    cloud: {
+      host: { value: "", placeholder: "your-instance.clickhouse.cloud" },
+      port: { value: "8443", placeholder: "8443" },
+      username: { value: "", placeholder: "default" },
+      password: { value: "", placeholder: "Your ClickHouse Cloud password" },
+      ssl: { value: true },
+    },
+    "self-hosted": {
+      host: { value: "", placeholder: "your-clickhouse-server.com" },
+      port: { value: "9000", placeholder: "9000" },
+      username: { value: "", placeholder: "default" },
+      password: { value: "", placeholder: "Your ClickHouse password" },
+      ssl: { value: false },
+    },
+    local: {
+      host: { value: "localhost", placeholder: "localhost" },
+      port: { value: "9000", placeholder: "9000" },
+      username: { value: "", placeholder: "default" },
+      password: { value: "", placeholder: "Your ClickHouse password" },
+      ssl: { value: false },
+    },
+  };
 
   // Form 1: Individual parameters
   const paramsFormId = `add-data-${connector.name}-form`;
@@ -64,6 +99,19 @@
   });
   let paramsError: string | null = null;
   let paramsErrorDetails: string | undefined = undefined;
+
+  // Initialize form with default values when deployment type changes
+  $: if (isClickHouse && !useDsn) {
+    const defaults = CLICKHOUSE_DEFAULTS[deploymentType];
+    paramsForm.update(($form) => ({
+      ...$form,
+      host: defaults.host.value,
+      port: defaults.port.value,
+      username: defaults.username.value,
+      password: defaults.password.value,
+      ssl: defaults.ssl.value,
+    }));
+  }
 
   // Form 2: DSN
   // SuperForms are not meant to have dynamic schemas, so we use a different form instance for the DSN form
@@ -110,7 +158,7 @@
   $: yamlPreview = (() => {
     let values = useDsn ? $dsnForm : $paramsForm;
     let props = useDsn ? dsnProperties : properties;
-    let out = {};
+    let out: Record<string, unknown> = {};
     for (const property of props) {
       const key = property.key;
       if (!key) continue;
@@ -240,43 +288,88 @@
             <SubmissionError message={paramsError} />
           {/if}
 
-          {#each properties as property (property.key)}
-            {@const propertyKey = property.key ?? ""}
-            {@const label =
-              property.displayName + (property.required ? "" : " (optional)")}
-            <div class="py-1.5 first:pt-0 last:pb-0">
-              {#if property.type === ConnectorDriverPropertyType.TYPE_STRING || property.type === ConnectorDriverPropertyType.TYPE_NUMBER}
-                <Input
-                  id={propertyKey}
-                  label={property.displayName}
-                  placeholder={property.placeholder}
-                  optional={!property.required}
-                  secret={property.secret}
-                  hint={property.hint}
-                  errors={$paramsErrors[propertyKey]}
-                  bind:value={$paramsForm[propertyKey]}
-                  onInput={(_, e) => onStringInputChange(e)}
-                  alwaysShowError
-                />
-              {:else if property.type === ConnectorDriverPropertyType.TYPE_BOOLEAN}
-                <label for={property.key} class="flex items-center">
-                  <input
-                    id={propertyKey}
-                    type="checkbox"
-                    bind:checked={$paramsForm[propertyKey]}
-                    class="h-5 w-5"
-                  />
-                  <span class="ml-2 text-sm">{label}</span>
-                </label>
-              {:else if property.type === ConnectorDriverPropertyType.TYPE_INFORMATIONAL}
-                <InformationalField
-                  description={property.description}
-                  hint={property.hint}
-                  href={property.docsUrl}
-                />
-              {/if}
+          {#if isClickHouse}
+            <div class="pb-3">
+              <Select
+                id="deployment-type"
+                options={DEPLOYMENT_TYPE_OPTIONS}
+                bind:value={deploymentType}
+                label="Deployment type"
+              />
             </div>
-          {/each}
+
+            {#each properties as property (property.key)}
+              {@const propertyKey = property.key ?? ""}
+              {@const label =
+                property.displayName + (property.required ? "" : " (optional)")}
+              {@const defaults = CLICKHOUSE_DEFAULTS[deploymentType]}
+              <div class="py-1.5 first:pt-0 last:pb-0">
+                {#if property.type === ConnectorDriverPropertyType.TYPE_STRING || property.type === ConnectorDriverPropertyType.TYPE_NUMBER}
+                  <Input
+                    id={propertyKey}
+                    label={property.displayName}
+                    placeholder={defaults[propertyKey]?.placeholder ??
+                      property.placeholder}
+                    optional={!property.required}
+                    secret={property.secret}
+                    hint={property.hint}
+                    errors={$paramsErrors[propertyKey]}
+                    bind:value={$paramsForm[propertyKey]}
+                    onInput={(_, e) => onStringInputChange(e)}
+                    alwaysShowError
+                  />
+                {:else if property.type === ConnectorDriverPropertyType.TYPE_BOOLEAN}
+                  <label for={property.key} class="flex items-center">
+                    <input
+                      id={propertyKey}
+                      type="checkbox"
+                      bind:checked={$paramsForm[propertyKey]}
+                      class="h-5 w-5"
+                    />
+                    <span class="ml-2 text-sm">{label}</span>
+                  </label>
+                {/if}
+              </div>
+            {/each}
+          {:else}
+            {#each properties as property (property.key)}
+              {@const propertyKey = property.key ?? ""}
+              {@const label =
+                property.displayName + (property.required ? "" : " (optional)")}
+              <div class="py-1.5 first:pt-0 last:pb-0">
+                {#if property.type === ConnectorDriverPropertyType.TYPE_STRING || property.type === ConnectorDriverPropertyType.TYPE_NUMBER}
+                  <Input
+                    id={propertyKey}
+                    label={property.displayName}
+                    placeholder={property.placeholder}
+                    optional={!property.required}
+                    secret={property.secret}
+                    hint={property.hint}
+                    errors={$paramsErrors[propertyKey]}
+                    bind:value={$paramsForm[propertyKey]}
+                    onInput={(_, e) => onStringInputChange(e)}
+                    alwaysShowError
+                  />
+                {:else if property.type === ConnectorDriverPropertyType.TYPE_BOOLEAN}
+                  <label for={property.key} class="flex items-center">
+                    <input
+                      id={propertyKey}
+                      type="checkbox"
+                      bind:checked={$paramsForm[propertyKey]}
+                      class="h-5 w-5"
+                    />
+                    <span class="ml-2 text-sm">{label}</span>
+                  </label>
+                {:else if property.type === ConnectorDriverPropertyType.TYPE_INFORMATIONAL}
+                  <InformationalField
+                    description={property.description}
+                    hint={property.hint}
+                    href={property.docsUrl}
+                  />
+                {/if}
+              </div>
+            {/each}
+          {/if}
         </form>
       {:else}
         <!-- Form 2: DSN -->
