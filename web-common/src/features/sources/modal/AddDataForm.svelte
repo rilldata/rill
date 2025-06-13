@@ -243,7 +243,7 @@
 
 <div class="add-data-layout">
   <div class="add-data-form-panel">
-    <div class="p-6 flex flex-col flex-grow">
+    <div class="p-6 flex flex-col flex-grow max-h-[400px] overflow-y-auto">
       {#if hasDsnFormOption}
         <div class="pb-3">
           <div class="text-sm font-medium mb-2">Connection method</div>
@@ -265,7 +265,6 @@
         <!-- Form 1: Individual parameters -->
         <form
           id={paramsFormId}
-          class="flex-grow overflow-y-auto"
           use:paramsEnhance
           on:submit|preventDefault={paramsSubmit}
           transition:slide={{ duration: FORM_TRANSITION_DURATION }}
@@ -361,7 +360,6 @@
         <!-- Form 2: DSN -->
         <form
           id={dsnFormId}
-          class="flex-grow overflow-y-auto"
           use:dsnEnhance
           on:submit|preventDefault={dsnSubmit}
           transition:slide={{ duration: FORM_TRANSITION_DURATION }}
