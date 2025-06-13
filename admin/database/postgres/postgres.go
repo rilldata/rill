@@ -1020,6 +1020,12 @@ func (c *connection) DeleteExpiredUserAuthTokens(ctx context.Context, retention 
 	return parseErr("auth token", err)
 }
 
+// DeleteInactiveUserAuthTokens deletes user authentication tokens that have not been used within the specified retention period.
+func (c *connection) DeleteInactiveUserAuthTokens(ctx context.Context, retention time.Duration) error {
+	_, err := c.getDB(ctx).ExecContext(ctx, `DELETE FROM user_auth_tokens WHERE used_on < (now() - $1) AND created_on < (now() - $1)`, retention)
+	return parseErr("auth token", err)
+}
+
 // FindServicesByOrgID returns a list of services in an org.
 func (c *connection) FindServicesByOrgID(ctx context.Context, orgID string) ([]*database.Service, error) {
 	var res []*database.Service
@@ -1159,6 +1165,12 @@ func (c *connection) DeleteServiceAuthToken(ctx context.Context, id string) erro
 // DeleteExpiredServiceAuthTokens deletes expired service auth tokens.
 func (c *connection) DeleteExpiredServiceAuthTokens(ctx context.Context, retention time.Duration) error {
 	_, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM service_auth_tokens WHERE expires_on IS NOT NULL AND expires_on + $1 < now()", retention)
+	return parseErr("service auth token", err)
+}
+
+// DeleteInactiveServiceAuthTokens deletes service authentication tokens that have not been used within the specified retention period.
+func (c *connection) DeleteInactiveServiceAuthTokens(ctx context.Context, retention time.Duration) error {
+	_, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM service_auth_tokens WHERE used_on < (now() - $1) AND created_on < (now() - $1)", retention)
 	return parseErr("service auth token", err)
 }
 

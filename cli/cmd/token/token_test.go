@@ -15,7 +15,7 @@ func TestToken(t *testing.T) {
 	u1 := testcli.NewWithUser(t, adm)
 
 	// Issue a plain token
-	res := u1.Run(t, "token", "issue")
+	res := u1.Run(t, "token", "issue", "--display-name", "Test Token")
 	require.Equal(t, 0, res.ExitCode)
 	require.Contains(t, res.Output, "Token: ")
 
@@ -27,12 +27,12 @@ func TestToken(t *testing.T) {
 	require.Contains(t, res.Output, "Email: ")
 
 	// Issue a token with a description
-	res = u1.Run(t, "token", "issue", "--description", "Foo")
+	res = u1.Run(t, "token", "issue", "--display-name", "Foo")
 	require.Equal(t, 0, res.ExitCode)
 	require.Contains(t, res.Output, "Token: ")
 
 	// Issue a token with an expiration
-	res = u1.Run(t, "token", "issue", "--ttl-minutes", "1")
+	res = u1.Run(t, "token", "issue", "--display-name", "Test Token", "--ttl-minutes", "1")
 	require.Equal(t, 0, res.ExitCode)
 	require.Contains(t, res.Output, "Token: ")
 

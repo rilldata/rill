@@ -1,6 +1,7 @@
 package authtoken
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/google/uuid"
@@ -97,4 +98,45 @@ func TestMany(t *testing.T) {
 		_, err := FromString(str)
 		require.NoError(t, err)
 	}
+}
+
+func TestPrefix(t *testing.T) {
+	tkn := NewRandom(TypeUser)
+	require.Equal(t, TypeUser, tkn.Type)
+	require.True(t, strings.HasPrefix(tkn.String(), tkn.Prefix()), "Full token should start with prefix")
+	require.NotEqual(t, tkn.Prefix(), tkn.String(), "Prefix should not match the full token string")
+}
+
+func TestMatchByPrefix(t *testing.T) {
+	t1 := NewRandom(TypeUser)
+	t2 := NewRandom(TypeUser)
+	t3 := NewRandom(TypeService)
+	tokens := []*Token{
+		t1,
+		t2,
+		t3,
+	}
+
+	// Should match only t1 by its full prefix
+	matches := MatchByPrefix(t1.Prefix(), tokens)
+	require.Len(t, matches, 1)
+	require.Equal(t, t1.ID, matches[0].ID)
+
+	// Should match only t2 by its full prefix
+	matches = MatchByPrefix(t2.Prefix(), tokens)
+	require.Len(t, matches, 1)
+	require.Equal(t, t2.ID, matches[0].ID)
+
+	// Should match only t3 by its full prefix
+	matches = MatchByPrefix(t3.Prefix(), tokens)
+	require.Len(t, matches, 1)
+	require.Equal(t, t3.ID, matches[0].ID)
+
+	// Should match nothing for a random prefix
+	matches = MatchByPrefix("rill_usr_abcdefghij", tokens)
+	require.Len(t, matches, 0)
+
+	// Should match nothing for a prefix that's too short
+	matches = MatchByPrefix("rill_", tokens)
+	require.Len(t, matches, 0)
 }
