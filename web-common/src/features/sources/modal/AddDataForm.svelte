@@ -2,6 +2,7 @@
   import { Button } from "@rilldata/web-common/components/button";
   import InformationalField from "@rilldata/web-common/components/forms/InformationalField.svelte";
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
+  import Select from "@rilldata/web-common/components/forms/Select.svelte";
   import SubmissionError from "@rilldata/web-common/components/forms/SubmissionError.svelte";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import {
@@ -10,7 +11,6 @@
   } from "@rilldata/web-common/runtime-client";
   import type { ActionResult } from "@sveltejs/kit";
   import { createEventDispatcher } from "svelte";
-  import { slide } from "svelte/transition";
   import {
     defaults,
     superForm,
@@ -26,9 +26,18 @@
   } from "./submitAddDataForm";
   import type { AddDataFormType } from "./types";
   import { dsnSchema, getYupSchema } from "./yupSchemas";
+  import yaml from "js-yaml";
+  import { ExternalLinkIcon } from "lucide-svelte";
 
-  const FORM_TRANSITION_DURATION = 150;
   const dispatch = createEventDispatcher();
+
+  type ClickHouseDeploymentType = "cloud" | "self-hosted" | "local";
+
+  const DEPLOYMENT_TYPE_OPTIONS = [
+    { value: "cloud", label: "ClickHouse Cloud" },
+    { value: "self-hosted", label: "Self-Hosted ClickHouse" },
+    { value: "local", label: "Local Development" },
+  ];
 
   export let connector: V1ConnectorDriver;
   export let formType: AddDataFormType;
@@ -37,6 +46,32 @@
 
   const isSourceForm = formType === "source";
   const isConnectorForm = formType === "connector";
+  const isClickHouse = connector.name === "clickhouse";
+  let deploymentType: ClickHouseDeploymentType = "cloud";
+
+  const CLICKHOUSE_DEFAULTS = {
+    cloud: {
+      host: { value: "", placeholder: "your-instance.clickhouse.cloud" },
+      port: { value: "8443", placeholder: "8443" },
+      username: { value: "", placeholder: "default" },
+      password: { value: "", placeholder: "Your ClickHouse Cloud password" },
+      ssl: { value: true },
+    },
+    "self-hosted": {
+      host: { value: "", placeholder: "your-clickhouse-server.com" },
+      port: { value: "9000", placeholder: "9000" },
+      username: { value: "", placeholder: "default" },
+      password: { value: "", placeholder: "Your ClickHouse password" },
+      ssl: { value: false },
+    },
+    local: {
+      host: { value: "localhost", placeholder: "localhost" },
+      port: { value: "9000", placeholder: "9000" },
+      username: { value: "", placeholder: "default" },
+      password: { value: "", placeholder: "Your ClickHouse password" },
+      ssl: { value: false },
+    },
+  };
 
   // Form 1: Individual parameters
   const paramsFormId = `add-data-${connector.name}-form`;
@@ -61,6 +96,19 @@
     resetForm: false,
   });
   let paramsError: string | null = null;
+
+  // Initialize form with default values when deployment type changes
+  $: if (isClickHouse && !useDsn) {
+    const defaults = CLICKHOUSE_DEFAULTS[deploymentType];
+    paramsForm.update(($form) => ({
+      ...$form,
+      host: defaults.host.value,
+      port: defaults.port.value,
+      username: defaults.username.value,
+      password: defaults.password.value,
+      ssl: defaults.ssl.value,
+    }));
+  }
 
   // Form 2: DSN
   // SuperForms are not meant to have dynamic schemas, so we use a different form instance for the DSN form
@@ -101,6 +149,27 @@
 
   // Emit the submitting state to the parent
   $: dispatch("submitting", { submitting });
+
+  // Generate YAML preview from form state
+  $: yamlPreview = (() => {
+    let values = useDsn ? $dsnForm : $paramsForm;
+    let props = useDsn ? dsnProperties : properties;
+    let out: Record<string, unknown> = {};
+    for (const property of props) {
+      const key = property.key;
+      if (!key) continue;
+      let value = values[key];
+      if (property.secret && value) {
+        value = "********";
+      }
+      if (value !== undefined && value !== null && value !== "") {
+        out[key] = value;
+      }
+    }
+    const title = `connector: ${connector.name}`;
+    if (Object.keys(out).length === 0) return title;
+    return `${title}\n${yaml.dump(out, { lineWidth: 80 })}`;
+  })();
 
   function handleConnectionTypeChange(e: CustomEvent<any>): void {
     useDsn = e.detail === "dsn";
@@ -170,127 +239,229 @@
   }
 </script>
 
-<div class="h-full w-full flex flex-col">
-  <div class="pb-1 text-slate-500">
-    Need help? Refer to our
-    <a
-      href={connector.docsUrl || "https://docs.rilldata.com/build/connect/"}
-      rel="noreferrer noopener"
-      target="_blank">docs</a
-    > for more information.
+<div class="add-data-layout">
+  <div class="add-data-form-panel">
+    <div
+      class="p-6 flex flex-col flex-grow max-h-[552px] min-h-[552px] overflow-y-auto"
+    >
+      {#if hasDsnFormOption}
+        <div class="pb-3">
+          <div class="text-sm font-medium mb-2">Connection method</div>
+          <ButtonGroup
+            selected={[useDsn ? "dsn" : "parameters"]}
+            on:subbutton-click={handleConnectionTypeChange}
+          >
+            <SubButton value="parameters" ariaLabel="Enter parameters">
+              <span class="px-2">Enter parameters</span>
+            </SubButton>
+            <SubButton value="dsn" ariaLabel="Use connection string">
+              <span class="px-2">Enter connection string</span>
+            </SubButton>
+          </ButtonGroup>
+        </div>
+      {/if}
+
+      {#if !useDsn}
+        <!-- Form 1: Individual parameters -->
+        <form
+          id={paramsFormId}
+          use:paramsEnhance
+          on:submit|preventDefault={paramsSubmit}
+        >
+          {#if paramsError}
+            <SubmissionError message={paramsError} />
+          {/if}
+
+          {#if isClickHouse}
+            <div class="pb-3">
+              <Select
+                id="deployment-type"
+                options={DEPLOYMENT_TYPE_OPTIONS}
+                bind:value={deploymentType}
+                label="Deployment type"
+              />
+            </div>
+
+            {#each properties as property (property.key)}
+              {@const propertyKey = property.key ?? ""}
+              {@const label =
+                property.displayName + (property.required ? "" : " (optional)")}
+              {@const defaults = CLICKHOUSE_DEFAULTS[deploymentType]}
+              <div class="py-1.5 first:pt-0 last:pb-0">
+                {#if property.type === ConnectorDriverPropertyType.TYPE_STRING || property.type === ConnectorDriverPropertyType.TYPE_NUMBER}
+                  <Input
+                    id={propertyKey}
+                    label={property.displayName}
+                    placeholder={defaults[propertyKey]?.placeholder ??
+                      property.placeholder}
+                    optional={!property.required}
+                    secret={property.secret}
+                    hint={property.hint}
+                    errors={$paramsErrors[propertyKey]}
+                    bind:value={$paramsForm[propertyKey]}
+                    onInput={(_, e) => onStringInputChange(e)}
+                    alwaysShowError
+                  />
+                {:else if property.type === ConnectorDriverPropertyType.TYPE_BOOLEAN}
+                  <label for={property.key} class="flex items-center">
+                    <input
+                      id={propertyKey}
+                      type="checkbox"
+                      bind:checked={$paramsForm[propertyKey]}
+                      class="h-5 w-5"
+                    />
+                    <span class="ml-2 text-sm">{label}</span>
+                  </label>
+                {/if}
+              </div>
+            {/each}
+          {:else}
+            {#each properties as property (property.key)}
+              {@const propertyKey = property.key ?? ""}
+              {@const label =
+                property.displayName + (property.required ? "" : " (optional)")}
+              <div class="py-1.5 first:pt-0 last:pb-0">
+                {#if property.type === ConnectorDriverPropertyType.TYPE_STRING || property.type === ConnectorDriverPropertyType.TYPE_NUMBER}
+                  <Input
+                    id={propertyKey}
+                    label={property.displayName}
+                    placeholder={property.placeholder}
+                    optional={!property.required}
+                    secret={property.secret}
+                    hint={property.hint}
+                    errors={$paramsErrors[propertyKey]}
+                    bind:value={$paramsForm[propertyKey]}
+                    onInput={(_, e) => onStringInputChange(e)}
+                    alwaysShowError
+                  />
+                {:else if property.type === ConnectorDriverPropertyType.TYPE_BOOLEAN}
+                  <label for={property.key} class="flex items-center">
+                    <input
+                      id={propertyKey}
+                      type="checkbox"
+                      bind:checked={$paramsForm[propertyKey]}
+                      class="h-5 w-5"
+                    />
+                    <span class="ml-2 text-sm">{label}</span>
+                  </label>
+                {:else if property.type === ConnectorDriverPropertyType.TYPE_INFORMATIONAL}
+                  <InformationalField
+                    description={property.description}
+                    hint={property.hint}
+                    href={property.docsUrl}
+                  />
+                {/if}
+              </div>
+            {/each}
+          {/if}
+        </form>
+      {:else}
+        <!-- Form 2: DSN -->
+        <form
+          id={dsnFormId}
+          use:dsnEnhance
+          on:submit|preventDefault={dsnSubmit}
+        >
+          {#if dsnError}
+            <SubmissionError message={dsnError} />
+          {/if}
+
+          {#each dsnProperties as property (property.key)}
+            {@const propertyKey = property.key ?? ""}
+            <div class="py-1.5">
+              <Input
+                id={propertyKey}
+                label={property.displayName}
+                placeholder={property.placeholder}
+                secret={property.secret}
+                hint={property.hint}
+                errors={$dsnErrors[propertyKey]}
+                bind:value={$dsnForm[propertyKey]}
+                alwaysShowError
+              />
+            </div>
+          {/each}
+        </form>
+      {/if}
+    </div>
+    <div
+      class="flex items-center justify-between space-x-2 px-6 py-4 border-t border-gray-200"
+    >
+      <Button onClick={onBack} type="secondary">Back</Button>
+      <Button disabled={submitting} form={formId} submitForm type="primary">
+        {#if isConnectorForm}
+          {#if submitting}
+            Testing connection...
+          {:else}
+            Test and Connect
+          {/if}
+        {:else}
+          Add data
+        {/if}
+      </Button>
+    </div>
   </div>
 
-  {#if hasDsnFormOption}
-    <div class="py-3">
-      <div class="text-sm font-medium mb-2">Connection method</div>
-      <ButtonGroup
-        selected={[useDsn ? "dsn" : "parameters"]}
-        on:subbutton-click={handleConnectionTypeChange}
-      >
-        <SubButton value="parameters" ariaLabel="Enter parameters">
-          <span class="px-2">Enter parameters</span>
-        </SubButton>
-        <SubButton value="dsn" ariaLabel="Use connection string">
-          <span class="px-2">Enter connection string</span>
-        </SubButton>
-      </ButtonGroup>
+  <div class="add-data-side-panel">
+    <div>
+      <div class="text-sm leading-none font-medium mb-4">
+        Connection preview
+      </div>
+      <pre>{yamlPreview}</pre>
     </div>
-  {/if}
-
-  {#if !useDsn}
-    <!-- Form 1: Individual parameters -->
-    <form
-      id={paramsFormId}
-      class="pb-5 flex-grow overflow-y-auto"
-      use:paramsEnhance
-      on:submit|preventDefault={paramsSubmit}
-      transition:slide={{ duration: FORM_TRANSITION_DURATION }}
-    >
-      {#if paramsError}
-        <SubmissionError message={paramsError} />
-      {/if}
-
-      {#each properties as property (property.key)}
-        {@const propertyKey = property.key ?? ""}
-        {@const label =
-          property.displayName + (property.required ? "" : " (optional)")}
-        <div class="py-1.5">
-          {#if property.type === ConnectorDriverPropertyType.TYPE_STRING || property.type === ConnectorDriverPropertyType.TYPE_NUMBER}
-            <Input
-              id={propertyKey}
-              label={property.displayName}
-              placeholder={property.placeholder}
-              optional={!property.required}
-              secret={property.secret}
-              hint={property.hint}
-              errors={$paramsErrors[propertyKey]}
-              bind:value={$paramsForm[propertyKey]}
-              onInput={(_, e) => onStringInputChange(e)}
-              alwaysShowError
-            />
-          {:else if property.type === ConnectorDriverPropertyType.TYPE_BOOLEAN}
-            <label for={property.key} class="flex items-center">
-              <input
-                id={propertyKey}
-                type="checkbox"
-                bind:checked={$paramsForm[propertyKey]}
-                class="h-5 w-5"
-              />
-              <span class="ml-2 text-sm">{label}</span>
-            </label>
-          {:else if property.type === ConnectorDriverPropertyType.TYPE_INFORMATIONAL}
-            <InformationalField
-              description={property.description}
-              hint={property.hint}
-              href={property.docsUrl}
-            />
-          {/if}
-        </div>
-      {/each}
-    </form>
-  {:else}
-    <!-- Form 2: DSN -->
-    <form
-      id={dsnFormId}
-      class="pb-5 flex-grow overflow-y-auto"
-      use:dsnEnhance
-      on:submit|preventDefault={dsnSubmit}
-      transition:slide={{ duration: FORM_TRANSITION_DURATION }}
-    >
-      {#if dsnError}
-        <SubmissionError message={dsnError} />
-      {/if}
-
-      {#each dsnProperties as property (property.key)}
-        {@const propertyKey = property.key ?? ""}
-        <div class="py-1.5">
-          <Input
-            id={propertyKey}
-            label={property.displayName}
-            placeholder={property.placeholder}
-            secret={property.secret}
-            hint={property.hint}
-            errors={$dsnErrors[propertyKey]}
-            bind:value={$dsnForm[propertyKey]}
-            alwaysShowError
-          />
-        </div>
-      {/each}
-    </form>
-  {/if}
-
-  <div class="flex items-center space-x-2 ml-auto">
-    <Button onClick={onBack} type="secondary">Back</Button>
-    <Button disabled={submitting} form={formId} submitForm type="primary">
-      {#if isConnectorForm}
-        {#if submitting}
-          Testing connection...
-        {:else}
-          Connect
-        {/if}
-      {:else}
-        Add data
-      {/if}
-    </Button>
+    <div>
+      <div class="text-sm leading-none font-medium mb-4">Help</div>
+      <div
+        class="text-sm leading-normal font-medium text-muted-foreground mb-2"
+      >
+        Need help connecting to {connector.displayName}? Check out our
+        documentation for detailed instructions.
+      </div>
+      <span class="flex flex-row items-center gap-2 group">
+        <a
+          href={connector.docsUrl || "https://docs.rilldata.com/build/connect/"}
+          rel="noreferrer noopener"
+          target="_blank"
+          class="text-sm leading-normal text-primary-500 hover:text-primary-600 font-medium group-hover:underline"
+        >
+          How to connect to {connector.displayName}
+        </a>
+        <ExternalLinkIcon size="16px" color="#6366F1" />
+      </span>
+    </div>
   </div>
 </div>
+
+<style lang="postcss">
+  .add-data-layout {
+    @apply flex flex-row h-full w-full;
+  }
+  .add-data-form-panel {
+    @apply flex-1 flex flex-col min-w-0;
+  }
+  .add-data-side-panel {
+    @apply w-96 min-w-[320px] max-w-[400px] border-l border-gray-200 pl-6 flex flex-col gap-6 p-6;
+    /* FIXME: bg-sidebar-background */
+    @apply bg-[#FAFAFA];
+  }
+  .add-data-side-panel pre {
+    @apply p-4 rounded-md text-xs border border-gray-200 font-medium;
+    @apply whitespace-pre-wrap overflow-x-visible;
+    /* FIXME: bg-base-muted */
+    @apply bg-[#F4F4F5];
+  }
+  .add-data-side-panel a {
+    @apply text-primary-500 font-medium break-all;
+  }
+  @media (max-width: 900px) {
+    .add-data-layout {
+      @apply flex-col;
+    }
+    .add-data-side-panel {
+      @apply w-full max-w-full border-l-0 border-t mt-6 pl-0 pt-6;
+    }
+    .add-data-form-panel {
+      @apply pr-0;
+    }
+  }
+</style>
