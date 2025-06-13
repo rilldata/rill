@@ -20,6 +20,8 @@
   import InputWithConfirm from "../components/forms/InputWithConfirm.svelte";
   import { fileArtifacts } from "../features/entity-management/file-artifacts";
 
+  const { rillDevCloudFeatures, darkMode } = featureFlags;
+
   export let mode: string;
 
   $: ({ instanceId } = $runtime);
@@ -28,8 +30,6 @@
     params: { name: dashboardName },
     route,
   } = $page);
-
-  const { rillDevCloudFeatures } = featureFlags;
 
   $: ({ unsavedFiles } = fileArtifacts);
   $: ({ size: unsavedFileCount } = $unsavedFiles);
@@ -110,7 +110,7 @@
     />
   {/if}
 
-  <div class="ml-auto flex gap-x-2">
+  <div class="ml-auto flex gap-x-2 h-full w-fit items-center py-2">
     {#if mode === "Preview"}
       {#if route.id?.includes("explore")}
         <ExplorePreviewCTAs exploreName={dashboardName} />
@@ -120,7 +120,7 @@
       {#if !onDeployPage}
         <DeployProjectCTA {hasValidDashboard} />
       {/if}
-      <LocalAvatarButton />
+      <LocalAvatarButton darkMode={$darkMode} />
     {/if}
   </div>
 </header>

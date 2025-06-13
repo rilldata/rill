@@ -95,7 +95,7 @@
   }
 
   .content {
-    @apply flex w-full flex-col bg-slate-100 overflow-hidden size-full;
+    @apply flex w-full flex-col bg-gray-50 overflow-hidden size-full;
     @apply p-2 gap-y-2;
   }
 </style>

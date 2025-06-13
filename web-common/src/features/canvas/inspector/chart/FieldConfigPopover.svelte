@@ -20,7 +20,10 @@
   $: isDimension = fieldConfig?.type === "nominal";
   $: isMeasure = fieldConfig?.type === "quantitative";
 
-  let limit = fieldConfig?.limit || 5000;
+  let limit =
+    fieldConfig?.limit || chartFieldInput?.limitSelector?.defaultLimit || 5000;
+  let min = fieldConfig?.min;
+  let max = fieldConfig?.max;
   let labelAngle =
     fieldConfig?.labelAngle ?? (fieldConfig?.type === "temporal" ? 0 : -90);
   let isDropdownOpen = false;
@@ -47,6 +50,7 @@
   $: showNull = chartFieldInput?.nullSelector ?? false;
   $: showLabelAngle = chartFieldInput?.labelAngleSelector ?? false;
   $: showLegend = chartFieldInput?.defaultLegendOrientation ?? false;
+  $: showAxisRange = chartFieldInput?.axisRangeSelector ?? false;
 </script>
 
 <Popover.Root bind:open={isDropdownOpen}>
@@ -60,6 +64,20 @@
       <span class="text-xs font-medium">{label} Configuration</span>
     </div>
     <div class="px-3.5 pb-1.5">
+      {#if showLegend}
+        <div class="py-1 flex items-center justify-between">
+          <span class="text-xs">Legend orientation</span>
+          <Select
+            size="sm"
+            id="legend-orientation-select"
+            width={180}
+            options={legendOptions}
+            value={fieldConfig?.legendOrientation ||
+              chartFieldInput?.defaultLegendOrientation}
+            on:change={(e) => onChange("legendOrientation", e.detail)}
+          />
+        </div>
+      {/if}
       {#if showAxisTitle}
         <div class="py-1.5 flex items-center justify-between">
           <span class="text-xs">Show axis title</span>
@@ -117,17 +135,55 @@
           </div>
         {/if}
       {/if}
-      {#if isMeasure && showOrigin}
-        <div class="py-1.5 flex items-center justify-between">
-          <span class="text-xs">Zero based origin</span>
-          <Switch
-            small
-            checked={fieldConfig?.zeroBasedOrigin}
-            on:click={() => {
-              onChange("zeroBasedOrigin", !fieldConfig?.zeroBasedOrigin);
-            }}
-          />
-        </div>
+      {#if isMeasure}
+        {#if showOrigin}
+          <div class="py-1.5 flex items-center justify-between">
+            <span class="text-xs">Zero based origin</span>
+            <Switch
+              small
+              checked={fieldConfig?.zeroBasedOrigin}
+              on:click={() => {
+                onChange("zeroBasedOrigin", !fieldConfig?.zeroBasedOrigin);
+              }}
+            />
+          </div>
+        {/if}
+        {#if showAxisRange}
+          <div class="py-1.5 flex items-center justify-between">
+            <span class="text-xs">Min</span>
+            <Input
+              size="sm"
+              width="120px"
+              id="axis-min-value-select"
+              inputType="number"
+              placeholder="Enter a number"
+              bind:value={min}
+              onBlur={() => {
+                onChange("min", min);
+              }}
+              onEnter={() => {
+                onChange("min", min);
+              }}
+            />
+          </div>
+          <div class="py-1.5 flex items-center justify-between">
+            <span class="text-xs">Max</span>
+            <Input
+              size="sm"
+              width="120px"
+              id="axis-min-value-select"
+              inputType="number"
+              placeholder="Enter a number"
+              bind:value={max}
+              onBlur={() => {
+                onChange("max", max);
+              }}
+              onEnter={() => {
+                onChange("max", max);
+              }}
+            />
+          </div>
+        {/if}
       {/if}
       {#if showLabelAngle && fieldConfig?.type !== "temporal"}
         <div class="py-1 flex items-center justify-between">
@@ -144,20 +200,6 @@
             onEnter={() => {
               onChange("labelAngle", labelAngle);
             }}
-          />
-        </div>
-      {/if}
-      {#if showLegend}
-        <div class="py-1 flex items-center justify-between">
-          <span class="text-xs">Legend orientation</span>
-          <Select
-            size="sm"
-            id="legend-orientation-select"
-            width={180}
-            options={legendOptions}
-            value={fieldConfig?.legendOrientation ||
-              chartFieldInput?.defaultLegendOrientation}
-            on:change={(e) => onChange("legendOrientation", e.detail)}
           />
         </div>
       {/if}

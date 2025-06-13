@@ -16,15 +16,13 @@
 </script>
 
 <div class="flex flex-row text-gray-800 my-1 {className}">
-  <div
-    class="p-0.5 border border-gray-200 rounded-bl-sm rounded-tl-sm bg-gray-50 command-text"
-  >
+  <div class="p-0.5 border rounded-bl-sm rounded-tl-sm bg-gray-50 command-text">
     {command}
   </div>
   <div
     role="button"
     tabindex="0"
-    class="p-1 border border-gray-200 rounded-br-sm rounded-tr-sm bg-gray-50"
+    class="p-1 border rounded-br-sm rounded-tr-sm bg-gray-50"
     class:cursor-pointer={copied}
     on:click={copyCommand}
     on:keydown={copyCommand}
