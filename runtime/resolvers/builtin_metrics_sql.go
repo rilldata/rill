@@ -6,6 +6,7 @@ import (
 
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/metricsview"
 )
 
 func init() {
@@ -18,7 +19,12 @@ func init() {
 		OpenAPIRequestSchema: `{
 			"type":"object",
 			"properties": {
-				"sql": {"type":"string"}
+				"sql": {"type":"string"},
+				"additional_where": {
+					"type": "object",
+					"description": "Additional filter expression for the metrics SQL query. See metricsview.Expression schema.",
+					"additionalProperties": true
+				}
 			},
 			"required":["sql"]
 		}`,
@@ -26,8 +32,9 @@ func init() {
 }
 
 type builtinMetricsSQLArgs struct {
-	SQL      string `mapstructure:"sql"`
-	Priority int    `mapstructure:"priority"`
+	SQL             string                 `mapstructure:"sql"`
+	AdditionalWhere metricsview.Expression `mapstructure:"additional_where"`
+	Priority        int                    `mapstructure:"priority"`
 }
 
 // newBuiltinMetricsSQL is the resolver for the built-in /metrics-sql API.

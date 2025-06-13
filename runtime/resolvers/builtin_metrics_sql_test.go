@@ -2,6 +2,7 @@ package resolvers
 
 import (
 	"context"
+	"encoding/json"
 	"testing"
 
 	"github.com/rilldata/rill/runtime"
@@ -72,4 +73,47 @@ measures:
 			require.Equal(t, []byte(tc.want), must(res.MarshalJSON()))
 		}
 	}
+
+	t.Run("additional_where_structured_expression", func(t *testing.T) {
+		props := api.Spec.ResolverProperties.AsMap()
+		props["additional_where"] = map[string]any{
+			"operator": "OPERATOR_EQ",
+			"expressions": []any{
+				map[string]any{"name": "a"},
+				map[string]any{"literal": 10},
+			},
+		}
+		res, err := rt.Resolve(ctx, &runtime.ResolveOptions{
+			InstanceID:         instanceID,
+			Resolver:           api.Spec.Resolver,
+			ResolverProperties: props,
+			Args:               map[string]any{"sql": "SELECT a, count FROM bar"},
+			Claims:             &runtime.SecurityClaims{SkipChecks: true},
+		})
+		require.NoError(t, err)
+		defer res.Close()
+		var rows []map[string]interface{}
+		require.NoError(t, json.Unmarshal(must(res.MarshalJSON()), &rows))
+		require.Len(t, rows, 1)
+		require.Equal(t, float64(10), rows[0]["a"])
+	})
+
+	t.Run("additional_where_empty_expression", func(t *testing.T) {
+		props := api.Spec.ResolverProperties.AsMap()
+		props["additional_where"] = map[string]any{} // Empty expression should not filter anything
+		res, err := rt.Resolve(ctx, &runtime.ResolveOptions{
+			InstanceID:         instanceID,
+			Resolver:           api.Spec.Resolver,
+			ResolverProperties: props,
+			Args:               map[string]any{"sql": "SELECT a, count FROM bar"},
+			Claims:             &runtime.SecurityClaims{SkipChecks: true},
+		})
+		require.NoError(t, err)
+		defer res.Close()
+		var rows []map[string]interface{}
+		require.NoError(t, json.Unmarshal(must(res.MarshalJSON()), &rows))
+		require.Len(t, rows, 1)
+		// Should still return the row with a=10
+		require.Equal(t, float64(10), rows[0]["a"])
+	})
 }
