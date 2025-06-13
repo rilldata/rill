@@ -105,6 +105,11 @@ func (q *Query) Validate() error {
 			return fmt.Errorf("pivot_on not supported when rows is set")
 		}
 	}
+
+	if q.TimeRange != nil && q.ComparisonTimeRange != nil && q.TimeRange.TimeDimension != q.ComparisonTimeRange.TimeDimension {
+		return fmt.Errorf("time_dimension in time_range and comparison_time_range must match")
+	}
+
 	return nil
 }
 
@@ -175,9 +180,10 @@ type WhereSpine struct {
 }
 
 type TimeSpine struct {
-	Start time.Time `mapstructure:"start"`
-	End   time.Time `mapstructure:"end"`
-	Grain TimeGrain `mapstructure:"grain"`
+	Start         time.Time `mapstructure:"start"`
+	End           time.Time `mapstructure:"end"`
+	Grain         TimeGrain `mapstructure:"grain"`
+	TimeDimension string    `mapstructure:"time_dimension"` // optional time dimension to use for time-based operations, if not specified, the default time dimension in the metrics view is used
 }
 
 type Sort struct {
@@ -186,12 +192,13 @@ type Sort struct {
 }
 
 type TimeRange struct {
-	Start        time.Time `mapstructure:"start"`
-	End          time.Time `mapstructure:"end"`
-	Expression   string    `mapstructure:"expression"`
-	IsoDuration  string    `mapstructure:"iso_duration"`
-	IsoOffset    string    `mapstructure:"iso_offset"`
-	RoundToGrain TimeGrain `mapstructure:"round_to_grain"`
+	Start         time.Time `mapstructure:"start"`
+	End           time.Time `mapstructure:"end"`
+	Expression    string    `mapstructure:"expression"`
+	IsoDuration   string    `mapstructure:"iso_duration"`
+	IsoOffset     string    `mapstructure:"iso_offset"`
+	RoundToGrain  TimeGrain `mapstructure:"round_to_grain"`
+	TimeDimension string    `mapstructure:"time_dimension"` // optional time dimension to use for time-based operations, if not specified, the default time dimension in the metrics view is used
 }
 
 func (tr *TimeRange) IsZero() bool {

@@ -36,6 +36,7 @@ type MetricsViewTimeSeries struct {
 	TimeGranularity runtimev1.TimeGrain          `json:"time_granularity,omitempty"`
 	TimeZone        string                       `json:"time_zone,omitempty"`
 	SecurityClaims  *runtime.SecurityClaims      `json:"security_claims,omitempty"`
+	TimeDimension   string                       `json:"time_dimension,omitempty"`
 
 	Result *runtimev1.MetricsViewTimeSeriesResponse `json:"-"`
 }
@@ -82,7 +83,12 @@ func (q *MetricsViewTimeSeries) Resolve(ctx context.Context, rt *runtime.Runtime
 		return fmt.Errorf("metrics view '%s' does not have a time dimension", q.MetricsViewName)
 	}
 
-	qry, err := q.rewriteToMetricsViewQuery(mv.ValidSpec.TimeDimension)
+	timeDim := mv.ValidSpec.TimeDimension
+	if q.TimeDimension != "" {
+		timeDim = q.TimeDimension
+	}
+
+	qry, err := q.rewriteToMetricsViewQuery(timeDim)
 	if err != nil {
 		return fmt.Errorf("error rewriting to metrics query: %w", err)
 	}
@@ -99,7 +105,7 @@ func (q *MetricsViewTimeSeries) Resolve(ctx context.Context, rt *runtime.Runtime
 	}
 	defer res.Close()
 
-	return q.populateResult(res, mv.ValidSpec.TimeDimension, mv.ValidSpec)
+	return q.populateResult(res, timeDim, mv.ValidSpec)
 }
 
 func (q *MetricsViewTimeSeries) Export(ctx context.Context, rt *runtime.Runtime, instanceID string, w io.Writer, opts *runtime.ExportOptions) error {
@@ -307,6 +313,7 @@ func (q *MetricsViewTimeSeries) rewriteToMetricsViewQuery(timeDimension string) 
 	if q.TimeEnd != nil {
 		res.End = q.TimeEnd.AsTime()
 	}
+	res.TimeDimension = timeDimension
 	qry.TimeRange = res
 
 	if q.Limit != 0 {

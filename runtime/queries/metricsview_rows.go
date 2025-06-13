@@ -27,6 +27,7 @@ type MetricsViewRows struct {
 	MetricsView        *runtimev1.MetricsViewSpec   `json:"-"`
 	ResolvedMVSecurity *runtime.ResolvedSecurity    `json:"security"`
 	Streaming          bool                         `json:"streaming,omitempty"`
+	TimeDimension      string                       `json:"time_dimension,omitempty"` // if empty, the default time dimension in mv is used
 
 	// backwards compatibility
 	Filter *runtimev1.MetricsViewFilter `json:"filter,omitempty"`
@@ -174,6 +175,7 @@ func (q *MetricsViewRows) rewriteToMetricsViewQuery() (*metricsview.Query, error
 	if q.TimeEnd != nil {
 		res.End = q.TimeEnd.AsTime()
 	}
+	res.TimeDimension = q.TimeDimension
 	qry.TimeRange = res
 
 	qry.Limit = q.Limit

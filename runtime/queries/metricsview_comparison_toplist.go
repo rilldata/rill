@@ -321,6 +321,7 @@ func (q *MetricsViewComparison) rewriteToMetricsViewQuery(export bool) (*metrics
 		res.IsoDuration = q.TimeRange.IsoDuration
 		res.IsoOffset = q.TimeRange.IsoOffset
 		res.RoundToGrain = metricsview.TimeGrainFromProto(q.TimeRange.RoundToGrain)
+		res.TimeDimension = q.TimeRange.TimeDimension
 		qry.TimeRange = res
 		qry.TimeZone = q.TimeRange.TimeZone
 	}
@@ -336,6 +337,7 @@ func (q *MetricsViewComparison) rewriteToMetricsViewQuery(export bool) (*metrics
 		res.IsoDuration = q.ComparisonTimeRange.IsoDuration
 		res.IsoOffset = q.ComparisonTimeRange.IsoOffset
 		res.RoundToGrain = metricsview.TimeGrainFromProto(q.ComparisonTimeRange.RoundToGrain)
+		res.TimeDimension = q.ComparisonTimeRange.TimeDimension
 		qry.ComparisonTimeRange = res
 	}
 
