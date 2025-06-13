@@ -965,6 +965,7 @@ message UpdateOrganizationRequest {
   optional string display_name = 5;
   optional string logo_asset_id = 6;
   optional string favicon_asset_id = 7;
+  optional string thumbnail_asset_id = 9;
   optional string default_project_role = 8;
   optional string billing_email = 4 [(validate.rules).string.email = true];
 }
@@ -2433,6 +2434,7 @@ message Organization {
   string description = 3;
   string logo_url = 12;
   string favicon_url = 13;
+  string thumbnail_url = 17;
   string custom_domain = 10;
   string default_project_role_id = 16;
   OrganizationQuotas quotas = 4;

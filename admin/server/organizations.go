@@ -208,6 +208,15 @@ func (s *Server) UpdateOrganization(ctx context.Context, req *adminv1.UpdateOrga
 		}
 	}
 
+	thumbnailAssetID := org.ThumbnailAssetID
+	if req.ThumbnailAssetId != nil { // Means it should be updated
+		if *req.ThumbnailAssetId == "" { // Means it should be cleared
+			thumbnailAssetID = nil
+		} else {
+			thumbnailAssetID = req.ThumbnailAssetId
+		}
+	}
+
 	defaultProjectRoleID := org.DefaultProjectRoleID
 	if req.DefaultProjectRole != nil {
 		if *req.DefaultProjectRole == "" {
@@ -229,6 +238,7 @@ func (s *Server) UpdateOrganization(ctx context.Context, req *adminv1.UpdateOrga
 		Description:                         valOrDefault(req.Description, org.Description),
 		LogoAssetID:                         logoAssetID,
 		FaviconAssetID:                      faviconAssetID,
+		ThumbnailAssetID:                    thumbnailAssetID,
 		CustomDomain:                        org.CustomDomain,
 		DefaultProjectRoleID:                defaultProjectRoleID,
 		QuotaProjects:                       org.QuotaProjects,
@@ -855,6 +865,7 @@ func (s *Server) SudoUpdateOrganizationQuotas(ctx context.Context, req *adminv1.
 		LogoAssetID:                         org.LogoAssetID,
 		FaviconAssetID:                      org.FaviconAssetID,
 		CustomDomain:                        org.CustomDomain,
+		ThumbnailAssetID:                    org.ThumbnailAssetID,
 		DefaultProjectRoleID:                org.DefaultProjectRoleID,
 		QuotaProjects:                       int(valOrDefault(req.Projects, int32(org.QuotaProjects))),
 		QuotaDeployments:                    int(valOrDefault(req.Deployments, int32(org.QuotaDeployments))),
@@ -903,6 +914,7 @@ func (s *Server) SudoUpdateOrganizationCustomDomain(ctx context.Context, req *ad
 		LogoAssetID:                         org.LogoAssetID,
 		FaviconAssetID:                      org.FaviconAssetID,
 		CustomDomain:                        req.CustomDomain,
+		ThumbnailAssetID:                    org.ThumbnailAssetID,
 		DefaultProjectRoleID:                org.DefaultProjectRoleID,
 		QuotaProjects:                       org.QuotaProjects,
 		QuotaDeployments:                    org.QuotaDeployments,
@@ -937,6 +949,11 @@ func (s *Server) organizationToDTO(o *database.Organization, privileged bool) *a
 		faviconURL = s.admin.URLs.WithCustomDomain(o.CustomDomain).Asset(*o.FaviconAssetID)
 	}
 
+	var thumbnailURL string
+	if o.ThumbnailAssetID != nil {
+		thumbnailURL = s.admin.URLs.WithCustomDomain(o.CustomDomain).Asset(*o.ThumbnailAssetID)
+	}
+
 	var defaultProjectRoleID string
 	if o.DefaultProjectRoleID != nil {
 		defaultProjectRoleID = *o.DefaultProjectRoleID
@@ -949,6 +966,7 @@ func (s *Server) organizationToDTO(o *database.Organization, privileged bool) *a
 		Description:          o.Description,
 		LogoUrl:              logoURL,
 		FaviconUrl:           faviconURL,
+		ThumbnailUrl:         thumbnailURL,
 		CustomDomain:         o.CustomDomain,
 		DefaultProjectRoleId: defaultProjectRoleID,
 		Quotas: &adminv1.OrganizationQuotas{
