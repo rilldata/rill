@@ -305,6 +305,7 @@ func (s *Service) StartTrial(ctx context.Context, org *database.Organization) (*
 		Description:                         org.Description,
 		LogoAssetID:                         org.LogoAssetID,
 		FaviconAssetID:                      org.FaviconAssetID,
+		ThumbnailAssetID:                    org.ThumbnailAssetID,
 		CustomDomain:                        org.CustomDomain,
 		DefaultProjectRoleID:                org.DefaultProjectRoleID,
 		QuotaProjects:                       biggerOfInt(plan.Quotas.NumProjects, org.QuotaProjects),
