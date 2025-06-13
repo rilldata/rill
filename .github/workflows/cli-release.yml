@@ -51,7 +51,7 @@ jobs:
       - name: Checkout sysroot for cross compilation
         uses: actions/checkout@v4
         with:
-          repository: goreleaser/goreleaser-cross-example-sysroot
+          repository: rilldata/goreleaser-cross-example-sysroot
           path: sysroot
 
       - name: Set up Go
