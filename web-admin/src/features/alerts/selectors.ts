@@ -9,7 +9,11 @@ import {
   createRuntimeServiceListResources,
   type V1AlertSpec,
 } from "@rilldata/web-common/runtime-client";
-import { readable } from "svelte/store";
+import { readable, get } from "svelte/store";
+import {
+  refetchInterval,
+  updateSmartRefetchInterval,
+} from "../shared/refetchIntervalStore";
 
 export function useAlerts(instanceId: string, enabled = true) {
   return createRuntimeServiceListResources(
@@ -21,6 +25,11 @@ export function useAlerts(instanceId: string, enabled = true) {
       query: {
         enabled: enabled && !!instanceId,
         refetchOnMount: true,
+        select: (data) => {
+          updateSmartRefetchInterval(data?.resources);
+          return data;
+        },
+        refetchInterval: () => get(refetchInterval),
       },
     },
   );
@@ -50,9 +59,9 @@ export function useAlertDashboardName(instanceId: string, name: string) {
             return getExploreName(alertSpec.annotations.web_open_path);
 
           const queryArgsJson = JSON.parse(
-            alertSpec.resolverProperties.query_args_json ||
+            (alertSpec.resolverProperties?.query_args_json ||
               alertSpec.queryArgsJson ||
-              "{}",
+              "{}") as string,
           );
 
           return (
