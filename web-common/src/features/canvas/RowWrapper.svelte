@@ -1,7 +1,7 @@
 <script lang="ts">
   import { MIN_HEIGHT } from "./layout-util";
 
-  export let zIndex = 50;
+  export let zIndex: number;
   export let maxWidth: number;
   export let gridTemplate: string;
   export let height: number | undefined = undefined;
