@@ -137,7 +137,7 @@ func (c *Client) GetUsageMetrics(ctx context.Context, startTime, endTime, afterT
 	    OR (start_time = '{{ .args.after_time }}' AND org_id = '{{ .args.after_org_id }}' AND project_id = '{{ .args.after_project_id }}' AND event_name > '{{ .args.after_event_name }}')
 	    {{ end }}
 	  GROUP BY ALL
-	  ORDER BY start_time, org_id, project_id, event_name, service
+	  ORDER BY start_time, org_id, project_id, event_name, billing_service
 	  LIMIT {{ .args.limit }}
 	// time is insertion time here to prevent handling of late arriving data
 	// if we move to syncing raw events then we will not use aggregation function and UNION ALL and just insertion time as event_time instead of using two fields start_time and end_time
