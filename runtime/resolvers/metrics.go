@@ -87,7 +87,7 @@ func newMetrics(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Res
 		query:          qry,
 		args:           args,
 		claims:         opts.Claims,
-		metricsHasTime: mv.TimeDimension != "",
+		metricsHasTime: mv.TimeDimension != "" || (qry.TimeRange != nil && qry.TimeRange.TimeDimension != ""),
 	}, nil
 }
 
@@ -127,7 +127,11 @@ func (r *metricsResolver) Validate(ctx context.Context) error {
 
 func (r *metricsResolver) ResolveInteractive(ctx context.Context) (runtime.ResolverResult, error) {
 	if r.metricsHasTime {
-		tsRes, err := resolveTimestampResult(ctx, r.runtime, r.instanceID, r.query.MetricsView, r.claims, r.args.Priority)
+		timeDim := ""
+		if r.query.TimeRange != nil && r.query.TimeRange.TimeDimension != "" {
+			timeDim = r.query.TimeRange.TimeDimension
+		}
+		tsRes, err := resolveTimestampResult(ctx, r.runtime, r.instanceID, r.query.MetricsView, timeDim, r.claims, r.args.Priority)
 		if err != nil {
 			return nil, err
 		}
