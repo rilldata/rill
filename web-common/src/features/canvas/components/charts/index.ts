@@ -41,7 +41,7 @@ export type ChartSpec =
 
 export function getChartComponent(
   type: ChartType,
-): BaseCanvasComponentConstructor {
+): BaseCanvasComponentConstructor<ChartSpec> {
   switch (type) {
     case "bar_chart":
     case "line_chart":
@@ -62,7 +62,7 @@ export function getChartComponent(
 export interface ChartMetadataConfig {
   title: string;
   icon: ComponentType<SvelteComponent>;
-  component: BaseCanvasComponentConstructor;
+  component: BaseCanvasComponentConstructor<ChartSpec>;
   generateSpec: (config: ChartSpec, data: ChartDataResult) => VisualizationSpec;
   hideFromSelector?: boolean;
 }
