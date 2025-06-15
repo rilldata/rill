@@ -131,7 +131,7 @@ func (e *Executor) CacheKey(ctx context.Context) ([]byte, bool, error) {
 
 // ValidateQuery validates the provided query against the executor's metrics view.
 func (e *Executor) ValidateQuery(qry *Query) error {
-	// TODO: Implement it, build on e.validateQuery as it does only time dimension validation as of now
+	// TODO: Implement it
 	panic("not implemented")
 }
 
@@ -174,7 +174,7 @@ func (e *Executor) Timestamps(ctx context.Context, timeDim string) (TimestampsRe
 
 // BindQuery allows to set min, max and watermark from a cache.
 func (e *Executor) BindQuery(ctx context.Context, qry *Query, timestamps TimestampsResult) error {
-	err := e.validateQuery(qry)
+	err := qry.Validate()
 	if err != nil {
 		return err
 	}
@@ -268,7 +268,7 @@ func (e *Executor) Query(ctx context.Context, qry *Query, executionTime *time.Ti
 		return nil, runtime.ErrForbidden
 	}
 
-	err := e.validateQuery(qry)
+	err := qry.Validate()
 	if err != nil {
 		return nil, err
 	}
@@ -397,7 +397,7 @@ func (e *Executor) Export(ctx context.Context, qry *Query, executionTime *time.T
 		return "", runtime.ErrForbidden
 	}
 
-	err := e.validateQuery(qry)
+	err := qry.Validate()
 	if err != nil {
 		return "", err
 	}
@@ -703,19 +703,6 @@ func (e *Executor) executeSearchInDruid(ctx context.Context, qry *SearchQuery, e
 		}
 	}
 	return result, nil
-}
-
-func (e *Executor) validateQuery(qry *Query) error {
-	err := qry.Validate()
-	if err != nil {
-		return err
-	}
-
-	if e.metricsView.TimeDimension == "" && qry.TimeRange != nil && qry.TimeRange.TimeDimension != "" {
-		return fmt.Errorf("time_dimension cannot be used with metrics views that does not have a primary timeseries defined")
-	}
-
-	return nil
 }
 
 // timeColumnOrExpr returns the time column or expression to use for the metrics view. ues time column if provided, otherwise fall back to the metrics view TimeDimension.

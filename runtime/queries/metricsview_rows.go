@@ -68,8 +68,8 @@ func (q *MetricsViewRows) UnmarshalResult(v any) error {
 }
 
 func (q *MetricsViewRows) Resolve(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int) error {
-	if q.MetricsView.TimeDimension == "" && (q.TimeStart != nil || q.TimeEnd != nil) {
-		return fmt.Errorf("metrics view '%s' does not have a time dimension", q.MetricsViewName)
+	if (q.MetricsView.TimeDimension == "" && q.TimeDimension == "") && (q.TimeStart != nil || q.TimeEnd != nil) {
+		return fmt.Errorf("no time dimension specified for metrics view '%s' and time range provided", q.MetricsViewName)
 	}
 
 	qry, err := q.rewriteToMetricsViewQuery()
@@ -105,8 +105,8 @@ func (q *MetricsViewRows) Resolve(ctx context.Context, rt *runtime.Runtime, inst
 }
 
 func (q *MetricsViewRows) Export(ctx context.Context, rt *runtime.Runtime, instanceID string, w io.Writer, opts *runtime.ExportOptions) error {
-	if q.MetricsView.TimeDimension == "" && (q.TimeStart != nil || q.TimeEnd != nil) {
-		return fmt.Errorf("metrics view '%s' does not have a time dimension", q.MetricsViewName)
+	if (q.MetricsView.TimeDimension == "" && q.TimeDimension == "") && (q.TimeStart != nil || q.TimeEnd != nil) {
+		return fmt.Errorf("no time dimension specified for metrics view '%s' and time range provided", q.MetricsViewName)
 	}
 
 	qry, err := q.rewriteToMetricsViewQuery()

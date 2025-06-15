@@ -67,8 +67,8 @@ func newMetricsViewTimeRangeResolver(ctx context.Context, opts *runtime.Resolver
 		return nil, fmt.Errorf("metrics view %q is invalid", res.Meta.Name.Name)
 	}
 
-	if mv.TimeDimension == "" {
-		return nil, fmt.Errorf("metrics view '%s' does not have a time dimension", tr.MetricsView)
+	if mv.TimeDimension == "" && args.TimeDimension == "" {
+		return nil, fmt.Errorf("no time dimension specified for metrics view %q", tr.MetricsView)
 	}
 
 	security, err := opts.Runtime.ResolveSecurity(opts.InstanceID, opts.Claims, res)

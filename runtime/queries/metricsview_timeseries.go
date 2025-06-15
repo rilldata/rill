@@ -79,13 +79,13 @@ func (q *MetricsViewTimeSeries) Resolve(ctx context.Context, rt *runtime.Runtime
 		return err
 	}
 
-	if mv.ValidSpec.TimeDimension == "" {
-		return fmt.Errorf("metrics view '%s' does not have a time dimension", q.MetricsViewName)
-	}
-
 	timeDim := mv.ValidSpec.TimeDimension
 	if q.TimeDimension != "" {
 		timeDim = q.TimeDimension
+	}
+
+	if timeDim == "" {
+		return fmt.Errorf("no time dimension specified for metrics view %q", q.MetricsViewName)
 	}
 
 	qry, err := q.rewriteToMetricsViewQuery(timeDim)

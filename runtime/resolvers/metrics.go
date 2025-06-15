@@ -87,7 +87,7 @@ func newMetrics(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Res
 		query:          qry,
 		args:           args,
 		claims:         opts.Claims,
-		metricsHasTime: mv.TimeDimension != "",
+		metricsHasTime: mv.TimeDimension != "" || (qry.TimeRange != nil && qry.TimeRange.TimeDimension != ""),
 	}, nil
 }
 
