@@ -28,16 +28,13 @@
   import { dsnSchema, getYupSchema } from "./yupSchemas";
   import yaml from "js-yaml";
   import { ExternalLinkIcon } from "lucide-svelte";
+  import {
+    CLICKHOUSE_DEFAULTS,
+    DEPLOYMENT_TYPE_OPTIONS,
+    type ClickHouseDeploymentType,
+  } from "../../connectors/olap/constants";
 
   const dispatch = createEventDispatcher();
-
-  type ClickHouseDeploymentType = "cloud" | "self-hosted" | "local";
-
-  const DEPLOYMENT_TYPE_OPTIONS = [
-    { value: "cloud", label: "ClickHouse Cloud" },
-    { value: "self-hosted", label: "Self-Hosted ClickHouse" },
-    { value: "local", label: "Local Development" },
-  ];
 
   export let connector: V1ConnectorDriver;
   export let formType: AddDataFormType;
@@ -47,31 +44,8 @@
   const isSourceForm = formType === "source";
   const isConnectorForm = formType === "connector";
   const isClickHouse = connector.name === "clickhouse";
-  let deploymentType: ClickHouseDeploymentType = "cloud";
 
-  const CLICKHOUSE_DEFAULTS = {
-    cloud: {
-      host: { value: "", placeholder: "your-instance.clickhouse.cloud" },
-      port: { value: "8443", placeholder: "8443" },
-      username: { value: "", placeholder: "default" },
-      password: { value: "", placeholder: "Your ClickHouse Cloud password" },
-      ssl: { value: true },
-    },
-    "self-hosted": {
-      host: { value: "", placeholder: "your-clickhouse-server.com" },
-      port: { value: "9000", placeholder: "9000" },
-      username: { value: "", placeholder: "default" },
-      password: { value: "", placeholder: "Your ClickHouse password" },
-      ssl: { value: false },
-    },
-    local: {
-      host: { value: "localhost", placeholder: "localhost" },
-      port: { value: "9000", placeholder: "9000" },
-      username: { value: "", placeholder: "default" },
-      password: { value: "", placeholder: "Your ClickHouse password" },
-      ssl: { value: false },
-    },
-  };
+  let deploymentType: ClickHouseDeploymentType = "cloud";
 
   // Form 1: Individual parameters
   const paramsFormId = `add-data-${connector.name}-form`;
