@@ -4,7 +4,6 @@
     Tabs,
     TabsList,
     TabsTrigger,
-    TabsContent,
   } from "@rilldata/web-common/components/tabs";
 
   export let value: string;

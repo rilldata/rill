@@ -248,14 +248,13 @@
     >
       {#if hasDsnFormOption}
         <div class="pb-3">
-          <div class="text-sm font-medium mb-2">Connection method</div>
           <Tabs
             value={useDsn ? "dsn" : "parameters"}
             options={[
               { value: "parameters", label: "Parameters" },
               { value: "dsn", label: "Connection String" },
             ]}
-            on:change={(e) => (useDsn = e.detail)}
+            on:change={handleConnectionTypeChange}
           >
             <TabsContent value="parameters" class="pt-0">
               <form
