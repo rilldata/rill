@@ -30,6 +30,8 @@
   import { ExternalLinkIcon } from "lucide-svelte";
   import { Info } from "lucide-svelte";
   import Checkbox from "@rilldata/web-common/components/forms/Checkbox.svelte";
+  import Tabs from "@rilldata/web-common/components/forms/Tabs.svelte";
+  import { TabsContent } from "@rilldata/web-common/components/tabs";
 
   const dispatch = createEventDispatcher();
 
@@ -249,139 +251,134 @@
       {#if hasDsnFormOption}
         <div class="pb-3">
           <div class="text-sm font-medium mb-2">Connection method</div>
-          <ButtonGroup
-            selected={[useDsn ? "dsn" : "parameters"]}
-            on:subbutton-click={handleConnectionTypeChange}
+          <Tabs
+            value={useDsn ? "dsn" : "parameters"}
+            options={[
+              { value: "parameters", label: "Parameters" },
+              { value: "dsn", label: "Connection String" },
+            ]}
+            on:change={(e) => (useDsn = e.detail)}
           >
-            <SubButton value="parameters" ariaLabel="Enter parameters">
-              <span class="px-2">Enter parameters</span>
-            </SubButton>
-            <SubButton value="dsn" ariaLabel="Use connection string">
-              <span class="px-2">Enter connection string</span>
-            </SubButton>
-          </ButtonGroup>
+            <TabsContent value="parameters" class="pt-0">
+              <!-- Form 1: Individual parameters -->
+              <form
+                id={paramsFormId}
+                use:paramsEnhance
+                on:submit|preventDefault={paramsSubmit}
+              >
+                {#if paramsError}
+                  <SubmissionError message={paramsError} />
+                {/if}
+                {#if isClickHouse}
+                  <div class="pb-3">
+                    <Select
+                      id="deployment-type"
+                      options={DEPLOYMENT_TYPE_OPTIONS}
+                      bind:value={deploymentType}
+                      label="Deployment type"
+                    />
+                  </div>
+                  {#each properties as property (property.key)}
+                    {@const propertyKey = property.key ?? ""}
+                    {@const label =
+                      property.displayName +
+                      (property.required ? "" : " (optional)")}
+                    {@const defaults = CLICKHOUSE_DEFAULTS[deploymentType]}
+                    <div class="py-1.5 first:pt-0 last:pb-0">
+                      {#if property.type === ConnectorDriverPropertyType.TYPE_STRING || property.type === ConnectorDriverPropertyType.TYPE_NUMBER}
+                        <Input
+                          id={propertyKey}
+                          label={property.displayName}
+                          placeholder={defaults[propertyKey]?.placeholder ??
+                            property.placeholder}
+                          optional={!property.required}
+                          secret={property.secret}
+                          hint={property.hint}
+                          errors={$paramsErrors[propertyKey]}
+                          bind:value={$paramsForm[propertyKey]}
+                          onInput={(_, e) => onStringInputChange(e)}
+                          alwaysShowError
+                        />
+                      {:else if property.type === ConnectorDriverPropertyType.TYPE_BOOLEAN}
+                        <label for={property.key} class="flex items-center">
+                          <Checkbox
+                            id={propertyKey}
+                            bind:checked={$paramsForm[propertyKey]}
+                          />
+                          <span class="ml-2 text-sm">{label}</span>
+                        </label>
+                      {/if}
+                    </div>
+                  {/each}
+                {:else}
+                  {#each properties as property (property.key)}
+                    {@const propertyKey = property.key ?? ""}
+                    {@const label =
+                      property.displayName +
+                      (property.required ? "" : " (optional)")}
+                    <div class="py-1.5 first:pt-0 last:pb-0">
+                      {#if property.type === ConnectorDriverPropertyType.TYPE_STRING || property.type === ConnectorDriverPropertyType.TYPE_NUMBER}
+                        <Input
+                          id={propertyKey}
+                          label={property.displayName}
+                          placeholder={property.placeholder}
+                          optional={!property.required}
+                          secret={property.secret}
+                          hint={property.hint}
+                          errors={$paramsErrors[propertyKey]}
+                          bind:value={$paramsForm[propertyKey]}
+                          onInput={(_, e) => onStringInputChange(e)}
+                          alwaysShowError
+                        />
+                      {:else if property.type === ConnectorDriverPropertyType.TYPE_BOOLEAN}
+                        <label for={property.key} class="flex items-center">
+                          <Checkbox
+                            id={propertyKey}
+                            bind:checked={$paramsForm[propertyKey]}
+                          />
+                          <span class="ml-2 text-sm">{label}</span>
+                        </label>
+                      {:else if property.type === ConnectorDriverPropertyType.TYPE_INFORMATIONAL}
+                        <InformationalField
+                          description={property.description}
+                          hint={property.hint}
+                          href={property.docsUrl}
+                        />
+                      {/if}
+                    </div>
+                  {/each}
+                {/if}
+              </form>
+            </TabsContent>
+            <TabsContent value="dsn" class="pt-0">
+              <!-- Form 2: DSN -->
+              <form
+                id={dsnFormId}
+                use:dsnEnhance
+                on:submit|preventDefault={dsnSubmit}
+              >
+                {#if dsnError}
+                  <SubmissionError message={dsnError} />
+                {/if}
+                {#each dsnProperties as property (property.key)}
+                  {@const propertyKey = property.key ?? ""}
+                  <div class="py-1.5 first:pt-0 last:pb-0">
+                    <Input
+                      id={propertyKey}
+                      label={property.displayName}
+                      placeholder={property.placeholder}
+                      secret={property.secret}
+                      hint={property.hint}
+                      errors={$dsnErrors[propertyKey]}
+                      bind:value={$dsnForm[propertyKey]}
+                      alwaysShowError
+                    />
+                  </div>
+                {/each}
+              </form>
+            </TabsContent>
+          </Tabs>
         </div>
-      {/if}
-
-      {#if !useDsn}
-        <!-- Form 1: Individual parameters -->
-        <form
-          id={paramsFormId}
-          use:paramsEnhance
-          on:submit|preventDefault={paramsSubmit}
-        >
-          {#if paramsError}
-            <SubmissionError message={paramsError} />
-          {/if}
-
-          {#if isClickHouse}
-            <div class="pb-3">
-              <Select
-                id="deployment-type"
-                options={DEPLOYMENT_TYPE_OPTIONS}
-                bind:value={deploymentType}
-                label="Deployment type"
-              />
-            </div>
-
-            {#each properties as property (property.key)}
-              {@const propertyKey = property.key ?? ""}
-              {@const label =
-                property.displayName + (property.required ? "" : " (optional)")}
-              {@const defaults = CLICKHOUSE_DEFAULTS[deploymentType]}
-              <div class="py-1.5 first:pt-0 last:pb-0">
-                {#if property.type === ConnectorDriverPropertyType.TYPE_STRING || property.type === ConnectorDriverPropertyType.TYPE_NUMBER}
-                  <Input
-                    id={propertyKey}
-                    label={property.displayName}
-                    placeholder={defaults[propertyKey]?.placeholder ??
-                      property.placeholder}
-                    optional={!property.required}
-                    secret={property.secret}
-                    hint={property.hint}
-                    errors={$paramsErrors[propertyKey]}
-                    bind:value={$paramsForm[propertyKey]}
-                    onInput={(_, e) => onStringInputChange(e)}
-                    alwaysShowError
-                  />
-                {:else if property.type === ConnectorDriverPropertyType.TYPE_BOOLEAN}
-                  <label for={property.key} class="flex items-center">
-                    <Checkbox
-                      id={propertyKey}
-                      bind:checked={$paramsForm[propertyKey]}
-                      class="h-4 w-4"
-                    />
-                    <span class="ml-2 text-sm">{label}</span>
-                  </label>
-                {/if}
-              </div>
-            {/each}
-          {:else}
-            {#each properties as property (property.key)}
-              {@const propertyKey = property.key ?? ""}
-              {@const label =
-                property.displayName + (property.required ? "" : " (optional)")}
-              <div class="py-1.5 first:pt-0 last:pb-0">
-                {#if property.type === ConnectorDriverPropertyType.TYPE_STRING || property.type === ConnectorDriverPropertyType.TYPE_NUMBER}
-                  <Input
-                    id={propertyKey}
-                    label={property.displayName}
-                    placeholder={property.placeholder}
-                    optional={!property.required}
-                    secret={property.secret}
-                    hint={property.hint}
-                    errors={$paramsErrors[propertyKey]}
-                    bind:value={$paramsForm[propertyKey]}
-                    onInput={(_, e) => onStringInputChange(e)}
-                    alwaysShowError
-                  />
-                {:else if property.type === ConnectorDriverPropertyType.TYPE_BOOLEAN}
-                  <label for={property.key} class="flex items-center">
-                    <Checkbox
-                      id={propertyKey}
-                      bind:checked={$paramsForm[propertyKey]}
-                      class="h-4 w-4"
-                    />
-                    <span class="ml-2 text-sm">{label}</span>
-                  </label>
-                {:else if property.type === ConnectorDriverPropertyType.TYPE_INFORMATIONAL}
-                  <InformationalField
-                    description={property.description}
-                    hint={property.hint}
-                    href={property.docsUrl}
-                  />
-                {/if}
-              </div>
-            {/each}
-          {/if}
-        </form>
-      {:else}
-        <!-- Form 2: DSN -->
-        <form
-          id={dsnFormId}
-          use:dsnEnhance
-          on:submit|preventDefault={dsnSubmit}
-        >
-          {#if dsnError}
-            <SubmissionError message={dsnError} />
-          {/if}
-
-          {#each dsnProperties as property (property.key)}
-            {@const propertyKey = property.key ?? ""}
-            <div class="py-1.5">
-              <Input
-                id={propertyKey}
-                label={property.displayName}
-                placeholder={property.placeholder}
-                secret={property.secret}
-                hint={property.hint}
-                errors={$dsnErrors[propertyKey]}
-                bind:value={$dsnForm[propertyKey]}
-                alwaysShowError
-              />
-            </div>
-          {/each}
-        </form>
       {/if}
     </div>
     <div
