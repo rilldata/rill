@@ -8,12 +8,15 @@
     inverse?: boolean;
   };
 
-  let className: $$Props["class"] = undefined;
   export let checked: $$Props["checked"] = undefined;
   export let disabled: $$Props["disabled"] = undefined;
   export let label: $$Props["label"] = undefined;
   export let inverse = false;
   export { className as class };
+
+  let className: $$Props["class"] = undefined;
+
+  const bgBasePrimary = "#6366F1";
 </script>
 
 <div class="flex gap-x-2 {inverse ? 'flex-row-reverse justify-end' : ''}">
@@ -25,7 +28,8 @@
     bind:checked
     {disabled}
     class={cn(
-      "h-4 w-4 shrink-0 rounded-sm border border-gray-300 bg-transparent ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:bg-primary-400 data-[state=checked]:border-primary-400",
+      "h-4 w-4 shrink-0 rounded border border-gray-300 bg-transparent ring-offset-2 ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-400 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ",
+      `data-[state=checked]:bg-[${bgBasePrimary}] data-[state=checked]:border-transparent`,
       className,
     )}
   >
