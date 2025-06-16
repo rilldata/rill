@@ -271,15 +271,15 @@
   .input-wrapper {
     @apply overflow-hidden;
     @apply flex justify-center items-center pr-0.5;
-    @apply bg-surface justify-center;
+    @apply bg-white justify-center;
     @apply border border-gray-300 rounded-[2px];
     @apply cursor-pointer;
-    @apply h-fit w-fit bg-background;
+    @apply h-fit w-fit;
   }
 
   input,
   .multiline-input {
-    @apply p-0 bg-background;
+    @apply p-0 bg-white;
     @apply size-full;
     @apply outline-none border-0;
     @apply cursor-text;
