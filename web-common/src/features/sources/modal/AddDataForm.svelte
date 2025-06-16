@@ -28,6 +28,8 @@
   import { dsnSchema, getYupSchema } from "./yupSchemas";
   import yaml from "js-yaml";
   import { ExternalLinkIcon } from "lucide-svelte";
+  import { Info } from "lucide-svelte";
+  import Checkbox from "@rilldata/web-common/components/forms/Checkbox.svelte";
 
   const dispatch = createEventDispatcher();
 
@@ -304,11 +306,10 @@
                   />
                 {:else if property.type === ConnectorDriverPropertyType.TYPE_BOOLEAN}
                   <label for={property.key} class="flex items-center">
-                    <input
+                    <Checkbox
                       id={propertyKey}
-                      type="checkbox"
                       bind:checked={$paramsForm[propertyKey]}
-                      class="h-5 w-5"
+                      class="h-4 w-4"
                     />
                     <span class="ml-2 text-sm">{label}</span>
                   </label>
@@ -336,11 +337,10 @@
                   />
                 {:else if property.type === ConnectorDriverPropertyType.TYPE_BOOLEAN}
                   <label for={property.key} class="flex items-center">
-                    <input
+                    <Checkbox
                       id={propertyKey}
-                      type="checkbox"
                       bind:checked={$paramsForm[propertyKey]}
-                      class="h-5 w-5"
+                      class="h-4 w-4"
                     />
                     <span class="ml-2 text-sm">{label}</span>
                   </label>
