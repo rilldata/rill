@@ -69,7 +69,11 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 	// We expect to remove this rewriting once all users start using GCS's s3 compatibility API support.
 	if scheme, secretSQL, ast, ok := objectStoreRef(ctx, inputProps, opts); ok {
 		if secretSQL != "" {
-			inputProps.PreExec = secretSQL
+			if inputProps.PreExec == "" {
+				inputProps.PreExec = secretSQL
+			} else {
+				inputProps.PreExec += ";" + secretSQL
+			}
 		} else if scheme == "gcs" {
 			// rewrite duckdb sql with locally downloaded files
 			handle, release, err := opts.Env.AcquireConnector(ctx, scheme)
