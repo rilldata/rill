@@ -418,9 +418,7 @@
 
   <div class="add-data-side-panel">
     <div>
-      <div class="text-sm leading-none font-medium mb-4">
-        Connection preview
-      </div>
+      <div class="text-sm leading-none font-medium mb-4">Connector preview</div>
       <pre>{yamlPreview}</pre>
     </div>
     <div>
