@@ -205,9 +205,9 @@
           }}
         >
           {#if showPassword}
-            <EyeOffIcon size="14px" class="stroke-primary-600" />
+            <EyeOffIcon size="14px" class="text-muted-foreground" />
           {:else}
-            <EyeIcon size="14px" class="stroke-primary-600" />
+            <EyeIcon size="14px" class="text-muted-foreground" />
           {/if}
         </IconButton>
       {/if}
