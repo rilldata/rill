@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"slices"
 	"strings"
+	"time"
 
 	"github.com/r3labs/sse/v2"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -305,10 +306,10 @@ func (s *Server) GetModelPartitions(ctx context.Context, req *runtimev1.GetModel
 		return &runtimev1.GetModelPartitionsResponse{}, nil
 	}
 
-	afterIdx := 0
+	var afterExecutedOn time.Time
 	afterKey := ""
 	if req.PageToken != "" {
-		err := unmarshalPageToken(req.PageToken, &afterIdx, &afterKey)
+		err := unmarshalPageToken(req.PageToken, &afterExecutedOn, &afterKey)
 		if err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, "failed to parse page token: %v", err)
 		}
@@ -321,12 +322,12 @@ func (s *Server) GetModelPartitions(ctx context.Context, req *runtimev1.GetModel
 	defer release()
 
 	opts := &drivers.FindModelPartitionsOptions{
-		ModelID:      partitionsModelID,
-		WherePending: req.Pending,
-		WhereErrored: req.Errored,
-		AfterIndex:   afterIdx,
-		AfterKey:     afterKey,
-		Limit:        validPageSize(req.PageSize),
+		ModelID:         partitionsModelID,
+		WherePending:    req.Pending,
+		WhereErrored:    req.Errored,
+		AfterExecutedOn: afterExecutedOn,
+		AfterKey:        afterKey,
+		Limit:           validPageSize(req.PageSize),
 	}
 
 	partitions, err := catalog.FindModelPartitions(ctx, opts)
