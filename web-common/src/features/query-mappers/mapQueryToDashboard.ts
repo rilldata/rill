@@ -1,14 +1,14 @@
-import { getDashboardFromAggregationRequest } from "@rilldata/web-admin/features/dashboards/query-mappers/getDashboardFromAggregationRequest";
-import { getDashboardFromComparisonRequest } from "@rilldata/web-admin/features/dashboards/query-mappers/getDashboardFromComparisonRequest";
-import type {
-  QueryMapperArgs,
-  QueryRequests,
-} from "@rilldata/web-admin/features/dashboards/query-mappers/types";
 import { getFullInitExploreState } from "@rilldata/web-common/features/dashboards/stores/dashboard-store-defaults";
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import { convertPresetToExploreState } from "@rilldata/web-common/features/dashboards/url-state/convertPresetToExploreState";
 import { getDefaultExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/getDefaultExplorePreset";
 import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
+import { getDashboardFromAggregationRequest } from "@rilldata/web-common/features/query-mappers/getDashboardFromAggregationRequest";
+import { getDashboardFromComparisonRequest } from "@rilldata/web-common/features/query-mappers/getDashboardFromComparisonRequest";
+import type {
+  QueryMapperArgs,
+  QueryRequests,
+} from "@rilldata/web-common/features/query-mappers/types";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import {
   createQueryServiceMetricsViewTimeRange,
@@ -131,7 +131,7 @@ export function mapQueryToDashboard(
       }
 
       // Type guard
-      if (!timeRangeSummary.data) {
+      if (!timeRangeSummary.data?.timeRangeSummary) {
         set({
           isFetching: false,
           isLoading: false,

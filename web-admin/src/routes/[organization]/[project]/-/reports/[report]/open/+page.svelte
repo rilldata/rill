@@ -1,7 +1,5 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
-  import { mapQueryToDashboard } from "@rilldata/web-admin/features/dashboards/query-mappers/mapQueryToDashboard";
-  import { getExplorePageUrlSearchParams } from "@rilldata/web-admin/features/dashboards/query-mappers/utils";
   import CtaButton from "@rilldata/web-common/components/calls-to-action/CTAButton.svelte";
   import CtaContentContainer from "@rilldata/web-common/components/calls-to-action/CTAContentContainer.svelte";
   import CtaLayoutContainer from "@rilldata/web-common/components/calls-to-action/CTALayoutContainer.svelte";
@@ -9,6 +7,8 @@
   import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
+  import { mapQueryToDashboard } from "@rilldata/web-common/features/query-mappers/mapQueryToDashboard";
+  import { getExplorePageUrlSearchParams } from "@rilldata/web-common/features/query-mappers/utils";
   import type { PageData } from "./$types";
 
   export let data: PageData;

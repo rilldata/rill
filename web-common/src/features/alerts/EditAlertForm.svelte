@@ -2,7 +2,6 @@
   import { page } from "$app/stores";
   import { createAdminServiceEditAlert } from "@rilldata/web-admin/client";
   import { useAlertDashboardState } from "@rilldata/web-admin/features/alerts/selectors";
-  import { getExploreName } from "@rilldata/web-admin/features/dashboards/query-mappers/utils";
   import {
     extractAlertFormValues,
     extractAlertNotification,
@@ -11,15 +10,16 @@
     useMetricsViewTimeRange,
     useMetricsViewValidSpec,
   } from "@rilldata/web-common/features/dashboards/selectors";
+  import { getExploreName } from "@rilldata/web-common/features/query-mappers/utils";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { createEventDispatcher } from "svelte";
   import { createForm } from "svelte-forms-lib";
   import {
-    type V1AlertSpec,
-    type V1MetricsViewAggregationRequest,
     getRuntimeServiceGetResourceQueryKey,
     getRuntimeServiceListResourcesQueryKey,
+    type V1AlertSpec,
+    type V1MetricsViewAggregationRequest,
   } from "../../runtime-client";
   import { runtime } from "../../runtime-client/runtime-store";
   import { ResourceKind } from "../entity-management/resource-selectors";

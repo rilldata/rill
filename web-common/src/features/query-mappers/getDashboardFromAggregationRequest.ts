@@ -1,8 +1,3 @@
-import type { QueryMapperArgs } from "@rilldata/web-admin/features/dashboards/query-mappers/types";
-import {
-  convertQueryFilterToToplistQuery,
-  fillTimeRange,
-} from "@rilldata/web-admin/features/dashboards/query-mappers/utils";
 import {
   ComparisonDeltaAbsoluteSuffix,
   ComparisonDeltaRelativeSuffix,
@@ -17,14 +12,19 @@ import {
   SortType,
 } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
 import { getDashboardStateFromUrl } from "@rilldata/web-common/features/dashboards/proto-state/fromProto";
+import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import {
   createAndExpression,
   createSubQueryExpression,
   forEachIdentifier,
   getAllIdentifiers,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
-import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
+import type { QueryMapperArgs } from "@rilldata/web-common/features/query-mappers/types";
+import {
+  convertQueryFilterToToplistQuery,
+  fillTimeRange,
+} from "@rilldata/web-common/features/query-mappers/utils";
 import { DashboardState_ActivePage } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import {
   getQueryServiceMetricsViewSchemaQueryKey,
@@ -113,7 +113,7 @@ export async function getDashboardFromAggregationRequest({
           filters:
             req.having.cond?.exprs
               ?.map(mapExprToMeasureFilter)
-              .filter(Boolean) ?? [],
+              .filter((f): f is NonNullable<typeof f> => f != null) ?? [],
         },
       ];
     }
