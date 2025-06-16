@@ -314,7 +314,24 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 		} else {
 			model.State.TotalExecutionDurationMs = model.State.LatestExecutionDurationMs
 		}
-		err := r.updateStateWithResult(ctx, self, execRes)
+
+		testHash, err := r.testSpecHash(model.Spec)
+		if err != nil {
+			return runtime.ReconcileResult{Err: fmt.Errorf("failed to compute test hash: %w", err)}
+		}
+
+		// If the test hash has changed or there are no test errors, run the tests
+		if model.State.TestHash != testHash || len(model.State.TestErrors) == 0 {
+			testErr := r.runModelTests(ctx, self)
+			if testErr != nil {
+				model.State.TestErrors = []string{testErr.Error()}
+			} else {
+				model.State.TestErrors = nil
+			}
+			model.State.TestHash = testHash
+		}
+
+		err = r.updateStateWithResult(ctx, self, execRes)
 		if err != nil {
 			return runtime.ReconcileResult{Err: err}
 		}
@@ -362,6 +379,11 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 	// Show if any partitions errored
 	if model.State.PartitionsHaveErrors {
 		return runtime.ReconcileResult{Err: errPartitionsHaveErrors, Retrigger: refreshOn}
+	}
+
+	// Show if the model has tests that failed
+	if len(model.State.TestErrors) > 0 {
+		return runtime.ReconcileResult{Err: fmt.Errorf("model tests failed: %s", strings.Join(model.State.TestErrors, ", ")), Retrigger: refreshOn}
 	}
 
 	// Return the next refresh time
@@ -545,6 +567,23 @@ func (r *ModelReconciler) refsStateHash(ctx context.Context, refs []*runtimev1.R
 			return "", err
 		}
 		err = binary.Write(hash, binary.BigEndian, stateUpdatedOn)
+		if err != nil {
+			return "", err
+		}
+	}
+
+	return hex.EncodeToString(hash.Sum(nil)), nil
+}
+
+// Compute a hash of the test spec
+func (r *ModelReconciler) testSpecHash(spec *runtimev1.ModelSpec) (string, error) {
+	hash := md5.New()
+	for _, test := range spec.Tests {
+		_, err := hash.Write([]byte(test.Name))
+		if err != nil {
+			return "", err
+		}
+		_, err = hash.Write([]byte(test.Resolver))
 		if err != nil {
 			return "", err
 		}
@@ -1123,6 +1162,14 @@ func (r *ModelReconciler) executePartition(ctx context.Context, catalog drivers.
 		logArgs = append(logArgs, zap.Error(err))
 	}
 
+	// Run partition-level tests after each partition is executed
+	if err == nil && mdl.Spec.PartitionsResolver != "" {
+		testErr := r.runPartitionTests(ctx, self, data)
+		if testErr != nil {
+			return nil, false, testErr
+		}
+	}
+
 	// Mark the partition as executed
 	now := time.Now()
 	partition.ExecutedOn = &now
@@ -1545,6 +1592,68 @@ func (r *ModelReconciler) shouldTrigger(ctx context.Context, self *runtimev1.Res
 	default:
 		return false, false, fmt.Errorf("unknown change mode %q", model.Spec.ChangeMode)
 	}
+}
+
+// execModelTest runs a single model test and returns an error if it fails. Accepts partitionData for partition-level tests.
+func (r *ModelReconciler) execModelTest(ctx context.Context, self *runtimev1.Resource, test *runtimev1.ModelTest, partitionData map[string]any) error {
+	args := map[string]any{"limit": 1}
+	if partitionData != nil {
+		args["partition"] = partitionData
+	}
+	result, err := r.C.Runtime.Resolve(ctx, &runtime.ResolveOptions{
+		InstanceID:         r.C.InstanceID,
+		Resolver:           test.Resolver,
+		ResolverProperties: test.ResolverProperties.AsMap(),
+		Claims:             &runtime.SecurityClaims{SkipChecks: true},
+		Args:               args,
+	})
+	if err != nil {
+		r.C.Logger.Warn("Model test errored", zap.String("model", self.Meta.Name.Name), zap.String("test", test.Name), zap.Error(err), observability.ZapCtx(ctx))
+		return fmt.Errorf("%s: %w", test.Name, err)
+	}
+	defer result.Close()
+
+	row, err := result.Next()
+	if errors.Is(err, io.EOF) {
+		return nil
+	}
+	if err != nil {
+		r.C.Logger.Warn("Model test errored reading result", zap.String("model", self.Meta.Name.Name), zap.String("test", test.Name), zap.Error(err), observability.ZapCtx(ctx))
+		return fmt.Errorf("model test errored: '%s': %w", strings.ToLower(test.Name), err)
+	}
+	if row != nil {
+		r.C.Logger.Warn("Model test failed", zap.String("model", self.Meta.Name.Name), zap.String("test", test.Name), observability.ZapCtx(ctx))
+		return fmt.Errorf("model test failed: '%s'", strings.ToLower(test.Name))
+	}
+	return nil
+}
+
+// runModelTests executes the user defined model-level tests for the model (global, not partition-level)
+func (r *ModelReconciler) runModelTests(ctx context.Context, self *runtimev1.Resource) error {
+	return r.runTests(ctx, self, self.GetModel().Spec.Tests, nil)
+}
+
+// runPartitionTests executes the user defined partition-level tests for the model, passing partitionData for templating
+func (r *ModelReconciler) runPartitionTests(ctx context.Context, self *runtimev1.Resource, partitionData map[string]any) error {
+	return r.runTests(ctx, self, self.GetModel().Spec.GetPartitionsTests(), partitionData)
+}
+
+// runTestsHelper executes a slice of model tests, optionally with partition data, and logs errors.
+func (r *ModelReconciler) runTests(ctx context.Context, self *runtimev1.Resource, tests []*runtimev1.ModelTest, partitionData map[string]any) error {
+	if len(tests) == 0 {
+		return nil
+	}
+	var errs []error
+	for _, test := range tests {
+		if err := r.execModelTest(ctx, self, test, partitionData); err != nil {
+			errs = append(errs, err)
+			r.C.Logger.Error("Model test failed", zap.String("model", self.Meta.Name.Name), zap.Error(err))
+		}
+	}
+	if len(errs) > 0 {
+		return errors.Join(errs...)
+	}
+	return nil
 }
 
 // hashWriteMapOrdered writes the keys and values of a map to the writer in a deterministic order.

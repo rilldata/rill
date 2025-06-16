@@ -70,6 +70,7 @@ measures:
 					ResultConnector:   "duckdb",
 					ResultProperties:  must(structpb.NewStruct(map[string]any{"table": "foo", "used_model_name": true, "view": false})),
 					ResultTable:       "foo",
+					TestHash:          "d41d8cd98f00b204e9800998ecf8427e",
 				},
 			},
 		},
@@ -99,6 +100,7 @@ measures:
 					ResultConnector:   "duckdb",
 					ResultProperties:  must(structpb.NewStruct(map[string]any{"table": "bar", "used_model_name": true, "view": true})),
 					ResultTable:       "bar",
+					TestHash:          "d41d8cd98f00b204e9800998ecf8427e",
 				},
 			},
 		},
@@ -165,7 +167,9 @@ path
 					OutputConnector: "duckdb",
 					ChangeMode:      runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
 				},
-				State: &runtimev1.ModelState{},
+				State: &runtimev1.ModelState{
+					TestHash: "d41d8cd98f00b204e9800998ecf8427e",
+				},
 			},
 		},
 	})
@@ -237,6 +241,7 @@ path: data/foo.csv
 					ResultConnector:   "duckdb",
 					ResultProperties:  must(structpb.NewStruct(map[string]any{"table": "foo", "used_model_name": true, "view": false})),
 					ResultTable:       "foo",
+					TestHash:          "d41d8cd98f00b204e9800998ecf8427e",
 				},
 			},
 		},
@@ -325,6 +330,7 @@ path: data/foo.csv
 					ResultConnector:   "duckdb",
 					ResultProperties:  must(structpb.NewStruct(map[string]any{"table": "foo", "used_model_name": true, "view": false})),
 					ResultTable:       "foo",
+					TestHash:          "d41d8cd98f00b204e9800998ecf8427e",
 				},
 			},
 		},
@@ -1185,6 +1191,7 @@ func newSource(name, path, localFileHash string) (*runtimev1.Model, *runtimev1.R
 			ResultConnector:   "duckdb",
 			ResultProperties:  must(structpb.NewStruct(map[string]any{"table": name, "used_model_name": true, "view": false})),
 			ResultTable:       name,
+			TestHash:          "d41d8cd98f00b204e9800998ecf8427e",
 		},
 	}
 	sourceRes := &runtimev1.Resource{
@@ -1214,6 +1221,7 @@ func newModel(query, name, source string) (*runtimev1.Model, *runtimev1.Resource
 			ResultConnector:   "duckdb",
 			ResultProperties:  must(structpb.NewStruct(map[string]any{"table": name, "used_model_name": true, "view": true})),
 			ResultTable:       name,
+			TestHash:          "d41d8cd98f00b204e9800998ecf8427e",
 		},
 	}
 	modelRes := &runtimev1.Resource{
