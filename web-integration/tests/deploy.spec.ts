@@ -18,13 +18,13 @@ test.describe("Deploy journey", () => {
   test.afterAll(async () => {
     await execAsync(
       // We need to set the home to get the correct creds
-      `HOME=${cliHomeDir} rill org delete e2e-viewer --interactive=false`,
+      `HOME=${cliHomeDir} rill org delete e2e --interactive=false`,
     );
 
     // Wait for the organization to be deleted
     // This includes deleting the org from Orb and Stripe, which we'd like to do to keep those environments clean.
     await expect
-      .poll(async () => await isOrgDeleted("e2e-viewer"), {
+      .poll(async () => await isOrgDeleted("e2e"), {
         intervals: [1_000],
         timeout: 15_000,
       })

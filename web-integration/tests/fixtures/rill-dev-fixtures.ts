@@ -1,5 +1,6 @@
 import type { Page } from "@playwright/test";
 import { asyncWaitUntil } from "@rilldata/web-common/lib/waitUtils";
+import { ADMIN_STORAGE_STATE } from "@rilldata/web-integration/tests/constants";
 import axios from "axios";
 import { spawn } from "node:child_process";
 import { cpSync, existsSync, mkdirSync, rmSync } from "node:fs";
@@ -83,7 +84,10 @@ export const rillDev = base.extend<MyFixtures>({
       }
     });
 
-    const page = await browser.newPage();
+    const context = await browser.newContext({
+      storageState: { cookies: [], origins: [] },
+    });
+    const page = await context.newPage();
 
     await page.goto(`http://localhost:${TEST_PORT}`);
 

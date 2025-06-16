@@ -1,4 +1,8 @@
 import { expect } from "@playwright/test";
+import {
+  RILL_DEVTOOL_BACKGROUND_PROCESS_PID_FILE,
+  RILL_EMBED_SERVICE_TOKEN_FILE,
+} from "@rilldata/web-integration/tests/constants";
 import { execAsync, spawnAndMatch } from "web-integration/tests/utils/spawn";
 import axios from "axios";
 import { spawn } from "child_process";
@@ -7,12 +11,10 @@ import { openSync } from "fs";
 import { mkdir } from "fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
-import { writeFileEnsuringDir } from "../utils/fs";
-import { test as setup, TestTempDirectory } from "./base";
+import { writeFileEnsuringDir } from "@rilldata/web-integration/tests/utils/fs";
+import { test as setup } from "./base";
 import {
   ADMIN_STORAGE_STATE,
-  RILL_DEVTOOL_BACKGROUND_PROCESS_PID_FILE,
-  RILL_EMBED_SERVICE_TOKEN_FILE,
   RILL_ORG_NAME,
   RILL_PROJECT_NAME,
   RILL_SERVICE_NAME,
