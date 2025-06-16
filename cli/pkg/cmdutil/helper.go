@@ -18,6 +18,7 @@ import (
 	"github.com/rilldata/rill/cli/pkg/dotrillcloud"
 	"github.com/rilldata/rill/cli/pkg/gitutil"
 	"github.com/rilldata/rill/cli/pkg/printer"
+	"github.com/rilldata/rill/cli/pkg/version"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	runtimeclient "github.com/rilldata/rill/runtime/client"
 	"github.com/rilldata/rill/runtime/pkg/activity"
@@ -38,7 +39,7 @@ const (
 
 type Helper struct {
 	*printer.Printer
-	Version            Version
+	Version            version.Version
 	DotRill            dotrill.DotRill
 	Interactive        bool
 	Org                string
@@ -56,7 +57,7 @@ type Helper struct {
 	gitHelperMu sync.Mutex
 }
 
-func NewHelper(ver Version, homeDir string) (*Helper, error) {
+func NewHelper(ver version.Version, homeDir string) (*Helper, error) {
 	// Create it
 	ch := &Helper{
 		Printer:     printer.NewPrinter(printer.FormatHuman),
@@ -361,7 +362,7 @@ func (h *Helper) LoadProject(ctx context.Context, path string) (*adminv1.Project
 	return res.Project, nil
 }
 
-func (h *Helper) ProjectNamesByGithubURL(ctx context.Context, org, githubURL, subPath string) ([]string, error) {
+func (h *Helper) ProjectNamesByGitRemote(ctx context.Context, org, remote, subPath string) ([]string, error) {
 	c, err := h.Client()
 	if err != nil {
 		return nil, err
@@ -376,13 +377,13 @@ func (h *Helper) ProjectNamesByGithubURL(ctx context.Context, org, githubURL, su
 
 	names := make([]string, 0)
 	for _, p := range resp.Projects {
-		if strings.EqualFold(p.GithubUrl, githubURL) && (subPath == "" || strings.EqualFold(p.Subpath, subPath)) {
+		if strings.EqualFold(p.GitRemote, remote) && (subPath == "" || strings.EqualFold(p.Subpath, subPath)) {
 			names = append(names, p.Name)
 		}
 	}
 
 	if len(names) == 0 {
-		return nil, fmt.Errorf("no project with github URL %q exists in org %q", githubURL, org)
+		return nil, fmt.Errorf("no project with Git remote %q exists in the org %q", remote, org)
 	}
 
 	return names, nil
@@ -399,13 +400,17 @@ func (h *Helper) InferProjectName(ctx context.Context, org, path string) (string
 	}
 
 	// Verify projectPath is a Git repo with remote on Github
-	_, githubURL, err := gitutil.ExtractGitRemote(path, "", true)
+	remote, err := gitutil.ExtractGitRemote(path, "", true)
+	if err != nil {
+		return "", err
+	}
+	githubRemote, err := remote.Github()
 	if err != nil {
 		return "", err
 	}
 
 	// Fetch project names matching the Github URL
-	names, err := h.ProjectNamesByGithubURL(ctx, org, githubURL, "")
+	names, err := h.ProjectNamesByGitRemote(ctx, org, githubRemote, "")
 	if err != nil {
 		return "", err
 	}

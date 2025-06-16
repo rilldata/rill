@@ -163,6 +163,7 @@ func NewApp(ctx context.Context, opts *AppOptions) (*App, error) {
 		SecurityEngineCacheSize:      1000,
 		ControllerLogBufferCapacity:  10000,
 		ControllerLogBufferSizeBytes: int64(datasize.MB * 16),
+		Version:                      opts.Ch.Version,
 	}
 	st, err := storage.New(dbDirPath, nil)
 	if err != nil {
@@ -368,11 +369,6 @@ func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly bool
 		return err
 	}
 
-	// Start the gRPC server
-	group.Go(func() error {
-		return runtimeServer.ServeGRPC(ctx)
-	})
-
 	// if keypath and certpath are provided
 	secure := tlsCertPath != "" && tlsKeyPath != ""
 
@@ -381,7 +377,7 @@ func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly bool
 		return runtimeServer.ServeHTTP(ctx, func(mux *http.ServeMux) {
 			// Inject local-only endpoints on the runtime server
 			localServer.RegisterHandlers(mux, httpPort, secure, enableUI)
-		})
+		}, enableUI)
 	})
 
 	// Start debug server on port 6060

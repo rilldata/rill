@@ -18,6 +18,7 @@
   export let isBeingCompared: boolean;
   export let sortedAscending: boolean;
   export let displayName: string;
+  export let dimensionDescription: string;
   export let hovered: boolean;
   export let sortType: SortType;
   export let allowDimensionComparison: boolean;
@@ -32,19 +33,11 @@
   ) => void;
   export let measureLabel: (measureName: string) => string;
 
-  let dimensionHeaderSpan: HTMLSpanElement;
-  let isTruncated = false;
-
   function shouldShowContextColumns(measureName: string): boolean {
     return (
       leaderboardShowContextForAllMeasures ||
       measureName === leaderboardSortByMeasureName
     );
-  }
-
-  $: if (dimensionHeaderSpan) {
-    isTruncated =
-      dimensionHeaderSpan.scrollHeight > dimensionHeaderSpan.clientHeight;
   }
 </script>
 
@@ -65,26 +58,39 @@
     </th>
 
     <th data-dimension-header>
-      <Tooltip location="top" suppress={!isTruncated}>
+      <Tooltip location="top">
         <button
           disabled={!allowExpandTable}
           class="text-slate-600 text-left {allowExpandTable
-            ? 'hover:text-primary-700'
+            ? 'hover:text-theme-700'
             : ''}"
           aria-label="Open dimension details"
           on:click={() => setPrimaryDimension(dimensionName)}
         >
-          <span bind:this={dimensionHeaderSpan} class="line-clamp-2"
-            >{displayName}</span
-          >
+          <span class="line-clamp-2">{displayName}</span>
         </button>
-        <TooltipContent slot="tooltip-content">
+        <TooltipContent slot="tooltip-content" maxWidth="280px">
           <div
             class="pointer-events-none items-baseline"
             aria-label="tooltip-name"
           >
             {displayName}
           </div>
+          {#if dimensionDescription}
+            <div
+              class="grid gap-x-2 pointer-events-none pt-1 pb-1 items-baseline"
+              style="grid-template-columns: auto max-content"
+              style:min-width="200px"
+            >
+              <div
+                class="text-gray-300 justify-self-start"
+                style:max-width="280px"
+                aria-label="tooltip-name-description"
+              >
+                {dimensionDescription}
+              </div>
+            </div>
+          {/if}
         </TooltipContent>
       </Tooltip>
     </th>

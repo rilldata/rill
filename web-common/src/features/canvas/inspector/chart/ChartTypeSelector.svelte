@@ -42,7 +42,7 @@
           type="secondary"
           label={CHART_CONFIG[chart].title}
           selected={type === chart}
-          on:click={() => selectChartType(chart)}
+          onClick={() => selectChartType(chart)}
         >
           <svelte:component this={CHART_CONFIG[chart].icon} size="20px" />
         </Button>
@@ -57,7 +57,7 @@
 <style lang="postcss">
   .section {
     @apply px-5 flex flex-col gap-y-2 p-2;
-    @apply border-t border-gray-200;
+    @apply border-t;
   }
 
   .chart-icons {

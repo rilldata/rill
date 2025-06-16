@@ -51,7 +51,8 @@ func (c *connection) findInstances(_ context.Context, whereClause string, args .
 			feature_flags,
 			annotations,
 			watch_repo,
-			public_paths
+			public_paths,
+			ai_instructions
 		FROM instances %s ORDER BY id
 	`, whereClause)
 
@@ -85,6 +86,7 @@ func (c *connection) findInstances(_ context.Context, whereClause string, args .
 			&annotations,
 			&i.WatchRepo,
 			&publicPaths,
+			&i.AIInstructions,
 		)
 		if err != nil {
 			return nil, err
@@ -201,9 +203,10 @@ func (c *connection) CreateInstance(_ context.Context, inst *drivers.Instance) e
 			feature_flags,
 			annotations,
 			watch_repo,
-			public_paths
+			public_paths,
+			ai_instructions
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
 		`,
 		inst.ID,
 		inst.Environment,
@@ -223,6 +226,7 @@ func (c *connection) CreateInstance(_ context.Context, inst *drivers.Instance) e
 		annotations,
 		inst.WatchRepo,
 		publicPaths,
+		inst.AIInstructions,
 	)
 	if err != nil {
 		return err
@@ -295,7 +299,8 @@ func (c *connection) EditInstance(_ context.Context, inst *drivers.Instance) err
 			feature_flags = $14,
 			annotations = $15,
 			watch_repo = $16,
-			public_paths = $17
+			public_paths = $17,
+			ai_instructions = $18
 		WHERE id = $1
 		`,
 		inst.ID,
@@ -315,6 +320,7 @@ func (c *connection) EditInstance(_ context.Context, inst *drivers.Instance) err
 		annotations,
 		inst.WatchRepo,
 		publicPaths,
+		inst.AIInstructions,
 	)
 	if err != nil {
 		return err

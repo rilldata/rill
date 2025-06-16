@@ -1,9 +1,20 @@
 <script lang="ts" context="module">
-  import Button from "@rilldata/web-common/components/button/Button.svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu/";
   import Add from "@rilldata/web-common/components/icons/Add.svelte";
   import { getStateManagers } from "../state-managers/state-managers";
   import { metricsExplorerStore } from "../stores/dashboard-stores";
+
+  import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
+  import {
+    getAllowedTimeGrains,
+    isGrainBigger,
+  } from "@rilldata/web-common/lib/time/grains";
+  import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
+
+  import type { SearchableFilterSelectableGroup } from "@rilldata/web-common/components/searchable-filter-menu/SearchableFilterSelectableItem";
+  import SearchableMenuContent from "@rilldata/web-common/components/searchable-filter-menu/SearchableMenuContent.svelte";
+
+  import { PivotChipType } from "./types";
   import type { PivotChipData } from "./types";
 </script>
 
@@ -16,51 +27,115 @@
     },
     exploreName,
   } = getStateManagers();
+  const timeControlsStore = useTimeControlStore(getStateManagers());
 
   let open = false;
 
-  function handleSelectValue(data: PivotChipData) {
-    metricsExplorerStore.addPivotField($exploreName, data, zone === "rows");
+  $: allTimeGrains = getAllowedTimeGrains(
+    new Date($timeControlsStore.timeStart!),
+    new Date($timeControlsStore.timeEnd!),
+  ).map((tgo) => {
+    return {
+      id: tgo.grain,
+      title: tgo.label,
+      type: PivotChipType.Time,
+    };
+  });
+
+  $: timeGrainOptions = allTimeGrains.filter(
+    (tgo) =>
+      $timeControlsStore.minTimeGrain === undefined ||
+      $timeControlsStore.minTimeGrain === V1TimeGrain.TIME_GRAIN_UNSPECIFIED ||
+      !isGrainBigger($timeControlsStore.minTimeGrain, tgo.id),
+  );
+
+  $: selectableGroups = [
+    ...(zone === "columns"
+      ? [
+          <SearchableFilterSelectableGroup>{
+            name: "MEASURES",
+            items: $measures?.map((m) => ({
+              name: m.id,
+              label: m.title,
+            })),
+          },
+        ]
+      : []),
+    <SearchableFilterSelectableGroup>{
+      name: "DIMENSIONS",
+      items: $dimensions?.map((d) => ({
+        name: d.id,
+        label: d.title,
+      })),
+    },
+    <SearchableFilterSelectableGroup>{
+      name: "TIME",
+      items: timeGrainOptions.map((tgo) => ({
+        name: tgo.id,
+        label: tgo.title,
+        type: PivotChipType.Time,
+      })),
+    },
+  ];
+
+  $: allDimensionsMeasures = [
+    ...$dimensions,
+    ...$measures,
+    ...timeGrainOptions,
+  ];
+
+  function handleSelectValue(name) {
+    const selectedItem = allDimensionsMeasures.find(
+      (item) => item.id === name,
+    ) as PivotChipData;
+
+    metricsExplorerStore.addPivotField(
+      $exploreName,
+      selectedItem,
+      zone === "rows",
+    );
   }
 </script>
 
-<DropdownMenu.Root bind:open>
+<DropdownMenu.Root bind:open typeahead={false}>
   <DropdownMenu.Trigger asChild let:builder>
-    <Button builders={[builder]} type="add" selected={open} label="add-field">
+    <button
+      class:active={open}
+      use:builder.action
+      {...builder}
+      aria-label="Add filter button"
+    >
       <Add size="17px" />
-    </Button>
+    </button>
   </DropdownMenu.Trigger>
 
-  <DropdownMenu.Content
-    class="min-h-10 max-h-80 w-64 overflow-y-auto"
-    align="start"
-  >
-    {#if zone === "columns"}
-      <DropdownMenu.Label>Measures</DropdownMenu.Label>
-      <DropdownMenu.Group>
-        {#each $measures as measure}
-          <DropdownMenu.Item
-            on:click={() => {
-              handleSelectValue(measure);
-            }}
-          >
-            {measure.title}
-          </DropdownMenu.Item>
-        {/each}
-      </DropdownMenu.Group>
-      <DropdownMenu.Separator />
-    {/if}
-    <DropdownMenu.Label>Dimensions</DropdownMenu.Label>
-    <DropdownMenu.Group>
-      {#each $dimensions as dimension}
-        <DropdownMenu.Item
-          on:click={() => {
-            handleSelectValue(dimension);
-          }}
-        >
-          {dimension.title}
-        </DropdownMenu.Item>
-      {/each}
-    </DropdownMenu.Group>
-  </DropdownMenu.Content>
+  <SearchableMenuContent
+    allowMultiSelect={false}
+    onSelect={(name) => {
+      handleSelectValue(name);
+    }}
+    {selectableGroups}
+    selectedItems={[]}
+  />
 </DropdownMenu.Root>
+
+<style lang="postcss">
+  button {
+    @apply w-[34px] h-[26px] rounded-2xl;
+    @apply flex items-center justify-center;
+    @apply bg-surface;
+  }
+
+  button.addBorder {
+    @apply border border-dashed border-slate-300;
+  }
+
+  button:hover {
+    @apply bg-slate-100;
+  }
+
+  button:active,
+  .active {
+    @apply bg-slate-200;
+  }
+</style>

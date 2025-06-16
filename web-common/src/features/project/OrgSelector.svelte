@@ -30,4 +30,4 @@
   options={orgs.map((o) => ({ value: o, label: o }))}
   width={400}
 />
-<Button wide type="primary" on:click={selectHandler}>Continue</Button>
+<Button wide type="primary" onClick={selectHandler}>Continue</Button>

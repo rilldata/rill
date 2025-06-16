@@ -29,6 +29,9 @@ type CircularChartEncoding = {
   color?: FieldConfig;
   innerRadius?: number;
 };
+
+const DEFAULT_COLOR_LIMIT = 20;
+
 export type CircularChartSpec = BaseChartConfig & CircularChartEncoding;
 
 export class CircularChartComponent extends BaseChart<CircularChartSpec> {
@@ -40,7 +43,7 @@ export class CircularChartComponent extends BaseChart<CircularChartSpec> {
         chartFieldInput: {
           type: "dimension",
           nullSelector: true,
-          limitSelector: true,
+          limitSelector: { defaultLimit: DEFAULT_COLOR_LIMIT },
           hideTimeDimension: true,
           defaultLegendOrientation: "right",
         },
@@ -84,7 +87,7 @@ export class CircularChartComponent extends BaseChart<CircularChartSpec> {
 
     let limit: number;
     if (config.color?.field) {
-      limit = config.color.limit ?? 20;
+      limit = config.color.limit ?? DEFAULT_COLOR_LIMIT;
       dimensions = [{ name: config.color.field }];
     }
 
@@ -161,7 +164,7 @@ export class CircularChartComponent extends BaseChart<CircularChartSpec> {
       color: {
         type: "nominal",
         field: randomDimension,
-        limit: 10,
+        limit: DEFAULT_COLOR_LIMIT,
       },
       measure: {
         type: "quantitative",

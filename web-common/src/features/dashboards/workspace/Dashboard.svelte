@@ -10,6 +10,7 @@
   import { useExploreState } from "web-common/src/features/dashboards/stores/dashboard-stores";
   import { DashboardState_ActivePage } from "../../../proto/gen/rill/ui/v1/dashboard_pb";
   import { runtime } from "../../../runtime-client/runtime-store";
+  import CellInspector from "@rilldata/web-common/components/CellInspector.svelte";
   import MeasuresContainer from "../big-number/MeasuresContainer.svelte";
   import DimensionDisplay from "../dimension-table/DimensionDisplay.svelte";
   import Filters from "../filters/Filters.svelte";
@@ -186,7 +187,7 @@
       </div>
 
       {#if showTimeDimensionDetail && expandedMeasureName}
-        <hr class="border-t border-gray-200 -ml-4" />
+        <hr class="border-t -ml-4" />
         <TimeDimensionDisplay
           {exploreName}
           {expandedMeasureName}
@@ -233,6 +234,8 @@
       {/if}
     </div>
   {/if}
+
+  <CellInspector />
 </article>
 
 {#if (isRillDeveloper || $cloudDataViewer) && !showTimeDimensionDetail && !mockUserHasNoAccess}

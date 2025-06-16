@@ -137,7 +137,7 @@ export class ProjectDeployer {
 
     // Project already exists
     if (projectResp.project) {
-      if (projectResp.project.githubUrl && !projectResp.project.managedGitId) {
+      if (projectResp.project.gitRemote && !projectResp.project.managedGitId) {
         // we do not support pushing to a project already connected to user managed github
         return;
       }

@@ -13,8 +13,7 @@
         [
           {
             transform: "translateY(2px) translateX(2px)",
-            boxShadow:
-              "-1px -1px 0px rgba(100, 100, 100, 1), -2px -2px 0px rgba(75, 75, 75, 1), -3px -3px 0px rgba(50, 50, 50, 1)",
+            boxShadow: "-2px -2px 0px var(--color-gray-600)",
           },
         ],
         { duration: 250, easing: "ease-in-out" },
@@ -32,7 +31,5 @@
     @apply inline-block;
     border-radius: 2px;
     position: relative;
-    mix-blend-mode: screen;
-    background-blend-mode: screen;
   }
 </style>

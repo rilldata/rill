@@ -310,6 +310,7 @@ message Instance {
   map<string, bool> feature_flags = 22;
   map<string, string> annotations = 14;
   bool watch_repo = 15;
+  string ai_instructions = 23;
 }
  
 message Connector {

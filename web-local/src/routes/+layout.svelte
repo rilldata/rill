@@ -7,7 +7,7 @@
   import ResourceWatcher from "@rilldata/web-common/features/entity-management/ResourceWatcher.svelte";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { initPylonWidget } from "@rilldata/web-common/features/help/initPylonWidget";
-  import { RillTheme } from "@rilldata/web-common/layout";
+
   import ApplicationHeader from "@rilldata/web-common/layout/ApplicationHeader.svelte";
   import BlockingOverlayContainer from "@rilldata/web-common/layout/BlockingOverlayContainer.svelte";
   import { overlay } from "@rilldata/web-common/layout/overlay-store";
@@ -27,6 +27,7 @@
   import type { AxiosError } from "axios";
   import { onMount } from "svelte";
   import type { LayoutData } from "./$types";
+  import "@rilldata/web-common/app.css";
 
   export let data: LayoutData;
 
@@ -73,23 +74,19 @@
   $: mode = route.id?.includes("(viz)") ? "Preview" : "Developer";
 </script>
 
-<RillTheme>
-  <QueryClientProvider client={queryClient}>
-    <ResourceWatcher {host} {instanceId}>
-      <div
-        class="body h-screen w-screen overflow-hidden absolute flex flex-col"
-      >
-        {#if data.initialized}
-          <BannerCenter />
-          <RepresentingUserBanner />
-          <ApplicationHeader {mode} />
-        {/if}
+<QueryClientProvider client={queryClient}>
+  <ResourceWatcher {host} {instanceId}>
+    <div class="body h-screen w-screen overflow-hidden absolute flex flex-col">
+      {#if data.initialized}
+        <BannerCenter />
+        <RepresentingUserBanner />
+        <ApplicationHeader {mode} />
+      {/if}
 
-        <slot />
-      </div>
-    </ResourceWatcher>
-  </QueryClientProvider>
-</RillTheme>
+      <slot />
+    </div>
+  </ResourceWatcher>
+</QueryClientProvider>
 
 {#if $overlay !== null}
   <BlockingOverlayContainer

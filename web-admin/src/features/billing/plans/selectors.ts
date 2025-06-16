@@ -9,7 +9,6 @@ import {
 import { isTeamPlan } from "@rilldata/web-admin/features/billing/plans/utils";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import { fetchWrapper } from "@rilldata/web-common/runtime-client/fetchWrapper";
-import { fixLocalhostRuntimePort } from "@rilldata/web-common/runtime-client/fix-localhost-runtime-port";
 import type { Page } from "@sveltejs/kit";
 import type { CreateQueryResult } from "@tanstack/svelte-query";
 import { DateTime } from "luxon";
@@ -90,7 +89,7 @@ function usageMetrics(
   instanceId: string,
   accessToken: string,
 ): Promise<UsageMetricsResponse> {
-  const url = new URL(fixLocalhostRuntimePort(runtimeHost));
+  const url = new URL(runtimeHost);
   url.pathname = `/v1/instances/${instanceId}/api/usage-meter`;
   return fetchWrapper({
     url: url.toString(),

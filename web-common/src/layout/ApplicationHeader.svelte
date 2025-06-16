@@ -11,6 +11,7 @@
   } from "@rilldata/web-common/features/dashboards/selectors.js";
   import DeployProjectCTA from "@rilldata/web-common/features/dashboards/workspace/DeployProjectCTA.svelte";
   import ExplorePreviewCTAs from "@rilldata/web-common/features/explores/ExplorePreviewCTAs.svelte";
+  import { featureFlags } from "@rilldata/web-common/features/feature-flags.ts";
   import { useProjectTitle } from "@rilldata/web-common/features/project/selectors";
   import { isDeployPage } from "@rilldata/web-common/layout/navigation/route-utils";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
@@ -18,6 +19,8 @@
   import { parseDocument } from "yaml";
   import InputWithConfirm from "../components/forms/InputWithConfirm.svelte";
   import { fileArtifacts } from "../features/entity-management/file-artifacts";
+
+  const { darkMode } = featureFlags;
 
   export let mode: string;
 
@@ -107,7 +110,7 @@
     />
   {/if}
 
-  <div class="ml-auto flex gap-x-2">
+  <div class="ml-auto flex gap-x-2 h-full w-fit items-center py-2">
     {#if mode === "Preview"}
       {#if route.id?.includes("explore")}
         <ExplorePreviewCTAs exploreName={dashboardName} />
@@ -116,7 +119,7 @@
     {#if !onDeployPage}
       <DeployProjectCTA {hasValidDashboard} />
     {/if}
-    <LocalAvatarButton />
+    <LocalAvatarButton darkMode={$darkMode} />
   </div>
 </header>
 
