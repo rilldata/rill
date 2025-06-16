@@ -51,24 +51,72 @@
 
   const CLICKHOUSE_DEFAULTS = {
     cloud: {
-      host: { value: "", placeholder: "your-instance.clickhouse.cloud" },
-      port: { value: "8443", placeholder: "8443" },
-      username: { value: "", placeholder: "default" },
-      password: { value: "", placeholder: "Your ClickHouse Cloud password" },
-      ssl: { value: true },
+      host: {
+        value: "",
+        placeholder: "your-instance.clickhouse.cloud",
+        hint: "Your ClickHouse Cloud hostname (ends with .clickhouse.cloud).",
+      },
+      port: {
+        value: "8443",
+        placeholder: "8443",
+        hint: "Default port is 8443 for HTTPS connections.",
+      },
+      username: {
+        value: "",
+        placeholder: "default",
+        hint: "Your ClickHouse Cloud username.",
+      },
+      password: {
+        value: "",
+        placeholder: "Your ClickHouse Cloud password",
+        hint: "Your ClickHouse Cloud password.",
+      },
+      ssl: { value: true, hint: "SSL is required for ClickHouse Cloud." },
     },
     "self-hosted": {
-      host: { value: "", placeholder: "your-clickhouse-server.com" },
-      port: { value: "9000", placeholder: "9000" },
-      username: { value: "", placeholder: "default" },
-      password: { value: "", placeholder: "Your ClickHouse password" },
-      ssl: { value: false },
+      host: {
+        value: "",
+        placeholder: "your-clickhouse-server.com",
+        hint: "Hostname or IP address of your ClickHouse server.",
+      },
+      port: {
+        value: "9000",
+        placeholder: "9000",
+        hint: "Default port is 9000 for native protocol, 9440 for TLS, 8123 for HTTP. Only specify if your ClickHouse server uses a non-standard port.",
+      },
+      username: {
+        value: "",
+        placeholder: "default",
+        hint: `Defaults to the built-in "default" user. Use this if your server is configured with custom users for authentication.`,
+      },
+      password: {
+        value: "",
+        placeholder: "Your ClickHouse password",
+        hint: "Leave blank if the selected user has no password configured. Required if your server enforces authentication.",
+      },
+      ssl: { value: false, hint: "Enable SSL for secure connections." },
     },
     local: {
-      host: { value: "localhost", placeholder: "localhost" },
-      port: { value: "9000", placeholder: "9000" },
-      username: { value: "", placeholder: "default" },
-      password: { value: "", placeholder: "Your ClickHouse password" },
+      host: {
+        value: "localhost",
+        placeholder: "localhost",
+        hint: `Use localhost if ClickHouse is running on the same machine. For containerized setups, use the internal hostname (e.g., host.docker.internal or a network alias).`,
+      },
+      port: {
+        value: "9000",
+        placeholder: "9000",
+        hint: "Defaults to 9000 for TCP. Only change this if you modified the ClickHouse port in the config file.",
+      },
+      username: {
+        value: "",
+        placeholder: "default",
+        hint: "Do not change unless you’ve created custom usernames for your local instance.",
+      },
+      password: {
+        value: "",
+        placeholder: "Your ClickHouse password",
+        hint: "Most local setups have no password for the default user. Provide a password only if one has been explicitly configured.",
+      },
       ssl: { value: false },
     },
   };
@@ -310,7 +358,7 @@
                       property.placeholder}
                     optional={!property.required}
                     secret={property.secret}
-                    hint={property.hint}
+                    hint={defaults[propertyKey]?.hint ?? property.hint}
                     errors={$paramsErrors[propertyKey]}
                     bind:value={$paramsForm[propertyKey]}
                     onInput={(_, e) => onStringInputChange(e)}
