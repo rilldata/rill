@@ -306,10 +306,10 @@ func (s *Server) GetModelPartitions(ctx context.Context, req *runtimev1.GetModel
 		return &runtimev1.GetModelPartitionsResponse{}, nil
 	}
 
-	var afterExecutedOn time.Time
+	var beforeExecutedOn time.Time
 	afterKey := ""
 	if req.PageToken != "" {
-		err := unmarshalPageToken(req.PageToken, &afterExecutedOn, &afterKey)
+		err := unmarshalPageToken(req.PageToken, &beforeExecutedOn, &afterKey)
 		if err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, "failed to parse page token: %v", err)
 		}
@@ -322,12 +322,12 @@ func (s *Server) GetModelPartitions(ctx context.Context, req *runtimev1.GetModel
 	defer release()
 
 	opts := &drivers.FindModelPartitionsOptions{
-		ModelID:         partitionsModelID,
-		WherePending:    req.Pending,
-		WhereErrored:    req.Errored,
-		AfterExecutedOn: afterExecutedOn,
-		AfterKey:        afterKey,
-		Limit:           validPageSize(req.PageSize),
+		ModelID:          partitionsModelID,
+		WherePending:     req.Pending,
+		WhereErrored:     req.Errored,
+		BeforeExecutedOn: beforeExecutedOn,
+		AfterKey:         afterKey,
+		Limit:            validPageSize(req.PageSize),
 	}
 
 	partitions, err := catalog.FindModelPartitions(ctx, opts)
