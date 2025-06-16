@@ -9,6 +9,7 @@
 
   export let value: string;
   export let options: { value: string; label: string }[];
+
   const dispatch = createEventDispatcher();
 
   function handleChange(e: CustomEvent) {
