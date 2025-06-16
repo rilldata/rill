@@ -100,12 +100,15 @@ export class TimeControls {
         (min: V1TimeGrain, metricsView) => {
           const timeGrain = metricsView?.state?.validSpec?.smallestTimeGrain;
 
-          console.log({ timeGrain });
           if (!timeGrain || timeGrain === V1TimeGrain.TIME_GRAIN_UNSPECIFIED) {
             return min;
           }
 
-          return isGrainBigger(min, timeGrain) ? timeGrain : min;
+          if (min === V1TimeGrain.TIME_GRAIN_UNSPECIFIED) {
+            return timeGrain;
+          }
+
+          return isGrainBigger(timeGrain, min) ? min : timeGrain;
         },
         V1TimeGrain.TIME_GRAIN_UNSPECIFIED,
       );
