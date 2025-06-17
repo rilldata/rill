@@ -84,8 +84,9 @@ jobs:
             echo "NIGHTLY=--snapshot" >> $GITHUB_ENV
             LATEST_TAG=$(git describe --tags $(git rev-list --tags --max-count=1))
             echo "GORELEASER_CURRENT_TAG=${LATEST_TAG}" >> $GITHUB_ENV
-          fi
-
+          else
+            echo "NIGHTLY=" >> $GITHUB_ENV
+          fi   
       - name: Build Rill using Goreleaser
         uses: goreleaser/goreleaser-action@v6
         with:
