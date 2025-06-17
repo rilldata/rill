@@ -92,7 +92,7 @@ jobs:
         with:
           distribution: goreleaser
           version: '~> v2'
-          args: release ${{ NIGHTLY }} ${{ matrix.goreleaser-config }}
+          args: release ${{ env.NIGHTLY }} ${{ matrix.goreleaser-config }}
         env:
           GITHUB_TOKEN: ${{ secrets.GORELEASER_ACCESS_TOKEN }}
           GOOGLE_APPLICATION_CREDENTIALS: /rill-binary-sa.json
