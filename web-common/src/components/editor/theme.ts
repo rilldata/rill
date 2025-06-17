@@ -10,11 +10,10 @@ const emerald = "var(--color-emerald-700)";
 const gray = "var(--color-gray-700)";
 const amber = "var(--color-amber-600)";
 const highlightBackground =
-  "color-mix(in oklab, var(--color-blue-50) calc(0.6 * 100%), transparent)";
+  "color-mix(in oklab, var(--color-neutral-300) calc(.22 * 100%), transparent)";
 const background = "var(--surface)";
 const tooltipBackground = "var(--popover)";
-const selection =
-  "color-mix(in oklab, var(--color-blue-100) calc(0.6 * 100%), transparent)";
+const selection = "#72a1ff59";
 const cursor = "var(--color-gray-800)";
 const orange = "var(--color-orange-700)";
 
@@ -40,7 +39,9 @@ export const editorTheme = EditorView.theme(
 
     ".cm-cursor, .cm-dropCursor": { borderLeftColor: cursor },
     "&.cm-focused > .cm-scroller > .cm-selectionLayer .cm-selectionBackground, .cm-selectionBackground, .cm-content ::selection":
-      { backgroundColor: selection },
+      {
+        background: selection,
+      },
 
     ".cm-panels": { backgroundColor: background, color: emerald },
     ".cm-panels.cm-panels-top": { borderBottom: "2px solid black" },
@@ -51,16 +52,16 @@ export const editorTheme = EditorView.theme(
       outline: "1px solid #457dff",
     },
     ".cm-searchMatch.cm-searchMatch-selected": {
-      backgroundColor: "#6199ff2f",
+      backgroundColor: selection,
     },
-    ".cm-scroller": {
+    "&.cm-editor .cm-scroller": {
       fontFamily: "var(--monospace)",
     },
     ".cm-activeLine": {
       backgroundColor: highlightBackground,
       backgroundBlendMode: "hue",
     },
-    ".cm-selectionMatch": { backgroundColor: "#aafe661a" },
+    ".cm-selectionMatch": { backgroundColor: selection },
 
     "&.cm-focused .cm-matchingBracket, &.cm-focused .cm-nonmatchingBracket": {
       backgroundColor: "#bad0f847",
