@@ -1,7 +1,8 @@
 <script lang="ts">
   import type { ConnectError } from "@connectrpc/connect";
+  import { isMergeConflictError } from "@rilldata/web-common/features/project/github-utils.ts";
   import MergeConflictResolutionDialog from "@rilldata/web-common/features/project/MergeConflictResolutionDialog.svelte";
-  import RemoteProjectContainsUpdatesDialog from "@rilldata/web-common/features/project/RemoteProjectContainsUpdatesDialog.svelte";
+  import ProjectContainsRemoteChangesDialog from "@rilldata/web-common/features/project/ProjectContainsRemoteChangesDialog.svelte";
   import {
     createLocalServiceGitPull,
     createLocalServiceGitStatus,
@@ -13,58 +14,75 @@
   let remoteChangeDialog = false;
   let mergeConflictResolutionDialog = false;
 
-  $: if (!$gitStatusQuery.isPending) {
-    remoteChangeDialog = $gitStatusQuery.data
-      ? $gitStatusQuery.data?.remoteCommits > 0
-      : false;
+  $: if ($gitStatusQuery.data) {
+    remoteChangeDialog = $gitStatusQuery.data.remoteCommits > 0;
   }
 
   $: ({ isPending: githubPullPending, error: githubPullError } =
     $gitPullMutation);
-  let customError: ConnectError | null = null;
-  $: error = githubPullError ?? customError;
+  let errorFromGitCommand: ConnectError | null = null;
+  $: error = githubPullError ?? errorFromGitCommand;
 
-  const MergeConflictsError =
-    /Your local changes to the following files would be overwritten by merge/;
-
-  async function handleFetchRemoteCommits(discardLocal: boolean) {
-    if (!discardLocal && $gitStatusQuery.data!.localCommits > 0) {
+  async function handleFetchRemoteCommits() {
+    if ($gitStatusQuery.data!.localCommits > 0) {
       // Since we can't really merge remote commits with local commits,
       // we just show the user the merge conflicts dialog for confirmation to clear it.
+      // We could directly show it since the data is in gitStatusQuery, but it feels like weird UX.
       mergeConflictResolutionDialog = true;
       return;
     }
 
-    customError = null;
+    errorFromGitCommand = null;
     const resp = await $gitPullMutation.mutateAsync({
-      discardLocal,
+      discardLocal: false,
     });
-    // `output` is populated with the error from the actual git pull command run.
+    // TODO: download diff once API is ready
+
     if (!resp.output) {
       remoteChangeDialog = false;
       mergeConflictResolutionDialog = false;
       return;
     }
-    if (!discardLocal && MergeConflictsError.test(resp.output)) {
+
+    if (isMergeConflictError(resp.output)) {
       mergeConflictResolutionDialog = true;
-    } else {
-      customError = {
-        message: resp.output,
-      } as ConnectError;
+      return;
     }
+
+    errorFromGitCommand = {
+      message: resp.output,
+    } as ConnectError;
+  }
+
+  async function handleForceFetchRemoteCommits() {
+    errorFromGitCommand = null;
+    const resp = await $gitPullMutation.mutateAsync({
+      discardLocal: true,
+    });
+    // TODO: download diff once API is ready
+
+    if (!resp.output) {
+      remoteChangeDialog = false;
+      mergeConflictResolutionDialog = false;
+      return;
+    }
+
+    errorFromGitCommand = {
+      message: resp.output,
+    } as ConnectError;
   }
 </script>
 
-<RemoteProjectContainsUpdatesDialog
+<ProjectContainsRemoteChangesDialog
   bind:open={remoteChangeDialog}
   loading={githubPullPending}
   {error}
-  onFetchAndMerge={() => handleFetchRemoteCommits(false)}
+  onFetchAndMerge={handleFetchRemoteCommits}
 />
 
 <MergeConflictResolutionDialog
   bind:open={mergeConflictResolutionDialog}
   loading={githubPullPending}
   {error}
-  onUseLatestVersion={() => handleFetchRemoteCommits(true)}
+  onUseLatestVersion={handleForceFetchRemoteCommits}
 />

@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { ConnectError } from "@connectrpc/connect";
   import * as Alert from "@rilldata/web-common/components/alert-dialog/index.js";
-  import CTAWithDescription from "@rilldata/web-common/components/calls-to-action/CTAWithDescription.svelte";
+  import CTACard from "@rilldata/web-common/components/calls-to-action/CTACard.svelte";
   import { AlertCircleIcon } from "lucide-svelte";
 
   export let open = false;
@@ -40,17 +40,18 @@
     </Alert.Header>
     <Alert.Footer class="flex-col">
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <CTAWithDescription
+        <CTACard
           title="Keep my version"
           description="Not recommended: You will keep your changes, but may face deployment issues later."
-          {loading}
+          disabled={loading}
           ctaText="Keep my version"
           onClick={() => (open = false)}
         />
-        <CTAWithDescription
+        <CTACard
           title="Use the latest changes"
           type="primary"
           {loading}
+          disabled={loading}
           ctaText="Use the latest changes"
           onClick={onUseLatestVersion}
         >
@@ -58,7 +59,7 @@
             <span class="font-medium text-primary-600">Recommended:</span>
             Your changes will be backed up before being replaced.
           </svelte:fragment>
-        </CTAWithDescription>
+        </CTACard>
       </div>
       {#if error}
         <div class="text-red-600">{error.message}</div>

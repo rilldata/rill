@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { ConnectError } from "@connectrpc/connect";
   import * as Alert from "@rilldata/web-common/components/alert-dialog/index.js";
-  import CTAWithDescription from "@rilldata/web-common/components/calls-to-action/CTAWithDescription.svelte";
+  import CTACard from "@rilldata/web-common/components/calls-to-action/CTACard.svelte";
 
   export let open = false;
   export let loading = false;
@@ -24,14 +24,14 @@
     <Alert.Footer>
       <div class="flex flex-col gap-y-2">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <CTAWithDescription
+          <CTACard
             title="Skip changes"
             description="Continue working with your current version. You can update later when you're ready."
             disabled={loading}
             ctaText="Skip changes"
             onClick={() => (open = false)}
           />
-          <CTAWithDescription
+          <CTACard
             title="Fetch and merge changes"
             type="primary"
             {loading}
@@ -43,7 +43,7 @@
               <span class="font-medium text-primary-600">Recommended:</span>
               Get the latest version while preserving your work.
             </svelte:fragment>
-          </CTAWithDescription>
+          </CTACard>
         </div>
         {#if error}
           <div class="text-red-600">{error.message}</div>
