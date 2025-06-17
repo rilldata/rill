@@ -588,9 +588,9 @@ func (c *Connection) estimateSize(ctx context.Context) (int64, error) {
 func (c *Connection) latestRCUPerService(ctx context.Context) (map[string]float64, error) {
 	var query string
 	if c.config.Cluster == "" {
-		query = "SELECT service as billing_service, anyLast(value) as latest_value from billing.events event_name = 'rcu' GROUP BY service"
+		query = "SELECT service as billing_service, anyLast(value) as latest_value from billing.events WHERE event_name = 'rcu' GROUP BY service"
 	} else {
-		query = fmt.Sprintf(`SELECT service as billing_service, sum(value) AS latest_value FROM (SELECT service, anyLast(value) as value FROM clusterAllReplicas('%s', billing.events) event_name = 'rcu' GROUP BY hostName(), service) GROUP BY billing_service`, c.config.Cluster)
+		query = fmt.Sprintf(`SELECT service as billing_service, sum(value) AS latest_value FROM (SELECT service, anyLast(value) as value FROM clusterAllReplicas('%s', billing.events) WHERE event_name = 'rcu' GROUP BY hostName(), service) GROUP BY billing_service`, c.config.Cluster)
 	}
 	rows, err := c.db.QueryxContext(ctx, query)
 	if err != nil {
