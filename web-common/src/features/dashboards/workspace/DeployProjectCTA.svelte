@@ -70,7 +70,9 @@
   $: deployPageUrl = `${$page.url.protocol}//${$page.url.host}/deploy`;
 
   $: if (userNotLoggedIn && $metadata.data) {
-    // Ref: admin/server/auth/handlers.go — uses `/auth/signup` endpoint to show the signup screen
+    // Ref: admin/server/auth/handlers.go
+    // loginUrl is localURL + '/auth'
+    // To show the signup screen, we need to use `/auth/signup` endpoint to show the signup screen
     const signupUrl = `${$metadata.data.loginUrl}/signup`;
 
     deployCTAUrl = `${signupUrl}?redirect=${deployPageUrl}`;
