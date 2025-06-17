@@ -170,7 +170,14 @@ setup.describe("global setup", () => {
     expect(orgCreateService).toContain("Created service");
 
     const serviceToken = orgCreateService.match(/Access token:\s+(\S+)/);
-    writeFileEnsuringDir(RILL_EMBED_SERVICE_TOKEN_FILE, serviceToken![1]);
+    const __dirname = path.dirname(fileURLToPath(import.meta.url));
+    const writePath = path.join(
+      __dirname,
+      "..",
+      "..",
+      RILL_EMBED_SERVICE_TOKEN_FILE,
+    );
+    writeFileEnsuringDir(writePath, serviceToken![1]);
 
     // Go to the organization's page
     await adminPage.goto(`/${RILL_ORG_NAME}`);
@@ -182,7 +189,7 @@ setup.describe("global setup", () => {
   setup("should deploy the OpenRTB project", async ({ adminPage }) => {
     // Deploy the OpenRTB project
     const { match } = await spawnAndMatch(
-      "../rill",
+      "rill",
       [
         "deploy",
         "--path",

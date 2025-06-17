@@ -18,13 +18,13 @@ test.describe("Deploy journey", () => {
   test.afterAll(async () => {
     await execAsync(
       // We need to set the home to get the correct creds
-      `HOME=${cliHomeDir} rill org delete e2e --interactive=false`,
+      `HOME=${cliHomeDir} rill org delete e2e-admin --interactive=false`,
     );
 
     // Wait for the organization to be deleted
     // This includes deleting the org from Orb and Stripe, which we'd like to do to keep those environments clean.
     await expect
-      .poll(async () => await isOrgDeleted("e2e"), {
+      .poll(async () => await isOrgDeleted("e2e-admin"), {
         intervals: [1_000],
         timeout: 15_000,
       })
@@ -41,8 +41,8 @@ test.describe("Deploy journey", () => {
 
     // Check that the required environment variables are set.
     if (
-      !process.env.RILL_DEVTOOL_E2E_VIEWER_ACCOUNT_EMAIL ||
-      !process.env.RILL_DEVTOOL_E2E_VIEWER_ACCOUNT_PASSWORD
+      !process.env.RILL_DEVTOOL_E2E_ADMIN_ACCOUNT_EMAIL ||
+      !process.env.RILL_DEVTOOL_E2E_ADMIN_ACCOUNT_PASSWORD
     ) {
       throw new Error(
         "Missing required environment variables for authentication",
@@ -69,7 +69,7 @@ test.describe("Deploy journey", () => {
     const emailInput = deployPage.locator('input[name="username"]');
     await emailInput.waitFor({ state: "visible" });
     await emailInput.click();
-    await emailInput.fill(process.env.RILL_DEVTOOL_E2E_VIEWER_ACCOUNT_EMAIL);
+    await emailInput.fill(process.env.RILL_DEVTOOL_E2E_ADMIN_ACCOUNT_EMAIL);
 
     // Click the continue button
     await deployPage
@@ -83,7 +83,7 @@ test.describe("Deploy journey", () => {
     await passwordInput.waitFor({ state: "visible" });
     await passwordInput.click();
     await passwordInput.fill(
-      process.env.RILL_DEVTOOL_E2E_VIEWER_ACCOUNT_PASSWORD,
+      process.env.RILL_DEVTOOL_E2E_ADMIN_ACCOUNT_PASSWORD,
     );
 
     // Click the continue button

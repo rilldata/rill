@@ -7,6 +7,7 @@ const config: PlaywrightTestConfig = {
     port: 3000,
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
+    cwd: "../web-admin",
   },
   retries: 0,
   reporter: "html",
