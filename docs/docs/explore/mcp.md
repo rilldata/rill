@@ -139,6 +139,33 @@ Click on Developer → Open MCP Log File and check the logs for any errors.
 - __*What is the available time range of my data?*__ – Provides an overview of your data's time range, earliest/latest date, etc.
 - __*Provide me a TIME_RANGE broken by TIME_GRAIN analysis of XXX measure.*__ – Builds on the previous queries to give you an actual analysis of your data in dimensions and measures based on the time range provided. 
 
+
+### Using Claude Styles
+
+You can use [Styles](https://www.anthropic.com/news/styles) to automatically provide Claude with additional context whenever you are talking to your data. For instance, by showing Rill how to use text characters to make simple data visualizations, you can get "fast vis" inline with the response, avoiding the delays that can happen when Claude decides to build an entire webpage as part of its answer.
+
+<img src='/img/explore/mcp/claude-desktop-custom-style.png' class='rounded-gif'/>
+<br />
+
+You can also teach Claude how to build a URL that links back to the Rill explore. This makes it easy to go from having a conversation in Claude chat, to exploring the data using Rill's dedicated data exploration interface.
+
+<img src='/img/explore/mcp/claude-desktop-explore-link.png' class='rounded-gif'/>
+<br />
+
+In order to use a custom style, you need to update our [template](https://github.com/rilldata/rill-claude-styles/blob/main/DataExplorer.md) with the links and explore names for your project. 
+
+1. Edit the BASE_URL to match your project in Rill Cloud
+2. Create an METRICS_EXPLORE_SLUG for each Explore in the project
+3. Use Rill to create an entire URL for each example
+4. Copy that URL into the Link: using the format below
+5. Repeat for each example:
+    - Multiple metrics and dimensions
+    - Individual metric
+    - Individual dimension
+
+Full instructions and the style template are included in the [rill-claude-styles](https://github.com/rilldata/rill-claude-styles) repository.
+
+
 Using all the above concepts, you can ask the Rill MCP server questions like:
 - What are my *week-on-week* __increases or decreases in sales__ of `XYZ service`?
 - During the *current year*, do I have any __outliers in website views__? What might this correlate to?
