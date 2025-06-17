@@ -11,6 +11,12 @@ cli-only:
 cli: cli.prepare
 	go build -o rill cli/main.go 
 
+.PHONY: go.releaser
+go.releaser:
+	# Builds the CLI binary for all platforms and architectures.
+	# Requires GoReleaser to be installed: https://goreleaser.com/install/
+	goreleaser build --single-target
+
 .PHONY: cli.prepare
 cli.prepare:
 	npm install
