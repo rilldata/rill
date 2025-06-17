@@ -47,6 +47,7 @@
         active={open}
         builders={[builder]}
         {label}
+        theme
         on:remove={onRemove}
         removable
         removeTooltipText="Remove {label}"

@@ -191,7 +191,16 @@ func RequireResource(t testing.TB, rt *runtime.Runtime, id string, a *runtimev1.
 		state.TotalExecutionDurationMs = 0
 	case runtime.ResourceKindMetricsView:
 		state := b.GetMetricsView().State
-		state.ModelRefreshedOn = nil
+		state.DataRefreshedOn = nil
+	case runtime.ResourceKindExplore:
+		state := b.GetExplore().State
+		state.DataRefreshedOn = nil
+	case runtime.ResourceKindComponent:
+		state := b.GetComponent().State
+		state.DataRefreshedOn = nil
+	case runtime.ResourceKindCanvas:
+		state := b.GetCanvas().State
+		state.DataRefreshedOn = nil
 	case runtime.ResourceKindAlert:
 		state := b.GetAlert().State
 		state.SpecHash = ""

@@ -17,7 +17,6 @@
   import NotificationCenter from "@rilldata/web-common/components/notifications/NotificationCenter.svelte";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { initPylonWidget } from "@rilldata/web-common/features/help/initPylonWidget";
-  import RillTheme from "@rilldata/web-common/layout/RillTheme.svelte";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { errorEventHandler } from "@rilldata/web-common/metrics/initMetrics";
   import { type Query, QueryClientProvider } from "@tanstack/svelte-query";
@@ -25,6 +24,7 @@
   import { onMount } from "svelte";
   import ErrorBoundary from "../components/errors/ErrorBoundary.svelte";
   import TopNavigationBar from "../features/navigation/TopNavigationBar.svelte";
+  import "@rilldata/web-common/app.css";
 
   export let data;
 
@@ -33,6 +33,7 @@
     organizationPermissions,
     organizationLogoUrl,
     organizationFaviconUrl,
+    organizationThumbnailUrl,
     planDisplayName,
   } = data);
   $: ({
@@ -101,39 +102,42 @@
   {:else}
     <link rel="icon" href="/favicon.png" />
   {/if}
+  {#if organizationThumbnailUrl}
+    <meta property="og:image" content={organizationThumbnailUrl} />
+  {:else}
+    <!-- Set the og image for thumbnail previews -->
+    <meta
+      property="og:image"
+      content="https://storage.googleapis.com/prod-cdn.rilldata.com/images/rill-admin.png"
+    />
+  {/if}
 </svelte:head>
 
-<RillTheme>
-  <QueryClientProvider client={queryClient}>
-    <main class="flex flex-col min-h-screen h-screen bg-surface">
-      <BannerCenter />
-      {#if !hideBillingManager}
-        <BillingBannerManager {organization} {organizationPermissions} />
-      {/if}
-      {#if !isEmbed && !hideTopBar}
-        <TopNavigationBar
-          createMagicAuthTokens={projectPermissions?.createMagicAuthTokens}
-          manageProjectMembers={projectPermissions?.manageProjectMembers}
-          manageProjectAdmins={projectPermissions?.manageProjectAdmins}
-          manageOrgAdmins={organizationPermissions?.manageOrgAdmins}
-          manageOrgMembers={organizationPermissions?.manageOrgMembers}
-          {organizationLogoUrl}
-          {planDisplayName}
-        />
+<QueryClientProvider client={queryClient}>
+  <main class="flex flex-col min-h-screen h-screen bg-surface">
+    <BannerCenter />
+    {#if !hideBillingManager}
+      <BillingBannerManager {organization} {organizationPermissions} />
+    {/if}
+    {#if !isEmbed && !hideTopBar}
+      <TopNavigationBar
+        createMagicAuthTokens={projectPermissions?.createMagicAuthTokens}
+        manageProjectMembers={projectPermissions?.manageProjectMembers}
+        manageProjectAdmins={projectPermissions?.manageProjectAdmins}
+        manageOrgAdmins={organizationPermissions?.manageOrgAdmins}
+        manageOrgMembers={organizationPermissions?.manageOrgMembers}
+        {organizationLogoUrl}
+        {planDisplayName}
+      />
 
-        {#if withinOnlyOrg}
-          <OrganizationTabs
-            {organization}
-            {organizationPermissions}
-            {pathname}
-          />
-        {/if}
+      {#if withinOnlyOrg}
+        <OrganizationTabs {organization} {organizationPermissions} {pathname} />
       {/if}
-      <ErrorBoundary>
-        <slot />
-      </ErrorBoundary>
-    </main>
-  </QueryClientProvider>
+    {/if}
+    <ErrorBoundary>
+      <slot />
+    </ErrorBoundary>
+  </main>
+</QueryClientProvider>
 
-  <NotificationCenter />
-</RillTheme>
+<NotificationCenter />
