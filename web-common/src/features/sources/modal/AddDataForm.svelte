@@ -14,6 +14,7 @@
     type SuperValidated,
   } from "sveltekit-superforms";
   import { yup } from "sveltekit-superforms/adapters";
+  import { object, string, number, boolean } from "yup";
   import { ButtonGroup, SubButton } from "../../../components/button-group";
   import { inferSourceName } from "../sourceUtils";
   import { humanReadableErrorMessage } from "../errors/errors";
@@ -22,7 +23,6 @@
     submitAddSourceForm,
   } from "./submitAddDataForm";
   import type { AddDataFormType } from "./types";
-  import { dsnSchema, getYupSchema } from "./yupSchemas";
   import {
     type TemplateAPIResponse,
     getConnectorTemplate,
@@ -64,13 +64,77 @@
 
   let useDsn = false;
 
+  // Generate Yup schema from template data
+  function generateYupSchema(template: TemplateAPIResponse) {
+    const schemaFields: Record<string, any> = {};
+
+    for (const property of template.properties) {
+      let fieldSchema: any;
+
+      if (property.type === "string") {
+        fieldSchema = string();
+      } else if (property.type === "number") {
+        fieldSchema = number();
+      } else if (property.type === "boolean") {
+        fieldSchema = boolean();
+      } else {
+        fieldSchema = string();
+      }
+
+      // Add validation patterns (only for string fields)
+      if (property.validation?.pattern && property.type === "string") {
+        fieldSchema = fieldSchema.matches(
+          new RegExp(property.validation.pattern),
+          property.validation.patternMessage ||
+            `Invalid format for ${property.displayName}`,
+        );
+      }
+
+      // Add required validation
+      if (property.required) {
+        fieldSchema = fieldSchema.required(
+          `${property.displayName} is required`,
+        );
+      }
+
+      schemaFields[property.key] = fieldSchema;
+    }
+
+    return object(schemaFields);
+  }
+
+  // Generate DSN Yup schema
+  function generateDsnYupSchema(template: TemplateAPIResponse) {
+    if (!template.dsn) return object({});
+
+    let dsnSchema = string();
+
+    if (template.dsn.validation?.pattern) {
+      dsnSchema = dsnSchema.matches(
+        new RegExp(template.dsn.validation.pattern),
+        template.dsn.validation.patternMessage ||
+          `Invalid format for ${template.dsn.displayName}`,
+      );
+    }
+
+    if (template.dsn.required) {
+      dsnSchema = dsnSchema.required(`${template.dsn.displayName} is required`);
+    }
+
+    return object({
+      [template.dsn.key]: dsnSchema,
+    });
+  }
+
   // Form 1: Individual parameters
   const paramsFormId = `add-data-${connector.name}-form`;
   $: properties =
     templateData && useDsn && templateData.dsn
       ? [templateData.dsn]
       : (templateData?.properties ?? []);
-  const schema = yup(getYupSchema[connector.name as keyof typeof getYupSchema]);
+
+  $: paramsSchema = templateData ? generateYupSchema(templateData) : object({});
+
   const {
     form: paramsForm,
     errors: paramsErrors,
@@ -78,9 +142,9 @@
     tainted: paramsTainted,
     submit: paramsSubmit,
     submitting: paramsSubmitting,
-  } = superForm(defaults(schema), {
+  } = superForm(defaults({}, yup(object({}))), {
     SPA: true,
-    validators: schema,
+    validators: templateData ? yup(paramsSchema) : undefined,
     onUpdate: handleOnUpdate,
     resetForm: false,
   });
@@ -88,11 +152,14 @@
   let paramsErrorDetails: string | undefined = undefined;
 
   // Form 2: DSN
-  // SuperForms are not meant to have dynamic schemas, so we use a different form instance for the DSN form
   $: hasDsnFormOption = templateData?.dsn !== undefined;
   const dsnFormId = `add-data-${connector.name}-dsn-form`;
   $: dsnProperties = templateData?.dsn ? [templateData.dsn] : [];
-  const dsnYupSchema = yup(dsnSchema);
+
+  $: dsnSchema = templateData?.dsn
+    ? generateDsnYupSchema(templateData)
+    : object({});
+
   const {
     form: dsnForm,
     errors: dsnErrors,
@@ -100,9 +167,9 @@
     tainted: dsnTainted,
     submit: dsnSubmit,
     submitting: dsnSubmitting,
-  } = superForm(defaults(dsnYupSchema), {
+  } = superForm(defaults({}, yup(object({}))), {
     SPA: true,
-    validators: dsnYupSchema,
+    validators: templateData?.dsn ? yup(dsnSchema) : undefined,
     onUpdate: handleOnUpdate,
     resetForm: false,
   });
