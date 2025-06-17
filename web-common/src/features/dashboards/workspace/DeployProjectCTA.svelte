@@ -1,5 +1,7 @@
 <script lang="ts" context="module">
   export const allowPrimary = writable(false);
+
+  import { constructSignupUrl } from "./url-utils";
 </script>
 
 <script lang="ts">
@@ -70,20 +72,7 @@
   $: deployPageUrl = `${$page.url.protocol}//${$page.url.host}/deploy`;
 
   $: if (userNotLoggedIn && $metadata.data) {
-    // Ref: admin/server/auth/handlers.go -- `/auth/signup` endpoint
-    // Default to show the signup screen
-    let signupUrl: string;
-
-    // Dev: Use runtime server's auth endpoint (loginUrl)
-    // No /auth/signup available locally because Auth0 not configured
-
-    // Staging/Prod: Use admin server's signup endpoint (adminUrl)
-    // Admin server has full Auth0 integration with signup flow
-    signupUrl = $metadata.data.isDev
-      ? $metadata.data.loginUrl
-      : `${$metadata.data.adminUrl}/auth/signup`;
-
-    deployCTAUrl = `${signupUrl}?redirect=${deployPageUrl}`;
+    deployCTAUrl = constructSignupUrl($metadata.data, deployPageUrl);
   } else {
     deployCTAUrl = deployPageUrl;
   }
