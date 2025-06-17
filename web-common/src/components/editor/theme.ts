@@ -9,11 +9,10 @@ const invalid = "var(--color-red-600)";
 const emerald = "var(--color-emerald-700)";
 const gray = "var(--color-gray-700)";
 const amber = "var(--color-amber-600)";
-const highlightBackground =
-  "color-mix(in oklab, var(--color-neutral-300) calc(.22 * 100%), transparent)";
+const highlightBackground = "var(--line-highlight)";
 const background = "var(--surface)";
 const tooltipBackground = "var(--popover)";
-const selection = "#72a1ff59";
+const selection = "var(--editor-selection)";
 const cursor = "var(--color-gray-800)";
 const orange = "var(--color-orange-700)";
 
@@ -59,7 +58,6 @@ export const editorTheme = EditorView.theme(
     },
     ".cm-activeLine": {
       backgroundColor: highlightBackground,
-      backgroundBlendMode: "hue",
     },
     ".cm-selectionMatch": { backgroundColor: selection },
 
