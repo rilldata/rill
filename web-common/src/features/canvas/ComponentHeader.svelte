@@ -8,7 +8,7 @@
   export let description: string | undefined = undefined;
   export let filters: ComponentFilterProperties | undefined = undefined;
   export let faint: boolean = false;
-  export let component: BaseCanvasComponent;
+  export let component: BaseCanvasComponent<any>;
 
   const WIDTH_THRESHOLD = 480;
 
