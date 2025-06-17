@@ -42,14 +42,14 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest]
+        os: [ubuntu-latest, macos-latest, ubuntu-24.04-arm]
         include:
           - os: ubuntu-latest
             goreleaser-config: --config .goreleaser-linux-amd64.yaml
-          # - os: macos-latest
-          #   goreleaser-config: --config .goreleaser-darwin.yaml
-          # - os: ubuntu-24.04-arm
-          #   goreleaser-config: --config .goreleaser-linux-arm64.yaml
+          - os: macos-latest
+            goreleaser-config: --config .goreleaser-darwin.yaml
+          - os: ubuntu-24.04-arm
+            goreleaser-config: --config .goreleaser-linux-arm64.yaml
 
     needs: validate-sequential
     steps:
