@@ -6,7 +6,7 @@
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { type V1ConnectorDriver } from "@rilldata/web-common/runtime-client";
   import type { ActionResult } from "@sveltejs/kit";
-  import { createEventDispatcher } from "svelte";
+  import { createEventDispatcher, onMount } from "svelte";
   import { slide } from "svelte/transition";
   import {
     defaults,
@@ -23,31 +23,10 @@
   } from "./submitAddDataForm";
   import type { AddDataFormType } from "./types";
   import { dsnSchema, getYupSchema } from "./yupSchemas";
-
-  type PropertyValidation = {
-    pattern: string;
-    patternMessage: string;
-  };
-
-  type BaseProperty = {
-    key: string;
-    type: "string" | "number" | "boolean";
-    displayName: string;
-    required: boolean;
-    hint: string;
-    docsUrl: string;
-    secret: boolean;
-    placeholder?: string;
-    validation?: PropertyValidation;
-    description?: string;
-  };
-
-  type Property = BaseProperty;
-
-  type TemplateAPIResponse = {
-    properties: Property[];
-    dsn?: Property;
-  };
+  import {
+    type TemplateAPIResponse,
+    getConnectorTemplate,
+  } from "./template-loader";
 
   const FORM_TRANSITION_DURATION = 150;
   const dispatch = createEventDispatcher();
@@ -60,109 +39,37 @@
   // FIXME: do we still need formType?
   const isConnectorForm = formType === "connector";
 
-  // TODO: remove this mocked json response
-  const mockedTemplateAPIResponse: TemplateAPIResponse = {
-    properties: [
-      {
-        key: "host",
-        type: "string",
-        displayName: "Host",
-        placeholder: "localhost",
-        required: true,
-        hint: "Hostname or IP address of the database server",
-        docsUrl: "https://docs.rilldata.com/reference/connectors/clickhouse",
-        secret: false,
-        validation: {
-          pattern: "^(?!https?://)[a-zA-Z0-9.-]+$",
-          patternMessage: "Do not prefix the host with `http(s)://`",
-        },
-      },
-      {
-        key: "port",
-        type: "number",
-        displayName: "Port",
-        placeholder: "9000",
-        required: false,
-        hint: "Port number of the database server",
-        docsUrl: "https://docs.rilldata.com/reference/connectors/clickhouse",
-        secret: false,
-        validation: {
-          pattern: "^\\d+$",
-          patternMessage: "Port must be a number",
-        },
-      },
-      {
-        key: "username",
-        type: "string",
-        displayName: "Username",
-        placeholder: "default",
-        required: false,
-        hint: "Username to connect to the database",
-        docsUrl: "https://docs.rilldata.com/reference/connectors/clickhouse",
-        secret: false,
-      },
-      {
-        key: "password",
-        type: "string",
-        displayName: "Password",
-        placeholder: "password",
-        required: false,
-        hint: "Password to connect to the database",
-        docsUrl: "https://docs.rilldata.com/reference/connectors/clickhouse",
-        secret: true,
-      },
-      {
-        key: "ssl",
-        type: "boolean",
-        displayName: "SSL",
-        required: true,
-        hint: "Use SSL to connect to the database server",
-        docsUrl: "https://docs.rilldata.com/reference/connectors/clickhouse",
-        secret: false,
-      },
-      {
-        key: "database",
-        type: "string",
-        displayName: "Database",
-        placeholder: "default",
-        required: false,
-        hint: "Name of the database to connect to",
-        docsUrl: "https://docs.rilldata.com/reference/connectors/clickhouse",
-        secret: false,
-      },
-      {
-        key: "connection_info",
-        type: "string",
-        displayName: "Connection Information",
-        description:
-          "Make sure your database server is accessible and the credentials are correct.",
-        hint: "You can find more information about connecting to ClickHouse in our documentation.",
-        docsUrl: "https://docs.rilldata.com/reference/connectors/clickhouse",
-        secret: false,
-        required: false,
-      },
-    ],
-    dsn: {
-      key: "dsn",
-      type: "string",
-      displayName: "Connection String",
-      placeholder:
-        "clickhouse://localhost:9000?username=default&password=password",
-      required: true,
-      hint: "Full connection string for the database",
-      docsUrl: "https://docs.rilldata.com/reference/connectors/clickhouse",
-      secret: true,
-    },
-  };
+  // Template data state
+  let templateData: TemplateAPIResponse | null = null;
+  let templateLoading = true;
+  let templateError: string | null = null;
+
+  // Load template data on mount
+  onMount(async () => {
+    try {
+      if (!connector.name) {
+        templateError = "Connector name is required";
+        return;
+      }
+      templateData = await getConnectorTemplate(connector.name);
+      if (!templateData) {
+        templateError = `No template found for connector: ${connector.name}`;
+      }
+    } catch (error) {
+      templateError = `Failed to load template for ${connector.name}: ${error instanceof Error ? error.message : "Unknown error"}`;
+    } finally {
+      templateLoading = false;
+    }
+  });
 
   let useDsn = false;
 
   // Form 1: Individual parameters
   const paramsFormId = `add-data-${connector.name}-form`;
-  const properties =
-    useDsn && mockedTemplateAPIResponse.dsn
-      ? [mockedTemplateAPIResponse.dsn]
-      : mockedTemplateAPIResponse.properties;
+  $: properties =
+    templateData && useDsn && templateData.dsn
+      ? [templateData.dsn]
+      : (templateData?.properties ?? []);
   const schema = yup(getYupSchema[connector.name as keyof typeof getYupSchema]);
   const {
     form: paramsForm,
@@ -182,9 +89,9 @@
 
   // Form 2: DSN
   // SuperForms are not meant to have dynamic schemas, so we use a different form instance for the DSN form
-  const hasDsnFormOption = mockedTemplateAPIResponse.dsn !== undefined;
+  $: hasDsnFormOption = templateData?.dsn !== undefined;
   const dsnFormId = `add-data-${connector.name}-dsn-form`;
-  const dsnProperties = [mockedTemplateAPIResponse.dsn];
+  $: dsnProperties = templateData?.dsn ? [templateData.dsn] : [];
   const dsnYupSchema = yup(dsnSchema);
   const {
     form: dsnForm,
@@ -306,22 +213,31 @@
     > for more information.
   </div>
 
-  {#if hasDsnFormOption}
-    <div class="py-3">
-      <div class="text-sm font-medium mb-2">Connection method</div>
-      <ButtonGroup
-        selected={[useDsn ? "dsn" : "parameters"]}
-        on:subbutton-click={handleConnectionTypeChange}
-      >
-        <SubButton value="parameters" ariaLabel="Enter parameters">
-          <span class="px-2">Enter parameters</span>
-        </SubButton>
-        <SubButton value="dsn" ariaLabel="Use connection string">
-          <span class="px-2">Enter connection string</span>
-        </SubButton>
-      </ButtonGroup>
+  {#if templateLoading}
+    <div class="flex items-center justify-center py-8">
+      <div class="text-slate-500">Loading connector template...</div>
     </div>
-  {/if}
+  {:else if templateError}
+    <div class="flex items-center justify-center py-8">
+      <div class="text-red-500">{templateError}</div>
+    </div>
+  {:else if templateData}
+    {#if hasDsnFormOption}
+      <div class="py-3">
+        <div class="text-sm font-medium mb-2">Connection method</div>
+        <ButtonGroup
+          selected={[useDsn ? "dsn" : "parameters"]}
+          on:subbutton-click={handleConnectionTypeChange}
+        >
+          <SubButton value="parameters" ariaLabel="Enter parameters">
+            <span class="px-2">Enter parameters</span>
+          </SubButton>
+          <SubButton value="dsn" ariaLabel="Use connection string">
+            <span class="px-2">Enter connection string</span>
+          </SubButton>
+        </ButtonGroup>
+      </div>
+    {/if}
 
   {#if !useDsn}
     <!-- Form 1: Individual parameters -->
@@ -351,24 +267,25 @@
               id={propertyKey}
               label={property?.displayName ?? ""}
               placeholder={property?.placeholder}
-              optional={!property?.required}
               secret={property?.secret}
               hint={property?.hint}
-              errors={$paramsErrors[propertyKey]}
-              bind:value={$paramsForm[propertyKey]}
-              onInput={(_, e) => onStringInputChange(e)}
+              errors={$dsnErrors[propertyKey]}
+              bind:value={$dsnForm[propertyKey]}
               alwaysShowError
             />
-          {:else if property?.type === "boolean"}
-            <label for={propertyKey} class="flex items-center">
-              <input
-                id={propertyKey}
-                type="checkbox"
-                bind:checked={$paramsForm[propertyKey]}
-                class="h-5 w-5"
-              />
-              <span class="ml-2 text-sm">{label}</span>
-            </label>
+          </div>
+        {/each}
+      </form>
+    {/if}
+
+    <div class="flex items-center space-x-2 ml-auto">
+      <Button onClick={onBack} type="secondary">Back</Button>
+      <Button disabled={submitting} form={formId} submitForm type="primary">
+        {#if isConnectorForm}
+          {#if submitting}
+            Testing connection...
+          {:else}
+            Connect
           {/if}
         </div>
       {/each}
@@ -410,11 +327,9 @@
         {#if submitting}
           Testing connection...
         {:else}
-          Connect
+          Add data
         {/if}
-      {:else}
-        Add data
-      {/if}
-    </Button>
-  </div>
+      </Button>
+    </div>
+  {/if}
 </div>

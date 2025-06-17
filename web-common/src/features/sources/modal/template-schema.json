@@ -1,0 +1,86 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Connector Template API Response",
+  "description": "Schema for connector template API responses used in AddDataForm",
+  "type": "object",
+  "properties": {
+    "properties": {
+      "type": "array",
+      "description": "Array of form properties for individual parameter input",
+      "items": {
+        "$ref": "#/definitions/Property"
+      }
+    },
+    "dsn": {
+      "$ref": "#/definitions/Property",
+      "description": "Optional DSN (Data Source Name) property for connection string input"
+    }
+  },
+  "required": ["properties"],
+  "definitions": {
+    "PropertyValidation": {
+      "type": "object",
+      "description": "Validation rules for a property",
+      "properties": {
+        "pattern": {
+          "type": "string",
+          "description": "Regex pattern for validation"
+        },
+        "patternMessage": {
+          "type": "string",
+          "description": "Error message shown when pattern validation fails"
+        }
+      },
+      "required": ["pattern", "patternMessage"]
+    },
+    "Property": {
+      "type": "object",
+      "description": "A form property definition",
+      "properties": {
+        "key": {
+          "type": "string",
+          "description": "Unique identifier for the property"
+        },
+        "type": {
+          "type": "string",
+          "enum": ["string", "number", "boolean"],
+          "description": "Data type of the property"
+        },
+        "displayName": {
+          "type": "string",
+          "description": "Human-readable name for the property"
+        },
+        "required": {
+          "type": "boolean",
+          "description": "Whether the property is required"
+        },
+        "hint": {
+          "type": "string",
+          "description": "Help text shown below the input"
+        },
+        "docsUrl": {
+          "type": "string",
+          "format": "uri",
+          "description": "URL to documentation for this property"
+        },
+        "secret": {
+          "type": "boolean",
+          "description": "Whether the property should be treated as sensitive (e.g., password)"
+        },
+        "placeholder": {
+          "type": "string",
+          "description": "Placeholder text for the input field"
+        },
+        "validation": {
+          "$ref": "#/definitions/PropertyValidation",
+          "description": "Optional validation rules"
+        },
+        "description": {
+          "type": "string",
+          "description": "Optional description text (used for informational fields)"
+        }
+      },
+      "required": ["key", "type", "displayName", "required", "hint", "docsUrl", "secret"]
+    }
+  }
+} 
