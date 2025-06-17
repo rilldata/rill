@@ -50,6 +50,7 @@ jobs:
             goreleaser-config: --config .goreleaser-darwin.yaml
           - os: ubuntu-24.04-arm
             goreleaser-config: --config .goreleaser-linux-arm64.yaml
+      fail-fast: false
 
     needs: validate-sequential
     steps:
@@ -76,6 +77,7 @@ jobs:
           RILL_UI_PUBLIC_INTAKE_PASSWORD: ${{ secrets.RILL_INTAKE_PASSWORD }}
           RILL_UI_PUBLIC_POSTHOG_API_KEY: "phc_4qnfUotXUuevk2zJN8ei8HgKXMynddEMI0wPI9XwzlS"
           RILL_UI_PUBLIC_PYLON_APP_ID: "26a0fdd2-3bd3-41e2-82bc-1b35a444729f"
+          NODE_OPTIONS: --max-old-space-size=4096
 
       - name: Set GORELEASER_CURRENT_TAG and NIGHTLY
         run: |
