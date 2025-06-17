@@ -2224,7 +2224,7 @@ func (c *connection) FindUnusedAssets(ctx context.Context, limit int) ([]*databa
 	// that were accidentally deleted and may need to be restored
 	err := c.getDB(ctx).SelectContext(ctx, &res, `
 		SELECT a.* FROM assets a 
-		WHERE a.created_on < nowss() - INTERVAL '7 DAYS'
+		WHERE a.created_on < now() - INTERVAL '7 DAYS'
 		AND NOT EXISTS (SELECT 1 FROM projects p WHERE p.archive_asset_id = a.id)
 		AND NOT EXISTS (SELECT 1 FROM orgs o WHERE o.logo_asset_id = a.id)
 		AND NOT EXISTS (SELECT 1 FROM orgs o WHERE o.favicon_asset_id = a.id)
