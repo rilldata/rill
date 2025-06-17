@@ -11,21 +11,6 @@ before:
     - go mod tidy
 
 builds:
-  - id: darwin_amd64
-    main: ./cli/main.go
-    binary: rill
-    goos:
-      - darwin
-    goarch:
-      - amd64
-    env:
-      - CC=o64-clang
-      - CXX=o64-clang++
-    flags:
-      - "-mod=readonly"
-    ldflags:
-      - -s -w -X main.Version={{.Version}} -X main.Commit={{.ShortCommit}} -X main.BuildDate={{.Date}}
-
   - id: darwin_arm64
     main: ./cli/main.go
     binary: rill
@@ -34,8 +19,8 @@ builds:
     goarch:
       - arm64
     env:
-      - CC=oa64-clang
-      - CXX=oa64-clang++
+      - CC=clang
+      - CXX=clang++
     flags:
       - "-mod=readonly"
     ldflags:

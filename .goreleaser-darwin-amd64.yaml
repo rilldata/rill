@@ -11,16 +11,16 @@ before:
     - go mod tidy
 
 builds:
-  - id: linux_aarch64
+  - id: darwin_amd64
     main: ./cli/main.go
     binary: rill
     goos:
-      - linux
+      - darwin
     goarch:
-      - arm64
+      - amd64
     env:
-      - CC=aarch64-linux-gnu-gcc
-      - CXX=aarch64-linux-gnu-g++
+      - CC=clang
+      - CXX=clang++
     flags:
       - "-mod=readonly"
     ldflags:
