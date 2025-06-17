@@ -72,7 +72,16 @@
   $: if (userNotLoggedIn && $metadata.data) {
     // Ref: admin/server/auth/handlers.go -- `/auth/signup` endpoint
     // Default to show the signup screen
-    const signupUrl = `${$metadata.data.adminUrl}/auth/signup`;
+    let signupUrl: string;
+
+    // Dev: Use runtime server's auth endpoint (loginUrl)
+    // No /auth/signup available locally because Auth0 not configured
+
+    // Staging/Prod: Use admin server's signup endpoint (adminUrl)
+    // Admin server has full Auth0 integration with signup flow
+    signupUrl = $metadata.data.isDev
+      ? $metadata.data.loginUrl
+      : `${$metadata.data.adminUrl}/auth/signup`;
 
     deployCTAUrl = `${signupUrl}?redirect=${deployPageUrl}`;
   } else {
