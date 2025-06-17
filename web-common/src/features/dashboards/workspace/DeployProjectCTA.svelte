@@ -1,7 +1,5 @@
 <script lang="ts" context="module">
   export const allowPrimary = writable(false);
-
-  import { constructSignupUrl } from "./url-utils";
 </script>
 
 <script lang="ts">
@@ -72,7 +70,9 @@
   $: deployPageUrl = `${$page.url.protocol}//${$page.url.host}/deploy`;
 
   $: if (userNotLoggedIn && $metadata.data) {
-    deployCTAUrl = constructSignupUrl($metadata.data, deployPageUrl);
+    // For first-time users, redirect to signup flow
+    // Use admin server's signup endpoint (/auth/signup) for proper signup experience
+    deployCTAUrl = `${$metadata.data.adminUrl}/auth/signup?redirect=${deployPageUrl}`;
   } else {
     deployCTAUrl = deployPageUrl;
   }
