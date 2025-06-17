@@ -108,7 +108,7 @@ export class TimeControls {
             return timeGrain;
           }
 
-          return isGrainBigger(timeGrain, min) ? min : timeGrain;
+          return isGrainBigger(timeGrain, min) ? timeGrain : min;
         },
         V1TimeGrain.TIME_GRAIN_UNSPECIFIED,
       );
