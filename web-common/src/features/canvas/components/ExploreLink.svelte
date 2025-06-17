@@ -93,7 +93,7 @@
       <span>{navigationError}</span>
     </div>
   {/if}
-  {#if $dashboardStateForComponent?.error && $dashboardStateForComponent?.isLoading}
+  {#if $dashboardStateForComponent?.error && isNavigating}
     <div class="flex flex-col gap-y-2">
       <h2 class="text-lg font-semibold">Unable to open Explore Dashboard</h2>
       <span>{$dashboardStateForComponent.error}</span>
