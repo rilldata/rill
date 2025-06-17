@@ -39,7 +39,17 @@ jobs:
 
   release:
     name: Release rill
-    runs-on: large-hosted
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, ubuntu-24.04-arm]
+        include:
+          - os: ubuntu-latest
+            goreleaser-config: --config .goreleaser-linux-amd64.yaml
+          - os: macos-latest
+            goreleaser-config: --config .goreleaser-darwin.yaml
+          - os: ubuntu-24.04-arm
+            goreleaser-config: --config .goreleaser-linux-arm64.yaml
+
     needs: validate-sequential
     steps:
       - name: Checkout code
@@ -47,12 +57,6 @@ jobs:
 
       - name: Fetch tags required by goreleaser
         run: git fetch --prune --unshallow
-
-      - name: Checkout sysroot for cross compilation
-        uses: actions/checkout@v4
-        with:
-          repository: goreleaser/goreleaser-cross-example-sysroot
-          path: sysroot
 
       - name: Set up Go
         uses: actions/setup-go@v5
@@ -72,35 +76,26 @@ jobs:
           RILL_UI_PUBLIC_POSTHOG_API_KEY: "phc_4qnfUotXUuevk2zJN8ei8HgKXMynddEMI0wPI9XwzlS"
           RILL_UI_PUBLIC_PYLON_APP_ID: "26a0fdd2-3bd3-41e2-82bc-1b35a444729f"
 
-      - name: Build Rill using Goreleaser
-        run: |-
-          echo '${{ secrets.RILL_BINARY_SA }}' > rill-binary-sa.json
-
-          echo 'GITHUB_TOKEN=${{ secrets.GORELEASER_ACCESS_TOKEN }}' > .release-env
-          echo 'GOOGLE_APPLICATION_CREDENTIALS=/rill-binary-sa.json' >> .release-env
-          echo 'DOCKERHUB_USER=${{ secrets.DOCKERHUB_USER }}' >> .release-env
-          echo 'DOCKERHUB_PASS=${{ secrets.DOCKERHUB_PASS }}' >> .release-env
-
-          echo '${{ github.ref_name }}' >> latest.txt
-
+      - name: Set GORELEASER_CURRENT_TAG and NIGHTLY
+        run: |
           if [[ ${{ env.PUBLISH_NIGHTLY }} == 'true' ]]; then
             export NIGHTLY="--snapshot"
             LATEST_TAG=$(git describe --tags $(git rev-list --tags --max-count=1))
-            echo "GORELEASER_CURRENT_TAG=${LATEST_TAG}" >> .release-env 
+            echo "GORELEASER_CURRENT_TAG=${LATEST_TAG}" >> $GITHUB_ENV
           fi
 
-          docker run \
-              --rm \
-              --privileged \
-              -e CGO_ENABLED=1 \
-              --env-file .release-env \
-              -v /var/run/docker.sock:/var/run/docker.sock \
-              -v `pwd`:/go/src/rilldata/rill \
-              -v `pwd`/sysroot:/sysroot \
-              -v `pwd`/rill-binary-sa.json:/rill-binary-sa.json \
-              -w /go/src/rilldata/rill \
-              goreleaser/goreleaser-cross:v1.24 \
-              release ${NIGHTLY}
+      - name: Build Rill using Goreleaser
+        uses: goreleaser/goreleaser-action@v6
+        with:
+          distribution: goreleaser
+          version: '~> v2'
+          args: release ${NIGHTLY} ${{ matrix.goreleaser-config }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GORELEASER_ACCESS_TOKEN }}
+          GOOGLE_APPLICATION_CREDENTIALS: /rill-binary-sa.json
+          CGO_ENABLED: 1
+          GORELEASER_CURRENT_TAG: ${{ env.GORELEASER_CURRENT_TAG }}
+          PUBLISH_NIGHTLY: ${{ env.PUBLISH_NIGHTLY }}
 
       - name: Authenticate GCS
         uses: google-github-actions/auth@v2
