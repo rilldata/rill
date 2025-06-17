@@ -15,7 +15,7 @@ cli: cli.prepare
 go.releaser:
 	# Builds the CLI binary for all platforms and architectures.
 	# Requires GoReleaser to be installed: https://goreleaser.com/install/
-	goreleaser build --single-target
+	goreleaser build --single-target --snapshot --clean
 
 .PHONY: cli.prepare
 cli.prepare:
