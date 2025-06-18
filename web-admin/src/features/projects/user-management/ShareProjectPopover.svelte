@@ -26,6 +26,7 @@
   import ProjectUserGroupItem from "./ProjectUserGroupItem.svelte";
   import UsergroupSetRole from "./UsergroupSetRole.svelte";
   import GeneralAccessSelectorDropdown from "./GeneralAccessSelectorDropdown.svelte";
+  import { buildSearchList } from "./helpers";
 
   export let organization: string;
   export let project: string;
@@ -170,59 +171,14 @@
     projectUserGroups.map((pg) => pg.groupName),
   );
 
-  // Optimized searchList computation with memoization and O(1) lookups
-  $: searchList = (() => {
-    const result = [];
-
-    // Process org member users
-    for (const member of allOrgMemberUsersRows) {
-      if (
-        !projectMemberEmailSet.has(member.userEmail) &&
-        !projectInviteEmailSet.has(member.userEmail)
-      ) {
-        result.push({
-          identifier: member.userEmail,
-          type: "user",
-          name: member.userName,
-          photoUrl: member.userPhotoUrl,
-          orgRoleName: member.roleName,
-        });
-      }
-    }
-
-    // Process org invites
-    for (const invite of allOrgInvitesRows) {
-      if (
-        !projectMemberEmailSet.has(invite.email) &&
-        !projectInviteEmailSet.has(invite.email)
-      ) {
-        result.push({
-          identifier: invite.email,
-          type: "user",
-          name: invite.email,
-          photoUrl: undefined,
-          orgRoleName: invite.roleName,
-          invitedBy: invite.invitedBy,
-        });
-      }
-    }
-
-    // Process org member usergroups
-    for (const group of orgMemberUsergroups) {
-      if (
-        !group.groupManaged &&
-        !projectUserGroupNameSet.has(group.groupName)
-      ) {
-        result.push({
-          identifier: group.groupName,
-          groupCount: group.usersCount,
-          type: "group",
-        });
-      }
-    }
-
-    return result;
-  })();
+  $: searchList = buildSearchList(
+    allOrgMemberUsersRows,
+    allOrgInvitesRows,
+    orgMemberUsergroups,
+    projectMemberEmailSet,
+    projectInviteEmailSet,
+    projectUserGroupNameSet,
+  );
 
   $: copyLink = `${$page.url.protocol}//${$page.url.host}/${organization}/${project}`;
 
