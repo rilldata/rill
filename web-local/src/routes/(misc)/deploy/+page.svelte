@@ -67,7 +67,7 @@
     }
 
     if (
-      $project.data.project.githubUrl &&
+      $project.data.project.gitRemote &&
       !$project.data.project.managedGitId
     ) {
       // we do not support pushing to a project already connected to user managed github
