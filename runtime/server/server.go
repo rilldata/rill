@@ -166,7 +166,7 @@ func (s *Server) HTTPHandler(ctx context.Context, registerAdditionalHandlers fun
 	runtimev1.RegisterConnectorServiceServer(grpcServer, s)
 
 	// Add gRPC and gRPC-to-REST transcoder.
-	// This will be the fallback for REST routes like `/v1/ping` and GPRC routes like `/rill.admin.v1.AdminService/Ping`.
+	// This will be the fallback for REST routes like `/v1/ping` and GPRC routes like `/rill.admin.v1.RuntimeService/Ping`.
 	transcoder, err := vanguardgrpc.NewTranscoder(grpcServer)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create transcoder: %w", err)
