@@ -13,9 +13,7 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 )
 
-var (
-	errUnsupportedType = errors.New("encountered unsupported redshift type")
-)
+var errUnsupportedType = errors.New("encountered unsupported redshift type")
 
 func (c *Connection) All(ctx context.Context, like string) ([]*drivers.Table, error) {
 	var likeClause string
