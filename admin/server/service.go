@@ -227,7 +227,7 @@ func (s *Server) UpdateService(ctx context.Context, req *adminv1.UpdateServiceRe
 	}, nil
 }
 
-func (s *Server) SetOrganizationMemberServiceRole(ctx context.Context, req *adminv1.SetOrganizationMemberServiceRoleRequest) (*adminv1.SetOrganizationMemberServiceRolesResponse, error) {
+func (s *Server) SetOrganizationMemberServiceRole(ctx context.Context, req *adminv1.SetOrganizationMemberServiceRoleRequest) (*adminv1.SetOrganizationMemberServiceRoleResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.name", req.Name),
 		attribute.String("args.organization_name", req.OrganizationName),
@@ -259,7 +259,7 @@ func (s *Server) SetOrganizationMemberServiceRole(ctx context.Context, req *admi
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	return &adminv1.SetOrganizationMemberServiceRolesResponse{}, nil
+	return &adminv1.SetOrganizationMemberServiceRoleResponse{}, nil
 }
 
 func (s *Server) SetProjectMemberServiceRole(ctx context.Context, req *adminv1.SetProjectMemberServiceRoleRequest) (*adminv1.SetProjectMemberServiceRoleResponse, error) {

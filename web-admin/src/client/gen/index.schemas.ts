@@ -1149,7 +1149,7 @@ export interface V1ServiceToken {
   expiresOn?: string;
 }
 
-export interface V1SetOrganizationMemberServiceRolesResponse {
+export interface V1SetOrganizationMemberServiceRoleResponse {
   [key: string]: unknown;
 }
 

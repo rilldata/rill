@@ -2507,33 +2507,33 @@ export class SetOrganizationMemberServiceRoleRequest extends Message<SetOrganiza
 }
 
 /**
- * @generated from message rill.admin.v1.SetOrganizationMemberServiceRolesResponse
+ * @generated from message rill.admin.v1.SetOrganizationMemberServiceRoleResponse
  */
-export class SetOrganizationMemberServiceRolesResponse extends Message<SetOrganizationMemberServiceRolesResponse> {
-  constructor(data?: PartialMessage<SetOrganizationMemberServiceRolesResponse>) {
+export class SetOrganizationMemberServiceRoleResponse extends Message<SetOrganizationMemberServiceRoleResponse> {
+  constructor(data?: PartialMessage<SetOrganizationMemberServiceRoleResponse>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.admin.v1.SetOrganizationMemberServiceRolesResponse";
+  static readonly typeName = "rill.admin.v1.SetOrganizationMemberServiceRoleResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SetOrganizationMemberServiceRolesResponse {
-    return new SetOrganizationMemberServiceRolesResponse().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SetOrganizationMemberServiceRoleResponse {
+    return new SetOrganizationMemberServiceRoleResponse().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SetOrganizationMemberServiceRolesResponse {
-    return new SetOrganizationMemberServiceRolesResponse().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SetOrganizationMemberServiceRoleResponse {
+    return new SetOrganizationMemberServiceRoleResponse().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SetOrganizationMemberServiceRolesResponse {
-    return new SetOrganizationMemberServiceRolesResponse().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SetOrganizationMemberServiceRoleResponse {
+    return new SetOrganizationMemberServiceRoleResponse().fromJsonString(jsonString, options);
   }
 
-  static equals(a: SetOrganizationMemberServiceRolesResponse | PlainMessage<SetOrganizationMemberServiceRolesResponse> | undefined, b: SetOrganizationMemberServiceRolesResponse | PlainMessage<SetOrganizationMemberServiceRolesResponse> | undefined): boolean {
-    return proto3.util.equals(SetOrganizationMemberServiceRolesResponse, a, b);
+  static equals(a: SetOrganizationMemberServiceRoleResponse | PlainMessage<SetOrganizationMemberServiceRoleResponse> | undefined, b: SetOrganizationMemberServiceRoleResponse | PlainMessage<SetOrganizationMemberServiceRoleResponse> | undefined): boolean {
+    return proto3.util.equals(SetOrganizationMemberServiceRoleResponse, a, b);
   }
 }
 

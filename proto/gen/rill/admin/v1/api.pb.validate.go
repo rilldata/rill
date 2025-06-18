@@ -6246,24 +6246,24 @@ var _ interface {
 	ErrorName() string
 } = SetOrganizationMemberServiceRoleRequestValidationError{}
 
-// Validate checks the field values on
-// SetOrganizationMemberServiceRolesResponse with the rules defined in the
-// proto definition for this message. If any rules are violated, the first
-// error encountered is returned, or nil if there are no violations.
-func (m *SetOrganizationMemberServiceRolesResponse) Validate() error {
+// Validate checks the field values on SetOrganizationMemberServiceRoleResponse
+// with the rules defined in the proto definition for this message. If any
+// rules are violated, the first error encountered is returned, or nil if
+// there are no violations.
+func (m *SetOrganizationMemberServiceRoleResponse) Validate() error {
 	return m.validate(false)
 }
 
 // ValidateAll checks the field values on
-// SetOrganizationMemberServiceRolesResponse with the rules defined in the
+// SetOrganizationMemberServiceRoleResponse with the rules defined in the
 // proto definition for this message. If any rules are violated, the result is
 // a list of violation errors wrapped in
-// SetOrganizationMemberServiceRolesResponseMultiError, or nil if none found.
-func (m *SetOrganizationMemberServiceRolesResponse) ValidateAll() error {
+// SetOrganizationMemberServiceRoleResponseMultiError, or nil if none found.
+func (m *SetOrganizationMemberServiceRoleResponse) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *SetOrganizationMemberServiceRolesResponse) validate(all bool) error {
+func (m *SetOrganizationMemberServiceRoleResponse) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -6271,20 +6271,20 @@ func (m *SetOrganizationMemberServiceRolesResponse) validate(all bool) error {
 	var errors []error
 
 	if len(errors) > 0 {
-		return SetOrganizationMemberServiceRolesResponseMultiError(errors)
+		return SetOrganizationMemberServiceRoleResponseMultiError(errors)
 	}
 
 	return nil
 }
 
-// SetOrganizationMemberServiceRolesResponseMultiError is an error wrapping
+// SetOrganizationMemberServiceRoleResponseMultiError is an error wrapping
 // multiple validation errors returned by
-// SetOrganizationMemberServiceRolesResponse.ValidateAll() if the designated
+// SetOrganizationMemberServiceRoleResponse.ValidateAll() if the designated
 // constraints aren't met.
-type SetOrganizationMemberServiceRolesResponseMultiError []error
+type SetOrganizationMemberServiceRoleResponseMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m SetOrganizationMemberServiceRolesResponseMultiError) Error() string {
+func (m SetOrganizationMemberServiceRoleResponseMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -6293,12 +6293,12 @@ func (m SetOrganizationMemberServiceRolesResponseMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m SetOrganizationMemberServiceRolesResponseMultiError) AllErrors() []error { return m }
+func (m SetOrganizationMemberServiceRoleResponseMultiError) AllErrors() []error { return m }
 
-// SetOrganizationMemberServiceRolesResponseValidationError is the validation
-// error returned by SetOrganizationMemberServiceRolesResponse.Validate if the
+// SetOrganizationMemberServiceRoleResponseValidationError is the validation
+// error returned by SetOrganizationMemberServiceRoleResponse.Validate if the
 // designated constraints aren't met.
-type SetOrganizationMemberServiceRolesResponseValidationError struct {
+type SetOrganizationMemberServiceRoleResponseValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -6306,24 +6306,24 @@ type SetOrganizationMemberServiceRolesResponseValidationError struct {
 }
 
 // Field function returns field value.
-func (e SetOrganizationMemberServiceRolesResponseValidationError) Field() string { return e.field }
+func (e SetOrganizationMemberServiceRoleResponseValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e SetOrganizationMemberServiceRolesResponseValidationError) Reason() string { return e.reason }
+func (e SetOrganizationMemberServiceRoleResponseValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e SetOrganizationMemberServiceRolesResponseValidationError) Cause() error { return e.cause }
+func (e SetOrganizationMemberServiceRoleResponseValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e SetOrganizationMemberServiceRolesResponseValidationError) Key() bool { return e.key }
+func (e SetOrganizationMemberServiceRoleResponseValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e SetOrganizationMemberServiceRolesResponseValidationError) ErrorName() string {
-	return "SetOrganizationMemberServiceRolesResponseValidationError"
+func (e SetOrganizationMemberServiceRoleResponseValidationError) ErrorName() string {
+	return "SetOrganizationMemberServiceRoleResponseValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e SetOrganizationMemberServiceRolesResponseValidationError) Error() string {
+func (e SetOrganizationMemberServiceRoleResponseValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -6335,14 +6335,14 @@ func (e SetOrganizationMemberServiceRolesResponseValidationError) Error() string
 	}
 
 	return fmt.Sprintf(
-		"invalid %sSetOrganizationMemberServiceRolesResponse.%s: %s%s",
+		"invalid %sSetOrganizationMemberServiceRoleResponse.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = SetOrganizationMemberServiceRolesResponseValidationError{}
+var _ error = SetOrganizationMemberServiceRoleResponseValidationError{}
 
 var _ interface {
 	Field() string
@@ -6350,7 +6350,7 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = SetOrganizationMemberServiceRolesResponseValidationError{}
+} = SetOrganizationMemberServiceRoleResponseValidationError{}
 
 // Validate checks the field values on RemoveProjectMemberServiceRequest with
 // the rules defined in the proto definition for this message. If any rules

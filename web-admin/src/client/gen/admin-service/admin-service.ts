@@ -206,7 +206,7 @@ import type {
   V1SearchProjectNamesResponse,
   V1SearchProjectUsersResponse,
   V1SearchUsersResponse,
-  V1SetOrganizationMemberServiceRolesResponse,
+  V1SetOrganizationMemberServiceRoleResponse,
   V1SetOrganizationMemberUserRoleResponse,
   V1SetOrganizationMemberUsergroupRoleResponse,
   V1SetProjectMemberServiceRoleResponse,
@@ -10408,7 +10408,7 @@ export const adminServiceSetOrganizationMemberServiceRole = (
   name: string,
   adminServiceSetProjectMemberUserRoleBodyBody: AdminServiceSetProjectMemberUserRoleBodyBody,
 ) => {
-  return httpClient<V1SetOrganizationMemberServiceRolesResponse>({
+  return httpClient<V1SetOrganizationMemberServiceRoleResponse>({
     url: `/v1/organizations/${organizationName}/services/${name}/role`,
     method: "PUT",
     headers: { "Content-Type": "application/json" },

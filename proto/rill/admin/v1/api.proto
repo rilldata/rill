@@ -636,7 +636,7 @@ service AdminService {
   }
 
   // SetOrganizationMemberServiceRole sets or updates the role of the service in the organization
-  rpc SetOrganizationMemberServiceRole(SetOrganizationMemberServiceRoleRequest) returns (SetOrganizationMemberServiceRolesResponse) {
+  rpc SetOrganizationMemberServiceRole(SetOrganizationMemberServiceRoleRequest) returns (SetOrganizationMemberServiceRoleResponse) {
     option (google.api.http) = {
       put: "/v1/organizations/{organization_name}/services/{name}/role",
       body: "*"
@@ -1246,7 +1246,7 @@ message SetOrganizationMemberServiceRoleRequest {
   string role = 3 [(validate.rules).string.min_len = 1];
 }
 
-message SetOrganizationMemberServiceRolesResponse {}
+message SetOrganizationMemberServiceRoleResponse {}
 
 message RemoveProjectMemberServiceRequest {
   string name = 1 [(validate.rules).string.min_len = 1];

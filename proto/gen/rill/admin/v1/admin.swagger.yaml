@@ -3036,7 +3036,7 @@ paths:
         "200":
           description: A successful response.
           schema:
-            $ref: '#/definitions/v1SetOrganizationMemberServiceRolesResponse'
+            $ref: '#/definitions/v1SetOrganizationMemberServiceRoleResponse'
         default:
           description: An unexpected error response.
           schema:
@@ -5812,7 +5812,7 @@ definitions:
       expiresOn:
         type: string
         format: date-time
-  v1SetOrganizationMemberServiceRolesResponse:
+  v1SetOrganizationMemberServiceRoleResponse:
     type: object
   v1SetOrganizationMemberUserRoleResponse:
     type: object

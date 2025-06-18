@@ -374,7 +374,7 @@ type AdminServiceClient interface {
 	// UpdateService updates a service per organization
 	UpdateService(ctx context.Context, in *UpdateServiceRequest, opts ...grpc.CallOption) (*UpdateServiceResponse, error)
 	// SetOrganizationMemberServiceRole sets or updates the role of the service in the organization
-	SetOrganizationMemberServiceRole(ctx context.Context, in *SetOrganizationMemberServiceRoleRequest, opts ...grpc.CallOption) (*SetOrganizationMemberServiceRolesResponse, error)
+	SetOrganizationMemberServiceRole(ctx context.Context, in *SetOrganizationMemberServiceRoleRequest, opts ...grpc.CallOption) (*SetOrganizationMemberServiceRoleResponse, error)
 	// SetProjectMemberServiceRole updates the project role for the service
 	SetProjectMemberServiceRole(ctx context.Context, in *SetProjectMemberServiceRoleRequest, opts ...grpc.CallOption) (*SetProjectMemberServiceRoleResponse, error)
 	// RemoveProjectMemberService removes the service from the project
@@ -1419,9 +1419,9 @@ func (c *adminServiceClient) UpdateService(ctx context.Context, in *UpdateServic
 	return out, nil
 }
 
-func (c *adminServiceClient) SetOrganizationMemberServiceRole(ctx context.Context, in *SetOrganizationMemberServiceRoleRequest, opts ...grpc.CallOption) (*SetOrganizationMemberServiceRolesResponse, error) {
+func (c *adminServiceClient) SetOrganizationMemberServiceRole(ctx context.Context, in *SetOrganizationMemberServiceRoleRequest, opts ...grpc.CallOption) (*SetOrganizationMemberServiceRoleResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(SetOrganizationMemberServiceRolesResponse)
+	out := new(SetOrganizationMemberServiceRoleResponse)
 	err := c.cc.Invoke(ctx, AdminService_SetOrganizationMemberServiceRole_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
@@ -2082,7 +2082,7 @@ type AdminServiceServer interface {
 	// UpdateService updates a service per organization
 	UpdateService(context.Context, *UpdateServiceRequest) (*UpdateServiceResponse, error)
 	// SetOrganizationMemberServiceRole sets or updates the role of the service in the organization
-	SetOrganizationMemberServiceRole(context.Context, *SetOrganizationMemberServiceRoleRequest) (*SetOrganizationMemberServiceRolesResponse, error)
+	SetOrganizationMemberServiceRole(context.Context, *SetOrganizationMemberServiceRoleRequest) (*SetOrganizationMemberServiceRoleResponse, error)
 	// SetProjectMemberServiceRole updates the project role for the service
 	SetProjectMemberServiceRole(context.Context, *SetProjectMemberServiceRoleRequest) (*SetProjectMemberServiceRoleResponse, error)
 	// RemoveProjectMemberService removes the service from the project
@@ -2462,7 +2462,7 @@ func (UnimplementedAdminServiceServer) CreateService(context.Context, *CreateSer
 func (UnimplementedAdminServiceServer) UpdateService(context.Context, *UpdateServiceRequest) (*UpdateServiceResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateService not implemented")
 }
-func (UnimplementedAdminServiceServer) SetOrganizationMemberServiceRole(context.Context, *SetOrganizationMemberServiceRoleRequest) (*SetOrganizationMemberServiceRolesResponse, error) {
+func (UnimplementedAdminServiceServer) SetOrganizationMemberServiceRole(context.Context, *SetOrganizationMemberServiceRoleRequest) (*SetOrganizationMemberServiceRoleResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SetOrganizationMemberServiceRole not implemented")
 }
 func (UnimplementedAdminServiceServer) SetProjectMemberServiceRole(context.Context, *SetProjectMemberServiceRoleRequest) (*SetProjectMemberServiceRoleResponse, error) {
