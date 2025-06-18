@@ -2,7 +2,10 @@
   import { Button } from "@rilldata/web-common/components/button";
   import Github from "@rilldata/web-common/components/icons/Github.svelte";
   import * as Popover from "@rilldata/web-common/components/popover";
-  import { getRepoNameFromGithubUrl } from "@rilldata/web-common/features/project/deploy/github-utils";
+  import {
+    getGitUrlFromRemote,
+    getRepoNameFromGitRemote,
+  } from "@rilldata/web-common/features/project/deploy/github-utils";
   import ProjectSelector from "@rilldata/web-common/features/project/deploy/ProjectSelector.svelte";
   import ProjectSelectorItem from "@rilldata/web-common/features/project/deploy/ProjectSelectorItem.svelte";
   import type { Project } from "@rilldata/web-common/proto/gen/rill/admin/v1/api_pb";
@@ -14,11 +17,11 @@
   let selectedProject: Project | undefined =
     matchingProjects.length === 1 ? matchingProjects[0] : undefined;
 
-  $: githubUrl = selectedProject?.githubUrl ?? "";
-  $: repoName = getRepoNameFromGithubUrl(githubUrl);
+  $: gitRemote = selectedProject?.gitRemote ?? "";
+  $: repoName = getRepoNameFromGitRemote(gitRemote);
   $: subpath = selectedProject?.subpath;
 
-  $: selfManagedGit = githubUrl && !selectedProject?.managedGitId;
+  $: selfManagedGit = gitRemote && !selectedProject?.managedGitId;
   $: enableUpdate = selectedProject && !selfManagedGit;
 
   $: deployUrl = selectedProject
@@ -62,7 +65,7 @@
         <div class="flex flex-row gap-x-1 items-center">
           <Github className="w-4 h-4" />
           <a
-            href={githubUrl}
+            href={getGitUrlFromRemote(gitRemote)}
             class="text-gray-800 text-[12px] font-semibold font-mono leading-5 truncate"
             target="_blank"
             rel="noreferrer noopener"
