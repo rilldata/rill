@@ -19,7 +19,7 @@ var migrationVersionTable = "runtime_migration_version"
 
 // Migrate implements drivers.Connection.
 // Migrate for SQLite may not be safe for concurrent use.
-func (c *connection) Migrate(_ context.Context) (err error) {
+func (c *Connection) Migrate(_ context.Context) (err error) {
 	// Override ctx because sqlite sometimes segfaults on context cancellation
 	ctx := context.Background()
 
@@ -74,7 +74,7 @@ func (c *connection) Migrate(_ context.Context) (err error) {
 	return nil
 }
 
-func (c *connection) migrateSingle(ctx context.Context, name string, sql []byte, version int) (err error) {
+func (c *Connection) migrateSingle(ctx context.Context, name string, sql []byte, version int) (err error) {
 	// Start a transaction
 	tx, err := c.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -103,7 +103,7 @@ func (c *connection) migrateSingle(ctx context.Context, name string, sql []byte,
 }
 
 // MigrationStatus implements drivers.Connection.
-func (c *connection) MigrationStatus(_ context.Context) (current, desired int, err error) {
+func (c *Connection) MigrationStatus(_ context.Context) (current, desired int, err error) {
 	// Override ctx because sqlite sometimes segfaults on context cancellation
 	ctx := context.Background()
 

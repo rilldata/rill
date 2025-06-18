@@ -9,7 +9,7 @@ import (
 )
 
 // FilePaths implements drivers.FileStore
-func (c *connection) FilePaths(ctx context.Context, src map[string]any) ([]string, error) {
+func (c *Connection) FilePaths(ctx context.Context, src map[string]any) ([]string, error) {
 	conf, err := parseSourceProperties(src)
 	if err != nil {
 		return nil, err
@@ -32,6 +32,6 @@ func (c *connection) FilePaths(ctx context.Context, src map[string]any) ([]strin
 	return localPaths, nil
 }
 
-func (c *connection) resolveLocalPath(path string) (string, error) {
+func (c *Connection) resolveLocalPath(path string) (string, error) {
 	return fileutil.ResolveLocalPath(path, c.root, c.driverConfig.AllowHostAccess)
 }

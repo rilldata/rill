@@ -16,6 +16,9 @@ var ErrNotFound = errors.New("driver: not found")
 // ErrNotImplemented indicates the driver doesn't support the requested operation.
 var ErrNotImplemented = errors.New("driver: not implemented")
 
+// ErrNotImplemented indicates the driver doesn't support the requested operation.
+var ErrInformationSchemaNotImplemented = errors.New("driver: information schema not implemented")
+
 // ErrStorageLimitExceeded indicates the driver's storage limit was exceeded.
 var ErrStorageLimitExceeded = fmt.Errorf("connectors: exceeds storage limit")
 
@@ -83,6 +86,10 @@ type Handle interface {
 
 	// MigrationStatus returns the handle's current and desired migration version (if applicable).
 	MigrationStatus(ctx context.Context) (current int, desired int, err error)
+
+	// InformationSchema returns an InformationSchema if the handle can serve as such, otherwise returns nil.
+	// Information schema provides metadata about existing tables in a driver.
+	InformationSchema() InformationSchema
 
 	// Close closes the handle.
 	Close() error

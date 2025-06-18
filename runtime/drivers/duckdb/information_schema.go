@@ -10,17 +10,9 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/rduckdb"
 )
 
-type informationSchema struct {
-	c *connection
-}
-
-func (c *connection) InformationSchema() drivers.InformationSchema {
-	return &informationSchema{c: c}
-}
-
-func (i informationSchema) All(ctx context.Context, ilike string) ([]*drivers.Table, error) {
+func (c *connection) All(ctx context.Context, ilike string) ([]*drivers.Table, error) {
 	// TODO: this bypasses the acquireMetaConn call in the original implementation. Fix this.
-	db, release, err := i.c.acquireDB()
+	db, release, err := c.acquireDB()
 	if err != nil {
 		return nil, err
 	}
@@ -28,10 +20,10 @@ func (i informationSchema) All(ctx context.Context, ilike string) ([]*drivers.Ta
 
 	rows, err := db.Schema(ctx, ilike, "")
 	if err != nil {
-		return nil, i.c.checkErr(err)
+		return nil, c.checkErr(err)
 	}
 
-	tables, err := i.scanTables(rows)
+	tables, err := scanTables(rows)
 	if err != nil {
 		return nil, err
 	}
@@ -39,9 +31,9 @@ func (i informationSchema) All(ctx context.Context, ilike string) ([]*drivers.Ta
 	return tables, nil
 }
 
-func (i informationSchema) Lookup(ctx context.Context, _, _, name string) (*drivers.Table, error) {
+func (c *connection) Lookup(ctx context.Context, _, _, name string) (*drivers.Table, error) {
 	// TODO: this bypasses the acquireMetaConn call in the original implementation. Fix this.
-	db, release, err := i.c.acquireDB()
+	db, release, err := c.acquireDB()
 	if err != nil {
 		return nil, err
 	}
@@ -49,10 +41,10 @@ func (i informationSchema) Lookup(ctx context.Context, _, _, name string) (*driv
 
 	rows, err := db.Schema(ctx, "", name)
 	if err != nil {
-		return nil, i.c.checkErr(err)
+		return nil, c.checkErr(err)
 	}
 
-	tables, err := i.scanTables(rows)
+	tables, err := scanTables(rows)
 	if err != nil {
 		return nil, err
 	}
@@ -64,12 +56,12 @@ func (i informationSchema) Lookup(ctx context.Context, _, _, name string) (*driv
 	return tables[0], nil
 }
 
-func (i informationSchema) LoadPhysicalSize(ctx context.Context, tables []*drivers.Table) error {
+func (c *connection) LoadPhysicalSize(ctx context.Context, tables []*drivers.Table) error {
 	// already populated in All and Lookup calls
 	return nil
 }
 
-func (i informationSchema) scanTables(rows []*rduckdb.Table) ([]*drivers.Table, error) {
+func scanTables(rows []*rduckdb.Table) ([]*drivers.Table, error) {
 	var res []*drivers.Table
 
 	for _, row := range rows {

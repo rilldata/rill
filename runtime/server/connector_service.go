@@ -187,6 +187,57 @@ func (s *Server) OLAPGetTable(ctx context.Context, req *runtimev1.OLAPGetTableRe
 	}, nil
 }
 
+func (s *Server) ListTables(ctx context.Context, req *runtimev1.ListTablesRequest) (*runtimev1.ListTablesResponse, error) {
+	handle, release, err := s.runtime.AcquireHandle(ctx, req.InstanceId, req.Connector)
+	if err != nil {
+		return nil, err
+	}
+	defer release()
+
+	tables, err := handle.InformationSchema().All(ctx, req.SearchPattern)
+	if err != nil {
+		return nil, err
+	}
+	_ = handle.InformationSchema().LoadPhysicalSize(ctx, tables)
+
+	res := make([]*runtimev1.TableInfo, len(tables))
+	for i, table := range tables {
+		res[i] = &runtimev1.TableInfo{
+			Database:                table.Database,
+			DatabaseSchema:          table.DatabaseSchema,
+			IsDefaultDatabase:       table.IsDefaultDatabase,
+			IsDefaultDatabaseSchema: table.IsDefaultDatabaseSchema,
+			Name:                    table.Name,
+			HasUnsupportedDataTypes: len(table.UnsupportedCols) != 0,
+			PhysicalSizeBytes:       table.PhysicalSizeBytes,
+		}
+	}
+	return &runtimev1.ListTablesResponse{
+		Tables: res,
+	}, nil
+}
+
+func (s *Server) GetTable(ctx context.Context, req *runtimev1.GetTableRequest) (*runtimev1.GetTableResponse, error) {
+	handle, release, err := s.runtime.AcquireHandle(ctx, req.InstanceId, req.Connector)
+	if err != nil {
+		return nil, err
+	}
+	defer release()
+
+	table, err := handle.InformationSchema().Lookup(ctx, req.Database, req.DatabaseSchema, req.Table)
+	if err != nil {
+		return nil, err
+	}
+	_ = handle.InformationSchema().LoadPhysicalSize(ctx, []*drivers.Table{table})
+
+	return &runtimev1.GetTableResponse{
+		Schema:             table.Schema,
+		UnsupportedColumns: table.UnsupportedCols,
+		View:               table.View,
+		PhysicalSizeBytes:  table.PhysicalSizeBytes,
+	}, nil
+}
+
 func (s *Server) BigQueryListDatasets(ctx context.Context, req *runtimev1.BigQueryListDatasetsRequest) (*runtimev1.BigQueryListDatasetsResponse, error) {
 	bq, release, err := s.getBigQueryConn(ctx, req.Connector, req.InstanceId)
 	if err != nil {

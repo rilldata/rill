@@ -7,13 +7,13 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 )
 
-func (h *Handle) Complete(ctx context.Context, msgs []*drivers.CompletionMessage) (*drivers.CompletionMessage, error) {
+func (c *Connection) Complete(ctx context.Context, msgs []*drivers.CompletionMessage) (*drivers.CompletionMessage, error) {
 	reqMsgs := make([]*adminv1.CompletionMessage, len(msgs))
 	for i, msg := range msgs {
 		reqMsgs[i] = &adminv1.CompletionMessage{Role: msg.Role, Data: msg.Data}
 	}
 
-	res, err := h.admin.Complete(ctx, &adminv1.CompleteRequest{Messages: reqMsgs})
+	res, err := c.admin.Complete(ctx, &adminv1.CompleteRequest{Messages: reqMsgs})
 	if err != nil {
 		return nil, err
 	}

@@ -81,7 +81,7 @@ func (c *Connection) insertTableAsSelect(ctx context.Context, name, sql string, 
 	}
 
 	if opts.Strategy == drivers.IncrementalStrategyPartitionOverwrite {
-		_, onCluster, err := informationSchema{c: c}.entityType(ctx, c.config.Database, name)
+		_, onCluster, err := c.entityType(ctx, c.config.Database, name)
 		if err != nil {
 			return nil, err
 		}
@@ -160,7 +160,7 @@ func (c *Connection) insertTableAsSelect(ctx context.Context, name, sql string, 
 	}
 
 	if opts.Strategy == drivers.IncrementalStrategyMerge {
-		_, onCluster, err := informationSchema{c: c}.entityType(ctx, c.config.Database, name)
+		_, onCluster, err := c.entityType(ctx, c.config.Database, name)
 		if err != nil {
 			return nil, err
 		}
@@ -193,7 +193,7 @@ func (c *Connection) insertTableAsSelect(ctx context.Context, name, sql string, 
 
 func (c *Connection) dropTable(ctx context.Context, name string) error {
 	ctx = contextWithQueryID(ctx)
-	typ, onCluster, err := informationSchema{c: c}.entityType(ctx, c.config.Database, name)
+	typ, onCluster, err := c.entityType(ctx, c.config.Database, name)
 	if err != nil {
 		return err
 	}
@@ -243,7 +243,7 @@ func (c *Connection) dropTable(ctx context.Context, name string) error {
 
 func (c *Connection) renameEntity(ctx context.Context, oldName, newName string) error {
 	ctx = contextWithQueryID(ctx)
-	typ, onCluster, err := informationSchema{c: c}.entityType(ctx, c.config.Database, oldName)
+	typ, onCluster, err := c.entityType(ctx, c.config.Database, oldName)
 	if err != nil {
 		return err
 	}

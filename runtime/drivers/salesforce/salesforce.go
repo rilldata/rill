@@ -140,7 +140,7 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 		return nil, errors.New("salesforce driver can't be shared")
 	}
 	// actual db connection is opened during query
-	return &connection{
+	return &Connection{
 		config: config,
 		logger: logger,
 	}, nil
@@ -158,13 +158,13 @@ func (d driver) TertiarySourceConnectors(ctx context.Context, src map[string]any
 	return nil, nil
 }
 
-type connection struct {
+type Connection struct {
 	config map[string]any
 	logger *zap.Logger
 }
 
 // Ping implements drivers.Handle.
-func (c *connection) Ping(ctx context.Context) error {
+func (c *Connection) Ping(ctx context.Context) error {
 	var username, password, endpoint, key, clientID string
 
 	if u, ok := c.config["username"].(string); ok && u != "" {
@@ -214,86 +214,91 @@ func (c *connection) Ping(ctx context.Context) error {
 }
 
 // Migrate implements drivers.Connection.
-func (c *connection) Migrate(ctx context.Context) (err error) {
+func (c *Connection) Migrate(ctx context.Context) (err error) {
 	return nil
 }
 
 // MigrationStatus implements drivers.Handle.
-func (c *connection) MigrationStatus(ctx context.Context) (current, desired int, err error) {
+func (c *Connection) MigrationStatus(ctx context.Context) (current, desired int, err error) {
 	return 0, 0, nil
 }
 
 // Driver implements drivers.Connection.
-func (c *connection) Driver() string {
+func (c *Connection) Driver() string {
 	return "salesforce"
 }
 
 // Config implements drivers.Connection.
-func (c *connection) Config() map[string]any {
+func (c *Connection) Config() map[string]any {
 	return maps.Clone(c.config)
 }
 
+// InformationSchema implements drivers.Handle.
+func (c *Connection) InformationSchema() drivers.InformationSchema {
+	return &drivers.NotImplementedInformationSchema{}
+}
+
 // Close implements drivers.Connection.
-func (c *connection) Close() error {
+func (c *Connection) Close() error {
 	return nil
 }
 
 // AsRegistry implements drivers.Connection.
-func (c *connection) AsRegistry() (drivers.RegistryStore, bool) {
+func (c *Connection) AsRegistry() (drivers.RegistryStore, bool) {
 	return nil, false
 }
 
 // AsCatalogStore implements drivers.Connection.
-func (c *connection) AsCatalogStore(instanceID string) (drivers.CatalogStore, bool) {
+func (c *Connection) AsCatalogStore(instanceID string) (drivers.CatalogStore, bool) {
 	return nil, false
 }
 
 // AsRepoStore implements drivers.Connection.
-func (c *connection) AsRepoStore(instanceID string) (drivers.RepoStore, bool) {
+func (c *Connection) AsRepoStore(instanceID string) (drivers.RepoStore, bool) {
 	return nil, false
 }
 
 // AsAdmin implements drivers.Handle.
-func (c *connection) AsAdmin(instanceID string) (drivers.AdminService, bool) {
+func (c *Connection) AsAdmin(instanceID string) (drivers.AdminService, bool) {
 	return nil, false
 }
 
 // AsAI implements drivers.Handle.
-func (c *connection) AsAI(instanceID string) (drivers.AIService, bool) {
+func (c *Connection) AsAI(instanceID string) (drivers.AIService, bool) {
 	return nil, false
 }
 
 // AsOLAP implements drivers.Connection.
-func (c *connection) AsOLAP(instanceID string) (drivers.OLAPStore, bool) {
+func (c *Connection) AsOLAP(instanceID string) (drivers.OLAPStore, bool) {
 	return nil, false
 }
 
 // AsObjectStore implements drivers.Connection.
-func (c *connection) AsObjectStore() (drivers.ObjectStore, bool) {
+func (c *Connection) AsObjectStore() (drivers.ObjectStore, bool) {
 	return nil, false
 }
 
 // AsModelExecutor implements drivers.Handle.
-func (c *connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorOptions) (drivers.ModelExecutor, bool) {
+func (c *Connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorOptions) (drivers.ModelExecutor, bool) {
 	return nil, false
 }
 
 // AsModelManager implements drivers.Handle.
-func (c *connection) AsModelManager(instanceID string) (drivers.ModelManager, bool) {
+func (c *Connection) AsModelManager(instanceID string) (drivers.ModelManager, bool) {
 	return nil, false
 }
 
 // AsFileStore implements drivers.Connection.
-func (c *connection) AsFileStore() (drivers.FileStore, bool) {
+func (c *Connection) AsFileStore() (drivers.FileStore, bool) {
 	return nil, false
 }
 
 // AsWarehouse implements drivers.Handle.
-func (c *connection) AsWarehouse() (drivers.Warehouse, bool) {
+func (c *Connection) AsWarehouse() (drivers.Warehouse, bool) {
 	return c, true
 }
 
 // AsNotifier implements drivers.Connection.
-func (c *connection) AsNotifier(properties map[string]any) (drivers.Notifier, error) {
+func (c *Connection) AsNotifier(properties map[string]any) (drivers.Notifier, error) {
 	return nil, drivers.ErrNotNotifier
 }

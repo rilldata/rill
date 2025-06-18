@@ -1008,6 +1008,16 @@ export interface V1GetResourceResponse {
   resource?: V1Resource;
 }
 
+export type V1GetTableResponseUnsupportedColumns = { [key: string]: string };
+
+export interface V1GetTableResponse {
+  schema?: V1StructType;
+  unsupportedColumns?: V1GetTableResponseUnsupportedColumns;
+  view?: boolean;
+  /** physical_size_bytes is the physical size of the table. Set to -1 if the size cannot be determined. */
+  physicalSizeBytes?: string;
+}
+
 export type V1HealthResponseInstancesHealth = {
   [key: string]: V1InstanceHealth;
 };
@@ -1124,6 +1134,10 @@ export interface V1ListNotifierConnectorsResponse {
 
 export interface V1ListResourcesResponse {
   resources?: V1Resource[];
+}
+
+export interface V1ListTablesResponse {
+  tables?: V1TableInfo[];
 }
 
 export interface V1Log {
@@ -2226,6 +2240,28 @@ export type ConnectorServiceOLAPGetTableParams = {
   database?: string;
   databaseSchema?: string;
   table?: string;
+};
+
+export type ConnectorServiceGetTableParams = {
+  instanceId?: string;
+  connector?: string;
+  database?: string;
+  databaseSchema?: string;
+  table?: string;
+};
+
+export type ConnectorServiceListTablesParams = {
+  instanceId?: string;
+  /**
+   * Connector to list tables from.
+   */
+  connector?: string;
+  /**
+ * Optional search pattern to filter tables by.
+Has the same syntax and behavior as ILIKE in SQL.
+If the connector supports schema/database names, it searches against both the plain table name and the fully qualified table name.
+ */
+  searchPattern?: string;
 };
 
 export type ConnectorServiceGCSListObjectsParams = {
