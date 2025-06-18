@@ -28,13 +28,9 @@
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import Avatar from "@rilldata/web-common/components/avatar/Avatar.svelte";
   import { getRandomBgColor } from "@rilldata/web-common/features/themes/color-config";
-  import { cn } from "@rilldata/web-common/lib/shadcn";
-  import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
-  import CaretUpIcon from "@rilldata/web-common/components/icons/CaretUpIcon.svelte";
-  import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
-  import Lock from "@rilldata/web-common/components/icons/Lock.svelte";
   import ProjectUserGroupItem from "./ProjectUserGroupItem.svelte";
   import UsergroupSetRole from "./UsergroupSetRole.svelte";
+  import GeneralAccessSelectorDropdown from "./GeneralAccessSelectorDropdown.svelte";
 
   export let organization: string;
   export let project: string;
@@ -388,114 +384,7 @@
             on:focus={() => (isHovered = true)}
             on:blur={() => (isHovered = false)}
           >
-            <!-- Only users with admin rights can see and use the dropdown selector -->
-            <DropdownMenu.Root bind:open={accessDropdownOpen}>
-              <DropdownMenu.Trigger>
-                <div class="flex flex-row items-center gap-x-2">
-                  <div class="flex items-center gap-2 py-2 pl-2">
-                    {#if hasAutogroupMembers}
-                      <div
-                        class={cn(
-                          "h-7 w-7 rounded-sm flex items-center justify-center",
-                          getRandomBgColor(`Everyone at ${organization}`),
-                        )}
-                      >
-                        <span class="text-sm text-white font-semibold"
-                          >{getInitials(`Everyone at ${organization}`)}</span
-                        >
-                      </div>
-                    {:else}
-                      <Lock size="28px" color="#374151" />
-                    {/if}
-                    <div class="flex flex-col text-left">
-                      <div class="flex">
-                        <div
-                          class="inline-flex flex-row items-center gap-x-1 text-sm font-medium text-gray-900 hover:bg-gray-100 rounded-sm px-1 py-0.5 -mx-1 -my-0.5"
-                        >
-                          {#if accessType === "everyone"}
-                            Everyone at {organization}
-                          {:else}
-                            Invite only
-                          {/if}
-                          {#if accessDropdownOpen}
-                            <CaretUpIcon size="12px" color="text-gray-700" />
-                          {:else}
-                            <CaretDownIcon size="12px" color="text-gray-700" />
-                          {/if}
-                        </div>
-                      </div>
-
-                      {#if accessType === "everyone"}
-                        <div class="flex flex-row items-center gap-x-1">
-                          {#if userGroupMemberUsersCount && userGroupMemberUsersCount > 0}
-                            <span class="text-xs text-gray-500">
-                              {userGroupMemberUsersCount} user{userGroupMemberUsersCount >
-                              1
-                                ? "s"
-                                : ""}
-                            </span>
-                          {/if}
-                        </div>
-                      {:else}
-                        <div class="flex flex-row items-center gap-x-1">
-                          <span class="text-xs text-gray-500">
-                            Only admins and invited users can access
-                          </span>
-                        </div>
-                      {/if}
-                    </div>
-                  </div>
-                </div>
-              </DropdownMenu.Trigger>
-              <DropdownMenu.Content align="start" strategy="fixed">
-                <DropdownMenu.Item
-                  on:click={setAccessInviteOnly}
-                  class="flex flex-col items-start py-2 data-[highlighted]:bg-gray-100 {accessType ===
-                  'invite-only'
-                    ? 'bg-gray-50'
-                    : ''}"
-                >
-                  <div class="flex items-start gap-2">
-                    <Lock size="20px" color="#374151" />
-                    <span class="text-xs font-medium text-gray-700"
-                      >Invite only</span
-                    >
-                  </div>
-                  <div class="flex flex-row items-center gap-2">
-                    <div class="w-[20px]" />
-                    <span class="text-[11px] text-gray-500"
-                      >Only admins and invited users can access</span
-                    >
-                  </div>
-                </DropdownMenu.Item>
-                <DropdownMenu.Item
-                  on:click={setAccessEveryone}
-                  class="flex flex-col items-start py-2 data-[highlighted]:bg-gray-100 {accessType ===
-                  'everyone'
-                    ? 'bg-gray-50'
-                    : ''}"
-                >
-                  <div class="flex items-start gap-2">
-                    <div
-                      class="h-5 w-5 flex items-center justify-center bg-primary-600 rounded-sm"
-                    >
-                      <span class="text-xs text-white font-semibold"
-                        >{organization[0].toUpperCase()}</span
-                      >
-                    </div>
-                    <span class="text-xs font-medium text-gray-700"
-                      >Everyone at {organization}</span
-                    >
-                  </div>
-                  <div class="flex flex-row items-center gap-2">
-                    <div class="w-[20px]" />
-                    <span class="text-[11px] text-gray-500"
-                      >Org members can access</span
-                    >
-                  </div>
-                </DropdownMenu.Item>
-              </DropdownMenu.Content>
-            </DropdownMenu.Root>
+            <GeneralAccessSelectorDropdown {organization} {project} />
 
             {#if hasAutogroupMembers}
               {#each projectMemberUserGroupsList as group}
