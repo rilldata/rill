@@ -9,7 +9,7 @@
   import Button from "web-common/src/components/button/Button.svelte";
   import ProjectResourcesTable from "./ProjectResourcesTable.svelte";
   import RefreshAllSourcesAndModelsConfirmDialog from "./RefreshAllSourcesAndModelsConfirmDialog.svelte";
-  import { isResourceReconciling } from "../../shared/refetch-interval";
+  import { isResourceReconciling } from "../../shared/refetch-interval-store";
   import { useResources } from "./selectors";
 
   const queryClient = useQueryClient();

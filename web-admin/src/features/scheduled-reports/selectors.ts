@@ -8,7 +8,7 @@ import {
 import {
   refetchInterval,
   updateSmartRefetchInterval,
-} from "../shared/refetchIntervalStore";
+} from "../shared/refetch-interval-store";
 import { get } from "svelte/store";
 
 export function useReports(instanceId: string, enabled = true) {

@@ -8,7 +8,7 @@ import { derived, get } from "svelte/store";
 import {
   refetchInterval,
   updateSmartRefetchInterval,
-} from "../../shared/refetchIntervalStore";
+} from "../../shared/refetch-interval-store";
 import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
 
 export function useDashboardsLastUpdated(

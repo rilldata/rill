@@ -13,7 +13,7 @@ import { readable, get } from "svelte/store";
 import {
   refetchInterval,
   updateSmartRefetchInterval,
-} from "../shared/refetchIntervalStore";
+} from "../shared/refetch-interval-store";
 
 export function useAlerts(instanceId: string, enabled = true) {
   return createRuntimeServiceListResources(
