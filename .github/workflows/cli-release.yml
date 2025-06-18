@@ -212,7 +212,6 @@ jobs:
       - name: Upload combined checksums back to GCS
         run: |
           gsutil cp combined-checksums.txt gs://prod-cdn.rilldata.com/${{ .env.BUCKET_DIR }}/checksums.txt
-          # also publish to latest if PUBLISH_RELEASE is true
           if [[ ${{ env.PUBLISH_RELEASE }} == 'true' ]]; then
             gsutil cp combined-checksums.txt gs://prod-cdn.rilldata.com/rill/latest/checksums.txt
           fi
