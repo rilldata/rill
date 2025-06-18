@@ -123,6 +123,7 @@ export enum TimeRangePreset {
   LAST_3_MONTHS = "P3M",
   LAST_12_MONTHS = "P12M",
   TODAY = "rill-TD",
+  DAY_TO_DATE = "rill-DTD",
   WEEK_TO_DATE = "rill-WTD",
   MONTH_TO_DATE = "rill-MTD",
   QUARTER_TO_DATE = "rill-QTD",

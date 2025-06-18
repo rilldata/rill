@@ -25,6 +25,7 @@ export const RILL_TO_UNIT: Record<
   "rill-PQC": "quarter",
   "rill-PYC": "year",
   "rill-TD": "day",
+  "rill-DTD": "hour",
   "rill-WTD": "week",
   "rill-MTD": "month",
   "rill-QTD": "quarter",
@@ -43,6 +44,7 @@ export const RILL_TO_LABEL: Record<
   "rill-PQC": "Previous quarter complete",
   "rill-PYC": "Previous year complete",
   "rill-TD": "Today",
+  "rill-DTD": "Day to date",
   "rill-WTD": "Week to date",
   "rill-MTD": "Month to date",
   "rill-QTD": "Quarter to date",
@@ -51,6 +53,7 @@ export const RILL_TO_LABEL: Record<
 
 export const RILL_PERIOD_TO_DATE = [
   "rill-TD",
+  "rill-DTD",
   "rill-WTD",
   "rill-MTD",
   "rill-QTD",
@@ -280,6 +283,13 @@ export function deriveInterval(
 ) {
   if (name === ALL_TIME_RANGE_ALIAS || name === CUSTOM_TIME_RANGE_ALIAS) {
     throw new Error("Cannot derive interval for all time or custom range");
+  }
+
+  if (name === "rill-DTD") {
+    return Interval.fromDateTimes(
+      anchor.startOf("day", { useLocaleWeeks: true }),
+      anchor.plus({ hour: 1 }).startOf("hour", { useLocaleWeeks: true }),
+    );
   }
 
   if (isRillPeriodToDate(name)) {

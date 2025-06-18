@@ -87,6 +87,7 @@ time_ranges:
   - P4W
   - P12M
   - rill-TD
+  - rill-DTD
   - rill-WTD
   - rill-MTD
   - rill-QTD
@@ -281,6 +282,7 @@ time_ranges:
   - P4W
   - P12M
   - rill-TD
+  - rill-DTD
   - rill-WTD
   - rill-MTD
   - rill-QTD
