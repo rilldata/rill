@@ -25,7 +25,7 @@ import (
 const maxParquetRowGroupSize = 512 * int64(datasize.MB)
 
 type olapToSelfExecutor struct {
-	c    *connection
+	c    *Connection
 	olap drivers.OLAPStore
 }
 

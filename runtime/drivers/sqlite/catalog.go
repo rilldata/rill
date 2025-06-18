@@ -9,7 +9,7 @@ import (
 )
 
 type catalogStore struct {
-	*connection
+	*Connection
 	instanceID string
 }
 

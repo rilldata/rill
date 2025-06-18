@@ -325,6 +325,11 @@ func (c *connection) Config() map[string]any {
 	return maps.Clone(c.driverConfig)
 }
 
+// InformationSchema implements drivers.Handle.
+func (c *connection) InformationSchema() drivers.InformationSchema {
+	return c
+}
+
 // Close implements drivers.Connection.
 func (c *connection) Close() error {
 	c.cancel()

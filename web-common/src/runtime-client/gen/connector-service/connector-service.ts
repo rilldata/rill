@@ -20,6 +20,8 @@ import type {
   ConnectorServiceGCSGetCredentialsInfoParams,
   ConnectorServiceGCSListBucketsParams,
   ConnectorServiceGCSListObjectsParams,
+  ConnectorServiceGetTableParams,
+  ConnectorServiceListTablesParams,
   ConnectorServiceOLAPGetTableParams,
   ConnectorServiceOLAPListTablesParams,
   ConnectorServiceS3GetBucketMetadataParams,
@@ -32,6 +34,8 @@ import type {
   V1GCSGetCredentialsInfoResponse,
   V1GCSListBucketsResponse,
   V1GCSListObjectsResponse,
+  V1GetTableResponse,
+  V1ListTablesResponse,
   V1OLAPGetTableResponse,
   V1OLAPListTablesResponse,
   V1S3GetBucketMetadataResponse,
@@ -239,7 +243,7 @@ export function createConnectorServiceBigQueryListTables<
 }
 
 /**
- * @summary OLAPGetTable returns metadata about a table or view in an OLAP
+ * @summary OLAPGetTable returns metadata about a table or view
  */
 export const connectorServiceOLAPGetTable = (
   params?: ConnectorServiceOLAPGetTableParams,
@@ -296,7 +300,7 @@ export type ConnectorServiceOLAPGetTableQueryResult = NonNullable<
 export type ConnectorServiceOLAPGetTableQueryError = ErrorType<RpcStatus>;
 
 /**
- * @summary OLAPGetTable returns metadata about a table or view in an OLAP
+ * @summary OLAPGetTable returns metadata about a table or view
  */
 
 export function createConnectorServiceOLAPGetTable<
@@ -318,6 +322,194 @@ export function createConnectorServiceOLAPGetTable<
   queryKey: DataTag<QueryKey, TData, TError>;
 } {
   const queryOptions = getConnectorServiceOLAPGetTableQueryOptions(
+    params,
+    options,
+  );
+
+  const query = createQuery(queryOptions, queryClient) as CreateQueryResult<
+    TData,
+    TError
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
+/**
+ * @summary GetTable returns metadata about a table or view
+ */
+export const connectorServiceGetTable = (
+  params?: ConnectorServiceGetTableParams,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1GetTableResponse>({
+    url: `/v1/connectors/table_metadata`,
+    method: "GET",
+    params,
+    signal,
+  });
+};
+
+export const getConnectorServiceGetTableQueryKey = (
+  params?: ConnectorServiceGetTableParams,
+) => {
+  return [
+    `/v1/connectors/table_metadata`,
+    ...(params ? [params] : []),
+  ] as const;
+};
+
+export const getConnectorServiceGetTableQueryOptions = <
+  TData = Awaited<ReturnType<typeof connectorServiceGetTable>>,
+  TError = ErrorType<RpcStatus>,
+>(
+  params?: ConnectorServiceGetTableParams,
+  options?: {
+    query?: Partial<
+      CreateQueryOptions<
+        Awaited<ReturnType<typeof connectorServiceGetTable>>,
+        TError,
+        TData
+      >
+    >;
+  },
+) => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getConnectorServiceGetTableQueryKey(params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof connectorServiceGetTable>>
+  > = ({ signal }) => connectorServiceGetTable(params, signal);
+
+  return { queryKey, queryFn, ...queryOptions } as CreateQueryOptions<
+    Awaited<ReturnType<typeof connectorServiceGetTable>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
+
+export type ConnectorServiceGetTableQueryResult = NonNullable<
+  Awaited<ReturnType<typeof connectorServiceGetTable>>
+>;
+export type ConnectorServiceGetTableQueryError = ErrorType<RpcStatus>;
+
+/**
+ * @summary GetTable returns metadata about a table or view
+ */
+
+export function createConnectorServiceGetTable<
+  TData = Awaited<ReturnType<typeof connectorServiceGetTable>>,
+  TError = ErrorType<RpcStatus>,
+>(
+  params?: ConnectorServiceGetTableParams,
+  options?: {
+    query?: Partial<
+      CreateQueryOptions<
+        Awaited<ReturnType<typeof connectorServiceGetTable>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+} {
+  const queryOptions = getConnectorServiceGetTableQueryOptions(params, options);
+
+  const query = createQuery(queryOptions, queryClient) as CreateQueryResult<
+    TData,
+    TError
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
+/**
+ * @summary ListTables list all tables across all databases
+ */
+export const connectorServiceListTables = (
+  params?: ConnectorServiceListTablesParams,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1ListTablesResponse>({
+    url: `/v1/connectors/tables`,
+    method: "GET",
+    params,
+    signal,
+  });
+};
+
+export const getConnectorServiceListTablesQueryKey = (
+  params?: ConnectorServiceListTablesParams,
+) => {
+  return [`/v1/connectors/tables`, ...(params ? [params] : [])] as const;
+};
+
+export const getConnectorServiceListTablesQueryOptions = <
+  TData = Awaited<ReturnType<typeof connectorServiceListTables>>,
+  TError = ErrorType<RpcStatus>,
+>(
+  params?: ConnectorServiceListTablesParams,
+  options?: {
+    query?: Partial<
+      CreateQueryOptions<
+        Awaited<ReturnType<typeof connectorServiceListTables>>,
+        TError,
+        TData
+      >
+    >;
+  },
+) => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getConnectorServiceListTablesQueryKey(params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof connectorServiceListTables>>
+  > = ({ signal }) => connectorServiceListTables(params, signal);
+
+  return { queryKey, queryFn, ...queryOptions } as CreateQueryOptions<
+    Awaited<ReturnType<typeof connectorServiceListTables>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
+
+export type ConnectorServiceListTablesQueryResult = NonNullable<
+  Awaited<ReturnType<typeof connectorServiceListTables>>
+>;
+export type ConnectorServiceListTablesQueryError = ErrorType<RpcStatus>;
+
+/**
+ * @summary ListTables list all tables across all databases
+ */
+
+export function createConnectorServiceListTables<
+  TData = Awaited<ReturnType<typeof connectorServiceListTables>>,
+  TError = ErrorType<RpcStatus>,
+>(
+  params?: ConnectorServiceListTablesParams,
+  options?: {
+    query?: Partial<
+      CreateQueryOptions<
+        Awaited<ReturnType<typeof connectorServiceListTables>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+} {
+  const queryOptions = getConnectorServiceListTablesQueryOptions(
     params,
     options,
   );
@@ -631,7 +823,7 @@ export function createConnectorServiceGCSGetCredentialsInfo<
 }
 
 /**
- * @summary OLAPListTables list all tables across all databases on motherduck
+ * @summary OLAPListTables list all tables across all databases
  */
 export const connectorServiceOLAPListTables = (
   params?: ConnectorServiceOLAPListTablesParams,
@@ -688,7 +880,7 @@ export type ConnectorServiceOLAPListTablesQueryResult = NonNullable<
 export type ConnectorServiceOLAPListTablesQueryError = ErrorType<RpcStatus>;
 
 /**
- * @summary OLAPListTables list all tables across all databases on motherduck
+ * @summary OLAPListTables list all tables across all databases
  */
 
 export function createConnectorServiceOLAPListTables<

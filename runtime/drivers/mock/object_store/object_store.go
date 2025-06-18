@@ -50,7 +50,7 @@ func (driver) Open(instanceID string, config map[string]any, st *storage.Client,
 		return nil, err
 	}
 
-	return &handle{
+	return &Connection{
 		logger: logger,
 		cfg:    cfg,
 		bucket: bucket,
@@ -67,112 +67,117 @@ func (driver) TertiarySourceConnectors(ctx context.Context, srcProps map[string]
 	return nil, nil
 }
 
-type handle struct {
+type Connection struct {
 	logger *zap.Logger
 	cfg    *configProperties
 	bucket *blob.Bucket
 }
 
-var _ drivers.Handle = &handle{}
+var _ drivers.Handle = &Connection{}
 
 // Ping implements drivers.Handle.
-func (h *handle) Ping(ctx context.Context) error {
+func (c *Connection) Ping(ctx context.Context) error {
 	return nil
 }
 
 // Driver implements drivers.Connection.
-func (h *handle) Driver() string {
+func (c *Connection) Driver() string {
 	return "s3"
 }
 
 // Config implements drivers.Connection.
-func (h *handle) Config() map[string]any {
+func (c *Connection) Config() map[string]any {
 	return nil
 }
 
+// InformationSchema implements drivers.Handle.
+func (c *Connection) InformationSchema() drivers.InformationSchema {
+	return &drivers.NotImplementedInformationSchema{}
+}
+
 // Close implements drivers.Connection.
-func (h *handle) Close() error {
-	return h.bucket.Close()
+func (c *Connection) Close() error {
+	return c.bucket.Close()
 }
 
 // AsRegistry implements drivers.Connection.
-func (h *handle) AsRegistry() (drivers.RegistryStore, bool) {
+func (c *Connection) AsRegistry() (drivers.RegistryStore, bool) {
 	return nil, false
 }
 
 // AsCatalogStore implements drivers.Connection.
-func (h *handle) AsCatalogStore(instanceID string) (drivers.CatalogStore, bool) {
+func (c *Connection) AsCatalogStore(instanceID string) (drivers.CatalogStore, bool) {
 	return nil, false
 }
 
 // AsRepoStore implements drivers.Connection.
-func (h *handle) AsRepoStore(instanceID string) (drivers.RepoStore, bool) {
+func (c *Connection) AsRepoStore(instanceID string) (drivers.RepoStore, bool) {
 	return nil, false
 }
 
 // AsAdmin implements drivers.Handle.
-func (h *handle) AsAdmin(instanceID string) (drivers.AdminService, bool) {
+func (c *Connection) AsAdmin(instanceID string) (drivers.AdminService, bool) {
 	return nil, false
 }
 
 // AsAI implements drivers.Handle.
-func (h *handle) AsAI(instanceID string) (drivers.AIService, bool) {
+func (c *Connection) AsAI(instanceID string) (drivers.AIService, bool) {
 	return nil, false
 }
 
 // AsOLAP implements drivers.Connection.
-func (h *handle) AsOLAP(instanceID string) (drivers.OLAPStore, bool) {
+func (c *Connection) AsOLAP(instanceID string) (drivers.OLAPStore, bool) {
 	return nil, false
 }
 
 // Migrate implements drivers.Connection.
-func (h *handle) Migrate(ctx context.Context) (err error) {
+func (c *Connection) Migrate(ctx context.Context) (err error) {
 	return nil
 }
 
 // MigrationStatus implements drivers.Connection.
-func (h *handle) MigrationStatus(ctx context.Context) (current, desired int, err error) {
+func (c *Connection) MigrationStatus(ctx context.Context) (current, desired int, err error) {
 	return 0, 0, nil
 }
 
 // AsObjectStore implements drivers.Connection.
-func (h *handle) AsObjectStore() (drivers.ObjectStore, bool) {
-	return h, true
+func (c *Connection) AsObjectStore() (drivers.ObjectStore, bool) {
+	return c, true
 }
 
 // AsModelExecutor implements drivers.Handle.
-func (h *handle) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorOptions) (drivers.ModelExecutor, bool) {
+func (c *Connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorOptions) (drivers.ModelExecutor, bool) {
 	return nil, false
 }
 
 // AsModelManager implements drivers.Handle.
-func (h *handle) AsModelManager(instanceID string) (drivers.ModelManager, bool) {
+func (c *Connection) AsModelManager(instanceID string) (drivers.ModelManager, bool) {
 	return nil, false
 }
 
 // AsFileStore implements drivers.Connection.
-func (h *handle) AsFileStore() (drivers.FileStore, bool) {
+func (c *Connection) AsFileStore() (drivers.FileStore, bool) {
 	return nil, false
 }
 
 // AsWarehouse implements drivers.Handle.
-func (h *handle) AsWarehouse() (drivers.Warehouse, bool) {
+func (c *Connection) AsWarehouse() (drivers.Warehouse, bool) {
 	return nil, false
 }
 
 // AsNotifier implements drivers.Connection.
-func (h *handle) AsNotifier(properties map[string]any) (drivers.Notifier, error) {
+func (c *Connection) AsNotifier(properties map[string]any) (drivers.Notifier, error) {
 	return nil, drivers.ErrNotNotifier
 }
 
 // ListObjects implements drivers.ObjectStore.
-func (h *handle) ListObjects(ctx context.Context, path string) ([]drivers.ObjectStoreEntry, error) {
+func (c *Connection) ListObjects(ctx context.Context, path string) ([]drivers.ObjectStoreEntry, error) {
 	url, err := globutil.ParseBucketURL(path)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse path %q, %w", path, err)
 	}
 
-	bucket, err := rillblob.NewBucket(h.bucket, h.logger)
+	bucket, err := rillblob.NewBucket(c.bucket, c.logger)
 	if err != nil {
 		return nil, err
 	}
@@ -182,6 +187,6 @@ func (h *handle) ListObjects(ctx context.Context, path string) ([]drivers.Object
 }
 
 // DownloadFiles implements drivers.ObjectStore.
-func (h *handle) DownloadFiles(ctx context.Context, path string) (drivers.FileIterator, error) {
+func (c *Connection) DownloadFiles(ctx context.Context, path string) (drivers.FileIterator, error) {
 	return nil, errors.New("not implemented")
 }

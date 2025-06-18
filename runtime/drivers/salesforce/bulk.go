@@ -67,7 +67,7 @@ func makeBulkJob(session *force.Force, objectName, query string, queryAll bool, 
 	}
 }
 
-func (c *connection) startJob(ctx context.Context, j *bulkJob) error {
+func (c *Connection) startJob(ctx context.Context, j *bulkJob) error {
 	session := j.session
 
 	jobInfo, err := session.CreateBulkJobWithContext(ctx, j.job, func(request *http.Request) {

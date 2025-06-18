@@ -396,6 +396,11 @@ func (c *Connection) Config() map[string]any {
 	return m
 }
 
+// InformationSchema implements drivers.Handle.
+func (c *Connection) InformationSchema() drivers.InformationSchema {
+	return c
+}
+
 // Close implements drivers.Connection.
 func (c *Connection) Close() error {
 	c.cancel()
