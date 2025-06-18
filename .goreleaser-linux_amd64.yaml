@@ -71,7 +71,7 @@ archives:
     format: zip
 
 checksum:
-  name_template: checksums.txt
+  name_template: checksums_linux_amd64.txt
 
 snapshot:
   name_template: "{{ incminor .Version }}-nightly"
