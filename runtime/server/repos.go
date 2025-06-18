@@ -99,6 +99,7 @@ func (s *Server) WatchFilesHandler(w http.ResponseWriter, req *http.Request) {
 		err := s.WatchFiles(watchReq, shim)
 		if err != nil && !errors.Is(err, context.Canceled) {
 			s.logger.Info("watch error", zap.Error(err))
+			eventServer.Close()
 		}
 	}()
 
