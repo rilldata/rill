@@ -257,7 +257,10 @@
           on:submit|preventDefault={paramsSubmit}
         >
           {#if paramsError}
-            <SubmissionError message={paramsError} />
+            <SubmissionError
+              message={paramsError}
+              details={paramsErrorDetails}
+            />
           {/if}
 
           {#if isClickHouse}
@@ -351,7 +354,7 @@
           on:submit|preventDefault={dsnSubmit}
         >
           {#if dsnError}
-            <SubmissionError message={dsnError} />
+            <SubmissionError message={dsnError} details={dsnErrorDetails} />
           {/if}
 
           {#each dsnProperties as property (property.key)}
