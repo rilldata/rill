@@ -142,7 +142,7 @@
     tainted: paramsTainted,
     submit: paramsSubmit,
     submitting: paramsSubmitting,
-  } = superForm(defaults({}, yup(object({}))), {
+  } = superForm(defaults({ name: "" }, yup(object({ name: string() }))), {
     SPA: true,
     validators: templateData ? yup(paramsSchema) : undefined,
     onUpdate: handleOnUpdate,
@@ -169,7 +169,10 @@
     submitting: dsnSubmitting,
   } = superForm(defaults({}, yup(object({}))), {
     SPA: true,
-    validators: templateData?.dsn ? yup(dsnSchema) : undefined,
+    validators:
+      templateData && "dsn" in templateData && (templateData as any).dsn
+        ? yup(dsnSchema)
+        : undefined,
     onUpdate: handleOnUpdate,
     resetForm: false,
   });
