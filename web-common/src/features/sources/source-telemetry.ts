@@ -1,4 +1,4 @@
-import { categorizeSourceError } from "@rilldata/web-common/features/sources/modal/errors";
+import { categorizeSourceError } from "@rilldata/web-common/features/sources/errors/errors";
 import { getFileTypeFromPath } from "@rilldata/web-common/features/sources/sourceUtils";
 import {
   behaviourEvent,
