@@ -203,7 +203,7 @@ jobs:
 
       - name: Download checksum files from GCS
         run: |
-          gsutil cp gs://prod-cdn.rilldata.com/$BUCKET_DIR/checksums*.txt ./checksums/
+          gsutil cp gs://prod-cdn.rilldata.com/$BUCKET_DIR/checksums_*.txt ./checksums/
 
       - name: Combine checksum files
         run: |
