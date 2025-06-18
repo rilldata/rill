@@ -77,3 +77,11 @@ export function buildSearchList(
 
   return result;
 }
+
+export function buildCopyLink(
+  pageUrl: URL,
+  organization: string,
+  project: string,
+): string {
+  return `${pageUrl.protocol}//${pageUrl.host}/${organization}/${project}`;
+}

@@ -26,7 +26,7 @@
   import ProjectUserGroupItem from "./ProjectUserGroupItem.svelte";
   import UsergroupSetRole from "./UsergroupSetRole.svelte";
   import GeneralAccessSelectorDropdown from "./GeneralAccessSelectorDropdown.svelte";
-  import { buildSearchList } from "./helpers";
+  import { buildSearchList, buildCopyLink } from "./helpers";
 
   export let organization: string;
   export let project: string;
@@ -194,7 +194,7 @@
     projectUserGroupNameSet,
   );
 
-  $: copyLink = `${$page.url.protocol}//${$page.url.host}/${organization}/${project}`;
+  $: copyLink = buildCopyLink($page.url, organization, project);
 
   $: hasAutogroupMembers = projectMemberUserGroupsList.some(
     (group) => group.groupName === "autogroup:members",
