@@ -2,8 +2,8 @@
   import type { NumberParts } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
   import Base from "./Base.svelte";
   import { isPercDiff } from "./type-utils";
+
   export let inTable = false;
-  export let dark = false;
   export let customStyle = "";
   export let value: string | number | undefined | null | NumberParts;
 
@@ -33,7 +33,6 @@
   classes="ui-copy-number w-full font-normal {customStyle} {inTable
     ? 'text-right'
     : ''}"
-  {dark}
 >
   {#if isValueNegative}
     <span class="text-red-500">

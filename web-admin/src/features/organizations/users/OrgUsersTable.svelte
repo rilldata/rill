@@ -33,6 +33,7 @@
   export let currentUserEmail: string;
   export let currentUserRole: string;
   export let billingContact: string | undefined;
+  export let scrollToTopTrigger: any = null;
 
   export let onAttemptRemoveBillingContactUser: () => void;
   export let onAttemptChangeBillingContactUserRole: () => void;
@@ -123,4 +124,5 @@
   maxHeight={dynamicTableMaxHeight}
   emptyStateMessage="No users found"
   {headerIcons}
+  {scrollToTopTrigger}
 />

@@ -6,12 +6,11 @@ import (
 	"fmt"
 	"net/url"
 	"os"
-	"path"
 	"strings"
 	"time"
 
 	"github.com/go-git/go-git/v5"
-	"github.com/go-git/go-git/v5/config"
+	gitConfig "github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/go-git/go-git/v5/plumbing/transport"
@@ -35,6 +34,24 @@ func (g *Config) IsExpired() bool {
 	return g.Password != "" && g.PasswordExpiresAt.Before(time.Now())
 }
 
+func (g *Config) FullyQualifiedRemote() (string, error) {
+	if g.Remote == "" {
+		return "", fmt.Errorf("remote is not set")
+	}
+	u, err := url.Parse(g.Remote)
+	if err != nil {
+		return "", err
+	}
+	if g.Username != "" {
+		if g.Password != "" {
+			u.User = url.UserPassword(g.Username, g.Password)
+		} else {
+			u.User = url.User(g.Username)
+		}
+	}
+	return u.String(), nil
+}
+
 func CloneRepo(repoURL string) (string, error) {
 	endpoint, err := transport.NewEndpoint(repoURL)
 	if err != nil {
@@ -52,11 +69,46 @@ func CloneRepo(repoURL string) (string, error) {
 	return repoName, nil
 }
 
+// Remote represents a Git remote with its name and URL.
+// The URL is normalized to a HTTPS URL with a .git suffix.
 type Remote struct {
 	Name string
 	URL  string
 }
 
+// Github returns a normalized HTTPS Github URL ending in .git for the remote.
+func (r Remote) Github() (string, error) {
+	if r.URL == "" {
+		return "", fmt.Errorf("remote %q has no URL", r.Name)
+	}
+	return NormalizeGithubRemote(r.URL)
+}
+
+// ExtractGitRemote extracts the first Git remote from the Git repository at projectPath.
+// If remoteName is provided, it will return the remote with that name.
+// If detectDotGit is true, it will look for a .git directory in parent directories.
+func ExtractGitRemote(projectPath, remoteName string, detectDotGit bool) (Remote, error) {
+	remotes, err := ExtractRemotes(projectPath, detectDotGit)
+	if err != nil {
+		return Remote{}, err
+	}
+	if remoteName != "" {
+		for _, remote := range remotes {
+			if remote.Name == remoteName {
+				return remote, nil
+			}
+		}
+		return Remote{}, ErrGitRemoteNotFound
+	}
+	if len(remotes) == 0 {
+		return Remote{}, ErrGitRemoteNotFound
+	}
+	return remotes[0], nil
+}
+
+// ExtractRemotes extracts all Git remotes from the Git repository at projectPath.
+// The returned remotes are normalized with NormalizeGithubRemote.
+// If detectDotGit is true, it will look for a .git directory in parent directories.
 func ExtractRemotes(projectPath string, detectDotGit bool) ([]Remote, error) {
 	repo, err := git.PlainOpenWithOptions(projectPath, &git.PlainOpenOptions{
 		DetectDotGit: detectDotGit,
@@ -85,90 +137,6 @@ func ExtractRemotes(projectPath string, detectDotGit bool) ([]Remote, error) {
 	}
 
 	return res, nil
-}
-
-func RemotesToGithubURL(remotes []Remote) (*Remote, string, error) {
-	// Return the first Github URL found.
-	// If no Github remotes were found, return the first error.
-	var firstErr error
-	for _, remote := range remotes {
-		ghurl, err := RemoteToGithubURL(remote.URL)
-		if err == nil {
-			// Found a Github remote. Success!
-			return &remote, ghurl, nil
-		}
-		if firstErr == nil {
-			firstErr = fmt.Errorf("invalid remote %q: %w", remote.URL, err)
-		}
-	}
-
-	if firstErr == nil {
-		return nil, "", ErrGitRemoteNotFound
-	}
-
-	return nil, "", firstErr
-}
-
-func RemoteToGithubURL(remote string) (string, error) {
-	ep, err := transport.NewEndpoint(remote)
-	if err != nil {
-		return "", err
-	}
-
-	if ep.Host != "github.com" {
-		return "", fmt.Errorf("must be a git remote on github.com")
-	}
-
-	account, repo := path.Split(ep.Path)
-	account = strings.Trim(account, "/")
-	repo = strings.TrimSuffix(repo, ".git")
-	if account == "" || repo == "" || strings.Contains(account, "/") {
-		return "", fmt.Errorf("not a valid github.com remote")
-	}
-
-	githubURL := &url.URL{
-		Scheme: "https",
-		Host:   ep.Host,
-		Path:   strings.TrimSuffix(ep.Path, ".git"),
-	}
-
-	return githubURL.String(), nil
-}
-
-func SplitGithubURL(githubURL string) (account, repo string, ok bool) {
-	ep, err := transport.NewEndpoint(githubURL)
-	if err != nil {
-		return "", "", false
-	}
-
-	if ep.Host != "github.com" {
-		return "", "", false
-	}
-
-	account, repo = path.Split(ep.Path)
-	account = strings.Trim(account, "/")
-	if account == "" || repo == "" || strings.Contains(account, "/") {
-		return "", "", false
-	}
-
-	return account, repo, true
-}
-
-func ExtractGitRemote(projectPath, remoteName string, detectDotGit bool) (*Remote, string, error) {
-	remotes, err := ExtractRemotes(projectPath, detectDotGit)
-	if err != nil {
-		return nil, "", err
-	}
-	if remoteName != "" {
-		for _, remote := range remotes {
-			if remote.Name == remoteName {
-				return RemotesToGithubURL([]Remote{remote})
-			}
-		}
-	}
-
-	// Parse into a https://github.com/account/repo (no .git) format
-	return RemotesToGithubURL(remotes)
 }
 
 type SyncStatus int
@@ -241,11 +209,11 @@ func GetSyncStatus(repoPath, branch, remote string) (SyncStatus, error) {
 	return SyncStatusSynced, nil
 }
 
-func CommitAndForcePush(ctx context.Context, projectPath, remote, username, password, branch string, author *object.Signature, allowEmptyCommits bool) error {
+func CommitAndForcePush(ctx context.Context, projectPath string, config *Config, commitMsg string, author *object.Signature, allowEmptyCommits bool) error {
 	// init git repo
 	repo, err := git.PlainInitWithOptions(projectPath, &git.PlainInitOptions{
 		InitOptions: git.InitOptions{
-			DefaultBranch: plumbing.NewBranchReferenceName(branch),
+			DefaultBranch: plumbing.NewBranchReferenceName(config.DefaultBranch),
 		},
 		Bare: false,
 	})
@@ -270,7 +238,10 @@ func CommitAndForcePush(ctx context.Context, projectPath, remote, username, pass
 	}
 
 	// git commit -m
-	_, err = wt.Commit("Auto committed by Rill", &git.CommitOptions{All: true, Author: author, AllowEmptyCommits: allowEmptyCommits})
+	if commitMsg == "" {
+		commitMsg = "Auto committed by Rill"
+	}
+	_, err = wt.Commit(commitMsg, &git.CommitOptions{All: true, Author: author, AllowEmptyCommits: allowEmptyCommits})
 	if err != nil {
 		if !errors.Is(err, git.ErrEmptyCommit) {
 			return fmt.Errorf("failed to commit files to git: %w", err)
@@ -280,9 +251,9 @@ func CommitAndForcePush(ctx context.Context, projectPath, remote, username, pass
 	}
 
 	// set remote
-	_, err = repo.CreateRemote(&config.RemoteConfig{
+	_, err = repo.CreateRemote(&gitConfig.RemoteConfig{
 		Name: "origin",
-		URLs: []string{remote},
+		URLs: []string{config.Remote},
 	})
 	if err != nil {
 		if !errors.Is(err, git.ErrRemoteExists) {
@@ -292,12 +263,18 @@ func CommitAndForcePush(ctx context.Context, projectPath, remote, username, pass
 	}
 
 	// push the changes
-	err = repo.PushContext(ctx, &git.PushOptions{
+	pushOpts := &git.PushOptions{
 		RemoteName: "origin",
-		RemoteURL:  remote,
-		Auth:       &githttp.BasicAuth{Username: username, Password: password},
+		RemoteURL:  config.Remote,
 		Force:      true,
-	})
+	}
+	if config.Username != "" && config.Password != "" {
+		pushOpts.Auth = &githttp.BasicAuth{
+			Username: config.Username,
+			Password: config.Password,
+		}
+	}
+	err = repo.PushContext(ctx, pushOpts)
 	if err != nil {
 		return fmt.Errorf("failed to push to remote : %w", err)
 	}
@@ -311,4 +288,24 @@ func Clone(ctx context.Context, path string, c *Config) (*git.Repository, error)
 		ReferenceName: plumbing.NewBranchReferenceName(c.DefaultBranch),
 		SingleBranch:  true,
 	})
+}
+
+func NativeGitSignature(ctx context.Context, path string) (*object.Signature, error) {
+	repo, err := git.PlainOpen(path)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open git repository: %w", err)
+	}
+	cfg, err := repo.ConfigScoped(gitConfig.SystemScope)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get git config: %w", err)
+	}
+	if cfg.User.Email != "" && cfg.User.Name != "" {
+		// user has git properly configured use that
+		return &object.Signature{
+			Name:  cfg.User.Name,
+			Email: cfg.User.Email,
+			When:  time.Now(),
+		}, nil
+	}
+	return nil, fmt.Errorf("git user email or name is not set in git config")
 }

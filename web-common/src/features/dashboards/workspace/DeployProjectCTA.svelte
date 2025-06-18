@@ -94,7 +94,7 @@
   <Tooltip distance={8}>
     <Button
       loading={$matchingProjectsQuery.isLoading}
-      on:click={onDeploy}
+      onClick={onDeploy}
       type={hasValidDashboard ? "primary" : "secondary"}
     >
       <Rocket size="16px" />

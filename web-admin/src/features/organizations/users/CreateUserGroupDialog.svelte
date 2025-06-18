@@ -2,8 +2,8 @@
   import { page } from "$app/stores";
   import type { V1OrganizationMemberUser } from "@rilldata/web-admin/client";
   import {
-    createAdminServiceCreateUsergroup,
     createAdminServiceAddUsergroupMemberUser,
+    createAdminServiceCreateUsergroup,
     getAdminServiceListOrganizationMemberUsergroupsQueryKey,
     getAdminServiceListOrganizationMemberUsersQueryKey,
     getAdminServiceListUsergroupMemberUsersQueryKey,
@@ -294,7 +294,7 @@
               <Button
                 type="text"
                 danger
-                on:click={() => handleRemove(user.userEmail)}
+                onClick={() => handleRemove(user.userEmail)}
               >
                 Remove
               </Button>
@@ -305,7 +305,7 @@
     </div>
 
     <DialogFooter>
-      <Button type="plain" on:click={handleClose}>Cancel</Button>
+      <Button type="plain" onClick={handleClose}>Cancel</Button>
       <Button
         type="primary"
         disabled={$submitting || $form.name.trim() === ""}

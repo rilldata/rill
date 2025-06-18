@@ -434,6 +434,9 @@ The values should be valid IANA location identifiers. */
 
 export interface V1CanvasState {
   validSpec?: V1CanvasSpec;
+  /** The last time any underlying metrics view(s)'s data was refreshed.
+This may be empty if the data refresh time is not known, e.g. if the metrics view is based on an externally managed table. */
+  dataRefreshedOn?: string;
 }
 
 export interface V1CategoricalSummary {
@@ -621,6 +624,9 @@ export interface V1ComponentSpec {
 
 export interface V1ComponentState {
   validSpec?: V1ComponentSpec;
+  /** The last time any underlying metrics view(s)'s data was refreshed.
+This may be empty if the data refresh time is not known, e.g. if the metrics view is based on an externally managed table. */
+  dataRefreshedOn?: string;
 }
 
 export interface V1ComponentVariable {
@@ -863,6 +869,9 @@ This currently happens for legacy metrics views (that don't have `version: 1`), 
 
 export interface V1ExploreState {
   validSpec?: V1ExploreSpec;
+  /** The last time the underlying metrics view's data was refreshed.
+This may be empty if the data refresh time is not known, e.g. if the metrics view is based on an externally managed table. */
+  dataRefreshedOn?: string;
 }
 
 export interface V1ExploreTimeRange {
@@ -1062,7 +1071,7 @@ export interface V1Instance {
   featureFlags?: V1InstanceFeatureFlags;
   annotations?: V1InstanceAnnotations;
   watchRepo?: boolean;
-  aiContext?: string;
+  aiInstructions?: string;
 }
 
 export type V1InstanceHealthMetricsViewErrors = { [key: string]: string };
@@ -1388,7 +1397,7 @@ export interface V1MetricsViewSpec {
   displayName?: string;
   description?: string;
   /** Extra context for LLM/AI features. Used to guide natural language question answering and routing. */
-  aiContext?: string;
+  aiInstructions?: string;
   timeDimension?: string;
   smallestTimeGrain?: V1TimeGrain;
   /** Expression to evaluate a watermark for the metrics view. If not set, the watermark defaults to max(time_dimension). */
@@ -1411,9 +1420,9 @@ export interface V1MetricsViewState {
   /** Streaming is true if the underlying data may change without the metrics view's spec/state version changing.
 It's set to true if the metrics view is based on an externally managed table. */
   streaming?: boolean;
-  /** The last time the metrics view's underlying model was refreshed.
+  /** The last time the metrics view's underlying data was refreshed.
 This may be empty if the metrics view is based on an externally managed table. */
-  modelRefreshedOn?: string;
+  dataRefreshedOn?: string;
 }
 
 export interface V1MetricsViewTimeRangeResponse {

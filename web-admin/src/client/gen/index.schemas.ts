@@ -15,7 +15,7 @@ export interface ListGithubUserReposResponseRepo {
   name?: string;
   owner?: string;
   description?: string;
-  url?: string;
+  remote?: string;
   defaultBranch?: string;
 }
 
@@ -783,6 +783,7 @@ export interface V1Organization {
   description?: string;
   logoUrl?: string;
   faviconUrl?: string;
+  thumbnailUrl?: string;
   customDomain?: string;
   defaultProjectRoleId?: string;
   quotas?: V1OrganizationQuotas;
@@ -857,7 +858,7 @@ export interface V1Project {
   public?: boolean;
   createdByUserId?: string;
   provisioner?: string;
-  githubUrl?: string;
+  gitRemote?: string;
   /** managed_git_id is set if the project is connected to a rill-managed git repo. */
   managedGitId?: string;
   subpath?: string;
@@ -1426,7 +1427,7 @@ export type AdminServiceTriggerRefreshSourcesBody = {
 };
 
 export type AdminServiceGetGithubRepoStatusParams = {
-  githubUrl?: string;
+  remote?: string;
 };
 
 export type AdminServiceListOrganizationsParams = {
@@ -1444,6 +1445,7 @@ export type AdminServiceUpdateOrganizationBody = {
   displayName?: string;
   logoAssetId?: string;
   faviconAssetId?: string;
+  thumbnailAssetId?: string;
   defaultProjectRole?: string;
   billingEmail?: string;
 };
@@ -1521,7 +1523,7 @@ export type AdminServiceGetCloneCredentialsParams = {
 };
 
 export type AdminServiceConnectProjectToGithubBody = {
-  repo?: string;
+  remote?: string;
   branch?: string;
   subpath?: string;
   force?: boolean;
@@ -1730,9 +1732,10 @@ export type AdminServiceCreateProjectBody = {
   prodSlots?: string;
   subpath?: string;
   prodBranch?: string;
-  /** github_url is set for projects whose project files are stored in github. This is set to a github repo url.
-Either github_url or archive_asset_id should be set. */
-  githubUrl?: string;
+  /** git_remote is set for projects whose project files are stored in Git.
+It currently only supports Github remotes. It should be a HTTPS remote ending in .git for github.com.
+Either git_remote or archive_asset_id should be set. */
+  gitRemote?: string;
   /** archive_asset_id is set for projects whose project files are not stored in github but are managed by rill. */
   archiveAssetId?: string;
   prodVersion?: string;
@@ -1749,7 +1752,7 @@ export type AdminServiceUpdateProjectBody = {
   description?: string;
   public?: boolean;
   prodBranch?: string;
-  githubUrl?: string;
+  gitRemote?: string;
   subpath?: string;
   archiveAssetId?: string;
   prodSlots?: string;

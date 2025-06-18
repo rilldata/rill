@@ -77,7 +77,7 @@
     <CreateNewOrgForm onCreate={handleCreateOrg} size="lg" />
 
     <Dialog.Footer class="gap-x-2">
-      <Button large type="text" on:click={() => (isNewOrgDialogOpen = false)}>
+      <Button large type="text" onClick={() => (isNewOrgDialogOpen = false)}>
         Cancel
       </Button>
       <Button large type="primary" submitForm form={CreateNewOrgFormId}>

@@ -33,13 +33,13 @@
     <PricingDetails extraText={deployError.message} />
   </p>
   <Button type="primary" href={planUpgradeUrl} wide>Upgrade</Button>
-  <Button type="secondary" noStroke wide on:click={onBack}>Back</Button>
+  <Button type="secondary" noStroke wide onClick={onBack}>Back</Button>
 {:else}
   <CancelCircleInverse size="7rem" className="text-gray-200" />
   <CTAHeader variant="bold">{deployError.title}</CTAHeader>
   <CTAMessage>{deployError.message}</CTAMessage>
   {#if deployError.type === DeployErrorType.Unknown}
-    <CTAButton variant="secondary" on:click={onRetry}>Retry</CTAButton>
+    <CTAButton variant="secondary" onClick={onRetry}>Retry</CTAButton>
   {/if}
 {/if}
 <CTAPylonHelp />

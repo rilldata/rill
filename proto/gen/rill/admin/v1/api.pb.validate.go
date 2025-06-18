@@ -1521,6 +1521,10 @@ func (m *UpdateOrganizationRequest) validate(all bool) error {
 		// no validation rules for FaviconAssetId
 	}
 
+	if m.ThumbnailAssetId != nil {
+		// no validation rules for ThumbnailAssetId
+	}
+
 	if m.DefaultProjectRole != nil {
 		// no validation rules for DefaultProjectRole
 	}
@@ -6147,7 +6151,7 @@ func (m *CreateProjectRequest) validate(all bool) error {
 
 	// no validation rules for ProdBranch
 
-	// no validation rules for GithubUrl
+	// no validation rules for GitRemote
 
 	// no validation rules for ArchiveAssetId
 
@@ -6634,8 +6638,8 @@ func (m *UpdateProjectRequest) validate(all bool) error {
 		// no validation rules for ProdBranch
 	}
 
-	if m.GithubUrl != nil {
-		// no validation rules for GithubUrl
+	if m.GitRemote != nil {
+		// no validation rules for GitRemote
 	}
 
 	if m.Subpath != nil {
@@ -25091,7 +25095,7 @@ func (m *GetGithubRepoStatusRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for GithubUrl
+	// no validation rules for Remote
 
 	if len(errors) > 0 {
 		return GetGithubRepoStatusRequestMultiError(errors)
@@ -25764,7 +25768,7 @@ func (m *ConnectProjectToGithubRequest) validate(all bool) error {
 
 	// no validation rules for Project
 
-	// no validation rules for Repo
+	// no validation rules for Remote
 
 	// no validation rules for Branch
 
@@ -35635,6 +35639,8 @@ func (m *Organization) validate(all bool) error {
 
 	// no validation rules for FaviconUrl
 
+	// no validation rules for ThumbnailUrl
+
 	// no validation rules for CustomDomain
 
 	// no validation rules for DefaultProjectRoleId
@@ -36346,7 +36352,7 @@ func (m *Project) validate(all bool) error {
 
 	// no validation rules for Provisioner
 
-	// no validation rules for GithubUrl
+	// no validation rules for GitRemote
 
 	// no validation rules for ManagedGitId
 
@@ -41801,7 +41807,7 @@ func (m *ListGithubUserReposResponse_Repo) validate(all bool) error {
 
 	// no validation rules for Description
 
-	// no validation rules for Url
+	// no validation rules for Remote
 
 	// no validation rules for DefaultBranch
 

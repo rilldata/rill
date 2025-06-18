@@ -176,17 +176,16 @@
             name={id}
             class={size}
             {disabled}
-            value={value ?? (inputType === "number" ? 0 : "")}
+            value={value ?? (inputType === "number" ? null : "")}
             autocomplete={autocomplete ? "on" : "off"}
             bind:this={inputElement}
             on:input={(e) => {
               if (inputType === "number") {
                 if (e.currentTarget.value === "") {
-                  value = "";
+                  value = undefined;
                 } else {
                   value = e.currentTarget.valueAsNumber;
                 }
-                return;
               }
               value = e.currentTarget.value;
               onInput(value, e);
@@ -288,12 +287,12 @@
     @apply bg-surface justify-center;
     @apply border border-gray-300 rounded-[2px];
     @apply cursor-pointer;
-    @apply h-fit w-fit;
+    @apply h-fit w-fit bg-background;
   }
 
   input,
   .multiline-input {
-    @apply p-0 bg-transparent;
+    @apply p-0 bg-background;
     @apply size-full;
     @apply outline-none border-0;
     @apply cursor-text;

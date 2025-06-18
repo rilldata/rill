@@ -25,6 +25,7 @@
   export let overscan = 5;
   export let maxHeight = "auto";
   export let headerIcons: Record<string, { icon: any; href: string }> = {};
+  export let scrollToTopTrigger: any = null;
 
   let virtualListEl: HTMLDivElement;
   let sorting: SortingState = [];
@@ -91,11 +92,22 @@
 
   $: rows = $table.getRowModel().rows;
 
+  const isSafari =
+    typeof window !== "undefined" &&
+    /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+
+  // Constants for table sizing
+  const EMPTY_TABLE_MIN_HEIGHT = 100;
+  const SAFARI_EXTRA_PADDING = 50;
+
+  let totalSize: number;
+
   $: virtualizer = createVirtualizer<HTMLDivElement, HTMLDivElement>({
     count: 0,
     getScrollElement: () => virtualListEl,
     estimateSize: () => rowHeight,
     overscan,
+    measureElement: (el) => el?.getBoundingClientRect()?.height ?? rowHeight,
   });
 
   $: {
@@ -114,6 +126,34 @@
       onLoadMore();
     }
   }
+
+  // Calculate total size, ensuring it updates when data changes
+  $: {
+    if (safeData.length === 0) {
+      totalSize = EMPTY_TABLE_MIN_HEIGHT;
+    } else {
+      const virtualizerSize = $virtualizer.getTotalSize();
+      const minContentSize = safeData.length * rowHeight;
+
+      if (isSafari) {
+        // Safari needs extra padding to prevent scrolling issues
+        totalSize = Math.max(
+          virtualizerSize + SAFARI_EXTRA_PADDING,
+          minContentSize,
+        );
+      } else {
+        totalSize = Math.max(virtualizerSize, minContentSize);
+      }
+    }
+  }
+
+  // Auto scroll to top when scrollToTopTrigger changes
+  $: if (scrollToTopTrigger !== null && virtualListEl) {
+    virtualListEl.scrollTo({
+      top: 0,
+      behavior: "smooth",
+    });
+  }
 </script>
 
 <div
@@ -121,7 +161,12 @@
   bind:this={virtualListEl}
   style:max-height={maxHeight}
 >
-  <div class="table-wrapper" style="position: relative;">
+  <div
+    class="table-wrapper"
+    style="min-height: {safeData.length === 0
+      ? '100'
+      : totalSize}px; width: 100%; position: relative;"
+  >
     <table>
       <thead>
         {#each $table.getHeaderGroups() as headerGroup}
@@ -225,7 +270,7 @@
     @apply border-b border-gray-200;
   }
   thead {
-    @apply sticky top-0 z-30 bg-white;
+    @apply sticky top-0 z-30 bg-surface;
   }
   thead tr th {
     @apply border-t border-gray-200;

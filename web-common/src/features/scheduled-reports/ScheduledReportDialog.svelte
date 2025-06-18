@@ -210,7 +210,7 @@
         <div class="text-red-500">{$mutation.error.message}</div>
       {/if}
       <div class="grow" />
-      <Button on:click={() => (open = false)} type="secondary">Cancel</Button>
+      <Button onClick={() => (open = false)} type="secondary">Cancel</Button>
       <Button
         disabled={$submitting || $form["emailRecipients"]?.length === 0}
         form="scheduled-report-form"

@@ -1,5 +1,8 @@
 <script lang="ts">
-  import { getRepoNameFromGithubUrl } from "@rilldata/web-common/features/project/deploy/github-utils";
+  import {
+    getGitUrlFromRemote,
+    getRepoNameFromGitRemote,
+  } from "@rilldata/web-common/features/project/deploy/github-utils";
   import {
     AlertDialog,
     AlertDialogContent,
@@ -13,10 +16,10 @@
   import Github from "@rilldata/web-common/components/icons/Github.svelte";
 
   export let open = false;
-  export let githubUrl: string;
+  export let gitRemote: string;
   export let subpath: string;
 
-  $: repoName = getRepoNameFromGithubUrl(githubUrl);
+  $: repoName = getRepoNameFromGitRemote(gitRemote);
 </script>
 
 <AlertDialog bind:open>
@@ -42,7 +45,7 @@
           <div class="flex flex-row gap-x-1 items-center">
             <Github className="w-4 h-4" />
             <a
-              href={githubUrl}
+              href={getGitUrlFromRemote(gitRemote)}
               class="text-gray-800 text-[12px] font-semibold font-mono leading-5 truncate"
               target="_blank"
               rel="noreferrer noopener"
@@ -62,7 +65,7 @@
       </AlertDialogDescription>
     </AlertDialogHeader>
     <AlertDialogFooter>
-      <Button on:click={() => (open = false)} type="secondary">Close</Button>
+      <Button onClick={() => (open = false)} type="secondary">Close</Button>
     </AlertDialogFooter>
   </AlertDialogContent>
 </AlertDialog>

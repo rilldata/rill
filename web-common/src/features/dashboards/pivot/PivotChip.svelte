@@ -23,6 +23,7 @@
   activeDelay={200}
 >
   <Chip
+    theme
     type={item.type}
     label="{item.title} pivot chip"
     caret={false}

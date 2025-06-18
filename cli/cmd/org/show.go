@@ -52,6 +52,7 @@ func ShowCmd(ch *cmdutil.Helper) *cobra.Command {
 			ch.Printf("Description: %s\n", org.Description)
 			ch.Printf("Custom Logo: %s\n", org.LogoUrl)
 			ch.Printf("Custom Favicon: %s\n", org.FaviconUrl)
+			ch.Printf("Custom Thumbnail: %s\n", org.ThumbnailUrl)
 			ch.Printf("Custom Domain: %s\n", org.CustomDomain)
 			ch.Printf("Default Project Role: %s\n", defaultProjectRole)
 			if res.Permissions.ManageOrg { // Mirrors redaction rules in organizationToDTO

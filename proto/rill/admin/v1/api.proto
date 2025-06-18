@@ -965,6 +965,7 @@ message UpdateOrganizationRequest {
   optional string display_name = 5;
   optional string logo_asset_id = 6;
   optional string favicon_asset_id = 7;
+  optional string thumbnail_asset_id = 9;
   optional string default_project_role = 8;
   optional string billing_email = 4 [(validate.rules).string.email = true];
 }
@@ -1219,9 +1220,10 @@ message CreateProjectRequest {
   int64 prod_slots = 8;
   string subpath = 12;
   string prod_branch = 9;
-  // github_url is set for projects whose project files are stored in github. This is set to a github repo url.
-  // Either github_url or archive_asset_id should be set.
-  string github_url = 10;
+  // git_remote is set for projects whose project files are stored in Git.
+  // It currently only supports Github remotes. It should be a HTTPS remote ending in .git for github.com.
+  // Either git_remote or archive_asset_id should be set.
+  string git_remote = 10;
   // archive_asset_id is set for projects whose project files are not stored in github but are managed by rill.
   string archive_asset_id = 14;
   string prod_version = 13;
@@ -1247,7 +1249,7 @@ message UpdateProjectRequest {
   optional string description = 3;
   optional bool public = 4;
   optional string prod_branch = 5;
-  optional string github_url = 6;
+  optional string git_remote = 6;
   optional string subpath = 13;
   optional string archive_asset_id = 12;
   optional int64 prod_slots = 7;
@@ -1970,7 +1972,7 @@ message RevokeMagicAuthTokenRequest {
 message RevokeMagicAuthTokenResponse {}
 
 message GetGithubRepoStatusRequest {
-  string github_url = 1;
+  string remote = 1;
 }
 
 message GetGithubRepoStatusResponse {
@@ -1999,7 +2001,7 @@ message ListGithubUserReposResponse {
     string name = 1;
     string owner = 2;
     string description = 3;
-    string url = 4;
+    string remote = 4;
     string default_branch = 5;
   }
   repeated Repo repos = 1;
@@ -2008,7 +2010,7 @@ message ListGithubUserReposResponse {
 message ConnectProjectToGithubRequest {
   string organization = 1;
   string project = 2;
-  string repo = 3;
+  string remote = 3;
   string branch = 4;
   string subpath = 5;
   bool force = 6;
@@ -2432,6 +2434,7 @@ message Organization {
   string description = 3;
   string logo_url = 12;
   string favicon_url = 13;
+  string thumbnail_url = 17;
   string custom_domain = 10;
   string default_project_role_id = 16;
   OrganizationQuotas quotas = 4;
@@ -2477,7 +2480,7 @@ message Project {
   bool public = 6;
   string created_by_user_id = 22;
   string provisioner = 7;
-  string github_url = 8;
+  string git_remote = 8;
   // managed_git_id is set if the project is connected to a rill-managed git repo.
   string managed_git_id = 24;
   string subpath = 17;

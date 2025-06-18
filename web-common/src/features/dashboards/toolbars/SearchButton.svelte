@@ -20,7 +20,7 @@
 {#if !isSearchElementOpen}
   <Button
     type="toolbar"
-    on:click={() => (isSearchElementOpen = !isSearchElementOpen)}
+    onClick={() => (isSearchElementOpen = !isSearchElementOpen)}
   >
     <SearchIcon size="16px" />
     <span>Search</span>

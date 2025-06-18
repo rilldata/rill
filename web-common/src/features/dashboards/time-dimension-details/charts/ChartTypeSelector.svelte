@@ -51,7 +51,7 @@
   {#each chartTypeTabs as { label, id, Icon } (label)}
     {@const active = chartType === id}
     {@const disabled = !hasComparison && comparisonCharts.includes(id)}
-    <div class:bg-primary-100={active} class="chart-icon-wrapper">
+    <div class:bg-theme-100={active} class="chart-icon-wrapper">
       <IconButton
         {disabled}
         disableHover
@@ -59,8 +59,12 @@
         on:click={() => handleChartTypeChange(id, disabled)}
       >
         <Icon
-          primaryColor={disabled ? "#9CA3AF" : "var(--color-primary-700)"}
-          secondaryColor={disabled ? "#CBD5E1" : "var(--color-primary-300)"}
+          primaryColor={disabled
+            ? "var(--color-gray-400)"
+            : "var(--color-theme-700)"}
+          secondaryColor={disabled
+            ? "var(--color-gray-300)"
+            : "var(--color-theme-300)"}
           size="20px"
         />
         <svelte:fragment slot="tooltip-content">
@@ -74,13 +78,13 @@
 <style lang="postcss">
   .chart-type-selector {
     @apply flex ml-auto overflow-hidden mr-4;
-    @apply border border-primary-300 divide-x divide-primary-300 rounded-sm;
+    @apply border border-theme-300 divide-x divide-theme-300 rounded-sm;
   }
   .chart-icon-wrapper {
     @apply p-1;
   }
 
   .chart-icon-wrapper:hover {
-    @apply bg-primary-100;
+    @apply bg-theme-100;
   }
 </style>

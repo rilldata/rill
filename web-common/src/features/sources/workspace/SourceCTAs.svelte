@@ -1,20 +1,20 @@
 <script lang="ts">
   import { Button } from "@rilldata/web-common/components/button";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu/";
-  import { createEventDispatcher } from "svelte";
+  import Add from "@rilldata/web-common/components/icons/Add.svelte";
+  import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
+  import RefreshIcon from "@rilldata/web-common/components/icons/RefreshIcon.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import RefreshIcon from "@rilldata/web-common/components/icons/RefreshIcon.svelte";
-  import { allowPrimary } from "../../dashboards/workspace/DeployProjectCTA.svelte";
-  import { useModels } from "../../models/selectors";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
+  import { createEventDispatcher } from "svelte";
+  import { allowPrimary } from "../../dashboards/workspace/DeployProjectCTA.svelte";
   import { removeLeadingSlash } from "../../entity-management/entity-mappers";
   import {
     resourceColorMapping,
     resourceIconMapping,
   } from "../../entity-management/resource-icon-mapping";
-  import Add from "@rilldata/web-common/components/icons/Add.svelte";
+  import { useModels } from "../../models/selectors";
 
   const dispatch = createEventDispatcher();
 
@@ -36,7 +36,7 @@
   <Tooltip distance={8}>
     <Button
       square
-      on:click={() => {
+      onClick={() => {
         if (isLocalFileConnector && !hasUnsavedChanges) return;
         if (hasUnsavedChanges) {
           dispatch("save-source");
@@ -92,7 +92,7 @@
 {#if modelsForSource.length === 0}
   <Button
     disabled={hasUnsavedChanges || hasErrors}
-    on:click={() => dispatch("create-model")}
+    onClick={() => dispatch("create-model")}
     type={$allowPrimary ? "primary" : "secondary"}
   >
     Create model
