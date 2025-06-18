@@ -64,7 +64,7 @@ downloadBinary() {
         VERSION=$(curl --silent --show-error ${LATEST_URL})
     fi
     BINARY_URL="https://${CDN}/rill/${VERSION}/rill_${PLATFORM}.zip"
-    CHECKSUM_URL="https://${CDN}/rill/${VERSION}/checksums.txt"
+    CHECKSUM_URL="https://${CDN}/rill/${VERSION}/checksums_${PLATFORM}.txt"
 
     printf "Downloading binary: %s\n" "$BINARY_URL"
     curl --location --progress-bar "${BINARY_URL}" --output rill_${PLATFORM}.zip
