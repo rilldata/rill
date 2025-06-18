@@ -34,7 +34,9 @@
     <Subheading twColor="text-slate-600">
       Build fast operational dashboards that your team will actually use.
     </Subheading>
-    <Subheading twColor="text-slate-600">Let’s get started.</Subheading>
+    <div class="hidden">
+      <Subheading twColor="text-slate-600">Let’s get started.</Subheading>
+    </div>
   </div>
   <button
     class="pl-2 pr-4 py-2 rounded-sm bg-gradient-to-b from-primary-400 to-primary-500 hover:from-primary-500 hover:to-primary-500"
