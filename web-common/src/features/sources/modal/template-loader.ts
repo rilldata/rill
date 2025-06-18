@@ -1,5 +1,4 @@
 import connectorTemplates from "./connector-templates.json";
-import templateSchema from "./template-schema.json";
 
 export type PropertyValidation = {
   pattern: string;

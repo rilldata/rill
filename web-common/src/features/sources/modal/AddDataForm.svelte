@@ -306,30 +306,59 @@
       </div>
     {/if}
 
-  {#if !useDsn}
-    <!-- Form 1: Individual parameters -->
-    {#if paramsError}
-      <SubmissionError message={paramsError} details={paramsErrorDetails} />
-    {/if}
-    <form
-      id={paramsFormId}
-      class="pb-5 flex-grow overflow-y-auto"
-      use:paramsEnhance
-      on:submit|preventDefault={paramsSubmit}
-      transition:slide={{ duration: FORM_TRANSITION_DURATION }}
-    >
-      {#each properties as property (property.key)}
-        {@const propertyKey = property.key ?? ""}
-        {@const label =
-          property?.displayName + (property?.required ? "" : " (optional)")}
-        <div class="py-1.5">
-          {#if property?.description}
-            <InformationalField
-              description={property.description}
-              hint={property?.hint}
-              href={property?.docsUrl}
-            />
-          {:else if property?.type === "string" || property?.type === "number"}
+    {#if !useDsn}
+      <!-- Form 1: Individual parameters -->
+      {#if paramsError}
+        <SubmissionError message={paramsError} details={paramsErrorDetails} />
+      {/if}
+      <form
+        id={paramsFormId}
+        class="pb-5 flex-grow overflow-y-auto"
+        use:paramsEnhance
+        on:submit|preventDefault={paramsSubmit}
+        transition:slide={{ duration: FORM_TRANSITION_DURATION }}
+      >
+        {#each properties as property (property.key)}
+          {@const propertyKey = property.key ?? ""}
+          {@const label =
+            property?.displayName + (property?.required ? "" : " (optional)")}
+          <div class="py-1.5">
+            {#if property?.description}
+              <InformationalField
+                description={property.description}
+                hint={property?.hint}
+                href={property?.docsUrl}
+              />
+            {:else if property?.type === "string" || property?.type === "number"}
+              <Input
+                id={propertyKey}
+                label={property?.displayName ?? ""}
+                placeholder={property?.placeholder}
+                secret={property?.secret}
+                hint={property?.hint}
+                errors={$paramsErrors[propertyKey]}
+                bind:value={$paramsForm[propertyKey]}
+                alwaysShowError
+              />
+            {/if}
+          </div>
+        {/each}
+      </form>
+    {:else}
+      <!-- Form 2: DSN -->
+      {#if dsnError}
+        <SubmissionError message={dsnError} details={dsnErrorDetails} />
+      {/if}
+      <form
+        id={dsnFormId}
+        class="pb-5 flex-grow overflow-y-auto"
+        use:dsnEnhance
+        on:submit|preventDefault={dsnSubmit}
+        transition:slide={{ duration: FORM_TRANSITION_DURATION }}
+      >
+        {#each dsnProperties as property (property.key)}
+          {@const propertyKey = property.key ?? ""}
+          <div class="py-1.5">
             <Input
               id={propertyKey}
               label={property?.displayName ?? ""}
@@ -354,44 +383,7 @@
           {:else}
             Connect
           {/if}
-        </div>
-      {/each}
-    </form>
-  {:else}
-    <!-- Form 2: DSN -->
-    {#if dsnError}
-      <SubmissionError message={dsnError} details={dsnErrorDetails} />
-    {/if}
-    <form
-      id={dsnFormId}
-      class="pb-5 flex-grow overflow-y-auto"
-      use:dsnEnhance
-      on:submit|preventDefault={dsnSubmit}
-      transition:slide={{ duration: FORM_TRANSITION_DURATION }}
-    >
-      {#each dsnProperties as property (property.key)}
-        {@const propertyKey = property.key ?? ""}
-        <div class="py-1.5">
-          <Input
-            id={propertyKey}
-            label={property?.displayName ?? ""}
-            placeholder={property?.placeholder}
-            secret={property?.secret}
-            hint={property?.hint}
-            errors={$dsnErrors[propertyKey]}
-            bind:value={$dsnForm[propertyKey]}
-            alwaysShowError
-          />
-        </div>
-      {/each}
-    </form>
-  {/if}
-
-  <div class="flex items-center space-x-2 ml-auto">
-    <Button onClick={onBack} type="secondary">Back</Button>
-    <Button disabled={submitting} form={formId} submitForm type="primary">
-      {#if isConnectorForm}
-        {#if submitting}
+        {:else if submitting}
           Testing connection...
         {:else}
           Add data
