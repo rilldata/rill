@@ -10,7 +10,7 @@ import { ResourceKind } from "@rilldata/web-common/features/entity-management/re
 import {
   refetchInterval,
   updateSmartRefetchInterval,
-} from "../../shared/refetchIntervalStore";
+} from "../../shared/refetch-interval-store";
 import { get } from "svelte/store";
 
 export function useProjectDeployment(orgName: string, projName: string) {
