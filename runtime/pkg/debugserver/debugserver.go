@@ -2,18 +2,30 @@ package debugserver
 
 import (
 	"context"
+	"fmt"
 	"net/http"
-
-	"github.com/rilldata/rill/runtime/pkg/graceful"
 
 	// Register /debug/pprof/* endpoints on http.DefaultServeMux
 	_ "net/http/pprof"
 )
 
 func ServeHTTP(ctx context.Context, port int) error {
-	srv := &http.Server{} // An empty server will serve http.DefaultServeMux
+	// A server without a handler will serve http.DefaultServeMux
+	addr := ":" + fmt.Sprint(port)
+	srv := &http.Server{Addr: addr}
 
-	return graceful.ServeHTTP(ctx, srv, graceful.ServeOptions{
-		Port: port,
-	})
+	// Run server in a goroutine
+	errCh := make(chan error, 1)
+	go func() {
+		errCh <- srv.ListenAndServe()
+	}()
+
+	// Handle errors and context cancellation
+	select {
+	case err := <-errCh:
+		return err
+	case <-ctx.Done():
+		_ = srv.Close()
+		return ctx.Err()
+	}
 }
