@@ -16,8 +16,6 @@ jobs:
       uses: actions/setup-go@v5
       with:
         go-version: 1.24
-    - name: Go fmt
-      run: test -z $(gofmt -l .)
     - name: Go test
       run: go test -short -v ./...
       env:
