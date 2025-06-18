@@ -30,6 +30,20 @@ export function initPosthog(rillVersion: string, sessionId?: string | null) {
         "Rill version": rillVersion,
       });
     },
+    before_send: (event) => {
+      // Only filter $exception (error tracking) events by URL
+      if (!event) return null;
+      if (event.event === "$exception") {
+        const url = window.location.href;
+        if (url.includes("ui.rilldata.com") || url.includes("localhost")) {
+          return event;
+        }
+        // Drop $exception events for all other URLs
+        return null;
+      }
+      // Allow all other events
+      return event;
+    },
   });
 }
 
