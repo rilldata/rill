@@ -34,8 +34,12 @@ export function initPosthog(rillVersion: string, sessionId?: string | null) {
       // Only filter $exception (error tracking) events by URL
       if (!event) return null;
       if (event.event === "$exception") {
-        const url = window.location.href;
-        if (url.includes("ui.rilldata.com") || url.includes("localhost")) {
+        const hostname = window.location.hostname;
+        if (
+          hostname === "ui.rilldata.com" ||
+          hostname === "localhost" ||
+          hostname === "127.0.0.1"
+        ) {
           return event;
         }
         // Drop $exception events for all other URLs
