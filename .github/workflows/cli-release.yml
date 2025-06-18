@@ -45,13 +45,13 @@ jobs:
         os: [ubuntu-latest, ubuntu-24.04-arm, macos-13, macos-latest]
         include:
           - os: ubuntu-latest
-            goreleaser-config: --config .goreleaser-linux-amd64.yaml
+            platform: linux_amd64
           - os: ubuntu-24.04-arm
-            goreleaser-config: --config .goreleaser-linux-arm64.yaml
+            platform: linux_arm64
           - os: macos-13
-            goreleaser-config: --config .goreleaser-darwin-amd64.yaml
+            platform: darwin_amd64
           - os: macos-latest
-            goreleaser-config: --config .goreleaser-darwin-arm64.yaml
+            platform: darwin_arm64
       fail-fast: false
 
     needs: validate-sequential
@@ -96,7 +96,7 @@ jobs:
         with:
           distribution: goreleaser
           version: '~> v2'
-          args: release ${{ env.NIGHTLY }} ${{ matrix.goreleaser-config }}
+          args: release ${{ env.NIGHTLY }} --config .goreleaser-${{ matrix.platform }}.yaml
         env:
           GITHUB_TOKEN: ${{ secrets.GORELEASER_ACCESS_TOKEN }}
           GOOGLE_APPLICATION_CREDENTIALS: /rill-binary-sa.json
@@ -140,7 +140,7 @@ jobs:
         run: |-
           mkdir nightly
           cp dist/*.zip nightly/
-          cp dist/checksums*.txt nightly/
+          cp dist/checksums.txt nightly/checksums_${{ matrix.platform }}.txt
 
       - name: Nightly - Upload nightly to CDN bucket
         if: env.PUBLISH_NIGHTLY == 'true'
