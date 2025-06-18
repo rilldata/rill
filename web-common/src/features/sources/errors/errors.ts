@@ -82,7 +82,7 @@ const errorTelemetryMap = {
 };
 
 const DEFAULT_CONNECTOR_ERROR_TEMPLATE =
-  "We got the following error when trying to connect to CONNECTOR_NAME. Please check your connection details and user permissions, then try again.";
+  "We received the following error when trying to connect to CONNECTOR_NAME. Please check your connection details and user permissions, then try again.";
 
 export function humanReadableErrorMessage(
   connectorName: string | undefined,
