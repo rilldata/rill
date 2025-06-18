@@ -113,6 +113,20 @@
         enabled: open,
         refetchOnMount: true,
         refetchOnWindowFocus: true,
+        select: (data) => {
+          if (!data?.members) return data;
+          const currentUserEmail = $currentUser.data?.user?.email;
+          if (!currentUserEmail) return data;
+
+          return {
+            ...data,
+            members: [...data.members].sort((a, b) => {
+              if (a.userEmail === currentUserEmail) return -1;
+              if (b.userEmail === currentUserEmail) return 1;
+              return 0;
+            }),
+          };
+        },
       },
     },
   );
@@ -182,13 +196,6 @@
 
   $: copyLink = `${$page.url.protocol}//${$page.url.host}/${organization}/${project}`;
 
-  // Sort the list to prioritize the current user
-  $: sortedProjectMemberUsersList = projectMemberUsersList.sort((a, b) => {
-    if (a.userEmail === $currentUser.data?.user?.email) return -1;
-    if (b.userEmail === $currentUser.data?.user?.email) return 1;
-    return 0;
-  });
-
   $: hasAutogroupMembers = projectMemberUserGroupsList.some(
     (group) => group.groupName === "autogroup:members",
   );
@@ -209,7 +216,7 @@
       <UserAndGroupInviteForm {organization} {project} {searchList} />
       <div class="flex flex-col gap-y-1 overflow-y-auto max-h-[350px] mt-2">
         <div class="mt-2">
-          {#each sortedProjectMemberUsersList as user}
+          {#each projectMemberUsersList as user}
             <UserItem
               {organization}
               {project}
