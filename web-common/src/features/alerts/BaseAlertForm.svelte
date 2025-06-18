@@ -85,7 +85,7 @@
 
 <!-- 802px = 1px border on each side of the form + 3 tabs with a 200px fixed-width -->
 <form
-  class="transform bg-white rounded-md flex flex-col w-[802px]"
+  class="transform bg-surface rounded-md flex flex-col w-[802px]"
   id={formId}
   on:submit|preventDefault={handleSubmit}
 >
@@ -93,12 +93,12 @@
     class="px-6 py-4 text-gray-900 text-lg font-semibold leading-7 flex flex-row items-center justify-between"
   >
     <div>{dialogTitle}</div>
-    <Button type="link" noStroke compact on:click={handleCancel}>
+    <Button type="link" noStroke compact onClick={handleCancel}>
       <X strokeWidth={3} size={16} class="text-black" />
     </Button>
   </DialogTitle>
   <DialogTabs.Root value={tabs[currentTabIndex]}>
-    <DialogTabs.List class="border-t border-gray-200">
+    <DialogTabs.List class="border-t">
       {#each tabs as tab, i}
         <!-- inner width is 800px. so, width = ceil(800/3) = 267 -->
         <DialogTabs.Trigger value={tab} tabIndex={i} class="w-[267px]">
@@ -121,12 +121,12 @@
   <div class="px-6 py-3 flex items-center gap-x-2">
     <div class="grow" />
     {#if currentTabIndex === 0}
-      <Button on:click={handleCancel} type="secondary">Cancel</Button>
+      <Button onClick={handleCancel} type="secondary">Cancel</Button>
     {:else}
-      <Button on:click={handleBack} type="secondary">Back</Button>
+      <Button onClick={handleBack} type="secondary">Back</Button>
     {/if}
     {#if currentTabIndex !== 2}
-      <Button type="primary" on:click={handleNextTab}>Next</Button>
+      <Button type="primary" onClick={handleNextTab}>Next</Button>
     {:else}
       <Button type="primary" disabled={$isSubmitting} form={formId} submitForm>
         {isEditForm ? "Update" : "Create"}

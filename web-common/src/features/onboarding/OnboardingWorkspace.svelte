@@ -80,7 +80,7 @@
     <p>Building data intuition at every step of analysis</p>
   </div>
   <ol
-    class="max-w-fit flex flex-col gap-y-4 px-9 pt-9 pb-[60px] bg-surface rounded-lg border border-gray-200"
+    class="max-w-fit flex flex-col gap-y-4 px-9 pt-9 pb-[60px] bg-surface rounded-lg border"
   >
     {#if olapConnector}
       {#each steps as step, i (step.heading)}
@@ -92,7 +92,7 @@
               <p>{step.description}</p>
             </div>
             {#if step.id === "source"}
-              <Button type="secondary" on:click={addSourceModal.open}>
+              <Button type="secondary" onClick={addSourceModal.open}>
                 <IconSpaceFixer pullLeft><Add /></IconSpaceFixer>
                 <span>Add data</span>
               </Button>

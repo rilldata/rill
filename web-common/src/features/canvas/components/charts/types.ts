@@ -50,7 +50,7 @@ export interface TimeDimensionDefinition {
   format?: string;
 }
 
-export type ChartSortDirection = "x" | "y" | "-x" | "-y";
+export type ChartSortDirection = "x" | "y" | "-x" | "-y" | "color" | "-color";
 
 export type ChartLegend = "none" | "top" | "bottom" | "left" | "right";
 
@@ -64,6 +64,8 @@ interface NominalFieldConfig {
 
 interface QuantitativeFieldConfig {
   zeroBasedOrigin?: boolean; // Default is false
+  min?: number;
+  max?: number;
 }
 
 export interface FieldConfig

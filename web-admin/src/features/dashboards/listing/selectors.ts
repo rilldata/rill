@@ -96,7 +96,7 @@ function getCanvasRefreshedOn(
     .map((m) =>
       allResources.get(`${m.meta.refs[0].kind}_${m.meta.refs[0].name}`),
     )
-    .map((m) => m.metricsView.state?.modelRefreshedOn)
+    .map((m) => m?.metricsView?.state?.dataRefreshedOn)
     .reduce((max, c) => (c > max ? c : max));
 
   return maxRefresh;
@@ -116,5 +116,5 @@ function getExploreRefreshedOn(
   if (!metricsView) return undefined;
 
   // Second, get the refreshedOn from the metrics view
-  return metricsView?.metricsView?.state?.modelRefreshedOn;
+  return metricsView?.metricsView?.state?.dataRefreshedOn;
 }

@@ -1,17 +1,17 @@
 <script lang="ts">
-  import * as Popover from "@rilldata/web-common/components/popover";
+  import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import DragHandle from "@rilldata/web-common/components/icons/DragHandle.svelte";
+  import EyeIcon from "@rilldata/web-common/components/icons/Eye.svelte";
+  import EyeOffIcon from "@rilldata/web-common/components/icons/EyeInvisible.svelte";
+  import * as Popover from "@rilldata/web-common/components/popover";
   import { clamp } from "@rilldata/web-common/lib/clamp";
   import type {
-    MetricsViewSpecMeasure,
     MetricsViewSpecDimension,
+    MetricsViewSpecMeasure,
   } from "@rilldata/web-common/runtime-client";
-  import { Button } from "../button";
-  import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
-  import EyeOffIcon from "@rilldata/web-common/components/icons/EyeInvisible.svelte";
-  import EyeIcon from "@rilldata/web-common/components/icons/Eye.svelte";
-  import Search from "../search/Search.svelte";
   import { Tooltip } from "bits-ui";
+  import { Button } from "../button";
+  import Search from "../search/Search.svelte";
 
   const UPPER_BOUND = 12 + 28 + 25;
   const ITEM_HEIGHT = 28;
@@ -203,10 +203,8 @@
 
 <Popover.Root bind:open={active}>
   <Popover.Trigger asChild let:builder>
-    <Button builders={[builder]} type="text" label={tooltipText} on:click>
-      <div
-        class="flex items-center gap-x-0.5 px-1 text-gray-700 hover:text-inherit"
-      >
+    <Button builders={[builder]} type="text" theme label={tooltipText}>
+      <div class="flex items-center gap-x-0.5 px-1">
         <strong
           >{`${numShownString} ${type === "measure" ? "Measures" : "Dimensions"}`}</strong
         >
@@ -246,14 +244,14 @@
         on:mousedown={handleMouseDown}
       >
         <header
-          class="flex-none flex w-full py-1.5 pb-1 justify-between px-2 sticky top-0 from-white from-80% to-transparent bg-gradient-to-b z-10"
+          class="flex-none flex w-full py-1.5 pb-1 justify-between px-2 sticky top-0 from-popover from-80% to-transparent bg-gradient-to-b z-10"
         >
           <h3 class="uppercase text-gray-500 font-semibold">
             Shown {type === "measure" ? "Measures" : "Dimensions"}
           </h3>
           {#if selectedItems.length > 1}
             <button
-              class="text-primary-500 pointer-events-auto hover:text-primary-600 font-medium text-[11px]"
+              class="text-theme-500 pointer-events-auto hover:text-theme-600 font-medium text-[11px]"
               on:click={() => {
                 selectedItems = [selectedItems[0]];
                 onSelectedChange(selectedItems);
@@ -409,15 +407,15 @@
         <span class="flex-none h-px bg-slate-200 w-full" />
         <div class="hidden-section flex flex-col flex-1 min-h-0 p-1.5 pt-0">
           <header
-            class="flex-none flex py-1.5 justify-between px-2 sticky top-0 from-white from-80% to-transparent bg-gradient-to-b"
+            class="flex-none flex py-1.5 justify-between px-2 sticky top-0 from-popover from-80% to-transparent bg-gradient-to-b"
           >
             <h3
-              class="uppercase text-xs text-gray-500 font-semibold from-white from-80% to-transparent bg-gradient-to-b"
+              class="uppercase text-xs text-gray-500 font-semibold from-popover from-80% to-transparent bg-gradient-to-b"
             >
               Hidden {type === "measure" ? "Measures" : "Dimensions"}
             </h3>
             <button
-              class="pointer-events-auto text-primary-500 text-[11px] font-medium"
+              class="pointer-events-auto text-theme-500 text-[11px] font-medium"
               on:click={() => {
                 selectedItems = allItems.map((item) => item.name ?? "");
                 onSelectedChange(selectedItems);

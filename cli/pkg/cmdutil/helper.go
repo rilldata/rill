@@ -114,6 +114,7 @@ func (h *Helper) SetOrg(org string) error {
 	if err != nil {
 		return fmt.Errorf("failed to set default org: %w", err)
 	}
+
 	h.gitHelperMu.Lock()
 	defer h.gitHelperMu.Unlock()
 	h.gitHelper = nil // Invalidate the git helper since the org has changed.
@@ -362,7 +363,7 @@ func (h *Helper) LoadProject(ctx context.Context, path string) (*adminv1.Project
 	return res.Project, nil
 }
 
-func (h *Helper) ProjectNamesByGithubURL(ctx context.Context, org, githubURL, subPath string) ([]string, error) {
+func (h *Helper) ProjectNamesByGitRemote(ctx context.Context, org, remote, subPath string) ([]string, error) {
 	c, err := h.Client()
 	if err != nil {
 		return nil, err
@@ -377,13 +378,13 @@ func (h *Helper) ProjectNamesByGithubURL(ctx context.Context, org, githubURL, su
 
 	names := make([]string, 0)
 	for _, p := range resp.Projects {
-		if strings.EqualFold(p.GithubUrl, githubURL) && (subPath == "" || strings.EqualFold(p.Subpath, subPath)) {
+		if strings.EqualFold(p.GitRemote, remote) && (subPath == "" || strings.EqualFold(p.Subpath, subPath)) {
 			names = append(names, p.Name)
 		}
 	}
 
 	if len(names) == 0 {
-		return nil, fmt.Errorf("no project with github URL %q exists in org %q", githubURL, org)
+		return nil, fmt.Errorf("no project with Git remote %q exists in the org %q", remote, org)
 	}
 
 	return names, nil
@@ -400,13 +401,17 @@ func (h *Helper) InferProjectName(ctx context.Context, org, path string) (string
 	}
 
 	// Verify projectPath is a Git repo with remote on Github
-	_, githubURL, err := gitutil.ExtractGitRemote(path, "", true)
+	remote, err := gitutil.ExtractGitRemote(path, "", true)
+	if err != nil {
+		return "", err
+	}
+	githubRemote, err := remote.Github()
 	if err != nil {
 		return "", err
 	}
 
 	// Fetch project names matching the Github URL
-	names, err := h.ProjectNamesByGithubURL(ctx, org, githubURL, "")
+	names, err := h.ProjectNamesByGitRemote(ctx, org, githubRemote, "")
 	if err != nil {
 		return "", err
 	}
@@ -463,12 +468,12 @@ func (h *Helper) OpenRuntimeClient(ctx context.Context, org, project string, loc
 	return rt, instanceID, nil
 }
 
-func (h *Helper) GitHelper(project, localPath string) *GitHelper {
+func (h *Helper) GitHelper(org, project, localPath string) *GitHelper {
 	h.gitHelperMu.Lock()
 	defer h.gitHelperMu.Unlock()
 
 	// If the git helper is nil or the org, project or local path has changed, create a new one.
-	if h.gitHelper == nil || h.gitHelper.org != h.Org || h.gitHelper.project != project || h.gitHelper.localPath != localPath {
+	if h.gitHelper == nil || h.gitHelper.org != org || h.gitHelper.project != project || h.gitHelper.localPath != localPath {
 		h.gitHelper = newGitHelper(h, h.Org, project, localPath)
 	}
 	return h.gitHelper

@@ -343,7 +343,7 @@
     padding-right: 0px;
   }
   :global(regular-table table) {
-    color: rgb(55 65 81);
+    color: var(--color-gray-700);
     table-layout: fixed;
     border-collapse: separate;
     font-family: Inter;
@@ -377,10 +377,6 @@
       "calt",
       "ccmp",
       "kern";
-  }
-
-  :global(regular-table thead tr) {
-    border-bottom: 2px solid rgb(229 231 235);
   }
 
   :global(regular-table *) {

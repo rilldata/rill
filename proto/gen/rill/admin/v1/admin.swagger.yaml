@@ -185,7 +185,7 @@ paths:
           schema:
             $ref: '#/definitions/rpcStatus'
       parameters:
-        - name: githubUrl
+        - name: remote
           in: query
           required: false
           type: string
@@ -400,6 +400,8 @@ paths:
               logoAssetId:
                 type: string
               faviconAssetId:
+                type: string
+              thumbnailAssetId:
                 type: string
               defaultProjectRole:
                 type: string
@@ -1093,7 +1095,7 @@ paths:
           schema:
             type: object
             properties:
-              repo:
+              remote:
                 type: string
               branch:
                 type: string
@@ -2686,11 +2688,12 @@ paths:
                 type: string
               prodBranch:
                 type: string
-              githubUrl:
+              gitRemote:
                 type: string
                 description: |-
-                  github_url is set for projects whose project files are stored in github. This is set to a github repo url.
-                  Either github_url or archive_asset_id should be set.
+                  git_remote is set for projects whose project files are stored in Git.
+                  It currently only supports Github remotes. It should be a HTTPS remote ending in .git for github.com.
+                  Either git_remote or archive_asset_id should be set.
               archiveAssetId:
                 type: string
                 description: archive_asset_id is set for projects whose project files are not stored in github but are managed by rill.
@@ -2793,7 +2796,7 @@ paths:
                 type: boolean
               prodBranch:
                 type: string
-              githubUrl:
+              gitRemote:
                 type: string
               subpath:
                 type: string
@@ -4009,7 +4012,7 @@ definitions:
         type: string
       description:
         type: string
-      url:
+      remote:
         type: string
       defaultBranch:
         type: string
@@ -5087,6 +5090,8 @@ definitions:
         type: string
       faviconUrl:
         type: string
+      thumbnailUrl:
+        type: string
       customDomain:
         type: string
       defaultProjectRoleId:
@@ -5224,7 +5229,7 @@ definitions:
         type: string
       provisioner:
         type: string
-      githubUrl:
+      gitRemote:
         type: string
       managedGitId:
         type: string

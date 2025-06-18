@@ -15,6 +15,19 @@ service LocalService {
   // GetVersion returns details about the current and latest available Rill versions.
   rpc GetVersion(GetVersionRequest) returns (GetVersionResponse) {}
 
+  // GitStatus returns the curren status of the local git repo. This is equivalent to doing a `git fetch` followed by running `git status`.
+  rpc GitStatus(GitStatusRequest) returns (GitStatusResponse) {}
+
+  // GitPull fetches the latest changes from the remote git repo equivalent to `git pull` command.
+  // If there are any merge conflicts the pull is aborted.
+  // Force can be set to true to force the pull and overwrite any local changes.
+  rpc GitPull(GitPullRequest) returns (GitPullResponse) {}
+  
+  // GitPush pushes the local changes to the remote git repo equivalent to `git push` command.
+  // The difference between this and PushTiGithub is that this does not create a new repo.
+  // It only pushes the changes to the existing remote repo.
+  rpc GitPush(GitPushRequest) returns (GitPushResponse) {}
+  
   // PushToGithub create a Git repo from local project and pushed to users git account.
   rpc PushToGithub(PushToGithubRequest) returns (PushToGithubResponse) {}
 
@@ -77,13 +90,46 @@ message GetVersionResponse {
   string latest = 2;
 }
 
+message GitStatusRequest {}
+
+message GitStatusResponse {
+  // The current branch of the git repo.
+  string branch = 1;
+  // The remote url of the git repo.
+  string github_url = 2;
+  // If the repo is managed by Rill.
+  bool managed_git = 3;
+  // local_changes returns true if there are any staged, unstaged, or untracked changes in the local git repo.
+  bool local_changes = 4;
+  // local_commits returns number of local commits that are not pushed to the remote git repo.
+  int32 local_commits = 5;
+  // remote_commits returns number of remote commits not pulled yet.
+  int32 remote_commits = 6;
+}
+
+message GitPullRequest {
+  bool discard_local = 1;
+}
+
+message GitPullResponse {
+  // The output of the git pull command. Only set for unsuccessful pulls.
+  string output = 1; 
+}
+
+message GitPushRequest {
+  string commit_message = 1;
+  bool force = 2;
+}
+
+message GitPushResponse {}
+
 message PushToGithubRequest {
   string account = 1;
   string repo = 2;
 }
 
 message PushToGithubResponse {
-  string github_url = 1;
+  string remote = 1;
   string account = 2;
   string repo = 3;
 }

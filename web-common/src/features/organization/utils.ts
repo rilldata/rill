@@ -28,7 +28,7 @@ export function getPlanUpgradeUrl(orgName: string) {
       //       We should add an endpoint to get frontendUrl from the urls.go util on cloud.
       let cloudUrl = adminUrl.replace("admin.rilldata", "ui.rilldata");
       // hack for dev env
-      if (cloudUrl === "http://localhost:9090") {
+      if (cloudUrl === "http://localhost:8080") {
         cloudUrl = "http://localhost:3000";
       }
 

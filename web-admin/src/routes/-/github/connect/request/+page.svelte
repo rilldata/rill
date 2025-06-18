@@ -20,7 +20,7 @@
     <Github className="w-10 h-10 text-gray-900" />
     <CtaHeader>Connect to GitHub</CtaHeader>
     <CtaMessage>
-      You requested access to <GithubRepoInline githubUrl={remote} />. You can
+      You requested access to <GithubRepoInline gitRemote={remote} />. You can
       close this page now.
     </CtaMessage>
     <CtaMessage>
