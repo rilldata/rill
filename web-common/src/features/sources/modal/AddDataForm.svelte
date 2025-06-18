@@ -332,12 +332,13 @@
             {:else if property?.type === "string" || property?.type === "number"}
               <Input
                 id={propertyKey}
-                label={property?.displayName ?? ""}
+                {label}
                 placeholder={property?.placeholder}
                 secret={property?.secret}
                 hint={property?.hint}
                 errors={$paramsErrors[propertyKey]}
                 bind:value={$paramsForm[propertyKey]}
+                onInput={(_, e) => onStringInputChange(e)}
                 alwaysShowError
               />
             {/if}
