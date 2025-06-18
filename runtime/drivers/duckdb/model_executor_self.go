@@ -69,7 +69,11 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 	// We expect to remove this rewriting once all users start using GCS's s3 compatibility API support.
 	if scheme, secretSQL, ast, ok := objectStoreRef(ctx, inputProps, opts); ok {
 		if secretSQL != "" {
-			inputProps.PreExec = secretSQL
+			if inputProps.PreExec == "" {
+				inputProps.PreExec = secretSQL
+			} else {
+				inputProps.PreExec += ";" + secretSQL
+			}
 		} else if scheme == "gcs" {
 			// rewrite duckdb sql with locally downloaded files
 			handle, release, err := opts.Env.AcquireConnector(ctx, scheme)
@@ -89,6 +93,19 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 				return nil, fmt.Errorf("invalid local path: %w", err)
 			}
 			inputProps.SQL = rewrittenSQL
+		}
+	}
+
+	// Add PreExec statements that create temporary secrets for object store connectors.
+	for _, connector := range e.c.config.secretConnectors() {
+		secretSQL, err := objectStoreSecretSQL(ctx, opts, connector, "", nil)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create secret for connector %q: %w", connector, err)
+		}
+		if inputProps.PreExec == "" {
+			inputProps.PreExec = secretSQL
+		} else {
+			inputProps.PreExec += ";" + secretSQL
 		}
 	}
 
@@ -271,12 +288,7 @@ func objectStoreRef(ctx context.Context, props *ModelInputProperties, opts *driv
 			uri.Scheme = "gcs"
 		}
 		// for s3 and azure we can just set a duckdb secret and ingest data using duckdb's native support for s3 and azure
-		handle, release, err := opts.Env.AcquireConnector(ctx, uri.Scheme)
-		if err != nil {
-			return "", "", nil, false
-		}
-		defer release()
-		secretSQL, err := objectStoreSecretSQL(ctx, ref.Paths[0], opts.ModelName, opts.InputConnector, handle, opts.InputProperties)
+		secretSQL, err := objectStoreSecretSQL(ctx, opts, uri.Scheme, ref.Paths[0], opts.InputProperties)
 		if err != nil {
 			if errors.Is(err, errGCSUsesNativeCreds) {
 				return uri.Scheme, "", ast, true
