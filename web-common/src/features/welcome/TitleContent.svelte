@@ -35,7 +35,7 @@
       Build fast operational dashboards that your team will actually use.
     </Subheading>
     <div class="hidden">
-      <Subheading twColor="text-slate-600">Let’s get started.</Subheading>
+      <Subheading twColor="text-slate-600">Let's get started.</Subheading>
     </div>
   </div>
   <button
@@ -46,7 +46,7 @@
       class="flex flex-row gap-x-1 items-center text-sm font-medium text-white"
     >
       <Add className="text-white" />
-      Add data
+      Connect your data
     </div>
   </button>
 </section>
