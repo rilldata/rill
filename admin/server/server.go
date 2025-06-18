@@ -379,6 +379,24 @@ func (s *Server) jwtAttributesForUser(ctx context.Context, userID, orgID string,
 	return attr, nil
 }
 
+func (s *Server) jwtAttributesForService(ctx context.Context, serviceID string, projectPermissions *adminv1.ProjectPermissions) (map[string]any, error) {
+	service, err := s.admin.DB.FindService(ctx, serviceID)
+	if err != nil {
+		return nil, err
+	}
+
+	attr := map[string]any{
+		"name":  service.Name,
+		"admin": projectPermissions.ManageProject,
+	}
+
+	for k, v := range service.Attributes {
+		attr[k] = v
+	}
+
+	return attr, nil
+}
+
 func timeoutSelector(fullMethodName string) time.Duration {
 	if strings.HasPrefix(fullMethodName, "/rill.admin.v1.AIService") {
 		return time.Minute * 2

@@ -2816,6 +2816,94 @@ paths:
                 type: boolean
       tags:
         - AdminService
+  /v1/organizations/{organizationName}/projects/{projectName}/services:
+    get:
+      summary: ListProjectServices returns all the services for the project for an organization
+      operationId: AdminService_ListProjectServices
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ListProjectServicesResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organizationName
+          in: path
+          required: true
+          type: string
+        - name: projectName
+          in: path
+          required: true
+          type: string
+      tags:
+        - AdminService
+  /v1/organizations/{organizationName}/projects/{projectName}/services/{name}:
+    delete:
+      summary: RemoveProjectMemberService removes the service from the project
+      operationId: AdminService_RemoveProjectMemberService
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1RemoveProjectMemberServiceResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organizationName
+          in: path
+          required: true
+          type: string
+        - name: projectName
+          in: path
+          required: true
+          type: string
+        - name: name
+          in: path
+          required: true
+          type: string
+      tags:
+        - AdminService
+  /v1/organizations/{organizationName}/projects/{projectName}/services/{name}/role:
+    put:
+      summary: SetProjectMemberServiceRole updates the project role for the service
+      operationId: AdminService_SetProjectMemberServiceRole
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1SetProjectMemberServiceRoleResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organizationName
+          in: path
+          required: true
+          type: string
+        - name: projectName
+          in: path
+          required: true
+          type: string
+        - name: name
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              role:
+                type: string
+      tags:
+        - AdminService
   /v1/organizations/{organizationName}/services:
     get:
       summary: ListService returns all the services per organization
@@ -2854,6 +2942,26 @@ paths:
           required: true
           type: string
         - name: name
+          in: query
+          required: false
+          type: string
+        - name: orgRoleName
+          description: Optional org role to assign
+          in: query
+          required: false
+          type: string
+        - name: projectName
+          description: Optional project to assign role to
+          in: query
+          required: false
+          type: string
+        - name: projectRoleName
+          description: Optional project role to assign
+          in: query
+          required: false
+          type: string
+        - name: attributes
+          description: This is a request variable of the map type. The query format is "map_name[key]=value", e.g. If the map name is Age, the key type is string, and the value type is integer, the query parameter is expressed as Age["bob"]=18
           in: query
           required: false
           type: string
@@ -2912,6 +3020,42 @@ paths:
             properties:
               newName:
                 type: string
+              attributes:
+                type: object
+                additionalProperties:
+                  type: string
+      tags:
+        - AdminService
+  /v1/organizations/{organizationName}/services/{name}/role:
+    put:
+      summary: SetOrganizationMemberServiceRole sets or updates the role of the service in the organization
+      operationId: AdminService_SetOrganizationMemberServiceRole
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1SetOrganizationMemberServiceRolesResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organizationName
+          in: path
+          required: true
+          type: string
+        - name: name
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              role:
+                type: string
       tags:
         - AdminService
   /v1/organizations/{organizationName}/services/{serviceName}/tokens:
@@ -2935,6 +3079,10 @@ paths:
         - name: serviceName
           in: path
           required: true
+          type: string
+        - name: projectName
+          in: query
+          required: false
           type: string
       tags:
         - AdminService
@@ -4869,6 +5017,14 @@ definitions:
           $ref: '#/definitions/v1ProjectMemberUser'
       nextPageToken:
         type: string
+  v1ListProjectServicesResponse:
+    type: object
+    properties:
+      services:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1ProjectMemberService'
   v1ListProjectWhitelistedDomainsResponse:
     type: object
     properties:
@@ -4941,7 +5097,7 @@ definitions:
         type: array
         items:
           type: object
-          $ref: '#/definitions/v1Service'
+          $ref: '#/definitions/v1OrganizationMemberService'
   v1ListSuperusersResponse:
     type: object
     properties:
@@ -5119,6 +5275,29 @@ definitions:
         type: string
       invitedBy:
         type: string
+  v1OrganizationMemberService:
+    type: object
+    properties:
+      id:
+        type: string
+      name:
+        type: string
+      orgId:
+        type: string
+      orgName:
+        type: string
+      roleName:
+        type: string
+      attributes:
+        type: object
+        additionalProperties:
+          type: string
+      createdOn:
+        type: string
+        format: date-time
+      updatedOn:
+        type: string
+        format: date-time
   v1OrganizationMemberUser:
     type: object
     properties:
@@ -5274,6 +5453,35 @@ definitions:
         type: string
       invitedBy:
         type: string
+  v1ProjectMemberService:
+    type: object
+    properties:
+      id:
+        type: string
+      name:
+        type: string
+      orgId:
+        type: string
+      orgName:
+        type: string
+      orgRoleName:
+        type: string
+      projectId:
+        type: string
+      projectName:
+        type: string
+      projectRoleName:
+        type: string
+      attributes:
+        type: object
+        additionalProperties:
+          type: string
+      createdOn:
+        type: string
+        format: date-time
+      updatedOn:
+        type: string
+        format: date-time
   v1ProjectMemberUser:
     type: object
     properties:
@@ -5441,6 +5649,8 @@ definitions:
     type: object
   v1RemoveOrganizationMemberUsergroupResponse:
     type: object
+  v1RemoveProjectMemberServiceResponse:
+    type: object
   v1RemoveProjectMemberUserResponse:
     type: object
   v1RemoveProjectMemberUsergroupResponse:
@@ -5577,6 +5787,10 @@ definitions:
         type: string
       orgName:
         type: string
+      attributes:
+        type: object
+        additionalProperties:
+          type: string
       createdOn:
         type: string
         format: date-time
@@ -5594,9 +5808,13 @@ definitions:
       expiresOn:
         type: string
         format: date-time
+  v1SetOrganizationMemberServiceRolesResponse:
+    type: object
   v1SetOrganizationMemberUserRoleResponse:
     type: object
   v1SetOrganizationMemberUsergroupRoleResponse:
+    type: object
+  v1SetProjectMemberServiceRoleResponse:
     type: object
   v1SetProjectMemberUserRoleResponse:
     type: object

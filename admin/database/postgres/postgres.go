@@ -1020,15 +1020,40 @@ func (c *connection) DeleteExpiredUserAuthTokens(ctx context.Context, retention 
 	return parseErr("auth token", err)
 }
 
-// FindServicesByOrgID returns a list of services in an org.
-func (c *connection) FindServicesByOrgID(ctx context.Context, orgID string) ([]*database.Service, error) {
-	var res []*database.Service
-
-	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT * FROM service WHERE org_id=$1", orgID)
+// FindOrganizationMemberServices returns a list of services in an org.
+func (c *connection) FindOrganizationMemberServices(ctx context.Context, orgID string) ([]*database.OrganizationMemberService, error) {
+	var services []*database.OrganizationMemberService
+	query := `
+		SELECT s.id, s.name, r.name as role_name, s.attributes, s.created_on, s.updated_on
+		FROM services s
+		JOIN services_orgs_roles org_sr ON org_sr.service_id = s.id
+		JOIN org_roles r ON r.id = org_sr.org_role_id
+		WHERE s.org_id = $1
+	`
+	err := c.getDB(ctx).SelectContext(ctx, &services, query, orgID)
 	if err != nil {
-		return nil, parseErr("service", err)
+		return nil, parseErr("org member services", err)
 	}
-	return res, nil
+	return services, nil
+}
+
+// FindProjectMemberServices returns the services that are members of a project
+func (c *connection) FindProjectMemberServices(ctx context.Context, projectID string) ([]*database.ProjectMemberService, error) {
+	var services []*database.ProjectMemberService
+	query := `
+		SELECT s.id, s.name, r.name as role_name, org_r.name as org_role_name, s.attributes, s.created_on, s.updated_on
+		FROM services s
+		JOIN services_projects_roles sr ON sr.service_id = s.id
+		JOIN project_roles r ON r.id = sr.project_role_id
+		JOIN services_orgs_roles org_sr ON org_sr.service_id = s.id
+		JOIN org_roles org_r ON org_r.id = org_sr.org_role_id
+		WHERE sr.project_id = $1
+	`
+	err := c.getDB(ctx).SelectContext(ctx, &services, query, projectID)
+	if err != nil {
+		return nil, parseErr("project member services", err)
+	}
+	return services, nil
 }
 
 // FindService returns a service.
@@ -1060,9 +1085,9 @@ func (c *connection) InsertService(ctx context.Context, opts *database.InsertSer
 
 	res := &database.Service{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, `
-		INSERT INTO service (org_id, name)
-		VALUES ($1, $2) RETURNING *`,
-		opts.OrgID, opts.Name,
+		INSERT INTO service (org_id, name, attributes)
+		VALUES ($1, $2, $3) RETURNING *`,
+		opts.OrgID, opts.Name, opts.Attributes,
 	).StructScan(res)
 	if err != nil {
 		return nil, parseErr("service", err)
@@ -1079,9 +1104,9 @@ func (c *connection) UpdateService(ctx context.Context, id string, opts *databas
 	res := &database.Service{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, `
 		UPDATE service
-		SET name=$1
-		WHERE id=$2 RETURNING *`,
-		opts.Name, id,
+		SET name=$1, attributes=$2
+		WHERE id=$3 RETURNING *`,
+		opts.Name, opts.Attributes, id,
 	).StructScan(res)
 	if err != nil {
 		return nil, parseErr("service", err)
@@ -1505,6 +1530,36 @@ func (c *connection) ResolveProjectRolesForUser(ctx context.Context, userID, pro
 	return res, nil
 }
 
+// ResolveOrganizationRoleForService returns the organization role for the service
+func (c *connection) ResolveOrganizationRoleForService(ctx context.Context, serviceID, orgID string) (*database.OrganizationRole, error) {
+	var role database.OrganizationRole
+	err := c.getDB(ctx).QueryRowxContext(ctx, `
+		SELECT r.*
+		FROM org_roles r
+		JOIN services_orgs_roles sr ON sr.org_role_id = r.id
+		WHERE sr.service_id = $1 AND sr.org_id = $2
+	`, serviceID, orgID).StructScan(&role)
+	if err != nil {
+		return nil, parseErr("service org role", err)
+	}
+	return &role, nil
+}
+
+// ResolveProjectRolesForService returns the project roles for a service
+func (c *connection) ResolveProjectRolesForService(ctx context.Context, serviceID, projectID string) ([]*database.ProjectRole, error) {
+	var roles []*database.ProjectRole
+	err := c.getDB(ctx).SelectContext(ctx, &roles, `
+		SELECT r.*
+		FROM project_roles r
+		JOIN services_projects_roles sr ON sr.project_role_id = r.id
+		WHERE sr.service_id = $1 AND sr.project_id = $2
+	`, serviceID, projectID)
+	if err != nil {
+		return nil, parseErr("service project roles", err)
+	}
+	return roles, nil
+}
+
 func (c *connection) FindOrganizationMemberUsers(ctx context.Context, orgID, filterRoleID string, withCounts bool, afterEmail string, limit int) ([]*database.OrganizationMemberUser, error) {
 	args := []any{orgID, afterEmail, limit}
 	var qry strings.Builder
@@ -1644,6 +1699,28 @@ func (c *connection) FindOrganizationMembersWithManageUsersRole(ctx context.Cont
 		return nil, parseErr("org members", err)
 	}
 	return res, nil
+}
+
+// InsertOrganizationMemberService adds a service to an organization with a role
+func (c *connection) InsertOrganizationMemberService(ctx context.Context, serviceID, orgID, roleID string) error {
+	_, err := c.getDB(ctx).ExecContext(ctx, `
+		INSERT INTO services_orgs_roles (service_id, org_id, org_role_id)
+		VALUES ($1, $2, $3)
+	`, serviceID, orgID, roleID)
+	if err != nil {
+		return parseErr("service org member", err)
+	}
+	return nil
+}
+
+// UpdateOrganizationMemberServiceRole updates the role of a service in an organization
+func (c *connection) UpdateOrganizationMemberServiceRole(ctx context.Context, serviceID, orgID, roleID string) error {
+	res, err := c.getDB(ctx).ExecContext(ctx, `
+		UPDATE services_orgs_roles
+		SET org_role_id = $3
+		WHERE service_id = $1 AND org_id = $2
+	`, serviceID, orgID, roleID)
+	return checkUpdateRow("service org member", res, err)
 }
 
 func (c *connection) FindProjectMemberUsers(ctx context.Context, orgID, projectID, filterRoleID, afterEmail string, limit int) ([]*database.ProjectMemberUser, error) {
@@ -1865,6 +1942,25 @@ func (c *connection) DeleteAllProjectMemberUserForOrganization(ctx context.Conte
 func (c *connection) UpdateProjectMemberUserRole(ctx context.Context, projectID, userID, roleID string) error {
 	res, err := c.getDB(ctx).ExecContext(ctx, `UPDATE users_projects_roles SET project_role_id = $1 WHERE user_id = $2 AND project_id = $3`, roleID, userID, projectID)
 	return checkUpdateRow("project member", res, err)
+}
+
+// UpsertProjectMemberServiceRole inserts or updates the role of a service in a project
+func (c *connection) UpsertProjectMemberServiceRole(ctx context.Context, serviceID, projectID, roleID string) error {
+	res, err := c.getDB(ctx).ExecContext(ctx, `
+		INSERT INTO services_projects_roles (service_id, project_id, project_role_id)
+		VALUES ($1, $2, $3)
+		ON CONFLICT (service_id, project_id) DO UPDATE SET project_role_id = $3
+	`, serviceID, projectID, roleID)
+	return checkUpdateRow("service project member", res, err)
+}
+
+// DeleteProjectMemberService removes a service from a project
+func (c *connection) DeleteProjectMemberService(ctx context.Context, serviceID, projectID string) error {
+	res, err := c.getDB(ctx).ExecContext(ctx, `
+		DELETE FROM services_projects_roles
+		WHERE service_id = $1 AND project_id = $2
+	`, serviceID, projectID)
+	return checkDeleteRow("service project member", res, err)
 }
 
 func (c *connection) FindOrganizationInvites(ctx context.Context, orgID, afterEmail string, limit int) ([]*database.OrganizationInviteWithRole, error) {

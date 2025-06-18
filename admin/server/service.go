@@ -19,6 +19,9 @@ func (s *Server) CreateService(ctx context.Context, req *adminv1.CreateServiceRe
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.name", req.Name),
 		attribute.String("args.organization_name", req.OrganizationName),
+		attribute.String("args.org_role_name", req.OrgRoleName),
+		attribute.String("args.project_name", req.ProjectName),
+		attribute.String("args.project_role_name", req.ProjectRoleName),
 	)
 
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.OrganizationName)
@@ -31,16 +34,59 @@ func (s *Server) CreateService(ctx context.Context, req *adminv1.CreateServiceRe
 		return nil, status.Error(codes.PermissionDenied, "not allowed to create a service")
 	}
 
+	ctx, tx, err := s.admin.DB.NewTx(ctx, true)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	// Create service with attributes
 	service, err := s.admin.DB.InsertService(ctx, &database.InsertServiceOptions{
-		OrgID: org.ID,
-		Name:  req.Name,
+		OrgID:      org.ID,
+		Name:       req.Name,
+		Attributes: req.Attributes,
 	})
 	if err != nil {
 		return nil, err
 	}
 
+	// If org role is specified, assign it
+	if req.OrgRoleName != "" {
+		orgRole, err := s.admin.DB.FindOrganizationRole(ctx, req.OrgRoleName)
+		if err != nil {
+			return nil, status.Error(codes.InvalidArgument, "invalid organization role")
+		}
+		err = s.admin.DB.InsertOrganizationMemberService(ctx, service.ID, org.ID, orgRole.ID)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// If project role is specified, assign it
+	if req.ProjectName != "" && req.ProjectRoleName != "" {
+		project, err := s.admin.DB.FindProjectByName(ctx, org.ID, req.ProjectName)
+		if err != nil {
+			return nil, status.Error(codes.InvalidArgument, "invalid project")
+		}
+
+		projectRole, err := s.admin.DB.FindProjectRole(ctx, req.ProjectRoleName)
+		if err != nil {
+			return nil, status.Error(codes.InvalidArgument, "invalid project role")
+		}
+
+		err = s.admin.DB.UpsertProjectMemberServiceRole(ctx, service.ID, project.ID, projectRole.ID)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// Commit transaction
+	if err := tx.Commit(); err != nil {
+		return nil, status.Error(codes.Internal, "failed to commit transaction")
+	}
+
 	return &adminv1.CreateServiceResponse{
-		Service: serviceToPB(service, req.OrganizationName),
+		Service: serviceToPB(service, org.Name),
 	}, nil
 }
 
@@ -48,7 +94,7 @@ func (s *Server) CreateService(ctx context.Context, req *adminv1.CreateServiceRe
 func (s *Server) ListServices(ctx context.Context, req *adminv1.ListServicesRequest) (*adminv1.ListServicesResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.org", req.OrganizationName),
-		attribute.String("args.O]organization_name", req.OrganizationName),
+		attribute.String("args.organization_name", req.OrganizationName),
 	)
 
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.OrganizationName)
@@ -57,18 +103,78 @@ func (s *Server) ListServices(ctx context.Context, req *adminv1.ListServicesRequ
 	}
 
 	claims := auth.GetClaims(ctx)
-	// Need a check if any other service permission to list a services
 	if !claims.OrganizationPermissions(ctx, org.ID).ManageOrg {
 		return nil, status.Error(codes.PermissionDenied, "not allowed to list services")
 	}
 
-	services, err := s.admin.DB.FindServicesByOrgID(ctx, org.ID)
+	services, err := s.admin.DB.FindOrganizationMemberServices(ctx, org.ID)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
+	var servicesPB []*adminv1.OrganizationMemberService
+	for _, service := range services {
+		servicesPB = append(servicesPB, &adminv1.OrganizationMemberService{
+			Id:         service.ID,
+			Name:       service.Name,
+			OrgId:      org.ID,
+			OrgName:    org.Name,
+			RoleName:   service.RoleName,
+			Attributes: service.Attributes,
+			CreatedOn:  timestamppb.New(service.CreatedOn),
+			UpdatedOn:  timestamppb.New(service.UpdatedOn),
+		})
+	}
+
 	return &adminv1.ListServicesResponse{
-		Services: servicesToPB(services, req.OrganizationName),
+		Services: servicesPB,
+	}, nil
+}
+
+// ListProjectServices lists all service accounts for a project.
+func (s *Server) ListProjectServices(ctx context.Context, req *adminv1.ListProjectServicesRequest) (*adminv1.ListProjectServicesResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.project_name", req.ProjectName),
+		attribute.String("args.organization_name", req.OrganizationName),
+	)
+
+	org, err := s.admin.DB.FindOrganizationByName(ctx, req.OrganizationName)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	project, err := s.admin.DB.FindProjectByName(ctx, org.ID, req.ProjectName)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	claims := auth.GetClaims(ctx)
+	if !claims.OrganizationPermissions(ctx, org.ID).ManageOrg {
+		return nil, status.Error(codes.PermissionDenied, "not allowed to list project services")
+	}
+
+	services, err := s.admin.DB.FindProjectMemberServices(ctx, project.ID)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	var servicesPB []*adminv1.ProjectMemberService
+	for _, service := range services {
+		p := &adminv1.ProjectMemberService{
+			Id:              service.ID,
+			Name:            service.Name,
+			OrgId:           org.ID,
+			OrgName:         org.Name,
+			OrgRoleName:     service.OrgRoleName,
+			ProjectId:       project.ID,
+			ProjectName:     project.Name,
+			ProjectRoleName: service.RoleName,
+		}
+		servicesPB = append(servicesPB, p)
+	}
+
+	return &adminv1.ListProjectServicesResponse{
+		Services: servicesPB,
 	}, nil
 }
 
@@ -98,16 +204,137 @@ func (s *Server) UpdateService(ctx context.Context, req *adminv1.UpdateServiceRe
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	updatedService, err := s.admin.DB.UpdateService(ctx, service.ID, &database.UpdateServiceOptions{
-		Name: valOrDefault(req.NewName, service.Name),
-	})
-	if err != nil {
-		return nil, err
+	// Update service name and attributes if provided
+	if req.NewName != nil || req.Attributes != nil {
+		updateOpts := &database.UpdateServiceOptions{
+			Name:       service.Name,       // Preserve existing name if not updating
+			Attributes: service.Attributes, // Preserve existing attributes if not updating
+		}
+		if req.NewName != nil {
+			updateOpts.Name = *req.NewName
+		}
+		if len(req.Attributes) > 0 {
+			updateOpts.Attributes = req.Attributes
+		}
+		service, err = s.admin.DB.UpdateService(ctx, service.ID, updateOpts)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return &adminv1.UpdateServiceResponse{
-		Service: serviceToPB(updatedService, req.OrganizationName),
+		Service: serviceToPB(service, org.Name),
 	}, nil
+}
+
+func (s *Server) SetOrganizationMemberServiceRole(ctx context.Context, req *adminv1.SetOrganizationMemberServiceRoleRequest) (*adminv1.SetOrganizationMemberServiceRolesResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.name", req.Name),
+		attribute.String("args.organization_name", req.OrganizationName),
+		attribute.String("args.role", req.Role),
+	)
+
+	org, err := s.admin.DB.FindOrganizationByName(ctx, req.OrganizationName)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	claims := auth.GetClaims(ctx)
+	if !claims.OrganizationPermissions(ctx, org.ID).ManageOrg {
+		return nil, status.Error(codes.PermissionDenied, "not allowed to update org")
+	}
+
+	service, err := s.admin.DB.FindServiceByName(ctx, org.ID, req.Name)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	orgRole, err := s.admin.DB.FindOrganizationRole(ctx, req.Role)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, "invalid organization role")
+	}
+
+	err = s.admin.DB.UpdateOrganizationMemberServiceRole(ctx, service.ID, org.ID, orgRole.ID)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	return &adminv1.SetOrganizationMemberServiceRolesResponse{}, nil
+}
+
+func (s *Server) SetProjectMemberServiceRole(ctx context.Context, req *adminv1.SetProjectMemberServiceRoleRequest) (*adminv1.SetProjectMemberServiceRoleResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.name", req.Name),
+		attribute.String("args.organization_name", req.OrganizationName),
+		attribute.String("args.project_name", req.ProjectName),
+		attribute.String("args.role", req.Role),
+	)
+
+	org, err := s.admin.DB.FindOrganizationByName(ctx, req.OrganizationName)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	claims := auth.GetClaims(ctx)
+	if !claims.OrganizationPermissions(ctx, org.ID).ManageOrg {
+		return nil, status.Error(codes.PermissionDenied, "not allowed to update org")
+	}
+
+	project, err := s.admin.DB.FindProjectByName(ctx, org.ID, req.ProjectName)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	service, err := s.admin.DB.FindServiceByName(ctx, org.ID, req.Name)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	projectRole, err := s.admin.DB.FindProjectRole(ctx, req.Role)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, "invalid project role")
+	}
+
+	err = s.admin.DB.UpsertProjectMemberServiceRole(ctx, service.ID, project.ID, projectRole.ID)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	return &adminv1.SetProjectMemberServiceRoleResponse{}, nil
+}
+
+func (s *Server) RemoveProjectMemberService(ctx context.Context, req *adminv1.RemoveProjectMemberServiceRequest) (*adminv1.RemoveProjectMemberServiceResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.name", req.Name),
+		attribute.String("args.organization_name", req.OrganizationName),
+		attribute.String("args.project_name", req.ProjectName),
+	)
+
+	org, err := s.admin.DB.FindOrganizationByName(ctx, req.OrganizationName)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+	claims := auth.GetClaims(ctx)
+	if !claims.OrganizationPermissions(ctx, org.ID).ManageOrg {
+		return nil, status.Error(codes.PermissionDenied, "not allowed to remove service from project")
+	}
+
+	project, err := s.admin.DB.FindProjectByName(ctx, org.ID, req.ProjectName)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	service, err := s.admin.DB.FindServiceByName(ctx, org.ID, req.Name)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	err = s.admin.DB.DeleteProjectMemberService(ctx, service.ID, project.ID)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	return &adminv1.RemoveProjectMemberServiceResponse{}, nil
 }
 
 // DeleteService deletes a service account.
@@ -256,14 +483,6 @@ func serviceToPB(service *database.Service, orgName string) *adminv1.Service {
 		CreatedOn: timestamppb.New(service.CreatedOn),
 		UpdatedOn: timestamppb.New(service.UpdatedOn),
 	}
-}
-
-func servicesToPB(services []*database.Service, orgName string) []*adminv1.Service {
-	var pbServices []*adminv1.Service
-	for _, service := range services {
-		pbServices = append(pbServices, serviceToPB(service, orgName))
-	}
-	return pbServices
 }
 
 func safeTime(t *time.Time) time.Time {
