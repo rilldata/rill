@@ -39,7 +39,7 @@
   <CTAHeader variant="bold">{deployError.title}</CTAHeader>
   <CTAMessage>{deployError.message}</CTAMessage>
   {#if deployError.type === DeployErrorType.Unknown}
-    <CTAButton variant="secondary" on:click={onRetry}>Retry</CTAButton>
+    <CTAButton variant="secondary" onClick={onRetry}>Retry</CTAButton>
   {/if}
 {/if}
 <CTAPylonHelp />
