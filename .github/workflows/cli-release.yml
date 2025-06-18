@@ -198,7 +198,7 @@ jobs:
           if [[ ${{ env.PUBLISH_NIGHTLY }} == 'true' ]]; then
             echo "BUCKET_DIR=rill/nightly" >> $GITHUB_ENV
           else
-            echo "BUCKET_DIR=rill/${{ github.ref#refs/tags/ }}" >> $GITHUB_ENV
+            echo "BUCKET_DIR=rill/$(echo "${GITHUB_REF#refs/tags/}")" >> $GITHUB_ENV
           fi
 
       - name: Download checksum files from GCS
