@@ -695,6 +695,11 @@ export class UpdateOrganizationRequest extends Message<UpdateOrganizationRequest
   faviconAssetId?: string;
 
   /**
+   * @generated from field: optional string thumbnail_asset_id = 9;
+   */
+  thumbnailAssetId?: string;
+
+  /**
    * @generated from field: optional string default_project_role = 8;
    */
   defaultProjectRole?: string;
@@ -718,6 +723,7 @@ export class UpdateOrganizationRequest extends Message<UpdateOrganizationRequest
     { no: 5, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 6, name: "logo_asset_id", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 7, name: "favicon_asset_id", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 9, name: "thumbnail_asset_id", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 8, name: "default_project_role", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 4, name: "billing_email", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
   ]);
@@ -2379,7 +2385,7 @@ export class UpdateServiceRequest extends Message<UpdateServiceRequest> {
   newName?: string;
 
   /**
-   * @generated from field: map<string, string> attributes = 7;
+   * @generated from field: map<string, string> attributes = 4;
    */
   attributes: { [key: string]: string } = {};
 
@@ -2394,7 +2400,7 @@ export class UpdateServiceRequest extends Message<UpdateServiceRequest> {
     { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "organization_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "new_name", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
-    { no: 7, name: "attributes", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
+    { no: 4, name: "attributes", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UpdateServiceRequest {
@@ -13441,6 +13447,11 @@ export class Organization extends Message<Organization> {
   faviconUrl = "";
 
   /**
+   * @generated from field: string thumbnail_url = 17;
+   */
+  thumbnailUrl = "";
+
+  /**
    * @generated from field: string custom_domain = 10;
    */
   customDomain = "";
@@ -13504,6 +13515,7 @@ export class Organization extends Message<Organization> {
     { no: 3, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 12, name: "logo_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 13, name: "favicon_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 17, name: "thumbnail_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 10, name: "custom_domain", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 16, name: "default_project_role_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "quotas", kind: "message", T: OrganizationQuotas },

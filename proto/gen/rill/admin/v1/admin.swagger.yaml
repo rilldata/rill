@@ -401,6 +401,8 @@ paths:
                 type: string
               faviconAssetId:
                 type: string
+              thumbnailAssetId:
+                type: string
               defaultProjectRole:
                 type: string
               billingEmail:
@@ -5243,6 +5245,8 @@ definitions:
       logoUrl:
         type: string
       faviconUrl:
+        type: string
+      thumbnailUrl:
         type: string
       customDomain:
         type: string

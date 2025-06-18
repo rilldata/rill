@@ -787,6 +787,7 @@ export interface V1Organization {
   description?: string;
   logoUrl?: string;
   faviconUrl?: string;
+  thumbnailUrl?: string;
   customDomain?: string;
   defaultProjectRoleId?: string;
   quotas?: V1OrganizationQuotas;
@@ -1492,6 +1493,7 @@ export type AdminServiceUpdateOrganizationBody = {
   displayName?: string;
   logoAssetId?: string;
   faviconAssetId?: string;
+  thumbnailAssetId?: string;
   defaultProjectRole?: string;
   billingEmail?: string;
 };
