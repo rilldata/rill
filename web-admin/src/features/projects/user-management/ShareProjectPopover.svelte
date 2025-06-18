@@ -4,8 +4,6 @@
     createAdminServiceListProjectInvites,
     createAdminServiceListProjectMemberUsergroups,
     createAdminServiceListProjectMemberUsers,
-    createAdminServiceRemoveProjectMemberUsergroup,
-    createAdminServiceAddProjectMemberUsergroup,
     createAdminServiceGetCurrentUser,
     createAdminServiceListUsergroupMemberUsers,
     createAdminServiceListOrganizationInvitesInfinite,
@@ -21,9 +19,6 @@
     PopoverTrigger,
   } from "@rilldata/web-common/components/popover";
   import UserItem from "./UserItem.svelte";
-  import { useQueryClient } from "@tanstack/svelte-query";
-  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
-  import { getAdminServiceListProjectMemberUsergroupsQueryKey } from "@rilldata/web-admin/client";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import Avatar from "@rilldata/web-common/components/avatar/Avatar.svelte";
@@ -39,15 +34,9 @@
   export let manageOrgMembers: boolean;
 
   let open = false;
-  let accessDropdownOpen = false;
   let accessType: "everyone" | "invite-only" = "everyone";
   let isHovered = false;
 
-  const queryClient = useQueryClient();
-  const removeProjectMemberUsergroup =
-    createAdminServiceRemoveProjectMemberUsergroup();
-  const addProjectMemberUsergroup =
-    createAdminServiceAddProjectMemberUsergroup();
   const currentUser = createAdminServiceGetCurrentUser();
 
   const PAGE_SIZE = 12;
@@ -162,7 +151,6 @@
   $: orgMemberUsergroups =
     $listOrganizationMemberUsergroups?.data?.members ?? [];
   $: userGroupMemberUsers = $listUsergroupMemberUsers?.data?.members ?? [];
-  $: userGroupMemberUsersCount = userGroupMemberUsers?.length ?? 0;
   $: projectMemberUserGroupsList =
     $listProjectMemberUsergroups.data?.members ?? [];
   $: projectMemberUsersList = $listProjectMemberUsers?.data?.members ?? [];
@@ -236,69 +224,6 @@
     return result;
   })();
 
-  async function setAccessInviteOnly() {
-    if (accessType === "invite-only") return;
-
-    // Find the autogroup:members user group
-    const autogroup = projectMemberUserGroupsList.find(
-      (group) => group.groupName === "autogroup:members",
-    );
-
-    if (autogroup) {
-      // Remove the autogroup:members user group
-      await $removeProjectMemberUsergroup.mutateAsync({
-        organization,
-        project,
-        usergroup: autogroup.groupName,
-      });
-
-      // Invalidate the query to refresh the list
-      await queryClient.invalidateQueries({
-        queryKey: getAdminServiceListProjectMemberUsergroupsQueryKey(
-          organization,
-          project,
-        ),
-      });
-
-      eventBus.emit("notification", {
-        message: "Project access changed to invite-only",
-      });
-    }
-
-    accessType = "invite-only";
-    accessDropdownOpen = false;
-  }
-
-  async function setAccessEveryone() {
-    if (accessType === "everyone") return;
-
-    // Add the autogroup:members user group back with the viewer role
-    // This is the default role for autogroup:members as seen in the tests
-    await $addProjectMemberUsergroup.mutateAsync({
-      organization,
-      project,
-      usergroup: "autogroup:members",
-      data: {
-        role: "viewer", // Default role for autogroup:members
-      },
-    });
-
-    // Invalidate the query to refresh the list
-    await queryClient.invalidateQueries({
-      queryKey: getAdminServiceListProjectMemberUsergroupsQueryKey(
-        organization,
-        project,
-      ),
-    });
-
-    eventBus.emit("notification", {
-      message: "Project access changed to everyone",
-    });
-
-    accessType = "everyone";
-    accessDropdownOpen = false;
-  }
-
   $: copyLink = `${$page.url.protocol}//${$page.url.host}/${organization}/${project}`;
 
   // Sort the list to prioritize the current user
@@ -313,10 +238,6 @@
   );
 
   $: accessType = hasAutogroupMembers ? "everyone" : "invite-only";
-
-  function getInitials(name: string) {
-    return name.charAt(0).toUpperCase();
-  }
 </script>
 
 <Popover bind:open>
@@ -330,7 +251,6 @@
         <div class="grow"></div>
       </div>
       <UserAndGroupInviteForm {organization} {project} {searchList} />
-      <!-- 52 * 8 = 416px -->
       <div class="flex flex-col gap-y-1 overflow-y-auto max-h-[350px] mt-2">
         <div class="mt-2">
           {#each sortedProjectMemberUsersList as user}
