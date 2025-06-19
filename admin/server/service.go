@@ -143,7 +143,7 @@ func (s *Server) ListProjectServices(ctx context.Context, req *adminv1.ListProje
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	project, err := s.admin.DB.FindProjectByName(ctx, org.ID, req.ProjectName)
+	project, err := s.admin.DB.FindProjectByName(ctx, req.OrganizationName, req.ProjectName)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -169,6 +169,7 @@ func (s *Server) ListProjectServices(ctx context.Context, req *adminv1.ListProje
 			ProjectId:       project.ID,
 			ProjectName:     project.Name,
 			ProjectRoleName: service.RoleName,
+			Attributes:      service.Attributes,
 		}
 		servicesPB = append(servicesPB, p)
 	}
@@ -244,7 +245,7 @@ func (s *Server) SetOrganizationMemberServiceRole(ctx context.Context, req *admi
 		return nil, status.Error(codes.PermissionDenied, "not allowed to update org")
 	}
 
-	service, err := s.admin.DB.FindServiceByName(ctx, org.ID, req.Name)
+	service, err := s.admin.DB.FindServiceByName(ctx, req.OrganizationName, req.Name)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -280,7 +281,7 @@ func (s *Server) SetProjectMemberServiceRole(ctx context.Context, req *adminv1.S
 		return nil, status.Error(codes.PermissionDenied, "not allowed to update org")
 	}
 
-	project, err := s.admin.DB.FindProjectByName(ctx, org.ID, req.ProjectName)
+	project, err := s.admin.DB.FindProjectByName(ctx, req.OrganizationName, req.ProjectName)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -476,12 +477,13 @@ func (s *Server) RevokeServiceAuthToken(ctx context.Context, req *adminv1.Revoke
 
 func serviceToPB(service *database.Service, orgName string) *adminv1.Service {
 	return &adminv1.Service{
-		Id:        service.ID,
-		Name:      service.Name,
-		OrgId:     service.OrgID,
-		OrgName:   orgName,
-		CreatedOn: timestamppb.New(service.CreatedOn),
-		UpdatedOn: timestamppb.New(service.UpdatedOn),
+		Id:         service.ID,
+		Name:       service.Name,
+		OrgId:      service.OrgID,
+		OrgName:    orgName,
+		Attributes: service.Attributes,
+		CreatedOn:  timestamppb.New(service.CreatedOn),
+		UpdatedOn:  timestamppb.New(service.UpdatedOn),
 	}
 }
 
