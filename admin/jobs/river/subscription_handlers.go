@@ -71,7 +71,6 @@ func (w *SubscriptionCancellationCheckWorker) subscriptionCancellationCheck(ctx 
 			Description:                         org.Description,
 			LogoAssetID:                         org.LogoAssetID,
 			FaviconAssetID:                      org.FaviconAssetID,
-			ThumbnailAssetID:                    org.ThumbnailAssetID,
 			CustomDomain:                        org.CustomDomain,
 			DefaultProjectRoleID:                org.DefaultProjectRoleID,
 			QuotaProjects:                       0,

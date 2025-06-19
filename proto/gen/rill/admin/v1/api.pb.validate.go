@@ -1521,10 +1521,6 @@ func (m *UpdateOrganizationRequest) validate(all bool) error {
 		// no validation rules for FaviconAssetId
 	}
 
-	if m.ThumbnailAssetId != nil {
-		// no validation rules for ThumbnailAssetId
-	}
-
 	if m.DefaultProjectRole != nil {
 		// no validation rules for DefaultProjectRole
 	}
@@ -35638,8 +35634,6 @@ func (m *Organization) validate(all bool) error {
 	// no validation rules for LogoUrl
 
 	// no validation rules for FaviconUrl
-
-	// no validation rules for ThumbnailUrl
 
 	// no validation rules for CustomDomain
 
