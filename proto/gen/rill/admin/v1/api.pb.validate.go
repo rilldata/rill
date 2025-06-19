@@ -24734,17 +24734,6 @@ func (m *ListServiceAuthTokensRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
-	if utf8.RuneCountInString(m.GetProjectName()) < 1 {
-		err := ListServiceAuthTokensRequestValidationError{
-			field:  "ProjectName",
-			reason: "value length must be at least 1 runes",
-		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
-	}
-
 	// no validation rules for ServiceName
 
 	if len(errors) > 0 {

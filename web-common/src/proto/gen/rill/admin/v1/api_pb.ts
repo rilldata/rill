@@ -8820,12 +8820,7 @@ export class ListServiceAuthTokensRequest extends Message<ListServiceAuthTokensR
   organizationName = "";
 
   /**
-   * @generated from field: string project_name = 2;
-   */
-  projectName = "";
-
-  /**
-   * @generated from field: string service_name = 3;
+   * @generated from field: string service_name = 2;
    */
   serviceName = "";
 
@@ -8838,8 +8833,7 @@ export class ListServiceAuthTokensRequest extends Message<ListServiceAuthTokensR
   static readonly typeName = "rill.admin.v1.ListServiceAuthTokensRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "organization_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "project_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "service_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "service_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListServiceAuthTokensRequest {

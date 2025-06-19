@@ -3082,10 +3082,6 @@ paths:
           in: path
           required: true
           type: string
-        - name: projectName
-          in: query
-          required: false
-          type: string
       tags:
         - AdminService
     post:
