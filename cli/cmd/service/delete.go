@@ -29,7 +29,7 @@ func DeleteCmd(ch *cmdutil.Helper) *cobra.Command {
 				if err != nil {
 					return err
 				}
-				ch.PrintfSuccess("Deleted service: %q from project: %q\n", args[0], projectName)
+				ch.PrintfSuccess("Removed service: %q from project: %q\n", args[0], projectName)
 				return nil
 			}
 

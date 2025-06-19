@@ -49,8 +49,8 @@ func SetRoleCmd(ch *cmdutil.Helper) *cobra.Command {
 				ch.PrintfSuccess("Updated role of service %q to %q in the project \"%s/%s\"\n", name, role, ch.Org, projectName)
 			} else {
 				_, err = client.SetOrganizationMemberServiceRole(cmd.Context(), &adminv1.SetOrganizationMemberServiceRoleRequest{
-					OrganizationName: ch.Org,
 					Name:             name,
+					OrganizationName: ch.Org,
 					Role:             role,
 				})
 				if err != nil {

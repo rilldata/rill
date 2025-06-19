@@ -18,10 +18,10 @@ import (
 func (s *Server) CreateService(ctx context.Context, req *adminv1.CreateServiceRequest) (*adminv1.CreateServiceResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.name", req.Name),
-		attribute.String("args.organization_name", req.OrganizationName),
-		attribute.String("args.org_role_name", req.OrgRoleName),
-		attribute.String("args.project_name", req.ProjectName),
-		attribute.String("args.project_role_name", req.ProjectRoleName),
+		attribute.String("args.organization", req.OrganizationName),
+		attribute.String("args.org_role", req.OrgRoleName),
+		attribute.String("args.project", req.ProjectName),
+		attribute.String("args.project_role", req.ProjectRoleName),
 	)
 
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.OrganizationName)
@@ -93,8 +93,7 @@ func (s *Server) CreateService(ctx context.Context, req *adminv1.CreateServiceRe
 // ListServices lists all service accounts in an organization.
 func (s *Server) ListServices(ctx context.Context, req *adminv1.ListServicesRequest) (*adminv1.ListServicesResponse, error) {
 	observability.AddRequestAttributes(ctx,
-		attribute.String("args.org", req.OrganizationName),
-		attribute.String("args.organization_name", req.OrganizationName),
+		attribute.String("args.organization", req.OrganizationName),
 	)
 
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.OrganizationName)
@@ -134,8 +133,8 @@ func (s *Server) ListServices(ctx context.Context, req *adminv1.ListServicesRequ
 // ListProjectServices lists all service accounts for a project.
 func (s *Server) ListProjectServices(ctx context.Context, req *adminv1.ListProjectServicesRequest) (*adminv1.ListProjectServicesResponse, error) {
 	observability.AddRequestAttributes(ctx,
-		attribute.String("args.project_name", req.ProjectName),
-		attribute.String("args.organization_name", req.OrganizationName),
+		attribute.String("args.project", req.ProjectName),
+		attribute.String("args.organization", req.OrganizationName),
 	)
 
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.OrganizationName)
@@ -183,7 +182,7 @@ func (s *Server) ListProjectServices(ctx context.Context, req *adminv1.ListProje
 func (s *Server) UpdateService(ctx context.Context, req *adminv1.UpdateServiceRequest) (*adminv1.UpdateServiceResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.name", req.Name),
-		attribute.String("args.organization_name", req.OrganizationName),
+		attribute.String("args.organization", req.OrganizationName),
 	)
 
 	if req.NewName != nil {
@@ -231,7 +230,7 @@ func (s *Server) UpdateService(ctx context.Context, req *adminv1.UpdateServiceRe
 func (s *Server) SetOrganizationMemberServiceRole(ctx context.Context, req *adminv1.SetOrganizationMemberServiceRoleRequest) (*adminv1.SetOrganizationMemberServiceRoleResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.name", req.Name),
-		attribute.String("args.organization_name", req.OrganizationName),
+		attribute.String("args.organization", req.OrganizationName),
 		attribute.String("args.role", req.Role),
 	)
 
@@ -245,7 +244,7 @@ func (s *Server) SetOrganizationMemberServiceRole(ctx context.Context, req *admi
 		return nil, status.Error(codes.PermissionDenied, "not allowed to update org")
 	}
 
-	service, err := s.admin.DB.FindServiceByName(ctx, req.OrganizationName, req.Name)
+	service, err := s.admin.DB.FindServiceByName(ctx, org.ID, req.Name)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -266,8 +265,8 @@ func (s *Server) SetOrganizationMemberServiceRole(ctx context.Context, req *admi
 func (s *Server) SetProjectMemberServiceRole(ctx context.Context, req *adminv1.SetProjectMemberServiceRoleRequest) (*adminv1.SetProjectMemberServiceRoleResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.name", req.Name),
-		attribute.String("args.organization_name", req.OrganizationName),
-		attribute.String("args.project_name", req.ProjectName),
+		attribute.String("args.organization", req.OrganizationName),
+		attribute.String("args.project", req.ProjectName),
 		attribute.String("args.role", req.Role),
 	)
 
@@ -307,8 +306,8 @@ func (s *Server) SetProjectMemberServiceRole(ctx context.Context, req *adminv1.S
 func (s *Server) RemoveProjectMemberService(ctx context.Context, req *adminv1.RemoveProjectMemberServiceRequest) (*adminv1.RemoveProjectMemberServiceResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.name", req.Name),
-		attribute.String("args.organization_name", req.OrganizationName),
-		attribute.String("args.project_name", req.ProjectName),
+		attribute.String("args.organization", req.OrganizationName),
+		attribute.String("args.project", req.ProjectName),
 	)
 
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.OrganizationName)
@@ -320,7 +319,7 @@ func (s *Server) RemoveProjectMemberService(ctx context.Context, req *adminv1.Re
 		return nil, status.Error(codes.PermissionDenied, "not allowed to remove service from project")
 	}
 
-	project, err := s.admin.DB.FindProjectByName(ctx, org.ID, req.ProjectName)
+	project, err := s.admin.DB.FindProjectByName(ctx, req.OrganizationName, req.ProjectName)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
