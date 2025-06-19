@@ -83,6 +83,7 @@ jobs:
 
       - name: Set GORELEASER_CURRENT_TAG and NIGHTLY
         run: |
+          echo '${{ github.ref_name }}' >> latest.txt
           if [[ ${{ env.PUBLISH_NIGHTLY }} == 'true' ]]; then
             echo "NIGHTLY=--snapshot" >> $GITHUB_ENV
             LATEST_TAG=$(git describe --tags $(git rev-list --tags --max-count=1))
@@ -107,6 +108,8 @@ jobs:
           CGO_ENABLED: 1
           GORELEASER_CURRENT_TAG: ${{ env.GORELEASER_CURRENT_TAG }}
           PUBLISH_NIGHTLY: ${{ env.PUBLISH_NIGHTLY }}
+          DOCKERHUB_USER: ${{ secrets.DOCKERHUB_USER }}
+          DOCKERHUB_PASS: ${{ secrets.DOCKERHUB_PASS }}
 
       - name: Release - Upload install script to CDN bucket
         uses: google-github-actions/upload-cloud-storage@v2
