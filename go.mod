@@ -88,7 +88,7 @@ require (
 	github.com/santhosh-tekuri/jsonschema/v5 v5.3.1
 	github.com/sashabaranov/go-openai v1.24.0
 	github.com/slack-go/slack v0.12.5
-	github.com/snowflakedb/gosnowflake v1.12.0
+	github.com/snowflakedb/gosnowflake v1.13.3
 	github.com/spf13/cobra v1.9.1
 	github.com/spf13/pflag v1.0.6
 	github.com/startreedata/pinot-client-go v0.6.0
