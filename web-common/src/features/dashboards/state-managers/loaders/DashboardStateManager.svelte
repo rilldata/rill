@@ -92,6 +92,7 @@
     const changedDashboard =
       !from || !to || from.params?.dashboard !== to.params?.dashboard;
     // Clear out any dashboard banners
+    // Note: we still have this on top of the above reactive statement to handle cases where navigation is to a non-dashboard route.
     if (changedDashboard) {
       eventBus.emit("remove-banner", ExploreUrlLimitWarningBannerID);
     }
