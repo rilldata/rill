@@ -4,7 +4,7 @@ project_name: rill
 
 release:
   prerelease: auto
-  draft: false
+  draft: true
 
 before:
   hooks:
