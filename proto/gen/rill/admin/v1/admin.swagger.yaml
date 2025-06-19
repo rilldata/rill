@@ -3170,10 +3170,6 @@ paths:
           in: path
           required: true
           type: string
-        - name: branch
-          in: query
-          required: false
-          type: string
       tags:
         - AdminService
   /v1/projects/{projectId}/repo/virtual:
@@ -4691,21 +4687,36 @@ definitions:
   v1GetRepoMetaResponse:
     type: object
     properties:
-      gitUrl:
-        type: string
-        description: If the Git-related fields are set, the archive-related fields will not be set (and vice versa).
-      gitUrlExpiresOn:
+      validUntilTime:
         type: string
         format: date-time
+        description: How long the returned config is valid for. Clients should call GetRepoMeta again after this time.
+      gitUrl:
+        type: string
+        description: |-
+          Git remote for cloning (and maybe pushing) a Git repository.
+          The URL uses HTTPS with embedded username/password.
       gitSubpath:
         type: string
+        description: Optional subpath within the Git repository to use as the project root.
+      gitBranch:
+        type: string
+        description: The branch to use for the deployment.
+      gitEditBranch:
+        type: string
+        description: |-
+          A unique branch name generated for temporary/ephemeral use in edit mode where files may be mutated.
+          This enables checkpointing progress across hibernations and also more easily pinning to a specific commit of the base branch to delay conflict resolution.
       archiveDownloadUrl:
         type: string
+        description: Signed URL for downloading a tarball of project files. If this is set, the git_* fields will be empty (and vice versa).
       archiveId:
         type: string
+        description: A stable ID for the archive returned from archive_download_url.
       archiveCreatedOn:
         type: string
         format: date-time
+        description: The creation time of the archive returned from archive_download_url.
   v1GetReportMetaResponse:
     type: object
     properties:
