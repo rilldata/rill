@@ -83,7 +83,7 @@ jobs:
 
       - name: Set GORELEASER_CURRENT_TAG and NIGHTLY
         run: |
-          echo '${{ secrets.RILL_BINARY_SA }}' > rill-binary-sa.json
+          echo '${{ secrets.RILL_BINARY_SA }}' > /rill-binary-sa.json
           if [[ ${{ env.PUBLISH_NIGHTLY }} == 'true' ]]; then
             echo "NIGHTLY=--snapshot" >> $GITHUB_ENV
             LATEST_TAG=$(git describe --tags $(git rev-list --tags --max-count=1))
