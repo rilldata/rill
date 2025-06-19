@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.0.0",
   "scripts": {
-    "dev": "docusaurus start --port 4002",
+    "dev": "npm install && docusaurus start --port 4002",
     "build": "docusaurus build --out-dir dist",
     "preview": "docusaurus serve --port 4002 --dir dist",
     "docusaurus": "docusaurus "
