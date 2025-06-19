@@ -214,7 +214,7 @@ require (
 	github.com/buger/goterm v1.0.4 // indirect
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
-	github.com/cloudflare/circl v1.6.0 // indirect
+	github.com/cloudflare/circl v1.6.1 // indirect
 	github.com/cncf/xds/go v0.0.0-20250121191232-2f005788dc42 // indirect
 	github.com/compose-spec/compose-go/v2 v2.4.9 // indirect
 	github.com/containerd/console v1.0.4 // indirect
