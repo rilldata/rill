@@ -343,6 +343,11 @@ type legacyResolverResult struct {
 	idx  int
 }
 
+// Meta implements runtime.ResolverResult.
+func (r *legacyResolverResult) Meta() []map[string]any {
+	return nil
+}
+
 func (r *legacyResolverResult) Close() error {
 	return nil
 }
