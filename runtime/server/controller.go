@@ -448,6 +448,7 @@ func (s *Server) WatchResourcesHandler(w http.ResponseWriter, r *http.Request) {
 		}, shim)
 		if err != nil {
 			s.logger.Warn("failed to watch resources", zap.String("instance_id", instanceID), zap.String("kind", kind), zap.Error(err))
+			eventServer.Close()
 		}
 	}()
 
