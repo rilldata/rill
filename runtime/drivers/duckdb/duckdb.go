@@ -499,7 +499,7 @@ func (c *connection) reopenDB(ctx context.Context) error {
 	connInitQueries = append(connInitQueries, "SET max_expression_depth TO 250")
 
 	// Create new DB
-	if c.config.Path != "" {
+	if c.config.Path != "" || c.config.Attach != "" {
 		settings := make(map[string]string)
 		maps.Copy(settings, c.config.readSettings())
 		maps.Copy(settings, c.config.writeSettings())
