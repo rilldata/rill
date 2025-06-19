@@ -170,6 +170,7 @@ Using all the above concepts, you can ask the Rill MCP server questions like:
 - What are my *week-on-week* __increases or decreases in sales__ of `XYZ service`?
 - During the *current year*, do I have any __outliers in website views__? What might this correlate to?
 - In the *previous quarter*, compared to the current ongoing quarter, what are the __trends for customer access__?
+- In the *last 7 days*, how many __auction requests were there from mobile vs desktop__?
 
 
 ## Conclusion
