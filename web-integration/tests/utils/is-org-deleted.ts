@@ -1,9 +1,14 @@
 import { execAsync } from "web-integration/tests/utils/spawn";
 
-export async function isOrgDeleted(orgName: string): Promise<boolean> {
+export async function isOrgDeleted(
+  orgName: string,
+  home?: string,
+): Promise<boolean> {
+  const envOverride = home ? `HOME=${home}` : "";
+
   try {
     // This command throws an exit code of 1 along with the "Org not found." message when the org is not found.
-    await execAsync(`rill org show ${orgName}`);
+    await execAsync(`${envOverride} rill org show ${orgName}`);
     // If it doesn't throw, the org still exists.
     return false;
   } catch (error: any) {

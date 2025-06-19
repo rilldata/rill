@@ -161,8 +161,15 @@ jobs:
           retention-days: 30
 
       - uses: actions/upload-artifact@v4
-        if: always() && (matrix.name == 'web-admin' || matrix.name == 'web-integration')
+        if: always() && matrix.name == 'web-admin'
         with:
           name: web-admin-services-log
           path: web-admin/playwright/logs/admin-runtime.log
+          retention-days: 30
+
+      - uses: actions/upload-artifact@v4
+        if: always() && matrix.name == 'web-integration'
+        with:
+          name: web-integration-services-log
+          path: web-integration/playwright/logs/admin-runtime.log
           retention-days: 30

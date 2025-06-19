@@ -170,13 +170,7 @@ setup.describe("global setup", () => {
     expect(orgCreateService).toContain("Created service");
 
     const serviceToken = orgCreateService.match(/Access token:\s+(\S+)/);
-    const __dirname = path.dirname(fileURLToPath(import.meta.url));
-    const writePath = path.join(
-      __dirname,
-      "..",
-      "..",
-      RILL_EMBED_SERVICE_TOKEN_FILE,
-    );
+    const writePath = path.join(process.cwd(), RILL_EMBED_SERVICE_TOKEN_FILE);
     writeFileEnsuringDir(writePath, serviceToken![1]);
 
     // Go to the organization's page

@@ -1,13 +1,13 @@
 import { test as base, type Page } from "@playwright/test";
 import { cliLogin, cliLogout } from "./cli";
 import path from "path";
-import { fileURLToPath } from "url";
 import {
   ADMIN_STORAGE_STATE,
   VIEWER_STORAGE_STATE,
   RILL_EMBED_SERVICE_TOKEN_FILE,
   RILL_ORG_NAME,
   RILL_PROJECT_NAME,
+  RILL_EMBED_HTML_FILE,
 } from "web-integration/tests/constants";
 import fs from "fs";
 import { generateEmbed } from "../utils/generate-embed";
@@ -58,13 +58,7 @@ export const rillCloud = base.extend<MyFixtures>({
 
   embedPage: [
     async ({ browser }, use) => {
-      const __dirname = path.dirname(fileURLToPath(import.meta.url));
-      const readPath = path.join(
-        __dirname,
-        "..",
-        "..",
-        RILL_EMBED_SERVICE_TOKEN_FILE,
-      );
+      const readPath = path.join(process.cwd(), RILL_EMBED_SERVICE_TOKEN_FILE);
       const rillServiceToken = fs.readFileSync(readPath, "utf-8");
 
       await generateEmbed(
@@ -73,7 +67,8 @@ export const rillCloud = base.extend<MyFixtures>({
         "bids_explore",
         rillServiceToken,
       );
-      const filePath = "file://" + path.resolve(__dirname, "..", "embed.html");
+      const filePath =
+        "file://" + path.resolve(process.cwd(), RILL_EMBED_HTML_FILE);
 
       const context = await browser.newContext();
       const embedPage = await context.newPage();

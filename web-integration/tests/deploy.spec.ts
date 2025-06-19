@@ -24,7 +24,7 @@ test.describe("Deploy journey", () => {
     // Wait for the organization to be deleted
     // This includes deleting the org from Orb and Stripe, which we'd like to do to keep those environments clean.
     await expect
-      .poll(async () => await isOrgDeleted("e2e-admin"), {
+      .poll(async () => await isOrgDeleted("e2e-admin", cliHomeDir), {
         intervals: [1_000],
         timeout: 15_000,
       })

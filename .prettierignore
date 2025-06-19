@@ -19,6 +19,7 @@ proto/
 playwright-report/
 web-admin/tests/setup/projects
 web-local/tests/data/projects
+web-integration/tests/data/projects
 
 .env
 *.sql
