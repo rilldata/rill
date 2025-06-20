@@ -70,9 +70,8 @@
   $: deployPageUrl = `${$page.url.protocol}//${$page.url.host}/deploy`;
 
   $: if (userNotLoggedIn && $metadata.data) {
-    // For first-time users, redirect to signup flow
-    // Use admin server's signup endpoint (/auth/signup) for proper signup experience
-    deployCTAUrl = `${$metadata.data.adminUrl}/auth/signup?redirect=${deployPageUrl}`;
+    // FIXME: implement signupUrl
+    deployCTAUrl = `${$metadata.data.signupUrl}?redirect=${deployPageUrl}`;
   } else {
     deployCTAUrl = deployPageUrl;
   }
