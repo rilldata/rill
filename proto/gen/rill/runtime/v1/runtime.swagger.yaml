@@ -3762,6 +3762,13 @@ definitions:
     properties:
       validSpec:
         $ref: '#/definitions/v1CanvasSpec'
+        description: Valid spec is a (potentially previous) version of the canvas's spec that is known to be valid.
+      dataRefreshedOn:
+        type: string
+        format: date-time
+        description: |-
+          The last time any underlying metrics view(s)'s data was refreshed.
+          This may be empty if the data refresh time is not known, e.g. if the metrics view is based on an externally managed table.
   v1CategoricalSummary:
     type: object
     properties:
@@ -4120,6 +4127,13 @@ definitions:
     properties:
       validSpec:
         $ref: '#/definitions/v1ComponentSpec'
+        description: Valid spec is a (potentially previous) version of the component's spec that is known to be valid.
+      dataRefreshedOn:
+        type: string
+        format: date-time
+        description: |-
+          The last time any underlying metrics view(s)'s data was refreshed.
+          This may be empty if the data refresh time is not known, e.g. if the metrics view is based on an externally managed table.
   v1ComponentVariable:
     type: object
     properties:
@@ -4546,6 +4560,15 @@ definitions:
     properties:
       validSpec:
         $ref: '#/definitions/v1ExploreSpec'
+        description: |-
+          Valid spec is a (potentially previous) version of the spec that is known to be valid.
+          It is also guaranteed to have concrete dimensions and measures, i.e. if the spec has a `dimensions_selector` or `measures_selector`, they will be resolved to concrete fields.
+      dataRefreshedOn:
+        type: string
+        format: date-time
+        description: |-
+          The last time the underlying metrics view's data was refreshed.
+          This may be empty if the data refresh time is not known, e.g. if the metrics view is based on an externally managed table.
   v1ExploreTimeRange:
     type: object
     properties:
@@ -5502,11 +5525,11 @@ definitions:
         description: |-
           Streaming is true if the underlying data may change without the metrics view's spec/state version changing.
           It's set to true if the metrics view is based on an externally managed table.
-      modelRefreshedOn:
+      dataRefreshedOn:
         type: string
         format: date-time
         description: |-
-          The last time the metrics view's underlying model was refreshed.
+          The last time the metrics view's underlying data was refreshed.
           This may be empty if the metrics view is based on an externally managed table.
   v1MetricsViewTimeRangeResponse:
     type: object

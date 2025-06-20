@@ -27,6 +27,9 @@ class FeatureFlag {
 type FeatureFlagKey = keyof Omit<FeatureFlags, "set">;
 
 class FeatureFlags {
+  ready: Promise<void>;
+  private _resolveReady!: () => void;
+
   adminServer = new FeatureFlag("rill", false);
   readOnly = new FeatureFlag("rill", false);
   /**
@@ -48,10 +51,16 @@ class FeatureFlags {
   exportHeader = new FeatureFlag("user", false);
   alerts = new FeatureFlag("user", true);
   reports = new FeatureFlag("user", true);
+  darkMode = new FeatureFlag("user", false);
   chat = new FeatureFlag("user", true); // TODO: set this to false before merging
 
   constructor() {
+    this.ready = new Promise<void>((resolve) => {
+      this._resolveReady = resolve;
+    });
+
     const updateFlags = (userFlags: V1InstanceFeatureFlags) => {
+      this._resolveReady();
       for (const key in userFlags) {
         const flag = this[key] as FeatureFlag | undefined;
         if (!flag || flag.internalOnly) continue;
