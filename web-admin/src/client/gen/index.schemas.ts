@@ -973,7 +973,9 @@ export interface V1ProvisionerResource {
 }
 
 export interface V1PullVirtualRepoResponse {
+  /** List of virtual files ordered by update time, most recent last. */
   files?: V1VirtualFile[];
+  /** Next page token for pagination. */
   nextPageToken?: string;
 }
 
@@ -1796,7 +1798,18 @@ export type AdminServiceGetAlertMetaBody = {
 };
 
 export type AdminServicePullVirtualRepoParams = {
+  /**
+ * The environment to pull virtual files for.
+It is optional. If the call is made with a deployment access token, it defaults to the environment of the deployment. Otherwise, it defaults to "prod".
+ */
+  environment?: string;
+  /**
+   * Page size for pagination.
+   */
   pageSize?: number;
+  /**
+   * Page token for pagination.
+   */
   pageToken?: string;
 };
 

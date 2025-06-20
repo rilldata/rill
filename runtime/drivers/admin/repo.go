@@ -67,10 +67,7 @@ func newRepo(h *Handle) *repo {
 	}
 }
 
-func (r *repo) Driver() string {
-	return r.h.Driver()
-}
-
+// Root implements drivers.RepoStore.
 func (r *repo) Root(ctx context.Context) (string, error) {
 	err := r.rlockEnsureSynced(ctx)
 	if err != nil {
@@ -86,33 +83,8 @@ func (r *repo) Root(ctx context.Context) (string, error) {
 	return r.git.root(), nil
 }
 
-func (r *repo) CommitHash(ctx context.Context) (string, error) {
-	err := r.rlockEnsureSynced(ctx)
-	if err != nil {
-		return "", err
-	}
-	defer r.mu.RUnlock()
-
-	if r.archive != nil {
-		return r.archive.archiveID, nil
-	}
-	return r.git.commitHash()
-}
-
-func (r *repo) CommitTimestamp(ctx context.Context) (time.Time, error) {
-	err := r.rlockEnsureSynced(ctx)
-	if err != nil {
-		return time.Time{}, err
-	}
-	defer r.mu.RUnlock()
-
-	if r.archive != nil {
-		return r.archive.archiveCreatedOn, nil
-	}
-	return r.git.commitTimestamp()
-}
-
-func (r *repo) ListRecursive(ctx context.Context, glob string, skipDirs bool) ([]drivers.DirEntry, error) {
+// ListGlob implements drivers.RepoStore.
+func (r *repo) ListGlob(ctx context.Context, glob string, skipDirs bool) ([]drivers.DirEntry, error) {
 	err := r.rlockEnsureSynced(ctx)
 	if err != nil {
 		return nil, err
@@ -146,6 +118,7 @@ func (r *repo) ListRecursive(ctx context.Context, glob string, skipDirs bool) ([
 	return entries, nil
 }
 
+// Get implements drivers.RepoStore.
 func (r *repo) Get(ctx context.Context, path string) (string, error) {
 	if drivers.IsIgnored(path, r.ignorePaths) {
 		return "", os.ErrNotExist
@@ -175,39 +148,8 @@ func (r *repo) Get(ctx context.Context, path string) (string, error) {
 	return "", readErr
 }
 
-func (r *repo) Stat(ctx context.Context, path string) (*drivers.RepoObjectStat, error) {
-	if drivers.IsIgnored(path, r.ignorePaths) {
-		return nil, os.ErrNotExist
-	}
-
-	err := r.rlockEnsureSynced(ctx)
-	if err != nil {
-		return nil, err
-	}
-	defer r.mu.RUnlock()
-
-	var statErr error
-	for _, root := range r.roots() { // Search in every underlying file system.
-		fp := filepath.Join(root, path)
-		info, err := os.Stat(fp)
-		if err != nil {
-			// Keep searching if it's a not exist error. Otherwise break and return the error immediately.
-			statErr = err
-			if !os.IsNotExist(err) {
-				break
-			}
-			continue
-		}
-		return &drivers.RepoObjectStat{
-			LastUpdated: info.ModTime(),
-			IsDir:       info.IsDir(),
-		}, nil
-	}
-
-	return nil, statErr
-}
-
-func (r *repo) FileHash(ctx context.Context, paths []string) (string, error) {
+// Hash implements drivers.RepoStore.
+func (r *repo) Hash(ctx context.Context, paths []string) (string, error) {
 	err := r.rlockEnsureSynced(ctx)
 	if err != nil {
 		return "", err
@@ -247,30 +189,98 @@ func (r *repo) FileHash(ctx context.Context, paths []string) (string, error) {
 	return hex.EncodeToString(hasher.Sum(nil)), nil
 }
 
+// Stat implements drivers.RepoStore.
+func (r *repo) Stat(ctx context.Context, path string) (*drivers.FileInfo, error) {
+	if drivers.IsIgnored(path, r.ignorePaths) {
+		return nil, os.ErrNotExist
+	}
+
+	err := r.rlockEnsureSynced(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer r.mu.RUnlock()
+
+	var statErr error
+	for _, root := range r.roots() { // Search in every underlying file system.
+		fp := filepath.Join(root, path)
+		info, err := os.Stat(fp)
+		if err != nil {
+			// Keep searching if it's a not exist error. Otherwise break and return the error immediately.
+			statErr = err
+			if !os.IsNotExist(err) {
+				break
+			}
+			continue
+		}
+		return &drivers.FileInfo{
+			LastUpdated: info.ModTime(),
+			IsDir:       info.IsDir(),
+		}, nil
+	}
+
+	return nil, statErr
+}
+
+// Put implements drivers.RepoStore.
 func (r *repo) Put(ctx context.Context, filePath string, reader io.Reader) error {
 	return fmt.Errorf("put operation is unsupported")
 }
 
-func (r *repo) MakeDir(ctx context.Context, dirPath string) error {
+// MkdirAll implements drivers.RepoStore.
+func (r *repo) MkdirAll(ctx context.Context, dirPath string) error {
 	return fmt.Errorf("make dir operation is unsupported")
 }
 
+// Rename implements drivers.RepoStore.
 func (r *repo) Rename(ctx context.Context, fromPath, toPath string) error {
 	return fmt.Errorf("rename operation is unsupported")
 }
 
+// Delete implements drivers.RepoStore.
 func (r *repo) Delete(ctx context.Context, filePath string, force bool) error {
 	return fmt.Errorf("delete operation is unsupported")
 }
 
-func (r *repo) Sync(ctx context.Context) error {
-	return r.sync(ctx)
-}
-
+// Watch implements drivers.RepoStore.
 func (r *repo) Watch(ctx context.Context, callback drivers.WatchCallback) error {
 	return fmt.Errorf("watch operation is unsupported")
 }
 
+// Sync implements drivers.RepoStore.
+func (r *repo) Sync(ctx context.Context) error {
+	return r.sync(ctx)
+}
+
+// CommitHash implements drivers.RepoStore.
+func (r *repo) CommitHash(ctx context.Context) (string, error) {
+	err := r.rlockEnsureSynced(ctx)
+	if err != nil {
+		return "", err
+	}
+	defer r.mu.RUnlock()
+
+	if r.archive != nil {
+		return r.archive.archiveID, nil
+	}
+	return r.git.commitHash()
+}
+
+// CommitTimestamp implements drivers.RepoStore.
+func (r *repo) CommitTimestamp(ctx context.Context) (time.Time, error) {
+	err := r.rlockEnsureSynced(ctx)
+	if err != nil {
+		return time.Time{}, err
+	}
+	defer r.mu.RUnlock()
+
+	if r.archive != nil {
+		return r.archive.archiveCreatedOn, nil
+	}
+	return r.git.commitTimestamp()
+}
+
+// close deletes the temporary directories used by the repo.
 func (r *repo) close() {
 	if r.archive != nil {
 		_ = os.RemoveAll(r.archive.tmpDir)
@@ -278,6 +288,21 @@ func (r *repo) close() {
 	if r.virtual != nil {
 		_ = os.RemoveAll(r.virtual.tmpDir)
 	}
+}
+
+// roots returns the actual local file system roots for the underlying repos, including the virtual files.
+func (r *repo) roots() []string {
+	var roots []string
+	if r.virtual != nil {
+		roots = append(roots, r.virtual.root())
+	}
+	if r.archive != nil {
+		roots = append(roots, r.archive.root())
+	}
+	if r.git != nil {
+		roots = append(roots, r.git.root())
+	}
+	return roots
 }
 
 // rlockEnsureSynced acquires a read lock after ensuring that the repo is synced.
@@ -419,9 +444,7 @@ func (r *repo) checkSyncHandshake(ctx context.Context) error {
 	}
 
 	// Handshake with the admin service.
-	meta, err := r.h.admin.GetRepoMeta(ctx, &adminv1.GetRepoMetaRequest{
-		ProjectId: r.h.config.ProjectID,
-	})
+	meta, err := r.h.admin.GetRepoMeta(ctx, &adminv1.GetRepoMetaRequest{})
 	if err != nil {
 		return fmt.Errorf("failed to get repo meta: %w", err)
 	}
@@ -482,19 +505,4 @@ func (r *repo) checkSyncHandshake(ctx context.Context) error {
 
 	r.handshakeExpiresAt = meta.ValidUntilTime.AsTime()
 	return nil
-}
-
-// roots returns the actual local file system roots for the underlying repos, including the virtual files.
-func (r *repo) roots() []string {
-	var roots []string
-	if r.virtual != nil {
-		roots = append(roots, r.virtual.root())
-	}
-	if r.archive != nil {
-		roots = append(roots, r.archive.root())
-	}
-	if r.git != nil {
-		roots = append(roots, r.git.root())
-	}
-	return roots
 }

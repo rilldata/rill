@@ -124,7 +124,7 @@ func (s *Server) WatchFiles(req *runtimev1.WatchFilesRequest, ss runtimev1.Runti
 	defer release()
 
 	if req.Replay {
-		files, err := repo.ListRecursive(ss.Context(), "**", false)
+		files, err := repo.ListGlob(ss.Context(), "**", false)
 		if err != nil {
 			return err
 		}
@@ -211,7 +211,7 @@ func (s *Server) CreateDirectory(ctx context.Context, req *runtimev1.CreateDirec
 		return nil, ErrForbidden
 	}
 
-	err := s.runtime.MakeDir(ctx, req.InstanceId, req.Path)
+	err := s.runtime.MkdirAll(ctx, req.InstanceId, req.Path)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}

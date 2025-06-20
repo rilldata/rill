@@ -10167,6 +10167,9 @@ export class ListProjectWhitelistedDomainsResponse extends Message<ListProjectWh
  */
 export class GetRepoMetaRequest extends Message<GetRepoMetaRequest> {
   /**
+   * The project ID to get repository metadata for.
+   * If the call is made with a deployment access token, the project ID is optional and is inferred from the token.
+   *
    * @generated from field: string project_id = 1;
    */
   projectId = "";
@@ -10301,16 +10304,31 @@ export class GetRepoMetaResponse extends Message<GetRepoMetaResponse> {
  */
 export class PullVirtualRepoRequest extends Message<PullVirtualRepoRequest> {
   /**
+   * The project ID to pull virtual files for.
+   * If the call is made with a deployment access token, the project ID is optional and is inferred from the token.
+   *
    * @generated from field: string project_id = 1;
    */
   projectId = "";
 
   /**
+   * The environment to pull virtual files for.
+   * It is optional. If the call is made with a deployment access token, it defaults to the environment of the deployment. Otherwise, it defaults to "prod".
+   *
+   * @generated from field: string environment = 5;
+   */
+  environment = "";
+
+  /**
+   * Page size for pagination.
+   *
    * @generated from field: uint32 page_size = 3;
    */
   pageSize = 0;
 
   /**
+   * Page token for pagination.
+   *
    * @generated from field: string page_token = 4;
    */
   pageToken = "";
@@ -10324,6 +10342,7 @@ export class PullVirtualRepoRequest extends Message<PullVirtualRepoRequest> {
   static readonly typeName = "rill.admin.v1.PullVirtualRepoRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "project_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "environment", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "page_size", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 4, name: "page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
@@ -10350,11 +10369,15 @@ export class PullVirtualRepoRequest extends Message<PullVirtualRepoRequest> {
  */
 export class PullVirtualRepoResponse extends Message<PullVirtualRepoResponse> {
   /**
+   * List of virtual files ordered by update time, most recent last.
+   *
    * @generated from field: repeated rill.admin.v1.VirtualFile files = 1;
    */
   files: VirtualFile[] = [];
 
   /**
+   * Next page token for pagination.
+   *
    * @generated from field: string next_page_token = 2;
    */
   nextPageToken = "";

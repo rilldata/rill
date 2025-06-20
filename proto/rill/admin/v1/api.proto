@@ -2113,6 +2113,7 @@ message ListProjectWhitelistedDomainsResponse {
 }
 
 message GetRepoMetaRequest {
+  // The project ID to get repository metadata for.
   string project_id = 1;
 }
 
@@ -2138,14 +2139,22 @@ message GetRepoMetaResponse {
 }
 
 message PullVirtualRepoRequest {
+  // The project ID to pull virtual files for.
   string project_id = 1;
+  // The environment to pull virtual files for.
+  // It is optional. If the call is made with a deployment access token, it defaults to the environment of the deployment. Otherwise, it defaults to "prod".
+  string environment = 5;
+  // Page size for pagination.
   uint32 page_size = 3 [(validate.rules).uint32 = {ignore_empty: true, lte: 100}];
+  // Page token for pagination.
   string page_token = 4;
   reserved 2;
 }
 
 message PullVirtualRepoResponse {
+  // List of virtual files ordered by update time, most recent last.
   repeated VirtualFile files = 1;
+  // Next page token for pagination.
   string next_page_token = 2;
 }
 

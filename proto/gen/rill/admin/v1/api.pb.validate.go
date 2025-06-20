@@ -28474,6 +28474,8 @@ func (m *PullVirtualRepoRequest) validate(all bool) error {
 
 	// no validation rules for ProjectId
 
+	// no validation rules for Environment
+
 	if m.GetPageSize() != 0 {
 
 		if m.GetPageSize() > 100 {

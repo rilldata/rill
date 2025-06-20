@@ -31,11 +31,6 @@ var spec = drivers.Spec{
 			Required: true,
 			Secret:   true,
 		},
-		{
-			Key:      "project_id",
-			Type:     drivers.StringPropertyType,
-			Required: true,
-		},
 	},
 }
 

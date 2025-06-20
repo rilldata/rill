@@ -20,34 +20,15 @@ func (s *Server) GetRepoMeta(ctx context.Context, req *adminv1.GetRepoMetaReques
 		attribute.String("args.project_id", req.ProjectId),
 	)
 
-	claims := auth.GetClaims(ctx)
-
-	var depl *database.Deployment
-	if claims.OwnerType() == auth.OwnerTypeDeployment {
-		var err error
-		depl, err = s.admin.DB.FindDeployment(ctx, claims.OwnerID())
-		if err != nil {
-			return nil, status.Error(codes.NotFound, "deployment not found")
-		}
-
-		if req.ProjectId == "" {
-			req.ProjectId = depl.ProjectID
-		}
-	}
-
 	proj, err := s.admin.DB.FindProject(ctx, req.ProjectId)
 	if err != nil {
 		return nil, err
 	}
 
-	if depl == nil || proj.ProdDeploymentID != nil && depl.ID == *proj.ProdDeploymentID {
-		if !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ReadProdStatus {
-			return nil, status.Error(codes.PermissionDenied, "does not have permission to read project repo")
-		}
-	} else {
-		if !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ReadDevStatus {
-			return nil, status.Error(codes.PermissionDenied, "does not have permission to read project repo")
-		}
+	claims := auth.GetClaims(ctx)
+	perms := claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID)
+	if !perms.ReadProdStatus && !perms.ReadDevStatus {
+		return nil, status.Error(codes.PermissionDenied, "does not have permission to read project repo")
 	}
 
 	if proj.ArchiveAssetID != nil {
@@ -72,6 +53,16 @@ func (s *Server) GetRepoMeta(ctx context.Context, req *adminv1.GetRepoMetaReques
 		return nil, status.Error(codes.FailedPrecondition, "project does not have a github integration")
 	}
 
+	// nolint // Pending other PR merging.
+	// var depl *database.Deployment
+	// if claims.OwnerType() == auth.OwnerTypeDeployment {
+	// 	var err error
+	// 	depl, err = s.admin.DB.FindDeployment(ctx, claims.OwnerID())
+	// 	if err != nil {
+	// 		return nil, status.Error(codes.NotFound, "deployment not found")
+	// 	}
+	// }
+
 	repoID, err := s.githubRepoIDForProject(ctx, proj)
 	if err != nil {
 		return nil, err
@@ -95,7 +86,7 @@ func (s *Server) GetRepoMeta(ctx context.Context, req *adminv1.GetRepoMetaReques
 		GitUrl:         gitURL,
 		GitSubpath:     proj.Subpath,
 		GitBranch:      proj.ProdBranch,
-		// TODO: GitEditBranch
+		// TODO: GitEditBranch from depl if not nil
 	}, nil
 }
 
@@ -111,9 +102,25 @@ func (s *Server) PullVirtualRepo(ctx context.Context, req *adminv1.PullVirtualRe
 		return nil, err
 	}
 
-	permissions := auth.GetClaims(ctx).ProjectPermissions(ctx, proj.OrganizationID, proj.ID)
-	if !permissions.ReadProdStatus {
+	claims := auth.GetClaims(ctx)
+	permissions := claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID)
+	if !permissions.ReadProdStatus && !permissions.ReadDevStatus {
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to read project repo")
+	}
+
+	var depl *database.Deployment
+	if claims.OwnerType() == auth.OwnerTypeDeployment {
+		var err error
+		depl, err = s.admin.DB.FindDeployment(ctx, claims.OwnerID())
+		if err != nil {
+			return nil, status.Error(codes.NotFound, "deployment not found")
+		}
+	}
+
+	environment := "prod"
+	if depl != nil { // nolint // Pending other PR merging.
+		// TODO: Once deployments have environments.
+		// environment = depl.Environment
 	}
 
 	pageToken, err := unmarshalStringTimestampPageToken(req.PageToken)
@@ -122,7 +129,7 @@ func (s *Server) PullVirtualRepo(ctx context.Context, req *adminv1.PullVirtualRe
 	}
 	pageSize := validPageSize(req.PageSize)
 
-	vfs, err := s.admin.DB.FindVirtualFiles(ctx, proj.ID, "prod", pageToken.Ts.AsTime(), pageToken.Str, pageSize)
+	vfs, err := s.admin.DB.FindVirtualFiles(ctx, proj.ID, environment, pageToken.Ts.AsTime(), pageToken.Str, pageSize)
 	if err != nil {
 		return nil, err
 	}
