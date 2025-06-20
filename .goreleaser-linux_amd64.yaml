@@ -69,7 +69,7 @@ archives:
       - README.md
       - LICENSE*
     name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}"
-    formats: ['zip']
+    formats: ["zip"]
 
 checksum:
   name_template: checksums_linux_amd64.txt
