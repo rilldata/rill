@@ -160,6 +160,64 @@ func (p *Printer) PrintProjectMemberUsers(members []*adminv1.ProjectMemberUser) 
 	p.PrintData(allMembers)
 }
 
+func (p *Printer) PrintOrganizationMemberServices(members []*adminv1.OrganizationMemberService) {
+	if len(members) == 0 {
+		p.PrintfWarn("No services found\n")
+		return
+	}
+
+	allMembers := make([]*orgMemberService, 0, len(members))
+	for _, m := range members {
+		var attributes string
+		if len(m.Attributes) > 0 {
+			attrBytes, err := json.Marshal(m.Attributes)
+			if err != nil {
+				panic(fmt.Errorf("failed to marshal service attributes: %w", err))
+			}
+			attributes = string(attrBytes)
+		} else {
+			attributes = "{}"
+		}
+		allMembers = append(allMembers, &orgMemberService{
+			Name:       m.Name,
+			RoleName:   m.RoleName,
+			Attributes: attributes,
+		})
+	}
+
+	p.PrintData(allMembers)
+}
+
+func (p *Printer) PrintProjectMemberServices(members []*adminv1.ProjectMemberService) {
+	if len(members) == 0 {
+		p.PrintfWarn("No services found\n")
+		return
+	}
+
+	allMembers := make([]*projectMemberService, 0, len(members))
+	for _, m := range members {
+		var attributes string
+		if len(m.Attributes) > 0 {
+			attrBytes, err := json.Marshal(m.Attributes)
+			if err != nil {
+				panic(fmt.Errorf("failed to marshal service attributes: %w", err))
+			}
+			attributes = string(attrBytes)
+		} else {
+			attributes = "{}"
+		}
+		allMembers = append(allMembers, &projectMemberService{
+			Name:            m.Name,
+			ProjectName:     m.ProjectName,
+			ProjectRoleName: m.ProjectRoleName,
+			OrgRoleName:     m.OrgRoleName,
+			Attributes:      attributes,
+		})
+	}
+
+	p.PrintData(allMembers)
+}
+
 func (p *Printer) PrintUsergroupMemberUsers(members []*adminv1.UsergroupMemberUser) {
 	if len(members) == 0 {
 		p.PrintfWarn("No members found\n")
@@ -186,6 +244,20 @@ type memberUserWithRole struct {
 	Email    string `header:"email" json:"email"`
 	Name     string `header:"name" json:"display_name"`
 	RoleName string `header:"role" json:"role_name"`
+}
+
+type orgMemberService struct {
+	Name       string `header:"name" json:"name"`
+	RoleName   string `header:"role" json:"role_name"`
+	Attributes string `header:"attributes" json:"attributes"`
+}
+
+type projectMemberService struct {
+	Name            string `header:"name" json:"name"`
+	ProjectName     string `header:"project" json:"project_name"`
+	ProjectRoleName string `header:"project_role" json:"project_role_name"`
+	OrgRoleName     string `header:"org_role" json:"org_role_name"`
+	Attributes      string `header:"attributes" json:"attributes"`
 }
 
 func (p *Printer) PrintOrganizationInvites(invites []*adminv1.OrganizationInvite) {
@@ -250,17 +322,29 @@ func toServicesTable(sv []*adminv1.Service) []*service {
 }
 
 func toServiceRow(s *adminv1.Service) *service {
+	var attr string
+	if len(s.Attributes) > 0 {
+		attrBytes, err := json.Marshal(s.Attributes)
+		if err != nil {
+			panic(fmt.Errorf("failed to marshal service attributes: %w", err))
+		}
+		attr = string(attrBytes)
+	} else {
+		attr = "{}"
+	}
 	return &service{
-		Name:      s.Name,
-		OrgName:   s.OrgName,
-		CreatedAt: s.CreatedOn.AsTime().Local().Format(time.DateTime),
+		Name:       s.Name,
+		OrgName:    s.OrgName,
+		Attributes: attr,
+		CreatedAt:  s.CreatedOn.AsTime().Local().Format(time.DateTime),
 	}
 }
 
 type service struct {
-	Name      string `header:"name" json:"name"`
-	OrgName   string `header:"org_name" json:"org_name"`
-	CreatedAt string `header:"created_at,timestamp(ms|utc|human)" json:"created_at"`
+	Name       string `header:"name" json:"name"`
+	OrgName    string `header:"org_name" json:"org_name"`
+	Attributes string `header:"attributes" json:"attributes"`
+	CreatedAt  string `header:"created_at,timestamp(ms|utc|human)" json:"created_at"`
 }
 
 func (p *Printer) PrintServiceTokens(sts []*adminv1.ServiceToken) {
