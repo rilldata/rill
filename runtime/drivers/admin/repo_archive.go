@@ -12,6 +12,8 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/archive"
 )
 
+// archiveRepo represents a tarball archive file source.
+// It is unsafe for concurrent reads and writes.
 type archiveRepo struct {
 	h                  *Handle
 	tmpDir             string
@@ -46,14 +48,6 @@ func (r *archiveRepo) sync(ctx context.Context) error {
 
 func (r *archiveRepo) root() string {
 	return r.tmpDir
-}
-
-func (r *archiveRepo) commitHash() string {
-	return r.archiveID
-}
-
-func (r *archiveRepo) commitTimestamp() time.Time {
-	return r.archiveCreatedOn
 }
 
 // generateTmpPath generates a temporary path with a random suffix.

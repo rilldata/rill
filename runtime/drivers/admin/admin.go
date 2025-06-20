@@ -21,9 +21,20 @@ var spec = drivers.Spec{
 	DisplayName: "Rill Admin",
 	ConfigProperties: []*drivers.PropertySpec{
 		{
-			Key:    "access_token",
-			Type:   drivers.StringPropertyType,
-			Secret: true,
+			Key:      "admin_url",
+			Type:     drivers.StringPropertyType,
+			Required: true,
+		},
+		{
+			Key:      "access_token",
+			Type:     drivers.StringPropertyType,
+			Required: true,
+			Secret:   true,
+		},
+		{
+			Key:      "project_id",
+			Type:     drivers.StringPropertyType,
+			Required: true,
 		},
 	},
 }

@@ -13,14 +13,16 @@ import (
 )
 
 const (
-	virtualFilesDir = "/__virtual__/"
-
+	virtualDir       = "/__virtual__/"
 	virtualRetryN    = 3
 	virtualRetryWait = 2 * time.Second
+	virtualPageSize  = 100
+	virtualMaxPages  = 500
 )
 
-const pullVirtualPageSize = 100
-
+// virtualRepo represents a repository of virtual files loaded from the Rill Admin service.
+// It presents all virtual files as residing under the /__virtual__/ path, in order to avoid conflicts with files in archiveRepo or gitRepo.
+// It is unsafe for concurrent reads and writes.
 type virtualRepo struct {
 	h             *Handle
 	tmpDir        string
@@ -50,11 +52,10 @@ func (r *virtualRepo) sync(ctx context.Context) error {
 
 func (r *virtualRepo) syncInner(ctx context.Context) error {
 	i := 0
-	n := 500
-	for i = 0; i < n; i++ { // Just a failsafe to avoid infinite loops
+	for i = 0; i < virtualMaxPages; i++ { // Just a failsafe to avoid infinite loops
 		res, err := r.h.admin.PullVirtualRepo(ctx, &adminv1.PullVirtualRepoRequest{
 			ProjectId: r.h.config.ProjectID,
-			PageSize:  pullVirtualPageSize,
+			PageSize:  virtualPageSize,
 			PageToken: r.nextPageToken,
 		})
 		if err != nil {
@@ -62,7 +63,7 @@ func (r *virtualRepo) syncInner(ctx context.Context) error {
 		}
 
 		for _, vf := range res.Files {
-			path := filepath.Join(r.tmpDir, virtualFilesDir, vf.Path)
+			path := filepath.Join(r.tmpDir, virtualDir, vf.Path)
 
 			if vf.Deleted {
 				err = os.Remove(path)
@@ -92,8 +93,8 @@ func (r *virtualRepo) syncInner(ctx context.Context) error {
 		}
 	}
 
-	if i == n {
-		return fmt.Errorf("internal: pullUnsafeVirtual ran for over %d iterations", n)
+	if i == virtualMaxPages {
+		return fmt.Errorf("internal: virtualRepo: syncInner ran for over %d iterations", virtualMaxPages)
 	}
 
 	return nil
