@@ -7,8 +7,9 @@
 
   $: ({ instanceId } = $runtime);
 
-  $: organization = $page.params.organization;
-  $: project = $page.params.project;
+  $: ({
+    params: { organization, project },
+  } = $page);
 
   $: query = useAlerts(instanceId);
 
