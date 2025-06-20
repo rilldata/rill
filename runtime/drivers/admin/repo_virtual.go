@@ -54,6 +54,7 @@ func (r *virtualRepo) syncInner(ctx context.Context) error {
 	i := 0
 	for i = 0; i < virtualMaxPages; i++ { // Just a failsafe to avoid infinite loops
 		res, err := r.h.admin.PullVirtualRepo(ctx, &adminv1.PullVirtualRepoRequest{
+			ProjectId: r.h.config.ProjectID,
 			PageSize:  virtualPageSize,
 			PageToken: r.nextPageToken,
 		})

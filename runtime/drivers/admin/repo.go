@@ -444,7 +444,9 @@ func (r *repo) checkSyncHandshake(ctx context.Context) error {
 	}
 
 	// Handshake with the admin service.
-	meta, err := r.h.admin.GetRepoMeta(ctx, &adminv1.GetRepoMetaRequest{})
+	meta, err := r.h.admin.GetRepoMeta(ctx, &adminv1.GetRepoMetaRequest{
+		ProjectId: r.h.config.ProjectID,
+	})
 	if err != nil {
 		return fmt.Errorf("failed to get repo meta: %w", err)
 	}

@@ -2,8 +2,6 @@ package admin
 
 import (
 	"context"
-	"crypto/rand"
-	"encoding/hex"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -21,6 +19,7 @@ type archiveRepo struct {
 	archiveID          string
 	archiveCreatedOn   time.Time
 
+	filesDir          string
 	syncedDownloadURL string
 }
 
@@ -29,45 +28,26 @@ func (r *archiveRepo) sync(ctx context.Context) error {
 		return nil
 	}
 
-	_ = os.RemoveAll(r.tmpDir)
+	archivePath := filepath.Join(r.tmpDir, "archive.tar.gz")
+	defer func() { _ = os.Remove(archivePath) }()
 
-	dst, err := generateTmpPath(r.tmpDir, "admin_driver_zipped_repo", ".tar.gz")
+	filesDir, err := os.MkdirTemp(r.tmpDir, "files")
 	if err != nil {
-		return fmt.Errorf("archiveRepo: %w", err)
-	}
-	defer func() { _ = os.Remove(dst) }()
-
-	err = archive.Download(ctx, r.archiveDownloadURL, dst, r.tmpDir, true, false)
-	if err != nil {
-		return fmt.Errorf("archiveRepo: %w", err)
+		return err
 	}
 
+	err = archive.Download(ctx, r.archiveDownloadURL, archivePath, filesDir, false, true)
+	if err != nil {
+		_ = os.RemoveAll(filesDir)
+		return fmt.Errorf("archiveRepo: %w", err)
+	}
+
+	_ = os.RemoveAll(r.filesDir)
+	r.filesDir = filesDir
 	r.syncedDownloadURL = r.archiveDownloadURL
 	return nil
 }
 
 func (r *archiveRepo) root() string {
-	return r.tmpDir
-}
-
-// generateTmpPath generates a temporary path with a random suffix.
-// It uses the format <dir>/<base><random><ext>.
-// The output path is absolute.
-func generateTmpPath(dir, base, ext string) (string, error) {
-	b := make([]byte, 16)
-	_, err := rand.Read(b)
-	if err != nil {
-		return "", fmt.Errorf("generate tmp path: %w", err)
-	}
-
-	r := hex.EncodeToString(b)
-
-	p := filepath.Join(dir, base+r+ext)
-
-	p, err = filepath.Abs(p)
-	if err != nil {
-		return "", fmt.Errorf("generate tmp path: %w", err)
-	}
-
-	return p, nil
+	return r.filesDir
 }
