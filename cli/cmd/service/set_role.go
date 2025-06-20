@@ -63,7 +63,6 @@ func SetRoleCmd(ch *cmdutil.Helper) *cobra.Command {
 		},
 	}
 	setRoleCmd.Flags().SortFlags = false
-	setRoleCmd.Flags().StringVar(&ch.Org, "org", "", "Organization name")
 	setRoleCmd.Flags().StringVar(&projectName, "project", "", "Project")
 	setRoleCmd.Flags().StringVar(&name, "name", "", "Name of the service")
 	setRoleCmd.Flags().StringVar(&role, "role", "", fmt.Sprintf("Role of the service (options: %s)", strings.Join(orgRoles, ", ")))
