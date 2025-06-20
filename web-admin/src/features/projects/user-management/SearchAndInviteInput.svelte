@@ -4,24 +4,38 @@
   import { cn } from "@rilldata/web-common/lib/shadcn";
   import SearchAndInviteListItem from "./SearchAndInviteListItem.svelte";
   import Close from "@rilldata/web-common/components/icons/Close.svelte";
+  import {
+    type SearchResult,
+    type DropdownPosition,
+    categorizeResults,
+    filterSearchResults,
+    validate,
+    processCommaSeparatedInput,
+    getDropdownPosition,
+    scrollToHighlighted,
+    getNextHighlightIndex,
+    getLastIncompletePart,
+    shouldMaintainFocus,
+  } from "./utils";
+  import { debounce } from "@rilldata/web-common/lib/create-debouncer";
 
   export let placeholder: string = "Search or invite by email";
   export let validators: ((value: string) => boolean | string)[] = [];
   export let roleSelect: boolean = false;
   export let initialRole: string = "viewer";
-  export let searchList: any[] | undefined = undefined;
+  export let searchList: SearchResult[] | undefined = undefined;
   export let searchKeys: string[] = [];
   export let loop: boolean = false;
   export let multiSelect: boolean = false;
-  export let autoFocusInput: -1 | 0 | 1 = 0; // -1: no auto focus, 0: auto focus on mount, 1: auto focus on blur
-  export let onSearch: (query: string) => Promise<any[]>;
+  export let autoFocusInput: -1 | 0 | 1 = 0;
+  export let onSearch: (query: string) => Promise<SearchResult[]>;
   export let onInvite: (
     emailsAndGroups: string[],
     role?: string,
   ) => Promise<void>;
 
   let input = "";
-  let searchResults: any[] = [];
+  let searchResults: SearchResult[] = [];
   let selected: string[] = [];
   let loading = false;
   let showDropdown = false;
@@ -30,186 +44,113 @@
   let highlightedIndex = -1;
   let dropdownList: HTMLElement;
   let inputElement: HTMLInputElement;
-  let dropdownTop = 0;
-  let dropdownLeft = 0;
-  let dropdownWidth = 0;
+  let dropdownPosition: DropdownPosition = { top: 0, left: 0, width: 0 };
   let keyboardNavigationActive = false;
 
-  // Only scroll when dropdown is visible and highlighted index changes
-  $: if (highlightedIndex >= 0 && showDropdown && dropdownList) {
-    scrollToHighlighted();
-  }
-
-  // Update dropdown position when selected items change (for multi-row chip wrapping)
-  $: if (selected && showDropdown) {
-    requestAnimationFrame(() => {
-      updateDropdownPosition();
-    });
-  }
-
-  $: categorizedResults = (() => {
-    if (!searchResults.length) {
-      return {
-        groups: [],
-        members: [],
-        guests: [],
-        allResults: [],
-        resultIndexMap: new Map(),
-      };
-    }
-
-    const groups = searchResults.filter((result) => result.type === "group");
-    const members = searchResults.filter(
-      (result) => result.type === "user" && result.orgRoleName !== "guest",
-    );
-    const guests = searchResults.filter(
-      (result) => result.type === "user" && result.orgRoleName === "guest",
-    );
-    const allResults = [...groups, ...members, ...guests];
-
-    // Create index map for O(1) lookups instead of O(n) indexOf calls
-    const resultIndexMap = new Map();
-    allResults.forEach((result, index) => {
-      resultIndexMap.set(result, index);
-    });
-
-    return { groups, members, guests, allResults, resultIndexMap };
-  })();
-
-  // Create a Set for O(1) selected lookups instead of O(n) includes() calls
+  $: categorizedResults = categorizeResults(searchResults);
   $: selectedSet = new Set(selected);
+
+  // Debounced search for better performance
+  const debouncedSearch = debounce(async (query: string) => {
+    if (searchList) {
+      searchResults = filterSearchResults(searchList, searchKeys, query);
+    } else {
+      try {
+        searchResults = await onSearch(query);
+      } catch {
+        searchResults = [];
+      }
+    }
+    showDropdown = searchResults.length > 0;
+    if (showDropdown) {
+      updateDropdownPosition();
+    }
+  }, 150);
+
+  $: if (highlightedIndex >= 0 && showDropdown && dropdownList) {
+    scrollToHighlighted(highlightedIndex, dropdownList);
+  }
+
+  $: if (selected && showDropdown) {
+    requestAnimationFrame(updateDropdownPosition);
+  }
 
   function updateDropdownPosition() {
     if (inputElement) {
-      const rect = inputElement.getBoundingClientRect();
-      const inputContainer = inputElement.closest(".input-with-role");
-      const containerRect = inputContainer?.getBoundingClientRect();
-
-      dropdownLeft = containerRect?.left || rect.left;
-      dropdownTop = (containerRect?.bottom || rect.bottom) + 2;
-      dropdownWidth = containerRect?.width || rect.width;
-    }
-  }
-
-  function scrollToHighlighted() {
-    if (highlightedIndex >= 0 && dropdownList) {
-      const items = dropdownList.querySelectorAll(".dropdown-item");
-      if (items[highlightedIndex]) {
-        items[highlightedIndex].scrollIntoView({ block: "nearest" });
-      }
-    }
-  }
-
-  function processCommaSeparatedInput(raw: string) {
-    // Split by comma, trim, filter out empty, and deduplicate
-    const parts = raw
-      .split(",")
-      .map((s) => s.trim())
-      .filter(Boolean);
-    const newEntries = parts.filter((entry) => !selectedSet.has(entry));
-    // Validate each entry
-    for (const entry of newEntries) {
-      const valid = validate(entry);
-      if (valid === true) {
-        selected = [...selected, entry];
-      } else {
-        error = valid as string;
-        // Optionally: skip adding invalid, or add anyway and show error
-      }
+      dropdownPosition = getDropdownPosition(inputElement);
     }
   }
 
   async function handleInput(e: Event) {
-    input = (e.target as HTMLInputElement).value;
+    const target = e.target as HTMLInputElement;
+    input = target.value;
     error = "";
-    // If input contains a comma, process it
+
+    // Handle comma-separated input
     if (input.includes(",")) {
-      processCommaSeparatedInput(input);
-      // Only keep the last (possibly incomplete) part in the input
-      const lastPart = input.split(",").pop() ?? "";
-      input = lastPart.trim();
+      const { newEntries, error: processError } = processCommaSeparatedInput(
+        input,
+        selectedSet,
+        validators,
+      );
+
+      if (processError) {
+        error = processError;
+      } else {
+        selected = [...selected, ...newEntries];
+      }
+
+      // Keep only the last incomplete part
+      input = getLastIncompletePart(target.value);
     }
+
     loading = true;
-    try {
-      if (searchList) {
-        const lower = input.toLowerCase();
-        // Keep selected items in the search results but mark them as selected
-        searchResults = searchList.filter((item) =>
-          searchKeys.some(
-            (key) => item[key] && item[key].toLowerCase().includes(lower),
-          ),
-        );
-      } else {
-        const results = await onSearch(input);
-        searchResults = results;
-      }
-      showDropdown = searchResults.length > 0;
-      if (showDropdown) {
-        updateDropdownPosition();
-      }
-    } catch {
-      searchResults = [];
-      showDropdown = false;
-    } finally {
-      loading = false;
-    }
+    await debouncedSearch(input);
+    loading = false;
   }
 
-  function validate(value: string) {
-    for (const v of validators) {
-      const res = v(value);
-      if (res !== true) return res;
-    }
-    return true;
-  }
-
-  function handleSelect(result: any) {
+  function handleSelect(result: SearchResult) {
     if (multiSelect) {
-      // Multi-select mode: toggle selection
-      if (selectedSet.has(result.identifier)) {
-        selected = selected.filter((id) => id !== result.identifier);
-      } else {
-        selected = [...selected, result.identifier];
-      }
-      // Clear input after selection
+      // Toggle selection in multi-select mode
+      selected = selectedSet.has(result.identifier)
+        ? selected.filter((id) => id !== result.identifier)
+        : [...selected, result.identifier];
+
       input = "";
-      // Refresh search results to show all options when input is empty
-      if (searchList) {
-        searchResults = searchList; // Show all items when input is empty
-      } else {
-        // Trigger search with empty input to get all results
-        onSearch("")
-          .then((results) => {
-            searchResults = results;
-            showDropdown = searchResults.length > 0;
-            if (showDropdown) {
-              updateDropdownPosition();
-            }
-          })
-          .catch(() => {
-            searchResults = [];
-            showDropdown = false;
-          });
-      }
-      // Keep dropdown open and input focused in multi-select mode
+      refreshSearchResults();
       showDropdown = true;
       inputElement?.focus();
     } else {
-      // Single-select mode: replace selection
+      // Replace selection in single-select mode
       selected = [result.identifier];
-      // Clear input after selection
       input = "";
       showDropdown = false;
-      highlightedIndex = -1; // Only reset highlightedIndex in single-select mode
+      highlightedIndex = -1;
+    }
+  }
+
+  async function refreshSearchResults() {
+    if (searchList) {
+      searchResults = searchList;
+    } else {
+      try {
+        searchResults = await onSearch("");
+        showDropdown = searchResults.length > 0;
+        if (showDropdown) {
+          updateDropdownPosition();
+        }
+      } catch {
+        searchResults = [];
+        showDropdown = false;
+      }
     }
   }
 
   function handleInvite() {
-    // First validate the current input if it exists
+    // Validate current input if it exists
     if (input.trim()) {
-      const inputValid = validate(input);
+      const inputValid = validate(input, validators);
       if (inputValid === true) {
-        // Add the input to selected items if it's valid
         selected = [...selected, input];
         input = "";
       } else {
@@ -218,11 +159,16 @@
       }
     }
 
-    const invalids = selected.map(validate).filter((v) => v !== true);
+    // Validate all selected items
+    const invalids = selected
+      .map((item) => validate(item, validators))
+      .filter((v) => v !== true);
+
     if (invalids.length > 0) {
       error = invalids[0] as string;
       return;
     }
+
     onInvite(selected, role)
       .then(() => {
         selected = [];
@@ -235,15 +181,14 @@
   }
 
   function handleInputKeydown(e: KeyboardEvent) {
-    // Handle Tab key to separate values - should work regardless of dropdown state
+    // Handle Tab key
     if (e.key === "Tab" && input.trim()) {
       e.preventDefault();
-      if (validate(input) === true) {
-        if (multiSelect) {
-          if (!selectedSet.has(input)) {
-            selected = [...selected, input];
-          }
-        } else {
+      const inputValid = validate(input, validators);
+      if (inputValid === true) {
+        if (multiSelect && !selectedSet.has(input)) {
+          selected = [...selected, input];
+        } else if (!multiSelect) {
           selected = [input];
         }
         input = "";
@@ -251,81 +196,47 @@
       return;
     }
 
-    if (!showDropdown || searchResults.length === 0) {
-      // If input contains a comma, process it on Enter
-      if (e.key === "Enter" && input.includes(",")) {
-        if (multiSelect) {
-          processCommaSeparatedInput(input);
-        } else {
-          // In single-select mode, only take the first valid input
-          const firstValid = input
-            .split(",")
-            .map((s) => s.trim())
-            .find((entry) => validate(entry) === true);
-          if (firstValid) {
-            selected = [firstValid];
-          }
+    // Handle Enter key
+    if (e.key === "Enter") {
+      if (input.includes(",")) {
+        const { newEntries, error: processError } = processCommaSeparatedInput(
+          input,
+          selectedSet,
+          validators,
+        );
+
+        if (!processError) {
+          selected = multiSelect
+            ? [...selected, ...newEntries]
+            : newEntries.length > 0
+              ? [newEntries[0]]
+              : selected;
         }
         input = "";
         e.preventDefault();
         return;
       }
-      // If input is empty and there are selected items, Enter should submit (invite)
-      if (e.key === "Enter" && input.trim() === "" && selected.length > 0) {
+
+      if (input.trim() === "" && selected.length > 0) {
         handleInvite();
         e.preventDefault();
         return;
       }
-    }
-    if (e.key === "ArrowDown") {
-      keyboardNavigationActive = true;
-      if (highlightedIndex === categorizedResults.allResults.length - 1) {
-        if (loop) {
-          highlightedIndex = 0;
-        } else {
-          e.preventDefault();
-          return;
-        }
-      } else {
-        highlightedIndex = highlightedIndex + 1;
-      }
-      e.preventDefault();
-      showDropdown = true;
-      updateDropdownPosition();
-    } else if (e.key === "ArrowUp") {
-      keyboardNavigationActive = true;
-      if (highlightedIndex === 0) {
-        if (loop) {
-          highlightedIndex = categorizedResults.allResults.length - 1;
-        } else {
-          e.preventDefault();
-          return;
-        }
-      } else {
-        highlightedIndex = highlightedIndex - 1;
-      }
-      e.preventDefault();
-      showDropdown = true;
-      updateDropdownPosition();
-    } else if (e.key === "Enter") {
+
       if (
+        showDropdown &&
         highlightedIndex >= 0 &&
         highlightedIndex < categorizedResults.allResults.length
       ) {
         handleSelect(categorizedResults.allResults[highlightedIndex]);
         e.preventDefault();
-        // In multi-select mode, keep dropdown open and input focused
-        if (multiSelect) {
-          showDropdown = true;
-          inputElement?.focus();
-        }
-      } else if (input && validate(input) === true) {
-        // Allow inviting a new email
-        if (multiSelect) {
-          if (!selectedSet.has(input)) {
-            selected = [...selected, input];
-          }
-        } else {
+        return;
+      }
+
+      if (input && validate(input, validators) === true) {
+        if (multiSelect && !selectedSet.has(input)) {
+          selected = [...selected, input];
+        } else if (!multiSelect) {
           selected = [input];
         }
         input = "";
@@ -333,16 +244,37 @@
         highlightedIndex = -1;
         e.preventDefault();
       }
-    } else if (e.key === "Space" && highlightedIndex >= 0) {
-      // Add space key support for multi-select
-      if (multiSelect) {
-        handleSelect(categorizedResults.allResults[highlightedIndex]);
-        e.preventDefault();
+    }
+
+    // Handle arrow keys
+    if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+      keyboardNavigationActive = true;
+      const direction = e.key === "ArrowDown" ? "down" : "up";
+      const newIndex = getNextHighlightIndex(
+        highlightedIndex,
+        categorizedResults.allResults.length,
+        direction,
+        loop,
+      );
+
+      if (newIndex !== highlightedIndex) {
+        highlightedIndex = newIndex;
         showDropdown = true;
-        inputElement?.focus();
+        updateDropdownPosition();
       }
-    } else if (e.key === "Backspace" && input === "" && selected.length > 0) {
-      // Remove the last selected chip when backspace is pressed and input is empty
+      e.preventDefault();
+    }
+
+    // Handle Space key for multi-select
+    if (e.key === "Space" && highlightedIndex >= 0 && multiSelect) {
+      handleSelect(categorizedResults.allResults[highlightedIndex]);
+      e.preventDefault();
+      showDropdown = true;
+      inputElement?.focus();
+    }
+
+    // Handle Backspace
+    if (e.key === "Backspace" && input === "" && selected.length > 0) {
       selected = selected.slice(0, -1);
       e.preventDefault();
     }
@@ -350,12 +282,7 @@
 
   function handleFocus() {
     if (searchList) {
-      const lower = input.toLowerCase();
-      searchResults = searchList.filter((item) =>
-        searchKeys.some(
-          (key) => item[key] && item[key].toLowerCase().includes(lower),
-        ),
-      );
+      searchResults = filterSearchResults(searchList, searchKeys, input);
       showDropdown = searchResults.length > 0;
       if (showDropdown) {
         updateDropdownPosition();
@@ -364,27 +291,40 @@
   }
 
   function handleBlur(e: FocusEvent) {
-    // In multi-select mode, only close dropdown if focus moves completely outside the component
-    if (multiSelect) {
-      // Check if the new focus target is within our component
-      const relatedTarget = e.relatedTarget as Element;
-      if (relatedTarget && dropdownList?.contains(relatedTarget)) {
-        return; // Don't close if focus is moving to dropdown
-      }
+    const relatedTarget = e.relatedTarget as Element;
+    if (shouldMaintainFocus(relatedTarget, dropdownList, multiSelect)) {
+      return;
     }
-    // Close dropdown in single-select mode or when focus moves outside component
     showDropdown = false;
   }
 
-  function removeSelected(identifier: string) {
-    selected = selected.filter((e) => e !== identifier);
+  function handlePaste(e: ClipboardEvent) {
+    const pasted = e.clipboardData?.getData("text") ?? "";
+    if (pasted.includes(",")) {
+      const { newEntries, error: processError } = processCommaSeparatedInput(
+        pasted,
+        selectedSet,
+        validators,
+      );
+
+      if (!processError) {
+        selected = [...selected, ...newEntries];
+      }
+      input = "";
+      e.preventDefault();
+    }
   }
 
-  function getResultIndex(result: any): number {
+  function removeSelected(identifier: string) {
+    selected = selected.filter((id) => id !== identifier);
+  }
+
+  function getResultIndex(result: SearchResult): number {
     return categorizedResults.resultIndexMap.get(result) ?? -1;
   }
 </script>
 
+<!-- Template remains largely the same but cleaner -->
 <div class="invite-search-input">
   <div class="input-row">
     <div
@@ -401,7 +341,8 @@
         {#each selected as identifier (identifier)}
           <span
             class="chip text-sm w-fit h-[24px] overflow-hidden text-ellipsis"
-            >{identifier}
+          >
+            {identifier}
             <button
               on:click={() => removeSelected(identifier)}
               class="ml-1 rounded hover:bg-gray-100 transition-colors"
@@ -410,6 +351,7 @@
             </button>
           </span>
         {/each}
+
         <input
           type="text"
           bind:value={input}
@@ -419,24 +361,19 @@
           on:keydown={handleInputKeydown}
           on:focus={handleFocus}
           on:blur={handleBlur}
-          on:paste={(e) => {
-            const pasted = e.clipboardData?.getData("text") ?? "";
-            if (pasted.includes(",")) {
-              processCommaSeparatedInput(pasted);
-              input = "";
-              e.preventDefault();
-            }
-          }}
+          on:paste={handlePaste}
           class:error={!!error}
           autocomplete="off"
           tabindex={autoFocusInput}
           class="px-1"
         />
       </div>
+
       {#if roleSelect && (selected.length > 0 || input.trim())}
         <UserRoleSelect bind:value={role} />
       {/if}
     </div>
+
     <Button
       type="primary"
       onClick={handleInvite}
@@ -446,14 +383,16 @@
       Invite
     </Button>
   </div>
+
   {#if error}
     <div class="error">{error}</div>
   {/if}
+
   {#if showDropdown && searchResults.length > 0}
     <div
       class="dropdown"
       bind:this={dropdownList}
-      style="width: {dropdownWidth}px; top: {dropdownTop}px; left: {dropdownLeft}px;"
+      style="width: {dropdownPosition.width}px; top: {dropdownPosition.top}px; left: {dropdownPosition.left}px;"
       on:pointermove={() => {
         keyboardNavigationActive = false;
       }}
@@ -535,7 +474,7 @@
   {:else if loading}
     <div
       class="dropdown loading"
-      style="width: {dropdownWidth}px; top: {dropdownTop}px; left: {dropdownLeft}px;"
+      style="width: {dropdownPosition.width}px; top: {dropdownPosition.top}px; left: {dropdownPosition.left}px;"
     >
       <div class="loading-spinner"></div>
       <span>Searching...</span>
@@ -548,11 +487,13 @@
     width: 100%;
     position: relative;
   }
+
   .input-row {
     display: flex;
     align-items: center;
     gap: 8px;
   }
+
   .input-with-role {
     display: flex;
     align-items: center;
@@ -577,6 +518,7 @@
     background: transparent;
     margin: 0;
   }
+
   .chip {
     background: #f3f4f6;
     color: #222;
@@ -586,6 +528,7 @@
     align-items: center;
     border: 1px solid #e5e7eb;
   }
+
   .chip button {
     background: none;
     border: none;
@@ -593,12 +536,14 @@
     margin-left: 4px;
     cursor: pointer;
   }
+
   .input-with-role :global(.dropdown-menu-trigger) {
     border: none;
     background: transparent;
     margin-left: 4px;
     min-width: 90px;
   }
+
   .dropdown {
     position: fixed;
     background: #fff;
@@ -612,18 +557,6 @@
     padding: 0;
     color: #222;
   }
-  .dropdown button {
-    padding: 8px 12px;
-    cursor: pointer;
-    scroll-margin: 8px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    transition: background-color 150ms ease-in-out;
-  }
-  .dropdown button:hover {
-    @apply bg-slate-100;
-  }
 
   .dropdown.loading {
     display: flex;
@@ -632,6 +565,7 @@
     gap: 8px;
     padding: 16px;
   }
+
   .loading-spinner {
     width: 16px;
     height: 16px;
@@ -640,6 +574,7 @@
     border-radius: 50%;
     animation: spin 1s linear infinite;
   }
+
   @keyframes spin {
     0% {
       transform: rotate(0deg);
@@ -660,28 +595,5 @@
 
   .section-divider {
     @apply border-t border-gray-200;
-  }
-
-  .dropdown-item {
-    @apply flex items-center justify-between px-3 py-2 cursor-pointer w-full text-left border-none bg-transparent;
-    scroll-margin: 8px;
-    transition: background-color 150ms ease-in-out;
-  }
-
-  .dropdown-item:hover {
-    @apply bg-slate-100;
-  }
-
-  .dropdown-item.highlighted {
-    @apply bg-slate-200;
-    scroll-snap-align: start;
-  }
-
-  .dropdown-item.selected {
-    @apply bg-slate-100;
-  }
-
-  .dropdown-item.selected:hover {
-    @apply bg-slate-200;
   }
 </style>
