@@ -77,7 +77,7 @@ var _ drivers.Handle = &handle{}
 
 // Ping implements drivers.Handle.
 func (h *handle) Ping(ctx context.Context) error {
-	return drivers.ErrNotImplemented
+	return nil
 }
 
 // Driver implements drivers.Connection.
