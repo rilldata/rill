@@ -64,7 +64,7 @@ func (s *Server) CreateService(ctx context.Context, req *adminv1.CreateServiceRe
 
 	// If project role is specified, assign it
 	if req.ProjectName != "" && req.ProjectRoleName != "" {
-		project, err := s.admin.DB.FindProjectByName(ctx, org.ID, req.ProjectName)
+		project, err := s.admin.DB.FindProjectByName(ctx, req.OrganizationName, req.ProjectName)
 		if err != nil {
 			return nil, status.Error(codes.InvalidArgument, "invalid project")
 		}

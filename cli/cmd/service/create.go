@@ -36,11 +36,6 @@ func CreateCmd(ch *cmdutil.Helper) *cobra.Command {
 				OrganizationName: ch.Org,
 			}
 
-			// Validate that we have either org role or project role, but not both
-			if orgRole != "" && projectRole != "" {
-				return fmt.Errorf("service cannot have both org role and project role")
-			}
-
 			// Set org role if provided
 			if orgRole != "" {
 				req.OrgRoleName = orgRole
