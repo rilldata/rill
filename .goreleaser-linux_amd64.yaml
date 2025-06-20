@@ -9,7 +9,7 @@ release:
 before:
   hooks:
     - go mod tidy
-    - docker login -u {{ .Env.DOCKERHUB_USER }} -p {{ .Env.DOCKERHUB_PASS }}
+    - echo {{ .Env.DOCKERHUB_PASS }} | docker login -u {{ .Env.DOCKERHUB_USER }} --password-stdin
 
 builds:
   - id: linux
@@ -69,13 +69,13 @@ archives:
       - README.md
       - LICENSE*
     name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}"
-    format: zip
+    formats: ["zip"]
 
 checksum:
   name_template: checksums_linux_amd64.txt
 
 snapshot:
-  name_template: "{{ incminor .Version }}-nightly"
+  version_template: "{{ incminor .Version }}-nightly"
 
 changelog:
   sort: asc
