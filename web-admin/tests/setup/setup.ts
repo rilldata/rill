@@ -1,8 +1,9 @@
 import { expect } from "@playwright/test";
 import {
-  execAsync,
-  spawnAndMatch,
-} from "@rilldata/web-common/tests/utils/spawn";
+  RILL_DEVTOOL_BACKGROUND_PROCESS_PID_FILE,
+  RILL_EMBED_SERVICE_TOKEN_FILE,
+} from "@rilldata/web-integration/tests/constants";
+import { execAsync, spawnAndMatch } from "web-integration/tests/utils/spawn";
 import axios from "axios";
 import { spawn } from "child_process";
 import dotenv from "dotenv";
@@ -10,17 +11,15 @@ import { openSync } from "fs";
 import { mkdir } from "fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
-import { writeFileEnsuringDir } from "../utils/fs";
+import { writeFileEnsuringDir } from "@rilldata/web-integration/tests/utils/fs";
 import { test as setup } from "./base";
 import {
   ADMIN_STORAGE_STATE,
-  RILL_DEVTOOL_BACKGROUND_PROCESS_PID_FILE,
-  RILL_EMBED_SERVICE_TOKEN_FILE,
   RILL_ORG_NAME,
   RILL_PROJECT_NAME,
   RILL_SERVICE_NAME,
 } from "./constants";
-import { cliLogin } from "./fixtures/cli";
+import { cliLogin } from "web-integration/tests/fixtures/cli";
 
 setup.describe("global setup", () => {
   setup.describe.configure({
@@ -171,7 +170,8 @@ setup.describe("global setup", () => {
     expect(orgCreateService).toContain("Created service");
 
     const serviceToken = orgCreateService.match(/Access token:\s+(\S+)/);
-    writeFileEnsuringDir(RILL_EMBED_SERVICE_TOKEN_FILE, serviceToken![1]);
+    const writePath = path.join(process.cwd(), RILL_EMBED_SERVICE_TOKEN_FILE);
+    writeFileEnsuringDir(writePath, serviceToken![1]);
 
     // Go to the organization's page
     await adminPage.goto(`/${RILL_ORG_NAME}`);

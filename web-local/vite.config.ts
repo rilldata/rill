@@ -29,6 +29,8 @@ const config = defineConfig({
   },
   define: {
     "import.meta.env.VITE_PLAYWRIGHT_TEST": process.env.PLAYWRIGHT_TEST,
+    "import.meta.env.VITE_PLAYWRIGHT_CLOUD_TEST":
+      process.env.PLAYWRIGHT_CLOUD_TEST,
   },
   plugins: [sveltekit()],
   envDir: "../",

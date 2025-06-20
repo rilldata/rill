@@ -11,7 +11,7 @@
   } from "@rilldata/web-common/features/dashboards/selectors.js";
   import DeployProjectCTA from "@rilldata/web-common/features/dashboards/workspace/DeployProjectCTA.svelte";
   import ExplorePreviewCTAs from "@rilldata/web-common/features/explores/ExplorePreviewCTAs.svelte";
-  import { featureFlags } from "@rilldata/web-common/features/feature-flags";
+  import { featureFlags } from "@rilldata/web-common/features/feature-flags.ts";
   import { useProjectTitle } from "@rilldata/web-common/features/project/selectors";
   import { isDeployPage } from "@rilldata/web-common/layout/navigation/route-utils";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
@@ -20,7 +20,7 @@
   import InputWithConfirm from "../components/forms/InputWithConfirm.svelte";
   import { fileArtifacts } from "../features/entity-management/file-artifacts";
 
-  const { rillDevCloudFeatures, darkMode } = featureFlags;
+  const { darkMode } = featureFlags;
 
   export let mode: string;
 
@@ -116,12 +116,10 @@
         <ExplorePreviewCTAs exploreName={dashboardName} />
       {/if}
     {/if}
-    {#if $rillDevCloudFeatures}
-      {#if !onDeployPage}
-        <DeployProjectCTA {hasValidDashboard} />
-      {/if}
-      <LocalAvatarButton darkMode={$darkMode} />
+    {#if !onDeployPage}
+      <DeployProjectCTA {hasValidDashboard} />
     {/if}
+    <LocalAvatarButton darkMode={$darkMode} />
   </div>
 </header>
 
