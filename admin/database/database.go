@@ -430,6 +430,8 @@ type Project struct {
 	ProdSlots                    int               `db:"prod_slots"`
 	ProdTTLSeconds               *int64            `db:"prod_ttl_seconds"`
 	ProdDeploymentID             *string           `db:"prod_deployment_id"`
+	DevSlots                     int               `db:"dev_slots"`
+	DevTTLSeconds                int64             `db:"dev_ttl_seconds"`
 	Annotations                  map[string]string `db:"annotations"`
 	CreatedOn                    time.Time         `db:"created_on"`
 	UpdatedOn                    time.Time         `db:"updated_on"`
@@ -455,6 +457,8 @@ type InsertProjectOptions struct {
 	ProdOLAPDSN          string
 	ProdSlots            int
 	ProdTTLSeconds       *int64
+	DevSlots             int
+	DevTTLSeconds        int64
 }
 
 // UpdateProjectOptions defines options for updating a Project.
@@ -474,6 +478,8 @@ type UpdateProjectOptions struct {
 	ProdDeploymentID     *string
 	ProdSlots            int
 	ProdTTLSeconds       *int64
+	DevSlots             int
+	DevTTLSeconds        int64
 	Annotations          map[string]string
 }
 
@@ -485,6 +491,7 @@ const (
 	DeploymentStatusPending     DeploymentStatus = 1
 	DeploymentStatusOK          DeploymentStatus = 2
 	DeploymentStatusError       DeploymentStatus = 4
+	DeploymentStatusStopped     DeploymentStatus = 5
 )
 
 func (d DeploymentStatus) String() string {
@@ -495,6 +502,8 @@ func (d DeploymentStatus) String() string {
 		return "OK"
 	case DeploymentStatusError:
 		return "Error"
+	case DeploymentStatusStopped:
+		return "Stopped"
 	default:
 		return "Unspecified"
 	}
@@ -505,6 +514,8 @@ func (d DeploymentStatus) String() string {
 type Deployment struct {
 	ID                string           `db:"id"`
 	ProjectID         string           `db:"project_id"`
+	OwnerUserID       *string          `db:"owner_user_id"`
+	Environment       string           `db:"environment"`
 	Branch            string           `db:"branch"`
 	RuntimeHost       string           `db:"runtime_host"`
 	RuntimeInstanceID string           `db:"runtime_instance_id"`
@@ -519,6 +530,8 @@ type Deployment struct {
 // InsertDeploymentOptions defines options for inserting a new Deployment.
 type InsertDeploymentOptions struct {
 	ProjectID         string
+	OwnerUserID       *string
+	Environment       string
 	Branch            string
 	RuntimeHost       string
 	RuntimeInstanceID string
