@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"time"
 
 	"github.com/go-git/go-git/v5/plumbing/transport"
 	"github.com/rilldata/rill/admin/database"
@@ -17,21 +18,36 @@ import (
 func (s *Server) GetRepoMeta(ctx context.Context, req *adminv1.GetRepoMetaRequest) (*adminv1.GetRepoMetaResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.project_id", req.ProjectId),
-		attribute.String("args.branch", req.Branch),
 	)
+
+	claims := auth.GetClaims(ctx)
+
+	var depl *database.Deployment
+	if claims.OwnerType() == auth.OwnerTypeDeployment {
+		var err error
+		depl, err = s.admin.DB.FindDeployment(ctx, claims.OwnerID())
+		if err != nil {
+			return nil, status.Error(codes.NotFound, "deployment not found")
+		}
+
+		if req.ProjectId == "" {
+			req.ProjectId = depl.ProjectID
+		}
+	}
 
 	proj, err := s.admin.DB.FindProject(ctx, req.ProjectId)
 	if err != nil {
 		return nil, err
 	}
 
-	permissions := auth.GetClaims(ctx).ProjectPermissions(ctx, proj.OrganizationID, proj.ID)
-	if !permissions.ReadProdStatus {
-		return nil, status.Error(codes.PermissionDenied, "does not have permission to read project repo")
-	}
-
-	if proj.ProdBranch != req.Branch {
-		return nil, status.Error(codes.InvalidArgument, "branch not found")
+	if depl == nil || proj.ProdDeploymentID != nil && depl.ID == *proj.ProdDeploymentID {
+		if !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ReadProdStatus {
+			return nil, status.Error(codes.PermissionDenied, "does not have permission to read project repo")
+		}
+	} else {
+		if !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ReadDevStatus {
+			return nil, status.Error(codes.PermissionDenied, "does not have permission to read project repo")
+		}
 	}
 
 	if proj.ArchiveAssetID != nil {
@@ -45,6 +61,7 @@ func (s *Server) GetRepoMeta(ctx context.Context, req *adminv1.GetRepoMetaReques
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
 		return &adminv1.GetRepoMetaResponse{
+			ValidUntilTime:     timestamppb.New(time.Now().Add(time.Hour * 24 * 365)), // Setting to a year because it doesn't need to be refreshed
 			ArchiveId:          asset.ID,
 			ArchiveDownloadUrl: downloadURL,
 			ArchiveCreatedOn:   timestamppb.New(asset.CreatedOn),
@@ -74,9 +91,11 @@ func (s *Server) GetRepoMeta(ctx context.Context, req *adminv1.GetRepoMetaReques
 	gitURL := ep.String()
 
 	return &adminv1.GetRepoMetaResponse{
-		GitUrl:          gitURL,
-		GitUrlExpiresOn: timestamppb.New(expiresAt),
-		GitSubpath:      proj.Subpath,
+		ValidUntilTime: timestamppb.New(expiresAt),
+		GitUrl:         gitURL,
+		GitSubpath:     proj.Subpath,
+		GitBranch:      proj.ProdBranch,
+		// TODO: GitEditBranch
 	}, nil
 }
 
