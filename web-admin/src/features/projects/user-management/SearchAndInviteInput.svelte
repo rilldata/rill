@@ -16,6 +16,7 @@
     getNextHighlightIndex,
     getLastIncompletePart,
     shouldMaintainFocus,
+    getResultIndex,
   } from "./utils";
   import { debounce } from "@rilldata/web-common/lib/create-debouncer";
 
@@ -318,10 +319,6 @@
   function removeSelected(identifier: string) {
     selected = selected.filter((id) => id !== identifier);
   }
-
-  function getResultIndex(result: SearchResult): number {
-    return categorizedResults.resultIndexMap.get(result) ?? -1;
-  }
 </script>
 
 <!-- Template remains largely the same but cleaner -->
@@ -400,7 +397,7 @@
       {#if categorizedResults.groups.length > 0}
         <div class="section-header">GROUPS</div>
         {#each categorizedResults.groups as result}
-          {@const resultIndex = getResultIndex(result)}
+          {@const resultIndex = getResultIndex(result, categorizedResults)}
           {@const isSelected = selectedSet.has(result.identifier)}
           <SearchAndInviteListItem
             {result}
@@ -426,7 +423,7 @@
       {#if categorizedResults.members.length > 0}
         <div class="section-header">MEMBERS</div>
         {#each categorizedResults.members as result}
-          {@const resultIndex = getResultIndex(result)}
+          {@const resultIndex = getResultIndex(result, categorizedResults)}
           {@const isSelected = selectedSet.has(result.identifier)}
           <SearchAndInviteListItem
             {result}
@@ -452,7 +449,7 @@
       {#if categorizedResults.guests.length > 0}
         <div class="section-header">GUESTS</div>
         {#each categorizedResults.guests as result}
-          {@const resultIndex = getResultIndex(result)}
+          {@const resultIndex = getResultIndex(result, categorizedResults)}
           {@const isSelected = selectedSet.has(result.identifier)}
           <SearchAndInviteListItem
             {result}

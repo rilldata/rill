@@ -200,6 +200,17 @@ export function getLastIncompletePart(input: string): string {
 }
 
 /**
+ * Gets the index of a result in the categorized results
+ * Uses the resultIndexMap for O(1) lookup performance
+ */
+export function getResultIndex(
+  result: SearchResult,
+  categorizedResults: CategorizedResults,
+): number {
+  return categorizedResults.resultIndexMap.get(result) ?? -1;
+}
+
+/**
  * Checks if focus should be maintained in multi-select mode
  * Prevents dropdown from closing when clicking inside it
  */
