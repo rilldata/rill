@@ -51,6 +51,7 @@ available_time_ranges:
   - P3M
   - P12M
   - rill-TD
+  - rill-DTD
   - rill-WTD
   - rill-MTD
   - rill-QTD
