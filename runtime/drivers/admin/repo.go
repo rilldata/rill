@@ -31,9 +31,9 @@ type repo struct {
 	synced             bool
 	syncErr            error
 	ignorePaths        []string
-	git                *gitFS
-	archive            *archiveFS
-	virtual            *virtualFS
+	git                *gitRepo
+	archive            *archiveRepo
+	virtual            *virtualRepo
 }
 
 var _ drivers.RepoStore = (*repo)(nil)
@@ -383,7 +383,7 @@ func (r *repo) checkSyncHandshake(ctx context.Context) error {
 			if err != nil {
 				return fmt.Errorf("failed to get git data dir: %w", err)
 			}
-			r.git = &gitFS{
+			r.git = &gitRepo{
 				h:       r.h,
 				repoDir: repoDir,
 			}
@@ -403,7 +403,7 @@ func (r *repo) checkSyncHandshake(ctx context.Context) error {
 				return err
 			}
 
-			r.archive = &archiveFS{
+			r.archive = &archiveRepo{
 				h:      r.h,
 				tmpDir: tmpDir,
 			}
@@ -422,7 +422,7 @@ func (r *repo) checkSyncHandshake(ctx context.Context) error {
 			return err
 		}
 
-		r.virtual = &virtualFS{
+		r.virtual = &virtualRepo{
 			h:      r.h,
 			tmpDir: tmpDir,
 		}

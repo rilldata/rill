@@ -18,7 +18,7 @@ const (
 	gitRetryWait = 2 * time.Second
 )
 
-type gitFS struct {
+type gitRepo struct {
 	h         *Handle
 	repoDir   string
 	remoteURL string
@@ -26,11 +26,11 @@ type gitFS struct {
 	subpath   string
 }
 
-func (fs *gitFS) sync(ctx context.Context) error {
+func (r *gitRepo) sync(ctx context.Context) error {
 	// Call syncInner with retries
 	var err error
 	for i := 0; i < gitRetryN; i++ {
-		err = fs.syncInner(ctx)
+		err = r.syncInner(ctx)
 		if err == nil {
 			break
 		}
@@ -46,23 +46,23 @@ func (fs *gitFS) sync(ctx context.Context) error {
 	return err
 }
 
-func (fs *gitFS) syncInner(ctx context.Context) error {
+func (r *gitRepo) syncInner(ctx context.Context) error {
 	// Check if repoDir exists and is a valid git repository
-	repo, err := git.PlainOpen(fs.repoDir)
+	repo, err := git.PlainOpen(r.repoDir)
 	if err != nil {
 		// Repository doesn't exist or is invalid, remove and clone fresh
-		if err := os.RemoveAll(fs.repoDir); err != nil {
+		if err := os.RemoveAll(r.repoDir); err != nil {
 			return err
 		}
 
 		cloneOptions := &git.CloneOptions{
-			URL:           fs.remoteURL,
+			URL:           r.remoteURL,
 			RemoteName:    "origin",
-			ReferenceName: plumbing.ReferenceName("refs/heads/" + fs.branch),
+			ReferenceName: plumbing.ReferenceName("refs/heads/" + r.branch),
 			SingleBranch:  true,
 		}
 
-		_, err = git.PlainCloneContext(ctx, fs.repoDir, false, cloneOptions)
+		_, err = git.PlainCloneContext(ctx, r.repoDir, false, cloneOptions)
 		return err
 	}
 
@@ -70,7 +70,7 @@ func (fs *gitFS) syncInner(ctx context.Context) error {
 	_ = repo.DeleteRemote("origin")
 	_, err = repo.CreateRemote(&config.RemoteConfig{
 		Name: "origin",
-		URLs: []string{fs.remoteURL},
+		URLs: []string{r.remoteURL},
 	})
 	if err != nil {
 		return fmt.Errorf("failed to set remote URL: %w", err)
@@ -82,8 +82,8 @@ func (fs *gitFS) syncInner(ctx context.Context) error {
 		return err
 	}
 	err = workTree.PullContext(ctx, &git.PullOptions{
-		RemoteURL:     fs.remoteURL,
-		ReferenceName: plumbing.ReferenceName("refs/heads/" + fs.branch),
+		RemoteURL:     r.remoteURL,
+		ReferenceName: plumbing.ReferenceName("refs/heads/" + r.branch),
 		SingleBranch:  true,
 		Force:         true,
 	})
@@ -102,15 +102,15 @@ func (fs *gitFS) syncInner(ctx context.Context) error {
 	return nil
 }
 
-func (fs *gitFS) root() string {
-	if fs.subpath != "" {
-		return path.Join(fs.repoDir, fs.subpath)
+func (r *gitRepo) root() string {
+	if r.subpath != "" {
+		return path.Join(r.repoDir, r.subpath)
 	}
-	return fs.repoDir
+	return r.repoDir
 }
 
-func (fs *gitFS) commitHash() (string, error) {
-	repo, err := git.PlainOpen(fs.repoDir)
+func (r *gitRepo) commitHash() (string, error) {
+	repo, err := git.PlainOpen(r.repoDir)
 	if err != nil {
 		return "", err
 	}
@@ -127,8 +127,8 @@ func (fs *gitFS) commitHash() (string, error) {
 	return ref.Hash().String(), nil
 }
 
-func (fs *gitFS) commitTimestamp() (time.Time, error) {
-	repo, err := git.PlainOpen(fs.repoDir)
+func (r *gitRepo) commitTimestamp() (time.Time, error) {
+	repo, err := git.PlainOpen(r.repoDir)
 	if err != nil {
 		return time.Time{}, err
 	}

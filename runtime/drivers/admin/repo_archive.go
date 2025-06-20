@@ -12,7 +12,7 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/archive"
 )
 
-type archiveFS struct {
+type archiveRepo struct {
 	h                  *Handle
 	tmpDir             string
 	archiveDownloadURL string
@@ -22,38 +22,38 @@ type archiveFS struct {
 	syncedDownloadURL string
 }
 
-func (fs *archiveFS) sync(ctx context.Context) error {
-	if fs.syncedDownloadURL == fs.archiveDownloadURL {
+func (r *archiveRepo) sync(ctx context.Context) error {
+	if r.syncedDownloadURL == r.archiveDownloadURL {
 		return nil
 	}
 
-	_ = os.RemoveAll(fs.tmpDir)
+	_ = os.RemoveAll(r.tmpDir)
 
-	dst, err := generateTmpPath(fs.tmpDir, "admin_driver_zipped_repo", ".tar.gz")
+	dst, err := generateTmpPath(r.tmpDir, "admin_driver_zipped_repo", ".tar.gz")
 	if err != nil {
-		return fmt.Errorf("archiveFS: %w", err)
+		return fmt.Errorf("archiveRepo: %w", err)
 	}
 	defer func() { _ = os.Remove(dst) }()
 
-	err = archive.Download(ctx, fs.archiveDownloadURL, dst, fs.tmpDir, true, false)
+	err = archive.Download(ctx, r.archiveDownloadURL, dst, r.tmpDir, true, false)
 	if err != nil {
-		return fmt.Errorf("archiveFS: %w", err)
+		return fmt.Errorf("archiveRepo: %w", err)
 	}
 
-	fs.syncedDownloadURL = fs.archiveDownloadURL
+	r.syncedDownloadURL = r.archiveDownloadURL
 	return nil
 }
 
-func (fs *archiveFS) root() string {
-	return fs.tmpDir
+func (r *archiveRepo) root() string {
+	return r.tmpDir
 }
 
-func (fs *archiveFS) commitHash() string {
-	return fs.archiveID
+func (r *archiveRepo) commitHash() string {
+	return r.archiveID
 }
 
-func (fs *archiveFS) commitTimestamp() time.Time {
-	return fs.archiveCreatedOn
+func (r *archiveRepo) commitTimestamp() time.Time {
+	return r.archiveCreatedOn
 }
 
 // generateTmpPath generates a temporary path with a random suffix.

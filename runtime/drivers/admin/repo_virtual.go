@@ -21,17 +21,17 @@ const (
 
 const pullVirtualPageSize = 100
 
-type virtualFS struct {
+type virtualRepo struct {
 	h             *Handle
 	tmpDir        string
 	nextPageToken string
 }
 
-func (fs *virtualFS) sync(ctx context.Context) error {
+func (r *virtualRepo) sync(ctx context.Context) error {
 	// Call syncInner with retries
 	var err error
 	for i := 0; i < virtualRetryN; i++ {
-		err = fs.syncInner(ctx)
+		err = r.syncInner(ctx)
 		if err == nil {
 			break
 		}
@@ -48,21 +48,21 @@ func (fs *virtualFS) sync(ctx context.Context) error {
 	return err
 }
 
-func (fs *virtualFS) syncInner(ctx context.Context) error {
+func (r *virtualRepo) syncInner(ctx context.Context) error {
 	i := 0
 	n := 500
 	for i = 0; i < n; i++ { // Just a failsafe to avoid infinite loops
-		res, err := fs.h.admin.PullVirtualRepo(ctx, &adminv1.PullVirtualRepoRequest{
-			ProjectId: fs.h.config.ProjectID,
+		res, err := r.h.admin.PullVirtualRepo(ctx, &adminv1.PullVirtualRepoRequest{
+			ProjectId: r.h.config.ProjectID,
 			PageSize:  pullVirtualPageSize,
-			PageToken: fs.nextPageToken,
+			PageToken: r.nextPageToken,
 		})
 		if err != nil {
 			return fmt.Errorf("failed to sync virtual repo: %w", err)
 		}
 
 		for _, vf := range res.Files {
-			path := filepath.Join(fs.tmpDir, virtualFilesDir, vf.Path)
+			path := filepath.Join(r.tmpDir, virtualFilesDir, vf.Path)
 
 			if vf.Deleted {
 				err = os.Remove(path)
@@ -83,7 +83,7 @@ func (fs *virtualFS) syncInner(ctx context.Context) error {
 			}
 		}
 
-		fs.nextPageToken = res.NextPageToken
+		r.nextPageToken = res.NextPageToken
 
 		// If there are no more files, we're done for now.
 		// We can't just check NextPageToken because it will still be set, enabling us to pull new changes next time this function is called.
@@ -99,6 +99,6 @@ func (fs *virtualFS) syncInner(ctx context.Context) error {
 	return nil
 }
 
-func (fs *virtualFS) root() string {
-	return fs.tmpDir
+func (r *virtualRepo) root() string {
+	return r.tmpDir
 }
