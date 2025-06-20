@@ -12,3 +12,10 @@ export function getRepoNameFromGitRemote(gitRemote: string) {
 export function getGitUrlFromRemote(remote: string | undefined) {
   return remote?.replace(githubUrlGitSuffixRegex, "");
 }
+
+const MergeConflictsError =
+  /Your local changes to the following files would be overwritten by merge/;
+
+export function isMergeConflictError(errorMessage: string) {
+  return MergeConflictsError.test(errorMessage);
+}
