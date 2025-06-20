@@ -329,7 +329,7 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 	}
 
 	c.used()
-	go c.periodicallyEmitStats(time.Minute, 10*time.Minute)
+	go c.periodicallyEmitStats()
 
 	return c, nil
 }
@@ -507,70 +507,58 @@ func (c *Connection) lastUsedOn() time.Time {
 }
 
 // Periodically collects stats about the database and emit them as activity events.
-func (c *Connection) periodicallyEmitStats(sensitive, regular time.Duration) {
+func (c *Connection) periodicallyEmitStats() {
 	if c.activity == nil {
 		// Activity client isn't set, there is no need to report stats
 		return
 	}
 
+	aMinute := time.Minute // for duration for sensitive ticker
 	// Sensitive ticker for sensitive stats
-	sensitiveTicker := time.NewTicker(sensitive)
+	sensitiveTicker := time.NewTicker(aMinute)
 	defer sensitiveTicker.Stop()
 
 	// Regular ticker for non-sensitive stats
-	regularTicker := time.NewTicker(regular)
+	regularTicker := time.NewTicker(10 * time.Minute)
 	defer regularTicker.Stop()
 
-	// Emit non-sensitive stats periodically
-	go func() {
-		for {
-			select {
-			case <-regularTicker.C:
-				// Emit the latest RCU per service.
-				latestRCU, err := c.latestRCUPerService(c.ctx)
-				if err == nil {
-					for service, value := range latestRCU {
-						c.activity.RecordMetric(c.ctx, "clickhouse_rcu", value, attribute.String("billing_service", service))
-					}
-					if len(latestRCU) == 0 {
-						c.logger.Warn("no RCU data found for any service", zap.String("clickhouse_host", c.config.Host))
-					}
-				} else if !errors.Is(err, c.ctx.Err()) {
-					c.logger.Warn("failed to fetch latest RCU per service", zap.Error(err))
-				}
-			case <-c.ctx.Done():
-				return
+	for {
+		select {
+		case <-sensitiveTicker.C:
+			// Skip if it hasn't been used recently and may be scaled to zero.
+			if c.config.CanScaleToZero && time.Since(c.lastUsedOn()) > 2*aMinute {
+				continue
 			}
-		}
-	}()
 
-	// Emit sensitive stats periodically
-	go func() {
-		for {
-			select {
-			case <-sensitiveTicker.C:
-				// Skip if it hasn't been used recently and may be scaled to zero.
-				if c.config.CanScaleToZero && time.Since(c.lastUsedOn()) > 2*sensitive {
-					continue
+			// Emit the estimated size of the database.
+			size, err := c.estimateSize(c.ctx)
+			if err == nil {
+				c.activity.RecordMetric(c.ctx, "clickhouse_estimated_size_bytes", float64(size))
+			} else if !errors.Is(err, c.ctx.Err()) {
+				lvl := zap.WarnLevel
+				if c.config.Managed {
+					lvl = zap.ErrorLevel
 				}
 
-				// Emit the estimated size of the database.
-				size, err := c.estimateSize(c.ctx)
-				if err == nil {
-					c.activity.RecordMetric(c.ctx, "clickhouse_estimated_size_bytes", float64(size))
-				} else if !errors.Is(err, c.ctx.Err()) {
-					lvl := zap.WarnLevel
-					if c.config.Managed {
-						lvl = zap.ErrorLevel
-					}
-
-					c.logger.Log(lvl, "failed to estimate clickhouse size", zap.Error(err), zap.Bool("managed", c.config.Managed))
-				}
-			case <-c.ctx.Done():
-				return
+				c.logger.Log(lvl, "failed to estimate clickhouse size", zap.Error(err), zap.Bool("managed", c.config.Managed))
 			}
+		case <-regularTicker.C:
+			// Emit the latest RCU per service.
+			latestRCU, err := c.latestRCUPerService(c.ctx)
+			if err == nil {
+				for service, value := range latestRCU {
+					c.activity.RecordMetric(c.ctx, "clickhouse_rcu", value, attribute.String("billing_service", service))
+				}
+				if len(latestRCU) == 0 {
+					c.logger.Warn("no RCU data found for any service", zap.String("clickhouse_host", c.config.Host))
+				}
+			} else if !errors.Is(err, c.ctx.Err()) {
+				c.logger.Warn("failed to fetch latest RCU per service", zap.Error(err))
+			}
+		case <-c.ctx.Done():
+			return
 		}
-	}()
+	}
 }
 
 // estimateSize returns the estimated combined disk size of all resources in the database in bytes.
