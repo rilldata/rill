@@ -13,6 +13,8 @@ import (
 )
 
 const (
+	virtualFilesDir = "/__virtual__/"
+
 	virtualRetryN    = 3
 	virtualRetryWait = 2 * time.Second
 )
@@ -60,7 +62,7 @@ func (fs *virtualFS) syncInner(ctx context.Context) error {
 		}
 
 		for _, vf := range res.Files {
-			path := filepath.Join(fs.tmpDir, vf.Path)
+			path := filepath.Join(fs.tmpDir, virtualFilesDir, vf.Path)
 
 			if vf.Deleted {
 				err = os.Remove(path)
@@ -95,4 +97,8 @@ func (fs *virtualFS) syncInner(ctx context.Context) error {
 	}
 
 	return nil
+}
+
+func (fs *virtualFS) root() string {
+	return fs.tmpDir
 }

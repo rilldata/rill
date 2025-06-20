@@ -44,6 +44,18 @@ func (fs *archiveFS) sync(ctx context.Context) error {
 	return nil
 }
 
+func (fs *archiveFS) root() string {
+	return fs.tmpDir
+}
+
+func (fs *archiveFS) commitHash() string {
+	return fs.archiveID
+}
+
+func (fs *archiveFS) commitTimestamp() time.Time {
+	return fs.archiveCreatedOn
+}
+
 // generateTmpPath generates a temporary path with a random suffix.
 // It uses the format <dir>/<base><random><ext>.
 // The output path is absolute.

@@ -10,11 +10,9 @@ import (
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
-	"github.com/rilldata/rill/runtime/pkg/ctxsync"
 	"github.com/rilldata/rill/runtime/storage"
 	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
-	"golang.org/x/sync/singleflight"
 )
 
 var tracer = otel.Tracer("github.com/rilldata/rill/runtime/drivers/admin")
@@ -66,12 +64,7 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 		storage: st,
 		admin:   admin,
 	}
-
-	h.fs = &muxFS{
-		h:            h,
-		mu:           ctxsync.NewRWMutex(),
-		singleflight: &singleflight.Group{},
-	}
+	h.repo = newRepo(h)
 
 	return h, nil
 }
@@ -93,7 +86,7 @@ type Handle struct {
 	logger  *zap.Logger
 	storage *storage.Client
 	admin   *client.Client
-	fs      *muxFS
+	repo    *repo
 }
 
 var _ drivers.Handle = &Handle{}
@@ -107,7 +100,7 @@ func (h *Handle) Ping(ctx context.Context) error {
 	}
 
 	// Check for a sync error
-	_, err = h.fs.syncStatus(ctx)
+	_, err = h.repo.syncStatus(ctx)
 	return err
 }
 
@@ -135,10 +128,8 @@ func (h *Handle) MigrationStatus(ctx context.Context) (current, desired int, err
 
 // Close implements drivers.Handle.
 func (h *Handle) Close() error {
-	return errors.Join(
-		h.fs.close(),
-		h.admin.Close(),
-	)
+	h.repo.close()
+	return h.admin.Close()
 }
 
 // AsRegistry implements drivers.Handle.
@@ -153,7 +144,7 @@ func (h *Handle) AsCatalogStore(instanceID string) (drivers.CatalogStore, bool) 
 
 // AsRepoStore implements drivers.Handle.
 func (h *Handle) AsRepoStore(instanceID string) (drivers.RepoStore, bool) {
-	return h, true
+	return h.repo, true
 }
 
 // AsAdmin implements drivers.Handle.

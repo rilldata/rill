@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path"
 	"time"
 
 	"github.com/go-git/go-git/v5"
@@ -99,4 +100,48 @@ func (fs *gitFS) syncInner(ctx context.Context) error {
 	}
 
 	return nil
+}
+
+func (fs *gitFS) root() string {
+	if fs.subpath != "" {
+		return path.Join(fs.repoDir, fs.subpath)
+	}
+	return fs.repoDir
+}
+
+func (fs *gitFS) commitHash() (string, error) {
+	repo, err := git.PlainOpen(fs.repoDir)
+	if err != nil {
+		return "", err
+	}
+
+	ref, err := repo.Head()
+	if err != nil {
+		return "", err
+	}
+
+	if ref.Hash().IsZero() {
+		return "", nil
+	}
+
+	return ref.Hash().String(), nil
+}
+
+func (fs *gitFS) commitTimestamp() (time.Time, error) {
+	repo, err := git.PlainOpen(fs.repoDir)
+	if err != nil {
+		return time.Time{}, err
+	}
+
+	ref, err := repo.Head()
+	if err != nil {
+		return time.Time{}, err
+	}
+
+	commit, err := repo.CommitObject(ref.Hash())
+	if err != nil {
+		return time.Time{}, err
+	}
+
+	return commit.Author.When, nil
 }
