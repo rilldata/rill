@@ -137,6 +137,52 @@ service AdminService {
     option (google.api.http) = {post: "/v1/organizations/{organization}/projects/{project}/hibernate"};
   }
 
+  // ListDeployments lists deployments for a project.
+  rpc ListDeployments(ListDeploymentsRequest) returns (ListDeploymentsResponse) {
+    option (google.api.http) = {
+      get: "/v1/organizations/{organization_name}/projects/{project_name}/deployments"
+    };
+  }
+
+  // CreateDeployment creates a new deployment for a project.
+  rpc CreateDeployment(CreateDeploymentRequest) returns (CreateDeploymentResponse) {
+    option (google.api.http) = {
+      post: "/v1/organizations/{organization_name}/projects/{project_name}/deployments",
+      body: "*"
+    };
+  }
+
+  // GetDeployment returns runtime info and access token on behalf of a specific user, or alternatively for a raw set of JWT attributes
+  rpc GetDeployment(GetDeploymentRequest) returns (GetDeploymentResponse) {
+    option (google.api.http) = {
+      post: "/v1/deployments/{deployment_id}/credentials",
+      body: "*"
+    };
+  }
+
+  // StartDeployment starts a deployment.
+  rpc StartDeployment(StartDeploymentRequest) returns (StartDeploymentResponse) {
+    option (google.api.http) = {
+      post: "/v1/deployments/{deployment_id}/start",
+      body: "*"
+    };
+  }
+
+  // StopDeployment stops a deployment.
+  rpc StopDeployment(StopDeploymentRequest) returns (StopDeploymentResponse) {
+    option (google.api.http) = {
+      post: "/v1/deployments/{deployment_id}/stop",
+      body: "*"
+    };
+  }
+
+  // DeleteDeployment deletes a deployment.
+  rpc DeleteDeployment(DeleteDeploymentRequest) returns (DeleteDeploymentResponse) {
+    option (google.api.http) = {
+      delete: "/v1/deployments/{deployment_id}"
+    };
+  }
+
   // TriggerReconcile triggers reconcile for the project's prod deployment.
   // DEPRECATED: Clients should call CreateTrigger directly on the deployed runtime instead.
   rpc TriggerReconcile(TriggerReconcileRequest) returns (TriggerReconcileResponse) {
@@ -978,6 +1024,68 @@ message ListProjectsForOrganizationRequest {
   string organization_name = 1 [(validate.rules).string.min_len = 1];
   uint32 page_size = 2 [(validate.rules).uint32 = {ignore_empty: true, lte: 1000}];
   string page_token = 3;
+}
+
+message ListDeploymentsRequest {
+  string organization_name = 1 [(validate.rules).string.min_len = 1];
+  string project_name = 2 [(validate.rules).string.min_len = 1];
+  optional string environment = 3 [(validate.rules).string.min_len = 1];
+  optional string user_id = 4 [(validate.rules).string.min_len = 1];
+}
+
+message ListDeploymentsResponse {
+  repeated Deployment deployments = 1;
+}
+
+message CreateDeploymentRequest {
+  string organization_name = 1 [(validate.rules).string.min_len = 1];
+  string project_name = 2 [(validate.rules).string.min_len = 1];
+  string environment = 3 [(validate.rules).string.min_len = 1];
+}
+
+message CreateDeploymentResponse {
+  Deployment deployment = 1;
+}
+
+message GetDeploymentRequest {
+  string deployment_id = 1;
+  uint32 access_token_ttl_seconds = 2;
+  oneof for {
+    string user_id = 3 [(validate.rules).string.min_len = 1];
+    string user_email = 4 [(validate.rules).string.email = true];
+    google.protobuf.Struct attributes = 5;
+  }
+}
+
+message GetDeploymentResponse {
+  string runtime_host = 1;
+  string instance_id = 2;
+  string access_token = 3;
+  uint32 ttl_seconds = 4;
+}
+
+message StartDeploymentRequest {
+  string deployment_id = 1;
+}
+
+message StartDeploymentResponse {
+  Deployment deployment = 1;
+}
+
+message StopDeploymentRequest {
+  string deployment_id = 1;
+}
+
+message StopDeploymentResponse {
+  string deployment_id = 1;
+}
+
+message DeleteDeploymentRequest {
+  string deployment_id = 1;
+}
+
+message DeleteDeploymentResponse {
+  string deployment_id = 1;
 }
 
 message ListProjectsForOrganizationResponse {
@@ -2490,6 +2598,7 @@ message Project {
   string prod_olap_dsn = 11;
   int64 prod_slots = 12;
   string prod_deployment_id = 13;
+  int64 dev_slots = 25;
   string frontend_url = 16; // Note: Does NOT incorporate the parent org's custom domain.
   int64 prod_ttl_seconds = 18;
   map<string, string> annotations = 20;
@@ -2508,6 +2617,8 @@ enum DeploymentStatus {
 message Deployment {
   string id = 1;
   string project_id = 2;
+  optional string owner_user_id = 12;
+  string environment = 11;
   string branch = 4;
   string runtime_host = 5;
   string runtime_instance_id = 6;

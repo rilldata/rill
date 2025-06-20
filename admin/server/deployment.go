@@ -2,11 +2,15 @@ package server
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/hex"
 	"errors"
+	"fmt"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/rilldata/rill/admin"
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/server/auth"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
@@ -93,7 +97,388 @@ func (s *Server) TriggerRefreshSources(ctx context.Context, req *adminv1.Trigger
 	return &adminv1.TriggerRefreshSourcesResponse{}, nil
 }
 
+// ListDeployments returns a list of deployments for a given project.
+func (s *Server) ListDeployments(ctx context.Context, req *adminv1.ListDeploymentsRequest) (*adminv1.ListDeploymentsResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.organization_name", req.OrganizationName),
+		attribute.String("args.project_name", req.ProjectName),
+	)
+	if req.Environment != nil {
+		observability.AddRequestAttributes(ctx,
+			attribute.String("args.environment", *req.Environment),
+		)
+	}
+	if req.UserId != nil {
+		observability.AddRequestAttributes(ctx,
+			attribute.String("args.user_id", *req.UserId),
+		)
+	}
+
+	proj, err := s.admin.DB.FindProjectByName(ctx, req.OrganizationName, req.ProjectName)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	claims := auth.GetClaims(ctx)
+	permissions := claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID)
+
+	depls, err := s.admin.DB.FindDeploymentsForProject(ctx, proj.ID)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	// Filter deployments based on permissions and specified environment and user ID.
+	var newDepls []*database.Deployment
+	for _, d := range depls {
+		if d.Environment == "prod" && !permissions.ReadProd {
+			continue
+		}
+		if d.Environment == "dev" && !permissions.ReadDev {
+			continue
+		}
+		if req.Environment != nil && *req.Environment != d.Environment {
+			continue
+		}
+		if req.UserId != nil && d.OwnerUserID != nil && *req.UserId != *d.OwnerUserID {
+			continue
+
+		}
+		newDepls = append(newDepls, d)
+	}
+
+	dtos := make([]*adminv1.Deployment, len(newDepls))
+	for i, d := range newDepls {
+		dtos[i] = deploymentToDTO(d)
+	}
+
+	return &adminv1.ListDeploymentsResponse{
+		Deployments: dtos,
+	}, nil
+}
+
+// GetDeployment returns runtime info and JWT on behalf of a specific user, or alternatively for a raw set of JWT attributes
+func (s *Server) GetDeployment(ctx context.Context, req *adminv1.GetDeploymentRequest) (*adminv1.GetDeploymentResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.deployment_id", req.DeploymentId),
+		attribute.String("args.access_token_ttl_seconds", strconv.FormatUint(uint64(req.AccessTokenTtlSeconds), 10)),
+	)
+
+	depl, err := s.admin.DB.FindDeployment(ctx, req.DeploymentId)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	proj, err := s.admin.DB.FindProject(ctx, depl.ProjectID)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	claims := auth.GetClaims(ctx)
+	permissions := claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID)
+
+	if depl.Environment == "prod" && !permissions.ReadProd {
+		return nil, status.Error(codes.PermissionDenied, "does not have permission to read prod deployment")
+	}
+
+	if depl.Environment == "dev" && !permissions.ReadDev {
+		return nil, status.Error(codes.PermissionDenied, "does not have permission to read dev deployment")
+	}
+
+	var attr map[string]any
+	if req.For == nil {
+		if claims.OwnerType() == auth.OwnerTypeUser {
+			attr, err = s.jwtAttributesForUser(ctx, claims.OwnerID(), proj.OrganizationID, permissions)
+			if err != nil {
+				return nil, err
+			}
+		} else if claims.OwnerType() == auth.OwnerTypeService {
+			attr = map[string]any{"admin": true}
+		}
+	} else {
+		if depl.Environment == "prod" && !permissions.ManageProd {
+			return nil, status.Error(codes.PermissionDenied, "does not have permission to manage prod deployment")
+		}
+
+		if depl.Environment == "dev" && !permissions.ManageDev {
+			return nil, status.Error(codes.PermissionDenied, "does not have permission to manage dev deployment")
+		}
+
+		switch forVal := req.For.(type) {
+		case *adminv1.GetDeploymentRequest_UserId:
+			attr, err = s.getAttributesForUser(ctx, proj.OrganizationID, proj.ID, forVal.UserId, "")
+			if err != nil {
+				return nil, err
+			}
+		case *adminv1.GetDeploymentRequest_UserEmail:
+			attr, err = s.getAttributesForUser(ctx, proj.OrganizationID, proj.ID, "", forVal.UserEmail)
+			if err != nil {
+				return nil, err
+			}
+		case *adminv1.GetDeploymentRequest_Attributes:
+			attr = forVal.Attributes.AsMap()
+		default:
+			return nil, status.Error(codes.InvalidArgument, "invalid 'for' type")
+		}
+	}
+
+	ttlDuration := runtimeAccessTokenEmbedTTL
+	if req.AccessTokenTtlSeconds > 0 {
+		ttlDuration = time.Duration(req.AccessTokenTtlSeconds) * time.Second
+	}
+
+	instPermissions := map[string][]runtimeauth.Permission{
+		depl.RuntimeInstanceID: {
+			runtimeauth.ReadObjects,
+			runtimeauth.ReadMetrics,
+			runtimeauth.ReadAPI,
+		},
+	}
+
+	// Add additional permissions for dev deployments
+	if depl.Environment == "dev" {
+		instPermissions[depl.RuntimeInstanceID] = append(instPermissions[depl.RuntimeInstanceID], runtimeauth.ReadRepo, runtimeauth.EditRepo)
+	}
+
+	// Generate JWT
+	jwt, err := s.issuer.NewToken(runtimeauth.TokenOptions{
+		AudienceURL:         depl.RuntimeAudience,
+		Subject:             claims.OwnerID(),
+		TTL:                 ttlDuration,
+		InstancePermissions: instPermissions,
+		Attributes:          attr,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "could not issue jwt: %s", err.Error())
+	}
+
+	s.admin.Used.Deployment(depl.ID)
+
+	return &adminv1.GetDeploymentResponse{
+		RuntimeHost: depl.RuntimeHost,
+		InstanceId:  depl.RuntimeInstanceID,
+		AccessToken: jwt,
+		TtlSeconds:  uint32(ttlDuration.Seconds()),
+	}, nil
+}
+
+// CreateDeployment creates a new deployment for a project.
+func (s *Server) CreateDeployment(ctx context.Context, req *adminv1.CreateDeploymentRequest) (*adminv1.CreateDeploymentResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.organization_name", req.OrganizationName),
+		attribute.String("args.project_name", req.ProjectName),
+		attribute.String("args.environment", req.Environment),
+	)
+
+	proj, err := s.admin.DB.FindProjectByName(ctx, req.OrganizationName, req.ProjectName)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	claims := auth.GetClaims(ctx)
+	permissions := claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID)
+	if req.Environment == "prod" && !permissions.ManageProd {
+		return nil, status.Error(codes.PermissionDenied, "does not have permission to manage prod deployment")
+	}
+	if req.Environment == "dev" && !permissions.ManageDev {
+		return nil, status.Error(codes.PermissionDenied, "does not have permission to manage dev deployment")
+	}
+
+	// We only allow one prod deployment.
+	if req.Environment != "prod" && proj.ProdDeploymentID != nil {
+		return nil, status.Error(codes.InvalidArgument, "project already has a prod deployment, cannot create a new prod deployment")
+	}
+
+	// Determine branch and slots based on environment.
+	var branch string
+	var slots int
+	switch req.Environment {
+	case "prod":
+		branch = proj.ProdBranch
+		slots = proj.ProdSlots
+	case "dev":
+		// Generate a random branch name for dev deployments
+		b := make([]byte, 8)
+		_, err := rand.Read(b)
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+		branch = fmt.Sprintf("rill/%s", hex.EncodeToString(b))
+		slots = proj.DevSlots
+	default:
+		return nil, status.Error(codes.InvalidArgument, "invalid environment specified, must be 'prod' or 'dev'")
+	}
+
+	org, err := s.admin.DB.FindOrganization(ctx, proj.OrganizationID)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	// Check projects quota
+	usage, err := s.admin.DB.CountProjectsQuotaUsage(ctx, org.ID)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	if org.QuotaSlotsPerDeployment >= 0 && slots > org.QuotaSlotsPerDeployment {
+		return nil, status.Errorf(codes.FailedPrecondition, "quota exceeded: org can't provision more than %d slots per deployment", org.QuotaSlotsPerDeployment)
+	}
+	if org.QuotaSlotsTotal >= 0 && usage.Slots+slots > org.QuotaSlotsTotal {
+		return nil, status.Errorf(codes.FailedPrecondition, "quota exceeded: org %q is limited to %d total slots", org.Name, org.QuotaSlotsTotal)
+	}
+	if org.QuotaDeployments >= 0 && usage.Deployments >= org.QuotaDeployments {
+		return nil, status.Errorf(codes.FailedPrecondition, "quota exceeded: org %q is limited to %d deployments", org.Name, org.QuotaDeployments)
+	}
+
+	depl, err := s.admin.CreateDeployment(ctx, &admin.CreateDeploymentOptions{
+		ProjectID:   proj.ID,
+		Environment: req.Environment,
+		Annotations: s.admin.NewDeploymentAnnotations(org, proj),
+		Branch:      branch,
+		Provisioner: proj.Provisioner,
+		Slots:       slots,
+		Version:     proj.ProdVersion,
+		Variables:   nil,
+		OLAPDriver:  "",
+		OLAPDSN:     "",
+	})
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	return &adminv1.CreateDeploymentResponse{
+		Deployment: deploymentToDTO(depl),
+	}, nil
+}
+
+// StartDeployment starts a deployment by ID.
+func (s *Server) StartDeployment(ctx context.Context, req *adminv1.StartDeploymentRequest) (*adminv1.StartDeploymentResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.deployment_id", req.DeploymentId),
+	)
+
+	depl, err := s.admin.DB.FindDeployment(ctx, req.DeploymentId)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	proj, err := s.admin.DB.FindProject(ctx, depl.ProjectID)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	claims := auth.GetClaims(ctx)
+	permissions := claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID)
+	if depl.Environment == "prod" && !permissions.ManageProd {
+		return nil, status.Error(codes.PermissionDenied, "does not have permission to manage prod deployment")
+	}
+	if depl.Environment == "dev" && !permissions.ManageDev {
+		return nil, status.Error(codes.PermissionDenied, "does not have permission to manage dev deployment")
+	}
+
+	org, err := s.admin.DB.FindOrganization(ctx, proj.OrganizationID)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	var slots int
+	switch depl.Environment {
+	case "prod":
+		slots = proj.ProdSlots
+	case "dev":
+		slots = proj.DevSlots
+	}
+
+	depl, err = s.admin.StartDeployment(ctx, depl, &admin.StartDeploymentOptions{
+		Annotations: s.admin.NewDeploymentAnnotations(org, proj),
+		Provisioner: proj.Provisioner,
+		Slots:       slots,
+		Version:     proj.ProdVersion,
+		Variables:   nil,
+		OLAPDriver:  "",
+		OLAPDSN:     "",
+	})
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	s.admin.Used.Deployment(depl.ID)
+
+	return &adminv1.StartDeploymentResponse{
+		Deployment: deploymentToDTO(depl),
+	}, nil
+}
+
+// StopDeployment stops a deployment by ID.
+func (s *Server) StopDeployment(ctx context.Context, req *adminv1.StopDeploymentRequest) (*adminv1.StopDeploymentResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.deployment_id", req.DeploymentId),
+	)
+
+	depl, err := s.admin.DB.FindDeployment(ctx, req.DeploymentId)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	proj, err := s.admin.DB.FindProject(ctx, depl.ProjectID)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	claims := auth.GetClaims(ctx)
+	permissions := claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID)
+	if depl.Environment == "prod" && !permissions.ManageProd {
+		return nil, status.Error(codes.PermissionDenied, "does not have permission to manage prod deployment")
+	}
+	if depl.Environment == "dev" && !permissions.ManageDev {
+		return nil, status.Error(codes.PermissionDenied, "does not have permission to manage dev deployment")
+	}
+
+	err = s.admin.StopDeployment(ctx, depl)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	return &adminv1.StopDeploymentResponse{
+		DeploymentId: depl.ID,
+	}, nil
+}
+
+// DeleteDeployment deletes a deployment by ID.
+func (s *Server) DeleteDeployment(ctx context.Context, req *adminv1.DeleteDeploymentRequest) (*adminv1.DeleteDeploymentResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.deployment_id", req.DeploymentId),
+	)
+
+	depl, err := s.admin.DB.FindDeployment(ctx, req.DeploymentId)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	proj, err := s.admin.DB.FindProject(ctx, depl.ProjectID)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	claims := auth.GetClaims(ctx)
+	permissions := claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID)
+
+	if depl.Environment == "prod" && !permissions.ManageProd {
+		return nil, status.Error(codes.PermissionDenied, "does not have permission to manage prod deployment")
+	}
+
+	if depl.Environment == "dev" && !permissions.ManageDev {
+		return nil, status.Error(codes.PermissionDenied, "does not have permission to manage dev deployment")
+	}
+
+	err = s.admin.TeardownDeployment(ctx, depl)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	return &adminv1.DeleteDeploymentResponse{DeploymentId: depl.ID}, nil
+}
+
 // GetDeploymentCredentials returns runtime info and JWT on behalf of a specific user, or alternatively for a raw set of JWT attributes
+// DEPRECATED: Clients should call GetDeployment instead.
 func (s *Server) GetDeploymentCredentials(ctx context.Context, req *adminv1.GetDeploymentCredentialsRequest) (*adminv1.GetDeploymentCredentialsResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.organization", req.Organization),

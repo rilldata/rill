@@ -24,8 +24,9 @@ func (r ResourceType) Valid() bool {
 
 // RuntimeArgs describe the expected arguments for provisioning a runtime resource.
 type RuntimeArgs struct {
-	Slots   int    `mapstructure:"slots"`
-	Version string `mapstructure:"version"`
+	Slots       int    `mapstructure:"slots"`
+	Version     string `mapstructure:"version"`
+	Environment string `mapstructure:"environment"`
 }
 
 func NewRuntimeArgs(args map[string]any) (*RuntimeArgs, error) {

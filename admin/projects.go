@@ -93,6 +93,7 @@ func (s *Service) CreateProject(ctx context.Context, org *database.Organization,
 	// Start using original context again since transaction in txCtx is done.
 	depl, err := s.CreateDeployment(ctx, &CreateDeploymentOptions{
 		ProjectID:   proj.ID,
+		Environment: "prod",
 		Annotations: s.NewDeploymentAnnotations(org, proj),
 		Branch:      proj.ProdBranch,
 		Provisioner: proj.Provisioner,
@@ -123,6 +124,8 @@ func (s *Service) CreateProject(ctx context.Context, org *database.Organization,
 		ProdSlots:            proj.ProdSlots,
 		ProdTTLSeconds:       proj.ProdTTLSeconds,
 		ProdDeploymentID:     &depl.ID,
+		DevSlots:             proj.DevSlots,
+		DevTTLSeconds:        proj.DevTTLSeconds,
 		Annotations:          proj.Annotations,
 	})
 	if err != nil {
@@ -327,6 +330,7 @@ func (s *Service) RedeployProject(ctx context.Context, proj *database.Project, p
 	// Provision new deployment
 	newDepl, err := s.CreateDeployment(ctx, &CreateDeploymentOptions{
 		ProjectID:   proj.ID,
+		Environment: "prod",
 		Annotations: s.NewDeploymentAnnotations(org, proj),
 		Branch:      proj.ProdBranch,
 		Provisioner: proj.Provisioner,
@@ -357,6 +361,8 @@ func (s *Service) RedeployProject(ctx context.Context, proj *database.Project, p
 		ProdDeploymentID:     &newDepl.ID,
 		ProdSlots:            proj.ProdSlots,
 		ProdTTLSeconds:       proj.ProdTTLSeconds,
+		DevSlots:             proj.DevSlots,
+		DevTTLSeconds:        proj.DevTTLSeconds,
 		Annotations:          proj.Annotations,
 	})
 	if err != nil {
@@ -375,7 +381,7 @@ func (s *Service) RedeployProject(ctx context.Context, proj *database.Project, p
 	return proj, nil
 }
 
-// HibernateProject hibernates a project by tearing down its prod deployment.
+// HibernateProject hibernates a project by tearing down its deployment.
 func (s *Service) HibernateProject(ctx context.Context, proj *database.Project) (*database.Project, error) {
 	depls, err := s.DB.FindDeploymentsForProject(ctx, proj.ID)
 	if err != nil {
@@ -383,7 +389,7 @@ func (s *Service) HibernateProject(ctx context.Context, proj *database.Project) 
 	}
 
 	for _, depl := range depls {
-		err = s.TeardownDeployment(ctx, depl)
+		err = s.StopDeployment(ctx, depl)
 		if err != nil {
 			return nil, err
 		}
@@ -405,6 +411,8 @@ func (s *Service) HibernateProject(ctx context.Context, proj *database.Project) 
 		ProdDeploymentID:     nil,
 		ProdSlots:            proj.ProdSlots,
 		ProdTTLSeconds:       proj.ProdTTLSeconds,
+		DevSlots:             proj.DevSlots,
+		DevTTLSeconds:        proj.DevTTLSeconds,
 		Annotations:          proj.Annotations,
 	})
 	if err != nil {

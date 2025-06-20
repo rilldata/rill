@@ -40,6 +40,12 @@ const (
 	AdminService_CreateAsset_FullMethodName                           = "/rill.admin.v1.AdminService/CreateAsset"
 	AdminService_RedeployProject_FullMethodName                       = "/rill.admin.v1.AdminService/RedeployProject"
 	AdminService_HibernateProject_FullMethodName                      = "/rill.admin.v1.AdminService/HibernateProject"
+	AdminService_ListDeployments_FullMethodName                       = "/rill.admin.v1.AdminService/ListDeployments"
+	AdminService_CreateDeployment_FullMethodName                      = "/rill.admin.v1.AdminService/CreateDeployment"
+	AdminService_GetDeployment_FullMethodName                         = "/rill.admin.v1.AdminService/GetDeployment"
+	AdminService_StartDeployment_FullMethodName                       = "/rill.admin.v1.AdminService/StartDeployment"
+	AdminService_StopDeployment_FullMethodName                        = "/rill.admin.v1.AdminService/StopDeployment"
+	AdminService_DeleteDeployment_FullMethodName                      = "/rill.admin.v1.AdminService/DeleteDeployment"
 	AdminService_TriggerReconcile_FullMethodName                      = "/rill.admin.v1.AdminService/TriggerReconcile"
 	AdminService_TriggerRefreshSources_FullMethodName                 = "/rill.admin.v1.AdminService/TriggerRefreshSources"
 	AdminService_TriggerRedeploy_FullMethodName                       = "/rill.admin.v1.AdminService/TriggerRedeploy"
@@ -208,6 +214,18 @@ type AdminServiceClient interface {
 	RedeployProject(ctx context.Context, in *RedeployProjectRequest, opts ...grpc.CallOption) (*RedeployProjectResponse, error)
 	// HibernateProject hibernates a project by tearing down its deployments.
 	HibernateProject(ctx context.Context, in *HibernateProjectRequest, opts ...grpc.CallOption) (*HibernateProjectResponse, error)
+	// ListDeployments lists deployments for a project.
+	ListDeployments(ctx context.Context, in *ListDeploymentsRequest, opts ...grpc.CallOption) (*ListDeploymentsResponse, error)
+	// CreateDeployment creates a new deployment for a project.
+	CreateDeployment(ctx context.Context, in *CreateDeploymentRequest, opts ...grpc.CallOption) (*CreateDeploymentResponse, error)
+	// GetDeployment returns runtime info and access token on behalf of a specific user, or alternatively for a raw set of JWT attributes
+	GetDeployment(ctx context.Context, in *GetDeploymentRequest, opts ...grpc.CallOption) (*GetDeploymentResponse, error)
+	// StartDeployment starts a deployment.
+	StartDeployment(ctx context.Context, in *StartDeploymentRequest, opts ...grpc.CallOption) (*StartDeploymentResponse, error)
+	// StopDeployment stops a deployment.
+	StopDeployment(ctx context.Context, in *StopDeploymentRequest, opts ...grpc.CallOption) (*StopDeploymentResponse, error)
+	// DeleteDeployment deletes a deployment.
+	DeleteDeployment(ctx context.Context, in *DeleteDeploymentRequest, opts ...grpc.CallOption) (*DeleteDeploymentResponse, error)
 	// TriggerReconcile triggers reconcile for the project's prod deployment.
 	// DEPRECATED: Clients should call CreateTrigger directly on the deployed runtime instead.
 	TriggerReconcile(ctx context.Context, in *TriggerReconcileRequest, opts ...grpc.CallOption) (*TriggerReconcileResponse, error)
@@ -661,6 +679,66 @@ func (c *adminServiceClient) HibernateProject(ctx context.Context, in *Hibernate
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(HibernateProjectResponse)
 	err := c.cc.Invoke(ctx, AdminService_HibernateProject_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) ListDeployments(ctx context.Context, in *ListDeploymentsRequest, opts ...grpc.CallOption) (*ListDeploymentsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListDeploymentsResponse)
+	err := c.cc.Invoke(ctx, AdminService_ListDeployments_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) CreateDeployment(ctx context.Context, in *CreateDeploymentRequest, opts ...grpc.CallOption) (*CreateDeploymentResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CreateDeploymentResponse)
+	err := c.cc.Invoke(ctx, AdminService_CreateDeployment_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) GetDeployment(ctx context.Context, in *GetDeploymentRequest, opts ...grpc.CallOption) (*GetDeploymentResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetDeploymentResponse)
+	err := c.cc.Invoke(ctx, AdminService_GetDeployment_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) StartDeployment(ctx context.Context, in *StartDeploymentRequest, opts ...grpc.CallOption) (*StartDeploymentResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(StartDeploymentResponse)
+	err := c.cc.Invoke(ctx, AdminService_StartDeployment_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) StopDeployment(ctx context.Context, in *StopDeploymentRequest, opts ...grpc.CallOption) (*StopDeploymentResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(StopDeploymentResponse)
+	err := c.cc.Invoke(ctx, AdminService_StopDeployment_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) DeleteDeployment(ctx context.Context, in *DeleteDeploymentRequest, opts ...grpc.CallOption) (*DeleteDeploymentResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DeleteDeploymentResponse)
+	err := c.cc.Invoke(ctx, AdminService_DeleteDeployment_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1868,6 +1946,18 @@ type AdminServiceServer interface {
 	RedeployProject(context.Context, *RedeployProjectRequest) (*RedeployProjectResponse, error)
 	// HibernateProject hibernates a project by tearing down its deployments.
 	HibernateProject(context.Context, *HibernateProjectRequest) (*HibernateProjectResponse, error)
+	// ListDeployments lists deployments for a project.
+	ListDeployments(context.Context, *ListDeploymentsRequest) (*ListDeploymentsResponse, error)
+	// CreateDeployment creates a new deployment for a project.
+	CreateDeployment(context.Context, *CreateDeploymentRequest) (*CreateDeploymentResponse, error)
+	// GetDeployment returns runtime info and access token on behalf of a specific user, or alternatively for a raw set of JWT attributes
+	GetDeployment(context.Context, *GetDeploymentRequest) (*GetDeploymentResponse, error)
+	// StartDeployment starts a deployment.
+	StartDeployment(context.Context, *StartDeploymentRequest) (*StartDeploymentResponse, error)
+	// StopDeployment stops a deployment.
+	StopDeployment(context.Context, *StopDeploymentRequest) (*StopDeploymentResponse, error)
+	// DeleteDeployment deletes a deployment.
+	DeleteDeployment(context.Context, *DeleteDeploymentRequest) (*DeleteDeploymentResponse, error)
 	// TriggerReconcile triggers reconcile for the project's prod deployment.
 	// DEPRECATED: Clients should call CreateTrigger directly on the deployed runtime instead.
 	TriggerReconcile(context.Context, *TriggerReconcileRequest) (*TriggerReconcileResponse, error)
@@ -2179,6 +2269,24 @@ func (UnimplementedAdminServiceServer) RedeployProject(context.Context, *Redeplo
 }
 func (UnimplementedAdminServiceServer) HibernateProject(context.Context, *HibernateProjectRequest) (*HibernateProjectResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method HibernateProject not implemented")
+}
+func (UnimplementedAdminServiceServer) ListDeployments(context.Context, *ListDeploymentsRequest) (*ListDeploymentsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListDeployments not implemented")
+}
+func (UnimplementedAdminServiceServer) CreateDeployment(context.Context, *CreateDeploymentRequest) (*CreateDeploymentResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateDeployment not implemented")
+}
+func (UnimplementedAdminServiceServer) GetDeployment(context.Context, *GetDeploymentRequest) (*GetDeploymentResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetDeployment not implemented")
+}
+func (UnimplementedAdminServiceServer) StartDeployment(context.Context, *StartDeploymentRequest) (*StartDeploymentResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method StartDeployment not implemented")
+}
+func (UnimplementedAdminServiceServer) StopDeployment(context.Context, *StopDeploymentRequest) (*StopDeploymentResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method StopDeployment not implemented")
+}
+func (UnimplementedAdminServiceServer) DeleteDeployment(context.Context, *DeleteDeploymentRequest) (*DeleteDeploymentResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteDeployment not implemented")
 }
 func (UnimplementedAdminServiceServer) TriggerReconcile(context.Context, *TriggerReconcileRequest) (*TriggerReconcileResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method TriggerReconcile not implemented")
@@ -2920,6 +3028,114 @@ func _AdminService_HibernateProject_Handler(srv interface{}, ctx context.Context
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(AdminServiceServer).HibernateProject(ctx, req.(*HibernateProjectRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_ListDeployments_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListDeploymentsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).ListDeployments(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_ListDeployments_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).ListDeployments(ctx, req.(*ListDeploymentsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_CreateDeployment_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateDeploymentRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).CreateDeployment(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_CreateDeployment_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).CreateDeployment(ctx, req.(*CreateDeploymentRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_GetDeployment_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetDeploymentRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).GetDeployment(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_GetDeployment_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).GetDeployment(ctx, req.(*GetDeploymentRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_StartDeployment_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(StartDeploymentRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).StartDeployment(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_StartDeployment_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).StartDeployment(ctx, req.(*StartDeploymentRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_StopDeployment_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(StopDeploymentRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).StopDeployment(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_StopDeployment_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).StopDeployment(ctx, req.(*StopDeploymentRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_DeleteDeployment_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteDeploymentRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).DeleteDeployment(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_DeleteDeployment_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).DeleteDeployment(ctx, req.(*DeleteDeploymentRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -5084,6 +5300,30 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "HibernateProject",
 			Handler:    _AdminService_HibernateProject_Handler,
+		},
+		{
+			MethodName: "ListDeployments",
+			Handler:    _AdminService_ListDeployments_Handler,
+		},
+		{
+			MethodName: "CreateDeployment",
+			Handler:    _AdminService_CreateDeployment_Handler,
+		},
+		{
+			MethodName: "GetDeployment",
+			Handler:    _AdminService_GetDeployment_Handler,
+		},
+		{
+			MethodName: "StartDeployment",
+			Handler:    _AdminService_StartDeployment_Handler,
+		},
+		{
+			MethodName: "StopDeployment",
+			Handler:    _AdminService_StopDeployment_Handler,
+		},
+		{
+			MethodName: "DeleteDeployment",
+			Handler:    _AdminService_DeleteDeployment_Handler,
 		},
 		{
 			MethodName: "TriggerReconcile",

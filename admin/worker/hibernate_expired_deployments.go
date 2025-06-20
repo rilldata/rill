@@ -40,33 +40,45 @@ func (w *Worker) hibernateExpiredDeployment(ctx context.Context, depl *database.
 		return err
 	}
 
-	if proj.ProdDeploymentID != nil && *proj.ProdDeploymentID == depl.ID {
-		_, err = w.admin.DB.UpdateProject(ctx, proj.ID, &database.UpdateProjectOptions{
-			Name:                 proj.Name,
-			Description:          proj.Description,
-			Public:               proj.Public,
-			Provisioner:          proj.Provisioner,
-			ArchiveAssetID:       proj.ArchiveAssetID,
-			GitRemote:            proj.GitRemote,
-			GithubInstallationID: proj.GithubInstallationID,
-			GithubRepoID:         proj.GithubRepoID,
-			ManagedGitRepoID:     proj.ManagedGitRepoID,
-			ProdVersion:          proj.ProdVersion,
-			ProdBranch:           proj.ProdBranch,
-			Subpath:              proj.Subpath,
-			ProdSlots:            proj.ProdSlots,
-			ProdTTLSeconds:       proj.ProdTTLSeconds,
-			ProdDeploymentID:     nil,
-			Annotations:          proj.Annotations,
-		})
+	if depl.Environment == "prod" {
+		// Tear down prod deployments on hibernation
+		// TODO: update this to stop deployment instead of tearing it down when the frontend supports it
+		if proj.ProdDeploymentID != nil && *proj.ProdDeploymentID == depl.ID {
+			_, err = w.admin.DB.UpdateProject(ctx, proj.ID, &database.UpdateProjectOptions{
+				Name:                 proj.Name,
+				Description:          proj.Description,
+				Public:               proj.Public,
+				Provisioner:          proj.Provisioner,
+				ArchiveAssetID:       proj.ArchiveAssetID,
+				GitRemote:            proj.GitRemote,
+				GithubInstallationID: proj.GithubInstallationID,
+				GithubRepoID:         proj.GithubRepoID,
+				ManagedGitRepoID:     proj.ManagedGitRepoID,
+				ProdVersion:          proj.ProdVersion,
+				ProdBranch:           proj.ProdBranch,
+				Subpath:              proj.Subpath,
+				ProdSlots:            proj.ProdSlots,
+				ProdTTLSeconds:       proj.ProdTTLSeconds,
+				ProdDeploymentID:     nil,
+				DevSlots:             proj.DevSlots,
+				DevTTLSeconds:        proj.DevTTLSeconds,
+				Annotations:          proj.Annotations,
+			})
+			if err != nil {
+				return err
+			}
+		}
+
+		err = w.admin.TeardownDeployment(ctx, depl)
 		if err != nil {
 			return err
 		}
-	}
-
-	err = w.admin.TeardownDeployment(ctx, depl)
-	if err != nil {
-		return err
+	} else if depl.Environment == "dev" {
+		// For dev deployments we stop the deployment
+		err = w.admin.StopDeployment(ctx, depl)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
