@@ -7,5 +7,5 @@ import (
 )
 
 type Client interface {
-	Complete(ctx context.Context, msgs []*adminv1.CompletionMessage) (*adminv1.CompletionMessage, error)
+	Complete(ctx context.Context, msgs []*adminv1.CompletionMessage, tools []*adminv1.Tool) (*adminv1.CompletionMessage, error)
 }
