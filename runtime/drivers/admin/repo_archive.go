@@ -36,7 +36,7 @@ func (r *archiveRepo) sync(ctx context.Context) error {
 		return err
 	}
 
-	err = archive.Download(ctx, r.archiveDownloadURL, archivePath, filesDir, false, true)
+	err = archive.Download(ctx, r.archiveDownloadURL, archivePath, filesDir, false, false)
 	if err != nil {
 		_ = os.RemoveAll(filesDir)
 		return fmt.Errorf("archiveRepo: %w", err)

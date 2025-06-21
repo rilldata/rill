@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	virtualDir       = "/__virtual__/"
+	virtualDir       = "__virtual__"
 	virtualRetryN    = 3
 	virtualRetryWait = 2 * time.Second
 	virtualPageSize  = 100
@@ -21,7 +21,7 @@ const (
 )
 
 // virtualRepo represents a repository of virtual files loaded from the Rill Admin service.
-// It presents all virtual files as residing under the /__virtual__/ path, in order to avoid conflicts with files in archiveRepo or gitRepo.
+// It presents all virtual files as residing under the /__virtual__ path, in order to avoid conflicts with files in archiveRepo or gitRepo.
 // It is unsafe for concurrent reads and writes.
 type virtualRepo struct {
 	h             *Handle
