@@ -379,19 +379,9 @@ func (c *catalogStore) ListConversations(ctx context.Context, ownerID string) ([
 	var result []*runtimev1.Conversation
 	for rows.Next() {
 		var conv runtimev1.Conversation
-		var createdOnStr, updatedOnStr string
-		if err := rows.Scan(&conv.Id, &conv.OwnerId, &conv.Title, &createdOnStr, &updatedOnStr); err != nil {
+		var createdOn, updatedOn time.Time
+		if err := rows.Scan(&conv.Id, &conv.OwnerId, &conv.Title, &createdOn, &updatedOn); err != nil {
 			return nil, err
-		}
-
-		// Parse timestamps
-		createdOn, err := parseMicrosecondTimestamp(createdOnStr)
-		if err != nil {
-			return nil, fmt.Errorf("failed to parse created_on timestamp %q: %w", createdOnStr, err)
-		}
-		updatedOn, err := parseMicrosecondTimestamp(updatedOnStr)
-		if err != nil {
-			return nil, fmt.Errorf("failed to parse updated_on timestamp %q: %w", updatedOnStr, err)
 		}
 
 		conv.CreatedOn = createdOn.Format(time.RFC3339)
@@ -419,19 +409,9 @@ func (c *catalogStore) GetConversation(ctx context.Context, conversationID strin
         WHERE instance_id = ? AND conversation_id = ?
     `, c.instanceID, conversationID)
 	var conv runtimev1.Conversation
-	var createdOnStr, updatedOnStr string
-	if err := row.Scan(&conv.Id, &conv.OwnerId, &conv.Title, &createdOnStr, &updatedOnStr); err != nil {
+	var createdOn, updatedOn time.Time
+	if err := row.Scan(&conv.Id, &conv.OwnerId, &conv.Title, &createdOn, &updatedOn); err != nil {
 		return nil, err
-	}
-
-	// Parse timestamps
-	createdOn, err := parseMicrosecondTimestamp(createdOnStr)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse created_on timestamp %q: %w", createdOnStr, err)
-	}
-	updatedOn, err := parseMicrosecondTimestamp(updatedOnStr)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse updated_on timestamp %q: %w", updatedOnStr, err)
 	}
 
 	conv.CreatedOn = createdOn.Format(time.RFC3339)
@@ -450,21 +430,20 @@ func (c *catalogStore) GetConversation(ctx context.Context, conversationID strin
 // CreateConversation inserts a new conversation.
 func (c *catalogStore) CreateConversation(ctx context.Context, ownerID, title string) (string, error) {
 	conversationID := uuid.NewString()
-	now := time.Now().Format("2006-01-02T15:04:05.000000Z07:00")
 	_, err := c.db.ExecContext(ctx, `
         INSERT INTO conversations (instance_id, conversation_id, owner_id, title, created_on, updated_on)
-        VALUES (?, ?, ?, ?, ?, ?)
-    `, c.instanceID, conversationID, ownerID, title, now, now)
+        VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+    `, c.instanceID, conversationID, ownerID, title)
 	return conversationID, err
 }
 
-// ListMessages fetches all messages for a conversation, ordered by created_on.
+// ListMessages fetches all messages for a conversation, ordered by sequence number.
 func (c *catalogStore) ListMessages(ctx context.Context, conversationID string) ([]*runtimev1.Message, error) {
 	rows, err := c.db.QueryContext(ctx, `
-        SELECT message_id, role, content_json, created_on, updated_on
+        SELECT message_id, role, content_json, created_on, updated_on, seq_num
         FROM messages
         WHERE instance_id = ? AND conversation_id = ?
-        ORDER BY created_on ASC
+        ORDER BY seq_num ASC
     `, c.instanceID, conversationID)
 	if err != nil {
 		return nil, err
@@ -473,8 +452,10 @@ func (c *catalogStore) ListMessages(ctx context.Context, conversationID string) 
 	var result []*runtimev1.Message
 	for rows.Next() {
 		var msg runtimev1.Message
-		var contentJSONStr, createdOnStr, updatedOnStr string
-		if err := rows.Scan(&msg.Id, &msg.Role, &contentJSONStr, &createdOnStr, &updatedOnStr); err != nil {
+		var contentJSONStr string
+		var createdOn, updatedOn time.Time
+		var seqNum int
+		if err := rows.Scan(&msg.Id, &msg.Role, &contentJSONStr, &createdOn, &updatedOn, &seqNum); err != nil {
 			return nil, err
 		}
 
@@ -489,16 +470,6 @@ func (c *catalogStore) ListMessages(ctx context.Context, conversationID string) 
 			msg.Content = tempMsg.Content
 		}
 
-		// Parse timestamps
-		createdOn, err := parseMicrosecondTimestamp(createdOnStr)
-		if err != nil {
-			return nil, fmt.Errorf("failed to parse created_on timestamp %q: %w", createdOnStr, err)
-		}
-		updatedOn, err := parseMicrosecondTimestamp(updatedOnStr)
-		if err != nil {
-			return nil, fmt.Errorf("failed to parse updated_on timestamp %q: %w", updatedOnStr, err)
-		}
-
 		msg.CreatedOn = createdOn.Format(time.RFC3339)
 		msg.UpdatedOn = updatedOn.Format(time.RFC3339)
 		result = append(result, &msg)
@@ -509,7 +480,6 @@ func (c *catalogStore) ListMessages(ctx context.Context, conversationID string) 
 // AddMessage inserts a new message into a conversation.
 func (c *catalogStore) AddMessage(ctx context.Context, conversationID, role string, content []*runtimev1.ContentBlock, parentMessageID *string) (string, error) {
 	messageID := uuid.NewString()
-	now := time.Now().Format("2006-01-02T15:04:05.000000Z07:00")
 
 	// Serialize content to JSON using protojson
 	tempMsg := &runtimev1.Message{Content: content}
@@ -529,14 +499,12 @@ func (c *catalogStore) AddMessage(ctx context.Context, conversationID, role stri
 		return "", fmt.Errorf("failed to marshal content only: %w", err)
 	}
 
+	// Auto-calculate seq_num using a subquery - this is atomic and race-condition safe
 	_, err = c.db.ExecContext(ctx, `
-        INSERT INTO messages (instance_id, conversation_id, message_id, role, content_json, created_on, updated_on)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-    `, c.instanceID, conversationID, messageID, role, string(contentOnlyJSON), now, now)
+        INSERT INTO messages (instance_id, conversation_id, seq_num, message_id, role, content_json, created_on, updated_on)
+        VALUES (?, ?, 
+            (SELECT COALESCE(MAX(seq_num), 0) + 1 FROM messages WHERE instance_id = ? AND conversation_id = ?),
+            ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+    `, c.instanceID, conversationID, c.instanceID, conversationID, messageID, role, string(contentOnlyJSON))
 	return messageID, err
-}
-
-// parseMicrosecondTimestamp parses a timestamp string in the microsecond format used by the catalog
-func parseMicrosecondTimestamp(timestampStr string) (time.Time, error) {
-	return time.Parse("2006-01-02T15:04:05.000000Z07:00", timestampStr)
 }
