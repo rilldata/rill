@@ -300,7 +300,7 @@ func (p *Parser) trackResourceNamesForDataPaths(ctx context.Context, name Resour
 
 	var localPaths []string
 	if fileutil.IsGlob(path) {
-		entries, err := p.Repo.ListRecursive(ctx, path, true)
+		entries, err := p.Repo.ListGlob(ctx, path, true)
 		if err != nil || len(entries) == 0 {
 			// The actual error will be returned by the model reconciler
 			return nil
@@ -323,7 +323,7 @@ func (p *Parser) trackResourceNamesForDataPaths(ctx context.Context, name Resour
 	}
 
 	// Calculate hash of local files
-	hash, err := p.Repo.FileHash(ctx, localPaths)
+	hash, err := p.Repo.Hash(ctx, localPaths)
 	if err != nil {
 		return err
 	}
