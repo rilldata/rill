@@ -1,6 +1,7 @@
 CREATE TABLE IF NOT EXISTS conversations (
     instance_id TEXT NOT NULL,
     conversation_id TEXT NOT NULL,
+    owner_id TEXT NOT NULL,
     title TEXT,
     created_on TIMESTAMP NOT NULL,
     updated_on TIMESTAMP NOT NULL,

@@ -363,14 +363,14 @@ func (c *catalogStore) UpsertInstanceHealth(ctx context.Context, h *drivers.Inst
 	return err
 }
 
-// ListConversations fetches all conversations for an instance.
-func (c *catalogStore) ListConversations(ctx context.Context) ([]*runtimev1.Conversation, error) {
+// ListConversations fetches all conversations in an instance for a given owner.
+func (c *catalogStore) ListConversations(ctx context.Context, ownerID string) ([]*runtimev1.Conversation, error) {
 	rows, err := c.db.QueryContext(ctx, `
-        SELECT conversation_id, title, created_on, updated_on
+        SELECT conversation_id, owner_id, title, created_on, updated_on
         FROM conversations
-        WHERE instance_id = ?
+        WHERE instance_id = ? AND owner_id = ?
         ORDER BY updated_on DESC
-    `, c.instanceID)
+    `, c.instanceID, ownerID)
 	if err != nil {
 		return nil, err
 	}
@@ -380,7 +380,7 @@ func (c *catalogStore) ListConversations(ctx context.Context) ([]*runtimev1.Conv
 	for rows.Next() {
 		var conv runtimev1.Conversation
 		var createdOnStr, updatedOnStr string
-		if err := rows.Scan(&conv.Id, &conv.Title, &createdOnStr, &updatedOnStr); err != nil {
+		if err := rows.Scan(&conv.Id, &conv.OwnerId, &conv.Title, &createdOnStr, &updatedOnStr); err != nil {
 			return nil, err
 		}
 
@@ -414,13 +414,13 @@ func (c *catalogStore) ListConversations(ctx context.Context) ([]*runtimev1.Conv
 // GetConversation fetches a conversation by ID.
 func (c *catalogStore) GetConversation(ctx context.Context, conversationID string) (*runtimev1.Conversation, error) {
 	row := c.db.QueryRowContext(ctx, `
-        SELECT conversation_id, title, created_on, updated_on
+        SELECT conversation_id, owner_id, title, created_on, updated_on
         FROM conversations
         WHERE instance_id = ? AND conversation_id = ?
     `, c.instanceID, conversationID)
 	var conv runtimev1.Conversation
 	var createdOnStr, updatedOnStr string
-	if err := row.Scan(&conv.Id, &conv.Title, &createdOnStr, &updatedOnStr); err != nil {
+	if err := row.Scan(&conv.Id, &conv.OwnerId, &conv.Title, &createdOnStr, &updatedOnStr); err != nil {
 		return nil, err
 	}
 
@@ -448,13 +448,13 @@ func (c *catalogStore) GetConversation(ctx context.Context, conversationID strin
 }
 
 // CreateConversation inserts a new conversation.
-func (c *catalogStore) CreateConversation(ctx context.Context, title string) (string, error) {
+func (c *catalogStore) CreateConversation(ctx context.Context, ownerID, title string) (string, error) {
 	conversationID := uuid.NewString()
 	now := time.Now().Format("2006-01-02T15:04:05.000000Z07:00")
 	_, err := c.db.ExecContext(ctx, `
-        INSERT INTO conversations (instance_id, conversation_id, title, created_on, updated_on)
-        VALUES (?, ?, ?, ?, ?)
-    `, c.instanceID, conversationID, title, now, now)
+        INSERT INTO conversations (instance_id, conversation_id, owner_id, title, created_on, updated_on)
+        VALUES (?, ?, ?, ?, ?, ?)
+    `, c.instanceID, conversationID, ownerID, title, now, now)
 	return conversationID, err
 }
 

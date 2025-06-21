@@ -48,7 +48,7 @@ type ToolService interface {
 }
 
 // CompleteWithTools runs a conversational AI completion with tool calling support using the provided tool service
-func (r *Runtime) CompleteWithTools(ctx context.Context, req *CompletionRequest, toolService ToolService) (*CompletionResult, error) {
+func (r *Runtime) CompleteWithTools(ctx context.Context, ownerID string, req *CompletionRequest, toolService ToolService) (*CompletionResult, error) {
 	// Get instance-specific logger
 	logger, err := r.InstanceLogger(ctx, req.InstanceID)
 	if err != nil {
@@ -69,7 +69,7 @@ func (r *Runtime) CompleteWithTools(ctx context.Context, req *CompletionRequest,
 	}()
 
 	// 1. Determine conversation ID (create if needed)
-	conversationID, err := r.ensureConversation(ctx, req.InstanceID, req.ConversationID, req.Messages)
+	conversationID, err := r.ensureConversation(ctx, req.InstanceID, ownerID, req.ConversationID, req.Messages)
 	if err != nil {
 		logger.Error("failed to ensure conversation", zap.Error(err), observability.ZapCtx(ctx))
 		return nil, err
@@ -111,19 +111,19 @@ func (n *noOpToolService) ExecuteTool(ctx context.Context, toolName string, tool
 }
 
 // Complete runs a conversational AI completion without tool calling support
-func (r *Runtime) Complete(ctx context.Context, req *CompletionRequest) (*CompletionResult, error) {
+func (r *Runtime) Complete(ctx context.Context, ownerID string, req *CompletionRequest) (*CompletionResult, error) {
 	// Use the no-op tool service for conversations that don't need tools
-	return r.CompleteWithTools(ctx, req, &noOpToolService{})
+	return r.CompleteWithTools(ctx, ownerID, req, &noOpToolService{})
 }
 
 // ===== BUSINESS LOGIC HELPERS =====
 
 // ensureConversation determines the conversation ID - creates new if empty, returns existing if provided
-func (r *Runtime) ensureConversation(ctx context.Context, instanceID, conversationID string, newMessages []*runtimev1.Message) (string, error) {
+func (r *Runtime) ensureConversation(ctx context.Context, instanceID, ownerID, conversationID string, newMessages []*runtimev1.Message) (string, error) {
 	if conversationID == "" {
 		// Create new conversation using the first user message as title
 		title := createConversationTitle(newMessages)
-		conv, err := r.createConversation(ctx, instanceID, title)
+		conv, err := r.createConversation(ctx, instanceID, ownerID, title)
 		if err != nil {
 			return "", err
 		}
@@ -431,14 +431,14 @@ func createConversationTitle(messages []*runtimev1.Message) string {
 }
 
 // createConversation creates a new conversation with the given title
-func (r *Runtime) createConversation(ctx context.Context, instanceID, title string) (*runtimev1.Conversation, error) {
+func (r *Runtime) createConversation(ctx context.Context, instanceID, ownerID, title string) (*runtimev1.Conversation, error) {
 	catalog, release, err := r.Catalog(ctx, instanceID)
 	if err != nil {
 		return nil, err
 	}
 	defer release()
 
-	conversationID, err := catalog.CreateConversation(ctx, title)
+	conversationID, err := catalog.CreateConversation(ctx, ownerID, title)
 	if err != nil {
 		return nil, err
 	}

@@ -927,10 +927,11 @@ message ToolResult {
 // Conversation metadata and messages
 message Conversation {
   string id = 1;
-  string title = 2;
-  string created_on = 3;
-  string updated_on = 4;
-  repeated Message messages = 5;
+  string owner_id = 2;
+  string title = 3;
+  string created_on = 4;
+  string updated_on = 5;
+  repeated Message messages = 6;
 }
 
 // Request message for RuntimeService.Complete

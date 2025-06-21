@@ -4271,6 +4271,8 @@ definitions:
     properties:
       id:
         type: string
+      ownerId:
+        type: string
       title:
         type: string
       createdOn:

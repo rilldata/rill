@@ -53,9 +53,9 @@ type CatalogStore interface {
 	FindInstanceHealth(ctx context.Context, instanceID string) (*InstanceHealth, error)
 	UpsertInstanceHealth(ctx context.Context, h *InstanceHealth) error
 
-	ListConversations(ctx context.Context) ([]*runtimev1.Conversation, error)
+	ListConversations(ctx context.Context, ownerID string) ([]*runtimev1.Conversation, error)
 	GetConversation(ctx context.Context, conversationID string) (*runtimev1.Conversation, error)
-	CreateConversation(ctx context.Context, title string) (string, error)
+	CreateConversation(ctx context.Context, ownerID, title string) (string, error)
 	ListMessages(ctx context.Context, conversationID string) ([]*runtimev1.Message, error)
 	AddMessage(ctx context.Context, conversationID, role string, content []*runtimev1.ContentBlock, parentMessageID *string) (string, error)
 }

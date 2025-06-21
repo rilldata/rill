@@ -4364,22 +4364,27 @@ export class Conversation extends Message$1<Conversation> {
   id = "";
 
   /**
-   * @generated from field: string title = 2;
+   * @generated from field: string owner_id = 2;
+   */
+  ownerId = "";
+
+  /**
+   * @generated from field: string title = 3;
    */
   title = "";
 
   /**
-   * @generated from field: string created_on = 3;
+   * @generated from field: string created_on = 4;
    */
   createdOn = "";
 
   /**
-   * @generated from field: string updated_on = 4;
+   * @generated from field: string updated_on = 5;
    */
   updatedOn = "";
 
   /**
-   * @generated from field: repeated rill.runtime.v1.Message messages = 5;
+   * @generated from field: repeated rill.runtime.v1.Message messages = 6;
    */
   messages: Message[] = [];
 
@@ -4392,10 +4397,11 @@ export class Conversation extends Message$1<Conversation> {
   static readonly typeName = "rill.runtime.v1.Conversation";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "title", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "created_on", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 4, name: "updated_on", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 5, name: "messages", kind: "message", T: Message, repeated: true },
+    { no: 2, name: "owner_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "title", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "created_on", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "updated_on", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 6, name: "messages", kind: "message", T: Message, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Conversation {

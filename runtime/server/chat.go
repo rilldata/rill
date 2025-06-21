@@ -16,13 +16,15 @@ func (s *Server) ListConversations(ctx context.Context, req *runtimev1.ListConve
 		return nil, ErrForbidden
 	}
 
+	ownerID := auth.GetClaims(ctx).Subject()
+
 	catalog, release, err := s.runtime.Catalog(ctx, req.InstanceId)
 	if err != nil {
 		return nil, err
 	}
 	defer release()
 
-	conversations, err := catalog.ListConversations(ctx)
+	conversations, err := catalog.ListConversations(ctx, ownerID)
 	if err != nil {
 		return nil, err
 	}
@@ -47,6 +49,11 @@ func (s *Server) GetConversation(ctx context.Context, req *runtimev1.GetConversa
 	conversation, err := catalog.GetConversation(ctx, req.ConversationId)
 	if err != nil {
 		return nil, err
+	}
+
+	// For now, we only allow users to access their own conversations.
+	if conversation.OwnerId != auth.GetClaims(ctx).Subject() {
+		return nil, status.Error(codes.NotFound, "conversation not found")
 	}
 
 	return &runtimev1.GetConversationResponse{
@@ -81,6 +88,8 @@ func (s *Server) Complete(ctx context.Context, req *runtimev1.CompleteRequest) (
 		return nil, status.Error(codes.InvalidArgument, "messages cannot be nil")
 	}
 
+	ownerID := auth.GetClaims(ctx).Subject()
+
 	// Handle conversation ID: nil or empty string means create new conversation
 	var conversationID string
 	if req.ConversationId != nil {
@@ -91,7 +100,7 @@ func (s *Server) Complete(ctx context.Context, req *runtimev1.CompleteRequest) (
 	toolService := &serverToolService{server: s, instanceID: req.InstanceId}
 
 	// Delegate to runtime business logic
-	result, err := s.runtime.CompleteWithTools(ctx, &runtime.CompletionRequest{
+	result, err := s.runtime.CompleteWithTools(ctx, ownerID, &runtime.CompletionRequest{
 		InstanceID:     req.InstanceId,
 		ConversationID: conversationID,
 		Messages:       req.Messages,

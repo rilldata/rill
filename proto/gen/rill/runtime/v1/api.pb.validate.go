@@ -10397,6 +10397,8 @@ func (m *Conversation) validate(all bool) error {
 
 	// no validation rules for Id
 
+	// no validation rules for OwnerId
+
 	// no validation rules for Title
 
 	// no validation rules for CreatedOn
