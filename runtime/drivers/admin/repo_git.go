@@ -52,7 +52,7 @@ func (r *gitRepo) sync(ctx context.Context) error {
 
 // syncInner contains the actual logic of r.sync without retries.
 func (r *gitRepo) syncInner(ctx context.Context) error {
-	// Check if repoDir exists and is a valid git repository
+	// Check if repoDir exists and is a valid Git repository
 	repo, err := git.PlainOpen(r.repoDir)
 	if err != nil {
 		// Repository doesn't exist or is invalid, remove and clone fresh
@@ -71,9 +71,11 @@ func (r *gitRepo) syncInner(ctx context.Context) error {
 		return err
 	}
 
+	// Repository exists, pull latest changes
+
 	// Ensure the remote URL is correct
 	_ = repo.DeleteRemote("origin")
-	_, err = repo.CreateRemote(&config.RemoteConfig{
+	remote, err := repo.CreateRemote(&config.RemoteConfig{
 		Name: "origin",
 		URLs: []string{r.remoteURL},
 	})
@@ -81,42 +83,45 @@ func (r *gitRepo) syncInner(ctx context.Context) error {
 		return fmt.Errorf("failed to set remote URL: %w", err)
 	}
 
-	// Repository exists, pull latest changes
-	workTree, err := repo.Worktree()
+	// Fetch the branch from remote
+	err = remote.Fetch(&git.FetchOptions{
+		RefSpecs: []config.RefSpec{config.RefSpec(fmt.Sprintf("refs/heads/%s:refs/heads/%s", r.branch, r.branch))},
+		Force:    true,
+	})
+	if err != nil && !errors.Is(err, git.NoErrAlreadyUpToDate) {
+		return fmt.Errorf("failed to fetch from remote: %w", err)
+	}
+
+	// Checkout the branch (in case it was changed)
+	worktree, err := repo.Worktree()
 	if err != nil {
 		return err
 	}
-	err = workTree.PullContext(ctx, &git.PullOptions{
+	err = worktree.Checkout(&git.CheckoutOptions{
+		Branch: plumbing.ReferenceName("refs/heads/" + r.branch),
+		Force:  true,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to checkout branch %q: %w", r.branch, err)
+	}
+
+	// Pull in the latest changes
+	err = worktree.PullContext(ctx, &git.PullOptions{
 		RemoteURL:     r.remoteURL,
 		ReferenceName: plumbing.ReferenceName("refs/heads/" + r.branch),
 		SingleBranch:  true,
 		Force:         true,
 	})
 	if err != nil && !errors.Is(err, git.NoErrAlreadyUpToDate) {
-		rev, err := repo.ResolveRevision(plumbing.Revision("remotes/origin/HEAD"))
+		rev, err := repo.ResolveRevision(plumbing.Revision(fmt.Sprintf("refs/remotes/origin/%s", r.branch)))
 		if err != nil {
 			return err
 		}
 
-		return workTree.Reset(&git.ResetOptions{
+		return worktree.Reset(&git.ResetOptions{
 			Commit: *rev,
 			Mode:   git.HardReset,
 		})
-	}
-
-	// Checkout in case the branch was changed
-	ref, err := repo.Head()
-	if err != nil {
-		return fmt.Errorf("failed to get HEAD: %w", err)
-	}
-	if ref.Name().Short() != r.branch {
-		err = workTree.Checkout(&git.CheckoutOptions{
-			Branch: plumbing.ReferenceName("refs/heads/" + r.branch),
-			Force:  true,
-		})
-		if err != nil {
-			return fmt.Errorf("failed to checkout branch %s: %w", r.branch, err)
-		}
 	}
 
 	return nil
