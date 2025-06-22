@@ -248,6 +248,30 @@ export const PERIOD_TO_DATE_RANGES: TimeRangeMetaSet = {
       ],
     },
   },
+  [TimeRangePreset.DAY_TO_DATE]: {
+    label: "Day to date",
+    rangePreset: RangePresetType.PERIOD_ANCHORED,
+    defaultComparison: TimeComparisonOption.DAY,
+    start: {
+      reference: ReferencePoint.MIN_OF_LATEST_DATA_AND_NOW,
+      transformation: [
+        {
+          period: Period.DAY,
+          truncationType: TimeTruncationType.START_OF_PERIOD,
+        },
+      ],
+    },
+    end: {
+      reference: ReferencePoint.MIN_OF_LATEST_DATA_AND_NOW,
+      transformation: [
+        { duration: "PT1H", operationType: TimeOffsetType.ADD },
+        {
+          period: Period.HOUR,
+          truncationType: TimeTruncationType.START_OF_PERIOD,
+        },
+      ],
+    },
+  },
   [TimeRangePreset.WEEK_TO_DATE]: {
     label: "Week to Date",
     rangePreset: RangePresetType.PERIOD_ANCHORED,
