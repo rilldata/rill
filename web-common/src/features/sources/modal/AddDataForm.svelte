@@ -273,6 +273,7 @@
               />
             </div>
 
+            <!-- TODO: should we only show this for cloud deployment type? -->
             <!-- Always show the managed checkbox -->
             <div class="py-1.5 first:pt-0 last:pb-0">
               <label for="managed" class="flex items-center">
