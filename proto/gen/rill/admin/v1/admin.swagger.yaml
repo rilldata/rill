@@ -756,6 +756,39 @@ paths:
                 type: boolean
       tags:
         - AdminService
+  /v1/organizations/{organization}/members/{email}/projects:
+    get:
+      summary: ListProjectMemberUserWithProjects lists project memberships for a user in the org
+      operationId: AdminService_ListProjectMemberUserWithProjects
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ListProjectMemberUserWithProjectsResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organization
+          in: path
+          required: true
+          type: string
+        - name: email
+          in: path
+          required: true
+          type: string
+        - name: pageSize
+          in: query
+          required: false
+          type: integer
+          format: int64
+        - name: pageToken
+          in: query
+          required: false
+          type: string
+      tags:
+        - AdminService
   /v1/organizations/{organization}/members/current:
     delete:
       summary: LeaveOrganization removes the current user from the organization
@@ -800,6 +833,11 @@ paths:
           type: string
         - name: role
           description: Optionally filter by role
+          in: query
+          required: false
+          type: string
+        - name: email
+          description: Optionally filter by user email
           in: query
           required: false
           type: string
@@ -2137,6 +2175,11 @@ paths:
           in: query
           required: false
           type: boolean
+        - name: email
+          description: Optionally filter by user email
+          in: query
+          required: false
+          type: string
         - name: pageSize
           in: query
           required: false
@@ -4851,6 +4894,16 @@ definitions:
           $ref: '#/definitions/v1ProjectInvite'
       nextPageToken:
         type: string
+  v1ListProjectMemberUserWithProjectsResponse:
+    type: object
+    properties:
+      members:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1ProjectMemberUserWithProject'
+      nextPageToken:
+        type: string
   v1ListProjectMemberUsergroupsResponse:
     type: object
     properties:
@@ -5299,6 +5352,15 @@ definitions:
       updatedOn:
         type: string
         format: date-time
+  v1ProjectMemberUserWithProject:
+    type: object
+    properties:
+      user:
+        $ref: '#/definitions/v1ProjectMemberUser'
+      projectId:
+        type: string
+      projectName:
+        type: string
   v1ProjectPermissions:
     type: object
     properties:

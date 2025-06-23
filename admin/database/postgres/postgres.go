@@ -1725,7 +1725,7 @@ func (c *connection) InsertProjectMemberUser(ctx context.Context, projectID, use
 
 // FindOrganizationMemberUsergroups returns org user groups as a collection of MemberUsergroup.
 // If a user group has no org role then RoleName is empty.
-func (c *connection) FindOrganizationMemberUsergroups(ctx context.Context, orgID, filterRoleID string, withCounts bool, afterName string, limit int) ([]*database.MemberUsergroup, error) {
+func (c *connection) FindOrganizationMemberUsergroups(ctx context.Context, orgID, filterRoleID, filterUserID string, withCounts bool, afterName string, limit int) ([]*database.MemberUsergroup, error) {
 	args := []any{orgID, afterName, limit}
 	var qry strings.Builder
 	qry.WriteString("SELECT ug.id, ug.name, ug.managed, ug.created_on, ug.updated_on, COALESCE(r.name, '') as role_name")
@@ -1745,6 +1745,10 @@ func (c *connection) FindOrganizationMemberUsergroups(ctx context.Context, orgID
 	if filterRoleID != "" {
 		qry.WriteString(" AND uor.org_role_id=$4")
 		args = append(args, filterRoleID)
+	}
+	if filterUserID != "" {
+		qry.WriteString(" AND ug.id IN (SELECT usergroup_id FROM usergroups_users WHERE user_id = $5)")
+		args = append(args, filterUserID)
 	}
 	qry.WriteString(" AND lower(ug.name) > lower($2) ORDER BY lower(ug.name) LIMIT $3")
 
@@ -1791,7 +1795,7 @@ func (c *connection) DeleteOrganizationMemberUsergroup(ctx context.Context, grou
 	return checkDeleteRow("org group member", res, err)
 }
 
-func (c *connection) FindProjectMemberUsergroups(ctx context.Context, projectID, filterRoleID, afterName string, limit int) ([]*database.MemberUsergroup, error) {
+func (c *connection) FindProjectMemberUsergroups(ctx context.Context, projectID, filterRoleID, filterUserID, afterName string, limit int) ([]*database.MemberUsergroup, error) {
 	args := []any{projectID, afterName, limit}
 	var qry strings.Builder
 	qry.WriteString(`
@@ -1803,6 +1807,10 @@ func (c *connection) FindProjectMemberUsergroups(ctx context.Context, projectID,
 	if filterRoleID != "" {
 		qry.WriteString(" AND upr.project_role_id=$4")
 		args = append(args, filterRoleID)
+	}
+	if filterUserID != "" {
+		qry.WriteString(" AND ug.id IN (SELECT usergroup_id FROM usergroups_users WHERE user_id = $5)")
+		args = append(args, filterUserID)
 	}
 	qry.WriteString(" AND lower(ug.name) > lower($2) ORDER BY lower(ug.name) LIMIT $3")
 
@@ -1865,6 +1873,24 @@ func (c *connection) DeleteAllProjectMemberUserForOrganization(ctx context.Conte
 func (c *connection) UpdateProjectMemberUserRole(ctx context.Context, projectID, userID, roleID string) error {
 	res, err := c.getDB(ctx).ExecContext(ctx, `UPDATE users_projects_roles SET project_role_id = $1 WHERE user_id = $2 AND project_id = $3`, roleID, userID, projectID)
 	return checkUpdateRow("project member", res, err)
+}
+
+func (c *connection) ListProjectMemberUsersWithProject(ctx context.Context, orgID, userID, afterName string, limit int) ([]*database.ProjectMemberUserWithProject, error) {
+	var res []*database.ProjectMemberUserWithProject
+	err := c.getDB(ctx).SelectContext(ctx, &res, `
+		SELECT u.id, u.email, u.display_name, u.photo_url, u.created_on, u.updated_on,
+			upr.project_id, p.name as project_name, upr.project_role_id as role_id,
+			pr.name as role_name
+		FROM users u
+		JOIN users_projects_roles upr ON upr.user_id = u.id
+		JOIN projects p ON upr.project_id = p.id
+		JOIN project_roles pr ON upr.project_role_id = pr.id
+		WHERE p.org_id = $1 AND u.id = $2 and lower(p.name) > lower($3) ORDER BY lower(p.name) LIMIT $4
+	`, orgID, userID, afterName, limit)
+	if err != nil {
+		return nil, parseErr("project members with project", err)
+	}
+	return res, nil
 }
 
 func (c *connection) FindOrganizationInvites(ctx context.Context, orgID, afterEmail string, limit int) ([]*database.OrganizationInviteWithRole, error) {

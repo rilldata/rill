@@ -905,6 +905,61 @@ func (s *Server) ListProjectMemberUsers(ctx context.Context, req *adminv1.ListPr
 	}, nil
 }
 
+func (s *Server) ListProjectMemberUserWithProjects(ctx context.Context, req *adminv1.ListProjectMemberUserWithProjectsRequest) (*adminv1.ListProjectMemberUserWithProjectsResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.org", req.Organization),
+		attribute.String("args.email", req.Email),
+	)
+
+	org, err := s.admin.DB.FindOrganization(ctx, req.Organization)
+	if err != nil {
+		return nil, err
+	}
+
+	claims := auth.GetClaims(ctx)
+	if !claims.OrganizationPermissions(ctx, org.ID).ReadOrgMembers {
+		return nil, status.Error(codes.PermissionDenied, "not authorized to read organization members")
+	}
+
+	user, err := s.admin.DB.FindUserByEmail(ctx, req.Email)
+	if err != nil {
+		if errors.Is(err, database.ErrNotFound) {
+			return &adminv1.ListProjectMemberUserWithProjectsResponse{}, nil
+		}
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	token, err := unmarshalPageToken(req.PageToken)
+	if err != nil {
+		return nil, err
+	}
+	pageSize := validPageSize(req.PageSize)
+
+	projs, err := s.admin.DB.ListProjectMemberUsersWithProject(ctx, org.ID, user.ID, token.Val, pageSize)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	nextToken := ""
+	if len(projs) >= pageSize {
+		nextToken = marshalPageToken(projs[len(projs)-1].ProjectName)
+	}
+
+	dtos := make([]*adminv1.ProjectMemberUserWithProject, len(projs))
+	for i, proj := range projs {
+		dtos[i] = &adminv1.ProjectMemberUserWithProject{
+			ProjectId:   proj.ProjectID,
+			ProjectName: proj.ProjectName,
+			User:        projMemberUserToPB(&proj.Member),
+		}
+	}
+
+	return &adminv1.ListProjectMemberUserWithProjectsResponse{
+		Members:       dtos,
+		NextPageToken: nextToken,
+	}, nil
+}
+
 func (s *Server) ListProjectInvites(ctx context.Context, req *adminv1.ListProjectInvitesRequest) (*adminv1.ListProjectInvitesResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.org", req.Organization),

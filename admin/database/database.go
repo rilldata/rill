@@ -225,14 +225,15 @@ type DB interface {
 	DeleteProjectMemberUser(ctx context.Context, projectID, userID string) error
 	DeleteAllProjectMemberUserForOrganization(ctx context.Context, orgID, userID string) error
 	UpdateProjectMemberUserRole(ctx context.Context, projectID, userID, roleID string) error
+	ListProjectMemberUsersWithProject(ctx context.Context, orgID, userID, afterName string, limit int) ([]*ProjectMemberUserWithProject, error)
 
-	FindOrganizationMemberUsergroups(ctx context.Context, orgID, filterRoleID string, withCounts bool, afterName string, limit int) ([]*MemberUsergroup, error)
+	FindOrganizationMemberUsergroups(ctx context.Context, orgID, filterRoleID, filterUserID string, withCounts bool, afterName string, limit int) ([]*MemberUsergroup, error)
 	FindOrganizationMemberUsergroupRole(ctx context.Context, groupID, orgID string) (*OrganizationRole, error)
 	InsertOrganizationMemberUsergroup(ctx context.Context, groupID, orgID, roleID string) error
 	UpdateOrganizationMemberUsergroup(ctx context.Context, groupID, orgID, roleID string) error
 	DeleteOrganizationMemberUsergroup(ctx context.Context, groupID, orgID string) error
 
-	FindProjectMemberUsergroups(ctx context.Context, projectID, filterRoleID, afterName string, limit int) ([]*MemberUsergroup, error)
+	FindProjectMemberUsergroups(ctx context.Context, projectID, filterRoleID, filterUserID, afterName string, limit int) ([]*MemberUsergroup, error)
 	FindProjectMemberUsergroupRole(ctx context.Context, groupID, projectID string) (*ProjectRole, error)
 	InsertProjectMemberUsergroup(ctx context.Context, groupID, projectID, roleID string) error
 	UpdateProjectMemberUsergroup(ctx context.Context, groupID, projectID, roleID string) error
@@ -894,6 +895,13 @@ type ProjectMemberUser struct {
 	OrgRoleName string    `db:"org_role_name"`
 	CreatedOn   time.Time `db:"created_on"`
 	UpdatedOn   time.Time `db:"updated_on"`
+}
+
+// ProjectMemberUserWithProject is a convenience type used for display-friendly representation of a project member with project details
+type ProjectMemberUserWithProject struct {
+	Member      ProjectMemberUser
+	ProjectID   string `db:"project_id"`
+	ProjectName string `db:"project_name"`
 }
 
 // UsergroupMemberUser is a convenience type used for display-friendly representation of a usergroup member
