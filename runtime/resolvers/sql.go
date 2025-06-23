@@ -126,9 +126,9 @@ func (r *sqlResolver) Validate(ctx context.Context) error {
 }
 
 func (r *sqlResolver) ResolveInteractive(ctx context.Context) (runtime.ResolverResult, error) {
-	var sql string
 	// Wrap the SQL with an outer SELECT to limit the number of rows returned in interactive mode.
 	// Adding +1 to the limit so we can return a nice error message if the limit is exceeded.
+	var sql string
 	if r.interactiveRowLimit != 0 {
 		sql = fmt.Sprintf("SELECT * FROM (%s\n) LIMIT %d", r.sql, r.interactiveRowLimit+1)
 	} else {
