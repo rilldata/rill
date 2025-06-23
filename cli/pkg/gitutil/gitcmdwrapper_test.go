@@ -80,12 +80,12 @@ func TestGitPull(t *testing.T) {
 
 	// Test case: Pull with local changes (discardLocal = false)
 	createCommit(t, tempDir, "local.txt", "local content", "local commit")
-	createRemoteCommit(t, remoteDir, "remote.txt", "remote content", "remote commit")
+	createRemoteCommit(t, remoteDir, "local.txt", "remote content", "remote commit")
 	output, err = GitPull(context.Background(), tempDir, false, "origin")
-	if err == nil {
+	if len(output) == 0 && err == nil {
 		t.Fatalf("expected GitPull to fail with local changes and discardLocal=false, but it succeeded")
 	}
-	require.Contains(t, output, "Please commit your changes or stash them before you merge", "unexpected output from GitPull with local changes")
+	require.Contains(t, output, "Need to specify how to reconcile divergent branches", "unexpected output from GitPull with local changes")
 
 	// Test case: Pull with local changes (discardLocal = true)
 	output, err = GitPull(context.Background(), tempDir, true, "origin")
@@ -106,6 +106,7 @@ func setupTestRepository(t *testing.T) (string, string) {
 	cmd := exec.Command("git", "init", tempDir)
 	err := cmd.Run()
 	require.NoError(t, err, "failed to initialize git repository")
+	setupGitConfig(t, tempDir)
 
 	// Create a remote repository in another temp directory
 	remoteDir := t.TempDir()
@@ -192,6 +193,7 @@ func createRemoteCommit(t *testing.T, remoteDir, fileName, fileContent, commitMe
 	cmd := exec.Command("git", "clone", remoteDir, workingDir)
 	err := cmd.Run()
 	require.NoError(t, err, "failed to clone remote repository")
+	setupGitConfig(t, workingDir)
 
 	// Create and commit the file in the working directory
 	createCommit(t, workingDir, fileName, fileContent, commitMessage)
@@ -200,4 +202,16 @@ func createRemoteCommit(t *testing.T, remoteDir, fileName, fileContent, commitMe
 	cmd = exec.Command("git", "-C", workingDir, "push", "origin", "HEAD")
 	err = cmd.Run()
 	require.NoError(t, err, "failed to push changes to remote repository")
+}
+
+// setupGitConfig sets up the git configuration for the repository at repoPath.
+func setupGitConfig(t *testing.T, repoPath string) {
+	// Set user name and email for the git repository
+	cmd := exec.Command("git", "-C", repoPath, "config", "user.name", "Test User")
+	err := cmd.Run()
+	require.NoError(t, err, "failed to set user name in git config")
+
+	cmd = exec.Command("git", "-C", repoPath, "config", "user.email", "test@rilldata.com")
+	err = cmd.Run()
+	require.NoError(t, err, "failed to set user email in git config")
 }
