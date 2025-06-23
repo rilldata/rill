@@ -1,7 +1,7 @@
 export const CLICKHOUSE_DEFAULTS = {
   cloud: {
     host: { value: "", placeholder: "your-instance.clickhouse.cloud" },
-    port: { value: "8443", placeholder: "8443" },
+    port: { value: "9000", placeholder: "9000" },
     username: { value: "", placeholder: "default" },
     password: { value: "", placeholder: "Your ClickHouse Cloud password" },
     ssl: { value: true },
@@ -11,7 +11,7 @@ export const CLICKHOUSE_DEFAULTS = {
     port: { value: "9000", placeholder: "9000" },
     username: { value: "", placeholder: "default" },
     password: { value: "", placeholder: "Your ClickHouse password" },
-    ssl: { value: false },
+    ssl: { value: true },
   },
   local: {
     host: { value: "localhost", placeholder: "localhost" },
