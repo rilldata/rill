@@ -1118,6 +1118,7 @@ export interface V1Service {
 
 export interface V1ServiceToken {
   id?: string;
+  prefix?: string;
   createdOn?: string;
   expiresOn?: string;
 }
@@ -1348,6 +1349,7 @@ export interface V1UserAuthToken {
   authClientId?: string;
   authClientDisplayName?: string;
   representingUserId?: string;
+  prefix?: string;
   createdOn?: string;
   expiresOn?: string;
   usedOn?: string;

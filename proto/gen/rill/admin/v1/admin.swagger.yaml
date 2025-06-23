@@ -3167,9 +3167,7 @@ paths:
             $ref: '#/definitions/rpcStatus'
       parameters:
         - name: projectId
-          description: |-
-            The project ID to get repository metadata for.
-            If the call is made with a deployment access token, the project ID is optional and is inferred from the token.
+          description: The project ID to get repository metadata for.
           in: path
           required: true
           type: string
@@ -3190,9 +3188,7 @@ paths:
             $ref: '#/definitions/rpcStatus'
       parameters:
         - name: projectId
-          description: |-
-            The project ID to pull virtual files for.
-            If the call is made with a deployment access token, the project ID is optional and is inferred from the token.
+          description: The project ID to pull virtual files for.
           in: path
           required: true
           type: string
@@ -5620,6 +5616,8 @@ definitions:
     properties:
       id:
         type: string
+      prefix:
+        type: string
       createdOn:
         type: string
         format: date-time
@@ -5923,6 +5921,8 @@ definitions:
       authClientDisplayName:
         type: string
       representingUserId:
+        type: string
+      prefix:
         type: string
       createdOn:
         type: string
