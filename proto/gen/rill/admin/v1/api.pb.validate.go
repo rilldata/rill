@@ -8911,6 +8911,8 @@ func (m *ListOrganizationMemberUsersResponse) validate(all bool) error {
 
 	}
 
+	// no validation rules for TotalCount
+
 	// no validation rules for NextPageToken
 
 	if len(errors) > 0 {
@@ -9172,6 +9174,8 @@ func (m *ListOrganizationInvitesResponse) validate(all bool) error {
 		}
 
 	}
+
+	// no validation rules for TotalCount
 
 	// no validation rules for NextPageToken
 

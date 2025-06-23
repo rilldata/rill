@@ -4809,6 +4809,10 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1OrganizationInvite'
+      totalCount:
+        type: integer
+        format: int64
+        title: Total number of invites in the organization
       nextPageToken:
         type: string
   v1ListOrganizationMemberUsergroupsResponse:
@@ -4829,6 +4833,10 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1OrganizationMemberUser'
+      totalCount:
+        type: integer
+        format: int64
+        title: Total number of members in the organization
       nextPageToken:
         type: string
   v1ListOrganizationsResponse:
