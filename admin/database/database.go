@@ -340,6 +340,7 @@ type Organization struct {
 	Description                         string
 	LogoAssetID                         *string   `db:"logo_asset_id"`
 	FaviconAssetID                      *string   `db:"favicon_asset_id"`
+	ThumbnailAssetID                    *string   `db:"thumbnail_asset_id"`
 	CustomDomain                        string    `db:"custom_domain"`
 	DefaultProjectRoleID                *string   `db:"default_project_role_id"`
 	CreatedOn                           time.Time `db:"created_on"`
@@ -365,6 +366,7 @@ type InsertOrganizationOptions struct {
 	Description                         string
 	LogoAssetID                         *string
 	FaviconAssetID                      *string
+	ThumbnailAssetID                    *string
 	CustomDomain                        string `validate:"omitempty,fqdn"`
 	DefaultProjectRoleID                *string
 	QuotaProjects                       int
@@ -386,6 +388,7 @@ type UpdateOrganizationOptions struct {
 	Description                         string
 	LogoAssetID                         *string
 	FaviconAssetID                      *string
+	ThumbnailAssetID                    *string
 	CustomDomain                        string `validate:"omitempty,fqdn"`
 	DefaultProjectRoleID                *string
 	QuotaProjects                       int
