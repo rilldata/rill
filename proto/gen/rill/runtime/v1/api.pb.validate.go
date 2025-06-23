@@ -4113,6 +4113,833 @@ var _ interface {
 	ErrorName() string
 } = DeleteFileResponseValidationError{}
 
+// Validate checks the field values on BeginFileTransactionRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *BeginFileTransactionRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on BeginFileTransactionRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// BeginFileTransactionRequestMultiError, or nil if none found.
+func (m *BeginFileTransactionRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *BeginFileTransactionRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if !_BeginFileTransactionRequest_InstanceId_Pattern.MatchString(m.GetInstanceId()) {
+		err := BeginFileTransactionRequestValidationError{
+			field:  "InstanceId",
+			reason: "value does not match regex pattern \"^[_\\\\-a-zA-Z0-9]+$\"",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	for idx, item := range m.GetFiles() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, BeginFileTransactionRequestValidationError{
+						field:  fmt.Sprintf("Files[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, BeginFileTransactionRequestValidationError{
+						field:  fmt.Sprintf("Files[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return BeginFileTransactionRequestValidationError{
+					field:  fmt.Sprintf("Files[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	if len(errors) > 0 {
+		return BeginFileTransactionRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// BeginFileTransactionRequestMultiError is an error wrapping multiple
+// validation errors returned by BeginFileTransactionRequest.ValidateAll() if
+// the designated constraints aren't met.
+type BeginFileTransactionRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m BeginFileTransactionRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m BeginFileTransactionRequestMultiError) AllErrors() []error { return m }
+
+// BeginFileTransactionRequestValidationError is the validation error returned
+// by BeginFileTransactionRequest.Validate if the designated constraints
+// aren't met.
+type BeginFileTransactionRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e BeginFileTransactionRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e BeginFileTransactionRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e BeginFileTransactionRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e BeginFileTransactionRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e BeginFileTransactionRequestValidationError) ErrorName() string {
+	return "BeginFileTransactionRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e BeginFileTransactionRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sBeginFileTransactionRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = BeginFileTransactionRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = BeginFileTransactionRequestValidationError{}
+
+var _BeginFileTransactionRequest_InstanceId_Pattern = regexp.MustCompile("^[_\\-a-zA-Z0-9]+$")
+
+// Validate checks the field values on StagedFile with the rules defined in the
+// proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *StagedFile) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on StagedFile with the rules defined in
+// the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in StagedFileMultiError, or
+// nil if none found.
+func (m *StagedFile) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *StagedFile) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if utf8.RuneCountInString(m.GetPath()) < 1 {
+		err := StagedFileValidationError{
+			field:  "Path",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	// no validation rules for Content
+
+	if len(errors) > 0 {
+		return StagedFileMultiError(errors)
+	}
+
+	return nil
+}
+
+// StagedFileMultiError is an error wrapping multiple validation errors
+// returned by StagedFile.ValidateAll() if the designated constraints aren't met.
+type StagedFileMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m StagedFileMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m StagedFileMultiError) AllErrors() []error { return m }
+
+// StagedFileValidationError is the validation error returned by
+// StagedFile.Validate if the designated constraints aren't met.
+type StagedFileValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e StagedFileValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e StagedFileValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e StagedFileValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e StagedFileValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e StagedFileValidationError) ErrorName() string { return "StagedFileValidationError" }
+
+// Error satisfies the builtin error interface
+func (e StagedFileValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sStagedFile.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = StagedFileValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = StagedFileValidationError{}
+
+// Validate checks the field values on BeginFileTransactionResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *BeginFileTransactionResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on BeginFileTransactionResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// BeginFileTransactionResponseMultiError, or nil if none found.
+func (m *BeginFileTransactionResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *BeginFileTransactionResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for TxnId
+
+	if len(errors) > 0 {
+		return BeginFileTransactionResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// BeginFileTransactionResponseMultiError is an error wrapping multiple
+// validation errors returned by BeginFileTransactionResponse.ValidateAll() if
+// the designated constraints aren't met.
+type BeginFileTransactionResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m BeginFileTransactionResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m BeginFileTransactionResponseMultiError) AllErrors() []error { return m }
+
+// BeginFileTransactionResponseValidationError is the validation error returned
+// by BeginFileTransactionResponse.Validate if the designated constraints
+// aren't met.
+type BeginFileTransactionResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e BeginFileTransactionResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e BeginFileTransactionResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e BeginFileTransactionResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e BeginFileTransactionResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e BeginFileTransactionResponseValidationError) ErrorName() string {
+	return "BeginFileTransactionResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e BeginFileTransactionResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sBeginFileTransactionResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = BeginFileTransactionResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = BeginFileTransactionResponseValidationError{}
+
+// Validate checks the field values on CommitFileTransactionRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *CommitFileTransactionRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on CommitFileTransactionRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// CommitFileTransactionRequestMultiError, or nil if none found.
+func (m *CommitFileTransactionRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *CommitFileTransactionRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if !_CommitFileTransactionRequest_InstanceId_Pattern.MatchString(m.GetInstanceId()) {
+		err := CommitFileTransactionRequestValidationError{
+			field:  "InstanceId",
+			reason: "value does not match regex pattern \"^[_\\\\-a-zA-Z0-9]+$\"",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if utf8.RuneCountInString(m.GetTxnId()) < 1 {
+		err := CommitFileTransactionRequestValidationError{
+			field:  "TxnId",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if len(errors) > 0 {
+		return CommitFileTransactionRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// CommitFileTransactionRequestMultiError is an error wrapping multiple
+// validation errors returned by CommitFileTransactionRequest.ValidateAll() if
+// the designated constraints aren't met.
+type CommitFileTransactionRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m CommitFileTransactionRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m CommitFileTransactionRequestMultiError) AllErrors() []error { return m }
+
+// CommitFileTransactionRequestValidationError is the validation error returned
+// by CommitFileTransactionRequest.Validate if the designated constraints
+// aren't met.
+type CommitFileTransactionRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e CommitFileTransactionRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e CommitFileTransactionRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e CommitFileTransactionRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e CommitFileTransactionRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e CommitFileTransactionRequestValidationError) ErrorName() string {
+	return "CommitFileTransactionRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e CommitFileTransactionRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sCommitFileTransactionRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = CommitFileTransactionRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = CommitFileTransactionRequestValidationError{}
+
+var _CommitFileTransactionRequest_InstanceId_Pattern = regexp.MustCompile("^[_\\-a-zA-Z0-9]+$")
+
+// Validate checks the field values on CommitFileTransactionResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *CommitFileTransactionResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on CommitFileTransactionResponse with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the result is a list of violation errors wrapped in
+// CommitFileTransactionResponseMultiError, or nil if none found.
+func (m *CommitFileTransactionResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *CommitFileTransactionResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if len(errors) > 0 {
+		return CommitFileTransactionResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// CommitFileTransactionResponseMultiError is an error wrapping multiple
+// validation errors returned by CommitFileTransactionResponse.ValidateAll()
+// if the designated constraints aren't met.
+type CommitFileTransactionResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m CommitFileTransactionResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m CommitFileTransactionResponseMultiError) AllErrors() []error { return m }
+
+// CommitFileTransactionResponseValidationError is the validation error
+// returned by CommitFileTransactionResponse.Validate if the designated
+// constraints aren't met.
+type CommitFileTransactionResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e CommitFileTransactionResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e CommitFileTransactionResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e CommitFileTransactionResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e CommitFileTransactionResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e CommitFileTransactionResponseValidationError) ErrorName() string {
+	return "CommitFileTransactionResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e CommitFileTransactionResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sCommitFileTransactionResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = CommitFileTransactionResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = CommitFileTransactionResponseValidationError{}
+
+// Validate checks the field values on RollbackFileTransactionRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *RollbackFileTransactionRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on RollbackFileTransactionRequest with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the result is a list of violation errors wrapped in
+// RollbackFileTransactionRequestMultiError, or nil if none found.
+func (m *RollbackFileTransactionRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *RollbackFileTransactionRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if !_RollbackFileTransactionRequest_InstanceId_Pattern.MatchString(m.GetInstanceId()) {
+		err := RollbackFileTransactionRequestValidationError{
+			field:  "InstanceId",
+			reason: "value does not match regex pattern \"^[_\\\\-a-zA-Z0-9]+$\"",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if utf8.RuneCountInString(m.GetTxnId()) < 1 {
+		err := RollbackFileTransactionRequestValidationError{
+			field:  "TxnId",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if len(errors) > 0 {
+		return RollbackFileTransactionRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// RollbackFileTransactionRequestMultiError is an error wrapping multiple
+// validation errors returned by RollbackFileTransactionRequest.ValidateAll()
+// if the designated constraints aren't met.
+type RollbackFileTransactionRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m RollbackFileTransactionRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m RollbackFileTransactionRequestMultiError) AllErrors() []error { return m }
+
+// RollbackFileTransactionRequestValidationError is the validation error
+// returned by RollbackFileTransactionRequest.Validate if the designated
+// constraints aren't met.
+type RollbackFileTransactionRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e RollbackFileTransactionRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e RollbackFileTransactionRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e RollbackFileTransactionRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e RollbackFileTransactionRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e RollbackFileTransactionRequestValidationError) ErrorName() string {
+	return "RollbackFileTransactionRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e RollbackFileTransactionRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sRollbackFileTransactionRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = RollbackFileTransactionRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = RollbackFileTransactionRequestValidationError{}
+
+var _RollbackFileTransactionRequest_InstanceId_Pattern = regexp.MustCompile("^[_\\-a-zA-Z0-9]+$")
+
+// Validate checks the field values on RollbackFileTransactionResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *RollbackFileTransactionResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on RollbackFileTransactionResponse with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the result is a list of violation errors wrapped in
+// RollbackFileTransactionResponseMultiError, or nil if none found.
+func (m *RollbackFileTransactionResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *RollbackFileTransactionResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if len(errors) > 0 {
+		return RollbackFileTransactionResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// RollbackFileTransactionResponseMultiError is an error wrapping multiple
+// validation errors returned by RollbackFileTransactionResponse.ValidateAll()
+// if the designated constraints aren't met.
+type RollbackFileTransactionResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m RollbackFileTransactionResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m RollbackFileTransactionResponseMultiError) AllErrors() []error { return m }
+
+// RollbackFileTransactionResponseValidationError is the validation error
+// returned by RollbackFileTransactionResponse.Validate if the designated
+// constraints aren't met.
+type RollbackFileTransactionResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e RollbackFileTransactionResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e RollbackFileTransactionResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e RollbackFileTransactionResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e RollbackFileTransactionResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e RollbackFileTransactionResponseValidationError) ErrorName() string {
+	return "RollbackFileTransactionResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e RollbackFileTransactionResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sRollbackFileTransactionResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = RollbackFileTransactionResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = RollbackFileTransactionResponseValidationError{}
+
 // Validate checks the field values on RenameFileRequest with the rules defined
 // in the proto definition for this message. If any rules are violated, the
 // first error encountered is returned, or nil if there are no violations.

@@ -109,6 +109,31 @@ service RuntimeService {
     };
   }
 
+
+  // BeginFileTransaction stages multiple files in a temporary area as part of a new transaction and returns a transaction ID.
+  rpc BeginFileTransaction(BeginFileTransactionRequest) returns (BeginFileTransactionResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/files/transaction/begin",
+      body: "*"
+    };
+  }
+
+  // CommitFileTransaction commits all staged files for the given transaction ID to their final locations atomically.
+  rpc CommitFileTransaction(CommitFileTransactionRequest) returns (CommitFileTransactionResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/files/transaction/commit",
+      body: "*"
+    };
+  }
+
+  // RollbackFileTransaction discards all staged files for the given transaction ID.
+  rpc RollbackFileTransaction(RollbackFileTransactionRequest) returns (RollbackFileTransactionResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/files/transaction/rollback",
+      body: "*"
+    };
+  }
+
   // ListExamples lists all the examples embedded into binary
   rpc ListExamples(ListExamplesRequest) returns (ListExamplesResponse) {
     option (google.api.http) = {get: "/v1/examples"};
@@ -488,6 +513,43 @@ message DeleteFileRequest {
 
 // Response message for RuntimeService.DeleteFile
 message DeleteFileResponse {}
+
+// Request message for RuntimeService.BeginFileTransaction
+message BeginFileTransactionRequest {
+  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+  repeated StagedFile files = 2;
+}
+
+// StagedFile represents a file to be staged in a transaction.
+message StagedFile {
+  string path = 1 [(validate.rules).string.min_len = 1];
+  string content = 2;
+}
+
+// Response message for RuntimeService.BeginFileTransaction
+message BeginFileTransactionResponse {
+  string txn_id = 1;
+}
+
+// Request message for RuntimeService.CommitFileTransaction
+message CommitFileTransactionRequest {
+  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+  string txn_id = 2 [(validate.rules).string.min_len = 1];
+}
+
+// Response message for RuntimeService.CommitFileTransaction
+message CommitFileTransactionResponse {}
+
+// Request message for RuntimeService.RollbackFileTransaction
+message RollbackFileTransactionRequest {
+  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+  string txn_id = 2 [(validate.rules).string.min_len = 1];
+}
+
+// Response message for RuntimeService.RollbackFileTransaction
+message RollbackFileTransactionResponse {}
+
+
 
 // Request message for RuntimeService.RenameFile
 message RenameFileRequest {

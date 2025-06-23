@@ -143,6 +143,9 @@ type connection struct {
 	watcherCount int
 	watcher      *watcher
 
+	txnMu sync.Mutex
+	txns  map[drivers.FileTransactionID]*fileTxn
+
 	ignorePaths []string
 }
 

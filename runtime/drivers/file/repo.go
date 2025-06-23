@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/bmatcuk/doublestar/v4"
+	"github.com/google/uuid"
 	"github.com/rilldata/rill/runtime/drivers"
 )
 
@@ -217,4 +218,104 @@ func (c *connection) Watch(ctx context.Context, cb drivers.WatchCallback) error 
 	}()
 
 	return c.watcher.subscribe(ctx, cb)
+}
+
+type fileTxn struct {
+	tmpDir string
+	files  []drivers.StagedFile
+}
+
+// BeginFileTransaction stages multiple files in a temporary area as part of a new transaction and returns a transaction ID.
+func (c *connection) BeginFileTransaction(ctx context.Context, files []drivers.StagedFile) (drivers.FileTransactionID, error) {
+	c.txnMu.Lock()
+	defer c.txnMu.Unlock()
+
+	if c.txns == nil {
+		c.txns = make(map[drivers.FileTransactionID]*fileTxn)
+	}
+
+	txnID := drivers.FileTransactionID(uuid.New().String())
+	tmpDir := filepath.Join(c.root, ".txn", "filetxn-"+string(txnID))
+	if err := os.MkdirAll(tmpDir, os.ModePerm); err != nil {
+		return "", err
+	}
+
+	for _, f := range files {
+		stagedPath := filepath.Join(tmpDir, f.Path)
+		if err := os.MkdirAll(filepath.Dir(stagedPath), os.ModePerm); err != nil {
+			return "", err
+		}
+		out, err := os.Create(stagedPath)
+		if err != nil {
+			return "", err
+		}
+		if _, err := io.Copy(out, f.Reader); err != nil {
+			out.Close()
+			return "", err
+		}
+		out.Close()
+	}
+
+	c.txns[txnID] = &fileTxn{
+		tmpDir: tmpDir,
+		files:  files,
+	}
+	return txnID, nil
+}
+
+// CommitFileTransaction commits all staged files for the given transaction ID to their final locations atomically.
+func (c *connection) CommitFileTransaction(ctx context.Context, txnID drivers.FileTransactionID) error {
+	c.txnMu.Lock()
+	defer c.txnMu.Unlock()
+	if c.txns == nil {
+		return fmt.Errorf("transaction not found: %s", txnID)
+	}
+	txn, ok := c.txns[txnID]
+	if !ok {
+		return fmt.Errorf("transaction not found: %s", txnID)
+	}
+
+	// Commit each file from the staging dir to the repo
+	for _, file := range txn.files {
+		stagedPath := filepath.Join(txn.tmpDir, file.Path)
+		finalPath := filepath.Join(c.root, file.Path)
+
+		// Create parent directory if needed
+		if err := os.MkdirAll(filepath.Dir(finalPath), os.ModePerm); err != nil {
+			return fmt.Errorf("failed to create parent directory for %s: %w", finalPath, err)
+		}
+
+		// Move the file atomically
+		if err := os.Rename(stagedPath, finalPath); err != nil {
+			return fmt.Errorf("failed to move %s to %s: %w", stagedPath, finalPath, err)
+		}
+	}
+
+	// Clean up the temporary directory
+	if err := os.RemoveAll(txn.tmpDir); err != nil {
+		return fmt.Errorf("failed to remove temp dir: %w", err)
+	}
+
+	delete(c.txns, txnID)
+	return nil
+}
+
+// RollbackFileTransaction discards all staged files for the given transaction ID.
+func (c *connection) RollbackFileTransaction(ctx context.Context, txnID drivers.FileTransactionID) error {
+	c.txnMu.Lock()
+	defer c.txnMu.Unlock()
+	if c.txns == nil {
+		return fmt.Errorf("transaction not found: %s", txnID)
+	}
+	txn, ok := c.txns[txnID]
+	if !ok {
+		return fmt.Errorf("transaction not found: %s", txnID)
+	}
+	// Clean up the temporary directory
+	if err := os.RemoveAll(txn.tmpDir); err != nil {
+		return fmt.Errorf("failed to remove temp dir: %w", err)
+	}
+
+	delete(c.txns, txnID)
+	return nil
 }

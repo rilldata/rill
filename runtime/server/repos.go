@@ -263,6 +263,78 @@ func (s *Server) RenameFile(ctx context.Context, req *runtimev1.RenameFileReques
 	return &runtimev1.RenameFileResponse{}, nil
 }
 
+// BeginFileTransaction implements RuntimeService.
+func (s *Server) BeginFileTransaction(ctx context.Context, req *runtimev1.BeginFileTransactionRequest) (*runtimev1.BeginFileTransactionResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.instance_id", req.InstanceId),
+	)
+
+	s.addInstanceRequestAttributes(ctx, req.InstanceId)
+
+	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.EditRepo) {
+		return nil, ErrForbidden
+	}
+
+	var files []drivers.StagedFile
+	for _, f := range req.Files {
+		files = append(files, drivers.StagedFile{
+			Path:   f.Path,
+			Reader: strings.NewReader(f.Content),
+		})
+	}
+
+	txnID, err := s.runtime.BeginFileTransaction(ctx, req.InstanceId, files)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	return &runtimev1.BeginFileTransactionResponse{
+		TxnId: string(txnID),
+	}, nil
+}
+
+// CommitFileTransaction implements RuntimeService.
+func (s *Server) CommitFileTransaction(ctx context.Context, req *runtimev1.CommitFileTransactionRequest) (*runtimev1.CommitFileTransactionResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.instance_id", req.InstanceId),
+		attribute.String("args.txn_id", req.TxnId),
+	)
+
+	s.addInstanceRequestAttributes(ctx, req.InstanceId)
+
+	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.EditRepo) {
+		return nil, ErrForbidden
+	}
+
+	err := s.runtime.CommitFileTransaction(ctx, req.InstanceId, drivers.FileTransactionID(req.TxnId))
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	return &runtimev1.CommitFileTransactionResponse{}, nil
+}
+
+// RollbackFileTransaction implements RuntimeService.
+func (s *Server) RollbackFileTransaction(ctx context.Context, req *runtimev1.RollbackFileTransactionRequest) (*runtimev1.RollbackFileTransactionResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.instance_id", req.InstanceId),
+		attribute.String("args.txn_id", req.TxnId),
+	)
+
+	s.addInstanceRequestAttributes(ctx, req.InstanceId)
+
+	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.EditRepo) {
+		return nil, ErrForbidden
+	}
+
+	err := s.runtime.RollbackFileTransaction(ctx, req.InstanceId, drivers.FileTransactionID(req.TxnId))
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	return &runtimev1.RollbackFileTransactionResponse{}, nil
+}
+
 // UploadMultipartFile implements the same functionality as PutFile, but for multipart HTTP upload.
 // It's mounted only on as a REST API and enables upload of large files (such as data files).
 func (s *Server) UploadMultipartFile(w http.ResponseWriter, req *http.Request) {

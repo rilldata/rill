@@ -216,3 +216,15 @@ func (h *Handle) Sync(ctx context.Context) error {
 func (h *Handle) Watch(ctx context.Context, callback drivers.WatchCallback) error {
 	return fmt.Errorf("watch operation is unsupported")
 }
+
+func (h *Handle) BeginFileTransaction(ctx context.Context, files []drivers.StagedFile) (drivers.FileTransactionID, error) {
+	return "", fmt.Errorf("BeginFileTransaction operation is unsupported")
+}
+
+func (h *Handle) CommitFileTransaction(ctx context.Context, txnID drivers.FileTransactionID) error {
+	return fmt.Errorf("CommitFileTransaction operation is unsupported")
+}
+
+func (h *Handle) RollbackFileTransaction(ctx context.Context, txnID drivers.FileTransactionID) error {
+	return fmt.Errorf("RollbackFileTransaction operation is unsupported")
+}
