@@ -3,10 +3,15 @@
   import { isMergeConflictError } from "@rilldata/web-common/features/project/github-utils.ts";
   import MergeConflictResolutionDialog from "@rilldata/web-common/features/project/MergeConflictResolutionDialog.svelte";
   import ProjectContainsRemoteChangesDialog from "@rilldata/web-common/features/project/ProjectContainsRemoteChangesDialog.svelte";
+  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
+  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
+  import type { GitStatusResponse } from "@rilldata/web-common/proto/gen/rill/local/v1/api_pb.ts";
   import {
     createLocalServiceGitPull,
     createLocalServiceGitStatus,
+    getLocalServiceGitStatusQueryKey,
   } from "@rilldata/web-common/runtime-client/local-service";
+  import { onMount } from "svelte";
 
   const gitStatusQuery = createLocalServiceGitStatus();
   const gitPullMutation = createLocalServiceGitPull();
@@ -15,13 +20,17 @@
   let mergeConflictResolutionDialog = false;
 
   $: if ($gitStatusQuery.data) {
-    remoteChangeDialog = $gitStatusQuery.data.remoteCommits > 0;
+    processGithubStatus($gitStatusQuery.data);
   }
 
   $: ({ isPending: githubPullPending, error: githubPullError } =
     $gitPullMutation);
   let errorFromGitCommand: ConnectError | null = null;
   $: error = githubPullError ?? errorFromGitCommand;
+
+  function processGithubStatus(status: GitStatusResponse) {
+    remoteChangeDialog = status.remoteCommits > 0;
+  }
 
   async function handleFetchRemoteCommits() {
     if ($gitStatusQuery.data!.localCommits > 0) {
@@ -38,8 +47,13 @@
     });
     // TODO: download diff once API is ready
 
+    void queryClient.invalidateQueries({
+      queryKey: getLocalServiceGitStatusQueryKey(),
+    });
+
+    remoteChangeDialog = false;
+
     if (!resp.output) {
-      remoteChangeDialog = false;
       mergeConflictResolutionDialog = false;
       return;
     }
@@ -61,6 +75,10 @@
     });
     // TODO: download diff once API is ready
 
+    void queryClient.invalidateQueries({
+      queryKey: getLocalServiceGitStatusQueryKey(),
+    });
+
     if (!resp.output) {
       remoteChangeDialog = false;
       mergeConflictResolutionDialog = false;
@@ -71,6 +89,16 @@
       message: resp.output,
     } as ConnectError;
   }
+
+  onMount(() => {
+    const unsub = eventBus.on("check-remote-project-status", () => {
+      if ($gitStatusQuery.data) {
+        processGithubStatus($gitStatusQuery.data);
+      }
+    });
+
+    return unsub;
+  });
 </script>
 
 <ProjectContainsRemoteChangesDialog

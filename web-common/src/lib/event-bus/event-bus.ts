@@ -58,6 +58,7 @@ export interface Events {
   "command-click": null;
   click: null;
   "shift-command-click": null;
+  "check-remote-project-status": null;
 }
 
 type T = keyof Events;
