@@ -1753,9 +1753,12 @@ export interface V1QueryBatchResponse {
   error?: string;
 }
 
+export type V1QueryResolverResponseMeta = { [key: string]: unknown };
+
 export type V1QueryResolverResponseDataItem = { [key: string]: unknown };
 
 export interface V1QueryResolverResponse {
+  meta?: V1QueryResolverResponseMeta;
   schema?: V1StructType;
   data?: V1QueryResolverResponseDataItem[];
 }
