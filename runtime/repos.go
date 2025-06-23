@@ -100,3 +100,48 @@ func (r *Runtime) RenameFile(ctx context.Context, instanceID, fromPath, toPath s
 
 	return nil
 }
+
+func (r *Runtime) BeginFileTransaction(ctx context.Context, instanceID string, files []drivers.StagedFile) (drivers.FileTransactionID, error) {
+	repo, release, err := r.Repo(ctx, instanceID)
+	if err != nil {
+		return "", err
+	}
+	defer release()
+
+	txnID, err := repo.BeginFileTransaction(ctx, files)
+	if err != nil {
+		return "", err
+	}
+
+	return txnID, nil
+}
+
+func (r *Runtime) CommitFileTransaction(ctx context.Context, instanceID string, txnID drivers.FileTransactionID) error {
+	repo, release, err := r.Repo(ctx, instanceID)
+	if err != nil {
+		return err
+	}
+	defer release()
+
+	err = repo.CommitFileTransaction(ctx, txnID)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (r *Runtime) RollbackFileTransaction(ctx context.Context, instanceID string, txnID drivers.FileTransactionID) error {
+	repo, release, err := r.Repo(ctx, instanceID)
+	if err != nil {
+		return err
+	}
+	defer release()
+
+	err = repo.RollbackFileTransaction(ctx, txnID)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}

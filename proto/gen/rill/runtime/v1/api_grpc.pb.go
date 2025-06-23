@@ -34,6 +34,9 @@ const (
 	RuntimeService_CreateDirectory_FullMethodName         = "/rill.runtime.v1.RuntimeService/CreateDirectory"
 	RuntimeService_DeleteFile_FullMethodName              = "/rill.runtime.v1.RuntimeService/DeleteFile"
 	RuntimeService_RenameFile_FullMethodName              = "/rill.runtime.v1.RuntimeService/RenameFile"
+	RuntimeService_BeginFileTransaction_FullMethodName    = "/rill.runtime.v1.RuntimeService/BeginFileTransaction"
+	RuntimeService_CommitFileTransaction_FullMethodName   = "/rill.runtime.v1.RuntimeService/CommitFileTransaction"
+	RuntimeService_RollbackFileTransaction_FullMethodName = "/rill.runtime.v1.RuntimeService/RollbackFileTransaction"
 	RuntimeService_ListExamples_FullMethodName            = "/rill.runtime.v1.RuntimeService/ListExamples"
 	RuntimeService_UnpackExample_FullMethodName           = "/rill.runtime.v1.RuntimeService/UnpackExample"
 	RuntimeService_UnpackEmpty_FullMethodName             = "/rill.runtime.v1.RuntimeService/UnpackEmpty"
@@ -94,6 +97,12 @@ type RuntimeServiceClient interface {
 	DeleteFile(ctx context.Context, in *DeleteFileRequest, opts ...grpc.CallOption) (*DeleteFileResponse, error)
 	// RenameFile renames a file in a repo
 	RenameFile(ctx context.Context, in *RenameFileRequest, opts ...grpc.CallOption) (*RenameFileResponse, error)
+	// BeginFileTransaction stages multiple files in a temporary area as part of a new transaction and returns a transaction ID.
+	BeginFileTransaction(ctx context.Context, in *BeginFileTransactionRequest, opts ...grpc.CallOption) (*BeginFileTransactionResponse, error)
+	// CommitFileTransaction commits all staged files for the given transaction ID to their final locations atomically.
+	CommitFileTransaction(ctx context.Context, in *CommitFileTransactionRequest, opts ...grpc.CallOption) (*CommitFileTransactionResponse, error)
+	// RollbackFileTransaction discards all staged files for the given transaction ID.
+	RollbackFileTransaction(ctx context.Context, in *RollbackFileTransactionRequest, opts ...grpc.CallOption) (*RollbackFileTransactionResponse, error)
 	// ListExamples lists all the examples embedded into binary
 	ListExamples(ctx context.Context, in *ListExamplesRequest, opts ...grpc.CallOption) (*ListExamplesResponse, error)
 	// UnpackExample unpacks an example project
@@ -300,6 +309,36 @@ func (c *runtimeServiceClient) RenameFile(ctx context.Context, in *RenameFileReq
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(RenameFileResponse)
 	err := c.cc.Invoke(ctx, RuntimeService_RenameFile_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *runtimeServiceClient) BeginFileTransaction(ctx context.Context, in *BeginFileTransactionRequest, opts ...grpc.CallOption) (*BeginFileTransactionResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(BeginFileTransactionResponse)
+	err := c.cc.Invoke(ctx, RuntimeService_BeginFileTransaction_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *runtimeServiceClient) CommitFileTransaction(ctx context.Context, in *CommitFileTransactionRequest, opts ...grpc.CallOption) (*CommitFileTransactionResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CommitFileTransactionResponse)
+	err := c.cc.Invoke(ctx, RuntimeService_CommitFileTransaction_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *runtimeServiceClient) RollbackFileTransaction(ctx context.Context, in *RollbackFileTransactionRequest, opts ...grpc.CallOption) (*RollbackFileTransactionResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RollbackFileTransactionResponse)
+	err := c.cc.Invoke(ctx, RuntimeService_RollbackFileTransaction_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -562,6 +601,12 @@ type RuntimeServiceServer interface {
 	DeleteFile(context.Context, *DeleteFileRequest) (*DeleteFileResponse, error)
 	// RenameFile renames a file in a repo
 	RenameFile(context.Context, *RenameFileRequest) (*RenameFileResponse, error)
+	// BeginFileTransaction stages multiple files in a temporary area as part of a new transaction and returns a transaction ID.
+	BeginFileTransaction(context.Context, *BeginFileTransactionRequest) (*BeginFileTransactionResponse, error)
+	// CommitFileTransaction commits all staged files for the given transaction ID to their final locations atomically.
+	CommitFileTransaction(context.Context, *CommitFileTransactionRequest) (*CommitFileTransactionResponse, error)
+	// RollbackFileTransaction discards all staged files for the given transaction ID.
+	RollbackFileTransaction(context.Context, *RollbackFileTransactionRequest) (*RollbackFileTransactionResponse, error)
 	// ListExamples lists all the examples embedded into binary
 	ListExamples(context.Context, *ListExamplesRequest) (*ListExamplesResponse, error)
 	// UnpackExample unpacks an example project
@@ -659,6 +704,15 @@ func (UnimplementedRuntimeServiceServer) DeleteFile(context.Context, *DeleteFile
 }
 func (UnimplementedRuntimeServiceServer) RenameFile(context.Context, *RenameFileRequest) (*RenameFileResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RenameFile not implemented")
+}
+func (UnimplementedRuntimeServiceServer) BeginFileTransaction(context.Context, *BeginFileTransactionRequest) (*BeginFileTransactionResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method BeginFileTransaction not implemented")
+}
+func (UnimplementedRuntimeServiceServer) CommitFileTransaction(context.Context, *CommitFileTransactionRequest) (*CommitFileTransactionResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CommitFileTransaction not implemented")
+}
+func (UnimplementedRuntimeServiceServer) RollbackFileTransaction(context.Context, *RollbackFileTransactionRequest) (*RollbackFileTransactionResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RollbackFileTransaction not implemented")
 }
 func (UnimplementedRuntimeServiceServer) ListExamples(context.Context, *ListExamplesRequest) (*ListExamplesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListExamples not implemented")
@@ -1000,6 +1054,60 @@ func _RuntimeService_RenameFile_Handler(srv interface{}, ctx context.Context, de
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(RuntimeServiceServer).RenameFile(ctx, req.(*RenameFileRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RuntimeService_BeginFileTransaction_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(BeginFileTransactionRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeServiceServer).BeginFileTransaction(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RuntimeService_BeginFileTransaction_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeServiceServer).BeginFileTransaction(ctx, req.(*BeginFileTransactionRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RuntimeService_CommitFileTransaction_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CommitFileTransactionRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeServiceServer).CommitFileTransaction(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RuntimeService_CommitFileTransaction_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeServiceServer).CommitFileTransaction(ctx, req.(*CommitFileTransactionRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RuntimeService_RollbackFileTransaction_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RollbackFileTransactionRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeServiceServer).RollbackFileTransaction(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RuntimeService_RollbackFileTransaction_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeServiceServer).RollbackFileTransaction(ctx, req.(*RollbackFileTransactionRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -1412,6 +1520,18 @@ var RuntimeService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "RenameFile",
 			Handler:    _RuntimeService_RenameFile_Handler,
+		},
+		{
+			MethodName: "BeginFileTransaction",
+			Handler:    _RuntimeService_BeginFileTransaction_Handler,
+		},
+		{
+			MethodName: "CommitFileTransaction",
+			Handler:    _RuntimeService_CommitFileTransaction_Handler,
+		},
+		{
+			MethodName: "RollbackFileTransaction",
+			Handler:    _RuntimeService_RollbackFileTransaction_Handler,
 		},
 		{
 			MethodName: "ListExamples",

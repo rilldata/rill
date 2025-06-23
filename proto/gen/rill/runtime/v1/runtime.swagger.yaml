@@ -742,6 +742,96 @@ paths:
             title: Request message for RuntimeService.RenameFile
       tags:
         - RuntimeService
+  /v1/instances/{instanceId}/files/transaction/begin:
+    post:
+      summary: BeginFileTransaction stages multiple files in a temporary area as part of a new transaction and returns a transaction ID.
+      operationId: RuntimeService_BeginFileTransaction
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1BeginFileTransactionResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              files:
+                type: array
+                items:
+                  type: object
+                  $ref: '#/definitions/v1StagedFile'
+            title: Request message for RuntimeService.BeginFileTransaction
+      tags:
+        - RuntimeService
+  /v1/instances/{instanceId}/files/transaction/commit:
+    post:
+      summary: CommitFileTransaction commits all staged files for the given transaction ID to their final locations atomically.
+      operationId: RuntimeService_CommitFileTransaction
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1CommitFileTransactionResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              txnId:
+                type: string
+            title: Request message for RuntimeService.CommitFileTransaction
+      tags:
+        - RuntimeService
+  /v1/instances/{instanceId}/files/transaction/rollback:
+    post:
+      summary: RollbackFileTransaction discards all staged files for the given transaction ID.
+      operationId: RuntimeService_RollbackFileTransaction
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1RollbackFileTransactionResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              txnId:
+                type: string
+            title: Request message for RuntimeService.RollbackFileTransaction
+      tags:
+        - RuntimeService
   /v1/instances/{instanceId}/files/unpack-empty:
     post:
       summary: UnpackEmpty unpacks an empty project
@@ -3522,6 +3612,12 @@ definitions:
       - ASSERTION_STATUS_FAIL
       - ASSERTION_STATUS_ERROR
     default: ASSERTION_STATUS_UNSPECIFIED
+  v1BeginFileTransactionResponse:
+    type: object
+    properties:
+      txnId:
+        type: string
+    title: Response message for RuntimeService.BeginFileTransaction
   v1BigQueryListDatasetsResponse:
     type: object
     properties:
@@ -4001,6 +4097,9 @@ definitions:
     properties:
       categoricalSummary:
         $ref: '#/definitions/v1CategoricalSummary'
+  v1CommitFileTransactionResponse:
+    type: object
+    title: Response message for RuntimeService.CommitFileTransaction
   v1Component:
     type: object
     properties:
@@ -6236,6 +6335,9 @@ definitions:
         type: string
       name:
         type: string
+  v1RollbackFileTransactionResponse:
+    type: object
+    title: Response message for RuntimeService.RollbackFileTransaction
   v1S3GetBucketMetadataResponse:
     type: object
     properties:
@@ -6374,6 +6476,14 @@ definitions:
       refreshedOn:
         type: string
         format: date-time
+  v1StagedFile:
+    type: object
+    properties:
+      path:
+        type: string
+      content:
+        type: string
+    description: StagedFile represents a file to be staged in a transaction.
   v1StringListValue:
     type: object
     properties:

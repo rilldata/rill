@@ -11,6 +11,15 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 )
 
+// FileTransactionID is a unique identifier for a file transaction.
+type FileTransactionID string
+
+// StagedFile represents a file to be staged in a transaction.
+type StagedFile struct {
+	Path   string
+	Reader io.Reader
+}
+
 // RepoStore is implemented by drivers capable of storing code artifacts.
 // It mirrors a file system, but may be virtualized by a database for non-local deployments.
 type RepoStore interface {
@@ -29,6 +38,13 @@ type RepoStore interface {
 	Delete(ctx context.Context, path string, force bool) error
 	Sync(ctx context.Context) error
 	Watch(ctx context.Context, cb WatchCallback) error
+
+	// BeginFileTransaction stages multiple files in a temporary area as part of a new transaction and returns a transaction ID.
+	BeginFileTransaction(ctx context.Context, files []StagedFile) (FileTransactionID, error)
+	// CommitFileTransaction commits all staged files for the given transaction ID to their final locations atomically.
+	CommitFileTransaction(ctx context.Context, txnID FileTransactionID) error
+	// RollbackFileTransaction discards all staged files for the given transaction ID.
+	RollbackFileTransaction(ctx context.Context, txnID FileTransactionID) error
 }
 
 type WatchCallback func(event []WatchEvent)

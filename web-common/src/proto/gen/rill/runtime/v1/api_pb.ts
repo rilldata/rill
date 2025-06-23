@@ -1729,6 +1729,291 @@ export class DeleteFileResponse extends Message<DeleteFileResponse> {
 }
 
 /**
+ * Request message for RuntimeService.BeginFileTransaction
+ *
+ * @generated from message rill.runtime.v1.BeginFileTransactionRequest
+ */
+export class BeginFileTransactionRequest extends Message<BeginFileTransactionRequest> {
+  /**
+   * @generated from field: string instance_id = 1;
+   */
+  instanceId = "";
+
+  /**
+   * @generated from field: repeated rill.runtime.v1.StagedFile files = 2;
+   */
+  files: StagedFile[] = [];
+
+  constructor(data?: PartialMessage<BeginFileTransactionRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.BeginFileTransactionRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "files", kind: "message", T: StagedFile, repeated: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): BeginFileTransactionRequest {
+    return new BeginFileTransactionRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): BeginFileTransactionRequest {
+    return new BeginFileTransactionRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): BeginFileTransactionRequest {
+    return new BeginFileTransactionRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: BeginFileTransactionRequest | PlainMessage<BeginFileTransactionRequest> | undefined, b: BeginFileTransactionRequest | PlainMessage<BeginFileTransactionRequest> | undefined): boolean {
+    return proto3.util.equals(BeginFileTransactionRequest, a, b);
+  }
+}
+
+/**
+ * StagedFile represents a file to be staged in a transaction.
+ *
+ * @generated from message rill.runtime.v1.StagedFile
+ */
+export class StagedFile extends Message<StagedFile> {
+  /**
+   * @generated from field: string path = 1;
+   */
+  path = "";
+
+  /**
+   * @generated from field: string content = 2;
+   */
+  content = "";
+
+  constructor(data?: PartialMessage<StagedFile>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.StagedFile";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "path", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "content", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): StagedFile {
+    return new StagedFile().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): StagedFile {
+    return new StagedFile().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): StagedFile {
+    return new StagedFile().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: StagedFile | PlainMessage<StagedFile> | undefined, b: StagedFile | PlainMessage<StagedFile> | undefined): boolean {
+    return proto3.util.equals(StagedFile, a, b);
+  }
+}
+
+/**
+ * Response message for RuntimeService.BeginFileTransaction
+ *
+ * @generated from message rill.runtime.v1.BeginFileTransactionResponse
+ */
+export class BeginFileTransactionResponse extends Message<BeginFileTransactionResponse> {
+  /**
+   * @generated from field: string txn_id = 1;
+   */
+  txnId = "";
+
+  constructor(data?: PartialMessage<BeginFileTransactionResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.BeginFileTransactionResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "txn_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): BeginFileTransactionResponse {
+    return new BeginFileTransactionResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): BeginFileTransactionResponse {
+    return new BeginFileTransactionResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): BeginFileTransactionResponse {
+    return new BeginFileTransactionResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: BeginFileTransactionResponse | PlainMessage<BeginFileTransactionResponse> | undefined, b: BeginFileTransactionResponse | PlainMessage<BeginFileTransactionResponse> | undefined): boolean {
+    return proto3.util.equals(BeginFileTransactionResponse, a, b);
+  }
+}
+
+/**
+ * Request message for RuntimeService.CommitFileTransaction
+ *
+ * @generated from message rill.runtime.v1.CommitFileTransactionRequest
+ */
+export class CommitFileTransactionRequest extends Message<CommitFileTransactionRequest> {
+  /**
+   * @generated from field: string instance_id = 1;
+   */
+  instanceId = "";
+
+  /**
+   * @generated from field: string txn_id = 2;
+   */
+  txnId = "";
+
+  constructor(data?: PartialMessage<CommitFileTransactionRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.CommitFileTransactionRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "txn_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CommitFileTransactionRequest {
+    return new CommitFileTransactionRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): CommitFileTransactionRequest {
+    return new CommitFileTransactionRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): CommitFileTransactionRequest {
+    return new CommitFileTransactionRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: CommitFileTransactionRequest | PlainMessage<CommitFileTransactionRequest> | undefined, b: CommitFileTransactionRequest | PlainMessage<CommitFileTransactionRequest> | undefined): boolean {
+    return proto3.util.equals(CommitFileTransactionRequest, a, b);
+  }
+}
+
+/**
+ * Response message for RuntimeService.CommitFileTransaction
+ *
+ * @generated from message rill.runtime.v1.CommitFileTransactionResponse
+ */
+export class CommitFileTransactionResponse extends Message<CommitFileTransactionResponse> {
+  constructor(data?: PartialMessage<CommitFileTransactionResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.CommitFileTransactionResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CommitFileTransactionResponse {
+    return new CommitFileTransactionResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): CommitFileTransactionResponse {
+    return new CommitFileTransactionResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): CommitFileTransactionResponse {
+    return new CommitFileTransactionResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: CommitFileTransactionResponse | PlainMessage<CommitFileTransactionResponse> | undefined, b: CommitFileTransactionResponse | PlainMessage<CommitFileTransactionResponse> | undefined): boolean {
+    return proto3.util.equals(CommitFileTransactionResponse, a, b);
+  }
+}
+
+/**
+ * Request message for RuntimeService.RollbackFileTransaction
+ *
+ * @generated from message rill.runtime.v1.RollbackFileTransactionRequest
+ */
+export class RollbackFileTransactionRequest extends Message<RollbackFileTransactionRequest> {
+  /**
+   * @generated from field: string instance_id = 1;
+   */
+  instanceId = "";
+
+  /**
+   * @generated from field: string txn_id = 2;
+   */
+  txnId = "";
+
+  constructor(data?: PartialMessage<RollbackFileTransactionRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.RollbackFileTransactionRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "txn_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): RollbackFileTransactionRequest {
+    return new RollbackFileTransactionRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): RollbackFileTransactionRequest {
+    return new RollbackFileTransactionRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): RollbackFileTransactionRequest {
+    return new RollbackFileTransactionRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: RollbackFileTransactionRequest | PlainMessage<RollbackFileTransactionRequest> | undefined, b: RollbackFileTransactionRequest | PlainMessage<RollbackFileTransactionRequest> | undefined): boolean {
+    return proto3.util.equals(RollbackFileTransactionRequest, a, b);
+  }
+}
+
+/**
+ * Response message for RuntimeService.RollbackFileTransaction
+ *
+ * @generated from message rill.runtime.v1.RollbackFileTransactionResponse
+ */
+export class RollbackFileTransactionResponse extends Message<RollbackFileTransactionResponse> {
+  constructor(data?: PartialMessage<RollbackFileTransactionResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.RollbackFileTransactionResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): RollbackFileTransactionResponse {
+    return new RollbackFileTransactionResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): RollbackFileTransactionResponse {
+    return new RollbackFileTransactionResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): RollbackFileTransactionResponse {
+    return new RollbackFileTransactionResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: RollbackFileTransactionResponse | PlainMessage<RollbackFileTransactionResponse> | undefined, b: RollbackFileTransactionResponse | PlainMessage<RollbackFileTransactionResponse> | undefined): boolean {
+    return proto3.util.equals(RollbackFileTransactionResponse, a, b);
+  }
+}
+
+/**
  * Request message for RuntimeService.RenameFile
  *
  * @generated from message rill.runtime.v1.RenameFileRequest
