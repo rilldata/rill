@@ -130,8 +130,14 @@ func setupTestRepository(t *testing.T) (string, string) {
 	}
 
 	cmd = exec.Command("git", "-C", tempDir, "commit", "-m", "initial commit")
-	err = cmd.Run()
-	require.NoError(t, err, "failed to commit files")
+	_, err = cmd.Output()
+	if err != nil {
+		var execErr *exec.ExitError
+		if errors.As(err, &execErr) {
+			require.NoError(t, err, "failed to commit files: "+fmt.Sprintf(": %s", execErr.Stderr))
+		}
+		require.NoError(t, err, "failed to commit files")
+	}
 
 	// Push the initial commit to the remote repository
 	cmd = exec.Command("git", "-C", tempDir, "push", "-u", "origin", "HEAD")
