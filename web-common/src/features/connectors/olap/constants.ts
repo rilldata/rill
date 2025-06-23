@@ -3,7 +3,7 @@ export const CLICKHOUSE_DEFAULTS = {
     host: { value: "", placeholder: "your-instance.clickhouse.cloud" },
     port: { value: "9000", placeholder: "9000" },
     username: { value: "", placeholder: "default" },
-    password: { value: "", placeholder: "Your ClickHouse Cloud password" },
+    password: { value: "", placeholder: "Your ClickHouse password" },
     ssl: { value: true },
   },
   "self-hosted": {
