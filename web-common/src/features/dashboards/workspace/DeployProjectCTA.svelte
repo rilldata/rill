@@ -50,14 +50,20 @@
     if (autoOpenDeploy) {
       autoOpenDeploy = false;
       didAutoDeploy = true;
-      void goto(copyWithAdditionalArguments($page.url, {}, { deploy: true }));
+      // If it was an auto-deploy, then unset the param from the url.
+      // This prevents the user from saving/sharing a url that would open the deploy dropdown.
+      void goto(copyWithAdditionalArguments($page.url, {}, { deploy: false }));
     }
+
+    // Check user login
 
     await waitUntil(() => !get(userQuery).isLoading);
     const userResp = get(userQuery).data;
     if (!userResp?.user) {
       if (didAutoDeploy) {
-        // redirect loop breaker.
+        // Redirect loop breaker.
+        // Right now we set auto deploy during a login flow.
+        // So if it is true without a user then there was an unexpected error somewhere.
         // TODO: show error
         return;
       }
@@ -65,6 +71,8 @@
       window.location.href = `${$metadata.data!.loginUrl}?redirect=${redirectPageUrl}`;
       return;
     }
+
+    // Check matching projects
 
     await waitUntil(() => !get(matchingProjectsQuery).isLoading);
     const matchingProjects = get(matchingProjectsQuery).data?.projects;

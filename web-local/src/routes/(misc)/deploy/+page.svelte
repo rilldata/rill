@@ -41,8 +41,8 @@
       return;
     }
 
+    // User is not logged in, redirect to login url provided from metadata query.
     if (!$user.data?.user) {
-      // User is not logged in, redirect to login url provided from metadata query.
       void behaviourEvent?.fireDeployEvent(BehaviourEventAction.LoginStart);
       const u = new URL($metadata.data?.loginUrl);
       // Set the redirect to this page so that deploy resumes after a login
@@ -70,7 +70,7 @@
       const singleProject = $matchingProjects.data.projects[0];
       // Project already exists. Run a redeploy
       return goto(
-        `/deploy/redeploy?org=${singleProject.orgName}&project_id=${singleProject.id}`,
+        `/deploy/redeploy?org=${singleProject.orgName}&project=${singleProject.name}`,
       );
     } else {
       return goto(`/deploy/matching-projects`);

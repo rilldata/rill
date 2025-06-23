@@ -25,7 +25,7 @@
 <Button
   wide
   type="primary"
-  href="/deploy/redeploy?org={selectedProject?.orgName}&project_id={selectedProject?.id}"
+  href="/deploy/redeploy?org={selectedProject?.orgName}&project={selectedProject?.name}"
   disabled={!selectedProject}
 >
   Update selected project
