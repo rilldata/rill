@@ -2,10 +2,15 @@ package sqlite
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
+	"google.golang.org/protobuf/encoding/protojson"
 )
 
 type catalogStore struct {
@@ -356,4 +361,150 @@ func (c *catalogStore) UpsertInstanceHealth(ctx context.Context, h *drivers.Inst
 		ON CONFLICT(instance_id) DO UPDATE SET health_json=excluded.health_json, updated_on=excluded.updated_on;
 	`, h.InstanceID, h.HealthJSON)
 	return err
+}
+
+// ListConversations fetches all conversations in an instance for a given owner.
+func (c *catalogStore) ListConversations(ctx context.Context, ownerID string) ([]*runtimev1.Conversation, error) {
+	rows, err := c.db.QueryContext(ctx, `
+        SELECT conversation_id, owner_id, title, created_on, updated_on
+        FROM conversations
+        WHERE instance_id = ? AND owner_id = ?
+        ORDER BY updated_on DESC
+    `, c.instanceID, ownerID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var result []*runtimev1.Conversation
+	for rows.Next() {
+		var conv runtimev1.Conversation
+		var createdOn, updatedOn time.Time
+		if err := rows.Scan(&conv.Id, &conv.OwnerId, &conv.Title, &createdOn, &updatedOn); err != nil {
+			return nil, err
+		}
+
+		conv.CreatedOn = createdOn.Format(time.RFC3339)
+		conv.UpdatedOn = updatedOn.Format(time.RFC3339)
+		result = append(result, &conv)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	// Ensure we return an empty slice instead of nil
+	if result == nil {
+		result = []*runtimev1.Conversation{}
+	}
+
+	return result, nil
+}
+
+// GetConversation fetches a conversation by ID.
+func (c *catalogStore) GetConversation(ctx context.Context, conversationID string) (*runtimev1.Conversation, error) {
+	row := c.db.QueryRowContext(ctx, `
+        SELECT conversation_id, owner_id, title, created_on, updated_on
+        FROM conversations
+        WHERE instance_id = ? AND conversation_id = ?
+    `, c.instanceID, conversationID)
+	var conv runtimev1.Conversation
+	var createdOn, updatedOn time.Time
+	if err := row.Scan(&conv.Id, &conv.OwnerId, &conv.Title, &createdOn, &updatedOn); err != nil {
+		return nil, err
+	}
+
+	conv.CreatedOn = createdOn.Format(time.RFC3339)
+	conv.UpdatedOn = updatedOn.Format(time.RFC3339)
+
+	// Fetch messages for this conversation
+	messages, err := c.ListMessages(ctx, conversationID)
+	if err != nil {
+		return nil, err
+	}
+	conv.Messages = messages
+
+	return &conv, nil
+}
+
+// CreateConversation inserts a new conversation.
+func (c *catalogStore) CreateConversation(ctx context.Context, ownerID, title string) (string, error) {
+	conversationID := uuid.NewString()
+	_, err := c.db.ExecContext(ctx, `
+        INSERT INTO conversations (instance_id, conversation_id, owner_id, title, created_on, updated_on)
+        VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+    `, c.instanceID, conversationID, ownerID, title)
+	return conversationID, err
+}
+
+// ListMessages fetches all messages for a conversation, ordered by sequence number.
+func (c *catalogStore) ListMessages(ctx context.Context, conversationID string) ([]*runtimev1.Message, error) {
+	rows, err := c.db.QueryContext(ctx, `
+        SELECT message_id, role, content_json, created_on, updated_on, seq_num
+        FROM messages
+        WHERE instance_id = ? AND conversation_id = ?
+        ORDER BY seq_num ASC
+    `, c.instanceID, conversationID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var result []*runtimev1.Message
+	for rows.Next() {
+		var msg runtimev1.Message
+		var contentJSONStr string
+		var createdOn, updatedOn time.Time
+		var seqNum int
+		if err := rows.Scan(&msg.Id, &msg.Role, &contentJSONStr, &createdOn, &updatedOn, &seqNum); err != nil {
+			return nil, err
+		}
+
+		// Parse content JSON into ContentBlock array using protojson
+		if contentJSONStr != "" {
+			// Create a temporary message with the content array wrapped
+			wrappedJSON := fmt.Sprintf(`{"content": %s}`, contentJSONStr)
+			tempMsg := &runtimev1.Message{}
+			if err := protojson.Unmarshal([]byte(wrappedJSON), tempMsg); err != nil {
+				return nil, fmt.Errorf("failed to unmarshal content JSON: %w", err)
+			}
+			msg.Content = tempMsg.Content
+		}
+
+		msg.CreatedOn = createdOn.Format(time.RFC3339)
+		msg.UpdatedOn = updatedOn.Format(time.RFC3339)
+		result = append(result, &msg)
+	}
+	return result, nil
+}
+
+// AddMessage inserts a new message into a conversation.
+func (c *catalogStore) AddMessage(ctx context.Context, conversationID, role string, content []*runtimev1.ContentBlock, parentMessageID *string) (string, error) {
+	messageID := uuid.NewString()
+
+	// Serialize content to JSON using protojson
+	tempMsg := &runtimev1.Message{Content: content}
+	contentJSON, err := protojson.Marshal(tempMsg)
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal content: %w", err)
+	}
+
+	// Extract just the content field from the JSON
+	var tempObj map[string]interface{}
+	if err := json.Unmarshal(contentJSON, &tempObj); err != nil {
+		return "", fmt.Errorf("failed to parse temp JSON: %w", err)
+	}
+
+	contentOnlyJSON, err := json.Marshal(tempObj["content"])
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal content only: %w", err)
+	}
+
+	// Auto-calculate seq_num using a subquery - this is atomic and race-condition safe
+	_, err = c.db.ExecContext(ctx, `
+        INSERT INTO messages (instance_id, conversation_id, seq_num, message_id, role, content_json, created_on, updated_on)
+        VALUES (?, ?, 
+            (SELECT COALESCE(MAX(seq_num), 0) + 1 FROM messages WHERE instance_id = ? AND conversation_id = ?),
+            ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+    `, c.instanceID, conversationID, c.instanceID, conversationID, messageID, role, string(contentOnlyJSON))
+	return messageID, err
 }

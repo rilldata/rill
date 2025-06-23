@@ -14,6 +14,6 @@ func NewNoop() Client {
 	return noop{}
 }
 
-func (noop) Complete(ctx context.Context, msgs []*adminv1.CompletionMessage) (*adminv1.CompletionMessage, error) {
+func (noop) Complete(ctx context.Context, msgs []*adminv1.CompletionMessage, tools []*adminv1.Tool) (*adminv1.CompletionMessage, error) {
 	return &adminv1.CompletionMessage{}, nil
 }
