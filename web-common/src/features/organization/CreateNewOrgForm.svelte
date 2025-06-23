@@ -44,7 +44,7 @@
         if (!form.valid) return;
         const values = form.data;
 
-        const resp = await $orgCreator.mutateAsync({
+        await $orgCreator.mutateAsync({
           name: values.name,
           displayName: values.displayName,
         });
@@ -55,6 +55,7 @@
         onCreate(values.name);
       },
       onError({ result }) {
+        // Mapping for backend error to a more user friendly UI error message.
         if (
           result.error.message.includes("an org with that name already exists")
         ) {
@@ -74,7 +75,7 @@
     if (orgNameChangedDirectly) return;
     $form.name = sanitizeOrgName(displayName);
   }
-  $: updateName($form.displayName);
+  $: updateName($form.displayName!);
 </script>
 
 <form
