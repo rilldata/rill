@@ -13,6 +13,7 @@
   import RefreshCell from "./RefreshCell.svelte";
   import NameCell from "./NameCell.svelte";
   import ActionsCell from "./ActionsCell.svelte";
+  import { V1ReconcileStatus } from "@rilldata/web-common/runtime-client";
 
   export let data: V1Resource[];
   export let isReconciling: boolean;
@@ -40,7 +41,7 @@
         }),
     },
     {
-      accessorFn: (row) => row.meta.reconcileError,
+      accessorFn: (row) => row.meta.reconcileStatus,
       header: "Status",
       cell: ({ row }) =>
         flexRender(ResourceErrorMessage, {
