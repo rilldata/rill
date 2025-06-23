@@ -60,7 +60,7 @@
           disabled={!enableUpdate}
           href={deployUrl}
           target="_blank"
-          on:click={() => (open = false)}
+          onClick={() => (open = false)}
         >
           Update
         </Button>

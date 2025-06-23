@@ -41,15 +41,12 @@ export function useProjectTitle(instanceId: string) {
 }
 
 export function getRequestProjectAccessUrl(project: Project) {
-  return derived(createLocalServiceGetMetadata(), (metadataResp) => {
-    if (!metadataResp.data?.adminUrl) return "";
-    const url = new URL(metadataResp.data.adminUrl);
-    url.pathname = "/-/request-project-access";
-    url.searchParams.set("organization", project.orgName);
-    url.searchParams.set("project", project.name);
-    // Since this already has a user action, skip showing a "request" button in cloud as well.
-    // Adding `auto_request` is handled there.
-    url.searchParams.set("auto_request", "true");
-    return url.toString();
-  });
+  const url = new URL(project.frontendUrl);
+  url.pathname = "/-/request-project-access";
+  url.searchParams.set("organization", project.orgName);
+  url.searchParams.set("project", project.name);
+  // Since this already has a user action, skip showing a "request" button in cloud as well.
+  // Adding `auto_request` is handled there.
+  url.searchParams.set("auto_request", "true");
+  return url.toString();
 }

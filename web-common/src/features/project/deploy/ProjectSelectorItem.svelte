@@ -10,7 +10,7 @@
   export let onClick: () => void = () => {};
 
   let hovered = false;
-  $: isManaged = !project.githubUrl || !!project.managedGitId;
+  $: isManaged = !project.gitRemote || !!project.managedGitId;
 </script>
 
 <button

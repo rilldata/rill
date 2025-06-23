@@ -42,7 +42,7 @@
       <Button
         onClick={() => (open = false)}
         type="primary"
-        href={$requestProjectAccessUrl}
+        href={requestProjectAccessUrl}
         target="_blank"
       >
         Request admin access
