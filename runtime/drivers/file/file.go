@@ -151,29 +151,34 @@ func (c *connection) Ping(ctx context.Context) error {
 	return drivers.ErrNotImplemented
 }
 
-// Config implements drivers.Connection.
+// Driver implements drivers.Handle.
+func (c *connection) Driver() string {
+	return c.driverName
+}
+
+// Config implements drivers.Handle.
 func (c *connection) Config() map[string]any {
 	m := make(map[string]any, 0)
 	_ = mapstructure.Decode(c.driverConfig, &m)
 	return m
 }
 
-// Close implements drivers.Connection.
+// Close implements drivers.Handle.
 func (c *connection) Close() error {
 	return nil
 }
 
-// AsRegistry implements drivers.Connection.
+// AsRegistry implements drivers.Handle.
 func (c *connection) AsRegistry() (drivers.RegistryStore, bool) {
 	return nil, false
 }
 
-// AsCatalogStore implements drivers.Connection.
+// AsCatalogStore implements drivers.Handle.
 func (c *connection) AsCatalogStore(instanceID string) (drivers.CatalogStore, bool) {
 	return nil, false
 }
 
-// AsRepoStore implements drivers.Connection.
+// AsRepoStore implements drivers.Handle.
 func (c *connection) AsRepoStore(instanceID string) (drivers.RepoStore, bool) {
 	return c, true
 }
@@ -188,22 +193,22 @@ func (c *connection) AsAI(instanceID string) (drivers.AIService, bool) {
 	return nil, false
 }
 
-// AsOLAP implements drivers.Connection.
+// AsOLAP implements drivers.Handle.
 func (c *connection) AsOLAP(instanceID string) (drivers.OLAPStore, bool) {
 	return nil, false
 }
 
-// Migrate implements drivers.Connection.
+// Migrate implements drivers.Handle.
 func (c *connection) Migrate(ctx context.Context) (err error) {
 	return nil
 }
 
-// MigrationStatus implements drivers.Connection.
+// MigrationStatus implements drivers.Handle.
 func (c *connection) MigrationStatus(ctx context.Context) (current, desired int, err error) {
 	return 0, 0, nil
 }
 
-// AsObjectStore implements drivers.Connection.
+// AsObjectStore implements drivers.Handle.
 func (c *connection) AsObjectStore() (drivers.ObjectStore, bool) {
 	return nil, false
 }
@@ -223,7 +228,7 @@ func (c *connection) AsModelManager(instanceID string) (drivers.ModelManager, bo
 	return nil, false
 }
 
-// AsFileStore implements drivers.Connection.
+// AsFileStore implements drivers.Handle.
 func (c *connection) AsFileStore() (drivers.FileStore, bool) {
 	return c, true
 }
@@ -233,7 +238,7 @@ func (c *connection) AsWarehouse() (drivers.Warehouse, bool) {
 	return nil, false
 }
 
-// AsNotifier implements drivers.Connection.
+// AsNotifier implements drivers.Handle.
 func (c *connection) AsNotifier(properties map[string]any) (drivers.Notifier, error) {
 	return nil, drivers.ErrNotNotifier
 }
