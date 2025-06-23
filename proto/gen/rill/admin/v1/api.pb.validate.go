@@ -1521,6 +1521,10 @@ func (m *UpdateOrganizationRequest) validate(all bool) error {
 		// no validation rules for FaviconAssetId
 	}
 
+	if m.ThumbnailAssetId != nil {
+		// no validation rules for ThumbnailAssetId
+	}
+
 	if m.DefaultProjectRole != nil {
 		// no validation rules for DefaultProjectRole
 	}
@@ -6147,7 +6151,7 @@ func (m *CreateProjectRequest) validate(all bool) error {
 
 	// no validation rules for ProdBranch
 
-	// no validation rules for GithubUrl
+	// no validation rules for GitRemote
 
 	// no validation rules for ArchiveAssetId
 
@@ -6634,8 +6638,8 @@ func (m *UpdateProjectRequest) validate(all bool) error {
 		// no validation rules for ProdBranch
 	}
 
-	if m.GithubUrl != nil {
-		// no validation rules for GithubUrl
+	if m.GitRemote != nil {
+		// no validation rules for GitRemote
 	}
 
 	if m.Subpath != nil {
@@ -25091,7 +25095,7 @@ func (m *GetGithubRepoStatusRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for GithubUrl
+	// no validation rules for Remote
 
 	if len(errors) > 0 {
 		return GetGithubRepoStatusRequestMultiError(errors)
@@ -25764,7 +25768,7 @@ func (m *ConnectProjectToGithubRequest) validate(all bool) error {
 
 	// no validation rules for Project
 
-	// no validation rules for Repo
+	// no validation rules for Remote
 
 	// no validation rules for Branch
 
@@ -28194,8 +28198,6 @@ func (m *GetRepoMetaRequest) validate(all bool) error {
 
 	// no validation rules for ProjectId
 
-	// no validation rules for Branch
-
 	if len(errors) > 0 {
 		return GetRepoMetaRequestMultiError(errors)
 	}
@@ -28298,14 +28300,12 @@ func (m *GetRepoMetaResponse) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for GitUrl
-
 	if all {
-		switch v := interface{}(m.GetGitUrlExpiresOn()).(type) {
+		switch v := interface{}(m.GetValidUntilTime()).(type) {
 		case interface{ ValidateAll() error }:
 			if err := v.ValidateAll(); err != nil {
 				errors = append(errors, GetRepoMetaResponseValidationError{
-					field:  "GitUrlExpiresOn",
+					field:  "ValidUntilTime",
 					reason: "embedded message failed validation",
 					cause:  err,
 				})
@@ -28313,23 +28313,29 @@ func (m *GetRepoMetaResponse) validate(all bool) error {
 		case interface{ Validate() error }:
 			if err := v.Validate(); err != nil {
 				errors = append(errors, GetRepoMetaResponseValidationError{
-					field:  "GitUrlExpiresOn",
+					field:  "ValidUntilTime",
 					reason: "embedded message failed validation",
 					cause:  err,
 				})
 			}
 		}
-	} else if v, ok := interface{}(m.GetGitUrlExpiresOn()).(interface{ Validate() error }); ok {
+	} else if v, ok := interface{}(m.GetValidUntilTime()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
 			return GetRepoMetaResponseValidationError{
-				field:  "GitUrlExpiresOn",
+				field:  "ValidUntilTime",
 				reason: "embedded message failed validation",
 				cause:  err,
 			}
 		}
 	}
 
+	// no validation rules for GitUrl
+
 	// no validation rules for GitSubpath
+
+	// no validation rules for GitBranch
+
+	// no validation rules for GitEditBranch
 
 	// no validation rules for ArchiveDownloadUrl
 
@@ -28467,6 +28473,8 @@ func (m *PullVirtualRepoRequest) validate(all bool) error {
 	var errors []error
 
 	// no validation rules for ProjectId
+
+	// no validation rules for Environment
 
 	if m.GetPageSize() != 0 {
 
@@ -35635,6 +35643,8 @@ func (m *Organization) validate(all bool) error {
 
 	// no validation rules for FaviconUrl
 
+	// no validation rules for ThumbnailUrl
+
 	// no validation rules for CustomDomain
 
 	// no validation rules for DefaultProjectRoleId
@@ -36346,7 +36356,7 @@ func (m *Project) validate(all bool) error {
 
 	// no validation rules for Provisioner
 
-	// no validation rules for GithubUrl
+	// no validation rules for GitRemote
 
 	// no validation rules for ManagedGitId
 
@@ -41801,7 +41811,7 @@ func (m *ListGithubUserReposResponse_Repo) validate(all bool) error {
 
 	// no validation rules for Description
 
-	// no validation rules for Url
+	// no validation rules for Remote
 
 	// no validation rules for DefaultBranch
 

@@ -103,6 +103,14 @@ export function isGrainBigger(
   possiblyBiggerGrain: V1TimeGrain,
   possiblySmallerGrain: V1TimeGrain,
 ): boolean {
+  if (possiblyBiggerGrain === V1TimeGrain.TIME_GRAIN_UNSPECIFIED) {
+    return false;
+  }
+
+  if (possiblySmallerGrain === V1TimeGrain.TIME_GRAIN_UNSPECIFIED) {
+    return true;
+  }
+
   const biggerGrainConfig = TIME_GRAIN[possiblyBiggerGrain];
   const smallerGrainConfig = TIME_GRAIN[possiblySmallerGrain];
 

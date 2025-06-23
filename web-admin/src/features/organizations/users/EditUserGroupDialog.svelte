@@ -3,12 +3,12 @@
   import type { V1OrganizationMemberUser } from "@rilldata/web-admin/client";
   import {
     createAdminServiceAddUsergroupMemberUser,
+    createAdminServiceListUsergroupMemberUsers,
+    createAdminServiceRemoveUsergroupMemberUser,
+    createAdminServiceRenameUsergroup,
     getAdminServiceListOrganizationMemberUsergroupsQueryKey,
     getAdminServiceListOrganizationMemberUsersQueryKey,
     getAdminServiceListUsergroupMemberUsersQueryKey,
-    createAdminServiceRemoveUsergroupMemberUser,
-    createAdminServiceRenameUsergroup,
-    createAdminServiceListUsergroupMemberUsers,
   } from "@rilldata/web-admin/client";
   import Avatar from "@rilldata/web-common/components/avatar/Avatar.svelte";
   import { Button } from "@rilldata/web-common/components/button/index.js";
@@ -27,6 +27,7 @@
   import { defaults, superForm } from "sveltekit-superforms";
   import { yup } from "sveltekit-superforms/adapters";
   import { object, string } from "yup";
+  import { SLUG_REGEX } from "../constants";
 
   export let open = false;
   export let groupName: string;
@@ -171,10 +172,11 @@
     object({
       newName: string()
         .required("Name is required")
-        .min(3, "Name must be at least 3 characters")
+        .min(1, "Name must be at least 1 character")
+        .max(40, "Name must be at most 40 characters")
         .matches(
-          /^[a-zA-Z0-9]+(-[a-zA-Z0-9]+)*$/,
-          "Name can only include letters, numbers, and hyphens — no spaces or special characters",
+          SLUG_REGEX,
+          "Name can only include letters, numbers, underscores, and hyphens — no spaces or special characters",
         ),
     }),
   );
@@ -328,7 +330,7 @@
               <Button
                 type="text"
                 danger
-                on:click={() => handleRemove(user.userEmail)}
+                onClick={() => handleRemove(user.userEmail)}
               >
                 Remove
               </Button>
@@ -339,7 +341,7 @@
     </div>
 
     <DialogFooter>
-      <Button type="plain" on:click={handleClose}>Cancel</Button>
+      <Button type="plain" onClick={handleClose}>Cancel</Button>
       <Button
         type="primary"
         disabled={$submitting || $form.newName.trim() === ""}

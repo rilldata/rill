@@ -39,7 +39,7 @@
     <span class="font-medium">personal access token</span> to use in your MCP configuration.
     This token authenticates your requests.
   </p>
-  <Button type="primary" on:click={issueToken} disabled={issuing}>
+  <Button type="primary" onClick={issueToken} disabled={issuing}>
     {issuing ? "Issuing..." : "Create token"}
   </Button>
 

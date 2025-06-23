@@ -78,7 +78,7 @@
             id="{id}.{i}.{accessorKey}"
             autocomplete="off"
             {placeholder}
-            class="bg-white rounded-sm border border-gray-300 px-3 py-[5px] h-8 cursor-pointer focus:outline-primary-500 w-full text-xs {errors[
+            class="bg-surface rounded-sm border border-gray-300 px-3 py-[5px] h-8 cursor-pointer focus:outline-primary-500 w-full text-xs {errors[
               i
             ]?.accessorKey && 'border-red-500'}"
             on:keydown={handleKeyDown}
@@ -94,7 +94,7 @@
         {/if}
       </div>
     {/each}
-    <Button on:click={handleAddItem} type="dashed">
+    <Button onClick={handleAddItem} type="dashed">
       <div class="flex gap-x-2">
         <Add className="text-gray-700" />
         {addItemLabel}

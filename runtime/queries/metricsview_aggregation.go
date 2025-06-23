@@ -446,8 +446,15 @@ func (q *MetricsViewAggregation) generateExportHeaders(ctx context.Context, rt *
 	if org != "" && project != "" {
 		parts = append(parts, org, project)
 	}
+	var dashboardDisplayName string
 	if opts.OriginDashboard != nil {
-		parts = append(parts, opts.OriginDashboard.Name)
+		dashboardDisplayName, err = q.getDisplayName(ctx, rt, instanceID, opts.OriginDashboard)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get dashboard display name: %w", err)
+		}
+	}
+	if dashboardDisplayName != "" {
+		parts = append(parts, dashboardDisplayName)
 	}
 	title := "Report by Rill Data"
 	if len(parts) > 0 {
@@ -469,7 +476,7 @@ func (q *MetricsViewAggregation) generateExportHeaders(ctx context.Context, rt *
 	headers = append(headers, fmt.Sprintf("Filters: %s", expStr))
 
 	// Add URL to dashboard
-	if opts.OriginURL != "" {
+	if opts.OriginURL != "" && dashboardDisplayName != "" {
 		headers = append(headers, fmt.Sprintf("Go to dashboard: %s", opts.OriginURL))
 	}
 
@@ -477,6 +484,36 @@ func (q *MetricsViewAggregation) generateExportHeaders(ctx context.Context, rt *
 	headers = append(headers, "")
 
 	return headers, nil
+}
+
+func (q *MetricsViewAggregation) getDisplayName(ctx context.Context, rt *runtime.Runtime, instanceID string, resourceName *runtimev1.ResourceName) (string, error) {
+	c, err := rt.Controller(ctx, instanceID)
+	if err != nil {
+		return "", fmt.Errorf("failed to get controller: %w", err)
+	}
+
+	res, err := c.Get(ctx, resourceName, false)
+	if err != nil {
+		if errors.Is(err, drivers.ErrResourceNotFound) {
+			return resourceName.Name, nil
+		}
+		return "", fmt.Errorf("failed to get resource: %w", err)
+	}
+
+	// Try to get DisplayName for known resource types
+	switch resourceName.Kind {
+	case runtime.ResourceKindExplore:
+		explore := res.GetExplore()
+		if explore != nil && explore.State != nil && explore.State.ValidSpec != nil && explore.State.ValidSpec.DisplayName != "" {
+			return explore.State.ValidSpec.DisplayName, nil
+		}
+	case runtime.ResourceKindCanvas:
+		canvas := res.GetCanvas()
+		if canvas != nil && canvas.State != nil && canvas.State.ValidSpec != nil && canvas.State.ValidSpec.DisplayName != "" {
+			return canvas.State.ValidSpec.DisplayName, nil
+		}
+	}
+	return resourceName.Name, nil
 }
 
 func metricViewExpression(expr *runtimev1.Expression, sql string) (*metricsview.Expression, error) {

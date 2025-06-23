@@ -89,6 +89,10 @@ var motherduckSpec = drivers.Spec{
 			Type:   drivers.StringPropertyType,
 			Secret: true,
 		},
+		{
+			Key:  "db",
+			Type: drivers.StringPropertyType,
+		},
 	},
 	SourceProperties: []*drivers.PropertySpec{
 		{
@@ -345,7 +349,7 @@ func (c *connection) AsRegistry() (drivers.RegistryStore, bool) {
 
 // AsCatalogStore Catalog implements drivers.Connection.
 func (c *connection) AsCatalogStore(instanceID string) (drivers.CatalogStore, bool) {
-	return c, true
+	return nil, false
 }
 
 // AsRepoStore Repo implements drivers.Connection.
@@ -495,6 +499,28 @@ func (c *connection) reopenDB(ctx context.Context) error {
 	connInitQueries = append(connInitQueries, "SET max_expression_depth TO 250")
 
 	// Create new DB
+	if c.config.Path != "" || c.config.Attach != "" {
+		settings := make(map[string]string)
+		maps.Copy(settings, c.config.readSettings())
+		maps.Copy(settings, c.config.writeSettings())
+		c.db, err = rduckdb.NewGeneric(ctx, &rduckdb.GenericOptions{
+			Path:               c.config.Path,
+			Attach:             c.config.Attach,
+			DBName:             c.config.DatabaseName,
+			LocalDataDir:       dataDir,
+			LocalCPU:           c.config.CPU,
+			LocalMemoryLimitGB: c.config.MemoryLimitGB,
+			Settings:           settings,
+			DBInitQueries:      dbInitQueries,
+			ConnInitQueries:    connInitQueries,
+			Logger:             c.logger,
+			OtelAttributes:     []attribute.KeyValue{attribute.String("instance_id", c.instanceID)},
+		})
+		if err != nil {
+			return err
+		}
+		return nil
+	}
 	c.db, err = rduckdb.NewDB(ctx, &rduckdb.DBOptions{
 		LocalPath:       dataDir,
 		Remote:          c.remote,

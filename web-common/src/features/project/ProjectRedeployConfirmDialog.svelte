@@ -48,13 +48,13 @@
     <AlertDialogFooter>
       <Button
         type="plain"
-        on:click={() => {
+        onClick={() => {
           open = false;
         }}
       >
         Cancel
       </Button>
-      <Button type="primary" on:click={onRedeploy}>Yes, update</Button>
+      <Button type="primary" onClick={onRedeploy}>Yes, update</Button>
     </AlertDialogFooter>
   </AlertDialogContent>
 </AlertDialog>

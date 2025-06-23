@@ -145,7 +145,6 @@ func (s *Service) createDeploymentInner(ctx context.Context, d *database.Deploym
 				"admin_url":    s.opts.ExternalURL,
 				"access_token": dat.Token().String(),
 				"project_id":   opts.ProjectID,
-				"branch":       opts.Branch,
 				"nonce":        time.Now().Format(time.RFC3339Nano), // Only set for consistency with updateDeployment
 			},
 		},
@@ -300,7 +299,6 @@ func (s *Service) UpdateDeployment(ctx context.Context, d *database.Deployment, 
 			if c.Config == nil {
 				c.Config = make(map[string]string)
 			}
-			c.Config["branch"] = opts.Branch
 
 			// Adding a nonce will cause the runtime to evict any currently open handle and open a new one.
 			if opts.EvictCachedRepo {
@@ -567,11 +565,11 @@ func (s *Service) findProvisionedRuntimeResource(ctx context.Context, deployment
 }
 
 func (s *Service) resolveRillVersion() string {
-	if s.VersionNumber != "" {
-		return s.VersionNumber
+	if s.Version.Number != "" {
+		return s.Version.Number
 	}
-	if s.VersionCommit != "" {
-		return s.VersionCommit
+	if s.Version.Commit != "" {
+		return s.Version.Commit
 	}
 	return "latest"
 }

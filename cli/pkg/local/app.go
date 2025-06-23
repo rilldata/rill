@@ -369,11 +369,6 @@ func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly bool
 		return err
 	}
 
-	// Start the gRPC server
-	group.Go(func() error {
-		return runtimeServer.ServeGRPC(ctx)
-	})
-
 	// if keypath and certpath are provided
 	secure := tlsCertPath != "" && tlsKeyPath != ""
 
@@ -382,7 +377,7 @@ func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly bool
 		return runtimeServer.ServeHTTP(ctx, func(mux *http.ServeMux) {
 			// Inject local-only endpoints on the runtime server
 			localServer.RegisterHandlers(mux, httpPort, secure, enableUI)
-		})
+		}, enableUI)
 	})
 
 	// Start debug server on port 6060

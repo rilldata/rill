@@ -19,14 +19,14 @@ allOf:
       features:
         type: object
         description: Optional feature flags. Can be specified as a map of feature names to booleans.
-      ai_context:
+      ai_instructions:
         type: string
-        description: Extra context for LLM/AI features. Used to guide natural language question answering and routing.
+        description: Extra instructions for LLM/AI features. Used to guide natural language question answering and routing.
   - title: Configuring the default OLAP Engine  
     description: |
       Rill allows you to specify the default OLAP engine to use in your project via `rill.yaml`.
       :::info Curious about OLAP Engines?
-      Please see our reference documentation on [OLAP Engines](../olap-engines/olap-engines.md).
+      Please see our reference documentation on [OLAP Engines](/docs/reference/olap-engines/olap-engines.md).
       :::
     type: object
     properties:
