@@ -273,39 +273,65 @@
               />
             </div>
 
-            {#each properties as property (property.key)}
-              {@const propertyKey = property.key ?? ""}
-              {@const label =
-                property.displayName + (property.required ? "" : " (optional)")}
-              {@const defaults = CLICKHOUSE_DEFAULTS[deploymentType]}
-              <div class="py-1.5 first:pt-0 last:pb-0">
-                {#if property.type === ConnectorDriverPropertyType.TYPE_STRING || property.type === ConnectorDriverPropertyType.TYPE_NUMBER}
-                  <Input
-                    id={propertyKey}
-                    label={property.displayName}
-                    placeholder={defaults[propertyKey]?.placeholder ??
-                      property.placeholder}
-                    optional={!property.required}
-                    secret={property.secret}
-                    hint={property.hint}
-                    errors={$paramsErrors[propertyKey]}
-                    bind:value={$paramsForm[propertyKey]}
-                    onInput={(_, e) => onStringInputChange(e)}
-                    alwaysShowError
-                  />
-                {:else if property.type === ConnectorDriverPropertyType.TYPE_BOOLEAN}
-                  <label for={property.key} class="flex items-center">
-                    <input
+            <!-- Always show the managed checkbox -->
+            <div class="py-1.5 first:pt-0 last:pb-0">
+              <label for="managed" class="flex items-center">
+                <input
+                  id="managed"
+                  type="checkbox"
+                  bind:checked={$paramsForm["managed"]}
+                  class="h-5 w-5"
+                />
+                <span class="ml-2 text-sm">Managed (optional)</span>
+              </label>
+            </div>
+
+            {#if $paramsForm["managed"]}
+              <InformationalField
+                description="Rill will automatically provision and manage your ClickHouse instance. No additional configuration is required."
+              />
+            {:else}
+              {#each properties.filter((property) => property.key !== "managed") as property (property.key)}
+                {@const propertyKey = property.key ?? ""}
+                {@const label =
+                  property.displayName +
+                  (property.required ? "" : " (optional)")}
+                {@const defaults = CLICKHOUSE_DEFAULTS[deploymentType]}
+                <div class="py-1.5 first:pt-0 last:pb-0">
+                  {#if property.type === ConnectorDriverPropertyType.TYPE_STRING || property.type === ConnectorDriverPropertyType.TYPE_NUMBER}
+                    <Input
                       id={propertyKey}
-                      type="checkbox"
-                      bind:checked={$paramsForm[propertyKey]}
-                      class="h-5 w-5"
+                      label={property.displayName}
+                      placeholder={defaults[propertyKey]?.placeholder ??
+                        property.placeholder}
+                      optional={!property.required}
+                      secret={property.secret}
+                      hint={property.hint}
+                      errors={$paramsErrors[propertyKey]}
+                      bind:value={$paramsForm[propertyKey]}
+                      onInput={(_, e) => onStringInputChange(e)}
+                      alwaysShowError
                     />
-                    <span class="ml-2 text-sm">{label}</span>
-                  </label>
-                {/if}
-              </div>
-            {/each}
+                  {:else if property.type === ConnectorDriverPropertyType.TYPE_BOOLEAN}
+                    <label for={property.key} class="flex items-center">
+                      <input
+                        id={propertyKey}
+                        type="checkbox"
+                        bind:checked={$paramsForm[propertyKey]}
+                        class="h-5 w-5"
+                      />
+                      <span class="ml-2 text-sm">{label}</span>
+                    </label>
+                  {:else if property.type === ConnectorDriverPropertyType.TYPE_INFORMATIONAL}
+                    <InformationalField
+                      description={property.description}
+                      hint={property.hint}
+                      href={property.docsUrl}
+                    />
+                  {/if}
+                </div>
+              {/each}
+            {/if}
           {:else}
             {#each properties as property (property.key)}
               {@const propertyKey = property.key ?? ""}
