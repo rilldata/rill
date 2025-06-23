@@ -52,14 +52,15 @@ type Resolver interface {
 type ResolverResult interface {
 	// Close should be called to release resources
 	Close() error
+	// Meta can contain arbitrary metadata about the result.
+	// For example, the metrics resolver will return information about the result fields, like display names and formatting rules.
+	Meta() map[string]any
 	// Schema is the schema for the Data
 	Schema() *runtimev1.StructType
 	// Next returns the next row of data. It returns io.EOF when there are no more rows.
 	Next() (map[string]any, error)
 	// MarshalJSON is a convenience method to serialize the result to JSON.
 	MarshalJSON() ([]byte, error)
-	// Meta returns metadata for the result fields (labels, formatting, etc).
-	Meta() []map[string]any
 }
 
 // ResolverExportOptions are the options passed to a resolver's ResolveExport method.
@@ -231,7 +232,7 @@ func (r *Runtime) Resolve(ctx context.Context, opts *ResolveOptions) (res Resolv
 }
 
 // NewDriverResolverResult creates a ResolverResult from a drivers.Result.
-func NewDriverResolverResult(result *drivers.Result, meta []map[string]any) ResolverResult {
+func NewDriverResolverResult(result *drivers.Result, meta map[string]any) ResolverResult {
 	return &driverResolverResult{
 		rows: result,
 		meta: meta,
@@ -239,7 +240,7 @@ func NewDriverResolverResult(result *drivers.Result, meta []map[string]any) Reso
 }
 
 type driverResolverResult struct {
-	meta     []map[string]any
+	meta     map[string]any
 	rows     *drivers.Result
 	closeErr error
 }
@@ -259,6 +260,11 @@ func (r *driverResolverResult) Close() error {
 // Schema implements ResolverResult.
 func (r *driverResolverResult) Schema() *runtimev1.StructType {
 	return r.rows.Schema
+}
+
+// Meta implements ResolverResult.
+func (r *driverResolverResult) Meta() map[string]any {
+	return r.meta
 }
 
 // Next implements ResolverResult.
@@ -307,11 +313,6 @@ func (r *driverResolverResult) MarshalJSON() ([]byte, error) {
 	return json.Marshal(out)
 }
 
-// Meta implements ResolverResult.
-func (r *driverResolverResult) Meta() []map[string]any {
-	return r.meta
-}
-
 // NewMapsResolverResult creates a ResolverResult from a slice of maps.
 func NewMapsResolverResult(result []map[string]any, schema *runtimev1.StructType) ResolverResult {
 	return &mapsResolverResult{
@@ -322,7 +323,7 @@ func NewMapsResolverResult(result []map[string]any, schema *runtimev1.StructType
 
 type mapsResolverResult struct {
 	rows   []map[string]any
-	meta   []map[string]any
+	meta   map[string]any
 	schema *runtimev1.StructType
 	idx    int
 }
@@ -355,7 +356,7 @@ func (r *mapsResolverResult) MarshalJSON() ([]byte, error) {
 }
 
 // Meta implements ResolverResult.
-func (r *mapsResolverResult) Meta() []map[string]any {
+func (r *mapsResolverResult) Meta() map[string]any {
 	return r.meta
 }
 
@@ -377,7 +378,7 @@ func newCachedResolverResult(res ResolverResult) (*cachedResolverResult, error) 
 
 type cachedResolverResult struct {
 	data   []byte
-	meta   []map[string]any
+	meta   map[string]any
 	schema *runtimev1.StructType
 
 	// Iterator fields. Should only be populated on short-lived copies obtained via copy().
@@ -421,7 +422,7 @@ func (r *cachedResolverResult) MarshalJSON() ([]byte, error) {
 }
 
 // Meta implements ResolverResult.
-func (r *cachedResolverResult) Meta() []map[string]any {
+func (r *cachedResolverResult) Meta() map[string]any {
 	return r.meta
 }
 

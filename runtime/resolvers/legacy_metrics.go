@@ -344,7 +344,7 @@ type legacyResolverResult struct {
 }
 
 // Meta implements runtime.ResolverResult.
-func (r *legacyResolverResult) Meta() []map[string]any {
+func (r *legacyResolverResult) Meta() map[string]any {
 	return nil
 }
 

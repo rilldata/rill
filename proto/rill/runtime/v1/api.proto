@@ -601,6 +601,7 @@ message QueryResolverRequest {
 }
 
 message QueryResolverResponse {
+  google.protobuf.Struct meta = 3;
   StructType schema = 1;
   repeated google.protobuf.Struct data = 2;
 }

@@ -66,25 +66,27 @@ measures:
 		})
 		if tc.wantErr != "" {
 			require.Equal(t, tc.wantErr, err.Error())
-		} else {
-			require.NoError(t, err)
-			defer res.Close()
-			require.Equal(t, []byte(tc.want), must(res.MarshalJSON()))
-			meta := res.Meta()
-			require.NotNil(t, meta)
-
-			schemaFields := map[string]struct{}{}
-			for _, f := range res.Schema().Fields {
-				schemaFields[f.Name] = struct{}{}
-			}
-			for _, m := range meta {
-				name, ok := m["name"].(string)
-				require.True(t, ok)
-				_, exists := schemaFields[name]
-				require.True(t, exists, "meta contains field not in schema: %s", name)
-				delete(schemaFields, name)
-			}
-			require.Empty(t, schemaFields, "schema fields missing in meta: %v", schemaFields)
+			continue
 		}
+		defer res.Close()
+		require.NoError(t, err)
+		require.Equal(t, []byte(tc.want), must(res.MarshalJSON()))
+
+		meta := res.Meta()
+		require.NotNil(t, meta)
+
+		schemaFields := map[string]bool{}
+		for _, f := range res.Schema().Fields {
+			schemaFields[f.Name] = true
+		}
+
+		for _, m := range meta["fields"].([]map[string]any) {
+			name, ok := m["name"].(string)
+			require.True(t, ok)
+			_, exists := schemaFields[name]
+			require.True(t, exists, "meta contains field not in schema: %s", name)
+			delete(schemaFields, name)
+		}
+		require.Empty(t, schemaFields, "schema fields missing in meta: %v", schemaFields)
 	}
 }

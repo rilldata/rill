@@ -140,7 +140,8 @@ func (r *metricsResolver) ResolveInteractive(ctx context.Context) (runtime.Resol
 		}
 	}
 
-	meta := metaFromQuery(r.mv, r.query)
+	meta := map[string]any{}
+	meta["fields"] = fieldsFromQuery(r.mv, r.query)
 
 	res, err := r.executor.Query(ctx, r.query, r.args.ExecutionTime)
 	if err != nil {
@@ -154,8 +155,8 @@ func (r *metricsResolver) ResolveExport(ctx context.Context, w io.Writer, opts *
 	return errors.New("not implemented")
 }
 
-// metaFromQuery returns meta details for only those dimensions and measures present in the query, preserving query order.
-func metaFromQuery(spec *runtimev1.MetricsViewSpec, q *metricsview.Query) []map[string]any {
+// fieldsFromQuery returns metadata for only those dimensions and measures present in the query, preserving query order.
+func fieldsFromQuery(spec *runtimev1.MetricsViewSpec, q *metricsview.Query) []map[string]any {
 	if q == nil || spec == nil {
 		return nil
 	}
@@ -178,7 +179,7 @@ func metaFromQuery(spec *runtimev1.MetricsViewSpec, q *metricsview.Query) []map[
 				"type":         "dimension",
 				"name":         d.Name,
 				"display_name": d.DisplayName,
-				"column":       d.Column,
+				"description":  d.Description,
 			})
 		}
 	}
@@ -187,11 +188,15 @@ func metaFromQuery(spec *runtimev1.MetricsViewSpec, q *metricsview.Query) []map[
 	for _, m := range q.Measures {
 		if meas, ok := measDetails[m.Name]; ok {
 			meta = append(meta, map[string]any{
-				"type":          "measure",
-				"name":          meas.Name,
-				"display_name":  meas.DisplayName,
-				"expression":    meas.Expression,
-				"format_preset": meas.FormatPreset,
+				"type":                   "measure",
+				"name":                   meas.Name,
+				"display_name":           meas.DisplayName,
+				"description":            meas.Description,
+				"format_preset":          meas.FormatPreset,
+				"format_d3":              meas.FormatD3,
+				"format_d3_locale":       meas.FormatD3Locale.AsMap(),
+				"valid_percent_of_total": meas.ValidPercentOfTotal,
+				"treat_nulls_as":         meas.TreatNullsAs,
 			})
 		}
 	}

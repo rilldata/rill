@@ -5899,6 +5899,8 @@ definitions:
   v1QueryResolverResponse:
     type: object
     properties:
+      meta:
+        type: object
       schema:
         $ref: '#/definitions/v1StructType'
       data:
