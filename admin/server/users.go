@@ -664,7 +664,7 @@ func (s *Server) findUserAuthTokenFuzzy(ctx context.Context, input string) (*dat
 
 	// Find all tokens for the user and match by prefix
 	dbTokens, err := s.admin.DB.FindUserAuthTokens(ctx, userID, "", 1000)
-	if err != nil && !errors.Is(err, database.ErrNotFound) {
+	if err != nil {
 		return nil, err
 	}
 
