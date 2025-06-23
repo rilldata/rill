@@ -672,7 +672,7 @@ func (s *Server) findUserAuthTokenFuzzy(ctx context.Context, input string) (*dat
 	for i, dbToken := range dbTokens {
 		id, err := uuid.Parse(dbToken.ID)
 		if err != nil {
-			return nil, status.Errorf(codes.Internal, "invalid token ID %q: %v", t.ID, err)
+			return nil, status.Errorf(codes.Internal, "invalid token ID %q: %v", dbToken.ID, err)
 		}
 		tokens[i] = authtoken.FromID(authtoken.TypeUser, id)
 	}
