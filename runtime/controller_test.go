@@ -1358,7 +1358,7 @@ func localFileHash(t *testing.T, rt *runtime.Runtime, id string, paths []string)
 	defer func() {
 		release()
 	}()
-	localFileHash, err := repo.FileHash(context.Background(), paths)
+	localFileHash, err := repo.Hash(context.Background(), paths)
 	require.NoError(t, err)
 	return localFileHash
 }
