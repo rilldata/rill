@@ -240,8 +240,8 @@ func NewDriverResolverResult(result *drivers.Result, meta map[string]any) Resolv
 }
 
 type driverResolverResult struct {
-	meta     map[string]any
 	rows     *drivers.Result
+	meta     map[string]any
 	closeErr error
 }
 
@@ -257,14 +257,14 @@ func (r *driverResolverResult) Close() error {
 	return r.rows.Close()
 }
 
-// Schema implements ResolverResult.
-func (r *driverResolverResult) Schema() *runtimev1.StructType {
-	return r.rows.Schema
-}
-
 // Meta implements ResolverResult.
 func (r *driverResolverResult) Meta() map[string]any {
 	return r.meta
+}
+
+// Schema implements ResolverResult.
+func (r *driverResolverResult) Schema() *runtimev1.StructType {
+	return r.rows.Schema
 }
 
 // Next implements ResolverResult.
@@ -335,6 +335,11 @@ func (r *mapsResolverResult) Close() error {
 	return nil
 }
 
+// Meta implements ResolverResult.
+func (r *mapsResolverResult) Meta() map[string]any {
+	return r.meta
+}
+
 // Schema implements ResolverResult.
 func (r *mapsResolverResult) Schema() *runtimev1.StructType {
 	return r.schema
@@ -353,11 +358,6 @@ func (r *mapsResolverResult) Next() (map[string]any, error) {
 // MarshalJSON implements ResolverResult.
 func (r *mapsResolverResult) MarshalJSON() ([]byte, error) {
 	return json.Marshal(r.rows)
-}
-
-// Meta implements ResolverResult.
-func (r *mapsResolverResult) Meta() map[string]any {
-	return r.meta
 }
 
 // newCachedResolverResult wraps a ResolverResult such that it is cacheable.
@@ -393,6 +393,11 @@ func (r *cachedResolverResult) Close() error {
 	return nil
 }
 
+// Meta implements ResolverResult.
+func (r *cachedResolverResult) Meta() map[string]any {
+	return r.meta
+}
+
 // Schema implements ResolverResult.
 func (r *cachedResolverResult) Schema() *runtimev1.StructType {
 	return r.schema
@@ -419,11 +424,6 @@ func (r *cachedResolverResult) Next() (map[string]any, error) {
 // MarshalJSON implements ResolverResult.
 func (r *cachedResolverResult) MarshalJSON() ([]byte, error) {
 	return r.data, nil
-}
-
-// Meta implements ResolverResult.
-func (r *cachedResolverResult) Meta() map[string]any {
-	return r.meta
 }
 
 func (r *cachedResolverResult) copy() *cachedResolverResult {

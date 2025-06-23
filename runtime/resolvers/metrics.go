@@ -21,14 +21,13 @@ func init() {
 }
 
 type metricsResolver struct {
-	runtime        *runtime.Runtime
-	instanceID     string
-	executor       *metricsview.Executor
-	query          *metricsview.Query
-	args           *metricsResolverArgs
-	claims         *runtime.SecurityClaims
-	metricsHasTime bool
-	mv             *runtimev1.MetricsViewSpec
+	runtime    *runtime.Runtime
+	instanceID string
+	mv         *runtimev1.MetricsViewSpec
+	executor   *metricsview.Executor
+	query      *metricsview.Query
+	args       *metricsResolverArgs
+	claims     *runtime.SecurityClaims
 }
 
 type metricsResolverArgs struct {
@@ -82,14 +81,13 @@ func newMetrics(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Res
 	}
 
 	return &metricsResolver{
-		runtime:        opts.Runtime,
-		instanceID:     opts.InstanceID,
-		executor:       executor,
-		query:          qry,
-		args:           args,
-		claims:         opts.Claims,
-		metricsHasTime: mv.TimeDimension != "",
-		mv:             mv,
+		runtime:    opts.Runtime,
+		instanceID: opts.InstanceID,
+		mv:         mv,
+		executor:   executor,
+		query:      qry,
+		args:       args,
+		claims:     opts.Claims,
 	}, nil
 }
 
@@ -128,7 +126,7 @@ func (r *metricsResolver) Validate(ctx context.Context) error {
 }
 
 func (r *metricsResolver) ResolveInteractive(ctx context.Context) (runtime.ResolverResult, error) {
-	if r.metricsHasTime {
+	if r.mv.TimeDimension != "" {
 		tsRes, err := resolveTimestampResult(ctx, r.runtime, r.instanceID, r.query.MetricsView, r.claims, r.args.Priority)
 		if err != nil {
 			return nil, err
