@@ -65,7 +65,7 @@ var spec = drivers.Spec{
 			Key:         "workgroup",
 			Type:        drivers.StringPropertyType,
 			DisplayName: "AWS Athena workgroup",
-			Description: "AWS Athena workgroup to use for queries.",
+			Description: "AWS Athena workgroup to use for queries. Default is primary",
 			Placeholder: "primary",
 			Required:    false,
 		},

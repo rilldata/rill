@@ -67,6 +67,26 @@ func (c *Connection) parseBucketURL(path string) (*globutil.URL, error) {
 	return url, nil
 }
 
+func (c *Connection) openBucket(ctx context.Context, bucket string, anonymous bool) (*blob.Bucket, error) {
+	var client *container.Client
+	var err error
+	if anonymous {
+		client, err = c.newAnonymousClient(bucket)
+	} else {
+		client, err = c.newClient(bucket)
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	azureBucket, err := azureblob.OpenBucket(ctx, client, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return blob.NewBucket(azureBucket, c.logger)
+}
+
 // newClient returns a new azure blob client.
 func (c *Connection) newClient(bucket string) (*container.Client, error) {
 	var accountKey, sasToken, connectionString string
@@ -188,24 +208,4 @@ func (c *Connection) accountName() (string, error) {
 	}
 
 	return "", errors.New("account name not found")
-}
-
-func (c *Connection) openBucket(ctx context.Context, bucket string, anonymous bool) (*blob.Bucket, error) {
-	var client *container.Client
-	var err error
-	if anonymous {
-		client, err = c.newAnonymousClient(bucket)
-	} else {
-		client, err = c.newClient(bucket)
-	}
-	if err != nil {
-		return nil, err
-	}
-
-	azureBucket, err := azureblob.OpenBucket(ctx, client, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return blob.NewBucket(azureBucket, c.logger)
 }

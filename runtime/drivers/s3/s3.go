@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/sts"
@@ -66,13 +67,6 @@ var spec = drivers.Spec{
 			Secret:      true,
 			Description: "Optional external ID to use when assuming an AWS role for cross-account access.",
 		},
-		{
-			Key:         "bucket",
-			Type:        drivers.StringPropertyType,
-			DisplayName: "Bucket",
-			Description: "The name of the bucket.",
-			Required:    true,
-		},
 	},
 	SourceProperties: []*drivers.PropertySpec{
 		{
@@ -113,7 +107,6 @@ type ConfigProperties struct {
 	SessionToken    string `mapstructure:"aws_access_token"`
 	Region          string `mapstructure:"region"`
 	Endpoint        string `mapstructure:"endpoint"`
-	Bucket          string `mapstructure:"bucket"`
 	RoleARN         string `mapstructure:"aws_role_arn"`
 	RoleSessionName string `mapstructure:"aws_role_session_name"`
 	ExternalID      string `mapstructure:"aws_external_id"`
@@ -162,19 +155,29 @@ var _ drivers.Handle = &Connection{}
 
 // Ping implements drivers.Handle.
 func (c *Connection) Ping(ctx context.Context) error {
-	if c.config.Bucket == "" {
-		return fmt.Errorf("bucket not configured")
+	creds, err := c.newCredentials()
+	if err != nil {
+		return fmt.Errorf("failed to get AWS credentials: %w", err)
 	}
 
-	bucket, err := c.openBucket(ctx, c.config.Bucket, false)
-	if err != nil {
-		return fmt.Errorf("failed to open bucket: %w", err)
+	cfg := aws.NewConfig().WithCredentials(creds)
+	if c.config.Region != "" {
+		cfg = cfg.WithRegion(c.config.Region)
 	}
-	defer bucket.Close()
 
-	_, err = bucket.ListObjects(ctx, "*")
+	if c.config.Endpoint != "" {
+		cfg = cfg.WithEndpoint(c.config.Endpoint).WithS3ForcePathStyle(true)
+	}
+
+	sess, err := session.NewSession(cfg)
 	if err != nil {
-		return fmt.Errorf("failed to list objects: %w", err)
+		return fmt.Errorf("failed to create AWS session: %w", err)
+	}
+
+	stsClient := sts.New(sess)
+	_, err = stsClient.GetCallerIdentityWithContext(ctx, &sts.GetCallerIdentityInput{})
+	if err != nil {
+		return fmt.Errorf("GetCallerIdentity failed: %w", err)
 	}
 
 	return nil
