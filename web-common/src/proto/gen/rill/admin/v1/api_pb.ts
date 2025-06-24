@@ -852,14 +852,14 @@ export class ListDeploymentsRequest extends Message<ListDeploymentsRequest> {
   projectName = "";
 
   /**
-   * @generated from field: optional string environment = 3;
+   * @generated from field: string environment = 3;
    */
-  environment?: string;
+  environment = "";
 
   /**
-   * @generated from field: optional string user_id = 4;
+   * @generated from field: string user_id = 4;
    */
-  userId?: string;
+  userId = "";
 
   constructor(data?: PartialMessage<ListDeploymentsRequest>) {
     super();
@@ -871,8 +871,8 @@ export class ListDeploymentsRequest extends Message<ListDeploymentsRequest> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "organization_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "project_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "environment", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
-    { no: 4, name: "user_id", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 3, name: "environment", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "user_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListDeploymentsRequest {

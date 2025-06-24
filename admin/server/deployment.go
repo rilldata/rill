@@ -102,13 +102,9 @@ func (s *Server) ListDeployments(ctx context.Context, req *adminv1.ListDeploymen
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.organization_name", req.OrganizationName),
 		attribute.String("args.project_name", req.ProjectName),
+		attribute.String("args.environment", req.Environment),
+		attribute.String("args.user_id", req.UserId),
 	)
-	if req.Environment != nil {
-		observability.AddRequestAttributes(ctx, attribute.String("args.environment", *req.Environment))
-	}
-	if req.UserId != nil {
-		observability.AddRequestAttributes(ctx, attribute.String("args.user_id", *req.UserId))
-	}
 
 	proj, err := s.admin.DB.FindProjectByName(ctx, req.OrganizationName, req.ProjectName)
 	if err != nil {
@@ -136,10 +132,10 @@ func (s *Server) ListDeployments(ctx context.Context, req *adminv1.ListDeploymen
 		if d.Environment == "dev" && !permissions.ReadDev {
 			continue
 		}
-		if req.Environment != nil && *req.Environment != d.Environment {
+		if req.Environment != "" && req.Environment != d.Environment {
 			continue
 		}
-		if req.UserId != nil && d.OwnerUserID != nil && *req.UserId != *d.OwnerUserID {
+		if req.UserId != "" && d.OwnerUserID != nil && req.UserId != *d.OwnerUserID {
 			continue
 		}
 		newDepls = append(newDepls, d)

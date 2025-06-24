@@ -113,8 +113,12 @@ func (s *Service) StopDeployment(ctx context.Context, depl *database.Deployment)
 	// Stop the deployment by tearing down its runtime instance and resources.
 	err := s.stopDeploymentInner(ctx, depl)
 	if err != nil {
-		s.Logger.Error("failed to stop deployment", zap.String("deployment_id", depl.ID), zap.Error(err), observability.ZapCtx(ctx))
-		return err
+		// Mark deployment error
+		ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+		defer cancel()
+		_, err2 := s.DB.UpdateDeploymentStatus(ctx, depl.ID, database.DeploymentStatusError, fmt.Sprintf("Failed to stop deployment: %v", err))
+		s.Logger.Error("stop deployment: failed to stop deployment", zap.String("project_id", depl.ProjectID), zap.String("deployment_id", depl.ID), zap.Error(err), observability.ZapCtx(ctx))
+		return errors.Join(err, err2)
 	}
 
 	// Update the deployment status to stopped

@@ -1983,35 +1983,9 @@ func (m *ListDeploymentsRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
-	if m.Environment != nil {
+	// no validation rules for Environment
 
-		if utf8.RuneCountInString(m.GetEnvironment()) < 1 {
-			err := ListDeploymentsRequestValidationError{
-				field:  "Environment",
-				reason: "value length must be at least 1 runes",
-			}
-			if !all {
-				return err
-			}
-			errors = append(errors, err)
-		}
-
-	}
-
-	if m.UserId != nil {
-
-		if utf8.RuneCountInString(m.GetUserId()) < 1 {
-			err := ListDeploymentsRequestValidationError{
-				field:  "UserId",
-				reason: "value length must be at least 1 runes",
-			}
-			if !all {
-				return err
-			}
-			errors = append(errors, err)
-		}
-
-	}
+	// no validation rules for UserId
 
 	if len(errors) > 0 {
 		return ListDeploymentsRequestMultiError(errors)
