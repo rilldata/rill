@@ -54,16 +54,6 @@ alwaysApply: false
 - Use **UPPER_SNAKE_CASE** for true constants
 - Examples: `MAX_FILE_SIZE`, `DEFAULT_TIMEOUT`, `API_BASE_URL`
 
-## API and Database Naming
-
-### API Endpoints
-- Use **kebab-case** for API endpoint paths
-- Examples: `/user-management`, `/environment-variables`, `/project-status`
-
-### Database Tables/Fields
-- Use **snake_case** for database tables and fields
-- Examples: `user_management`, `environment_variables`, `project_status`
-
 ## Special Cases
 
 ### Test Files
@@ -73,7 +63,3 @@ alwaysApply: false
 ### Configuration Files
 - Use **kebab-case** for configuration files
 - Examples: `tailwind.config.ts`, `vite.config.ts`, `svelte.config.js`
-
-### Documentation Files
-- Use **kebab-case** for documentation files
-- Examples: `README.md`, `api-documentation.md`, `deployment-guide.md`
