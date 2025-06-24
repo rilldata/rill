@@ -4656,6 +4656,7 @@ definitions:
       - DEPLOYMENT_STATUS_PENDING
       - DEPLOYMENT_STATUS_OK
       - DEPLOYMENT_STATUS_ERROR
+      - DEPLOYMENT_STATUS_STOPPED
     default: DEPLOYMENT_STATUS_UNSPECIFIED
   v1DisconnectProjectFromGithubResponse:
     type: object
