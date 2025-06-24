@@ -2638,7 +2638,7 @@ enum DeploymentStatus {
 message Deployment {
   string id = 1;
   string project_id = 2;
-  optional string owner_user_id = 12;
+  string owner_user_id = 12;
   string environment = 11;
   string branch = 4;
   string runtime_host = 5;

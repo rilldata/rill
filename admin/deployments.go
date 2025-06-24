@@ -100,13 +100,13 @@ func (s *Service) StartDeployment(ctx context.Context, depl *database.Deployment
 	}
 
 	// Mark deployment ready
-	_, err = s.DB.UpdateDeploymentStatus(ctx, depl.ID, database.DeploymentStatusOK, "")
+	depl1, err := s.DB.UpdateDeploymentStatus(ctx, depl.ID, database.DeploymentStatusOK, "")
 	if err != nil {
 		// NOTE: Unlikely case – we'll leave it pending in this case, the user can reset.
 		return nil, err
 	}
 
-	return depl, nil
+	return depl1, nil
 }
 
 func (s *Service) StopDeployment(ctx context.Context, depl *database.Deployment) error {

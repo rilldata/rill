@@ -38111,6 +38111,8 @@ func (m *Deployment) validate(all bool) error {
 
 	// no validation rules for ProjectId
 
+	// no validation rules for OwnerUserId
+
 	// no validation rules for Environment
 
 	// no validation rules for Branch
@@ -38179,10 +38181,6 @@ func (m *Deployment) validate(all bool) error {
 				cause:  err,
 			}
 		}
-	}
-
-	if m.OwnerUserId != nil {
-		// no validation rules for OwnerUserId
 	}
 
 	if len(errors) > 0 {

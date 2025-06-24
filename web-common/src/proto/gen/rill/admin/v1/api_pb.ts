@@ -13947,9 +13947,9 @@ export class Deployment extends Message<Deployment> {
   projectId = "";
 
   /**
-   * @generated from field: optional string owner_user_id = 12;
+   * @generated from field: string owner_user_id = 12;
    */
-  ownerUserId?: string;
+  ownerUserId = "";
 
   /**
    * @generated from field: string environment = 11;
@@ -14001,7 +14001,7 @@ export class Deployment extends Message<Deployment> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "project_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 12, name: "owner_user_id", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 12, name: "owner_user_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 11, name: "environment", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "runtime_host", kind: "scalar", T: 9 /* ScalarType.STRING */ },
