@@ -362,6 +362,33 @@ func (s *Server) CreateDeployment(ctx context.Context, req *adminv1.CreateDeploy
 		return nil, err
 	}
 
+	if depl.Environment == "prod" {
+		// If this is a prod deployment, we update the prod deployment on project
+		_, err = s.admin.DB.UpdateProject(ctx, proj.ID, &database.UpdateProjectOptions{
+			Name:                 proj.Name,
+			Description:          proj.Description,
+			Public:               proj.Public,
+			Provisioner:          proj.Provisioner,
+			ArchiveAssetID:       proj.ArchiveAssetID,
+			GitRemote:            proj.GitRemote,
+			GithubInstallationID: proj.GithubInstallationID,
+			GithubRepoID:         proj.GithubRepoID,
+			ManagedGitRepoID:     proj.ManagedGitRepoID,
+			ProdVersion:          proj.ProdVersion,
+			ProdBranch:           proj.ProdBranch,
+			Subpath:              proj.Subpath,
+			ProdDeploymentID:     &depl.ID,
+			ProdSlots:            proj.ProdSlots,
+			ProdTTLSeconds:       proj.ProdTTLSeconds,
+			DevSlots:             proj.DevSlots,
+			DevTTLSeconds:        proj.DevTTLSeconds,
+			Annotations:          proj.Annotations,
+		})
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	return &adminv1.CreateDeploymentResponse{
 		Deployment: deploymentToDTO(depl),
 	}, nil
