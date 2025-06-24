@@ -334,15 +334,24 @@ type ProjectAccessRequest struct {
 	ToName      string
 	Email       string
 	OrgName     string
+	Role        string
 	ProjectName string
 	ApproveLink string
 	DenyLink    string
 }
 
 func (c *Client) SendProjectAccessRequest(opts *ProjectAccessRequest) error {
-	subject := fmt.Sprintf("%s would like to view %s/%s", opts.Email, opts.OrgName, opts.ProjectName)
+	accessPrefix := "to view"
+	switch opts.Role {
+	case "admin":
+		accessPrefix = "to be an admin of"
+	case "editor":
+		accessPrefix = "to edit"
+	}
+
+	subject := fmt.Sprintf("%s would like %s %s/%s", opts.Email, accessPrefix, opts.OrgName, opts.ProjectName)
 	if opts.Body == "" {
-		opts.Body = template.HTML(fmt.Sprintf("<b>%s</b> would like to view <b>%s/%s</b>", opts.Email, opts.OrgName, opts.ProjectName))
+		opts.Body = template.HTML(fmt.Sprintf("<b>%s</b> would like %s <b>%s/%s</b>", opts.Email, accessPrefix, opts.OrgName, opts.ProjectName))
 	}
 
 	buf := new(bytes.Buffer)

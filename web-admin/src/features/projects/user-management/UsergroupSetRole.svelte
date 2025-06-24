@@ -7,6 +7,7 @@
   import type { V1MemberUsergroup } from "@rilldata/web-admin/client";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import { capitalize } from "@rilldata/web-common/components/table/utils";
+  import { UserRoles } from "@rilldata/web-common/features/users/roles.ts";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { useQueryClient } from "@tanstack/svelte-query";
   import CaretUpIcon from "@rilldata/web-common/components/icons/CaretUpIcon.svelte";
@@ -100,9 +101,7 @@
       'admin'
         ? 'bg-slate-100'
         : ''}"
-      on:click={() => {
-        handleSetRole(group.groupName, "admin");
-      }}
+      on:click={() => handleSetRole(group.groupName, UserRoles.Admin)}
     >
       <span class="font-medium">Admin</span>
       <span class="text-xs text-gray-600"
@@ -114,9 +113,7 @@
       'editor'
         ? 'bg-slate-100'
         : ''}"
-      on:click={() => {
-        handleSetRole(group.groupName, "editor");
-      }}
+      on:click={() => handleSetRole(group.groupName, UserRoles.Editor)}
     >
       <span class="font-medium">Editor</span>
       <span class="text-xs text-gray-600"
@@ -128,9 +125,7 @@
       'viewer'
         ? 'bg-slate-100'
         : ''}"
-      on:click={() => {
-        handleSetRole(group.groupName, "viewer");
-      }}
+      on:click={() => handleSetRole(group.groupName, UserRoles.Viewer)}
     >
       <span class="font-medium">Viewer</span>
       <span class="text-xs text-gray-600"
@@ -140,9 +135,7 @@
     <DropdownMenu.Separator />
     <DropdownMenu.Item
       class="font-normal flex items-center"
-      on:click={() => {
-        handleRemove(group.groupName);
-      }}
+      on:click={() => handleRemove(group.groupName)}
     >
       <span class="text-red-600">Remove</span>
     </DropdownMenu.Item>

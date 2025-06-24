@@ -1672,6 +1672,9 @@ paths:
           required: true
           schema:
             type: object
+            properties:
+              role:
+                type: string
       tags:
         - AdminService
   /v1/organizations/{organization}/projects/{project}/tokens/magic:

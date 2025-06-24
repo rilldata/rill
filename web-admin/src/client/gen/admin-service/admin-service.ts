@@ -5923,14 +5923,14 @@ export const createAdminServiceUnsubscribeReport = <
 export const adminServiceRequestProjectAccess = (
   organization: string,
   project: string,
-  adminServiceTriggerReconcileBodyBody: AdminServiceTriggerReconcileBodyBody,
+  adminServiceSetProjectMemberUserRoleBodyBody: AdminServiceSetProjectMemberUserRoleBodyBody,
   signal?: AbortSignal,
 ) => {
   return httpClient<V1RequestProjectAccessResponse>({
     url: `/v1/organizations/${organization}/projects/${project}/request-access`,
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    data: adminServiceTriggerReconcileBodyBody,
+    data: adminServiceSetProjectMemberUserRoleBodyBody,
     signal,
   });
 };
@@ -5945,7 +5945,7 @@ export const getAdminServiceRequestProjectAccessMutationOptions = <
     {
       organization: string;
       project: string;
-      data: AdminServiceTriggerReconcileBodyBody;
+      data: AdminServiceSetProjectMemberUserRoleBodyBody;
     },
     TContext
   >;
@@ -5955,7 +5955,7 @@ export const getAdminServiceRequestProjectAccessMutationOptions = <
   {
     organization: string;
     project: string;
-    data: AdminServiceTriggerReconcileBodyBody;
+    data: AdminServiceSetProjectMemberUserRoleBodyBody;
   },
   TContext
 > => {
@@ -5973,7 +5973,7 @@ export const getAdminServiceRequestProjectAccessMutationOptions = <
     {
       organization: string;
       project: string;
-      data: AdminServiceTriggerReconcileBodyBody;
+      data: AdminServiceSetProjectMemberUserRoleBodyBody;
     }
   > = (props) => {
     const { organization, project, data } = props ?? {};
@@ -5988,7 +5988,7 @@ export type AdminServiceRequestProjectAccessMutationResult = NonNullable<
   Awaited<ReturnType<typeof adminServiceRequestProjectAccess>>
 >;
 export type AdminServiceRequestProjectAccessMutationBody =
-  AdminServiceTriggerReconcileBodyBody;
+  AdminServiceSetProjectMemberUserRoleBodyBody;
 export type AdminServiceRequestProjectAccessMutationError = RpcStatus;
 
 export const createAdminServiceRequestProjectAccess = <
@@ -6002,7 +6002,7 @@ export const createAdminServiceRequestProjectAccess = <
       {
         organization: string;
         project: string;
-        data: AdminServiceTriggerReconcileBodyBody;
+        data: AdminServiceSetProjectMemberUserRoleBodyBody;
       },
       TContext
     >;
@@ -6014,7 +6014,7 @@ export const createAdminServiceRequestProjectAccess = <
   {
     organization: string;
     project: string;
-    data: AdminServiceTriggerReconcileBodyBody;
+    data: AdminServiceSetProjectMemberUserRoleBodyBody;
   },
   TContext
 > => {

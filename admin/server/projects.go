@@ -1321,7 +1321,8 @@ func (s *Server) RequestProjectAccess(ctx context.Context, req *adminv1.RequestP
 			Email:       user.Email,
 			OrgName:     org.Name,
 			ProjectName: proj.Name,
-			ApproveLink: s.admin.URLs.WithCustomDomain(org.CustomDomain).ApproveProjectAccess(org.Name, proj.Name, accessReq.ID),
+			Role:        req.Role,
+			ApproveLink: s.admin.URLs.WithCustomDomain(org.CustomDomain).ApproveProjectAccess(org.Name, proj.Name, accessReq.ID, req.Role),
 			DenyLink:    s.admin.URLs.WithCustomDomain(org.CustomDomain).DenyProjectAccess(org.Name, proj.Name, accessReq.ID),
 		})
 		if err != nil {
