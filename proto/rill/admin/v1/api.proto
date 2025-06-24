@@ -536,6 +536,7 @@ service AdminService {
   }
 
   // GetDeploymentCredentials returns runtime info and access token on behalf of a specific user, or alternatively for a raw set of JWT attributes
+  // DEPRECATED: Clients should call GetDeployment instead.
   rpc GetDeploymentCredentials(GetDeploymentCredentialsRequest) returns (GetDeploymentCredentialsResponse) {
     option (google.api.http) = {
       post: "/v1/organizations/{organization}/projects/{project}/credentials",

@@ -104,14 +104,10 @@ func (s *Server) ListDeployments(ctx context.Context, req *adminv1.ListDeploymen
 		attribute.String("args.project_name", req.ProjectName),
 	)
 	if req.Environment != nil {
-		observability.AddRequestAttributes(ctx,
-			attribute.String("args.environment", *req.Environment),
-		)
+		observability.AddRequestAttributes(ctx, attribute.String("args.environment", *req.Environment))
 	}
 	if req.UserId != nil {
-		observability.AddRequestAttributes(ctx,
-			attribute.String("args.user_id", *req.UserId),
-		)
+		observability.AddRequestAttributes(ctx, attribute.String("args.user_id", *req.UserId))
 	}
 
 	proj, err := s.admin.DB.FindProjectByName(ctx, req.OrganizationName, req.ProjectName)
@@ -121,6 +117,10 @@ func (s *Server) ListDeployments(ctx context.Context, req *adminv1.ListDeploymen
 
 	claims := auth.GetClaims(ctx)
 	permissions := claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID)
+
+	if !permissions.ReadProject {
+		return nil, status.Error(codes.PermissionDenied, "does not have permission to read project")
+	}
 
 	depls, err := s.admin.DB.FindDeploymentsForProject(ctx, proj.ID)
 	if err != nil {
@@ -141,7 +141,6 @@ func (s *Server) ListDeployments(ctx context.Context, req *adminv1.ListDeploymen
 		}
 		if req.UserId != nil && d.OwnerUserID != nil && *req.UserId != *d.OwnerUserID {
 			continue
-
 		}
 		newDepls = append(newDepls, d)
 	}
@@ -176,12 +175,14 @@ func (s *Server) GetDeployment(ctx context.Context, req *adminv1.GetDeploymentRe
 	claims := auth.GetClaims(ctx)
 	permissions := claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID)
 
-	if depl.Environment == "prod" && !permissions.ReadProd {
-		return nil, status.Error(codes.PermissionDenied, "does not have permission to read prod deployment")
-	}
-
-	if depl.Environment == "dev" && !permissions.ReadDev {
-		return nil, status.Error(codes.PermissionDenied, "does not have permission to read dev deployment")
+	if depl.Environment == "dev" {
+		if !permissions.ReadDev {
+			return nil, status.Error(codes.PermissionDenied, "does not have permission to read dev deployment")
+		}
+	} else {
+		if !permissions.ReadProd {
+			return nil, status.Error(codes.PermissionDenied, "does not have permission to read prod deployment")
+		}
 	}
 
 	var attr map[string]any
@@ -276,11 +277,15 @@ func (s *Server) CreateDeployment(ctx context.Context, req *adminv1.CreateDeploy
 
 	claims := auth.GetClaims(ctx)
 	permissions := claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID)
-	if req.Environment == "prod" && !permissions.ManageProd {
-		return nil, status.Error(codes.PermissionDenied, "does not have permission to manage prod deployment")
-	}
-	if req.Environment == "dev" && !permissions.ManageDev {
-		return nil, status.Error(codes.PermissionDenied, "does not have permission to manage dev deployment")
+
+	if req.Environment == "dev" {
+		if !permissions.ManageDev {
+			return nil, status.Error(codes.PermissionDenied, "does not have permission to manage dev deployment")
+		}
+	} else {
+		if !permissions.ManageProd {
+			return nil, status.Error(codes.PermissionDenied, "does not have permission to manage prod deployment")
+		}
 	}
 
 	// We only allow one prod deployment.
@@ -293,7 +298,7 @@ func (s *Server) CreateDeployment(ctx context.Context, req *adminv1.CreateDeploy
 	var slots int
 	switch req.Environment {
 	case "prod":
-		branch = proj.ProdBranch
+		branch = ""
 		slots = proj.ProdSlots
 	case "dev":
 		// Generate a random branch name for dev deployments
@@ -316,7 +321,7 @@ func (s *Server) CreateDeployment(ctx context.Context, req *adminv1.CreateDeploy
 	// Check projects quota
 	usage, err := s.admin.DB.CountProjectsQuotaUsage(ctx, org.ID)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 	if org.QuotaSlotsPerDeployment >= 0 && slots > org.QuotaSlotsPerDeployment {
 		return nil, status.Errorf(codes.FailedPrecondition, "quota exceeded: org can't provision more than %d slots per deployment", org.QuotaSlotsPerDeployment)
@@ -328,20 +333,33 @@ func (s *Server) CreateDeployment(ctx context.Context, req *adminv1.CreateDeploy
 		return nil, status.Errorf(codes.FailedPrecondition, "quota exceeded: org %q is limited to %d deployments", org.Name, org.QuotaDeployments)
 	}
 
+	// If the request is for a dev deployment and the owner is a user, we set the ownerUserID
+	var ownerUserID *string
+	if req.Environment == "dev" && claims.OwnerType() == auth.OwnerTypeUser {
+		id := claims.OwnerID()
+		ownerUserID = &id
+	}
+
+	vars, err := s.admin.ResolveVariables(ctx, proj.ID, req.Environment, true)
+	if err != nil {
+		return nil, err
+	}
+
 	depl, err := s.admin.CreateDeployment(ctx, &admin.CreateDeploymentOptions{
 		ProjectID:   proj.ID,
+		OwnerUserID: ownerUserID,
 		Environment: req.Environment,
 		Annotations: s.admin.NewDeploymentAnnotations(org, proj),
 		Branch:      branch,
 		Provisioner: proj.Provisioner,
 		Slots:       slots,
 		Version:     proj.ProdVersion,
-		Variables:   nil,
+		Variables:   vars,
 		OLAPDriver:  "",
 		OLAPDSN:     "",
 	})
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 
 	return &adminv1.CreateDeploymentResponse{
@@ -367,11 +385,14 @@ func (s *Server) StartDeployment(ctx context.Context, req *adminv1.StartDeployme
 
 	claims := auth.GetClaims(ctx)
 	permissions := claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID)
-	if depl.Environment == "prod" && !permissions.ManageProd {
-		return nil, status.Error(codes.PermissionDenied, "does not have permission to manage prod deployment")
-	}
-	if depl.Environment == "dev" && !permissions.ManageDev {
-		return nil, status.Error(codes.PermissionDenied, "does not have permission to manage dev deployment")
+	if depl.Environment == "dev" {
+		if !permissions.ManageDev {
+			return nil, status.Error(codes.PermissionDenied, "does not have permission to manage dev deployment")
+		}
+	} else {
+		if !permissions.ManageProd {
+			return nil, status.Error(codes.PermissionDenied, "does not have permission to manage prod deployment")
+		}
 	}
 
 	org, err := s.admin.DB.FindOrganization(ctx, proj.OrganizationID)
@@ -385,6 +406,13 @@ func (s *Server) StartDeployment(ctx context.Context, req *adminv1.StartDeployme
 		slots = proj.ProdSlots
 	case "dev":
 		slots = proj.DevSlots
+	default:
+		return nil, status.Error(codes.InvalidArgument, "invalid environment, must be 'prod' or 'dev'")
+	}
+
+	vars, err := s.admin.ResolveVariables(ctx, proj.ID, depl.Environment, true)
+	if err != nil {
+		return nil, err
 	}
 
 	depl, err = s.admin.StartDeployment(ctx, depl, &admin.StartDeploymentOptions{
@@ -392,12 +420,12 @@ func (s *Server) StartDeployment(ctx context.Context, req *adminv1.StartDeployme
 		Provisioner: proj.Provisioner,
 		Slots:       slots,
 		Version:     proj.ProdVersion,
-		Variables:   nil,
+		Variables:   vars,
 		OLAPDriver:  "",
 		OLAPDSN:     "",
 	})
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 
 	s.admin.Used.Deployment(depl.ID)
@@ -425,11 +453,14 @@ func (s *Server) StopDeployment(ctx context.Context, req *adminv1.StopDeployment
 
 	claims := auth.GetClaims(ctx)
 	permissions := claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID)
-	if depl.Environment == "prod" && !permissions.ManageProd {
-		return nil, status.Error(codes.PermissionDenied, "does not have permission to manage prod deployment")
-	}
-	if depl.Environment == "dev" && !permissions.ManageDev {
-		return nil, status.Error(codes.PermissionDenied, "does not have permission to manage dev deployment")
+	if depl.Environment == "dev" {
+		if !permissions.ManageDev {
+			return nil, status.Error(codes.PermissionDenied, "does not have permission to manage dev deployment")
+		}
+	} else {
+		if !permissions.ManageProd {
+			return nil, status.Error(codes.PermissionDenied, "does not have permission to manage prod deployment")
+		}
 	}
 
 	err = s.admin.StopDeployment(ctx, depl)
@@ -460,13 +491,14 @@ func (s *Server) DeleteDeployment(ctx context.Context, req *adminv1.DeleteDeploy
 
 	claims := auth.GetClaims(ctx)
 	permissions := claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID)
-
-	if depl.Environment == "prod" && !permissions.ManageProd {
-		return nil, status.Error(codes.PermissionDenied, "does not have permission to manage prod deployment")
-	}
-
-	if depl.Environment == "dev" && !permissions.ManageDev {
-		return nil, status.Error(codes.PermissionDenied, "does not have permission to manage dev deployment")
+	if depl.Environment == "dev" {
+		if !permissions.ManageDev {
+			return nil, status.Error(codes.PermissionDenied, "does not have permission to manage dev deployment")
+		}
+	} else {
+		if !permissions.ManageProd {
+			return nil, status.Error(codes.PermissionDenied, "does not have permission to manage prod deployment")
+		}
 	}
 
 	err = s.admin.TeardownDeployment(ctx, depl)
@@ -478,7 +510,6 @@ func (s *Server) DeleteDeployment(ctx context.Context, req *adminv1.DeleteDeploy
 }
 
 // GetDeploymentCredentials returns runtime info and JWT on behalf of a specific user, or alternatively for a raw set of JWT attributes
-// DEPRECATED: Clients should call GetDeployment instead.
 func (s *Server) GetDeploymentCredentials(ctx context.Context, req *adminv1.GetDeploymentCredentialsRequest) (*adminv1.GetDeploymentCredentialsResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.organization", req.Organization),

@@ -55,7 +55,7 @@ func (o *Orb) DefaultQuotas() Quotas {
 		StorageLimitBytesPerDeployment: toPtr(int64(10737418240)), // 10GB
 		NumProjects:                    toPtr(1),
 		NumDeployments:                 toPtr(20),
-		NumSlotsTotal:                  toPtr(12),
+		NumSlotsTotal:                  toPtr(40),
 		NumSlotsPerDeployment:          toPtr(8),
 		NumOutstandingInvites:          toPtr(200),
 	}

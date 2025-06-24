@@ -36,16 +36,6 @@ type CreateDeploymentOptions struct {
 	OLAPDSN     string
 }
 
-type StartDeploymentOptions struct {
-	Annotations DeploymentAnnotations
-	Provisioner string
-	Slots       int
-	Version     string
-	Variables   map[string]string
-	OLAPDriver  string
-	OLAPDSN     string
-}
-
 func (s *Service) CreateDeployment(ctx context.Context, opts *CreateDeploymentOptions) (*database.Deployment, error) {
 	// Create the deployment
 	depl, err := s.DB.InsertDeployment(ctx, &database.InsertDeploymentOptions{
@@ -78,6 +68,16 @@ func (s *Service) CreateDeployment(ctx context.Context, opts *CreateDeploymentOp
 	}
 
 	return depl, nil
+}
+
+type StartDeploymentOptions struct {
+	Annotations DeploymentAnnotations
+	Provisioner string
+	Slots       int
+	Version     string
+	Variables   map[string]string
+	OLAPDriver  string
+	OLAPDSN     string
 }
 
 func (s *Service) StartDeployment(ctx context.Context, depl *database.Deployment, opts *StartDeploymentOptions) (*database.Deployment, error) {
@@ -347,8 +347,7 @@ type UpdateDeploymentOptions struct {
 	Annotations     DeploymentAnnotations
 	Branch          string
 	Version         string
-	Variables       map[string]string // If empty, the existing variables are left unchanged.
-	EvictCachedRepo bool              // Set to true to force the runtime to do a fresh repo clone instead of a pull.
+	EvictCachedRepo bool // Set to true to force the runtime to do a fresh repo clone instead of a pull.
 }
 
 func (s *Service) UpdateDeployment(ctx context.Context, d *database.Deployment, opts *UpdateDeploymentOptions) error {
@@ -356,6 +355,12 @@ func (s *Service) UpdateDeployment(ctx context.Context, d *database.Deployment, 
 	// This is usually "latest", which the provisioner internally may resolve to an actual version.
 	runtimeVersion := opts.Version
 	err := validateRuntimeVersion(runtimeVersion)
+	if err != nil {
+		return err
+	}
+
+	// Resolve the deployment's variables
+	vars, err := s.ResolveVariables(ctx, d.ProjectID, d.Environment, true)
 	if err != nil {
 		return err
 	}
@@ -416,7 +421,7 @@ func (s *Service) UpdateDeployment(ctx context.Context, d *database.Deployment, 
 	_, err = rt.EditInstance(ctx, &runtimev1.EditInstanceRequest{
 		InstanceId:  d.RuntimeInstanceID,
 		Connectors:  connectors,
-		Variables:   opts.Variables,
+		Variables:   vars,
 		Annotations: opts.Annotations.ToMap(),
 	})
 	if err != nil {
