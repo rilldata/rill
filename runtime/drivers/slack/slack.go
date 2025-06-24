@@ -73,7 +73,7 @@ var _ drivers.Handle = &Connection{}
 // Ping implements drivers.Handle.
 func (c *Connection) Ping(ctx context.Context) error {
 	if c.config.BotToken == "" {
-		return fmt.Errorf("bot token not configured")
+		return nil
 	}
 
 	// Create a test notifier to verify the token

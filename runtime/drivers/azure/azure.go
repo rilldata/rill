@@ -4,19 +4,16 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net/url"
 	"os"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
-	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/container"
+	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/service"
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
-	"github.com/rilldata/rill/runtime/pkg/blob"
 	"github.com/rilldata/rill/runtime/storage"
 	"go.uber.org/zap"
-	"gocloud.dev/blob/azureblob"
 )
 
 func init() {
@@ -80,7 +77,6 @@ type ConfigProperties struct {
 	Key              string `mapstructure:"azure_storage_key"`
 	SASToken         string `mapstructure:"azure_storage_sas_token"`
 	ConnectionString string `mapstructure:"azure_storage_connection_string"`
-	Bucket           string `mapstructure:"azure_storage_bucket"`
 	AllowHostAccess  bool   `mapstructure:"allow_host_access"`
 }
 
@@ -125,20 +121,14 @@ var _ drivers.Handle = &Connection{}
 
 // Ping implements drivers.Handle.
 func (c *Connection) Ping(ctx context.Context) error {
-	if c.config.Bucket == "" {
-		return fmt.Errorf("bucket not configured")
+	client, err := c.newStorageClient()
+	if err != nil {
+		return fmt.Errorf("failed to initialize Azure storage client: %w", err)
 	}
 
-	// Try to open the bucket to verify connection
-	bucket, err := c.openBucket(ctx, c.config.Bucket, false)
+	_, err = client.GetAccountInfo(ctx, nil)
 	if err != nil {
-		return fmt.Errorf("failed to open bucket: %w", err)
-	}
-	defer bucket.Close()
-
-	_, err = bucket.ListObjects(ctx, "*")
-	if err != nil {
-		return fmt.Errorf("failed to list objects: %w", err)
+		return fmt.Errorf("failed to get Azure account info: %w", err)
 	}
 
 	return nil
@@ -235,8 +225,8 @@ func (c *Connection) AsNotifier(properties map[string]any) (drivers.Notifier, er
 	return nil, drivers.ErrNotNotifier
 }
 
-// newClient returns a new azure blob client.
-func (c *Connection) newClient(bucket string) (*container.Client, error) {
+// newStorageClient returns a service client.
+func (c *Connection) newStorageClient() (*service.Client, error) {
 	var accountKey, sasToken, connectionString string
 
 	accountName, err := c.accountName()
@@ -261,119 +251,31 @@ func (c *Connection) newClient(bucket string) (*container.Client, error) {
 	}
 
 	if connectionString != "" {
-		client, err := container.NewClientFromConnectionString(connectionString, bucket, nil)
-		if err != nil {
-			return nil, fmt.Errorf("failed container.NewClientFromConnectionString: %w", err)
-		}
-		return client, nil
+		return service.NewClientFromConnectionString(connectionString, nil)
 	}
 
 	if accountName != "" {
-		svcURL := fmt.Sprintf("https://%s.blob.core.windows.net", accountName)
-		containerURL, err := url.JoinPath(svcURL, bucket)
-		if err != nil {
-			return nil, err
-		}
-
-		var sharedKeyCred *azblob.SharedKeyCredential
+		serviceURL := fmt.Sprintf("https://%s.blob.core.windows.net/", accountName)
 
 		if accountKey != "" {
-			sharedKeyCred, err = azblob.NewSharedKeyCredential(accountName, accountKey)
+			cred, err := azblob.NewSharedKeyCredential(accountName, accountKey)
 			if err != nil {
-				return nil, fmt.Errorf("failed azblob.NewSharedKeyCredential: %w", err)
+				return nil, fmt.Errorf("failed to create shared key credential: %w", err)
 			}
-
-			client, err := container.NewClientWithSharedKeyCredential(containerURL, sharedKeyCred, nil)
-			if err != nil {
-				return nil, fmt.Errorf("failed container.NewClientWithSharedKeyCredential: %w", err)
-			}
-			return client, nil
+			return service.NewClientWithSharedKeyCredential(serviceURL, cred, nil)
 		}
 
 		if sasToken != "" {
-			serviceURL, err := azureblob.NewServiceURL(&azureblob.ServiceURLOptions{
-				AccountName: accountName,
-				SASToken:    sasToken,
-			})
-			if err != nil {
-				return nil, err
-			}
-
-			containerURL, err := url.JoinPath(string(serviceURL), bucket)
-			if err != nil {
-				return nil, err
-			}
-
-			client, err := container.NewClientWithNoCredential(containerURL, nil)
-			if err != nil {
-				return nil, fmt.Errorf("failed container.NewClientWithNoCredential: %w", err)
-			}
-			return client, nil
+			svcURL := fmt.Sprintf("%s?%s", serviceURL, sasToken)
+			return service.NewClientWithNoCredential(svcURL, nil)
 		}
 
-		cred, err := azidentity.NewDefaultAzureCredential(&azidentity.DefaultAzureCredentialOptions{
-			DisableInstanceDiscovery: true,
-		})
+		cred, err := azidentity.NewDefaultAzureCredential(nil)
 		if err != nil {
-			return nil, fmt.Errorf("failed azidentity.NewDefaultAzureCredential: %w", err)
+			return nil, fmt.Errorf("failed to create default Azure credential: %w", err)
 		}
-		client, err := container.NewClient(containerURL, cred, nil)
-		if err != nil {
-			return nil, fmt.Errorf("failed container.NewClient: %w", err)
-		}
-		return client, nil
+		return service.NewClient(serviceURL, cred, nil)
 	}
 
-	return nil, errors.New("can't access remote host without credentials: no credentials provided")
-}
-
-func (c *Connection) newAnonymousClient(bucket string) (*container.Client, error) {
-	accountName, err := c.accountName()
-	if err != nil {
-		return nil, err
-	}
-
-	svcURL := fmt.Sprintf("https://%s.blob.core.windows.net", accountName)
-	containerURL, err := url.JoinPath(svcURL, bucket)
-	if err != nil {
-		return nil, err
-	}
-	client, err := container.NewClientWithNoCredential(containerURL, nil)
-	if err != nil {
-		return nil, fmt.Errorf("failed container.NewClientWithNoCredential: %w", err)
-	}
-
-	return client, nil
-}
-
-func (c *Connection) accountName() (string, error) {
-	if c.config.Account != "" {
-		return c.config.Account, nil
-	}
-
-	if c.config.AllowHostAccess {
-		return os.Getenv("AZURE_STORAGE_ACCOUNT"), nil
-	}
-
-	return "", errors.New("account name not found")
-}
-
-func (c *Connection) openBucket(ctx context.Context, bucket string, anonymous bool) (*blob.Bucket, error) {
-	var client *container.Client
-	var err error
-	if anonymous {
-		client, err = c.newAnonymousClient(bucket)
-	} else {
-		client, err = c.newClient(bucket)
-	}
-	if err != nil {
-		return nil, err
-	}
-
-	azureBucket, err := azureblob.OpenBucket(ctx, client, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return blob.NewBucket(azureBucket, c.logger)
+	return nil, errors.New("no valid Azure credentials provided")
 }

@@ -83,24 +83,7 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 		return nil, errors.New("postgres driver can't be shared")
 	}
 
-	conf := &ConfigProperties{}
-	if err := mapstructure.WeakDecode(config, conf); err != nil {
-		return nil, fmt.Errorf("failed to decode config: %w", err)
-	}
-
-	dsn := conf.ResolveDSN()
-	if dsn == "" {
-		return nil, fmt.Errorf("database_url or dsn not provided")
-	}
-
-	// Open DB handle
-	db, err := sqlx.Open("pgx", dsn)
-	if err != nil {
-		return nil, fmt.Errorf("failed to open connection: %w", err)
-	}
-
 	return &Connection{
-		db:     db,
 		config: config,
 	}, nil
 }
@@ -118,13 +101,17 @@ func (d driver) TertiarySourceConnectors(ctx context.Context, src map[string]any
 }
 
 type Connection struct {
-	db     *sqlx.DB
 	config map[string]any
 }
 
 // Ping implements drivers.Handle.
 func (c *Connection) Ping(ctx context.Context) error {
-	return c.db.PingContext(ctx)
+	db, err := c.getDB()
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	return db.PingContext(ctx)
 }
 
 // Migrate implements drivers.Connection.
@@ -154,7 +141,7 @@ func (c *Connection) InformationSchema() drivers.InformationSchema {
 
 // Close implements drivers.Connection.
 func (c *Connection) Close() error {
-	return c.db.Close()
+	return nil
 }
 
 // AsRegistry implements drivers.Connection.
@@ -215,4 +202,21 @@ func (c *Connection) AsWarehouse() (drivers.Warehouse, bool) {
 // AsNotifier implements drivers.Connection.
 func (c *Connection) AsNotifier(properties map[string]any) (drivers.Notifier, error) {
 	return nil, drivers.ErrNotNotifier
+}
+
+// getDB opens a new sqlx.DB connection using the config.
+func (c *Connection) getDB() (*sqlx.DB, error) {
+	conf := &ConfigProperties{}
+	if err := mapstructure.WeakDecode(c.config, conf); err != nil {
+		return nil, fmt.Errorf("failed to decode config: %w", err)
+	}
+	dsn := conf.ResolveDSN()
+	if dsn == "" {
+		return nil, fmt.Errorf("database_url or dsn not provided")
+	}
+	db, err := sqlx.Open("pgx", dsn)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open connection: %w", err)
+	}
+	return db, nil
 }

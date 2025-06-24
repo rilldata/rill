@@ -8,11 +8,9 @@ import (
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
-	"github.com/rilldata/rill/runtime/pkg/blob"
 	"github.com/rilldata/rill/runtime/pkg/gcputil"
 	"github.com/rilldata/rill/runtime/storage"
 	"go.uber.org/zap"
-	"gocloud.dev/blob/gcsblob"
 	"gocloud.dev/gcp"
 )
 
@@ -66,7 +64,6 @@ type ConfigProperties struct {
 	// When working in s3 compatible mode
 	KeyID  string `mapstructure:"key_id"`
 	Secret string `mapstructure:"secret"`
-	Bucket string `mapstructure:"bucket"`
 }
 
 func NewConfigProperties(in map[string]any) (*ConfigProperties, error) {
@@ -119,20 +116,22 @@ var _ drivers.Handle = &Connection{}
 
 // Ping implements drivers.Handle.
 func (c *Connection) Ping(ctx context.Context) error {
-	// TODO: also handle if hmac key_id and secret is provided
-	if c.config.Bucket == "" {
-		return fmt.Errorf("bucket not configured")
+	if c.config.SecretJSON != "" {
+		creds, err := gcputil.Credentials(ctx, c.config.SecretJSON, c.config.AllowHostAccess)
+		if err != nil {
+			return fmt.Errorf("failed to load credentials: %w", err)
+		}
+
+		ts := gcp.CredentialsTokenSource(creds)
+		_, err = ts.Token()
+		if err != nil {
+			return fmt.Errorf("failed to retrieve access token: %w", err)
+		}
 	}
 
-	bucket, err := c.openBucket(ctx, c.config.Bucket)
-	if err != nil {
-		return fmt.Errorf("failed to open bucket: %w", err)
-	}
-	defer bucket.Close()
-
-	_, err = bucket.ListObjects(ctx, "*")
-	if err != nil {
-		return fmt.Errorf("failed to list objects: %w", err)
+	if c.config.KeyID != "" && c.config.Secret != "" {
+		// TODO: handle in case of HMAC key secret
+		return nil
 	}
 
 	return nil
@@ -241,18 +240,4 @@ func (c *Connection) newClient(ctx context.Context) (*gcp.HTTPClient, error) {
 	}
 	// the token source returned from credentials works for all kind of credentials like serviceAccountKey, credentialsKey etc.
 	return gcp.NewHTTPClient(gcp.DefaultTransport(), gcp.CredentialsTokenSource(creds))
-}
-
-func (c *Connection) openBucket(ctx context.Context, bucket string) (*blob.Bucket, error) {
-	client, err := c.newClient(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	gcsBucket, err := gcsblob.OpenBucket(ctx, client, bucket, nil)
-	if err != nil {
-		return nil, fmt.Errorf("failed to open bucket %q: %w", bucket, err)
-	}
-
-	return blob.NewBucket(gcsBucket, c.logger)
 }

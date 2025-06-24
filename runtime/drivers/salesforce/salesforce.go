@@ -170,13 +170,15 @@ func (c *Connection) Ping(ctx context.Context) error {
 	if u, ok := c.config["username"].(string); ok && u != "" {
 		username = u
 	} else {
-		return fmt.Errorf("the property 'username' is required for Salesforce. Provide 'username' in the YAML properties or pass '--env connector.salesforce.username=...' to 'rill start'")
+		// backwards compatibility: return early because this can be defined in sourceProp
+		return nil
 	}
 
 	if e, ok := c.config["endpoint"].(string); ok && e != "" {
 		endpoint = e
 	} else {
-		return fmt.Errorf("the property 'endpoint' is required for Salesforce. Provide 'endpoint' in the YAML properties or pass '--env connector.salesforce.endpoint=...' to 'rill start'")
+		// backwards compatibility: return early because this can be defined in sourceProp
+		return nil
 	}
 
 	if c, ok := c.config["client_id"].(string); ok && c != "" {
@@ -194,7 +196,8 @@ func (c *Connection) Ping(ctx context.Context) error {
 	}
 
 	if password == "" && key == "" {
-		return fmt.Errorf("the property 'password' or property 'key' is required for Salesforce. Provide 'password' or 'key' in the YAML properties or pass '--env connector.salesforce.password=...' or '--env connector.salesforce.key=...' to 'rill start'")
+		// backwards compatibility: return early because this can be defined in sourceProp
+		return nil
 	}
 
 	authOptions := authenticationOptions{

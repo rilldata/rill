@@ -38,7 +38,13 @@ func (c *Connection) All(ctx context.Context, like string) ([]*drivers.Table, er
 		ORDER BY database, database_schema, name, table_type
 	`, likeClause)
 
-	rows, err := c.db.QueryxContext(ctx, q, args...)
+	db, err := c.getDB()
+	if err != nil {
+		return nil, err
+	}
+	defer db.Close()
+
+	rows, err := db.QueryxContext(ctx, q, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -51,7 +57,7 @@ func (c *Connection) All(ctx context.Context, like string) ([]*drivers.Table, er
 	return tables, nil
 }
 
-func (c *Connection) Lookup(ctx context.Context, db, schema, name string) (*drivers.Table, error) {
+func (c *Connection) Lookup(ctx context.Context, dbName, schema, name string) (*drivers.Table, error) {
 	var q string
 	var args []any
 	q = `
@@ -69,10 +75,10 @@ func (c *Connection) Lookup(ctx context.Context, db, schema, name string) (*driv
 		WHERE T.table_catalog = COALESCE(?, CURRENT_DATABASE()) AND T.table_schema = COALESCE(?, CURRENT_SCHEMA()) AND T.table_name = ?
 		ORDER BY database, database_schema, name, table_type, ordinal_position
 	`
-	if db == "" {
+	if dbName == "" {
 		args = append(args, nil)
 	} else {
-		args = append(args, db)
+		args = append(args, dbName)
 	}
 	if schema == "" {
 		args = append(args, nil)
@@ -81,7 +87,13 @@ func (c *Connection) Lookup(ctx context.Context, db, schema, name string) (*driv
 	}
 	args = append(args, name)
 
-	rows, err := c.db.QueryxContext(ctx, q, args...)
+	db, err := c.getDB()
+	if err != nil {
+		return nil, err
+	}
+	defer db.Close()
+
+	rows, err := db.QueryxContext(ctx, q, args...)
 	if err != nil {
 		return nil, err
 	}

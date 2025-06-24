@@ -81,19 +81,7 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 	if err != nil {
 		return nil, err
 	}
-
-	if conf.DSN == "" {
-		return nil, fmt.Errorf("dsn not provided")
-	}
-
-	// Open DB handle
-	db, err := sqlx.Open("snowflake", conf.DSN)
-	if err != nil {
-		return nil, fmt.Errorf("failed to open connection: %w", err)
-	}
-
 	return &Connection{
-		db:               db,
 		configProperties: conf,
 		storage:          st,
 		logger:           logger,
@@ -113,7 +101,6 @@ func (d driver) TertiarySourceConnectors(ctx context.Context, src map[string]any
 }
 
 type Connection struct {
-	db               *sqlx.DB
 	configProperties *configProperties
 	storage          *storage.Client
 	logger           *zap.Logger
@@ -121,7 +108,16 @@ type Connection struct {
 
 // Ping implements drivers.Handle.
 func (c *Connection) Ping(ctx context.Context) error {
-	return c.db.PingContext(ctx)
+	if c.configProperties.DSN == "" {
+		// backwards compatibility: return early can't ping because dsn can be define in source.
+		return nil
+	}
+	db, err := c.getDB()
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	return db.PingContext(ctx)
 }
 
 // Migrate implements drivers.Connection.
@@ -153,7 +149,7 @@ func (c *Connection) InformationSchema() drivers.InformationSchema {
 
 // Close implements drivers.Connection.
 func (c *Connection) Close() error {
-	return c.db.Close()
+	return nil
 }
 
 // AsRegistry implements drivers.Connection.
@@ -222,4 +218,16 @@ func (c *Connection) AsWarehouse() (drivers.Warehouse, bool) {
 // AsNotifier implements drivers.Connection.
 func (c *Connection) AsNotifier(properties map[string]any) (drivers.Notifier, error) {
 	return nil, drivers.ErrNotNotifier
+}
+
+// getDB opens a new sqlx.DB connection using the configProperties.
+func (c *Connection) getDB() (*sqlx.DB, error) {
+	if c.configProperties.DSN == "" {
+		return nil, fmt.Errorf("dsn not provided")
+	}
+	db, err := sqlx.Open("snowflake", c.configProperties.DSN)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open connection: %w", err)
+	}
+	return db, nil
 }
