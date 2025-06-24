@@ -5647,6 +5647,11 @@ definitions:
       changeMode:
         $ref: '#/definitions/v1ModelChangeMode'
         description: change_mode is the mode of change detection to use for the model.
+      tests:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1ModelTest'
       trigger:
         type: boolean
       triggerFull:
@@ -5675,6 +5680,14 @@ definitions:
       refsHash:
         type: string
         description: refs_hash is a hash of the model's refs current state. It is used to determine if the model's refs have changed.
+      testHash:
+        type: string
+        description: test_hash is a hash of the model's tests current state. It is used to determine if the model's tests have changed.
+      testErrors:
+        type: array
+        items:
+          type: string
+        description: test_errors contains the results of the model's tests.
       refreshedOn:
         type: string
         format: date-time
@@ -5702,6 +5715,15 @@ definitions:
         type: string
         format: int64
         description: latest_execution_duration_ms is the time user queries took to execute in the last successful refresh.
+  v1ModelTest:
+    type: object
+    properties:
+      name:
+        type: string
+      resolver:
+        type: string
+      resolverProperties:
+        type: object
   v1Notifier:
     type: object
     properties:

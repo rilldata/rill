@@ -12930,7 +12930,6 @@ type GetRepoMetaRequest struct {
 	unknownFields protoimpl.UnknownFields
 
 	// The project ID to get repository metadata for.
-	// If the call is made with a deployment access token, the project ID is optional and is inferred from the token.
 	ProjectId string `protobuf:"bytes,1,opt,name=project_id,json=projectId,proto3" json:"project_id,omitempty"`
 }
 
@@ -13092,7 +13091,6 @@ type PullVirtualRepoRequest struct {
 	unknownFields protoimpl.UnknownFields
 
 	// The project ID to pull virtual files for.
-	// If the call is made with a deployment access token, the project ID is optional and is inferred from the token.
 	ProjectId string `protobuf:"bytes,1,opt,name=project_id,json=projectId,proto3" json:"project_id,omitempty"`
 	// The environment to pull virtual files for.
 	// It is optional. If the call is made with a deployment access token, it defaults to the environment of the deployment. Otherwise, it defaults to "prod".

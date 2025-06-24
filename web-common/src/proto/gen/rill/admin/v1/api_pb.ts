@@ -10168,7 +10168,6 @@ export class ListProjectWhitelistedDomainsResponse extends Message<ListProjectWh
 export class GetRepoMetaRequest extends Message<GetRepoMetaRequest> {
   /**
    * The project ID to get repository metadata for.
-   * If the call is made with a deployment access token, the project ID is optional and is inferred from the token.
    *
    * @generated from field: string project_id = 1;
    */
@@ -10305,7 +10304,6 @@ export class GetRepoMetaResponse extends Message<GetRepoMetaResponse> {
 export class PullVirtualRepoRequest extends Message<PullVirtualRepoRequest> {
   /**
    * The project ID to pull virtual files for.
-   * If the call is made with a deployment access token, the project ID is optional and is inferred from the token.
    *
    * @generated from field: string project_id = 1;
    */
