@@ -10,7 +10,7 @@
     useMetricsViewTimeRange,
     useMetricsViewValidSpec,
   } from "@rilldata/web-common/features/dashboards/selectors";
-  import { getExploreName } from "@rilldata/web-common/features/query-mappers/utils";
+  import { getExploreName } from "@rilldata/web-common/features/explore-mappers/utils";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { createEventDispatcher } from "svelte";

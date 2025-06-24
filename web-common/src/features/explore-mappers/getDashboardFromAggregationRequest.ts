@@ -20,11 +20,11 @@ import {
   getAllIdentifiers,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
-import type { QueryMapperArgs } from "@rilldata/web-common/features/query-mappers/types";
+import type { TransformerArgs } from "@rilldata/web-common/features/explore-mappers/types";
 import {
   convertQueryFilterToToplistQuery,
   fillTimeRange,
-} from "@rilldata/web-common/features/query-mappers/utils";
+} from "@rilldata/web-common/features/explore-mappers/utils";
 import { DashboardState_ActivePage } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import {
   getQueryServiceMetricsViewSchemaQueryKey,
@@ -46,7 +46,7 @@ export async function getDashboardFromAggregationRequest({
   metricsView,
   explore,
   annotations,
-}: QueryMapperArgs<V1MetricsViewAggregationRequest>) {
+}: TransformerArgs<V1MetricsViewAggregationRequest>) {
   let loadedFromState = false;
   if (annotations["web_open_state"]) {
     await mergeDashboardFromUrlState(

@@ -8,11 +8,11 @@
   import CtaMessage from "@rilldata/web-common/components/calls-to-action/CTAMessage.svelte";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
-  import { mapQueryToDashboard } from "@rilldata/web-common/features/query-mappers/mapQueryToDashboard";
+  import { mapQueryToDashboard } from "@rilldata/web-common/features/explore-mappers/map-to-explore";
   import {
     getExploreName,
     getExplorePageUrlSearchParams,
-  } from "@rilldata/web-common/features/query-mappers/utils";
+  } from "@rilldata/web-common/features/explore-mappers/utils";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 
   $: ({ instanceId } = $runtime);

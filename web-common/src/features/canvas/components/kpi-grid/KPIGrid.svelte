@@ -1,5 +1,4 @@
 <script lang="ts">
-  import ExploreLink from "@rilldata/web-common/features/canvas/components/ExploreLink.svelte";
   import type { KPIGridComponent } from ".";
   import ComponentHeader from "../../ComponentHeader.svelte";
   import ComponentError from "../ComponentError.svelte";
@@ -43,11 +42,6 @@
 </script>
 
 <ComponentHeader {component} {title} {description} {filters} />
-
-<ExploreLink
-  metricsViewName={kpiGridProperties.metrics_view}
-  timeAndFilterStore={$timeAndFilterStore}
-/>
 
 {#if schema.isValid}
   <div class="h-fit p-0 grow relative" class:!p-0={kpis.length === 1}>

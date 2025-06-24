@@ -1,4 +1,4 @@
-import { getExploreName } from "@rilldata/web-common/features/query-mappers/utils";
+import { getExploreName } from "@rilldata/web-common/features/explore-mappers/utils";
 import {
   getDayOfMonthFromCronExpression,
   getDayOfWeekFromCronExpression,

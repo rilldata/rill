@@ -2,13 +2,17 @@ import { getFullInitExploreState } from "@rilldata/web-common/features/dashboard
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import { convertPresetToExploreState } from "@rilldata/web-common/features/dashboards/url-state/convertPresetToExploreState";
 import { getDefaultExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/getDefaultExplorePreset";
-import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
-import { getDashboardFromAggregationRequest } from "@rilldata/web-common/features/query-mappers/getDashboardFromAggregationRequest";
-import { getDashboardFromComparisonRequest } from "@rilldata/web-common/features/query-mappers/getDashboardFromComparisonRequest";
+import { getDashboardFromAggregationRequest } from "@rilldata/web-common/features/explore-mappers/getDashboardFromAggregationRequest";
+import { getDashboardFromComparisonRequest } from "@rilldata/web-common/features/explore-mappers/getDashboardFromComparisonRequest";
+import { getDashboardFromComponentTransformer } from "@rilldata/web-common/features/explore-mappers/getDashboardFromComponentTransformer";
 import type {
-  QueryMapperArgs,
+  ComponentTransformerProperties,
   QueryRequests,
-} from "@rilldata/web-common/features/query-mappers/types";
+  TransformerArgs,
+  TransformerProperties,
+} from "@rilldata/web-common/features/explore-mappers/types";
+import { convertRequestKeysToCamelCase } from "@rilldata/web-common/features/explore-mappers/utils";
+import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import {
   createQueryServiceMetricsViewTimeRange,
@@ -41,26 +45,65 @@ export function mapQueryToDashboard(
       error: new Error("Required parameters are missing."),
     });
 
-  let metricsViewName: string = "";
-  const req: QueryRequests = convertRequestKeysToCamelCase(
+  const queryRequestProperties: QueryRequests = convertRequestKeysToCamelCase(
     JSON.parse(queryArgsJson),
   );
+
+  return mapObjectToExploreState(
+    exploreName,
+    queryName,
+    queryRequestProperties,
+    executionTime,
+    annotations,
+  );
+}
+
+export function mapObjectToExploreState(
+  exploreName: string,
+  transformerName: string,
+  transformerProperties: TransformerProperties,
+  executionTime: string,
+  annotations: Record<string, string>,
+): Readable<{
+  isFetching: boolean;
+  isLoading: boolean;
+  error: Error;
+  data?: { exploreState: ExploreState; exploreName: string };
+}> {
+  if (!executionTime)
+    return readable({
+      isFetching: false,
+      isLoading: false,
+      error: new Error("Required parameters are missing."),
+    });
+
+  let metricsViewName: string = "";
+
   let getDashboardState: (
-    args: QueryMapperArgs<QueryRequests>,
+    args: TransformerArgs<TransformerProperties>,
   ) => Promise<ExploreState>;
 
   // get metrics view name and the query mapper function based on the query name.
-  switch (queryName) {
+  switch (transformerName) {
     case "MetricsViewAggregation":
       metricsViewName =
-        (req as V1MetricsViewAggregationRequest).metricsView ?? "";
+        (transformerProperties as V1MetricsViewAggregationRequest)
+          .metricsView ?? "";
       getDashboardState = getDashboardFromAggregationRequest;
       break;
 
     case "MetricsViewComparison":
       metricsViewName =
-        (req as V1MetricsViewComparisonRequest).metricsViewName ?? "";
+        (transformerProperties as V1MetricsViewComparisonRequest)
+          .metricsViewName ?? "";
       getDashboardState = getDashboardFromComparisonRequest;
+      break;
+
+    case "ComponentTransformer":
+      metricsViewName = (
+        transformerProperties as ComponentTransformerProperties
+      ).metricsViewName;
+      getDashboardState = getDashboardFromComponentTransformer;
       break;
 
     // TODO
@@ -160,7 +203,7 @@ export function mapQueryToDashboard(
         queryClient,
         instanceId,
         dashboard: defaultExploreState,
-        req,
+        req: transformerProperties,
         metricsView,
         explore,
         timeRangeSummary: timeRangeSummary.data.timeRangeSummary,
@@ -187,26 +230,4 @@ export function mapQueryToDashboard(
         });
     },
   );
-}
-
-/**
- * This method corrects the underscore naming to camel case.
- * This is the drawback of storing the request object as is.
- */
-function convertRequestKeysToCamelCase(
-  req: Record<string, any>,
-): Record<string, any> {
-  const newReq: Record<string, any> = {};
-
-  for (const key in req) {
-    const newKey = key.replace(/_(\w)/g, (_, c: string) => c.toUpperCase());
-    const val = req[key];
-    if (val && typeof val === "object" && !("length" in val)) {
-      newReq[newKey] = convertRequestKeysToCamelCase(val);
-    } else {
-      newReq[newKey] = val;
-    }
-  }
-
-  return newReq;
 }

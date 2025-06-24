@@ -1,7 +1,7 @@
 import { getSortType } from "@rilldata/web-common/features/dashboards/leaderboard/leaderboard-utils";
 import { SortDirection } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
-import type { QueryMapperArgs } from "@rilldata/web-common/features/query-mappers/types";
-import { fillTimeRange } from "@rilldata/web-common/features/query-mappers/utils";
+import type { TransformerArgs } from "@rilldata/web-common/features/explore-mappers/types";
+import { fillTimeRange } from "@rilldata/web-common/features/explore-mappers/utils";
 import { DashboardState_ActivePage } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import {
   V1MetricsViewComparisonMeasureType,
@@ -14,7 +14,7 @@ export async function getDashboardFromComparisonRequest({
   metricsView,
   timeRangeSummary,
   executionTime,
-}: QueryMapperArgs<V1MetricsViewComparisonRequest>) {
+}: TransformerArgs<V1MetricsViewComparisonRequest>) {
   if (req.where) dashboard.whereFilter = req.where;
 
   fillTimeRange(
