@@ -375,6 +375,8 @@ type Connection struct {
 	opts *clickhouse.Options
 	// embed is embedded clickhouse server for local run
 	embed *embedClickHouse
+	// billingTableExists cached state of whether the billing.events table exists in the database
+	billingTableExists *bool
 }
 
 // Ping implements drivers.Handle.
@@ -543,6 +545,17 @@ func (c *Connection) periodicallyEmitStats() {
 				c.logger.Log(lvl, "failed to estimate clickhouse size", zap.Error(err), zap.Bool("managed", c.config.Managed))
 			}
 		case <-regularTicker.C:
+			billingTableExists, err := c.checkBillingTableExists(c.ctx)
+			if err != nil {
+				if !errors.Is(err, c.ctx.Err()) {
+					c.logger.Warn("failed to check if billing table exists", zap.Error(err))
+				}
+				continue
+			}
+			if !billingTableExists {
+				c.logger.Debug("billing.events table does not exist in the database, RCU metrics will not be available", zap.String("clickhouse_host", c.config.Host), zap.String("clickhouse_dsn", c.config.DSN))
+				continue
+			}
 			// Emit the latest RCU per service.
 			latestRCU, err := c.latestRCUPerService(c.ctx)
 			if err == nil {
@@ -600,4 +613,17 @@ func (c *Connection) latestRCUPerService(ctx context.Context) (map[string]float6
 	}
 
 	return latestRCU, nil
+}
+
+func (c *Connection) checkBillingTableExists(ctx context.Context) (bool, error) {
+	if c.billingTableExists != nil {
+		return *c.billingTableExists, nil
+	}
+	var exists bool
+	err := c.db.QueryRowxContext(ctx, `SELECT count() > 0 FROM system.tables WHERE database = 'billing' AND name = 'events'`).Scan(&exists)
+	if err != nil {
+		return false, fmt.Errorf("failed to check if billing table exists: %w", err)
+	}
+	c.billingTableExists = &exists
+	return exists, nil
 }
