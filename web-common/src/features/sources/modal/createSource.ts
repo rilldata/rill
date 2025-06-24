@@ -2,6 +2,7 @@ import { getFileAPIPathFromNameAndType } from "@rilldata/web-common/features/ent
 import { EntityType } from "@rilldata/web-common/features/entity-management/types";
 import { runtimeServicePutFile } from "@rilldata/web-common/runtime-client";
 
+// @deprecated
 export async function createSource(
   instanceId: string,
   tableName: string,

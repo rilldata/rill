@@ -73,7 +73,7 @@ export function compileSourceYAML(
   );
 }
 
-// TODO: remove this
+// @deprecated
 export function compileLocalFileSourceYAML(path: string) {
   return `${TOP_OF_FILE}\n\nconnector: "duckdb"\nsql: "${buildDuckDbQuery(
     path,
