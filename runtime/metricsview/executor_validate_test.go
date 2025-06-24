@@ -31,7 +31,7 @@ func TestValidateMetricsView(t *testing.T) {
 	e, err := metricsview.NewExecutor(context.Background(), rt, instanceID, mv, false, runtime.ResolvedSecurityOpen, 0)
 	require.NoError(t, err)
 
-	res, _, err := e.ValidateMetricsView(context.Background())
+	res, err := e.ValidateAndNormalizeMetricsView(context.Background())
 	require.NoError(t, err)
 	require.Empty(t, res.TimeDimensionErr)
 	require.Empty(t, res.DimensionErrs)

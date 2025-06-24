@@ -108,7 +108,7 @@ func (r *MetricsViewReconciler) Reconcile(ctx context.Context, n *runtimev1.Reso
 		return runtime.ReconcileResult{Err: fmt.Errorf("failed to create metrics view executor: %w", err)}
 	}
 	defer e.Close()
-	validateResult, mvSchema, validateErr := e.ValidateMetricsView(ctx)
+	validateResult, validateErr := e.ValidateAndNormalizeMetricsView(ctx)
 	if validateErr == nil {
 		validateErr = validateResult.Error()
 	}
@@ -132,11 +132,8 @@ func (r *MetricsViewReconciler) Reconcile(ctx context.Context, n *runtimev1.Reso
 		return runtime.ReconcileResult{Err: validateErr}
 	}
 
-	// If the validation was successful, update the data types in the spec.
-	normalizedMVSpec := e.NormalizeMetricsView(mvSchema)
-
 	// Capture the spec, which we now know to be valid.
-	mv.State.ValidSpec = normalizedMVSpec
+	mv.State.ValidSpec = mv.Spec
 	// If there's no internal ref, we assume the metrics view is based on an externally managed table and set the streaming state to true.
 	mv.State.Streaming = !hasInternalRef
 	// We copy the underlying model's refreshed_on timestamp to the metrics view state since dashboard users may not have access to the underlying model resource.

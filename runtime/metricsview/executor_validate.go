@@ -12,7 +12,6 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"golang.org/x/sync/errgroup"
-	"google.golang.org/protobuf/proto"
 )
 
 const validateConcurrencyLimit = 10
@@ -53,8 +52,10 @@ func (r *ValidateMetricsViewResult) Error() error {
 	return errors.Join(errs...)
 }
 
-// ValidateMetricsView validates the dimensions and measures in the executor's metrics view and returns a ValidateMetricsViewResult and the schema of the metrics view.
-func (e *Executor) ValidateMetricsView(ctx context.Context) (*ValidateMetricsViewResult, *runtimev1.StructType, error) {
+// ValidateAndNormalizeMetricsView validates the dimensions and measures in the executor's metrics view and returns a ValidateMetricsViewResult
+// It also populates the schema of the metrics view if all dimensions and measures are valid.
+// Note - Beware that it modifies the metrics view spec in place to populate the dimension and measure types.
+func (e *Executor) ValidateAndNormalizeMetricsView(ctx context.Context) (*ValidateMetricsViewResult, error) {
 	// Create the result
 	res := &ValidateMetricsViewResult{}
 
@@ -64,9 +65,9 @@ func (e *Executor) ValidateMetricsView(ctx context.Context) (*ValidateMetricsVie
 	if err != nil {
 		if errors.Is(err, drivers.ErrNotFound) {
 			res.OtherErrs = append(res.OtherErrs, fmt.Errorf("table %q does not exist", mv.Table))
-			return res, nil, nil
+			return res, nil
 		}
-		return nil, nil, fmt.Errorf("could not find table %q: %w", mv.Table, err)
+		return nil, fmt.Errorf("could not find table %q: %w", mv.Table, err)
 	}
 	cols := make(map[string]*runtimev1.StructType_Field, len(t.Schema.Fields))
 	for _, f := range t.Schema.Fields {
@@ -130,10 +131,9 @@ func (e *Executor) ValidateMetricsView(ctx context.Context) (*ValidateMetricsVie
 		res.OtherErrs = append(res.OtherErrs, fmt.Errorf("time shift not supported for Pinot dialect, so FirstDayOfWeek and FirstMonthOfYear should be 1"))
 	}
 
-	var schema *runtimev1.StructType
 	// Validate the metrics view schema.
 	if res.IsZero() { // All dimensions and measures need to be valid to compute the schema.
-		schema, err = e.validateSchema(ctx, res)
+		err = e.validateSchema(ctx, res)
 		if err != nil {
 			res.OtherErrs = append(res.OtherErrs, fmt.Errorf("failed to validate metrics view schema: %w", err))
 		}
@@ -145,32 +145,7 @@ func (e *Executor) ValidateMetricsView(ctx context.Context) (*ValidateMetricsVie
 		res.OtherErrs = append(res.OtherErrs, fmt.Errorf("failed to get cache key: %w", err))
 	}
 
-	return res, schema, nil
-}
-
-// NormalizeMetricsView clones the metrics view and updates the data types of dimensions and measures based on the provided schema.
-func (e *Executor) NormalizeMetricsView(mvSchema *runtimev1.StructType) *runtimev1.MetricsViewSpec {
-	// clone the metrics view to avoid modifying the original
-	mv := proto.Clone(e.metricsView).(*runtimev1.MetricsViewSpec)
-
-	types := make(map[string]*runtimev1.Type, len(mvSchema.Fields))
-	for _, f := range mvSchema.Fields {
-		types[f.Name] = f.Type
-	}
-
-	for _, d := range mv.Dimensions {
-		if typ, ok := types[d.Name]; ok {
-			d.DataType = typ
-		} // ignore dimensions that don't have a type in the schema
-	}
-
-	for _, m := range mv.Measures {
-		if typ, ok := types[m.Name]; ok {
-			m.DataType = typ
-		} // ignore measures that don't have a type in the schema
-	}
-
-	return mv
+	return res, nil
 }
 
 // validateAllDimensionsAndMeasures validates all dimensions and measures with one query. It returns an error if any of the expressions are invalid.
@@ -378,11 +353,11 @@ func (e *Executor) validateMeasure(ctx context.Context, t *drivers.Table, m *run
 }
 
 // validateSchema validates that the metrics view's measures are numeric.
-func (e *Executor) validateSchema(ctx context.Context, res *ValidateMetricsViewResult) (*runtimev1.StructType, error) {
+func (e *Executor) validateSchema(ctx context.Context, res *ValidateMetricsViewResult) error {
 	// Resolve the schema of the metrics view's dimensions and measures
 	schema, err := e.Schema(ctx)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	types := make(map[string]*runtimev1.Type, len(schema.Fields))
 	for _, f := range schema.Fields {
@@ -404,7 +379,14 @@ func (e *Executor) validateSchema(ctx context.Context, res *ValidateMetricsViewR
 				Err: fmt.Errorf("measure %q is of type %s, but must be a numeric type", m.Name, typ.Code),
 			})
 		}
+		m.DataType = typ
 	}
 
-	return schema, nil
+	for _, d := range e.metricsView.Dimensions {
+		if typ, ok := types[d.Name]; ok {
+			d.DataType = typ
+		} // ignore dimensions that don't have a type in the schema
+	}
+
+	return nil
 }
