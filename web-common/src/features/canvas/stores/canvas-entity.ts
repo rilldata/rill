@@ -85,7 +85,7 @@ export class CanvasEntity {
 
     this.spec = new CanvasResolvedSpec(this.specStore);
     this.timeControls = new TimeControls(this.specStore);
-    this.filters = new Filters(this.spec);
+    this.filters = new Filters(this.spec, true);
 
     this.unsubscriber = this.specStore.subscribe((spec) => {
       const filePath = spec.data?.filePath;

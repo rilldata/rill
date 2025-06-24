@@ -44,6 +44,9 @@ import {
   writable,
   type Writable,
 } from "svelte/store";
+import { page } from "$app/stores";
+import { ExploreStateURLParams } from "../../dashboards/url-state/url-params";
+import { goto } from "$app/navigation";
 
 export class Filters {
   private spec: CanvasResolvedSpec;
@@ -95,8 +98,10 @@ export class Filters {
   includedDimensionValues: Readable<(dimensionName: string) => unknown[]>;
   hasAtLeastOneDimensionFilter: Readable<() => boolean>;
   filterText: Readable<string>;
+  global = false;
 
-  constructor(spec: CanvasResolvedSpec) {
+  constructor(spec: CanvasResolvedSpec, global = false) {
+    this.global = global;
     // -----------------------------
     // Initialize writable stores
     // -----------------------------
@@ -328,6 +333,32 @@ export class Filters {
         );
       },
     );
+
+    if (this.global) {
+      page.subscribe(($page) => {
+        const { searchParams } = $page.url;
+        const filterText = searchParams.get(ExploreStateURLParams.Filters);
+
+        this.whereFilter.set(getFiltersFromText(filterText ?? "").expr);
+      });
+
+      this.filterText.subscribe((text) => {
+        const pageStore = get(page);
+        const url = pageStore.url;
+
+        const existingFilter = url.searchParams.get(
+          ExploreStateURLParams.Filters,
+        );
+
+        if (text && existingFilter !== text) {
+          url.searchParams.set(ExploreStateURLParams.Filters, text);
+        } else if (!text) {
+          url.searchParams.delete(ExploreStateURLParams.Filters);
+        }
+
+        goto(url.toString(), { replaceState: true }).catch(console.error);
+      });
+    }
   }
 
   private getMeasureFilters = (
@@ -479,6 +510,7 @@ export class Filters {
         }
       }
     }
+
     this.whereFilter.set(wf);
   };
 

@@ -66,10 +66,16 @@
         comparisonRangeStateStore,
         selectedTimezone,
         minTimeGrain,
+        set,
+        // selectZone,
+        // selectRange,
+        selectGrain,
         selectTimeRange,
         setTimeZone,
-        displayTimeComparison,
-        setSelectedComparisonRange,
+
+        setShowTimeComparison,
+
+        selectComparisonRange,
         setInitialState,
       },
     },
@@ -244,23 +250,23 @@
     }
   }
 
-  function onSelectTimeZone(timeZone: string) {
-    if (!interval.isValid) return;
+  // function onSelectTimeZone(timeZone: string) {
+  //   if (!interval.isValid) return;
 
-    if (selectedRangeAlias === TimeRangePreset.CUSTOM) {
-      selectRange({
-        name: TimeRangePreset.CUSTOM,
-        start: interval.start
-          ?.setZone(timeZone, { keepLocalTime: true })
-          .toJSDate(),
-        end: interval.end
-          ?.setZone(timeZone, { keepLocalTime: true })
-          .toJSDate(),
-      });
-    }
+  //   if (selectedRangeAlias === TimeRangePreset.CUSTOM) {
+  //     selectRange({
+  //       name: TimeRangePreset.CUSTOM,
+  //       start: interval.start
+  //         ?.setZone(timeZone, { keepLocalTime: true })
+  //         .toJSDate(),
+  //       end: interval.end
+  //         ?.setZone(timeZone, { keepLocalTime: true })
+  //         .toJSDate(),
+  //     });
+  //   }
 
-    setTimeZone(timeZone);
-  }
+  //   setTimeZone(timeZone);
+  // }
 
   onMount(() => {
     if (!$timeRangeStateStore) {
@@ -296,10 +302,14 @@
       canPanRight
       showPan
       {showDefaultItem}
-      applyRange={selectRange}
-      {onSelectRange}
-      {onTimeGrainSelect}
-      {onSelectTimeZone}
+      applyRange={(timeRange) => {
+        const string =
+          `${timeRange.start.toISOString()},${timeRange.end.toISOString()}`;
+        set.range(string);
+      }}
+      onSelectRange={set.range}
+      onTimeGrainSelect={set.grain}
+      onSelectTimeZone={set.zone}
       {onPan}
     />
     <CanvasComparisonPill
@@ -309,8 +319,12 @@
       showTimeComparison={$comparisonRangeStateStore?.showTimeComparison ??
         false}
       activeTimeZone={$selectedTimezone}
-      onDisplayTimeComparison={displayTimeComparison}
-      onSetSelectedComparisonRange={setSelectedComparisonRange}
+      onDisplayTimeComparison={set.comparison
+    }
+      onSetSelectedComparisonRange={(range) => {
+        if (range.name ===)
+
+      }}
     />
   </div>
   <div class="relative flex flex-row gap-x-2 gap-y-2 items-start ml-2">

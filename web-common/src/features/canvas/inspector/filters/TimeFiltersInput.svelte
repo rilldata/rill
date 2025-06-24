@@ -45,6 +45,8 @@
     selectedTimezone,
     minTimeGrain,
     selectTimeRange,
+    selectGrain,
+    selectZone,
     setTimeZone,
     displayTimeComparison,
     setSelectedComparisonRange,
@@ -144,15 +146,17 @@
     }
   }
 
-  async function onTimeGrainSelect(timeGrain: V1TimeGrain) {
-    if (baseTimeRange) {
-      await makeTimeSeriesTimeRangeAndUpdateAppState(
-        baseTimeRange,
-        timeGrain,
-        selectedComparisonTimeRange,
-      );
-    }
-  }
+  // async function onTimeGrainSelect(timeGrain: V1TimeGrain) {
+  //   if (baseTimeRange) {
+  //     await makeTimeSeriesTimeRangeAndUpdateAppState(
+  //       baseTimeRange,
+  //       timeGrain,
+  //       selectedComparisonTimeRange,
+  //     );
+  //   }
+  // }
+
+  $: console.log({ selectZone });
 </script>
 
 <div class="flex flex-col gap-y-1 pt-1">
@@ -202,8 +206,8 @@
         showDefaultItem={false}
         applyRange={selectRange}
         {onSelectRange}
-        {onTimeGrainSelect}
-        onSelectTimeZone={() => {}}
+        {selectZone}
+        onTimeGrainSelect={selectGrain}
         onPan={() => {}}
       />
 

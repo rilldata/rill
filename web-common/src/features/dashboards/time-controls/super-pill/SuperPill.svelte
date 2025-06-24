@@ -63,9 +63,9 @@
       {allowCustomTimeRange}
       selected={selectedRangeAlias ?? ""}
       grain={activeTimeGrain}
-      {onSelectRange}
       {interval}
       zone={activeTimeZone}
+      {onSelectRange}
       applyCustomRange={(interval) => {
         applyRange({
           name: TimeRangePreset.CUSTOM,
