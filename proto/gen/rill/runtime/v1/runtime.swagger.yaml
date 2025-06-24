@@ -3126,6 +3126,8 @@ definitions:
         type: boolean
       treatNullsAs:
         type: string
+      increaseIsGood:
+        type: boolean
     title: Measures are aggregated computed values
   MetricsViewSpecMeasureType:
     type: string

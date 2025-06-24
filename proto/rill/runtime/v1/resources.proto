@@ -227,6 +227,7 @@ message MetricsViewSpec {
     google.protobuf.Struct format_d3_locale = 13;
     bool valid_percent_of_total = 6;
     string treat_nulls_as = 14;
+    bool increase_is_good = 15; 
   }
   // Connector containing the table
   string connector = 1;

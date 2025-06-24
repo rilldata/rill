@@ -12206,6 +12206,8 @@ func (m *MetricsViewSpec_Measure) validate(all bool) error {
 
 	// no validation rules for TreatNullsAs
 
+	// no validation rules for IncreaseIsGood
+
 	if len(errors) > 0 {
 		return MetricsViewSpec_MeasureMultiError(errors)
 	}

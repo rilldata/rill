@@ -1159,7 +1159,10 @@ definitions:
                   additionalProperties: true
                 valid_percent_of_total:
                   type: boolean
-                  description: a boolean indicating whether percent-of-total values should be rendered for this measure 
+                  description: a boolean indicating whether percent-of-total values should be rendered for this measure
+                increase_is_good:
+                  type: boolean
+                  description: if false, the measure will be rendered as a negative value when it increases, otherwise it will be rendered as a positive value. For example, an increase in cost is bad.
                 treat_nulls_as:
                   type: string
                   description: used to configure what value to fill in for missing time buckets. This also works generally as COALESCING over non empty time buckets.

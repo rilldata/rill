@@ -17,6 +17,7 @@
     | PERC_DIFF;
   export let tabularNumber = true;
   export let assembled = true;
+  export let increaseIsGood = true;
 
   let diffIsNegative = false;
   let intValue: string;
@@ -79,7 +80,9 @@
     {#if isNoData}
       <span class="text-gray-400">-</span>
     {:else if value !== null && assembled}
-      <span class:text-red-500={diffIsNegative}>
+      <span
+        class:text-red-500={increaseIsGood ? diffIsNegative : !diffIsNegative}
+      >
         {approxSign}{negSign}{posSign}{intValue}{suffix}<span class="opacity-50"
           >%</span
         >

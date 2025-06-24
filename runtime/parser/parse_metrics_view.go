@@ -62,6 +62,7 @@ type MetricsViewYAML struct {
 		Ignore              bool           `yaml:"ignore"` // Deprecated
 		ValidPercentOfTotal bool           `yaml:"valid_percent_of_total"`
 		TreatNullsAs        string         `yaml:"treat_nulls_as"`
+		IncreaseIsGood      *bool          `yaml:"increase_is_good"`
 	}
 	Security *SecurityPolicyYAML
 
@@ -360,6 +361,11 @@ func (p *Parser) parseMetricsView(node *Node) error {
 			}
 		}
 
+		increaseIsGood := true
+		if measure.IncreaseIsGood != nil {
+			increaseIsGood = *measure.IncreaseIsGood
+		}
+
 		var perDimensions []*runtimev1.MetricsViewSpec_DimensionSelector
 		for _, per := range measure.Per {
 			typ, ok := names[strings.ToLower(per.Name)]
@@ -472,6 +478,7 @@ func (p *Parser) parseMetricsView(node *Node) error {
 			FormatD3Locale:      formatD3Locale,
 			ValidPercentOfTotal: measure.ValidPercentOfTotal,
 			TreatNullsAs:        measure.TreatNullsAs,
+			IncreaseIsGood:      increaseIsGood,
 		})
 	}
 	if len(measures) == 0 {

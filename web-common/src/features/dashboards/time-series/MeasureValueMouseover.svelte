@@ -14,6 +14,10 @@
   export let showComparison = false;
   export let mouseoverFormat;
   export let numberKind: NumberKind;
+  export let invertGoodBadColors = false;
+
+  let mainPoint;
+
   $: comparisonYAccessor = `comparison.${yAccessor}`;
 
   $: x = point?.[xAccessor];
@@ -46,30 +50,35 @@
   $: currentPointIsNull = y === null;
   $: comparisonPointIsNull = comparisonY === null || comparisonY === undefined;
 
-  $: mainPoint = {
-    x,
-    y: currentPointIsNull ? lastAvailableCurrentY : y,
-    yOverride: currentPointIsNull,
-    yOverrideLabel: "no current data",
-    yOverrideStyleClass: "fill-gray-500 italic",
-    key: "main",
-    label:
+  $: {
+    const useRed =
       showComparison &&
-      hasValidComparisonPoint &&
-      !currentPointIsNull &&
-      !comparisonPointIsNull &&
-      numberKind !== NumberKind.PERCENT &&
-      isDiffValid
-        ? `(${diffLabel})`
-        : "",
-    pointColor: "var(--color-theme-700)",
-    valueStyleClass: "font-semibold",
-    valueColorClass: "fill-gray-600",
-    labelColorClass:
-      !comparisonIsPositive && showComparison
-        ? "fill-red-500"
-        : "fill-gray-600",
-  };
+      isDiffValid &&
+      ((invertGoodBadColors && comparisonIsPositive) ||
+        (!invertGoodBadColors && !comparisonIsPositive));
+
+    mainPoint = {
+      x,
+      y: currentPointIsNull ? lastAvailableCurrentY : y,
+      yOverride: currentPointIsNull,
+      yOverrideLabel: "no current data",
+      yOverrideStyleClass: "fill-gray-500 italic",
+      key: "main",
+      label:
+        showComparison &&
+        hasValidComparisonPoint &&
+        !currentPointIsNull &&
+        !comparisonPointIsNull &&
+        numberKind !== NumberKind.PERCENT &&
+        isDiffValid
+          ? `(${diffLabel})`
+          : "",
+      pointColor: "var(--color-theme-700)",
+      valueStyleClass: "font-semibold",
+      valueColorClass: "fill-gray-600",
+      labelColorClass: useRed ? "fill-red-500" : "fill-gray-600",
+    };
+  }
 
   $: comparisonPoint =
     showComparison && hasValidComparisonPoint

@@ -78,6 +78,10 @@
 
   $: tddHref = `?${ExploreStateURLParams.WebView}=tdd&${ExploreStateURLParams.ExpandedMeasure}=${measure.name}`;
 
+  $: shouldEmphasize = measure?.increaseIsGood
+    ? !!isComparisonPositive
+    : !isComparisonPositive;
+
   function shiftClickHandler(number: string | undefined) {
     if (number === undefined) return;
 
@@ -164,7 +168,7 @@
               <div
                 role="complementary"
                 class="w-fit max-w-full overflow-hidden text-ellipsis ui-copy-inactive"
-                class:font-semibold={isComparisonPositive}
+                class:font-semibold={shouldEmphasize}
                 on:mouseenter={() =>
                   (tooltipValue =
                     measureValueFormatterTooltip(diff) ?? "no data")}
@@ -195,7 +199,6 @@
                   (tooltipValue =
                     measureValueFormatterUnabridged(value) ?? "no data")}
                 class="w-fit ui-copy-inactive"
-                class:text-red-500={!isComparisonPositive}
               >
                 <WithTween
                   value={comparisonPercChange}
@@ -205,6 +208,7 @@
                   <PercentageChange
                     tabularNumber={false}
                     value={formatMeasurePercentageDifference(output)}
+                    increaseIsGood={measure.increaseIsGood}
                   />
                 </WithTween>
               </div>

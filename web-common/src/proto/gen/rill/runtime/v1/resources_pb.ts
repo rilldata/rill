@@ -1718,6 +1718,11 @@ export class MetricsViewSpec_Measure extends Message<MetricsViewSpec_Measure> {
    */
   treatNullsAs = "";
 
+  /**
+   * @generated from field: bool increase_is_good = 15;
+   */
+  increaseIsGood = false;
+
   constructor(data?: PartialMessage<MetricsViewSpec_Measure>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1740,6 +1745,7 @@ export class MetricsViewSpec_Measure extends Message<MetricsViewSpec_Measure> {
     { no: 13, name: "format_d3_locale", kind: "message", T: Struct },
     { no: 6, name: "valid_percent_of_total", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 14, name: "treat_nulls_as", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 15, name: "increase_is_good", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewSpec_Measure {

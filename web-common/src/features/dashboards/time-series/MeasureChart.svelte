@@ -356,6 +356,7 @@
                   {showComparison}
                   {mouseoverFormat}
                   {numberKind}
+                  invertGoodBadColors={!measure?.increaseIsGood}
                 />
               {/if}
             </g>
