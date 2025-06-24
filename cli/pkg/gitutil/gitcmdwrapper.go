@@ -27,7 +27,7 @@ func (s GitStatus) Equal(v GitStatus) bool {
 	return s.Branch == v.Branch && s.LocalCommits == v.LocalCommits && s.RemoteCommits == v.RemoteCommits && s.LocalChanges == v.LocalChanges
 }
 
-func RunGitStatus(path string) (GitStatus, error) {
+func RunGitStatus(path, remoteName string) (GitStatus, error) {
 	cmd := exec.Command("git", "-C", path, "status", "--porcelain=v2", "--branch")
 	data, err := cmd.CombinedOutput()
 	if err != nil {
@@ -80,16 +80,17 @@ func RunGitStatus(path string) (GitStatus, error) {
 	}
 
 	// get the remote URL
-	data, err = exec.Command("git", "-C", path, "remote", "get-url", "rill").CombinedOutput()
-	if err != nil {
-		return status, fmt.Errorf("failed to get remote URL: %w", err)
+	data, err = exec.Command("git", "-C", path, "remote", "get-url", remoteName).CombinedOutput()
+	if err == nil {
+		status.RemoteURL = strings.TrimSpace(string(data))
 	}
-	status.RemoteURL = strings.TrimSpace(string(data))
 	return status, nil
 }
 
+// GitPull runs a git pull command in the specified path.
+// The remote can be both the name of the remote (e.g., "origin") or a URL.
 func GitPull(ctx context.Context, path string, discardLocal bool, remote string) (string, error) {
-	st, err := RunGitStatus(path)
+	st, err := RunGitStatus(path, remote)
 	if err != nil {
 		return "", err
 	}

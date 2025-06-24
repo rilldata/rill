@@ -28,6 +28,7 @@ type Config struct {
 	PasswordExpiresAt time.Time
 	DefaultBranch     string
 	Subpath           string
+	ManagedRepo       bool
 }
 
 func (g *Config) IsExpired() bool {
@@ -50,6 +51,13 @@ func (g *Config) FullyQualifiedRemote() (string, error) {
 		}
 	}
 	return u.String(), nil
+}
+
+func (g *Config) RemoteName() string {
+	if g.ManagedRepo {
+		return "rill"
+	}
+	return "origin"
 }
 
 func CloneRepo(repoURL string) (string, error) {
@@ -251,12 +259,13 @@ func CommitAndForcePush(ctx context.Context, projectPath string, config *Config,
 	}
 
 	// set remote and push the changes
-	err = setRemote(repo, config.Remote)
+	err = SetRemote(projectPath, config.Remote)
 	if err != nil {
 		return err
 	}
 	pushOpts := &git.PushOptions{
-		RemoteName: "rill",
+		RemoteName: config.RemoteName(),
+		RemoteURL:  config.Remote,
 		Force:      true,
 	}
 	if config.Username != "" && config.Password != "" {
@@ -282,7 +291,7 @@ func CommitAndForcePush(ctx context.Context, projectPath string, config *Config,
 		cfg.Branches[config.DefaultBranch] = branch
 	}
 
-	branch.Remote = "rill"
+	branch.Remote = config.RemoteName()
 	branch.Merge = plumbing.ReferenceName("refs/heads/" + config.DefaultBranch)
 
 	err = repo.Storer.SetConfig(cfg)
@@ -328,6 +337,7 @@ func GitFetch(ctx context.Context, path string, config *Config) error {
 		return fmt.Errorf("failed to open git repository: %w", err)
 	}
 	if config == nil {
+		// uses default git configuration
 		return repo.FetchContext(ctx, &git.FetchOptions{})
 	}
 	return repo.FetchContext(ctx, &git.FetchOptions{
@@ -340,28 +350,35 @@ func GitFetch(ctx context.Context, path string, config *Config) error {
 	})
 }
 
-// setRemote sets the remote by name Rill for the given repository to the provided remote URL.
-func setRemote(repo *git.Repository, remoteURL string) error {
-	_, err := repo.CreateRemote(&gitConfig.RemoteConfig{
-		Name: "rill",
-		URLs: []string{remoteURL},
-	})
-	if err == nil {
+// SetRemote sets the remote by name Rill for the given repository to the provided remote URL.
+func SetRemote(path, remoteURL string) error {
+	if remoteURL == "" {
 		return nil
 	}
-	if !errors.Is(err, git.ErrRemoteExists) {
-		return fmt.Errorf("failed to create remote: %w", err)
+	repo, err := git.PlainOpen(path)
+	if err != nil {
+		return fmt.Errorf("failed to open git repository: %w", err)
 	}
-	// delete existing remote and create a new one
-	if err := repo.DeleteRemote("rill"); err != nil {
-		return fmt.Errorf("failed to delete existing remote: %w", err)
+
+	remote, err := repo.Remote("rill")
+	if err != nil && !errors.Is(err, git.ErrRemoteNotFound) {
+		return fmt.Errorf("failed to get remote: %w", err)
 	}
+	if remote != nil {
+		if remote.Config().URLs[0] == remoteURL {
+			// remote already exists with the same URL, no need to create it again
+			return nil
+		}
+		// if the remote already exists with a different URL, delete it
+		err = repo.DeleteRemote("rill")
+		if err != nil {
+			return fmt.Errorf("failed to delete existing remote: %w", err)
+		}
+	}
+
 	_, err = repo.CreateRemote(&gitConfig.RemoteConfig{
 		Name: "rill",
 		URLs: []string{remoteURL},
 	})
-	if err != nil {
-		return fmt.Errorf("failed to create remote: %w", err)
-	}
-	return nil
+	return err
 }

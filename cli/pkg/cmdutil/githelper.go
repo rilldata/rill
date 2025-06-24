@@ -97,6 +97,7 @@ func (g *GitHelper) PushToNewManagedRepo(ctx context.Context) (*adminv1.CreateMa
 		Password:          gitRepo.Password,
 		PasswordExpiresAt: gitRepo.PasswordExpiresAt.AsTime(),
 		DefaultBranch:     gitRepo.DefaultBranch,
+		ManagedRepo:       true,
 	}
 	err = gitutil.CommitAndForcePush(ctx, g.localPath, config, "", author, true)
 	if err != nil {
@@ -123,6 +124,7 @@ func (g *GitHelper) PushToManagedRepo(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+	gitConfig.ManagedRepo = true
 
 	author, err := g.h.GitSignature(ctx, g.localPath)
 	if err != nil {

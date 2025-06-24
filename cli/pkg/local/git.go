@@ -7,66 +7,82 @@ import (
 
 	"connectrpc.com/connect"
 	"github.com/rilldata/rill/cli/pkg/gitutil"
-	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	localv1 "github.com/rilldata/rill/proto/gen/rill/local/v1"
 )
 
 func (s *Server) GitStatus(ctx context.Context, r *connect.Request[localv1.GitStatusRequest]) (*connect.Response[localv1.GitStatusResponse], error) {
 	// try with native git configurations
-	nativeCreds := true
 	err := gitutil.GitFetch(ctx, s.app.ProjectPath, nil)
-	if err != nil {
-		// if native git fetch fails, try with ephemeral token - this may be a managed git project
-		nativeCreds = false
-		// Get authenticated admin client
-		if !s.app.ch.IsAuthenticated() {
-			// if the user is not authenticated, we cannot fetch the project
-			// return the best effort status
-			gs, err := gitutil.RunGitStatus(s.app.ProjectPath)
-			if err != nil {
-				return nil, err
-			}
-			return connect.NewResponse(&localv1.GitStatusResponse{
-				Branch:     gs.Branch,
-				GithubUrl:  gs.RemoteURL,
-				ManagedGit: true, // We assumed managed git but it can also be a native git project
-			}), nil
-		}
-
-		project, err := s.app.ch.LoadProject(ctx, s.app.ProjectPath)
+	if err == nil || !s.app.ch.IsAuthenticated() {
+		// if native git fetch succeeds, return the status
+		gs, err := gitutil.RunGitStatus(s.app.ProjectPath, "origin")
 		if err != nil {
 			return nil, err
 		}
-		if project == nil {
-			// If the project is not found return the best effort status
-			gs, err := gitutil.RunGitStatus(s.app.ProjectPath)
-			if err != nil {
-				return nil, err
-			}
-			return connect.NewResponse(&localv1.GitStatusResponse{
-				Branch:    gs.Branch,
-				GithubUrl: gs.RemoteURL,
-			}), nil
-		}
-
-		config, err := s.app.ch.GitHelper(project.OrgName, project.Name, s.app.ProjectPath).GitConfig(ctx)
-		if err != nil {
-			return nil, err
-		}
-		err = gitutil.GitFetch(ctx, s.app.ProjectPath, config)
-		if err != nil {
-			return nil, err
-		}
+		return connect.NewResponse(&localv1.GitStatusResponse{
+			Branch:        gs.Branch,
+			GithubUrl:     gs.RemoteURL,
+			LocalChanges:  gs.LocalChanges,
+			LocalCommits:  gs.LocalCommits,
+			RemoteCommits: gs.RemoteCommits,
+		}), nil
 	}
 
-	gs, err := gitutil.RunGitStatus(s.app.ProjectPath)
+	// if native git fetch fails, try with ephemeral token - this may be a managed git project
+
+	// Get authenticated admin client
+	if !s.app.ch.IsAuthenticated() {
+		// if the user is not authenticated, we cannot fetch the project
+		// return the best effort status
+		gs, err := gitutil.RunGitStatus(s.app.ProjectPath, "origin")
+		if err != nil {
+			return nil, err
+		}
+		return connect.NewResponse(&localv1.GitStatusResponse{
+			Branch:    gs.Branch,
+			GithubUrl: gs.RemoteURL,
+		}), nil
+	}
+
+	project, err := s.app.ch.LoadProject(ctx, s.app.ProjectPath)
+	if err != nil {
+		return nil, err
+	}
+	if project == nil {
+		// If the project is not found return the best effort status
+		gs, err := gitutil.RunGitStatus(s.app.ProjectPath, "origin")
+		if err != nil {
+			return nil, err
+		}
+		return connect.NewResponse(&localv1.GitStatusResponse{
+			Branch:    gs.Branch,
+			GithubUrl: gs.RemoteURL,
+		}), nil
+	}
+
+	// get ephemeral git credentials
+	config, err := s.app.ch.GitHelper(project.OrgName, project.Name, s.app.ProjectPath).GitConfig(ctx)
+	if err != nil {
+		return nil, err
+	}
+	// set remote
+	// usually not needed but the older flow did not set the remote by name `rill`
+	err = gitutil.SetRemote(s.app.ProjectPath, config.Remote)
+	if err != nil {
+		return nil, err
+	}
+	err = gitutil.GitFetch(ctx, s.app.ProjectPath, config)
+	if err != nil {
+		return nil, err
+	}
+	gs, err := gitutil.RunGitStatus(s.app.ProjectPath, "rill")
 	if err != nil {
 		return nil, err
 	}
 	return connect.NewResponse(&localv1.GitStatusResponse{
 		Branch:        gs.Branch,
 		GithubUrl:     gs.RemoteURL,
-		ManagedGit:    !nativeCreds,
+		ManagedGit:    true,
 		LocalChanges:  gs.LocalChanges,
 		LocalCommits:  gs.LocalCommits,
 		RemoteCommits: gs.RemoteCommits,
@@ -74,7 +90,7 @@ func (s *Server) GitStatus(ctx context.Context, r *connect.Request[localv1.GitSt
 }
 
 func (s *Server) GitPull(ctx context.Context, r *connect.Request[localv1.GitPullRequest]) (*connect.Response[localv1.GitPullResponse], error) {
-	out, err := gitutil.GitPull(ctx, s.app.ProjectPath, r.Msg.DiscardLocal, "")
+	out, err := gitutil.GitPull(ctx, s.app.ProjectPath, r.Msg.DiscardLocal, "origin")
 	if err == nil && !strings.Contains(out, "Repository not found") {
 		return connect.NewResponse(&localv1.GitPullResponse{
 			Output: out,
@@ -95,10 +111,20 @@ func (s *Server) GitPull(ctx context.Context, r *connect.Request[localv1.GitPull
 		return nil, errors.New("git credentials not set and repo is not connected to a project")
 	}
 
-	remote, err := s.gitRemoteForProject(ctx, project)
+	config, err := s.app.ch.GitHelper(project.OrgName, project.Name, s.app.ProjectPath).GitConfig(ctx)
 	if err != nil {
 		return nil, err
 	}
+	err = gitutil.SetRemote(s.app.ProjectPath, config.Remote)
+	if err != nil {
+		return nil, err
+	}
+
+	remote, err := config.FullyQualifiedRemote()
+	if err != nil {
+		return nil, err
+	}
+
 	out, err = gitutil.GitPull(ctx, s.app.ProjectPath, r.Msg.DiscardLocal, remote)
 	if err != nil {
 		return nil, err
@@ -109,7 +135,7 @@ func (s *Server) GitPull(ctx context.Context, r *connect.Request[localv1.GitPull
 }
 
 func (s *Server) GitPush(ctx context.Context, r *connect.Request[localv1.GitPushRequest]) (*connect.Response[localv1.GitPushResponse], error) {
-	st, err := gitutil.RunGitStatus(s.app.ProjectPath)
+	st, err := gitutil.RunGitStatus(s.app.ProjectPath, "origin")
 	if err != nil {
 		return nil, err
 	}
@@ -149,6 +175,20 @@ func (s *Server) GitPush(ctx context.Context, r *connect.Request[localv1.GitPush
 	if err != nil {
 		return nil, err
 	}
+	config.ManagedRepo = project.ManagedGitId != ""
+	err = gitutil.SetRemote(s.app.ProjectPath, config.Remote)
+	if err != nil {
+		return nil, err
+	}
+
+	// fetch the status again
+	gs, err := gitutil.RunGitStatus(s.app.ProjectPath, "rill")
+	if err != nil {
+		return nil, err
+	}
+	if gs.RemoteCommits > 0 && !r.Msg.Force {
+		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.New("cannot push with remote commits present, please pull first"))
+	}
 
 	err = gitutil.CommitAndForcePush(ctx, s.app.ProjectPath, config, r.Msg.CommitMessage, author, true)
 	if err != nil {
@@ -156,16 +196,4 @@ func (s *Server) GitPush(ctx context.Context, r *connect.Request[localv1.GitPush
 	}
 
 	return connect.NewResponse(&localv1.GitPushResponse{}), nil
-}
-
-func (s *Server) gitRemoteForProject(ctx context.Context, project *adminv1.Project) (string, error) {
-	config, err := s.app.ch.GitHelper(project.OrgName, project.Name, s.app.ProjectPath).GitConfig(ctx)
-	if err != nil {
-		return "", err
-	}
-	remote, err := config.FullyQualifiedRemote()
-	if err != nil {
-		return "", err
-	}
-	return remote, nil
 }
