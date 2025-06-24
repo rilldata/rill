@@ -61,10 +61,9 @@ export async function submitAddSourceForm(
 
   // Create model artifact that reads from the connector
   const modelName = formValues.name as string;
-  const newModelFilePath = getFileAPIPathFromNameAndType(
-    modelName,
-    EntityType.Model,
-  );
+
+  // For models that need connector configuration, create a .yaml file instead of .sql
+  const newModelFilePath = `models/${modelName}.yaml`;
 
   const modelYAML = compileModelYAML(connectorName, rewrittenFormValues);
   await runtimeServicePutFile(instanceId, {

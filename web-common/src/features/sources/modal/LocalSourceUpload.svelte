@@ -50,17 +50,14 @@
 
         // Create model artifact instead of source
         const yaml = compileLocalFileModelYAML(filePath);
-        const newModelFilePath = getFilePathFromNameAndType(
-          tableName,
-          EntityType.Model,
-        );
+        const newModelFilePath = `models/${tableName}.yaml`;
         await runtimeServicePutFile(instanceId, {
           path: newModelFilePath,
           blob: yaml,
           create: true,
           createOnly: false,
         });
-        await goto(`/files${newModelFilePath}`);
+        await goto(`/files/${newModelFilePath}`);
       } catch (err) {
         console.error(err);
       }
