@@ -23,6 +23,7 @@
   export let isHovering: boolean;
   export let data;
   export let dimensionData: DimensionDataItem[] = [];
+  export let isFetching: boolean;
   export let xAccessor: string;
   export let yAccessor: string;
   export let scrubStart;
@@ -98,6 +99,7 @@
             : 200}
           lineColor={d?.color}
           data={d?.data || []}
+          {isFetching}
           {xAccessor}
           {yAccessor}
         />
@@ -148,6 +150,7 @@
         ? 0
         : 200}
       {data}
+      {isFetching}
       {xAccessor}
       {yAccessor}
     />
