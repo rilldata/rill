@@ -4641,6 +4641,7 @@ export const createAdminServiceConnectProjectToGithub = <
 };
 /**
  * @summary GetDeploymentCredentials returns runtime info and access token on behalf of a specific user, or alternatively for a raw set of JWT attributes
+DEPRECATED: Clients should call GetDeployment instead.
  */
 export const adminServiceGetDeploymentCredentials = (
   organization: string,
@@ -4724,6 +4725,7 @@ export type AdminServiceGetDeploymentCredentialsQueryError = RpcStatus;
 
 /**
  * @summary GetDeploymentCredentials returns runtime info and access token on behalf of a specific user, or alternatively for a raw set of JWT attributes
+DEPRECATED: Clients should call GetDeployment instead.
  */
 
 export function createAdminServiceGetDeploymentCredentials<

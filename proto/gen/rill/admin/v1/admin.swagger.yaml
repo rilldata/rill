@@ -1212,7 +1212,9 @@ paths:
         - AdminService
   /v1/organizations/{organization}/projects/{project}/credentials:
     post:
-      summary: GetDeploymentCredentials returns runtime info and access token on behalf of a specific user, or alternatively for a raw set of JWT attributes
+      summary: |-
+        GetDeploymentCredentials returns runtime info and access token on behalf of a specific user, or alternatively for a raw set of JWT attributes
+        DEPRECATED: Clients should call GetDeployment instead.
       operationId: AdminService_GetDeploymentCredentials
       responses:
         "200":

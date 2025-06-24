@@ -346,6 +346,7 @@ type AdminServiceClient interface {
 	// ListSuperusers lists all the superusers
 	ListSuperusers(ctx context.Context, in *ListSuperusersRequest, opts ...grpc.CallOption) (*ListSuperusersResponse, error)
 	// GetDeploymentCredentials returns runtime info and access token on behalf of a specific user, or alternatively for a raw set of JWT attributes
+	// DEPRECATED: Clients should call GetDeployment instead.
 	GetDeploymentCredentials(ctx context.Context, in *GetDeploymentCredentialsRequest, opts ...grpc.CallOption) (*GetDeploymentCredentialsResponse, error)
 	// GetIFrame returns the iframe URL for the given project
 	GetIFrame(ctx context.Context, in *GetIFrameRequest, opts ...grpc.CallOption) (*GetIFrameResponse, error)
@@ -2078,6 +2079,7 @@ type AdminServiceServer interface {
 	// ListSuperusers lists all the superusers
 	ListSuperusers(context.Context, *ListSuperusersRequest) (*ListSuperusersResponse, error)
 	// GetDeploymentCredentials returns runtime info and access token on behalf of a specific user, or alternatively for a raw set of JWT attributes
+	// DEPRECATED: Clients should call GetDeployment instead.
 	GetDeploymentCredentials(context.Context, *GetDeploymentCredentialsRequest) (*GetDeploymentCredentialsResponse, error)
 	// GetIFrame returns the iframe URL for the given project
 	GetIFrame(context.Context, *GetIFrameRequest) (*GetIFrameResponse, error)
