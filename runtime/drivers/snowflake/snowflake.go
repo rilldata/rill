@@ -82,18 +82,7 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 		return nil, err
 	}
 
-	if conf.DSN == "" {
-		return nil, fmt.Errorf("dsn not provided")
-	}
-
-	// Open DB handle
-	db, err := sqlx.Open("snowflake", conf.DSN)
-	if err != nil {
-		return nil, fmt.Errorf("failed to open connection: %w", err)
-	}
-
 	return &connection{
-		db:               db,
 		configProperties: conf,
 		storage:          st,
 		logger:           logger,
@@ -113,7 +102,6 @@ func (d driver) TertiarySourceConnectors(ctx context.Context, src map[string]any
 }
 
 type connection struct {
-	db               *sqlx.DB
 	configProperties *configProperties
 	storage          *storage.Client
 	logger           *zap.Logger
@@ -121,7 +109,16 @@ type connection struct {
 
 // Ping implements drivers.Handle.
 func (c *connection) Ping(ctx context.Context) error {
-	return c.db.PingContext(ctx)
+	if c.configProperties.DSN == "" {
+		// backwards compatibility: return early can't ping because dsn can be define in source.
+		return nil
+	}
+	db, err := sqlx.Open("snowflake", c.configProperties.DSN)
+	if err != nil {
+		return fmt.Errorf("failed to open connection: %w", err)
+	}
+	defer db.Close()
+	return db.PingContext(ctx)
 }
 
 // Migrate implements drivers.Connection.
@@ -148,7 +145,7 @@ func (c *connection) Config() map[string]any {
 
 // Close implements drivers.Connection.
 func (c *connection) Close() error {
-	return c.db.Close()
+	return nil
 }
 
 // AsRegistry implements drivers.Connection.

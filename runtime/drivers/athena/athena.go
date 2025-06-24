@@ -57,7 +57,7 @@ var spec = drivers.Spec{
 			Key:         "output_location",
 			Type:        drivers.StringPropertyType,
 			DisplayName: "S3 output location",
-			Description: "Output location for query results in S3.",
+			Description: "An output location for query result is required either through the workgroup result configuration setting or set here.",
 			Placeholder: "s3://bucket-name/path/",
 			Required:    false,
 		},
@@ -293,6 +293,7 @@ func (c *Connection) executeQuery(ctx context.Context, client *athena.Client, sq
 		QueryString: aws.String(sql),
 	}
 
+	// this is not required be can be infer auto from workgroup if configure in it.
 	if outputLocation != "" {
 		executeParams.ResultConfiguration = &types2.ResultConfiguration{
 			OutputLocation: aws.String(outputLocation),

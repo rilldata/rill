@@ -77,23 +77,7 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 		return nil, errors.New("mysql driver can't be shared")
 	}
 
-	conf := &ConfigProperties{}
-	if err := mapstructure.WeakDecode(config, conf); err != nil {
-		return nil, fmt.Errorf("failed to decode config: %w", err)
-	}
-
-	if conf.DSN == "" {
-		return nil, fmt.Errorf("dsn not provided")
-	}
-
-	// Open DB handle
-	db, err := sqlx.Open("mysql", conf.DSN)
-	if err != nil {
-		return nil, fmt.Errorf("failed to open connection: %w", err)
-	}
-
 	return &connection{
-		db:     db,
 		config: config,
 	}, nil
 }
@@ -111,13 +95,27 @@ func (d driver) TertiarySourceConnectors(ctx context.Context, src map[string]any
 }
 
 type connection struct {
-	db     *sqlx.DB
 	config map[string]any
 }
 
 // Ping implements drivers.Handle.
 func (c *connection) Ping(ctx context.Context) error {
-	return c.db.PingContext(ctx)
+	conf := &ConfigProperties{}
+	if err := mapstructure.WeakDecode(c.config, conf); err != nil {
+		return fmt.Errorf("failed to decode config: %w", err)
+	}
+
+	if conf.DSN == "" {
+		return fmt.Errorf("dsn not provided")
+	}
+	// Open DB handle
+	db, err := sqlx.Open("mysql", conf.DSN)
+	if err != nil {
+		return fmt.Errorf("failed to open connection: %w", err)
+	}
+	defer db.Close()
+
+	return db.PingContext(ctx)
 }
 
 // Migrate implements drivers.Connection.
@@ -142,7 +140,7 @@ func (c *connection) Config() map[string]any {
 
 // Close implements drivers.Connection.
 func (c *connection) Close() error {
-	return c.db.Close()
+	return nil
 }
 
 // AsRegistry implements drivers.Connection.
