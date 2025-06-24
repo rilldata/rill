@@ -655,11 +655,6 @@ export interface V1ListProjectInvitesResponse {
   nextPageToken?: string;
 }
 
-export interface V1ListProjectMemberUserWithProjectsResponse {
-  members?: V1ProjectMemberUserWithProject[];
-  nextPageToken?: string;
-}
-
 export interface V1ListProjectMemberUsergroupsResponse {
   members?: V1MemberUsergroup[];
   nextPageToken?: string;
@@ -898,12 +893,6 @@ export interface V1ProjectMemberUser {
   orgRoleName?: string;
   createdOn?: string;
   updatedOn?: string;
-}
-
-export interface V1ProjectMemberUserWithProject {
-  user?: V1ProjectMemberUser;
-  projectId?: string;
-  projectName?: string;
 }
 
 export interface V1ProjectPermissions {
@@ -1512,11 +1501,6 @@ export type AdminServiceAddOrganizationMemberUserBody = {
 export type AdminServiceSetOrganizationMemberUserRoleBody = {
   role?: string;
   superuserForceAccess?: boolean;
-};
-
-export type AdminServiceListProjectMemberUserWithProjectsParams = {
-  pageSize?: number;
-  pageToken?: string;
 };
 
 export type AdminServiceListProjectMemberUsergroupsParams = {

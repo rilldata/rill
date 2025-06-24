@@ -52,7 +52,6 @@ const (
 	AdminService_LeaveOrganization_FullMethodName                     = "/rill.admin.v1.AdminService/LeaveOrganization"
 	AdminService_SetOrganizationMemberUserRole_FullMethodName         = "/rill.admin.v1.AdminService/SetOrganizationMemberUserRole"
 	AdminService_ListProjectMemberUsers_FullMethodName                = "/rill.admin.v1.AdminService/ListProjectMemberUsers"
-	AdminService_ListProjectMemberUserWithProjects_FullMethodName     = "/rill.admin.v1.AdminService/ListProjectMemberUserWithProjects"
 	AdminService_ListProjectInvites_FullMethodName                    = "/rill.admin.v1.AdminService/ListProjectInvites"
 	AdminService_AddProjectMemberUser_FullMethodName                  = "/rill.admin.v1.AdminService/AddProjectMemberUser"
 	AdminService_RemoveProjectMemberUser_FullMethodName               = "/rill.admin.v1.AdminService/RemoveProjectMemberUser"
@@ -237,8 +236,6 @@ type AdminServiceClient interface {
 	SetOrganizationMemberUserRole(ctx context.Context, in *SetOrganizationMemberUserRoleRequest, opts ...grpc.CallOption) (*SetOrganizationMemberUserRoleResponse, error)
 	// ListProjectMemberUsers lists all the project members
 	ListProjectMemberUsers(ctx context.Context, in *ListProjectMemberUsersRequest, opts ...grpc.CallOption) (*ListProjectMemberUsersResponse, error)
-	// ListProjectMemberUserWithProjects lists project memberships for a user in the org
-	ListProjectMemberUserWithProjects(ctx context.Context, in *ListProjectMemberUserWithProjectsRequest, opts ...grpc.CallOption) (*ListProjectMemberUserWithProjectsResponse, error)
 	// ListProjectInvites lists all the project invites
 	ListProjectInvites(ctx context.Context, in *ListProjectInvitesRequest, opts ...grpc.CallOption) (*ListProjectInvitesResponse, error)
 	// AddProjectMemberUser adds a member to the project
@@ -784,16 +781,6 @@ func (c *adminServiceClient) ListProjectMemberUsers(ctx context.Context, in *Lis
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ListProjectMemberUsersResponse)
 	err := c.cc.Invoke(ctx, AdminService_ListProjectMemberUsers_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *adminServiceClient) ListProjectMemberUserWithProjects(ctx context.Context, in *ListProjectMemberUserWithProjectsRequest, opts ...grpc.CallOption) (*ListProjectMemberUserWithProjectsResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(ListProjectMemberUserWithProjectsResponse)
-	err := c.cc.Invoke(ctx, AdminService_ListProjectMemberUserWithProjects_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1909,8 +1896,6 @@ type AdminServiceServer interface {
 	SetOrganizationMemberUserRole(context.Context, *SetOrganizationMemberUserRoleRequest) (*SetOrganizationMemberUserRoleResponse, error)
 	// ListProjectMemberUsers lists all the project members
 	ListProjectMemberUsers(context.Context, *ListProjectMemberUsersRequest) (*ListProjectMemberUsersResponse, error)
-	// ListProjectMemberUserWithProjects lists project memberships for a user in the org
-	ListProjectMemberUserWithProjects(context.Context, *ListProjectMemberUserWithProjectsRequest) (*ListProjectMemberUserWithProjectsResponse, error)
 	// ListProjectInvites lists all the project invites
 	ListProjectInvites(context.Context, *ListProjectInvitesRequest) (*ListProjectInvitesResponse, error)
 	// AddProjectMemberUser adds a member to the project
@@ -2230,9 +2215,6 @@ func (UnimplementedAdminServiceServer) SetOrganizationMemberUserRole(context.Con
 }
 func (UnimplementedAdminServiceServer) ListProjectMemberUsers(context.Context, *ListProjectMemberUsersRequest) (*ListProjectMemberUsersResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListProjectMemberUsers not implemented")
-}
-func (UnimplementedAdminServiceServer) ListProjectMemberUserWithProjects(context.Context, *ListProjectMemberUserWithProjectsRequest) (*ListProjectMemberUserWithProjectsResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ListProjectMemberUserWithProjects not implemented")
 }
 func (UnimplementedAdminServiceServer) ListProjectInvites(context.Context, *ListProjectInvitesRequest) (*ListProjectInvitesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListProjectInvites not implemented")
@@ -3154,24 +3136,6 @@ func _AdminService_ListProjectMemberUsers_Handler(srv interface{}, ctx context.C
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(AdminServiceServer).ListProjectMemberUsers(ctx, req.(*ListProjectMemberUsersRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _AdminService_ListProjectMemberUserWithProjects_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ListProjectMemberUserWithProjectsRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(AdminServiceServer).ListProjectMemberUserWithProjects(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: AdminService_ListProjectMemberUserWithProjects_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AdminServiceServer).ListProjectMemberUserWithProjects(ctx, req.(*ListProjectMemberUserWithProjectsRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -5168,10 +5132,6 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ListProjectMemberUsers",
 			Handler:    _AdminService_ListProjectMemberUsers_Handler,
-		},
-		{
-			MethodName: "ListProjectMemberUserWithProjects",
-			Handler:    _AdminService_ListProjectMemberUserWithProjects_Handler,
 		},
 		{
 			MethodName: "ListProjectInvites",

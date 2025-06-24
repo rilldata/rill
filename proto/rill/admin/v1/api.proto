@@ -219,11 +219,6 @@ service AdminService {
     option (google.api.http) = {get: "/v1/organizations/{organization}/projects/{project}/members"};
   }
 
-  // ListProjectMemberUserWithProjects lists project memberships for a user in the org
-  rpc ListProjectMemberUserWithProjects(ListProjectMemberUserWithProjectsRequest) returns (ListProjectMemberUserWithProjectsResponse) {
-    option (google.api.http) = {get: "/v1/organizations/{organization}/members/{email}/projects"};
-  }
-
   // ListProjectInvites lists all the project invites
   rpc ListProjectInvites(ListProjectInvitesRequest) returns (ListProjectInvitesResponse) {
     option (google.api.http) = {get: "/v1/organizations/{organization}/projects/{project}/invites"};
@@ -1534,18 +1529,6 @@ message ListProjectMemberUsersResponse {
   string next_page_token = 2;
 }
 
-message ListProjectMemberUserWithProjectsRequest {
-  string organization = 1 [(validate.rules).string.min_len = 1];
-  string email = 2 [(validate.rules).string.email = true];
-  uint32 page_size = 3 [(validate.rules).uint32 = {ignore_empty: true, lte: 1000}];
-  string page_token = 4;
-}
-
-message ListProjectMemberUserWithProjectsResponse {
-  repeated ProjectMemberUserWithProject members = 1;
-  string next_page_token = 2;
-}
-
 message ListProjectInvitesRequest {
   string organization = 1 [(validate.rules).string.min_len = 1];
   string project = 2 [(validate.rules).string.min_len = 1];
@@ -2616,12 +2599,6 @@ message ProjectMemberUser {
   string org_role_name = 8;
   google.protobuf.Timestamp created_on = 5;
   google.protobuf.Timestamp updated_on = 6;
-}
-
-message ProjectMemberUserWithProject {
-  ProjectMemberUser user = 1;
-  string project_id = 2;
-  string project_name = 3;
 }
 
 message UsergroupMemberUser {

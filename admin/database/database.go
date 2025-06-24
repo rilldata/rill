@@ -225,7 +225,6 @@ type DB interface {
 	DeleteProjectMemberUser(ctx context.Context, projectID, userID string) error
 	DeleteAllProjectMemberUserForOrganization(ctx context.Context, orgID, userID string) error
 	UpdateProjectMemberUserRole(ctx context.Context, projectID, userID, roleID string) error
-	ListProjectMemberUsersWithProject(ctx context.Context, orgID, userID, afterName string, limit int) ([]*ProjectMemberUserWithProject, error)
 
 	FindOrganizationMemberUsergroups(ctx context.Context, orgID, filterRoleID, filterUserID string, withCounts bool, afterName string, limit int) ([]*MemberUsergroup, error)
 	FindOrganizationMemberUsergroupRole(ctx context.Context, groupID, orgID string) (*OrganizationRole, error)
@@ -895,13 +894,6 @@ type ProjectMemberUser struct {
 	OrgRoleName string    `db:"org_role_name"`
 	CreatedOn   time.Time `db:"created_on"`
 	UpdatedOn   time.Time `db:"updated_on"`
-}
-
-// ProjectMemberUserWithProject is a convenience type used for display-friendly representation of a project member with project details
-type ProjectMemberUserWithProject struct {
-	*ProjectMemberUser
-	ProjectID   string `db:"project_id"`
-	ProjectName string `db:"project_name"`
 }
 
 // UsergroupMemberUser is a convenience type used for display-friendly representation of a usergroup member
