@@ -1806,12 +1806,15 @@ func (c *connection) FindProjectMemberUsergroups(ctx context.Context, projectID,
 		JOIN project_roles r ON upr.project_role_id = r.id
 		WHERE upr.project_id=$1
 	`)
+
+	paramIdx := 4
 	if filterRoleID != "" {
-		qry.WriteString(" AND upr.project_role_id=$4")
+		qry.WriteString(fmt.Sprintf(" AND upr.project_role_id=$%d", paramIdx))
 		args = append(args, filterRoleID)
+		paramIdx++
 	}
 	if filterUserID != "" {
-		qry.WriteString(" AND ug.id IN (SELECT usergroup_id FROM usergroups_users WHERE user_id = $5)")
+		qry.WriteString(fmt.Sprintf(" AND ug.id IN (SELECT usergroup_id FROM usergroups_users WHERE user_id = $%d)", paramIdx))
 		args = append(args, filterUserID)
 	}
 	qry.WriteString(" AND lower(ug.name) > lower($2) ORDER BY lower(ug.name) LIMIT $3")

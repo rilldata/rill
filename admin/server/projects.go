@@ -60,7 +60,6 @@ func (s *Server) ListProjectsForOrganization(ctx context.Context, req *adminv1.L
 
 	// If user has ManageProjects, return all projects
 	claims := auth.GetClaims(ctx)
-
 	var projs []*database.Project
 	if claims.OrganizationPermissions(ctx, org.ID).ManageProjects {
 		projs, err = s.admin.DB.FindProjectsForOrganization(ctx, org.ID, token.Val, pageSize)
