@@ -3,6 +3,7 @@ package local
 import (
 	"context"
 	"errors"
+	"strings"
 
 	"connectrpc.com/connect"
 	"github.com/rilldata/rill/cli/pkg/gitutil"
@@ -13,7 +14,7 @@ import (
 func (s *Server) GitStatus(ctx context.Context, r *connect.Request[localv1.GitStatusRequest]) (*connect.Response[localv1.GitStatusResponse], error) {
 	// try with native git configurations
 	nativeCreds := true
-	err := gitutil.GitFetch(ctx, s.app.ProjectPath, "")
+	err := gitutil.GitFetch(ctx, s.app.ProjectPath, nil)
 	if err != nil {
 		// if native git fetch fails, try with ephemeral token - this may be a managed git project
 		nativeCreds = false
@@ -48,12 +49,11 @@ func (s *Server) GitStatus(ctx context.Context, r *connect.Request[localv1.GitSt
 			}), nil
 		}
 
-		remote, err := s.gitRemoteForProject(ctx, project)
+		config, err := s.app.ch.GitHelper(project.OrgName, project.Name, s.app.ProjectPath).GitConfig(ctx)
 		if err != nil {
 			return nil, err
 		}
-
-		err = gitutil.GitFetch(ctx, s.app.ProjectPath, remote)
+		err = gitutil.GitFetch(ctx, s.app.ProjectPath, config)
 		if err != nil {
 			return nil, err
 		}
@@ -75,7 +75,7 @@ func (s *Server) GitStatus(ctx context.Context, r *connect.Request[localv1.GitSt
 
 func (s *Server) GitPull(ctx context.Context, r *connect.Request[localv1.GitPullRequest]) (*connect.Response[localv1.GitPullResponse], error) {
 	out, err := gitutil.GitPull(ctx, s.app.ProjectPath, r.Msg.DiscardLocal, "")
-	if err == nil {
+	if err == nil && !strings.Contains(out, "Repository not found") {
 		return connect.NewResponse(&localv1.GitPullResponse{
 			Output: out,
 		}), nil

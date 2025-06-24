@@ -80,30 +80,12 @@ func RunGitStatus(path string) (GitStatus, error) {
 	}
 
 	// get the remote URL
-	data, err = exec.Command("git", "-C", path, "remote", "get-url", "origin").CombinedOutput()
+	data, err = exec.Command("git", "-C", path, "remote", "get-url", "rill").CombinedOutput()
 	if err != nil {
 		return status, fmt.Errorf("failed to get remote URL: %w", err)
 	}
 	status.RemoteURL = strings.TrimSpace(string(data))
 	return status, nil
-}
-
-func GitFetch(ctx context.Context, path, remote string) error {
-	args := []string{"-C", path, "fetch"}
-	if remote != "" {
-		// if remote is specified, fetch from that remote
-		args = append(args, remote)
-	}
-	cmd := exec.CommandContext(ctx, "git", args...)
-	_, err := cmd.Output()
-	if err != nil {
-		var execErr *exec.ExitError
-		if errors.As(err, &execErr) {
-			return fmt.Errorf("git fetch failed: %s", string(execErr.Stderr))
-		}
-		return err
-	}
-	return nil
 }
 
 func GitPull(ctx context.Context, path string, discardLocal bool, remote string) (string, error) {

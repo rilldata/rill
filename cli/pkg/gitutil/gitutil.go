@@ -250,22 +250,13 @@ func CommitAndForcePush(ctx context.Context, projectPath string, config *Config,
 		return nil
 	}
 
-	// set remote
-	_, err = repo.CreateRemote(&gitConfig.RemoteConfig{
-		Name: "origin",
-		URLs: []string{config.Remote},
-	})
+	// set remote and push the changes
+	err = setRemote(repo, config.Remote)
 	if err != nil {
-		if !errors.Is(err, git.ErrRemoteExists) {
-			return fmt.Errorf("failed to create remote: %w", err)
-		}
-		// remote already exists do nothing we can override the URL while pushing
+		return err
 	}
-
-	// push the changes
 	pushOpts := &git.PushOptions{
-		RemoteName: "origin",
-		RemoteURL:  config.Remote,
+		RemoteName: "rill",
 		Force:      true,
 	}
 	if config.Username != "" && config.Password != "" {
@@ -278,12 +269,33 @@ func CommitAndForcePush(ctx context.Context, projectPath string, config *Config,
 	if err != nil {
 		return fmt.Errorf("failed to push to remote : %w", err)
 	}
+
+	// set the tracking information for the branch
+	cfg, err := repo.Storer.Config()
+	if err != nil {
+		return fmt.Errorf("failed to set tracking information: %w", err)
+	}
+
+	branch := cfg.Branches[config.DefaultBranch]
+	if branch == nil {
+		branch = &gitConfig.Branch{Name: config.DefaultBranch}
+		cfg.Branches[config.DefaultBranch] = branch
+	}
+
+	branch.Remote = "rill"
+	branch.Merge = plumbing.ReferenceName("refs/heads/" + config.DefaultBranch)
+
+	err = repo.Storer.SetConfig(cfg)
+	if err != nil {
+		return fmt.Errorf("failed to set tracking information: %w", err)
+	}
 	return nil
 }
 
 func Clone(ctx context.Context, path string, c *Config) (*git.Repository, error) {
 	return git.PlainCloneContext(ctx, path, false, &git.CloneOptions{
 		URL:           c.Remote,
+		RemoteName:    "rill",
 		Auth:          &githttp.BasicAuth{Username: c.Username, Password: c.Password},
 		ReferenceName: plumbing.NewBranchReferenceName(c.DefaultBranch),
 		SingleBranch:  true,
@@ -308,4 +320,48 @@ func NativeGitSignature(ctx context.Context, path string) (*object.Signature, er
 		}, nil
 	}
 	return nil, fmt.Errorf("git user email or name is not set in git config")
+}
+
+func GitFetch(ctx context.Context, path string, config *Config) error {
+	repo, err := git.PlainOpen(path)
+	if err != nil {
+		return fmt.Errorf("failed to open git repository: %w", err)
+	}
+	if config == nil {
+		return repo.FetchContext(ctx, &git.FetchOptions{})
+	}
+	return repo.FetchContext(ctx, &git.FetchOptions{
+		RemoteName: "rill",
+		RemoteURL:  config.Remote,
+		Auth: &githttp.BasicAuth{
+			Username: config.Username,
+			Password: config.Password,
+		},
+	})
+}
+
+// setRemote sets the remote by name Rill for the given repository to the provided remote URL.
+func setRemote(repo *git.Repository, remoteURL string) error {
+	_, err := repo.CreateRemote(&gitConfig.RemoteConfig{
+		Name: "rill",
+		URLs: []string{remoteURL},
+	})
+	if err == nil {
+		return nil
+	}
+	if !errors.Is(err, git.ErrRemoteExists) {
+		return fmt.Errorf("failed to create remote: %w", err)
+	}
+	// delete existing remote and create a new one
+	if err := repo.DeleteRemote("rill"); err != nil {
+		return fmt.Errorf("failed to delete existing remote: %w", err)
+	}
+	_, err = repo.CreateRemote(&gitConfig.RemoteConfig{
+		Name: "rill",
+		URLs: []string{remoteURL},
+	})
+	if err != nil {
+		return fmt.Errorf("failed to create remote: %w", err)
+	}
+	return nil
 }
