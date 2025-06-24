@@ -12,12 +12,12 @@ import (
 )
 
 // FindInstances implements drivers.RegistryStore.
-func (c *Connection) FindInstances(ctx context.Context) ([]*drivers.Instance, error) {
+func (c *connection) FindInstances(ctx context.Context) ([]*drivers.Instance, error) {
 	return c.findInstances(ctx, "")
 }
 
 // FindInstance implements drivers.RegistryStore.
-func (c *Connection) FindInstance(ctx context.Context, id string) (*drivers.Instance, error) {
+func (c *connection) FindInstance(ctx context.Context, id string) (*drivers.Instance, error) {
 	is, err := c.findInstances(ctx, "WHERE id = $1", id)
 	if err != nil {
 		return nil, err
@@ -28,7 +28,7 @@ func (c *Connection) FindInstance(ctx context.Context, id string) (*drivers.Inst
 	return is[0], nil
 }
 
-func (c *Connection) findInstances(_ context.Context, whereClause string, args ...any) ([]*drivers.Instance, error) {
+func (c *connection) findInstances(_ context.Context, whereClause string, args ...any) ([]*drivers.Instance, error) {
 	// Override ctx because sqlite sometimes segfaults on context cancellation
 	ctx := context.Background()
 
@@ -137,7 +137,7 @@ func (c *Connection) findInstances(_ context.Context, whereClause string, args .
 }
 
 // CreateInstance implements drivers.RegistryStore.
-func (c *Connection) CreateInstance(_ context.Context, inst *drivers.Instance) error {
+func (c *connection) CreateInstance(_ context.Context, inst *drivers.Instance) error {
 	// Override ctx because sqlite sometimes segfaults on context cancellation
 	ctx := context.Background()
 
@@ -239,7 +239,7 @@ func (c *Connection) CreateInstance(_ context.Context, inst *drivers.Instance) e
 }
 
 // CreateInstance implements drivers.RegistryStore.
-func (c *Connection) EditInstance(_ context.Context, inst *drivers.Instance) error {
+func (c *connection) EditInstance(_ context.Context, inst *drivers.Instance) error {
 	// Override ctx because sqlite sometimes segfaults on context cancellation
 	ctx := context.Background()
 
@@ -332,7 +332,7 @@ func (c *Connection) EditInstance(_ context.Context, inst *drivers.Instance) err
 }
 
 // DeleteInstance implements drivers.RegistryStore.
-func (c *Connection) DeleteInstance(_ context.Context, id string) error {
+func (c *connection) DeleteInstance(_ context.Context, id string) error {
 	// Override ctx because sqlite sometimes segfaults on context cancellation
 	ctx := context.Background()
 

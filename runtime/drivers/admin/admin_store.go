@@ -11,7 +11,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-func (c *Connection) GetReportMetadata(ctx context.Context, reportName, ownerID, explore, canvas, webOpenMode string, emailRecipients []string, anonRecipients bool, executionTime time.Time) (*drivers.ReportMetadata, error) {
+func (h *Connection) GetReportMetadata(ctx context.Context, reportName, ownerID, explore, canvas, webOpenMode string, emailRecipients []string, anonRecipients bool, executionTime time.Time) (*drivers.ReportMetadata, error) {
 	var resources []*adminv1.ResourceName
 	resources = append(resources, &adminv1.ResourceName{
 		Type: runtime.ResourceKindReport,
@@ -32,8 +32,8 @@ func (c *Connection) GetReportMetadata(ctx context.Context, reportName, ownerID,
 		})
 	}
 
-	res, err := c.admin.GetReportMeta(ctx, &adminv1.GetReportMetaRequest{
-		ProjectId:       c.config.ProjectID,
+	res, err := h.admin.GetReportMeta(ctx, &adminv1.GetReportMetaRequest{
+		ProjectId:       h.config.ProjectID,
 		Report:          reportName,
 		OwnerId:         ownerID,
 		EmailRecipients: emailRecipients,
@@ -61,9 +61,9 @@ func (c *Connection) GetReportMetadata(ctx context.Context, reportName, ownerID,
 	}, nil
 }
 
-func (c *Connection) GetAlertMetadata(ctx context.Context, alertName string, annotations map[string]string, queryForUserID, queryForUserEmail string) (*drivers.AlertMetadata, error) {
+func (h *Connection) GetAlertMetadata(ctx context.Context, alertName string, annotations map[string]string, queryForUserID, queryForUserEmail string) (*drivers.AlertMetadata, error) {
 	req := &adminv1.GetAlertMetaRequest{
-		ProjectId:   c.config.ProjectID,
+		ProjectId:   h.config.ProjectID,
 		Alert:       alertName,
 		Annotations: annotations,
 	}
@@ -74,7 +74,7 @@ func (c *Connection) GetAlertMetadata(ctx context.Context, alertName string, ann
 		req.QueryFor = &adminv1.GetAlertMetaRequest_QueryForUserEmail{QueryForUserEmail: queryForUserEmail}
 	}
 
-	res, err := c.admin.GetAlertMeta(ctx, req)
+	res, err := h.admin.GetAlertMeta(ctx, req)
 	if err != nil {
 		return nil, err
 	}
@@ -91,13 +91,13 @@ func (c *Connection) GetAlertMetadata(ctx context.Context, alertName string, ann
 	return meta, nil
 }
 
-func (c *Connection) ProvisionConnector(ctx context.Context, name, driver string, args map[string]any) (map[string]any, error) {
+func (h *Connection) ProvisionConnector(ctx context.Context, name, driver string, args map[string]any) (map[string]any, error) {
 	argsPB, err := structpb.NewStruct(args)
 	if err != nil {
 		return nil, err
 	}
 
-	res, err := c.admin.Provision(ctx, &adminv1.ProvisionRequest{
+	res, err := h.admin.Provision(ctx, &adminv1.ProvisionRequest{
 		DeploymentId: "", // Will default to the deployment ID of the current access token.
 		Type:         driver,
 		Name:         name,

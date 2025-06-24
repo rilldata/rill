@@ -16,10 +16,10 @@ var tracer = otel.Tracer("github.com/rilldata/rill/runtime/drivers/salesforce")
 
 const defaultClientID = "3MVG9KsVczVNcM8y6w3Kjszy.DW9gMzcYDHT97WIX3NYNYA35UvITypEhtYc6FDY8qqcDEIQc_qJgZErv6Q_d"
 
-var _ drivers.Warehouse = &Connection{}
+var _ drivers.Warehouse = &connection{}
 
 // QueryAsFiles implements drivers.SQLStore
-func (c *Connection) QueryAsFiles(ctx context.Context, props map[string]any) (outIt drivers.FileIterator, outErr error) {
+func (c *connection) QueryAsFiles(ctx context.Context, props map[string]any) (outIt drivers.FileIterator, outErr error) {
 	ctx, span := tracer.Start(ctx, "Connection.QueryAsFiles")
 	defer func() {
 		if outErr != nil {

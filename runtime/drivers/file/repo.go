@@ -17,27 +17,27 @@ import (
 )
 
 // Driver implements drivers.RepoStore.
-func (c *Connection) Driver() string {
+func (c *connection) Driver() string {
 	return c.driverName
 }
 
 // Root implements drivers.RepoStore.
-func (c *Connection) Root(ctx context.Context) (string, error) {
+func (c *connection) Root(ctx context.Context) (string, error) {
 	return c.root, nil
 }
 
 // CommitHash implements drivers.RepoStore.
-func (c *Connection) CommitHash(ctx context.Context) (string, error) {
+func (c *connection) CommitHash(ctx context.Context) (string, error) {
 	return "", nil
 }
 
 // CommitTimestamp implements drivers.RepoStore.
-func (c *Connection) CommitTimestamp(ctx context.Context) (time.Time, error) {
+func (c *connection) CommitTimestamp(ctx context.Context) (time.Time, error) {
 	return time.Time{}, nil
 }
 
 // ListRecursive implements drivers.RepoStore.
-func (c *Connection) ListRecursive(ctx context.Context, glob string, skipDirs bool) ([]drivers.DirEntry, error) {
+func (c *connection) ListRecursive(ctx context.Context, glob string, skipDirs bool) ([]drivers.DirEntry, error) {
 	// Check that folder hasn't been moved
 	if err := c.checkRoot(); err != nil {
 		return nil, err
@@ -78,7 +78,7 @@ func (c *Connection) ListRecursive(ctx context.Context, glob string, skipDirs bo
 }
 
 // Get implements drivers.RepoStore.
-func (c *Connection) Get(ctx context.Context, filePath string) (string, error) {
+func (c *connection) Get(ctx context.Context, filePath string) (string, error) {
 	fp := filepath.Join(c.root, filePath)
 
 	b, err := os.ReadFile(fp)
@@ -94,7 +94,7 @@ func (c *Connection) Get(ctx context.Context, filePath string) (string, error) {
 }
 
 // Stat implements drivers.RepoStore.
-func (c *Connection) Stat(ctx context.Context, filePath string) (*drivers.RepoObjectStat, error) {
+func (c *connection) Stat(ctx context.Context, filePath string) (*drivers.RepoObjectStat, error) {
 	filePath = filepath.Join(c.root, filePath)
 
 	info, err := os.Stat(filePath)
@@ -108,7 +108,7 @@ func (c *Connection) Stat(ctx context.Context, filePath string) (*drivers.RepoOb
 	}, nil
 }
 
-func (c *Connection) FileHash(ctx context.Context, paths []string) (string, error) {
+func (c *connection) FileHash(ctx context.Context, paths []string) (string, error) {
 	hasher := md5.New()
 	for _, path := range paths {
 		path = filepath.Join(c.root, path)
@@ -130,7 +130,7 @@ func (c *Connection) FileHash(ctx context.Context, paths []string) (string, erro
 }
 
 // Put implements drivers.RepoStore.
-func (c *Connection) Put(ctx context.Context, filePath string, reader io.Reader) error {
+func (c *connection) Put(ctx context.Context, filePath string, reader io.Reader) error {
 	filePath = filepath.Join(c.root, filePath)
 
 	err := os.MkdirAll(filepath.Dir(filePath), os.ModePerm)
@@ -152,7 +152,7 @@ func (c *Connection) Put(ctx context.Context, filePath string, reader io.Reader)
 	return nil
 }
 
-func (c *Connection) MakeDir(ctx context.Context, dirPath string) error {
+func (c *connection) MakeDir(ctx context.Context, dirPath string) error {
 	dirPath = filepath.Join(c.root, dirPath)
 
 	err := os.MkdirAll(dirPath, os.ModePerm)
@@ -164,7 +164,7 @@ func (c *Connection) MakeDir(ctx context.Context, dirPath string) error {
 }
 
 // Rename implements drivers.RepoStore.
-func (c *Connection) Rename(ctx context.Context, fromPath, toPath string) error {
+func (c *connection) Rename(ctx context.Context, fromPath, toPath string) error {
 	toPath = filepath.Join(c.root, toPath)
 
 	fromPath = filepath.Join(c.root, fromPath)
@@ -179,7 +179,7 @@ func (c *Connection) Rename(ctx context.Context, fromPath, toPath string) error 
 }
 
 // Delete implements drivers.RepoStore.
-func (c *Connection) Delete(ctx context.Context, filePath string, force bool) error {
+func (c *connection) Delete(ctx context.Context, filePath string, force bool) error {
 	filePath = filepath.Join(c.root, filePath)
 	if force {
 		return os.RemoveAll(filePath)
@@ -188,12 +188,12 @@ func (c *Connection) Delete(ctx context.Context, filePath string, force bool) er
 }
 
 // Sync implements drivers.RepoStore.
-func (c *Connection) Sync(ctx context.Context) error {
+func (c *connection) Sync(ctx context.Context) error {
 	return nil
 }
 
 // Watch implements drivers.RepoStore.
-func (c *Connection) Watch(ctx context.Context, cb drivers.WatchCallback) error {
+func (c *connection) Watch(ctx context.Context, cb drivers.WatchCallback) error {
 	c.watcherMu.Lock()
 	if c.watcher == nil {
 		w, err := newWatcher(c.root, c.ignorePaths, c.logger)

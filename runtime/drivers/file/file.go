@@ -82,7 +82,7 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 		return nil, err
 	}
 
-	c := &Connection{
+	c := &connection{
 		logger:       logger,
 		root:         absPath,
 		driverConfig: conf,
@@ -132,7 +132,7 @@ func parseSourceProperties(props map[string]any) (*sourceProperties, error) {
 	return conf, nil
 }
 
-type Connection struct {
+type connection struct {
 	logger *zap.Logger
 	// root should be absolute path
 	root         string
@@ -147,74 +147,74 @@ type Connection struct {
 }
 
 // Ping implements drivers.Handle.
-func (c *Connection) Ping(ctx context.Context) error {
+func (c *connection) Ping(ctx context.Context) error {
 	return c.checkRoot()
 }
 
 // Config implements drivers.Connection.
-func (c *Connection) Config() map[string]any {
+func (c *connection) Config() map[string]any {
 	m := make(map[string]any, 0)
 	_ = mapstructure.Decode(c.driverConfig, &m)
 	return m
 }
 
 // InformationSchema implements drivers.Handle.
-func (c *Connection) InformationSchema() drivers.InformationSchema {
+func (c *connection) InformationSchema() drivers.InformationSchema {
 	return &drivers.NotImplementedInformationSchema{}
 }
 
 // Close implements drivers.Connection.
-func (c *Connection) Close() error {
+func (c *connection) Close() error {
 	return nil
 }
 
 // AsRegistry implements drivers.Connection.
-func (c *Connection) AsRegistry() (drivers.RegistryStore, bool) {
+func (c *connection) AsRegistry() (drivers.RegistryStore, bool) {
 	return nil, false
 }
 
 // AsCatalogStore implements drivers.Connection.
-func (c *Connection) AsCatalogStore(instanceID string) (drivers.CatalogStore, bool) {
+func (c *connection) AsCatalogStore(instanceID string) (drivers.CatalogStore, bool) {
 	return nil, false
 }
 
 // AsRepoStore implements drivers.Connection.
-func (c *Connection) AsRepoStore(instanceID string) (drivers.RepoStore, bool) {
+func (c *connection) AsRepoStore(instanceID string) (drivers.RepoStore, bool) {
 	return c, true
 }
 
 // AsAdmin implements drivers.Handle.
-func (c *Connection) AsAdmin(instanceID string) (drivers.AdminService, bool) {
+func (c *connection) AsAdmin(instanceID string) (drivers.AdminService, bool) {
 	return nil, false
 }
 
 // AsAI implements drivers.Handle.
-func (c *Connection) AsAI(instanceID string) (drivers.AIService, bool) {
+func (c *connection) AsAI(instanceID string) (drivers.AIService, bool) {
 	return nil, false
 }
 
 // AsOLAP implements drivers.Connection.
-func (c *Connection) AsOLAP(instanceID string) (drivers.OLAPStore, bool) {
+func (c *connection) AsOLAP(instanceID string) (drivers.OLAPStore, bool) {
 	return nil, false
 }
 
 // Migrate implements drivers.Connection.
-func (c *Connection) Migrate(ctx context.Context) (err error) {
+func (c *connection) Migrate(ctx context.Context) (err error) {
 	return nil
 }
 
 // MigrationStatus implements drivers.Connection.
-func (c *Connection) MigrationStatus(ctx context.Context) (current, desired int, err error) {
+func (c *connection) MigrationStatus(ctx context.Context) (current, desired int, err error) {
 	return 0, 0, nil
 }
 
 // AsObjectStore implements drivers.Connection.
-func (c *Connection) AsObjectStore() (drivers.ObjectStore, bool) {
+func (c *connection) AsObjectStore() (drivers.ObjectStore, bool) {
 	return nil, false
 }
 
 // AsModelExecutor implements drivers.Handle.
-func (c *Connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorOptions) (drivers.ModelExecutor, bool) {
+func (c *connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorOptions) (drivers.ModelExecutor, bool) {
 	if opts.OutputHandle == c {
 		if olap, ok := opts.InputHandle.AsOLAP(instanceID); ok {
 			return &olapToSelfExecutor{c, olap}, true
@@ -224,27 +224,27 @@ func (c *Connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecu
 }
 
 // AsModelManager implements drivers.Handle.
-func (c *Connection) AsModelManager(instanceID string) (drivers.ModelManager, bool) {
+func (c *connection) AsModelManager(instanceID string) (drivers.ModelManager, bool) {
 	return nil, false
 }
 
 // AsFileStore implements drivers.Connection.
-func (c *Connection) AsFileStore() (drivers.FileStore, bool) {
+func (c *connection) AsFileStore() (drivers.FileStore, bool) {
 	return c, true
 }
 
 // AsWarehouse implements drivers.Handle.
-func (c *Connection) AsWarehouse() (drivers.Warehouse, bool) {
+func (c *connection) AsWarehouse() (drivers.Warehouse, bool) {
 	return nil, false
 }
 
 // AsNotifier implements drivers.Connection.
-func (c *Connection) AsNotifier(properties map[string]any) (drivers.Notifier, error) {
+func (c *connection) AsNotifier(properties map[string]any) (drivers.Notifier, error) {
 	return nil, drivers.ErrNotNotifier
 }
 
 // checkPath checks that the connection's root is a valid directory.
-func (c *Connection) checkRoot() error {
+func (c *connection) checkRoot() error {
 	info, err := os.Stat(c.root)
 	if err != nil {
 		if os.IsNotExist(err) {

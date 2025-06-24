@@ -46,7 +46,7 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 		return nil, err
 	}
 
-	conn := &Connection{
+	conn := &handle{
 		config:    conf,
 		logger:    logger,
 		templates: template.Must(template.New("").ParseFS(templatesFS, "templates/slack/*.slack")),
@@ -62,22 +62,22 @@ func (d driver) TertiarySourceConnectors(ctx context.Context, src map[string]any
 	return nil, fmt.Errorf("not implemented")
 }
 
-type Connection struct {
+type handle struct {
 	config    *configProperties
 	logger    *zap.Logger
 	templates *template.Template
 }
 
-var _ drivers.Handle = &Connection{}
+var _ drivers.Handle = &handle{}
 
 // Ping implements drivers.Handle.
-func (c *Connection) Ping(ctx context.Context) error {
-	if c.config.BotToken == "" {
+func (h *handle) Ping(ctx context.Context) error {
+	if h.config.BotToken == "" {
 		return nil
 	}
 
 	// Create a test notifier to verify the token
-	notifier, err := newNotifier(c.config.BotToken, nil)
+	notifier, err := newNotifier(h.config.BotToken, nil)
 	if err != nil {
 		return fmt.Errorf("failed to create notifier: %w", err)
 	}
@@ -90,79 +90,79 @@ func (c *Connection) Ping(ctx context.Context) error {
 	return nil
 }
 
-func (c *Connection) Driver() string {
+func (h *handle) Driver() string {
 	return "slack"
 }
 
-func (c *Connection) Config() map[string]any {
+func (h *handle) Config() map[string]any {
 	return map[string]any{}
 }
 
-func (c *Connection) Migrate(ctx context.Context) error {
+func (h *handle) Migrate(ctx context.Context) error {
 	return nil
 }
 
-func (c *Connection) MigrationStatus(ctx context.Context) (current, desired int, err error) {
+func (h *handle) MigrationStatus(ctx context.Context) (current, desired int, err error) {
 	return 0, 0, nil
 }
 
 // InformationSchema implements drivers.Handle.
-func (c *Connection) InformationSchema() drivers.InformationSchema {
+func (h *handle) InformationSchema() drivers.InformationSchema {
 	return &drivers.NotImplementedInformationSchema{}
 }
 
-func (c *Connection) Close() error {
+func (h *handle) Close() error {
 	return nil
 }
 
-func (c *Connection) AsRegistry() (drivers.RegistryStore, bool) {
+func (h *handle) AsRegistry() (drivers.RegistryStore, bool) {
 	return nil, false
 }
 
-func (c *Connection) AsCatalogStore(instanceID string) (drivers.CatalogStore, bool) {
+func (h *handle) AsCatalogStore(instanceID string) (drivers.CatalogStore, bool) {
 	return nil, false
 }
 
-func (c *Connection) AsRepoStore(instanceID string) (drivers.RepoStore, bool) {
+func (h *handle) AsRepoStore(instanceID string) (drivers.RepoStore, bool) {
 	return nil, false
 }
 
-func (c *Connection) AsAdmin(instanceID string) (drivers.AdminService, bool) {
+func (h *handle) AsAdmin(instanceID string) (drivers.AdminService, bool) {
 	return nil, false
 }
 
-func (c *Connection) AsAI(instanceID string) (drivers.AIService, bool) {
+func (h *handle) AsAI(instanceID string) (drivers.AIService, bool) {
 	return nil, false
 }
 
-func (c *Connection) AsOLAP(instanceID string) (drivers.OLAPStore, bool) {
+func (h *handle) AsOLAP(instanceID string) (drivers.OLAPStore, bool) {
 	return nil, false
 }
 
-func (c *Connection) AsObjectStore() (drivers.ObjectStore, bool) {
+func (h *handle) AsObjectStore() (drivers.ObjectStore, bool) {
 	return nil, false
 }
 
-func (c *Connection) AsFileStore() (drivers.FileStore, bool) {
+func (h *handle) AsFileStore() (drivers.FileStore, bool) {
 	return nil, false
 }
 
 // AsWarehouse implements drivers.Handle.
-func (c *Connection) AsWarehouse() (drivers.Warehouse, bool) {
+func (h *handle) AsWarehouse() (drivers.Warehouse, bool) {
 	return nil, false
 }
 
-func (c *Connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorOptions) (drivers.ModelExecutor, bool) {
+func (h *handle) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorOptions) (drivers.ModelExecutor, bool) {
 	return nil, false
 }
 
 // AsModelManager implements drivers.Handle.
-func (c *Connection) AsModelManager(instanceID string) (drivers.ModelManager, bool) {
+func (h *handle) AsModelManager(instanceID string) (drivers.ModelManager, bool) {
 	return nil, false
 }
 
-func (c *Connection) AsNotifier(properties map[string]any) (drivers.Notifier, error) {
-	return newNotifier(c.config.BotToken, properties)
+func (h *handle) AsNotifier(properties map[string]any) (drivers.Notifier, error) {
+	return newNotifier(h.config.BotToken, properties)
 }
 
 type configProperties struct {

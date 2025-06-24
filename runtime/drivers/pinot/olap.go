@@ -9,21 +9,21 @@ import (
 	"go.uber.org/zap"
 )
 
-var _ drivers.OLAPStore = &Connection{}
+var _ drivers.OLAPStore = &connection{}
 
-func (c *Connection) Dialect() drivers.Dialect {
+func (c *connection) Dialect() drivers.Dialect {
 	return drivers.DialectPinot
 }
 
-func (c *Connection) MayBeScaledToZero(ctx context.Context) bool {
+func (c *connection) MayBeScaledToZero(ctx context.Context) bool {
 	return false
 }
 
-func (c *Connection) WithConnection(ctx context.Context, priority int, fn drivers.WithConnectionFunc) error {
+func (c *connection) WithConnection(ctx context.Context, priority int, fn drivers.WithConnectionFunc) error {
 	return fmt.Errorf("pinot: WithConnection not supported")
 }
 
-func (c *Connection) Exec(ctx context.Context, stmt *drivers.Statement) error {
+func (c *connection) Exec(ctx context.Context, stmt *drivers.Statement) error {
 	res, err := c.Query(ctx, stmt)
 	if err != nil {
 		return err
@@ -34,7 +34,7 @@ func (c *Connection) Exec(ctx context.Context, stmt *drivers.Statement) error {
 	return res.Close()
 }
 
-func (c *Connection) Query(ctx context.Context, stmt *drivers.Statement) (*drivers.Result, error) {
+func (c *connection) Query(ctx context.Context, stmt *drivers.Statement) (*drivers.Result, error) {
 	if c.logQueries {
 		c.logger.Info("pinot query", zap.String("sql", stmt.Query), zap.Any("args", stmt.Args), zap.Int64("timeoutMS", c.timeoutMS), observability.ZapCtx(ctx))
 	}

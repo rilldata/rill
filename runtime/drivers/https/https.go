@@ -73,7 +73,7 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 		return nil, err
 	}
 
-	conn := &Connection{
+	conn := &connection{
 		config: config,
 		logger: logger,
 	}
@@ -113,26 +113,26 @@ func parseSourceProperties(props map[string]any) (*sourceProperties, error) {
 	return conf, nil
 }
 
-type Connection struct {
+type connection struct {
 	config map[string]any
 	logger *zap.Logger
 }
 
-var _ drivers.Handle = &Connection{}
+var _ drivers.Handle = &connection{}
 
 // Ping implements drivers.Handle.
-func (c *Connection) Ping(ctx context.Context) error {
+func (c *connection) Ping(ctx context.Context) error {
 	// no properties to define in connector so ping always return true.
 	return nil
 }
 
 // Driver implements drivers.Connection.
-func (c *Connection) Driver() string {
+func (c *connection) Driver() string {
 	return "https"
 }
 
 // Config implements drivers.Connection.
-func (c *Connection) Config() map[string]any {
+func (c *connection) Config() map[string]any {
 	m := make(map[string]any)
 	err := mapstructure.Decode(c.config, &m)
 	if err != nil {
@@ -142,86 +142,86 @@ func (c *Connection) Config() map[string]any {
 }
 
 // InformationSchema implements drivers.Handle.
-func (c *Connection) InformationSchema() drivers.InformationSchema {
+func (c *connection) InformationSchema() drivers.InformationSchema {
 	return &drivers.NotImplementedInformationSchema{}
 }
 
 // Close implements drivers.Connection.
-func (c *Connection) Close() error {
+func (c *connection) Close() error {
 	return nil
 }
 
 // AsRegistry implements drivers.Connection.
-func (c *Connection) AsRegistry() (drivers.RegistryStore, bool) {
+func (c *connection) AsRegistry() (drivers.RegistryStore, bool) {
 	return nil, false
 }
 
 // AsCatalogStore implements drivers.Connection.
-func (c *Connection) AsCatalogStore(instanceID string) (drivers.CatalogStore, bool) {
+func (c *connection) AsCatalogStore(instanceID string) (drivers.CatalogStore, bool) {
 	return nil, false
 }
 
 // AsRepoStore implements drivers.Connection.
-func (c *Connection) AsRepoStore(instanceID string) (drivers.RepoStore, bool) {
+func (c *connection) AsRepoStore(instanceID string) (drivers.RepoStore, bool) {
 	return nil, false
 }
 
 // AsAdmin implements drivers.Handle.
-func (c *Connection) AsAdmin(instanceID string) (drivers.AdminService, bool) {
+func (c *connection) AsAdmin(instanceID string) (drivers.AdminService, bool) {
 	return nil, false
 }
 
 // AsOLAP implements drivers.Connection.
-func (c *Connection) AsOLAP(instanceID string) (drivers.OLAPStore, bool) {
+func (c *connection) AsOLAP(instanceID string) (drivers.OLAPStore, bool) {
 	return nil, false
 }
 
 // AsAI implements drivers.Handle.
-func (c *Connection) AsAI(instanceID string) (drivers.AIService, bool) {
+func (c *connection) AsAI(instanceID string) (drivers.AIService, bool) {
 	return nil, false
 }
 
 // Migrate implements drivers.Connection.
-func (c *Connection) Migrate(ctx context.Context) (err error) {
+func (c *connection) Migrate(ctx context.Context) (err error) {
 	return nil
 }
 
 // MigrationStatus implements drivers.Connection.
-func (c *Connection) MigrationStatus(ctx context.Context) (current, desired int, err error) {
+func (c *connection) MigrationStatus(ctx context.Context) (current, desired int, err error) {
 	return 0, 0, nil
 }
 
 // AsObjectStore implements drivers.Connection.
-func (c *Connection) AsObjectStore() (drivers.ObjectStore, bool) {
+func (c *connection) AsObjectStore() (drivers.ObjectStore, bool) {
 	return nil, false
 }
 
 // AsModelExecutor implements drivers.Handle.
-func (c *Connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorOptions) (drivers.ModelExecutor, bool) {
+func (c *connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorOptions) (drivers.ModelExecutor, bool) {
 	return nil, false
 }
 
 // AsModelManager implements drivers.Handle.
-func (c *Connection) AsModelManager(instanceID string) (drivers.ModelManager, bool) {
+func (c *connection) AsModelManager(instanceID string) (drivers.ModelManager, bool) {
 	return nil, false
 }
 
-func (c *Connection) AsFileStore() (drivers.FileStore, bool) {
+func (c *connection) AsFileStore() (drivers.FileStore, bool) {
 	return c, true
 }
 
 // AsWarehouse implements drivers.Handle.
-func (c *Connection) AsWarehouse() (drivers.Warehouse, bool) {
+func (c *connection) AsWarehouse() (drivers.Warehouse, bool) {
 	return nil, false
 }
 
 // AsNotifier implements drivers.Connection.
-func (c *Connection) AsNotifier(properties map[string]any) (drivers.Notifier, error) {
+func (c *connection) AsNotifier(properties map[string]any) (drivers.Notifier, error) {
 	return nil, drivers.ErrNotNotifier
 }
 
 // FilePaths implements drivers.FileStore
-func (c *Connection) FilePaths(ctx context.Context, src map[string]any) ([]string, error) {
+func (c *connection) FilePaths(ctx context.Context, src map[string]any) ([]string, error) {
 	conf, err := parseSourceProperties(src)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse config: %w", err)

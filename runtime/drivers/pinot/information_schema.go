@@ -18,7 +18,7 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-func (c *Connection) All(ctx context.Context, like string) ([]*drivers.Table, error) {
+func (c *connection) All(ctx context.Context, like string) ([]*drivers.Table, error) {
 	// query /tables endpoint, for each table name, query /tables/{tableName}/schema
 	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, c.schemaURL+"/tables", http.NoBody)
 	for k, v := range c.headers {
@@ -77,7 +77,7 @@ func (c *Connection) All(ctx context.Context, like string) ([]*drivers.Table, er
 	return tables, nil
 }
 
-func (c *Connection) Lookup(ctx context.Context, db, schema, name string) (*drivers.Table, error) {
+func (c *connection) Lookup(ctx context.Context, db, schema, name string) (*drivers.Table, error) {
 	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, c.schemaURL+"/tables/"+name+"/schema", http.NoBody)
 	for k, v := range c.headers {
 		req.Header.Set(k, v)
@@ -148,7 +148,7 @@ func (c *Connection) Lookup(ctx context.Context, db, schema, name string) (*driv
 
 // LoadPhysicalSize populates the PhysicalSizeBytes field of the tables.
 // This was not tested when implemented so should be tested when pinot becomes a fairly used connector.
-func (c *Connection) LoadPhysicalSize(ctx context.Context, tables []*drivers.Table) error {
+func (c *connection) LoadPhysicalSize(ctx context.Context, tables []*drivers.Table) error {
 	if len(tables) == 0 {
 		return nil
 	}

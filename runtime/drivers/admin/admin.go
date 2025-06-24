@@ -138,188 +138,188 @@ type rillYAML struct {
 }
 
 // Ping implements drivers.Handle.
-func (c *Connection) Ping(ctx context.Context) error {
+func (h *Connection) Ping(ctx context.Context) error {
 	// check connectivity with admin service
-	_, err := c.admin.Ping(ctx, &adminv1.PingRequest{})
+	_, err := h.admin.Ping(ctx, &adminv1.PingRequest{})
 
-	if lockErr := c.repoMu.RLock(ctx); lockErr != nil {
+	if lockErr := h.repoMu.RLock(ctx); lockErr != nil {
 		return lockErr
 	}
-	defer c.repoMu.RUnlock()
-	return errors.Join(err, c.syncErr)
+	defer h.repoMu.RUnlock()
+	return errors.Join(err, h.syncErr)
 }
 
 // Driver implements drivers.Handle.
-func (c *Connection) Driver() string {
+func (h *Connection) Driver() string {
 	return "admin"
 }
 
 // Config implements drivers.Handle.
-func (c *Connection) Config() map[string]any {
+func (h *Connection) Config() map[string]any {
 	m := make(map[string]any, 0)
-	_ = mapstructure.Decode(c.config, &m)
+	_ = mapstructure.Decode(h.config, &m)
 	return m
 }
 
 // Migrate implements drivers.Handle.
-func (c *Connection) Migrate(ctx context.Context) (err error) {
+func (h *Connection) Migrate(ctx context.Context) (err error) {
 	return nil
 }
 
 // MigrationStatus implements drivers.Handle.
-func (c *Connection) MigrationStatus(ctx context.Context) (current, desired int, err error) {
+func (h *Connection) MigrationStatus(ctx context.Context) (current, desired int, err error) {
 	return 0, 0, nil
 }
 
 // InformationSchema implements drivers.Handle.
-func (c *Connection) InformationSchema() drivers.InformationSchema {
+func (h *Connection) InformationSchema() drivers.InformationSchema {
 	return &drivers.NotImplementedInformationSchema{}
 }
 
 // Close implements drivers.Handle.
-func (c *Connection) Close() error {
-	if c.repoPath != "" {
-		_ = os.RemoveAll(c.repoPath)
+func (h *Connection) Close() error {
+	if h.repoPath != "" {
+		_ = os.RemoveAll(h.repoPath)
 	}
 	return nil
 }
 
 // AsRegistry implements drivers.Handle.
-func (c *Connection) AsRegistry() (drivers.RegistryStore, bool) {
+func (h *Connection) AsRegistry() (drivers.RegistryStore, bool) {
 	return nil, false
 }
 
 // AsCatalogStore implements drivers.Handle.
-func (c *Connection) AsCatalogStore(instanceID string) (drivers.CatalogStore, bool) {
+func (h *Connection) AsCatalogStore(instanceID string) (drivers.CatalogStore, bool) {
 	return nil, false
 }
 
 // AsRepoStore implements drivers.Handle.
-func (c *Connection) AsRepoStore(instanceID string) (drivers.RepoStore, bool) {
-	return c, true
+func (h *Connection) AsRepoStore(instanceID string) (drivers.RepoStore, bool) {
+	return h, true
 }
 
 // AsAdmin implements drivers.Handle.
-func (c *Connection) AsAdmin(instanceID string) (drivers.AdminService, bool) {
-	return c, true
+func (h *Connection) AsAdmin(instanceID string) (drivers.AdminService, bool) {
+	return h, true
 }
 
 // AsAI implements drivers.Handle.
-func (c *Connection) AsAI(instanceID string) (drivers.AIService, bool) {
-	return c, true
+func (h *Connection) AsAI(instanceID string) (drivers.AIService, bool) {
+	return h, true
 }
 
 // AsOLAP implements drivers.Handle.
-func (c *Connection) AsOLAP(instanceID string) (drivers.OLAPStore, bool) {
+func (h *Connection) AsOLAP(instanceID string) (drivers.OLAPStore, bool) {
 	return nil, false
 }
 
 // AsObjectStore implements drivers.Handle.
-func (c *Connection) AsObjectStore() (drivers.ObjectStore, bool) {
+func (h *Connection) AsObjectStore() (drivers.ObjectStore, bool) {
 	return nil, false
 }
 
 // AsFileStore implements drivers.Handle.
-func (c *Connection) AsFileStore() (drivers.FileStore, bool) {
+func (h *Connection) AsFileStore() (drivers.FileStore, bool) {
 	return nil, false
 }
 
 // AsWarehouse implements drivers.Handle.
-func (c *Connection) AsWarehouse() (drivers.Warehouse, bool) {
+func (h *Connection) AsWarehouse() (drivers.Warehouse, bool) {
 	return nil, false
 }
 
 // AsModelExecutor implements drivers.Handle.
-func (c *Connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorOptions) (drivers.ModelExecutor, bool) {
+func (h *Connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorOptions) (drivers.ModelExecutor, bool) {
 	return nil, false
 }
 
 // AsModelManager implements drivers.Handle.
-func (c *Connection) AsModelManager(instanceID string) (drivers.ModelManager, bool) {
+func (h *Connection) AsModelManager(instanceID string) (drivers.ModelManager, bool) {
 	return nil, false
 }
 
 // AsNotifier implements drivers.Handle.
-func (c *Connection) AsNotifier(properties map[string]any) (drivers.Notifier, error) {
+func (h *Connection) AsNotifier(properties map[string]any) (drivers.Notifier, error) {
 	return nil, drivers.ErrNotNotifier
 }
 
-// rlockEnsureCloned ensures that the repo is cloned and locks c.repoMu for reading.
-// If it succeeds, r.repoMu.RUnlock() should be called when done reading from the cloned repo.
+// rlockEnsureCloned ensures that the repo is cloned and locks h.repoMu for reading.
+// If it succeeds, h.repoMu.RUnlock() should be called when done reading from the cloned repo.
 // It is safe to call this function concurrently.
-func (c *Connection) rlockEnsureCloned(ctx context.Context) error {
+func (h *Connection) rlockEnsureCloned(ctx context.Context) error {
 	// Take read lock
-	err := c.repoMu.RLock(ctx)
+	err := h.repoMu.RLock(ctx)
 	if err != nil {
 		return err
 	}
 
 	// If already cloned, we're done
-	if c.cloned {
+	if h.cloned {
 		return nil
 	}
 
 	// Release read lock and clone (which uses a singleflight)
-	c.repoMu.RUnlock()
+	h.repoMu.RUnlock()
 
 	// Clone the repo
-	err = c.cloneOrPull(ctx)
+	err = h.cloneOrPull(ctx)
 	if err != nil {
 		return err
 	}
 
 	// We know it's cloned now. Take read lock and return.
-	return c.repoMu.RLock(ctx)
+	return h.repoMu.RLock(ctx)
 }
 
 // cloneOrPull clones or pulls the repo with an exponential backoff retry on retryable errors.
-// After the first time it returns successfully, c.repoPath is safe to access.
-// Safe for concurrent invocation (but must not be called while holding c.repoMu).
-func (c *Connection) cloneOrPull(ctx context.Context) error {
+// After the first time it returns successfully, h.repoPath is safe to access.
+// Safe for concurrent invocation (but must not be called while holding h.repoMu).
+func (h *Connection) cloneOrPull(ctx context.Context) error {
 	ctx, span := tracer.Start(ctx, "cloneOrPull")
 	defer span.End()
 
 	// Using a SingleFlight to ensure that the clone keeps running even if the caller's ctx is cancelled.
 	// (Since more than one caller may be waiting on the clone concurrently.)
-	ch := c.repoSF.DoChan("cloneOrPull", func() (any, error) {
-		err := c.repoMu.Lock(context.Background())
+	ch := h.repoSF.DoChan("cloneOrPull", func() (any, error) {
+		err := h.repoMu.Lock(context.Background())
 		if err != nil {
 			return nil, err
 		}
-		defer c.repoMu.Unlock()
+		defer h.repoMu.Unlock()
 
 		ctx, cancel := context.WithTimeout(context.Background(), pullTimeout)
 		defer cancel()
 
 		r := retrier.New(retrier.ExponentialBackoff(pullRetryN, pullRetryWait), retryErrClassifier{})
-		c.syncErr = r.Run(func() error {
-			err := c.cloneOrPullInner(ctx)
+		h.syncErr = r.Run(func() error {
+			err := h.cloneOrPullInner(ctx)
 			if err != nil {
-				c.cloned = false
-				c.repoPath = ""
-				c.projPath = ""
-				c.virtualNextPageToken = ""
-				c.virtualStashPath = ""
-				c.ignorePaths = nil
-				c.gitURL = ""
-				c.gitURLExpiresOn = time.Time{}
-				c.archiveDownloadURL = ""
-				c.archiveID = ""
-				c.archiveCreatedOn = time.Time{}
+				h.cloned = false
+				h.repoPath = ""
+				h.projPath = ""
+				h.virtualNextPageToken = ""
+				h.virtualStashPath = ""
+				h.ignorePaths = nil
+				h.gitURL = ""
+				h.gitURLExpiresOn = time.Time{}
+				h.archiveDownloadURL = ""
+				h.archiveID = ""
+				h.archiveCreatedOn = time.Time{}
 			}
 			return err
 		})
-		if c.syncErr != nil {
-			return nil, c.syncErr
+		if h.syncErr != nil {
+			return nil, h.syncErr
 		}
 
 		// Read rill.yaml and fill in `ignore_paths`
-		rawYaml, err := os.ReadFile(filepath.Join(c.projPath, "rill.yaml"))
+		rawYaml, err := os.ReadFile(filepath.Join(h.projPath, "rill.yaml"))
 		if err == nil {
 			yml := &rillYAML{}
 			err = yaml.Unmarshal(rawYaml, yml)
 			if err == nil {
-				c.ignorePaths = yml.IgnorePaths
+				h.ignorePaths = yml.IgnorePaths
 			}
 		}
 
@@ -336,61 +336,61 @@ func (c *Connection) cloneOrPull(ctx context.Context) error {
 
 // cloneOrPullUnsafe pulls changes from the repo. Also clones the repo if it hasn't been cloned already.
 // Unsafe for concurrent use.
-func (c *Connection) cloneOrPullInner(ctx context.Context) (resErr error) {
-	if c.cloned {
-		if c.archiveDownloadURL != "" {
+func (h *Connection) cloneOrPullInner(ctx context.Context) (resErr error) {
+	if h.cloned {
+		if h.archiveDownloadURL != "" {
 			// in case of one-time uploads we edit instance and close handle when artifacts are updated
 			// so we just pull virtual files and return early.
-			return c.pullVirtual(ctx)
+			return h.pullVirtual(ctx)
 		}
 		// Move the virtual directory out of the Git repository, and put it back after the pull.
 		// See stashVirtual for details on why this is needed.
-		err := c.stashVirtual()
+		err := h.stashVirtual()
 		if err != nil {
 			return err
 		}
 		defer func() {
-			err := c.unstashVirtual()
+			err := h.unstashVirtual()
 			resErr = errors.Join(resErr, err)
 		}()
 	}
 
-	err := c.checkHandshake(ctx)
+	err := h.checkHandshake(ctx)
 	if err != nil {
 		return fmt.Errorf("repo handshake failed: %w", err)
 	}
 
-	if c.archiveDownloadURL != "" {
+	if h.archiveDownloadURL != "" {
 		// download repo
-		if err := c.download(); err != nil {
+		if err := h.download(); err != nil {
 			return err
 		}
-		err := c.pullVirtual(ctx)
+		err := h.pullVirtual(ctx)
 		if err != nil {
 			return err
 		}
-		c.cloned = true
+		h.cloned = true
 		return nil
 	}
 
-	if !c.cloned {
-		err := c.cloneGit()
+	if !h.cloned {
+		err := h.cloneGit()
 		if err != nil {
 			return err
 		}
-		err = c.pullVirtual(ctx)
+		err = h.pullVirtual(ctx)
 		if err != nil {
 			return err
 		}
-		c.cloned = true
+		h.cloned = true
 		return nil
 	}
 
-	err = c.pullGit()
+	err = h.pullGit()
 	if err != nil {
 		return err
 	}
-	err = c.pullVirtual(ctx)
+	err = h.pullVirtual(ctx)
 	if err != nil {
 		return err
 	}
@@ -400,49 +400,49 @@ func (c *Connection) cloneOrPullInner(ctx context.Context) (resErr error) {
 
 // checkHandshake checks and possibly renews the repo details handshake with the admin server.
 // Unsafe for concurrent use.
-func (c *Connection) checkHandshake(ctx context.Context) error {
-	if c.gitURLExpiresOn.After(time.Now()) {
+func (h *Connection) checkHandshake(ctx context.Context) error {
+	if h.gitURLExpiresOn.After(time.Now()) {
 		return nil
 	}
-	meta, err := c.admin.GetRepoMeta(ctx, &adminv1.GetRepoMetaRequest{
-		ProjectId: c.config.ProjectID,
-		Branch:    c.config.Branch,
+	meta, err := h.admin.GetRepoMeta(ctx, &adminv1.GetRepoMetaRequest{
+		ProjectId: h.config.ProjectID,
+		Branch:    h.config.Branch,
 	})
 	if err != nil {
 		return err
 	}
 
-	if c.repoPath == "" {
-		c.repoPath, err = c.storage.RandomTempDir("admin_driver_repo")
+	if h.repoPath == "" {
+		h.repoPath, err = h.storage.RandomTempDir("admin_driver_repo")
 		if err != nil {
 			return err
 		}
 
-		c.repoPath, err = filepath.Abs(c.repoPath)
+		h.repoPath, err = filepath.Abs(h.repoPath)
 		if err != nil {
 			return err
 		}
 	}
 
 	if meta.GitSubpath == "" {
-		c.projPath = c.repoPath
+		h.projPath = h.repoPath
 	} else {
-		c.projPath = filepath.Join(c.repoPath, meta.GitSubpath)
+		h.projPath = filepath.Join(h.repoPath, meta.GitSubpath)
 	}
 
-	c.archiveDownloadURL = meta.ArchiveDownloadUrl
-	c.archiveID = meta.ArchiveId
-	c.archiveCreatedOn = time.Time{}
+	h.archiveDownloadURL = meta.ArchiveDownloadUrl
+	h.archiveID = meta.ArchiveId
+	h.archiveCreatedOn = time.Time{}
 	if meta.ArchiveCreatedOn != nil {
-		c.archiveCreatedOn = meta.ArchiveCreatedOn.AsTime()
+		h.archiveCreatedOn = meta.ArchiveCreatedOn.AsTime()
 	}
 
-	c.gitURL = meta.GitUrl
+	h.gitURL = meta.GitUrl
 	if meta.GitUrlExpiresOn != nil {
-		c.gitURLExpiresOn = meta.GitUrlExpiresOn.AsTime()
+		h.gitURLExpiresOn = meta.GitUrlExpiresOn.AsTime()
 	} else {
 		// Should never happen, unless there is no connected Github repo, which is not allowed today.
-		c.gitURLExpiresOn = time.Now().Add(time.Hour)
+		h.gitURLExpiresOn = time.Now().Add(time.Hour)
 	}
 
 	return nil
@@ -450,15 +450,15 @@ func (c *Connection) checkHandshake(ctx context.Context) error {
 
 // cloneUnsafe clones the Git repository. It removes any existing repository at the repoPath (in case a previous clone failed in a dirty state).
 // Unsafe for concurrent use.
-func (c *Connection) cloneGit() error {
-	_, err := os.Stat(c.repoPath)
+func (h *Connection) cloneGit() error {
+	_, err := os.Stat(h.repoPath)
 	if err == nil {
-		_ = os.RemoveAll(c.repoPath)
+		_ = os.RemoveAll(h.repoPath)
 	}
 
-	_, err = git.PlainClone(c.repoPath, false, &git.CloneOptions{
-		URL:           c.gitURL,
-		ReferenceName: plumbing.NewBranchReferenceName(c.config.Branch),
+	_, err = git.PlainClone(h.repoPath, false, &git.CloneOptions{
+		URL:           h.gitURL,
+		ReferenceName: plumbing.NewBranchReferenceName(h.config.Branch),
 		SingleBranch:  true,
 	})
 	return err
@@ -466,8 +466,8 @@ func (c *Connection) cloneGit() error {
 
 // pullUnsafeGit pulls changes from the Git repo. It must run after a successful call to cloneUnsafeGit.
 // Unsafe for concurrent use.
-func (c *Connection) pullGit() error {
-	repo, err := git.PlainOpen(c.repoPath)
+func (h *Connection) pullGit() error {
+	repo, err := git.PlainOpen(h.repoPath)
 	if err != nil {
 		return err
 	}
@@ -478,8 +478,8 @@ func (c *Connection) pullGit() error {
 	}
 
 	err = wt.Pull(&git.PullOptions{
-		RemoteURL:     c.gitURL,
-		ReferenceName: plumbing.NewBranchReferenceName(c.config.Branch),
+		RemoteURL:     h.gitURL,
+		ReferenceName: plumbing.NewBranchReferenceName(h.config.Branch),
 		SingleBranch:  true,
 		Force:         true,
 	})
@@ -519,21 +519,21 @@ func (c *Connection) pullGit() error {
 // It places files from the virtual repo in a sub-directory __virtual__ of the Git repository.
 // It must run after a successful call to cloneUnsafeGit (which creates the directory).
 // Unsafe for concurrent use.
-func (c *Connection) pullVirtual(ctx context.Context) error {
+func (h *Connection) pullVirtual(ctx context.Context) error {
 	var dst string
-	if c.virtualStashPath == "" {
-		dst = generateVirtualPath(c.projPath)
+	if h.virtualStashPath == "" {
+		dst = generateVirtualPath(h.projPath)
 	} else {
-		dst = c.virtualStashPath
+		dst = h.virtualStashPath
 	}
 
 	i := 0
 	n := 500
 	for i = 0; i < n; i++ { // Just a failsafe to avoid infinite loops
-		res, err := c.admin.PullVirtualRepo(ctx, &adminv1.PullVirtualRepoRequest{
-			ProjectId: c.config.ProjectID,
+		res, err := h.admin.PullVirtualRepo(ctx, &adminv1.PullVirtualRepoRequest{
+			ProjectId: h.config.ProjectID,
 			PageSize:  pullVirtualPageSize,
-			PageToken: c.virtualNextPageToken,
+			PageToken: h.virtualNextPageToken,
 		})
 		if err != nil {
 			return fmt.Errorf("failed to sync virtual repo: %w", err)
@@ -561,7 +561,7 @@ func (c *Connection) pullVirtual(ctx context.Context) error {
 			}
 		}
 
-		c.virtualNextPageToken = res.NextPageToken
+		h.virtualNextPageToken = res.NextPageToken
 
 		// If there are no more files, we're done for now.
 		// We can't just check NextPageToken because it will still be set, enabling us to pull new changes next time pullUnsafeVirtual is called.
@@ -584,23 +584,23 @@ func (c *Connection) pullVirtual(ctx context.Context) error {
 // This is needed for two reasons:
 // a) to handle changes to the project path (i.e. if GitSubpath is changed in checkHandshake),
 // b) to handle a bug where go-git removes unstaged files during "git pull": https://github.com/src-d/go-git/issues/1026#issue-382413262.
-func (c *Connection) stashVirtual() error {
-	if c.virtualStashPath != "" {
+func (h *Connection) stashVirtual() error {
+	if h.virtualStashPath != "" {
 		return fmt.Errorf("stash virtual: virtual directory already stashed")
 	}
 
-	if c.projPath == "" {
+	if h.projPath == "" {
 		return fmt.Errorf("stash virtual: project path not set")
 	}
 
-	src := generateVirtualPath(c.projPath)
+	src := generateVirtualPath(h.projPath)
 	if _, err := os.Stat(src); os.IsNotExist(err) {
 		// Nothing to stasc.
 		// unstashVirtual gracefully handles when virtualStashPath is empty.
 		return nil
 	}
 
-	tempPatc, err := c.storage.TempDir()
+	tempPatc, err := h.storage.TempDir()
 	if err != nil {
 		return fmt.Errorf("stash virtual: %w", err)
 	}
@@ -614,42 +614,42 @@ func (c *Connection) stashVirtual() error {
 		return fmt.Errorf("stash virtual: %w", err)
 	}
 
-	c.virtualStashPath = dst
+	h.virtualStashPath = dst
 	return nil
 }
 
 // unstashVirtual reverses the effect of stashVirtual.
 // Unsafe for concurrent use.
-func (c *Connection) unstashVirtual() error {
-	if c.virtualStashPath == "" {
+func (h *Connection) unstashVirtual() error {
+	if h.virtualStashPath == "" {
 		// Not returning an error since stashVirtual might not stash anything if there aren't any virtual files.
 		return nil
 	}
 
-	if c.projPath == "" {
+	if h.projPath == "" {
 		return fmt.Errorf("unstash virtual: project path not set")
 	}
 
-	src := c.virtualStashPath
-	dst := generateVirtualPath(c.projPath)
+	src := h.virtualStashPath
+	dst := generateVirtualPath(h.projPath)
 
 	err := os.Rename(src, dst)
 	if err != nil {
 		return fmt.Errorf("unstash virtual: %w", err)
 	}
 
-	c.virtualStashPath = ""
+	h.virtualStashPath = ""
 	return nil
 }
 
 // download repo when archiveDownloadURL is set.
 // Unsafe for concurrent use.
-func (c *Connection) download() error {
+func (h *Connection) download() error {
 	ctx, cancel := context.WithTimeout(context.Background(), pullTimeout)
 	defer cancel()
 
 	// generate a temporary file to copy repo tar directory
-	tempPatc, err := c.storage.TempDir()
+	tempPatc, err := h.storage.TempDir()
 	if err != nil {
 		return fmt.Errorf("download: %w", err)
 	}
@@ -658,7 +658,7 @@ func (c *Connection) download() error {
 		return fmt.Errorf("download: %w", err)
 	}
 
-	err = archive.Download(ctx, c.archiveDownloadURL, downloadDst, c.projPath, true, false)
+	err = archive.Download(ctx, h.archiveDownloadURL, downloadDst, h.projPath, true, false)
 	if err != nil {
 		return fmt.Errorf("download: %w", err)
 	}

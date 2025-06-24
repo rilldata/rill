@@ -13,7 +13,7 @@ import (
 )
 
 type selfToObjectStoreExecutor struct {
-	c     *Connection
+	c     *connection
 	store drivers.ObjectStore
 }
 

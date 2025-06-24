@@ -13,7 +13,7 @@ import (
 
 var errUnsupportedType = errors.New("encountered unsupported postgres type")
 
-func (c *Connection) All(ctx context.Context, like string) ([]*drivers.Table, error) {
+func (c *connection) All(ctx context.Context, like string) ([]*drivers.Table, error) {
 	var likeClause string
 	var args []any
 	if like != "" {
@@ -57,7 +57,7 @@ func (c *Connection) All(ctx context.Context, like string) ([]*drivers.Table, er
 	return tables, nil
 }
 
-func (c *Connection) Lookup(ctx context.Context, dbName, schema, name string) (*drivers.Table, error) {
+func (c *connection) Lookup(ctx context.Context, dbName, schema, name string) (*drivers.Table, error) {
 	var q string
 	var args []any
 	q = `
@@ -111,7 +111,7 @@ func (c *Connection) Lookup(ctx context.Context, dbName, schema, name string) (*
 	return tables[0], nil
 }
 
-func (c *Connection) LoadPhysicalSize(ctx context.Context, tables []*drivers.Table) error {
+func (c *connection) LoadPhysicalSize(ctx context.Context, tables []*drivers.Table) error {
 	if len(tables) == 0 {
 		return nil
 	}
@@ -121,7 +121,7 @@ func (c *Connection) LoadPhysicalSize(ctx context.Context, tables []*drivers.Tab
 	return nil
 }
 
-func (c *Connection) scanTables(rows *sqlx.Rows) ([]*drivers.Table, error) {
+func (c *connection) scanTables(rows *sqlx.Rows) ([]*drivers.Table, error) {
 	var res []*drivers.Table
 
 	for rows.Next() {

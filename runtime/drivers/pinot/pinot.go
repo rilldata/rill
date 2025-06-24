@@ -200,7 +200,7 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 		return nil, err
 	}
 
-	conn := &Connection{
+	conn := &connection{
 		db:         dbx,
 		config:     config,
 		queryURL:   broker,
@@ -225,7 +225,7 @@ func (d driver) TertiarySourceConnectors(ctx context.Context, src map[string]any
 	return nil, fmt.Errorf("not implemented")
 }
 
-type Connection struct {
+type connection struct {
 	db         *sqlx.DB
 	config     map[string]any
 	queryURL   string
@@ -237,85 +237,85 @@ type Connection struct {
 }
 
 // Ping implements drivers.Handle.
-func (c *Connection) Ping(ctx context.Context) error {
+func (c *connection) Ping(ctx context.Context) error {
 	return c.db.PingContext(ctx)
 }
 
 // Driver implements drivers.Connection.
-func (c *Connection) Driver() string {
+func (c *connection) Driver() string {
 	return "pinot"
 }
 
 // Config used to open the Connection
-func (c *Connection) Config() map[string]any {
+func (c *connection) Config() map[string]any {
 	return maps.Clone(c.config)
 }
 
 // InformationSchema implements drivers.Handle.
-func (c *Connection) InformationSchema() drivers.InformationSchema {
+func (c *connection) InformationSchema() drivers.InformationSchema {
 	return c
 }
 
 // Close implements drivers.Connection.
-func (c *Connection) Close() error {
+func (c *connection) Close() error {
 	return c.db.Close()
 }
 
-func (c *Connection) AsRegistry() (drivers.RegistryStore, bool) {
+func (c *connection) AsRegistry() (drivers.RegistryStore, bool) {
 	return nil, false
 }
 
-func (c *Connection) AsCatalogStore(instanceID string) (drivers.CatalogStore, bool) {
+func (c *connection) AsCatalogStore(instanceID string) (drivers.CatalogStore, bool) {
 	return nil, false
 }
 
-func (c *Connection) AsRepoStore(instanceID string) (drivers.RepoStore, bool) {
+func (c *connection) AsRepoStore(instanceID string) (drivers.RepoStore, bool) {
 	return nil, false
 }
 
-func (c *Connection) AsAdmin(instanceID string) (drivers.AdminService, bool) {
+func (c *connection) AsAdmin(instanceID string) (drivers.AdminService, bool) {
 	return nil, false
 }
 
-func (c *Connection) AsAI(instanceID string) (drivers.AIService, bool) {
+func (c *connection) AsAI(instanceID string) (drivers.AIService, bool) {
 	return nil, false
 }
 
-func (c *Connection) AsOLAP(instanceID string) (drivers.OLAPStore, bool) {
+func (c *connection) AsOLAP(instanceID string) (drivers.OLAPStore, bool) {
 	return c, true
 }
 
-func (c *Connection) Migrate(ctx context.Context) (err error) {
+func (c *connection) Migrate(ctx context.Context) (err error) {
 	return nil
 }
 
-func (c *Connection) MigrationStatus(ctx context.Context) (current, desired int, err error) {
+func (c *connection) MigrationStatus(ctx context.Context) (current, desired int, err error) {
 	return 0, 0, nil
 }
 
-func (c *Connection) AsObjectStore() (drivers.ObjectStore, bool) {
+func (c *connection) AsObjectStore() (drivers.ObjectStore, bool) {
 	return nil, false
 }
 
-func (c *Connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorOptions) (drivers.ModelExecutor, bool) {
+func (c *connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorOptions) (drivers.ModelExecutor, bool) {
 	return nil, false
 }
 
 // AsModelManager implements drivers.Handle.
-func (c *Connection) AsModelManager(instanceID string) (drivers.ModelManager, bool) {
+func (c *connection) AsModelManager(instanceID string) (drivers.ModelManager, bool) {
 	return nil, false
 }
 
-func (c *Connection) AsFileStore() (drivers.FileStore, bool) {
+func (c *connection) AsFileStore() (drivers.FileStore, bool) {
 	return nil, false
 }
 
 // AsWarehouse implements drivers.Handle.
-func (c *Connection) AsWarehouse() (drivers.Warehouse, bool) {
+func (c *connection) AsWarehouse() (drivers.Warehouse, bool) {
 	return nil, false
 }
 
 // AsNotifier implements drivers.Connection.
-func (c *Connection) AsNotifier(properties map[string]any) (drivers.Notifier, error) {
+func (c *connection) AsNotifier(properties map[string]any) (drivers.Notifier, error) {
 	return nil, drivers.ErrNotNotifier
 }
