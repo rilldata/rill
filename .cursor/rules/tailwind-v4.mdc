@@ -1,0 +1,9 @@
+---
+description: Standards for Tailwind CSS v4 usage in Svelte files
+globs: ["web-admin/**/*.svelte", "web-common/**/*.svelte", "web-local/**/*.svelte"]
+alwaysApply: false
+---
+
+# Tailwind CSS v4 Standards
+
+- Use inline tailwind, avoid creating style blocks <style lang="postcss"> in Svelte files
