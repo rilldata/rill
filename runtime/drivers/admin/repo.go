@@ -17,7 +17,7 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 )
 
-func (h *Connection) Root(ctx context.Context) (string, error) {
+func (h *Handle) Root(ctx context.Context) (string, error) {
 	err := h.rlockEnsureCloned(ctx)
 	if err != nil {
 		return "", err
@@ -27,7 +27,7 @@ func (h *Connection) Root(ctx context.Context) (string, error) {
 	return h.projPath, nil
 }
 
-func (h *Connection) CommitTimestamp(ctx context.Context) (time.Time, error) {
+func (h *Handle) CommitTimestamp(ctx context.Context) (time.Time, error) {
 	err := h.rlockEnsureCloned(ctx)
 	if err != nil {
 		return time.Time{}, err
@@ -56,7 +56,7 @@ func (h *Connection) CommitTimestamp(ctx context.Context) (time.Time, error) {
 	return commit.Author.When, nil
 }
 
-func (h *Connection) CommitHash(ctx context.Context) (string, error) {
+func (h *Handle) CommitHash(ctx context.Context) (string, error) {
 	err := h.rlockEnsureCloned(ctx)
 	if err != nil {
 		return "", err
@@ -84,7 +84,7 @@ func (h *Connection) CommitHash(ctx context.Context) (string, error) {
 	return ref.Hash().String(), nil
 }
 
-func (h *Connection) ListRecursive(ctx context.Context, glob string, skipDirs bool) ([]drivers.DirEntry, error) {
+func (h *Handle) ListRecursive(ctx context.Context, glob string, skipDirs bool) ([]drivers.DirEntry, error) {
 	err := h.rlockEnsureCloned(ctx)
 	if err != nil {
 		return nil, err
@@ -125,7 +125,7 @@ func (h *Connection) ListRecursive(ctx context.Context, glob string, skipDirs bo
 	return entries, nil
 }
 
-func (h *Connection) Get(ctx context.Context, filePath string) (string, error) {
+func (h *Handle) Get(ctx context.Context, filePath string) (string, error) {
 	err := h.rlockEnsureCloned(ctx)
 	if err != nil {
 		return "", err
@@ -146,7 +146,7 @@ func (h *Connection) Get(ctx context.Context, filePath string) (string, error) {
 	return string(b), nil
 }
 
-func (h *Connection) Stat(ctx context.Context, filePath string) (*drivers.RepoObjectStat, error) {
+func (h *Handle) Stat(ctx context.Context, filePath string) (*drivers.RepoObjectStat, error) {
 	err := h.rlockEnsureCloned(ctx)
 	if err != nil {
 		return nil, err
@@ -166,7 +166,7 @@ func (h *Connection) Stat(ctx context.Context, filePath string) (*drivers.RepoOb
 	}, nil
 }
 
-func (h *Connection) FileHash(ctx context.Context, paths []string) (string, error) {
+func (h *Handle) FileHash(ctx context.Context, paths []string) (string, error) {
 	err := h.rlockEnsureCloned(ctx)
 	if err != nil {
 		return "", err
@@ -193,26 +193,26 @@ func (h *Connection) FileHash(ctx context.Context, paths []string) (string, erro
 	return hex.EncodeToString(hasher.Sum(nil)), nil
 }
 
-func (h *Connection) Put(ctx context.Context, filePath string, reader io.Reader) error {
+func (h *Handle) Put(ctx context.Context, filePath string, reader io.Reader) error {
 	return fmt.Errorf("put operation is unsupported")
 }
 
-func (h *Connection) MakeDir(ctx context.Context, dirPath string) error {
+func (h *Handle) MakeDir(ctx context.Context, dirPath string) error {
 	return fmt.Errorf("make dir operation is unsupported")
 }
 
-func (h *Connection) Rename(ctx context.Context, fromPath, toPath string) error {
+func (h *Handle) Rename(ctx context.Context, fromPath, toPath string) error {
 	return fmt.Errorf("rename operation is unsupported")
 }
 
-func (h *Connection) Delete(ctx context.Context, filePath string, force bool) error {
+func (h *Handle) Delete(ctx context.Context, filePath string, force bool) error {
 	return fmt.Errorf("delete operation is unsupported")
 }
 
-func (h *Connection) Sync(ctx context.Context) error {
+func (h *Handle) Sync(ctx context.Context) error {
 	return h.cloneOrPull(ctx)
 }
 
-func (h *Connection) Watch(ctx context.Context, callback drivers.WatchCallback) error {
+func (h *Handle) Watch(ctx context.Context, callback drivers.WatchCallback) error {
 	return fmt.Errorf("watch operation is unsupported")
 }

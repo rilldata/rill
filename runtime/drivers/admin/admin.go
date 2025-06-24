@@ -79,7 +79,7 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 		return nil, fmt.Errorf("failed to open admin client: %w", err)
 	}
 
-	c := &Connection{
+	c := &Handle{
 		config:  cfg,
 		logger:  logger,
 		storage: st,
@@ -103,7 +103,7 @@ func (d driver) TertiarySourceConnectors(ctx context.Context, src map[string]any
 	return nil, fmt.Errorf("not implemented")
 }
 
-type Connection struct {
+type Handle struct {
 	config               *configProperties
 	logger               *zap.Logger
 	storage              *storage.Client
@@ -129,7 +129,7 @@ type Connection struct {
 	archiveCreatedOn   time.Time
 }
 
-var _ drivers.Handle = &Connection{}
+var _ drivers.Handle = &Handle{}
 
 // a smaller subset of relevant parts of rill.yaml
 type rillYAML struct {
@@ -138,7 +138,7 @@ type rillYAML struct {
 }
 
 // Ping implements drivers.Handle.
-func (h *Connection) Ping(ctx context.Context) error {
+func (h *Handle) Ping(ctx context.Context) error {
 	// check connectivity with admin service
 	_, err := h.admin.Ping(ctx, &adminv1.PingRequest{})
 
@@ -150,34 +150,34 @@ func (h *Connection) Ping(ctx context.Context) error {
 }
 
 // Driver implements drivers.Handle.
-func (h *Connection) Driver() string {
+func (h *Handle) Driver() string {
 	return "admin"
 }
 
 // Config implements drivers.Handle.
-func (h *Connection) Config() map[string]any {
+func (h *Handle) Config() map[string]any {
 	m := make(map[string]any, 0)
 	_ = mapstructure.Decode(h.config, &m)
 	return m
 }
 
 // Migrate implements drivers.Handle.
-func (h *Connection) Migrate(ctx context.Context) (err error) {
+func (h *Handle) Migrate(ctx context.Context) (err error) {
 	return nil
 }
 
 // MigrationStatus implements drivers.Handle.
-func (h *Connection) MigrationStatus(ctx context.Context) (current, desired int, err error) {
+func (h *Handle) MigrationStatus(ctx context.Context) (current, desired int, err error) {
 	return 0, 0, nil
 }
 
 // InformationSchema implements drivers.Handle.
-func (h *Connection) InformationSchema() drivers.InformationSchema {
+func (h *Handle) InformationSchema() drivers.InformationSchema {
 	return &drivers.NotImplementedInformationSchema{}
 }
 
 // Close implements drivers.Handle.
-func (h *Connection) Close() error {
+func (h *Handle) Close() error {
 	if h.repoPath != "" {
 		_ = os.RemoveAll(h.repoPath)
 	}
@@ -185,69 +185,69 @@ func (h *Connection) Close() error {
 }
 
 // AsRegistry implements drivers.Handle.
-func (h *Connection) AsRegistry() (drivers.RegistryStore, bool) {
+func (h *Handle) AsRegistry() (drivers.RegistryStore, bool) {
 	return nil, false
 }
 
 // AsCatalogStore implements drivers.Handle.
-func (h *Connection) AsCatalogStore(instanceID string) (drivers.CatalogStore, bool) {
+func (h *Handle) AsCatalogStore(instanceID string) (drivers.CatalogStore, bool) {
 	return nil, false
 }
 
 // AsRepoStore implements drivers.Handle.
-func (h *Connection) AsRepoStore(instanceID string) (drivers.RepoStore, bool) {
+func (h *Handle) AsRepoStore(instanceID string) (drivers.RepoStore, bool) {
 	return h, true
 }
 
 // AsAdmin implements drivers.Handle.
-func (h *Connection) AsAdmin(instanceID string) (drivers.AdminService, bool) {
+func (h *Handle) AsAdmin(instanceID string) (drivers.AdminService, bool) {
 	return h, true
 }
 
 // AsAI implements drivers.Handle.
-func (h *Connection) AsAI(instanceID string) (drivers.AIService, bool) {
+func (h *Handle) AsAI(instanceID string) (drivers.AIService, bool) {
 	return h, true
 }
 
 // AsOLAP implements drivers.Handle.
-func (h *Connection) AsOLAP(instanceID string) (drivers.OLAPStore, bool) {
+func (h *Handle) AsOLAP(instanceID string) (drivers.OLAPStore, bool) {
 	return nil, false
 }
 
 // AsObjectStore implements drivers.Handle.
-func (h *Connection) AsObjectStore() (drivers.ObjectStore, bool) {
+func (h *Handle) AsObjectStore() (drivers.ObjectStore, bool) {
 	return nil, false
 }
 
 // AsFileStore implements drivers.Handle.
-func (h *Connection) AsFileStore() (drivers.FileStore, bool) {
+func (h *Handle) AsFileStore() (drivers.FileStore, bool) {
 	return nil, false
 }
 
 // AsWarehouse implements drivers.Handle.
-func (h *Connection) AsWarehouse() (drivers.Warehouse, bool) {
+func (h *Handle) AsWarehouse() (drivers.Warehouse, bool) {
 	return nil, false
 }
 
 // AsModelExecutor implements drivers.Handle.
-func (h *Connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorOptions) (drivers.ModelExecutor, bool) {
+func (h *Handle) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorOptions) (drivers.ModelExecutor, bool) {
 	return nil, false
 }
 
 // AsModelManager implements drivers.Handle.
-func (h *Connection) AsModelManager(instanceID string) (drivers.ModelManager, bool) {
+func (h *Handle) AsModelManager(instanceID string) (drivers.ModelManager, bool) {
 	return nil, false
 }
 
 // AsNotifier implements drivers.Handle.
-func (h *Connection) AsNotifier(properties map[string]any) (drivers.Notifier, error) {
+func (h *Handle) AsNotifier(properties map[string]any) (drivers.Notifier, error) {
 	return nil, drivers.ErrNotNotifier
 }
 
 // rlockEnsureCloned ensures that the repo is cloned and locks h.repoMu for reading.
 // If it succeeds, h.repoMu.RUnlock() should be called when done reading from the cloned repo.
 // It is safe to call this function concurrently.
-func (h *Connection) rlockEnsureCloned(ctx context.Context) error {
+func (h *Handle) rlockEnsureCloned(ctx context.Context) error {
 	// Take read lock
 	err := h.repoMu.RLock(ctx)
 	if err != nil {
@@ -275,7 +275,7 @@ func (h *Connection) rlockEnsureCloned(ctx context.Context) error {
 // cloneOrPull clones or pulls the repo with an exponential backoff retry on retryable errors.
 // After the first time it returns successfully, h.repoPath is safe to access.
 // Safe for concurrent invocation (but must not be called while holding h.repoMu).
-func (h *Connection) cloneOrPull(ctx context.Context) error {
+func (h *Handle) cloneOrPull(ctx context.Context) error {
 	ctx, span := tracer.Start(ctx, "cloneOrPull")
 	defer span.End()
 
@@ -336,7 +336,7 @@ func (h *Connection) cloneOrPull(ctx context.Context) error {
 
 // cloneOrPullUnsafe pulls changes from the repo. Also clones the repo if it hasn't been cloned already.
 // Unsafe for concurrent use.
-func (h *Connection) cloneOrPullInner(ctx context.Context) (resErr error) {
+func (h *Handle) cloneOrPullInner(ctx context.Context) (resErr error) {
 	if h.cloned {
 		if h.archiveDownloadURL != "" {
 			// in case of one-time uploads we edit instance and close handle when artifacts are updated
@@ -400,7 +400,7 @@ func (h *Connection) cloneOrPullInner(ctx context.Context) (resErr error) {
 
 // checkHandshake checks and possibly renews the repo details handshake with the admin server.
 // Unsafe for concurrent use.
-func (h *Connection) checkHandshake(ctx context.Context) error {
+func (h *Handle) checkHandshake(ctx context.Context) error {
 	if h.gitURLExpiresOn.After(time.Now()) {
 		return nil
 	}
@@ -450,7 +450,7 @@ func (h *Connection) checkHandshake(ctx context.Context) error {
 
 // cloneUnsafe clones the Git repository. It removes any existing repository at the repoPath (in case a previous clone failed in a dirty state).
 // Unsafe for concurrent use.
-func (h *Connection) cloneGit() error {
+func (h *Handle) cloneGit() error {
 	_, err := os.Stat(h.repoPath)
 	if err == nil {
 		_ = os.RemoveAll(h.repoPath)
@@ -466,7 +466,7 @@ func (h *Connection) cloneGit() error {
 
 // pullUnsafeGit pulls changes from the Git repo. It must run after a successful call to cloneUnsafeGit.
 // Unsafe for concurrent use.
-func (h *Connection) pullGit() error {
+func (h *Handle) pullGit() error {
 	repo, err := git.PlainOpen(h.repoPath)
 	if err != nil {
 		return err
@@ -519,7 +519,7 @@ func (h *Connection) pullGit() error {
 // It places files from the virtual repo in a sub-directory __virtual__ of the Git repository.
 // It must run after a successful call to cloneUnsafeGit (which creates the directory).
 // Unsafe for concurrent use.
-func (h *Connection) pullVirtual(ctx context.Context) error {
+func (h *Handle) pullVirtual(ctx context.Context) error {
 	var dst string
 	if h.virtualStashPath == "" {
 		dst = generateVirtualPath(h.projPath)
@@ -584,7 +584,7 @@ func (h *Connection) pullVirtual(ctx context.Context) error {
 // This is needed for two reasons:
 // a) to handle changes to the project path (i.e. if GitSubpath is changed in checkHandshake),
 // b) to handle a bug where go-git removes unstaged files during "git pull": https://github.com/src-d/go-git/issues/1026#issue-382413262.
-func (h *Connection) stashVirtual() error {
+func (h *Handle) stashVirtual() error {
 	if h.virtualStashPath != "" {
 		return fmt.Errorf("stash virtual: virtual directory already stashed")
 	}
@@ -620,7 +620,7 @@ func (h *Connection) stashVirtual() error {
 
 // unstashVirtual reverses the effect of stashVirtual.
 // Unsafe for concurrent use.
-func (h *Connection) unstashVirtual() error {
+func (h *Handle) unstashVirtual() error {
 	if h.virtualStashPath == "" {
 		// Not returning an error since stashVirtual might not stash anything if there aren't any virtual files.
 		return nil
@@ -644,7 +644,7 @@ func (h *Connection) unstashVirtual() error {
 
 // download repo when archiveDownloadURL is set.
 // Unsafe for concurrent use.
-func (h *Connection) download() error {
+func (h *Handle) download() error {
 	ctx, cancel := context.WithTimeout(context.Background(), pullTimeout)
 	defer cancel()
 

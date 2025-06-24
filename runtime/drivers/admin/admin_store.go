@@ -11,7 +11,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-func (h *Connection) GetReportMetadata(ctx context.Context, reportName, ownerID, explore, canvas, webOpenMode string, emailRecipients []string, anonRecipients bool, executionTime time.Time) (*drivers.ReportMetadata, error) {
+func (h *Handle) GetReportMetadata(ctx context.Context, reportName, ownerID, explore, canvas, webOpenMode string, emailRecipients []string, anonRecipients bool, executionTime time.Time) (*drivers.ReportMetadata, error) {
 	var resources []*adminv1.ResourceName
 	resources = append(resources, &adminv1.ResourceName{
 		Type: runtime.ResourceKindReport,
@@ -61,7 +61,7 @@ func (h *Connection) GetReportMetadata(ctx context.Context, reportName, ownerID,
 	}, nil
 }
 
-func (h *Connection) GetAlertMetadata(ctx context.Context, alertName string, annotations map[string]string, queryForUserID, queryForUserEmail string) (*drivers.AlertMetadata, error) {
+func (h *Handle) GetAlertMetadata(ctx context.Context, alertName string, annotations map[string]string, queryForUserID, queryForUserEmail string) (*drivers.AlertMetadata, error) {
 	req := &adminv1.GetAlertMetaRequest{
 		ProjectId:   h.config.ProjectID,
 		Alert:       alertName,
@@ -91,7 +91,7 @@ func (h *Connection) GetAlertMetadata(ctx context.Context, alertName string, ann
 	return meta, nil
 }
 
-func (h *Connection) ProvisionConnector(ctx context.Context, name, driver string, args map[string]any) (map[string]any, error) {
+func (h *Handle) ProvisionConnector(ctx context.Context, name, driver string, args map[string]any) (map[string]any, error) {
 	argsPB, err := structpb.NewStruct(args)
 	if err != nil {
 		return nil, err

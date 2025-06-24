@@ -76,6 +76,7 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 	if instanceID == "" {
 		return nil, errors.New("mysql driver can't be shared")
 	}
+
 	return &connection{
 		config: config,
 	}, nil

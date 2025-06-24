@@ -22,7 +22,7 @@ func TestWatch(t *testing.T) {
 	err := os.Mkdir(tmpDir, 0777)
 	require.NoError(t, err)
 	createFile(t, filepath.Join(tmpDir, "file3"))
-	c := Connection{root: dir, logger: zap.NewNop()}
+	c := connection{root: dir, logger: zap.NewNop()}
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
