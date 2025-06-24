@@ -303,9 +303,9 @@ message MetricsViewState {
   // Streaming is true if the underlying data may change without the metrics view's spec/state version changing.
   // It's set to true if the metrics view is based on an externally managed table.
   bool streaming = 2;
-  // The last time the metrics view's underlying model was refreshed.
+  // The last time the metrics view's underlying data was refreshed.
   // This may be empty if the metrics view is based on an externally managed table.
-  google.protobuf.Timestamp model_refreshed_on = 3;
+  google.protobuf.Timestamp data_refreshed_on = 3;
 }
 
 message Explore {
@@ -357,7 +357,12 @@ message ExploreSpec {
 }
 
 message ExploreState {
+  // Valid spec is a (potentially previous) version of the spec that is known to be valid.
+  // It is also guaranteed to have concrete dimensions and measures, i.e. if the spec has a `dimensions_selector` or `measures_selector`, they will be resolved to concrete fields.
   ExploreSpec valid_spec = 1;
+  // The last time the underlying metrics view's data was refreshed.
+  // This may be empty if the data refresh time is not known, e.g. if the metrics view is based on an externally managed table.
+  google.protobuf.Timestamp data_refreshed_on = 2;
 }
 
 message ExploreTimeRange {
@@ -652,7 +657,11 @@ message ComponentSpec {
 }
 
 message ComponentState {
+  // Valid spec is a (potentially previous) version of the component's spec that is known to be valid.
   ComponentSpec valid_spec = 1;
+  // The last time any underlying metrics view(s)'s data was refreshed.
+  // This may be empty if the data refresh time is not known, e.g. if the metrics view is based on an externally managed table.
+  google.protobuf.Timestamp data_refreshed_on = 2;
 }
 
 message ComponentVariable {
@@ -704,7 +713,11 @@ message CanvasSpec {
 }
 
 message CanvasState {
+  // Valid spec is a (potentially previous) version of the canvas's spec that is known to be valid.
   CanvasSpec valid_spec = 1;
+  // The last time any underlying metrics view(s)'s data was refreshed.
+  // This may be empty if the data refresh time is not known, e.g. if the metrics view is based on an externally managed table.
+  google.protobuf.Timestamp data_refreshed_on = 2;
 }
 
 message CanvasRow {

@@ -85,7 +85,7 @@
 
 <!-- 802px = 1px border on each side of the form + 3 tabs with a 200px fixed-width -->
 <form
-  class="transform bg-white rounded-md flex flex-col w-[802px]"
+  class="transform bg-surface rounded-md flex flex-col w-[802px]"
   id={formId}
   on:submit|preventDefault={handleSubmit}
 >
@@ -98,7 +98,7 @@
     </Button>
   </DialogTitle>
   <DialogTabs.Root value={tabs[currentTabIndex]}>
-    <DialogTabs.List class="border-t border-gray-200">
+    <DialogTabs.List class="border-t">
       {#each tabs as tab, i}
         <!-- inner width is 800px. so, width = ceil(800/3) = 267 -->
         <DialogTabs.Trigger value={tab} tabIndex={i} class="w-[267px]">

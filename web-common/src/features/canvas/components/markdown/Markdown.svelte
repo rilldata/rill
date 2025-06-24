@@ -12,7 +12,7 @@
   $: positionClasses = getPositionClasses(markdownProperties.alignment);
 </script>
 
-<div class="size-full px-2 bg-white overflow-y-auto">
+<div class="size-full px-2 bg-surface overflow-y-auto">
   <div class="canvas-markdown {positionClasses} h-full flex flex-col min-h-min">
     {#await marked(markdownProperties.content) then content}
       {@html DOMPurify.sanitize(content)}
@@ -22,7 +22,7 @@
 
 <style lang="postcss">
   :global(.canvas-markdown) {
-    @apply text-gray-800;
+    @apply text-gray-900;
   }
   :global(.canvas-markdown h1) {
     font-size: 24px;
@@ -56,10 +56,10 @@
     @apply w-full border-collapse my-4;
   }
   :global(.canvas-markdown th) {
-    @apply bg-gray-50 border border-gray-200 px-4 py-2 text-left text-sm font-medium;
+    @apply bg-gray-50 border px-4 py-2 text-left text-sm font-medium;
   }
   :global(.canvas-markdown td) {
-    @apply border border-gray-200 px-4 py-2 text-sm;
+    @apply border px-4 py-2 text-sm;
   }
   :global(.canvas-markdown tr:nth-child(even)) {
     @apply bg-gray-50;

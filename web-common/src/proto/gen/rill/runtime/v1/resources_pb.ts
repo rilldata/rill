@@ -2003,12 +2003,12 @@ export class MetricsViewState extends Message<MetricsViewState> {
   streaming = false;
 
   /**
-   * The last time the metrics view's underlying model was refreshed.
+   * The last time the metrics view's underlying data was refreshed.
    * This may be empty if the metrics view is based on an externally managed table.
    *
-   * @generated from field: google.protobuf.Timestamp model_refreshed_on = 3;
+   * @generated from field: google.protobuf.Timestamp data_refreshed_on = 3;
    */
-  modelRefreshedOn?: Timestamp;
+  dataRefreshedOn?: Timestamp;
 
   constructor(data?: PartialMessage<MetricsViewState>) {
     super();
@@ -2020,7 +2020,7 @@ export class MetricsViewState extends Message<MetricsViewState> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "valid_spec", kind: "message", T: MetricsViewSpec },
     { no: 2, name: "streaming", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 3, name: "model_refreshed_on", kind: "message", T: Timestamp },
+    { no: 3, name: "data_refreshed_on", kind: "message", T: Timestamp },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewState {
@@ -2266,9 +2266,20 @@ export class ExploreSpec extends Message<ExploreSpec> {
  */
 export class ExploreState extends Message<ExploreState> {
   /**
+   * Valid spec is a (potentially previous) version of the spec that is known to be valid.
+   * It is also guaranteed to have concrete dimensions and measures, i.e. if the spec has a `dimensions_selector` or `measures_selector`, they will be resolved to concrete fields.
+   *
    * @generated from field: rill.runtime.v1.ExploreSpec valid_spec = 1;
    */
   validSpec?: ExploreSpec;
+
+  /**
+   * The last time the underlying metrics view's data was refreshed.
+   * This may be empty if the data refresh time is not known, e.g. if the metrics view is based on an externally managed table.
+   *
+   * @generated from field: google.protobuf.Timestamp data_refreshed_on = 2;
+   */
+  dataRefreshedOn?: Timestamp;
 
   constructor(data?: PartialMessage<ExploreState>) {
     super();
@@ -2279,6 +2290,7 @@ export class ExploreState extends Message<ExploreState> {
   static readonly typeName = "rill.runtime.v1.ExploreState";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "valid_spec", kind: "message", T: ExploreSpec },
+    { no: 2, name: "data_refreshed_on", kind: "message", T: Timestamp },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ExploreState {
@@ -4037,9 +4049,19 @@ export class ComponentSpec extends Message<ComponentSpec> {
  */
 export class ComponentState extends Message<ComponentState> {
   /**
+   * Valid spec is a (potentially previous) version of the component's spec that is known to be valid.
+   *
    * @generated from field: rill.runtime.v1.ComponentSpec valid_spec = 1;
    */
   validSpec?: ComponentSpec;
+
+  /**
+   * The last time any underlying metrics view(s)'s data was refreshed.
+   * This may be empty if the data refresh time is not known, e.g. if the metrics view is based on an externally managed table.
+   *
+   * @generated from field: google.protobuf.Timestamp data_refreshed_on = 2;
+   */
+  dataRefreshedOn?: Timestamp;
 
   constructor(data?: PartialMessage<ComponentState>) {
     super();
@@ -4050,6 +4072,7 @@ export class ComponentState extends Message<ComponentState> {
   static readonly typeName = "rill.runtime.v1.ComponentState";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "valid_spec", kind: "message", T: ComponentSpec },
+    { no: 2, name: "data_refreshed_on", kind: "message", T: Timestamp },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ComponentState {
@@ -4321,9 +4344,19 @@ export class CanvasSpec extends Message<CanvasSpec> {
  */
 export class CanvasState extends Message<CanvasState> {
   /**
+   * Valid spec is a (potentially previous) version of the canvas's spec that is known to be valid.
+   *
    * @generated from field: rill.runtime.v1.CanvasSpec valid_spec = 1;
    */
   validSpec?: CanvasSpec;
+
+  /**
+   * The last time any underlying metrics view(s)'s data was refreshed.
+   * This may be empty if the data refresh time is not known, e.g. if the metrics view is based on an externally managed table.
+   *
+   * @generated from field: google.protobuf.Timestamp data_refreshed_on = 2;
+   */
+  dataRefreshedOn?: Timestamp;
 
   constructor(data?: PartialMessage<CanvasState>) {
     super();
@@ -4334,6 +4367,7 @@ export class CanvasState extends Message<CanvasState> {
   static readonly typeName = "rill.runtime.v1.CanvasState";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "valid_spec", kind: "message", T: CanvasSpec },
+    { no: 2, name: "data_refreshed_on", kind: "message", T: Timestamp },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CanvasState {

@@ -8,7 +8,7 @@
   import type { Row } from "./stores/row";
 
   export let row: Row;
-  export let zIndex = 50;
+  export let zIndex = 1;
   export let maxWidth: number;
   export let rowIndex: number;
   export let components: CanvasEntity["components"];

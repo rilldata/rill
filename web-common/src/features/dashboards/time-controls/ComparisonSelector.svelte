@@ -64,6 +64,7 @@
   <DropdownMenu.Trigger>
     <Tooltip distance={8} suppress={open}>
       <Chip
+        theme
         label="Select a comparison dimension"
         active={open}
         type="dimension"

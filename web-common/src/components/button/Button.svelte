@@ -42,6 +42,7 @@
   export let preload = true;
   export let active = false;
   export let loadingCopy = "Loading";
+  export let theme = false;
   // needed to set certain style that could be overridden by the style block in this component
   export let forcedStyle = "";
   export let dataAttributes: Record<`data-${string}`, string> = {};
@@ -70,6 +71,7 @@
   class:loading
   class:large
   class:small
+  class:theme
   class:wide
   class:compact
   class:rounded
@@ -136,6 +138,19 @@
     @apply bg-slate-400;
   }
 
+  .primary.theme {
+    @apply bg-theme-600 text-white;
+  }
+
+  .primary.theme:hover {
+    @apply bg-theme-700;
+  }
+
+  .primary.theme:active,
+  .primary.theme.selected {
+    @apply bg-theme-800;
+  }
+
   /* SECONDARY, GHOST, DASHED STYLES */
 
   .secondary,
@@ -164,6 +179,32 @@
     @apply bg-primary-100;
   }
 
+  .secondary.theme,
+  .ghost.theme,
+  .dashed.theme {
+    @apply bg-transparent text-theme-600;
+  }
+
+  .secondary.theme,
+  .dashed.theme {
+    @apply border border-theme-300;
+  }
+
+  .secondary.theme:hover,
+  .ghost.theme:hover,
+  .dashed.theme:hover {
+    @apply bg-theme-50;
+  }
+
+  .secondary.theme:active,
+  .secondary.theme.selected,
+  .ghost.theme:active,
+  .ghost.theme.elected,
+  .dashed.theme:active,
+  .dashed.theme.selected {
+    @apply bg-theme-100;
+  }
+
   .secondary.loading,
   .ghost.loading,
   .dashed.loading {
@@ -188,6 +229,15 @@
   .dashed:active:hover,
   .dashed.selected:hover {
     @apply bg-primary-200;
+  }
+
+  .secondary.theme:active:hover,
+  .secondary.theme.selected:hover,
+  .ghost.theme:active:hover,
+  .ghost.theme.selected:hover,
+  .dashed.theme:active:hover,
+  .dashed.theme.selected:hover {
+    @apply bg-theme-200;
   }
 
   /* PLAIN STYLES */
@@ -256,10 +306,23 @@
     @apply text-slate-400;
   }
 
+  .link.theme {
+    @apply text-theme-600 p-0;
+  }
+
+  .link.theme:hover {
+    @apply text-theme-700;
+  }
+
+  .link.theme:active,
+  .link.theme.selected {
+    @apply text-theme-800;
+  }
+
   /* TEXT STYLES */
 
   .text {
-    @apply text-slate-600 p-0;
+    @apply text-gray-700 p-0;
   }
 
   .text:hover {
@@ -279,10 +342,19 @@
     @apply text-slate-400;
   }
 
+  .text.theme:hover {
+    @apply text-green-700;
+  }
+
+  .text.theme:active,
+  .text.theme.selected {
+    @apply text-theme-800;
+  }
+
   /* TOOLBAR STYLES */
 
   .toolbar {
-    @apply font-normal text-gray-700;
+    @apply font-normal text-gray-800;
     @apply h-6 px-1.5 rounded-sm;
     @apply gap-x-1.5;
   }
@@ -298,6 +370,15 @@
 
   .toolbar:disabled {
     @apply text-slate-400;
+  }
+
+  .text.theme:hover {
+    @apply text-theme-700;
+  }
+
+  .text.theme:active,
+  .text.theme.selected {
+    @apply text-theme-800;
   }
 
   /* DANGER STYLES */
@@ -320,7 +401,7 @@
   }
 
   .danger.secondary {
-    @apply bg-white;
+    @apply bg-surface;
     @apply text-red-500;
     @apply border-red-500;
   }
@@ -408,7 +489,7 @@
     @apply w-[34px] h-[26px] rounded-2xl;
     @apply flex items-center justify-center;
     @apply border border-dashed border-slate-300;
-    @apply bg-white px-0;
+    @apply bg-surface px-0;
   }
 
   .gray:not(:hover) {
