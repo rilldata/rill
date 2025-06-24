@@ -1,9 +1,4 @@
 ---
-description: 
-globs: 
-alwaysApply: false
----
----
 description: Naming conventions for files and components in the Rill web frontend codebases
 globs: ["web-admin/**/*.ts", "web-admin/**/*.svelte", "web-admin/**/*.js", "web-common/**/*.ts", "web-common/**/*.svelte", "web-common/**/*.js", "web-local/**/*.ts", "web-local/**/*.svelte", "web-local/**/*.js"]
 alwaysApply: false
