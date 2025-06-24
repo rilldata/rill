@@ -107,8 +107,8 @@ func (h *handle) MigrationStatus(ctx context.Context) (current, desired int, err
 }
 
 // InformationSchema implements drivers.Handle.
-func (h *handle) InformationSchema() drivers.InformationSchema {
-	return &drivers.NotImplementedInformationSchema{}
+func (h *handle) AsInformationSchema() (drivers.InformationSchema, bool) {
+	return nil, false
 }
 
 func (h *handle) Close() error {

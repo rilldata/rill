@@ -91,8 +91,8 @@ func (h *handle) Config() map[string]any {
 }
 
 // InformationSchema implements drivers.Handle.
-func (h *handle) InformationSchema() drivers.InformationSchema {
-	return &drivers.NotImplementedInformationSchema{}
+func (h *handle) AsInformationSchema() (drivers.InformationSchema, bool) {
+	return nil, false
 }
 
 // Close implements drivers.Connection.

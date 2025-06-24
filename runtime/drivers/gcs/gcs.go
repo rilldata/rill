@@ -150,8 +150,8 @@ func (c *Connection) Config() map[string]any {
 }
 
 // InformationSchema implements drivers.Handle.
-func (c *Connection) InformationSchema() drivers.InformationSchema {
-	return &drivers.NotImplementedInformationSchema{}
+func (c *Connection) AsInformationSchema() (drivers.InformationSchema, bool) {
+	return nil, false
 }
 
 // Close implements drivers.Connection.

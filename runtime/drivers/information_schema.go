@@ -31,19 +31,3 @@ type Table struct {
 	UnsupportedCols         map[string]string
 	PhysicalSizeBytes       int64
 }
-
-// NotImplementedInformationSchema provides a default implementation that returns "not implemented" errors.
-// This can be used by drivers that don't implement the information schema interface.
-type NotImplementedInformationSchema struct{}
-
-func (n *NotImplementedInformationSchema) All(ctx context.Context, like string) ([]*Table, error) {
-	return nil, ErrInformationSchemaNotImplemented
-}
-
-func (n *NotImplementedInformationSchema) Lookup(ctx context.Context, db, schema, name string) (*Table, error) {
-	return nil, ErrInformationSchemaNotImplemented
-}
-
-func (n *NotImplementedInformationSchema) LoadPhysicalSize(ctx context.Context, tables []*Table) error {
-	return ErrInformationSchemaNotImplemented
-}

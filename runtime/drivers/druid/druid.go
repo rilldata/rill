@@ -247,8 +247,8 @@ func (c *connection) Config() map[string]any {
 }
 
 // InformationSchema implements drivers.Handle.
-func (c *connection) InformationSchema() drivers.InformationSchema {
-	return c
+func (c *connection) AsInformationSchema() (drivers.InformationSchema, bool) {
+	return c, true
 }
 
 // Close implements drivers.Connection.

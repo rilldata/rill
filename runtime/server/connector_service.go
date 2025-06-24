@@ -194,11 +194,17 @@ func (s *Server) ListTables(ctx context.Context, req *runtimev1.ListTablesReques
 	}
 	defer release()
 
-	tables, err := handle.InformationSchema().All(ctx, req.SearchPattern)
+	is, ok := handle.AsInformationSchema()
+	if !ok {
+		return nil, fmt.Errorf("driver: information schema not implemented")
+	}
+
+	tables, err := is.All(ctx, req.SearchPattern)
 	if err != nil {
 		return nil, err
 	}
-	_ = handle.InformationSchema().LoadPhysicalSize(ctx, tables)
+
+	_ = is.LoadPhysicalSize(ctx, tables)
 
 	res := make([]*runtimev1.TableInfo, len(tables))
 	for i, table := range tables {
@@ -224,11 +230,16 @@ func (s *Server) GetTable(ctx context.Context, req *runtimev1.GetTableRequest) (
 	}
 	defer release()
 
-	table, err := handle.InformationSchema().Lookup(ctx, req.Database, req.DatabaseSchema, req.Table)
+	is, ok := handle.AsInformationSchema()
+	if !ok {
+		return nil, fmt.Errorf("driver: information schema not implemented")
+	}
+
+	table, err := is.Lookup(ctx, req.Database, req.DatabaseSchema, req.Table)
 	if err != nil {
 		return nil, err
 	}
-	_ = handle.InformationSchema().LoadPhysicalSize(ctx, []*drivers.Table{table})
+	_ = is.LoadPhysicalSize(ctx, []*drivers.Table{table})
 
 	return &runtimev1.GetTableResponse{
 		Schema:             table.Schema,

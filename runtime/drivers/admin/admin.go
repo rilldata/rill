@@ -79,7 +79,7 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 		return nil, fmt.Errorf("failed to open admin client: %w", err)
 	}
 
-	c := &Handle{
+	h := &Handle{
 		config:  cfg,
 		logger:  logger,
 		storage: st,
@@ -88,7 +88,7 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 		repoSF:  &singleflight.Group{},
 	}
 
-	return c, nil
+	return h, nil
 }
 
 func (d driver) Spec() drivers.Spec {
@@ -172,8 +172,8 @@ func (h *Handle) MigrationStatus(ctx context.Context) (current, desired int, err
 }
 
 // InformationSchema implements drivers.Handle.
-func (h *Handle) InformationSchema() drivers.InformationSchema {
-	return &drivers.NotImplementedInformationSchema{}
+func (h *Handle) AsInformationSchema() (drivers.InformationSchema, bool) {
+	return nil, false
 }
 
 // Close implements drivers.Handle.
@@ -245,7 +245,7 @@ func (h *Handle) AsNotifier(properties map[string]any) (drivers.Notifier, error)
 }
 
 // rlockEnsureCloned ensures that the repo is cloned and locks h.repoMu for reading.
-// If it succeeds, h.repoMu.RUnlock() should be called when done reading from the cloned repo.
+// If it succeeds, r.repoMu.RUnlock() should be called when done reading from the cloned repo.
 // It is safe to call this function concurrently.
 func (h *Handle) rlockEnsureCloned(ctx context.Context) error {
 	// Take read lock
@@ -595,16 +595,16 @@ func (h *Handle) stashVirtual() error {
 
 	src := generateVirtualPath(h.projPath)
 	if _, err := os.Stat(src); os.IsNotExist(err) {
-		// Nothing to stasc.
+		// Nothing to stash.
 		// unstashVirtual gracefully handles when virtualStashPath is empty.
 		return nil
 	}
 
-	tempPatc, err := h.storage.TempDir()
+	tempPath, err := h.storage.TempDir()
 	if err != nil {
 		return fmt.Errorf("stash virtual: %w", err)
 	}
-	dst, err := generateTmpPath(tempPatc, "admin_driver_virtual_stash", "")
+	dst, err := generateTmpPath(tempPath, "admin_driver_virtual_stash", "")
 	if err != nil {
 		return fmt.Errorf("stash virtual: %w", err)
 	}
@@ -649,11 +649,11 @@ func (h *Handle) download() error {
 	defer cancel()
 
 	// generate a temporary file to copy repo tar directory
-	tempPatc, err := h.storage.TempDir()
+	tempPath, err := h.storage.TempDir()
 	if err != nil {
 		return fmt.Errorf("download: %w", err)
 	}
-	downloadDst, err := generateTmpPath(tempPatc, "admin_driver_zipped_repo", ".tar.gz")
+	downloadDst, err := generateTmpPath(tempPath, "admin_driver_zipped_repo", ".tar.gz")
 	if err != nil {
 		return fmt.Errorf("download: %w", err)
 	}
