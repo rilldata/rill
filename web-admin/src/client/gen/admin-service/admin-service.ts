@@ -51,7 +51,6 @@ import type {
   AdminServiceGetPaymentsPortalURLParams,
   AdminServiceGetProjectParams,
   AdminServiceGetProjectVariablesParams,
-  AdminServiceGetRepoMetaParams,
   AdminServiceGetReportMetaBody,
   AdminServiceGetUserParams,
   AdminServiceGetUsergroupParams,
@@ -11577,25 +11576,17 @@ export const createAdminServiceGetAlertMeta = <
  */
 export const adminServiceGetRepoMeta = (
   projectId: string,
-  params?: AdminServiceGetRepoMetaParams,
   signal?: AbortSignal,
 ) => {
   return httpClient<V1GetRepoMetaResponse>({
     url: `/v1/projects/${projectId}/repo/meta`,
     method: "GET",
-    params,
     signal,
   });
 };
 
-export const getAdminServiceGetRepoMetaQueryKey = (
-  projectId: string,
-  params?: AdminServiceGetRepoMetaParams,
-) => {
-  return [
-    `/v1/projects/${projectId}/repo/meta`,
-    ...(params ? [params] : []),
-  ] as const;
+export const getAdminServiceGetRepoMetaQueryKey = (projectId: string) => {
+  return [`/v1/projects/${projectId}/repo/meta`] as const;
 };
 
 export const getAdminServiceGetRepoMetaQueryOptions = <
@@ -11603,7 +11594,6 @@ export const getAdminServiceGetRepoMetaQueryOptions = <
   TError = RpcStatus,
 >(
   projectId: string,
-  params?: AdminServiceGetRepoMetaParams,
   options?: {
     query?: Partial<
       CreateQueryOptions<
@@ -11617,12 +11607,11 @@ export const getAdminServiceGetRepoMetaQueryOptions = <
   const { query: queryOptions } = options ?? {};
 
   const queryKey =
-    queryOptions?.queryKey ??
-    getAdminServiceGetRepoMetaQueryKey(projectId, params);
+    queryOptions?.queryKey ?? getAdminServiceGetRepoMetaQueryKey(projectId);
 
   const queryFn: QueryFunction<
     Awaited<ReturnType<typeof adminServiceGetRepoMeta>>
-  > = ({ signal }) => adminServiceGetRepoMeta(projectId, params, signal);
+  > = ({ signal }) => adminServiceGetRepoMeta(projectId, signal);
 
   return {
     queryKey,
@@ -11650,7 +11639,6 @@ export function createAdminServiceGetRepoMeta<
   TError = RpcStatus,
 >(
   projectId: string,
-  params?: AdminServiceGetRepoMetaParams,
   options?: {
     query?: Partial<
       CreateQueryOptions<
@@ -11666,7 +11654,6 @@ export function createAdminServiceGetRepoMeta<
 } {
   const queryOptions = getAdminServiceGetRepoMetaQueryOptions(
     projectId,
-    params,
     options,
   );
 

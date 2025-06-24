@@ -563,12 +563,23 @@ export interface V1GetProjectVariablesResponse {
 }
 
 export interface V1GetRepoMetaResponse {
-  /** If the Git-related fields are set, the archive-related fields will not be set (and vice versa). */
+  /** How long the returned config is valid for. Clients should call GetRepoMeta again after this time. */
+  validUntilTime?: string;
+  /** Git remote for cloning (and maybe pushing) a Git repository.
+The URL uses HTTPS with embedded username/password. */
   gitUrl?: string;
-  gitUrlExpiresOn?: string;
+  /** Optional subpath within the Git repository to use as the project root. */
   gitSubpath?: string;
+  /** The branch to use for the deployment. */
+  gitBranch?: string;
+  /** A unique branch name generated for temporary/ephemeral use in edit mode where files may be mutated.
+This enables checkpointing progress across hibernations and also more easily pinning to a specific commit of the base branch to delay conflict resolution. */
+  gitEditBranch?: string;
+  /** Signed URL for downloading a tarball of project files. If this is set, the git_* fields will be empty (and vice versa). */
   archiveDownloadUrl?: string;
+  /** A stable ID for the archive returned from archive_download_url. */
   archiveId?: string;
+  /** The creation time of the archive returned from archive_download_url. */
   archiveCreatedOn?: string;
 }
 
@@ -984,7 +995,9 @@ export interface V1ProvisionerResource {
 }
 
 export interface V1PullVirtualRepoResponse {
+  /** List of virtual files ordered by update time, most recent last. */
   files?: V1VirtualFile[];
+  /** Next page token for pagination. */
   nextPageToken?: string;
 }
 
@@ -1127,6 +1140,7 @@ export interface V1Service {
 
 export interface V1ServiceToken {
   id?: string;
+  prefix?: string;
   createdOn?: string;
   expiresOn?: string;
 }
@@ -1365,6 +1379,7 @@ export interface V1UserAuthToken {
   authClientId?: string;
   authClientDisplayName?: string;
   representingUserId?: string;
+  prefix?: string;
   createdOn?: string;
   expiresOn?: string;
   usedOn?: string;
@@ -1834,12 +1849,19 @@ export type AdminServiceGetAlertMetaBody = {
   queryForUserEmail?: string;
 };
 
-export type AdminServiceGetRepoMetaParams = {
-  branch?: string;
-};
-
 export type AdminServicePullVirtualRepoParams = {
+  /**
+ * The environment to pull virtual files for.
+It is optional. If the call is made with a deployment access token, it defaults to the environment of the deployment. Otherwise, it defaults to "prod".
+ */
+  environment?: string;
+  /**
+   * Page size for pagination.
+   */
   pageSize?: number;
+  /**
+   * Page token for pagination.
+   */
   pageToken?: string;
 };
 
