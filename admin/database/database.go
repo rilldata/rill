@@ -899,7 +899,7 @@ type ProjectMemberUser struct {
 
 // ProjectMemberUserWithProject is a convenience type used for display-friendly representation of a project member with project details
 type ProjectMemberUserWithProject struct {
-	Member      ProjectMemberUser
+	*ProjectMemberUser
 	ProjectID   string `db:"project_id"`
 	ProjectName string `db:"project_name"`
 }

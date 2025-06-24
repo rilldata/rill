@@ -911,7 +911,7 @@ func (s *Server) ListProjectMemberUserWithProjects(ctx context.Context, req *adm
 		attribute.String("args.email", req.Email),
 	)
 
-	org, err := s.admin.DB.FindOrganization(ctx, req.Organization)
+	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Organization)
 	if err != nil {
 		return nil, err
 	}
@@ -950,7 +950,7 @@ func (s *Server) ListProjectMemberUserWithProjects(ctx context.Context, req *adm
 		dtos[i] = &adminv1.ProjectMemberUserWithProject{
 			ProjectId:   proj.ProjectID,
 			ProjectName: proj.ProjectName,
-			User:        projMemberUserToPB(&proj.Member),
+			User:        projMemberUserToPB(proj.ProjectMemberUser),
 		}
 	}
 

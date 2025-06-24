@@ -1742,13 +1742,16 @@ func (c *connection) FindOrganizationMemberUsergroups(ctx context.Context, orgID
 		LEFT JOIN org_roles r ON uor.org_role_id = r.id
 		WHERE ug.org_id=$1
 	`)
+	paramIdx := 4
 	if filterRoleID != "" {
-		qry.WriteString(" AND uor.org_role_id=$4")
+		qry.WriteString(fmt.Sprintf(" AND uor.org_role_id=$%d", paramIdx))
 		args = append(args, filterRoleID)
+		paramIdx++
 	}
 	if filterUserID != "" {
-		qry.WriteString(" AND ug.id IN (SELECT usergroup_id FROM usergroups_users WHERE user_id = $5)")
+		qry.WriteString(fmt.Sprintf(" AND ug.id IN (SELECT usergroup_id FROM usergroups_users WHERE user_id = $%d)", paramIdx))
 		args = append(args, filterUserID)
+		paramIdx++
 	}
 	qry.WriteString(" AND lower(ug.name) > lower($2) ORDER BY lower(ug.name) LIMIT $3")
 
@@ -1879,8 +1882,7 @@ func (c *connection) ListProjectMemberUsersWithProject(ctx context.Context, orgI
 	var res []*database.ProjectMemberUserWithProject
 	err := c.getDB(ctx).SelectContext(ctx, &res, `
 		SELECT u.id, u.email, u.display_name, u.photo_url, u.created_on, u.updated_on,
-			upr.project_id, p.name as project_name, upr.project_role_id as role_id,
-			pr.name as role_name
+			upr.project_id, p.name as project_name, pr.name as role_name
 		FROM users u
 		JOIN users_projects_roles upr ON upr.user_id = u.id
 		JOIN projects p ON upr.project_id = p.id
