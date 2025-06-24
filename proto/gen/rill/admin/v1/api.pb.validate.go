@@ -1521,6 +1521,10 @@ func (m *UpdateOrganizationRequest) validate(all bool) error {
 		// no validation rules for FaviconAssetId
 	}
 
+	if m.ThumbnailAssetId != nil {
+		// no validation rules for ThumbnailAssetId
+	}
+
 	if m.DefaultProjectRole != nil {
 		// no validation rules for DefaultProjectRole
 	}
@@ -28194,8 +28198,6 @@ func (m *GetRepoMetaRequest) validate(all bool) error {
 
 	// no validation rules for ProjectId
 
-	// no validation rules for Branch
-
 	if len(errors) > 0 {
 		return GetRepoMetaRequestMultiError(errors)
 	}
@@ -28298,14 +28300,12 @@ func (m *GetRepoMetaResponse) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for GitUrl
-
 	if all {
-		switch v := interface{}(m.GetGitUrlExpiresOn()).(type) {
+		switch v := interface{}(m.GetValidUntilTime()).(type) {
 		case interface{ ValidateAll() error }:
 			if err := v.ValidateAll(); err != nil {
 				errors = append(errors, GetRepoMetaResponseValidationError{
-					field:  "GitUrlExpiresOn",
+					field:  "ValidUntilTime",
 					reason: "embedded message failed validation",
 					cause:  err,
 				})
@@ -28313,23 +28313,29 @@ func (m *GetRepoMetaResponse) validate(all bool) error {
 		case interface{ Validate() error }:
 			if err := v.Validate(); err != nil {
 				errors = append(errors, GetRepoMetaResponseValidationError{
-					field:  "GitUrlExpiresOn",
+					field:  "ValidUntilTime",
 					reason: "embedded message failed validation",
 					cause:  err,
 				})
 			}
 		}
-	} else if v, ok := interface{}(m.GetGitUrlExpiresOn()).(interface{ Validate() error }); ok {
+	} else if v, ok := interface{}(m.GetValidUntilTime()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
 			return GetRepoMetaResponseValidationError{
-				field:  "GitUrlExpiresOn",
+				field:  "ValidUntilTime",
 				reason: "embedded message failed validation",
 				cause:  err,
 			}
 		}
 	}
 
+	// no validation rules for GitUrl
+
 	// no validation rules for GitSubpath
+
+	// no validation rules for GitBranch
+
+	// no validation rules for GitEditBranch
 
 	// no validation rules for ArchiveDownloadUrl
 
@@ -28467,6 +28473,8 @@ func (m *PullVirtualRepoRequest) validate(all bool) error {
 	var errors []error
 
 	// no validation rules for ProjectId
+
+	// no validation rules for Environment
 
 	if m.GetPageSize() != 0 {
 
@@ -35635,6 +35643,8 @@ func (m *Organization) validate(all bool) error {
 
 	// no validation rules for FaviconUrl
 
+	// no validation rules for ThumbnailUrl
+
 	// no validation rules for CustomDomain
 
 	// no validation rules for DefaultProjectRoleId
@@ -38416,6 +38426,8 @@ func (m *ServiceToken) validate(all bool) error {
 
 	// no validation rules for Id
 
+	// no validation rules for Prefix
+
 	if all {
 		switch v := interface{}(m.GetCreatedOn()).(type) {
 		case interface{ ValidateAll() error }:
@@ -38582,6 +38594,8 @@ func (m *UserAuthToken) validate(all bool) error {
 	// no validation rules for AuthClientDisplayName
 
 	// no validation rules for RepresentingUserId
+
+	// no validation rules for Prefix
 
 	if all {
 		switch v := interface{}(m.GetCreatedOn()).(type) {

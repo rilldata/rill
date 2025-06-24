@@ -120,7 +120,7 @@ func (c *Client) RecordMetric(ctx context.Context, name string, value float64, a
 	})
 }
 
-// EmitBehavioral sends a telemetry event of type "behavioral" with the provided name and attributes.
+// RecordBehavioralLegacy sends a telemetry event of type "behavioral" with the provided name and attributes.
 // The event additionally has all the attributes associated with out legacy behavioral events.
 // It will panic if all of WithServiceName, WithServiceVersion, WithInstallID and WithUserID have not been called on the client.
 func (c *Client) RecordBehavioralLegacy(name string, extraAttrs ...attribute.KeyValue) {

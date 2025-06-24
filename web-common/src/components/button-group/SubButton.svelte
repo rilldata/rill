@@ -39,10 +39,10 @@
     : "text-gray-700 hover:text-gray-900 ";
 
   $: bgStyle = disabled
-    ? "bg-white"
+    ? "bg-surface"
     : isSelected
       ? "bg-gray-100 hover:bg-gray-200 "
-      : "bg-white hover:bg-gray-50 ";
+      : "bg-surface hover:bg-gray-50 ";
 
   // This is needed to make sure that the left and right most child
   // elements don't break out of the border drawn by the parent element

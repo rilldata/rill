@@ -347,6 +347,11 @@ func (r *legacyResolverResult) Close() error {
 	return nil
 }
 
+// Meta implements runtime.ResolverResult.
+func (r *legacyResolverResult) Meta() map[string]any {
+	return nil
+}
+
 func (r *legacyResolverResult) Schema() *runtimev1.StructType {
 	return r.schema
 }

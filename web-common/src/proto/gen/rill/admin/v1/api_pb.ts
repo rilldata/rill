@@ -695,6 +695,11 @@ export class UpdateOrganizationRequest extends Message<UpdateOrganizationRequest
   faviconAssetId?: string;
 
   /**
+   * @generated from field: optional string thumbnail_asset_id = 9;
+   */
+  thumbnailAssetId?: string;
+
+  /**
    * @generated from field: optional string default_project_role = 8;
    */
   defaultProjectRole?: string;
@@ -718,6 +723,7 @@ export class UpdateOrganizationRequest extends Message<UpdateOrganizationRequest
     { no: 5, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 6, name: "logo_asset_id", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 7, name: "favicon_asset_id", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 9, name: "thumbnail_asset_id", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 8, name: "default_project_role", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 4, name: "billing_email", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
   ]);
@@ -10161,14 +10167,11 @@ export class ListProjectWhitelistedDomainsResponse extends Message<ListProjectWh
  */
 export class GetRepoMetaRequest extends Message<GetRepoMetaRequest> {
   /**
+   * The project ID to get repository metadata for.
+   *
    * @generated from field: string project_id = 1;
    */
   projectId = "";
-
-  /**
-   * @generated from field: string branch = 2;
-   */
-  branch = "";
 
   constructor(data?: PartialMessage<GetRepoMetaRequest>) {
     super();
@@ -10179,7 +10182,6 @@ export class GetRepoMetaRequest extends Message<GetRepoMetaRequest> {
   static readonly typeName = "rill.admin.v1.GetRepoMetaRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "project_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetRepoMetaRequest {
@@ -10204,33 +10206,59 @@ export class GetRepoMetaRequest extends Message<GetRepoMetaRequest> {
  */
 export class GetRepoMetaResponse extends Message<GetRepoMetaResponse> {
   /**
-   * If the Git-related fields are set, the archive-related fields will not be set (and vice versa).
+   * How long the returned config is valid for. Clients should call GetRepoMeta again after this time.
+   *
+   * @generated from field: google.protobuf.Timestamp valid_until_time = 2;
+   */
+  validUntilTime?: Timestamp;
+
+  /**
+   * Git remote for cloning (and maybe pushing) a Git repository.
+   * The URL uses HTTPS with embedded username/password.
    *
    * @generated from field: string git_url = 1;
    */
   gitUrl = "";
 
   /**
-   * @generated from field: google.protobuf.Timestamp git_url_expires_on = 2;
-   */
-  gitUrlExpiresOn?: Timestamp;
-
-  /**
+   * Optional subpath within the Git repository to use as the project root.
+   *
    * @generated from field: string git_subpath = 3;
    */
   gitSubpath = "";
 
   /**
+   * The branch to use for the deployment.
+   *
+   * @generated from field: string git_branch = 7;
+   */
+  gitBranch = "";
+
+  /**
+   * A unique branch name generated for temporary/ephemeral use in edit mode where files may be mutated.
+   * This enables checkpointing progress across hibernations and also more easily pinning to a specific commit of the base branch to delay conflict resolution.
+   *
+   * @generated from field: string git_edit_branch = 8;
+   */
+  gitEditBranch = "";
+
+  /**
+   * Signed URL for downloading a tarball of project files. If this is set, the git_* fields will be empty (and vice versa).
+   *
    * @generated from field: string archive_download_url = 4;
    */
   archiveDownloadUrl = "";
 
   /**
+   * A stable ID for the archive returned from archive_download_url.
+   *
    * @generated from field: string archive_id = 5;
    */
   archiveId = "";
 
   /**
+   * The creation time of the archive returned from archive_download_url.
+   *
    * @generated from field: google.protobuf.Timestamp archive_created_on = 6;
    */
   archiveCreatedOn?: Timestamp;
@@ -10243,9 +10271,11 @@ export class GetRepoMetaResponse extends Message<GetRepoMetaResponse> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.admin.v1.GetRepoMetaResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 2, name: "valid_until_time", kind: "message", T: Timestamp },
     { no: 1, name: "git_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "git_url_expires_on", kind: "message", T: Timestamp },
     { no: 3, name: "git_subpath", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 7, name: "git_branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 8, name: "git_edit_branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "archive_download_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "archive_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "archive_created_on", kind: "message", T: Timestamp },
@@ -10273,16 +10303,30 @@ export class GetRepoMetaResponse extends Message<GetRepoMetaResponse> {
  */
 export class PullVirtualRepoRequest extends Message<PullVirtualRepoRequest> {
   /**
+   * The project ID to pull virtual files for.
+   *
    * @generated from field: string project_id = 1;
    */
   projectId = "";
 
   /**
+   * The environment to pull virtual files for.
+   * It is optional. If the call is made with a deployment access token, it defaults to the environment of the deployment. Otherwise, it defaults to "prod".
+   *
+   * @generated from field: string environment = 5;
+   */
+  environment = "";
+
+  /**
+   * Page size for pagination.
+   *
    * @generated from field: uint32 page_size = 3;
    */
   pageSize = 0;
 
   /**
+   * Page token for pagination.
+   *
    * @generated from field: string page_token = 4;
    */
   pageToken = "";
@@ -10296,6 +10340,7 @@ export class PullVirtualRepoRequest extends Message<PullVirtualRepoRequest> {
   static readonly typeName = "rill.admin.v1.PullVirtualRepoRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "project_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "environment", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "page_size", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 4, name: "page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
@@ -10322,11 +10367,15 @@ export class PullVirtualRepoRequest extends Message<PullVirtualRepoRequest> {
  */
 export class PullVirtualRepoResponse extends Message<PullVirtualRepoResponse> {
   /**
+   * List of virtual files ordered by update time, most recent last.
+   *
    * @generated from field: repeated rill.admin.v1.VirtualFile files = 1;
    */
   files: VirtualFile[] = [];
 
   /**
+   * Next page token for pagination.
+   *
    * @generated from field: string next_page_token = 2;
    */
   nextPageToken = "";
@@ -12891,6 +12940,11 @@ export class Organization extends Message<Organization> {
   faviconUrl = "";
 
   /**
+   * @generated from field: string thumbnail_url = 17;
+   */
+  thumbnailUrl = "";
+
+  /**
    * @generated from field: string custom_domain = 10;
    */
   customDomain = "";
@@ -12954,6 +13008,7 @@ export class Organization extends Message<Organization> {
     { no: 3, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 12, name: "logo_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 13, name: "favicon_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 17, name: "thumbnail_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 10, name: "custom_domain", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 16, name: "default_project_role_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "quotas", kind: "message", T: OrganizationQuotas },
@@ -14336,6 +14391,11 @@ export class ServiceToken extends Message<ServiceToken> {
   id = "";
 
   /**
+   * @generated from field: string prefix = 4;
+   */
+  prefix = "";
+
+  /**
    * @generated from field: google.protobuf.Timestamp created_on = 2;
    */
   createdOn?: Timestamp;
@@ -14354,6 +14414,7 @@ export class ServiceToken extends Message<ServiceToken> {
   static readonly typeName = "rill.admin.v1.ServiceToken";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "prefix", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "created_on", kind: "message", T: Timestamp },
     { no: 3, name: "expires_on", kind: "message", T: Timestamp },
   ]);
@@ -14405,6 +14466,11 @@ export class UserAuthToken extends Message<UserAuthToken> {
   representingUserId = "";
 
   /**
+   * @generated from field: string prefix = 9;
+   */
+  prefix = "";
+
+  /**
    * @generated from field: google.protobuf.Timestamp created_on = 6;
    */
   createdOn?: Timestamp;
@@ -14432,6 +14498,7 @@ export class UserAuthToken extends Message<UserAuthToken> {
     { no: 3, name: "auth_client_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "auth_client_display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "representing_user_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 9, name: "prefix", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "created_on", kind: "message", T: Timestamp },
     { no: 7, name: "expires_on", kind: "message", T: Timestamp },
     { no: 8, name: "used_on", kind: "message", T: Timestamp },
