@@ -194,6 +194,6 @@ func (h *Handle) AsModelManager(instanceID string) (drivers.ModelManager, bool) 
 }
 
 // AsNotifier implements drivers.Handle.
-func (h *Handle) AsNotifier(properties map[string]any) (drivers.Notifier, error) {
-	return nil, drivers.ErrNotNotifier
+func (h *Handle) AsNotifier(properties map[string]any) (drivers.Notifier, bool) {
+	return nil, false
 }

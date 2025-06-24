@@ -239,8 +239,8 @@ func (c *connection) AsWarehouse() (drivers.Warehouse, bool) {
 }
 
 // AsNotifier implements drivers.Handle.
-func (c *connection) AsNotifier(properties map[string]any) (drivers.Notifier, error) {
-	return nil, drivers.ErrNotNotifier
+func (c *connection) AsNotifier(properties map[string]any) (drivers.Notifier, bool) {
+	return nil, false
 }
 
 // checkPath checks that the connection's root is a valid directory.
