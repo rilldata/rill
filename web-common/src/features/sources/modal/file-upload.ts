@@ -63,7 +63,7 @@ export async function* uploadTableFiles(
   }
 
   if (lastTableName && goToIfSuccessful) {
-    await goto(`/files/sources/${lastTableName}.yaml`);
+    await goto(`/files/models/${lastTableName}.yaml`);
   }
 
   if (invalidFiles.length) {

@@ -73,10 +73,26 @@ export function compileSourceYAML(
   );
 }
 
+// TODO: remove this
 export function compileLocalFileSourceYAML(path: string) {
   return `${TOP_OF_FILE}\n\nconnector: "duckdb"\nsql: "${buildDuckDbQuery(
     path,
   )}"`;
+}
+
+export function compileLocalFileModelYAML(path: string) {
+  return `# Model YAML
+# Reference documentation: https://docs.rilldata.com/reference/project-files/models
+
+type: model
+
+input:
+  connector: "duckdb"
+  sql: "${buildDuckDbQuery(path)}"
+
+output:
+  connector: "duckdb"
+  materialize: true`;
 }
 
 function buildDuckDbQuery(path: string): string {

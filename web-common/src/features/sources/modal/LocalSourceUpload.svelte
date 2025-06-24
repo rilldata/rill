@@ -8,13 +8,15 @@
     uploadTableFiles,
   } from "@rilldata/web-common/features/sources/modal/file-upload";
   import { overlay } from "@rilldata/web-common/layout/overlay-store";
-  import { createRuntimeServiceUnpackEmpty } from "@rilldata/web-common/runtime-client";
+  import {
+    createRuntimeServiceUnpackEmpty,
+    runtimeServicePutFile,
+  } from "@rilldata/web-common/runtime-client";
   import { createEventDispatcher } from "svelte";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { EMPTY_PROJECT_TITLE } from "../../welcome/constants";
   import { isProjectInitialized } from "../../welcome/is-project-initialized";
-  import { compileLocalFileSourceYAML } from "../sourceUtils";
-  import { createSource } from "./createSource";
+  import { compileLocalFileModelYAML } from "../sourceUtils";
 
   const dispatch = createEventDispatcher();
 
@@ -46,13 +48,19 @@
           await invalidate("init");
         }
 
-        const yaml = compileLocalFileSourceYAML(filePath);
-        await createSource(instanceId, tableName, yaml);
-        const newFilePath = getFilePathFromNameAndType(
+        // Create model artifact instead of source
+        const yaml = compileLocalFileModelYAML(filePath);
+        const newModelFilePath = getFilePathFromNameAndType(
           tableName,
-          EntityType.Table,
+          EntityType.Model,
         );
-        await goto(`/files${newFilePath}`);
+        await runtimeServicePutFile(instanceId, {
+          path: newModelFilePath,
+          blob: yaml,
+          create: true,
+          createOnly: false,
+        });
+        await goto(`/files${newModelFilePath}`);
       } catch (err) {
         console.error(err);
       }

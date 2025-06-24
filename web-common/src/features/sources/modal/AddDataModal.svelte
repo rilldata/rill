@@ -186,7 +186,7 @@
     <Dialog.Content noClose>
       {#if step === 1}
         {#if $isModelingSupportedForDefaultOlapDriver}
-          <Dialog.Title>Add a source</Dialog.Title>
+          <Dialog.Title>Add data</Dialog.Title>
           <section class="mb-1">
             <div class="connector-grid">
               {#each connectors.filter((c) => c.name && SOURCES.includes(c.name)) as connector (connector.name)}
@@ -242,7 +242,7 @@
       {#if step === 2 && selectedConnector}
         <Dialog.Title>
           {#if $duplicateSourceName !== null}
-            Duplicate source
+            Duplicate model
           {:else}
             {selectedConnector.displayName}
           {/if}
@@ -257,7 +257,7 @@
             connector={selectedConnector}
             formType={OLAP_CONNECTORS.includes(selectedConnector.name)
               ? "connector"
-              : "source"}
+              : "model"}
             onClose={resetModal}
             onBack={back}
             on:submitting={handleSubmittingChange}

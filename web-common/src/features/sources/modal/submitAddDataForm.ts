@@ -31,7 +31,7 @@ import { ResourceKind } from "../../entity-management/resource-selectors";
 import { EntityType } from "../../entity-management/types";
 import { EMPTY_PROJECT_TITLE } from "../../welcome/constants";
 import { isProjectInitialized } from "../../welcome/is-project-initialized";
-import { compileSourceYAML, maybeRewriteToDuckDb } from "../sourceUtils";
+import { maybeRewriteToDuckDb } from "../sourceUtils";
 
 interface AddDataFormValues {
   // name: string; // Commenting out until we add user-provided names for Connectors
@@ -51,16 +51,56 @@ export async function submitAddSourceForm(
     formValues,
   );
 
-  // Make a new <source>.yaml file
-  const newSourceFilePath = getFileAPIPathFromNameAndType(
-    formValues.name as string,
-    EntityType.Table,
+  // Create connector artifact first
+  const connectorName = await createConnectorForSource(
+    queryClient,
+    instanceId,
+    rewrittenConnector,
+    rewrittenFormValues,
   );
+
+  // Create model artifact that reads from the connector
+  const modelName = formValues.name as string;
+  const newModelFilePath = getFileAPIPathFromNameAndType(
+    modelName,
+    EntityType.Model,
+  );
+
+  const modelYAML = compileModelYAML(connectorName, rewrittenFormValues);
   await runtimeServicePutFile(instanceId, {
-    path: newSourceFilePath,
-    blob: compileSourceYAML(rewrittenConnector, rewrittenFormValues),
+    path: newModelFilePath,
+    blob: modelYAML,
     create: true,
-    createOnly: false, // The modal might be opened from a YAML file with placeholder text, so the file might already exist
+    createOnly: false,
+  });
+
+  await goto(`/files/${newModelFilePath}`);
+}
+
+// Helper function to create a connector for a source
+async function createConnectorForSource(
+  queryClient: QueryClient,
+  instanceId: string,
+  connector: V1ConnectorDriver,
+  formValues: Record<string, unknown>,
+): Promise<string> {
+  // Generate connector name (use driver name for single connector, add index for multiple)
+  const existingConnectors = fileArtifacts.getNamesForKind(
+    ResourceKind.Connector,
+  );
+  const connectorName = getName(connector.name as string, existingConnectors);
+
+  // Create connector artifact
+  const newConnectorFilePath = getFileAPIPathFromNameAndType(
+    connectorName,
+    EntityType.Connector,
+  );
+
+  await runtimeServicePutFile(instanceId, {
+    path: newConnectorFilePath,
+    blob: compileConnectorYAML(connector, formValues),
+    create: true,
+    createOnly: false,
   });
 
   // Create or update the `.env` file
@@ -68,15 +108,50 @@ export async function submitAddSourceForm(
     path: ".env",
     blob: await updateDotEnvWithSecrets(
       queryClient,
-      rewrittenConnector,
-      rewrittenFormValues,
-      "source",
+      connector,
+      formValues,
+      "connector",
     ),
     create: true,
     createOnly: false,
   });
 
-  await goto(`/files/${newSourceFilePath}`);
+  return connectorName;
+}
+
+// Helper function to compile model YAML
+function compileModelYAML(
+  connectorName: string,
+  formValues: Record<string, unknown>,
+): string {
+  const modelName = formValues.name as string;
+
+  // Extract SQL or other query properties
+  const sql = formValues.sql as string;
+  const path = formValues.path as string;
+
+  let inputQuery = "";
+  if (sql) {
+    inputQuery = `sql: |\n  ${sql
+      .split("\n")
+      .map((line) => `  ${line}`)
+      .join("\n")}`;
+  } else if (path) {
+    inputQuery = `path: "${path}"`;
+  }
+
+  return `# Model YAML
+# Reference documentation: https://docs.rilldata.com/reference/project-files/models
+
+type: model
+
+input:
+  connector: "${connectorName}"
+  ${inputQuery}
+
+output:
+  connector: "duckdb"
+  materialize: true`;
 }
 
 export async function submitAddOLAPConnectorForm(

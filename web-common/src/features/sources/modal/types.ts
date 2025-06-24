@@ -1,1 +1,1 @@
-export type AddDataFormType = "source" | "connector";
+export type AddDataFormType = "model" | "connector";

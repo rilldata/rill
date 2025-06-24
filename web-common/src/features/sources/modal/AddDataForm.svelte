@@ -35,13 +35,13 @@
   export let onBack: () => void;
   export let onClose: () => void;
 
-  const isSourceForm = formType === "source";
+  const isModelForm = formType === "model";
   const isConnectorForm = formType === "connector";
 
   // Form 1: Individual parameters
   const paramsFormId = `add-data-${connector.name}-form`;
   const properties =
-    (isSourceForm
+    (isModelForm
       ? connector.sourceProperties
       : connector.configProperties?.filter(
           (property) => property.key !== "dsn",
@@ -140,7 +140,7 @@
     const values = event.form.data;
 
     try {
-      if (formType === "source") {
+      if (formType === "model") {
         await submitAddSourceForm(queryClient, connector, values);
       } else {
         await submitAddOLAPConnectorForm(queryClient, connector, values);

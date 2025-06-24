@@ -3,12 +3,14 @@
   import Overlay from "@rilldata/web-common/components/overlay/Overlay.svelte";
   import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
-  import { createRuntimeServiceUnpackEmpty } from "@rilldata/web-common/runtime-client";
+  import {
+    createRuntimeServiceUnpackEmpty,
+    runtimeServicePutFile,
+  } from "@rilldata/web-common/runtime-client";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { EMPTY_PROJECT_TITLE } from "../../welcome/constants";
   import { isProjectInitialized } from "../../welcome/is-project-initialized";
-  import { compileLocalFileSourceYAML } from "../sourceUtils";
-  import { createSource } from "./createSource";
+  import { compileLocalFileModelYAML } from "../sourceUtils";
   import { uploadTableFiles } from "./file-upload";
 
   export let showDropOverlay: boolean;
@@ -45,13 +47,19 @@
           await invalidate("init");
         }
 
-        const yaml = compileLocalFileSourceYAML(filePath);
-        await createSource(instanceId, tableName, yaml);
-        const newFilePath = getFilePathFromNameAndType(
+        // Create model artifact instead of source
+        const yaml = compileLocalFileModelYAML(filePath);
+        const newModelFilePath = getFilePathFromNameAndType(
           tableName,
-          EntityType.Table,
+          EntityType.Model,
         );
-        await goto(`/files${newFilePath}`);
+        await runtimeServicePutFile(instanceId, {
+          path: newModelFilePath,
+          blob: yaml,
+          create: true,
+          createOnly: false,
+        });
+        await goto(`/files${newModelFilePath}`);
       } catch (err) {
         console.error(err);
       }
@@ -76,7 +84,7 @@
       class="grid place-content-center grid-gap-2 text-white m-auto p-6 break-all text-3xl"
     >
       <span class="place-content-center">
-        drop your files to add new source
+        drop your files to add new model
       </span>
     </div>
   </div>
