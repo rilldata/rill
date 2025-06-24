@@ -16,6 +16,7 @@ alwaysApply: false
 
 ## Component Events
 - Avoid using createDispatchEvent and use callback props for handling component events
+
 ## Reactivity
 - Use proper reactive declarations
 - Implement proper stores
