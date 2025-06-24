@@ -16296,6 +16296,8 @@ func (m *ListOrganizationMemberUsergroupsRequest) validate(all bool) error {
 
 	// no validation rules for IncludeCounts
 
+	// no validation rules for Email
+
 	if m.GetPageSize() != 0 {
 
 		if m.GetPageSize() > 1000 {
@@ -16583,6 +16585,8 @@ func (m *ListProjectMemberUsergroupsRequest) validate(all bool) error {
 	}
 
 	// no validation rules for Role
+
+	// no validation rules for Email
 
 	if m.GetPageSize() != 0 {
 

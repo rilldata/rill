@@ -803,6 +803,11 @@ paths:
           in: query
           required: false
           type: string
+        - name: email
+          description: Optionally filter by user email
+          in: query
+          required: false
+          type: string
         - name: pageSize
           in: query
           required: false
@@ -2137,6 +2142,11 @@ paths:
           in: query
           required: false
           type: boolean
+        - name: email
+          description: Optionally filter by user email
+          in: query
+          required: false
+          type: string
         - name: pageSize
           in: query
           required: false

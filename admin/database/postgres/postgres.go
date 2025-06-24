@@ -1737,7 +1737,7 @@ func (c *connection) InsertProjectMemberUser(ctx context.Context, projectID, use
 
 // FindOrganizationMemberUsergroups returns org user groups as a collection of MemberUsergroup.
 // If a user group has no org role then RoleName is empty.
-func (c *connection) FindOrganizationMemberUsergroups(ctx context.Context, orgID, filterRoleID string, withCounts bool, afterName string, limit int) ([]*database.MemberUsergroup, error) {
+func (c *connection) FindOrganizationMemberUsergroups(ctx context.Context, orgID, filterRoleID, filterUserID string, withCounts bool, afterName string, limit int) ([]*database.MemberUsergroup, error) {
 	args := []any{orgID, afterName, limit}
 	var qry strings.Builder
 	qry.WriteString("SELECT ug.id, ug.name, ug.managed, ug.created_on, ug.updated_on, COALESCE(r.name, '') as role_name")
@@ -1754,9 +1754,15 @@ func (c *connection) FindOrganizationMemberUsergroups(ctx context.Context, orgID
 		LEFT JOIN org_roles r ON uor.org_role_id = r.id
 		WHERE ug.org_id=$1
 	`)
+	paramIdx := 4
 	if filterRoleID != "" {
-		qry.WriteString(" AND uor.org_role_id=$4")
+		qry.WriteString(fmt.Sprintf(" AND uor.org_role_id=$%d", paramIdx))
 		args = append(args, filterRoleID)
+		paramIdx++
+	}
+	if filterUserID != "" {
+		qry.WriteString(fmt.Sprintf(" AND ug.id IN (SELECT usergroup_id FROM usergroups_users WHERE user_id = $%d)", paramIdx))
+		args = append(args, filterUserID)
 	}
 	qry.WriteString(" AND lower(ug.name) > lower($2) ORDER BY lower(ug.name) LIMIT $3")
 
@@ -1803,7 +1809,7 @@ func (c *connection) DeleteOrganizationMemberUsergroup(ctx context.Context, grou
 	return checkDeleteRow("org group member", res, err)
 }
 
-func (c *connection) FindProjectMemberUsergroups(ctx context.Context, projectID, filterRoleID, afterName string, limit int) ([]*database.MemberUsergroup, error) {
+func (c *connection) FindProjectMemberUsergroups(ctx context.Context, projectID, filterRoleID, filterUserID, afterName string, limit int) ([]*database.MemberUsergroup, error) {
 	args := []any{projectID, afterName, limit}
 	var qry strings.Builder
 	qry.WriteString(`
@@ -1812,9 +1818,16 @@ func (c *connection) FindProjectMemberUsergroups(ctx context.Context, projectID,
 		JOIN project_roles r ON upr.project_role_id = r.id
 		WHERE upr.project_id=$1
 	`)
+
+	paramIdx := 4
 	if filterRoleID != "" {
-		qry.WriteString(" AND upr.project_role_id=$4")
+		qry.WriteString(fmt.Sprintf(" AND upr.project_role_id=$%d", paramIdx))
 		args = append(args, filterRoleID)
+		paramIdx++
+	}
+	if filterUserID != "" {
+		qry.WriteString(fmt.Sprintf(" AND ug.id IN (SELECT usergroup_id FROM usergroups_users WHERE user_id = $%d)", paramIdx))
+		args = append(args, filterUserID)
 	}
 	qry.WriteString(" AND lower(ug.name) > lower($2) ORDER BY lower(ug.name) LIMIT $3")
 

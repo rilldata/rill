@@ -196,7 +196,16 @@ func (s *Server) ListOrganizationMemberUsergroups(ctx context.Context, req *admi
 		roleID = role.ID
 	}
 
-	members, err := s.admin.DB.FindOrganizationMemberUsergroups(ctx, org.ID, roleID, req.IncludeCounts, token.Val, pageSize)
+	var userID string
+	if req.Email != "" {
+		user, err := s.admin.DB.FindUserByEmail(ctx, req.Email)
+		if err != nil {
+			return nil, err
+		}
+		userID = user.ID
+	}
+
+	members, err := s.admin.DB.FindOrganizationMemberUsergroups(ctx, org.ID, roleID, userID, req.IncludeCounts, token.Val, pageSize)
 	if err != nil {
 		return nil, err
 	}
@@ -248,7 +257,16 @@ func (s *Server) ListProjectMemberUsergroups(ctx context.Context, req *adminv1.L
 		roleID = role.ID
 	}
 
-	members, err := s.admin.DB.FindProjectMemberUsergroups(ctx, proj.ID, roleID, token.Val, pageSize)
+	var userID string
+	if req.Email != "" {
+		user, err := s.admin.DB.FindUserByEmail(ctx, req.Email)
+		if err != nil {
+			return nil, err
+		}
+		userID = user.ID
+	}
+
+	members, err := s.admin.DB.FindProjectMemberUsergroups(ctx, proj.ID, roleID, userID, token.Val, pageSize)
 	if err != nil {
 		return nil, err
 	}

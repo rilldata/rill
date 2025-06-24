@@ -1523,6 +1523,10 @@ export type AdminServiceListProjectMemberUsergroupsParams = {
    * Optionally filter by role
    */
   role?: string;
+  /**
+   * Optionally filter by user email
+   */
+  email?: string;
   pageSize?: number;
   pageToken?: string;
 };
@@ -1700,6 +1704,10 @@ export type AdminServiceListOrganizationMemberUsergroupsParams = {
    * Optionally include counts
    */
   includeCounts?: boolean;
+  /**
+   * Optionally filter by user email
+   */
+  email?: string;
   pageSize?: number;
   pageToken?: string;
 };

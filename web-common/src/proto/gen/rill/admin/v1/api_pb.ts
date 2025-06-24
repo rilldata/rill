@@ -5974,6 +5974,13 @@ export class ListOrganizationMemberUsergroupsRequest extends Message<ListOrganiz
   includeCounts = false;
 
   /**
+   * Optionally filter by user email
+   *
+   * @generated from field: string email = 6;
+   */
+  email = "";
+
+  /**
    * @generated from field: uint32 page_size = 2;
    */
   pageSize = 0;
@@ -5994,6 +6001,7 @@ export class ListOrganizationMemberUsergroupsRequest extends Message<ListOrganiz
     { no: 1, name: "organization", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "role", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "include_counts", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 6, name: "email", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "page_size", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 3, name: "page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
@@ -6080,6 +6088,13 @@ export class ListProjectMemberUsergroupsRequest extends Message<ListProjectMembe
   role = "";
 
   /**
+   * Optionally filter by user email
+   *
+   * @generated from field: string email = 6;
+   */
+  email = "";
+
+  /**
    * @generated from field: uint32 page_size = 3;
    */
   pageSize = 0;
@@ -6100,6 +6115,7 @@ export class ListProjectMemberUsergroupsRequest extends Message<ListProjectMembe
     { no: 1, name: "organization", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "project", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "role", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 6, name: "email", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "page_size", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 4, name: "page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
