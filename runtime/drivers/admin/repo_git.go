@@ -27,6 +27,7 @@ type gitRepo struct {
 	remoteURL string // Note that repo.checkSyncHandshake may update it at any time
 	branch    string // Note that repo.checkSyncHandshake may update it at any time
 	subpath   string // Note that repo.checkSyncHandshake may update it at any time
+	editable  bool
 }
 
 // sync clones or pulls from the remote Git repository.

@@ -10,6 +10,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/bmatcuk/doublestar/v4"
@@ -223,23 +224,165 @@ func (r *repo) Stat(ctx context.Context, path string) (*drivers.FileInfo, error)
 }
 
 // Put implements drivers.RepoStore.
-func (r *repo) Put(ctx context.Context, filePath string, reader io.Reader) error {
-	return fmt.Errorf("put operation is unsupported")
+func (r *repo) Put(ctx context.Context, path string, reader io.Reader) error {
+	if drivers.IsIgnored(path, r.ignorePaths) {
+		return fmt.Errorf("can't write to ignored path %q", path)
+	}
+
+	err := r.rlockEnsureSynced(ctx)
+	if err != nil {
+		return err
+	}
+	defer r.mu.RUnlock()
+
+	if r.git != nil && !r.git.editable {
+		return fmt.Errorf("repo is not editable")
+	}
+
+	var root string
+	if r.archive != nil {
+		root = r.archive.root()
+	} else {
+		root = r.git.root()
+	}
+
+	fp := filepath.Join(root, path)
+
+	err = os.MkdirAll(filepath.Dir(path), os.ModePerm)
+	if err != nil {
+		return err
+	}
+
+	f, err := os.Create(fp)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	_, err = io.Copy(f, reader)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // MkdirAll implements drivers.RepoStore.
-func (r *repo) MkdirAll(ctx context.Context, dirPath string) error {
-	return fmt.Errorf("make dir operation is unsupported")
+func (r *repo) MkdirAll(ctx context.Context, path string) error {
+	if drivers.IsIgnored(path, r.ignorePaths) {
+		return fmt.Errorf("can't write to ignored path %q", path)
+	}
+
+	err := r.rlockEnsureSynced(ctx)
+	if err != nil {
+		return err
+	}
+	defer r.mu.RUnlock()
+
+	if r.git != nil && !r.git.editable {
+		return fmt.Errorf("repo is not editable")
+	}
+
+	var root string
+	if r.archive != nil {
+		root = r.archive.root()
+	} else {
+		root = r.git.root()
+	}
+
+	fp := filepath.Join(root, path)
+
+	err = os.MkdirAll(fp, os.ModePerm)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // Rename implements drivers.RepoStore.
 func (r *repo) Rename(ctx context.Context, fromPath, toPath string) error {
-	return fmt.Errorf("rename operation is unsupported")
+	if drivers.IsIgnored(fromPath, r.ignorePaths) {
+		return fmt.Errorf("can't write from ignored path %q", fromPath)
+	}
+	if drivers.IsIgnored(toPath, r.ignorePaths) {
+		return fmt.Errorf("can't write to ignored path %q", toPath)
+	}
+
+	err := r.rlockEnsureSynced(ctx)
+	if err != nil {
+		return err
+	}
+	defer r.mu.RUnlock()
+
+	if r.git != nil && !r.git.editable {
+		return fmt.Errorf("repo is not editable")
+	}
+
+	var root string
+	if r.archive != nil {
+		root = r.archive.root()
+	} else {
+		root = r.git.root()
+	}
+
+	fromPath = filepath.Join(root, fromPath)
+	toPath = filepath.Join(root, toPath)
+
+	if _, err := os.Stat(toPath); !strings.EqualFold(fromPath, toPath) && err == nil {
+		return os.ErrExist
+	}
+
+	err = os.Rename(fromPath, toPath)
+	if err != nil {
+		return err
+	}
+	err = os.Chtimes(toPath, time.Now(), time.Now())
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // Delete implements drivers.RepoStore.
-func (r *repo) Delete(ctx context.Context, filePath string, force bool) error {
-	return fmt.Errorf("delete operation is unsupported")
+func (r *repo) Delete(ctx context.Context, path string, force bool) error {
+	if drivers.IsIgnored(path, r.ignorePaths) {
+		return fmt.Errorf("can't write to ignored path %q", path)
+	}
+
+	err := r.rlockEnsureSynced(ctx)
+	if err != nil {
+		return err
+	}
+	defer r.mu.RUnlock()
+
+	if r.git != nil && !r.git.editable {
+		return fmt.Errorf("repo is not editable")
+	}
+
+	var root string
+	if r.archive != nil {
+		root = r.archive.root()
+	} else {
+		root = r.git.root()
+	}
+
+	fp := filepath.Join(root, path)
+
+	if force {
+		err = os.RemoveAll(fp)
+		if err != nil {
+			return err
+		}
+	} else {
+		err = os.Remove(fp)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 // Watch implements drivers.RepoStore.
