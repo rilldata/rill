@@ -289,7 +289,7 @@ func (s *Server) CreateDeployment(ctx context.Context, req *adminv1.CreateDeploy
 	}
 
 	// We only allow one prod deployment.
-	if req.Environment != "prod" && proj.ProdDeploymentID != nil {
+	if req.Environment == "prod" && proj.ProdDeploymentID != nil {
 		return nil, status.Error(codes.InvalidArgument, "project already has a prod deployment, cannot create a new prod deployment")
 	}
 

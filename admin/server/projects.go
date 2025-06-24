@@ -2011,6 +2011,8 @@ func deploymentToDTO(d *database.Deployment) *adminv1.Deployment {
 	return &adminv1.Deployment{
 		Id:                d.ID,
 		ProjectId:         d.ProjectID,
+		OwnerUserId:       d.OwnerUserID,
+		Environment:       d.Environment,
 		Branch:            d.Branch,
 		RuntimeHost:       d.RuntimeHost,
 		RuntimeInstanceId: d.RuntimeInstanceID,
