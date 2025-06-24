@@ -45,9 +45,8 @@
     selectedTimezone,
     minTimeGrain,
     selectTimeRange,
-    selectGrain,
-    selectZone,
-    setTimeZone,
+
+    set,
     displayTimeComparison,
     setSelectedComparisonRange,
   } = componentStore.localTimeControls);
@@ -125,7 +124,7 @@
     if (includesTimeZoneOffset) {
       const timeZone = name.match(/@ {(.*)}/)?.[1];
 
-      if (timeZone) setTimeZone(timeZone);
+      if (timeZone) set.zone(timeZone);
     }
 
     const interval = deriveInterval(
@@ -145,18 +144,6 @@
       selectRange(baseTimeRange);
     }
   }
-
-  // async function onTimeGrainSelect(timeGrain: V1TimeGrain) {
-  //   if (baseTimeRange) {
-  //     await makeTimeSeriesTimeRangeAndUpdateAppState(
-  //       baseTimeRange,
-  //       timeGrain,
-  //       selectedComparisonTimeRange,
-  //     );
-  //   }
-  // }
-
-  $: console.log({ selectZone });
 </script>
 
 <div class="flex flex-col gap-y-1 pt-1">
@@ -205,9 +192,9 @@
         showFullRange={false}
         showDefaultItem={false}
         applyRange={selectRange}
-        {onSelectRange}
-        {selectZone}
-        onTimeGrainSelect={selectGrain}
+        onSelectRange={set.range}
+        onTimeGrainSelect={set.grain}
+        onSelectTimeZone={set.zone}
         onPan={() => {}}
       />
 
