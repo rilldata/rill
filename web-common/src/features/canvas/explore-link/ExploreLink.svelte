@@ -1,6 +1,7 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { page } from "$app/stores";
+  import IconButton from "@rilldata/web-common/components/button/IconButton.svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu/";
   import ExploreIcon from "@rilldata/web-common/components/icons/ExploreIcon.svelte";
   import type { BaseCanvasComponent } from "@rilldata/web-common/features/canvas/components/BaseCanvasComponent";
@@ -65,7 +66,7 @@
       );
       await goto(exploreURL);
     } catch (error) {
-      console.error("Navigation error:", error);
+      console.warn("Navigation error:", error);
       if (error.type) {
         navigationError = error as ExploreLinkError;
       } else {
@@ -98,8 +99,6 @@
     $exploreAvailability.isAvailable &&
     !isNavigating &&
     !!$exploreQuery?.data?.exploreState;
-
-  $: console.log("canNavigate", canNavigate);
 </script>
 
 {#if $exploreAvailability.isAvailable}
@@ -113,21 +112,21 @@
       Go to Explore
     </DropdownMenu.Item>
   {:else if mode === "icon-button"}
-    <button
+    <IconButton
       on:click={gotoExplorePage}
-      class="size-7 grid place-content-center hover:bg-slate-100 active:bg-slate-200 text-blue-600 hover:text-blue-800 disabled:opacity-50 disabled:cursor-not-allowed"
-      title="Go to Explore Dashboard"
-      type="button"
+      size={28}
       disabled={!canNavigate}
+      ariaLabel="Go to Explore Dashboard"
+      disableHover={!canNavigate}
     >
       {#if isNavigating}
-        <Spinner status={EntityStatus.Running} size="16px" />
+        <Spinner status={EntityStatus.Running} size="18px" />
       {:else}
-        <ExploreIcon size="16px" />
+        <ExploreIcon size="18px" />
       {/if}
-    </button>
+      <div slot="tooltip-content">Go to Explore Dashboard</div>
+    </IconButton>
   {:else}
-    <!-- inline mode - default -->
     <button
       on:click={gotoExplorePage}
       class="inline-flex items-center gap-2 text-blue-600 hover:text-blue-800 underline cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"

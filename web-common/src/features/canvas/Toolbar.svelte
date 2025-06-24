@@ -23,7 +23,7 @@
 </script>
 
 <div
-  class:!flex={dropdownOpen || (!editable && showExplore)}
+  class:!flex={dropdownOpen}
   class="group-hover:flex p-0 overflow-hidden bg-slate-50 gap-x-1 items-center justify-center hidden toolbar top-0 right-0 shadow-sm z-[1000] absolute w-fit border-l border-b pointer-events-auto rounded-bl-sm rounded-tr-sm"
 >
   {#if editable}
