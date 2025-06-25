@@ -1462,6 +1462,7 @@ message ListOrganizationMemberUsersRequest {
 
 message ListOrganizationMemberUsersResponse {
   repeated OrganizationMemberUser members = 1;
+  uint32 total_count = 3; // Total number of members in the organization
   string next_page_token = 2;
 }
 
@@ -1473,6 +1474,7 @@ message ListOrganizationInvitesRequest {
 
 message ListOrganizationInvitesResponse {
   repeated OrganizationInvite invites = 1;
+  uint32 total_count = 3; // Total number of invites in the organization
   string next_page_token = 2;
 }
 
