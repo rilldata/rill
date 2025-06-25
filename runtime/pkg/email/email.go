@@ -8,6 +8,7 @@ import (
 	"math"
 	"time"
 
+	"github.com/rilldata/rill/admin/database"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 )
@@ -341,12 +342,14 @@ type ProjectAccessRequest struct {
 }
 
 func (c *Client) SendProjectAccessRequest(opts *ProjectAccessRequest) error {
-	accessPrefix := "to view"
+	var accessPrefix string
 	switch opts.Role {
-	case "admin":
+	case database.ProjectRoleNameAdmin:
 		accessPrefix = "to be an admin of"
-	case "editor":
+	case database.ProjectRoleNameEditor:
 		accessPrefix = "to edit"
+	case database.ProjectRoleNameViewer:
+		accessPrefix = "to view"
 	}
 
 	subject := fmt.Sprintf("%s would like %s %s/%s", opts.Email, accessPrefix, opts.OrgName, opts.ProjectName)

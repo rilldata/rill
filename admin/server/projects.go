@@ -1287,8 +1287,8 @@ func (s *Server) RequestProjectAccess(ctx context.Context, req *adminv1.RequestP
 
 	claims := auth.GetClaims(ctx)
 	projectPermissions := claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID)
-	if (req.Role != "admin" && projectPermissions.ReadProject) ||
-		(req.Role == "admin" && projectPermissions.ManageProject) {
+	if (req.Role != database.ProjectRoleNameAdmin && projectPermissions.ReadProject) ||
+		(req.Role == database.ProjectRoleNameAdmin && projectPermissions.ManageProject) {
 		return nil, status.Error(codes.InvalidArgument, "already have access to project")
 	}
 
