@@ -31,7 +31,6 @@ alwaysApply: false
 ### TypeScript Interfaces/Types
 - Use **PascalCase** for interfaces and types
 - Examples: `ProjectPermissions`, `UserManagement`, `EnvironmentVariable`
-- Prefix interfaces with `I` only when there's a naming conflict
 
 ## Variable and Function Naming
 
