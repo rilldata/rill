@@ -42,7 +42,8 @@ func (s *Server) GetRepoMeta(ctx context.Context, req *adminv1.GetRepoMetaReques
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
 		return &adminv1.GetRepoMetaResponse{
-			ValidUntilTime:     timestamppb.New(time.Now().Add(time.Hour * 24 * 365)), // Setting to a year because it doesn't need to be refreshed
+			ExpiresOn:          timestamppb.New(time.Now().Add(time.Hour * 24 * 365)), // Setting to a year because it doesn't need to be refreshed
+			LastUpdatedOn:      timestamppb.New(proj.UpdatedOn),
 			ArchiveId:          asset.ID,
 			ArchiveDownloadUrl: downloadURL,
 			ArchiveCreatedOn:   timestamppb.New(asset.CreatedOn),
@@ -53,15 +54,14 @@ func (s *Server) GetRepoMeta(ctx context.Context, req *adminv1.GetRepoMetaReques
 		return nil, status.Error(codes.FailedPrecondition, "project does not have a github integration")
 	}
 
-	// nolint // Pending other PR merging.
-	// var depl *database.Deployment
-	// if claims.OwnerType() == auth.OwnerTypeDeployment {
-	// 	var err error
-	// 	depl, err = s.admin.DB.FindDeployment(ctx, claims.OwnerID())
-	// 	if err != nil {
-	// 		return nil, status.Error(codes.NotFound, "deployment not found")
-	// 	}
-	// }
+	var depl *database.Deployment
+	if claims.OwnerType() == auth.OwnerTypeDeployment {
+		var err error
+		depl, err = s.admin.DB.FindDeployment(ctx, claims.OwnerID())
+		if err != nil {
+			return nil, status.Error(codes.NotFound, "deployment not found")
+		}
+	}
 
 	repoID, err := s.githubRepoIDForProject(ctx, proj)
 	if err != nil {
@@ -81,12 +81,18 @@ func (s *Server) GetRepoMeta(ctx context.Context, req *adminv1.GetRepoMetaReques
 	ep.Password = token
 	gitURL := ep.String()
 
+	var editBranch string
+	if depl != nil {
+		editBranch = depl.Branch
+	}
+
 	return &adminv1.GetRepoMetaResponse{
-		ValidUntilTime: timestamppb.New(expiresAt),
-		GitUrl:         gitURL,
-		GitSubpath:     proj.Subpath,
-		GitBranch:      proj.ProdBranch,
-		// TODO: GitEditBranch from depl if not nil
+		ExpiresOn:     timestamppb.New(expiresAt),
+		LastUpdatedOn: timestamppb.New(proj.UpdatedOn),
+		GitUrl:        gitURL,
+		GitSubpath:    proj.Subpath,
+		GitBranch:     proj.ProdBranch,
+		GitEditBranch: editBranch,
 	}, nil
 }
 
@@ -118,9 +124,8 @@ func (s *Server) PullVirtualRepo(ctx context.Context, req *adminv1.PullVirtualRe
 	}
 
 	environment := "prod"
-	if depl != nil { // nolint // Pending other PR merging.
-		// TODO: Once deployments have environments.
-		// environment = depl.Environment
+	if depl != nil {
+		environment = depl.Environment
 	}
 
 	pageToken, err := unmarshalStringTimestampPageToken(req.PageToken)
