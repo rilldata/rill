@@ -24,10 +24,10 @@ type gitRepo struct {
 	h       *Handle
 	repoDir string // The persistent directory where we store the Git repository
 
-	remoteURL string // Note that repo.checkSyncHandshake may update it at any time
-	branch    string // Note that repo.checkSyncHandshake may update it at any time
-	subpath   string // Note that repo.checkSyncHandshake may update it at any time
-	editable  bool
+	remoteURL     string // Note that repo.checkSyncHandshake may update it at any time
+	defaultBranch string // Note that repo.checkSyncHandshake may update it at any time
+	editBranch    string // Does not change. Only set for dev deployments.
+	subpath       string // Note that repo.checkSyncHandshake may update it at any time
 }
 
 // sync clones or pulls from the remote Git repository.
@@ -64,7 +64,7 @@ func (r *gitRepo) syncInner(ctx context.Context) error {
 		cloneOptions := &git.CloneOptions{
 			URL:           r.remoteURL,
 			RemoteName:    "origin",
-			ReferenceName: plumbing.ReferenceName("refs/heads/" + r.branch),
+			ReferenceName: plumbing.ReferenceName("refs/heads/" + r.defaultBranch),
 			SingleBranch:  true,
 		}
 
@@ -86,7 +86,7 @@ func (r *gitRepo) syncInner(ctx context.Context) error {
 
 	// Fetch the branch from remote
 	err = remote.Fetch(&git.FetchOptions{
-		RefSpecs: []config.RefSpec{config.RefSpec(fmt.Sprintf("refs/heads/%s:refs/heads/%s", r.branch, r.branch))},
+		RefSpecs: []config.RefSpec{config.RefSpec(fmt.Sprintf("refs/heads/%s:refs/heads/%s", r.defaultBranch, r.defaultBranch))},
 		Force:    true,
 	})
 	if err != nil && !errors.Is(err, git.NoErrAlreadyUpToDate) {
@@ -99,22 +99,22 @@ func (r *gitRepo) syncInner(ctx context.Context) error {
 		return err
 	}
 	err = worktree.Checkout(&git.CheckoutOptions{
-		Branch: plumbing.ReferenceName("refs/heads/" + r.branch),
+		Branch: plumbing.ReferenceName("refs/heads/" + r.defaultBranch),
 		Force:  true,
 	})
 	if err != nil {
-		return fmt.Errorf("failed to checkout branch %q: %w", r.branch, err)
+		return fmt.Errorf("failed to checkout branch %q: %w", r.defaultBranch, err)
 	}
 
 	// Pull in the latest changes
 	err = worktree.PullContext(ctx, &git.PullOptions{
 		RemoteURL:     r.remoteURL,
-		ReferenceName: plumbing.ReferenceName("refs/heads/" + r.branch),
+		ReferenceName: plumbing.ReferenceName("refs/heads/" + r.defaultBranch),
 		SingleBranch:  true,
 		Force:         true,
 	})
 	if err != nil && !errors.Is(err, git.NoErrAlreadyUpToDate) {
-		rev, err := repo.ResolveRevision(plumbing.Revision(fmt.Sprintf("refs/remotes/origin/%s", r.branch)))
+		rev, err := repo.ResolveRevision(plumbing.Revision(fmt.Sprintf("refs/remotes/origin/%s", r.defaultBranch)))
 		if err != nil {
 			return err
 		}
@@ -128,6 +128,13 @@ func (r *gitRepo) syncInner(ctx context.Context) error {
 	return nil
 }
 
+// editable returns true if its allowed to edit files in the repository.
+// Will be true for dev deployments with an edit branch, and false for prod deployments that serve files on the default branch.
+func (r *gitRepo) editable() bool {
+	return r.editBranch != ""
+}
+
+// root returns the absolute path to the root of the Rill project.
 func (r *gitRepo) root() string {
 	if r.subpath != "" {
 		return path.Join(r.repoDir, r.subpath)
@@ -135,6 +142,7 @@ func (r *gitRepo) root() string {
 	return r.repoDir
 }
 
+// commitHash returns the current commit hash of the repository.
 func (r *gitRepo) commitHash() (string, error) {
 	repo, err := git.PlainOpen(r.repoDir)
 	if err != nil {
@@ -153,6 +161,7 @@ func (r *gitRepo) commitHash() (string, error) {
 	return ref.Hash().String(), nil
 }
 
+// commitTimestamp returns the timestamp of the latest commit on the current branch.
 func (r *gitRepo) commitTimestamp() (time.Time, error) {
 	repo, err := git.PlainOpen(r.repoDir)
 	if err != nil {

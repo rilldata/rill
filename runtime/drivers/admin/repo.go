@@ -239,19 +239,13 @@ func (r *repo) Put(ctx context.Context, path string, reader io.Reader) error {
 	}
 	defer r.mu.RUnlock()
 
-	if r.git != nil && !r.git.editable {
+	if r.git != nil && !r.git.editable() {
 		return fmt.Errorf("repo is not editable")
 	}
+	root := r.git.root()
 
 	if drivers.IsIgnored(path, r.ignorePaths) {
 		return fmt.Errorf("can't write to ignored path %q", path)
-	}
-
-	var root string
-	if r.archive != nil {
-		root = r.archive.root()
-	} else {
-		root = r.git.root()
 	}
 
 	fp := filepath.Join(root, path)
@@ -283,19 +277,13 @@ func (r *repo) MkdirAll(ctx context.Context, path string) error {
 	}
 	defer r.mu.RUnlock()
 
-	if r.git != nil && !r.git.editable {
+	if r.git != nil && !r.git.editable() {
 		return fmt.Errorf("repo is not editable")
 	}
+	root := r.git.root()
 
 	if drivers.IsIgnored(path, r.ignorePaths) {
 		return fmt.Errorf("can't write to ignored path %q", path)
-	}
-
-	var root string
-	if r.archive != nil {
-		root = r.archive.root()
-	} else {
-		root = r.git.root()
 	}
 
 	fp := filepath.Join(root, path)
@@ -316,22 +304,16 @@ func (r *repo) Rename(ctx context.Context, fromPath, toPath string) error {
 	}
 	defer r.mu.RUnlock()
 
-	if r.git != nil && !r.git.editable {
+	if r.git != nil && !r.git.editable() {
 		return fmt.Errorf("repo is not editable")
 	}
+	root := r.git.root()
 
 	if drivers.IsIgnored(fromPath, r.ignorePaths) {
 		return fmt.Errorf("can't write from ignored path %q", fromPath)
 	}
 	if drivers.IsIgnored(toPath, r.ignorePaths) {
 		return fmt.Errorf("can't write to ignored path %q", toPath)
-	}
-
-	var root string
-	if r.archive != nil {
-		root = r.archive.root()
-	} else {
-		root = r.git.root()
 	}
 
 	fromPath = filepath.Join(root, fromPath)
@@ -361,19 +343,13 @@ func (r *repo) Delete(ctx context.Context, path string, force bool) error {
 	}
 	defer r.mu.RUnlock()
 
-	if r.git != nil && !r.git.editable {
+	if r.git != nil && !r.git.editable() {
 		return fmt.Errorf("repo is not editable")
 	}
+	root := r.git.root()
 
 	if drivers.IsIgnored(path, r.ignorePaths) {
 		return fmt.Errorf("can't write to ignored path %q", path)
-	}
-
-	var root string
-	if r.archive != nil {
-		root = r.archive.root()
-	} else {
-		root = r.git.root()
 	}
 
 	fp := filepath.Join(root, path)
@@ -400,19 +376,14 @@ func (r *repo) Watch(ctx context.Context, cb drivers.WatchCallback) error {
 		return err
 	}
 
-	if r.git != nil && !r.git.editable {
+	if r.git != nil && !r.git.editable() {
 		r.mu.RUnlock()
 		return fmt.Errorf("repo is not watchable")
 	}
+	root := r.git.root()
 
-	var root string
-	if r.archive != nil {
-		root = r.archive.root()
-	} else {
-		root = r.git.root()
-	}
-
-	// Derive a context that is cancelled if the repo config changes (i.e. if r.configCtx is cancelled).
+	// Derive a context that is also cancelled if the repo config changes (i.e. if r.configCtx is cancelled).
+	// This is acceptable because upstream clients are expected to retry watches if they fail.
 	ctx, cancel := context.WithCancel(ctx)
 	stop := context.AfterFunc(r.configCtx, cancel)
 	defer stop()
@@ -661,7 +632,8 @@ func (r *repo) checkSyncHandshake(ctx context.Context) error {
 		}
 
 		r.git.remoteURL = meta.GitUrl
-		r.git.branch = meta.GitBranch
+		r.git.defaultBranch = meta.GitBranch
+		r.git.editBranch = meta.GitEditBranch
 		r.git.subpath = meta.GitSubpath
 	} else {
 		r.git = nil
