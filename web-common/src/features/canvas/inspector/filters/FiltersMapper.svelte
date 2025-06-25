@@ -42,13 +42,8 @@
           {canvasName}
           id={key}
           {localTimeControls}
-          timeFilter={localParamValues[key]}
           showComparison={config?.meta?.hasComparison}
           showGrain={config?.meta?.hasGrain}
-          onChange={async (filter) => {
-            localParamValues[key] = filter;
-            component.updateProperty(key, localParamValues[key]);
-          }}
         />
       {:else if config.type == "dimension_filters" && metricsView}
         <DimensionFiltersInput
@@ -58,10 +53,6 @@
           {excludedDimensions}
           id={key}
           filter={localParamValues[key]}
-          onChange={async (filter) => {
-            localParamValues[key] = filter;
-            component.updateProperty(key, localParamValues[key]);
-          }}
         />
       {/if}
     </div>

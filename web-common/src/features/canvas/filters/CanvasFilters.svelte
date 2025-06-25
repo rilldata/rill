@@ -41,7 +41,6 @@
         dimensionHasFilter,
         getDimensionFilterItems,
         getAllDimensionFilterItems,
-        isFilterExcludeMode,
         getMeasureFilterItems,
         getAllMeasureFilterItems,
         measureHasFilter,
@@ -54,7 +53,7 @@
         selectedTimezone,
         minTimeGrain,
         set,
-        setInitialState,
+        // setInitialState,
       },
     },
   } = getCanvasStore(canvasName));
@@ -134,11 +133,11 @@
     set.comparison(TimeComparisonOption.CONTIGUOUS);
   }
 
-  onMount(() => {
-    if (!$timeRangeStateStore) {
-      setInitialState();
-    }
-  });
+  // onMount(() => {
+  //   if (!$timeRangeStateStore) {
+  //     setInitialState();
+  //   }
+  // });
 </script>
 
 <div
@@ -213,7 +212,7 @@
           No filters selected
         </div>
       {:else}
-        {#each allDimensionFilters as { name, label, mode, selectedValues, inputText, metricsViewNames } (name)}
+        {#each allDimensionFilters as { name, isInclude, label, mode, selectedValues, inputText, metricsViewNames } (name)}
           {@const dimension = $allDimensions.find(
             (d) => d.name === name || d.column === name,
           )}
@@ -231,7 +230,7 @@
                 {timeStart}
                 {timeEnd}
                 timeControlsReady={!!$timeRangeStateStore}
-                excludeMode={$isFilterExcludeMode(name)}
+                excludeMode={!isInclude}
                 whereFilter={$whereFilter}
                 onRemove={() => removeDimensionFilter(name)}
                 onToggleFilterMode={() => toggleDimensionFilterMode(name)}

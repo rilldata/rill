@@ -7,13 +7,11 @@
   import { DateTime, Interval } from "luxon";
   import type { TimeControls } from "../../stores/time-control";
 
+  export let canvasName: string;
   export let id: string;
-  export let timeFilter: string;
+  export let localTimeControls: TimeControls;
   export let showComparison: boolean;
   export let showGrain: boolean;
-  export let canvasName: string;
-  export let localTimeControls: TimeControls;
-  export let onChange: (filter: string) => void = () => {};
 
   $: ({
     canvasEntity: {
@@ -21,26 +19,20 @@
     },
   } = getCanvasStore(canvasName));
 
-  $: showLocalFilters = Boolean(timeFilter && timeFilter !== "");
-
-  $: filterText = $timeRangeText?.toString() || "";
-
-  $: if (showLocalFilters) {
-    // console.log({ filterText });
-    // onChange(filterText);
-  }
-
   $: ({
     allTimeRange,
-    timeRangeText,
     timeRangeStateStore,
     comparisonRangeStateStore,
     selectedTimezone,
     minTimeGrain,
     set,
+    searchParamsStore,
+    clearAll,
   } = localTimeControls);
 
   $: ({ selectedTimeRange, timeStart, timeEnd } = $timeRangeStateStore || {});
+
+  $: localFiltersEnabled = Boolean($searchParamsStore.size);
 
   $: selectedComparisonTimeRange =
     $comparisonRangeStateStore?.selectedComparisonTimeRange;
@@ -65,27 +57,31 @@
       small
       label="Local time range"
       {id}
-      faint={!showLocalFilters}
+      faint={!localFiltersEnabled}
     />
     <Switch
-      checked={showLocalFilters}
+      checked={localFiltersEnabled}
       on:click={() => {
-        showLocalFilters = !showLocalFilters;
-        console.log({ showLocalFilters, filterText });
-        onChange(showLocalFilters ? filterText : "");
+        if (localFiltersEnabled) {
+          clearAll();
+        } else {
+          set.range("P14D");
+          set.zone("UTC");
+          set.grain("TIME_GRAIN_HOUR");
+        }
       }}
       small
     />
   </div>
   <div class="text-gray-500">
-    {#if showLocalFilters}
+    {#if localFiltersEnabled}
       Overriding inherited time filters from canvas.
     {:else}
       Overrides inherited time filters from canvas when ON.
     {/if}
   </div>
 
-  {#if showLocalFilters}
+  {#if localFiltersEnabled}
     <div class="flex flex-row flex-wrap pt-2 gap-y-1.5 items-center">
       <SuperPill
         allTimeRange={$allTimeRange}

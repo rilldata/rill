@@ -12,30 +12,21 @@
   import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
   import { flip } from "svelte/animate";
   import type { Filters } from "../../stores/filters";
+  import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params";
 
+  export let id: string;
+  export let canvasName: string;
   export let metricsView: string;
   export let localFilters: Filters;
   export let excludedDimensions: string[];
-  export let id: string;
-  export let filter: string;
-  export let canvasName: string;
-  export let onChange: (filter: string) => void = () => {};
+
+  let localFiltersEnabled = false;
 
   $: ({
     canvasEntity: {
       spec: { getDimensionsForMetricView, getSimpleMeasuresForMetricView },
     },
   } = getCanvasStore(canvasName));
-
-  let filterToggle = false;
-
-  $: showFilter = !!filter || filterToggle;
-
-  $: allDimensions = getDimensionsForMetricView(metricsView);
-  $: allValidDimensions = $allDimensions.filter(
-    (d) => !excludedDimensions.includes(d.name || (d.column as string)),
-  );
-  $: allSimpleMeasures = getSimpleMeasuresForMetricView(metricsView);
 
   $: ({
     whereFilter,
@@ -48,15 +39,24 @@
     removeMeasureFilter,
     setTemporaryFilterName,
     clearAllFilters,
-    filterText,
     dimensionHasFilter,
     getDimensionFilterItems,
     getAllDimensionFilterItems,
-    isFilterExcludeMode,
     getMeasureFilterItems,
     getAllMeasureFilterItems,
     measureHasFilter,
+    searchParamsStore,
   } = localFilters);
+
+  $: if ($searchParamsStore.has(ExploreStateURLParams.Filters)) {
+    localFiltersEnabled = true;
+  }
+
+  $: allDimensions = getDimensionsForMetricView(metricsView);
+  $: allValidDimensions = $allDimensions.filter(
+    (d) => !excludedDimensions.includes(d.name || (d.column as string)),
+  );
+  $: allSimpleMeasures = getSimpleMeasuresForMetricView(metricsView);
 
   $: dimensionIdMap = getMapFromArray(
     allValidDimensions,
@@ -67,10 +67,6 @@
     $allSimpleMeasures,
     (m) => m.name as string,
   );
-
-  $: if ((filter ?? "") !== ($filterText ?? "")) {
-    onChange($filterText);
-  }
 
   $: currentDimensionFilters = $getDimensionFilterItems(dimensionIdMap);
   $: allDimensionFilters = $getAllDimensionFilterItems(
@@ -110,29 +106,29 @@
       small
       label="Local filters"
       {id}
-      faint={!showFilter}
+      faint={!localFiltersEnabled}
     />
     <Switch
-      checked={showFilter}
+      checked={localFiltersEnabled}
       on:click={() => {
-        if (filter) {
-          filterToggle = false;
-          onChange("");
+        if (localFiltersEnabled) {
+          localFiltersEnabled = false;
+          clearAllFilters();
         } else {
-          filterToggle = true;
+          localFiltersEnabled = true;
         }
       }}
       small
     />
   </div>
   <div class="text-gray-500">
-    {#if showFilter}
+    {#if localFiltersEnabled}
       Overriding inherited filters from canvas.
     {:else}
       Overrides inherited filters from canvas when ON.
     {/if}
   </div>
-  {#if showFilter}
+  {#if localFiltersEnabled}
     <div class="flex justify-between gap-x-2">
       <InputLabel small label="Filters" {id} />
 
@@ -151,7 +147,7 @@
         {#if isComplexFilter}
           <AdvancedFilter advancedFilter={$whereFilter} />
         {:else if allDimensionFilters.length || allMeasureFilters.length}
-          {#each allDimensionFilters as { name, label, mode, selectedValues, inputText } (name)}
+          {#each allDimensionFilters as { name, label, isInclude, mode, selectedValues, inputText } (name)}
             {@const dimension = allValidDimensions.find(
               (d) => d.name === name || d.column === name,
             )}
@@ -170,7 +166,7 @@
                   timeStart={new Date(0).toISOString()}
                   timeEnd={new Date().toISOString()}
                   timeControlsReady
-                  excludeMode={$isFilterExcludeMode(name)}
+                  excludeMode={!isInclude}
                   whereFilter={$whereFilter}
                   onRemove={() => removeDimensionFilter(name)}
                   onToggleFilterMode={() => toggleDimensionFilterMode(name)}

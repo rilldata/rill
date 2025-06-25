@@ -31,6 +31,7 @@ import type {
 } from "../stores/canvas-entity";
 import { Filters } from "../stores/filters";
 import { TimeControls } from "../stores/time-control";
+import { ExploreStateURLParams } from "../../dashboards/url-state/url-params";
 
 export abstract class BaseCanvasComponent<T = ComponentSpec> {
   id: string;
@@ -40,8 +41,9 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
   specStore: Writable<T>;
   // Path in the YAML where the component is stored
   pathInYAML: ComponentPath;
-
+  // Widget specific dimension and measure filters
   localFilters: Filters;
+  // Widget specific time filters
   localTimeControls: TimeControls;
 
   abstract type: CanvasComponentType;
@@ -98,7 +100,17 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
 
     const localFiltersStore: SearchParamsStore = (() => {
       const store = derived(this.specStore, (spec) => {
-        return new URLSearchParams(spec?.["dimension_filters"] ?? "");
+        const dimensionFiltersString = spec?.["dimension_filters"] ?? "";
+        const searchParams = new URLSearchParams();
+
+        if (dimensionFiltersString) {
+          searchParams.set(
+            ExploreStateURLParams.Filters,
+            dimensionFiltersString,
+          );
+        }
+
+        return searchParams;
       });
       return {
         subscribe: store.subscribe,
@@ -109,13 +121,17 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
 
           this.updateProperty(
             "dimension_filters" as AllKeys<T>,
-            searchParams.toString() as T[AllKeys<T>],
+            value as T[AllKeys<T>],
           );
         },
       };
     })();
 
-    this.localFilters = new Filters(this.parent.spec);
+    this.localFilters = new Filters(
+      this.parent.spec,
+      localFiltersStore,
+      this.id,
+    );
     this.localTimeControls = new TimeControls(
       this.parent.specStore,
       timeFiltersStore,

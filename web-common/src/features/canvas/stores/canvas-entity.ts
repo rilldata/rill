@@ -17,7 +17,6 @@ import {
   writable,
   type Readable,
   type Unsubscriber,
-  type Writable,
 } from "svelte/store";
 import { parseDocument } from "yaml";
 import type { FileArtifact } from "../../entity-management/file-artifact";
@@ -42,7 +41,8 @@ import { goto } from "$app/navigation";
 
 export type SearchParamsStore = {
   subscribe: (run: (value: URLSearchParams) => void) => Unsubscriber;
-  set: (key: string, value: string) => void;
+  set: (key: string, value?: string) => void;
+  clearAll: () => void;
 };
 
 export class CanvasEntity {
@@ -51,15 +51,10 @@ export class CanvasEntity {
 
   _rows: Grid = new Grid(this);
 
-  /**
-   * Time controls for the canvas entity containing various
-   * time related writables
-   */
+  // Time state controls
   timeControls: TimeControls;
 
-  /**
-   * Dimension and measure filters for the canvas entity
-   */
+  // Dimension and measure filter state
   filters: Filters;
 
   /**
@@ -106,12 +101,20 @@ export class CanvasEntity {
 
           goto(url.toString(), { replaceState: true }).catch(console.error);
         },
+        clear: () => {
+          const url = get(page).url;
+          url.searchParams.forEach((_, key) => {
+            url.searchParams.delete(key);
+          });
+
+          goto(url.toString(), { replaceState: true }).catch(console.error);
+        },
       };
     })();
 
     this.spec = new CanvasResolvedSpec(this.specStore);
     this.timeControls = new TimeControls(this.specStore, searchParamsStore);
-    this.filters = new Filters(this.spec, true);
+    this.filters = new Filters(this.spec, searchParamsStore);
 
     this.unsubscriber = this.specStore.subscribe((spec) => {
       const filePath = spec.data?.filePath;
