@@ -720,7 +720,6 @@ export interface V1CreateInstanceRequest {
   connectors?: V1Connector[];
   variables?: V1CreateInstanceRequestVariables;
   annotations?: V1CreateInstanceRequestAnnotations;
-  watchRepo?: boolean;
 }
 
 export interface V1CreateInstanceResponse {
@@ -1070,7 +1069,6 @@ export interface V1Instance {
   projectVariables?: V1InstanceProjectVariables;
   featureFlags?: V1InstanceFeatureFlags;
   annotations?: V1InstanceAnnotations;
-  watchRepo?: boolean;
   aiInstructions?: string;
 }
 
@@ -2293,7 +2291,6 @@ export type RuntimeServiceEditInstanceBody = {
   connectors?: V1Connector[];
   variables?: RuntimeServiceEditInstanceBodyVariables;
   annotations?: RuntimeServiceEditInstanceBodyAnnotations;
-  watchRepo?: boolean;
 };
 
 export type RuntimeServiceListFilesParams = {

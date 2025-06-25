@@ -145,6 +145,10 @@ func (r *ProjectParserReconciler) Reconcile(ctx context.Context, n *runtimev1.Re
 	if err != nil {
 		return runtime.ReconcileResult{Err: fmt.Errorf("failed to find instance: %w", err)}
 	}
+	instCfg, err := inst.Config()
+	if err != nil {
+		return runtime.ReconcileResult{Err: fmt.Errorf("failed to get instance config: %w", err)}
+	}
 
 	// Parse the project
 	// NOTE: Explicitly passing inst.OLAPConnector instead of inst.ResolveOLAPConnector() since the parser expects the base name to use if not overridden in rill.yaml.
@@ -160,7 +164,7 @@ func (r *ProjectParserReconciler) Reconcile(ctx context.Context, n *runtimev1.Re
 	if err != nil && !errors.Is(err, ErrParserHasParseErrors) {
 		return runtime.ReconcileResult{Err: err}
 	}
-	if !inst.WatchRepo {
+	if !instCfg.WatchRepo {
 		return runtime.ReconcileResult{Err: err}
 	}
 
