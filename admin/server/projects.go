@@ -1275,7 +1275,9 @@ func (s *Server) RequestProjectAccess(ctx context.Context, req *adminv1.RequestP
 	}
 
 	claims := auth.GetClaims(ctx)
-	if claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ReadProject {
+	projectPermissions := claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID)
+	if (req.Role != "admin" && projectPermissions.ReadProject) ||
+		(req.Role == "admin" && projectPermissions.ManageProject) {
 		return nil, status.Error(codes.InvalidArgument, "already have access to project")
 	}
 
@@ -1400,10 +1402,23 @@ func (s *Server) ApproveProjectAccess(ctx context.Context, req *adminv1.ApproveP
 		return nil, status.Error(codes.PermissionDenied, "as a non-admin you are not allowed to assign an admin role")
 	}
 
-	// Add the user as a project member.
-	err = s.admin.InsertProjectMemberUser(ctx, proj.OrganizationID, proj.ID, user.ID, role.ID)
+	ok, err := s.admin.DB.CheckUserIsAProjectMember(ctx, user.ID, proj.ID)
 	if err != nil {
 		return nil, err
+	}
+
+	if ok {
+		// User is already a project member, update the role.
+		err = s.admin.DB.UpdateProjectMemberUserRole(ctx, proj.ID, user.ID, role.ID)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		// Add the user as a project member.
+		err = s.admin.InsertProjectMemberUser(ctx, proj.OrganizationID, proj.ID, user.ID, role.ID)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	// Remove the access request.
