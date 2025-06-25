@@ -28,7 +28,7 @@ func NewLazyWatcher(root string, ignorePaths []string, logger *zap.Logger) *Lazy
 func (w *LazyWatcher) Close() {
 	w.mu.Lock()
 	watcher := w.watcher
-	w.count = 0
+	w.watcher = nil
 	w.mu.Unlock()
 	if watcher != nil {
 		watcher.Close()
@@ -51,7 +51,7 @@ func (w *LazyWatcher) Subscribe(ctx context.Context, cb WatchCallback) error {
 	defer func() {
 		w.mu.Lock()
 		w.count--
-		if w.count == 0 {
+		if w.count == 0 && w.watcher != nil {
 			w.watcher.Close()
 			w.watcher = nil
 		}
