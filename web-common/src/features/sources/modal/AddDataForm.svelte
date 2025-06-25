@@ -26,7 +26,6 @@
   } from "./submitAddDataForm";
   import type { AddDataFormType } from "./types";
   import { dsnSchema, getYupSchema } from "./yupSchemas";
-  import yaml from "js-yaml";
   import { ExternalLinkIcon } from "lucide-svelte";
   import {
     CLICKHOUSE_DEFAULTS,
