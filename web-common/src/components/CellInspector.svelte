@@ -2,7 +2,6 @@
   import { onMount, onDestroy } from "svelte";
   import { fly } from "svelte/transition";
   import { formatInteger } from "../lib/formatters";
-  import { copyToClipboard } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
   import { cellInspectorStore } from "../features/dashboards/stores/cell-inspector-store";
   import { cubicOut } from "svelte/easing";
   import Kbd from "./Kbd.svelte";
@@ -15,7 +14,6 @@
   let hoveredValue: string | null = null;
   let container: HTMLElement;
   let content: HTMLElement;
-  let copied = false;
   let isJson = false;
   let parsedJson: any = null;
   let isLocked = false;
@@ -45,14 +43,6 @@
       event.preventDefault();
       event.stopPropagation();
       cellInspectorStore.close();
-    } else if (
-      (event.metaKey || event.ctrlKey) &&
-      event.key === "c" &&
-      isOpen
-    ) {
-      event.preventDefault();
-      event.stopPropagation();
-      onCopy();
     } else if (event.key === "l" && isOpen) {
       event.preventDefault();
       event.stopPropagation();
@@ -116,15 +106,6 @@
   // Only update the value on hover, but don't open the inspector
   $: if (hovered && hoveredValue && isOpen && !isLocked) {
     cellInspectorStore.open(hoveredValue);
-  }
-
-  function onCopy() {
-    copyToClipboard(value, undefined, false);
-    copied = true;
-
-    setTimeout(() => {
-      copied = false;
-    }, 2_000);
   }
 
   function toggleLock() {
