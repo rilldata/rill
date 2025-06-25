@@ -136,7 +136,7 @@
 {#if isOpen}
   <div
     bind:this={container}
-    class="cell-inspector fixed top-12 right-4 z-50 transition-opacity shadow-lg rounded-lg border border-gray-200 dark:border-gray-700 bg-surface dark:bg-gray-800"
+    class="cell-inspector fixed top-12 right-4 z-50 transition-opacity shadow-lg rounded-lg border border-gray-200 bg-surface"
     class:invisible={!isOpen && !hovered}
     class:opacity-0={!isOpen && !hovered}
     class:opacity-100={isOpen || hovered}
@@ -147,28 +147,28 @@
     transition:fly={{ duration: 200, x: 200, easing: cubicOut }}
   >
     <div
-      class="w-full min-w-64 max-w-2xl max-h-[80vh] overflow-hidden flex flex-col rounded-lg"
+      class="w-full min-w-80 max-w-2xl max-h-[80vh] flex flex-col rounded-lg"
       role="document"
       bind:this={content}
     >
+      <!-- Scrollable content area -->
       <div
-        class="flex justify-between p-2 border-gray-200 dark:border-gray-700 gap-1 overflow-y-auto"
+        class="flex-1 min-h-0 overflow-y-auto p-2 border-gray-200"
         class:items-start={isJson}
         class:items-center={!isJson}
       >
         {#if value === null}
-          <span class="text-sm text-gray-500 dark:text-gray-400 italic"
-            >No value</span
-          >
+          <span class="text-sm text-gray-500 italic">No value</span>
         {:else}
           <span
-            class="whitespace-pre-wrap break-words text-sm text-gray-800 dark:text-gray-200 flex-1"
+            class="whitespace-pre-wrap break-words text-sm text-gray-800 w-full"
             class:font-mono={isJson}>{formatValue(value)}</span
           >
         {/if}
       </div>
+      <!-- Fixed footer -->
       <div
-        class="flex justify-between p-2 border-t border-gray-200 gap-1 text-[11px] text-gray-500"
+        class="flex justify-between p-2 border-t border-gray-200 gap-1 text-[11px] text-gray-500 bg-surface rounded-b-lg"
       >
         {#if !copied}
           <span>
