@@ -4103,6 +4103,13 @@ export class ListOrganizationMemberUsersResponse extends Message<ListOrganizatio
   members: OrganizationMemberUser[] = [];
 
   /**
+   * Total number of members in the organization
+   *
+   * @generated from field: uint32 total_count = 3;
+   */
+  totalCount = 0;
+
+  /**
    * @generated from field: string next_page_token = 2;
    */
   nextPageToken = "";
@@ -4116,6 +4123,7 @@ export class ListOrganizationMemberUsersResponse extends Message<ListOrganizatio
   static readonly typeName = "rill.admin.v1.ListOrganizationMemberUsersResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "members", kind: "message", T: OrganizationMemberUser, repeated: true },
+    { no: 3, name: "total_count", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 2, name: "next_page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
@@ -4195,6 +4203,13 @@ export class ListOrganizationInvitesResponse extends Message<ListOrganizationInv
   invites: OrganizationInvite[] = [];
 
   /**
+   * Total number of invites in the organization
+   *
+   * @generated from field: uint32 total_count = 3;
+   */
+  totalCount = 0;
+
+  /**
    * @generated from field: string next_page_token = 2;
    */
   nextPageToken = "";
@@ -4208,6 +4223,7 @@ export class ListOrganizationInvitesResponse extends Message<ListOrganizationInv
   static readonly typeName = "rill.admin.v1.ListOrganizationInvitesResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "invites", kind: "message", T: OrganizationInvite, repeated: true },
+    { no: 3, name: "total_count", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 2, name: "next_page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 

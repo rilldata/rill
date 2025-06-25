@@ -323,6 +323,11 @@ func (s *Server) ListOrganizationMemberUsers(ctx context.Context, req *adminv1.L
 		return nil, err
 	}
 
+	count, err := s.admin.DB.CountOrganizationMemberUsers(ctx, org.ID, roleID)
+	if err != nil {
+		return nil, err
+	}
+
 	nextToken := ""
 	if len(members) >= pageSize {
 		nextToken = marshalPageToken(members[len(members)-1].Email)
@@ -335,6 +340,7 @@ func (s *Server) ListOrganizationMemberUsers(ctx context.Context, req *adminv1.L
 
 	return &adminv1.ListOrganizationMemberUsersResponse{
 		Members:       dtos,
+		TotalCount:    uint32(count),
 		NextPageToken: nextToken,
 	}, nil
 }
@@ -366,6 +372,11 @@ func (s *Server) ListOrganizationInvites(ctx context.Context, req *adminv1.ListO
 		return nil, err
 	}
 
+	count, err := s.admin.DB.CountInvitesForOrganization(ctx, org.ID)
+	if err != nil {
+		return nil, err
+	}
+
 	nextToken := ""
 	if len(userInvites) >= pageSize {
 		nextToken = marshalPageToken(userInvites[len(userInvites)-1].Email)
@@ -378,6 +389,7 @@ func (s *Server) ListOrganizationInvites(ctx context.Context, req *adminv1.ListO
 
 	return &adminv1.ListOrganizationInvitesResponse{
 		Invites:       invitesDtos,
+		TotalCount:    uint32(count),
 		NextPageToken: nextToken,
 	}, nil
 }
