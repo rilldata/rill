@@ -509,14 +509,6 @@ func (h *Helper) GitSignature(ctx context.Context, path string) (*object.Signatu
 		return nil, err
 	}
 
-	if userResp.User == nil {
-		return &object.Signature{
-			Name:  "service-account",
-			Email: "service-account@rilldata.com", // not an actual email
-			When:  time.Now(),
-		}, nil
-	}
-
 	return &object.Signature{
 		Name:  userResp.User.DisplayName,
 		Email: userResp.User.Email,
