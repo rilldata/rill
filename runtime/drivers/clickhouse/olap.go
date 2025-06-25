@@ -36,7 +36,7 @@ func (c *Connection) Dialect() drivers.Dialect {
 }
 
 func (c *Connection) MayBeScaledToZero(ctx context.Context) bool {
-	return c.config.CanScaleToZero
+	return c.config.CanScaleToZero != nil && *c.config.CanScaleToZero
 }
 
 func (c *Connection) WithConnection(ctx context.Context, priority int, fn drivers.WithConnectionFunc) error {

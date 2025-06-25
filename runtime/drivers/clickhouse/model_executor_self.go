@@ -22,18 +22,8 @@ func (e *selfToSelfExecutor) Concurrency(desired int) (int, bool) {
 }
 
 func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExecuteOptions) (*drivers.ModelResult, error) {
-	// Parse the input and output properties
-	inputProps := &ModelInputProperties{}
-	if err := mapstructure.WeakDecode(opts.InputProperties, inputProps); err != nil {
-		return nil, fmt.Errorf("failed to parse input properties: %w", err)
-	}
-	outputProps := &ModelOutputProperties{}
-	if err := mapstructure.WeakDecode(opts.OutputProperties, outputProps); err != nil {
-		return nil, fmt.Errorf("failed to parse output properties: %w", err)
-	}
-
 	// Validate the output properties
-	err := e.c.validateAndApplyDefaults(opts, inputProps, outputProps)
+	inputProps, outputProps, err := e.c.parsePropertiesAndApplyDefaults(opts)
 	if err != nil {
 		return nil, fmt.Errorf("invalid model properties: %w", err)
 	}
@@ -56,13 +46,13 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 
 		// Drop the staging view/table if it exists.
 		// NOTE: This intentionally drops the end table if not staging changes.
-		_ = e.c.dropTable(ctx, stagingTableName)
+		_ = e.c.dropEntity(ctx, stagingTableName)
 
 		// Create the table
 		var err error
-		metrics, err = e.c.createTableAsSelect(ctx, stagingTableName, inputProps.SQL, outputProps)
+		metrics, err = e.c.createEntity(ctx, stagingTableName, inputProps, outputProps)
 		if err != nil {
-			_ = e.c.dropTable(ctx, stagingTableName)
+			_ = e.c.dropEntity(ctx, stagingTableName)
 			return nil, fmt.Errorf("failed to create model: %w", err)
 		}
 
@@ -76,9 +66,7 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 	} else {
 		// Insert into the table
 		var err error
-		metrics, err = e.c.insertTableAsSelect(ctx, tableName, inputProps.SQL, &InsertTableOptions{
-			Strategy: outputProps.IncrementalStrategy,
-		}, outputProps)
+		metrics, err = e.c.insertTable(ctx, tableName, inputProps, outputProps.IncrementalStrategy)
 		if err != nil {
 			return nil, fmt.Errorf("failed to incrementally insert into table: %w", err)
 		}
