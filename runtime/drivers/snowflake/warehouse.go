@@ -46,18 +46,20 @@ func (c *connection) QueryAsFiles(ctx context.Context, props map[string]any) (ou
 		span.End()
 	}()
 
-	srcProps, err := parseSourceProperties(props)
+	sourceProperties, err := parseSourceProperties(props)
 	if err != nil {
 		return nil, err
 	}
 
 	var dsn string
-	if srcProps.DSN != "" { // get from src properties
-		dsn = srcProps.DSN
-	} else if c.configProperties.DSN != "" { // get from driver configs
-		dsn = c.configProperties.DSN
+	if sourceProperties.DSN != "" { // get from src properties
+		dsn = sourceProperties.DSN
 	} else {
-		return nil, fmt.Errorf("the property 'dsn' is required for Snowflake: configure it in the YAML properties or set the 'connector.snowflake.dsn' environment variable")
+		dsnResolved, err := c.configProperties.resolveDSN()
+		if err != nil {
+			return nil, err
+		}
+		dsn = dsnResolved
 	}
 
 	parallelFetchLimit := 5
@@ -89,7 +91,7 @@ func (c *connection) QueryAsFiles(ctx context.Context, props map[string]any) (ou
 
 	var rows sqld.Rows
 	err = conn.Raw(func(x interface{}) error {
-		rows, err = x.(sqld.QueryerContext).QueryContext(ctx, srcProps.SQL, nil)
+		rows, err = x.(sqld.QueryerContext).QueryContext(ctx, sourceProperties.SQL, nil)
 		return err
 	})
 	if err != nil {
