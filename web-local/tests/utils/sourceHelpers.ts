@@ -67,7 +67,7 @@ export async function uploadFile(
 export async function createSource(page: Page, file: string, filePath: string) {
   await uploadFile(page, file);
   await Promise.all([
-    page.getByText("View this source").click(),
+    page.getByText("View this model").click(),
     waitForFileNavEntry(page, filePath, true),
   ]);
 }
@@ -81,7 +81,7 @@ export async function waitForSource(
   const name = extractFileName(fileName);
 
   await Promise.all([
-    page.getByText("View this source").click(),
+    page.getByText("View this model").click(),
     waitForFileNavEntry(page, filePath, true),
     waitForProfiling(page, name, columns),
   ]);
