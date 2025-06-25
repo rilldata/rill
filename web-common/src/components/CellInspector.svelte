@@ -18,8 +18,6 @@
   let parsedJson: any = null;
   let isLocked = false;
 
-  const isMac = window.navigator.userAgent.includes("Macintosh");
-
   // Subscribe to the cellInspectorStore to keep the component in sync
   const unsubscribe = cellInspectorStore.subscribe((state) => {
     isOpen = state.isOpen;
