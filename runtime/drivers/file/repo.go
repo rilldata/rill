@@ -181,7 +181,7 @@ func (c *connection) Watch(ctx context.Context, cb drivers.WatchCallback) error 
 		if len(events) == 0 {
 			return
 		}
-		var watchEvents []drivers.WatchEvent
+		watchEvents := make([]drivers.WatchEvent, 0, len(events))
 		for _, e := range events {
 			watchEvents = append(watchEvents, drivers.WatchEvent{
 				Type: e.Type,

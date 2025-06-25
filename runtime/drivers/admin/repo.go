@@ -250,7 +250,7 @@ func (r *repo) Put(ctx context.Context, path string, reader io.Reader) error {
 
 	fp := filepath.Join(root, path)
 
-	err = os.MkdirAll(filepath.Dir(path), os.ModePerm)
+	err = os.MkdirAll(filepath.Dir(fp), os.ModePerm)
 	if err != nil {
 		return err
 	}
@@ -376,30 +376,38 @@ func (r *repo) Watch(ctx context.Context, cb drivers.WatchCallback) error {
 		return err
 	}
 
+	// Check and copy config, then release the read lock early.
+	// We cannot access mutable fields on repo without holding a read lock, but we also can't hold the read lock forever while the watcher is running.
+	// In case the root or ignorePaths change, the watcher will respond to configCtx cancellation ensuring adequate consistency.
 	if r.git != nil && !r.git.editable() {
 		r.mu.RUnlock()
 		return fmt.Errorf("repo is not watchable")
 	}
 	root := r.git.root()
+	ignorePaths := r.ignorePaths
+	configCtx := r.configCtx
+	r.mu.RUnlock()
 
 	// Derive a context that is also cancelled if the repo config changes (i.e. if r.configCtx is cancelled).
 	// This is acceptable because upstream clients are expected to retry watches if they fail.
 	ctx, cancel := context.WithCancel(ctx)
-	stop := context.AfterFunc(r.configCtx, cancel)
+	defer cancel()
+	stop := context.AfterFunc(configCtx, cancel)
 	defer stop()
 
-	w, err := filewatcher.NewWatcher(root, r.ignorePaths, r.h.logger)
+	// We create a new watcher for each call to Watch.
+	// This makes cancellation and handling config changes easier than if we used a single shared watcher with many subscribers.
+	// This should be fine performance-wise since we don't expect many concurrent watchers (only the project parser plus up to a handful of concurrent editors).
+	w, err := filewatcher.NewWatcher(root, ignorePaths, r.h.logger)
 	if err != nil {
-		r.mu.RUnlock()
 		return fmt.Errorf("failed to create file watcher: %w", err)
 	}
-	r.mu.RUnlock()
 
 	return w.Subscribe(ctx, func(events []filewatcher.WatchEvent) {
 		if len(events) == 0 {
 			return
 		}
-		var watchEvents []drivers.WatchEvent
+		watchEvents := make([]drivers.WatchEvent, 0, len(events))
 		for _, e := range events {
 			watchEvents = append(watchEvents, drivers.WatchEvent{
 				Type: e.Type,
