@@ -10208,9 +10208,16 @@ export class GetRepoMetaResponse extends Message<GetRepoMetaResponse> {
   /**
    * How long the returned config is valid for. Clients should call GetRepoMeta again after this time.
    *
-   * @generated from field: google.protobuf.Timestamp valid_until_time = 2;
+   * @generated from field: google.protobuf.Timestamp expires_on = 2;
    */
-  validUntilTime?: Timestamp;
+  expiresOn?: Timestamp;
+
+  /**
+   * When the returned config was last modified. This covers all fields in the response except the ephemeral credentials embedded in git_url and archive_download_url.
+   *
+   * @generated from field: google.protobuf.Timestamp last_updated_on = 9;
+   */
+  lastUpdatedOn?: Timestamp;
 
   /**
    * Git remote for cloning (and maybe pushing) a Git repository.
@@ -10271,7 +10278,8 @@ export class GetRepoMetaResponse extends Message<GetRepoMetaResponse> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.admin.v1.GetRepoMetaResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 2, name: "valid_until_time", kind: "message", T: Timestamp },
+    { no: 2, name: "expires_on", kind: "message", T: Timestamp },
+    { no: 9, name: "last_updated_on", kind: "message", T: Timestamp },
     { no: 1, name: "git_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "git_subpath", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 7, name: "git_branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },

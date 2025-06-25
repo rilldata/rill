@@ -181,8 +181,6 @@ func (c *connection) Watch(ctx context.Context, cb drivers.WatchCallback) error 
 		if len(events) == 0 {
 			return
 		}
-
-		// Convert filewatcher events to drivers.WatchEvent
 		var watchEvents []drivers.WatchEvent
 		for _, e := range events {
 			watchEvents = append(watchEvents, drivers.WatchEvent{

@@ -10,6 +10,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"slices"
 	"strings"
 	"time"
 
@@ -17,6 +18,7 @@ import (
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/ctxsync"
+	"github.com/rilldata/rill/runtime/pkg/filewatcher"
 	"golang.org/x/sync/singleflight"
 	"gopkg.in/yaml.v3"
 )
@@ -39,8 +41,14 @@ type repo struct {
 	// singleflight is used to deduplicate concurrent sync calls.
 	singleflight *singleflight.Group
 
-	// handshakeExpiresAt is the next time we should refresh the admin handshake, namely to ensure the Git credentials remain valid.
-	handshakeExpiresAt time.Time
+	// handshakeExpiresOn is the next time we should refresh the admin handshake, namely to ensure the Git credentials remain valid.
+	handshakeExpiresOn time.Time
+	// configUpdatedOn tracks the last_updated_on time from the handshake. We use it to find out if the configuration (apart from credentials) has changed.
+	configUpdatedOn time.Time
+	// configCtx is a context that is valid until a handshake changes the repo configuration (i.e. configUpdatedOn increases).
+	configCtx context.Context
+	// configCtxCancel is a cancel function for the configCtx.
+	configCtxCancel context.CancelFunc
 	// synced is true if files are have been synced successfully.
 	// After the first successful sync, it remains true even if the latest sync fails (so syncErr is not nil).
 	synced bool
@@ -386,8 +394,50 @@ func (r *repo) Delete(ctx context.Context, path string, force bool) error {
 }
 
 // Watch implements drivers.RepoStore.
-func (r *repo) Watch(ctx context.Context, callback drivers.WatchCallback) error {
-	return fmt.Errorf("watch operation is unsupported")
+func (r *repo) Watch(ctx context.Context, cb drivers.WatchCallback) error {
+	err := r.rlockEnsureSynced(ctx)
+	if err != nil {
+		return err
+	}
+
+	if r.git != nil && !r.git.editable {
+		r.mu.RUnlock()
+		return fmt.Errorf("repo is not watchable")
+	}
+
+	var root string
+	if r.archive != nil {
+		root = r.archive.root()
+	} else {
+		root = r.git.root()
+	}
+
+	// Derive a context that is cancelled if the repo config changes (i.e. if r.configCtx is cancelled).
+	ctx, cancel := context.WithCancel(ctx)
+	stop := context.AfterFunc(r.configCtx, cancel)
+	defer stop()
+
+	w, err := filewatcher.NewWatcher(root, r.ignorePaths, r.h.logger)
+	if err != nil {
+		r.mu.RUnlock()
+		return fmt.Errorf("failed to create file watcher: %w", err)
+	}
+	r.mu.RUnlock()
+
+	return w.Subscribe(ctx, func(events []filewatcher.WatchEvent) {
+		if len(events) == 0 {
+			return
+		}
+		var watchEvents []drivers.WatchEvent
+		for _, e := range events {
+			watchEvents = append(watchEvents, drivers.WatchEvent{
+				Type: e.Type,
+				Path: e.RelPath,
+				Dir:  e.Dir,
+			})
+		}
+		cb(watchEvents)
+	})
 }
 
 // Sync implements drivers.RepoStore.
@@ -571,6 +621,9 @@ func (r *repo) syncInner(ctx context.Context) error {
 		}{}
 		err = yaml.Unmarshal(rawYAML, tmp)
 		if err == nil {
+			if !slices.Equal(r.ignorePaths, tmp.IgnorePaths) {
+				r.configChanged()
+			}
 			r.ignorePaths = tmp.IgnorePaths
 		}
 	}
@@ -582,7 +635,7 @@ func (r *repo) syncInner(ctx context.Context) error {
 // Unsafe for concurrent use.
 func (r *repo) checkSyncHandshake(ctx context.Context) error {
 	// If the handshake is still valid, return early.
-	if !r.handshakeExpiresAt.Before(time.Now()) {
+	if !r.handshakeExpiresOn.Before(time.Now()) {
 		return nil
 	}
 
@@ -648,6 +701,20 @@ func (r *repo) checkSyncHandshake(ctx context.Context) error {
 		}
 	}
 
-	r.handshakeExpiresAt = meta.ValidUntilTime.AsTime()
+	if !r.configUpdatedOn.Equal(meta.LastUpdatedOn.AsTime()) {
+		r.configChanged()
+		r.configUpdatedOn = meta.LastUpdatedOn.AsTime()
+	}
+	r.handshakeExpiresOn = meta.ExpiresOn.AsTime()
 	return nil
+}
+
+// configChanged should be called on changes to the repo configuration, such as branch or subpath (but not when the Git credentials, as happens routinely).
+// It cancels the current configCtx and creates a new one, which will be used for
+// It is not safe for concurrent use and should be called with a write lock is held.
+func (r *repo) configChanged() {
+	if r.configCtx != nil {
+		r.configCtxCancel()
+	}
+	r.configCtx, r.configCtxCancel = context.WithCancel(context.Background())
 }
