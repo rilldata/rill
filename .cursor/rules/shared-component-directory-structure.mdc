@@ -5,19 +5,9 @@ alwaysApply: false
 ---
 # Component Directory Structure
 
-## Generic Components
-
-### Shared Components
 - Generic components should be in `web-common/src/components`
-- These are reusable components that can be used across multiple applications (web-admin, web-local)
-- Examples: `Button.svelte`, `Modal.svelte`, `DataTable.svelte`, `FormField.svelte`
-
-### Component Organization in web-common
-```
-web-common/src/components/
-├── ui/                    # Basic UI components (buttons, inputs, etc.)
-├── layout/               # Layout components (headers, footers, etc.)
-├── data/                 # Data display components (tables, charts, etc.)
-├── forms/                # Form-related components
-└── feedback/             # Feedback components (alerts, notifications, etc.)
-```
+- The reusable components should be inserted into this directory structure:
+└── rill/
+    ├── web-admin/
+    ├── web-common/
+    └── web-local/
