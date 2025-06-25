@@ -259,7 +259,7 @@ func CommitAndForcePush(ctx context.Context, projectPath string, config *Config,
 	}
 
 	// set remote and push the changes
-	err = SetRemote(projectPath, config.Remote)
+	err = SetRemote(projectPath, config)
 	if err != nil {
 		return err
 	}
@@ -278,33 +278,13 @@ func CommitAndForcePush(ctx context.Context, projectPath string, config *Config,
 	if err != nil {
 		return fmt.Errorf("failed to push to remote : %w", err)
 	}
-
-	// set the tracking information for the branch
-	cfg, err := repo.Storer.Config()
-	if err != nil {
-		return fmt.Errorf("failed to set tracking information: %w", err)
-	}
-
-	branch := cfg.Branches[config.DefaultBranch]
-	if branch == nil {
-		branch = &gitConfig.Branch{Name: config.DefaultBranch}
-		cfg.Branches[config.DefaultBranch] = branch
-	}
-
-	branch.Remote = config.RemoteName()
-	branch.Merge = plumbing.ReferenceName("refs/heads/" + config.DefaultBranch)
-
-	err = repo.Storer.SetConfig(cfg)
-	if err != nil {
-		return fmt.Errorf("failed to set tracking information: %w", err)
-	}
 	return nil
 }
 
 func Clone(ctx context.Context, path string, c *Config) (*git.Repository, error) {
 	return git.PlainCloneContext(ctx, path, false, &git.CloneOptions{
 		URL:           c.Remote,
-		RemoteName:    "rill",
+		RemoteName:    c.RemoteName(),
 		Auth:          &githttp.BasicAuth{Username: c.Username, Password: c.Password},
 		ReferenceName: plumbing.NewBranchReferenceName(c.DefaultBranch),
 		SingleBranch:  true,
@@ -338,21 +318,31 @@ func GitFetch(ctx context.Context, path string, config *Config) error {
 	}
 	if config == nil {
 		// uses default git configuration
-		return repo.FetchContext(ctx, &git.FetchOptions{})
+		// go-git does not support fetching from a private repo without auth
+		// so we will trigger the git command directly
+		return RunGitFetch(ctx, path, "origin")
 	}
-	return repo.FetchContext(ctx, &git.FetchOptions{
-		RemoteName: "rill",
+	err = repo.FetchContext(ctx, &git.FetchOptions{
+		RemoteName: config.RemoteName(),
 		RemoteURL:  config.Remote,
 		Auth: &githttp.BasicAuth{
 			Username: config.Username,
 			Password: config.Password,
 		},
 	})
+	if err != nil {
+		if errors.Is(err, git.NoErrAlreadyUpToDate) {
+			// no new changes to fetch, this is not an error
+			return nil
+		}
+		return fmt.Errorf("failed to fetch from remote: %w", err)
+	}
+	return nil
 }
 
 // SetRemote sets the remote by name Rill for the given repository to the provided remote URL.
-func SetRemote(path, remoteURL string) error {
-	if remoteURL == "" {
+func SetRemote(path string, config *Config) error {
+	if config.Remote == "" {
 		return nil
 	}
 	repo, err := git.PlainOpen(path)
@@ -360,12 +350,12 @@ func SetRemote(path, remoteURL string) error {
 		return fmt.Errorf("failed to open git repository: %w", err)
 	}
 
-	remote, err := repo.Remote("rill")
+	remote, err := repo.Remote(config.RemoteName())
 	if err != nil && !errors.Is(err, git.ErrRemoteNotFound) {
 		return fmt.Errorf("failed to get remote: %w", err)
 	}
 	if remote != nil {
-		if remote.Config().URLs[0] == remoteURL {
+		if remote.Config().URLs[0] == config.Remote {
 			// remote already exists with the same URL, no need to create it again
 			return nil
 		}
@@ -377,8 +367,8 @@ func SetRemote(path, remoteURL string) error {
 	}
 
 	_, err = repo.CreateRemote(&gitConfig.RemoteConfig{
-		Name: "rill",
-		URLs: []string{remoteURL},
+		Name: config.RemoteName(),
+		URLs: []string{config.Remote},
 	})
 	return err
 }

@@ -465,6 +465,7 @@ export interface V1GetCloneCredentialsResponse {
   gitPasswordExpiresAt?: string;
   gitSubpath?: string;
   gitProdBranch?: string;
+  gitManagedRepo?: boolean;
   archiveDownloadUrl?: string;
 }
 

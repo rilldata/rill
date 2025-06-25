@@ -4755,6 +4755,8 @@ definitions:
         type: string
       gitProdBranch:
         type: string
+      gitManagedRepo:
+        type: boolean
       archiveDownloadUrl:
         type: string
         title: either archive_download_url or git related details will be set

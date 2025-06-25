@@ -52,45 +52,54 @@ func RunGitStatus(path, remoteName string) (GitStatus, error) {
 			if strings.HasSuffix(line, "(detached)") {
 				return status, errDetachedHead
 			}
-			// Should handle detached state ?
 			status.Branch = strings.TrimPrefix(line, "# branch.head ")
 		case strings.HasPrefix(line, "# branch.upstream "):
 		case strings.HasPrefix(line, "# branch.ab "):
-			s := strings.Split(line, " ")
-
-			ahead, err := strconv.ParseInt(s[2], 10, 32)
-			if err != nil {
-				return status, err
-			}
-			status.LocalCommits = int32(ahead)
-
-			behind, err := strconv.ParseInt(s[3], 10, 32)
-			if err != nil {
-				return status, err
-			}
-			if behind < 0 {
-				behind = 0 - behind // git status reports negative behind if there are remote commits
-			}
-			status.RemoteCommits = int32(behind)
+			// do not use this as the remote tracking branch may not be set/may be set to a different remote
 		default:
 			// any non header line means staged, unstaged or untracked changes
 			status.LocalChanges = true
-			return status, nil
 		}
 	}
 
+	localCommits, err := countCommitsAhead(path, fmt.Sprintf("%s/%s", remoteName, status.Branch), status.Branch)
+	if err == nil {
+		status.LocalCommits = localCommits
+	}
+	remoteCommits, err := countCommitsAhead(path, status.Branch, fmt.Sprintf("%s/%s", remoteName, status.Branch))
+	if err == nil {
+		status.RemoteCommits = remoteCommits
+	}
+
 	// get the remote URL
-	data, err = exec.Command("git", "-C", path, "remote", "get-url", remoteName).CombinedOutput()
+	data, err = exec.Command("git", "-C", path, "remote", "get-url", remoteName).Output()
 	if err == nil {
 		status.RemoteURL = strings.TrimSpace(string(data))
 	}
 	return status, nil
 }
 
+func RunGitFetch(ctx context.Context, path, remote string) error {
+	args := []string{"-C", path, "fetch"}
+	if remote != "" {
+		// if remote is specified, fetch from that remote
+		args = append(args, remote)
+	}
+	cmd := exec.CommandContext(ctx, "git", args...)
+	_, err := cmd.Output()
+	if err != nil {
+		var execErr *exec.ExitError
+		if errors.As(err, &execErr) {
+			return fmt.Errorf("git fetch failed: %s", string(execErr.Stderr))
+		}
+		return err
+	}
+	return nil
+}
+
 // GitPull runs a git pull command in the specified path.
-// The remote can be both the name of the remote (e.g., "origin") or a URL.
-func GitPull(ctx context.Context, path string, discardLocal bool, remote string) (string, error) {
-	st, err := RunGitStatus(path, remote)
+func GitPull(ctx context.Context, path string, discardLocal bool, remote, remoteName string) (string, error) {
+	st, err := RunGitStatus(path, remoteName)
 	if err != nil {
 		return "", err
 	}
@@ -137,4 +146,18 @@ func GitPull(ctx context.Context, path string, discardLocal bool, remote string)
 	}
 	// Skip the normal output of git pull, just return an empty string
 	return "", nil
+}
+
+// countCommitsAhead counts the number of commits in `from` branch not present in `to` branch.
+func countCommitsAhead(path, to, from string) (int32, error) {
+	cmd := exec.Command("git", "-C", path, "rev-list", "--count", fmt.Sprintf("%s..%s", to, from))
+	data, err := cmd.CombinedOutput()
+	if err != nil {
+		return 0, fmt.Errorf("failed to count commits: %w", err)
+	}
+	count, err := strconv.ParseInt(strings.TrimSpace(string(data)), 10, 32)
+	if err != nil {
+		return 0, fmt.Errorf("failed to parse commit count: %w", err)
+	}
+	return int32(count), nil
 }

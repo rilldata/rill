@@ -13,7 +13,7 @@ import (
 func (s *Server) GitStatus(ctx context.Context, r *connect.Request[localv1.GitStatusRequest]) (*connect.Response[localv1.GitStatusResponse], error) {
 	// try with native git configurations
 	err := gitutil.GitFetch(ctx, s.app.ProjectPath, nil)
-	if err == nil || !s.app.ch.IsAuthenticated() {
+	if err == nil {
 		// if native git fetch succeeds, return the status
 		gs, err := gitutil.RunGitStatus(s.app.ProjectPath, "origin")
 		if err != nil {
@@ -67,7 +67,7 @@ func (s *Server) GitStatus(ctx context.Context, r *connect.Request[localv1.GitSt
 	}
 	// set remote
 	// usually not needed but the older flow did not set the remote by name `rill`
-	err = gitutil.SetRemote(s.app.ProjectPath, config.Remote)
+	err = gitutil.SetRemote(s.app.ProjectPath, config)
 	if err != nil {
 		return nil, err
 	}
@@ -82,7 +82,7 @@ func (s *Server) GitStatus(ctx context.Context, r *connect.Request[localv1.GitSt
 	return connect.NewResponse(&localv1.GitStatusResponse{
 		Branch:        gs.Branch,
 		GithubUrl:     gs.RemoteURL,
-		ManagedGit:    true,
+		ManagedGit:    config.ManagedRepo,
 		LocalChanges:  gs.LocalChanges,
 		LocalCommits:  gs.LocalCommits,
 		RemoteCommits: gs.RemoteCommits,
@@ -90,8 +90,8 @@ func (s *Server) GitStatus(ctx context.Context, r *connect.Request[localv1.GitSt
 }
 
 func (s *Server) GitPull(ctx context.Context, r *connect.Request[localv1.GitPullRequest]) (*connect.Response[localv1.GitPullResponse], error) {
-	out, err := gitutil.GitPull(ctx, s.app.ProjectPath, r.Msg.DiscardLocal, "origin")
-	if err == nil && !strings.Contains(out, "Repository not found") {
+	out, err := gitutil.GitPull(ctx, s.app.ProjectPath, r.Msg.DiscardLocal, "", "origin")
+	if err == nil && strings.Contains(out, "Already up to date") {
 		return connect.NewResponse(&localv1.GitPullResponse{
 			Output: out,
 		}), nil
@@ -115,7 +115,7 @@ func (s *Server) GitPull(ctx context.Context, r *connect.Request[localv1.GitPull
 	if err != nil {
 		return nil, err
 	}
-	err = gitutil.SetRemote(s.app.ProjectPath, config.Remote)
+	err = gitutil.SetRemote(s.app.ProjectPath, config)
 	if err != nil {
 		return nil, err
 	}
@@ -125,7 +125,7 @@ func (s *Server) GitPull(ctx context.Context, r *connect.Request[localv1.GitPull
 		return nil, err
 	}
 
-	out, err = gitutil.GitPull(ctx, s.app.ProjectPath, r.Msg.DiscardLocal, remote)
+	out, err = gitutil.GitPull(ctx, s.app.ProjectPath, r.Msg.DiscardLocal, remote, "rill")
 	if err != nil {
 		return nil, err
 	}
@@ -176,7 +176,7 @@ func (s *Server) GitPush(ctx context.Context, r *connect.Request[localv1.GitPush
 		return nil, err
 	}
 	config.ManagedRepo = project.ManagedGitId != ""
-	err = gitutil.SetRemote(s.app.ProjectPath, config.Remote)
+	err = gitutil.SetRemote(s.app.ProjectPath, config)
 	if err != nil {
 		return nil, err
 	}

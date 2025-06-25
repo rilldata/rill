@@ -70,6 +70,7 @@ func (g *GitHelper) GitConfig(ctx context.Context) (*gitutil.Config, error) {
 		PasswordExpiresAt: resp.GitPasswordExpiresAt.AsTime(),
 		DefaultBranch:     resp.GitProdBranch,
 		Subpath:           resp.GitSubpath,
+		ManagedRepo:       resp.GitManagedRepo,
 	}
 	return g.gitConfig, nil
 }

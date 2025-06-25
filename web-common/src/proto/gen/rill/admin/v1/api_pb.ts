@@ -10178,6 +10178,11 @@ export class GetCloneCredentialsResponse extends Message<GetCloneCredentialsResp
   gitProdBranch = "";
 
   /**
+   * @generated from field: bool git_managed_repo = 8;
+   */
+  gitManagedRepo = false;
+
+  /**
    * either archive_download_url or git related details will be set
    *
    * @generated from field: string archive_download_url = 6;
@@ -10198,6 +10203,7 @@ export class GetCloneCredentialsResponse extends Message<GetCloneCredentialsResp
     { no: 7, name: "git_password_expires_at", kind: "message", T: Timestamp },
     { no: 4, name: "git_subpath", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "git_prod_branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 8, name: "git_managed_repo", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 6, name: "archive_download_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
