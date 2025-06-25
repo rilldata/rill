@@ -180,7 +180,15 @@
     result: Extract<ActionResult, { type: "success" | "failure" }>;
   }) {
     if (!event.form.valid) return;
-    const values = event.form.data;
+    let values = event.form.data;
+
+    // Ensure managed property is set for ClickHouse
+    if (isClickHouse) {
+      values = {
+        ...values,
+        managed: deploymentType === "rill-managed",
+      };
+    }
 
     try {
       if (formType === "source") {
