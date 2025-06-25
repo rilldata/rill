@@ -6,12 +6,12 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"sync"
 
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
+	"github.com/rilldata/rill/runtime/pkg/filewatcher"
 	"github.com/rilldata/rill/runtime/storage"
 	"go.uber.org/zap"
 	"gopkg.in/yaml.v3"
@@ -102,6 +102,9 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 		}
 	}
 
+	// Setup the file watcher
+	c.watcher = filewatcher.NewLazyWatcher(c.root, c.ignorePaths, c.logger)
+
 	return c, nil
 }
 
@@ -133,16 +136,12 @@ func parseSourceProperties(props map[string]any) (*sourceProperties, error) {
 }
 
 type connection struct {
-	logger *zap.Logger
-	// root should be absolute path
-	root         string
+	logger       *zap.Logger
+	root         string // root should be absolute path
 	driverConfig *configProperties
 	driverName   string
 
-	watcherMu    sync.Mutex
-	watcherCount int
-	watcher      *watcher
-
+	watcher     *filewatcher.LazyWatcher
 	ignorePaths []string
 }
 

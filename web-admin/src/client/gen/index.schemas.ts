@@ -273,6 +273,10 @@ export interface V1CreateBookmarkResponse {
   bookmark?: V1Bookmark;
 }
 
+export interface V1CreateDeploymentResponse {
+  deployment?: V1Deployment;
+}
+
 export interface V1CreateManagedGitRepoResponse {
   remote?: string;
   username?: string;
@@ -319,6 +323,10 @@ export interface V1DeleteAlertResponse {
   [key: string]: unknown;
 }
 
+export interface V1DeleteDeploymentResponse {
+  deploymentId?: string;
+}
+
 export interface V1DeleteOrganizationResponse {
   [key: string]: unknown;
 }
@@ -350,6 +358,8 @@ export interface V1DenyProjectAccessResponse {
 export interface V1Deployment {
   id?: string;
   projectId?: string;
+  ownerUserId?: string;
+  environment?: string;
   branch?: string;
   runtimeHost?: string;
   runtimeInstanceId?: string;
@@ -368,6 +378,7 @@ export const V1DeploymentStatus = {
   DEPLOYMENT_STATUS_PENDING: "DEPLOYMENT_STATUS_PENDING",
   DEPLOYMENT_STATUS_OK: "DEPLOYMENT_STATUS_OK",
   DEPLOYMENT_STATUS_ERROR: "DEPLOYMENT_STATUS_ERROR",
+  DEPLOYMENT_STATUS_STOPPED: "DEPLOYMENT_STATUS_STOPPED",
 } as const;
 
 export interface V1DisconnectProjectFromGithubResponse {
@@ -473,6 +484,13 @@ export interface V1GetDeploymentCredentialsResponse {
   ttlSeconds?: number;
 }
 
+export interface V1GetDeploymentResponse {
+  runtimeHost?: string;
+  instanceId?: string;
+  accessToken?: string;
+  ttlSeconds?: number;
+}
+
 export interface V1GetGithubRepoStatusResponse {
   hasAccess?: boolean;
   grantAccessUrl?: string;
@@ -547,7 +565,9 @@ export interface V1GetProjectVariablesResponse {
 
 export interface V1GetRepoMetaResponse {
   /** How long the returned config is valid for. Clients should call GetRepoMeta again after this time. */
-  validUntilTime?: string;
+  expiresOn?: string;
+  /** When the returned config was last modified. This covers all fields in the response except the ephemeral credentials embedded in git_url and archive_download_url. */
+  lastUpdatedOn?: string;
   /** Git remote for cloning (and maybe pushing) a Git repository.
 The URL uses HTTPS with embedded username/password. */
   gitUrl?: string;
@@ -626,6 +646,10 @@ export interface V1LeaveOrganizationResponse {
 
 export interface V1ListBookmarksResponse {
   bookmarks?: V1Bookmark[];
+}
+
+export interface V1ListDeploymentsResponse {
+  deployments?: V1Deployment[];
 }
 
 export interface V1ListGithubUserReposResponse {
@@ -881,6 +905,7 @@ export interface V1Project {
   prodOlapDsn?: string;
   prodSlots?: string;
   prodDeploymentId?: string;
+  devSlots?: string;
   /** Note: Does NOT incorporate the parent org's custom domain. */
   frontendUrl?: string;
   prodTtlSeconds?: string;
@@ -1120,6 +1145,7 @@ export interface V1Service {
 
 export interface V1ServiceToken {
   id?: string;
+  prefix?: string;
   createdOn?: string;
   expiresOn?: string;
 }
@@ -1147,6 +1173,14 @@ export interface V1SetSuperuserRequest {
 
 export interface V1SetSuperuserResponse {
   [key: string]: unknown;
+}
+
+export interface V1StartDeploymentResponse {
+  deployment?: V1Deployment;
+}
+
+export interface V1StopDeploymentResponse {
+  deploymentId?: string;
 }
 
 export interface V1Subquery {
@@ -1350,6 +1384,7 @@ export interface V1UserAuthToken {
   authClientId?: string;
   authClientDisplayName?: string;
   representingUserId?: string;
+  prefix?: string;
   createdOn?: string;
   expiresOn?: string;
   usedOn?: string;
@@ -1420,6 +1455,17 @@ export type AdminServiceCreateReportBodyBody = {
 
 export type AdminServiceCreateUsergroupBodyBody = {
   name?: string;
+};
+
+export type AdminServiceGetDeploymentBodyAttributes = {
+  [key: string]: unknown;
+};
+
+export type AdminServiceGetDeploymentBody = {
+  accessTokenTtlSeconds?: number;
+  userId?: string;
+  userEmail?: string;
+  attributes?: AdminServiceGetDeploymentBodyAttributes;
 };
 
 /**
@@ -1776,6 +1822,15 @@ export type AdminServiceUpdateProjectBody = {
   prodTtlSeconds?: string;
   prodVersion?: string;
   superuserForceAccess?: boolean;
+};
+
+export type AdminServiceListDeploymentsParams = {
+  environment?: string;
+  userId?: string;
+};
+
+export type AdminServiceCreateDeploymentBody = {
+  environment?: string;
 };
 
 export type AdminServiceCreateServiceParams = {
