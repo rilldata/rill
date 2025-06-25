@@ -11,10 +11,10 @@ test.describe("Breadcrumbs", () => {
       await uploadFile(page, "AdBids.csv");
 
       await page
-        .getByText("View this source")
+        .getByText("View this model")
         .waitFor({ state: "visible", timeout: 5000 });
 
-      await page.getByText("View this source").click();
+      await page.getByText("View this model").click();
 
       let link = page.getByRole("link", {
         name: "AdBids",
