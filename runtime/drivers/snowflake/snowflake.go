@@ -303,10 +303,5 @@ func parseRSAPrivateKey(keyStr string) (*rsa.PrivateKey, error) {
 		return nil, errors.New("unsupported key type: not RSA (PKCS#8)")
 	}
 
-	// Try PKCS#1
-	if rsaKey, err := x509.ParsePKCS1PrivateKey(keyBytes); err == nil {
-		return rsaKey, nil
-	}
-
 	return nil, errors.New("failed to parse RSA private key (neither PKCS#1 nor PKCS#8)")
 }
