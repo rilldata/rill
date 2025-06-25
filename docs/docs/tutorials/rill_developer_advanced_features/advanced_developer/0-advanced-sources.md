@@ -29,7 +29,7 @@ Your source file should look something like:
 # Source YAML
 # Reference documentation: https://docs.rilldata.com/reference/project-files/sources
 
-type: source
+type: model
 
 connector: "duckdb"
 sql: "select * from read_parquet('gs://rilldata-public/github-analytics/Clickhouse/2025/03/commits_*.parquet')"
@@ -53,7 +53,7 @@ Now let's do the same for `modified_files`.
 # Source YAML
 # Reference documentation: https://docs.rilldata.com/reference/project-files/sources
   
-type: source
+type: model
 
 connector: "duckdb"
 dev:
