@@ -45,16 +45,19 @@
   const isConnectorForm = formType === "connector";
   const isClickHouse = connector.name === "clickhouse";
 
-  let deploymentType: ClickHouseDeploymentType = "rill-managed";
+  let deploymentType: ClickHouseDeploymentType = "self-managed";
 
-  // Form 1: Individual parameters
-  const paramsFormId = `add-data-${connector.name}-form`;
-  const properties =
+  const filteredProperties =
     (isSourceForm
       ? connector.sourceProperties
       : connector.configProperties?.filter(
-          (property) => property.key !== "dsn",
+          (property) =>
+            property.key !== "dsn" &&
+            (!isClickHouse || property.key !== "managed"),
         )) ?? [];
+
+  // Form 1: Individual parameters
+  const paramsFormId = `add-data-${connector.name}-form`;
   const schema = yup(getYupSchema[connector.name as keyof typeof getYupSchema]);
   const {
     form: paramsForm,
@@ -129,7 +132,7 @@
   // Generate YAML preview from form state
   $: yamlPreview = (() => {
     let values = useDsn ? $dsnForm : $paramsForm;
-    let props = useDsn ? dsnProperties : properties;
+    let props = useDsn ? dsnProperties : filteredProperties;
     let out: Record<string, unknown> = {};
     for (const property of props) {
       const key = property.key;
@@ -285,7 +288,7 @@
                   details={paramsErrorDetails}
                 />
               {/if}
-              {#each properties as property (property.key)}
+              {#each filteredProperties as property (property.key)}
                 {@const propertyKey = property.key ?? ""}
                 {@const label =
                   property.displayName +
@@ -368,7 +371,7 @@
             />
           {/if}
 
-          {#each properties as property (property.key)}
+          {#each filteredProperties as property (property.key)}
             {@const propertyKey = property.key ?? ""}
             {@const label =
               property.displayName + (property.required ? "" : " (optional)")}
