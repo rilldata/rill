@@ -45,7 +45,7 @@
   const isConnectorForm = formType === "connector";
   const isClickHouse = connector.name === "clickhouse";
 
-  let deploymentType: ClickHouseDeploymentType = "cloud";
+  let deploymentType: ClickHouseDeploymentType = "rill-managed";
 
   // Form 1: Individual parameters
   const paramsFormId = `add-data-${connector.name}-form`;
@@ -232,67 +232,52 @@
     <div
       class="p-6 flex flex-col flex-grow max-h-[552px] min-h-[552px] overflow-y-auto"
     >
-      {#if hasDsnFormOption}
+      {#if isClickHouse}
         <div class="pb-3">
-          <div class="text-sm font-medium mb-2">Connection method</div>
-          <ButtonGroup
-            selected={[useDsn ? "dsn" : "parameters"]}
-            on:subbutton-click={handleConnectionTypeChange}
-          >
-            <SubButton value="parameters" ariaLabel="Enter parameters">
-              <span class="px-2">Enter parameters</span>
-            </SubButton>
-            <SubButton value="dsn" ariaLabel="Use connection string">
-              <span class="px-2">Enter connection string</span>
-            </SubButton>
-          </ButtonGroup>
+          <Select
+            id="deployment-type"
+            options={DEPLOYMENT_TYPE_OPTIONS}
+            bind:value={deploymentType}
+            label="Deployment type"
+          />
         </div>
-      {/if}
 
-      {#if !useDsn}
-        <!-- Form 1: Individual parameters -->
-        <form
-          id={paramsFormId}
-          use:paramsEnhance
-          on:submit|preventDefault={paramsSubmit}
-        >
-          {#if paramsError}
-            <SubmissionError
-              message={paramsError}
-              details={paramsErrorDetails}
-            />
-          {/if}
-
-          {#if isClickHouse}
+        {#if deploymentType === "rill-managed"}
+          <InformationalField
+            description="Rill will automatically provision and manage your ClickHouse instance. No additional configuration is required."
+          />
+        {:else}
+          {#if hasDsnFormOption}
             <div class="pb-3">
-              <Select
-                id="deployment-type"
-                options={DEPLOYMENT_TYPE_OPTIONS}
-                bind:value={deploymentType}
-                label="Deployment type"
-              />
+              <div class="text-sm font-medium mb-2">Connection method</div>
+              <ButtonGroup
+                selected={[useDsn ? "dsn" : "parameters"]}
+                on:subbutton-click={handleConnectionTypeChange}
+              >
+                <SubButton value="parameters" ariaLabel="Enter parameters">
+                  <span class="px-2">Enter parameters</span>
+                </SubButton>
+                <SubButton value="dsn" ariaLabel="Use connection string">
+                  <span class="px-2">Enter connection string</span>
+                </SubButton>
+              </ButtonGroup>
             </div>
-
-            <!-- TODO: should we only show this for cloud deployment type? -->
-            <!-- Always show the managed checkbox -->
-            <div class="py-1.5 first:pt-0 last:pb-0">
-              <label for="managed" class="flex items-center">
-                <input
-                  id="managed"
-                  type="checkbox"
-                  bind:checked={$paramsForm["managed"]}
-                  class="h-5 w-5"
+          {/if}
+          <!-- The rest of the form rendering for self-managed -->
+          {#if !useDsn}
+            <!-- Form 1: Individual parameters -->
+            <form
+              id={paramsFormId}
+              use:paramsEnhance
+              on:submit|preventDefault={paramsSubmit}
+            >
+              {#if paramsError}
+                <SubmissionError
+                  message={paramsError}
+                  details={paramsErrorDetails}
                 />
-                <span class="ml-2 text-sm">Managed (optional)</span>
-              </label>
-            </div>
-
-            {#if $paramsForm["managed"]}
-              <InformationalField
-                description="Rill will automatically provision and manage your ClickHouse instance. No additional configuration is required."
-              />
-            {:else}
-              {#each properties.filter((property) => property.key !== "managed") as property (property.key)}
+              {/if}
+              {#each properties as property (property.key)}
                 {@const propertyKey = property.key ?? ""}
                 {@const label =
                   property.displayName +
@@ -332,71 +317,84 @@
                   {/if}
                 </div>
               {/each}
-            {/if}
+            </form>
           {:else}
-            {#each properties as property (property.key)}
-              {@const propertyKey = property.key ?? ""}
-              {@const label =
-                property.displayName + (property.required ? "" : " (optional)")}
-              <div class="py-1.5 first:pt-0 last:pb-0">
-                {#if property.type === ConnectorDriverPropertyType.TYPE_STRING || property.type === ConnectorDriverPropertyType.TYPE_NUMBER}
+            <!-- Form 2: DSN -->
+            <form
+              id={dsnFormId}
+              use:dsnEnhance
+              on:submit|preventDefault={dsnSubmit}
+            >
+              {#if dsnError}
+                <SubmissionError message={dsnError} details={dsnErrorDetails} />
+              {/if}
+              {#each dsnProperties as property (property.key)}
+                {@const propertyKey = property.key ?? ""}
+                <div class="py-1.5">
                   <Input
                     id={propertyKey}
                     label={property.displayName}
                     placeholder={property.placeholder}
-                    optional={!property.required}
                     secret={property.secret}
                     hint={property.hint}
-                    errors={$paramsErrors[propertyKey]}
-                    bind:value={$paramsForm[propertyKey]}
-                    onInput={(_, e) => onStringInputChange(e)}
+                    errors={$dsnErrors[propertyKey]}
+                    bind:value={$dsnForm[propertyKey]}
                     alwaysShowError
                   />
-                {:else if property.type === ConnectorDriverPropertyType.TYPE_BOOLEAN}
-                  <label for={property.key} class="flex items-center">
-                    <input
-                      id={propertyKey}
-                      type="checkbox"
-                      bind:checked={$paramsForm[propertyKey]}
-                      class="h-5 w-5"
-                    />
-                    <span class="ml-2 text-sm">{label}</span>
-                  </label>
-                {:else if property.type === ConnectorDriverPropertyType.TYPE_INFORMATIONAL}
-                  <InformationalField
-                    description={property.description}
-                    hint={property.hint}
-                    href={property.docsUrl}
-                  />
-                {/if}
-              </div>
-            {/each}
+                </div>
+              {/each}
+            </form>
           {/if}
-        </form>
+        {/if}
       {:else}
-        <!-- Form 2: DSN -->
+        <!-- Form 1: Individual parameters -->
         <form
-          id={dsnFormId}
-          use:dsnEnhance
-          on:submit|preventDefault={dsnSubmit}
+          id={paramsFormId}
+          use:paramsEnhance
+          on:submit|preventDefault={paramsSubmit}
         >
-          {#if dsnError}
-            <SubmissionError message={dsnError} details={dsnErrorDetails} />
+          {#if paramsError}
+            <SubmissionError
+              message={paramsError}
+              details={paramsErrorDetails}
+            />
           {/if}
 
-          {#each dsnProperties as property (property.key)}
+          {#each properties as property (property.key)}
             {@const propertyKey = property.key ?? ""}
-            <div class="py-1.5">
-              <Input
-                id={propertyKey}
-                label={property.displayName}
-                placeholder={property.placeholder}
-                secret={property.secret}
-                hint={property.hint}
-                errors={$dsnErrors[propertyKey]}
-                bind:value={$dsnForm[propertyKey]}
-                alwaysShowError
-              />
+            {@const label =
+              property.displayName + (property.required ? "" : " (optional)")}
+            <div class="py-1.5 first:pt-0 last:pb-0">
+              {#if property.type === ConnectorDriverPropertyType.TYPE_STRING || property.type === ConnectorDriverPropertyType.TYPE_NUMBER}
+                <Input
+                  id={propertyKey}
+                  label={property.displayName}
+                  placeholder={property.placeholder}
+                  optional={!property.required}
+                  secret={property.secret}
+                  hint={property.hint}
+                  errors={$paramsErrors[propertyKey]}
+                  bind:value={$paramsForm[propertyKey]}
+                  onInput={(_, e) => onStringInputChange(e)}
+                  alwaysShowError
+                />
+              {:else if property.type === ConnectorDriverPropertyType.TYPE_BOOLEAN}
+                <label for={property.key} class="flex items-center">
+                  <input
+                    id={propertyKey}
+                    type="checkbox"
+                    bind:checked={$paramsForm[propertyKey]}
+                    class="h-5 w-5"
+                  />
+                  <span class="ml-2 text-sm">{label}</span>
+                </label>
+              {:else if property.type === ConnectorDriverPropertyType.TYPE_INFORMATIONAL}
+                <InformationalField
+                  description={property.description}
+                  hint={property.hint}
+                  href={property.docsUrl}
+                />
+              {/if}
             </div>
           {/each}
         </form>
