@@ -4,7 +4,12 @@ import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
 import type { V1Resource } from "@rilldata/web-common/runtime-client";
 import { createRuntimeServiceListResources } from "@rilldata/web-common/runtime-client";
 import type { CreateQueryResult } from "@tanstack/svelte-query";
-import { derived } from "svelte/store";
+import { derived, get } from "svelte/store";
+import {
+  refetchInterval,
+  updateSmartRefetchInterval,
+} from "../../shared/refetch-interval-store";
+import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
 
 export function useDashboardsLastUpdated(
   instanceId: string,
@@ -49,10 +54,11 @@ export interface DashboardResource {
 // This iteration of `useDashboards` returns the above `DashboardResource` type, which includes `refreshedOn`
 export function useDashboardsV2(
   instanceId: string,
-): CreateQueryResult<DashboardResource[]> {
+): CreateQueryResult<DashboardResource[], HTTPError> {
   return createRuntimeServiceListResources(instanceId, undefined, {
     query: {
       select: (data) => {
+        updateSmartRefetchInterval(data?.resources);
         // create a map since we are potentially looking up twice per explore
         const allResources = getMapFromArray(
           data.resources,
@@ -79,6 +85,7 @@ export function useDashboardsV2(
         );
         return allDashboards;
       },
+      refetchInterval: () => get(refetchInterval),
     },
   });
 }
