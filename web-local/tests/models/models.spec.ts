@@ -14,14 +14,14 @@ test.describe("models", () => {
   test.use({ project: "Blank" });
 
   test("Create and edit model", async ({ page }) => {
-    // Add the AdBids source
+    // Add the AdBids model
     await createSource(page, "AdBids.csv", "/sources/AdBids.yaml");
 
     // Create a "Hello world" model named AdBids_model.sql
     await createModel(page, "AdBids_model.sql");
     await waitForFileNavEntry(page, "/models/AdBids_model.sql", true);
 
-    // Edit the model to select all columns from the AdBids source
+    // Edit the model to select all columns from the AdBids model
     await updateCodeEditor(page, "select * from AdBids");
     await waitForProfiling(page, "AdBids_model", [
       "publisher",

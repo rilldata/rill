@@ -20,7 +20,7 @@ import { gotoNavEntry } from "../utils/waitHelpers";
 test.describe("explores", () => {
   test.use({ project: "Blank" });
 
-  test("Autogenerate explore from source", async ({ page }) => {
+  test("Autogenerate explore from model", async ({ page }) => {
     await createSource(page, "AdBids.csv", "/sources/AdBids.yaml");
     await createExploreFromSource(page);
     // Temporary timeout while the issue is looked into
