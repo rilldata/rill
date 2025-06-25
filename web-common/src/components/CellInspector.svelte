@@ -6,6 +6,7 @@
   import { cellInspectorStore } from "../features/dashboards/stores/cell-inspector-store";
   import { cubicOut } from "svelte/easing";
   import Kbd from "./Kbd.svelte";
+  import { Lock, Unlock } from "lucide-svelte";
 
   export let value: any = null;
   export let isOpen: boolean = false;
@@ -17,13 +18,14 @@
   let copied = false;
   let isJson = false;
   let parsedJson: any = null;
+  let isLocked = false;
 
   const isMac = window.navigator.userAgent.includes("Macintosh");
 
   // Subscribe to the cellInspectorStore to keep the component in sync
   const unsubscribe = cellInspectorStore.subscribe((state) => {
     isOpen = state.isOpen;
-    if (state.value && state.isOpen) {
+    if (state.value && state.isOpen && !isLocked) {
       value = state.value;
     }
   });
@@ -51,6 +53,10 @@
       event.preventDefault();
       event.stopPropagation();
       onCopy();
+    } else if (event.key === "l" && isOpen) {
+      event.preventDefault();
+      event.stopPropagation();
+      toggleLock();
     }
   }
 
@@ -108,7 +114,7 @@
   }
 
   // Only update the value on hover, but don't open the inspector
-  $: if (hovered && hoveredValue && isOpen) {
+  $: if (hovered && hoveredValue && isOpen && !isLocked) {
     cellInspectorStore.open(hoveredValue);
   }
 
@@ -119,6 +125,10 @@
     setTimeout(() => {
       copied = false;
     }, 2_000);
+  }
+
+  function toggleLock() {
+    isLocked = !isLocked;
   }
 
   // Parse the value as JSON if it is a valid JSON string
@@ -147,13 +157,31 @@
     transition:fly={{ duration: 200, x: 200, easing: cubicOut }}
   >
     <div
-      class="w-full min-w-80 max-w-2xl max-h-[80vh] flex flex-col rounded-lg"
+      class="w-full min-w-[576px] max-w-2xl max-h-[80vh] flex flex-col rounded-lg"
       role="document"
       bind:this={content}
     >
+      <!-- Header with lock icon -->
+      <div
+        class="flex justify-between items-center p-2 border-b border-gray-200 bg-surface rounded-t-lg"
+      >
+        <span class="text-xs text-gray-500 font-medium">Cell Inspector</span>
+        <button
+          class="p-1 hover:bg-gray-100 rounded transition-colors"
+          on:click={toggleLock}
+          title={isLocked ? "Unlock value (L)" : "Lock value (L)"}
+        >
+          {#if isLocked}
+            <Lock size="16" class="ui-copy-icon" />
+          {:else}
+            <Unlock size="16" class="ui-copy-icon" />
+          {/if}
+        </button>
+      </div>
+
       <!-- Scrollable content area -->
       <div
-        class="flex-1 min-h-0 overflow-y-auto p-2 border-gray-200"
+        class="flex-1 min-h-0 overflow-y-auto p-2"
         class:items-start={isJson}
         class:items-center={!isJson}
       >
@@ -170,19 +198,18 @@
       <div
         class="flex justify-between p-2 border-t border-gray-200 gap-1 text-[11px] text-gray-500 bg-surface rounded-b-lg"
       >
-        {#if !copied}
+        <div class="flex gap-2">
           <span>
-            <Kbd>{isMac ? "⌘" : "Ctrl"}</Kbd>
-            <Kbd>C</Kbd>
-            to copy</span
+            <Kbd>L</Kbd>
+            to {isLocked ? "unlock" : "lock"}</span
           >
-        {:else}
-          <span>Copied</span>
-        {/if}
-        <span>
-          <Kbd>Space</Kbd>
-          to close</span
-        >
+        </div>
+        <div class="flex gap-2">
+          <span>
+            <Kbd>Space</Kbd>
+            to close</span
+          >
+        </div>
       </div>
     </div>
   </div>
