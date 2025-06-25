@@ -11,7 +11,8 @@
   $: ({
     specStore,
     type,
-    state: componentStore,
+    localFilters,
+    localTimeControls,
     parent: { name: canvasName },
   } = component);
 
@@ -40,7 +41,7 @@
         <TimeFiltersInput
           {canvasName}
           id={key}
-          {componentStore}
+          {localTimeControls}
           timeFilter={localParamValues[key]}
           showComparison={config?.meta?.hasComparison}
           showGrain={config?.meta?.hasGrain}
@@ -53,7 +54,7 @@
         <DimensionFiltersInput
           {canvasName}
           {metricsView}
-          {componentStore}
+          {localFilters}
           {excludedDimensions}
           id={key}
           filter={localParamValues[key]}

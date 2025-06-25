@@ -11,10 +11,10 @@
   import { isExpressionUnsupported } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
   import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
   import { flip } from "svelte/animate";
-  import type { CanvasComponentState } from "../../stores/canvas-component";
+  import type { Filters } from "../../stores/filters";
 
   export let metricsView: string;
-  export let componentStore: CanvasComponentState;
+  export let localFilters: Filters;
   export let excludedDimensions: string[];
   export let id: string;
   export let filter: string;
@@ -56,7 +56,7 @@
     getMeasureFilterItems,
     getAllMeasureFilterItems,
     measureHasFilter,
-  } = componentStore.localFilters);
+  } = localFilters);
 
   $: dimensionIdMap = getMapFromArray(
     allValidDimensions,

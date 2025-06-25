@@ -44,6 +44,7 @@ import {
 import { normalizeWeekday } from "../../dashboards/time-controls/new-time-controls";
 import { page } from "$app/stores";
 import { goto } from "$app/navigation";
+import type { SearchParamsStore } from "./canvas-entity";
 
 type AllTimeRange = TimeRange & { isFetching: boolean };
 
@@ -67,13 +68,17 @@ export class TimeControls {
   hasTimeSeries: Readable<boolean>;
   timeRangeStateStore: Readable<TimeRangeState | undefined>;
   comparisonRangeStateStore: Readable<ComparisonTimeRangeState | undefined>;
-  timeRangeText: Readable<string>;
+  timeRangeText = writable(new URLSearchParams());
 
   private componentName: string | undefined;
   private isInitialStateSet: boolean = false;
   private specStore: CanvasSpecResponseStore;
 
-  constructor(specStore: CanvasSpecResponseStore, componentName?: string) {
+  constructor(
+    specStore: CanvasSpecResponseStore,
+    public searchParamsStore: SearchParamsStore,
+    componentName?: string,
+  ) {
     this.allTimeRange = this.combinedTimeRangeSummaryStore(runtime, specStore);
     this.selectedTimeRange = writable(undefined);
     this.selectedComparisonTimeRange = writable(undefined);
@@ -215,76 +220,29 @@ export class TimeControls {
       },
     );
 
-    this.timeRangeText = derived(
-      [
-        this.selectedTimeRange,
-        this.selectedComparisonTimeRange,
-        this.showTimeComparison,
-      ],
-      ([
-        selectedTimeRange,
-        selectedComparisonTimeRange,
-        showTimeComparison,
-      ]) => {
-        const searchParams = new URLSearchParams();
-
-        searchParams.set(
-          ExploreStateURLParams.TimeRange,
-          toTimeRangeParam(selectedTimeRange),
-        );
-
-        if (showTimeComparison && selectedComparisonTimeRange) {
-          searchParams.set(
-            ExploreStateURLParams.ComparisonTimeRange,
-            toTimeRangeParam(selectedComparisonTimeRange),
-          );
-        }
-
-        if (selectedTimeRange?.interval) {
-          const mappedTimeGrain =
-            ToURLParamTimeGrainMapMap[selectedTimeRange?.interval];
-          if (mappedTimeGrain) {
-            searchParams.set(ExploreStateURLParams.TimeGrain, mappedTimeGrain);
-          }
-        }
-
-        return searchParams.toString();
-      },
-    );
-
     if (!this.componentName) {
-      page.subscribe(($page) => {
-        const { searchParams } = $page.url;
-
+      page.subscribe(({ url: { searchParams } }) => {
         const string = searchParams.toString();
 
         if (!string) return;
 
-        this.setTimeFiltersFromText(searchParams.toString());
+        this.setTimeFiltersFromText(string);
       });
+    } else if (this.searchParamsStore) {
+      this.searchParamsStore.subscribe((searchParams) => {
+        const string = searchParams.toString();
 
-      // this.timeRangeText.subscribe((text) => {
-      //   const pageStore = get(page);
-      //   const url = pageStore.url;
+        if (!string) return;
 
-      //   const existingFilter = url.searchParams.get(
-      //     ExploreStateURLParams.Filters,
-      //   );
-
-      //   if (text && existingFilter !== text) {
-      //     url.searchParams.set(ExploreStateURLParams.Filters, text);
-      //   } else if (!text) {
-      //     url.searchParams.delete(ExploreStateURLParams.Filters);
-      //   }
-
-      //   goto(url.toString(), { replaceState: true }).catch(console.error);
-      // });
+        this.setTimeFiltersFromText(string);
+      });
     }
 
     this.setInitialState();
   }
 
   setInitialState = () => {
+    // console.log("Setting initial state for time controls", this.componentName);
     const defaultStore = derived(
       [this.allTimeRange, this.specStore],
       ([allTimeRange, spec]) => {
@@ -326,7 +284,7 @@ export class TimeControls {
           comparisonTimeRange,
         );
 
-        console.log("INITIAL STATE", { newComparisonRange });
+        // console.log("INITIAL STATE", { newComparisonRange });
         this.selectedComparisonTimeRange.set(newComparisonRange);
 
         if (
@@ -447,137 +405,46 @@ export class TimeControls {
 
   set = {
     zone: (timeZone: string) => {
-      const url = get(page).url;
-
-      url.searchParams.set(ExploreStateURLParams.TimeZone, timeZone);
-
-      goto(url.toString()).catch(console.error);
+      this.searchParamsStore.set(ExploreStateURLParams.TimeZone, timeZone);
     },
     range: (range: string) => {
-      const url = get(page).url;
-
-      url.searchParams.set(ExploreStateURLParams.TimeRange, range);
-
-      goto(url.toString()).catch(console.error);
+      this.searchParamsStore.set(ExploreStateURLParams.TimeRange, range);
     },
     grain: (timeGrain: V1TimeGrain) => {
-      const url = get(page).url;
-
       const mappedTimeGrain = ToURLParamTimeGrainMapMap[timeGrain];
-
       if (mappedTimeGrain) {
-        url.searchParams.set(ExploreStateURLParams.TimeGrain, mappedTimeGrain);
+        this.searchParamsStore.set(
+          ExploreStateURLParams.TimeGrain,
+          mappedTimeGrain,
+        );
       }
-
-      goto(url.toString()).catch(console.error);
     },
     comparison: (range: boolean | string) => {
-      const url = get(page).url;
-
       const showTimeComparison = Boolean(range);
-
       this.showTimeComparison.set(showTimeComparison);
-
       if (showTimeComparison) {
         if (range === true) {
           const comparisonStore = get(this.comparisonRangeStateStore);
-
           const selectedComparisonTimeRange =
             comparisonStore?.selectedComparisonTimeRange;
-
           if (!selectedComparisonTimeRange) return;
-          url.searchParams.set(
+          this.searchParamsStore.set(
             ExploreStateURLParams.ComparisonTimeRange,
             toTimeRangeParam(selectedComparisonTimeRange),
           );
         } else if (typeof range === "string") {
-          url.searchParams.set(
+          this.searchParamsStore.set(
             ExploreStateURLParams.ComparisonTimeRange,
             range,
           );
         }
       } else {
-        url.searchParams.delete(ExploreStateURLParams.ComparisonTimeRange);
+        this.searchParamsStore.set(
+          ExploreStateURLParams.ComparisonTimeRange,
+          undefined,
+        );
       }
-
-      // this.selectedComparisonTimeRange.set(comparisonTimeRange);
-
-      // url.searchParams.set(
-      //   ExploreStateURLParams.ComparisonTimeRange,
-      //   toTimeRangeParam(comparisonTimeRange),
-      // );
-
-      goto(url.toString(), { replaceState: true });
     },
-  };
-
-  setTimeZone = (timezone: string) => {
-    this.selectedTimezone.set(timezone);
-  };
-
-  selectRange = (range: string) => {
-    const url = get(page).url;
-
-    url.searchParams.set(ExploreStateURLParams.TimeRange, range);
-
-    goto(url.toString()).catch(console.error);
-  };
-
-  setShowTimeComparison = (showTimeComparison: boolean) => {
-    const url = get(page).url;
-    this.showTimeComparison.set(showTimeComparison);
-
-    if (showTimeComparison) {
-      const comparisonStore = get(this.comparisonRangeStateStore);
-
-      const selectedComparisonTimeRange =
-        comparisonStore?.selectedComparisonTimeRange;
-
-      if (!selectedComparisonTimeRange) return;
-
-      url.searchParams.set(
-        ExploreStateURLParams.ComparisonTimeRange,
-        toTimeRangeParam(selectedComparisonTimeRange),
-      );
-    } else {
-      url.searchParams.delete(ExploreStateURLParams.ComparisonTimeRange);
-    }
-
-    goto(url.toString(), { replaceState: true });
-  };
-
-  selectComparisonRange = (comparisonTimeRange: DashboardTimeControls) => {
-    const url = get(page).url;
-
-    this.selectedComparisonTimeRange.set(comparisonTimeRange);
-
-    url.searchParams.set(
-      ExploreStateURLParams.ComparisonTimeRange,
-      toTimeRangeParam(comparisonTimeRange),
-    );
-
-    goto(url.toString(), { replaceState: true });
-  };
-
-  selectGrain = (timeGrain: V1TimeGrain) => {
-    const url = get(page).url;
-
-    const mappedTimeGrain = ToURLParamTimeGrainMapMap[timeGrain];
-
-    if (mappedTimeGrain) {
-      url.searchParams.set(ExploreStateURLParams.TimeGrain, mappedTimeGrain);
-    }
-
-    goto(url.toString()).catch(console.error);
-  };
-
-  selectZone = (timeZone: string) => {
-    console.log({ timeZone });
-    const url = get(page).url;
-
-    url.searchParams.set(ExploreStateURLParams.TimeZone, timeZone);
-
-    goto(url.toString()).catch(console.error);
   };
 
   selectTimeRange = (

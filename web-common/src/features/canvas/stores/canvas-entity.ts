@@ -17,6 +17,7 @@ import {
   writable,
   type Readable,
   type Unsubscriber,
+  type Writable,
 } from "svelte/store";
 import { parseDocument } from "yaml";
 import type { FileArtifact } from "../../entity-management/file-artifact";
@@ -36,6 +37,13 @@ import { TailwindColorSpacing } from "../../themes/color-config";
 import { updateThemeVariables } from "../../themes/actions";
 import { CanvasResolvedSpec } from "./spec";
 import { TimeControls } from "./time-control";
+import { page } from "$app/stores";
+import { goto } from "$app/navigation";
+
+export type SearchParamsStore = {
+  subscribe: (run: (value: URLSearchParams) => void) => Unsubscriber;
+  set: (key: string, value: string) => void;
+};
 
 export class CanvasEntity {
   name: string;
@@ -83,8 +91,26 @@ export class CanvasEntity {
 
     this.name = name;
 
+    const searchParamsStore: SearchParamsStore = (() => {
+      return {
+        subscribe: derived(page, ($page) => {
+          return $page.url.searchParams;
+        }).subscribe,
+        set: (key: string, value: string | undefined) => {
+          const url = get(page).url;
+          if (value === undefined || value === null || value === "") {
+            url.searchParams.delete(key);
+          } else {
+            url.searchParams.set(key, value);
+          }
+
+          goto(url.toString(), { replaceState: true }).catch(console.error);
+        },
+      };
+    })();
+
     this.spec = new CanvasResolvedSpec(this.specStore);
-    this.timeControls = new TimeControls(this.specStore);
+    this.timeControls = new TimeControls(this.specStore, searchParamsStore);
     this.filters = new Filters(this.spec, true);
 
     this.unsubscriber = this.specStore.subscribe((spec) => {

@@ -24,8 +24,13 @@ import type {
   ComparisonTimeRangeState,
   TimeRangeState,
 } from "../../dashboards/time-controls/time-control-store";
-import { CanvasComponentState } from "../stores/canvas-component";
-import type { CanvasEntity, ComponentPath } from "../stores/canvas-entity";
+import type {
+  CanvasEntity,
+  ComponentPath,
+  SearchParamsStore,
+} from "../stores/canvas-entity";
+import { Filters } from "../stores/filters";
+import { TimeControls } from "../stores/time-control";
 
 export abstract class BaseCanvasComponent<T = ComponentSpec> {
   id: string;
@@ -35,8 +40,10 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
   specStore: Writable<T>;
   // Path in the YAML where the component is stored
   pathInYAML: ComponentPath;
-  // Local filters and local time controls (will be moved out of class)
-  state: CanvasComponentState<T>;
+
+  localFilters: Filters;
+  localTimeControls: TimeControls;
+
   abstract type: CanvasComponentType;
   // Component responsible for DOM rendering
   abstract component: ComponentType<SvelteComponent>;
@@ -65,11 +72,54 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
 
     this.resource.set(resource);
     this.id = resource.meta?.name?.name as string;
-    this.state = new CanvasComponentState(
-      this.id,
+
+    const timeFiltersStore: SearchParamsStore = (() => {
+      const store = derived(this.specStore, (spec) => {
+        return new URLSearchParams(spec?.["time_filters"] ?? "");
+      });
+      return {
+        subscribe: store.subscribe,
+        set: (key: string, value: string | undefined) => {
+          const searchParams = get(store);
+
+          if (value === undefined || value === null || value === "") {
+            searchParams.delete(key);
+          } else {
+            searchParams.set(key, value);
+          }
+
+          this.updateProperty(
+            "time_filters" as AllKeys<T>,
+            searchParams.toString() as T[AllKeys<T>],
+          );
+        },
+      };
+    })();
+
+    const localFiltersStore: SearchParamsStore = (() => {
+      const store = derived(this.specStore, (spec) => {
+        return new URLSearchParams(spec?.["dimension_filters"] ?? "");
+      });
+      return {
+        subscribe: store.subscribe,
+        set: (key: string, value: string) => {
+          const searchParams = get(store);
+
+          searchParams.set(key, value);
+
+          this.updateProperty(
+            "dimension_filters" as AllKeys<T>,
+            searchParams.toString() as T[AllKeys<T>],
+          );
+        },
+      };
+    })();
+
+    this.localFilters = new Filters(this.parent.spec);
+    this.localTimeControls = new TimeControls(
       this.parent.specStore,
-      this.parent.spec,
-      this.specStore,
+      timeFiltersStore,
+      this.id,
     );
   }
 
@@ -85,9 +135,9 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
     return derived(
       [
         this.parent.timeControls.timeRangeStateStore,
-        this.state.localTimeControls.timeRangeStateStore,
+        this.localTimeControls.timeRangeStateStore,
         this.parent.timeControls.comparisonRangeStateStore,
-        this.state.localTimeControls.comparisonRangeStateStore,
+        this.localTimeControls.comparisonRangeStateStore,
         this.parent.timeControls.selectedTimezone,
         this.parent.filters.whereFilter,
         this.parent.filters.dimensionThresholdFilters,

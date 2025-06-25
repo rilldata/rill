@@ -10,22 +10,9 @@
   import type { MeasureFilterEntry } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
   import { getPanRangeForTimeRange } from "@rilldata/web-common/features/dashboards/state-managers/selectors/charts";
   import { isExpressionUnsupported } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
-  import {
-    ALL_TIME_RANGE_ALIAS,
-    CUSTOM_TIME_RANGE_ALIAS,
-    deriveInterval,
-  } from "@rilldata/web-common/features/dashboards/time-controls/new-time-controls";
   import SuperPill from "@rilldata/web-common/features/dashboards/time-controls/super-pill/SuperPill.svelte";
   import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
-  import { DEFAULT_TIME_RANGES } from "@rilldata/web-common/lib/time/config";
-  import { getDefaultTimeGrain } from "@rilldata/web-common/lib/time/grains";
-  import {
-    TimeComparisonOption,
-    TimeRangePreset,
-    type DashboardTimeControls,
-    type TimeRange,
-  } from "@rilldata/web-common/lib/time/types";
-  import type { V1TimeGrain } from "@rilldata/web-common/runtime-client";
+  import { TimeComparisonOption } from "@rilldata/web-common/lib/time/types";
   import { DateTime, Interval } from "luxon";
   import { onMount } from "svelte";
   import { flip } from "svelte/animate";
@@ -67,7 +54,6 @@
         selectedTimezone,
         minTimeGrain,
         set,
-        selectTimeRange,
         setInitialState,
       },
     },
@@ -79,13 +65,6 @@
 
   $: selectedComparisonTimeRange =
     $comparisonRangeStateStore?.selectedComparisonTimeRange;
-
-  $: baseTimeRange = selectedTimeRange?.start &&
-    selectedTimeRange?.end && {
-      name: selectedTimeRange?.name,
-      start: selectedTimeRange.start,
-      end: selectedTimeRange.end,
-    };
 
   $: selectedRangeAlias = selectedTimeRange?.name;
   $: activeTimeGrain = selectedTimeRange?.interval;
@@ -149,97 +128,10 @@
     if (!panRange) return;
     const { start, end } = panRange;
 
-    const timeRange = {
-      name: CUSTOM_TIME_RANGE_ALIAS,
-      start: start,
-      end: end,
-    };
-
-    const comparisonTimeRange = {
-      name: TimeComparisonOption.CONTIGUOUS,
-    } as DashboardTimeControls; // FIXME wrong typecasting across application
-
     if (!activeTimeGrain) return;
-    selectTimeRange(
-      timeRange as TimeRange,
-      activeTimeGrain,
-      comparisonTimeRange,
-    );
-  }
-  function makeTimeSeriesTimeRangeAndUpdateAppState(
-    timeRange: TimeRange,
-    timeGrain: V1TimeGrain,
-    /** we should only reset the comparison range when the user has explicitly chosen a new
-     * time range. Otherwise, the current comparison state should continue to be the
-     * source of truth.
-     */
-    comparisonTimeRange: DashboardTimeControls | undefined,
-  ) {
-    selectTimeRange(timeRange, timeGrain, comparisonTimeRange);
-  }
 
-  function selectRange(range: TimeRange) {
-    const defaultTimeGrain = getDefaultTimeGrain(range.start, range.end).grain;
-
-    const comparisonOption = DEFAULT_TIME_RANGES[range.name as TimeRangePreset]
-      ?.defaultComparison as TimeComparisonOption;
-
-    // Get valid option for the new time range
-    const validComparison = $allTimeRange && comparisonOption;
-
-    makeTimeSeriesTimeRangeAndUpdateAppState(range, defaultTimeGrain, {
-      name: validComparison,
-    } as DashboardTimeControls);
-  }
-
-  function onSelectRange(name: string) {
-    if (!$allTimeRange?.end) {
-      return;
-    }
-
-    if (name === ALL_TIME_RANGE_ALIAS) {
-      makeTimeSeriesTimeRangeAndUpdateAppState(
-        $allTimeRange,
-        "TIME_GRAIN_DAY",
-        undefined,
-      );
-      return;
-    }
-
-    const includesTimeZoneOffset = name.includes("@");
-
-    if (includesTimeZoneOffset) {
-      const timeZone = name.match(/@ {(.*)}/)?.[1];
-
-      if (timeZone) set.zone(timeZone);
-    }
-
-    const interval = deriveInterval(
-      name,
-      DateTime.fromJSDate($allTimeRange.end),
-    );
-
-    if (interval?.isValid) {
-      const validInterval = interval as Interval<true>;
-      const baseTimeRange: TimeRange = {
-        // Temporary fix for custom syntax
-        name: name as TimeRangePreset,
-        start: validInterval.start.toJSDate(),
-        end: validInterval.end.toJSDate(),
-      };
-
-      selectRange(baseTimeRange);
-    }
-  }
-
-  function onTimeGrainSelect(timeGrain: V1TimeGrain) {
-    if (baseTimeRange) {
-      makeTimeSeriesTimeRangeAndUpdateAppState(
-        baseTimeRange,
-        timeGrain,
-        selectedComparisonTimeRange,
-      );
-    }
+    set.range(`${start.toISOString()},${end.toISOString()}`);
+    set.comparison(TimeComparisonOption.CONTIGUOUS);
   }
 
   onMount(() => {
@@ -293,7 +185,14 @@
         false}
       activeTimeZone={$selectedTimezone}
       onDisplayTimeComparison={set.comparison}
-      onSetSelectedComparisonRange={(range) => {}}
+      onSetSelectedComparisonRange={(range) => {
+        if (range.name === "CUSTOM_COMPARISON_RANGE") {
+          const stringRange = `${range.start.toISOString()},${range.end.toISOString()}`;
+          set.comparison(stringRange);
+        } else if (range.name) {
+          set.comparison(range.name);
+        }
+      }}
     />
   </div>
   <div class="relative flex flex-row gap-x-2 gap-y-2 items-start ml-2">
