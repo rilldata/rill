@@ -21,6 +21,6 @@ export const DEPLOYMENT_TYPE_OPTIONS: {
   value: ClickHouseDeploymentType;
   label: string;
 }[] = [
-  { value: "rill-managed", label: "Rill Managed" },
-  { value: "self-managed", label: "Self Managed" },
+  { value: "rill-managed", label: "Rill-managed ClickHouse" },
+  { value: "self-managed", label: "Self-managed ClickHouse" },
 ];
