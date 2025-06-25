@@ -13,10 +13,7 @@ export function compileConnectorYAML(
   formValues: Record<string, unknown>,
 ) {
   // Add instructions to the top of the file
-  const topOfFile = `# Connector YAML
-# Reference documentation: https://docs.rilldata.com/reference/project-files/connectors
-  
-type: connector
+  const topOfFile = `type: connector
 
 driver: ${connector.name}`;
 

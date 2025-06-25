@@ -33,6 +33,7 @@
     DEPLOYMENT_TYPE_OPTIONS,
     type ClickHouseDeploymentType,
   } from "../../connectors/olap/constants";
+  import { compileConnectorYAML } from "../../connectors/code-utils";
 
   const dispatch = createEventDispatcher();
 
@@ -131,23 +132,8 @@
 
   // Generate YAML preview from form state
   $: yamlPreview = (() => {
-    let values = useDsn ? $dsnForm : $paramsForm;
-    let props = useDsn ? dsnProperties : filteredProperties;
-    let out: Record<string, unknown> = {};
-    for (const property of props) {
-      const key = property.key;
-      if (!key) continue;
-      let value = values[key];
-      if (property.secret && value) {
-        value = "********";
-      }
-      if (value !== undefined && value !== null && value !== "") {
-        out[key] = value;
-      }
-    }
-    const title = `connector: ${connector.name}`;
-    if (Object.keys(out).length === 0) return title;
-    return `${title}\n${yaml.dump(out, { lineWidth: 80 })}`;
+    const values = useDsn ? $dsnForm : $paramsForm;
+    return compileConnectorYAML(connector, values);
   })();
 
   $: showConnectorPreview = !(
