@@ -129,15 +129,15 @@ func (r *repo) ListGlob(ctx context.Context, glob string, skipDirs bool) ([]driv
 
 // Get implements drivers.RepoStore.
 func (r *repo) Get(ctx context.Context, path string) (string, error) {
-	if drivers.IsIgnored(path, r.ignorePaths) {
-		return "", os.ErrNotExist
-	}
-
 	err := r.rlockEnsureSynced(ctx)
 	if err != nil {
 		return "", err
 	}
 	defer r.mu.RUnlock()
+
+	if drivers.IsIgnored(path, r.ignorePaths) {
+		return "", os.ErrNotExist
+	}
 
 	var readErr error
 	for _, root := range r.roots() { // Search in every underlying file system.
@@ -200,15 +200,15 @@ func (r *repo) Hash(ctx context.Context, paths []string) (string, error) {
 
 // Stat implements drivers.RepoStore.
 func (r *repo) Stat(ctx context.Context, path string) (*drivers.FileInfo, error) {
-	if drivers.IsIgnored(path, r.ignorePaths) {
-		return nil, os.ErrNotExist
-	}
-
 	err := r.rlockEnsureSynced(ctx)
 	if err != nil {
 		return nil, err
 	}
 	defer r.mu.RUnlock()
+
+	if drivers.IsIgnored(path, r.ignorePaths) {
+		return nil, os.ErrNotExist
+	}
 
 	var statErr error
 	for _, root := range r.roots() { // Search in every underlying file system.
@@ -233,10 +233,6 @@ func (r *repo) Stat(ctx context.Context, path string) (*drivers.FileInfo, error)
 
 // Put implements drivers.RepoStore.
 func (r *repo) Put(ctx context.Context, path string, reader io.Reader) error {
-	if drivers.IsIgnored(path, r.ignorePaths) {
-		return fmt.Errorf("can't write to ignored path %q", path)
-	}
-
 	err := r.rlockEnsureSynced(ctx)
 	if err != nil {
 		return err
@@ -245,6 +241,10 @@ func (r *repo) Put(ctx context.Context, path string, reader io.Reader) error {
 
 	if r.git != nil && !r.git.editable {
 		return fmt.Errorf("repo is not editable")
+	}
+
+	if drivers.IsIgnored(path, r.ignorePaths) {
+		return fmt.Errorf("can't write to ignored path %q", path)
 	}
 
 	var root string
@@ -277,10 +277,6 @@ func (r *repo) Put(ctx context.Context, path string, reader io.Reader) error {
 
 // MkdirAll implements drivers.RepoStore.
 func (r *repo) MkdirAll(ctx context.Context, path string) error {
-	if drivers.IsIgnored(path, r.ignorePaths) {
-		return fmt.Errorf("can't write to ignored path %q", path)
-	}
-
 	err := r.rlockEnsureSynced(ctx)
 	if err != nil {
 		return err
@@ -289,6 +285,10 @@ func (r *repo) MkdirAll(ctx context.Context, path string) error {
 
 	if r.git != nil && !r.git.editable {
 		return fmt.Errorf("repo is not editable")
+	}
+
+	if drivers.IsIgnored(path, r.ignorePaths) {
+		return fmt.Errorf("can't write to ignored path %q", path)
 	}
 
 	var root string
@@ -310,13 +310,6 @@ func (r *repo) MkdirAll(ctx context.Context, path string) error {
 
 // Rename implements drivers.RepoStore.
 func (r *repo) Rename(ctx context.Context, fromPath, toPath string) error {
-	if drivers.IsIgnored(fromPath, r.ignorePaths) {
-		return fmt.Errorf("can't write from ignored path %q", fromPath)
-	}
-	if drivers.IsIgnored(toPath, r.ignorePaths) {
-		return fmt.Errorf("can't write to ignored path %q", toPath)
-	}
-
 	err := r.rlockEnsureSynced(ctx)
 	if err != nil {
 		return err
@@ -325,6 +318,13 @@ func (r *repo) Rename(ctx context.Context, fromPath, toPath string) error {
 
 	if r.git != nil && !r.git.editable {
 		return fmt.Errorf("repo is not editable")
+	}
+
+	if drivers.IsIgnored(fromPath, r.ignorePaths) {
+		return fmt.Errorf("can't write from ignored path %q", fromPath)
+	}
+	if drivers.IsIgnored(toPath, r.ignorePaths) {
+		return fmt.Errorf("can't write to ignored path %q", toPath)
 	}
 
 	var root string
@@ -355,10 +355,6 @@ func (r *repo) Rename(ctx context.Context, fromPath, toPath string) error {
 
 // Delete implements drivers.RepoStore.
 func (r *repo) Delete(ctx context.Context, path string, force bool) error {
-	if drivers.IsIgnored(path, r.ignorePaths) {
-		return fmt.Errorf("can't write to ignored path %q", path)
-	}
-
 	err := r.rlockEnsureSynced(ctx)
 	if err != nil {
 		return err
@@ -367,6 +363,10 @@ func (r *repo) Delete(ctx context.Context, path string, force bool) error {
 
 	if r.git != nil && !r.git.editable {
 		return fmt.Errorf("repo is not editable")
+	}
+
+	if drivers.IsIgnored(path, r.ignorePaths) {
+		return fmt.Errorf("can't write to ignored path %q", path)
 	}
 
 	var root string
