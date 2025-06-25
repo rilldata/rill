@@ -91,7 +91,7 @@ Similar to the example in the previous section, let's say we had a S3 source def
 Now, for your `source.yaml` file (and combined with templating), you could do something like:
 
 ```yaml
-type: source
+type: model
 connector: "duckdb"
 sql: SELECT * FROM read_parquet('s3://path/to/bucket/*.parquet') {{ if dev }} where updated_at >= '2024-01-01' AND updated_at < '2024-02-01' {{ end }}
 ```

@@ -24,7 +24,7 @@ In many cases, since SQLite is used as an in-process database, credentials are n
 On the other hand, if you are creating the source YAML file directly, the definition should look something like:
 
 ```yaml
-type: "source"
+type: "model"
 connector: "duckdb"
 sql: "SELECT * FROM sqlite_scan('<path_to_sqlite_db>', '<table_name>');"
 ```
