@@ -273,6 +273,10 @@ export interface V1CreateBookmarkResponse {
   bookmark?: V1Bookmark;
 }
 
+export interface V1CreateDeploymentResponse {
+  deployment?: V1Deployment;
+}
+
 export interface V1CreateManagedGitRepoResponse {
   remote?: string;
   username?: string;
@@ -319,6 +323,10 @@ export interface V1DeleteAlertResponse {
   [key: string]: unknown;
 }
 
+export interface V1DeleteDeploymentResponse {
+  deploymentId?: string;
+}
+
 export interface V1DeleteOrganizationResponse {
   [key: string]: unknown;
 }
@@ -350,6 +358,8 @@ export interface V1DenyProjectAccessResponse {
 export interface V1Deployment {
   id?: string;
   projectId?: string;
+  ownerUserId?: string;
+  environment?: string;
   branch?: string;
   runtimeHost?: string;
   runtimeInstanceId?: string;
@@ -368,6 +378,7 @@ export const V1DeploymentStatus = {
   DEPLOYMENT_STATUS_PENDING: "DEPLOYMENT_STATUS_PENDING",
   DEPLOYMENT_STATUS_OK: "DEPLOYMENT_STATUS_OK",
   DEPLOYMENT_STATUS_ERROR: "DEPLOYMENT_STATUS_ERROR",
+  DEPLOYMENT_STATUS_STOPPED: "DEPLOYMENT_STATUS_STOPPED",
 } as const;
 
 export interface V1DisconnectProjectFromGithubResponse {
@@ -467,6 +478,13 @@ export interface V1GetCurrentUserResponse {
 }
 
 export interface V1GetDeploymentCredentialsResponse {
+  runtimeHost?: string;
+  instanceId?: string;
+  accessToken?: string;
+  ttlSeconds?: number;
+}
+
+export interface V1GetDeploymentResponse {
   runtimeHost?: string;
   instanceId?: string;
   accessToken?: string;
@@ -628,6 +646,10 @@ export interface V1LeaveOrganizationResponse {
 
 export interface V1ListBookmarksResponse {
   bookmarks?: V1Bookmark[];
+}
+
+export interface V1ListDeploymentsResponse {
+  deployments?: V1Deployment[];
 }
 
 export interface V1ListGithubUserReposResponse {
@@ -881,6 +903,7 @@ export interface V1Project {
   prodOlapDsn?: string;
   prodSlots?: string;
   prodDeploymentId?: string;
+  devSlots?: string;
   /** Note: Does NOT incorporate the parent org's custom domain. */
   frontendUrl?: string;
   prodTtlSeconds?: string;
@@ -1148,6 +1171,14 @@ export interface V1SetSuperuserRequest {
 
 export interface V1SetSuperuserResponse {
   [key: string]: unknown;
+}
+
+export interface V1StartDeploymentResponse {
+  deployment?: V1Deployment;
+}
+
+export interface V1StopDeploymentResponse {
+  deploymentId?: string;
 }
 
 export interface V1Subquery {
@@ -1422,6 +1453,17 @@ export type AdminServiceCreateReportBodyBody = {
 
 export type AdminServiceCreateUsergroupBodyBody = {
   name?: string;
+};
+
+export type AdminServiceGetDeploymentBodyAttributes = {
+  [key: string]: unknown;
+};
+
+export type AdminServiceGetDeploymentBody = {
+  accessTokenTtlSeconds?: number;
+  userId?: string;
+  userEmail?: string;
+  attributes?: AdminServiceGetDeploymentBodyAttributes;
 };
 
 /**
@@ -1778,6 +1820,15 @@ export type AdminServiceUpdateProjectBody = {
   prodTtlSeconds?: string;
   prodVersion?: string;
   superuserForceAccess?: boolean;
+};
+
+export type AdminServiceListDeploymentsParams = {
+  environment?: string;
+  userId?: string;
+};
+
+export type AdminServiceCreateDeploymentBody = {
+  environment?: string;
 };
 
 export type AdminServiceCreateServiceParams = {
