@@ -57,6 +57,11 @@ export enum DeploymentStatus {
    * @generated from enum value: DEPLOYMENT_STATUS_ERROR = 4;
    */
   ERROR = 4,
+
+  /**
+   * @generated from enum value: DEPLOYMENT_STATUS_STOPPED = 5;
+   */
+  STOPPED = 5,
 }
 // Retrieve enum metadata with: proto3.getEnumType(DeploymentStatus)
 proto3.util.setEnumType(DeploymentStatus, "rill.admin.v1.DeploymentStatus", [
@@ -64,6 +69,7 @@ proto3.util.setEnumType(DeploymentStatus, "rill.admin.v1.DeploymentStatus", [
   { no: 1, name: "DEPLOYMENT_STATUS_PENDING" },
   { no: 2, name: "DEPLOYMENT_STATUS_OK" },
   { no: 4, name: "DEPLOYMENT_STATUS_ERROR" },
+  { no: 5, name: "DEPLOYMENT_STATUS_STOPPED" },
 ]);
 
 /**
@@ -828,6 +834,530 @@ export class ListProjectsForOrganizationRequest extends Message<ListProjectsForO
 
   static equals(a: ListProjectsForOrganizationRequest | PlainMessage<ListProjectsForOrganizationRequest> | undefined, b: ListProjectsForOrganizationRequest | PlainMessage<ListProjectsForOrganizationRequest> | undefined): boolean {
     return proto3.util.equals(ListProjectsForOrganizationRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.ListDeploymentsRequest
+ */
+export class ListDeploymentsRequest extends Message<ListDeploymentsRequest> {
+  /**
+   * @generated from field: string organization_name = 1;
+   */
+  organizationName = "";
+
+  /**
+   * @generated from field: string project_name = 2;
+   */
+  projectName = "";
+
+  /**
+   * @generated from field: string environment = 3;
+   */
+  environment = "";
+
+  /**
+   * @generated from field: string user_id = 4;
+   */
+  userId = "";
+
+  constructor(data?: PartialMessage<ListDeploymentsRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.ListDeploymentsRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "organization_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "project_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "environment", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "user_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListDeploymentsRequest {
+    return new ListDeploymentsRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListDeploymentsRequest {
+    return new ListDeploymentsRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListDeploymentsRequest {
+    return new ListDeploymentsRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ListDeploymentsRequest | PlainMessage<ListDeploymentsRequest> | undefined, b: ListDeploymentsRequest | PlainMessage<ListDeploymentsRequest> | undefined): boolean {
+    return proto3.util.equals(ListDeploymentsRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.ListDeploymentsResponse
+ */
+export class ListDeploymentsResponse extends Message<ListDeploymentsResponse> {
+  /**
+   * @generated from field: repeated rill.admin.v1.Deployment deployments = 1;
+   */
+  deployments: Deployment[] = [];
+
+  constructor(data?: PartialMessage<ListDeploymentsResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.ListDeploymentsResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "deployments", kind: "message", T: Deployment, repeated: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListDeploymentsResponse {
+    return new ListDeploymentsResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListDeploymentsResponse {
+    return new ListDeploymentsResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListDeploymentsResponse {
+    return new ListDeploymentsResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ListDeploymentsResponse | PlainMessage<ListDeploymentsResponse> | undefined, b: ListDeploymentsResponse | PlainMessage<ListDeploymentsResponse> | undefined): boolean {
+    return proto3.util.equals(ListDeploymentsResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.CreateDeploymentRequest
+ */
+export class CreateDeploymentRequest extends Message<CreateDeploymentRequest> {
+  /**
+   * @generated from field: string organization_name = 1;
+   */
+  organizationName = "";
+
+  /**
+   * @generated from field: string project_name = 2;
+   */
+  projectName = "";
+
+  /**
+   * @generated from field: string environment = 3;
+   */
+  environment = "";
+
+  constructor(data?: PartialMessage<CreateDeploymentRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.CreateDeploymentRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "organization_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "project_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "environment", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateDeploymentRequest {
+    return new CreateDeploymentRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): CreateDeploymentRequest {
+    return new CreateDeploymentRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): CreateDeploymentRequest {
+    return new CreateDeploymentRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: CreateDeploymentRequest | PlainMessage<CreateDeploymentRequest> | undefined, b: CreateDeploymentRequest | PlainMessage<CreateDeploymentRequest> | undefined): boolean {
+    return proto3.util.equals(CreateDeploymentRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.CreateDeploymentResponse
+ */
+export class CreateDeploymentResponse extends Message<CreateDeploymentResponse> {
+  /**
+   * @generated from field: rill.admin.v1.Deployment deployment = 1;
+   */
+  deployment?: Deployment;
+
+  constructor(data?: PartialMessage<CreateDeploymentResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.CreateDeploymentResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "deployment", kind: "message", T: Deployment },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateDeploymentResponse {
+    return new CreateDeploymentResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): CreateDeploymentResponse {
+    return new CreateDeploymentResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): CreateDeploymentResponse {
+    return new CreateDeploymentResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: CreateDeploymentResponse | PlainMessage<CreateDeploymentResponse> | undefined, b: CreateDeploymentResponse | PlainMessage<CreateDeploymentResponse> | undefined): boolean {
+    return proto3.util.equals(CreateDeploymentResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.GetDeploymentRequest
+ */
+export class GetDeploymentRequest extends Message<GetDeploymentRequest> {
+  /**
+   * @generated from field: string deployment_id = 1;
+   */
+  deploymentId = "";
+
+  /**
+   * @generated from field: uint32 access_token_ttl_seconds = 2;
+   */
+  accessTokenTtlSeconds = 0;
+
+  /**
+   * @generated from oneof rill.admin.v1.GetDeploymentRequest.for
+   */
+  for: {
+    /**
+     * @generated from field: string user_id = 3;
+     */
+    value: string;
+    case: "userId";
+  } | {
+    /**
+     * @generated from field: string user_email = 4;
+     */
+    value: string;
+    case: "userEmail";
+  } | {
+    /**
+     * @generated from field: google.protobuf.Struct attributes = 5;
+     */
+    value: Struct;
+    case: "attributes";
+  } | { case: undefined; value?: undefined } = { case: undefined };
+
+  constructor(data?: PartialMessage<GetDeploymentRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.GetDeploymentRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "deployment_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "access_token_ttl_seconds", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 3, name: "user_id", kind: "scalar", T: 9 /* ScalarType.STRING */, oneof: "for" },
+    { no: 4, name: "user_email", kind: "scalar", T: 9 /* ScalarType.STRING */, oneof: "for" },
+    { no: 5, name: "attributes", kind: "message", T: Struct, oneof: "for" },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetDeploymentRequest {
+    return new GetDeploymentRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetDeploymentRequest {
+    return new GetDeploymentRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetDeploymentRequest {
+    return new GetDeploymentRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetDeploymentRequest | PlainMessage<GetDeploymentRequest> | undefined, b: GetDeploymentRequest | PlainMessage<GetDeploymentRequest> | undefined): boolean {
+    return proto3.util.equals(GetDeploymentRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.GetDeploymentResponse
+ */
+export class GetDeploymentResponse extends Message<GetDeploymentResponse> {
+  /**
+   * @generated from field: string runtime_host = 1;
+   */
+  runtimeHost = "";
+
+  /**
+   * @generated from field: string instance_id = 2;
+   */
+  instanceId = "";
+
+  /**
+   * @generated from field: string access_token = 3;
+   */
+  accessToken = "";
+
+  /**
+   * @generated from field: uint32 ttl_seconds = 4;
+   */
+  ttlSeconds = 0;
+
+  constructor(data?: PartialMessage<GetDeploymentResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.GetDeploymentResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "runtime_host", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "access_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "ttl_seconds", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetDeploymentResponse {
+    return new GetDeploymentResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetDeploymentResponse {
+    return new GetDeploymentResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetDeploymentResponse {
+    return new GetDeploymentResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetDeploymentResponse | PlainMessage<GetDeploymentResponse> | undefined, b: GetDeploymentResponse | PlainMessage<GetDeploymentResponse> | undefined): boolean {
+    return proto3.util.equals(GetDeploymentResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.StartDeploymentRequest
+ */
+export class StartDeploymentRequest extends Message<StartDeploymentRequest> {
+  /**
+   * @generated from field: string deployment_id = 1;
+   */
+  deploymentId = "";
+
+  constructor(data?: PartialMessage<StartDeploymentRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.StartDeploymentRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "deployment_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): StartDeploymentRequest {
+    return new StartDeploymentRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): StartDeploymentRequest {
+    return new StartDeploymentRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): StartDeploymentRequest {
+    return new StartDeploymentRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: StartDeploymentRequest | PlainMessage<StartDeploymentRequest> | undefined, b: StartDeploymentRequest | PlainMessage<StartDeploymentRequest> | undefined): boolean {
+    return proto3.util.equals(StartDeploymentRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.StartDeploymentResponse
+ */
+export class StartDeploymentResponse extends Message<StartDeploymentResponse> {
+  /**
+   * @generated from field: rill.admin.v1.Deployment deployment = 1;
+   */
+  deployment?: Deployment;
+
+  constructor(data?: PartialMessage<StartDeploymentResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.StartDeploymentResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "deployment", kind: "message", T: Deployment },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): StartDeploymentResponse {
+    return new StartDeploymentResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): StartDeploymentResponse {
+    return new StartDeploymentResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): StartDeploymentResponse {
+    return new StartDeploymentResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: StartDeploymentResponse | PlainMessage<StartDeploymentResponse> | undefined, b: StartDeploymentResponse | PlainMessage<StartDeploymentResponse> | undefined): boolean {
+    return proto3.util.equals(StartDeploymentResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.StopDeploymentRequest
+ */
+export class StopDeploymentRequest extends Message<StopDeploymentRequest> {
+  /**
+   * @generated from field: string deployment_id = 1;
+   */
+  deploymentId = "";
+
+  constructor(data?: PartialMessage<StopDeploymentRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.StopDeploymentRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "deployment_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): StopDeploymentRequest {
+    return new StopDeploymentRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): StopDeploymentRequest {
+    return new StopDeploymentRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): StopDeploymentRequest {
+    return new StopDeploymentRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: StopDeploymentRequest | PlainMessage<StopDeploymentRequest> | undefined, b: StopDeploymentRequest | PlainMessage<StopDeploymentRequest> | undefined): boolean {
+    return proto3.util.equals(StopDeploymentRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.StopDeploymentResponse
+ */
+export class StopDeploymentResponse extends Message<StopDeploymentResponse> {
+  /**
+   * @generated from field: string deployment_id = 1;
+   */
+  deploymentId = "";
+
+  constructor(data?: PartialMessage<StopDeploymentResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.StopDeploymentResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "deployment_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): StopDeploymentResponse {
+    return new StopDeploymentResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): StopDeploymentResponse {
+    return new StopDeploymentResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): StopDeploymentResponse {
+    return new StopDeploymentResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: StopDeploymentResponse | PlainMessage<StopDeploymentResponse> | undefined, b: StopDeploymentResponse | PlainMessage<StopDeploymentResponse> | undefined): boolean {
+    return proto3.util.equals(StopDeploymentResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.DeleteDeploymentRequest
+ */
+export class DeleteDeploymentRequest extends Message<DeleteDeploymentRequest> {
+  /**
+   * @generated from field: string deployment_id = 1;
+   */
+  deploymentId = "";
+
+  constructor(data?: PartialMessage<DeleteDeploymentRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.DeleteDeploymentRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "deployment_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DeleteDeploymentRequest {
+    return new DeleteDeploymentRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): DeleteDeploymentRequest {
+    return new DeleteDeploymentRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): DeleteDeploymentRequest {
+    return new DeleteDeploymentRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: DeleteDeploymentRequest | PlainMessage<DeleteDeploymentRequest> | undefined, b: DeleteDeploymentRequest | PlainMessage<DeleteDeploymentRequest> | undefined): boolean {
+    return proto3.util.equals(DeleteDeploymentRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.DeleteDeploymentResponse
+ */
+export class DeleteDeploymentResponse extends Message<DeleteDeploymentResponse> {
+  /**
+   * @generated from field: string deployment_id = 1;
+   */
+  deploymentId = "";
+
+  constructor(data?: PartialMessage<DeleteDeploymentResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.DeleteDeploymentResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "deployment_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DeleteDeploymentResponse {
+    return new DeleteDeploymentResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): DeleteDeploymentResponse {
+    return new DeleteDeploymentResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): DeleteDeploymentResponse {
+    return new DeleteDeploymentResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: DeleteDeploymentResponse | PlainMessage<DeleteDeploymentResponse> | undefined, b: DeleteDeploymentResponse | PlainMessage<DeleteDeploymentResponse> | undefined): boolean {
+    return proto3.util.equals(DeleteDeploymentResponse, a, b);
   }
 }
 
@@ -13315,6 +13845,11 @@ export class Project extends Message<Project> {
   prodDeploymentId = "";
 
   /**
+   * @generated from field: int64 dev_slots = 25;
+   */
+  devSlots = protoInt64.zero;
+
+  /**
    * Note: Does NOT incorporate the parent org's custom domain.
    *
    * @generated from field: string frontend_url = 16;
@@ -13371,6 +13906,7 @@ export class Project extends Message<Project> {
     { no: 11, name: "prod_olap_dsn", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 12, name: "prod_slots", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
     { no: 13, name: "prod_deployment_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 25, name: "dev_slots", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
     { no: 16, name: "frontend_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 18, name: "prod_ttl_seconds", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
     { no: 20, name: "annotations", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
@@ -13409,6 +13945,16 @@ export class Deployment extends Message<Deployment> {
    * @generated from field: string project_id = 2;
    */
   projectId = "";
+
+  /**
+   * @generated from field: string owner_user_id = 12;
+   */
+  ownerUserId = "";
+
+  /**
+   * @generated from field: string environment = 11;
+   */
+  environment = "";
 
   /**
    * @generated from field: string branch = 4;
@@ -13455,6 +14001,8 @@ export class Deployment extends Message<Deployment> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "project_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 12, name: "owner_user_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 11, name: "environment", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "runtime_host", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "runtime_instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
