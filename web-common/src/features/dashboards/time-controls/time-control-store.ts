@@ -248,7 +248,7 @@ export const useTimeControlStore = memoizeMetricsStore<TimeControlStore>(
  */
 export function calculateTimeRangePartial(
   allTimeRange: DashboardTimeControls,
-  currentSelectedTimeRange: string | undefined,
+  currentSelectedTimeRange: DashboardTimeControls | undefined,
   lastDefinedScrubRange: ScrubRange | undefined,
   selectedTimezone: string | undefined,
   defaultTimeRange: DashboardTimeControls,
