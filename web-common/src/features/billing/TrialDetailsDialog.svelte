@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { page } from "$app/stores";
   import {
     AlertDialog,
     AlertDialogContent,
@@ -12,8 +13,8 @@
   import DeployIcon from "@rilldata/web-common/components/icons/DeployIcon.svelte";
 
   export let open: boolean;
-  export let deployCTAUrl: string | undefined = undefined;
-  export let onContinue: () => void = () => {};
+
+  $: deployCTAUrl = `${$page.url.protocol}//${$page.url.host}/deploy`;
 </script>
 
 <AlertDialog bind:open>
@@ -43,26 +44,14 @@
         </AlertDialogHeader>
         <AlertDialogFooter class="mt-5">
           <Button onClick={() => (open = false)} type="secondary">Back</Button>
-          {#if deployCTAUrl}
-            <Button
-              onClick={() => (open = false)}
-              type="primary"
-              href={deployCTAUrl}
-              target="_blank"
-            >
-              Continue
-            </Button>
-          {:else}
-            <Button
-              onClick={() => {
-                open = false;
-                onContinue();
-              }}
-              type="primary"
-            >
-              Continue
-            </Button>
-          {/if}
+          <Button
+            onClick={() => (open = false)}
+            type="primary"
+            href={deployCTAUrl}
+            target="_blank"
+          >
+            Continue
+          </Button>
         </AlertDialogFooter>
       </div>
     </div>
