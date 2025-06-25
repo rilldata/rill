@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/md5"
 	"encoding/hex"
-	"errors"
 	"fmt"
 	"strings"
 	"sync"
@@ -500,10 +499,22 @@ func (h *Helper) GitSignature(ctx context.Context, path string) (*object.Signatu
 	}
 	userResp, err := c.GetCurrentUser(ctx, &adminv1.GetCurrentUserRequest{})
 	if err != nil {
+		if strings.Contains(err.Error(), "not authenticated as a user") {
+			return &object.Signature{
+				Name:  "service-account",
+				Email: "service-account@rilldata.com", // not an actual email
+				When:  time.Now(),
+			}, nil
+		}
 		return nil, err
 	}
+
 	if userResp.User == nil {
-		return nil, errors.New("failed to get current user")
+		return &object.Signature{
+			Name:  "service-account",
+			Email: "service-account@rilldata.com", // not an actual email
+			When:  time.Now(),
+		}, nil
 	}
 
 	return &object.Signature{
