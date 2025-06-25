@@ -33,12 +33,6 @@ alwaysApply: false
 - Use Tailwind variants for responsive design
 - Leverage Tailwind's design system
 
-### CSS Organization
-- Global styles in `app.css`
-- Component-specific styles inline
-- Use CSS custom properties for theming
-- Follow mobile-first responsive design
-
 ## State Management
 
 ### Svelte Stores
