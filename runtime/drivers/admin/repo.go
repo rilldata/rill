@@ -352,7 +352,7 @@ func (r *repo) sync(ctx context.Context) error {
 
 		// Do the actual sync.
 		err = r.syncInner(ctx)
-		r.synced = r.synced && (err == nil) // If a sync previously succeeded, we still consider the repo synced even though the latest sync failed.
+		r.synced = r.synced || (err == nil) // If a sync previously succeeded, we still consider the repo synced even though the latest sync failed.
 		r.syncErr = err
 		return nil, r.syncErr
 	})
