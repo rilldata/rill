@@ -6,4 +6,5 @@ alwaysApply: false
 
 # Tailwind CSS v4 Standards
 
-- Use inline tailwind, avoid creating style blocks <style lang="postcss"> in Svelte files
+- Use inline Tailwind classes
+- Avoid `<style>` blocks in Svelte files

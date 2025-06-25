@@ -25,14 +25,6 @@ alwaysApply: false
 - Match component name to file name
 - Keep components small and focused
 
-## Styling Guidelines
-
-### Tailwind CSS v4
-- Use inline Tailwind classes
-- Avoid `<style>` blocks in Svelte files
-- Use Tailwind variants for responsive design
-- Leverage Tailwind's design system
-
 ## State Management
 
 ### Svelte Stores
