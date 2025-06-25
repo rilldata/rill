@@ -255,7 +255,7 @@
 
         {#if deploymentType === "rill-managed"}
           <InformationalField
-            description="Rill will automatically provision and manage your ClickHouse instance. No additional configuration is required."
+            description="This option uses ClickHouse as an OLAP engine with Rill-managed infrastructure. No additional configuration is required - Rill will handle the setup and management of your ClickHouse instance."
           />
         {:else}
           {#if hasDsnFormOption}
