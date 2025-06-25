@@ -515,20 +515,23 @@ func (c *Connection) periodicallyEmitStats() {
 		return
 	}
 
-	aMinute := time.Minute // for duration for sensitive ticker
 	// Sensitive ticker for sensitive stats
-	sensitiveTicker := time.NewTicker(aMinute)
+	sensitiveTicker := time.NewTicker(time.Minute)
 	defer sensitiveTicker.Stop()
 
 	// Regular ticker for non-sensitive stats
 	regularTicker := time.NewTicker(10 * time.Minute)
 	defer regularTicker.Stop()
 
+	// Cache invalidation ticker to reset billing table existence cache
+	cacheInvalidationTicker := time.NewTicker(60 * time.Minute)
+	defer cacheInvalidationTicker.Stop()
+
 	for {
 		select {
 		case <-sensitiveTicker.C:
 			// Skip if it hasn't been used recently and may be scaled to zero.
-			if c.config.CanScaleToZero && time.Since(c.lastUsedOn()) > 2*aMinute {
+			if c.config.CanScaleToZero && time.Since(c.lastUsedOn()) > 2*time.Minute {
 				continue
 			}
 
@@ -545,7 +548,7 @@ func (c *Connection) periodicallyEmitStats() {
 				c.logger.Log(lvl, "failed to estimate clickhouse size", zap.Error(err), zap.Bool("managed", c.config.Managed))
 			}
 		case <-regularTicker.C:
-			billingTableExists, err := c.checkBillingTableExists(c.ctx)
+			billingTableExists, err := c.checkBillingTableExists(c.ctx, c.config.Cluster)
 			if err != nil {
 				if !errors.Is(err, c.ctx.Err()) {
 					c.logger.Warn("failed to check if billing table exists", zap.Error(err))
@@ -568,6 +571,9 @@ func (c *Connection) periodicallyEmitStats() {
 			} else if !errors.Is(err, c.ctx.Err()) {
 				c.logger.Warn("failed to fetch latest RCU per service", zap.Error(err))
 			}
+		case <-cacheInvalidationTicker.C:
+			// Invalidate the billing table existence cache every hour.
+			c.billingTableExists = nil
 		case <-c.ctx.Done():
 			return
 		}
@@ -615,15 +621,33 @@ func (c *Connection) latestRCUPerService(ctx context.Context) (map[string]float6
 	return latestRCU, nil
 }
 
-func (c *Connection) checkBillingTableExists(ctx context.Context) (bool, error) {
+func (c *Connection) checkBillingTableExists(ctx context.Context, cluster string) (bool, error) {
 	if c.billingTableExists != nil {
 		return *c.billingTableExists, nil
 	}
-	var exists bool
-	err := c.db.QueryRowxContext(ctx, `SELECT count() > 0 FROM system.tables WHERE database = 'billing' AND name = 'events'`).Scan(&exists)
-	if err != nil {
-		return false, fmt.Errorf("failed to check if billing table exists: %w", err)
+	var existsEverywhere bool
+	var existsSomewhere bool
+	if cluster == "" {
+		err := c.db.QueryRowxContext(ctx, `SELECT count() > 0 as exists FROM system.tables WHERE database = 'billing' AND name = 'events'`).Scan(&existsEverywhere)
+		if err != nil {
+			return false, fmt.Errorf("failed to check if billing table exists: %w", err)
+		}
+	} else {
+		err := c.db.QueryRowxContext(ctx, fmt.Sprintf(`
+				SELECT countIf(found) = count() AS exists_everywhere, countIf(found) > 0 AS exists_somewhere
+				FROM
+				(
+					SELECT hostName() AS host, max((database = 'billing') AND (name = 'events')) AS found
+					FROM clusterAllReplicas('%s', system.tables)
+					GROUP BY host
+				)`, cluster)).Scan(&existsEverywhere, &existsSomewhere)
+		if err != nil {
+			return false, fmt.Errorf("failed to check if billing table exists in cluster %q: %w", cluster, err)
+		}
+		if existsSomewhere && !existsEverywhere {
+			c.logger.Warn("billing.events table does not exists on all cluster nodes, RCU will not be reported", zap.String("clickhouse_host", c.config.Host), zap.String("clickhouse_dsn", c.config.DSN))
+		}
 	}
-	c.billingTableExists = &exists
-	return exists, nil
+	c.billingTableExists = &existsEverywhere
+	return existsEverywhere, nil
 }
