@@ -144,6 +144,7 @@ export function getFileTypeFromPath(fileName) {
   return fileType;
 }
 
+// FIXME: deprecate this and migrate to templates API
 /**
  * Convert applicable connectors to DuckDB. We do this to leverage DuckDB's native,
  * well-documented file reading capabilities.
