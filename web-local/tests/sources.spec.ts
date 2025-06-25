@@ -13,10 +13,10 @@ import {
 import { test } from "./setup/base";
 import { fileNotPresent, waitForFileNavEntry } from "./utils/waitHelpers";
 
-test.describe("models", () => {
+test.describe("sources", () => {
   test.use({ project: "Blank" });
 
-  test("Import models", async ({ page }) => {
+  test("Import sources", async ({ page }) => {
     await Promise.all([
       waitForSource(page, "/sources/AdBids.yaml", [
         "publisher",
@@ -46,7 +46,7 @@ test.describe("models", () => {
     await fileNotPresent(page, "AdBids_2");
   });
 
-  test("Rename and delete models", async ({ page }) => {
+  test("Rename and delete sources", async ({ page }) => {
     await createSource(page, "AdBids.csv", "/sources/AdBids.yaml");
 
     // rename
@@ -60,8 +60,8 @@ test.describe("models", () => {
     await fileNotPresent(page, "/sources/AdBids");
   });
 
-  test("Edit model", async ({ page }) => {
-    // Upload data & create two models
+  test("Edit source", async ({ page }) => {
+    // Upload data & create two sources
     await createSource(
       page,
       "AdImpressions.tsv",
@@ -69,23 +69,23 @@ test.describe("models", () => {
     );
     await createSource(page, "AdBids.csv", "/sources/AdBids.yaml");
 
-    // Edit model path to a non-existent file
-    const nonExistentModel = `connector: local_file
+    // Edit source path to a non-existent file
+    const nonExistentSource = `connector: local_file
 path: ${TestDataPath}/non_existent_file.csv`;
-    await updateCodeEditor(page, nonExistentModel);
+    await updateCodeEditor(page, nonExistentSource);
     await page.getByRole("button", { name: "Save" }).click();
 
     // Observe error message "file does not exist"
     await expect(page.getByText("file does not exist")).toBeVisible();
 
-    // Edit model path to an existent file
-    const adImpressionsModel = `connector: local_file
+    // Edit source path to an existent file
+    const adImpressionsSource = `connector: local_file
 path: ${TestDataPath}/AdImpressions.tsv`;
 
-    await updateCodeEditor(page, adImpressionsModel);
+    await updateCodeEditor(page, adImpressionsSource);
     await page.getByRole("button", { name: "Save" }).click();
 
-    // Check that the model data is updated
+    // Check that the source data is updated
     // (The column "user_id" exists in AdImpressions, but not in AdBids)
     await expect(
       page.getByRole("button").filter({ hasText: "user_id" }).first(),
