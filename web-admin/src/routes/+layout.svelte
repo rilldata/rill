@@ -60,7 +60,7 @@
 
   // The admin server enables some dashboard features like scheduled reports and alerts
   // Set read-only mode so that the user can't edit the dashboard
-  featureFlags.set(true, "adminServer", "readOnly");
+  featureFlags.set(true, "adminServer");
 
   let removeJavascriptListeners: () => void;
 

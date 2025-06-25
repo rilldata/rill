@@ -170,7 +170,7 @@
         : "There was an error deploying your project. Please contact support."}
     />
   {:else if projectData.prodDeployment.status === V1DeploymentStatus.DEPLOYMENT_STATUS_OK}
-    <RuntimeProvider
+    <!-- <RuntimeProvider
       instanceId={mockedUserId && mockedUserDeploymentCredentials
         ? mockedUserDeploymentCredentials.instanceId
         : projectData.prodDeployment.runtimeInstanceId}
@@ -181,8 +181,8 @@
         ? mockedUserDeploymentCredentials.accessToken
         : projectData.jwt}
       {authContext}
-    >
-      <slot />
-    </RuntimeProvider>
+    > -->
+    <slot />
+    <!-- </RuntimeProvider> -->
   {/if}
 {/if}

@@ -24,6 +24,8 @@
 
   const DEFAULT_PERCENTAGE = 0.4;
 
+  export let basePath = "";
+
   let width = DEFAULT_NAV_WIDTH;
   let previousWidth: number;
   let resizing = false;
@@ -95,7 +97,7 @@
     <div class="scroll-container">
       <div class="nav-wrapper" bind:contentRect>
         <section class="size-full overflow-y-auto pb-4">
-          <FileExplorer hasUnsaved={unsavedFileCount > 0} />
+          <FileExplorer {basePath} hasUnsaved={unsavedFileCount > 0} />
         </section>
 
         {#if navWrapperHeight}

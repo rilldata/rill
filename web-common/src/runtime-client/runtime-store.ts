@@ -35,6 +35,7 @@ const createRuntimeStore = () => {
       jwt?: string,
       authContext?: AuthContext,
     ) => {
+      console.log("SET RUNTIME", { instanceId });
       if (jwt && !authContext) {
         throw new Error("authContext is required if jwt is provided");
       }

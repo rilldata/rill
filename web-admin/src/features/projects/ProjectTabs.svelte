@@ -36,6 +36,11 @@
       hasPermission: true,
     },
     {
+      route: `/${organization}/${project}/-/edit`,
+      label: "Edit",
+      hasPermission: true,
+    },
+    {
       route: `/${organization}/${project}/-/status`,
       label: "Status",
       hasPermission: projectPermissions.manageProject,

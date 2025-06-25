@@ -25,11 +25,14 @@
   import { findDirectory, transformFileList } from "./transform-file-list";
 
   export let hasUnsaved: boolean;
+  export let basePath: string;
 
   $: ({ instanceId } = $runtime);
+  $: console.log({ instanceId });
   $: getFileTree = createRuntimeServiceListFiles(instanceId, undefined, {
     query: {
       select: (data) => {
+        console.log({ data });
         if (!data || !data.files?.length) return;
 
         const files = data.files
@@ -58,6 +61,8 @@
   });
 
   $: ({ data: fileTree } = $getFileTree);
+
+  $: console.log({ fileTree });
 
   let showRenameModelModal = false;
   let renameFilePath: string;
@@ -143,6 +148,8 @@
       await fileArtifacts.saveAll();
     }
   }
+
+  $: console.log("File explorer", { basePath });
 </script>
 
 <svelte:window
@@ -161,8 +168,9 @@
 
 <!-- File tree -->
 <ul class="flex flex-col w-full items-start justify-start overflow-auto">
-  {#if fileTree}
+  {#if fileTree && basePath}
     <NavDirectory
+      {basePath}
       directory={fileTree}
       {onRename}
       {onDuplicate}
