@@ -33,6 +33,8 @@
     type ClickHouseConnectorType,
   } from "../../connectors/olap/constants";
   import Checkbox from "@rilldata/web-common/components/forms/Checkbox.svelte";
+  import Tabs from "@rilldata/web-common/components/forms/Tabs.svelte";
+  import { TabsContent } from "@rilldata/web-common/components/tabs";
 
   const dispatch = createEventDispatcher();
 
@@ -236,7 +238,58 @@
     <div
       class="p-6 flex flex-col flex-grow max-h-[552px] min-h-[552px] overflow-y-auto"
     >
-      {#if isClickHouse}
+      {#if !isClickHouse}
+        <!-- Non-ClickHouse Form -->
+        <form
+          id={paramsFormId}
+          use:paramsEnhance
+          on:submit|preventDefault={paramsSubmit}
+        >
+          {#if paramsError}
+            <SubmissionError
+              message={paramsError}
+              details={paramsErrorDetails}
+            />
+          {/if}
+
+          {#each filteredProperties as property (property.key)}
+            {@const propertyKey = property.key ?? ""}
+            {@const label =
+              property.displayName + (property.required ? "" : " (optional)")}
+            <div class="py-1.5 first:pt-0 last:pb-0">
+              {#if property.type === ConnectorDriverPropertyType.TYPE_STRING || property.type === ConnectorDriverPropertyType.TYPE_NUMBER}
+                <Input
+                  id={propertyKey}
+                  label={property.displayName}
+                  placeholder={property.placeholder}
+                  optional={!property.required}
+                  secret={property.secret}
+                  hint={defaults[propertyKey]?.hint ?? property.hint}
+                  errors={$paramsErrors[propertyKey]}
+                  bind:value={$paramsForm[propertyKey]}
+                  onInput={(_, e) => onStringInputChange(e)}
+                  alwaysShowError
+                />
+              {:else if property.type === ConnectorDriverPropertyType.TYPE_BOOLEAN}
+                <label for={property.key} class="flex items-center">
+                  <Checkbox
+                    id={propertyKey}
+                    bind:checked={$paramsForm[propertyKey]}
+                  />
+                  <span class="ml-2 text-sm">{label}</span>
+                </label>
+              {:else if property.type === ConnectorDriverPropertyType.TYPE_INFORMATIONAL}
+                <InformationalField
+                  description={property.description}
+                  hint={property.hint}
+                  href={property.docsUrl}
+                />
+              {/if}
+            </div>
+          {/each}
+        </form>
+      {:else}
+        <!-- ClickHouse Form -->
         <div class="pb-3">
           <Select
             id="connector-type"
@@ -256,6 +309,7 @@
             description="This option uses ClickHouse as an OLAP engine with Rill-managed infrastructure. No additional configuration is required - Rill will handle the setup and management of your ClickHouse instance."
           />
         {:else}
+          <!-- Self-managed ClickHouse Form -->
           {#if hasDsnFormOption}
             <div class="pb-3">
               <ButtonGroup
@@ -271,9 +325,35 @@
               </ButtonGroup>
             </div>
           {/if}
-          <!-- The rest of the form rendering for self-managed -->
-          {#if !useDsn}
-            <!-- Form 1: Individual parameters -->
+
+          {#if useDsn}
+            <!-- DSN Form -->
+            <form
+              id={dsnFormId}
+              use:dsnEnhance
+              on:submit|preventDefault={dsnSubmit}
+            >
+              {#if dsnError}
+                <SubmissionError message={dsnError} details={dsnErrorDetails} />
+              {/if}
+              {#each dsnProperties as property (property.key)}
+                {@const propertyKey = property.key ?? ""}
+                <div class="py-1.5 first:pt-0 last:pb-0">
+                  <Input
+                    id={propertyKey}
+                    label={property.displayName}
+                    placeholder={property.placeholder}
+                    secret={property.secret}
+                    hint={defaults[propertyKey]?.hint ?? property.hint}
+                    errors={$dsnErrors[propertyKey]}
+                    bind:value={$dsnForm[propertyKey]}
+                    alwaysShowError
+                  />
+                </div>
+              {/each}
+            </form>
+          {:else}
+            <!-- Parameters Form -->
             <form
               id={paramsFormId}
               use:paramsEnhance
@@ -324,84 +404,8 @@
                 </div>
               {/each}
             </form>
-          {:else}
-            <!-- Form 2: DSN -->
-            <form
-              id={dsnFormId}
-              use:dsnEnhance
-              on:submit|preventDefault={dsnSubmit}
-            >
-              {#if dsnError}
-                <SubmissionError message={dsnError} details={dsnErrorDetails} />
-              {/if}
-              {#each dsnProperties as property (property.key)}
-                {@const propertyKey = property.key ?? ""}
-                <div class="py-1.5 first:pt-0 last:pb-0">
-                  <Input
-                    id={propertyKey}
-                    label={property.displayName}
-                    placeholder={property.placeholder}
-                    secret={property.secret}
-                    hint={defaults[propertyKey]?.hint ?? property.hint}
-                    errors={$dsnErrors[propertyKey]}
-                    bind:value={$dsnForm[propertyKey]}
-                    alwaysShowError
-                  />
-                </div>
-              {/each}
-            </form>
           {/if}
         {/if}
-      {:else}
-        <!-- Form 1: Individual parameters -->
-        <form
-          id={paramsFormId}
-          use:paramsEnhance
-          on:submit|preventDefault={paramsSubmit}
-        >
-          {#if paramsError}
-            <SubmissionError
-              message={paramsError}
-              details={paramsErrorDetails}
-            />
-          {/if}
-
-          {#each filteredProperties as property (property.key)}
-            {@const propertyKey = property.key ?? ""}
-            {@const label =
-              property.displayName + (property.required ? "" : " (optional)")}
-            <div class="py-1.5 first:pt-0 last:pb-0">
-              {#if property.type === ConnectorDriverPropertyType.TYPE_STRING || property.type === ConnectorDriverPropertyType.TYPE_NUMBER}
-                <Input
-                  id={propertyKey}
-                  label={property.displayName}
-                  placeholder={property.placeholder}
-                  optional={!property.required}
-                  secret={property.secret}
-                  hint={defaults[propertyKey]?.hint ?? property.hint}
-                  errors={$paramsErrors[propertyKey]}
-                  bind:value={$paramsForm[propertyKey]}
-                  onInput={(_, e) => onStringInputChange(e)}
-                  alwaysShowError
-                />
-              {:else if property.type === ConnectorDriverPropertyType.TYPE_BOOLEAN}
-                <label for={property.key} class="flex items-center">
-                  <Checkbox
-                    id={propertyKey}
-                    bind:checked={$paramsForm[propertyKey]}
-                  />
-                  <span class="ml-2 text-sm">{label}</span>
-                </label>
-              {:else if property.type === ConnectorDriverPropertyType.TYPE_INFORMATIONAL}
-                <InformationalField
-                  description={property.description}
-                  hint={property.hint}
-                  href={property.docsUrl}
-                />
-              {/if}
-            </div>
-          {/each}
-        </form>
       {/if}
     </div>
     <div
@@ -459,14 +463,12 @@
   }
   .add-data-side-panel {
     @apply w-96 min-w-[320px] max-w-[400px] border-l border-gray-200 pl-6 flex flex-col gap-6 p-6;
-    /* FIXME: bg-sidebar-background */
     @apply bg-[#FAFAFA];
   }
-  .add-data-side-panel pre {
+  /* .add-data-side-panel pre {
     @apply p-4 rounded-md text-xs border border-gray-200 font-medium;
-    /* FIXME: bg-base-muted */
     @apply bg-[#F4F4F5];
-  }
+  } */
   .add-data-side-panel a {
     @apply text-primary-500 font-medium break-all;
   }
