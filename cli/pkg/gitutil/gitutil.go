@@ -360,7 +360,7 @@ func SetRemote(path string, config *Config) error {
 			return nil
 		}
 		// if the remote already exists with a different URL, delete it
-		err = repo.DeleteRemote("rill")
+		err = repo.DeleteRemote(config.RemoteName())
 		if err != nil {
 			return fmt.Errorf("failed to delete existing remote: %w", err)
 		}

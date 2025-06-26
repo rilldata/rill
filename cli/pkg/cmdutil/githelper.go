@@ -125,7 +125,6 @@ func (g *GitHelper) PushToManagedRepo(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	gitConfig.ManagedRepo = true
 
 	author, err := g.h.GitSignature(ctx, g.localPath)
 	if err != nil {

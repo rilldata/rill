@@ -255,7 +255,7 @@ func (s *Server) PushToGithub(ctx context.Context, r *connect.Request[localv1.Pu
 	}
 
 	// Create the remote
-	_, err = repo.CreateRemote(&config.RemoteConfig{Name: "rill", URLs: []string{*githubRepo.CloneURL}})
+	_, err = repo.CreateRemote(&config.RemoteConfig{Name: "origin", URLs: []string{*githubRepo.CloneURL}})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create remote: %w", err)
 	}

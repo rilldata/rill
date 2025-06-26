@@ -75,7 +75,7 @@ func (s *Server) GitStatus(ctx context.Context, r *connect.Request[localv1.GitSt
 	if err != nil {
 		return nil, err
 	}
-	gs, err := gitutil.RunGitStatus(s.app.ProjectPath, "rill")
+	gs, err := gitutil.RunGitStatus(s.app.ProjectPath, config.RemoteName())
 	if err != nil {
 		return nil, err
 	}
@@ -125,7 +125,7 @@ func (s *Server) GitPull(ctx context.Context, r *connect.Request[localv1.GitPull
 		return nil, err
 	}
 
-	out, err = gitutil.GitPull(ctx, s.app.ProjectPath, r.Msg.DiscardLocal, remote, "rill")
+	out, err = gitutil.GitPull(ctx, s.app.ProjectPath, r.Msg.DiscardLocal, remote, config.RemoteName())
 	if err != nil {
 		return nil, err
 	}
@@ -175,14 +175,13 @@ func (s *Server) GitPush(ctx context.Context, r *connect.Request[localv1.GitPush
 	if err != nil {
 		return nil, err
 	}
-	config.ManagedRepo = project.ManagedGitId != ""
 	err = gitutil.SetRemote(s.app.ProjectPath, config)
 	if err != nil {
 		return nil, err
 	}
 
 	// fetch the status again
-	gs, err := gitutil.RunGitStatus(s.app.ProjectPath, "rill")
+	gs, err := gitutil.RunGitStatus(s.app.ProjectPath, config.RemoteName())
 	if err != nil {
 		return nil, err
 	}
