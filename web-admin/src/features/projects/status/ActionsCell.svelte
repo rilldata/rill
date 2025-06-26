@@ -2,12 +2,14 @@
   import IconButton from "@rilldata/web-common/components/button/IconButton.svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import ThreeDot from "@rilldata/web-common/components/icons/ThreeDot.svelte";
-  import { createRuntimeServiceCreateTrigger } from "@rilldata/web-common/runtime-client";
-  import { RefreshCcwIcon } from "lucide-svelte";
+  import {
+    createRuntimeServiceCreateTrigger,
+    getRuntimeServiceListResourcesQueryKey,
+  } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import RefreshResourceConfirmDialog from "./RefreshResourceConfirmDialog.svelte";
   import { useQueryClient } from "@tanstack/svelte-query";
-  import { getRuntimeServiceListResourcesQueryKey } from "@rilldata/web-common/runtime-client";
+  import { RefreshCcwIcon } from "lucide-svelte";
+  import RefreshResourceConfirmDialog from "./RefreshResourceConfirmDialog.svelte";
 
   export let resourceKind: string;
   export let resourceName: string;
@@ -39,7 +41,7 @@
 {#if canRefresh}
   <DropdownMenu.Root bind:open={isDropdownOpen}>
     <DropdownMenu.Trigger class="flex-none">
-      <IconButton rounded active={isDropdownOpen} compact>
+      <IconButton rounded active={isDropdownOpen} size={20}>
         <ThreeDot size="16px" />
       </IconButton>
     </DropdownMenu.Trigger>
