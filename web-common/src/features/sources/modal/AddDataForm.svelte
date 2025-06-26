@@ -47,13 +47,6 @@
 
   let connectorType: ClickHouseConnectorType = "self-managed";
 
-  const filteredProperties =
-    (isSourceForm
-      ? connector.sourceProperties
-      : connector.configProperties?.filter(
-          (property) => property.key !== "dsn",
-        )) ?? [];
-
   // Form 1: Individual parameters
   const paramsFormId = `add-data-${connector.name}-form`;
   const schema = yup(getYupSchema[connector.name as keyof typeof getYupSchema]);
@@ -123,6 +116,13 @@
   } else {
     if ($paramsTainted) paramsError = null;
   }
+
+  const filteredProperties =
+    (isSourceForm
+      ? connector.sourceProperties
+      : connector.configProperties?.filter(
+          (property) => !(isClickHouse && !useDsn && property.key === "dsn"),
+        )) ?? [];
 
   // Emit the submitting state to the parent
   $: dispatch("submitting", { submitting });
@@ -336,7 +336,7 @@
               {/if}
               {#each dsnProperties as property (property.key)}
                 {@const propertyKey = property.key ?? ""}
-                <div class="py-1.5">
+                <div class="py-1.5 first:pt-0 last:pb-0">
                   <Input
                     id={propertyKey}
                     label={property.displayName}
