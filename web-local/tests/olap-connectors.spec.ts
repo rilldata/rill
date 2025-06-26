@@ -27,8 +27,7 @@ test.describe("ClickHouse connector", () => {
     await clickhouse.stop();
   });
 
-  // Flaky
-  test.skip("Create connector using individual fields", async ({ page }) => {
+  test("Create connector using individual fields", async ({ page }) => {
     // Open the Add Data modal
     await page.getByRole("button", { name: "Add Asset" }).click();
     await page.getByRole("menuitem", { name: "Add Data" }).click();
@@ -40,7 +39,7 @@ test.describe("ClickHouse connector", () => {
     await page
       .getByRole("dialog", { name: "ClickHouse" })
       .getByRole("button", {
-        name: "Connect",
+        name: "Test and Connect",
         exact: true,
       })
       .click();
@@ -73,7 +72,7 @@ test.describe("ClickHouse connector", () => {
     // Submit the form
     await page
       .getByRole("dialog", { name: "ClickHouse" })
-      .getByRole("button", { name: "Connect", exact: true })
+      .getByRole("button", { name: "Test andConnect", exact: true })
       .click();
 
     // Wait for navigation to the new file
@@ -105,7 +104,6 @@ test.describe("ClickHouse connector", () => {
     ).toBeVisible();
   });
 
-  // Flaky
   test.skip("Create connector using DSN", async ({ page }) => {
     // Open the Add Data modal
     await page.getByRole("button", { name: "Add Asset" }).click();
