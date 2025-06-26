@@ -178,6 +178,7 @@ func NewApp(ctx context.Context, opts *AppOptions) (*App, error) {
 	vars := map[string]string{
 		"rill.download_limit_bytes": "0", // 0 means unlimited
 		"rill.stage_changes":        "false",
+		"rill.watch_repo":           "true", // Run a file watcher instead of requiring manual refreshes
 	}
 	for k, v := range opts.Variables {
 		vars[k] = v
@@ -250,17 +251,15 @@ func NewApp(ctx context.Context, opts *AppOptions) (*App, error) {
 
 	// Create instance with its repo set to the project directory
 	inst := &drivers.Instance{
-		ID:               DefaultInstanceID,
-		Environment:      opts.Environment,
-		OLAPConnector:    olapConnector.Name,
-		RepoConnector:    repoConnector.Name,
-		AIConnector:      aiConnector.Name,
-		CatalogConnector: catalogConnector.Name,
-		Connectors:       connectors,
-		Variables:        vars,
-		Annotations:      map[string]string{},
-		WatchRepo:        true,
-		// ModelMaterializeDelaySeconds:     30, // TODO: Enable when we support skipping it for the initial load
+		ID:                               DefaultInstanceID,
+		Environment:                      opts.Environment,
+		OLAPConnector:                    olapConnector.Name,
+		RepoConnector:                    repoConnector.Name,
+		AIConnector:                      aiConnector.Name,
+		CatalogConnector:                 catalogConnector.Name,
+		Connectors:                       connectors,
+		Variables:                        vars,
+		Annotations:                      map[string]string{},
 		IgnoreInitialInvalidProjectError: !isInit, // See ProjectParser reconciler for details
 	}
 	err = rt.CreateInstance(ctx, inst)

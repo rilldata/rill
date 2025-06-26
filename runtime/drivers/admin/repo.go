@@ -454,6 +454,7 @@ func (r *repo) CommitTimestamp(ctx context.Context) (time.Time, error) {
 
 // close deletes the temporary directories used by the repo.
 func (r *repo) close() {
+	r.configCtxCancel()
 	if r.archive != nil {
 		_ = os.RemoveAll(r.archive.tmpDir)
 	}

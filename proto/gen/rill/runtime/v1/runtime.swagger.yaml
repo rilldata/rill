@@ -458,8 +458,6 @@ paths:
                 type: object
                 additionalProperties:
                   type: string
-              watchRepo:
-                type: boolean
             description: |-
               Request message for RuntimeService.EditInstance.
               See message Instance for field descriptions.
@@ -4214,8 +4212,6 @@ definitions:
         type: object
         additionalProperties:
           type: string
-      watchRepo:
-        type: boolean
     description: |-
       Request message for RuntimeService.CreateInstance.
       See message Instance for field descriptions.
@@ -4721,8 +4717,6 @@ definitions:
         type: object
         additionalProperties:
           type: string
-      watchRepo:
-        type: boolean
       aiInstructions:
         type: string
     description: |-
