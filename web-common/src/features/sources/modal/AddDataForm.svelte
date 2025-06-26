@@ -32,8 +32,6 @@
     CONNECTOR_TYPE_OPTIONS,
     type ClickHouseConnectorType,
   } from "../../connectors/olap/constants";
-  import { compileConnectorYAML } from "../../connectors/code-utils";
-  import { maybeRewriteToDuckDb, compileSourceYAML } from "../sourceUtils";
 
   const dispatch = createEventDispatcher();
 
@@ -130,21 +128,21 @@
   // Emit the submitting state to the parent
   $: dispatch("submitting", { submitting });
 
-  // Generate YAML preview from form state
-  $: yamlPreview = (() => {
-    const values = useDsn ? $dsnForm : $paramsForm;
-    if (isSourceForm) {
-      // Use the same logic as submitAddSourceForm
-      const [rewrittenConnector, rewrittenFormValues] = maybeRewriteToDuckDb(
-        connector,
-        { ...values },
-      );
-      return compileSourceYAML(rewrittenConnector, rewrittenFormValues);
-    } else {
-      // Connector form
-      return compileConnectorYAML(connector, values);
-    }
-  })();
+  // // Generate YAML preview from form state
+  // $: yamlPreview = (() => {
+  //   const values = useDsn ? $dsnForm : $paramsForm;
+  //   if (isSourceForm) {
+  //     // Use the same logic as submitAddSourceForm
+  //     const [rewrittenConnector, rewrittenFormValues] = maybeRewriteToDuckDb(
+  //       connector,
+  //       { ...values },
+  //     );
+  //     return compileSourceYAML(rewrittenConnector, rewrittenFormValues);
+  //   } else {
+  //     // Connector form
+  //     return compileConnectorYAML(connector, values);
+  //   }
+  // })();
 
   function handleConnectionTypeChange(e: CustomEvent<any>): void {
     useDsn = e.detail === "dsn";
@@ -430,10 +428,10 @@
   </div>
 
   <div class="add-data-side-panel">
-    <div>
+    <!-- <div>
       <div class="text-sm leading-none font-medium mb-4">Connector preview</div>
-      <pre>{yamlPreview}</pre>
-    </div>
+      <pre class="overflow-x-auto">{yamlPreview}</pre>
+    </div> -->
     <div>
       <div class="text-sm leading-none font-medium mb-4">Help</div>
       <div
@@ -471,7 +469,6 @@
   }
   .add-data-side-panel pre {
     @apply p-4 rounded-md text-xs border border-gray-200 font-medium;
-    @apply whitespace-pre-wrap overflow-x-visible;
     /* FIXME: bg-base-muted */
     @apply bg-[#F4F4F5];
   }
