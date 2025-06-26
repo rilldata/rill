@@ -135,10 +135,6 @@
     return compileConnectorYAML(connector, values);
   })();
 
-  $: showConnectorPreview = !(
-    isClickHouse && deploymentType === "rill-managed"
-  );
-
   function handleConnectionTypeChange(e: CustomEvent<any>): void {
     useDsn = e.detail === "dsn";
   }
@@ -419,14 +415,10 @@
   </div>
 
   <div class="add-data-side-panel">
-    {#if showConnectorPreview}
-      <div>
-        <div class="text-sm leading-none font-medium mb-4">
-          Connector preview
-        </div>
-        <pre>{yamlPreview}</pre>
-      </div>
-    {/if}
+    <div>
+      <div class="text-sm leading-none font-medium mb-4">Connector preview</div>
+      <pre>{yamlPreview}</pre>
+    </div>
     <div>
       <div class="text-sm leading-none font-medium mb-4">Help</div>
       <div
