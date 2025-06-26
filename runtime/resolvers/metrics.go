@@ -126,8 +126,12 @@ func (r *metricsResolver) Validate(ctx context.Context) error {
 }
 
 func (r *metricsResolver) ResolveInteractive(ctx context.Context) (runtime.ResolverResult, error) {
-	if r.mv.TimeDimension != "" {
-		tsRes, err := resolveTimestampResult(ctx, r.runtime, r.instanceID, r.query.MetricsView, r.claims, r.args.Priority)
+	if r.mv.TimeDimension != "" || (r.query.TimeRange != nil && r.query.TimeRange.TimeDimension != "") {
+		timeDim := ""
+		if r.query.TimeRange != nil && r.query.TimeRange.TimeDimension != "" {
+			timeDim = r.query.TimeRange.TimeDimension
+		}
+		tsRes, err := resolveTimestampResult(ctx, r.runtime, r.instanceID, r.query.MetricsView, timeDim, r.claims, r.args.Priority)
 		if err != nil {
 			return nil, err
 		}

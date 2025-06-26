@@ -28,7 +28,8 @@ type metricsViewTimeRangeResolver struct {
 }
 
 type metricsViewTimeRangeResolverArgs struct {
-	Priority int `mapstructure:"priority"`
+	Priority      int    `mapstructure:"priority"`
+	TimeDimension string `mapstructure:"time_dimension"` // if empty, the default time dimension in mv is used
 }
 
 type metricsViewTimeRange struct {
@@ -66,8 +67,8 @@ func newMetricsViewTimeRangeResolver(ctx context.Context, opts *runtime.Resolver
 		return nil, fmt.Errorf("metrics view %q is invalid", res.Meta.Name.Name)
 	}
 
-	if mv.TimeDimension == "" {
-		return nil, fmt.Errorf("metrics view '%s' does not have a time dimension", tr.MetricsView)
+	if mv.TimeDimension == "" && args.TimeDimension == "" {
+		return nil, fmt.Errorf("no time dimension specified for metrics view %q", tr.MetricsView)
 	}
 
 	security, err := opts.Runtime.ResolveSecurity(opts.InstanceID, opts.Claims, res)
@@ -111,7 +112,7 @@ func (r *metricsViewTimeRangeResolver) Validate(ctx context.Context) error {
 }
 
 func (r *metricsViewTimeRangeResolver) ResolveInteractive(ctx context.Context) (runtime.ResolverResult, error) {
-	ts, err := r.executor.Timestamps(ctx)
+	ts, err := r.executor.Timestamps(ctx, r.args.TimeDimension)
 	if err != nil {
 		return nil, err
 	}
@@ -140,7 +141,7 @@ func (r *metricsViewTimeRangeResolver) ResolveExport(ctx context.Context, w io.W
 	return errors.New("not implemented")
 }
 
-func resolveTimestampResult(ctx context.Context, rt *runtime.Runtime, instanceID, metricsViewName string, security *runtime.SecurityClaims, priority int) (metricsview.TimestampsResult, error) {
+func resolveTimestampResult(ctx context.Context, rt *runtime.Runtime, instanceID, metricsViewName, timeDimension string, security *runtime.SecurityClaims, priority int) (metricsview.TimestampsResult, error) {
 	res, err := rt.Resolve(ctx, &runtime.ResolveOptions{
 		InstanceID: instanceID,
 		Resolver:   "metrics_time_range",
@@ -148,7 +149,8 @@ func resolveTimestampResult(ctx context.Context, rt *runtime.Runtime, instanceID
 			"metrics_view": metricsViewName,
 		},
 		Args: map[string]any{
-			"priority": priority,
+			"priority":       priority,
+			"time_dimension": timeDimension,
 		},
 		Claims: security,
 	})

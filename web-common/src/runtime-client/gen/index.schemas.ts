@@ -60,6 +60,7 @@ export interface MetricsViewSpecDimension {
   lookupKeyColumn?: string;
   lookupValueColumn?: string;
   lookupDefaultExpression?: string;
+  dataType?: Runtimev1Type;
 }
 
 export interface MetricsViewSpecDimensionSelector {
@@ -85,6 +86,7 @@ export interface MetricsViewSpecMeasure {
   formatD3Locale?: MetricsViewSpecMeasureFormatD3Locale;
   validPercentOfTotal?: boolean;
   treatNullsAs?: string;
+  dataType?: Runtimev1Type;
 }
 
 export type MetricsViewSpecMeasureType =
@@ -1363,6 +1365,7 @@ export interface V1MetricsViewRowsRequest {
   priority?: number;
   timeZone?: string;
   filter?: V1MetricsViewFilter;
+  timeDimension?: string;
 }
 
 export type V1MetricsViewRowsResponseDataItem = { [key: string]: unknown };
@@ -1447,6 +1450,7 @@ export interface V1MetricsViewTimeSeriesRequest {
   timeZone?: string;
   priority?: number;
   filter?: V1MetricsViewFilter;
+  timeDimension?: string;
 }
 
 export interface V1MetricsViewTimeSeriesResponse {
@@ -1490,6 +1494,7 @@ export interface V1MetricsViewTotalsRequest {
   whereSql?: string;
   priority?: number;
   filter?: V1MetricsViewFilter;
+  timeDimension?: string;
 }
 
 export type V1MetricsViewTotalsResponseData = { [key: string]: unknown };
@@ -2159,6 +2164,7 @@ export interface V1TimeRange {
   /** Optional. Rill format time range. Should only be used for alerts and reports.
 For dashboard call ResolveTimeRanges. */
   expression?: string;
+  timeDimension?: string;
 }
 
 export interface V1TimeRangeSummary {
@@ -2548,6 +2554,7 @@ export type QueryServiceMetricsViewRowsBody = {
   priority?: number;
   timeZone?: string;
   filter?: V1MetricsViewFilter;
+  timeDimension?: string;
 };
 
 export type QueryServiceMetricsViewSchemaParams = {
@@ -2566,12 +2573,14 @@ export type QueryServiceMetricsViewSearchBody = {
 
 export type QueryServiceMetricsViewTimeRangeBody = {
   priority?: number;
+  timeDimension?: string;
 };
 
 export type QueryServiceMetricsViewTimeRangesBody = {
   expressions?: string[];
   priority?: number;
   timeZone?: string;
+  timeDimension?: string;
 };
 
 export type QueryServiceMetricsViewTimeSeriesBody = {
@@ -2588,6 +2597,7 @@ export type QueryServiceMetricsViewTimeSeriesBody = {
   timeZone?: string;
   priority?: number;
   filter?: V1MetricsViewFilter;
+  timeDimension?: string;
 };
 
 export type QueryServiceMetricsViewToplistBody = {
@@ -2615,6 +2625,7 @@ export type QueryServiceMetricsViewTotalsBody = {
   whereSql?: string;
   priority?: number;
   filter?: V1MetricsViewFilter;
+  timeDimension?: string;
 };
 
 export type QueryServiceColumnNullCountParams = {
