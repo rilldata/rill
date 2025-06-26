@@ -301,7 +301,7 @@
                         property.placeholder}
                       optional={!property.required}
                       secret={property.secret}
-                      hint={property.hint}
+                      hint={defaults[propertyKey]?.hint ?? property.hint}
                       errors={$paramsErrors[propertyKey]}
                       bind:value={$paramsForm[propertyKey]}
                       onInput={(_, e) => onStringInputChange(e)}
@@ -345,7 +345,7 @@
                     label={property.displayName}
                     placeholder={property.placeholder}
                     secret={property.secret}
-                    hint={property.hint}
+                    hint={defaults[propertyKey]?.hint ?? property.hint}
                     errors={$dsnErrors[propertyKey]}
                     bind:value={$dsnForm[propertyKey]}
                     alwaysShowError
@@ -381,7 +381,7 @@
                   placeholder={property.placeholder}
                   optional={!property.required}
                   secret={property.secret}
-                  hint={property.hint}
+                  hint={defaults[propertyKey]?.hint ?? property.hint}
                   errors={$paramsErrors[propertyKey]}
                   bind:value={$paramsForm[propertyKey]}
                   onInput={(_, e) => onStringInputChange(e)}
