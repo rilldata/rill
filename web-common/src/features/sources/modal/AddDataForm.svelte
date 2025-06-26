@@ -146,10 +146,6 @@
   //   }
   // })();
 
-  function handleConnectionTypeChange(e: CustomEvent<any>): void {
-    useDsn = e.detail === "dsn";
-  }
-
   function onStringInputChange(event: Event) {
     const target = event.target as HTMLInputElement;
     const { name, value } = target;
