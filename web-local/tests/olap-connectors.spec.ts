@@ -72,7 +72,7 @@ test.describe("ClickHouse connector", () => {
     // Submit the form
     await page
       .getByRole("dialog", { name: "ClickHouse" })
-      .getByRole("button", { name: "Test andConnect", exact: true })
+      .getByRole("button", { name: "Test and Connect", exact: true })
       .click();
 
     // Wait for navigation to the new file
