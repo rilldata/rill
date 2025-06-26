@@ -62,7 +62,7 @@ var spec = drivers.Spec{
 		{
 			Key:         "username",
 			Type:        drivers.StringPropertyType,
-			Required:    false,
+			Required:    true,
 			DisplayName: "Username",
 			Description: "Username to connect to the ClickHouse server",
 			Placeholder: "default",
@@ -70,7 +70,7 @@ var spec = drivers.Spec{
 		{
 			Key:         "password",
 			Type:        drivers.StringPropertyType,
-			Required:    false,
+			Required:    true,
 			DisplayName: "Password",
 			Description: "Password to connect to the ClickHouse server",
 			Placeholder: "password",
