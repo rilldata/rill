@@ -243,7 +243,7 @@ func (r *ProjectParserReconciler) Reconcile(ctx context.Context, n *runtimev1.Re
 	})
 	if reparseErr != nil {
 		err = fmt.Errorf("re-parse failed: %w", reparseErr)
-	} else if err != nil {
+	} else if err != nil && !errors.Is(err, ctx.Err()) {
 		err = fmt.Errorf("watch failed: %w", err)
 	}
 

@@ -105,12 +105,12 @@ func (s *Server) WatchFilesHandler(w http.ResponseWriter, req *http.Request) {
 
 			errJSON, err := json.Marshal(map[string]string{"error": err.Error()})
 			if err != nil {
-				s.logger.Info("failed to marshal error", zap.Error(err))
+				s.logger.Error("failed to marshal error as json", zap.Error(err))
 			}
 
 			eventServer.Publish("files", &sse.Event{
-				Event: []byte("error"),
 				Data:  errJSON,
+				Event: []byte("error"),
 			})
 		}
 		eventServer.Close()

@@ -453,12 +453,12 @@ func (s *Server) WatchResourcesHandler(w http.ResponseWriter, r *http.Request) {
 
 			errJSON, err := json.Marshal(map[string]string{"error": err.Error()})
 			if err != nil {
-				s.logger.Info("failed to marshal error", zap.Error(err))
+				s.logger.Error("failed to marshal error as json", zap.Error(err))
 			}
 
 			eventServer.Publish("resources", &sse.Event{
-				Event: []byte("error"),
 				Data:  errJSON,
+				Event: []byte("error"),
 			})
 		}
 		eventServer.Close()
