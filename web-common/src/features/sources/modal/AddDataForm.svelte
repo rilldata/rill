@@ -33,6 +33,7 @@
     type ClickHouseConnectorType,
   } from "../../connectors/olap/constants";
   import { compileConnectorYAML } from "../../connectors/code-utils";
+  import { maybeRewriteToDuckDb, compileSourceYAML } from "../sourceUtils";
 
   const dispatch = createEventDispatcher();
 
@@ -132,7 +133,17 @@
   // Generate YAML preview from form state
   $: yamlPreview = (() => {
     const values = useDsn ? $dsnForm : $paramsForm;
-    return compileConnectorYAML(connector, values);
+    if (isSourceForm) {
+      // Use the same logic as submitAddSourceForm
+      const [rewrittenConnector, rewrittenFormValues] = maybeRewriteToDuckDb(
+        connector,
+        { ...values },
+      );
+      return compileSourceYAML(rewrittenConnector, rewrittenFormValues);
+    } else {
+      // Connector form
+      return compileConnectorYAML(connector, values);
+    }
   })();
 
   function handleConnectionTypeChange(e: CustomEvent<any>): void {
@@ -236,6 +247,11 @@
             bind:value={connectorType}
             label="Connector type"
           />
+          {#if connectorType === "self-managed"}
+            <div class="text-xs text-muted-foreground mt-2">
+              Connect to your own ClickHouse instance (Cloud or self-hosted)
+            </div>
+          {/if}
         </div>
 
         {#if connectorType === "rill-managed"}
@@ -245,7 +261,6 @@
         {:else}
           {#if hasDsnFormOption}
             <div class="pb-3">
-              <div class="text-sm font-medium mb-2">Connection method</div>
               <ButtonGroup
                 selected={[useDsn ? "dsn" : "parameters"]}
                 on:subbutton-click={handleConnectionTypeChange}
