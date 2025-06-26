@@ -51,9 +51,7 @@
     (isSourceForm
       ? connector.sourceProperties
       : connector.configProperties?.filter(
-          (property) =>
-            property.key !== "dsn" &&
-            (!isClickHouse || property.key !== "managed"),
+          (property) => property.key !== "dsn",
         )) ?? [];
 
   // Form 1: Individual parameters
