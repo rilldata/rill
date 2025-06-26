@@ -11,7 +11,6 @@
   import ProjectRedeployConfirmDialog from "@rilldata/web-common/features/project/ProjectRedeployConfirmDialog.svelte";
   import PushToGitForDeployDialog from "@rilldata/web-common/features/project/PushToGitForDeployDialog.svelte";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
-  import { waitUntil } from "@rilldata/web-common/lib/waitUtils";
   import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
   import { BehaviourEventAction } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
   import {
@@ -22,7 +21,7 @@
     createLocalServiceListOrganizationsAndBillingMetadataRequest,
   } from "@rilldata/web-common/runtime-client/local-service";
   import Rocket from "svelte-radix/Rocket.svelte";
-  import { get, writable } from "svelte/store";
+  import { writable } from "svelte/store";
   import { Button } from "../../../components/button";
 
   export let hasValidDashboard: boolean;
@@ -67,9 +66,7 @@
     deployCTAUrl = deployPageUrl;
   }
 
-  $: managedGit = !!$currentProject.data?.project?.managedGitId;
-
-  async function onRedeploy() {
+  function onRedeploy() {
     if (hasRemoteChanges) {
       // If there are remote changes then block deploy and trigger RemoteProjectManager
       eventBus.emit("check-remote-project-status", null);
@@ -77,12 +74,6 @@
     }
 
     void behaviourEvent?.fireDeployEvent(BehaviourEventAction.DeployIntent);
-
-    await waitUntil(() => !get(currentProject).isFetching);
-    if (get(currentProject).data?.project?.gitRemote && !managedGit) {
-      pushThroughGitOpen = true;
-      return;
-    }
 
     window.open(deployCTAUrl, "_blank");
   }

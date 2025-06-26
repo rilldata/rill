@@ -20,6 +20,7 @@ import {
   createLocalServiceGetCurrentProject,
   createLocalServiceGetCurrentUser,
   createLocalServiceGetMetadata,
+  createLocalServiceGitPush,
   createLocalServiceListOrganizationsAndBillingMetadataRequest,
   createLocalServiceRedeploy,
   getLocalServiceGetCurrentUserQueryKey,
@@ -42,6 +43,7 @@ export class ProjectDeployer {
 
   private readonly deployMutation = createLocalServiceDeploy();
   private readonly redeployMutation = createLocalServiceRedeploy();
+  private readonly gitPushMutation = createLocalServiceGitPush();
 
   public constructor(
     // use a specific org. org could be set in url params as a callback from upgrading to team plan
@@ -64,6 +66,7 @@ export class ProjectDeployer {
         this.org,
         this.deployMutation,
         this.redeployMutation,
+        this.gitPushMutation,
       ],
       ([
         metadata,
@@ -73,6 +76,7 @@ export class ProjectDeployer {
         org,
         deployMutation,
         redeployMutation,
+        gitPushMutation,
       ]) => {
         if (
           metadata.error ||
@@ -80,7 +84,8 @@ export class ProjectDeployer {
           user.error ||
           project.error ||
           deployMutation.error ||
-          redeployMutation.error
+          redeployMutation.error ||
+          gitPushMutation.error
         ) {
           const orgMetadata = orgsMetadata?.data?.orgs.find(
             (om) => om.name === org,
@@ -93,7 +98,8 @@ export class ProjectDeployer {
                 (user.error as ConnectError) ??
                 (project.error as ConnectError) ??
                 (deployMutation.error as ConnectError) ??
-                (redeployMutation.error as ConnectError),
+                (redeployMutation.error as ConnectError) ??
+                (gitPushMutation.error as ConnectError),
               onTrial,
             ),
           };
@@ -136,16 +142,18 @@ export class ProjectDeployer {
 
     // Project already exists
     if (projectResp.project) {
-      if (projectResp.project.gitRemote && !projectResp.project.managedGitId) {
-        // we do not support pushing to a project already connected to user managed github
-        return;
+      if (!projectResp.project.gitRemote) {
+        // Legacy archive project
+        await get(this.redeployMutation).mutateAsync({
+          projectId: projectResp.project.id,
+          reupload: true,
+        });
+      } else {
+        // For everything else use git push API
+        await get(this.gitPushMutation).mutateAsync({});
       }
 
-      const resp = await get(this.redeployMutation).mutateAsync({
-        projectId: projectResp.project.id,
-        reupload: true,
-      });
-      const projectUrl = resp.frontendUrl; // https://ui.rilldata.com/<org>/<project>
+      const projectUrl = projectResp.project.frontendUrl; // https://ui.rilldata.com/<org>/<project>
       const projectUrlWithSessionId = addPosthogSessionIdToUrl(projectUrl);
       window.open(projectUrlWithSessionId, "_self");
       return;
@@ -209,7 +217,6 @@ export class ProjectDeployer {
   ) {
     let i = 0;
 
-    // eslint-disable-next-line no-constant-condition
     while (true) {
       try {
         const tryOrgName = `${org}${i === 0 ? "" : "-" + i}`;
