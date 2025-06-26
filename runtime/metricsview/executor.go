@@ -35,7 +35,7 @@ type Executor struct {
 	olapRelease func()
 	instanceCfg drivers.InstanceConfig
 
-	timestamps TimestampsResult
+	timestamps map[string]TimestampsResult
 }
 
 type TimestampsResult struct {
@@ -67,6 +67,7 @@ func NewExecutor(ctx context.Context, rt *runtime.Runtime, instanceID string, mv
 		olap:        olap,
 		olapRelease: release,
 		instanceCfg: instanceCfg,
+		timestamps:  make(map[string]TimestampsResult),
 	}, nil
 }
 
@@ -90,8 +91,8 @@ func (e *Executor) CacheKey(ctx context.Context) ([]byte, bool, error) {
 			// (until the metrics view is refreshed/edited, which always leads to cache invalidations)
 			return []byte(""), true, nil
 		}
-		// watermark is the default cache key for streaming metrics views
-		ts, err := e.Timestamps(ctx)
+		// watermark is the default cache key for streaming metrics views, use default mv time dimension
+		ts, err := e.Timestamps(ctx, "")
 		if err != nil {
 			return nil, false, err
 		}
@@ -134,18 +135,30 @@ func (e *Executor) ValidateQuery(qry *Query) error {
 	panic("not implemented")
 }
 
-// Timestamps queries min, max and watermark for the metrics view
-func (e *Executor) Timestamps(ctx context.Context) (TimestampsResult, error) {
-	if !e.timestamps.Min.IsZero() {
-		return e.timestamps, nil
+// Timestamps queries min, max and watermark for the metrics view.
+func (e *Executor) Timestamps(ctx context.Context, timeDim string) (TimestampsResult, error) {
+	if timeDim == "" {
+		timeDim = e.metricsView.TimeDimension
 	}
 
-	var err error
+	if res, ok := e.timestamps[timeDim]; ok && !res.Min.IsZero() {
+		return res, nil
+	}
+
+	timeExpr, err := e.timeColumnOrExpr(timeDim)
+	if err != nil {
+		return TimestampsResult{}, fmt.Errorf("failed to resolve time column or expression: %w", err)
+	}
+	if timeExpr == "" {
+		return TimestampsResult{}, fmt.Errorf("no time dimension found in metrics view '%s'", timeDim)
+	}
+
+	var res TimestampsResult
 	switch e.olap.Dialect() {
 	case drivers.DialectDuckDB, drivers.DialectClickHouse, drivers.DialectPinot:
-		e.timestamps, err = e.resolveDuckDBClickHouseAndPinot(ctx)
+		res, err = e.resolveDuckDBClickHouseAndPinot(ctx, timeExpr)
 	case drivers.DialectDruid:
-		e.timestamps, err = e.resolveDruid(ctx)
+		res, err = e.resolveDruid(ctx, timeExpr)
 	default:
 		return TimestampsResult{}, fmt.Errorf("not available for dialect '%s'", e.olap.Dialect())
 	}
@@ -153,13 +166,24 @@ func (e *Executor) Timestamps(ctx context.Context) (TimestampsResult, error) {
 		return TimestampsResult{}, err
 	}
 
-	e.timestamps.Now = time.Now()
-	return e.timestamps, nil
+	res.Now = time.Now()
+	e.timestamps[timeDim] = res
+
+	return res, nil
 }
 
 // BindQuery allows to set min, max and watermark from a cache.
 func (e *Executor) BindQuery(ctx context.Context, qry *Query, timestamps TimestampsResult) error {
-	e.timestamps = timestamps
+	err := qry.Validate()
+	if err != nil {
+		return err
+	}
+
+	if qry.TimeRange != nil && qry.TimeRange.TimeDimension != "" {
+		e.timestamps[qry.TimeRange.TimeDimension] = timestamps
+	} else if e.metricsView.TimeDimension != "" {
+		e.timestamps[e.metricsView.TimeDimension] = timestamps
+	}
 	return e.rewriteQueryTimeRanges(ctx, qry, nil)
 }
 
@@ -371,6 +395,11 @@ func (e *Executor) Query(ctx context.Context, qry *Query, executionTime *time.Ti
 func (e *Executor) Export(ctx context.Context, qry *Query, executionTime *time.Time, format drivers.FileFormat, headers []string) (string, error) {
 	if !e.security.CanAccess() {
 		return "", runtime.ErrForbidden
+	}
+
+	err := qry.Validate()
+	if err != nil {
+		return "", err
 	}
 
 	pivotAST, pivoting, err := e.rewriteQueryForPivot(qry)
@@ -674,6 +703,21 @@ func (e *Executor) executeSearchInDruid(ctx context.Context, qry *SearchQuery, e
 		}
 	}
 	return result, nil
+}
+
+// timeColumnOrExpr returns the time column or expression to use for the metrics view. ues time column if provided, otherwise fall back to the metrics view TimeDimension.
+func (e *Executor) timeColumnOrExpr(timeDim string) (string, error) {
+	// figure out the time column or expression to use from the dimension list
+	for _, dim := range e.metricsView.Dimensions {
+		if dim.Name == timeDim {
+			expr, err := e.olap.Dialect().MetricsViewDimensionExpression(dim)
+			if err != nil {
+				return "", fmt.Errorf("failed to get time dimension expression for '%s': %w", timeDim, err)
+			}
+			return expr, nil
+		}
+	}
+	return e.olap.Dialect().EscapeIdentifier(timeDim), nil // fallback to the time dimension if not found in dimensions
 }
 
 func whereExprForSearch(where *Expression, dimension, search string) *Expression {
