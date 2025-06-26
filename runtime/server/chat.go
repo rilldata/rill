@@ -12,7 +12,7 @@ import (
 
 // ListConversations returns a list of conversations for an instance.
 func (s *Server) ListConversations(ctx context.Context, req *runtimev1.ListConversationsRequest) (*runtimev1.ListConversationsResponse, error) {
-	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadObjects) {
+	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.UseAI) {
 		return nil, ErrForbidden
 	}
 
@@ -36,7 +36,7 @@ func (s *Server) ListConversations(ctx context.Context, req *runtimev1.ListConve
 
 // GetConversation returns a conversation and its messages.
 func (s *Server) GetConversation(ctx context.Context, req *runtimev1.GetConversationRequest) (*runtimev1.GetConversationResponse, error) {
-	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadObjects) {
+	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.UseAI) {
 		return nil, ErrForbidden
 	}
 
@@ -79,7 +79,7 @@ func (s *serverToolService) ExecuteTool(ctx context.Context, toolName string, to
 
 // Complete runs a conversational AI completion with tool calling support.
 func (s *Server) Complete(ctx context.Context, req *runtimev1.CompleteRequest) (resp *runtimev1.CompleteResponse, err error) {
-	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadObjects) {
+	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.UseAI) {
 		return nil, ErrForbidden
 	}
 

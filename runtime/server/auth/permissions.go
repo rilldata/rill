@@ -19,4 +19,5 @@ const (
 	ReadProfiling Permission = 0x18
 	ReadAPI       Permission = 0x19
 	ReadResolvers Permission = 0x1A
+	UseAI         Permission = 0x1B
 )
