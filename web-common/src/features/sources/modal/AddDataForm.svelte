@@ -316,8 +316,8 @@
               <Tabs
                 value={connectionTab}
                 options={[
-                  { value: "parameters", label: "Parameters" },
-                  { value: "dsn", label: "Connection string" },
+                  { value: "parameters", label: "Enter parameters" },
+                  { value: "dsn", label: "Enter connection string" },
                 ]}
                 on:change={(event) => (connectionTab = event.detail)}
               >
