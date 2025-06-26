@@ -12,7 +12,6 @@ export function compileConnectorYAML(
   connector: V1ConnectorDriver,
   formValues: Record<string, unknown>,
 ) {
-  // Add instructions to the top of the file
   const topOfFile = `type: connector
 
 driver: ${connector.name}`;
