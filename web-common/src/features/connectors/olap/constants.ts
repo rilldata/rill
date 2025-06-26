@@ -1,11 +1,5 @@
 export const CLICKHOUSE_DEFAULTS = {
-  "rill-managed": {
-    host: { value: "", placeholder: "Managed by Rill" },
-    port: { value: "9000", placeholder: "9000" },
-    username: { value: "", placeholder: "default" },
-    password: { value: "", placeholder: "Your ClickHouse password" },
-    ssl: { value: true },
-  },
+  "rill-managed": {},
   "self-managed": {
     host: { value: "", placeholder: "your-clickhouse-server.com" },
     port: { value: "9000", placeholder: "9000" },
