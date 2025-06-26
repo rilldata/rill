@@ -29,8 +29,8 @@
   import { ExternalLinkIcon } from "lucide-svelte";
   import {
     CLICKHOUSE_DEFAULTS,
-    DEPLOYMENT_TYPE_OPTIONS,
-    type ClickHouseDeploymentType,
+    CONNECTOR_TYPE_OPTIONS,
+    type ClickHouseConnectorType,
   } from "../../connectors/olap/constants";
   import { compileConnectorYAML } from "../../connectors/code-utils";
 
@@ -45,7 +45,7 @@
   const isConnectorForm = formType === "connector";
   const isClickHouse = connector.name === "clickhouse";
 
-  let deploymentType: ClickHouseDeploymentType = "self-managed";
+  let connectorType: ClickHouseConnectorType = "self-managed";
 
   const filteredProperties =
     (isSourceForm
@@ -76,8 +76,8 @@
   let paramsErrorDetails: string | undefined = undefined;
 
   // Initialize form with default values when deployment type changes
-  $: if (isClickHouse && !useDsn && deploymentType === "self-managed") {
-    const defaults = CLICKHOUSE_DEFAULTS[deploymentType];
+  $: if (isClickHouse && !useDsn && connectorType === "self-managed") {
+    const defaults = CLICKHOUSE_DEFAULTS[connectorType];
     paramsForm.update(($form) => ({
       ...$form,
       host: defaults.host.value,
@@ -174,7 +174,7 @@
     if (isClickHouse) {
       values = {
         ...values,
-        managed: deploymentType === "rill-managed",
+        managed: connectorType === "rill-managed",
       };
     }
 
@@ -231,14 +231,14 @@
       {#if isClickHouse}
         <div class="pb-3">
           <Select
-            id="deployment-type"
-            options={DEPLOYMENT_TYPE_OPTIONS}
-            bind:value={deploymentType}
+            id="connector-type"
+            options={CONNECTOR_TYPE_OPTIONS}
+            bind:value={connectorType}
             label="Connector type"
           />
         </div>
 
-        {#if deploymentType === "rill-managed"}
+        {#if connectorType === "rill-managed"}
           <InformationalField
             description="This option uses ClickHouse as an OLAP engine with Rill-managed infrastructure. No additional configuration is required - Rill will handle the setup and management of your ClickHouse instance."
           />
@@ -278,7 +278,7 @@
                 {@const label =
                   property.displayName +
                   (property.required ? "" : " (optional)")}
-                {@const defaults = CLICKHOUSE_DEFAULTS[deploymentType]}
+                {@const defaults = CLICKHOUSE_DEFAULTS[connectorType]}
                 <div class="py-1.5 first:pt-0 last:pb-0">
                   {#if property.type === ConnectorDriverPropertyType.TYPE_STRING || property.type === ConnectorDriverPropertyType.TYPE_NUMBER}
                     <Input

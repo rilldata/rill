@@ -13,10 +13,10 @@ export const CLICKHOUSE_DEFAULTS = {
   },
 };
 
-export type ClickHouseDeploymentType = keyof typeof CLICKHOUSE_DEFAULTS;
+export type ClickHouseConnectorType = keyof typeof CLICKHOUSE_DEFAULTS;
 
-export const DEPLOYMENT_TYPE_OPTIONS: {
-  value: ClickHouseDeploymentType;
+export const CONNECTOR_TYPE_OPTIONS: {
+  value: ClickHouseConnectorType;
   label: string;
 }[] = [
   { value: "self-managed", label: "Self-managed ClickHouse" },
