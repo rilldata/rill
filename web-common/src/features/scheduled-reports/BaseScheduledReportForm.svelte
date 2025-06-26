@@ -117,7 +117,7 @@
       bind:checked={$data["exportIncludeHeader"]}
       id="exportIncludeHeader"
       onCheckedChange={(checked) => {
-        $data["exportIncludeHeader"] = checked;
+        $data["exportIncludeHeader"] = Boolean(checked);
       }}
       inverse
       disabled={$data["exportFormat"] === V1ExportFormat.EXPORT_FORMAT_PARQUET}
@@ -154,7 +154,7 @@
       <MultiInput
         id="slackChannels"
         label="Channels"
-        hint="We’ll send alerts directly to these channels."
+        hint="We'll send alerts directly to these channels."
         bind:values={$data["slackChannels"]}
         errors={$errors["slackChannels"]}
         singular="channel"
@@ -164,7 +164,7 @@
       <MultiInput
         id="slackUsers"
         label="Users"
-        hint="We’ll alert them with direct messages in Slack."
+        hint="We'll alert them with direct messages in Slack."
         bind:values={$data["slackUsers"]}
         errors={$errors["slackUsers"]}
         singular="user"
