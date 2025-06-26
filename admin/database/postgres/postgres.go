@@ -1560,6 +1560,23 @@ func (c *connection) FindOrganizationMemberUsers(ctx context.Context, orgID, fil
 	return res, nil
 }
 
+func (c *connection) CountOrganizationMemberUsers(ctx context.Context, orgID, filterRoleID string) (int, error) {
+	var count int
+	query := "SELECT COUNT(*) FROM users_orgs_roles uor WHERE uor.org_id=$1"
+	args := []any{orgID}
+
+	if filterRoleID != "" {
+		query += " AND uor.org_role_id=$2"
+		args = append(args, filterRoleID)
+	}
+
+	err := c.getDB(ctx).QueryRowxContext(ctx, query, args...).Scan(&count)
+	if err != nil {
+		return 0, parseErr("org members count", err)
+	}
+	return count, nil
+}
+
 func (c *connection) FindOrganizationMemberUsersByRole(ctx context.Context, orgID, roleID string) ([]*database.User, error) {
 	var res []*database.User
 	err := c.getDB(ctx).SelectContext(
@@ -1895,6 +1912,15 @@ func (c *connection) FindOrganizationInvites(ctx context.Context, orgID, afterEm
 		return nil, parseErr("org invites", err)
 	}
 	return res, nil
+}
+
+func (c *connection) CountOrganizationInvites(ctx context.Context, orgID string) (int, error) {
+	var count int
+	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT COUNT(*) FROM org_invites WHERE org_id = $1", orgID).Scan(&count)
+	if err != nil {
+		return 0, parseErr("org invites count", err)
+	}
+	return count, nil
 }
 
 func (c *connection) FindOrganizationInvitesByEmail(ctx context.Context, userEmail string) ([]*database.OrganizationInvite, error) {

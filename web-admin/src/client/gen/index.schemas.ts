@@ -667,6 +667,7 @@ export interface V1ListOrganizationBillingIssuesResponse {
 
 export interface V1ListOrganizationInvitesResponse {
   invites?: V1OrganizationInvite[];
+  totalCount?: number;
   nextPageToken?: string;
 }
 
@@ -677,6 +678,7 @@ export interface V1ListOrganizationMemberUsergroupsResponse {
 
 export interface V1ListOrganizationMemberUsersResponse {
   members?: V1OrganizationMemberUser[];
+  totalCount?: number;
   nextPageToken?: string;
 }
 
