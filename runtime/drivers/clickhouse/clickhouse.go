@@ -95,6 +95,14 @@ var spec = drivers.Spec{
 			Placeholder: "default",
 		},
 		{
+			Key:         "cluster",
+			Type:        drivers.StringPropertyType,
+			Required:    false,
+			DisplayName: "Cluster",
+			Description: "Cluster name. If set, Rill will create all models in the cluster as distributed tables.",
+			Placeholder: "",
+		},
+		{
 			Key:         "ssl",
 			Type:        drivers.BooleanPropertyType,
 			Required:    true,

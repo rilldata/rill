@@ -8,7 +8,8 @@ export const CLICKHOUSE_DEFAULTS = {
     },
     port: { value: "9000", placeholder: "9000" },
     username: { value: "", placeholder: "default" },
-    password: { value: "", placeholder: "Your ClickHouse database password" },
+    password: { value: "", placeholder: "Database password" },
+    cluster: { value: "", placeholder: "Cluster name" },
     ssl: { value: true },
   },
 };
