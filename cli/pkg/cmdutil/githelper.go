@@ -105,14 +105,7 @@ func (g *GitHelper) PushToNewManagedRepo(ctx context.Context) (*adminv1.CreateMa
 		return nil, err
 	}
 
-	err = g.setGitConfig(ctx, &gitutil.Config{
-		Remote:            gitRepo.Remote,
-		Username:          gitRepo.Username,
-		Password:          gitRepo.Password,
-		PasswordExpiresAt: gitRepo.PasswordExpiresAt.AsTime(),
-		DefaultBranch:     gitRepo.DefaultBranch,
-		Subpath:           "",
-	})
+	err = g.setGitConfig(ctx, config)
 	if err != nil {
 		return nil, err
 	}

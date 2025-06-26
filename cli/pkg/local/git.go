@@ -3,6 +3,7 @@ package local
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strings"
 
 	"connectrpc.com/connect"
@@ -44,11 +45,11 @@ func (s *Server) GitStatus(ctx context.Context, r *connect.Request[localv1.GitSt
 		}), nil
 	}
 
-	project, err := s.app.ch.LoadProject(ctx, s.app.ProjectPath)
+	name, err := s.resolveProjectName(ctx)
 	if err != nil {
-		return nil, err
-	}
-	if project == nil {
+		if !strings.Contains(err.Error(), "no project with Git remote") {
+			return nil, err
+		}
 		// If the project is not found return the best effort status
 		gs, err := gitutil.RunGitStatus(s.app.ProjectPath, "origin")
 		if err != nil {
@@ -61,7 +62,7 @@ func (s *Server) GitStatus(ctx context.Context, r *connect.Request[localv1.GitSt
 	}
 
 	// get ephemeral git credentials
-	config, err := s.app.ch.GitHelper(project.OrgName, project.Name, s.app.ProjectPath).GitConfig(ctx)
+	config, err := s.app.ch.GitHelper(s.app.ch.Org, name, s.app.ProjectPath).GitConfig(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -103,15 +104,15 @@ func (s *Server) GitPull(ctx context.Context, r *connect.Request[localv1.GitPull
 		return nil, errors.New("must authenticate before performing this action")
 	}
 
-	project, err := s.app.ch.LoadProject(ctx, s.app.ProjectPath)
+	name, err := s.resolveProjectName(ctx)
 	if err != nil {
-		return nil, err
-	}
-	if project == nil {
+		if !strings.Contains(err.Error(), "no project with Git remote") {
+			return nil, err
+		}
 		return nil, errors.New("git credentials not set and repo is not connected to a project")
 	}
 
-	config, err := s.app.ch.GitHelper(project.OrgName, project.Name, s.app.ProjectPath).GitConfig(ctx)
+	config, err := s.app.ch.GitHelper(s.app.ch.Org, name, s.app.ProjectPath).GitConfig(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -158,11 +159,11 @@ func (s *Server) GitPush(ctx context.Context, r *connect.Request[localv1.GitPush
 		return nil, errors.New("must authenticate before performing this action")
 	}
 
-	project, err := s.app.ch.LoadProject(ctx, s.app.ProjectPath)
+	name, err := s.resolveProjectName(ctx)
 	if err != nil {
-		return nil, err
-	}
-	if project == nil {
+		if !strings.Contains(err.Error(), "no project with Git remote") {
+			return nil, err
+		}
 		return nil, errors.New("git credentials not set and repo is not connected to a project")
 	}
 
@@ -171,7 +172,7 @@ func (s *Server) GitPush(ctx context.Context, r *connect.Request[localv1.GitPush
 		return nil, err
 	}
 
-	config, err := s.app.ch.GitHelper(project.OrgName, project.Name, s.app.ProjectPath).GitConfig(ctx)
+	config, err := s.app.ch.GitHelper(s.app.ch.Org, name, s.app.ProjectPath).GitConfig(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -195,4 +196,37 @@ func (s *Server) GitPush(ctx context.Context, r *connect.Request[localv1.GitPush
 	}
 
 	return connect.NewResponse(&localv1.GitPushResponse{}), nil
+}
+
+func (s *Server) resolveProjectName(ctx context.Context) (string, error) {
+	// Try loading the project from the .rillcloud directory
+	proj, err := s.app.ch.LoadProject(ctx, s.app.ProjectPath)
+	if err != nil {
+		return "", err
+	}
+	if proj != nil {
+		return proj.Name, nil
+	}
+
+	// Verify projectPath is a Git repo with remote on Github
+	remote, err := gitutil.ExtractGitRemote(s.app.ProjectPath, "", true)
+	if err != nil {
+		return "", err
+	}
+	githubRemote, err := remote.Github()
+	if err != nil {
+		return "", err
+	}
+
+	// Fetch project names matching the Github URL
+	names, err := s.app.ch.ProjectNamesByGitRemote(ctx, s.app.ch.Org, githubRemote, "")
+	if err != nil {
+		return "", err
+	}
+
+	if len(names) == 1 {
+		return names[0], nil
+	}
+	// more than one project found
+	return "", fmt.Errorf("multiple projects found with Git remote %q in org %q: %v", githubRemote, s.app.ch.Org, names)
 }
