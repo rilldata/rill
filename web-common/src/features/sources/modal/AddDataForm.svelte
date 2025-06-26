@@ -32,6 +32,7 @@
     CONNECTOR_TYPE_OPTIONS,
     type ClickHouseConnectorType,
   } from "../../connectors/olap/constants";
+  import Checkbox from "@rilldata/web-common/components/forms/Checkbox.svelte";
 
   const dispatch = createEventDispatcher();
 
@@ -309,11 +310,9 @@
                     />
                   {:else if property.type === ConnectorDriverPropertyType.TYPE_BOOLEAN}
                     <label for={property.key} class="flex items-center">
-                      <input
+                      <Checkbox
                         id={propertyKey}
-                        type="checkbox"
                         bind:checked={$paramsForm[propertyKey]}
-                        class="h-5 w-5"
                       />
                       <span class="ml-2 text-sm">{label}</span>
                     </label>
@@ -389,11 +388,9 @@
                 />
               {:else if property.type === ConnectorDriverPropertyType.TYPE_BOOLEAN}
                 <label for={property.key} class="flex items-center">
-                  <input
+                  <Checkbox
                     id={propertyKey}
-                    type="checkbox"
                     bind:checked={$paramsForm[propertyKey]}
-                    class="h-5 w-5"
                   />
                   <span class="ml-2 text-sm">{label}</span>
                 </label>
