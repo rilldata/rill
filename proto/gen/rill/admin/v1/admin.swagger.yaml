@@ -4897,10 +4897,14 @@ definitions:
   v1GetRepoMetaResponse:
     type: object
     properties:
-      validUntilTime:
+      expiresOn:
         type: string
         format: date-time
         description: How long the returned config is valid for. Clients should call GetRepoMeta again after this time.
+      lastUpdatedOn:
+        type: string
+        format: date-time
+        description: When the returned config was last modified. This covers all fields in the response except the ephemeral credentials embedded in git_url and archive_download_url.
       gitUrl:
         type: string
         description: |-
@@ -5038,6 +5042,10 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1OrganizationInvite'
+      totalCount:
+        type: integer
+        format: int64
+        title: Total number of invites in the organization
       nextPageToken:
         type: string
   v1ListOrganizationMemberUsergroupsResponse:
@@ -5058,6 +5066,10 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1OrganizationMemberUser'
+      totalCount:
+        type: integer
+        format: int64
+        title: Total number of members in the organization
       nextPageToken:
         type: string
   v1ListOrganizationsResponse:

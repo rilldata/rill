@@ -1462,6 +1462,7 @@ message ListOrganizationMemberUsersRequest {
 
 message ListOrganizationMemberUsersResponse {
   repeated OrganizationMemberUser members = 1;
+  uint32 total_count = 3; // Total number of members in the organization
   string next_page_token = 2;
 }
 
@@ -1473,6 +1474,7 @@ message ListOrganizationInvitesRequest {
 
 message ListOrganizationInvitesResponse {
   repeated OrganizationInvite invites = 1;
+  uint32 total_count = 3; // Total number of invites in the organization
   string next_page_token = 2;
 }
 
@@ -2229,7 +2231,9 @@ message GetRepoMetaRequest {
 
 message GetRepoMetaResponse {
   // How long the returned config is valid for. Clients should call GetRepoMeta again after this time.
-  google.protobuf.Timestamp valid_until_time = 2;
+  google.protobuf.Timestamp expires_on = 2;
+  // When the returned config was last modified. This covers all fields in the response except the ephemeral credentials embedded in git_url and archive_download_url.
+  google.protobuf.Timestamp last_updated_on = 9;
   // Git remote for cloning (and maybe pushing) a Git repository.
   // The URL uses HTTPS with embedded username/password.
   string git_url = 1;
