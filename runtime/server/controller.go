@@ -447,9 +447,21 @@ func (s *Server) WatchResourcesHandler(w http.ResponseWriter, r *http.Request) {
 			Replay:     replay,
 		}, shim)
 		if err != nil {
-			s.logger.Warn("failed to watch resources", zap.String("instance_id", instanceID), zap.String("kind", kind), zap.Error(err))
-			eventServer.Close()
+			if !errors.Is(err, context.Canceled) {
+				s.logger.Warn("watch resources error", zap.String("instance_id", instanceID), zap.String("kind", kind), zap.Error(err))
+			}
+
+			errJSON, err := json.Marshal(map[string]string{"error": err.Error()})
+			if err != nil {
+				s.logger.Info("failed to marshal error", zap.Error(err))
+			}
+
+			eventServer.Publish("resources", &sse.Event{
+				Event: []byte("error"),
+				Data:  errJSON,
+			})
 		}
+		eventServer.Close()
 	}()
 
 	eventServer.ServeHTTP(w, r)
