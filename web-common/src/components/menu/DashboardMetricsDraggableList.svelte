@@ -270,7 +270,7 @@
               : `No ${type === "measure" ? "measures" : "dimensions"} shown`}
           </div>
         {:else}
-          {#each filteredSelectedItems as id, i (i)}
+          {#each filteredSelectedItems as id, i (id)}
             {@const elementId = `visible-${type === "measure" ? "measures" : "dimensions"}-${id}`}
             {@const isDragItem = dragId === elementId}
             {#if allItemsMap.get(id)?.description || selectedItems.length === 1}
@@ -433,7 +433,7 @@
                 : `No hidden ${type === "measure" ? "measures" : "dimensions"}`}
             </div>
           {:else}
-            {#each filteredHiddenItems as [id = "", item], i (i)}
+            {#each filteredHiddenItems as [id = "", item], i (id)}
               {@const elementId = `hidden-${type === "measure" ? "measures" : "dimensions"}-${id}`}
               {@const isDragItem = dragId === elementId}
               {#if item.description}
