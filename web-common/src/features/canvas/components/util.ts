@@ -146,7 +146,7 @@ export function createComponent(
   resource: V1Resource,
   parent: CanvasEntity,
   path: ComponentPath,
-) {
+): BaseCanvasComponent<any> {
   const type = resource.component?.spec?.renderer as CanvasComponentType;
   const ComponentClass =
     COMPONENT_CLASS_MAP[type as keyof typeof COMPONENT_CLASS_MAP];
