@@ -123,6 +123,7 @@ message ModelSpec {
   google.protobuf.Struct output_properties = 12;
   // change_mode is the mode of change detection to use for the model.
   ModelChangeMode change_mode = 24;
+  repeated ModelTest tests = 25;
   bool trigger = 9;
   bool trigger_full = 22;
   // defined_as_source is true if it was defined by user as a source but converted internally to a model.
@@ -143,6 +144,10 @@ message ModelState {
   string spec_hash = 3;
   // refs_hash is a hash of the model's refs current state. It is used to determine if the model's refs have changed.
   string refs_hash = 9;
+  // test_hash is a hash of the model's tests current state. It is used to determine if the model's tests have changed.
+  string test_hash = 27;
+  // test_errors contains the results of the model's tests.
+  repeated string test_errors = 28;
   // refreshed_on is the time the model was last executed.
   google.protobuf.Timestamp refreshed_on = 4;
   // incremental_state contains the result of the most recent invocation of the model's incremental state resolver.
@@ -166,6 +171,12 @@ enum ModelChangeMode {
   MODEL_CHANGE_MODE_RESET = 1;
   MODEL_CHANGE_MODE_MANUAL = 2;
   MODEL_CHANGE_MODE_PATCH = 3;
+}
+
+message ModelTest {
+  string name = 1;
+  string resolver = 2;
+  google.protobuf.Struct resolver_properties = 3;
 }
 
 message MetricsView {

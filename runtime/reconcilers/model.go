@@ -218,6 +218,12 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 		return runtime.ReconcileResult{Err: fmt.Errorf("failed to compute spec hash: %w", err)}
 	}
 
+	// Compute the test hash to check if any of the model's tests have changed.
+	testHash, err := r.testSpecHash(model.Spec)
+	if err != nil {
+		return runtime.ReconcileResult{Err: fmt.Errorf("failed to compute test hash: %w", err)}
+	}
+
 	// Compute the refs hash to check if any of the model's refs have changed.
 	refsHash, err := r.refsStateHash(ctx, self.Meta.Refs, model.Spec)
 	if err != nil {
@@ -299,7 +305,7 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 		}
 	}
 
-	// If the build succeeded, update the model's state accodingly
+	// If the build succeeded, update the model's state accordingly
 	if execErr == nil {
 		model.State.ExecutorConnector = executorConnector
 		model.State.SpecHash = specHash
@@ -314,7 +320,18 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 		} else {
 			model.State.TotalExecutionDurationMs = model.State.LatestExecutionDurationMs
 		}
-		err := r.updateStateWithResult(ctx, self, execRes)
+
+		if model.State.TestHash != testHash {
+			testErr := r.runModelTests(ctx, self)
+			if testErr != nil {
+				model.State.TestErrors = []string{testErr.Error()}
+			} else {
+				model.State.TestErrors = nil
+			}
+			model.State.TestHash = testHash
+		}
+
+		err = r.updateStateWithResult(ctx, self, execRes)
 		if err != nil {
 			return runtime.ReconcileResult{Err: err}
 		}
@@ -362,6 +379,12 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 	// Show if any partitions errored
 	if model.State.PartitionsHaveErrors {
 		return runtime.ReconcileResult{Err: errPartitionsHaveErrors, Retrigger: refreshOn}
+	}
+
+	// Show if the model has tests that failed
+	if len(model.State.TestErrors) > 0 {
+		errorMsg := fmt.Sprintf("tests failed for %s: %s", self.Meta.Name.Name, strings.Join(model.State.TestErrors, "; "))
+		return runtime.ReconcileResult{Err: fmt.Errorf("%s", errorMsg), Retrigger: refreshOn}
 	}
 
 	// Return the next refresh time
@@ -553,6 +576,31 @@ func (r *ModelReconciler) refsStateHash(ctx context.Context, refs []*runtimev1.R
 	return hex.EncodeToString(hash.Sum(nil)), nil
 }
 
+// testSpecHash computes a hash of the model's tests.
+func (r *ModelReconciler) testSpecHash(spec *runtimev1.ModelSpec) (string, error) {
+	hash := md5.New()
+
+	for _, test := range spec.Tests {
+		_, err := hash.Write([]byte(test.Name))
+		if err != nil {
+			return "", err
+		}
+		_, err = hash.Write([]byte(test.Resolver))
+		if err != nil {
+			return "", err
+		}
+
+		if test.ResolverProperties != nil {
+			err = pbutil.WriteHash(structpb.NewStructValue(test.ResolverProperties), hash)
+			if err != nil {
+				return "", err
+			}
+		}
+	}
+
+	return hex.EncodeToString(hash.Sum(nil)), nil
+}
+
 // updateStateWithResult updates the model resource's state with the result of a model execution.
 // It only updates the result-related fields. If changing other fields, such as RefreshedOn and SpecHash, they must be assigned before calling this function.
 func (r *ModelReconciler) updateStateWithResult(ctx context.Context, self *runtimev1.Resource, res *drivers.ModelResult) error {
@@ -580,6 +628,8 @@ func (r *ModelReconciler) updateStateClear(ctx context.Context, self *runtimev1.
 	mdl.State.ResultTable = ""
 	mdl.State.SpecHash = ""
 	mdl.State.RefsHash = ""
+	mdl.State.TestHash = ""
+	mdl.State.TestErrors = nil
 	mdl.State.RefreshedOn = nil
 	mdl.State.IncrementalState = nil
 	mdl.State.IncrementalStateSchema = nil
@@ -1545,6 +1595,53 @@ func (r *ModelReconciler) shouldTrigger(ctx context.Context, self *runtimev1.Res
 	default:
 		return false, false, fmt.Errorf("unknown change mode %q", model.Spec.ChangeMode)
 	}
+}
+
+// execModelTest runs a single model test and returns an error if it fails.
+func (r *ModelReconciler) execModelTest(ctx context.Context, test *runtimev1.ModelTest) error {
+	result, err := r.C.Runtime.Resolve(ctx, &runtime.ResolveOptions{
+		InstanceID:         r.C.InstanceID,
+		Resolver:           test.Resolver,
+		ResolverProperties: test.ResolverProperties.AsMap(),
+		Claims:             &runtime.SecurityClaims{SkipChecks: true},
+		Args:               map[string]any{"limit": 1},
+	})
+	if err != nil {
+		return fmt.Errorf("%s: %w", test.Name, err)
+	}
+	defer result.Close()
+
+	row, err := result.Next()
+	if err != nil && !errors.Is(err, io.EOF) {
+		return fmt.Errorf("%s: %w", test.Name, err)
+	}
+
+	if !errors.Is(err, io.EOF) {
+		if res, ok := row["result"]; ok && res != nil {
+			return fmt.Errorf("%s: %v", test.Name, res)
+		}
+		return fmt.Errorf("%s: test did not pass", test.Name)
+	}
+
+	return nil
+}
+
+// runModelTests executes the user defined model-level tests for the model (global, not partition-level)
+func (r *ModelReconciler) runModelTests(ctx context.Context, self *runtimev1.Resource) error {
+	tests := self.GetModel().Spec.Tests
+	if len(tests) == 0 {
+		return nil
+	}
+	var errs []error
+	for _, test := range tests {
+		if err := r.execModelTest(ctx, test); err != nil {
+			errs = append(errs, err)
+		}
+	}
+	if len(errs) > 0 {
+		return errors.Join(errs...)
+	}
+	return nil
 }
 
 // hashWriteMapOrdered writes the keys and values of a map to the writer in a deterministic order.

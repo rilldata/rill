@@ -973,6 +973,11 @@ export class ModelSpec extends Message<ModelSpec> {
   changeMode = ModelChangeMode.UNSPECIFIED;
 
   /**
+   * @generated from field: repeated rill.runtime.v1.ModelTest tests = 25;
+   */
+  tests: ModelTest[] = [];
+
+  /**
    * @generated from field: bool trigger = 9;
    */
   trigger = false;
@@ -1013,6 +1018,7 @@ export class ModelSpec extends Message<ModelSpec> {
     { no: 1, name: "output_connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 12, name: "output_properties", kind: "message", T: Struct },
     { no: 24, name: "change_mode", kind: "enum", T: proto3.getEnumType(ModelChangeMode) },
+    { no: 25, name: "tests", kind: "message", T: ModelTest, repeated: true },
     { no: 9, name: "trigger", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 22, name: "trigger_full", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 23, name: "defined_as_source", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
@@ -1082,6 +1088,20 @@ export class ModelState extends Message<ModelState> {
   refsHash = "";
 
   /**
+   * test_hash is a hash of the model's tests current state. It is used to determine if the model's tests have changed.
+   *
+   * @generated from field: string test_hash = 27;
+   */
+  testHash = "";
+
+  /**
+   * test_errors contains the results of the model's tests.
+   *
+   * @generated from field: repeated string test_errors = 28;
+   */
+  testErrors: string[] = [];
+
+  /**
    * refreshed_on is the time the model was last executed.
    *
    * @generated from field: google.protobuf.Timestamp refreshed_on = 4;
@@ -1146,6 +1166,8 @@ export class ModelState extends Message<ModelState> {
     { no: 2, name: "result_table", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "spec_hash", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 9, name: "refs_hash", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 27, name: "test_hash", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 28, name: "test_errors", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 4, name: "refreshed_on", kind: "message", T: Timestamp },
     { no: 7, name: "incremental_state", kind: "message", T: Struct },
     { no: 8, name: "incremental_state_schema", kind: "message", T: StructType },
@@ -1169,6 +1191,55 @@ export class ModelState extends Message<ModelState> {
 
   static equals(a: ModelState | PlainMessage<ModelState> | undefined, b: ModelState | PlainMessage<ModelState> | undefined): boolean {
     return proto3.util.equals(ModelState, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.ModelTest
+ */
+export class ModelTest extends Message<ModelTest> {
+  /**
+   * @generated from field: string name = 1;
+   */
+  name = "";
+
+  /**
+   * @generated from field: string resolver = 2;
+   */
+  resolver = "";
+
+  /**
+   * @generated from field: google.protobuf.Struct resolver_properties = 3;
+   */
+  resolverProperties?: Struct;
+
+  constructor(data?: PartialMessage<ModelTest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.ModelTest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "resolver", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "resolver_properties", kind: "message", T: Struct },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ModelTest {
+    return new ModelTest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ModelTest {
+    return new ModelTest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ModelTest {
+    return new ModelTest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ModelTest | PlainMessage<ModelTest> | undefined, b: ModelTest | PlainMessage<ModelTest> | undefined): boolean {
+    return proto3.util.equals(ModelTest, a, b);
   }
 }
 

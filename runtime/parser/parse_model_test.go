@@ -56,6 +56,7 @@ output:
 				InputProperties: must(structpb.NewStruct(map[string]any{"sql": "SELECT 1"})),
 				OutputConnector: "duckdb",
 				ChangeMode:      runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
+				Tests:           []*runtimev1.ModelTest{},
 			},
 		},
 		// model m2
@@ -68,6 +69,7 @@ output:
 				InputProperties: must(structpb.NewStruct(map[string]any{"sql": "SELECT 1"})),
 				OutputConnector: "duckdb",
 				ChangeMode:      runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
+				Tests:           []*runtimev1.ModelTest{},
 			},
 		},
 		// model m3
@@ -80,6 +82,7 @@ output:
 				InputProperties: must(structpb.NewStruct(map[string]any{"sql": "SELECT 1"})),
 				OutputConnector: "duckdb",
 				ChangeMode:      runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
+				Tests:           []*runtimev1.ModelTest{},
 			},
 		},
 		// model m4
@@ -95,6 +98,7 @@ output:
 					"table": "foobar",
 				})),
 				ChangeMode: runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
+				Tests:      []*runtimev1.ModelTest{},
 			},
 		},
 		// model m5
@@ -107,6 +111,7 @@ output:
 				InputProperties: must(structpb.NewStruct(map[string]any{"sql": "SELECT 1"})),
 				OutputConnector: "clickhouse",
 				ChangeMode:      runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
+				Tests:           []*runtimev1.ModelTest{},
 			},
 		},
 		// model m6
@@ -119,6 +124,7 @@ output:
 				InputProperties: must(structpb.NewStruct(map[string]any{"sql": "SELECT 1"})),
 				OutputConnector: "clickhouse",
 				ChangeMode:      runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
+				Tests:           []*runtimev1.ModelTest{},
 			},
 		},
 	}
