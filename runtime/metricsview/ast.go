@@ -834,6 +834,8 @@ func (a *AST) addTimeRange(n *SelectNode, tr *TimeRange) error {
 	return nil
 }
 
+// getTimeDimensionExpression returns the SQL expression for the time dimension specified in the TimeRange or the metrics view's time dimension.
+// It looks up the time dimension definition in the metrics view or returns the escaped column name from the model.
 func (a *AST) getTimeDimensionExpression(tr *TimeRange) (string, error) {
 	timeDim := a.metricsView.TimeDimension
 	if tr.TimeDimension != "" {
