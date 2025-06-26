@@ -76,7 +76,7 @@
   let paramsErrorDetails: string | undefined = undefined;
 
   // Initialize form with default values when deployment type changes
-  $: if (isClickHouse && !useDsn) {
+  $: if (isClickHouse && !useDsn && deploymentType === "self-managed") {
     const defaults = CLICKHOUSE_DEFAULTS[deploymentType];
     paramsForm.update(($form) => ({
       ...$form,
