@@ -74,7 +74,7 @@
   let paramsError: string | null = null;
   let paramsErrorDetails: string | undefined = undefined;
 
-  // Initialize form with default values when deployment type changes
+  // Initialize form with default values when connector type changes
   $: if (isClickHouse && !useDsn && connectorType === "self-managed") {
     const defaults = CLICKHOUSE_DEFAULTS[connectorType];
     paramsForm.update(($form) => ({
