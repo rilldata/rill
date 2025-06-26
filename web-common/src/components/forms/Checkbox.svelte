@@ -15,8 +15,6 @@
   export { className as class };
 
   let className: $$Props["class"] = undefined;
-
-  const bgBasePrimary = "#6366F1";
 </script>
 
 <div class="flex gap-x-2 {inverse ? 'flex-row-reverse justify-end' : ''}">
@@ -29,7 +27,8 @@
     {disabled}
     class={cn(
       "h-4 w-4 shrink-0 rounded border border-gray-300 bg-transparent ring-offset-2 ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-400 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ",
-      `data-[state=checked]:bg-[${bgBasePrimary}] data-[state=checked]:border-transparent`,
+      // FIXME: bg-base-primary is not in the system, but used in figma
+      `data-[state=checked]:bg-[#6366F1] data-[state=checked]:border-transparent`,
       className,
     )}
   >
