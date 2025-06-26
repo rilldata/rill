@@ -233,8 +233,8 @@
   }
 </script>
 
-<div class="add-data-layout">
-  <div class="add-data-form-panel">
+<div class="add-data-layout flex flex-row h-full w-full md:flex-row flex-col">
+  <div class="add-data-form-panel flex-1 flex flex-col min-w-0 md:pr-0 pr-0">
     <div
       class="p-6 flex flex-col flex-grow max-h-[552px] min-h-[552px] overflow-y-auto"
     >
@@ -426,7 +426,9 @@
     </div>
   </div>
 
-  <div class="add-data-side-panel">
+  <div
+    class="add-data-side-panel flex flex-col gap-6 p-6 bg-[#FAFAFA] w-full max-w-full border-l-0 border-t mt-6 pl-0 pt-6 md:w-96 md:min-w-[320px] md:max-w-[400px] md:border-l md:border-t-0 md:mt-0 md:pl-6"
+  >
     <!-- <div>
       <div class="text-sm leading-none font-medium mb-4">Connector preview</div>
       <pre class="overflow-x-auto">{yamlPreview}</pre>
@@ -444,7 +446,7 @@
           href={connector.docsUrl || "https://docs.rilldata.com/build/connect/"}
           rel="noreferrer noopener"
           target="_blank"
-          class="text-sm leading-normal text-primary-500 hover:text-primary-600 font-medium group-hover:underline"
+          class="text-sm leading-normal text-primary-500 hover:text-primary-600 font-medium group-hover:underline break-all"
         >
           How to connect to {connector.displayName}
         </a>
@@ -453,34 +455,3 @@
     </div>
   </div>
 </div>
-
-<style lang="postcss">
-  .add-data-layout {
-    @apply flex flex-row h-full w-full;
-  }
-  .add-data-form-panel {
-    @apply flex-1 flex flex-col min-w-0;
-  }
-  .add-data-side-panel {
-    @apply w-96 min-w-[320px] max-w-[400px] border-l border-gray-200 pl-6 flex flex-col gap-6 p-6;
-    @apply bg-[#FAFAFA];
-  }
-  /* .add-data-side-panel pre {
-    @apply p-4 rounded-md text-xs border border-gray-200 font-medium;
-    @apply bg-[#F4F4F5];
-  } */
-  .add-data-side-panel a {
-    @apply text-primary-500 font-medium break-all;
-  }
-  @media (max-width: 900px) {
-    .add-data-layout {
-      @apply flex-col;
-    }
-    .add-data-side-panel {
-      @apply w-full max-w-full border-l-0 border-t mt-6 pl-0 pt-6;
-    }
-    .add-data-form-panel {
-      @apply pr-0;
-    }
-  }
-</style>
