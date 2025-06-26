@@ -1,11 +1,11 @@
-import { makeTempDir } from "web-integration/tests/utils/make-temp-dir";
-import { execAsync } from "web-integration/tests/utils/spawn";
+import { makeTempDir } from "@rilldata/web-common/tests/utils/make-temp-dir";
+import { execAsync } from "@rilldata/web-common/tests/utils/spawn";
 import dotenv from "dotenv";
 import path from "path";
 import { fileURLToPath } from "url";
 import { test } from "./setup/base";
 import { expect } from "@playwright/test";
-import { isOrgDeleted } from "./utils/is-org-deleted";
+import { isOrgDeleted } from "@rilldata/web-common/tests/utils/is-org-deleted";
 
 test.describe("Deploy journey", () => {
   const cliHomeDir = makeTempDir("deploy_home");
@@ -30,8 +30,6 @@ test.describe("Deploy journey", () => {
       })
       .toBeTruthy();
   });
-
-  // Note: This uses the viewer account to avoid conflicts with the admin account that would already have an org and project.
 
   test("Should create new org and deploy", async ({ rillDevPage }) => {
     // Load environment variables from our root `.env` file

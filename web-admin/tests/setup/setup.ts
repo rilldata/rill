@@ -3,7 +3,10 @@ import {
   RILL_DEVTOOL_BACKGROUND_PROCESS_PID_FILE,
   RILL_EMBED_SERVICE_TOKEN_FILE,
 } from "@rilldata/web-integration/tests/constants";
-import { execAsync, spawnAndMatch } from "web-integration/tests/utils/spawn";
+import {
+  execAsync,
+  spawnAndMatch,
+} from "@rilldata/web-common/tests/utils/spawn";
 import axios from "axios";
 import { spawn } from "child_process";
 import dotenv from "dotenv";
@@ -11,7 +14,7 @@ import { openSync } from "fs";
 import { mkdir } from "fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
-import { writeFileEnsuringDir } from "@rilldata/web-integration/tests/utils/fs";
+import { writeFileEnsuringDir } from "@rilldata/web-common/tests/utils/fs";
 import { test as setup } from "./base";
 import {
   ADMIN_STORAGE_STATE,
@@ -19,7 +22,7 @@ import {
   RILL_PROJECT_NAME,
   RILL_SERVICE_NAME,
 } from "./constants";
-import { cliLogin } from "web-integration/tests/fixtures/cli";
+import { cliLogin } from "@rilldata/web-common/tests/fixtures/cli";
 
 setup.describe("global setup", () => {
   setup.describe.configure({
@@ -187,7 +190,7 @@ setup.describe("global setup", () => {
       [
         "deploy",
         "--path",
-        "tests/setup/projects/openrtb",
+        "../web-common/tests/projects/openrtb",
         "--project",
         RILL_PROJECT_NAME,
         "--archive",

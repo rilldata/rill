@@ -1,5 +1,5 @@
 import { mergeTests } from "playwright/test";
-import { rillCloud } from "web-integration/tests/fixtures/rill-cloud-fixtures";
-import { rillDev } from "web-integration/tests/fixtures/rill-dev-fixtures";
+import { rillCloud } from "@rilldata/web-common/tests/fixtures/rill-cloud-fixtures";
+import { rillDev } from "@rilldata/web-common/tests/fixtures/rill-dev-fixtures";
 
 export const test = mergeTests(rillDev, rillCloud);

@@ -7,8 +7,8 @@
     "docs",
     "web-admin",
     "web-common",
-    "web-local",
-    "web-integration"
+    "web-integration",
+    "web-local"
   ],
   "scripts": {
     "prepare": "husky || true",

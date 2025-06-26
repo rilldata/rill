@@ -1,5 +1,5 @@
 import { expect } from "@playwright/test";
-import { spawnAndMatch } from "web-integration/tests/utils/spawn";
+import { spawnAndMatch } from "@rilldata/web-common/tests/utils/spawn";
 import axios from "axios";
 import { spawn } from "child_process";
 import dotenv from "dotenv";
@@ -7,7 +7,7 @@ import { openSync } from "fs";
 import { mkdir } from "fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
-import { writeFileEnsuringDir } from "../utils/fs";
+import { writeFileEnsuringDir } from "@rilldata/web-common/tests/utils/fs";
 import { test as setup } from "./base";
 import { RILL_DEVTOOL_BACKGROUND_PROCESS_PID_FILE } from "../constants";
 
