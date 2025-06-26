@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"slices"
 	"strings"
+	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
@@ -185,6 +186,7 @@ func (r *ProjectParserReconciler) Reconcile(ctx context.Context, n *runtimev1.Re
 	// If pp.Spec is changed, the controller will cancel the context and call Reconcile again.
 	var reparseErr error
 	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
 	err = repo.Watch(ctx, func(events []drivers.WatchEvent) {
 		// Get changed paths that are not directories
 		changedPaths := make([]string, 0, len(events))
@@ -242,17 +244,16 @@ func (r *ProjectParserReconciler) Reconcile(ctx context.Context, n *runtimev1.Re
 	if reparseErr != nil {
 		err = fmt.Errorf("re-parse failed: %w", reparseErr)
 	} else if err != nil {
-		if errors.Is(err, ctx.Err()) {
-			// The controller cancelled the context. It means pp.Spec was changed. Will be rescheduled.
-			return runtime.ReconcileResult{Err: err}
-		}
 		err = fmt.Errorf("watch failed: %w", err)
 	}
 
-	// If the watch failed, we return without rescheduling.
-	// TODO: Should we have some kind of retry?
-	r.C.Logger.Error("Stopped watching for file changes", zap.String("error", err.Error()), observability.ZapCtx(ctx))
-	return runtime.ReconcileResult{Err: err}
+	// If the watch failed, we return and ask the controller to retry immediately.
+	if !errors.Is(err, ctx.Err()) { // context cancellations are used for manual triggers and graceful shutdowns, so not an error.
+		r.C.Logger.Error("Stopped watching for file changes, retrying...", zap.String("error", err.Error()), observability.ZapCtx(ctx))
+	} else {
+		r.C.Logger.Debug("Stopped watching for file changes, retrying...", observability.ZapCtx(ctx))
+	}
+	return runtime.ReconcileResult{Err: err, Retrigger: time.Now()}
 }
 
 // reconcileParser reconciles a parser's output with the current resources in the catalog.
