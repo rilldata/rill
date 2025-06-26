@@ -137,6 +137,52 @@ service AdminService {
     option (google.api.http) = {post: "/v1/organizations/{organization}/projects/{project}/hibernate"};
   }
 
+  // ListDeployments lists deployments for a project.
+  rpc ListDeployments(ListDeploymentsRequest) returns (ListDeploymentsResponse) {
+    option (google.api.http) = {
+      get: "/v1/organizations/{organization_name}/projects/{project_name}/deployments"
+    };
+  }
+
+  // CreateDeployment creates a new deployment for a project.
+  rpc CreateDeployment(CreateDeploymentRequest) returns (CreateDeploymentResponse) {
+    option (google.api.http) = {
+      post: "/v1/organizations/{organization_name}/projects/{project_name}/deployments",
+      body: "*"
+    };
+  }
+
+  // GetDeployment returns runtime info and access token on behalf of a specific user, or alternatively for a raw set of JWT attributes
+  rpc GetDeployment(GetDeploymentRequest) returns (GetDeploymentResponse) {
+    option (google.api.http) = {
+      post: "/v1/deployments/{deployment_id}/credentials",
+      body: "*"
+    };
+  }
+
+  // StartDeployment starts a deployment.
+  rpc StartDeployment(StartDeploymentRequest) returns (StartDeploymentResponse) {
+    option (google.api.http) = {
+      post: "/v1/deployments/{deployment_id}/start",
+      body: "*"
+    };
+  }
+
+  // StopDeployment stops a deployment.
+  rpc StopDeployment(StopDeploymentRequest) returns (StopDeploymentResponse) {
+    option (google.api.http) = {
+      post: "/v1/deployments/{deployment_id}/stop",
+      body: "*"
+    };
+  }
+
+  // DeleteDeployment deletes a deployment.
+  rpc DeleteDeployment(DeleteDeploymentRequest) returns (DeleteDeploymentResponse) {
+    option (google.api.http) = {
+      delete: "/v1/deployments/{deployment_id}"
+    };
+  }
+
   // TriggerReconcile triggers reconcile for the project's prod deployment.
   // DEPRECATED: Clients should call CreateTrigger directly on the deployed runtime instead.
   rpc TriggerReconcile(TriggerReconcileRequest) returns (TriggerReconcileResponse) {
@@ -490,6 +536,7 @@ service AdminService {
   }
 
   // GetDeploymentCredentials returns runtime info and access token on behalf of a specific user, or alternatively for a raw set of JWT attributes
+  // DEPRECATED: Clients should call GetDeployment instead.
   rpc GetDeploymentCredentials(GetDeploymentCredentialsRequest) returns (GetDeploymentCredentialsResponse) {
     option (google.api.http) = {
       post: "/v1/organizations/{organization}/projects/{project}/credentials",
@@ -965,6 +1012,7 @@ message UpdateOrganizationRequest {
   optional string display_name = 5;
   optional string logo_asset_id = 6;
   optional string favicon_asset_id = 7;
+  optional string thumbnail_asset_id = 9;
   optional string default_project_role = 8;
   optional string billing_email = 4 [(validate.rules).string.email = true];
 }
@@ -977,6 +1025,68 @@ message ListProjectsForOrganizationRequest {
   string organization_name = 1 [(validate.rules).string.min_len = 1];
   uint32 page_size = 2 [(validate.rules).uint32 = {ignore_empty: true, lte: 1000}];
   string page_token = 3;
+}
+
+message ListDeploymentsRequest {
+  string organization_name = 1 [(validate.rules).string.min_len = 1];
+  string project_name = 2 [(validate.rules).string.min_len = 1];
+  string environment = 3;
+  string user_id = 4;
+}
+
+message ListDeploymentsResponse {
+  repeated Deployment deployments = 1;
+}
+
+message CreateDeploymentRequest {
+  string organization_name = 1 [(validate.rules).string.min_len = 1];
+  string project_name = 2 [(validate.rules).string.min_len = 1];
+  string environment = 3 [(validate.rules).string.min_len = 1];
+}
+
+message CreateDeploymentResponse {
+  Deployment deployment = 1;
+}
+
+message GetDeploymentRequest {
+  string deployment_id = 1;
+  uint32 access_token_ttl_seconds = 2;
+  oneof for {
+    string user_id = 3 [(validate.rules).string.min_len = 1];
+    string user_email = 4 [(validate.rules).string.email = true];
+    google.protobuf.Struct attributes = 5;
+  }
+}
+
+message GetDeploymentResponse {
+  string runtime_host = 1;
+  string instance_id = 2;
+  string access_token = 3;
+  uint32 ttl_seconds = 4;
+}
+
+message StartDeploymentRequest {
+  string deployment_id = 1;
+}
+
+message StartDeploymentResponse {
+  Deployment deployment = 1;
+}
+
+message StopDeploymentRequest {
+  string deployment_id = 1;
+}
+
+message StopDeploymentResponse {
+  string deployment_id = 1;
+}
+
+message DeleteDeploymentRequest {
+  string deployment_id = 1;
+}
+
+message DeleteDeploymentResponse {
+  string deployment_id = 1;
 }
 
 message ListProjectsForOrganizationResponse {
@@ -1352,6 +1462,7 @@ message ListOrganizationMemberUsersRequest {
 
 message ListOrganizationMemberUsersResponse {
   repeated OrganizationMemberUser members = 1;
+  uint32 total_count = 3; // Total number of members in the organization
   string next_page_token = 2;
 }
 
@@ -1363,6 +1474,7 @@ message ListOrganizationInvitesRequest {
 
 message ListOrganizationInvitesResponse {
   repeated OrganizationInvite invites = 1;
+  uint32 total_count = 3; // Total number of invites in the organization
   string next_page_token = 2;
 }
 
@@ -2112,29 +2224,50 @@ message ListProjectWhitelistedDomainsResponse {
 }
 
 message GetRepoMetaRequest {
+  // The project ID to get repository metadata for.
   string project_id = 1;
-  string branch = 2;
 }
 
 message GetRepoMetaResponse {
-  // If the Git-related fields are set, the archive-related fields will not be set (and vice versa).
+  // How long the returned config is valid for. Clients should call GetRepoMeta again after this time.
+  google.protobuf.Timestamp expires_on = 2;
+  // When the returned config was last modified. This covers all fields in the response except the ephemeral credentials embedded in git_url and archive_download_url.
+  google.protobuf.Timestamp last_updated_on = 9;
+  // Git remote for cloning (and maybe pushing) a Git repository.
+  // The URL uses HTTPS with embedded username/password.
   string git_url = 1;
-  google.protobuf.Timestamp git_url_expires_on = 2;
+  // Optional subpath within the Git repository to use as the project root.
   string git_subpath = 3;
+  // The branch to use for the deployment.
+  string git_branch = 7;
+  // A unique branch name generated for temporary/ephemeral use in edit mode where files may be mutated.
+  // This enables checkpointing progress across hibernations and also more easily pinning to a specific commit of the base branch to delay conflict resolution.
+  string git_edit_branch = 8;
+  // Signed URL for downloading a tarball of project files. If this is set, the git_* fields will be empty (and vice versa).
   string archive_download_url = 4;
+  // A stable ID for the archive returned from archive_download_url.
   string archive_id = 5;
+  // The creation time of the archive returned from archive_download_url.
   google.protobuf.Timestamp archive_created_on = 6;
 }
 
 message PullVirtualRepoRequest {
+  // The project ID to pull virtual files for.
   string project_id = 1;
+  // The environment to pull virtual files for.
+  // It is optional. If the call is made with a deployment access token, it defaults to the environment of the deployment. Otherwise, it defaults to "prod".
+  string environment = 5;
+  // Page size for pagination.
   uint32 page_size = 3 [(validate.rules).uint32 = {ignore_empty: true, lte: 100}];
+  // Page token for pagination.
   string page_token = 4;
   reserved 2;
 }
 
 message PullVirtualRepoResponse {
+  // List of virtual files ordered by update time, most recent last.
   repeated VirtualFile files = 1;
+  // Next page token for pagination.
   string next_page_token = 2;
 }
 
@@ -2433,6 +2566,7 @@ message Organization {
   string description = 3;
   string logo_url = 12;
   string favicon_url = 13;
+  string thumbnail_url = 17;
   string custom_domain = 10;
   string default_project_role_id = 16;
   OrganizationQuotas quotas = 4;
@@ -2488,6 +2622,7 @@ message Project {
   string prod_olap_dsn = 11;
   int64 prod_slots = 12;
   string prod_deployment_id = 13;
+  int64 dev_slots = 25;
   string frontend_url = 16; // Note: Does NOT incorporate the parent org's custom domain.
   int64 prod_ttl_seconds = 18;
   map<string, string> annotations = 20;
@@ -2501,11 +2636,14 @@ enum DeploymentStatus {
   DEPLOYMENT_STATUS_PENDING = 1;
   DEPLOYMENT_STATUS_OK = 2;
   DEPLOYMENT_STATUS_ERROR = 4;
+  DEPLOYMENT_STATUS_STOPPED = 5;
 }
 
 message Deployment {
   string id = 1;
   string project_id = 2;
+  string owner_user_id = 12;
+  string environment = 11;
   string branch = 4;
   string runtime_host = 5;
   string runtime_instance_id = 6;
@@ -2641,6 +2779,7 @@ message Bookmark {
 
 message ServiceToken {
   string id = 1;
+  string prefix = 4;
   google.protobuf.Timestamp created_on = 2;
   google.protobuf.Timestamp expires_on = 3;
 }
@@ -2651,6 +2790,7 @@ message UserAuthToken {
   string auth_client_id = 3;
   string auth_client_display_name = 4;
   string representing_user_id = 5;
+  string prefix = 9;
   google.protobuf.Timestamp created_on = 6;
   google.protobuf.Timestamp expires_on = 7;
   google.protobuf.Timestamp used_on = 8;

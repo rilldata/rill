@@ -278,6 +278,7 @@ func (w *TrialGracePeriodCheckWorker) trialGracePeriodCheck(ctx context.Context)
 			Description:                         org.Description,
 			LogoAssetID:                         org.LogoAssetID,
 			FaviconAssetID:                      org.FaviconAssetID,
+			ThumbnailAssetID:                    org.ThumbnailAssetID,
 			CustomDomain:                        org.CustomDomain,
 			DefaultProjectRoleID:                org.DefaultProjectRoleID,
 			QuotaProjects:                       0,
