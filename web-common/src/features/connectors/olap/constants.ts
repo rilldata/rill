@@ -5,12 +5,29 @@ export const CLICKHOUSE_DEFAULTS = {
       value: "",
       placeholder:
         "your-instance.clickhouse.cloud or your.clickhouse.server.com",
+      hint: "Your ClickHouse hostname (e.g., your-instance.clickhouse.cloud or your-server.com)",
     },
-    port: { value: "9000", placeholder: "9000" },
-    username: { value: "", placeholder: "default" },
-    password: { value: "", placeholder: "Database password" },
-    cluster: { value: "", placeholder: "Cluster name" },
-    ssl: { value: true },
+    port: {
+      value: "9000",
+      placeholder: "9000",
+      hint: "Default port is 9000 for native protocol. Also commonly used: 8443 for ClickHouse Cloud (HTTPS), 8123 for HTTP",
+    },
+    username: {
+      value: "",
+      placeholder: "default",
+      hint: "Username for authentication",
+    },
+    password: {
+      value: "",
+      placeholder: "Database password",
+      hint: "Password to your database",
+    },
+    cluster: {
+      value: "",
+      placeholder: "Cluster name",
+      hint: "Cluster name (required for some self-hosted ClickHouse setups)",
+    },
+    ssl: { value: true, hint: "Enable SSL for secure connections" },
   },
 };
 
