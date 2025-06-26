@@ -1,10 +1,14 @@
 export const CLICKHOUSE_DEFAULTS = {
   "rill-managed": {},
   "self-managed": {
-    host: { value: "", placeholder: "your-clickhouse-server.com" },
+    host: {
+      value: "",
+      placeholder:
+        "your-instance.clickhouse.cloud or your.clickhouse.server.com",
+    },
     port: { value: "9000", placeholder: "9000" },
     username: { value: "", placeholder: "default" },
-    password: { value: "", placeholder: "Your ClickHouse password" },
+    password: { value: "", placeholder: "Your ClickHouse database password" },
     ssl: { value: true },
   },
 };
@@ -15,6 +19,6 @@ export const DEPLOYMENT_TYPE_OPTIONS: {
   value: ClickHouseDeploymentType;
   label: string;
 }[] = [
-  { value: "rill-managed", label: "Rill-managed ClickHouse" },
   { value: "self-managed", label: "Self-managed ClickHouse" },
+  { value: "rill-managed", label: "Rill-managed ClickHouse" },
 ];

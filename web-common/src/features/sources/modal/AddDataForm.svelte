@@ -234,7 +234,7 @@
             id="deployment-type"
             options={DEPLOYMENT_TYPE_OPTIONS}
             bind:value={deploymentType}
-            label="Deployment type"
+            label="Connector type"
           />
         </div>
 
