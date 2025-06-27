@@ -13,6 +13,7 @@ import type {
 import type { CanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
 import type { TimeAndFilterStore } from "@rilldata/web-common/features/canvas/stores/types";
 import type {
+  V1Expression,
   V1MetricsViewSpec,
   V1Resource,
 } from "@rilldata/web-common/runtime-client";
@@ -42,6 +43,7 @@ export abstract class BaseChart<
   minSize = { width: 4, height: 4 };
   defaultSize = { width: 6, height: 4 };
   resetParams = [];
+  combinedWhere: V1Expression | undefined;
   type: ChartType;
   chartType: Writable<ChartType>;
   component = Chart;

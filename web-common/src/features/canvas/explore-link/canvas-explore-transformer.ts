@@ -1,7 +1,13 @@
 import type { BaseCanvasComponent } from "@rilldata/web-common/features/canvas/components/BaseCanvasComponent";
+import type { ChartSpec } from "@rilldata/web-common/features/canvas/components/charts";
 import type { ComponentWithMetricsView } from "@rilldata/web-common/features/canvas/components/types";
 import type { TimeAndFilterStore } from "@rilldata/web-common/features/canvas/stores/types";
 import { splitWhereFilter } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
+import type {
+  PivotChipData,
+  PivotState,
+} from "@rilldata/web-common/features/dashboards/pivot/types";
+import { PivotChipType } from "@rilldata/web-common/features/dashboards/pivot/types";
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import { mapObjectToExploreState } from "@rilldata/web-common/features/explore-mappers/map-to-explore";
 import type { ComponentTransformerProperties } from "@rilldata/web-common/features/explore-mappers/types";
@@ -75,4 +81,51 @@ export function useTransformCanvasToExploreState(
       {},
     );
   }
+}
+
+export function getPivotStateFromChartSpec(spec: ChartSpec): PivotState {
+  const columns: PivotChipData[] = [];
+
+  // Iterate over all properties in the spec
+  for (const [key, value] of Object.entries(spec)) {
+    // Skip non-field properties
+    if (key === "metrics_view" || key === "title" || key === "description") {
+      continue;
+    }
+
+    // Check if this property is a field config object
+    if (
+      typeof value === "object" &&
+      value !== null &&
+      "field" in value &&
+      "type" in value
+    ) {
+      const fieldConfig = value as { field: string; type: string };
+
+      const chipType =
+        fieldConfig.type === "quantitative"
+          ? PivotChipType.Measure
+          : fieldConfig.type === "temporal"
+            ? PivotChipType.Time
+            : PivotChipType.Dimension;
+
+      columns.push({
+        id: fieldConfig.field,
+        title: fieldConfig.field,
+        type: chipType,
+      });
+    }
+  }
+
+  return {
+    columns,
+    rows: [],
+    expanded: {},
+    sorting: [],
+    columnPage: 0,
+    rowPage: 0,
+    enableComparison: false,
+    tableMode: "flat",
+    activeCell: null,
+  };
 }

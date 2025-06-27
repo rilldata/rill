@@ -14,7 +14,19 @@
   export let component: BaseCanvasComponent;
 
   // Component types that support explore functionality
-  const EXPLORE_SUPPORTED_TYPES = ["kpi_grid", "leaderboard", "table"] as const;
+  const EXPLORE_SUPPORTED_TYPES = [
+    "kpi_grid",
+    "leaderboard",
+    "table",
+    "bar_chart",
+    "line_chart",
+    "area_chart",
+    "stacked_bar",
+    "stacked_bar_normalized",
+    "donut_chart",
+    "pie_chart",
+    "heatmap",
+  ] as const;
 
   $: showExplore = EXPLORE_SUPPORTED_TYPES.includes(component.type as any);
   $: exploreComponent = showExplore

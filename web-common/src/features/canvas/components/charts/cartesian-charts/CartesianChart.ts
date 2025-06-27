@@ -1,9 +1,13 @@
 import { getFilterWithNullHandling } from "@rilldata/web-common/features/canvas/components/charts/query-utils";
+import { getPivotStateFromChartSpec } from "@rilldata/web-common/features/canvas/explore-link/canvas-explore-transformer";
 import type { ComponentInputParam } from "@rilldata/web-common/features/canvas/inspector/types";
 import type { CanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
 import type { TimeAndFilterStore } from "@rilldata/web-common/features/canvas/stores/types";
+import { splitWhereFilter } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
 import { mergeFilters } from "@rilldata/web-common/features/dashboards/pivot/pivot-merge-filters";
+import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import { createInExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
+import { DashboardState_ActivePage } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import {
   getQueryServiceMetricsViewAggregationQueryOptions,
   type V1Expression,
@@ -81,6 +85,19 @@ export class CartesianChartComponent extends BaseChart<CartesianChartSpec> {
 
   getChartSpecificOptions(): Record<string, ComponentInputParam> {
     return CartesianChartComponent.chartInputParams;
+  }
+
+  getExploreTransformerProperties(): Partial<ExploreState> {
+    const spec = get(this.specStore);
+    const { dimensionFilters, dimensionThresholdFilters } = splitWhereFilter(
+      this.combinedWhere,
+    );
+    return {
+      whereFilter: dimensionFilters,
+      dimensionThresholdFilters,
+      activePage: DashboardState_ActivePage.PIVOT,
+      pivot: getPivotStateFromChartSpec(spec),
+    };
   }
 
   createChartDataQuery(
@@ -241,6 +258,7 @@ export class CartesianChartComponent extends BaseChart<CartesianChartSpec> {
           combinedWhere = mergeFilters(combinedWhere, filterForTopColorValues);
         }
 
+        this.combinedWhere = combinedWhere;
         // Update dimensions with timeGrain if temporal
         if (config.x?.type === "temporal" && timeGrain) {
           dimensions = dimensions.map((d) =>
