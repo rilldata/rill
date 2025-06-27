@@ -1293,9 +1293,21 @@ func newMetricsView(name, model string, measures, dimensions []string) (*runtime
 }
 
 func TestDedicatedConnector(t *testing.T) {
-	// Add source, model, and dashboard
-	rt, id := testruntime.NewInstance(t)
-	testruntime.PutFiles(t, rt, id, map[string]string{
+	// Acquire the connectors for the runtime instance.
+	vars := make(map[string]string)
+
+	acquireS3, ok := testruntime.Connectors["s3"]
+	cfgS3 := acquireS3(t)
+	require.True(t, ok, "unknown connector s3")
+	vars["connector.s3-dedicated.aws_access_key_id"] = cfgS3["aws_access_key_id"]
+	vars["connector.s3-dedicated.aws_secret_access_key"] = cfgS3["aws_secret_access_key"]
+
+	acquireGcs, ok := testruntime.Connectors["gcs"]
+	cfgGcs := acquireGcs(t)
+	require.True(t, ok, "unknown connector gcs")
+	vars["connector.my-gcs.google_application_credentials"] = cfgGcs["google_application_credentials"]
+
+	files := map[string]string{
 		"rill.yaml": `
 connectors:
 - name: s3-integrated
@@ -1312,7 +1324,13 @@ region: us-west-2
 driver: gcs
 name: my-gcs
 `,
+	}
+	// Create the test runtime instance.
+	rt, id := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		Files:     files,
+		Variables: vars,
 	})
+
 	testruntime.ReconcileParserAndWait(t, rt, id)
 	testruntime.RequireReconcileState(t, rt, id, 3, 0, 0)
 
