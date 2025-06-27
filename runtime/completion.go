@@ -155,7 +155,7 @@ func (r *Runtime) loadConversationContext(ctx context.Context, instanceID, conve
 	}
 	defer release()
 
-	conversation, err := catalog.GetConversation(ctx, conversationID)
+	conversation, err := catalog.FindConversation(ctx, conversationID)
 	if err != nil {
 		return nil, err
 	}
@@ -383,7 +383,7 @@ func (r *Runtime) buildCompletionResult(ctx context.Context, instanceID, convers
 	}
 	defer release()
 
-	conversation, err := catalog.GetConversation(ctx, conversationID)
+	conversation, err := catalog.FindConversation(ctx, conversationID)
 	if err != nil {
 		return nil, err
 	}
@@ -450,13 +450,13 @@ func (r *Runtime) createConversation(ctx context.Context, instanceID, ownerID, t
 	}
 	defer release()
 
-	conversationID, err := catalog.CreateConversation(ctx, ownerID, title)
+	conversationID, err := catalog.InsertConversation(ctx, ownerID, title)
 	if err != nil {
 		return nil, err
 	}
 
 	// Return the created conversation
-	return catalog.GetConversation(ctx, conversationID)
+	return catalog.FindConversation(ctx, conversationID)
 }
 
 // addMessage adds a message to a conversation
@@ -467,7 +467,7 @@ func (r *Runtime) addMessage(ctx context.Context, instanceID, conversationID, ro
 	}
 	defer release()
 
-	return catalog.AddMessage(ctx, conversationID, role, content, nil)
+	return catalog.InsertMessage(ctx, conversationID, role, content, nil)
 }
 
 // maybeTruncateConversation keeps recent messages and a few early ones for context.

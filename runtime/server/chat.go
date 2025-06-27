@@ -24,7 +24,7 @@ func (s *Server) ListConversations(ctx context.Context, req *runtimev1.ListConve
 	}
 	defer release()
 
-	conversations, err := catalog.ListConversations(ctx, ownerID)
+	conversations, err := catalog.FindConversations(ctx, ownerID)
 	if err != nil {
 		return nil, err
 	}
@@ -46,7 +46,7 @@ func (s *Server) GetConversation(ctx context.Context, req *runtimev1.GetConversa
 	}
 	defer release()
 
-	conversation, err := catalog.GetConversation(ctx, req.ConversationId)
+	conversation, err := catalog.FindConversation(ctx, req.ConversationId)
 	if err != nil {
 		return nil, err
 	}

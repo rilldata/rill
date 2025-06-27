@@ -363,8 +363,8 @@ func (c *catalogStore) UpsertInstanceHealth(ctx context.Context, h *drivers.Inst
 	return err
 }
 
-// ListConversations fetches all conversations in an instance for a given owner.
-func (c *catalogStore) ListConversations(ctx context.Context, ownerID string) ([]*runtimev1.Conversation, error) {
+// FindConversations fetches all conversations in an instance for a given owner.
+func (c *catalogStore) FindConversations(ctx context.Context, ownerID string) ([]*runtimev1.Conversation, error) {
 	rows, err := c.db.QueryContext(ctx, `
         SELECT conversation_id, owner_id, title, created_on, updated_on
         FROM conversations
@@ -401,8 +401,8 @@ func (c *catalogStore) ListConversations(ctx context.Context, ownerID string) ([
 	return result, nil
 }
 
-// GetConversation fetches a conversation by ID.
-func (c *catalogStore) GetConversation(ctx context.Context, conversationID string) (*runtimev1.Conversation, error) {
+// FindConversation fetches a conversation by ID.
+func (c *catalogStore) FindConversation(ctx context.Context, conversationID string) (*runtimev1.Conversation, error) {
 	row := c.db.QueryRowContext(ctx, `
         SELECT conversation_id, owner_id, title, created_on, updated_on
         FROM conversations
@@ -418,7 +418,7 @@ func (c *catalogStore) GetConversation(ctx context.Context, conversationID strin
 	conv.UpdatedOn = updatedOn.Format(time.RFC3339)
 
 	// Fetch messages for this conversation
-	messages, err := c.ListMessages(ctx, conversationID)
+	messages, err := c.FindMessages(ctx, conversationID)
 	if err != nil {
 		return nil, err
 	}
@@ -427,8 +427,8 @@ func (c *catalogStore) GetConversation(ctx context.Context, conversationID strin
 	return &conv, nil
 }
 
-// CreateConversation inserts a new conversation.
-func (c *catalogStore) CreateConversation(ctx context.Context, ownerID, title string) (string, error) {
+// InsertConversation inserts a new conversation.
+func (c *catalogStore) InsertConversation(ctx context.Context, ownerID, title string) (string, error) {
 	conversationID := uuid.NewString()
 	_, err := c.db.ExecContext(ctx, `
         INSERT INTO conversations (instance_id, conversation_id, owner_id, title, created_on, updated_on)
@@ -437,8 +437,8 @@ func (c *catalogStore) CreateConversation(ctx context.Context, ownerID, title st
 	return conversationID, err
 }
 
-// ListMessages fetches all messages for a conversation, ordered by sequence number.
-func (c *catalogStore) ListMessages(ctx context.Context, conversationID string) ([]*runtimev1.Message, error) {
+// FindMessages fetches all messages for a conversation, ordered by sequence number.
+func (c *catalogStore) FindMessages(ctx context.Context, conversationID string) ([]*runtimev1.Message, error) {
 	rows, err := c.db.QueryContext(ctx, `
         SELECT message_id, role, content_json, created_on, updated_on, seq_num
         FROM messages
@@ -477,8 +477,8 @@ func (c *catalogStore) ListMessages(ctx context.Context, conversationID string) 
 	return result, nil
 }
 
-// AddMessage inserts a new message into a conversation.
-func (c *catalogStore) AddMessage(ctx context.Context, conversationID, role string, content []*runtimev1.ContentBlock, parentMessageID *string) (string, error) {
+// InsertMessage inserts a new message into a conversation.
+func (c *catalogStore) InsertMessage(ctx context.Context, conversationID, role string, content []*runtimev1.ContentBlock, parentMessageID *string) (string, error) {
 	messageID := uuid.NewString()
 
 	// Serialize content to JSON using protojson
