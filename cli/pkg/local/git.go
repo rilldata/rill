@@ -12,21 +12,24 @@ import (
 )
 
 func (s *Server) GitStatus(ctx context.Context, r *connect.Request[localv1.GitStatusRequest]) (*connect.Response[localv1.GitStatusResponse], error) {
-	// try with native git configurations
-	err := gitutil.GitFetch(ctx, s.app.ProjectPath, nil)
-	if err == nil {
-		// if native git fetch succeeds, return the status
-		gs, err := gitutil.RunGitStatus(s.app.ProjectPath, "origin")
-		if err != nil {
-			return nil, err
+	// if there is a origin set, try with native git configurations
+	remote, err := gitutil.ExtractGitRemote(s.app.ProjectPath, "origin", false)
+	if err == nil && remote.URL != "" {
+		err = gitutil.GitFetch(ctx, s.app.ProjectPath, nil)
+		if err == nil {
+			// if native git fetch succeeds, return the status
+			gs, err := gitutil.RunGitStatus(s.app.ProjectPath, "origin")
+			if err != nil {
+				return nil, err
+			}
+			return connect.NewResponse(&localv1.GitStatusResponse{
+				Branch:        gs.Branch,
+				GithubUrl:     gs.RemoteURL,
+				LocalChanges:  gs.LocalChanges,
+				LocalCommits:  gs.LocalCommits,
+				RemoteCommits: gs.RemoteCommits,
+			}), nil
 		}
-		return connect.NewResponse(&localv1.GitStatusResponse{
-			Branch:        gs.Branch,
-			GithubUrl:     gs.RemoteURL,
-			LocalChanges:  gs.LocalChanges,
-			LocalCommits:  gs.LocalCommits,
-			RemoteCommits: gs.RemoteCommits,
-		}), nil
 	}
 
 	// if native git fetch fails, try with ephemeral token - this may be a managed git project
@@ -91,11 +94,14 @@ func (s *Server) GitStatus(ctx context.Context, r *connect.Request[localv1.GitSt
 }
 
 func (s *Server) GitPull(ctx context.Context, r *connect.Request[localv1.GitPullRequest]) (*connect.Response[localv1.GitPullResponse], error) {
-	out, err := gitutil.GitPull(ctx, s.app.ProjectPath, r.Msg.DiscardLocal, "", "origin")
-	if err == nil && strings.Contains(out, "Already up to date") {
-		return connect.NewResponse(&localv1.GitPullResponse{
-			Output: out,
-		}), nil
+	origin, err := gitutil.ExtractGitRemote(s.app.ProjectPath, "origin", false)
+	if err == nil && origin.URL != "" {
+		out, err := gitutil.RunGitPull(ctx, s.app.ProjectPath, r.Msg.DiscardLocal, "", "origin")
+		if err == nil && strings.Contains(out, "Already up to date") {
+			return connect.NewResponse(&localv1.GitPullResponse{
+				Output: out,
+			}), nil
+		}
 	}
 	// if native git pull fails, try with ephemeral token - this may be a managed git project
 
@@ -126,7 +132,7 @@ func (s *Server) GitPull(ctx context.Context, r *connect.Request[localv1.GitPull
 		return nil, err
 	}
 
-	out, err = gitutil.GitPull(ctx, s.app.ProjectPath, r.Msg.DiscardLocal, remote, config.RemoteName())
+	out, err := gitutil.RunGitPull(ctx, s.app.ProjectPath, r.Msg.DiscardLocal, remote, config.RemoteName())
 	if err != nil {
 		return nil, err
 	}
@@ -136,20 +142,23 @@ func (s *Server) GitPull(ctx context.Context, r *connect.Request[localv1.GitPull
 }
 
 func (s *Server) GitPush(ctx context.Context, r *connect.Request[localv1.GitPushRequest]) (*connect.Response[localv1.GitPushResponse], error) {
-	st, err := gitutil.RunGitStatus(s.app.ProjectPath, "origin")
-	if err != nil {
-		return nil, err
-	}
-	if st.RemoteCommits > 0 && !r.Msg.Force {
-		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.New("cannot push with remote commits present, please pull first"))
-	}
+	remote, err := gitutil.ExtractGitRemote(s.app.ProjectPath, "origin", false)
+	if err == nil && remote.URL != "" {
+		st, err := gitutil.RunGitStatus(s.app.ProjectPath, "origin")
+		if err != nil {
+			return nil, err
+		}
+		if st.RemoteCommits > 0 && !r.Msg.Force {
+			return nil, connect.NewError(connect.CodeFailedPrecondition, errors.New("cannot push with remote commits present, please pull first"))
+		}
 
-	// generate git signature
-	author, err := gitutil.NativeGitSignature(ctx, s.app.ProjectPath)
-	if err == nil {
-		err = gitutil.CommitAndForcePush(ctx, s.app.ProjectPath, &gitutil.Config{Remote: st.RemoteURL, DefaultBranch: st.Branch}, r.Msg.CommitMessage, author, true)
+		// generate git signature
+		author, err := gitutil.NativeGitSignature(ctx, s.app.ProjectPath)
 		if err == nil {
-			return connect.NewResponse(&localv1.GitPushResponse{}), nil
+			err = gitutil.CommitAndForcePush(ctx, s.app.ProjectPath, &gitutil.Config{Remote: st.RemoteURL, DefaultBranch: st.Branch}, r.Msg.CommitMessage, author, true)
+			if err == nil {
+				return connect.NewResponse(&localv1.GitPushResponse{}), nil
+			}
 		}
 	}
 	// if native git push fails, try with ephemeral token - this may be a managed git project
@@ -167,7 +176,7 @@ func (s *Server) GitPush(ctx context.Context, r *connect.Request[localv1.GitPush
 		return nil, errors.New("git credentials not set and repo is not connected to a project")
 	}
 
-	author, err = s.app.ch.GitSignature(ctx, s.app.ProjectPath)
+	author, err := s.app.ch.GitSignature(ctx, s.app.ProjectPath)
 	if err != nil {
 		return nil, err
 	}
@@ -209,7 +218,7 @@ func (s *Server) resolveProjectName(ctx context.Context) (string, error) {
 	}
 
 	// Verify projectPath is a Git repo with remote on Github
-	remote, err := gitutil.ExtractGitRemote(s.app.ProjectPath, "", true)
+	remote, err := gitutil.ExtractGitRemote(s.app.ProjectPath, "__rill_remote", true)
 	if err != nil {
 		return "", err
 	}

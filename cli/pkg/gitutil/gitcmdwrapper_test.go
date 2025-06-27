@@ -76,27 +76,27 @@ func TestGitPull(t *testing.T) {
 	tempDir, remoteDir := setupTestRepository(t)
 
 	// Test case: Pull with no local changes
-	output, err := GitPull(context.Background(), tempDir, false, "", "origin")
+	output, err := RunGitPull(context.Background(), tempDir, false, "", "origin")
 	require.NoError(t, err, "GitPull failed with no local changes")
 	require.Empty(t, output, "unexpected output from GitPull with no local changes")
 
 	// Test case: Pull with local changes (discardLocal = false)
 	createCommit(t, tempDir, "local.txt", "local content", "local commit")
 	createRemoteCommit(t, remoteDir, "local.txt", "remote content", "remote commit")
-	output, err = GitPull(context.Background(), tempDir, false, "", "origin")
+	output, err = RunGitPull(context.Background(), tempDir, false, "", "origin")
 	if len(output) == 0 && err == nil {
 		t.Fatalf("expected GitPull to fail with local changes and discardLocal=false, but it succeeded")
 	}
 	require.Contains(t, output, "Need to specify how to reconcile divergent branches", "unexpected output from GitPull with local changes")
 
 	// Test case: Pull with local changes (discardLocal = true)
-	output, err = GitPull(context.Background(), tempDir, true, "", "origin")
+	output, err = RunGitPull(context.Background(), tempDir, true, "", "origin")
 	require.NoError(t, err, "GitPull failed with local changes and discardLocal=true")
 	require.Empty(t, output, "unexpected output from GitPull with discardLocal=true")
 
 	// Test case: Pull with remote changes
 	createRemoteCommit(t, remoteDir, "remote.txt", "remote content", "remote commit")
-	output, err = GitPull(context.Background(), tempDir, false, "", "origin")
+	output, err = RunGitPull(context.Background(), tempDir, false, "", "origin")
 	require.NoError(t, err, "GitPull failed with remote changes")
 	require.Empty(t, output, "unexpected output from GitPull with remote changes")
 }

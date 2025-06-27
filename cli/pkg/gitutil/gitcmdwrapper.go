@@ -97,8 +97,8 @@ func RunGitFetch(ctx context.Context, path, remote string) error {
 	return nil
 }
 
-// GitPull runs a git pull command in the specified path.
-func GitPull(ctx context.Context, path string, discardLocal bool, remote, remoteName string) (string, error) {
+// RunGitPull runs a git pull command in the specified path.
+func RunGitPull(ctx context.Context, path string, discardLocal bool, remote, remoteName string) (string, error) {
 	st, err := RunGitStatus(path, remoteName)
 	if err != nil {
 		return "", err
