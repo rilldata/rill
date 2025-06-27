@@ -10,7 +10,7 @@ import (
 	"os/exec"
 )
 
-//go:embed embed/install.sh
+//go:embed embed/*
 var embedFS embed.FS
 
 func Install(ctx context.Context, version string) error {
