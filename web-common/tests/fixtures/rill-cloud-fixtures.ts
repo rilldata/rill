@@ -1,5 +1,8 @@
 import { test as base, type Page } from "@playwright/test";
-import { cliLogin, cliLogout } from "web-common/tests/fixtures/cli.ts";
+import {
+  cliLogin,
+  cliLogout,
+} from "@rilldata/web-common/tests/fixtures/cli.ts";
 import path from "path";
 import {
   ADMIN_STORAGE_STATE,
@@ -10,7 +13,7 @@ import {
   RILL_EMBED_HTML_FILE,
 } from "@rilldata/web-integration/tests/constants.ts";
 import fs from "fs";
-import { generateEmbed } from "web-common/tests/utils/generate-embed.ts";
+import { generateEmbed } from "@rilldata/web-common/tests/utils/generate-embed.ts";
 
 type MyFixtures = {
   adminPage: Page;

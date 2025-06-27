@@ -10,6 +10,7 @@ import { fileURLToPath } from "url";
 import { writeFileEnsuringDir } from "@rilldata/web-common/tests/utils/fs";
 import { test as setup } from "./base";
 import { RILL_DEVTOOL_BACKGROUND_PROCESS_PID_FILE } from "../constants";
+import { isServiceReady } from "@rilldata/web-common/tests/utils/is-service-ready";
 
 setup.describe("global setup", () => {
   setup.describe.configure({
@@ -96,13 +97,3 @@ setup.describe("global setup", () => {
     console.log("Runtime service ready");
   });
 });
-
-// TODO: reuse
-async function isServiceReady(url: string): Promise<boolean> {
-  try {
-    const response = await axios.get(url);
-    return response.status === 200;
-  } catch {
-    return false;
-  }
-}

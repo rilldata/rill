@@ -1,4 +1,5 @@
 import { expect } from "@playwright/test";
+import { isServiceReady } from "@rilldata/web-common/tests/utils/is-service-ready.ts";
 import {
   RILL_DEVTOOL_BACKGROUND_PROCESS_PID_FILE,
   RILL_EMBED_SERVICE_TOKEN_FILE,
@@ -266,12 +267,3 @@ setup.describe("global setup", () => {
       .toContain("Last refreshed");
   });
 });
-
-async function isServiceReady(url: string): Promise<boolean> {
-  try {
-    const response = await axios.get(url);
-    return response.status === 200;
-  } catch {
-    return false;
-  }
-}

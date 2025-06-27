@@ -21,7 +21,7 @@ export async function spawnAndMatch(
   const { timeoutMs = 30000 } = options;
 
   return new Promise((resolve, reject) => {
-    const processForCommand = spawn(command, args, {
+    const childProcess = spawn(command, args, {
       stdio: ["inherit", "pipe", "inherit"],
       cwd: options.cwd,
       env: {
@@ -31,26 +31,26 @@ export async function spawnAndMatch(
     });
 
     const timeout = setTimeout(() => {
-      processForCommand.kill();
+      childProcess.kill();
       reject(new Error(`Timeout waiting for regex match: ${pattern}`));
     }, timeoutMs);
 
-    processForCommand.stdout.on("data", (data: Buffer | string) => {
+    childProcess.stdout.on("data", (data: Buffer | string) => {
       const output = data.toString();
       console.log(output);
       const match = output.match(pattern);
       if (match) {
         clearTimeout(timeout);
-        resolve({ process: processForCommand, match });
+        resolve({ process: childProcess, match });
       }
     });
 
-    processForCommand.on("error", (err) => {
+    childProcess.on("error", (err) => {
       clearTimeout(timeout);
       reject(err);
     });
 
-    processForCommand.on("exit", (code) => {
+    childProcess.on("exit", (code) => {
       clearTimeout(timeout);
       reject(
         new Error(

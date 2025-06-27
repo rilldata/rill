@@ -6,9 +6,9 @@ import { cpSync, existsSync, mkdirSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { test as base } from "playwright/test";
 import treeKill from "tree-kill";
-import { getOpenPort } from "web-common/tests/utils/get-open-port.ts";
-import { makeTempDir } from "web-common/tests/utils/make-temp-dir.ts";
-import { spawnAndMatch } from "web-common/tests/utils/spawn.ts";
+import { getOpenPort } from "@rilldata/web-common/tests/utils/get-open-port.ts";
+import { makeTempDir } from "@rilldata/web-common/tests/utils/make-temp-dir.ts";
+import { spawnAndMatch } from "@rilldata/web-common/tests/utils/spawn.ts";
 
 type MyFixtures = {
   cliHomeDir: string;
