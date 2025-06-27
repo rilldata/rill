@@ -246,6 +246,11 @@ func (c *connection) Config() map[string]any {
 	return m
 }
 
+// InformationSchema implements drivers.Handle.
+func (c *connection) AsInformationSchema() (drivers.InformationSchema, bool) {
+	return c, true
+}
+
 // Close implements drivers.Connection.
 func (c *connection) Close() error {
 	return c.db.Close()

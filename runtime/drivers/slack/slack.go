@@ -72,7 +72,6 @@ var _ drivers.Handle = &handle{}
 
 // Ping implements drivers.Handle.
 func (h *handle) Ping(ctx context.Context) error {
-	// return early when BotToken is not defined.
 	if h.config.BotToken == "" {
 		return nil
 	}
@@ -105,6 +104,11 @@ func (h *handle) Migrate(ctx context.Context) error {
 
 func (h *handle) MigrationStatus(ctx context.Context) (current, desired int, err error) {
 	return 0, 0, nil
+}
+
+// InformationSchema implements drivers.Handle.
+func (h *handle) AsInformationSchema() (drivers.InformationSchema, bool) {
+	return nil, false
 }
 
 func (h *handle) Close() error {

@@ -90,6 +90,11 @@ func (h *handle) Config() map[string]any {
 	return nil
 }
 
+// InformationSchema implements drivers.Handle.
+func (h *handle) AsInformationSchema() (drivers.InformationSchema, bool) {
+	return nil, false
+}
+
 // Close implements drivers.Connection.
 func (h *handle) Close() error {
 	return h.bucket.Close()

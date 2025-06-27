@@ -12,16 +12,8 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 )
 
-type informationSchema struct {
-	c *Connection
-}
-
-func (c *Connection) InformationSchema() drivers.InformationSchema {
-	return informationSchema{c: c}
-}
-
-func (i informationSchema) All(ctx context.Context, like string) ([]*drivers.Table, error) {
-	conn, release, err := i.c.acquireMetaConn(ctx)
+func (c *Connection) All(ctx context.Context, like string) ([]*drivers.Table, error) {
+	conn, release, err := c.acquireMetaConn(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -35,8 +27,8 @@ func (i informationSchema) All(ctx context.Context, like string) ([]*drivers.Tab
 	}
 
 	var dbFilter string
-	if i.c.config.DatabaseWhitelist != "" {
-		dbs := strings.Split(i.c.config.DatabaseWhitelist, ",")
+	if c.config.DatabaseWhitelist != "" {
+		dbs := strings.Split(c.config.DatabaseWhitelist, ",")
 		var filter strings.Builder
 		for i, db := range dbs {
 			if i > 0 {
@@ -75,15 +67,15 @@ func (i informationSchema) All(ctx context.Context, like string) ([]*drivers.Tab
 	}
 	defer rows.Close()
 
-	tables, err := i.scanTables(rows)
+	tables, err := scanTables(rows)
 	if err != nil {
 		return nil, err
 	}
 	return tables, nil
 }
 
-func (i informationSchema) Lookup(ctx context.Context, db, schema, name string) (*drivers.Table, error) {
-	conn, release, err := i.c.acquireMetaConn(ctx)
+func (c *Connection) Lookup(ctx context.Context, db, schema, name string) (*drivers.Table, error) {
+	conn, release, err := c.acquireMetaConn(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -117,7 +109,7 @@ func (i informationSchema) Lookup(ctx context.Context, db, schema, name string) 
 	}
 	defer rows.Close()
 
-	tables, err := i.scanTables(rows)
+	tables, err := scanTables(rows)
 	if err != nil {
 		return nil, err
 	}
@@ -129,11 +121,11 @@ func (i informationSchema) Lookup(ctx context.Context, db, schema, name string) 
 	return tables[0], nil
 }
 
-func (i informationSchema) LoadPhysicalSize(ctx context.Context, tables []*drivers.Table) error {
+func (c *Connection) LoadPhysicalSize(ctx context.Context, tables []*drivers.Table) error {
 	if len(tables) == 0 {
 		return nil
 	}
-	conn, release, err := i.c.acquireMetaConn(ctx)
+	conn, release, err := c.acquireMetaConn(ctx)
 	if err != nil {
 		return err
 	}
@@ -197,7 +189,7 @@ func (i informationSchema) LoadPhysicalSize(ctx context.Context, tables []*drive
 	return err
 }
 
-func (i informationSchema) scanTables(rows *sqlx.Rows) ([]*drivers.Table, error) {
+func scanTables(rows *sqlx.Rows) ([]*drivers.Table, error) {
 	var res []*drivers.Table
 
 	for rows.Next() {
@@ -263,15 +255,15 @@ func (i informationSchema) scanTables(rows *sqlx.Rows) ([]*drivers.Table, error)
 	return res, nil
 }
 
-func (i informationSchema) entityType(ctx context.Context, db, name string) (typ string, onCluster bool, err error) {
-	conn, release, err := i.c.acquireMetaConn(ctx)
+func (c *Connection) entityType(ctx context.Context, db, name string) (typ string, onCluster bool, err error) {
+	conn, release, err := c.acquireMetaConn(ctx)
 	if err != nil {
 		return "", false, err
 	}
 	defer func() { _ = release() }()
 
 	var q string
-	if i.c.config.Cluster == "" {
+	if c.config.Cluster == "" {
 		q = `SELECT
     			multiIf(engine IN ('MaterializedView', 'View'), 'VIEW', engine = 'Dictionary', 'DICTIONARY', 'TABLE') AS type,
     			0 AS is_on_cluster
@@ -282,7 +274,7 @@ func (i informationSchema) entityType(ctx context.Context, db, name string) (typ
 		q = `SELECT
     			multiIf(engine IN ('MaterializedView', 'View'), 'VIEW', engine = 'Dictionary', 'DICTIONARY', 'TABLE') AS type,
     			countDistinct(_shard_num) > 1 AS is_on_cluster
-			FROM clusterAllReplicas(` + safeSQLName(i.c.config.Cluster) + `, system.tables) AS t
+			FROM clusterAllReplicas(` + safeSQLName(c.config.Cluster) + `, system.tables) AS t
 			JOIN system.databases AS db ON t.database = db.name
 			WHERE t.database = coalesce(?, currentDatabase()) AND t.name = ?
 			GROUP BY engine, t.name`

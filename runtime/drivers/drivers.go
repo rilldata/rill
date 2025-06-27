@@ -84,6 +84,10 @@ type Handle interface {
 	// MigrationStatus returns the handle's current and desired migration version (if applicable).
 	MigrationStatus(ctx context.Context) (current int, desired int, err error)
 
+	// AsInformationSchema returns a InformationSchema if the handle can serve as such, otherwise returns false.
+	// InformationSchema provides metadata about existing tables in a driver.
+	AsInformationSchema() (InformationSchema, bool)
+
 	// Close closes the handle.
 	Close() error
 

@@ -54,7 +54,7 @@ func TestClickhouseCluster(t *testing.T) {
 	olap, ok := conn.AsOLAP("default")
 	require.True(t, ok)
 
-	prepareClusterConn(t, c, olap, cluster)
+	prepareClusterConn(t, olap, cluster)
 
 	t.Run("WithConnection", func(t *testing.T) { testWithConnection(t, olap) })
 	t.Run("RenameView", func(t *testing.T) { testRenameView(t, c, olap) })
@@ -112,8 +112,8 @@ func testRenameView(t *testing.T, c *Connection, olap drivers.OLAPStore) {
 	require.NoError(t, err)
 
 	// check that views no longer exist
-	notExists(t, c, olap, "foo_view")
-	notExists(t, c, olap, "foo_view1")
+	notExists(t, olap, "foo_view")
+	notExists(t, olap, "foo_view1")
 
 	res, err := olap.Query(ctx, &drivers.Statement{Query: "SELECT id FROM bar_view"})
 	require.NoError(t, err)
@@ -132,11 +132,11 @@ func testRenameTable(t *testing.T, c *Connection, olap drivers.OLAPStore) {
 	err = c.renameEntity(ctx, "foo1", "bar")
 	require.NoError(t, err)
 
-	notExists(t, c, olap, "foo")
-	notExists(t, c, olap, "foo1")
+	notExists(t, olap, "foo")
+	notExists(t, olap, "foo1")
 }
 
-func notExists(t *testing.T, c *Connection, olap drivers.OLAPStore, tbl string) {
+func notExists(t *testing.T, olap drivers.OLAPStore, tbl string) {
 	result, err := olap.Query(context.Background(), &drivers.Statement{
 		Query: "EXISTS " + tbl,
 	})
@@ -456,7 +456,7 @@ func testIntervalType(t *testing.T, olap drivers.OLAPStore) {
 	}
 }
 
-func prepareClusterConn(t *testing.T, c *Connection, olap drivers.OLAPStore, cluster string) {
+func prepareClusterConn(t *testing.T, olap drivers.OLAPStore, cluster string) {
 	err := olap.Exec(context.Background(), &drivers.Statement{
 		Query: fmt.Sprintf("CREATE OR REPLACE TABLE foo_local ON CLUSTER %s (bar VARCHAR, baz INTEGER) engine=MergeTree ORDER BY tuple()", cluster),
 	})
