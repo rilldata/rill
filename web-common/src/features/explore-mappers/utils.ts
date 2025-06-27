@@ -223,3 +223,25 @@ export async function getExplorePageUrlSearchParams(
 
   return searchParams;
 }
+
+/**
+ * This method corrects the underscore naming to camel case.
+ * This is the drawback of storing the request object as is.
+ */
+export function convertRequestKeysToCamelCase(
+  req: Record<string, any>,
+): Record<string, any> {
+  const newReq: Record<string, any> = {};
+
+  for (const key in req) {
+    const newKey = key.replace(/_(\w)/g, (_, c: string) => c.toUpperCase());
+    const val = req[key];
+    if (val && typeof val === "object" && !("length" in val)) {
+      newReq[newKey] = convertRequestKeysToCamelCase(val);
+    } else {
+      newReq[newKey] = val;
+    }
+  }
+
+  return newReq;
+}

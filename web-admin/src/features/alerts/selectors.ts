@@ -1,8 +1,8 @@
 import { createAdminServiceSearchProjectUsers } from "@rilldata/web-admin/client";
-import { getExploreName } from "@rilldata/web-admin/features/dashboards/query-mappers/utils";
 import { getDashboardStateFromUrl } from "@rilldata/web-common/features/dashboards/proto-state/fromProto";
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
+import { getExploreName } from "@rilldata/web-common/features/explore-mappers/utils";
 import {
   createRuntimeServiceGetExplore,
   createRuntimeServiceGetResource,

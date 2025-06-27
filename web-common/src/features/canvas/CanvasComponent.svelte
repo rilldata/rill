@@ -33,9 +33,13 @@
   class:shadow-sm={allowBorder || open}
   class="group component-card size-full flex flex-col cursor-pointer z-10 p-0 relative outline-[1px] outline-gray-200 dark:outline-gray-300 bg-surface overflow-hidden rounded-sm"
 >
-  {#if editable}
-    <Toolbar {onDelete} {onDuplicate} bind:dropdownOpen={open} />
-  {/if}
+  <Toolbar
+    {component}
+    {onDelete}
+    {onDuplicate}
+    {editable}
+    bind:dropdownOpen={open}
+  />
 
   <div
     role="presentation"

@@ -18,7 +18,15 @@ export type QueryRequests =
   | V1MetricsViewTimeSeriesRequest
   | V1MetricsViewComparisonRequest;
 
-export type QueryMapperArgs<R extends QueryRequests> = {
+export interface ComponentTransformerProperties extends ExploreState {
+  metricsViewName: string;
+}
+
+export type TransformerProperties =
+  | QueryRequests
+  | ComponentTransformerProperties;
+
+export type TransformerArgs<R extends TransformerProperties> = {
   queryClient: QueryClient;
   instanceId: string;
   dashboard: ExploreState;
@@ -29,3 +37,23 @@ export type QueryMapperArgs<R extends QueryRequests> = {
   executionTime: string;
   annotations: Record<string, string>;
 };
+
+export interface ExploreAvailabilityResult {
+  isAvailable: boolean;
+  exploreName?: string;
+  error?: string;
+}
+
+export interface DashboardSelectionCriteria {
+  preferredType?: "recent" | "most_used" | "first_available";
+}
+
+export interface ExploreLinkError {
+  type:
+    | "VALIDATION_ERROR"
+    | "TRANSFORMATION_ERROR"
+    | "NETWORK_ERROR"
+    | "PERMISSION_ERROR";
+  message: string;
+  details?: any;
+}
