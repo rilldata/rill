@@ -57,16 +57,16 @@ var (
 	)
 	daxNotations = map[string]string{
 		// Mapping for our old rill-<DAX> syntax
-		"TD":  "D^ to D$",
-		"WTD": "W^ to D$",
-		"MTD": "M^ to D$",
-		"QTD": "Q^ to D$",
-		"YTD": "Y^ to D$",
-		"PDC": "-1D^ to D^",
-		"PWC": "-1W^ to W^",
-		"PMC": "-1M^ to M^",
-		"PQC": "-1Q^ to Q^",
-		"PYC": "-1Y^ to Y^",
+		"TD":  "ref/D to ref as of watermark",
+		"WTD": "ref/W to ref as of watermark",
+		"MTD": "ref/M to ref as of watermark",
+		"QTD": "ref/Q to ref as of watermark",
+		"YTD": "ref/Y to ref as of watermark",
+		"PDC": "-1D/D to ref/D as of watermark",
+		"PWC": "-1W/W to ref/W as of watermark",
+		"PMC": "-1M/M to ref/M as of watermark",
+		"PQC": "-1Q/Q to ref/Q as of watermark",
+		"PYC": "-1Y/Y to ref/Y as of watermark",
 		// TODO: previous period is contextual. should be handled in UI
 		"PP": "",
 		"PD": "-1D^ to D^",
@@ -90,6 +90,15 @@ var (
 		"M": timeutil.TimeGrainMonth,
 		"y": timeutil.TimeGrainYear,
 		"Y": timeutil.TimeGrainYear,
+	}
+	higherOrderMap = map[timeutil.TimeGrain]timeutil.TimeGrain{
+		timeutil.TimeGrainSecond:  timeutil.TimeGrainMinute,
+		timeutil.TimeGrainMinute:  timeutil.TimeGrainHour,
+		timeutil.TimeGrainHour:    timeutil.TimeGrainDay,
+		timeutil.TimeGrainDay:     timeutil.TimeGrainMonth,
+		timeutil.TimeGrainWeek:    timeutil.TimeGrainMonth,
+		timeutil.TimeGrainMonth:   timeutil.TimeGrainYear,
+		timeutil.TimeGrainQuarter: timeutil.TimeGrainYear,
 	}
 	lowerOrderMap = map[timeutil.TimeGrain]timeutil.TimeGrain{
 		timeutil.TimeGrainSecond:  timeutil.TimeGrainMillisecond,
@@ -226,7 +235,8 @@ type EvalOptions struct {
 	FirstMonth    int
 	SmallestGrain timeutil.TimeGrain
 
-	ref time.Time
+	ref          time.Time
+	truncatedRef bool
 }
 
 func Parse(from string, parseOpts ParseOptions) (*Expression, error) {
@@ -239,21 +249,6 @@ func Parse(from string, parseOpts ParseOptions) (*Expression, error) {
 	}
 
 	if rt == nil {
-		//tokens, err := rillTimeParser.Lex("", strings.NewReader(from))
-		//if err != nil {
-		//	return nil, err
-		//}
-		//for _, token := range tokens {
-		//	name := token.String()
-		//	for tokenName, tokenType := range rillTimeLexer.Symbols() {
-		//		if tokenType == token.Type {
-		//			name = tokenName
-		//			break
-		//		}
-		//	}
-		//	fmt.Println(name, token.Value)
-		//}
-
 		rt, err = rillTimeParser.ParseString("", from)
 		if err != nil {
 			return nil, err
@@ -325,16 +320,22 @@ func (e *Expression) Eval(evalOpts EvalOptions) (time.Time, time.Time, timeutil.
 	}
 
 	// Update the ref so that anchor override can use it if needed. (EG: `-2Y^ to Y^ as of now`)
-	i := len(e.AnchorOverrides)-1
+	if evalOpts.ref.IsZero() {
+		evalOpts.ref = evalOpts.Now
+	}
+	i := len(e.AnchorOverrides) - 1
 	for i >= 0 {
 		evalOpts.ref, _ = e.AnchorOverrides[i].eval(evalOpts, evalOpts.ref, e.timeZone)
+		if e.AnchorOverrides[i].Snap != nil {
+			evalOpts.truncatedRef = true
+		}
 		i--
 	}
 
 	if e.isoDuration != nil {
-		// handling for old iso format
-		isoStart := e.isoDuration.Sub(evalOpts.MaxTime.In(e.timeZone))
-		isoEnd := evalOpts.ref
+		// handling for old iso format. all the times are relative to watermark for old format.
+		isoStart := e.isoDuration.Sub(evalOpts.Watermark.In(e.timeZone))
+		isoEnd := evalOpts.Watermark
 		tg := timeutil.TimeGrainUnspecified
 		if e.Grain != nil {
 			tg = grainMap[*e.Grain]
@@ -421,6 +422,15 @@ func (o *OrdinalInterval) eval(evalOpts EvalOptions, start time.Time, tz *time.L
 	end := start
 	tg := timeutil.TimeGrainUnspecified
 
+	if len(o.Ordinals) == 0 {
+		return start, end, tg
+	}
+
+	if !evalOpts.truncatedRef {
+		tg = grainMap[o.Ordinals[len(o.Ordinals)-1].Grain]
+		start = truncateWithCorrection(start, higherOrderMap[tg], tz, evalOpts.FirstDay, evalOpts.FirstMonth)
+	}
+
 	i := len(o.Ordinals) - 1
 	for i >= 0 {
 		start, end, tg = o.Ordinals[i].eval(evalOpts, start, tz)
@@ -482,23 +492,24 @@ func (p *PointInTime) eval(evalOpts EvalOptions, tm time.Time, tz *time.Location
 		tm, _, tg = p.ISO.eval(tz)
 	}
 
-	secondarySnap := timeutil.TimeGrainUnspecified
 	if p.Snap != nil {
-		// If the snap grain is overridden, use that over the duration's grain.
 		tg = grainMap[*p.Snap]
-	}
-	if p.SecondarySnap != nil {
-		// SecondarySnap is a special case, allows snap by a grain and then by another grain.
-		// The only case where this will be different is when weeks are involved.
-		secondarySnap = grainMap[*p.SecondarySnap]
-	}
 
-	tm = timeutil.TruncateTime(tm, tg, tz, evalOpts.FirstDay, evalOpts.FirstMonth)
+		secondarySnap := timeutil.TimeGrainUnspecified
+		if p.SecondarySnap != nil {
+			// SecondarySnap is a special case, allows snap by a grain and then by another grain.
+			// The only case where this will be different is when weeks are involved.
+			secondarySnap = grainMap[*p.SecondarySnap]
+		}
 
-	if secondarySnap != timeutil.TimeGrainUnspecified {
-		// If there is a secondary snap, then apply it after the primary snap has happened.
-		// These need week correction since that is the primary goal of this syntax.
-		tm = truncateWithCorrection(tm, secondarySnap, tz, evalOpts.FirstDay, evalOpts.FirstMonth)
+		tm = timeutil.TruncateTime(tm, tg, tz, evalOpts.FirstDay, evalOpts.FirstMonth)
+
+		if secondarySnap != timeutil.TimeGrainUnspecified {
+			// If there is a secondary snap, then apply it after the primary snap has happened.
+			// These need week correction since that is the primary goal of this syntax.
+			tm = truncateWithCorrection(tm, secondarySnap, tz, evalOpts.FirstDay, evalOpts.FirstMonth)
+		}
+
 	}
 
 	for _, offset := range p.Offsets {
@@ -637,7 +648,17 @@ func parseISO(from string, parseOpts ParseOptions) (*Expression, error) {
 					},
 					End: &PointInTime{
 						Labeled: &LabeledPointInTime{
-							Now: true,
+							Latest: true,
+						},
+						Offsets: []*GrainPointInTime{
+							{
+								Parts: []*GrainPointInTimePart{
+									{
+										Prefix:   "+",
+										Duration: &GrainDuration{Parts: []*GrainDurationPart{{Grain: "s", Num: 1}}},
+									},
+								},
+							},
 						},
 					},
 				},
