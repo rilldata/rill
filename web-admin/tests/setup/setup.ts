@@ -8,7 +8,6 @@ import {
   execAsync,
   spawnAndMatch,
 } from "@rilldata/web-common/tests/utils/spawn";
-import axios from "axios";
 import { spawn } from "child_process";
 import dotenv from "dotenv";
 import { openSync } from "fs";
