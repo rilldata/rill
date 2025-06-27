@@ -219,13 +219,10 @@ func (s *Server) UpdateService(ctx context.Context, req *adminv1.UpdateServiceRe
 	// Update service name and attributes if provided
 	if req.NewName != nil || req.Attributes != nil {
 		updateOpts := &database.UpdateServiceOptions{
-			Name:       service.Name,       // Preserve existing name if not updating
-			Attributes: service.Attributes, // Preserve existing attributes if not updating
+			Name:       valOrDefault(req.NewName, service.Name), // Preserve existing name if not updating
+			Attributes: service.Attributes,                      // Preserve existing attributes if not updating
 		}
-		if req.NewName != nil {
-			updateOpts.Name = *req.NewName
-		}
-		if len(req.Attributes) > 0 {
+		if req.Attributes != nil {
 			updateOpts.Attributes = req.Attributes
 		}
 		service, err = s.admin.DB.UpdateService(ctx, service.ID, updateOpts)

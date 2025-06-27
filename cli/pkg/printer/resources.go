@@ -249,7 +249,7 @@ type memberUserWithRole struct {
 
 type orgMemberService struct {
 	Name            string `header:"name" json:"name"`
-	RoleName        string `header:"role" json:"role_name"`
+	RoleName        string `header:"org_role" json:"role_name"`
 	HasProjectRoles bool   `header:"has_project_roles" json:"has_project_roles"`
 	Attributes      string `header:"attributes" json:"attributes"`
 }
