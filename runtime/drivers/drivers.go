@@ -136,7 +136,8 @@ type Handle interface {
 	// But managing the result lifecycle is easier to do directly using the output connector.
 	AsModelManager(instanceID string) (ModelManager, bool)
 
-	// AsNotifier returns a Notifier (if the driver can serve as such) to send notifications: alerts, reports, etc.
-	// Examples: email notifier, slack notifier.
-	AsNotifier(properties map[string]any) (Notifier, error)
+	// AsNotifier returns a Notifier if the driver can serve as such, otherwise returns false.
+	// Notifices can be used to notifications, such as for alerts and reports.
+	// Example implementations include email and Slack notifiers.
+	AsNotifier(properties map[string]any) (Notifier, bool)
 }

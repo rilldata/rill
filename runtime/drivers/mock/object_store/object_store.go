@@ -161,8 +161,8 @@ func (h *handle) AsWarehouse() (drivers.Warehouse, bool) {
 }
 
 // AsNotifier implements drivers.Connection.
-func (h *handle) AsNotifier(properties map[string]any) (drivers.Notifier, error) {
-	return nil, drivers.ErrNotNotifier
+func (h *handle) AsNotifier(properties map[string]any) (drivers.Notifier, bool) {
+	return nil, false
 }
 
 // ListObjects implements drivers.ObjectStore.

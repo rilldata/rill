@@ -754,9 +754,9 @@ func (r *AlertReconciler) popCurrentExecution(ctx context.Context, self *runtime
 						return err
 					}
 					defer release()
-					n, err := conn.AsNotifier(notifier.Properties.AsMap())
-					if err != nil {
-						return err
+					n, ok := conn.AsNotifier(notifier.Properties.AsMap())
+					if !ok {
+						return fmt.Errorf("connector %q is not a notifier", notifier.Connector)
 					}
 					start := time.Now()
 					defer func() {

@@ -9,7 +9,6 @@ import (
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
-	"github.com/rilldata/rill/runtime/drivers/slack"
 	"github.com/rilldata/rill/runtime/pkg/duration"
 	"github.com/rilldata/rill/runtime/pkg/pbutil"
 	"google.golang.org/protobuf/types/known/structpb"
@@ -236,7 +235,11 @@ func (p *Parser) parseReport(node *Node) error {
 		}
 		// Slack settings
 		if len(tmp.Notify.Slack.Channels) > 0 || len(tmp.Notify.Slack.Users) > 0 || len(tmp.Notify.Slack.Webhooks) > 0 {
-			props, err := structpb.NewStruct(slack.EncodeProps(tmp.Notify.Slack.Users, tmp.Notify.Slack.Channels, tmp.Notify.Slack.Webhooks))
+			props, err := structpb.NewStruct(map[string]any{
+				"users":    pbutil.ToSliceAny(tmp.Notify.Slack.Users),
+				"channels": pbutil.ToSliceAny(tmp.Notify.Slack.Channels),
+				"webhooks": pbutil.ToSliceAny(tmp.Notify.Slack.Webhooks),
+			})
 			if err != nil {
 				return err
 			}

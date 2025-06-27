@@ -243,8 +243,8 @@ func (c *Connection) AsWarehouse() (drivers.Warehouse, bool) {
 }
 
 // AsNotifier implements drivers.Connection.
-func (c *Connection) AsNotifier(properties map[string]any) (drivers.Notifier, error) {
-	return nil, drivers.ErrNotNotifier
+func (c *Connection) AsNotifier(properties map[string]any) (drivers.Notifier, bool) {
+	return nil, false
 }
 
 // newCredentials returns credentials for connecting to AWS.
