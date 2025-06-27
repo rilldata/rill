@@ -7,7 +7,7 @@
   import ResourceWatcher from "@rilldata/web-common/features/entity-management/ResourceWatcher.svelte";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { initPylonWidget } from "@rilldata/web-common/features/help/initPylonWidget";
-
+  import RemoteProjectManager from "@rilldata/web-common/features/project/RemoteProjectManager.svelte";
   import ApplicationHeader from "@rilldata/web-common/layout/ApplicationHeader.svelte";
   import BlockingOverlayContainer from "@rilldata/web-common/layout/BlockingOverlayContainer.svelte";
   import { overlay } from "@rilldata/web-common/layout/overlay-store";
@@ -85,6 +85,7 @@
           <RepresentingUserBanner />
         {/if}
         <ApplicationHeader {mode} />
+        <RemoteProjectManager />
       {/if}
 
       <slot />
