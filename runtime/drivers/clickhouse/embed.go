@@ -119,8 +119,8 @@ func (e *embedClickHouse) start() (*clickhouse.Options, error) {
 		decoder := json.NewDecoder(stderr)
 
 		for {
-			var obj clickhouseLog
-			if err := decoder.Decode(&obj); err != nil {
+			var log clickhouseLog
+			if err := decoder.Decode(&log); err != nil {
 				if err == io.EOF {
 					// EOF means the process has exited and the stderr pipe is closed.
 					break
@@ -128,16 +128,16 @@ func (e *embedClickHouse) start() (*clickhouse.Options, error) {
 				e.logger.Error("Failed to decode ClickHouse log", zap.Error(err))
 			}
 
-			switch strings.ToLower(obj.Level) {
-			case "fatal":
-				e.logger.Fatal("ClickHouse embedded server: fatal log received, restart server", zap.String("logger_name", obj.LoggerName), zap.String("message", obj.Message))
-			case "critical", "error":
-				e.logger.Error("ClickHouse embedded server", zap.String("logger_name", obj.LoggerName), zap.String("message", obj.Message))
-			case "warning", "notice":
-				e.logger.Warn("ClickHouse embedded server", zap.String("logger_name", obj.LoggerName), zap.String("message", obj.Message))
-			case "information", "debug", "trace", "test":
+			switch log.Level {
+			case "Fatal":
+				e.logger.Fatal("ClickHouse embedded server: fatal log received, restart server", zap.String("logger_name", log.LoggerName), zap.String("message", log.Message))
+			case "Critical", "Error":
+				e.logger.Error("ClickHouse embedded server", zap.String("logger_name", log.LoggerName), zap.String("message", log.Message))
+			case "Warning", "Notice":
+				e.logger.Warn("ClickHouse embedded server", zap.String("logger_name", log.LoggerName), zap.String("message", log.Message))
+			case "Information", "Debug", "Trace", "Test":
 				// even the information logs are too verbose in clickhouse so we log them at debug level
-				e.logger.Debug("ClickHouse embedded server", zap.String("logger_name", obj.LoggerName), zap.String("message", obj.Message))
+				e.logger.Debug("ClickHouse embedded server", zap.String("logger_name", log.LoggerName), zap.String("message", log.Message))
 			}
 		}
 		stderr.Close()
