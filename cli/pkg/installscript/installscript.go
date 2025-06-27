@@ -36,14 +36,14 @@ func execScript(ctx context.Context, version string, args ...string) error {
 }
 
 func createScriptFile(ctx context.Context, version string) (string, error) {
-	var reader io.Reader
+	var in io.Reader
 	var err error
 
 	if version == "" {
-		reader, err = getEmbeddedScript()
+		in, err = getEmbeddedScript()
 	} else {
 		// Download script for specific version
-		reader, err = downloadScript(ctx, version)
+		in, err = downloadScript(ctx, version)
 	}
 
 	if err != nil {
@@ -57,7 +57,7 @@ func createScriptFile(ctx context.Context, version string) (string, error) {
 	}
 	defer out.Close()
 
-	_, err = io.Copy(out, reader)
+	_, err = io.Copy(out, in)
 	if err != nil {
 		return "", err
 	}
