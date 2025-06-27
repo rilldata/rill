@@ -3,6 +3,7 @@ package gcs
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -115,7 +116,25 @@ var _ drivers.Handle = &Connection{}
 
 // Ping implements drivers.Handle.
 func (c *Connection) Ping(ctx context.Context) error {
-	return drivers.ErrNotImplemented
+	if c.config.SecretJSON != "" {
+		creds, err := gcputil.Credentials(ctx, c.config.SecretJSON, c.config.AllowHostAccess)
+		if err != nil {
+			return fmt.Errorf("failed to load credentials: %w", err)
+		}
+
+		ts := gcp.CredentialsTokenSource(creds)
+		_, err = ts.Token()
+		if err != nil {
+			return fmt.Errorf("failed to retrieve access token: %w", err)
+		}
+	}
+
+	if c.config.KeyID != "" && c.config.Secret != "" {
+		// TODO: handle in case of HMAC key secret
+		return nil
+	}
+
+	return nil
 }
 
 // Driver implements drivers.Connection.

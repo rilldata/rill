@@ -128,7 +128,31 @@ var _ drivers.Handle = &Connection{}
 
 // Ping implements drivers.Handle.
 func (c *Connection) Ping(ctx context.Context) error {
-	return drivers.ErrNotImplemented
+	opts, err := c.clientOption(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to get client options: %w", err)
+	}
+	var projectID string
+	if c.config.ProjectID != "" {
+		projectID = c.config.ProjectID
+	} else {
+		projectID = bigquery.DetectProjectID
+	}
+
+	client, err := createClient(ctx, projectID, opts)
+	if err != nil {
+		return fmt.Errorf("failed to create client: %w", err)
+	}
+	defer client.Close()
+
+	// Run a simple query to verify connection
+	q := client.Query("SELECT 1")
+	_, err = q.Read(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to execute test query: %w", err)
+	}
+
+	return nil
 }
 
 // Driver implements drivers.Connection.

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/sts"
@@ -154,7 +155,32 @@ var _ drivers.Handle = &Connection{}
 
 // Ping implements drivers.Handle.
 func (c *Connection) Ping(ctx context.Context) error {
-	return drivers.ErrNotImplemented
+	creds, err := c.newCredentials()
+	if err != nil {
+		return fmt.Errorf("failed to get AWS credentials: %w", err)
+	}
+
+	cfg := aws.NewConfig().WithCredentials(creds)
+	if c.config.Region != "" {
+		cfg = cfg.WithRegion(c.config.Region)
+	}
+
+	if c.config.Endpoint != "" {
+		cfg = cfg.WithEndpoint(c.config.Endpoint).WithS3ForcePathStyle(true)
+	}
+
+	sess, err := session.NewSession(cfg)
+	if err != nil {
+		return fmt.Errorf("failed to create AWS session: %w", err)
+	}
+
+	stsClient := sts.New(sess)
+	_, err = stsClient.GetCallerIdentityWithContext(ctx, &sts.GetCallerIdentityInput{})
+	if err != nil {
+		return fmt.Errorf("GetCallerIdentity failed: %w", err)
+	}
+
+	return nil
 }
 
 // Driver implements drivers.Connection.
