@@ -2,16 +2,19 @@ package snowflake
 
 import (
 	"context"
+	"crypto/rsa"
+	"crypto/x509"
+	"encoding/base64"
+	"encoding/pem"
 	"errors"
+	"fmt"
 
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/storage"
+	"github.com/snowflakedb/gosnowflake"
 	"go.uber.org/zap"
-
-	// Load database/sql driver
-	_ "github.com/snowflakedb/gosnowflake"
 )
 
 func init() {
@@ -65,8 +68,67 @@ var spec = drivers.Spec{
 type driver struct{}
 
 type configProperties struct {
-	DSN                string `mapstructure:"dsn"`
-	ParallelFetchLimit int    `mapstructure:"parallel_fetch_limit"`
+	DSN                string         `mapstructure:"dsn"`
+	Account            string         `mapstructure:"account"`
+	User               string         `mapstructure:"user"`
+	Password           string         `mapstructure:"password"`
+	Database           string         `mapstructure:"database"`
+	Schema             string         `mapstructure:"schema"`
+	Warehouse          string         `mapstructure:"warehouse"`
+	Role               string         `mapstructure:"role"`
+	Authenticator      string         `mapstructure:"authenticator"`
+	PrivateKey         string         `mapstructure:"privateKey"`
+	ParallelFetchLimit int            `mapstructure:"parallel_fetch_limit"`
+	Extras             map[string]any `mapstructure:",remain"`
+}
+
+func (cp configProperties) resolveDSN() (string, error) {
+	if cp.DSN != "" {
+		return cp.DSN, nil
+	}
+
+	if cp.Account == "" || cp.User == "" || cp.Database == "" {
+		return "", errors.New("missing required fields: account, user, or database")
+	}
+
+	if cp.Password == "" && cp.PrivateKey == "" {
+		return "", errors.New("either password or privateKey must be provided")
+	}
+
+	cfg := &gosnowflake.Config{
+		Account:   cp.Account,
+		User:      cp.User,
+		Password:  cp.Password,
+		Database:  cp.Database,
+		Schema:    cp.Schema,
+		Warehouse: cp.Warehouse,
+		Role:      cp.Role,
+		Params:    map[string]*string{},
+	}
+
+	if cp.PrivateKey != "" {
+		privateKey, err := parseRSAPrivateKey(cp.PrivateKey)
+		if err != nil {
+			return "", err
+		}
+		cfg.PrivateKey = privateKey
+		cfg.Authenticator = gosnowflake.AuthTypeJwt
+	} else if cp.Authenticator != "" {
+		cfg.Params["authenticator"] = &cp.Authenticator
+	}
+
+	// Apply extra params
+	for k, v := range cp.Extras {
+		switch val := v.(type) {
+		case string:
+			cfg.Params[k] = &val
+		default:
+			strVal := fmt.Sprintf("%v", val)
+			cfg.Params[k] = &strVal
+		}
+	}
+
+	return gosnowflake.DSN(cfg)
 }
 
 func (d driver) Open(instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
@@ -204,4 +266,42 @@ func (c *connection) AsWarehouse() (drivers.Warehouse, bool) {
 // AsNotifier implements drivers.Connection.
 func (c *connection) AsNotifier(properties map[string]any) (drivers.Notifier, error) {
 	return nil, drivers.ErrNotNotifier
+}
+
+// parseRSAPrivateKey parses a private key string
+func parseRSAPrivateKey(keyStr string) (*rsa.PrivateKey, error) {
+	var keyBytes []byte
+
+	// 1. Try standard Base64 decoding (common in env vars or configs)
+	if decoded, err := base64.StdEncoding.DecodeString(keyStr); err == nil {
+		if block, _ := pem.Decode(decoded); block != nil {
+			keyBytes = block.Bytes // decoded base64 was PEM
+		} else {
+			keyBytes = decoded // decoded base64 was raw DER
+		}
+	} else if decoded, err := base64.URLEncoding.DecodeString(keyStr); err == nil {
+		// 2. Try URL-safe Base64 (used by Snowflake SDK)
+		if block, _ := pem.Decode(decoded); block != nil {
+			keyBytes = block.Bytes
+		} else {
+			keyBytes = decoded
+		}
+	} else {
+		// 3. Fallback: maybe it's a raw PEM string (with BEGIN/END)
+		if block, _ := pem.Decode([]byte(keyStr)); block != nil {
+			keyBytes = block.Bytes
+		} else {
+			return nil, errors.New("invalid private key: not valid base64 or PEM")
+		}
+	}
+
+	// Try PKCS#8
+	if key, err := x509.ParsePKCS8PrivateKey(keyBytes); err == nil {
+		if rsaKey, ok := key.(*rsa.PrivateKey); ok {
+			return rsaKey, nil
+		}
+		return nil, errors.New("unsupported key type: not RSA (PKCS#8)")
+	}
+
+	return nil, errors.New("failed to parse RSA private key not PKCS#8)")
 }
