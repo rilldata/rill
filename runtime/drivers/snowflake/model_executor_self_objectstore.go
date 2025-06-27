@@ -55,14 +55,14 @@ func (e *selfToObjectStoreExecutor) Execute(ctx context.Context, opts *drivers.M
 }
 
 func (e *selfToObjectStoreExecutor) export(ctx context.Context, props map[string]any, outputLocation string, format drivers.FileFormat) (string, error) {
-	sourceProperties, err := parseSourceProperties(props)
+	srcProps, err := parseSourceProperties(props)
 	if err != nil {
 		return "", err
 	}
 
 	var dsn string
-	if sourceProperties.DSN != "" { // get from src properties
-		dsn = sourceProperties.DSN
+	if srcProps.DSN != "" { // get from src properties
+		dsn = srcProps.DSN
 	} else {
 		dsnResolved, err := e.c.configProperties.resolveDSN()
 		if err != nil {
@@ -94,7 +94,7 @@ func (e *selfToObjectStoreExecutor) export(ctx context.Context, props map[string
 		CREDENTIALS = %s
 		HEADER = TRUE
 		MAX_FILE_SIZE = 536870912 
-		FILE_FORMAT = (TYPE='%s' COMPRESSION = 'SNAPPY')`, outputLocation, sourceProperties.SQL, creds, string(format))
+		FILE_FORMAT = (TYPE='%s' COMPRESSION = 'SNAPPY')`, outputLocation, srcProps.SQL, creds, string(format))
 	_, err = db.ExecContext(ctx, query)
 	if err != nil {
 		return "", err

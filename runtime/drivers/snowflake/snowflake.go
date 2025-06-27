@@ -268,7 +268,7 @@ func (c *connection) AsNotifier(properties map[string]any) (drivers.Notifier, er
 	return nil, drivers.ErrNotNotifier
 }
 
-// parseRSAPrivateKey parses a private key string that is either:
+// parseRSAPrivateKey parses a private key string
 func parseRSAPrivateKey(keyStr string) (*rsa.PrivateKey, error) {
 	var keyBytes []byte
 
@@ -303,5 +303,5 @@ func parseRSAPrivateKey(keyStr string) (*rsa.PrivateKey, error) {
 		return nil, errors.New("unsupported key type: not RSA (PKCS#8)")
 	}
 
-	return nil, errors.New("failed to parse RSA private key (neither PKCS#1 nor PKCS#8)")
+	return nil, errors.New("failed to parse RSA private key not PKCS#8)")
 }

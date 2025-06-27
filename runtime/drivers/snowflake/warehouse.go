@@ -46,14 +46,14 @@ func (c *connection) QueryAsFiles(ctx context.Context, props map[string]any) (ou
 		span.End()
 	}()
 
-	sourceProperties, err := parseSourceProperties(props)
+	srcProps, err := parseSourceProperties(props)
 	if err != nil {
 		return nil, err
 	}
 
 	var dsn string
-	if sourceProperties.DSN != "" { // get from src properties
-		dsn = sourceProperties.DSN
+	if srcProps.DSN != "" { // get from src properties
+		dsn = srcProps.DSN
 	} else {
 		dsnResolved, err := c.configProperties.resolveDSN()
 		if err != nil {
@@ -91,7 +91,7 @@ func (c *connection) QueryAsFiles(ctx context.Context, props map[string]any) (ou
 
 	var rows sqld.Rows
 	err = conn.Raw(func(x interface{}) error {
-		rows, err = x.(sqld.QueryerContext).QueryContext(ctx, sourceProperties.SQL, nil)
+		rows, err = x.(sqld.QueryerContext).QueryContext(ctx, srcProps.SQL, nil)
 		return err
 	})
 	if err != nil {
