@@ -179,9 +179,10 @@ func (p *Printer) PrintOrganizationMemberServices(members []*adminv1.Organizatio
 			attributes = "{}"
 		}
 		allMembers = append(allMembers, &orgMemberService{
-			Name:       m.Name,
-			RoleName:   m.RoleName,
-			Attributes: attributes,
+			Name:            m.Name,
+			RoleName:        m.RoleName,
+			HasProjectRoles: m.HasProjectRoles,
+			Attributes:      attributes,
 		})
 	}
 
@@ -247,9 +248,10 @@ type memberUserWithRole struct {
 }
 
 type orgMemberService struct {
-	Name       string `header:"name" json:"name"`
-	RoleName   string `header:"role" json:"role_name"`
-	Attributes string `header:"attributes" json:"attributes"`
+	Name            string `header:"name" json:"name"`
+	RoleName        string `header:"role" json:"role_name"`
+	HasProjectRoles bool   `header:"has_project_roles" json:"has_project_roles"`
+	Attributes      string `header:"attributes" json:"attributes"`
 }
 
 type projectMemberService struct {

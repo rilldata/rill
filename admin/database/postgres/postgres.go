@@ -1024,7 +1024,13 @@ func (c *connection) DeleteExpiredUserAuthTokens(ctx context.Context, retention 
 func (c *connection) FindOrganizationMemberServices(ctx context.Context, orgID string) ([]*database.OrganizationMemberService, error) {
 	var services []*organizationMemberServiceDTO
 	query := `
-		SELECT s.id, s.name, COALESCE(r.name, '') as role_name, s.attributes, s.created_on, s.updated_on
+		SELECT s.id, s.name, COALESCE(r.name, '') as role_name, EXISTS (
+           SELECT 1
+           FROM service_projects_roles spr
+           JOIN projects p ON p.id = spr.project_id
+           WHERE spr.service_id = s.id AND p.org_id = $1
+       	) AS has_project_roles, 
+		s.attributes, s.created_on, s.updated_on
 		FROM service s
 		LEFT JOIN service_orgs_roles org_sr ON org_sr.service_id = s.id
 		LEFT JOIN org_roles r ON r.id = org_sr.org_role_id

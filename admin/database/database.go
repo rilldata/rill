@@ -1318,12 +1318,13 @@ type InsertManagedGitRepoOptions struct {
 }
 
 type OrganizationMemberService struct {
-	ID         string
-	Name       string
-	RoleName   string            `db:"role_name"`
-	Attributes map[string]string `db:"attributes"`
-	CreatedOn  time.Time         `db:"created_on"`
-	UpdatedOn  time.Time         `db:"updated_on"`
+	ID              string
+	Name            string
+	RoleName        string            `db:"role_name"`
+	HasProjectRoles bool              `db:"has_project_roles"`
+	Attributes      map[string]string `db:"attributes"`
+	CreatedOn       time.Time         `db:"created_on"`
+	UpdatedOn       time.Time         `db:"updated_on"`
 }
 
 type ProjectMemberService struct {

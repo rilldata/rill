@@ -655,6 +655,10 @@ export interface V1ListProjectInvitesResponse {
   nextPageToken?: string;
 }
 
+export interface V1ListProjectMemberServicesResponse {
+  services?: V1ProjectMemberService[];
+}
+
 export interface V1ListProjectMemberUsergroupsResponse {
   members?: V1MemberUsergroup[];
   nextPageToken?: string;
@@ -663,10 +667,6 @@ export interface V1ListProjectMemberUsergroupsResponse {
 export interface V1ListProjectMemberUsersResponse {
   members?: V1ProjectMemberUser[];
   nextPageToken?: string;
-}
-
-export interface V1ListProjectServicesResponse {
-  services?: V1ProjectMemberService[];
 }
 
 export interface V1ListProjectWhitelistedDomainsResponse {
@@ -814,6 +814,8 @@ export interface V1OrganizationMemberService {
   orgId?: string;
   orgName?: string;
   roleName?: string;
+  /** True if the user has a project role in any project in the organization. */
+  hasProjectRoles?: boolean;
   attributes?: V1OrganizationMemberServiceAttributes;
   createdOn?: string;
   updatedOn?: string;

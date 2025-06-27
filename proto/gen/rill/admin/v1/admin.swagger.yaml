@@ -2820,13 +2820,13 @@ paths:
         - AdminService
   /v1/organizations/{organizationName}/projects/{projectName}/services:
     get:
-      summary: ListProjectServices returns all the services for the project for an organization
-      operationId: AdminService_ListProjectServices
+      summary: ListProjectMemberServices returns all the services for the project for an organization
+      operationId: AdminService_ListProjectMemberServices
       responses:
         "200":
           description: A successful response.
           schema:
-            $ref: '#/definitions/v1ListProjectServicesResponse'
+            $ref: '#/definitions/v1ListProjectMemberServicesResponse'
         default:
           description: An unexpected error response.
           schema:
@@ -4995,6 +4995,14 @@ definitions:
           $ref: '#/definitions/v1ProjectInvite'
       nextPageToken:
         type: string
+  v1ListProjectMemberServicesResponse:
+    type: object
+    properties:
+      services:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1ProjectMemberService'
   v1ListProjectMemberUsergroupsResponse:
     type: object
     properties:
@@ -5015,14 +5023,6 @@ definitions:
           $ref: '#/definitions/v1ProjectMemberUser'
       nextPageToken:
         type: string
-  v1ListProjectServicesResponse:
-    type: object
-    properties:
-      services:
-        type: array
-        items:
-          type: object
-          $ref: '#/definitions/v1ProjectMemberService'
   v1ListProjectWhitelistedDomainsResponse:
     type: object
     properties:
@@ -5288,6 +5288,9 @@ definitions:
         type: string
       roleName:
         type: string
+      hasProjectRoles:
+        type: boolean
+        description: True if the user has a project role in any project in the organization.
       attributes:
         type: object
         additionalProperties:

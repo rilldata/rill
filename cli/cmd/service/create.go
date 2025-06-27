@@ -27,13 +27,17 @@ func CreateCmd(ch *cmdutil.Helper) *cobra.Command {
 			var attrs map[string]string
 			if attributes != "" {
 				if err := json.Unmarshal([]byte(attributes), &attrs); err != nil {
-					return err
+					return fmt.Errorf("failed to parse --attributes as JSON: %w", err)
 				}
 			}
 
 			req := &adminv1.CreateServiceRequest{
 				Name:             args[0],
 				OrganizationName: ch.Org,
+			}
+
+			if orgRole == "" && projectRole == "" {
+				return fmt.Errorf("either --org-role or --project-role must be specified")
 			}
 
 			// Set org role if provided

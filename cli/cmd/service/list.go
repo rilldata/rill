@@ -19,7 +19,7 @@ func ListCmd(ch *cmdutil.Helper) *cobra.Command {
 
 			if project != "" {
 				// If project is specified, list services for that project
-				res, err := client.ListProjectServices(cmd.Context(), &adminv1.ListProjectServicesRequest{
+				res, err := client.ListProjectMemberServices(cmd.Context(), &adminv1.ListProjectMemberServicesRequest{
 					OrganizationName: ch.Org,
 					ProjectName:      project,
 				})

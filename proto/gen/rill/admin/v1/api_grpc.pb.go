@@ -111,7 +111,7 @@ const (
 	AdminService_RemoveProjectWhitelistedDomain_FullMethodName        = "/rill.admin.v1.AdminService/RemoveProjectWhitelistedDomain"
 	AdminService_ListProjectWhitelistedDomains_FullMethodName         = "/rill.admin.v1.AdminService/ListProjectWhitelistedDomains"
 	AdminService_ListServices_FullMethodName                          = "/rill.admin.v1.AdminService/ListServices"
-	AdminService_ListProjectServices_FullMethodName                   = "/rill.admin.v1.AdminService/ListProjectServices"
+	AdminService_ListProjectMemberServices_FullMethodName             = "/rill.admin.v1.AdminService/ListProjectMemberServices"
 	AdminService_CreateService_FullMethodName                         = "/rill.admin.v1.AdminService/CreateService"
 	AdminService_UpdateService_FullMethodName                         = "/rill.admin.v1.AdminService/UpdateService"
 	AdminService_SetOrganizationMemberServiceRole_FullMethodName      = "/rill.admin.v1.AdminService/SetOrganizationMemberServiceRole"
@@ -367,8 +367,8 @@ type AdminServiceClient interface {
 	ListProjectWhitelistedDomains(ctx context.Context, in *ListProjectWhitelistedDomainsRequest, opts ...grpc.CallOption) (*ListProjectWhitelistedDomainsResponse, error)
 	// ListService returns all the services per organization
 	ListServices(ctx context.Context, in *ListServicesRequest, opts ...grpc.CallOption) (*ListServicesResponse, error)
-	// ListProjectServices returns all the services for the project for an organization
-	ListProjectServices(ctx context.Context, in *ListProjectServicesRequest, opts ...grpc.CallOption) (*ListProjectServicesResponse, error)
+	// ListProjectMemberServices returns all the services for the project for an organization
+	ListProjectMemberServices(ctx context.Context, in *ListProjectMemberServicesRequest, opts ...grpc.CallOption) (*ListProjectMemberServicesResponse, error)
 	// CreateService creates a new service per organization
 	CreateService(ctx context.Context, in *CreateServiceRequest, opts ...grpc.CallOption) (*CreateServiceResponse, error)
 	// UpdateService updates a service per organization
@@ -1389,10 +1389,10 @@ func (c *adminServiceClient) ListServices(ctx context.Context, in *ListServicesR
 	return out, nil
 }
 
-func (c *adminServiceClient) ListProjectServices(ctx context.Context, in *ListProjectServicesRequest, opts ...grpc.CallOption) (*ListProjectServicesResponse, error) {
+func (c *adminServiceClient) ListProjectMemberServices(ctx context.Context, in *ListProjectMemberServicesRequest, opts ...grpc.CallOption) (*ListProjectMemberServicesResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(ListProjectServicesResponse)
-	err := c.cc.Invoke(ctx, AdminService_ListProjectServices_FullMethodName, in, out, cOpts...)
+	out := new(ListProjectMemberServicesResponse)
+	err := c.cc.Invoke(ctx, AdminService_ListProjectMemberServices_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -2075,8 +2075,8 @@ type AdminServiceServer interface {
 	ListProjectWhitelistedDomains(context.Context, *ListProjectWhitelistedDomainsRequest) (*ListProjectWhitelistedDomainsResponse, error)
 	// ListService returns all the services per organization
 	ListServices(context.Context, *ListServicesRequest) (*ListServicesResponse, error)
-	// ListProjectServices returns all the services for the project for an organization
-	ListProjectServices(context.Context, *ListProjectServicesRequest) (*ListProjectServicesResponse, error)
+	// ListProjectMemberServices returns all the services for the project for an organization
+	ListProjectMemberServices(context.Context, *ListProjectMemberServicesRequest) (*ListProjectMemberServicesResponse, error)
 	// CreateService creates a new service per organization
 	CreateService(context.Context, *CreateServiceRequest) (*CreateServiceResponse, error)
 	// UpdateService updates a service per organization
@@ -2453,8 +2453,8 @@ func (UnimplementedAdminServiceServer) ListProjectWhitelistedDomains(context.Con
 func (UnimplementedAdminServiceServer) ListServices(context.Context, *ListServicesRequest) (*ListServicesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListServices not implemented")
 }
-func (UnimplementedAdminServiceServer) ListProjectServices(context.Context, *ListProjectServicesRequest) (*ListProjectServicesResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ListProjectServices not implemented")
+func (UnimplementedAdminServiceServer) ListProjectMemberServices(context.Context, *ListProjectMemberServicesRequest) (*ListProjectMemberServicesResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListProjectMemberServices not implemented")
 }
 func (UnimplementedAdminServiceServer) CreateService(context.Context, *CreateServiceRequest) (*CreateServiceResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateService not implemented")
@@ -4274,20 +4274,20 @@ func _AdminService_ListServices_Handler(srv interface{}, ctx context.Context, de
 	return interceptor(ctx, in, info, handler)
 }
 
-func _AdminService_ListProjectServices_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ListProjectServicesRequest)
+func _AdminService_ListProjectMemberServices_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListProjectMemberServicesRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(AdminServiceServer).ListProjectServices(ctx, in)
+		return srv.(AdminServiceServer).ListProjectMemberServices(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: AdminService_ListProjectServices_FullMethodName,
+		FullMethod: AdminService_ListProjectMemberServices_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AdminServiceServer).ListProjectServices(ctx, req.(*ListProjectServicesRequest))
+		return srv.(AdminServiceServer).ListProjectMemberServices(ctx, req.(*ListProjectMemberServicesRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -5514,8 +5514,8 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _AdminService_ListServices_Handler,
 		},
 		{
-			MethodName: "ListProjectServices",
-			Handler:    _AdminService_ListProjectServices_Handler,
+			MethodName: "ListProjectMemberServices",
+			Handler:    _AdminService_ListProjectMemberServices_Handler,
 		},
 		{
 			MethodName: "CreateService",

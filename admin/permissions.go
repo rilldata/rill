@@ -63,28 +63,6 @@ func (s *Service) OrganizationPermissionsForService(ctx context.Context, orgID, 
 		}, nil
 	}
 
-	// Fall back to legacy behavior for backward compatibility
-	service, err := s.DB.FindService(ctx, serviceID)
-	if err != nil {
-		return nil, err
-	}
-
-	// Services get full permissions on the org they belong to
-	if orgID == service.OrgID {
-		return &adminv1.OrganizationPermissions{
-			Admin:            true,
-			Guest:            false,
-			ReadOrg:          true,
-			ManageOrg:        true,
-			ReadProjects:     true,
-			CreateProjects:   true,
-			ManageProjects:   true,
-			ReadOrgMembers:   true,
-			ManageOrgMembers: true,
-			ManageOrgAdmins:  true,
-		}, nil
-	}
-
 	return &adminv1.OrganizationPermissions{}, nil
 }
 
@@ -211,13 +189,12 @@ func (s *Service) ProjectPermissionsForService(ctx context.Context, projectID, s
 		return composite, nil
 	}
 
-	// Fall back to legacy behavior for backward compatibility
+	// If no roles are found, check if the service belongs to the org of the project
 	service, err := s.DB.FindService(ctx, serviceID)
 	if err != nil {
 		return nil, err
 	}
 
-	// Get org project belongs to
 	proj, err := s.DB.FindProject(ctx, projectID)
 	if err != nil {
 		return nil, err

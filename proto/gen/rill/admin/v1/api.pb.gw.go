@@ -5701,8 +5701,8 @@ func local_request_AdminService_ListServices_0(ctx context.Context, marshaler ru
 
 }
 
-func request_AdminService_ListProjectServices_0(ctx context.Context, marshaler runtime.Marshaler, client AdminServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq ListProjectServicesRequest
+func request_AdminService_ListProjectMemberServices_0(ctx context.Context, marshaler runtime.Marshaler, client AdminServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq ListProjectMemberServicesRequest
 	var metadata runtime.ServerMetadata
 
 	var (
@@ -5732,13 +5732,13 @@ func request_AdminService_ListProjectServices_0(ctx context.Context, marshaler r
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "project_name", err)
 	}
 
-	msg, err := client.ListProjectServices(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	msg, err := client.ListProjectMemberServices(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
 
 }
 
-func local_request_AdminService_ListProjectServices_0(ctx context.Context, marshaler runtime.Marshaler, server AdminServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq ListProjectServicesRequest
+func local_request_AdminService_ListProjectMemberServices_0(ctx context.Context, marshaler runtime.Marshaler, server AdminServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq ListProjectMemberServicesRequest
 	var metadata runtime.ServerMetadata
 
 	var (
@@ -5768,7 +5768,7 @@ func local_request_AdminService_ListProjectServices_0(ctx context.Context, marsh
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "project_name", err)
 	}
 
-	msg, err := server.ListProjectServices(ctx, &protoReq)
+	msg, err := server.ListProjectMemberServices(ctx, &protoReq)
 	return msg, metadata, err
 
 }
@@ -11288,7 +11288,7 @@ func RegisterAdminServiceHandlerServer(ctx context.Context, mux *runtime.ServeMu
 
 	})
 
-	mux.Handle("GET", pattern_AdminService_ListProjectServices_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("GET", pattern_AdminService_ListProjectMemberServices_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
@@ -11296,12 +11296,12 @@ func RegisterAdminServiceHandlerServer(ctx context.Context, mux *runtime.ServeMu
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rill.admin.v1.AdminService/ListProjectServices", runtime.WithHTTPPathPattern("/v1/organizations/{organization_name}/projects/{project_name}/services"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rill.admin.v1.AdminService/ListProjectMemberServices", runtime.WithHTTPPathPattern("/v1/organizations/{organization_name}/projects/{project_name}/services"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_AdminService_ListProjectServices_0(annotatedContext, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_AdminService_ListProjectMemberServices_0(annotatedContext, inboundMarshaler, server, req, pathParams)
 		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
 		if err != nil {
@@ -11309,7 +11309,7 @@ func RegisterAdminServiceHandlerServer(ctx context.Context, mux *runtime.ServeMu
 			return
 		}
 
-		forward_AdminService_ListProjectServices_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_AdminService_ListProjectMemberServices_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -14553,25 +14553,25 @@ func RegisterAdminServiceHandlerClient(ctx context.Context, mux *runtime.ServeMu
 
 	})
 
-	mux.Handle("GET", pattern_AdminService_ListProjectServices_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("GET", pattern_AdminService_ListProjectMemberServices_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/rill.admin.v1.AdminService/ListProjectServices", runtime.WithHTTPPathPattern("/v1/organizations/{organization_name}/projects/{project_name}/services"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/rill.admin.v1.AdminService/ListProjectMemberServices", runtime.WithHTTPPathPattern("/v1/organizations/{organization_name}/projects/{project_name}/services"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_AdminService_ListProjectServices_0(annotatedContext, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_AdminService_ListProjectMemberServices_0(annotatedContext, inboundMarshaler, client, req, pathParams)
 		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
 		if err != nil {
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
 
-		forward_AdminService_ListProjectServices_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_AdminService_ListProjectMemberServices_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -15797,7 +15797,7 @@ var (
 
 	pattern_AdminService_ListServices_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3}, []string{"v1", "organizations", "organization_name", "services"}, ""))
 
-	pattern_AdminService_ListProjectServices_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 1, 0, 4, 1, 5, 4, 2, 5}, []string{"v1", "organizations", "organization_name", "projects", "project_name", "services"}, ""))
+	pattern_AdminService_ListProjectMemberServices_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 1, 0, 4, 1, 5, 4, 2, 5}, []string{"v1", "organizations", "organization_name", "projects", "project_name", "services"}, ""))
 
 	pattern_AdminService_CreateService_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3}, []string{"v1", "organizations", "organization_name", "services"}, ""))
 
@@ -16079,7 +16079,7 @@ var (
 
 	forward_AdminService_ListServices_0 = runtime.ForwardResponseMessage
 
-	forward_AdminService_ListProjectServices_0 = runtime.ForwardResponseMessage
+	forward_AdminService_ListProjectMemberServices_0 = runtime.ForwardResponseMessage
 
 	forward_AdminService_CreateService_0 = runtime.ForwardResponseMessage
 

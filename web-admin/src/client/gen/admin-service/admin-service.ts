@@ -166,9 +166,9 @@ import type {
   V1ListOrganizationMemberUsersResponse,
   V1ListOrganizationsResponse,
   V1ListProjectInvitesResponse,
+  V1ListProjectMemberServicesResponse,
   V1ListProjectMemberUsergroupsResponse,
   V1ListProjectMemberUsersResponse,
-  V1ListProjectServicesResponse,
   V1ListProjectWhitelistedDomainsResponse,
   V1ListProjectsForOrganizationAndUserResponse,
   V1ListProjectsForOrganizationResponse,
@@ -9715,21 +9715,21 @@ export const createAdminServiceUpdateProject = <
   return createMutation(mutationOptions, queryClient);
 };
 /**
- * @summary ListProjectServices returns all the services for the project for an organization
+ * @summary ListProjectMemberServices returns all the services for the project for an organization
  */
-export const adminServiceListProjectServices = (
+export const adminServiceListProjectMemberServices = (
   organizationName: string,
   projectName: string,
   signal?: AbortSignal,
 ) => {
-  return httpClient<V1ListProjectServicesResponse>({
+  return httpClient<V1ListProjectMemberServicesResponse>({
     url: `/v1/organizations/${organizationName}/projects/${projectName}/services`,
     method: "GET",
     signal,
   });
 };
 
-export const getAdminServiceListProjectServicesQueryKey = (
+export const getAdminServiceListProjectMemberServicesQueryKey = (
   organizationName: string,
   projectName: string,
 ) => {
@@ -9738,8 +9738,8 @@ export const getAdminServiceListProjectServicesQueryKey = (
   ] as const;
 };
 
-export const getAdminServiceListProjectServicesQueryOptions = <
-  TData = Awaited<ReturnType<typeof adminServiceListProjectServices>>,
+export const getAdminServiceListProjectMemberServicesQueryOptions = <
+  TData = Awaited<ReturnType<typeof adminServiceListProjectMemberServices>>,
   TError = RpcStatus,
 >(
   organizationName: string,
@@ -9747,7 +9747,7 @@ export const getAdminServiceListProjectServicesQueryOptions = <
   options?: {
     query?: Partial<
       CreateQueryOptions<
-        Awaited<ReturnType<typeof adminServiceListProjectServices>>,
+        Awaited<ReturnType<typeof adminServiceListProjectMemberServices>>,
         TError,
         TData
       >
@@ -9758,12 +9758,19 @@ export const getAdminServiceListProjectServicesQueryOptions = <
 
   const queryKey =
     queryOptions?.queryKey ??
-    getAdminServiceListProjectServicesQueryKey(organizationName, projectName);
+    getAdminServiceListProjectMemberServicesQueryKey(
+      organizationName,
+      projectName,
+    );
 
   const queryFn: QueryFunction<
-    Awaited<ReturnType<typeof adminServiceListProjectServices>>
+    Awaited<ReturnType<typeof adminServiceListProjectMemberServices>>
   > = ({ signal }) =>
-    adminServiceListProjectServices(organizationName, projectName, signal);
+    adminServiceListProjectMemberServices(
+      organizationName,
+      projectName,
+      signal,
+    );
 
   return {
     queryKey,
@@ -9771,23 +9778,23 @@ export const getAdminServiceListProjectServicesQueryOptions = <
     enabled: !!(organizationName && projectName),
     ...queryOptions,
   } as CreateQueryOptions<
-    Awaited<ReturnType<typeof adminServiceListProjectServices>>,
+    Awaited<ReturnType<typeof adminServiceListProjectMemberServices>>,
     TError,
     TData
   > & { queryKey: DataTag<QueryKey, TData, TError> };
 };
 
-export type AdminServiceListProjectServicesQueryResult = NonNullable<
-  Awaited<ReturnType<typeof adminServiceListProjectServices>>
+export type AdminServiceListProjectMemberServicesQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceListProjectMemberServices>>
 >;
-export type AdminServiceListProjectServicesQueryError = RpcStatus;
+export type AdminServiceListProjectMemberServicesQueryError = RpcStatus;
 
 /**
- * @summary ListProjectServices returns all the services for the project for an organization
+ * @summary ListProjectMemberServices returns all the services for the project for an organization
  */
 
-export function createAdminServiceListProjectServices<
-  TData = Awaited<ReturnType<typeof adminServiceListProjectServices>>,
+export function createAdminServiceListProjectMemberServices<
+  TData = Awaited<ReturnType<typeof adminServiceListProjectMemberServices>>,
   TError = RpcStatus,
 >(
   organizationName: string,
@@ -9795,7 +9802,7 @@ export function createAdminServiceListProjectServices<
   options?: {
     query?: Partial<
       CreateQueryOptions<
-        Awaited<ReturnType<typeof adminServiceListProjectServices>>,
+        Awaited<ReturnType<typeof adminServiceListProjectMemberServices>>,
         TError,
         TData
       >
@@ -9805,7 +9812,7 @@ export function createAdminServiceListProjectServices<
 ): CreateQueryResult<TData, TError> & {
   queryKey: DataTag<QueryKey, TData, TError>;
 } {
-  const queryOptions = getAdminServiceListProjectServicesQueryOptions(
+  const queryOptions = getAdminServiceListProjectMemberServicesQueryOptions(
     organizationName,
     projectName,
     options,

@@ -34,6 +34,15 @@ func (s *Server) CreateService(ctx context.Context, req *adminv1.CreateServiceRe
 		return nil, status.Error(codes.PermissionDenied, "not allowed to create a service")
 	}
 
+	if req.OrgRoleName == "" && req.ProjectRoleName == "" {
+		return nil, status.Error(codes.InvalidArgument, "at least one of org role or project role must be specified")
+	}
+
+	// Check if project name and role are both provided or both empty
+	if (req.ProjectName != "" && req.ProjectRoleName == "") || (req.ProjectName == "" && req.ProjectRoleName != "") {
+		return nil, status.Error(codes.InvalidArgument, "both project name and project role must be specified together")
+	}
+
 	ctx, tx, err := s.admin.DB.NewTx(ctx, true)
 	if err != nil {
 		return nil, err
@@ -114,14 +123,15 @@ func (s *Server) ListServices(ctx context.Context, req *adminv1.ListServicesRequ
 	var servicesPB []*adminv1.OrganizationMemberService
 	for _, service := range services {
 		servicesPB = append(servicesPB, &adminv1.OrganizationMemberService{
-			Id:         service.ID,
-			Name:       service.Name,
-			OrgId:      org.ID,
-			OrgName:    org.Name,
-			RoleName:   service.RoleName,
-			Attributes: service.Attributes,
-			CreatedOn:  timestamppb.New(service.CreatedOn),
-			UpdatedOn:  timestamppb.New(service.UpdatedOn),
+			Id:              service.ID,
+			Name:            service.Name,
+			OrgId:           org.ID,
+			OrgName:         org.Name,
+			RoleName:        service.RoleName,
+			HasProjectRoles: service.HasProjectRoles,
+			Attributes:      service.Attributes,
+			CreatedOn:       timestamppb.New(service.CreatedOn),
+			UpdatedOn:       timestamppb.New(service.UpdatedOn),
 		})
 	}
 
@@ -130,8 +140,8 @@ func (s *Server) ListServices(ctx context.Context, req *adminv1.ListServicesRequ
 	}, nil
 }
 
-// ListProjectServices lists all service accounts for a project.
-func (s *Server) ListProjectServices(ctx context.Context, req *adminv1.ListProjectServicesRequest) (*adminv1.ListProjectServicesResponse, error) {
+// ListProjectMemberServices lists all service accounts for a project.
+func (s *Server) ListProjectMemberServices(ctx context.Context, req *adminv1.ListProjectMemberServicesRequest) (*adminv1.ListProjectMemberServicesResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.project", req.ProjectName),
 		attribute.String("args.organization", req.OrganizationName),
@@ -139,12 +149,12 @@ func (s *Server) ListProjectServices(ctx context.Context, req *adminv1.ListProje
 
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.OrganizationName)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	project, err := s.admin.DB.FindProjectByName(ctx, req.OrganizationName, req.ProjectName)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	claims := auth.GetClaims(ctx)
@@ -154,7 +164,7 @@ func (s *Server) ListProjectServices(ctx context.Context, req *adminv1.ListProje
 
 	services, err := s.admin.DB.FindProjectMemberServices(ctx, project.ID)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 
 	var servicesPB []*adminv1.ProjectMemberService
@@ -173,7 +183,7 @@ func (s *Server) ListProjectServices(ctx context.Context, req *adminv1.ListProje
 		servicesPB = append(servicesPB, p)
 	}
 
-	return &adminv1.ListProjectServicesResponse{
+	return &adminv1.ListProjectMemberServicesResponse{
 		Services: servicesPB,
 	}, nil
 }
@@ -191,7 +201,7 @@ func (s *Server) UpdateService(ctx context.Context, req *adminv1.UpdateServiceRe
 
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.OrganizationName)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	claims := auth.GetClaims(ctx)
@@ -201,7 +211,7 @@ func (s *Server) UpdateService(ctx context.Context, req *adminv1.UpdateServiceRe
 
 	service, err := s.admin.DB.FindServiceByName(ctx, org.ID, req.Name)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	// Update service name and attributes if provided
