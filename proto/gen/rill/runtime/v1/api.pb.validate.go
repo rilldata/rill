@@ -1053,8 +1053,6 @@ func (m *Instance) validate(all bool) error {
 
 	// no validation rules for Annotations
 
-	// no validation rules for WatchRepo
-
 	// no validation rules for AiInstructions
 
 	if len(errors) > 0 {
@@ -1849,8 +1847,6 @@ func (m *CreateInstanceRequest) validate(all bool) error {
 
 	// no validation rules for Annotations
 
-	// no validation rules for WatchRepo
-
 	if len(errors) > 0 {
 		return CreateInstanceRequestMultiError(errors)
 	}
@@ -2370,10 +2366,6 @@ func (m *EditInstanceRequest) validate(all bool) error {
 
 	if m.AiConnector != nil {
 		// no validation rules for AiConnector
-	}
-
-	if m.WatchRepo != nil {
-		// no validation rules for WatchRepo
 	}
 
 	if len(errors) > 0 {

@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -97,10 +98,22 @@ func (s *Server) WatchFilesHandler(w http.ResponseWriter, req *http.Request) {
 
 		// Call the existing WatchFiles implementation with our shim
 		err := s.WatchFiles(watchReq, shim)
-		if err != nil && !errors.Is(err, context.Canceled) {
-			s.logger.Info("watch error", zap.Error(err))
-			eventServer.Close()
+		if err != nil {
+			if !errors.Is(err, context.Canceled) {
+				s.logger.Warn("watch files error", zap.String("instance_id", instanceID), zap.Error(err))
+			}
+
+			errJSON, err := json.Marshal(map[string]string{"error": err.Error()})
+			if err != nil {
+				s.logger.Error("failed to marshal error as json", zap.Error(err))
+			}
+
+			eventServer.Publish("files", &sse.Event{
+				Data:  errJSON,
+				Event: []byte("error"),
+			})
 		}
+		eventServer.Close()
 	}()
 
 	// Serve the SSE stream

@@ -6215,6 +6215,8 @@ func (m *TimeRange) validate(all bool) error {
 
 	// no validation rules for Expression
 
+	// no validation rules for TimeDimension
+
 	if len(errors) > 0 {
 		return TimeRangeMultiError(errors)
 	}
@@ -7117,6 +7119,8 @@ func (m *MetricsViewTimeSeriesRequest) validate(all bool) error {
 		}
 	}
 
+	// no validation rules for TimeDimension
+
 	if len(errors) > 0 {
 		return MetricsViewTimeSeriesRequestMultiError(errors)
 	}
@@ -7538,6 +7542,8 @@ func (m *MetricsViewTotalsRequest) validate(all bool) error {
 			}
 		}
 	}
+
+	// no validation rules for TimeDimension
 
 	if len(errors) > 0 {
 		return MetricsViewTotalsRequestMultiError(errors)
@@ -7996,6 +8002,8 @@ func (m *MetricsViewRowsRequest) validate(all bool) error {
 			}
 		}
 	}
+
+	// no validation rules for TimeDimension
 
 	if len(errors) > 0 {
 		return MetricsViewRowsRequestMultiError(errors)
@@ -8796,6 +8804,8 @@ func (m *MetricsViewTimeRangeRequest) validate(all bool) error {
 	}
 
 	// no validation rules for Priority
+
+	// no validation rules for TimeDimension
 
 	if len(errors) > 0 {
 		return MetricsViewTimeRangeRequestMultiError(errors)
@@ -9649,6 +9659,8 @@ func (m *MetricsViewTimeRangesRequest) validate(all bool) error {
 	// no validation rules for Priority
 
 	// no validation rules for TimeZone
+
+	// no validation rules for TimeDimension
 
 	if len(errors) > 0 {
 		return MetricsViewTimeRangesRequestMultiError(errors)
