@@ -112,6 +112,9 @@ func NewInstanceWithOptions(t TestingT, opts InstanceOptions) (*runtime.Runtime,
 	if vars["rill.stage_changes"] == "" {
 		vars["rill.stage_changes"] = strconv.FormatBool(opts.StageChanges)
 	}
+	if vars["rill.watch_repo"] == "" {
+		vars["rill.watch_repo"] = strconv.FormatBool(opts.WatchRepo)
+	}
 
 	for _, conn := range opts.TestConnectors {
 		acquire, ok := Connectors[conn]
@@ -149,7 +152,6 @@ func NewInstanceWithOptions(t TestingT, opts InstanceOptions) (*runtime.Runtime,
 			},
 		},
 		Variables: vars,
-		WatchRepo: opts.WatchRepo,
 	}
 
 	if _, ok := opts.Files["rill.yaml"]; !ok {

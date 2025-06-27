@@ -1,4 +1,4 @@
-package file
+package filewatcher
 
 import (
 	"context"
@@ -10,26 +10,28 @@ import (
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
-	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 )
 
 func TestWatch(t *testing.T) {
 	dir := t.TempDir()
+
 	// create /tmp directory and ensure watcher does not watch it
 	tmpDir := filepath.Join(dir, "tmp")
 	err := os.Mkdir(tmpDir, 0777)
 	require.NoError(t, err)
 	createFile(t, filepath.Join(tmpDir, "file3"))
-	c := connection{root: dir, logger: zap.NewNop()}
+
+	w, err := NewWatcher(dir, nil, zap.NewNop())
+	require.NoError(t, err)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	ch := make(chan drivers.WatchEvent, 10)
+	ch := make(chan WatchEvent, 10)
 	go func() {
-		err := c.Watch(ctx, func(es []drivers.WatchEvent) {
+		err := w.Subscribe(ctx, func(es []WatchEvent) {
 			for _, e := range es {
 				ch <- e
 			}
@@ -59,7 +61,7 @@ func TestWatch(t *testing.T) {
 	time.Sleep(2 * time.Second) // Ensure Watcher picks up events
 
 	// Consume events
-	var res []drivers.WatchEvent
+	var res []WatchEvent
 	done := false
 	for !done {
 		select {
@@ -72,37 +74,37 @@ func TestWatch(t *testing.T) {
 	require.Len(t, res, 5)
 
 	// Split events into two batches and sort (since order of events happening close to each other is not guaranteed)
-	var batch1, batch2 []drivers.WatchEvent
+	var batch1, batch2 []WatchEvent
 	for _, e := range res[0:3] {
 		batch1 = append(batch1, e)
 	}
 	for _, e := range res[3:] {
 		batch2 = append(batch2, e)
 	}
-	less := func(a, b drivers.WatchEvent) int {
-		return strings.Compare(a.Path, b.Path)
+	less := func(a, b WatchEvent) int {
+		return strings.Compare(a.RelPath, b.RelPath)
 	}
 
 	slices.SortFunc(batch1, less)
 	slices.SortFunc(batch2, less)
 
 	require.Equal(t, runtimev1.FileEvent_FILE_EVENT_WRITE, batch1[0].Type)
-	require.Equal(t, "/file1", batch1[0].Path)
+	require.Equal(t, "/file1", batch1[0].RelPath)
 
 	require.Equal(t, runtimev1.FileEvent_FILE_EVENT_WRITE, batch1[1].Type)
-	require.Equal(t, "/subdir", batch1[1].Path)
+	require.Equal(t, "/subdir", batch1[1].RelPath)
 	require.Equal(t, true, batch1[1].Dir)
 
 	require.Equal(t, runtimev1.FileEvent_FILE_EVENT_WRITE, batch1[2].Type)
-	require.Equal(t, "/subdir/file2", batch1[2].Path)
+	require.Equal(t, "/subdir/file2", batch1[2].RelPath)
 
 	require.Equal(t, runtimev1.FileEvent_FILE_EVENT_DELETE, batch2[0].Type)
-	require.Equal(t, "/file1", batch2[0].Path)
+	require.Equal(t, "/file1", batch2[0].RelPath)
 
 	require.Equal(t, runtimev1.FileEvent_FILE_EVENT_DELETE, batch2[1].Type)
-	require.Equal(t, "/subdir/file2", batch2[1].Path)
+	require.Equal(t, "/subdir/file2", batch2[1].RelPath)
 
-	files := c.watcher.watcher.WatchList()
+	files := w.watcher.WatchList()
 	require.NotContains(t, files, tmpDir)
 }
 

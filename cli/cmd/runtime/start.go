@@ -3,6 +3,7 @@ package runtime
 import (
 	"context"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"os"
 	"time"
@@ -276,7 +277,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				group.Go(func() error { return debugserver.ServeHTTP(cctx, conf.DebugPort) })
 			}
 			err = group.Wait()
-			if err != nil {
+			if err != nil && !errors.Is(err, context.Canceled) {
 				logger.Error("server crashed", zap.Error(err))
 				return
 			}

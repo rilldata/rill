@@ -565,7 +565,9 @@ export interface V1GetProjectVariablesResponse {
 
 export interface V1GetRepoMetaResponse {
   /** How long the returned config is valid for. Clients should call GetRepoMeta again after this time. */
-  validUntilTime?: string;
+  expiresOn?: string;
+  /** When the returned config was last modified. This covers all fields in the response except the ephemeral credentials embedded in git_url and archive_download_url. */
+  lastUpdatedOn?: string;
   /** Git remote for cloning (and maybe pushing) a Git repository.
 The URL uses HTTPS with embedded username/password. */
   gitUrl?: string;
@@ -665,6 +667,7 @@ export interface V1ListOrganizationBillingIssuesResponse {
 
 export interface V1ListOrganizationInvitesResponse {
   invites?: V1OrganizationInvite[];
+  totalCount?: number;
   nextPageToken?: string;
 }
 
@@ -675,6 +678,7 @@ export interface V1ListOrganizationMemberUsergroupsResponse {
 
 export interface V1ListOrganizationMemberUsersResponse {
   members?: V1OrganizationMemberUser[];
+  totalCount?: number;
   nextPageToken?: string;
 }
 

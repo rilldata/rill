@@ -130,8 +130,8 @@ measures:
 						Table:       "bar",
 						Model:       "bar",
 						DisplayName: "Foobar",
-						Dimensions:  []*runtimev1.MetricsViewSpec_Dimension{{Name: "a", DisplayName: "A", Column: "a"}},
-						Measures:    []*runtimev1.MetricsViewSpec_Measure{{Name: "b", DisplayName: "B", Expression: "count(*)", Type: runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE}},
+						Dimensions:  []*runtimev1.MetricsViewSpec_Dimension{{Name: "a", DisplayName: "A", Column: "a", DataType: &runtimev1.Type{Code: runtimev1.Type_CODE_INT64, Nullable: true}}},
+						Measures:    []*runtimev1.MetricsViewSpec_Measure{{Name: "b", DisplayName: "B", Expression: "count(*)", Type: runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE, DataType: &runtimev1.Type{Code: runtimev1.Type_CODE_INT64, Nullable: true}}},
 					},
 				},
 			},
@@ -690,7 +690,7 @@ measures:
 - expression: avg(a)
 `,
 	})
-	metrics, metricsRes := newMetricsView("dash", "bar3", []string{"count(*)", "avg(a)"}, []string{"b", "c"})
+	metrics, metricsRes := newMetricsView("dash", "bar3", []any{"count(*)", runtimev1.Type_CODE_INT64, "avg(a)", runtimev1.Type_CODE_FLOAT64}, []any{"b", runtimev1.Type_CODE_INT64, "c", runtimev1.Type_CODE_INT64})
 	testruntime.ReconcileParserAndWait(t, rt, id)
 	testruntime.RequireReconcileState(t, rt, id, 6, 0, 0)
 	testruntime.RequireOLAPTableCount(t, rt, id, "bar1", 3)
@@ -842,7 +842,7 @@ measures:
 `,
 	})
 
-	_, metricsRes := newMetricsView("dash", "bar", []string{"count(*)", "avg(a)"}, []string{"b", "c"})
+	_, metricsRes := newMetricsView("dash", "bar", []any{"count(*)", runtimev1.Type_CODE_INT64, "avg(a)", runtimev1.Type_CODE_FLOAT64}, []any{"b", runtimev1.Type_CODE_INT64, "c", runtimev1.Type_CODE_INT64})
 	testruntime.ReconcileParserAndWait(t, rt, id)
 	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
 	testruntime.RequireResource(t, rt, id, metricsRes)
@@ -864,7 +864,7 @@ measures:
   ignore: true
 `,
 	})
-	_, metricsRes = newMetricsView("dash", "bar", []string{"count(*)"}, []string{"b"})
+	_, metricsRes = newMetricsView("dash", "bar", []any{"count(*)", runtimev1.Type_CODE_INT64}, []any{"b", runtimev1.Type_CODE_INT64})
 	testruntime.ReconcileParserAndWait(t, rt, id)
 	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
 	testruntime.RequireResource(t, rt, id, metricsRes)
@@ -909,7 +909,7 @@ measures:
   ignore: true
 `,
 	})
-	_, metricsRes = newMetricsView("dash", "bar", []string{"count(*)"}, []string{})
+	_, metricsRes = newMetricsView("dash", "bar", []any{"count(*)", runtimev1.Type_CODE_INT64}, []any{})
 	testruntime.ReconcileParserAndWait(t, rt, id)
 	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
 	testruntime.RequireResource(t, rt, id, metricsRes)
@@ -992,7 +992,7 @@ measures:
 - expression: avg(a)
 `,
 	})
-	metrics, metricsRes := newMetricsView("dash", "bar", []string{"count(*)", "avg(a)"}, []string{"b", "c"})
+	metrics, metricsRes := newMetricsView("dash", "bar", []any{"count(*)", runtimev1.Type_CODE_INT64, "avg(a)", runtimev1.Type_CODE_FLOAT64}, []any{"b", runtimev1.Type_CODE_INT64, "c", runtimev1.Type_CODE_INT64})
 	testruntime.ReconcileParserAndWait(t, rt, id)
 	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
 	testruntime.RequireResource(t, rt, id, metricsRes)
@@ -1043,7 +1043,7 @@ measures:
 `,
 	})
 	_, modelRes := newModel("SELECT * FROM foo", "bar", "foo")
-	_, metricsRes := newMetricsView("dash", "bar", []string{"count(*)", "avg(a)"}, []string{"b", "c"})
+	_, metricsRes := newMetricsView("dash", "bar", []any{"count(*)", runtimev1.Type_CODE_INT64, "avg(a)", runtimev1.Type_CODE_FLOAT64}, []any{"b", runtimev1.Type_CODE_INT64, "c", runtimev1.Type_CODE_INT64})
 	testruntime.ReconcileParserAndWait(t, rt, id)
 	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
 	testruntime.RequireResource(t, rt, id, modelRes)
@@ -1136,7 +1136,7 @@ measures:
 	})
 	awaitIdle()
 	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
-	_, metricsRes := newMetricsView("dash", "bar", []string{"count(*)", "avg(a)"}, []string{"b", "c"})
+	_, metricsRes := newMetricsView("dash", "bar", []any{"count(*)", runtimev1.Type_CODE_INT64, "avg(a)", runtimev1.Type_CODE_FLOAT64}, []any{"b", runtimev1.Type_CODE_INT64, "c", runtimev1.Type_CODE_INT64})
 	testruntime.RequireResource(t, rt, id, metricsRes)
 }
 
@@ -1165,7 +1165,7 @@ measures:
 	testruntime.ReconcileParserAndWait(t, rt, id)
 	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
 
-	_, metricsRes := newMetricsView("dash", "bar", []string{"count(*)"}, []string{"country"})
+	_, metricsRes := newMetricsView("dash", "bar", []any{"count(*)", runtimev1.Type_CODE_INT64}, []any{"country", runtimev1.Type_CODE_STRING})
 	testruntime.RequireResource(t, rt, id, metricsRes)
 }
 
@@ -1230,14 +1230,14 @@ func newModel(query, name, source string) (*runtimev1.Model, *runtimev1.Resource
 	return model, modelRes
 }
 
-func newMetricsView(name, model string, measures, dimensions []string) (*runtimev1.MetricsView, *runtimev1.Resource) {
+func newMetricsView(name, model string, measures, dimensions []any) (*runtimev1.MetricsView, *runtimev1.Resource) {
 	metrics := &runtimev1.MetricsView{
 		Spec: &runtimev1.MetricsViewSpec{
 			Connector:   "duckdb",
 			Model:       model,
 			DisplayName: parser.ToDisplayName(name),
-			Measures:    make([]*runtimev1.MetricsViewSpec_Measure, len(measures)),
-			Dimensions:  make([]*runtimev1.MetricsViewSpec_Dimension, len(dimensions)),
+			Measures:    make([]*runtimev1.MetricsViewSpec_Measure, len(measures)/2),
+			Dimensions:  make([]*runtimev1.MetricsViewSpec_Dimension, len(dimensions)/2),
 		},
 		State: &runtimev1.MetricsViewState{
 			ValidSpec: &runtimev1.MetricsViewSpec{
@@ -1245,37 +1245,43 @@ func newMetricsView(name, model string, measures, dimensions []string) (*runtime
 				Table:       model,
 				Model:       model,
 				DisplayName: parser.ToDisplayName(name),
-				Measures:    make([]*runtimev1.MetricsViewSpec_Measure, len(measures)),
-				Dimensions:  make([]*runtimev1.MetricsViewSpec_Dimension, len(dimensions)),
+				Measures:    make([]*runtimev1.MetricsViewSpec_Measure, len(measures)/2),
+				Dimensions:  make([]*runtimev1.MetricsViewSpec_Dimension, len(dimensions)/2),
 			},
 		},
 	}
 
-	for i, measure := range measures {
+	for i := range len(measures) / 2 {
 		name := fmt.Sprintf("measure_%d", i)
+		idx := i * 2
+		expr := measures[idx].(string)
 		metrics.Spec.Measures[i] = &runtimev1.MetricsViewSpec_Measure{
 			Name:        name,
 			DisplayName: parser.ToDisplayName(name),
-			Expression:  measure,
+			Expression:  expr,
 			Type:        runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE,
 		}
 		metrics.State.ValidSpec.Measures[i] = &runtimev1.MetricsViewSpec_Measure{
 			Name:        name,
 			DisplayName: parser.ToDisplayName(name),
-			Expression:  measure,
+			Expression:  expr,
 			Type:        runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE,
+			DataType:    &runtimev1.Type{Code: measures[idx+1].(runtimev1.Type_Code), Nullable: true},
 		}
 	}
-	for i, dimension := range dimensions {
+	for i := range len(dimensions) / 2 {
+		idx := i * 2
+		name := dimensions[idx].(string)
 		metrics.Spec.Dimensions[i] = &runtimev1.MetricsViewSpec_Dimension{
-			Name:        dimension,
-			DisplayName: parser.ToDisplayName(dimension),
-			Column:      dimension,
+			Name:        name,
+			DisplayName: parser.ToDisplayName(name),
+			Column:      name,
 		}
 		metrics.State.ValidSpec.Dimensions[i] = &runtimev1.MetricsViewSpec_Dimension{
-			Name:        dimension,
-			DisplayName: parser.ToDisplayName(dimension),
-			Column:      dimension,
+			Name:        name,
+			DisplayName: parser.ToDisplayName(name),
+			Column:      name,
+			DataType:    &runtimev1.Type{Code: dimensions[idx+1].(runtimev1.Type_Code), Nullable: true},
 		}
 	}
 	metricsRes := &runtimev1.Resource{

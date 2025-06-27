@@ -10,12 +10,15 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"slices"
+	"strings"
 	"time"
 
 	"github.com/bmatcuk/doublestar/v4"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/ctxsync"
+	"github.com/rilldata/rill/runtime/pkg/filewatcher"
 	"golang.org/x/sync/singleflight"
 	"gopkg.in/yaml.v3"
 )
@@ -38,8 +41,14 @@ type repo struct {
 	// singleflight is used to deduplicate concurrent sync calls.
 	singleflight *singleflight.Group
 
-	// handshakeExpiresAt is the next time we should refresh the admin handshake, namely to ensure the Git credentials remain valid.
-	handshakeExpiresAt time.Time
+	// handshakeExpiresOn is the next time we should refresh the admin handshake, namely to ensure the Git credentials remain valid.
+	handshakeExpiresOn time.Time
+	// configUpdatedOn tracks the last_updated_on time from the handshake. We use it to find out if the configuration (apart from credentials) has changed.
+	configUpdatedOn time.Time
+	// configCtx is a context that is valid until a handshake changes the repo configuration (i.e. configUpdatedOn increases).
+	configCtx context.Context
+	// configCtxCancel is a cancel function for the configCtx.
+	configCtxCancel context.CancelFunc
 	// synced is true if files are have been synced successfully.
 	// After the first successful sync, it remains true even if the latest sync fails (so syncErr is not nil).
 	synced bool
@@ -120,15 +129,15 @@ func (r *repo) ListGlob(ctx context.Context, glob string, skipDirs bool) ([]driv
 
 // Get implements drivers.RepoStore.
 func (r *repo) Get(ctx context.Context, path string) (string, error) {
-	if drivers.IsIgnored(path, r.ignorePaths) {
-		return "", os.ErrNotExist
-	}
-
 	err := r.rlockEnsureSynced(ctx)
 	if err != nil {
 		return "", err
 	}
 	defer r.mu.RUnlock()
+
+	if drivers.IsIgnored(path, r.ignorePaths) {
+		return "", os.ErrNotExist
+	}
 
 	var readErr error
 	for _, root := range r.roots() { // Search in every underlying file system.
@@ -191,15 +200,15 @@ func (r *repo) Hash(ctx context.Context, paths []string) (string, error) {
 
 // Stat implements drivers.RepoStore.
 func (r *repo) Stat(ctx context.Context, path string) (*drivers.FileInfo, error) {
-	if drivers.IsIgnored(path, r.ignorePaths) {
-		return nil, os.ErrNotExist
-	}
-
 	err := r.rlockEnsureSynced(ctx)
 	if err != nil {
 		return nil, err
 	}
 	defer r.mu.RUnlock()
+
+	if drivers.IsIgnored(path, r.ignorePaths) {
+		return nil, os.ErrNotExist
+	}
 
 	var statErr error
 	for _, root := range r.roots() { // Search in every underlying file system.
@@ -223,28 +232,191 @@ func (r *repo) Stat(ctx context.Context, path string) (*drivers.FileInfo, error)
 }
 
 // Put implements drivers.RepoStore.
-func (r *repo) Put(ctx context.Context, filePath string, reader io.Reader) error {
-	return fmt.Errorf("put operation is unsupported")
+func (r *repo) Put(ctx context.Context, path string, reader io.Reader) error {
+	err := r.rlockEnsureSynced(ctx)
+	if err != nil {
+		return err
+	}
+	defer r.mu.RUnlock()
+
+	if r.git != nil && !r.git.editable() {
+		return fmt.Errorf("repo is not editable")
+	}
+	root := r.git.root()
+
+	if drivers.IsIgnored(path, r.ignorePaths) {
+		return fmt.Errorf("can't write to ignored path %q", path)
+	}
+
+	fp := filepath.Join(root, path)
+
+	err = os.MkdirAll(filepath.Dir(fp), os.ModePerm)
+	if err != nil {
+		return err
+	}
+
+	f, err := os.Create(fp)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	_, err = io.Copy(f, reader)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // MkdirAll implements drivers.RepoStore.
-func (r *repo) MkdirAll(ctx context.Context, dirPath string) error {
-	return fmt.Errorf("make dir operation is unsupported")
+func (r *repo) MkdirAll(ctx context.Context, path string) error {
+	err := r.rlockEnsureSynced(ctx)
+	if err != nil {
+		return err
+	}
+	defer r.mu.RUnlock()
+
+	if r.git != nil && !r.git.editable() {
+		return fmt.Errorf("repo is not editable")
+	}
+	root := r.git.root()
+
+	if drivers.IsIgnored(path, r.ignorePaths) {
+		return fmt.Errorf("can't write to ignored path %q", path)
+	}
+
+	fp := filepath.Join(root, path)
+
+	err = os.MkdirAll(fp, os.ModePerm)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // Rename implements drivers.RepoStore.
 func (r *repo) Rename(ctx context.Context, fromPath, toPath string) error {
-	return fmt.Errorf("rename operation is unsupported")
+	err := r.rlockEnsureSynced(ctx)
+	if err != nil {
+		return err
+	}
+	defer r.mu.RUnlock()
+
+	if r.git != nil && !r.git.editable() {
+		return fmt.Errorf("repo is not editable")
+	}
+	root := r.git.root()
+
+	if drivers.IsIgnored(fromPath, r.ignorePaths) {
+		return fmt.Errorf("can't write from ignored path %q", fromPath)
+	}
+	if drivers.IsIgnored(toPath, r.ignorePaths) {
+		return fmt.Errorf("can't write to ignored path %q", toPath)
+	}
+
+	fromPath = filepath.Join(root, fromPath)
+	toPath = filepath.Join(root, toPath)
+
+	if _, err := os.Stat(toPath); !strings.EqualFold(fromPath, toPath) && err == nil {
+		return os.ErrExist
+	}
+
+	err = os.Rename(fromPath, toPath)
+	if err != nil {
+		return err
+	}
+	err = os.Chtimes(toPath, time.Now(), time.Now())
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // Delete implements drivers.RepoStore.
-func (r *repo) Delete(ctx context.Context, filePath string, force bool) error {
-	return fmt.Errorf("delete operation is unsupported")
+func (r *repo) Delete(ctx context.Context, path string, force bool) error {
+	err := r.rlockEnsureSynced(ctx)
+	if err != nil {
+		return err
+	}
+	defer r.mu.RUnlock()
+
+	if r.git != nil && !r.git.editable() {
+		return fmt.Errorf("repo is not editable")
+	}
+	root := r.git.root()
+
+	if drivers.IsIgnored(path, r.ignorePaths) {
+		return fmt.Errorf("can't write to ignored path %q", path)
+	}
+
+	fp := filepath.Join(root, path)
+
+	if force {
+		err = os.RemoveAll(fp)
+		if err != nil {
+			return err
+		}
+	} else {
+		err = os.Remove(fp)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 // Watch implements drivers.RepoStore.
-func (r *repo) Watch(ctx context.Context, callback drivers.WatchCallback) error {
-	return fmt.Errorf("watch operation is unsupported")
+func (r *repo) Watch(ctx context.Context, cb drivers.WatchCallback) error {
+	err := r.rlockEnsureSynced(ctx)
+	if err != nil {
+		return err
+	}
+
+	// Check and copy config, then release the read lock early.
+	// We cannot access mutable fields on repo without holding a read lock, but we also can't hold the read lock forever while the watcher is running.
+	// In case the root or ignorePaths change, the watcher will respond to configCtx cancellation ensuring adequate consistency.
+	if r.git != nil && !r.git.editable() {
+		r.mu.RUnlock()
+		return fmt.Errorf("repo is not watchable")
+	}
+	root := r.git.root()
+	ignorePaths := r.ignorePaths
+	configCtx := r.configCtx
+	r.mu.RUnlock()
+
+	// Derive a context that is also cancelled if the repo config changes (i.e. if r.configCtx is cancelled).
+	// This is acceptable because upstream clients are expected to retry watches if they fail.
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+	stop := context.AfterFunc(configCtx, cancel)
+	defer stop()
+
+	// We create a new watcher for each call to Watch.
+	// This makes cancellation and handling config changes easier than if we used a single shared watcher with many subscribers.
+	// This should be fine performance-wise since we don't expect many concurrent watchers (only the project parser plus up to a handful of concurrent editors).
+	w, err := filewatcher.NewWatcher(root, ignorePaths, r.h.logger)
+	if err != nil {
+		return fmt.Errorf("failed to create file watcher: %w", err)
+	}
+
+	return w.Subscribe(ctx, func(events []filewatcher.WatchEvent) {
+		if len(events) == 0 {
+			return
+		}
+		watchEvents := make([]drivers.WatchEvent, 0, len(events))
+		for _, e := range events {
+			watchEvents = append(watchEvents, drivers.WatchEvent{
+				Type: e.Type,
+				Path: e.RelPath,
+				Dir:  e.Dir,
+			})
+		}
+		cb(watchEvents)
+	})
 }
 
 // Sync implements drivers.RepoStore.
@@ -282,6 +454,7 @@ func (r *repo) CommitTimestamp(ctx context.Context) (time.Time, error) {
 
 // close deletes the temporary directories used by the repo.
 func (r *repo) close() {
+	r.configCtxCancel()
 	if r.archive != nil {
 		_ = os.RemoveAll(r.archive.tmpDir)
 	}
@@ -352,7 +525,7 @@ func (r *repo) sync(ctx context.Context) error {
 
 		// Do the actual sync.
 		err = r.syncInner(ctx)
-		r.synced = r.synced && (err == nil) // If a sync previously succeeded, we still consider the repo synced even though the latest sync failed.
+		r.synced = r.synced || (err == nil) // If a sync previously succeeded, we still consider the repo synced even though the latest sync failed.
 		r.syncErr = err
 		return nil, r.syncErr
 	})
@@ -428,6 +601,9 @@ func (r *repo) syncInner(ctx context.Context) error {
 		}{}
 		err = yaml.Unmarshal(rawYAML, tmp)
 		if err == nil {
+			if !slices.Equal(r.ignorePaths, tmp.IgnorePaths) {
+				r.configChanged()
+			}
 			r.ignorePaths = tmp.IgnorePaths
 		}
 	}
@@ -439,7 +615,7 @@ func (r *repo) syncInner(ctx context.Context) error {
 // Unsafe for concurrent use.
 func (r *repo) checkSyncHandshake(ctx context.Context) error {
 	// If the handshake is still valid, return early.
-	if !r.handshakeExpiresAt.Before(time.Now()) {
+	if !r.handshakeExpiresOn.Before(time.Now()) {
 		return nil
 	}
 
@@ -465,7 +641,8 @@ func (r *repo) checkSyncHandshake(ctx context.Context) error {
 		}
 
 		r.git.remoteURL = meta.GitUrl
-		r.git.branch = meta.GitBranch
+		r.git.defaultBranch = meta.GitBranch
+		r.git.editBranch = meta.GitEditBranch
 		r.git.subpath = meta.GitSubpath
 	} else {
 		r.git = nil
@@ -505,6 +682,20 @@ func (r *repo) checkSyncHandshake(ctx context.Context) error {
 		}
 	}
 
-	r.handshakeExpiresAt = meta.ValidUntilTime.AsTime()
+	if !r.configUpdatedOn.Equal(meta.LastUpdatedOn.AsTime()) {
+		r.configChanged()
+		r.configUpdatedOn = meta.LastUpdatedOn.AsTime()
+	}
+	r.handshakeExpiresOn = meta.ExpiresOn.AsTime()
 	return nil
+}
+
+// configChanged should be called on changes to the repo configuration, such as branch or subpath (but not when the Git credentials, as happens routinely).
+// It cancels the current configCtx and creates a new one, which will be used for
+// It is not safe for concurrent use and should be called with a write lock is held.
+func (r *repo) configChanged() {
+	if r.configCtx != nil {
+		r.configCtxCancel()
+	}
+	r.configCtx, r.configCtxCancel = context.WithCancel(context.Background())
 }
