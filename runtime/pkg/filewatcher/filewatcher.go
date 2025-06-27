@@ -1,4 +1,4 @@
-package file
+package filewatcher
 
 import (
 	"context"
@@ -23,8 +23,8 @@ const batchInterval = 250 * time.Millisecond
 
 const maxBufferSize = 1000
 
-// watcher implements a recursive, batching file watcher on top of fsnotify.
-type watcher struct {
+// Watcher implements a recursive, batching file watcher on top of fsnotify.
+type Watcher struct {
 	logger           *zap.Logger
 	root             string
 	ignorePaths      []string
@@ -33,35 +33,37 @@ type watcher struct {
 	done             chan struct{}
 	err              error
 	mu               sync.Mutex
-	subscribers      map[int]drivers.WatchCallback
+	subscribers      map[int]WatchCallback
 	nextSubscriberID int
-	buffer           map[string]watchEvent
+	buffer           map[string]WatchEvent
 }
 
-type watchEvent struct {
-	eventType runtimev1.FileEvent
-	path      string
-	relPath   string
-	dir       bool
-	isCreate  bool
+type WatchCallback func(event []WatchEvent)
+
+type WatchEvent struct {
+	Type     runtimev1.FileEvent
+	FullPath string
+	RelPath  string
+	Dir      bool
+	isCreate bool
 }
 
-// newWatcher creates a new watcher for the given root directory.
+// NewWatcher creates a new watcher for the given root directory.
 // The root directory must be an absolute path.
-func newWatcher(root string, ignorePaths []string, logger *zap.Logger) (*watcher, error) {
+func NewWatcher(root string, ignorePaths []string, logger *zap.Logger) (*Watcher, error) {
 	fsw, err := fsnotify.NewWatcher()
 	if err != nil {
 		return nil, err
 	}
 
-	w := &watcher{
+	w := &Watcher{
 		logger:      logger,
 		root:        root,
 		ignorePaths: ignorePaths,
 		watcher:     fsw,
 		done:        make(chan struct{}),
-		subscribers: make(map[int]drivers.WatchCallback),
-		buffer:      make(map[string]watchEvent),
+		subscribers: make(map[int]WatchCallback),
+		buffer:      make(map[string]WatchEvent),
 	}
 
 	err = w.addDir(root, false, true)
@@ -75,11 +77,11 @@ func newWatcher(root string, ignorePaths []string, logger *zap.Logger) (*watcher
 	return w, nil
 }
 
-func (w *watcher) close() {
+func (w *Watcher) Close() {
 	w.closeWithErr(nil)
 }
 
-func (w *watcher) closeWithErr(err error) {
+func (w *Watcher) closeWithErr(err error) {
 	// Support multiple calls, but only actually close once.
 	// Not using w.mu here because someday someone will try to close the watcher from a callback.
 	if w.closed.Swap(true) {
@@ -95,7 +97,7 @@ func (w *watcher) closeWithErr(err error) {
 	close(w.done)
 }
 
-func (w *watcher) subscribe(ctx context.Context, fn drivers.WatchCallback) error {
+func (w *Watcher) Subscribe(ctx context.Context, fn WatchCallback) error {
 	w.mu.Lock()
 	if w.err != nil {
 		w.mu.Unlock()
@@ -123,7 +125,7 @@ func (w *watcher) subscribe(ctx context.Context, fn drivers.WatchCallback) error
 // flush emits buffered events to all subscribers.
 // Note it is called in the event loop in runInner, so new events will not be appended to w.buffer while a flush is running.
 // Calls to flush block until all subscribers have processed the events. This is an acceptable trade-off for now, but we may want to revisit it in the future.
-func (w *watcher) flush() {
+func (w *Watcher) flush() {
 	if len(w.buffer) == 0 {
 		return
 	}
@@ -133,11 +135,11 @@ func (w *watcher) flush() {
 			continue
 		}
 		// check for directory for CREATE events
-		info, err := os.Stat(event.path)
-		event.dir = err == nil && info.IsDir()
-		if event.dir {
+		info, err := os.Stat(event.FullPath)
+		event.Dir = err == nil && info.IsDir()
+		if event.Dir {
 			// add directory to tracking paths
-			err = w.addDir(event.path, true, false)
+			err = w.addDir(event.FullPath, true, false)
 			if err != nil {
 				delete(w.buffer, p)
 				continue
@@ -147,31 +149,23 @@ func (w *watcher) flush() {
 	}
 
 	events := maps.Values(w.buffer)
-	driverEvents := make([]drivers.WatchEvent, len(events))
-	for i, event := range events {
-		driverEvents[i] = drivers.WatchEvent{
-			Type: event.eventType,
-			Path: event.relPath,
-			Dir:  event.dir,
-		}
-	}
 
 	w.mu.Lock()
 	defer w.mu.Unlock()
 
 	for _, fn := range w.subscribers {
-		fn(driverEvents)
+		fn(events)
 	}
 
-	w.buffer = make(map[string]watchEvent)
+	w.buffer = make(map[string]WatchEvent)
 }
 
-func (w *watcher) run() {
+func (w *Watcher) run() {
 	err := w.runInner()
 	w.closeWithErr(err)
 }
 
-func (w *watcher) runInner() error {
+func (w *Watcher) runInner() error {
 	ticker := time.NewTicker(batchInterval)
 	defer ticker.Stop()
 
@@ -193,11 +187,11 @@ func (w *watcher) runInner() error {
 				return nil
 			}
 
-			we := watchEvent{}
+			we := WatchEvent{}
 			if e.Has(fsnotify.Remove) || e.Has(fsnotify.Rename) {
-				we.eventType = runtimev1.FileEvent_FILE_EVENT_DELETE
+				we.Type = runtimev1.FileEvent_FILE_EVENT_DELETE
 			} else if e.Has(fsnotify.Create) || e.Has(fsnotify.Write) || e.Has(fsnotify.Chmod) {
-				we.eventType = runtimev1.FileEvent_FILE_EVENT_WRITE
+				we.Type = runtimev1.FileEvent_FILE_EVENT_WRITE
 			} else {
 				continue
 			}
@@ -210,8 +204,8 @@ func (w *watcher) runInner() error {
 			}
 
 			p = path.Join("/", p)
-			we.relPath = p
-			we.path = e.Name
+			we.RelPath = p
+			we.FullPath = e.Name
 
 			// Do not send files for ignored paths
 			if drivers.IsIgnored(p, w.ignorePaths) {
@@ -219,7 +213,7 @@ func (w *watcher) runInner() error {
 			}
 
 			existing, ok := w.buffer[p]
-			if ok && existing.isCreate && we.eventType == runtimev1.FileEvent_FILE_EVENT_WRITE {
+			if ok && existing.isCreate && we.Type == runtimev1.FileEvent_FILE_EVENT_WRITE {
 				// copy over `IsCreate` within the batch for a path
 				we.isCreate = existing.isCreate
 			}
@@ -237,7 +231,7 @@ func (w *watcher) runInner() error {
 	}
 }
 
-func (w *watcher) addDir(p string, replay, errIfNotExist bool) error {
+func (w *Watcher) addDir(p string, replay, errIfNotExist bool) error {
 	// Check if it is an ignored path
 	// We do not watch files for ignored paths
 	relPath, err := filepath.Rel(w.root, p)
@@ -278,11 +272,11 @@ func (w *watcher) addDir(p string, replay, errIfNotExist bool) error {
 			}
 			ep = path.Join("/", ep)
 
-			w.buffer[ep] = watchEvent{
-				path:      fullPath,
-				relPath:   ep,
-				eventType: runtimev1.FileEvent_FILE_EVENT_WRITE,
-				dir:       e.IsDir(),
+			w.buffer[ep] = WatchEvent{
+				Type:     runtimev1.FileEvent_FILE_EVENT_WRITE,
+				FullPath: fullPath,
+				RelPath:  ep,
+				Dir:      e.IsDir(),
 			}
 		}
 

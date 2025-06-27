@@ -368,6 +368,7 @@ func toServiceTokenRow(s *adminv1.ServiceToken) *serviceToken {
 
 	return &serviceToken{
 		ID:        s.Id,
+		Prefix:    s.Prefix,
 		CreatedOn: s.CreatedOn.AsTime().Local().Format(time.DateTime),
 		ExpiresOn: expiresOn,
 	}
@@ -375,6 +376,7 @@ func toServiceTokenRow(s *adminv1.ServiceToken) *serviceToken {
 
 type serviceToken struct {
 	ID        string `header:"id" json:"id"`
+	Prefix    string `header:"prefix" json:"prefix"`
 	CreatedOn string `header:"created_on,timestamp(ms|utc|human)" json:"created_on"`
 	ExpiresOn string `header:"expires_on,timestamp(ms|utc|human)" json:"expires_on"`
 }
@@ -402,6 +404,7 @@ func toUserTokenRow(u *adminv1.UserAuthToken) *userToken {
 	return &userToken{
 		ID:          u.Id,
 		ClientName:  u.AuthClientDisplayName,
+		Prefix:      u.Prefix,
 		Description: u.DisplayName,
 		CreatedOn:   u.CreatedOn.AsTime().Local().Format(time.DateTime),
 		ExpiresOn:   expiresOn,
@@ -412,6 +415,7 @@ func toUserTokenRow(u *adminv1.UserAuthToken) *userToken {
 type userToken struct {
 	ID          string `header:"id" json:"id"`
 	Description string `header:"description" json:"description"`
+	Prefix      string `header:"prefix" json:"prefix"`
 	ClientName  string `header:"client" json:"client"`
 	CreatedOn   string `header:"created,timestamp(ms|utc|human)" json:"created_on"`
 	ExpiresOn   string `header:"expires,timestamp(ms|utc|human)" json:"expires_on"`

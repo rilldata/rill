@@ -4,7 +4,9 @@ import (
 	"context"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/rilldata/rill/admin/database"
+	"github.com/rilldata/rill/admin/pkg/authtoken"
 	"github.com/rilldata/rill/admin/server/auth"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/rilldata/rill/runtime/pkg/observability"
@@ -406,8 +408,16 @@ func (s *Server) ListServiceAuthTokens(ctx context.Context, req *adminv1.ListSer
 
 	dtos := make([]*adminv1.ServiceToken, len(tokens))
 	for i, token := range tokens {
+		id, err := uuid.Parse(token.ID)
+		if err != nil {
+			return nil, status.Error(codes.Internal, "invalid token ID format")
+		}
+
+		prefix := authtoken.FromID(authtoken.TypeService, id).Prefix()
+
 		dtos[i] = &adminv1.ServiceToken{
 			Id:        token.ID,
+			Prefix:    prefix,
 			CreatedOn: timestamppb.New(token.CreatedOn),
 			ExpiresOn: timestamppb.New(safeTime(token.ExpiresOn)),
 		}
