@@ -219,8 +219,17 @@ func (r *Runtime) executeAICompletion(ctx context.Context, instanceID string, al
 		iteration++
 		logger.Debug("starting tool calling iteration", zap.Int("iteration", iteration), observability.ZapCtx(ctx))
 
+		// Truncate conversation if it's getting too long
+		messages := maybeTruncateConversation(allMessages)
+		if len(messages) < len(allMessages) {
+			logger.Debug("truncated conversation for AI",
+				zap.Int("original_messages", len(allMessages)),
+				zap.Int("truncated_messages", len(messages)),
+				observability.ZapCtx(ctx))
+		}
+
 		// Call the AI service - returns structured ContentBlocks
-		res, err := ai.Complete(ctx, allMessages, driverTools)
+		res, err := ai.Complete(ctx, messages, driverTools)
 		if err != nil {
 			logger.Error("AI completion call failed", zap.Error(err), zap.Int("iteration", iteration), observability.ZapCtx(ctx))
 			return nil, err
@@ -340,8 +349,11 @@ func (r *Runtime) executeAICompletion(ctx context.Context, instanceID string, al
 	}
 	allMessages = append(allMessages, limitMessage)
 
+	// Truncate conversation if needed before final call
+	messages := maybeTruncateConversation(allMessages)
+
 	// Get final response from AI without tools
-	res, err := ai.Complete(ctx, allMessages, []drivers.Tool{}) // No tools provided
+	res, err := ai.Complete(ctx, messages, []drivers.Tool{}) // No tools provided
 	if err != nil {
 		logger.Error("final AI completion call failed after tool limit", zap.Error(err), observability.ZapCtx(ctx))
 		return nil, err
@@ -456,4 +468,42 @@ func (r *Runtime) addMessage(ctx context.Context, instanceID, conversationID, ro
 	defer release()
 
 	return catalog.AddMessage(ctx, conversationID, role, content, nil)
+}
+
+// maybeTruncateConversation keeps recent messages and a few early ones for context.
+// It's a simple placeholder strategy. In the future, we'll enhance this with AI summarization.
+func maybeTruncateConversation(messages []*drivers.CompletionMessage) []*drivers.CompletionMessage {
+	const (
+		maxMessages = 20 // Keep up to 20 messages total
+		keepFirst   = 3  // Always keep first 3 messages for context
+		keepLast    = 16 // Keep last 16 messages
+	)
+
+	if len(messages) <= maxMessages {
+		return messages
+	}
+
+	var result []*drivers.CompletionMessage
+
+	// Keep first messages
+	result = append(result, messages[:keepFirst]...)
+
+	// Add truncation indicator
+	skipped := len(messages) - keepFirst - keepLast
+	result = append(result, &drivers.CompletionMessage{
+		Role: "system",
+		Content: []*runtimev1.ContentBlock{
+			{
+				BlockType: &runtimev1.ContentBlock_Text{
+					Text: fmt.Sprintf("... [%d messages omitted for brevity] ...", skipped),
+				},
+			},
+		},
+	})
+
+	// Keep last messages
+	start := len(messages) - keepLast
+	result = append(result, messages[start:]...)
+
+	return result
 }
