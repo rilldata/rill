@@ -25,8 +25,7 @@
     if (resourceKind === ResourceKind.Model) {
       await $createTrigger.mutateAsync({
         instanceId: $runtime.instanceId,
-        // NOTE: `RuntimeServiceCreateTriggerBody` allFull is only supported for models
-        data: refreshType === "full" ? { allFull: true } : {},
+        data: refreshType === "full" ? { allFull: true } : { all: true },
       });
     } else {
       await $createTrigger.mutateAsync({
