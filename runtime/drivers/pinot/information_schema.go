@@ -19,11 +19,34 @@ import (
 )
 
 func (c *connection) ListDatabases(ctx context.Context) ([]string, error) {
-	return []string{"default"}, nil
+	return []string{}, nil
 }
 
 func (c *connection) ListSchemas(ctx context.Context, database string) ([]string, error) {
-	return []string{"default"}, nil
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.schemaURL+"/databases", http.NoBody)
+	if err != nil {
+		return nil, err
+	}
+	for k, v := range c.headers {
+		req.Header.Set(k, v)
+	}
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+	}
+
+	var databases []string
+	if err := json.NewDecoder(resp.Body).Decode(&databases); err != nil {
+		return nil, err
+	}
+
+	return databases, nil
 }
 
 func (c *connection) All(ctx context.Context, like string) ([]*drivers.Table, error) {

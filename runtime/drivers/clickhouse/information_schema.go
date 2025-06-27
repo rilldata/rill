@@ -13,56 +13,7 @@ import (
 )
 
 func (c *Connection) ListDatabases(ctx context.Context) ([]string, error) {
-	conn, release, err := c.acquireMetaConn(ctx)
-	if err != nil {
-		return nil, err
-	}
-	defer func() { _ = release() }()
-
-	var whereClause string
-	var args []any
-	if c.config.DatabaseWhitelist != "" {
-		dbs := strings.Split(c.config.DatabaseWhitelist, ",")
-		var filter strings.Builder
-		for i, db := range dbs {
-			if i > 0 {
-				filter.WriteString(", ")
-			}
-			filter.WriteString("?")
-			args = append(args, strings.TrimSpace(db))
-		}
-		whereClause = fmt.Sprintf("WHERE name IN (%s)", filter.String())
-	} else {
-		whereClause = "WHERE LOWER(name) NOT IN ('information_schema', 'system')"
-	}
-
-	q := fmt.Sprintf(`
-		SELECT name
-		FROM system.databases
-		%s
-		ORDER BY name
-	`, whereClause)
-
-	rows, err := conn.QueryxContext(ctx, q, args...)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var names []string
-	for rows.Next() {
-		var name string
-		if err := rows.Scan(&name); err != nil {
-			return nil, err
-		}
-		names = append(names, name)
-	}
-
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-
-	return names, nil
+	return []string{}, nil
 }
 
 func (c *Connection) ListSchemas(ctx context.Context, database string) ([]string, error) {
@@ -72,16 +23,7 @@ func (c *Connection) ListSchemas(ctx context.Context, database string) ([]string
 	}
 	defer func() { _ = release() }()
 
-	if database == "" {
-		database = "currentDatabase()"
-	}
-
-	q := fmt.Sprintf(`
-		SELECT name
-		FROM system.databases
-		WHERE name = %s
-		ORDER BY name
-	`, database)
+	q := "SELECT name FROM system.databases"
 
 	rows, err := conn.QueryxContext(ctx, q)
 	if err != nil {

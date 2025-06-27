@@ -14,7 +14,7 @@ import (
 var errUnsupportedType = errors.New("encountered unsupported mysql type")
 
 func (c *connection) ListDatabases(ctx context.Context) ([]string, error) {
-	return []string{"def"}, nil
+	return []string{}, nil
 }
 
 func (c *connection) ListSchemas(ctx context.Context, database string) ([]string, error) {
