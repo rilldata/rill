@@ -15,6 +15,81 @@ import (
 
 var errUnsupportedType = errors.New("encountered unsupported redshift type")
 
+func (c *Connection) ListDatabases(ctx context.Context) ([]string, error) {
+	q := `SHOW DATABASES`
+
+	awsConfig, err := c.awsConfig(ctx, c.config.AWSRegion)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get AWS config: %w", err)
+	}
+
+	client := redshiftdata.NewFromConfig(awsConfig)
+
+	queryExecutionID, err := c.executeQuery(ctx, client, q, c.config.Database, c.config.Workgroup, c.config.ClusterIdentifier)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list databases: %w", err)
+	}
+
+	result, err := client.GetStatementResult(ctx, &redshiftdata.GetStatementResultInput{
+		Id: aws.String(queryExecutionID),
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to get query results: %w", err)
+	}
+
+	var names []string
+	for i, record := range result.Records {
+		if i == 0 { // Skip header row
+			continue
+		}
+		name := record[0].(*types.FieldMemberStringValue).Value
+		names = append(names, name)
+	}
+
+	return names, nil
+}
+
+func (c *Connection) ListSchemas(ctx context.Context, database string) ([]string, error) {
+	q := fmt.Sprintf(`SHOW SCHEMAS FROM DATABASE %s`, database)
+
+	awsConfig, err := c.awsConfig(ctx, c.config.AWSRegion)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get AWS config: %w", err)
+	}
+
+	client := redshiftdata.NewFromConfig(awsConfig)
+
+	queryExecutionID, err := c.executeQuery(ctx, client, q, c.config.Database, c.config.Workgroup, c.config.ClusterIdentifier)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list schemas: %w", err)
+	}
+
+	result, err := client.GetStatementResult(ctx, &redshiftdata.GetStatementResultInput{
+		Id: aws.String(queryExecutionID),
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to get query results: %w", err)
+	}
+
+	var names []string
+	exclude := map[string]bool{
+		"information_schema": true,
+		"pg_catalog":         true,
+		"pg_internal":        true,
+	}
+	for i, record := range result.Records {
+		if i == 0 { // Skip header row
+			continue
+		}
+		name := record[1].(*types.FieldMemberStringValue).Value
+		if !exclude[name] {
+			names = append(names, name)
+		}
+	}
+
+	return names, nil
+}
+
 func (c *Connection) All(ctx context.Context, like string) ([]*drivers.Table, error) {
 	var likeClause string
 	if like != "" {

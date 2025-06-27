@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"maps"
+	"net/url"
+	"strings"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/mitchellh/mapstructure"
@@ -106,7 +108,7 @@ type connection struct {
 
 // Ping implements drivers.Handle.
 func (c *connection) Ping(ctx context.Context) error {
-	db, err := c.getDB()
+	db, err := c.getDB("")
 	if err != nil {
 		return err
 	}
@@ -205,7 +207,8 @@ func (c *connection) AsNotifier(properties map[string]any) (drivers.Notifier, er
 }
 
 // getDB opens a new sqlx.DB connection using the config.
-func (c *connection) getDB() (*sqlx.DB, error) {
+// If a non-empty database name is provided, it updates the database in the existing DSN accordingly.
+func (c *connection) getDB(database string) (*sqlx.DB, error) {
 	conf := &ConfigProperties{}
 	if err := mapstructure.WeakDecode(c.config, conf); err != nil {
 		return nil, fmt.Errorf("failed to decode config: %w", err)
@@ -214,9 +217,46 @@ func (c *connection) getDB() (*sqlx.DB, error) {
 	if dsn == "" {
 		return nil, fmt.Errorf("database_url or dsn not provided")
 	}
+
+	if database != "" {
+		var err error
+		dsn, err = updateDSNDatabase(dsn, database)
+		if err != nil {
+			return nil, fmt.Errorf("failed to update DSN: %w", err)
+		}
+	}
+
 	db, err := sqlx.Open("pgx", dsn)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open connection: %w", err)
 	}
 	return db, nil
+}
+
+// updateDSNDatabase sets or replaces the database name in a PostgreSQL DSN.
+func updateDSNDatabase(dsn, database string) (string, error) {
+	// Handle URL-style DSN
+	if strings.HasPrefix(dsn, "postgres://") || strings.HasPrefix(dsn, "postgresql://") {
+		u, err := url.Parse(dsn)
+		if err != nil {
+			return "", err
+		}
+		u.Path = "/" + database
+		return u.String(), nil
+	}
+
+	// Handle DSN as key=value pairs (e.g., user=foo password=bar dbname=mydb)
+	parts := strings.Fields(dsn)
+	found := false
+	for i, part := range parts {
+		if strings.HasPrefix(part, "dbname=") {
+			parts[i] = "dbname=" + database
+			found = true
+			break
+		}
+	}
+	if !found {
+		parts = append(parts, "dbname="+database)
+	}
+	return strings.Join(parts, " "), nil
 }

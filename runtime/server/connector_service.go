@@ -187,6 +187,50 @@ func (s *Server) OLAPGetTable(ctx context.Context, req *runtimev1.OLAPGetTableRe
 	}, nil
 }
 
+func (s *Server) ListDatabases(ctx context.Context, req *runtimev1.ListDatabasesRequest) (*runtimev1.ListDatabasesResponse, error) {
+	handle, release, err := s.runtime.AcquireHandle(ctx, req.InstanceId, req.Connector)
+	if err != nil {
+		return nil, err
+	}
+	defer release()
+
+	i, ok := handle.AsInformationSchema()
+	if !ok {
+		return nil, fmt.Errorf("driver: information schema not implemented")
+	}
+
+	databases, err := i.ListDatabases(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return &runtimev1.ListDatabasesResponse{
+		Databases: databases,
+	}, nil
+}
+
+func (s *Server) ListSchemas(ctx context.Context, req *runtimev1.ListSchemasRequest) (*runtimev1.ListSchemasResponse, error) {
+	handle, release, err := s.runtime.AcquireHandle(ctx, req.InstanceId, req.Connector)
+	if err != nil {
+		return nil, err
+	}
+	defer release()
+
+	i, ok := handle.AsInformationSchema()
+	if !ok {
+		return nil, fmt.Errorf("driver: information schema not implemented")
+	}
+
+	schemas, err := i.ListSchemas(ctx, req.Database)
+	if err != nil {
+		return nil, err
+	}
+
+	return &runtimev1.ListSchemasResponse{
+		Schemas: schemas,
+	}, nil
+}
+
 func (s *Server) ListTables(ctx context.Context, req *runtimev1.ListTablesRequest) (*runtimev1.ListTablesResponse, error) {
 	handle, release, err := s.runtime.AcquireHandle(ctx, req.InstanceId, req.Connector)
 	if err != nil {

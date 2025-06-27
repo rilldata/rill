@@ -12,6 +12,41 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 )
 
+func (c *Connection) ListDatabases(ctx context.Context) ([]string, error) {
+	return []string{}, nil
+}
+
+func (c *Connection) ListSchemas(ctx context.Context, database string) ([]string, error) {
+	conn, release, err := c.acquireMetaConn(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = release() }()
+
+	q := "SELECT name FROM system.databases"
+
+	rows, err := conn.QueryxContext(ctx, q)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var names []string
+	for rows.Next() {
+		var name string
+		if err := rows.Scan(&name); err != nil {
+			return nil, err
+		}
+		names = append(names, name)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return names, nil
+}
+
 func (c *Connection) All(ctx context.Context, like string) ([]*drivers.Table, error) {
 	conn, release, err := c.acquireMetaConn(ctx)
 	if err != nil {

@@ -14,6 +14,56 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 )
 
+func (c *Connection) ListDatabases(ctx context.Context) ([]string, error) {
+	// NOTE: In Athena, catalogs are similar to databases in most traditional DBs.
+	var catalogs []string
+
+	awsConfig, err := c.awsConfig(ctx, c.config.AWSRegion)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get AWS config: %w", err)
+	}
+	client := athena.NewFromConfig(awsConfig)
+	input := &athena.ListDataCatalogsInput{}
+	paginator := athena.NewListDataCatalogsPaginator(client, input)
+	for paginator.HasMorePages() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, summary := range page.DataCatalogsSummary {
+			catalogs = append(catalogs, *summary.CatalogName)
+		}
+	}
+
+	return catalogs, nil
+}
+
+func (c *Connection) ListSchemas(ctx context.Context, catalog string) ([]string, error) {
+	// NOTE: In Athena, databases are similar to schemas in most traditional DBs.
+	var databases []string
+
+	awsConfig, err := c.awsConfig(ctx, c.config.AWSRegion)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get AWS config: %w", err)
+	}
+	client := athena.NewFromConfig(awsConfig)
+	input := &athena.ListDatabasesInput{
+		CatalogName: &catalog,
+	}
+	paginator := athena.NewListDatabasesPaginator(client, input)
+	for paginator.HasMorePages() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, summary := range page.DatabaseList {
+			databases = append(databases, *summary.Name)
+		}
+	}
+
+	return databases, nil
+}
+
 func (c *Connection) All(ctx context.Context, like string) ([]*drivers.Table, error) {
 	var likeClause string
 	if like != "" {

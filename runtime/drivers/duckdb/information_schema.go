@@ -10,6 +10,14 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/rduckdb"
 )
 
+func (c *connection) ListDatabases(ctx context.Context) ([]string, error) {
+	return []string{"main_db"}, nil
+}
+
+func (c *connection) ListSchemas(ctx context.Context, database string) ([]string, error) {
+	return []string{"main"}, nil
+}
+
 func (c *connection) All(ctx context.Context, ilike string) ([]*drivers.Table, error) {
 	// TODO: this bypasses the acquireMetaConn call in the original implementation. Fix this.
 	db, release, err := c.acquireDB()
@@ -333,9 +341,6 @@ func splitCommasUnlessQuotedOrNestedInParens(s string) []string {
 	return splits
 }
 
-// splitStructFieldStr splits a single struct name/type pair.
-// It expects fieldStr to have the format `name TYPE` or `"name" TYPE`.
-// If the name string is quoted and contains escaped quotes `""`, they'll be replaced by `"`.
 // For example: splitStructFieldStr(`"hello "" world" VARCHAR`) -> (`hello " world`, `VARCHAR`, true).
 func splitStructFieldStr(fieldStr string) (string, string, bool) {
 	// If the string DOES NOT start with a `"`, we can just split on the first space.
