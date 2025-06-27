@@ -81,6 +81,31 @@ paths:
           type: string
       tags:
         - ConnectorService
+  /v1/connectors/databases:
+    get:
+      summary: ListDatabases list all databases
+      operationId: ConnectorService_ListDatabases
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ListDatabasesResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: query
+          required: false
+          type: string
+        - name: connector
+          description: Connector to list databases from.
+          in: query
+          required: false
+          type: string
+      tags:
+        - ConnectorService
   /v1/connectors/meta:
     get:
       summary: |-
@@ -129,6 +154,36 @@ paths:
           required: false
           type: string
         - name: table
+          in: query
+          required: false
+          type: string
+      tags:
+        - ConnectorService
+  /v1/connectors/schemas:
+    get:
+      summary: ListSchemas list all schemas in a database
+      operationId: ConnectorService_ListSchemas
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ListSchemasResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: query
+          required: false
+          type: string
+        - name: connector
+          description: Connector to list schemas from.
+          in: query
+          required: false
+          type: string
+        - name: database
+          description: Database to list schemas from.
           in: query
           required: false
           type: string
@@ -4831,6 +4886,13 @@ definitions:
           type: object
           $ref: '#/definitions/v1ConnectorDriver'
     title: Response message for RuntimeService.ListConnectorDrivers
+  v1ListDatabasesResponse:
+    type: object
+    properties:
+      databases:
+        type: array
+        items:
+          type: string
   v1ListExamplesResponse:
     type: object
     properties:
@@ -4878,6 +4940,13 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1Resource'
+  v1ListSchemasResponse:
+    type: object
+    properties:
+      schemas:
+        type: array
+        items:
+          type: string
   v1ListTablesResponse:
     type: object
     properties:

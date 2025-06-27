@@ -13,6 +13,45 @@ import (
 
 var errUnsupportedType = errors.New("encountered unsupported mysql type")
 
+func (c *connection) ListDatabases(ctx context.Context) ([]string, error) {
+	return []string{"def"}, nil
+}
+
+func (c *connection) ListSchemas(ctx context.Context, database string) ([]string, error) {
+	q := `
+	SELECT schema_name FROM information_schema.schemata
+	WHERE schema_name not in ('information_schema', 'performance_schema', 'sys')
+	ORDER BY schema_name
+	`
+
+	db, err := c.getDB()
+	if err != nil {
+		return nil, err
+	}
+	defer db.Close()
+
+	rows, err := db.QueryxContext(ctx, q)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var names []string
+	for rows.Next() {
+		var name string
+		if err := rows.Scan(&name); err != nil {
+			return nil, err
+		}
+		names = append(names, name)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return names, nil
+}
+
 func (c *connection) All(ctx context.Context, like string) ([]*drivers.Table, error) {
 	var likeClause string
 	var args []any

@@ -6,9 +6,13 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 )
 
-// InformationSchema contains information about existing tables in an OLAP driver.
-// Table lookups should be case insensitive.
+// InformationSchema contains information about existing databases, schemas and tables
 type InformationSchema interface {
+	// ListDatabases returns a list of all databases available in the OLAP driver.
+	ListDatabases(ctx context.Context) ([]string, error)
+	// ListSchemas returns a list of all schemas available in the specified database.
+	// If database is empty, it returns schemas from the current/default database.
+	ListSchemas(ctx context.Context, database string) ([]string, error)
 	// All returns metadata about all tables and views.
 	// The like argument can optionally be passed to filter the tables by name.
 	All(ctx context.Context, like string) ([]*Table, error)

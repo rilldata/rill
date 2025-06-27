@@ -52,6 +52,16 @@ service ConnectorService {
     option (google.api.http) = {get: "/v1/connectors/olap/table"};
   }
 
+  // ListDatabases list all databases 
+  rpc ListDatabases(ListDatabasesRequest) returns (ListDatabasesResponse) {
+    option (google.api.http) = {get: "/v1/connectors/databases"};
+  }
+
+  // ListSchemas list all schemas in a database
+  rpc ListSchemas(ListSchemasRequest) returns (ListSchemasResponse) {
+    option (google.api.http) = {get: "/v1/connectors/schemas"};
+  }
+
   // ListTables list all tables across all databases 
   rpc ListTables(ListTablesRequest) returns (ListTablesResponse) {
     option (google.api.http) = {get: "/v1/connectors/tables"};
@@ -203,6 +213,28 @@ message OLAPGetTableResponse {
   bool view = 2;
   // physical_size_bytes is the physical size of the table. Set to -1 if the size cannot be determined.
   int64 physical_size_bytes = 4;
+}
+
+message ListDatabasesRequest {
+  string instance_id = 1;
+  // Connector to list databases from.
+  string connector = 2;
+}
+
+message ListDatabasesResponse {
+  repeated string databases = 1;
+}
+
+message ListSchemasRequest {
+  string instance_id = 1;
+  // Connector to list schemas from.
+  string connector = 2;
+  // Database to list schemas from.
+  string database = 3;
+}
+
+message ListSchemasResponse {
+  repeated string schemas = 1;
 }
 
 message ListTablesRequest {

@@ -16,6 +16,14 @@ import (
 //
 // Since all user tables are in `druid` schema so we hardcode schema as `druid` and does not query database
 
+func (c *connection) ListDatabases(ctx context.Context) ([]string, error) {
+	return []string{"default"}, nil
+}
+
+func (c *connection) ListSchemas(ctx context.Context, database string) ([]string, error) {
+	return []string{"druid", "information_schema", "sys", "lookup"}, nil
+}
+
 func (c *connection) All(ctx context.Context, like string) ([]*drivers.Table, error) {
 	var likeClause string
 	var args []any

@@ -13,6 +13,90 @@ import (
 
 var errUnsupportedType = errors.New("encountered unsupported snowflake type")
 
+func (c *connection) ListDatabases(ctx context.Context) ([]string, error) {
+	q := `SHOW DATABASES`
+
+	db, err := c.getDB()
+	if err != nil {
+		return nil, err
+	}
+	defer db.Close()
+
+	rows, err := db.QueryxContext(ctx, q)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var names []string
+	for rows.Next() {
+		cols, _ := rows.Columns()
+		vals := make([]interface{}, len(cols))
+		for i := range vals {
+			var v interface{}
+			vals[i] = &v
+		}
+
+		if err := rows.Scan(vals...); err != nil {
+			return nil, err
+		}
+		nameVal := *(vals[1].(*interface{})) // first column is "name"
+		nameStr, ok := nameVal.(string)
+		if !ok {
+			return nil, fmt.Errorf("expected database name string, got %T", nameVal)
+		}
+		names = append(names, nameStr)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return names, nil
+}
+
+func (c *connection) ListSchemas(ctx context.Context, database string) ([]string, error) {
+	q := fmt.Sprintf(`SHOW SCHEMAS IN DATABASE %s`, database)
+
+	db, err := c.getDB()
+	if err != nil {
+		return nil, err
+	}
+	defer db.Close()
+
+	rows, err := db.QueryxContext(ctx, q)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var names []string
+	for rows.Next() {
+		cols, _ := rows.Columns()
+		vals := make([]interface{}, len(cols))
+		for i := range vals {
+			var v interface{}
+			vals[i] = &v
+		}
+
+		if err := rows.Scan(vals...); err != nil {
+			return nil, err
+		}
+		nameVal := *(vals[1].(*interface{})) // first column is "name"
+		nameStr, ok := nameVal.(string)
+		if !ok {
+			return nil, fmt.Errorf("expected schema name as string got %T", nameVal)
+		}
+		names = append(names, nameStr)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return names, nil
+}
+
 func (c *connection) All(ctx context.Context, like string) ([]*drivers.Table, error) {
 	var likeClause string
 	var args []any

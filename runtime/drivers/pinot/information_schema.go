@@ -18,6 +18,14 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
+func (c *connection) ListDatabases(ctx context.Context) ([]string, error) {
+	return []string{"default"}, nil
+}
+
+func (c *connection) ListSchemas(ctx context.Context, database string) ([]string, error) {
+	return []string{"default"}, nil
+}
+
 func (c *connection) All(ctx context.Context, like string) ([]*drivers.Table, error) {
 	// query /tables endpoint, for each table name, query /tables/{tableName}/schema
 	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, c.schemaURL+"/tables", http.NoBody)

@@ -13,6 +13,75 @@ import (
 
 var errUnsupportedType = errors.New("encountered unsupported postgres type")
 
+func (c *connection) ListDatabases(ctx context.Context) ([]string, error) {
+	q := `
+	SELECT datname FROM pg_database 
+	WHERE has_database_privilege(datname, 'CONNECT') AND datname NOT IN ('template0', 'template1')
+	ORDER BY datname
+	`
+	db, err := c.getDB("")
+	if err != nil {
+		return nil, err
+	}
+	defer db.Close()
+
+	rows, err := db.QueryxContext(ctx, q)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var names []string
+	for rows.Next() {
+		var name string
+		if err := rows.Scan(&name); err != nil {
+			return nil, err
+		}
+		names = append(names, name)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return names, nil
+}
+
+func (c *connection) ListSchemas(ctx context.Context, database string) ([]string, error) {
+	q := `
+	SELECT n.nspname FROM pg_namespace n 
+	WHERE has_schema_privilege(n.nspname, 'USAGE') AND n.nspname NOT IN ('pg_catalog', 'information_schema', 'pg_toast', 'pg_temp_1', 'pg_toast_temp_1')
+	ORDER BY n.nspname
+	`
+
+	db, err := c.getDB(database)
+	if err != nil {
+		return nil, err
+	}
+	defer db.Close()
+
+	rows, err := db.QueryxContext(ctx, q)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var names []string
+	for rows.Next() {
+		var name string
+		if err := rows.Scan(&name); err != nil {
+			return nil, err
+		}
+		names = append(names, name)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return names, nil
+}
+
 func (c *connection) All(ctx context.Context, like string) ([]*drivers.Table, error) {
 	var likeClause string
 	var args []any
@@ -38,7 +107,7 @@ func (c *connection) All(ctx context.Context, like string) ([]*drivers.Table, er
 		ORDER BY database, database_schema, name, table_type
 	`, likeClause)
 
-	db, err := c.getDB()
+	db, err := c.getDB("")
 	if err != nil {
 		return nil, err
 	}
@@ -87,7 +156,7 @@ func (c *connection) Lookup(ctx context.Context, dbName, schema, name string) (*
 	}
 	args = append(args, name)
 
-	db, err := c.getDB()
+	db, err := c.getDB("")
 	if err != nil {
 		return nil, err
 	}

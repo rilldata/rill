@@ -1337,6 +1337,221 @@ func (x *OLAPGetTableResponse) GetPhysicalSizeBytes() int64 {
 	return 0
 }
 
+type ListDatabasesRequest struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	InstanceId string `protobuf:"bytes,1,opt,name=instance_id,json=instanceId,proto3" json:"instance_id,omitempty"`
+	// Connector to list databases from.
+	Connector string `protobuf:"bytes,2,opt,name=connector,proto3" json:"connector,omitempty"`
+}
+
+func (x *ListDatabasesRequest) Reset() {
+	*x = ListDatabasesRequest{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_rill_runtime_v1_connectors_proto_msgTypes[20]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *ListDatabasesRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListDatabasesRequest) ProtoMessage() {}
+
+func (x *ListDatabasesRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_rill_runtime_v1_connectors_proto_msgTypes[20]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListDatabasesRequest.ProtoReflect.Descriptor instead.
+func (*ListDatabasesRequest) Descriptor() ([]byte, []int) {
+	return file_rill_runtime_v1_connectors_proto_rawDescGZIP(), []int{20}
+}
+
+func (x *ListDatabasesRequest) GetInstanceId() string {
+	if x != nil {
+		return x.InstanceId
+	}
+	return ""
+}
+
+func (x *ListDatabasesRequest) GetConnector() string {
+	if x != nil {
+		return x.Connector
+	}
+	return ""
+}
+
+type ListDatabasesResponse struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Databases []string `protobuf:"bytes,1,rep,name=databases,proto3" json:"databases,omitempty"`
+}
+
+func (x *ListDatabasesResponse) Reset() {
+	*x = ListDatabasesResponse{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_rill_runtime_v1_connectors_proto_msgTypes[21]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *ListDatabasesResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListDatabasesResponse) ProtoMessage() {}
+
+func (x *ListDatabasesResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_rill_runtime_v1_connectors_proto_msgTypes[21]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListDatabasesResponse.ProtoReflect.Descriptor instead.
+func (*ListDatabasesResponse) Descriptor() ([]byte, []int) {
+	return file_rill_runtime_v1_connectors_proto_rawDescGZIP(), []int{21}
+}
+
+func (x *ListDatabasesResponse) GetDatabases() []string {
+	if x != nil {
+		return x.Databases
+	}
+	return nil
+}
+
+type ListSchemasRequest struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	InstanceId string `protobuf:"bytes,1,opt,name=instance_id,json=instanceId,proto3" json:"instance_id,omitempty"`
+	// Connector to list schemas from.
+	Connector string `protobuf:"bytes,2,opt,name=connector,proto3" json:"connector,omitempty"`
+	// Database to list schemas from.
+	Database string `protobuf:"bytes,3,opt,name=database,proto3" json:"database,omitempty"`
+}
+
+func (x *ListSchemasRequest) Reset() {
+	*x = ListSchemasRequest{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_rill_runtime_v1_connectors_proto_msgTypes[22]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *ListSchemasRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListSchemasRequest) ProtoMessage() {}
+
+func (x *ListSchemasRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_rill_runtime_v1_connectors_proto_msgTypes[22]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListSchemasRequest.ProtoReflect.Descriptor instead.
+func (*ListSchemasRequest) Descriptor() ([]byte, []int) {
+	return file_rill_runtime_v1_connectors_proto_rawDescGZIP(), []int{22}
+}
+
+func (x *ListSchemasRequest) GetInstanceId() string {
+	if x != nil {
+		return x.InstanceId
+	}
+	return ""
+}
+
+func (x *ListSchemasRequest) GetConnector() string {
+	if x != nil {
+		return x.Connector
+	}
+	return ""
+}
+
+func (x *ListSchemasRequest) GetDatabase() string {
+	if x != nil {
+		return x.Database
+	}
+	return ""
+}
+
+type ListSchemasResponse struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Schemas []string `protobuf:"bytes,1,rep,name=schemas,proto3" json:"schemas,omitempty"`
+}
+
+func (x *ListSchemasResponse) Reset() {
+	*x = ListSchemasResponse{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_rill_runtime_v1_connectors_proto_msgTypes[23]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *ListSchemasResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListSchemasResponse) ProtoMessage() {}
+
+func (x *ListSchemasResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_rill_runtime_v1_connectors_proto_msgTypes[23]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListSchemasResponse.ProtoReflect.Descriptor instead.
+func (*ListSchemasResponse) Descriptor() ([]byte, []int) {
+	return file_rill_runtime_v1_connectors_proto_rawDescGZIP(), []int{23}
+}
+
+func (x *ListSchemasResponse) GetSchemas() []string {
+	if x != nil {
+		return x.Schemas
+	}
+	return nil
+}
+
 type ListTablesRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -1354,7 +1569,7 @@ type ListTablesRequest struct {
 func (x *ListTablesRequest) Reset() {
 	*x = ListTablesRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_connectors_proto_msgTypes[20]
+		mi := &file_rill_runtime_v1_connectors_proto_msgTypes[24]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1367,7 +1582,7 @@ func (x *ListTablesRequest) String() string {
 func (*ListTablesRequest) ProtoMessage() {}
 
 func (x *ListTablesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_connectors_proto_msgTypes[20]
+	mi := &file_rill_runtime_v1_connectors_proto_msgTypes[24]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1380,7 +1595,7 @@ func (x *ListTablesRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListTablesRequest.ProtoReflect.Descriptor instead.
 func (*ListTablesRequest) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_connectors_proto_rawDescGZIP(), []int{20}
+	return file_rill_runtime_v1_connectors_proto_rawDescGZIP(), []int{24}
 }
 
 func (x *ListTablesRequest) GetInstanceId() string {
@@ -1415,7 +1630,7 @@ type ListTablesResponse struct {
 func (x *ListTablesResponse) Reset() {
 	*x = ListTablesResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_connectors_proto_msgTypes[21]
+		mi := &file_rill_runtime_v1_connectors_proto_msgTypes[25]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1428,7 +1643,7 @@ func (x *ListTablesResponse) String() string {
 func (*ListTablesResponse) ProtoMessage() {}
 
 func (x *ListTablesResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_connectors_proto_msgTypes[21]
+	mi := &file_rill_runtime_v1_connectors_proto_msgTypes[25]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1441,7 +1656,7 @@ func (x *ListTablesResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListTablesResponse.ProtoReflect.Descriptor instead.
 func (*ListTablesResponse) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_connectors_proto_rawDescGZIP(), []int{21}
+	return file_rill_runtime_v1_connectors_proto_rawDescGZIP(), []int{25}
 }
 
 func (x *ListTablesResponse) GetTables() []*TableInfo {
@@ -1466,7 +1681,7 @@ type GetTableRequest struct {
 func (x *GetTableRequest) Reset() {
 	*x = GetTableRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_connectors_proto_msgTypes[22]
+		mi := &file_rill_runtime_v1_connectors_proto_msgTypes[26]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1479,7 +1694,7 @@ func (x *GetTableRequest) String() string {
 func (*GetTableRequest) ProtoMessage() {}
 
 func (x *GetTableRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_connectors_proto_msgTypes[22]
+	mi := &file_rill_runtime_v1_connectors_proto_msgTypes[26]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1492,7 +1707,7 @@ func (x *GetTableRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetTableRequest.ProtoReflect.Descriptor instead.
 func (*GetTableRequest) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_connectors_proto_rawDescGZIP(), []int{22}
+	return file_rill_runtime_v1_connectors_proto_rawDescGZIP(), []int{26}
 }
 
 func (x *GetTableRequest) GetInstanceId() string {
@@ -1546,7 +1761,7 @@ type GetTableResponse struct {
 func (x *GetTableResponse) Reset() {
 	*x = GetTableResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_connectors_proto_msgTypes[23]
+		mi := &file_rill_runtime_v1_connectors_proto_msgTypes[27]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1559,7 +1774,7 @@ func (x *GetTableResponse) String() string {
 func (*GetTableResponse) ProtoMessage() {}
 
 func (x *GetTableResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_connectors_proto_msgTypes[23]
+	mi := &file_rill_runtime_v1_connectors_proto_msgTypes[27]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1572,7 +1787,7 @@ func (x *GetTableResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetTableResponse.ProtoReflect.Descriptor instead.
 func (*GetTableResponse) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_connectors_proto_rawDescGZIP(), []int{23}
+	return file_rill_runtime_v1_connectors_proto_rawDescGZIP(), []int{27}
 }
 
 func (x *GetTableResponse) GetSchema() *StructType {
@@ -1622,7 +1837,7 @@ type TableInfo struct {
 func (x *TableInfo) Reset() {
 	*x = TableInfo{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_connectors_proto_msgTypes[24]
+		mi := &file_rill_runtime_v1_connectors_proto_msgTypes[28]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1635,7 +1850,7 @@ func (x *TableInfo) String() string {
 func (*TableInfo) ProtoMessage() {}
 
 func (x *TableInfo) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_connectors_proto_msgTypes[24]
+	mi := &file_rill_runtime_v1_connectors_proto_msgTypes[28]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1648,7 +1863,7 @@ func (x *TableInfo) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TableInfo.ProtoReflect.Descriptor instead.
 func (*TableInfo) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_connectors_proto_rawDescGZIP(), []int{24}
+	return file_rill_runtime_v1_connectors_proto_rawDescGZIP(), []int{28}
 }
 
 func (x *TableInfo) GetDatabase() string {
@@ -1714,7 +1929,7 @@ type BigQueryListDatasetsRequest struct {
 func (x *BigQueryListDatasetsRequest) Reset() {
 	*x = BigQueryListDatasetsRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_connectors_proto_msgTypes[25]
+		mi := &file_rill_runtime_v1_connectors_proto_msgTypes[29]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1727,7 +1942,7 @@ func (x *BigQueryListDatasetsRequest) String() string {
 func (*BigQueryListDatasetsRequest) ProtoMessage() {}
 
 func (x *BigQueryListDatasetsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_connectors_proto_msgTypes[25]
+	mi := &file_rill_runtime_v1_connectors_proto_msgTypes[29]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1740,7 +1955,7 @@ func (x *BigQueryListDatasetsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BigQueryListDatasetsRequest.ProtoReflect.Descriptor instead.
 func (*BigQueryListDatasetsRequest) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_connectors_proto_rawDescGZIP(), []int{25}
+	return file_rill_runtime_v1_connectors_proto_rawDescGZIP(), []int{29}
 }
 
 func (x *BigQueryListDatasetsRequest) GetInstanceId() string {
@@ -1783,7 +1998,7 @@ type BigQueryListDatasetsResponse struct {
 func (x *BigQueryListDatasetsResponse) Reset() {
 	*x = BigQueryListDatasetsResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_connectors_proto_msgTypes[26]
+		mi := &file_rill_runtime_v1_connectors_proto_msgTypes[30]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1796,7 +2011,7 @@ func (x *BigQueryListDatasetsResponse) String() string {
 func (*BigQueryListDatasetsResponse) ProtoMessage() {}
 
 func (x *BigQueryListDatasetsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_connectors_proto_msgTypes[26]
+	mi := &file_rill_runtime_v1_connectors_proto_msgTypes[30]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1809,7 +2024,7 @@ func (x *BigQueryListDatasetsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BigQueryListDatasetsResponse.ProtoReflect.Descriptor instead.
 func (*BigQueryListDatasetsResponse) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_connectors_proto_rawDescGZIP(), []int{26}
+	return file_rill_runtime_v1_connectors_proto_rawDescGZIP(), []int{30}
 }
 
 func (x *BigQueryListDatasetsResponse) GetNextPageToken() string {
@@ -1841,7 +2056,7 @@ type BigQueryListTablesRequest struct {
 func (x *BigQueryListTablesRequest) Reset() {
 	*x = BigQueryListTablesRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_connectors_proto_msgTypes[27]
+		mi := &file_rill_runtime_v1_connectors_proto_msgTypes[31]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1854,7 +2069,7 @@ func (x *BigQueryListTablesRequest) String() string {
 func (*BigQueryListTablesRequest) ProtoMessage() {}
 
 func (x *BigQueryListTablesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_connectors_proto_msgTypes[27]
+	mi := &file_rill_runtime_v1_connectors_proto_msgTypes[31]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1867,7 +2082,7 @@ func (x *BigQueryListTablesRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BigQueryListTablesRequest.ProtoReflect.Descriptor instead.
 func (*BigQueryListTablesRequest) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_connectors_proto_rawDescGZIP(), []int{27}
+	return file_rill_runtime_v1_connectors_proto_rawDescGZIP(), []int{31}
 }
 
 func (x *BigQueryListTablesRequest) GetInstanceId() string {
@@ -1917,7 +2132,7 @@ type BigQueryListTablesResponse struct {
 func (x *BigQueryListTablesResponse) Reset() {
 	*x = BigQueryListTablesResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_connectors_proto_msgTypes[28]
+		mi := &file_rill_runtime_v1_connectors_proto_msgTypes[32]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1930,7 +2145,7 @@ func (x *BigQueryListTablesResponse) String() string {
 func (*BigQueryListTablesResponse) ProtoMessage() {}
 
 func (x *BigQueryListTablesResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_connectors_proto_msgTypes[28]
+	mi := &file_rill_runtime_v1_connectors_proto_msgTypes[32]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1943,7 +2158,7 @@ func (x *BigQueryListTablesResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BigQueryListTablesResponse.ProtoReflect.Descriptor instead.
 func (*BigQueryListTablesResponse) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_connectors_proto_rawDescGZIP(), []int{28}
+	return file_rill_runtime_v1_connectors_proto_rawDescGZIP(), []int{32}
 }
 
 func (x *BigQueryListTablesResponse) GetNextPageToken() string {
@@ -2151,7 +2366,26 @@ var file_rill_runtime_v1_connectors_proto_rawDesc = []byte{
 	0x6f, 0x6c, 0x75, 0x6d, 0x6e, 0x73, 0x45, 0x6e, 0x74, 0x72, 0x79, 0x12, 0x10, 0x0a, 0x03, 0x6b,
 	0x65, 0x79, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x03, 0x6b, 0x65, 0x79, 0x12, 0x14, 0x0a,
 	0x05, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x05, 0x76, 0x61,
-	0x6c, 0x75, 0x65, 0x3a, 0x02, 0x38, 0x01, 0x22, 0x79, 0x0a, 0x11, 0x4c, 0x69, 0x73, 0x74, 0x54,
+	0x6c, 0x75, 0x65, 0x3a, 0x02, 0x38, 0x01, 0x22, 0x55, 0x0a, 0x14, 0x4c, 0x69, 0x73, 0x74, 0x44,
+	0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12,
+	0x1f, 0x0a, 0x0b, 0x69, 0x6e, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x5f, 0x69, 0x64, 0x18, 0x01,
+	0x20, 0x01, 0x28, 0x09, 0x52, 0x0a, 0x69, 0x6e, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x49, 0x64,
+	0x12, 0x1c, 0x0a, 0x09, 0x63, 0x6f, 0x6e, 0x6e, 0x65, 0x63, 0x74, 0x6f, 0x72, 0x18, 0x02, 0x20,
+	0x01, 0x28, 0x09, 0x52, 0x09, 0x63, 0x6f, 0x6e, 0x6e, 0x65, 0x63, 0x74, 0x6f, 0x72, 0x22, 0x35,
+	0x0a, 0x15, 0x4c, 0x69, 0x73, 0x74, 0x44, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x73, 0x52,
+	0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x1c, 0x0a, 0x09, 0x64, 0x61, 0x74, 0x61, 0x62,
+	0x61, 0x73, 0x65, 0x73, 0x18, 0x01, 0x20, 0x03, 0x28, 0x09, 0x52, 0x09, 0x64, 0x61, 0x74, 0x61,
+	0x62, 0x61, 0x73, 0x65, 0x73, 0x22, 0x6f, 0x0a, 0x12, 0x4c, 0x69, 0x73, 0x74, 0x53, 0x63, 0x68,
+	0x65, 0x6d, 0x61, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x1f, 0x0a, 0x0b, 0x69,
+	0x6e, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x5f, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09,
+	0x52, 0x0a, 0x69, 0x6e, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x49, 0x64, 0x12, 0x1c, 0x0a, 0x09,
+	0x63, 0x6f, 0x6e, 0x6e, 0x65, 0x63, 0x74, 0x6f, 0x72, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52,
+	0x09, 0x63, 0x6f, 0x6e, 0x6e, 0x65, 0x63, 0x74, 0x6f, 0x72, 0x12, 0x1a, 0x0a, 0x08, 0x64, 0x61,
+	0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x18, 0x03, 0x20, 0x01, 0x28, 0x09, 0x52, 0x08, 0x64, 0x61,
+	0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x22, 0x2f, 0x0a, 0x13, 0x4c, 0x69, 0x73, 0x74, 0x53, 0x63,
+	0x68, 0x65, 0x6d, 0x61, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x18, 0x0a,
+	0x07, 0x73, 0x63, 0x68, 0x65, 0x6d, 0x61, 0x73, 0x18, 0x01, 0x20, 0x03, 0x28, 0x09, 0x52, 0x07,
+	0x73, 0x63, 0x68, 0x65, 0x6d, 0x61, 0x73, 0x22, 0x79, 0x0a, 0x11, 0x4c, 0x69, 0x73, 0x74, 0x54,
 	0x61, 0x62, 0x6c, 0x65, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x1f, 0x0a, 0x0b,
 	0x69, 0x6e, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x5f, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28,
 	0x09, 0x52, 0x0a, 0x69, 0x6e, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x49, 0x64, 0x12, 0x1c, 0x0a,
@@ -2248,7 +2482,7 @@ var file_rill_runtime_v1_connectors_proto_rawDesc = []byte{
 	0x6e, 0x65, 0x78, 0x74, 0x5f, 0x70, 0x61, 0x67, 0x65, 0x5f, 0x74, 0x6f, 0x6b, 0x65, 0x6e, 0x18,
 	0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0d, 0x6e, 0x65, 0x78, 0x74, 0x50, 0x61, 0x67, 0x65, 0x54,
 	0x6f, 0x6b, 0x65, 0x6e, 0x12, 0x14, 0x0a, 0x05, 0x6e, 0x61, 0x6d, 0x65, 0x73, 0x18, 0x02, 0x20,
-	0x03, 0x28, 0x09, 0x52, 0x05, 0x6e, 0x61, 0x6d, 0x65, 0x73, 0x32, 0xf6, 0x0d, 0x0a, 0x10, 0x43,
+	0x03, 0x28, 0x09, 0x52, 0x05, 0x6e, 0x61, 0x6d, 0x65, 0x73, 0x32, 0xf3, 0x0f, 0x0a, 0x10, 0x43,
 	0x6f, 0x6e, 0x6e, 0x65, 0x63, 0x74, 0x6f, 0x72, 0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x12,
 	0x76, 0x0a, 0x0d, 0x53, 0x33, 0x4c, 0x69, 0x73, 0x74, 0x42, 0x75, 0x63, 0x6b, 0x65, 0x74, 0x73,
 	0x12, 0x25, 0x2e, 0x72, 0x69, 0x6c, 0x6c, 0x2e, 0x72, 0x75, 0x6e, 0x74, 0x69, 0x6d, 0x65, 0x2e,
@@ -2327,52 +2561,68 @@ var file_rill_runtime_v1_connectors_proto_rawDesc = []byte{
 	0x47, 0x65, 0x74, 0x54, 0x61, 0x62, 0x6c, 0x65, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65,
 	0x22, 0x21, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x1b, 0x12, 0x19, 0x2f, 0x76, 0x31, 0x2f, 0x63, 0x6f,
 	0x6e, 0x6e, 0x65, 0x63, 0x74, 0x6f, 0x72, 0x73, 0x2f, 0x6f, 0x6c, 0x61, 0x70, 0x2f, 0x74, 0x61,
-	0x62, 0x6c, 0x65, 0x12, 0x74, 0x0a, 0x0a, 0x4c, 0x69, 0x73, 0x74, 0x54, 0x61, 0x62, 0x6c, 0x65,
-	0x73, 0x12, 0x22, 0x2e, 0x72, 0x69, 0x6c, 0x6c, 0x2e, 0x72, 0x75, 0x6e, 0x74, 0x69, 0x6d, 0x65,
-	0x2e, 0x76, 0x31, 0x2e, 0x4c, 0x69, 0x73, 0x74, 0x54, 0x61, 0x62, 0x6c, 0x65, 0x73, 0x52, 0x65,
-	0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x23, 0x2e, 0x72, 0x69, 0x6c, 0x6c, 0x2e, 0x72, 0x75, 0x6e,
-	0x74, 0x69, 0x6d, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x4c, 0x69, 0x73, 0x74, 0x54, 0x61, 0x62, 0x6c,
-	0x65, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x1d, 0x82, 0xd3, 0xe4, 0x93,
-	0x02, 0x17, 0x12, 0x15, 0x2f, 0x76, 0x31, 0x2f, 0x63, 0x6f, 0x6e, 0x6e, 0x65, 0x63, 0x74, 0x6f,
-	0x72, 0x73, 0x2f, 0x74, 0x61, 0x62, 0x6c, 0x65, 0x73, 0x12, 0x76, 0x0a, 0x08, 0x47, 0x65, 0x74,
-	0x54, 0x61, 0x62, 0x6c, 0x65, 0x12, 0x20, 0x2e, 0x72, 0x69, 0x6c, 0x6c, 0x2e, 0x72, 0x75, 0x6e,
-	0x74, 0x69, 0x6d, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x47, 0x65, 0x74, 0x54, 0x61, 0x62, 0x6c, 0x65,
-	0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x21, 0x2e, 0x72, 0x69, 0x6c, 0x6c, 0x2e, 0x72,
-	0x75, 0x6e, 0x74, 0x69, 0x6d, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x47, 0x65, 0x74, 0x54, 0x61, 0x62,
-	0x6c, 0x65, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x25, 0x82, 0xd3, 0xe4, 0x93,
-	0x02, 0x1f, 0x12, 0x1d, 0x2f, 0x76, 0x31, 0x2f, 0x63, 0x6f, 0x6e, 0x6e, 0x65, 0x63, 0x74, 0x6f,
-	0x72, 0x73, 0x2f, 0x74, 0x61, 0x62, 0x6c, 0x65, 0x5f, 0x6d, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74,
-	0x61, 0x12, 0x92, 0x01, 0x0a, 0x14, 0x42, 0x69, 0x67, 0x51, 0x75, 0x65, 0x72, 0x79, 0x4c, 0x69,
-	0x73, 0x74, 0x44, 0x61, 0x74, 0x61, 0x73, 0x65, 0x74, 0x73, 0x12, 0x2c, 0x2e, 0x72, 0x69, 0x6c,
-	0x6c, 0x2e, 0x72, 0x75, 0x6e, 0x74, 0x69, 0x6d, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x42, 0x69, 0x67,
-	0x51, 0x75, 0x65, 0x72, 0x79, 0x4c, 0x69, 0x73, 0x74, 0x44, 0x61, 0x74, 0x61, 0x73, 0x65, 0x74,
-	0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x2d, 0x2e, 0x72, 0x69, 0x6c, 0x6c, 0x2e,
-	0x72, 0x75, 0x6e, 0x74, 0x69, 0x6d, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x42, 0x69, 0x67, 0x51, 0x75,
-	0x65, 0x72, 0x79, 0x4c, 0x69, 0x73, 0x74, 0x44, 0x61, 0x74, 0x61, 0x73, 0x65, 0x74, 0x73, 0x52,
+	0x62, 0x6c, 0x65, 0x12, 0x80, 0x01, 0x0a, 0x0d, 0x4c, 0x69, 0x73, 0x74, 0x44, 0x61, 0x74, 0x61,
+	0x62, 0x61, 0x73, 0x65, 0x73, 0x12, 0x25, 0x2e, 0x72, 0x69, 0x6c, 0x6c, 0x2e, 0x72, 0x75, 0x6e,
+	0x74, 0x69, 0x6d, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x4c, 0x69, 0x73, 0x74, 0x44, 0x61, 0x74, 0x61,
+	0x62, 0x61, 0x73, 0x65, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x26, 0x2e, 0x72,
+	0x69, 0x6c, 0x6c, 0x2e, 0x72, 0x75, 0x6e, 0x74, 0x69, 0x6d, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x4c,
+	0x69, 0x73, 0x74, 0x44, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x73, 0x52, 0x65, 0x73, 0x70,
+	0x6f, 0x6e, 0x73, 0x65, 0x22, 0x20, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x1a, 0x12, 0x18, 0x2f, 0x76,
+	0x31, 0x2f, 0x63, 0x6f, 0x6e, 0x6e, 0x65, 0x63, 0x74, 0x6f, 0x72, 0x73, 0x2f, 0x64, 0x61, 0x74,
+	0x61, 0x62, 0x61, 0x73, 0x65, 0x73, 0x12, 0x78, 0x0a, 0x0b, 0x4c, 0x69, 0x73, 0x74, 0x53, 0x63,
+	0x68, 0x65, 0x6d, 0x61, 0x73, 0x12, 0x23, 0x2e, 0x72, 0x69, 0x6c, 0x6c, 0x2e, 0x72, 0x75, 0x6e,
+	0x74, 0x69, 0x6d, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x4c, 0x69, 0x73, 0x74, 0x53, 0x63, 0x68, 0x65,
+	0x6d, 0x61, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x24, 0x2e, 0x72, 0x69, 0x6c,
+	0x6c, 0x2e, 0x72, 0x75, 0x6e, 0x74, 0x69, 0x6d, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x4c, 0x69, 0x73,
+	0x74, 0x53, 0x63, 0x68, 0x65, 0x6d, 0x61, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65,
+	0x22, 0x1e, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x18, 0x12, 0x16, 0x2f, 0x76, 0x31, 0x2f, 0x63, 0x6f,
+	0x6e, 0x6e, 0x65, 0x63, 0x74, 0x6f, 0x72, 0x73, 0x2f, 0x73, 0x63, 0x68, 0x65, 0x6d, 0x61, 0x73,
+	0x12, 0x74, 0x0a, 0x0a, 0x4c, 0x69, 0x73, 0x74, 0x54, 0x61, 0x62, 0x6c, 0x65, 0x73, 0x12, 0x22,
+	0x2e, 0x72, 0x69, 0x6c, 0x6c, 0x2e, 0x72, 0x75, 0x6e, 0x74, 0x69, 0x6d, 0x65, 0x2e, 0x76, 0x31,
+	0x2e, 0x4c, 0x69, 0x73, 0x74, 0x54, 0x61, 0x62, 0x6c, 0x65, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65,
+	0x73, 0x74, 0x1a, 0x23, 0x2e, 0x72, 0x69, 0x6c, 0x6c, 0x2e, 0x72, 0x75, 0x6e, 0x74, 0x69, 0x6d,
+	0x65, 0x2e, 0x76, 0x31, 0x2e, 0x4c, 0x69, 0x73, 0x74, 0x54, 0x61, 0x62, 0x6c, 0x65, 0x73, 0x52,
 	0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x1d, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x17, 0x12,
-	0x15, 0x2f, 0x76, 0x31, 0x2f, 0x62, 0x69, 0x67, 0x71, 0x75, 0x65, 0x72, 0x79, 0x2f, 0x64, 0x61,
-	0x74, 0x61, 0x73, 0x65, 0x74, 0x73, 0x12, 0x8a, 0x01, 0x0a, 0x12, 0x42, 0x69, 0x67, 0x51, 0x75,
-	0x65, 0x72, 0x79, 0x4c, 0x69, 0x73, 0x74, 0x54, 0x61, 0x62, 0x6c, 0x65, 0x73, 0x12, 0x2a, 0x2e,
-	0x72, 0x69, 0x6c, 0x6c, 0x2e, 0x72, 0x75, 0x6e, 0x74, 0x69, 0x6d, 0x65, 0x2e, 0x76, 0x31, 0x2e,
-	0x42, 0x69, 0x67, 0x51, 0x75, 0x65, 0x72, 0x79, 0x4c, 0x69, 0x73, 0x74, 0x54, 0x61, 0x62, 0x6c,
-	0x65, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x2b, 0x2e, 0x72, 0x69, 0x6c, 0x6c,
-	0x2e, 0x72, 0x75, 0x6e, 0x74, 0x69, 0x6d, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x42, 0x69, 0x67, 0x51,
-	0x75, 0x65, 0x72, 0x79, 0x4c, 0x69, 0x73, 0x74, 0x54, 0x61, 0x62, 0x6c, 0x65, 0x73, 0x52, 0x65,
-	0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x1b, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x15, 0x12, 0x13,
-	0x2f, 0x76, 0x31, 0x2f, 0x62, 0x69, 0x67, 0x71, 0x75, 0x65, 0x72, 0x79, 0x2f, 0x74, 0x61, 0x62,
-	0x6c, 0x65, 0x73, 0x42, 0xc2, 0x01, 0x0a, 0x13, 0x63, 0x6f, 0x6d, 0x2e, 0x72, 0x69, 0x6c, 0x6c,
-	0x2e, 0x72, 0x75, 0x6e, 0x74, 0x69, 0x6d, 0x65, 0x2e, 0x76, 0x31, 0x42, 0x0f, 0x43, 0x6f, 0x6e,
-	0x6e, 0x65, 0x63, 0x74, 0x6f, 0x72, 0x73, 0x50, 0x72, 0x6f, 0x74, 0x6f, 0x50, 0x01, 0x5a, 0x3c,
-	0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x72, 0x69, 0x6c, 0x6c, 0x64,
-	0x61, 0x74, 0x61, 0x2f, 0x72, 0x69, 0x6c, 0x6c, 0x2f, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x2f, 0x67,
-	0x65, 0x6e, 0x2f, 0x72, 0x69, 0x6c, 0x6c, 0x2f, 0x72, 0x75, 0x6e, 0x74, 0x69, 0x6d, 0x65, 0x2f,
-	0x76, 0x31, 0x3b, 0x72, 0x75, 0x6e, 0x74, 0x69, 0x6d, 0x65, 0x76, 0x31, 0xa2, 0x02, 0x03, 0x52,
-	0x52, 0x58, 0xaa, 0x02, 0x0f, 0x52, 0x69, 0x6c, 0x6c, 0x2e, 0x52, 0x75, 0x6e, 0x74, 0x69, 0x6d,
-	0x65, 0x2e, 0x56, 0x31, 0xca, 0x02, 0x0f, 0x52, 0x69, 0x6c, 0x6c, 0x5c, 0x52, 0x75, 0x6e, 0x74,
-	0x69, 0x6d, 0x65, 0x5c, 0x56, 0x31, 0xe2, 0x02, 0x1b, 0x52, 0x69, 0x6c, 0x6c, 0x5c, 0x52, 0x75,
-	0x6e, 0x74, 0x69, 0x6d, 0x65, 0x5c, 0x56, 0x31, 0x5c, 0x47, 0x50, 0x42, 0x4d, 0x65, 0x74, 0x61,
-	0x64, 0x61, 0x74, 0x61, 0xea, 0x02, 0x11, 0x52, 0x69, 0x6c, 0x6c, 0x3a, 0x3a, 0x52, 0x75, 0x6e,
-	0x74, 0x69, 0x6d, 0x65, 0x3a, 0x3a, 0x56, 0x31, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x15, 0x2f, 0x76, 0x31, 0x2f, 0x63, 0x6f, 0x6e, 0x6e, 0x65, 0x63, 0x74, 0x6f, 0x72, 0x73, 0x2f,
+	0x74, 0x61, 0x62, 0x6c, 0x65, 0x73, 0x12, 0x76, 0x0a, 0x08, 0x47, 0x65, 0x74, 0x54, 0x61, 0x62,
+	0x6c, 0x65, 0x12, 0x20, 0x2e, 0x72, 0x69, 0x6c, 0x6c, 0x2e, 0x72, 0x75, 0x6e, 0x74, 0x69, 0x6d,
+	0x65, 0x2e, 0x76, 0x31, 0x2e, 0x47, 0x65, 0x74, 0x54, 0x61, 0x62, 0x6c, 0x65, 0x52, 0x65, 0x71,
+	0x75, 0x65, 0x73, 0x74, 0x1a, 0x21, 0x2e, 0x72, 0x69, 0x6c, 0x6c, 0x2e, 0x72, 0x75, 0x6e, 0x74,
+	0x69, 0x6d, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x47, 0x65, 0x74, 0x54, 0x61, 0x62, 0x6c, 0x65, 0x52,
+	0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x25, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x1f, 0x12,
+	0x1d, 0x2f, 0x76, 0x31, 0x2f, 0x63, 0x6f, 0x6e, 0x6e, 0x65, 0x63, 0x74, 0x6f, 0x72, 0x73, 0x2f,
+	0x74, 0x61, 0x62, 0x6c, 0x65, 0x5f, 0x6d, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74, 0x61, 0x12, 0x92,
+	0x01, 0x0a, 0x14, 0x42, 0x69, 0x67, 0x51, 0x75, 0x65, 0x72, 0x79, 0x4c, 0x69, 0x73, 0x74, 0x44,
+	0x61, 0x74, 0x61, 0x73, 0x65, 0x74, 0x73, 0x12, 0x2c, 0x2e, 0x72, 0x69, 0x6c, 0x6c, 0x2e, 0x72,
+	0x75, 0x6e, 0x74, 0x69, 0x6d, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x42, 0x69, 0x67, 0x51, 0x75, 0x65,
+	0x72, 0x79, 0x4c, 0x69, 0x73, 0x74, 0x44, 0x61, 0x74, 0x61, 0x73, 0x65, 0x74, 0x73, 0x52, 0x65,
+	0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x2d, 0x2e, 0x72, 0x69, 0x6c, 0x6c, 0x2e, 0x72, 0x75, 0x6e,
+	0x74, 0x69, 0x6d, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x42, 0x69, 0x67, 0x51, 0x75, 0x65, 0x72, 0x79,
+	0x4c, 0x69, 0x73, 0x74, 0x44, 0x61, 0x74, 0x61, 0x73, 0x65, 0x74, 0x73, 0x52, 0x65, 0x73, 0x70,
+	0x6f, 0x6e, 0x73, 0x65, 0x22, 0x1d, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x17, 0x12, 0x15, 0x2f, 0x76,
+	0x31, 0x2f, 0x62, 0x69, 0x67, 0x71, 0x75, 0x65, 0x72, 0x79, 0x2f, 0x64, 0x61, 0x74, 0x61, 0x73,
+	0x65, 0x74, 0x73, 0x12, 0x8a, 0x01, 0x0a, 0x12, 0x42, 0x69, 0x67, 0x51, 0x75, 0x65, 0x72, 0x79,
+	0x4c, 0x69, 0x73, 0x74, 0x54, 0x61, 0x62, 0x6c, 0x65, 0x73, 0x12, 0x2a, 0x2e, 0x72, 0x69, 0x6c,
+	0x6c, 0x2e, 0x72, 0x75, 0x6e, 0x74, 0x69, 0x6d, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x42, 0x69, 0x67,
+	0x51, 0x75, 0x65, 0x72, 0x79, 0x4c, 0x69, 0x73, 0x74, 0x54, 0x61, 0x62, 0x6c, 0x65, 0x73, 0x52,
+	0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x2b, 0x2e, 0x72, 0x69, 0x6c, 0x6c, 0x2e, 0x72, 0x75,
+	0x6e, 0x74, 0x69, 0x6d, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x42, 0x69, 0x67, 0x51, 0x75, 0x65, 0x72,
+	0x79, 0x4c, 0x69, 0x73, 0x74, 0x54, 0x61, 0x62, 0x6c, 0x65, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f,
+	0x6e, 0x73, 0x65, 0x22, 0x1b, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x15, 0x12, 0x13, 0x2f, 0x76, 0x31,
+	0x2f, 0x62, 0x69, 0x67, 0x71, 0x75, 0x65, 0x72, 0x79, 0x2f, 0x74, 0x61, 0x62, 0x6c, 0x65, 0x73,
+	0x42, 0xc2, 0x01, 0x0a, 0x13, 0x63, 0x6f, 0x6d, 0x2e, 0x72, 0x69, 0x6c, 0x6c, 0x2e, 0x72, 0x75,
+	0x6e, 0x74, 0x69, 0x6d, 0x65, 0x2e, 0x76, 0x31, 0x42, 0x0f, 0x43, 0x6f, 0x6e, 0x6e, 0x65, 0x63,
+	0x74, 0x6f, 0x72, 0x73, 0x50, 0x72, 0x6f, 0x74, 0x6f, 0x50, 0x01, 0x5a, 0x3c, 0x67, 0x69, 0x74,
+	0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x72, 0x69, 0x6c, 0x6c, 0x64, 0x61, 0x74, 0x61,
+	0x2f, 0x72, 0x69, 0x6c, 0x6c, 0x2f, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x2f, 0x67, 0x65, 0x6e, 0x2f,
+	0x72, 0x69, 0x6c, 0x6c, 0x2f, 0x72, 0x75, 0x6e, 0x74, 0x69, 0x6d, 0x65, 0x2f, 0x76, 0x31, 0x3b,
+	0x72, 0x75, 0x6e, 0x74, 0x69, 0x6d, 0x65, 0x76, 0x31, 0xa2, 0x02, 0x03, 0x52, 0x52, 0x58, 0xaa,
+	0x02, 0x0f, 0x52, 0x69, 0x6c, 0x6c, 0x2e, 0x52, 0x75, 0x6e, 0x74, 0x69, 0x6d, 0x65, 0x2e, 0x56,
+	0x31, 0xca, 0x02, 0x0f, 0x52, 0x69, 0x6c, 0x6c, 0x5c, 0x52, 0x75, 0x6e, 0x74, 0x69, 0x6d, 0x65,
+	0x5c, 0x56, 0x31, 0xe2, 0x02, 0x1b, 0x52, 0x69, 0x6c, 0x6c, 0x5c, 0x52, 0x75, 0x6e, 0x74, 0x69,
+	0x6d, 0x65, 0x5c, 0x56, 0x31, 0x5c, 0x47, 0x50, 0x42, 0x4d, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74,
+	0x61, 0xea, 0x02, 0x11, 0x52, 0x69, 0x6c, 0x6c, 0x3a, 0x3a, 0x52, 0x75, 0x6e, 0x74, 0x69, 0x6d,
+	0x65, 0x3a, 0x3a, 0x56, 0x31, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -2387,7 +2637,7 @@ func file_rill_runtime_v1_connectors_proto_rawDescGZIP() []byte {
 	return file_rill_runtime_v1_connectors_proto_rawDescData
 }
 
-var file_rill_runtime_v1_connectors_proto_msgTypes = make([]protoimpl.MessageInfo, 31)
+var file_rill_runtime_v1_connectors_proto_msgTypes = make([]protoimpl.MessageInfo, 35)
 var file_rill_runtime_v1_connectors_proto_goTypes = []any{
 	(*S3Object)(nil),                      // 0: rill.runtime.v1.S3Object
 	(*S3ListBucketsRequest)(nil),          // 1: rill.runtime.v1.S3ListBucketsRequest
@@ -2409,31 +2659,35 @@ var file_rill_runtime_v1_connectors_proto_goTypes = []any{
 	(*OLAPListTablesResponse)(nil),        // 17: rill.runtime.v1.OLAPListTablesResponse
 	(*OLAPGetTableRequest)(nil),           // 18: rill.runtime.v1.OLAPGetTableRequest
 	(*OLAPGetTableResponse)(nil),          // 19: rill.runtime.v1.OLAPGetTableResponse
-	(*ListTablesRequest)(nil),             // 20: rill.runtime.v1.ListTablesRequest
-	(*ListTablesResponse)(nil),            // 21: rill.runtime.v1.ListTablesResponse
-	(*GetTableRequest)(nil),               // 22: rill.runtime.v1.GetTableRequest
-	(*GetTableResponse)(nil),              // 23: rill.runtime.v1.GetTableResponse
-	(*TableInfo)(nil),                     // 24: rill.runtime.v1.TableInfo
-	(*BigQueryListDatasetsRequest)(nil),   // 25: rill.runtime.v1.BigQueryListDatasetsRequest
-	(*BigQueryListDatasetsResponse)(nil),  // 26: rill.runtime.v1.BigQueryListDatasetsResponse
-	(*BigQueryListTablesRequest)(nil),     // 27: rill.runtime.v1.BigQueryListTablesRequest
-	(*BigQueryListTablesResponse)(nil),    // 28: rill.runtime.v1.BigQueryListTablesResponse
-	nil,                                   // 29: rill.runtime.v1.OLAPGetTableResponse.UnsupportedColumnsEntry
-	nil,                                   // 30: rill.runtime.v1.GetTableResponse.UnsupportedColumnsEntry
-	(*timestamppb.Timestamp)(nil),         // 31: google.protobuf.Timestamp
-	(*StructType)(nil),                    // 32: rill.runtime.v1.StructType
+	(*ListDatabasesRequest)(nil),          // 20: rill.runtime.v1.ListDatabasesRequest
+	(*ListDatabasesResponse)(nil),         // 21: rill.runtime.v1.ListDatabasesResponse
+	(*ListSchemasRequest)(nil),            // 22: rill.runtime.v1.ListSchemasRequest
+	(*ListSchemasResponse)(nil),           // 23: rill.runtime.v1.ListSchemasResponse
+	(*ListTablesRequest)(nil),             // 24: rill.runtime.v1.ListTablesRequest
+	(*ListTablesResponse)(nil),            // 25: rill.runtime.v1.ListTablesResponse
+	(*GetTableRequest)(nil),               // 26: rill.runtime.v1.GetTableRequest
+	(*GetTableResponse)(nil),              // 27: rill.runtime.v1.GetTableResponse
+	(*TableInfo)(nil),                     // 28: rill.runtime.v1.TableInfo
+	(*BigQueryListDatasetsRequest)(nil),   // 29: rill.runtime.v1.BigQueryListDatasetsRequest
+	(*BigQueryListDatasetsResponse)(nil),  // 30: rill.runtime.v1.BigQueryListDatasetsResponse
+	(*BigQueryListTablesRequest)(nil),     // 31: rill.runtime.v1.BigQueryListTablesRequest
+	(*BigQueryListTablesResponse)(nil),    // 32: rill.runtime.v1.BigQueryListTablesResponse
+	nil,                                   // 33: rill.runtime.v1.OLAPGetTableResponse.UnsupportedColumnsEntry
+	nil,                                   // 34: rill.runtime.v1.GetTableResponse.UnsupportedColumnsEntry
+	(*timestamppb.Timestamp)(nil),         // 35: google.protobuf.Timestamp
+	(*StructType)(nil),                    // 36: rill.runtime.v1.StructType
 }
 var file_rill_runtime_v1_connectors_proto_depIdxs = []int32{
-	31, // 0: rill.runtime.v1.S3Object.modified_on:type_name -> google.protobuf.Timestamp
+	35, // 0: rill.runtime.v1.S3Object.modified_on:type_name -> google.protobuf.Timestamp
 	0,  // 1: rill.runtime.v1.S3ListObjectsResponse.objects:type_name -> rill.runtime.v1.S3Object
-	31, // 2: rill.runtime.v1.GCSObject.modified_on:type_name -> google.protobuf.Timestamp
+	35, // 2: rill.runtime.v1.GCSObject.modified_on:type_name -> google.protobuf.Timestamp
 	9,  // 3: rill.runtime.v1.GCSListObjectsResponse.objects:type_name -> rill.runtime.v1.GCSObject
-	24, // 4: rill.runtime.v1.OLAPListTablesResponse.tables:type_name -> rill.runtime.v1.TableInfo
-	32, // 5: rill.runtime.v1.OLAPGetTableResponse.schema:type_name -> rill.runtime.v1.StructType
-	29, // 6: rill.runtime.v1.OLAPGetTableResponse.unsupported_columns:type_name -> rill.runtime.v1.OLAPGetTableResponse.UnsupportedColumnsEntry
-	24, // 7: rill.runtime.v1.ListTablesResponse.tables:type_name -> rill.runtime.v1.TableInfo
-	32, // 8: rill.runtime.v1.GetTableResponse.schema:type_name -> rill.runtime.v1.StructType
-	30, // 9: rill.runtime.v1.GetTableResponse.unsupported_columns:type_name -> rill.runtime.v1.GetTableResponse.UnsupportedColumnsEntry
+	28, // 4: rill.runtime.v1.OLAPListTablesResponse.tables:type_name -> rill.runtime.v1.TableInfo
+	36, // 5: rill.runtime.v1.OLAPGetTableResponse.schema:type_name -> rill.runtime.v1.StructType
+	33, // 6: rill.runtime.v1.OLAPGetTableResponse.unsupported_columns:type_name -> rill.runtime.v1.OLAPGetTableResponse.UnsupportedColumnsEntry
+	28, // 7: rill.runtime.v1.ListTablesResponse.tables:type_name -> rill.runtime.v1.TableInfo
+	36, // 8: rill.runtime.v1.GetTableResponse.schema:type_name -> rill.runtime.v1.StructType
+	34, // 9: rill.runtime.v1.GetTableResponse.unsupported_columns:type_name -> rill.runtime.v1.GetTableResponse.UnsupportedColumnsEntry
 	1,  // 10: rill.runtime.v1.ConnectorService.S3ListBuckets:input_type -> rill.runtime.v1.S3ListBucketsRequest
 	3,  // 11: rill.runtime.v1.ConnectorService.S3ListObjects:input_type -> rill.runtime.v1.S3ListObjectsRequest
 	5,  // 12: rill.runtime.v1.ConnectorService.S3GetBucketMetadata:input_type -> rill.runtime.v1.S3GetBucketMetadataRequest
@@ -2443,25 +2697,29 @@ var file_rill_runtime_v1_connectors_proto_depIdxs = []int32{
 	14, // 16: rill.runtime.v1.ConnectorService.GCSGetCredentialsInfo:input_type -> rill.runtime.v1.GCSGetCredentialsInfoRequest
 	16, // 17: rill.runtime.v1.ConnectorService.OLAPListTables:input_type -> rill.runtime.v1.OLAPListTablesRequest
 	18, // 18: rill.runtime.v1.ConnectorService.OLAPGetTable:input_type -> rill.runtime.v1.OLAPGetTableRequest
-	20, // 19: rill.runtime.v1.ConnectorService.ListTables:input_type -> rill.runtime.v1.ListTablesRequest
-	22, // 20: rill.runtime.v1.ConnectorService.GetTable:input_type -> rill.runtime.v1.GetTableRequest
-	25, // 21: rill.runtime.v1.ConnectorService.BigQueryListDatasets:input_type -> rill.runtime.v1.BigQueryListDatasetsRequest
-	27, // 22: rill.runtime.v1.ConnectorService.BigQueryListTables:input_type -> rill.runtime.v1.BigQueryListTablesRequest
-	2,  // 23: rill.runtime.v1.ConnectorService.S3ListBuckets:output_type -> rill.runtime.v1.S3ListBucketsResponse
-	4,  // 24: rill.runtime.v1.ConnectorService.S3ListObjects:output_type -> rill.runtime.v1.S3ListObjectsResponse
-	6,  // 25: rill.runtime.v1.ConnectorService.S3GetBucketMetadata:output_type -> rill.runtime.v1.S3GetBucketMetadataResponse
-	8,  // 26: rill.runtime.v1.ConnectorService.S3GetCredentialsInfo:output_type -> rill.runtime.v1.S3GetCredentialsInfoResponse
-	11, // 27: rill.runtime.v1.ConnectorService.GCSListBuckets:output_type -> rill.runtime.v1.GCSListBucketsResponse
-	13, // 28: rill.runtime.v1.ConnectorService.GCSListObjects:output_type -> rill.runtime.v1.GCSListObjectsResponse
-	15, // 29: rill.runtime.v1.ConnectorService.GCSGetCredentialsInfo:output_type -> rill.runtime.v1.GCSGetCredentialsInfoResponse
-	17, // 30: rill.runtime.v1.ConnectorService.OLAPListTables:output_type -> rill.runtime.v1.OLAPListTablesResponse
-	19, // 31: rill.runtime.v1.ConnectorService.OLAPGetTable:output_type -> rill.runtime.v1.OLAPGetTableResponse
-	21, // 32: rill.runtime.v1.ConnectorService.ListTables:output_type -> rill.runtime.v1.ListTablesResponse
-	23, // 33: rill.runtime.v1.ConnectorService.GetTable:output_type -> rill.runtime.v1.GetTableResponse
-	26, // 34: rill.runtime.v1.ConnectorService.BigQueryListDatasets:output_type -> rill.runtime.v1.BigQueryListDatasetsResponse
-	28, // 35: rill.runtime.v1.ConnectorService.BigQueryListTables:output_type -> rill.runtime.v1.BigQueryListTablesResponse
-	23, // [23:36] is the sub-list for method output_type
-	10, // [10:23] is the sub-list for method input_type
+	20, // 19: rill.runtime.v1.ConnectorService.ListDatabases:input_type -> rill.runtime.v1.ListDatabasesRequest
+	22, // 20: rill.runtime.v1.ConnectorService.ListSchemas:input_type -> rill.runtime.v1.ListSchemasRequest
+	24, // 21: rill.runtime.v1.ConnectorService.ListTables:input_type -> rill.runtime.v1.ListTablesRequest
+	26, // 22: rill.runtime.v1.ConnectorService.GetTable:input_type -> rill.runtime.v1.GetTableRequest
+	29, // 23: rill.runtime.v1.ConnectorService.BigQueryListDatasets:input_type -> rill.runtime.v1.BigQueryListDatasetsRequest
+	31, // 24: rill.runtime.v1.ConnectorService.BigQueryListTables:input_type -> rill.runtime.v1.BigQueryListTablesRequest
+	2,  // 25: rill.runtime.v1.ConnectorService.S3ListBuckets:output_type -> rill.runtime.v1.S3ListBucketsResponse
+	4,  // 26: rill.runtime.v1.ConnectorService.S3ListObjects:output_type -> rill.runtime.v1.S3ListObjectsResponse
+	6,  // 27: rill.runtime.v1.ConnectorService.S3GetBucketMetadata:output_type -> rill.runtime.v1.S3GetBucketMetadataResponse
+	8,  // 28: rill.runtime.v1.ConnectorService.S3GetCredentialsInfo:output_type -> rill.runtime.v1.S3GetCredentialsInfoResponse
+	11, // 29: rill.runtime.v1.ConnectorService.GCSListBuckets:output_type -> rill.runtime.v1.GCSListBucketsResponse
+	13, // 30: rill.runtime.v1.ConnectorService.GCSListObjects:output_type -> rill.runtime.v1.GCSListObjectsResponse
+	15, // 31: rill.runtime.v1.ConnectorService.GCSGetCredentialsInfo:output_type -> rill.runtime.v1.GCSGetCredentialsInfoResponse
+	17, // 32: rill.runtime.v1.ConnectorService.OLAPListTables:output_type -> rill.runtime.v1.OLAPListTablesResponse
+	19, // 33: rill.runtime.v1.ConnectorService.OLAPGetTable:output_type -> rill.runtime.v1.OLAPGetTableResponse
+	21, // 34: rill.runtime.v1.ConnectorService.ListDatabases:output_type -> rill.runtime.v1.ListDatabasesResponse
+	23, // 35: rill.runtime.v1.ConnectorService.ListSchemas:output_type -> rill.runtime.v1.ListSchemasResponse
+	25, // 36: rill.runtime.v1.ConnectorService.ListTables:output_type -> rill.runtime.v1.ListTablesResponse
+	27, // 37: rill.runtime.v1.ConnectorService.GetTable:output_type -> rill.runtime.v1.GetTableResponse
+	30, // 38: rill.runtime.v1.ConnectorService.BigQueryListDatasets:output_type -> rill.runtime.v1.BigQueryListDatasetsResponse
+	32, // 39: rill.runtime.v1.ConnectorService.BigQueryListTables:output_type -> rill.runtime.v1.BigQueryListTablesResponse
+	25, // [25:40] is the sub-list for method output_type
+	10, // [10:25] is the sub-list for method input_type
 	10, // [10:10] is the sub-list for extension type_name
 	10, // [10:10] is the sub-list for extension extendee
 	0,  // [0:10] is the sub-list for field type_name
@@ -2715,7 +2973,7 @@ func file_rill_runtime_v1_connectors_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_connectors_proto_msgTypes[20].Exporter = func(v any, i int) any {
-			switch v := v.(*ListTablesRequest); i {
+			switch v := v.(*ListDatabasesRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -2727,7 +2985,7 @@ func file_rill_runtime_v1_connectors_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_connectors_proto_msgTypes[21].Exporter = func(v any, i int) any {
-			switch v := v.(*ListTablesResponse); i {
+			switch v := v.(*ListDatabasesResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -2739,7 +2997,7 @@ func file_rill_runtime_v1_connectors_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_connectors_proto_msgTypes[22].Exporter = func(v any, i int) any {
-			switch v := v.(*GetTableRequest); i {
+			switch v := v.(*ListSchemasRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -2751,7 +3009,7 @@ func file_rill_runtime_v1_connectors_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_connectors_proto_msgTypes[23].Exporter = func(v any, i int) any {
-			switch v := v.(*GetTableResponse); i {
+			switch v := v.(*ListSchemasResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -2763,7 +3021,7 @@ func file_rill_runtime_v1_connectors_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_connectors_proto_msgTypes[24].Exporter = func(v any, i int) any {
-			switch v := v.(*TableInfo); i {
+			switch v := v.(*ListTablesRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -2775,7 +3033,7 @@ func file_rill_runtime_v1_connectors_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_connectors_proto_msgTypes[25].Exporter = func(v any, i int) any {
-			switch v := v.(*BigQueryListDatasetsRequest); i {
+			switch v := v.(*ListTablesResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -2787,7 +3045,7 @@ func file_rill_runtime_v1_connectors_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_connectors_proto_msgTypes[26].Exporter = func(v any, i int) any {
-			switch v := v.(*BigQueryListDatasetsResponse); i {
+			switch v := v.(*GetTableRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -2799,7 +3057,7 @@ func file_rill_runtime_v1_connectors_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_connectors_proto_msgTypes[27].Exporter = func(v any, i int) any {
-			switch v := v.(*BigQueryListTablesRequest); i {
+			switch v := v.(*GetTableResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -2811,6 +3069,54 @@ func file_rill_runtime_v1_connectors_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_connectors_proto_msgTypes[28].Exporter = func(v any, i int) any {
+			switch v := v.(*TableInfo); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_rill_runtime_v1_connectors_proto_msgTypes[29].Exporter = func(v any, i int) any {
+			switch v := v.(*BigQueryListDatasetsRequest); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_rill_runtime_v1_connectors_proto_msgTypes[30].Exporter = func(v any, i int) any {
+			switch v := v.(*BigQueryListDatasetsResponse); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_rill_runtime_v1_connectors_proto_msgTypes[31].Exporter = func(v any, i int) any {
+			switch v := v.(*BigQueryListTablesRequest); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_rill_runtime_v1_connectors_proto_msgTypes[32].Exporter = func(v any, i int) any {
 			switch v := v.(*BigQueryListTablesResponse); i {
 			case 0:
 				return &v.state
@@ -2829,7 +3135,7 @@ func file_rill_runtime_v1_connectors_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_rill_runtime_v1_connectors_proto_rawDesc,
 			NumEnums:      0,
-			NumMessages:   31,
+			NumMessages:   35,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
