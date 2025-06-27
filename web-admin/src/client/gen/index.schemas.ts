@@ -693,6 +693,10 @@ export interface V1ListProjectInvitesResponse {
   nextPageToken?: string;
 }
 
+export interface V1ListProjectMemberServicesResponse {
+  services?: V1ProjectMemberService[];
+}
+
 export interface V1ListProjectMemberUsergroupsResponse {
   members?: V1MemberUsergroup[];
   nextPageToken?: string;
@@ -735,7 +739,7 @@ export interface V1ListServiceAuthTokensResponse {
 }
 
 export interface V1ListServicesResponse {
-  services?: V1Service[];
+  services?: V1OrganizationMemberService[];
 }
 
 export interface V1ListSuperusersResponse {
@@ -840,6 +844,21 @@ export interface V1OrganizationInvite {
   invitedBy?: string;
 }
 
+export type V1OrganizationMemberServiceAttributes = { [key: string]: string };
+
+export interface V1OrganizationMemberService {
+  id?: string;
+  name?: string;
+  orgId?: string;
+  orgName?: string;
+  roleName?: string;
+  /** True if the user has a project role in any project in the organization. */
+  hasProjectRoles?: boolean;
+  attributes?: V1OrganizationMemberServiceAttributes;
+  createdOn?: string;
+  updatedOn?: string;
+}
+
 export interface V1OrganizationMemberUser {
   userId?: string;
   userEmail?: string;
@@ -921,6 +940,22 @@ export interface V1ProjectInvite {
   roleName?: string;
   orgRoleName?: string;
   invitedBy?: string;
+}
+
+export type V1ProjectMemberServiceAttributes = { [key: string]: string };
+
+export interface V1ProjectMemberService {
+  id?: string;
+  name?: string;
+  orgId?: string;
+  orgName?: string;
+  orgRoleName?: string;
+  projectId?: string;
+  projectName?: string;
+  projectRoleName?: string;
+  attributes?: V1ProjectMemberServiceAttributes;
+  createdOn?: string;
+  updatedOn?: string;
 }
 
 export interface V1ProjectMemberUser {
@@ -1042,6 +1077,10 @@ export interface V1RemoveOrganizationMemberUsergroupResponse {
   [key: string]: unknown;
 }
 
+export interface V1RemoveProjectMemberServiceResponse {
+  [key: string]: unknown;
+}
+
 export interface V1RemoveProjectMemberUserResponse {
   [key: string]: unknown;
 }
@@ -1135,11 +1174,14 @@ export interface V1SearchUsersResponse {
   nextPageToken?: string;
 }
 
+export type V1ServiceAttributes = { [key: string]: string };
+
 export interface V1Service {
   id?: string;
   name?: string;
   orgId?: string;
   orgName?: string;
+  attributes?: V1ServiceAttributes;
   createdOn?: string;
   updatedOn?: string;
 }
@@ -1151,11 +1193,19 @@ export interface V1ServiceToken {
   expiresOn?: string;
 }
 
+export interface V1SetOrganizationMemberServiceRoleResponse {
+  [key: string]: unknown;
+}
+
 export interface V1SetOrganizationMemberUserRoleResponse {
   [key: string]: unknown;
 }
 
 export interface V1SetOrganizationMemberUsergroupRoleResponse {
+  [key: string]: unknown;
+}
+
+export interface V1SetProjectMemberServiceRoleResponse {
   [key: string]: unknown;
 }
 
@@ -1836,10 +1886,29 @@ export type AdminServiceCreateDeploymentBody = {
 
 export type AdminServiceCreateServiceParams = {
   name?: string;
+  /**
+   * Optional org role to assign
+   */
+  orgRoleName?: string;
+  /**
+   * Optional project to assign role to
+   */
+  projectName?: string;
+  /**
+   * Optional project role to assign
+   */
+  projectRoleName?: string;
+  /**
+   * This is a request variable of the map type. The query format is "map_name[key]=value", e.g. If the map name is Age, the key type is string, and the value type is integer, the query parameter is expressed as Age["bob"]=18
+   */
+  attributes?: string;
 };
+
+export type AdminServiceUpdateServiceBodyAttributes = { [key: string]: string };
 
 export type AdminServiceUpdateServiceBody = {
   newName?: string;
+  attributes?: AdminServiceUpdateServiceBodyAttributes;
 };
 
 export type AdminServiceListProjectsForUserByNameParams = {

@@ -158,7 +158,8 @@ type DB interface {
 	DeleteExpiredUserAuthTokens(ctx context.Context, retention time.Duration) error
 	DeleteInactiveUserAuthTokens(ctx context.Context, retention time.Duration) error
 
-	FindServicesByOrgID(ctx context.Context, orgID string) ([]*Service, error)
+	FindOrganizationMemberServices(ctx context.Context, orgID string) ([]*OrganizationMemberService, error)
+	FindProjectMemberServices(ctx context.Context, projectID string) ([]*ProjectMemberService, error)
 	FindService(ctx context.Context, id string) (*Service, error)
 	FindServiceByName(ctx context.Context, orgID, name string) (*Service, error)
 	InsertService(ctx context.Context, opts *InsertServiceOptions) (*Service, error)
@@ -211,6 +212,8 @@ type DB interface {
 	FindProjectRole(ctx context.Context, name string) (*ProjectRole, error)
 	ResolveOrganizationRolesForUser(ctx context.Context, userID, orgID string) ([]*OrganizationRole, error)
 	ResolveProjectRolesForUser(ctx context.Context, userID, projectID string) ([]*ProjectRole, error)
+	ResolveOrganizationRoleForService(ctx context.Context, serviceID, orgID string) (*OrganizationRole, error)
+	ResolveProjectRolesForService(ctx context.Context, serviceID, projectID string) ([]*ProjectRole, error)
 
 	FindOrganizationMemberUsers(ctx context.Context, orgID, filterRoleID string, withCounts bool, afterEmail string, limit int) ([]*OrganizationMemberUser, error)
 	CountOrganizationMemberUsers(ctx context.Context, orgID, filterRoleID string) (int, error)
@@ -221,6 +224,8 @@ type DB interface {
 	UpdateOrganizationMemberUserRole(ctx context.Context, orgID, userID, roleID string) error
 	CountSingleuserOrganizationsForMemberUser(ctx context.Context, userID string) (int, error)
 	FindOrganizationMembersWithManageUsersRole(ctx context.Context, orgID string) ([]*OrganizationMemberUser, error)
+	InsertOrganizationMemberService(ctx context.Context, serviceID, orgID, roleID string) error
+	UpdateOrganizationMemberServiceRole(ctx context.Context, serviceID, orgID, roleID string) error
 
 	FindProjectMemberUsers(ctx context.Context, orgID, projectID, filterRoleID, afterEmail string, limit int) ([]*ProjectMemberUser, error)
 	FindProjectMemberUserRole(ctx context.Context, projectID, userID string) (*ProjectRole, error)
@@ -228,6 +233,8 @@ type DB interface {
 	DeleteProjectMemberUser(ctx context.Context, projectID, userID string) error
 	DeleteAllProjectMemberUserForOrganization(ctx context.Context, orgID, userID string) error
 	UpdateProjectMemberUserRole(ctx context.Context, projectID, userID, roleID string) error
+	UpsertProjectMemberServiceRole(ctx context.Context, serviceID, projectID, roleID string) error
+	DeleteProjectMemberService(ctx context.Context, serviceID, projectID string) error
 
 	FindOrganizationMemberUsergroups(ctx context.Context, orgID, filterRoleID string, withCounts bool, afterName string, limit int) ([]*MemberUsergroup, error)
 	FindOrganizationMemberUsergroupRole(ctx context.Context, groupID, orgID string) (*OrganizationRole, error)
@@ -603,23 +610,26 @@ type UpdateUserOptions struct {
 // Service represents a service account.
 // Service accounts may belong to single organization
 type Service struct {
-	ID        string
-	OrgID     string `db:"org_id"`
-	Name      string
-	CreatedOn time.Time `db:"created_on"`
-	UpdatedOn time.Time `db:"updated_on"`
-	ActiveOn  time.Time `db:"active_on"`
+	ID         string
+	OrgID      string `db:"org_id"`
+	Name       string
+	Attributes map[string]string `db:"attributes"`
+	CreatedOn  time.Time         `db:"created_on"`
+	UpdatedOn  time.Time         `db:"updated_on"`
+	ActiveOn   time.Time         `db:"active_on"`
 }
 
 // InsertServiceOptions defines options for inserting a new service
 type InsertServiceOptions struct {
-	OrgID string
-	Name  string `validate:"min=1,max=40,slug"`
+	OrgID      string
+	Name       string `validate:"min=1,max=40,slug"`
+	Attributes map[string]string
 }
 
 // UpdateServiceOptions defines options for updating an existing service
 type UpdateServiceOptions struct {
-	Name string `validate:"min=1,max=40,slug"`
+	Name       string `validate:"min=1,max=40,slug"`
+	Attributes map[string]string
 }
 
 // Usergroup represents a group of org members
@@ -1322,4 +1332,24 @@ type InsertManagedGitRepoOptions struct {
 	OrgID   string `validate:"required"`
 	Remote  string `validate:"required"`
 	OwnerID string `validate:"required"`
+}
+
+type OrganizationMemberService struct {
+	ID              string
+	Name            string
+	RoleName        string            `db:"role_name"`
+	HasProjectRoles bool              `db:"has_project_roles"`
+	Attributes      map[string]string `db:"attributes"`
+	CreatedOn       time.Time         `db:"created_on"`
+	UpdatedOn       time.Time         `db:"updated_on"`
+}
+
+type ProjectMemberService struct {
+	ID          string
+	Name        string
+	RoleName    string            `db:"role_name"`
+	OrgRoleName string            `db:"org_role_name"`
+	Attributes  map[string]string `db:"attributes"`
+	CreatedOn   time.Time         `db:"created_on"`
+	UpdatedOn   time.Time         `db:"updated_on"`
 }
