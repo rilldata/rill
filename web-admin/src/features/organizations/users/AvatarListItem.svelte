@@ -2,6 +2,7 @@
   import Avatar from "@rilldata/web-common/components/avatar/Avatar.svelte";
   import { Chip } from "@rilldata/web-common/components/chip";
   import { getRandomBgColor } from "@rilldata/web-common/features/themes/color-config";
+  import { UserRoles } from "@rilldata/web-common/features/users/roles.ts";
   import { cn } from "@rilldata/web-common/lib/shadcn";
   import { page } from "$app/stores";
 
@@ -58,7 +59,7 @@
       <span class="text-gray-500 font-normal">
         {isCurrentUser ? "(You)" : ""}
       </span>
-      {#if showGuestChip || role === "guest"}
+      {#if showGuestChip || role === UserRoles.Guest}
         <Chip type="amber" label="Guest" compact readOnly>
           <svelte:fragment slot="body">Guest</svelte:fragment>
         </Chip>

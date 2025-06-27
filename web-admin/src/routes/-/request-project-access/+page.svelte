@@ -8,10 +8,12 @@
   import { Button } from "@rilldata/web-common/components/button";
   import Check from "@rilldata/web-common/components/icons/Check.svelte";
   import Lock from "@rilldata/web-common/components/icons/Lock.svelte";
+  import { UserRoles } from "@rilldata/web-common/features/users/roles.ts";
   import type { AxiosError } from "axios";
 
   $: organization = $page.url.searchParams.get("organization");
   $: project = $page.url.searchParams.get("project");
+  $: role = $page.url.searchParams.get("role") ?? UserRoles.Viewer;
 
   let requested = false;
   $: requestAccess = createAdminServiceRequestProjectAccess();
@@ -20,7 +22,9 @@
     void $requestAccess.mutateAsync({
       organization,
       project,
-      data: {},
+      data: {
+        role,
+      },
     });
   }
 

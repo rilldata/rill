@@ -1,5 +1,6 @@
 <script lang="ts">
   import AvatarListItem from "@rilldata/web-admin/features/organizations/users/AvatarListItem.svelte";
+  import { UserRoles } from "@rilldata/web-common/features/users/roles.ts";
   import UserSetRole from "./UserSetRole.svelte";
   import { createAdminServiceGetCurrentUser } from "@rilldata/web-admin/client";
   import type {
@@ -18,7 +19,7 @@
 
   $: currentUser = createAdminServiceGetCurrentUser();
 
-  $: showGuestChip = orgRole === "guest";
+  $: showGuestChip = orgRole === UserRoles.Guest;
 
   function isProjectMemberUser(user: User): user is V1ProjectMemberUser {
     return "userName" in user;
