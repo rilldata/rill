@@ -4,6 +4,7 @@ import (
 	"archive/tar"
 	"bufio"
 	"compress/gzip"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net"
@@ -115,7 +116,31 @@ func (e *embedClickHouse) start() (*clickhouse.Options, error) {
 	// We read StderrPipe initially to check for clickhouse running status.
 	// Once the process is closed the stderr pipe will be closed too, io.Copy will return EOF and the goroutine will exit.
 	go func() {
-		_, _ = io.Copy(io.Discard, stderr)
+		decoder := json.NewDecoder(stderr)
+
+		for {
+			var obj clickhouseLog
+			if err := decoder.Decode(&obj); err != nil {
+				if err == io.EOF {
+					// EOF means the process has exited and the stderr pipe is closed.
+					break
+				}
+				e.logger.Error("Failed to decode ClickHouse log", zap.Error(err))
+			}
+
+			switch strings.ToLower(obj.Level) {
+			case "fatal":
+				e.logger.Fatal("ClickHouse embedded server: fatal log received, restart server", zap.String("logger_name", obj.LoggerName), zap.String("message", obj.Message))
+			case "critical", "error":
+				e.logger.Error("ClickHouse embedded server", zap.String("logger_name", obj.LoggerName), zap.String("message", obj.Message))
+			case "warning", "notice":
+				e.logger.Warn("ClickHouse embedded server", zap.String("logger_name", obj.LoggerName), zap.String("message", obj.Message))
+			case "information", "debug", "trace", "test":
+				// even the information logs are too verbose in clickhouse so we log them at debug level
+				e.logger.Debug("ClickHouse embedded server", zap.String("logger_name", obj.LoggerName), zap.String("message", obj.Message))
+			}
+		}
+		stderr.Close()
 	}()
 
 	addr := net.JoinHostPort("localhost", fmt.Sprintf("%d", e.tcpPort))
@@ -263,8 +288,16 @@ func (e *embedClickHouse) getConfigContent() ([]byte, error) {
 
 	config := []byte(fmt.Sprintf(`<clickhouse>
     <logger>
-        <level>information</level>
+        <level>debug</level>
         <console>true</console>
+		<formatting>
+			<type>json</type>
+			<names>
+				<level>level</level>
+				<logger_name>logger_name</logger_name>
+				<message>message</message>
+        	</names>
+		</formatting>
     </logger>
 
     <tcp_port>%d</tcp_port>
@@ -317,18 +350,20 @@ func (e *embedClickHouse) startAndWaitUntilReady(stderr io.Reader) error {
 		case <-timer.C:
 			return fmt.Errorf("clickhouse is not ready: timeout")
 		default:
-			if scanner.Scan() {
-				line := scanner.Text()
-				if strings.Contains(line, "<Error>") {
-					e.logger.Error(line)
-				} else if strings.Contains(line, "Application: Ready for connections") {
-					return nil
-				}
-			} else {
-				if err := scanner.Err(); err != nil {
-					return fmt.Errorf("error reading clickhouse logs: %w", err)
-				}
-				return fmt.Errorf("clickhouse is not ready")
+			if !scanner.Scan() {
+				continue
+			}
+			line := scanner.Text()
+			var logLine clickhouseLog
+			if err := json.Unmarshal([]byte(line), &logLine); err != nil {
+				// Till the clickhouse configs are parsed the logs may not be in JSON format.
+				continue
+			}
+			if logLine.LoggerName == "Application" && strings.Contains(logLine.Message, "Ready for connections") {
+				return nil
+			}
+			if logLine.Level == "Error" {
+				e.logger.Error("ClickHouse error", zap.String("message", logLine.Message), zap.String("logger_name", logLine.LoggerName))
 			}
 		}
 	}
@@ -420,4 +455,10 @@ func getFreePort() (int, error) {
 
 	addr := listener.Addr().(*net.TCPAddr)
 	return addr.Port, nil
+}
+
+type clickhouseLog struct {
+	LoggerName string `json:"logger_name"`
+	Message    string `json:"message"`
+	Level      string `json:"level"`
 }
