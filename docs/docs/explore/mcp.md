@@ -69,7 +69,7 @@ Replace `org` and `project` with the ID of your organization and project.
             "command": "npx",
             "args": [
                 "mcp-remote",
-                "https://api.rilldata.com/v1/organizations/{org}/projects/{project}/runtime/mcp/sse",
+                "https://api.rilldata.com/v1/organizations/{org}/projects/{project}/runtime/mcp",
                 "--header",
                 "Authorization:${AUTH_HEADER}"
             ],
@@ -92,7 +92,7 @@ See [our demo page](https://ui.rilldata.com/demo) for public projects to test.
             "command": "npx",
             "args": [
                 "mcp-remote",
-                "https://api.rilldata.com/v1/organizations/demo/projects/rill-github-analytics/runtime/mcp/sse"
+                "https://api.rilldata.com/v1/organizations/demo/projects/rill-github-analytics/runtime/mcp"
             ]
         }
     }
@@ -108,7 +108,7 @@ __*Locally Running Rill Developer*__
             "command": "npx",
             "args": [
                 "mcp-remote",
-                "http://localhost:9009/mcp/sse"
+                "http://localhost:9009/mcp"
             ]
         }
     }
