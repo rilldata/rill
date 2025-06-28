@@ -1,8 +1,8 @@
+import { RILL_EMBED_HTML_FILE } from "@rilldata/web-integration/tests/constants.ts";
 import type { AxiosResponse } from "axios";
 import axios from "axios";
 import fs from "fs";
 import path from "path";
-import { fileURLToPath } from "url";
 
 export async function generateEmbed(
   organization: string,
@@ -47,8 +47,7 @@ export async function generateEmbed(
 </body>
 </html>`;
 
-    const __dirname = path.dirname(fileURLToPath(import.meta.url));
-    const outputPath = path.join(__dirname, "..", "embed.html");
+    const outputPath = path.join(process.cwd(), RILL_EMBED_HTML_FILE);
 
     fs.writeFileSync(outputPath, htmlContent, "utf8");
   } catch (error: unknown) {
