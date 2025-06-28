@@ -35,16 +35,6 @@ var spec = drivers.Spec{
 	// Important: Any edits to the below properties must be accompanied by changes to the client-side form validation schemas.
 	ConfigProperties: []*drivers.PropertySpec{
 		{
-			Key:         "managed",
-			Type:        drivers.BooleanPropertyType,
-			Required:    false,
-			DisplayName: "Managed",
-			Description: "Use a managed ClickHouse instance. This will start an embedded ClickHouse server in development.",
-			Placeholder: "false",
-			Default:     "false",
-			NoPrompt:    true,
-		},
-		{
 			Key:         "dsn",
 			Type:        drivers.StringPropertyType,
 			Required:    false,
@@ -72,7 +62,7 @@ var spec = drivers.Spec{
 		{
 			Key:         "username",
 			Type:        drivers.StringPropertyType,
-			Required:    false,
+			Required:    true,
 			DisplayName: "Username",
 			Description: "Username to connect to the ClickHouse server",
 			Placeholder: "default",
@@ -80,7 +70,7 @@ var spec = drivers.Spec{
 		{
 			Key:         "password",
 			Type:        drivers.StringPropertyType,
-			Required:    false,
+			Required:    true,
 			DisplayName: "Password",
 			Description: "Password to connect to the ClickHouse server",
 			Placeholder: "password",
@@ -93,6 +83,14 @@ var spec = drivers.Spec{
 			DisplayName: "Database",
 			Description: "Name of the ClickHouse database to connect to",
 			Placeholder: "default",
+		},
+		{
+			Key:         "cluster",
+			Type:        drivers.StringPropertyType,
+			Required:    false,
+			DisplayName: "Cluster",
+			Description: "Cluster name. If set, Rill will create all models in the cluster as distributed tables.",
+			Placeholder: "",
 		},
 		{
 			Key:         "ssl",
