@@ -69,7 +69,7 @@ type FieldNode struct {
 	Name        string
 	DisplayName string
 	Expr        string
-	AutoUnnest  bool
+	Unnest      bool
 	TreatNullAs string // only used for measures
 }
 
@@ -185,22 +185,24 @@ func NewAST(mv *runtimev1.MetricsViewSpec, sec *runtime.ResolvedSecurity, qry *Q
 			Name:        dim.Name,
 			DisplayName: dim.DisplayName,
 			Expr:        expr,
+			Unnest:      dim.Unnest,
 		}
 
 		if dim.Unnest {
 			unnestAlias := ast.generateIdentifier()
 
-			tblWithAlias, auto, err := ast.dialect.LateralUnnest(f.Expr, unnestAlias, f.Name)
+			tblWithAlias, tupleStyle, auto, err := ast.dialect.LateralUnnest(f.Expr, unnestAlias, f.Name)
 			if err != nil {
 				return nil, fmt.Errorf("failed to unnest field %q: %w", f.Name, err)
 			}
 
-			if auto {
-				f.Expr = ast.dialect.AutoUnnest(f.Expr)
-				f.AutoUnnest = true
-			} else {
+			if !auto {
 				ast.unnests = append(ast.unnests, tblWithAlias)
-				f.Expr = ast.sqlForMember(unnestAlias, f.Name)
+				if tupleStyle {
+					f.Expr = ast.sqlForMember(unnestAlias, f.Name)
+				} else {
+					f.Expr = ast.sqlForMember("", f.Name)
+				}
 			}
 		}
 
