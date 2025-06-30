@@ -299,6 +299,7 @@ func (e *embedClickHouse) prepareConfig() (string, error) {
 // https://github.com/ClickHouse/ClickHouse/blob/master/programs/server/embedded.xml
 // Full list of properties can be found here:
 // https://github.com/ClickHouse/ClickHouse/blob/master/programs/server/config.xml
+// Ref for low memory settings: https://kb.altinity.com/altinity-kb-setup-and-maintenance/configure_clickhouse_for_low_mem_envs/
 func (e *embedClickHouse) getConfigContent() ([]byte, error) {
 	dataDirAbsPath, err := filepath.Abs(e.dataDir)
 	if err != nil {
@@ -333,8 +334,59 @@ func (e *embedClickHouse) getConfigContent() ([]byte, error) {
 
     <mlock_executable>true</mlock_executable>
 
+	<!-- These settinsg should allow to run clickhouse in nodes with 4GB/8GB RAM -->
+	<!-- disable some optional components/tables -->
+	<mysql_port remove="1" />
+	<postgresql_port remove="1" />  
+	<query_thread_log remove="1" />
+	<opentelemetry_span_log remove="1" />
+	<processors_profile_log remove="1" />   
+
+	<!-- decrease the cache sizes -->
+	<mark_cache_size>268435456</mark_cache_size> <!-- 256 MB -->
+	<index_mark_cache_size>67108864</index_mark_cache_size> <!-- 64 MB -->
+	<uncompressed_cache_size>16777216</uncompressed_cache_size> <!-- 16 MB -->
+
+	<!-- control the concurrency -->
+	<max_thread_pool_size>2000</max_thread_pool_size>
+	<max_connections>64</max_connections>
+	<max_concurrent_queries>8</max_concurrent_queries>
+	<max_server_memory_usage_to_ram_ratio>0.75</max_server_memory_usage_to_ram_ratio> <!-- 75 percent of the RAM, leave more for the system -->
+	<max_server_memory_usage>0</max_server_memory_usage> <!-- We leave the overcommiter to manage available ram for queries-->
+
+	<!-- reconfigure the main pool to limit the merges (those can create problems if the insert pressure is high) -->
+	<background_pool_size>2</background_pool_size>
+	<background_merges_mutations_concurrency_ratio>2</background_merges_mutations_concurrency_ratio>
+	<merge_tree>
+		<merge_max_block_size>1024</merge_max_block_size>
+		<max_bytes_to_merge_at_max_space_in_pool>1073741824</max_bytes_to_merge_at_max_space_in_pool> <!-- 1 GB max part-->
+		<number_of_free_entries_in_pool_to_lower_max_size_of_merge>2</number_of_free_entries_in_pool_to_lower_max_size_of_merge>
+		<number_of_free_entries_in_pool_to_execute_mutation>2</number_of_free_entries_in_pool_to_execute_mutation>
+		<number_of_free_entries_in_pool_to_execute_optimize_entire_partition>2</number_of_free_entries_in_pool_to_execute_optimize_entire_partition>
+	</merge_tree>
+
+	<!-- shrink all pools to minimum-->
+	<background_buffer_flush_schedule_pool_size>1</background_buffer_flush_schedule_pool_size>
+	<background_merges_mutations_scheduling_policy>round_robin</background_merges_mutations_scheduling_policy>
+	<background_move_pool_size>1</background_move_pool_size>
+	<background_fetches_pool_size>1</background_fetches_pool_size>
+	<background_common_pool_size>2</background_common_pool_size>
+	<background_schedule_pool_size>8</background_schedule_pool_size>
+	<background_message_broker_schedule_pool_size>1</background_message_broker_schedule_pool_size>
+	<background_distributed_schedule_pool_size>1</background_distributed_schedule_pool_size>
+	<tables_loader_foreground_pool_size>0</tables_loader_foreground_pool_size>
+	<tables_loader_background_pool_size>0</tables_loader_background_pool_size> 
+
     <users>
         <default>
+			<max_threads>2</max_threads>
+			<queue_max_wait_ms>1000</queue_max_wait_ms>
+			<max_execution_time>600</max_execution_time>
+			<input_format_parallel_parsing>0</input_format_parallel_parsing>
+			<output_format_parallel_formatting>0</output_format_parallel_formatting>
+			<max_bytes_before_external_group_by>3221225472</max_bytes_before_external_group_by> <!-- 3 GB -->
+			<max_bytes_before_external_sort>3221225472</max_bytes_before_external_sort> <!-- 3 GB -->
+
             <password></password>
 
             <networks>
