@@ -99,10 +99,9 @@ test.describe("ClickHouse connector", () => {
     ).toBeVisible();
   });
 
-  test.skip("Create connector using DSN", async ({ page }) => {
+  test("Create connector using DSN", async ({ page }) => {
     // Open the Add Data modal
-    await page.getByRole("button", { name: "Add Asset" }).click();
-    await page.getByRole("menuitem", { name: "Add Data" }).click();
+    await page.getByRole("button", { name: "Add data" }).click();
 
     // Select ClickHouse
     await page.locator("#clickhouse").click();
@@ -112,7 +111,7 @@ test.describe("ClickHouse connector", () => {
 
     // Fill in the form correctly
     await page
-      .getByRole("textbox", { name: "Connection string" })
+      .getByRole("textbox", { name: "Connection String" })
       .fill(
         `http://${clickhouse.getHost()}:${clickhouse.getPort().toString()}?username=default&password=password`,
       );
