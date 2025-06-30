@@ -19,7 +19,6 @@ import (
 	"github.com/rilldata/rill/admin/billing/payment"
 	"github.com/rilldata/rill/admin/jobs/river"
 	"github.com/rilldata/rill/admin/server"
-	"github.com/rilldata/rill/admin/worker"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/debugserver"
@@ -327,7 +326,6 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 			// Determine services to run. If no service name was provided, run them all.
 			// We just have three currently, so keeping this basic.
 			runServer := len(args) == 0 || args[0] == "server"
-			runJobs := len(args) == 0 || args[0] == "jobs"
 
 			// Init and run server
 			if runServer {
@@ -364,16 +362,6 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				group.Go(func() error { return srv.ServeHTTP(cctx) })
 				if conf.DebugPort != 0 {
 					group.Go(func() error { return debugserver.ServeHTTP(cctx, conf.DebugPort) })
-				}
-			}
-
-			// Init and run worker
-			if runJobs {
-				wkr := worker.New(logger, adm, jobs)
-				if runJobs {
-					for _, job := range conf.Jobs {
-						group.Go(func() error { return wkr.RunJob(cctx, job) })
-					}
 				}
 			}
 
