@@ -35,6 +35,16 @@ var spec = drivers.Spec{
 	// Important: Any edits to the below properties must be accompanied by changes to the client-side form validation schemas.
 	ConfigProperties: []*drivers.PropertySpec{
 		{
+			Key:         "managed",
+			Type:        drivers.BooleanPropertyType,
+			Required:    false,
+			DisplayName: "Managed",
+			Description: "Use a managed ClickHouse instance. This will start an embedded ClickHouse server in development.",
+			Placeholder: "false",
+			Default:     "false",
+			NoPrompt:    true,
+		},
+		{
 			Key:         "dsn",
 			Type:        drivers.StringPropertyType,
 			Required:    false,

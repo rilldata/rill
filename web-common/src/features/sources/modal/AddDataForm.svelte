@@ -124,7 +124,10 @@
     (isSourceForm
       ? connector.sourceProperties
       : connector.configProperties?.filter(
-          (property) => !(isClickHouse && !useDsn && property.key === "dsn"),
+          (property) =>
+            !(isClickHouse && !useDsn && property.key === "dsn") &&
+            // NOTE: To hide the "managed" property from the form.
+            !property.noPrompt,
         )) ?? [];
 
   // Emit the submitting state to the parent
