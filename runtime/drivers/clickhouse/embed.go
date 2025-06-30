@@ -351,8 +351,7 @@ func (e *embedClickHouse) getConfigContent() ([]byte, error) {
 	<max_thread_pool_size>2000</max_thread_pool_size>
 	<max_connections>64</max_connections>
 	<max_concurrent_queries>8</max_concurrent_queries>
-	<max_server_memory_usage_to_ram_ratio>0.75</max_server_memory_usage_to_ram_ratio> <!-- 75 percent of the RAM, leave more for the system -->
-	<max_server_memory_usage>0</max_server_memory_usage> <!-- We leave the overcommiter to manage available ram for queries-->
+	<max_server_memory_usage_to_ram_ratio>2</max_server_memory_usage_to_ram_ratio> <!-- Uses swap memory(altinitly recommends 0.75 but probably they expect it to run on systems with no/less swap memory available) -->
 
 	<!-- reconfigure the main pool to limit the merges (those can create problems if the insert pressure is high) -->
 	<background_pool_size>2</background_pool_size>
