@@ -62,12 +62,8 @@ test.describe("ClickHouse connector", () => {
       .getByRole("textbox", { name: "Port (optional)" })
       .fill(clickhouse.getPort().toString());
     await page.getByRole("textbox", { name: "Port (optional)" }).press("Tab");
-    await page
-      .getByRole("textbox", { name: "Username (optional)" })
-      .fill("default");
-    await page
-      .getByRole("textbox", { name: "Password (optional)" })
-      .fill("password");
+    await page.getByRole("textbox", { name: "Username" }).fill("default");
+    await page.getByRole("textbox", { name: "Password" }).fill("password");
 
     // Submit the form
     await page
