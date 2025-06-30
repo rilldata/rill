@@ -4,6 +4,7 @@ import (
 	"archive/tar"
 	"bufio"
 	"compress/gzip"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -151,7 +152,7 @@ func (e *embedClickHouse) start() (*clickhouse.Options, error) {
 	return e.opts, nil
 }
 
-func (e *embedClickHouse) startClickhouse(binPath string, configPath string) (io.ReadCloser, error) {
+func (e *embedClickHouse) startClickhouse(binPath, configPath string) (io.ReadCloser, error) {
 	e.cmd = exec.Command(binPath, "server", "--config-file", configPath)
 	e.cmd.Stdout = io.Discard
 
@@ -510,18 +511,37 @@ func (e *embedClickHouse) killExistingProcess() error {
 	if pid <= 0 {
 		return fmt.Errorf("no valid PID found in status file")
 	}
-	process, err := os.FindProcess(pid)
+	p, err := os.FindProcess(pid)
 	if err != nil {
 		return fmt.Errorf("failed to find process with PID %d: %w", pid, err)
 	}
-	err = process.Kill()
+	err = p.Signal(syscall.SIGTERM)
 	if err != nil {
 		return fmt.Errorf("failed to kill process with PID %d: %w", pid, err)
 	}
+
 	// wait for the process to exit
 	// unfortunately no way to wait for the process to exit gracefully since we don't have the original handle that started this process
-	time.Sleep(3 * time.Second)
-	return nil
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+	defer cancel()
+	for {
+		select {
+		case <-ctx.Done():
+			return fmt.Errorf("timeout while waiting for process with PID %d to exit: %w", pid, ctx.Err())
+		case <-time.After(500 * time.Millisecond):
+			// check if the process is still running
+			err = p.Signal(syscall.Signal(0))
+			if err != nil {
+				if errors.Is(err, os.ErrProcessDone) {
+					// process has exited
+					return nil
+				}
+				// some other error occurred, return it
+				return fmt.Errorf("failed to check if process with PID %d is running: %w", pid, err)
+			}
+			// process is still running, continue waiting
+		}
+	}
 }
 
 type clickhouseLog struct {
