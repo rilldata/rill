@@ -74,6 +74,7 @@ func New(ctx context.Context, dsn string, adm *admin.Service) (jobs.Client, erro
 	river.AddWorker(workers, &PaymentSuccessWorker{admin: adm, logger: billingLogger})
 	river.AddWorker(workers, &PaymentFailedGracePeriodCheckWorker{admin: adm, logger: billingLogger})
 	river.AddWorker(workers, &PlanChangedWorker{admin: adm})
+	river.AddWorker(workers, &BillingReporterWorker{admin: adm, logger: billingLogger})
 
 	// trial checks worker
 	river.AddWorker(workers, &TrialEndingSoonWorker{admin: adm, logger: billingLogger})
@@ -96,6 +97,11 @@ func New(ctx context.Context, dsn string, adm *admin.Service) (jobs.Client, erro
 	// token cleanup workers
 	river.AddWorker(workers, &DeleteUnusedUserTokenWorker{admin: adm, logger: adm.Logger})
 	river.AddWorker(workers, &DeleteUnusedServiceTokenWorker{admin: adm, logger: adm.Logger})
+	river.AddWorker(workers, &DeleteExpiredTokenWorker{admin: adm, logger: adm.Logger})
+
+	// deployment workers
+	river.AddWorker(workers, &HibernateExpiredDeploymentsWorker{admin: adm, logger: adm.Logger})
+	river.AddWorker(workers, &DeploymentHealthCheckWorker{admin: adm, logger: adm.Logger})
 
 	periodicJobs := []*river.PeriodicJob{
 		// NOTE: Add new periodic jobs here
@@ -107,8 +113,27 @@ func New(ctx context.Context, dsn string, adm *admin.Service) (jobs.Client, erro
 		newPeriodicJob(&SubscriptionCancellationCheckArgs{}, "20 1 * * *", true), // daily at 1:20am UTC
 		newPeriodicJob(&DeleteUnusedUserTokenArgs{}, "0 */12 * * *", true),       // every 12 hours
 		newPeriodicJob(&DeleteUnusedServiceTokenArgs{}, "0 */12 * * *", true),    // every 12 hours
+		newPeriodicJob(&DeleteExpiredTokenArgs{}, "0 */6 * * *", true),           // every 6 hours
 		newPeriodicJob(&deleteUnusedGithubReposArgs{}, "0 */6 * * *", true),      // every 6 hours
+		newPeriodicJob(&DeleteExpiredDeviceAuthCodesArgs{}, "0 */6 * * *", true), // every 6 hours
+		newPeriodicJob(&DeleteExpiredAuthCodesArgs{}, "0 */6 * * *", true),       // every 6 hours
+		newPeriodicJob(&DeleteExpiredVirtualFilesArgs{}, "0 */6 * * *", true),    // every 6 hours
+		newPeriodicJob(&DeleteUnusedAssetsArgs{}, "0 */6 * * *", true),           // every 6 hours
 		newPeriodicJob(&HibernateInactiveOrgsArgs{}, "0 7 * * 1", true),          // Monday at 7:00am UTC
+		newPeriodicJob(&CheckProvisionersArgs{}, "*/15 * * * *", true),           // every 15 minutes
+		newPeriodicJob(&HibernateExpiredDeploymentsArgs{}, "*/15 * * * *", true), // every 15 minutes
+		newPeriodicJob(&DeploymentHealthCheckArgs{}, "*/10 * * * *", true),       // every 10 minutes
+	}
+
+	// Add billing reporter periodic job if configured
+	reportCronExpr := adm.Biller.GetReportingWorkerCron()
+	if reportCronExpr != "" {
+		periodicJobs = append(periodicJobs, newPeriodicJob(&BillingReporterArgs{}, reportCronExpr, true))
+	}
+	// Add autoscaler periodic job if configured
+	autoscalerCronExpr := adm.AutoscalerCron
+	if autoscalerCronExpr != "" {
+		periodicJobs = append(periodicJobs, newPeriodicJob(&AutoscalerArgs{}, autoscalerCronExpr, true))
 	}
 
 	// Wire our zap logger to a slog logger for the river client
@@ -403,8 +428,61 @@ func (c *Client) HibernateInactiveOrgs(ctx context.Context) (*jobs.InsertResult,
 	}, nil
 }
 
+// DeploymentHealthCheck implements jobs.Client.
+func (c *Client) DeploymentHealthCheck(ctx context.Context) (*jobs.InsertResult, error) {
+	res, err := c.riverClient.Insert(ctx, DeploymentHealthCheckArgs{}, nil)
+	if err != nil {
+		return nil, err
+	}
+	return &jobs.InsertResult{
+		ID:        res.Job.ID,
+		Duplicate: res.UniqueSkippedAsDuplicate,
+	}, nil
+}
+
+// HibernateExpiredDeployments implements jobs.Client.
+func (c *Client) HibernateExpiredDeployments(ctx context.Context) (*jobs.InsertResult, error) {
+	res, err := c.riverClient.Insert(ctx, HibernateExpiredDeploymentsArgs{}, nil)
+	if err != nil {
+		return nil, err
+	}
+	return &jobs.InsertResult{
+		ID:        res.Job.ID,
+		Duplicate: res.UniqueSkippedAsDuplicate,
+	}, nil
+}
+
+// DeleteUnusedAssets implements jobs.Client.
+func (c *Client) DeleteUnusedAssets(ctx context.Context) (*jobs.InsertResult, error) {
+	res, err := c.riverClient.Insert(ctx, DeleteUnusedAssetsArgs{}, nil)
+	if err != nil {
+		return nil, err
+	}
+	return &jobs.InsertResult{
+		ID:        res.Job.ID,
+		Duplicate: res.UniqueSkippedAsDuplicate,
+	}, nil
+}
+
 type ErrorHandler struct {
 	logger *zap.Logger
+}
+
+func (c *Client) EnqueueByKind(ctx context.Context, kind string) (*jobs.InsertResult, error) {
+	switch kind {
+	case ResetAllDeploymentsArgs{}.Kind():
+		return c.ResetAllDeployments(ctx)
+	case HibernateExpiredDeploymentsArgs{}.Kind():
+		return c.HibernateExpiredDeployments(ctx)
+	case DeploymentHealthCheckArgs{}.Kind():
+		return c.DeploymentHealthCheck(ctx)
+	case DeleteUnusedAssetsArgs{}.Kind():
+		return c.DeleteUnusedAssets(ctx)
+	case HibernateInactiveOrgsArgs{}.Kind():
+		return c.HibernateInactiveOrgs(ctx)
+	default:
+		return nil, fmt.Errorf("unknown job kind: %s", kind)
+	}
 }
 
 func (h *ErrorHandler) HandleError(ctx context.Context, job *rivertype.JobRow, err error) *river.ErrorHandlerResult {

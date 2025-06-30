@@ -1,14 +1,30 @@
-package worker
+package river
 
 import (
 	"context"
 	"math"
 	"time"
 
+	"github.com/rilldata/rill/admin"
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/metrics"
+	"github.com/riverqueue/river"
 	"go.uber.org/zap"
 )
+
+type AutoscalerArgs struct{}
+
+func (AutoscalerArgs) Kind() string { return "run_autoscaler" }
+
+type AutoscalerWorker struct {
+	river.WorkerDefaults[AutoscalerArgs]
+	admin  *admin.Service
+	logger *zap.Logger
+}
+
+func (w *AutoscalerWorker) Work(ctx context.Context, job *river.Job[AutoscalerArgs]) error {
+	return w.runAutoscaler(ctx)
+}
 
 const (
 	legacyRecommendTime   = 24 * time.Hour
@@ -22,7 +38,7 @@ const (
 	belowThreshold = "scaling change is below the threshold"
 )
 
-func (w *Worker) runAutoscaler(ctx context.Context) error {
+func (w *AutoscalerWorker) runAutoscaler(ctx context.Context) error {
 	recs, ok, err := w.allRecommendations(ctx)
 	if err != nil {
 		w.logger.Error("failed to autoscale: unable to fetch recommended slots", zap.Error(err))
@@ -36,13 +52,13 @@ func (w *Worker) runAutoscaler(ctx context.Context) error {
 	for _, rec := range recs {
 		targetProject, err := w.admin.DB.FindProject(ctx, rec.ProjectID)
 		if err != nil {
-			w.logger.Debug("failed to find project", zap.String("project_name", targetProject.Name), zap.Error(err))
+			w.logger.Debug("failed to find project", zap.String("project_name", rec.ProjectID), zap.Error(err))
 			continue
 		}
 
 		projectOrg, err := w.admin.DB.FindOrganization(ctx, targetProject.OrganizationID)
 		if err != nil {
-			w.logger.Error("failed to autoscale: unable to find org for the project", zap.String("organization_name", projectOrg.Name), zap.String("project_name", targetProject.Name), zap.Error(err))
+			w.logger.Error("failed to autoscale: unable to find org for the project", zap.String("organization_name", targetProject.OrganizationID), zap.String("project_name", targetProject.Name), zap.Error(err))
 			continue
 		}
 
@@ -64,12 +80,12 @@ func (w *Worker) runAutoscaler(ctx context.Context) error {
 				return err
 			}
 
-			var overshoot int
+			overshoot := 0
 			if projectOrg.QuotaSlotsPerDeployment >= 0 {
-				overshoot = max(overshoot, rec.RecommendedSlots-projectOrg.QuotaSlotsPerDeployment)
+				overshoot = int(math.Max(float64(overshoot), float64(rec.RecommendedSlots-projectOrg.QuotaSlotsPerDeployment)))
 			}
 			if projectOrg.QuotaSlotsTotal >= 0 {
-				overshoot = max(overshoot, usage.Slots-targetProject.ProdSlots+rec.RecommendedSlots-projectOrg.QuotaSlotsTotal)
+				overshoot = int(math.Max(float64(overshoot), float64(usage.Slots-targetProject.ProdSlots+rec.RecommendedSlots-projectOrg.QuotaSlotsTotal)))
 			}
 
 			// If the recommendation would exceed a quota, change it to scale to the limit of the quota.
@@ -145,7 +161,7 @@ func (w *Worker) runAutoscaler(ctx context.Context) error {
 	return nil
 }
 
-func (w *Worker) allRecommendations(ctx context.Context) ([]metrics.AutoscalerSlotsRecommendation, bool, error) {
+func (w *AutoscalerWorker) allRecommendations(ctx context.Context) ([]metrics.AutoscalerSlotsRecommendation, bool, error) {
 	client, ok, err := w.admin.OpenMetricsProject(ctx)
 	if err != nil {
 		return nil, false, err

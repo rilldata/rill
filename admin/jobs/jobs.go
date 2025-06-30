@@ -9,6 +9,7 @@ type Client interface {
 	Close(ctx context.Context) error
 	Work(ctx context.Context) error
 	CancelJob(ctx context.Context, jobID int64) error
+	EnqueueByKind(ctx context.Context, kind string) (*InsertResult, error)
 
 	// NOTE: Add new job trigger functions here
 	ResetAllDeployments(ctx context.Context) (*InsertResult, error)
@@ -21,6 +22,7 @@ type Client interface {
 	// biller related jobs
 	PaymentFailed(ctx context.Context, billingCustomerID, invoiceID, invoiceNumber, invoiceURL, amount, currency string, dueDate, failedAt time.Time) (*InsertResult, error)
 	PaymentSuccess(ctx context.Context, billingCustomerID, invoiceID string) (*InsertResult, error)
+	PlanChanged(ctx context.Context, billingCustomerID string) (*InsertResult, error)
 
 	// org related jobs
 	InitOrgBilling(ctx context.Context, orgID string) (*InsertResult, error)
@@ -29,7 +31,12 @@ type Client interface {
 	DeleteOrg(ctx context.Context, orgID string) (*InsertResult, error)
 	HibernateInactiveOrgs(ctx context.Context) (*InsertResult, error)
 
-	PlanChanged(ctx context.Context, billingCustomerID string) (*InsertResult, error)
+	// deployment related jobs
+	HibernateExpiredDeployments(ctx context.Context) (*InsertResult, error)
+	DeploymentHealthCheck(ctx context.Context) (*InsertResult, error)
+
+	// asset related jobs
+	DeleteUnusedAssets(ctx context.Context) (*InsertResult, error)
 }
 
 type InsertResult struct {
