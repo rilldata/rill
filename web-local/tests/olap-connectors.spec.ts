@@ -29,8 +29,7 @@ test.describe("ClickHouse connector", () => {
 
   test("Create connector using individual fields", async ({ page }) => {
     // Open the Add Data modal
-    await page.getByRole("button", { name: "Add" }).click();
-    await page.getByRole("menuitem", { name: "Data" }).click();
+    await page.getByRole("button", { name: "Add data" }).click();
 
     // Select ClickHouse
     await page.locator("#clickhouse").click();
