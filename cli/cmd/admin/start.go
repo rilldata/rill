@@ -326,6 +326,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 			// Determine services to run. If no service name was provided, run them all.
 			// We just have three currently, so keeping this basic.
 			runServer := len(args) == 0 || args[0] == "server"
+			runJobs := len(args) == 0 || args[0] == "jobs"
 
 			// Init and run server
 			if runServer {
@@ -362,6 +363,21 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				group.Go(func() error { return srv.ServeHTTP(cctx) })
 				if conf.DebugPort != 0 {
 					group.Go(func() error { return debugserver.ServeHTTP(cctx, conf.DebugPort) })
+				}
+			}
+
+			if runJobs {
+				queue, err := river.New(cctx, conf.RiverDatabaseURL, adm)
+				if err != nil {
+					logger.Fatal("error creating river client", zap.Error(err))
+				}
+				defer queue.Close(cctx)
+
+				for _, job := range conf.Jobs {
+					_, err := queue.EnqueueByKind(cctx, job)
+					if err != nil {
+						logger.Error("error enqueuing job", zap.Error(err))
+					}
 				}
 			}
 

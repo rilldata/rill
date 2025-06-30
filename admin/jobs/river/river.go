@@ -468,6 +468,23 @@ type ErrorHandler struct {
 	logger *zap.Logger
 }
 
+func (c *Client) EnqueueByKind(ctx context.Context, kind string) (*jobs.InsertResult, error) {
+	switch kind {
+	case ResetAllDeploymentsArgs{}.Kind():
+		return c.ResetAllDeployments(ctx)
+	case HibernateExpiredDeploymentsArgs{}.Kind():
+		return c.HibernateExpiredDeployments(ctx)
+	case DeploymentHealthCheckArgs{}.Kind():
+		return c.DeploymentHealthCheck(ctx)
+	case DeleteUnusedAssetsArgs{}.Kind():
+		return c.DeleteUnusedAssets(ctx)
+	case HibernateInactiveOrgsArgs{}.Kind():
+		return c.HibernateInactiveOrgs(ctx)
+	default:
+		return nil, fmt.Errorf("unknown job kind: %s", kind)
+	}
+}
+
 func (h *ErrorHandler) HandleError(ctx context.Context, job *rivertype.JobRow, err error) *river.ErrorHandlerResult {
 	if job.Attempt >= job.MaxAttempts {
 		var args string
