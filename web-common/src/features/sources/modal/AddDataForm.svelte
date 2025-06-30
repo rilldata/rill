@@ -242,13 +242,6 @@
           use:paramsEnhance
           on:submit|preventDefault={paramsSubmit}
         >
-          {#if paramsError}
-            <SubmissionError
-              message={paramsError}
-              details={paramsErrorDetails}
-            />
-          {/if}
-
           {#each filteredProperties as property (property.key)}
             {@const propertyKey = property.key ?? ""}
             {@const label =
@@ -324,12 +317,6 @@
                     use:paramsEnhance
                     on:submit|preventDefault={paramsSubmit}
                   >
-                    {#if paramsError}
-                      <SubmissionError
-                        message={paramsError}
-                        details={paramsErrorDetails}
-                      />
-                    {/if}
                     {#each filteredProperties as property (property.key)}
                       {@const propertyKey = property.key ?? ""}
                       {@const label =
@@ -377,12 +364,6 @@
                     use:dsnEnhance
                     on:submit|preventDefault={dsnSubmit}
                   >
-                    {#if dsnError}
-                      <SubmissionError
-                        message={dsnError}
-                        details={dsnErrorDetails}
-                      />
-                    {/if}
                     {#each dsnProperties as property (property.key)}
                       {@const propertyKey = property.key ?? ""}
                       <div class="py-1.5 first:pt-0 last:pb-0">
@@ -431,6 +412,12 @@
       <div class="text-sm leading-none font-medium mb-4">Connector preview</div>
       <pre class="overflow-x-auto">{yamlPreview}</pre>
     </div> -->
+    {#if dsnError || paramsError}
+      <SubmissionError
+        message={(useDsn ? dsnError : paramsError) ?? ""}
+        details={(useDsn ? dsnErrorDetails : paramsErrorDetails) ?? ""}
+      />
+    {/if}
     <div>
       <div class="text-sm leading-none font-medium mb-4">Help</div>
       <div
