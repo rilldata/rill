@@ -53,3 +53,37 @@ func (w *DeleteUnusedServiceTokenWorker) Work(ctx context.Context, job *river.Jo
 	}
 	return nil
 }
+
+// DeleteExpiredTokenArgs and Worker for both user and service tokens
+
+type DeleteExpiredTokenArgs struct{}
+
+func (DeleteExpiredTokenArgs) Kind() string { return "delete_expired_token" }
+
+type DeleteExpiredTokenWorker struct {
+	river.WorkerDefaults[DeleteExpiredTokenArgs]
+	admin  *admin.Service
+	logger *zap.Logger
+}
+
+func (w *DeleteExpiredTokenWorker) Work(ctx context.Context, job *river.Job[DeleteExpiredTokenArgs]) error {
+	// Delete auth tokens that have been expired for more than 24 hours
+	retention := 24 * time.Hour
+	err := w.admin.DB.DeleteExpiredUserAuthTokens(ctx, retention)
+	if err != nil {
+		return err
+	}
+	err = w.admin.DB.DeleteExpiredServiceAuthTokens(ctx, retention)
+	if err != nil {
+		return err
+	}
+	err = w.admin.DB.DeleteExpiredDeploymentAuthTokens(ctx, retention)
+	if err != nil {
+		return err
+	}
+	err = w.admin.DB.DeleteExpiredMagicAuthTokens(ctx, retention)
+	if err != nil {
+		return err
+	}
+	return nil
+}

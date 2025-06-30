@@ -327,7 +327,6 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 			// Determine services to run. If no service name was provided, run them all.
 			// We just have three currently, so keeping this basic.
 			runServer := len(args) == 0 || args[0] == "server"
-			runWorker := len(args) == 0 || args[0] == "worker"
 			runJobs := len(args) == 0 || args[0] == "jobs"
 
 			// Init and run server
@@ -369,18 +368,10 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			// Init and run worker
-			if runWorker || runJobs {
+			if runJobs {
 				wkr := worker.New(logger, adm, jobs)
-				if runWorker {
-					group.Go(func() error { return wkr.Run(cctx) })
-					if !runServer {
-						// If we're not running the server, lets start a http server with /ping endpoint for health checks
-						group.Go(func() error { return worker.StartPingServer(cctx, conf.HTTPPort) })
-					}
-				}
 				if runJobs {
 					for _, job := range conf.Jobs {
-						job := job
 						group.Go(func() error { return wkr.RunJob(cctx, job) })
 					}
 				}

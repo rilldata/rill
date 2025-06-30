@@ -75,3 +75,15 @@ func (n *noop) PlanChanged(ctx context.Context, billingCustomerID string) (*Inse
 func (n *noop) HibernateInactiveOrgs(ctx context.Context) (*InsertResult, error) {
 	return nil, nil
 }
+
+func (n *noop) DeploymentHealthCheck(ctx context.Context) (*InsertResult, error) {
+	return nil, nil
+}
+
+func (n *noop) HibernateExpiredDeployments(ctx context.Context) (*InsertResult, error) {
+	return nil, nil
+}
+
+func (n *noop) DeleteUnusedAssets(ctx context.Context) (*InsertResult, error) {
+	return nil, nil
+}
