@@ -5,8 +5,8 @@ test.describe("canvas", () => {
   test.use({ project: "AdBids" });
 
   test("can add widgets via primary button", async ({ page }) => {
-    await page.getByLabel("Add asset").waitFor({ state: "visible" });
-    await page.getByLabel("Add asset").click();
+    await page.getByLabel("Add Asset").waitFor({ state: "visible" });
+    await page.getByLabel("Add Asset").click();
 
     await page.getByRole("menuitem", { name: "Canvas dashboard" }).click();
 
@@ -30,8 +30,8 @@ test.describe("canvas", () => {
   });
 
   test("can add widgets via column divider", async ({ page }) => {
-    await page.getByLabel("Add asset").waitFor({ state: "visible" });
-    await page.getByLabel("Add asset").click();
+    await page.getByLabel("Add Asset").waitFor({ state: "visible" });
+    await page.getByLabel("Add Asset").click();
 
     await page.getByRole("menuitem", { name: "Canvas dashboard" }).click();
 

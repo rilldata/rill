@@ -29,7 +29,9 @@ test.describe("ClickHouse connector", () => {
 
   test("Create connector using individual fields", async ({ page }) => {
     // Open the Add Data modal
-    await page.getByRole("button", { name: "Add data" }).click();
+    await page.getByLabel("Add Asset").waitFor({ state: "visible" });
+    await page.getByLabel("Add Asset").click();
+    await page.getByRole("menuitem", { name: "Add Data" }).click();
 
     // Select ClickHouse
     await page.locator("#clickhouse").click();
@@ -101,7 +103,9 @@ test.describe("ClickHouse connector", () => {
 
   test("Create connector using DSN", async ({ page }) => {
     // Open the Add Data modal
-    await page.getByRole("button", { name: "Add data" }).click();
+    await page.getByLabel("Add Asset").waitFor({ state: "visible" });
+    await page.getByLabel("Add Asset").click();
+    await page.getByRole("menuitem", { name: "Add Data" }).click();
 
     // Select ClickHouse
     await page.locator("#clickhouse").click();
