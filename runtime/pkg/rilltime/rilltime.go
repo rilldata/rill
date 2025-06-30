@@ -360,14 +360,16 @@ func (e *Expression) Eval(evalOpts EvalOptions) (time.Time, time.Time, timeutil.
 /* Intervals */
 
 func (i *Interval) parse() error {
-	if i.Iso != nil {
-		return i.Iso.parse()
-	}
-	// Shorthand syntax that maps to StartEndInterval
-	if i.Shorthand != nil {
+	if i.StartEnd != nil {
+		return i.StartEnd.parse()
+	} else if i.Shorthand != nil {
+		// Shorthand syntax that maps to StartEndInterval.
 		i.StartEnd = i.Shorthand.expand()
 	} else if i.PeriodToGrain != nil {
+		// Period-to-date syntax maps to StartEndInterval as well.
 		i.StartEnd = i.PeriodToGrain.expand()
+	} else if i.Iso != nil {
+		return i.Iso.parse()
 	}
 	return nil
 }
@@ -440,6 +442,14 @@ func (o *OrdinalInterval) eval(evalOpts EvalOptions, start time.Time, tz *time.L
 	return start, end, tg
 }
 
+func (o *StartEndInterval) parse() error {
+	err := o.Start.parse()
+	if err != nil {
+		return err
+	}
+	return o.End.parse()
+}
+
 func (o *StartEndInterval) eval(evalOpts EvalOptions, tm time.Time, tz *time.Location) (time.Time, time.Time, timeutil.TimeGrain) {
 	start, startTg := o.Start.eval(evalOpts, tm, tz)
 	end, endTg := o.End.eval(evalOpts, tm, tz)
@@ -509,7 +519,6 @@ func (p *PointInTime) eval(evalOpts EvalOptions, tm time.Time, tz *time.Location
 			// These need week correction since that is the primary goal of this syntax.
 			tm = truncateWithCorrection(tm, secondarySnap, tz, evalOpts.FirstDay, evalOpts.FirstMonth)
 		}
-
 	}
 
 	for _, offset := range p.Offsets {

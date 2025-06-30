@@ -235,9 +235,9 @@ tests:
             comparison_value:
               measure: sum
       time_range:
-        expression: '-2D^ to +1D^'
+        expression: '3D as of watermark/D+1D'
       comparison_time_range:
-        expression: '-4D^ to -2D^'
+        expression: '3D as of -3D as of watermark/D+1D'
       sort:
         - name: sum
     result:
@@ -260,9 +260,9 @@ tests:
             comparison_value:
               measure: sum
       time_range:
-        expression: '-2D^ to +1D^'
+        expression: '3D as of watermark/D+1D'
       comparison_time_range:
-        expression: '-4D^ to -2D^'
+        expression: '3D as of -3D as of watermark/D+1D'
       sort:
         - name: sum
     result:

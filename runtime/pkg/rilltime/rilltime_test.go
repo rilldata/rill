@@ -289,7 +289,7 @@ func TestEval_ShorthandSyntax(t *testing.T) {
 		{"7D", "2025-05-08T10:32:36Z", "2025-05-15T10:32:36Z", timeutil.TimeGrainDay, 1, 1},
 		{"7D as of now/D", "2025-05-08T00:00:00Z", "2025-05-15T00:00:00Z", timeutil.TimeGrainDay, 1, 1},
 		{"7D as of watermark", "2025-05-06T06:32:36Z", "2025-05-13T06:32:36Z", timeutil.TimeGrainDay, 1, 1},
-		{"7D as of watermark/D", "2025-05-06T07:00:00Z", "2025-05-13T07:00:00Z", timeutil.TimeGrainDay, 1, 1},
+		{"7D as of watermark/H+1H", "2025-05-06T07:00:00Z", "2025-05-13T07:00:00Z", timeutil.TimeGrainDay, 1, 1},
 
 		{"MTD", "2025-05-01T00:00:00Z", "2025-05-15T10:32:36Z", timeutil.TimeGrainDay, 1, 1},
 		{"MTD as of watermark", "2025-05-01T00:00:00Z", "2025-05-13T06:32:36Z", timeutil.TimeGrainDay, 1, 1},
@@ -469,7 +469,6 @@ func runTests(t *testing.T, testCases []testCase, now, minTime, maxTime, waterma
 				FirstMonth:    testCase.FirstMonth,
 				SmallestGrain: minTg,
 			})
-			fmt.Println(start, end)
 			require.Equal(t, parseTestTime(t, testCase.start), start)
 			require.Equal(t, parseTestTime(t, testCase.end), end)
 			if testCase.grain != timeutil.TimeGrainUnspecified {

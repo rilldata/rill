@@ -5,12 +5,7 @@ import {
 } from "@rilldata/web-common/runtime-client";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import { get } from "svelte/store";
-import {
-  Interval,
-  DateTime,
-  type DateTimeUnit,
-  type DurationLike,
-} from "luxon";
+import { Interval, DateTime, type DateTimeUnit } from "luxon";
 
 const GRAINS = ["Y", "Q", "M", "W", "D", "H", "m", "s"] as const;
 
