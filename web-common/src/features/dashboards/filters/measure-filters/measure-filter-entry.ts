@@ -36,7 +36,7 @@ export const ComparisonDeltaPreviousSuffix = "_prev";
 export const ComparisonDeltaAbsoluteSuffix = "_delta";
 export const ComparisonDeltaRelativeSuffix = "_delta_perc";
 export const ComparisonPercentOfTotal = "_percent_of_total";
-const HasSuffixRegex = /_delta(?:_perc)?|_percent_of_total/;
+export const ComparisonSuffixRegex = /_delta(?:_perc)?|_percent_of_total/;
 
 export function mapExprToMeasureFilter(
   expr: V1Expression | undefined,
@@ -103,7 +103,7 @@ export function mapExprToMeasureFilter(
   }
 
   return {
-    measure: field.replace(HasSuffixRegex, ""),
+    measure: field.replace(ComparisonSuffixRegex, ""),
     operation,
     type,
     value1: value1.toString(),
@@ -163,8 +163,8 @@ export function mapMeasureFilterToExpr(
 }
 
 export function measureHasSuffix(measureName: string) {
-  return HasSuffixRegex.test(measureName);
+  return ComparisonSuffixRegex.test(measureName);
 }
 export function stripMeasureSuffix(measureName: string) {
-  return measureName.replace(HasSuffixRegex, "");
+  return measureName.replace(ComparisonSuffixRegex, "");
 }

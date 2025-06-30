@@ -147,8 +147,15 @@ export const filterOutSomeAdvancedAggregationMeasures = (
   const measuresSeen = new Set<string>();
 
   return measures.filter((measure) => {
+    const sourceMeasureName =
+      measure.comparisonDelta?.measure ??
+      measure.comparisonValue?.measure ??
+      measure.comparisonRatio?.measure ??
+      measure.percentOfTotal?.measure ??
+      measure.name ??
+      "";
     const measureSpec = metricsViewSpec.measures?.find(
-      (m) => m.name === measure.name,
+      (m) => m.name === sourceMeasureName,
     );
     if (!measureSpec) return false;
     const measureIsSupported = isMeasureSupported(
