@@ -3,9 +3,11 @@ package resolvers
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/metricsview"
 )
 
 func init() {
@@ -15,13 +17,14 @@ func init() {
 		Resolver:           "builtin_metrics_sql",
 		ResolverProperties: nil,
 		OpenAPISummary:     "Query metrics with SQL",
-		OpenAPIRequestSchema: `{
+		OpenAPIRequestSchema: fmt.Sprintf(`{
 			"type":"object",
 			"properties": {
-				"sql": {"type":"string"}
+				"sql": {"type":"string"},
+				"additional_where": %s
 			},
 			"required":["sql"]
-		}`,
+		}`, metricsview.ExpressionJSONSchema),
 	})
 }
 
