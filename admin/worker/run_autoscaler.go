@@ -15,6 +15,7 @@ const (
 	scaleThreshold        = 0.10 // 10%
 	smallServiceThreshold = 10
 	minScalingSlots       = 5.0
+	disableAutoscaler     = true
 
 	// Reasons for not scaling
 	scaledown      = "scaling down is temporarily disabled due to constraint"
@@ -23,6 +24,11 @@ const (
 )
 
 func (w *Worker) runAutoscaler(ctx context.Context) error {
+	if disableAutoscaler {
+		w.logger.Info("skipping autoscaler: disabled by configuration")
+		return nil
+	}
+
 	recs, ok, err := w.allRecommendations(ctx)
 	if err != nil {
 		w.logger.Error("failed to autoscale: unable to fetch recommended slots", zap.Error(err))
