@@ -87,14 +87,14 @@
     }
   }
 
-  function handlePrimaryColorChange(color: string) {
-    customPrimary = color;
-    onColorChange(customPrimary, effectiveSecondary);
-  }
-
-  function handleSecondaryColorChange(color: string) {
-    customSecondary = color;
-    onColorChange(effectivePrimary, customSecondary);
+  function handleColorChange(color: string, isPrimary: boolean) {
+    if (isPrimary) {
+      customPrimary = color;
+      onColorChange(customPrimary, effectiveSecondary);
+    } else {
+      customSecondary = color;
+      onColorChange(effectivePrimary, customSecondary);
+    }
   }
 </script>
 
@@ -138,7 +138,7 @@
       label="Primary"
       disabled={isPresetMode}
       allowLightnessControl={$darkMode}
-      onChange={handlePrimaryColorChange}
+      onChange={(color) => handleColorChange(color, true)}
     />
 
     <ColorInput
@@ -147,7 +147,7 @@
       label="Secondary"
       disabled={isPresetMode}
       allowLightnessControl={$darkMode}
-      onChange={handleSecondaryColorChange}
+      onChange={(color) => handleColorChange(color, false)}
     />
   </div>
 </div>
