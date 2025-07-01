@@ -106,6 +106,7 @@
 <RefreshResourceConfirmDialog
   bind:open={isConfirmDialogOpen}
   name={resourceName}
+  {refreshType}
   onRefresh={() => {
     void refresh();
     isConfirmDialogOpen = false;
