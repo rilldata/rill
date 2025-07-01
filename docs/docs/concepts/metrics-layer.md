@@ -21,7 +21,7 @@ Assuming that you have the ' * ', select all, in your dashboard configurations, 
 Within Rill, we refer to Metrics layers as a metrics view. It's a single view or file that contains all of your measures and dimensions that will be used to display the data in various ways. The metrics view also contains some configurations settings that are required to ensure that the data being displayed is as accurate as you need. 
 
 
-<img src = '/img/tutorials/102/new-viz-editor.png' class='rounded-gif' />
+<img src = '/img/tutorials/rill_basics/new-viz-editor.png' class='rounded-gif' />
 <br />
 
 :::tip

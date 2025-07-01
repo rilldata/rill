@@ -19,16 +19,15 @@ Here at Rill, we believe in business-speed visual analytics. Gone are the days o
 ---
 Follow along, refer to the in-line linked documentation, and explore our product to make the most out of these tutorials! Please reach out to ask any question or provide feedback on our Community Slack or Discord!
 
-- **6 steps to Rill Cloud:** Learn the basics and understand the core concepts of Rill and deploy to Cloud!
+- [**6 Steps to Rill Cloud:**](/tutorials/rill_basics//launch) Learn the basics and understand the core concepts of Rill and deploy to Cloud!
+- [**Rill + ClickHouse:**](/tutorials/rill_clickhouse/) For our friends from **ClickHouse**, we have created a dedicated course that goes over the same topics as Rill Basics! After completing, you can continue to Rill Advanced
 - **Rill's Advanced features:** Master advanced features and become an expert in Rill.
-- **Rill's Administrative features:** Deep dive into Rill as an administrator, tasks you will need to perform and how to do so.
-- **Rill + ClickHouse:** For our friends from **ClickHouse**, we have created a dedicated course that goes over the same topics as Rill Basics! After completing, you can continue to Rill Advanced
+- **Rill's Administration features:** Deep dive into Rill as an administrator, tasks you will need to perform and how to do so.
+- **Rill Quick Start and Other How-to's:** Got a specific project in mind? Take a look at some of our Quick Starts that goes into depth about each of the components when you clone and start a project with Rill and how you can modify it to read your own data.
+
 
 Each section is crafted to ensure a smooth and comprehensive learning experience. Happy learning!
 
-import CustomDocCardList from '@site/src/components/CustomDocCardList';
-
-<CustomDocCardList />
 ---
 
 

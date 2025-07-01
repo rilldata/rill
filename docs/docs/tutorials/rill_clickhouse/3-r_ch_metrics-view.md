@@ -49,7 +49,7 @@ measures:
 
 
 
-While we go into more details in our [Rill Basics course](/tutorials/rill_basics/dashboard) and [our documentation](https://docs.rilldata.com/build/dashboards/), let's go over it quickly.
+While we go into more details in our [Rill Basics course](/tutorials/rill_basics//dashboard) and [our documentation](https://docs.rilldata.com/build/dashboards/), let's go over it quickly.
 
 ---
 

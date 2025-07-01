@@ -1,20 +1,22 @@
 ---
-title: "3. Create the SQL Model"
-sidebar_label: "3. Create the SQL Model"
+title: "3. Create a SQL Model"
+sidebar_label: "3. Create a SQL Model"
 sidebar_position: 2
 hide_table_of_contents: false
 tags:
   - OLAP:DuckDB
+  - Rill Developer
+  - Getting Started
 ---
 
 ### What is a model?
-A data model in Rill is a used to perform intermediate processing as well as any last mile ETL on the source data required. We recommend creating <a href="https://docs.rilldata.com/build/models/#one-big-table-and-dashboarding" target="_blank">"One Big Table"</a> to power your metrics views. 
+A model in Rill is a used to perform intermediate processing as well as any last mile ETL on the source data. This includes joining look up tables to your table to enrich and transform the data for analysis. We recommend creating <a href="https://docs.rilldata.com/build/models/#one-big-table-and-dashboarding" target="_blank">"One Big Table"</a> to power your metrics views. 
 
 ### Create a Model from the Source
 
 Go ahead and select the `Create Model` button in the top right-hand corner from the commits dataset.
 
-<img src = '/img/tutorials/102/Add-Model.gif' class='rounded-gif' />
+<img src = '/img/tutorials/rill_basics/Add-Model.gif' class='rounded-gif' />
 <br />
 
 You'll be automatically redirected to the model page. On the left panel, you'll see a model's folder created with the file `commits__model.sql`. On the right panel, you'll find general information about your model table, the column values and at the bottom of the page, a preview of the data.
@@ -31,7 +33,7 @@ select * from commits order by author_date DESC
 Notice that the preview table is automatically updated as we modify the SQL. This is due to our auto-save feature. In case of any errors that are encountered the UI will update accordingly and display the error.
 
 
-<img src = '/img/tutorials/102/Model-SQL.gif' class='rounded-gif' />
+<img src = '/img/tutorials/rill_basics/Model-SQL.gif' class='rounded-gif' />
 <br />
 
 

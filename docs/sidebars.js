@@ -20,8 +20,8 @@ const sidebars = {
   tutorialsSidebar: [
     {
       type: 'category',
-      label: 'Tutorials',
-      collapsible: false,
+      label: 'First Time?',
+      collapsible: true,
       collapsed: false,
       link: {
         type: 'doc',
@@ -33,7 +33,6 @@ const sidebars = {
           type: 'category',
           label: 'Rill Developer to Rill Cloud in 6 steps!',
           description: 'Rill Developer to  Rill Cloud',
-
           items: [
             'tutorials/rill_basics/launch',
             'tutorials/rill_basics/import',
@@ -43,20 +42,57 @@ const sidebars = {
             'tutorials/rill_basics/deploy',
             'tutorials/rill_basics/success',
           ]
-        },
+        }
 
 
+      ],
+    },
 
+    {
+      type: 'category',
+      label: 'Bringing ClickHouse to Rill?',
+      collapsible: true,
+      collapsed: false,
+      items: [
         {
           type: 'category',
-          label: "Rill Advanced Features",
-          description: 'Advanced Features and beyond',
+          label: 'Rill and ClickHouse to Dashboarding in 5 steps!',
+          description: 'For our friends from ClickHouse, a revamped guide.',
           link: {
             type: 'doc',
-            id: 'tutorials/rill_developer_advanced_features/overview',
+            id: 'tutorials/rill_clickhouse/index',
 
           },
+          items: [
+            'tutorials/rill_clickhouse/r_ch_launch',
+            'tutorials/rill_clickhouse/r_ch_connect',
+            'tutorials/rill_clickhouse/r_ch_metrics-view',
+            'tutorials/rill_clickhouse/r_ch_dashboard',
+            'tutorials/rill_clickhouse/r_ch_deploy',
+            {
+              type: 'category',
+              label: 'Extra Topics:',
+              items: [
+                'tutorials/rill_clickhouse/r_ch_ingest',
+              ],
 
+            },
+
+
+          ]
+        }
+      ]
+    },
+    {
+      type: 'category',
+      label: 'Advanced Features',
+      collapsible: true,
+      collapsed: false,
+      items: [
+        {
+          type: 'category',
+          label: "Rill Developer",
+          description: 'Advanced Features and beyond',
           items: [
 
             {
@@ -77,7 +113,7 @@ const sidebars = {
                   ]
                 },
                 'tutorials/rill_developer_advanced_features/advanced_developer/update-rill-cloud',
-
+                'tutorials/rill_developer_advanced_features/dashboard-row-policies',
               ]
             },
 
@@ -124,64 +160,94 @@ const sidebars = {
 
           ]
         },
-
         {
           type: 'category',
-          label: 'Rill and ClickHouse to Dashboarding in 5 steps!',
-          description: 'For our friends from ClickHouse, a revamped guide.',
-          link: {
-            type: 'doc',
-            id: 'tutorials/rill_clickhouse/index',
+          label: "Rill Cloud",
+          description: 'Advanced Features and beyond',
 
-          },
-          items: [
-            'tutorials/rill_clickhouse/r_ch_launch',
-            'tutorials/rill_clickhouse/r_ch_connect',
-            'tutorials/rill_clickhouse/r_ch_metrics-view',
-            'tutorials/rill_clickhouse/r_ch_dashboard',
-            'tutorials/rill_clickhouse/r_ch_deploy',
-            {
-              type: 'category',
-              label: 'Extra Topics:',
-              items: [
-                'tutorials/rill_clickhouse/r_ch_ingest',
-              ],
-
-            },
-
-
-          ]
-        },
-        {
-          type: 'category',
-          label: 'Administration Topics',
-          description: 'Rill Administration Topics',
-          link: {
-            type: 'doc',
-            id: 'tutorials/administration/index',
-
-          },
           items: [
             {
               type: 'category',
-              label: 'User Management',
+              label: 'Custom APIs',
+              description: "Create, Deploy and Test Custom APIs",
               items: [
-                'tutorials/administration/user/user-management',
-                'tutorials/administration/user/user-group-management',
+                'tutorials/rill_developer_advanced_features/custom_api/getting-started',
+                'tutorials/rill_developer_advanced_features/custom_api/create-api',
+                'tutorials/rill_developer_advanced_features/custom_api/test-api',
               ]
             },
             {
               type: 'category',
-              label: 'Project Management',
+              label: 'Alerts',
+              description: "Create Alerts to monitor your Project",
               items: [
-                'tutorials/administration/project/project-maintanence',
-                'tutorials/administration/project/credentials-env-variable-management',
-                'tutorials/administration/project/github',
+                'tutorials/rill_developer_advanced_features/alerts/create-alert',
+                'tutorials/rill_developer_advanced_features/alerts/data-accuracy-check',
               ]
             },
+            'tutorials/rill_cloud_advanced_features/share-dashboard-publicly',
 
           ]
+        }
+       
+      ]
+    },
+    {
+      type: 'category',
+      label: 'Administration',
+      collapsible: true,
+      collapsed: false,
+      link: {
+        type: 'doc',
+        id: 'tutorials/index',
+
+      },
+      items: [
+        {
+          type: 'category',
+          label: 'Organization Management',
+          items: [
+            'tutorials/administration/organization/organization',
+          ]
         },
+        {
+          type: 'category',
+          label: 'Project Management',
+          items: [
+      
+            'tutorials/administration/project/project-maintanence',
+            'tutorials/administration/project/credentials-env-variable-management',
+            'tutorials/administration/project/github',
+            'tutorials/administration/project/mcp',
+          ]
+        },
+        {
+          type: 'category',
+          label: 'User Management',
+          items: [
+            'tutorials/administration/user/user-management',
+            'tutorials/administration/user/user-group-management',
+          ]
+        },
+
+      ]
+    },
+    {
+      type: 'category',
+      label: 'Quick Start',
+      collapsible: true,
+      collapsed: false,
+      link: {
+        type: 'doc',
+        id: 'tutorials/index',
+
+      },
+      items: [
+        'tutorials/quick_start/github-analytics',
+        'tutorials/quick_start/openrtb-analytics',
+        'tutorials/quick_start/cost-monitoring',
+        'tutorials/quick_start/embed-dashboard',
+        
         {
           type: 'category',
           label: "Other Concepts and How-to's",
@@ -189,17 +255,12 @@ const sidebars = {
           items: [
             'tutorials/other/resolvers',
             'tutorials/other/add-column-dimension',
-            'tutorials/other/dashboard-row-policies',
-            'tutorials/other/embed-dashboard',
-            'tutorials/other/Rill Cloud/share-dashboard-publicly',
             'tutorials/other/avg_avg'
 
           ]
-        },
-
-
-      ],
-    },
+        }
+      ]
+    }
   ],
 
   refSidebar: [
