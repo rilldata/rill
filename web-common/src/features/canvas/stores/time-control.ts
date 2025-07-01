@@ -42,6 +42,8 @@ import {
   type Writable,
 } from "svelte/store";
 import { normalizeWeekday } from "../../dashboards/time-controls/new-time-controls";
+import type { SearchParamsStore } from "./canvas-entity";
+import Timer from "@rilldata/web-common/components/icons/Timer.svelte";
 
 type AllTimeRange = TimeRange & { isFetching: boolean };
 
@@ -65,13 +67,15 @@ export class TimeControls {
   hasTimeSeries: Readable<boolean>;
   timeRangeStateStore: Readable<TimeRangeState | undefined>;
   comparisonRangeStateStore: Readable<ComparisonTimeRangeState | undefined>;
-  timeRangeText: Readable<string>;
 
-  private componentName: string | undefined;
   private isInitialStateSet: boolean = false;
   private specStore: CanvasSpecResponseStore;
 
-  constructor(specStore: CanvasSpecResponseStore, componentName?: string) {
+  constructor(
+    specStore: CanvasSpecResponseStore,
+    public searchParamsStore: SearchParamsStore,
+    public componentName?: string,
+  ) {
     this.allTimeRange = this.combinedTimeRangeSummaryStore(runtime, specStore);
     this.selectedTimeRange = writable(undefined);
     this.selectedComparisonTimeRange = writable(undefined);
@@ -213,106 +217,77 @@ export class TimeControls {
       },
     );
 
-    this.timeRangeText = derived(
-      [
-        this.selectedTimeRange,
-        this.selectedComparisonTimeRange,
-        this.showTimeComparison,
-      ],
-      ([
-        selectedTimeRange,
-        selectedComparisonTimeRange,
-        showTimeComparison,
-      ]) => {
-        const searchParams = new URLSearchParams();
+    this.searchParamsStore.subscribe((searchParams) => {
+      const string = searchParams.toString();
 
-        searchParams.set(
-          ExploreStateURLParams.TimeRange,
-          toTimeRangeParam(selectedTimeRange),
-        );
+      if (!string) return;
 
-        if (showTimeComparison && selectedComparisonTimeRange) {
-          searchParams.set(
-            ExploreStateURLParams.ComparisonTimeRange,
-            toTimeRangeParam(selectedComparisonTimeRange),
-          );
-        }
+      this.setTimeFiltersFromText(string);
+    });
 
-        if (selectedTimeRange?.interval) {
-          const mappedTimeGrain =
-            ToURLParamTimeGrainMapMap[selectedTimeRange?.interval];
-          if (mappedTimeGrain) {
-            searchParams.set(ExploreStateURLParams.TimeGrain, mappedTimeGrain);
-          }
-        }
-
-        return searchParams.toString();
-      },
-    );
-
-    this.setInitialState();
+    // this.setInitialState();
   }
 
-  setInitialState = () => {
-    const defaultStore = derived(
-      [this.allTimeRange, this.specStore],
-      ([allTimeRange, spec]) => {
-        if (!spec?.data || allTimeRange.isFetching || this.isInitialStateSet) {
-          return;
-        }
+  // setInitialState = () => {
+  //   const defaultStore = derived(
+  //     [this.allTimeRange, this.specStore],
+  //     ([allTimeRange, spec]) => {
+  //       if (!spec?.data || allTimeRange.isFetching || this.isInitialStateSet) {
+  //         return;
+  //       }
 
-        const isLocalComponentControl = Boolean(this.componentName);
+  //       const isLocalComponentControl = Boolean(this.componentName);
 
-        const selectedTimezone = get(this.selectedTimezone);
-        const comparisonTimeRange = get(this.selectedComparisonTimeRange);
+  //       const selectedTimezone = get(this.selectedTimezone);
+  //       const comparisonTimeRange = get(this.selectedComparisonTimeRange);
 
-        const { defaultPreset } = spec.data?.canvas || {};
-        const timeRanges = spec?.data?.canvas?.timeRanges;
+  //       const { defaultPreset } = spec.data?.canvas || {};
+  //       const timeRanges = spec?.data?.canvas?.timeRanges;
 
-        const defaultTimeRange = isoDurationToFullTimeRange(
-          defaultPreset?.timeRange,
-          allTimeRange.start,
-          allTimeRange.end,
-          selectedTimezone,
-        );
+  //       const defaultTimeRange = isoDurationToFullTimeRange(
+  //         defaultPreset?.timeRange,
+  //         allTimeRange.start,
+  //         allTimeRange.end,
+  //         selectedTimezone,
+  //       );
 
-        const newTimeRange: DashboardTimeControls = {
-          name: defaultTimeRange.name,
-          start: defaultTimeRange.start,
-          end: defaultTimeRange.end,
-        };
+  //       const newTimeRange: DashboardTimeControls = {
+  //         name: defaultTimeRange.name,
+  //         start: defaultTimeRange.start,
+  //         end: defaultTimeRange.end,
+  //       };
 
-        newTimeRange.interval = getTimeGrain(
-          undefined,
-          newTimeRange,
-          V1TimeGrain.TIME_GRAIN_UNSPECIFIED,
-        );
+  //       newTimeRange.interval = getTimeGrain(
+  //         undefined,
+  //         newTimeRange,
+  //         V1TimeGrain.TIME_GRAIN_UNSPECIFIED,
+  //       );
 
-        const newComparisonRange = getComparisonTimeRange(
-          timeRanges,
-          allTimeRange,
-          newTimeRange,
-          comparisonTimeRange,
-        );
+  //       const newComparisonRange = getComparisonTimeRange(
+  //         timeRanges,
+  //         allTimeRange,
+  //         newTimeRange,
+  //         comparisonTimeRange,
+  //       );
 
-        this.selectedComparisonTimeRange.set(newComparisonRange);
+  //       this.selectedComparisonTimeRange.set(newComparisonRange);
 
-        if (
-          defaultPreset?.comparisonMode ===
-            V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_TIME &&
-          !isLocalComponentControl
-        ) {
-          this.showTimeComparison.set(true);
-        }
+  //       if (
+  //         defaultPreset?.comparisonMode ===
+  //           V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_TIME &&
+  //         !isLocalComponentControl
+  //       ) {
+  //         this.showTimeComparison.set(true);
+  //       }
 
-        this.selectedTimeRange.set(newTimeRange);
-        this.isInitialStateSet = true;
-      },
-    );
+  //       this.selectedTimeRange.set(newTimeRange);
+  //       this.isInitialStateSet = true;
+  //     },
+  //   );
 
-    // Subscribe to ensure the derived code runs
-    defaultStore.subscribe(() => {});
-  };
+  //   // Subscribe to ensure the derived code runs
+  //   defaultStore.subscribe(() => {});
+  // };
 
   combinedTimeRangeSummaryStore = (
     runtime: Writable<Runtime>,
@@ -413,27 +388,58 @@ export class TimeControls {
     });
   };
 
-  setTimeZone = (timezone: string) => {
-    this.selectedTimezone.set(timezone);
+  set = {
+    zone: (timeZone: string) => {
+      this.searchParamsStore.set(ExploreStateURLParams.TimeZone, timeZone);
+    },
+    range: (range: string) => {
+      this.searchParamsStore.set(ExploreStateURLParams.TimeRange, range);
+    },
+    grain: (timeGrain: V1TimeGrain) => {
+      const mappedTimeGrain = ToURLParamTimeGrainMapMap[timeGrain];
+      if (mappedTimeGrain) {
+        this.searchParamsStore.set(
+          ExploreStateURLParams.TimeGrain,
+          mappedTimeGrain,
+        );
+      }
+    },
+    comparison: (range: boolean | string) => {
+      const showTimeComparison = Boolean(range);
+      this.showTimeComparison.set(showTimeComparison);
+      if (showTimeComparison) {
+        if (range === true) {
+          const comparisonStore = get(this.comparisonRangeStateStore);
+          const selectedComparisonTimeRange =
+            comparisonStore?.selectedComparisonTimeRange;
+          if (!selectedComparisonTimeRange) return;
+          this.searchParamsStore.set(
+            ExploreStateURLParams.ComparisonTimeRange,
+            toTimeRangeParam(selectedComparisonTimeRange),
+          );
+        } else if (typeof range === "string") {
+          this.searchParamsStore.set(
+            ExploreStateURLParams.ComparisonTimeRange,
+            range,
+          );
+        }
+      } else {
+        this.searchParamsStore.set(
+          ExploreStateURLParams.ComparisonTimeRange,
+          undefined,
+        );
+      }
+    },
   };
 
-  selectTimeRange = (
-    timeRange: TimeRange,
-    timeGrain: V1TimeGrain,
-    comparisonTimeRange: DashboardTimeControls | undefined,
-  ) => {
-    if (!timeRange.name) return;
-
-    if (timeRange.name === TimeRangePreset.ALL_TIME) {
-      this.showTimeComparison.set(false);
-    }
-
-    this.selectedTimeRange.set({
-      ...timeRange,
-      interval: timeGrain,
-    });
-
-    this.selectedComparisonTimeRange.set(comparisonTimeRange);
+  clearAll = () => {
+    this.searchParamsStore.set(ExploreStateURLParams.TimeRange, undefined);
+    this.searchParamsStore.set(ExploreStateURLParams.TimeGrain, undefined);
+    this.searchParamsStore.set(
+      ExploreStateURLParams.ComparisonTimeRange,
+      undefined,
+    );
+    this.searchParamsStore.set(ExploreStateURLParams.TimeZone, undefined);
   };
 
   setSelectedComparisonRange = (comparisonTimeRange: DashboardTimeControls) => {
@@ -449,14 +455,40 @@ export class TimeControls {
       selectedTimeRange,
       selectedComparisonTimeRange,
       showTimeComparison,
+      timeZone,
     } = getTimeRangeFromText(timeFilter);
 
-    this.selectedTimeRange.set(selectedTimeRange);
-    if (selectedComparisonTimeRange)
-      this.selectedComparisonTimeRange.set(selectedComparisonTimeRange);
-    this.showTimeComparison.set(showTimeComparison);
+    console.log({
+      cn: this.componentName,
+      selectedTimeRange,
+      selectedComparisonTimeRange,
+      showTimeComparison,
+      timeZone,
+    });
 
-    this.isInitialStateSet = true;
+    if (!selectedTimeRange) {
+      const specStore = get(this.specStore);
+
+      const { defaultPreset } = specStore.data?.canvas || {};
+      const timeRanges = specStore?.data?.canvas?.timeRanges;
+
+      this.selectedTimeRange.set({
+        name:
+          (defaultPreset?.timeRange as TimeRangePreset) ||
+          timeRanges?.[0] ||
+          TimeRangePreset.LAST_24_HOURS,
+      } as DashboardTimeControls);
+    } else {
+      this.selectedTimeRange.set(selectedTimeRange);
+    }
+
+    this.selectedTimezone.set(timeZone ?? "UTC");
+
+    if (selectedComparisonTimeRange) {
+      this.selectedComparisonTimeRange.set(selectedComparisonTimeRange);
+    }
+
+    this.showTimeComparison.set(showTimeComparison);
   };
 }
 
@@ -470,11 +502,13 @@ export function getTimeRangeFromText(timeFilter: string) {
       selectedTimeRange: undefined,
       selectedComparisonTimeRange: undefined,
       showTimeComparison: false,
+      timeZone: "UTC",
     };
   }
   let selectedTimeRange: DashboardTimeControls | undefined;
   let selectedComparisonTimeRange: DashboardTimeControls | undefined;
   let showTimeComparison = false;
+  let timeZone: string = "UTC";
 
   if (preset.timeRange) {
     selectedTimeRange = fromTimeRangeUrlParam(preset.timeRange);
@@ -504,5 +538,14 @@ export function getTimeRangeFromText(timeFilter: string) {
     selectedComparisonTimeRange = undefined;
     showTimeComparison = false;
   }
-  return { selectedTimeRange, selectedComparisonTimeRange, showTimeComparison };
+  if (preset.timezone) {
+    timeZone = preset.timezone;
+  }
+
+  return {
+    selectedTimeRange,
+    selectedComparisonTimeRange,
+    showTimeComparison,
+    timeZone,
+  };
 }

@@ -311,7 +311,9 @@
         removable={!readOnly}
         {readOnly}
         removeTooltipText="remove {selectedValues.length} value{selectedValues.length !==
-          1 && 's'}"
+        1
+          ? 's'
+          : ''}"
       >
         <DimensionFilterChipBody
           slot="body"
