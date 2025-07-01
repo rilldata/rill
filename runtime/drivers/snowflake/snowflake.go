@@ -170,11 +170,12 @@ type connection struct {
 
 // Ping implements drivers.Handle.
 func (c *connection) Ping(ctx context.Context) error {
-	if c.configProperties.DSN == "" {
-		// backwards compatibility: return early can't ping because dsn can be define in source.
-		return nil
+	dsn, err := c.configProperties.resolveDSN()
+	if err != nil {
+		return err
 	}
-	db, err := sqlx.Open("snowflake", c.configProperties.DSN)
+
+	db, err := sqlx.Open("snowflake", dsn)
 	if err != nil {
 		return fmt.Errorf("failed to open connection: %w", err)
 	}
