@@ -195,13 +195,19 @@
       <button
         class="trigger"
         use:builder.action
+        class:open
         {...builder}
-        style:background-color={hsl}
-      />
+        style:--hsl={hsl}
+      >
+      </button>
     </Popover.Trigger>
 
-    <Popover.Content class="w-[270px] space-y-2" align="start" sideOffset={10}>
-      <div class="space-y-1">
+    <Popover.Content
+      class="w-[270px] space-y-1.5"
+      align="start"
+      sideOffset={10}
+    >
+      <div class="space-y-0.5 -mt-1">
         <InputLabel label="Hue" id="hue" />
         <ColorSlider
           mode="hue"
@@ -209,12 +215,12 @@
           {hue}
           color={hsl}
           onChange={() => {
-            stringColor = `hsl(${hue}, ${saturation}%, 50%)`;
+            stringColor = `hsl(${hue}, ${saturation}%, ${lightness}%)`;
             onChange(stringColor);
           }}
         />
       </div>
-      <div class="space-y-1">
+      <div class="space-y-0.5">
         <InputLabel label="Saturation" id="saturation" />
         <ColorSlider
           mode="saturation"
@@ -222,7 +228,20 @@
           {hue}
           color={hsl}
           onChange={() => {
-            stringColor = `hsl(${hue}, ${saturation}%, 50%)`;
+            stringColor = `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+            onChange(stringColor);
+          }}
+        />
+      </div>
+      <div class="space-y-0.5">
+        <InputLabel label="Lightness" id="lightness" />
+        <ColorSlider
+          mode="lightness"
+          bind:value={lightness}
+          {hue}
+          color={hsl}
+          onChange={() => {
+            stringColor = `hsl(${hue}, ${saturation}%, ${lightness}%)`;
             onChange(stringColor);
           }}
         />
@@ -252,7 +271,14 @@
 <style lang="postcss">
   .trigger {
     @apply h-full aspect-square;
-    @apply rounded-[2px];
+    @apply rounded-[2px] overflow-hidden flex-none;
+    background-color: var(--hsl);
+  }
+
+  .trigger:hover,
+  .trigger.open {
+    border: 1.5px solid;
+    border-color: color-mix(in oklch, var(--hsl), black 40%);
   }
 
   .color-wrapper {

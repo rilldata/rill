@@ -13,14 +13,15 @@ export function createDarkVariation(colors: Color[]) {
 
 function generatePalette(
   refColor: Color,
+  neutralizeGray: boolean = true,
   stepCount: number = 11,
   gamma: number = 1.12,
 ) {
   const [l, c, h] = refColor.oklch();
 
-  const isGray = c < 0.1;
+  const isGray = c < 0.05;
 
-  if (isGray) {
+  if (isGray && neutralizeGray) {
     const spectrum = chroma
       .scale([chroma("black"), refColor, chroma("white")])
       .mode(MODE)
@@ -139,7 +140,7 @@ export function updateThemeVariables(theme: V1ThemeSpec | undefined) {
       (theme.primaryColor.blue ?? 1) * 256,
     );
 
-    const { light, dark } = generatePalette(chromaColor);
+    const { light, dark } = generatePalette(chromaColor, false);
 
     setVariables(root, "theme", "light", light);
     setVariables(root, "theme", "dark", dark);
@@ -155,7 +156,7 @@ export function updateThemeVariables(theme: V1ThemeSpec | undefined) {
       (theme.secondaryColor.blue ?? 1) * 256,
     );
 
-    const { light, dark } = generatePalette(chromaColor);
+    const { light, dark } = generatePalette(chromaColor, false);
 
     setVariables(root, "theme-secondary", "light", light);
     setVariables(root, "theme-secondary", "dark", dark);
