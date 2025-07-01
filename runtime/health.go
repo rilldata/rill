@@ -266,7 +266,10 @@ func (r *Runtime) checkOLAP(ctx context.Context, inst *drivers.Instance, cachedH
 
 	mayBeScaledToZero := olap.MayBeScaledToZero(ctx)
 	if cachedHealth != nil && mayBeScaledToZero {
-		return errors.New(cachedHealth.OLAP)
+		if cachedHealth.OLAP != "" {
+			return errors.New(cachedHealth.OLAP)
+		}
+		return nil
 	}
 
 	return h.Ping(ctx)
