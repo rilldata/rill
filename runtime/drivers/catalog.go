@@ -91,12 +91,12 @@ type ModelPartition struct {
 
 // FindModelPartitionsOptions is used to filter model partitions.
 type FindModelPartitionsOptions struct {
-	ModelID      string
-	Limit        int
-	WherePending bool
-	WhereErrored bool
-	AfterIndex   int
-	AfterKey     string
+	ModelID          string
+	Limit            int
+	WherePending     bool
+	WhereErrored     bool
+	BeforeExecutedOn time.Time
+	AfterKey         string
 }
 
 // InstanceHealth represents the health of an instance.

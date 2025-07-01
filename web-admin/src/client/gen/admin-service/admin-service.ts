@@ -31,6 +31,7 @@ import type {
   AdminServiceConnectProjectToGithubBody,
   AdminServiceCreateAlertBodyBody,
   AdminServiceCreateAssetBody,
+  AdminServiceCreateDeploymentBody,
   AdminServiceCreateManagedGitRepoBody,
   AdminServiceCreateProjectBody,
   AdminServiceCreateProjectWhitelistedDomainBodyBody,
@@ -42,6 +43,7 @@ import type {
   AdminServiceGetAlertMetaBody,
   AdminServiceGetBillingSubscriptionParams,
   AdminServiceGetCloneCredentialsParams,
+  AdminServiceGetDeploymentBody,
   AdminServiceGetDeploymentCredentialsBody,
   AdminServiceGetGithubRepoStatusParams,
   AdminServiceGetIFrameBody,
@@ -49,7 +51,6 @@ import type {
   AdminServiceGetPaymentsPortalURLParams,
   AdminServiceGetProjectParams,
   AdminServiceGetProjectVariablesParams,
-  AdminServiceGetRepoMetaParams,
   AdminServiceGetReportMetaBody,
   AdminServiceGetUserParams,
   AdminServiceGetUsergroupParams,
@@ -57,6 +58,7 @@ import type {
   AdminServiceIssueMagicAuthTokenBody,
   AdminServiceIssueUserAuthTokenBody,
   AdminServiceListBookmarksParams,
+  AdminServiceListDeploymentsParams,
   AdminServiceListMagicAuthTokensParams,
   AdminServiceListOrganizationBillingIssuesParams,
   AdminServiceListOrganizationInvitesParams,
@@ -103,6 +105,7 @@ import type {
   V1CreateAssetResponse,
   V1CreateBookmarkRequest,
   V1CreateBookmarkResponse,
+  V1CreateDeploymentResponse,
   V1CreateManagedGitRepoResponse,
   V1CreateOrganizationRequest,
   V1CreateOrganizationResponse,
@@ -113,6 +116,7 @@ import type {
   V1CreateUsergroupResponse,
   V1CreateWhitelistedDomainResponse,
   V1DeleteAlertResponse,
+  V1DeleteDeploymentResponse,
   V1DeleteOrganizationResponse,
   V1DeleteProjectResponse,
   V1DeleteReportResponse,
@@ -136,6 +140,7 @@ import type {
   V1GetCurrentMagicAuthTokenResponse,
   V1GetCurrentUserResponse,
   V1GetDeploymentCredentialsResponse,
+  V1GetDeploymentResponse,
   V1GetGithubRepoStatusResponse,
   V1GetGithubUserStatusResponse,
   V1GetIFrameResponse,
@@ -158,6 +163,7 @@ import type {
   V1IssueUserAuthTokenResponse,
   V1LeaveOrganizationResponse,
   V1ListBookmarksResponse,
+  V1ListDeploymentsResponse,
   V1ListGithubUserReposResponse,
   V1ListMagicAuthTokensResponse,
   V1ListOrganizationBillingIssuesResponse,
@@ -209,6 +215,8 @@ import type {
   V1SetProjectMemberUsergroupRoleResponse,
   V1SetSuperuserRequest,
   V1SetSuperuserResponse,
+  V1StartDeploymentResponse,
+  V1StopDeploymentResponse,
   V1SudoDeleteOrganizationBillingIssueResponse,
   V1SudoExtendTrialRequest,
   V1SudoExtendTrialResponse,
@@ -438,6 +446,173 @@ export function createAdminServiceListPublicBillingPlans<
   return query;
 }
 
+/**
+ * @summary DeleteDeployment deletes a deployment.
+ */
+export const adminServiceDeleteDeployment = (deploymentId: string) => {
+  return httpClient<V1DeleteDeploymentResponse>({
+    url: `/v1/deployments/${deploymentId}`,
+    method: "DELETE",
+  });
+};
+
+export const getAdminServiceDeleteDeploymentMutationOptions = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceDeleteDeployment>>,
+    TError,
+    { deploymentId: string },
+    TContext
+  >;
+}): CreateMutationOptions<
+  Awaited<ReturnType<typeof adminServiceDeleteDeployment>>,
+  TError,
+  { deploymentId: string },
+  TContext
+> => {
+  const mutationKey = ["adminServiceDeleteDeployment"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceDeleteDeployment>>,
+    { deploymentId: string }
+  > = (props) => {
+    const { deploymentId } = props ?? {};
+
+    return adminServiceDeleteDeployment(deploymentId);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminServiceDeleteDeploymentMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceDeleteDeployment>>
+>;
+
+export type AdminServiceDeleteDeploymentMutationError = RpcStatus;
+
+/**
+ * @summary DeleteDeployment deletes a deployment.
+ */
+export const createAdminServiceDeleteDeployment = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof adminServiceDeleteDeployment>>,
+      TError,
+      { deploymentId: string },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
+  Awaited<ReturnType<typeof adminServiceDeleteDeployment>>,
+  TError,
+  { deploymentId: string },
+  TContext
+> => {
+  const mutationOptions =
+    getAdminServiceDeleteDeploymentMutationOptions(options);
+
+  return createMutation(mutationOptions, queryClient);
+};
+/**
+ * @summary GetDeployment returns runtime info and access token on behalf of a specific user, or alternatively for a raw set of JWT attributes
+ */
+export const adminServiceGetDeployment = (
+  deploymentId: string,
+  adminServiceGetDeploymentBody: AdminServiceGetDeploymentBody,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1GetDeploymentResponse>({
+    url: `/v1/deployments/${deploymentId}/credentials`,
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    data: adminServiceGetDeploymentBody,
+    signal,
+  });
+};
+
+export const getAdminServiceGetDeploymentMutationOptions = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceGetDeployment>>,
+    TError,
+    { deploymentId: string; data: AdminServiceGetDeploymentBody },
+    TContext
+  >;
+}): CreateMutationOptions<
+  Awaited<ReturnType<typeof adminServiceGetDeployment>>,
+  TError,
+  { deploymentId: string; data: AdminServiceGetDeploymentBody },
+  TContext
+> => {
+  const mutationKey = ["adminServiceGetDeployment"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceGetDeployment>>,
+    { deploymentId: string; data: AdminServiceGetDeploymentBody }
+  > = (props) => {
+    const { deploymentId, data } = props ?? {};
+
+    return adminServiceGetDeployment(deploymentId, data);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminServiceGetDeploymentMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceGetDeployment>>
+>;
+export type AdminServiceGetDeploymentMutationBody =
+  AdminServiceGetDeploymentBody;
+export type AdminServiceGetDeploymentMutationError = RpcStatus;
+
+/**
+ * @summary GetDeployment returns runtime info and access token on behalf of a specific user, or alternatively for a raw set of JWT attributes
+ */
+export const createAdminServiceGetDeployment = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof adminServiceGetDeployment>>,
+      TError,
+      { deploymentId: string; data: AdminServiceGetDeploymentBody },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
+  Awaited<ReturnType<typeof adminServiceGetDeployment>>,
+  TError,
+  { deploymentId: string; data: AdminServiceGetDeploymentBody },
+  TContext
+> => {
+  const mutationOptions = getAdminServiceGetDeploymentMutationOptions(options);
+
+  return createMutation(mutationOptions, queryClient);
+};
 /**
  * @summary Provision provisions a new resource for a deployment.
 If an existing resource matches the request, it will be returned without provisioning a new resource.
@@ -703,6 +878,181 @@ export const createAdminServiceTriggerRefreshSources = <
 > => {
   const mutationOptions =
     getAdminServiceTriggerRefreshSourcesMutationOptions(options);
+
+  return createMutation(mutationOptions, queryClient);
+};
+/**
+ * @summary StartDeployment starts a deployment.
+ */
+export const adminServiceStartDeployment = (
+  deploymentId: string,
+  adminServiceTriggerReconcileBodyBody: AdminServiceTriggerReconcileBodyBody,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1StartDeploymentResponse>({
+    url: `/v1/deployments/${deploymentId}/start`,
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    data: adminServiceTriggerReconcileBodyBody,
+    signal,
+  });
+};
+
+export const getAdminServiceStartDeploymentMutationOptions = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceStartDeployment>>,
+    TError,
+    { deploymentId: string; data: AdminServiceTriggerReconcileBodyBody },
+    TContext
+  >;
+}): CreateMutationOptions<
+  Awaited<ReturnType<typeof adminServiceStartDeployment>>,
+  TError,
+  { deploymentId: string; data: AdminServiceTriggerReconcileBodyBody },
+  TContext
+> => {
+  const mutationKey = ["adminServiceStartDeployment"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceStartDeployment>>,
+    { deploymentId: string; data: AdminServiceTriggerReconcileBodyBody }
+  > = (props) => {
+    const { deploymentId, data } = props ?? {};
+
+    return adminServiceStartDeployment(deploymentId, data);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminServiceStartDeploymentMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceStartDeployment>>
+>;
+export type AdminServiceStartDeploymentMutationBody =
+  AdminServiceTriggerReconcileBodyBody;
+export type AdminServiceStartDeploymentMutationError = RpcStatus;
+
+/**
+ * @summary StartDeployment starts a deployment.
+ */
+export const createAdminServiceStartDeployment = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof adminServiceStartDeployment>>,
+      TError,
+      { deploymentId: string; data: AdminServiceTriggerReconcileBodyBody },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
+  Awaited<ReturnType<typeof adminServiceStartDeployment>>,
+  TError,
+  { deploymentId: string; data: AdminServiceTriggerReconcileBodyBody },
+  TContext
+> => {
+  const mutationOptions =
+    getAdminServiceStartDeploymentMutationOptions(options);
+
+  return createMutation(mutationOptions, queryClient);
+};
+/**
+ * @summary StopDeployment stops a deployment.
+ */
+export const adminServiceStopDeployment = (
+  deploymentId: string,
+  adminServiceTriggerReconcileBodyBody: AdminServiceTriggerReconcileBodyBody,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1StopDeploymentResponse>({
+    url: `/v1/deployments/${deploymentId}/stop`,
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    data: adminServiceTriggerReconcileBodyBody,
+    signal,
+  });
+};
+
+export const getAdminServiceStopDeploymentMutationOptions = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceStopDeployment>>,
+    TError,
+    { deploymentId: string; data: AdminServiceTriggerReconcileBodyBody },
+    TContext
+  >;
+}): CreateMutationOptions<
+  Awaited<ReturnType<typeof adminServiceStopDeployment>>,
+  TError,
+  { deploymentId: string; data: AdminServiceTriggerReconcileBodyBody },
+  TContext
+> => {
+  const mutationKey = ["adminServiceStopDeployment"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceStopDeployment>>,
+    { deploymentId: string; data: AdminServiceTriggerReconcileBodyBody }
+  > = (props) => {
+    const { deploymentId, data } = props ?? {};
+
+    return adminServiceStopDeployment(deploymentId, data);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminServiceStopDeploymentMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceStopDeployment>>
+>;
+export type AdminServiceStopDeploymentMutationBody =
+  AdminServiceTriggerReconcileBodyBody;
+export type AdminServiceStopDeploymentMutationError = RpcStatus;
+
+/**
+ * @summary StopDeployment stops a deployment.
+ */
+export const createAdminServiceStopDeployment = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof adminServiceStopDeployment>>,
+      TError,
+      { deploymentId: string; data: AdminServiceTriggerReconcileBodyBody },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
+  Awaited<ReturnType<typeof adminServiceStopDeployment>>,
+  TError,
+  { deploymentId: string; data: AdminServiceTriggerReconcileBodyBody },
+  TContext
+> => {
+  const mutationOptions = getAdminServiceStopDeploymentMutationOptions(options);
 
   return createMutation(mutationOptions, queryClient);
 };
@@ -4291,6 +4641,7 @@ export const createAdminServiceConnectProjectToGithub = <
 };
 /**
  * @summary GetDeploymentCredentials returns runtime info and access token on behalf of a specific user, or alternatively for a raw set of JWT attributes
+DEPRECATED: Clients should call GetDeployment instead.
  */
 export const adminServiceGetDeploymentCredentials = (
   organization: string,
@@ -4374,6 +4725,7 @@ export type AdminServiceGetDeploymentCredentialsQueryError = RpcStatus;
 
 /**
  * @summary GetDeploymentCredentials returns runtime info and access token on behalf of a specific user, or alternatively for a raw set of JWT attributes
+DEPRECATED: Clients should call GetDeployment instead.
  */
 
 export function createAdminServiceGetDeploymentCredentials<
@@ -9711,6 +10063,233 @@ export const createAdminServiceUpdateProject = <
   return createMutation(mutationOptions, queryClient);
 };
 /**
+ * @summary ListDeployments lists deployments for a project.
+ */
+export const adminServiceListDeployments = (
+  organizationName: string,
+  projectName: string,
+  params?: AdminServiceListDeploymentsParams,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1ListDeploymentsResponse>({
+    url: `/v1/organizations/${organizationName}/projects/${projectName}/deployments`,
+    method: "GET",
+    params,
+    signal,
+  });
+};
+
+export const getAdminServiceListDeploymentsQueryKey = (
+  organizationName: string,
+  projectName: string,
+  params?: AdminServiceListDeploymentsParams,
+) => {
+  return [
+    `/v1/organizations/${organizationName}/projects/${projectName}/deployments`,
+    ...(params ? [params] : []),
+  ] as const;
+};
+
+export const getAdminServiceListDeploymentsQueryOptions = <
+  TData = Awaited<ReturnType<typeof adminServiceListDeployments>>,
+  TError = RpcStatus,
+>(
+  organizationName: string,
+  projectName: string,
+  params?: AdminServiceListDeploymentsParams,
+  options?: {
+    query?: Partial<
+      CreateQueryOptions<
+        Awaited<ReturnType<typeof adminServiceListDeployments>>,
+        TError,
+        TData
+      >
+    >;
+  },
+) => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getAdminServiceListDeploymentsQueryKey(
+      organizationName,
+      projectName,
+      params,
+    );
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof adminServiceListDeployments>>
+  > = ({ signal }) =>
+    adminServiceListDeployments(organizationName, projectName, params, signal);
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!(organizationName && projectName),
+    ...queryOptions,
+  } as CreateQueryOptions<
+    Awaited<ReturnType<typeof adminServiceListDeployments>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
+
+export type AdminServiceListDeploymentsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceListDeployments>>
+>;
+export type AdminServiceListDeploymentsQueryError = RpcStatus;
+
+/**
+ * @summary ListDeployments lists deployments for a project.
+ */
+
+export function createAdminServiceListDeployments<
+  TData = Awaited<ReturnType<typeof adminServiceListDeployments>>,
+  TError = RpcStatus,
+>(
+  organizationName: string,
+  projectName: string,
+  params?: AdminServiceListDeploymentsParams,
+  options?: {
+    query?: Partial<
+      CreateQueryOptions<
+        Awaited<ReturnType<typeof adminServiceListDeployments>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+} {
+  const queryOptions = getAdminServiceListDeploymentsQueryOptions(
+    organizationName,
+    projectName,
+    params,
+    options,
+  );
+
+  const query = createQuery(queryOptions, queryClient) as CreateQueryResult<
+    TData,
+    TError
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
+/**
+ * @summary CreateDeployment creates a new deployment for a project.
+ */
+export const adminServiceCreateDeployment = (
+  organizationName: string,
+  projectName: string,
+  adminServiceCreateDeploymentBody: AdminServiceCreateDeploymentBody,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1CreateDeploymentResponse>({
+    url: `/v1/organizations/${organizationName}/projects/${projectName}/deployments`,
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    data: adminServiceCreateDeploymentBody,
+    signal,
+  });
+};
+
+export const getAdminServiceCreateDeploymentMutationOptions = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceCreateDeployment>>,
+    TError,
+    {
+      organizationName: string;
+      projectName: string;
+      data: AdminServiceCreateDeploymentBody;
+    },
+    TContext
+  >;
+}): CreateMutationOptions<
+  Awaited<ReturnType<typeof adminServiceCreateDeployment>>,
+  TError,
+  {
+    organizationName: string;
+    projectName: string;
+    data: AdminServiceCreateDeploymentBody;
+  },
+  TContext
+> => {
+  const mutationKey = ["adminServiceCreateDeployment"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceCreateDeployment>>,
+    {
+      organizationName: string;
+      projectName: string;
+      data: AdminServiceCreateDeploymentBody;
+    }
+  > = (props) => {
+    const { organizationName, projectName, data } = props ?? {};
+
+    return adminServiceCreateDeployment(organizationName, projectName, data);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminServiceCreateDeploymentMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceCreateDeployment>>
+>;
+export type AdminServiceCreateDeploymentMutationBody =
+  AdminServiceCreateDeploymentBody;
+export type AdminServiceCreateDeploymentMutationError = RpcStatus;
+
+/**
+ * @summary CreateDeployment creates a new deployment for a project.
+ */
+export const createAdminServiceCreateDeployment = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof adminServiceCreateDeployment>>,
+      TError,
+      {
+        organizationName: string;
+        projectName: string;
+        data: AdminServiceCreateDeploymentBody;
+      },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
+  Awaited<ReturnType<typeof adminServiceCreateDeployment>>,
+  TError,
+  {
+    organizationName: string;
+    projectName: string;
+    data: AdminServiceCreateDeploymentBody;
+  },
+  TContext
+> => {
+  const mutationOptions =
+    getAdminServiceCreateDeploymentMutationOptions(options);
+
+  return createMutation(mutationOptions, queryClient);
+};
+/**
  * @summary ListService returns all the services per organization
  */
 export const adminServiceListServices = (
@@ -10999,25 +11578,17 @@ export const createAdminServiceGetAlertMeta = <
  */
 export const adminServiceGetRepoMeta = (
   projectId: string,
-  params?: AdminServiceGetRepoMetaParams,
   signal?: AbortSignal,
 ) => {
   return httpClient<V1GetRepoMetaResponse>({
     url: `/v1/projects/${projectId}/repo/meta`,
     method: "GET",
-    params,
     signal,
   });
 };
 
-export const getAdminServiceGetRepoMetaQueryKey = (
-  projectId: string,
-  params?: AdminServiceGetRepoMetaParams,
-) => {
-  return [
-    `/v1/projects/${projectId}/repo/meta`,
-    ...(params ? [params] : []),
-  ] as const;
+export const getAdminServiceGetRepoMetaQueryKey = (projectId: string) => {
+  return [`/v1/projects/${projectId}/repo/meta`] as const;
 };
 
 export const getAdminServiceGetRepoMetaQueryOptions = <
@@ -11025,7 +11596,6 @@ export const getAdminServiceGetRepoMetaQueryOptions = <
   TError = RpcStatus,
 >(
   projectId: string,
-  params?: AdminServiceGetRepoMetaParams,
   options?: {
     query?: Partial<
       CreateQueryOptions<
@@ -11039,12 +11609,11 @@ export const getAdminServiceGetRepoMetaQueryOptions = <
   const { query: queryOptions } = options ?? {};
 
   const queryKey =
-    queryOptions?.queryKey ??
-    getAdminServiceGetRepoMetaQueryKey(projectId, params);
+    queryOptions?.queryKey ?? getAdminServiceGetRepoMetaQueryKey(projectId);
 
   const queryFn: QueryFunction<
     Awaited<ReturnType<typeof adminServiceGetRepoMeta>>
-  > = ({ signal }) => adminServiceGetRepoMeta(projectId, params, signal);
+  > = ({ signal }) => adminServiceGetRepoMeta(projectId, signal);
 
   return {
     queryKey,
@@ -11072,7 +11641,6 @@ export function createAdminServiceGetRepoMeta<
   TError = RpcStatus,
 >(
   projectId: string,
-  params?: AdminServiceGetRepoMetaParams,
   options?: {
     query?: Partial<
       CreateQueryOptions<
@@ -11088,7 +11656,6 @@ export function createAdminServiceGetRepoMeta<
 } {
   const queryOptions = getAdminServiceGetRepoMetaQueryOptions(
     projectId,
-    params,
     options,
   );
 

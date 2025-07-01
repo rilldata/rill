@@ -280,6 +280,10 @@ export interface V1CreateBookmarkResponse {
   bookmark?: V1Bookmark;
 }
 
+export interface V1CreateDeploymentResponse {
+  deployment?: V1Deployment;
+}
+
 export interface V1CreateManagedGitRepoResponse {
   remote?: string;
   username?: string;
@@ -326,6 +330,10 @@ export interface V1DeleteAlertResponse {
   [key: string]: unknown;
 }
 
+export interface V1DeleteDeploymentResponse {
+  deploymentId?: string;
+}
+
 export interface V1DeleteOrganizationResponse {
   [key: string]: unknown;
 }
@@ -357,6 +365,8 @@ export interface V1DenyProjectAccessResponse {
 export interface V1Deployment {
   id?: string;
   projectId?: string;
+  ownerUserId?: string;
+  environment?: string;
   branch?: string;
   runtimeHost?: string;
   runtimeInstanceId?: string;
@@ -375,6 +385,7 @@ export const V1DeploymentStatus = {
   DEPLOYMENT_STATUS_PENDING: "DEPLOYMENT_STATUS_PENDING",
   DEPLOYMENT_STATUS_OK: "DEPLOYMENT_STATUS_OK",
   DEPLOYMENT_STATUS_ERROR: "DEPLOYMENT_STATUS_ERROR",
+  DEPLOYMENT_STATUS_STOPPED: "DEPLOYMENT_STATUS_STOPPED",
 } as const;
 
 export interface V1DisconnectProjectFromGithubResponse {
@@ -461,6 +472,7 @@ export interface V1GetCloneCredentialsResponse {
   gitPasswordExpiresAt?: string;
   gitSubpath?: string;
   gitProdBranch?: string;
+  gitManagedRepo?: boolean;
   archiveDownloadUrl?: string;
 }
 
@@ -474,6 +486,13 @@ export interface V1GetCurrentUserResponse {
 }
 
 export interface V1GetDeploymentCredentialsResponse {
+  runtimeHost?: string;
+  instanceId?: string;
+  accessToken?: string;
+  ttlSeconds?: number;
+}
+
+export interface V1GetDeploymentResponse {
   runtimeHost?: string;
   instanceId?: string;
   accessToken?: string;
@@ -553,12 +572,25 @@ export interface V1GetProjectVariablesResponse {
 }
 
 export interface V1GetRepoMetaResponse {
-  /** If the Git-related fields are set, the archive-related fields will not be set (and vice versa). */
+  /** How long the returned config is valid for. Clients should call GetRepoMeta again after this time. */
+  expiresOn?: string;
+  /** When the returned config was last modified. This covers all fields in the response except the ephemeral credentials embedded in git_url and archive_download_url. */
+  lastUpdatedOn?: string;
+  /** Git remote for cloning (and maybe pushing) a Git repository.
+The URL uses HTTPS with embedded username/password. */
   gitUrl?: string;
-  gitUrlExpiresOn?: string;
+  /** Optional subpath within the Git repository to use as the project root. */
   gitSubpath?: string;
+  /** The branch to use for the deployment. */
+  gitBranch?: string;
+  /** A unique branch name generated for temporary/ephemeral use in edit mode where files may be mutated.
+This enables checkpointing progress across hibernations and also more easily pinning to a specific commit of the base branch to delay conflict resolution. */
+  gitEditBranch?: string;
+  /** Signed URL for downloading a tarball of project files. If this is set, the git_* fields will be empty (and vice versa). */
   archiveDownloadUrl?: string;
+  /** A stable ID for the archive returned from archive_download_url. */
   archiveId?: string;
+  /** The creation time of the archive returned from archive_download_url. */
   archiveCreatedOn?: string;
 }
 
@@ -624,6 +656,10 @@ export interface V1ListBookmarksResponse {
   bookmarks?: V1Bookmark[];
 }
 
+export interface V1ListDeploymentsResponse {
+  deployments?: V1Deployment[];
+}
+
 export interface V1ListGithubUserReposResponse {
   repos?: ListGithubUserReposResponseRepo[];
 }
@@ -639,6 +675,7 @@ export interface V1ListOrganizationBillingIssuesResponse {
 
 export interface V1ListOrganizationInvitesResponse {
   invites?: V1OrganizationInvite[];
+  totalCount?: number;
   nextPageToken?: string;
 }
 
@@ -649,6 +686,7 @@ export interface V1ListOrganizationMemberUsergroupsResponse {
 
 export interface V1ListOrganizationMemberUsersResponse {
   members?: V1OrganizationMemberUser[];
+  totalCount?: number;
   nextPageToken?: string;
 }
 
@@ -875,6 +913,7 @@ export interface V1Project {
   prodOlapDsn?: string;
   prodSlots?: string;
   prodDeploymentId?: string;
+  devSlots?: string;
   /** Note: Does NOT incorporate the parent org's custom domain. */
   frontendUrl?: string;
   prodTtlSeconds?: string;
@@ -969,7 +1008,9 @@ export interface V1ProvisionerResource {
 }
 
 export interface V1PullVirtualRepoResponse {
+  /** List of virtual files ordered by update time, most recent last. */
   files?: V1VirtualFile[];
+  /** Next page token for pagination. */
   nextPageToken?: string;
 }
 
@@ -1112,6 +1153,7 @@ export interface V1Service {
 
 export interface V1ServiceToken {
   id?: string;
+  prefix?: string;
   createdOn?: string;
   expiresOn?: string;
 }
@@ -1139,6 +1181,14 @@ export interface V1SetSuperuserRequest {
 
 export interface V1SetSuperuserResponse {
   [key: string]: unknown;
+}
+
+export interface V1StartDeploymentResponse {
+  deployment?: V1Deployment;
+}
+
+export interface V1StopDeploymentResponse {
+  deploymentId?: string;
 }
 
 export interface V1Subquery {
@@ -1362,6 +1412,7 @@ export interface V1UserAuthToken {
   authClientId?: string;
   authClientDisplayName?: string;
   representingUserId?: string;
+  prefix?: string;
   createdOn?: string;
   expiresOn?: string;
   usedOn?: string;
@@ -1432,6 +1483,17 @@ export type AdminServiceCreateReportBodyBody = {
 
 export type AdminServiceCreateUsergroupBodyBody = {
   name?: string;
+};
+
+export type AdminServiceGetDeploymentBodyAttributes = {
+  [key: string]: unknown;
+};
+
+export type AdminServiceGetDeploymentBody = {
+  accessTokenTtlSeconds?: number;
+  userId?: string;
+  userEmail?: string;
+  attributes?: AdminServiceGetDeploymentBodyAttributes;
 };
 
 /**
@@ -1790,6 +1852,15 @@ export type AdminServiceUpdateProjectBody = {
   superuserForceAccess?: boolean;
 };
 
+export type AdminServiceListDeploymentsParams = {
+  environment?: string;
+  userId?: string;
+};
+
+export type AdminServiceCreateDeploymentBody = {
+  environment?: string;
+};
+
 export type AdminServiceCreateServiceParams = {
   name?: string;
 };
@@ -1811,12 +1882,19 @@ export type AdminServiceGetAlertMetaBody = {
   queryForUserEmail?: string;
 };
 
-export type AdminServiceGetRepoMetaParams = {
-  branch?: string;
-};
-
 export type AdminServicePullVirtualRepoParams = {
+  /**
+ * The environment to pull virtual files for.
+It is optional. If the call is made with a deployment access token, it defaults to the environment of the deployment. Otherwise, it defaults to "prod".
+ */
+  environment?: string;
+  /**
+   * Page size for pagination.
+   */
   pageSize?: number;
+  /**
+   * Page token for pagination.
+   */
   pageToken?: string;
 };
 

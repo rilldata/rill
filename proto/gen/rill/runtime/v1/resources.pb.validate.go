@@ -11708,6 +11708,35 @@ func (m *MetricsViewSpec_Dimension) validate(all bool) error {
 
 	// no validation rules for LookupDefaultExpression
 
+	if all {
+		switch v := interface{}(m.GetDataType()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, MetricsViewSpec_DimensionValidationError{
+					field:  "DataType",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, MetricsViewSpec_DimensionValidationError{
+					field:  "DataType",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetDataType()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return MetricsViewSpec_DimensionValidationError{
+				field:  "DataType",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
 	if len(errors) > 0 {
 		return MetricsViewSpec_DimensionMultiError(errors)
 	}
@@ -12205,6 +12234,35 @@ func (m *MetricsViewSpec_Measure) validate(all bool) error {
 	// no validation rules for ValidPercentOfTotal
 
 	// no validation rules for TreatNullsAs
+
+	if all {
+		switch v := interface{}(m.GetDataType()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, MetricsViewSpec_MeasureValidationError{
+					field:  "DataType",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, MetricsViewSpec_MeasureValidationError{
+					field:  "DataType",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetDataType()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return MetricsViewSpec_MeasureValidationError{
+				field:  "DataType",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
 
 	if len(errors) > 0 {
 		return MetricsViewSpec_MeasureMultiError(errors)

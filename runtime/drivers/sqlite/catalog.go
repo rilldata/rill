@@ -162,12 +162,12 @@ func (c *catalogStore) FindModelPartitions(ctx context.Context, opts *drivers.Fi
 		qry.WriteString(" AND executed_on IS NULL")
 	}
 
-	if opts.AfterIndex != 0 || opts.AfterKey != "" {
-		qry.WriteString(" AND (idx > ? OR (idx = ? AND key > ?))")
-		args = append(args, opts.AfterIndex, opts.AfterIndex, opts.AfterKey)
+	if !opts.BeforeExecutedOn.IsZero() || opts.AfterKey != "" {
+		qry.WriteString(" AND (executed_on < ? OR (executed_on = ? AND key > ?))")
+		args = append(args, opts.BeforeExecutedOn, opts.BeforeExecutedOn, opts.AfterKey)
 	}
 
-	qry.WriteString(" ORDER BY idx, key")
+	qry.WriteString(" ORDER BY executed_on DESC, key")
 
 	if opts.Limit != 0 {
 		qry.WriteString(" LIMIT ?")
