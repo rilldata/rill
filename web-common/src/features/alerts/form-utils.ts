@@ -15,7 +15,9 @@ import type {
   V1Operation,
   V1TimeRange,
 } from "@rilldata/web-common/runtime-client";
-import * as yup from "yup";
+import type { ValidationErrors } from "sveltekit-superforms";
+import { yup, type ValidationAdapter } from "sveltekit-superforms/adapters";
+import { object, array, string } from "yup";
 
 export type AlertFormValues = {
   name: string;
@@ -26,10 +28,10 @@ export type AlertFormValues = {
   evaluationInterval: string;
   snooze: string;
   enableSlackNotification: boolean;
-  slackChannels: { channel: string }[];
-  slackUsers: { email: string }[];
+  slackChannels: string[];
+  slackUsers: string[];
   enableEmailNotification: boolean;
-  emailRecipients: { email: string }[];
+  emailRecipients: string[];
   // The following fields are not editable in the form, but they're state that's used throughout the form, so
   // it's helpful to have them here. Also, in the future they may be editable in the form.
   metricsViewName: string;
@@ -113,44 +115,46 @@ export function getAlertQueryArgsFromFormValues(
   };
 }
 
-export const alertFormValidationSchema = yup.object({
-  name: yup.string().required("Required"),
-  measure: yup.string().required("Required"),
-  criteria: yup.array().of(
-    yup.object().shape({
-      measure: yup.string().required("Required"),
-      operation: yup.string().required("Required"),
-      type: yup.string().required("Required"),
-      value1: yup
-        .number()
-        .required("Required")
-        .test((value, context) => {
-          const criteria = context.parent as MeasureFilterEntry;
-          if (
-            criteria.type === MeasureFilterType.PercentOfTotal &&
-            (value < 0 || value > 100)
-          ) {
-            return context.createError({
-              message: `${context.path} must be a value between 0 and 100.`,
-            });
-          }
-          return true;
-        }),
-    }),
-  ),
-  criteriaOperation: yup.string().required("Required"),
-  snooze: yup.string().required("Required"),
-  slackUsers: yup.array().of(
-    yup.object().shape({
-      email: yup.string().email("Invalid email"),
-    }),
-  ),
-  emailRecipients: yup.array().of(
-    yup.object().shape({
-      email: yup.string().email("Invalid email"),
-    }),
-  ),
-});
+export const alertFormValidationSchema = yup(
+  object({
+    name: string().required("Required"),
+    measure: string().required("Required"),
+    criteria: array().of(
+      object().shape({
+        measure: string().required("Required"),
+        operation: string().required("Required"),
+        type: string().required("Required"),
+        value1: string()
+          .required("Required")
+          .test((value, context) => {
+            // `number` doest allow of string representation of number with the superforms yup adapter.
+            // TODO: do a greater refactor changing the type of this in all the places to a number
+            const numValue = Number(value);
+            if (Number.isNaN(numValue)) {
+              return context.createError({
+                message: `${context.path} must be a valid number.`,
+              });
+            }
+
+            const criteria = context.parent as MeasureFilterEntry;
+            if (
+              criteria.type === MeasureFilterType.PercentOfTotal &&
+              (numValue < 0 || numValue > 100)
+            ) {
+              return context.createError({
+                message: `${context.path} must be a value between 0 and 100.`,
+              });
+            }
+            return true;
+          }),
+      }),
+    ),
+    criteriaOperation: string().required("Required"),
+    snooze: string().required("Required"),
+    slackUsers: array(string().email("Invalid email")),
+    emailRecipients: array(string().email("Invalid email")),
+  }),
+) as unknown as ValidationAdapter<AlertFormValues>;
 export const FieldsByTab: (keyof AlertFormValues)[][] = [
   ["measure"],
   ["criteria", "criteriaOperation"],
@@ -160,8 +164,10 @@ export const FieldsByTab: (keyof AlertFormValues)[][] = [
 export function checkIsTabValid(
   tabIndex: number,
   formValues: AlertFormValues,
-  errors: Record<string, string>,
+  errors: ValidationErrors<AlertFormValues> | undefined,
 ): boolean {
+  if (!errors) return true;
+
   let hasRequiredFields: boolean;
   let hasErrors: boolean;
 
@@ -179,29 +185,16 @@ export function checkIsTabValid(
         hasRequiredFields = false;
       }
     });
-    hasErrors =
-      typeof errors.criteria === "string"
-        ? !!errors.criteria
-        : (errors.criteria as Array<MeasureFilterEntry>).some(
-            (c) =>
-              c.measure !== "" ||
-              (c.operation as string) !== "" ||
-              c.measure !== "",
-          );
+    hasErrors = errors.criteria?.[0]
+      ? Object.values(errors.criteria?.[0]).some((c) => c.length > 0)
+      : false;
   } else if (tabIndex === 2) {
     // TODO: do better for >1 recipients
     hasRequiredFields =
-      formValues.name !== "" &&
-      formValues.snooze !== "" &&
-      formValues.emailRecipients[0].email !== "";
+      !formValues.name && !formValues.snooze && !!formValues.emailRecipients[0];
 
-    // There's a bug in how `svelte-forms-lib` types the `$errors` store for arrays.
-    // See: https://github.com/tjinauyeung/svelte-forms-lib/issues/154#issuecomment-1087331250
-    const recipientErrors = errors.emailRecipients as unknown as {
-      email: string;
-    }[];
-
-    hasErrors = !!errors.name || !!errors.snooze || !!recipientErrors[0].email;
+    hasErrors =
+      !!errors.name || !!errors.snooze || !!errors.emailRecipients?.[0]?.length;
   } else {
     throw new Error(`Unexpected tabIndex: ${tabIndex}`);
   }
