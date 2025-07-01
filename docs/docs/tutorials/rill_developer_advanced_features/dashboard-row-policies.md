@@ -1,10 +1,21 @@
 ---
 title: "Creating Dashboard Policies"
-sidebar_label:  "Access Policies for Partner Facing Dashboards"
+sidebar_label:  "Dashboard Access Policies"
 hide_table_of_contents: false
 ---
 
 For this example, we will use the OpenRTB Programmatic Advertising project available in our [examples repository.](https://github.com/rilldata/rill-examples/tree/main/rill-openrtb-prog-ads). 
+
+
+
+## Dashboard Access 
+
+This can be set both on the metric view level and at the dashboard level. Simply define an access statement like below:
+
+```yaml
+security:
+  access: "{{ .user.admin }} OR '{{ .user.domain }}' == 'example.com'"
+```
 
 
 ## Dashboard Access Policies
@@ -113,12 +124,3 @@ security:
 
 In this case, if the user is not part of Rill Data, they will not be able to view the listed dimensions and measures. This is especially useful if your dashboard has customer sensitive information that should not be viewable. 
 
-
-## Dashboard Access 
-
-This can be set both on the metric view level and at the dashboard level. Simply define an access statement like below:
-
-```yaml
-security:
-  access: "{{ .user.admin }} OR '{{ .user.domain }}' == 'example.com'"
-```

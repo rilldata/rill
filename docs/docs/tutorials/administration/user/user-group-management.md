@@ -15,12 +15,14 @@ import ComingSoon from '@site/src/components/ComingSoon';
 
 ### Managing User Groups on Rill Cloud:
 
-<ComingSoon />
+From the Users' tab on your organization page, let's create the tutorial-admin group. You can select users to add to the group via the UI.
+<img src = '/img/tutorials/admin/usergroup-tutorial.png' class='rounded-gif' />
+<br />
 
-<div class='contents_to_overlay'>
-Historically (pre 0.48), user management was only possible via the CLI. Now, it is also possible to do so via the UI! 
+:::note Limited Support
 
-</div>
+We are still working to create parity between the CLI and UI. Currently it is possible to create the usergroup and add users but lacks the ability to add permissions to the user group. 
+:::
 
 
 ### Managing User Groups via the CLI:

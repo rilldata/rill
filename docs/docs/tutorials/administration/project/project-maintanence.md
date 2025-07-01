@@ -7,9 +7,45 @@ tags:
   - Administration
 ---
 
-import ComingSoon from '@site/src/components/ComingSoon';
-
+## Project Management 
 Changes to the project information, such as title and description is only modifable in the CLI. 
+
+```bash
+rill project
+
+Manage projects
+
+Usage:
+  rill project [command]
+
+Available Commands:
+  list           List all the projects
+  show           Show project details
+  edit           Edit the project details
+  rename         Rename project
+  hibernate      Hibernate project
+  delete         Delete the project
+  status         Project deployment status
+  partitions     List partitions for a model
+  logs           Show project logs
+  describe       Retrieve detailed state for a resource
+  refresh        Refresh one or more resources
+  clone          Clone Project
+  connect-github Deploy project to Rill Cloud by pulling project files from a git repository
+  deploy         Deploy project to Rill Cloud by using a Rill Managed Git repo
+
+Flags:
+      --org string   Organization Name (default "rilldata")
+
+Global Flags:
+      --api-token string   Token for authenticating with the cloud API
+      --format string      Output format (options: "human", "json", "csv") (default "human")
+  -h, --help               Print usage
+      --interactive        Prompt for missing required parameters (default true)
+
+Use "rill project [command] --help" for more information about a command.
+
+```
 
 To change the name of your project:
 ```bash
@@ -33,7 +69,6 @@ rill project edit
 ? Enter the production branch main
 ? Make project public No
 ```
-
 
 ## Status
 
@@ -135,3 +170,4 @@ Along with the CLI, you can also view and manage the public URLs from the Settin
 <img src = '/img/tutorials/admin/settings-public-url.png' class='rounded-gif' />
 <br />
  
+

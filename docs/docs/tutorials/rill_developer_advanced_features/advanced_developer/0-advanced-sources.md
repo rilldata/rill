@@ -1,13 +1,11 @@
 ---
-title: "Let's get back to our project"
+title: "Modifying the source YAML"
 description:  Further build on project
 sidebar_label: "DEV and PROD Sources"
 sidebar_position: 00
 ---
 
-Before we discuss the advanced features, we'll go over how to make changes in Rill Developer and push to Rill Cloud.
-
-In our initial ingestion of the data, we brought in only a month's worth of data to ensure that we do not try to download **all the data** from our source. However, we would want our dashboards in Rill Cloud to display all the data. We can do this by defining the behavior of the source via the YAML. See [our reference documentation](/reference/project-files/sources) for more information.
+In our initial ingestion of the data, we brought in only a month's worth of data to ensure that we do not try to download **all the data** from our source. However, we would want our dashboards in Rill Cloud to display all the data. We can do this by redefining the behavior of the source via the YAML. See [our reference documentation](/reference/project-files/sources) for more information.
 
 ```
 gs://rilldata-public/github-analytics/Clickhouse/2025/03/modified_files_*.parquet
@@ -79,3 +77,9 @@ refresh:
   #cron: "0 8 * * *"
 ```
 Now each day, this source will refresh on its own, and you'll have fresh data. Now let's take a look at the model.
+
+:::tip Incremental Modeling
+
+If you might have caught on, a single select all from a source is going to be a big job to run and any time outs might cause some issues. Please see our [incremental guide](/tutorials/rill_developer_advanced_features/incremental_models/cloud-storage-partitions) to fix this.
+
+:::

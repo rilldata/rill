@@ -7,16 +7,16 @@ sidebar_position: 12
 
 Now that we understand what [Incremental Models](/build/advanced-models/incremental-models) and [Partitions](/build/advanced-models/partitions) are, let's apply to them to our ClickHouse project.
 
-Since our ClickHouse data is hosted in GCS, we will be using glob based partitions, instead of the example's SQL select statements.
+Since our ClickHouse data is hosted in GCS, we will be using `glob-based partitions` to divide our dataset and ingestion into smaller sections. This allows us to easily manage partitions in case of errors.
 
 
-### Let's create a basic partitioned model.
+## First, let's partition the data
 In the previous courses, we used a GCS connection to import ClickHouse's repository commit history. Let's go ahead and assume we are using the same folder structure.
 
 ```
 #gs://rilldata-public/github-analytics/Clickhouse/YYYY/MM/filename_YYYY_MM.parquet
 
-gs://rilldata-public/github-analytics/Clickhouse/**/commits_.parquet
+gs://rilldata-public/github-analytics/Clickhouse/**/commits*_.parquet
 gs://rilldata-public/github-analytics/Clickhouse/**/modified_files_*.parquet
 ```
 1. Create a YAML file: `partitions-tutorial.yaml`
@@ -26,9 +26,11 @@ gs://rilldata-public/github-analytics/Clickhouse/**/modified_files_*.parquet
 type: model
 
 partitions:
-  glob:
-    connector: gcs
-    path: gs://rilldata-public/github-analytics/Clickhouse/2024/*/commits_*.parquet
+  glob: #defines the partition as glob
+    connector: gcs 
+    path: gs://rilldata-public/github-analytics/Clickhouse/2025/*/commits_*.parquet
+    # path: gs://rilldata-public/github-analytics/Clickhouse/**/commits_*.parquet # can use wildcard here if unsure of the full path
+
 ```
 3. Set the SQL statement to user the URI.
 ```yaml
@@ -83,16 +85,16 @@ Error: can't refresh partitions on model "partitions_tutorial" because it is not
 
 As we reviewed before, this is only possible when the model is an incremental one! Did you catch the issue before running the command? 
 
-## What is Incremental Modeling?
+## Incrementing the ingestion
 Once partitions are set up, you can use incremental modeling to load only new data when refreshing a dataset. This becomes important when your data is large, and it does not make sense to reload all the data when trying to ingest new data.
 
 ### Let's create an Incremental model for our commits and modified files sources.
 
-0. Create a file CH_incremental_commits.yaml and CH_incremental_modified_files.yaml
+1. Create a file `CH_incremental_commits.yaml` and `CH_incremental_modified_files.yaml`.
 
-1. After copying the previous YAML contents, set `incremental` to true 
+2. After copying the previous YAML contents, set `incremental` to true 
 
-2. You can manually setup a `partitions_watermark` but since our data is using the `glob` key, it is automatically set to the `updated_on` field. 
+  a. You can manually setup a `partitions_watermark` but since our data is using the `glob` key, it is automatically set to the `updated_on` field. 
 
 3. Let's set up a `refresh` based on `cron` that runs daily at 8AM UTC.
 ```
@@ -121,6 +123,16 @@ partitions:
 
 sql: SELECT * FROM read_parquet('{{ .partition.uri }}')
 ```
+
+:::tip Default Incremental Strategy 
+We default to partition override for the partition strategy if nothing is defined. If you want to append instead, define the incremental_strategy in the output parameter.
+
+```yaml
+output:
+  table: output_table_name
+  incremental_strategy: append
+```
+:::
 
 You now have a working incremental model that refreshed new data based on the `updated_on` key at 8AM UTC everyday. Along with writing to the default OLAP engine, DuckDB, we have also added some features to use staging tables for connectors that do not have direct read/write capabilities.
 

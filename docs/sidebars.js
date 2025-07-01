@@ -42,9 +42,8 @@ const sidebars = {
             'tutorials/rill_basics/deploy',
             'tutorials/rill_basics/success',
           ]
-        }
-
-
+        },
+        'tutorials/rill_basics/why-deploy'
       ],
     },
 
@@ -91,75 +90,58 @@ const sidebars = {
       items: [
         {
           type: 'category',
-          label: "Rill Developer",
-          description: 'Advanced Features and beyond',
+          label: 'Rill Developer',
+          description: 'Make some changes to our SQL model and Dashboard',
           items: [
-
+            'tutorials/rill_developer_advanced_features/advanced_developer/advanced-sources',
+            'tutorials/rill_developer_advanced_features/advanced_developer/advanced-modeling',
             {
               type: 'category',
-              label: 'Pushing Changes from Rill Developer to Rill Cloud',
-              description: 'Make some changes to our SQL model and Dashboard',
+              label: 'Advanced Measures and Dimensions',
+              description: "Advanced Measures and Dimensions",
               items: [
-                'tutorials/rill_developer_advanced_features/advanced_developer/advanced-sources',
-                'tutorials/rill_developer_advanced_features/advanced_developer/advanced-modeling',
-                {
-                  type: 'category',
-                  label: 'Advanced Measures and Dimensions',
-                  description: "Advanced Measures and Dimensions",
-                  items: [
-                    'tutorials/rill_developer_advanced_features/advanced_developer/advanced-metrics/new-metrics-view',
-                    'tutorials/rill_developer_advanced_features/advanced_developer/advanced-metrics/advanced-measures',
+                'tutorials/rill_developer_advanced_features/advanced_developer/advanced-metrics/new-metrics-view',
+                'tutorials/rill_developer_advanced_features/advanced_developer/advanced-metrics/advanced-measures',
 
-                  ]
-                },
-                'tutorials/rill_developer_advanced_features/advanced_developer/update-rill-cloud',
-                'tutorials/rill_developer_advanced_features/dashboard-row-policies',
               ]
             },
-
-            {
-              type: 'category',
-              label: 'Advanced Models',
-              description: "Partitioned, Incremental and Staging Models",
-              items: [
-                'tutorials/rill_developer_advanced_features/incremental_models/introduction',
-                {
-                  type: 'category',
-                  label: 'Basic Incremental and Partitions Model Examples',
-                  items: [
-                    'tutorials/rill_developer_advanced_features/incremental_models/simple-examples/incremental_now',
-                    'tutorials/rill_developer_advanced_features/incremental_models/simple-examples/partitions_now',
-                  ]
-                },
-                'tutorials/rill_developer_advanced_features/incremental_models/cloud-storage-partitions',
-                'tutorials/rill_developer_advanced_features/incremental_models/data-warehouse-partitions',
-                'tutorials/rill_developer_advanced_features/incremental_models/staging-connectors'
-              ]
-            },
-
-
-            {
-              type: 'category',
-              label: 'Custom APIs',
-              description: "Create, Deploy and Test Custom APIs",
-              items: [
-                'tutorials/rill_developer_advanced_features/custom_api/getting-started',
-                'tutorials/rill_developer_advanced_features/custom_api/create-api',
-                'tutorials/rill_developer_advanced_features/custom_api/test-api',
-              ]
-            },
-            {
-              type: 'category',
-              label: 'Alerts',
-              description: "Create Alerts to monitor your Project",
-              items: [
-                'tutorials/rill_developer_advanced_features/alerts/create-alert',
-                'tutorials/rill_developer_advanced_features/alerts/data-accuracy-check',
-              ]
-            }
-
+            'tutorials/rill_developer_advanced_features/advanced_developer/update-rill-cloud',
+            'tutorials/rill_developer_advanced_features/dashboard-row-policies',
+        {
+          type: 'category',
+          label: 'Advanced Models',
+          description: "Partitioned, Incremental and Staging Models",
+          items: [
+            'tutorials/rill_developer_advanced_features/incremental_models/introduction',
+            'tutorials/rill_developer_advanced_features/incremental_models/cloud-storage-partitions',
+            'tutorials/rill_developer_advanced_features/incremental_models/data-warehouse-partitions',
+            'tutorials/rill_developer_advanced_features/incremental_models/staging-connectors'
           ]
         },
+
+
+        {
+          type: 'category',
+          label: 'Custom APIs',
+          description: "Create, Deploy and Test Custom APIs",
+          items: [
+            'tutorials/rill_developer_advanced_features/custom_api/getting-started',
+            'tutorials/rill_developer_advanced_features/custom_api/create-api',
+            'tutorials/rill_developer_advanced_features/custom_api/test-api',
+          ]
+        },
+        {
+          type: 'category',
+          label: 'Alerts',
+          description: "Create Alerts to monitor your Project",
+          items: [
+            'tutorials/rill_developer_advanced_features/alerts/create-alert',
+            'tutorials/rill_developer_advanced_features/alerts/data-accuracy-check',
+          ]
+        },
+        'tutorials/rill_developer_advanced_features/rill_profile_file',
+      ]
+    },
         {
           type: 'category',
           label: "Rill Cloud",
@@ -168,21 +150,10 @@ const sidebars = {
           items: [
             {
               type: 'category',
-              label: 'Custom APIs',
-              description: "Create, Deploy and Test Custom APIs",
-              items: [
-                'tutorials/rill_developer_advanced_features/custom_api/getting-started',
-                'tutorials/rill_developer_advanced_features/custom_api/create-api',
-                'tutorials/rill_developer_advanced_features/custom_api/test-api',
-              ]
-            },
-            {
-              type: 'category',
               label: 'Alerts',
               description: "Create Alerts to monitor your Project",
               items: [
-                'tutorials/rill_developer_advanced_features/alerts/create-alert',
-                'tutorials/rill_developer_advanced_features/alerts/data-accuracy-check',
+                'tutorials/rill_cloud_advanced_features/dashboard-alerts',
               ]
             },
             'tutorials/rill_cloud_advanced_features/share-dashboard-publicly',
@@ -203,13 +174,8 @@ const sidebars = {
 
       },
       items: [
-        {
-          type: 'category',
-          label: 'Organization Management',
-          items: [
-            'tutorials/administration/organization/organization',
-          ]
-        },
+        'tutorials/administration/organization/organization',
+
         {
           type: 'category',
           label: 'Project Management',
@@ -243,18 +209,19 @@ const sidebars = {
 
       },
       items: [
+        'tutorials/quick_start/clone-a-project',
         'tutorials/quick_start/github-analytics',
         'tutorials/quick_start/openrtb-analytics',
         'tutorials/quick_start/cost-monitoring',
         'tutorials/quick_start/embed-dashboard',
-        
+        'tutorials/quick_start/setting-up-mcp',
         {
           type: 'category',
-          label: "Other Concepts and How-to's",
+          label: "Other Concepts",
           description: 'For guides that are not quite Rill related but needs consideration',
           items: [
             'tutorials/other/resolvers',
-            'tutorials/other/add-column-dimension',
+            // 'tutorials/other/add-column-dimension',
             'tutorials/other/avg_avg'
 
           ]
