@@ -33,6 +33,8 @@ export const CLICKHOUSE_DEFAULTS = {
 
 export type ClickHouseConnectorType = keyof typeof CLICKHOUSE_DEFAULTS;
 
+// FIXME: rill-managed is only available locally
+// https://docs.rilldata.com/reference/olap-engines/clickhouse#configuring-rill-cloud
 export const CONNECTOR_TYPE_OPTIONS: {
   value: ClickHouseConnectorType;
   label: string;
