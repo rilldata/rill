@@ -120,6 +120,15 @@ jobs:
           headers: |-
             cache-control: no-store
 
+      - name: Release - Upload install script to versioned CDN bucket
+        if: env.PUBLISH_RELEASE == 'true'
+        uses: google-github-actions/upload-cloud-storage@v2
+        with:
+          path: scripts/install.sh
+          destination: prod-cdn.rilldata.com/rill/${{ github.ref_name }}/install.sh
+          headers: |-
+            cache-control: no-store
+
       - name: Release - Upload latest version file to CDN bucket
         if: env.PUBLISH_RELEASE == 'true'
         uses: google-github-actions/upload-cloud-storage@v2
@@ -149,6 +158,15 @@ jobs:
         with:
           path: nightly/
           destination: prod-cdn.rilldata.com/rill/
+          headers: |-
+            cache-control: no-store
+
+      - name: Nightly - Upload install script to nightly CDN bucket
+        if: env.PUBLISH_NIGHTLY == 'true'
+        uses: google-github-actions/upload-cloud-storage@v2
+        with:
+          path: scripts/install.sh
+          destination: prod-cdn.rilldata.com/rill/nightly/install.sh
           headers: |-
             cache-control: no-store
 
