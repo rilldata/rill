@@ -165,11 +165,13 @@ var _ drivers.Handle = &Connection{}
 
 // Ping implements drivers.Handle.
 func (c *Connection) Ping(ctx context.Context) error {
+	// Get AWS config with configured region
 	awsConfig, err := c.awsConfig(ctx, c.config.AWSRegion)
 	if err != nil {
 		return fmt.Errorf("failed to get AWS config: %w", err)
 	}
 
+	// Create Redshift client
 	client := redshiftdata.NewFromConfig(awsConfig, func(o *redshiftdata.Options) {
 		o.TracerProvider = smithyoteltracing.Adapt(otel.GetTracerProvider())
 	})

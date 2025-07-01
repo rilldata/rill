@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/md5"
 	"encoding/hex"
-	"errors"
 	"fmt"
 	"strings"
 	"sync"
@@ -114,6 +113,7 @@ func (h *Helper) SetOrg(org string) error {
 	if err != nil {
 		return fmt.Errorf("failed to set default org: %w", err)
 	}
+
 	h.gitHelperMu.Lock()
 	defer h.gitHelperMu.Unlock()
 	h.gitHelper = nil // Invalidate the git helper since the org has changed.
@@ -467,12 +467,12 @@ func (h *Helper) OpenRuntimeClient(ctx context.Context, org, project string, loc
 	return rt, instanceID, nil
 }
 
-func (h *Helper) GitHelper(project, localPath string) *GitHelper {
+func (h *Helper) GitHelper(org, project, localPath string) *GitHelper {
 	h.gitHelperMu.Lock()
 	defer h.gitHelperMu.Unlock()
 
 	// If the git helper is nil or the org, project or local path has changed, create a new one.
-	if h.gitHelper == nil || h.gitHelper.org != h.Org || h.gitHelper.project != project || h.gitHelper.localPath != localPath {
+	if h.gitHelper == nil || h.gitHelper.org != org || h.gitHelper.project != project || h.gitHelper.localPath != localPath {
 		h.gitHelper = newGitHelper(h, h.Org, project, localPath)
 	}
 	return h.gitHelper
@@ -499,10 +499,14 @@ func (h *Helper) GitSignature(ctx context.Context, path string) (*object.Signatu
 	}
 	userResp, err := c.GetCurrentUser(ctx, &adminv1.GetCurrentUserRequest{})
 	if err != nil {
+		if strings.Contains(err.Error(), "not authenticated as a user") {
+			return &object.Signature{
+				Name:  "service-account",
+				Email: "service-account@rilldata.com", // not an actual email
+				When:  time.Now(),
+			}, nil
+		}
 		return nil, err
-	}
-	if userResp.User == nil {
-		return nil, errors.New("failed to get current user")
 	}
 
 	return &object.Signature{

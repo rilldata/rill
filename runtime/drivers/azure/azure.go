@@ -4,11 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
 
-	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
-	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
-	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/service"
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
@@ -223,59 +219,4 @@ func (c *Connection) AsWarehouse() (drivers.Warehouse, bool) {
 // AsNotifier implements drivers.Connection.
 func (c *Connection) AsNotifier(properties map[string]any) (drivers.Notifier, error) {
 	return nil, drivers.ErrNotNotifier
-}
-
-// newStorageClient returns a service client.
-func (c *Connection) newStorageClient() (*service.Client, error) {
-	var accountKey, sasToken, connectionString string
-
-	accountName, err := c.accountName()
-	if err != nil {
-		return nil, err
-	}
-
-	if c.config.AllowHostAccess {
-		accountKey = os.Getenv("AZURE_STORAGE_KEY")
-		sasToken = os.Getenv("AZURE_STORAGE_SAS_TOKEN")
-		connectionString = os.Getenv("AZURE_STORAGE_CONNECTION_STRING")
-	}
-
-	if c.config.Key != "" {
-		accountKey = c.config.Key
-	}
-	if c.config.SASToken != "" {
-		sasToken = c.config.SASToken
-	}
-	if c.config.ConnectionString != "" {
-		connectionString = c.config.ConnectionString
-	}
-
-	if connectionString != "" {
-		return service.NewClientFromConnectionString(connectionString, nil)
-	}
-
-	if accountName != "" {
-		serviceURL := fmt.Sprintf("https://%s.blob.core.windows.net/", accountName)
-
-		if accountKey != "" {
-			cred, err := azblob.NewSharedKeyCredential(accountName, accountKey)
-			if err != nil {
-				return nil, fmt.Errorf("failed to create shared key credential: %w", err)
-			}
-			return service.NewClientWithSharedKeyCredential(serviceURL, cred, nil)
-		}
-
-		if sasToken != "" {
-			svcURL := fmt.Sprintf("%s?%s", serviceURL, sasToken)
-			return service.NewClientWithNoCredential(svcURL, nil)
-		}
-
-		cred, err := azidentity.NewDefaultAzureCredential(nil)
-		if err != nil {
-			return nil, fmt.Errorf("failed to create default Azure credential: %w", err)
-		}
-		return service.NewClient(serviceURL, cred, nil)
-	}
-
-	return nil, errors.New("no valid Azure credentials provided")
 }

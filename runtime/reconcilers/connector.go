@@ -95,7 +95,7 @@ func (r *ConnectorReconciler) Reconcile(ctx context.Context, n *runtimev1.Resour
 	// Test the connector configuration
 	err = r.testConnector(ctx, self.Meta.Name.Name)
 	if err != nil {
-		return runtime.ReconcileResult{Err: err}
+		return runtime.ReconcileResult{Err: fmt.Errorf("validation failed: %w", err)}
 	}
 
 	t.State.SpecHash = specHash

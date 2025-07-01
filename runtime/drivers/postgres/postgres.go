@@ -106,9 +106,20 @@ type connection struct {
 
 // Ping implements drivers.Handle.
 func (c *connection) Ping(ctx context.Context) error {
-	db, err := c.getDB()
+	conf := &ConfigProperties{}
+	if err := mapstructure.WeakDecode(c.config, conf); err != nil {
+		return fmt.Errorf("failed to decode config: %w", err)
+	}
+
+	dsn := conf.ResolveDSN()
+	if dsn == "" {
+		return fmt.Errorf("database_url or dsn not provided")
+	}
+
+	// Open DB handle
+	db, err := sqlx.Open("pgx", dsn)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to open connection: %w", err)
 	}
 	defer db.Close()
 	return db.PingContext(ctx)

@@ -527,8 +527,6 @@ paths:
                 type: object
                 additionalProperties:
                   type: string
-              watchRepo:
-                type: boolean
             description: |-
               Request message for RuntimeService.EditInstance.
               See message Instance for field descriptions.
@@ -1659,6 +1657,9 @@ paths:
               filter:
                 $ref: '#/definitions/v1MetricsViewFilter'
                 title: Deprecated. should be removed once UI is moved to use new filters
+              timeDimension:
+                type: string
+                title: Optional. If not specified, falls back to the primary time dimension in the metrics view spec
       tags:
         - QueryService
   /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/schema:
@@ -1773,6 +1774,9 @@ paths:
               priority:
                 type: integer
                 format: int32
+              timeDimension:
+                type: string
+                title: Optional. If not specified, falls back to the primary time dimension in the metrics view spec
       tags:
         - QueryService
   /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/time-ranges:
@@ -1812,6 +1816,9 @@ paths:
               timeZone:
                 type: string
                 title: Optional timezone param to easily override time-range expressions
+              timeDimension:
+                type: string
+                title: Optional. If not specified, falls back to the primary time dimension in the metrics view spec
       tags:
         - QueryService
   /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/timeseries:
@@ -1880,6 +1887,9 @@ paths:
               filter:
                 $ref: '#/definitions/v1MetricsViewFilter'
                 title: Deprecated. should be removed once UI is moved to use new filters
+              timeDimension:
+                type: string
+                title: Optional. If not specified, falls back to the primary time dimension in the metrics view spec
       tags:
         - QueryService
   /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/toplist:
@@ -2007,6 +2017,9 @@ paths:
               filter:
                 $ref: '#/definitions/v1MetricsViewFilter'
                 title: Deprecated. should be removed once UI is moved to use new filters
+              timeDimension:
+                type: string
+                title: Optional. If not specified, falls back to the primary time dimension in the metrics view spec
       tags:
         - QueryService
   /v1/instances/{instanceId}/queries/null-count/tables/{tableName}:
@@ -3143,6 +3156,9 @@ definitions:
         type: string
       lookupDefaultExpression:
         type: string
+      dataType:
+        $ref: '#/definitions/runtimev1Type'
+        description: The data type of the dimension. Only populated in ValidSpec.
     title: Dimensions are columns to filter and group by
   MetricsViewSpecDimensionSelector:
     type: object
@@ -3195,6 +3211,9 @@ definitions:
         type: boolean
       treatNullsAs:
         type: string
+      dataType:
+        $ref: '#/definitions/runtimev1Type'
+        description: The data type of the measure. Only populated in ValidSpec.
     title: Measures are aggregated computed values
   MetricsViewSpecMeasureType:
     type: string
@@ -3748,6 +3767,13 @@ definitions:
     properties:
       validSpec:
         $ref: '#/definitions/v1CanvasSpec'
+        description: Valid spec is a (potentially previous) version of the canvas's spec that is known to be valid.
+      dataRefreshedOn:
+        type: string
+        format: date-time
+        description: |-
+          The last time any underlying metrics view(s)'s data was refreshed.
+          This may be empty if the data refresh time is not known, e.g. if the metrics view is based on an externally managed table.
   v1CategoricalSummary:
     type: object
     properties:
@@ -4095,6 +4121,13 @@ definitions:
     properties:
       validSpec:
         $ref: '#/definitions/v1ComponentSpec'
+        description: Valid spec is a (potentially previous) version of the component's spec that is known to be valid.
+      dataRefreshedOn:
+        type: string
+        format: date-time
+        description: |-
+          The last time any underlying metrics view(s)'s data was refreshed.
+          This may be empty if the data refresh time is not known, e.g. if the metrics view is based on an externally managed table.
   v1ComponentVariable:
     type: object
     properties:
@@ -4248,8 +4281,6 @@ definitions:
         type: object
         additionalProperties:
           type: string
-      watchRepo:
-        type: boolean
     description: |-
       Request message for RuntimeService.CreateInstance.
       See message Instance for field descriptions.
@@ -4494,6 +4525,15 @@ definitions:
     properties:
       validSpec:
         $ref: '#/definitions/v1ExploreSpec'
+        description: |-
+          Valid spec is a (potentially previous) version of the spec that is known to be valid.
+          It is also guaranteed to have concrete dimensions and measures, i.e. if the spec has a `dimensions_selector` or `measures_selector`, they will be resolved to concrete fields.
+      dataRefreshedOn:
+        type: string
+        format: date-time
+        description: |-
+          The last time the underlying metrics view's data was refreshed.
+          This may be empty if the data refresh time is not known, e.g. if the metrics view is based on an externally managed table.
   v1ExploreTimeRange:
     type: object
     properties:
@@ -4762,9 +4802,7 @@ definitions:
         type: object
         additionalProperties:
           type: string
-      watchRepo:
-        type: boolean
-      aiContext:
+      aiInstructions:
         type: string
     description: |-
       Instance represents a single data project, meaning one set of code artifacts,
@@ -5323,6 +5361,9 @@ definitions:
       filter:
         $ref: '#/definitions/v1MetricsViewFilter'
         title: Deprecated. should be removed once UI is moved to use new filters
+      timeDimension:
+        type: string
+        title: Optional. If not specified, falls back to the primary time dimension in the metrics view spec
   v1MetricsViewRowsResponse:
     type: object
     properties:
@@ -5383,7 +5424,7 @@ definitions:
       description:
         type: string
         title: User-facing description
-      aiContext:
+      aiInstructions:
         type: string
         description: Extra context for LLM/AI features. Used to guide natural language question answering and routing.
       timeDimension:
@@ -5442,11 +5483,11 @@ definitions:
         description: |-
           Streaming is true if the underlying data may change without the metrics view's spec/state version changing.
           It's set to true if the metrics view is based on an externally managed table.
-      modelRefreshedOn:
+      dataRefreshedOn:
         type: string
         format: date-time
         description: |-
-          The last time the metrics view's underlying model was refreshed.
+          The last time the metrics view's underlying data was refreshed.
           This may be empty if the metrics view is based on an externally managed table.
   v1MetricsViewTimeRangeResponse:
     type: object
@@ -5505,6 +5546,9 @@ definitions:
       filter:
         $ref: '#/definitions/v1MetricsViewFilter'
         title: Deprecated. should be removed once UI is moved to use new filters
+      timeDimension:
+        type: string
+        title: Optional. If not specified, falls back to the primary time dimension in the metrics view spec
   v1MetricsViewTimeSeriesResponse:
     type: object
     properties:
@@ -5610,6 +5654,9 @@ definitions:
       filter:
         $ref: '#/definitions/v1MetricsViewFilter'
         title: Deprecated. should be removed once UI is moved to use new filters
+      timeDimension:
+        type: string
+        title: Optional. If not specified, falls back to the primary time dimension in the metrics view spec
   v1MetricsViewTotalsResponse:
     type: object
     properties:
@@ -5992,6 +6039,8 @@ definitions:
   v1QueryResolverResponse:
     type: object
     properties:
+      meta:
+        type: object
       schema:
         $ref: '#/definitions/v1StructType'
       data:
@@ -6632,6 +6681,9 @@ definitions:
         description: |-
           Optional. Rill format time range. Should only be used for alerts and reports.
           For dashboard call ResolveTimeRanges.
+      timeDimension:
+        type: string
+        title: Optional. If not specified, falls back to the primary time dimension in the metrics view spec
     title: 2 of the (start, end, iso_duration) should be set
   v1TimeRangeSummary:
     type: object

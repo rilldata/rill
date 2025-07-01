@@ -20,7 +20,7 @@ type MetricsViewYAML struct {
 	DisplayName       string           `yaml:"display_name"`
 	Title             string           `yaml:"title"` // Deprecated: use display_name
 	Description       string           `yaml:"description"`
-	AIContext         string           `yaml:"ai_context"`
+	AIInstructions    string           `yaml:"ai_instructions"`
 	Model             string           `yaml:"model"`
 	Database          string           `yaml:"database"`
 	DatabaseSchema    string           `yaml:"database_schema"`
@@ -262,6 +262,7 @@ func (p *Parser) parseMetricsView(node *Node) error {
 
 	names := make(map[string]uint8)
 	names[strings.ToLower(tmp.TimeDimension)] = nameIsDimension
+	timeSeen := false
 
 	for i, dim := range tmp.Dimensions {
 		if dim == nil || dim.Ignore {
@@ -307,7 +308,17 @@ func (p *Parser) parseMetricsView(node *Node) error {
 
 		lower := strings.ToLower(dim.Name)
 		if _, ok := names[lower]; ok {
-			return fmt.Errorf("found duplicate dimension or measure name %q", dim.Name)
+			// allow time dimension to be defined in the dimensions list once
+			if strings.EqualFold(lower, tmp.TimeDimension) {
+				if timeSeen {
+					return fmt.Errorf("time dimension %q defined multiple times", tmp.TimeDimension)
+				} else if dim.Name != tmp.TimeDimension {
+					return fmt.Errorf("dimension name %q does not match the case of time dimension %q", dim.Name, tmp.TimeDimension)
+				}
+				timeSeen = true
+			} else {
+				return fmt.Errorf("found duplicate dimension or measure name %q", dim.Name)
+			}
 		}
 		names[lower] = nameIsDimension
 	}
@@ -588,7 +599,7 @@ func (p *Parser) parseMetricsView(node *Node) error {
 		spec.DisplayName = ToDisplayName(node.Name)
 	}
 	spec.Description = tmp.Description
-	spec.AiContext = tmp.AIContext
+	spec.AiInstructions = tmp.AIInstructions
 	spec.TimeDimension = tmp.TimeDimension
 	spec.WatermarkExpression = tmp.Watermark
 	spec.SmallestTimeGrain = smallestTimeGrain

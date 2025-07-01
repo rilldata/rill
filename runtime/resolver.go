@@ -52,6 +52,9 @@ type Resolver interface {
 type ResolverResult interface {
 	// Close should be called to release resources
 	Close() error
+	// Meta can contain arbitrary metadata about the result.
+	// For example, the metrics resolver will return information about the result fields, like display names and formatting rules.
+	Meta() map[string]any
 	// Schema is the schema for the Data
 	Schema() *runtimev1.StructType
 	// Next returns the next row of data. It returns io.EOF when there are no more rows.
@@ -229,14 +232,16 @@ func (r *Runtime) Resolve(ctx context.Context, opts *ResolveOptions) (res Resolv
 }
 
 // NewDriverResolverResult creates a ResolverResult from a drivers.Result.
-func NewDriverResolverResult(result *drivers.Result) ResolverResult {
+func NewDriverResolverResult(result *drivers.Result, meta map[string]any) ResolverResult {
 	return &driverResolverResult{
 		rows: result,
+		meta: meta,
 	}
 }
 
 type driverResolverResult struct {
 	rows     *drivers.Result
+	meta     map[string]any
 	closeErr error
 }
 
@@ -250,6 +255,11 @@ func (r *driverResolverResult) Close() error {
 	// it is okay to call Close multiple times
 	// so we don't need to track if it was already called
 	return r.rows.Close()
+}
+
+// Meta implements ResolverResult.
+func (r *driverResolverResult) Meta() map[string]any {
+	return r.meta
 }
 
 // Schema implements ResolverResult.
@@ -290,7 +300,6 @@ func (r *driverResolverResult) MarshalJSON() ([]byte, error) {
 		}
 		row, ok := ret.(map[string]any)
 		if !ok {
-			// this should never happen
 			return nil, fmt.Errorf("Resolver.MarshalJSON unexpected type %T", ret)
 		}
 		out = append(out, row)
@@ -314,6 +323,7 @@ func NewMapsResolverResult(result []map[string]any, schema *runtimev1.StructType
 
 type mapsResolverResult struct {
 	rows   []map[string]any
+	meta   map[string]any
 	schema *runtimev1.StructType
 	idx    int
 }
@@ -323,6 +333,11 @@ var _ ResolverResult = &mapsResolverResult{}
 // Close implements ResolverResult.
 func (r *mapsResolverResult) Close() error {
 	return nil
+}
+
+// Meta implements ResolverResult.
+func (r *mapsResolverResult) Meta() map[string]any {
+	return r.meta
 }
 
 // Schema implements ResolverResult.
@@ -356,12 +371,14 @@ func newCachedResolverResult(res ResolverResult) (*cachedResolverResult, error) 
 
 	return &cachedResolverResult{
 		data:   data,
+		meta:   res.Meta(),
 		schema: res.Schema(),
 	}, nil
 }
 
 type cachedResolverResult struct {
 	data   []byte
+	meta   map[string]any
 	schema *runtimev1.StructType
 
 	// Iterator fields. Should only be populated on short-lived copies obtained via copy().
@@ -374,6 +391,11 @@ var _ ResolverResult = &cachedResolverResult{}
 // Close implements ResolverResult.
 func (r *cachedResolverResult) Close() error {
 	return nil
+}
+
+// Meta implements ResolverResult.
+func (r *cachedResolverResult) Meta() map[string]any {
+	return r.meta
 }
 
 // Schema implements ResolverResult.
@@ -408,6 +430,7 @@ func (r *cachedResolverResult) copy() *cachedResolverResult {
 	return &cachedResolverResult{
 		data:   r.data,
 		schema: r.schema,
+		meta:   r.meta,
 		rows:   nil,
 		idx:    0,
 	}

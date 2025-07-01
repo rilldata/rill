@@ -306,7 +306,7 @@ func (c *Connection) executeQuery(ctx context.Context, client *athena.Client, sq
 		}
 	}
 
-	if workgroup != "" {
+	if workgroup != "" { // primary is used if nothing is set
 		executeParams.WorkGroup = aws.String(workgroup)
 	}
 

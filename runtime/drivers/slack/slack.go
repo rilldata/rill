@@ -72,6 +72,7 @@ var _ drivers.Handle = &handle{}
 
 // Ping implements drivers.Handle.
 func (h *handle) Ping(ctx context.Context) error {
+	// return early when BotToken is not defined.
 	if h.config.BotToken == "" {
 		return nil
 	}

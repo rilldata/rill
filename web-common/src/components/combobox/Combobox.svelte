@@ -50,12 +50,10 @@
     : options;
 
   // Update initialSelectedItems when selectedValues changes
-  $: if (selectedValues && selectedValues.length > 0) {
-    initialSelectedItems = selectedValues.map((value) => ({
-      value,
-      label: options.find((opt) => opt.value === value)?.label || value,
-    }));
-  }
+  $: initialSelectedItems = selectedValues.map((value) => ({
+    value,
+    label: options.find((opt) => opt.value === value)?.label || value,
+  }));
 
   function handleSelectedChange(selected: Selected<string>[] | undefined) {
     if (disabled) return;

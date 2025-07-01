@@ -43,7 +43,7 @@
       <ul class="border rounded-sm">
         {#each parseErrors as error, i (i)}
           <li
-            class="flex gap-x-5 justify-between py-1 px-9 border-b border-gray-200 bg-red-50 font-mono last:border-b-0"
+            class="flex gap-x-5 justify-between py-1 px-9 border-b bg-red-50 font-mono last:border-b-0"
           >
             <span class="text-red-600 break-all">
               {error.message}

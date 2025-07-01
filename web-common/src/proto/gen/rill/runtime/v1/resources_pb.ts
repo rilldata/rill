@@ -5,7 +5,7 @@
 
 import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialMessage, PlainMessage } from "@bufbuild/protobuf";
 import { Message, proto3, protoInt64, Struct, Timestamp, Value } from "@bufbuild/protobuf";
-import { StructType } from "./schema_pb.js";
+import { StructType, Type } from "./schema_pb.js";
 import { TimeGrain } from "./time_grain_pb.js";
 import { Expression } from "./expression_pb.js";
 import { ExportFormat } from "./export_format_pb.js";
@@ -1271,9 +1271,9 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
   /**
    * Extra context for LLM/AI features. Used to guide natural language question answering and routing.
    *
-   * @generated from field: string ai_context = 28;
+   * @generated from field: string ai_instructions = 28;
    */
-  aiContext = "";
+  aiInstructions = "";
 
   /**
    * Name of the primary time dimension, used for rendering time series
@@ -1364,7 +1364,7 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
     { no: 24, name: "model", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 28, name: "ai_context", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 28, name: "ai_instructions", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "time_dimension", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 8, name: "smallest_time_grain", kind: "enum", T: proto3.getEnumType(TimeGrain) },
     { no: 20, name: "watermark_expression", kind: "scalar", T: 9 /* ScalarType.STRING */ },
@@ -1492,6 +1492,13 @@ export class MetricsViewSpec_Dimension extends Message<MetricsViewSpec_Dimension
    */
   lookupDefaultExpression = "";
 
+  /**
+   * The data type of the dimension. Only populated in ValidSpec.
+   *
+   * @generated from field: rill.runtime.v1.Type data_type = 12;
+   */
+  dataType?: Type;
+
   constructor(data?: PartialMessage<MetricsViewSpec_Dimension>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1511,6 +1518,7 @@ export class MetricsViewSpec_Dimension extends Message<MetricsViewSpec_Dimension
     { no: 9, name: "lookup_key_column", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 10, name: "lookup_value_column", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 11, name: "lookup_default_expression", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 12, name: "data_type", kind: "message", T: Type },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewSpec_Dimension {
@@ -1718,6 +1726,13 @@ export class MetricsViewSpec_Measure extends Message<MetricsViewSpec_Measure> {
    */
   treatNullsAs = "";
 
+  /**
+   * The data type of the measure. Only populated in ValidSpec.
+   *
+   * @generated from field: rill.runtime.v1.Type data_type = 15;
+   */
+  dataType?: Type;
+
   constructor(data?: PartialMessage<MetricsViewSpec_Measure>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1740,6 +1755,7 @@ export class MetricsViewSpec_Measure extends Message<MetricsViewSpec_Measure> {
     { no: 13, name: "format_d3_locale", kind: "message", T: Struct },
     { no: 6, name: "valid_percent_of_total", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 14, name: "treat_nulls_as", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 15, name: "data_type", kind: "message", T: Type },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewSpec_Measure {
@@ -1987,12 +2003,12 @@ export class MetricsViewState extends Message<MetricsViewState> {
   streaming = false;
 
   /**
-   * The last time the metrics view's underlying model was refreshed.
+   * The last time the metrics view's underlying data was refreshed.
    * This may be empty if the metrics view is based on an externally managed table.
    *
-   * @generated from field: google.protobuf.Timestamp model_refreshed_on = 3;
+   * @generated from field: google.protobuf.Timestamp data_refreshed_on = 3;
    */
-  modelRefreshedOn?: Timestamp;
+  dataRefreshedOn?: Timestamp;
 
   constructor(data?: PartialMessage<MetricsViewState>) {
     super();
@@ -2004,7 +2020,7 @@ export class MetricsViewState extends Message<MetricsViewState> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "valid_spec", kind: "message", T: MetricsViewSpec },
     { no: 2, name: "streaming", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 3, name: "model_refreshed_on", kind: "message", T: Timestamp },
+    { no: 3, name: "data_refreshed_on", kind: "message", T: Timestamp },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewState {
@@ -2250,9 +2266,20 @@ export class ExploreSpec extends Message<ExploreSpec> {
  */
 export class ExploreState extends Message<ExploreState> {
   /**
+   * Valid spec is a (potentially previous) version of the spec that is known to be valid.
+   * It is also guaranteed to have concrete dimensions and measures, i.e. if the spec has a `dimensions_selector` or `measures_selector`, they will be resolved to concrete fields.
+   *
    * @generated from field: rill.runtime.v1.ExploreSpec valid_spec = 1;
    */
   validSpec?: ExploreSpec;
+
+  /**
+   * The last time the underlying metrics view's data was refreshed.
+   * This may be empty if the data refresh time is not known, e.g. if the metrics view is based on an externally managed table.
+   *
+   * @generated from field: google.protobuf.Timestamp data_refreshed_on = 2;
+   */
+  dataRefreshedOn?: Timestamp;
 
   constructor(data?: PartialMessage<ExploreState>) {
     super();
@@ -2263,6 +2290,7 @@ export class ExploreState extends Message<ExploreState> {
   static readonly typeName = "rill.runtime.v1.ExploreState";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "valid_spec", kind: "message", T: ExploreSpec },
+    { no: 2, name: "data_refreshed_on", kind: "message", T: Timestamp },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ExploreState {
@@ -4021,9 +4049,19 @@ export class ComponentSpec extends Message<ComponentSpec> {
  */
 export class ComponentState extends Message<ComponentState> {
   /**
+   * Valid spec is a (potentially previous) version of the component's spec that is known to be valid.
+   *
    * @generated from field: rill.runtime.v1.ComponentSpec valid_spec = 1;
    */
   validSpec?: ComponentSpec;
+
+  /**
+   * The last time any underlying metrics view(s)'s data was refreshed.
+   * This may be empty if the data refresh time is not known, e.g. if the metrics view is based on an externally managed table.
+   *
+   * @generated from field: google.protobuf.Timestamp data_refreshed_on = 2;
+   */
+  dataRefreshedOn?: Timestamp;
 
   constructor(data?: PartialMessage<ComponentState>) {
     super();
@@ -4034,6 +4072,7 @@ export class ComponentState extends Message<ComponentState> {
   static readonly typeName = "rill.runtime.v1.ComponentState";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "valid_spec", kind: "message", T: ComponentSpec },
+    { no: 2, name: "data_refreshed_on", kind: "message", T: Timestamp },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ComponentState {
@@ -4305,9 +4344,19 @@ export class CanvasSpec extends Message<CanvasSpec> {
  */
 export class CanvasState extends Message<CanvasState> {
   /**
+   * Valid spec is a (potentially previous) version of the canvas's spec that is known to be valid.
+   *
    * @generated from field: rill.runtime.v1.CanvasSpec valid_spec = 1;
    */
   validSpec?: CanvasSpec;
+
+  /**
+   * The last time any underlying metrics view(s)'s data was refreshed.
+   * This may be empty if the data refresh time is not known, e.g. if the metrics view is based on an externally managed table.
+   *
+   * @generated from field: google.protobuf.Timestamp data_refreshed_on = 2;
+   */
+  dataRefreshedOn?: Timestamp;
 
   constructor(data?: PartialMessage<CanvasState>) {
     super();
@@ -4318,6 +4367,7 @@ export class CanvasState extends Message<CanvasState> {
   static readonly typeName = "rill.runtime.v1.CanvasState";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "valid_spec", kind: "message", T: CanvasSpec },
+    { no: 2, name: "data_refreshed_on", kind: "message", T: Timestamp },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CanvasState {

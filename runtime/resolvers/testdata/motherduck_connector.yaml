@@ -1,3 +1,4 @@
+skip: true # TODO: Remove when motherduck start using duckdb 1.3.1
 connectors:
   - motherduck
 project_files:
