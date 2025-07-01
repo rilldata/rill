@@ -22,7 +22,7 @@
   on:click={handleClick}
 >
   <div class="min-w-0">
-    <div class="font-medium text-xs text-gray-900 truncate">
+    <div class="text-xs text-gray-900 truncate">
       {conversation.title || "New Conversation"}
     </div>
   </div>

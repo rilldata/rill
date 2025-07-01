@@ -16,7 +16,11 @@
 <div class="chatbot-header">
   <span class="chatbot-title">{currentTitle}</span>
   <div class="chatbot-header-actions">
-    <IconButton ariaLabel="New conversation" on:click={onNewConversation}>
+    <IconButton
+      ariaLabel="New conversation"
+      bgGray
+      on:click={onNewConversation}
+    >
       <PlusIcon className="text-gray-500" />
     </IconButton>
 
@@ -26,7 +30,7 @@
       onSelect={onSelectConversation}
     />
 
-    <IconButton ariaLabel="Close chat" on:click={onClose}>
+    <IconButton ariaLabel="Close chat" bgGray on:click={onClose}>
       <Close className="text-gray-500" />
     </IconButton>
   </div>

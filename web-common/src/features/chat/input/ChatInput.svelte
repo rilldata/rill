@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount } from "svelte";
+  import { onMount, tick } from "svelte";
   import IconButton from "../../../components/button/IconButton.svelte";
   import SendIcon from "../../../components/icons/SendIcon.svelte";
 
@@ -17,20 +17,13 @@
     }
   }
 
-  function sendMessage() {
+  async function sendMessage() {
     if (!value.trim() || disabled) return;
-
     const message = value;
-
-    // Clear the input immediately for better UX
     value = "";
-
-    // Reset textarea height and maintain focus
-    if (textarea) {
-      textarea.style.height = "auto";
-      textarea.focus();
-    }
-
+    await tick();
+    autoResize();
+    textarea?.focus();
     onSend(message);
   }
 
@@ -41,24 +34,13 @@
     }
   }
 
-  // Focus input when user clicks on the input container
-  function handleContainerClick() {
-    if (textarea && !disabled) {
-      textarea.focus();
-    }
-  }
-
   // Public method to focus input (can be called from parent)
   export function focusInput() {
-    if (textarea && !disabled) {
-      textarea.focus();
-    }
+    textarea?.focus();
   }
 
   onMount(() => {
-    if (textarea) {
-      autoResize();
-    }
+    autoResize();
   });
 
   // Auto-resize when value changes
@@ -68,7 +50,7 @@
 </script>
 
 <form class="chat-input-form" on:submit|preventDefault={sendMessage}>
-  <div class="chat-input-container" on:click={handleContainerClick}>
+  <div class="chat-input-container">
     <textarea
       bind:this={textarea}
       bind:value
@@ -77,7 +59,6 @@
       rows="1"
       on:keydown={handleKeydown}
       on:input={autoResize}
-      {disabled}
     />
     <IconButton
       ariaLabel="Send message"

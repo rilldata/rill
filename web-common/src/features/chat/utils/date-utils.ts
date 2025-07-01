@@ -62,13 +62,24 @@ export function groupConversationsByDate(conversations: V1Conversation[]): {
   const groups: { [key: string]: V1Conversation[] } = {};
   const now = new Date();
 
+  // Get today's date at midnight in local timezone
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
   conversations.forEach((conv) => {
     const dateStr = conv.updatedOn || conv.createdOn || "";
     if (!dateStr) return;
 
     const date = new Date(dateStr);
+    // Get conversation date at midnight in local timezone
+    const convDate = new Date(
+      date.getFullYear(),
+      date.getMonth(),
+      date.getDate(),
+    );
+
+    // Calculate difference in calendar days
     const diffInDays = Math.floor(
-      (now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24),
+      (today.getTime() - convDate.getTime()) / (1000 * 60 * 60 * 24),
     );
 
     let groupKey: string;

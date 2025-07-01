@@ -2,8 +2,11 @@
   import { afterUpdate } from "svelte";
   import AlertCircle from "../../../components/icons/AlertCircle.svelte";
   import LoadingSpinner from "../../../components/icons/LoadingSpinner.svelte";
+  import DelayedSpinner from "../../entity-management/DelayedSpinner.svelte";
   import { error, loading, messages } from "../chat-store";
   import ChatMessage from "./ChatMessage.svelte";
+
+  export let isConversationLoading = false;
 
   let messagesContainer: HTMLDivElement;
 
@@ -16,18 +19,23 @@
 </script>
 
 <div class="chat-messages" bind:this={messagesContainer}>
-  {#if $messages.length === 0}
+  {#if isConversationLoading}
+    <div class="chat-loading">
+      <DelayedSpinner isLoading={isConversationLoading} size="24px" />
+    </div>
+  {:else if $messages.length === 0}
     <div class="chat-empty">
       <!-- <div class="chat-empty-icon">💬</div> -->
       <div class="chat-empty-title">How can I help you today?</div>
       <div class="chat-empty-subtitle">Happy to help explore your data</div>
     </div>
+  {:else}
+    {#each $messages as msg (msg.id)}
+      <ChatMessage message={msg} />
+    {/each}
   {/if}
-  {#each $messages as msg (msg.id)}
-    <ChatMessage message={msg} />
-  {/each}
   {#if $loading}
-    <div class="chat-loading">
+    <div class="response-loading">
       <LoadingSpinner size="1.2em" /> Thinking...
     </div>
   {/if}
@@ -79,7 +87,7 @@
     color: #6b7280;
   }
 
-  .chat-loading {
+  .response-loading {
     display: flex;
     align-items: center;
     justify-content: center;

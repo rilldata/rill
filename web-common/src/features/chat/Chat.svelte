@@ -1,15 +1,19 @@
 <script lang="ts">
+  import { createQuery } from "@tanstack/svelte-query";
+  import { derived } from "svelte/store";
   import Resizer from "../../layout/Resizer.svelte";
   import {
-    createRuntimeServiceGetConversation,
-    createRuntimeServiceListConversations,
+    getRuntimeServiceGetConversationQueryOptions,
+    getRuntimeServiceListConversationsQueryOptions,
     type V1Conversation,
   } from "../../runtime-client";
   import { runtime } from "../../runtime-client/runtime-store";
   import {
     chatActions,
     chatOpen,
-    currentConversation,
+    currentConversationId,
+    DEFAULTS,
+    isOptimisticId,
     loading,
     sidebarWidth,
   } from "./chat-store";
@@ -17,12 +21,6 @@
   import ChatFooter from "./input/ChatFooter.svelte";
   import ChatInput from "./input/ChatInput.svelte";
   import ChatMessages from "./messages/ChatMessages.svelte";
-  import { DEFAULTS } from "./utils/storage";
-
-  // Close chat using the centralized action
-  function onClose() {
-    chatActions.closeChat();
-  }
 
   // Local UI state
   let input = "";
@@ -41,34 +39,49 @@
     }, 100);
   }
 
-  // API clients - these need to be reactive to runtime and currentConversation
-  $: listConversations = createRuntimeServiceListConversations(
-    $runtime.instanceId,
-  );
-  $: getConversation = createRuntimeServiceGetConversation(
-    $runtime.instanceId,
-    $currentConversation?.id || "",
-    {
+  // API clients
+  const listConversationsQueryOptionsStore = derived(runtime, ($runtime) =>
+    getRuntimeServiceListConversationsQueryOptions($runtime.instanceId, {
       query: {
-        enabled: !!$currentConversation?.id,
+        enabled: !!$chatOpen,
       },
-    },
+    }),
   );
+  const listConversationsQuery = createQuery(
+    listConversationsQueryOptionsStore,
+  );
+  $: ({ data: listConversationsData } = $listConversationsQuery);
 
-  // Load messages when conversation data is fetched
-  $: if ($getConversation.data?.conversation?.messages) {
-    chatActions.loadMessages($getConversation.data.conversation.messages);
-  }
+  const getConversationQueryOptionsStore = derived(
+    [runtime, currentConversationId],
+    ([$runtime, $currentConversationId]) =>
+      getRuntimeServiceGetConversationQueryOptions(
+        $runtime.instanceId,
+        $currentConversationId || "",
+        {
+          query: {
+            enabled:
+              $chatOpen &&
+              !!$currentConversationId &&
+              !isOptimisticId($currentConversationId),
+          },
+        },
+      ),
+  );
+  const getConversationQuery = createQuery(getConversationQueryOptionsStore);
+  $: ({ data: getConversationData } = $getConversationQuery);
+  $: currentConversation = getConversationData?.conversation || null;
 
-  // Update current conversation when fetched data changes (for new conversations)
-  $: if ($getConversation.data?.conversation && !$currentConversation) {
-    chatActions.updateCurrentConversation($getConversation.data.conversation);
-  }
-
-  // Send message
   async function handleSendMessage(message: string) {
     try {
       await chatActions.sendMessage(message);
+      // Refocus the input after sending
+      if (
+        chatInputComponent &&
+        typeof chatInputComponent.focusInput === "function"
+      ) {
+        chatInputComponent.focusInput();
+      }
     } catch (error) {
       // If sending failed, restore the message to the input so user can retry
       input = message;
@@ -76,16 +89,22 @@
     }
   }
 
-  // Create a new conversation
   function createNewConversation() {
     chatActions.createNewConversation();
+    if (
+      chatInputComponent &&
+      typeof chatInputComponent.focusInput === "function"
+    ) {
+      chatInputComponent.focusInput();
+    }
   }
 
-  // Select a conversation from the list
   function selectConversation(conv: V1Conversation) {
     chatActions.selectConversation(conv);
-    // Refetch conversation data to get latest messages
-    $getConversation.refetch();
+  }
+
+  function onClose() {
+    chatActions.closeChat();
   }
 </script>
 
@@ -103,15 +122,15 @@
     <div class="chat-sidebar-content">
       <div class="chatbot-header-container">
         <ChatHeader
-          currentTitle={$currentConversation?.title || ""}
-          conversations={$listConversations.data?.conversations || []}
-          currentConversationId={$currentConversation?.id}
+          currentTitle={currentConversation?.title || ""}
+          conversations={listConversationsData?.conversations || []}
+          currentConversationId={currentConversation?.id}
           onNewConversation={createNewConversation}
           onSelectConversation={selectConversation}
           {onClose}
         />
       </div>
-      <ChatMessages />
+      <ChatMessages isConversationLoading={$getConversationQuery.isLoading} />
       <ChatInput
         bind:this={chatInputComponent}
         bind:value={input}
