@@ -35,44 +35,51 @@ func (p *Parser) parseAPI(node *Node) error {
 	}
 
 	// Validate
-	var openapiSummary, openapiParams, openapiRequestSchema, openapiResponseSchema string
+	var openapiSummary, openapiParams, openapiRequestSchema, openapiResponseSchema, openapiDefsPrefix string
 	if tmp.OpenAPI != nil {
 		openapiSummary = tmp.OpenAPI.Summary
 
-		paramsJSON, err := json.Marshal(tmp.OpenAPI.Parameters)
-		if err != nil {
-			return fmt.Errorf("invalid openapi.parameters: %w", err)
+		if len(tmp.OpenAPI.Parameters) != 0 {
+			paramsJSON, err := json.Marshal(tmp.OpenAPI.Parameters)
+			if err != nil {
+				return fmt.Errorf("invalid openapi.parameters: %w", err)
+			}
+			_, err = openapiutil.ParseJSONParameters(string(paramsJSON))
+			if err != nil {
+				return fmt.Errorf("invalid openapi.parameters: %w", err)
+			}
+			openapiParams = string(paramsJSON)
 		}
-		_, err = openapiutil.ParseJSONParameters(string(paramsJSON))
-		if err != nil {
-			return fmt.Errorf("invalid openapi.parameters: %w", err)
-		}
-		openapiParams = string(paramsJSON)
 
-		requestSchemaJSON, err := json.Marshal(tmp.OpenAPI.RequestSchema)
-		if err != nil {
-			return fmt.Errorf("invalid openapi.request_schema: %w", err)
+		if len(tmp.OpenAPI.RequestSchema) != 0 {
+			requestSchemaJSON, err := json.Marshal(tmp.OpenAPI.RequestSchema)
+			if err != nil {
+				return fmt.Errorf("invalid openapi.request_schema: %w", err)
+			}
+			_, _, err = openapiutil.ParseJSONSchema(node.Name, string(requestSchemaJSON))
+			if err != nil {
+				return fmt.Errorf("invalid openapi.request_schema: %w", err)
+			}
+			openapiRequestSchema = string(requestSchemaJSON)
 		}
-		_, _, err = openapiutil.ParseJSONSchema(node.Name, string(requestSchemaJSON))
-		if err != nil {
-			return fmt.Errorf("invalid openapi.request_schema: %w", err)
-		}
-		openapiRequestSchema = string(requestSchemaJSON)
 
-		responseSchemaJSON, err := json.Marshal(tmp.OpenAPI.ResponseSchema)
-		if err != nil {
-			return fmt.Errorf("invalid openapi.response_schema: %w", err)
+		if len(tmp.OpenAPI.ResponseSchema) != 0 {
+			responseSchemaJSON, err := json.Marshal(tmp.OpenAPI.ResponseSchema)
+			if err != nil {
+				return fmt.Errorf("invalid openapi.response_schema: %w", err)
+			}
+			_, _, err = openapiutil.ParseJSONSchema(node.Name, string(responseSchemaJSON))
+			if err != nil {
+				return fmt.Errorf("invalid openapi.response_schema: %w", err)
+			}
+			openapiResponseSchema = string(responseSchemaJSON)
 		}
-		_, _, err = openapiutil.ParseJSONSchema(node.Name, string(responseSchemaJSON))
-		if err != nil {
-			return fmt.Errorf("invalid openapi.response_schema: %w", err)
-		}
-		openapiResponseSchema = string(responseSchemaJSON)
 
 		if tmp.OpenAPI.DefsPrefix == nil {
 			// Default to the API name in PascalCase
-			prefix := toPascalCase(node.Name)
-			tmp.OpenAPI.DefsPrefix = &prefix
+			openapiDefsPrefix = toPascalCase(node.Name)
+		} else {
+			openapiDefsPrefix = *tmp.OpenAPI.DefsPrefix
 		}
 	}
 
@@ -113,6 +120,7 @@ func (p *Parser) parseAPI(node *Node) error {
 	r.APISpec.OpenapiParametersJson = openapiParams
 	r.APISpec.OpenapiRequestSchemaJson = openapiRequestSchema
 	r.APISpec.OpenapiResponseSchemaJson = openapiResponseSchema
+	r.APISpec.OpenapiDefsPrefix = openapiDefsPrefix
 	r.APISpec.SecurityRules = securityRules
 	r.APISpec.SkipNestedSecurity = tmp.SkipNestedSecurity
 
