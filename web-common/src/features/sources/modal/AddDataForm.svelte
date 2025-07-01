@@ -133,22 +133,6 @@
   // Emit the submitting state to the parent
   $: dispatch("submitting", { submitting });
 
-  // // Generate YAML preview from form state
-  // $: yamlPreview = (() => {
-  //   const values = useDsn ? $dsnForm : $paramsForm;
-  //   if (isSourceForm) {
-  //     // Use the same logic as submitAddSourceForm
-  //     const [rewrittenConnector, rewrittenFormValues] = maybeRewriteToDuckDb(
-  //       connector,
-  //       { ...values },
-  //     );
-  //     return compileSourceYAML(rewrittenConnector, rewrittenFormValues);
-  //   } else {
-  //     // Connector form
-  //     return compileConnectorYAML(connector, values);
-  //   }
-  // })();
-
   function onStringInputChange(event: Event) {
     const target = event.target as HTMLInputElement;
     const { name, value } = target;
@@ -407,22 +391,8 @@
     >
       <Button onClick={onBack} type="secondary">Back</Button>
       <Button disabled={submitting} form={formId} submitForm type="primary">
-        {#if isClickHouse && connectorType === "rill-managed"}
-          {#if isConnectorForm}
-            {#if submitting}
-              Connecting...
-            {:else}
-              Connect
-            {/if}
-          {:else}
-            Add data
-          {/if}
-        {:else if isConnectorForm}
-          {#if submitting}
-            Testing connection...
-          {:else}
-            Test and Connect
-          {/if}
+        {#if isConnectorForm}
+          {submitting ? "Testing connection..." : "Test and Connect"}
         {:else}
           Add data
         {/if}
@@ -433,10 +403,6 @@
   <div
     class="add-data-side-panel flex flex-col gap-6 p-6 bg-[#FAFAFA] w-full max-w-full border-l-0 border-t mt-6 pl-0 pt-6 md:w-96 md:min-w-[320px] md:max-w-[400px] md:border-l md:border-t-0 md:mt-0 md:pl-6"
   >
-    <!-- <div>
-      <div class="text-sm leading-none font-medium mb-4">Connector preview</div>
-      <pre class="overflow-x-auto">{yamlPreview}</pre>
-    </div> -->
     {#if dsnError || paramsError}
       <SubmissionError
         message={(useDsn ? dsnError : paramsError) ?? ""}
