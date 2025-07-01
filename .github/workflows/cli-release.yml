@@ -129,6 +129,15 @@ jobs:
           headers: |-
             cache-control: no-store
 
+      - name: Release - Upload install script to latest CDN bucket
+        if: env.PUBLISH_RELEASE == 'true'
+        uses: google-github-actions/upload-cloud-storage@v2
+        with:
+          path: scripts/install.sh
+          destination: prod-cdn.rilldata.com/rill/latest/install.sh
+          headers: |-
+            cache-control: no-store
+
       - name: Release - Upload latest version file to CDN bucket
         if: env.PUBLISH_RELEASE == 'true'
         uses: google-github-actions/upload-cloud-storage@v2
