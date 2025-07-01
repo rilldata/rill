@@ -392,7 +392,11 @@
       <Button onClick={onBack} type="secondary">Back</Button>
       <Button disabled={submitting} form={formId} submitForm type="primary">
         {#if isConnectorForm}
-          {submitting ? "Testing connection..." : "Test and Connect"}
+          {#if isClickHouse && connectorType === "rill-managed"}
+            {submitting ? "Connecting..." : "Connect"}
+          {:else}
+            {submitting ? "Testing connection..." : "Test and Connect"}
+          {/if}
         {:else}
           Add data
         {/if}
