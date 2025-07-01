@@ -80,7 +80,7 @@
       <AlertDialog.Action asChild let:builder>
         <AlertDialog.Cancel asChild let:builder>
           <Button builders={[builder]} onClick={goToSource} type="secondary">
-            View this model
+            View this source
           </Button>
         </AlertDialog.Cancel>
 
