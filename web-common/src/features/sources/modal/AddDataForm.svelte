@@ -182,10 +182,15 @@
 
     // Ensure managed property is set for ClickHouse
     if (isClickHouse) {
-      values = {
-        ...values,
-        managed: connectorType === "rill-managed",
-      };
+      if (connectorType === "rill-managed") {
+        Object.keys(values).forEach((key) => {
+          if (key !== "managed")
+            delete (values as Record<string, unknown>)[key];
+        });
+        (values as Record<string, unknown>).managed = true;
+      } else {
+        (values as Record<string, unknown>).managed = false;
+      }
     }
 
     try {
@@ -233,7 +238,7 @@
   }
 </script>
 
-<div class="add-data-layout flex flex-row h-full w-full md:flex-row flex-col">
+<div class="add-data-layout flex flex-col h-full w-full md:flex-row">
   <div class="add-data-form-panel flex-1 flex flex-col min-w-0 md:pr-0 pr-0">
     <div
       class="p-6 flex flex-col flex-grow max-h-[552px] min-h-[552px] overflow-y-auto"
@@ -301,6 +306,13 @@
           <InformationalField
             description="This option uses ClickHouse as an OLAP engine with Rill-managed infrastructure. No additional configuration is required - Rill will handle the setup and management of your ClickHouse instance."
           />
+          <form
+            id={paramsFormId}
+            use:paramsEnhance
+            on:submit|preventDefault={paramsSubmit}
+          >
+            <input type="hidden" name="managed" value="true" />
+          </form>
         {:else}
           <!-- Self-managed ClickHouse Form -->
           {#if hasDsnFormOption}
@@ -395,7 +407,17 @@
     >
       <Button onClick={onBack} type="secondary">Back</Button>
       <Button disabled={submitting} form={formId} submitForm type="primary">
-        {#if isConnectorForm}
+        {#if isClickHouse && connectorType === "rill-managed"}
+          {#if isConnectorForm}
+            {#if submitting}
+              Connecting...
+            {:else}
+              Connect
+            {/if}
+          {:else}
+            Add data
+          {/if}
+        {:else if isConnectorForm}
           {#if submitting}
             Testing connection...
           {:else}
