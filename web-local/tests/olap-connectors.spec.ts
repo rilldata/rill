@@ -31,9 +31,8 @@ test.describe("ClickHouse connector", () => {
     test.setTimeout(40_000);
 
     // Open the Add Data modal
-    await page.getByLabel("Add Asset").waitFor({ state: "visible" });
     await page.getByLabel("Add Asset").click();
-    await page.getByRole("menuitem", { name: "Add Data" }).click();
+    await page.getByLabel("Add Data").click();
 
     // Select ClickHouse
     await page.locator("#clickhouse").click();
