@@ -142,7 +142,6 @@ export const filterOutSomeAdvancedAggregationMeasures = (
   metricsViewSpec: V1MetricsViewSpec,
   measures: V1MetricsViewAggregationMeasure[],
   includeWindowMeasures: boolean,
-  includeTimeDependantMeasures: boolean,
 ) => {
   const measuresSeen = new Set<string>();
 
@@ -162,7 +161,7 @@ export const filterOutSomeAdvancedAggregationMeasures = (
       exploreState,
       measureSpec,
       includeWindowMeasures,
-      includeTimeDependantMeasures,
+      false,
     );
     if (!measureIsSupported || measuresSeen.has(measure.name!)) return false;
 
@@ -175,7 +174,7 @@ const isMeasureSupported = (
   exploreState: ExploreState,
   measure: MetricsViewSpecMeasure,
   allowWindowMeasure: boolean,
-  allowTimeDependantMeasure: boolean,
+  allowTimeDependentMeasure: boolean,
 ) => {
   if (
     measure.type === MetricsViewSpecMeasureType.MEASURE_TYPE_TIME_COMPARISON ||
@@ -183,17 +182,17 @@ const isMeasureSupported = (
   )
     return false;
 
-  const allDependantDimensionsAllowed =
+  const allDependentDimensionsAllowed =
     measure.requiredDimensions?.every((reqDim) => {
       const hasNoTimeGrain =
         !reqDim.timeGrain ||
         reqDim.timeGrain === V1TimeGrain.TIME_GRAIN_UNSPECIFIED;
       if (hasNoTimeGrain) return true;
 
-      if (!allowTimeDependantMeasure) return false;
+      if (!allowTimeDependentMeasure) return false;
       return reqDim.timeGrain === exploreState.selectedTimeRange?.interval;
     }) ?? true;
-  return allDependantDimensionsAllowed;
+  return allDependentDimensionsAllowed;
 };
 
 export const measureSelectors = {

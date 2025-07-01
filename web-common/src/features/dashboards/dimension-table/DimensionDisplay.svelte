@@ -105,7 +105,6 @@
     metricsViewSpec,
     measures,
     false,
-    false,
   );
 
   $: totalsQuery = createQueryServiceMetricsViewAggregation(
@@ -120,8 +119,8 @@
         ),
         undefined,
       ),
-      timeStart: timeRange.start,
-      timeEnd: timeRange.end,
+      timeRange,
+      comparisonTimeRange,
     },
     {
       query: {

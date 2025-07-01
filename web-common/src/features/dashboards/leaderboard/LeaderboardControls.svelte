@@ -38,7 +38,6 @@
     metricsViewSpec,
     $visibleMeasures,
     false,
-    false,
   );
 
   $: activeLeaderboardMeasure = $getMeasureByName(
