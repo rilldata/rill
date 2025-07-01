@@ -19,43 +19,17 @@ func MustExtractDefAsSchema(jsonSchema, defName string) string {
 // The resulting schema's $defs will contain any other definitions that are referenced by the extracted definition.
 // It returns the definition as a JSON schema string.
 func ExtractDefAsSchema(jsonSchema, defName string) (string, error) {
-	// Parse the JSON schema into a map
-	var schemaMap struct {
-		Defs map[string]any `json:"$defs"`
+	// Extract the defs from the JSON schema
+	defs, err := ExtractReferencedDefs(jsonSchema, defName)
+	if err != nil {
+		return "", err
 	}
-	if err := json.Unmarshal([]byte(jsonSchema), &schemaMap); err != nil {
-		return "", fmt.Errorf("failed to parse JSON schema: %w", err)
-	}
-
-	// Find the requested definition
-	targetDefAny, ok := schemaMap.Defs[defName]
-	if !ok {
-		return "", fmt.Errorf("definition %q not found in $defs", defName)
-	}
-	targetDef, ok := targetDefAny.(map[string]any)
-	if !ok {
-		return "", fmt.Errorf("definition %q is not a valid object", defName)
-	}
-
-	// Collect all referenced definitions
-	referencedDefs := make(map[string]any)
-	collectReferencedDefs(targetDef, schemaMap.Defs, referencedDefs, make(map[string]bool))
 
 	// Build the result schema
-	resultSchema := make(map[string]any)
-
-	// Copy all properties from the target definition to the root
-	for k, v := range targetDef {
-		resultSchema[k] = v
-	}
-
-	// Add $defs if there are any referenced definitions
-	if len(referencedDefs) > 0 {
-		resultSchema["$defs"] = referencedDefs
-	}
-
-	// Convert back to JSON
-	jsonData, err := json.Marshal(resultSchema)
+	jsonData, err := json.Marshal(map[string]any{
+		"$ref":  fmt.Sprintf("#/$defs/%s", defName),
+		"$defs": defs,
+	})
 	if err != nil {
 		return "", fmt.Errorf("failed to marshal result schema: %w", err)
 	}
@@ -63,40 +37,72 @@ func ExtractDefAsSchema(jsonSchema, defName string) (string, error) {
 	return string(jsonData), nil
 }
 
-// collectReferencedDefs recursively collects all definitions referenced by the given data.
-func collectReferencedDefs(data any, allDefs, collectedDefs map[string]any, visited map[string]bool) {
-	switch v := data.(type) {
+// MustExtractReferencedDefs wraps ExtractReferencedDefs and panics if an error occurs.
+func MustExtractReferencedDefs(jsonSchema, defName string) map[string]any {
+	result, err := ExtractReferencedDefs(jsonSchema, defName)
+	if err != nil {
+		panic(fmt.Sprintf("failed to extract referenced definitions for %q: %v", defName, err))
+	}
+	return result
+}
+
+// ExtractReferencedDefs extracts all definitions referenced by a specific definition in the $defs property of JSON schema.
+// It returns a map of definition names to their corresponding JSON schema definitions.
+// The resulting map will include the specified definition and any other definitions that are referenced by it.
+func ExtractReferencedDefs(jsonSchema, defName string) (map[string]any, error) {
+	// Extract the defs from the JSON schema
+	var schema struct {
+		Defs map[string]any `json:"$defs"`
+	}
+	if err := json.Unmarshal([]byte(jsonSchema), &schema); err != nil {
+		return nil, fmt.Errorf("failed to parse JSON schema: %w", err)
+	}
+	defs := schema.Defs
+
+	// Check the def exists
+	if _, ok := defs[defName]; !ok {
+		return nil, fmt.Errorf("definition %q not found in $defs", defName)
+	}
+
+	// Visit all the definitions
+	visited := map[string]bool{defName: true}
+	visitRefs(defs, defs[defName], visited)
+
+	// Filter out defs that were not visited
+	for defName := range defs {
+		if !visited[defName] {
+			delete(defs, defName)
+		}
+	}
+
+	return defs, nil
+}
+
+// visitRefs recursively visits all definitions referenced in the given node.
+func visitRefs(allDefs map[string]any, node any, visited map[string]bool) {
+	switch v := node.(type) {
 	case map[string]any:
 		// Check for $ref
 		if ref, ok := v["$ref"].(string); ok {
-			if strings.HasPrefix(ref, "#/$defs/") {
-				defName := strings.TrimPrefix(ref, "#/$defs/")
-
+			if defName, ok := strings.CutPrefix(ref, "#/$defs/"); ok {
 				// Skip if already visited (avoid infinite recursion)
 				if visited[defName] {
 					return
 				}
 				visited[defName] = true
-
-				// Add the referenced definition if it exists
-				if def, exists := allDefs[defName]; exists {
-					collectedDefs[defName] = def
-					// Recursively collect refs from this definition
-					collectReferencedDefs(def, allDefs, collectedDefs, visited)
-				}
+				visitRefs(allDefs, allDefs[defName], visited)
 			}
 		}
 
 		// Recursively process all values in the map
 		for _, value := range v {
-			collectReferencedDefs(value, allDefs, collectedDefs, visited)
+			visitRefs(allDefs, value, visited)
 		}
-
 	case []any:
 		// Recursively process each item in the array
 		for _, item := range v {
-			collectReferencedDefs(item, allDefs, collectedDefs, visited)
+			visitRefs(allDefs, item, visited)
 		}
 	}
-	// For primitive types (string, number, bool, nil), nothing to do
+	// Primitive types can't contain a $ref, so nothing to do
 }

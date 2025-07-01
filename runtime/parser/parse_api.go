@@ -3,6 +3,8 @@ package parser
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
+	"unicode"
 
 	"github.com/rilldata/rill/runtime/pkg/openapiutil"
 )
@@ -20,6 +22,7 @@ type OpenAPIYAML struct {
 	Parameters     []map[string]any `yaml:"parameters"`
 	RequestSchema  map[string]any   `yaml:"request_schema"`
 	ResponseSchema map[string]any   `yaml:"response_schema"`
+	DefsPrefix     *string          `yaml:"defs_prefix,omitempty"` // Optional prefix for definitions in the OpenAPI spec. Defaults to the API name in Pascal case.
 }
 
 // parseAPI parses an API definition and adds the resulting resource to p.Resources.
@@ -65,6 +68,12 @@ func (p *Parser) parseAPI(node *Node) error {
 			return fmt.Errorf("invalid openapi.response_schema: %w", err)
 		}
 		openapiResponseSchema = string(responseSchemaJSON)
+
+		if tmp.OpenAPI.DefsPrefix == nil {
+			// Default to the API name in PascalCase
+			prefix := toPascalCase(node.Name)
+			tmp.OpenAPI.DefsPrefix = &prefix
+		}
 	}
 
 	// Map common node properties to DataYAML
@@ -108,4 +117,24 @@ func (p *Parser) parseAPI(node *Node) error {
 	r.APISpec.SkipNestedSecurity = tmp.SkipNestedSecurity
 
 	return nil
+}
+
+// toPascalCase converts a string to PascalCase.
+// The string may contain underscores and dashes, which will be treated as word separators.
+func toPascalCase(s string) string {
+	if s == "" {
+		return s
+	}
+
+	words := strings.FieldsFunc(s, func(r rune) bool {
+		return r == '_' || r == '-' || r == ' '
+	})
+
+	for i, word := range words {
+		if word != "" {
+			words[i] = string(unicode.ToUpper(rune(word[0]))) + word[1:]
+		}
+	}
+
+	return strings.Join(words, "")
 }

@@ -37,13 +37,11 @@ func TestExtractDefAsSchema_SimpleDefinitionWithoutRefs(t *testing.T) {
 	require.NoError(t, err)
 
 	// Verify the result has the expected structure
-	require.Equal(t, "object", resultMap["type"])
-	require.Contains(t, resultMap, "properties")
-	require.Contains(t, resultMap, "required")
-	require.NotContains(t, resultMap, "$defs") // No refs, so no $defs needed
+	require.Equal(t, "#/$defs/Person", resultMap["$ref"])
+	require.Len(t, resultMap["$defs"], 1)
 
 	// Verify properties
-	props := resultMap["properties"].(map[string]any)
+	props := resultMap["$defs"].(map[string]any)["Person"].(map[string]any)["properties"].(map[string]any)
 	require.Contains(t, props, "name")
 	require.Contains(t, props, "age")
 }
@@ -80,16 +78,21 @@ func TestExtractDefAsSchema_DefinitionWithSingleRef(t *testing.T) {
 	err = json.Unmarshal([]byte(result), &resultMap)
 	require.NoError(t, err)
 
-	// Verify the result has the expected structure
-	require.Equal(t, "object", resultMap["type"])
-	require.Contains(t, resultMap, "properties")
+	// Verify the result has a top-level $ref
+	require.Equal(t, "#/$defs/Person", resultMap["$ref"])
 	require.Contains(t, resultMap, "$defs")
 
-	// Verify $defs contains only the referenced Address
+	// Verify $defs contains Person and Address
 	defs := resultMap["$defs"].(map[string]any)
+	require.Contains(t, defs, "Person")
 	require.Contains(t, defs, "Address")
 	require.NotContains(t, defs, "UnusedDef")
-	require.Len(t, defs, 1)
+	require.Len(t, defs, 2)
+
+	// Verify Person definition is complete
+	personDef := defs["Person"].(map[string]any)
+	require.Equal(t, "object", personDef["type"])
+	require.Contains(t, personDef, "properties")
 }
 
 func TestExtractDefAsSchema_DefinitionWithNestedRefs(t *testing.T) {
@@ -128,11 +131,15 @@ func TestExtractDefAsSchema_DefinitionWithNestedRefs(t *testing.T) {
 	err = json.Unmarshal([]byte(result), &resultMap)
 	require.NoError(t, err)
 
-	// Verify $defs contains both Address and Country
+	// Verify the result has a top-level $ref
+	require.Equal(t, "#/$defs/Person", resultMap["$ref"])
+
+	// Verify $defs contains Person, Address and Country
 	defs := resultMap["$defs"].(map[string]any)
+	require.Contains(t, defs, "Person")
 	require.Contains(t, defs, "Address")
 	require.Contains(t, defs, "Country")
-	require.Len(t, defs, 2)
+	require.Len(t, defs, 3)
 }
 
 func TestExtractDefAsSchema_DefinitionWithCircularRefs(t *testing.T) {
@@ -160,8 +167,17 @@ func TestExtractDefAsSchema_DefinitionWithCircularRefs(t *testing.T) {
 	err = json.Unmarshal([]byte(result), &resultMap)
 	require.NoError(t, err)
 
+	// Verify the result has a top-level $ref
+	require.Equal(t, "#/$defs/Node", resultMap["$ref"])
+
+	// Should have $defs with Node since it's self-referential
+	defs := resultMap["$defs"].(map[string]any)
+	require.Contains(t, defs, "Node")
+	require.Len(t, defs, 1)
+
 	// Verify the self-reference is preserved
-	props := resultMap["properties"].(map[string]any)
+	nodeDef := defs["Node"].(map[string]any)
+	props := nodeDef["properties"].(map[string]any)
 	children := props["children"].(map[string]any)
 	items := children["items"].(map[string]any)
 	require.Equal(t, "#/$defs/Node", items["$ref"])
@@ -199,10 +215,14 @@ func TestExtractDefAsSchema_DefinitionWithArrayOfRefs(t *testing.T) {
 	err = json.Unmarshal([]byte(result), &resultMap)
 	require.NoError(t, err)
 
-	// Verify $defs contains Person
+	// Verify the result has a top-level $ref
+	require.Equal(t, "#/$defs/Team", resultMap["$ref"])
+
+	// Verify $defs contains Team and Person
 	defs := resultMap["$defs"].(map[string]any)
+	require.Contains(t, defs, "Team")
 	require.Contains(t, defs, "Person")
-	require.Len(t, defs, 1)
+	require.Len(t, defs, 2)
 }
 
 func TestExtractDefAsSchema_NonExistentDefinition(t *testing.T) {
@@ -239,19 +259,6 @@ func TestExtractDefAsSchema_InvalidJSON(t *testing.T) {
 	_, err := ExtractDefAsSchema(jsonSchema, "Person")
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "failed to parse JSON schema")
-}
-
-func TestExtractDefAsSchema_DefNotMap(t *testing.T) {
-	jsonSchema := `{
-		"type": "object",
-		"$defs": {
-			"Person": "not a map"
-		}
-	}`
-
-	_, err := ExtractDefAsSchema(jsonSchema, "Person")
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "not a valid object")
 }
 
 func TestExtractDefAsSchema_ComplexNestedStructure(t *testing.T) {
@@ -305,11 +312,15 @@ func TestExtractDefAsSchema_ComplexNestedStructure(t *testing.T) {
 	err = json.Unmarshal([]byte(result), &resultMap)
 	require.NoError(t, err)
 
-	// Verify $defs contains all transitively referenced definitions
+	// Verify the result has a top-level $ref
+	require.Equal(t, "#/$defs/Company", resultMap["$ref"])
+
+	// Verify $defs contains Company and all transitively referenced definitions
 	defs := resultMap["$defs"].(map[string]any)
+	require.Contains(t, defs, "Company")
 	require.Contains(t, defs, "Employee")
 	require.Contains(t, defs, "Role")
 	require.Contains(t, defs, "Address")
 	require.NotContains(t, defs, "UnusedDef")
-	require.Len(t, defs, 3)
+	require.Len(t, defs, 4)
 }
