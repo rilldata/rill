@@ -10,6 +10,7 @@
     defaultSecondaryColors,
   } from "../themes/color-config";
   import { useTheme } from "../themes/selectors";
+  import { featureFlags } from "../feature-flags";
 
   const defaultTheme: V1ThemeSpec = {
     primaryColorRaw: `hsl(${defaultPrimaryColors[500].split(" ").join(",")})`,
@@ -20,6 +21,8 @@
     primaryColorRaw: "hsl(180, 100%, 50%)",
     secondaryColorRaw: "lightgreen",
   };
+
+  const { darkMode } = featureFlags;
 
   export let themeNames: string[];
   export let theme: string | V1ThemeSpec | undefined;
@@ -35,6 +38,8 @@
     typeof theme === "string" ? theme : undefined;
 
   $: ({ instanceId } = $runtime);
+
+  $: allowDarkMode = $darkMode;
 
   $: themeQuery =
     typeof theme === "string" ? useTheme(instanceId, theme) : undefined;
@@ -101,6 +106,7 @@
       stringColor={currentTheme.primaryColorRaw}
       label="Primary"
       disabled={presetMode}
+      allowLightnessControl={allowDarkMode}
       onChange={(color) => {
         onColorChange(color, themeProxy.secondaryColorRaw ?? "");
         themeProxy.primaryColorRaw = color;
@@ -111,6 +117,7 @@
       stringColor={currentTheme.secondaryColorRaw}
       label="Secondary"
       disabled={presetMode}
+      allowLightnessControl={allowDarkMode}
       onChange={(color) => {
         onColorChange(themeProxy.primaryColorRaw ?? "", color);
         themeProxy.secondaryColorRaw = color;
