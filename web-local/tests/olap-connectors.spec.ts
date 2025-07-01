@@ -104,8 +104,7 @@ test.describe("ClickHouse connector", () => {
     ).toBeVisible();
   });
 
-  // Flaky
-  test.skip("Create connector using DSN", async ({ page }) => {
+  test("Create connector using DSN", async ({ page }) => {
     // Open the Add Data modal
     await page.getByRole("button", { name: "Add Asset" }).click();
     await page.getByRole("menuitem", { name: "Add Data" }).click();
