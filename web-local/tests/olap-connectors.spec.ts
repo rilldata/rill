@@ -27,8 +27,7 @@ test.describe("ClickHouse connector", () => {
     await clickhouse.stop();
   });
 
-  // Flaky
-  test.skip("Create connector using individual fields", async ({ page }) => {
+  test("Create connector using individual fields", async ({ page }) => {
     // Open the Add Data modal
     await page.getByRole("button", { name: "Add Asset" }).click();
     await page.getByRole("menuitem", { name: "Add Data" }).click();
