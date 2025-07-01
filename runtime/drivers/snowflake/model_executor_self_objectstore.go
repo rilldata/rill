@@ -13,8 +13,8 @@ import (
 )
 
 type selfToObjectStoreExecutor struct {
-	c     *connection
-	store drivers.ObjectStore
+	c           *connection
+	objectStore drivers.Handle
 }
 
 var _ drivers.ModelExecutor = &selfToObjectStoreExecutor{}
@@ -84,7 +84,7 @@ func (e *selfToObjectStoreExecutor) export(ctx context.Context, props map[string
 		return "", err
 	}
 
-	creds, err := creds(e.store)
+	creds, err := e.creds()
 	if err != nil {
 		return "", err
 	}
@@ -104,18 +104,17 @@ func (e *selfToObjectStoreExecutor) export(ctx context.Context, props map[string
 	return outputLocation, nil
 }
 
-func creds(store drivers.ObjectStore) (string, error) {
-	h := store.(drivers.Handle)
-	switch h.Driver() {
+func (e *selfToObjectStoreExecutor) creds() (string, error) {
+	switch e.objectStore.Driver() {
 	case "s3":
 		conf := &s3.ConfigProperties{}
-		if err := mapstructure.Decode(h.Config(), conf); err != nil {
+		if err := mapstructure.Decode(e.objectStore.Config(), conf); err != nil {
 			return "", err
 		}
 		return fmt.Sprintf("(AWS_KEY_ID='%s' AWS_SECRET_KEY='%s' AWS_TOKEN='%s')", conf.AccessKeyID, conf.SecretAccessKey, conf.SessionToken), nil
 	case "gcs":
 		return "", fmt.Errorf("snowflake connector can't export to connector 'gcs'. Use s3 compatibility.")
 	default:
-		return "", fmt.Errorf("snowflake connector can't export to connector %q", h.Driver())
+		return "", fmt.Errorf("snowflake connector can't export to connector %q", e.objectStore.Driver())
 	}
 }
