@@ -53,7 +53,7 @@ type Fixture struct {
 // New creates an ephemeral admin service and server for testing.
 // See the docstring for the returned Fixture for details.
 func New(t *testing.T) *Fixture {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	// Postgres
 	pg := pgtestcontainer.New(t)
@@ -166,7 +166,7 @@ func (f *Fixture) NewUser(t *testing.T) (*database.User, *client.Client) {
 // NewSuperuser creates a new user with superuser permission in the fixture's admin service.
 func (f *Fixture) NewSuperuser(t *testing.T) (*database.User, *client.Client) {
 	u, c := f.NewUserWithDomain(t, "test-superuser.com")
-	err := f.Admin.DB.UpdateSuperuser(context.Background(), u.ID, true)
+	err := f.Admin.DB.UpdateSuperuser(t.Context(), u.ID, true)
 	require.NoError(t, err)
 	return u, c
 }
@@ -180,12 +180,13 @@ func (f *Fixture) NewUserWithDomain(t *testing.T, domain string) (*database.User
 
 // NewUserWithEmail creates a new user with the given email in the fixture's admin service.
 func (f *Fixture) NewUserWithEmail(t *testing.T, emailAddr string) (*database.User, *client.Client) {
+	ctx := t.Context()
 	name := fmt.Sprintf("Test %s", strings.Split(emailAddr, "@")[0])
 
-	u, err := f.Admin.CreateOrUpdateUser(context.Background(), emailAddr, name, "")
+	u, err := f.Admin.CreateOrUpdateUser(ctx, emailAddr, name, "")
 	require.NoError(t, err)
 
-	tkn, err := f.Admin.IssueUserAuthToken(context.Background(), u.ID, database.AuthClientIDRillWeb, "Test session", nil, nil)
+	tkn, err := f.Admin.IssueUserAuthToken(ctx, u.ID, database.AuthClientIDRillWeb, "Test session", nil, nil)
 	require.NoError(t, err)
 
 	return u, f.NewClient(t, tkn.Token().String())

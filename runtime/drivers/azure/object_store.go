@@ -10,6 +10,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/container"
+	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/service"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/blob"
 	"github.com/rilldata/rill/runtime/pkg/globutil"
@@ -89,6 +90,15 @@ func (c *Connection) openBucket(ctx context.Context, bucket string, anonymous bo
 
 // newClient returns a new azure blob client.
 func (c *Connection) newClient(bucket string) (*container.Client, error) {
+	client, err := c.newStorageClient()
+	if err != nil {
+		return nil, fmt.Errorf("failed to initialize Azure storage client: %w", err)
+	}
+	return client.NewContainerClient(bucket), nil
+}
+
+// newStorageClient returns a service client.
+func (c *Connection) newStorageClient() (*service.Client, error) {
 	var accountKey, sasToken, connectionString string
 
 	accountName, err := c.accountName()
@@ -113,19 +123,15 @@ func (c *Connection) newClient(bucket string) (*container.Client, error) {
 	}
 
 	if connectionString != "" {
-		client, err := container.NewClientFromConnectionString(connectionString, bucket, nil)
+		client, err := service.NewClientFromConnectionString(connectionString, nil)
 		if err != nil {
-			return nil, fmt.Errorf("failed container.NewClientFromConnectionString: %w", err)
+			return nil, fmt.Errorf("failed service.NewClientFromConnectionString: %w", err)
 		}
 		return client, nil
 	}
 
 	if accountName != "" {
-		svcURL := fmt.Sprintf("https://%s.blob.core.windows.net", accountName)
-		containerURL, err := url.JoinPath(svcURL, bucket)
-		if err != nil {
-			return nil, err
-		}
+		svcURL := fmt.Sprintf("https://%s.blob.core.windows.net/", accountName)
 
 		var sharedKeyCred *azblob.SharedKeyCredential
 
@@ -135,9 +141,9 @@ func (c *Connection) newClient(bucket string) (*container.Client, error) {
 				return nil, fmt.Errorf("failed azblob.NewSharedKeyCredential: %w", err)
 			}
 
-			client, err := container.NewClientWithSharedKeyCredential(containerURL, sharedKeyCred, nil)
+			client, err := service.NewClientWithSharedKeyCredential(svcURL, sharedKeyCred, nil)
 			if err != nil {
-				return nil, fmt.Errorf("failed container.NewClientWithSharedKeyCredential: %w", err)
+				return nil, fmt.Errorf("failed service.NewClientWithSharedKeyCredential: %w", err)
 			}
 			return client, nil
 		}
@@ -151,14 +157,9 @@ func (c *Connection) newClient(bucket string) (*container.Client, error) {
 				return nil, err
 			}
 
-			containerURL, err := url.JoinPath(string(serviceURL), bucket)
+			client, err := service.NewClientWithNoCredential(string(serviceURL), nil)
 			if err != nil {
-				return nil, err
-			}
-
-			client, err := container.NewClientWithNoCredential(containerURL, nil)
-			if err != nil {
-				return nil, fmt.Errorf("failed container.NewClientWithNoCredential: %w", err)
+				return nil, fmt.Errorf("failed service.NewClientWithNoCredential: %w", err)
 			}
 			return client, nil
 		}
@@ -169,9 +170,9 @@ func (c *Connection) newClient(bucket string) (*container.Client, error) {
 		if err != nil {
 			return nil, fmt.Errorf("failed azidentity.NewDefaultAzureCredential: %w", err)
 		}
-		client, err := container.NewClient(containerURL, cred, nil)
+		client, err := service.NewClient(svcURL, cred, nil)
 		if err != nil {
-			return nil, fmt.Errorf("failed container.NewClient: %w", err)
+			return nil, fmt.Errorf("failed service.NewClient: %w", err)
 		}
 		return client, nil
 	}

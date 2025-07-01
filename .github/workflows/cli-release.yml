@@ -108,7 +108,7 @@ jobs:
           CGO_ENABLED: 1
           GORELEASER_CURRENT_TAG: ${{ env.GORELEASER_CURRENT_TAG }}
           PUBLISH_NIGHTLY: ${{ env.PUBLISH_NIGHTLY }}
-          DOCKERHUB_USER: ${{ secrets.DOCKERHUB_USER }}Add commentMore actions
+          DOCKERHUB_USER: ${{ secrets.DOCKERHUB_USER }}
           DOCKERHUB_PASS: ${{ secrets.DOCKERHUB_PASS }}
 
       - name: Release - Upload install script to CDN bucket

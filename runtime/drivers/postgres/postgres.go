@@ -3,12 +3,18 @@ package postgres
 import (
 	"context"
 	"errors"
+	"fmt"
 	"maps"
 
+	"github.com/jmoiron/sqlx"
+	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/storage"
 	"go.uber.org/zap"
+
+	// Load postgres driver
+	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
 func init() {
@@ -76,7 +82,7 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 	if instanceID == "" {
 		return nil, errors.New("postgres driver can't be shared")
 	}
-	// actual db connection is opened during query
+
 	return &connection{
 		config: config,
 	}, nil
@@ -100,7 +106,23 @@ type connection struct {
 
 // Ping implements drivers.Handle.
 func (c *connection) Ping(ctx context.Context) error {
-	return drivers.ErrNotImplemented
+	conf := &ConfigProperties{}
+	if err := mapstructure.WeakDecode(c.config, conf); err != nil {
+		return fmt.Errorf("failed to decode config: %w", err)
+	}
+
+	dsn := conf.ResolveDSN()
+	if dsn == "" {
+		return fmt.Errorf("database_url or dsn not provided")
+	}
+
+	// Open DB handle
+	db, err := sqlx.Open("pgx", dsn)
+	if err != nil {
+		return fmt.Errorf("failed to open connection: %w", err)
+	}
+	defer db.Close()
+	return db.PingContext(ctx)
 }
 
 // Migrate implements drivers.Connection.
