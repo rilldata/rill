@@ -25,7 +25,14 @@
     if (resourceKind === ResourceKind.Model) {
       await $createTrigger.mutateAsync({
         instanceId: $runtime.instanceId,
-        data: refreshType === "full" ? { allFull: true } : { all: true },
+        data: {
+          models: [
+            {
+              model: resourceName,
+              full: refreshType === "full",
+            },
+          ],
+        },
       });
     } else {
       await $createTrigger.mutateAsync({
