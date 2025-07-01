@@ -28,8 +28,6 @@ test.describe("ClickHouse connector", () => {
   });
 
   test("Create connector using individual fields", async ({ page }) => {
-    test.setTimeout(40_000);
-
     // Open the Add Data modal
     await page.getByLabel("Add Asset").click();
     await page.getByLabel("Add Data").click();
@@ -73,9 +71,18 @@ test.describe("ClickHouse connector", () => {
       .getByRole("button", { name: "Test and Connect", exact: true })
       .click();
 
-    // Wait for navigation to the new file
-    // await page.waitForURL(`**/files/connectors/clickhouse.yaml`);
+    // Wait for Testing connection...
+    await page
+      .getByRole("dialog", { name: "ClickHouse" })
+      .getByRole("button", { name: "Testing connection...", exact: true })
+      .waitFor({ state: "visible" });
 
+    // Expect modal to close
+    await expect(
+      page.getByRole("dialog", { name: "ClickHouse" }),
+    ).not.toBeVisible();
+
+    // Wait for navigation to the new file
     await page.waitForURL(`**/files/connectors/clickhouse.yaml`);
 
     // Assert that the file contains key properties
