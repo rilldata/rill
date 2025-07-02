@@ -169,7 +169,7 @@ func (c *Connection) Config() map[string]any {
 
 // InformationSchema implements drivers.Handle.
 func (c *Connection) AsInformationSchema() (drivers.InformationSchema, bool) {
-	return nil, false
+	return c, true
 }
 
 // Close implements drivers.Connection.

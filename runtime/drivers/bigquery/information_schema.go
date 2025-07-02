@@ -1,13 +1,10 @@
-package redshift
+package bigquery
 
 import (
 	"context"
-	"errors"
 
 	"github.com/rilldata/rill/runtime/drivers"
 )
-
-var errUnsupportedType = errors.New("encountered unsupported redshift type")
 
 func (c *Connection) ListSchemas(ctx context.Context) ([]*drivers.DatabaseSchemaInfo, error) {
 	return nil, nil

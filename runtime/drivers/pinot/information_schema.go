@@ -18,7 +18,19 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-func (c *connection) All(ctx context.Context, like string) ([]*drivers.Table, error) {
+func (c *connection) ListSchemas(ctx context.Context) ([]*drivers.DatabaseSchemaInfo, error) {
+	return nil, nil
+}
+
+func (c *connection) ListTables(ctx context.Context, database, schema string) ([]*drivers.TableInfo, error) {
+	return nil, nil
+}
+
+func (c *connection) GetTable(ctx context.Context, database, schema, table string) (*drivers.TableMetadata, error) {
+	return nil, nil
+}
+
+func (c *connection) All(ctx context.Context, like string) ([]*drivers.OlapTable, error) {
 	// query /tables endpoint, for each table name, query /tables/{tableName}/schema
 	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, c.schemaURL+"/tables", http.NoBody)
 	for k, v := range c.headers {
@@ -50,7 +62,7 @@ func (c *connection) All(ctx context.Context, like string) ([]*drivers.Table, er
 		}
 	}
 
-	tables := make([]*drivers.Table, 0, len(tablesResp.Tables))
+	tables := make([]*drivers.OlapTable, 0, len(tablesResp.Tables))
 	// fetch table schemas in parallel with concurrency of 5
 	g, ctx := errgroup.WithContext(ctx)
 	g.SetLimit(5)
@@ -77,7 +89,7 @@ func (c *connection) All(ctx context.Context, like string) ([]*drivers.Table, er
 	return tables, nil
 }
 
-func (c *connection) Lookup(ctx context.Context, db, schema, name string) (*drivers.Table, error) {
+func (c *connection) Lookup(ctx context.Context, db, schema, name string) (*drivers.OlapTable, error) {
 	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, c.schemaURL+"/tables/"+name+"/schema", http.NoBody)
 	for k, v := range c.headers {
 		req.Header.Set(k, v)
@@ -133,7 +145,7 @@ func (c *connection) Lookup(ctx context.Context, db, schema, name string) (*driv
 		schemaFields = append(schemaFields, &runtimev1.StructType_Field{Name: field.Name, Type: databaseTypeToPB(field.DataType, !field.NotNull, singleValueField)})
 	}
 
-	table := &drivers.Table{
+	table := &drivers.OlapTable{
 		Database:          "",
 		DatabaseSchema:    "",
 		Name:              name,
@@ -148,7 +160,7 @@ func (c *connection) Lookup(ctx context.Context, db, schema, name string) (*driv
 
 // LoadPhysicalSize populates the PhysicalSizeBytes field of the tables.
 // This was not tested when implemented so should be tested when pinot becomes a fairly used connector.
-func (c *connection) LoadPhysicalSize(ctx context.Context, tables []*drivers.Table) error {
+func (c *connection) LoadPhysicalSize(ctx context.Context, tables []*drivers.OlapTable) error {
 	if len(tables) == 0 {
 		return nil
 	}

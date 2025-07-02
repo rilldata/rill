@@ -48,7 +48,7 @@ type OLAPStore interface {
 	// The result MUST be closed after use.
 	Query(ctx context.Context, stmt *Statement) (*Result, error)
 	// InformationSchema enables introspecting the tables and views available in the OLAP driver.
-	InformationSchema() InformationSchema
+	InformationSchema() OlapInformationSchema
 }
 
 // Statement wraps a query to execute against an OLAP driver.

@@ -207,9 +207,8 @@ func (c *Connection) Query(ctx context.Context, stmt *drivers.Statement) (res *d
 	return res, nil
 }
 
-func (c *Connection) InformationSchema() drivers.InformationSchema {
-	is, _ := c.AsInformationSchema()
-	return is
+func (c *Connection) InformationSchema() drivers.OlapInformationSchema {
+	return c
 }
 
 // acquireMetaConn gets a connection from the pool for "meta" queries like information schema (i.e. fast queries).

@@ -12,7 +12,19 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 )
 
-func (c *Connection) All(ctx context.Context, like string) ([]*drivers.Table, error) {
+func (c *Connection) ListSchemas(ctx context.Context) ([]*drivers.DatabaseSchemaInfo, error) {
+	return nil, nil
+}
+
+func (c *Connection) ListTables(ctx context.Context, database, schema string) ([]*drivers.TableInfo, error) {
+	return nil, nil
+}
+
+func (c *Connection) GetTable(ctx context.Context, database, schema, table string) (*drivers.TableMetadata, error) {
+	return nil, nil
+}
+
+func (c *Connection) All(ctx context.Context, like string) ([]*drivers.OlapTable, error) {
 	conn, release, err := c.acquireMetaConn(ctx)
 	if err != nil {
 		return nil, err
@@ -74,7 +86,7 @@ func (c *Connection) All(ctx context.Context, like string) ([]*drivers.Table, er
 	return tables, nil
 }
 
-func (c *Connection) Lookup(ctx context.Context, db, schema, name string) (*drivers.Table, error) {
+func (c *Connection) Lookup(ctx context.Context, db, schema, name string) (*drivers.OlapTable, error) {
 	conn, release, err := c.acquireMetaConn(ctx)
 	if err != nil {
 		return nil, err
@@ -121,7 +133,7 @@ func (c *Connection) Lookup(ctx context.Context, db, schema, name string) (*driv
 	return tables[0], nil
 }
 
-func (c *Connection) LoadPhysicalSize(ctx context.Context, tables []*drivers.Table) error {
+func (c *Connection) LoadPhysicalSize(ctx context.Context, tables []*drivers.OlapTable) error {
 	if len(tables) == 0 {
 		return nil
 	}
@@ -189,8 +201,8 @@ func (c *Connection) LoadPhysicalSize(ctx context.Context, tables []*drivers.Tab
 	return err
 }
 
-func scanTables(rows *sqlx.Rows) ([]*drivers.Table, error) {
-	var res []*drivers.Table
+func scanTables(rows *sqlx.Rows) ([]*drivers.OlapTable, error) {
+	var res []*drivers.OlapTable
 
 	for rows.Next() {
 		var databaseSchema string
@@ -207,7 +219,7 @@ func scanTables(rows *sqlx.Rows) ([]*drivers.Table, error) {
 		}
 
 		// set t to res[len(res)-1] if it's the same table, else set t to a new table and append it
-		var t *drivers.Table
+		var t *drivers.OlapTable
 		if len(res) > 0 {
 			t = res[len(res)-1]
 			if !(t.DatabaseSchema == databaseSchema && t.Name == name) {
@@ -215,7 +227,7 @@ func scanTables(rows *sqlx.Rows) ([]*drivers.Table, error) {
 			}
 		}
 		if t == nil {
-			t = &drivers.Table{
+			t = &drivers.OlapTable{
 				DatabaseSchema:          databaseSchema,
 				IsDefaultDatabaseSchema: isDefaultSchema,
 				Name:                    name,

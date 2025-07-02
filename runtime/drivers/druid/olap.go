@@ -119,9 +119,8 @@ func (c *connection) Query(ctx context.Context, stmt *drivers.Statement) (*drive
 	return r, nil
 }
 
-func (c *connection) InformationSchema() drivers.InformationSchema {
-	is, _ := c.AsInformationSchema()
-	return is
+func (c *connection) InformationSchema() drivers.OlapInformationSchema {
+	return c
 }
 
 func rowsToSchema(r *sqlx.Rows) (*runtimev1.StructType, error) {

@@ -16,7 +16,19 @@ import (
 //
 // Since all user tables are in `druid` schema so we hardcode schema as `druid` and does not query database
 
-func (c *connection) All(ctx context.Context, like string) ([]*drivers.Table, error) {
+func (c *connection) ListSchemas(ctx context.Context) ([]*drivers.DatabaseSchemaInfo, error) {
+	return nil, nil
+}
+
+func (c *connection) ListTables(ctx context.Context, database, schema string) ([]*drivers.TableInfo, error) {
+	return nil, nil
+}
+
+func (c *connection) GetTable(ctx context.Context, database, schema, table string) (*drivers.TableMetadata, error) {
+	return nil, nil
+}
+
+func (c *connection) All(ctx context.Context, like string) ([]*drivers.OlapTable, error) {
 	var likeClause string
 	var args []any
 	if like != "" {
@@ -52,7 +64,7 @@ func (c *connection) All(ctx context.Context, like string) ([]*drivers.Table, er
 	return tables, nil
 }
 
-func (c *connection) Lookup(ctx context.Context, db, schema, name string) (*drivers.Table, error) {
+func (c *connection) Lookup(ctx context.Context, db, schema, name string) (*drivers.OlapTable, error) {
 	// Ensure Coordinator is ready.
 	// The issues is that the request
 	//	SELECT ...
@@ -102,7 +114,7 @@ func (c *connection) Lookup(ctx context.Context, db, schema, name string) (*driv
 	return tables[0], nil
 }
 
-func (c *connection) LoadPhysicalSize(ctx context.Context, tables []*drivers.Table) error {
+func (c *connection) LoadPhysicalSize(ctx context.Context, tables []*drivers.OlapTable) error {
 	q := `SELECT
     		datasource,
     		SUM("size") AS total_size
@@ -137,8 +149,8 @@ func (c *connection) LoadPhysicalSize(ctx context.Context, tables []*drivers.Tab
 	return nil
 }
 
-func scanTables(rows *sqlx.Rows) ([]*drivers.Table, error) {
-	var res []*drivers.Table
+func scanTables(rows *sqlx.Rows) ([]*drivers.OlapTable, error) {
+	var res []*drivers.OlapTable
 
 	for rows.Next() {
 		var schema string
@@ -154,7 +166,7 @@ func scanTables(rows *sqlx.Rows) ([]*drivers.Table, error) {
 		}
 
 		// set t to res[len(res)-1] if it's the same table, else set t to a new table and append it
-		var t *drivers.Table
+		var t *drivers.OlapTable
 		if len(res) > 0 {
 			t = res[len(res)-1]
 			if !(t.DatabaseSchema == schema && t.Name == name) {
@@ -162,7 +174,7 @@ func scanTables(rows *sqlx.Rows) ([]*drivers.Table, error) {
 			}
 		}
 		if t == nil {
-			t = &drivers.Table{
+			t = &drivers.OlapTable{
 				DatabaseSchema:          schema,
 				IsDefaultDatabaseSchema: true,
 				Name:                    name,

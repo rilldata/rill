@@ -10,7 +10,19 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/rduckdb"
 )
 
-func (c *connection) All(ctx context.Context, ilike string) ([]*drivers.Table, error) {
+func (c *connection) ListSchemas(ctx context.Context) ([]*drivers.DatabaseSchemaInfo, error) {
+	return nil, nil
+}
+
+func (c *connection) ListTables(ctx context.Context, database, schema string) ([]*drivers.TableInfo, error) {
+	return nil, nil
+}
+
+func (c *connection) GetTable(ctx context.Context, database, schema, table string) (*drivers.TableMetadata, error) {
+	return nil, nil
+}
+
+func (c *connection) All(ctx context.Context, ilike string) ([]*drivers.OlapTable, error) {
 	// TODO: this bypasses the acquireMetaConn call in the original implementation. Fix this.
 	db, release, err := c.acquireDB()
 	if err != nil {
@@ -31,7 +43,7 @@ func (c *connection) All(ctx context.Context, ilike string) ([]*drivers.Table, e
 	return tables, nil
 }
 
-func (c *connection) Lookup(ctx context.Context, _, _, name string) (*drivers.Table, error) {
+func (c *connection) Lookup(ctx context.Context, _, _, name string) (*drivers.OlapTable, error) {
 	// TODO: this bypasses the acquireMetaConn call in the original implementation. Fix this.
 	db, release, err := c.acquireDB()
 	if err != nil {
@@ -56,16 +68,16 @@ func (c *connection) Lookup(ctx context.Context, _, _, name string) (*drivers.Ta
 	return tables[0], nil
 }
 
-func (c *connection) LoadPhysicalSize(ctx context.Context, tables []*drivers.Table) error {
+func (c *connection) LoadPhysicalSize(ctx context.Context, tables []*drivers.OlapTable) error {
 	// already populated in All and Lookup calls
 	return nil
 }
 
-func scanTables(rows []*rduckdb.Table) ([]*drivers.Table, error) {
-	var res []*drivers.Table
+func scanTables(rows []*rduckdb.Table) ([]*drivers.OlapTable, error) {
+	var res []*drivers.OlapTable
 
 	for _, row := range rows {
-		t := &drivers.Table{
+		t := &drivers.OlapTable{
 			Database: row.Database,
 			// the database schema changes with every ingestion in duckdb(Refer rduckdb pkg for more info)
 			// we pin the read connection to the latest schema and set schema as `main` to give impression that everything is in the same schema
