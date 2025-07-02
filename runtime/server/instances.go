@@ -175,7 +175,7 @@ func (s *Server) EditInstance(ctx context.Context, req *runtimev1.EditInstanceRe
 	}
 
 	// Force the repo to refresh its handshake.
-	// NOTE: When we move from push-based config to pull-based config, this should be done on every config pull.
+	// NOTE: When we move from push-based config to pull-based config, this should ideally be done only when repo-related properties change.
 	repo, release, err := s.runtime.Repo(ctx, req.InstanceId)
 	if err == nil {
 		defer release()

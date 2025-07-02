@@ -41,7 +41,7 @@ type RepoStore interface {
 
 	// Pull synchronizes local and remote state.
 	// If discardChanges is true, it will discard any local changes made using Put/Rename/etc. and force synchronize to the remote state.
-	// If forceHandshake is true, it will re-verify any cached config changes. Specifically, this should be used when external config changes, such as the Git branch or file archive ID.
+	// If forceHandshake is true, it will re-verify any cached config. Specifically, this should be used when external config changes, such as the Git branch or file archive ID.
 	Pull(ctx context.Context, discardChanges, forceHandshake bool) error
 	// CommitAndPush commits local changes to the remote repository and pushes them.
 	CommitAndPush(ctx context.Context, message string, force bool) error
