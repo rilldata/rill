@@ -42,12 +42,12 @@ service ConnectorService {
     option (google.api.http) = {get: "/v1/gcs/credentials_info"};
   }
 
-  // OLAPListTables list all tables across all databases
+  // OLAPListTables list all tables across all databases in an OLAP
   rpc OLAPListTables(OLAPListTablesRequest) returns (OLAPListTablesResponse) {
     option (google.api.http) = {get: "/v1/olap/tables"};
   }
 
-  // OLAPGetTable returns metadata about a table or view
+  // OLAPGetTable returns metadata about a table or view in an OLAP
   rpc OLAPGetTable(OLAPGetTableRequest) returns (OLAPGetTableResponse) {
     option (google.api.http) = {get: "/v1/connectors/olap/table"};
   }
@@ -199,7 +199,7 @@ message OlapTableInfo {
   bool is_default_database = 5;
   bool is_default_database_schema = 6;
   string name = 2;
-  // has_unsupported_data_types indicates if the underlying table has any column with an unsupported datatype
+  // has_unsupported_data_types indicates if the underlying table has any column with an unsupported OLAP engine datatype
   bool has_unsupported_data_types = 3;
   // physical_size_bytes is the physical size of the table. Set to -1 if the size cannot be determined.
   int64 physical_size_bytes = 7;

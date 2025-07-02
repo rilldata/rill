@@ -53,9 +53,9 @@ type ConnectorServiceClient interface {
 	GCSListObjects(ctx context.Context, in *GCSListObjectsRequest, opts ...grpc.CallOption) (*GCSListObjectsResponse, error)
 	// GCSGetCredentialsInfo returns metadata for the given bucket.
 	GCSGetCredentialsInfo(ctx context.Context, in *GCSGetCredentialsInfoRequest, opts ...grpc.CallOption) (*GCSGetCredentialsInfoResponse, error)
-	// OLAPListTables list all tables across all databases
+	// OLAPListTables list all tables across all databases in an OLAP
 	OLAPListTables(ctx context.Context, in *OLAPListTablesRequest, opts ...grpc.CallOption) (*OLAPListTablesResponse, error)
-	// OLAPGetTable returns metadata about a table or view
+	// OLAPGetTable returns metadata about a table or view in an OLAP
 	OLAPGetTable(ctx context.Context, in *OLAPGetTableRequest, opts ...grpc.CallOption) (*OLAPGetTableResponse, error)
 	// ListSchemas list all schemas across databases
 	ListSchemas(ctx context.Context, in *ListSchemasRequest, opts ...grpc.CallOption) (*ListSchemasResponse, error)
@@ -235,9 +235,9 @@ type ConnectorServiceServer interface {
 	GCSListObjects(context.Context, *GCSListObjectsRequest) (*GCSListObjectsResponse, error)
 	// GCSGetCredentialsInfo returns metadata for the given bucket.
 	GCSGetCredentialsInfo(context.Context, *GCSGetCredentialsInfoRequest) (*GCSGetCredentialsInfoResponse, error)
-	// OLAPListTables list all tables across all databases
+	// OLAPListTables list all tables across all databases in an OLAP
 	OLAPListTables(context.Context, *OLAPListTablesRequest) (*OLAPListTablesResponse, error)
-	// OLAPGetTable returns metadata about a table or view
+	// OLAPGetTable returns metadata about a table or view in an OLAP
 	OLAPGetTable(context.Context, *OLAPGetTableRequest) (*OLAPGetTableResponse, error)
 	// ListSchemas list all schemas across databases
 	ListSchemas(context.Context, *ListSchemasRequest) (*ListSchemasResponse, error)

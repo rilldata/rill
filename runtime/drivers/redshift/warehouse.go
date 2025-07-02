@@ -118,10 +118,10 @@ func (c *Connection) QueryAsFiles(ctx context.Context, props map[string]any) (ou
 
 func (c *Connection) unload(ctx context.Context, client *redshiftdata.Client, sourceProperties *sourceProperties, unloadLocation string) error {
 	finalSQL := fmt.Sprintf("UNLOAD ('%s') TO '%s/' IAM_ROLE '%s' FORMAT AS PARQUET", sourceProperties.SQL, unloadLocation, sourceProperties.RoleARN)
-	_, err := c.executeQuery(ctx, client, finalSQL, sourceProperties.ResolveDatabase(c.config),
+	return c.executeQuery(ctx, client, finalSQL,
+		sourceProperties.ResolveDatabase(c.config),
 		sourceProperties.ResolveWorkgroup(c.config),
 		sourceProperties.ResolveClusterIdentifier(c.config))
-	return err
 }
 
 func parseSourceProperties(props map[string]any) (*sourceProperties, error) {

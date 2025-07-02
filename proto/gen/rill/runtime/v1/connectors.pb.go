@@ -1195,7 +1195,7 @@ type OlapTableInfo struct {
 	IsDefaultDatabase       bool   `protobuf:"varint,5,opt,name=is_default_database,json=isDefaultDatabase,proto3" json:"is_default_database,omitempty"`
 	IsDefaultDatabaseSchema bool   `protobuf:"varint,6,opt,name=is_default_database_schema,json=isDefaultDatabaseSchema,proto3" json:"is_default_database_schema,omitempty"`
 	Name                    string `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
-	// has_unsupported_data_types indicates if the underlying table has any column with an unsupported datatype
+	// has_unsupported_data_types indicates if the underlying table has any column with an unsupported OLAP engine datatype
 	HasUnsupportedDataTypes bool `protobuf:"varint,3,opt,name=has_unsupported_data_types,json=hasUnsupportedDataTypes,proto3" json:"has_unsupported_data_types,omitempty"`
 	// physical_size_bytes is the physical size of the table. Set to -1 if the size cannot be determined.
 	PhysicalSizeBytes int64 `protobuf:"varint,7,opt,name=physical_size_bytes,json=physicalSizeBytes,proto3" json:"physical_size_bytes,omitempty"`

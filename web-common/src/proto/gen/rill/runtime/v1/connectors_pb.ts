@@ -943,7 +943,7 @@ export class OlapTableInfo extends Message<OlapTableInfo> {
   name = "";
 
   /**
-   * has_unsupported_data_types indicates if the underlying table has any column with an unsupported datatype
+   * has_unsupported_data_types indicates if the underlying table has any column with an unsupported OLAP engine datatype
    *
    * @generated from field: bool has_unsupported_data_types = 3;
    */

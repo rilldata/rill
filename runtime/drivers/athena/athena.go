@@ -157,8 +157,7 @@ func (c *Connection) Ping(ctx context.Context) error {
 	})
 
 	// Execute a simple query to verify connection
-	_, err = c.executeQuery(ctx, client, "SELECT 1", c.config.Workgroup, c.config.OutputLocation)
-	return err
+	return c.executeQuery(ctx, client, "SELECT 1", c.config.Workgroup, c.config.OutputLocation)
 }
 
 // Driver implements drivers.Connection.
@@ -294,7 +293,7 @@ func (c *Connection) awsConfig(ctx context.Context, awsRegion string) (aws.Confi
 	return awsConfig, nil
 }
 
-func (c *Connection) executeQuery(ctx context.Context, client *athena.Client, sql, workgroup, outputLocation string) (string, error) {
+func (c *Connection) executeQuery(ctx context.Context, client *athena.Client, sql, workgroup, outputLocation string) error {
 	executeParams := &athena.StartQueryExecutionInput{
 		QueryString: aws.String(sql),
 	}
@@ -312,7 +311,7 @@ func (c *Connection) executeQuery(ctx context.Context, client *athena.Client, sq
 
 	queryExecutionOutput, err := client.StartQueryExecution(ctx, executeParams)
 	if err != nil {
-		return "", err
+		return err
 	}
 
 	for {
@@ -321,22 +320,22 @@ func (c *Connection) executeQuery(ctx context.Context, client *athena.Client, sq
 			_, err = client.StopQueryExecution(ctx, &athena.StopQueryExecutionInput{
 				QueryExecutionId: queryExecutionOutput.QueryExecutionId,
 			})
-			return "", errors.Join(ctx.Err(), err)
+			return errors.Join(ctx.Err(), err)
 		default:
 			status, err := client.GetQueryExecution(ctx, &athena.GetQueryExecutionInput{
 				QueryExecutionId: queryExecutionOutput.QueryExecutionId,
 			})
 			if err != nil {
-				return "", err
+				return err
 			}
 
 			switch status.QueryExecution.Status.State {
 			case types2.QueryExecutionStateSucceeded:
-				return *queryExecutionOutput.QueryExecutionId, nil
+				return nil
 			case types2.QueryExecutionStateCancelled:
-				return "", fmt.Errorf("Athena query execution cancelled")
+				return fmt.Errorf("Athena query execution cancelled")
 			case types2.QueryExecutionStateFailed:
-				return "", fmt.Errorf("Athena query execution failed %s", *status.QueryExecution.Status.AthenaError.ErrorMessage)
+				return fmt.Errorf("Athena query execution failed %s", *status.QueryExecution.Status.AthenaError.ErrorMessage)
 			}
 		}
 		time.Sleep(time.Second)
