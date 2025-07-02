@@ -3328,6 +3328,8 @@ definitions:
         type: string
       openapiResponseSchemaJson:
         type: string
+      openapiDefsPrefix:
+        type: string
       securityRules:
         type: array
         items:
