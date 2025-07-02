@@ -16,7 +16,7 @@ Once you have deployed your project to Rill Cloud, you should be able to access 
 
 You can select your project from the list and select your dashboard.
 
-<img src = '/img/tutorials/201/rill-cloud-projects.png' class='rounded-gif' />
+<img src = '/img/tutorials/rill-advanced/rill-cloud-projects.png' class='rounded-gif' />
 <br />
 
 ### Adding Filters and Creating the Public URL

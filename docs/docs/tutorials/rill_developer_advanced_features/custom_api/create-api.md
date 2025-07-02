@@ -3,6 +3,9 @@ title: "Custom APIs"
 description:  "Creating the API"
 sidebar_label: "Creating the API"
 sidebar_position: 12
+tags:
+  - Rill Developer
+  - Advanced Features
 ---
 
 ## Creating the custom API YAML in Developer

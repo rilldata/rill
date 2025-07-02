@@ -103,7 +103,7 @@ rill user list --group tutorial-admin
 
 Let's navigate to our project, my-rill-tutorial, to see some differences between viewer and admin.
 
-<img src = '/img/tutorials/201/viewervsadmin.gif' class='rounded-gif' />
+<img src = '/img/tutorials/rill-advanced/viewervsadmin.gif' class='rounded-gif' />
 <br />
 
 For a detailed description of the differences between `admin` and `viewer`, please refer to our <a href='https://docs.rilldata.com/manage/roles-permissions' target=' blank'> Roles and permissions documentation. </a>

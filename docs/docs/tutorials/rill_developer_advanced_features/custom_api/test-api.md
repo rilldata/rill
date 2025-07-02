@@ -3,6 +3,9 @@ title: "Testing the Custom APIs"
 description:  "Testing the API"
 sidebar_label: "Testing the API"
 sidebar_position: 12
+tags:
+  - Rill Developer
+  - Advanced Features
 ---
 
 

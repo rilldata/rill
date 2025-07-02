@@ -93,21 +93,29 @@ const sidebars = {
           label: 'Rill Developer',
           description: 'Make some changes to our SQL model and Dashboard',
           items: [
-            'tutorials/rill_developer_advanced_features/advanced_developer/advanced-sources',
-            'tutorials/rill_developer_advanced_features/advanced_developer/advanced-modeling',
             {
               type: 'category',
-              label: 'Advanced Measures and Dimensions',
-              description: "Advanced Measures and Dimensions",
+              label: 'Tutorial Project Continued',
+              description: "Partitioned, Incremental and Staging Models",
               items: [
-                'tutorials/rill_developer_advanced_features/advanced_developer/advanced-metrics/new-metrics-view',
-                'tutorials/rill_developer_advanced_features/advanced_developer/advanced-metrics/advanced-measures',
+              'tutorials/rill_developer_advanced_features/advanced_developer/advanced-sources',
+              'tutorials/rill_developer_advanced_features/advanced_developer/advanced-modeling',
+              {
+                type: 'category',
+                label: 'Advanced Measures and Dimensions',
+                description: "Advanced Measures and Dimensions",
+                items: [
+                  'tutorials/rill_developer_advanced_features/advanced_developer/advanced-metrics/new-metrics-view',
+                  'tutorials/rill_developer_advanced_features/advanced_developer/advanced-metrics/advanced-measures',
 
-              ]
-            },
-            'tutorials/rill_developer_advanced_features/advanced_developer/update-rill-cloud',
-            'tutorials/rill_developer_advanced_features/dashboard-row-policies',
-        {
+                ]
+              },
+              'tutorials/rill_developer_advanced_features/advanced_developer/update-rill-cloud',
+            
+          ]
+        },
+        
+              {
           type: 'category',
           label: 'Advanced Models',
           description: "Partitioned, Incremental and Staging Models",
@@ -119,6 +127,7 @@ const sidebars = {
           ]
         },
 
+        'tutorials/rill_developer_advanced_features/dashboard-row-policies',
 
         {
           type: 'category',
@@ -148,15 +157,12 @@ const sidebars = {
           description: 'Advanced Features and beyond',
 
           items: [
-            {
-              type: 'category',
-              label: 'Alerts',
-              description: "Create Alerts to monitor your Project",
-              items: [
-                'tutorials/rill_cloud_advanced_features/dashboard-alerts',
-              ]
-            },
+            'tutorials/rill_cloud_advanced_features/dashboard-alerts',
+            'tutorials/rill_cloud_advanced_features/bookmarks',
+            'tutorials/rill_cloud_advanced_features/scheduled-reports',
             'tutorials/rill_cloud_advanced_features/share-dashboard-publicly',
+            'tutorials/rill_cloud_advanced_features/embed-dashboard',
+
 
           ]
         }
@@ -209,12 +215,11 @@ const sidebars = {
 
       },
       items: [
+        'tutorials/quick_start/setting-up-mcp',
         'tutorials/quick_start/clone-a-project',
         'tutorials/quick_start/github-analytics',
         'tutorials/quick_start/openrtb-analytics',
-        'tutorials/quick_start/cost-monitoring',
-        'tutorials/quick_start/embed-dashboard',
-        'tutorials/quick_start/setting-up-mcp',
+        // 'tutorials/quick_start/cost-monitoring',
         {
           type: 'category',
           label: "Other Concepts",

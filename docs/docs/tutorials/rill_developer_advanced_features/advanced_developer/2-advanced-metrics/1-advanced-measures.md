@@ -3,6 +3,9 @@ title: "Advanced Measures and Dimensions"
 description:  Further build on project
 sidebar_display_name: "Advanced Measures and Dimensions"
 sidebar_position: 2
+tags:
+  - Rill Developer
+  - Advanced Features
 ---
 
 Now that we have another dashboard based off of our new metrics view, let's return to `advanced_metrics.yaml` and further expand on the capabilities of a metrics view. As the metrics view is backed by DuckDB (assuming you are using the default configuration), you are able to use many of the features within the metrics view. 
@@ -38,7 +41,7 @@ Let's also try to unnest the directory path of the files. This gives us the abil
     unnest: true
 ```
 
-<img src = '/img/tutorials/204/new_dimensions.png' class='rounded-gif' />
+<img src = '/img/tutorials/rill-advanced/new_dimensions.png' class='rounded-gif' />
 <br />
 
 ## Functions in Measures
@@ -97,7 +100,7 @@ While this doesn't quite make sense for our repository monitoring use-case. Let'
     display_name: Percent Lines removed vs. Guarantee
 ```
 
-<img src = '/img/tutorials/204/new_measures.png' class='rounded-gif' />
+<img src = '/img/tutorials/rill-advanced/new_measures.png' class='rounded-gif' />
 <br />
 
 <details>

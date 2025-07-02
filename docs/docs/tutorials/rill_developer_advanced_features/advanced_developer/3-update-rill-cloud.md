@@ -2,6 +2,9 @@
 title: "How to push your changes to  Rill Cloud"
 description:  Redeploy onto Rill Cloud
 sidebar_label: "Pushing changes to Rill Cloud"
+tags:
+  - Rill Developer
+  - Advanced Features
 ---
 
 ## How to push changes made on Rill Developer to Rill Cloud
@@ -16,7 +19,7 @@ If you need to make any changes in Rill Cloud, you will need to do so via Rill D
 
 You'll notice that the `Deploy to share` button has now changes to `Update`. When you have made changes that you'd like to push to Rill Cloud, you can select this button. We'll take care of the background tasks for you and navigate you to the project dashboard page.
 
-<img src = '/img/tutorials/204/redeploy.gif' class='rounded-gif' />
+<img src = '/img/tutorials/rill-advanced/redeploy.gif' class='rounded-gif' />
 <br />
 >
 
@@ -68,7 +71,7 @@ It's probably not best practice to push your changes directly onto your `main` b
 
 Checking on our GitHub repository, we can see that the dashboard and model folder have been updated with the commit message, "Adding new files."
 
-<img src = '/img/tutorials/204/github-pushed-changes.png' class='rounded-gif' />
+<img src = '/img/tutorials/rill-advanced/github-pushed-changes.png' class='rounded-gif' />
 <br />
 
 

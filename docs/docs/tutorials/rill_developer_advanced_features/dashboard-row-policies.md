@@ -1,12 +1,13 @@
 ---
-title: "Creating Dashboard Policies"
-sidebar_label:  "Dashboard Access Policies"
+title: "Create Dashboard Policies"
+sidebar_label:  "Create Dashboard Access Policies"
 hide_table_of_contents: false
+tags:
+  - Rill Developer
+  - Advanced Features
 ---
 
-For this example, we will use the OpenRTB Programmatic Advertising project available in our [examples repository.](https://github.com/rilldata/rill-examples/tree/main/rill-openrtb-prog-ads). 
-
-
+For this example, we will use the OpenRTB Programmatic Advertising project available in our [examples repository.](https://github.com/rilldata/rill-examples/tree/main/rill-openrtb-prog-ads) We will create a few dashbaord access policies and test this in Rill Developer before pushing to Rill Cloud!
 
 ## Dashboard Access 
 
@@ -18,21 +19,23 @@ security:
 ```
 
 
-## Dashboard Access Policies
+## Granular Policies
+Including true / false access to a Dashboard, Rill also allows you to customize the view of the dashboard based on [specific criteria](https://docs.rilldata.com/manage/security#restrict-dashboard-access-to-users-matching-specific-criteria). This includes removing specific dimensions and measures and filtering out row data.
 
-While there are times that you can completely limit a user from viewing a dashboard by setting up [dashboard-level access](https://docs.rilldata.com/manage/security#restrict-dashboard-access-to-users-matching-specific-criteria), there are times that you might want to re-use the same dashboard but limit the view based on the user.
+This allow for deeper customizability of the dashboard experience without having to manage many dashboards. 
 
-Depending on how you will manage the row policies, it depends highly on the type of data and the domain. i.e., if the domain of the user matches with a column's value, then you will not need to create any mapping. However, in this example, we will cover creating a mapping file, and mapping domains to different values in the column, "Pub Name".
+This simplest form of row access policy is mapping a dimension value to the `domain` of the user. However, we find that most of the real-life use cases do not follow such a similar one-to-one relationship. Either a single domain is required to view multiple domains and/or it doesn't map to a dimension. Therefore, in this example, we will cover creating a mapping file, and mapping domains to different values in the column, "Pub Name".
 
-Let's look at the possible values for Pub Name: [Click Here](https://ui.rilldata.com/demo/rill-openrtb-prog-ads/auction)
+Let's look at the possible values for Pub Name: [Click Here](https://ui.rilldata.com/demo/rill-openrtb-prog-ads/auction_explore)
 
-Some values include: Disney, Pluto TV, LG USA, ...
+Some values include: `Disney`, `Pluto TV`, `LG USA`, ...
 
 ## Dashboard Access via Mapping Table
 ### Creating the Mapping Table
 There are many ways to set up the mapping file. Whether it's directly in a model SQL, or reading from an S3 bucket. You have the freedom to decide, in this example, we will make it directly in the models/model.sql file.
 
 ```SQL
+-- mapping.sql in Rill
 -- Model SQL
 -- Reference documentation: https://docs.rilldata.com/reference/project-files/models
 
@@ -124,3 +127,9 @@ security:
 
 In this case, if the user is not part of Rill Data, they will not be able to view the listed dimensions and measures. This is especially useful if your dashboard has customer sensitive information that should not be viewable. 
 
+
+
+## Confidence in Publishing Changes
+Once you've tested the following in Rill Developer and confirm that the access is behaving as required, you can be confident in publishing your changes to Rill Cloud. 
+
+Did you know? You can also define default project access in the rill.yaml file. See [Rill Project file](/tutorials/rill_developer_advanced_features/rill_profile_file#embedded-dashboard-mock-users) for more information.

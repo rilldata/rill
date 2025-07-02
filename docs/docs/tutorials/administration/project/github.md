@@ -10,7 +10,7 @@ After deploying to Rill Cloud, you will have the ability to sync your project to
 
 ### via UI
 
-<img src = '/img/tutorials/203/github-ui.gif' class='rounded-gif' />
+<img src = '/img/tutorials/rill-advanced/github-ui.gif' class='rounded-gif' />
 <br />
 
 Starting from `v0.48`, we have added a new feature to deploy your project directly from the UI. By selecting the `Connect to GitHub` button you will then need to follow the steps in the UI to create a new blank repository [or a select an existing one] and connect this to your current Rill project. Rill will then push the current contents [or overwrite]. You'll be direct back to the Status page and can see that your project is now <a href ='https://docs.rilldata.com/deploy/existing-project/' target="BLANK" >synced with your GitHub repository! </a>
@@ -72,7 +72,7 @@ The CLI will ask if you want to create a repo, select Yes.
 
 If this is your first time, you will be prompted to log into GitHub. Once completed, you'll see this in the browser and can navigate back to the CLI.
 
-<img src = '/img/tutorials/203/git_okay.png' class='rounded-gif' />
+<img src = '/img/tutorials/rill-advanced/git_okay.png' class='rounded-gif' />
 <br />
 
 Rill will automatically use the project name as the repository and project name. If there are any issues with overlapping names, it will prompt your for a different name. Once this all completes, your browser will be automatically opened.

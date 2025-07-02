@@ -3,6 +3,9 @@ title: "Custom APIs"
 description:  "Getting Started with API"
 sidebar_label: "Getting Started"
 sidebar_position: 12
+tags:
+  - Rill Developer
+  - Advanced Features
 ---
 
 ## Getting started with custom APIs

@@ -5,6 +5,8 @@ sidebar_label: " Data Accuracy Alerting"
 tags:
   - CLI
   - Administration
+  - Rill Developer
+  - Advanced Features
 ---
 
 Another important type of alert is a custom SQL alert that allows you to check for data accuracy. You will want to check for a historical data point to use as your reference point. While it is the responsibilty of the user who is making model changes to ensure data accuracy, there might be occasions that this is not done properly, and faulty models are pushed to Rill Cloud. 

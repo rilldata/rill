@@ -5,6 +5,8 @@ sidebar_label: " Project Resource Alerting"
 tags:
   - CLI
   - Administration
+  - Rill Developer
+  - Advanced Features
 ---
 
 There are two different types of alerting in Rill. 

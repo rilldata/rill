@@ -3,6 +3,9 @@ title: "Modifying the source YAML"
 description:  Further build on project
 sidebar_label: "DEV and PROD Sources"
 sidebar_position: 00
+tags:
+  - Rill Developer
+  - Advanced Features
 ---
 
 In our initial ingestion of the data, we brought in only a month's worth of data to ensure that we do not try to download **all the data** from our source. However, we would want our dashboards in Rill Cloud to display all the data. We can do this by redefining the behavior of the source via the YAML. See [our reference documentation](/reference/project-files/sources) for more information.

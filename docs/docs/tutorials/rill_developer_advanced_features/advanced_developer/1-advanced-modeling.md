@@ -3,6 +3,9 @@ title: "Aggregating the Models"
 description:  Further build on project
 sidebar_label: "SQL Modeling Continued"
 sidebar_position: 16
+tags:
+  - Rill Developer
+  - Advanced Features
 ---
 ##  SQL modeling continued
 

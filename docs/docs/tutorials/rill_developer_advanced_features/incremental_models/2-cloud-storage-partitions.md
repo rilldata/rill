@@ -3,6 +3,9 @@ title: "Incremental Partitioned Models on Cloud Storage"
 description:  "Getting Started with Partitions"
 sidebar_label: "Cloud Storage: Incremental Partitioned Models"
 sidebar_position: 12
+tags:
+  - Rill Developer
+  - Advanced Features
 ---
 
 Now that we understand what [Incremental Models](/build/advanced-models/incremental-models) and [Partitions](/build/advanced-models/partitions) are, let's apply to them to our ClickHouse project.
