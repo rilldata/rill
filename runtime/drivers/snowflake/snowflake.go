@@ -27,6 +27,7 @@ var spec = drivers.Spec{
 	DisplayName: "Snowflake",
 	Description: "Connect to Snowflake.",
 	DocsURL:     "https://docs.rilldata.com/reference/connectors/snowflake",
+	// Important: Any edits to the below properties must be accompanied by changes to the client-side form validation schemas.
 	ConfigProperties: []*drivers.PropertySpec{
 		{
 			Key:    "dsn",
@@ -106,11 +107,11 @@ var spec = drivers.Spec{
 		{
 			Key:         "dsn",
 			Type:        drivers.StringPropertyType,
-			DisplayName: "Connection string (override)",
+			DisplayName: "Connection string",
 			Required:    false,
 			DocsURL:     "https://docs.rilldata.com/reference/connectors/snowflake",
 			Placeholder: "<username>@<account_identifier>/<database>/<schema>?warehouse=<warehouse>&role=<role>&authenticator=SNOWFLAKE_JWT&privateKey=<privateKey_base64_url_encoded>",
-			Hint:        "Optional: override the connector's DSN for this source only.",
+			Hint:        "Can be configured here or by setting the 'connector.snowflake.dsn' environment variable (using '.env' or '--env')",
 			Secret:      true,
 		},
 		{
