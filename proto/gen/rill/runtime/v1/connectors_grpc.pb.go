@@ -28,6 +28,7 @@ const (
 	ConnectorService_GCSGetCredentialsInfo_FullMethodName = "/rill.runtime.v1.ConnectorService/GCSGetCredentialsInfo"
 	ConnectorService_OLAPListTables_FullMethodName        = "/rill.runtime.v1.ConnectorService/OLAPListTables"
 	ConnectorService_OLAPGetTable_FullMethodName          = "/rill.runtime.v1.ConnectorService/OLAPGetTable"
+	ConnectorService_ListSchemas_FullMethodName           = "/rill.runtime.v1.ConnectorService/ListSchemas"
 	ConnectorService_ListTables_FullMethodName            = "/rill.runtime.v1.ConnectorService/ListTables"
 	ConnectorService_GetTable_FullMethodName              = "/rill.runtime.v1.ConnectorService/GetTable"
 	ConnectorService_BigQueryListDatasets_FullMethodName  = "/rill.runtime.v1.ConnectorService/BigQueryListDatasets"
@@ -56,7 +57,9 @@ type ConnectorServiceClient interface {
 	OLAPListTables(ctx context.Context, in *OLAPListTablesRequest, opts ...grpc.CallOption) (*OLAPListTablesResponse, error)
 	// OLAPGetTable returns metadata about a table or view
 	OLAPGetTable(ctx context.Context, in *OLAPGetTableRequest, opts ...grpc.CallOption) (*OLAPGetTableResponse, error)
-	// ListTables list all tables across all databases
+	// ListSchemas list all schemas across databases
+	ListSchemas(ctx context.Context, in *ListSchemasRequest, opts ...grpc.CallOption) (*ListSchemasResponse, error)
+	// ListTables list all tables for database and database_schema provided
 	ListTables(ctx context.Context, in *ListTablesRequest, opts ...grpc.CallOption) (*ListTablesResponse, error)
 	// GetTable returns metadata about a table or view
 	GetTable(ctx context.Context, in *GetTableRequest, opts ...grpc.CallOption) (*GetTableResponse, error)
@@ -164,6 +167,16 @@ func (c *connectorServiceClient) OLAPGetTable(ctx context.Context, in *OLAPGetTa
 	return out, nil
 }
 
+func (c *connectorServiceClient) ListSchemas(ctx context.Context, in *ListSchemasRequest, opts ...grpc.CallOption) (*ListSchemasResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListSchemasResponse)
+	err := c.cc.Invoke(ctx, ConnectorService_ListSchemas_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *connectorServiceClient) ListTables(ctx context.Context, in *ListTablesRequest, opts ...grpc.CallOption) (*ListTablesResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ListTablesResponse)
@@ -226,7 +239,9 @@ type ConnectorServiceServer interface {
 	OLAPListTables(context.Context, *OLAPListTablesRequest) (*OLAPListTablesResponse, error)
 	// OLAPGetTable returns metadata about a table or view
 	OLAPGetTable(context.Context, *OLAPGetTableRequest) (*OLAPGetTableResponse, error)
-	// ListTables list all tables across all databases
+	// ListSchemas list all schemas across databases
+	ListSchemas(context.Context, *ListSchemasRequest) (*ListSchemasResponse, error)
+	// ListTables list all tables for database and database_schema provided
 	ListTables(context.Context, *ListTablesRequest) (*ListTablesResponse, error)
 	// GetTable returns metadata about a table or view
 	GetTable(context.Context, *GetTableRequest) (*GetTableResponse, error)
@@ -270,6 +285,9 @@ func (UnimplementedConnectorServiceServer) OLAPListTables(context.Context, *OLAP
 }
 func (UnimplementedConnectorServiceServer) OLAPGetTable(context.Context, *OLAPGetTableRequest) (*OLAPGetTableResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method OLAPGetTable not implemented")
+}
+func (UnimplementedConnectorServiceServer) ListSchemas(context.Context, *ListSchemasRequest) (*ListSchemasResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListSchemas not implemented")
 }
 func (UnimplementedConnectorServiceServer) ListTables(context.Context, *ListTablesRequest) (*ListTablesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListTables not implemented")
@@ -466,6 +484,24 @@ func _ConnectorService_OLAPGetTable_Handler(srv interface{}, ctx context.Context
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ConnectorService_ListSchemas_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListSchemasRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ConnectorServiceServer).ListSchemas(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ConnectorService_ListSchemas_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ConnectorServiceServer).ListSchemas(ctx, req.(*ListSchemasRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _ConnectorService_ListTables_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ListTablesRequest)
 	if err := dec(in); err != nil {
@@ -580,6 +616,10 @@ var ConnectorService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "OLAPGetTable",
 			Handler:    _ConnectorService_OLAPGetTable_Handler,
+		},
+		{
+			MethodName: "ListSchemas",
+			Handler:    _ConnectorService_ListSchemas_Handler,
 		},
 		{
 			MethodName: "ListTables",

@@ -881,9 +881,9 @@ export class OLAPListTablesRequest extends Message<OLAPListTablesRequest> {
  */
 export class OLAPListTablesResponse extends Message<OLAPListTablesResponse> {
   /**
-   * @generated from field: repeated rill.runtime.v1.TableInfo tables = 1;
+   * @generated from field: repeated rill.runtime.v1.OlapTableInfo tables = 1;
    */
-  tables: TableInfo[] = [];
+  tables: OlapTableInfo[] = [];
 
   constructor(data?: PartialMessage<OLAPListTablesResponse>) {
     super();
@@ -893,7 +893,7 @@ export class OLAPListTablesResponse extends Message<OLAPListTablesResponse> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.runtime.v1.OLAPListTablesResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "tables", kind: "message", T: TableInfo, repeated: true },
+    { no: 1, name: "tables", kind: "message", T: OlapTableInfo, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): OLAPListTablesResponse {
@@ -910,6 +910,83 @@ export class OLAPListTablesResponse extends Message<OLAPListTablesResponse> {
 
   static equals(a: OLAPListTablesResponse | PlainMessage<OLAPListTablesResponse> | undefined, b: OLAPListTablesResponse | PlainMessage<OLAPListTablesResponse> | undefined): boolean {
     return proto3.util.equals(OLAPListTablesResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.OlapTableInfo
+ */
+export class OlapTableInfo extends Message<OlapTableInfo> {
+  /**
+   * @generated from field: string database = 1;
+   */
+  database = "";
+
+  /**
+   * @generated from field: string database_schema = 4;
+   */
+  databaseSchema = "";
+
+  /**
+   * @generated from field: bool is_default_database = 5;
+   */
+  isDefaultDatabase = false;
+
+  /**
+   * @generated from field: bool is_default_database_schema = 6;
+   */
+  isDefaultDatabaseSchema = false;
+
+  /**
+   * @generated from field: string name = 2;
+   */
+  name = "";
+
+  /**
+   * has_unsupported_data_types indicates if the underlying table has any column with an unsupported datatype
+   *
+   * @generated from field: bool has_unsupported_data_types = 3;
+   */
+  hasUnsupportedDataTypes = false;
+
+  /**
+   * physical_size_bytes is the physical size of the table. Set to -1 if the size cannot be determined.
+   *
+   * @generated from field: int64 physical_size_bytes = 7;
+   */
+  physicalSizeBytes = protoInt64.zero;
+
+  constructor(data?: PartialMessage<OlapTableInfo>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.OlapTableInfo";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "database", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "database_schema", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "is_default_database", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 6, name: "is_default_database_schema", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 2, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "has_unsupported_data_types", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 7, name: "physical_size_bytes", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): OlapTableInfo {
+    return new OlapTableInfo().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): OlapTableInfo {
+    return new OlapTableInfo().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): OlapTableInfo {
+    return new OlapTableInfo().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: OlapTableInfo | PlainMessage<OlapTableInfo> | undefined, b: OlapTableInfo | PlainMessage<OlapTableInfo> | undefined): boolean {
+    return proto3.util.equals(OlapTableInfo, a, b);
   }
 }
 
@@ -1034,6 +1111,129 @@ export class OLAPGetTableResponse extends Message<OLAPGetTableResponse> {
 }
 
 /**
+ * @generated from message rill.runtime.v1.ListSchemasRequest
+ */
+export class ListSchemasRequest extends Message<ListSchemasRequest> {
+  /**
+   * @generated from field: string instance_id = 1;
+   */
+  instanceId = "";
+
+  /**
+   * @generated from field: string connector = 2;
+   */
+  connector = "";
+
+  constructor(data?: PartialMessage<ListSchemasRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.ListSchemasRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListSchemasRequest {
+    return new ListSchemasRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListSchemasRequest {
+    return new ListSchemasRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListSchemasRequest {
+    return new ListSchemasRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ListSchemasRequest | PlainMessage<ListSchemasRequest> | undefined, b: ListSchemasRequest | PlainMessage<ListSchemasRequest> | undefined): boolean {
+    return proto3.util.equals(ListSchemasRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.ListSchemasResponse
+ */
+export class ListSchemasResponse extends Message<ListSchemasResponse> {
+  /**
+   * @generated from field: repeated rill.runtime.v1.SchemaInfo schemas = 1;
+   */
+  schemas: SchemaInfo[] = [];
+
+  constructor(data?: PartialMessage<ListSchemasResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.ListSchemasResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "schemas", kind: "message", T: SchemaInfo, repeated: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListSchemasResponse {
+    return new ListSchemasResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListSchemasResponse {
+    return new ListSchemasResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListSchemasResponse {
+    return new ListSchemasResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ListSchemasResponse | PlainMessage<ListSchemasResponse> | undefined, b: ListSchemasResponse | PlainMessage<ListSchemasResponse> | undefined): boolean {
+    return proto3.util.equals(ListSchemasResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.SchemaInfo
+ */
+export class SchemaInfo extends Message<SchemaInfo> {
+  /**
+   * @generated from field: string database = 1;
+   */
+  database = "";
+
+  /**
+   * @generated from field: string database_schema = 2;
+   */
+  databaseSchema = "";
+
+  constructor(data?: PartialMessage<SchemaInfo>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.SchemaInfo";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "database", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "database_schema", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SchemaInfo {
+    return new SchemaInfo().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SchemaInfo {
+    return new SchemaInfo().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SchemaInfo {
+    return new SchemaInfo().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: SchemaInfo | PlainMessage<SchemaInfo> | undefined, b: SchemaInfo | PlainMessage<SchemaInfo> | undefined): boolean {
+    return proto3.util.equals(SchemaInfo, a, b);
+  }
+}
+
+/**
  * @generated from message rill.runtime.v1.ListTablesRequest
  */
 export class ListTablesRequest extends Message<ListTablesRequest> {
@@ -1043,20 +1243,19 @@ export class ListTablesRequest extends Message<ListTablesRequest> {
   instanceId = "";
 
   /**
-   * Connector to list tables from.
-   *
    * @generated from field: string connector = 2;
    */
   connector = "";
 
   /**
-   * Optional search pattern to filter tables by.
-   * Has the same syntax and behavior as ILIKE in SQL.
-   * If the connector supports schema/database names, it searches against both the plain table name and the fully qualified table name.
-   *
-   * @generated from field: string search_pattern = 3;
+   * @generated from field: string database = 3;
    */
-  searchPattern = "";
+  database = "";
+
+  /**
+   * @generated from field: string database_schema = 4;
+   */
+  databaseSchema = "";
 
   constructor(data?: PartialMessage<ListTablesRequest>) {
     super();
@@ -1068,7 +1267,8 @@ export class ListTablesRequest extends Message<ListTablesRequest> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "search_pattern", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "database", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "database_schema", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListTablesRequest {
@@ -1122,6 +1322,49 @@ export class ListTablesResponse extends Message<ListTablesResponse> {
 
   static equals(a: ListTablesResponse | PlainMessage<ListTablesResponse> | undefined, b: ListTablesResponse | PlainMessage<ListTablesResponse> | undefined): boolean {
     return proto3.util.equals(ListTablesResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.TableInfo
+ */
+export class TableInfo extends Message<TableInfo> {
+  /**
+   * @generated from field: string name = 1;
+   */
+  name = "";
+
+  /**
+   * @generated from field: bool view = 2;
+   */
+  view = false;
+
+  constructor(data?: PartialMessage<TableInfo>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.TableInfo";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "view", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): TableInfo {
+    return new TableInfo().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): TableInfo {
+    return new TableInfo().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): TableInfo {
+    return new TableInfo().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: TableInfo | PlainMessage<TableInfo> | undefined, b: TableInfo | PlainMessage<TableInfo> | undefined): boolean {
+    return proto3.util.equals(TableInfo, a, b);
   }
 }
 
@@ -1191,28 +1434,9 @@ export class GetTableRequest extends Message<GetTableRequest> {
  */
 export class GetTableResponse extends Message<GetTableResponse> {
   /**
-   * @generated from field: rill.runtime.v1.StructType schema = 1;
+   * @generated from field: map<string, string> schema = 1;
    */
-  schema?: StructType;
-
-  /**
-   * unsupported_columns are columns having datatypes which are not supported by Rill
-   *
-   * @generated from field: map<string, string> unsupported_columns = 3;
-   */
-  unsupportedColumns: { [key: string]: string } = {};
-
-  /**
-   * @generated from field: bool view = 2;
-   */
-  view = false;
-
-  /**
-   * physical_size_bytes is the physical size of the table. Set to -1 if the size cannot be determined.
-   *
-   * @generated from field: int64 physical_size_bytes = 4;
-   */
-  physicalSizeBytes = protoInt64.zero;
+  schema: { [key: string]: string } = {};
 
   constructor(data?: PartialMessage<GetTableResponse>) {
     super();
@@ -1222,10 +1446,7 @@ export class GetTableResponse extends Message<GetTableResponse> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.runtime.v1.GetTableResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "schema", kind: "message", T: StructType },
-    { no: 3, name: "unsupported_columns", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
-    { no: 2, name: "view", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 4, name: "physical_size_bytes", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
+    { no: 1, name: "schema", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetTableResponse {
@@ -1242,83 +1463,6 @@ export class GetTableResponse extends Message<GetTableResponse> {
 
   static equals(a: GetTableResponse | PlainMessage<GetTableResponse> | undefined, b: GetTableResponse | PlainMessage<GetTableResponse> | undefined): boolean {
     return proto3.util.equals(GetTableResponse, a, b);
-  }
-}
-
-/**
- * @generated from message rill.runtime.v1.TableInfo
- */
-export class TableInfo extends Message<TableInfo> {
-  /**
-   * @generated from field: string database = 1;
-   */
-  database = "";
-
-  /**
-   * @generated from field: string database_schema = 4;
-   */
-  databaseSchema = "";
-
-  /**
-   * @generated from field: bool is_default_database = 5;
-   */
-  isDefaultDatabase = false;
-
-  /**
-   * @generated from field: bool is_default_database_schema = 6;
-   */
-  isDefaultDatabaseSchema = false;
-
-  /**
-   * @generated from field: string name = 2;
-   */
-  name = "";
-
-  /**
-   * has_unsupported_data_types indicates if the underlying table has any column with an unsupported datatype
-   *
-   * @generated from field: bool has_unsupported_data_types = 3;
-   */
-  hasUnsupportedDataTypes = false;
-
-  /**
-   * physical_size_bytes is the physical size of the table. Set to -1 if the size cannot be determined.
-   *
-   * @generated from field: int64 physical_size_bytes = 7;
-   */
-  physicalSizeBytes = protoInt64.zero;
-
-  constructor(data?: PartialMessage<TableInfo>) {
-    super();
-    proto3.util.initPartial(data, this);
-  }
-
-  static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.runtime.v1.TableInfo";
-  static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "database", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 4, name: "database_schema", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 5, name: "is_default_database", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 6, name: "is_default_database_schema", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 2, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "has_unsupported_data_types", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 7, name: "physical_size_bytes", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
-  ]);
-
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): TableInfo {
-    return new TableInfo().fromBinary(bytes, options);
-  }
-
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): TableInfo {
-    return new TableInfo().fromJson(jsonValue, options);
-  }
-
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): TableInfo {
-    return new TableInfo().fromJsonString(jsonString, options);
-  }
-
-  static equals(a: TableInfo | PlainMessage<TableInfo> | undefined, b: TableInfo | PlainMessage<TableInfo> | undefined): boolean {
-    return proto3.util.equals(TableInfo, a, b);
   }
 }
 

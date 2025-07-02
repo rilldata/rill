@@ -52,7 +52,12 @@ service ConnectorService {
     option (google.api.http) = {get: "/v1/connectors/olap/table"};
   }
 
-  // ListTables list all tables across all databases 
+  // ListSchemas list all schemas across databases 
+  rpc ListSchemas(ListSchemasRequest) returns (ListSchemasResponse) {
+    option (google.api.http) = {get: "/v1/connectors/schemas"};
+  }
+
+  // ListTables list all tables for database and database_schema provided
   rpc ListTables(ListTablesRequest) returns (ListTablesResponse) {
     option (google.api.http) = {get: "/v1/connectors/tables"};
   }
@@ -185,7 +190,19 @@ message OLAPListTablesRequest {
 }
 
 message OLAPListTablesResponse {
-  repeated TableInfo tables = 1;
+  repeated OlapTableInfo tables = 1;
+}
+
+message OlapTableInfo { 
+  string database = 1;
+  string database_schema = 4;
+  bool is_default_database = 5;
+  bool is_default_database_schema = 6;
+  string name = 2;
+  // has_unsupported_data_types indicates if the underlying table has any column with an unsupported datatype
+  bool has_unsupported_data_types = 3;
+  // physical_size_bytes is the physical size of the table. Set to -1 if the size cannot be determined.
+  int64 physical_size_bytes = 7;
 }
 
 message OLAPGetTableRequest {
@@ -205,18 +222,34 @@ message OLAPGetTableResponse {
   int64 physical_size_bytes = 4;
 }
 
+message ListSchemasRequest {
+  string instance_id = 1;
+  string connector = 2;
+}
+
+message ListSchemasResponse {
+  repeated SchemaInfo schemas = 1;
+}
+
+message SchemaInfo {
+  string database = 1;
+  string database_schema = 2;
+}
+
 message ListTablesRequest {
   string instance_id = 1;
-  // Connector to list tables from.
   string connector = 2;
-  // Optional search pattern to filter tables by.
-  // Has the same syntax and behavior as ILIKE in SQL.
-  // If the connector supports schema/database names, it searches against both the plain table name and the fully qualified table name.
-  string search_pattern = 3;
+  string database = 3;
+  string database_schema = 4;
 }
 
 message ListTablesResponse {
   repeated TableInfo tables = 1;
+}
+
+message TableInfo { 
+  string name = 1;
+  bool view = 2;
 }
 
 message GetTableRequest {
@@ -228,25 +261,9 @@ message GetTableRequest {
 }
 
 message GetTableResponse {
-  StructType schema = 1;
-  // unsupported_columns are columns having datatypes which are not supported by Rill
-  map<string, string> unsupported_columns = 3;
-  bool view = 2;
-  // physical_size_bytes is the physical size of the table. Set to -1 if the size cannot be determined.
-  int64 physical_size_bytes = 4;
+  map<string, string> schema = 1;
 }
 
-message TableInfo {
-  string database = 1;
-  string database_schema = 4;
-  bool is_default_database = 5;
-  bool is_default_database_schema = 6;
-  string name = 2;
-  // has_unsupported_data_types indicates if the underlying table has any column with an unsupported datatype
-  bool has_unsupported_data_types = 3;
-  // physical_size_bytes is the physical size of the table. Set to -1 if the size cannot be determined.
-  int64 physical_size_bytes = 7;
-}
 
 message BigQueryListDatasetsRequest {
   string instance_id = 1;

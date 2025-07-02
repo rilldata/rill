@@ -134,6 +134,30 @@ paths:
           type: string
       tags:
         - ConnectorService
+  /v1/connectors/schemas:
+    get:
+      summary: ListSchemas list all schemas across databases
+      operationId: ConnectorService_ListSchemas
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ListSchemasResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: query
+          required: false
+          type: string
+        - name: connector
+          in: query
+          required: false
+          type: string
+      tags:
+        - ConnectorService
   /v1/connectors/table_metadata:
     get:
       summary: GetTable returns metadata about a table or view
@@ -172,7 +196,7 @@ paths:
         - ConnectorService
   /v1/connectors/tables:
     get:
-      summary: ListTables list all tables across all databases
+      summary: ListTables list all tables for database and database_schema provided
       operationId: ConnectorService_ListTables
       responses:
         "200":
@@ -189,15 +213,14 @@ paths:
           required: false
           type: string
         - name: connector
-          description: Connector to list tables from.
           in: query
           required: false
           type: string
-        - name: searchPattern
-          description: |-
-            Optional search pattern to filter tables by.
-            Has the same syntax and behavior as ILIKE in SQL.
-            If the connector supports schema/database names, it searches against both the plain table name and the fully qualified table name.
+        - name: database
+          in: query
+          required: false
+          type: string
+        - name: databaseSchema
           in: query
           required: false
           type: string
@@ -4721,18 +4744,9 @@ definitions:
     type: object
     properties:
       schema:
-        $ref: '#/definitions/v1StructType'
-      unsupportedColumns:
         type: object
         additionalProperties:
           type: string
-        title: unsupported_columns are columns having datatypes which are not supported by Rill
-      view:
-        type: boolean
-      physicalSizeBytes:
-        type: string
-        format: int64
-        description: physical_size_bytes is the physical size of the table. Set to -1 if the size cannot be determined.
   v1HealthResponse:
     type: object
     properties:
@@ -4916,6 +4930,14 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1Resource'
+  v1ListSchemasResponse:
+    type: object
+    properties:
+      schemas:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1SchemaInfo'
   v1ListTablesResponse:
     type: object
     properties:
@@ -5901,7 +5923,27 @@ definitions:
         type: array
         items:
           type: object
-          $ref: '#/definitions/v1TableInfo'
+          $ref: '#/definitions/v1OlapTableInfo'
+  v1OlapTableInfo:
+    type: object
+    properties:
+      database:
+        type: string
+      databaseSchema:
+        type: string
+      isDefaultDatabase:
+        type: boolean
+      isDefaultDatabaseSchema:
+        type: boolean
+      name:
+        type: string
+      hasUnsupportedDataTypes:
+        type: boolean
+        title: has_unsupported_data_types indicates if the underlying table has any column with an unsupported datatype
+      physicalSizeBytes:
+        type: string
+        format: int64
+        description: physical_size_bytes is the physical size of the table. Set to -1 if the size cannot be determined.
   v1Operation:
     type: string
     enum:
@@ -6413,6 +6455,13 @@ definitions:
         format: int64
       timeZone:
         type: string
+  v1SchemaInfo:
+    type: object
+    properties:
+      database:
+        type: string
+      databaseSchema:
+        type: string
   v1SecurityRule:
     type: object
     properties:
@@ -6577,23 +6626,10 @@ definitions:
   v1TableInfo:
     type: object
     properties:
-      database:
-        type: string
-      databaseSchema:
-        type: string
-      isDefaultDatabase:
-        type: boolean
-      isDefaultDatabaseSchema:
-        type: boolean
       name:
         type: string
-      hasUnsupportedDataTypes:
+      view:
         type: boolean
-        title: has_unsupported_data_types indicates if the underlying table has any column with an unsupported datatype
-      physicalSizeBytes:
-        type: string
-        format: int64
-        description: physical_size_bytes is the physical size of the table. Set to -1 if the size cannot be determined.
   v1TableRowsRequest:
     type: object
     properties:
