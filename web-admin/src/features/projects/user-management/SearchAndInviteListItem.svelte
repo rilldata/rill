@@ -2,7 +2,7 @@
   import Avatar from "@rilldata/web-common/components/avatar/Avatar.svelte";
   import { Chip } from "@rilldata/web-common/components/chip";
   import Check from "@rilldata/web-common/components/icons/Check.svelte";
-  import { UserRoles } from "@rilldata/web-common/features/users/roles.ts";
+  import { OrgUserRoles } from "@rilldata/web-common/features/users/roles.ts";
   import { cn } from "@rilldata/web-common/lib/shadcn";
   import { getRandomBgColor } from "@rilldata/web-common/features/themes/color-config";
 
@@ -80,7 +80,7 @@
         bgColor={getRandomBgColor(result.identifier)}
       />
       <div class="flex flex-col text-left">
-        {#if result.type === "user" && result.orgRoleName === UserRoles.Guest}
+        {#if result.type === "user" && result.orgRoleName === OrgUserRoles.Guest}
           <span
             class="text-sm font-medium text-gray-900 flex flex-row items-center gap-x-1"
           >

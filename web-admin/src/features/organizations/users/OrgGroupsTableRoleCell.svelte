@@ -3,7 +3,7 @@
   import CaretUpIcon from "@rilldata/web-common/components/icons/CaretUpIcon.svelte";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import { page } from "$app/stores";
-  import { UserRoles } from "@rilldata/web-common/features/users/roles.ts";
+  import { OrgUserRoles } from "@rilldata/web-common/features/users/roles.ts";
   import { useQueryClient } from "@tanstack/svelte-query";
   import {
     createAdminServiceAddOrganizationMemberUsergroup,
@@ -128,7 +128,7 @@
         class="font-normal flex flex-col items-start py-2 {role === 'admin'
           ? 'bg-slate-100'
           : ''}"
-        on:click={() => handleRoleSelect(UserRoles.Admin)}
+        on:click={() => handleRoleSelect(OrgUserRoles.Admin)}
       >
         <span class="font-medium">Admin</span>
         <span class="text-xs text-gray-600"
@@ -140,7 +140,7 @@
       class="font-normal flex flex-col items-start py-2 {role === 'editor'
         ? 'bg-slate-100'
         : ''}"
-      on:click={() => handleRoleSelect(UserRoles.Editor)}
+      on:click={() => handleRoleSelect(OrgUserRoles.Editor)}
     >
       <span class="font-medium">Editor</span>
       <span class="text-xs text-gray-600"
@@ -151,7 +151,7 @@
       class="font-normal flex flex-col items-start py-2 {role === 'viewer'
         ? 'bg-slate-100'
         : ''}"
-      on:click={() => handleRoleSelect(UserRoles.Viewer)}
+      on:click={() => handleRoleSelect(OrgUserRoles.Viewer)}
     >
       <span class="font-medium">Viewer</span>
       <span class="text-xs text-gray-600"

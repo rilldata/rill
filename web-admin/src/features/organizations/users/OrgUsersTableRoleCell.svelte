@@ -8,7 +8,7 @@
     getAdminServiceListOrganizationMemberUsersQueryKey,
   } from "@rilldata/web-admin/client";
   import { page } from "$app/stores";
-  import { UserRoles } from "@rilldata/web-common/features/users/roles.ts";
+  import { OrgUserRoles } from "@rilldata/web-common/features/users/roles.ts";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import OrgUpgradeGuestConfirmDialog from "./OrgUpgradeGuestConfirmDialog.svelte";
@@ -28,23 +28,23 @@
   let newRole = "";
 
   $: organization = $page.params.organization;
-  $: isAdmin = currentUserRole === UserRoles.Admin;
-  $: isEditor = currentUserRole === UserRoles.Editor;
-  $: isGuest = role === UserRoles.Guest;
+  $: isAdmin = currentUserRole === OrgUserRoles.Admin;
+  $: isEditor = currentUserRole === OrgUserRoles.Editor;
+  $: isGuest = role === OrgUserRoles.Guest;
   $: canManageUser =
     !isCurrentUser &&
     (isAdmin ||
       (isEditor &&
-        (role === UserRoles.Editor ||
-          role === UserRoles.Viewer ||
-          role === UserRoles.Guest)));
+        (role === OrgUserRoles.Editor ||
+          role === OrgUserRoles.Viewer ||
+          role === OrgUserRoles.Guest)));
 
   const queryClient = useQueryClient();
   const setOrganizationMemberUserRole =
     createAdminServiceSetOrganizationMemberUserRole();
 
   async function handleSetRole(role: string) {
-    if (role !== UserRoles.Admin && isBillingContact) {
+    if (role !== OrgUserRoles.Admin && isBillingContact) {
       // We cannot change a billing contact's role to a non-admin one.
       onAttemptChangeBillingContactUserRole();
       return;
@@ -139,7 +139,7 @@
           'admin'
             ? 'bg-slate-100'
             : ''}"
-          on:click={() => handleSetRole(UserRoles.Admin)}
+          on:click={() => handleSetRole(OrgUserRoles.Admin)}
         >
           <span class="text-xs font-medium text-slate-700">Admin</span>
           <span class="text-[11px] text-slate-500"
@@ -152,7 +152,7 @@
         'editor'
           ? 'bg-slate-100'
           : ''}"
-        on:click={() => handleSetRole(UserRoles.Editor)}
+        on:click={() => handleSetRole(OrgUserRoles.Editor)}
       >
         <span class="text-xs font-medium text-slate-700">Editor</span>
         <span class="text-[11px] text-slate-500"
@@ -164,7 +164,7 @@
         'viewer'
           ? 'bg-slate-100'
           : ''}"
-        on:click={() => handleSetRole(UserRoles.Viewer)}
+        on:click={() => handleSetRole(OrgUserRoles.Viewer)}
       >
         <span class="text-xs font-medium text-slate-700">Viewer</span>
         <span class="text-[11px] text-slate-500"
@@ -177,7 +177,7 @@
           'guest'
             ? 'bg-slate-100'
             : ''}"
-          on:click={() => handleSetRole(UserRoles.Guest)}
+          on:click={() => handleSetRole(OrgUserRoles.Guest)}
         >
           <span class="text-xs font-medium text-slate-700">Guest</span>
           <span class="text-[11px] text-slate-500"

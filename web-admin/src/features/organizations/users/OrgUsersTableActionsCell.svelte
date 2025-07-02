@@ -2,7 +2,7 @@
   import IconButton from "@rilldata/web-common/components/button/IconButton.svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import ThreeDot from "@rilldata/web-common/components/icons/ThreeDot.svelte";
-  import { UserRoles } from "@rilldata/web-common/features/users/roles.ts";
+  import { OrgUserRoles } from "@rilldata/web-common/features/users/roles.ts";
   import { Trash2Icon } from "lucide-svelte";
   import RemoveUserFromOrgConfirmDialog from "./RemoveUserFromOrgConfirmDialog.svelte";
   import {
@@ -28,15 +28,15 @@
   let isRemoveConfirmOpen = false;
 
   $: organization = $page.params.organization;
-  $: isAdmin = currentUserRole === UserRoles.Admin;
-  $: isEditor = currentUserRole === UserRoles.Editor;
+  $: isAdmin = currentUserRole === OrgUserRoles.Admin;
+  $: isEditor = currentUserRole === OrgUserRoles.Editor;
   $: canManageUser =
     !isCurrentUser &&
     (isAdmin ||
       (isEditor &&
-        (role === UserRoles.Editor ||
-          role === UserRoles.Viewer ||
-          role === UserRoles.Guest)));
+        (role === OrgUserRoles.Editor ||
+          role === OrgUserRoles.Viewer ||
+          role === OrgUserRoles.Guest)));
 
   const queryClient = useQueryClient();
   const removeOrganizationMemberUser =

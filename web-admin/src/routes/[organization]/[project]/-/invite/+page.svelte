@@ -15,7 +15,7 @@
   import { Button } from "@rilldata/web-common/components/button";
   import Label from "@rilldata/web-common/components/forms/Label.svelte";
   import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
-  import { UserRoles } from "@rilldata/web-common/features/users/roles.ts";
+  import { ProjectUserRoles } from "@rilldata/web-common/features/users/roles.ts";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import type { AxiosError } from "axios";
   import type { PageData } from "./$types";
@@ -47,7 +47,7 @@
           project,
           data: {
             domain: $userDomain.data,
-            role: UserRoles.Viewer,
+            role: ProjectUserRoles.Viewer,
           },
         });
       } catch (e) {

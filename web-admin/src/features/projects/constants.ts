@@ -1,23 +1,26 @@
-import { UserRoles } from "@rilldata/web-common/features/users/roles.ts";
+import {
+  OrgUserRoles,
+  ProjectUserRoles,
+} from "@rilldata/web-common/features/users/roles.ts";
 
 export const PROJECT_ROLES_OPTIONS = [
   {
-    value: UserRoles.Admin,
+    value: ProjectUserRoles.Admin,
     label: "Admin",
     description: "Full control of project settings and members",
   },
   {
-    value: UserRoles.Editor,
+    value: ProjectUserRoles.Editor,
     label: "Editor",
     description: "Can create and edit dashboards; manage non-admin access",
   },
   {
-    value: UserRoles.Viewer,
+    value: ProjectUserRoles.Viewer,
     label: "Viewer",
     description: "Read-only access to all project resources",
   },
   {
-    value: UserRoles.Guest,
+    value: OrgUserRoles.Guest,
     label: "Guest",
     description: "Access to invited projects only",
   },

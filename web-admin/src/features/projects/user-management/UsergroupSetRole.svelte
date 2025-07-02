@@ -7,7 +7,7 @@
   import type { V1MemberUsergroup } from "@rilldata/web-admin/client";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import { capitalize } from "@rilldata/web-common/components/table/utils";
-  import { UserRoles } from "@rilldata/web-common/features/users/roles.ts";
+  import { ProjectUserRoles } from "@rilldata/web-common/features/users/roles.ts";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { useQueryClient } from "@tanstack/svelte-query";
   import CaretUpIcon from "@rilldata/web-common/components/icons/CaretUpIcon.svelte";
@@ -101,7 +101,7 @@
       'admin'
         ? 'bg-slate-100'
         : ''}"
-      on:click={() => handleSetRole(group.groupName, UserRoles.Admin)}
+      on:click={() => handleSetRole(group.groupName, ProjectUserRoles.Admin)}
     >
       <span class="font-medium">Admin</span>
       <span class="text-xs text-gray-600"
@@ -113,7 +113,7 @@
       'editor'
         ? 'bg-slate-100'
         : ''}"
-      on:click={() => handleSetRole(group.groupName, UserRoles.Editor)}
+      on:click={() => handleSetRole(group.groupName, ProjectUserRoles.Editor)}
     >
       <span class="font-medium">Editor</span>
       <span class="text-xs text-gray-600"
@@ -125,7 +125,7 @@
       'viewer'
         ? 'bg-slate-100'
         : ''}"
-      on:click={() => handleSetRole(group.groupName, UserRoles.Viewer)}
+      on:click={() => handleSetRole(group.groupName, ProjectUserRoles.Viewer)}
     >
       <span class="font-medium">Viewer</span>
       <span class="text-xs text-gray-600"
