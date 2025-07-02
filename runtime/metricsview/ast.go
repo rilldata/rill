@@ -212,7 +212,7 @@ func NewAST(mv *runtimev1.MetricsViewSpec, sec *runtime.ResolvedSecurity, qry *Q
 		cf := f // Clone
 		if ast.query.ComparisonTimeRange != nil && qd.Compute != nil && qd.Compute.TimeFloor != nil {
 			if strings.EqualFold(qd.Compute.TimeFloor.Dimension, timeDim) {
-				cf.Expr, err = ast.sqlForExpressionAdjustedByComparisonTimeRangeOffset(f.Expr, qd.Compute.TimeFloor.Grain, minGrain)
+				cf.Expr, err = ast.sqlForExpressionAdjustedByComparisonTimeRangeOffset(f.Expr, timeDim, qd.Compute.TimeFloor.Grain, minGrain)
 				if err != nil {
 					return nil, err
 				}
@@ -475,6 +475,46 @@ func (a *AST) resolveMeasure(qm Measure, visible bool) (*runtimev1.MetricsViewSp
 			Expression:  a.sqlForAnyInGroup(uri),
 			Type:        runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE,
 			DisplayName: fmt.Sprintf("URI for %s", dim.DisplayName),
+		}, nil
+	}
+
+	if qm.Compute.ComparisonTime != nil {
+		if a.query.ComparisonTimeRange == nil || (a.query.ComparisonTimeRange.TimeDimension != "" && a.query.ComparisonTimeRange.TimeDimension != qm.Compute.ComparisonTime.Dimension) || a.metricsView.TimeDimension != qm.Compute.ComparisonTime.Dimension {
+			return nil, fmt.Errorf("comparison time measure %q must be based on the metrics view's time dimension %q or the query's comparison time dimension %q", qm.Name, a.metricsView.TimeDimension, a.query.ComparisonTimeRange.TimeDimension)
+		}
+
+		// find the base computed time dimension from the query
+		var qd *Dimension
+		for _, q := range a.query.Dimensions {
+			if q.Compute != nil && q.Compute.TimeFloor != nil && strings.EqualFold(q.Compute.TimeFloor.Dimension, qm.Compute.ComparisonTime.Dimension) {
+				qd = &q
+				break
+			}
+		}
+		if qd == nil {
+			return nil, fmt.Errorf("comparison time measure %q must be based on a computed time dimension in the query", qm.Name)
+		}
+
+		baseStart := a.query.TimeRange.Start
+		compStart := a.query.ComparisonTimeRange.Start
+
+		dateDiff, err := a.dialect.DateDiff(qd.Compute.TimeFloor.Grain.ToProto(), compStart, baseStart)
+		if err != nil {
+			return nil, fmt.Errorf("failed to compute date difference for comparison time measure %q: %w", qm.Name, err)
+		}
+
+		baseExpr := fmt.Sprintf("COALESCE(base.%s, comparison.%s)", a.dialect.EscapeIdentifier(qd.Name), a.dialect.EscapeIdentifier(qd.Name))
+
+		expr, err := a.dialect.IntervalSubtract(baseExpr, dateDiff, qd.Compute.TimeFloor.Grain.ToProto())
+		if err != nil {
+			return nil, fmt.Errorf("failed to compute comparison time measure %q expression: %w", qm.Name, err)
+		}
+
+		return &runtimev1.MetricsViewSpec_Measure{
+			Name:        qm.Name,
+			Expression:  expr,
+			Type:        runtimev1.MetricsViewSpec_MEASURE_TYPE_TIME_COMPARISON,
+			DisplayName: fmt.Sprintf("Comparison time for %s", qd.Name),
 		}, nil
 	}
 
@@ -1353,7 +1393,7 @@ func (a *AST) sqlForAnyInGroup(expr string) string {
 
 // sqlForExpression returns the provided time expression adjusted by the fixed time offset between the current query's base and comparison time ranges.
 // The timestamp column (ie a.metricsView.TimeDimension) is expected to be the base timestamp for `expr` (in case of multiple metrics view time dimensions defined).
-func (a *AST) sqlForExpressionAdjustedByComparisonTimeRangeOffset(expr string, g, mg TimeGrain) (string, error) {
+func (a *AST) sqlForExpressionAdjustedByComparisonTimeRangeOffset(expr, timeDim string, g, mg TimeGrain) (string, error) {
 	if a.query.TimeRange == nil || a.query.TimeRange.Start.IsZero() || a.query.ComparisonTimeRange == nil || a.query.ComparisonTimeRange.Start.IsZero() {
 		return "", errors.New("must specify an explicit start time for both the base and comparison time range when comparing by a time dimension")
 	}
@@ -1384,7 +1424,7 @@ func (a *AST) sqlForExpressionAdjustedByComparisonTimeRangeOffset(expr string, g
 		dateDiff = res
 
 		// DATE_TRUNC('year', t - INTERVAL (DATE_DIFF(start, end)) day)
-		tc := a.dialect.EscapeIdentifier(a.metricsView.TimeDimension)
+		tc := a.dialect.EscapeIdentifier(timeDim)
 		expr, err := a.dialect.IntervalSubtract(tc, dateDiff, mg.ToProto())
 		if err != nil {
 			return "", err

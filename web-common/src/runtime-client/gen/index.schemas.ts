@@ -1183,6 +1183,7 @@ export interface V1MetricsViewAggregationMeasure {
   comparisonRatio?: V1MetricsViewAggregationMeasureComputeComparisonRatio;
   percentOfTotal?: V1MetricsViewAggregationMeasureComputePercentOfTotal;
   uri?: V1MetricsViewAggregationMeasureComputeURI;
+  comparisonTime?: V1MetricsViewAggregationMeasureComputeComparisonTime;
 }
 
 export interface V1MetricsViewAggregationMeasureComputeComparisonDelta {
@@ -1191,6 +1192,10 @@ export interface V1MetricsViewAggregationMeasureComputeComparisonDelta {
 
 export interface V1MetricsViewAggregationMeasureComputeComparisonRatio {
   measure?: string;
+}
+
+export interface V1MetricsViewAggregationMeasureComputeComparisonTime {
+  dimension?: string;
 }
 
 export interface V1MetricsViewAggregationMeasureComputeComparisonValue {
