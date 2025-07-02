@@ -298,7 +298,6 @@ func TestConversationWithTools(t *testing.T) {
 			},
 		},
 		Variables: map[string]string{"rill.stage_changes": "false"},
-		WatchRepo: false,
 	}
 
 	// Create required files for a basic project
@@ -517,7 +516,6 @@ func newConversationTestServer(t *testing.T) (*server.Server, string) {
 			},
 		},
 		Variables: map[string]string{"rill.stage_changes": "false"},
-		WatchRepo: false,
 	}
 
 	// Add required files
