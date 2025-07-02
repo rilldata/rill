@@ -120,7 +120,7 @@ test.describe("ClickHouse connector", () => {
     await page.locator("#clickhouse").click();
 
     // Switch to the DSN tab
-    await page.getByRole("button", { name: "Enter connection string" }).click();
+    await page.getByRole("tab", { name: "Enter connection string" }).click();
 
     // Fill in the form correctly
     await page
