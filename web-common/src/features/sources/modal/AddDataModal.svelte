@@ -171,11 +171,17 @@
   $: isModelingSupportedForDefaultOlapDriver =
     useIsModelingSupportedForDefaultOlapDriver($runtime.instanceId);
 
-  // TODO: figure out a better abstraction. we only want to show parameters and connection string
-  // toggle for olap connectors. we also need to account for `snowflake`.
-  const TOGGLE_CONNECTORS = ["snowflake", "clickhouse", "druid", "pinot"];
+  // TODO: figure out a better abstraction.
+  const PARAMETERS_CONNECTION_STRING_TOGGLE_CONNECTORS = [
+    "snowflake",
+    "clickhouse",
+    "druid",
+    "pinot",
+  ];
   function isConfigurableConnector(connector: V1ConnectorDriver) {
-    return TOGGLE_CONNECTORS.includes(connector.name ?? "");
+    return PARAMETERS_CONNECTION_STRING_TOGGLE_CONNECTORS.includes(
+      connector.name ?? "",
+    );
   }
 </script>
 
