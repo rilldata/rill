@@ -47,6 +47,23 @@
 
   let connectorType: ClickHouseConnectorType = "self-managed";
 
+  function getSpecDefaults(properties) {
+    const defaults = {};
+    (properties ?? []).forEach((property) => {
+      if (property.default !== undefined) {
+        let value = property.default;
+        // Convert to correct type
+        if (property.type === ConnectorDriverPropertyType.TYPE_BOOLEAN) {
+          value = value === "true";
+        } else if (property.type === ConnectorDriverPropertyType.TYPE_NUMBER) {
+          value = Number(value);
+        }
+        defaults[property.key] = value;
+      }
+    });
+    return defaults;
+  }
+
   // Form 1: Individual parameters
   const paramsFormId = `add-data-${connector.name}-form`;
   const schema = yup(getYupSchema[connector.name as keyof typeof getYupSchema]);
@@ -118,6 +135,15 @@
 
   // Emit the submitting state to the parent
   $: dispatch("submitting", { submitting });
+
+  // Update params form whenever the data connector changes, unless the form is tainted
+  $: if (connector && !$paramsTainted) {
+    const specDefaults = getSpecDefaults(connector.configProperties);
+    paramsForm.update(($form) => ({
+      ...$form,
+      ...specDefaults,
+    }));
+  }
 
   function onStringInputChange(event: Event) {
     const target = event.target as HTMLInputElement;
