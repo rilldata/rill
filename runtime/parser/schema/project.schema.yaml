@@ -402,25 +402,34 @@ definitions:
             const: athena
           aws_access_key_id:
             type: string
-            description: AWS Access Key ID for Athena access
+            description: AWS Access Key ID used for authentication. Required when using static credentials directly or as base credentials for assuming a role.
           aws_secret_access_key:
             type: string
-            description: AWS Secret Access Key for Athena access
+            description: AWS Secret Access Key paired with the Access Key ID. Required when using static credentials directly or as base credentials for assuming a role.
           aws_access_token:
             type: string
-            description: Optional AWS session token for temporary credentials
-          external_id:
-            type: string
-            description: Optional External ID for assuming a role
+            description: AWS session token used with temporary credentials. Required only if the Access Key and Secret Key are part of a temporary session credentials.
           role_arn:
             type: string
-            description: Optional AWS Role ARN to assume when accessing Athena
+            description: ARN of the IAM role to assume. When specified, the SDK uses the base credentials to call STS AssumeRole and obtain temporary credentials scoped to this role.
           role_session_name:
             type: string
-            description: Optional Session name when assuming the role
+            description: Session name to associate with the STS AssumeRole session. Used only if 'role_arn' is specified. Useful for identifying and auditing the session.
+          external_id:
+            type: string
+            description: External ID required by some roles when assuming them, typically for cross-account access. Used only if 'role_arn' is specified and the role's trust policy requires it.
+          workgroup:
+            type: string
+            description: Athena workgroup to use for query execution. Defaults to 'primary' if not specified.
+          output_location:
+            type: string
+            description: S3 URI where Athena query results should be stored (e.g., s3://your-bucket/athena/results/). Optional if the selected workgroup has a default result configuration.
+          aws_region:
+            type: string
+            description: AWS region where Athena and the result S3 bucket are located (e.g., us-east-1). Defaults to 'us-east-1' if not specified.
           allow_host_access:
             type: boolean
-            description: Allow access to host environment configuration
+            description: Allow the Athena client to access host environment configurations such as environment variables or local AWS credential files. Defaults to true, enabling use of credentials and settings from the host environment unless explicitly disabled.
         required:
           - driver
       azure:
@@ -444,11 +453,15 @@ definitions:
           azure_storage_connection_string:
             type: string
             description: Optional azure connection string for storage account
+          azure_storage_bucket:
+            type: string
+            description: Name of the Azure Blob Storage container (equivalent to an S3 bucket)
           allow_host_access:
             type: boolean
             description: Allow access to host environment configuration
         required:
           - driver
+          - azure_storage_bucket
       bigquery:
         type: object
         title: bigquery
@@ -460,10 +473,13 @@ definitions:
             const: bigquery
           google_application_credentials:
             type: string
-            description: Path to the Google Cloud credentials JSON file
+            description: Raw contents of the Google Cloud service account key (in JSON format) used for authentication.
+          project_id:
+            type: string
+            description: ID of the Google Cloud project to use for BigQuery operations. This can be omitted only if the project ID is included in the service account key.         
           allow_host_access:
             type: boolean
-            description: Allow access to host environment configuration
+            description: Enable the BigQuery client to use credentials from the host environment when no service account JSON is provided. This includes Application Default Credentials from environment variables, local credential files, or the Google Compute Engine metadata server. Defaults to true, allowing seamless authentication in GCP environments.
         required:
           - driver
       clickhouse:
@@ -617,6 +633,9 @@ definitions:
           google_application_credentials:
             type: string
             description: Google Cloud credentials JSON string
+          bucket:
+            type: string
+            description: Name of gcs bucket
           allow_host_access:
             type: boolean
             description: Allow access to host environment configuration
@@ -628,6 +647,7 @@ definitions:
             description: Optional S3-compatible Secret when used in compatibility mode
         required:
           - driver
+          - bucket
       https:
         type: object
         title: https
@@ -770,18 +790,30 @@ definitions:
             const: redshift
           aws_access_key_id:
             type: string
-            description: AWS access key ID for authentication
+            description: AWS Access Key ID used for authenticating with Redshift.
           aws_secret_access_key:
             type: string
-            description: AWS secret access key for authentication
+            description: AWS Secret Access Key used for authenticating with Redshift.
           aws_access_token:
             type: string
-            description: AWS session token for temporary credentials (optional)
-          allow_host_access:
-            type: boolean
-            description: Allow access to host environment configuration
+            description: AWS Session Token for temporary credentials (optional).
+          region:
+            type: string
+            description: AWS region where the Redshift cluster or workgroup is hosted (e.g., 'us-east-1').
+          database:
+            type: string
+            description: Name of the Redshift database to query.
+          workgroup:
+            type: string
+            description: Workgroup name for Redshift Serverless, in case of provisioned Redshift clusters use 'cluster_identifier'.
+          cluster_identifier:
+            type: string
+            description: Cluster identifier for provisioned Redshift clusters, in case of Redshift Serverless use 'workgroup' .
         required:
           - driver
+          - aws_access_key_id
+          - aws_secret_access_key
+          - database
       s3:
         type: object
         title: s3
@@ -800,6 +832,9 @@ definitions:
           aws_access_token:
             type: string
             description: Optional AWS session token for temporary credentials
+          bucket:
+            type: string
+            description: Name of s3 bucket 
           endpoint:
             type: string
             description: Optional custom endpoint URL for S3-compatible storage
@@ -814,6 +849,7 @@ definitions:
             description: Whether to retain intermediate files after processing
         required:
           - driver
+          - bucket
       salesforce:
         type: object
         title: salesforce

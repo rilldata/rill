@@ -1271,6 +1271,7 @@ func (s *Server) GetCloneCredentials(ctx context.Context, req *adminv1.GetCloneC
 		GitPasswordExpiresAt: timestamppb.New(expiresAt),
 		GitSubpath:           proj.Subpath,
 		GitProdBranch:        proj.ProdBranch,
+		GitManagedRepo:       proj.ManagedGitRepoID != nil,
 	}, nil
 }
 

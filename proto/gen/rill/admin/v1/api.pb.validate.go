@@ -28152,6 +28152,8 @@ func (m *GetCloneCredentialsResponse) validate(all bool) error {
 
 	// no validation rules for GitProdBranch
 
+	// no validation rules for GitManagedRepo
+
 	// no validation rules for ArchiveDownloadUrl
 
 	if len(errors) > 0 {

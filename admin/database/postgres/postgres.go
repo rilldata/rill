@@ -502,7 +502,7 @@ func (c *connection) FindDeployments(ctx context.Context, afterID string, limit 
 	return res, nil
 }
 
-// FindExpiredDeployments returns all the deployments which are expired as per prod ttl
+// FindExpiredDeployments returns all the deployments which are expired as per ttl
 func (c *connection) FindExpiredDeployments(ctx context.Context) ([]*database.Deployment, error) {
 	var res []*database.Deployment
 	err := c.getDB(ctx).SelectContext(ctx, &res, `
@@ -510,7 +510,7 @@ func (c *connection) FindExpiredDeployments(ctx context.Context) ([]*database.De
 		JOIN projects p ON d.project_id = p.id
 		WHERE d.status != $1
 		AND ((p.prod_ttl_seconds IS NOT NULL AND d.used_on + p.prod_ttl_seconds * interval '1 second' < now())
-		OR (p.dev_ttl_seconds IS NOT NULL AND d.used_on + p.dev_ttl_seconds * interval '1 second' < now()))
+		OR (d.environment = 'dev' AND p.dev_ttl_seconds IS NOT NULL AND d.used_on + p.dev_ttl_seconds * interval '1 second' < now()))
 	`, database.DeploymentStatusStopped)
 	if err != nil {
 		return nil, parseErr("deployments", err)
@@ -1024,7 +1024,7 @@ func (c *connection) DeleteExpiredUserAuthTokens(ctx context.Context, retention 
 
 // DeleteInactiveUserAuthTokens deletes user authentication tokens that have not been used within the specified retention period.
 func (c *connection) DeleteInactiveUserAuthTokens(ctx context.Context, retention time.Duration) error {
-	_, err := c.getDB(ctx).ExecContext(ctx, `DELETE FROM user_auth_tokens WHERE used_on < (now() - $1) AND created_on < (now() - $1)`, retention)
+	_, err := c.getDB(ctx).ExecContext(ctx, `DELETE FROM user_auth_tokens WHERE used_on + $1 < now() AND created_on + $1 < now()`, retention)
 	return parseErr("auth token", err)
 }
 
@@ -1172,7 +1172,7 @@ func (c *connection) DeleteExpiredServiceAuthTokens(ctx context.Context, retenti
 
 // DeleteInactiveServiceAuthTokens deletes service authentication tokens that have not been used within the specified retention period.
 func (c *connection) DeleteInactiveServiceAuthTokens(ctx context.Context, retention time.Duration) error {
-	_, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM service_auth_tokens WHERE used_on < (now() - $1) AND created_on < (now() - $1)", retention)
+	_, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM service_auth_tokens WHERE used_on + $1 < now() AND created_on + $1 < now()", retention)
 	return parseErr("service auth token", err)
 }
 
