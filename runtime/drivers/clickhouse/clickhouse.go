@@ -59,7 +59,8 @@ var spec = drivers.Spec{
 			Required:    true,
 			DisplayName: "Host",
 			Description: "Hostname or IP address of the ClickHouse server",
-			Placeholder: "localhost",
+			Placeholder: "your-instance.clickhouse.cloud or your.clickhouse.server.com",
+			Hint:        "Your ClickHouse hostname (e.g., your-instance.clickhouse.cloud or your-server.com)",
 		},
 		{
 			Key:         "port",
@@ -68,6 +69,8 @@ var spec = drivers.Spec{
 			DisplayName: "Port",
 			Description: "Port number of the ClickHouse server",
 			Placeholder: "9000",
+			Hint:        "Default port is 9000 for native protocol. Also commonly used: 8443 for ClickHouse Cloud (HTTPS), 8123 for HTTP",
+			Default:     "9000",
 		},
 		{
 			Key:         "username",
@@ -76,6 +79,8 @@ var spec = drivers.Spec{
 			DisplayName: "Username",
 			Description: "Username to connect to the ClickHouse server",
 			Placeholder: "default",
+			Hint:        "Username for authentication",
+			Default:     "default",
 		},
 		{
 			Key:         "password",
@@ -83,8 +88,9 @@ var spec = drivers.Spec{
 			Required:    true,
 			DisplayName: "Password",
 			Description: "Password to connect to the ClickHouse server",
-			Placeholder: "password",
+			Placeholder: "Database password",
 			Secret:      true,
+			Hint:        "Password to your database",
 		},
 		{
 			Key:         "database",
@@ -93,6 +99,7 @@ var spec = drivers.Spec{
 			DisplayName: "Database",
 			Description: "Name of the ClickHouse database to connect to",
 			Placeholder: "default",
+			Default:     "default",
 		},
 		{
 			Key:         "cluster",
@@ -100,7 +107,8 @@ var spec = drivers.Spec{
 			Required:    false,
 			DisplayName: "Cluster",
 			Description: "Cluster name. If set, Rill will create all models in the cluster as distributed tables.",
-			Placeholder: "",
+			Placeholder: "Cluster name",
+			Hint:        "Cluster name (required for some self-hosted ClickHouse setups)",
 		},
 		{
 			Key:         "ssl",
@@ -108,6 +116,8 @@ var spec = drivers.Spec{
 			Required:    true,
 			DisplayName: "SSL",
 			Description: "Use SSL to connect to the ClickHouse server",
+			Hint:        "Enable SSL for secure connections",
+			Default:     "true",
 		},
 	},
 	ImplementsOLAP: true,
