@@ -51,7 +51,7 @@
     $gitStatusQuery.data && $gitStatusQuery.data.remoteCommits > 0;
 
   // gitStatusQuery is refetched. So we have to check `isFetching` to get the correct loading status.
-  $: loading = $currentProject.isLoading || $gitStatusQuery.isFetching;
+  $: loading = $gitStatusQuery.isFetching || $currentProject.isLoading;
 
   $: allowPrimary.set(isDeployed || !hasValidDashboard);
 
