@@ -55,8 +55,6 @@
         // Convert to correct type
         if (property.type === ConnectorDriverPropertyType.TYPE_BOOLEAN) {
           value = value === "true";
-        } else if (property.type === ConnectorDriverPropertyType.TYPE_NUMBER) {
-          value = Number(value);
         }
         defaults[property.key] = value;
       }
@@ -137,7 +135,7 @@
   $: dispatch("submitting", { submitting });
 
   // Update params form whenever the data connector changes, unless the form is tainted
-  $: if (connector && !$paramsTainted) {
+  $: if (connector) {
     const specDefaults = getSpecDefaults(connector.configProperties);
     paramsForm.update(($form) => ({
       ...$form,
