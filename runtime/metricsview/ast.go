@@ -224,7 +224,7 @@ func NewAST(mv *runtimev1.MetricsViewSpec, sec *runtime.ResolvedSecurity, qry *Q
 	}
 
 	if qry.Rows {
-		// when Rows is set we want underlying rows from the model, that's why adding only * as the dim field
+		// when Rows is set we want underlying rows from the model, adding only * as the dim field, query validation is done earlier which disallows any dimensions
 		ast.dimFields = append(ast.dimFields, FieldNode{
 			Name: "*",
 			Expr: "*",
@@ -397,9 +397,14 @@ func (a *AST) resolveMeasure(qm Measure, visible bool) (*runtimev1.MetricsViewSp
 			return nil, err
 		}
 
+		expr := fmt.Sprintf("comparison.%s", a.dialect.EscapeIdentifier(m.Name))
+		if m.TreatNullsAs != "" {
+			expr = fmt.Sprintf("COALESCE(%s, %s)", expr, m.TreatNullsAs)
+		}
+
 		return &runtimev1.MetricsViewSpec_Measure{
 			Name:               qm.Name,
-			Expression:         fmt.Sprintf("comparison.%s", a.dialect.EscapeIdentifier(m.Name)),
+			Expression:         expr,
 			Type:               runtimev1.MetricsViewSpec_MEASURE_TYPE_TIME_COMPARISON,
 			ReferencedMeasures: []string{qm.Compute.ComparisonValue.Measure},
 			DisplayName:        fmt.Sprintf("%s (prev)", m.DisplayName),
@@ -412,9 +417,14 @@ func (a *AST) resolveMeasure(qm Measure, visible bool) (*runtimev1.MetricsViewSp
 			return nil, err
 		}
 
+		compareExpr := fmt.Sprintf("comparison.%s", a.dialect.EscapeIdentifier(m.Name))
+		if m.TreatNullsAs != "" {
+			compareExpr = fmt.Sprintf("COALESCE(%s, %s)", compareExpr, m.TreatNullsAs)
+		}
+
 		return &runtimev1.MetricsViewSpec_Measure{
 			Name:               qm.Name,
-			Expression:         fmt.Sprintf("base.%s - comparison.%s", a.dialect.EscapeIdentifier(m.Name), a.dialect.EscapeIdentifier(m.Name)),
+			Expression:         fmt.Sprintf("base.%s - %s", a.dialect.EscapeIdentifier(m.Name), compareExpr),
 			Type:               runtimev1.MetricsViewSpec_MEASURE_TYPE_TIME_COMPARISON,
 			ReferencedMeasures: []string{qm.Compute.ComparisonDelta.Measure},
 			DisplayName:        fmt.Sprintf("%s (Δ)", m.DisplayName),
@@ -428,8 +438,11 @@ func (a *AST) resolveMeasure(qm Measure, visible bool) (*runtimev1.MetricsViewSp
 		}
 
 		base := fmt.Sprintf("base.%s", a.dialect.EscapeIdentifier(m.Name))
-		comp := fmt.Sprintf("comparison.%s", a.dialect.EscapeIdentifier(m.Name))
-		expr := a.dialect.SafeDivideExpression(fmt.Sprintf("%s - %s", base, comp), comp)
+		compareExpr := fmt.Sprintf("comparison.%s", a.dialect.EscapeIdentifier(m.Name))
+		if m.TreatNullsAs != "" {
+			compareExpr = fmt.Sprintf("COALESCE(%s, %s)", compareExpr, m.TreatNullsAs)
+		}
+		expr := a.dialect.SafeDivideExpression(fmt.Sprintf("%s - %s", base, compareExpr), compareExpr)
 
 		return &runtimev1.MetricsViewSpec_Measure{
 			Name:               qm.Name,
