@@ -5,6 +5,7 @@ sidebar_position: 9
 hide_table_of_contents: false
 tags:
   - OLAP:ClickHouse
+  - Tutorial
 ---
 :::tip Rill Cloud Trial
 

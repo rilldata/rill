@@ -4,6 +4,7 @@ sidebar_label: "4. Create the Metrics View"
 sidebar_position: 3
 hide_table_of_contents: false
 tags:
+  - Tutorial
   - OLAP:DuckDB
 ---
 

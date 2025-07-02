@@ -3,6 +3,8 @@ title: "How to Embed a Dashboard"
 sidebar_label: "How to Embed your Rill Dashboards"
 sidebar_position: 10
 hide_table_of_contents: false
+tags:
+    - Tutorial
 ---
 
 The following guide is based on the example repository: [Rill Embedding Example](https://github.com/rilldata/rill-embedding-example). We will create the same three embed dashboards in this guide. (We will not go over how to create the web application) To view our publicly available web application: [Click here!](https://rill-embedding-example.netlify.app/)

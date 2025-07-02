@@ -6,6 +6,7 @@ sidebar_position: 1
 tags:
   - Rill Developer
   - Advanced Features
+  - Tutorial
 ---
 For reference on the following measures and dimensions, see our documentation on [advanced measures](/build/metrics-view/advanced-expressions/)
 

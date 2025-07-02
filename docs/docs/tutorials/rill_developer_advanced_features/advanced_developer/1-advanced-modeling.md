@@ -6,6 +6,7 @@ sidebar_position: 16
 tags:
   - Rill Developer
   - Advanced Features
+  - Tutorial
 ---
 ##  SQL modeling continued
 

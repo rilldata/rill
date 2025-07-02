@@ -6,6 +6,7 @@ sidebar_position: 1
 tags:
   - Rill Developer
   - Advanced Features
+  - Tutorial
 ---
 In order to help with data ingestion into Rill, we will introduce the concepts of [partitions](https://docs.rilldata.com/build/incremental-models/#what-are-partitions) and [incremental models](https://docs.rilldata.com/build/incremental-models/#what-is-an-incremental-model) Before diving into our ClickHouse project, let's understand what each of these are used for and do.
 

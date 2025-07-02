@@ -4,6 +4,7 @@ sidebar_label: "5. Create a Dashboard"
 sidebar_position: 3
 hide_table_of_contents: false
 tags:
+  - Tutorial
   - OLAP:DuckDB
 ---
 

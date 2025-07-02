@@ -4,6 +4,7 @@ sidebar_label: "MCP Setup and Customization"
 hide_table_of_contents: false
 tags:
     - Quickstart
+    - Tutorial
 ---
 
 Connecting your Rill project to your AI Agent has never been easier! 

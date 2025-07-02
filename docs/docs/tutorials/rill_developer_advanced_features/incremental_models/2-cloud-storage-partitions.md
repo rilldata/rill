@@ -6,6 +6,7 @@ sidebar_position: 12
 tags:
   - Rill Developer
   - Advanced Features
+  - Tutorial
 ---
 
 Now that we understand what [Incremental Models](/build/advanced-models/incremental-models) and [Partitions](/build/advanced-models/partitions) are, let's apply to them to our ClickHouse project.

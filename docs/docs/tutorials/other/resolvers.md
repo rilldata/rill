@@ -4,6 +4,7 @@ sidebar_position: 10
 hide_table_of_contents: false
 tags:
   - OLAP:DuckDB
+  - Tutorial
 ---
 
 # Understanding Resolvers in Rill

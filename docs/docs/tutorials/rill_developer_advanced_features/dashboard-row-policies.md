@@ -5,6 +5,7 @@ hide_table_of_contents: false
 tags:
   - Rill Developer
   - Advanced Features
+  - Tutorial
 ---
 
 For this example, we will use the OpenRTB Programmatic Advertising project available in our [examples repository.](https://github.com/rilldata/rill-examples/tree/main/rill-openrtb-prog-ads) We will create a few dashbaord access policies and test this in Rill Developer before pushing to Rill Cloud!

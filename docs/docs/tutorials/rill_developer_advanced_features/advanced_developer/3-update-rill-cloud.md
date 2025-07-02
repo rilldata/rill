@@ -5,6 +5,7 @@ sidebar_label: "Pushing changes to Rill Cloud"
 tags:
   - Rill Developer
   - Advanced Features
+  - Tutorial
 ---
 
 ## How to push changes made on Rill Developer to Rill Cloud

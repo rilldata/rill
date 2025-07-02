@@ -6,6 +6,7 @@ sidebar_position: 12
 tags:
   - Rill Developer
   - Advanced Features
+  - Tutorial
 ---
 
 Another advanced concept within Rill is using [Incremental Models](/build/advanced-models/incremental-models) for a SQL based source. For the most part, we suggest that you use a time column as your partitioning column. The main questions to ask are:

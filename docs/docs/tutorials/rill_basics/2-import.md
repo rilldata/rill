@@ -5,6 +5,7 @@ sidebar_position: 1
 hide_table_of_contents: false
 
 tags:
+  - Tutorial
   - OLAP:DuckDB
   - Rill Developer
   - Getting Started

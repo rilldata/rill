@@ -7,6 +7,7 @@ tags:
   - Administration
   - Rill Developer
   - Advanced Features
+  - Tutorial
 ---
 
 There are two different types of alerting in Rill. 

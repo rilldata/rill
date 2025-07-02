@@ -6,6 +6,7 @@ sidebar_position: 2
 tags:
   - Rill Developer
   - Advanced Features
+  - Tutorial
 ---
 
 Now that we have another dashboard based off of our new metrics view, let's return to `advanced_metrics.yaml` and further expand on the capabilities of a metrics view. As the metrics view is backed by DuckDB (assuming you are using the default configuration), you are able to use many of the features within the metrics view. 

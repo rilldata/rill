@@ -5,6 +5,7 @@ sidebar_position: 4
 hide_table_of_contents: false
 tags:
   - OLAP:ClickHouse
+  - Tutorial
 ---
 
 ## Importing your own Data into ClickHouse from ...

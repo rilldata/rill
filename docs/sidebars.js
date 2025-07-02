@@ -157,9 +157,9 @@ const sidebars = {
           description: 'Advanced Features and beyond',
 
           items: [
-            'tutorials/rill_cloud_advanced_features/dashboard-alerts',
-            'tutorials/rill_cloud_advanced_features/bookmarks',
-            'tutorials/rill_cloud_advanced_features/scheduled-reports',
+            // 'tutorials/rill_cloud_advanced_features/dashboard-alerts',
+            // 'tutorials/rill_cloud_advanced_features/bookmarks',
+            // 'tutorials/rill_cloud_advanced_features/scheduled-reports',
             'tutorials/rill_cloud_advanced_features/share-dashboard-publicly',
             'tutorials/rill_cloud_advanced_features/embed-dashboard',
 

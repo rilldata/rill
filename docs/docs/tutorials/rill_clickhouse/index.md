@@ -2,6 +2,9 @@
 title: Rill and ClickHouse Tutorial
 description: tutorial for ClickHouse
 sidebar_position: 3
+tags:
+    - Tutorial
+    - OLAP:ClickHouse
 ---
 
 <img src = '/img/tutorials/ch/clickhouse-rill.png' class='rounded-gif' />

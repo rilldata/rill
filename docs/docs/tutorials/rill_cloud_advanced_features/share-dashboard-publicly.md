@@ -4,6 +4,7 @@ sidebar_label: "Sharing Dashboards Publicly"
 hide_table_of_contents: false
 tags:
     - Rill Cloud
+    - Tutorial
 ---
 
 There might be occasions that sharing a dashboard to a 'non-user' is required in your workflow. In order to accomdate such situations, you can send a public URL of your dashboard with set parameters and with a expiration date if required.

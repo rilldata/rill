@@ -4,6 +4,7 @@ sidebar_label: "3. Create a SQL Model"
 sidebar_position: 2
 hide_table_of_contents: false
 tags:
+  - Tutorial
   - OLAP:DuckDB
   - Rill Developer
   - Getting Started

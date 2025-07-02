@@ -6,9 +6,8 @@ hide_table_of_contents: false
 
 tags:
   - Getting Started
-  - Clone
-  - Existing Project
-  - Rill Developer
+  - Quickstart
+  - Tutorial
 ---
 
 # Clone a Project - Quick Start

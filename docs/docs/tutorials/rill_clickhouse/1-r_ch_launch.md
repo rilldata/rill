@@ -5,6 +5,7 @@ sidebar_position: 3
 hide_table_of_contents: false
 tags:
   - OLAP:ClickHouse
+  - Tutorial
 ---
 
 :::note prerequisites

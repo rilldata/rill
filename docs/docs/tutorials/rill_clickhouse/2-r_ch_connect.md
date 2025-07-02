@@ -5,7 +5,7 @@ sidebar_position: 3
 hide_table_of_contents: false
 tags:
   - OLAP:ClickHouse
-
+  - Tutorial
 ---
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';

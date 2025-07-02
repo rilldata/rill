@@ -4,6 +4,7 @@ sidebar_label: '6. Deploy to Rill Cloud'
 sidebar_position: 9
 hide_table_of_contents: false
 tags:
+  - Tutorial
   - OLAP:DuckDB
 ---
 :::tip Rill Cloud Trial

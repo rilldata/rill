@@ -3,11 +3,9 @@ title: "GitHub Analytics Demo"
 sidebar_label: "GitHub Analytics Demo"
 sidebar_position: 5
 hide_table_of_contents: false
-
 tags:
-  - Getting Started
-  - Demo
-  - GitHub Analytics
+  - Tutorial
+  - Quickstart
   - Example Project
 ---
 

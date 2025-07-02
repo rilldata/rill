@@ -6,6 +6,7 @@ sidebar_position: 13
 tags:
   - Rill Developer
   - Advanced Features
+  - Tutorial
 ---
 
 There are some connections that are not natively supported such as Snowflake to ClickHouse. In order to successfully ingest data from these types of sources, there are times where a staging table is required. 

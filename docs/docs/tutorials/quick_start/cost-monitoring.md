@@ -3,6 +3,7 @@ title: "Walkthough the Demo Project"
 sidebar_label: "Cost Monitoring Analytics Demo"
 hide_table_of_contents: false
 tags:
+    - Tutorial
     - Quickstart
 ---
 

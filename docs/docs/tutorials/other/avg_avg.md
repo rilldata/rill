@@ -3,6 +3,8 @@ title: "Average of Averages, aren't actually averages, why?"
 sidebar_label: "Average of Averages"
 sidebar_position: 10
 hide_table_of_contents: false
+tags:
+    - Tutorial
 ---
 To understand why this is an issue when using OLAP engines, we need to both understand why this occurs, and the mathematical reasoning behind it.
 

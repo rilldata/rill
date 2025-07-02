@@ -5,6 +5,7 @@ sidebar_position: 10
 hide_table_of_contents: false
 tags:
   - OLAP:DuckDB
+  - Tutorial
 ---
 You will need to add the dimension/s back in Rill Developer and [push the changes to Rill Cloud](/tutorials/rill_developer_advanced_features/advanced_developer/update-rill-cloud) when you're ready.
 

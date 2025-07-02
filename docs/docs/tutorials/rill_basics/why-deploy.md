@@ -8,6 +8,7 @@ tags:
   - OLAP:DuckDB
   - Rill Developer
   - Getting Started
+  - Tutorial
 ---
 
 For a full documentation on what the difference between Rill Cloud and Rill Developer is, click [here](/concepts/developerVsCloud). 
