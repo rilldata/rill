@@ -27,7 +27,6 @@
   import { dsnSchema, getYupSchema } from "./yupSchemas";
   import { ExternalLinkIcon } from "lucide-svelte";
   import {
-    CLICKHOUSE_DEFAULTS,
     CONNECTOR_TYPE_OPTIONS,
     type ClickHouseConnectorType,
   } from "../../connectors/olap/constants";
@@ -66,19 +65,6 @@
   });
   let paramsError: string | null = null;
   let paramsErrorDetails: string | undefined = undefined;
-
-  // Initialize form with default values when connector type changes
-  $: if (isClickHouse && !useDsn && connectorType === "self-managed") {
-    const defaults = CLICKHOUSE_DEFAULTS[connectorType];
-    paramsForm.update(($form) => ({
-      ...$form,
-      host: defaults.host.value,
-      port: defaults.port.value,
-      username: defaults.username.value,
-      password: defaults.password.value,
-      ssl: defaults.ssl.value,
-    }));
-  }
 
   // Form 2: DSN
   // SuperForms are not meant to have dynamic schemas, so we use a different form instance for the DSN form
@@ -246,7 +232,7 @@
                   placeholder={property.placeholder}
                   optional={!property.required}
                   secret={property.secret}
-                  hint={defaults[propertyKey]?.hint ?? property.hint}
+                  hint={property.hint}
                   errors={$paramsErrors[propertyKey]}
                   bind:value={$paramsForm[propertyKey]}
                   onInput={(_, e) => onStringInputChange(e)}
@@ -321,17 +307,15 @@
                       {@const label =
                         property.displayName +
                         (property.required ? "" : " (optional)")}
-                      {@const defaults = CLICKHOUSE_DEFAULTS[connectorType]}
                       <div class="py-1.5 first:pt-0 last:pb-0">
                         {#if property.type === ConnectorDriverPropertyType.TYPE_STRING || property.type === ConnectorDriverPropertyType.TYPE_NUMBER}
                           <Input
                             id={propertyKey}
                             label={property.displayName}
-                            placeholder={defaults[propertyKey]?.placeholder ??
-                              property.placeholder}
+                            placeholder={property.placeholder}
                             optional={!property.required}
                             secret={property.secret}
-                            hint={defaults[propertyKey]?.hint ?? property.hint}
+                            hint={property.hint}
                             errors={$paramsErrors[propertyKey]}
                             bind:value={$paramsForm[propertyKey]}
                             onInput={(_, e) => onStringInputChange(e)}
@@ -371,7 +355,7 @@
                           label={property.displayName}
                           placeholder={property.placeholder}
                           secret={property.secret}
-                          hint={defaults[propertyKey]?.hint ?? property.hint}
+                          hint={property.hint}
                           errors={$dsnErrors[propertyKey]}
                           bind:value={$dsnForm[propertyKey]}
                           alwaysShowError
