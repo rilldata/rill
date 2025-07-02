@@ -205,7 +205,6 @@ func (s *Service) startDeploymentInner(ctx context.Context, depl *database.Deplo
 				"admin_url":    s.opts.ExternalURL,
 				"access_token": dat.Token().String(),
 				"project_id":   depl.ProjectID,
-				"nonce":        time.Now().Format(time.RFC3339Nano), // Only set for consistency with updateDeployment
 			},
 		},
 		// Always configure a DuckDB connector, even if it's not set as the default OLAP connector
