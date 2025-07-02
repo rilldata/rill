@@ -425,16 +425,16 @@ func (r *registryCache) restartController(iwc *instanceWithController) {
 	go func() {
 		// Loop in case reopen gets set
 		for {
-			// Before starting the controller, sync the repo.
-			// This is necessary for resources (usually sources or models) that reference files in the repo,
-			// and may be triggered before the project parser is triggered and syncs the repo.
-			iwc.logger.Debug("syncing repo")
-			err := r.ensureRepoSync(iwc.ctx, iwc.instanceID)
+			// Before starting the controller, pull the repo.
+			// Even though the project parser will also do this, it needs to happen before the controller starts.
+			// This is necessary for models that reference files in the repo, since they may be triggered before the project parser is triggered.
+			iwc.logger.Debug("pulling repo")
+			err := r.ensureRepoReady(iwc.ctx, iwc.instanceID)
 			if err != nil {
-				iwc.logger.Warn("failed to sync repo", zap.Error(err))
-				// Even if repo sync failed, we'll start the controller
+				iwc.logger.Warn("failed to pull repo", zap.Error(err))
+				// Even if repo pull failed, we'll start the controller
 			} else {
-				iwc.logger.Debug("repo synced")
+				iwc.logger.Debug("repo pulled")
 			}
 
 			// Before starting the controller, update the project config.
@@ -513,14 +513,14 @@ func (r *registryCache) restartController(iwc *instanceWithController) {
 	}()
 }
 
-func (r *registryCache) ensureRepoSync(ctx context.Context, instanceID string) error {
+func (r *registryCache) ensureRepoReady(ctx context.Context, instanceID string) error {
 	repo, release, err := r.rt.Repo(ctx, instanceID)
 	if err != nil {
 		return err
 	}
 	defer release()
 
-	return repo.Sync(ctx)
+	return repo.Pull(ctx, false, false)
 }
 
 func (r *registryCache) ensureProjectParser(ctx context.Context, instanceID string, ctrl *Controller) {

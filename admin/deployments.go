@@ -394,35 +394,15 @@ func (s *Service) UpdateDeployment(ctx context.Context, d *database.Deployment, 
 		return err
 	}
 
-	// Connect to the runtime, and update the instance's connectors/variables/annotations.
+	// Connect to the runtime, and update the instance's variables/annotations.
+	// Any call to EditInstance will also force it to check for any repo config changes (e.g. branch or archive ID).
 	rt, err := s.OpenRuntimeClient(d)
 	if err != nil {
 		return err
 	}
 	defer rt.Close()
-	res, err := rt.GetInstance(ctx, &runtimev1.GetInstanceRequest{
-		InstanceId: d.RuntimeInstanceID,
-		Sensitive:  true,
-	})
-	if err != nil {
-		return err
-	}
-	connectors := res.Instance.Connectors
-	for _, c := range connectors {
-		if c.Name == "admin" {
-			if c.Config == nil {
-				c.Config = make(map[string]string)
-			}
-
-			// Adding a nonce will cause the runtime to evict any currently open handle and open a new one.
-			if opts.EvictCachedRepo {
-				c.Config["nonce"] = time.Now().Format(time.RFC3339Nano)
-			}
-		}
-	}
 	_, err = rt.EditInstance(ctx, &runtimev1.EditInstanceRequest{
 		InstanceId:  d.RuntimeInstanceID,
-		Connectors:  connectors,
 		Variables:   vars,
 		Annotations: opts.Annotations.ToMap(),
 	})
