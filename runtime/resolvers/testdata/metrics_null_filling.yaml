@@ -316,6 +316,48 @@ tests:
       - sum: 0
         sum_prev: 1
         time__day: "2024-01-04T00:00:00Z"
+  - name: null_filling_coalesce_compare_time_compute_duckdb
+    resolver: metrics
+    properties:
+      metrics_view: duckdb_metrics
+      dimensions:
+        - name: time__day
+          compute:
+            time_floor:
+              dimension: time
+              grain: day
+      measures:
+        - name: sum
+        - name: sum_prev
+          compute:
+            comparison_value:
+              measure: sum
+        - name: time__day__prev
+          compute:
+            comparison_time:
+              dimension: time
+      time_range:
+        end: 2024-01-05T00:00:00Z
+        start: 2024-01-03T00:00:00Z
+      comparison_time_range:
+        end: 2024-01-03T00:00:00Z
+        start: 2024-01-01T00:00:00Z
+      sort:
+        - name: time__day
+      spine:
+        time:
+          start:
+          end:
+          grain:
+    result:
+      - sum: 10
+        sum_prev: null
+        time__day: "2024-01-03T00:00:00Z"
+        time__day__prev: "2024-01-01T00:00:00Z"
+      - sum: 0
+        sum_prev: 1
+        time__day: "2024-01-04T00:00:00Z"
+        time__day__prev: "2024-01-02T00:00:00Z"
   - name: null_filling_no_overlap_results_duckdb
     resolver: metrics
     properties:
