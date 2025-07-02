@@ -258,8 +258,7 @@ export const completeExistingConversation = createRuntimeServiceComplete(
       },
 
       onSuccess: (response, variables) => {
-        const { instanceId, data } = variables;
-        const conversationId = data.conversationId!;
+        const { instanceId } = variables;
 
         if (response.conversationId) {
           const queryKey = getRuntimeServiceGetConversationQueryKey(

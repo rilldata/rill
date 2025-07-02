@@ -51,7 +51,8 @@ func (s *Server) mcpListTools(ctx context.Context, instanceID string) ([]runtime
 	}
 
 	runtimeTools := make([]runtime.Tool, len(tools.Tools))
-	for i, tool := range tools.Tools {
+	for i := range tools.Tools {
+		tool := &tools.Tools[i]
 		runtimeTool := runtime.Tool{
 			Name:        tool.Name,
 			Description: tool.Description,
@@ -68,7 +69,7 @@ func (s *Server) mcpListTools(ctx context.Context, instanceID string) ([]runtime
 	return runtimeTools, nil
 }
 
-func (s *Server) mcpExecuteTool(ctx context.Context, instanceID string, toolName string, toolArgs map[string]any) (any, error) {
+func (s *Server) mcpExecuteTool(ctx context.Context, instanceID, toolName string, toolArgs map[string]any) (any, error) {
 	// Add instance ID to context for internal MCP server tools
 	ctxWithInstance := context.WithValue(ctx, mcpInstanceIDKey{}, instanceID)
 

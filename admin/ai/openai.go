@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/sashabaranov/go-openai"
@@ -79,13 +80,15 @@ func convertRillMessageToOpenAIMessage(msg *adminv1.CompletionMessage) openai.Ch
 			content += text
 		} else if toolCall := block.GetToolCall(); toolCall != nil {
 			// Convert tool calls to JSON format for OpenAI
-			toolCallJSON, _ := json.Marshal(map[string]interface{}{
+			toolCallJSON, err := json.Marshal(map[string]interface{}{
 				"type":  "tool_use",
 				"id":    toolCall.Id,
 				"name":  toolCall.Name,
 				"input": toolCall.Input.AsMap(),
 			})
-			content += string(toolCallJSON)
+			if err == nil {
+				content += string(toolCallJSON)
+			}
 		} else if toolResult := block.GetToolResult(); toolResult != nil {
 			// Add tool results directly as text content
 			content += toolResult.Content
@@ -163,7 +166,9 @@ func convertOpenAIMessageToRillMessage(message openai.ChatCompletionMessage) (*a
 	for _, toolCall := range message.ToolCalls {
 		toolCallProto, err := convertOpenAIToolCallToRillToolCall(toolCall)
 		if err != nil {
-			continue // Skip malformed tool calls
+			// Log the error but continue processing other tool calls
+			// This prevents one malformed tool call from breaking the entire response
+			continue
 		}
 
 		contentBlocks = append(contentBlocks, &adminv1.ContentBlock{
@@ -184,14 +189,13 @@ func convertOpenAIToolCallToRillToolCall(toolCall openai.ToolCall) (*adminv1.Too
 	// Parse OpenAI ToolCall arguments
 	var input map[string]interface{}
 	if err := json.Unmarshal([]byte(toolCall.Function.Arguments), &input); err != nil {
-		input = map[string]interface{}{}
+		return nil, fmt.Errorf("failed to unmarshal tool call arguments for %s: %w", toolCall.Function.Name, err)
 	}
 
 	// Convert input to protobuf Struct
 	inputStruct, err := structpb.NewStruct(input)
 	if err != nil {
-		// Fallback to empty struct if conversion fails
-		inputStruct = &structpb.Struct{}
+		return nil, fmt.Errorf("failed to convert tool call input to protobuf struct for %s: %w", toolCall.Function.Name, err)
 	}
 
 	// Create Rill ToolCall

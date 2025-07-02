@@ -16,8 +16,10 @@ import (
 // ===== CONSTANTS AND TYPES =====
 
 // Constants for AI completion
-const aiGenerateTimeout = 30 * time.Second
-const maxToolCallIterations = 20
+const (
+	aiGenerateTimeout     = 30 * time.Second
+	maxToolCallIterations = 20
+)
 
 // ===== PUBLIC API =====
 
@@ -415,25 +417,26 @@ func createConversationTitle(messages []*runtimev1.Message) string {
 	for _, msg := range messages {
 		if msg.Role == "user" {
 			for _, block := range msg.Content {
-				if block.GetText() != "" {
-					title := strings.TrimSpace(block.GetText())
-
-					// Truncate to 50 characters and add ellipsis if needed
-					if len(title) > 50 {
-						title = title[:50] + "..."
-					}
-
-					// Replace newlines with spaces
-					title = strings.ReplaceAll(title, "\n", " ")
-					title = strings.ReplaceAll(title, "\r", " ")
-
-					// Collapse multiple spaces
-					for strings.Contains(title, "  ") {
-						title = strings.ReplaceAll(title, "  ", " ")
-					}
-
-					return title
+				if block.GetText() == "" {
+					continue
 				}
+				title := strings.TrimSpace(block.GetText())
+
+				// Truncate to 50 characters and add ellipsis if needed
+				if len(title) > 50 {
+					title = title[:50] + "..."
+				}
+
+				// Replace newlines with spaces
+				title = strings.ReplaceAll(title, "\n", " ")
+				title = strings.ReplaceAll(title, "\r", " ")
+
+				// Collapse multiple spaces
+				for strings.Contains(title, "  ") {
+					title = strings.ReplaceAll(title, "  ", " ")
+				}
+
+				return title
 			}
 		}
 	}
