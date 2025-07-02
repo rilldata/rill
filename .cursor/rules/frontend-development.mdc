@@ -1,15 +1,25 @@
 ---
+<<<<<<< HEAD
 description:
 globs:
 alwaysApply: false
 ---
 
+=======
+description: 
+globs: 
+alwaysApply: false
+---
+>>>>>>> d29ffb72e (wip)
 # Frontend Development Guidelines
 
 ## Technology Stack
 
 ### Web Applications
+<<<<<<< HEAD
 
+=======
+>>>>>>> d29ffb72e (wip)
 - **web-local**: Local Rill application (data modeler)
 - **web-admin**: Admin control plane frontend
 - **web-common**: Shared components and utilities
@@ -17,27 +27,41 @@ alwaysApply: false
 ## Component Architecture
 
 ### Shared Components (web-common)
+<<<<<<< HEAD
 
+=======
+>>>>>>> d29ffb72e (wip)
 - Generic, reusable components
 - No business logic dependencies
 - Proper TypeScript interfaces
 - Comprehensive prop validation
 
 ### Component Guidelines
+<<<<<<< HEAD
 
+=======
+- Use PascalCase for component names
+- Match component name to file name
+>>>>>>> d29ffb72e (wip)
 - Keep components small and focused
 
 ## State Management
 
 ### Svelte Stores
+<<<<<<< HEAD
 
+=======
+>>>>>>> d29ffb72e (wip)
 - Use Svelte stores for global state
 - Keep stores modular and focused
 - Use derived stores for computed values
 - Implement proper store subscriptions
 
 ### Data Fetching
+<<<<<<< HEAD
 
+=======
+>>>>>>> d29ffb72e (wip)
 - Use `@tanstack/svelte-query` for server state
 - Implement proper loading states
 - Handle errors gracefully
@@ -46,7 +70,10 @@ alwaysApply: false
 ## API Integration
 
 ### Client Generation
+<<<<<<< HEAD
 
+=======
+>>>>>>> d29ffb72e (wip)
 - Use `orval` for OpenAPI client generation
 - Standardize the naming convention of the admin service usage. Example: `const removeProjectMemberUsergroup = createAdminServiceRemoveProjectMemberUsergroup();`
 - Generate clients in `web-common`
@@ -54,7 +81,10 @@ alwaysApply: false
 - Implement proper error handling
 
 ### API Patterns (TODO)
+<<<<<<< HEAD
 
+=======
+>>>>>>> d29ffb72e (wip)
 - Implement proper request/response types
 - Handle authentication and authorization
 - Use proper error boundaries
@@ -62,13 +92,22 @@ alwaysApply: false
 ## Accessibility
 
 ### ARIA Guidelines
+<<<<<<< HEAD
 
+=======
+>>>>>>> d29ffb72e (wip)
 - Use proper ARIA labels and roles
 - Implement keyboard navigation
 - Ensure proper color contrast
 - Test with screen readers
 
 ### Semantic HTML
+<<<<<<< HEAD
 
 - Implement proper heading hierarchy
 - Use proper form labels and descriptions
+=======
+- Use semantic HTML elements
+- Implement proper heading hierarchy
+- Use proper form labels and descriptions
+>>>>>>> d29ffb72e (wip)
