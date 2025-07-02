@@ -81,6 +81,30 @@ paths:
           type: string
       tags:
         - ConnectorService
+  /v1/connectors/database_schemas:
+    get:
+      summary: ListDatabaseSchemas list all schemas across databases
+      operationId: ConnectorService_ListDatabaseSchemas
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ListDatabaseSchemasResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: query
+          required: false
+          type: string
+        - name: connector
+          in: query
+          required: false
+          type: string
+      tags:
+        - ConnectorService
   /v1/connectors/meta:
     get:
       summary: |-
@@ -129,30 +153,6 @@ paths:
           required: false
           type: string
         - name: table
-          in: query
-          required: false
-          type: string
-      tags:
-        - ConnectorService
-  /v1/connectors/schemas:
-    get:
-      summary: ListDatabaseSchemas list all schemas across databases
-      operationId: ConnectorService_ListDatabaseSchemas
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1ListDatabaseSchemasResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: instanceId
-          in: query
-          required: false
-          type: string
-        - name: connector
           in: query
           required: false
           type: string

@@ -2260,17 +2260,17 @@ export type ConnectorServiceBigQueryListTablesParams = {
   pageToken?: string;
 };
 
+export type ConnectorServiceListDatabaseSchemasParams = {
+  instanceId?: string;
+  connector?: string;
+};
+
 export type ConnectorServiceOLAPGetTableParams = {
   instanceId?: string;
   connector?: string;
   database?: string;
   databaseSchema?: string;
   table?: string;
-};
-
-export type ConnectorServiceListDatabaseSchemasParams = {
-  instanceId?: string;
-  connector?: string;
 };
 
 export type ConnectorServiceGetTableParams = {

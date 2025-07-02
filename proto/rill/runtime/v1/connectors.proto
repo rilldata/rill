@@ -54,7 +54,7 @@ service ConnectorService {
 
   // ListDatabaseSchemas list all schemas across databases 
   rpc ListDatabaseSchemas(ListDatabaseSchemasRequest) returns (ListDatabaseSchemasResponse) {
-    option (google.api.http) = {get: "/v1/connectors/schemas"};
+    option (google.api.http) = {get: "/v1/connectors/database_schemas"};
   }
 
   // ListTables list all tables for database and database_schema provided
