@@ -38,9 +38,14 @@ func (c *connection) All(ctx context.Context, like string) ([]*drivers.Table, er
 		ORDER BY database, database_schema, name, table_type
 	`, likeClause)
 
-	db, err := c.getDB()
+	dsn, err := c.configProperties.resolveDSN()
 	if err != nil {
 		return nil, err
+	}
+
+	db, err := sqlx.Open("snowflake", dsn)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open connection: %w", err)
 	}
 	defer db.Close()
 
@@ -87,9 +92,14 @@ func (c *connection) Lookup(ctx context.Context, dbName, schema, name string) (*
 	}
 	args = append(args, name)
 
-	db, err := c.getDB()
+	dsn, err := c.configProperties.resolveDSN()
 	if err != nil {
 		return nil, err
+	}
+
+	db, err := sqlx.Open("snowflake", dsn)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open connection: %w", err)
 	}
 	defer db.Close()
 
