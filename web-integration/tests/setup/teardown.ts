@@ -1,24 +1,9 @@
-import { expect } from "@playwright/test";
 import { RILL_DEVTOOL_BACKGROUND_PROCESS_PID_FILE } from "@rilldata/web-integration/tests/constants";
-import { isOrgDeleted } from "@rilldata/web-common/tests/utils/is-org-deleted";
 import { execAsync } from "@rilldata/web-common/tests/utils/spawn";
 import fs from "fs";
 import { test as teardown } from "./base";
 
 teardown.describe("global teardown", () => {
-  teardown("should clean up the test organization", async ({ cli: _ }) => {
-    await execAsync("rill org delete e2e --interactive=false");
-
-    // Wait for the organization to be deleted
-    // This includes deleting the org from Orb and Stripe, which we'd like to do to keep those environments clean.
-    await expect
-      .poll(async () => await isOrgDeleted("e2e"), {
-        intervals: [1_000],
-        timeout: 15_000,
-      })
-      .toBeTruthy();
-  });
-
   teardown("should stop all services", async () => {
     // Stop the admin and runtime services:
     // 1. Get the process ID from the file
