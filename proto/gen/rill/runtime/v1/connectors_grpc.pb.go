@@ -28,7 +28,7 @@ const (
 	ConnectorService_GCSGetCredentialsInfo_FullMethodName = "/rill.runtime.v1.ConnectorService/GCSGetCredentialsInfo"
 	ConnectorService_OLAPListTables_FullMethodName        = "/rill.runtime.v1.ConnectorService/OLAPListTables"
 	ConnectorService_OLAPGetTable_FullMethodName          = "/rill.runtime.v1.ConnectorService/OLAPGetTable"
-	ConnectorService_ListSchemas_FullMethodName           = "/rill.runtime.v1.ConnectorService/ListSchemas"
+	ConnectorService_ListDatabaseSchemas_FullMethodName   = "/rill.runtime.v1.ConnectorService/ListDatabaseSchemas"
 	ConnectorService_ListTables_FullMethodName            = "/rill.runtime.v1.ConnectorService/ListTables"
 	ConnectorService_GetTable_FullMethodName              = "/rill.runtime.v1.ConnectorService/GetTable"
 	ConnectorService_BigQueryListDatasets_FullMethodName  = "/rill.runtime.v1.ConnectorService/BigQueryListDatasets"
@@ -57,8 +57,8 @@ type ConnectorServiceClient interface {
 	OLAPListTables(ctx context.Context, in *OLAPListTablesRequest, opts ...grpc.CallOption) (*OLAPListTablesResponse, error)
 	// OLAPGetTable returns metadata about a table or view in an OLAP
 	OLAPGetTable(ctx context.Context, in *OLAPGetTableRequest, opts ...grpc.CallOption) (*OLAPGetTableResponse, error)
-	// ListSchemas list all schemas across databases
-	ListSchemas(ctx context.Context, in *ListSchemasRequest, opts ...grpc.CallOption) (*ListSchemasResponse, error)
+	// ListDatabaseSchemas list all schemas across databases
+	ListDatabaseSchemas(ctx context.Context, in *ListDatabaseSchemasRequest, opts ...grpc.CallOption) (*ListDatabaseSchemasResponse, error)
 	// ListTables list all tables for database and database_schema provided
 	ListTables(ctx context.Context, in *ListTablesRequest, opts ...grpc.CallOption) (*ListTablesResponse, error)
 	// GetTable returns metadata about a table or view
@@ -167,10 +167,10 @@ func (c *connectorServiceClient) OLAPGetTable(ctx context.Context, in *OLAPGetTa
 	return out, nil
 }
 
-func (c *connectorServiceClient) ListSchemas(ctx context.Context, in *ListSchemasRequest, opts ...grpc.CallOption) (*ListSchemasResponse, error) {
+func (c *connectorServiceClient) ListDatabaseSchemas(ctx context.Context, in *ListDatabaseSchemasRequest, opts ...grpc.CallOption) (*ListDatabaseSchemasResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(ListSchemasResponse)
-	err := c.cc.Invoke(ctx, ConnectorService_ListSchemas_FullMethodName, in, out, cOpts...)
+	out := new(ListDatabaseSchemasResponse)
+	err := c.cc.Invoke(ctx, ConnectorService_ListDatabaseSchemas_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -239,8 +239,8 @@ type ConnectorServiceServer interface {
 	OLAPListTables(context.Context, *OLAPListTablesRequest) (*OLAPListTablesResponse, error)
 	// OLAPGetTable returns metadata about a table or view in an OLAP
 	OLAPGetTable(context.Context, *OLAPGetTableRequest) (*OLAPGetTableResponse, error)
-	// ListSchemas list all schemas across databases
-	ListSchemas(context.Context, *ListSchemasRequest) (*ListSchemasResponse, error)
+	// ListDatabaseSchemas list all schemas across databases
+	ListDatabaseSchemas(context.Context, *ListDatabaseSchemasRequest) (*ListDatabaseSchemasResponse, error)
 	// ListTables list all tables for database and database_schema provided
 	ListTables(context.Context, *ListTablesRequest) (*ListTablesResponse, error)
 	// GetTable returns metadata about a table or view
@@ -286,8 +286,8 @@ func (UnimplementedConnectorServiceServer) OLAPListTables(context.Context, *OLAP
 func (UnimplementedConnectorServiceServer) OLAPGetTable(context.Context, *OLAPGetTableRequest) (*OLAPGetTableResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method OLAPGetTable not implemented")
 }
-func (UnimplementedConnectorServiceServer) ListSchemas(context.Context, *ListSchemasRequest) (*ListSchemasResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ListSchemas not implemented")
+func (UnimplementedConnectorServiceServer) ListDatabaseSchemas(context.Context, *ListDatabaseSchemasRequest) (*ListDatabaseSchemasResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListDatabaseSchemas not implemented")
 }
 func (UnimplementedConnectorServiceServer) ListTables(context.Context, *ListTablesRequest) (*ListTablesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListTables not implemented")
@@ -484,20 +484,20 @@ func _ConnectorService_OLAPGetTable_Handler(srv interface{}, ctx context.Context
 	return interceptor(ctx, in, info, handler)
 }
 
-func _ConnectorService_ListSchemas_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ListSchemasRequest)
+func _ConnectorService_ListDatabaseSchemas_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListDatabaseSchemasRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ConnectorServiceServer).ListSchemas(ctx, in)
+		return srv.(ConnectorServiceServer).ListDatabaseSchemas(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: ConnectorService_ListSchemas_FullMethodName,
+		FullMethod: ConnectorService_ListDatabaseSchemas_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ConnectorServiceServer).ListSchemas(ctx, req.(*ListSchemasRequest))
+		return srv.(ConnectorServiceServer).ListDatabaseSchemas(ctx, req.(*ListDatabaseSchemasRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -618,8 +618,8 @@ var ConnectorService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _ConnectorService_OLAPGetTable_Handler,
 		},
 		{
-			MethodName: "ListSchemas",
-			Handler:    _ConnectorService_ListSchemas_Handler,
+			MethodName: "ListDatabaseSchemas",
+			Handler:    _ConnectorService_ListDatabaseSchemas_Handler,
 		},
 		{
 			MethodName: "ListTables",

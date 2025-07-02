@@ -16,7 +16,7 @@ import (
 //
 // Since all user tables are in `druid` schema so we hardcode schema as `druid` and does not query database
 
-func (c *connection) ListSchemas(ctx context.Context) ([]*drivers.DatabaseSchemaInfo, error) {
+func (c *connection) ListDatabaseSchemas(ctx context.Context) ([]*drivers.DatabaseSchemaInfo, error) {
 	return nil, nil
 }
 

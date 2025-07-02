@@ -732,6 +732,11 @@ export interface V1CreateTriggerResponse {
   [key: string]: unknown;
 }
 
+export interface V1DatabaseSchemaInfo {
+  database?: string;
+  databaseSchema?: string;
+}
+
 export interface V1DeleteFileResponse {
   [key: string]: unknown;
 }
@@ -1119,6 +1124,10 @@ export interface V1ListConnectorDriversResponse {
   connectors?: V1ConnectorDriver[];
 }
 
+export interface V1ListDatabaseSchemasResponse {
+  schemas?: V1DatabaseSchemaInfo[];
+}
+
 export interface V1ListExamplesResponse {
   examples?: V1Example[];
 }
@@ -1139,10 +1148,6 @@ export interface V1ListNotifierConnectorsResponse {
 
 export interface V1ListResourcesResponse {
   resources?: V1Resource[];
-}
-
-export interface V1ListSchemasResponse {
-  schemas?: V1SchemaInfo[];
 }
 
 export interface V1ListTablesResponse {
@@ -2025,11 +2030,6 @@ export interface V1Schedule {
   timeZone?: string;
 }
 
-export interface V1SchemaInfo {
-  database?: string;
-  databaseSchema?: string;
-}
-
 export interface V1SecurityRule {
   access?: V1SecurityRuleAccess;
   fieldAccess?: V1SecurityRuleFieldAccess;
@@ -2268,7 +2268,7 @@ export type ConnectorServiceOLAPGetTableParams = {
   table?: string;
 };
 
-export type ConnectorServiceListSchemasParams = {
+export type ConnectorServiceListDatabaseSchemasParams = {
   instanceId?: string;
   connector?: string;
 };

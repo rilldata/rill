@@ -1111,9 +1111,9 @@ export class OLAPGetTableResponse extends Message<OLAPGetTableResponse> {
 }
 
 /**
- * @generated from message rill.runtime.v1.ListSchemasRequest
+ * @generated from message rill.runtime.v1.ListDatabaseSchemasRequest
  */
-export class ListSchemasRequest extends Message<ListSchemasRequest> {
+export class ListDatabaseSchemasRequest extends Message<ListDatabaseSchemasRequest> {
   /**
    * @generated from field: string instance_id = 1;
    */
@@ -1124,76 +1124,76 @@ export class ListSchemasRequest extends Message<ListSchemasRequest> {
    */
   connector = "";
 
-  constructor(data?: PartialMessage<ListSchemasRequest>) {
+  constructor(data?: PartialMessage<ListDatabaseSchemasRequest>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.runtime.v1.ListSchemasRequest";
+  static readonly typeName = "rill.runtime.v1.ListDatabaseSchemasRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListSchemasRequest {
-    return new ListSchemasRequest().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListDatabaseSchemasRequest {
+    return new ListDatabaseSchemasRequest().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListSchemasRequest {
-    return new ListSchemasRequest().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListDatabaseSchemasRequest {
+    return new ListDatabaseSchemasRequest().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListSchemasRequest {
-    return new ListSchemasRequest().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListDatabaseSchemasRequest {
+    return new ListDatabaseSchemasRequest().fromJsonString(jsonString, options);
   }
 
-  static equals(a: ListSchemasRequest | PlainMessage<ListSchemasRequest> | undefined, b: ListSchemasRequest | PlainMessage<ListSchemasRequest> | undefined): boolean {
-    return proto3.util.equals(ListSchemasRequest, a, b);
+  static equals(a: ListDatabaseSchemasRequest | PlainMessage<ListDatabaseSchemasRequest> | undefined, b: ListDatabaseSchemasRequest | PlainMessage<ListDatabaseSchemasRequest> | undefined): boolean {
+    return proto3.util.equals(ListDatabaseSchemasRequest, a, b);
   }
 }
 
 /**
- * @generated from message rill.runtime.v1.ListSchemasResponse
+ * @generated from message rill.runtime.v1.ListDatabaseSchemasResponse
  */
-export class ListSchemasResponse extends Message<ListSchemasResponse> {
+export class ListDatabaseSchemasResponse extends Message<ListDatabaseSchemasResponse> {
   /**
-   * @generated from field: repeated rill.runtime.v1.SchemaInfo schemas = 1;
+   * @generated from field: repeated rill.runtime.v1.DatabaseSchemaInfo schemas = 1;
    */
-  schemas: SchemaInfo[] = [];
+  schemas: DatabaseSchemaInfo[] = [];
 
-  constructor(data?: PartialMessage<ListSchemasResponse>) {
+  constructor(data?: PartialMessage<ListDatabaseSchemasResponse>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.runtime.v1.ListSchemasResponse";
+  static readonly typeName = "rill.runtime.v1.ListDatabaseSchemasResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "schemas", kind: "message", T: SchemaInfo, repeated: true },
+    { no: 1, name: "schemas", kind: "message", T: DatabaseSchemaInfo, repeated: true },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListSchemasResponse {
-    return new ListSchemasResponse().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListDatabaseSchemasResponse {
+    return new ListDatabaseSchemasResponse().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListSchemasResponse {
-    return new ListSchemasResponse().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListDatabaseSchemasResponse {
+    return new ListDatabaseSchemasResponse().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListSchemasResponse {
-    return new ListSchemasResponse().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListDatabaseSchemasResponse {
+    return new ListDatabaseSchemasResponse().fromJsonString(jsonString, options);
   }
 
-  static equals(a: ListSchemasResponse | PlainMessage<ListSchemasResponse> | undefined, b: ListSchemasResponse | PlainMessage<ListSchemasResponse> | undefined): boolean {
-    return proto3.util.equals(ListSchemasResponse, a, b);
+  static equals(a: ListDatabaseSchemasResponse | PlainMessage<ListDatabaseSchemasResponse> | undefined, b: ListDatabaseSchemasResponse | PlainMessage<ListDatabaseSchemasResponse> | undefined): boolean {
+    return proto3.util.equals(ListDatabaseSchemasResponse, a, b);
   }
 }
 
 /**
- * @generated from message rill.runtime.v1.SchemaInfo
+ * @generated from message rill.runtime.v1.DatabaseSchemaInfo
  */
-export class SchemaInfo extends Message<SchemaInfo> {
+export class DatabaseSchemaInfo extends Message<DatabaseSchemaInfo> {
   /**
    * @generated from field: string database = 1;
    */
@@ -1204,32 +1204,32 @@ export class SchemaInfo extends Message<SchemaInfo> {
    */
   databaseSchema = "";
 
-  constructor(data?: PartialMessage<SchemaInfo>) {
+  constructor(data?: PartialMessage<DatabaseSchemaInfo>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.runtime.v1.SchemaInfo";
+  static readonly typeName = "rill.runtime.v1.DatabaseSchemaInfo";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "database", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "database_schema", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SchemaInfo {
-    return new SchemaInfo().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DatabaseSchemaInfo {
+    return new DatabaseSchemaInfo().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SchemaInfo {
-    return new SchemaInfo().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): DatabaseSchemaInfo {
+    return new DatabaseSchemaInfo().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SchemaInfo {
-    return new SchemaInfo().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): DatabaseSchemaInfo {
+    return new DatabaseSchemaInfo().fromJsonString(jsonString, options);
   }
 
-  static equals(a: SchemaInfo | PlainMessage<SchemaInfo> | undefined, b: SchemaInfo | PlainMessage<SchemaInfo> | undefined): boolean {
-    return proto3.util.equals(SchemaInfo, a, b);
+  static equals(a: DatabaseSchemaInfo | PlainMessage<DatabaseSchemaInfo> | undefined, b: DatabaseSchemaInfo | PlainMessage<DatabaseSchemaInfo> | undefined): boolean {
+    return proto3.util.equals(DatabaseSchemaInfo, a, b);
   }
 }
 

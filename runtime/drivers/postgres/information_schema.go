@@ -6,7 +6,7 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 )
 
-func (c *connection) ListSchemas(ctx context.Context) ([]*drivers.DatabaseSchemaInfo, error) {
+func (c *connection) ListDatabaseSchemas(ctx context.Context) ([]*drivers.DatabaseSchemaInfo, error) {
 	return nil, nil
 }
 

@@ -52,8 +52,8 @@ service ConnectorService {
     option (google.api.http) = {get: "/v1/connectors/olap/table"};
   }
 
-  // ListSchemas list all schemas across databases 
-  rpc ListSchemas(ListSchemasRequest) returns (ListSchemasResponse) {
+  // ListDatabaseSchemas list all schemas across databases 
+  rpc ListDatabaseSchemas(ListDatabaseSchemasRequest) returns (ListDatabaseSchemasResponse) {
     option (google.api.http) = {get: "/v1/connectors/schemas"};
   }
 
@@ -222,16 +222,16 @@ message OLAPGetTableResponse {
   int64 physical_size_bytes = 4;
 }
 
-message ListSchemasRequest {
+message ListDatabaseSchemasRequest {
   string instance_id = 1;
   string connector = 2;
 }
 
-message ListSchemasResponse {
-  repeated SchemaInfo schemas = 1;
+message ListDatabaseSchemasResponse {
+  repeated DatabaseSchemaInfo schemas = 1;
 }
 
-message SchemaInfo {
+message DatabaseSchemaInfo {
   string database = 1;
   string database_schema = 2;
 }

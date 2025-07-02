@@ -2559,22 +2559,22 @@ var _ interface {
 	ErrorName() string
 } = OLAPGetTableResponseValidationError{}
 
-// Validate checks the field values on ListSchemasRequest with the rules
-// defined in the proto definition for this message. If any rules are
+// Validate checks the field values on ListDatabaseSchemasRequest with the
+// rules defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
-func (m *ListSchemasRequest) Validate() error {
+func (m *ListDatabaseSchemasRequest) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on ListSchemasRequest with the rules
-// defined in the proto definition for this message. If any rules are
+// ValidateAll checks the field values on ListDatabaseSchemasRequest with the
+// rules defined in the proto definition for this message. If any rules are
 // violated, the result is a list of violation errors wrapped in
-// ListSchemasRequestMultiError, or nil if none found.
-func (m *ListSchemasRequest) ValidateAll() error {
+// ListDatabaseSchemasRequestMultiError, or nil if none found.
+func (m *ListDatabaseSchemasRequest) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *ListSchemasRequest) validate(all bool) error {
+func (m *ListDatabaseSchemasRequest) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -2586,19 +2586,19 @@ func (m *ListSchemasRequest) validate(all bool) error {
 	// no validation rules for Connector
 
 	if len(errors) > 0 {
-		return ListSchemasRequestMultiError(errors)
+		return ListDatabaseSchemasRequestMultiError(errors)
 	}
 
 	return nil
 }
 
-// ListSchemasRequestMultiError is an error wrapping multiple validation errors
-// returned by ListSchemasRequest.ValidateAll() if the designated constraints
-// aren't met.
-type ListSchemasRequestMultiError []error
+// ListDatabaseSchemasRequestMultiError is an error wrapping multiple
+// validation errors returned by ListDatabaseSchemasRequest.ValidateAll() if
+// the designated constraints aren't met.
+type ListDatabaseSchemasRequestMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m ListSchemasRequestMultiError) Error() string {
+func (m ListDatabaseSchemasRequestMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -2607,11 +2607,11 @@ func (m ListSchemasRequestMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m ListSchemasRequestMultiError) AllErrors() []error { return m }
+func (m ListDatabaseSchemasRequestMultiError) AllErrors() []error { return m }
 
-// ListSchemasRequestValidationError is the validation error returned by
-// ListSchemasRequest.Validate if the designated constraints aren't met.
-type ListSchemasRequestValidationError struct {
+// ListDatabaseSchemasRequestValidationError is the validation error returned
+// by ListDatabaseSchemasRequest.Validate if the designated constraints aren't met.
+type ListDatabaseSchemasRequestValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -2619,24 +2619,24 @@ type ListSchemasRequestValidationError struct {
 }
 
 // Field function returns field value.
-func (e ListSchemasRequestValidationError) Field() string { return e.field }
+func (e ListDatabaseSchemasRequestValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e ListSchemasRequestValidationError) Reason() string { return e.reason }
+func (e ListDatabaseSchemasRequestValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e ListSchemasRequestValidationError) Cause() error { return e.cause }
+func (e ListDatabaseSchemasRequestValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e ListSchemasRequestValidationError) Key() bool { return e.key }
+func (e ListDatabaseSchemasRequestValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e ListSchemasRequestValidationError) ErrorName() string {
-	return "ListSchemasRequestValidationError"
+func (e ListDatabaseSchemasRequestValidationError) ErrorName() string {
+	return "ListDatabaseSchemasRequestValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e ListSchemasRequestValidationError) Error() string {
+func (e ListDatabaseSchemasRequestValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -2648,14 +2648,14 @@ func (e ListSchemasRequestValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sListSchemasRequest.%s: %s%s",
+		"invalid %sListDatabaseSchemasRequest.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = ListSchemasRequestValidationError{}
+var _ error = ListDatabaseSchemasRequestValidationError{}
 
 var _ interface {
 	Field() string
@@ -2663,24 +2663,24 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = ListSchemasRequestValidationError{}
+} = ListDatabaseSchemasRequestValidationError{}
 
-// Validate checks the field values on ListSchemasResponse with the rules
-// defined in the proto definition for this message. If any rules are
+// Validate checks the field values on ListDatabaseSchemasResponse with the
+// rules defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
-func (m *ListSchemasResponse) Validate() error {
+func (m *ListDatabaseSchemasResponse) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on ListSchemasResponse with the rules
-// defined in the proto definition for this message. If any rules are
+// ValidateAll checks the field values on ListDatabaseSchemasResponse with the
+// rules defined in the proto definition for this message. If any rules are
 // violated, the result is a list of violation errors wrapped in
-// ListSchemasResponseMultiError, or nil if none found.
-func (m *ListSchemasResponse) ValidateAll() error {
+// ListDatabaseSchemasResponseMultiError, or nil if none found.
+func (m *ListDatabaseSchemasResponse) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *ListSchemasResponse) validate(all bool) error {
+func (m *ListDatabaseSchemasResponse) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -2694,7 +2694,7 @@ func (m *ListSchemasResponse) validate(all bool) error {
 			switch v := interface{}(item).(type) {
 			case interface{ ValidateAll() error }:
 				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, ListSchemasResponseValidationError{
+					errors = append(errors, ListDatabaseSchemasResponseValidationError{
 						field:  fmt.Sprintf("Schemas[%v]", idx),
 						reason: "embedded message failed validation",
 						cause:  err,
@@ -2702,7 +2702,7 @@ func (m *ListSchemasResponse) validate(all bool) error {
 				}
 			case interface{ Validate() error }:
 				if err := v.Validate(); err != nil {
-					errors = append(errors, ListSchemasResponseValidationError{
+					errors = append(errors, ListDatabaseSchemasResponseValidationError{
 						field:  fmt.Sprintf("Schemas[%v]", idx),
 						reason: "embedded message failed validation",
 						cause:  err,
@@ -2711,7 +2711,7 @@ func (m *ListSchemasResponse) validate(all bool) error {
 			}
 		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
 			if err := v.Validate(); err != nil {
-				return ListSchemasResponseValidationError{
+				return ListDatabaseSchemasResponseValidationError{
 					field:  fmt.Sprintf("Schemas[%v]", idx),
 					reason: "embedded message failed validation",
 					cause:  err,
@@ -2722,19 +2722,19 @@ func (m *ListSchemasResponse) validate(all bool) error {
 	}
 
 	if len(errors) > 0 {
-		return ListSchemasResponseMultiError(errors)
+		return ListDatabaseSchemasResponseMultiError(errors)
 	}
 
 	return nil
 }
 
-// ListSchemasResponseMultiError is an error wrapping multiple validation
-// errors returned by ListSchemasResponse.ValidateAll() if the designated
-// constraints aren't met.
-type ListSchemasResponseMultiError []error
+// ListDatabaseSchemasResponseMultiError is an error wrapping multiple
+// validation errors returned by ListDatabaseSchemasResponse.ValidateAll() if
+// the designated constraints aren't met.
+type ListDatabaseSchemasResponseMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m ListSchemasResponseMultiError) Error() string {
+func (m ListDatabaseSchemasResponseMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -2743,11 +2743,12 @@ func (m ListSchemasResponseMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m ListSchemasResponseMultiError) AllErrors() []error { return m }
+func (m ListDatabaseSchemasResponseMultiError) AllErrors() []error { return m }
 
-// ListSchemasResponseValidationError is the validation error returned by
-// ListSchemasResponse.Validate if the designated constraints aren't met.
-type ListSchemasResponseValidationError struct {
+// ListDatabaseSchemasResponseValidationError is the validation error returned
+// by ListDatabaseSchemasResponse.Validate if the designated constraints
+// aren't met.
+type ListDatabaseSchemasResponseValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -2755,24 +2756,24 @@ type ListSchemasResponseValidationError struct {
 }
 
 // Field function returns field value.
-func (e ListSchemasResponseValidationError) Field() string { return e.field }
+func (e ListDatabaseSchemasResponseValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e ListSchemasResponseValidationError) Reason() string { return e.reason }
+func (e ListDatabaseSchemasResponseValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e ListSchemasResponseValidationError) Cause() error { return e.cause }
+func (e ListDatabaseSchemasResponseValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e ListSchemasResponseValidationError) Key() bool { return e.key }
+func (e ListDatabaseSchemasResponseValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e ListSchemasResponseValidationError) ErrorName() string {
-	return "ListSchemasResponseValidationError"
+func (e ListDatabaseSchemasResponseValidationError) ErrorName() string {
+	return "ListDatabaseSchemasResponseValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e ListSchemasResponseValidationError) Error() string {
+func (e ListDatabaseSchemasResponseValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -2784,14 +2785,14 @@ func (e ListSchemasResponseValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sListSchemasResponse.%s: %s%s",
+		"invalid %sListDatabaseSchemasResponse.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = ListSchemasResponseValidationError{}
+var _ error = ListDatabaseSchemasResponseValidationError{}
 
 var _ interface {
 	Field() string
@@ -2799,24 +2800,24 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = ListSchemasResponseValidationError{}
+} = ListDatabaseSchemasResponseValidationError{}
 
-// Validate checks the field values on SchemaInfo with the rules defined in the
-// proto definition for this message. If any rules are violated, the first
-// error encountered is returned, or nil if there are no violations.
-func (m *SchemaInfo) Validate() error {
+// Validate checks the field values on DatabaseSchemaInfo with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *DatabaseSchemaInfo) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on SchemaInfo with the rules defined in
-// the proto definition for this message. If any rules are violated, the
-// result is a list of violation errors wrapped in SchemaInfoMultiError, or
-// nil if none found.
-func (m *SchemaInfo) ValidateAll() error {
+// ValidateAll checks the field values on DatabaseSchemaInfo with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// DatabaseSchemaInfoMultiError, or nil if none found.
+func (m *DatabaseSchemaInfo) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *SchemaInfo) validate(all bool) error {
+func (m *DatabaseSchemaInfo) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -2828,18 +2829,19 @@ func (m *SchemaInfo) validate(all bool) error {
 	// no validation rules for DatabaseSchema
 
 	if len(errors) > 0 {
-		return SchemaInfoMultiError(errors)
+		return DatabaseSchemaInfoMultiError(errors)
 	}
 
 	return nil
 }
 
-// SchemaInfoMultiError is an error wrapping multiple validation errors
-// returned by SchemaInfo.ValidateAll() if the designated constraints aren't met.
-type SchemaInfoMultiError []error
+// DatabaseSchemaInfoMultiError is an error wrapping multiple validation errors
+// returned by DatabaseSchemaInfo.ValidateAll() if the designated constraints
+// aren't met.
+type DatabaseSchemaInfoMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m SchemaInfoMultiError) Error() string {
+func (m DatabaseSchemaInfoMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -2848,11 +2850,11 @@ func (m SchemaInfoMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m SchemaInfoMultiError) AllErrors() []error { return m }
+func (m DatabaseSchemaInfoMultiError) AllErrors() []error { return m }
 
-// SchemaInfoValidationError is the validation error returned by
-// SchemaInfo.Validate if the designated constraints aren't met.
-type SchemaInfoValidationError struct {
+// DatabaseSchemaInfoValidationError is the validation error returned by
+// DatabaseSchemaInfo.Validate if the designated constraints aren't met.
+type DatabaseSchemaInfoValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -2860,22 +2862,24 @@ type SchemaInfoValidationError struct {
 }
 
 // Field function returns field value.
-func (e SchemaInfoValidationError) Field() string { return e.field }
+func (e DatabaseSchemaInfoValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e SchemaInfoValidationError) Reason() string { return e.reason }
+func (e DatabaseSchemaInfoValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e SchemaInfoValidationError) Cause() error { return e.cause }
+func (e DatabaseSchemaInfoValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e SchemaInfoValidationError) Key() bool { return e.key }
+func (e DatabaseSchemaInfoValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e SchemaInfoValidationError) ErrorName() string { return "SchemaInfoValidationError" }
+func (e DatabaseSchemaInfoValidationError) ErrorName() string {
+	return "DatabaseSchemaInfoValidationError"
+}
 
 // Error satisfies the builtin error interface
-func (e SchemaInfoValidationError) Error() string {
+func (e DatabaseSchemaInfoValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -2887,14 +2891,14 @@ func (e SchemaInfoValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sSchemaInfo.%s: %s%s",
+		"invalid %sDatabaseSchemaInfo.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = SchemaInfoValidationError{}
+var _ error = DatabaseSchemaInfoValidationError{}
 
 var _ interface {
 	Field() string
@@ -2902,7 +2906,7 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = SchemaInfoValidationError{}
+} = DatabaseSchemaInfoValidationError{}
 
 // Validate checks the field values on ListTablesRequest with the rules defined
 // in the proto definition for this message. If any rules are violated, the

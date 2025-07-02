@@ -187,7 +187,7 @@ func (s *Server) OLAPGetTable(ctx context.Context, req *runtimev1.OLAPGetTableRe
 	}, nil
 }
 
-func (s *Server) ListSchemas(ctx context.Context, req *runtimev1.ListSchemasRequest) (*runtimev1.ListSchemasResponse, error) {
+func (s *Server) ListDatabaseSchemas(ctx context.Context, req *runtimev1.ListDatabaseSchemasRequest) (*runtimev1.ListDatabaseSchemasResponse, error) {
 	handle, release, err := s.runtime.AcquireHandle(ctx, req.InstanceId, req.Connector)
 	if err != nil {
 		return nil, err
@@ -199,18 +199,18 @@ func (s *Server) ListSchemas(ctx context.Context, req *runtimev1.ListSchemasRequ
 		return nil, fmt.Errorf("driver: information schema not implemented")
 	}
 
-	schemas, err := is.ListSchemas(ctx)
+	schemas, err := is.ListDatabaseSchemas(ctx)
 	if err != nil {
 		return nil, err
 	}
-	res := make([]*runtimev1.SchemaInfo, len(schemas))
+	res := make([]*runtimev1.DatabaseSchemaInfo, len(schemas))
 	for i, schema := range schemas {
-		res[i] = &runtimev1.SchemaInfo{
+		res[i] = &runtimev1.DatabaseSchemaInfo{
 			Database:       schema.Database,
 			DatabaseSchema: schema.DatabaseSchema,
 		}
 	}
-	return &runtimev1.ListSchemasResponse{
+	return &runtimev1.ListDatabaseSchemasResponse{
 		Schemas: res,
 	}, nil
 }

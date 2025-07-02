@@ -136,13 +136,13 @@ paths:
         - ConnectorService
   /v1/connectors/schemas:
     get:
-      summary: ListSchemas list all schemas across databases
-      operationId: ConnectorService_ListSchemas
+      summary: ListDatabaseSchemas list all schemas across databases
+      operationId: ConnectorService_ListDatabaseSchemas
       responses:
         "200":
           description: A successful response.
           schema:
-            $ref: '#/definitions/v1ListSchemasResponse'
+            $ref: '#/definitions/v1ListDatabaseSchemasResponse'
         default:
           description: An unexpected error response.
           schema:
@@ -4315,6 +4315,13 @@ definitions:
     title: Response message for RuntimeService.CreateInstance
   v1CreateTriggerResponse:
     type: object
+  v1DatabaseSchemaInfo:
+    type: object
+    properties:
+      database:
+        type: string
+      databaseSchema:
+        type: string
   v1DeleteFileResponse:
     type: object
     title: Response message for RuntimeService.DeleteFile
@@ -4883,6 +4890,14 @@ definitions:
           type: object
           $ref: '#/definitions/v1ConnectorDriver'
     title: Response message for RuntimeService.ListConnectorDrivers
+  v1ListDatabaseSchemasResponse:
+    type: object
+    properties:
+      schemas:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1DatabaseSchemaInfo'
   v1ListExamplesResponse:
     type: object
     properties:
@@ -4930,14 +4945,6 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1Resource'
-  v1ListSchemasResponse:
-    type: object
-    properties:
-      schemas:
-        type: array
-        items:
-          type: object
-          $ref: '#/definitions/v1SchemaInfo'
   v1ListTablesResponse:
     type: object
     properties:
@@ -6454,13 +6461,6 @@ definitions:
         type: integer
         format: int64
       timeZone:
-        type: string
-  v1SchemaInfo:
-    type: object
-    properties:
-      database:
-        type: string
-      databaseSchema:
         type: string
   v1SecurityRule:
     type: object

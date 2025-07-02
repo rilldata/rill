@@ -21,7 +21,7 @@ import type {
   ConnectorServiceGCSListBucketsParams,
   ConnectorServiceGCSListObjectsParams,
   ConnectorServiceGetTableParams,
-  ConnectorServiceListSchemasParams,
+  ConnectorServiceListDatabaseSchemasParams,
   ConnectorServiceListTablesParams,
   ConnectorServiceOLAPGetTableParams,
   ConnectorServiceOLAPListTablesParams,
@@ -36,7 +36,7 @@ import type {
   V1GCSListBucketsResponse,
   V1GCSListObjectsResponse,
   V1GetTableResponse,
-  V1ListSchemasResponse,
+  V1ListDatabaseSchemasResponse,
   V1ListTablesResponse,
   V1OLAPGetTableResponse,
   V1OLAPListTablesResponse,
@@ -339,13 +339,13 @@ export function createConnectorServiceOLAPGetTable<
 }
 
 /**
- * @summary ListSchemas list all schemas across databases
+ * @summary ListDatabaseSchemas list all schemas across databases
  */
-export const connectorServiceListSchemas = (
-  params?: ConnectorServiceListSchemasParams,
+export const connectorServiceListDatabaseSchemas = (
+  params?: ConnectorServiceListDatabaseSchemasParams,
   signal?: AbortSignal,
 ) => {
-  return httpClient<V1ListSchemasResponse>({
+  return httpClient<V1ListDatabaseSchemasResponse>({
     url: `/v1/connectors/schemas`,
     method: "GET",
     params,
@@ -353,21 +353,21 @@ export const connectorServiceListSchemas = (
   });
 };
 
-export const getConnectorServiceListSchemasQueryKey = (
-  params?: ConnectorServiceListSchemasParams,
+export const getConnectorServiceListDatabaseSchemasQueryKey = (
+  params?: ConnectorServiceListDatabaseSchemasParams,
 ) => {
   return [`/v1/connectors/schemas`, ...(params ? [params] : [])] as const;
 };
 
-export const getConnectorServiceListSchemasQueryOptions = <
-  TData = Awaited<ReturnType<typeof connectorServiceListSchemas>>,
+export const getConnectorServiceListDatabaseSchemasQueryOptions = <
+  TData = Awaited<ReturnType<typeof connectorServiceListDatabaseSchemas>>,
   TError = ErrorType<RpcStatus>,
 >(
-  params?: ConnectorServiceListSchemasParams,
+  params?: ConnectorServiceListDatabaseSchemasParams,
   options?: {
     query?: Partial<
       CreateQueryOptions<
-        Awaited<ReturnType<typeof connectorServiceListSchemas>>,
+        Awaited<ReturnType<typeof connectorServiceListDatabaseSchemas>>,
         TError,
         TData
       >
@@ -377,37 +377,39 @@ export const getConnectorServiceListSchemasQueryOptions = <
   const { query: queryOptions } = options ?? {};
 
   const queryKey =
-    queryOptions?.queryKey ?? getConnectorServiceListSchemasQueryKey(params);
+    queryOptions?.queryKey ??
+    getConnectorServiceListDatabaseSchemasQueryKey(params);
 
   const queryFn: QueryFunction<
-    Awaited<ReturnType<typeof connectorServiceListSchemas>>
-  > = ({ signal }) => connectorServiceListSchemas(params, signal);
+    Awaited<ReturnType<typeof connectorServiceListDatabaseSchemas>>
+  > = ({ signal }) => connectorServiceListDatabaseSchemas(params, signal);
 
   return { queryKey, queryFn, ...queryOptions } as CreateQueryOptions<
-    Awaited<ReturnType<typeof connectorServiceListSchemas>>,
+    Awaited<ReturnType<typeof connectorServiceListDatabaseSchemas>>,
     TError,
     TData
   > & { queryKey: DataTag<QueryKey, TData, TError> };
 };
 
-export type ConnectorServiceListSchemasQueryResult = NonNullable<
-  Awaited<ReturnType<typeof connectorServiceListSchemas>>
+export type ConnectorServiceListDatabaseSchemasQueryResult = NonNullable<
+  Awaited<ReturnType<typeof connectorServiceListDatabaseSchemas>>
 >;
-export type ConnectorServiceListSchemasQueryError = ErrorType<RpcStatus>;
+export type ConnectorServiceListDatabaseSchemasQueryError =
+  ErrorType<RpcStatus>;
 
 /**
- * @summary ListSchemas list all schemas across databases
+ * @summary ListDatabaseSchemas list all schemas across databases
  */
 
-export function createConnectorServiceListSchemas<
-  TData = Awaited<ReturnType<typeof connectorServiceListSchemas>>,
+export function createConnectorServiceListDatabaseSchemas<
+  TData = Awaited<ReturnType<typeof connectorServiceListDatabaseSchemas>>,
   TError = ErrorType<RpcStatus>,
 >(
-  params?: ConnectorServiceListSchemasParams,
+  params?: ConnectorServiceListDatabaseSchemasParams,
   options?: {
     query?: Partial<
       CreateQueryOptions<
-        Awaited<ReturnType<typeof connectorServiceListSchemas>>,
+        Awaited<ReturnType<typeof connectorServiceListDatabaseSchemas>>,
         TError,
         TData
       >
@@ -417,7 +419,7 @@ export function createConnectorServiceListSchemas<
 ): CreateQueryResult<TData, TError> & {
   queryKey: DataTag<QueryKey, TData, TError>;
 } {
-  const queryOptions = getConnectorServiceListSchemasQueryOptions(
+  const queryOptions = getConnectorServiceListDatabaseSchemasQueryOptions(
     params,
     options,
   );

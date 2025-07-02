@@ -7,9 +7,9 @@ import (
 )
 
 type InformationSchema interface {
-	// ListSchemas returns metadata about all schemas.
-	ListSchemas(ctx context.Context) ([]*DatabaseSchemaInfo, error)
-	// ListTables returns metadata about all tables in a schema.
+	// ListDatabaseSchemas returns all schemas across databases
+	ListDatabaseSchemas(ctx context.Context) ([]*DatabaseSchemaInfo, error)
+	// ListTables returns all tables in a schema.
 	ListTables(ctx context.Context, database, databaseSchema string) ([]*TableInfo, error)
 	// GetTable returns metadata about a specific table.
 	GetTable(ctx context.Context, database, databaseSchema, table string) (*TableMetadata, error)
