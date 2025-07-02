@@ -1,5 +1,6 @@
 ---
 description: Naming conventions for files and components in the Rill web frontend codebases
+<<<<<<< HEAD
 globs:
   [
     "web-admin/**/*.ts",
@@ -12,6 +13,9 @@ globs:
     "web-local/**/*.svelte",
     "web-local/**/*.js",
   ]
+=======
+globs: ["web-admin/**/*.ts", "web-admin/**/*.svelte", "web-admin/**/*.js", "web-common/**/*.ts", "web-common/**/*.svelte", "web-common/**/*.js", "web-local/**/*.ts", "web-local/**/*.svelte", "web-local/**/*.js"]
+>>>>>>> d29ffb72e (wip)
 alwaysApply: false
 ---
 
@@ -20,54 +24,79 @@ alwaysApply: false
 ## File Naming Rules
 
 ### TypeScript/JavaScript Files
+<<<<<<< HEAD
 
+=======
+>>>>>>> d29ffb72e (wip)
 - Use **kebab-case** for all TypeScript and JavaScript files
 - Examples: `user-management.ts`, `environment-variables.ts`, `project-status.ts`
 
 ### Svelte Component Files
+<<<<<<< HEAD
 
+=======
+>>>>>>> d29ffb72e (wip)
 - Use **PascalCase** for Svelte component files
 - Examples: `ProjectCard.svelte`, `UserManagement.svelte`, `EnvironmentVariables.svelte`
 - Exception: Use **kebab-case** for layout files (e.g., `+layout.svelte`, `+page.svelte`)
 
 ### Directory Naming
+<<<<<<< HEAD
 
+=======
+>>>>>>> d29ffb72e (wip)
 - Use **kebab-case** for all directories
 - Examples: `user-management/`, `environment-variables/`, `project-status/`
 
 ## Component Naming Rules
 
 ### Svelte Components
+<<<<<<< HEAD
 
+=======
+>>>>>>> d29ffb72e (wip)
 - Use **PascalCase** for component names in Svelte files
 - Examples: `<ProjectCard />`, `<UserManagement />`, `<EnvironmentVariables />`
 - Match the component name to the file name
 
 ### TypeScript Interfaces/Types
+<<<<<<< HEAD
 
+=======
+>>>>>>> d29ffb72e (wip)
 - Use **PascalCase** for interfaces and types
 - Examples: `ProjectPermissions`, `UserManagement`, `EnvironmentVariable`
 
 ## Variable and Function Naming
 
 ### Variables
+<<<<<<< HEAD
 
+=======
+>>>>>>> d29ffb72e (wip)
 - Use **camelCase** for variables and constants
 - Examples: `projectPermissions`, `environmentVariables`, `userManagement`
 
 ### Functions
+<<<<<<< HEAD
 
+=======
+>>>>>>> d29ffb72e (wip)
 - Use **camelCase** for function names
 - Use descriptive verbs: `getProjectPermissions()`, `updateEnvironmentVariables()`, `validateUserInput()`
 
 ### Constants
+<<<<<<< HEAD
 
+=======
+>>>>>>> d29ffb72e (wip)
 - Use **UPPER_SNAKE_CASE** for true constants
 - Examples: `MAX_FILE_SIZE`, `DEFAULT_TIMEOUT`, `API_BASE_URL`
 
 ## Special Cases
 
 ### Test Files
+<<<<<<< HEAD
 
 - Use the same naming as the source file with `.spec` suffix
 
@@ -75,3 +104,10 @@ alwaysApply: false
 
 - Use **kebab-case** for configuration files
 - Examples: `tailwind.config.ts`, `vite.config.ts`, `svelte.config.js`
+=======
+- Use the same naming as the source file with `.spec` suffix
+
+### Configuration Files
+- Use **kebab-case** for configuration files
+- Examples: `tailwind.config.ts`, `vite.config.ts`, `svelte.config.js`
+>>>>>>> d29ffb72e (wip)
