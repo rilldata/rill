@@ -103,18 +103,21 @@ export function extractAlertNotification(
   const slackNotifier = alertSpec.notifiers?.find(
     (n) => n.connector === "slack",
   );
-  const slackChannels =
-    (slackNotifier?.properties?.channels as string[] | undefined) ?? [];
+  const slackChannels = slackNotifier?.properties?.channels
+    ? [...(slackNotifier.properties.channels as string[])]
+    : [];
   slackChannels.push("");
-  const slackUsers =
-    (slackNotifier?.properties?.users as string[] | undefined) ?? [];
+  const slackUsers = slackNotifier?.properties?.users
+    ? [...(slackNotifier.properties.users as string[])]
+    : [];
   slackUsers.push("");
 
   const emailNotifier = alertSpec.notifiers?.find(
     (n) => n.connector === "email",
   );
-  const emailRecipients =
-    (emailNotifier?.properties?.recipients as string[] | undefined) ?? [];
+  const emailRecipients = emailNotifier?.properties?.recipients
+    ? [...(emailNotifier.properties.recipients as string[])]
+    : [];
   emailRecipients.push("");
 
   return {
@@ -125,12 +128,6 @@ export function extractAlertNotification(
     enableEmailNotification: !!emailNotifier,
     emailRecipients,
   };
-}
-
-function mapAndAddEmptyEntry<R>(entries: string[] | undefined, key: string): R {
-  const mappedEntries = entries?.map((e) => ({ [key]: e })) ?? [];
-  mappedEntries.push({ [key]: "" });
-  return mappedEntries as R;
 }
 
 export function getExistingAlertInitialFormValues(

@@ -69,7 +69,7 @@
   $: ({ instanceId } = $runtime);
 
   // Convenience variable to be used when other fields from props are not needed.
-  // Typescript won't parse the object switch if other fields from props is needed, so some statements below don't use this.
+  // Typescript won't parse the object switch if this is used in conditionals, so some statements below don't use this.
   $: isCreateForm = props.mode === "create";
 
   $: exploreName =
@@ -256,7 +256,7 @@
   </DialogTitle>
   <DialogTabs.Root value={tabs[currentTabIndex]}>
     <DialogTabs.List class="border-t">
-      {#each tabs as tab, i}
+      {#each tabs as tab, i (i)}
         <!-- inner width is 800px. so, width = ceil(800/3) = 267 -->
         <DialogTabs.Trigger value={tab} tabIndex={i} class="w-[267px]">
           {tab}

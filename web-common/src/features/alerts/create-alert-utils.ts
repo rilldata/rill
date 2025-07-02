@@ -26,8 +26,8 @@ export function getNewAlertInitialFormValues(
   user: V1User | undefined,
 ): AlertFormValues {
   const dimension =
-    exploreState.selectedComparisonDimension ??
-    exploreState.selectedDimensionName ??
+    exploreState.selectedComparisonDimension ||
+    exploreState.selectedDimensionName ||
     "";
 
   const timeControlsState = getTimeControlState(
@@ -50,8 +50,8 @@ export function getNewAlertInitialFormValues(
   return {
     name: "",
     measure:
-      exploreState.tdd?.expandedMeasureName ??
-      exploreState.leaderboardSortByMeasureName ??
+      exploreState.tdd?.expandedMeasureName ||
+      exploreState.leaderboardSortByMeasureName ||
       "",
     splitByDimension: dimension,
     evaluationInterval: "",

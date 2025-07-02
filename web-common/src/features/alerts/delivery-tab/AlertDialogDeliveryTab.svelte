@@ -22,7 +22,7 @@
   <FormSection title="Alert name">
     <Input
       alwaysShowError
-      errors={$errors?.["name"]}
+      errors={$errors["name"]}
       id="name"
       placeholder="My alert"
       value={$form["name"]}

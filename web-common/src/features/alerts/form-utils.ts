@@ -127,8 +127,9 @@ export const alertFormValidationSchema = yup(
         value1: string()
           .required("Required")
           .test((value, context) => {
-            // `number` doest allow of string representation of number with the superforms yup adapter.
-            // TODO: do a greater refactor changing the type of this in all the places to a number
+            // `number` doest allow for string representation of number with the superforms yup adapter.
+            // So we use `string` and check for NaN
+            // TODO: do a greater refactor changing the type of value1 in all the places to a number
             const numValue = Number(value);
             if (Number.isNaN(numValue)) {
               return context.createError({
@@ -185,9 +186,7 @@ export function checkIsTabValid(
         hasRequiredFields = false;
       }
     });
-    hasErrors = errors.criteria?.[0]
-      ? Object.values(errors.criteria?.[0]).some((c) => c.length > 0)
-      : false;
+    hasErrors = someCriteriaHasErrors(errors.criteria);
   } else if (tabIndex === 2) {
     // TODO: do better for >1 recipients
     hasRequiredFields =
@@ -200,4 +199,14 @@ export function checkIsTabValid(
   }
 
   return hasRequiredFields && !hasErrors;
+}
+
+function someCriteriaHasErrors(
+  criteriaErrors: ValidationErrors<AlertFormValues>["criteria"],
+) {
+  if (!criteriaErrors) return false;
+  return Object.values(criteriaErrors).every((criteriaError) => {
+    if (!criteriaError) return false;
+    return Object.values(criteriaError).every((c: string[]) => !c?.length);
+  });
 }

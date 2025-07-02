@@ -7,6 +7,7 @@
   import type { AlertFormValues } from "@rilldata/web-common/features/alerts/form-utils";
   import { useMetricsViewValidSpec } from "@rilldata/web-common/features/dashboards/selectors";
   import { debounce } from "@rilldata/web-common/lib/create-debouncer";
+  import { onMount } from "svelte";
   import { slide } from "svelte/transition";
   import type { SuperForm } from "sveltekit-superforms/client";
   import { runtime } from "../../../runtime-client/runtime-store";
@@ -41,7 +42,7 @@
   $: typeOptions = getTypeOptions($form, selectedMeasure);
 
   // Debounce the update of value. This avoids constant refetches
-  let value: string = $form["criteria"][index].value1;
+  let value: string = "0";
   const valueUpdater = debounce(() => {
     if ($form["criteria"][index]) $form["criteria"][index].value1 = value;
     void validate(`criteria[${index}].value1`);
@@ -54,6 +55,10 @@
   $: if (type) void validate(`criteria[${index}].value1`);
 
   $: groupErr = parseCriteriaError($errors?.criteria?.[index]);
+
+  onMount(() => {
+    value = $form["criteria"][index].value1;
+  });
 </script>
 
 <div class="flex flex-row gap-2">

@@ -184,9 +184,9 @@
               } else {
                 value = e.currentTarget.valueAsNumber;
               }
-            } else {
-              value = e.currentTarget.value;
+              return;
             }
+            value = e.currentTarget.value;
             onInput(value, e);
           }}
           on:keydown={onKeydown}
