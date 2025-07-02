@@ -9,8 +9,6 @@ import (
 	"os/exec"
 )
 
-const cdnBaseURL = "https://cdn.rilldata.com/rill"
-
 func Install(ctx context.Context, version string) error {
 	return execScript(ctx, version, "--version", version)
 }
@@ -38,13 +36,13 @@ func createScriptFile(ctx context.Context, version string) (string, error) {
 	switch version {
 	case "nightly":
 		// https://cdn.rilldata.com/rill/nightly/install.sh
-		url = fmt.Sprintf("%s/nightly/install.sh", cdnBaseURL)
+		url = "https://cdn.rilldata.com/rill/nightly/install.sh"
 	case "latest":
 		// https://cdn.rilldata.com/rill/latest/install.sh
-		url = fmt.Sprintf("%s/latest/install.sh", cdnBaseURL)
+		url = "https://cdn.rilldata.com/rill/latest/install.sh"
 	default:
-		// https://cdn.rilldata.com/rill/<version>/install.sh
-		url = fmt.Sprintf("%s/%s/install.sh", cdnBaseURL, version)
+		// https://raw.githubusercontent.com/rilldata/rill/<version>/scripts/install.sh
+		url = fmt.Sprintf("https://raw.githubusercontent.com/rilldata/rill/%s/scripts/install.sh", version)
 	}
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, http.NoBody)
