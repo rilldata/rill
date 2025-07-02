@@ -1,6 +1,6 @@
 ---
 title: "Rill Project File"
-sidebar_label:  "Rill Project file"
+sidebar_label:  "Rill Project File"
 hide_table_of_contents: false
 tags:
   - Rill Developer

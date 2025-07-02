@@ -1,5 +1,5 @@
 ---
-title: Quickstart & Examples
+title: Quickstart & Examples Repository
 sidebar_label: Quickstart & Examples
 sidebar_position: 10
 ---
@@ -37,6 +37,12 @@ rill start my-rill-project
     }}
   ></iframe>
 </div>
+
+## Quick Start
+If you're looking for more details on one of our sample projects, that walks through each of the different components of a Rill project, take a look at our [quick start tutorials](/tutorials/quick_start/github-analytics)!
+
+- [GiHub Analytics](/tutorials/quick_start/github-analytics)
+- [OpenRTB Analytics](/tutorials/quick_start/openrtb-analytics)
 
 
 ## Example Projects Repository
