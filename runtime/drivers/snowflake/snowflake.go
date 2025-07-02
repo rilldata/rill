@@ -30,14 +30,18 @@ var spec = drivers.Spec{
 	// Important: Any edits to the below properties must be accompanied by changes to the client-side form validation schemas.
 	ConfigProperties: []*drivers.PropertySpec{
 		{
+			// Key:         "dsn",
+			// Type:        drivers.StringPropertyType,
+			// DisplayName: "Connection string",
+			// Required:    false,
+			// DocsURL:     "https://docs.rilldata.com/reference/connectors/snowflake",
+			// Placeholder: "<username>@<account_identifier>/<database>/<schema>?warehouse=<warehouse>&role=<role>&authenticator=SNOWFLAKE_JWT&privateKey=<privateKey_base64_url_encoded>",
+			// Hint:        "Can be configured here or by setting the 'connector.snowflake.dsn' environment variable (using '.env' or '--env')",
+			// Secret:      true,
 			Key:         "dsn",
 			Type:        drivers.StringPropertyType,
-			DisplayName: "Connection string",
-			Required:    false,
-			DocsURL:     "https://docs.rilldata.com/reference/connectors/snowflake",
-			Placeholder: "<username>@<account_identifier>/<database>/<schema>?warehouse=<warehouse>&role=<role>&authenticator=SNOWFLAKE_JWT&privateKey=<privateKey_base64_url_encoded>",
-			Hint:        "Can be configured here or by setting the 'connector.snowflake.dsn' environment variable (using '.env' or '--env')",
 			Secret:      true,
+			DisplayName: "Connection string",
 		},
 		{
 			Key:         "account",
@@ -98,6 +102,23 @@ var spec = drivers.Spec{
 			Required:    false,
 			Hint:        "E.g. SNOWFLAKE_JWT for key-based auth.",
 		},
+		// TODO: do we need to include these to connection string form?
+		{
+			Key:         "sql",
+			Type:        drivers.StringPropertyType,
+			Required:    true,
+			DisplayName: "SQL",
+			Description: "Query to extract data from Snowflake.",
+			Placeholder: "select * from table",
+		},
+		{
+			Key:         "name",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "Source name",
+			Description: "The name of the source",
+			Placeholder: "my_new_source",
+			Required:    true,
+		},
 	},
 	// Important: Any edits to the below properties must be accompanied by changes to the client-side form validation schemas.
 	SourceProperties: []*drivers.PropertySpec{
@@ -109,16 +130,16 @@ var spec = drivers.Spec{
 			Description: "Query to extract data from Snowflake.",
 			Placeholder: "select * from table",
 		},
-		// {
-		// 	Key:         "dsn",
-		// 	Type:        drivers.StringPropertyType,
-		// 	DisplayName: "Connection string",
-		// 	Required:    false,
-		// 	DocsURL:     "https://docs.rilldata.com/reference/connectors/snowflake",
-		// 	Placeholder: "<username>@<account_identifier>/<database>/<schema>?warehouse=<warehouse>&role=<role>&authenticator=SNOWFLAKE_JWT&privateKey=<privateKey_base64_url_encoded>",
-		// 	Hint:        "Can be configured here or by setting the 'connector.snowflake.dsn' environment variable (using '.env' or '--env')",
-		// 	Secret:      true,
-		// },
+		{
+			Key:         "dsn",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "Connection string",
+			Required:    false,
+			DocsURL:     "https://docs.rilldata.com/reference/connectors/snowflake",
+			Placeholder: "<username>@<account_identifier>/<database>/<schema>?warehouse=<warehouse>&role=<role>&authenticator=SNOWFLAKE_JWT&privateKey=<privateKey_base64_url_encoded>",
+			Hint:        "Can be configured here or by setting the 'connector.snowflake.dsn' environment variable (using '.env' or '--env')",
+			Secret:      true,
+		},
 		{
 			Key:         "name",
 			Type:        drivers.StringPropertyType,
