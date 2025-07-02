@@ -100,6 +100,7 @@ var spec = drivers.Spec{
 			Description: "Name of the ClickHouse database to connect to",
 			Placeholder: "default",
 			Default:     "default",
+			Hint:        "Database name (default is 'default')",
 		},
 		{
 			Key:         "cluster",

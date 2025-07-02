@@ -239,13 +239,12 @@
                   alwaysShowError
                 />
               {:else if property.type === ConnectorDriverPropertyType.TYPE_BOOLEAN}
-                <label for={property.key} class="flex items-center">
-                  <Checkbox
-                    id={propertyKey}
-                    bind:checked={$paramsForm[propertyKey]}
-                  />
-                  <span class="ml-2 text-sm">{label}</span>
-                </label>
+                <Checkbox
+                  id={propertyKey}
+                  bind:checked={$paramsForm[propertyKey]}
+                  {label}
+                  hint={property.hint}
+                />
               {:else if property.type === ConnectorDriverPropertyType.TYPE_INFORMATIONAL}
                 <InformationalField
                   description={property.description}
@@ -322,13 +321,12 @@
                             alwaysShowError
                           />
                         {:else if property.type === ConnectorDriverPropertyType.TYPE_BOOLEAN}
-                          <label for={property.key} class="flex items-center">
-                            <Checkbox
-                              id={propertyKey}
-                              bind:checked={$paramsForm[propertyKey]}
-                            />
-                            <span class="ml-2 text-sm">{label}</span>
-                          </label>
+                          <Checkbox
+                            id={propertyKey}
+                            bind:checked={$paramsForm[propertyKey]}
+                            {label}
+                            hint={property.hint}
+                          />
                         {:else if property.type === ConnectorDriverPropertyType.TYPE_INFORMATIONAL}
                           <InformationalField
                             description={property.description}

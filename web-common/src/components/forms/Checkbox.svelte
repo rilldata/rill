@@ -2,25 +2,31 @@
   import { Checkbox as CheckboxPrimitive } from "bits-ui";
   import { cn } from "@rilldata/web-common/lib/shadcn";
   import { Check } from "lucide-svelte";
+  import InfoCircle from "../icons/InfoCircle.svelte";
+  import Tooltip from "../tooltip/Tooltip.svelte";
+  import TooltipContent from "../tooltip/TooltipContent.svelte";
 
   type $$Props = CheckboxPrimitive.Props & {
     label?: string;
     inverse?: boolean;
+    hint?: string;
   };
 
   export let checked: $$Props["checked"] = undefined;
   export let disabled: $$Props["disabled"] = undefined;
   export let label: $$Props["label"] = undefined;
   export let inverse = false;
+  export let hint: string | undefined = undefined;
   export { className as class };
 
   let className: $$Props["class"] = undefined;
 </script>
 
-<div class="flex gap-x-2 {inverse ? 'flex-row-reverse justify-end' : ''}">
-  {#if label}
-    <label for={$$props.id} class="text-gray-600">{label}</label>
-  {/if}
+<div
+  class="flex items-center gap-x-1 {inverse
+    ? 'flex-row-reverse justify-end'
+    : ''}"
+>
   <CheckboxPrimitive.Root
     {...$$restProps}
     bind:checked
@@ -38,4 +44,20 @@
       <Check class="h-3.5 w-3.5" />
     </CheckboxPrimitive.Indicator>
   </CheckboxPrimitive.Root>
+
+  {#if label}
+    <label for={$$props.id} class="flex items-center text-sm gap-x-1">
+      {label}
+      {#if hint}
+        <Tooltip location="right" alignment="middle" distance={8}>
+          <div class="text-gray-500">
+            <InfoCircle size="13px" />
+          </div>
+          <TooltipContent maxWidth="240px" slot="tooltip-content">
+            {@html hint}
+          </TooltipContent>
+        </Tooltip>
+      {/if}
+    </label>
+  {/if}
 </div>
