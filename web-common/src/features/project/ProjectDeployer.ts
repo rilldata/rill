@@ -1,6 +1,7 @@
 import { page } from "$app/stores";
 import type { ConnectError } from "@connectrpc/connect";
 import { getTrialIssue } from "@rilldata/web-common/features/billing/issues";
+import { featureFlags } from "@rilldata/web-common/features/feature-flags";
 import { sanitizeOrgName } from "@rilldata/web-common/features/organization/sanitizeOrgName";
 import {
   DeployErrorType,
@@ -140,13 +141,18 @@ export class ProjectDeployer {
 
     const projectResp = get(this.project).data as GetCurrentProjectResponse;
 
+    const legacyArchiveDeploy = get(featureFlags.legacyArchiveDeploy);
+
     // Project already exists
     if (projectResp.project) {
       if (!projectResp.project.gitRemote) {
         // Legacy archive project
         await get(this.redeployMutation).mutateAsync({
           projectId: projectResp.project.id,
-          reupload: true,
+          // If `legacyArchiveDeploy` is enabled, then use the archive route. Else use upload route.
+          // This is mainly set to true in E2E tests.
+          reupload: !legacyArchiveDeploy,
+          rearchive: legacyArchiveDeploy,
         });
       } else {
         // For everything else use git push API
@@ -216,6 +222,7 @@ export class ProjectDeployer {
     checkNextOrg: boolean,
   ) {
     let i = 0;
+    const legacyArchiveDeploy = get(featureFlags.legacyArchiveDeploy);
 
     while (true) {
       try {
@@ -224,7 +231,10 @@ export class ProjectDeployer {
         const resp = await get(this.deployMutation).mutateAsync({
           projectName,
           org: tryOrgName,
-          upload: true,
+          // If `legacyArchiveDeploy` is enabled, then use the archive route. Else use upload route.
+          // This is mainly set to true in E2E tests.
+          upload: !legacyArchiveDeploy,
+          archive: legacyArchiveDeploy,
         });
         // wait for the telemetry to finish since the page will be redirected after a deploy success
         await behaviourEvent?.fireDeployEvent(
