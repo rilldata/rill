@@ -221,7 +221,8 @@ var Connectors = map[string]ConnectorAcquireFunc{
 
 		pgc := pgtestcontainer.New(t.(*testing.T))
 		t.Cleanup(func() {
-			pgc.Terminate(t.(*testing.T))
+			err := pgc.Terminate()
+			require.NoError(t, err)
 		})
 
 		db, err := sql.Open("pgx", pgc.DatabaseURL)

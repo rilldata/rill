@@ -53,7 +53,7 @@ var sqlStmt = `CREATE TYPE country AS ENUM ('IND', 'AUS', 'SA', 'NZ');
 
 func TestTransfer(t *testing.T) {
 	pg := pgtestcontainer.New(t)
-	defer pg.Terminate(t)
+	defer pg.Terminate()
 
 	db, err := sql.Open("pgx", pg.DatabaseURL)
 	require.NoError(t, err)
