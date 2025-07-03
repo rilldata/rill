@@ -48,7 +48,6 @@ func New(t *testing.T) Container {
 
 // Terminate stops and removes the container.
 func (c Container) Terminate(t *testing.T) {
-	ctx := t.Context()
-	err := c.Container.Terminate(ctx)
-	require.NoError(t, err)
+	err := c.Container.Terminate(t.Context())
+	require.ErrorIs(t, err, t.Context().Err())
 }

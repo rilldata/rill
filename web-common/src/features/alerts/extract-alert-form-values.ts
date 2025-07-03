@@ -1,4 +1,3 @@
-import { getExploreName } from "@rilldata/web-admin/features/dashboards/query-mappers/utils.ts";
 import { getSnoozeValueFromAlertSpec } from "@rilldata/web-common/features/alerts/delivery-tab/snooze.ts";
 import type { AlertFormValues } from "@rilldata/web-common/features/alerts/form-utils";
 import {
@@ -8,6 +7,7 @@ import {
 } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
 import { splitWhereFilter } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
+import { getExploreName } from "@rilldata/web-common/features/explore-mappers/utils.ts";
 import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
 import {
   type V1AlertSpec,

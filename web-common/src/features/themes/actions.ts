@@ -2,6 +2,9 @@ import { TailwindColorSpacing } from "./color-config.ts";
 import type { V1ThemeSpec } from "../../../../web-common/src/runtime-client/index.ts";
 import chroma, { type Color } from "chroma-js";
 import { clamp } from "../../../../web-common/src/lib/clamp.ts";
+import { generateColorPalette } from "./palette-generator.ts";
+import { featureFlags } from "../feature-flags.ts";
+import { get } from "svelte/store";
 
 export const BLACK = chroma("black");
 export const WHITE = chroma("white");
@@ -13,14 +16,13 @@ export function createDarkVariation(colors: Color[]) {
 
 function generatePalette(
   refColor: Color,
+  desaturateNearGray: boolean = true,
   stepCount: number = 11,
   gamma: number = 1.12,
 ) {
   const [l, c, h] = refColor.oklch();
 
-  const isGray = c < 0.1;
-
-  if (isGray) {
+  if (desaturateNearGray && c < 0.05) {
     const spectrum = chroma
       .scale([chroma("black"), refColor, chroma("white")])
       .mode(MODE)
@@ -132,6 +134,9 @@ export function setVariables(
 
 export function updateThemeVariables(theme: V1ThemeSpec | undefined) {
   const root = document.documentElement;
+  const { darkMode } = featureFlags;
+  const allowNewPalette = get(darkMode);
+
   if (theme?.primaryColor) {
     const chromaColor = chroma.rgb(
       (theme.primaryColor.red ?? 1) * 256,
@@ -139,9 +144,16 @@ export function updateThemeVariables(theme: V1ThemeSpec | undefined) {
       (theme.primaryColor.blue ?? 1) * 256,
     );
 
-    const { light, dark } = generatePalette(chromaColor);
+    const originalLightPalette = generateColorPalette(chromaColor);
+    const { light, dark } = generatePalette(chromaColor, false);
 
-    setVariables(root, "theme", "light", light);
+    setVariables(
+      root,
+      "theme",
+      "light",
+      allowNewPalette ? light : originalLightPalette,
+    );
+
     setVariables(root, "theme", "dark", dark);
   } else {
     setVariables(root, "theme", "light");
@@ -155,9 +167,15 @@ export function updateThemeVariables(theme: V1ThemeSpec | undefined) {
       (theme.secondaryColor.blue ?? 1) * 256,
     );
 
-    const { light, dark } = generatePalette(chromaColor);
+    const originalLightPalette = generateColorPalette(chromaColor);
+    const { light, dark } = generatePalette(chromaColor, false);
 
-    setVariables(root, "theme-secondary", "light", light);
+    setVariables(
+      root,
+      "theme-secondary",
+      "light",
+      allowNewPalette ? light : originalLightPalette,
+    );
     setVariables(root, "theme-secondary", "dark", dark);
   } else {
     setVariables(root, "theme-secondary", "light");
