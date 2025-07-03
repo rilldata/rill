@@ -7,6 +7,7 @@ import (
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
+	"google.golang.org/protobuf/types/known/structpb"
 )
 
 func EditCmd(ch *cmdutil.Helper) *cobra.Command {
@@ -23,14 +24,6 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 
-			// Parse attributes if provided
-			var attrs map[string]string
-			if attributes != "" {
-				if err := json.Unmarshal([]byte(attributes), &attrs); err != nil {
-					return fmt.Errorf("failed to parse --attributes as JSON: %w", err)
-				}
-			}
-
 			req := &adminv1.UpdateServiceRequest{
 				Name:             args[0],
 				OrganizationName: ch.Org,
@@ -40,8 +33,18 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 				req.NewName = &newName
 			}
 
-			if attrs != nil {
-				req.Attributes = attrs
+			if cmd.Flags().Changed("attributes") {
+				if attributes == "" {
+					attributes = "{}" // Default to empty JSON object if not provided
+				}
+				var attrs map[string]any
+				if err = json.Unmarshal([]byte(attributes), &attrs); err != nil {
+					return fmt.Errorf("failed to parse --attributes as JSON: %w", err)
+				}
+				req.Attributes, err = structpb.NewStruct(attrs)
+				if err != nil {
+					return fmt.Errorf("failed to convert attributes to struct: %w", err)
+				}
 			}
 
 			res, err := client.UpdateService(cmd.Context(), req)

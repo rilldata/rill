@@ -41,7 +41,7 @@ var (
 		"/rill.admin.v1.AdminService/UpdateProject":          version.Must(version.NewVersion("0.28.0")),
 		"/rill.admin.v1.AdminService/UpdateOrganization":     version.Must(version.NewVersion("0.28.0")),
 		"/rill.admin.v1.AdminService/UpdateProjectVariables": version.Must(version.NewVersion("0.51.0")),
-		"/rill.admin.v1.AdminService/CreateService":          version.Must(version.NewVersion("0.66.0")),
+		"/rill.admin.v1.AdminService/CreateService":          version.Must(version.NewVersion("0.67.0")),
 	}
 )
 

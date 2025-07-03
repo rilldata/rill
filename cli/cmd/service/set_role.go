@@ -12,9 +12,11 @@ import (
 func SetRoleCmd(ch *cmdutil.Helper) *cobra.Command {
 	var name, projectName, role string
 	setRoleCmd := &cobra.Command{
-		Use:   "set-role",
+		Use:   "set-role <service-name>",
+		Args:  cobra.ExactArgs(1),
 		Short: "Set role for service",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			name = args[0]
 			var roleOptions []string
 			if projectName != "" {
 				roleOptions = projectRoles
@@ -68,7 +70,6 @@ func SetRoleCmd(ch *cmdutil.Helper) *cobra.Command {
 	}
 	setRoleCmd.Flags().SortFlags = false
 	setRoleCmd.Flags().StringVar(&projectName, "project", "", "Project")
-	setRoleCmd.Flags().StringVar(&name, "name", "", "Name of the service")
 	setRoleCmd.Flags().StringVar(&role, "role", "", fmt.Sprintf("Role of the service (options: %s)", strings.Join(orgRoles, ", ")))
 
 	return setRoleCmd

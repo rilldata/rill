@@ -162,6 +162,8 @@ type DB interface {
 	FindProjectMemberServices(ctx context.Context, projectID string) ([]*ProjectMemberService, error)
 	FindService(ctx context.Context, id string) (*Service, error)
 	FindServiceByName(ctx context.Context, orgID, name string) (*Service, error)
+	FindOrganizationMemberServiceForService(ctx context.Context, id string) (*OrganizationMemberService, error)
+	FindProjectMemberServicesForService(ctx context.Context, id string) ([]*ProjectMemberServiceWithProject, error)
 	InsertService(ctx context.Context, opts *InsertServiceOptions) (*Service, error)
 	DeleteService(ctx context.Context, id string) error
 	UpdateService(ctx context.Context, id string, opts *UpdateServiceOptions) (*Service, error)
@@ -234,6 +236,7 @@ type DB interface {
 	DeleteAllProjectMemberUserForOrganization(ctx context.Context, orgID, userID string) error
 	UpdateProjectMemberUserRole(ctx context.Context, projectID, userID, roleID string) error
 	UpsertProjectMemberServiceRole(ctx context.Context, serviceID, projectID, roleID string) error
+	DeleteOrganizationMemberService(ctx context.Context, serviceID, orgID string) error
 	DeleteProjectMemberService(ctx context.Context, serviceID, projectID string) error
 
 	FindOrganizationMemberUsergroups(ctx context.Context, orgID, filterRoleID string, withCounts bool, afterName string, limit int) ([]*MemberUsergroup, error)
@@ -613,23 +616,23 @@ type Service struct {
 	ID         string
 	OrgID      string `db:"org_id"`
 	Name       string
-	Attributes map[string]string `db:"attributes"`
-	CreatedOn  time.Time         `db:"created_on"`
-	UpdatedOn  time.Time         `db:"updated_on"`
-	ActiveOn   time.Time         `db:"active_on"`
+	Attributes map[string]any `db:"attributes"`
+	CreatedOn  time.Time      `db:"created_on"`
+	UpdatedOn  time.Time      `db:"updated_on"`
+	ActiveOn   time.Time      `db:"active_on"`
 }
 
 // InsertServiceOptions defines options for inserting a new service
 type InsertServiceOptions struct {
 	OrgID      string
 	Name       string `validate:"min=1,max=40,slug"`
-	Attributes map[string]string
+	Attributes map[string]any
 }
 
 // UpdateServiceOptions defines options for updating an existing service
 type UpdateServiceOptions struct {
 	Name       string `validate:"min=1,max=40,slug"`
-	Attributes map[string]string
+	Attributes map[string]any
 }
 
 // Usergroup represents a group of org members
@@ -1337,19 +1340,31 @@ type InsertManagedGitRepoOptions struct {
 type OrganizationMemberService struct {
 	ID              string
 	Name            string
-	RoleName        string            `db:"role_name"`
-	HasProjectRoles bool              `db:"has_project_roles"`
-	Attributes      map[string]string `db:"attributes"`
-	CreatedOn       time.Time         `db:"created_on"`
-	UpdatedOn       time.Time         `db:"updated_on"`
+	RoleName        string         `db:"role_name"`
+	HasProjectRoles bool           `db:"has_project_roles"`
+	Attributes      map[string]any `db:"attributes"`
+	CreatedOn       time.Time      `db:"created_on"`
+	UpdatedOn       time.Time      `db:"updated_on"`
 }
 
 type ProjectMemberService struct {
 	ID          string
 	Name        string
-	RoleName    string            `db:"role_name"`
-	OrgRoleName string            `db:"org_role_name"`
-	Attributes  map[string]string `db:"attributes"`
-	CreatedOn   time.Time         `db:"created_on"`
-	UpdatedOn   time.Time         `db:"updated_on"`
+	RoleName    string         `db:"role_name"`
+	OrgRoleName string         `db:"org_role_name"`
+	Attributes  map[string]any `db:"attributes"`
+	CreatedOn   time.Time      `db:"created_on"`
+	UpdatedOn   time.Time      `db:"updated_on"`
+}
+
+type ProjectMemberServiceWithProject struct {
+	ID          string
+	Name        string
+	ProjectID   string         `db:"project_id"`
+	ProjectName string         `db:"project_name"`
+	RoleName    string         `db:"role_name"`
+	OrgRoleName string         `db:"org_role_name"`
+	Attributes  map[string]any `db:"attributes"`
+	CreatedOn   time.Time      `db:"created_on"`
+	UpdatedOn   time.Time      `db:"updated_on"`
 }

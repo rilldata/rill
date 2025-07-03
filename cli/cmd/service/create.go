@@ -7,6 +7,7 @@ import (
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
+	"google.golang.org/protobuf/types/known/structpb"
 )
 
 func CreateCmd(ch *cmdutil.Helper) *cobra.Command {
@@ -23,8 +24,7 @@ func CreateCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 
-			// Parse attributes if provided
-			var attrs map[string]string
+			var attrs map[string]any
 			if attributes != "" {
 				if err := json.Unmarshal([]byte(attributes), &attrs); err != nil {
 					return fmt.Errorf("failed to parse --attributes as JSON: %w", err)
@@ -36,27 +36,50 @@ func CreateCmd(ch *cmdutil.Helper) *cobra.Command {
 				OrganizationName: ch.Org,
 			}
 
+			if ch.Interactive && orgRole == "" {
+				ok, err := cmdutil.ConfirmPrompt("Do you want to assign an organization role to the service?", "", false)
+				if err != nil {
+					return err
+				}
+				if ok {
+					err = cmdutil.SelectPromptIfEmpty(&orgRole, "Select role", orgRoles, "")
+					if err != nil {
+						return err
+					}
+				}
+			}
+
+			if ch.Interactive && projectRole == "" {
+				ok, err := cmdutil.ConfirmPrompt("Do you want to assign a project role to the service?", "", false)
+				if err != nil {
+					return err
+				}
+				if ok {
+					err = cmdutil.StringPromptIfEmpty(&projectName, "Enter project name")
+					if err != nil {
+						return err
+					}
+					err = cmdutil.SelectPromptIfEmpty(&projectRole, "Select role", projectRoles, "")
+					if err != nil {
+						return err
+					}
+				}
+			}
+
 			if orgRole == "" && projectRole == "" {
 				return fmt.Errorf("either --org-role or --project-role must be specified")
 			}
 
-			// Set org role if provided
-			if orgRole != "" {
-				req.OrgRoleName = orgRole
-			}
-
-			// Set project role if provided
-			if projectRole != "" {
-				if projectName == "" {
-					return fmt.Errorf("project name is required when project role is set")
-				}
-				req.ProjectName = projectName
-				req.ProjectRoleName = projectRole
-			}
+			req.OrgRoleName = orgRole
+			req.ProjectName = projectName
+			req.ProjectRoleName = projectRole
 
 			// Set attributes if provided
 			if attrs != nil {
-				req.Attributes = attrs
+				req.Attributes, err = structpb.NewStruct(attrs)
+				if err != nil {
+					return fmt.Errorf("failed to convert attributes to struct: %w", err)
+				}
 			}
 
 			res1, err := client.CreateService(cmd.Context(), req)

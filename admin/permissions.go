@@ -189,19 +189,8 @@ func (s *Service) ProjectPermissionsForService(ctx context.Context, projectID, s
 		return composite, nil
 	}
 
-	// If no roles are found, check if the service belongs to the org of the project
-	service, err := s.DB.FindService(ctx, serviceID)
-	if err != nil {
-		return nil, err
-	}
-
-	proj, err := s.DB.FindProject(ctx, projectID)
-	if err != nil {
-		return nil, err
-	}
-
-	// Services get read permissions on the projects of the org they belong to
-	if proj.OrganizationID == service.OrgID {
+	// If no roles are found, check if the service has read projects permission on the org
+	if orgPerms.ReadProjects {
 		return &adminv1.ProjectPermissions{
 			Admin:                      false,
 			ReadProject:                true,

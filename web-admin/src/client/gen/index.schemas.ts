@@ -844,7 +844,7 @@ export interface V1OrganizationInvite {
   invitedBy?: string;
 }
 
-export type V1OrganizationMemberServiceAttributes = { [key: string]: string };
+export type V1OrganizationMemberServiceAttributes = { [key: string]: unknown };
 
 export interface V1OrganizationMemberService {
   id?: string;
@@ -942,7 +942,7 @@ export interface V1ProjectInvite {
   invitedBy?: string;
 }
 
-export type V1ProjectMemberServiceAttributes = { [key: string]: string };
+export type V1ProjectMemberServiceAttributes = { [key: string]: unknown };
 
 export interface V1ProjectMemberService {
   id?: string;
@@ -1069,6 +1069,10 @@ export interface V1RemoveBookmarkResponse {
   [key: string]: unknown;
 }
 
+export interface V1RemoveOrganizationMemberServiceResponse {
+  [key: string]: unknown;
+}
+
 export interface V1RemoveOrganizationMemberUserResponse {
   [key: string]: unknown;
 }
@@ -1174,7 +1178,7 @@ export interface V1SearchUsersResponse {
   nextPageToken?: string;
 }
 
-export type V1ServiceAttributes = { [key: string]: string };
+export type V1ServiceAttributes = { [key: string]: unknown };
 
 export interface V1Service {
   id?: string;
@@ -1224,6 +1228,11 @@ export interface V1SetSuperuserRequest {
 
 export interface V1SetSuperuserResponse {
   [key: string]: unknown;
+}
+
+export interface V1ShowServiceResponse {
+  orgService?: V1OrganizationMemberService;
+  projectServices?: V1ProjectMemberService[];
 }
 
 export interface V1StartDeploymentResponse {
@@ -1884,27 +1893,21 @@ export type AdminServiceCreateDeploymentBody = {
   environment?: string;
 };
 
-export type AdminServiceCreateServiceParams = {
-  name?: string;
-  /**
-   * Optional org role to assign
-   */
-  orgRoleName?: string;
-  /**
-   * Optional project to assign role to
-   */
-  projectName?: string;
-  /**
-   * Optional project role to assign
-   */
-  projectRoleName?: string;
-  /**
-   * This is a request variable of the map type. The query format is "map_name[key]=value", e.g. If the map name is Age, the key type is string, and the value type is integer, the query parameter is expressed as Age["bob"]=18
-   */
-  attributes?: string;
+export type AdminServiceCreateServiceBodyAttributes = {
+  [key: string]: unknown;
 };
 
-export type AdminServiceUpdateServiceBodyAttributes = { [key: string]: string };
+export type AdminServiceCreateServiceBody = {
+  name?: string;
+  orgRoleName?: string;
+  projectName?: string;
+  projectRoleName?: string;
+  attributes?: AdminServiceCreateServiceBodyAttributes;
+};
+
+export type AdminServiceUpdateServiceBodyAttributes = {
+  [key: string]: unknown;
+};
 
 export type AdminServiceUpdateServiceBody = {
   newName?: string;

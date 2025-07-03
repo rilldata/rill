@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -51,12 +52,16 @@ func (s *Server) CreateService(ctx context.Context, req *adminv1.CreateServiceRe
 	}
 	defer func() { _ = tx.Rollback() }()
 
-	// Create service with attributes
-	service, err := s.admin.DB.InsertService(ctx, &database.InsertServiceOptions{
+	opts := &database.InsertServiceOptions{
 		OrgID:      org.ID,
 		Name:       req.Name,
-		Attributes: req.Attributes,
-	})
+		Attributes: nil,
+	}
+	if req.Attributes != nil {
+		opts.Attributes = req.Attributes.AsMap()
+	}
+	// Create service with attributes
+	service, err := s.admin.DB.InsertService(ctx, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -101,6 +106,47 @@ func (s *Server) CreateService(ctx context.Context, req *adminv1.CreateServiceRe
 	}, nil
 }
 
+func (s *Server) ShowService(ctx context.Context, req *adminv1.ShowServiceRequest) (*adminv1.ShowServiceResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.name", req.Name),
+		attribute.String("args.organization", req.OrganizationName),
+	)
+
+	org, err := s.admin.DB.FindOrganizationByName(ctx, req.OrganizationName)
+	if err != nil {
+		return nil, err
+	}
+
+	claims := auth.GetClaims(ctx)
+	if !claims.OrganizationPermissions(ctx, org.ID).ManageOrg {
+		return nil, status.Error(codes.PermissionDenied, "not allowed to show service")
+	}
+
+	service, err := s.admin.DB.FindServiceByName(ctx, org.ID, req.Name)
+	if err != nil {
+		return nil, err
+	}
+
+	orgMemberService, err := s.admin.DB.FindOrganizationMemberServiceForService(ctx, service.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	projectMemberServices, err := s.admin.DB.FindProjectMemberServicesForService(ctx, service.ID)
+	if err != nil {
+		return nil, err
+	}
+	var projectMemberServicesPB []*adminv1.ProjectMemberService
+	for _, projectMemberService := range projectMemberServices {
+		projectMemberServicesPB = append(projectMemberServicesPB, projectMemberServiceWithProjectToPB(projectMemberService, org.ID, org.Name))
+	}
+
+	return &adminv1.ShowServiceResponse{
+		OrgService:      orgMemberServiceToPB(orgMemberService, org.ID, org.Name),
+		ProjectServices: projectMemberServicesPB,
+	}, nil
+}
+
 // ListServices lists all service accounts in an organization.
 func (s *Server) ListServices(ctx context.Context, req *adminv1.ListServicesRequest) (*adminv1.ListServicesResponse, error) {
 	observability.AddRequestAttributes(ctx,
@@ -124,17 +170,7 @@ func (s *Server) ListServices(ctx context.Context, req *adminv1.ListServicesRequ
 
 	var servicesPB []*adminv1.OrganizationMemberService
 	for _, service := range services {
-		servicesPB = append(servicesPB, &adminv1.OrganizationMemberService{
-			Id:              service.ID,
-			Name:            service.Name,
-			OrgId:           org.ID,
-			OrgName:         org.Name,
-			RoleName:        service.RoleName,
-			HasProjectRoles: service.HasProjectRoles,
-			Attributes:      service.Attributes,
-			CreatedOn:       timestamppb.New(service.CreatedOn),
-			UpdatedOn:       timestamppb.New(service.UpdatedOn),
-		})
+		servicesPB = append(servicesPB, orgMemberServiceToPB(service, org.ID, org.Name))
 	}
 
 	return &adminv1.ListServicesResponse{
@@ -171,18 +207,7 @@ func (s *Server) ListProjectMemberServices(ctx context.Context, req *adminv1.Lis
 
 	var servicesPB []*adminv1.ProjectMemberService
 	for _, service := range services {
-		p := &adminv1.ProjectMemberService{
-			Id:              service.ID,
-			Name:            service.Name,
-			OrgId:           org.ID,
-			OrgName:         org.Name,
-			OrgRoleName:     service.OrgRoleName,
-			ProjectId:       project.ID,
-			ProjectName:     project.Name,
-			ProjectRoleName: service.RoleName,
-			Attributes:      service.Attributes,
-		}
-		servicesPB = append(servicesPB, p)
+		servicesPB = append(servicesPB, projectMemberServiceToPB(service, org.ID, org.Name, project.ID, project.Name))
 	}
 
 	return &adminv1.ListProjectMemberServicesResponse{
@@ -216,19 +241,17 @@ func (s *Server) UpdateService(ctx context.Context, req *adminv1.UpdateServiceRe
 		return nil, err
 	}
 
-	// Update service name and attributes if provided
-	if req.NewName != nil || req.Attributes != nil {
-		updateOpts := &database.UpdateServiceOptions{
-			Name:       valOrDefault(req.NewName, service.Name), // Preserve existing name if not updating
-			Attributes: service.Attributes,                      // Preserve existing attributes if not updating
-		}
-		if req.Attributes != nil {
-			updateOpts.Attributes = req.Attributes
-		}
-		service, err = s.admin.DB.UpdateService(ctx, service.ID, updateOpts)
-		if err != nil {
-			return nil, err
-		}
+	updateOpts := &database.UpdateServiceOptions{
+		Name:       valOrDefault(req.NewName, service.Name),
+		Attributes: service.Attributes,
+	}
+	if req.Attributes != nil {
+		updateOpts.Attributes = req.Attributes.AsMap()
+	}
+
+	service, err = s.admin.DB.UpdateService(ctx, service.ID, updateOpts)
+	if err != nil {
+		return nil, err
 	}
 
 	return &adminv1.UpdateServiceResponse{
@@ -245,7 +268,7 @@ func (s *Server) SetOrganizationMemberServiceRole(ctx context.Context, req *admi
 
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.OrganizationName)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	claims := auth.GetClaims(ctx)
@@ -255,12 +278,12 @@ func (s *Server) SetOrganizationMemberServiceRole(ctx context.Context, req *admi
 
 	service, err := s.admin.DB.FindServiceByName(ctx, org.ID, req.Name)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	orgRole, err := s.admin.DB.FindOrganizationRole(ctx, req.Role)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, "invalid organization role")
+		return nil, err
 	}
 
 	err = s.admin.DB.UpdateOrganizationMemberServiceRole(ctx, service.ID, org.ID, orgRole.ID)
@@ -269,6 +292,35 @@ func (s *Server) SetOrganizationMemberServiceRole(ctx context.Context, req *admi
 	}
 
 	return &adminv1.SetOrganizationMemberServiceRoleResponse{}, nil
+}
+
+func (s *Server) RemoveOrganizationMemberService(ctx context.Context, req *adminv1.RemoveOrganizationMemberServiceRequest) (*adminv1.RemoveOrganizationMemberServiceResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.name", req.Name),
+		attribute.String("args.organization", req.OrganizationName),
+	)
+
+	org, err := s.admin.DB.FindOrganizationByName(ctx, req.OrganizationName)
+	if err != nil {
+		return nil, err
+	}
+
+	claims := auth.GetClaims(ctx)
+	if !claims.OrganizationPermissions(ctx, org.ID).ManageOrg {
+		return nil, status.Error(codes.PermissionDenied, "not allowed to remove service")
+	}
+
+	service, err := s.admin.DB.FindServiceByName(ctx, org.ID, req.Name)
+	if err != nil {
+		return nil, err
+	}
+
+	err = s.admin.DB.DeleteOrganizationMemberService(ctx, service.ID, org.ID)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	return &adminv1.RemoveOrganizationMemberServiceResponse{}, nil
 }
 
 func (s *Server) SetProjectMemberServiceRole(ctx context.Context, req *adminv1.SetProjectMemberServiceRoleRequest) (*adminv1.SetProjectMemberServiceRoleResponse, error) {
@@ -281,7 +333,7 @@ func (s *Server) SetProjectMemberServiceRole(ctx context.Context, req *adminv1.S
 
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.OrganizationName)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	claims := auth.GetClaims(ctx)
@@ -291,17 +343,17 @@ func (s *Server) SetProjectMemberServiceRole(ctx context.Context, req *adminv1.S
 
 	project, err := s.admin.DB.FindProjectByName(ctx, req.OrganizationName, req.ProjectName)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	service, err := s.admin.DB.FindServiceByName(ctx, org.ID, req.Name)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	projectRole, err := s.admin.DB.FindProjectRole(ctx, req.Role)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, "invalid project role")
+		return nil, err
 	}
 
 	err = s.admin.DB.UpsertProjectMemberServiceRole(ctx, service.ID, project.ID, projectRole.ID)
@@ -321,7 +373,7 @@ func (s *Server) RemoveProjectMemberService(ctx context.Context, req *adminv1.Re
 
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.OrganizationName)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 	claims := auth.GetClaims(ctx)
 	if !claims.OrganizationPermissions(ctx, org.ID).ManageOrg {
@@ -330,17 +382,17 @@ func (s *Server) RemoveProjectMemberService(ctx context.Context, req *adminv1.Re
 
 	project, err := s.admin.DB.FindProjectByName(ctx, req.OrganizationName, req.ProjectName)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	service, err := s.admin.DB.FindServiceByName(ctx, org.ID, req.Name)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	err = s.admin.DB.DeleteProjectMemberService(ctx, service.ID, project.ID)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 
 	return &adminv1.RemoveProjectMemberServiceResponse{}, nil
@@ -355,12 +407,12 @@ func (s *Server) DeleteService(ctx context.Context, req *adminv1.DeleteServiceRe
 
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.OrganizationName)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	service, err := s.admin.DB.FindServiceByName(ctx, org.ID, req.Name)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	claims := auth.GetClaims(ctx)
@@ -370,7 +422,7 @@ func (s *Server) DeleteService(ctx context.Context, req *adminv1.DeleteServiceRe
 
 	err = s.admin.DB.DeleteService(ctx, service.ID)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 
 	return &adminv1.DeleteServiceResponse{}, nil
@@ -385,7 +437,7 @@ func (s *Server) ListServiceAuthTokens(ctx context.Context, req *adminv1.ListSer
 
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.OrganizationName)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	claims := auth.GetClaims(ctx)
@@ -395,7 +447,7 @@ func (s *Server) ListServiceAuthTokens(ctx context.Context, req *adminv1.ListSer
 
 	service, err := s.admin.DB.FindServiceByName(ctx, org.ID, req.ServiceName)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	tokens, err := s.admin.DB.FindServiceAuthTokens(ctx, service.ID)
@@ -434,12 +486,12 @@ func (s *Server) IssueServiceAuthToken(ctx context.Context, req *adminv1.IssueSe
 
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.OrganizationName)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	service, err := s.admin.DB.FindServiceByName(ctx, org.ID, req.ServiceName)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	claims := auth.GetClaims(ctx)
@@ -465,12 +517,12 @@ func (s *Server) RevokeServiceAuthToken(ctx context.Context, req *adminv1.Revoke
 
 	token, err := s.admin.DB.FindServiceAuthToken(ctx, req.TokenId)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	service, err := s.admin.DB.FindService(ctx, token.ServiceID)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	org, err := s.admin.DB.FindOrganization(ctx, service.OrgID)
@@ -492,14 +544,76 @@ func (s *Server) RevokeServiceAuthToken(ctx context.Context, req *adminv1.Revoke
 }
 
 func serviceToPB(service *database.Service, orgName string) *adminv1.Service {
+	attr, err := structpb.NewStruct(service.Attributes)
+	if err != nil {
+		panic(err)
+	}
 	return &adminv1.Service{
 		Id:         service.ID,
 		Name:       service.Name,
 		OrgId:      service.OrgID,
 		OrgName:    orgName,
-		Attributes: service.Attributes,
+		Attributes: attr,
 		CreatedOn:  timestamppb.New(service.CreatedOn),
 		UpdatedOn:  timestamppb.New(service.UpdatedOn),
+	}
+}
+
+func orgMemberServiceToPB(service *database.OrganizationMemberService, orgID, orgName string) *adminv1.OrganizationMemberService {
+	attr, err := structpb.NewStruct(service.Attributes)
+	if err != nil {
+		panic(err)
+	}
+	return &adminv1.OrganizationMemberService{
+		Id:              service.ID,
+		Name:            service.Name,
+		OrgId:           orgID,
+		OrgName:         orgName,
+		RoleName:        service.RoleName,
+		HasProjectRoles: service.HasProjectRoles,
+		Attributes:      attr,
+		CreatedOn:       timestamppb.New(service.CreatedOn),
+		UpdatedOn:       timestamppb.New(service.UpdatedOn),
+	}
+}
+
+func projectMemberServiceToPB(service *database.ProjectMemberService, orgID, orgName, projectID, projectName string) *adminv1.ProjectMemberService {
+	attr, err := structpb.NewStruct(service.Attributes)
+	if err != nil {
+		panic(err)
+	}
+	return &adminv1.ProjectMemberService{
+		Id:              service.ID,
+		Name:            service.Name,
+		OrgId:           orgID,
+		OrgName:         orgName,
+		OrgRoleName:     service.OrgRoleName,
+		ProjectId:       projectID,
+		ProjectName:     projectName,
+		ProjectRoleName: service.RoleName,
+		Attributes:      attr,
+		CreatedOn:       timestamppb.New(service.CreatedOn),
+		UpdatedOn:       timestamppb.New(service.UpdatedOn),
+	}
+}
+
+func projectMemberServiceWithProjectToPB(service *database.ProjectMemberServiceWithProject, orgID, orgName string) *adminv1.ProjectMemberService {
+	attr, err := structpb.NewStruct(service.Attributes)
+	if err != nil {
+		panic(err)
+	}
+	return &adminv1.ProjectMemberService{
+		Id:              service.ID,
+		Name:            service.Name,
+		OrgId:           orgID,
+		OrgName:         orgName,
+		OrgRoleName:     service.OrgRoleName,
+		ProjectId:       service.ProjectID,
+		ProjectName:     service.ProjectName,
+		ProjectRoleName: service.RoleName,
+		Attributes:      attr,
+		CreatedOn:       timestamppb.New(service.CreatedOn),
+		UpdatedOn:       timestamppb.New(service.UpdatedOn),
 	}
 }
 

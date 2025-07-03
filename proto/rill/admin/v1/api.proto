@@ -671,7 +671,13 @@ service AdminService {
   rpc CreateService(CreateServiceRequest) returns (CreateServiceResponse) {
     option (google.api.http) = {
       post: "/v1/organizations/{organization_name}/services",
+      body: "*"
     };
+  }
+
+  // ShowService returns information about a specific service
+  rpc ShowService(ShowServiceRequest) returns (ShowServiceResponse) {
+    option (google.api.http) = {get: "/v1/organizations/{organization_name}/services/{name}"};
   }
 
   // UpdateService updates a service per organization
@@ -688,6 +694,11 @@ service AdminService {
       put: "/v1/organizations/{organization_name}/services/{name}/role",
       body: "*"
     };
+  }
+
+  // RemoveOrganizationMemberService removes the organization role for the service
+  rpc RemoveOrganizationMemberService(RemoveOrganizationMemberServiceRequest) returns (RemoveOrganizationMemberServiceResponse) {
+    option (google.api.http) = {delete: "/v1/organizations/{organization_name}/services/{name}/role"};
   }
 
   // SetProjectMemberServiceRole updates the project role for the service
@@ -1331,18 +1342,28 @@ message CreateServiceRequest {
   string org_role_name = 3; // Optional org role to assign
   string project_name = 4; // Optional project to assign role to
   string project_role_name = 5; // Optional project role to assign
-  map<string, string> attributes = 6;
+  optional google.protobuf.Struct attributes = 6;
 }
 
 message CreateServiceResponse {
   Service service = 1;
 }
 
+message ShowServiceRequest {
+  string name = 1 [(validate.rules).string.min_len = 1];
+  string organization_name = 2 [(validate.rules).string.min_len = 1];
+}
+
+message ShowServiceResponse {
+  OrganizationMemberService org_service = 1;
+  repeated ProjectMemberService project_services = 2; // All projects that the service is a member of
+}
+
 message UpdateServiceRequest {
   string name = 1 [(validate.rules).string.min_len = 1];
   string organization_name = 2 [(validate.rules).string.min_len = 1];
   optional string new_name = 3;
-  map<string, string> attributes = 4;
+  optional google.protobuf.Struct attributes = 4;
 }
 
 message UpdateServiceResponse {
@@ -1356,6 +1377,13 @@ message SetOrganizationMemberServiceRoleRequest {
 }
 
 message SetOrganizationMemberServiceRoleResponse {}
+
+message RemoveOrganizationMemberServiceRequest {
+  string name = 1 [(validate.rules).string.min_len = 1];
+  string organization_name = 2 [(validate.rules).string.min_len = 1];
+}
+
+message RemoveOrganizationMemberServiceResponse {}
 
 message RemoveProjectMemberServiceRequest {
   string name = 1 [(validate.rules).string.min_len = 1];
@@ -2621,7 +2649,7 @@ message Service {
   string name = 2;
   string org_id = 3;
   string org_name = 4;
-  map<string, string> attributes = 8;
+  google.protobuf.Struct attributes = 8;
   google.protobuf.Timestamp created_on = 5;
   google.protobuf.Timestamp updated_on = 6;
 }
@@ -2633,7 +2661,7 @@ message OrganizationMemberService {
   string org_name = 4;
   string role_name = 5;
   bool has_project_roles = 7; // True if the user has a project role in any project in the organization.
-  map<string, string> attributes = 8;
+  google.protobuf.Struct attributes = 8;
   google.protobuf.Timestamp created_on = 9;
   google.protobuf.Timestamp updated_on = 10;
 }
@@ -2647,7 +2675,7 @@ message ProjectMemberService {
   string project_id = 6;
   string project_name = 7;
   string project_role_name = 8;
-  map<string, string> attributes = 9;
+  google.protobuf.Struct attributes = 9;
   google.protobuf.Timestamp created_on = 10;
   google.protobuf.Timestamp updated_on = 11;
 }

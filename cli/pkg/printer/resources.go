@@ -168,21 +168,15 @@ func (p *Printer) PrintOrganizationMemberServices(members []*adminv1.Organizatio
 
 	allMembers := make([]*orgMemberService, 0, len(members))
 	for _, m := range members {
-		var attributes string
-		if len(m.Attributes) > 0 {
-			attrBytes, err := json.Marshal(m.Attributes)
-			if err != nil {
-				panic(fmt.Errorf("failed to marshal service attributes: %w", err))
-			}
-			attributes = string(attrBytes)
-		} else {
-			attributes = "{}"
+		attrBytes, err := json.Marshal(m.Attributes)
+		if err != nil {
+			panic(fmt.Errorf("failed to marshal service attributes: %w", err))
 		}
 		allMembers = append(allMembers, &orgMemberService{
 			Name:            m.Name,
 			RoleName:        m.RoleName,
 			HasProjectRoles: m.HasProjectRoles,
-			Attributes:      attributes,
+			Attributes:      string(attrBytes),
 		})
 	}
 
@@ -197,22 +191,17 @@ func (p *Printer) PrintProjectMemberServices(members []*adminv1.ProjectMemberSer
 
 	allMembers := make([]*projectMemberService, 0, len(members))
 	for _, m := range members {
-		var attributes string
-		if len(m.Attributes) > 0 {
-			attrBytes, err := json.Marshal(m.Attributes)
-			if err != nil {
-				panic(fmt.Errorf("failed to marshal service attributes: %w", err))
-			}
-			attributes = string(attrBytes)
-		} else {
-			attributes = "{}"
+		attrBytes, err := json.Marshal(m.Attributes)
+		if err != nil {
+			panic(fmt.Errorf("failed to marshal service attributes: %w", err))
 		}
+
 		allMembers = append(allMembers, &projectMemberService{
 			Name:            m.Name,
 			ProjectName:     m.ProjectName,
 			ProjectRoleName: m.ProjectRoleName,
 			OrgRoleName:     m.OrgRoleName,
-			Attributes:      attributes,
+			Attributes:      string(attrBytes),
 		})
 	}
 
@@ -324,20 +313,15 @@ func toServicesTable(sv []*adminv1.Service) []*service {
 }
 
 func toServiceRow(s *adminv1.Service) *service {
-	var attr string
-	if len(s.Attributes) > 0 {
-		attrBytes, err := json.Marshal(s.Attributes)
-		if err != nil {
-			panic(fmt.Errorf("failed to marshal service attributes: %w", err))
-		}
-		attr = string(attrBytes)
-	} else {
-		attr = "{}"
+	attrBytes, err := json.Marshal(s.Attributes)
+	if err != nil {
+		panic(fmt.Errorf("failed to marshal service attributes: %w", err))
 	}
+
 	return &service{
 		Name:       s.Name,
 		OrgName:    s.OrgName,
-		Attributes: attr,
+		Attributes: string(attrBytes),
 		CreatedAt:  s.CreatedOn.AsTime().Local().Format(time.DateTime),
 	}
 }
