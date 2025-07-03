@@ -257,7 +257,7 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 
 	// Reschedule if we're not triggering a refresh
 	if !trigger {
-		// Re-run tests if the test hash has changed
+		// Re-run tests if the test config has changed
 		if model.State.TestHash != testHash {
 			testErrs, err := r.runModelTests(ctx, self)
 			if err != nil {
@@ -328,6 +328,8 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 		model.State.ExecutorConnector = executorConnector
 		model.State.SpecHash = specHash
 		model.State.RefsHash = refsHash
+		model.State.TestHash = ""    // Updated below if tests are configured
+		model.State.TestErrors = nil // Updated below if tests are configured
 		model.State.RefreshedOn = timestamppb.Now()
 		model.State.IncrementalState = newIncrementalState
 		model.State.IncrementalStateSchema = newIncrementalStateSchema
@@ -375,7 +377,7 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 
 	// If the build succeeded, re-run the model tests.
 	// We do this after updating other state to ensure we preserve the successful execution state.
-	if execErr == nil {
+	if execErr == nil && len(model.Spec.Tests) != 0 {
 		testErrs, err := r.runModelTests(ctx, self)
 		if err != nil {
 			return runtime.ReconcileResult{Err: fmt.Errorf("failed to run model tests: %w", err)}
@@ -601,6 +603,10 @@ func (r *ModelReconciler) refsStateHash(ctx context.Context, refs []*runtimev1.R
 
 // testSpecHash computes a hash of the model's tests.
 func (r *ModelReconciler) testSpecHash(spec *runtimev1.ModelSpec) (string, error) {
+	if len(spec.Tests) == 0 {
+		return "", nil
+	}
+
 	hash := md5.New()
 
 	for _, test := range spec.Tests {
