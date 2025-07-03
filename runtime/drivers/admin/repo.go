@@ -23,9 +23,10 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-const repoPullTimeout = 10 * time.Minute
-
-const repoCheckpointTimeout = 30 * time.Second
+const (
+	repoPullTimeout       = 10 * time.Minute
+	repoCheckpointTimeout = 30 * time.Second
+)
 
 // repo implements the drivers.RepoStore interface.
 // It does a handshake using GetRepoMeta on the admin service to discover code files (Git, tarball archive, and/or virtual files).
