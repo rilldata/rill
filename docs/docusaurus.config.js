@@ -116,7 +116,7 @@ const config = {
             sidebarId: "refSidebar",
             position: "left",
             label: "Reference",
-          }, 
+          },
 
           {
             type: "doc",
@@ -134,7 +134,7 @@ const config = {
           {
             type: "html",
             position: "right",
-            value: '<a href="https://www.rilldata.com/blog" class="navbar-icon-link" aria-label="Blog" target="_blank"><i class="fa-light fa-blog"></i></a>',
+            value: '<a href="https://www.rilldata.com/blog" class="navbar-icon-link" aria-label="Blog" target="_blank"><i class="fa-solid fa-blog"></i></a>',
           },
           {
             type: "search",
