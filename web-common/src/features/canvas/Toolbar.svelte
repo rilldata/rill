@@ -19,6 +19,14 @@
     "leaderboard",
     "table",
     "pivot",
+    "bar_chart",
+    "line_chart",
+    "area_chart",
+    "stacked_bar",
+    "stacked_bar_normalized",
+    "donut_chart",
+    "pie_chart",
+    "heatmap",
   ] as const;
 
   $: showExplore = EXPLORE_SUPPORTED_TYPES.includes(component.type as any);
