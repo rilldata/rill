@@ -132,11 +132,6 @@ func (h *Handle) MigrationStatus(ctx context.Context) (current, desired int, err
 	return 0, 0, nil
 }
 
-// InformationSchema implements drivers.Handle.
-func (h *Handle) AsInformationSchema() (drivers.InformationSchema, bool) {
-	return nil, false
-}
-
 // Close implements drivers.Handle.
 func (h *Handle) Close() error {
 	h.repo.close()
@@ -170,6 +165,11 @@ func (h *Handle) AsAI(instanceID string) (drivers.AIService, bool) {
 
 // AsOLAP implements drivers.Handle.
 func (h *Handle) AsOLAP(instanceID string) (drivers.OLAPStore, bool) {
+	return nil, false
+}
+
+// InformationSchema implements drivers.Handle.
+func (h *Handle) AsInformationSchema() (drivers.InformationSchema, bool) {
 	return nil, false
 }
 
