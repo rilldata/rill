@@ -1,5 +1,6 @@
 import type { BaseCanvasComponent } from "@rilldata/web-common/features/canvas/components/BaseCanvasComponent";
 import type { ChartSpec } from "@rilldata/web-common/features/canvas/components/charts";
+import type { FieldConfig } from "@rilldata/web-common/features/canvas/components/charts/types";
 import type { ComponentWithMetricsView } from "@rilldata/web-common/features/canvas/components/types";
 import type { TimeAndFilterStore } from "@rilldata/web-common/features/canvas/stores/types";
 import { splitWhereFilter } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
@@ -9,6 +10,7 @@ import type {
 } from "@rilldata/web-common/features/dashboards/pivot/types";
 import { PivotChipType } from "@rilldata/web-common/features/dashboards/pivot/types";
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
+import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 
 export interface CanvasLinkContext {
   organization?: string;
@@ -69,8 +71,12 @@ export function useTransformCanvasToExploreState(
   return partialExploreState;
 }
 
-export function getPivotStateFromChartSpec(spec: ChartSpec): PivotState {
+export function getPivotStateFromChartSpec(
+  spec: ChartSpec,
+  timeGrain: V1TimeGrain | undefined,
+): PivotState {
   const columns: PivotChipData[] = [];
+  const rows: PivotChipData[] = [];
 
   // Iterate over all properties in the spec
   for (const [key, value] of Object.entries(spec)) {
@@ -86,32 +92,46 @@ export function getPivotStateFromChartSpec(spec: ChartSpec): PivotState {
       "field" in value &&
       "type" in value
     ) {
-      const fieldConfig = value as { field: string; type: string };
+      const fieldConfig = value as FieldConfig;
 
-      const chipType =
-        fieldConfig.type === "quantitative"
-          ? PivotChipType.Measure
-          : fieldConfig.type === "temporal"
-            ? PivotChipType.Time
-            : PivotChipType.Dimension;
+      let chipType: PivotChipType;
+      let id: string;
+      if (fieldConfig.type === "quantitative") {
+        id = fieldConfig.field;
+        chipType = PivotChipType.Measure;
+      } else if (fieldConfig.type === "temporal") {
+        id = timeGrain || V1TimeGrain.TIME_GRAIN_DAY;
+        chipType = PivotChipType.Time;
+      } else {
+        id = fieldConfig.field;
+        chipType = PivotChipType.Dimension;
+      }
 
-      columns.push({
-        id: fieldConfig.field,
-        title: fieldConfig.field,
-        type: chipType,
-      });
+      if (key === "x" || chipType === PivotChipType.Measure) {
+        columns.push({
+          id,
+          title: fieldConfig.field,
+          type: chipType,
+        });
+      } else {
+        rows.push({
+          id,
+          title: fieldConfig.field,
+          type: chipType,
+        });
+      }
     }
   }
 
   return {
     columns,
-    rows: [],
+    rows,
     expanded: {},
     sorting: [],
     columnPage: 0,
     rowPage: 0,
     enableComparison: false,
-    tableMode: "flat",
+    tableMode: "nest",
     activeCell: null,
   };
 }
