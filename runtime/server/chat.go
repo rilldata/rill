@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 
+	aiv1 "github.com/rilldata/rill/proto/gen/rill/ai/v1"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/server/auth"
@@ -93,7 +94,7 @@ type serverToolService struct {
 }
 
 // ListTools implements runtime.ToolService
-func (s *serverToolService) ListTools(ctx context.Context) ([]runtime.Tool, error) {
+func (s *serverToolService) ListTools(ctx context.Context) ([]*aiv1.Tool, error) {
 	return s.server.mcpListTools(ctx, s.instanceID)
 }
 

@@ -8,9 +8,9 @@ import (
 	"strings"
 	"time"
 
+	aiv1 "github.com/rilldata/rill/proto/gen/rill/ai/v1"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
-	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/queries"
@@ -142,12 +142,12 @@ func (s *Server) generateResolverForTable(ctx context.Context, instanceID, userP
 	systemPrompt := resolverForTableSystemPrompt()
 	fullUserPrompt := resolverUserPrompt(userPrompt, tblName, dialect, schema)
 
-	msgs := []*drivers.CompletionMessage{
+	msgs := []*aiv1.CompletionMessage{
 		{
 			Role: "system",
-			Content: []*runtimev1.ContentBlock{
+			Content: []*aiv1.ContentBlock{
 				{
-					BlockType: &runtimev1.ContentBlock_Text{
+					BlockType: &aiv1.ContentBlock_Text{
 						Text: systemPrompt,
 					},
 				},
@@ -155,9 +155,9 @@ func (s *Server) generateResolverForTable(ctx context.Context, instanceID, userP
 		},
 		{
 			Role: "user",
-			Content: []*runtimev1.ContentBlock{
+			Content: []*aiv1.ContentBlock{
 				{
-					BlockType: &runtimev1.ContentBlock_Text{
+					BlockType: &aiv1.ContentBlock_Text{
 						Text: fullUserPrompt,
 					},
 				},
@@ -219,12 +219,12 @@ func (s *Server) generateResolverForMetricsView(ctx context.Context, instanceID,
 	systemPrompt := resolverForMetricsViewSystemPrompt()
 	fullUserPrompt := resolverUserPrompt(userPrompt, metricsView, dialect, schema)
 
-	msgs := []*drivers.CompletionMessage{
+	msgs := []*aiv1.CompletionMessage{
 		{
 			Role: "system",
-			Content: []*runtimev1.ContentBlock{
+			Content: []*aiv1.ContentBlock{
 				{
-					BlockType: &runtimev1.ContentBlock_Text{
+					BlockType: &aiv1.ContentBlock_Text{
 						Text: systemPrompt,
 					},
 				},
@@ -232,9 +232,9 @@ func (s *Server) generateResolverForMetricsView(ctx context.Context, instanceID,
 		},
 		{
 			Role: "user",
-			Content: []*runtimev1.ContentBlock{
+			Content: []*aiv1.ContentBlock{
 				{
-					BlockType: &runtimev1.ContentBlock_Text{
+					BlockType: &aiv1.ContentBlock_Text{
 						Text: fullUserPrompt,
 					},
 				},

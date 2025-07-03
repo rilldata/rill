@@ -3,7 +3,7 @@ package ai
 import (
 	"context"
 
-	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
+	aiv1 "github.com/rilldata/rill/proto/gen/rill/ai/v1"
 )
 
 type noop struct{}
@@ -14,6 +14,6 @@ func NewNoop() Client {
 	return noop{}
 }
 
-func (noop) Complete(ctx context.Context, msgs []*adminv1.CompletionMessage, tools []*adminv1.Tool) (*adminv1.CompletionMessage, error) {
-	return &adminv1.CompletionMessage{}, nil
+func (noop) Complete(ctx context.Context, msgs []*aiv1.CompletionMessage, tools []*aiv1.Tool) (*aiv1.CompletionMessage, error) {
+	return &aiv1.CompletionMessage{}, nil
 }

@@ -4497,6 +4497,7 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1ContentBlock'
+    title: Completion message for AI API calls
   v1Condition:
     type: object
     properties:

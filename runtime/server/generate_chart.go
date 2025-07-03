@@ -7,9 +7,9 @@ import (
 	"strings"
 	"time"
 
+	aiv1 "github.com/rilldata/rill/proto/gen/rill/ai/v1"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
-	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/server/auth"
@@ -77,12 +77,12 @@ func (s *Server) generateRendererWithAI(ctx context.Context, instanceID, userPro
 	systemPrompt := vegaSpecSystemPrompt()
 	userPrompt = vegaSpecUserPrompt(userPrompt, schema)
 
-	msgs := []*drivers.CompletionMessage{
+	msgs := []*aiv1.CompletionMessage{
 		{
 			Role: "system",
-			Content: []*runtimev1.ContentBlock{
+			Content: []*aiv1.ContentBlock{
 				{
-					BlockType: &runtimev1.ContentBlock_Text{
+					BlockType: &aiv1.ContentBlock_Text{
 						Text: systemPrompt,
 					},
 				},
@@ -90,9 +90,9 @@ func (s *Server) generateRendererWithAI(ctx context.Context, instanceID, userPro
 		},
 		{
 			Role: "user",
-			Content: []*runtimev1.ContentBlock{
+			Content: []*aiv1.ContentBlock{
 				{
-					BlockType: &runtimev1.ContentBlock_Text{
+					BlockType: &aiv1.ContentBlock_Text{
 						Text: userPrompt,
 					},
 				},

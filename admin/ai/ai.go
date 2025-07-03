@@ -3,9 +3,9 @@ package ai
 import (
 	"context"
 
-	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
+	aiv1 "github.com/rilldata/rill/proto/gen/rill/ai/v1"
 )
 
 type Client interface {
-	Complete(ctx context.Context, msgs []*adminv1.CompletionMessage, tools []*adminv1.Tool) (*adminv1.CompletionMessage, error)
+	Complete(ctx context.Context, msgs []*aiv1.CompletionMessage, tools []*aiv1.Tool) (*aiv1.CompletionMessage, error)
 }

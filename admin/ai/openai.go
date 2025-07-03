@@ -6,7 +6,7 @@ import (
 	"errors"
 	"fmt"
 
-	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
+	aiv1 "github.com/rilldata/rill/proto/gen/rill/ai/v1"
 	"github.com/sashabaranov/go-openai"
 	"google.golang.org/protobuf/types/known/structpb"
 )
@@ -29,7 +29,7 @@ func NewOpenAI(apiKey string) (Client, error) {
 
 // Complete sends a chat completion request to OpenAI and returns the response.
 // It handles conversion between Rill's message format and OpenAI's message format.
-func (c *openAI) Complete(ctx context.Context, msgs []*adminv1.CompletionMessage, tools []*adminv1.Tool) (*adminv1.CompletionMessage, error) {
+func (c *openAI) Complete(ctx context.Context, msgs []*aiv1.CompletionMessage, tools []*aiv1.Tool) (*aiv1.CompletionMessage, error) {
 	// Convert input to OpenAI format
 	reqMsgs := make([]openai.ChatCompletionMessage, len(msgs))
 	for i, msg := range msgs {
@@ -75,7 +75,7 @@ func (c *openAI) Complete(ctx context.Context, msgs []*adminv1.CompletionMessage
 }
 
 // convertRillMessageToOpenAIMessage converts a single Rill CompletionMessage to OpenAI ChatCompletionMessage format.
-func convertRillMessageToOpenAIMessage(msg *adminv1.CompletionMessage) openai.ChatCompletionMessage {
+func convertRillMessageToOpenAIMessage(msg *aiv1.CompletionMessage) openai.ChatCompletionMessage {
 	var content string
 
 	// Process each content block in the message
@@ -106,7 +106,7 @@ func convertRillMessageToOpenAIMessage(msg *adminv1.CompletionMessage) openai.Ch
 }
 
 // convertRillToolToOpenAITool converts a single Rill Tool to OpenAI Tool format.
-func convertRillToolToOpenAITool(tool *adminv1.Tool) (openai.Tool, error) {
+func convertRillToolToOpenAITool(tool *aiv1.Tool) (openai.Tool, error) {
 	schemaMap, err := parseToolSchema(tool.InputSchema)
 	if err != nil {
 		return openai.Tool{}, fmt.Errorf("failed to convert tool %s: %w", tool.Name, err)
@@ -141,27 +141,27 @@ func parseToolSchema(schemaJSON string) (map[string]interface{}, error) {
 }
 
 // convertOpenAIMessageToRillMessage converts OpenAI ChatCompletionMessage to Rill CompletionMessage format.
-func convertOpenAIMessageToRillMessage(message openai.ChatCompletionMessage) (*adminv1.CompletionMessage, error) {
+func convertOpenAIMessageToRillMessage(message openai.ChatCompletionMessage) (*aiv1.CompletionMessage, error) {
 	// Handle standard text responses (simple case)
 	if len(message.ToolCalls) == 0 {
-		contentBlocks := []*adminv1.ContentBlock{
+		contentBlocks := []*aiv1.ContentBlock{
 			{
-				BlockType: &adminv1.ContentBlock_Text{Text: message.Content},
+				BlockType: &aiv1.ContentBlock_Text{Text: message.Content},
 			},
 		}
-		return &adminv1.CompletionMessage{
+		return &aiv1.CompletionMessage{
 			Role:    openai.ChatMessageRoleAssistant,
 			Content: contentBlocks,
 		}, nil
 	}
 
 	// Handle responses with tool calls (complex case)
-	var contentBlocks []*adminv1.ContentBlock
+	var contentBlocks []*aiv1.ContentBlock
 
 	// Include any text content alongside tool calls
 	if message.Content != "" {
-		contentBlocks = append(contentBlocks, &adminv1.ContentBlock{
-			BlockType: &adminv1.ContentBlock_Text{Text: message.Content},
+		contentBlocks = append(contentBlocks, &aiv1.ContentBlock{
+			BlockType: &aiv1.ContentBlock_Text{Text: message.Content},
 		})
 	}
 
@@ -174,21 +174,21 @@ func convertOpenAIMessageToRillMessage(message openai.ChatCompletionMessage) (*a
 			continue
 		}
 
-		contentBlocks = append(contentBlocks, &adminv1.ContentBlock{
-			BlockType: &adminv1.ContentBlock_ToolCall{
+		contentBlocks = append(contentBlocks, &aiv1.ContentBlock{
+			BlockType: &aiv1.ContentBlock_ToolCall{
 				ToolCall: toolCallProto,
 			},
 		})
 	}
 
-	return &adminv1.CompletionMessage{
+	return &aiv1.CompletionMessage{
 		Role:    openai.ChatMessageRoleAssistant,
 		Content: contentBlocks,
 	}, nil
 }
 
 // convertOpenAIToolCallToRillToolCall converts an OpenAI ToolCall to Rill ToolCall format.
-func convertOpenAIToolCallToRillToolCall(toolCall openai.ToolCall) (*adminv1.ToolCall, error) {
+func convertOpenAIToolCallToRillToolCall(toolCall openai.ToolCall) (*aiv1.ToolCall, error) {
 	// Parse OpenAI ToolCall arguments
 	var input map[string]interface{}
 	if err := json.Unmarshal([]byte(toolCall.Function.Arguments), &input); err != nil {
@@ -202,7 +202,7 @@ func convertOpenAIToolCallToRillToolCall(toolCall openai.ToolCall) (*adminv1.Too
 	}
 
 	// Create Rill ToolCall
-	return &adminv1.ToolCall{
+	return &aiv1.ToolCall{
 		Id:    toolCall.ID,
 		Name:  toolCall.Function.Name,
 		Input: inputStruct,

@@ -9,7 +9,7 @@ import (
 	"github.com/mark3labs/mcp-go/client"
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
-	"github.com/rilldata/rill/runtime"
+	aiv1 "github.com/rilldata/rill/proto/gen/rill/ai/v1"
 )
 
 func (s *Server) newMCPClient(mcpServer *server.MCPServer) *client.Client {
@@ -41,7 +41,7 @@ func (s *Server) newMCPClient(mcpServer *server.MCPServer) *client.Client {
 	return client
 }
 
-func (s *Server) mcpListTools(ctx context.Context, instanceID string) ([]runtime.Tool, error) {
+func (s *Server) mcpListTools(ctx context.Context, instanceID string) ([]*aiv1.Tool, error) {
 	// Add instance ID to context for internal MCP server tools
 	ctxWithInstance := context.WithValue(ctx, mcpInstanceIDKey{}, instanceID)
 
@@ -50,23 +50,23 @@ func (s *Server) mcpListTools(ctx context.Context, instanceID string) ([]runtime
 		return nil, err
 	}
 
-	runtimeTools := make([]runtime.Tool, len(tools.Tools))
+	aiTools := make([]*aiv1.Tool, len(tools.Tools))
 	for i := range tools.Tools {
 		tool := &tools.Tools[i]
-		runtimeTool := runtime.Tool{
+		aiTool := &aiv1.Tool{
 			Name:        tool.Name,
 			Description: tool.Description,
 		}
 
 		// Convert InputSchema to JSON string if present
 		if schemaBytes, err := json.Marshal(tool.InputSchema); err == nil && string(schemaBytes) != "{}" && string(schemaBytes) != "null" {
-			runtimeTool.InputSchema = string(schemaBytes)
+			aiTool.InputSchema = string(schemaBytes)
 		}
 
-		runtimeTools[i] = runtimeTool
+		aiTools[i] = aiTool
 	}
 
-	return runtimeTools, nil
+	return aiTools, nil
 }
 
 func (s *Server) mcpExecuteTool(ctx context.Context, instanceID, toolName string, toolArgs map[string]any) (any, error) {

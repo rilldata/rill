@@ -3,7 +3,7 @@ package ai
 import (
 	"context"
 
-	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	aiv1 "github.com/rilldata/rill/proto/gen/rill/ai/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/storage"
@@ -155,7 +155,7 @@ func (c *connection) AsNotifier(properties map[string]any) (drivers.Notifier, er
 }
 
 // Complete implements drivers.AIService.
-func (c *connection) Complete(ctx context.Context, msgs []*drivers.CompletionMessage, tools []drivers.Tool) (*drivers.CompletionMessage, error) {
+func (c *connection) Complete(ctx context.Context, msgs []*aiv1.CompletionMessage, tools []*aiv1.Tool) (*aiv1.CompletionMessage, error) {
 	if c.toolCallingMode {
 		return c.handleToolCalling()
 	}
@@ -163,14 +163,14 @@ func (c *connection) Complete(ctx context.Context, msgs []*drivers.CompletionMes
 }
 
 // handleToolCalling returns a simple mock tool call for testing
-func (c *connection) handleToolCalling() (*drivers.CompletionMessage, error) {
+func (c *connection) handleToolCalling() (*aiv1.CompletionMessage, error) {
 	inputStruct, _ := structpb.NewStruct(map[string]interface{}{})
-	return &drivers.CompletionMessage{
+	return &aiv1.CompletionMessage{
 		Role: "assistant",
-		Content: []*runtimev1.ContentBlock{
+		Content: []*aiv1.ContentBlock{
 			{
-				BlockType: &runtimev1.ContentBlock_ToolCall{
-					ToolCall: &runtimev1.ToolCall{
+				BlockType: &aiv1.ContentBlock_ToolCall{
+					ToolCall: &aiv1.ToolCall{
 						Id:    "tool_call_123",
 						Name:  "list_metrics_views",
 						Input: inputStruct,
@@ -182,7 +182,7 @@ func (c *connection) handleToolCalling() (*drivers.CompletionMessage, error) {
 }
 
 // echoUserMessage finds the last user message and echoes it back
-func (c *connection) echoUserMessage(msgs []*drivers.CompletionMessage) (*drivers.CompletionMessage, error) {
+func (c *connection) echoUserMessage(msgs []*aiv1.CompletionMessage) (*aiv1.CompletionMessage, error) {
 	text := c.findLastUserText(msgs)
 	if text == "" {
 		text = "No user message found"
@@ -190,11 +190,11 @@ func (c *connection) echoUserMessage(msgs []*drivers.CompletionMessage) (*driver
 		text = "Echo: " + text
 	}
 
-	return &drivers.CompletionMessage{
+	return &aiv1.CompletionMessage{
 		Role: "assistant",
-		Content: []*runtimev1.ContentBlock{
+		Content: []*aiv1.ContentBlock{
 			{
-				BlockType: &runtimev1.ContentBlock_Text{
+				BlockType: &aiv1.ContentBlock_Text{
 					Text: text,
 				},
 			},
@@ -203,7 +203,7 @@ func (c *connection) echoUserMessage(msgs []*drivers.CompletionMessage) (*driver
 }
 
 // findLastUserText extracts text from the most recent user message
-func (c *connection) findLastUserText(msgs []*drivers.CompletionMessage) string {
+func (c *connection) findLastUserText(msgs []*aiv1.CompletionMessage) string {
 	for i := len(msgs) - 1; i >= 0; i-- {
 		if msgs[i].Role == "user" {
 			for _, block := range msgs[i].Content {

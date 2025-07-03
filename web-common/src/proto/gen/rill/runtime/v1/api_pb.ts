@@ -7,6 +7,7 @@ import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialM
 import { Message as Message$1, proto3, Struct, Timestamp } from "@bufbuild/protobuf";
 import { StructType } from "./schema_pb.js";
 import { RefreshModelTrigger, Resource, ResourceName } from "./resources_pb.js";
+import { ContentBlock } from "../../ai/v1/ai_pb.js";
 
 /**
  * FileEvent describes a file change.
@@ -4133,7 +4134,7 @@ export class Message extends Message$1<Message> {
   role = "";
 
   /**
-   * @generated from field: repeated rill.runtime.v1.ContentBlock content = 3;
+   * @generated from field: repeated rill.ai.v1.ContentBlock content = 3;
    */
   content: ContentBlock[] = [];
 
@@ -4176,167 +4177,6 @@ export class Message extends Message$1<Message> {
 
   static equals(a: Message | PlainMessage<Message> | undefined, b: Message | PlainMessage<Message> | undefined): boolean {
     return proto3.util.equals(Message, a, b);
-  }
-}
-
-/**
- * Content block within a message
- *
- * @generated from message rill.runtime.v1.ContentBlock
- */
-export class ContentBlock extends Message$1<ContentBlock> {
-  /**
-   * @generated from oneof rill.runtime.v1.ContentBlock.block_type
-   */
-  blockType: {
-    /**
-     * @generated from field: string text = 1;
-     */
-    value: string;
-    case: "text";
-  } | {
-    /**
-     * @generated from field: rill.runtime.v1.ToolCall tool_call = 2;
-     */
-    value: ToolCall;
-    case: "toolCall";
-  } | {
-    /**
-     * @generated from field: rill.runtime.v1.ToolResult tool_result = 3;
-     */
-    value: ToolResult;
-    case: "toolResult";
-  } | { case: undefined; value?: undefined } = { case: undefined };
-
-  constructor(data?: PartialMessage<ContentBlock>) {
-    super();
-    proto3.util.initPartial(data, this);
-  }
-
-  static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.runtime.v1.ContentBlock";
-  static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "text", kind: "scalar", T: 9 /* ScalarType.STRING */, oneof: "block_type" },
-    { no: 2, name: "tool_call", kind: "message", T: ToolCall, oneof: "block_type" },
-    { no: 3, name: "tool_result", kind: "message", T: ToolResult, oneof: "block_type" },
-  ]);
-
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ContentBlock {
-    return new ContentBlock().fromBinary(bytes, options);
-  }
-
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ContentBlock {
-    return new ContentBlock().fromJson(jsonValue, options);
-  }
-
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ContentBlock {
-    return new ContentBlock().fromJsonString(jsonString, options);
-  }
-
-  static equals(a: ContentBlock | PlainMessage<ContentBlock> | undefined, b: ContentBlock | PlainMessage<ContentBlock> | undefined): boolean {
-    return proto3.util.equals(ContentBlock, a, b);
-  }
-}
-
-/**
- * Tool call specification
- *
- * @generated from message rill.runtime.v1.ToolCall
- */
-export class ToolCall extends Message$1<ToolCall> {
-  /**
-   * @generated from field: string id = 1;
-   */
-  id = "";
-
-  /**
-   * @generated from field: string name = 2;
-   */
-  name = "";
-
-  /**
-   * @generated from field: google.protobuf.Struct input = 3;
-   */
-  input?: Struct;
-
-  constructor(data?: PartialMessage<ToolCall>) {
-    super();
-    proto3.util.initPartial(data, this);
-  }
-
-  static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.runtime.v1.ToolCall";
-  static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "input", kind: "message", T: Struct },
-  ]);
-
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ToolCall {
-    return new ToolCall().fromBinary(bytes, options);
-  }
-
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ToolCall {
-    return new ToolCall().fromJson(jsonValue, options);
-  }
-
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ToolCall {
-    return new ToolCall().fromJsonString(jsonString, options);
-  }
-
-  static equals(a: ToolCall | PlainMessage<ToolCall> | undefined, b: ToolCall | PlainMessage<ToolCall> | undefined): boolean {
-    return proto3.util.equals(ToolCall, a, b);
-  }
-}
-
-/**
- * Tool execution result
- *
- * @generated from message rill.runtime.v1.ToolResult
- */
-export class ToolResult extends Message$1<ToolResult> {
-  /**
-   * @generated from field: string id = 1;
-   */
-  id = "";
-
-  /**
-   * @generated from field: string content = 2;
-   */
-  content = "";
-
-  /**
-   * @generated from field: bool is_error = 3;
-   */
-  isError = false;
-
-  constructor(data?: PartialMessage<ToolResult>) {
-    super();
-    proto3.util.initPartial(data, this);
-  }
-
-  static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.runtime.v1.ToolResult";
-  static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "content", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "is_error", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-  ]);
-
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ToolResult {
-    return new ToolResult().fromBinary(bytes, options);
-  }
-
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ToolResult {
-    return new ToolResult().fromJson(jsonValue, options);
-  }
-
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ToolResult {
-    return new ToolResult().fromJsonString(jsonString, options);
-  }
-
-  static equals(a: ToolResult | PlainMessage<ToolResult> | undefined, b: ToolResult | PlainMessage<ToolResult> | undefined): boolean {
-    return proto3.util.equals(ToolResult, a, b);
   }
 }
 

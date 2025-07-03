@@ -362,12 +362,12 @@ func (c *catalogStore) UpsertInstanceHealth(ctx context.Context, h *drivers.Inst
 
 // FindConversations fetches all conversations in an instance for a given owner.
 func (c *catalogStore) FindConversations(ctx context.Context, ownerID string) ([]*drivers.Conversation, error) {
-	rows, err := c.db.QueryContext(ctx, `
-        SELECT conversation_id, owner_id, title, created_on, updated_on
-        FROM conversations
-        WHERE instance_id = ? AND owner_id = ?
-        ORDER BY updated_on DESC
-    `, c.instanceID, ownerID)
+	rows, err := c.db.QueryxContext(ctx, `
+		SELECT conversation_id, owner_id, title, created_on, updated_on
+		FROM conversations
+		WHERE instance_id = ? AND owner_id = ?
+		ORDER BY updated_on DESC
+	`, c.instanceID, ownerID)
 	if err != nil {
 		return nil, err
 	}
@@ -396,11 +396,11 @@ func (c *catalogStore) FindConversations(ctx context.Context, ownerID string) ([
 
 // FindConversation fetches a conversation by ID.
 func (c *catalogStore) FindConversation(ctx context.Context, conversationID string) (*drivers.Conversation, error) {
-	row := c.db.QueryRowContext(ctx, `
-        SELECT conversation_id, owner_id, title, created_on, updated_on
-        FROM conversations
-        WHERE instance_id = ? AND conversation_id = ?
-    `, c.instanceID, conversationID)
+	row := c.db.QueryRowxContext(ctx, `
+		SELECT conversation_id, owner_id, title, created_on, updated_on
+		FROM conversations
+		WHERE instance_id = ? AND conversation_id = ?
+	`, c.instanceID, conversationID)
 
 	var conv drivers.Conversation
 	if err := row.Scan(&conv.ID, &conv.OwnerID, &conv.Title, &conv.CreatedOn, &conv.UpdatedOn); err != nil {
@@ -414,20 +414,20 @@ func (c *catalogStore) FindConversation(ctx context.Context, conversationID stri
 func (c *catalogStore) InsertConversation(ctx context.Context, ownerID, title string) (string, error) {
 	conversationID := uuid.NewString()
 	_, err := c.db.ExecContext(ctx, `
-        INSERT INTO conversations (instance_id, conversation_id, owner_id, title, created_on, updated_on)
-        VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-    `, c.instanceID, conversationID, ownerID, title)
+		INSERT INTO conversations (instance_id, conversation_id, owner_id, title, created_on, updated_on)
+		VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+  `, c.instanceID, conversationID, ownerID, title)
 	return conversationID, err
 }
 
 // FindMessages fetches all messages for a conversation, ordered by sequence number.
 func (c *catalogStore) FindMessages(ctx context.Context, conversationID string) ([]*drivers.Message, error) {
 	rows, err := c.db.QueryxContext(ctx, `
-        SELECT message_id, conversation_id, seq_num, role, content_json, created_on, updated_on
-        FROM messages
-        WHERE instance_id = ? AND conversation_id = ?
-        ORDER BY seq_num ASC
-    `, c.instanceID, conversationID)
+		SELECT message_id, conversation_id, seq_num, role, content_json, created_on, updated_on
+		FROM messages
+		WHERE instance_id = ? AND conversation_id = ?
+		ORDER BY seq_num ASC
+  `, c.instanceID, conversationID)
 	if err != nil {
 		return nil, err
 	}
@@ -460,10 +460,10 @@ func (c *catalogStore) InsertMessage(ctx context.Context, conversationID, role s
 
 	// Auto-calculate seq_num using a subquery - this is atomic and race-condition safe
 	_, err := c.db.ExecContext(ctx, `
-        INSERT INTO messages (instance_id, conversation_id, seq_num, message_id, role, content_json, created_on, updated_on)
-        VALUES (?, ?, 
-            (SELECT COALESCE(MAX(seq_num), 0) + 1 FROM messages WHERE instance_id = ? AND conversation_id = ?),
-            ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-    `, c.instanceID, conversationID, c.instanceID, conversationID, messageID, role, msg.ContentJSON)
+  	INSERT INTO messages (instance_id, conversation_id, seq_num, message_id, role, content_json, created_on, updated_on)
+  	VALUES (?, ?, 
+  	  (SELECT COALESCE(MAX(seq_num), 0) + 1 FROM messages WHERE instance_id = ? AND conversation_id = ?),
+  	  ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+  `, c.instanceID, conversationID, c.instanceID, conversationID, messageID, role, msg.ContentJSON)
 	return messageID, err
 }

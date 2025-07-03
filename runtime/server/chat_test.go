@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	aiv1 "github.com/rilldata/rill/proto/gen/rill/ai/v1"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -435,7 +436,7 @@ func TestConversationErrorHandling(t *testing.T) {
 			Messages: []*runtimev1.Message{
 				{
 					Role:    "user",
-					Content: []*runtimev1.ContentBlock{}, // Empty content blocks
+					Content: []*aiv1.ContentBlock{}, // Empty content blocks
 				},
 			},
 		})
@@ -471,9 +472,9 @@ func TestConversationErrorHandling(t *testing.T) {
 func createTestTextMessage(role, text string) *runtimev1.Message {
 	return &runtimev1.Message{
 		Role: role,
-		Content: []*runtimev1.ContentBlock{
+		Content: []*aiv1.ContentBlock{
 			{
-				BlockType: &runtimev1.ContentBlock_Text{
+				BlockType: &aiv1.ContentBlock_Text{
 					Text: text,
 				},
 			},

@@ -4,6 +4,7 @@ package rill.runtime.v1;
 import "google/api/annotations.proto";
 import "google/protobuf/timestamp.proto";
 import "google/protobuf/struct.proto";
+import "rill/ai/v1/ai.proto";
 import "rill/runtime/v1/schema.proto";
 import "rill/runtime/v1/resources.proto";
 import "validate/validate.proto";
@@ -894,32 +895,9 @@ message ListNotifierConnectorsResponse {
 message Message {
   string id = 1;
   string role = 2;
-  repeated ContentBlock content = 3;
+  repeated rill.ai.v1.ContentBlock content = 3;
   google.protobuf.Timestamp created_on = 4;
   google.protobuf.Timestamp updated_on = 5;
-}
-
-// Content block within a message
-message ContentBlock {
-  oneof block_type {
-    string text = 1;
-    ToolCall tool_call = 2;
-    ToolResult tool_result = 3;
-  }
-}
-
-// Tool call specification
-message ToolCall {
-  string id = 1;
-  string name = 2;
-  google.protobuf.Struct input = 3;
-}
-
-// Tool execution result
-message ToolResult {
-  string id = 1;
-  string content = 2;
-  bool is_error = 3;
 }
 
 // Conversation metadata and messages

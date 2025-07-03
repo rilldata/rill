@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/mark3labs/mcp-go/mcp"
-	"github.com/rilldata/rill/runtime"
+	aiv1 "github.com/rilldata/rill/proto/gen/rill/ai/v1"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/ratelimit"
 	"github.com/rilldata/rill/runtime/testruntime"
@@ -49,10 +49,10 @@ func TestMCPListTools(t *testing.T) {
 	}
 
 	// Verify specific tool metadata for get_metrics_view (has input schema)
-	var getMetricsViewTool *runtime.Tool
+	var getMetricsViewTool *aiv1.Tool
 	for _, tool := range tools {
 		if tool.Name == "get_metrics_view" {
-			getMetricsViewTool = &tool
+			getMetricsViewTool = tool
 			break
 		}
 	}
