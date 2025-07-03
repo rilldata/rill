@@ -128,6 +128,7 @@ func (e *embedClickHouse) start() (*clickhouse.Options, error) {
 					break
 				}
 				e.logger.Error("Failed to decode ClickHouse log", zap.Error(err))
+				continue
 			}
 
 			switch log.Level {
