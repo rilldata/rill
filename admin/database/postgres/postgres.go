@@ -502,7 +502,7 @@ func (c *connection) FindDeployments(ctx context.Context, afterID string, limit 
 	return res, nil
 }
 
-// FindExpiredDeployments returns all the deployments which are expired as per prod ttl
+// FindExpiredDeployments returns all the deployments which are expired as per ttl
 func (c *connection) FindExpiredDeployments(ctx context.Context) ([]*database.Deployment, error) {
 	var res []*database.Deployment
 	err := c.getDB(ctx).SelectContext(ctx, &res, `
@@ -510,7 +510,7 @@ func (c *connection) FindExpiredDeployments(ctx context.Context) ([]*database.De
 		JOIN projects p ON d.project_id = p.id
 		WHERE d.status != $1
 		AND ((p.prod_ttl_seconds IS NOT NULL AND d.used_on + p.prod_ttl_seconds * interval '1 second' < now())
-		OR (p.dev_ttl_seconds IS NOT NULL AND d.used_on + p.dev_ttl_seconds * interval '1 second' < now()))
+		OR (d.environment = 'dev' AND p.dev_ttl_seconds IS NOT NULL AND d.used_on + p.dev_ttl_seconds * interval '1 second' < now()))
 	`, database.DeploymentStatusStopped)
 	if err != nil {
 		return nil, parseErr("deployments", err)

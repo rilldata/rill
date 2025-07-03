@@ -219,6 +219,8 @@ export class HeatmapChartComponent extends BaseChart<HeatmapChartSpec> {
           });
         }
 
+        this.combinedWhere = combinedWhere;
+
         return getQueryServiceMetricsViewAggregationQueryOptions(
           runtime.instanceId,
           config.metrics_view,
