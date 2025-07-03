@@ -16,21 +16,21 @@ For most of the examples here, DuckDB is being used. However, most if not all of
 
 :::tip
 
-Rill's modeling layer provides open-ended SQL compatibility for complex SQL queries. More details can be found in our [modeling section](/build/models/models.md).
+Rill's modeling layer provides open-ended SQL compatibility for complex SQL queries. More details can be found in our [modeling section](/ingest-sources/models/models.md).
 
 :::
 
 ## Measure Expressions
 
-Measure expressions can take any SQL numeric function, a set of aggregates, and apply filters to create derived metrics. A reminder on basic expressions is available in the [create metrics view definition](../metrics-view.md#measures).
+Measure expressions can take any SQL numeric function, a set of aggregates, and apply filters to create derived metrics. A reminder on basic expressions is available in the [create metrics view definition](/build-dashboard/metrics-view#measures).
 
 See our dedicated examples and pages for the following advanced measures!
-- **[Metric Formatting](/build/metrics-view/advanced-expressions/metric-formatting)**
-- **[Case Statements and Filters](/build/metrics-view/advanced-expressions/case-statements)**
-- **[Referencing Measures](/build/metrics-view/advanced-expressions/referencing)**
-- **[Quantiles](/build/metrics-view/advanced-expressions/quantiles)**
-- **[Fixed Metrics](/build/metrics-view/advanced-expressions/fixed-metrics)**
-- **[Window Functions](/build/metrics-view/advanced-expressions/windows)**
+- **[Metric Formatting](/build-dashboard/metrics-view/advanced-expressions/metric-formatting)**
+- **[Case Statements and Filters](/build-dashboard/metrics-view/advanced-expressions/case-statements)**
+- **[Referencing Measures](/build-dashboard/metrics-view/advanced-expressions/referencing)**
+- **[Quantiles](/build-dashboard/metrics-view/advanced-expressions/quantiles)**
+- **[Fixed Metrics](/build-dashboard/metrics-view/advanced-expressions/fixed-metrics)**
+- **[Window Functions](/build-dashboard/metrics-view/advanced-expressions/windows)**
 
   
 
@@ -48,7 +48,7 @@ To utilize an expression, replace the `column` property with `expression` and ap
 ```
 See our dedicated examples and pages for the following advanced dimensions!
 
-- **[Unnest Dimensions](/build/metrics-view/advanced-expressions/unnesting)**
+- **[Unnest Dimensions](/build-dashboard/metrics-view/advanced-expressions/unnesting)**
 
 ## Druid Lookups
 

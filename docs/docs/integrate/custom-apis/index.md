@@ -13,7 +13,7 @@ To create a custom API, create a new yaml file under `apis` directory in your Ri
 
 ### SQL API
 
-You can write a SQL query and expose it as an API endpoint. This is useful when you want to directly write queries against a [model](/build/models/models.md) that you have created. It should have the following structure:
+You can write a SQL query and expose it as an API endpoint. This is useful when you want to directly write queries against a [model](/ingest-sources/models/models.md) that you have created. It should have the following structure:
     
 ```yaml
 type: api
@@ -24,7 +24,7 @@ Read more details about [SQL apis](./sql-api.md).
 
 ### Metrics SQL API
 
-You can write a SQL query referring to metrics definition and dimensions defined in a [metrics view](/build/metrics-view/metrics-view.md). 
+You can write a SQL query referring to metrics definition and dimensions defined in a [metrics view](/build-dashboard/metrics-view/metrics-view.md). 
 It should have the following structure:
     
 ```yaml

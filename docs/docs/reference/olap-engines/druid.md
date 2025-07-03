@@ -112,4 +112,4 @@ Rill supports connecting to Druid v28.0 or newer versions.
 ## Additional Notes
 
 - At the moment, we do not support modeling with Druid. If this is something you're interested in, please [contact us](../../contact.md).
-- For dashboards powered by Druid, [measure definitions](/build/metrics-view/metrics-view.md#measures) are required to follow standard [Druid SQL](https://druid.apache.org/docs/latest/querying/sql/) syntax.
+- For dashboards powered by Druid, [measure definitions](/build-dashboard/metrics-view/metrics-view.md#measures) are required to follow standard [Druid SQL](https://druid.apache.org/docs/latest/querying/sql/) syntax.

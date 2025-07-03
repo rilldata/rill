@@ -17,7 +17,7 @@ By default, data transformations in Rill Developer are powered by DuckDB and the
 
 It is possible to change the default [OLAP engine](https://docs.rilldata.com/build/olap/) for [the entire project](https://docs.rilldata.com/reference/project-files/rill-yaml#configuring-the-default-olap-engine) or [a specific metrics view](https://docs.rilldata.com/reference/project-files/metrics-views). You will need to define the connector credentials within your Rill project or via environment variables.
 
-For additional tips on commonly used expressions (either in models or dashboard definitions) visit our [common expressions page](../metrics-view/advanced-expressions/advanced-expressions.md).
+For additional tips on commonly used expressions (either in models or dashboard definitions) visit our [common expressions page](/build-dashboard/metrics-view/advanced-expressions/advanced-expressions.md).
 
 
 ## Adding a data model
@@ -42,7 +42,7 @@ See also our [Model YAML](../../reference/project-files/models) reference page.
 
 It is powerful to be able to translate many ad hoc questions into a data framework that can answer a class of questions at scale. For example, high-level insights that are relevant to a company (how much revenue did we make last week?) are more actionable for an employee if it is relevant for their role (how did my campaign increase revenue last week?).
 
-To experience the full potential of Rill, model your data sources into "One Big Table" – a granular resource that contains as much information as possible and can be rolled up in a meaningful way. This flexible OBT can be combined with a generalizable [metrics definition](/build/dashboards) to enable ad hoc slice-and-dice discovery through Rill's interactive dashboard.
+To experience the full potential of Rill, model your data sources into "One Big Table" – a granular resource that contains as much information as possible and can be rolled up in a meaningful way. This flexible OBT can be combined with a generalizable [metrics definition](/build-dashboard/dashboards) to enable ad hoc slice-and-dice discovery through Rill's interactive dashboard.
 
 ### Intermediate processing
 
