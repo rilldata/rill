@@ -1125,7 +1125,7 @@ export interface V1ListConnectorDriversResponse {
 }
 
 export interface V1ListDatabaseSchemasResponse {
-  schemas?: V1DatabaseSchemaInfo[];
+  databaseSchemas?: V1DatabaseSchemaInfo[];
 }
 
 export interface V1ListExamplesResponse {

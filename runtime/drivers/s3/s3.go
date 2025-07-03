@@ -198,11 +198,6 @@ func (c *Connection) Config() map[string]any {
 	return m
 }
 
-// InformationSchema implements drivers.Handle.
-func (c *Connection) AsInformationSchema() (drivers.InformationSchema, bool) {
-	return nil, false
-}
-
 // Close implements drivers.Connection.
 func (c *Connection) Close() error {
 	return nil
@@ -235,6 +230,11 @@ func (c *Connection) AsAI(instanceID string) (drivers.AIService, bool) {
 
 // AsOLAP implements drivers.Connection.
 func (c *Connection) AsOLAP(instanceID string) (drivers.OLAPStore, bool) {
+	return nil, false
+}
+
+// AsInformationSchema implements drivers.Connection.
+func (c *Connection) AsInformationSchema() (drivers.InformationSchema, bool) {
 	return nil, false
 }
 

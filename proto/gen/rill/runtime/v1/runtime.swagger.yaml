@@ -4893,7 +4893,7 @@ definitions:
   v1ListDatabaseSchemasResponse:
     type: object
     properties:
-      schemas:
+      databaseSchemas:
         type: array
         items:
           type: object

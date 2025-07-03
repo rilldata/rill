@@ -329,11 +329,6 @@ func (c *connection) Config() map[string]any {
 	return maps.Clone(c.driverConfig)
 }
 
-// InformationSchema implements drivers.Handle.
-func (c *connection) AsInformationSchema() (drivers.InformationSchema, bool) {
-	return c, true
-}
-
 // Close implements drivers.Connection.
 func (c *connection) Close() error {
 	c.cancel()
@@ -375,6 +370,11 @@ func (c *connection) AsAI(instanceID string) (drivers.AIService, bool) {
 // AsOLAP OLAP implements drivers.Connection.
 func (c *connection) AsOLAP(instanceID string) (drivers.OLAPStore, bool) {
 	return c, true
+}
+
+// AsInformationSchema implements drivers.Connection.
+func (c *connection) AsInformationSchema() (drivers.InformationSchema, bool) {
+	return nil, false
 }
 
 // AsObjectStore implements drivers.Connection.

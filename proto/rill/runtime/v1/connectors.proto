@@ -228,7 +228,7 @@ message ListDatabaseSchemasRequest {
 }
 
 message ListDatabaseSchemasResponse {
-  repeated DatabaseSchemaInfo schemas = 1;
+  repeated DatabaseSchemaInfo database_schemas = 1;
 }
 
 message DatabaseSchemaInfo {

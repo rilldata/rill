@@ -90,11 +90,6 @@ func (h *handle) Config() map[string]any {
 	return nil
 }
 
-// InformationSchema implements drivers.Handle.
-func (h *handle) AsInformationSchema() (drivers.InformationSchema, bool) {
-	return nil, false
-}
-
 // Close implements drivers.Connection.
 func (h *handle) Close() error {
 	return h.bucket.Close()
@@ -127,6 +122,11 @@ func (h *handle) AsAI(instanceID string) (drivers.AIService, bool) {
 
 // AsOLAP implements drivers.Connection.
 func (h *handle) AsOLAP(instanceID string) (drivers.OLAPStore, bool) {
+	return nil, false
+}
+
+// InformationSchema implements drivers.Handle.
+func (h *handle) AsInformationSchema() (drivers.InformationSchema, bool) {
 	return nil, false
 }
 

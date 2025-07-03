@@ -176,7 +176,7 @@ func (c *connection) Query(ctx context.Context, stmt *drivers.Statement) (res *d
 	return res, nil
 }
 
-func (c *connection) InformationSchema() drivers.OlapInformationSchema {
+func (c *connection) InformationSchema() drivers.OLAPInformationSchema {
 	return c
 }
 
