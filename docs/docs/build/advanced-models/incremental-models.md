@@ -5,7 +5,7 @@ sidebar_label: Incremental Models
 sidebar_position: 01
 ---
 
-Incremental Models help with the ingestion of large datasets as it allows a dataset to be broken down into smaller sections to ingest rather than a single read of the entire dataset.  Unlike [standard SQL models](../models/models.md) that are created via .sql file, incremental models are defined in a YAML file and are used when a large dataset needs to be incrementally ingested to improve ingestion costs and ingestion time. 
+Incremental models help with the ingestion of large datasets, as they allow a dataset to be broken down into smaller sections to ingest, rather than reading the entire dataset at once. Unlike [standard SQL models](../models/models.md) that are created via a .sql file, incremental models are defined in a YAML file and are used when a large dataset needs to be incrementally ingested to improve ingestion costs and time. 
 
 :::note Take a look at the Reference!
 If you are unsure what are the required parameters, please review the [reference page for Advanced Models](/reference/project-files/advanced-models).
@@ -22,7 +22,7 @@ Please [reach out to us](contact.md) if you have any questions regarding increme
 
 ## Creating an Incremental Model
 
- In order to enable incremental model, you will need to set the following: `incremental: true`.
+ In order to enable an incremental model, you will need to set the following: `incremental: true`.
 ```yaml
 type: model
 incremental: true
@@ -88,7 +88,7 @@ When selecting to refresh incrementally what is being run in the CLI is:
  rill project refresh --local --model <model_name> 
 ```
 
-Kind in mind that if you select `Full refresh` this will start the ingestion of **all of your data** from scratch. Only use this when absolutely required. When running a full refresh, the CLI command is:
+Keep in mind that if you select `Full refresh`, this will start the ingestion of **all of your data** from scratch. Only use this when absolutely required. When running a full refresh, the CLI command is:
 
 ```bash
  rill project refresh --local --model <model_name> --full

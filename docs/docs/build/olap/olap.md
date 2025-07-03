@@ -12,7 +12,7 @@ There are two ways to define an OLAP engine within Rill.
 1. Set the [default OLAP engine](../../reference/project-files/rill-yaml#configuring-the-default-olap-engine) via the rill.yaml file.
 2. Set the [OLAP engine](../../reference/project-files/explore-dashboards.md) for a specific dashboard.
 
-The OLAP engine set on the dashboard will take precedence over the project-level defined OLAP engine.
+The OLAP engine set on the dashboard will take precedence over the project-level OLAP engine defined.
 
 ## Supported OLAP Engines
 
@@ -28,13 +28,13 @@ Rill is continually evaluating additional OLAP engines that can be added. For a 
 
 ## Multiple OLAP Engines in a single project
 
-Rill supports the use of multiple OLAP engines in a single project with some limitations. For more detailed information, see our reference on [multiple olap engines](../../reference/olap-engines/multiple-olap). The basic use cases for multiple engines in a single project is: 
+Rill supports the use of multiple OLAP engines in a single project with some limitations. For more detailed information, see our reference on [multiple olap engines](../../reference/olap-engines/multiple-olap). The basic use cases for multiple engines in a single project are: 
 
 1. Using Rill on top of already created and optimized tables from different OLAP sources.
 2. Separating data based on size as performance on different engines differ based on the size of the data.
 
 ## Externally Hosted Services
-If you have a firewall in front of your externally hosted service, you will need to whitelist the below IP addresses. This will allow you to connect to/from your service once your project is deployed to Rill Cloud. 
+If you have a firewall in front of your externally hosted service, you will need to whitelist the IP addresses below. This will allow you to connect to/from your service once your project is deployed to Rill Cloud. 
 ```
 35.196.245.100
 34.74.117.37
@@ -47,7 +47,7 @@ If you have a firewall in front of your externally hosted service, you will need
 
 ## DuckDB
 
-DuckDB is unique in that it can act as both a [source](../../reference/connectors/motherduck.md) and [OLAP engine](../../reference/olap-engines/duckdb.md) for Rill. If you wish to connect to existing tables in DuckDB though, you can simply use the [DuckDB connector](../../reference/connectors/motherduck.md#connecting-to-external-duckdb-as-a-source) to read a specific table or view from an accessible DuckDB database file and ingest the data into Rill.
+DuckDB is unique in that it can act as both a [source](../../reference/connectors/motherduck.md) and [OLAP engine](../../reference/olap-engines/duckdb.md) for Rill. If you wish to connect to existing tables in DuckDB, you can simply use the [DuckDB connector](../../reference/connectors/motherduck.md#connecting-to-external-duckdb-as-a-source) to read a specific table or view from an accessible DuckDB database file and ingest the data into Rill.
 
 <img src = '/img/build/connect/duckdb.png' class='rounded-gif' />
 <br />
@@ -74,12 +74,12 @@ When ClickHouse has been configured as the [default OLAP engine](../../reference
 <br />
 
 :::note No Source Folder in ClickHouse
-There is no source folder in a ClickHouse based project as all of the tables exist on your ClickHouse Database and is read into Rill at start up. If you try to import data into a ClickHouse based project, you will likely result in errors stating that importing from XXX to ClickHouse is not supported.
+There is no source folder in a ClickHouse-based project as all of the tables exist on your ClickHouse Database and are read into Rill at startup. If you try to import data into a ClickHouse-based project, you will likely encounter errors stating that importing from XXX to ClickHouse is not supported.
 :::
 
 ## Pinot
 
-When Pinot has been configured as the [default OLAP engine](../../reference/project-files/rill-yaml.md#configuring-the-default-olap-engine) for your project, any existing external tables that Rill can read and query should be shown through the Rill Developer UI under `Tables` section in left pane. You can then create dashboards using these external Pinot tables.
+When Pinot has been configured as the [default OLAP engine](../../reference/project-files/rill-yaml.md#configuring-the-default-olap-engine) for your project, any existing external tables that Rill can read and query should be shown through the Rill Developer UI under the `Tables` section in the left pane. You can then create dashboards using these external Pinot tables.
 
 <img src = '/img/build/connect/external-tables/external-pinot-table.png' class='rounded-gif' />
 <br />

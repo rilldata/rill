@@ -6,7 +6,7 @@ sidebar_position: 45
 ---
 
 
-The Rill project file `rill.yaml` is often overlooked but is a powerful tool as it sets defaults, environmental variables, and connector settings. Let's walk though setting up [`mock_users`](/manage/security#in-rill-developer) to test row access policies, default security settings for your metrics views and explore dashboards, refresh scheudules, MCP `ai_instructions` and default OLAP connector.
+The Rill project file `rill.yaml` is often overlooked but is a powerful tool as it sets defaults, environmental variables, and connector settings. Let's walk through setting up [`mock_users`](/manage/security#in-rill-developer) to test row access policies, default security settings for your metrics views and explore dashboards, refresh schedules, MCP `ai_instructions`, and the default OLAP connector.
 
 <img src = '/img/tutorials/admin/project.png' class='rounded-gif' />
 <br />
@@ -30,9 +30,9 @@ ai_instructions: This project is a QA project, do not include this project in an
 ```
 
 ## Mock Users 
-Access to dashboards and even finer, access to rows, is a big concern for everyone. This is why mock users in Rill Developer is so important to be able to test the access of dashboards and data in dashboards before pushing to Rill Cloud. This is done via the mock_users in the project file. You can create pseudo users with specific domains, or admin and non admin users or user groups to test to ensure that access is correct. 
+Access to your environment is a crucial step in creating your project in Rill Developer. By doing so, you can confidently push your dashboard changes to Rill Cloud. This is done via the mock_users in the project file. You can create pseudo users with specific domains, or admin and non-admin users or user groups, to ensure that access is correct. 
 
-Let's assume that the following is applied to the metrics view.
+Let's assume that the following are applied to the metrics view.
 
 ```yaml
 security:
@@ -93,7 +93,7 @@ You can do a test mock user to ensure that this dashboard is working as designed
 
 
 ## Metrics Views Defaults
-By default, Rill is open to access (to your organization users), unless otherwise defined. In order to add project level access to the Rill project, you can add a default metrics view security policy in the rill.yaml file. Like a metrics_view, you can define the security as seen below. For more information, read our [dashboard access documentation](/manage/security#examples).
+By default, Rill is open to access (to your organization users), unless otherwise defined. To add project-level access to the Rill project, you can add a default metrics view security policy in the rill.yaml file. Like a metrics_view, you can define the security as shown below. For more information, read our [dashboard access documentation](/manage/security#examples).
 
 ```
 metrics_views:
@@ -102,7 +102,7 @@ metrics_views:
     row_fitler:
 ```
 
-Other parameters that can be set in the defaults are `first_day_of_week` and `smallest_time_gran`.
+Other parameters that can be set in the defaults are `first_day_of_week` and `smallest_time_grain`.
 
 :::tip Order of Operations 
 
@@ -112,7 +112,7 @@ Rill YAML settings < Metrics View YAML
 ## Explore Defaults
 Similar to metrics views, you can set similar security to an explore dashboard. (Note that only `access` can be set on the dashboard level.)
 
-You are also able to set the `defaults` parameter in the explores dashboard to define your default time range, as well as the avaiilable time_zones and time_ranges in an Explore dashboard.
+You are also able to set the `defaults` parameter in the explores dashboard to define your default time range, as well as the available time_zones and time_ranges in an Explore dashboard.
 ```yaml
 explores:
     defaults:

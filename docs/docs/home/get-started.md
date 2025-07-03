@@ -9,7 +9,7 @@ import Video from '@site/src/components/Video';
 
 ## Installation
 
-Run the following from the CLI to install and start Rill. Select a sample project from the UI or add your own data.
+Run the following commands in your CLI to install and start Rill. Select a sample project from the UI, or add your own data.
 ```
 curl https://rill.sh | sh
 rill start my-rill-project
@@ -42,9 +42,9 @@ rill start my-rill-project
 
 ## Guides
 
-Take a look at our [guides](/guides/) for more in-depth information on how to use Rill and the benefits that can be easily and quickly found in our Explore dashboards!
+Take a look at our [guides](/guides/) for more in-depth information on how to use Rill and the benefits you can quickly find in our Explore dashboards!
 
 
 ## We want to hear from you
 
-You can file an issue [on GitHub](https://github.com/rilldata/rill/issues/new/choose) or reach us in our [Discord channel](https://discord.gg/DJ5qcsxE2m). If you want to contact Rill Support, please see our [Contact](contact.md#contacting-support) page for additional options.
+You can file an issue [on GitHub](https://github.com/rilldata/rill/issues/new/choose) or reach us in our [Discord channel](https://discord.gg/DJ5qcsxE2m). If you want to contact Rill Support, please see our [Contact](contact.md#contacting-support) page for more options.

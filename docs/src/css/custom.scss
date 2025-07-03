@@ -301,13 +301,14 @@ li.theme-doc-sidebar-item-category-level-2 .menu__list-item-collapsible {
   display: flex;
   flex-direction: column;
   height: 100%;
-  
+
+
   .sidebar-release-notes-section {
     position: sticky;
     bottom: 0;
     left: 0;
     width: 100%;
-    background: white; /* or var(--ifm-background-color) for theme support */
+    background: var(--ifm-background-color);
     z-index: 2;
     padding: 8px;
     text-align: left;

@@ -12,7 +12,7 @@ You can install `rill` using our installation script on both macOS and Linux:
 curl https://rill.sh | sh
 ```
 
-To verify that the installation succeeded, run the following command. You will see an output of various commands that you can run via the CLI.
+To verify that the installation succeeded, run the following command. You will see a list of various commands that you can run via the CLI.
 ```bash
 rill --help
 ```
@@ -59,7 +59,7 @@ curl https://rill.sh | sh -s -- --nightly
 ```
 
 
-### What is nightly release?
+### What is a nightly release?
 The nightly release will give you the most up-to-date version of Rill without having to wait for the official release. As these releases are not fully ready for production, you may encounter some issues. Also, version mismatching from Rill Developer to Rill Cloud may result in broken components as Rill Cloud is on the previous stable release. 
 
 
@@ -93,29 +93,9 @@ sudo apt-get install unzip
 :::tip Where should Rill be running? 
 Please check that you are running the commands in your Linux instance not from your Windows Command Prompt. 
 
-If you are seeing strange behavior in Rill Developer, run the following command from the CLI to see where your project files are being save `echo "$PWD"`. If they are mounted from your Windows drive, you'll need to bring them into the WSL environment. 
+If you are seeing strange behavior in Rill Developer, run the following command from the CLI to see where your project files are being saved: `echo "$PWD"`.
 
 :::
 
 With `unzip` installed, you're ready to install Rill Developer by running the following command:
-```bash
-curl https://rill.sh | sh
-```
-
-## Manual Install
-
-You can download platform-specific binaries from our [releases page on GitHub](https://github.com/rilldata/rill/releases). A manual download will not make Rill Developer globally accessible, so you'll need to reference the full path of the binary when executing CLI commands.
-
-## Brew Install
-
-On macOS, you can also install Rill using Homebrew. To avoid conflicts, don't mix it with other installation options and always upgrade Rill via `brew`.
-```bash
-brew install rilldata/tap/rill 
-```
-
-## Uninstall Rill
-
-To uninstall Rill, you can use the following command:
-```bash
-rill uninstall
 ```

@@ -5,7 +5,7 @@ sidebar_label: "Customization & Themes"
 sidebar_position: 30
 ---
 
-You will find below some common customizations and dashboard configurations that are available for end users. 
+Below are some common customizations and dashboard configurations available for end users. 
 
 :::info Dashboard properties
 
@@ -16,7 +16,7 @@ For a full list of available dashboard properties and configurations, please see
 
 ### Time Ranges
 
-One of the more important configurations, available time ranges allow you to change the defaults in the time dropdown for periods to select. Updating this list allows users to quickly change between the most common analyses like day over day, recent weeks, or period to date. The range must be a valid [ISO 8601 duration](https://en.wikipedia.org/wiki/ISO_8601#Durations) or one of the [Rill ISO 8601 extensions](../../reference/rill-iso-extensions.md#extensions).
+One of the more important configurations, available time ranges allow you to change the defaults in the time dropdown for periods to select. Updating this list allows users to quickly change between the most common analyses, like day over day, recent weeks, or period to date. The range must be a valid [ISO 8601 duration](https://en.wikipedia.org/wiki/ISO_8601#Durations) or one of the [Rill ISO 8601 extensions](../../reference/rill-iso-extensions.md#extensions).
 
 ```yaml
 time_ranges:
@@ -30,7 +30,7 @@ time_ranges:
 
 ### Time Zones
 
-Rill will automatically select several time zones that should be pinned to the top of the time zone selector. It should be a list of [IANA time zone identifiers](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones). You can add or remove from this list for the relevant time zones for your team.
+Rill will automatically select several time zones that should be pinned to the top of the time zone selector. It should be a list of [IANA time zone identifiers](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones). You can add or remove relevant time zones for your team from this list.
 
 ```yaml
 time_zones:
@@ -54,14 +54,14 @@ Starting from version 0.50, the default views have been consolidated into a sing
 
 ### Default Time Range
 
-Default time range controls the data analyzed on initial page load. Setting the default time range improves user experience by setting to most frequently used period - in particular, avoiding `all time` if you have a large data source but only analyze more recent data.
+Default time range controls the data analyzed on initial page load. Setting the default time range improves user experience by setting it to the most frequently used period— in particular, avoiding `all time` if you have a large data source but only analyze more recent data.
 
 The value must be either a valid [ISO 8601 duration](https://en.wikipedia.org/wiki/ISO_8601#Durations) (for example, `PT12H` for 12 hours, `P1M` for 1 month, or `P26W` for 26 weeks) or one of the [Rill ISO 8601 extensions](../../reference/rill-iso-extensions.md#extensions).
 
 
 ### Default Dimensions
 
-For dashboards with wide tables, setting default dimensions is a good way to make sure that users can focus on the primary analyses and ensure a positive first experience. Each dimension listed under the `dimensions` setting would appear on the screen, while the remainder of the dimensions would be hidden (and still available for selection under filters). Common use cases for setting default fields would be to simplify dashboards on initial load, to narrow the dashboard to the most used fields, and to avoid high cardinality fields (that may take longer to load, but are used less often so improve performance). An example addition to the `dashboard.yaml` file is below.
+For dashboards with wide tables, setting default dimensions is a good way to make sure that users can focus on the primary analyses and ensure a positive first experience. Each dimension listed under the `dimensions` setting will appear on the screen, while the remainder of the dimensions will be hidden (and still available for selection under filters). Common use cases for setting default fields include simplifying dashboards on initial load, narrowing the dashboard to the most used fields, and avoiding high cardinality fields (that may take longer to load, but are used less often, so this improves performance). An example addition to the `dashboard.yaml` file is below.
 
 ```yaml
 defaults:
