@@ -1,12 +1,13 @@
 ---
 title: Quickstart & Examples Repository
-sidebar_label: Quickstart & Examples
-sidebar_position: 10
+sidebar_label: Getting Started with Rill
+sidebar_position: 05
 ---
 import Video from '@site/src/components/Video';
 
 <!-- WARNING: There are links to this page in source code. If you move it, find and replace the links and consider adding a redirect in docusaurus.config.js. -->
 
+## Installation
 
 Run the following from the CLI to install and start Rill. Select a sample project from the UI or add your own data.
 ```
@@ -39,10 +40,10 @@ rill start my-rill-project
 </div>
 
 ## Quick Start
-If you're looking for more details on one of our sample projects, that walks through each of the different components of a Rill project, take a look at our [quick start tutorials](/tutorials/quick_start/github-analytics)!
+If you're looking for more details on one of our sample projects, that walks through each of the different components of a Rill project, take a look at our [quick start tutorials](//quick_start/github-analytics)!
 
-- [GiHub Analytics](/tutorials/quick_start/github-analytics)
-- [OpenRTB Analytics](/tutorials/quick_start/openrtb-analytics)
+- [GiHub Analytics] (/tutorials/quick_start/github-analytics)
+- [OpenRTB Analytics] (/tutorials/quick_start/openrtb-analytics)
 
 
 ## Example Projects Repository

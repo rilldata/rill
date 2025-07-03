@@ -1,7 +1,7 @@
 ---
 title: Deployment Success!
 sidebar_label: Deployment Success!
-sidebar_position: 8
+sidebar_position: 10
 hide_table_of_contents: false
 tags:
   - OLAP:DuckDB

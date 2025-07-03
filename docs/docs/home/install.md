@@ -1,7 +1,7 @@
 ---
 title: How to install Rill Developer
 sidebar_label: Install Rill
-sidebar_position: 15
+sidebar_position: 01
 ---
 
 ## Quick Install
