@@ -48,7 +48,7 @@ dev:
   path: s3://path/to/bucket/Y=2024/M=01/*.parquet
 ```
 
-Similarly, if you wanted to set a project-wide default in `rill.yaml` where models are [materialized](/reference/project-files/models.md#model-materialization) only on Rill Cloud (i.e. `prod) and dashboards use a different default [theme](../dashboards/customize.md#changing-themes--colors) in production compared to locally, you could do this by:
+Similarly, if you wanted to set a project-wide default in `rill.yaml` where models are [materialized](/reference/project-files/models.md#model-materialization) only on Rill Cloud (i.e. `prod) and dashboards use a different default [theme](/build-dashboard/dashboards/customize#changing-themes--colors) in production compared to locally, you could do this by:
 
 ```yaml
 prod:
