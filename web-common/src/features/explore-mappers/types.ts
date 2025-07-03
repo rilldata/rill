@@ -18,13 +18,7 @@ export type QueryRequests =
   | V1MetricsViewTimeSeriesRequest
   | V1MetricsViewComparisonRequest;
 
-export interface ComponentTransformerProperties extends ExploreState {
-  metricsViewName: string;
-}
-
-export type TransformerProperties =
-  | QueryRequests
-  | ComponentTransformerProperties;
+export type TransformerProperties = QueryRequests;
 
 export type TransformerArgs<R extends TransformerProperties> = {
   queryClient: QueryClient;
@@ -48,12 +42,15 @@ export interface DashboardSelectionCriteria {
   preferredType?: "recent" | "most_used" | "first_available";
 }
 
+export enum ExploreLinkErrorType {
+  VALIDATION_ERROR = "VALIDATION_ERROR",
+  TRANSFORMATION_ERROR = "TRANSFORMATION_ERROR",
+  NETWORK_ERROR = "NETWORK_ERROR",
+  PERMISSION_ERROR = "PERMISSION_ERROR",
+}
+
 export interface ExploreLinkError {
-  type:
-    | "VALIDATION_ERROR"
-    | "TRANSFORMATION_ERROR"
-    | "NETWORK_ERROR"
-    | "PERMISSION_ERROR";
+  type: ExploreLinkErrorType;
   message: string;
   details?: any;
 }
