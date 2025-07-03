@@ -46,7 +46,6 @@ To experience the full potential of Rill, model your data sources into "One Big 
 
 ### Intermediate processing
 
-Models can also be cross-referenced between each other to produce the final output for your dashboard. The advantage here is more complex, intermediate data transformations can be utilized to achieve your final source for the dashboard. Example ideas for modeling:
 Models can also be cross-referenced between each other to produce the final output for your dashboard. The advantage here is that more complex, intermediate data transformations can be utilized to achieve your final source for the dashboard. Example ideas for modeling:
 
 - Lookups for id/name joins
