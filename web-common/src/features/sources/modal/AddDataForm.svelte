@@ -191,7 +191,17 @@
       if (formType === "source") {
         await submitAddSourceForm(queryClient, connector, values);
       } else {
-        await submitAddOLAPConnectorForm(queryClient, connector, values);
+        // Pass skipTest: true for rill-managed ClickHouse
+        if (isClickHouse && connectorType === "rill-managed") {
+          await submitAddOLAPConnectorForm(
+            queryClient,
+            connector,
+            values,
+            true,
+          );
+        } else {
+          await submitAddOLAPConnectorForm(queryClient, connector, values);
+        }
       }
       onClose();
     } catch (e) {

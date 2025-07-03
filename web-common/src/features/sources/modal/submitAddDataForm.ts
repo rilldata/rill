@@ -83,6 +83,7 @@ export async function submitAddOLAPConnectorForm(
   queryClient: QueryClient,
   connector: V1ConnectorDriver,
   formValues: AddDataFormValues,
+  skipTest: boolean = false,
 ): Promise<void> {
   const instanceId = get(runtime).instanceId;
   await beforeSubmitForm(instanceId);
@@ -169,17 +170,22 @@ export async function submitAddOLAPConnectorForm(
 
   // Test the connection to the OLAP database
   // If the connection test fails, rollback the changes
-  const result = await testOLAPConnector(instanceId, connector.name as string);
-  if (!result.success) {
-    await rollbackConnectorChanges(
+  if (!skipTest) {
+    const result = await testOLAPConnector(
       instanceId,
-      newConnectorFilePath,
-      originalEnvBlob,
+      connector.name as string,
     );
-    throw {
-      message: result.error || "Unable to establish a connection",
-      details: result.details,
-    };
+    if (!result.success) {
+      await rollbackConnectorChanges(
+        instanceId,
+        newConnectorFilePath,
+        originalEnvBlob,
+      );
+      throw {
+        message: result.error || "Unable to establish a connection",
+        details: result.details,
+      };
+    }
   }
 
   /**
