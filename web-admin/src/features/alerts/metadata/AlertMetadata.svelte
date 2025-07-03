@@ -105,7 +105,7 @@
         </h1>
         <div class="grow" />
         {#if !$isAlertCreatedByCode.data}
-          <EditAlert {alertSpec} {metricsViewName} />
+          <EditAlert {alertSpec} />
           <DropdownMenu.Root>
             <DropdownMenu.Trigger>
               <IconButton>

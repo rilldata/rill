@@ -7,6 +7,7 @@ import (
 
 	"github.com/mitchellh/mapstructure"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime/pkg/jsonschemautil"
 	"github.com/rilldata/rill/runtime/pkg/timeutil"
 )
 
@@ -762,3 +763,5 @@ const QueryJSONSchema = `
   }
 }
 `
+
+var ExpressionJSONSchema = jsonschemautil.MustExtractDefAsSchema(QueryJSONSchema, "Expression")
