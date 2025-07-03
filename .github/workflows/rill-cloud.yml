@@ -64,7 +64,7 @@ jobs:
           git branch -r | grep release-0
           if [ "$RELEASE" == "true" ] || [ "$GITHUB_REF_NAME" == "main" ]; then
             echo "DEPLOY_CLOUD=1" >> $GITHUB_ENV
-          else            
+          else
             echo "LATEST_BRANCH=$(git branch -r | grep release-0 | sort | tail -1)"
             echo "DEPLOY_CLOUD=$(git branch -r | grep release-0 | sort | tail -1 | grep -c $GITHUB_REF_NAME)" >> $GITHUB_ENV
           fi
