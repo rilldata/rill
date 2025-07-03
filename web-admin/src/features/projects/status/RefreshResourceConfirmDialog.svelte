@@ -12,6 +12,7 @@
   export let open = false;
   export let name: string;
   export let onRefresh: () => void;
+  export let refreshType: "full" | "incremental" = "full";
 
   function handleRefresh() {
     try {
@@ -26,7 +27,10 @@
 <AlertDialog bind:open>
   <AlertDialogContent>
     <AlertDialogHeader>
-      <AlertDialogTitle>Refresh {name}?</AlertDialogTitle>
+      <AlertDialogTitle>
+        {refreshType === "full" ? "Full Refresh" : "Incremental Refresh"}
+        {name}?
+      </AlertDialogTitle>
       <AlertDialogDescription>
         <div class="mt-1">
           Refreshing this resource will update all dependent resources.

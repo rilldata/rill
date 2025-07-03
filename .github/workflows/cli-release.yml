@@ -108,7 +108,7 @@ jobs:
           CGO_ENABLED: 1
           GORELEASER_CURRENT_TAG: ${{ env.GORELEASER_CURRENT_TAG }}
           PUBLISH_NIGHTLY: ${{ env.PUBLISH_NIGHTLY }}
-          DOCKERHUB_USER: ${{ secrets.DOCKERHUB_USER }}Add commentMore actions
+          DOCKERHUB_USER: ${{ secrets.DOCKERHUB_USER }}
           DOCKERHUB_PASS: ${{ secrets.DOCKERHUB_PASS }}
 
       - name: Release - Upload install script to CDN bucket
@@ -117,6 +117,24 @@ jobs:
         with:
           path: scripts/install.sh
           destination: prod-cdn.rilldata.com/
+          headers: |-
+            cache-control: no-store
+
+      - name: Release - Upload install script to versioned CDN bucket
+        if: env.PUBLISH_RELEASE == 'true'
+        uses: google-github-actions/upload-cloud-storage@v2
+        with:
+          path: scripts/install.sh
+          destination: prod-cdn.rilldata.com/rill/${{ github.ref_name }}/install.sh
+          headers: |-
+            cache-control: no-store
+
+      - name: Release - Upload install script to latest CDN bucket
+        if: env.PUBLISH_RELEASE == 'true'
+        uses: google-github-actions/upload-cloud-storage@v2
+        with:
+          path: scripts/install.sh
+          destination: prod-cdn.rilldata.com/rill/latest/install.sh
           headers: |-
             cache-control: no-store
 
@@ -149,6 +167,15 @@ jobs:
         with:
           path: nightly/
           destination: prod-cdn.rilldata.com/rill/
+          headers: |-
+            cache-control: no-store
+
+      - name: Nightly - Upload install script to nightly CDN bucket
+        if: env.PUBLISH_NIGHTLY == 'true'
+        uses: google-github-actions/upload-cloud-storage@v2
+        with:
+          path: scripts/install.sh
+          destination: prod-cdn.rilldata.com/rill/nightly/install.sh
           headers: |-
             cache-control: no-store
 

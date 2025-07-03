@@ -32,10 +32,11 @@ func ParseSQLFilter(sql string) (*metricsview.Expression, error) {
 	if !ok {
 		return nil, fmt.Errorf("invalid sql filter")
 	}
-	return parseFilter(context.Background(), stmt.Where, nil)
+	return parseFilter(context.Background(), stmt.Where, nil, nil)
 }
 
-func parseFilter(ctx context.Context, node ast.ExprNode, q *query) (*metricsview.Expression, error) {
+// note - context is optional, it is used to resolve time functions like time_range_start and time_range_end as they require context in which they are executed
+func parseFilter(ctx context.Context, node, context ast.ExprNode, q *query) (*metricsview.Expression, error) {
 	switch node := node.(type) {
 	case *ast.ColumnNameExpr:
 		col, err := parseColumnNameExpr(node)
@@ -68,7 +69,7 @@ func parseFilter(ctx context.Context, node ast.ExprNode, q *query) (*metricsview
 	case *ast.BetweenExpr:
 		return parseBetween(ctx, node, q)
 	case *ast.FuncCallExpr:
-		return parseFuncCallInFilter(ctx, node, q)
+		return parseFuncCallInFilter(ctx, node, context, q)
 	default:
 		return nil, fmt.Errorf("metrics sql: unsupported expression %q", restore(node))
 	}
@@ -90,12 +91,12 @@ func parseColumnNameExpr(in ast.Node) (string, error) {
 }
 
 func parseBinaryOperation(ctx context.Context, node *ast.BinaryOperationExpr, q *query) (*metricsview.Expression, error) {
-	left, err := parseFilter(ctx, node.L, q)
+	left, err := parseFilter(ctx, node.L, node.R, q)
 	if err != nil {
 		return nil, err
 	}
 
-	right, err := parseFilter(ctx, node.R, q)
+	right, err := parseFilter(ctx, node.R, node.L, q)
 	if err != nil {
 		return nil, err
 	}
@@ -110,7 +111,7 @@ func parseBinaryOperation(ctx context.Context, node *ast.BinaryOperationExpr, q 
 }
 
 func parseIsNullOperation(ctx context.Context, node *ast.IsNullExpr, q *query) (*metricsview.Expression, error) {
-	expr, err := parseFilter(ctx, node.Expr, q)
+	expr, err := parseFilter(ctx, node.Expr, nil, q)
 	if err != nil {
 		return nil, err
 	}
@@ -133,7 +134,7 @@ func parseIsNullOperation(ctx context.Context, node *ast.IsNullExpr, q *query) (
 }
 
 func parseIsTruthOperation(ctx context.Context, node *ast.IsTruthExpr, q *query) (*metricsview.Expression, error) {
-	expr, err := parseFilter(ctx, node.Expr, q)
+	expr, err := parseFilter(ctx, node.Expr, nil, q)
 	if err != nil {
 		return nil, err
 	}
@@ -156,7 +157,7 @@ func parseIsTruthOperation(ctx context.Context, node *ast.IsTruthExpr, q *query)
 }
 
 func parseParentheses(ctx context.Context, node *ast.ParenthesesExpr, q *query) (*metricsview.Expression, error) {
-	expr, err := parseFilter(ctx, node.Expr, q)
+	expr, err := parseFilter(ctx, node.Expr, nil, q)
 	if err != nil {
 		return nil, err
 	}
@@ -168,7 +169,7 @@ func parsePatternIn(ctx context.Context, node *ast.PatternInExpr, q *query) (*me
 		return nil, fmt.Errorf("metrics sql: sub_query is not supported")
 	}
 
-	expr, err := parseFilter(ctx, node.Expr, q)
+	expr, err := parseFilter(ctx, node.Expr, nil, q)
 	if err != nil {
 		return nil, err
 	}
@@ -204,7 +205,7 @@ func parsePatternLikeOrIlike(ctx context.Context, n *ast.PatternLikeOrIlikeExpr,
 		return nil, fmt.Errorf("metrics sql: `ESCAPE` is not supported")
 	}
 
-	expr, err := parseFilter(ctx, n.Expr, q)
+	expr, err := parseFilter(ctx, n.Expr, nil, q)
 	if err != nil {
 		return nil, err
 	}
@@ -233,17 +234,17 @@ func parsePatternLikeOrIlike(ctx context.Context, n *ast.PatternLikeOrIlikeExpr,
 }
 
 func parseBetween(ctx context.Context, n *ast.BetweenExpr, q *query) (*metricsview.Expression, error) {
-	expr, err := parseFilter(ctx, n.Expr, q)
+	expr, err := parseFilter(ctx, n.Expr, nil, q)
 	if err != nil {
 		return nil, err
 	}
 
-	left, err := parseFilter(ctx, n.Left, q)
+	left, err := parseFilter(ctx, n.Left, n.Expr, q)
 	if err != nil {
 		return nil, err
 	}
 
-	right, err := parseFilter(ctx, n.Right, q)
+	right, err := parseFilter(ctx, n.Right, n.Expr, q)
 	if err != nil {
 		return nil, err
 	}
@@ -289,24 +290,32 @@ func parseTimeUnitValueExpr(in ast.Node) (string, error) {
 	return node.Unit.String(), nil
 }
 
-func parseFuncCallInFilter(ctx context.Context, node *ast.FuncCallExpr, q *query) (*metricsview.Expression, error) {
+func parseFuncCallInFilter(ctx context.Context, node *ast.FuncCallExpr, context ast.ExprNode, q *query) (*metricsview.Expression, error) {
 	switch node.FnName.L {
 	case "time_range_start":
 		if q == nil {
 			return nil, fmt.Errorf("metrics sql: time_range_start function is only supported for metrics_sql")
 		}
-		return q.parseTimeRangeStart(ctx, node)
+		timeDim, ok := context.(*ast.ColumnNameExpr)
+		if !ok {
+			return nil, fmt.Errorf("metrics sql: time_range_start function requires a valid time dimension")
+		}
+		return q.parseTimeRangeStart(ctx, node, timeDim)
 	case "time_range_end":
 		if q == nil {
 			return nil, fmt.Errorf("metrics sql: time_range_end function is only supported for metrics_sql")
 		}
-		return q.parseTimeRangeEnd(ctx, node)
+		timeDim, ok := context.(*ast.ColumnNameExpr)
+		if !ok {
+			return nil, fmt.Errorf("metrics sql: time_range_end function requires a valid time dimension")
+		}
+		return q.parseTimeRangeEnd(ctx, node, timeDim)
 	case "now":
 		return &metricsview.Expression{
 			Value: time.Now().Format(time.RFC3339),
 		}, nil
 	case "date_add", "date_sub": // ex : date_add(time, INTERVAL x UNIT)
-		val, err := parseFilter(ctx, node.Args[0], q) // handling of time
+		val, err := parseFilter(ctx, node.Args[0], nil, q) // handling of time
 		if err != nil {
 			return nil, err
 		}

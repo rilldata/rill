@@ -14,24 +14,23 @@ const (
 	defaultExecutionTimeout = time.Minute * 3
 )
 
-func (e *Executor) resolveDuckDBClickHouseAndPinot(ctx context.Context) (TimestampsResult, error) {
+func (e *Executor) resolveDuckDBClickHouseAndPinot(ctx context.Context, timeExpr string) (TimestampsResult, error) {
 	filter := e.security.RowFilter()
 	if filter != "" {
 		filter = fmt.Sprintf(" WHERE %s", filter)
 	}
-	timeDim := e.olap.Dialect().EscapeIdentifier(e.metricsView.TimeDimension)
 	escapedTableName := e.olap.Dialect().EscapeTable(e.metricsView.Database, e.metricsView.DatabaseSchema, e.metricsView.Table)
 
 	var watermarkExpr string
 	if e.metricsView.WatermarkExpression != "" {
 		watermarkExpr = e.metricsView.WatermarkExpression
 	} else {
-		watermarkExpr = fmt.Sprintf("max(%s)", timeDim)
+		watermarkExpr = fmt.Sprintf("max(%s)", timeExpr)
 	}
 
 	rangeSQL := fmt.Sprintf(
 		"SELECT min(%[1]s) as \"min\", max(%[1]s) as \"max\", %[2]s as \"watermark\" FROM %[3]s %[4]s",
-		timeDim,
+		timeExpr,
 		watermarkExpr,
 		escapedTableName,
 		filter,
@@ -81,12 +80,11 @@ func (e *Executor) resolveDuckDBClickHouseAndPinot(ctx context.Context) (Timesta
 	return TimestampsResult{}, errors.New("no rows returned")
 }
 
-func (e *Executor) resolveDruid(ctx context.Context) (TimestampsResult, error) {
+func (e *Executor) resolveDruid(ctx context.Context, timeExpr string) (TimestampsResult, error) {
 	filter := e.security.RowFilter()
 	if filter != "" {
 		filter = fmt.Sprintf(" WHERE %s", filter)
 	}
-	timeDim := e.olap.Dialect().EscapeIdentifier(e.metricsView.TimeDimension)
 	escapedTableName := e.olap.Dialect().EscapeTable(e.metricsView.Database, e.metricsView.DatabaseSchema, e.metricsView.Table)
 
 	var ts TimestampsResult
@@ -99,7 +97,7 @@ func (e *Executor) resolveDruid(ctx context.Context) (TimestampsResult, error) {
 	group.Go(func() error {
 		minSQL := fmt.Sprintf(
 			"SELECT min(%[1]s) as \"min\" FROM %[2]s %[3]s",
-			timeDim,
+			timeExpr,
 			escapedTableName,
 			filter,
 		)
@@ -135,7 +133,7 @@ func (e *Executor) resolveDruid(ctx context.Context) (TimestampsResult, error) {
 	group.Go(func() error {
 		maxSQL := fmt.Sprintf(
 			"SELECT max(%[1]s) as \"max\" FROM %[2]s %[3]s",
-			timeDim,
+			timeExpr,
 			escapedTableName,
 			filter,
 		)

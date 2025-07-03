@@ -14,6 +14,7 @@ import (
 
 	"github.com/bmatcuk/doublestar/v4"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/filewatcher"
 )
 
 // Root implements drivers.RepoStore.
@@ -176,29 +177,20 @@ func (c *connection) Delete(ctx context.Context, filePath string, force bool) er
 
 // Watch implements drivers.RepoStore.
 func (c *connection) Watch(ctx context.Context, cb drivers.WatchCallback) error {
-	c.watcherMu.Lock()
-	if c.watcher == nil {
-		w, err := newWatcher(c.root, c.ignorePaths, c.logger)
-		if err != nil {
-			c.watcherMu.Unlock()
-			return err
+	return c.watcher.Subscribe(ctx, func(events []filewatcher.WatchEvent) {
+		if len(events) == 0 {
+			return
 		}
-		c.watcher = w
-	}
-	c.watcherCount++
-	c.watcherMu.Unlock()
-
-	defer func() {
-		c.watcherMu.Lock()
-		c.watcherCount--
-		if c.watcherCount == 0 {
-			c.watcher.close()
-			c.watcher = nil
+		watchEvents := make([]drivers.WatchEvent, 0, len(events))
+		for _, e := range events {
+			watchEvents = append(watchEvents, drivers.WatchEvent{
+				Type: e.Type,
+				Path: e.RelPath,
+				Dir:  e.Dir,
+			})
 		}
-		c.watcherMu.Unlock()
-	}()
-
-	return c.watcher.subscribe(ctx, cb)
+		cb(watchEvents)
+	})
 }
 
 // Sync implements drivers.RepoStore.

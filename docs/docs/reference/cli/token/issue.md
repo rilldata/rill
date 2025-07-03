@@ -13,8 +13,8 @@ rill token issue [flags]
 ### Flags
 
 ```
-      --description string   Description for the token
-      --ttl-minutes int      Optional minutes until the token should expire
+      --display-name string   Display name for the token
+      --ttl-minutes int       Optional minutes until the token should expire
 ```
 
 ### Global flags

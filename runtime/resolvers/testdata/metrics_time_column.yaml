@@ -1,0 +1,155 @@
+project_files:
+  duckdb_data.yaml:
+    type: model
+    connector: duckdb
+    sql: |
+      select '2024-01-01T00:00:00Z'::TIMESTAMP as time, '2024-01-08T00:00:00Z'::TIMESTAMP as time_7d, 'DK' as country, 1 as val union all
+      select '2024-01-02T00:00:00Z'::TIMESTAMP as time, '2024-01-09T00:00:00Z'::TIMESTAMP as time_7d, 'US' as country, 2 as val union all
+      select '2024-01-03T00:00:00Z'::TIMESTAMP as time, '2024-01-10T00:00:00Z'::TIMESTAMP as time_7d, 'US' as country, 3 as val union all
+      select '2024-01-04T00:00:00Z'::TIMESTAMP as time, '2024-01-11T00:00:00Z'::TIMESTAMP as time_7d, 'US' as country, 4 as val union all
+      select '2024-01-05T00:00:00Z'::TIMESTAMP as time, '2024-01-12T00:00:00Z'::TIMESTAMP as time_7d, 'DK' as country, 5 as val
+  duckdb_metrics.yaml:
+    type: metrics_view
+    model: duckdb_data
+    timeseries: time
+    dimensions:
+      - column: country
+      - name: time_7d
+        column: time_7d
+    measures:
+      - name: count
+        expression: count(*)
+      - name: sum
+        expression: sum(val)
+  duckdb_metrics_expr.yaml:
+    type: metrics_view
+    model: duckdb_data
+    timeseries: time_7d
+    dimensions:
+      - column: country
+      - name: primary_time
+        column: time
+      - name: time_7d
+        expression: time + INTERVAL 7 DAYS
+    measures:
+      - name: count
+        expression: count(*)
+      - name: sum
+        expression: sum(val)
+  duckdb_metrics_no_timeseries.yaml:
+    type: metrics_view
+    model: duckdb_data
+    dimensions:
+      - column: country
+      - name: primary_time
+        column: time
+      - name: time_7d
+        expression: time + INTERVAL 7 DAYS
+    measures:
+      - name: count
+        expression: count(*)
+      - name: sum
+        expression: sum(val)
+tests:
+  - name: timeseries_time_dim_duckdb
+    resolver: metrics
+    properties:
+      metrics_view: duckdb_metrics
+      dimensions:
+        - name: time__day
+          compute:
+            time_floor:
+              dimension: time
+              grain: day
+      measures:
+        - name: sum
+      time_range:
+        end: 2024-01-12T00:00:00Z
+        start: 2024-01-10T00:00:00Z
+        time_dimension: time_7d
+      sort:
+        - name: time__day
+    result:
+      - sum: 3
+        time__day: "2024-01-03T00:00:00Z"
+      - sum: 4
+        time__day: "2024-01-04T00:00:00Z"
+  - name: compare_time_dim_duckdb
+    resolver: metrics
+    properties:
+      metrics_view: duckdb_metrics
+      dimensions:
+        - name: time_7d__day
+          compute:
+            time_floor:
+              dimension: time_7d
+              grain: day
+      measures:
+        - name: sum
+        - name: sum_prev
+          compute:
+            comparison_value:
+              measure: sum
+      time_range:
+        end: 2024-01-12T00:00:00Z
+        start: 2024-01-10T00:00:00Z
+        time_dimension: time_7d
+      comparison_time_range:
+        end: 2024-01-10T00:00:00Z
+        start: 2024-01-08T00:00:00Z
+        time_dimension: time_7d
+      sort:
+        - name: time_7d__day
+    result:
+      - sum: 3
+        sum_prev: 1
+        time_7d__day: "2024-01-10T00:00:00Z"
+      - sum: 4
+        sum_prev: 2
+        time_7d__day: "2024-01-11T00:00:00Z"
+  - name: timeseries_time_expr_column_duckdb
+    resolver: metrics
+    properties:
+      metrics_view: duckdb_metrics_expr
+      dimensions:
+        - name: primary_time__day
+          compute:
+            time_floor:
+              dimension: primary_time
+              grain: day
+      measures:
+        - name: sum
+      time_range:
+        end: 2024-01-12T00:00:00Z
+        start: 2024-01-10T00:00:00Z
+        time_dimension: time_7d
+      sort:
+        - name: primary_time__day
+    result:
+      - sum: 3
+        primary_time__day: "2024-01-03T00:00:00Z"
+      - sum: 4
+        primary_time__day: "2024-01-04T00:00:00Z"
+  - name: no_timeseries_time_expr_column_duckdb
+    resolver: metrics
+    properties:
+      metrics_view: duckdb_metrics_no_timeseries
+      dimensions:
+        - name: primary_time__day
+          compute:
+            time_floor:
+              dimension: primary_time
+              grain: day
+      measures:
+        - name: sum
+      time_range:
+        end: 2024-01-12T00:00:00Z
+        start: 2024-01-10T00:00:00Z
+        time_dimension: time_7d
+      sort:
+        - name: primary_time__day
+    result:
+      - sum: 3
+        primary_time__day: "2024-01-03T00:00:00Z"
+      - sum: 4
+        primary_time__day: "2024-01-04T00:00:00Z"
