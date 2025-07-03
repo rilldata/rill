@@ -1,7 +1,6 @@
 package pgtestcontainer
 
 import (
-	"context"
 	"fmt"
 	"testing"
 	"time"
@@ -48,7 +47,7 @@ func New(t *testing.T) Container {
 }
 
 // Terminate stops and removes the container.
-func (c Container) Terminate() error {
-	ctx := context.Background()
-	return c.Container.Terminate(ctx)
+func (c Container) Terminate(t *testing.T) {
+	err := c.Container.Terminate(t.Context())
+	require.ErrorIs(t, err, t.Context().Err())
 }

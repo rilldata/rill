@@ -20,7 +20,7 @@ func TestPostgres(t *testing.T) {
 	ctx := context.Background()
 
 	pg := pgtestcontainer.New(t)
-	defer pg.Terminate()
+	defer pg.Terminate(t)
 
 	encKeyRing, err := database.NewRandomKeyring()
 	require.NoError(t, err)

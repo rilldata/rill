@@ -57,10 +57,7 @@ func New(t *testing.T) *Fixture {
 
 	// Postgres
 	pg := pgtestcontainer.New(t)
-	t.Cleanup(func() {
-		err := pg.Terminate()
-		require.NoError(t, err)
-	})
+	t.Cleanup(func() { pg.Terminate(t) })
 
 	// Logger
 	cfg := zap.NewProductionConfig()

@@ -77,7 +77,7 @@ func withFile(t *testing.T, fn func(driver, instanceID string, cfg map[string]an
 
 func withPostgres(t *testing.T, fn func(driver, instanceID string, cfg map[string]any)) error {
 	pg := pgtestcontainer.New(t)
-	defer pg.Terminate()
+	defer pg.Terminate(t)
 
 	fn("postgres", "default", map[string]any{"dsn": pg.DatabaseURL})
 	return nil
