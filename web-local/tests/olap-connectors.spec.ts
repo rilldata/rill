@@ -94,9 +94,6 @@ test.describe("ClickHouse connector", () => {
       'password: "{{ .env.connector.clickhouse.password }}"',
     );
 
-    // refresh the page to ensure the file is saved
-    await page.reload();
-
     // Assert that the connector explorer now has a ClickHouse connector
     await expect(
       page
@@ -159,9 +156,6 @@ test.describe("ClickHouse connector", () => {
       .getByLabel("codemirror editor")
       .getByRole("textbox");
     await expect(rillYamlEditor).toContainText("olap_connector: clickhouse");
-
-    // refresh the page to ensure the file is saved
-    await page.reload();
 
     // Assert that the connector explorer now has a ClickHouse connector
     await expect(

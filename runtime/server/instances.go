@@ -96,7 +96,6 @@ func (s *Server) CreateInstance(ctx context.Context, req *runtimev1.CreateInstan
 		Connectors:     req.Connectors,
 		Variables:      req.Variables,
 		Annotations:    req.Annotations,
-		WatchRepo:      req.WatchRepo,
 	}
 
 	err := s.runtime.CreateInstance(ctx, inst)
@@ -167,7 +166,6 @@ func (s *Server) EditInstance(ctx context.Context, req *runtimev1.EditInstanceRe
 		ProjectVariables:     oldInst.ProjectVariables,
 		FeatureFlags:         oldInst.FeatureFlags,
 		Annotations:          annotations,
-		WatchRepo:            valOrDefault(req.WatchRepo, oldInst.WatchRepo),
 		AIInstructions:       oldInst.AIInstructions,
 	}
 
@@ -292,7 +290,6 @@ func instanceToPB(inst *drivers.Instance, sensitive bool) *runtimev1.Instance {
 		pb.Variables = inst.Variables
 		pb.ProjectVariables = inst.ProjectVariables
 		pb.Annotations = inst.Annotations
-		pb.WatchRepo = inst.WatchRepo
 	}
 
 	return pb

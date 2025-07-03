@@ -1,12 +1,13 @@
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import { createLinkError } from "@rilldata/web-common/features/explore-mappers/explore-validation";
+import { ExploreLinkErrorType } from "@rilldata/web-common/features/explore-mappers/types";
 import { getExplorePageUrlSearchParams } from "@rilldata/web-common/features/explore-mappers/utils";
 
 /**
  * Generates the explore page URL with proper search parameters
  */
 export async function generateExploreLink(
-  exploreState: ExploreState,
+  exploreState: Partial<ExploreState>,
   exploreName: string,
   organization?: string | undefined,
   project?: string | undefined,
@@ -36,7 +37,7 @@ export async function generateExploreLink(
     return url.toString();
   } catch (error) {
     throw createLinkError(
-      "TRANSFORMATION_ERROR",
+      ExploreLinkErrorType.TRANSFORMATION_ERROR,
       `Failed to generate explore link: ${error.message}`,
       error,
     );

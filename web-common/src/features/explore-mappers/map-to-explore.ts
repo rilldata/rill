@@ -4,9 +4,7 @@ import { convertPresetToExploreState } from "@rilldata/web-common/features/dashb
 import { getDefaultExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/getDefaultExplorePreset";
 import { getDashboardFromAggregationRequest } from "@rilldata/web-common/features/explore-mappers/getDashboardFromAggregationRequest";
 import { getDashboardFromComparisonRequest } from "@rilldata/web-common/features/explore-mappers/getDashboardFromComparisonRequest";
-import { getDashboardFromComponentTransformer } from "@rilldata/web-common/features/explore-mappers/getDashboardFromComponentTransformer";
 import type {
-  ComponentTransformerProperties,
   QueryRequests,
   TransformerArgs,
   TransformerProperties,
@@ -97,13 +95,6 @@ export function mapObjectToExploreState(
         (transformerProperties as V1MetricsViewComparisonRequest)
           .metricsViewName ?? "";
       getDashboardState = getDashboardFromComparisonRequest;
-      break;
-
-    case "ComponentTransformer":
-      metricsViewName = (
-        transformerProperties as ComponentTransformerProperties
-      ).metricsViewName;
-      getDashboardState = getDashboardFromComponentTransformer;
       break;
 
     // TODO

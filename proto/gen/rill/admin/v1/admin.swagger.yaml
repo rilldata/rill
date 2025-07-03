@@ -68,6 +68,61 @@ paths:
             $ref: '#/definitions/rpcStatus'
       tags:
         - AdminService
+  /v1/deployments/{deploymentId}:
+    delete:
+      summary: DeleteDeployment deletes a deployment.
+      operationId: AdminService_DeleteDeployment
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1DeleteDeploymentResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: deploymentId
+          in: path
+          required: true
+          type: string
+      tags:
+        - AdminService
+  /v1/deployments/{deploymentId}/credentials:
+    post:
+      summary: GetDeployment returns runtime info and access token on behalf of a specific user, or alternatively for a raw set of JWT attributes
+      operationId: AdminService_GetDeployment
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetDeploymentResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: deploymentId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              accessTokenTtlSeconds:
+                type: integer
+                format: int64
+              userId:
+                type: string
+              userEmail:
+                type: string
+              attributes:
+                type: object
+      tags:
+        - AdminService
   /v1/deployments/{deploymentId}/provision:
     post:
       summary: |-
@@ -167,6 +222,56 @@ paths:
                 type: array
                 items:
                   type: string
+      tags:
+        - AdminService
+  /v1/deployments/{deploymentId}/start:
+    post:
+      summary: StartDeployment starts a deployment.
+      operationId: AdminService_StartDeployment
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1StartDeploymentResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: deploymentId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+      tags:
+        - AdminService
+  /v1/deployments/{deploymentId}/stop:
+    post:
+      summary: StopDeployment stops a deployment.
+      operationId: AdminService_StopDeployment
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1StopDeploymentResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: deploymentId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
       tags:
         - AdminService
   /v1/github/repositories:
@@ -1107,7 +1212,9 @@ paths:
         - AdminService
   /v1/organizations/{organization}/projects/{project}/credentials:
     post:
-      summary: GetDeploymentCredentials returns runtime info and access token on behalf of a specific user, or alternatively for a raw set of JWT attributes
+      summary: |-
+        GetDeploymentCredentials returns runtime info and access token on behalf of a specific user, or alternatively for a raw set of JWT attributes
+        DEPRECATED: Clients should call GetDeployment instead.
       operationId: AdminService_GetDeploymentCredentials
       responses:
         "200":
@@ -2818,6 +2925,69 @@ paths:
                 type: boolean
       tags:
         - AdminService
+  /v1/organizations/{organizationName}/projects/{projectName}/deployments:
+    get:
+      summary: ListDeployments lists deployments for a project.
+      operationId: AdminService_ListDeployments
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ListDeploymentsResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organizationName
+          in: path
+          required: true
+          type: string
+        - name: projectName
+          in: path
+          required: true
+          type: string
+        - name: environment
+          in: query
+          required: false
+          type: string
+        - name: userId
+          in: query
+          required: false
+          type: string
+      tags:
+        - AdminService
+    post:
+      summary: CreateDeployment creates a new deployment for a project.
+      operationId: AdminService_CreateDeployment
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1CreateDeploymentResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organizationName
+          in: path
+          required: true
+          type: string
+        - name: projectName
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              environment:
+                type: string
+      tags:
+        - AdminService
   /v1/organizations/{organizationName}/services:
     get:
       summary: ListService returns all the services per organization
@@ -3167,12 +3337,9 @@ paths:
             $ref: '#/definitions/rpcStatus'
       parameters:
         - name: projectId
+          description: The project ID to get repository metadata for.
           in: path
           required: true
-          type: string
-        - name: branch
-          in: query
-          required: false
           type: string
       tags:
         - AdminService
@@ -3191,15 +3358,25 @@ paths:
             $ref: '#/definitions/rpcStatus'
       parameters:
         - name: projectId
+          description: The project ID to pull virtual files for.
           in: path
           required: true
           type: string
+        - name: environment
+          description: |-
+            The environment to pull virtual files for.
+            It is optional. If the call is made with a deployment access token, it defaults to the environment of the deployment. Otherwise, it defaults to "prod".
+          in: query
+          required: false
+          type: string
         - name: pageSize
+          description: Page size for pagination.
           in: query
           required: false
           type: integer
           format: int64
         - name: pageToken
+          description: Page token for pagination.
           in: query
           required: false
           type: string
@@ -4361,6 +4538,11 @@ definitions:
     properties:
       bookmark:
         $ref: '#/definitions/v1Bookmark'
+  v1CreateDeploymentResponse:
+    type: object
+    properties:
+      deployment:
+        $ref: '#/definitions/v1Deployment'
   v1CreateManagedGitRepoResponse:
     type: object
     properties:
@@ -4415,6 +4597,11 @@ definitions:
     type: object
   v1DeleteAlertResponse:
     type: object
+  v1DeleteDeploymentResponse:
+    type: object
+    properties:
+      deploymentId:
+        type: string
   v1DeleteOrganizationResponse:
     type: object
   v1DeleteProjectResponse:
@@ -4442,6 +4629,10 @@ definitions:
         type: string
       projectId:
         type: string
+      ownerUserId:
+        type: string
+      environment:
+        type: string
       branch:
         type: string
       runtimeHost:
@@ -4465,6 +4656,7 @@ definitions:
       - DEPLOYMENT_STATUS_PENDING
       - DEPLOYMENT_STATUS_OK
       - DEPLOYMENT_STATUS_ERROR
+      - DEPLOYMENT_STATUS_STOPPED
     default: DEPLOYMENT_STATUS_UNSPECIFIED
   v1DisconnectProjectFromGithubResponse:
     type: object
@@ -4563,6 +4755,8 @@ definitions:
         type: string
       gitProdBranch:
         type: string
+      gitManagedRepo:
+        type: boolean
       archiveDownloadUrl:
         type: string
         title: either archive_download_url or git related details will be set
@@ -4579,6 +4773,18 @@ definitions:
       preferences:
         $ref: '#/definitions/v1UserPreferences'
   v1GetDeploymentCredentialsResponse:
+    type: object
+    properties:
+      runtimeHost:
+        type: string
+      instanceId:
+        type: string
+      accessToken:
+        type: string
+      ttlSeconds:
+        type: integer
+        format: int64
+  v1GetDeploymentResponse:
     type: object
     properties:
       runtimeHost:
@@ -4691,21 +4897,40 @@ definitions:
   v1GetRepoMetaResponse:
     type: object
     properties:
-      gitUrl:
-        type: string
-        description: If the Git-related fields are set, the archive-related fields will not be set (and vice versa).
-      gitUrlExpiresOn:
+      expiresOn:
         type: string
         format: date-time
+        description: How long the returned config is valid for. Clients should call GetRepoMeta again after this time.
+      lastUpdatedOn:
+        type: string
+        format: date-time
+        description: When the returned config was last modified. This covers all fields in the response except the ephemeral credentials embedded in git_url and archive_download_url.
+      gitUrl:
+        type: string
+        description: |-
+          Git remote for cloning (and maybe pushing) a Git repository.
+          The URL uses HTTPS with embedded username/password.
       gitSubpath:
         type: string
+        description: Optional subpath within the Git repository to use as the project root.
+      gitBranch:
+        type: string
+        description: The branch to use for the deployment.
+      gitEditBranch:
+        type: string
+        description: |-
+          A unique branch name generated for temporary/ephemeral use in edit mode where files may be mutated.
+          This enables checkpointing progress across hibernations and also more easily pinning to a specific commit of the base branch to delay conflict resolution.
       archiveDownloadUrl:
         type: string
+        description: Signed URL for downloading a tarball of project files. If this is set, the git_* fields will be empty (and vice versa).
       archiveId:
         type: string
+        description: A stable ID for the archive returned from archive_download_url.
       archiveCreatedOn:
         type: string
         format: date-time
+        description: The creation time of the archive returned from archive_download_url.
   v1GetReportMetaResponse:
     type: object
     properties:
@@ -4775,6 +5000,14 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1Bookmark'
+  v1ListDeploymentsResponse:
+    type: object
+    properties:
+      deployments:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1Deployment'
   v1ListGithubUserReposResponse:
     type: object
     properties:
@@ -4809,6 +5042,10 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1OrganizationInvite'
+      totalCount:
+        type: integer
+        format: int64
+        title: Total number of invites in the organization
       nextPageToken:
         type: string
   v1ListOrganizationMemberUsergroupsResponse:
@@ -4829,6 +5066,10 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1OrganizationMemberUser'
+      totalCount:
+        type: integer
+        format: int64
+        title: Total number of members in the organization
       nextPageToken:
         type: string
   v1ListOrganizationsResponse:
@@ -5249,6 +5490,9 @@ definitions:
         format: int64
       prodDeploymentId:
         type: string
+      devSlots:
+        type: string
+        format: int64
       frontendUrl:
         type: string
         description: 'Note: Does NOT incorporate the parent org''s custom domain.'
@@ -5411,8 +5655,10 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1VirtualFile'
+        description: List of virtual files ordered by update time, most recent last.
       nextPageToken:
         type: string
+        description: Next page token for pagination.
   v1Quotas:
     type: object
     properties:
@@ -5592,6 +5838,8 @@ definitions:
     properties:
       id:
         type: string
+      prefix:
+        type: string
       createdOn:
         type: string
         format: date-time
@@ -5615,6 +5863,16 @@ definitions:
         type: boolean
   v1SetSuperuserResponse:
     type: object
+  v1StartDeploymentResponse:
+    type: object
+    properties:
+      deployment:
+        $ref: '#/definitions/v1Deployment'
+  v1StopDeploymentResponse:
+    type: object
+    properties:
+      deploymentId:
+        type: string
   v1Subquery:
     type: object
     properties:
@@ -5895,6 +6153,8 @@ definitions:
       authClientDisplayName:
         type: string
       representingUserId:
+        type: string
+      prefix:
         type: string
       createdOn:
         type: string

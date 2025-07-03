@@ -13,11 +13,12 @@
   export let editable = false;
   export let component: BaseCanvasComponent;
 
-  // Component types that support explore functionality
+  // Component types that support link to explore functionality
   const EXPLORE_SUPPORTED_TYPES = [
     "kpi_grid",
     "leaderboard",
     "table",
+    "pivot",
     "bar_chart",
     "line_chart",
     "area_chart",

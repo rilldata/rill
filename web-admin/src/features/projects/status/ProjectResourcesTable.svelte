@@ -4,7 +4,10 @@
     prettyResourceKind,
     ResourceKind,
   } from "@rilldata/web-common/features/entity-management/resource-selectors";
-  import type { V1Resource } from "@rilldata/web-common/runtime-client";
+  import {
+    V1ReconcileStatus,
+    type V1Resource,
+  } from "@rilldata/web-common/runtime-client";
   import ResourceErrorMessage from "./ResourceErrorMessage.svelte";
   import { getResourceKindTagColor } from "./display-utils";
   import { flexRender } from "@tanstack/svelte-table";
@@ -40,8 +43,29 @@
         }),
     },
     {
-      accessorFn: (row) => row.meta.reconcileError,
+      accessorFn: (row) => row.meta.reconcileStatus,
       header: "Status",
+      sortingFn: (rowA, rowB) => {
+        // Priority order: Running (highest) -> Pending -> Idle -> Unknown (lowest)
+        const getStatusPriority = (status: V1ReconcileStatus) => {
+          switch (status) {
+            case V1ReconcileStatus.RECONCILE_STATUS_RUNNING:
+              return 4;
+            case V1ReconcileStatus.RECONCILE_STATUS_PENDING:
+              return 3;
+            case V1ReconcileStatus.RECONCILE_STATUS_IDLE:
+              return 2;
+            case V1ReconcileStatus.RECONCILE_STATUS_UNSPECIFIED:
+            default:
+              return 1;
+          }
+        };
+
+        return (
+          getStatusPriority(rowB.original.meta.reconcileStatus) -
+          getStatusPriority(rowA.original.meta.reconcileStatus)
+        );
+      },
       cell: ({ row }) =>
         flexRender(ResourceErrorMessage, {
           message: row.original.meta.reconcileError,

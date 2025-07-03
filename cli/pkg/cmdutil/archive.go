@@ -13,7 +13,7 @@ import (
 // Internally it creates an asset object on admin service and returns its id which can be supplied while creating/updating project.
 func UploadRepo(ctx context.Context, repo drivers.RepoStore, ch *Helper, org, name string) (string, error) {
 	// list files
-	entries, err := repo.ListRecursive(ctx, "**", false)
+	entries, err := repo.ListGlob(ctx, "**", false)
 	if err != nil {
 		return "", err
 	}

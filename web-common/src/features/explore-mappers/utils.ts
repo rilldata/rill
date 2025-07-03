@@ -3,6 +3,10 @@ import { createInExpression } from "@rilldata/web-common/features/dashboards/sto
 import { getTimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import { PreviousCompleteRangeMap } from "@rilldata/web-common/features/dashboards/time-controls/time-range-mappers";
 import { convertPartialExploreStateToUrlParams } from "@rilldata/web-common/features/dashboards/url-state/convert-partial-explore-state-to-url-params";
+import {
+  type ExploreLinkError,
+  ExploreLinkErrorType,
+} from "@rilldata/web-common/features/explore-mappers/types";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import { isoDurationToFullTimeRange } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
 import {
@@ -165,7 +169,7 @@ export async function convertQueryFilterToToplistQuery(
 
 export async function getExplorePageUrlSearchParams(
   exploreName: string,
-  exploreState: ExploreState,
+  exploreState: Partial<ExploreState>,
 ): Promise<URLSearchParams> {
   const instanceId = get(runtime).instanceId;
   const { explore, metricsView } = await queryClient.fetchQuery({
@@ -244,4 +248,21 @@ export function convertRequestKeysToCamelCase(
   }
 
   return newReq;
+}
+
+export function getErrorMessage(error: ExploreLinkError): string {
+  if (error.message) {
+    return error.message;
+  }
+  switch (error.type) {
+    case ExploreLinkErrorType.VALIDATION_ERROR:
+      return "No compatible explore dashboard found for this component.";
+    case ExploreLinkErrorType.PERMISSION_ERROR:
+      return "You do not have permission to access the explore dashboard.";
+    case ExploreLinkErrorType.NETWORK_ERROR:
+      return "Failed to connect to the server. Please try again.";
+    case ExploreLinkErrorType.TRANSFORMATION_ERROR:
+    default:
+      return "Unable to open explore dashboard. Please try again.";
+  }
 }

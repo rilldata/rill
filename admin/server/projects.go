@@ -31,6 +31,10 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
+const devDeplTTL = 6 * time.Hour
+
+const devSlots = 8
+
 const prodDeplTTL = 14 * 24 * time.Hour
 
 // runtimeAccessTokenTTL is the validity duration of JWTs issued for runtime access when calling GetProject.
@@ -511,12 +515,15 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 		return nil, status.Errorf(codes.FailedPrecondition, "quota exceeded: org %q is limited to %d deployments", org.Name, org.QuotaDeployments)
 	}
 
-	// Add prod TTL as 7 days if not a public project else infinite
+	// Add prod TTL as 14 days if not a public project else infinite
 	var prodTTL *int64
 	if !req.Public {
 		tmp := int64(prodDeplTTL.Seconds())
 		prodTTL = &tmp
 	}
+
+	// Add dev TTL as 6 hours
+	devTTL := int64(devDeplTTL.Seconds())
 
 	// Backwards compatibility: if prod version is not set, default to "latest"
 	if req.ProdVersion == "" {
@@ -550,6 +557,8 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 		ProdOLAPDSN:          req.ProdOlapDsn,
 		ProdSlots:            int(req.ProdSlots),
 		ProdTTLSeconds:       prodTTL,
+		DevSlots:             devSlots,
+		DevTTLSeconds:        devTTL,
 	}
 
 	// Check and validate the project file source.
@@ -752,6 +761,8 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 		ProdDeploymentID:     proj.ProdDeploymentID,
 		ProdSlots:            int(valOrDefault(req.ProdSlots, int64(proj.ProdSlots))),
 		ProdTTLSeconds:       prodTTLSeconds,
+		DevSlots:             proj.DevSlots,
+		DevTTLSeconds:        proj.DevTTLSeconds,
 		Provisioner:          valOrDefault(req.Provisioner, proj.Provisioner),
 		Annotations:          proj.Annotations,
 	}
@@ -1260,6 +1271,7 @@ func (s *Server) GetCloneCredentials(ctx context.Context, req *adminv1.GetCloneC
 		GitPasswordExpiresAt: timestamppb.New(expiresAt),
 		GitSubpath:           proj.Subpath,
 		GitProdBranch:        proj.ProdBranch,
+		GitManagedRepo:       proj.ManagedGitRepoID != nil,
 	}, nil
 }
 
@@ -1544,6 +1556,8 @@ func (s *Server) SudoUpdateAnnotations(ctx context.Context, req *adminv1.SudoUpd
 		ProdDeploymentID:     proj.ProdDeploymentID,
 		ProdSlots:            proj.ProdSlots,
 		ProdTTLSeconds:       proj.ProdTTLSeconds,
+		DevSlots:             proj.DevSlots,
+		DevTTLSeconds:        proj.DevTTLSeconds,
 		Provisioner:          proj.Provisioner,
 		Annotations:          req.Annotations,
 	})
@@ -1967,6 +1981,8 @@ func (s *Server) githubRepoIDForProject(ctx context.Context, p *database.Project
 		ProdDeploymentID:     p.ProdDeploymentID,
 		ProdSlots:            p.ProdSlots,
 		ProdTTLSeconds:       p.ProdTTLSeconds,
+		DevSlots:             p.DevSlots,
+		DevTTLSeconds:        p.DevTTLSeconds,
 		Provisioner:          p.Provisioner,
 		Annotations:          p.Annotations,
 	})
@@ -1987,6 +2003,8 @@ func deploymentToDTO(d *database.Deployment) *adminv1.Deployment {
 		s = adminv1.DeploymentStatus_DEPLOYMENT_STATUS_OK
 	case database.DeploymentStatusError:
 		s = adminv1.DeploymentStatus_DEPLOYMENT_STATUS_ERROR
+	case database.DeploymentStatusStopped:
+		s = adminv1.DeploymentStatus_DEPLOYMENT_STATUS_STOPPED
 	default:
 		panic(fmt.Errorf("unhandled deployment status %d", d.Status))
 	}
@@ -1994,6 +2012,8 @@ func deploymentToDTO(d *database.Deployment) *adminv1.Deployment {
 	return &adminv1.Deployment{
 		Id:                d.ID,
 		ProjectId:         d.ProjectID,
+		OwnerUserId:       safeStr(d.OwnerUserID),
+		Environment:       d.Environment,
 		Branch:            d.Branch,
 		RuntimeHost:       d.RuntimeHost,
 		RuntimeInstanceId: d.RuntimeInstanceID,

@@ -10,7 +10,11 @@
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { useExploreAvailability } from "@rilldata/web-common/features/explore-mappers/explore-validation";
   import { generateExploreLink } from "@rilldata/web-common/features/explore-mappers/generate-explore-link";
-  import type { ExploreLinkError } from "@rilldata/web-common/features/explore-mappers/types";
+  import {
+    ExploreLinkErrorType,
+    type ExploreLinkError,
+  } from "@rilldata/web-common/features/explore-mappers/types";
+  import { getErrorMessage } from "@rilldata/web-common/features/explore-mappers/utils";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { derived } from "svelte/store";
   import { useTransformCanvasToExploreState } from "./canvas-explore-transformer";
@@ -34,23 +38,21 @@
   $: context = derived(
     [exploreAvailability, component.timeAndFilterStore],
     ([exploreAvailResp, timeAndFilterStore]) => ({
-      instanceId,
       organization,
       project,
-      metricsViewName,
       exploreName: exploreAvailResp.exploreName ?? metricsViewName,
       timeAndFilterStore,
     }),
   );
 
-  $: exploreQuery = useTransformCanvasToExploreState(component, $context);
+  $: exploreState = useTransformCanvasToExploreState(component, $context);
 
   async function gotoExplorePage() {
     if (
       !$exploreAvailability.isAvailable ||
       !metricsViewName ||
       !$exploreAvailability.exploreName ||
-      !$exploreQuery?.data?.exploreState
+      !exploreState
     )
       return;
 
@@ -59,7 +61,7 @@
 
     try {
       const exploreURL = await generateExploreLink(
-        $exploreQuery?.data?.exploreState,
+        exploreState,
         $context.exploreName,
         $context.organization,
         $context.project,
@@ -71,8 +73,8 @@
         navigationError = error as ExploreLinkError;
       } else {
         navigationError = {
-          type: "TRANSFORMATION_ERROR",
-          message: error?.message || "Failed to navigate to Explore Dashboard.",
+          type: ExploreLinkErrorType.TRANSFORMATION_ERROR,
+          message: error?.message,
           details: error,
         };
       }
@@ -81,24 +83,8 @@
     }
   }
 
-  function getErrorMessage(error: ExploreLinkError): string {
-    switch (error.type) {
-      case "VALIDATION_ERROR":
-        return "No compatible explore dashboard found for this component.";
-      case "PERMISSION_ERROR":
-        return "You do not have permission to access the explore dashboard.";
-      case "NETWORK_ERROR":
-        return "Failed to connect to the server. Please try again.";
-      case "TRANSFORMATION_ERROR":
-      default:
-        return "Unable to open explore dashboard. Please try again.";
-    }
-  }
-
   $: canNavigate =
-    $exploreAvailability.isAvailable &&
-    !isNavigating &&
-    !!$exploreQuery?.data?.exploreState;
+    $exploreAvailability.isAvailable && !isNavigating && !!exploreState;
 </script>
 
 {#if $exploreAvailability.isAvailable}
@@ -146,7 +132,7 @@
       <p class="text-xs">{getErrorMessage(navigationError)}</p>
     </div>
   {/if}
-{:else if ($exploreQuery?.isLoading || $exploreQuery?.isFetching) && mode === "inline"}
+{:else if isNavigating && mode === "inline"}
   <div class="h-36">
     <Spinner status={EntityStatus.Running} size="7rem" duration={725} />
   </div>

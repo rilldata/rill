@@ -38,7 +38,7 @@ linters:
     - revive
     - staticcheck
     - stylecheck
-    - tenv
+    - usetesting
     - testpackage
     - tparallel
     - typecheck
