@@ -204,18 +204,17 @@ func (p *Parser) parseModel(ctx context.Context, node *Node) error {
 		}
 	}
 
-	sqlTests := []*runtimev1.ModelTest{}
-	sqlTestsRefs := []ResourceName{}
+	// Parse the model tests
+	var modelTests []*runtimev1.ModelTest
 	for i := range tmp.Tests {
-		test := &tmp.Tests[i]
-		modelTest, refs, err := p.parseModelTest(test.Name, &test.DataYAML, outputConnector, node.Name, test.Assert)
+		t := tmp.Tests[i]
+		modelTest, refs, err := p.parseModelTest(t.Name, &t.DataYAML, outputConnector, node.Name, t.Assert)
 		if err != nil {
-			return fmt.Errorf(`failed to parse test %q: %w`, test.Name, err)
+			return fmt.Errorf(`failed to parse test %q: %w`, t.Name, err)
 		}
-		sqlTests = append(sqlTests, modelTest)
-		sqlTestsRefs = append(sqlTestsRefs, refs...)
+		modelTests = append(modelTests, modelTest)
+		node.Refs = append(node.Refs, refs...)
 	}
-	node.Refs = append(node.Refs, sqlTestsRefs...)
 
 	// Insert the model
 	r, err := p.insertResource(ResourceKindModel, node.Name, node.Paths, node.Refs...)
@@ -255,7 +254,7 @@ func (p *Parser) parseModel(ctx context.Context, node *Node) error {
 	r.ModelSpec.OutputConnector = outputConnector
 	r.ModelSpec.OutputProperties = outputPropsPB
 
-	r.ModelSpec.Tests = sqlTests
+	r.ModelSpec.Tests = modelTests
 
 	return nil
 }
