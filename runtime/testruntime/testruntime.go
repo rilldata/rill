@@ -47,10 +47,12 @@ type TestingT interface {
 	FailNow()
 	Errorf(format string, args ...interface{})
 	Cleanup(f func())
+	Context() context.Context
 }
 
 // New returns a runtime configured for use in tests.
 func New(t TestingT, allowHostAccess bool) *runtime.Runtime {
+	ctx := t.Context()
 	opts := &runtime.Options{
 		MetastoreConnector: "metastore",
 		SystemConnectors: []*runtimev1.Connector{
@@ -77,7 +79,7 @@ func New(t TestingT, allowHostAccess bool) *runtime.Runtime {
 		require.NoError(t, err)
 	}
 
-	rt, err := runtime.New(context.Background(), opts, logger, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), email.New(email.NewTestSender()))
+	rt, err := runtime.New(ctx, opts, logger, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), email.New(email.NewTestSender()))
 	require.NoError(t, err)
 	t.Cleanup(func() { rt.Close() })
 
@@ -98,6 +100,7 @@ type InstanceOptions struct {
 // The instance's repo is a temp directory that will be cleared when the tests finish.
 func NewInstanceWithOptions(t TestingT, opts InstanceOptions) (*runtime.Runtime, string) {
 	rt := New(t, !opts.DisableHostAccess)
+	ctx := t.Context()
 
 	olapDriver := os.Getenv("RILL_RUNTIME_TEST_OLAP_DRIVER")
 	if olapDriver == "" {
@@ -112,6 +115,9 @@ func NewInstanceWithOptions(t TestingT, opts InstanceOptions) (*runtime.Runtime,
 	maps.Copy(vars, opts.Variables)
 	if vars["rill.stage_changes"] == "" {
 		vars["rill.stage_changes"] = strconv.FormatBool(opts.StageChanges)
+	}
+	if vars["rill.watch_repo"] == "" {
+		vars["rill.watch_repo"] = strconv.FormatBool(opts.WatchRepo)
 	}
 
 	for _, conn := range opts.TestConnectors {
@@ -150,7 +156,6 @@ func NewInstanceWithOptions(t TestingT, opts InstanceOptions) (*runtime.Runtime,
 			},
 		},
 		Variables: vars,
-		WatchRepo: opts.WatchRepo,
 	}
 
 	if _, ok := opts.Files["rill.yaml"]; !ok {
@@ -163,17 +168,17 @@ func NewInstanceWithOptions(t TestingT, opts InstanceOptions) (*runtime.Runtime,
 		require.NoError(t, os.WriteFile(abs, []byte(data), 0o644))
 	}
 
-	err := rt.CreateInstance(context.Background(), inst)
+	err := rt.CreateInstance(ctx, inst)
 	require.NoError(t, err)
 	require.NotEmpty(t, inst.ID)
 
-	ctrl, err := rt.Controller(context.Background(), inst.ID)
+	ctrl, err := rt.Controller(ctx, inst.ID)
 	require.NoError(t, err)
 
-	_, err = ctrl.Get(context.Background(), runtime.GlobalProjectParserName, false)
+	_, err = ctrl.Get(ctx, runtime.GlobalProjectParserName, false)
 	require.NoError(t, err)
 
-	err = ctrl.WaitUntilIdle(context.Background(), opts.WatchRepo)
+	err = ctrl.WaitUntilIdle(ctx, opts.WatchRepo)
 	require.NoError(t, err)
 
 	return rt, inst.ID
@@ -203,6 +208,7 @@ func NewInstanceWithModel(t TestingT, name, sql string) (*runtime.Runtime, strin
 // You should not do mutable repo operations on the returned instance.
 func NewInstanceForProject(t TestingT, name string) (*runtime.Runtime, string) {
 	rt := New(t, true)
+	ctx := t.Context()
 
 	_, currentFile, _, _ := goruntime.Caller(0)
 	projectPath := filepath.Join(currentFile, "..", "testdata", name)
@@ -242,17 +248,17 @@ func NewInstanceForProject(t TestingT, name string) (*runtime.Runtime, string) {
 		},
 	}
 
-	err := rt.CreateInstance(context.Background(), inst)
+	err := rt.CreateInstance(ctx, inst)
 	require.NoError(t, err)
 	require.NotEmpty(t, inst.ID)
 
-	ctrl, err := rt.Controller(context.Background(), inst.ID)
+	ctrl, err := rt.Controller(ctx, inst.ID)
 	require.NoError(t, err)
 
-	_, err = ctrl.Get(context.Background(), runtime.GlobalProjectParserName, false)
+	_, err = ctrl.Get(ctx, runtime.GlobalProjectParserName, false)
 	require.NoError(t, err)
 
-	err = ctrl.WaitUntilIdle(context.Background(), false)
+	err = ctrl.WaitUntilIdle(ctx, false)
 	require.NoError(t, err)
 
 	return rt, inst.ID
@@ -270,6 +276,7 @@ func NewInstanceForDruidProject(t *testing.T) (*runtime.Runtime, string, error) 
 	}
 
 	rt := New(t, true)
+	ctx := t.Context()
 
 	_, currentFile, _, _ = goruntime.Caller(0)
 	projectPath := filepath.Join(currentFile, "..", "testdata", "ad_bids_druid")
@@ -301,17 +308,17 @@ func NewInstanceForDruidProject(t *testing.T) (*runtime.Runtime, string, error) 
 		},
 	}
 
-	err = rt.CreateInstance(context.Background(), inst)
+	err = rt.CreateInstance(ctx, inst)
 	require.NoError(t, err)
 	require.NotEmpty(t, inst.ID)
 
-	ctrl, err := rt.Controller(context.Background(), inst.ID)
+	ctrl, err := rt.Controller(ctx, inst.ID)
 	require.NoError(t, err)
 
-	_, err = ctrl.Get(context.Background(), runtime.GlobalProjectParserName, false)
+	_, err = ctrl.Get(ctx, runtime.GlobalProjectParserName, false)
 	require.NoError(t, err)
 
-	err = ctrl.WaitUntilIdle(context.Background(), false)
+	err = ctrl.WaitUntilIdle(ctx, false)
 	require.NoError(t, err)
 
 	return rt, inst.ID, nil
@@ -319,7 +326,10 @@ func NewInstanceForDruidProject(t *testing.T) (*runtime.Runtime, string, error) 
 
 func NewInstanceWithClickhouseProject(t TestingT, withCluster bool) (*runtime.Runtime, string) {
 	dsn, cluster := testclickhouse.StartCluster(t)
+
 	rt := New(t, true)
+	ctx := t.Context()
+
 	_, currentFile, _, _ := goruntime.Caller(0)
 	projectPath := filepath.Join(currentFile, "..", "testdata", "ad_bids_clickhouse")
 
@@ -355,17 +365,17 @@ func NewInstanceWithClickhouseProject(t TestingT, withCluster bool) (*runtime.Ru
 		Variables: map[string]string{"rill.stage_changes": "false"},
 	}
 
-	err := rt.CreateInstance(context.Background(), inst)
+	err := rt.CreateInstance(ctx, inst)
 	require.NoError(t, err)
 	require.NotEmpty(t, inst.ID)
 
-	ctrl, err := rt.Controller(context.Background(), inst.ID)
+	ctrl, err := rt.Controller(ctx, inst.ID)
 	require.NoError(t, err)
 
-	_, err = ctrl.Get(context.Background(), runtime.GlobalProjectParserName, false)
+	_, err = ctrl.Get(ctx, runtime.GlobalProjectParserName, false)
 	require.NoError(t, err)
 
-	err = ctrl.WaitUntilIdle(context.Background(), false)
+	err = ctrl.WaitUntilIdle(ctx, false)
 	require.NoError(t, err)
 
 	return rt, inst.ID

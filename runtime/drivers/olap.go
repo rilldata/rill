@@ -325,19 +325,25 @@ func (d Dialect) DimensionSelectPair(db, dbSchema, table string, dim *runtimev1.
 	return unnestColName, colName, fmt.Sprintf(`, LATERAL UNNEST(%s) %s(%s)`, dim.Expression, unnestTableName, unnestColName), nil
 }
 
-func (d Dialect) LateralUnnest(expr, tableAlias, colName string) (tbl string, auto bool, err error) {
-	if d == DialectDruid || d == DialectPinot || d == DialectClickHouse {
-		return "", true, nil
+func (d Dialect) LateralUnnest(expr, tableAlias, colName string) (tbl string, tupleStyle, auto bool, err error) {
+	if d == DialectDruid || d == DialectPinot {
+		return "", false, true, nil
 	}
-
-	return fmt.Sprintf(`LATERAL UNNEST(%s) %s(%s)`, expr, tableAlias, d.EscapeIdentifier(colName)), false, nil
+	if d == DialectClickHouse {
+		// using `LEFT ARRAY JOIN` instead of just `ARRAY JOIN` as it includes empty arrays in the result set with zero values
+		return fmt.Sprintf("LEFT ARRAY JOIN %s as %s", expr, colName), false, false, nil
+	}
+	return fmt.Sprintf(`LATERAL UNNEST(%s) %s(%s)`, expr, tableAlias, d.EscapeIdentifier(colName)), true, false, nil
 }
 
-func (d Dialect) AutoUnnest(expr string) string {
-	if d == DialectClickHouse {
-		return fmt.Sprintf("arrayJoin(%s)", expr)
+func (d Dialect) UnnestSQLSuffix(tbl string) string {
+	if d == DialectDruid || d == DialectPinot {
+		panic("Druid and Pinot auto unnests")
 	}
-	return expr
+	if d == DialectClickHouse {
+		return fmt.Sprintf(" %s", tbl)
+	}
+	return fmt.Sprintf(", %s", tbl)
 }
 
 func (d Dialect) MetricsViewDimensionExpression(dimension *runtimev1.MetricsViewSpec_Dimension) (string, error) {

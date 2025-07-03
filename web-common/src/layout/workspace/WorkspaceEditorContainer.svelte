@@ -8,9 +8,11 @@
   export let showError = true;
 </script>
 
-<div class="flex flex-col size-full gap-y-1 bg-surface overflow-hidden">
+<div
+  class="flex flex-col size-full gap-y-1 bg-surface rounded-[2px] border overflow-hidden"
+>
   <div
-    class="size-full border relative rounded-[2px] overflow-hidden flex flex-col items-center justify-center"
+    class="size-full relative overflow-hidden flex flex-col items-center justify-center"
     class:!border-red-500={error}
   >
     <slot />

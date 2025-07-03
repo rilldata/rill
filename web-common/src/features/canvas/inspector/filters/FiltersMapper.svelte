@@ -70,6 +70,6 @@
 <style lang="postcss">
   .component-param {
     @apply py-3 px-5;
-    @apply border-t border-gray-200;
+    @apply border-t;
   }
 </style>

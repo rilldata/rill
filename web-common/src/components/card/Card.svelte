@@ -43,7 +43,7 @@
   }
 
   .gradient {
-    @apply bg-gradient-to-b from-white to-slate-50;
+    @apply bg-gradient-to-b from-surface to-slate-50;
   }
 
   a[aria-disabled="true"] {
