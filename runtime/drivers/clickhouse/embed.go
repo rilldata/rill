@@ -12,7 +12,9 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"runtime"
+	"strconv"
 	"strings"
 	"sync"
 	"syscall"
@@ -130,11 +132,21 @@ func (e *embedClickHouse) start() (*clickhouse.Options, error) {
 
 			switch log.Level {
 			case "Fatal":
-				e.logger.Fatal("ClickHouse embedded server: fatal log received, restart server", zap.String("logger_name", log.LoggerName), zap.String("message", log.Message))
+				e.logger.Error("ClickHouse embedded server: fatal log received, restart server", zap.String("logger_name", log.LoggerName), zap.String("message", log.Message))
 			case "Critical", "Error":
-				e.logger.Error("ClickHouse embedded server", zap.String("logger_name", log.LoggerName), zap.String("message", log.Message))
+				code := parseErrorCode(log.Message)
+				if isUserError(code) {
+					e.logger.Debug("ClickHouse embedded server", zap.String("logger_name", log.LoggerName), zap.String("message", log.Message))
+				} else {
+					e.logger.Error("ClickHouse embedded server", zap.String("logger_name", log.LoggerName), zap.String("message", log.Message))
+				}
 			case "Warning", "Notice":
-				e.logger.Warn("ClickHouse embedded server", zap.String("logger_name", log.LoggerName), zap.String("message", log.Message))
+				code := parseErrorCode(log.Message)
+				if isUserError(code) {
+					e.logger.Debug("ClickHouse embedded server", zap.String("logger_name", log.LoggerName), zap.String("message", log.Message))
+				} else {
+					e.logger.Warn("ClickHouse embedded server", zap.String("logger_name", log.LoggerName), zap.String("message", log.Message))
+				}
 			case "Information", "Debug", "Trace", "Test":
 				// even the information logs are too verbose in clickhouse so we log them at debug level
 				e.logger.Debug("ClickHouse embedded server", zap.String("logger_name", log.LoggerName), zap.String("message", log.Message))
@@ -296,7 +308,7 @@ func (e *embedClickHouse) getConfigContent() ([]byte, error) {
 				<level>level</level>
 				<logger_name>logger_name</logger_name>
 				<message>message</message>
-        	</names>
+			</names>
 		</formatting>
     </logger>
 
@@ -351,7 +363,10 @@ func (e *embedClickHouse) startAndWaitUntilReady(stderr io.Reader) error {
 			return fmt.Errorf("clickhouse is not ready: timeout")
 		default:
 			if !scanner.Scan() {
-				continue
+				if scanner.Err() != nil {
+					return fmt.Errorf("error reading clickhouse logs: %w", scanner.Err())
+				}
+				return fmt.Errorf("clickhouse is not ready")
 			}
 			line := scanner.Text()
 			var logLine clickhouseLog
@@ -455,6 +470,49 @@ func getFreePort() (int, error) {
 
 	addr := listener.Addr().(*net.TCPAddr)
 	return addr.Port, nil
+}
+
+var errorCodeRegexp = regexp.MustCompile(`Code:\s*(\d+)`)
+
+func parseErrorCode(msg string) int {
+	match := errorCodeRegexp.FindStringSubmatch(msg)
+	if len(match) < 2 {
+		return -1
+	}
+	code, err := strconv.Atoi(match[1])
+	if err != nil {
+		return -1
+	}
+	return code
+}
+
+// isUserError checks if the error code is a user error.
+// Clickhouse returns lots of exceptions that are not server errors or an issue with the server but rather a user error.
+// Exceptions are usually accompanied by an error code, which is a number that can be used to identify the type of error.
+// This function checks for specific error codes that are considered user errors.
+// As of writing this is not an exhaustive list so if you find an error that is not to be logged add the error code here.
+func isUserError(code int) bool {
+	switch code {
+	case 16: // no such column in table
+		return true
+	case 20: // number of columns does not match
+		return true
+	case 34, 35, 42: // too many/too few arguments for function
+		return true
+	case 46: // unknown function
+		return true
+	case 50: // unknown type
+		return true
+	case 51, 52, 53, 57, 60, 62, 63, 81, 82: // different query syntax error
+		return true
+	case 181, 182, 183, 184: // aggregate syntax error
+		return true
+	case 210: // network error but also thrown on query cancellation, connection failures etc which are usually auto recovered
+		return true
+
+	default:
+		return false
+	}
 }
 
 type clickhouseLog struct {
