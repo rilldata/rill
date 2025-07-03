@@ -4645,7 +4645,7 @@ export class APISpec extends Message<APISpec> {
   /**
    * @generated from field: string openapi_defs_prefix = 11;
    */
-  openapiDefsPrefix
+  openapiDefsPrefix = "";
 
   /**
    * @generated from field: repeated rill.runtime.v1.SecurityRule security_rules = 6;

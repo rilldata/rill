@@ -98,7 +98,14 @@ export class CompletionMessage extends Message<CompletionMessage> {
   role = "";
 
   /**
-   * @generated from field: repeated rill.admin.v1.ContentBlock content = 2;
+   * Deprecated in favor of content
+   *
+   * @generated from field: string data = 2;
+   */
+  data = "";
+
+  /**
+   * @generated from field: repeated rill.admin.v1.ContentBlock content = 3;
    */
   content: ContentBlock[] = [];
 
@@ -111,7 +118,8 @@ export class CompletionMessage extends Message<CompletionMessage> {
   static readonly typeName = "rill.admin.v1.CompletionMessage";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "role", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "content", kind: "message", T: ContentBlock, repeated: true },
+    { no: 2, name: "data", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "content", kind: "message", T: ContentBlock, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CompletionMessage {

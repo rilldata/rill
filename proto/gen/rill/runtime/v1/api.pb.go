@@ -5022,11 +5022,11 @@ type Message struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Id        string          `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	Role      string          `protobuf:"bytes,2,opt,name=role,proto3" json:"role,omitempty"`
-	Content   []*ContentBlock `protobuf:"bytes,3,rep,name=content,proto3" json:"content,omitempty"`
-	CreatedOn string          `protobuf:"bytes,4,opt,name=created_on,json=createdOn,proto3" json:"created_on,omitempty"`
-	UpdatedOn string          `protobuf:"bytes,5,opt,name=updated_on,json=updatedOn,proto3" json:"updated_on,omitempty"`
+	Id        string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Role      string                 `protobuf:"bytes,2,opt,name=role,proto3" json:"role,omitempty"`
+	Content   []*ContentBlock        `protobuf:"bytes,3,rep,name=content,proto3" json:"content,omitempty"`
+	CreatedOn *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=created_on,json=createdOn,proto3" json:"created_on,omitempty"`
+	UpdatedOn *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=updated_on,json=updatedOn,proto3" json:"updated_on,omitempty"`
 }
 
 func (x *Message) Reset() {
@@ -5082,18 +5082,18 @@ func (x *Message) GetContent() []*ContentBlock {
 	return nil
 }
 
-func (x *Message) GetCreatedOn() string {
+func (x *Message) GetCreatedOn() *timestamppb.Timestamp {
 	if x != nil {
 		return x.CreatedOn
 	}
-	return ""
+	return nil
 }
 
-func (x *Message) GetUpdatedOn() string {
+func (x *Message) GetUpdatedOn() *timestamppb.Timestamp {
 	if x != nil {
 		return x.UpdatedOn
 	}
-	return ""
+	return nil
 }
 
 // Content block within a message
@@ -5326,12 +5326,12 @@ type Conversation struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Id        string     `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	OwnerId   string     `protobuf:"bytes,2,opt,name=owner_id,json=ownerId,proto3" json:"owner_id,omitempty"`
-	Title     string     `protobuf:"bytes,3,opt,name=title,proto3" json:"title,omitempty"`
-	CreatedOn string     `protobuf:"bytes,4,opt,name=created_on,json=createdOn,proto3" json:"created_on,omitempty"`
-	UpdatedOn string     `protobuf:"bytes,5,opt,name=updated_on,json=updatedOn,proto3" json:"updated_on,omitempty"`
-	Messages  []*Message `protobuf:"bytes,6,rep,name=messages,proto3" json:"messages,omitempty"`
+	Id        string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	OwnerId   string                 `protobuf:"bytes,2,opt,name=owner_id,json=ownerId,proto3" json:"owner_id,omitempty"`
+	Title     string                 `protobuf:"bytes,3,opt,name=title,proto3" json:"title,omitempty"`
+	CreatedOn *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=created_on,json=createdOn,proto3" json:"created_on,omitempty"`
+	UpdatedOn *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=updated_on,json=updatedOn,proto3" json:"updated_on,omitempty"`
+	Messages  []*Message             `protobuf:"bytes,6,rep,name=messages,proto3" json:"messages,omitempty"`
 }
 
 func (x *Conversation) Reset() {
@@ -5387,18 +5387,18 @@ func (x *Conversation) GetTitle() string {
 	return ""
 }
 
-func (x *Conversation) GetCreatedOn() string {
+func (x *Conversation) GetCreatedOn() *timestamppb.Timestamp {
 	if x != nil {
 		return x.CreatedOn
 	}
-	return ""
+	return nil
 }
 
-func (x *Conversation) GetUpdatedOn() string {
+func (x *Conversation) GetUpdatedOn() *timestamppb.Timestamp {
 	if x != nil {
 		return x.UpdatedOn
 	}
-	return ""
+	return nil
 }
 
 func (x *Conversation) GetMessages() []*Message {
@@ -7001,47 +7001,54 @@ var file_rill_runtime_v1_api_proto_rawDesc = []byte{
 	0x74, 0x6f, 0x72, 0x73, 0x18, 0x01, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x1a, 0x2e, 0x72, 0x69, 0x6c,
 	0x6c, 0x2e, 0x72, 0x75, 0x6e, 0x74, 0x69, 0x6d, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x43, 0x6f, 0x6e,
 	0x6e, 0x65, 0x63, 0x74, 0x6f, 0x72, 0x52, 0x0a, 0x63, 0x6f, 0x6e, 0x6e, 0x65, 0x63, 0x74, 0x6f,
-	0x72, 0x73, 0x22, 0xa4, 0x01, 0x0a, 0x07, 0x4d, 0x65, 0x73, 0x73, 0x61, 0x67, 0x65, 0x12, 0x0e,
+	0x72, 0x73, 0x22, 0xdc, 0x01, 0x0a, 0x07, 0x4d, 0x65, 0x73, 0x73, 0x61, 0x67, 0x65, 0x12, 0x0e,
 	0x0a, 0x02, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x02, 0x69, 0x64, 0x12, 0x12,
 	0x0a, 0x04, 0x72, 0x6f, 0x6c, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x04, 0x72, 0x6f,
 	0x6c, 0x65, 0x12, 0x37, 0x0a, 0x07, 0x63, 0x6f, 0x6e, 0x74, 0x65, 0x6e, 0x74, 0x18, 0x03, 0x20,
 	0x03, 0x28, 0x0b, 0x32, 0x1d, 0x2e, 0x72, 0x69, 0x6c, 0x6c, 0x2e, 0x72, 0x75, 0x6e, 0x74, 0x69,
 	0x6d, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x43, 0x6f, 0x6e, 0x74, 0x65, 0x6e, 0x74, 0x42, 0x6c, 0x6f,
-	0x63, 0x6b, 0x52, 0x07, 0x63, 0x6f, 0x6e, 0x74, 0x65, 0x6e, 0x74, 0x12, 0x1d, 0x0a, 0x0a, 0x63,
-	0x72, 0x65, 0x61, 0x74, 0x65, 0x64, 0x5f, 0x6f, 0x6e, 0x18, 0x04, 0x20, 0x01, 0x28, 0x09, 0x52,
-	0x09, 0x63, 0x72, 0x65, 0x61, 0x74, 0x65, 0x64, 0x4f, 0x6e, 0x12, 0x1d, 0x0a, 0x0a, 0x75, 0x70,
-	0x64, 0x61, 0x74, 0x65, 0x64, 0x5f, 0x6f, 0x6e, 0x18, 0x05, 0x20, 0x01, 0x28, 0x09, 0x52, 0x09,
-	0x75, 0x70, 0x64, 0x61, 0x74, 0x65, 0x64, 0x4f, 0x6e, 0x22, 0xac, 0x01, 0x0a, 0x0c, 0x43, 0x6f,
-	0x6e, 0x74, 0x65, 0x6e, 0x74, 0x42, 0x6c, 0x6f, 0x63, 0x6b, 0x12, 0x14, 0x0a, 0x04, 0x74, 0x65,
-	0x78, 0x74, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x48, 0x00, 0x52, 0x04, 0x74, 0x65, 0x78, 0x74,
-	0x12, 0x38, 0x0a, 0x09, 0x74, 0x6f, 0x6f, 0x6c, 0x5f, 0x63, 0x61, 0x6c, 0x6c, 0x18, 0x02, 0x20,
-	0x01, 0x28, 0x0b, 0x32, 0x19, 0x2e, 0x72, 0x69, 0x6c, 0x6c, 0x2e, 0x72, 0x75, 0x6e, 0x74, 0x69,
-	0x6d, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x54, 0x6f, 0x6f, 0x6c, 0x43, 0x61, 0x6c, 0x6c, 0x48, 0x00,
-	0x52, 0x08, 0x74, 0x6f, 0x6f, 0x6c, 0x43, 0x61, 0x6c, 0x6c, 0x12, 0x3e, 0x0a, 0x0b, 0x74, 0x6f,
-	0x6f, 0x6c, 0x5f, 0x72, 0x65, 0x73, 0x75, 0x6c, 0x74, 0x18, 0x03, 0x20, 0x01, 0x28, 0x0b, 0x32,
-	0x1b, 0x2e, 0x72, 0x69, 0x6c, 0x6c, 0x2e, 0x72, 0x75, 0x6e, 0x74, 0x69, 0x6d, 0x65, 0x2e, 0x76,
-	0x31, 0x2e, 0x54, 0x6f, 0x6f, 0x6c, 0x52, 0x65, 0x73, 0x75, 0x6c, 0x74, 0x48, 0x00, 0x52, 0x0a,
-	0x74, 0x6f, 0x6f, 0x6c, 0x52, 0x65, 0x73, 0x75, 0x6c, 0x74, 0x42, 0x0c, 0x0a, 0x0a, 0x62, 0x6c,
-	0x6f, 0x63, 0x6b, 0x5f, 0x74, 0x79, 0x70, 0x65, 0x22, 0x5d, 0x0a, 0x08, 0x54, 0x6f, 0x6f, 0x6c,
-	0x43, 0x61, 0x6c, 0x6c, 0x12, 0x0e, 0x0a, 0x02, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09,
-	0x52, 0x02, 0x69, 0x64, 0x12, 0x12, 0x0a, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x18, 0x02, 0x20, 0x01,
-	0x28, 0x09, 0x52, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x12, 0x2d, 0x0a, 0x05, 0x69, 0x6e, 0x70, 0x75,
-	0x74, 0x18, 0x03, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x17, 0x2e, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65,
-	0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2e, 0x53, 0x74, 0x72, 0x75, 0x63, 0x74,
-	0x52, 0x05, 0x69, 0x6e, 0x70, 0x75, 0x74, 0x22, 0x51, 0x0a, 0x0a, 0x54, 0x6f, 0x6f, 0x6c, 0x52,
-	0x65, 0x73, 0x75, 0x6c, 0x74, 0x12, 0x0e, 0x0a, 0x02, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28,
-	0x09, 0x52, 0x02, 0x69, 0x64, 0x12, 0x18, 0x0a, 0x07, 0x63, 0x6f, 0x6e, 0x74, 0x65, 0x6e, 0x74,
-	0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x07, 0x63, 0x6f, 0x6e, 0x74, 0x65, 0x6e, 0x74, 0x12,
-	0x19, 0x0a, 0x08, 0x69, 0x73, 0x5f, 0x65, 0x72, 0x72, 0x6f, 0x72, 0x18, 0x03, 0x20, 0x01, 0x28,
-	0x08, 0x52, 0x07, 0x69, 0x73, 0x45, 0x72, 0x72, 0x6f, 0x72, 0x22, 0xc3, 0x01, 0x0a, 0x0c, 0x43,
-	0x6f, 0x6e, 0x76, 0x65, 0x72, 0x73, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x12, 0x0e, 0x0a, 0x02, 0x69,
-	0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x02, 0x69, 0x64, 0x12, 0x19, 0x0a, 0x08, 0x6f,
-	0x77, 0x6e, 0x65, 0x72, 0x5f, 0x69, 0x64, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x07, 0x6f,
-	0x77, 0x6e, 0x65, 0x72, 0x49, 0x64, 0x12, 0x14, 0x0a, 0x05, 0x74, 0x69, 0x74, 0x6c, 0x65, 0x18,
-	0x03, 0x20, 0x01, 0x28, 0x09, 0x52, 0x05, 0x74, 0x69, 0x74, 0x6c, 0x65, 0x12, 0x1d, 0x0a, 0x0a,
-	0x63, 0x72, 0x65, 0x61, 0x74, 0x65, 0x64, 0x5f, 0x6f, 0x6e, 0x18, 0x04, 0x20, 0x01, 0x28, 0x09,
-	0x52, 0x09, 0x63, 0x72, 0x65, 0x61, 0x74, 0x65, 0x64, 0x4f, 0x6e, 0x12, 0x1d, 0x0a, 0x0a, 0x75,
-	0x70, 0x64, 0x61, 0x74, 0x65, 0x64, 0x5f, 0x6f, 0x6e, 0x18, 0x05, 0x20, 0x01, 0x28, 0x09, 0x52,
+	0x63, 0x6b, 0x52, 0x07, 0x63, 0x6f, 0x6e, 0x74, 0x65, 0x6e, 0x74, 0x12, 0x39, 0x0a, 0x0a, 0x63,
+	0x72, 0x65, 0x61, 0x74, 0x65, 0x64, 0x5f, 0x6f, 0x6e, 0x18, 0x04, 0x20, 0x01, 0x28, 0x0b, 0x32,
+	0x1a, 0x2e, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75,
+	0x66, 0x2e, 0x54, 0x69, 0x6d, 0x65, 0x73, 0x74, 0x61, 0x6d, 0x70, 0x52, 0x09, 0x63, 0x72, 0x65,
+	0x61, 0x74, 0x65, 0x64, 0x4f, 0x6e, 0x12, 0x39, 0x0a, 0x0a, 0x75, 0x70, 0x64, 0x61, 0x74, 0x65,
+	0x64, 0x5f, 0x6f, 0x6e, 0x18, 0x05, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1a, 0x2e, 0x67, 0x6f, 0x6f,
+	0x67, 0x6c, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2e, 0x54, 0x69, 0x6d,
+	0x65, 0x73, 0x74, 0x61, 0x6d, 0x70, 0x52, 0x09, 0x75, 0x70, 0x64, 0x61, 0x74, 0x65, 0x64, 0x4f,
+	0x6e, 0x22, 0xac, 0x01, 0x0a, 0x0c, 0x43, 0x6f, 0x6e, 0x74, 0x65, 0x6e, 0x74, 0x42, 0x6c, 0x6f,
+	0x63, 0x6b, 0x12, 0x14, 0x0a, 0x04, 0x74, 0x65, 0x78, 0x74, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09,
+	0x48, 0x00, 0x52, 0x04, 0x74, 0x65, 0x78, 0x74, 0x12, 0x38, 0x0a, 0x09, 0x74, 0x6f, 0x6f, 0x6c,
+	0x5f, 0x63, 0x61, 0x6c, 0x6c, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x19, 0x2e, 0x72, 0x69,
+	0x6c, 0x6c, 0x2e, 0x72, 0x75, 0x6e, 0x74, 0x69, 0x6d, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x54, 0x6f,
+	0x6f, 0x6c, 0x43, 0x61, 0x6c, 0x6c, 0x48, 0x00, 0x52, 0x08, 0x74, 0x6f, 0x6f, 0x6c, 0x43, 0x61,
+	0x6c, 0x6c, 0x12, 0x3e, 0x0a, 0x0b, 0x74, 0x6f, 0x6f, 0x6c, 0x5f, 0x72, 0x65, 0x73, 0x75, 0x6c,
+	0x74, 0x18, 0x03, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1b, 0x2e, 0x72, 0x69, 0x6c, 0x6c, 0x2e, 0x72,
+	0x75, 0x6e, 0x74, 0x69, 0x6d, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x54, 0x6f, 0x6f, 0x6c, 0x52, 0x65,
+	0x73, 0x75, 0x6c, 0x74, 0x48, 0x00, 0x52, 0x0a, 0x74, 0x6f, 0x6f, 0x6c, 0x52, 0x65, 0x73, 0x75,
+	0x6c, 0x74, 0x42, 0x0c, 0x0a, 0x0a, 0x62, 0x6c, 0x6f, 0x63, 0x6b, 0x5f, 0x74, 0x79, 0x70, 0x65,
+	0x22, 0x5d, 0x0a, 0x08, 0x54, 0x6f, 0x6f, 0x6c, 0x43, 0x61, 0x6c, 0x6c, 0x12, 0x0e, 0x0a, 0x02,
+	0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x02, 0x69, 0x64, 0x12, 0x12, 0x0a, 0x04,
+	0x6e, 0x61, 0x6d, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x04, 0x6e, 0x61, 0x6d, 0x65,
+	0x12, 0x2d, 0x0a, 0x05, 0x69, 0x6e, 0x70, 0x75, 0x74, 0x18, 0x03, 0x20, 0x01, 0x28, 0x0b, 0x32,
+	0x17, 0x2e, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75,
+	0x66, 0x2e, 0x53, 0x74, 0x72, 0x75, 0x63, 0x74, 0x52, 0x05, 0x69, 0x6e, 0x70, 0x75, 0x74, 0x22,
+	0x51, 0x0a, 0x0a, 0x54, 0x6f, 0x6f, 0x6c, 0x52, 0x65, 0x73, 0x75, 0x6c, 0x74, 0x12, 0x0e, 0x0a,
+	0x02, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x02, 0x69, 0x64, 0x12, 0x18, 0x0a,
+	0x07, 0x63, 0x6f, 0x6e, 0x74, 0x65, 0x6e, 0x74, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x07,
+	0x63, 0x6f, 0x6e, 0x74, 0x65, 0x6e, 0x74, 0x12, 0x19, 0x0a, 0x08, 0x69, 0x73, 0x5f, 0x65, 0x72,
+	0x72, 0x6f, 0x72, 0x18, 0x03, 0x20, 0x01, 0x28, 0x08, 0x52, 0x07, 0x69, 0x73, 0x45, 0x72, 0x72,
+	0x6f, 0x72, 0x22, 0xfb, 0x01, 0x0a, 0x0c, 0x43, 0x6f, 0x6e, 0x76, 0x65, 0x72, 0x73, 0x61, 0x74,
+	0x69, 0x6f, 0x6e, 0x12, 0x0e, 0x0a, 0x02, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52,
+	0x02, 0x69, 0x64, 0x12, 0x19, 0x0a, 0x08, 0x6f, 0x77, 0x6e, 0x65, 0x72, 0x5f, 0x69, 0x64, 0x18,
+	0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x07, 0x6f, 0x77, 0x6e, 0x65, 0x72, 0x49, 0x64, 0x12, 0x14,
+	0x0a, 0x05, 0x74, 0x69, 0x74, 0x6c, 0x65, 0x18, 0x03, 0x20, 0x01, 0x28, 0x09, 0x52, 0x05, 0x74,
+	0x69, 0x74, 0x6c, 0x65, 0x12, 0x39, 0x0a, 0x0a, 0x63, 0x72, 0x65, 0x61, 0x74, 0x65, 0x64, 0x5f,
+	0x6f, 0x6e, 0x18, 0x04, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1a, 0x2e, 0x67, 0x6f, 0x6f, 0x67, 0x6c,
+	0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2e, 0x54, 0x69, 0x6d, 0x65, 0x73,
+	0x74, 0x61, 0x6d, 0x70, 0x52, 0x09, 0x63, 0x72, 0x65, 0x61, 0x74, 0x65, 0x64, 0x4f, 0x6e, 0x12,
+	0x39, 0x0a, 0x0a, 0x75, 0x70, 0x64, 0x61, 0x74, 0x65, 0x64, 0x5f, 0x6f, 0x6e, 0x18, 0x05, 0x20,
+	0x01, 0x28, 0x0b, 0x32, 0x1a, 0x2e, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2e, 0x70, 0x72, 0x6f,
+	0x74, 0x6f, 0x62, 0x75, 0x66, 0x2e, 0x54, 0x69, 0x6d, 0x65, 0x73, 0x74, 0x61, 0x6d, 0x70, 0x52,
 	0x09, 0x75, 0x70, 0x64, 0x61, 0x74, 0x65, 0x64, 0x4f, 0x6e, 0x12, 0x34, 0x0a, 0x08, 0x6d, 0x65,
 	0x73, 0x73, 0x61, 0x67, 0x65, 0x73, 0x18, 0x06, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x18, 0x2e, 0x72,
 	0x69, 0x6c, 0x6c, 0x2e, 0x72, 0x75, 0x6e, 0x74, 0x69, 0x6d, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x4d,
@@ -7704,100 +7711,104 @@ var file_rill_runtime_v1_api_proto_depIdxs = []int32{
 	72,  // 66: rill.runtime.v1.AnalyzeConnectorsResponse.connectors:type_name -> rill.runtime.v1.AnalyzedConnector
 	12,  // 67: rill.runtime.v1.ListNotifierConnectorsResponse.connectors:type_name -> rill.runtime.v1.Connector
 	80,  // 68: rill.runtime.v1.Message.content:type_name -> rill.runtime.v1.ContentBlock
-	81,  // 69: rill.runtime.v1.ContentBlock.tool_call:type_name -> rill.runtime.v1.ToolCall
-	82,  // 70: rill.runtime.v1.ContentBlock.tool_result:type_name -> rill.runtime.v1.ToolResult
-	112, // 71: rill.runtime.v1.ToolCall.input:type_name -> google.protobuf.Struct
-	79,  // 72: rill.runtime.v1.Conversation.messages:type_name -> rill.runtime.v1.Message
-	79,  // 73: rill.runtime.v1.CompleteRequest.messages:type_name -> rill.runtime.v1.Message
-	79,  // 74: rill.runtime.v1.CompleteResponse.messages:type_name -> rill.runtime.v1.Message
-	83,  // 75: rill.runtime.v1.ListConversationsResponse.conversations:type_name -> rill.runtime.v1.Conversation
-	83,  // 76: rill.runtime.v1.GetConversationResponse.conversation:type_name -> rill.runtime.v1.Conversation
-	112, // 77: rill.runtime.v1.IssueDevJWTRequest.attributes:type_name -> google.protobuf.Struct
-	94,  // 78: rill.runtime.v1.AnalyzeVariablesResponse.variables:type_name -> rill.runtime.v1.AnalyzedVariable
-	115, // 79: rill.runtime.v1.AnalyzedVariable.used_by:type_name -> rill.runtime.v1.ResourceName
-	10,  // 80: rill.runtime.v1.HealthResponse.InstancesHealthEntry.value:type_name -> rill.runtime.v1.InstanceHealth
-	3,   // 81: rill.runtime.v1.ConnectorDriver.Property.type:type_name -> rill.runtime.v1.ConnectorDriver.Property.Type
-	4,   // 82: rill.runtime.v1.RuntimeService.Ping:input_type -> rill.runtime.v1.PingRequest
-	6,   // 83: rill.runtime.v1.RuntimeService.Health:input_type -> rill.runtime.v1.HealthRequest
-	8,   // 84: rill.runtime.v1.RuntimeService.InstanceHealth:input_type -> rill.runtime.v1.InstanceHealthRequest
-	13,  // 85: rill.runtime.v1.RuntimeService.ListInstances:input_type -> rill.runtime.v1.ListInstancesRequest
-	15,  // 86: rill.runtime.v1.RuntimeService.GetInstance:input_type -> rill.runtime.v1.GetInstanceRequest
-	17,  // 87: rill.runtime.v1.RuntimeService.CreateInstance:input_type -> rill.runtime.v1.CreateInstanceRequest
-	21,  // 88: rill.runtime.v1.RuntimeService.EditInstance:input_type -> rill.runtime.v1.EditInstanceRequest
-	19,  // 89: rill.runtime.v1.RuntimeService.DeleteInstance:input_type -> rill.runtime.v1.DeleteInstanceRequest
-	23,  // 90: rill.runtime.v1.RuntimeService.ListFiles:input_type -> rill.runtime.v1.ListFilesRequest
-	26,  // 91: rill.runtime.v1.RuntimeService.WatchFiles:input_type -> rill.runtime.v1.WatchFilesRequest
-	28,  // 92: rill.runtime.v1.RuntimeService.GetFile:input_type -> rill.runtime.v1.GetFileRequest
-	30,  // 93: rill.runtime.v1.RuntimeService.PutFile:input_type -> rill.runtime.v1.PutFileRequest
-	32,  // 94: rill.runtime.v1.RuntimeService.CreateDirectory:input_type -> rill.runtime.v1.CreateDirectoryRequest
-	34,  // 95: rill.runtime.v1.RuntimeService.DeleteFile:input_type -> rill.runtime.v1.DeleteFileRequest
-	36,  // 96: rill.runtime.v1.RuntimeService.RenameFile:input_type -> rill.runtime.v1.RenameFileRequest
-	39,  // 97: rill.runtime.v1.RuntimeService.ListExamples:input_type -> rill.runtime.v1.ListExamplesRequest
-	41,  // 98: rill.runtime.v1.RuntimeService.UnpackExample:input_type -> rill.runtime.v1.UnpackExampleRequest
-	43,  // 99: rill.runtime.v1.RuntimeService.UnpackEmpty:input_type -> rill.runtime.v1.UnpackEmptyRequest
-	45,  // 100: rill.runtime.v1.RuntimeService.GenerateMetricsViewFile:input_type -> rill.runtime.v1.GenerateMetricsViewFileRequest
-	47,  // 101: rill.runtime.v1.RuntimeService.GenerateResolver:input_type -> rill.runtime.v1.GenerateResolverRequest
-	49,  // 102: rill.runtime.v1.RuntimeService.GenerateRenderer:input_type -> rill.runtime.v1.GenerateRendererRequest
-	51,  // 103: rill.runtime.v1.RuntimeService.QueryResolver:input_type -> rill.runtime.v1.QueryResolverRequest
-	55,  // 104: rill.runtime.v1.RuntimeService.GetLogs:input_type -> rill.runtime.v1.GetLogsRequest
-	57,  // 105: rill.runtime.v1.RuntimeService.WatchLogs:input_type -> rill.runtime.v1.WatchLogsRequest
-	59,  // 106: rill.runtime.v1.RuntimeService.ListResources:input_type -> rill.runtime.v1.ListResourcesRequest
-	61,  // 107: rill.runtime.v1.RuntimeService.WatchResources:input_type -> rill.runtime.v1.WatchResourcesRequest
-	63,  // 108: rill.runtime.v1.RuntimeService.GetResource:input_type -> rill.runtime.v1.GetResourceRequest
-	65,  // 109: rill.runtime.v1.RuntimeService.GetExplore:input_type -> rill.runtime.v1.GetExploreRequest
-	67,  // 110: rill.runtime.v1.RuntimeService.GetModelPartitions:input_type -> rill.runtime.v1.GetModelPartitionsRequest
-	69,  // 111: rill.runtime.v1.RuntimeService.CreateTrigger:input_type -> rill.runtime.v1.CreateTriggerRequest
-	73,  // 112: rill.runtime.v1.RuntimeService.ListConnectorDrivers:input_type -> rill.runtime.v1.ListConnectorDriversRequest
-	75,  // 113: rill.runtime.v1.RuntimeService.AnalyzeConnectors:input_type -> rill.runtime.v1.AnalyzeConnectorsRequest
-	77,  // 114: rill.runtime.v1.RuntimeService.ListNotifierConnectors:input_type -> rill.runtime.v1.ListNotifierConnectorsRequest
-	84,  // 115: rill.runtime.v1.RuntimeService.Complete:input_type -> rill.runtime.v1.CompleteRequest
-	86,  // 116: rill.runtime.v1.RuntimeService.ListConversations:input_type -> rill.runtime.v1.ListConversationsRequest
-	88,  // 117: rill.runtime.v1.RuntimeService.GetConversation:input_type -> rill.runtime.v1.GetConversationRequest
-	90,  // 118: rill.runtime.v1.RuntimeService.IssueDevJWT:input_type -> rill.runtime.v1.IssueDevJWTRequest
-	92,  // 119: rill.runtime.v1.RuntimeService.AnalyzeVariables:input_type -> rill.runtime.v1.AnalyzeVariablesRequest
-	5,   // 120: rill.runtime.v1.RuntimeService.Ping:output_type -> rill.runtime.v1.PingResponse
-	7,   // 121: rill.runtime.v1.RuntimeService.Health:output_type -> rill.runtime.v1.HealthResponse
-	9,   // 122: rill.runtime.v1.RuntimeService.InstanceHealth:output_type -> rill.runtime.v1.InstanceHealthResponse
-	14,  // 123: rill.runtime.v1.RuntimeService.ListInstances:output_type -> rill.runtime.v1.ListInstancesResponse
-	16,  // 124: rill.runtime.v1.RuntimeService.GetInstance:output_type -> rill.runtime.v1.GetInstanceResponse
-	18,  // 125: rill.runtime.v1.RuntimeService.CreateInstance:output_type -> rill.runtime.v1.CreateInstanceResponse
-	22,  // 126: rill.runtime.v1.RuntimeService.EditInstance:output_type -> rill.runtime.v1.EditInstanceResponse
-	20,  // 127: rill.runtime.v1.RuntimeService.DeleteInstance:output_type -> rill.runtime.v1.DeleteInstanceResponse
-	24,  // 128: rill.runtime.v1.RuntimeService.ListFiles:output_type -> rill.runtime.v1.ListFilesResponse
-	27,  // 129: rill.runtime.v1.RuntimeService.WatchFiles:output_type -> rill.runtime.v1.WatchFilesResponse
-	29,  // 130: rill.runtime.v1.RuntimeService.GetFile:output_type -> rill.runtime.v1.GetFileResponse
-	31,  // 131: rill.runtime.v1.RuntimeService.PutFile:output_type -> rill.runtime.v1.PutFileResponse
-	33,  // 132: rill.runtime.v1.RuntimeService.CreateDirectory:output_type -> rill.runtime.v1.CreateDirectoryResponse
-	35,  // 133: rill.runtime.v1.RuntimeService.DeleteFile:output_type -> rill.runtime.v1.DeleteFileResponse
-	37,  // 134: rill.runtime.v1.RuntimeService.RenameFile:output_type -> rill.runtime.v1.RenameFileResponse
-	40,  // 135: rill.runtime.v1.RuntimeService.ListExamples:output_type -> rill.runtime.v1.ListExamplesResponse
-	42,  // 136: rill.runtime.v1.RuntimeService.UnpackExample:output_type -> rill.runtime.v1.UnpackExampleResponse
-	44,  // 137: rill.runtime.v1.RuntimeService.UnpackEmpty:output_type -> rill.runtime.v1.UnpackEmptyResponse
-	46,  // 138: rill.runtime.v1.RuntimeService.GenerateMetricsViewFile:output_type -> rill.runtime.v1.GenerateMetricsViewFileResponse
-	48,  // 139: rill.runtime.v1.RuntimeService.GenerateResolver:output_type -> rill.runtime.v1.GenerateResolverResponse
-	50,  // 140: rill.runtime.v1.RuntimeService.GenerateRenderer:output_type -> rill.runtime.v1.GenerateRendererResponse
-	52,  // 141: rill.runtime.v1.RuntimeService.QueryResolver:output_type -> rill.runtime.v1.QueryResolverResponse
-	56,  // 142: rill.runtime.v1.RuntimeService.GetLogs:output_type -> rill.runtime.v1.GetLogsResponse
-	58,  // 143: rill.runtime.v1.RuntimeService.WatchLogs:output_type -> rill.runtime.v1.WatchLogsResponse
-	60,  // 144: rill.runtime.v1.RuntimeService.ListResources:output_type -> rill.runtime.v1.ListResourcesResponse
-	62,  // 145: rill.runtime.v1.RuntimeService.WatchResources:output_type -> rill.runtime.v1.WatchResourcesResponse
-	64,  // 146: rill.runtime.v1.RuntimeService.GetResource:output_type -> rill.runtime.v1.GetResourceResponse
-	66,  // 147: rill.runtime.v1.RuntimeService.GetExplore:output_type -> rill.runtime.v1.GetExploreResponse
-	68,  // 148: rill.runtime.v1.RuntimeService.GetModelPartitions:output_type -> rill.runtime.v1.GetModelPartitionsResponse
-	70,  // 149: rill.runtime.v1.RuntimeService.CreateTrigger:output_type -> rill.runtime.v1.CreateTriggerResponse
-	74,  // 150: rill.runtime.v1.RuntimeService.ListConnectorDrivers:output_type -> rill.runtime.v1.ListConnectorDriversResponse
-	76,  // 151: rill.runtime.v1.RuntimeService.AnalyzeConnectors:output_type -> rill.runtime.v1.AnalyzeConnectorsResponse
-	78,  // 152: rill.runtime.v1.RuntimeService.ListNotifierConnectors:output_type -> rill.runtime.v1.ListNotifierConnectorsResponse
-	85,  // 153: rill.runtime.v1.RuntimeService.Complete:output_type -> rill.runtime.v1.CompleteResponse
-	87,  // 154: rill.runtime.v1.RuntimeService.ListConversations:output_type -> rill.runtime.v1.ListConversationsResponse
-	89,  // 155: rill.runtime.v1.RuntimeService.GetConversation:output_type -> rill.runtime.v1.GetConversationResponse
-	91,  // 156: rill.runtime.v1.RuntimeService.IssueDevJWT:output_type -> rill.runtime.v1.IssueDevJWTResponse
-	93,  // 157: rill.runtime.v1.RuntimeService.AnalyzeVariables:output_type -> rill.runtime.v1.AnalyzeVariablesResponse
-	120, // [120:158] is the sub-list for method output_type
-	82,  // [82:120] is the sub-list for method input_type
-	82,  // [82:82] is the sub-list for extension type_name
-	82,  // [82:82] is the sub-list for extension extendee
-	0,   // [0:82] is the sub-list for field type_name
+	111, // 69: rill.runtime.v1.Message.created_on:type_name -> google.protobuf.Timestamp
+	111, // 70: rill.runtime.v1.Message.updated_on:type_name -> google.protobuf.Timestamp
+	81,  // 71: rill.runtime.v1.ContentBlock.tool_call:type_name -> rill.runtime.v1.ToolCall
+	82,  // 72: rill.runtime.v1.ContentBlock.tool_result:type_name -> rill.runtime.v1.ToolResult
+	112, // 73: rill.runtime.v1.ToolCall.input:type_name -> google.protobuf.Struct
+	111, // 74: rill.runtime.v1.Conversation.created_on:type_name -> google.protobuf.Timestamp
+	111, // 75: rill.runtime.v1.Conversation.updated_on:type_name -> google.protobuf.Timestamp
+	79,  // 76: rill.runtime.v1.Conversation.messages:type_name -> rill.runtime.v1.Message
+	79,  // 77: rill.runtime.v1.CompleteRequest.messages:type_name -> rill.runtime.v1.Message
+	79,  // 78: rill.runtime.v1.CompleteResponse.messages:type_name -> rill.runtime.v1.Message
+	83,  // 79: rill.runtime.v1.ListConversationsResponse.conversations:type_name -> rill.runtime.v1.Conversation
+	83,  // 80: rill.runtime.v1.GetConversationResponse.conversation:type_name -> rill.runtime.v1.Conversation
+	112, // 81: rill.runtime.v1.IssueDevJWTRequest.attributes:type_name -> google.protobuf.Struct
+	94,  // 82: rill.runtime.v1.AnalyzeVariablesResponse.variables:type_name -> rill.runtime.v1.AnalyzedVariable
+	115, // 83: rill.runtime.v1.AnalyzedVariable.used_by:type_name -> rill.runtime.v1.ResourceName
+	10,  // 84: rill.runtime.v1.HealthResponse.InstancesHealthEntry.value:type_name -> rill.runtime.v1.InstanceHealth
+	3,   // 85: rill.runtime.v1.ConnectorDriver.Property.type:type_name -> rill.runtime.v1.ConnectorDriver.Property.Type
+	4,   // 86: rill.runtime.v1.RuntimeService.Ping:input_type -> rill.runtime.v1.PingRequest
+	6,   // 87: rill.runtime.v1.RuntimeService.Health:input_type -> rill.runtime.v1.HealthRequest
+	8,   // 88: rill.runtime.v1.RuntimeService.InstanceHealth:input_type -> rill.runtime.v1.InstanceHealthRequest
+	13,  // 89: rill.runtime.v1.RuntimeService.ListInstances:input_type -> rill.runtime.v1.ListInstancesRequest
+	15,  // 90: rill.runtime.v1.RuntimeService.GetInstance:input_type -> rill.runtime.v1.GetInstanceRequest
+	17,  // 91: rill.runtime.v1.RuntimeService.CreateInstance:input_type -> rill.runtime.v1.CreateInstanceRequest
+	21,  // 92: rill.runtime.v1.RuntimeService.EditInstance:input_type -> rill.runtime.v1.EditInstanceRequest
+	19,  // 93: rill.runtime.v1.RuntimeService.DeleteInstance:input_type -> rill.runtime.v1.DeleteInstanceRequest
+	23,  // 94: rill.runtime.v1.RuntimeService.ListFiles:input_type -> rill.runtime.v1.ListFilesRequest
+	26,  // 95: rill.runtime.v1.RuntimeService.WatchFiles:input_type -> rill.runtime.v1.WatchFilesRequest
+	28,  // 96: rill.runtime.v1.RuntimeService.GetFile:input_type -> rill.runtime.v1.GetFileRequest
+	30,  // 97: rill.runtime.v1.RuntimeService.PutFile:input_type -> rill.runtime.v1.PutFileRequest
+	32,  // 98: rill.runtime.v1.RuntimeService.CreateDirectory:input_type -> rill.runtime.v1.CreateDirectoryRequest
+	34,  // 99: rill.runtime.v1.RuntimeService.DeleteFile:input_type -> rill.runtime.v1.DeleteFileRequest
+	36,  // 100: rill.runtime.v1.RuntimeService.RenameFile:input_type -> rill.runtime.v1.RenameFileRequest
+	39,  // 101: rill.runtime.v1.RuntimeService.ListExamples:input_type -> rill.runtime.v1.ListExamplesRequest
+	41,  // 102: rill.runtime.v1.RuntimeService.UnpackExample:input_type -> rill.runtime.v1.UnpackExampleRequest
+	43,  // 103: rill.runtime.v1.RuntimeService.UnpackEmpty:input_type -> rill.runtime.v1.UnpackEmptyRequest
+	45,  // 104: rill.runtime.v1.RuntimeService.GenerateMetricsViewFile:input_type -> rill.runtime.v1.GenerateMetricsViewFileRequest
+	47,  // 105: rill.runtime.v1.RuntimeService.GenerateResolver:input_type -> rill.runtime.v1.GenerateResolverRequest
+	49,  // 106: rill.runtime.v1.RuntimeService.GenerateRenderer:input_type -> rill.runtime.v1.GenerateRendererRequest
+	51,  // 107: rill.runtime.v1.RuntimeService.QueryResolver:input_type -> rill.runtime.v1.QueryResolverRequest
+	55,  // 108: rill.runtime.v1.RuntimeService.GetLogs:input_type -> rill.runtime.v1.GetLogsRequest
+	57,  // 109: rill.runtime.v1.RuntimeService.WatchLogs:input_type -> rill.runtime.v1.WatchLogsRequest
+	59,  // 110: rill.runtime.v1.RuntimeService.ListResources:input_type -> rill.runtime.v1.ListResourcesRequest
+	61,  // 111: rill.runtime.v1.RuntimeService.WatchResources:input_type -> rill.runtime.v1.WatchResourcesRequest
+	63,  // 112: rill.runtime.v1.RuntimeService.GetResource:input_type -> rill.runtime.v1.GetResourceRequest
+	65,  // 113: rill.runtime.v1.RuntimeService.GetExplore:input_type -> rill.runtime.v1.GetExploreRequest
+	67,  // 114: rill.runtime.v1.RuntimeService.GetModelPartitions:input_type -> rill.runtime.v1.GetModelPartitionsRequest
+	69,  // 115: rill.runtime.v1.RuntimeService.CreateTrigger:input_type -> rill.runtime.v1.CreateTriggerRequest
+	73,  // 116: rill.runtime.v1.RuntimeService.ListConnectorDrivers:input_type -> rill.runtime.v1.ListConnectorDriversRequest
+	75,  // 117: rill.runtime.v1.RuntimeService.AnalyzeConnectors:input_type -> rill.runtime.v1.AnalyzeConnectorsRequest
+	77,  // 118: rill.runtime.v1.RuntimeService.ListNotifierConnectors:input_type -> rill.runtime.v1.ListNotifierConnectorsRequest
+	84,  // 119: rill.runtime.v1.RuntimeService.Complete:input_type -> rill.runtime.v1.CompleteRequest
+	86,  // 120: rill.runtime.v1.RuntimeService.ListConversations:input_type -> rill.runtime.v1.ListConversationsRequest
+	88,  // 121: rill.runtime.v1.RuntimeService.GetConversation:input_type -> rill.runtime.v1.GetConversationRequest
+	90,  // 122: rill.runtime.v1.RuntimeService.IssueDevJWT:input_type -> rill.runtime.v1.IssueDevJWTRequest
+	92,  // 123: rill.runtime.v1.RuntimeService.AnalyzeVariables:input_type -> rill.runtime.v1.AnalyzeVariablesRequest
+	5,   // 124: rill.runtime.v1.RuntimeService.Ping:output_type -> rill.runtime.v1.PingResponse
+	7,   // 125: rill.runtime.v1.RuntimeService.Health:output_type -> rill.runtime.v1.HealthResponse
+	9,   // 126: rill.runtime.v1.RuntimeService.InstanceHealth:output_type -> rill.runtime.v1.InstanceHealthResponse
+	14,  // 127: rill.runtime.v1.RuntimeService.ListInstances:output_type -> rill.runtime.v1.ListInstancesResponse
+	16,  // 128: rill.runtime.v1.RuntimeService.GetInstance:output_type -> rill.runtime.v1.GetInstanceResponse
+	18,  // 129: rill.runtime.v1.RuntimeService.CreateInstance:output_type -> rill.runtime.v1.CreateInstanceResponse
+	22,  // 130: rill.runtime.v1.RuntimeService.EditInstance:output_type -> rill.runtime.v1.EditInstanceResponse
+	20,  // 131: rill.runtime.v1.RuntimeService.DeleteInstance:output_type -> rill.runtime.v1.DeleteInstanceResponse
+	24,  // 132: rill.runtime.v1.RuntimeService.ListFiles:output_type -> rill.runtime.v1.ListFilesResponse
+	27,  // 133: rill.runtime.v1.RuntimeService.WatchFiles:output_type -> rill.runtime.v1.WatchFilesResponse
+	29,  // 134: rill.runtime.v1.RuntimeService.GetFile:output_type -> rill.runtime.v1.GetFileResponse
+	31,  // 135: rill.runtime.v1.RuntimeService.PutFile:output_type -> rill.runtime.v1.PutFileResponse
+	33,  // 136: rill.runtime.v1.RuntimeService.CreateDirectory:output_type -> rill.runtime.v1.CreateDirectoryResponse
+	35,  // 137: rill.runtime.v1.RuntimeService.DeleteFile:output_type -> rill.runtime.v1.DeleteFileResponse
+	37,  // 138: rill.runtime.v1.RuntimeService.RenameFile:output_type -> rill.runtime.v1.RenameFileResponse
+	40,  // 139: rill.runtime.v1.RuntimeService.ListExamples:output_type -> rill.runtime.v1.ListExamplesResponse
+	42,  // 140: rill.runtime.v1.RuntimeService.UnpackExample:output_type -> rill.runtime.v1.UnpackExampleResponse
+	44,  // 141: rill.runtime.v1.RuntimeService.UnpackEmpty:output_type -> rill.runtime.v1.UnpackEmptyResponse
+	46,  // 142: rill.runtime.v1.RuntimeService.GenerateMetricsViewFile:output_type -> rill.runtime.v1.GenerateMetricsViewFileResponse
+	48,  // 143: rill.runtime.v1.RuntimeService.GenerateResolver:output_type -> rill.runtime.v1.GenerateResolverResponse
+	50,  // 144: rill.runtime.v1.RuntimeService.GenerateRenderer:output_type -> rill.runtime.v1.GenerateRendererResponse
+	52,  // 145: rill.runtime.v1.RuntimeService.QueryResolver:output_type -> rill.runtime.v1.QueryResolverResponse
+	56,  // 146: rill.runtime.v1.RuntimeService.GetLogs:output_type -> rill.runtime.v1.GetLogsResponse
+	58,  // 147: rill.runtime.v1.RuntimeService.WatchLogs:output_type -> rill.runtime.v1.WatchLogsResponse
+	60,  // 148: rill.runtime.v1.RuntimeService.ListResources:output_type -> rill.runtime.v1.ListResourcesResponse
+	62,  // 149: rill.runtime.v1.RuntimeService.WatchResources:output_type -> rill.runtime.v1.WatchResourcesResponse
+	64,  // 150: rill.runtime.v1.RuntimeService.GetResource:output_type -> rill.runtime.v1.GetResourceResponse
+	66,  // 151: rill.runtime.v1.RuntimeService.GetExplore:output_type -> rill.runtime.v1.GetExploreResponse
+	68,  // 152: rill.runtime.v1.RuntimeService.GetModelPartitions:output_type -> rill.runtime.v1.GetModelPartitionsResponse
+	70,  // 153: rill.runtime.v1.RuntimeService.CreateTrigger:output_type -> rill.runtime.v1.CreateTriggerResponse
+	74,  // 154: rill.runtime.v1.RuntimeService.ListConnectorDrivers:output_type -> rill.runtime.v1.ListConnectorDriversResponse
+	76,  // 155: rill.runtime.v1.RuntimeService.AnalyzeConnectors:output_type -> rill.runtime.v1.AnalyzeConnectorsResponse
+	78,  // 156: rill.runtime.v1.RuntimeService.ListNotifierConnectors:output_type -> rill.runtime.v1.ListNotifierConnectorsResponse
+	85,  // 157: rill.runtime.v1.RuntimeService.Complete:output_type -> rill.runtime.v1.CompleteResponse
+	87,  // 158: rill.runtime.v1.RuntimeService.ListConversations:output_type -> rill.runtime.v1.ListConversationsResponse
+	89,  // 159: rill.runtime.v1.RuntimeService.GetConversation:output_type -> rill.runtime.v1.GetConversationResponse
+	91,  // 160: rill.runtime.v1.RuntimeService.IssueDevJWT:output_type -> rill.runtime.v1.IssueDevJWTResponse
+	93,  // 161: rill.runtime.v1.RuntimeService.AnalyzeVariables:output_type -> rill.runtime.v1.AnalyzeVariablesResponse
+	124, // [124:162] is the sub-list for method output_type
+	86,  // [86:124] is the sub-list for method input_type
+	86,  // [86:86] is the sub-list for extension type_name
+	86,  // [86:86] is the sub-list for extension extendee
+	0,   // [0:86] is the sub-list for field type_name
 }
 
 func init() { file_rill_runtime_v1_api_proto_init() }

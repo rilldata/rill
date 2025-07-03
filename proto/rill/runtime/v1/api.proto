@@ -895,8 +895,8 @@ message Message {
   string id = 1;
   string role = 2;
   repeated ContentBlock content = 3;
-  string created_on = 4;
-  string updated_on = 5;
+  google.protobuf.Timestamp created_on = 4;
+  google.protobuf.Timestamp updated_on = 5;
 }
 
 // Content block within a message
@@ -927,8 +927,8 @@ message Conversation {
   string id = 1;
   string owner_id = 2;
   string title = 3;
-  string created_on = 4;
-  string updated_on = 5;
+  google.protobuf.Timestamp created_on = 4;
+  google.protobuf.Timestamp updated_on = 5;
   repeated Message messages = 6;
 }
 

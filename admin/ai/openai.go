@@ -40,7 +40,11 @@ func (c *openAI) Complete(ctx context.Context, msgs []*adminv1.CompletionMessage
 	if len(tools) > 0 {
 		openaiTools = make([]openai.Tool, len(tools))
 		for i, tool := range tools {
-			openaiTools[i] = convertRillToolToOpenAITool(tool)
+			openaiTool, err := convertRillToolToOpenAITool(tool)
+			if err != nil {
+				return nil, fmt.Errorf("failed to convert tool: %w", err)
+			}
+			openaiTools[i] = openaiTool
 		}
 	}
 
@@ -102,8 +106,11 @@ func convertRillMessageToOpenAIMessage(msg *adminv1.CompletionMessage) openai.Ch
 }
 
 // convertRillToolToOpenAITool converts a single Rill Tool to OpenAI Tool format.
-func convertRillToolToOpenAITool(tool *adminv1.Tool) openai.Tool {
-	schemaMap := parseToolSchema(tool.InputSchema)
+func convertRillToolToOpenAITool(tool *adminv1.Tool) (openai.Tool, error) {
+	schemaMap, err := parseToolSchema(tool.InputSchema)
+	if err != nil {
+		return openai.Tool{}, fmt.Errorf("failed to convert tool %s: %w", tool.Name, err)
+	}
 
 	return openai.Tool{
 		Type: openai.ToolTypeFunction,
@@ -112,29 +119,25 @@ func convertRillToolToOpenAITool(tool *adminv1.Tool) openai.Tool {
 			Description: tool.Description,
 			Parameters:  schemaMap,
 		},
-	}
+	}, nil
 }
 
 // parseToolSchema parses a JSON schema string and returns a map, with fallback to default schema.
-func parseToolSchema(schemaJSON string) map[string]interface{} {
+func parseToolSchema(schemaJSON string) (map[string]interface{}, error) {
 	if schemaJSON == "" {
 		// Default schema when none is provided
 		return map[string]interface{}{
 			"type":       "object",
 			"properties": map[string]interface{}{},
-		}
+		}, nil
 	}
 
 	var schemaMap map[string]interface{}
 	if err := json.Unmarshal([]byte(schemaJSON), &schemaMap); err != nil {
-		// Fallback to basic schema if parsing fails
-		return map[string]interface{}{
-			"type":       "object",
-			"properties": map[string]interface{}{},
-		}
+		return nil, fmt.Errorf("failed to parse tool schema JSON: %w", err)
 	}
 
-	return schemaMap
+	return schemaMap, nil
 }
 
 // convertOpenAIMessageToRillMessage converts OpenAI ChatCompletionMessage to Rill CompletionMessage format.

@@ -2,6 +2,7 @@ package runtime
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -11,6 +12,8 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/types/known/structpb"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // ===== CONSTANTS AND TYPES =====
@@ -23,17 +26,10 @@ const (
 
 // ===== PUBLIC API =====
 
-// CompletionRequest represents the input for AI completion
-type CompletionRequest struct {
-	InstanceID     string
-	ConversationID string // Empty string means create new conversation
-	Messages       []*runtimev1.Message
-}
-
-// CompletionResult represents the output of AI completion
-type CompletionResult struct {
-	ConversationID string
-	Messages       []*runtimev1.Message
+// ToolService interface for managing and executing tools - will be implemented by server layer
+type ToolService interface {
+	ListTools(ctx context.Context) ([]Tool, error)
+	ExecuteTool(ctx context.Context, toolName string, toolArgs map[string]any) (any, error)
 }
 
 // Tool represents a tool that can be called by the AI
@@ -43,24 +39,32 @@ type Tool struct {
 	InputSchema string // TODO: Use a better type
 }
 
-// ToolService interface for managing and executing tools - will be implemented by server layer
-type ToolService interface {
-	ListTools(ctx context.Context) ([]Tool, error)
-	ExecuteTool(ctx context.Context, toolName string, toolArgs map[string]any) (any, error)
+// CompleteWithToolsOptions represents the input for AI completion
+type CompleteWithToolsOptions struct {
+	OwnerID        string
+	InstanceID     string
+	ConversationID string // Empty string means create new conversation
+	Messages       []*runtimev1.Message
+	ToolService    ToolService
+}
+
+// CompleteWithToolsResult represents the output of AI completion
+type CompleteWithToolsResult struct {
+	ConversationID string
+	Messages       []*runtimev1.Message
 }
 
 // CompleteWithTools runs a conversational AI completion with tool calling support using the provided tool service
-func (r *Runtime) CompleteWithTools(ctx context.Context, ownerID string, req *CompletionRequest, toolService ToolService) (*CompletionResult, error) {
+func (r *Runtime) CompleteWithTools(ctx context.Context, opts *CompleteWithToolsOptions) (*CompleteWithToolsResult, error) {
 	// Get instance-specific logger
-	logger, err := r.InstanceLogger(ctx, req.InstanceID)
+	logger, err := r.InstanceLogger(ctx, opts.InstanceID)
 	if err != nil {
-		r.Logger.Error("failed to get instance logger", zap.Error(err), zap.String("instance_id", req.InstanceID), observability.ZapCtx(ctx))
-		logger = r.Logger.With(zap.String("instance_id", req.InstanceID))
+		return nil, err
 	}
 
 	logger.Info("starting AI completion",
-		zap.String("conversation_id", req.ConversationID),
-		zap.Int("message_count", len(req.Messages)),
+		zap.String("conversation_id", opts.ConversationID),
+		zap.Int("message_count", len(opts.Messages)),
 		observability.ZapCtx(ctx))
 
 	start := time.Now()
@@ -71,56 +75,36 @@ func (r *Runtime) CompleteWithTools(ctx context.Context, ownerID string, req *Co
 	}()
 
 	// 1. Determine conversation ID (create if needed)
-	conversationID, err := r.ensureConversation(ctx, req.InstanceID, ownerID, req.ConversationID, req.Messages)
+	conversationID, err := r.ensureConversation(ctx, opts.InstanceID, opts.OwnerID, opts.ConversationID, opts.Messages)
 	if err != nil {
-		logger.Error("failed to ensure conversation", zap.Error(err), observability.ZapCtx(ctx))
 		return nil, err
 	}
 
 	// 2. Save user messages to database first
-	addedMessageIDs, err := r.saveUserMessages(ctx, req.InstanceID, conversationID, req.Messages)
+	addedMessageIDs, err := r.saveUserMessages(ctx, opts.InstanceID, conversationID, opts.Messages)
 	if err != nil {
 		return nil, err
 	}
 
 	// 3. Load complete conversation context from database (single DB call)
-	allMessages, err := r.loadConversationContext(ctx, req.InstanceID, conversationID)
+	allMessages, err := r.loadConversationContext(ctx, opts.InstanceID, conversationID)
 	if err != nil {
 		return nil, err
 	}
 
 	// 4. Execute AI completion with database-backed context
-	logger.Debug("executing AI completion", zap.Int("context_messages", len(allMessages)), observability.ZapCtx(ctx))
-	contentBlocks, err := r.executeAICompletion(ctx, req.InstanceID, allMessages, toolService)
+	contentBlocks, err := r.executeAICompletion(ctx, opts.InstanceID, allMessages, opts.ToolService)
 	if err != nil {
-		logger.Error("AI completion failed", zap.Error(err), observability.ZapCtx(ctx))
 		return nil, err
 	}
 
 	// 5. Save assistant message and build response
-	return r.buildCompletionResult(ctx, req.InstanceID, conversationID, contentBlocks, addedMessageIDs)
-}
-
-// noOpToolService provides a no-op implementation for conversations without tool calling
-type noOpToolService struct{}
-
-func (n *noOpToolService) ListTools(ctx context.Context) ([]Tool, error) {
-	return []Tool{}, nil
-}
-
-func (n *noOpToolService) ExecuteTool(ctx context.Context, toolName string, toolArgs map[string]any) (any, error) {
-	return nil, fmt.Errorf("tool execution not implemented in runtime layer")
-}
-
-// Complete runs a conversational AI completion without tool calling support
-func (r *Runtime) Complete(ctx context.Context, ownerID string, req *CompletionRequest) (*CompletionResult, error) {
-	// Use the no-op tool service for conversations that don't need tools
-	return r.CompleteWithTools(ctx, ownerID, req, &noOpToolService{})
+	return r.buildCompletionResult(ctx, opts.InstanceID, conversationID, contentBlocks, addedMessageIDs)
 }
 
 // ===== BUSINESS LOGIC HELPERS =====
 
-// ensureConversation determines the conversation ID - creates new if empty, returns existing if provided
+// ensureConversation determines the conversation ID - creates new if empty, validates existing if provided
 func (r *Runtime) ensureConversation(ctx context.Context, instanceID, ownerID, conversationID string, newMessages []*runtimev1.Message) (string, error) {
 	if conversationID == "" {
 		// Create new conversation using the first user message as title
@@ -132,7 +116,23 @@ func (r *Runtime) ensureConversation(ctx context.Context, instanceID, ownerID, c
 		return conv.Id, nil
 	}
 
-	// For existing conversations, just return the ID - validation happens in loadConversationContext
+	// For existing conversations, validate that it exists and belongs to the user
+	catalog, release, err := r.Catalog(ctx, instanceID)
+	if err != nil {
+		return "", err
+	}
+	defer release()
+
+	conversation, err := catalog.FindConversation(ctx, conversationID)
+	if err != nil {
+		return "", err
+	}
+
+	// Verify ownership
+	if conversation.OwnerID != ownerID {
+		return "", fmt.Errorf("conversation not found or access denied")
+	}
+
 	return conversationID, nil
 }
 
@@ -150,24 +150,24 @@ func (r *Runtime) saveUserMessages(ctx context.Context, instanceID, conversation
 }
 
 // loadConversationContext loads the complete conversation context from database for AI processing
-func (r *Runtime) loadConversationContext(ctx context.Context, instanceID, conversationID string) ([]*drivers.CompletionMessage, error) {
+func (r *Runtime) loadConversationContext(ctx context.Context, instanceID, conversationID string) ([]*runtimev1.Message, error) {
 	catalog, release, err := r.Catalog(ctx, instanceID)
 	if err != nil {
 		return nil, err
 	}
 	defer release()
 
-	conversation, err := catalog.FindConversation(ctx, conversationID)
+	catalogMessages, err := catalog.FindMessages(ctx, conversationID)
 	if err != nil {
 		return nil, err
 	}
 
-	// Convert all conversation messages (including just-saved ones) to completion messages
-	allMessages := make([]*drivers.CompletionMessage, len(conversation.Messages))
-	for i, msg := range conversation.Messages {
-		allMessages[i] = &drivers.CompletionMessage{
-			Role:    msg.Role,
-			Content: msg.Content,
+	// Convert catalog messages to runtime protobuf messages
+	allMessages := make([]*runtimev1.Message, len(catalogMessages))
+	for i, msg := range catalogMessages {
+		allMessages[i], err = MessageToPB(msg)
+		if err != nil {
+			return nil, err
 		}
 	}
 
@@ -175,12 +175,11 @@ func (r *Runtime) loadConversationContext(ctx context.Context, instanceID, conve
 }
 
 // executeAICompletion runs the AI completion loop with tool calling support
-func (r *Runtime) executeAICompletion(ctx context.Context, instanceID string, allMessages []*drivers.CompletionMessage, toolService ToolService) ([]*runtimev1.ContentBlock, error) {
+func (r *Runtime) executeAICompletion(ctx context.Context, instanceID string, allMessages []*runtimev1.Message, toolService ToolService) ([]*runtimev1.ContentBlock, error) {
 	// Get instance-specific logger
 	logger, err := r.InstanceLogger(ctx, instanceID)
 	if err != nil {
-		r.Logger.Error("failed to get instance logger in executeAICompletion", zap.Error(err), zap.String("instance_id", instanceID), observability.ZapCtx(ctx))
-		logger = r.Logger.With(zap.String("instance_id", instanceID))
+		return nil, err
 	}
 
 	// Connect to the AI service configured for the instance
@@ -197,7 +196,6 @@ func (r *Runtime) executeAICompletion(ctx context.Context, instanceID string, al
 	// Get available tools and convert to drivers.Tool format (once per conversation)
 	tools, err := toolService.ListTools(ctx)
 	if err != nil {
-		logger.Error("failed to list tools", zap.Error(err), observability.ZapCtx(ctx))
 		return nil, err
 	}
 
@@ -230,10 +228,15 @@ func (r *Runtime) executeAICompletion(ctx context.Context, instanceID string, al
 				observability.ZapCtx(ctx))
 		}
 
+		// Convert runtime messages to drivers.CompletionMessage for AI service call
+		completionMessages := make([]*drivers.CompletionMessage, len(messages))
+		for i, msg := range messages {
+			completionMessages[i] = MessageToCompletionMessage(msg)
+		}
+
 		// Call the AI service - returns structured ContentBlocks
-		res, err := ai.Complete(ctx, messages, driverTools)
+		res, err := ai.Complete(ctx, completionMessages, driverTools)
 		if err != nil {
-			logger.Error("AI completion call failed", zap.Error(err), zap.Int("iteration", iteration), observability.ZapCtx(ctx))
 			return nil, err
 		}
 
@@ -262,8 +265,9 @@ func (r *Runtime) executeAICompletion(ctx context.Context, instanceID string, al
 
 		logger.Info("executing tool calls", zap.Int("tool_call_count", len(toolCalls)), zap.Int("iteration", iteration), observability.ZapCtx(ctx))
 
-		// Add the assistant's response with tool calls to the AI conversation context
-		allMessages = append(allMessages, res)
+		// Add the assistant's response with tool calls to the conversation context
+		assistantMessage := CompletionMessageToMessage(res)
+		allMessages = append(allMessages, assistantMessage)
 
 		// Execute each tool call and add results as content blocks
 		for _, toolCall := range toolCalls {
@@ -277,7 +281,14 @@ func (r *Runtime) executeAICompletion(ctx context.Context, instanceID string, al
 
 			var toolResult *runtimev1.ToolResult
 			if err != nil {
-				logger.Error("tool execution failed", zap.Error(err), zap.String("tool_name", toolCall.Name), zap.String("tool_id", toolCall.Id), observability.ZapCtx(ctx))
+				// If context error, return the error
+				if errors.Is(err, ctx.Err()) {
+					logger.Debug("tool execution cancelled due to context error", zap.Error(err), zap.String("tool_name", toolCall.Name), zap.String("tool_id", toolCall.Id), observability.ZapCtx(ctx))
+					return nil, err
+				}
+
+				// If not a context error, populate the tool result with the error message
+				logger.Debug("tool execution failed", zap.Error(err), zap.String("tool_name", toolCall.Name), zap.String("tool_id", toolCall.Id), observability.ZapCtx(ctx))
 				toolResult = &runtimev1.ToolResult{
 					Id:      toolCall.Id,
 					Content: fmt.Sprintf("Error executing tool %s: %v", toolCall.Name, err),
@@ -312,7 +323,7 @@ func (r *Runtime) executeAICompletion(ctx context.Context, instanceID string, al
 			})
 		}
 
-		// Add tool results to AI conversation context
+		// Add tool results to conversation context
 		var toolResultBlocks []*runtimev1.ContentBlock
 		for _, toolCall := range toolCalls {
 			// Find the corresponding result
@@ -325,10 +336,11 @@ func (r *Runtime) executeAICompletion(ctx context.Context, instanceID string, al
 		}
 
 		// Add tool results as a user message to continue the conversation
-		allMessages = append(allMessages, &drivers.CompletionMessage{
+		userMessage := &runtimev1.Message{
 			Role:    "user",
 			Content: toolResultBlocks,
-		})
+		}
+		allMessages = append(allMessages, userMessage)
 
 		// Continue the loop to get the next response
 	}
@@ -339,7 +351,7 @@ func (r *Runtime) executeAICompletion(ctx context.Context, instanceID string, al
 		observability.ZapCtx(ctx))
 
 	// Instead of erroring, inform the AI and get a final response
-	limitMessage := &drivers.CompletionMessage{
+	limitMessage := &runtimev1.Message{
 		Role: "user",
 		Content: []*runtimev1.ContentBlock{
 			{
@@ -354,10 +366,15 @@ func (r *Runtime) executeAICompletion(ctx context.Context, instanceID string, al
 	// Truncate conversation if needed before final call
 	messages := maybeTruncateConversation(allMessages)
 
+	// Convert runtime messages to drivers.CompletionMessage for final AI service call
+	completionMessages := make([]*drivers.CompletionMessage, len(messages))
+	for i, msg := range messages {
+		completionMessages[i] = MessageToCompletionMessage(msg)
+	}
+
 	// Get final response from AI without tools
-	res, err := ai.Complete(ctx, messages, []drivers.Tool{}) // No tools provided
+	res, err := ai.Complete(ctx, completionMessages, []drivers.Tool{}) // No tools provided
 	if err != nil {
-		logger.Error("final AI completion call failed after tool limit", zap.Error(err), observability.ZapCtx(ctx))
 		return nil, err
 	}
 
@@ -370,7 +387,7 @@ func (r *Runtime) executeAICompletion(ctx context.Context, instanceID string, al
 }
 
 // buildCompletionResult saves the assistant message and builds the final result
-func (r *Runtime) buildCompletionResult(ctx context.Context, instanceID, conversationID string, contentBlocks []*runtimev1.ContentBlock, addedMessageIDs []string) (*CompletionResult, error) {
+func (r *Runtime) buildCompletionResult(ctx context.Context, instanceID, conversationID string, contentBlocks []*runtimev1.ContentBlock, addedMessageIDs []string) (*CompleteWithToolsResult, error) {
 	// Save the complete assistant message with all content blocks
 	messageID, err := r.addMessage(ctx, instanceID, conversationID, "assistant", contentBlocks)
 	if err != nil {
@@ -378,22 +395,32 @@ func (r *Runtime) buildCompletionResult(ctx context.Context, instanceID, convers
 	}
 	addedMessageIDs = append(addedMessageIDs, messageID)
 
-	// Get the conversation to retrieve all saved messages with timestamps
+	// Get the messages to retrieve all saved messages with timestamps
 	catalog, release, err := r.Catalog(ctx, instanceID)
 	if err != nil {
 		return nil, err
 	}
 	defer release()
 
-	conversation, err := catalog.FindConversation(ctx, conversationID)
+	catalogMessages, err := catalog.FindMessages(ctx, conversationID)
 	if err != nil {
 		return nil, err
+	}
+
+	// Convert catalog messages to protobuf messages
+	messages := make([]*runtimev1.Message, len(catalogMessages))
+	for i, msg := range catalogMessages {
+		pbMessage, err := MessageToPB(msg)
+		if err != nil {
+			return nil, fmt.Errorf("failed to convert catalog message to protobuf: %w", err)
+		}
+		messages[i] = pbMessage
 	}
 
 	// Collect all messages that were added during this Complete call
 	var addedMessages []*runtimev1.Message
 	for _, messageID := range addedMessageIDs {
-		for _, msg := range conversation.Messages {
+		for _, msg := range messages {
 			if msg.Id == messageID {
 				addedMessages = append(addedMessages, msg)
 				break
@@ -402,7 +429,7 @@ func (r *Runtime) buildCompletionResult(ctx context.Context, instanceID, convers
 	}
 
 	// Return final result with all messages added during this Complete call
-	return &CompletionResult{
+	return &CompleteWithToolsResult{
 		ConversationID: conversationID,
 		Messages:       addedMessages,
 	}, nil
@@ -459,7 +486,12 @@ func (r *Runtime) createConversation(ctx context.Context, instanceID, ownerID, t
 	}
 
 	// Return the created conversation
-	return catalog.FindConversation(ctx, conversationID)
+	catalogConversation, err := catalog.FindConversation(ctx, conversationID)
+	if err != nil {
+		return nil, err
+	}
+
+	return ConversationToPB(catalogConversation), nil
 }
 
 // addMessage adds a message to a conversation
@@ -470,12 +502,18 @@ func (r *Runtime) addMessage(ctx context.Context, instanceID, conversationID, ro
 	}
 	defer release()
 
-	return catalog.InsertMessage(ctx, conversationID, role, content, nil)
+	// Convert protobuf ContentBlocks to catalog MessageContent
+	catalogContent, err := MessageContentFromPBSlice(content)
+	if err != nil {
+		return "", err
+	}
+
+	return catalog.InsertMessage(ctx, conversationID, role, catalogContent, nil)
 }
 
 // maybeTruncateConversation keeps recent messages and a few early ones for context.
 // It's a simple placeholder strategy. In the future, we'll enhance this with AI summarization.
-func maybeTruncateConversation(messages []*drivers.CompletionMessage) []*drivers.CompletionMessage {
+func maybeTruncateConversation(messages []*runtimev1.Message) []*runtimev1.Message {
 	const (
 		maxMessages = 20 // Keep up to 20 messages total
 		keepFirst   = 3  // Always keep first 3 messages for context
@@ -486,14 +524,14 @@ func maybeTruncateConversation(messages []*drivers.CompletionMessage) []*drivers
 		return messages
 	}
 
-	var result []*drivers.CompletionMessage
+	var result []*runtimev1.Message
 
 	// Keep first messages
 	result = append(result, messages[:keepFirst]...)
 
 	// Add truncation indicator
 	skipped := len(messages) - keepFirst - keepLast
-	result = append(result, &drivers.CompletionMessage{
+	result = append(result, &runtimev1.Message{
 		Role: "system",
 		Content: []*runtimev1.ContentBlock{
 			{
@@ -509,4 +547,138 @@ func maybeTruncateConversation(messages []*drivers.CompletionMessage) []*drivers
 	result = append(result, messages[start:]...)
 
 	return result
+}
+
+// Helper conversion functions - these handle conversions between catalog and protobuf types
+// Exported functions are used by the server layer, internal ones are used only by completion logic
+
+// ConversationToPB converts a drivers.Conversation to a runtimev1.Conversation.
+func ConversationToPB(conv *drivers.Conversation) *runtimev1.Conversation {
+	return &runtimev1.Conversation{
+		Id:        conv.ID,
+		OwnerId:   conv.OwnerID,
+		Title:     conv.Title,
+		CreatedOn: timestamppb.New(conv.CreatedOn),
+		UpdatedOn: timestamppb.New(conv.UpdatedOn),
+	}
+}
+
+// MessageToPB converts a drivers.Message to a runtimev1.Message.
+func MessageToPB(msg *drivers.Message) (*runtimev1.Message, error) {
+	content, err := msg.GetContent()
+	if err != nil {
+		return nil, err
+	}
+
+	contentBlocks := make([]*runtimev1.ContentBlock, len(content))
+	for i, c := range content {
+		block, err := MessageContentToPB(c)
+		if err != nil {
+			return nil, fmt.Errorf("failed to convert message content to protobuf: %w", err)
+		}
+		contentBlocks[i] = block
+	}
+
+	return &runtimev1.Message{
+		Id:        msg.ID,
+		Role:      msg.Role,
+		Content:   contentBlocks,
+		CreatedOn: timestamppb.New(msg.CreatedOn),
+		UpdatedOn: timestamppb.New(msg.UpdatedOn),
+	}, nil
+}
+
+// MessageContentToPB converts drivers.MessageContent to runtimev1.ContentBlock.
+func MessageContentToPB(mc drivers.MessageContent) (*runtimev1.ContentBlock, error) {
+	switch mc.Type {
+	case "text":
+		return &runtimev1.ContentBlock{
+			BlockType: &runtimev1.ContentBlock_Text{
+				Text: mc.Text,
+			},
+		}, nil
+	case "tool_call":
+		// Convert map to protobuf Struct
+		input, err := structpb.NewStruct(mc.ToolCallInput)
+		if err != nil {
+			return nil, fmt.Errorf("failed to convert tool call input to struct: %w", err)
+		}
+		return &runtimev1.ContentBlock{
+			BlockType: &runtimev1.ContentBlock_ToolCall{
+				ToolCall: &runtimev1.ToolCall{
+					Id:    mc.ToolCallID,
+					Name:  mc.ToolCallName,
+					Input: input,
+				},
+			},
+		}, nil
+	case "tool_result":
+		return &runtimev1.ContentBlock{
+			BlockType: &runtimev1.ContentBlock_ToolResult{
+				ToolResult: &runtimev1.ToolResult{
+					Id:      mc.ToolResultID,
+					Content: mc.ToolResultContent,
+					IsError: mc.ToolResultIsError,
+				},
+			},
+		}, nil
+	default:
+		return nil, fmt.Errorf("unknown message content type: %s", mc.Type)
+	}
+}
+
+// MessageContentFromPB converts runtimev1.ContentBlock to drivers.MessageContent.
+func MessageContentFromPB(block *runtimev1.ContentBlock) (drivers.MessageContent, error) {
+	if text := block.GetText(); text != "" {
+		return drivers.MessageContent{
+			Type: "text",
+			Text: text,
+		}, nil
+	} else if toolCall := block.GetToolCall(); toolCall != nil {
+		return drivers.MessageContent{
+			Type:          "tool_call",
+			ToolCallID:    toolCall.Id,
+			ToolCallName:  toolCall.Name,
+			ToolCallInput: toolCall.Input.AsMap(),
+		}, nil
+	} else if toolResult := block.GetToolResult(); toolResult != nil {
+		return drivers.MessageContent{
+			Type:              "tool_result",
+			ToolResultID:      toolResult.Id,
+			ToolResultContent: toolResult.Content,
+			ToolResultIsError: toolResult.IsError,
+		}, nil
+	}
+
+	// Fallback
+	return drivers.MessageContent{}, fmt.Errorf("unknown message content type: %s", block.BlockType)
+}
+
+// MessageContentFromPBSlice converts a slice of runtimev1.ContentBlock to a slice of drivers.MessageContent.
+func MessageContentFromPBSlice(blocks []*runtimev1.ContentBlock) ([]drivers.MessageContent, error) {
+	content := make([]drivers.MessageContent, len(blocks))
+	var err error
+	for i, block := range blocks {
+		content[i], err = MessageContentFromPB(block)
+		if err != nil {
+			return nil, fmt.Errorf("failed to convert message content to protobuf: %w", err)
+		}
+	}
+	return content, nil
+}
+
+// MessageToCompletionMessage converts a runtimev1.Message to a drivers.CompletionMessage
+func MessageToCompletionMessage(msg *runtimev1.Message) *drivers.CompletionMessage {
+	return &drivers.CompletionMessage{
+		Role:    msg.Role,
+		Content: msg.Content, // Both use []*runtimev1.ContentBlock
+	}
+}
+
+// CompletionMessageToMessage converts a drivers.CompletionMessage to a runtimev1.Message
+func CompletionMessageToMessage(completionMessage *drivers.CompletionMessage) *runtimev1.Message {
+	return &runtimev1.Message{
+		Role:    completionMessage.Role,
+		Content: completionMessage.Content, // Both use []*runtimev1.ContentBlock
+	}
 }

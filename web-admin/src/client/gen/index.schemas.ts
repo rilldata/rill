@@ -235,6 +235,7 @@ export interface V1CompleteResponse {
 
 export interface V1CompletionMessage {
   role?: string;
+  data?: string;
   content?: V1ContentBlock[];
 }
 

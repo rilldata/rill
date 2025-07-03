@@ -26,7 +26,8 @@ message CompleteResponse {
 
 message CompletionMessage {
   string role = 1;
-  repeated ContentBlock content = 2;
+  string data = 2; // Deprecated in favor of content
+  repeated ContentBlock content = 3;
 }
 
 // Content block within a message

@@ -24,9 +24,15 @@ func (s *Server) ListConversations(ctx context.Context, req *runtimev1.ListConve
 	}
 	defer release()
 
-	conversations, err := catalog.FindConversations(ctx, ownerID)
+	catalogConversations, err := catalog.FindConversations(ctx, ownerID)
 	if err != nil {
 		return nil, err
+	}
+
+	// Convert catalog conversations to protobuf conversations
+	conversations := make([]*runtimev1.Conversation, len(catalogConversations))
+	for i, conv := range catalogConversations {
+		conversations[i] = runtime.ConversationToPB(conv)
 	}
 
 	return &runtimev1.ListConversationsResponse{
@@ -46,15 +52,34 @@ func (s *Server) GetConversation(ctx context.Context, req *runtimev1.GetConversa
 	}
 	defer release()
 
-	conversation, err := catalog.FindConversation(ctx, req.ConversationId)
+	catalogConversation, err := catalog.FindConversation(ctx, req.ConversationId)
 	if err != nil {
 		return nil, err
 	}
 
 	// For now, we only allow users to access their own conversations.
-	if conversation.OwnerId != auth.GetClaims(ctx).Subject() {
+	if catalogConversation.OwnerID != auth.GetClaims(ctx).Subject() {
 		return nil, status.Error(codes.NotFound, "conversation not found")
 	}
+
+	// Convert catalog conversation to protobuf and fetch messages
+	conversation := runtime.ConversationToPB(catalogConversation)
+
+	// Fetch messages separately and convert them
+	catalogMessages, err := catalog.FindMessages(ctx, req.ConversationId)
+	if err != nil {
+		return nil, err
+	}
+
+	messages := make([]*runtimev1.Message, len(catalogMessages))
+	for i, msg := range catalogMessages {
+		pbMessage, err := runtime.MessageToPB(msg)
+		if err != nil {
+			return nil, err
+		}
+		messages[i] = pbMessage
+	}
+	conversation.Messages = messages
 
 	return &runtimev1.GetConversationResponse{
 		Conversation: conversation,
@@ -84,8 +109,8 @@ func (s *Server) Complete(ctx context.Context, req *runtimev1.CompleteRequest) (
 	}
 
 	// Add basic validation - fail fast for invalid requests
-	if req.Messages == nil {
-		return nil, status.Error(codes.InvalidArgument, "messages cannot be nil")
+	if len(req.Messages) == 0 {
+		return nil, status.Error(codes.InvalidArgument, "messages cannot be empty")
 	}
 
 	ownerID := auth.GetClaims(ctx).Subject()
@@ -100,11 +125,13 @@ func (s *Server) Complete(ctx context.Context, req *runtimev1.CompleteRequest) (
 	toolService := &serverToolService{server: s, instanceID: req.InstanceId}
 
 	// Delegate to runtime business logic
-	result, err := s.runtime.CompleteWithTools(ctx, ownerID, &runtime.CompletionRequest{
+	result, err := s.runtime.CompleteWithTools(ctx, &runtime.CompleteWithToolsOptions{
+		OwnerID:        ownerID,
 		InstanceID:     req.InstanceId,
 		ConversationID: conversationID,
 		Messages:       req.Messages,
-	}, toolService)
+		ToolService:    toolService,
+	})
 	if err != nil {
 		return nil, err
 	}

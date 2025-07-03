@@ -4298,8 +4298,10 @@ definitions:
         type: string
       createdOn:
         type: string
+        format: date-time
       updatedOn:
         type: string
+        format: date-time
       messages:
         type: array
         items:
@@ -5015,8 +5017,10 @@ definitions:
           $ref: '#/definitions/v1ContentBlock'
       createdOn:
         type: string
+        format: date-time
       updatedOn:
         type: string
+        format: date-time
     title: Message exchanged in a conversation
   v1MetricsView:
     type: object

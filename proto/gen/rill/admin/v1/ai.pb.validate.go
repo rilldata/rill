@@ -356,6 +356,8 @@ func (m *CompletionMessage) validate(all bool) error {
 
 	// no validation rules for Role
 
+	// no validation rules for Data
+
 	for idx, item := range m.GetContent() {
 		_, _ = idx, item
 

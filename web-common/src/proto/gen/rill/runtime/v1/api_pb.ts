@@ -4138,14 +4138,14 @@ export class Message extends Message$1<Message> {
   content: ContentBlock[] = [];
 
   /**
-   * @generated from field: string created_on = 4;
+   * @generated from field: google.protobuf.Timestamp created_on = 4;
    */
-  createdOn = "";
+  createdOn?: Timestamp;
 
   /**
-   * @generated from field: string updated_on = 5;
+   * @generated from field: google.protobuf.Timestamp updated_on = 5;
    */
-  updatedOn = "";
+  updatedOn?: Timestamp;
 
   constructor(data?: PartialMessage<Message>) {
     super();
@@ -4158,8 +4158,8 @@ export class Message extends Message$1<Message> {
     { no: 1, name: "id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "role", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "content", kind: "message", T: ContentBlock, repeated: true },
-    { no: 4, name: "created_on", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 5, name: "updated_on", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "created_on", kind: "message", T: Timestamp },
+    { no: 5, name: "updated_on", kind: "message", T: Timestamp },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Message {
@@ -4362,14 +4362,14 @@ export class Conversation extends Message$1<Conversation> {
   title = "";
 
   /**
-   * @generated from field: string created_on = 4;
+   * @generated from field: google.protobuf.Timestamp created_on = 4;
    */
-  createdOn = "";
+  createdOn?: Timestamp;
 
   /**
-   * @generated from field: string updated_on = 5;
+   * @generated from field: google.protobuf.Timestamp updated_on = 5;
    */
-  updatedOn = "";
+  updatedOn?: Timestamp;
 
   /**
    * @generated from field: repeated rill.runtime.v1.Message messages = 6;
@@ -4387,8 +4387,8 @@ export class Conversation extends Message$1<Conversation> {
     { no: 1, name: "id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "owner_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "title", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 4, name: "created_on", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 5, name: "updated_on", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "created_on", kind: "message", T: Timestamp },
+    { no: 5, name: "updated_on", kind: "message", T: Timestamp },
     { no: 6, name: "messages", kind: "message", T: Message, repeated: true },
   ]);
 

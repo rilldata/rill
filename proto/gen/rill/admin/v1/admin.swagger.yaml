@@ -4489,6 +4489,9 @@ definitions:
     properties:
       role:
         type: string
+      data:
+        type: string
+        title: Deprecated in favor of content
       content:
         type: array
         items:

@@ -112,7 +112,7 @@ func (s *Server) generateRendererWithAI(ctx context.Context, instanceID, userPro
 	defer cancel()
 
 	// Call AI service to infer a metrics view YAML
-	res, err := ai.Complete(ctx, msgs, []drivers.Tool{})
+	res, err := ai.Complete(ctx, msgs, nil)
 	if err != nil {
 		return "", nil, err
 	}
