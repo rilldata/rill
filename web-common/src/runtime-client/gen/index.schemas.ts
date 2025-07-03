@@ -219,7 +219,7 @@ export interface V1APISpec {
   openapiParametersJson?: string;
   openapiRequestSchemaJson?: string;
   openapiResponseSchemaJson?: string;
-  openapiDefsPrefixng;
+  openapiDefsPrefix?: string;
   securityRules?: V1SecurityRule[];
   skipNestedSecurity?: boolean;
 }
