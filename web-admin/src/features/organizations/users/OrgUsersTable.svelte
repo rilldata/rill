@@ -5,6 +5,8 @@
     V1ListOrganizationMemberUsersResponse,
     V1OrganizationMemberUser,
     V1OrganizationInvite,
+    V1Project,
+    V1Usergroup,
   } from "@rilldata/web-admin/client";
   import OrgUsersTableUserCompositeCell from "./OrgUsersTableUserCompositeCell.svelte";
   import OrgUsersTableActionsCell from "./OrgUsersTableActionsCell.svelte";
@@ -16,9 +18,16 @@
   } from "@tanstack/svelte-query";
   import { ExternalLinkIcon } from "lucide-svelte";
   import InfiniteScrollTable from "@rilldata/web-common/components/table/InfiniteScrollTable.svelte";
+  import { onMount } from "svelte";
+  import {
+    adminServiceListProjectsForOrganizationAndUser,
+    adminServiceListUsergroupsForOrganizationAndUser,
+  } from "@rilldata/web-admin/client/gen/admin-service/admin-service";
 
   interface OrgUser extends V1OrganizationMemberUser, V1OrganizationInvite {
     invitedBy?: string;
+    projects?: V1Project[];
+    groups?: V1Usergroup[];
   }
 
   export let data: OrgUser[];
@@ -34,11 +43,52 @@
   export let currentUserRole: string;
   export let billingContact: string | undefined;
   export let scrollToTopTrigger: any = null;
+  export let organization: string;
 
   export let onAttemptRemoveBillingContactUser: () => void;
   export let onAttemptChangeBillingContactUserRole: () => void;
 
   $: safeData = Array.isArray(data) ? data : [];
+
+  // Loading state for fetching projects and groups
+  let loadingExtraData = true;
+  let enrichedData: OrgUser[] = [];
+
+  async function fetchProjectsAndGroupsForUsers(users: OrgUser[], org: string) {
+    // If no users, nothing to do
+    if (!users.length) return [];
+    // Use userId if available, else userEmail
+    const results = await Promise.all(
+      users.map(async (user) => {
+        let projects: V1Project[] = [];
+        let groups: V1Usergroup[] = [];
+        try {
+          const [projectsRes, groupsRes] = await Promise.all([
+            adminServiceListProjectsForOrganizationAndUser(org, {
+              userId: user.userId,
+            }),
+            adminServiceListUsergroupsForOrganizationAndUser(org, {
+              userId: user.userId,
+            }),
+          ]);
+          console.log("projectsRes", projectsRes);
+          console.log("groupsRes", groupsRes);
+          projects = projectsRes.projects || [];
+          groups = groupsRes.usergroups || [];
+        } catch (e) {
+          // Optionally handle error
+        }
+        return { ...user, projects, groups };
+      }),
+    );
+    return results;
+  }
+
+  onMount(async () => {
+    loadingExtraData = true;
+    enrichedData = await fetchProjectsAndGroupsForUsers(safeData, organization);
+    loadingExtraData = false;
+  });
 
   $: columns = <ColumnDef<OrgUser, any>[]>[
     {
@@ -55,7 +105,7 @@
           role: row.original.roleName,
         }),
       meta: {
-        widthPercent: 50,
+        widthPercent: 35,
       },
     },
     {
@@ -71,8 +121,30 @@
           onAttemptChangeBillingContactUserRole,
         }),
       meta: {
-        widthPercent: 40,
+        widthPercent: 20,
         marginLeft: "8px",
+      },
+    },
+    {
+      accessorKey: "groups",
+      header: "Groups",
+      cell: ({ row }) =>
+        row.original.groups && row.original.groups.length
+          ? `${row.original.groups.length} group${row.original.groups.length > 1 ? "s" : ""}`
+          : "None",
+      meta: {
+        widthPercent: 15,
+      },
+    },
+    {
+      accessorKey: "projects",
+      header: "Projects",
+      cell: ({ row }) =>
+        row.original.projects && row.original.projects.length
+          ? `${row.original.projects.length} project${row.original.projects.length > 1 ? "s" : ""}`
+          : "None",
+      meta: {
+        widthPercent: 15,
       },
     },
     {
@@ -114,15 +186,21 @@
   };
 </script>
 
-<InfiniteScrollTable
-  data={safeData}
-  {columns}
-  hasNextPage={usersQuery.hasNextPage || invitesQuery.hasNextPage}
-  isFetchingNextPage={usersQuery.isFetchingNextPage ||
-    invitesQuery.isFetchingNextPage}
-  onLoadMore={handleLoadMore}
-  maxHeight={dynamicTableMaxHeight}
-  emptyStateMessage="No users found"
-  {headerIcons}
-  {scrollToTopTrigger}
-/>
+{#if loadingExtraData}
+  <div class="flex items-center justify-center py-8">
+    Loading user projects and groups...
+  </div>
+{:else}
+  <InfiniteScrollTable
+    data={enrichedData}
+    {columns}
+    hasNextPage={usersQuery.hasNextPage || invitesQuery.hasNextPage}
+    isFetchingNextPage={usersQuery.isFetchingNextPage ||
+      invitesQuery.isFetchingNextPage}
+    onLoadMore={handleLoadMore}
+    maxHeight={dynamicTableMaxHeight}
+    emptyStateMessage="No users found"
+    {headerIcons}
+    {scrollToTopTrigger}
+  />
+{/if}

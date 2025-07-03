@@ -184,6 +184,7 @@
           currentUserEmail={$currentUser.data?.user.email}
           {currentUserRole}
           billingContact={$billingContactUser?.email}
+          {organization}
           {scrollToTopTrigger}
           onAttemptRemoveBillingContactUser={() =>
             (isRemovingBillingContactDialogOpen = true)}
