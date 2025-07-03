@@ -54,6 +54,7 @@ const config = {
           postsPerPage: 1,
           blogSidebarTitle: 'Release Notes',
           blogSidebarCount: 'ALL',
+          onUntruncatedBlogPosts: 'ignore',
           feedOptions: {
             type: 'all',
             copyright: `Copyright © ${new Date().getFullYear()} Rill Data, Inc.`,
@@ -133,7 +134,7 @@ const config = {
           {
             type: "html",
             position: "right",
-            value: '<a href="https://www.rilldata.com/blog" class="navbar-icon-link" aria-label="Blog" target="_blank"><i class="fas fa-file-alt"></i></a>',
+            value: '<a href="https://www.rilldata.com/blog" class="navbar-icon-link" aria-label="Blog" target="_blank"><i class="fa-light fa-blog"></i></a>',
           },
           {
             type: "search",

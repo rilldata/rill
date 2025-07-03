@@ -17,14 +17,12 @@ rill start my-rill-project
 
 ## Guided Tutorial
 
-If you're looking for an in-depth tutorial that walks you through our available features, click [here] (../tutorials/index.md)! 
+If you're looking for an in-depth tutorial that walks you through our available features, click [here](/guides/tutorial/rill-basics/launch)! 
 
 Some Tutorials include:
 
-- [From Source to Deployment in 6 steps!] (../tutorials/rill_basics/launch) : Data Import, Transformation, Dashboard, to Deployment!
-- [How to Administrate Rill] (../tutorials/administration/) : Administrative tasks from the CLI and UI that an administrator would need to know to be a Rill Administrator
-- [Rill and ClickHouse] (../tutorials/rill_clickhouse/r_ch_launch) : For our friends coming from ClickHouse, get started in **5 steps**.
-- [Rill's Advanced Developer] (../tutorials/rill_developer_advanced_features/advanced_developer/advanced-sources) : Customize your Rill Experience with our advanced features! 
+- [From Source to Deployment in 6 steps!](/guides/tutorial/rill-basics/launch) : Data Import, Transformation, Dashboard, to Deployment!
+- [Rill and ClickHouse](/guides/tutorial/rill-clickhouse/) : For our friends coming from ClickHouse, get started in **5 steps**.
 
 The final project is available on our [example repository](https://github.com/rilldata/rill-examples/tree/main/my-rill-tutorial). 
 

@@ -27,7 +27,7 @@ By default, Rill uses DuckDB as the underlying OLAP engine (see <a href='https:/
 Please see our docs for the 
 <a href="https://docs.rilldata.com/build/connect/" target="_blank">supported list</a> of connectors.
 
-We support various different OLAP engines. If you have a different OLAP engine that you're interested in using, please let us know! Looking for ClickHouse tutorial? Click [Here!] (/tutorials/rill_clickhouse/)
+We support various different OLAP engines. If you have a different OLAP engine that you're interested in using, please let us know! Looking for ClickHouse tutorial? Click [Here!] (/tutorials/rill-clickhouse/)
 :::
 
 ### Add a Data Source

@@ -35,7 +35,7 @@ Rill Developer is a local application used to preview your project and make any 
 
 ### How do I do XXX in Rill Developer? 
 
-Please refer to [our tutorials](/tutorials) to get started using Rill. In the tutorials, we walk you through first project creation, modeling, creating a metrics view and explore dashboard and finally deploying to Rill Cloud. From there, we go through making local changes in Rill Developer and pushing your changes. In more advanced topics we discuss custom APIs, Embed Dashboards, and more! 
+Please refer to [our guided tutorial](/guides/tutorial/rill-basics/launch) to get started using Rill. In the tutorials, we walk you through first project creation, modeling, creating a metrics view and explore dashboard and finally deploying to Rill Cloud. From there, we go through making local changes in Rill Developer and pushing your changes. In more advanced topics we discuss custom APIs, Embed Dashboards, and more! 
 If you still have any questions, please [contact us!](/contact)
 
 
@@ -129,7 +129,7 @@ At Rill, we do not charge per seat! From subscription to a Rill Team Plan, you'l
 We charge you by the amount of data that you load into Rill when building your sources and models. Use the [pricing calculator](https://www.rilldata.com/pricing) on our pricing site for more insight into how much your data might cost! If you'd like a further detailed inspection of your objects, [contact us](../contact), and we'll set this up for you. 
 
 ### When am I billed? 
-You'll be billed on the first of each month via our partner at Stripe. You'll need to set up a valid credit card as explained in [our billing documentation](/manage/account-management/billing#managing-payment-information). If there are any issues with the card, you'll be notified in the UI and be given a few day grace period to update your information. If you start in the middle of the month, you'll be billed prorated for the number of days you have access to Rill Cloud.
+You'll be billed on the first of each month via our partner at Stripe. You'll need to set up a valid credit card as explained in [our billing documentation](/other/account-management/billing#managing-payment-information). If there are any issues with the card, you'll be notified in the UI and be given a few day grace period to update your information. If you start in the middle of the month, you'll be billed prorated for the number of days you have access to Rill Cloud.
 
 ### Why was I billed $XXX? 
 You can check your data usage in your organization setting usage page. The graph will display the data that you have over 10GB. Use the [pricing calculator](https://www.rilldata.com/pricing) to see your cost of your current data usage.  If you'd like a further detailed inspection of your objects, [contact us](../contact), and we'll set this up for you. 
