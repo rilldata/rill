@@ -298,6 +298,10 @@ func (q *MetricsViewAggregation) rewriteToMetricsViewQuery(export bool) (*metric
 				res.Compute = &metricsview.MeasureCompute{URI: &metricsview.MeasureComputeURI{
 					Dimension: c.Uri.Dimension,
 				}}
+			case *runtimev1.MetricsViewAggregationMeasure_ComparisonTime:
+				res.Compute = &metricsview.MeasureCompute{ComparisonTime: &metricsview.MeasureComputeComparisonTime{
+					Dimension: c.ComparisonTime.Dimension,
+				}}
 			}
 		}
 
