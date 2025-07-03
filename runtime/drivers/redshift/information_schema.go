@@ -56,7 +56,8 @@ func (c *Connection) ListTables(ctx context.Context, database, databaseSchema st
 	END AS view
 	FROM svv_all_tables
 	WHERE database_name = '%s'
-	AND schema_name = '%s';
+	AND schema_name = '%s' 
+	ORDER BY table_name;
 	`, database, databaseSchema)
 
 	awsConfig, err := c.awsConfig(ctx, c.config.AWSRegion)
@@ -88,6 +89,45 @@ func (c *Connection) ListTables(ctx context.Context, database, databaseSchema st
 	return res, nil
 }
 
-func (c *Connection) GetTable(ctx context.Context, database, schema, table string) (*drivers.TableMetadata, error) {
-	return nil, nil
+func (c *Connection) GetTable(ctx context.Context, database, databaseSchema, table string) (*drivers.TableMetadata, error) {
+	// Query to get column name and data type
+	q := fmt.Sprintf(`
+	SELECT column_name, data_type
+	FROM svv_all_columns
+	WHERE database_name = '%s'
+	AND schema_name = '%s'
+	AND table_name = '%s'
+	ORDER BY ordinal_position;
+	`, database, databaseSchema, table)
+
+	awsConfig, err := c.awsConfig(ctx, c.config.AWSRegion)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get AWS config: %w", err)
+	}
+
+	client := redshiftdata.NewFromConfig(awsConfig)
+
+	queryExecutionID, err := c.executeQuery(ctx, client, q, c.config.Database, c.config.Workgroup, c.config.ClusterIdentifier)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get table metadata: %w", err)
+	}
+
+	result, err := client.GetStatementResult(ctx, &redshiftdata.GetStatementResultInput{
+		Id: aws.String(queryExecutionID),
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to get query results: %w", err)
+	}
+
+	// Build schema map
+	schemaMap := make(map[string]string)
+	for _, record := range result.Records {
+		column := record[0].(*types.FieldMemberStringValue).Value
+		dataType := record[1].(*types.FieldMemberStringValue).Value
+		schemaMap[column] = dataType
+	}
+
+	return &drivers.TableMetadata{
+		Schema: schemaMap,
+	}, nil
 }
