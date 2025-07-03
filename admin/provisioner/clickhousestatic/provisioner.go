@@ -28,6 +28,9 @@ type Spec struct {
 	// Path to a file that we should load the DSN from.
 	// This is an alternative to specifying the DSN directly, which can be useful for secrets management.
 	DSNPath string `json:"dsn_path"`
+	// ENV variable that contains the clickhouse DSN.
+	// This is an alternative to specifying the DSN directly, which can be useful for injecting secrets
+	DSNEnv string `json:"dsn_env"`
 }
 
 // Provisioner provisions Clickhouse resources using a static, multi-tenant Clickhouse service.
@@ -53,6 +56,14 @@ func New(specJSON []byte, _ database.DB, logger *zap.Logger) (provisioner.Provis
 			return nil, fmt.Errorf("failed to read DSN file: %w", err)
 		}
 		spec.DSN = strings.TrimSpace(string(dsn))
+	}
+
+	if spec.DSNEnv != "" && spec.DSN == "" && spec.DSNPath == "" {
+		dsn := os.Getenv(spec.DSNEnv)
+		if dsn == "" {
+			return nil, fmt.Errorf("environment variable %s is not set or empty", spec.DSNEnv)
+		}
+		spec.DSN = dsn
 	}
 
 	opts, err := clickhouse.ParseDSN(spec.DSN)

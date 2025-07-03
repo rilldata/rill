@@ -212,6 +212,9 @@
       --color-theme-secondary-light-950,
       var(--color-secondary-light-950)
     );
+
+    --editor-selection: #b0daffb3;
+    --line-highlight: #ededed5b;
   }
 
   :root.dark {
@@ -327,6 +330,9 @@
       --color-theme-secondary-dark-950,
       var(--color-secondary-dark-950)
     );
+
+    --editor-selection: #304e75;
+    --line-highlight: #26262659;
   }
 
   h1,

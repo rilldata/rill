@@ -12,8 +12,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
-	// Load postgres driver
-	_ "github.com/jackc/pgx/v5/stdlib"
 	_ "github.com/rilldata/rill/runtime/drivers/duckdb"
 	_ "github.com/rilldata/rill/runtime/drivers/postgres"
 )

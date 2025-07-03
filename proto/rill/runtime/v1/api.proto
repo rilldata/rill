@@ -309,7 +309,6 @@ message Instance {
   map<string, string> project_variables = 8;
   map<string, bool> feature_flags = 22;
   map<string, string> annotations = 14;
-  bool watch_repo = 15;
   string ai_instructions = 23;
 }
  
@@ -365,7 +364,6 @@ message CreateInstanceRequest {
   repeated Connector connectors = 10;
   map<string, string> variables = 7;
   map<string, string> annotations = 9;
-  bool watch_repo = 11;
 }
 
 // Response message for RuntimeService.CreateInstance
@@ -393,7 +391,6 @@ message EditInstanceRequest {
   repeated Connector connectors = 9;
   map<string, string> variables = 15;
   map<string, string> annotations = 10;
-  optional bool watch_repo = 11;
 }
 
 // Response message for RuntimeService.EditInstance
@@ -601,6 +598,7 @@ message QueryResolverRequest {
 }
 
 message QueryResolverResponse {
+  google.protobuf.Struct meta = 3;
   StructType schema = 1;
   repeated google.protobuf.Struct data = 2;
 }

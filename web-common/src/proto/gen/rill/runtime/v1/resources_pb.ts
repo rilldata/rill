@@ -5,7 +5,7 @@
 
 import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialMessage, PlainMessage } from "@bufbuild/protobuf";
 import { Message, proto3, protoInt64, Struct, Timestamp, Value } from "@bufbuild/protobuf";
-import { StructType } from "./schema_pb.js";
+import { StructType, Type } from "./schema_pb.js";
 import { TimeGrain } from "./time_grain_pb.js";
 import { Expression } from "./expression_pb.js";
 import { ExportFormat } from "./export_format_pb.js";
@@ -1492,6 +1492,13 @@ export class MetricsViewSpec_Dimension extends Message<MetricsViewSpec_Dimension
    */
   lookupDefaultExpression = "";
 
+  /**
+   * The data type of the dimension. Only populated in ValidSpec.
+   *
+   * @generated from field: rill.runtime.v1.Type data_type = 12;
+   */
+  dataType?: Type;
+
   constructor(data?: PartialMessage<MetricsViewSpec_Dimension>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1511,6 +1518,7 @@ export class MetricsViewSpec_Dimension extends Message<MetricsViewSpec_Dimension
     { no: 9, name: "lookup_key_column", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 10, name: "lookup_value_column", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 11, name: "lookup_default_expression", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 12, name: "data_type", kind: "message", T: Type },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewSpec_Dimension {
@@ -1718,6 +1726,13 @@ export class MetricsViewSpec_Measure extends Message<MetricsViewSpec_Measure> {
    */
   treatNullsAs = "";
 
+  /**
+   * The data type of the measure. Only populated in ValidSpec.
+   *
+   * @generated from field: rill.runtime.v1.Type data_type = 15;
+   */
+  dataType?: Type;
+
   constructor(data?: PartialMessage<MetricsViewSpec_Measure>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1740,6 +1755,7 @@ export class MetricsViewSpec_Measure extends Message<MetricsViewSpec_Measure> {
     { no: 13, name: "format_d3_locale", kind: "message", T: Struct },
     { no: 6, name: "valid_percent_of_total", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 14, name: "treat_nulls_as", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 15, name: "data_type", kind: "message", T: Type },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewSpec_Measure {
@@ -4627,6 +4643,11 @@ export class APISpec extends Message<APISpec> {
   openapiResponseSchemaJson = "";
 
   /**
+   * @generated from field: string openapi_defs_prefix = 11;
+   */
+  openapiDefsPrefix
+
+  /**
    * @generated from field: repeated rill.runtime.v1.SecurityRule security_rules = 6;
    */
   securityRules: SecurityRule[] = [];
@@ -4650,6 +4671,7 @@ export class APISpec extends Message<APISpec> {
     { no: 8, name: "openapi_parameters_json", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 9, name: "openapi_request_schema_json", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 10, name: "openapi_response_schema_json", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 11, name: "openapi_defs_prefix", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "security_rules", kind: "message", T: SecurityRule, repeated: true },
     { no: 7, name: "skip_nested_security", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
