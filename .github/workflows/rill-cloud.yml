@@ -52,9 +52,6 @@ jobs:
         with:
           go-version: 1.24
 
-      - name: Setup tmate session
-        uses: mxschmitt/action-tmate@v3
-
       - name: Authenticate GCloud
         uses: google-github-actions/auth@v2
         with:
@@ -65,7 +62,6 @@ jobs:
 
       - name: Build & Publish Rill docker image
         run: |-
-          git branch -r | grep release-0
           if [ "$RELEASE" == "true" ] || [ "$GITHUB_REF_NAME" == "main" ]; then
             echo "DEPLOY_CLOUD=1" >> $GITHUB_ENV
           else
