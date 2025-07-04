@@ -172,7 +172,10 @@ export class Filters {
         this.temporaryFilterName,
       ],
       ([$dimensionNameMap, $dimensionFilterItems, tempFilter]) => {
-        const merged = [...$dimensionFilterItems];
+        const merged = $dimensionFilterItems.map((dfi) => ({
+          ...dfi,
+          metricsViewNames: [this.data.metricsViewName],
+        }));
         if (tempFilter && $dimensionNameMap.has(tempFilter)) {
           merged.push({
             mode: DimensionFilterMode.Select,
@@ -180,7 +183,7 @@ export class Filters {
             label: getDimensionDisplayName($dimensionNameMap.get(tempFilter)),
             selectedValues: [],
             isInclude: true,
-            // metricsViewNames, // TODO: for canvas
+            metricsViewNames: [this.data.metricsViewName],
           });
         }
         return merged.sort(filterItemsSortFunction);

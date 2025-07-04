@@ -8,7 +8,10 @@ import {
 import { MeasureFilterType } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-options";
 import { mergeDimensionAndMeasureFilters } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
 import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
-import { mapSelectedTimeRangeToV1TimeRange } from "@rilldata/web-common/features/dashboards/time-controls/time-range-mappers.ts";
+import {
+  mapSelectedComparisonTimeRangeToV1TimeRange,
+  mapSelectedTimeRangeToV1TimeRange,
+} from "@rilldata/web-common/features/dashboards/time-controls/time-range-mappers.ts";
 import type { FiltersState } from "@rilldata/web-common/features/scheduled-reports/filters/Filters.ts";
 import type { TimeControlState } from "@rilldata/web-common/features/scheduled-reports/filters/TimeControls.ts";
 import type {
@@ -45,13 +48,24 @@ export function getAlertQueryArgsFromFormValues(
   timeControlArgs: TimeControlState,
   exploreSpec: V1ExploreSpec,
 ): V1MetricsViewAggregationRequest {
+  const timeRange = mapSelectedTimeRangeToV1TimeRange(
+    timeControlArgs.selectedTimeRange,
+    timeControlArgs.selectedTimezone,
+    exploreSpec,
+  );
+  const comparisonTimeRange = mapSelectedComparisonTimeRangeToV1TimeRange(
+    timeControlArgs.selectedComparisonTimeRange,
+    timeControlArgs.showTimeComparison,
+    timeRange,
+  );
+
   return {
     metricsView: formValues.metricsViewName,
     measures: [
       {
         name: formValues.measure,
       },
-      ...(timeControlArgs.selectedComparisonTimeRange
+      ...(comparisonTimeRange
         ? [
             {
               name: formValues.measure + ComparisonDeltaAbsoluteSuffix,
@@ -92,26 +106,14 @@ export function getAlertQueryArgsFromFormValues(
           .filter((e) => !!e),
       },
     }),
-    timeRange: mapSelectedTimeRangeToV1TimeRange(
-      timeControlArgs.selectedTimeRange,
-      timeControlArgs.selectedTimezone,
-      exploreSpec,
-    ),
+    timeRange,
     sort: [
       {
         name: formValues.measure,
         desc: true,
       },
     ],
-    ...(timeControlArgs.showTimeComparison
-      ? {
-          comparisonTimeRange: mapSelectedTimeRangeToV1TimeRange(
-            timeControlArgs.selectedComparisonTimeRange,
-            timeControlArgs.selectedTimezone,
-            exploreSpec,
-          ),
-        }
-      : {}),
+    comparisonTimeRange,
   };
 }
 
@@ -197,6 +199,7 @@ export function checkIsTabValid(
   } else {
     throw new Error(`Unexpected tabIndex: ${tabIndex}`);
   }
+  console.log(tabIndex, hasRequiredFields, hasErrors, errors);
 
   return hasRequiredFields && !hasErrors;
 }
@@ -207,6 +210,6 @@ function someCriteriaHasErrors(
   if (!criteriaErrors) return false;
   return Object.values(criteriaErrors).every((criteriaError) => {
     if (!criteriaError) return false;
-    return Object.values(criteriaError).every((c: string[]) => !c?.length);
+    return Object.values(criteriaError).every((c: string[]) => !!c?.[0]);
   });
 }

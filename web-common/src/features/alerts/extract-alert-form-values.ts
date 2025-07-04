@@ -144,22 +144,6 @@ export function getExistingAlertInitialFiltersFormValues(
   const timeRange = (queryArgsJson.timeRange as V1TimeRange) ?? {
     isoDuration: TimeRangePreset.ALL_TIME,
   };
-  if (!timeRange.end && timeRangeSummary?.max) {
-    // alerts only have duration optionally offset, end is added during execution by reconciler
-    // so, we add end here to get a valid query
-    timeRange.end = timeRangeSummary?.max;
-  }
-
-  const comparisonTimeRange = queryArgsJson.comparisonTimeRange;
-  if (
-    comparisonTimeRange &&
-    !comparisonTimeRange.end &&
-    timeRangeSummary?.max
-  ) {
-    // alerts only have duration and offset, end is added during execution by reconciler
-    // so, we add end here to get a valid query
-    comparisonTimeRange.end = timeRangeSummary?.max;
-  }
 
   let selectedTimeRange: DashboardTimeControls | undefined = undefined;
   let selectedComparisonTimeRange: DashboardTimeControls | undefined =
@@ -168,14 +152,14 @@ export function getExistingAlertInitialFiltersFormValues(
     selectedTimeRange = mapV1TimeRangeToSelectedTimeRange(
       timeRange,
       timeRangeSummary,
-      timeRange.isoOffset,
+      timeRange.isoDuration,
       timeRangeSummary.max,
     );
-    if (comparisonTimeRange) {
+    if (queryArgsJson.comparisonTimeRange) {
       selectedComparisonTimeRange = mapV1TimeRangeToSelectedTimeRange(
-        comparisonTimeRange,
+        queryArgsJson.comparisonTimeRange,
         timeRangeSummary,
-        comparisonTimeRange.isoOffset,
+        queryArgsJson.comparisonTimeRange.isoOffset,
         timeRangeSummary.max,
       );
     }

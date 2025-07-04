@@ -1,4 +1,3 @@
-import type { TimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import { isoDurationToFullTimeRange } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
 import {
   type DashboardTimeControls,
@@ -88,22 +87,18 @@ export function mapSelectedTimeRangeToV1TimeRange(
 }
 
 export function mapSelectedComparisonTimeRangeToV1TimeRange(
-  timeControlState: TimeControlState,
+  selectedComparisonTimeRange: DashboardTimeControls | undefined,
+  showTimeComparison: boolean,
   timeRange: V1TimeRange | undefined,
 ) {
-  if (
-    !timeRange ||
-    !timeControlState.showTimeComparison ||
-    !timeControlState.selectedComparisonTimeRange?.name
-  ) {
+  if (!timeRange || !showTimeComparison || !selectedComparisonTimeRange?.name) {
     return undefined;
   }
 
   const comparisonTimeRange: V1TimeRange = {};
-  switch (timeControlState.selectedComparisonTimeRange.name) {
+  switch (selectedComparisonTimeRange.name) {
     default:
-      comparisonTimeRange.isoOffset =
-        timeControlState.selectedComparisonTimeRange.name;
+      comparisonTimeRange.isoOffset = selectedComparisonTimeRange.name;
       comparisonTimeRange.isoDuration = timeRange.isoDuration;
       break;
     case TimeComparisonOption.CONTIGUOUS:
@@ -112,8 +107,9 @@ export function mapSelectedComparisonTimeRangeToV1TimeRange(
       break;
 
     case TimeComparisonOption.CUSTOM:
-      comparisonTimeRange.start = timeControlState.comparisonTimeStart;
-      comparisonTimeRange.end = timeControlState.comparisonTimeEnd;
+      comparisonTimeRange.start =
+        selectedComparisonTimeRange.start.toISOString();
+      comparisonTimeRange.end = selectedComparisonTimeRange.end.toISOString();
       break;
   }
   return comparisonTimeRange;
@@ -144,11 +140,6 @@ export function mapV1TimeRangeToSelectedTimeRange(
       new Date(timeRangeSummary.min),
       new Date(end),
     );
-    // Convert the range to a custom one with resolved start and end.
-    // This retains the resolved range with `executionTime` incorporated into the range.
-    // TODO: Once we have rill-time do `<syntax> as of <executionTime>` as time range.
-    //       Note we need to have the new drop down out of feature flag as well.
-    selectedTimeRange.name = TimeRangePreset.CUSTOM;
   } else {
     return undefined;
   }

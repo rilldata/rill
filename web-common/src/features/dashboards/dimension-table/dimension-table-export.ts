@@ -55,7 +55,8 @@ export function getDimensionTableExportQuery(
   if (timeControlState.showTimeComparison) {
     if (isScheduled) {
       comparisonTimeRange = mapSelectedComparisonTimeRangeToV1TimeRange(
-        timeControlState,
+        timeControlState.selectedComparisonTimeRange,
+        timeControlState.showTimeComparison,
         timeRange,
       );
     } else {

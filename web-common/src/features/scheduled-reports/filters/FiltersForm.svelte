@@ -244,6 +244,7 @@
         canPanLeft={false}
         canPanRight={false}
         onPan={() => {}}
+        minTimeGrain={undefined}
       />
       <CanvasComparisonPill
         allTimeRange={$allTimeRange}

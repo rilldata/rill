@@ -291,7 +291,7 @@
         <AlertDialogDataTab {superFormInstance} {filters} {timeControls} />
       </DialogTabs.Content>
       <DialogTabs.Content {currentTabIndex} tabIndex={1} value={tabs[1]}>
-        <AlertDialogCriteriaTab {superFormInstance} />
+        <AlertDialogCriteriaTab {superFormInstance} {filters} {timeControls} />
       </DialogTabs.Content>
       <DialogTabs.Content {currentTabIndex} tabIndex={2} value={tabs[2]}>
         <AlertDialogDeliveryTab {superFormInstance} />

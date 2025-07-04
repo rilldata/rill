@@ -22,7 +22,7 @@ export class MetricsViewData {
 
   public constructor(
     instanceId: string,
-    metricsViewName: string,
+    public readonly metricsViewName: string,
     exploreName: string,
   ) {
     this.validSpecQuery = useExploreValidSpec(

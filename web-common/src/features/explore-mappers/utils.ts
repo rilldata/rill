@@ -11,9 +11,7 @@ import {
   ExploreLinkErrorType,
 } from "@rilldata/web-common/features/explore-mappers/types";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
-import { isoDurationToFullTimeRange } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
 import {
-  type DashboardTimeControls,
   TimeComparisonOption,
   TimeRangePreset,
 } from "@rilldata/web-common/lib/time/types";
@@ -57,6 +55,9 @@ export function fillTimeRange(
       reqTimeRange.isoDuration,
       executionTime,
     );
+    if (exploreState.selectedTimeRange) {
+      exploreState.selectedTimeRange.name = TimeRangePreset.CUSTOM;
+    }
   }
 
   if (reqComparisonTimeRange) {
@@ -79,12 +80,7 @@ export function fillTimeRange(
           reqComparisonTimeRange.isoOffset,
           executionTime,
         );
-      // temporary fix to not lead to an uncaught error.
-      // TODO: we should a single custom label when we move to rill-time syntax
-      if (
-        exploreState.selectedComparisonTimeRange?.name ===
-        TimeRangePreset.CUSTOM
-      ) {
+      if (exploreState.selectedComparisonTimeRange) {
         exploreState.selectedComparisonTimeRange.name =
           TimeComparisonOption.CUSTOM;
       }

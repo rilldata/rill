@@ -213,10 +213,14 @@ export class TimeControls {
   };
 
   public toState(): TimeControlState {
+    const timeRangeStateStore = get(this.timeRangeStateStore);
+    const comparisonRangeStateStore = get(this.comparisonRangeStateStore);
     return {
-      selectedTimeRange: get(this.selectedTimeRange),
-      selectedComparisonTimeRange: get(this.selectedComparisonTimeRange),
-      showTimeComparison: get(this.showTimeComparison),
+      selectedTimeRange: timeRangeStateStore?.selectedTimeRange,
+      selectedComparisonTimeRange:
+        comparisonRangeStateStore?.selectedComparisonTimeRange,
+      showTimeComparison:
+        comparisonRangeStateStore?.showTimeComparison ?? false,
       selectedTimezone: get(this.selectedTimezone),
     };
   }
@@ -224,20 +228,16 @@ export class TimeControls {
   public getStore(): Readable<TimeControlState> {
     return derived(
       [
-        this.selectedTimeRange,
-        this.selectedComparisonTimeRange,
-        this.showTimeComparison,
+        this.timeRangeStateStore,
+        this.comparisonRangeStateStore,
         this.selectedTimezone,
       ],
-      ([
-        selectedTimeRange,
-        selectedComparisonTimeRange,
-        showTimeComparison,
-        selectedTimezone,
-      ]) => ({
-        selectedTimeRange,
-        selectedComparisonTimeRange,
-        showTimeComparison,
+      ([timeRangeStateStore, comparisonRangeStateStore, selectedTimezone]) => ({
+        selectedTimeRange: timeRangeStateStore?.selectedTimeRange,
+        selectedComparisonTimeRange:
+          comparisonRangeStateStore?.selectedComparisonTimeRange,
+        showTimeComparison:
+          comparisonRangeStateStore?.showTimeComparison ?? false,
         selectedTimezone,
       }),
     );
