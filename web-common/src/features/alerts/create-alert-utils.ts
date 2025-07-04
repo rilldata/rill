@@ -4,24 +4,14 @@ import type { AlertFormValues } from "@rilldata/web-common/features/alerts/form-
 import { getEmptyMeasureFilterEntry } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry.ts";
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state.ts";
 import { createAndExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils.ts";
-import { getTimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store.ts";
-import {
-  mapSelectedComparisonTimeRangeToV1TimeRange,
-  mapSelectedTimeRangeToV1TimeRange,
-} from "@rilldata/web-common/features/dashboards/time-controls/time-range-mappers.ts";
-import {
-  type V1ExploreSpec,
-  type V1MetricsViewSpec,
-  V1Operation,
-  type V1TimeRangeSummary,
-} from "@rilldata/web-common/runtime-client";
+import { Filters } from "@rilldata/web-common/features/scheduled-reports/filters/Filters.ts";
+import { MetricsViewData } from "@rilldata/web-common/features/scheduled-reports/filters/MetricsViewData.ts";
+import { TimeControls } from "@rilldata/web-common/features/scheduled-reports/filters/TimeControls.ts";
+import { V1Operation } from "@rilldata/web-common/runtime-client";
 
 export function getNewAlertInitialFormValues(
   metricsViewName: string,
   exploreName: string,
-  metricsViewSpec: V1MetricsViewSpec,
-  exploreSpec: V1ExploreSpec,
-  timeRangeSummary: V1TimeRangeSummary | undefined,
   exploreState: Partial<ExploreState>,
   user: V1User | undefined,
 ): AlertFormValues {
@@ -29,23 +19,6 @@ export function getNewAlertInitialFormValues(
     exploreState.selectedComparisonDimension ||
     exploreState.selectedDimensionName ||
     "";
-
-  const timeControlsState = getTimeControlState(
-    metricsViewSpec,
-    exploreSpec,
-    timeRangeSummary,
-    exploreState,
-  )!; // we have a check on time range beforehand. So timeControlsState cannot be undefined here.
-
-  const timeRange = mapSelectedTimeRangeToV1TimeRange(
-    timeControlsState,
-    exploreState.selectedTimezone ?? "",
-    exploreSpec,
-  );
-  const comparisonTimeRange = mapSelectedComparisonTimeRangeToV1TimeRange(
-    timeControlsState,
-    timeRange,
-  );
 
   return {
     name: "",
@@ -72,20 +45,32 @@ export function getNewAlertInitialFormValues(
 
     metricsViewName,
     exploreName: exploreName,
+  };
+}
+
+export function getNewAlertInitialFiltersFormValues(
+  instanceId: string,
+  metricsViewName: string,
+  exploreName: string,
+  exploreState: Partial<ExploreState>,
+) {
+  const metricsViewData = new MetricsViewData(
+    instanceId,
+    metricsViewName,
+    exploreName,
+  );
+  const filters = new Filters(metricsViewData, {
     whereFilter: exploreState.whereFilter ?? createAndExpression([]),
     dimensionsWithInlistFilter: exploreState.dimensionsWithInlistFilter ?? [],
     dimensionThresholdFilters: exploreState.dimensionThresholdFilters ?? [],
-    timeRange: timeRange
-      ? {
-          ...timeRange,
-          end: timeControlsState.timeEnd,
-        }
-      : {},
-    comparisonTimeRange: comparisonTimeRange
-      ? {
-          ...comparisonTimeRange,
-          end: timeControlsState.timeEnd,
-        }
-      : undefined,
-  };
+    dimensionFilterExcludeMode:
+      exploreState.dimensionFilterExcludeMode ?? new Map<string, boolean>(),
+  });
+  const timeControls = new TimeControls(metricsViewData, {
+    selectedTimeRange: exploreState.selectedTimeRange,
+    selectedComparisonTimeRange: exploreState.selectedComparisonTimeRange,
+    showTimeComparison: exploreState.showTimeComparison ?? false,
+    selectedTimezone: exploreState.selectedTimezone ?? "UTC",
+  });
+  return { filters, timeControls };
 }

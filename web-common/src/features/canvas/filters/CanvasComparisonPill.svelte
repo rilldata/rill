@@ -61,6 +61,7 @@
     on:click={() => {
       onDisplayTimeComparison(!showTimeComparison);
     }}
+    type="button"
   >
     <div class="pointer-events-none flex items-center gap-x-1.5">
       <Switch
