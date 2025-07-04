@@ -91,7 +91,7 @@ require (
 	github.com/snowflakedb/gosnowflake v1.12.0
 	github.com/spf13/cobra v1.9.1
 	github.com/spf13/pflag v1.0.6
-	github.com/startreedata/pinot-client-go v0.6.0
+	github.com/startreedata/pinot-client-go v0.8.0
 	github.com/stretchr/testify v1.10.0
 	github.com/stripe/stripe-go/v79 v79.6.0
 	github.com/testcontainers/testcontainers-go v0.35.0
@@ -271,7 +271,7 @@ require (
 	github.com/go-playground/locales v0.14.1 // indirect
 	github.com/go-playground/universal-translator v0.18.1 // indirect
 	github.com/go-viper/mapstructure/v2 v2.3.0 // indirect
-	github.com/go-zookeeper/zk v1.0.3 // indirect
+	github.com/go-zookeeper/zk v1.0.4 // indirect
 	github.com/goccy/go-json v0.10.5 // indirect
 	github.com/gofrs/flock v0.12.1 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
