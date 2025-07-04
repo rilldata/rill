@@ -1,13 +1,15 @@
 ---
-description: 
-globs: 
+description:
+globs:
 alwaysApply: false
 ---
+
 # Frontend Development Guidelines
 
 ## Technology Stack
 
 ### Web Applications
+
 - **web-local**: Local Rill application (data modeler)
 - **web-admin**: Admin control plane frontend
 - **web-common**: Shared components and utilities
@@ -15,25 +17,27 @@ alwaysApply: false
 ## Component Architecture
 
 ### Shared Components (web-common)
+
 - Generic, reusable components
 - No business logic dependencies
 - Proper TypeScript interfaces
 - Comprehensive prop validation
 
 ### Component Guidelines
-- Use PascalCase for component names
-- Match component name to file name
+
 - Keep components small and focused
 
 ## State Management
 
 ### Svelte Stores
+
 - Use Svelte stores for global state
 - Keep stores modular and focused
 - Use derived stores for computed values
 - Implement proper store subscriptions
 
 ### Data Fetching
+
 - Use `@tanstack/svelte-query` for server state
 - Implement proper loading states
 - Handle errors gracefully
@@ -42,6 +46,7 @@ alwaysApply: false
 ## API Integration
 
 ### Client Generation
+
 - Use `orval` for OpenAPI client generation
 - Standardize the naming convention of the admin service usage. Example: `const removeProjectMemberUsergroup = createAdminServiceRemoveProjectMemberUsergroup();`
 - Generate clients in `web-common`
@@ -49,6 +54,7 @@ alwaysApply: false
 - Implement proper error handling
 
 ### API Patterns (TODO)
+
 - Implement proper request/response types
 - Handle authentication and authorization
 - Use proper error boundaries
@@ -56,12 +62,13 @@ alwaysApply: false
 ## Accessibility
 
 ### ARIA Guidelines
+
 - Use proper ARIA labels and roles
 - Implement keyboard navigation
 - Ensure proper color contrast
 - Test with screen readers
 
 ### Semantic HTML
-- Use semantic HTML elements
+
 - Implement proper heading hierarchy
 - Use proper form labels and descriptions

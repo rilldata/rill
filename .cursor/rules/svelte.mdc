@@ -1,12 +1,14 @@
 ---
 description: Svelte best practices and patterns for modern web applications
-globs: ["web-admin/**/*.svelte", "web-common/**/*.svelte", "web-local/**/*.svelte"]
+globs:
+  ["web-admin/**/*.svelte", "web-common/**/*.svelte", "web-local/**/*.svelte"]
 alwaysApply: false
 ---
 
 # Svelte Best Practices
 
 ## Component Structure
+
 - Keep components small and focused
 - Use proper TypeScript integration
 - Implement proper props typing
@@ -15,9 +17,11 @@ alwaysApply: false
 - Use proper slot implementation
 
 ## Component Events
+
 - Avoid using createDispatchEvent and use callback props for handling component events
 
 ## Reactivity
+
 - Use proper reactive declarations
 - Implement proper stores
 - Use proper reactive statements
@@ -26,6 +30,7 @@ alwaysApply: false
 - Implement proper bindings
 
 ## State Management
+
 - Use proper Svelte stores
 - Keep stores modular
 - Use proper derived stores
@@ -34,6 +39,7 @@ alwaysApply: false
 - Use proper store subscriptions
 
 ## Performance
+
 - Use proper component lazy loading
 - Implement proper transitions
 - Use proper animations
@@ -42,6 +48,7 @@ alwaysApply: false
 - Implement proper key blocks
 
 ## Routing
+
 - Use SvelteKit for routing
 - Implement proper layouts
 - Use proper route parameters
@@ -50,6 +57,7 @@ alwaysApply: false
 - Use proper navigation methods
 
 ## Forms
+
 - Use proper form bindings
 - Implement proper validation
 - Handle form submission properly
@@ -58,6 +66,7 @@ alwaysApply: false
 - Implement proper form reset
 
 ## TypeScript Integration
+
 - Use proper component types
 - Implement proper prop types
 - Use proper event types
@@ -66,6 +75,7 @@ alwaysApply: false
 - Implement proper action types
 
 ## Testing
+
 - Write proper unit tests
 - Implement proper component tests
 - Use proper testing libraries
@@ -74,6 +84,7 @@ alwaysApply: false
 - Test async operations
 
 ## Best Practices
+
 - Follow Svelte style guide
 - Use proper naming conventions
 - Keep components organized
@@ -82,9 +93,10 @@ alwaysApply: false
 - Document complex logic
 
 ## Build and Tooling
+
 - Use Vite for development
 - Configure proper build setup
 - Use proper environment variables
 - Implement proper code splitting
 - Use proper asset handling
-- Configure proper optimization 
+- Configure proper optimization
