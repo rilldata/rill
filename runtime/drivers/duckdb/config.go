@@ -23,13 +23,14 @@ type config struct {
 	MemoryLimitGB int `mapstructure:"memory_limit_gb"`
 	// ReadWriteRatio is the ratio of resources to allocate to the read DB. If set, CPU and MemoryLimitGB are distributed based on this ratio.
 	ReadWriteRatio float64 `mapstructure:"read_write_ratio"`
-	// BootQueries is SQL to execute when initializing a new connection. It runs before any extensions are loaded or default settings are set.
+	// BootQueries is deprecated. Use InitSQL instead. Retained for backward compatibility.
 	BootQueries string `mapstructure:"boot_queries"`
-	// InitSQL is SQL to execute when initializing a new connection. It runs after extensions are loaded and and default settings are set.
+	// InitSQL is the SQL executed during database initialization.
 	InitSQL string `mapstructure:"init_sql"`
+	// ConnInitSQL is the SQL executed when a new connection is initialized.
+	ConnInitSQL string `mapstructure:"conn_init_sql"`
 	// LogQueries controls whether to log the raw SQL passed to OLAP.Execute. (Internal queries will not be logged.)
 	LogQueries bool `mapstructure:"log_queries"`
-
 	// Path switches the implementation to use a generic rduckdb implementation backed by the db used in the Path
 	Path string `mapstructure:"path"`
 	// Attach allows user to pass a full ATTACH statement to attach a DuckDB database.
