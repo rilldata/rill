@@ -176,7 +176,6 @@ func (c *Connection) Ping(ctx context.Context) error {
 		o.TracerProvider = smithyoteltracing.Adapt(otel.GetTracerProvider())
 	})
 
-	// Execute a simple query to verify connection
 	return c.executeQuery(ctx, client, "SELECT 1", c.config.Database, c.config.Workgroup, c.config.ClusterIdentifier)
 }
 
@@ -219,6 +218,11 @@ func (c *Connection) AsAdmin(instanceID string) (drivers.AdminService, bool) {
 
 // AsOLAP implements drivers.Connection.
 func (c *Connection) AsOLAP(instanceID string) (drivers.OLAPStore, bool) {
+	return nil, false
+}
+
+// AsInformationSchema implements drivers.Connection.
+func (c *Connection) AsInformationSchema() (drivers.InformationSchema, bool) {
 	return nil, false
 }
 
