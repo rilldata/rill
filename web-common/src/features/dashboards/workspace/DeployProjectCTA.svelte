@@ -10,17 +10,18 @@
   import TrialDetailsDialog from "@rilldata/web-common/features/billing/TrialDetailsDialog.svelte";
   import ProjectRedeployConfirmDialog from "@rilldata/web-common/features/project/ProjectRedeployConfirmDialog.svelte";
   import PushToGitForDeployDialog from "@rilldata/web-common/features/project/PushToGitForDeployDialog.svelte";
-  import { waitUntil } from "@rilldata/web-common/lib/waitUtils";
+  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
   import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
   import { BehaviourEventAction } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
   import {
     createLocalServiceGetCurrentProject,
     createLocalServiceGetCurrentUser,
     createLocalServiceGetMetadata,
+    createLocalServiceGitStatus,
     createLocalServiceListOrganizationsAndBillingMetadataRequest,
   } from "@rilldata/web-common/runtime-client/local-service";
   import Rocket from "svelte-radix/Rocket.svelte";
-  import { get, writable } from "svelte/store";
+  import { writable } from "svelte/store";
   import { Button } from "../../../components/button";
 
   export let hasValidDashboard: boolean;
@@ -45,6 +46,13 @@
   $: isFirstTimeDeploy =
     !isDeployed && (userNotLoggedIn || everyOrgHasNeverSubscribed);
 
+  const gitStatusQuery = createLocalServiceGitStatus();
+  $: hasRemoteChanges =
+    $gitStatusQuery.data && $gitStatusQuery.data.remoteCommits > 0;
+
+  // gitStatusQuery is refetched. So we have to check `isFetching` to get the correct loading status.
+  $: loading = $gitStatusQuery.isFetching || $currentProject.isLoading;
+
   $: allowPrimary.set(isDeployed || !hasValidDashboard);
 
   $: user = createLocalServiceGetCurrentUser();
@@ -58,21 +66,25 @@
     deployCTAUrl = deployPageUrl;
   }
 
-  $: managedGit = $currentProject.data?.project?.managedGitId ? true : false;
-
-  async function onRedeploy() {
-    void behaviourEvent?.fireDeployEvent(BehaviourEventAction.DeployIntent);
-
-    await waitUntil(() => !get(currentProject).isFetching);
-    if (get(currentProject).data?.project?.gitRemote && !managedGit) {
-      pushThroughGitOpen = true;
+  function onRedeploy() {
+    if (hasRemoteChanges) {
+      // If there are remote changes then block deploy and trigger RemoteProjectManager
+      eventBus.emit("check-remote-project-status", null);
       return;
     }
+
+    void behaviourEvent?.fireDeployEvent(BehaviourEventAction.DeployIntent);
 
     window.open(deployCTAUrl, "_blank");
   }
 
   function onShowDeploy() {
+    if (hasRemoteChanges) {
+      // If there are remote changes then block deploy and trigger RemoteProjectManager
+      eventBus.emit("check-remote-project-status", null);
+      return;
+    }
+
     if (!isFirstTimeDeploy) {
       // do not show the confirmation dialog for successive deploys
       void behaviourEvent?.fireDeployEvent(BehaviourEventAction.DeployIntent);
@@ -86,14 +98,11 @@
 </script>
 
 {#if isDeployed}
-  <ProjectRedeployConfirmDialog
-    isLoading={$currentProject.isLoading}
-    onConfirm={onRedeploy}
-  />
+  <ProjectRedeployConfirmDialog isLoading={loading} onConfirm={onRedeploy} />
 {:else}
   <Tooltip distance={8}>
     <Button
-      loading={$currentProject.isLoading}
+      {loading}
       onClick={onShowDeploy}
       type={hasValidDashboard ? "primary" : "secondary"}
     >
