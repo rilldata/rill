@@ -1158,9 +1158,9 @@ export class ListDatabaseSchemasRequest extends Message<ListDatabaseSchemasReque
  */
 export class ListDatabaseSchemasResponse extends Message<ListDatabaseSchemasResponse> {
   /**
-   * @generated from field: repeated rill.runtime.v1.DatabaseSchemaInfo schemas = 1;
+   * @generated from field: repeated rill.runtime.v1.DatabaseSchemaInfo database_schemas = 1;
    */
-  schemas: DatabaseSchemaInfo[] = [];
+  databaseSchemas: DatabaseSchemaInfo[] = [];
 
   constructor(data?: PartialMessage<ListDatabaseSchemasResponse>) {
     super();
@@ -1170,7 +1170,7 @@ export class ListDatabaseSchemasResponse extends Message<ListDatabaseSchemasResp
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.runtime.v1.ListDatabaseSchemasResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "schemas", kind: "message", T: DatabaseSchemaInfo, repeated: true },
+    { no: 1, name: "database_schemas", kind: "message", T: DatabaseSchemaInfo, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListDatabaseSchemasResponse {

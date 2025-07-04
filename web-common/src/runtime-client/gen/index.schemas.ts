@@ -219,6 +219,7 @@ export interface V1APISpec {
   openapiParametersJson?: string;
   openapiRequestSchemaJson?: string;
   openapiResponseSchemaJson?: string;
+  openapiDefsPrefixng;
   securityRules?: V1SecurityRule[];
   skipNestedSecurity?: boolean;
 }
@@ -1125,7 +1126,7 @@ export interface V1ListConnectorDriversResponse {
 }
 
 export interface V1ListDatabaseSchemasResponse {
-  schemas?: V1DatabaseSchemaInfo[];
+  databaseSchemas?: V1DatabaseSchemaInfo[];
 }
 
 export interface V1ListExamplesResponse {
@@ -1202,6 +1203,7 @@ export interface V1MetricsViewAggregationMeasure {
   comparisonRatio?: V1MetricsViewAggregationMeasureComputeComparisonRatio;
   percentOfTotal?: V1MetricsViewAggregationMeasureComputePercentOfTotal;
   uri?: V1MetricsViewAggregationMeasureComputeURI;
+  comparisonTime?: V1MetricsViewAggregationMeasureComputeComparisonTime;
 }
 
 export interface V1MetricsViewAggregationMeasureComputeComparisonDelta {
@@ -1210,6 +1212,10 @@ export interface V1MetricsViewAggregationMeasureComputeComparisonDelta {
 
 export interface V1MetricsViewAggregationMeasureComputeComparisonRatio {
   measure?: string;
+}
+
+export interface V1MetricsViewAggregationMeasureComputeComparisonTime {
+  dimension?: string;
 }
 
 export interface V1MetricsViewAggregationMeasureComputeComparisonValue {

@@ -3420,6 +3420,8 @@ definitions:
         type: string
       openapiResponseSchemaJson:
         type: string
+      openapiDefsPrefix:
+        type: string
       securityRules:
         type: array
         items:
@@ -4893,7 +4895,7 @@ definitions:
   v1ListDatabaseSchemasResponse:
     type: object
     properties:
-      schemas:
+      databaseSchemas:
         type: array
         items:
           type: object
@@ -5033,6 +5035,8 @@ definitions:
         $ref: '#/definitions/v1MetricsViewAggregationMeasureComputePercentOfTotal'
       uri:
         $ref: '#/definitions/v1MetricsViewAggregationMeasureComputeURI'
+      comparisonTime:
+        $ref: '#/definitions/v1MetricsViewAggregationMeasureComputeComparisonTime'
   v1MetricsViewAggregationMeasureComputeComparisonDelta:
     type: object
     properties:
@@ -5042,6 +5046,11 @@ definitions:
     type: object
     properties:
       measure:
+        type: string
+  v1MetricsViewAggregationMeasureComputeComparisonTime:
+    type: object
+    properties:
+      dimension:
         type: string
   v1MetricsViewAggregationMeasureComputeComparisonValue:
     type: object

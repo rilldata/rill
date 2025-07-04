@@ -140,6 +140,11 @@ func (h *handle) AsOLAP(instanceID string) (drivers.OLAPStore, bool) {
 	return nil, false
 }
 
+// AsInformationSchema implements drivers.Handle.
+func (h *handle) AsInformationSchema() (drivers.InformationSchema, bool) {
+	return nil, false
+}
+
 func (h *handle) AsObjectStore() (drivers.ObjectStore, bool) {
 	return nil, false
 }

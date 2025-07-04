@@ -83,12 +83,8 @@ type Handle interface {
 
 	// MigrationStatus returns the handle's current and desired migration version (if applicable).
 	MigrationStatus(ctx context.Context) (current int, desired int, err error)
-
-	// AsInformationSchema returns a InformationSchema if the handle can serve as such, otherwise returns false.
-	// InformationSchema provides metadata about existing tables in a driver.
-	AsInformationSchema() (InformationSchema, bool)
-
 	// Close closes the handle.
+
 	Close() error
 
 	// AsRegistry returns a RegistryStore if the handle can serve as such, otherwise returns false.
@@ -115,6 +111,10 @@ type Handle interface {
 	// An OLAP store is used to serve interactive, low-latency, analytical queries.
 	// NOTE: We should consider merging the OLAPStore and SQLStore interfaces.
 	AsOLAP(instanceID string) (OLAPStore, bool)
+
+	// AsInformationSchema returns a InformationSchema if the handle can serve as such, otherwise returns false.
+	// InformationSchema provides metadata about existing tables in a driver.
+	AsInformationSchema() (InformationSchema, bool)
 
 	// AsObjectStore returns an ObjectStore if the driver can serve as such, otherwise returns false.
 	// An object store can store, list and retrieve files on a remote server.

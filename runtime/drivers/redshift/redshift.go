@@ -176,8 +176,7 @@ func (c *Connection) Ping(ctx context.Context) error {
 		o.TracerProvider = smithyoteltracing.Adapt(otel.GetTracerProvider())
 	})
 
-	_, err = c.executeQuery(ctx, client, "SELECT 1", c.config.Database, c.config.Workgroup, c.config.ClusterIdentifier)
-	return err
+	return c.executeQuery(ctx, client, "SELECT 1", c.config.Database, c.config.Workgroup, c.config.ClusterIdentifier)
 }
 
 // Driver implements drivers.Connection.
@@ -190,11 +189,6 @@ func (c *Connection) Config() map[string]any {
 	m := make(map[string]any, 0)
 	_ = mapstructure.Decode(c.config, &m)
 	return m
-}
-
-// InformationSchema implements drivers.Handle.
-func (c *Connection) AsInformationSchema() (drivers.InformationSchema, bool) {
-	return c, true
 }
 
 // Close implements drivers.Connection.
@@ -224,6 +218,11 @@ func (c *Connection) AsAdmin(instanceID string) (drivers.AdminService, bool) {
 
 // AsOLAP implements drivers.Connection.
 func (c *Connection) AsOLAP(instanceID string) (drivers.OLAPStore, bool) {
+	return nil, false
+}
+
+// AsInformationSchema implements drivers.Connection.
+func (c *Connection) AsInformationSchema() (drivers.InformationSchema, bool) {
 	return nil, false
 }
 
@@ -292,7 +291,7 @@ func (c *Connection) awsConfig(ctx context.Context, awsRegion string) (aws.Confi
 }
 
 // executeQuery executes a query and waits for it to complete
-func (c *Connection) executeQuery(ctx context.Context, client *redshiftdata.Client, sql, database, workgroup, clusterIdentifier string) (string, error) {
+func (c *Connection) executeQuery(ctx context.Context, client *redshiftdata.Client, sql, database, workgroup, clusterIdentifier string) error {
 	executeParams := &redshiftdata.ExecuteStatementInput{
 		Sql:      aws.String(sql),
 		Database: aws.String(database),
@@ -308,7 +307,7 @@ func (c *Connection) executeQuery(ctx context.Context, client *redshiftdata.Clie
 
 	queryExecutionOutput, err := client.ExecuteStatement(ctx, executeParams)
 	if err != nil {
-		return "", err
+		return err
 	}
 
 	ticker := time.NewTicker(time.Second)
@@ -321,23 +320,23 @@ func (c *Connection) executeQuery(ctx context.Context, client *redshiftdata.Clie
 				Id: queryExecutionOutput.Id,
 			})
 			cancel()
-			return "", errors.Join(ctx.Err(), err)
+			return errors.Join(ctx.Err(), err)
 		case <-ticker.C:
 			status, err := client.DescribeStatement(ctx, &redshiftdata.DescribeStatementInput{
 				Id: queryExecutionOutput.Id,
 			})
 			if err != nil {
-				return "", err
+				return err
 			}
 
 			state := status.Status
 
 			if status.Error != nil {
-				return "", fmt.Errorf("Redshift query execution failed %s", *status.Error)
+				return fmt.Errorf("Redshift query execution failed %s", *status.Error)
 			}
 
 			if state != redshift_types.StatusStringSubmitted && state != redshift_types.StatusStringStarted && state != redshift_types.StatusStringPicked {
-				return *queryExecutionOutput.Id, nil
+				return nil
 			}
 		}
 	}

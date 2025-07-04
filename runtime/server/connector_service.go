@@ -211,7 +211,7 @@ func (s *Server) ListDatabaseSchemas(ctx context.Context, req *runtimev1.ListDat
 		}
 	}
 	return &runtimev1.ListDatabaseSchemasResponse{
-		Schemas: res,
+		DatabaseSchemas: res,
 	}, nil
 }
 

@@ -16,6 +16,7 @@
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import { Search } from "@rilldata/web-common/components/search";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
+  import { OrgUserRoles } from "@rilldata/web-common/features/users/roles.ts";
   import { Plus } from "lucide-svelte";
 
   const PAGE_SIZE = 12;
@@ -120,12 +121,12 @@
         // Only members (org admin, editor, viewer)
         matchesRole =
           !("invitedBy" in user) &&
-          (user.roleName === "admin" ||
-            user.roleName === "editor" ||
-            user.roleName === "viewer");
+          (user.roleName === OrgUserRoles.Admin ||
+            user.roleName === OrgUserRoles.Editor ||
+            user.roleName === OrgUserRoles.Viewer);
       } else if (filterSelection === "guests") {
         // Only guests
-        matchesRole = user.roleName === "guest";
+        matchesRole = user.roleName === OrgUserRoles.Guest;
       } else if (filterSelection === "pending") {
         // Only users with pending invites
         matchesRole = "invitedBy" in user;
