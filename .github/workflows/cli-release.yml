@@ -99,6 +99,7 @@ jobs:
 
       - name: Login to Docker Hub
         uses: docker/login-action@v3
+        if: ${{ matrix.platform == 'linux_amd64' }}
         with:
           username: ${{ secrets.DOCKERHUB_USER }}
           password: ${{ secrets.DOCKERHUB_PASS }}
@@ -114,8 +115,6 @@ jobs:
           CGO_ENABLED: 1
           GORELEASER_CURRENT_TAG: ${{ env.GORELEASER_CURRENT_TAG }}
           PUBLISH_NIGHTLY: ${{ env.PUBLISH_NIGHTLY }}
-          DOCKERHUB_USER: ${{ secrets.DOCKERHUB_USER }}
-          DOCKERHUB_PASS: ${{ secrets.DOCKERHUB_PASS }}
 
       - name: Release - Upload install script to CDN bucket
         uses: google-github-actions/upload-cloud-storage@v2
