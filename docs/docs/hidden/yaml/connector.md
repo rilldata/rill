@@ -318,6 +318,10 @@ _[string]_ - is executed during database initialization.
 
 _[string]_ - is executed when a new connection is initialized. 
 
+### `secrets`
+
+_[string]_ - Comma-separated list of other connector names to create temporary secrets for in DuckDB before executing a model. 
+
 ### `log_queries`
 
 _[boolean]_ - Whether to log raw SQL queries executed through OLAP 
