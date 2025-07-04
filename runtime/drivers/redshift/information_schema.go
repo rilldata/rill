@@ -3,6 +3,7 @@ package redshift
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/redshiftdata"
@@ -12,10 +13,14 @@ import (
 
 func (c *Connection) ListDatabaseSchemas(ctx context.Context) ([]*drivers.DatabaseSchemaInfo, error) {
 	q := `
-	SELECT database_name,schema_name 
+	SELECT 
+		database_name, 
+		schema_name 
 	FROM svv_all_tables 
-	WHERE schema_name NOT IN ('information_schema','pg_catalog') 
-	GROUP BY database_name,schema_name`
+	WHERE schema_name NOT IN ('information_schema', 'pg_catalog') 
+	GROUP BY database_name, schema_name 
+	ORDER BY database_name, schema_name
+	`
 
 	awsConfig, err := c.awsConfig(ctx, c.config.AWSRegion)
 	if err != nil {
@@ -38,9 +43,17 @@ func (c *Connection) ListDatabaseSchemas(ctx context.Context) ([]*drivers.Databa
 
 	var res []*drivers.DatabaseSchemaInfo
 	for _, record := range result.Records {
+		dbField, ok := record[0].(*types.FieldMemberStringValue)
+		if !ok {
+			return nil, fmt.Errorf("unexpected type for database_name field")
+		}
+		schemaField, ok := record[1].(*types.FieldMemberStringValue)
+		if !ok {
+			return nil, fmt.Errorf("unexpected type for schema_name field")
+		}
 		res = append(res, &drivers.DatabaseSchemaInfo{
-			Database:       record[0].(*types.FieldMemberStringValue).Value,
-			DatabaseSchema: record[1].(*types.FieldMemberStringValue).Value,
+			Database:       dbField.Value,
+			DatabaseSchema: schemaField.Value,
 		})
 	}
 	return res, nil
@@ -49,16 +62,12 @@ func (c *Connection) ListDatabaseSchemas(ctx context.Context) ([]*drivers.Databa
 func (c *Connection) ListTables(ctx context.Context, database, databaseSchema string) ([]*drivers.TableInfo, error) {
 	q := fmt.Sprintf(`
 	SELECT
-	table_name,
-	CASE
-		WHEN table_type = 'VIEW' THEN true
-		ELSE false
-	END AS view
+		table_name,
+		CASE WHEN table_type = 'VIEW' THEN true ELSE false END AS view
 	FROM svv_all_tables
-	WHERE database_name = '%s'
-	AND schema_name = '%s' 
+	WHERE database_name = '%s' AND schema_name = '%s' 
 	ORDER BY table_name;
-	`, database, databaseSchema)
+	`, safeSQLString(database), safeSQLString(databaseSchema))
 
 	awsConfig, err := c.awsConfig(ctx, c.config.AWSRegion)
 	if err != nil {
@@ -81,9 +90,17 @@ func (c *Connection) ListTables(ctx context.Context, database, databaseSchema st
 
 	var res []*drivers.TableInfo
 	for _, record := range result.Records {
+		nameField, ok := record[0].(*types.FieldMemberStringValue)
+		if !ok {
+			return nil, fmt.Errorf("unexpected type for table name field")
+		}
+		viewField, ok := record[1].(*types.FieldMemberBooleanValue)
+		if !ok {
+			return nil, fmt.Errorf("unexpected type for view field")
+		}
 		res = append(res, &drivers.TableInfo{
-			Name: record[0].(*types.FieldMemberStringValue).Value,
-			View: record[1].(*types.FieldMemberBooleanValue).Value,
+			Name: nameField.Value,
+			View: viewField.Value,
 		})
 	}
 	return res, nil
@@ -92,13 +109,13 @@ func (c *Connection) ListTables(ctx context.Context, database, databaseSchema st
 func (c *Connection) GetTable(ctx context.Context, database, databaseSchema, table string) (*drivers.TableMetadata, error) {
 	// Query to get column name and data type
 	q := fmt.Sprintf(`
-	SELECT column_name, data_type
+	SELECT 
+		column_name, 
+		data_type
 	FROM svv_all_columns
-	WHERE database_name = '%s'
-	AND schema_name = '%s'
-	AND table_name = '%s'
+	WHERE database_name = '%s' AND schema_name = '%s' AND table_name = '%s'
 	ORDER BY ordinal_position;
-	`, database, databaseSchema, table)
+	`, safeSQLString(database), safeSQLString(databaseSchema), safeSQLString(table))
 
 	awsConfig, err := c.awsConfig(ctx, c.config.AWSRegion)
 	if err != nil {
@@ -119,15 +136,27 @@ func (c *Connection) GetTable(ctx context.Context, database, databaseSchema, tab
 		return nil, fmt.Errorf("failed to get query results: %w", err)
 	}
 
-	// Build schema map
-	schemaMap := make(map[string]string)
+	var column, dataType string
+	schemaMap := make(map[string]string, len(result.Records))
 	for _, record := range result.Records {
-		column := record[0].(*types.FieldMemberStringValue).Value
-		dataType := record[1].(*types.FieldMemberStringValue).Value
+		colField, ok := record[0].(*types.FieldMemberStringValue)
+		if !ok {
+			return nil, fmt.Errorf("unexpected type for column_name field")
+		}
+		typeField, ok := record[1].(*types.FieldMemberStringValue)
+		if !ok {
+			return nil, fmt.Errorf("unexpected type for data_type field")
+		}
+		column = colField.Value
+		dataType = typeField.Value
 		schemaMap[column] = dataType
 	}
 
 	return &drivers.TableMetadata{
 		Schema: schemaMap,
 	}, nil
+}
+
+func safeSQLString(input string) string {
+	return strings.ReplaceAll(input, "'", "''")
 }
