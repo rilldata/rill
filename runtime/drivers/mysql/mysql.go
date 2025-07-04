@@ -100,21 +100,12 @@ type connection struct {
 
 // Ping implements drivers.Handle.
 func (c *connection) Ping(ctx context.Context) error {
-	conf := &ConfigProperties{}
-	if err := mapstructure.WeakDecode(c.config, conf); err != nil {
-		return fmt.Errorf("failed to decode config: %w", err)
-	}
-
-	if conf.DSN == "" {
-		return fmt.Errorf("dsn not provided")
-	}
 	// Open DB handle
-	db, err := sqlx.Open("mysql", conf.DSN)
+	db, err := c.getDB()
 	if err != nil {
 		return fmt.Errorf("failed to open connection: %w", err)
 	}
 	defer db.Close()
-
 	return db.PingContext(ctx)
 }
 
@@ -173,6 +164,11 @@ func (c *connection) AsOLAP(instanceID string) (drivers.OLAPStore, bool) {
 	return nil, false
 }
 
+// AsInformationSchema implements drivers.Connection.
+func (c *connection) AsInformationSchema() (drivers.InformationSchema, bool) {
+	return nil, false
+}
+
 // AsObjectStore implements drivers.Connection.
 func (c *connection) AsObjectStore() (drivers.ObjectStore, bool) {
 	return nil, false
@@ -201,4 +197,20 @@ func (c *connection) AsWarehouse() (drivers.Warehouse, bool) {
 // AsNotifier implements drivers.Connection.
 func (c *connection) AsNotifier(properties map[string]any) (drivers.Notifier, error) {
 	return nil, drivers.ErrNotNotifier
+}
+
+// getDB opens a new sqlx.DB connection using the config.
+func (c *connection) getDB() (*sqlx.DB, error) {
+	conf := &ConfigProperties{}
+	if err := mapstructure.WeakDecode(c.config, conf); err != nil {
+		return nil, fmt.Errorf("failed to decode config: %w", err)
+	}
+	if conf.DSN == "" {
+		return nil, fmt.Errorf("dsn not provided")
+	}
+	db, err := sqlx.Open("mysql", conf.DSN)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open connection: %w", err)
+	}
+	return db, nil
 }

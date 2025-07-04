@@ -1,11 +1,11 @@
 <script lang="ts">
   import { IconButton } from "@rilldata/web-common/components/button";
   import InfoCircle from "@rilldata/web-common/components/icons/InfoCircle.svelte";
-  import { waitUntil } from "@rilldata/web-common/lib/waitUtils";
-  import { slide } from "svelte/transition";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import { waitUntil } from "@rilldata/web-common/lib/waitUtils";
   import { XIcon } from "lucide-svelte";
+  import { slide } from "svelte/transition";
 
   /**
    * Input that allows to enter multiple items but appears within a single input box.
@@ -144,7 +144,7 @@
             >
               {values[i]}
             </div>
-            <IconButton disableHover compact on:click={() => handleRemove(i)}>
+            <IconButton disableHover size={20} on:click={() => handleRemove(i)}>
               <XIcon
                 size="12px"
                 class="{hasError

@@ -765,6 +765,7 @@ message APISpec {
   string openapi_parameters_json = 8;
   string openapi_request_schema_json = 9;
   string openapi_response_schema_json = 10;
+  string openapi_defs_prefix = 11;
   repeated SecurityRule security_rules = 6;
   bool skip_nested_security = 7;
 }
