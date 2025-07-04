@@ -1,19 +1,11 @@
 ---
 description: Standards for Tailwind CSS v4 usage in Svelte files
-<<<<<<< HEAD
 globs:
   ["web-admin/**/*.svelte", "web-common/**/*.svelte", "web-local/**/*.svelte"]
-=======
-globs: ["web-admin/**/*.svelte", "web-common/**/*.svelte", "web-local/**/*.svelte"]
->>>>>>> d29ffb72e (wip)
 alwaysApply: false
 ---
 
 # Tailwind CSS v4 Standards
 
 - Use inline Tailwind classes
-<<<<<<< HEAD
 - Avoid `<style>` blocks in Svelte files
-=======
-- Avoid `<style>` blocks in Svelte files
->>>>>>> d29ffb72e (wip)

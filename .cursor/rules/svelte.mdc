@@ -1,21 +1,14 @@
 ---
 description: Svelte best practices and patterns for modern web applications
-<<<<<<< HEAD
 globs:
   ["web-admin/**/*.svelte", "web-common/**/*.svelte", "web-local/**/*.svelte"]
-=======
-globs: ["web-admin/**/*.svelte", "web-common/**/*.svelte", "web-local/**/*.svelte"]
->>>>>>> d29ffb72e (wip)
 alwaysApply: false
 ---
 
 # Svelte Best Practices
 
 ## Component Structure
-<<<<<<< HEAD
 
-=======
->>>>>>> d29ffb72e (wip)
 - Keep components small and focused
 - Use proper TypeScript integration
 - Implement proper props typing
@@ -24,17 +17,11 @@ alwaysApply: false
 - Use proper slot implementation
 
 ## Component Events
-<<<<<<< HEAD
 
 - Avoid using createDispatchEvent and use callback props for handling component events
 
 ## Reactivity
 
-=======
-- Avoid using createDispatchEvent and use callback props for handling component events
-
-## Reactivity
->>>>>>> d29ffb72e (wip)
 - Use proper reactive declarations
 - Implement proper stores
 - Use proper reactive statements
@@ -43,10 +30,7 @@ alwaysApply: false
 - Implement proper bindings
 
 ## State Management
-<<<<<<< HEAD
 
-=======
->>>>>>> d29ffb72e (wip)
 - Use proper Svelte stores
 - Keep stores modular
 - Use proper derived stores
@@ -55,10 +39,7 @@ alwaysApply: false
 - Use proper store subscriptions
 
 ## Performance
-<<<<<<< HEAD
 
-=======
->>>>>>> d29ffb72e (wip)
 - Use proper component lazy loading
 - Implement proper transitions
 - Use proper animations
@@ -67,10 +48,7 @@ alwaysApply: false
 - Implement proper key blocks
 
 ## Routing
-<<<<<<< HEAD
 
-=======
->>>>>>> d29ffb72e (wip)
 - Use SvelteKit for routing
 - Implement proper layouts
 - Use proper route parameters
@@ -79,10 +57,7 @@ alwaysApply: false
 - Use proper navigation methods
 
 ## Forms
-<<<<<<< HEAD
 
-=======
->>>>>>> d29ffb72e (wip)
 - Use proper form bindings
 - Implement proper validation
 - Handle form submission properly
@@ -91,10 +66,7 @@ alwaysApply: false
 - Implement proper form reset
 
 ## TypeScript Integration
-<<<<<<< HEAD
 
-=======
->>>>>>> d29ffb72e (wip)
 - Use proper component types
 - Implement proper prop types
 - Use proper event types
@@ -103,10 +75,7 @@ alwaysApply: false
 - Implement proper action types
 
 ## Testing
-<<<<<<< HEAD
 
-=======
->>>>>>> d29ffb72e (wip)
 - Write proper unit tests
 - Implement proper component tests
 - Use proper testing libraries
@@ -115,10 +84,7 @@ alwaysApply: false
 - Test async operations
 
 ## Best Practices
-<<<<<<< HEAD
 
-=======
->>>>>>> d29ffb72e (wip)
 - Follow Svelte style guide
 - Use proper naming conventions
 - Keep components organized
@@ -127,17 +93,10 @@ alwaysApply: false
 - Document complex logic
 
 ## Build and Tooling
-<<<<<<< HEAD
 
-=======
->>>>>>> d29ffb72e (wip)
 - Use Vite for development
 - Configure proper build setup
 - Use proper environment variables
 - Implement proper code splitting
 - Use proper asset handling
-<<<<<<< HEAD
 - Configure proper optimization
-=======
-- Configure proper optimization 
->>>>>>> d29ffb72e (wip)
