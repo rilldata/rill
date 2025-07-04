@@ -62,7 +62,6 @@ dockers:
   - image_templates:
       - rilldata/rill:latest
       - rilldata/rill:{{ .Tag }}
-    skip_push: true
 
 archives:
   - files:
