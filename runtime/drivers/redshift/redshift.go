@@ -224,7 +224,7 @@ func (c *Connection) AsOLAP(instanceID string) (drivers.OLAPStore, bool) {
 
 // AsInformationSchema implements drivers.Connection.
 func (c *Connection) AsInformationSchema() (drivers.InformationSchema, bool) {
-	return nil, false
+	return c, true
 }
 
 // Migrate implements drivers.Connection.
