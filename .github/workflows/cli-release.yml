@@ -155,7 +155,7 @@ jobs:
 
       - name: Publish nightly docker image
         if: ${{ env.PUBLISH_NIGHTLY == 'true' && matrix.platform == 'linux_amd64' }}
-        run: |-          
+        run: |-
           docker tag rilldata/rill:latest rilldata/rill:nightly
           docker push rilldata/rill:nightly
 
