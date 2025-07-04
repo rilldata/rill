@@ -125,6 +125,11 @@ func (h *handle) AsOLAP(instanceID string) (drivers.OLAPStore, bool) {
 	return nil, false
 }
 
+// InformationSchema implements drivers.Handle.
+func (h *handle) AsInformationSchema() (drivers.InformationSchema, bool) {
+	return nil, false
+}
+
 // Migrate implements drivers.Connection.
 func (h *handle) Migrate(ctx context.Context) (err error) {
 	return nil

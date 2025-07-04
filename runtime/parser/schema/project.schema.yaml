@@ -610,12 +610,12 @@ definitions:
           read_write_ratio:
             type: number
             description: Ratio of resources allocated to the read database; used to divide CPU and memory
-          boot_queries:
-            type: string
-            description: SQL to run when initializing a new connection, before extensions and defaults
           init_sql:
             type: string
-            description: SQL to run when initializing a new connection, after extensions and defaults
+            description: is executed during database initialization.
+          conn_init_sql:
+            type: string
+            description: is executed when a new connection is initialized.
           secrets:
             type: string
             description: Comma-separated list of other connector names to create temporary secrets for in DuckDB before executing a model.
@@ -1550,10 +1550,14 @@ definitions:
             description: 'Format of the data source (e.g., csv, json, parquet).'
           pre_exec:
             type: string
-            description: refers to a SQL queries to run before the main query, available for DuckDB based models
+            description: 'refers to SQL queries to run before the main query, available for DuckDB-based models. _(optional)_. Ensure `pre_exec` queries are idempotent. Use `IF NOT EXISTS` statements when applicable.'
           post_exec:
             type: string
-            description: refers to a SQL query that is run after the main query, available for DuckDB based models
+            description: 'refers to a SQL query that is run after the main query, available for DuckDB-based models. _(optional)_. Ensure `post_exec` queries are idempotent. Use `IF EXISTS` statements when applicable.'
+            examples:
+            - pre_exec: ATTACH IF NOT EXISTS 'dbname=postgres host=localhost port=5432 user=postgres password=postgres' AS postgres_db (TYPE POSTGRES);
+              sql: SELECT * FROM postgres_query('postgres_db', 'SELECT * FROM USERS')
+              post_exec: DETACH DATABASE IF EXISTS postgres_db 
       gcs:
         type: object
         properties:

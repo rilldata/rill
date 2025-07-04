@@ -12967,6 +12967,11 @@ export class RequestProjectAccessRequest extends Message<RequestProjectAccessReq
    */
   project = "";
 
+  /**
+   * @generated from field: string role = 3;
+   */
+  role = "";
+
   constructor(data?: PartialMessage<RequestProjectAccessRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -12977,6 +12982,7 @@ export class RequestProjectAccessRequest extends Message<RequestProjectAccessReq
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "organization", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "project", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "role", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): RequestProjectAccessRequest {

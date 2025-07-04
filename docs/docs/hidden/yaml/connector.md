@@ -68,31 +68,43 @@ _[string]_ - Refers to the driver type and must be driver `athena` _(required)_
 
 ### `aws_access_key_id`
 
-_[string]_ - AWS Access Key ID for Athena access 
+_[string]_ - AWS Access Key ID used for authentication. Required when using static credentials directly or as base credentials for assuming a role. 
 
 ### `aws_secret_access_key`
 
-_[string]_ - AWS Secret Access Key for Athena access 
+_[string]_ - AWS Secret Access Key paired with the Access Key ID. Required when using static credentials directly or as base credentials for assuming a role. 
 
 ### `aws_access_token`
 
-_[string]_ - Optional AWS session token for temporary credentials 
-
-### `external_id`
-
-_[string]_ - Optional External ID for assuming a role 
+_[string]_ - AWS session token used with temporary credentials. Required only if the Access Key and Secret Key are part of a temporary session credentials. 
 
 ### `role_arn`
 
-_[string]_ - Optional AWS Role ARN to assume when accessing Athena 
+_[string]_ - ARN of the IAM role to assume. When specified, the SDK uses the base credentials to call STS AssumeRole and obtain temporary credentials scoped to this role. 
 
 ### `role_session_name`
 
-_[string]_ - Optional Session name when assuming the role 
+_[string]_ - Session name to associate with the STS AssumeRole session. Used only if 'role_arn' is specified. Useful for identifying and auditing the session. 
+
+### `external_id`
+
+_[string]_ - External ID required by some roles when assuming them, typically for cross-account access. Used only if 'role_arn' is specified and the role's trust policy requires it. 
+
+### `workgroup`
+
+_[string]_ - Athena workgroup to use for query execution. Defaults to 'primary' if not specified. 
+
+### `output_location`
+
+_[string]_ - S3 URI where Athena query results should be stored (e.g., s3://your-bucket/athena/results/). Optional if the selected workgroup has a default result configuration. 
+
+### `aws_region`
+
+_[string]_ - AWS region where Athena and the result S3 bucket are located (e.g., us-east-1). Defaults to 'us-east-1' if not specified. 
 
 ### `allow_host_access`
 
-_[boolean]_ - Allow access to host environment configuration 
+_[boolean]_ - Allow the Athena client to access host environment configurations such as environment variables or local AWS credential files. Defaults to true, enabling use of credentials and settings from the host environment unless explicitly disabled. 
 
 ## azure
 
@@ -118,6 +130,10 @@ _[string]_ - Optional azure SAS token for authentication
 
 _[string]_ - Optional azure connection string for storage account 
 
+### `azure_storage_bucket`
+
+_[string]_ - Name of the Azure Blob Storage container (equivalent to an S3 bucket) _(required)_
+
 ### `allow_host_access`
 
 _[boolean]_ - Allow access to host environment configuration 
@@ -132,11 +148,15 @@ _[string]_ - Refers to the driver type and must be driver `bigquery` _(required)
 
 ### `google_application_credentials`
 
-_[string]_ - Path to the Google Cloud credentials JSON file 
+_[string]_ - Raw contents of the Google Cloud service account key (in JSON format) used for authentication. 
+
+### `project_id`
+
+_[string]_ - ID of the Google Cloud project to use for BigQuery operations. This can be omitted only if the project ID is included in the service account key. 
 
 ### `allow_host_access`
 
-_[boolean]_ - Allow access to host environment configuration 
+_[boolean]_ - Enable the BigQuery client to use credentials from the host environment when no service account JSON is provided. This includes Application Default Credentials from environment variables, local credential files, or the Google Compute Engine metadata server. Defaults to true, allowing seamless authentication in GCP environments. 
 
 ## clickhouse
 
@@ -290,13 +310,13 @@ _[integer]_ - Amount of memory in GB available to the database
 
 _[number]_ - Ratio of resources allocated to the read database; used to divide CPU and memory 
 
-### `boot_queries`
-
-_[string]_ - SQL to run when initializing a new connection, before extensions and defaults 
-
 ### `init_sql`
 
-_[string]_ - SQL to run when initializing a new connection, after extensions and defaults 
+_[string]_ - is executed during database initialization. 
+
+### `conn_init_sql`
+
+_[string]_ - is executed when a new connection is initialized. 
 
 ### `secrets`
 
@@ -317,6 +337,10 @@ _[string]_ - Refers to the driver type and must be driver `gcs` _(required)_
 ### `google_application_credentials`
 
 _[string]_ - Google Cloud credentials JSON string 
+
+### `bucket`
+
+_[string]_ - Name of gcs bucket _(required)_
 
 ### `allow_host_access`
 
@@ -460,19 +484,31 @@ _[string]_ - Refers to the driver type and must be driver `redshift` _(required)
 
 ### `aws_access_key_id`
 
-_[string]_ - AWS access key ID for authentication 
+_[string]_ - AWS Access Key ID used for authenticating with Redshift. _(required)_
 
 ### `aws_secret_access_key`
 
-_[string]_ - AWS secret access key for authentication 
+_[string]_ - AWS Secret Access Key used for authenticating with Redshift. _(required)_
 
 ### `aws_access_token`
 
-_[string]_ - AWS session token for temporary credentials (optional) 
+_[string]_ - AWS Session Token for temporary credentials (optional). 
 
-### `allow_host_access`
+### `region`
 
-_[boolean]_ - Allow access to host environment configuration 
+_[string]_ - AWS region where the Redshift cluster or workgroup is hosted (e.g., 'us-east-1'). 
+
+### `database`
+
+_[string]_ - Name of the Redshift database to query. _(required)_
+
+### `workgroup`
+
+_[string]_ - Workgroup name for Redshift Serverless, in case of provisioned Redshift clusters use 'cluster_identifier'. 
+
+### `cluster_identifier`
+
+_[string]_ - Cluster identifier for provisioned Redshift clusters, in case of Redshift Serverless use 'workgroup' . 
 
 ## s3
 
@@ -493,6 +529,10 @@ _[string]_ - AWS Secret Access Key used for authentication
 ### `aws_access_token`
 
 _[string]_ - Optional AWS session token for temporary credentials 
+
+### `bucket`
+
+_[string]_ - Name of s3 bucket _(required)_
 
 ### `endpoint`
 
