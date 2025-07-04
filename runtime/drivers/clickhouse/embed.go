@@ -498,17 +498,17 @@ func isUserError(code int) bool {
 		return true
 	case 20: // number of columns does not match
 		return true
-	case 34, 35, 42: // too many/too few arguments for function
-		return true
-	case 46: // unknown function
+	case 34, 35: // too many/too few arguments for function
 		return true
 	case 50: // unknown type
 		return true
-	case 51, 52, 53, 57, 60, 62, 63, 81, 82: // different query syntax error
+	case 42, 43, 44, 46, 47, 51, 52, 53, 57, 60, 62, 63, 81, 82, 179: // different query syntax error
 		return true
-	case 181, 182, 183, 184: // aggregate syntax error
+	case 181, 182, 183, 184, 215: // aggregate syntax error
 		return true
 	case 210: // network error but also thrown on query cancellation, connection failures etc which are usually auto recovered
+		return true
+	case 394: // query was cancelled
 		return true
 
 	default:
