@@ -114,9 +114,9 @@ func (r *ProjectParserReconciler) Reconcile(ctx context.Context, n *runtimev1.Re
 		return runtime.ReconcileResult{Err: fmt.Errorf("failed to access repo: %w", err)}
 	}
 	defer release()
-	err = repo.Sync(ctx)
+	err = repo.Pull(ctx, false, false)
 	if err != nil {
-		return runtime.ReconcileResult{Err: fmt.Errorf("failed to sync repo: %w", err)}
+		return runtime.ReconcileResult{Err: fmt.Errorf("failed to pull repo: %w", err)}
 	}
 
 	// Update commit sha and timestamp

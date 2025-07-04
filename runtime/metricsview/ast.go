@@ -69,7 +69,7 @@ type FieldNode struct {
 	Name        string
 	DisplayName string
 	Expr        string
-	AutoUnnest  bool
+	Unnest      bool
 	TreatNullAs string // only used for measures
 }
 
@@ -185,22 +185,24 @@ func NewAST(mv *runtimev1.MetricsViewSpec, sec *runtime.ResolvedSecurity, qry *Q
 			Name:        dim.Name,
 			DisplayName: dim.DisplayName,
 			Expr:        expr,
+			Unnest:      dim.Unnest,
 		}
 
 		if dim.Unnest {
 			unnestAlias := ast.generateIdentifier()
 
-			tblWithAlias, auto, err := ast.dialect.LateralUnnest(f.Expr, unnestAlias, f.Name)
+			tblWithAlias, tupleStyle, auto, err := ast.dialect.LateralUnnest(f.Expr, unnestAlias, f.Name)
 			if err != nil {
 				return nil, fmt.Errorf("failed to unnest field %q: %w", f.Name, err)
 			}
 
-			if auto {
-				f.Expr = ast.dialect.AutoUnnest(f.Expr)
-				f.AutoUnnest = true
-			} else {
+			if !auto {
 				ast.unnests = append(ast.unnests, tblWithAlias)
-				f.Expr = ast.sqlForMember(unnestAlias, f.Name)
+				if tupleStyle {
+					f.Expr = ast.sqlForMember(unnestAlias, f.Name)
+				} else {
+					f.Expr = ast.sqlForMember("", f.Name)
+				}
 			}
 		}
 
@@ -212,7 +214,7 @@ func NewAST(mv *runtimev1.MetricsViewSpec, sec *runtime.ResolvedSecurity, qry *Q
 		cf := f // Clone
 		if ast.query.ComparisonTimeRange != nil && qd.Compute != nil && qd.Compute.TimeFloor != nil {
 			if strings.EqualFold(qd.Compute.TimeFloor.Dimension, timeDim) {
-				cf.Expr, err = ast.sqlForExpressionAdjustedByComparisonTimeRangeOffset(f.Expr, qd.Compute.TimeFloor.Grain, minGrain)
+				cf.Expr, err = ast.sqlForExpressionAdjustedByComparisonTimeRangeOffset(f.Expr, timeDim, qd.Compute.TimeFloor.Grain, minGrain)
 				if err != nil {
 					return nil, err
 				}
@@ -224,7 +226,7 @@ func NewAST(mv *runtimev1.MetricsViewSpec, sec *runtime.ResolvedSecurity, qry *Q
 	}
 
 	if qry.Rows {
-		// when Rows is set we want underlying rows from the model, that's why adding only * as the dim field
+		// when Rows is set we want underlying rows from the model, adding only * as the dim field, query validation is done earlier which disallows any dimensions
 		ast.dimFields = append(ast.dimFields, FieldNode{
 			Name: "*",
 			Expr: "*",
@@ -397,9 +399,14 @@ func (a *AST) resolveMeasure(qm Measure, visible bool) (*runtimev1.MetricsViewSp
 			return nil, err
 		}
 
+		expr := fmt.Sprintf("comparison.%s", a.dialect.EscapeIdentifier(m.Name))
+		if m.TreatNullsAs != "" {
+			expr = fmt.Sprintf("COALESCE(%s, %s)", expr, m.TreatNullsAs)
+		}
+
 		return &runtimev1.MetricsViewSpec_Measure{
 			Name:               qm.Name,
-			Expression:         fmt.Sprintf("comparison.%s", a.dialect.EscapeIdentifier(m.Name)),
+			Expression:         expr,
 			Type:               runtimev1.MetricsViewSpec_MEASURE_TYPE_TIME_COMPARISON,
 			ReferencedMeasures: []string{qm.Compute.ComparisonValue.Measure},
 			DisplayName:        fmt.Sprintf("%s (prev)", m.DisplayName),
@@ -412,9 +419,14 @@ func (a *AST) resolveMeasure(qm Measure, visible bool) (*runtimev1.MetricsViewSp
 			return nil, err
 		}
 
+		compareExpr := fmt.Sprintf("comparison.%s", a.dialect.EscapeIdentifier(m.Name))
+		if m.TreatNullsAs != "" {
+			compareExpr = fmt.Sprintf("COALESCE(%s, %s)", compareExpr, m.TreatNullsAs)
+		}
+
 		return &runtimev1.MetricsViewSpec_Measure{
 			Name:               qm.Name,
-			Expression:         fmt.Sprintf("base.%s - comparison.%s", a.dialect.EscapeIdentifier(m.Name), a.dialect.EscapeIdentifier(m.Name)),
+			Expression:         fmt.Sprintf("base.%s - %s", a.dialect.EscapeIdentifier(m.Name), compareExpr),
 			Type:               runtimev1.MetricsViewSpec_MEASURE_TYPE_TIME_COMPARISON,
 			ReferencedMeasures: []string{qm.Compute.ComparisonDelta.Measure},
 			DisplayName:        fmt.Sprintf("%s (Δ)", m.DisplayName),
@@ -428,8 +440,11 @@ func (a *AST) resolveMeasure(qm Measure, visible bool) (*runtimev1.MetricsViewSp
 		}
 
 		base := fmt.Sprintf("base.%s", a.dialect.EscapeIdentifier(m.Name))
-		comp := fmt.Sprintf("comparison.%s", a.dialect.EscapeIdentifier(m.Name))
-		expr := a.dialect.SafeDivideExpression(fmt.Sprintf("%s - %s", base, comp), comp)
+		compareExpr := fmt.Sprintf("comparison.%s", a.dialect.EscapeIdentifier(m.Name))
+		if m.TreatNullsAs != "" {
+			compareExpr = fmt.Sprintf("COALESCE(%s, %s)", compareExpr, m.TreatNullsAs)
+		}
+		expr := a.dialect.SafeDivideExpression(fmt.Sprintf("%s - %s", base, compareExpr), compareExpr)
 
 		return &runtimev1.MetricsViewSpec_Measure{
 			Name:               qm.Name,
@@ -475,6 +490,46 @@ func (a *AST) resolveMeasure(qm Measure, visible bool) (*runtimev1.MetricsViewSp
 			Expression:  a.sqlForAnyInGroup(uri),
 			Type:        runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE,
 			DisplayName: fmt.Sprintf("URI for %s", dim.DisplayName),
+		}, nil
+	}
+
+	if qm.Compute.ComparisonTime != nil {
+		if a.query.ComparisonTimeRange == nil || (a.query.ComparisonTimeRange.TimeDimension != "" && a.query.ComparisonTimeRange.TimeDimension != qm.Compute.ComparisonTime.Dimension) || a.metricsView.TimeDimension != qm.Compute.ComparisonTime.Dimension {
+			return nil, fmt.Errorf("comparison time measure %q must be based on the metrics view's time dimension %q or the query's comparison time dimension %q", qm.Name, a.metricsView.TimeDimension, a.query.ComparisonTimeRange.TimeDimension)
+		}
+
+		// find the base computed time dimension from the query
+		var qd *Dimension
+		for _, q := range a.query.Dimensions {
+			if q.Compute != nil && q.Compute.TimeFloor != nil && strings.EqualFold(q.Compute.TimeFloor.Dimension, qm.Compute.ComparisonTime.Dimension) {
+				qd = &q
+				break
+			}
+		}
+		if qd == nil {
+			return nil, fmt.Errorf("comparison time measure %q must be based on a computed time dimension in the query", qm.Name)
+		}
+
+		baseStart := a.query.TimeRange.Start
+		compStart := a.query.ComparisonTimeRange.Start
+
+		dateDiff, err := a.dialect.DateDiff(qd.Compute.TimeFloor.Grain.ToProto(), compStart, baseStart)
+		if err != nil {
+			return nil, fmt.Errorf("failed to compute date difference for comparison time measure %q: %w", qm.Name, err)
+		}
+
+		baseExpr := fmt.Sprintf("COALESCE(base.%s, comparison.%s)", a.dialect.EscapeIdentifier(qd.Name), a.dialect.EscapeIdentifier(qd.Name))
+
+		expr, err := a.dialect.IntervalSubtract(baseExpr, dateDiff, qd.Compute.TimeFloor.Grain.ToProto())
+		if err != nil {
+			return nil, fmt.Errorf("failed to compute comparison time measure %q expression: %w", qm.Name, err)
+		}
+
+		return &runtimev1.MetricsViewSpec_Measure{
+			Name:        qm.Name,
+			Expression:  expr,
+			Type:        runtimev1.MetricsViewSpec_MEASURE_TYPE_TIME_COMPARISON,
+			DisplayName: fmt.Sprintf("Comparison time for %s", qd.Name),
 		}, nil
 	}
 
@@ -1353,7 +1408,7 @@ func (a *AST) sqlForAnyInGroup(expr string) string {
 
 // sqlForExpression returns the provided time expression adjusted by the fixed time offset between the current query's base and comparison time ranges.
 // The timestamp column (ie a.metricsView.TimeDimension) is expected to be the base timestamp for `expr` (in case of multiple metrics view time dimensions defined).
-func (a *AST) sqlForExpressionAdjustedByComparisonTimeRangeOffset(expr string, g, mg TimeGrain) (string, error) {
+func (a *AST) sqlForExpressionAdjustedByComparisonTimeRangeOffset(expr, timeDim string, g, mg TimeGrain) (string, error) {
 	if a.query.TimeRange == nil || a.query.TimeRange.Start.IsZero() || a.query.ComparisonTimeRange == nil || a.query.ComparisonTimeRange.Start.IsZero() {
 		return "", errors.New("must specify an explicit start time for both the base and comparison time range when comparing by a time dimension")
 	}
@@ -1384,7 +1439,7 @@ func (a *AST) sqlForExpressionAdjustedByComparisonTimeRangeOffset(expr string, g
 		dateDiff = res
 
 		// DATE_TRUNC('year', t - INTERVAL (DATE_DIFF(start, end)) day)
-		tc := a.dialect.EscapeIdentifier(a.metricsView.TimeDimension)
+		tc := a.dialect.EscapeIdentifier(timeDim)
 		expr, err := a.dialect.IntervalSubtract(tc, dateDiff, mg.ToProto())
 		if err != nil {
 			return "", err

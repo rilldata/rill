@@ -10406,6 +10406,8 @@ func (m *APISpec) validate(all bool) error {
 
 	// no validation rules for OpenapiResponseSchemaJson
 
+	// no validation rules for OpenapiDefsPrefix
+
 	for idx, item := range m.GetSecurityRules() {
 		_, _ = idx, item
 
