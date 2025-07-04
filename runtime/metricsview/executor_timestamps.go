@@ -25,11 +25,11 @@ func (e *Executor) resolveDuckDBClickHouseAndPinot(ctx context.Context, timeExpr
 	if e.metricsView.WatermarkExpression != "" {
 		watermarkExpr = e.metricsView.WatermarkExpression
 	} else {
-		watermarkExpr = fmt.Sprintf("max(%s)", timeExpr)
+		watermarkExpr = fmt.Sprintf("if(count(*) = 0, NULL, max(%s))", timeExpr)
 	}
 
 	rangeSQL := fmt.Sprintf(
-		"SELECT min(%[1]s) as \"min\", max(%[1]s) as \"max\", %[2]s as \"watermark\" FROM %[3]s %[4]s",
+		"SELECT if(count(*) = 0, NULL, min(%[1]s)) as \"min\", if(count(*) = 0, NULL, max(%[1]s)) as \"max\", %[2]s as \"watermark\" FROM %[3]s %[4]s",
 		timeExpr,
 		watermarkExpr,
 		escapedTableName,
