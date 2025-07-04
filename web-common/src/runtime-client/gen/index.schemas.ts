@@ -219,7 +219,7 @@ export interface V1APISpec {
   openapiParametersJson?: string;
   openapiRequestSchemaJson?: string;
   openapiResponseSchemaJson?: string;
-  openapiDefsPrefixng;
+  openapiDefsPrefix?: string;
   securityRules?: V1SecurityRule[];
   skipNestedSecurity?: boolean;
 }
@@ -608,6 +608,11 @@ export interface V1ColumnTopKResponse {
   categoricalSummary?: V1CategoricalSummary;
 }
 
+export interface V1CompleteResponse {
+  conversationId?: string;
+  messages?: V1Message[];
+}
+
 export interface V1Component {
   spec?: V1ComponentSpec;
   state?: V1ComponentState;
@@ -699,6 +704,21 @@ export interface V1ConnectorState {
 export interface V1ConnectorV2 {
   spec?: V1ConnectorSpec;
   state?: V1ConnectorState;
+}
+
+export interface V1ContentBlock {
+  text?: string;
+  toolCall?: V1ToolCall;
+  toolResult?: V1ToolResult;
+}
+
+export interface V1Conversation {
+  id?: string;
+  ownerId?: string;
+  title?: string;
+  createdOn?: string;
+  updatedOn?: string;
+  messages?: V1Message[];
 }
 
 export interface V1CreateDirectoryResponse {
@@ -992,6 +1012,10 @@ export interface V1GenerateResolverResponse {
   resolverProperties?: V1GenerateResolverResponseResolverProperties;
 }
 
+export interface V1GetConversationResponse {
+  conversation?: V1Conversation;
+}
+
 export interface V1GetExploreResponse {
   explore?: V1Resource;
   metricsView?: V1Resource;
@@ -1114,6 +1138,10 @@ export interface V1ListConnectorDriversResponse {
   connectors?: V1ConnectorDriver[];
 }
 
+export interface V1ListConversationsResponse {
+  conversations?: V1Conversation[];
+}
+
 export interface V1ListExamplesResponse {
   examples?: V1Example[];
 }
@@ -1158,6 +1186,14 @@ export const V1LogLevel = {
 export interface V1MapType {
   keyType?: Runtimev1Type;
   valueType?: Runtimev1Type;
+}
+
+export interface V1Message {
+  id?: string;
+  role?: string;
+  content?: V1ContentBlock[];
+  createdOn?: string;
+  updatedOn?: string;
 }
 
 export interface V1MetricsView {
@@ -2199,6 +2235,20 @@ export interface V1TimeSeriesValue {
   records?: V1TimeSeriesValueRecords;
 }
 
+export type V1ToolCallInput = { [key: string]: unknown };
+
+export interface V1ToolCall {
+  id?: string;
+  name?: string;
+  input?: V1ToolCallInput;
+}
+
+export interface V1ToolResult {
+  id?: string;
+  content?: string;
+  isError?: boolean;
+}
+
 export interface V1TopK {
   entries?: TopKEntry[];
 }
@@ -2303,6 +2353,12 @@ export type RuntimeServiceEditInstanceBody = {
   connectors?: V1Connector[];
   variables?: RuntimeServiceEditInstanceBodyVariables;
   annotations?: RuntimeServiceEditInstanceBodyAnnotations;
+};
+
+export type RuntimeServiceCompleteBody = {
+  conversationId?: string;
+  messages?: V1Message[];
+  toolNames?: string[];
 };
 
 export type RuntimeServiceListFilesParams = {

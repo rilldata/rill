@@ -9,7 +9,7 @@
   export let disabled = false;
   export let rounded = false;
   export let size = 24;
-  export let bgDark = false;
+  export let bgGray = false;
   export let active = false;
   export let disableTooltip = false;
   export let disableHover = false;
@@ -37,8 +37,8 @@
       : 'text-gray-800'}
 {disableHover || disabled
       ? ''
-      : bgDark
-        ? 'hover:bg-gray-600'
+      : bgGray
+        ? 'hover:bg-gray-200'
         : 'hover:bg-gray-50'}"
     class:bg-gray-100={active}
     style:width="{size}px"
