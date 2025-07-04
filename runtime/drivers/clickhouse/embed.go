@@ -4,6 +4,7 @@ import (
 	"archive/tar"
 	"bufio"
 	"compress/gzip"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net"
@@ -11,7 +12,9 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"runtime"
+	"strconv"
 	"strings"
 	"sync"
 	"syscall"
@@ -115,7 +118,42 @@ func (e *embedClickHouse) start() (*clickhouse.Options, error) {
 	// We read StderrPipe initially to check for clickhouse running status.
 	// Once the process is closed the stderr pipe will be closed too, io.Copy will return EOF and the goroutine will exit.
 	go func() {
-		_, _ = io.Copy(io.Discard, stderr)
+		decoder := json.NewDecoder(stderr)
+
+		for {
+			var log clickhouseLog
+			if err := decoder.Decode(&log); err != nil {
+				if err == io.EOF {
+					// EOF means the process has exited and the stderr pipe is closed.
+					break
+				}
+				e.logger.Error("Failed to decode ClickHouse log", zap.Error(err))
+				continue
+			}
+
+			switch log.Level {
+			case "Fatal":
+				e.logger.Error("ClickHouse embedded server: fatal log received, restart server", zap.String("logger_name", log.LoggerName), zap.String("message", log.Message))
+			case "Critical", "Error":
+				code := parseErrorCode(log.Message)
+				if isUserError(code) {
+					e.logger.Debug("ClickHouse embedded server", zap.String("logger_name", log.LoggerName), zap.String("message", log.Message))
+				} else {
+					e.logger.Error("ClickHouse embedded server", zap.String("logger_name", log.LoggerName), zap.String("message", log.Message))
+				}
+			case "Warning", "Notice":
+				code := parseErrorCode(log.Message)
+				if isUserError(code) {
+					e.logger.Debug("ClickHouse embedded server", zap.String("logger_name", log.LoggerName), zap.String("message", log.Message))
+				} else {
+					e.logger.Warn("ClickHouse embedded server", zap.String("logger_name", log.LoggerName), zap.String("message", log.Message))
+				}
+			case "Information", "Debug", "Trace", "Test":
+				// even the information logs are too verbose in clickhouse so we log them at debug level
+				e.logger.Debug("ClickHouse embedded server", zap.String("logger_name", log.LoggerName), zap.String("message", log.Message))
+			}
+		}
+		stderr.Close()
 	}()
 
 	addr := net.JoinHostPort("localhost", fmt.Sprintf("%d", e.tcpPort))
@@ -263,8 +301,16 @@ func (e *embedClickHouse) getConfigContent() ([]byte, error) {
 
 	config := []byte(fmt.Sprintf(`<clickhouse>
     <logger>
-        <level>information</level>
+        <level>debug</level>
         <console>true</console>
+		<formatting>
+			<type>json</type>
+			<names>
+				<level>level</level>
+				<logger_name>logger_name</logger_name>
+				<message>message</message>
+			</names>
+		</formatting>
     </logger>
 
     <tcp_port>%d</tcp_port>
@@ -317,18 +363,23 @@ func (e *embedClickHouse) startAndWaitUntilReady(stderr io.Reader) error {
 		case <-timer.C:
 			return fmt.Errorf("clickhouse is not ready: timeout")
 		default:
-			if scanner.Scan() {
-				line := scanner.Text()
-				if strings.Contains(line, "<Error>") {
-					e.logger.Error(line)
-				} else if strings.Contains(line, "Application: Ready for connections") {
-					return nil
-				}
-			} else {
-				if err := scanner.Err(); err != nil {
-					return fmt.Errorf("error reading clickhouse logs: %w", err)
+			if !scanner.Scan() {
+				if scanner.Err() != nil {
+					return fmt.Errorf("error reading clickhouse logs: %w", scanner.Err())
 				}
 				return fmt.Errorf("clickhouse is not ready")
+			}
+			line := scanner.Text()
+			var logLine clickhouseLog
+			if err := json.Unmarshal([]byte(line), &logLine); err != nil {
+				// Till the clickhouse configs are parsed the logs may not be in JSON format.
+				continue
+			}
+			if logLine.LoggerName == "Application" && strings.Contains(logLine.Message, "Ready for connections") {
+				return nil
+			}
+			if logLine.Level == "Error" {
+				e.logger.Error("ClickHouse error", zap.String("message", logLine.Message), zap.String("logger_name", logLine.LoggerName))
 			}
 		}
 	}
@@ -420,4 +471,53 @@ func getFreePort() (int, error) {
 
 	addr := listener.Addr().(*net.TCPAddr)
 	return addr.Port, nil
+}
+
+var errorCodeRegexp = regexp.MustCompile(`Code:\s*(\d+)`)
+
+func parseErrorCode(msg string) int {
+	match := errorCodeRegexp.FindStringSubmatch(msg)
+	if len(match) < 2 {
+		return -1
+	}
+	code, err := strconv.Atoi(match[1])
+	if err != nil {
+		return -1
+	}
+	return code
+}
+
+// isUserError checks if the error code is a user error.
+// Clickhouse returns lots of exceptions that are not server errors or an issue with the server but rather a user error.
+// Exceptions are usually accompanied by an error code, which is a number that can be used to identify the type of error.
+// This function checks for specific error codes that are considered user errors.
+// As of writing this is not an exhaustive list so if you find an error that is not to be logged add the error code here.
+func isUserError(code int) bool {
+	switch code {
+	case 16: // no such column in table
+		return true
+	case 20: // number of columns does not match
+		return true
+	case 34, 35: // too many/too few arguments for function
+		return true
+	case 50: // unknown type
+		return true
+	case 38, 42, 43, 44, 46, 47, 51, 52, 53, 57, 60, 62, 63, 81, 82, 179: // different query syntax error
+		return true
+	case 181, 182, 183, 184, 215: // aggregate syntax error
+		return true
+	case 210: // network error but also thrown on query cancellation, connection failures etc which are usually auto recovered
+		return true
+	case 394: // query was cancelled
+		return true
+
+	default:
+		return false
+	}
+}
+
+type clickhouseLog struct {
+	LoggerName string `json:"logger_name"`
+	Message    string `json:"message"`
+	Level      string `json:"level"`
 }
