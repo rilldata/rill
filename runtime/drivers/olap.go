@@ -370,6 +370,13 @@ func (d Dialect) MetricsViewDimensionExpression(dimension *runtimev1.MetricsView
 	return d.EscapeIdentifier(dimension.Name), nil
 }
 
+func (d Dialect) GetTimeDimensionParameter() string {
+	if d == DialectPinot {
+		return "CAST(? AS TIMESTAMP)"
+	}
+	return "?"
+}
+
 func (d Dialect) SafeDivideExpression(numExpr, denExpr string) string {
 	switch d {
 	case DialectDruid:
