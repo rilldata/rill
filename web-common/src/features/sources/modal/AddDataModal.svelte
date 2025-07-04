@@ -170,6 +170,19 @@
 
   $: isModelingSupportedForDefaultOlapDriver =
     useIsModelingSupportedForDefaultOlapDriver($runtime.instanceId);
+
+  // TODO: figure out a better abstraction.
+  const PARAMETERS_CONNECTION_STRING_TOGGLE_CONNECTORS = [
+    "snowflake",
+    "clickhouse",
+    "druid",
+    "pinot",
+  ];
+  function isConfigurableConnector(connector: V1ConnectorDriver) {
+    return PARAMETERS_CONNECTION_STRING_TOGGLE_CONNECTORS.includes(
+      connector.name ?? "",
+    );
+  }
 </script>
 
 {#if step >= 1 || $duplicateSourceName}
@@ -255,7 +268,7 @@
         {:else if selectedConnector.name}
           <AddDataForm
             connector={selectedConnector}
-            formType={OLAP_CONNECTORS.includes(selectedConnector.name)
+            formType={isConfigurableConnector(selectedConnector)
               ? "connector"
               : "source"}
             onClose={resetModal}
