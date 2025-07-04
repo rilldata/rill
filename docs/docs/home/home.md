@@ -21,9 +21,9 @@ If you're looking for an in-depth tutorial that walks you through our available 
 
 Some Tutorials include:
 
-- [From Source to Deployment in 6 steps!](../tutorials/rill_basics/launch) : Data Import, Transformation, Dashboard, to Deployment!
+- [From Source to Deployment in 6 steps!](../tutorials/rill_basics/1-launch) : Data Import, Transformation, Dashboard, to Deployment!
 - [How to Administrate Rill](../tutorials/administration/) : Administrative tasks from the CLI and UI that an administrator would need to know to be a Rill Administrator
-- [Rill and ClickHouse](../tutorials/rill_clickhouse/r_ch_launch) : For our friends coming from ClickHouse, get started in **5 steps**.
+- [Rill and ClickHouse](../tutorials/rill_clickhouse/1-r_ch_launch) : For our friends coming from ClickHouse, get started in **5 steps**.
 - [Rill's Advanced Features](../tutorials/rill_developer_advanced_features/overview) : Customize your Rill Experience with our advanced features! 
 
 The final project is available on our [example repository](https://github.com/rilldata/rill-examples/tree/main/my-rill-tutorial). 
@@ -49,7 +49,7 @@ Curious about what's new? Peek into our latest and greatest updates in the [rele
 ## Don't be a stranger!
 We always appreciate hearing from our users and welcome any questions, comments, or concerns you may have. To get in touch with us, there are a few options available:
 1. _**File an issue**_: Spotted a bug or have a brilliant idea? Let us know by [filing an issue](https://github.com/rilldata/rill/issues/new/choose) on GitHub.
-2. _**Join the party on Discord!**_ Whether you have questions or need a hand getting started, our community and Rill team members is here to help. Join us at [Discord](https://discord.gg/DJ5qcsxE2m).
+2. _**Join the party on Discord!**_ Whether you have questions or need a hand getting started, our community and Rill team members are here to help. Join us at [Discord](https://discord.gg/DJ5qcsxE2m).
 3. _**Contact Rill Support**_: For existing prospects and customers, you can also reach [Rill Support](contact.md#contacting-support) through Slack, email, and in-app chat. 
 
 :::info

@@ -46,14 +46,14 @@ If you try to start two instances of Rill Developer, you will hit the following 
 Error: serve: server crashed: grpc port 49009 is in use by another process. Either kill that process or pass `--port-grpc PORT` to run Rill on another port
 ```
 
-In other to run two instances, please use the following flags with a unique port number.
+In order to run two instances, please use the following flags with a unique port number.
 ```bash
 rill start --port 10010 --port-grpc 10011
 ```
 
 ### How do I share my dashboard with my colleagues?
 
-To share your dashboards with your colleagues, you need to [deploy your dashboard to Rill Cloud](https://docs.rilldata.com/deploy/existing-project/). Once deployed, you have various ways to share this dashboard to your team. Since Rill does not charge by number of users, you can simply [add them to your organization](../manage/user-management#how-to-add-an-organization-user) and have them sign up to view the dashboard! Other ways to share the dashboard includes, [public URLs](../explore/public-url.md) for a limited view and [project invites](../manage/user-management#how-to-add-a-project-user).
+To share your dashboards with your colleagues, you need to [deploy your dashboard to Rill Cloud](../deploy/deploy-dashboard/deploy-dashboard). Once deployed, you have various ways to share this dashboard to your team. Since Rill does not charge by number of users, you can simply [add them to your organization](../manage/user-management#how-to-add-an-organization-user) and have them sign up to view the dashboard! Other ways to share the dashboard includes, [public URLs](../explore/public-url.md) for a limited view and [project invites](../manage/user-management#how-to-add-a-project-user).
 
 ## Rill Cloud
 
@@ -78,7 +78,7 @@ You can follow the same steps as above. After deploying to Rill Cloud, if you re
 
 ### How do I share my dashboard to other users?
 
-You will need to [invite users to your organization](../manage/user-management.md#how-to-add-an-organization-user) or [project](../manage/user-management#how-to-add-a-project-user), send them a URL for them to [request access to your dashboard](../manage/user-management#user-requests-access-via-url) or if you just want them to see the contents of your dashboard, you can look into using [public URLs](https://docs.rilldata.com/explore/share-url).
+You will need to [invite users to your organization](../manage/user-management.md#how-to-add-an-organization-user) or [project](../manage/user-management#how-to-add-a-project-user), send them a URL for them to [request access to your dashboard](../manage/user-management#user-requests-access-via-url) or if you just want them to see the contents of your dashboard, you can look into using [public URLs](../explore/public-url).
 
 
 ## Rill Cloud Trial
