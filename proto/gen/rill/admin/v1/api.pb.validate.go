@@ -37372,6 +37372,8 @@ func (m *RequestProjectAccessRequest) validate(all bool) error {
 
 	// no validation rules for Project
 
+	// no validation rules for Role
+
 	if len(errors) > 0 {
 		return RequestProjectAccessRequestMultiError(errors)
 	}

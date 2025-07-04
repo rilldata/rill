@@ -8,7 +8,7 @@
 
   export let disabled = false;
   export let rounded = false;
-  export let compact = false;
+  export let size = 24;
   export let bgDark = false;
   export let active = false;
   export let disableTooltip = false;
@@ -41,8 +41,8 @@
         ? 'hover:bg-gray-600'
         : 'hover:bg-gray-50'}"
     class:bg-gray-100={active}
-    style:width="{compact ? 20 : 24}px"
-    style:height="{compact ? 20 : 24}px"
+    style:width="{size}px"
+    style:height="{size}px"
     style:font-size="18px"
   >
     <slot />
