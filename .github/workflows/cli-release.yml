@@ -148,7 +148,8 @@ jobs:
             cache-control: no-store
 
       - name: Publish nightly docker image
-        if: ${{ env.PUBLISH_NIGHTLY == 'true' && matrix.platform == 'linux_amd64' }}
+        if: false
+        #if: ${{ env.PUBLISH_NIGHTLY == 'true' && matrix.platform == 'linux_amd64' }}
         run: |-
           echo '${{ secrets.DOCKERHUB_PASS }}' | docker login -u '${{ secrets.DOCKERHUB_USER }}' --password-stdin
           docker tag rilldata/rill:latest rilldata/rill:nightly
