@@ -2507,6 +2507,7 @@ message TelemetryResponse {}
 message RequestProjectAccessRequest {
   string organization = 1;
   string project = 2;
+  string role = 3;
 }
 
 message RequestProjectAccessResponse {}
