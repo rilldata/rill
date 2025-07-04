@@ -595,6 +595,11 @@ export interface V1GetReportMetaResponse {
   recipientUrls?: V1GetReportMetaResponseRecipientUrls;
 }
 
+export interface V1GetServiceResponse {
+  service?: V1OrganizationMemberService;
+  projectMemberships?: V1ProjectMemberService[];
+}
+
 export interface V1GetUserResponse {
   user?: V1User;
 }
@@ -693,6 +698,10 @@ export interface V1ListProjectInvitesResponse {
   nextPageToken?: string;
 }
 
+export interface V1ListProjectMemberServicesResponse {
+  services?: V1ProjectMemberService[];
+}
+
 export interface V1ListProjectMemberUsergroupsResponse {
   members?: V1MemberUsergroup[];
   nextPageToken?: string;
@@ -735,7 +744,7 @@ export interface V1ListServiceAuthTokensResponse {
 }
 
 export interface V1ListServicesResponse {
-  services?: V1Service[];
+  services?: V1OrganizationMemberService[];
 }
 
 export interface V1ListSuperusersResponse {
@@ -840,6 +849,21 @@ export interface V1OrganizationInvite {
   invitedBy?: string;
 }
 
+export type V1OrganizationMemberServiceAttributes = { [key: string]: unknown };
+
+export interface V1OrganizationMemberService {
+  id?: string;
+  name?: string;
+  orgId?: string;
+  orgName?: string;
+  roleName?: string;
+  /** True if the user has a project role in any project in the organization. */
+  hasProjectRoles?: boolean;
+  attributes?: V1OrganizationMemberServiceAttributes;
+  createdOn?: string;
+  updatedOn?: string;
+}
+
 export interface V1OrganizationMemberUser {
   userId?: string;
   userEmail?: string;
@@ -921,6 +945,22 @@ export interface V1ProjectInvite {
   roleName?: string;
   orgRoleName?: string;
   invitedBy?: string;
+}
+
+export type V1ProjectMemberServiceAttributes = { [key: string]: unknown };
+
+export interface V1ProjectMemberService {
+  id?: string;
+  name?: string;
+  orgId?: string;
+  orgName?: string;
+  orgRoleName?: string;
+  projectId?: string;
+  projectName?: string;
+  projectRoleName?: string;
+  attributes?: V1ProjectMemberServiceAttributes;
+  createdOn?: string;
+  updatedOn?: string;
 }
 
 export interface V1ProjectMemberUser {
@@ -1034,11 +1074,19 @@ export interface V1RemoveBookmarkResponse {
   [key: string]: unknown;
 }
 
+export interface V1RemoveOrganizationMemberServiceResponse {
+  [key: string]: unknown;
+}
+
 export interface V1RemoveOrganizationMemberUserResponse {
   [key: string]: unknown;
 }
 
 export interface V1RemoveOrganizationMemberUsergroupResponse {
+  [key: string]: unknown;
+}
+
+export interface V1RemoveProjectMemberServiceResponse {
   [key: string]: unknown;
 }
 
@@ -1135,11 +1183,14 @@ export interface V1SearchUsersResponse {
   nextPageToken?: string;
 }
 
+export type V1ServiceAttributes = { [key: string]: unknown };
+
 export interface V1Service {
   id?: string;
   name?: string;
   orgId?: string;
   orgName?: string;
+  attributes?: V1ServiceAttributes;
   createdOn?: string;
   updatedOn?: string;
 }
@@ -1151,11 +1202,19 @@ export interface V1ServiceToken {
   expiresOn?: string;
 }
 
+export interface V1SetOrganizationMemberServiceRoleResponse {
+  [key: string]: unknown;
+}
+
 export interface V1SetOrganizationMemberUserRoleResponse {
   [key: string]: unknown;
 }
 
 export interface V1SetOrganizationMemberUsergroupRoleResponse {
+  [key: string]: unknown;
+}
+
+export interface V1SetProjectMemberServiceRoleResponse {
   [key: string]: unknown;
 }
 
@@ -1834,12 +1893,25 @@ export type AdminServiceCreateDeploymentBody = {
   environment?: string;
 };
 
-export type AdminServiceCreateServiceParams = {
+export type AdminServiceCreateServiceBodyAttributes = {
+  [key: string]: unknown;
+};
+
+export type AdminServiceCreateServiceBody = {
   name?: string;
+  orgRoleName?: string;
+  projectName?: string;
+  projectRoleName?: string;
+  attributes?: AdminServiceCreateServiceBodyAttributes;
+};
+
+export type AdminServiceUpdateServiceBodyAttributes = {
+  [key: string]: unknown;
 };
 
 export type AdminServiceUpdateServiceBody = {
   newName?: string;
+  attributes?: AdminServiceUpdateServiceBodyAttributes;
 };
 
 export type AdminServiceListProjectsForUserByNameParams = {
