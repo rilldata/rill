@@ -65,7 +65,7 @@
 <style lang="postcss">
   .error-container {
     @apply border-red-600 bg-red-50;
-    @apply p-2 flex border rounded mb-3;
+    @apply p-2 flex border rounded;
   }
 
   .details-section {

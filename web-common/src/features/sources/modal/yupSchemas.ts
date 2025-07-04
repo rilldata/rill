@@ -169,6 +169,7 @@ export const getYupSchema = {
       .matches(/^\d+$/, "Port must be a number"),
     username: yup.string(),
     password: yup.string(),
+    cluster: yup.string(),
     ssl: yup.boolean(),
     name: yup.string(), // Required for typing
     // User-provided connector names requires a little refactor. Commenting out for now.

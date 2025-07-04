@@ -27,11 +27,10 @@ test.describe("ClickHouse connector", () => {
     await clickhouse.stop();
   });
 
-  // Flaky
   test.skip("Create connector using individual fields", async ({ page }) => {
     // Open the Add Data modal
-    await page.getByRole("button", { name: "Add Asset" }).click();
-    await page.getByRole("menuitem", { name: "Add Data" }).click();
+    await page.getByLabel("Add Asset").click();
+    await page.getByLabel("Add Data").click();
 
     // Select ClickHouse
     await page.locator("#clickhouse").click();
@@ -40,7 +39,7 @@ test.describe("ClickHouse connector", () => {
     await page
       .getByRole("dialog", { name: "ClickHouse" })
       .getByRole("button", {
-        name: "Connect",
+        name: "Test and Connect",
         exact: true,
       })
       .click();
@@ -63,18 +62,25 @@ test.describe("ClickHouse connector", () => {
       .getByRole("textbox", { name: "Port (optional)" })
       .fill(clickhouse.getPort().toString());
     await page.getByRole("textbox", { name: "Port (optional)" }).press("Tab");
-    await page
-      .getByRole("textbox", { name: "Username (optional)" })
-      .fill("default");
-    await page
-      .getByRole("textbox", { name: "Password (optional)" })
-      .fill("password");
+    await page.getByRole("textbox", { name: "Username" }).fill("default");
+    await page.getByRole("textbox", { name: "Password" }).fill("password");
 
     // Submit the form
     await page
       .getByRole("dialog", { name: "ClickHouse" })
-      .getByRole("button", { name: "Connect", exact: true })
+      .getByRole("button", { name: "Test and Connect", exact: true })
       .click();
+
+    // Wait for Testing connection...
+    await page
+      .getByRole("dialog", { name: "ClickHouse" })
+      .getByRole("button", { name: "Testing connection...", exact: true })
+      .waitFor({ state: "visible" });
+
+    // Expect modal to close
+    await expect(
+      page.getByRole("dialog", { name: "ClickHouse" }),
+    ).not.toBeVisible();
 
     // Wait for navigation to the new file
     await page.waitForURL(`**/files/connectors/clickhouse.yaml`);
@@ -105,21 +111,20 @@ test.describe("ClickHouse connector", () => {
     ).toBeVisible();
   });
 
-  // Flaky
   test.skip("Create connector using DSN", async ({ page }) => {
     // Open the Add Data modal
-    await page.getByRole("button", { name: "Add Asset" }).click();
-    await page.getByRole("menuitem", { name: "Add Data" }).click();
+    await page.getByLabel("Add Asset").click();
+    await page.getByLabel("Add Data").click();
 
     // Select ClickHouse
     await page.locator("#clickhouse").click();
 
     // Switch to the DSN tab
-    await page.getByRole("button", { name: "Use connection string" }).click();
+    await page.getByRole("tab", { name: "Enter connection string" }).click();
 
     // Fill in the form correctly
     await page
-      .getByRole("textbox", { name: "Connection string" })
+      .getByRole("textbox", { name: "Connection String" })
       .fill(
         `http://${clickhouse.getHost()}:${clickhouse.getPort().toString()}?username=default&password=password`,
       );
@@ -127,7 +132,7 @@ test.describe("ClickHouse connector", () => {
     // Submit the form
     await page
       .getByRole("dialog", { name: "ClickHouse" })
-      .getByRole("button", { name: "Connect", exact: true })
+      .getByRole("button", { name: "Test and Connect", exact: true })
       .click();
 
     // Wait for navigation to the new file
