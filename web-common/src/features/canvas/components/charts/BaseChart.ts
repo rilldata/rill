@@ -5,6 +5,7 @@ import {
   createComponent,
   getFilterOptions,
 } from "@rilldata/web-common/features/canvas/components/util";
+import { getPivotStateFromChartSpec } from "@rilldata/web-common/features/canvas/explore-link/canvas-explore-transformer";
 import type {
   AllKeys,
   ComponentInputParam,
@@ -12,7 +13,11 @@ import type {
 } from "@rilldata/web-common/features/canvas/inspector/types";
 import type { CanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
 import type { TimeAndFilterStore } from "@rilldata/web-common/features/canvas/stores/types";
+import { splitWhereFilter } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
+import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
+import { DashboardState_ActivePage } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import type {
+  V1Expression,
   V1MetricsViewSpec,
   V1Resource,
 } from "@rilldata/web-common/runtime-client";
@@ -42,6 +47,7 @@ export abstract class BaseChart<
   minSize = { width: 4, height: 4 };
   defaultSize = { width: 6, height: 4 };
   resetParams = [];
+  combinedWhere: V1Expression | undefined;
   type: ChartType;
   chartType: Writable<ChartType>;
   component = Chart;
@@ -92,6 +98,23 @@ export abstract class BaseChart<
       showAxisTitle: true,
       zeroBasedOrigin: true,
       showNull: false,
+    };
+  }
+
+  getExploreTransformerProperties(): Partial<ExploreState> {
+    const spec = get(this.specStore);
+    const { dimensionFilters, dimensionThresholdFilters } = splitWhereFilter(
+      this.combinedWhere,
+    );
+
+    const timeGrain = get(this.timeAndFilterStore)?.timeGrain;
+
+    return {
+      whereFilter: dimensionFilters,
+      dimensionThresholdFilters,
+      showTimeComparison: false,
+      activePage: DashboardState_ActivePage.PIVOT,
+      pivot: getPivotStateFromChartSpec(spec, timeGrain),
     };
   }
 
