@@ -3,6 +3,7 @@ package azure
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -116,7 +117,17 @@ var _ drivers.Handle = &Connection{}
 
 // Ping implements drivers.Handle.
 func (c *Connection) Ping(ctx context.Context) error {
-	return drivers.ErrNotImplemented
+	client, err := c.newStorageClient()
+	if err != nil {
+		return fmt.Errorf("failed to initialize Azure storage client: %w", err)
+	}
+
+	_, err = client.GetAccountInfo(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("failed to get Azure account info: %w", err)
+	}
+
+	return nil
 }
 
 // Driver implements drivers.Connection.
@@ -129,6 +140,11 @@ func (c *Connection) Config() map[string]any {
 	m := make(map[string]any, 0)
 	_ = mapstructure.Decode(c.config, &m)
 	return m
+}
+
+// InformationSchema implements drivers.Handle.
+func (c *Connection) AsInformationSchema() (drivers.InformationSchema, bool) {
+	return nil, false
 }
 
 // Close implements drivers.Connection.

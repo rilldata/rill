@@ -8,7 +8,6 @@ import (
 	"strings"
 	"time"
 
-	"connectrpc.com/vanguard"
 	"connectrpc.com/vanguard/vanguardgrpc"
 	grpc_auth "github.com/grpc-ecosystem/go-grpc-middleware/auth"
 	"github.com/grpc-ecosystem/go-grpc-middleware/util/metautils"
@@ -135,9 +134,26 @@ func New(logger *zap.Logger, adm *admin.Service, issuer *runtimeauth.Issuer, lim
 	}, nil
 }
 
-// ServeGRPC Starts the gRPC server.
-func (s *Server) ServeGRPC(ctx context.Context) (*vanguard.Transcoder, error) {
-	server := grpc.NewServer(
+// Starts the HTTP server.
+func (s *Server) ServeHTTP(ctx context.Context) error {
+	handler, err := s.HTTPHandler(ctx)
+	if err != nil {
+		return err
+	}
+
+	return graceful.ServeHTTP(ctx, handler, graceful.ServeOptions{
+		Port:     s.opts.HTTPPort,
+		GRPCPort: s.opts.GRPCPort,
+		Logger:   s.logger,
+	})
+}
+
+// HTTPHandler returns a HTTP handler that serves REST and gRPC.
+func (s *Server) HTTPHandler(ctx context.Context) (http.Handler, error) {
+	mux := http.NewServeMux()
+
+	// Create gRPC server
+	grpcServer := grpc.NewServer(
 		grpc.ChainStreamInterceptor(
 			middleware.TimeoutStreamServerInterceptor(timeoutSelector),
 			observability.LoggingStreamServerInterceptor(s.logger),
@@ -158,40 +174,20 @@ func (s *Server) ServeGRPC(ctx context.Context) (*vanguard.Transcoder, error) {
 		),
 		grpc.StatsHandler(otelgrpc.NewServerHandler()),
 	)
+	adminv1.RegisterAdminServiceServer(grpcServer, s)
+	adminv1.RegisterAIServiceServer(grpcServer, s)
+	adminv1.RegisterTelemetryServiceServer(grpcServer, s)
 
-	adminv1.RegisterAdminServiceServer(server, s)
-	adminv1.RegisterAIServiceServer(server, s)
-	adminv1.RegisterTelemetryServiceServer(server, s)
-
-	return vanguardgrpc.NewTranscoder(server)
-}
-
-// Starts the HTTP server.
-func (s *Server) ServeHTTP(ctx context.Context) error {
-	transcoder, err := s.ServeGRPC(ctx)
+	// Add gRPC and gRPC-to-REST transcoder.
+	// This will be the fallback for REST routes like `/v1/ping` and GPRC routes like `/rill.admin.v1.AdminService/Ping`.
+	transcoder, err := vanguardgrpc.NewTranscoder(grpcServer)
 	if err != nil {
-		return err
+		return nil, fmt.Errorf("failed to create transcoder: %w", err)
 	}
-
-	handler, err := s.HTTPHandler(ctx, transcoder)
-	if err != nil {
-		return err
-	}
-
-	server := &http.Server{Handler: handler}
-	s.logger.Sugar().Infof("serving admin HTTP on port:%v", s.opts.HTTPPort)
-
-	return graceful.ServeHTTP(ctx, server, graceful.ServeOptions{
-		Port: s.opts.HTTPPort,
-	})
-}
-
-// HTTPHandler HTTP handler serving REST gateway.
-func (s *Server) HTTPHandler(ctx context.Context, transcoder *vanguard.Transcoder) (http.Handler, error) {
-	mux := http.NewServeMux()
-
-	mux.Handle("/", transcoder)
 	mux.Handle("/v1/", transcoder)
+	mux.Handle("/rill.admin.v1.AdminService/", transcoder)
+	mux.Handle("/rill.admin.v1.AIService/", transcoder)
+	mux.Handle("/rill.admin.v1.TelemetryService/", transcoder)
 
 	// Add runtime proxy
 	proxyHandler := observability.Middleware(
@@ -238,6 +234,14 @@ func (s *Server) HTTPHandler(ctx context.Context, transcoder *vanguard.Transcode
 			mux.Handle("/payment/webhook", observability.Middleware("admin", s.logger, inner))
 		}
 	}
+
+	// Temporary endpoint for testing headers.
+	// TODO: Remove this.
+	mux.HandleFunc("/v1/dump-headers", func(w http.ResponseWriter, r *http.Request) {
+		for k, v := range r.Header {
+			fmt.Fprintf(w, "%s: %v\n", k, v)
+		}
+	})
 
 	// Build CORS options for admin server
 

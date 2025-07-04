@@ -344,7 +344,7 @@ func (s *Server) DeployProject(ctx context.Context, r *connect.Request[localv1.D
 			ArchiveAssetId:   assetID,
 		}
 	} else if r.Msg.Upload { // upload repo to rill managed storage instead of github
-		ghRepo, err := s.app.ch.GitHelper(r.Msg.ProjectName, s.app.ProjectPath).PushToNewManagedRepo(ctx)
+		ghRepo, err := s.app.ch.GitHelper(r.Msg.Org, r.Msg.ProjectName, s.app.ProjectPath).PushToNewManagedRepo(ctx)
 		if err != nil {
 			return nil, err
 		}
@@ -443,6 +443,23 @@ func (s *Server) DeployProject(ctx context.Context, r *connect.Request[localv1.D
 		return nil, err
 	}
 
+	// if the project is backed by git repo, we need to push the .rillcloud directory to the remote
+	if r.Msg.Upload {
+		err = s.app.ch.GitHelper(r.Msg.Org, r.Msg.ProjectName, s.app.ProjectPath).PushToManagedRepo(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("failed to push .rillcloud directory to remote: %w", err)
+		}
+	} else if !r.Msg.Archive {
+		author, err := s.app.ch.GitSignature(ctx, s.app.ProjectPath)
+		if err != nil {
+			return nil, fmt.Errorf("failed to generate git commit signature: %w", err)
+		}
+		err = gitutil.CommitAndForcePush(ctx, s.app.ProjectPath, &gitutil.Config{Remote: projResp.Project.GitRemote, DefaultBranch: projResp.Project.ProdBranch}, "Autocommit .rillcloud dir", author)
+		if err != nil {
+			return nil, fmt.Errorf("failed to push .rillcloud directory to remote: %w", err)
+		}
+	}
+
 	// Parse .env and push it as variables
 	dotenv, err := ParseDotenv(ctx, s.app.ProjectPath)
 	if err != nil {
@@ -515,7 +532,7 @@ func (s *Server) RedeployProject(ctx context.Context, r *connect.Request[localv1
 	} else if r.Msg.Reupload {
 		if projResp.Project.ArchiveAssetId != "" {
 			// project was previously deployed using zip and ship
-			ghRepo, err := s.app.ch.GitHelper(projResp.Project.Name, s.app.ProjectPath).PushToNewManagedRepo(ctx)
+			ghRepo, err := s.app.ch.GitHelper(projResp.Project.OrgName, projResp.Project.Name, s.app.ProjectPath).PushToNewManagedRepo(ctx)
 			if err != nil {
 				return nil, err
 			}
@@ -528,7 +545,7 @@ func (s *Server) RedeployProject(ctx context.Context, r *connect.Request[localv1
 				return nil, err
 			}
 		} else if projResp.Project.ManagedGitId != "" {
-			err = s.app.ch.GitHelper(projResp.Project.Name, s.app.ProjectPath).PushToManagedRepo(ctx)
+			err = s.app.ch.GitHelper(projResp.Project.OrgName, projResp.Project.Name, s.app.ProjectPath).PushToManagedRepo(ctx)
 			if err != nil {
 				return nil, err
 			}

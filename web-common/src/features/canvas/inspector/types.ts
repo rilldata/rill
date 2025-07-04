@@ -24,7 +24,7 @@ export type ChartFieldInput = {
   hideTimeDimension?: boolean;
   originSelector?: boolean;
   sortSelector?: boolean;
-  limitSelector?: boolean;
+  limitSelector?: { defaultLimit: number };
   nullSelector?: boolean;
   labelAngleSelector?: boolean;
   axisRangeSelector?: boolean;

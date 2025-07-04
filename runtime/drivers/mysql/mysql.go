@@ -3,12 +3,18 @@ package mysql
 import (
 	"context"
 	"errors"
+	"fmt"
 	"maps"
 
+	"github.com/jmoiron/sqlx"
+	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/storage"
 	"go.uber.org/zap"
+
+	// Load mysql driver
+	_ "github.com/go-sql-driver/mysql"
 )
 
 func init() {
@@ -70,7 +76,7 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 	if instanceID == "" {
 		return nil, errors.New("mysql driver can't be shared")
 	}
-	// actual db connection is opened during query
+
 	return &connection{
 		config: config,
 	}, nil
@@ -94,7 +100,13 @@ type connection struct {
 
 // Ping implements drivers.Handle.
 func (c *connection) Ping(ctx context.Context) error {
-	return drivers.ErrNotImplemented
+	// Open DB handle
+	db, err := c.getDB()
+	if err != nil {
+		return fmt.Errorf("failed to open connection: %w", err)
+	}
+	defer db.Close()
+	return db.PingContext(ctx)
 }
 
 // Migrate implements drivers.Connection.
@@ -152,6 +164,11 @@ func (c *connection) AsOLAP(instanceID string) (drivers.OLAPStore, bool) {
 	return nil, false
 }
 
+// AsInformationSchema implements drivers.Connection.
+func (c *connection) AsInformationSchema() (drivers.InformationSchema, bool) {
+	return nil, false
+}
+
 // AsObjectStore implements drivers.Connection.
 func (c *connection) AsObjectStore() (drivers.ObjectStore, bool) {
 	return nil, false
@@ -180,4 +197,20 @@ func (c *connection) AsWarehouse() (drivers.Warehouse, bool) {
 // AsNotifier implements drivers.Connection.
 func (c *connection) AsNotifier(properties map[string]any) (drivers.Notifier, error) {
 	return nil, drivers.ErrNotNotifier
+}
+
+// getDB opens a new sqlx.DB connection using the config.
+func (c *connection) getDB() (*sqlx.DB, error) {
+	conf := &ConfigProperties{}
+	if err := mapstructure.WeakDecode(c.config, conf); err != nil {
+		return nil, fmt.Errorf("failed to decode config: %w", err)
+	}
+	if conf.DSN == "" {
+		return nil, fmt.Errorf("dsn not provided")
+	}
+	db, err := sqlx.Open("mysql", conf.DSN)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open connection: %w", err)
+	}
+	return db, nil
 }

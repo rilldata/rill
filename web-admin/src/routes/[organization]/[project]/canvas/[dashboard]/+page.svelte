@@ -1,21 +1,21 @@
 <script lang="ts">
-  import { page } from "$app/stores";
   import { onNavigate } from "$app/navigation";
+  import { page } from "$app/stores";
   import { errorStore } from "@rilldata/web-admin/components/errors/error-store";
   import DashboardBuilding from "@rilldata/web-admin/features/dashboards/DashboardBuilding.svelte";
+  import {
+    DashboardBannerID,
+    DashboardBannerPriority,
+  } from "@rilldata/web-common/components/banner/constants";
   import CanvasDashboardEmbed from "@rilldata/web-common/features/canvas/CanvasDashboardEmbed.svelte";
   import CanvasThemeProvider from "@rilldata/web-common/features/canvas/CanvasThemeProvider.svelte";
   import {
     ResourceKind,
     useResource,
   } from "@rilldata/web-common/features/entity-management/resource-selectors.js";
+  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store.js";
-  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
-  import {
-    DashboardBannerID,
-    DashboardBannerPriority,
-  } from "@rilldata/web-common/components/banner/constants";
 
   const PollIntervalWhenDashboardFirstReconciling = 1000;
   const PollIntervalWhenDashboardErrored = 5000;
@@ -25,7 +25,7 @@
 
   $: canvasQuery = useResource(instanceId, canvasName, ResourceKind.Canvas, {
     refetchInterval: (query) => {
-      const resource = query.state.data.resource;
+      const resource = query?.state?.data?.resource;
       if (!resource) return false;
       if (isCanvasReconcilingForFirstTime(resource))
         return PollIntervalWhenDashboardFirstReconciling;

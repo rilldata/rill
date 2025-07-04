@@ -40,7 +40,7 @@ func (c *Connection) ListDatasets(ctx context.Context, req *runtimev1.BigQueryLi
 	return names, nextToken, nil
 }
 
-func (c *Connection) ListTables(ctx context.Context, req *runtimev1.BigQueryListTablesRequest) ([]string, string, error) {
+func (c *Connection) ListBigQueryTables(ctx context.Context, req *runtimev1.BigQueryListTablesRequest) ([]string, string, error) {
 	opts, err := c.clientOption(ctx)
 	if err != nil {
 		return nil, "", err

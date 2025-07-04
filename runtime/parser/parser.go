@@ -195,7 +195,7 @@ type Parser struct {
 
 // ParseRillYAML parses only the project's rill.yaml (or rill.yml) file.
 func ParseRillYAML(ctx context.Context, repo drivers.RepoStore, instanceID string) (*RillYAML, error) {
-	files, err := repo.ListRecursive(ctx, "rill.{yaml,yml}", true)
+	files, err := repo.ListGlob(ctx, "rill.{yaml,yml}", true)
 	if err != nil {
 		return nil, fmt.Errorf("could not list project files: %w", err)
 	}
@@ -337,7 +337,7 @@ func (p *Parser) reload(ctx context.Context) error {
 	p.deletedResources = nil
 
 	// Load entire repo
-	files, err := p.Repo.ListRecursive(ctx, "**/*.{env,sql,yaml,yml}", true)
+	files, err := p.Repo.ListGlob(ctx, "**/*.{env,sql,yaml,yml}", true)
 	if err != nil {
 		return fmt.Errorf("could not list project files: %w", err)
 	}
@@ -1077,8 +1077,8 @@ func pathIsIgnored(p string) bool {
 	return false
 }
 
-// normalizePath normalizes a user-provided path to the format returned from ListRecursive.
-// TODO: Change this once ListRecursive returns paths without leading slash.
+// normalizePath normalizes a user-provided path to the format returned from ListGlob.
+// TODO: Change this once ListGlob returns paths without leading slash.
 func normalizePath(path string) string {
 	if path != "" && path[0] != '/' {
 		return "/" + path

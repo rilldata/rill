@@ -4,11 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 )
 
+// Health reports a combined health status for the runtime and all instances.
 type Health struct {
 	HangingConn     error
 	Registry        error
@@ -20,25 +22,51 @@ type Health struct {
 // We want to avoid hitting the underlying OLAP engine when OLAP engine can scale to zero when no queries are generated within TTL.
 // We do not want to keep it running just to check health. In such cases, we use the cached health information.
 type InstanceHealth struct {
+	// Controller error. The controller is considered healthy if this is empty.
 	Controller string `json:"controller"`
-	// OLAP error can be cached
-	OLAP string `json:"olap"`
-	Repo string `json:"repo"`
-	// MetricsViews errors can be cached
-	MetricsViews      map[string]InstanceHealthMetricsViewError `json:"metrics_views"`
-	ParseErrCount     int                                       `json:"parse_error_count"`
-	ReconcileErrCount int                                       `json:"reconcile_error_count"`
-
-	// cached health check information can be used if controller version is same and metrics view spec is same
+	// ControllerVersion is the version of the controller that cached this health information.
+	// It is used for health cache checks.
 	ControllerVersion int64 `json:"controller_version"`
+	// OLAP error. May be cached for OLAPs that scale to zero. The OLAP is considered healthy if this is empty.
+	OLAP string `json:"olap"`
+	// Repo error. The repo is considered healthy if this is empty.
+	Repo string `json:"repo"`
+	// MetricsViews contains health checks for metrics views.
+	MetricsViews map[string]InstanceHealthMetricsViewError `json:"metrics_views"`
+	// ParseErrCount is the number of parse errors in the project parser.
+	ParseErrCount int `json:"parse_error_count"`
+	// ReconcileErrCount is the number of resources with reconcile errors.
+	ReconcileErrCount int `json:"reconcile_error_count"`
 }
 
+// InstanceHealthMetricsViewError contains health information for a single metrics view.
 type InstanceHealthMetricsViewError struct {
 	Err     string `json:"err"`
 	Version int64  `json:"version"`
 }
 
-func (r *Runtime) Health(ctx context.Context) (*Health, error) {
+// Proto converts InstanceHealth to the proto representation.
+func (h *InstanceHealth) Proto() *runtimev1.InstanceHealth {
+	if h == nil {
+		return nil
+	}
+	r := &runtimev1.InstanceHealth{
+		ControllerError:     h.Controller,
+		RepoError:           h.Repo,
+		OlapError:           h.OLAP,
+		ParseErrorCount:     int32(h.ParseErrCount),
+		ReconcileErrorCount: int32(h.ReconcileErrCount),
+	}
+	r.MetricsViewErrors = make(map[string]string, len(h.MetricsViews))
+	for k, v := range h.MetricsViews {
+		if v.Err != "" {
+			r.MetricsViewErrors[k] = v.Err
+		}
+	}
+	return r
+}
+
+func (r *Runtime) Health(ctx context.Context, fullStatus bool) (*Health, error) {
 	instances, err := r.registryCache.list()
 	if err != nil {
 		return nil, err
@@ -51,7 +79,7 @@ func (r *Runtime) Health(ctx context.Context) (*Health, error) {
 			return nil, err
 		}
 		// if there is a single instance hosted on this runtime then instead of returning error msgs throw error if OLAP/repo/controller are in error state
-		if len(instances) == 1 {
+		if len(instances) == 1 && !fullStatus {
 			h := ih[inst.ID]
 			if h.OLAP != "" {
 				return nil, errors.New(h.OLAP)
@@ -73,10 +101,10 @@ func (r *Runtime) Health(ctx context.Context) (*Health, error) {
 
 func (r *Runtime) InstanceHealth(ctx context.Context, instanceID string) (*InstanceHealth, error) {
 	res := &InstanceHealth{}
-	// check repo error
-	err := r.pingRepo(ctx, instanceID)
+
+	inst, err := r.Instance(ctx, instanceID)
 	if err != nil {
-		res.Repo = err.Error()
+		return nil, err
 	}
 
 	ctrl, err := r.Controller(ctx, instanceID)
@@ -92,25 +120,21 @@ func (r *Runtime) InstanceHealth(ctx context.Context, instanceID string) (*Insta
 	res.ParseErrCount = len(parser.GetProjectParser().State.ParseErrors)
 
 	cachedHealth, _ := r.cachedInstanceHealth(ctx, ctrl.InstanceID, ctrl.catalog.version)
-	// set to true if any of the olap engines can be scaled to zero
-	var canScaleToZero bool
+
+	// check repo error
+	err = r.checkRepo(ctx, inst)
+	if err == nil {
+		res.Repo = ""
+	} else {
+		res.Repo = err.Error()
+	}
 
 	// check OLAP error
-	olap, release, err := r.OLAP(ctx, instanceID, "")
-	if err != nil {
-		res.OLAP = err.Error()
+	err = r.checkOLAP(ctx, inst, cachedHealth)
+	if err == nil {
+		res.OLAP = ""
 	} else {
-		mayBeScaledToZero := olap.MayBeScaledToZero(ctx)
-		canScaleToZero = canScaleToZero || mayBeScaledToZero
-		if cachedHealth != nil && mayBeScaledToZero {
-			res.OLAP = cachedHealth.OLAP
-		} else {
-			err = r.pingOLAP(ctx, olap)
-			if err != nil {
-				res.OLAP = err.Error()
-			}
-		}
-		release()
+		res.OLAP = err.Error()
 	}
 
 	// check resources with reconcile errors
@@ -140,7 +164,6 @@ func (r *Runtime) InstanceHealth(ctx context.Context, instanceID string) (*Insta
 			continue
 		}
 		mayBeScaledToZero := olap.MayBeScaledToZero(ctx)
-		canScaleToZero = canScaleToZero || mayBeScaledToZero
 		release()
 
 		// only use cached health if the OLAP can be scaled to zero
@@ -214,43 +237,40 @@ func (r *Runtime) cachedInstanceHealth(ctx context.Context, instanceID string, c
 	return c, true
 }
 
-func (r *Runtime) pingRepo(ctx context.Context, instanceID string) error {
-	repo, rr, err := r.Repo(ctx, instanceID)
+func (r *Runtime) checkRepo(ctx context.Context, inst *drivers.Instance) error {
+	h, release, err := r.AcquireHandle(ctx, inst.ID, inst.RepoConnector)
 	if err != nil {
 		return err
 	}
-	defer rr()
-	h, ok := repo.(drivers.Handle)
+	defer release()
+
+	_, ok := h.AsRepoStore(inst.ID)
 	if !ok {
-		return errors.New("unable to ping repo")
+		return fmt.Errorf("connector %q is not a repo connector", inst.RepoConnector)
 	}
+
 	return h.Ping(ctx)
 }
 
-func (r *Runtime) pingOLAP(ctx context.Context, olap drivers.OLAPStore) error {
-	h, ok := olap.(drivers.Handle)
-	if !ok {
-		return errors.New("unable to ping olap")
+func (r *Runtime) checkOLAP(ctx context.Context, inst *drivers.Instance, cachedHealth *InstanceHealth) error {
+	h, release, err := r.AcquireHandle(ctx, inst.ID, inst.ResolveOLAPConnector())
+	if err != nil {
+		return err
 	}
-	return h.Ping(ctx)
-}
+	defer release()
 
-func (h *InstanceHealth) To() *runtimev1.InstanceHealth {
-	if h == nil {
+	olap, ok := h.AsOLAP(inst.ID)
+	if !ok {
+		return fmt.Errorf("connector %q is not an OLAP connector", inst.ResolveOLAPConnector())
+	}
+
+	mayBeScaledToZero := olap.MayBeScaledToZero(ctx)
+	if cachedHealth != nil && mayBeScaledToZero {
+		if cachedHealth.OLAP != "" {
+			return errors.New(cachedHealth.OLAP)
+		}
 		return nil
 	}
-	r := &runtimev1.InstanceHealth{
-		ControllerError:     h.Controller,
-		RepoError:           h.Repo,
-		OlapError:           h.OLAP,
-		ParseErrorCount:     int32(h.ParseErrCount),
-		ReconcileErrorCount: int32(h.ReconcileErrCount),
-	}
-	r.MetricsViewErrors = make(map[string]string, len(h.MetricsViews))
-	for k, v := range h.MetricsViews {
-		if v.Err != "" {
-			r.MetricsViewErrors[k] = v.Err
-		}
-	}
-	return r
+
+	return h.Ping(ctx)
 }

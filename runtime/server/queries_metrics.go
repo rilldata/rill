@@ -28,6 +28,8 @@ func (s *Server) MetricsViewAggregation(ctx context.Context, req *runtimev1.Metr
 		attribute.StringSlice("args.sort.names", marshalMetricsViewAggregationSort(req.Sort)),
 		attribute.String("args.time_start", safeTimeStr(req.TimeStart)),
 		attribute.String("args.time_end", safeTimeStr(req.TimeEnd)),
+		attribute.String("args.time_range", marshalTimeRange(req.TimeRange)),
+		attribute.String("args.comparison_time_range", marshalTimeRange(req.ComparisonTimeRange)),
 		attribute.Int("args.filter_count", filterCount(req.Where)),
 		attribute.Int64("args.limit", req.Limit),
 		attribute.Int64("args.offset", req.Offset),
@@ -201,6 +203,7 @@ func (s *Server) MetricsViewTimeSeries(ctx context.Context, req *runtimev1.Metri
 		attribute.String("args.time_granularity", req.TimeGranularity.String()),
 		attribute.Int("args.filter_count", filterCount(req.Where)),
 		attribute.Int("args.priority", int(req.Priority)),
+		attribute.String("args.time_dimension", req.TimeDimension),
 	)
 
 	s.addInstanceRequestAttributes(ctx, req.InstanceId)
@@ -222,6 +225,7 @@ func (s *Server) MetricsViewTimeSeries(ctx context.Context, req *runtimev1.Metri
 		TimeZone:        req.TimeZone,
 		Filter:          req.Filter,
 		SecurityClaims:  auth.GetClaims(ctx).SecurityClaims(),
+		TimeDimension:   req.TimeDimension,
 	}
 	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {
@@ -240,6 +244,7 @@ func (s *Server) MetricsViewTotals(ctx context.Context, req *runtimev1.MetricsVi
 		attribute.String("args.time_end", safeTimeStr(req.TimeEnd)),
 		attribute.Int("args.filter_count", filterCount(req.Where)),
 		attribute.Int("args.priority", int(req.Priority)),
+		attribute.String("args.time_dimension", req.TimeDimension),
 	)
 
 	s.addInstanceRequestAttributes(ctx, req.InstanceId)
@@ -257,6 +262,7 @@ func (s *Server) MetricsViewTotals(ctx context.Context, req *runtimev1.MetricsVi
 		WhereSQL:        req.WhereSql,
 		Filter:          req.Filter,
 		SecurityClaims:  auth.GetClaims(ctx).SecurityClaims(),
+		TimeDimension:   req.TimeDimension,
 	}
 	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {
@@ -278,6 +284,7 @@ func (s *Server) MetricsViewRows(ctx context.Context, req *runtimev1.MetricsView
 		attribute.Int("args.limit", int(req.Limit)),
 		attribute.Int64("args.offset", req.Offset),
 		attribute.Int("args.priority", int(req.Priority)),
+		attribute.String("args.time_dimension", req.TimeDimension),
 	)
 
 	s.addInstanceRequestAttributes(ctx, req.InstanceId)
@@ -307,6 +314,7 @@ func (s *Server) MetricsViewRows(ctx context.Context, req *runtimev1.MetricsView
 		ResolvedMVSecurity: security,
 		Streaming:          mv.Streaming,
 		Filter:             req.Filter,
+		TimeDimension:      req.TimeDimension,
 	}
 	err = s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {
@@ -322,6 +330,7 @@ func (s *Server) MetricsViewTimeRange(ctx context.Context, req *runtimev1.Metric
 		attribute.String("args.instance_id", req.InstanceId),
 		attribute.String("args.metric_view", req.MetricsViewName),
 		attribute.Int("args.priority", int(req.Priority)),
+		attribute.String("args.time_dimension", req.TimeDimension),
 	)
 
 	s.addInstanceRequestAttributes(ctx, req.InstanceId)
@@ -330,7 +339,7 @@ func (s *Server) MetricsViewTimeRange(ctx context.Context, req *runtimev1.Metric
 		return nil, ErrForbidden
 	}
 
-	ts, err := queries.ResolveTimestampResult(ctx, s.runtime, req.InstanceId, req.MetricsViewName, auth.GetClaims(ctx).SecurityClaims(), int(req.Priority))
+	ts, err := queries.ResolveTimestampResult(ctx, s.runtime, req.InstanceId, req.MetricsViewName, req.TimeDimension, auth.GetClaims(ctx).SecurityClaims(), int(req.Priority))
 	if err != nil {
 		return nil, err
 	}
@@ -377,6 +386,7 @@ func (s *Server) MetricsViewSearch(ctx context.Context, req *runtimev1.MetricsVi
 		attribute.String("args.metric_view", req.MetricsViewName),
 		attribute.StringSlice("args.dimensions.names", req.Dimensions),
 		attribute.String("args.search", req.Search),
+		attribute.String("args.time_range", marshalTimeRange(req.TimeRange)),
 		attribute.Int("args.filter_count", filterCount(req.Where)),
 		attribute.Int("args.priority", int(req.Priority)),
 	)
@@ -412,6 +422,7 @@ func (s *Server) MetricsViewTimeRanges(ctx context.Context, req *runtimev1.Metri
 		attribute.String("args.instance_id", req.InstanceId),
 		attribute.String("args.metric_view", req.MetricsViewName),
 		attribute.StringSlice("args.expressions", req.Expressions),
+		attribute.String("args.time_dimension", req.TimeDimension),
 	)
 
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadMetrics) {
@@ -424,7 +435,7 @@ func (s *Server) MetricsViewTimeRanges(ctx context.Context, req *runtimev1.Metri
 		return nil, err
 	}
 
-	ts, err := queries.ResolveTimestampResult(ctx, s.runtime, req.InstanceId, req.MetricsViewName, auth.GetClaims(ctx).SecurityClaims(), int(req.Priority))
+	ts, err := queries.ResolveTimestampResult(ctx, s.runtime, req.InstanceId, req.MetricsViewName, req.TimeDimension, auth.GetClaims(ctx).SecurityClaims(), int(req.Priority))
 	if err != nil {
 		return nil, err
 	}
@@ -464,7 +475,8 @@ func (s *Server) MetricsViewTimeRanges(ctx context.Context, req *runtimev1.Metri
 			End:          timestamppb.New(end),
 			RoundToGrain: timeutil.TimeGrainToAPI(grain),
 			// for a reference
-			Expression: tr,
+			Expression:    tr,
+			TimeDimension: req.TimeDimension,
 		}
 	}
 
