@@ -6,9 +6,17 @@ import {
   type MeasureFilterEntry,
 } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
 import { splitWhereFilter } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
+import { includeExcludeModeFromFilters } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores.ts";
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
+import { mapV1TimeRangeToSelectedTimeRange } from "@rilldata/web-common/features/dashboards/time-controls/time-range-mappers.ts";
 import { getExploreName } from "@rilldata/web-common/features/explore-mappers/utils.ts";
-import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
+import { Filters } from "@rilldata/web-common/features/scheduled-reports/filters/Filters.ts";
+import { MetricsViewData } from "@rilldata/web-common/features/scheduled-reports/filters/MetricsViewData.ts";
+import { TimeControls } from "@rilldata/web-common/features/scheduled-reports/filters/TimeControls.ts";
+import {
+  type DashboardTimeControls,
+  TimeRangePreset,
+} from "@rilldata/web-common/lib/time/types";
 import {
   type V1AlertSpec,
   type V1MetricsViewAggregationDimension,
@@ -22,11 +30,6 @@ import {
 export type AlertFormValuesSubset = Pick<
   AlertFormValues,
   | "metricsViewName"
-  | "whereFilter"
-  | "dimensionsWithInlistFilter"
-  | "dimensionThresholdFilters"
-  | "timeRange"
-  | "comparisonTimeRange"
   | "measure"
   | "splitByDimension"
   | "criteria"
@@ -35,38 +38,12 @@ export type AlertFormValuesSubset = Pick<
 
 export function extractAlertFormValues(
   queryArgs: V1MetricsViewAggregationRequest,
-  timeRangeSummary: V1TimeRangeSummary | undefined,
-  partialExploreState: Partial<ExploreState>,
 ): AlertFormValuesSubset {
   if (!queryArgs) return {} as AlertFormValuesSubset;
 
   const measures = queryArgs.measures as V1MetricsViewAggregationMeasure[];
   const dimensions =
     queryArgs.dimensions as V1MetricsViewAggregationDimension[];
-
-  const timeRange = (queryArgs.timeRange as V1TimeRange) ?? {
-    isoDuration: TimeRangePreset.ALL_TIME,
-  };
-  if (!timeRange.end && timeRangeSummary?.max) {
-    // alerts only have duration optionally offset, end is added during execution by reconciler
-    // so, we add end here to get a valid query
-    timeRange.end = timeRangeSummary?.max;
-  }
-
-  const comparisonTimeRange = queryArgs.comparisonTimeRange;
-  if (
-    comparisonTimeRange &&
-    !comparisonTimeRange.end &&
-    timeRangeSummary?.max
-  ) {
-    // alerts only have duration and offset, end is added during execution by reconciler
-    // so, we add end here to get a valid query
-    comparisonTimeRange.end = timeRangeSummary?.max;
-  }
-
-  const { dimensionFilters, dimensionThresholdFilters } = splitWhereFilter(
-    queryArgs.where,
-  );
 
   return {
     measure: measures[0]?.name ?? "",
@@ -79,12 +56,6 @@ export function extractAlertFormValues(
 
     // These are not part of the form, but are used to track the state of the form
     metricsViewName: queryArgs.metricsView as string,
-    whereFilter: dimensionFilters,
-    dimensionsWithInlistFilter:
-      partialExploreState.dimensionsWithInlistFilter ?? [],
-    dimensionThresholdFilters,
-    timeRange,
-    comparisonTimeRange,
   };
 }
 
@@ -151,6 +122,85 @@ export function getExistingAlertInitialFormValues(
     snooze: getSnoozeValueFromAlertSpec(alertSpec),
     evaluationInterval: alertSpec.intervalsIsoDuration ?? "",
     ...extractAlertNotification(alertSpec),
-    ...extractAlertFormValues(queryArgsJson, timeRangeSummary, exploreState),
+    ...extractAlertFormValues(queryArgsJson),
   };
+}
+
+export function getExistingAlertInitialFiltersFormValues(
+  instanceId: string,
+  alertSpec: V1AlertSpec,
+  metricsViewName: string,
+  timeRangeSummary: V1TimeRangeSummary | undefined,
+) {
+  const queryArgsJson = JSON.parse(
+    (alertSpec.resolverProperties?.query_args_json ??
+      alertSpec.queryArgsJson) as string,
+  ) as V1MetricsViewAggregationRequest;
+
+  const exploreName = getExploreName(
+    alertSpec.annotations?.web_open_path ?? "",
+  );
+
+  const timeRange = (queryArgsJson.timeRange as V1TimeRange) ?? {
+    isoDuration: TimeRangePreset.ALL_TIME,
+  };
+  if (!timeRange.end && timeRangeSummary?.max) {
+    // alerts only have duration optionally offset, end is added during execution by reconciler
+    // so, we add end here to get a valid query
+    timeRange.end = timeRangeSummary?.max;
+  }
+
+  const comparisonTimeRange = queryArgsJson.comparisonTimeRange;
+  if (
+    comparisonTimeRange &&
+    !comparisonTimeRange.end &&
+    timeRangeSummary?.max
+  ) {
+    // alerts only have duration and offset, end is added during execution by reconciler
+    // so, we add end here to get a valid query
+    comparisonTimeRange.end = timeRangeSummary?.max;
+  }
+
+  let selectedTimeRange: DashboardTimeControls | undefined = undefined;
+  let selectedComparisonTimeRange: DashboardTimeControls | undefined =
+    undefined;
+  if (timeRangeSummary?.max) {
+    selectedTimeRange = mapV1TimeRangeToSelectedTimeRange(
+      timeRange,
+      timeRangeSummary,
+      timeRange.isoOffset,
+      timeRangeSummary.max,
+    );
+    if (comparisonTimeRange) {
+      selectedComparisonTimeRange = mapV1TimeRangeToSelectedTimeRange(
+        comparisonTimeRange,
+        timeRangeSummary,
+        comparisonTimeRange.isoOffset,
+        timeRangeSummary.max,
+      );
+    }
+  }
+
+  const { dimensionFilters, dimensionThresholdFilters } = splitWhereFilter(
+    queryArgsJson.where,
+  );
+
+  const metricsViewData = new MetricsViewData(
+    instanceId,
+    metricsViewName,
+    exploreName,
+  );
+  const filters = new Filters(metricsViewData, {
+    whereFilter: dimensionFilters,
+    dimensionsWithInlistFilter: [],
+    dimensionThresholdFilters: dimensionThresholdFilters,
+    dimensionFilterExcludeMode: includeExcludeModeFromFilters(dimensionFilters),
+  });
+  const timeControls = new TimeControls(metricsViewData, {
+    selectedTimeRange,
+    selectedComparisonTimeRange,
+    showTimeComparison: !!selectedComparisonTimeRange,
+    selectedTimezone: timeRange?.timeZone ?? "UTC",
+  });
+  return { filters, timeControls };
 }

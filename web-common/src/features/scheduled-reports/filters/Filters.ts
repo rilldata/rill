@@ -10,8 +10,12 @@ import {
 } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters.ts";
 import { filterItemsSortFunction } from "@rilldata/web-common/features/dashboards/state-managers/selectors/filters.ts";
 import type { MeasureFilterItem } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measure-filters.ts";
-import type { DimensionThresholdFilter } from "@rilldata/web-common/features/dashboards/stores/explore-state.ts";
+import type {
+  DimensionThresholdFilter,
+  ExploreState,
+} from "@rilldata/web-common/features/dashboards/stores/explore-state.ts";
 import {
+  copyFilterExpression,
   createAndExpression,
   createInExpression,
   createLikeExpression,
@@ -32,7 +36,15 @@ import {
   type Readable,
   type Writable,
 } from "svelte/store";
-import type { FiltersData } from "./FiltersData";
+import type { MetricsViewData } from "web-common/src/features/scheduled-reports/filters/MetricsViewData.ts";
+
+export type FiltersState = Pick<
+  ExploreState,
+  | "whereFilter"
+  | "dimensionsWithInlistFilter"
+  | "dimensionThresholdFilters"
+  | "dimensionFilterExcludeMode"
+>;
 
 /**
  * Filters class encapsulates all filter related selectors and actions into a single class.
@@ -67,20 +79,28 @@ export class Filters {
 
   public readonly hasFilters: Readable<boolean>;
 
-  constructor(public readonly data: FiltersData) {
+  constructor(
+    public readonly data: MetricsViewData,
+    {
+      whereFilter,
+      dimensionsWithInlistFilter,
+      dimensionThresholdFilters,
+      dimensionFilterExcludeMode,
+    }: FiltersState,
+  ) {
     // -----------------------------
     // Initialize writable stores
+    // Lot of these are edited in place. So create a copy to avoid updating the original.
     // -----------------------------
-    this.dimensionFilterExcludeMode = writable(new Map<string, boolean>());
+    this.whereFilter = writable(copyFilterExpression(whereFilter));
+    this.dimensionsWithInlistFilter = writable([...dimensionsWithInlistFilter]);
+    this.dimensionThresholdFilters = writable(
+      structuredClone(dimensionThresholdFilters),
+    );
+    this.dimensionFilterExcludeMode = writable(
+      new Map(dimensionFilterExcludeMode),
+    );
     this.temporaryFilterName = writable(null);
-    this.whereFilter = writable({
-      cond: {
-        op: "OPERATION_AND",
-        exprs: [],
-      },
-    });
-    this.dimensionsWithInlistFilter = writable([]);
-    this.dimensionThresholdFilters = writable([]);
 
     // -------------------------------
     // MEASURE SELECTORS
@@ -388,6 +408,37 @@ export class Filters {
   public setTemporaryFilterName = (name: string) => {
     this.temporaryFilterName.set(name);
   };
+
+  public toState(): FiltersState {
+    return {
+      whereFilter: get(this.whereFilter),
+      dimensionThresholdFilters: get(this.dimensionThresholdFilters),
+      dimensionsWithInlistFilter: get(this.dimensionsWithInlistFilter),
+      dimensionFilterExcludeMode: get(this.dimensionFilterExcludeMode),
+    };
+  }
+
+  public getStore(): Readable<FiltersState> {
+    return derived(
+      [
+        this.whereFilter,
+        this.dimensionThresholdFilters,
+        this.dimensionsWithInlistFilter,
+        this.dimensionFilterExcludeMode,
+      ],
+      ([
+        whereFilter,
+        dimensionThresholdFilters,
+        dimensionsWithInlistFilter,
+        dimensionFilterExcludeMode,
+      ]) => ({
+        whereFilter,
+        dimensionThresholdFilters,
+        dimensionsWithInlistFilter,
+        dimensionFilterExcludeMode,
+      }),
+    );
+  }
 
   public clearAllFilters = () => {
     const wf = get(this.whereFilter);

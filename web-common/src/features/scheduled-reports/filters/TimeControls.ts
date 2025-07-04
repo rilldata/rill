@@ -1,3 +1,4 @@
+import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state.ts";
 import { normalizeWeekday } from "@rilldata/web-common/features/dashboards/time-controls/new-time-controls.ts";
 import {
   calculateComparisonTimeRangePartial,
@@ -5,40 +6,68 @@ import {
   type ComparisonTimeRangeState,
   type TimeRangeState,
 } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store.ts";
-import { FiltersData } from "@rilldata/web-common/features/scheduled-reports/filters/FiltersData.ts";
+import { MetricsViewData } from "@rilldata/web-common/features/scheduled-reports/filters/MetricsViewData.ts";
 import { isoDurationToFullTimeRange } from "@rilldata/web-common/lib/time/ranges/iso-ranges.ts";
 import {
   type DashboardTimeControls,
   type TimeRange,
   TimeRangePreset,
 } from "@rilldata/web-common/lib/time/types.ts";
-import type { V1TimeGrain } from "@rilldata/web-common/runtime-client";
+import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import { Settings } from "luxon";
-import { derived, type Readable, writable, type Writable } from "svelte/store";
+import {
+  derived,
+  get,
+  type Readable,
+  writable,
+  type Writable,
+} from "svelte/store";
+
+export type TimeControlState = Pick<
+  ExploreState,
+  | "selectedTimeRange"
+  | "selectedComparisonTimeRange"
+  | "showTimeComparison"
+  | "selectedTimezone"
+>;
 
 export class TimeControls {
   /**
    * Writables which can be updated by the user
    */
-  selectedTimeRange: Writable<DashboardTimeControls | undefined>;
-  selectedComparisonTimeRange: Writable<DashboardTimeControls | undefined>;
-  showTimeComparison: Writable<boolean>;
-  selectedTimezone: Writable<string>;
+  public readonly selectedTimeRange: Writable<
+    DashboardTimeControls | undefined
+  >;
+  public readonly selectedComparisonTimeRange: Writable<
+    DashboardTimeControls | undefined
+  >;
+  public readonly showTimeComparison: Writable<boolean>;
+  public readonly selectedTimezone: Writable<string>;
 
   /**
    * Derived stores based on writables and spec
    */
-  allTimeRange: Readable<TimeRange | undefined>;
-  minTimeGrain: Readable<V1TimeGrain>;
-  hasTimeSeries: Readable<boolean>;
-  timeRangeStateStore: Readable<TimeRangeState | undefined>;
-  comparisonRangeStateStore: Readable<ComparisonTimeRangeState | undefined>;
+  public readonly allTimeRange: Readable<TimeRange | undefined>;
+  public readonly minTimeGrain: Readable<V1TimeGrain>;
+  public readonly hasTimeSeries: Readable<boolean>;
+  public readonly timeRangeStateStore: Readable<TimeRangeState | undefined>;
+  public readonly comparisonRangeStateStore: Readable<
+    ComparisonTimeRangeState | undefined
+  >;
 
-  public constructor(data: FiltersData) {
-    this.selectedTimeRange = writable(undefined);
-    this.selectedComparisonTimeRange = writable(undefined);
-    this.showTimeComparison = writable(false);
-    this.selectedTimezone = writable("UTC");
+  public constructor(
+    data: MetricsViewData,
+    {
+      selectedTimeRange,
+      selectedComparisonTimeRange,
+      showTimeComparison,
+      selectedTimezone,
+    }: TimeControlState,
+  ) {
+    this.selectedTimeRange = writable(selectedTimeRange);
+    this.selectedComparisonTimeRange = writable(selectedComparisonTimeRange);
+    this.showTimeComparison = writable(showTimeComparison);
+    this.selectedTimezone = writable(selectedTimezone);
 
     this.allTimeRange = derived(
       data.timeRangeSummary,
@@ -55,6 +84,13 @@ export class TimeControls {
     this.hasTimeSeries = derived(data.validSpecQuery, (validSpecResp) => {
       const metricsViewSpec = validSpecResp.data?.metricsView ?? {};
       return Boolean(metricsViewSpec.timeDimension);
+    });
+
+    this.minTimeGrain = derived(data.validSpecQuery, (validSpecResp) => {
+      const metricsViewSpec = validSpecResp.data?.metricsView ?? {};
+      return (
+        metricsViewSpec.smallestTimeGrain ?? V1TimeGrain.TIME_GRAIN_UNSPECIFIED
+      );
     });
 
     this.timeRangeStateStore = derived(
@@ -143,11 +179,11 @@ export class TimeControls {
     );
   }
 
-  setTimeZone = (timezone: string) => {
+  public setTimeZone = (timezone: string) => {
     this.selectedTimezone.set(timezone);
   };
 
-  selectTimeRange = (
+  public selectTimeRange = (
     timeRange: TimeRange,
     timeGrain: V1TimeGrain,
     comparisonTimeRange: DashboardTimeControls | undefined,
@@ -166,11 +202,44 @@ export class TimeControls {
     this.selectedComparisonTimeRange.set(comparisonTimeRange);
   };
 
-  setSelectedComparisonRange = (comparisonTimeRange: DashboardTimeControls) => {
+  public setSelectedComparisonRange = (
+    comparisonTimeRange: DashboardTimeControls,
+  ) => {
     this.selectedComparisonTimeRange.set(comparisonTimeRange);
   };
 
-  displayTimeComparison = (showTimeComparison: boolean) => {
+  public displayTimeComparison = (showTimeComparison: boolean) => {
     this.showTimeComparison.set(showTimeComparison);
   };
+
+  public toState(): TimeControlState {
+    return {
+      selectedTimeRange: get(this.selectedTimeRange),
+      selectedComparisonTimeRange: get(this.selectedComparisonTimeRange),
+      showTimeComparison: get(this.showTimeComparison),
+      selectedTimezone: get(this.selectedTimezone),
+    };
+  }
+
+  public getStore(): Readable<TimeControlState> {
+    return derived(
+      [
+        this.selectedTimeRange,
+        this.selectedComparisonTimeRange,
+        this.showTimeComparison,
+        this.selectedTimezone,
+      ],
+      ([
+        selectedTimeRange,
+        selectedComparisonTimeRange,
+        showTimeComparison,
+        selectedTimezone,
+      ]) => ({
+        selectedTimeRange,
+        selectedComparisonTimeRange,
+        showTimeComparison,
+        selectedTimezone,
+      }),
+    );
+  }
 }

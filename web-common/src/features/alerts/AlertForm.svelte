@@ -26,11 +26,17 @@
   } from "@rilldata/web-admin/features/alerts/selectors.ts";
   import { DialogTitle } from "@rilldata/web-common/components/dialog";
   import * as DialogTabs from "@rilldata/web-common/components/dialog/tabs";
-  import { getNewAlertInitialFormValues } from "@rilldata/web-common/features/alerts/create-alert-utils.ts";
+  import {
+    getNewAlertInitialFiltersFormValues,
+    getNewAlertInitialFormValues,
+  } from "@rilldata/web-common/features/alerts/create-alert-utils.ts";
   import AlertDialogCriteriaTab from "@rilldata/web-common/features/alerts/criteria-tab/AlertDialogCriteriaTab.svelte";
   import AlertDialogDataTab from "@rilldata/web-common/features/alerts/data-tab/AlertDialogDataTab.svelte";
   import AlertDialogDeliveryTab from "@rilldata/web-common/features/alerts/delivery-tab/AlertDialogDeliveryTab.svelte";
-  import { getExistingAlertInitialFormValues } from "@rilldata/web-common/features/alerts/extract-alert-form-values.ts";
+  import {
+    getExistingAlertInitialFiltersFormValues,
+    getExistingAlertInitialFormValues,
+  } from "@rilldata/web-common/features/alerts/extract-alert-form-values.ts";
   import {
     alertFormValidationSchema,
     type AlertFormValues,
@@ -104,9 +110,6 @@
       ? getNewAlertInitialFormValues(
           metricsViewName,
           exploreName,
-          metricsViewSpec,
-          exploreSpec,
-          $allTimeRangeResp.data?.timeRangeSummary,
           $exploreState!,
           $user.data?.user,
         )
@@ -116,6 +119,21 @@
           $allTimeRangeResp.data?.timeRangeSummary,
           $exploreState!,
         );
+
+  $: ({ filters, timeControls } =
+    props.mode === "create"
+      ? getNewAlertInitialFiltersFormValues(
+          instanceId,
+          metricsViewName,
+          exploreName,
+          $exploreState!,
+        )
+      : getExistingAlertInitialFiltersFormValues(
+          instanceId,
+          props.alertSpec,
+          metricsViewName,
+          $allTimeRangeResp.data?.timeRangeSummary,
+        ));
 
   $: superFormInstance = superForm(
     defaults(initialValues, alertFormValidationSchema),
@@ -160,7 +178,12 @@
           displayName: values.name,
           queryName: "MetricsViewAggregation",
           queryArgsJson: JSON.stringify(
-            getAlertQueryArgsFromFormValues(values),
+            getAlertQueryArgsFromFormValues(
+              values,
+              filters.toState(),
+              timeControls.toState(),
+              exploreSpec,
+            ),
           ),
           metricsViewName: values.metricsViewName,
           slackChannels: values.enableSlackNotification
@@ -265,7 +288,7 @@
     </DialogTabs.List>
     <div class="p-3 bg-slate-100 h-[600px] overflow-auto">
       <DialogTabs.Content {currentTabIndex} tabIndex={0} value={tabs[0]}>
-        <AlertDialogDataTab {superFormInstance} />
+        <AlertDialogDataTab {superFormInstance} {filters} {timeControls} />
       </DialogTabs.Content>
       <DialogTabs.Content {currentTabIndex} tabIndex={1} value={tabs[1]}>
         <AlertDialogCriteriaTab {superFormInstance} />

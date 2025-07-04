@@ -66,7 +66,6 @@
     selectedTimezone,
     allTimeRange,
 
-    minTimeGrain,
     timeRangeStateStore,
     comparisonRangeStateStore,
 
@@ -227,7 +226,6 @@
         allTimeRange={$allTimeRange}
         {selectedRangeAlias}
         showPivot={false}
-        minTimeGrain={$minTimeGrain}
         {defaultTimeRange}
         {availableTimeZones}
         {timeRanges}

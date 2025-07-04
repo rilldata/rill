@@ -39,7 +39,7 @@ export function getDimensionTableExportQuery(
   let timeRange: V1TimeRange | undefined;
   if (isScheduled) {
     timeRange = mapSelectedTimeRangeToV1TimeRange(
-      timeControlState,
+      timeControlState.selectedTimeRange,
       dashboardState.selectedTimezone,
       validSpecStore.data.explore,
     );

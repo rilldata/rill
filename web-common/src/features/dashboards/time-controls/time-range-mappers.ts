@@ -1,5 +1,7 @@
 import type { TimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
+import { isoDurationToFullTimeRange } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
 import {
+  type DashboardTimeControls,
   TimeComparisonOption,
   TimeRangePreset,
 } from "@rilldata/web-common/lib/time/types";
@@ -7,6 +9,7 @@ import {
   type V1ExploreSpec,
   V1TimeGrain,
   type V1TimeRange,
+  type V1TimeRangeSummary,
 } from "@rilldata/web-common/runtime-client";
 
 // Temporary fix to split previous complete ranges to duration and round to grain to get it working on backend
@@ -36,35 +39,45 @@ export const PreviousCompleteRangeMap: Partial<
   },
 };
 
+// We are manually sending in duration, offset and round to grain for previous complete ranges.
+// This is to map back that split
+const PreviousCompleteRangeReverseMap: Record<string, TimeRangePreset> = {};
+for (const preset in PreviousCompleteRangeMap) {
+  const range: V1TimeRange = PreviousCompleteRangeMap[preset];
+  PreviousCompleteRangeReverseMap[
+    `${range.isoDuration}_${range.isoOffset}_${range.roundToGrain}`
+  ] = preset as TimeRangePreset;
+}
+
 export function mapSelectedTimeRangeToV1TimeRange(
-  timeControlState: TimeControlState,
+  selectedTimeRange: DashboardTimeControls | undefined,
   timeZone: string,
   explore: V1ExploreSpec,
 ): V1TimeRange | undefined {
-  if (!timeControlState.selectedTimeRange?.name) return undefined;
+  if (!selectedTimeRange?.name) return undefined;
 
   const timeRange: V1TimeRange = {};
-  switch (timeControlState.selectedTimeRange.name) {
+  switch (selectedTimeRange.name) {
     case TimeRangePreset.DEFAULT:
       timeRange.isoDuration = explore?.defaultPreset?.timeRange;
       break;
 
     case TimeRangePreset.CUSTOM:
-      timeRange.start = timeControlState.timeStart;
-      timeRange.end = timeControlState.timeEnd;
+      timeRange.start = selectedTimeRange.start.toISOString();
+      timeRange.end = selectedTimeRange.end.toISOString();
       break;
 
     default:
-      if (timeControlState.selectedTimeRange.name in PreviousCompleteRangeMap) {
+      if (selectedTimeRange.name in PreviousCompleteRangeMap) {
         const prevCompleteTimeRange: V1TimeRange | undefined =
-          PreviousCompleteRangeMap[timeControlState.selectedTimeRange.name];
+          PreviousCompleteRangeMap[selectedTimeRange.name];
         // Backend doesn't support previous complete ranges since it has offset built in.
         // We add the offset manually as a workaround for now
         timeRange.isoDuration = prevCompleteTimeRange?.isoDuration;
         timeRange.isoOffset = prevCompleteTimeRange?.isoOffset;
         timeRange.roundToGrain = prevCompleteTimeRange?.roundToGrain;
       } else {
-        timeRange.isoDuration = timeControlState.selectedTimeRange.name;
+        timeRange.isoDuration = selectedTimeRange.name;
       }
       break;
   }
@@ -104,4 +117,43 @@ export function mapSelectedComparisonTimeRangeToV1TimeRange(
       break;
   }
   return comparisonTimeRange;
+}
+
+export function mapV1TimeRangeToSelectedTimeRange(
+  timeRange: V1TimeRange,
+  timeRangeSummary: V1TimeRangeSummary,
+  duration: string | undefined,
+  end: string,
+) {
+  let selectedTimeRange: DashboardTimeControls;
+
+  const fullRangeKey = `${timeRange.isoDuration ?? ""}_${timeRange.isoOffset ?? ""}_${timeRange.roundToGrain ?? ""}`;
+  if (fullRangeKey in PreviousCompleteRangeReverseMap) {
+    duration = PreviousCompleteRangeReverseMap[fullRangeKey];
+  }
+
+  if (timeRange.start && timeRange.end) {
+    selectedTimeRange = {
+      name: TimeRangePreset.CUSTOM,
+      start: new Date(timeRange.start),
+      end: new Date(timeRange.end),
+    };
+  } else if (duration && timeRangeSummary.min) {
+    selectedTimeRange = isoDurationToFullTimeRange(
+      duration,
+      new Date(timeRangeSummary.min),
+      new Date(end),
+    );
+    // Convert the range to a custom one with resolved start and end.
+    // This retains the resolved range with `executionTime` incorporated into the range.
+    // TODO: Once we have rill-time do `<syntax> as of <executionTime>` as time range.
+    //       Note we need to have the new drop down out of feature flag as well.
+    selectedTimeRange.name = TimeRangePreset.CUSTOM;
+  } else {
+    return undefined;
+  }
+
+  selectedTimeRange.interval = timeRange.roundToGrain;
+
+  return selectedTimeRange;
 }

@@ -8,12 +8,13 @@ import {
 import { MeasureFilterType } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-options";
 import { mergeDimensionAndMeasureFilters } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
 import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
-import type { DimensionThresholdFilter } from "@rilldata/web-common/features/dashboards/stores/explore-state";
+import { mapSelectedTimeRangeToV1TimeRange } from "@rilldata/web-common/features/dashboards/time-controls/time-range-mappers.ts";
+import type { FiltersState } from "@rilldata/web-common/features/scheduled-reports/filters/Filters.ts";
+import type { TimeControlState } from "@rilldata/web-common/features/scheduled-reports/filters/TimeControls.ts";
 import type {
-  V1Expression,
+  V1ExploreSpec,
   V1MetricsViewAggregationRequest,
   V1Operation,
-  V1TimeRange,
 } from "@rilldata/web-common/runtime-client";
 import type { ValidationErrors } from "sveltekit-superforms";
 import { yup, type ValidationAdapter } from "sveltekit-superforms/adapters";
@@ -36,15 +37,13 @@ export type AlertFormValues = {
   // it's helpful to have them here. Also, in the future they may be editable in the form.
   metricsViewName: string;
   exploreName: string;
-  whereFilter: V1Expression;
-  dimensionsWithInlistFilter: string[];
-  dimensionThresholdFilters: Array<DimensionThresholdFilter>;
-  timeRange: V1TimeRange;
-  comparisonTimeRange: V1TimeRange | undefined;
 };
 
 export function getAlertQueryArgsFromFormValues(
   formValues: AlertFormValues,
+  filtersArgs: FiltersState,
+  timeControlArgs: TimeControlState,
+  exploreSpec: V1ExploreSpec,
 ): V1MetricsViewAggregationRequest {
   return {
     metricsView: formValues.metricsViewName,
@@ -52,7 +51,7 @@ export function getAlertQueryArgsFromFormValues(
       {
         name: formValues.measure,
       },
-      ...(formValues.comparisonTimeRange
+      ...(timeControlArgs.selectedComparisonTimeRange
         ? [
             {
               name: formValues.measure + ComparisonDeltaAbsoluteSuffix,
@@ -80,8 +79,8 @@ export function getAlertQueryArgsFromFormValues(
       : [],
     where: sanitiseExpression(
       mergeDimensionAndMeasureFilters(
-        formValues.whereFilter,
-        formValues.dimensionThresholdFilters,
+        filtersArgs.whereFilter,
+        filtersArgs.dimensionThresholdFilters,
       ),
       undefined,
     ),
@@ -93,23 +92,24 @@ export function getAlertQueryArgsFromFormValues(
           .filter((e) => !!e),
       },
     }),
-    timeRange: {
-      isoDuration: formValues.timeRange.isoDuration,
-      timeZone: formValues.timeRange.timeZone,
-      roundToGrain: formValues.timeRange.roundToGrain,
-    },
+    timeRange: mapSelectedTimeRangeToV1TimeRange(
+      timeControlArgs.selectedTimeRange,
+      timeControlArgs.selectedTimezone,
+      exploreSpec,
+    ),
     sort: [
       {
         name: formValues.measure,
         desc: true,
       },
     ],
-    ...(formValues.comparisonTimeRange
+    ...(timeControlArgs.showTimeComparison
       ? {
-          comparisonTimeRange: {
-            isoDuration: formValues.comparisonTimeRange.isoDuration,
-            isoOffset: formValues.comparisonTimeRange.isoOffset,
-          },
+          comparisonTimeRange: mapSelectedTimeRangeToV1TimeRange(
+            timeControlArgs.selectedComparisonTimeRange,
+            timeControlArgs.selectedTimezone,
+            exploreSpec,
+          ),
         }
       : {}),
   };
