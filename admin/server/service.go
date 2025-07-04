@@ -106,7 +106,7 @@ func (s *Server) CreateService(ctx context.Context, req *adminv1.CreateServiceRe
 	}, nil
 }
 
-func (s *Server) ShowService(ctx context.Context, req *adminv1.ShowServiceRequest) (*adminv1.ShowServiceResponse, error) {
+func (s *Server) GetService(ctx context.Context, req *adminv1.GetServiceRequest) (*adminv1.GetServiceResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.name", req.Name),
 		attribute.String("args.organization", req.OrganizationName),
@@ -141,9 +141,9 @@ func (s *Server) ShowService(ctx context.Context, req *adminv1.ShowServiceReques
 		projectMemberServicesPB = append(projectMemberServicesPB, projectMemberServiceWithProjectToPB(projectMemberService, org.ID, org.Name))
 	}
 
-	return &adminv1.ShowServiceResponse{
-		OrgService:      orgMemberServiceToPB(orgMemberService, org.ID, org.Name),
-		ProjectServices: projectMemberServicesPB,
+	return &adminv1.GetServiceResponse{
+		Service:            orgMemberServiceToPB(orgMemberService, org.ID, org.Name),
+		ProjectMemberships: projectMemberServicesPB,
 	}, nil
 }
 

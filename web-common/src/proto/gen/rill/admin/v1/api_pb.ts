@@ -2896,9 +2896,9 @@ export class CreateServiceResponse extends Message<CreateServiceResponse> {
 }
 
 /**
- * @generated from message rill.admin.v1.ShowServiceRequest
+ * @generated from message rill.admin.v1.GetServiceRequest
  */
-export class ShowServiceRequest extends Message<ShowServiceRequest> {
+export class GetServiceRequest extends Message<GetServiceRequest> {
   /**
    * @generated from field: string name = 1;
    */
@@ -2909,77 +2909,77 @@ export class ShowServiceRequest extends Message<ShowServiceRequest> {
    */
   organizationName = "";
 
-  constructor(data?: PartialMessage<ShowServiceRequest>) {
+  constructor(data?: PartialMessage<GetServiceRequest>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.admin.v1.ShowServiceRequest";
+  static readonly typeName = "rill.admin.v1.GetServiceRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "organization_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ShowServiceRequest {
-    return new ShowServiceRequest().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetServiceRequest {
+    return new GetServiceRequest().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ShowServiceRequest {
-    return new ShowServiceRequest().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetServiceRequest {
+    return new GetServiceRequest().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ShowServiceRequest {
-    return new ShowServiceRequest().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetServiceRequest {
+    return new GetServiceRequest().fromJsonString(jsonString, options);
   }
 
-  static equals(a: ShowServiceRequest | PlainMessage<ShowServiceRequest> | undefined, b: ShowServiceRequest | PlainMessage<ShowServiceRequest> | undefined): boolean {
-    return proto3.util.equals(ShowServiceRequest, a, b);
+  static equals(a: GetServiceRequest | PlainMessage<GetServiceRequest> | undefined, b: GetServiceRequest | PlainMessage<GetServiceRequest> | undefined): boolean {
+    return proto3.util.equals(GetServiceRequest, a, b);
   }
 }
 
 /**
- * @generated from message rill.admin.v1.ShowServiceResponse
+ * @generated from message rill.admin.v1.GetServiceResponse
  */
-export class ShowServiceResponse extends Message<ShowServiceResponse> {
+export class GetServiceResponse extends Message<GetServiceResponse> {
   /**
-   * @generated from field: rill.admin.v1.OrganizationMemberService org_service = 1;
+   * @generated from field: rill.admin.v1.OrganizationMemberService service = 1;
    */
-  orgService?: OrganizationMemberService;
+  service?: OrganizationMemberService;
 
   /**
    * All projects that the service is a member of
    *
-   * @generated from field: repeated rill.admin.v1.ProjectMemberService project_services = 2;
+   * @generated from field: repeated rill.admin.v1.ProjectMemberService project_memberships = 2;
    */
-  projectServices: ProjectMemberService[] = [];
+  projectMemberships: ProjectMemberService[] = [];
 
-  constructor(data?: PartialMessage<ShowServiceResponse>) {
+  constructor(data?: PartialMessage<GetServiceResponse>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.admin.v1.ShowServiceResponse";
+  static readonly typeName = "rill.admin.v1.GetServiceResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "org_service", kind: "message", T: OrganizationMemberService },
-    { no: 2, name: "project_services", kind: "message", T: ProjectMemberService, repeated: true },
+    { no: 1, name: "service", kind: "message", T: OrganizationMemberService },
+    { no: 2, name: "project_memberships", kind: "message", T: ProjectMemberService, repeated: true },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ShowServiceResponse {
-    return new ShowServiceResponse().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetServiceResponse {
+    return new GetServiceResponse().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ShowServiceResponse {
-    return new ShowServiceResponse().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetServiceResponse {
+    return new GetServiceResponse().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ShowServiceResponse {
-    return new ShowServiceResponse().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetServiceResponse {
+    return new GetServiceResponse().fromJsonString(jsonString, options);
   }
 
-  static equals(a: ShowServiceResponse | PlainMessage<ShowServiceResponse> | undefined, b: ShowServiceResponse | PlainMessage<ShowServiceResponse> | undefined): boolean {
-    return proto3.util.equals(ShowServiceResponse, a, b);
+  static equals(a: GetServiceResponse | PlainMessage<GetServiceResponse> | undefined, b: GetServiceResponse | PlainMessage<GetServiceResponse> | undefined): boolean {
+    return proto3.util.equals(GetServiceResponse, a, b);
   }
 }
 

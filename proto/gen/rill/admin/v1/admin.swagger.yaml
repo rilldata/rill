@@ -3136,13 +3136,13 @@ paths:
         - AdminService
   /v1/organizations/{organizationName}/services/{name}:
     get:
-      summary: ShowService returns information about a specific service
-      operationId: AdminService_ShowService
+      summary: GetService returns information about a specific service
+      operationId: AdminService_GetService
       responses:
         "200":
           description: A successful response.
           schema:
-            $ref: '#/definitions/v1ShowServiceResponse'
+            $ref: '#/definitions/v1GetServiceResponse'
         default:
           description: An unexpected error response.
           schema:
@@ -5121,6 +5121,17 @@ definitions:
         type: object
         additionalProperties:
           $ref: '#/definitions/GetReportMetaResponseURLs'
+  v1GetServiceResponse:
+    type: object
+    properties:
+      service:
+        $ref: '#/definitions/v1OrganizationMemberService'
+      projectMemberships:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1ProjectMemberService'
+        title: All projects that the service is a member of
   v1GetUserResponse:
     type: object
     properties:
@@ -6115,17 +6126,6 @@ definitions:
         type: boolean
   v1SetSuperuserResponse:
     type: object
-  v1ShowServiceResponse:
-    type: object
-    properties:
-      orgService:
-        $ref: '#/definitions/v1OrganizationMemberService'
-      projectServices:
-        type: array
-        items:
-          type: object
-          $ref: '#/definitions/v1ProjectMemberService'
-        title: All projects that the service is a member of
   v1StartDeploymentResponse:
     type: object
     properties:

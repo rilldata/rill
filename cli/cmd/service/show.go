@@ -20,7 +20,7 @@ func ShowCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 
-			res, err := client.ShowService(cmd.Context(), &adminv1.ShowServiceRequest{
+			res, err := client.GetService(cmd.Context(), &adminv1.GetServiceRequest{
 				Name:             args[0],
 				OrganizationName: ch.Org,
 			})
@@ -29,23 +29,23 @@ func ShowCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			ch.PrintfSuccess("Service Details:\n")
-			ch.Println(" Name: ", res.OrgService.Name)
-			ch.Println(" Org Name: ", res.OrgService.OrgName)
-			ch.Println(" Org Role: ", res.OrgService.RoleName)
+			ch.Println(" Name: ", res.Service.Name)
+			ch.Println(" Org Name: ", res.Service.OrgName)
+			ch.Println(" Org Role: ", res.Service.RoleName)
 			ch.Print(" Attributes: ")
-			attrBytes, err := json.Marshal(res.OrgService.Attributes)
+			attrBytes, err := json.Marshal(res.Service.Attributes)
 			if err != nil {
 				panic(fmt.Errorf("failed to marshal service attributes: %w", err))
 			}
 			ch.Println(string(attrBytes))
 
-			ch.Println(" Created On: ", res.OrgService.CreatedOn.AsTime().Format("2006-01-02 15:04:05"))
-			ch.Println(" Updated On: ", res.OrgService.UpdatedOn.AsTime().Format("2006-01-02 15:04:05"))
+			ch.Println(" Created On: ", res.Service.CreatedOn.AsTime().Format("2006-01-02 15:04:05"))
+			ch.Println(" Updated On: ", res.Service.UpdatedOn.AsTime().Format("2006-01-02 15:04:05"))
 
 			ch.Printf("\n")
-			if len(res.ProjectServices) > 0 {
+			if len(res.ProjectMemberships) > 0 {
 				ch.PrintfSuccess("Project Memberships:\n")
-				ch.PrintProjectMemberServices(res.ProjectServices)
+				ch.PrintProjectMemberServices(res.ProjectMemberships)
 			}
 
 			return nil

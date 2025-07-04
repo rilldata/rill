@@ -1033,7 +1033,7 @@ func (c *connection) FindOrganizationMemberServices(ctx context.Context, orgID s
 	var services []*organizationMemberServiceDTO
 	query := `
        SELECT s.id, s.name, COALESCE(r.name, '') as role_name, EXISTS (
-           SELECT 1
+	       SELECT 1
            FROM service_projects_roles spr
            JOIN projects p ON p.id = spr.project_id
            WHERE spr.service_id = s.id AND p.org_id = $1

@@ -119,7 +119,7 @@ const (
 	AdminService_ListServices_FullMethodName                          = "/rill.admin.v1.AdminService/ListServices"
 	AdminService_ListProjectMemberServices_FullMethodName             = "/rill.admin.v1.AdminService/ListProjectMemberServices"
 	AdminService_CreateService_FullMethodName                         = "/rill.admin.v1.AdminService/CreateService"
-	AdminService_ShowService_FullMethodName                           = "/rill.admin.v1.AdminService/ShowService"
+	AdminService_GetService_FullMethodName                            = "/rill.admin.v1.AdminService/GetService"
 	AdminService_UpdateService_FullMethodName                         = "/rill.admin.v1.AdminService/UpdateService"
 	AdminService_SetOrganizationMemberServiceRole_FullMethodName      = "/rill.admin.v1.AdminService/SetOrganizationMemberServiceRole"
 	AdminService_RemoveOrganizationMemberService_FullMethodName       = "/rill.admin.v1.AdminService/RemoveOrganizationMemberService"
@@ -392,8 +392,8 @@ type AdminServiceClient interface {
 	ListProjectMemberServices(ctx context.Context, in *ListProjectMemberServicesRequest, opts ...grpc.CallOption) (*ListProjectMemberServicesResponse, error)
 	// CreateService creates a new service per organization
 	CreateService(ctx context.Context, in *CreateServiceRequest, opts ...grpc.CallOption) (*CreateServiceResponse, error)
-	// ShowService returns information about a specific service
-	ShowService(ctx context.Context, in *ShowServiceRequest, opts ...grpc.CallOption) (*ShowServiceResponse, error)
+	// GetService returns information about a specific service
+	GetService(ctx context.Context, in *GetServiceRequest, opts ...grpc.CallOption) (*GetServiceResponse, error)
 	// UpdateService updates a service per organization
 	UpdateService(ctx context.Context, in *UpdateServiceRequest, opts ...grpc.CallOption) (*UpdateServiceResponse, error)
 	// SetOrganizationMemberServiceRole sets or updates the role of the service in the organization
@@ -1494,10 +1494,10 @@ func (c *adminServiceClient) CreateService(ctx context.Context, in *CreateServic
 	return out, nil
 }
 
-func (c *adminServiceClient) ShowService(ctx context.Context, in *ShowServiceRequest, opts ...grpc.CallOption) (*ShowServiceResponse, error) {
+func (c *adminServiceClient) GetService(ctx context.Context, in *GetServiceRequest, opts ...grpc.CallOption) (*GetServiceResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(ShowServiceResponse)
-	err := c.cc.Invoke(ctx, AdminService_ShowService_FullMethodName, in, out, cOpts...)
+	out := new(GetServiceResponse)
+	err := c.cc.Invoke(ctx, AdminService_GetService_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -2197,8 +2197,8 @@ type AdminServiceServer interface {
 	ListProjectMemberServices(context.Context, *ListProjectMemberServicesRequest) (*ListProjectMemberServicesResponse, error)
 	// CreateService creates a new service per organization
 	CreateService(context.Context, *CreateServiceRequest) (*CreateServiceResponse, error)
-	// ShowService returns information about a specific service
-	ShowService(context.Context, *ShowServiceRequest) (*ShowServiceResponse, error)
+	// GetService returns information about a specific service
+	GetService(context.Context, *GetServiceRequest) (*GetServiceResponse, error)
 	// UpdateService updates a service per organization
 	UpdateService(context.Context, *UpdateServiceRequest) (*UpdateServiceResponse, error)
 	// SetOrganizationMemberServiceRole sets or updates the role of the service in the organization
@@ -2599,8 +2599,8 @@ func (UnimplementedAdminServiceServer) ListProjectMemberServices(context.Context
 func (UnimplementedAdminServiceServer) CreateService(context.Context, *CreateServiceRequest) (*CreateServiceResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateService not implemented")
 }
-func (UnimplementedAdminServiceServer) ShowService(context.Context, *ShowServiceRequest) (*ShowServiceResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ShowService not implemented")
+func (UnimplementedAdminServiceServer) GetService(context.Context, *GetServiceRequest) (*GetServiceResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetService not implemented")
 }
 func (UnimplementedAdminServiceServer) UpdateService(context.Context, *UpdateServiceRequest) (*UpdateServiceResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateService not implemented")
@@ -4564,20 +4564,20 @@ func _AdminService_CreateService_Handler(srv interface{}, ctx context.Context, d
 	return interceptor(ctx, in, info, handler)
 }
 
-func _AdminService_ShowService_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ShowServiceRequest)
+func _AdminService_GetService_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetServiceRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(AdminServiceServer).ShowService(ctx, in)
+		return srv.(AdminServiceServer).GetService(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: AdminService_ShowService_FullMethodName,
+		FullMethod: AdminService_GetService_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AdminServiceServer).ShowService(ctx, req.(*ShowServiceRequest))
+		return srv.(AdminServiceServer).GetService(ctx, req.(*GetServiceRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -5836,8 +5836,8 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _AdminService_CreateService_Handler,
 		},
 		{
-			MethodName: "ShowService",
-			Handler:    _AdminService_ShowService_Handler,
+			MethodName: "GetService",
+			Handler:    _AdminService_GetService_Handler,
 		},
 		{
 			MethodName: "UpdateService",

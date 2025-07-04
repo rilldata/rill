@@ -675,8 +675,8 @@ service AdminService {
     };
   }
 
-  // ShowService returns information about a specific service
-  rpc ShowService(ShowServiceRequest) returns (ShowServiceResponse) {
+  // GetService returns information about a specific service
+  rpc GetService(GetServiceRequest) returns (GetServiceResponse) {
     option (google.api.http) = {get: "/v1/organizations/{organization_name}/services/{name}"};
   }
 
@@ -1349,14 +1349,14 @@ message CreateServiceResponse {
   Service service = 1;
 }
 
-message ShowServiceRequest {
+message GetServiceRequest {
   string name = 1 [(validate.rules).string.min_len = 1];
   string organization_name = 2 [(validate.rules).string.min_len = 1];
 }
 
-message ShowServiceResponse {
-  OrganizationMemberService org_service = 1;
-  repeated ProjectMemberService project_services = 2; // All projects that the service is a member of
+message GetServiceResponse {
+  OrganizationMemberService service = 1;
+  repeated ProjectMemberService project_memberships = 2; // All projects that the service is a member of
 }
 
 message UpdateServiceRequest {

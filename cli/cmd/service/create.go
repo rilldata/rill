@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/rilldata/rill/cli/cmd/project"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
@@ -49,13 +50,17 @@ func CreateCmd(ch *cmdutil.Helper) *cobra.Command {
 				}
 			}
 
-			if ch.Interactive && projectRole == "" {
+			if ch.Interactive && projectRole == "" && !cmd.Flags().Changed("org-role") {
 				ok, err := cmdutil.ConfirmPrompt("Do you want to assign a project role to the service?", "", false)
 				if err != nil {
 					return err
 				}
 				if ok {
-					err = cmdutil.StringPromptIfEmpty(&projectName, "Enter project name")
+					projectNames, err := project.ProjectNames(cmd.Context(), ch)
+					if err != nil {
+						return fmt.Errorf("failed to fetch project names: %w", err)
+					}
+					err = cmdutil.SelectPromptIfEmpty(&projectName, "Select project", projectNames, "")
 					if err != nil {
 						return err
 					}

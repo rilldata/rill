@@ -153,6 +153,7 @@ import type {
   V1GetProjectVariablesResponse,
   V1GetRepoMetaResponse,
   V1GetReportMetaResponse,
+  V1GetServiceResponse,
   V1GetUserResponse,
   V1GetUsergroupResponse,
   V1HibernateProjectResponse,
@@ -220,7 +221,6 @@ import type {
   V1SetProjectMemberUsergroupRoleResponse,
   V1SetSuperuserRequest,
   V1SetSuperuserResponse,
-  V1ShowServiceResponse,
   V1StartDeploymentResponse,
   V1StopDeploymentResponse,
   V1SudoDeleteOrganizationBillingIssueResponse,
@@ -10802,29 +10802,29 @@ export const createAdminServiceCreateService = <
   return createMutation(mutationOptions, queryClient);
 };
 /**
- * @summary ShowService returns information about a specific service
+ * @summary GetService returns information about a specific service
  */
-export const adminServiceShowService = (
+export const adminServiceGetService = (
   organizationName: string,
   name: string,
   signal?: AbortSignal,
 ) => {
-  return httpClient<V1ShowServiceResponse>({
+  return httpClient<V1GetServiceResponse>({
     url: `/v1/organizations/${organizationName}/services/${name}`,
     method: "GET",
     signal,
   });
 };
 
-export const getAdminServiceShowServiceQueryKey = (
+export const getAdminServiceGetServiceQueryKey = (
   organizationName: string,
   name: string,
 ) => {
   return [`/v1/organizations/${organizationName}/services/${name}`] as const;
 };
 
-export const getAdminServiceShowServiceQueryOptions = <
-  TData = Awaited<ReturnType<typeof adminServiceShowService>>,
+export const getAdminServiceGetServiceQueryOptions = <
+  TData = Awaited<ReturnType<typeof adminServiceGetService>>,
   TError = RpcStatus,
 >(
   organizationName: string,
@@ -10832,7 +10832,7 @@ export const getAdminServiceShowServiceQueryOptions = <
   options?: {
     query?: Partial<
       CreateQueryOptions<
-        Awaited<ReturnType<typeof adminServiceShowService>>,
+        Awaited<ReturnType<typeof adminServiceGetService>>,
         TError,
         TData
       >
@@ -10843,11 +10843,11 @@ export const getAdminServiceShowServiceQueryOptions = <
 
   const queryKey =
     queryOptions?.queryKey ??
-    getAdminServiceShowServiceQueryKey(organizationName, name);
+    getAdminServiceGetServiceQueryKey(organizationName, name);
 
   const queryFn: QueryFunction<
-    Awaited<ReturnType<typeof adminServiceShowService>>
-  > = ({ signal }) => adminServiceShowService(organizationName, name, signal);
+    Awaited<ReturnType<typeof adminServiceGetService>>
+  > = ({ signal }) => adminServiceGetService(organizationName, name, signal);
 
   return {
     queryKey,
@@ -10855,23 +10855,23 @@ export const getAdminServiceShowServiceQueryOptions = <
     enabled: !!(organizationName && name),
     ...queryOptions,
   } as CreateQueryOptions<
-    Awaited<ReturnType<typeof adminServiceShowService>>,
+    Awaited<ReturnType<typeof adminServiceGetService>>,
     TError,
     TData
   > & { queryKey: DataTag<QueryKey, TData, TError> };
 };
 
-export type AdminServiceShowServiceQueryResult = NonNullable<
-  Awaited<ReturnType<typeof adminServiceShowService>>
+export type AdminServiceGetServiceQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceGetService>>
 >;
-export type AdminServiceShowServiceQueryError = RpcStatus;
+export type AdminServiceGetServiceQueryError = RpcStatus;
 
 /**
- * @summary ShowService returns information about a specific service
+ * @summary GetService returns information about a specific service
  */
 
-export function createAdminServiceShowService<
-  TData = Awaited<ReturnType<typeof adminServiceShowService>>,
+export function createAdminServiceGetService<
+  TData = Awaited<ReturnType<typeof adminServiceGetService>>,
   TError = RpcStatus,
 >(
   organizationName: string,
@@ -10879,7 +10879,7 @@ export function createAdminServiceShowService<
   options?: {
     query?: Partial<
       CreateQueryOptions<
-        Awaited<ReturnType<typeof adminServiceShowService>>,
+        Awaited<ReturnType<typeof adminServiceGetService>>,
         TError,
         TData
       >
@@ -10889,7 +10889,7 @@ export function createAdminServiceShowService<
 ): CreateQueryResult<TData, TError> & {
   queryKey: DataTag<QueryKey, TData, TError>;
 } {
-  const queryOptions = getAdminServiceShowServiceQueryOptions(
+  const queryOptions = getAdminServiceGetServiceQueryOptions(
     organizationName,
     name,
     options,

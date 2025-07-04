@@ -595,6 +595,11 @@ export interface V1GetReportMetaResponse {
   recipientUrls?: V1GetReportMetaResponseRecipientUrls;
 }
 
+export interface V1GetServiceResponse {
+  service?: V1OrganizationMemberService;
+  projectMemberships?: V1ProjectMemberService[];
+}
+
 export interface V1GetUserResponse {
   user?: V1User;
 }
@@ -1228,11 +1233,6 @@ export interface V1SetSuperuserRequest {
 
 export interface V1SetSuperuserResponse {
   [key: string]: unknown;
-}
-
-export interface V1ShowServiceResponse {
-  orgService?: V1OrganizationMemberService;
-  projectServices?: V1ProjectMemberService[];
 }
 
 export interface V1StartDeploymentResponse {

@@ -189,34 +189,6 @@ func (s *Service) ProjectPermissionsForService(ctx context.Context, projectID, s
 		return composite, nil
 	}
 
-	// If no roles are found, check if the service has read projects permission on the org
-	if orgPerms.ReadProjects {
-		return &adminv1.ProjectPermissions{
-			Admin:                      false,
-			ReadProject:                true,
-			ManageProject:              false,
-			ReadProd:                   true,
-			ReadProdStatus:             true,
-			ManageProd:                 false,
-			ReadDev:                    true,
-			ReadDevStatus:              true,
-			ManageDev:                  false,
-			ReadProvisionerResources:   true,
-			ManageProvisionerResources: false,
-			ReadProjectMembers:         true,
-			ManageProjectMembers:       false,
-			ManageProjectAdmins:        false,
-			CreateMagicAuthTokens:      false,
-			ManageMagicAuthTokens:      false,
-			CreateReports:              false,
-			ManageReports:              false,
-			CreateAlerts:               false,
-			ManageAlerts:               false,
-			CreateBookmarks:            false,
-			ManageBookmarks:            false,
-		}, nil
-	}
-
 	return &adminv1.ProjectPermissions{}, nil
 }
 
