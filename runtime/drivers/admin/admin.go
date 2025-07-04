@@ -105,8 +105,8 @@ func (h *Handle) Ping(ctx context.Context) error {
 		return err
 	}
 
-	// Check for a sync error
-	_, err = h.repo.syncStatus(ctx)
+	// Check for a repo error
+	_, err = h.repo.checkReady(ctx)
 	return err
 }
 
@@ -134,8 +134,10 @@ func (h *Handle) MigrationStatus(ctx context.Context) (current, desired int, err
 
 // Close implements drivers.Handle.
 func (h *Handle) Close() error {
-	h.repo.close()
-	return h.admin.Close()
+	return errors.Join(
+		h.repo.close(),
+		h.admin.Close(),
+	)
 }
 
 // AsRegistry implements drivers.Handle.
