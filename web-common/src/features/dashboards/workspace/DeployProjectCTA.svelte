@@ -53,7 +53,8 @@
   $: deployPageUrl = `${$page.url.protocol}//${$page.url.host}/deploy`;
 
   $: if (userNotLoggedIn && $metadata.data) {
-    deployCTAUrl = `${$metadata.data.loginUrl}?redirect=${deployPageUrl}`;
+    // FIXME: implement signupUrl
+    deployCTAUrl = `${$metadata.data.signupUrl}?redirect=${deployPageUrl}`;
   } else {
     deployCTAUrl = deployPageUrl;
   }
