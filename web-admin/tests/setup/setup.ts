@@ -166,7 +166,7 @@ setup.describe("global setup", () => {
 
     // create service and write access token to file
     const { stdout: orgCreateService } = await execAsync(
-      `rill service create ${RILL_SERVICE_NAME} --org-role admin`,
+      `rill service create ${RILL_SERVICE_NAME} --org-role admin --interactive=false`,
     );
     expect(orgCreateService).toContain("Created service");
 
