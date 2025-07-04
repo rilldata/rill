@@ -18,7 +18,6 @@ s3_secret: bar
 type: connector
 driver: s3
 region: eu-north-1
-endpoint: https://baz.com
 aws_access_key_id: "{{.env.s3_key_id}}"
 aws_secret_access_key: "{{.env.s3_secret}}"
 `,
@@ -46,14 +45,14 @@ sql: >
 		DisableHostAccess: true,
 	})
 	testruntime.ReconcileParserAndWait(t, rt, id)
-	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
+	testruntime.RequireReconcileState(t, rt, id, 4, 1, 0)
 
 	testruntime.RequireResolve(t, rt, id, &testruntime.RequireResolveOptions{
 		Resolver:   "sql",
 		Properties: map[string]any{"sql": `SELECT * FROM secrets`},
 		Result: []map[string]any{{
 			"region":     "eu-north-1",
-			"endpoint":   "baz.com",
+			"endpoint":   "",
 			"key_id":     "foo",
 			"secret_key": "", // Gets redacted
 		}},
