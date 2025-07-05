@@ -22,7 +22,7 @@ Rill's modeling layer provides open-ended SQL compatibility for complex SQL quer
 
 ## Measure Expressions
 
-Measure expressions can take any SQL numeric function, a set of aggregates, and apply filters to create derived metrics. A reminder on basic expressions is available in the [create metrics view definition](/build-dashboard/metrics-view#measures).
+Measure expressions can take any SQL numeric function, a set of aggregates, and apply filters to create derived metrics. A reminder on basic expressions is available in the [create metrics view definition](/build/metrics-view#measures).
 
 See our dedicated examples and pages for the following advanced measures!
 - **[Metric Formatting](/define/metrics-view/advanced-expressions/metric-formatting)**

@@ -1,7 +1,7 @@
 ---
 title: Templating
 description: Details about Rill's templating engine and syntax
-sidebar_label: Templating
+sidebar_label: Source Templating
 sidebar_position: 12
 ---
 ## Overview
@@ -31,7 +31,7 @@ env:
   database: "default"
 ```
 2. Manually passing in the variable when starting Rill (i.e. `rill start --env <var_name>=<value>`)
-3. Specifying the key-value pair for your variable in your `<RILL_PROJECT_HOME>/.env` file and/or using `rill env set` to set the variable via the CLI (and then [pushing / pulling as appropriate](../ingest-sources/credentials/credentials.md#variables))
+3. Specifying the key-value pair for your variable in your `<RILL_PROJECT_HOME>/.env` file and/or using `rill env set` to set the variable via the CLI (and then [pushing / pulling as appropriate](../ingest/connect/credentials.md#variables))
 
 For more information, please check our [reference documentation](/reference/project-files/rill-yaml.md#setting-variables).
 

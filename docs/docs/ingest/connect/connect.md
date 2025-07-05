@@ -129,12 +129,12 @@ Rill requires an appropriate set of <u>credentials</u> to connect to remote data
 
 :::note Setting up credentials
 
-Please see our [Configuring Credentials](../credentials/credentials.md) and [Deployment Credentials](../../deploy/deploy-credentials.md) for more information about setting up and using credentials in Rill.
+Please see our [Configuring Credentials](credentials.md) and [Deployment Credentials](../../deploy/deploy-credentials.md) for more information about setting up and using credentials in Rill.
 
 :::
 
 ### Templating 
-When creating your sources, you can template the YAML file to ensure that locally you are only using `dev` data but when pushing to Rill Cloud, use `prod` data. Doing so will simplify the deployment process. For more information, see [templating](/deploy/templating).
+When creating your sources, you can template the YAML file to ensure that locally you are only using `dev` data but when pushing to Rill Cloud, use `prod` data. Doing so will simplify the deployment process. For more information, see [templating](/ingest/templating).
 
 ## External OLAP tables
 
@@ -148,7 +148,7 @@ For more details about configuring and/or changing the OLAP engine used by Rill,
 
 ## Rill Developer vs Rill Cloud
 
-_There is a difference_ between Rill Developer and Rill Cloud and they work hand-in-hand to provide a shared experience. For distributed teams, Rill Developer is primarily meant for local development and modeling purposes while Rill Cloud is where the primary dashboard consumption occurs and helps to enable shared collaboration at scale. For Rill Developer, as the size or volume of source data continues to grow (or reaches a certain size), it is strongly recommended to [work with a segment of the data for modeling purposes](../../deploy/performance.md#work-with-a-subset-of-your-source-data-for-local-development-and-modeling) instead of the full dataset (i.e. think of it as a "dev partition"), which is meant to help the developer validate the model logic and verify that the correct results are being produced. Then, after the [model](../models/models) and [dashboard](/build-dashboard/dashboards) configurations have been finalized, the project can be [deployed to Rill Cloud](../../deploy/deploy-dashboard/) against the full range of data and dashboards can be [explored](/explore/dashboard-101/) by other end users.
+_There is a difference_ between Rill Developer and Rill Cloud and they work hand-in-hand to provide a shared experience. For distributed teams, Rill Developer is primarily meant for local development and modeling purposes while Rill Cloud is where the primary dashboard consumption occurs and helps to enable shared collaboration at scale. For Rill Developer, as the size or volume of source data continues to grow (or reaches a certain size), it is strongly recommended to [work with a segment of the data for modeling purposes](../../deploy/performance.md#work-with-a-subset-of-your-source-data-for-local-development-and-modeling) instead of the full dataset (i.e. think of it as a "dev partition"), which is meant to help the developer validate the model logic and verify that the correct results are being produced. Then, after the [model](../models/models) and [dashboard](/build/dashboards) configurations have been finalized, the project can be [deployed to Rill Cloud](../../deploy/deploy-dashboard/) against the full range of data and dashboards can be [explored](/explore/dashboard-101/) by other end users.
 
 :::info Have questions?
 

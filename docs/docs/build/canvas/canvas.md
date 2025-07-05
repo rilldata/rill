@@ -29,7 +29,7 @@ sidebar_position: 05
 </div>
 <br/>
 ----
-While Rill's signature **[Explore dashboards](/build-dashboard/dashboards/dashboards.md)** let you slice, dice, and interact with your data in our suggested layout, **Canvas dashboards** let you define your own visualizations of data from multiple [metrics views](/define/metrics-view/metrics-view.md) and arrange them into your preferred layout. 
+While Rill's signature **[Explore dashboards](/build/dashboards/dashboards.md)** let you slice, dice, and interact with your data in our suggested layout, **Canvas dashboards** let you define your own visualizations of data from multiple [metrics views](/define/metrics-view/metrics-view.md) and arrange them into your preferred layout. 
 
 You can add the following widgets to a Canvas dashboard:
 

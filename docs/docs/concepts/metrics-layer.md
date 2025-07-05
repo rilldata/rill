@@ -13,7 +13,7 @@ A metrics layer is a `centralized framework` used to define and organize **key m
 Starting from version 0.50, the operation of creating a dashboard via AI will create a metrics view and dashboard separately in their own respective folders and navigate you to a preview of your dashboard. If you find that some metrics need to be modified, you will need to navigate to your [metrics/model_name_metrics.yaml](/define/metrics-view/) file. 
 
 
-Assuming that you have the ' * ', select all, in your dashboard configurations, any changes will automatically be changed on your [explore dashboard](/build-dashboard/dashboards/).
+Assuming that you have the ' * ', select all, in your dashboard configurations, any changes will automatically be changed on your [explore dashboard](/build/dashboards/).
 :::
 
 

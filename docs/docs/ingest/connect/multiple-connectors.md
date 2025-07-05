@@ -58,7 +58,7 @@ If you need to make changes to the DSN after deployment, you can [set the creden
 <img src = '/img/build/connect/multiple-connectors/rill-env-configure.png' class='rounded-gif' />
 <br />
 
-Or, you can also configure your project's `.env` file manually to contain the correct connection string for each connector DSN, and run `rill env push` to [push and pull your credentials](/ingest-sources/credentials/#pulling-credentials-and-variables-from-a-deployed-project-on-rill-cloud) to Rill Cloud.
+Or, you can also configure your project's `.env` file manually to contain the correct connection string for each connector DSN, and run `rill env push` to [push and pull your credentials](/ingest/connect/credentials/#pulling-credentials-and-variables-from-a-deployed-project-on-rill-cloud) to Rill Cloud.
 
 ```shell
 connector.snowflake-a.dsn="<input_connectionA_dsn>"
