@@ -9,7 +9,6 @@ release:
 before:
   hooks:
     - go mod tidy
-    - echo {{ .Env.DOCKERHUB_PASS }} | docker login -u {{ .Env.DOCKERHUB_USER }} --password-stdin
 
 builds:
   - id: linux
