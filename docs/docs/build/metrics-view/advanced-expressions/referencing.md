@@ -5,7 +5,7 @@ sidebar_label: "Referencing Measures"
 sidebar_position: 02
 ---
 
-Within a metrics view, it is possible for a measure to reference another by using the `requires` array parameter. By doing this, you could easily aggregate the already existing measures to simplify the expressions. IE: get a percentage of two already summed values. 
+Within a metrics view, it is possible for a measure to reference another by using the `requires` array parameter. By doing this, you can easily aggregate already existing measures to simplify the expressions. For example, get a percentage of two already summed values. 
 
 
 <img src = '/img/build/metrics-view/examples/requires-example.png' class='rounded-gif' />
@@ -30,7 +30,7 @@ In the following example, `percentage_reactive_to_active_measure` uses the alrea
 
 
 ### Window Function
-If using a [window function](./windows), you'll need to define the measure that you are building the window for. In this example, we are getting the rolling sum of average voltage measurements for all time, that's a lot of volts! You can modify the frame to include less rows based on the order column. 
+If you are using a [window function](./windows), you'll need to define the measure that you are building the window for. In this example, we are getting the rolling sum of average voltage measurements for all time— that's a lot of volts! You can modify the frame to include fewer rows based on the order column. 
 
 <img src = '/img/build/metrics-view/examples/window-example.png' class='rounded-gif' />
 <br /> 

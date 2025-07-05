@@ -11,7 +11,7 @@ Sometimes, you will need to set up multiple connectors of the same type in one p
 
 By default, Rill will infer the connection type when creating a source. However, in the case that multiple unique connectors of the same type (with different connection strings) are needed within the context of the same Rill project, we will need to first explicitly define each connector within the project's [rill.yaml](/reference/project-files/rill-yaml) file.
 
-This can be done by specifying the connector type and name under the `connectors` property. For example, in the following `rill.yaml` file, we are defining an unique `snowflake-a` and `snowflake-b` connector in this project (both of `snowflake` type). 
+This can be done by specifying the connector type and name under the `connectors` property. For example, in the following `rill.yaml` file, we are defining a unique `snowflake-a` and `snowflake-b` connector in this project (both of `snowflake` type). 
 
 ```yaml
 connectors:
@@ -29,7 +29,7 @@ Any connectors you define explicitly in your `rill.yaml` file can be named howev
 
 ## Updating your `source.yaml` to use the defined connector
 
-For <u>each</u> source that's using one of these connectors, make sure to update the [source.yaml](/reference/project-files/sources) definition accordingly so that the `connector` property specified the correct connector by name (previous section). 
+For <u>each</u> source that's using one of these connectors, make sure to update the [source.yaml](/reference/project-files/sources) definition accordingly so that the `connector` property specifies the correct connector by name (previous section). 
 
 For example, let's say we had `sourceA` and `sourceB` defined that point to different databases and schemas (in Snowflake).
 
@@ -51,7 +51,7 @@ sql: "select * from table_B"
 
 ## Setting credentials for each connector when deploying to Rill Cloud
 
-Credentials that are defined in a project's `.env` file and defined in a `connector_name.yaml` will automatically be deployed with the project. 
+Credentials that are defined in a project's `.env` file and referenced in a `connector_name.yaml` will automatically be deployed with the project. 
 If you need to make changes to the DSN after deployment, you can [set the credentials via the Rill Cloud UI](/deploy/deploy-credentials#configure-environmental-variables-and-credentials-for-rill-cloud) for each connector or by running `rill env configure`. You will be prompted to input the correct `connector.<connector_name>.dsn` connection strings.
 
 
