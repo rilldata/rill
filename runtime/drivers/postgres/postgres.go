@@ -174,7 +174,7 @@ func (c *connection) AsOLAP(instanceID string) (drivers.OLAPStore, bool) {
 
 // AsInformationSchema implements drivers.Connection.
 func (c *connection) AsInformationSchema() (drivers.InformationSchema, bool) {
-	return nil, false
+	return c, true
 }
 
 // AsObjectStore implements drivers.Connection.
@@ -220,6 +220,9 @@ func (c *connection) getDB(database string) (*sqlx.DB, error) {
 	}
 	if database != "" {
 		dsn, err = updateDatabaseInDSN(dsn, database)
+		if err != nil {
+			return nil, fmt.Errorf("failed to update database in DSN: %w", err)
+		}
 	}
 
 	db, err := sqlx.Open("pgx", dsn)
