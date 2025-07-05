@@ -54,7 +54,7 @@ Once a dashboard is ready to preview, before [deploying to Rill Cloud](/deploy/d
 
 
 ### Clickable Dimension Links 
-Adding an additional parameter to your dimension in the [metrics view](/build-dashboard/metrics-view/) can allow for clickable links directly from the dashboard.
+Adding an additional parameter to your dimension in the [metrics view](/define/metrics-view/) can allow for clickable links directly from the dashboard.
 
 ```yaml
 dimensions:

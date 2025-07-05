@@ -303,14 +303,16 @@ li.theme-doc-sidebar-item-category-level-2 .menu__list-item-collapsible {
   height: 100%;
 
 
+
   .sidebar-release-notes-section {
     position: sticky;
     bottom: 0;
     left: 0;
     width: 100%;
-    background: var(--ifm-background-color);
+    background: #fff;
     z-index: 2;
     padding: 8px;
+    
     text-align: left;
     border-top: 1px solid var(--ifm-toc-border-color);
     
@@ -333,9 +335,11 @@ li.theme-doc-sidebar-item-category-level-2 .menu__list-item-collapsible {
   }
 }
 
-.custom-doc-sidebar nav.menu {
-  padding-bottom: 72px;
+// Dark mode override
+[data-theme='dark'] .sidebar-release-notes-section {
+  background: var(--ifm-background-color, #18191A);
 }
+
 
 // Additional search button styling
 .DocSearch-Button {

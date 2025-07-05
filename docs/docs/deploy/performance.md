@@ -23,7 +23,7 @@ Depending on the complexity of your underlying models and the size of the data m
 
 By default, models will be materialized as views (in DuckDB). This allows for a dynamic and highly interactive experience when modeling, such as keystroke-by-keystroke profiling. However, since views are logical in nature, as the complexity and size of your data models continue grow (especially if the underlying data is very large), this can start to significantly impact performance as these complex queries will need to be continuously re-executed along with a number of profiling queries that the Rill runtime will send in the backend. 
 
-In such scenarios, we recommend [materializing these models as tables](/reference/project-files/models.md#model-materialization). However, there are some tradeoffs to consider.
+In such scenarios, we recommend [materializing these models as tables](/reference/project-files/models#model-materialization). However, there are some tradeoffs to consider.
 - **Pros:** Materializing a model will generally ensure significantly improved performance for downstream dependent models and dashboards. 
 - **Cons:** Enabling materialization for a model can severely impact or break the "keystroke-by-keystroke" experience and these models may also take longer to update (because the results are being written to a table vs remaining a view). It can also lead to _degraded_ performance for very specific operations, such as when you need to perform cross joins.
 
@@ -57,7 +57,7 @@ dev:
   path: s3://bucket/path/year=2023/month=12/**/*.parquet
 ```
 
-By leveraging the [environment YAML syntax](/ingest-sources/models/environments.md), this ensures that only data from December 2023 will be read in from this S3 source when using Rill Developer locally while the full range of data will still be used in production (on Rill Cloud). However, if this data was **not** partitioned, then we could simply leverage DuckDB's ability to read from S3 files directly and _apply a filter post-download_ on the source. Taking this same example and using some [templating](templating.md), the `source.yaml` could be rewritten to something like the following:
+By leveraging the [environment YAML syntax](/transform/models/environments), this ensures that only data from December 2023 will be read in from this S3 source when using Rill Developer locally while the full range of data will still be used in production (on Rill Cloud). However, if this data was **not** partitioned, then we could simply leverage DuckDB's ability to read from S3 files directly and _apply a filter post-download_ on the source. Taking this same example and using some [templating](templating.md), the `source.yaml` could be rewritten to something like the following:
 ```yaml
 type: source
 connector: "duckdb"
@@ -66,7 +66,7 @@ sql: SELECT * FROM read_parquet('s3://bucket/path/*.parquet') {{ if dev }} where
 
 #### Creating intermediate staging models
 
-Another option would be to create intermediate staging models from your sources, either through [statistical sampling](https://duckdb.org/docs/sql/samples.html) or by applying a [raw limit](https://duckdb.org/docs/sql/query_syntax/limit.html), to reduce the size of your models in development. For example, with [templating](templating.md) and [environments](/ingest-sources/models/environments.md), this `model.sql` applies a five percent sample to a source:
+Another option would be to create intermediate staging models from your sources, either through [statistical sampling](https://duckdb.org/docs/sql/samples.html) or by applying a [raw limit](https://duckdb.org/docs/sql/query_syntax/limit.html), to reduce the size of your models in development. For example, with [templating](templating.md) and [environments](/transform/models/environments), this `model.sql` applies a five percent sample to a source:
 
 ```sql
 -- @materialize

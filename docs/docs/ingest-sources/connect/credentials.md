@@ -4,7 +4,7 @@ sidebar_label: Configure Local Credentials
 sidebar_position: 00
 ---
 
-Rill requires credentials to connect to remote data sources such as private buckets (S3, GCS, Azure), data warehouses (Snowflake, BigQuery), OLAP engines (ClickHouse, Apache Druid) or other DuckDB sources (MotherDuck). Please refer to the appropriate [connector](../../reference/connectors/connectors.md) and [OLAP engine](../../reference/olap-engines/olap-engines.md) page for instructions to configure credentials accordingly.
+Rill requires credentials to connect to remote data sources such as private buckets (S3, GCS, Azure), data warehouses (Snowflake, BigQuery), OLAP engines (ClickHouse, Apache Druid) or other DuckDB sources (MotherDuck). Please refer to the appropriate [connector](/reference/connectors/connectors.md) and [OLAP engine](/reference/olap-engines/olap-engines.md) page for instructions to configure credentials accordingly.
 
 At a high level, configuring credentials and credentials management in Rill can be broken down into three categories:
 - Setting credentials for Rill Developer
@@ -14,9 +14,9 @@ At a high level, configuring credentials and credentials management in Rill can 
 ## Setting credentials for Rill Developer
 
 When reading from a source (or using a different OLAP engine), Rill will attempt to use existing credentials that have been configured on your machine.
-1. Credentials that have been configured in your local environment via the CLI (for [AWS](../../reference/connectors/s3.md#local-credentials) / [Azure](../../reference/connectors/azure.md#local-credentials) / [Google Cloud](../../reference/connectors/gcs#rill-developer-local-credentials))
+1. Credentials that have been configured in your local environment via the CLI (for [AWS](/reference/connectors/s3.md#local-credentials) / [Azure](../../reference/connectors/azure.md#local-credentials) / [Google Cloud](../../reference/connectors/gcs#rill-developer-local-credentials))
 2. Credentials that have been passed in directly through the connection string or DSN (typically for databases - see [Source YAML](../../reference/project-files/sources.md) and [Connector YAML](../../reference/project-files/connectors.md) for more details)
-3. Credentials that have been passed in as a [variable](../../deploy/templating.md) when starting Rill Developer via `rill start --env key=value`
+3. Credentials that have been passed in as a [variable](/ingest-sources/templating.md) when starting Rill Developer via `rill start --env key=value`
 4. Credentials that have been specified in your *`<RILL_PROJECT_HOME>/.env`* file, see [credential naming schema](#credentials-naming-schema) for more information.
 
 For more details, please refer to the corresponding [connector](../../reference/connectors/connectors.md) or [OLAP engine](../../reference/olap-engines/olap-engines.md) page.
@@ -36,7 +36,7 @@ Project variables work exactly the same way as credentials and can be defined wh
 variable=xyz
 ```
 
-This variable will then be usable and referenceable for [templating](../../deploy/templating.md) purposes in the local instance of your project. 
+This variable will then be usable and referenceable for [templating](/ingest-sources/templating.md) purposes in the local instance of your project. 
 
 :::info Fun Fact
 

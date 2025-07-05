@@ -5,7 +5,7 @@ sidebar_position: 40
 ---
 
 You can write a SQL query and expose it as an API endpoint. This is useful when you want to directly write queries 
-against a [model](/ingest-sources/models/models.md) or [source](../../reference/project-files/sources.md) that you have created. 
+against a [model](/transform/models) or [source](../../reference/project-files/sources.md) that you have created. 
 It should have the following structure:
 
 ```yaml

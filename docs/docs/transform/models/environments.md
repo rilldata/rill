@@ -48,7 +48,7 @@ dev:
   path: s3://path/to/bucket/Y=2024/M=01/*.parquet
 ```
 
-Similarly, if you wanted to set a project-wide default in `rill.yaml` where models are [materialized](/reference/project-files/models.md#model-materialization) only on Rill Cloud (i.e. `prod) and dashboards use a different default [theme](/build-dashboard/dashboards/customize#changing-themes--colors) in production compared to locally, you could do this by:
+Similarly, if you wanted to set a project-wide default in `rill.yaml` where models are [materialized](/reference/project-files/models#model-materialization) only on Rill Cloud (i.e. `prod) and dashboards use a different default [theme](/build-dashboard/dashboards/customize#changing-themes--colors) in production compared to locally, you could do this by:
 
 ```yaml
 prod:
@@ -61,8 +61,8 @@ prod:
 :::info Hierarchy of inheritance and property overrides
 
 As a general rule of thumb, properties that have been specified at a more _granular_ level will supercede or override higher level properties that have been inherited. Therefore, in order of inheritance, Rill will prioritize properties in the following order:
-1. Individual [source](/reference/project-files/sources.md)/[model](/reference/project-files/models.md)/[dashboard](/reference/project-files/explore-dashboards.md) object level properties (e.g. `source.yaml` or `dashboard.yaml`)
-2. [Environment](/ingest-sources/models/environments.md) level properties (e.g. a specific property that have been set for `dev`)
+1. Individual [source](/reference/project-files/sources.md)/[model](/reference/project-files/models)/[dashboard](/reference/project-files/explore-dashboards.md) object level properties (e.g. `source.yaml` or `dashboard.yaml`)
+2. [Environment](/transform/models/environments) level properties (e.g. a specific property that have been set for `dev`)
 3. [Project-wide defaults](/reference/project-files/rill-yaml.md#project-wide-defaults) for a specific property and resource type
 
 :::

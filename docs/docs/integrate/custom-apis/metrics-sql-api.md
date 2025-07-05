@@ -4,7 +4,7 @@ sidebar_label: Metrics SQL API
 sidebar_position: 50
 ---
 
-Metrics SQL API allows you to query data from your predefined [metrics view](/build-dashboard/metrics-view/metrics-view.md) using a SQL dialect.
+Metrics SQL API allows you to query data from your predefined [metrics view](/define/metrics-view/metrics-view.md) using a SQL dialect.
 
 For example, if `my_metrics` is a metrics view with a dimension `foo` and a measure `count`, you can create a custom API that queries it with metrics SQL:
 

@@ -30,12 +30,12 @@ In your Rill project directory, create a metrics view, `<metrics_view>.yaml`, fi
 
 **`connector`** — Refers to the OLAP engine, if you are not using DuckDB, IE: [ClickHouse OLAP engine](../olap-engines/multiple-olap.md). _(optional)_.
 
-**`model`** — Refers to the **model** powering the dashboard with no path specified; should only be used for [Rill models](/ingest-sources/models/models.md) _(either **model** or **table** is required)_.
+**`model`** — Refers to the **model** powering the dashboard with no path specified; should only be used for [Rill models](/transform/models) _(either **model** or **table** is required)_.
 
 **`table`** — Refers to the **table** powering the dashboard with no path specified; should be used instead of `model` for dashboards create from [external OLAP tables](../../concepts/OLAP.md#external-olap-tables) _(either **table** or **model** is required)_. 
 
 
-**`dimensions`** — Relates to exploring segments or [dimensions](/build-dashboard/metrics-view/metrics-view.md#dimensions) of your data and filtering the dashboard _(required)_.
+**`dimensions`** — Relates to exploring segments or [dimensions](/define/metrics-view/metrics-view.md#dimensions) of your data and filtering the dashboard _(required)_.
   - **`column`** — a categorical column _(required)_ 
   - **`expression`** a non-aggregate expression such as `string_split(domain, '.')`. One of `column` and `expression` is required but cannot have both at the same time _(required)_
   - **`name`** — a stable identifier for the dimension _(optional)_
@@ -44,7 +44,7 @@ In your Rill project directory, create a metrics view, `<metrics_view>.yaml`, fi
   - **`unnest`** - if true, allows multi-valued dimension to be unnested (such as lists) and filters will automatically switch to "contains" instead of exact match _(optional)_
   - **`uri`** - enable if your dimension is a clickable URL to enable single click navigation _(boolean or valid SQL expression)_   _(optional)_
 
-**`measures`** — Used to define the numeric [aggregates](/build-dashboard/metrics-view/metrics-view.md#measures) of columns from your data model  _(required)_.
+**`measures`** — Used to define the numeric [aggregates](/define/metrics-view/metrics-view.md#measures) of columns from your data model  _(required)_.
   - **`expression`** — a combination of operators and functions for aggregations _(required)_ 
   - **`name`** — a stable identifier for the measure _(required)_
   - **`display_name`** - the display name of your measure._(required)_
@@ -70,7 +70,7 @@ In your Rill project directory, create a metrics view, `<metrics_view>.yaml`, fi
     - `percentage` — output transformed from a rate to a percentage appended with a percentage sign
     - `interval_ms` — time intervals given in milliseconds are transformed into human readable time units like hours (h), days (d), years (y), etc.
   - **`treat_nulls_as`** — used to configure what value to fill in for missing time buckets. This also works generally as COALESCING over non empty time buckets. _(optional)_ 
-  - **`window`** — can be used for [advanced window expressions](/build-dashboard/metrics-view/advanced-expressions), cannot be used with simple measures _(optional)_ 
+  - **`window`** — can be used for [advanced window expressions](/define/metrics-view/advanced-expressions), cannot be used with simple measures _(optional)_ 
     - **`partition`** — boolean _(optional)_ 
     - **`order`** — using a value available in your metrics view to order the window _(optional)_ 
     - **`ordertime`** — boolean, sets the order only by the time dimensions _(optional)_ 

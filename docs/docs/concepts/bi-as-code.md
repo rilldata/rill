@@ -44,12 +44,12 @@ This approach allows engineering teams to maintain control over their analytics 
 
 ### Developer Experience
 - Use familiar tools and workflows (Git, CLI, IDEs)
-- Write [SQL for last-mile ETL](/ingest-sources/models/)
+- Write [SQL for last-mile ETL](/transform/models)
 - Maintain analytics as part of your codebase
 - Leverage existing development practices
 
 ### Flexibility & Coexistence
-- Define [core metrics and dimensions in code](/build-dashboard/metrics-view/)
+- Define [core metrics and dimensions in code](/define/metrics-view/)
 - Make UI-based adjustments when needed
 - Both code-defined and UI-created assets live in harmony
 - Best of both worlds: developer control and business agility

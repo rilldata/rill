@@ -8,7 +8,7 @@ sidebar_position: 00
 <img src = '/img/build/model/model.png' class='rounded-gif' />
 <br />
 
-In Rill, [data models](/reference/project-files/models.md) are built using SQL `SELECT` statements applied to your source data.
+In Rill, [data models](/reference/project-files/models) are built using SQL `SELECT` statements applied to your source data.
 They allow you to join, transform, and clean data.
 
 ## SQL transformations
@@ -17,7 +17,7 @@ By default, data transformations in Rill Developer are powered by DuckDB and the
 
 It is possible to change the default [OLAP engine](https://docs.rilldata.com/build/olap/) for [the entire project](https://docs.rilldata.com/reference/project-files/rill-yaml#configuring-the-default-olap-engine) or [a specific metrics view](https://docs.rilldata.com/reference/project-files/metrics-views). You will need to define the connector credentials within your Rill project or via environment variables.
 
-For additional tips on commonly used expressions (either in models or dashboard definitions) visit our [common expressions page](/build-dashboard/metrics-view/advanced-expressions/advanced-expressions.md).
+For additional tips on commonly used expressions (either in models or dashboard definitions) visit our [common expressions page](/define/metrics-view/advanced-expressions/advanced-expressions.md).
 
 
 ## Adding a data model
