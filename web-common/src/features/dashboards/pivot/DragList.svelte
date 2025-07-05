@@ -4,6 +4,7 @@
   import Row from "@rilldata/web-common/components/icons/Row.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
   import { writable } from "svelte/store";
   import { getStateManagers } from "../state-managers/state-managers";
   import { metricsExplorerStore } from "../stores/dashboard-stores";
@@ -37,6 +38,13 @@
   export let tableMode: PivotTableMode = "nest";
   export let onUpdate: (items: PivotChipData[]) => void = () => {};
 
+  import {
+    handleTimeChipClick,
+    handleTimeChipDrop,
+    updateTimeChipGrain,
+  } from "@rilldata/web-common/features/dashboards/pivot/time-pill-utils";
+  import { timePillSelectors } from "./time-pill-store";
+
   const isDropLocation = zone === "columns" || zone === "rows";
 
   const _ghostIndex = writable<number | null>(null);
@@ -65,7 +73,14 @@
     dragData &&
     (zone === "columns" || dragChip?.type !== PivotChipType.Measure);
 
+  // Get available grains from the store
+  const availableGrainsStore = timePillSelectors.getAvailableGrains("time");
+  $: availableTimeGrains = $availableGrainsStore;
+
   function handleMouseDown(e: MouseEvent, item: PivotChipData) {
+    const target = e.target as HTMLElement;
+    if (target.closest(".grain-dropdown")) return;
+
     e.preventDefault();
 
     if (e.button !== 0) return;
@@ -134,10 +149,22 @@
       if (dragChip && ghostIndex !== null) {
         const temp = [...items];
 
-        temp.splice(ghostIndex, 0, dragChip);
+        const timeChipsInZone = temp.filter(
+          (chip) => chip.type === PivotChipType.Time,
+        );
 
+        let chipToAdd = dragChip;
+        if (dragChip.type === PivotChipType.Time) {
+          chipToAdd = handleTimeChipDrop(
+            dragChip,
+            ghostIndex,
+            timeChipsInZone,
+            availableTimeGrains,
+          );
+        }
+
+        temp.splice(ghostIndex, 0, chipToAdd);
         items = temp;
-
         onUpdate(items);
       }
       swap = false;
@@ -169,11 +196,25 @@
   }
 
   function handleRowClick(item: PivotChipData) {
-    metricsExplorerStore.addPivotField($exploreName, item, true);
+    let itemToAdd = item;
+    if (item.type === PivotChipType.Time) {
+      itemToAdd = handleTimeChipClick(item, availableTimeGrains);
+    }
+    metricsExplorerStore.addPivotField($exploreName, itemToAdd, true);
   }
 
   function handleColumnClick(item: PivotChipData) {
-    metricsExplorerStore.addPivotField($exploreName, item, false);
+    let itemToAdd = item;
+    if (item.type === PivotChipType.Time) {
+      itemToAdd = handleTimeChipClick(item, availableTimeGrains);
+    }
+    metricsExplorerStore.addPivotField($exploreName, itemToAdd, false);
+  }
+
+  function handleTimeGrainSelect(item: PivotChipData, timeGrain: V1TimeGrain) {
+    const updatedItems = updateTimeChipGrain(items, item, timeGrain);
+    items = updatedItems;
+    onUpdate(updatedItems);
   }
 </script>
 
@@ -222,6 +263,12 @@
         <PivotChip
           grab
           removable={isDropLocation}
+          withDropdown={isDropLocation && item.type === PivotChipType.Time}
+          availableGrains={isDropLocation && item.type === PivotChipType.Time
+            ? availableTimeGrains
+            : []}
+          onTimeGrainSelect={(timeGrain) =>
+            handleTimeGrainSelect(item, timeGrain)}
           {item}
           on:mousedown={(e) => handleMouseDown(e, item)}
           onRemove={() => {
