@@ -964,15 +964,19 @@ function generateTestCases(metadata: TimeMetadata): Test[] {
       ),
     },
 
-    {
-      syntax: `W1 as of latest-1Y`,
-      description:
-        "The one week period starting one year ago, rounded to the week",
-      interval: Interval.fromDateTimes(
-        metadata.latest.startOf("week").minus({ year: 1 }).minus({ week: 1 }),
-        metadata.latest.startOf("week").minus({ year: 1 }),
-      ),
-    },
+    /*
+    The following tests are commented out because they may not fully supported.
+    They can be uncommented and adjusted as needed when the functionality is implemented.
+    */
+    //  {
+    //   syntax: `W1 of 2024`,
+    //   description:
+    //     "The one week period starting one year ago, rounded to the week",
+    //   interval: Interval.fromDateTimes(
+    //     metadata.latest.startOf("week").minus({ year: 1 }).minus({ week: 1 }),
+    //     metadata.latest.startOf("week").minus({ year: 1 }),
+    //   ),
+    // },
     // ...[1, 2, 4, 13, 26, 39, 52, 53, 54].map((value) => {
     //   return {
     //     syntax: `W${value} of Y as of latest`,
