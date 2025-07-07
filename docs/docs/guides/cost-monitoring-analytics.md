@@ -7,22 +7,25 @@ tags:
   - Tutorial
   - Quickstart
   - Example Project
-  - AWS
   - Cost Management
+  - Margin Analysis
+  - Business Intelligence
 ---
 
 # Cost Monitoring Analytics Demo
 
-This guide walks you through the Cost Monitoring Analytics demo project, which showcases Rill's capabilities for analyzing AWS cost and usage data. You'll learn how to clone the project, understand its structure, and explore the cost analytics dashboard.
+This guide walks you through the Cost Monitoring Analytics demo project, which showcases Rill's capabilities for analyzing cost and usage data. You'll learn how to clone the project, understand its structure, and explore the dashboard.
 
 ## Overview
 
-The Cost Monitoring Analytics demo analyzes AWS cost and usage data, providing insights into:
-- **Cost trends** - Daily, weekly, and monthly spending patterns
-- **Service breakdown** - Which AWS services are driving costs
-- **Resource utilization** - Understanding cost efficiency across resources
-- **Budget tracking** - Monitoring spending against budgets and forecasts
-- **Cost optimization** - Identifying opportunities for savings
+This dataset is modeled after a similar dashboard we use internally at Rill to both identify opportunities to improve our cloud infrastructure operations and to manage customer implementations. Typical users would include engineering, customer success and finance. In this example, we've tied together a combination of cloud services, other hosting costs, and revenue metrics.
+
+The Cost Monitoring Analytics demo analyzes operational costs and revenue data, providing insights into:
+- **Margin trends** - Daily, weekly, and monthly profitability patterns
+- **Customer profitability** - Which customers are driving the highest margins
+- **Cost efficiency** - Understanding operational cost effectiveness across services
+- **Revenue optimization** - Monitoring revenue performance against operational costs
+- **Business intelligence** - Identifying opportunities for improved profitability
 
 ## Step 1: Clone the Project
 
@@ -34,13 +37,6 @@ git clone https://github.com/rilldata/rill-examples.git
 cd rill-examples/rill-cost-monitoring
 ```
 
-### Alternative: Use Rill CLI
-
-```bash
-# Clone directly using Rill CLI
-rill project clone rill-cost-monitoring
-cd rill-cost-monitoring
-```
 
 ## Step 2: Project Structure
 
@@ -50,7 +46,7 @@ The project is organized as follows:
 rill-cost-monitoring/
 ├── rill.yaml                           # Project configuration
 ├── sources/                            # Data source definitions
-│   └── metrics_margin_monitoring.yaml  # AWS billing details
+│   └── metrics_margin_monitoring.yaml  # Margin source dataset
 ├── models/                             # SQL transformations
 │   └── metrics_margin_model.sql        # Cost trend analysis
 ├── metrics/                            # Defined measures and dimensions
@@ -63,7 +59,7 @@ rill-cost-monitoring/
 
 ## Step 3: Data Sources
 
-The source here is to our static public dataset
+The source connects to our static public dataset containing operational cost and revenue data. You can modify this [source](/connect/) to point to your own data export.
 
 ```yaml
 # Visit https://docs.rilldata.com/ to learn more about Rill code artifacts.
@@ -72,338 +68,155 @@ connector: "https"
 uri: "https://storage.googleapis.com/rilldata-public/metrics_margin_monitoring.parquet"
 ```
 
-**What this does:**
-- Connects to your AWS Cost and Usage Reports stored in S3
-- Fetches detailed cost and usage data across all AWS services
-- Includes resource-level cost attribution and tagging information
-- Data includes service costs, usage types, and billing dimensions
+**What this data contains:**
+- **Cost data** - Operational expenses broken down by component, environment, and pipeline
+- **Revenue data** - Customer revenue associated with different billing plans and SKUs
+- **Customer information** - Company names and associated billing plans
+- **Operational metadata** - Location, environment, application, and pipeline details
+- **Time series data** - Daily granular data for trend analysis
 
-### AWS Billing Data Source
+**What this source does:**
+- Connects to our public GCS bucket (if modified, will need to be verified via [credentials](/connect/credentials))
+- Ingests the data into Rill's OLAP Engine (DuckDB)
+- Provides the foundation for margin analysis and business intelligence
 
-The billing data source provides additional billing context:
 
-```yaml
-# sources/aws_billing_data.yaml
-type: source
-connector: "s3"
-uri: "s3://your-billing-bucket/billing-reports/*/billing-*.parquet"
-```
-
-**What this does:**
-- Provides billing period information and invoice details
-- Includes account-level billing summaries
-- Tracks payment methods and billing adjustments
-- Enables month-over-month billing comparisons
 
 ## Step 4: Data Models
+:::tip Modeling
+In our example, we've already processed the data, but if you need to do some last mile ETL in Rill, this is possible via a [model](/transform/models/).
+:::
 
-### Cost by Service Model
-
-This model aggregates costs by AWS service and provides service-level insights:
-
-```sql
--- models/cost_by_service.sql
--- Reference documentation: https://docs.rilldata.com/reference/project-files/models
--- @materialize: true
-
-SELECT
-    usage_date AS date,
-    product_product_name AS service_name,
-    CASE 
-        WHEN product_product_name LIKE '%EC2%' THEN 'Compute'
-        WHEN product_product_name LIKE '%S3%' THEN 'Storage'
-        WHEN product_product_name LIKE '%RDS%' THEN 'Database'
-        WHEN product_product_name LIKE '%Lambda%' THEN 'Serverless'
-        ELSE 'Other'
-    END AS service_category,
-    line_item_usage_account_id AS account_id,
-    product_region AS region,
-    line_item_usage_type AS usage_type,
-    line_item_operation AS operation,
-    SUM(line_item_unblended_cost) AS unblended_cost,
-    SUM(line_item_blended_cost) AS blended_cost,
-    SUM(reservation_effective_cost) AS effective_cost,
-    SUM(line_item_usage_amount) AS usage_amount,
-    resource_tags_user_name AS resource_owner,
-    resource_tags_user_environment AS environment,
-    resource_tags_user_project AS project
-FROM aws_cost_data
-WHERE line_item_line_item_type != 'Tax'
-GROUP BY 
-    usage_date,
-    product_product_name,
-    service_category,
-    line_item_usage_account_id,
-    product_region,
-    line_item_usage_type,
-    line_item_operation,
-    resource_tags_user_name,
-    resource_tags_user_environment,
-    resource_tags_user_project
-```
-
-### Daily Costs Model
-
-This model provides daily cost aggregations for trend analysis:
-
-```sql
--- models/daily_costs.sql
--- @materialize: true
-
-SELECT
-    usage_date AS date,
-    line_item_usage_account_id AS account_id,
-    SUM(line_item_unblended_cost) AS daily_cost,
-    SUM(line_item_usage_amount) AS daily_usage,
-    COUNT(DISTINCT product_product_name) AS services_used,
-    COUNT(DISTINCT product_region) AS regions_used,
-    AVG(line_item_unblended_cost) AS avg_line_item_cost,
-    -- Calculate month-to-date costs
-    SUM(SUM(line_item_unblended_cost)) OVER (
-        PARTITION BY DATE_TRUNC('month', usage_date), line_item_usage_account_id
-        ORDER BY usage_date
-        ROWS UNBOUNDED PRECEDING
-    ) AS month_to_date_cost,
-    -- Calculate running 7-day average
-    AVG(SUM(line_item_unblended_cost)) OVER (
-        PARTITION BY line_item_usage_account_id
-        ORDER BY usage_date
-        ROWS 6 PRECEDING
-    ) AS seven_day_avg_cost
-FROM aws_cost_data
-WHERE line_item_line_item_type != 'Tax'
-GROUP BY usage_date, line_item_usage_account_id
-ORDER BY usage_date DESC
-```
 
 ## Step 5: Creating your Metrics View
 
-Metrics in Rill define the measures and dimensions that power your cost monitoring dashboards:
+Metrics in Rill define the measures and dimensions that power your margin monitoring dashboards:
 
 ```yaml
-# metrics/cost_metrics.yaml
-title: "AWS Cost Monitoring Metrics"
-description: "Key metrics for analyzing AWS costs and usage"
+# Metrics view YAML
+# Reference documentation: https://docs.rilldata.com/reference/project-files/dashboards
+# This file was generated using AI.
 
-measures:
-  - name: "total_cost"
-    description: "Total unblended cost"
-    expression: "SUM(unblended_cost)"
-    format_preset: "currency_usd"
-    
-  - name: "effective_cost"
-    description: "Total effective cost (including RI/SP benefits)"
-    expression: "SUM(effective_cost)"
-    format_preset: "currency_usd"
-    
-  - name: "average_daily_cost"
-    description: "Average daily cost"
-    expression: "AVG(daily_cost)"
-    format_preset: "currency_usd"
-    
-  - name: "cost_per_service"
-    description: "Average cost per service"
-    expression: "total_cost / COUNT(DISTINCT service_name)"
-    format_preset: "currency_usd"
-    
-  - name: "month_over_month_change"
-    description: "Month-over-month cost change percentage"
-    expression: "((SUM(CASE WHEN date >= DATE_TRUNC('month', CURRENT_DATE) THEN unblended_cost END) - SUM(CASE WHEN date >= DATE_TRUNC('month', CURRENT_DATE - INTERVAL '1 month') AND date < DATE_TRUNC('month', CURRENT_DATE) THEN unblended_cost END)) / SUM(CASE WHEN date >= DATE_TRUNC('month', CURRENT_DATE - INTERVAL '1 month') AND date < DATE_TRUNC('month', CURRENT_DATE) THEN unblended_cost END)) * 100"
-    format_preset: "percentage_1"
-    
-  - name: "total_usage_amount"
-    description: "Total usage amount"
-    expression: "SUM(usage_amount)"
-    
-  - name: "cost_efficiency_ratio"
-    description: "Ratio of effective cost to unblended cost"
-    expression: "SUM(effective_cost) / SUM(unblended_cost)"
-    format_preset: "percentage_2"
-    
-  - name: "unique_services"
-    description: "Number of unique AWS services used"
-    expression: "COUNT(DISTINCT service_name)"
-    
-  - name: "unique_regions"
-    description: "Number of unique regions used"
-    expression: "COUNT(DISTINCT region)"
+version: 1
+type: metrics_view
+
+display_name: Metrics Margin Model KPIs
+model: metrics_margin_model
+timeseries: __time
+smallest_time_grain: "day"
 
 dimensions:
-  - name: "date"
-    description: "Usage date"
-    expression: "date"
+  - name: customer
+    display_name: Customer
+    column: company
+    description: "The name of the customer"
+  - name: plan_name
+    display_name: Plan Name
+    column: plan_name
+    description: "The name of the billing plan"
+  - name: location
+    display_name: "Cost by Region"
+    column: "location"
+    description: "The region incurring costs"
+  - name: component
+    display_name: Cost by Component
+    column: component
+    description: "The component generating costs"
+  - name: app_name
+    display_name: "Cost by App Name"
+    column: "app_name"
+    description: "The app generating costs"
+  - name: sku_description
+    display_name: "Cost by SKU"
+    column: "sku_description"
+    description: "The sku description for costs"
+  - name: pipeline
+    display_name: "Cost by Data Pipeline"
+    column: "pipeline"
+    description: "The pipeline incurring costs"
+  - name: environment
+    display_name: "Cost by Environment"
+    column: "environment"
+    description: "The environment incurring costs"
     
-  - name: "service_name"
-    description: "AWS service name"
-    expression: "service_name"
-    
-  - name: "service_category"
-    description: "AWS service category"
-    expression: "service_category"
-    
-  - name: "account_id"
-    description: "AWS account ID"
-    expression: "account_id"
-    
-  - name: "region"
-    description: "AWS region"
-    expression: "region"
-    
-  - name: "usage_type"
-    description: "Usage type"
-    expression: "usage_type"
-    
-  - name: "operation"
-    description: "AWS operation"
-    expression: "operation"
-    
-  - name: "environment"
-    description: "Environment tag"
-    expression: "environment"
-    
-  - name: "project"
-    description: "Project tag"
-    expression: "project"
-    
-  - name: "resource_owner"
-    description: "Resource owner tag"
-    expression: "resource_owner"
-
-time_grain: "day"
+measures:
+  - display_name: "Total Cost"
+    expression: "SUM(cost)"
+    name: total_cost
+    description: "The sum of cost"
+    format_preset: currency_usd
+  - display_name: "Total Revenue"
+    expression: SUM(revenue)
+    name: total_revenue
+    description: The sum of revenue
+    format_preset: currency_usd
+  - display_name: "Net Revenue"
+    expression: "SUM(revenue) - SUM(cost)"
+    name: net_revenue
+    description: "The sum of revenue minus the sum of cost"
+    format_preset: currency_usd
+  - display_name: "Gross Margin %"
+    expression: "(SUM(revenue) - SUM(cost))/SUM(revenue)"
+    name: gross_margin_percent
+    description: "Net revenue divided by sum of revenue"
+    format_preset: percentage
+  - display_name: "Unique Customers"
+    expression: "COUNT(DISTINCT company)"
+    name: unique_customers
+    description: "The count of unique companies"
+    format_preset: humanize
 ```
 
 **What this metrics file does:**
 
-- **Measures** define the cost calculations you want to perform:
-  - `total_cost` - Sum of all unblended costs
-  - `effective_cost` - Cost including Reserved Instance and Savings Plan benefits
-  - `average_daily_cost` - Daily cost averages for trend analysis
-  - `month_over_month_change` - Growth rate calculations
-  - `cost_efficiency_ratio` - Savings from RI/SP usage
+- **Measures** define the key business calculations you want to perform:
+  - `total_cost` - Sum of all operational costs
+  - `total_revenue` - Sum of all revenue generated
+  - `net_revenue` - Revenue minus costs (profit calculation)
+  - `gross_margin_percent` - Profitability percentage calculation
+  - `unique_customers` - Count of distinct customers
 
-- **Dimensions** define how you can slice and dice the cost data:
-  - `date` - Time-based cost analysis
-  - `service_name` - Per-service cost breakdown
-  - `account_id` - Multi-account cost analysis
-  - `region` - Regional cost distribution
-  - `environment` - Cost by environment (dev/staging/prod)
-
-- **Time grain** sets the default time aggregation to daily
-
-### Creating Custom Cost Metrics
-
-You can add more sophisticated cost metrics:
-
-```yaml
-# Additional measures for advanced cost analysis
-measures:
-  - name: "cost_per_region"
-    description: "Average cost per region"
-    expression: "total_cost / unique_regions"
-    format_preset: "currency_usd"
-    
-  - name: "weekly_cost_trend"
-    description: "Week-over-week cost change"
-    expression: "((SUM(CASE WHEN date >= DATE_TRUNC('week', CURRENT_DATE) THEN unblended_cost END) - SUM(CASE WHEN date >= DATE_TRUNC('week', CURRENT_DATE - INTERVAL '1 week') AND date < DATE_TRUNC('week', CURRENT_DATE) THEN unblended_cost END)) / SUM(CASE WHEN date >= DATE_TRUNC('week', CURRENT_DATE - INTERVAL '1 week') AND date < DATE_TRUNC('week', CURRENT_DATE) THEN unblended_cost END)) * 100"
-    format_preset: "percentage_1"
-    
-  - name: "top_service_cost_share"
-    description: "Percentage of total cost from top service"
-    expression: "MAX(SUM(unblended_cost)) / SUM(unblended_cost) * 100"
-    format_preset: "percentage_1"
-```
+- **Dimensions** define how you can slice and dice the margin data:
+  - `customer` - Analysis by individual customer/company
+  - `plan_name` - Breakdown by billing plan types
+  - `location` - Regional cost and revenue analysis
+  - `component` - Analysis by system components
+  - `app_name` - Application-specific margin analysis
+  - `sku_description` - Product SKU-level insights
+  - `pipeline` - Data pipeline cost attribution
+  - `environment` - Environment-based analysis (dev/staging/prod)
 
 ## Step 6: Dashboard Exploration
 
 #### **Features**
-- **Cost Overview** - High-level cost trends and key metrics
-- **Service Breakdown** - Detailed analysis by AWS service
-- **Regional Analysis** - Cost distribution across regions
-- **Tag-based Analysis** - Cost allocation by projects, environments, and owners
-- **Budget Tracking** - Monitor spending against budgets
+- **Margin Overview** - High-level profitability trends and key metrics
+- **Customer Analysis** - Detailed margin analysis by customer
+- **Product Breakdown** - Profitability by plan types and SKUs
+- **Regional Analysis** - Cost and revenue distribution across locations
+- **Component Analysis** - Margin breakdown by system components
+- **Environment Tracking** - Cost allocation across environments
 
 #### **Selectors**
 - **Date range selector** - Analyze specific time periods
 - **Time Comparison Toggle** - Compare with previous periods
-- **Account filter** - Focus on specific AWS accounts
-- **Service filter** - Analyze specific AWS services
+- **Customer filter** - Focus on specific customers
+- **Plan filter** - Analyze specific billing plans
 
 #### **Filters**
-- **Environment filter** - Focus on dev, staging, or production
-- **Region filter** - Analyze specific AWS regions
-- **Cost threshold filter** - Focus on high-cost resources
+- **Region filter** - Analyze specific regions
+- **Component filter** - Focus on specific system components
+- **Margin threshold filter** - Focus on high/low margin segments
 
-### Let's answer some key cost questions!
+### Let's answer some key margin questions!
 
-**Which AWS services are driving the highest costs?**
-<img src='/img/tutorials/cost-monitoring/service-breakdown.png' class='rounded-gif'/>
+**Which customers are driving the highest margins?**
+<img src='/img/tutorials/quickstart/customer-margins-1.png' class='rounded-gif'/>
 <br />
 
-**How are costs trending over time? Are there any unusual spikes?**
-<img src='/img/tutorials/cost-monitoring/cost-trends.png' class='rounded-gif'/>
+
+**Which billing plans have the best profitability?**
+<img src='/img/tutorials/quickstart/customer-margins-2.png' class='rounded-gif'/>
 <br />
 
-**Which regions and accounts have the highest cost concentration?**
-<img src='/img/tutorials/cost-monitoring/regional-analysis.png' class='rounded-gif'/>
-<br />
+These are just some of the insights that you can find within your explore dashboard but you'll find more hidden gems in your data as you continue to use Rill. Please let us know if you have any other questions!
 
-**How effectively are we using Reserved Instances and Savings Plans?**
-<img src='/img/tutorials/cost-monitoring/savings-analysis.png' class='rounded-gif'/>
-<br />
-
-## Cost Optimization Insights
-
-The dashboard helps identify several cost optimization opportunities:
-
-### 1. **Service Optimization**
-- Identify services with high costs but low utilization
-- Compare costs across similar services to find alternatives
-- Track cost per unit of usage to identify inefficiencies
-
-### 2. **Regional Cost Analysis**
-- Identify regions with unexpectedly high costs
-- Compare regional pricing for similar workloads
-- Optimize data transfer costs between regions
-
-### 3. **Reserved Instance and Savings Plan Optimization**
-- Track RI/SP utilization and coverage
-- Identify opportunities for additional commitments
-- Monitor effective cost vs. on-demand costs
-
-### 4. **Tag-based Cost Allocation**
-- Identify untagged resources contributing to costs
-- Allocate costs to projects and teams accurately
-- Track cost accountability across the organization
-
-## Getting Started with Your Own Data
-
-To use this dashboard with your own AWS cost data:
-
-1. **Set up AWS Cost and Usage Reports**:
-   - Enable detailed billing reports in your AWS account
-   - Configure reports to be delivered to an S3 bucket
-   - Ensure reports include resource IDs and tags
-
-2. **Update source configurations**:
-   - Modify `sources/aws_cost_data.yaml` to point to your S3 bucket
-   - Update any credential configurations as needed
-
-3. **Customize metrics and dimensions**:
-   - Add your organization's specific tags as dimensions
-   - Create custom measures for your business metrics
-   - Adjust time grains based on your reporting needs
-
-4. **Set up alerts and monitoring**:
-   - Create alerts for cost thresholds
-   - Set up anomaly detection for unusual spending patterns
-   - Configure scheduled reports for stakeholders
-
-These are just some of the insights you can discover with your cost monitoring dashboard. The combination of detailed AWS cost data and Rill's powerful analytics capabilities provides a comprehensive view of your cloud spending patterns and optimization opportunities.
-
-For more advanced cost optimization strategies, consider integrating additional data sources such as:
-- AWS CloudWatch metrics for utilization data
-- AWS Trusted Advisor recommendations
-- Third-party cost optimization tools
-- Business metrics to correlate costs with business outcomes
-
-Please let us know if you have any questions about implementing cost monitoring analytics with Rill!

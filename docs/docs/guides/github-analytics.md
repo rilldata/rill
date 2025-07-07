@@ -31,15 +31,6 @@ git clone https://github.com/rilldata/rill-examples.git
 cd rill-examples/rill-github-analytics
 ```
 
-### Alternative: Use Rill CLI
-
-```bash
-# Clone directly using Rill CLI, assuming you have access to the demo project.
-rill org switch demo
-rill project clone rill-github-analytics
-cd rill-github-analytics
-```
-
 ## Step 2: Project Structure
 
 The project is organized as follows:
