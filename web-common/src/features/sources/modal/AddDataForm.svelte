@@ -196,6 +196,7 @@
 
   {#if connector.name === "clickhouse"}
     <div class="pt-3">
+      <div class="text-sm font-medium mb-2">Connector type</div>
       <select id="managed" bind:value={$paramsForm.managed} class="form-select">
         <option value={true}>Rill-managed ClickHouse</option>
         <option value={false}>Self-managed ClickHouse</option>
