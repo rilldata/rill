@@ -110,8 +110,16 @@ func (p *Provisioner) Provision(ctx context.Context, r *provisioner.Resource, op
 
 	// Prepare for creating the schema and user.
 	id := strings.ReplaceAll(r.ID, "-", "")
-	dbName := fmt.Sprintf("rill_%s", id)
 	user := fmt.Sprintf("rill_%s", id)
+	dbName := fmt.Sprintf("rill_%s", id)
+
+	// Use org and project names to create a more human-readable database name.
+	orgName := sanitizeName(getAnnotationValue(opts.Annotations, "org"))
+	projectName := sanitizeName(getAnnotationValue(opts.Annotations, "project"))
+	if orgName != "" && projectName != "" {
+		dbName = fmt.Sprintf("rill_%s_%s_%s", orgName, projectName, id)
+	}
+
 	password := newPassword()
 	annotationsJSON, err := json.Marshal(opts.Annotations)
 	if err != nil {
@@ -276,4 +284,34 @@ func newPassword() string {
 	}
 	// Ensure all of digits/letters/uppercase/lowercase/special characters
 	return fmt.Sprintf("1Rr!%x", b[:])
+}
+
+// Helper function to get annotation value
+func getAnnotationValue(annotations map[string]string, key string) string {
+	if annotations == nil {
+		return ""
+	}
+	return annotations[key]
+}
+
+// Helper function to sanitize names for ClickHouse identifiers
+func sanitizeName(name string) string {
+	if name == "" {
+		return ""
+	}
+
+	// Replace invalid characters with underscores and convert to lowercase
+	sanitized := strings.ToLower(name)
+	sanitized = strings.ReplaceAll(sanitized, "-", "_")
+	sanitized = strings.ReplaceAll(sanitized, " ", "_")
+
+	// Remove any characters that aren't alphanumeric or underscore
+	var result strings.Builder
+	for _, r := range sanitized {
+		if (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') || r == '_' {
+			result.WriteRune(r)
+		}
+	}
+
+	return result.String()
 }
