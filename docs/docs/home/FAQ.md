@@ -98,7 +98,7 @@ The banner will show you the remaining days for your trial and will update as th
 Your trial will start when you deploy a project to Rill Cloud from Rill Developer. An Organization will be automatically created during this process using your email and the project will be the folder that your Rill project exists in. You can change the name using [CLI commands](https://docs.rilldata.com/reference/cli/project/rename). 
 
 ### How long does my Rill Cloud Trial last?
-A Rill Cloud trial lasts for 30 days. If you have any comments or concerns, please reach out to us on our [various platforms](../contact.md)! 
+A Rill Cloud trial lasts for 30 days. If you have any comments or concerns, please reach out to us on our [various platforms](/contact)! 
 
 ### What is included in the free trial? 
 The free trial is locked at 2 projects and up to 10 GB of data each. You can invite as many users as required and there are no locked features. 
@@ -137,7 +137,7 @@ You can check your data usage in your organization setting usage page. The graph
 ## Enterprise Plan
 
 ### What is an Enterprise Plan? 
-Enterprise plan includes all the features of a Team Plan but also provides further offerings, such as a dedicated Technical Account Manager and fewer restrictions on data storage. For more information, please visit our price page, [here](https://www.rilldata.com/pricing), or [contact us](../contact.md). Transparent usage-based billing means you only pay for what you need. Flexible pricing based on storage, compute, and network units start at the rates below:
+Enterprise plan includes all the features of a Team Plan but also provides further offerings, such as a dedicated Technical Account Manager and fewer restrictions on data storage. For more information, please visit our price page, [here](https://www.rilldata.com/pricing), or [contact us](/contact). Transparent usage-based billing means you only pay for what you need. Flexible pricing based on storage, compute, and network units start at the rates below:
 
 **Storage:**
 

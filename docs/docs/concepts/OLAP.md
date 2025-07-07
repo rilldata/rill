@@ -38,7 +38,7 @@ Rill currently supports the following OLAP engines. Please refer to our [Build S
 - Pinot 
 
 :::tip Don't see an OLAP engine?
-Our team is continually evaluating new OLAP engines to support. If you don't see an OLAP engine that you'd like to use, please don't hesitate to [reach out](contact.md). We'd love to hear from you!
+Our team is continually evaluating new OLAP engines to support. If you don't see an OLAP engine that you'd like to use, please don't hesitate to [reach out](/contact). We'd love to hear from you!
 :::
 
 

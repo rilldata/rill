@@ -17,7 +17,7 @@ For a detailed breakdown of access permissions at different levels, see the [Rol
 
 :::tip More Rill Cloud workflows coming
 
-We have begun releasing new features around user management via Rill Cloud. If you'd like to learn more, please feel free to [reach out](contact.md)!
+We have begun releasing new features around user management via Rill Cloud. If you'd like to learn more, please feel free to [reach out](/contact)!
 
 :::
 
@@ -213,7 +213,7 @@ In order to access a deployed project and/or view a shared dashboard, users will
 
 :::info SAML Authentication
 
-Rill Cloud **does** support SAML authentication for our enterprise customers. If this is a requirement, [please get in contact](contact.md) with us and we can discuss appropriate next steps to help you with your setup.
+Rill Cloud **does** support SAML authentication for our enterprise customers. If this is a requirement, [please get in contact](/contact) with us and we can discuss appropriate next steps to help you with your setup.
 
 :::
 

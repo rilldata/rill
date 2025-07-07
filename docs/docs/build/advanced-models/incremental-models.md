@@ -17,7 +17,7 @@ Rill supports incremental models on either cloud storage or data warehouses but 
 See [our reference documentation](/reference/project-files/advanced-models) for more information.
 
 :::tip Need help with getting Incremental Models set up?
-Please [reach out to us](contact.md) if you have any questions regarding incremental modeling! 
+Please [reach out to us](/contact) if you have any questions regarding incremental modeling! 
 :::
 
 ## Creating an Incremental Model

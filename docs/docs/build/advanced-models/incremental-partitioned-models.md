@@ -9,7 +9,7 @@ sidebar_position: 05
 Putting the two concepts together, it is possible to create an incremental partitioned model. Doing so will allow you to not only partition the model but also refresh only the partition that you need and incrementally ingest partitions.
 
 :::note Need help?
-If you need any assistance with setting up an incremental partitioned model, [reach out](contact.md) to us for assistance! 
+If you need any assistance with setting up an incremental partitioned model, [reach out](/contact) to us for assistance! 
 :::
 
 :::tip Looking for an example?

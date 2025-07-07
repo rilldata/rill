@@ -30,7 +30,7 @@ To provide a non-exhaustive list, Rill supports the following connectors:
 
 :::info Full List Of Connectors
 
-Rill is continually adding new sources and connectors in our releases. For a comprehensive list, you can refer to our [Connectors](/reference/connectors) page. Please don't hesitate to [reach out](contact.md) either if there's a connector you'd like us to add!
+Rill is continually adding new sources and connectors in our releases. For a comprehensive list, you can refer to our [Connectors](/reference/connectors) page. Please don't hesitate to [reach out](/contact) either if there's a connector you'd like us to add!
 
 :::
 
@@ -152,6 +152,6 @@ _There is a difference_ between Rill Developer and Rill Cloud and they work hand
 
 :::info Have questions?
 
-We are just one Slack, email, or chat message away. Please feel free to [contact us](contact.md) - we'd love to help!
+We are just one Slack, email, or chat message away. Please feel free to [contact us](/contact) - we'd love to help!
 
 :::
