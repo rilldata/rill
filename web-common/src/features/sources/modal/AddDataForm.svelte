@@ -47,9 +47,6 @@
       : connector.configProperties?.filter(
           (property) => property.key !== "dsn",
         )) ?? [];
-  const filteredProperties = properties.filter(
-    (property) => !property.noPrompt,
-  );
   const schema = yup(getYupSchema[connector.name as keyof typeof getYupSchema]);
   const {
     form: paramsForm,
