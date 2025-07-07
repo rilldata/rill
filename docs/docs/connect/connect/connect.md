@@ -134,7 +134,7 @@ Please see our [Configuring Credentials](credentials.md) and [Deployment Credent
 :::
 
 ### Templating 
-When creating your sources, you can template the YAML file to ensure that locally you are only using `dev` data but when pushing to Rill Cloud, use `prod` data. Doing so will simplify the deployment process. For more information, see [templating](/ingest/templating).
+When creating your sources, you can template the YAML file to ensure that locally you are only using `dev` data but when pushing to Rill Cloud, use `prod` data. Doing so will simplify the deployment process. For more information, see [templating](/connect/templating).
 
 ## External OLAP tables
 

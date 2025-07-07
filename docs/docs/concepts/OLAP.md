@@ -30,7 +30,7 @@ Rill supports creating and powering dashboards using existing tables from altern
 
 ## Supported OLAP Engines
 
-Rill currently supports the following OLAP engines. Please refer to our [Build Section](../ingest/olap/olap.md) for more information on the topic.
+Rill currently supports the following OLAP engines. Please refer to our [Build Section](../connect/olap/olap.md) for more information on the topic.
 
 - DuckDB
 - ClickHouse

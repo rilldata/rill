@@ -12,7 +12,7 @@ sidebar_position: 00
 Deploying dashboards from Rill Developer allows you to share dashboards with other users, leverage [Rill Cloud capabilities](../../explore/dashboard-101), [embed Rill](/integrate/embedding.md) into other applications, and more!
 
 :::tip Configure credentials
-Cloud datastores will typically require service keys to access data. Make sure to you create the necessary key for your service account and either add these credetials to your `.env` file directly or deploy your project and then run ```rill env configure``` with the correct credentials. For more details, please refer to our [connector documentation](/ingest/connect/credentials.md).
+Cloud datastores will typically require service keys to access data. Make sure to you create the necessary key for your service account and either add these credetials to your `.env` file directly or deploy your project and then run ```rill env configure``` with the correct credentials. For more details, please refer to our [connector documentation](/connect/connect/credentials.md).
 :::
 
 The flow diagram below shows two options for deploying an existing project. 
