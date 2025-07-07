@@ -185,9 +185,6 @@
       }
     }
   }
-
-  $: console.log("useDsn: ", useDsn);
-  $: console.log("managed: ", $paramsForm.managed);
 </script>
 
 <div class="h-full w-full flex flex-col">
@@ -314,8 +311,8 @@
         {/if}
       {/each}
     </form>
-  {:else if !(connector.name === "clickhouse" && $paramsForm.managed)}
-    <!-- Show DSN form only if NOT clickhouse managed -->
+  {:else if hasDsnFormOption && !(connector.name === "clickhouse" && $paramsForm.managed)}
+    <!-- Show DSN form only if DSN is supported and NOT clickhouse managed -->
     {#if dsnError}
       <SubmissionError message={dsnError} details={dsnErrorDetails} />
     {/if}
