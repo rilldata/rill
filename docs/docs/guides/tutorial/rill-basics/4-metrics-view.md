@@ -25,7 +25,7 @@ Now that the data is ready in your model file, we can create a metrics view. The
 
 Let's go ahead and create a simple metrics layer via the UI and build onto it. 
 
-<img src = '/img/tutorials/rill_basics/create-metrics-view-ui.png' class='rounded-gif' />
+<img src = '/img/tutorials/rill-basics/create-metrics-view-ui.png' class='rounded-gif' />
 <br />
 
 
@@ -70,7 +70,7 @@ We can go ahead and change the following components as directed in the UI:
 - `measures`: sum(added_lines)
 - `dimensions`: author_name
 
-<img src = '/img/tutorials/rill_basics/basic-viz-editor.png' class='rounded-gif' />
+<img src = '/img/tutorials/rill-basics/basic-viz-editor.png' class='rounded-gif' />
 <br />
 
 Once finished, the red border will disappear and your explore dashboard is ready to be created. If you need further information on each component see the next section, via the YAML.
@@ -206,7 +206,7 @@ measures:
 If you decide to build out the metrics view via the UI, it should look something like below!
 
 
-<img src = '/img/tutorials/rill_basics/new-viz-editor.png' class='rounded-gif' />
+<img src = '/img/tutorials/rill-basics/new-viz-editor.png' class='rounded-gif' />
 <br />
 
 

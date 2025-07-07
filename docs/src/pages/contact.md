@@ -1,5 +1,4 @@
 ---
-sidebar_class_name: hidden
 title: Contact us
 ---
 
@@ -36,4 +35,4 @@ For logged-in users, Rill provides an ability to ask a question and/or report an
 
 
 <img src = '/img/contact/rill-developer-chat.png' class='rounded-gif' />
-<br />
+<br /> 

@@ -17,7 +17,7 @@ Let's start at the beginning of all data pipelines: **the source**.
 
 In Rill, a source model represents your raw data. See our list of [connectors](/reference/connectors/) or select Add -> Add Data from Rill Developer to see the supported sources.
 
-<img src = '/img/tutorials/rill_basics/add_data.png' class='rounded-gif' style={{maxWidth: '400px', height: 'auto'}} />
+<img src = '/img/tutorials/rill-basics/add_data.png' class='rounded-gif' style={{maxWidth: '400px', height: 'auto'}} />
 <br />
 
 Depending on the source type, you will need to either explicitly provide credentials (for Snowflake, Athena, etc.) or Rill can dynamically retrieve them via the CLI (for AWS, GCP, Azure). In either case, the credentials needs to be [stored in a `.env` file](/build/credentials) in order to be pushed to your deployed projet. You might need to run `rill env configure` after deploying if your credentials are not pushed properly.
@@ -34,7 +34,7 @@ We support various different OLAP engines. If you have a different OLAP engine t
 
 Select the `+Add` dropdown and select `Data`. This will open a UI showing supported connectors.
 
-<img src = '/img/tutorials/rill_basics/Adding-Data.gif' class='rounded-gif' />
+<img src = '/img/tutorials/rill-basics/Adding-Data.gif' class='rounded-gif' />
 <br />
 
 For our tutorial, let's add two GCS storage sources from our public storage. 
@@ -57,7 +57,7 @@ Once imported, you'll see the UI change with several things:
 3. Within the DuckDB database, under main, the source table with a preview when selected.
 4. The right panel showing a summary of the data source and column values.
 
-<img src = '/img/tutorials/rill_basics/Add-GCS.gif' class='rounded-gif' />
+<img src = '/img/tutorials/rill-basics/Add-GCS.gif' class='rounded-gif' />
 <br />
 
 Now we're ready to create a `model`.

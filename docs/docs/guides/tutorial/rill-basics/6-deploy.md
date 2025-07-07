@@ -21,7 +21,7 @@ Depending on your version, you'll notice a `Deploy to share` button in the top r
 Deploying via the UI was introduced in v0.48. Please upgrade Rill by running `rill upgrade` in the CLI. The version is on the bottom left of the Rill Developer UI.
 :::
 
-<img src = '/img/tutorials/rill_basics/deploy-ui.gif' class='rounded-gif' />
+<img src = '/img/tutorials/rill-basics/deploy-ui.gif' class='rounded-gif' />
 <br />
 
 Steps to deploy to Rill Cloud:
@@ -35,4 +35,4 @@ Steps to deploy to Rill Cloud:
 
 ## Welcome to Rill Cloud!
 Take note of the following features in the UI, we'll go over the them later.
-<img src = '/img/tutorials/rill_basics/ui-explained.gif' class='rounded-gif' />
+<img src = '/img/tutorials/rill-basics/ui-explained.gif' class='rounded-gif' />

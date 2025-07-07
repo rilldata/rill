@@ -11,13 +11,13 @@ tags:
 ## Explore Dashboard
 We have the choice to start with either an Explore or Canvas dashboard. Let's start with an Explore Dashboard by selecting the `Create Explore Dashboard`. This will automatically populate the explore dashboard to select all the of created metrics and dimension in your metrics view. We can make changes to the view via the YAML or visual dashboard editor.
 
-<img src = '/img/tutorials/rill_basics/Completed-100-dashboard.png' class='rounded-gif' />
+<img src = '/img/tutorials/rill-basics/Completed-100-dashboard.png' class='rounded-gif' />
 <br />
 
 ## Making Changes
 ### Visual Explore Dashboard
 
-<img src = '/img/tutorials/rill_basics/visual-dashboard-tutorial.png' class='rounded-gif' />
+<img src = '/img/tutorials/rill-basics/visual-dashboard-tutorial.png' class='rounded-gif' />
 <br />
 
 On the right panel, you are able to select measures, dimensions, time ranges, and various other components that control the view of your dashboard. In the main area, you will see a preview of what your dashboard will look like. You can also select the code view to make any needed changes and/or set more advanced settings as found in our [explore dashboard YAML reference.](https://docs.rilldata.com/reference/project-files/explore-dashboards)
@@ -43,7 +43,7 @@ measures: '*'
 
 For a quick summary on the different components of an explore dashboard, and its respective parts in the dashboard UI.
 
-<img src = '/img/tutorials/rill_basics/simple-dashboard.gif' class='rounded-gif' />
+<img src = '/img/tutorials/rill-basics/simple-dashboard.gif' class='rounded-gif' />
 <br />
 
 --- 
@@ -51,7 +51,7 @@ For a quick summary on the different components of an explore dashboard, and its
 ## Canvas Dashboard
 Next, let's try to make a Canvas dashboard!
 
-<img src = '/img/tutorials/rill_basics/canvas-dashboard.png' class='rounded-gif' />
+<img src = '/img/tutorials/rill-basics/canvas-dashboard.png' class='rounded-gif' />
 <br />
 
 Select the `Add widget` to build a component using our metrics view. The right-hand panel will display the different parameters that you can set per component. 
@@ -62,7 +62,7 @@ Try to create the following:
 
 Once completed, select `Preview`. You should see something like the following image
 
-<img src = '/img/tutorials/rill_basics/complete-canvas-dashboard.png' class='rounded-gif' />
+<img src = '/img/tutorials/rill-basics/complete-canvas-dashboard.png' class='rounded-gif' />
 <br />
 
 
