@@ -22,7 +22,7 @@
   // Local state for optimistic updates
   let localSelectedItems: string[] = selectedItems;
 
-  $: ctx = getCanvasStore(canvasName);
+  $: ctx = getCanvasStore(canvasName, instanceId);
   $: fieldData = useMetricFieldData(ctx, metricName, types);
   $: selectableGroups = [
     ...(types.includes("measure")

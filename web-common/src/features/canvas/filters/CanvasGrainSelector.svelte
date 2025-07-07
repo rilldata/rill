@@ -19,7 +19,7 @@
   export let selectedComparisonTimeRange: DashboardTimeControls | undefined;
   export let canvasName: string;
 
-  $: ({ canvasEntity } = getCanvasStore(canvasName));
+  $: ({ canvasEntity } = getCanvasStore(canvasName, instanceId));
 
   let timeGrainOptions: TimeGrain[];
   // TODO: Change this
