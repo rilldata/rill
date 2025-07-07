@@ -2,6 +2,7 @@ package snowflake
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"strings"
 
@@ -15,69 +16,34 @@ func (c *connection) ListDatabaseSchemas(ctx context.Context) ([]*drivers.Databa
 	}
 	defer db.Close()
 
-	dbRows, err := db.QueryxContext(ctx, "SHOW DATABASES")
+	curDBName, curSchemaName, err := getCurrentDatabaseAndSchema(ctx, db.DB)
 	if err != nil {
 		return nil, err
 	}
-	defer dbRows.Close()
+	rows, err := db.QueryxContext(ctx, "SHOW TERSE SCHEMAS IN ACCOUNT")
+	if err != nil {
+		return nil, fmt.Errorf("failed to execute SHOW TERSE SCHEMAS IN ACCOUNT: %w", err)
+	}
+	defer rows.Close()
 
 	var results []*drivers.DatabaseSchemaInfo
-
-	for dbRows.Next() {
-		cols := make([]interface{}, 12)
-		for i := range cols {
-			var v interface{}
-			cols[i] = &v
-		}
-		if err := dbRows.Scan(cols...); err != nil {
-			return nil, err
+	var schemaName, dbName string
+	var createdOn, kind any
+	for rows.Next() {
+		if err := rows.Scan(&createdOn, &schemaName, &kind, &dbName); err != nil {
+			return nil, fmt.Errorf("failed to scan schema row: %w", err)
 		}
 
-		dbName := fmt.Sprintf("%v", *(cols[1].(*interface{})))    // column 1 = database name
-		isCurrent := fmt.Sprintf("%v", *(cols[3].(*interface{}))) // column 3 = IS_CURRENT (Y/N)
-
-		// Skip SNOWFLAKE database unless it's current
-		if strings.EqualFold(dbName, "SNOWFLAKE") && isCurrent != "Y" {
+		if (strings.EqualFold(dbName, "SNOWFLAKE") && !strings.EqualFold(curDBName, "SNOWFLAKE")) || (strings.EqualFold(schemaName, "INFORMATION_SCHEMA") && !strings.EqualFold(curSchemaName, "INFORMATION_SCHEMA")) {
 			continue
 		}
 
-		schemaQuery := fmt.Sprintf("SHOW SCHEMAS IN DATABASE %s", sqlSafeName(dbName))
-		schemaRows, err := db.QueryxContext(ctx, schemaQuery)
-		if err != nil {
-			return nil, err
-		}
-
-		for schemaRows.Next() {
-			schemaCols := make([]interface{}, 14)
-			for i := range schemaCols {
-				var v interface{}
-				schemaCols[i] = &v
-			}
-			if err := schemaRows.Scan(schemaCols...); err != nil {
-				schemaRows.Close()
-				return nil, err
-			}
-			schemaName := fmt.Sprintf("%v", *(schemaCols[1].(*interface{})))      // column 1 = schema name
-			schemaIsCurrent := fmt.Sprintf("%v", *(schemaCols[3].(*interface{}))) // column 3 = IS_CURRENT
-
-			// Skip INFORMATION_SCHEMA unless it's current
-			if strings.EqualFold(schemaName, "INFORMATION_SCHEMA") && schemaIsCurrent != "Y" {
-				continue
-			}
-
-			results = append(results, &drivers.DatabaseSchemaInfo{
-				Database:       dbName,
-				DatabaseSchema: schemaName,
-			})
-		}
-		schemaRows.Close()
+		results = append(results, &drivers.DatabaseSchemaInfo{
+			Database:       dbName,
+			DatabaseSchema: schemaName,
+		})
 	}
-
-	if err := dbRows.Err(); err != nil {
-		return nil, err
-	}
-
-	return results, nil
+	return results, rows.Err()
 }
 
 func (c *connection) ListTables(ctx context.Context, database, databaseSchema string) ([]*drivers.TableInfo, error) {
@@ -158,6 +124,25 @@ func (c *connection) GetTable(ctx context.Context, database, databaseSchema, tab
 	return &drivers.TableMetadata{
 		Schema: schemaMap,
 	}, nil
+}
+
+func getCurrentDatabaseAndSchema(ctx context.Context, db *sql.DB) (string, string, error) {
+	query := "SELECT CURRENT_DATABASE(), CURRENT_SCHEMA()"
+
+	var currentDB, currentSchema sql.NullString
+	err := db.QueryRowContext(ctx, query).Scan(&currentDB, &currentSchema)
+	if err != nil {
+		return "", "", fmt.Errorf("failed to get current database and schema: %w", err)
+	}
+	dbName := ""
+	if currentDB.Valid {
+		dbName = currentDB.String
+	}
+	schemaName := ""
+	if currentSchema.Valid {
+		schemaName = currentSchema.String
+	}
+	return dbName, schemaName, nil
 }
 
 func sqlSafeName(name string) string {
