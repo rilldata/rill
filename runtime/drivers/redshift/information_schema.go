@@ -17,7 +17,7 @@ func (c *Connection) ListDatabaseSchemas(ctx context.Context) ([]*drivers.Databa
 		database_name, 
 		schema_name 
 	FROM svv_all_tables 
-	WHERE schema_name NOT IN ('information_schema', 'pg_catalog') 
+	WHERE schema_name NOT IN ('information_schema', 'pg_catalog') OR schema_name = current_schema()
 	GROUP BY database_name, schema_name 
 	ORDER BY database_name, schema_name
 	`
@@ -65,9 +65,9 @@ func (c *Connection) ListTables(ctx context.Context, database, databaseSchema st
 		table_name,
 		CASE WHEN table_type = 'VIEW' THEN true ELSE false END AS view
 	FROM svv_all_tables
-	WHERE database_name = '%s' AND schema_name = '%s' 
+	WHERE database_name = %s AND schema_name = %s 
 	ORDER BY table_name;
-	`, safeSQLString(database), safeSQLString(databaseSchema))
+	`, escapeStringValue(database), escapeStringValue(databaseSchema))
 
 	awsConfig, err := c.awsConfig(ctx, c.config.AWSRegion)
 	if err != nil {
@@ -113,9 +113,9 @@ func (c *Connection) GetTable(ctx context.Context, database, databaseSchema, tab
 		column_name, 
 		data_type
 	FROM svv_all_columns
-	WHERE database_name = '%s' AND schema_name = '%s' AND table_name = '%s'
+	WHERE database_name = %s AND schema_name = %s AND table_name = %s
 	ORDER BY ordinal_position;
-	`, safeSQLString(database), safeSQLString(databaseSchema), safeSQLString(table))
+	`, escapeStringValue(database), escapeStringValue(databaseSchema), escapeStringValue(table))
 
 	awsConfig, err := c.awsConfig(ctx, c.config.AWSRegion)
 	if err != nil {
@@ -157,6 +157,6 @@ func (c *Connection) GetTable(ctx context.Context, database, databaseSchema, tab
 	}, nil
 }
 
-func safeSQLString(input string) string {
-	return strings.ReplaceAll(input, "'", "''")
+func escapeStringValue(s string) string {
+	return fmt.Sprintf("'%s'", strings.ReplaceAll(s, "'", "''"))
 }
