@@ -207,7 +207,7 @@
     </div>
   {/if}
 
-  {#if hasDsnFormOption}
+  {#if connector.name === "clickhouse" && !$paramsForm.managed}
     <div class="py-3">
       <div class="text-sm font-medium mb-2">Connection method</div>
       <ButtonGroup
@@ -240,38 +240,40 @@
         {@const propertyKey = property.key ?? ""}
         {@const label =
           property.displayName + (property.required ? "" : " (optional)")}
-        <div class="py-1.5">
-          {#if property.type === ConnectorDriverPropertyType.TYPE_STRING || property.type === ConnectorDriverPropertyType.TYPE_NUMBER}
-            <Input
-              id={propertyKey}
-              label={property.displayName}
-              placeholder={property.placeholder}
-              optional={!property.required}
-              secret={property.secret}
-              hint={property.hint}
-              errors={$paramsErrors[propertyKey]}
-              bind:value={$paramsForm[propertyKey]}
-              onInput={(_, e) => onStringInputChange(e)}
-              alwaysShowError
-            />
-          {:else if property.type === ConnectorDriverPropertyType.TYPE_BOOLEAN}
-            <label for={property.key} class="flex items-center">
-              <input
+        {#if !(connector.name === "clickhouse" && $paramsForm.managed && propertyKey !== "managed")}
+          <div class="py-1.5">
+            {#if property.type === ConnectorDriverPropertyType.TYPE_STRING || property.type === ConnectorDriverPropertyType.TYPE_NUMBER}
+              <Input
                 id={propertyKey}
-                type="checkbox"
-                bind:checked={$paramsForm[propertyKey]}
-                class="h-5 w-5"
+                label={property.displayName}
+                placeholder={property.placeholder}
+                optional={!property.required}
+                secret={property.secret}
+                hint={property.hint}
+                errors={$paramsErrors[propertyKey]}
+                bind:value={$paramsForm[propertyKey]}
+                onInput={(_, e) => onStringInputChange(e)}
+                alwaysShowError
               />
-              <span class="ml-2 text-sm">{label}</span>
-            </label>
-          {:else if property.type === ConnectorDriverPropertyType.TYPE_INFORMATIONAL}
-            <InformationalField
-              description={property.description}
-              hint={property.hint}
-              href={property.docsUrl}
-            />
-          {/if}
-        </div>
+            {:else if property.type === ConnectorDriverPropertyType.TYPE_BOOLEAN}
+              <label for={property.key} class="flex items-center">
+                <input
+                  id={propertyKey}
+                  type="checkbox"
+                  bind:checked={$paramsForm[propertyKey]}
+                  class="h-5 w-5"
+                />
+                <span class="ml-2 text-sm">{label}</span>
+              </label>
+            {:else if property.type === ConnectorDriverPropertyType.TYPE_INFORMATIONAL}
+              <InformationalField
+                description={property.description}
+                hint={property.hint}
+                href={property.docsUrl}
+              />
+            {/if}
+          </div>
+        {/if}
       {/each}
     </form>
   {:else}
