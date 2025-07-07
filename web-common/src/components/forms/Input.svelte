@@ -197,7 +197,7 @@
       {/if}
       {#if secret}
         <IconButton
-          compact
+          size={20}
           disableHover
           ariaLabel={showPassword ? "Hide password" : "Show password"}
           on:click={() => {
