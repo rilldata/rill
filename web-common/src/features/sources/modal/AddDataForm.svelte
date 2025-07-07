@@ -46,6 +46,9 @@
       : connector.configProperties?.filter(
           (property) => property.key !== "dsn",
         )) ?? [];
+  const filteredProperties = properties.filter(
+    (property) => !property.noPrompt,
+  );
   const schema = yup(getYupSchema[connector.name as keyof typeof getYupSchema]);
   const {
     form: paramsForm,
@@ -233,7 +236,7 @@
       on:submit|preventDefault={paramsSubmit}
       transition:slide={{ duration: FORM_TRANSITION_DURATION }}
     >
-      {#each properties as property (property.key)}
+      {#each filteredProperties as property (property.key)}
         {@const propertyKey = property.key ?? ""}
         {@const label =
           property.displayName + (property.required ? "" : " (optional)")}
