@@ -836,7 +836,6 @@ function generateTestCases(metadata: TimeMetadata): Test[] {
           .startOf("minute"),
       ),
     },
-
     {
       syntax: `-127d/W to -89d/W as of watermark`,
       description:
@@ -846,7 +845,6 @@ function generateTestCases(metadata: TimeMetadata): Test[] {
         metadata.watermark.minus({ day: 89 }).startOf("week"),
       ),
     },
-
     {
       syntax: `-15Y/W to -4Y/W as of latest`,
       description:
@@ -856,7 +854,6 @@ function generateTestCases(metadata: TimeMetadata): Test[] {
         metadata.latest.minus({ year: 4 }).startOf("week"),
       ),
     },
-
     {
       syntax: `-2Y/Y/W to -2Y/W as of latest`,
       description: "All weeks of the current year, offset into two years ago",
@@ -924,10 +921,9 @@ function generateTestCases(metadata: TimeMetadata): Test[] {
           .startOf("week"),
       ),
     },
-
     {
       syntax: `1Q as of 2025-02-25T09:00:00Z-8W `,
-      description: "The 61 quarter period ending exactly 8 weeks ago",
+      description: "The 1 quarter period ending exactly 8 weeks ago",
       interval: Interval.fromDateTimes(
         DateTime.fromISO("2025-02-25T09:00:00Z", { zone: "UTC" })
           .minus({ week: 8 })
@@ -939,7 +935,8 @@ function generateTestCases(metadata: TimeMetadata): Test[] {
     },
     {
       syntax: `1Q as of 2025-02-25T09:00:00Z-8W/Q`,
-      description: "The 61 quarter period ending exactly 8 weeks ago",
+      description:
+        "The 1 quarter period ending exactly 8 weeks ago, snapped to quarter",
       interval: Interval.fromDateTimes(
         DateTime.fromISO("2025-02-25T09:00:00Z", { zone: "UTC" })
           .minus({ week: 8 })
@@ -950,7 +947,6 @@ function generateTestCases(metadata: TimeMetadata): Test[] {
           .startOf("quarter"),
       ),
     },
-
     {
       syntax: `-1W to ref as of watermark/W-1Y`,
       description:
