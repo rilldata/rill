@@ -4,7 +4,9 @@ import (
 	"archive/tar"
 	"bufio"
 	"compress/gzip"
+	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -28,8 +30,9 @@ import (
 const embedVersion = "25.2.2.39"
 
 var (
-	embed *embedClickHouse
-	once  sync.Once
+	embed             *embedClickHouse
+	once              sync.Once
+	errAlreadyRunning = fmt.Errorf("ClickHouse server is already running, please stop it before starting a new one")
 )
 
 type embedClickHouse struct {
@@ -91,26 +94,21 @@ func (e *embedClickHouse) start() (*clickhouse.Options, error) {
 		return nil, err
 	}
 
-	e.cmd = exec.Command(binPath, "server", "--config-file", configPath)
-	e.cmd.Stdout = io.Discard
-
-	stderr, err := e.cmd.StderrPipe()
+	// Start the ClickHouse server
+	stderr, err := e.startClickhouse(binPath, configPath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get stderr pipe: %w", err)
-	}
-
-	ready := make(chan error, 1)
-	go func() {
-		err := e.startAndWaitUntilReady(stderr)
-		ready <- err
-		if err != nil && e.cmd != nil && e.cmd.Process != nil {
-			_ = e.cmd.Process.Kill()
-			return
+		if !errors.Is(err, errAlreadyRunning) {
+			return nil, err
 		}
-	}()
-
-	if err := <-ready; err != nil {
-		return nil, err
+		e.logger.Warn("ClickHouse server is already running, attempting to kill the existing process")
+		err = e.killExistingProcess()
+		if err != nil {
+			return nil, fmt.Errorf("failed to kill existing ClickHouse process: %w", err)
+		}
+		stderr, err = e.startClickhouse(binPath, configPath)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	// If you're using cmd.StdoutPipe() or cmd.StderrPipe() and not reading from them fast enough,
@@ -164,6 +162,31 @@ func (e *embedClickHouse) start() (*clickhouse.Options, error) {
 		Addr:     []string{addr},
 	}
 	return e.opts, nil
+}
+
+func (e *embedClickHouse) startClickhouse(binPath, configPath string) (io.ReadCloser, error) {
+	e.cmd = exec.Command(binPath, "server", "--config-file", configPath)
+	e.cmd.Stdout = io.Discard
+
+	stderr, err := e.cmd.StderrPipe()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get stderr pipe: %w", err)
+	}
+
+	ready := make(chan error, 1)
+	go func() {
+		err := e.startAndWaitUntilReady(stderr)
+		ready <- err
+		if err != nil && e.cmd != nil && e.cmd.Process != nil {
+			_ = e.cmd.Process.Kill()
+			return
+		}
+	}()
+
+	if err := <-ready; err != nil {
+		return nil, err
+	}
+	return stderr, nil
 }
 
 func (e *embedClickHouse) stop() error {
@@ -379,6 +402,9 @@ func (e *embedClickHouse) startAndWaitUntilReady(stderr io.Reader) error {
 				return nil
 			}
 			if logLine.Level == "Error" {
+				if strings.Contains(logLine.Message, "Another server instance in same directory is already running") {
+					return errAlreadyRunning
+				}
 				e.logger.Error("ClickHouse error", zap.String("message", logLine.Message), zap.String("logger_name", logLine.LoggerName))
 			}
 		}
@@ -513,6 +539,66 @@ func isUserError(code int) bool {
 
 	default:
 		return false
+	}
+}
+
+func (e *embedClickHouse) killExistingProcess() error {
+	file, err := os.Open(filepath.Join(e.dataDir, "status"))
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	var pid int
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		line := scanner.Text()
+		if !strings.HasPrefix(line, "PID:") {
+			continue
+		}
+		parts := strings.Split(line, ":")
+		if len(parts) == 2 {
+			pid, err = strconv.Atoi(strings.TrimSpace(parts[1]))
+			if err != nil {
+				return fmt.Errorf("failed to parse PID from status file: %w", err)
+			}
+			break
+		}
+	}
+
+	if pid <= 0 {
+		return fmt.Errorf("no valid PID found in status file")
+	}
+	p, err := os.FindProcess(pid)
+	if err != nil {
+		return fmt.Errorf("failed to find process with PID %d: %w", pid, err)
+	}
+	err = p.Signal(syscall.SIGTERM)
+	if err != nil {
+		return fmt.Errorf("failed to kill process with PID %d: %w", pid, err)
+	}
+
+	// wait for the process to exit
+	// unfortunately no way to wait for the process to exit gracefully since we don't have the original handle that started this process
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+	defer cancel()
+	for {
+		select {
+		case <-ctx.Done():
+			return fmt.Errorf("timeout while waiting for process with PID %d to exit: %w", pid, ctx.Err())
+		case <-time.After(500 * time.Millisecond):
+			// check if the process is still running
+			err = p.Signal(syscall.Signal(0))
+			if err != nil {
+				if errors.Is(err, os.ErrProcessDone) {
+					// process has exited
+					return nil
+				}
+				// some other error occurred, return it
+				return fmt.Errorf("failed to check if process with PID %d is running: %w", pid, err)
+			}
+			// process is still running, continue waiting
+		}
 	}
 }
 
