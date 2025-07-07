@@ -38,12 +38,93 @@ func (c *Connection) ListDatabaseSchemas(ctx context.Context) ([]*drivers.Databa
 	return res, nil
 }
 
-func (c *Connection) ListTables(ctx context.Context, database, schema string) ([]*drivers.TableInfo, error) {
-	return nil, nil
+func (c *Connection) ListTables(ctx context.Context, database, databaseSchema string) ([]*drivers.TableInfo, error) {
+	awsConfig, err := c.awsConfig(ctx, c.config.AWSRegion)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get AWS config: %w", err)
+	}
+
+	client := athena.NewFromConfig(awsConfig, func(o *athena.Options) {
+		o.TracerProvider = smithyoteltracing.Adapt(otel.GetTracerProvider())
+	})
+
+	q := fmt.Sprintf(`
+	SELECT
+		table_name,
+		table_type
+	FROM %s.information_schema.tables 
+	WHERE table_schema = %s
+	`, sqlSafeName(database), escapeStringValue(databaseSchema))
+
+	queryID, err := c.executeQuery(ctx, client, q, c.config.Workgroup, c.config.OutputLocation)
+	if err != nil {
+		return nil, fmt.Errorf("failed to execute table listing query: %w", err)
+	}
+
+	results, err := client.GetQueryResults(ctx, &athena.GetQueryResultsInput{
+		QueryExecutionId: aws.String(queryID),
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to get query results: %w", err)
+	}
+	tables := make([]*drivers.TableInfo, 0, len(results.ResultSet.Rows)-1)
+	for _, row := range results.ResultSet.Rows[1:] {
+		if len(row.Data) < 2 || row.Data[0].VarCharValue == nil || row.Data[1].VarCharValue == nil {
+			continue
+		}
+
+		name := *row.Data[0].VarCharValue
+		typ := *row.Data[1].VarCharValue
+		tables = append(tables, &drivers.TableInfo{
+			Name: name,
+			View: strings.EqualFold(typ, "VIEW"),
+		})
+	}
+
+	return tables, nil
 }
 
-func (c *Connection) GetTable(ctx context.Context, database, schema, table string) (*drivers.TableMetadata, error) {
-	return nil, nil
+func (c *Connection) GetTable(ctx context.Context, database, databaseSchema, table string) (*drivers.TableMetadata, error) {
+	awsConfig, err := c.awsConfig(ctx, c.config.AWSRegion)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get AWS config: %w", err)
+	}
+
+	client := athena.NewFromConfig(awsConfig, func(o *athena.Options) {
+		o.TracerProvider = smithyoteltracing.Adapt(otel.GetTracerProvider())
+	})
+
+	query := fmt.Sprintf(`
+	SELECT
+		column_name,
+		data_type
+	FROM %s.information_schema.columns 
+	WHERE table_schema = %s AND table_name = %s
+	ORDER BY ordinal_position
+	`, sqlSafeName(database), escapeStringValue(databaseSchema), escapeStringValue(table))
+
+	queryID, err := c.executeQuery(ctx, client, query, c.config.Workgroup, c.config.OutputLocation)
+	if err != nil {
+		return nil, fmt.Errorf("failed to execute columns query: %w", err)
+	}
+
+	results, err := client.GetQueryResults(ctx, &athena.GetQueryResultsInput{
+		QueryExecutionId: aws.String(queryID),
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to get query results: %w", err)
+	}
+
+	schemaMap := make(map[string]string, len(results.ResultSet.Rows)-1)
+	for _, row := range results.ResultSet.Rows[1:] {
+		colName := *row.Data[0].VarCharValue
+		colType := *row.Data[1].VarCharValue
+		schemaMap[colName] = colType
+	}
+
+	return &drivers.TableMetadata{
+		Schema: schemaMap,
+	}, nil
 }
 
 func (c *Connection) listCatalogs(ctx context.Context) ([]string, error) {
@@ -95,6 +176,7 @@ func (c *Connection) listSchemasForCatalog(ctx context.Context, catalog string) 
 	if catalog != "" {
 		q = fmt.Sprintf(`
 		SELECT
+			catalog_name,
 			schema_name 
 		FROM %s.information_schema.schemata
 		`, sqlSafeName(catalog))
@@ -121,25 +203,15 @@ func (c *Connection) listSchemasForCatalog(ctx context.Context, catalog string) 
 		return nil, fmt.Errorf("failed to get query results: %w", err)
 	}
 
-	var res []*drivers.DatabaseSchemaInfo
-	// Parse rows; skip header
+	res := make([]*drivers.DatabaseSchemaInfo, 0, len(results.ResultSet.Rows)-1)
 	for _, row := range results.ResultSet.Rows[1:] {
-		data := row.Data
-
-		if catalog != "" && len(data) >= 1 && data[0].VarCharValue != nil {
-			schema := *data[0].VarCharValue
-			res = append(res, &drivers.DatabaseSchemaInfo{
-				Database:       catalog,
-				DatabaseSchema: schema,
-			})
-		} else if len(data) >= 2 && data[0].VarCharValue != nil && data[1].VarCharValue != nil {
-			catalogName := *data[0].VarCharValue
-			schemaName := *data[1].VarCharValue
-			res = append(res, &drivers.DatabaseSchemaInfo{
-				Database:       catalogName,
-				DatabaseSchema: schemaName,
-			})
+		if len(row.Data) < 2 || row.Data[0].VarCharValue == nil || row.Data[1].VarCharValue == nil {
+			continue
 		}
+		res = append(res, &drivers.DatabaseSchemaInfo{
+			Database:       *row.Data[0].VarCharValue,
+			DatabaseSchema: *row.Data[1].VarCharValue,
+		})
 	}
 
 	return res, nil
@@ -148,4 +220,8 @@ func (c *Connection) listSchemasForCatalog(ctx context.Context, catalog string) 
 func sqlSafeName(name string) string {
 	escaped := strings.ReplaceAll(name, `"`, `""`)
 	return fmt.Sprintf("%q", escaped)
+}
+
+func escapeStringValue(s string) string {
+	return fmt.Sprintf("'%s'", strings.ReplaceAll(s, "'", "''"))
 }
