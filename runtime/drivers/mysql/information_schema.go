@@ -11,7 +11,7 @@ func (c *connection) ListDatabaseSchemas(ctx context.Context) ([]*drivers.Databa
 	SELECT
 		schema_name
 	FROM information_schema.schemata
-	WHERE schema_name not in ('information_schema', 'performance_schema', 'sys')
+	WHERE schema_name not in ('information_schema', 'performance_schema', 'sys') OR schema_name = DATABASE()
 	ORDER BY schema_name
 	`
 
