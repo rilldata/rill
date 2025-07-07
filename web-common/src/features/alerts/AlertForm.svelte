@@ -127,7 +127,9 @@
           exploreName,
           JSON.parse(
             props.alertSpec.queryArgsJson ||
-              props.alertSpec.resolverProperties?.query_args_json ||
+              (props.alertSpec.resolverProperties?.query_args_json as
+                | string
+                | undefined) ||
               "{}",
           ),
           $allTimeRangeResp.data?.timeRangeSummary,
@@ -151,8 +153,8 @@
   $: ({ form, errors, enhance, submit, submitting, tainted, validate } =
     superFormInstance);
 
-  const formId = isCreateForm ? "create-alert-form" : "edit-alert-form";
-  const dialogTitle = isCreateForm ? "Create Alert" : "Edit Alert";
+  $: formId = isCreateForm ? "create-alert-form" : "edit-alert-form";
+  $: dialogTitle = isCreateForm ? "Create Alert" : "Edit Alert";
 
   const tabs = ["Data", "Criteria", "Delivery"];
 

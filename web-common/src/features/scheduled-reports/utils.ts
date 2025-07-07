@@ -24,7 +24,6 @@ import {
   TimeRangePreset,
 } from "@rilldata/web-common/lib/time/types.ts";
 import {
-  type V1AlertSpec,
   V1ExportFormat,
   type V1MetricsViewAggregationRequest,
   type V1Notifier,
