@@ -8,6 +8,7 @@
   import ChipDragList from "./ChipDragList.svelte";
   import { useMetricFieldData } from "./selectors";
   import type { FieldType } from "./types";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 
   export let canvasName: string;
   export let metricName: string;
@@ -21,6 +22,8 @@
   let searchValue = "";
   // Local state for optimistic updates
   let localSelectedItems: string[] = selectedItems;
+
+  $: ({ instanceId } = $runtime);
 
   $: ctx = getCanvasStore(canvasName, instanceId);
   $: fieldData = useMetricFieldData(ctx, metricName, types);
