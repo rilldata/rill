@@ -1,7 +1,6 @@
 package rilltime
 
 import (
-	"fmt"
 	"testing"
 	"time"
 
@@ -308,6 +307,9 @@ func TestEval_IsoTimeRanges(t *testing.T) {
 		{"2025-02-20", "2025-02-20T00:00:00Z", "2025-02-21T00:00:00Z", timeutil.TimeGrainHour, 1, 1},
 		{"2025-02", "2025-02-01T00:00:00Z", "2025-03-01T00:00:00Z", timeutil.TimeGrainDay, 1, 1},
 		{"2025", "2025-01-01T00:00:00Z", "2026-01-01T00:00:00Z", timeutil.TimeGrainMonth, 1, 1},
+
+		{"2025-02-20T01:23:45.123Z to 2025-07-15T02:34:50.123456Z", "2025-02-20T01:23:45.123Z", "2025-07-15T02:34:50.123456Z", timeutil.TimeGrainMillisecond, 1, 1},
+		{"2025-02-20T01:23:45.123456Z to 2025-07-15T02:34:50.123456789Z", "2025-02-20T01:23:45.123456Z", "2025-07-15T02:34:50.123456789Z", timeutil.TimeGrainMillisecond, 1, 1},
 	}
 
 	runTests(t, testCases, now, minTime, maxTime, watermark, nil, timeutil.TimeGrainUnspecified)
@@ -397,6 +399,7 @@ func TestEval_Misc(t *testing.T) {
 		// Now is adjusted ref. Since min_grain is unspecified it defaults to millisecond
 		{"now/Y to now", "2025-01-01T00:00:00Z", "2025-05-15T10:32:36Z", timeutil.TimeGrainMonth, 1, 1},
 		{"watermark to latest", "2025-05-13T06:32:36Z", "2025-05-14T06:32:36Z", timeutil.TimeGrainUnspecified, 1, 1},
+		{"watermark-1Y/Y to watermark/Y", "2024-01-01T00:00:00Z", "2025-01-01T00:00:00Z", timeutil.TimeGrainUnspecified, 1, 1},
 
 		// `as of` without explicit truncate. Should take the higher order for calculating ordinals
 		{"D2 as of -2Y as of watermark", "2023-05-02T00:00:00Z", "2023-05-03T00:00:00Z", timeutil.TimeGrainHour, 1, 1},
@@ -414,6 +417,8 @@ func TestEval_Misc(t *testing.T) {
 		// This can lead to a slightly different start/end times when weeks are involved.
 		{"-5W4M3Q2Y to -4W3M2Q1Y as of watermark", "2022-03-09T06:32:36Z", "2023-07-16T06:32:36Z", timeutil.TimeGrainWeek, 1, 1},
 		{"-5W-4M-3Q-2Y to -4W-3M-2Q-1Y as of watermark", "2022-03-08T06:32:36Z", "2023-07-15T06:32:36Z", timeutil.TimeGrainMonth, 1, 1},
+
+		{"3W18D23h as of latest-3Y", "2022-04-04T07:32:36Z", "2022-05-14T06:32:36Z", timeutil.TimeGrainWeek, 1, 1},
 	}
 
 	runTests(t, testCases, now, minTime, maxTime, watermark, nil, timeutil.TimeGrainUnspecified)

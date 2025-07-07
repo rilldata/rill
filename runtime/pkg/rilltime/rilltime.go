@@ -16,7 +16,7 @@ import (
 var (
 	infPattern      = regexp.MustCompile("^(?i)inf$")
 	durationPattern = regexp.MustCompile(`^P((?P<year>\d+)Y)?((?P<month>\d+)M)?((?P<week>\d+)W)?((?P<day>\d+)D)?(T((?P<hour>\d+)H)?((?P<minute>\d+)M)?((?P<second>\d+)S)?)?$`)
-	isoTimePattern  = `(?P<year>\d{4})(-(?P<month>\d{2})(-(?P<day>\d{2})(T(?P<hour>\d{2})(:(?P<minute>\d{2})(:(?P<second>\d{2})Z)?)?)?)?)?`
+	isoTimePattern  = `(?P<year>\d{4})(-(?P<month>\d{2})(-(?P<day>\d{2})(T(?P<hour>\d{2})(:(?P<minute>\d{2})(:(?P<second>\d{2})(\.((?P<milli>\d{3})|(?P<micro>\d{6})|(?P<nano>\d{9})))?Z)?)?)?)?)?`
 	isoTimeRegex    = regexp.MustCompile(isoTimePattern)
 	// nolint:govet // This is suggested usage by the docs.
 	rillTimeLexer = lexer.MustSimple([]lexer.SimpleRule{
@@ -134,8 +134,7 @@ type Interval struct {
 // ShorthandInterval is a convenience shorthand syntax for the advanced StartEndInterval
 // <num><grain> maps to -<num><grain> to ref
 type ShorthandInterval struct {
-	Num   int    `parser:"@Number"`
-	Grain string `parser:"@Grain"`
+	Parts []*GrainDurationPart `parser:"@@ @@*"`
 }
 
 // PeriodToGrainInterval is a convenience syntax for specifying <grain> to ref
@@ -162,6 +161,10 @@ type IsoInterval struct {
 }
 
 type PointInTime struct {
+	Points []*PointInTimeWithSnap `parser:"@@ @@*"`
+}
+
+type PointInTimeWithSnap struct {
 	Grain   *GrainPointInTime   `parser:"( @@"`
 	Labeled *LabeledPointInTime `parser:"| @@"`
 	ISO     *ISOPointInTime     `parser:"| @@)"`
@@ -171,8 +174,6 @@ type PointInTime struct {
 	// EG: `Y/Y/W` or `Y/Y/W + 1Y` snaps to the beginning of the 1st week of the year or the beginning of the 1st week of next year (to include the last week of the year)
 	//     `Y/Y` or `Y/Y + 1Y` instead gives 1st day of the year or 1st day of next year.
 	SecondarySnap *string `parser:"(Snap @Grain)?)?"`
-
-	Offsets []*GrainPointInTime `parser:"@@*"`
 }
 
 type GrainPointInTime struct {
@@ -202,6 +203,7 @@ type ISOPointInTime struct {
 	hour   int
 	minute int
 	second int
+	nano   int
 
 	tg timeutil.TimeGrain
 }
@@ -326,7 +328,7 @@ func (e *Expression) Eval(evalOpts EvalOptions) (time.Time, time.Time, timeutil.
 	i := len(e.AnchorOverrides) - 1
 	for i >= 0 {
 		evalOpts.ref, _ = e.AnchorOverrides[i].eval(evalOpts, evalOpts.ref, e.timeZone)
-		if e.AnchorOverrides[i].Snap != nil {
+		if e.AnchorOverrides[i].truncates() {
 			evalOpts.truncatedRef = true
 		}
 		i--
@@ -388,13 +390,15 @@ func (i *Interval) eval(evalOpts EvalOptions, start time.Time, tz *time.Location
 func (s *ShorthandInterval) expand() *StartEndInterval {
 	return &StartEndInterval{
 		Start: &PointInTime{
-			Grain: &GrainPointInTime{
-				Parts: []*GrainPointInTimePart{
-					{
-						Prefix: "-",
-						Duration: &GrainDuration{
-							Parts: []*GrainDurationPart{
-								{Grain: s.Grain, Num: s.Num},
+			Points: []*PointInTimeWithSnap{
+				{
+					Grain: &GrainPointInTime{
+						Parts: []*GrainPointInTimePart{
+							{
+								Prefix: "-",
+								Duration: &GrainDuration{
+									Parts: s.Parts,
+								},
 							},
 						},
 					},
@@ -402,7 +406,11 @@ func (s *ShorthandInterval) expand() *StartEndInterval {
 			},
 		},
 		End: &PointInTime{
-			Labeled: &LabeledPointInTime{Ref: true},
+			Points: []*PointInTimeWithSnap{
+				{
+					Labeled: &LabeledPointInTime{Ref: true},
+				},
+			},
 		},
 	}
 }
@@ -411,11 +419,19 @@ func (p *PeriodToGrainInterval) expand() *StartEndInterval {
 	fromTg := string(p.PeriodToGrain[0])
 	return &StartEndInterval{
 		Start: &PointInTime{
-			Labeled: &LabeledPointInTime{Ref: true},
-			Snap:    &fromTg,
+			Points: []*PointInTimeWithSnap{
+				{
+					Labeled: &LabeledPointInTime{Ref: true},
+					Snap:    &fromTg,
+				},
+			},
 		},
 		End: &PointInTime{
-			Labeled: &LabeledPointInTime{Ref: true},
+			Points: []*PointInTimeWithSnap{
+				{
+					Labeled: &LabeledPointInTime{Ref: true},
+				},
+			},
 		},
 	}
 }
@@ -486,13 +502,35 @@ func (i *IsoInterval) eval(tz *time.Location) (time.Time, time.Time, timeutil.Ti
 /* Points in time */
 
 func (p *PointInTime) parse() error {
+	for _, point := range p.Points {
+		err := point.parse()
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (p *PointInTime) eval(evalOpts EvalOptions, tm time.Time, tz *time.Location) (time.Time, timeutil.TimeGrain) {
+	tg := timeutil.TimeGrainUnspecified
+	for _, point := range p.Points {
+		tm, tg = point.eval(evalOpts, tm, tz)
+	}
+	return tm, tg
+}
+
+func (p *PointInTime) truncates() bool {
+	return len(p.Points) > 0 && p.Points[len(p.Points)-1].Snap != nil
+}
+
+func (p *PointInTimeWithSnap) parse() error {
 	if p.ISO != nil {
 		return p.ISO.parse()
 	}
 	return nil
 }
 
-func (p *PointInTime) eval(evalOpts EvalOptions, tm time.Time, tz *time.Location) (time.Time, timeutil.TimeGrain) {
+func (p *PointInTimeWithSnap) eval(evalOpts EvalOptions, tm time.Time, tz *time.Location) (time.Time, timeutil.TimeGrain) {
 	tg := timeutil.TimeGrainUnspecified
 	if p.Grain != nil {
 		tm, tg = p.Grain.eval(tm)
@@ -519,10 +557,6 @@ func (p *PointInTime) eval(evalOpts EvalOptions, tm time.Time, tz *time.Location
 			// These need week correction since that is the primary goal of this syntax.
 			tm = truncateWithCorrection(tm, secondarySnap, tz, evalOpts.FirstDay, evalOpts.FirstMonth)
 		}
-	}
-
-	for _, offset := range p.Offsets {
-		tm, tg = offset.eval(tm)
 	}
 
 	return tm, tg
@@ -596,6 +630,15 @@ func (a *ISOPointInTime) parse() error {
 		case "second":
 			a.second = val
 			a.tg = timeutil.TimeGrainSecond
+		case "milli":
+			a.nano = val * 1000 * 1000
+			a.tg = timeutil.TimeGrainMillisecond
+		case "micro":
+			a.nano = val * 1000
+			a.tg = timeutil.TimeGrainMillisecond // We dont go below milli
+		case "nano":
+			a.nano = val
+			a.tg = timeutil.TimeGrainMillisecond // We dont go below milli
 		default:
 			return fmt.Errorf("unexpected field %q in duration", name)
 		}
@@ -606,7 +649,7 @@ func (a *ISOPointInTime) parse() error {
 
 func (a *ISOPointInTime) eval(tz *time.Location) (time.Time, time.Time, timeutil.TimeGrain) {
 	// Since we use this to build a time, month and day cannot be zero, hence the max(1, xx)
-	absStart := time.Date(a.year, time.Month(max(1, a.month)), max(1, a.day), a.hour, a.minute, a.second, 0, tz)
+	absStart := time.Date(a.year, time.Month(max(1, a.month)), max(1, a.day), a.hour, a.minute, a.second, a.nano, tz)
 	absEnd := timeutil.OffsetTime(absStart, a.tg, 1)
 
 	return absStart, absEnd, a.tg
@@ -651,20 +694,28 @@ func parseISO(from string, parseOpts ParseOptions) (*Expression, error) {
 			Interval: &Interval{
 				StartEnd: &StartEndInterval{
 					Start: &PointInTime{
-						Labeled: &LabeledPointInTime{
-							Earliest: true,
+						Points: []*PointInTimeWithSnap{
+							{
+								Labeled: &LabeledPointInTime{
+									Earliest: true,
+								},
+							},
 						},
 					},
 					End: &PointInTime{
-						Labeled: &LabeledPointInTime{
-							Latest: true,
-						},
-						Offsets: []*GrainPointInTime{
+						Points: []*PointInTimeWithSnap{
 							{
-								Parts: []*GrainPointInTimePart{
-									{
-										Prefix:   "+",
-										Duration: &GrainDuration{Parts: []*GrainDurationPart{{Grain: "s", Num: 1}}},
+								Labeled: &LabeledPointInTime{
+									Latest: true,
+								},
+							},
+							{
+								Grain: &GrainPointInTime{
+									Parts: []*GrainPointInTimePart{
+										{
+											Prefix:   "+",
+											Duration: &GrainDuration{Parts: []*GrainDurationPart{{Grain: "s", Num: 1}}},
+										},
 									},
 								},
 							},
