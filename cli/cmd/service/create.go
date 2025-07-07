@@ -3,6 +3,7 @@ package service
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/rilldata/rill/cli/cmd/project"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
@@ -107,8 +108,8 @@ func CreateCmd(ch *cmdutil.Helper) *cobra.Command {
 		},
 	}
 
-	createCmd.Flags().StringVar(&orgRole, "org-role", "", "Organization role to assign to the service")
-	createCmd.Flags().StringVar(&projectRole, "project-role", "", "Project role to assign to the service")
+	createCmd.Flags().StringVar(&orgRole, "org-role", "", fmt.Sprintf("Organization role to assign to the service (%s)", strings.Join(orgRoles, ", ")))
+	createCmd.Flags().StringVar(&projectRole, "project-role", "", fmt.Sprintf("Project role to assign to the service (%s)", strings.Join(projectRoles, ", ")))
 	createCmd.Flags().StringVar(&projectName, "project", "", "Project to assign the role to (required if project-role is set)")
 	createCmd.Flags().StringVar(&attributes, "attributes", "", "JSON object of key-value pairs for service attributes")
 
