@@ -50,6 +50,7 @@ We always appreciate hearing from our users and welcome any questions, comments,
 2. _**Join the party on Discord!**_ Whether you have questions or need a hand getting started, our community and Rill team members are here to help. Join us at [Discord](https://discord.gg/DJ5qcsxE2m).
 3. _**Contact Rill Support**_: If you are an existing prospect or customer, you can also reach [Rill Support](/contact.md#contacting-support) through Slack, email, or in-app chat. 
 
+
 :::info
 
 Please make sure to abide by our [community policy](https://github.com/rilldata/rill/blob/main/COMMUNITY-POLICY.md)!

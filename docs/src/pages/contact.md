@@ -2,7 +2,7 @@
 title: Contact us
 ---
 
-Rill has a globally distributed team and we'd love to hear from you, whether you're a customer, prospect, or simply a Rill enthusiast alike. There are a few different ways to get in touch with the Rill team and engage the community, which you can find described below.
+Rill has a globally distributed team and we'd love to hear from you, whether you're a customer, prospect, or simply a Rill enthusiast. There are a few different ways to get in touch with the Rill team and engage the community, which you can find described below.
 
 ## GitHub
 

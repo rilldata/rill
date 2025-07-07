@@ -78,7 +78,7 @@ You can follow the same steps as above. After deploying to Rill Cloud, if you re
 
 ### How do I share my dashboard to other users?
 
-You will need to [invite users to your organization](../manage/user-management.md#how-to-add-an-organization-user) or [project](../manage/user-management#how-to-add-a-project-user), send them a URL for them to [request access to your dashboard](../manage/user-management#user-requests-access-via-url) or if you just want them to see the contents of your dashboard, you can look into using [public URLs](https://docs.rilldata.com/explore/share-url).
+You will need to [invite users to your organization](../manage/user-management.md#how-to-add-an-organization-user) or [project](../manage/user-management#how-to-add-a-project-user), send them a URL for them to [request access to your dashboard](../manage/user-management#user-requests-access-via-url) or if you just want them to see the contents of your dashboard, you can look into using [public URLs](../explore/public-url).
 
 
 ## Rill Cloud Trial

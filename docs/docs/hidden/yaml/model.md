@@ -267,11 +267,17 @@ _[string]_ - Format of the data source (e.g., csv, json, parquet).
 
 ### `pre_exec`
 
-_[string]_ - refers to a SQL queries to run before the main query, available for DuckDB based models 
+_[string]_ - refers to SQL queries to run before the main query, available for DuckDB-based models. _(optional)_. Ensure `pre_exec` queries are idempotent. Use `IF NOT EXISTS` statements when applicable. 
 
 ### `post_exec`
 
-_[string]_ - refers to a SQL query that is run after the main query, available for DuckDB based models 
+_[string]_ - refers to a SQL query that is run after the main query, available for DuckDB-based models. _(optional)_. Ensure `post_exec` queries are idempotent. Use `IF EXISTS` statements when applicable. 
+
+```yaml
+pre_exec: ATTACH IF NOT EXISTS 'dbname=postgres host=localhost port=5432 user=postgres password=postgres' AS postgres_db (TYPE POSTGRES);
+sql: SELECT * FROM postgres_query('postgres_db', 'SELECT * FROM USERS')
+post_exec: DETACH DATABASE IF EXISTS postgres_db
+```
 
 ## Additional properties when `connector` is `gcs` or [named connector](./connector.md#name) of gcs
 

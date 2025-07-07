@@ -11,6 +11,8 @@ import (
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/rilldata/rill/runtime/pkg/observability"
+	"go.uber.org/zap"
 )
 
 const (
@@ -30,12 +32,12 @@ type gitRepo struct {
 	subpath       string // Note that repo.checkSyncHandshake may update it at any time
 }
 
-// sync clones or pulls from the remote Git repository.
-func (r *gitRepo) sync(ctx context.Context) error {
-	// Call syncInner with retries
+// pull clones or pulls from the remote Git repository.
+func (r *gitRepo) pull(ctx context.Context, force bool) error {
+	// Call pullInner with retries
 	var err error
 	for i := 0; i < gitRetryN; i++ {
-		err = r.syncInner(ctx)
+		err = r.pullInner(ctx, force)
 		if err == nil {
 			break
 		}
@@ -51,8 +53,13 @@ func (r *gitRepo) sync(ctx context.Context) error {
 	return err
 }
 
-// syncInner contains the actual logic of r.sync without retries.
-func (r *gitRepo) syncInner(ctx context.Context) error {
+// pullInner contains the actual logic of r.pull without retries.
+func (r *gitRepo) pullInner(ctx context.Context, force bool) error {
+	// If the repository is not editable, there shouldn't be any local changes, but just to be safe, we always force pull.
+	if !r.editable() {
+		force = true
+	}
+
 	// Check if repoDir exists and is a valid Git repository
 	repo, err := git.PlainOpen(r.repoDir)
 	if err != nil {
@@ -65,7 +72,7 @@ func (r *gitRepo) syncInner(ctx context.Context) error {
 			URL:           r.remoteURL,
 			RemoteName:    "origin",
 			ReferenceName: plumbing.ReferenceName("refs/heads/" + r.defaultBranch),
-			SingleBranch:  true,
+			SingleBranch:  !r.editable(),
 		}
 
 		_, err = git.PlainCloneContext(ctx, r.repoDir, false, cloneOptions)
@@ -84,7 +91,7 @@ func (r *gitRepo) syncInner(ctx context.Context) error {
 		return fmt.Errorf("failed to set remote URL: %w", err)
 	}
 
-	// Fetch the branch from remote
+	// Fetch the default branch from remote
 	err = remote.Fetch(&git.FetchOptions{
 		RefSpecs: []config.RefSpec{config.RefSpec(fmt.Sprintf("refs/heads/%s:refs/heads/%s", r.defaultBranch, r.defaultBranch))},
 		Force:    true,
@@ -93,7 +100,7 @@ func (r *gitRepo) syncInner(ctx context.Context) error {
 		return fmt.Errorf("failed to fetch from remote: %w", err)
 	}
 
-	// Checkout the branch (in case it was changed)
+	// Checkout the default branch (in case it was changed)
 	worktree, err := repo.Worktree()
 	if err != nil {
 		return err
@@ -110,7 +117,7 @@ func (r *gitRepo) syncInner(ctx context.Context) error {
 	err = worktree.PullContext(ctx, &git.PullOptions{
 		RemoteURL:     r.remoteURL,
 		ReferenceName: plumbing.ReferenceName("refs/heads/" + r.defaultBranch),
-		SingleBranch:  true,
+		SingleBranch:  !r.editable(),
 		Force:         true,
 	})
 	if err != nil && !errors.Is(err, git.NoErrAlreadyUpToDate) {
@@ -119,11 +126,27 @@ func (r *gitRepo) syncInner(ctx context.Context) error {
 			return err
 		}
 
-		return worktree.Reset(&git.ResetOptions{
+		err = worktree.Reset(&git.ResetOptions{
 			Commit: *rev,
 			Mode:   git.HardReset,
 		})
+		if err != nil {
+			return err
+		}
 	}
+
+	// If not editable, we stay on the default branch.
+	if !r.editable() {
+		return nil
+	}
+
+	// We're in editable mode, so r.editBranch is set. We want to pull/create it and switch to it.
+	// The edit branch enables us to commit progress when closing (e.g. due to hibernation) without affecting the default branch.
+	// When pulling the editBranch, we should force pull if there are conflicts even if `force` is false (to bring us in sync with changes made in a split-brain scenario).
+	// To reduce the chance of conflicts, we should also try to merge the default branch into the edit branch (but only force merge if `force` is true).
+
+	// TODO: Implement editable mode.
+	r.h.logger.Info("pullInner", zap.Bool("force", force), observability.ZapCtx(ctx))
 
 	return nil
 }
@@ -140,6 +163,32 @@ func (r *gitRepo) root() string {
 		return path.Join(r.repoDir, r.subpath)
 	}
 	return r.repoDir
+}
+
+// commitToEditBranch auto-commits any current changes to the edit branch of the repository.
+// This is done to checkpoint progress when the handle is closed.
+// If there are conflicts, it should drop any local changes.
+func (r *gitRepo) commitToEditBranch(ctx context.Context) error {
+	if !r.editable() {
+		return fmt.Errorf("cannot commit to the edit branch because it is not configured")
+	}
+
+	// TODO: Implement
+	r.h.logger.Info("commitToEditBranch", observability.ZapCtx(ctx))
+
+	return nil
+}
+
+// commitAndPush commits changes to the repository and pushes them to the remote.
+func (r *gitRepo) commitAndPushToDefaultBranch(ctx context.Context, message string, force bool) error {
+	if !r.editable() {
+		return fmt.Errorf("cannot commit to this repository because it is not marked editable")
+	}
+
+	// TODO: Commit to r.editBranch, then merge it into r.defaultBranch and push it to the remote (respecting force).
+	r.h.logger.Info("commitAndPushToDefaultBranch", zap.String("message", message), zap.Bool("force", force), observability.ZapCtx(ctx))
+
+	return nil
 }
 
 // commitHash returns the current commit hash of the repository.

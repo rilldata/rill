@@ -174,6 +174,19 @@ func (s *Server) EditInstance(ctx context.Context, req *runtimev1.EditInstanceRe
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
+	// Force the repo to refresh its handshake.
+	// NOTE: When we move from push-based config to pull-based config, this should ideally be done only when repo-related properties change.
+	repo, release, err := s.runtime.Repo(ctx, req.InstanceId)
+	if err == nil {
+		defer release()
+		err = repo.Pull(ctx, false, true)
+		if err != nil {
+			s.logger.Error("failed to pull repo after editing instance", zap.String("instance_id", req.InstanceId), zap.Error(err), observability.ZapCtx(ctx))
+		}
+	} else {
+		s.logger.Error("failed to acquire repo after editing instance", zap.String("instance_id", req.InstanceId), zap.Error(err), observability.ZapCtx(ctx))
+	}
+
 	return &runtimev1.EditInstanceResponse{
 		Instance: instanceToPB(inst, true),
 	}, nil
