@@ -45,6 +45,16 @@ var spec = drivers.Spec{
 			NoPrompt:    true,
 		},
 		{
+			Key:         "mutable",
+			Type:        drivers.BooleanPropertyType,
+			Required:    false,
+			DisplayName: "Allow Overwrite",
+			Description: "Explicitly allow overwriting existing tables in the ClickHouse database.",
+			Placeholder: "false",
+			Default:     "false",
+			NoPrompt:    true,
+		},
+		{
 			Key:         "dsn",
 			Type:        drivers.StringPropertyType,
 			Required:    false,
@@ -110,6 +120,8 @@ type driver struct{}
 type configProperties struct {
 	// Managed is set internally if the connector has `managed: true`.
 	Managed bool `mapstructure:"managed"`
+	// Mutable is set automatically to true if Managed is true.
+	Mutable bool `mapstructure:"mutable"`
 	// Provision is set when Managed is true and provisioning should be handled by this driver.
 	// (In practice, this gets set on local and means we should start an embedded Clickhouse server).
 	Provision bool `mapstructure:"provision"`
@@ -169,6 +181,11 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 	err := mapstructure.WeakDecode(config, conf)
 	if err != nil {
 		return nil, err
+	}
+
+	// If the managed flag is set we are free to allow overwriting tables.
+	if conf.Managed {
+		conf.Mutable = true
 	}
 
 	// build clickhouse options
@@ -464,6 +481,10 @@ func (c *Connection) AsObjectStore() (drivers.ObjectStore, bool) {
 
 // AsModelExecutor implements drivers.Handle.
 func (c *Connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorOptions) (drivers.ModelExecutor, bool) {
+	if !c.config.Mutable {
+		c.logger.Warn("Model execution is restricted because 'mutable' is not enabled in the configuration.")
+		return nil, false
+	}
 	if opts.OutputHandle != c {
 		return nil, false
 	}
@@ -481,6 +502,10 @@ func (c *Connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecu
 
 // AsModelManager implements drivers.Handle.
 func (c *Connection) AsModelManager(instanceID string) (drivers.ModelManager, bool) {
+	if !c.config.Mutable {
+		c.logger.Warn("Model creation is restricted because 'mutable' is not enabled in the configuration.")
+		return nil, false
+	}
 	return c, true
 }
 
