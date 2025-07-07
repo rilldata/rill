@@ -69,9 +69,9 @@ func (c *connection) ListTables(ctx context.Context, database, databaseSchema st
 	defer rows.Close()
 
 	var res []*drivers.TableInfo
+	var name string
+	var view bool
 	for rows.Next() {
-		var name string
-		var view bool
 		if err := rows.Scan(&name, &view); err != nil {
 			return nil, err
 		}
@@ -110,8 +110,8 @@ func (c *connection) GetTable(ctx context.Context, database, databaseSchema, tab
 	defer rows.Close()
 
 	schemaMap := make(map[string]string)
+	var colName, colType string
 	for rows.Next() {
-		var colName, colType string
 		if err := rows.Scan(&colName, &colType); err != nil {
 			return nil, err
 		}
