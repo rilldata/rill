@@ -72,12 +72,9 @@ func (c *Connection) ListTables(ctx context.Context, database, databaseSchema st
 		if len(row.Data) < 2 || row.Data[0].VarCharValue == nil || row.Data[1].VarCharValue == nil {
 			continue
 		}
-
-		name := *row.Data[0].VarCharValue
-		typ := *row.Data[1].VarCharValue
 		tables = append(tables, &drivers.TableInfo{
-			Name: name,
-			View: strings.EqualFold(typ, "VIEW"),
+			Name: *row.Data[0].VarCharValue,
+			View: strings.EqualFold(*row.Data[1].VarCharValue, "VIEW"),
 		})
 	}
 
@@ -117,9 +114,10 @@ func (c *Connection) GetTable(ctx context.Context, database, databaseSchema, tab
 
 	schemaMap := make(map[string]string, len(results.ResultSet.Rows)-1)
 	for _, row := range results.ResultSet.Rows[1:] {
-		colName := *row.Data[0].VarCharValue
-		colType := *row.Data[1].VarCharValue
-		schemaMap[colName] = colType
+		if len(row.Data) < 2 || row.Data[0].VarCharValue == nil || row.Data[1].VarCharValue == nil {
+			continue
+		}
+		schemaMap[*row.Data[0].VarCharValue] = *row.Data[1].VarCharValue
 	}
 
 	return &drivers.TableMetadata{
