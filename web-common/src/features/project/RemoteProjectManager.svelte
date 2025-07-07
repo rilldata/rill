@@ -11,7 +11,6 @@
     createLocalServiceGitStatus,
     getLocalServiceGitStatusQueryKey,
   } from "@rilldata/web-common/runtime-client/local-service";
-  import { onMount } from "svelte";
 
   const gitStatusQuery = createLocalServiceGitStatus();
   const gitPullMutation = createLocalServiceGitPull();
@@ -55,6 +54,9 @@
 
     if (!resp.output) {
       mergeConflictResolutionDialog = false;
+      eventBus.emit("notification", {
+        message: "Remote project changes fetched and merged.",
+      });
       return;
     }
 
@@ -82,6 +84,10 @@
     if (!resp.output) {
       remoteChangeDialog = false;
       mergeConflictResolutionDialog = false;
+      eventBus.emit("notification", {
+        message:
+          "Remote project changes fetched and merged. Your changes have been stashed.",
+      });
       return;
     }
 
@@ -89,16 +95,6 @@
       message: resp.output,
     } as ConnectError;
   }
-
-  onMount(() => {
-    const unsub = eventBus.on("check-remote-project-status", () => {
-      if ($gitStatusQuery.data) {
-        processGithubStatus($gitStatusQuery.data);
-      }
-    });
-
-    return unsub;
-  });
 </script>
 
 <ProjectContainsRemoteChangesDialog

@@ -4,21 +4,25 @@
 
 <script lang="ts">
   import { page } from "$app/stores";
+  import type { ConnectError } from "@connectrpc/connect";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { getNeverSubscribedIssue } from "@rilldata/web-common/features/billing/issues";
   import TrialDetailsDialog from "@rilldata/web-common/features/billing/TrialDetailsDialog.svelte";
+  import ProjectContainsRemoteChangesDialog from "@rilldata/web-common/features/project/ProjectContainsRemoteChangesDialog.svelte";
   import ProjectRedeployConfirmDialog from "@rilldata/web-common/features/project/ProjectRedeployConfirmDialog.svelte";
-  import PushToGitForDeployDialog from "@rilldata/web-common/features/project/PushToGitForDeployDialog.svelte";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
+  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
   import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
   import { BehaviourEventAction } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
   import {
     createLocalServiceGetCurrentProject,
     createLocalServiceGetCurrentUser,
     createLocalServiceGetMetadata,
+    createLocalServiceGitPull,
     createLocalServiceGitStatus,
     createLocalServiceListOrganizationsAndBillingMetadataRequest,
+    getLocalServiceGitStatusQueryKey,
   } from "@rilldata/web-common/runtime-client/local-service";
   import Rocket from "svelte-radix/Rocket.svelte";
   import { writable } from "svelte/store";
@@ -26,7 +30,7 @@
 
   export let hasValidDashboard: boolean;
 
-  let pushThroughGitOpen = false;
+  let remoteChangeDialog = false;
   let deployConfirmOpen = false;
   let deployCTAUrl: string;
 
@@ -49,6 +53,12 @@
   const gitStatusQuery = createLocalServiceGitStatus();
   $: hasRemoteChanges =
     $gitStatusQuery.data && $gitStatusQuery.data.remoteCommits > 0;
+  const gitPullMutation = createLocalServiceGitPull();
+
+  $: ({ isPending: githubPullPending, error: githubPullError } =
+    $gitPullMutation);
+  let errorFromGitCommand: ConnectError | null = null;
+  $: error = githubPullError ?? errorFromGitCommand;
 
   // gitStatusQuery is refetched. So we have to check `isFetching` to get the correct loading status.
   $: loading = $gitStatusQuery.isFetching || $currentProject.isLoading;
@@ -68,8 +78,6 @@
 
   function onRedeploy() {
     if (hasRemoteChanges) {
-      // If there are remote changes then block deploy and trigger RemoteProjectManager
-      eventBus.emit("check-remote-project-status", null);
       return;
     }
 
@@ -80,8 +88,6 @@
 
   function onShowDeploy() {
     if (hasRemoteChanges) {
-      // If there are remote changes then block deploy and trigger RemoteProjectManager
-      eventBus.emit("check-remote-project-status", null);
       return;
     }
 
@@ -94,6 +100,31 @@
 
     deployConfirmOpen = true;
     void behaviourEvent?.fireDeployEvent(BehaviourEventAction.DeployIntent);
+  }
+
+  async function handleForceFetchRemoteCommits() {
+    errorFromGitCommand = null;
+    const resp = await $gitPullMutation.mutateAsync({
+      discardLocal: true,
+    });
+    // TODO: download diff once API is ready
+
+    void queryClient.invalidateQueries({
+      queryKey: getLocalServiceGitStatusQueryKey(),
+    });
+
+    if (!resp.output) {
+      remoteChangeDialog = false;
+      eventBus.emit("notification", {
+        message:
+          "Remote project changes fetched and merged. Your changes have been stashed.",
+      });
+      return;
+    }
+
+    errorFromGitCommand = {
+      message: resp.output,
+    } as ConnectError;
   }
 </script>
 
@@ -118,8 +149,9 @@
 
 <TrialDetailsDialog bind:open={deployConfirmOpen} {deployCTAUrl} />
 
-<PushToGitForDeployDialog
-  bind:open={pushThroughGitOpen}
-  gitRemote={$currentProject.data?.project?.gitRemote ?? ""}
-  subpath={$currentProject.data?.project?.subpath ?? ""}
+<ProjectContainsRemoteChangesDialog
+  bind:open={remoteChangeDialog}
+  loading={githubPullPending}
+  {error}
+  onFetchAndMerge={handleForceFetchRemoteCommits}
 />

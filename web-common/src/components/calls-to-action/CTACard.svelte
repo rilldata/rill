@@ -30,6 +30,7 @@
     {loading}
     {disabled}
     forcedStyle="border-width: 1px !important; border-radius: calc(var(--radius) - 2px) !important;"
+    large
   >
     {ctaText}
   </Button>

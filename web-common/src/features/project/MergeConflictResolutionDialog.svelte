@@ -14,7 +14,7 @@
   <Alert.Trigger asChild>
     <div class="hidden"></div>
   </Alert.Trigger>
-  <Alert.Content class="min-w-[675px]">
+  <Alert.Content class="min-w-[675px]" noCancel>
     <Alert.Header>
       <Alert.Title>Merge conflicts detected</Alert.Title>
       <Alert.Description>
