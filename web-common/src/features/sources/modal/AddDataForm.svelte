@@ -27,6 +27,7 @@
   import type { AddDataFormType } from "./types";
   import { dsnSchema, getYupSchema } from "./yupSchemas";
   import AddClickHouseForm from "./AddClickHouseForm.svelte";
+  import Checkbox from "@rilldata/web-common/components/forms/Checkbox.svelte";
 
   const FORM_TRANSITION_DURATION = 150;
   const dispatch = createEventDispatcher();
@@ -256,15 +257,12 @@
                 alwaysShowError
               />
             {:else if property.type === ConnectorDriverPropertyType.TYPE_BOOLEAN}
-              <label for={property.key} class="flex items-center">
-                <input
-                  id={propertyKey}
-                  type="checkbox"
-                  bind:checked={$paramsForm[propertyKey]}
-                  class="h-5 w-5"
-                />
-                <span class="ml-2 text-sm">{label}</span>
-              </label>
+              <Checkbox
+                id={propertyKey}
+                bind:checked={$paramsForm[propertyKey]}
+                {label}
+                hint={property.hint}
+              />
             {:else if property.type === ConnectorDriverPropertyType.TYPE_INFORMATIONAL}
               <InformationalField
                 description={property.description}
