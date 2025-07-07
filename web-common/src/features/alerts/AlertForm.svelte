@@ -113,12 +113,7 @@
           $exploreState!,
           $user.data?.user,
         )
-      : getExistingAlertInitialFormValues(
-          props.alertSpec,
-          metricsViewName,
-          $allTimeRangeResp.data?.timeRangeSummary,
-          $exploreState!,
-        );
+      : getExistingAlertInitialFormValues(props.alertSpec, metricsViewName);
 
   $: ({ filters, timeControls } =
     props.mode === "create"

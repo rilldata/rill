@@ -104,8 +104,6 @@ export function extractAlertNotification(
 export function getExistingAlertInitialFormValues(
   alertSpec: V1AlertSpec,
   metricsViewName: string,
-  timeRangeSummary: V1TimeRangeSummary | undefined,
-  exploreState: Partial<ExploreState>,
 ): AlertFormValues {
   const queryArgsJson = JSON.parse(
     (alertSpec.resolverProperties?.query_args_json ??

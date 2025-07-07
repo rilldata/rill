@@ -1,7 +1,6 @@
 <script lang="ts">
   import DataPreview from "@rilldata/web-common/features/alerts/data-tab/DataPreview.svelte";
   import type { AlertFormValues } from "@rilldata/web-common/features/alerts/form-utils";
-  import { createTimeControlStoreFromName } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import type { Filters } from "@rilldata/web-common/features/scheduled-reports/filters/Filters.ts";
   import FiltersForm from "@rilldata/web-common/features/scheduled-reports/filters/FiltersForm.svelte";
   import type { TimeControls } from "@rilldata/web-common/features/scheduled-reports/filters/TimeControls.ts";
@@ -48,12 +47,6 @@
         : (d.expression ?? (d.name as string)),
     })) ?? []),
   ];
-
-  $: timeControlStore = createTimeControlStoreFromName(
-    instanceId,
-    metricsViewName,
-    $form["exploreName"],
-  );
 </script>
 
 <div class="flex flex-col gap-y-3">
