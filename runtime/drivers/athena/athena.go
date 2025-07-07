@@ -157,7 +157,8 @@ func (c *Connection) Ping(ctx context.Context) error {
 	})
 
 	// Execute a simple query to verify connection
-	return c.executeQuery(ctx, client, "SELECT 1", c.config.Workgroup, c.config.OutputLocation)
+	_, err = c.executeQuery(ctx, client, "SELECT 1", c.config.Workgroup, c.config.OutputLocation)
+	return err
 }
 
 // Driver implements drivers.Connection.
@@ -209,7 +210,7 @@ func (c *Connection) AsOLAP(instanceID string) (drivers.OLAPStore, bool) {
 
 // AsInformationSchema implements drivers.Connection.
 func (c *Connection) AsInformationSchema() (drivers.InformationSchema, bool) {
-	return nil, false
+	return c, true
 }
 
 // Migrate implements drivers.Connection.
@@ -293,7 +294,7 @@ func (c *Connection) awsConfig(ctx context.Context, awsRegion string) (aws.Confi
 	return awsConfig, nil
 }
 
-func (c *Connection) executeQuery(ctx context.Context, client *athena.Client, sql, workgroup, outputLocation string) error {
+func (c *Connection) executeQuery(ctx context.Context, client *athena.Client, sql, workgroup, outputLocation string) (string, error) {
 	executeParams := &athena.StartQueryExecutionInput{
 		QueryString: aws.String(sql),
 	}
@@ -311,31 +312,33 @@ func (c *Connection) executeQuery(ctx context.Context, client *athena.Client, sq
 
 	queryExecutionOutput, err := client.StartQueryExecution(ctx, executeParams)
 	if err != nil {
-		return err
+		return "", err
 	}
+
+	queryID := *queryExecutionOutput.QueryExecutionId
 
 	for {
 		select {
 		case <-ctx.Done():
-			_, err = client.StopQueryExecution(ctx, &athena.StopQueryExecutionInput{
-				QueryExecutionId: queryExecutionOutput.QueryExecutionId,
+			_, stopErr := client.StopQueryExecution(ctx, &athena.StopQueryExecutionInput{
+				QueryExecutionId: aws.String(queryID),
 			})
-			return errors.Join(ctx.Err(), err)
+			return "", errors.Join(ctx.Err(), stopErr)
 		default:
 			status, err := client.GetQueryExecution(ctx, &athena.GetQueryExecutionInput{
-				QueryExecutionId: queryExecutionOutput.QueryExecutionId,
+				QueryExecutionId: aws.String(queryID),
 			})
 			if err != nil {
-				return err
+				return "", err
 			}
 
 			switch status.QueryExecution.Status.State {
 			case types2.QueryExecutionStateSucceeded:
-				return nil
+				return queryID, nil
 			case types2.QueryExecutionStateCancelled:
-				return fmt.Errorf("Athena query execution cancelled")
+				return "", fmt.Errorf("Athena query execution cancelled")
 			case types2.QueryExecutionStateFailed:
-				return fmt.Errorf("Athena query execution failed %s", *status.QueryExecution.Status.AthenaError.ErrorMessage)
+				return "", fmt.Errorf("Athena query execution failed: %s", aws.ToString(status.QueryExecution.Status.AthenaError.ErrorMessage))
 			}
 		}
 		time.Sleep(time.Second)
