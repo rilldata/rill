@@ -185,6 +185,9 @@
       }
     }
   }
+
+  $: console.log("useDsn: ", useDsn);
+  $: console.log("managed: ", $paramsForm.managed);
 </script>
 
 <div class="h-full w-full flex flex-col">
@@ -240,7 +243,42 @@
         {@const propertyKey = property.key ?? ""}
         {@const label =
           property.displayName + (property.required ? "" : " (optional)")}
-        {#if !(connector.name === "clickhouse" && $paramsForm.managed && propertyKey !== "managed")}
+        {#if connector.name === "clickhouse"}
+          {#if !$paramsForm.managed || propertyKey === "managed"}
+            <div class="py-1.5">
+              {#if property.type === ConnectorDriverPropertyType.TYPE_STRING || property.type === ConnectorDriverPropertyType.TYPE_NUMBER}
+                <Input
+                  id={propertyKey}
+                  label={property.displayName}
+                  placeholder={property.placeholder}
+                  optional={!property.required}
+                  secret={property.secret}
+                  hint={property.hint}
+                  errors={$paramsErrors[propertyKey]}
+                  bind:value={$paramsForm[propertyKey]}
+                  onInput={(_, e) => onStringInputChange(e)}
+                  alwaysShowError
+                />
+              {:else if property.type === ConnectorDriverPropertyType.TYPE_BOOLEAN}
+                <label for={property.key} class="flex items-center">
+                  <input
+                    id={propertyKey}
+                    type="checkbox"
+                    bind:checked={$paramsForm[propertyKey]}
+                    class="h-5 w-5"
+                  />
+                  <span class="ml-2 text-sm">{label}</span>
+                </label>
+              {:else if property.type === ConnectorDriverPropertyType.TYPE_INFORMATIONAL}
+                <InformationalField
+                  description={property.description}
+                  hint={property.hint}
+                  href={property.docsUrl}
+                />
+              {/if}
+            </div>
+          {/if}
+        {:else}
           <div class="py-1.5">
             {#if property.type === ConnectorDriverPropertyType.TYPE_STRING || property.type === ConnectorDriverPropertyType.TYPE_NUMBER}
               <Input
@@ -276,8 +314,8 @@
         {/if}
       {/each}
     </form>
-  {:else}
-    <!-- Form 2: DSN -->
+  {:else if !(connector.name === "clickhouse" && $paramsForm.managed)}
+    <!-- Show DSN form only if NOT clickhouse managed -->
     {#if dsnError}
       <SubmissionError message={dsnError} details={dsnErrorDetails} />
     {/if}
