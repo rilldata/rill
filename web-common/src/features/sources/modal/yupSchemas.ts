@@ -157,7 +157,7 @@ export const getYupSchema = {
   }),
 
   clickhouse: yup.object().shape({
-    managed: yup.boolean(),
+    managed: yup.boolean().default(false),
     host: yup.string(),
     // .required("Host is required")
     // .matches(
