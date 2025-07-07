@@ -46,7 +46,7 @@ On the second tab, you will have the opportunity to specify the criteria for whi
 
 ### Delivery
 
-On the final tab, you will choose how and where your alert is delivered. By default, the alert will be checked whenever the source data is [refreshed](/build/connect/source-refresh). There are a few additional things worth noting:
+On the final tab, you will choose how and where your alert is delivered. By default, the alert will be checked whenever the source data is [refreshed](/connect/connect/source-refresh). There are a few additional things worth noting:
 1. To limit the number of alerts, you can set an optional **Snooz**e** period after an alert is triggered.
 2. Depending on the available notification targets (see next section), choose which targets and/or users to subscribe to the alert.
 
@@ -62,7 +62,7 @@ When creating an alert, all available notification targets that can be configure
 
 :::note Interested in other alerting notification targets?
 
-If there is a potential alerting destination that you'd like to use with Rill but don't currently see available as a target, please don't hesitate to [contact us](contact.md). We're always iterating and would love to learn more about your use case!
+If there is a potential alerting destination that you'd like to use with Rill but don't currently see available as a target, please don't hesitate to [contact us](/contact). We're always iterating and would love to learn more about your use case!
 
 :::
 

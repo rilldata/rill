@@ -1,4 +1,4 @@
-position: 30
-label: Deploy
-collapsible: false
-collapsed: false
+position: 40
+label: Publish
+collapsible: true
+collapsed: true

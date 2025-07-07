@@ -7,11 +7,11 @@ sidebar_position: 20
 
 ## Overview
 
-On this page, we've gathered a running list of recommendations and general guidelines to ensure your experience of using Rill remains performant and optimized. These best practices will help to ensure your dashboards remain performant, and that things continue to "just work" (for both Rill Developer and Rill Cloud), even as the size of your underlying data and deployment continues to grow. These best practices and guidelines will also continue to evolve but please don't hesitate to [reach out](contact.md) if you start facing any bottlenecks or have further questions about ways to improve the Rill experience!
+On this page, we've gathered a running list of recommendations and general guidelines to ensure your experience of using Rill remains performant and optimized. These best practices will help to ensure your dashboards remain performant, and that things continue to "just work" (for both Rill Developer and Rill Cloud), even as the size of your underlying data and deployment continues to grow. These best practices and guidelines will also continue to evolve but please don't hesitate to [reach out](/contact) if you start facing any bottlenecks or have further questions about ways to improve the Rill experience!
 
 :::info Working with very large data from the get go?
 
-Generally speaking, Rill's [embedded DuckDB OLAP engine](/reference/olap-engines/duckdb.md) works very well out-of-the-box for datasets _up to around 50GB in size_. If you plan to be working with and ingesting volumes of data larger than 50GB, please [**get in touch**](contact.md) and we can explore using one of our other enterprise-grade [OLAP engine](/reference/olap-engines/olap-engines.md) options. 
+Generally speaking, Rill's [embedded DuckDB OLAP engine](/reference/olap-engines/duckdb.md) works very well out-of-the-box for datasets _up to around 50GB in size_. If you plan to be working with and ingesting volumes of data larger than 50GB, please [**get in touch**](/contact) and we can explore using one of our other enterprise-grade [OLAP engine](/reference/olap-engines/olap-engines.md) options. 
 
 :::
 
@@ -23,7 +23,7 @@ Depending on the complexity of your underlying models and the size of the data m
 
 By default, models will be materialized as views (in DuckDB). This allows for a dynamic and highly interactive experience when modeling, such as keystroke-by-keystroke profiling. However, since views are logical in nature, as the complexity and size of your data models continue grow (especially if the underlying data is very large), this can start to significantly impact performance as these complex queries will need to be continuously re-executed along with a number of profiling queries that the Rill runtime will send in the backend. 
 
-In such scenarios, we recommend [materializing these models as tables](/reference/project-files/models.md#model-materialization). However, there are some tradeoffs to consider.
+In such scenarios, we recommend [materializing these models as tables](/reference/project-files/models#model-materialization). However, there are some tradeoffs to consider.
 - **Pros:** Materializing a model will generally ensure significantly improved performance for downstream dependent models and dashboards. 
 - **Cons:** Enabling materialization for a model can severely impact or break the "keystroke-by-keystroke" experience and these models may also take longer to update (because the results are being written to a table vs remaining a view). It can also lead to _degraded_ performance for very specific operations, such as when you need to perform cross joins.
 
@@ -57,7 +57,7 @@ dev:
   path: s3://bucket/path/year=2023/month=12/**/*.parquet
 ```
 
-By leveraging the [environment YAML syntax](/build/models/environments.md), this ensures that only data from December 2023 will be read in from this S3 source when using Rill Developer locally while the full range of data will still be used in production (on Rill Cloud). However, if this data was **not** partitioned, then we could simply leverage DuckDB's ability to read from S3 files directly and _apply a filter post-download_ on the source. Taking this same example and using some [templating](templating.md), the `source.yaml` could be rewritten to something like the following:
+By leveraging the [environment YAML syntax](/transform/models/environments), this ensures that only data from December 2023 will be read in from this S3 source when using Rill Developer locally while the full range of data will still be used in production (on Rill Cloud). However, if this data was **not** partitioned, then we could simply leverage DuckDB's ability to read from S3 files directly and _apply a filter post-download_ on the source. Taking this same example and using some [templating](/connect/templating.md), the `source.yaml` could be rewritten to something like the following:
 ```yaml
 type: source
 connector: "duckdb"
@@ -66,7 +66,7 @@ sql: SELECT * FROM read_parquet('s3://bucket/path/*.parquet') {{ if dev }} where
 
 #### Creating intermediate staging models
 
-Another option would be to create intermediate staging models from your sources, either through [statistical sampling](https://duckdb.org/docs/sql/samples.html) or by applying a [raw limit](https://duckdb.org/docs/sql/query_syntax/limit.html), to reduce the size of your models in development. For example, with [templating](templating.md) and [environments](/build/models/environments.md), this `model.sql` applies a five percent sample to a source:
+Another option would be to create intermediate staging models from your sources, either through [statistical sampling](https://duckdb.org/docs/sql/samples.html) or by applying a [raw limit](https://duckdb.org/docs/sql/query_syntax/limit.html), to reduce the size of your models in development. For example, with [templating](/connect/templating.md) and [environments](/transform/models/environments), this `model.sql` applies a five percent sample to a source:
 
 ```sql
 -- @materialize
@@ -93,17 +93,17 @@ As mentioned in an [above section](#consider-which-models-to-materialize), model
 
 :::warning When applying templated logic to model SQL, make sure to leverage the `ref` function
 
-If you use templating in SQL models, you must replace references to tables / models created by other sources or models with `ref` tags. See this section on ["Referencing other tables or models in SQL when using templating"](templating.md#referencing-other-tables-or-models-in-sql-when-using-templating). This ensures that the native Go templating engine used by Rill is able to resolve and correctly compile the SQL syntax during runtime (to avoid any potential downstream errors).
+If you use templating in SQL models, you must replace references to tables / models created by other sources or models with `ref` tags. See this section on ["Referencing other tables or models in SQL when using templating"](/connect/templating.md#referencing-other-tables-or-models-in-sql-when-using-templating). This ensures that the native Go templating engine used by Rill is able to resolve and correctly compile the SQL syntax during runtime (to avoid any potential downstream errors).
 
 :::
 
 #### Use data from a dev / staging environment
 
-Some organizations might have both a development and production version of source data. In these cases, your sources should be configured to use the "dev" bucket or database for local development (in Rill Developer) and pointed to the "prod" bucket or database when in production (when deployed to Rill Cloud). Please refer to [this example](templating.md#changing-the-database-user-based-on-dev--prod) and [this example](templating.md#changing-the-bucket-location-based-on-dev--prod) for a complete walkthrough of how this can be configured.
+Some organizations might have both a development and production version of source data. In these cases, your sources should be configured to use the "dev" bucket or database for local development (in Rill Developer) and pointed to the "prod" bucket or database when in production (when deployed to Rill Cloud). Please refer to [this example](/connect/templating.md#changing-the-database-user-based-on-dev--prod) and [this example](/connect/templating.md#changing-the-bucket-location-based-on-dev--prod) for a complete walkthrough of how this can be configured.
 
 ## Query Optimization
 
-Query optimization is crucial for maintaining high performance and efficiency, especially when working with data-intensive applications. As Rill dashboards are powered by [OLAP engines](../build/olap/olap.md), designed for analytical queries, ensuring that our queries are well-optimized can help maximize the responsiveness and speed of our dashboards. There are also additional potential second-order benefits to optimizing queries in Rill, such as improving ingestion times, how long it takes to build models, how resource intensive it is to build models, how fast profiling queries run, and more. 
+Query optimization is crucial for maintaining high performance and efficiency, especially when working with data-intensive applications. As Rill dashboards are powered by [OLAP engines](../connect/olap/olap.md), designed for analytical queries, ensuring that our queries are well-optimized can help maximize the responsiveness and speed of our dashboards. There are also additional potential second-order benefits to optimizing queries in Rill, such as improving ingestion times, how long it takes to build models, how resource intensive it is to build models, how fast profiling queries run, and more. 
 
 ### Use appropriate data types and avoid casting when possible
 
@@ -113,7 +113,7 @@ Similarly, choosing the right data type for each column is also important. Small
 
 ### Select the columns you need and avoid `SELECT *` when possible
 
-Because most [OLAP databases](../build/olap/olap.md) store data in a columnar format, including [DuckDB](/reference/olap-engines/duckdb.md), selecting only the columns that you need during the modeling phase ensures that DuckDB will only ingest and store the data _it actually needs_ (speeding up model build times and reducing footprint). Furthermore, columnar formats are optimized for analytical queries so by selecting only the columns that you need (instead of a blanket `SELECT *`), this will help to minimize data processsing times and improve the query execution speed.
+Because most [OLAP databases](../connect/olap/olap.md) store data in a columnar format, including [DuckDB](/reference/olap-engines/duckdb.md), selecting only the columns that you need during the modeling phase ensures that DuckDB will only ingest and store the data _it actually needs_ (speeding up model build times and reducing footprint). Furthermore, columnar formats are optimized for analytical queries so by selecting only the columns that you need (instead of a blanket `SELECT *`), this will help to minimize data processsing times and improve the query execution speed.
 
 ### Consider sorting your data by an appropriate timestamp column
 
@@ -121,17 +121,17 @@ Generally speaking, if possible, it is recommended to make sure that your upstre
 
 :::info When to sort vs not to sort?
 
-Sorting, especially in DuckDB, _can also be computationally intensive_ and most input data is generally sorted enough (by time). If the data ingested is completely unsorted or sorted by a different, non-timestamp column, it could be worth the computional overhead to sort by a timestamp column (especially if used in a dashboard). If you're unsure, please feel free to [reach out](contact.md) and we'd be happy to help you assess the best path forward!
+Sorting, especially in DuckDB, _can also be computationally intensive_ and most input data is generally sorted enough (by time). If the data ingested is completely unsorted or sorted by a different, non-timestamp column, it could be worth the computional overhead to sort by a timestamp column (especially if used in a dashboard). If you're unsure, please feel free to [reach out](/contact) and we'd be happy to help you assess the best path forward!
 
 :::
 
 ### Use joins efficiently
 
-Plan your joins carefully, especially when working with large datasets. Most [OLAP engines](/build/olap/olap.md), DuckDB included, will optimize join operations, but ensuring the join keys are well chosen and considering the size of the datasets being joined can reduce processing time. For example, if you're looking to perform a cross or cartesian join across a very wide table, be sure it's necessary as it can otherwise explode the size of your result set. 
+Plan your joins carefully, especially when working with large datasets. Most [OLAP engines](/connect/olap/olap.md), DuckDB included, will optimize join operations, but ensuring the join keys are well chosen and considering the size of the datasets being joined can reduce processing time. For example, if you're looking to perform a cross or cartesian join across a very wide table, be sure it's necessary as it can otherwise explode the size of your result set. 
 
 ### Apply filters early and use WHERE clauses wisely
 
-When possible, it can be good practice to apply filtering early in your queries with `WHERE` clauses to reduce the amount of data being processed in subsequent steps (or downstream models / queries). This can both help to reduce the amount of data being scanned and, given the columnar nature of most [OLAP engines](/build/olap/olap.md), significantly speed up queries.
+When possible, it can be good practice to apply filtering early in your queries with `WHERE` clauses to reduce the amount of data being processed in subsequent steps (or downstream models / queries). This can both help to reduce the amount of data being scanned and, given the columnar nature of most [OLAP engines](/connect/olap/olap.md), significantly speed up queries.
 
 ### Optimize your subqueries to leverage joins or CTEs when possible
 
@@ -145,7 +145,7 @@ Depending on the [OLAP engine](/reference/olap-engines/olap-engines.md), `UNION`
 
 ## OLAP Engines
 
-Often, data in external [OLAP engines](/build/olap/olap.md) is quite large in size and requires different considerations to improve performance. At Rill, we manage clusters in the 100's of TB so included some tips below based on our experience.
+Often, data in external [OLAP engines](/connect/olap/olap.md) is quite large in size and requires different considerations to improve performance. At Rill, we manage clusters in the 100's of TB so included some tips below based on our experience.
 
 ### Data Lifecycle Management 
 
@@ -173,7 +173,7 @@ If looking to track uniques, but with smaller datasets and significantly improve
 
 ### Lookups
 
-While joins can kill the performance of [OLAP engines](/build/olap/olap.md), lookups (key-value pairs) are common to reduce data size and improve query speeds. Lookups can be done during ingestion time (a static lookup to enrich the source data) or at query time (dynamic lookups).
+While joins can kill the performance of [OLAP engines](/connect/olap/olap.md), lookups (key-value pairs) are common to reduce data size and improve query speeds. Lookups can be done during ingestion time (a static lookup to enrich the source data) or at query time (dynamic lookups).
 
 **Static Lookups** 
 

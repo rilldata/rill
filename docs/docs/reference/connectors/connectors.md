@@ -12,7 +12,7 @@ When running Rill locally, Rill Developer will establish a connection with exist
 
 :::tip Don't see a connector?
 
-We are always adding new connectors as part of our release cycle. If there's a source of data that you'd like to ingest into Rill but don't see it, please don't hesitate to [contact us](contact.md) and give us your feedback!
+We are always adding new connectors as part of our release cycle. If there's a source of data that you'd like to ingest into Rill but don't see it, please don't hesitate to [contact us](/contact) and give us your feedback!
 
 :::
 

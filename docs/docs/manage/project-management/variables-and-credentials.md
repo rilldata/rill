@@ -1,9 +1,9 @@
-<!-- WARNING: There are links to this page in source code. If you move it, find and replace the links and consider adding a redirect in docusaurus.config.js. -->
 ---
 title: Environmental Variables and Credentials in Rill Cloud
-sidebar_label: Variables and Credentials 
+sidebar_label: "Variables and Credentials"
 sidebar_position: 50
 ---
+<!-- WARNING: There are links to this page in source code. If you move it, find and replace the links and consider adding a redirect in docusaurus.config.js. -->
 
 The credentials in a deployed Rill Cloud projects can be managed on the Settings page or via the CLI. If you have yet to deploy your credentials, please follow the steps in our [deploy credentials page](/deploy/deploy-credentials#configure-environmental-variables-and-credentials-for-rill-cloud). 
 

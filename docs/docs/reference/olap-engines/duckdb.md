@@ -13,7 +13,7 @@ By default, Rill includes DuckDB as an embedded OLAP engine that is used to inge
 
 :::tip Optimizing performance on DuckDB
 
-DuckDB is a very useful analytical engine but can start hitting into performance scale challenges as the size of ingested data grows significantly. As a general rule of thumb, we recommend keeping the size of data in DuckDB **to under 50GB** along with some other [performance recommendations](../../deploy/performance.md). For larger volumes of data, Rill still promises great performance but additional backend optimizations will be needed. [Please contact us](../../contact.md)!
+DuckDB is a very useful analytical engine but can start hitting into performance scale challenges as the size of ingested data grows significantly. As a general rule of thumb, we recommend keeping the size of data in DuckDB **to under 50GB** along with some other [performance recommendations](../../deploy/performance.md). For larger volumes of data, Rill still promises great performance but additional backend optimizations will be needed. [Please contact us](/contact)!
 
 :::
 
@@ -25,5 +25,5 @@ Well now you can! For more details, see our page on [Using Multiple OLAP Engines
 
 ## Additional Notes
 
-- For dashboards powered by DuckDB, [measure definitions](/build/metrics-view/metrics-view.md#measures) are required to follow standard [DuckDB SQL](https://duckdb.org/docs/sql/introduction) syntax.
+- For dashboards powered by DuckDB, [measure definitions](/define/metrics-view/metrics-view.md#measures) are required to follow standard [DuckDB SQL](https://duckdb.org/docs/sql/introduction) syntax.
 - Known issue around creating a DuckDB source via the UI, you will need to create the YAML file manually.

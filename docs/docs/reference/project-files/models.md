@@ -5,7 +5,7 @@ sidebar_position: 20
 hide_table_of_contents: true
 ---
 
-When using Rill Developer, data transformations are powered by DuckDB and their dialect of SQL. Under the hood, _by default_, data models are created as views in DuckDB. Please check our [modeling](/build/models/models.md) page and [DuckDB documentation](https://duckdb.org/docs/sql/introduction) for more details about how to construct and write your model SQL syntax.
+When using Rill Developer, data transformations are powered by DuckDB and their dialect of SQL. Under the hood, _by default_, data models are created as views in DuckDB. Please check our [modeling](/transform/models) page and [DuckDB documentation](https://duckdb.org/docs/sql/introduction) for more details about how to construct and write your model SQL syntax.
 
 In your Rill project directory, you can also create a `<model_name>.sql` file containing an appropriate DuckDB `SELECT` statement, most commonly within the default `models` directory, to represent a model (or set of SQL transformations). Rill will automatically detect and parse the model next time you run `rill start`.
 
@@ -61,6 +61,6 @@ There are both pros and cons to materializing your models.
 - Pros can include improved performance for downstream models and dashboards, especially with the SQL is complex and/or the data size is large. We generally recommend _materializing_ final models that power dashboards.
 - Cons can include a degraded keystroke-by-keystroke modeling experience or for specific edge cases, such as when using cross joins.
 
-If unsure, we would generally recommend leaving the defaults and/or [reaching out](contact.md) for further guidance!
+If unsure, we would generally recommend leaving the defaults and/or [reaching out](/contact) for further guidance!
 
 :::

@@ -27,7 +27,6 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "experimentalDecorators": true,
-    "allowImportingTsExtensions": true,
     "strictNullChecks": true,
     "baseUrl": ".",
     "allowJs": true,

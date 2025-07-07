@@ -5,7 +5,7 @@ sidebar_label: "Customization & Themes"
 sidebar_position: 30
 ---
 
-You will find below some common customizations and dashboard configurations that are available for end users. 
+Below are some common customizations and dashboard configurations available to end users. 
 
 :::info Dashboard properties
 
@@ -16,7 +16,7 @@ For a full list of available dashboard properties and configurations, please see
 
 ### Time Ranges
 
-One of the more important configurations, available time ranges allow you to change the defaults in the time dropdown for periods to select. Updating this list allows users to quickly change between the most common analyses like day over day, recent weeks, or period to date. The range must be a valid [ISO 8601 duration](https://en.wikipedia.org/wiki/ISO_8601#Durations) or one of the [Rill ISO 8601 extensions](../../reference/rill-iso-extensions.md#extensions).
+One of the more important configurations, available time ranges allow you to change the defaults in the time dropdown for periods to select. Updating this list allows users to quickly change between the most common analyses, like day over day, recent weeks, or period to date. Each range must be a valid [ISO 8601 duration](https://en.wikipedia.org/wiki/ISO_8601#Durations) or one of the [Rill ISO 8601 extensions](../../reference/rill-iso-extensions.md#extensions).
 
 ```yaml
 time_ranges:
@@ -30,7 +30,7 @@ time_ranges:
 
 ### Time Zones
 
-Rill will automatically select several time zones that should be pinned to the top of the time zone selector. It should be a list of [IANA time zone identifiers](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones). You can add or remove from this list for the relevant time zones for your team.
+Rill will automatically select several time zones that should be pinned to the top of the time zone selector. This should be a list of [IANA time zone identifiers](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones). You can add or remove relevant time zones for your team from this list.
 
 ```yaml
 time_zones:
@@ -54,7 +54,7 @@ Starting from version 0.50, the default views have been consolidated into a sing
 
 ### Default Time Range
 
-Default time range controls the data analyzed on initial page load. Setting the default time range improves user experience by setting to most frequently used period - in particular, avoiding `all time` if you have a large datasource but only analyze more recent data.
+Default time range controls the data analyzed on initial page load. Setting the default time range improves user experience by setting it to the most frequently used period— in particular, avoiding `all time` if you have a large data source but only analyze more recent data.
 
 The value must be either a valid [ISO 8601 duration](https://en.wikipedia.org/wiki/ISO_8601#Durations) (for example, `PT12H` for 12 hours, `P1M` for 1 month, or `P26W` for 26 weeks) or one of the [Rill ISO 8601 extensions](../../reference/rill-iso-extensions.md#extensions).
 
@@ -72,7 +72,7 @@ defaults:
 ## Row Access Policies
 ### Security
 
-Defining security policies for your data is crucial for security. For more information on this, please refer to our [Dashboard Access Policies](/manage/security.md)
+Defining security policies for your data is crucial. For more information, please refer to our [Dashboard Access Policies](/manage/security.md).
 
 ## Changing Themes & Colors
 
@@ -87,7 +87,7 @@ colors:
   secondary: violet 
 ```
 
-Once you have created that file, update the `dashboard.yaml` with the following configuration (we typically add this at the top along with time zones, time series and other configurations):
+Once you have created that file, update the `dashboard.yaml` with the following configuration (we typically add this at the top, along with time zones, time series, and other configurations):
 
 `theme: <name of theme yaml file>` 
 

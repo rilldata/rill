@@ -56,7 +56,7 @@ Please see our reference documentation on [OLAP Engines](../olap-engines/olap-en
  
 ## Project-wide defaults
 
-In `rill.yaml`, project-wide defaults can be specified for a resource type within a project. Unless otherwise specified, _individual resources will inherit any defaults_ that have been specified in `rill.yaml`. For available properties that can be configured, please refer to the YAML specification for each individual resource type - [sources](sources.md), [models](models.md), and [dashboards](explore-dashboards.md)
+In `rill.yaml`, project-wide defaults can be specified for a resource type within a project. Unless otherwise specified, _individual resources will inherit any defaults_ that have been specified in `rill.yaml`. For available properties that can be configured, please refer to the YAML specification for each individual resource type - [sources](sources.md), [models](models), and [dashboards](explore-dashboards.md)
 
 :::note Use plurals when specifying project-wide defaults
 
@@ -65,7 +65,7 @@ In your `rill.yaml`, the top level property for the resource type needs to be **
 :::
 
 For example, the following YAML configuration below will set a project-wide default for:
-- **Sources** - Configure a [source refresh](/build/connect/source-refresh.md).
+- **Sources** - Configure a [source refresh](/connect/connect/source-refresh.md).
 - **Models** - Automatically materialize the models as tables instead of views (the default behavior if unspecified).
 - **Metrics View** - Set the [first day of the week](metrics-views.md) for timeseries aggregations to be Sunday along with setting the smallest_time_grain.
 - **Explore Dashboards** - Set the [default](explore-dashboards.md) values when a user opens a dashboard, and available time zones and/or time ranges.
@@ -119,15 +119,15 @@ explores:
 :::info Hierarchy of inheritance and property overrides
 
 As a general rule of thumb, properties that have been specified at a more _granular_ level will supercede or override higher level properties that have been inherited. Therefore, in order of inheritance, Rill will prioritize properties in the following order:
-1. Individual [source](/reference/project-files/sources.md)/[model](/reference/project-files/models.md)/[dashboard](/reference/project-files/explore-dashboards.md) object level properties (e.g. `source.yaml` or `dashboard.yaml`)
-2. [Environment](/docs/build/models/environments.md) level properties (e.g. a specific property that have been set for `dev`)
+1. Individual [source](/reference/project-files/sources.md)/[model](/reference/project-files/models)/[dashboard](/reference/project-files/explore-dashboards.md) object level properties (e.g. `source.yaml` or `dashboard.yaml`)
+2. [Environment](/transform/models/environments) level properties (e.g. a specific property that have been set for `dev`)
 3. [Project-wide defaults](/reference/project-files/rill-yaml.md#project-wide-defaults) for a specific property and resource type
 
 :::
 
 ## Setting variables
 
-Primarily useful for [templating](/deploy/templating.md), variables can be set in the `rill.yaml` file directly. This allows variables to be set for your projects deployed to Rill Cloud while still being able to use different variable values locally if you prefer. 
+Primarily useful for [templating](/connect/templating.md), variables can be set in the `rill.yaml` file directly. This allows variables to be set for your projects deployed to Rill Cloud while still being able to use different variable values locally if you prefer. 
 
 To define a variable in `rill.yaml`, pass in the appropriate key-value pair for the variable under the `env` key:
 ```yaml
@@ -153,7 +153,7 @@ Variables can also be set through your project's `<RILL_PROJECT_HOME>/.env` file
 variable=xyz
 ```
 
-Similar to how [connector credentials can be pushed / pulled](/build/credentials/credentials.md#pulling-credentials-and-variables-from-a-deployed-project-on-rill-cloud) from local to cloud or vice versa, project variables set locally in Rill Developer can be pushed to Rill Cloud and/or pulled back to your local instance from your deployed project by using the `rill env push` and `rill env pull` commands respectively.
+Similar to how [connector credentials can be pushed / pulled](/connect/connect/credentials.md#pulling-credentials-and-variables-from-a-deployed-project-on-rill-cloud) from local to cloud or vice versa, project variables set locally in Rill Developer can be pushed to Rill Cloud and/or pulled back to your local instance from your deployed project by using the `rill env push` and `rill env pull` commands respectively.
 
 :::
 

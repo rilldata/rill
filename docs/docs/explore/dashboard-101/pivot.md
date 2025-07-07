@@ -12,7 +12,7 @@ Rill's multi-dimensional pivot provides lightning fast Excel style pivot tables 
 
 - Regular reporting: Monthly financial reports, campaign reporting, client reports
 - Time analysis: Dimensions by time columns for daily or weekly comparisons 
-- Data export: Scheduled exports for generating CSVs for external analysis (_coming soon_)
+- Data export: Scheduled exports for generating CSVs for external analysis
 
 ## Using Rill's Pivot View
 
