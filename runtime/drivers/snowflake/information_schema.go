@@ -15,8 +15,7 @@ func (c *connection) ListDatabaseSchemas(ctx context.Context) ([]*drivers.Databa
 	}
 	defer db.Close()
 
-	// Get all databases (TERSE for faster results)
-	dbRows, err := db.QueryxContext(ctx, "SHOW TERSE DATABASES")
+	dbRows, err := db.QueryxContext(ctx, "SHOW DATABASES")
 	if err != nil {
 		return nil, err
 	}
@@ -25,7 +24,7 @@ func (c *connection) ListDatabaseSchemas(ctx context.Context) ([]*drivers.Databa
 	var results []*drivers.DatabaseSchemaInfo
 
 	for dbRows.Next() {
-		cols := make([]interface{}, 5)
+		cols := make([]interface{}, 12)
 		for i := range cols {
 			var v interface{}
 			cols[i] = &v
@@ -33,16 +32,23 @@ func (c *connection) ListDatabaseSchemas(ctx context.Context) ([]*drivers.Databa
 		if err := dbRows.Scan(cols...); err != nil {
 			return nil, err
 		}
-		dbName := fmt.Sprintf("%v", *(cols[1].(*interface{}))) // column 1 = database name
 
-		schemaQuery := fmt.Sprintf("SHOW TERSE SCHEMAS IN DATABASE %s", sqlSafeName(dbName))
+		dbName := fmt.Sprintf("%v", *(cols[1].(*interface{})))    // column 1 = database name
+		isCurrent := fmt.Sprintf("%v", *(cols[3].(*interface{}))) // column 3 = IS_CURRENT (Y/N)
+
+		// Skip SNOWFLAKE database unless it's current
+		if strings.EqualFold(dbName, "SNOWFLAKE") && isCurrent != "Y" {
+			continue
+		}
+
+		schemaQuery := fmt.Sprintf("SHOW SCHEMAS IN DATABASE %s", sqlSafeName(dbName))
 		schemaRows, err := db.QueryxContext(ctx, schemaQuery)
 		if err != nil {
 			return nil, err
 		}
 
 		for schemaRows.Next() {
-			schemaCols := make([]interface{}, 5)
+			schemaCols := make([]interface{}, 14)
 			for i := range schemaCols {
 				var v interface{}
 				schemaCols[i] = &v
@@ -51,10 +57,11 @@ func (c *connection) ListDatabaseSchemas(ctx context.Context) ([]*drivers.Databa
 				schemaRows.Close()
 				return nil, err
 			}
-			schemaName := fmt.Sprintf("%v", *(schemaCols[1].(*interface{}))) // column 1 = schema name
+			schemaName := fmt.Sprintf("%v", *(schemaCols[1].(*interface{})))      // column 1 = schema name
+			schemaIsCurrent := fmt.Sprintf("%v", *(schemaCols[3].(*interface{}))) // column 3 = IS_CURRENT
 
-			// Skip INFORMATION_SCHEMA and other system schemas
-			if strings.EqualFold(schemaName, "INFORMATION_SCHEMA") {
+			// Skip INFORMATION_SCHEMA unless it's current
+			if strings.EqualFold(schemaName, "INFORMATION_SCHEMA") && schemaIsCurrent != "Y" {
 				continue
 			}
 
