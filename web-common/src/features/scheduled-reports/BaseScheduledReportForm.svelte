@@ -4,6 +4,9 @@
   import FormSection from "@rilldata/web-common/components/forms/FormSection.svelte";
   import { getHasSlackConnection } from "@rilldata/web-common/features/alerts/delivery-tab/notifiers-utils";
   import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
+  import type { Filters } from "@rilldata/web-common/features/scheduled-reports/filters/Filters.ts";
+  import FiltersForm from "@rilldata/web-common/features/scheduled-reports/filters/FiltersForm.svelte";
+  import type { TimeControls } from "@rilldata/web-common/features/scheduled-reports/filters/TimeControls.ts";
   import type { ReportValues } from "@rilldata/web-common/features/scheduled-reports/utils";
   import { V1ExportFormat } from "@rilldata/web-common/runtime-client";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
@@ -23,6 +26,8 @@
   export let submit: () => void;
   export let enhance;
   export let exploreName: string;
+  export let filters: Filters;
+  export let timeControls: TimeControls;
 
   $: ({ instanceId } = $runtime);
 
@@ -133,6 +138,9 @@
       </TooltipContent>
     </Tooltip>
   </div>
+
+  <FiltersForm {filters} {timeControls} maxWidth={750} />
+
   <MultiInput
     id="emailRecipients"
     label="Email Recipients"
