@@ -5,8 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"maps"
-	"net/url"
-	"strings"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/mitchellh/mapstructure"
@@ -109,7 +107,7 @@ type connection struct {
 // Ping implements drivers.Handle.
 func (c *connection) Ping(ctx context.Context) error {
 	// Open DB handle
-	db, err := c.getDB("")
+	db, err := c.getDB()
 	if err != nil {
 		return fmt.Errorf("failed to open connection: %w", err)
 	}
@@ -207,8 +205,8 @@ func (c *connection) AsNotifier(properties map[string]any) (drivers.Notifier, er
 	return nil, drivers.ErrNotNotifier
 }
 
-// getDB opens a new sqlx.DB connection to the specified database; if empty, connects to the default database from the DSN.
-func (c *connection) getDB(database string) (*sqlx.DB, error) {
+// getDB opens a new sqlx.DB connection using the config.
+func (c *connection) getDB() (*sqlx.DB, error) {
 	conf := &ConfigProperties{}
 	var err error
 	if err = mapstructure.WeakDecode(c.config, conf); err != nil {
@@ -218,44 +216,10 @@ func (c *connection) getDB(database string) (*sqlx.DB, error) {
 	if dsn == "" {
 		return nil, fmt.Errorf("database_url or dsn not provided")
 	}
-	if database != "" {
-		dsn, err = updateDatabaseInDSN(dsn, database)
-		if err != nil {
-			return nil, fmt.Errorf("failed to update database in DSN: %w", err)
-		}
-	}
 
 	db, err := sqlx.Open("pgx", dsn)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open connection: %w", err)
 	}
 	return db, nil
-}
-
-// updateDSNDatabase sets or replaces the database name in a PostgreSQL DSN.
-func updateDatabaseInDSN(dsn, database string) (string, error) {
-	// Handle URL-style DSN
-	if strings.HasPrefix(dsn, "postgres://") || strings.HasPrefix(dsn, "postgresql://") {
-		u, err := url.Parse(dsn)
-		if err != nil {
-			return "", err
-		}
-		u.Path = "/" + database
-		return u.String(), nil
-	}
-
-	// Handle DSN as key=value pairs (e.g., user=foo password=bar dbname=mydb)
-	parts := strings.Fields(dsn)
-	found := false
-	for i, part := range parts {
-		if strings.HasPrefix(part, "dbname=") {
-			parts[i] = "dbname=" + database
-			found = true
-			break
-		}
-	}
-	if !found {
-		parts = append(parts, "dbname="+database)
-	}
-	return strings.Join(parts, " "), nil
 }

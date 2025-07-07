@@ -9,12 +9,13 @@ import (
 func (c *connection) ListDatabaseSchemas(ctx context.Context) ([]*drivers.DatabaseSchemaInfo, error) {
 	q := `
 	SELECT 
-		datname 
-	FROM pg_database 
-	WHERE has_database_privilege(datname, 'CONNECT') AND datname NOT IN ('template0', 'template1')
-	ORDER BY datname
+	    current_database() AS database_name,
+		nspname 
+	FROM pg_namespace 
+	WHERE has_schema_privilege(nspname, 'USAGE') AND (nspname NOT IN ('pg_catalog', 'information_schema', 'pg_toast', 'pg_temp_1', 'pg_toast_temp_1') OR nspname = current_schema())
+	ORDER BY nspname
 	`
-	db, err := c.getDB("")
+	db, err := c.getDB()
 	if err != nil {
 		return nil, err
 	}
@@ -26,20 +27,18 @@ func (c *connection) ListDatabaseSchemas(ctx context.Context) ([]*drivers.Databa
 	}
 	defer rows.Close()
 
-	var databaseSchemas []*drivers.DatabaseSchemaInfo
+	var schemas []*drivers.DatabaseSchemaInfo
+	var database, schema string
 	for rows.Next() {
-		var database string
-		if err := rows.Scan(&database); err != nil {
+		if err := rows.Scan(&database, &schema); err != nil {
 			return nil, err
 		}
-
-		schemas, err := c.fetchSchemasForDatabase(ctx, database)
-		if err != nil {
-			return nil, err
-		}
-		databaseSchemas = append(databaseSchemas, schemas...)
+		schemas = append(schemas, &drivers.DatabaseSchemaInfo{
+			Database:       database,
+			DatabaseSchema: schema,
+		})
 	}
-	return databaseSchemas, rows.Err()
+	return schemas, rows.Err()
 }
 
 func (c *connection) ListTables(ctx context.Context, database, databaseSchema string) ([]*drivers.TableInfo, error) {
@@ -51,7 +50,7 @@ func (c *connection) ListTables(ctx context.Context, database, databaseSchema st
 	WHERE table_schema = $1
 	ORDER BY table_name
 	`
-	db, err := c.getDB(database)
+	db, err := c.getDB()
 	if err != nil {
 		return nil, err
 	}
@@ -64,9 +63,9 @@ func (c *connection) ListTables(ctx context.Context, database, databaseSchema st
 	defer rows.Close()
 
 	var result []*drivers.TableInfo
+	var name string
+	var isView bool
 	for rows.Next() {
-		var name string
-		var isView bool
 		if err := rows.Scan(&name, &isView); err != nil {
 			return nil, err
 		}
@@ -88,7 +87,7 @@ func (c *connection) GetTable(ctx context.Context, database, databaseSchema, tab
 	WHERE table_schema = $1 AND table_name = $2
 	ORDER BY ordinal_position
 	`
-	db, err := c.getDB(database)
+	db, err := c.getDB()
 	if err != nil {
 		return nil, err
 	}
@@ -101,8 +100,8 @@ func (c *connection) GetTable(ctx context.Context, database, databaseSchema, tab
 	defer rows.Close()
 
 	columns := make(map[string]string)
+	var name, typ string
 	for rows.Next() {
-		var name, typ string
 		if err := rows.Scan(&name, &typ); err != nil {
 			return nil, err
 		}
@@ -111,40 +110,4 @@ func (c *connection) GetTable(ctx context.Context, database, databaseSchema, tab
 	return &drivers.TableMetadata{
 		Schema: columns,
 	}, rows.Err()
-}
-
-// fetchSchemasForDatabase fetches schemas from the given database and returns them
-func (c *connection) fetchSchemasForDatabase(ctx context.Context, database string) ([]*drivers.DatabaseSchemaInfo, error) {
-	q := `
-	SELECT 
-		nspname 
-	FROM pg_namespace 
-	WHERE has_schema_privilege(nspname, 'USAGE') AND nspname NOT IN ('pg_catalog', 'information_schema', 'pg_toast', 'pg_temp_1', 'pg_toast_temp_1')
-	ORDER BY nspname
-	`
-
-	db, err := c.getDB(database)
-	if err != nil {
-		return nil, err
-	}
-	defer db.Close()
-
-	rows, err := db.QueryxContext(ctx, q)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var schemas []*drivers.DatabaseSchemaInfo
-	for rows.Next() {
-		var schema string
-		if err := rows.Scan(&schema); err != nil {
-			return nil, err
-		}
-		schemas = append(schemas, &drivers.DatabaseSchemaInfo{
-			Database:       database,
-			DatabaseSchema: schema,
-		})
-	}
-	return schemas, rows.Err()
 }
