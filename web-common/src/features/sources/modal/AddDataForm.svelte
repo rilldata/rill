@@ -194,6 +194,15 @@
     > for more information.
   </div>
 
+  {#if connector.name === "clickhouse"}
+    <div class="pt-3">
+      <select id="managed" bind:value={$paramsForm.managed} class="form-select">
+        <option value={true}>Rill-managed ClickHouse</option>
+        <option value={false}>Self-managed ClickHouse</option>
+      </select>
+    </div>
+  {/if}
+
   {#if hasDsnFormOption}
     <div class="py-3">
       <div class="text-sm font-medium mb-2">Connection method</div>

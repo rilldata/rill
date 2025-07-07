@@ -157,13 +157,13 @@ export const getYupSchema = {
   }),
 
   clickhouse: yup.object().shape({
-    host: yup
-      .string()
-      .required("Host is required")
-      .matches(
-        /^(?!https?:\/\/)[a-zA-Z0-9.-]+$/,
-        "Do not prefix the host with `http(s)://`", // It will be added by the runtime
-      ),
+    managed: yup.boolean().default(false),
+    host: yup.string(),
+    // .required("Host is required")
+    // .matches(
+    //   /^(?!https?:\/\/)[a-zA-Z0-9.-]+$/,
+    //   "Do not prefix the host with `http(s)://`", // It will be added by the runtime
+    // ),
     port: yup
       .string() // Purposefully using a string input, not a numeric input
       .matches(/^\d+$/, "Port must be a number"),
