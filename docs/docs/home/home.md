@@ -48,7 +48,8 @@ Curious about what's new? Peek into our latest and greatest updates in the [rele
 We always appreciate hearing from our users and welcome any questions, comments, or concerns you may have. To get in touch with us, there are a few options available:
 1. _**File an issue**_: Spotted a bug or have a brilliant idea? Let us know by [filing an issue](https://github.com/rilldata/rill/issues/new/choose) on GitHub.
 2. _**Join the party on Discord!**_ Whether you have questions or need a hand getting started, our community and Rill team members are here to help. Join us at [Discord](https://discord.gg/DJ5qcsxE2m).
-3. _**Contact Rill Support**_: If you are an existing prospect or customer, you can also reach [Rill Support](/contact.md#contacting-support) through Slack, email, or in-app chat. 
+3. _**Contact Rill Support**_: If you are an existing prospect or customer, you can also reach [Rill Support](/contact#contacting-support) through Slack, email, or in-app chat. 
+
 
 :::info
 

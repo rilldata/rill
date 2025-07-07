@@ -23,7 +23,7 @@ Rill supports the use of several different OLAP engines to power your dashboards
 - [Pinot](/reference/olap-engines/pinot.md)
 
 :::note Additional OLAP Engines
-Rill is continually evaluating additional OLAP engines that can be added. For a full list of OLAP engines that we support, you can refer to our [OLAP Engines](/reference/olap-engines) page. If you don't see an OLAP engine that you'd like to use, please don't hesitate to [reach out](contact.md)!
+Rill is continually evaluating additional OLAP engines that can be added. For a full list of OLAP engines that we support, you can refer to our [OLAP Engines](/reference/olap-engines) page. If you don't see an OLAP engine that you'd like to use, please don't hesitate to [reach out](/contact)!
 :::
 
 ## Multiple OLAP Engines in a single project

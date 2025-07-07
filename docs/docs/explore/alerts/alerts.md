@@ -62,7 +62,7 @@ When creating an alert, all available notification targets that can be configure
 
 :::note Interested in other alerting notification targets?
 
-If there is a potential alerting destination that you'd like to use with Rill but don't currently see available as a target, please don't hesitate to [contact us](contact.md). We're always iterating and would love to learn more about your use case!
+If there is a potential alerting destination that you'd like to use with Rill but don't currently see available as a target, please don't hesitate to [contact us](/contact). We're always iterating and would love to learn more about your use case!
 
 :::
 

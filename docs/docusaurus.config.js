@@ -119,8 +119,7 @@ const config = {
           },
 
           {
-            type: "doc",
-            docId: "contact",
+            to: "/contact",
             position: "left",
             label: "Contact Us",
           },
@@ -129,18 +128,14 @@ const config = {
           {
             type: "html",
             position: "right",
-            value: '<a href="https://github.com/rilldata/rill" class="navbar-icon-link" aria-label="GitHub"><i class="fab fa-github"></i></a>',
+            value: '<a href="https://github.com/rilldata/rill" class="navbar-icon-link" aria-label="GitHub">GitHub</i></a>',
           },
           {
             type: "html",
             position: "right",
-            value: '<a href="https://www.rilldata.com/blog" class="navbar-icon-link" aria-label="Blog"><i class="fa-solid fa-square-rss"></i></a>',
+            value: '<a href="https://www.rilldata.com/blog" class="navbar-icon-link" aria-label="Blog">Blog</i></a>',
           },
-          {
-            type: "html",
-            position: "right",
-            value: '<a href="/contact" class="navbar-icon-link" aria-label="Contact Us"><i class="fa-solid fa-headset"></i></a>',
-          },
+
           {
             type: "search",
             position: "right"

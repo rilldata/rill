@@ -93,6 +93,6 @@ Now that your dashboards should be fully synced to GitHub, version controlled, a
 
 :::info Have further questions? We'd love to hear from you!
 
-We know that utilizing Git may be new to some - please don't hesitate to [reach out](contact.md) to us with any questions and we'd be happy to assist.
+We know that utilizing Git may be new to some - please don't hesitate to [reach out](/contact) to us with any questions and we'd be happy to assist.
 
 :::

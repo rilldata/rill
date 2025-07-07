@@ -6,6 +6,7 @@ import (
 
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/metricsview"
 	metricssqlparser "github.com/rilldata/rill/runtime/pkg/metricssql"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
@@ -16,7 +17,10 @@ func init() {
 }
 
 type metricsSQLProps struct {
+	// SQL is the metrics SQL to evaluate.
 	SQL string `mapstructure:"sql"`
+	// AdditionalWhere is a filter to apply to the metrics SQL. (additional WHERE clause)
+	AdditionalWhere *metricsview.Expression `mapstructure:"additional_where"`
 }
 
 type metricsSQLArgs struct {
@@ -39,6 +43,7 @@ func newMetricsSQL(ctx context.Context, opts *runtime.ResolverOptions) (runtime.
 	span := trace.SpanFromContext(ctx)
 	if span.SpanContext().IsValid() {
 		span.SetAttributes(attribute.String("metrics_sql", props.SQL))
+		span.SetAttributes(attribute.Bool("has_additional_where", props.AdditionalWhere != nil))
 	}
 
 	instance, err := opts.Runtime.Instance(ctx, opts.InstanceID)
@@ -65,6 +70,21 @@ func newMetricsSQL(ctx context.Context, opts *runtime.ResolverOptions) (runtime.
 	query, err := compiler.Rewrite(ctx, props.SQL)
 	if err != nil {
 		return nil, err
+	}
+
+	// Inject the additional where clause if provided
+	if props.AdditionalWhere != nil {
+		expr := props.AdditionalWhere
+		if query.Where != nil {
+			query.Where = &metricsview.Expression{
+				Condition: &metricsview.Condition{
+					Operator:    metricsview.OperatorAnd,
+					Expressions: []*metricsview.Expression{query.Where, expr},
+				},
+			}
+		} else {
+			query.Where = expr
+		}
 	}
 
 	// Build the options for the metrics resolver

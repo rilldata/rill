@@ -74,7 +74,7 @@ Another example is attaching a database to DuckDB, running some queries against 
 ```yaml
 pre_exec: ATTACH IF NOT EXISTS 'dbname=postgres host=localhost port=5432 user=postgres password=postgres' AS postgres_db (TYPE POSTGRES);
 sql: SELECT * FROM postgres_query('postgres_db', 'SELECT * FROM USERS')
-post_exec: DETACH postgres_db # Note : this is not mandatory but nice to have 
+post_exec: DETACH DATABASE IF EXISTS postgres_db # Note : this is not mandatory but nice to have 
 ```
 
 ## Similar Considerations to Note

@@ -7,11 +7,11 @@ sidebar_position: 20
 
 ## Overview
 
-On this page, we've gathered a running list of recommendations and general guidelines to ensure your experience of using Rill remains performant and optimized. These best practices will help to ensure your dashboards remain performant, and that things continue to "just work" (for both Rill Developer and Rill Cloud), even as the size of your underlying data and deployment continues to grow. These best practices and guidelines will also continue to evolve but please don't hesitate to [reach out](contact.md) if you start facing any bottlenecks or have further questions about ways to improve the Rill experience!
+On this page, we've gathered a running list of recommendations and general guidelines to ensure your experience of using Rill remains performant and optimized. These best practices will help to ensure your dashboards remain performant, and that things continue to "just work" (for both Rill Developer and Rill Cloud), even as the size of your underlying data and deployment continues to grow. These best practices and guidelines will also continue to evolve but please don't hesitate to [reach out](/contact) if you start facing any bottlenecks or have further questions about ways to improve the Rill experience!
 
 :::info Working with very large data from the get go?
 
-Generally speaking, Rill's [embedded DuckDB OLAP engine](/reference/olap-engines/duckdb.md) works very well out-of-the-box for datasets _up to around 50GB in size_. If you plan to be working with and ingesting volumes of data larger than 50GB, please [**get in touch**](contact.md) and we can explore using one of our other enterprise-grade [OLAP engine](/reference/olap-engines/olap-engines.md) options. 
+Generally speaking, Rill's [embedded DuckDB OLAP engine](/reference/olap-engines/duckdb.md) works very well out-of-the-box for datasets _up to around 50GB in size_. If you plan to be working with and ingesting volumes of data larger than 50GB, please [**get in touch**](/contact) and we can explore using one of our other enterprise-grade [OLAP engine](/reference/olap-engines/olap-engines.md) options. 
 
 :::
 
@@ -121,7 +121,7 @@ Generally speaking, if possible, it is recommended to make sure that your upstre
 
 :::info When to sort vs not to sort?
 
-Sorting, especially in DuckDB, _can also be computationally intensive_ and most input data is generally sorted enough (by time). If the data ingested is completely unsorted or sorted by a different, non-timestamp column, it could be worth the computional overhead to sort by a timestamp column (especially if used in a dashboard). If you're unsure, please feel free to [reach out](contact.md) and we'd be happy to help you assess the best path forward!
+Sorting, especially in DuckDB, _can also be computationally intensive_ and most input data is generally sorted enough (by time). If the data ingested is completely unsorted or sorted by a different, non-timestamp column, it could be worth the computional overhead to sort by a timestamp column (especially if used in a dashboard). If you're unsure, please feel free to [reach out](/contact) and we'd be happy to help you assess the best path forward!
 
 :::
 

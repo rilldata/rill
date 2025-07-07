@@ -102,7 +102,7 @@ connector.clickhouse.dsn="https://<hostname>:<port>?username=<username>&password
 
 :::info Need help connecting to ClickHouse?
 
-If you would like to connect Rill to an existing ClickHouse instance, please don't hesitate to [contact us](../../contact.md). We'd love to help!
+If you would like to connect Rill to an existing ClickHouse instance, please don't hesitate to [contact us](/contact). We'd love to help!
 
 :::
 
@@ -149,4 +149,5 @@ Rill supports reading from multiple schemas in ClickHouse from within the same p
 
 - At the moment, we do not officially support modeling with ClickHouse, however this is available via a feature flag. If this is something you're interested in, please [contact us](../../contact.md).
 - For dashboards powered by ClickHouse, [measure definitions](/define/metrics-view/metrics-view.md#measures) are required to follow standard [ClickHouse SQL](https://clickhouse.com/docs/en/sql-reference) syntax.
+
 - Because string columns in ClickHouse can theoretically contain [arbitrary binary data](https://github.com/ClickHouse/ClickHouse/issues/2976#issuecomment-416694860), if your column contains invalid UTF-8 characters, you may want to first cast the column by applying the `toValidUTF8` function ([see ClickHouse documentation](https://clickhouse.com/docs/en/sql-reference/functions/string-functions#tovalidutf8)) before reading the table into Rill to avoid any downstream issues.

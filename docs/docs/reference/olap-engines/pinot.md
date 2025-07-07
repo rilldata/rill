@@ -43,7 +43,7 @@ connector.pinot.dsn="http(s)://username:password@localhost:8000?controller=local
 
 :::info Need help connecting to Pinot?
 
-If you would like to connect Rill to an existing Pinot instance, please don't hesitate to [contact us](../../contact.md). We'd love to help!
+If you would like to connect Rill to an existing Pinot instance, please don't hesitate to [contact us](/contact). We'd love to help!
 
 :::
 

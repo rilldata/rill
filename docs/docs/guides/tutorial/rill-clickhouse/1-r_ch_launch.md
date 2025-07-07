@@ -31,7 +31,7 @@ localhost:9009
 
 You should see the folowing webpage appear. 
 
-<img src = '/img/tutorials/rill_basics/new-rill-project.png' class='rounded-gif' />
+<img src = '/img/tutorials/rill-basics/new-rill-project.png' class='rounded-gif' />
 <br />
 
 Let's go ahead and select `Start with an empty project`.

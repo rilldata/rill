@@ -6,7 +6,7 @@ sidebar_position: 15
 
 Explore our [public example repository](https://github.com/rilldata/rill-examples/) to jumpstart your Rill journey with real-world projects and use cases.
 
-<img src = '/img/tutorials/rill_basics/new-rill-project.png' class='rounded-gif' />
+<img src = '/img/tutorials/rill-basics/new-rill-project.png' class='rounded-gif' />
 <br />
 
 Every example project includes comprehensive documentation covering:
