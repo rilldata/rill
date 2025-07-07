@@ -28,9 +28,9 @@ func (c *connection) ListDatabaseSchemas(ctx context.Context) ([]*drivers.Databa
 
 	var results []*drivers.DatabaseSchemaInfo
 	var schemaName, dbName string
-	var createdOn, kind any
+	var createdOn, kind, sn any
 	for rows.Next() {
-		if err := rows.Scan(&createdOn, &schemaName, &kind, &dbName); err != nil {
+		if err := rows.Scan(&createdOn, &schemaName, &kind, &dbName, &sn); err != nil {
 			return nil, fmt.Errorf("failed to scan schema row: %w", err)
 		}
 
