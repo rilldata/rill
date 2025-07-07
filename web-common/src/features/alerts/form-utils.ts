@@ -199,7 +199,6 @@ export function checkIsTabValid(
   } else {
     throw new Error(`Unexpected tabIndex: ${tabIndex}`);
   }
-  console.log(tabIndex, hasRequiredFields, hasErrors, errors);
 
   return hasRequiredFields && !hasErrors;
 }

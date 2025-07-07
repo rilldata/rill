@@ -118,10 +118,10 @@ export function mapSelectedComparisonTimeRangeToV1TimeRange(
 export function mapV1TimeRangeToSelectedTimeRange(
   timeRange: V1TimeRange,
   timeRangeSummary: V1TimeRangeSummary,
-  duration: string | undefined,
   end: string,
 ) {
   let selectedTimeRange: DashboardTimeControls;
+  let duration = timeRange.isoDuration;
 
   const fullRangeKey = `${timeRange.isoDuration ?? ""}_${timeRange.isoOffset ?? ""}_${timeRange.roundToGrain ?? ""}`;
   if (fullRangeKey in PreviousCompleteRangeReverseMap) {
@@ -134,6 +134,45 @@ export function mapV1TimeRangeToSelectedTimeRange(
       start: new Date(timeRange.start),
       end: new Date(timeRange.end),
     };
+  } else if (duration && timeRangeSummary.min) {
+    selectedTimeRange = isoDurationToFullTimeRange(
+      duration,
+      new Date(timeRangeSummary.min),
+      new Date(end),
+    );
+  } else {
+    return undefined;
+  }
+
+  selectedTimeRange.interval = timeRange.roundToGrain;
+
+  return selectedTimeRange;
+}
+
+export function mapV1TimeRangeToSelectedComparisonTimeRange(
+  timeRange: V1TimeRange,
+  timeRangeSummary: V1TimeRangeSummary,
+  end: string,
+) {
+  let selectedTimeRange: DashboardTimeControls;
+  let duration = timeRange.isoOffset;
+
+  const fullRangeKey = `${timeRange.isoDuration ?? ""}_${timeRange.isoOffset ?? ""}_${timeRange.roundToGrain ?? ""}`;
+  if (fullRangeKey in PreviousCompleteRangeReverseMap) {
+    duration = PreviousCompleteRangeReverseMap[fullRangeKey];
+  }
+
+  if (timeRange.start && timeRange.end) {
+    selectedTimeRange = {
+      name: TimeComparisonOption.CUSTOM,
+      start: new Date(timeRange.start),
+      end: new Date(timeRange.end),
+    };
+  } else if (timeRange.isoOffset === timeRange.isoDuration) {
+    // Previous period is when offset = duration
+    selectedTimeRange = {
+      name: TimeComparisonOption.CONTIGUOUS,
+    } as DashboardTimeControls;
   } else if (duration && timeRangeSummary.min) {
     selectedTimeRange = isoDurationToFullTimeRange(
       duration,

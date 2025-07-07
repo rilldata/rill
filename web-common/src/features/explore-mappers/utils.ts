@@ -2,6 +2,7 @@ import type { ExploreState } from "@rilldata/web-common/features/dashboards/stor
 import { createInExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { getTimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import {
+  mapV1TimeRangeToSelectedComparisonTimeRange,
   mapV1TimeRangeToSelectedTimeRange,
   PreviousCompleteRangeMap,
 } from "@rilldata/web-common/features/dashboards/time-controls/time-range-mappers";
@@ -52,7 +53,6 @@ export function fillTimeRange(
     exploreState.selectedTimeRange = mapV1TimeRangeToSelectedTimeRange(
       reqTimeRange,
       timeRangeSummary,
-      reqTimeRange.isoDuration,
       executionTime,
     );
     if (exploreState.selectedTimeRange) {
@@ -74,10 +74,9 @@ export function fillTimeRange(
       };
     } else {
       exploreState.selectedComparisonTimeRange =
-        mapV1TimeRangeToSelectedTimeRange(
+        mapV1TimeRangeToSelectedComparisonTimeRange(
           reqComparisonTimeRange,
           timeRangeSummary,
-          reqComparisonTimeRange.isoOffset,
           executionTime,
         );
       if (exploreState.selectedComparisonTimeRange) {

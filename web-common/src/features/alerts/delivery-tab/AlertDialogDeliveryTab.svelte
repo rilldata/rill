@@ -25,7 +25,7 @@
       errors={$errors["name"]}
       id="name"
       placeholder="My alert"
-      value={$form["name"]}
+      bind:value={$form["name"]}
     />
   </FormSection>
   <FormSection

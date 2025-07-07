@@ -33,10 +33,7 @@
   import AlertDialogCriteriaTab from "@rilldata/web-common/features/alerts/criteria-tab/AlertDialogCriteriaTab.svelte";
   import AlertDialogDataTab from "@rilldata/web-common/features/alerts/data-tab/AlertDialogDataTab.svelte";
   import AlertDialogDeliveryTab from "@rilldata/web-common/features/alerts/delivery-tab/AlertDialogDeliveryTab.svelte";
-  import {
-    getExistingAlertInitialFiltersFormValues,
-    getExistingAlertInitialFormValues,
-  } from "@rilldata/web-common/features/alerts/extract-alert-form-values.ts";
+  import { getExistingAlertInitialFormValues } from "@rilldata/web-common/features/alerts/extract-alert-form-values.ts";
   import {
     alertFormValidationSchema,
     type AlertFormValues,
@@ -54,6 +51,7 @@
   import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state.ts";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
   import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors.ts";
+  import { getFiltersFormValuesAggregationRequest } from "@rilldata/web-common/features/scheduled-reports/utils.ts";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
   import {
@@ -123,10 +121,15 @@
           exploreName,
           $exploreState!,
         )
-      : getExistingAlertInitialFiltersFormValues(
+      : getFiltersFormValuesAggregationRequest(
           instanceId,
-          props.alertSpec,
           metricsViewName,
+          exploreName,
+          JSON.parse(
+            props.alertSpec.queryArgsJson ||
+              props.alertSpec.resolverProperties?.query_args_json ||
+              "{}",
+          ),
           $allTimeRangeResp.data?.timeRangeSummary,
         ));
 

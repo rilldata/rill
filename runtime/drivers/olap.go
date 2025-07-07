@@ -48,7 +48,7 @@ type OLAPStore interface {
 	// The result MUST be closed after use.
 	Query(ctx context.Context, stmt *Statement) (*Result, error)
 	// InformationSchema enables introspecting the tables and views available in the OLAP driver.
-	InformationSchema() InformationSchema
+	InformationSchema() OLAPInformationSchema
 }
 
 // Statement wraps a query to execute against an OLAP driver.
@@ -151,21 +151,21 @@ func (r *Result) Close() error {
 	return firstErr
 }
 
-// InformationSchema contains information about existing tables in an OLAP driver.
+// OLAPInformationSchema contains information about existing tables in an OLAP driver.
 // Table lookups should be case insensitive.
-type InformationSchema interface {
+type OLAPInformationSchema interface {
 	// All returns metadata about all tables and views.
 	// The like argument can optionally be passed to filter the tables by name.
-	All(ctx context.Context, like string) ([]*Table, error)
+	All(ctx context.Context, like string) ([]*OlapTable, error)
 	// Lookup returns metadata about a specific tables and views.
-	Lookup(ctx context.Context, db, schema, name string) (*Table, error)
+	Lookup(ctx context.Context, db, schema, name string) (*OlapTable, error)
 	// LoadPhysicalSize populates the PhysicalSizeBytes field of table metadata.
 	// It should be called after All or Lookup and not on manually created tables.
-	LoadPhysicalSize(ctx context.Context, tables []*Table) error
+	LoadPhysicalSize(ctx context.Context, tables []*OlapTable) error
 }
 
-// Table represents a table in an information schema.
-type Table struct {
+// OlapTable represents a table in an information schema.
+type OlapTable struct {
 	Database                string
 	DatabaseSchema          string
 	IsDefaultDatabase       bool
@@ -368,6 +368,13 @@ func (d Dialect) MetricsViewDimensionExpression(dimension *runtimev1.MetricsView
 	// Backwards compatibility for older projects that have not run reconcile on this metrics view.
 	// In that case `column` will not be present.
 	return d.EscapeIdentifier(dimension.Name), nil
+}
+
+func (d Dialect) GetTimeDimensionParameter() string {
+	if d == DialectPinot {
+		return "CAST(? AS TIMESTAMP)"
+	}
+	return "?"
 }
 
 func (d Dialect) SafeDivideExpression(numExpr, denExpr string) string {

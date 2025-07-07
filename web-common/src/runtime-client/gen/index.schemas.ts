@@ -219,7 +219,7 @@ export interface V1APISpec {
   openapiParametersJson?: string;
   openapiRequestSchemaJson?: string;
   openapiResponseSchemaJson?: string;
-  openapiDefsPrefixng;
+  openapiDefsPrefix?: string;
   securityRules?: V1SecurityRule[];
   skipNestedSecurity?: boolean;
 }
@@ -733,6 +733,11 @@ export interface V1CreateTriggerResponse {
   [key: string]: unknown;
 }
 
+export interface V1DatabaseSchemaInfo {
+  database?: string;
+  databaseSchema?: string;
+}
+
 export interface V1DeleteFileResponse {
   [key: string]: unknown;
 }
@@ -1019,6 +1024,12 @@ export interface V1GetResourceResponse {
   resource?: V1Resource;
 }
 
+export type V1GetTableResponseSchema = { [key: string]: string };
+
+export interface V1GetTableResponse {
+  schema?: V1GetTableResponseSchema;
+}
+
 export type V1HealthResponseInstancesHealth = {
   [key: string]: V1InstanceHealth;
 };
@@ -1114,6 +1125,10 @@ export interface V1ListConnectorDriversResponse {
   connectors?: V1ConnectorDriver[];
 }
 
+export interface V1ListDatabaseSchemasResponse {
+  databaseSchemas?: V1DatabaseSchemaInfo[];
+}
+
 export interface V1ListExamplesResponse {
   examples?: V1Example[];
 }
@@ -1134,6 +1149,10 @@ export interface V1ListNotifierConnectorsResponse {
 
 export interface V1ListResourcesResponse {
   resources?: V1Resource[];
+}
+
+export interface V1ListTablesResponse {
+  tables?: V1TableInfo[];
 }
 
 export interface V1Log {
@@ -1584,6 +1603,7 @@ export interface V1ModelSpec {
   outputConnector?: string;
   outputProperties?: V1ModelSpecOutputProperties;
   changeMode?: V1ModelChangeMode;
+  tests?: V1ModelTest[];
   trigger?: boolean;
   triggerFull?: boolean;
   /** defined_as_source is true if it was defined by user as a source but converted internally to a model. */
@@ -1613,6 +1633,10 @@ export interface V1ModelState {
   specHash?: string;
   /** refs_hash is a hash of the model's refs current state. It is used to determine if the model's refs have changed. */
   refsHash?: string;
+  /** test_hash is a hash of the model's tests current state. It is used to determine if the model's tests have changed. */
+  testHash?: string;
+  /** test_errors contains the results of the model's tests. */
+  testErrors?: string[];
   /** refreshed_on is the time the model was last executed. */
   refreshedOn?: string;
   /** incremental_state contains the result of the most recent invocation of the model's incremental state resolver. */
@@ -1628,6 +1652,14 @@ This is not the time it took to refresh the model which also includes other stuf
   totalExecutionDurationMs?: string;
   /** latest_execution_duration_ms is the time user queries took to execute in the last successful refresh. */
   latestExecutionDurationMs?: string;
+}
+
+export type V1ModelTestResolverProperties = { [key: string]: unknown };
+
+export interface V1ModelTest {
+  name?: string;
+  resolver?: string;
+  resolverProperties?: V1ModelTestResolverProperties;
 }
 
 export type V1NotifierProperties = { [key: string]: unknown };
@@ -1674,7 +1706,18 @@ export interface V1OLAPGetTableResponse {
 }
 
 export interface V1OLAPListTablesResponse {
-  tables?: V1TableInfo[];
+  tables?: V1OlapTableInfo[];
+}
+
+export interface V1OlapTableInfo {
+  database?: string;
+  databaseSchema?: string;
+  isDefaultDatabase?: boolean;
+  isDefaultDatabaseSchema?: boolean;
+  name?: string;
+  hasUnsupportedDataTypes?: boolean;
+  /** physical_size_bytes is the physical size of the table. Set to -1 if the size cannot be determined. */
+  physicalSizeBytes?: string;
 }
 
 export type V1Operation = (typeof V1Operation)[keyof typeof V1Operation];
@@ -2102,14 +2145,8 @@ export interface V1TableColumnsResponse {
 }
 
 export interface V1TableInfo {
-  database?: string;
-  databaseSchema?: string;
-  isDefaultDatabase?: boolean;
-  isDefaultDatabaseSchema?: boolean;
   name?: string;
-  hasUnsupportedDataTypes?: boolean;
-  /** physical_size_bytes is the physical size of the table. Set to -1 if the size cannot be determined. */
-  physicalSizeBytes?: string;
+  view?: boolean;
 }
 
 export interface V1TableRowsRequest {
@@ -2242,12 +2279,32 @@ export type ConnectorServiceBigQueryListTablesParams = {
   pageToken?: string;
 };
 
+export type ConnectorServiceListDatabaseSchemasParams = {
+  instanceId?: string;
+  connector?: string;
+};
+
 export type ConnectorServiceOLAPGetTableParams = {
   instanceId?: string;
   connector?: string;
   database?: string;
   databaseSchema?: string;
   table?: string;
+};
+
+export type ConnectorServiceGetTableParams = {
+  instanceId?: string;
+  connector?: string;
+  database?: string;
+  databaseSchema?: string;
+  table?: string;
+};
+
+export type ConnectorServiceListTablesParams = {
+  instanceId?: string;
+  connector?: string;
+  database?: string;
+  databaseSchema?: string;
 };
 
 export type ConnectorServiceGCSListObjectsParams = {

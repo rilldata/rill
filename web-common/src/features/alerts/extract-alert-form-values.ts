@@ -5,26 +5,13 @@ import {
   mapExprToMeasureFilter,
   type MeasureFilterEntry,
 } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
-import { splitWhereFilter } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
-import { includeExcludeModeFromFilters } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores.ts";
-import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
-import { mapV1TimeRangeToSelectedTimeRange } from "@rilldata/web-common/features/dashboards/time-controls/time-range-mappers.ts";
 import { getExploreName } from "@rilldata/web-common/features/explore-mappers/utils.ts";
-import { Filters } from "@rilldata/web-common/features/scheduled-reports/filters/Filters.ts";
-import { MetricsViewData } from "@rilldata/web-common/features/scheduled-reports/filters/MetricsViewData.ts";
-import { TimeControls } from "@rilldata/web-common/features/scheduled-reports/filters/TimeControls.ts";
-import {
-  type DashboardTimeControls,
-  TimeRangePreset,
-} from "@rilldata/web-common/lib/time/types";
 import {
   type V1AlertSpec,
   type V1MetricsViewAggregationDimension,
   type V1MetricsViewAggregationMeasure,
   type V1MetricsViewAggregationRequest,
   V1Operation,
-  type V1TimeRange,
-  type V1TimeRangeSummary,
 } from "@rilldata/web-common/runtime-client";
 
 export type AlertFormValuesSubset = Pick<
@@ -122,67 +109,4 @@ export function getExistingAlertInitialFormValues(
     ...extractAlertNotification(alertSpec),
     ...extractAlertFormValues(queryArgsJson),
   };
-}
-
-export function getExistingAlertInitialFiltersFormValues(
-  instanceId: string,
-  alertSpec: V1AlertSpec,
-  metricsViewName: string,
-  timeRangeSummary: V1TimeRangeSummary | undefined,
-) {
-  const queryArgsJson = JSON.parse(
-    (alertSpec.resolverProperties?.query_args_json ??
-      alertSpec.queryArgsJson) as string,
-  ) as V1MetricsViewAggregationRequest;
-
-  const exploreName = getExploreName(
-    alertSpec.annotations?.web_open_path ?? "",
-  );
-
-  const timeRange = (queryArgsJson.timeRange as V1TimeRange) ?? {
-    isoDuration: TimeRangePreset.ALL_TIME,
-  };
-
-  let selectedTimeRange: DashboardTimeControls | undefined = undefined;
-  let selectedComparisonTimeRange: DashboardTimeControls | undefined =
-    undefined;
-  if (timeRangeSummary?.max) {
-    selectedTimeRange = mapV1TimeRangeToSelectedTimeRange(
-      timeRange,
-      timeRangeSummary,
-      timeRange.isoDuration,
-      timeRangeSummary.max,
-    );
-    if (queryArgsJson.comparisonTimeRange) {
-      selectedComparisonTimeRange = mapV1TimeRangeToSelectedTimeRange(
-        queryArgsJson.comparisonTimeRange,
-        timeRangeSummary,
-        queryArgsJson.comparisonTimeRange.isoOffset,
-        timeRangeSummary.max,
-      );
-    }
-  }
-
-  const { dimensionFilters, dimensionThresholdFilters } = splitWhereFilter(
-    queryArgsJson.where,
-  );
-
-  const metricsViewData = new MetricsViewData(
-    instanceId,
-    metricsViewName,
-    exploreName,
-  );
-  const filters = new Filters(metricsViewData, {
-    whereFilter: dimensionFilters,
-    dimensionsWithInlistFilter: [],
-    dimensionThresholdFilters: dimensionThresholdFilters,
-    dimensionFilterExcludeMode: includeExcludeModeFromFilters(dimensionFilters),
-  });
-  const timeControls = new TimeControls(metricsViewData, {
-    selectedTimeRange,
-    selectedComparisonTimeRange,
-    showTimeComparison: !!selectedComparisonTimeRange,
-    selectedTimezone: timeRange?.timeZone ?? "UTC",
-  });
-  return { filters, timeControls };
 }
