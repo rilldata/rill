@@ -248,8 +248,6 @@ service RuntimeService {
     option (google.api.http) = {get: "/v1/instances/{instance_id}/ai/conversations/{conversation_id}"};
   }
 
-
-
   // Access management
 
   // IssueDevJWT issues a JWT for mimicking a user in local development.

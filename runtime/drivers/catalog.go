@@ -105,7 +105,7 @@ type InstanceHealth struct {
 	UpdatedOn  time.Time `db:"updated_on"`
 }
 
-// Conversation represents a conversation entity in the catalog, designed to match the database schema
+// Conversation represents a conversation entity in the catalog
 type Conversation struct {
 	ID        string    `db:"conversation_id"`
 	OwnerID   string    `db:"owner_id"`
@@ -114,7 +114,7 @@ type Conversation struct {
 	UpdatedOn time.Time `db:"updated_on"`
 }
 
-// Message represents a message entity in the catalog, designed to match the database schema
+// Message represents a message entity in the catalog
 type Message struct {
 	ID             string    `db:"message_id"`
 	ConversationID string    `db:"conversation_id"`

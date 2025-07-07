@@ -246,8 +246,14 @@ func (s *Server) generateMetricsViewYAMLWithAI(ctx context.Context, instanceID, 
 	// Extract text from content blocks
 	var responseText string
 	for _, block := range res.Content {
-		if text := block.GetText(); text != "" {
-			responseText += text
+		switch blockType := block.GetBlockType().(type) {
+		case *aiv1.ContentBlock_Text:
+			if text := blockType.Text; text != "" {
+				responseText += text
+			}
+		default:
+			// For metrics view generation, we only expect text responses
+			return nil, fmt.Errorf("unexpected content block type in AI response: %T", blockType)
 		}
 	}
 

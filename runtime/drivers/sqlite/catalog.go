@@ -386,11 +386,6 @@ func (c *catalogStore) FindConversations(ctx context.Context, ownerID string) ([
 		return nil, err
 	}
 
-	// Ensure we return an empty slice instead of nil
-	if result == nil {
-		result = []*drivers.Conversation{}
-	}
-
 	return result, nil
 }
 

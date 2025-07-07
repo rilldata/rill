@@ -12,10 +12,10 @@ import (
 	aiv1 "github.com/rilldata/rill/proto/gen/rill/ai/v1"
 )
 
-func (s *Server) newMCPClient(mcpServer *server.MCPServer) *client.Client {
+func (s *Server) newMCPClient(mcpServer *server.MCPServer) (*client.Client, error) {
 	client, err := client.NewInProcessClient(mcpServer)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	// Start the client with a timeout context
@@ -23,7 +23,7 @@ func (s *Server) newMCPClient(mcpServer *server.MCPServer) *client.Client {
 	defer cancel()
 
 	if err := client.Start(ctx); err != nil {
-		panic(fmt.Errorf("failed to start MCP client: %w", err))
+		return nil, fmt.Errorf("failed to start MCP client: %w", err)
 	}
 
 	// Try to initialize the client
@@ -35,10 +35,10 @@ func (s *Server) newMCPClient(mcpServer *server.MCPServer) *client.Client {
 	}
 
 	if _, err := client.Initialize(ctx, initRequest); err != nil {
-		panic(fmt.Errorf("failed to initialize MCP client: %w", err))
+		return nil, fmt.Errorf("failed to initialize MCP client: %w", err)
 	}
 
-	return client
+	return client, nil
 }
 
 func (s *Server) mcpListTools(ctx context.Context, instanceID string) ([]*aiv1.Tool, error) {

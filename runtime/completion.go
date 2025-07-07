@@ -49,7 +49,7 @@ type CompleteWithToolsResult struct {
 }
 
 // CompleteWithTools runs a conversational AI completion with tool calling support using the provided tool service
-func (r *Runtime) CompleteWithTools(ctx context.Context, opts *CompleteWithToolsOptions) (*CompleteWithToolsResult, error) {
+func (r *Runtime) CompleteWithTools(ctx context.Context, opts *CompleteWithToolsOptions) (result *CompleteWithToolsResult, err error) {
 	// Get instance-specific logger
 	logger, err := r.InstanceLogger(ctx, opts.InstanceID)
 	if err != nil {
@@ -63,9 +63,16 @@ func (r *Runtime) CompleteWithTools(ctx context.Context, opts *CompleteWithTools
 
 	start := time.Now()
 	defer func() {
-		logger.Info("completed AI completion",
-			zap.Duration("duration", time.Since(start)),
-			observability.ZapCtx(ctx))
+		if err != nil {
+			logger.Info("failed AI completion",
+				zap.Error(err),
+				zap.Duration("duration", time.Since(start)),
+				observability.ZapCtx(ctx))
+		} else {
+			logger.Info("completed AI completion",
+				zap.Duration("duration", time.Since(start)),
+				observability.ZapCtx(ctx))
+		}
 	}()
 
 	// 1. Determine conversation ID (create if needed)
@@ -75,25 +82,33 @@ func (r *Runtime) CompleteWithTools(ctx context.Context, opts *CompleteWithTools
 	}
 
 	// 2. Save user messages to database first
-	addedMessageIDs, err := r.saveUserMessages(ctx, opts.InstanceID, conversationID, opts.Messages)
+	var addedMessageIDs []string
+	addedMessageIDs, err = r.saveUserMessages(ctx, opts.InstanceID, conversationID, opts.Messages)
 	if err != nil {
 		return nil, err
 	}
 
 	// 3. Load complete conversation context from database (single DB call)
-	allMessages, err := r.loadConversationContext(ctx, opts.InstanceID, conversationID)
+	var allMessages []*runtimev1.Message
+	allMessages, err = r.loadConversationContext(ctx, opts.InstanceID, conversationID)
 	if err != nil {
 		return nil, err
 	}
 
 	// 4. Execute AI completion with database-backed context
-	contentBlocks, err := r.executeAICompletion(ctx, opts.InstanceID, allMessages, opts.ToolService)
+	var contentBlocks []*aiv1.ContentBlock
+	contentBlocks, err = r.executeAICompletion(ctx, opts.InstanceID, allMessages, opts.ToolService)
 	if err != nil {
 		return nil, err
 	}
 
 	// 5. Save assistant message and build response
-	return r.buildCompletionResult(ctx, opts.InstanceID, conversationID, contentBlocks, addedMessageIDs)
+	result, err = r.buildCompletionResult(ctx, opts.InstanceID, conversationID, contentBlocks, addedMessageIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	return result, nil
 }
 
 // ===== BUSINESS LOGIC HELPERS =====

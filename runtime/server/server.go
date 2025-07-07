@@ -103,7 +103,11 @@ func NewServer(ctx context.Context, opts *Options, rt *runtime.Runtime, logger *
 
 	// Initialize MCP server and client for shared use across the runtime
 	srv.mcpServer = srv.newMCPServer()
-	srv.mcpClient = srv.newMCPClient(srv.mcpServer)
+	mcpClient, err := srv.newMCPClient(srv.mcpServer)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create MCP client: %w", err)
+	}
+	srv.mcpClient = mcpClient
 
 	return srv, nil
 }
