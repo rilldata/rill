@@ -125,8 +125,8 @@ type driver struct{}
 type configProperties struct {
 	// Managed is set internally if the connector has `managed: true`.
 	Managed bool `mapstructure:"managed"`
-	// mode is set automatically to readwrite if Managed is true.
-	mode string `mapstructure:"mode"`
+	// Mode is set automatically to readwrite if Managed is true.
+	Mode string `mapstructure:"mode"`
 	// Provision is set when Managed is true and provisioning should be handled by this driver.
 	// (In practice, this gets set on local and means we should start an embedded Clickhouse server).
 	Provision bool `mapstructure:"provision"`
@@ -190,12 +190,12 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 
 	// If the managed flag is set we are free to allow overwriting tables.
 	if conf.Managed {
-		conf.mode = modeReadWrite
+		conf.Mode = modeReadWrite
 	}
 
 	// Default to read-only mode if not set
-	if conf.mode == "" {
-		conf.mode = modeReadOnly
+	if conf.Mode == "" {
+		conf.Mode = modeReadOnly
 	}
 
 	// build clickhouse options
@@ -491,8 +491,12 @@ func (c *Connection) AsObjectStore() (drivers.ObjectStore, bool) {
 
 // AsModelExecutor implements drivers.Handle.
 func (c *Connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorOptions) (drivers.ModelExecutor, bool) {
-	if c.config.mode != modeReadWrite {
-		c.logger.Warn("Model execution is disabled. To enable modeling on this ClickHouse database, set 'mode: readwrite' in your connector configuration. WARNING: This will allow Rill to create and overwrite tables in your database.")
+	if c.config.Mode != modeReadWrite {
+		if c.config.Managed {
+			c.logger.Error("Model execution is disabled on managed ClickHouse instance. This should not happen.")
+		} else {
+			c.logger.Warn("Model execution is disabled. To enable modeling on this ClickHouse database, set 'mode: readwrite' in your connector configuration. WARNING: This will allow Rill to create and overwrite tables in your database.")
+		}
 		return nil, false
 	}
 	if opts.OutputHandle != c {
@@ -512,8 +516,12 @@ func (c *Connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecu
 
 // AsModelManager implements drivers.Handle.
 func (c *Connection) AsModelManager(instanceID string) (drivers.ModelManager, bool) {
-	if c.config.mode != modeReadWrite {
-		c.logger.Warn("Model management is disabled. To enable modeling on this ClickHouse database, set 'mode: readwrite' in your connector configuration. WARNING: This will allow Rill to create and overwrite tables in your database.")
+	if c.config.Mode != modeReadWrite {
+		if c.config.Managed {
+			c.logger.Error("Model management is disabled on managed ClickHouse instance. This should not happen.")
+		} else {
+			c.logger.Warn("Model management is disabled. To enable modeling on this ClickHouse database, set 'mode: readwrite' in your connector configuration. WARNING: This will allow Rill to create and overwrite tables in your database.")
+		}
 		return nil, false
 	}
 	return c, true
