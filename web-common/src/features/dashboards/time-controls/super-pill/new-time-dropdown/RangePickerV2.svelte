@@ -267,10 +267,10 @@
   </Popover.Content>
 </Popover.Root>
 
-{#if isShortHandSyntax && parsedTime?.inGrain && parsedTime.rangeGrain}
+{#if isShortHandSyntax && parsedTime?.rangeGrain}
   <InControl
     {parsedTime}
-    inGrain={parsedTime.getCorrectInGrain(smallestTimeGrain)}
+    inGrain={parsedTime.rangeGrain}
     rangeGrain={parsedTime.rangeGrain}
     isComplete={parsedTime.isComplete}
     {smallestTimeGrain}
