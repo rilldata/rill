@@ -8,8 +8,6 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"strings"
-	"unicode"
 
 	"github.com/getkin/kin-openapi/openapi3"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -267,7 +265,7 @@ func (s *Server) generatePathItemSpec(name string, api *runtimev1.API) (*openapi
 
 	var requestBody *openapi3.RequestBodyRef
 	if api.Spec.OpenapiRequestSchemaJson != "" {
-		s, cs, err := openapiutil.ParseJSONSchema(toPascalCase(name), api.Spec.OpenapiRequestSchemaJson)
+		s, cs, err := openapiutil.ParseJSONSchema(api.Spec.OpenapiDefsPrefix, api.Spec.OpenapiRequestSchemaJson)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -285,7 +283,7 @@ func (s *Server) generatePathItemSpec(name string, api *runtimev1.API) (*openapi
 
 	var responseSchema *openapi3.Schema
 	if api.Spec.OpenapiResponseSchemaJson != "" {
-		s, cs, err := openapiutil.ParseJSONSchema(toPascalCase(name), api.Spec.OpenapiRequestSchemaJson)
+		s, cs, err := openapiutil.ParseJSONSchema(api.Spec.OpenapiDefsPrefix, api.Spec.OpenapiResponseSchemaJson)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -346,24 +344,4 @@ func (s *Server) generatePathItemSpec(name string, api *runtimev1.API) (*openapi
 	}
 
 	return pathItem, components, nil
-}
-
-// toPascalCase converts a string to PascalCase.
-// The string may contain underscores and dashes, which will be treated as word separators.
-func toPascalCase(s string) string {
-	if s == "" {
-		return s
-	}
-
-	words := strings.FieldsFunc(s, func(r rune) bool {
-		return r == '_' || r == '-' || r == ' '
-	})
-
-	for i, word := range words {
-		if word != "" {
-			words[i] = string(unicode.ToUpper(rune(word[0]))) + word[1:]
-		}
-	}
-
-	return strings.Join(words, "")
 }

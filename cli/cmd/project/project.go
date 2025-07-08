@@ -36,7 +36,7 @@ func ProjectCmd(ch *cmdutil.Helper) *cobra.Command {
 	return projectCmd
 }
 
-func projectNames(ctx context.Context, ch *cmdutil.Helper) ([]string, error) {
+func ProjectNames(ctx context.Context, ch *cmdutil.Helper) ([]string, error) {
 	c, err := ch.Client()
 	if err != nil {
 		return nil, err

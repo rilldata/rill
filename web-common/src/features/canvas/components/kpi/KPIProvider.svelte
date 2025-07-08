@@ -18,7 +18,7 @@
   export let timeAndFilterStore: Readable<TimeAndFilterStore>;
   export let canvasName: string;
 
-  $: ctx = getCanvasStore(canvasName);
+  $: ctx = getCanvasStore(canvasName, instanceId);
   $: ({
     spec: { getMeasureForMetricView },
   } = ctx.canvasEntity);

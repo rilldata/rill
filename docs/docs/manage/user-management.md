@@ -17,7 +17,7 @@ For a detailed breakdown of access permissions at different levels, see the [Rol
 
 :::tip More Rill Cloud workflows coming
 
-We have begun releasing new features around user management via Rill Cloud. If you'd like to learn more, please feel free to [reach out](contact.md)!
+We have begun releasing new features around user management via Rill Cloud. If you'd like to learn more, please feel free to [reach out](/contact)!
 
 :::
 
@@ -163,15 +163,19 @@ There are two ways to add a user to a user group.
 
 #### Adds a user to a user group in Rill Cloud
 
-import ComingSoon from '@site/src/components/ComingSoon';
+### Managing Users via Rill Cloud
+There are two ways that a user can get access to Rill Cloud. 
 
-<ComingSoon />
+**Organization invites from Admin**
+From the Users page on the Organization page, you can inivte a user to the organization. Please note that organization viewers have access to view all projects. 
 
-<div class='contents_to_overlay'>
-<img src = '' class='rounded-gif' />
+<img src = '/img/tutorials/admin/org-user-management.png' class='rounded-gif' />
 <br />
+**Project level access requests**
 
-</div>
+  Please refer to the <a href='https://docs.rilldata.com/manage/user-management#admin-invites-user' target = "blank">documentation how a user can request access to project, or how an admin can invite a user to the project. </a>
+
+
 
 #### Adds a user to a user group with the Rill CLI
 
@@ -209,7 +213,7 @@ In order to access a deployed project and/or view a shared dashboard, users will
 
 :::info SAML Authentication
 
-Rill Cloud **does** support SAML authentication for our enterprise customers. If this is a requirement, [please get in contact](contact.md) with us and we can discuss appropriate next steps to help you with your setup.
+Rill Cloud **does** support SAML authentication for our enterprise customers. If this is a requirement, [please get in contact](/contact) with us and we can discuss appropriate next steps to help you with your setup.
 
 :::
 

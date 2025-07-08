@@ -23,7 +23,7 @@ For more details, please refer to the corresponding [connector](../../reference/
 
 :::note Ensuring security of credentials in use
 
-If you plan to deploy a project (to Rill Cloud), it is not recommended passing in credentials directly through the local connection string or DSN as your credentials will then be checked directly into your Git repository (and thus accessible by others). To ensure better security, credentials should be passed in as a variable / configured locally or specified in the project's local `.env` file (which is part of `.gitignore` and thus won't be included).
+If you plan to deploy a project (to Rill Cloud), it is not recommended to pass in credentials directly through the local connection string or DSN as your credentials will then be checked directly into your Git repository (and thus accessible by others). To ensure better security, credentials should be passed in as a variable / configured locally or specified in the project's local `.env` file (which is part of `.gitignore` and thus won't be included).
 
 :::
 
@@ -46,7 +46,7 @@ Connector credentials are essentially a form of project variable, prefixed using
 
 :::tip Avoid committing sensitive information to Git
 
-It's never a good idea to commit sensitive information to Git and goes against security best practices. Similar to credentials, if there are sensitive variables that you don't want to commit publicly to your `rill.yaml` configuration file (and thus potentially accessible by others), it's recommended to set them in your `.env` file directly and/or use `rill env set` via the CLI (and then optionally push / pull them as necessary).
+It's never a good idea to commit sensitive information to Git and it goes against security best practices. Similar to credentials, if there are sensitive variables that you don't want to commit publicly to your `rill.yaml` configuration file (and thus potentially accessible by others), it's recommended to set them in your `.env` file directly and/or use `rill env set` via the CLI (and then optionally push / pull them as necessary).
 
 :::
 
@@ -58,7 +58,7 @@ Please see our [deploy credentials page](/deploy/deploy-credentials#configure-en
 
 ## Pulling Credentials and Variables from a Deployed Project on Rill Cloud
 
-If you are making changes to an already deployed instance from Rill Cloud, it is possible to **pull** the credentials and variables from the Rill Cloud to your local instance of Rill Developer. If you've made any changes to the credentials, don't forget to run `rill env push` to push the variable changes to the project, or manually change these in the project's setting page.
+If you are making changes to an already deployed instance from Rill Cloud, it is possible to **pull** the credentials and variables from the Rill Cloud to your local instance of Rill Developer. If you've made any changes to the credentials, don't forget to run `rill env push` to push the variable changes to the project, or manually change these in the project's settings page.
 
 ### rill env pull
 

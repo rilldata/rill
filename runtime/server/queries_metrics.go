@@ -9,6 +9,7 @@ import (
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/pkg/rilltime"
+	"github.com/rilldata/rill/runtime/pkg/timeutil"
 	"github.com/rilldata/rill/runtime/queries"
 	"github.com/rilldata/rill/runtime/server/auth"
 	"go.opentelemetry.io/otel/attribute"
@@ -471,7 +472,7 @@ func (s *Server) MetricsViewTimeRanges(ctx context.Context, req *runtimev1.Metri
 		timeRanges[i] = &runtimev1.TimeRange{
 			Start:        timestamppb.New(start),
 			End:          timestamppb.New(end),
-			RoundToGrain: queries.TimeGrainToAPI(grain),
+			RoundToGrain: timeutil.TimeGrainToAPI(grain),
 			// for a reference
 			Expression:    tr,
 			TimeDimension: req.TimeDimension,

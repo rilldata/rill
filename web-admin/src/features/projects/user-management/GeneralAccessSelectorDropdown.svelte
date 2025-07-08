@@ -5,6 +5,7 @@
     createAdminServiceAddProjectMemberUsergroup,
     createAdminServiceListUsergroupMemberUsers,
   } from "@rilldata/web-admin/client";
+  import { ProjectUserRoles } from "@rilldata/web-common/features/users/roles.ts";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { getAdminServiceListProjectMemberUsergroupsQueryKey } from "@rilldata/web-admin/client";
@@ -103,7 +104,7 @@
       project,
       usergroup: "autogroup:members",
       data: {
-        role: "viewer", // Default role for autogroup:members
+        role: ProjectUserRoles.Viewer, // Default role for autogroup:members
       },
     });
 

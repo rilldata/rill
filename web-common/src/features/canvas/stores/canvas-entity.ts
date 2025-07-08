@@ -10,7 +10,6 @@ import {
   type V1Resource,
   type V1ThemeSpec,
 } from "@rilldata/web-common/runtime-client";
-import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import {
   derived,
   get,
@@ -68,8 +67,7 @@ export class CanvasEntity {
 
   theme: Record<(typeof TailwindColorSpacing)[number], string>;
 
-  constructor(name: string) {
-    const instanceId = get(runtime).instanceId;
+  constructor(name: string, instanceId: string) {
     this.specStore = useCanvas(
       instanceId,
       name,

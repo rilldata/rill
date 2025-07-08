@@ -218,6 +218,12 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 		return runtime.ReconcileResult{Err: fmt.Errorf("failed to compute spec hash: %w", err)}
 	}
 
+	// Compute the test hash to check if any of the model's tests have changed.
+	testHash, err := r.testSpecHash(model.Spec)
+	if err != nil {
+		return runtime.ReconcileResult{Err: fmt.Errorf("failed to compute test hash: %w", err)}
+	}
+
 	// Compute the refs hash to check if any of the model's refs have changed.
 	refsHash, err := r.refsStateHash(ctx, self.Meta.Refs, model.Spec)
 	if err != nil {
@@ -249,11 +255,29 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 		return runtime.ReconcileResult{Err: err}
 	}
 
-	// Reschedule if we're not triggering
+	// Reschedule if we're not triggering a refresh
 	if !trigger {
+		// Re-run tests if the test config has changed
+		if model.State.TestHash != testHash {
+			testErrs, err := r.runModelTests(ctx, self)
+			if err != nil {
+				return runtime.ReconcileResult{Err: fmt.Errorf("failed to run model tests: %w", err)}
+			}
+			model.State.TestHash = testHash
+			model.State.TestErrors = testErrs
+			err = r.C.UpdateState(ctx, self.Meta.Name, self)
+			if err != nil {
+				return runtime.ReconcileResult{Err: err}
+			}
+		}
+
 		// Show if any partitions errored
 		if model.State.PartitionsHaveErrors {
 			return runtime.ReconcileResult{Err: errPartitionsHaveErrors, Retrigger: refreshOn}
+		}
+		// Show if any model tests failed
+		if len(model.State.TestErrors) > 0 {
+			return runtime.ReconcileResult{Err: newTestsError(model.State.TestErrors), Retrigger: refreshOn}
 		}
 		return runtime.ReconcileResult{Retrigger: refreshOn}
 	}
@@ -299,11 +323,13 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 		}
 	}
 
-	// If the build succeeded, update the model's state accodingly
+	// If the build succeeded, update the model's state accordingly
 	if execErr == nil {
 		model.State.ExecutorConnector = executorConnector
 		model.State.SpecHash = specHash
 		model.State.RefsHash = refsHash
+		model.State.TestHash = ""    // Updated below if tests are configured
+		model.State.TestErrors = nil // Updated below if tests are configured
 		model.State.RefreshedOn = timestamppb.Now()
 		model.State.IncrementalState = newIncrementalState
 		model.State.IncrementalStateSchema = newIncrementalStateSchema
@@ -314,7 +340,8 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 		} else {
 			model.State.TotalExecutionDurationMs = model.State.LatestExecutionDurationMs
 		}
-		err := r.updateStateWithResult(ctx, self, execRes)
+
+		err = r.updateStateWithResult(ctx, self, execRes)
 		if err != nil {
 			return runtime.ReconcileResult{Err: err}
 		}
@@ -348,6 +375,22 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 		}
 	}
 
+	// If the build succeeded, re-run the model tests.
+	// We do this after updating other state to ensure we preserve the successful execution state.
+	if execErr == nil && len(model.Spec.Tests) != 0 {
+		testErrs, err := r.runModelTests(ctx, self)
+		if err != nil {
+			return runtime.ReconcileResult{Err: fmt.Errorf("failed to run model tests: %w", err)}
+		}
+
+		model.State.TestHash = testHash
+		model.State.TestErrors = testErrs
+		err = r.C.UpdateState(ctx, self.Meta.Name, self)
+		if err != nil {
+			return runtime.ReconcileResult{Err: err}
+		}
+	}
+
 	// Compute next refresh time
 	refreshOn, err = nextRefreshTime(time.Now(), model.Spec.RefreshSchedule)
 	if err != nil {
@@ -362,6 +405,11 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 	// Show if any partitions errored
 	if model.State.PartitionsHaveErrors {
 		return runtime.ReconcileResult{Err: errPartitionsHaveErrors, Retrigger: refreshOn}
+	}
+
+	// Show if the model has tests that failed
+	if len(model.State.TestErrors) > 0 {
+		return runtime.ReconcileResult{Err: newTestsError(model.State.TestErrors), Retrigger: refreshOn}
 	}
 
 	// Return the next refresh time
@@ -553,6 +601,35 @@ func (r *ModelReconciler) refsStateHash(ctx context.Context, refs []*runtimev1.R
 	return hex.EncodeToString(hash.Sum(nil)), nil
 }
 
+// testSpecHash computes a hash of the model's tests.
+func (r *ModelReconciler) testSpecHash(spec *runtimev1.ModelSpec) (string, error) {
+	if len(spec.Tests) == 0 {
+		return "", nil
+	}
+
+	hash := md5.New()
+
+	for _, test := range spec.Tests {
+		_, err := hash.Write([]byte(test.Name))
+		if err != nil {
+			return "", err
+		}
+		_, err = hash.Write([]byte(test.Resolver))
+		if err != nil {
+			return "", err
+		}
+
+		if test.ResolverProperties != nil {
+			err = pbutil.WriteHash(structpb.NewStructValue(test.ResolverProperties), hash)
+			if err != nil {
+				return "", err
+			}
+		}
+	}
+
+	return hex.EncodeToString(hash.Sum(nil)), nil
+}
+
 // updateStateWithResult updates the model resource's state with the result of a model execution.
 // It only updates the result-related fields. If changing other fields, such as RefreshedOn and SpecHash, they must be assigned before calling this function.
 func (r *ModelReconciler) updateStateWithResult(ctx context.Context, self *runtimev1.Resource, res *drivers.ModelResult) error {
@@ -580,6 +657,8 @@ func (r *ModelReconciler) updateStateClear(ctx context.Context, self *runtimev1.
 	mdl.State.ResultTable = ""
 	mdl.State.SpecHash = ""
 	mdl.State.RefsHash = ""
+	mdl.State.TestHash = ""
+	mdl.State.TestErrors = nil
 	mdl.State.RefreshedOn = nil
 	mdl.State.IncrementalState = nil
 	mdl.State.IncrementalStateSchema = nil
@@ -1545,6 +1624,69 @@ func (r *ModelReconciler) shouldTrigger(ctx context.Context, self *runtimev1.Res
 	default:
 		return false, false, fmt.Errorf("unknown change mode %q", model.Spec.ChangeMode)
 	}
+}
+
+// runModelTests executes the user defined model-level tests for the model (global, not partition-level).
+// It returns an array of test error messages.
+func (r *ModelReconciler) runModelTests(ctx context.Context, self *runtimev1.Resource) ([]string, error) {
+	tests := self.GetModel().Spec.Tests
+	if len(tests) == 0 {
+		return nil, nil
+	}
+	var msgs []string
+	for _, test := range tests {
+		msg, err := r.execModelTest(ctx, test)
+		if err != nil {
+			return nil, fmt.Errorf("failed to execute model test %q: %w", test.Name, err)
+		}
+		if msg != "" {
+			msgs = append(msgs, msg)
+		}
+	}
+	return msgs, nil
+}
+
+// execModelTest runs a single model test and returns an error if it fails.
+func (r *ModelReconciler) execModelTest(ctx context.Context, test *runtimev1.ModelTest) (string, error) {
+	result, err := r.C.Runtime.Resolve(ctx, &runtime.ResolveOptions{
+		InstanceID:         r.C.InstanceID,
+		Resolver:           test.Resolver,
+		ResolverProperties: test.ResolverProperties.AsMap(),
+		Claims:             &runtime.SecurityClaims{SkipChecks: true},
+		Args:               map[string]any{"limit": 1},
+	})
+	if err != nil {
+		if errors.Is(err, ctx.Err()) {
+			return "", err
+		}
+		return fmt.Sprintf("%s: %v", test.Name, err), nil
+	}
+	defer result.Close()
+
+	row, err := result.Next()
+	if err != nil {
+		if errors.Is(err, ctx.Err()) {
+			return "", err
+		}
+		if errors.Is(err, io.EOF) {
+			return "", nil // Test passed
+		}
+		return fmt.Sprintf("%s: %v", test.Name, err), nil
+	}
+
+	if res, ok := row["result"]; ok && res != nil {
+		return fmt.Sprintf("%s: %v", test.Name, res), nil
+	}
+
+	return fmt.Sprintf("%s: test did not pass", test.Name), nil
+}
+
+// newTestsError creates a new error that summarizes the messages returned from runModelTests.
+func newTestsError(msgs []string) error {
+	if len(msgs) == 0 {
+		return nil // No errors
+	}
+	return fmt.Errorf("tests failed:\n%s", strings.Join(msgs, "\n"))
 }
 
 // hashWriteMapOrdered writes the keys and values of a map to the writer in a deterministic order.

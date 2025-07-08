@@ -5,6 +5,7 @@ import {
   createColorEncoding,
   createConfigWithLegend,
   createDefaultTooltipEncoding,
+  createOrderEncoding,
   createPositionEncoding,
   createSingleLayerBaseSpec,
 } from "../builder";
@@ -54,6 +55,8 @@ export function generateVLPieChartSpec(
   };
   const theta = createPositionEncoding(config.measure, data);
   const color = createColorEncoding(config.color, data);
+  const order = createOrderEncoding(config.measure);
+
   const tooltip = createDefaultTooltipEncoding(
     [config.measure, config.color],
     data,
@@ -64,6 +67,7 @@ export function generateVLPieChartSpec(
     encoding: {
       theta,
       color,
+      order,
       tooltip,
     },
     ...(vegaConfig && { config: vegaConfig }),

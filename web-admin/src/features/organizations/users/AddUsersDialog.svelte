@@ -16,6 +16,7 @@
   } from "@rilldata/web-common/components/dialog";
   import MultiInput from "@rilldata/web-common/components/forms/MultiInput.svelte";
   import { RFC5322EmailRegex } from "@rilldata/web-common/components/forms/validation";
+  import { OrgUserRoles } from "@rilldata/web-common/features/users/roles.ts";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { defaults, superForm } from "sveltekit-superforms";
@@ -70,7 +71,7 @@
     role: string;
   } = {
     emails: [""],
-    role: "viewer",
+    role: OrgUserRoles.Viewer,
   };
   const schema = yup(
     object({

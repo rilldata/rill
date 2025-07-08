@@ -2,7 +2,6 @@ package testcli
 
 import (
 	"bytes"
-	"context"
 	"testing"
 
 	"github.com/rilldata/rill/admin/testadmin"
@@ -72,7 +71,7 @@ func (f *Fixture) RunWithInput(t *testing.T, input string, args ...string) Resul
 	root.SetArgs(args)
 
 	// Execute the command (mirrors the logic in cli/cmd.Run)
-	err = root.ExecuteContext(context.Background())
+	err = root.ExecuteContext(t.Context())
 	code := cmd.HandleExecuteError(ch, err)
 
 	return Result{

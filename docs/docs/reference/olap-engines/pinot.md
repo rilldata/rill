@@ -43,7 +43,7 @@ connector.pinot.dsn="http(s)://username:password@localhost:8000?controller=local
 
 :::info Need help connecting to Pinot?
 
-If you would like to connect Rill to an existing Pinot instance, please don't hesitate to [contact us](../../contact.md). We'd love to help!
+If you would like to connect Rill to an existing Pinot instance, please don't hesitate to [contact us](/contact). We'd love to help!
 
 :::
 
@@ -104,5 +104,5 @@ Pinot does not support unnest function so don't set `unnest` property to true in
 
 ## Additional Notes
 
-- At the moment, we do not support modeling with Pinot. If this is something you're interested in, please [contact us](../../contact.md).
+- At the moment, we do not support modeling with Pinot. If this is something you're interested in, please [contact us](/contact).
 - For dashboards powered by Pinot, [measure definitions](../../build/metrics-view/metrics-view.md#measures) are required to follow [Pinot SQL](https://docs.pinot.apache.org/users/user-guide-query/querying-pinot) syntax.

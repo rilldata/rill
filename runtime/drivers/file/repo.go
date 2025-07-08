@@ -193,8 +193,15 @@ func (c *connection) Watch(ctx context.Context, cb drivers.WatchCallback) error 
 	})
 }
 
-// Sync implements drivers.RepoStore.
-func (c *connection) Sync(ctx context.Context) error {
+// Pull implements drivers.RepoStore.
+func (c *connection) Pull(ctx context.Context, discardChanges, forceHandshake bool) error {
+	// TODO: If its a Git repository, pull the current branch. Otherwise, this is a no-op.
+	return nil
+}
+
+// CommitAndPush commits local changes to the remote repository and pushes them.
+func (c *connection) CommitAndPush(ctx context.Context, message string, force bool) error {
+	// TODO: If its a Git repository, commit and push the changes with the given message to the current branch.
 	return nil
 }
 

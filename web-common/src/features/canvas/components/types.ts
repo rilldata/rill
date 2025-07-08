@@ -8,17 +8,16 @@ import type { LeaderboardSpec } from "./leaderboard";
 import type { MarkdownSpec } from "./markdown";
 import type { PivotSpec, TableSpec } from "./pivot";
 
-// First, let's create a union type for all possible specs
-export type ComponentSpec =
+export type ComponentWithMetricsView =
   | CartesianChartSpec
   | CircularChartSpec
   | PivotSpec
-  | ImageSpec
   | TableSpec
   | KPISpec
   | KPIGridSpec
-  | LeaderboardSpec
-  | MarkdownSpec;
+  | LeaderboardSpec;
+
+export type ComponentSpec = ComponentWithMetricsView | ImageSpec | MarkdownSpec;
 
 export interface ComponentCommonProperties {
   title?: string;

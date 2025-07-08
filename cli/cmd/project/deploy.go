@@ -223,6 +223,13 @@ func DeployWithUploadFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployO
 	if err != nil {
 		return err
 	}
+	if req.GitRemote != "" {
+		// also commit dotrillcloud to the repo
+		err = ch.GitHelper(ch.Org, opts.Name, localProjectPath).PushToManagedRepo(ctx)
+		if err != nil {
+			return err
+		}
+	}
 
 	// Success!
 	ch.PrintfSuccess("Created project \"%s/%s\". Use `rill project rename` to change name if required.\n\n", ch.Org, res.Project.Name)

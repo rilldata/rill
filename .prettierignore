@@ -18,6 +18,7 @@ dev-project/
 proto/
 playwright-report/
 web-admin/tests/setup/projects
+web-common/tests/projects
 web-local/tests/data/projects
 
 .env

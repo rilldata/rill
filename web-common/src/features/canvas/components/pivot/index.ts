@@ -8,6 +8,8 @@ import type {
   PivotDataStoreConfig,
   PivotState,
 } from "@rilldata/web-common/features/dashboards/pivot/types";
+import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
+import { DashboardState_ActivePage } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import type {
   V1MetricsViewSpec,
   V1Resource,
@@ -118,6 +120,13 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
     return typeof spec.metrics_view === "string";
   }
 
+  getExploreTransformerProperties(): Partial<ExploreState> {
+    const pivotState = get(this.pivotState);
+    return {
+      pivot: pivotState,
+      activePage: DashboardState_ActivePage.PIVOT,
+    };
+  }
   inputParams(type: "pivot" | "table"): InputParams<PivotSpec | TableSpec> {
     if (type === "pivot") {
       return {

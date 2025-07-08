@@ -110,23 +110,6 @@ func (c *Connection) ListObjectsRaw(ctx context.Context, req *runtimev1.S3ListOb
 	return s3Objects, string(nextToken), nil
 }
 
-func (c *Connection) GetBucketRegion(ctx context.Context, bkt string) (string, error) {
-	creds, err := c.newCredentials()
-	if err != nil {
-		return "", err
-	}
-
-	sess, err := c.newSessionForBucket(ctx, bkt, "", "", creds)
-	if err != nil {
-		return "", err
-	}
-
-	if sess.Config.Region != nil {
-		return *sess.Config.Region, nil
-	}
-	return "", fmt.Errorf("unable to get region")
-}
-
 func (c *Connection) GetCredentialsInfo(ctx context.Context) (provider string, exist bool, err error) {
 	creds, err := c.newCredentials()
 	if creds == credentials.AnonymousCredentials {

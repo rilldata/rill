@@ -1,4 +1,3 @@
-
 # Trace Viewer in Rill Developer
 
 Rill Developer provides a built-in trace viewer, enabling users to visually inspect operations performed when reconciling resources or fetching data for dashboards. This helps in diagnosing performance and operational issues.
@@ -25,12 +24,12 @@ http://localhost:9009/traces
 
 ### Step 3: Visualize Traces
 
-You can visualize traces in two ways:
+There are two ways to visualize traces:
 
 - **By Trace ID:** Enter a specific Trace ID to inspect a particular operation.
 - **By Resource Reconciliation:** Browse operations associated with reconciling specific resources.
 
-For example, if you want to view the operations performed during the reconciliation of the `bids` model, simply enter `bids` in the resource name field.
+For example, to view the operations performed during the reconciliation of the `bids` model, enter `bids` in the resource name field.
 
 ## Understanding the Trace Graph
 

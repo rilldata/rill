@@ -13,7 +13,7 @@ test.describe("canvas charts", () => {
     await page.locator(".chart-icons").getByLabel("Heatmap").click();
 
     await page
-      .getByLabel("A rect chart with embedded")
+      .getByLabel("A heatmap chart with embedded data")
       .locator("canvas")
       .click();
 

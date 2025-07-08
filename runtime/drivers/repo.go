@@ -39,8 +39,12 @@ type RepoStore interface {
 	// The function does not return until the context is cancelled or an error occurs.
 	Watch(ctx context.Context, cb WatchCallback) error
 
-	// Sync synchronizes the local repo state with the remote.
-	Sync(ctx context.Context) error
+	// Pull synchronizes local and remote state.
+	// If discardChanges is true, it will discard any local changes made using Put/Rename/etc. and force synchronize to the remote state.
+	// If forceHandshake is true, it will re-verify any cached config. Specifically, this should be used when external config changes, such as the Git branch or file archive ID.
+	Pull(ctx context.Context, discardChanges, forceHandshake bool) error
+	// CommitAndPush commits local changes to the remote repository and pushes them.
+	CommitAndPush(ctx context.Context, message string, force bool) error
 	// CommitHash returns a unique ID for the state of the remote files currently served (does not change on uncommitted local changes).
 	CommitHash(ctx context.Context) (string, error)
 	// CommitTimestamp returns the update timestamp for the current remote files (does not change on uncommitted local changes).

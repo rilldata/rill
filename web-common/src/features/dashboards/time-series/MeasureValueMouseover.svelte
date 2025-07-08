@@ -212,7 +212,7 @@
           y1={yScale(0)}
           y2={output.y}
           stroke-width="4"
-          class="stroke-primary-300"
+          class="stroke-theme-300"
         />
       {/if}
     </WithTween>
@@ -224,7 +224,4 @@
     formatValue={mouseoverFormat}
     point={pointSet || []}
   />
-
-  <!-- {/if} -->
 </WithGraphicContexts>
-<!-- lines and such -->

@@ -1,6 +1,7 @@
 <script lang="ts">
   import { Button } from "@rilldata/web-common/components/button";
   import UserRoleSelect from "@rilldata/web-admin/features/projects/user-management/UserRoleSelect.svelte";
+  import { ProjectUserRoles } from "@rilldata/web-common/features/users/roles.ts";
   import { cn } from "@rilldata/web-common/lib/shadcn";
   import SearchAndInviteListItem from "./SearchAndInviteListItem.svelte";
   import Close from "@rilldata/web-common/components/icons/Close.svelte";
@@ -23,7 +24,7 @@
   export let placeholder: string = "Search or invite by email";
   export let validators: ((value: string) => boolean | string)[] = [];
   export let roleSelect: boolean = false;
-  export let initialRole: string = "viewer";
+  export let initialRole: string = ProjectUserRoles.Viewer;
   export let searchList: SearchResult[] | undefined = undefined;
   export let searchKeys: string[] = [];
   export let loop: boolean = false;

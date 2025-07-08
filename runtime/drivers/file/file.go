@@ -147,7 +147,7 @@ type connection struct {
 
 // Ping implements drivers.Handle.
 func (c *connection) Ping(ctx context.Context) error {
-	return drivers.ErrNotImplemented
+	return c.checkRoot()
 }
 
 // Driver implements drivers.Handle.
@@ -160,6 +160,11 @@ func (c *connection) Config() map[string]any {
 	m := make(map[string]any, 0)
 	_ = mapstructure.Decode(c.driverConfig, &m)
 	return m
+}
+
+// InformationSchema implements drivers.Handle.
+func (c *connection) AsInformationSchema() (drivers.InformationSchema, bool) {
+	return nil, false
 }
 
 // Close implements drivers.Handle.

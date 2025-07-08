@@ -3,29 +3,29 @@ import { AllMeasureFilterTypeOptions } from "@rilldata/web-common/features/dashb
 import { getComparisonLabel } from "@rilldata/web-common/lib/time/comparisons";
 import { TIME_COMPARISON } from "@rilldata/web-common/lib/time/config";
 import type { V1MetricsViewSpec } from "@rilldata/web-common/runtime-client";
+import type { TaintedFields } from "sveltekit-superforms";
 
 const IgnoredKeys: Partial<Record<keyof AlertFormValues, boolean>> = {
   whereFilter: true,
   timeRange: true,
 };
-export function getTouched(
-  touchedRecord: Record<string, boolean | Array<any> | Record<string, any>>,
-) {
-  for (const key in touchedRecord) {
+
+export function isSomeFieldTainted(taintedFields: TaintedFields<any>) {
+  for (const key in taintedFields) {
     if (key in IgnoredKeys) continue;
-    if (typeof touchedRecord[key] === "boolean") {
-      if (touchedRecord[key]) return true;
+    if (typeof taintedFields[key] === "boolean") {
+      if (taintedFields[key]) return true;
       continue;
     }
-    if (typeof touchedRecord[key] !== "object") continue;
-    if (Array.isArray(touchedRecord[key])) {
-      if ((touchedRecord[key] as Array<any>).some((e) => getTouched(e)))
+    if (typeof taintedFields[key] !== "object") continue;
+    if (Array.isArray(taintedFields[key])) {
+      if ((taintedFields[key] as Array<any>).some((e) => isSomeFieldTainted(e)))
         return true;
       continue;
     }
-    if (getTouched(touchedRecord[key] as Record<string, any>)) return true;
+    if (isSomeFieldTainted(taintedFields[key] as Record<string, any>))
+      return true;
   }
-  return false;
 }
 
 export function generateAlertName(

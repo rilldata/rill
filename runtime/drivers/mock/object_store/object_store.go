@@ -77,7 +77,7 @@ var _ drivers.Handle = &handle{}
 
 // Ping implements drivers.Handle.
 func (h *handle) Ping(ctx context.Context) error {
-	return drivers.ErrNotImplemented
+	return nil
 }
 
 // Driver implements drivers.Connection.
@@ -122,6 +122,11 @@ func (h *handle) AsAI(instanceID string) (drivers.AIService, bool) {
 
 // AsOLAP implements drivers.Connection.
 func (h *handle) AsOLAP(instanceID string) (drivers.OLAPStore, bool) {
+	return nil, false
+}
+
+// InformationSchema implements drivers.Handle.
+func (h *handle) AsInformationSchema() (drivers.InformationSchema, bool) {
 	return nil, false
 }
 

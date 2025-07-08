@@ -1,4 +1,4 @@
-import { removeSomeAdvancedMeasures } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measures";
+import { filterOutSomeAdvancedMeasures } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measures";
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import {
   type V1MetricsViewSpec,
@@ -99,7 +99,7 @@ describe("measures selectors", () => {
     for (const { title, measures, timeGrain, expectedMeasures } of TestCases) {
       it(title, () => {
         expect(
-          removeSomeAdvancedMeasures(
+          filterOutSomeAdvancedMeasures(
             {
               selectedTimeRange: {
                 interval: timeGrain,
@@ -115,7 +115,7 @@ describe("measures selectors", () => {
 
     it("with window measure and do not select it", () => {
       expect(
-        removeSomeAdvancedMeasures(
+        filterOutSomeAdvancedMeasures(
           {
             selectedTimeRange: {
               interval: V1TimeGrain.TIME_GRAIN_UNSPECIFIED,

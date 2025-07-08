@@ -8,6 +8,7 @@
     getAdminServiceListProjectMemberUsergroupsQueryKey,
   } from "@rilldata/web-admin/client";
   import { RFC5322EmailRegex } from "@rilldata/web-common/components/forms/validation";
+  import { ProjectUserRoles } from "@rilldata/web-common/features/users/roles.ts";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { useQueryClient } from "@tanstack/svelte-query";
   import SearchAndInviteInput from "@rilldata/web-admin/features/projects/user-management/SearchAndInviteInput.svelte";
@@ -158,7 +159,7 @@
   placeholder="Email or group, separated by commas"
   validators={[emailOrGroupValidator]}
   roleSelect={true}
-  initialRole="viewer"
+  initialRole={ProjectUserRoles.Viewer}
   searchKeys={["identifier"]}
   autoFocusInput={-1}
   multiSelect={true}

@@ -1,3 +1,5 @@
+import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils.ts";
+import { MetricsViewSpecMeasureType } from "@rilldata/web-common/runtime-client";
 import { visibleMeasures } from "./measures";
 import type { DashboardDataSources } from "./types";
 
@@ -12,13 +14,22 @@ export const leaderboardMeasureNames = ({
   ...rest
 }: DashboardDataSources) => {
   const visibleMeasuresList = visibleMeasures({ dashboard, ...rest });
-  const visibleMeasureNames = new Set(
-    visibleMeasuresList.map((measure) => measure.name),
+  const visibleMeasuresMap = getMapFromArray(
+    visibleMeasuresList,
+    (m) => m.name,
   );
 
   // Filter and sort the leaderboard measure names based on the order in visibleMeasures
   const filteredNames = dashboard.leaderboardMeasureNames
-    ?.filter((name) => visibleMeasureNames.has(name))
+    ?.filter((name) => {
+      const measure = visibleMeasuresMap.get(name);
+      if (!measure) return false;
+      return (
+        measure.type !==
+          MetricsViewSpecMeasureType.MEASURE_TYPE_TIME_COMPARISON &&
+        !measure.window
+      );
+    })
     .sort((a, b) => {
       const aIndex = visibleMeasuresList.findIndex((m) => m.name === a);
       const bIndex = visibleMeasuresList.findIndex((m) => m.name === b);

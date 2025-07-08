@@ -2234,6 +2234,88 @@ change_mode: patch
 	}
 }
 
+func TestModelAssertions(t *testing.T) {
+	ctx := context.Background()
+	repo := makeRepo(t, map[string]string{
+		`rill.yaml`: ``,
+		`models/m1.yaml`: `
+type: model
+sql: SELECT * FROM range(5)
+tests:
+  - name: Test Row Count
+    sql: SELECT count(*) = 5 as ok FROM m1
+  - name: Validate 3 is present
+    sql: SELECT count(*) = 1 as ok FROM m1 WHERE range = 3
+  - name: Validate 3 is present with where
+    assert: range = 3
+  - name: Empty test with where clause
+    assert: range >= 0
+  - name: Complex where condition
+    assert: range BETWEEN 1 AND 3 AND range % 2 = 1
+`,
+	})
+
+	resources := []*Resource{
+		{
+			Name:  ResourceName{Kind: ResourceKindModel, Name: "m1"},
+			Paths: []string{"/models/m1.yaml"},
+			ModelSpec: &runtimev1.ModelSpec{
+				RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
+				InputConnector:  "duckdb",
+				InputProperties: must(structpb.NewStruct(map[string]any{"sql": "SELECT * FROM range(5)"})),
+				OutputConnector: "duckdb",
+				ChangeMode:      runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
+				Tests: []*runtimev1.ModelTest{
+					{
+						Name:     "Test Row Count",
+						Resolver: "sql",
+						ResolverProperties: must(structpb.NewStruct(map[string]any{
+							"connector": "duckdb",
+							"sql":       "SELECT count(*) = 5 as ok FROM m1",
+						})),
+					},
+					{
+						Name:     "Validate 3 is present",
+						Resolver: "sql",
+						ResolverProperties: must(structpb.NewStruct(map[string]any{
+							"connector": "duckdb",
+							"sql":       "SELECT count(*) = 1 as ok FROM m1 WHERE range = 3",
+						})),
+					},
+					{
+						Name:     "Validate 3 is present with where",
+						Resolver: "sql",
+						ResolverProperties: must(structpb.NewStruct(map[string]any{
+							"connector": "duckdb",
+							"sql":       "SELECT * FROM m1 WHERE NOT (range = 3)",
+						})),
+					},
+					{
+						Name:     "Empty test with where clause",
+						Resolver: "sql",
+						ResolverProperties: must(structpb.NewStruct(map[string]any{
+							"connector": "duckdb",
+							"sql":       "SELECT * FROM m1 WHERE NOT (range >= 0)",
+						})),
+					},
+					{
+						Name:     "Complex where condition",
+						Resolver: "sql",
+						ResolverProperties: must(structpb.NewStruct(map[string]any{
+							"connector": "duckdb",
+							"sql":       "SELECT * FROM m1 WHERE NOT (range BETWEEN 1 AND 3 AND range % 2 = 1)",
+						})),
+					},
+				},
+			},
+		},
+	}
+
+	p, err := Parse(ctx, repo, "", "", "duckdb")
+	require.NoError(t, err)
+	requireResourcesAndErrors(t, p, resources, nil)
+}
+
 func requireResourcesAndErrors(t testing.TB, p *Parser, wantResources []*Resource, wantErrors []*runtimev1.ParseError) {
 	// Check errors
 	// NOTE: Assumes there's at most one parse error per file path

@@ -14,12 +14,15 @@
     TimeRange,
   } from "@rilldata/web-common/lib/time/types";
   import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 
   export let selectedTimeRange: DashboardTimeControls | undefined;
   export let selectedComparisonTimeRange: DashboardTimeControls | undefined;
   export let canvasName: string;
 
-  $: ({ canvasEntity } = getCanvasStore(canvasName));
+  $: ({ instanceId } = $runtime);
+
+  $: ({ canvasEntity } = getCanvasStore(canvasName, instanceId));
 
   let timeGrainOptions: TimeGrain[];
   // TODO: Change this

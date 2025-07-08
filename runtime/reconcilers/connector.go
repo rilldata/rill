@@ -92,6 +92,12 @@ func (r *ConnectorReconciler) Reconcile(ctx context.Context, n *runtimev1.Resour
 		return runtime.ReconcileResult{Err: err}
 	}
 
+	// Test the connector configuration
+	err = r.testConnector(ctx, self.Meta.Name.Name)
+	if err != nil {
+		return runtime.ReconcileResult{Err: fmt.Errorf("validation failed: %w", err)}
+	}
+
 	t.State.SpecHash = specHash
 
 	err = r.C.UpdateState(ctx, self.Meta.Name, self)
@@ -153,4 +159,15 @@ func (r *ConnectorReconciler) executionSpecHash(ctx context.Context, spec *runti
 	}
 
 	return hex.EncodeToString(hash.Sum(nil)), nil
+}
+
+func (r *ConnectorReconciler) testConnector(ctx context.Context, connectorName string) error {
+	// Get the connector configuration
+	handle, release, err := r.C.Runtime.AcquireHandle(ctx, r.C.InstanceID, connectorName)
+	if err != nil {
+		return err
+	}
+	defer release()
+
+	return handle.Ping(ctx)
 }

@@ -7,14 +7,15 @@
   import type { AlertFormValues } from "@rilldata/web-common/features/alerts/form-utils";
   import { useMetricsViewValidSpec } from "@rilldata/web-common/features/dashboards/selectors";
   import { debounce } from "@rilldata/web-common/lib/create-debouncer";
-  import { createForm } from "svelte-forms-lib";
+  import { onMount } from "svelte";
   import { slide } from "svelte/transition";
+  import type { SuperForm } from "sveltekit-superforms/client";
   import { runtime } from "../../../runtime-client/runtime-store";
 
-  export let formState: ReturnType<typeof createForm<AlertFormValues>>;
+  export let superFormInstance: SuperForm<AlertFormValues>;
   export let index: number;
 
-  const { form, errors, validateField } = formState;
+  $: ({ form, errors, validate } = superFormInstance);
 
   $: ({ instanceId } = $runtime);
 
@@ -41,19 +42,23 @@
   $: typeOptions = getTypeOptions($form, selectedMeasure);
 
   // Debounce the update of value. This avoids constant refetches
-  let value: string = $form["criteria"][index].value1;
+  let value: string = "0";
   const valueUpdater = debounce(() => {
     if ($form["criteria"][index]) $form["criteria"][index].value1 = value;
-    void validateField("criteria");
+    void validate(`criteria[${index}].value1`);
   }, 500);
 
   // memoize `type` to avoid unnecessary calls to `validateField("criteria")`
   $: type = $form["criteria"][index].type;
   // changing type should re-trigger `criteria` validation,
   // especially when changed to/from a percent type
-  $: if (type) void validateField("criteria");
+  $: if (type) void validate(`criteria[${index}].value1`);
 
-  $: groupErr = parseCriteriaError($errors["criteria"], index);
+  $: groupErr = parseCriteriaError($errors?.criteria?.[index]);
+
+  onMount(() => {
+    value = $form["criteria"][index].value1;
+  });
 </script>
 
 <div class="flex flex-row gap-2">

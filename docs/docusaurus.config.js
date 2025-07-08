@@ -54,6 +54,7 @@ const config = {
           postsPerPage: 1,
           blogSidebarTitle: 'Release Notes',
           blogSidebarCount: 'ALL',
+          onUntruncatedBlogPosts: 'ignore',
           feedOptions: {
             type: 'all',
             copyright: `Copyright © ${new Date().getFullYear()} Rill Data, Inc.`,
@@ -69,6 +70,11 @@ const config = {
   themeConfig:
     /** @type {import('@docusaurus/preset-classic').ThemeConfig} */
     ({
+      colorMode: {
+        defaultMode: 'light',
+        disableSwitch: false,
+        respectPrefersColorScheme: false,
+      },
       algolia: {
         appId: "4U01DM4NS4",
         apiKey: "c0399915ae21a35c6d34a473d017c15b",
@@ -104,12 +110,7 @@ const config = {
             position: "left",
             label: "Docs",
           },
-          {
-            type: "docSidebar",
-            sidebarId: "tutorialsSidebar",
-            position: "left",
-            label: "Tutorials",
-          },
+
           {
             type: "docSidebar",
             sidebarId: "refSidebar",
@@ -118,30 +119,44 @@ const config = {
           },
 
           {
-            label: "Release Notes",
-            to: "notes",
-            position: "left",
-          },
-
-          {
-            to: "contact",
+            type: "docSidebar",
+            sidebarId: "contactSidebar",
             position: "left",
             label: "Contact Us",
           },
+
+          // Right side items
           {
-            href: "https://github.com/rilldata/rill",
-            label: "GitHub",
+            type: "html",
             position: "right",
+            value: '<a href="https://github.com/rilldata/rill" class="navbar-icon-link" aria-label="GitHub">GitHub</i></a>',
           },
           {
-            href: "https://www.rilldata.com/blog",
-            label: "Blog",
+            type: "html",
             position: "right",
+            value: '<a href="https://www.rilldata.com/blog" class="navbar-icon-link" aria-label="Blog">Blog</i></a>',
           },
+
           {
             type: "search",
             position: "right"
-          }
+          },
+          {
+            type: "html",
+            position: "right",
+            value: '<span class="navbar-divider"></span>',
+          },
+          // {
+          //   type: "html",
+          //   position: "right",
+          //   value: '<button id="dark-mode-toggle" class="navbar-icon-link" aria-label="Toggle dark mode"><div class="icon-container"></div></button>',
+          // },
+
+          // {
+          //   type: "html",
+          //   position: "right",
+          //   value: '<a href="https://ui.rilldata.com" class="navbar-cloud-btn" target="_blank" rel="noopener">Rill Cloud</a>',
+          // },
         ],
       },
       footer: {
@@ -260,7 +275,7 @@ const config = {
           {
             from: '/share/scheduled-reports',
             to: '/explore/exports'
-          },
+          }
         ],
       },
     ],
@@ -271,6 +286,9 @@ const config = {
   markdown: {
     mermaid: true,
   },
+  stylesheets: [
+    "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+  ],
 };
 
 module.exports = config;

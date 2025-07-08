@@ -7,6 +7,7 @@ import (
 )
 
 func ListCmd(ch *cmdutil.Helper) *cobra.Command {
+	var project string
 	listCmd := &cobra.Command{
 		Use:   "list",
 		Short: "List service",
@@ -16,6 +17,20 @@ func ListCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 
+			if project != "" {
+				// If project is specified, list services for that project
+				res, err := client.ListProjectMemberServices(cmd.Context(), &adminv1.ListProjectMemberServicesRequest{
+					OrganizationName: ch.Org,
+					ProjectName:      project,
+				})
+				if err != nil {
+					return err
+				}
+
+				ch.PrintProjectMemberServices(res.Services)
+				return nil
+			}
+
 			res, err := client.ListServices(cmd.Context(), &adminv1.ListServicesRequest{
 				OrganizationName: ch.Org,
 			})
@@ -23,11 +38,12 @@ func ListCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 
-			ch.PrintServices(res.Services)
+			ch.PrintOrganizationMemberServices(res.Services)
 
 			return nil
 		},
 	}
 
+	listCmd.Flags().StringVar(&project, "project", "", "Project name to filter services")
 	return listCmd
 }

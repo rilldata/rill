@@ -8,6 +8,7 @@
     getAdminServiceListOrganizationMemberUsersQueryKey,
   } from "@rilldata/web-admin/client";
   import { page } from "$app/stores";
+  import { OrgUserRoles } from "@rilldata/web-common/features/users/roles.ts";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import OrgUpgradeGuestConfirmDialog from "./OrgUpgradeGuestConfirmDialog.svelte";
@@ -27,21 +28,23 @@
   let newRole = "";
 
   $: organization = $page.params.organization;
-  $: isAdmin = currentUserRole === "admin";
-  $: isEditor = currentUserRole === "editor";
-  $: isGuest = role === "guest";
+  $: isAdmin = currentUserRole === OrgUserRoles.Admin;
+  $: isEditor = currentUserRole === OrgUserRoles.Editor;
+  $: isGuest = role === OrgUserRoles.Guest;
   $: canManageUser =
     !isCurrentUser &&
     (isAdmin ||
       (isEditor &&
-        (role === "editor" || role === "viewer" || role === "guest")));
+        (role === OrgUserRoles.Editor ||
+          role === OrgUserRoles.Viewer ||
+          role === OrgUserRoles.Guest)));
 
   const queryClient = useQueryClient();
   const setOrganizationMemberUserRole =
     createAdminServiceSetOrganizationMemberUserRole();
 
   async function handleSetRole(role: string) {
-    if (role !== "admin" && isBillingContact) {
+    if (role !== OrgUserRoles.Admin && isBillingContact) {
       // We cannot change a billing contact's role to a non-admin one.
       onAttemptChangeBillingContactUserRole();
       return;
@@ -136,9 +139,7 @@
           'admin'
             ? 'bg-slate-100'
             : ''}"
-          on:click={() => {
-            handleSetRole("admin");
-          }}
+          on:click={() => handleSetRole(OrgUserRoles.Admin)}
         >
           <span class="text-xs font-medium text-slate-700">Admin</span>
           <span class="text-[11px] text-slate-500"
@@ -151,9 +152,7 @@
         'editor'
           ? 'bg-slate-100'
           : ''}"
-        on:click={() => {
-          handleSetRole("editor");
-        }}
+        on:click={() => handleSetRole(OrgUserRoles.Editor)}
       >
         <span class="text-xs font-medium text-slate-700">Editor</span>
         <span class="text-[11px] text-slate-500"
@@ -165,9 +164,7 @@
         'viewer'
           ? 'bg-slate-100'
           : ''}"
-        on:click={() => {
-          handleSetRole("viewer");
-        }}
+        on:click={() => handleSetRole(OrgUserRoles.Viewer)}
       >
         <span class="text-xs font-medium text-slate-700">Viewer</span>
         <span class="text-[11px] text-slate-500"
@@ -180,9 +177,7 @@
           'guest'
             ? 'bg-slate-100'
             : ''}"
-          on:click={() => {
-            handleSetRole("guest");
-          }}
+          on:click={() => handleSetRole(OrgUserRoles.Guest)}
         >
           <span class="text-xs font-medium text-slate-700">Guest</span>
           <span class="text-[11px] text-slate-500"

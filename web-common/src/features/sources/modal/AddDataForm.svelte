@@ -26,6 +26,8 @@
   } from "./submitAddDataForm";
   import type { AddDataFormType } from "./types";
   import { dsnSchema, getYupSchema } from "./yupSchemas";
+  import AddClickHouseForm from "./AddClickHouseForm.svelte";
+  import Checkbox from "@rilldata/web-common/components/forms/Checkbox.svelte";
 
   const FORM_TRANSITION_DURATION = 150;
   const dispatch = createEventDispatcher();
@@ -191,118 +193,130 @@
       href={connector.docsUrl || "https://docs.rilldata.com/build/connect/"}
       rel="noreferrer noopener"
       target="_blank">docs</a
-    > for more information.
+    >
+    for more information.
   </div>
 
-  {#if hasDsnFormOption}
-    <div class="py-3">
-      <div class="text-sm font-medium mb-2">Connection method</div>
-      <ButtonGroup
-        selected={[useDsn ? "dsn" : "parameters"]}
-        on:subbutton-click={handleConnectionTypeChange}
-      >
-        <SubButton value="parameters" ariaLabel="Enter parameters">
-          <span class="px-2">Enter parameters</span>
-        </SubButton>
-        <SubButton value="dsn" ariaLabel="Use connection string">
-          <span class="px-2">Enter connection string</span>
-        </SubButton>
-      </ButtonGroup>
-    </div>
-  {/if}
-
-  {#if !useDsn}
-    <!-- Form 1: Individual parameters -->
-    {#if paramsError}
-      <SubmissionError message={paramsError} details={paramsErrorDetails} />
+  <!-- ClickHouse has a special form that handles the managed flag -->
+  {#if connector.name === "clickhouse"}
+    <AddClickHouseForm
+      {connector}
+      {formType}
+      {onBack}
+      {onClose}
+      on:submitting
+    />
+  {:else}
+    <!-- For all other connectors, we show a connection method selector -->
+    {#if hasDsnFormOption}
+      <div class="py-3">
+        <div class="text-sm font-medium mb-2">Connection method</div>
+        <ButtonGroup
+          selected={[useDsn ? "dsn" : "parameters"]}
+          on:subbutton-click={handleConnectionTypeChange}
+        >
+          <SubButton value="parameters" ariaLabel="Enter parameters">
+            <span class="px-2">Enter parameters</span>
+          </SubButton>
+          <SubButton value="dsn" ariaLabel="Use connection string">
+            <span class="px-2">Enter connection string</span>
+          </SubButton>
+        </ButtonGroup>
+      </div>
     {/if}
-    <form
-      id={paramsFormId}
-      class="pb-5 flex-grow overflow-y-auto"
-      use:paramsEnhance
-      on:submit|preventDefault={paramsSubmit}
-      transition:slide={{ duration: FORM_TRANSITION_DURATION }}
-    >
-      {#each properties as property (property.key)}
-        {@const propertyKey = property.key ?? ""}
-        {@const label =
-          property.displayName + (property.required ? "" : " (optional)")}
-        <div class="py-1.5">
-          {#if property.type === ConnectorDriverPropertyType.TYPE_STRING || property.type === ConnectorDriverPropertyType.TYPE_NUMBER}
+
+    <!-- If the user has selected to enter parameters, we show the parameters form -->
+    {#if !useDsn}
+      <!-- Form 1: Individual parameters -->
+      {#if paramsError}
+        <SubmissionError message={paramsError} details={paramsErrorDetails} />
+      {/if}
+      <form
+        id={paramsFormId}
+        class="pb-5 flex-grow overflow-y-auto"
+        use:paramsEnhance
+        on:submit|preventDefault={paramsSubmit}
+        transition:slide={{ duration: FORM_TRANSITION_DURATION }}
+      >
+        {#each properties as property (property.key)}
+          {@const propertyKey = property.key ?? ""}
+          {@const label =
+            property.displayName + (property.required ? "" : " (optional)")}
+          <div class="py-1.5">
+            {#if property.type === ConnectorDriverPropertyType.TYPE_STRING || property.type === ConnectorDriverPropertyType.TYPE_NUMBER}
+              <Input
+                id={propertyKey}
+                label={property.displayName}
+                placeholder={property.placeholder}
+                optional={!property.required}
+                secret={property.secret}
+                hint={property.hint}
+                errors={$paramsErrors[propertyKey]}
+                bind:value={$paramsForm[propertyKey]}
+                onInput={(_, e) => onStringInputChange(e)}
+                alwaysShowError
+              />
+            {:else if property.type === ConnectorDriverPropertyType.TYPE_BOOLEAN}
+              <Checkbox
+                id={propertyKey}
+                bind:checked={$paramsForm[propertyKey]}
+                {label}
+                hint={property.hint}
+              />
+            {:else if property.type === ConnectorDriverPropertyType.TYPE_INFORMATIONAL}
+              <InformationalField
+                description={property.description}
+                hint={property.hint}
+                href={property.docsUrl}
+              />
+            {/if}
+          </div>
+        {/each}
+      </form>
+      <!-- If the user has selected to enter a connection string, we show the connection string form -->
+    {:else}
+      <!-- Form 2: DSN -->
+      {#if dsnError}
+        <SubmissionError message={dsnError} details={dsnErrorDetails} />
+      {/if}
+      <form
+        id={dsnFormId}
+        class="pb-5 flex-grow overflow-y-auto"
+        use:dsnEnhance
+        on:submit|preventDefault={dsnSubmit}
+        transition:slide={{ duration: FORM_TRANSITION_DURATION }}
+      >
+        {#each dsnProperties as property (property.key)}
+          {@const propertyKey = property.key ?? ""}
+          <div class="py-1.5">
             <Input
               id={propertyKey}
               label={property.displayName}
               placeholder={property.placeholder}
-              optional={!property.required}
               secret={property.secret}
               hint={property.hint}
-              errors={$paramsErrors[propertyKey]}
-              bind:value={$paramsForm[propertyKey]}
-              onInput={(_, e) => onStringInputChange(e)}
+              errors={$dsnErrors[propertyKey]}
+              bind:value={$dsnForm[propertyKey]}
               alwaysShowError
             />
-          {:else if property.type === ConnectorDriverPropertyType.TYPE_BOOLEAN}
-            <label for={property.key} class="flex items-center">
-              <input
-                id={propertyKey}
-                type="checkbox"
-                bind:checked={$paramsForm[propertyKey]}
-                class="h-5 w-5"
-              />
-              <span class="ml-2 text-sm">{label}</span>
-            </label>
-          {:else if property.type === ConnectorDriverPropertyType.TYPE_INFORMATIONAL}
-            <InformationalField
-              description={property.description}
-              hint={property.hint}
-              href={property.docsUrl}
-            />
-          {/if}
-        </div>
-      {/each}
-    </form>
-  {:else}
-    <!-- Form 2: DSN -->
-    {#if dsnError}
-      <SubmissionError message={dsnError} details={dsnErrorDetails} />
+          </div>
+        {/each}
+      </form>
     {/if}
-    <form
-      id={dsnFormId}
-      class="pb-5 flex-grow overflow-y-auto"
-      use:dsnEnhance
-      on:submit|preventDefault={dsnSubmit}
-      transition:slide={{ duration: FORM_TRANSITION_DURATION }}
-    >
-      {#each dsnProperties as property (property.key)}
-        {@const propertyKey = property.key ?? ""}
-        <div class="py-1.5">
-          <Input
-            id={propertyKey}
-            label={property.displayName}
-            placeholder={property.placeholder}
-            secret={property.secret}
-            hint={property.hint}
-            errors={$dsnErrors[propertyKey]}
-            bind:value={$dsnForm[propertyKey]}
-            alwaysShowError
-          />
-        </div>
-      {/each}
-    </form>
-  {/if}
 
-  <div class="flex items-center space-x-2 ml-auto">
-    <Button onClick={onBack} type="secondary">Back</Button>
-    <Button disabled={submitting} form={formId} submitForm type="primary">
-      {#if isConnectorForm}
-        {#if submitting}
-          Testing connection...
+    <div class="flex items-center space-x-2 ml-auto">
+      <Button onClick={onBack} type="secondary">Back</Button>
+      <Button disabled={submitting} form={formId} submitForm type="primary">
+        {#if isConnectorForm}
+          {#if submitting}
+            Testing connection...
+          {:else}
+            Connect
+          {/if}
         {:else}
-          Connect
+          Add data
         {/if}
-      {:else}
-        Add data
-      {/if}
-    </Button>
-  </div>
+      </Button>
+    </div>
+  {/if}
 </div>

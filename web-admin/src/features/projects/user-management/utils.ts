@@ -1,3 +1,5 @@
+import { OrgUserRoles } from "@rilldata/web-common/features/users/roles.ts";
+
 export interface SearchResult {
   identifier: string;
   type: "user" | "group";
@@ -45,7 +47,7 @@ export function categorizeResults(
     if (result.type === "group") {
       groups.push(result);
     } else if (result.type === "user") {
-      if (result.orgRoleName === "guest") {
+      if (result.orgRoleName === OrgUserRoles.Guest) {
         guests.push(result);
       } else {
         members.push(result);
