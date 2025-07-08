@@ -157,7 +157,8 @@ export const getYupSchema = {
   }),
 
   clickhouse: yup.object().shape({
-    managed: yup.boolean().default(false),
+    managed: yup.boolean(),
+    // FIXME: conditionally apply the required based on managed
     host: yup.string(),
     // .required("Host is required")
     // .matches(
