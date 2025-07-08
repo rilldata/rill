@@ -28,6 +28,7 @@
   import { dsnSchema, getYupSchema } from "./yupSchemas";
   import AddClickHouseForm from "./AddClickHouseForm.svelte";
   import Checkbox from "@rilldata/web-common/components/forms/Checkbox.svelte";
+  import NeedHelpText from "./NeedHelpText.svelte";
 
   const FORM_TRANSITION_DURATION = 150;
   const dispatch = createEventDispatcher();
@@ -186,18 +187,11 @@
   }
 </script>
 
-<div class="h-full w-full flex flex-col">
-  <div class="pb-1 text-slate-500">
-    Need help? Refer to our
-    <a
-      href={connector.docsUrl || "https://docs.rilldata.com/build/connect/"}
-      rel="noreferrer noopener"
-      target="_blank">docs</a
-    >
-    for more information.
-  </div>
+<div
+  class="flex flex-col flex-grow max-h-[552px] min-h-[552px] overflow-y-auto p-6"
+>
+  <NeedHelpText {connector} />
 
-  <!-- ClickHouse has a special form that handles the managed flag -->
   {#if connector.name === "clickhouse"}
     <AddClickHouseForm
       {connector}
