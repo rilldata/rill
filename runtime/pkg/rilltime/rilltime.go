@@ -28,19 +28,14 @@ var (
 		{"Starting", "starting"},
 		{"Ending", "ending"},
 		// this needs to be after Now and Latest to match to them
-		{"WeekSnapGrain", `[qQMyY][wW]`},
 		{"PeriodToGrain", `[sSmhHdDwWqQMyY]TD`},
 		{"Grain", `[sSmhHdDwWqQMyY]`},
 		// this has to be at the end
 		{"TimeZone", `{.+?}`},
 		{"ISOTime", isoTimePattern},
 		{"Prefix", `[+\-]`},
-		{"Suffix", `[\^\$]`},
-		{"SnapPrefix", `[<>]`},
 		{"Number", `\d+`},
 		{"Snap", `[/]`},
-		{"Interval", `[#]`},
-		{"Ceil", `[!]`},
 		{"To", `(?i)to`},
 		{"By", `(?i)by`},
 		{"Of", `(?i)of`},
@@ -53,7 +48,6 @@ var (
 	rillTimeParser = participle.MustBuild[Expression](
 		participle.Lexer(rillTimeLexer),
 		participle.Elide("Whitespace"),
-		participle.UseLookahead(25), // We need this to disambiguate certain cases. Mainly for something like `-4d#`
 	)
 	daxNotations = map[string]string{
 		// Mapping for our old rill-<DAX> syntax
