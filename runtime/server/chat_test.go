@@ -268,7 +268,7 @@ func TestConversationWithTools(t *testing.T) {
 	t.Parallel()
 
 	// Create instance with AI connector (needed for tool integration)
-	rt := testruntime.New(t)
+	rt := testruntime.New(t, true)
 	tmpDir := t.TempDir()
 	inst := &drivers.Instance{
 		Environment:      "test",
@@ -484,7 +484,7 @@ func createTestTextMessage(role, text string) *runtimev1.Message {
 
 // newConversationTestServer creates a test server with AI connector support for conversation tests
 func newConversationTestServer(t *testing.T) (*server.Server, string) {
-	rt := testruntime.New(t)
+	rt := testruntime.New(t, true)
 
 	// Create instance with AI connector
 	tmpDir := t.TempDir()
