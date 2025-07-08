@@ -29,15 +29,16 @@ var (
 		{"PeriodToGrain", `[sSmhHdDwWqQMyY]TD`},
 		{"Grain", `[sSmhHdDwWqQMyY]`},
 		// this has to be at the end
-		{"TimeZone", `{.+?}`},
 		{"ISOTime", isoTimePattern},
 		{"Prefix", `[+\-]`},
 		{"Number", `\d+`},
 		{"Snap", `[/]`},
+		{"TimeZone", `[0-9a-zA-Z/+\-_]{3,}`},
 		{"To", `(?i)to`},
 		{"By", `(?i)by`},
 		{"Of", `(?i)of`},
 		{"As", `(?i)as`},
+		{"Tz", `(?i)tz`},
 		// needed for misc. direct character references used
 		{"Punct", `[-[!@#$%^&*()+_={}\|:;"'<,>.?/]]`},
 		{"Whitespace", `[ \t]+`},
@@ -107,7 +108,7 @@ type Expression struct {
 	Interval        *Interval      `parser:"@@"`
 	AnchorOverrides []*PointInTime `parser:"(As Of @@)*"`
 	Grain           *string        `parser:"(By @Grain)?"`
-	TimeZone        *string        `parser:"('@' @TimeZone)?"`
+	TimeZone        *string        `parser:"(Tz @TimeZone)?"`
 
 	isNewFormat bool
 	tz          *time.Location

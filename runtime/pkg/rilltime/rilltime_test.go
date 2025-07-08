@@ -362,6 +362,7 @@ func Test_KatmanduTimezone(t *testing.T) {
 		{"-1D/D to ref as of watermark", "2025-05-11T18:15:00Z", "2025-05-13T06:32:36Z", timeutil.TimeGrainHour, 1, 1},
 
 		{"W1 as of watermark", "2025-04-27T18:15:00Z", "2025-05-04T18:15:00Z", timeutil.TimeGrainDay, 1, 1},
+		{"W1 as of watermark tz Asia/Kathmandu", "2025-04-27T18:15:00Z", "2025-05-04T18:15:00Z", timeutil.TimeGrainDay, 1, 1},
 		{"W1 as of -2M as of watermark", "2025-03-02T18:15:00Z", "2025-03-09T18:15:00Z", timeutil.TimeGrainDay, 1, 1},
 		{"W1 as of -1Y as of watermark", "2024-04-28T18:15:00Z", "2024-05-05T18:15:00Z", timeutil.TimeGrainDay, 1, 1},
 	}
