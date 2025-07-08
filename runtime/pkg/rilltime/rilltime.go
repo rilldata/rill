@@ -25,8 +25,6 @@ var (
 		{"Now", "now"},
 		{"Latest", "latest"},
 		{"Watermark", "watermark"},
-		{"Starting", "starting"},
-		{"Ending", "ending"},
 		// this needs to be after Now and Latest to match to them
 		{"PeriodToGrain", `[sSmhHdDwWqQMyY]TD`},
 		{"Grain", `[sSmhHdDwWqQMyY]`},
@@ -40,7 +38,6 @@ var (
 		{"By", `(?i)by`},
 		{"Of", `(?i)of`},
 		{"As", `(?i)as`},
-		{"In", `(?i)in`},
 		// needed for misc. direct character references used
 		{"Punct", `[-[!@#$%^&*()+_={}\|:;"'<,>.?/]]`},
 		{"Whitespace", `[ \t]+`},
@@ -113,7 +110,7 @@ type Expression struct {
 	TimeZone        *string        `parser:"('@' @TimeZone)?"`
 
 	isNewFormat bool
-	timeZone    *time.Location
+	tz          *time.Location
 	isoDuration *duration.StandardDuration
 }
 
@@ -266,17 +263,17 @@ func Parse(from string, parseOpts ParseOptions) (*Expression, error) {
 		}
 	}
 
-	rt.timeZone = time.UTC
+	rt.tz = time.UTC
 	if parseOpts.TimeZoneOverride != nil {
-		rt.timeZone = parseOpts.TimeZoneOverride
+		rt.tz = parseOpts.TimeZoneOverride
 	} else if rt.TimeZone != nil {
 		var err error
-		rt.timeZone, err = time.LoadLocation(strings.Trim(*rt.TimeZone, "{}"))
+		rt.tz, err = time.LoadLocation(strings.Trim(*rt.TimeZone, "{}"))
 		if err != nil {
 			return nil, err
 		}
 	} else if parseOpts.DefaultTimeZone != nil {
-		rt.timeZone = parseOpts.DefaultTimeZone
+		rt.tz = parseOpts.DefaultTimeZone
 	}
 
 	return rt, nil
@@ -318,7 +315,7 @@ func (e *Expression) Eval(evalOpts EvalOptions) (time.Time, time.Time, timeutil.
 	}
 	i := len(e.AnchorOverrides) - 1
 	for i >= 0 {
-		evalOpts.ref, _ = e.AnchorOverrides[i].eval(evalOpts, evalOpts.ref, e.timeZone)
+		evalOpts.ref, _ = e.AnchorOverrides[i].eval(evalOpts, evalOpts.ref, e.tz)
 		if e.AnchorOverrides[i].truncates() {
 			evalOpts.truncatedRef = true
 		}
@@ -327,19 +324,19 @@ func (e *Expression) Eval(evalOpts EvalOptions) (time.Time, time.Time, timeutil.
 
 	if e.isoDuration != nil {
 		// handling for old iso format. all the times are relative to watermark for old format.
-		isoStart := e.isoDuration.Sub(evalOpts.Watermark.In(e.timeZone))
+		isoStart := e.isoDuration.Sub(evalOpts.Watermark.In(e.tz))
 		isoEnd := evalOpts.Watermark
 		tg := timeutil.TimeGrainUnspecified
 		if e.Grain != nil {
 			tg = grainMap[*e.Grain]
-			isoStart = timeutil.TruncateTime(isoStart, tg, e.timeZone, evalOpts.FirstDay, evalOpts.FirstMonth)
-			isoEnd = timeutil.TruncateTime(isoEnd, tg, e.timeZone, evalOpts.FirstDay, evalOpts.FirstMonth)
+			isoStart = timeutil.TruncateTime(isoStart, tg, e.tz, evalOpts.FirstDay, evalOpts.FirstMonth)
+			isoEnd = timeutil.TruncateTime(isoEnd, tg, e.tz, evalOpts.FirstDay, evalOpts.FirstMonth)
 		}
 
 		return isoStart, isoEnd, tg
 	}
 
-	start, end, tg := e.Interval.eval(evalOpts, evalOpts.ref, e.timeZone)
+	start, end, tg := e.Interval.eval(evalOpts, evalOpts.ref, e.tz)
 
 	if e.Grain != nil {
 		tg = grainMap[*e.Grain]
@@ -631,7 +628,7 @@ func (a *ISOPointInTime) parse() error {
 			a.nano = val
 			a.tg = timeutil.TimeGrainMillisecond // We dont go below milli
 		default:
-			return fmt.Errorf("unexpected field %q in duration", name)
+			return fmt.Errorf("unexpected field %q in time", name)
 		}
 	}
 
