@@ -19,7 +19,10 @@ import { removeZoneOffset } from "../../../lib/time/timezone";
 import { getDurationMultiple, getOffset } from "../../../lib/time/transforms";
 import { TimeOffsetType } from "../../../lib/time/types";
 import { roundToNearestTimeUnit } from "./round-to-nearest-time-unit";
-import type { TimeSeriesDatum } from "./timeseries-data-store";
+import {
+  ComparisonTimeSuffix,
+  type TimeSeriesDatum,
+} from "./timeseries-data-store";
 
 /** sets extents to 0 if it makes sense; otherwise, inflates each extent component */
 export function niceMeasureExtents(
@@ -98,6 +101,47 @@ export function updateChartInteractionStore(
       xHover: xHoverColNum,
     }));
   }
+}
+
+export function prepareTimeSeriesOffsets(
+  timeSeriesData: V1MetricsViewAggregationResponseDataItem[],
+  timeDimension: string | undefined,
+  timeGrainDuration: string,
+  zone: string,
+) {
+  return timeSeriesData?.map((datum) => {
+    const emptyPt = {
+      ts: undefined,
+      ts_position: undefined,
+      ...datum,
+    };
+
+    if (!timeDimension || !datum?.[timeDimension]) {
+      return emptyPt;
+    }
+
+    const comparisonPt = datum?.[timeDimension + ComparisonTimeSuffix];
+    const currentTime = datum[timeDimension] as string | Date | undefined;
+
+    const ts = adjustOffsetForZone(currentTime, zone, timeGrainDuration);
+
+    if (!ts || typeof ts === "string") {
+      return emptyPt;
+    }
+    const offsetDuration = getDurationMultiple(timeGrainDuration, 0.5);
+    const ts_position = getOffset(ts, offsetDuration, TimeOffsetType.ADD);
+    return {
+      ts,
+      ts_position,
+      ...datum,
+      ...toComparisonKeys(
+        comparisonPt || {},
+        offsetDuration,
+        zone,
+        timeGrainDuration,
+      ),
+    };
+  });
 }
 
 export function prepareTimeSeries(

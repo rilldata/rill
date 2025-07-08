@@ -1,3 +1,4 @@
+import { ComparisonDeltaPreviousSuffix } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
 import { mergeDimensionAndMeasureFilters } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 import {
@@ -9,6 +10,7 @@ import {
 import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import {
   createQueryServiceMetricsViewAggregation,
+  type V1MetricsViewAggregationMeasure,
   type V1MetricsViewAggregationResponse,
 } from "@rilldata/web-common/runtime-client";
 import { type HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
@@ -18,7 +20,7 @@ import { derived } from "svelte/store";
 export function createTotalsForMeasure(
   ctx: StateManagers,
   measures: string[],
-  isComparison = false,
+  includeComparison = false,
 ): CreateQueryResult<V1MetricsViewAggregationResponse, HTTPError> {
   return derived(
     [
@@ -27,12 +29,28 @@ export function createTotalsForMeasure(
       useTimeControlStore(ctx),
       ctx.dashboardStore,
     ],
-    ([runtime, metricsViewName, timeControls, dashboard], set) =>
-      createQueryServiceMetricsViewAggregation(
+    ([runtime, metricsViewName, timeControls, dashboard], set) => {
+      const measuresList: V1MetricsViewAggregationMeasure[] = measures.flatMap(
+        (measureName) => {
+          const baseMeasure = { name: measureName };
+          if (!includeComparison) {
+            return [baseMeasure];
+          }
+          return [
+            baseMeasure,
+            {
+              name: measureName + ComparisonDeltaPreviousSuffix,
+              comparisonValue: { measure: measureName },
+            },
+          ];
+        },
+      );
+
+      return createQueryServiceMetricsViewAggregation(
         runtime.instanceId,
         metricsViewName,
         {
-          measures: measures.map((measure) => ({ name: measure })),
+          measures: measuresList,
           where: sanitiseExpression(
             mergeDimensionAndMeasureFilters(
               dashboard.whereFilter,
@@ -41,22 +59,29 @@ export function createTotalsForMeasure(
             undefined,
           ),
           timeRange: {
-            start: isComparison
-              ? timeControls?.comparisonTimeStart
-              : timeControls.timeStart,
-            end: isComparison
-              ? timeControls?.comparisonTimeEnd
-              : timeControls.timeEnd,
+            start: timeControls.timeStart,
+            end: timeControls.timeEnd,
           },
+          comparisonTimeRange: includeComparison
+            ? {
+                start: timeControls?.comparisonTimeStart,
+                end: timeControls?.comparisonTimeEnd,
+              }
+            : undefined,
         },
         {
           query: {
-            enabled: !!timeControls.ready && !!ctx.dashboardStore,
+            enabled:
+              !!timeControls.ready &&
+              !!ctx.dashboardStore &&
+              // in case of comparison, we need to wait for the comparison start time to be available
+              (!includeComparison || !!timeControls.comparisonTimeStart),
             refetchOnMount: false,
           },
         },
         ctx.queryClient,
-      ).subscribe(set),
+      ).subscribe(set);
+    },
   );
 }
 

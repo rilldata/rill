@@ -1,4 +1,5 @@
 import { createSparkline } from "@rilldata/web-common/components/data-graphic/marks/sparkline";
+import { ComparisonDeltaPreviousSuffix } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
 import { useSelectedValuesForCompareDimension } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
@@ -7,8 +8,8 @@ import {
   type DimensionDataItem,
 } from "@rilldata/web-common/features/dashboards/time-series/multiple-dimension-queries";
 import {
-  type TimeSeriesDatum,
   useTimeSeriesDataStore,
+  type TimeSeriesDatum,
 } from "@rilldata/web-common/features/dashboards/time-series/timeseries-data-store";
 import { formatMeasurePercentageDifference } from "@rilldata/web-common/lib/number-formatting/percentage-formatter";
 import { formatProperFractionAsPercent } from "@rilldata/web-common/lib/number-formatting/proper-fraction-formatter";
@@ -404,7 +405,8 @@ export function createTimeDimensionDataStore(
       const unfilteredTotal =
         timeSeries?.unfilteredTotal && timeSeries?.unfilteredTotal[measureName];
       const comparisonTotal =
-        timeSeries?.comparisonTotal && timeSeries?.comparisonTotal[measureName];
+        timeSeries?.total &&
+        timeSeries?.total[measureName + ComparisonDeltaPreviousSuffix];
       const isAllTime =
         timeControls?.selectedTimeRange?.name === TimeRangePreset.ALL_TIME;
 
