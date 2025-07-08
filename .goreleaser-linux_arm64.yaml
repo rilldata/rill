@@ -2,10 +2,6 @@ version: 2
 
 project_name: rill
 
-release:
-  prerelease: auto
-  draft: true
-
 before:
   hooks:
     - go mod tidy

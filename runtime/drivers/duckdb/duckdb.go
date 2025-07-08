@@ -372,6 +372,11 @@ func (c *connection) AsOLAP(instanceID string) (drivers.OLAPStore, bool) {
 	return c, true
 }
 
+// AsInformationSchema implements drivers.Connection.
+func (c *connection) AsInformationSchema() (drivers.InformationSchema, bool) {
+	return nil, false
+}
+
 // AsObjectStore implements drivers.Connection.
 func (c *connection) AsObjectStore() (drivers.ObjectStore, bool) {
 	return nil, false
@@ -460,10 +465,15 @@ func (c *connection) reopenDB(ctx context.Context) error {
 		connInitQueries []string
 	)
 
-	// Add custom boot queries before any other (e.g. to override the extensions repository)
+	// Add custom InitSQL queries before any other (e.g. to override the extensions repository)
+	// BootQueries is deprecated. Use InitSQL instead. Retained for backward compatibility.
 	if c.config.BootQueries != "" {
 		dbInitQueries = append(dbInitQueries, c.config.BootQueries)
 	}
+	if c.config.InitSQL != "" {
+		dbInitQueries = append(dbInitQueries, c.config.InitSQL)
+	}
+
 	dbInitQueries = append(dbInitQueries,
 		"INSTALL 'json'",
 		"INSTALL 'sqlite'",
@@ -493,8 +503,8 @@ func (c *connection) reopenDB(ctx context.Context) error {
 	}
 
 	// Add init SQL if provided
-	if c.config.InitSQL != "" {
-		connInitQueries = append(connInitQueries, c.config.InitSQL)
+	if c.config.ConnInitSQL != "" {
+		connInitQueries = append(connInitQueries, c.config.ConnInitSQL)
 	}
 	connInitQueries = append(connInitQueries, "SET max_expression_depth TO 250")
 

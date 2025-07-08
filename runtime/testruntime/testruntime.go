@@ -51,7 +51,7 @@ type TestingT interface {
 }
 
 // New returns a runtime configured for use in tests.
-func New(t TestingT) *runtime.Runtime {
+func New(t TestingT, allowHostAccess bool) *runtime.Runtime {
 	ctx := t.Context()
 	opts := &runtime.Options{
 		MetastoreConnector: "metastore",
@@ -69,7 +69,7 @@ func New(t TestingT) *runtime.Runtime {
 		SecurityEngineCacheSize:      100,
 		ControllerLogBufferCapacity:  10000,
 		ControllerLogBufferSizeBytes: int64(datasize.MB * 16),
-		AllowHostAccess:              true,
+		AllowHostAccess:              allowHostAccess,
 	}
 
 	logger := zap.NewNop()
@@ -88,17 +88,18 @@ func New(t TestingT) *runtime.Runtime {
 
 // InstanceOptions enables configuration of the instance options that are configurable in tests.
 type InstanceOptions struct {
-	Files          map[string]string
-	Variables      map[string]string
-	WatchRepo      bool
-	StageChanges   bool
-	TestConnectors []string
+	Files             map[string]string
+	Variables         map[string]string
+	WatchRepo         bool
+	StageChanges      bool
+	DisableHostAccess bool
+	TestConnectors    []string
 }
 
 // NewInstanceWithOptions creates a runtime and an instance for use in tests.
 // The instance's repo is a temp directory that will be cleared when the tests finish.
 func NewInstanceWithOptions(t TestingT, opts InstanceOptions) (*runtime.Runtime, string) {
-	rt := New(t)
+	rt := New(t, !opts.DisableHostAccess)
 	ctx := t.Context()
 
 	olapDriver := os.Getenv("RILL_RUNTIME_TEST_OLAP_DRIVER")
@@ -206,7 +207,7 @@ func NewInstanceWithModel(t TestingT, name, sql string) (*runtime.Runtime, strin
 // The passed name should match a test project in the testdata folder.
 // You should not do mutable repo operations on the returned instance.
 func NewInstanceForProject(t TestingT, name string) (*runtime.Runtime, string) {
-	rt := New(t)
+	rt := New(t, true)
 	ctx := t.Context()
 
 	_, currentFile, _, _ := goruntime.Caller(0)
@@ -274,7 +275,7 @@ func NewInstanceForDruidProject(t *testing.T) (*runtime.Runtime, string, error) 
 		t.Skip("skipping the test without the test instance")
 	}
 
-	rt := New(t)
+	rt := New(t, true)
 	ctx := t.Context()
 
 	_, currentFile, _, _ = goruntime.Caller(0)
@@ -325,8 +326,10 @@ func NewInstanceForDruidProject(t *testing.T) (*runtime.Runtime, string, error) 
 
 func NewInstanceWithClickhouseProject(t TestingT, withCluster bool) (*runtime.Runtime, string) {
 	dsn, cluster := testclickhouse.StartCluster(t)
-	rt := New(t)
+
+	rt := New(t, true)
 	ctx := t.Context()
+
 	_, currentFile, _, _ := goruntime.Caller(0)
 	projectPath := filepath.Join(currentFile, "..", "testdata", "ad_bids_clickhouse")
 

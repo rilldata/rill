@@ -117,8 +117,14 @@ const (
 	AdminService_RemoveProjectWhitelistedDomain_FullMethodName        = "/rill.admin.v1.AdminService/RemoveProjectWhitelistedDomain"
 	AdminService_ListProjectWhitelistedDomains_FullMethodName         = "/rill.admin.v1.AdminService/ListProjectWhitelistedDomains"
 	AdminService_ListServices_FullMethodName                          = "/rill.admin.v1.AdminService/ListServices"
+	AdminService_ListProjectMemberServices_FullMethodName             = "/rill.admin.v1.AdminService/ListProjectMemberServices"
 	AdminService_CreateService_FullMethodName                         = "/rill.admin.v1.AdminService/CreateService"
+	AdminService_GetService_FullMethodName                            = "/rill.admin.v1.AdminService/GetService"
 	AdminService_UpdateService_FullMethodName                         = "/rill.admin.v1.AdminService/UpdateService"
+	AdminService_SetOrganizationMemberServiceRole_FullMethodName      = "/rill.admin.v1.AdminService/SetOrganizationMemberServiceRole"
+	AdminService_RemoveOrganizationMemberService_FullMethodName       = "/rill.admin.v1.AdminService/RemoveOrganizationMemberService"
+	AdminService_SetProjectMemberServiceRole_FullMethodName           = "/rill.admin.v1.AdminService/SetProjectMemberServiceRole"
+	AdminService_RemoveProjectMemberService_FullMethodName            = "/rill.admin.v1.AdminService/RemoveProjectMemberService"
 	AdminService_DeleteService_FullMethodName                         = "/rill.admin.v1.AdminService/DeleteService"
 	AdminService_ListServiceAuthTokens_FullMethodName                 = "/rill.admin.v1.AdminService/ListServiceAuthTokens"
 	AdminService_IssueServiceAuthToken_FullMethodName                 = "/rill.admin.v1.AdminService/IssueServiceAuthToken"
@@ -382,10 +388,22 @@ type AdminServiceClient interface {
 	ListProjectWhitelistedDomains(ctx context.Context, in *ListProjectWhitelistedDomainsRequest, opts ...grpc.CallOption) (*ListProjectWhitelistedDomainsResponse, error)
 	// ListService returns all the services per organization
 	ListServices(ctx context.Context, in *ListServicesRequest, opts ...grpc.CallOption) (*ListServicesResponse, error)
+	// ListProjectMemberServices returns all the services for the project for an organization
+	ListProjectMemberServices(ctx context.Context, in *ListProjectMemberServicesRequest, opts ...grpc.CallOption) (*ListProjectMemberServicesResponse, error)
 	// CreateService creates a new service per organization
 	CreateService(ctx context.Context, in *CreateServiceRequest, opts ...grpc.CallOption) (*CreateServiceResponse, error)
+	// GetService returns information about a specific service
+	GetService(ctx context.Context, in *GetServiceRequest, opts ...grpc.CallOption) (*GetServiceResponse, error)
 	// UpdateService updates a service per organization
 	UpdateService(ctx context.Context, in *UpdateServiceRequest, opts ...grpc.CallOption) (*UpdateServiceResponse, error)
+	// SetOrganizationMemberServiceRole sets or updates the role of the service in the organization
+	SetOrganizationMemberServiceRole(ctx context.Context, in *SetOrganizationMemberServiceRoleRequest, opts ...grpc.CallOption) (*SetOrganizationMemberServiceRoleResponse, error)
+	// RemoveOrganizationMemberService removes the organization role for the service
+	RemoveOrganizationMemberService(ctx context.Context, in *RemoveOrganizationMemberServiceRequest, opts ...grpc.CallOption) (*RemoveOrganizationMemberServiceResponse, error)
+	// SetProjectMemberServiceRole updates the project role for the service
+	SetProjectMemberServiceRole(ctx context.Context, in *SetProjectMemberServiceRoleRequest, opts ...grpc.CallOption) (*SetProjectMemberServiceRoleResponse, error)
+	// RemoveProjectMemberService removes the service from the project
+	RemoveProjectMemberService(ctx context.Context, in *RemoveProjectMemberServiceRequest, opts ...grpc.CallOption) (*RemoveProjectMemberServiceResponse, error)
 	// DeleteService deletes a service per organization
 	DeleteService(ctx context.Context, in *DeleteServiceRequest, opts ...grpc.CallOption) (*DeleteServiceResponse, error)
 	// ListServiceAuthTokens lists all the service auth tokens
@@ -1456,6 +1474,16 @@ func (c *adminServiceClient) ListServices(ctx context.Context, in *ListServicesR
 	return out, nil
 }
 
+func (c *adminServiceClient) ListProjectMemberServices(ctx context.Context, in *ListProjectMemberServicesRequest, opts ...grpc.CallOption) (*ListProjectMemberServicesResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListProjectMemberServicesResponse)
+	err := c.cc.Invoke(ctx, AdminService_ListProjectMemberServices_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *adminServiceClient) CreateService(ctx context.Context, in *CreateServiceRequest, opts ...grpc.CallOption) (*CreateServiceResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(CreateServiceResponse)
@@ -1466,10 +1494,60 @@ func (c *adminServiceClient) CreateService(ctx context.Context, in *CreateServic
 	return out, nil
 }
 
+func (c *adminServiceClient) GetService(ctx context.Context, in *GetServiceRequest, opts ...grpc.CallOption) (*GetServiceResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetServiceResponse)
+	err := c.cc.Invoke(ctx, AdminService_GetService_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *adminServiceClient) UpdateService(ctx context.Context, in *UpdateServiceRequest, opts ...grpc.CallOption) (*UpdateServiceResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(UpdateServiceResponse)
 	err := c.cc.Invoke(ctx, AdminService_UpdateService_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) SetOrganizationMemberServiceRole(ctx context.Context, in *SetOrganizationMemberServiceRoleRequest, opts ...grpc.CallOption) (*SetOrganizationMemberServiceRoleResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SetOrganizationMemberServiceRoleResponse)
+	err := c.cc.Invoke(ctx, AdminService_SetOrganizationMemberServiceRole_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) RemoveOrganizationMemberService(ctx context.Context, in *RemoveOrganizationMemberServiceRequest, opts ...grpc.CallOption) (*RemoveOrganizationMemberServiceResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RemoveOrganizationMemberServiceResponse)
+	err := c.cc.Invoke(ctx, AdminService_RemoveOrganizationMemberService_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) SetProjectMemberServiceRole(ctx context.Context, in *SetProjectMemberServiceRoleRequest, opts ...grpc.CallOption) (*SetProjectMemberServiceRoleResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SetProjectMemberServiceRoleResponse)
+	err := c.cc.Invoke(ctx, AdminService_SetProjectMemberServiceRole_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) RemoveProjectMemberService(ctx context.Context, in *RemoveProjectMemberServiceRequest, opts ...grpc.CallOption) (*RemoveProjectMemberServiceResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RemoveProjectMemberServiceResponse)
+	err := c.cc.Invoke(ctx, AdminService_RemoveProjectMemberService_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -2115,10 +2193,22 @@ type AdminServiceServer interface {
 	ListProjectWhitelistedDomains(context.Context, *ListProjectWhitelistedDomainsRequest) (*ListProjectWhitelistedDomainsResponse, error)
 	// ListService returns all the services per organization
 	ListServices(context.Context, *ListServicesRequest) (*ListServicesResponse, error)
+	// ListProjectMemberServices returns all the services for the project for an organization
+	ListProjectMemberServices(context.Context, *ListProjectMemberServicesRequest) (*ListProjectMemberServicesResponse, error)
 	// CreateService creates a new service per organization
 	CreateService(context.Context, *CreateServiceRequest) (*CreateServiceResponse, error)
+	// GetService returns information about a specific service
+	GetService(context.Context, *GetServiceRequest) (*GetServiceResponse, error)
 	// UpdateService updates a service per organization
 	UpdateService(context.Context, *UpdateServiceRequest) (*UpdateServiceResponse, error)
+	// SetOrganizationMemberServiceRole sets or updates the role of the service in the organization
+	SetOrganizationMemberServiceRole(context.Context, *SetOrganizationMemberServiceRoleRequest) (*SetOrganizationMemberServiceRoleResponse, error)
+	// RemoveOrganizationMemberService removes the organization role for the service
+	RemoveOrganizationMemberService(context.Context, *RemoveOrganizationMemberServiceRequest) (*RemoveOrganizationMemberServiceResponse, error)
+	// SetProjectMemberServiceRole updates the project role for the service
+	SetProjectMemberServiceRole(context.Context, *SetProjectMemberServiceRoleRequest) (*SetProjectMemberServiceRoleResponse, error)
+	// RemoveProjectMemberService removes the service from the project
+	RemoveProjectMemberService(context.Context, *RemoveProjectMemberServiceRequest) (*RemoveProjectMemberServiceResponse, error)
 	// DeleteService deletes a service per organization
 	DeleteService(context.Context, *DeleteServiceRequest) (*DeleteServiceResponse, error)
 	// ListServiceAuthTokens lists all the service auth tokens
@@ -2503,11 +2593,29 @@ func (UnimplementedAdminServiceServer) ListProjectWhitelistedDomains(context.Con
 func (UnimplementedAdminServiceServer) ListServices(context.Context, *ListServicesRequest) (*ListServicesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListServices not implemented")
 }
+func (UnimplementedAdminServiceServer) ListProjectMemberServices(context.Context, *ListProjectMemberServicesRequest) (*ListProjectMemberServicesResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListProjectMemberServices not implemented")
+}
 func (UnimplementedAdminServiceServer) CreateService(context.Context, *CreateServiceRequest) (*CreateServiceResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateService not implemented")
 }
+func (UnimplementedAdminServiceServer) GetService(context.Context, *GetServiceRequest) (*GetServiceResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetService not implemented")
+}
 func (UnimplementedAdminServiceServer) UpdateService(context.Context, *UpdateServiceRequest) (*UpdateServiceResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateService not implemented")
+}
+func (UnimplementedAdminServiceServer) SetOrganizationMemberServiceRole(context.Context, *SetOrganizationMemberServiceRoleRequest) (*SetOrganizationMemberServiceRoleResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SetOrganizationMemberServiceRole not implemented")
+}
+func (UnimplementedAdminServiceServer) RemoveOrganizationMemberService(context.Context, *RemoveOrganizationMemberServiceRequest) (*RemoveOrganizationMemberServiceResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RemoveOrganizationMemberService not implemented")
+}
+func (UnimplementedAdminServiceServer) SetProjectMemberServiceRole(context.Context, *SetProjectMemberServiceRoleRequest) (*SetProjectMemberServiceRoleResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SetProjectMemberServiceRole not implemented")
+}
+func (UnimplementedAdminServiceServer) RemoveProjectMemberService(context.Context, *RemoveProjectMemberServiceRequest) (*RemoveProjectMemberServiceResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RemoveProjectMemberService not implemented")
 }
 func (UnimplementedAdminServiceServer) DeleteService(context.Context, *DeleteServiceRequest) (*DeleteServiceResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteService not implemented")
@@ -4420,6 +4528,24 @@ func _AdminService_ListServices_Handler(srv interface{}, ctx context.Context, de
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AdminService_ListProjectMemberServices_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListProjectMemberServicesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).ListProjectMemberServices(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_ListProjectMemberServices_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).ListProjectMemberServices(ctx, req.(*ListProjectMemberServicesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _AdminService_CreateService_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(CreateServiceRequest)
 	if err := dec(in); err != nil {
@@ -4438,6 +4564,24 @@ func _AdminService_CreateService_Handler(srv interface{}, ctx context.Context, d
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AdminService_GetService_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetServiceRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).GetService(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_GetService_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).GetService(ctx, req.(*GetServiceRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _AdminService_UpdateService_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(UpdateServiceRequest)
 	if err := dec(in); err != nil {
@@ -4452,6 +4596,78 @@ func _AdminService_UpdateService_Handler(srv interface{}, ctx context.Context, d
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(AdminServiceServer).UpdateService(ctx, req.(*UpdateServiceRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_SetOrganizationMemberServiceRole_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SetOrganizationMemberServiceRoleRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).SetOrganizationMemberServiceRole(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_SetOrganizationMemberServiceRole_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).SetOrganizationMemberServiceRole(ctx, req.(*SetOrganizationMemberServiceRoleRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_RemoveOrganizationMemberService_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RemoveOrganizationMemberServiceRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).RemoveOrganizationMemberService(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_RemoveOrganizationMemberService_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).RemoveOrganizationMemberService(ctx, req.(*RemoveOrganizationMemberServiceRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_SetProjectMemberServiceRole_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SetProjectMemberServiceRoleRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).SetProjectMemberServiceRole(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_SetProjectMemberServiceRole_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).SetProjectMemberServiceRole(ctx, req.(*SetProjectMemberServiceRoleRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_RemoveProjectMemberService_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RemoveProjectMemberServiceRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).RemoveProjectMemberService(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_RemoveProjectMemberService_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).RemoveProjectMemberService(ctx, req.(*RemoveProjectMemberServiceRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -5612,12 +5828,36 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _AdminService_ListServices_Handler,
 		},
 		{
+			MethodName: "ListProjectMemberServices",
+			Handler:    _AdminService_ListProjectMemberServices_Handler,
+		},
+		{
 			MethodName: "CreateService",
 			Handler:    _AdminService_CreateService_Handler,
 		},
 		{
+			MethodName: "GetService",
+			Handler:    _AdminService_GetService_Handler,
+		},
+		{
 			MethodName: "UpdateService",
 			Handler:    _AdminService_UpdateService_Handler,
+		},
+		{
+			MethodName: "SetOrganizationMemberServiceRole",
+			Handler:    _AdminService_SetOrganizationMemberServiceRole_Handler,
+		},
+		{
+			MethodName: "RemoveOrganizationMemberService",
+			Handler:    _AdminService_RemoveOrganizationMemberService_Handler,
+		},
+		{
+			MethodName: "SetProjectMemberServiceRole",
+			Handler:    _AdminService_SetProjectMemberServiceRole_Handler,
+		},
+		{
+			MethodName: "RemoveProjectMemberService",
+			Handler:    _AdminService_RemoveProjectMemberService_Handler,
 		},
 		{
 			MethodName: "DeleteService",

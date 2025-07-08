@@ -106,15 +106,34 @@ func TestTruncateTime_Kathmandu_first_month(t *testing.T) {
 	require.Equal(t, parseTestTime(t, "2022-12-31T18:15:00Z"), TruncateTime(parseTestTime(t, "2023-01-02T00:20:00Z"), TimeGrainYear, tz, 2, 1))
 }
 
-func TestCopyTimeTill(t *testing.T) {
-	require.Equal(t, CopyTimeComponentsUntil(parseTestTime(t, "2022-01-10T00:00:00Z"), parseTestTime(t, "2022-01-30T23:59:43Z"), TimeGrainWeek), parseTestTime(t, "2022-01-16T23:59:43Z"))
-	require.Equal(t, CopyTimeComponentsUntil(parseTestTime(t, "2022-01-10T00:00:00Z"), parseTestTime(t, "2022-01-31T23:59:43Z"), TimeGrainWeek), parseTestTime(t, "2022-01-10T23:59:43Z"))
-	require.Equal(t, CopyTimeComponentsUntil(parseTestTime(t, "2022-01-10T00:00:00Z"), parseTestTime(t, "2022-02-01T23:59:43Z"), TimeGrainWeek), parseTestTime(t, "2022-01-11T23:59:43Z"))
-	require.Equal(t, CopyTimeComponentsUntil(parseTestTime(t, "2022-01-10T00:00:00Z"), parseTestTime(t, "2022-02-02T23:59:43Z"), TimeGrainWeek), parseTestTime(t, "2022-01-12T23:59:43Z"))
-	require.Equal(t, CopyTimeComponentsUntil(parseTestTime(t, "2022-01-10T00:00:00Z"), parseTestTime(t, "2022-02-03T23:59:43Z"), TimeGrainWeek), parseTestTime(t, "2022-01-13T23:59:43Z"))
-	require.Equal(t, CopyTimeComponentsUntil(parseTestTime(t, "2022-01-10T00:00:00Z"), parseTestTime(t, "2022-02-04T23:59:43Z"), TimeGrainWeek), parseTestTime(t, "2022-01-14T23:59:43Z"))
-	require.Equal(t, CopyTimeComponentsUntil(parseTestTime(t, "2022-01-10T00:00:00Z"), parseTestTime(t, "2022-02-05T23:59:43Z"), TimeGrainWeek), parseTestTime(t, "2022-01-15T23:59:43Z"))
-	require.Equal(t, CopyTimeComponentsUntil(parseTestTime(t, "2022-01-10T00:00:00Z"), parseTestTime(t, "2022-02-06T23:59:43Z"), TimeGrainWeek), parseTestTime(t, "2022-01-16T23:59:43Z"))
+func TestOffsetTime(t *testing.T) {
+	// Offset to February in a non-leap year
+	require.Equal(t, parseTestTime(t, "2025-02-28T10:10:00Z"), OffsetTime(parseTestTime(t, "2025-03-31T10:10:00Z"), TimeGrainMonth, -1))
+	require.Equal(t, parseTestTime(t, "2025-02-28T10:10:00Z"), OffsetTime(parseTestTime(t, "2025-05-31T10:10:00Z"), TimeGrainQuarter, -1))
+	require.Equal(t, parseTestTime(t, "2025-02-28T10:10:00Z"), OffsetTime(parseTestTime(t, "2025-01-31T10:10:00Z"), TimeGrainMonth, 1))
+	require.Equal(t, parseTestTime(t, "2025-02-28T10:10:00Z"), OffsetTime(parseTestTime(t, "2024-11-30T10:10:00Z"), TimeGrainQuarter, 1))
+
+	// Offset to February in a leap year
+	require.Equal(t, parseTestTime(t, "2024-02-29T10:10:00Z"), OffsetTime(parseTestTime(t, "2024-03-31T10:10:00Z"), TimeGrainMonth, -1))
+	require.Equal(t, parseTestTime(t, "2024-02-29T10:10:00Z"), OffsetTime(parseTestTime(t, "2024-05-31T10:10:00Z"), TimeGrainQuarter, -1))
+	require.Equal(t, parseTestTime(t, "2024-02-29T10:10:00Z"), OffsetTime(parseTestTime(t, "2024-01-31T10:10:00Z"), TimeGrainMonth, 1))
+	require.Equal(t, parseTestTime(t, "2024-02-29T10:10:00Z"), OffsetTime(parseTestTime(t, "2023-11-30T10:10:00Z"), TimeGrainQuarter, 1))
+
+	// Offset to April (30 days)
+	require.Equal(t, parseTestTime(t, "2025-04-30T10:10:00Z"), OffsetTime(parseTestTime(t, "2025-05-31T10:10:00Z"), TimeGrainMonth, -1))
+	require.Equal(t, parseTestTime(t, "2025-04-30T10:10:00Z"), OffsetTime(parseTestTime(t, "2025-07-31T10:10:00Z"), TimeGrainQuarter, -1))
+	require.Equal(t, parseTestTime(t, "2025-04-30T10:10:00Z"), OffsetTime(parseTestTime(t, "2025-03-31T10:10:00Z"), TimeGrainMonth, 1))
+	require.Equal(t, parseTestTime(t, "2025-04-30T10:10:00Z"), OffsetTime(parseTestTime(t, "2025-01-31T10:10:00Z"), TimeGrainQuarter, 1))
+
+	// Offset by a year from feb in leap year to non-leap year
+	require.Equal(t, parseTestTime(t, "2023-02-28T10:10:00Z"), OffsetTime(parseTestTime(t, "2024-02-29T10:10:00Z"), TimeGrainYear, -1))
+	require.Equal(t, parseTestTime(t, "2025-02-28T10:10:00Z"), OffsetTime(parseTestTime(t, "2024-02-29T10:10:00Z"), TimeGrainYear, 1))
+
+	// Offset within max days
+	require.Equal(t, parseTestTime(t, "2025-02-20T10:10:00Z"), OffsetTime(parseTestTime(t, "2025-03-20T10:10:00Z"), TimeGrainMonth, -1))
+	require.Equal(t, parseTestTime(t, "2025-02-20T10:10:00Z"), OffsetTime(parseTestTime(t, "2025-05-20T10:10:00Z"), TimeGrainQuarter, -1))
+	require.Equal(t, parseTestTime(t, "2025-02-20T10:10:00Z"), OffsetTime(parseTestTime(t, "2025-01-20T10:10:00Z"), TimeGrainMonth, 1))
+	require.Equal(t, parseTestTime(t, "2025-02-20T10:10:00Z"), OffsetTime(parseTestTime(t, "2024-11-20T10:10:00Z"), TimeGrainQuarter, 1))
 }
 
 func parseTestTime(tst *testing.T, t string) time.Time {
