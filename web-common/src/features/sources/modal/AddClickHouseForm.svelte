@@ -9,7 +9,6 @@
     type V1ConnectorDriver,
   } from "@rilldata/web-common/runtime-client";
   import { createEventDispatcher } from "svelte";
-  import { slide } from "svelte/transition";
   import {
     defaults,
     superForm,
@@ -230,19 +229,25 @@
 </script>
 
 <div class="h-full w-full flex flex-col">
-  <!-- Managed toggle -->
+  <!-- FIXME: ConnectorTypeSelector -->
   <div>
     <div class="text-sm font-medium mb-2">Connector type</div>
     <select id="managed" bind:value={$paramsForm.managed} class="form-select">
       <option value={true}>Rill-managed ClickHouse</option>
       <option value={false}>Self-managed ClickHouse</option>
     </select>
+    {#if $paramsForm.managed}
+      <InformationalField
+        description="This option uses ClickHouse as an OLAP engine with Rill-managed infrastructure. No additional configuration is required - Rill will handle the setup and management of your ClickHouse instance."
+      />
+    {/if}
   </div>
 
   <!-- Connection method selector -->
   {#if !$paramsForm.managed}
     <div class="py-3">
       <div class="text-sm font-medium mb-2">Connection method</div>
+      <!-- FIXME: use Tabs, not ButtonGroup -->
       <ButtonGroup
         selected={[useDsn ? "dsn" : "parameters"]}
         on:subbutton-click={handleConnectionTypeChange}
