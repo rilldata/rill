@@ -21,10 +21,10 @@ func (c *Connection) ListDatabaseSchemas(ctx context.Context) ([]*drivers.Databa
 	it := client.Datasets(ctx)
 	for {
 		ds, err := it.Next()
-		if errors.Is(err, iterator.Done) {
-			break
-		}
 		if err != nil {
+			if errors.Is(err, iterator.Done) {
+				break
+			}
 			return nil, fmt.Errorf("error listing datasets: %w", err)
 		}
 		allSchemas = append(allSchemas, &drivers.DatabaseSchemaInfo{
@@ -37,33 +37,42 @@ func (c *Connection) ListDatabaseSchemas(ctx context.Context) ([]*drivers.Databa
 }
 
 func (c *Connection) ListTables(ctx context.Context, database, databaseSchema string) ([]*drivers.TableInfo, error) {
-	client, err := c.createClient(ctx, "")
+	q := fmt.Sprintf(`
+	SELECT
+		table_name,
+		table_type
+	FROM `+"`%s.%s.INFORMATION_SCHEMA.TABLES`"+`
+	`, database, databaseSchema,
+	)
+
+	client, err := c.createClient(ctx, database)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get BigQuery client: %w", err)
 	}
 	defer client.Close()
 
-	dataset := client.DatasetInProject(database, databaseSchema)
-	it := dataset.Tables(ctx)
+	cq := client.Query(q)
+	it, err := cq.Read(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query INFORMATION_SCHEMA.TABLES: %w", err)
+	}
 
 	var res []*drivers.TableInfo
+	var row struct {
+		TableName string `bigquery:"table_name"`
+		TableType string `bigquery:"table_type"`
+	}
 	for {
-		tbl, err := it.Next()
+		err := it.Next(&row)
 		if err != nil {
 			if errors.Is(err, iterator.Done) {
 				break
 			}
-			return nil, fmt.Errorf("error listing tables in dataset %s: %w", databaseSchema, err)
+			return nil, fmt.Errorf("failed to iterate over tables: %w", err)
 		}
-
-		meta, err := tbl.Metadata(ctx)
-		if err != nil {
-			return nil, fmt.Errorf("error fetching table metadata: %w", err)
-		}
-
 		res = append(res, &drivers.TableInfo{
-			Name: tbl.TableID,
-			View: meta.Type == bigquery.ViewTable,
+			Name: row.TableName,
+			View: row.TableType == "VIEW",
 		})
 	}
 
@@ -71,27 +80,26 @@ func (c *Connection) ListTables(ctx context.Context, database, databaseSchema st
 }
 
 func (c *Connection) GetTable(ctx context.Context, database, databaseSchema, table string) (*drivers.TableMetadata, error) {
-	query := fmt.Sprintf(`
+	q := fmt.Sprintf(`
 	SELECT 
 		column_name,
 		data_type
-	FROM 
-		`+"`%s.%s.INFORMATION_SCHEMA.COLUMNS`"+`
+	FROM `+"`%s.%s.INFORMATION_SCHEMA.COLUMNS`"+`
 	WHERE  table_name = @table
-	ORDER BY 
-			ordinal_position`, database, databaseSchema)
+	ORDER BY ordinal_position
+	`, database, databaseSchema)
 
 	client, err := c.createClient(ctx, database)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get BigQuery client: %w", err)
 	}
 	defer client.Close()
-	q := client.Query(query)
-	q.Parameters = []bigquery.QueryParameter{
+	cq := client.Query(q)
+	cq.Parameters = []bigquery.QueryParameter{
 		{Name: "table", Value: table},
 	}
 
-	it, err := q.Read(ctx)
+	it, err := cq.Read(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to run INFORMATION_SCHEMA query: %w", err)
 	}
