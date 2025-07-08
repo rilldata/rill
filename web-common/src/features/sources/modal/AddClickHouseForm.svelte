@@ -182,7 +182,7 @@
 
 <div class="h-full w-full flex flex-col">
   <!-- Managed toggle -->
-  <div class="pt-3">
+  <div>
     <div class="text-sm font-medium mb-2">Connector type</div>
     <select id="managed" bind:value={$paramsForm.managed} class="form-select">
       <option value={true}>Rill-managed ClickHouse</option>
@@ -286,6 +286,8 @@
 
   <div class="flex items-center space-x-2 ml-auto">
     <Button onClick={onBack} type="secondary">Back</Button>
+
+    <!-- FIXME: use Connect when managed is true -->
     <Button disabled={submitting} form={formId} submitForm type="primary">
       {#if formType === "connector"}
         {#if submitting}
