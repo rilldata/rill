@@ -291,8 +291,8 @@ func (u *URLs) MagicAuthTokenOpen(org, project, token string) string {
 }
 
 // ApproveProjectAccess returns the frontend URL for approving a project access request.
-func (u *URLs) ApproveProjectAccess(org, project, id string) string {
-	return urlutil.MustJoinURL(u.Frontend(), org, project, "-", "request-access", id, "approve")
+func (u *URLs) ApproveProjectAccess(org, project, id, role string) string {
+	return urlutil.MustWithQuery(urlutil.MustJoinURL(u.Frontend(), org, project, "-", "request-access", id, "approve"), map[string]string{"role": role})
 }
 
 // DenyProjectAccess returns the frontend URL for denying a project access request.

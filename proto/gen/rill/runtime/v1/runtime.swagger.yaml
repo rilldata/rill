@@ -81,6 +81,30 @@ paths:
           type: string
       tags:
         - ConnectorService
+  /v1/connectors/database_schemas:
+    get:
+      summary: ListDatabaseSchemas list all schemas across databases
+      operationId: ConnectorService_ListDatabaseSchemas
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ListDatabaseSchemasResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: query
+          required: false
+          type: string
+        - name: connector
+          in: query
+          required: false
+          type: string
+      tags:
+        - ConnectorService
   /v1/connectors/meta:
     get:
       summary: |-
@@ -129,6 +153,74 @@ paths:
           required: false
           type: string
         - name: table
+          in: query
+          required: false
+          type: string
+      tags:
+        - ConnectorService
+  /v1/connectors/table_metadata:
+    get:
+      summary: GetTable returns metadata about a table or view
+      operationId: ConnectorService_GetTable
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetTableResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: query
+          required: false
+          type: string
+        - name: connector
+          in: query
+          required: false
+          type: string
+        - name: database
+          in: query
+          required: false
+          type: string
+        - name: databaseSchema
+          in: query
+          required: false
+          type: string
+        - name: table
+          in: query
+          required: false
+          type: string
+      tags:
+        - ConnectorService
+  /v1/connectors/tables:
+    get:
+      summary: ListTables list all tables for database and database_schema provided
+      operationId: ConnectorService_ListTables
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ListTablesResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: query
+          required: false
+          type: string
+        - name: connector
+          in: query
+          required: false
+          type: string
+        - name: database
+          in: query
+          required: false
+          type: string
+        - name: databaseSchema
           in: query
           required: false
           type: string
@@ -2885,7 +2977,7 @@ paths:
         - RuntimeService
   /v1/olap/tables:
     get:
-      summary: OLAPListTables list all tables across all databases on motherduck
+      summary: OLAPListTables list all tables across all databases in an OLAP
       operationId: ConnectorService_OLAPListTables
       responses:
         "200":
@@ -4350,6 +4442,13 @@ definitions:
     title: Response message for RuntimeService.CreateInstance
   v1CreateTriggerResponse:
     type: object
+  v1DatabaseSchemaInfo:
+    type: object
+    properties:
+      database:
+        type: string
+      databaseSchema:
+        type: string
   v1DeleteFileResponse:
     type: object
     title: Response message for RuntimeService.DeleteFile
@@ -4781,6 +4880,13 @@ definitions:
     properties:
       resource:
         $ref: '#/definitions/v1Resource'
+  v1GetTableResponse:
+    type: object
+    properties:
+      schema:
+        type: object
+        additionalProperties:
+          type: string
   v1HealthResponse:
     type: object
     properties:
@@ -4926,6 +5032,14 @@ definitions:
           type: object
           $ref: '#/definitions/v1Conversation'
     title: Response message for RuntimeService.ListConversations
+  v1ListDatabaseSchemasResponse:
+    type: object
+    properties:
+      databaseSchemas:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1DatabaseSchemaInfo'
   v1ListExamplesResponse:
     type: object
     properties:
@@ -4973,6 +5087,14 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1Resource'
+  v1ListTablesResponse:
+    type: object
+    properties:
+      tables:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1TableInfo'
   v1Log:
     type: object
     properties:
@@ -5072,6 +5194,8 @@ definitions:
         $ref: '#/definitions/v1MetricsViewAggregationMeasureComputePercentOfTotal'
       uri:
         $ref: '#/definitions/v1MetricsViewAggregationMeasureComputeURI'
+      comparisonTime:
+        $ref: '#/definitions/v1MetricsViewAggregationMeasureComputeComparisonTime'
   v1MetricsViewAggregationMeasureComputeComparisonDelta:
     type: object
     properties:
@@ -5081,6 +5205,11 @@ definitions:
     type: object
     properties:
       measure:
+        type: string
+  v1MetricsViewAggregationMeasureComputeComparisonTime:
+    type: object
+    properties:
+      dimension:
         type: string
   v1MetricsViewAggregationMeasureComputeComparisonValue:
     type: object
@@ -5832,6 +5961,11 @@ definitions:
       changeMode:
         $ref: '#/definitions/v1ModelChangeMode'
         description: change_mode is the mode of change detection to use for the model.
+      tests:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1ModelTest'
       trigger:
         type: boolean
       triggerFull:
@@ -5860,6 +5994,14 @@ definitions:
       refsHash:
         type: string
         description: refs_hash is a hash of the model's refs current state. It is used to determine if the model's refs have changed.
+      testHash:
+        type: string
+        description: test_hash is a hash of the model's tests current state. It is used to determine if the model's tests have changed.
+      testErrors:
+        type: array
+        items:
+          type: string
+        description: test_errors contains the results of the model's tests.
       refreshedOn:
         type: string
         format: date-time
@@ -5887,6 +6029,15 @@ definitions:
         type: string
         format: int64
         description: latest_execution_duration_ms is the time user queries took to execute in the last successful refresh.
+  v1ModelTest:
+    type: object
+    properties:
+      name:
+        type: string
+      resolver:
+        type: string
+      resolverProperties:
+        type: object
   v1Notifier:
     type: object
     properties:
@@ -5969,7 +6120,27 @@ definitions:
         type: array
         items:
           type: object
-          $ref: '#/definitions/v1TableInfo'
+          $ref: '#/definitions/v1OlapTableInfo'
+  v1OlapTableInfo:
+    type: object
+    properties:
+      database:
+        type: string
+      databaseSchema:
+        type: string
+      isDefaultDatabase:
+        type: boolean
+      isDefaultDatabaseSchema:
+        type: boolean
+      name:
+        type: string
+      hasUnsupportedDataTypes:
+        type: boolean
+        title: has_unsupported_data_types indicates if the underlying table has any column with an unsupported OLAP engine datatype
+      physicalSizeBytes:
+        type: string
+        format: int64
+        description: physical_size_bytes is the physical size of the table. Set to -1 if the size cannot be determined.
   v1Operation:
     type: string
     enum:
@@ -6645,23 +6816,10 @@ definitions:
   v1TableInfo:
     type: object
     properties:
-      database:
-        type: string
-      databaseSchema:
-        type: string
-      isDefaultDatabase:
-        type: boolean
-      isDefaultDatabaseSchema:
-        type: boolean
       name:
         type: string
-      hasUnsupportedDataTypes:
+      view:
         type: boolean
-        title: has_unsupported_data_types indicates if the underlying table has any column with an unsupported OLAP engine datatype
-      physicalSizeBytes:
-        type: string
-        format: int64
-        description: physical_size_bytes is the physical size of the table. Set to -1 if the size cannot be determined.
   v1TableRowsRequest:
     type: object
     properties:

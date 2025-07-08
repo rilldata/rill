@@ -10,7 +10,7 @@ By default, Rill utilizes DuckDB as an embedded OLAP engine to serve highly perf
 
 :::tip Don't see an OLAP Engine?
 
-If there's an OLAP engine that you'd like to use with Rill but don't see it below, please don't hesitate to [contact us](/contact.md). We'd love to get your feedback and learn more about your use case!
+If there's an OLAP engine that you'd like to use with Rill but don't see it below, please don't hesitate to [contact us](/contact). We'd love to get your feedback and learn more about your use case!
 
 :::
 

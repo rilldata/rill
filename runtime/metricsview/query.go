@@ -56,6 +56,7 @@ type MeasureCompute struct {
 	ComparisonRatio *MeasureComputeComparisonRatio `mapstructure:"comparison_ratio"`
 	PercentOfTotal  *MeasureComputePercentOfTotal  `mapstructure:"percent_of_total"`
 	URI             *MeasureComputeURI             `mapstructure:"uri"`
+	ComparisonTime  *MeasureComputeComparisonTime  `mapstructure:"comparison_time"`
 }
 
 func (q *Query) AsMap() (map[string]any, error) {
@@ -137,6 +138,9 @@ func (m *MeasureCompute) Validate() error {
 	if m.URI != nil {
 		n++
 	}
+	if m.ComparisonTime != nil {
+		n++
+	}
 	if n == 0 {
 		return fmt.Errorf(`must specify a compute operation`)
 	}
@@ -168,6 +172,10 @@ type MeasureComputePercentOfTotal struct {
 }
 
 type MeasureComputeURI struct {
+	Dimension string `mapstructure:"dimension"`
+}
+
+type MeasureComputeComparisonTime struct {
 	Dimension string `mapstructure:"dimension"`
 }
 

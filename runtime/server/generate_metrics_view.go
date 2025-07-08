@@ -198,7 +198,7 @@ type generateMetricsViewYAMLWithres struct {
 
 // generateMetricsViewYAMLWithAI attempts to generate a metrics view YAML definition from a table schema using AI.
 // It validates that the result is a valid metrics view. Due to the unpredictable nature of AI (and chance of downtime), this function may error non-deterministically.
-func (s *Server) generateMetricsViewYAMLWithAI(ctx context.Context, instanceID, dialect, connector string, tbl *drivers.Table, isDefaultConnector, isModel bool) (*generateMetricsViewYAMLWithres, error) {
+func (s *Server) generateMetricsViewYAMLWithAI(ctx context.Context, instanceID, dialect, connector string, tbl *drivers.OlapTable, isDefaultConnector, isModel bool) (*generateMetricsViewYAMLWithres, error) {
 	// Build messages
 	systemPrompt := metricsViewYAMLSystemPrompt()
 	userPrompt := metricsViewYAMLUserPrompt(dialect, tbl.Name, tbl.Schema)
@@ -408,7 +408,7 @@ Give me up to 10 suggested metrics using the %q SQL dialect based on the table n
 }
 
 // generateMetricsViewYAMLSimple generates a simple metrics view YAML definition from a table schema.
-func generateMetricsViewYAMLSimple(connector string, tbl *drivers.Table, isDefaultConnector, isModel bool) (string, error) {
+func generateMetricsViewYAMLSimple(connector string, tbl *drivers.OlapTable, isDefaultConnector, isModel bool) (string, error) {
 	doc := &metricsViewYAML{
 		Version:       1,
 		Type:          "metrics_view",
@@ -461,7 +461,7 @@ func generateMetricsViewYAMLSimpleDimensions(schema *runtimev1.StructType) []*me
 	return dims
 }
 
-func generateMetricsViewYAMLSimpleMeasures(tbl *drivers.Table) []*metricsViewMeasureYAML {
+func generateMetricsViewYAMLSimpleMeasures(tbl *drivers.OlapTable) []*metricsViewMeasureYAML {
 	// Add a count measure
 	var measures []*metricsViewMeasureYAML
 	measures = append(measures, &metricsViewMeasureYAML{
