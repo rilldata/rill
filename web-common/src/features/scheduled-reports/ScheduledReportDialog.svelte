@@ -24,7 +24,7 @@
   import {
     getDashboardNameFromReport,
     getExistingReportInitialFormValues,
-    getFiltersFormValuesFromAggregationRequest,
+    getFiltersFormValuesAggregationRequest,
     getNewReportInitialFormValues,
     getQueryNameFromQuery,
     getUpdatedAggregationRequest,
@@ -89,9 +89,8 @@
       ? props.query.metricsViewAggregationRequest
       : JSON.parse(props.reportSpec.queryArgsJson || "{}")
   ) as V1MetricsViewAggregationRequest;
-  $: console.log(aggregationRequest);
 
-  $: ({ filters, timeControls } = getFiltersFormValuesFromAggregationRequest(
+  $: ({ filters, timeControls } = getFiltersFormValuesAggregationRequest(
     instanceId,
     metricsViewName,
     exploreName,
