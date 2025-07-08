@@ -4,7 +4,11 @@
   import CanvasDashboardWrapper from "./CanvasDashboardWrapper.svelte";
   import { getCanvasStore } from "./state-managers/state-managers";
   import StaticCanvasRow from "./StaticCanvasRow.svelte";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+
   export let resource: V1Resource;
+
+  $: ({ instanceId } = $runtime);
 
   $: meta = resource?.meta;
   $: canvasName = meta?.name?.name as string;
@@ -14,7 +18,7 @@
 
   $: ({
     canvasEntity: { components, _rows },
-  } = getCanvasStore(canvasName));
+  } = getCanvasStore(canvasName, instanceId));
 
   $: rows = $_rows;
 </script>
