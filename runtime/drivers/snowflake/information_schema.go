@@ -34,6 +34,7 @@ func (c *connection) ListDatabaseSchemas(ctx context.Context) ([]*drivers.Databa
 			return nil, fmt.Errorf("failed to scan schema row: %w", err)
 		}
 
+                // Skip the SNOWFLAKE database and INFORMATION_SCHEMA schema unless they are the current database or schema in use.
 		if (strings.EqualFold(dbName, "SNOWFLAKE") && !strings.EqualFold(curDBName, "SNOWFLAKE")) || (strings.EqualFold(schemaName, "INFORMATION_SCHEMA") && !strings.EqualFold(curSchemaName, "INFORMATION_SCHEMA")) {
 			continue
 		}
@@ -134,11 +135,11 @@ func getCurrentDatabaseAndSchema(ctx context.Context, db *sql.DB) (string, strin
 	if err != nil {
 		return "", "", fmt.Errorf("failed to get current database and schema: %w", err)
 	}
-	dbName := ""
+	var dbName string
 	if currentDB.Valid {
 		dbName = currentDB.String
 	}
-	schemaName := ""
+	var schemaName string
 	if currentSchema.Valid {
 		schemaName = currentSchema.String
 	}
