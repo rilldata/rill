@@ -39,25 +39,6 @@ blobs:
     extra_files:
       - glob: ./dist/**/*
 
-brews:
-  - homepage: https://github.com/rilldata/rill
-    description: The Rill CLI
-    name: rill
-    license: Apache 2.0
-    url_template: https://cdn.rilldata.com/rill/{{ .Tag }}/{{ .ArtifactName }}
-    repository:
-      owner: rilldata
-      name: homebrew-tap
-      branch: main
-      token: "{{ .Env.GITHUB_TOKEN }}"
-    test: |
-      system "#{bin}/rill --version"
-    install: |
-      bin.install "rill"
-    commit_author:
-      name: rilldata
-      email: support@rilldata.com
-
 dockers:
   - image_templates:
       - rilldata/rill:latest
