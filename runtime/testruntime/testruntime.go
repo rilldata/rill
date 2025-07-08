@@ -333,7 +333,7 @@ func NewInstanceWithClickhouseProject(t TestingT, withCluster bool) (*runtime.Ru
 	_, currentFile, _, _ := goruntime.Caller(0)
 	projectPath := filepath.Join(currentFile, "..", "testdata", "ad_bids_clickhouse")
 
-	olapConfig := map[string]string{"dsn": dsn}
+	olapConfig := map[string]string{"dsn": dsn, "mode": "readwrite"}
 	if withCluster {
 		olapConfig["cluster"] = cluster
 		olapConfig["log_queries"] = "true"
