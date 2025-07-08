@@ -461,13 +461,12 @@ func (s *Server) MetricsViewTimeRanges(ctx context.Context, req *runtimev1.Metri
 		}
 
 		start, end, grain := rillTime.Eval(rilltime.EvalOptions{
-			Now:           now,
-			MinTime:       ts.Min,
-			MaxTime:       ts.Max,
-			Watermark:     ts.Watermark,
-			FirstDay:      int(mv.ValidSpec.FirstDayOfWeek),
-			FirstMonth:    int(mv.ValidSpec.FirstMonthOfYear),
-			SmallestGrain: timeutil.TimeGrainFromAPI(mv.ValidSpec.SmallestTimeGrain),
+			Now:        now,
+			MinTime:    ts.Min,
+			MaxTime:    ts.Max,
+			Watermark:  ts.Watermark,
+			FirstDay:   int(mv.ValidSpec.FirstDayOfWeek),
+			FirstMonth: int(mv.ValidSpec.FirstMonthOfYear),
 		})
 
 		timeRanges[i] = &runtimev1.TimeRange{

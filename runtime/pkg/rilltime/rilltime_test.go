@@ -130,7 +130,7 @@ func TestEval_PreviousAndCurrentCompleteGrain(t *testing.T) {
 		{"YTD as of watermark/Y+1Y", "2026-01-01T00:00:00Z", "2026-01-01T00:00:00Z", timeutil.TimeGrainMillisecond, 1, 1},
 	}
 
-	runTests(t, testCases, now, minTime, maxTime, watermark, nil, timeutil.TimeGrainUnspecified)
+	runTests(t, testCases, now, minTime, maxTime, watermark, nil)
 }
 
 func TestEval_FirstAndLastOfPeriod(t *testing.T) {
@@ -227,7 +227,7 @@ func TestEval_FirstAndLastOfPeriod(t *testing.T) {
 		{"Q2 as of -2Y/Y as of watermark/Y", "2023-04-01T00:00:00Z", "2023-07-01T00:00:00Z", timeutil.TimeGrainMonth, 1, 1},
 	}
 
-	runTests(t, testCases, now, minTime, maxTime, watermark, nil, timeutil.TimeGrainUnspecified)
+	runTests(t, testCases, now, minTime, maxTime, watermark, nil)
 }
 
 func TestEval_OrdinalVariations(t *testing.T) {
@@ -239,7 +239,7 @@ func TestEval_OrdinalVariations(t *testing.T) {
 		{"s57 of m4 of H2 of D4 as of -1M", "2025-04-04T01:03:56Z", "2025-04-04T01:03:57Z", timeutil.TimeGrainMillisecond, 1, 1},
 	}
 
-	runTests(t, testCases, now, minTime, maxTime, watermark, nil, timeutil.TimeGrainUnspecified)
+	runTests(t, testCases, now, minTime, maxTime, watermark, nil)
 }
 
 func TestEval_WeekCorrections(t *testing.T) {
@@ -280,7 +280,7 @@ func TestEval_WeekCorrections(t *testing.T) {
 		{"W1 as of 2024-12-01T00:00:00Z", "2024-12-01T00:00:00Z", "2024-12-08T00:00:00Z", timeutil.TimeGrainDay, 7, 1},
 	}
 
-	runTests(t, testCases, now, minTime, maxTime, watermark, nil, timeutil.TimeGrainUnspecified)
+	runTests(t, testCases, now, minTime, maxTime, watermark, nil)
 }
 
 func TestEval_ShorthandSyntax(t *testing.T) {
@@ -294,7 +294,7 @@ func TestEval_ShorthandSyntax(t *testing.T) {
 		{"MTD as of watermark", "2025-05-01T00:00:00Z", "2025-05-13T06:32:36Z", timeutil.TimeGrainDay, 1, 1},
 	}
 
-	runTests(t, testCases, now, minTime, maxTime, watermark, nil, timeutil.TimeGrainUnspecified)
+	runTests(t, testCases, now, minTime, maxTime, watermark, nil)
 }
 
 func TestEval_IsoTimeRanges(t *testing.T) {
@@ -312,7 +312,7 @@ func TestEval_IsoTimeRanges(t *testing.T) {
 		{"2025-02-20T01:23:45.123456Z to 2025-07-15T02:34:50.123456789Z", "2025-02-20T01:23:45.123456Z", "2025-07-15T02:34:50.123456789Z", timeutil.TimeGrainMillisecond, 1, 1},
 	}
 
-	runTests(t, testCases, now, minTime, maxTime, watermark, nil, timeutil.TimeGrainUnspecified)
+	runTests(t, testCases, now, minTime, maxTime, watermark, nil)
 }
 
 func TestEval_WatermarkOnBoundary(t *testing.T) {
@@ -348,7 +348,7 @@ func TestEval_WatermarkOnBoundary(t *testing.T) {
 		{"W2 as of -1Y as of 2024", "2023-01-09T00:00:00Z", "2023-01-16T00:00:00Z", timeutil.TimeGrainDay, 1, 1},
 	}
 
-	runTests(t, testCases, now, minTime, maxTimeOnBoundary, watermarkOnBoundary, nil, timeutil.TimeGrainDay)
+	runTests(t, testCases, now, minTime, maxTimeOnBoundary, watermarkOnBoundary, nil)
 }
 
 func Test_KatmanduTimezone(t *testing.T) {
@@ -366,7 +366,7 @@ func Test_KatmanduTimezone(t *testing.T) {
 		{"W1 as of -1Y as of watermark", "2024-04-28T18:15:00Z", "2024-05-05T18:15:00Z", timeutil.TimeGrainDay, 1, 1},
 	}
 
-	runTests(t, testCases, now, minTime, maxTime, watermark, tz, timeutil.TimeGrainUnspecified)
+	runTests(t, testCases, now, minTime, maxTime, watermark, tz)
 }
 
 func TestEval_BackwardsCompatibility(t *testing.T) {
@@ -388,7 +388,7 @@ func TestEval_BackwardsCompatibility(t *testing.T) {
 		{"P2DT10H", "2025-05-10T20:00:00Z", "2025-05-13T06:00:00Z", timeutil.TimeGrainHour, 1, 1},
 	}
 
-	runTests(t, testCases, now, minTime, maxTime, watermark, nil, timeutil.TimeGrainUnspecified)
+	runTests(t, testCases, now, minTime, maxTime, watermark, nil)
 }
 
 func TestEval_Misc(t *testing.T) {
@@ -421,7 +421,7 @@ func TestEval_Misc(t *testing.T) {
 		{"3W18D23h as of latest-3Y", "2022-04-04T07:32:36Z", "2022-05-14T06:32:36Z", timeutil.TimeGrainWeek, 1, 1},
 	}
 
-	runTests(t, testCases, now, minTime, maxTime, watermark, nil, timeutil.TimeGrainUnspecified)
+	runTests(t, testCases, now, minTime, maxTime, watermark, nil)
 }
 
 func TestEval_SyntaxErrors(t *testing.T) {
@@ -452,7 +452,7 @@ type testCase struct {
 	FirstMonth int
 }
 
-func runTests(t *testing.T, testCases []testCase, now, minTime, maxTime, watermark string, tz *time.Location, minTg timeutil.TimeGrain) {
+func runTests(t *testing.T, testCases []testCase, now, minTime, maxTime, watermark string, tz *time.Location) {
 	nowTm := parseTestTime(t, now)
 	minTimeTm := parseTestTime(t, minTime)
 	maxTimeTm := parseTestTime(t, maxTime)
@@ -466,13 +466,12 @@ func runTests(t *testing.T, testCases []testCase, now, minTime, maxTime, waterma
 			require.NoError(t, err)
 
 			start, end, grain := rt.Eval(EvalOptions{
-				Now:           nowTm,
-				MinTime:       minTimeTm,
-				MaxTime:       maxTimeTm,
-				Watermark:     watermarkTm,
-				FirstDay:      testCase.FirstDay,
-				FirstMonth:    testCase.FirstMonth,
-				SmallestGrain: minTg,
+				Now:        nowTm,
+				MinTime:    minTimeTm,
+				MaxTime:    maxTimeTm,
+				Watermark:  watermarkTm,
+				FirstDay:   testCase.FirstDay,
+				FirstMonth: testCase.FirstMonth,
 			})
 			require.Equal(t, parseTestTime(t, testCase.start), start)
 			require.Equal(t, parseTestTime(t, testCase.end), end)

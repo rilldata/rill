@@ -226,7 +226,7 @@ func OffsetTime(tm time.Time, tg TimeGrain, n int) time.Time {
 		case TimeGrainYear:
 			yearOffset = n
 		default:
-			// Won't happen since this is an outer switch
+			// Won't happen since there is an outer switch
 		}
 
 		// `tm` offset as if it were the 1st day of month. Day is applied below based on max days in the month.

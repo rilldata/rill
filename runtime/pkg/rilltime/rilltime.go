@@ -317,9 +317,6 @@ func (e *Expression) Eval(evalOpts EvalOptions) (time.Time, time.Time, timeutil.
 	if evalOpts.FirstMonth == 0 {
 		evalOpts.FirstMonth = 1
 	}
-	if evalOpts.SmallestGrain == timeutil.TimeGrainUnspecified {
-		evalOpts.SmallestGrain = timeutil.TimeGrainMillisecond
-	}
 
 	// Update the ref so that anchor override can use it if needed. (EG: `-2Y^ to Y^ as of now`)
 	if evalOpts.ref.IsZero() {
