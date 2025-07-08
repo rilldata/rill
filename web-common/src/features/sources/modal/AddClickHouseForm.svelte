@@ -40,7 +40,7 @@
   const clickhouseSchema = yup(getYupSchema["clickhouse"]);
 
   const initialDefaults = {
-    ...defaults(clickhouseSchema),
+    // ...defaults(clickhouseSchema),
     ...getSpecDefaults(connector.configProperties),
   };
   const paramsFormId = `add-data-${connector.name}-form`;

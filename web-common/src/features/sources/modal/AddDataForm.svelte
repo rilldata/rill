@@ -51,10 +51,9 @@
         )) ?? [];
   const schema = yup(getYupSchema[connector.name as keyof typeof getYupSchema]);
   const initialDefaults = {
-    ...defaults(schema),
+    // ...defaults(schema),
     ...getSpecDefaults(connector.configProperties),
   };
-  $: console.log("initialDefaults: ", initialDefaults);
   const {
     form: paramsForm,
     errors: paramsErrors,
