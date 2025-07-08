@@ -134,6 +134,7 @@
           ),
           $allTimeRangeResp.data?.timeRangeSummary,
         ));
+  $: ({ selectedComparisonTimeRange } = timeControls);
 
   $: superFormInstance = superForm(
     defaults(initialValues, alertFormValidationSchema),
@@ -256,7 +257,11 @@
       return;
     }
     // if the user came to the delivery tab and name was not changed then auto generate it
-    const name = generateAlertName($form, metricsViewSpec);
+    const name = generateAlertName(
+      $form,
+      $selectedComparisonTimeRange,
+      metricsViewSpec,
+    );
     if (!name) return;
     $form.name = name;
   }

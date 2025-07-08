@@ -1,3 +1,4 @@
+import { TIME_COMPARISON } from "@rilldata/web-common/lib/time/config.ts";
 import { isoDurationToFullTimeRange } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
 import {
   type DashboardTimeControls,
@@ -174,6 +175,9 @@ export function mapV1TimeRangeToSelectedComparisonTimeRange(
       name: TimeComparisonOption.CONTIGUOUS,
     } as DashboardTimeControls;
   } else if (duration && timeRangeSummary.min) {
+    if (duration in TIME_COMPARISON) {
+      duration = TIME_COMPARISON[duration].offsetIso;
+    }
     selectedTimeRange = isoDurationToFullTimeRange(
       duration,
       new Date(timeRangeSummary.min),
