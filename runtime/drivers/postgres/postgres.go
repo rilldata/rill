@@ -208,8 +208,7 @@ func (c *connection) AsNotifier(properties map[string]any) (drivers.Notifier, er
 // getDB opens a new sqlx.DB connection using the config.
 func (c *connection) getDB() (*sqlx.DB, error) {
 	conf := &ConfigProperties{}
-	var err error
-	if err = mapstructure.WeakDecode(c.config, conf); err != nil {
+	if err := mapstructure.WeakDecode(c.config, conf); err != nil {
 		return nil, fmt.Errorf("failed to decode config: %w", err)
 	}
 	dsn := conf.ResolveDSN()
