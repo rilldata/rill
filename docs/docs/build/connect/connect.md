@@ -10,7 +10,7 @@ sidebar_position: 00
 <img src = '/img/build/connect/sources.png' class='rounded-gif' />
 <br />
 
-Rill supports a multitude of connectors to ingest data from various sources: local files, S3 or GCS buckets, download using HTTP(S), databases, data warehouses, and the list goes on. Rill supports ingestion of `.csv`, `.tsv`, `.json`, and `.parquet` files, including compressed versions (`.gz`). This can be done either through the UI directly, when working with Rill Developer, or by pushing the logic into the [source YAML](../../reference/project-files/sources.md) definition directly (see _Using Code_ sections below).
+Rill supports a multitude of connectors to ingest data from various sources: local files, S3 or GCS buckets, downloads using HTTP(S), databases, data warehouses, and more. Rill supports ingestion of `.csv`, `.tsv`, `.json`, and `.parquet` files, including compressed versions (`.gz`). This can be done either through the UI directly, when working with Rill Developer, or by pushing the logic into the [source YAML](../../reference/project-files/sources.md) definition directly (see _Using Code_ sections below).
 
 To provide a non-exhaustive list, Rill supports the following connectors:
 - [Google Cloud Storage](/reference/connectors/gcs.md)
@@ -30,7 +30,7 @@ To provide a non-exhaustive list, Rill supports the following connectors:
 
 :::info Full List Of Connectors
 
-Rill is continually adding new sources and connectors in our releases. For a comprehensive list, you can refer to our [Connectors](/reference/connectors) page. Please don't hesitate to [reach out](contact.md) either if there's a connector you'd like us to add!
+Rill is continually adding new sources and connectors in our releases. For a comprehensive list, you can refer to our [Connectors](/reference/connectors) page. Please don't hesitate to [reach out](/contact) either if there's a connector you'd like us to add!
 
 :::
 
@@ -44,7 +44,7 @@ Rill works best for slicing and dicing data meaning keeping data closer to raw t
 
 ### Using the UI
 
-To import a file using the UI, click "+" by Sources in the left-hand navigation pane, select "Local File", and navigate to the specific file. Alternately, try dragging and dropping the file directly onto the Rill interface.
+To import a file using the UI, click "+" by Sources in the left-hand navigation pane, select "Local File", and navigate to the specific file. Alternatively, try dragging and dropping the file directly onto the Rill interface.
 
 ### Using code
 When you add a source using the UI, a code definition will automatically be created as a `.yaml` file in your Rill project in the `sources` directory. However, you can also create sources more directly by creating the artifact.
@@ -74,7 +74,7 @@ For more details about available configurations and properties, check our [Sourc
 ## Adding a remote source
 
 ### Using the UI
-To add a remote source using the UI, click "+" by Sources in the left hand navigation pane and select the location where your remote files are stored ("Google Cloud Storage", "Amazon S3", or "http(s)"). Enter your file's URI and click "Add Source".
+To add a remote source using the UI, click "+" by Sources in the left-hand navigation pane and select the location where your remote files are stored ("Google Cloud Storage", "Amazon S3", or "http(s)"). Enter your file's URI and click "Add Source".
 
 After import, you can reimport your data whenever you want by clicking the "refresh source" button in the Rill UI.
 
@@ -152,6 +152,6 @@ _There is a difference_ between Rill Developer and Rill Cloud and they work hand
 
 :::info Have questions?
 
-We are one Slack, email, or chat message away. Please feel free to [contact us](contact.md) - we'd love to help!
+We are just one Slack, email, or chat message away. Please feel free to [contact us](/contact) - we'd love to help!
 
 :::
