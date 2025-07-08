@@ -9,14 +9,67 @@ import { Interval, DateTime, type DateTimeUnit } from "luxon";
 
 const GRAINS = ["Y", "Q", "M", "W", "D", "H", "m", "s"] as const;
 
-const START_CHARACTER = "^";
-const END_CHARACTER = "$";
-const LITERAL_CHARACTER = "";
-const INTERVAL_CHARACTER = "#";
-const ENDING = "ending";
-const STARTING = "starting";
+const REF = "ref";
 
 type RillGrain = (typeof GRAINS)[number];
+
+type TimeMetadata = {
+  watermark: DateTime;
+  now: DateTime;
+  latest: DateTime;
+};
+
+type Order = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | typeof Infinity;
+
+type TimeGrainAlias =
+  | "ms"
+  | "MS"
+  | "s"
+  | "S"
+  | "m"
+  | "h"
+  | "H"
+  | "d"
+  | "D"
+  | "w"
+  | "W"
+  | "M"
+  | "q"
+  | "Q"
+  | "y"
+  | "Y";
+
+export const V1TimeGrainToOrder: Record<V1TimeGrain, Order> = {
+  [V1TimeGrain.TIME_GRAIN_UNSPECIFIED]: 0,
+  [V1TimeGrain.TIME_GRAIN_MILLISECOND]: 0,
+  [V1TimeGrain.TIME_GRAIN_SECOND]: 0,
+  [V1TimeGrain.TIME_GRAIN_MINUTE]: 1,
+  [V1TimeGrain.TIME_GRAIN_HOUR]: 2,
+  [V1TimeGrain.TIME_GRAIN_DAY]: 3,
+  [V1TimeGrain.TIME_GRAIN_WEEK]: 4,
+  [V1TimeGrain.TIME_GRAIN_MONTH]: 5,
+  [V1TimeGrain.TIME_GRAIN_QUARTER]: 6,
+  [V1TimeGrain.TIME_GRAIN_YEAR]: 7,
+};
+
+export const GrainAliasToOrder: Record<TimeGrainAlias, Order> = {
+  ms: V1TimeGrainToOrder[V1TimeGrain.TIME_GRAIN_MILLISECOND],
+  MS: V1TimeGrainToOrder[V1TimeGrain.TIME_GRAIN_MILLISECOND],
+  s: V1TimeGrainToOrder[V1TimeGrain.TIME_GRAIN_SECOND],
+  S: V1TimeGrainToOrder[V1TimeGrain.TIME_GRAIN_SECOND],
+  m: V1TimeGrainToOrder[V1TimeGrain.TIME_GRAIN_MINUTE],
+  h: V1TimeGrainToOrder[V1TimeGrain.TIME_GRAIN_HOUR],
+  H: V1TimeGrainToOrder[V1TimeGrain.TIME_GRAIN_HOUR],
+  d: V1TimeGrainToOrder[V1TimeGrain.TIME_GRAIN_DAY],
+  D: V1TimeGrainToOrder[V1TimeGrain.TIME_GRAIN_DAY],
+  w: V1TimeGrainToOrder[V1TimeGrain.TIME_GRAIN_WEEK],
+  W: V1TimeGrainToOrder[V1TimeGrain.TIME_GRAIN_WEEK],
+  M: V1TimeGrainToOrder[V1TimeGrain.TIME_GRAIN_MONTH],
+  q: V1TimeGrainToOrder[V1TimeGrain.TIME_GRAIN_QUARTER],
+  Q: V1TimeGrainToOrder[V1TimeGrain.TIME_GRAIN_QUARTER],
+  y: V1TimeGrainToOrder[V1TimeGrain.TIME_GRAIN_YEAR],
+  Y: V1TimeGrainToOrder[V1TimeGrain.TIME_GRAIN_YEAR],
+};
 
 const GRAIN_TO_LUXON: Record<string, DateTimeUnit> = {
   s: "second",
@@ -28,18 +81,6 @@ const GRAIN_TO_LUXON: Record<string, DateTimeUnit> = {
   Q: "quarter",
   Y: "year",
 };
-const PROTO_GRAIN_TO_LUXON: Record<V1TimeGrain, DateTimeUnit> = {
-  [V1TimeGrain.TIME_GRAIN_UNSPECIFIED]: "millisecond",
-  [V1TimeGrain.TIME_GRAIN_MILLISECOND]: "millisecond",
-  [V1TimeGrain.TIME_GRAIN_SECOND]: "second",
-  [V1TimeGrain.TIME_GRAIN_MINUTE]: "minute",
-  [V1TimeGrain.TIME_GRAIN_HOUR]: "hour",
-  [V1TimeGrain.TIME_GRAIN_DAY]: "day",
-  [V1TimeGrain.TIME_GRAIN_WEEK]: "week",
-  [V1TimeGrain.TIME_GRAIN_MONTH]: "month",
-  [V1TimeGrain.TIME_GRAIN_QUARTER]: "quarter",
-  [V1TimeGrain.TIME_GRAIN_YEAR]: "year",
-};
 
 interface Test {
   syntax: string;
@@ -48,73 +89,8 @@ interface Test {
   log?: true;
 }
 
-function generateToTests(now: DateTime, n1?: number, n2?: number): Test[] {
-  if (!n1 || !n2) {
-    n1 = Math.floor(Math.random() * 100);
-    n2 = Math.floor(n1 * Math.random());
-  }
-
-  const tests: Test[] = [];
-
-  GRAINS.forEach((grain, i) => {
-    GRAINS.forEach((grain2, j) => {
-      if (j < i) {
-        return;
-      }
-
-      const unit1 = GRAIN_TO_LUXON[grain];
-      const unit2 = GRAIN_TO_LUXON[grain2];
-
-      tests.push({
-        syntax: `-${n1}${grain}${START_CHARACTER} to -${n2}${grain2}${START_CHARACTER}`,
-        description: `${n1} ${unit1}(s) ago to ${n2} ${unit2}(s) ago, snapped to grain start`,
-
-        interval: Interval.fromDateTimes(
-          now.minus({ [unit1]: n1 }).startOf(unit1),
-          now.minus({ [unit2]: n2 }).startOf(unit2),
-        ),
-      });
-    });
-  });
-
-  return tests;
-}
-
-function generateEndTests(now: DateTime, n1?: number, n2?: number): Test[] {
-  if (!n1 || !n2) {
-    n1 = Math.floor(Math.random() * 100);
-    n2 = Math.floor(n1 * Math.random());
-  }
-
-  const tests: Test[] = [];
-
-  GRAINS.forEach((grain, i) => {
-    GRAINS.forEach((grain2, j) => {
-      if (j < i) {
-        return;
-      }
-
-      const unit1 = GRAIN_TO_LUXON[grain];
-      const unit2 = GRAIN_TO_LUXON[grain2];
-
-      tests.push({
-        syntax: `-${n1}${grain}${END_CHARACTER} to -${n2}${grain2}${END_CHARACTER}`,
-        description: `${n1} ${unit1}(s) ago to ${n2} ${unit2}(s) ago, snapped to grain end`,
-
-        interval: Interval.fromDateTimes(
-          now.minus({ [unit1]: n1 - 1 }).startOf(unit1),
-          now.minus({ [unit2]: n2 - 1 }).startOf(unit2),
-        ),
-      });
-    });
-  });
-
-  return tests;
-}
-
-function generateLiteralTests(
-  now: DateTime,
-  smallestTimeGrain: DateTimeUnit,
+function generateToTests(
+  metadata: TimeMetadata,
   n1?: number,
   n2?: number,
 ): Test[] {
@@ -135,12 +111,12 @@ function generateLiteralTests(
       const unit2 = GRAIN_TO_LUXON[grain2];
 
       tests.push({
-        syntax: `-${n1}${grain}${LITERAL_CHARACTER} to -${n2}${grain2}${LITERAL_CHARACTER}`,
-        description: `${n1} ${unit1}(s) ago to ${n2} ${unit2}(s) ago`,
+        syntax: `-${n1}${grain}/${grain} to -${n2}${grain2}/${grain2}`,
+        description: `${n1} ${unit1}(s) ago to ${n2} ${unit2}(s) ago, snapped to grain start`,
 
         interval: Interval.fromDateTimes(
-          now.minus({ [unit1]: n1 }).plus({ [smallestTimeGrain]: 1 }),
-          now.minus({ [unit2]: n2 }).plus({ [smallestTimeGrain]: 1 }),
+          metadata.now.minus({ [unit1]: n1 }).startOf(unit1),
+          metadata.now.minus({ [unit2]: n2 }).startOf(unit2),
         ),
       });
     });
@@ -149,7 +125,7 @@ function generateLiteralTests(
   return tests;
 }
 
-function lastNPeriodExcludingCurrentPeriod(now: DateTime, upTo: number = 100) {
+function lastNCompletePeriods(metadata: TimeMetadata, upTo: number = 100) {
   const tests: Test[] = [];
 
   for (let i = 1; i <= upTo; i++) {
@@ -157,35 +133,19 @@ function lastNPeriodExcludingCurrentPeriod(now: DateTime, upTo: number = 100) {
       const unit = GRAIN_TO_LUXON[grain];
 
       const interval = Interval.fromDateTimes(
-        now.minus({ [unit]: i }).startOf(unit),
-        now.startOf(unit),
+        metadata.watermark.minus({ [unit]: i }).startOf(unit),
+        metadata.watermark.startOf(unit),
       );
 
-      // Short
       tests.push({
-        syntax: `-${i}${grain}${START_CHARACTER} to ${grain}${START_CHARACTER}`,
-        description: `Last ${i} complete ${unit}(s) using short syntax`,
+        syntax: `-${i}${grain} to ${REF} as of watermark/${grain}`,
+        description: `Last ${i} complete ${unit}(s) using ref syntax`,
         interval,
       });
 
-      // Explicit
       tests.push({
-        syntax: `-${i}${grain}/${grain}${START_CHARACTER} to -0${grain}/${grain}${START_CHARACTER}`,
-        description: `Last ${i} complete ${unit}(s) using explicit syntax`,
-        interval,
-      });
-
-      // Using ending terminology
-      tests.push({
-        syntax: `${i}${grain} ${ENDING} ${grain}${START_CHARACTER}`,
-        description: `Last ${i} complete ${unit}(s) using ending terminology`,
-        interval,
-      });
-
-      // Using starting terminology
-      tests.push({
-        syntax: `${i}${grain} ${STARTING} -${i}${grain}${START_CHARACTER}`,
-        description: `Last ${i} complete ${unit}(s) using starting terminology`,
+        syntax: `-${i}${grain}/${grain} to ${REF}/${grain} as of watermark`,
+        description: `Last ${i} complete ${unit}(s) using ref syntax`,
         interval,
       });
     });
@@ -194,10 +154,7 @@ function lastNPeriodExcludingCurrentPeriod(now: DateTime, upTo: number = 100) {
   return tests;
 }
 
-export function generateStartingAndEndingTests(
-  now: DateTime,
-  smallestTimeGrain: DateTimeUnit,
-) {
+export function generateStartingAndEndingTests(metadata: TimeMetadata) {
   return GRAINS.map((periodGrain) => {
     const periodUnit = GRAIN_TO_LUXON[periodGrain];
     const periodInteger = Math.floor(Math.random() * 100);
@@ -208,44 +165,14 @@ export function generateStartingAndEndingTests(
 
       return [
         <Test>{
-          syntax: `${periodInteger}${periodGrain} ${STARTING} -${offsetInteger}${offsetGrain}`,
+          syntax: `${periodInteger}${periodGrain} as of latest-${offsetInteger}${offsetGrain}`,
           description: `The ${periodInteger} ${periodUnit} period starting exactly -${offsetInteger} ${offsetUnit}(s) ago`,
           interval: Interval.fromDateTimes(
-            now
-              .plus({ [smallestTimeGrain]: 1 })
-              .minus({ [offsetUnit]: offsetInteger }),
-            now
-              .plus({ [smallestTimeGrain]: 1 })
-              .minus({ [offsetUnit]: offsetInteger })
-              .plus({ [periodUnit]: periodInteger }),
-          ),
-        },
-        <Test>{
-          syntax: `${periodInteger}${periodGrain} ${ENDING} -${offsetInteger}${offsetGrain}`,
-          description: `The ${periodInteger} ${periodUnit} period ending exactly -${offsetInteger} ${offsetUnit}(s) ago`,
-          interval: Interval.fromDateTimes(
-            now
-              .plus({ [smallestTimeGrain]: 1 })
+            metadata.latest
+
               .minus({ [offsetUnit]: offsetInteger })
               .minus({ [periodUnit]: periodInteger }),
-            now
-              .plus({ [smallestTimeGrain]: 1 })
-              .minus({ [offsetUnit]: offsetInteger }),
-          ),
-        },
-        <Test>{
-          syntax: `${periodInteger}${periodGrain} ${STARTING} -${offsetInteger}${offsetGrain}/${periodGrain}${START_CHARACTER}`,
-          description: `The ${periodInteger} ${periodUnit} period starting exactly -${offsetInteger} ${offsetUnit}(s) ago rounded to the ${periodUnit} start`,
-          interval: Interval.fromDateTimes(
-            now
-              .plus({ [smallestTimeGrain]: 1 })
-              .minus({ [offsetUnit]: offsetInteger })
-              .startOf(periodUnit),
-            now
-              .plus({ [smallestTimeGrain]: 1 })
-              .minus({ [offsetUnit]: offsetInteger })
-              .startOf(periodUnit)
-              .plus({ [periodUnit]: periodInteger }),
+            metadata.latest.minus({ [offsetUnit]: offsetInteger }),
           ),
         },
       ];
@@ -255,7 +182,7 @@ export function generateStartingAndEndingTests(
     .flat();
 }
 
-function lastNPeriodIncludingCurrentPeriod(now: DateTime, upTo: number = 100) {
+function lastNPeriods(metadata: TimeMetadata, upTo: number = 100) {
   const tests: Test[] = [];
 
   for (let i = 1; i <= upTo; i++) {
@@ -263,35 +190,19 @@ function lastNPeriodIncludingCurrentPeriod(now: DateTime, upTo: number = 100) {
       const unit = GRAIN_TO_LUXON[grain];
 
       const interval = Interval.fromDateTimes(
-        now.minus({ [unit]: i - 1 }).startOf(unit),
-        now.plus({ [unit]: 1 }).startOf(unit),
+        metadata.latest.minus({ [unit]: i - 1 }).startOf(unit),
+        metadata.latest.plus({ [unit]: 1 }).startOf(unit),
       );
 
-      // Short
       tests.push({
-        syntax: `-${i - 1}${grain}${START_CHARACTER} to ${grain}${END_CHARACTER}`,
-        description: `Last ${i} ${unit}(s) inclduing this ${unit}`,
+        syntax: `-${i}${grain} to ${REF} as of latest/${grain}+1${grain}`,
+        description: `Last ${i} complete ${unit}(s) using ref syntax`,
         interval,
       });
 
-      // Explicit
       tests.push({
-        syntax: `-${i - 1}${grain}/${grain}${START_CHARACTER} to -0${grain}/${grain}${END_CHARACTER}`,
-        description: `Last ${i} ${unit}(s) inclduing this ${unit}`,
-        interval,
-      });
-
-      // Using +1
-      tests.push({
-        syntax: `-${i - 1}${grain}${START_CHARACTER} to +1${grain}${START_CHARACTER}`,
-        description: `Last ${i} ${unit}(s) inclduing this ${unit}`,
-        interval,
-      });
-
-      // Using ending terminology
-      tests.push({
-        syntax: `${i}${grain} ${ENDING} ${grain}${END_CHARACTER}`,
-        description: `Last ${i} ${unit}(s) inclduing this ${unit}`,
+        syntax: `-${i - 1}${grain}/${grain} to ${REF}/${grain}+1${grain} as of latest`,
+        description: `Last ${i} complete ${unit}(s) using ref syntax`,
         interval,
       });
     });
@@ -300,23 +211,42 @@ function lastNPeriodIncludingCurrentPeriod(now: DateTime, upTo: number = 100) {
   return tests;
 }
 
-function lastNPeriodToNow(now: DateTime, upTo: number = 100) {
+function lastNPeriodToNow(metadata: TimeMetadata, upTo: number = 100) {
   const tests: Test[] = [];
 
   for (let i = 1; i <= upTo; i++) {
     GRAINS.forEach((grain) => {
       const unit = GRAIN_TO_LUXON[grain];
 
+      // const truncatedNow = metadata.now.startOf("second");
+
       const interval = Interval.fromDateTimes(
-        now.minus({ [unit]: i }).startOf(unit),
-        now,
+        metadata.now.minus({ [unit]: i }),
+        metadata.now,
       );
 
-      // Short
       tests.push({
-        syntax: `-${i}${grain}${START_CHARACTER} to watermark`,
-        description: `Last ${i} ${unit}(s) to watermark`,
+        syntax: `-${i}${grain} to ref as of ${metadata.now.toISO()}`,
+        description: `Last ${i} ${unit}(s) to now `,
         interval,
+      });
+
+      tests.push({
+        syntax: `-${i}${grain} to ref as of latest`,
+        description: `Last ${i} ${unit}(s) to latest`,
+        interval: Interval.fromDateTimes(
+          metadata.latest.minus({ [unit]: i }),
+          metadata.latest,
+        ),
+      });
+
+      tests.push({
+        syntax: `-${i}${grain} to ref as of latest`,
+        description: `Last ${i} ${unit}(s) to watermark`,
+        interval: Interval.fromDateTimes(
+          metadata.watermark.minus({ [unit]: i }),
+          metadata.watermark,
+        ),
       });
     });
   }
@@ -336,62 +266,81 @@ function getHigherOrderGrain(grain: RillGrain): RillGrain | undefined {
   return higherOrderGrain;
 }
 
-function generateCurrentAndPreviousPeriods(now: DateTime) {
+function generateCurrentAndPreviousPeriods(metadata: TimeMetadata) {
   const tests: Test[] = [];
 
   GRAINS.forEach((grain) => {
     const unit = GRAIN_TO_LUXON[grain];
 
     const current = Interval.fromDateTimes(
-      now.startOf(unit),
-      now.plus({ [unit]: 1 }).startOf(unit),
+      metadata.latest.startOf(unit),
+      metadata.latest.plus({ [unit]: 1 }).startOf(unit),
     );
 
     const previous = Interval.fromDateTimes(
-      now.minus({ [unit]: 1 }).startOf(unit),
-      now.startOf(unit),
+      metadata.watermark.startOf(unit).minus({ [unit]: 1 }),
+      metadata.watermark.startOf(unit),
     );
 
-    const toNow = Interval.fromDateTimes(now.startOf(unit), now);
+    GRAINS.forEach((grain2) => {
+      const unit2 = GRAIN_TO_LUXON[grain2];
+      if (GrainAliasToOrder[grain2] >= GrainAliasToOrder[grain]) return;
+
+      tests.push({
+        syntax: `${grain}TD as of latest/${grain2}+1${grain2}`,
+        description: `The current ${unit} up the latest ${unit2}`,
+        interval: Interval.fromDateTimes(
+          metadata.latest.startOf(unit),
+          metadata.latest.plus({ [unit2]: 1 }).startOf(unit2),
+        ),
+      });
+
+      tests.push({
+        syntax: `ref/${grain} to ref as of latest/${grain2}+1${grain2}`,
+        description: `The current ${unit} up the latest ${unit2}`,
+        interval: Interval.fromDateTimes(
+          metadata.latest.startOf(unit),
+          metadata.latest.plus({ [unit2]: 1 }).startOf(unit2),
+        ),
+      });
+    });
 
     tests.push({
-      syntax: `${grain}#`,
+      syntax: `ref/${grain} to ref/${grain}+1${grain} as of latest`,
       description: `The full current ${unit}`,
       interval: current,
     });
 
     tests.push({
-      syntax: `${grain}${START_CHARACTER} to watermark`,
-      description: `Start of ${unit} to watermark`,
-      interval: toNow,
-    });
-
-    tests.push({
-      syntax: `1${grain} ${STARTING} ${grain}${START_CHARACTER}`,
+      syntax: `1${grain} as of latest/${grain}+1${grain}`,
       description: `The full current ${unit}`,
       interval: current,
     });
 
     tests.push({
-      syntax: `1${grain} ${ENDING} ${grain}${END_CHARACTER}`,
+      syntax: `-0${grain}/${grain} to +1${grain}/${grain} as of latest`,
       description: `The full current ${unit}`,
       interval: current,
     });
 
     tests.push({
-      syntax: `-0${grain}/${grain}${START_CHARACTER} to -0${grain}/${grain}${END_CHARACTER}`,
-      description: `The full current ${unit}`,
-      interval: current,
+      syntax: `-1${grain}/${grain} to ref/${grain} as of latest`,
+      description: `The previous ${unit} from latest`,
+      interval: Interval.fromDateTimes(
+        metadata.latest.minus({ [unit]: 1 }).startOf(unit),
+        metadata.latest.startOf(unit),
+      ),
     });
 
+    //Complete
     tests.push({
-      syntax: `-1${grain}${START_CHARACTER} to ${grain}${START_CHARACTER}`,
+      syntax: `1${grain} as of watermark/${grain}`,
       description: `The last complete ${unit}`,
       interval: previous,
     });
 
     tests.push({
-      syntax: `-1${grain}${INTERVAL_CHARACTER} `,
+      syntax: `-1${grain}/${grain} to ref/${grain} as of watermark`,
       description: `The last complete ${unit}`,
       interval: previous,
     });
@@ -400,7 +349,7 @@ function generateCurrentAndPreviousPeriods(now: DateTime) {
   return tests;
 }
 
-function generateFirstNPeriodTests(now: DateTime, n: number = 3) {
+function generateFirstNPeriodTests(metadata: TimeMetadata, n: number = 3) {
   const tests: Test[] = [];
 
   GRAINS.forEach((grain) => {
@@ -411,7 +360,8 @@ function generateFirstNPeriodTests(now: DateTime, n: number = 3) {
     if (!higherOrderGrain) return;
     const higherOrderUnit = GRAIN_TO_LUXON[higherOrderGrain];
 
-    let start = now.startOf(higherOrderUnit);
+    const ref = metadata.now.startOf(higherOrderUnit).startOf("second");
+    let start = ref;
 
     if (unit === "week") {
       if (start.weekday >= 5) {
@@ -421,26 +371,14 @@ function generateFirstNPeriodTests(now: DateTime, n: number = 3) {
       }
 
       tests.push({
-        syntax: `${higherOrderGrain}/${higherOrderGrain}/W${START_CHARACTER} to ${higherOrderGrain}/${higherOrderGrain}/W${START_CHARACTER}+${n}${grain}`,
+        syntax: `${REF}/${higherOrderGrain}/W to ${REF}/${higherOrderGrain}/W+${n}${grain} as of ${ref.toISO({ suppressMilliseconds: true })}`,
         description: `First ${n} ${unit}(s) of the current ${higherOrderUnit}`,
-        interval: Interval.fromDateTimes(start, start.plus({ [unit]: n })),
-      });
-
-      tests.push({
-        syntax: `${n}${grain} starting ${higherOrderGrain}/${higherOrderGrain}/W${START_CHARACTER}`,
-        description: `First ${n} ${unit}(s) of the current ${higherOrderUnit} using starting terminology`,
         interval: Interval.fromDateTimes(start, start.plus({ [unit]: n })),
       });
     } else {
       tests.push({
-        syntax: `${higherOrderGrain}${START_CHARACTER} to ${higherOrderGrain}${START_CHARACTER}+${n}${grain}`,
+        syntax: `${REF}/${higherOrderGrain} to ${REF}/${higherOrderGrain}+${n}${grain} as of ${ref.toISO({ suppressMilliseconds: true })}`,
         description: `First ${n} ${unit}(s) of the current ${higherOrderUnit}`,
-        interval: Interval.fromDateTimes(start, start.plus({ [unit]: n })),
-      });
-
-      tests.push({
-        syntax: `${n}${grain} starting ${higherOrderGrain}${START_CHARACTER}`,
-        description: `First ${n} ${unit}(s) of the current ${higherOrderUnit} using starting terminology`,
         interval: Interval.fromDateTimes(start, start.plus({ [unit]: n })),
       });
     }
@@ -449,10 +387,7 @@ function generateFirstNPeriodTests(now: DateTime, n: number = 3) {
   return tests;
 }
 
-export async function runTests(
-  metricsViewName: string,
-  smallestTimeGrain: V1TimeGrain | undefined,
-) {
+export async function runTests(metricsViewName: string) {
   const instanceId = get(runtime).instanceId;
 
   let failures = 1;
@@ -485,12 +420,23 @@ export async function runTests(
 
   console.log(allTime.toLocaleString(DateTime.DATETIME_FULL_WITH_SECONDS));
 
-  const testCases = generateTestCases(
-    allTime.end?.setZone("UTC"),
-    PROTO_GRAIN_TO_LUXON[
-      smallestTimeGrain ?? V1TimeGrain.TIME_GRAIN_MILLISECOND
-    ],
-  );
+  const latest = allTime.end;
+  const watermark = DateTime.fromISO(timeRangeSummary.watermark).setZone("UTC");
+  const now = DateTime.now().setZone("UTC");
+
+  const metadata = {
+    latest,
+    watermark,
+    now,
+  };
+
+  console.log({
+    latest: latest.toISO(),
+    watermark: watermark.toISO(),
+    now: now.toISO(),
+  });
+
+  const testCases = generateTestCases(metadata);
 
   const expressions = testCases.map((testCase) => testCase.syntax);
 
@@ -606,48 +552,41 @@ export function generateIntervalTestCases(reference: DateTime): Test[] {
 
 export const forceTestImport = "test";
 
-function generateTestCases(
-  now: DateTime,
-  smallestTimeGrain: DateTimeUnit,
-): Test[] {
+function generateTestCases(metadata: TimeMetadata): Test[] {
   return [
-    ...generateToTests(now, 6, 3),
-    ...generateToTests(now, 4, 1),
-    ...generateToTests(now, 9, 7),
-    ...generateToTests(now),
-    ...lastNPeriodExcludingCurrentPeriod(now),
-    ...lastNPeriodIncludingCurrentPeriod(now),
-    ...generateFirstNPeriodTests(now),
-    ...generateLiteralTests(now, smallestTimeGrain),
-    ...generateEndTests(now),
-    ...generateCurrentAndPreviousPeriods(now),
-    ...lastNPeriodToNow(now),
-    ...generateStartingAndEndingTests(now, smallestTimeGrain),
+    ...generateToTests(metadata, 6, 3),
+    ...generateToTests(metadata, 4, 1),
+    ...generateToTests(metadata, 9, 7),
+    ...generateToTests(metadata),
+    ...lastNCompletePeriods(metadata),
+    ...lastNPeriods(metadata),
+    ...lastNPeriodToNow(metadata),
+    ...generateFirstNPeriodTests(metadata),
+    ...generateCurrentAndPreviousPeriods(metadata),
+    ...generateStartingAndEndingTests(metadata),
     ...generateISOTests(),
 
     {
-      syntax: `-6d${START_CHARACTER} to h${START_CHARACTER}`,
+      syntax: `-6d/d to ${REF}/h as of latest`,
       description: "Six days to date excluding the current hour",
       interval: Interval.fromDateTimes(
-        now.minus({ day: 6 }).startOf("day"),
-        now.startOf("hour"),
+        metadata.latest.minus({ day: 6 }).startOf("day"),
+        metadata.latest.startOf("hour"),
       ),
     },
-
     {
-      syntax: `-2h/h${START_CHARACTER}-3d${LITERAL_CHARACTER} to -2h/h${START_CHARACTER}`,
+      syntax: `-2h/h-3d to -2h/h as of latest`,
       description: "The 3 day period starting two hour boundaries ago",
       interval: Interval.fromDateTimes(
-        now.minus({ hour: 2 }).startOf("hour").minus({ day: 3 }),
-        now.minus({ hour: 2 }).startOf("hour"),
+        metadata.latest.minus({ hour: 2 }).startOf("hour").minus({ day: 3 }),
+        metadata.latest.minus({ hour: 2 }).startOf("hour"),
       ),
     },
     {
-      syntax: `-2s-3m-4h-5d-6W-7M-8Q-9Y to -1s-2m-3h-4d-5W-6M-7Q-8Y`,
+      syntax: `-2s-3m-4h-5d-6W-7M-8Q-9Y to -1s-2m-3h-4d-5W-6M-7Q-8Y as of latest`,
       description: "Stacking offsets",
       interval: Interval.fromDateTimes(
-        now
-          .plus({ [smallestTimeGrain]: 1 })
+        metadata.latest
           .minus({
             second: 2,
           })
@@ -673,8 +612,7 @@ function generateTestCases(
             year: 9,
           }),
 
-        now
-          .plus({ [smallestTimeGrain]: 1 })
+        metadata.latest
           .minus({
             second: 1,
           })
@@ -702,10 +640,10 @@ function generateTestCases(
       ),
     },
     {
-      syntax: `-2s3m4h5d6w7M8Q9Y to -1s2m3h4d5w6M7Q8Y`,
+      syntax: `-2s3m4h5d6w7M8Q9Y to -1s2m3h4d5w6M7Q8Y as of latest`,
       description: "Offsetting by compound duration",
       interval: Interval.fromDateTimes(
-        now.plus({ [smallestTimeGrain]: 1 }).minus({
+        metadata.latest.minus({
           second: 2,
           minute: 3,
           hour: 4,
@@ -715,7 +653,7 @@ function generateTestCases(
           quarter: 8,
           year: 9,
         }),
-        now.plus({ [smallestTimeGrain]: 1 }).minus({
+        metadata.latest.minus({
           second: 1,
           minute: 2,
           hour: 3,
@@ -729,18 +667,18 @@ function generateTestCases(
     },
 
     {
-      syntax: `-42W-3M/W${START_CHARACTER} to -2M-3h/M${END_CHARACTER}`,
+      syntax: `-42W-3M/W to -2M-3h/M+1M as of latest`,
       description:
         "The start of the week 42 weeks and 3 minutes ago to the end of the month 2 months and 3 hours ago",
       interval: Interval.fromDateTimes(
-        now
+        metadata.latest
           .minus({
             week: 42,
             month: 3,
           })
           .startOf("week"),
 
-        now
+        metadata.latest
           .minus({
             month: 2,
             hour: 3,
@@ -752,11 +690,11 @@ function generateTestCases(
       ),
     },
     {
-      syntax: `-3Y/d${START_CHARACTER}+6h-6W/h${START_CHARACTER} to -4d/M${END_CHARACTER}-23h-7m`,
+      syntax: `-3Y/d+6h-6W/h to -4d/M+1M-23h-7m as of latest`,
       description:
         "The day start three days ago plus 6 hours minus 6 weeks rounded to the hour start TO the month end three years ago minus 23 hours and 7 minutes",
       interval: Interval.fromDateTimes(
-        now
+        metadata.latest
           .minus({
             year: 3,
           })
@@ -769,7 +707,7 @@ function generateTestCases(
           })
           .startOf("hour"),
 
-        now
+        metadata.latest
           .minus({
             day: 4,
           })
@@ -785,569 +723,207 @@ function generateTestCases(
     },
 
     {
-      syntax: `3W18D23h ${STARTING} -3Y${LITERAL_CHARACTER}`,
+      syntax: `3W18D23h as of latest-3Y`,
       description:
         "The three week, 18 day, and 23 hour period starting exactly three years ago",
       interval: Interval.fromDateTimes(
-        now.plus({ [smallestTimeGrain]: 1 }).minus({
-          year: 3,
-        }),
-        now
-          .plus({ [smallestTimeGrain]: 1 })
+        metadata.latest
           .minus({
             year: 3,
           })
-          .plus({
+          .minus({
             week: 3,
             day: 18,
             hour: 23,
           }),
-      ),
-    },
-
-    {
-      syntax: `2h ${STARTING} -4h${LITERAL_CHARACTER}`,
-      description: "The two hour period starting exactly four hours ago",
-      interval: Interval.fromDateTimes(
-        now.plus({ [smallestTimeGrain]: 1 }).minus({
-          hour: 4,
+        metadata.latest.minus({
+          year: 3,
         }),
-        now
-          .plus({ [smallestTimeGrain]: 1 })
-          .minus({
-            hour: 4,
-          })
-          .plus({
-            hour: 2,
-          }),
       ),
     },
 
     {
-      syntax: `-2h to latest`,
+      syntax: `-2h to ref as of latest`,
       description: "The two hour period ending at the latest data point",
       interval: Interval.fromDateTimes(
-        now.plus({ [smallestTimeGrain]: 1 }).minus({
+        metadata.latest.minus({
           hour: 2,
         }),
-        now,
+        metadata.latest,
       ),
     },
 
     {
-      syntax: `3W18D23h ${ENDING} -3Y${LITERAL_CHARACTER}`,
-      description:
-        "The three week, 18 day, and 23 hour period ending exactly three years ago",
+      syntax: `3W as of latest-3Y`,
+      description: "The three week period ending exactly three years ago",
       interval: Interval.fromDateTimes(
-        now
-          .plus({ [smallestTimeGrain]: 1 })
+        metadata.latest
           .minus({
             year: 3,
           })
           .minus({
             week: 3,
-            day: 18,
-            hour: 23,
           }),
-        now.plus({ [smallestTimeGrain]: 1 }).minus({
+        metadata.latest.minus({
           year: 3,
         }),
       ),
     },
+    {
+      syntax: `7h as of watermark/d`,
+      description: "The last 7 hours of the last complete day",
+      interval: Interval.fromDateTimes(
+        metadata.watermark.startOf("day").minus({ hour: 7 }),
+        metadata.watermark.startOf("day"),
+      ),
+    },
 
     {
-      syntax: `<6H of D25 as of -3M`,
-      description:
-        "The first 6 hours of the 25th day of the month three months ago",
-      interval: Interval.fromDateTimes(
-        now.minus({ month: 3 }).set({ day: 25 }).startOf("day"),
-        now
-          .minus({ month: 3 })
-          .set({ day: 25 })
-          .startOf("day")
-          .plus({ hours: 6 }),
-      ),
-    },
-    {
-      syntax: `6h ${STARTING} D25^ as of -3M`,
-      description:
-        "The first 6 hours of the 25th day of the month three months ago",
-      interval: Interval.fromDateTimes(
-        now.minus({ month: 3 }).set({ day: 25 }).startOf("day"),
-        now
-          .minus({ month: 3 })
-          .set({ day: 25 })
-          .startOf("day")
-          .plus({ hours: 6 }),
-      ),
-    },
-    {
-      syntax: `7h ${ENDING} -1d${END_CHARACTER}`,
-      description: "The last 7 hours of the previous day",
-      interval: Interval.fromDateTimes(
-        now.startOf("day").minus({ hour: 7 }),
-        now.startOf("day"),
-      ),
-    },
-    {
-      syntax: `7h ${ENDING} -1d${END_CHARACTER}`,
-      description: "The last 7 hours of the previous day",
-      interval: Interval.fromDateTimes(
-        now.startOf("day").minus({ hour: 7 }),
-        now.startOf("day"),
-      ),
-    },
-    {
-      syntax: `>7h of -1d${INTERVAL_CHARACTER}`,
-      description: "The last 7 hours of the previous day",
-      interval: Interval.fromDateTimes(
-        now.startOf("day").minus({ hour: 7 }),
-        now.startOf("day"),
-      ),
-    },
-    {
-      syntax: `H4 as of -1d`,
+      syntax: `H4 as of latest-1d`,
       description: "The fourth hour of the previous day",
       interval: Interval.fromDateTimes(
-        now.minus({ day: 1 }).set({ hour: 3 }).startOf("hour"),
-        now.minus({ day: 1 }).set({ hour: 4 }).startOf("hour"),
+        metadata.latest.minus({ day: 1 }).set({ hour: 3 }).startOf("hour"),
+        metadata.latest.minus({ day: 1 }).set({ hour: 4 }).startOf("hour"),
       ),
     },
+
     {
-      syntax: `H4 of -1d${INTERVAL_CHARACTER}`,
-      description: "The fourth hour of the previous day",
-      interval: Interval.fromDateTimes(
-        now.minus({ day: 1 }).set({ hour: 3 }).startOf("hour"),
-        now.minus({ day: 1 }).set({ hour: 4 }).startOf("hour"),
-      ),
-    },
-    {
-      syntax: `-2d${START_CHARACTER} to -2d${START_CHARACTER}+3h`,
+      syntax: `-2d/d to -2d/d+3h as of latest`,
       description: "The first 3 hours of two days ago",
       interval: Interval.fromDateTimes(
-        now.minus({ day: 2 }).startOf("day"),
-        now.minus({ day: 2 }).set({ hour: 3 }).startOf("hour"),
-      ),
-    },
-    ...[1, 2, 4, 13, 26, 39, 52, 53, 54].map((value) => {
-      return {
-        syntax: `W${value} of Y`,
-        description: `Week ${value} of the current year`,
-        interval: Interval.fromDateTimes(
-          DateTime.fromObject(
-            {
-              weekYear: now.year,
-              weekNumber: value,
-            },
-            { zone: now.zone },
-          ),
-          DateTime.fromObject(
-            {
-              weekYear: now.year,
-              weekNumber: value,
-            },
-            { zone: now.zone },
-          )
-            .plus({ week: 1 })
-            .startOf("week"),
-        ),
-      };
-    }),
-
-    {
-      syntax: `W1 of -1M${INTERVAL_CHARACTER}`,
-      description:
-        "The first week of the last complete month following ISO rules",
-      interval: Interval.fromDateTimes(
-        now.minus({ month: 1 }).startOf("month").weekday >= 5
-          ? now
-              .minus({ month: 1 })
-              .startOf("month")
-              .startOf("week")
-              .plus({ week: 1 })
-          : now.minus({ month: 1 }).startOf("month").startOf("week"),
-        (now.minus({ month: 1 }).startOf("month").weekday >= 5
-          ? now
-              .minus({ month: 1 })
-              .startOf("month")
-              .plus({ week: 1 })
-              .startOf("week")
-          : now.minus({ month: 1 }).startOf("month").startOf("week")
-        )
-          .plus({ week: 1 })
-          .startOf("week"),
+        metadata.latest.minus({ day: 2 }).startOf("day"),
+        metadata.latest.minus({ day: 2 }).set({ hour: 3 }).startOf("hour"),
       ),
     },
     {
-      syntax: `W1 of -1M${START_CHARACTER} to -1M${END_CHARACTER}`,
-      description:
-        "The first week of the last complete month following ISO rules",
-      interval: Interval.fromDateTimes(
-        now.minus({ month: 1 }).startOf("month").weekday >= 5
-          ? now
-              .minus({ month: 1 })
-              .startOf("month")
-              .startOf("week")
-              .plus({ week: 1 })
-          : now.minus({ month: 1 }).startOf("month").startOf("week"),
-        (now.minus({ month: 1 }).startOf("month").weekday >= 5
-          ? now
-              .minus({ month: 1 })
-              .startOf("month")
-              .plus({ week: 1 })
-              .startOf("week")
-          : now.minus({ month: 1 }).startOf("month").startOf("week")
-        )
-          .plus({ week: 1 })
-          .startOf("week"),
-      ),
-    },
-    {
-      syntax: "W1 of M",
-      description: "The first week of the current month following ISO rules",
-      interval: Interval.fromDateTimes(
-        now.startOf("month").weekday >= 5
-          ? now.startOf("month").plus({ week: 1 }).startOf("week")
-          : now.startOf("month").startOf("week"),
-        (now.startOf("month").weekday >= 5
-          ? now.startOf("month").plus({ week: 1 }).startOf("week")
-          : now.startOf("month").startOf("week")
-        )
-          .plus({ week: 1 })
-          .startOf("week"),
-      ),
-    },
-
-    {
-      syntax: `>3s of m4 of H2 of D4 of -1M${INTERVAL_CHARACTER}`,
-      description:
-        "The last three seconds of the fourth minute of the second hour of the 4th day of last month",
-      interval: Interval.fromDateTimes(
-        now
-          .minus({ month: 1 })
-          .set({ day: 4 })
-          .set({ hour: 1 })
-          .set({ minute: 3 })
-          .set({ second: 57 })
-          .startOf("second"),
-        now
-          .minus({ month: 1 })
-          .set({ day: 4 })
-          .set({ hour: 1 })
-          .set({ minute: 4 })
-          .startOf("minute"),
-      ),
-    },
-    {
-      syntax: `-2d${START_CHARACTER} to d${END_CHARACTER} as of -1Q`,
+      syntax: `-2d/d to ref/d+1d as of latest-1Q`,
       description:
         "The 3 day period that includes the current incomplete day and the 2 previous complete days offset into the previous quarter",
       interval: Interval.fromDateTimes(
-        now.minus({ day: 2 }).startOf("day").minus({ quarter: 1 }),
-        now
-          .minus({ day: 2 })
-          .startOf("day")
-          .minus({ quarter: 1 })
-          .plus({ day: 3 })
-          .startOf("day"),
+        metadata.latest.minus({ quarter: 1 }).minus({ day: 2 }).startOf("day"),
+        metadata.latest.minus({ quarter: 1 }).startOf("day").plus({ day: 1 }),
       ),
     },
     {
-      syntax: `3d ${ENDING} -1Q/d${END_CHARACTER}`,
+      syntax: `3d as of latest-1Q/d+1d`,
       description:
         "The 3 day period that includes the current incomplete day and the 2 previous complete days offset into the previous quarter",
       interval: Interval.fromDateTimes(
-        now.minus({ day: 2 }).startOf("day").minus({ quarter: 1 }),
-        now
-          .minus({ day: 2 })
-          .startOf("day")
-          .minus({ quarter: 1 })
-          .plus({ day: 3 })
-          .startOf("day"),
+        metadata.latest.minus({ quarter: 1 }).startOf("day").minus({ day: 2 }),
+        metadata.latest.minus({ quarter: 1 }).startOf("day").plus({ day: 1 }),
       ),
     },
     {
-      syntax: `3d ${ENDING} -1Q/d${END_CHARACTER}`,
+      syntax: `m30 of H12 of D5 of Q3 as of latest-2Y`,
       description:
-        "The 3 day period that includes the current incomplete day and the 2 previous complete days offset into the previous quarter",
+        "The 30th minute of the 12th hour of the fifth day of quarter three of two years ago",
       interval: Interval.fromDateTimes(
-        now.minus({ day: 2 }).startOf("day").minus({ quarter: 1 }),
-        now
-          .minus({ day: 2 })
-          .startOf("day")
-          .minus({ quarter: 1 })
-          .plus({ day: 3 })
-          .startOf("day"),
-      ),
-    },
-    {
-      syntax: "<6h of W4 of Q2",
-      description:
-        "The first 6 hours of week 4 of quarter 2 of the current year",
-      interval: Interval.fromDateTimes(
-        now.startOf("year").plus({ quarter: 1 }).weekday >= 5
-          ? now
-              .startOf("year")
-              .plus({ quarter: 1 })
-              .plus({ week: 4 })
-              .startOf("week")
-          : now
-              .startOf("year")
-              .plus({ quarter: 1 })
-              .plus({ week: 3 })
-              .startOf("week"),
-        (now.startOf("year").plus({ quarter: 1 }).weekday >= 5
-          ? now
-              .startOf("year")
-              .plus({ quarter: 1 })
-              .plus({ week: 4 })
-              .startOf("week")
-          : now
-              .startOf("year")
-              .plus({ quarter: 1 })
-              .plus({ week: 3 })
-              .startOf("week")
-        )
-          .plus({ hour: 6 })
-          .startOf("hour"),
-      ),
-    },
-    {
-      syntax: `m30 of H12 of D5 of >1W of Q3 as of -2Y`,
-      description:
-        "The 30th minute of the 12th hour of the fifth day of the last week of quarter three of two years ago",
-      interval: Interval.fromDateTimes(
-        (now.minus({ year: 2 }).startOf("year").plus({ quarter: 3 }).weekday >=
-        5
-          ? now.minus({ year: 2 }).startOf("year").plus({ quarter: 3 })
-          : now
-              .minus({ year: 2 })
-              .startOf("year")
-              .plus({ quarter: 3 })
-              .minus({ week: 1 })
-        )
-          .startOf("week")
+        metadata.latest
+          .minus({ year: 2 })
+          .startOf("year")
+          .plus({ quarter: 2 })
           .plus({ day: 4 })
           .set({ hour: 11 })
           .set({ minute: 29 })
           .startOf("minute"),
-        (now.minus({ year: 2 }).startOf("year").plus({ quarter: 3 }).weekday >=
-        5
-          ? now.minus({ year: 2 }).startOf("year").plus({ quarter: 3 })
-          : now
-              .minus({ year: 2 })
-              .startOf("year")
-              .plus({ quarter: 3 })
-              .minus({ week: 1 })
-        )
-          .startOf("week")
+        metadata.latest
+          .minus({ year: 2 })
+          .startOf("year")
+          .plus({ quarter: 2 })
           .plus({ day: 4 })
           .set({ hour: 11 })
           .set({ minute: 30 })
           .startOf("minute"),
       ),
     },
-
     {
-      syntax: `Y${START_CHARACTER} to M${START_CHARACTER}`,
-      description: "All complete months of the current year",
-      interval: Interval.fromDateTimes(
-        now.startOf("year"),
-        now.startOf("month"),
-      ),
-    },
-    {
-      syntax: `Y${START_CHARACTER} to M${END_CHARACTER}`,
+      syntax: `-127d/W to -89d/W as of watermark`,
       description:
-        "All months of the current year, including the current incomplete one",
+        "The week start 127 days ago to the current week start 89 days ago",
       interval: Interval.fromDateTimes(
-        now.startOf("year"),
-        now.plus({ month: 1 }).startOf("month"),
+        metadata.watermark.minus({ day: 127 }).startOf("week"),
+        metadata.watermark.minus({ day: 89 }).startOf("week"),
       ),
     },
     {
-      syntax: `Y${START_CHARACTER} to D${START_CHARACTER}`,
-      description: "All complete days of the current year",
-      interval: Interval.fromDateTimes(now.startOf("year"), now.startOf("day")),
-    },
-    {
-      syntax: `Y${START_CHARACTER} to D${END_CHARACTER}`,
-      description:
-        "All days of the current year, including the current incomplete one",
-      interval: Interval.fromDateTimes(
-        now.startOf("year"),
-        now.plus({ day: 1 }).startOf("day"),
-      ),
-    },
-
-    {
-      syntax: `Y/Y/W${START_CHARACTER} to W${START_CHARACTER}`,
-      description:
-        "All weeks of the current year, excluding the current incomplete one",
-      interval: Interval.fromDateTimes(
-        DateTime.fromObject(
-          {
-            weekYear: now.year,
-            weekNumber: 1,
-          },
-          { zone: now.zone },
-        ),
-        now.startOf("week"),
-      ),
-    },
-
-    {
-      syntax: `-127d/W${START_CHARACTER} to -89d/W${START_CHARACTER}`,
-      description:
-        "The current week start 127 days ago to the current week start 89 days ago",
-      interval: Interval.fromDateTimes(
-        now.minus({ day: 127 }).startOf("week"),
-        now.minus({ day: 89 }).startOf("week"),
-      ),
-    },
-
-    {
-      syntax: `-15Y/W${START_CHARACTER} to -4Y/W${START_CHARACTER}`,
+      syntax: `-15Y/W to -4Y/W as of latest`,
       description:
         "The current week start 15 years ago to the current week start 4 years ago",
       interval: Interval.fromDateTimes(
-        now.minus({ year: 15 }).startOf("week"),
-        now.minus({ year: 4 }).startOf("week"),
+        metadata.latest.minus({ year: 15 }).startOf("week"),
+        metadata.latest.minus({ year: 4 }).startOf("week"),
       ),
     },
-
     {
-      syntax: `-2Y/Y/W${START_CHARACTER} to -2Y/W${START_CHARACTER}`,
+      syntax: `-2Y/Y/W to -2Y/W as of latest`,
       description: "All weeks of the current year, offset into two years ago",
       interval: Interval.fromDateTimes(
         DateTime.fromObject(
           {
-            weekYear: now.year - 2,
+            weekYear: metadata.latest.year - 2,
             weekNumber: 1,
           },
-          { zone: now.zone },
+          { zone: metadata.latest.zone },
         ),
-        now.minus({ year: 2 }).startOf("week"),
+        metadata.latest.minus({ year: 2 }).startOf("week"),
       ),
     },
     {
-      syntax: `-2Y/Y/W${START_CHARACTER} to -2Y/Y/W${END_CHARACTER}`,
+      syntax: `-2Y/Y/W to -1Y/Y/W`,
       description: "The year two years ago by ISO week rules",
       interval: Interval.fromDateTimes(
         DateTime.fromObject(
           {
-            weekYear: now.year - 2,
+            weekYear: metadata.latest.year - 2,
             weekNumber: 1,
           },
-          { zone: now.zone },
+          { zone: metadata.latest.zone },
         ),
         DateTime.fromObject(
           {
-            weekYear: now.year - 1,
+            weekYear: metadata.latest.year - 1,
             weekNumber: 1,
           },
-          { zone: now.zone },
+          { zone: metadata.latest.zone },
         ),
       ),
     },
-
     {
-      syntax: `D3 of W2 of -2M${INTERVAL_CHARACTER}`,
-      description: "Day 3 of week 2 of two months ago",
-      interval: Interval.fromDateTimes(
-        (now.minus({ month: 2 }).startOf("month").weekday >= 5
-          ? now
-              .minus({ month: 2 })
-              .startOf("month")
-              .startOf("week")
-              .plus({ week: 1 })
-          : now.minus({ month: 2 }).startOf("month").startOf("week")
-        ).plus({ day: 2, week: 1 }),
-
-        (now.minus({ month: 2 }).startOf("month").weekday >= 5
-          ? now
-              .minus({ month: 2 })
-              .startOf("month")
-              .startOf("week")
-              .plus({ week: 1 })
-          : now.minus({ month: 2 }).startOf("month").startOf("week")
-        ).plus({ day: 3, week: 1 }),
-      ),
-    },
-
-    {
-      syntax: `94m ${STARTING} -9d`,
-      description: "The 94 minute period starting exactly 9 days ago",
-      interval: Interval.fromDateTimes(
-        now.plus({ [smallestTimeGrain]: 1 }).minus({ day: 9 }),
-        now
-          .plus({ [smallestTimeGrain]: 1 })
-          .minus({ day: 9 })
-          .plus({ minute: 94 }),
-      ),
-    },
-
-    {
-      syntax: `94Q ${STARTING} -9d`,
-      description: "The 94 quarter period starting exactly 9 days ago",
-      interval: Interval.fromDateTimes(
-        now.plus({ [smallestTimeGrain]: 1 }).minus({ day: 9 }),
-        now
-          .plus({ [smallestTimeGrain]: 1 })
-          .minus({ day: 9 })
-          .plus({ quarter: 94 }),
-      ),
-    },
-
-    {
-      syntax: `94m ${ENDING} -9d/m^`,
+      syntax: `94m as of latest/m-9d`,
       description:
         "The 94 minute period ending 9 days ago, rounded to the minute",
       interval: Interval.fromDateTimes(
-        now.minus({ day: 9 }).startOf("minute").minus({ minute: 94 }),
-        now.minus({ day: 9 }).startOf("minute"),
+        metadata.latest
+          .minus({ day: 9 })
+          .startOf("minute")
+          .minus({ minute: 94 }),
+        metadata.latest.minus({ day: 9 }).startOf("minute"),
       ),
     },
     {
-      syntax: `94m ${ENDING} -9d`,
+      syntax: `94m as of latest-9d`,
       description: "The 94 minute period ending exactly 9 days ago",
       interval: Interval.fromDateTimes(
-        now.minus({ day: 9 }).minus({ minute: 94 }),
-        now.minus({ day: 9 }),
+        metadata.latest.minus({ day: 9 }).minus({ minute: 94 }),
+        metadata.latest.minus({ day: 9 }),
       ),
     },
-    // This fails
     {
-      syntax: `-1y/W^ to -1y/W$ as of 2025-05-17T13:43:00Z`,
+      syntax: `-1y/W to -1y/W+1W as of 2025-05-14T13:43:00Z`,
       description: "The one week period starting two years ago from 05/14/2025",
       interval: Interval.fromDateTimes(
-        DateTime.fromISO("2025-05-17T13:43:00Z", { zone: "UTC" })
+        DateTime.fromISO("2025-05-14T13:43:00Z", { zone: "UTC" })
           .minus({ year: 1 })
           .startOf("week"),
-        DateTime.fromISO("2025-05-17T13:43:00Z", { zone: "UTC" })
+        DateTime.fromISO("2025-05-14T13:43:00Z", { zone: "UTC" })
           .minus({ year: 1 })
           .plus({ week: 1 })
           .startOf("week"),
       ),
     },
-    // This doesn't fail (but they should both be the same)
     {
-      syntax: `-1y/W^ to -1y/W$ as of 2025-05-15T13:43:00Z`,
-      description: "The one week period starting two years ago from 05/14/2025",
-      interval: Interval.fromDateTimes(
-        DateTime.fromISO("2025-05-15T13:43:00Z", { zone: "UTC" })
-          .minus({ year: 1 })
-          .startOf("week"),
-        DateTime.fromISO("2025-05-15T13:43:00Z", { zone: "UTC" })
-          .minus({ year: 1 })
-          .plus({ week: 1 })
-          .startOf("week"),
-      ),
-    },
-
-    {
-      syntax: `1Q ${ENDING} -8W as of 2025-02-25T09:00:00Z`,
-      description: "The 61 quarter period ending exactly 8 weeks ago",
+      syntax: `1Q as of 2025-02-25T09:00:00Z-8W `,
+      description: "The 1 quarter period ending exactly 8 weeks ago",
       interval: Interval.fromDateTimes(
         DateTime.fromISO("2025-02-25T09:00:00Z", { zone: "UTC" })
           .minus({ week: 8 })
@@ -1358,8 +934,9 @@ function generateTestCases(
       ),
     },
     {
-      syntax: `1Q ${ENDING} -8W/Q${START_CHARACTER} as of 2025-02-25T09:00:00Z`,
-      description: "The 61 quarter period ending exactly 8 weeks ago",
+      syntax: `1Q as of 2025-02-25T09:00:00Z-8W/Q`,
+      description:
+        "The 1 quarter period ending exactly 8 weeks ago, snapped to quarter",
       interval: Interval.fromDateTimes(
         DateTime.fromISO("2025-02-25T09:00:00Z", { zone: "UTC" })
           .minus({ week: 8 })
@@ -1370,28 +947,296 @@ function generateTestCases(
           .startOf("quarter"),
       ),
     },
-
     {
-      syntax: `73M ${STARTING} -26D as of 2025-02-25T09:00:00Z`,
-      description: "The 61 quarter period ending exactly 8 weeks ago",
-      interval: Interval.fromDateTimes(
-        DateTime.fromISO("2025-02-25T09:00:00Z", { zone: "UTC" }).minus({
-          day: 26,
-        }),
-        DateTime.fromISO("2025-02-25T09:00:00Z", { zone: "UTC" })
-          .minus({ day: 26 })
-          .plus({ month: 73 }),
-      ),
-    },
-
-    {
-      syntax: `-1Y/W^ to -1Y/W$`,
+      syntax: `-1W to ref as of watermark/W-1Y`,
       description:
         "The one week period starting one year ago, rounded to the week",
       interval: Interval.fromDateTimes(
-        now.minus({ year: 1 }).startOf("week"),
-        now.minus({ year: 1 }).plus({ week: 1 }).startOf("week"),
+        metadata.watermark
+          .startOf("week")
+          .minus({ year: 1 })
+          .minus({ week: 1 }),
+        metadata.watermark.startOf("week").minus({ year: 1 }),
       ),
     },
+
+    /*
+    The following tests are commented out because they may not fully supported.
+    They can be uncommented and adjusted as needed when the functionality is implemented.
+    */
+    //  {
+    //   syntax: `W1 of 2024`,
+    //   description:
+    //     "The one week period starting one year ago, rounded to the week",
+    //   interval: Interval.fromDateTimes(
+    //     metadata.latest.startOf("week").minus({ year: 1 }).minus({ week: 1 }),
+    //     metadata.latest.startOf("week").minus({ year: 1 }),
+    //   ),
+    // },
+    // ...[1, 2, 4, 13, 26, 39, 52, 53, 54].map((value) => {
+    //   return {
+    //     syntax: `W${value} of Y as of latest`,
+    //     description: `Week ${value} of the current year`,
+    //     interval: Interval.fromDateTimes(
+    //       DateTime.fromObject(
+    //         {
+    //           weekYear: metadata.latest.year,
+    //           weekNumber: value,
+    //         },
+    //         { zone: metadata.latest.zone },
+    //       ),
+    //       DateTime.fromObject(
+    //         {
+    //           weekYear: metadata.latest.year,
+    //           weekNumber: value,
+    //         },
+    //         { zone: metadata.latest.zone },
+    //       )
+    //         .plus({ week: 1 })
+    //         .startOf("week"),
+    //     ),
+    //   };
+    // }),
+
+    // {
+    //   syntax: `W1 of -1M${INTERVAL_CHARACTER}`,
+    //   description:
+    //     "The first week of the last complete month following ISO rules",
+    //   interval: Interval.fromDateTimes(
+    //     now.minus({ month: 1 }).startOf("month").weekday >= 5
+    //       ? now
+    //           .minus({ month: 1 })
+    //           .startOf("month")
+    //           .startOf("week")
+    //           .plus({ week: 1 })
+    //       : now.minus({ month: 1 }).startOf("month").startOf("week"),
+    //     (now.minus({ month: 1 }).startOf("month").weekday >= 5
+    //       ? now
+    //           .minus({ month: 1 })
+    //           .startOf("month")
+    //           .plus({ week: 1 })
+    //           .startOf("week")
+    //       : now.minus({ month: 1 }).startOf("month").startOf("week")
+    //     )
+    //       .plus({ week: 1 })
+    //       .startOf("week"),
+    //   ),
+    // },
+    // {
+    //   syntax: `W1 of -1M${START_CHARACTER} to -1M${END_CHARACTER}`,
+    //   description:
+    //     "The first week of the last complete month following ISO rules",
+    //   interval: Interval.fromDateTimes(
+    //     now.minus({ month: 1 }).startOf("month").weekday >= 5
+    //       ? now
+    //           .minus({ month: 1 })
+    //           .startOf("month")
+    //           .startOf("week")
+    //           .plus({ week: 1 })
+    //       : now.minus({ month: 1 }).startOf("month").startOf("week"),
+    //     (now.minus({ month: 1 }).startOf("month").weekday >= 5
+    //       ? now
+    //           .minus({ month: 1 })
+    //           .startOf("month")
+    //           .plus({ week: 1 })
+    //           .startOf("week")
+    //       : now.minus({ month: 1 }).startOf("month").startOf("week")
+    //     )
+    //       .plus({ week: 1 })
+    //       .startOf("week"),
+    //   ),
+    // },
+    // {
+    //   syntax: "W1 of M",
+    //   description: "The first week of the current month following ISO rules",
+    //   interval: Interval.fromDateTimes(
+    //     now.startOf("month").weekday >= 5
+    //       ? now.startOf("month").plus({ week: 1 }).startOf("week")
+    //       : now.startOf("month").startOf("week"),
+    //     (now.startOf("month").weekday >= 5
+    //       ? now.startOf("month").plus({ week: 1 }).startOf("week")
+    //       : now.startOf("month").startOf("week")
+    //     )
+    //       .plus({ week: 1 })
+    //       .startOf("week"),
+    //   ),
+    // },
+
+    // {
+    //   syntax: `>3s of m4 of H2 of D4 of -1M${INTERVAL_CHARACTER}`,
+    //   description:
+    //     "The last three seconds of the fourth minute of the second hour of the 4th day of last month",
+    //   interval: Interval.fromDateTimes(
+    //     now
+    //       .minus({ month: 1 })
+    //       .set({ day: 4 })
+    //       .set({ hour: 1 })
+    //       .set({ minute: 3 })
+    //       .set({ second: 57 })
+    //       .startOf("second"),
+    //     now
+    //       .minus({ month: 1 })
+    //       .set({ day: 4 })
+    //       .set({ hour: 1 })
+    //       .set({ minute: 4 })
+    //       .startOf("minute"),
+    //   ),
+    // },
+
+    // {
+    //   syntax: `<6h of D25 as of watermark-3M`,
+    //   description:
+    //     "The first 6 hours of the 25th day of the month three months ago",
+    //   interval: Interval.fromDateTimes(
+    //     metadata.watermark.minus({ month: 3 }).set({ day: 25 }).startOf("day"),
+    //     metadata.watermark
+    //       .minus({ month: 3 })
+    //       .set({ day: 25 })
+    //       .startOf("day")
+    //       .plus({ hours: 6 }),
+    //   ),
+    // },
+    // {
+    //   syntax: `6h ${STARTING} D25^ as of -3M`,
+    //   description:
+    //     "The first 6 hours of the 25th day of the month three months ago",
+    //   interval: Interval.fromDateTimes(
+    //     now.minus({ month: 3 }).set({ day: 25 }).startOf("day"),
+    //     now
+    //       .minus({ month: 3 })
+    //       .set({ day: 25 })
+    //       .startOf("day")
+    //       .plus({ hours: 6 }),
+    //   ),
+    // },
+
+    // {
+    //   syntax: "<6h of W4 of Q2",
+    //   description:
+    //     "The first 6 hours of week 4 of quarter 2 of the current year",
+    //   interval: Interval.fromDateTimes(
+    //     now.startOf("year").plus({ quarter: 1 }).weekday >= 5
+    //       ? now
+    //           .startOf("year")
+    //           .plus({ quarter: 1 })
+    //           .plus({ week: 4 })
+    //           .startOf("week")
+    //       : now
+    //           .startOf("year")
+    //           .plus({ quarter: 1 })
+    //           .plus({ week: 3 })
+    //           .startOf("week"),
+    //     (now.startOf("year").plus({ quarter: 1 }).weekday >= 5
+    //       ? now
+    //           .startOf("year")
+    //           .plus({ quarter: 1 })
+    //           .plus({ week: 4 })
+    //           .startOf("week")
+    //       : now
+    //           .startOf("year")
+    //           .plus({ quarter: 1 })
+    //           .plus({ week: 3 })
+    //           .startOf("week")
+    //     )
+    //       .plus({ hour: 6 })
+    //       .startOf("hour"),
+    //   ),
+    // },
+
+    // {
+    //   syntax: `Y${START_CHARACTER} to M${START_CHARACTER}`,
+    //   description: "All complete months of the current year",
+    //   interval: Interval.fromDateTimes(
+    //     now.startOf("year"),
+    //     now.startOf("month"),
+    //   ),
+    // },
+    // {
+    //   syntax: `Y${START_CHARACTER} to M${END_CHARACTER}`,
+    //   description:
+    //     "All months of the current year, including the current incomplete one",
+    //   interval: Interval.fromDateTimes(
+    //     now.startOf("year"),
+    //     now.plus({ month: 1 }).startOf("month"),
+    //   ),
+    // },
+    // {
+    //   syntax: `Y${START_CHARACTER} to D${START_CHARACTER}`,
+    //   description: "All complete days of the current year",
+    //   interval: Interval.fromDateTimes(now.startOf("year"), now.startOf("day")),
+    // },
+    // {
+    //   syntax: `Y${START_CHARACTER} to D${END_CHARACTER}`,
+    //   description:
+    //     "All days of the current year, including the current incomplete one",
+    //   interval: Interval.fromDateTimes(
+    //     now.startOf("year"),
+    //     now.plus({ day: 1 }).startOf("day"),
+    //   ),
+    // },
+
+    // {
+    //   syntax: `Y/Y/W${START_CHARACTER} to W${START_CHARACTER}`,
+    //   description:
+    //     "All weeks of the current year, excluding the current incomplete one",
+    //   interval: Interval.fromDateTimes(
+    //     DateTime.fromObject(
+    //       {
+    //         weekYear: now.year,
+    //         weekNumber: 1,
+    //       },
+    //       { zone: now.zone },
+    //     ),
+    //     now.startOf("week"),
+    //   ),
+    // },
+
+    // {
+    //   syntax: `D3 of W2 of -2M${INTERVAL_CHARACTER}`,
+    //   description: "Day 3 of week 2 of two months ago",
+    //   interval: Interval.fromDateTimes(
+    //     (now.minus({ month: 2 }).startOf("month").weekday >= 5
+    //       ? now
+    //           .minus({ month: 2 })
+    //           .startOf("month")
+    //           .startOf("week")
+    //           .plus({ week: 1 })
+    //       : now.minus({ month: 2 }).startOf("month").startOf("week")
+    //     ).plus({ day: 2, week: 1 }),
+
+    //     (now.minus({ month: 2 }).startOf("month").weekday >= 5
+    //       ? now
+    //           .minus({ month: 2 })
+    //           .startOf("month")
+    //           .startOf("week")
+    //           .plus({ week: 1 })
+    //       : now.minus({ month: 2 }).startOf("month").startOf("week")
+    //     ).plus({ day: 3, week: 1 }),
+    //   ),
+    // },
+
+    // {
+    //   syntax: `94m ${STARTING} -9d`,
+    //   description: "The 94 minute period starting exactly 9 days ago",
+    //   interval: Interval.fromDateTimes(
+    //     now.plus({ [smallestTimeGrain]: 1 }).minus({ day: 9 }),
+    //     now
+    //       .plus({ [smallestTimeGrain]: 1 })
+    //       .minus({ day: 9 })
+    //       .plus({ minute: 94 }),
+    //   ),
+    // },
+
+    // {
+    //   syntax: `94Q ${STARTING} -9d`,
+    //   description: "The 94 quarter period starting exactly 9 days ago",
+    //   interval: Interval.fromDateTimes(
+    //     now.plus({ [smallestTimeGrain]: 1 }).minus({ day: 9 }),
+    //     now
+    //       .plus({ [smallestTimeGrain]: 1 })
+    //       .minus({ day: 9 })
+    //       .plus({ quarter: 94 }),
+    //   ),
+    // },
   ];
 }
