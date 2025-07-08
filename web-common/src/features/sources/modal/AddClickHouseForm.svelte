@@ -178,6 +178,55 @@
         !useDsn ? p.key !== "dsn" : true,
       ) ?? []);
   $: filteredProperties = properties.filter((property) => !property.noPrompt);
+
+  function isEmpty(val: any) {
+    return (
+      val === undefined ||
+      val === null ||
+      val === "" ||
+      (typeof val === "string" && val.trim() === "")
+    );
+  }
+
+  // Compute disabled state for the submit button
+  // Refer to `runtime/drivers/clickhouse/clickhouse.go` for the required
+  // Account for the managed property and the dsn property can be either true or false
+  $: isSubmitDisabled = (() => {
+    if ($paramsForm.managed) {
+      // Managed form: only check required properties where property.key === 'managed' or property.key is not 'managed'
+      for (const property of filteredProperties) {
+        if (
+          property.required &&
+          (property.key === "managed" || property.key !== "managed")
+        ) {
+          const key = String(property.key);
+          const value = $paramsForm[key];
+          if (isEmpty(value) || $paramsErrors[key]?.length) return true;
+        }
+      }
+      return false;
+    } else if (useDsn) {
+      // Self-managed DSN form
+      for (const property of dsnProperties) {
+        if (property.required) {
+          const key = String(property.key);
+          const value = $dsnForm[key];
+          if (isEmpty(value) || $dsnErrors[key]?.length) return true;
+        }
+      }
+      return false;
+    } else {
+      // Self-managed parameters form: only check required properties where property.key !== 'managed'
+      for (const property of filteredProperties) {
+        if (property.required && property.key !== "managed") {
+          const key = String(property.key);
+          const value = $paramsForm[key];
+          if (isEmpty(value) || $paramsErrors[key]?.length) return true;
+        }
+      }
+      return false;
+    }
+  })();
 </script>
 
 <div class="h-full w-full flex flex-col">
@@ -288,7 +337,12 @@
     <Button onClick={onBack} type="secondary">Back</Button>
 
     <!-- FIXME: use Connect when managed is true -->
-    <Button disabled={submitting} form={formId} submitForm type="primary">
+    <Button
+      disabled={submitting || isSubmitDisabled}
+      form={formId}
+      submitForm
+      type="primary"
+    >
       {#if formType === "connector"}
         {#if submitting}
           Testing connection...
