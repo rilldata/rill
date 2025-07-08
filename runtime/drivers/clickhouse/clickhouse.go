@@ -492,11 +492,7 @@ func (c *Connection) AsObjectStore() (drivers.ObjectStore, bool) {
 // AsModelExecutor implements drivers.Handle.
 func (c *Connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorOptions) (drivers.ModelExecutor, bool) {
 	if c.config.Mode != modeReadWrite {
-		if c.config.Managed {
-			c.logger.Error("Model execution is disabled on managed ClickHouse instance. This should not happen.")
-		} else {
-			c.logger.Warn("Model execution is disabled. To enable modeling on this ClickHouse database, set 'mode: readwrite' in your connector configuration. WARNING: This will allow Rill to create and overwrite tables in your database.")
-		}
+		c.logger.Warn("Model execution is disabled. To enable modeling on this ClickHouse database, set 'mode: readwrite' in your connector configuration. WARNING: This will allow Rill to create and overwrite tables in your database.")
 		return nil, false
 	}
 	if opts.OutputHandle != c {
@@ -517,11 +513,7 @@ func (c *Connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecu
 // AsModelManager implements drivers.Handle.
 func (c *Connection) AsModelManager(instanceID string) (drivers.ModelManager, bool) {
 	if c.config.Mode != modeReadWrite {
-		if c.config.Managed {
-			c.logger.Error("Model management is disabled on managed ClickHouse instance. This should not happen.")
-		} else {
-			c.logger.Warn("Model management is disabled. To enable modeling on this ClickHouse database, set 'mode: readwrite' in your connector configuration. WARNING: This will allow Rill to create and overwrite tables in your database.")
-		}
+		c.logger.Warn("Model management is disabled. To enable modeling on this ClickHouse database, set 'mode: readwrite' in your connector configuration. WARNING: This will allow Rill to create and overwrite tables in your database.")
 		return nil, false
 	}
 	return c, true
