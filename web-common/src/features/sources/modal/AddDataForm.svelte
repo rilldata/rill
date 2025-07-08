@@ -30,7 +30,6 @@
   import Checkbox from "@rilldata/web-common/components/forms/Checkbox.svelte";
   import NeedHelpText from "./NeedHelpText.svelte";
 
-  const FORM_TRANSITION_DURATION = 150;
   const dispatch = createEventDispatcher();
 
   export let connector: V1ConnectorDriver;
@@ -230,7 +229,6 @@
         class="pb-5 flex-grow overflow-y-auto"
         use:paramsEnhance
         on:submit|preventDefault={paramsSubmit}
-        transition:slide={{ duration: FORM_TRANSITION_DURATION }}
       >
         {#each properties as property (property.key)}
           {@const propertyKey = property.key ?? ""}
@@ -278,7 +276,6 @@
         class="pb-5 flex-grow overflow-y-auto"
         use:dsnEnhance
         on:submit|preventDefault={dsnSubmit}
-        transition:slide={{ duration: FORM_TRANSITION_DURATION }}
       >
         {#each dsnProperties as property (property.key)}
           {@const propertyKey = property.key ?? ""}
