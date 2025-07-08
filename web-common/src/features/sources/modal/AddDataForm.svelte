@@ -40,6 +40,21 @@
   const isSourceForm = formType === "source";
   const isConnectorForm = formType === "connector";
 
+  function getSpecDefaults(properties) {
+    const defaults = {};
+    (properties ?? []).forEach((property) => {
+      if (property.default !== undefined) {
+        let value = property.default;
+        // Convert to correct type
+        if (property.type === ConnectorDriverPropertyType.TYPE_BOOLEAN) {
+          value = value === "true";
+        }
+        defaults[property.key] = value;
+      }
+    });
+    return defaults;
+  }
+
   // Form 1: Individual parameters
   const paramsFormId = `add-data-${connector.name}-form`;
   const properties =
@@ -49,6 +64,11 @@
           (property) => property.key !== "dsn",
         )) ?? [];
   const schema = yup(getYupSchema[connector.name as keyof typeof getYupSchema]);
+  const initialDefaults = {
+    ...defaults(schema),
+    ...getSpecDefaults(connector.configProperties),
+  };
+  $: console.log("initialDefaults: ", initialDefalts);
   const {
     form: paramsForm,
     errors: paramsErrors,
@@ -56,7 +76,7 @@
     tainted: paramsTainted,
     submit: paramsSubmit,
     submitting: paramsSubmitting,
-  } = superForm(defaults(schema), {
+  } = superForm(initialDefaults, {
     SPA: true,
     validators: schema,
     onUpdate: handleOnUpdate,
@@ -105,6 +125,15 @@
 
   // Emit the submitting state to the parent
   $: dispatch("submitting", { submitting });
+
+  // Update params form whenever the data connector changes, unless the form is tainted
+  $: if (connector) {
+    const specDefaults = getSpecDefaults(connector.configProperties);
+    paramsForm.update(($form) => ({
+      ...$form,
+      ...specDefaults,
+    }));
+  }
 
   function handleConnectionTypeChange(e: CustomEvent<any>): void {
     useDsn = e.detail === "dsn";
@@ -184,6 +213,8 @@
       }
     }
   }
+
+  $: console.log("$paramsForm: ", $paramsForm);
 </script>
 
 <div class="h-full w-full flex flex-col">

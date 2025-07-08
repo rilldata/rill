@@ -32,6 +32,7 @@ import { EntityType } from "../../entity-management/types";
 import { EMPTY_PROJECT_TITLE } from "../../welcome/constants";
 import { isProjectInitialized } from "../../welcome/is-project-initialized";
 import { compileSourceYAML, maybeRewriteToDuckDb } from "../sourceUtils";
+import { ConnectorDriverPropertyType } from "../../connectors/types";
 
 interface AddDataFormValues {
   // name: string; // Commenting out until we add user-provided names for Connectors
@@ -197,6 +198,21 @@ export async function submitAddOLAPConnectorForm(
 
   // Go to the new connector file
   await goto(`/files/${newConnectorFilePath}`);
+}
+
+export function getSpecDefaults(properties) {
+  const defaults = {};
+  (properties ?? []).forEach((property) => {
+    if (property.default !== undefined) {
+      let value = property.default;
+      // Convert to correct type
+      if (property.type === ConnectorDriverPropertyType.TYPE_BOOLEAN) {
+        value = value === "true";
+      }
+      defaults[property.key] = value;
+    }
+  });
+  return defaults;
 }
 
 async function beforeSubmitForm(instanceId: string) {

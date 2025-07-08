@@ -37,6 +37,26 @@
 
   // Always include 'managed' in the schema for ClickHouse
   const clickhouseSchema = yup(getYupSchema["clickhouse"]);
+
+  function getSpecDefaults(properties) {
+    const defaults = {};
+    (properties ?? []).forEach((property) => {
+      if (property.default !== undefined) {
+        let value = property.default;
+        // Convert to correct type
+        if (property.type === ConnectorDriverPropertyType.TYPE_BOOLEAN) {
+          value = value === "true";
+        }
+        defaults[property.key] = value;
+      }
+    });
+    return defaults;
+  }
+
+  const initialDefaults = {
+    ...defaults(clickhouseSchema),
+    ...getSpecDefaults(connector.configProperties),
+  };
   const paramsFormId = `add-data-${connector.name}-form`;
   const {
     form: paramsForm,
@@ -45,7 +65,7 @@
     tainted: paramsTainted,
     submit: paramsSubmit,
     submitting: paramsSubmitting,
-  } = superForm(defaults(clickhouseSchema), {
+  } = superForm(initialDefaults, {
     SPA: true,
     validators: clickhouseSchema,
     onUpdate: handleOnUpdate,
