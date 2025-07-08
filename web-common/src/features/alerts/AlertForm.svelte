@@ -127,11 +127,14 @@
           exploreName,
           JSON.parse(
             props.alertSpec.queryArgsJson ||
-              props.alertSpec.resolverProperties?.query_args_json ||
+              (props.alertSpec.resolverProperties?.query_args_json as
+                | string
+                | undefined) ||
               "{}",
           ),
           $allTimeRangeResp.data?.timeRangeSummary,
         ));
+  $: ({ selectedComparisonTimeRange } = timeControls);
 
   $: superFormInstance = superForm(
     defaults(initialValues, alertFormValidationSchema),
@@ -151,8 +154,8 @@
   $: ({ form, errors, enhance, submit, submitting, tainted, validate } =
     superFormInstance);
 
-  const formId = isCreateForm ? "create-alert-form" : "edit-alert-form";
-  const dialogTitle = isCreateForm ? "Create Alert" : "Edit Alert";
+  $: formId = isCreateForm ? "create-alert-form" : "edit-alert-form";
+  $: dialogTitle = isCreateForm ? "Create Alert" : "Edit Alert";
 
   const tabs = ["Data", "Criteria", "Delivery"];
 
@@ -254,7 +257,11 @@
       return;
     }
     // if the user came to the delivery tab and name was not changed then auto generate it
-    const name = generateAlertName($form, metricsViewSpec);
+    const name = generateAlertName(
+      $form,
+      $selectedComparisonTimeRange,
+      metricsViewSpec,
+    );
     if (!name) return;
     $form.name = name;
   }

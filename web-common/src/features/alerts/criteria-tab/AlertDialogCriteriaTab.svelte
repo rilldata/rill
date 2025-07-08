@@ -19,7 +19,7 @@
     description="Trigger alert when these conditions are met"
     title="Criteria"
   >
-    <CriteriaGroup {superFormInstance} />
+    <CriteriaGroup {superFormInstance} {timeControls} />
   </FormSection>
   <FormSection title="Alert Preview">
     <AlertPreview formValues={$form} {filters} {timeControls} />

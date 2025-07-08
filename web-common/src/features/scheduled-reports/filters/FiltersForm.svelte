@@ -255,6 +255,7 @@
         activeTimeZone={$selectedTimezone}
         onDisplayTimeComparison={displayTimeComparison}
         onSetSelectedComparisonRange={setSelectedComparisonRange}
+        allowCustomTimeRange={false}
       />
     {/if}
   </div>
