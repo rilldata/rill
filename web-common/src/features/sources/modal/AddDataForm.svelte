@@ -50,7 +50,11 @@
           (property) => property.key !== "dsn",
         )) ?? [];
   const schema = yup(getYupSchema[connector.name as keyof typeof getYupSchema]);
-  const initialDefaults = getSpecDefaults(connector.configProperties);
+  const initialDefaults = {
+    ...defaults(schema),
+    ...getSpecDefaults(connector.configProperties),
+  };
+  $: console.log("initialDefaults: ", initialDefaults);
   const {
     form: paramsForm,
     errors: paramsErrors,

@@ -38,7 +38,11 @@
 
   // Always include 'managed' in the schema for ClickHouse
   const clickhouseSchema = yup(getYupSchema["clickhouse"]);
-  const initialDefaults = getSpecDefaults(connector.configProperties);
+
+  const initialDefaults = {
+    ...defaults(clickhouseSchema),
+    ...getSpecDefaults(connector.configProperties),
+  };
   const paramsFormId = `add-data-${connector.name}-form`;
   const {
     form: paramsForm,
