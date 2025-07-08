@@ -1,14 +1,15 @@
 ---
-title: Quickstart & Examples
-sidebar_label: Quickstart & Examples
-sidebar_position: 10
+title: Getting Started with Rill
+sidebar_label: Getting Started with Rill
+sidebar_position: 05
 ---
 import Video from '@site/src/components/Video';
 
 <!-- WARNING: There are links to this page in source code. If you move it, find and replace the links and consider adding a redirect in docusaurus.config.js. -->
 
+## Installation
 
-Run the following from the CLI to install and start Rill. Select a sample project from the UI or add your own data.
+Run the following commands in your CLI to install and start Rill. Select a sample project from the UI, or add your own data.
 ```
 curl https://rill.sh | sh
 rill start my-rill-project
@@ -39,42 +40,11 @@ rill start my-rill-project
 </div>
 
 
-## Example Projects Repository
+## Guides
 
-Take a look at our [public repository](https://github.com/rilldata/rill-examples/) for examples on getting started with Rill! 
-
-Each example project includes a README with more details on:
-
-- Source data in the dataset
-- Dimension and metric definitions
-- Example dashboard analyses
-
-Current projects include:
-
-- [App Engagement](https://github.com/rilldata/rill-examples/tree/main/rill-app-engagement): a conversion dataset used by marketers, mobile developers or product teams to analyze funnel steps
-- [Cost Monitoring](https://github.com/rilldata/rill-examples/tree/main/rill-cost-monitoring): based off of Rill's own internal dashboards, cloud infrastructure data (compute, storage, pipeline statistics, etc.) merged with customer data to analyze bottlenecks and look for efficiencies
-- [GitHub Analytics](https://github.com/rilldata/rill-examples/tree/main/rill-github-analytics): analyze GitHub activity to understand what parts of your codebase are most active, analyze contributor productivity, and evaluate the intersections between commits and files
-- [Programmatic Ads/OpenRTB](https://github.com/rilldata/rill-examples/tree/main/rill-openrtb-prog-ads): bidstream data for programmtic advertisers to optimize pricing strategies, look for inventory opportunities, and improve campaign performance
-- [Final Tutorial Project](https://github.com/rilldata/rill-examples/tree/main/my-rill-tutorial): A finalized version of the tutorial project with many working examples, a good place to reference any newer features, updated regularly.
-
-## Installing Examples
-
-You can install `rill` using our installation script:
-
-```
-curl https://rill.sh | sh
-```
-
-To run an example (in this case our Programmatic/OpenRTB dataset):
-```
-git clone https://github.com/rilldata/rill-examples.git
-cd rill-examples/rill-openrtb-prog-ads
-rill start
-```
-
-Rill will build your project from data sources to dashboard and then launch in a new browser window.
+Take a look at our [guides](/guides/) for more in-depth information on how to use Rill and the benefits you can quickly find in our Explore dashboards!
 
 
 ## We want to hear from you
 
-You can file an issue [on GitHub](https://github.com/rilldata/rill/issues/new/choose) or reach us in our [Discord channel](https://discord.gg/DJ5qcsxE2m). If you want to contact Rill Support, please see our [Contact](contact.md#contacting-support) page for additional options.
+You can file an issue [on GitHub](https://github.com/rilldata/rill/issues/new/choose) or reach us in our [Discord channel](https://discord.gg/DJ5qcsxE2m). If you want to contact Rill Support, please see our [Contact](/contact#contacting-support) page for more options.

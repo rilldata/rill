@@ -26,7 +26,7 @@ Please review the reference documentation, [here.](/reference/project-files/metr
 
 ## Customization
 
-For further customization of your measures, you can swtich to the YAML view and with our [metrics view reference documentation](/reference/project-files/metrics-views) use the [format_d3_locale](https://d3js.org/d3-format#formatLocale) parameter to create specific formatting. 
+For further customization of your measures, you can switch to the YAML view and, with our [metrics view reference documentation](/reference/project-files/metrics-views), use the [format_d3_locale](https://d3js.org/d3-format#formatLocale) parameter to create specific formatting. 
 
 ```yaml
  format_d3: 
@@ -38,15 +38,15 @@ For further customization of your measures, you can swtich to the YAML view and 
 
 ## Examples
 
-As explained in the introduction, you'll notice that in each of the screenshot the Big Number doesn't always follow the exact formatting, but will change based on percentage / currency formatting. This is as designed as there is a fixed width that the number has to be displayed. Instead you'll see these values in the dimension leaderboard, TDD and pivot tables.
+As explained in the introduction, you'll notice that in each of the screenshots the Big Number doesn't always follow the exact formatting, but will change based on percentage/currency formatting. This is as designed, as there is a fixed width that the number has to be displayed in. Instead, you'll see these values in the dimension leaderboard, TDD, and pivot tables.
 
-If you have any quesitons, please review our [reference documentation.](/reference/project-files/metrics-views)
+If you have any questions, please review our [reference documentation.](/reference/project-files/metrics-views)
 
 ### Format a measure to include specific amount of decimals
 <img src = '/img/build/metrics-view/examples/decimal-example.png' class='rounded-gif' />
 <br />
 
-In the case that you need to view more granular values of your data, you can set the decimal places to whatever value you need. In the above example, we are setting the average voltage measure to 4 decimals spots to get a more accurate representation for each dimension.
+In the case that you need to view more granular values of your data, you can set the decimal places to whatever value you need. In the above example, we are setting the average voltage measure to 4 decimal places to get a more accurate representation for each dimension.
 
 ```yaml
 format_d3: ".4f"
@@ -64,7 +64,7 @@ format_d3_locale:
     grouping: [3, 2, 2]
     currency: ["₹", ""]
 ```
-As Indian Rupees are formatted in a different way than USD and EUR, you'll need to use the `format_d3_locale` parameter to set the exact grouping and currency. Likewise if the currency symbol is written after the numeric value, you can set the currency to `["". "$"]`. 
+As Indian Rupees are formatted in a different way than USD and EUR, you'll need to use the `format_d3_locale` parameter to set the exact grouping and currency. Likewise, if the currency symbol is written after the numeric value, you can set the currency to `["", "$"]`. 
 
 ### Percentages 
 <img src = '/img/build/metrics-view/examples/percent-example.png' class='rounded-gif' />

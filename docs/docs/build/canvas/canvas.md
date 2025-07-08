@@ -29,7 +29,7 @@ sidebar_position: 05
 </div>
 <br/>
 ----
-While Rill's signature **[Explore dashboards](/build/dashboards/dashboards.md)** let you slice-and-dice and interact with your data in our suggested layout, **Canvas dashboards** let you define your own visualizations of data from from multiple [metrics views](/build/metrics-view/metrics-view.md) and arrange them into your preferred layout. 
+While Rill's signature **[Explore dashboards](/build/dashboards/dashboards.md)** let you slice, dice, and interact with your data in our suggested layout, **Canvas dashboards** let you define your own visualizations of data from multiple [metrics views](/build/metrics-view/metrics-view.md) and arrange them into your preferred layout. 
 
 You can add the following widgets to a Canvas dashboard:
 
@@ -43,7 +43,7 @@ You can add the following widgets to a Canvas dashboard:
 
 ## A Visual Editing Experience 
 
-To modify any single widget, click to select it and use the righthand panel to change its associated properties. Click out of the widget to view global properties associated with the overall Canvas.
+To modify any single widget, click to select it and use the righthand panel to change its associated properties. Click outside the widget to view global properties associated with the overall Canvas.
 
 <img src = '/img/build/canvas/selected-widget.png' class='rounded-gif' />
 <br/>
@@ -55,14 +55,14 @@ Optionally toggle on the filter bar under Canvas properties to give dashboard vi
 <img src = '/img/build/canvas/global-filter-bar.png' class='rounded-gif' />
 <br/>
 
-Filters for a single KPI, Chart, or Table can be separated from the global filters via the "Filters" tab in the properties panel, where you can set filters local to just that widget.
+Filters for a single KPI, Chart, or Table can be separated from the global filters via the "Filters" tab in the properties panel, where you can set filters that are local to just that widget.
 
 
 <img src = '/img/build/canvas/local-filters.png' class='rounded-gif' />
 
 
 ## Making changes to the YAML 
-While we encourage creating Canvas dashboards via the visual editing experience described above, you can always change the YAML file directly using the code view, by flipping the toggle next to the filename at the top of the page. Please see our [customimzation page](customization.md) and [reference documentation](/reference/project-files/canvas-dashboards) for more information.
+While we encourage creating Canvas dashboards via the visual editing experience described above, you can always edit the YAML file directly using the code view by toggling the switch next to the filename at the top of the page. Please see our [customization page](customization.md) and [reference documentation](/reference/project-files/canvas-dashboards) for more information.
 
 
 <img src = '/img/build/canvas/code-toggle.png' class='rounded-gif' />
