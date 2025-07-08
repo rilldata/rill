@@ -32,9 +32,9 @@ import {
 
 export interface TimeSeriesDatum {
   ts?: Date;
-  bin?: number;
-  ts_comparison?: Date;
   ts_position?: Date;
+  "comparison.ts"?: Date;
+  "comparison.ts_position"?: Date;
   [key: string]: Date | string | number | undefined;
 }
 

@@ -108,7 +108,7 @@ export function prepareTimeSeriesOffsets(
   timeDimension: string | undefined,
   timeGrainDuration: string,
   zone: string,
-) {
+): TimeSeriesDatum[] {
   return timeSeriesData?.map((datum) => {
     const emptyPt = {
       ts: undefined,
@@ -120,7 +120,10 @@ export function prepareTimeSeriesOffsets(
       return emptyPt;
     }
 
-    const comparisonPt = datum?.[timeDimension + ComparisonTimeSuffix];
+    const comparisonTime = datum?.[timeDimension + ComparisonTimeSuffix] as
+      | string
+      | Date
+      | undefined;
     const currentTime = datum[timeDimension] as string | Date | undefined;
 
     const ts = adjustOffsetForZone(currentTime, zone, timeGrainDuration);
@@ -130,16 +133,28 @@ export function prepareTimeSeriesOffsets(
     }
     const offsetDuration = getDurationMultiple(timeGrainDuration, 0.5);
     const ts_position = getOffset(ts, offsetDuration, TimeOffsetType.ADD);
+
+    let ts_comparison: Date | undefined;
+    let ts_comparison_position: Date | undefined;
+    if (comparisonTime) {
+      ts_comparison = adjustOffsetForZone(
+        comparisonTime,
+        zone,
+        timeGrainDuration,
+      ) as Date;
+      ts_comparison_position = getOffset(
+        ts_comparison,
+        offsetDuration,
+        TimeOffsetType.ADD,
+      );
+    }
+
     return {
       ts,
       ts_position,
+      "comparison.ts": ts_comparison,
+      "comparison.ts_position": ts_comparison_position,
       ...datum,
-      ...toComparisonKeys(
-        comparisonPt || {},
-        offsetDuration,
-        zone,
-        timeGrainDuration,
-      ),
     };
   });
 }

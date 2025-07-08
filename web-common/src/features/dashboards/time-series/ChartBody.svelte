@@ -3,6 +3,7 @@
     ChunkedLine,
     ClippedChunkedLine,
   } from "@rilldata/web-common/components/data-graphic/marks";
+  import { ComparisonDeltaPreviousSuffix } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
   import {
     AreaMutedColorGradientDark,
     AreaMutedColorGradientLight,
@@ -12,6 +13,7 @@
     MainLineColor,
   } from "@rilldata/web-common/features/dashboards/time-series/chart-colors";
   import type { DimensionDataItem } from "@rilldata/web-common/features/dashboards/time-series/multiple-dimension-queries";
+  import type { TimeSeriesDatum } from "@rilldata/web-common/features/dashboards/time-series/timeseries-data-store";
   import { previousValueStore } from "@rilldata/web-common/lib/store-utils";
   import { writable } from "svelte/store";
 
@@ -21,7 +23,7 @@
   export let showComparison: boolean;
   export let dimensionValue: string | undefined | null;
   export let isHovering: boolean;
-  export let data;
+  export let data: TimeSeriesDatum[];
   export let dimensionData: DimensionDataItem[] = [];
   export let xAccessor: string;
   export let yAccessor: string;
@@ -136,7 +138,7 @@
             : 200}
           {data}
           {xAccessor}
-          yAccessor="comparison.{yAccessor}"
+          yAccessor={yAccessor + ComparisonDeltaPreviousSuffix}
         />
       </g>
     {/if}
