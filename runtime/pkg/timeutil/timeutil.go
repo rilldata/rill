@@ -2,10 +2,11 @@ package timeutil
 
 import (
 	"time"
-	// Load IANA time zone data
-	_ "time/tzdata"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+
+	// Load IANA time zone data
+	_ "time/tzdata"
 )
 
 // TimeGrain is extension of std time package with Week and Quarter added
@@ -200,15 +201,15 @@ func OffsetTime(tm time.Time, tg TimeGrain, n int) time.Time {
 	switch tg {
 	case TimeGrainUnspecified:
 	case TimeGrainMillisecond:
-		tm = tm.Add(time.Duration(n) * time.Millisecond)
+		return tm.Add(time.Duration(n) * time.Millisecond)
 	case TimeGrainSecond:
-		tm = tm.Add(time.Duration(n) * time.Second)
+		return tm.Add(time.Duration(n) * time.Second)
 	case TimeGrainMinute:
-		tm = tm.Add(time.Duration(n) * time.Minute)
+		return tm.Add(time.Duration(n) * time.Minute)
 	case TimeGrainHour:
-		tm = tm.Add(time.Duration(n) * time.Hour)
+		return tm.Add(time.Duration(n) * time.Hour)
 	case TimeGrainDay:
-		tm = tm.AddDate(0, 0, n)
+		return tm.AddDate(0, 0, n)
 	case TimeGrainWeek:
 		return tm.AddDate(0, 0, n*7)
 	case TimeGrainMonth, TimeGrainQuarter, TimeGrainYear:
@@ -236,7 +237,7 @@ func OffsetTime(tm time.Time, tg TimeGrain, n int) time.Time {
 		return offsetFirstDay.AddDate(0, 0, min(maxDays-1, tm.Day()-1))
 	}
 
-	return tm.In(time.UTC)
+	return tm
 }
 
 var daysForMonths = []int{31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31}
