@@ -56,7 +56,7 @@ type CatalogStore interface {
 	FindConversation(ctx context.Context, conversationID string) (*Conversation, error)
 	InsertConversation(ctx context.Context, ownerID, title string) (string, error)
 	FindMessages(ctx context.Context, conversationID string) ([]*Message, error)
-	InsertMessage(ctx context.Context, conversationID, role string, content []MessageContent, parentMessageID *string) (string, error)
+	InsertMessage(ctx context.Context, conversationID, role string, content []MessageContent) (string, error)
 }
 
 // Resource is an entry in a catalog store

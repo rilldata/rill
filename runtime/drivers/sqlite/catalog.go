@@ -440,7 +440,7 @@ func (c *catalogStore) FindMessages(ctx context.Context, conversationID string) 
 }
 
 // InsertMessage inserts a new message into a conversation.
-func (c *catalogStore) InsertMessage(ctx context.Context, conversationID, role string, content []drivers.MessageContent, parentMessageID *string) (string, error) {
+func (c *catalogStore) InsertMessage(ctx context.Context, conversationID, role string, content []drivers.MessageContent) (string, error) {
 	messageID := uuid.NewString()
 
 	// Create message struct and set content

@@ -507,7 +507,7 @@ func (r *Runtime) addMessage(ctx context.Context, instanceID, conversationID, ro
 		return "", err
 	}
 
-	return catalog.InsertMessage(ctx, conversationID, role, catalogContent, nil)
+	return catalog.InsertMessage(ctx, conversationID, role, catalogContent)
 }
 
 // maybeTruncateConversation keeps recent messages and a few early ones for context.
