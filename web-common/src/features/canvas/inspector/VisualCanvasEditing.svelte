@@ -6,14 +6,17 @@
   import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
   import { Inspector } from "@rilldata/web-common/layout/workspace";
   import { parseDocument } from "yaml";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 
   export let fileArtifact: FileArtifact;
   export let autoSave: boolean;
   export let canvasName: string;
 
+  $: ({ instanceId } = $runtime);
+
   $: ({
     canvasEntity: { selectedComponent, components },
-  } = getCanvasStore(canvasName));
+  } = getCanvasStore(canvasName, instanceId));
 
   $: ({ editorContent, updateEditorContent, saveLocalContent, path } =
     fileArtifact);

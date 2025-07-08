@@ -41,7 +41,7 @@
       spec: { canvasSpec },
       filters: { setFilters },
     },
-  } = getCanvasStore(canvasName));
+  } = getCanvasStore(canvasName, instanceId));
 
   $: ({ instanceId } = $runtime);
 
