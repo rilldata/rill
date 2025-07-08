@@ -34,7 +34,7 @@ func (c *connection) ListDatabaseSchemas(ctx context.Context) ([]*drivers.Databa
 			return nil, fmt.Errorf("failed to scan schema row: %w", err)
 		}
 
-                // Skip the SNOWFLAKE database and INFORMATION_SCHEMA schema unless they are the current database or schema in use.
+		// Skip the SNOWFLAKE database and INFORMATION_SCHEMA schema unless they are the current database or schema in use.
 		if (strings.EqualFold(dbName, "SNOWFLAKE") && !strings.EqualFold(curDBName, "SNOWFLAKE")) || (strings.EqualFold(schemaName, "INFORMATION_SCHEMA") && !strings.EqualFold(curSchemaName, "INFORMATION_SCHEMA")) {
 			continue
 		}
