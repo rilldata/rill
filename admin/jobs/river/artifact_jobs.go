@@ -11,7 +11,6 @@ import (
 	"cloud.google.com/go/storage"
 	"github.com/rilldata/rill/admin"
 	"github.com/riverqueue/river"
-	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -23,8 +22,7 @@ func (DeleteExpiredVirtualFilesArgs) Kind() string { return "delete_expired_virt
 
 type DeleteExpiredVirtualFilesWorker struct {
 	river.WorkerDefaults[DeleteExpiredVirtualFilesArgs]
-	admin  *admin.Service
-	logger *zap.Logger
+	admin *admin.Service
 }
 
 func (w *DeleteExpiredVirtualFilesWorker) Work(ctx context.Context, job *river.Job[DeleteExpiredVirtualFilesArgs]) error {
@@ -43,8 +41,7 @@ func (DeleteUnusedAssetsArgs) Kind() string { return "delete_unused_assets" }
 
 type DeleteUnusedAssetsWorker struct {
 	river.WorkerDefaults[DeleteUnusedAssetsArgs]
-	admin  *admin.Service
-	logger *zap.Logger
+	admin *admin.Service
 }
 
 func (w *DeleteUnusedAssetsWorker) Work(ctx context.Context, job *river.Job[DeleteUnusedAssetsArgs]) error {

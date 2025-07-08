@@ -6,7 +6,6 @@ import (
 
 	"github.com/rilldata/rill/admin"
 	"github.com/riverqueue/river"
-	"go.uber.org/zap"
 )
 
 // DeleteExpiredDeviceAuthCodesArgs and Worker for both user and service tokens
@@ -17,8 +16,7 @@ func (DeleteExpiredDeviceAuthCodesArgs) Kind() string { return "delete_expired_d
 
 type DeleteExpiredDeviceAuthCodesWorker struct {
 	river.WorkerDefaults[DeleteExpiredDeviceAuthCodesArgs]
-	admin  *admin.Service
-	logger *zap.Logger
+	admin *admin.Service
 }
 
 func (w *DeleteExpiredDeviceAuthCodesWorker) Work(ctx context.Context, job *river.Job[DeleteExpiredDeviceAuthCodesArgs]) error {
@@ -34,8 +32,7 @@ func (DeleteExpiredAuthCodesArgs) Kind() string { return "delete_expired_auth_co
 
 type DeleteExpiredAuthCodesWorker struct {
 	river.WorkerDefaults[DeleteExpiredAuthCodesArgs]
-	admin  *admin.Service
-	logger *zap.Logger
+	admin *admin.Service
 }
 
 func (w *DeleteExpiredAuthCodesWorker) Work(ctx context.Context, job *river.Job[DeleteExpiredAuthCodesArgs]) error {

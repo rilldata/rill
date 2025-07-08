@@ -10,6 +10,7 @@ import (
 
 	"github.com/rilldata/rill/admin"
 	"github.com/rilldata/rill/admin/database"
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/riverqueue/river"
 	"go.opentelemetry.io/otel/attribute"
@@ -18,8 +19,6 @@ import (
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-
-	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 )
 
 const validateDeploymentsForProjectTimeout = 5 * time.Minute
