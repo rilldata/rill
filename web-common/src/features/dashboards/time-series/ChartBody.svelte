@@ -116,7 +116,7 @@
               : 200}
             data={d?.data || []}
             {xAccessor}
-            yAccessor="comparison.{yAccessor}"
+            yAccessor={yAccessor + ComparisonDeltaPreviousSuffix}
           />
         </g>
       {/if}

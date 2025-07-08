@@ -1,5 +1,6 @@
 import type { GraphicScale } from "@rilldata/web-common/components/data-graphic/state/types";
 import { bisectData } from "@rilldata/web-common/components/data-graphic/utils";
+import { ComparisonDeltaPreviousSuffix } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
 import { createIndexMap } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils";
 import {
   createAndExpression,
@@ -47,21 +48,17 @@ export function toComparisonKeys(
   return Object.keys(d).reduce((acc, key) => {
     if (key === "records") {
       Object.entries(d.records).forEach(([key, value]) => {
-        acc[`comparison.${key}`] = value;
+        acc[key + ComparisonDeltaPreviousSuffix] = value;
       });
-    } else if (`comparison.${key}` === "comparison.ts") {
-      acc[`comparison.${key}`] = adjustOffsetForZone(
-        d[key],
-        zone,
-        grainDuration,
-      );
+    } else if (key === "ts") {
+      acc["comparison.ts"] = adjustOffsetForZone(d[key], zone, grainDuration);
       acc["comparison.ts_position"] = getOffset(
         acc["comparison.ts"],
         offsetDuration,
         TimeOffsetType.ADD,
       );
     } else {
-      acc[`comparison.${key}`] = d[key];
+      acc[key + ComparisonDeltaPreviousSuffix] = d[key];
     }
     return acc;
   }, {});
