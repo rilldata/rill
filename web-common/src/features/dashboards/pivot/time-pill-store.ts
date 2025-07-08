@@ -119,6 +119,7 @@ export const timePillActions = {
       (chip) => chip.id as AvailableTimeGrain,
     );
 
+    console.log("usedGrains", usedGrains);
     timePillStore.update((state) => ({
       ...state,
       [timeDimensionKey]: {

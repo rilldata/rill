@@ -12,6 +12,7 @@
   import PivotChip from "./PivotChip.svelte";
   import PivotPortalItem from "./PivotPortalItem.svelte";
   import { swapListener } from "./swapListener";
+  import TimeDropdownChip from "./TimeDropdownChip.svelte";
   import {
     type PivotChipData,
     PivotChipType,
@@ -41,6 +42,7 @@
   import {
     handleTimeChipClick,
     handleTimeChipDrop,
+    isNewTimeChip,
     updateTimeChipGrain,
   } from "@rilldata/web-common/features/dashboards/pivot/time-pill-utils";
   import { timePillSelectors } from "./time-pill-store";
@@ -79,7 +81,8 @@
 
   function handleMouseDown(e: MouseEvent, item: PivotChipData) {
     const target = e.target as HTMLElement;
-    if (target.closest(".grain-dropdown")) return;
+    if (target.closest(".grain-dropdown") || target.closest(".grain-label"))
+      return;
 
     e.preventDefault();
 
@@ -149,12 +152,13 @@
       if (dragChip && ghostIndex !== null) {
         const temp = [...items];
 
-        const timeChipsInZone = temp.filter(
-          (chip) => chip.type === PivotChipType.Time,
-        );
-
         let chipToAdd = dragChip;
-        if (dragChip.type === PivotChipType.Time) {
+
+        if (isNewTimeChip(chipToAdd)) {
+          const timeChipsInZone = temp.filter(
+            (chip) => chip.type === PivotChipType.Time,
+          );
+
           chipToAdd = handleTimeChipDrop(
             dragChip,
             ghostIndex,
@@ -260,22 +264,32 @@
         class:hidden={dragChip?.id === item.id && zoneStartedDrag}
         class:rounded-full={item.type !== PivotChipType.Measure}
       >
-        <PivotChip
-          grab
-          removable={isDropLocation}
-          withDropdown={isDropLocation && item.type === PivotChipType.Time}
-          availableGrains={isDropLocation && item.type === PivotChipType.Time
-            ? availableTimeGrains
-            : []}
-          onTimeGrainSelect={(timeGrain) =>
-            handleTimeGrainSelect(item, timeGrain)}
-          {item}
-          on:mousedown={(e) => handleMouseDown(e, item)}
-          onRemove={() => {
-            items = items.filter((i) => i.id !== item.id);
-            onUpdate(items);
-          }}
-        />
+        {#if isDropLocation && item.type === PivotChipType.Time}
+          <TimeDropdownChip
+            {item}
+            grab
+            removable
+            availableGrains={availableTimeGrains}
+            onTimeGrainSelect={(timeGrain) =>
+              handleTimeGrainSelect(item, timeGrain)}
+            on:mousedown={(e) => handleMouseDown(e, item)}
+            onRemove={() => {
+              items = items.filter((i) => i.id !== item.id);
+              onUpdate(items);
+            }}
+          />
+        {:else}
+          <PivotChip
+            {item}
+            grab
+            removable={isDropLocation}
+            on:mousedown={(e) => handleMouseDown(e, item)}
+            onRemove={() => {
+              items = items.filter((i) => i.id !== item.id);
+              onUpdate(items);
+            }}
+          />
+        {/if}
       </div>
 
       {#if zone !== "rows" && zone !== "columns"}

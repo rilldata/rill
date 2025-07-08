@@ -5,7 +5,11 @@
   import { onMount } from "svelte";
   import { slide } from "svelte/transition";
   import PivotDrag from "./PivotDrag.svelte";
-  import { timePillActions, timePillSelectors } from "./time-pill-store";
+  import {
+    timePillActions,
+    timePills,
+    timePillSelectors,
+  } from "./time-pill-store";
   import type { PivotChipData } from "./types";
   import { PivotChipType } from "./types";
 
@@ -18,7 +22,7 @@
     },
   } = stateManagers;
 
-  const timeControlsStore = useTimeControlStore(getStateManagers());
+  const timeControlsStore = useTimeControlStore(stateManagers);
 
   let sidebarHeight = 0;
   let searchText = "";
@@ -36,11 +40,14 @@
   }
 
   $: if ($rows && $columns) {
+    console.log("caleed", $rows, $columns);
     timePillActions.updateUsedGrains("time", $rows, $columns.dimension);
   }
 
   // Get reactive values from the store
   $: shouldShowTimePill = timePillSelectors.getAllGrainsUsed("time");
+
+  $: console.log($timePills);
 
   $: timeGrainOptions = !$shouldShowTimePill
     ? [

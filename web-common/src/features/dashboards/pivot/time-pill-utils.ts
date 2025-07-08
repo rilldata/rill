@@ -47,6 +47,12 @@ export function createTimeChipWithGrain(grain: V1TimeGrain): PivotChipData {
   };
 }
 
+export function isNewTimeChip(pivotChip: PivotChipData) {
+  if (pivotChip.type !== PivotChipType.Time) return false;
+  const allGrains = Object.keys(TIME_GRAIN);
+  return !allGrains.includes(pivotChip.id);
+}
+
 /**
  * Handle time chip transformation when dropping
  */
