@@ -22,6 +22,9 @@ const (
 	LocalService_Ping_FullMethodName                                = "/rill.local.v1.LocalService/Ping"
 	LocalService_GetMetadata_FullMethodName                         = "/rill.local.v1.LocalService/GetMetadata"
 	LocalService_GetVersion_FullMethodName                          = "/rill.local.v1.LocalService/GetVersion"
+	LocalService_GitStatus_FullMethodName                           = "/rill.local.v1.LocalService/GitStatus"
+	LocalService_GitPull_FullMethodName                             = "/rill.local.v1.LocalService/GitPull"
+	LocalService_GitPush_FullMethodName                             = "/rill.local.v1.LocalService/GitPush"
 	LocalService_PushToGithub_FullMethodName                        = "/rill.local.v1.LocalService/PushToGithub"
 	LocalService_DeployProject_FullMethodName                       = "/rill.local.v1.LocalService/DeployProject"
 	LocalService_RedeployProject_FullMethodName                     = "/rill.local.v1.LocalService/RedeployProject"
@@ -31,6 +34,7 @@ const (
 	LocalService_CreateOrganization_FullMethodName                  = "/rill.local.v1.LocalService/CreateOrganization"
 	LocalService_ListMatchingProjects_FullMethodName                = "/rill.local.v1.LocalService/ListMatchingProjects"
 	LocalService_ListProjectsForOrg_FullMethodName                  = "/rill.local.v1.LocalService/ListProjectsForOrg"
+	LocalService_GetProject_FullMethodName                          = "/rill.local.v1.LocalService/GetProject"
 )
 
 // LocalServiceClient is the client API for LocalService service.
@@ -43,6 +47,16 @@ type LocalServiceClient interface {
 	GetMetadata(ctx context.Context, in *GetMetadataRequest, opts ...grpc.CallOption) (*GetMetadataResponse, error)
 	// GetVersion returns details about the current and latest available Rill versions.
 	GetVersion(ctx context.Context, in *GetVersionRequest, opts ...grpc.CallOption) (*GetVersionResponse, error)
+	// GitStatus returns the curren status of the local git repo. This is equivalent to doing a `git fetch` followed by running `git status`.
+	GitStatus(ctx context.Context, in *GitStatusRequest, opts ...grpc.CallOption) (*GitStatusResponse, error)
+	// GitPull fetches the latest changes from the remote git repo equivalent to `git pull` command.
+	// If there are any merge conflicts the pull is aborted.
+	// Force can be set to true to force the pull and overwrite any local changes.
+	GitPull(ctx context.Context, in *GitPullRequest, opts ...grpc.CallOption) (*GitPullResponse, error)
+	// GitPush pushes the local changes to the remote git repo equivalent to `git push` command.
+	// The difference between this and PushTiGithub is that this does not create a new repo.
+	// It only pushes the changes to the existing remote repo.
+	GitPush(ctx context.Context, in *GitPushRequest, opts ...grpc.CallOption) (*GitPushResponse, error)
 	// PushToGithub create a Git repo from local project and pushed to users git account.
 	PushToGithub(ctx context.Context, in *PushToGithubRequest, opts ...grpc.CallOption) (*PushToGithubResponse, error)
 	// DeployProject deploys the local project to the Rill cloud.
@@ -61,6 +75,8 @@ type LocalServiceClient interface {
 	ListMatchingProjects(ctx context.Context, in *ListMatchingProjectsRequest, opts ...grpc.CallOption) (*ListMatchingProjectsResponse, error)
 	// ListProjectsForOrg returns all projects within an org
 	ListProjectsForOrg(ctx context.Context, in *ListProjectsForOrgRequest, opts ...grpc.CallOption) (*ListProjectsForOrgResponse, error)
+	// GetProject returns information about a specific project
+	GetProject(ctx context.Context, in *GetProjectRequest, opts ...grpc.CallOption) (*GetProjectResponse, error)
 }
 
 type localServiceClient struct {
@@ -95,6 +111,36 @@ func (c *localServiceClient) GetVersion(ctx context.Context, in *GetVersionReque
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GetVersionResponse)
 	err := c.cc.Invoke(ctx, LocalService_GetVersion_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *localServiceClient) GitStatus(ctx context.Context, in *GitStatusRequest, opts ...grpc.CallOption) (*GitStatusResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GitStatusResponse)
+	err := c.cc.Invoke(ctx, LocalService_GitStatus_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *localServiceClient) GitPull(ctx context.Context, in *GitPullRequest, opts ...grpc.CallOption) (*GitPullResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GitPullResponse)
+	err := c.cc.Invoke(ctx, LocalService_GitPull_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *localServiceClient) GitPush(ctx context.Context, in *GitPushRequest, opts ...grpc.CallOption) (*GitPushResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GitPushResponse)
+	err := c.cc.Invoke(ctx, LocalService_GitPush_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -191,6 +237,16 @@ func (c *localServiceClient) ListProjectsForOrg(ctx context.Context, in *ListPro
 	return out, nil
 }
 
+func (c *localServiceClient) GetProject(ctx context.Context, in *GetProjectRequest, opts ...grpc.CallOption) (*GetProjectResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetProjectResponse)
+	err := c.cc.Invoke(ctx, LocalService_GetProject_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // LocalServiceServer is the server API for LocalService service.
 // All implementations must embed UnimplementedLocalServiceServer
 // for forward compatibility.
@@ -201,6 +257,16 @@ type LocalServiceServer interface {
 	GetMetadata(context.Context, *GetMetadataRequest) (*GetMetadataResponse, error)
 	// GetVersion returns details about the current and latest available Rill versions.
 	GetVersion(context.Context, *GetVersionRequest) (*GetVersionResponse, error)
+	// GitStatus returns the curren status of the local git repo. This is equivalent to doing a `git fetch` followed by running `git status`.
+	GitStatus(context.Context, *GitStatusRequest) (*GitStatusResponse, error)
+	// GitPull fetches the latest changes from the remote git repo equivalent to `git pull` command.
+	// If there are any merge conflicts the pull is aborted.
+	// Force can be set to true to force the pull and overwrite any local changes.
+	GitPull(context.Context, *GitPullRequest) (*GitPullResponse, error)
+	// GitPush pushes the local changes to the remote git repo equivalent to `git push` command.
+	// The difference between this and PushTiGithub is that this does not create a new repo.
+	// It only pushes the changes to the existing remote repo.
+	GitPush(context.Context, *GitPushRequest) (*GitPushResponse, error)
 	// PushToGithub create a Git repo from local project and pushed to users git account.
 	PushToGithub(context.Context, *PushToGithubRequest) (*PushToGithubResponse, error)
 	// DeployProject deploys the local project to the Rill cloud.
@@ -219,6 +285,8 @@ type LocalServiceServer interface {
 	ListMatchingProjects(context.Context, *ListMatchingProjectsRequest) (*ListMatchingProjectsResponse, error)
 	// ListProjectsForOrg returns all projects within an org
 	ListProjectsForOrg(context.Context, *ListProjectsForOrgRequest) (*ListProjectsForOrgResponse, error)
+	// GetProject returns information about a specific project
+	GetProject(context.Context, *GetProjectRequest) (*GetProjectResponse, error)
 	mustEmbedUnimplementedLocalServiceServer()
 }
 
@@ -237,6 +305,15 @@ func (UnimplementedLocalServiceServer) GetMetadata(context.Context, *GetMetadata
 }
 func (UnimplementedLocalServiceServer) GetVersion(context.Context, *GetVersionRequest) (*GetVersionResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetVersion not implemented")
+}
+func (UnimplementedLocalServiceServer) GitStatus(context.Context, *GitStatusRequest) (*GitStatusResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GitStatus not implemented")
+}
+func (UnimplementedLocalServiceServer) GitPull(context.Context, *GitPullRequest) (*GitPullResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GitPull not implemented")
+}
+func (UnimplementedLocalServiceServer) GitPush(context.Context, *GitPushRequest) (*GitPushResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GitPush not implemented")
 }
 func (UnimplementedLocalServiceServer) PushToGithub(context.Context, *PushToGithubRequest) (*PushToGithubResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method PushToGithub not implemented")
@@ -264,6 +341,9 @@ func (UnimplementedLocalServiceServer) ListMatchingProjects(context.Context, *Li
 }
 func (UnimplementedLocalServiceServer) ListProjectsForOrg(context.Context, *ListProjectsForOrgRequest) (*ListProjectsForOrgResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListProjectsForOrg not implemented")
+}
+func (UnimplementedLocalServiceServer) GetProject(context.Context, *GetProjectRequest) (*GetProjectResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetProject not implemented")
 }
 func (UnimplementedLocalServiceServer) mustEmbedUnimplementedLocalServiceServer() {}
 func (UnimplementedLocalServiceServer) testEmbeddedByValue()                      {}
@@ -336,6 +416,60 @@ func _LocalService_GetVersion_Handler(srv interface{}, ctx context.Context, dec 
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(LocalServiceServer).GetVersion(ctx, req.(*GetVersionRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _LocalService_GitStatus_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GitStatusRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(LocalServiceServer).GitStatus(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: LocalService_GitStatus_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(LocalServiceServer).GitStatus(ctx, req.(*GitStatusRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _LocalService_GitPull_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GitPullRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(LocalServiceServer).GitPull(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: LocalService_GitPull_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(LocalServiceServer).GitPull(ctx, req.(*GitPullRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _LocalService_GitPush_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GitPushRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(LocalServiceServer).GitPush(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: LocalService_GitPush_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(LocalServiceServer).GitPush(ctx, req.(*GitPushRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -502,6 +636,24 @@ func _LocalService_ListProjectsForOrg_Handler(srv interface{}, ctx context.Conte
 	return interceptor(ctx, in, info, handler)
 }
 
+func _LocalService_GetProject_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetProjectRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(LocalServiceServer).GetProject(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: LocalService_GetProject_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(LocalServiceServer).GetProject(ctx, req.(*GetProjectRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // LocalService_ServiceDesc is the grpc.ServiceDesc for LocalService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -520,6 +672,18 @@ var LocalService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetVersion",
 			Handler:    _LocalService_GetVersion_Handler,
+		},
+		{
+			MethodName: "GitStatus",
+			Handler:    _LocalService_GitStatus_Handler,
+		},
+		{
+			MethodName: "GitPull",
+			Handler:    _LocalService_GitPull_Handler,
+		},
+		{
+			MethodName: "GitPush",
+			Handler:    _LocalService_GitPush_Handler,
 		},
 		{
 			MethodName: "PushToGithub",
@@ -556,6 +720,10 @@ var LocalService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ListProjectsForOrg",
 			Handler:    _LocalService_ListProjectsForOrg_Handler,
+		},
+		{
+			MethodName: "GetProject",
+			Handler:    _LocalService_GetProject_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

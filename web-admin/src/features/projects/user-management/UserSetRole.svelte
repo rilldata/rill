@@ -11,6 +11,7 @@
   } from "@rilldata/web-admin/client";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import { capitalize } from "@rilldata/web-common/components/table/utils";
+  import { ProjectUserRoles } from "@rilldata/web-common/features/users/roles.ts";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { useQueryClient } from "@tanstack/svelte-query";
   import CaretUpIcon from "@rilldata/web-common/components/icons/CaretUpIcon.svelte";
@@ -113,16 +114,15 @@
   }
 </script>
 
-{#if manageProjectMembers}
+{#if manageProjectMembers && !isCurrentUser}
   <DropdownMenu.Root bind:open={isOpen}>
     <DropdownMenu.Trigger
-      class="w-18 flex flex-row gap-1 items-center rounded-sm mr-[10px] {isOpen
+      class="flex flex-row gap-1 items-center rounded-sm mr-[10px] w-[72px] text-right {isOpen
         ? 'bg-slate-200'
         : 'hover:bg-slate-100'} px-2 py-1"
-      disabled={!manageProjectAdmins && getUserRole(user) === "admin"}
     >
       {capitalize(getUserRole(user))}
-      {#if !(!manageProjectAdmins && getUserRole(user) === "admin")}
+      {#if !(!manageProjectAdmins && getUserRole(user) === ProjectUserRoles.Admin)}
         {#if isOpen}
           <CaretUpIcon size="12px" />
         {:else}
@@ -138,7 +138,8 @@
           ) === 'admin'
             ? 'bg-slate-100'
             : ''}"
-          on:click={() => handleSetRole(getUserEmail(user), "admin")}
+          on:click={() =>
+            handleSetRole(getUserEmail(user), ProjectUserRoles.Admin)}
         >
           <span class="font-medium">Admin</span>
           <span class="text-xs text-gray-600"
@@ -152,7 +153,8 @@
         'editor'
           ? 'bg-slate-100'
           : ''}"
-        on:click={() => handleSetRole(getUserEmail(user), "editor")}
+        on:click={() =>
+          handleSetRole(getUserEmail(user), ProjectUserRoles.Editor)}
       >
         <span class="font-medium">Editor</span>
         <span class="text-xs text-gray-600"
@@ -165,7 +167,8 @@
         'viewer'
           ? 'bg-slate-100'
           : ''}"
-        on:click={() => handleSetRole(getUserEmail(user), "viewer")}
+        on:click={() =>
+          handleSetRole(getUserEmail(user), ProjectUserRoles.Viewer)}
       >
         <span class="font-medium">Viewer</span>
         <span class="text-xs text-gray-600"
@@ -186,7 +189,7 @@
   </DropdownMenu.Root>
 {:else}
   <div
-    class="w-18 flex flex-row gap-1 items-center rounded-sm px-2 py-1 mr-[10px]"
+    class="flex flex-row gap-1 items-center rounded-sm px-2 py-1 mr-[10px] w-[72px] text-right"
   >
     <span>{capitalize(getUserRole(user))}</span>
   </div>

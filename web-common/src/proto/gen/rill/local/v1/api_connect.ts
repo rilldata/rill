@@ -3,7 +3,7 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import { CreateOrganizationRequest, CreateOrganizationResponse, DeployProjectRequest, DeployProjectResponse, GetCurrentProjectRequest, GetCurrentProjectResponse, GetCurrentUserRequest, GetCurrentUserResponse, GetMetadataRequest, GetMetadataResponse, GetVersionRequest, GetVersionResponse, ListMatchingProjectsRequest, ListMatchingProjectsResponse, ListOrganizationsAndBillingMetadataRequest, ListOrganizationsAndBillingMetadataResponse, ListProjectsForOrgRequest, ListProjectsForOrgResponse, PingRequest, PingResponse, PushToGithubRequest, PushToGithubResponse, RedeployProjectRequest, RedeployProjectResponse } from "./api_pb.js";
+import { CreateOrganizationRequest, CreateOrganizationResponse, DeployProjectRequest, DeployProjectResponse, GetCurrentProjectRequest, GetCurrentProjectResponse, GetCurrentUserRequest, GetCurrentUserResponse, GetMetadataRequest, GetMetadataResponse, GetProjectRequest, GetProjectResponse, GetVersionRequest, GetVersionResponse, GitPullRequest, GitPullResponse, GitPushRequest, GitPushResponse, GitStatusRequest, GitStatusResponse, ListMatchingProjectsRequest, ListMatchingProjectsResponse, ListOrganizationsAndBillingMetadataRequest, ListOrganizationsAndBillingMetadataResponse, ListProjectsForOrgRequest, ListProjectsForOrgResponse, PingRequest, PingResponse, PushToGithubRequest, PushToGithubResponse, RedeployProjectRequest, RedeployProjectResponse } from "./api_pb.js";
 import { MethodKind } from "@bufbuild/protobuf";
 
 /**
@@ -43,6 +43,43 @@ export const LocalService = {
       name: "GetVersion",
       I: GetVersionRequest,
       O: GetVersionResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * GitStatus returns the curren status of the local git repo. This is equivalent to doing a `git fetch` followed by running `git status`.
+     *
+     * @generated from rpc rill.local.v1.LocalService.GitStatus
+     */
+    gitStatus: {
+      name: "GitStatus",
+      I: GitStatusRequest,
+      O: GitStatusResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * GitPull fetches the latest changes from the remote git repo equivalent to `git pull` command.
+     * If there are any merge conflicts the pull is aborted.
+     * Force can be set to true to force the pull and overwrite any local changes.
+     *
+     * @generated from rpc rill.local.v1.LocalService.GitPull
+     */
+    gitPull: {
+      name: "GitPull",
+      I: GitPullRequest,
+      O: GitPullResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * GitPush pushes the local changes to the remote git repo equivalent to `git push` command.
+     * The difference between this and PushTiGithub is that this does not create a new repo.
+     * It only pushes the changes to the existing remote repo.
+     *
+     * @generated from rpc rill.local.v1.LocalService.GitPush
+     */
+    gitPush: {
+      name: "GitPush",
+      I: GitPushRequest,
+      O: GitPushResponse,
       kind: MethodKind.Unary,
     },
     /**
@@ -142,6 +179,17 @@ export const LocalService = {
       name: "ListProjectsForOrg",
       I: ListProjectsForOrgRequest,
       O: ListProjectsForOrgResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * GetProject returns information about a specific project
+     *
+     * @generated from rpc rill.local.v1.LocalService.GetProject
+     */
+    getProject: {
+      name: "GetProject",
+      I: GetProjectRequest,
+      O: GetProjectResponse,
       kind: MethodKind.Unary,
     },
   }

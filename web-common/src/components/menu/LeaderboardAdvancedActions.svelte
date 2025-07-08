@@ -7,10 +7,25 @@
     PopoverContent,
     PopoverTrigger,
   } from "@rilldata/web-common/components/popover";
+  import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
+  import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
+  import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
+
+  const ctx = getStateManagers();
+  const { exploreName } = ctx;
+
+  const timeControlsStore = useTimeControlStore(ctx);
+  $: ({ showTimeComparison } = $timeControlsStore);
 
   export let isOpen: boolean;
-  export let leaderboardShowContextForAllMeasures: boolean;
-  export let setLeaderboardShowContextForAllMeasures: (value: boolean) => void;
+  export let toggle: () => void;
+
+  // Ensure time comparison is enabled before toggling the leaderboard show context for all measures
+  function ensureTimeComparisonEnabled() {
+    if (!showTimeComparison) {
+      metricsExplorerStore.displayTimeComparison($exploreName, true);
+    }
+  }
 </script>
 
 <Popover bind:open={isOpen}>
@@ -26,11 +41,12 @@
   >
     <span>Show context for all measures</span>
     <Switch
-      checked={leaderboardShowContextForAllMeasures}
-      on:click={() => {
-        setLeaderboardShowContextForAllMeasures(
-          !leaderboardShowContextForAllMeasures,
-        );
+      theme
+      onCheckedChange={() => {
+        ensureTimeComparisonEnabled();
+
+        // Avoid race condition
+        setTimeout(() => toggle(), 0);
       }}
       small
     />

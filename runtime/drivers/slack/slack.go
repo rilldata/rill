@@ -72,7 +72,23 @@ var _ drivers.Handle = &handle{}
 
 // Ping implements drivers.Handle.
 func (h *handle) Ping(ctx context.Context) error {
-	return drivers.ErrNotImplemented
+	// return early when BotToken is not defined.
+	if h.config.BotToken == "" {
+		return nil
+	}
+
+	// Create a test notifier to verify the token
+	notifier, err := newNotifier(h.config.BotToken, nil)
+	if err != nil {
+		return fmt.Errorf("failed to create notifier: %w", err)
+	}
+
+	_, err = notifier.api.AuthTest()
+	if err != nil {
+		return fmt.Errorf("failed to verify bot token: %w", err)
+	}
+
+	return nil
 }
 
 func (h *handle) Driver() string {
@@ -116,6 +132,11 @@ func (h *handle) AsAI(instanceID string) (drivers.AIService, bool) {
 }
 
 func (h *handle) AsOLAP(instanceID string) (drivers.OLAPStore, bool) {
+	return nil, false
+}
+
+// AsInformationSchema implements drivers.Handle.
+func (h *handle) AsInformationSchema() (drivers.InformationSchema, bool) {
 	return nil, false
 }
 

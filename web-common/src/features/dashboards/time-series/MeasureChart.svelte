@@ -292,7 +292,7 @@
         {yExtentMax}
       />
       <line
-        class="stroke-primary-200"
+        class="stroke-theme-200"
         x1={config.plotLeft}
         x2={config.plotLeft + config.plotRight}
         y1={yScale(0)}
@@ -315,7 +315,7 @@
           {#if point && inBounds(internalXMin, internalXMax, point[xAccessor])}
             <g transition:fly={{ duration: 100, x: -4 }}>
               <text
-                class="fill-gray-600 stroke-surface"
+                class="fill-gray-700 stroke-surface"
                 style:paint-order="stroke"
                 stroke-width="3px"
                 x={config.plotLeft + config.bodyBuffer + 6}
@@ -327,7 +327,7 @@
                 <text
                   style:paint-order="stroke"
                   stroke-width="3px"
-                  class="fill-gray-400 stroke-surface"
+                  class="fill-gray-500 stroke-surface"
                   x={config.plotLeft + config.bodyBuffer + 6}
                   y={config.plotTop + 24 + config.bodyBuffer}
                 >

@@ -40,11 +40,11 @@
     <AlertDialogFooter>
       <Button
         type="plain"
-        on:click={() => {
+        onClick={() => {
           open = false;
         }}>Cancel</Button
       >
-      <Button type="primary" on:click={handleRefresh}>Yes, refresh</Button>
+      <Button type="primary" onClick={handleRefresh}>Yes, refresh</Button>
     </AlertDialogFooter>
   </AlertDialogContent>
 </AlertDialog>

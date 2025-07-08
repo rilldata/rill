@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-	"strings"
 	"time"
 
 	"github.com/go-git/go-git/v5/plumbing/transport"
@@ -16,12 +15,9 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-const gitURLTTL = 30 * time.Minute
-
 func (s *Server) GetRepoMeta(ctx context.Context, req *adminv1.GetRepoMetaRequest) (*adminv1.GetRepoMetaResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.project_id", req.ProjectId),
-		attribute.String("args.branch", req.Branch),
 	)
 
 	proj, err := s.admin.DB.FindProject(ctx, req.ProjectId)
@@ -29,13 +25,10 @@ func (s *Server) GetRepoMeta(ctx context.Context, req *adminv1.GetRepoMetaReques
 		return nil, err
 	}
 
-	permissions := auth.GetClaims(ctx).ProjectPermissions(ctx, proj.OrganizationID, proj.ID)
-	if !permissions.ReadProdStatus {
+	claims := auth.GetClaims(ctx)
+	perms := claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID)
+	if !perms.ReadProdStatus && !perms.ReadDevStatus {
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to read project repo")
-	}
-
-	if proj.ProdBranch != req.Branch {
-		return nil, status.Error(codes.InvalidArgument, "branch not found")
 	}
 
 	if proj.ArchiveAssetID != nil {
@@ -49,14 +42,25 @@ func (s *Server) GetRepoMeta(ctx context.Context, req *adminv1.GetRepoMetaReques
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
 		return &adminv1.GetRepoMetaResponse{
+			ExpiresOn:          timestamppb.New(time.Now().Add(time.Hour * 24 * 365)), // Setting to a year because it doesn't need to be refreshed
+			LastUpdatedOn:      timestamppb.New(proj.UpdatedOn),
 			ArchiveId:          asset.ID,
 			ArchiveDownloadUrl: downloadURL,
 			ArchiveCreatedOn:   timestamppb.New(asset.CreatedOn),
 		}, nil
 	}
 
-	if proj.GithubURL == nil || proj.GithubInstallationID == nil {
+	if proj.GitRemote == nil || proj.GithubInstallationID == nil {
 		return nil, status.Error(codes.FailedPrecondition, "project does not have a github integration")
+	}
+
+	var depl *database.Deployment
+	if claims.OwnerType() == auth.OwnerTypeDeployment {
+		var err error
+		depl, err = s.admin.DB.FindDeployment(ctx, claims.OwnerID())
+		if err != nil {
+			return nil, status.Error(codes.NotFound, "deployment not found")
+		}
 	}
 
 	repoID, err := s.githubRepoIDForProject(ctx, proj)
@@ -64,29 +68,31 @@ func (s *Server) GetRepoMeta(ctx context.Context, req *adminv1.GetRepoMetaReques
 		return nil, err
 	}
 
-	token, err := s.admin.Github.InstallationToken(ctx, *proj.GithubInstallationID, repoID)
+	token, expiresAt, err := s.admin.Github.InstallationToken(ctx, *proj.GithubInstallationID, repoID)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	var cloneURL string
-	if strings.HasSuffix(*proj.GithubURL, ".git") {
-		cloneURL = *proj.GithubURL
-	} else {
-		cloneURL = *proj.GithubURL + ".git"
-	}
-	ep, err := transport.NewEndpoint(cloneURL)
+	ep, err := transport.NewEndpoint(*proj.GitRemote)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "failed to create endpoint from %q: %s", *proj.GithubURL, err.Error())
+		return nil, status.Errorf(codes.InvalidArgument, "failed to create endpoint from %q: %s", *proj.GitRemote, err.Error())
 	}
 	ep.User = "x-access-token"
 	ep.Password = token
 	gitURL := ep.String()
 
+	var editBranch string
+	if depl != nil {
+		editBranch = depl.Branch
+	}
+
 	return &adminv1.GetRepoMetaResponse{
-		GitUrl:          gitURL,
-		GitUrlExpiresOn: timestamppb.New(time.Now().Add(gitURLTTL)),
-		GitSubpath:      proj.Subpath,
+		ExpiresOn:     timestamppb.New(expiresAt),
+		LastUpdatedOn: timestamppb.New(proj.UpdatedOn),
+		GitUrl:        gitURL,
+		GitSubpath:    proj.Subpath,
+		GitBranch:     proj.ProdBranch,
+		GitEditBranch: editBranch,
 	}, nil
 }
 
@@ -102,9 +108,24 @@ func (s *Server) PullVirtualRepo(ctx context.Context, req *adminv1.PullVirtualRe
 		return nil, err
 	}
 
-	permissions := auth.GetClaims(ctx).ProjectPermissions(ctx, proj.OrganizationID, proj.ID)
-	if !permissions.ReadProdStatus {
+	claims := auth.GetClaims(ctx)
+	permissions := claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID)
+	if !permissions.ReadProdStatus && !permissions.ReadDevStatus {
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to read project repo")
+	}
+
+	var depl *database.Deployment
+	if claims.OwnerType() == auth.OwnerTypeDeployment {
+		var err error
+		depl, err = s.admin.DB.FindDeployment(ctx, claims.OwnerID())
+		if err != nil {
+			return nil, status.Error(codes.NotFound, "deployment not found")
+		}
+	}
+
+	environment := "prod"
+	if depl != nil {
+		environment = depl.Environment
 	}
 
 	pageToken, err := unmarshalStringTimestampPageToken(req.PageToken)
@@ -113,7 +134,7 @@ func (s *Server) PullVirtualRepo(ctx context.Context, req *adminv1.PullVirtualRe
 	}
 	pageSize := validPageSize(req.PageSize)
 
-	vfs, err := s.admin.DB.FindVirtualFiles(ctx, proj.ID, "prod", pageToken.Ts.AsTime(), pageToken.Str, pageSize)
+	vfs, err := s.admin.DB.FindVirtualFiles(ctx, proj.ID, environment, pageToken.Ts.AsTime(), pageToken.Str, pageSize)
 	if err != nil {
 		return nil, err
 	}

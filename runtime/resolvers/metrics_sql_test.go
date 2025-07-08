@@ -126,3 +126,66 @@ func TestPolicyMetricsSQLAPI(t *testing.T) {
 	require.Equal(t, "msn.com", resp[0]["domain"])
 	require.Equal(t, nil, resp[0]["publisher"])
 }
+
+func TestMetricsSQLWithAdditionalWhere(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
+
+	testruntime.RequireParseErrors(t, rt, instanceID, nil)
+
+	res, err := rt.Resolve(context.Background(), &runtime.ResolveOptions{
+		InstanceID: instanceID,
+		Resolver:   "metrics_sql",
+		ResolverProperties: map[string]any{
+			"sql": "SELECT dom, pub FROM ad_bids_metrics",
+			"additional_where": map[string]any{
+				"cond": map[string]any{
+					"op":    "eq",
+					"exprs": []map[string]any{{"name": "dom"}, {"val": "msn.com"}},
+				},
+			},
+		},
+		Args:   nil,
+		Claims: &runtime.SecurityClaims{},
+	})
+	require.NoError(t, err)
+	defer res.Close()
+
+	require.NotNil(t, res)
+	var rows []map[string]interface{}
+	require.NoError(t, json.Unmarshal(must(res.MarshalJSON()), &rows))
+
+	// Should return filtered results for msn.com only
+	require.Greater(t, len(rows), 0, "Should return filtered results")
+
+	// All returned rows should have dom = "msn.com" due to additional_where filter
+	for _, row := range rows {
+		require.Equal(t, "msn.com", row["dom"], "All rows should have dom = msn.com due to additional_where filter")
+	}
+
+	resNoFilter, err := rt.Resolve(context.Background(), &runtime.ResolveOptions{
+		InstanceID: instanceID,
+		Resolver:   "metrics_sql",
+		ResolverProperties: map[string]any{
+			"sql": "SELECT dom, pub FROM ad_bids_metrics",
+		},
+		Args:   nil,
+		Claims: &runtime.SecurityClaims{},
+	})
+	require.NoError(t, err)
+	defer resNoFilter.Close()
+
+	var rowsNoFilter []map[string]interface{}
+	require.NoError(t, json.Unmarshal(must(resNoFilter.MarshalJSON()), &rowsNoFilter))
+
+	// Without the filter, we should get more domains than just msn.com
+	require.GreaterOrEqual(t, len(rowsNoFilter), len(rows), "Unfiltered results should have same or more rows")
+
+	// Verify unfiltered results include multiple domains
+	domains := make(map[string]bool)
+	for _, row := range rowsNoFilter {
+		if domain, ok := row["dom"].(string); ok {
+			domains[domain] = true
+		}
+	}
+	require.Greater(t, len(domains), 1, "Unfiltered results should include multiple domains")
+}

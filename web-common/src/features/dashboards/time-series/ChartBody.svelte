@@ -123,8 +123,8 @@
     {#if showComparison}
       <g
         class="transition-opacity"
-        class:opacity-80={isHovering}
-        class:opacity-40={!isHovering}
+        class:opacity-100={isHovering}
+        class:opacity-60={!isHovering}
       >
         <ChunkedLine
           lineOpacity={0.5}

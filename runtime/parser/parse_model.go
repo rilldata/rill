@@ -12,6 +12,7 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/duckdbsql"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"google.golang.org/protobuf/types/known/structpb"
+	"gopkg.in/yaml.v3"
 )
 
 // ModelYAML is the raw structure of a Model resource defined in YAML (does not include common fields)
@@ -31,12 +32,45 @@ type ModelYAML struct {
 		Connector  string         `yaml:"connector"`
 		Properties map[string]any `yaml:",inline" mapstructure:",remain"`
 	} `yaml:"stage"`
-	Output struct {
-		Connector  string         `yaml:"connector"`
-		Properties map[string]any `yaml:",inline" mapstructure:",remain"`
-	} `yaml:"output"`
+	Output ModelOutputYAML `yaml:"output"`
+	Tests  []struct {
+		Name     string `yaml:"name"`
+		Assert   string `yaml:"assert"`
+		DataYAML `yaml:",inline"`
+	} `yaml:"tests"`
 	Materialize     *bool `yaml:"materialize"`
 	DefinedAsSource bool  `yaml:"defined_as_source"`
+}
+
+// ModelOutputYAML parses the `output:` property of a model.
+// It supports either a string connector name or a mapping with a connector and arbitrary output properties.
+type ModelOutputYAML struct {
+	Connector  string
+	Properties map[string]any
+}
+
+func (y *ModelOutputYAML) UnmarshalYAML(v *yaml.Node) error {
+	if v == nil {
+		return nil
+	}
+	switch v.Kind {
+	case yaml.ScalarNode:
+		y.Connector = v.Value
+	case yaml.MappingNode:
+		tmp := &struct {
+			Connector  string         `yaml:"connector"`
+			Properties map[string]any `yaml:",inline" mapstructure:",remain"`
+		}{}
+		err := v.Decode(tmp)
+		if err != nil {
+			return err
+		}
+		y.Connector = tmp.Connector
+		y.Properties = tmp.Properties
+	default:
+		return fmt.Errorf("expected connector name or mapping of output properties, got type %q", v.Kind)
+	}
+	return nil
 }
 
 // parseModel parses a model definition and adds the resulting resource to p.Resources.
@@ -112,7 +146,7 @@ func (p *Parser) parseModel(ctx context.Context, node *Node) error {
 	// Build output details
 	outputConnector := tmp.Output.Connector
 	if outputConnector == "" {
-		outputConnector = inputConnector
+		outputConnector = p.defaultOLAPConnector()
 	}
 	outputProps := tmp.Output.Properties
 
@@ -170,6 +204,18 @@ func (p *Parser) parseModel(ctx context.Context, node *Node) error {
 		}
 	}
 
+	// Parse the model tests
+	var modelTests []*runtimev1.ModelTest
+	for i := range tmp.Tests {
+		t := tmp.Tests[i]
+		modelTest, refs, err := p.parseModelTest(t.Name, &t.DataYAML, outputConnector, node.Name, t.Assert)
+		if err != nil {
+			return fmt.Errorf(`failed to parse test %q: %w`, t.Name, err)
+		}
+		modelTests = append(modelTests, modelTest)
+		node.Refs = append(node.Refs, refs...)
+	}
+
 	// Insert the model
 	r, err := p.insertResource(ResourceKindModel, node.Name, node.Paths, node.Refs...)
 	if err != nil {
@@ -208,7 +254,42 @@ func (p *Parser) parseModel(ctx context.Context, node *Node) error {
 	r.ModelSpec.OutputConnector = outputConnector
 	r.ModelSpec.OutputProperties = outputPropsPB
 
+	r.ModelSpec.Tests = modelTests
+
 	return nil
+}
+
+// parseModelTests parses the model tests from the YAML file
+func (p *Parser) parseModelTest(name string, data *DataYAML, connector, modelName, assert string) (*runtimev1.ModelTest, []ResourceName, error) {
+	// Validate required name field
+	if name == "" {
+		return nil, nil, fmt.Errorf(`test must have a "name" defined`)
+	}
+
+	hasSQL := data.SQL != ""
+	hasAssertion := assert != ""
+
+	// Validate that exactly one of "sql" or "assert" is provided
+	switch {
+	case hasSQL && hasAssertion:
+		return nil, nil, fmt.Errorf(`test %q must not have both "sql" and "assert" defined`, name)
+	case !hasSQL && !hasAssertion:
+		return nil, nil, fmt.Errorf(`test %q must have either "sql" or "assert" defined`, name)
+	case hasAssertion:
+		// Wrap assertion condition in a SQL query following SQLMesh audit pattern
+		// Query for rows that violate the assertion (bad data)
+		data.SQL = fmt.Sprintf("SELECT * FROM %s WHERE NOT (%s)", modelName, assert)
+	}
+
+	resolver, props, refs, err := p.parseDataYAML(data, connector)
+	if err != nil {
+		return nil, nil, err
+	}
+	return &runtimev1.ModelTest{
+		Name:               name,
+		Resolver:           resolver,
+		ResolverProperties: props,
+	}, refs, nil
 }
 
 // inferSQLRefs attempts to infer table references from the node's SQL.
@@ -271,7 +352,7 @@ func (p *Parser) trackResourceNamesForDataPaths(ctx context.Context, name Resour
 
 	var localPaths []string
 	if fileutil.IsGlob(path) {
-		entries, err := p.Repo.ListRecursive(ctx, path, true)
+		entries, err := p.Repo.ListGlob(ctx, path, true)
 		if err != nil || len(entries) == 0 {
 			// The actual error will be returned by the model reconciler
 			return nil
@@ -294,7 +375,7 @@ func (p *Parser) trackResourceNamesForDataPaths(ctx context.Context, name Resour
 	}
 
 	// Calculate hash of local files
-	hash, err := p.Repo.FileHash(ctx, localPaths)
+	hash, err := p.Repo.Hash(ctx, localPaths)
 	if err != nil {
 		return err
 	}

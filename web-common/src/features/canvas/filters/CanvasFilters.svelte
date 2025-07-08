@@ -395,7 +395,7 @@
         <!-- if filters are present, place a chip at the end of the flex container 
       that enables clearing all filters -->
         {#if hasFilters}
-          <Button type="text" on:click={clearAllFilters}>Clear filters</Button>
+          <Button type="text" onClick={clearAllFilters}>Clear filters</Button>
         {/if}
       {/if}
     </div>

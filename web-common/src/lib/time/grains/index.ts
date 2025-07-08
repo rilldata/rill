@@ -120,6 +120,7 @@ export function isGrainBigger(
   const smallerIndex = APITimeGrainOrder.indexOf(possiblySmallerGrain);
   return biggerIndex > smallerIndex;
 }
+
 export function getMinGrain(...grains: V1TimeGrain[]) {
   let minGrain: V1TimeGrain = V1TimeGrain.TIME_GRAIN_UNSPECIFIED;
   let minGrainIndex = APITimeGrainOrder.length;

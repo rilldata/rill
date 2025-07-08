@@ -503,14 +503,9 @@ export class Instance extends Message<Instance> {
   annotations: { [key: string]: string } = {};
 
   /**
-   * @generated from field: bool embed_catalog = 6;
+   * @generated from field: string ai_instructions = 23;
    */
-  embedCatalog = false;
-
-  /**
-   * @generated from field: bool watch_repo = 15;
-   */
-  watchRepo = false;
+  aiInstructions = "";
 
   constructor(data?: PartialMessage<Instance>) {
     super();
@@ -534,8 +529,7 @@ export class Instance extends Message<Instance> {
     { no: 8, name: "project_variables", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
     { no: 22, name: "feature_flags", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 8 /* ScalarType.BOOL */} },
     { no: 14, name: "annotations", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
-    { no: 6, name: "embed_catalog", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 15, name: "watch_repo", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 23, name: "ai_instructions", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Instance {
@@ -858,16 +852,6 @@ export class CreateInstanceRequest extends Message<CreateInstanceRequest> {
    */
   annotations: { [key: string]: string } = {};
 
-  /**
-   * @generated from field: bool embed_catalog = 6;
-   */
-  embedCatalog = false;
-
-  /**
-   * @generated from field: bool watch_repo = 11;
-   */
-  watchRepo = false;
-
   constructor(data?: PartialMessage<CreateInstanceRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -885,8 +869,6 @@ export class CreateInstanceRequest extends Message<CreateInstanceRequest> {
     { no: 10, name: "connectors", kind: "message", T: Connector, repeated: true },
     { no: 7, name: "variables", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
     { no: 9, name: "annotations", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
-    { no: 6, name: "embed_catalog", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 11, name: "watch_repo", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateInstanceRequest {
@@ -1069,16 +1051,6 @@ export class EditInstanceRequest extends Message<EditInstanceRequest> {
    */
   annotations: { [key: string]: string } = {};
 
-  /**
-   * @generated from field: optional bool embed_catalog = 6;
-   */
-  embedCatalog?: boolean;
-
-  /**
-   * @generated from field: optional bool watch_repo = 11;
-   */
-  watchRepo?: boolean;
-
   constructor(data?: PartialMessage<EditInstanceRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1096,8 +1068,6 @@ export class EditInstanceRequest extends Message<EditInstanceRequest> {
     { no: 9, name: "connectors", kind: "message", T: Connector, repeated: true },
     { no: 15, name: "variables", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
     { no: 10, name: "annotations", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
-    { no: 6, name: "embed_catalog", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
-    { no: 11, name: "watch_repo", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): EditInstanceRequest {
@@ -2529,6 +2499,11 @@ export class QueryResolverRequest extends Message<QueryResolverRequest> {
  */
 export class QueryResolverResponse extends Message<QueryResolverResponse> {
   /**
+   * @generated from field: google.protobuf.Struct meta = 3;
+   */
+  meta?: Struct;
+
+  /**
    * @generated from field: rill.runtime.v1.StructType schema = 1;
    */
   schema?: StructType;
@@ -2546,6 +2521,7 @@ export class QueryResolverResponse extends Message<QueryResolverResponse> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.runtime.v1.QueryResolverResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 3, name: "meta", kind: "message", T: Struct },
     { no: 1, name: "schema", kind: "message", T: StructType },
     { no: 2, name: "data", kind: "message", T: Struct, repeated: true },
   ]);

@@ -1,9 +1,8 @@
 <script context="module" lang="ts">
-  import { Interval } from "luxon";
-  import Calendar from "@rilldata/web-common/components/date-picker/Calendar.svelte";
-  import { DateTime } from "luxon";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
+  import Calendar from "@rilldata/web-common/components/date-picker/Calendar.svelte";
   import DateInput from "@rilldata/web-common/components/date-picker/DateInput.svelte";
+  import { DateTime, Interval } from "luxon";
 </script>
 
 <script lang="ts">

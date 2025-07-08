@@ -83,24 +83,23 @@ export function useDashboardsV2(
   });
 }
 
-// Super naive heuristic for now.
 function getCanvasRefreshedOn(
   dashboard: V1Resource,
   allResources: Map<string, V1Resource>,
 ): string | undefined {
   if (!dashboard) return undefined;
 
-  // First, get the first referenced resource for the canvas
-  const refResourceName = dashboard.meta.refs[0];
-  const refResource = allResources.get(
-    `${refResourceName?.kind}_${refResourceName?.name}`,
-  );
+  // Find the max refresh time of all the resources that are referenced by the components in the dashboard
+  const maxRefresh = dashboard.meta.refs
+    .map((r) => allResources.get(`${r?.kind}_${r?.name}`))
+    .filter((c) => c.meta.refs.length) // filter out resources that don't have refs such as markdown and image
+    .map((m) =>
+      allResources.get(`${m.meta.refs[0].kind}_${m.meta.refs[0].name}`),
+    )
+    .map((m) => m?.metricsView?.state?.dataRefreshedOn)
+    .reduce((max, c) => (c > max ? c : max));
 
-  // Second, get the refreshedOn from the referenced resource
-  return (
-    refResource?.model?.state.refreshedOn ||
-    refResource?.source?.state.refreshedOn
-  );
+  return maxRefresh;
 }
 
 function getExploreRefreshedOn(
@@ -117,5 +116,5 @@ function getExploreRefreshedOn(
   if (!metricsView) return undefined;
 
   // Second, get the refreshedOn from the metrics view
-  return metricsView?.metricsView?.state?.modelRefreshedOn;
+  return metricsView?.metricsView?.state?.dataRefreshedOn;
 }

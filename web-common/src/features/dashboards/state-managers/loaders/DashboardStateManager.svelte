@@ -1,5 +1,10 @@
 <script lang="ts">
-  import { afterNavigate } from "$app/navigation";
+  import { afterNavigate, onNavigate } from "$app/navigation";
+  import { page } from "$app/stores";
+  import {
+    ExploreUrlLimitWarningBannerID,
+    ExploreUrlLimitWarningBannerPriority,
+  } from "@rilldata/web-common/components/banner/constants";
   import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
   import type { CompoundQueryResult } from "@rilldata/web-common/features/compound-query-result";
   import { DashboardStateDataLoader } from "@rilldata/web-common/features/dashboards/state-managers/loaders/DashboardStateDataLoader";
@@ -7,7 +12,9 @@
   import { useExploreState } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
   import DashboardLoading from "@rilldata/web-common/features/dashboards/state-managers/loaders/DashboardLoading.svelte";
+  import { isUrlTooLong } from "@rilldata/web-common/features/dashboards/url-state/url-length-limits";
   import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
+  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { onDestroy } from "svelte";
@@ -17,6 +24,7 @@
   export let bookmarkOrTokenExploreState:
     | CompoundQueryResult<Partial<ExploreState> | null>
     | undefined = undefined;
+  export let disableMostRecentDashboardState: boolean = false;
 
   $: ({ instanceId } = $runtime);
   $: exploreSpecQuery = useExploreValidSpec(instanceId, exploreName);
@@ -29,6 +37,7 @@
     exploreName,
     storageNamespacePrefix,
     bookmarkOrTokenExploreState,
+    disableMostRecentDashboardState,
   );
 
   let stateSync: DashboardStateSync | undefined;
@@ -57,10 +66,36 @@
     });
   }
 
+  $: showUrlWarning = isUrlTooLong($page.url);
+  $: if (showUrlWarning) {
+    eventBus.emit("add-banner", {
+      id: ExploreUrlLimitWarningBannerID,
+      priority: ExploreUrlLimitWarningBannerPriority,
+      message: {
+        type: "warning",
+        message:
+          "URL is too long. Some features like export will not work. Please remove some filters.",
+        iconType: "alert",
+      },
+    });
+  } else {
+    eventBus.emit("remove-banner", ExploreUrlLimitWarningBannerID);
+  }
+
   afterNavigate(({ from, to, type }) => {
     if (!from?.url || !to?.url || !stateSync) return;
 
     void stateSync.handleURLChange(to.url.searchParams, type);
+  });
+
+  onNavigate(({ from, to }) => {
+    const changedDashboard =
+      !from || !to || from.params?.dashboard !== to.params?.dashboard;
+    // Clear out any dashboard banners
+    // Note: we still have this on top of the above reactive statement to handle cases where navigation is to a non-dashboard route.
+    if (changedDashboard) {
+      eventBus.emit("remove-banner", ExploreUrlLimitWarningBannerID);
+    }
   });
 
   onDestroy(() => {

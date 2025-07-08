@@ -21,7 +21,7 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/go-git/go-git/v5/plumbing/transport"
 	githttp "github.com/go-git/go-git/v5/plumbing/transport/http"
-	"github.com/google/go-github/v52/github"
+	"github.com/google/go-github/v71/github"
 	"github.com/rilldata/rill/admin"
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/pkg/gitutil"
@@ -38,6 +38,7 @@ import (
 	githuboauth "golang.org/x/oauth2/github"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 const (
@@ -169,8 +170,11 @@ func (s *Server) GetGithubUserStatus(ctx context.Context, req *adminv1.GetGithub
 
 func (s *Server) GetGithubRepoStatus(ctx context.Context, req *adminv1.GetGithubRepoStatusRequest) (*adminv1.GetGithubRepoStatusResponse, error) {
 	observability.AddRequestAttributes(ctx,
-		attribute.String("args.github_url", req.GithubUrl),
+		attribute.String("args.remote", req.Remote),
 	)
+
+	// Backwards compatibility
+	req.Remote = normalizeGitRemote(req.Remote)
 
 	// Check the request is made by an authenticated user
 	claims := auth.GetClaims(ctx)
@@ -179,14 +183,14 @@ func (s *Server) GetGithubRepoStatus(ctx context.Context, req *adminv1.GetGithub
 	}
 
 	// Check whether we have the access to the repo
-	installationID, err := s.admin.GetGithubInstallation(ctx, req.GithubUrl)
+	installationID, err := s.admin.GetGithubInstallation(ctx, req.Remote)
 	if err != nil {
 		if !errors.Is(err, admin.ErrGithubInstallationNotFound) {
 			return nil, status.Errorf(codes.InvalidArgument, "failed to check Github access: %s", err.Error())
 		}
 
 		// If no access, return instructions for granting access
-		grantAccessURL := s.admin.URLs.GithubConnect(req.GithubUrl)
+		grantAccessURL := s.admin.URLs.GithubConnect(req.Remote)
 
 		res := &adminv1.GetGithubRepoStatusResponse{
 			HasAccess:      false,
@@ -206,19 +210,19 @@ func (s *Server) GetGithubRepoStatus(ctx context.Context, req *adminv1.GetGithub
 	if user.GithubUsername == "" {
 		res := &adminv1.GetGithubRepoStatusResponse{
 			HasAccess:      false,
-			GrantAccessUrl: s.admin.URLs.GithubAuth(req.GithubUrl),
+			GrantAccessUrl: s.admin.URLs.GithubAuth(req.Remote),
 		}
 		return res, nil
 	}
 
 	// Get repo info for user and return.
-	repository, err := s.admin.LookupGithubRepoForUser(ctx, installationID, req.GithubUrl, user.GithubUsername)
+	repository, err := s.admin.LookupGithubRepoForUser(ctx, installationID, req.Remote, user.GithubUsername)
 	if err != nil {
 		if errors.Is(err, admin.ErrUserIsNotCollaborator) {
 			// may be user authorised from another username
 			res := &adminv1.GetGithubRepoStatusResponse{
 				HasAccess:      false,
-				GrantAccessUrl: s.admin.URLs.GithubRetryAuthUI(req.GithubUrl, user.GithubUsername),
+				GrantAccessUrl: s.admin.URLs.GithubRetryAuthUI(req.Remote, user.GithubUsername),
 			}
 			return res, nil
 		}
@@ -286,11 +290,14 @@ func (s *Server) ConnectProjectToGithub(ctx context.Context, req *adminv1.Connec
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.organization", req.Organization),
 		attribute.String("args.project", req.Project),
-		attribute.String("args.repo", req.Repo),
+		attribute.String("args.remote", req.Remote),
 		attribute.String("args.branch", req.Branch),
 		attribute.String("args.subpath", req.Subpath),
 		attribute.Bool("args.force", req.Force),
 	)
+
+	// Backwards compatibility
+	req.Remote = normalizeGitRemote(req.Remote)
 
 	// Find project
 	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
@@ -358,24 +365,24 @@ func (s *Server) ConnectProjectToGithub(ctx context.Context, req *adminv1.Connec
 			downloadDst := filepath.Join(downloadDir, "zipped_repo.tar.gz")
 			// extract the archive once the folder is prepped with git
 			return archive.Download(ctx, downloadURL, downloadDst, projPath, false, true)
-		}, req.Repo, req.Branch, req.Subpath, token, req.Force, sign)
+		}, req.Remote, req.Branch, req.Subpath, token, req.Force, sign)
 		if err != nil {
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
-	} else if proj.GithubURL != nil {
+	} else if proj.GitRemote != nil {
 		err = s.pushToGit(ctx, func(projPath string) error {
 			var appToken string
 			if proj.ManagedGitRepoID != nil {
 				// user token is not valid for cloning rill managed repo
-				appToken, err = s.admin.Github.InstallationToken(ctx, *proj.GithubInstallationID, *proj.GithubRepoID)
+				appToken, _, err = s.admin.Github.InstallationToken(ctx, *proj.GithubInstallationID, *proj.GithubRepoID)
 				if err != nil {
 					return err
 				}
 			} else {
 				appToken = token
 			}
-			return copyFromSrcGit(projPath, *proj.GithubURL, proj.ProdBranch, proj.Subpath, appToken)
-		}, req.Repo, req.Branch, req.Subpath, token, req.Force, sign)
+			return copyFromSrcGit(projPath, *proj.GitRemote, proj.ProdBranch, proj.Subpath, appToken)
+		}, req.Remote, req.Branch, req.Subpath, token, req.Force, sign)
 		if err != nil {
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
@@ -392,7 +399,7 @@ func (s *Server) ConnectProjectToGithub(ctx context.Context, req *adminv1.Connec
 		OrganizationName: org.Name,
 		Name:             proj.Name,
 		ProdBranch:       &req.Branch,
-		GithubUrl:        &req.Repo,
+		GitRemote:        &req.Remote,
 		Subpath:          &req.Subpath,
 	})
 	if err != nil {
@@ -428,16 +435,17 @@ func (s *Server) CreateManagedGitRepo(ctx context.Context, req *adminv1.CreateMa
 	if err != nil {
 		return nil, err
 	}
-	token, err := s.admin.Github.InstallationToken(ctx, id, *repo.ID)
+	token, expiresAt, err := s.admin.Github.InstallationToken(ctx, id, *repo.ID)
 	if err != nil {
 		return nil, err
 	}
 
 	return &adminv1.CreateManagedGitRepoResponse{
-		Remote:        *repo.CloneURL,
-		Username:      "x-access-token",
-		Password:      token,
-		DefaultBranch: valOrDefault(repo.DefaultBranch, "main"),
+		Remote:            *repo.CloneURL,
+		Username:          "x-access-token",
+		Password:          token,
+		DefaultBranch:     valOrDefault(repo.DefaultBranch, "main"),
+		PasswordExpiresAt: timestamppb.New(expiresAt),
 	}, nil
 }
 
@@ -465,7 +473,7 @@ func (s *Server) DisconnectProjectFromGithub(ctx context.Context, req *adminv1.D
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to edit project")
 	}
 
-	if proj.GithubURL == nil || proj.ManagedGitRepoID != nil {
+	if proj.GitRemote == nil || proj.ManagedGitRepoID != nil {
 		return nil, status.Error(codes.InvalidArgument, "project is not connected to github")
 	}
 
@@ -484,7 +492,7 @@ func (s *Server) DisconnectProjectFromGithub(ctx context.Context, req *adminv1.D
 		return nil, err
 	}
 
-	mgdRepoToken, err := s.admin.Github.InstallationToken(ctx, id, *repo.ID)
+	mgdRepoToken, _, err := s.admin.Github.InstallationToken(ctx, id, *repo.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -496,12 +504,12 @@ func (s *Server) DisconnectProjectFromGithub(ctx context.Context, req *adminv1.D
 		if err != nil {
 			return err
 		}
-		token, err := s.admin.Github.InstallationToken(ctx, *proj.GithubInstallationID, repoID)
+		token, _, err := s.admin.Github.InstallationToken(ctx, *proj.GithubInstallationID, repoID)
 		if err != nil {
 			return err
 		}
 
-		return copyFromSrcGit(path, *proj.GithubURL, proj.ProdBranch, proj.Subpath, token)
+		return copyFromSrcGit(path, *proj.GitRemote, proj.ProdBranch, proj.Subpath, token)
 	}
 	sign, err := s.gitSignFromClaims(ctx, claims)
 	if err != nil {
@@ -518,7 +526,7 @@ func (s *Server) DisconnectProjectFromGithub(ctx context.Context, req *adminv1.D
 	_, err = s.UpdateProject(ctx, &adminv1.UpdateProjectRequest{
 		OrganizationName: req.Organization,
 		Name:             req.Project,
-		GithubUrl:        repo.CloneURL,
+		GitRemote:        repo.CloneURL,
 		ProdBranch:       &branch,
 		Subpath:          &subpath,
 		ArchiveAssetId:   nil,
@@ -601,7 +609,9 @@ func (s *Server) githubConnectCallback(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		redirectURL := s.admin.URLs.GithubConnectRequestUI(qry.Get("state"))
+		remoteURL := qry.Get("state")
+		remoteURL = normalizeGitRemote(remoteURL) // Backwards compatibility
+		redirectURL := s.admin.URLs.GithubConnectRequestUI(remoteURL)
 		http.Redirect(w, r, redirectURL, http.StatusTemporaryRedirect)
 		return
 	}
@@ -642,6 +652,7 @@ func (s *Server) githubConnectCallback(w http.ResponseWriter, r *http.Request) {
 	}
 
 	remoteURL := qry.Get("state")
+	remoteURL = normalizeGitRemote(remoteURL) // Backwards compatibility
 	if remoteURL == "autoclose" {
 		// signal from UI flow to autoclose the confirmation dialog
 		// TODO: if we ever want more complex signals, we should consider converting this to an object using proto or json
@@ -650,7 +661,7 @@ func (s *Server) githubConnectCallback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	account, repo, ok := gitutil.SplitGithubURL(remoteURL)
+	account, repo, ok := gitutil.SplitGithubRemote(remoteURL)
 	if !ok {
 		// request without state can come in multiple ways like
 		// 	- if user changes app installation directly on the settings page
@@ -728,6 +739,7 @@ func (s *Server) githubAuth(w http.ResponseWriter, r *http.Request) {
 	// Set state in cookie
 	sess.Values[githubcookieFieldState] = state
 	remote := r.URL.Query().Get("remote")
+	remote = normalizeGitRemote(remote) // Backwards compatibility
 	if remote != "" {
 		sess.Values[githubcookieFieldRemote] = remote
 	}
@@ -822,6 +834,7 @@ func (s *Server) githubAuthCallback(w http.ResponseWriter, r *http.Request) {
 		remote = value.(string)
 	}
 	delete(sess.Values, githubcookieFieldRemote)
+	remote = normalizeGitRemote(remote) // Backwards compatibility
 
 	if remote == "autoclose" {
 		// signal from UI flow to autoclose the confirmation dialog
@@ -831,7 +844,7 @@ func (s *Server) githubAuthCallback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	account, repo, ok := gitutil.SplitGithubURL(remote)
+	account, repo, ok := gitutil.SplitGithubRemote(remote)
 	if !ok {
 		http.Redirect(w, r, s.admin.URLs.GithubConnectSuccessUI(false), http.StatusTemporaryRedirect)
 		return
@@ -901,12 +914,10 @@ func (s *Server) githubStatus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var (
-		hasAccess      bool
-		grantAccessURL string
-		remote         = r.URL.Query().Get("remote")
-	)
-
+	var hasAccess bool
+	var grantAccessURL string
+	remote := r.URL.Query().Get("remote")
+	remote = normalizeGitRemote(remote) // Backwards compatibility
 	if remote == "" {
 		resp, err := s.GetGithubUserStatus(ctx, &adminv1.GetGithubUserStatusRequest{})
 		if err != nil {
@@ -916,7 +927,7 @@ func (s *Server) githubStatus(w http.ResponseWriter, r *http.Request) {
 		hasAccess = resp.HasAccess
 		grantAccessURL = resp.GrantAccessUrl
 	} else {
-		resp, err := s.GetGithubRepoStatus(ctx, &adminv1.GetGithubRepoStatusRequest{GithubUrl: remote})
+		resp, err := s.GetGithubRepoStatus(ctx, &adminv1.GetGithubRepoStatusRequest{Remote: remote})
 		if err != nil {
 			http.Error(w, fmt.Sprintf("failed to fetch github repo status: %s", err), http.StatusInternalServerError)
 			return
@@ -1064,7 +1075,7 @@ func (s *Server) fetchReposForInstallation(ctx context.Context, client *github.C
 				Name:          fromStringPtr(repo.Name),
 				Owner:         owner,
 				Description:   fromStringPtr(repo.Description),
-				Url:           fromStringPtr(repo.HTMLURL),
+				Remote:        fromStringPtr(repo.CloneURL),
 				DefaultBranch: branch,
 			})
 		}
@@ -1208,10 +1219,10 @@ func (s *Server) pushToGit(ctx context.Context, copyData func(projPath string) e
 	return nil
 }
 
-func (s *Server) githubAppInstallationURL(state string) string {
+func (s *Server) githubAppInstallationURL(remote string) string {
 	res := fmt.Sprintf("https://github.com/apps/%s/installations/new", s.opts.GithubAppName)
-	if state != "" {
-		res = urlutil.MustWithQuery(res, map[string]string{"state": state})
+	if remote != "" {
+		res = urlutil.MustWithQuery(res, map[string]string{"state": remote})
 	}
 	return res
 }
@@ -1412,4 +1423,17 @@ func copyFile(srcFile, destFile string) error {
 	}
 
 	return nil
+}
+
+// normalizeGitRemote adds a .git suffix to the Git remote URL if it doesn't already have one.
+// If it's not a Github URL, it returns the string as is.
+// This is for backwards compatibility with old CLIs that sent Github HTML URLs instead of Github remote URLs.
+func normalizeGitRemote(remote string) string {
+	if !strings.HasPrefix(remote, "https://github.com") {
+		return remote // Not a Github remote, return as is
+	}
+	if strings.HasSuffix(remote, ".git") {
+		return remote
+	}
+	return remote + ".git"
 }

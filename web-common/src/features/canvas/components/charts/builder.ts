@@ -41,7 +41,7 @@ export function createSingleLayerBaseSpec(
   return {
     $schema: "https://vega.github.io/schema/vega-lite/v5.json",
     description: `A ${mark} chart with embedded data.`,
-    mark,
+    mark: { type: mark, clip: true },
     width: "container",
     data: { name: "metrics-view" },
     autosize: { type: "fit" },
@@ -60,12 +60,13 @@ export function createPositionEncoding(
     type: field.type,
     ...(metaData && "timeUnit" in metaData && { timeUnit: metaData.timeUnit }),
     ...(field.sort && field.type !== "temporal" && { sort: field.sort }),
-    ...(field.type === "quantitative" &&
-      field.zeroBasedOrigin !== true && {
-        scale: {
-          zero: false,
-        },
-      }),
+    ...(field.type === "quantitative" && {
+      scale: {
+        ...(field.zeroBasedOrigin !== true && { zero: false }),
+        ...(field.min !== undefined && { domainMin: field.min }),
+        ...(field.max !== undefined && { domainMax: field.max }),
+      },
+    }),
     axis: {
       ...(field.labelAngle !== undefined && { labelAngle: field.labelAngle }),
       ...(field.type === "quantitative" && {
@@ -109,6 +110,15 @@ export function createOpacityEncoding(paramName: string) {
       },
     ],
     value: 0.2,
+  };
+}
+
+export function createOrderEncoding(field: FieldConfig | undefined) {
+  if (!field) return {};
+  return {
+    field: sanitizeValueForVega(field.field),
+    type: field.type,
+    order: "descending",
   };
 }
 

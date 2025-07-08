@@ -17,8 +17,11 @@ import { updateExploreSessionStore } from "@rilldata/web-common/features/dashboa
 import { getCleanedUrlParamsForGoto } from "@rilldata/web-common/features/dashboards/url-state/convert-partial-explore-state-to-url-params";
 import { createRillDefaultExploreUrlParams } from "@rilldata/web-common/features/dashboards/url-state/get-rill-default-explore-url-params";
 import type { AfterNavigate } from "@sveltejs/kit";
+import { getContext, setContext } from "svelte";
 import { derived, get, type Readable } from "svelte/store";
 import type { CompoundQueryResult } from "@rilldata/web-common/features/compound-query-result";
+
+export const DASHBOARD_STATE_SYNC_KEY = Symbol("state-sync");
 
 /**
  * Keeps explore state and url in sync.
@@ -31,7 +34,7 @@ export class DashboardStateSync {
   private readonly timeControlStore: TimeControlStore;
   // Cached url params for a rill opinionated dashboard defaults. Used to remove params from url.
   // To avoid converting the default explore state to url evey time it is needed we maintain a cached version here.
-  public readonly rillDefaultExploreURLParams: CompoundQueryResult<URLSearchParams>;
+  private readonly rillDefaultExploreURLParams: CompoundQueryResult<URLSearchParams>;
 
   private readonly unsubInit: (() => void) | undefined;
   private readonly unsubExploreState: (() => void) | undefined;
@@ -40,6 +43,10 @@ export class DashboardStateSync {
   // There can be cases when updating either the url or the state can impact the code handling the other part.
   // So we need a lock to make sure an update doesn't trigger the counterpart code.
   private updating = false;
+
+  public static getFromContext() {
+    return getContext<DashboardStateSync>(DASHBOARD_STATE_SYNC_KEY);
+  }
 
   public constructor(
     instanceId: string,
@@ -77,11 +84,38 @@ export class DashboardStateSync {
       if (!exploreState || !this.initialized) return;
       void this.gotoNewState(exploreState);
     });
+
+    setContext(DASHBOARD_STATE_SYNC_KEY, this);
   }
 
   public teardown() {
     this.unsubInit?.();
     this.unsubExploreState?.();
+  }
+
+  public getUrlForExploreState(exploreState: ExploreState) {
+    const { data: validSpecData } = get(this.dataLoader.validSpecQuery);
+    const exploreSpec = validSpecData?.explore ?? {};
+    const pageState = get(page);
+    const { data: rillDefaultExploreURLParams } = get(
+      this.rillDefaultExploreURLParams,
+    );
+    // Type-safety
+    if (!rillDefaultExploreURLParams) return pageState.url;
+
+    const timeControlsState = get(this.timeControlStore);
+
+    const redirectUrl = new URL(pageState.url);
+    const exploreStateParams = getCleanedUrlParamsForGoto(
+      exploreSpec,
+      exploreState,
+      timeControlsState,
+      rillDefaultExploreURLParams,
+      pageState.url,
+    );
+    redirectUrl.search = exploreStateParams.toString();
+
+    return redirectUrl;
   }
 
   /**
@@ -98,6 +132,7 @@ export class DashboardStateSync {
     const { data: rillDefaultExploreURLParams } = get(
       this.rillDefaultExploreURLParams,
     );
+    // Ensure dashboard data is loaded before we proceed.
     if (!rillDefaultExploreURLParams) return;
 
     const pageState = get(page);
@@ -122,15 +157,7 @@ export class DashboardStateSync {
     // Get time controls state after explore state is initialized.
     const timeControlsState = get(this.timeControlStore);
     // Get the updated url params. If we merged state other than the url we would need to navigate to it.
-    const redirectUrl = new URL(pageState.url);
-    const exploreStateParams = getCleanedUrlParamsForGoto(
-      exploreSpec,
-      initExploreState,
-      timeControlsState,
-      rillDefaultExploreURLParams,
-      pageState.url,
-    );
-    redirectUrl.search = exploreStateParams.toString();
+    const redirectUrl = this.getUrlForExploreState(initExploreState);
 
     // Update session storage with the initial state
     updateExploreSessionStore(
@@ -140,12 +167,14 @@ export class DashboardStateSync {
       exploreSpec,
       timeControlsState,
     );
-    // Update "most recent explore state" with the initial state
-    saveMostRecentPartialExploreState(
-      this.exploreName,
-      this.extraPrefix,
-      initExploreState,
-    );
+    if (!this.dataLoader.disableMostRecentDashboardState) {
+      // Update "most recent explore state" with the initial state
+      saveMostRecentPartialExploreState(
+        this.exploreName,
+        this.extraPrefix,
+        initExploreState,
+      );
+    }
 
     // If the current url same as the new url then there is no need to do anything
     if (redirectUrl.search === pageState.url.search) {
@@ -221,15 +250,7 @@ export class DashboardStateSync {
     const timeControlsState = get(this.timeControlStore);
     // Get the updated URL, this could be different from the page url if we added extra state.
     // The extra state could come from session storage, home bookmark or yaml defaults
-    const redirectUrl = new URL(pageState.url);
-    const exploreStateParams = getCleanedUrlParamsForGoto(
-      exploreSpec,
-      partialExplore,
-      timeControlsState,
-      rillDefaultExploreURLParams,
-      pageState.url,
-    );
-    redirectUrl.search = exploreStateParams.toString();
+    const redirectUrl = this.getUrlForExploreState(partialExplore);
 
     // Get the full updated state and save to session storage
     const updatedExploreState =
@@ -241,12 +262,14 @@ export class DashboardStateSync {
       exploreSpec,
       timeControlsState,
     );
-    // Update "most recent explore state" with updated state from url
-    saveMostRecentPartialExploreState(
-      this.exploreName,
-      this.extraPrefix,
-      updatedExploreState,
-    );
+    if (!this.dataLoader.disableMostRecentDashboardState) {
+      // Update "most recent explore state" with updated state from url
+      saveMostRecentPartialExploreState(
+        this.exploreName,
+        this.extraPrefix,
+        updatedExploreState,
+      );
+    }
 
     this.updating = false;
     // If the url doesn't need to be changed further then we can skip the goto
@@ -277,24 +300,11 @@ export class DashboardStateSync {
     const { data: validSpecData } = get(this.dataLoader.validSpecQuery);
     const exploreSpec = validSpecData?.explore ?? {};
     const timeControlsState = get(this.timeControlStore);
-    const { data: rillDefaultExploreURLParams } = get(
-      this.rillDefaultExploreURLParams,
-    );
-    // Type-safety
-    if (!rillDefaultExploreURLParams) return;
 
     const pageState = get(page);
 
     // Get the new url params for the updated state
-    const newUrl = new URL(pageState.url);
-    const exploreStateParams = getCleanedUrlParamsForGoto(
-      exploreSpec,
-      exploreState,
-      timeControlsState,
-      rillDefaultExploreURLParams,
-      newUrl,
-    );
-    newUrl.search = exploreStateParams.toString();
+    const newUrl = this.getUrlForExploreState(exploreState);
 
     // Update the session storage with the new explore state.
     updateExploreSessionStore(
@@ -304,13 +314,15 @@ export class DashboardStateSync {
       exploreSpec,
       timeControlsState,
     );
-    // Update "most recent explore state" with updated state.
-    // Since we do not update the state per action we do it here as blanket update.
-    saveMostRecentPartialExploreState(
-      this.exploreName,
-      this.extraPrefix,
-      exploreState,
-    );
+    if (!this.dataLoader.disableMostRecentDashboardState) {
+      // Update "most recent explore state" with updated state.
+      // Since we do not update the state per action we do it here as blanket update.
+      saveMostRecentPartialExploreState(
+        this.exploreName,
+        this.extraPrefix,
+        exploreState,
+      );
+    }
 
     this.updating = false;
     // If the state didnt result in a new url then skip goto.

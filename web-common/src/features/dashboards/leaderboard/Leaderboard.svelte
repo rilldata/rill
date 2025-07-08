@@ -62,7 +62,6 @@
   export let filterExcludeMode: boolean;
   export let isBeingCompared: boolean;
   export let parentElement: HTMLElement;
-  export let suppressTooltip = false;
   export let allowExpandTable = true;
   export let allowDimensionComparison = true;
   export let formatters: Record<
@@ -254,10 +253,12 @@
 
   $: belowTheFoldData = data?.data?.length
     ? data?.data
-    : belowTheFoldValues.map((value) => ({
-        [dimensionName]: value,
-        [leaderboardSortByMeasureName]: null,
-      }));
+    : belowTheFoldValues
+        .map((value) => ({
+          [dimensionName]: value,
+          [leaderboardSortByMeasureName]: null,
+        }))
+        .slice(0, belowTheFoldDataLimit);
 
   $: belowTheFoldRows = belowTheFoldData.map((item) =>
     cleanUpComparisonValue(
@@ -355,7 +356,6 @@
       >
         {#each aboveTheFold as itemData (itemData.dimensionValue)}
           <LeaderboardRow
-            {suppressTooltip}
             {tableWidth}
             {isBeingCompared}
             {filterExcludeMode}
@@ -376,7 +376,6 @@
 
       {#each belowTheFoldRows as itemData, i (itemData.dimensionValue)}
         <LeaderboardRow
-          {suppressTooltip}
           {itemData}
           {tableWidth}
           {dimensionName}

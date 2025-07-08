@@ -18,7 +18,7 @@
 </script>
 
 <div
-  class="bg-white size-fit p-2 flex z-100 flex-col gap-y-1.5 border rounded-[2px] shadow-md"
+  class="bg-surface size-fit p-2 flex z-100 flex-col gap-y-1.5 border rounded-[2px] shadow-md"
 >
   {#if timeStart}
     <div class="flex justify-between gap-x-3">

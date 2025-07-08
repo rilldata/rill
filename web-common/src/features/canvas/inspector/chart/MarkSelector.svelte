@@ -23,6 +23,9 @@
 
   function updateFieldConfig(property: keyof FieldConfig, value: any) {
     if (typeof markConfig !== "string") {
+      if (markConfig[property] === value) {
+        return;
+      }
       const updatedConfig: FieldConfig = {
         ...markConfig,
         [property]: value,
@@ -41,12 +44,14 @@
   <div class="flex justify-between items-center">
     <InputLabel small label={config.label ?? key} id={key} />
     {#if Object.keys(chartFieldInput ?? {}).length > 1 && typeof markConfig !== "string"}
-      <FieldConfigPopover
-        fieldConfig={markConfig}
-        label={config.label ?? key}
-        onChange={updateFieldConfig}
-        {chartFieldInput}
-      />
+      {#key markConfig}
+        <FieldConfigPopover
+          fieldConfig={markConfig}
+          label={config.label ?? key}
+          onChange={updateFieldConfig}
+          {chartFieldInput}
+        />
+      {/key}
     {/if}
   </div>
 

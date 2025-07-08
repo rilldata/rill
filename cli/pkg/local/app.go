@@ -163,6 +163,7 @@ func NewApp(ctx context.Context, opts *AppOptions) (*App, error) {
 		SecurityEngineCacheSize:      1000,
 		ControllerLogBufferCapacity:  10000,
 		ControllerLogBufferSizeBytes: int64(datasize.MB * 16),
+		Version:                      opts.Ch.Version,
 	}
 	st, err := storage.New(dbDirPath, nil)
 	if err != nil {
@@ -177,6 +178,7 @@ func NewApp(ctx context.Context, opts *AppOptions) (*App, error) {
 	vars := map[string]string{
 		"rill.download_limit_bytes": "0", // 0 means unlimited
 		"rill.stage_changes":        "false",
+		"rill.watch_repo":           "true", // Run a file watcher instead of requiring manual refreshes
 	}
 	for k, v := range opts.Variables {
 		vars[k] = v
@@ -249,17 +251,15 @@ func NewApp(ctx context.Context, opts *AppOptions) (*App, error) {
 
 	// Create instance with its repo set to the project directory
 	inst := &drivers.Instance{
-		ID:               DefaultInstanceID,
-		Environment:      opts.Environment,
-		OLAPConnector:    olapConnector.Name,
-		RepoConnector:    repoConnector.Name,
-		AIConnector:      aiConnector.Name,
-		CatalogConnector: catalogConnector.Name,
-		Connectors:       connectors,
-		Variables:        vars,
-		Annotations:      map[string]string{},
-		WatchRepo:        true,
-		// ModelMaterializeDelaySeconds:     30, // TODO: Enable when we support skipping it for the initial load
+		ID:                               DefaultInstanceID,
+		Environment:                      opts.Environment,
+		OLAPConnector:                    olapConnector.Name,
+		RepoConnector:                    repoConnector.Name,
+		AIConnector:                      aiConnector.Name,
+		CatalogConnector:                 catalogConnector.Name,
+		Connectors:                       connectors,
+		Variables:                        vars,
+		Annotations:                      map[string]string{},
 		IgnoreInitialInvalidProjectError: !isInit, // See ProjectParser reconciler for details
 	}
 	err = rt.CreateInstance(ctx, inst)
@@ -368,11 +368,6 @@ func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly bool
 		return err
 	}
 
-	// Start the gRPC server
-	group.Go(func() error {
-		return runtimeServer.ServeGRPC(ctx)
-	})
-
 	// if keypath and certpath are provided
 	secure := tlsCertPath != "" && tlsKeyPath != ""
 
@@ -381,7 +376,7 @@ func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly bool
 		return runtimeServer.ServeHTTP(ctx, func(mux *http.ServeMux) {
 			// Inject local-only endpoints on the runtime server
 			localServer.RegisterHandlers(mux, httpPort, secure, enableUI)
-		})
+		}, enableUI)
 	})
 
 	// Start debug server on port 6060
