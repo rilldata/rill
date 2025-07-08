@@ -96,8 +96,6 @@ func (s *Server) CreateInstance(ctx context.Context, req *runtimev1.CreateInstan
 		Connectors:     req.Connectors,
 		Variables:      req.Variables,
 		Annotations:    req.Annotations,
-		EmbedCatalog:   req.EmbedCatalog,
-		WatchRepo:      req.WatchRepo,
 	}
 
 	err := s.runtime.CreateInstance(ctx, inst)
@@ -168,8 +166,7 @@ func (s *Server) EditInstance(ctx context.Context, req *runtimev1.EditInstanceRe
 		ProjectVariables:     oldInst.ProjectVariables,
 		FeatureFlags:         oldInst.FeatureFlags,
 		Annotations:          annotations,
-		EmbedCatalog:         valOrDefault(req.EmbedCatalog, oldInst.EmbedCatalog),
-		WatchRepo:            valOrDefault(req.WatchRepo, oldInst.WatchRepo),
+		AIInstructions:       oldInst.AIInstructions,
 	}
 
 	err = s.runtime.EditInstance(ctx, inst, true)
@@ -271,10 +268,11 @@ func (s *Server) WatchLogs(req *runtimev1.WatchLogsRequest, srv runtimev1.Runtim
 
 func instanceToPB(inst *drivers.Instance, sensitive bool) *runtimev1.Instance {
 	pb := &runtimev1.Instance{
-		InstanceId:   inst.ID,
-		CreatedOn:    timestamppb.New(inst.CreatedOn),
-		UpdatedOn:    timestamppb.New(inst.UpdatedOn),
-		FeatureFlags: inst.FeatureFlags,
+		InstanceId:     inst.ID,
+		CreatedOn:      timestamppb.New(inst.CreatedOn),
+		UpdatedOn:      timestamppb.New(inst.UpdatedOn),
+		FeatureFlags:   inst.FeatureFlags,
+		AiInstructions: inst.AIInstructions,
 	}
 
 	if sensitive {
@@ -292,8 +290,6 @@ func instanceToPB(inst *drivers.Instance, sensitive bool) *runtimev1.Instance {
 		pb.Variables = inst.Variables
 		pb.ProjectVariables = inst.ProjectVariables
 		pb.Annotations = inst.Annotations
-		pb.EmbedCatalog = inst.EmbedCatalog
-		pb.WatchRepo = inst.WatchRepo
 	}
 
 	return pb

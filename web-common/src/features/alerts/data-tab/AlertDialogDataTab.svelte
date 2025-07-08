@@ -3,16 +3,15 @@
   import type { AlertFormValues } from "@rilldata/web-common/features/alerts/form-utils";
   import { createTimeControlStoreFromName } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import { MetricsViewSpecMeasureType } from "@rilldata/web-common/runtime-client";
-  import { createForm } from "svelte-forms-lib";
+  import type { SuperForm } from "sveltekit-superforms/client";
   import FormSection from "../../../components/forms/FormSection.svelte";
   import Select from "../../../components/forms/Select.svelte";
   import { runtime } from "../../../runtime-client/runtime-store";
-  import FilterChipsReadOnly from "../../dashboards/filters/FilterChipsReadOnly.svelte";
+  import ExploreFilterChipsReadOnly from "../../dashboards/filters/ExploreFilterChipsReadOnly.svelte";
   import { useMetricsViewValidSpec } from "../../dashboards/selectors";
 
-  export let formState: ReturnType<typeof createForm<AlertFormValues>>;
-
-  const { form } = formState;
+  export let superFormInstance: SuperForm<AlertFormValues>;
+  $: ({ form } = superFormInstance);
 
   $: ({ instanceId } = $runtime);
 
@@ -57,7 +56,7 @@
     description="These are inherited from the underlying dashboard view."
     title="Filters"
   >
-    <FilterChipsReadOnly
+    <ExploreFilterChipsReadOnly
       dimensionThresholdFilters={$form["dimensionThresholdFilters"]}
       filters={$form["whereFilter"]}
       dimensionsWithInlistFilter={$form["dimensionsWithInlistFilter"]}

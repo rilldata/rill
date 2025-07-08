@@ -81,7 +81,7 @@ type DB interface {
 	// FindProjectsForOrgAndUser lists the public projects in the org and the projects where user is added as an external user
 	FindProjectsForOrgAndUser(ctx context.Context, orgID, userID string, includePublic bool, afterProjectName string, limit int) ([]*Project, error)
 	FindPublicProjectsInOrganization(ctx context.Context, orgID, afterProjectName string, limit int) ([]*Project, error)
-	FindProjectsByGithubURL(ctx context.Context, githubURL string) ([]*Project, error)
+	FindProjectsByGitRemote(ctx context.Context, remote string) ([]*Project, error)
 	FindProjectsByGithubInstallationID(ctx context.Context, id int64) ([]*Project, error)
 	FindProject(ctx context.Context, id string) (*Project, error)
 	FindProjectByName(ctx context.Context, orgName string, name string) (*Project, error)
@@ -150,12 +150,13 @@ type DB interface {
 	InsertManagedUsergroupsMemberUser(ctx context.Context, orgID, userID, roleID string) error
 	DeleteManagedUsergroupsMemberUser(ctx context.Context, orgID, userID string) error
 
-	FindUserAuthTokens(ctx context.Context, userID string) ([]*UserAuthToken, error)
+	FindUserAuthTokens(ctx context.Context, userID, afterID string, limit int) ([]*UserAuthToken, error)
 	FindUserAuthToken(ctx context.Context, id string) (*UserAuthToken, error)
 	InsertUserAuthToken(ctx context.Context, opts *InsertUserAuthTokenOptions) (*UserAuthToken, error)
 	UpdateUserAuthTokenUsedOn(ctx context.Context, ids []string) error
 	DeleteUserAuthToken(ctx context.Context, id string) error
 	DeleteExpiredUserAuthTokens(ctx context.Context, retention time.Duration) error
+	DeleteInactiveUserAuthTokens(ctx context.Context, retention time.Duration) error
 
 	FindServicesByOrgID(ctx context.Context, orgID string) ([]*Service, error)
 	FindService(ctx context.Context, id string) (*Service, error)
@@ -171,6 +172,7 @@ type DB interface {
 	UpdateServiceAuthTokenUsedOn(ctx context.Context, ids []string) error
 	DeleteServiceAuthToken(ctx context.Context, id string) error
 	DeleteExpiredServiceAuthTokens(ctx context.Context, retention time.Duration) error
+	DeleteInactiveServiceAuthTokens(ctx context.Context, retention time.Duration) error
 
 	FindDeploymentAuthToken(ctx context.Context, id string) (*DeploymentAuthToken, error)
 	InsertDeploymentAuthToken(ctx context.Context, opts *InsertDeploymentAuthTokenOptions) (*DeploymentAuthToken, error)
@@ -211,6 +213,7 @@ type DB interface {
 	ResolveProjectRolesForUser(ctx context.Context, userID, projectID string) ([]*ProjectRole, error)
 
 	FindOrganizationMemberUsers(ctx context.Context, orgID, filterRoleID string, withCounts bool, afterEmail string, limit int) ([]*OrganizationMemberUser, error)
+	CountOrganizationMemberUsers(ctx context.Context, orgID, filterRoleID string) (int, error)
 	FindOrganizationMemberUsersByRole(ctx context.Context, orgID, roleID string) ([]*User, error)
 	FindOrganizationMemberUserAdminStatus(ctx context.Context, orgID, userID string) (isAdmin, isLastAdmin bool, err error)
 	InsertOrganizationMemberUser(ctx context.Context, orgID, userID, roleID string, ifNotExists bool) (bool, error)
@@ -239,6 +242,7 @@ type DB interface {
 	DeleteProjectMemberUsergroup(ctx context.Context, groupID, projectID string) error
 
 	FindOrganizationInvites(ctx context.Context, orgID, afterEmail string, limit int) ([]*OrganizationInviteWithRole, error)
+	CountOrganizationInvites(ctx context.Context, orgID string) (int, error)
 	FindOrganizationInvitesByEmail(ctx context.Context, userEmail string) ([]*OrganizationInvite, error)
 	FindOrganizationInvite(ctx context.Context, orgID, userEmail string) (*OrganizationInvite, error)
 	InsertOrganizationInvite(ctx context.Context, opts *InsertOrganizationInviteOptions) error
@@ -338,6 +342,7 @@ type Organization struct {
 	Description                         string
 	LogoAssetID                         *string   `db:"logo_asset_id"`
 	FaviconAssetID                      *string   `db:"favicon_asset_id"`
+	ThumbnailAssetID                    *string   `db:"thumbnail_asset_id"`
 	CustomDomain                        string    `db:"custom_domain"`
 	DefaultProjectRoleID                *string   `db:"default_project_role_id"`
 	CreatedOn                           time.Time `db:"created_on"`
@@ -363,6 +368,7 @@ type InsertOrganizationOptions struct {
 	Description                         string
 	LogoAssetID                         *string
 	FaviconAssetID                      *string
+	ThumbnailAssetID                    *string
 	CustomDomain                        string `validate:"omitempty,fqdn"`
 	DefaultProjectRoleID                *string
 	QuotaProjects                       int
@@ -384,6 +390,7 @@ type UpdateOrganizationOptions struct {
 	Description                         string
 	LogoAssetID                         *string
 	FaviconAssetID                      *string
+	ThumbnailAssetID                    *string
 	CustomDomain                        string `validate:"omitempty,fqdn"`
 	DefaultProjectRoleID                *string
 	QuotaProjects                       int
@@ -413,7 +420,7 @@ type Project struct {
 	// ArchiveAssetID is set when project files are managed by Rill instead of maintained in Git.
 	// If ArchiveAssetID is set all git related fields will be empty.
 	ArchiveAssetID               *string           `db:"archive_asset_id"`
-	GithubURL                    *string           `db:"github_url"`
+	GitRemote                    *string           `db:"git_remote"`
 	GithubInstallationID         *int64            `db:"github_installation_id"`
 	GithubRepoID                 *int64            `db:"github_repo_id"`
 	ManagedGitRepoID             *string           `db:"managed_git_repo_id"`
@@ -427,6 +434,8 @@ type Project struct {
 	ProdSlots                    int               `db:"prod_slots"`
 	ProdTTLSeconds               *int64            `db:"prod_ttl_seconds"`
 	ProdDeploymentID             *string           `db:"prod_deployment_id"`
+	DevSlots                     int               `db:"dev_slots"`
+	DevTTLSeconds                int64             `db:"dev_ttl_seconds"`
 	Annotations                  map[string]string `db:"annotations"`
 	CreatedOn                    time.Time         `db:"created_on"`
 	UpdatedOn                    time.Time         `db:"updated_on"`
@@ -441,7 +450,7 @@ type InsertProjectOptions struct {
 	CreatedByUserID      *string
 	Provisioner          string
 	ArchiveAssetID       *string
-	GithubURL            *string `validate:"omitempty,http_url"`
+	GitRemote            *string `validate:"omitempty,http_url,endswith=.git"`
 	GithubInstallationID *int64  `validate:"omitempty,ne=0"`
 	GithubRepoID         *int64
 	ManagedGitRepoID     *string
@@ -452,6 +461,8 @@ type InsertProjectOptions struct {
 	ProdOLAPDSN          string
 	ProdSlots            int
 	ProdTTLSeconds       *int64
+	DevSlots             int
+	DevTTLSeconds        int64
 }
 
 // UpdateProjectOptions defines options for updating a Project.
@@ -461,7 +472,7 @@ type UpdateProjectOptions struct {
 	Public               bool
 	Provisioner          string
 	ArchiveAssetID       *string
-	GithubURL            *string `validate:"omitempty,http_url"`
+	GitRemote            *string `validate:"omitempty,http_url,endswith=.git"`
 	GithubInstallationID *int64  `validate:"omitempty,ne=0"`
 	GithubRepoID         *int64
 	ManagedGitRepoID     *string
@@ -471,6 +482,8 @@ type UpdateProjectOptions struct {
 	ProdDeploymentID     *string
 	ProdSlots            int
 	ProdTTLSeconds       *int64
+	DevSlots             int
+	DevTTLSeconds        int64
 	Annotations          map[string]string
 }
 
@@ -482,6 +495,7 @@ const (
 	DeploymentStatusPending     DeploymentStatus = 1
 	DeploymentStatusOK          DeploymentStatus = 2
 	DeploymentStatusError       DeploymentStatus = 4
+	DeploymentStatusStopped     DeploymentStatus = 5
 )
 
 func (d DeploymentStatus) String() string {
@@ -492,6 +506,8 @@ func (d DeploymentStatus) String() string {
 		return "OK"
 	case DeploymentStatusError:
 		return "Error"
+	case DeploymentStatusStopped:
+		return "Stopped"
 	default:
 		return "Unspecified"
 	}
@@ -502,6 +518,8 @@ func (d DeploymentStatus) String() string {
 type Deployment struct {
 	ID                string           `db:"id"`
 	ProjectID         string           `db:"project_id"`
+	OwnerUserID       *string          `db:"owner_user_id"`
+	Environment       string           `db:"environment"`
 	Branch            string           `db:"branch"`
 	RuntimeHost       string           `db:"runtime_host"`
 	RuntimeInstanceID string           `db:"runtime_instance_id"`
@@ -516,6 +534,8 @@ type Deployment struct {
 // InsertDeploymentOptions defines options for inserting a new Deployment.
 type InsertDeploymentOptions struct {
 	ProjectID         string
+	OwnerUserID       *string
+	Environment       string
 	Branch            string
 	RuntimeHost       string
 	RuntimeInstanceID string
@@ -631,15 +651,16 @@ const (
 
 // UserAuthToken is a persistent API token for a user.
 type UserAuthToken struct {
-	ID                 string
-	SecretHash         []byte     `db:"secret_hash"`
-	UserID             string     `db:"user_id"`
-	DisplayName        string     `db:"display_name"`
-	AuthClientID       *string    `db:"auth_client_id"`
-	RepresentingUserID *string    `db:"representing_user_id"`
-	CreatedOn          time.Time  `db:"created_on"`
-	ExpiresOn          *time.Time `db:"expires_on"`
-	UsedOn             time.Time  `db:"used_on"`
+	ID                    string
+	SecretHash            []byte     `db:"secret_hash"`
+	UserID                string     `db:"user_id"`
+	DisplayName           string     `db:"display_name"`
+	AuthClientID          *string    `db:"auth_client_id"`
+	AuthClientDisplayName *string    `db:"auth_client_display_name"`
+	RepresentingUserID    *string    `db:"representing_user_id"`
+	CreatedOn             time.Time  `db:"created_on"`
+	ExpiresOn             *time.Time `db:"expires_on"`
+	UsedOn                time.Time  `db:"used_on"`
 }
 
 // InsertUserAuthTokenOptions defines options for creating a UserAuthToken.
@@ -772,6 +793,7 @@ const (
 	AuthClientIDRillCLI      = "12345678-0000-0000-0000-000000000002"
 	AuthClientIDRillSupport  = "12345678-0000-0000-0000-000000000003"
 	AuthClientIDRillWebLocal = "12345678-0000-0000-0000-000000000004"
+	AuthClientIDRillManual   = "12345678-0000-0000-0000-000000000005"
 )
 
 // DeviceAuthCodeState is an enum representing the approval state of a DeviceAuthCode

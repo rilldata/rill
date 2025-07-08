@@ -69,7 +69,7 @@ type FieldNode struct {
 	Name        string
 	DisplayName string
 	Expr        string
-	AutoUnnest  bool
+	Unnest      bool
 	TreatNullAs string // only used for measures
 }
 
@@ -130,6 +130,12 @@ func NewAST(mv *runtimev1.MetricsViewSpec, sec *runtime.ResolvedSecurity, qry *Q
 		return nil, fmt.Errorf("must specify at least one dimension or measure")
 	}
 
+	// Use provided time column if available, otherwise fall back to TimeDimension
+	timeDim := mv.TimeDimension
+	if qry.TimeRange != nil && qry.TimeRange.TimeDimension != "" {
+		timeDim = qry.TimeRange.TimeDimension
+	}
+
 	// Init
 	ast := &AST{
 		metricsView: mv,
@@ -144,7 +150,7 @@ func NewAST(mv *runtimev1.MetricsViewSpec, sec *runtime.ResolvedSecurity, qry *Q
 		if qd.Compute == nil || qd.Compute.TimeFloor == nil {
 			continue
 		}
-		if !strings.EqualFold(qd.Compute.TimeFloor.Dimension, ast.metricsView.TimeDimension) {
+		if !strings.EqualFold(qd.Compute.TimeFloor.Dimension, timeDim) {
 			continue
 		}
 		tg := qd.Compute.TimeFloor.Grain
@@ -179,22 +185,24 @@ func NewAST(mv *runtimev1.MetricsViewSpec, sec *runtime.ResolvedSecurity, qry *Q
 			Name:        dim.Name,
 			DisplayName: dim.DisplayName,
 			Expr:        expr,
+			Unnest:      dim.Unnest,
 		}
 
 		if dim.Unnest {
 			unnestAlias := ast.generateIdentifier()
 
-			tblWithAlias, auto, err := ast.dialect.LateralUnnest(f.Expr, unnestAlias, f.Name)
+			tblWithAlias, tupleStyle, auto, err := ast.dialect.LateralUnnest(f.Expr, unnestAlias, f.Name)
 			if err != nil {
 				return nil, fmt.Errorf("failed to unnest field %q: %w", f.Name, err)
 			}
 
-			if auto {
-				f.Expr = ast.dialect.AutoUnnest(f.Expr)
-				f.AutoUnnest = true
-			} else {
+			if !auto {
 				ast.unnests = append(ast.unnests, tblWithAlias)
-				f.Expr = ast.sqlForMember(unnestAlias, f.Name)
+				if tupleStyle {
+					f.Expr = ast.sqlForMember(unnestAlias, f.Name)
+				} else {
+					f.Expr = ast.sqlForMember("", f.Name)
+				}
 			}
 		}
 
@@ -205,7 +213,7 @@ func NewAST(mv *runtimev1.MetricsViewSpec, sec *runtime.ResolvedSecurity, qry *Q
 		// Also note that the comparison time range currently always targets a.metricsView.TimeDimension, so we only apply the correction for that dimension.
 		cf := f // Clone
 		if ast.query.ComparisonTimeRange != nil && qd.Compute != nil && qd.Compute.TimeFloor != nil {
-			if strings.EqualFold(qd.Compute.TimeFloor.Dimension, ast.metricsView.TimeDimension) {
+			if strings.EqualFold(qd.Compute.TimeFloor.Dimension, timeDim) {
 				cf.Expr, err = ast.sqlForExpressionAdjustedByComparisonTimeRangeOffset(f.Expr, qd.Compute.TimeFloor.Grain, minGrain)
 				if err != nil {
 					return nil, err
@@ -218,7 +226,7 @@ func NewAST(mv *runtimev1.MetricsViewSpec, sec *runtime.ResolvedSecurity, qry *Q
 	}
 
 	if qry.Rows {
-		// when Rows is set that means we want underlying rows from the model that why adding * as dim field which will also avoid using AS clause
+		// when Rows is set we want underlying rows from the model, that's why adding only * as the dim field
 		ast.dimFields = append(ast.dimFields, FieldNode{
 			Name: "*",
 			Expr: "*",
@@ -482,7 +490,14 @@ func (a *AST) lookupDimension(name string, visible bool) (*runtimev1.MetricsView
 		return nil, errors.New("received empty dimension name")
 	}
 
+	// not checking access if its primary time dimension
 	if name == a.metricsView.TimeDimension {
+		// check if its defined in the dimensions list otherwise return a default dimension spec
+		for _, dim := range a.metricsView.Dimensions {
+			if dim.Name == name {
+				return dim, nil
+			}
+		}
 		return &runtimev1.MetricsViewSpec_Dimension{
 			Name:   name,
 			Column: name,
@@ -660,7 +675,10 @@ func (a *AST) buildBaseSelect(alias string, comparison bool) (*SelectNode, error
 		tr = a.query.ComparisonTimeRange
 	}
 
-	a.addTimeRange(n, tr)
+	err := a.addTimeRange(n, tr)
+	if err != nil {
+		return nil, fmt.Errorf("failed to add time range: %w", err)
+	}
 
 	// If there is a spine, we wrap the base SELECT in a new SELECT that we add the spine to.
 	// We do not join the spine directly to the FromTable because the join would be evaluated before the GROUP BY,
@@ -705,7 +723,10 @@ func (a *AST) buildSpineSelect(alias string, spine *Spine, tr *TimeRange) (*Sele
 			FromTable: a.underlyingTable,
 		}
 		n.Where = n.Where.and(expr, args)
-		a.addTimeRange(n, tr)
+		err = a.addTimeRange(n, tr)
+		if err != nil {
+			return nil, fmt.Errorf("failed to add time range: %w", err)
+		}
 
 		return n, nil
 	}
@@ -717,9 +738,14 @@ func (a *AST) buildSpineSelect(alias string, spine *Spine, tr *TimeRange) (*Sele
 			return nil, errors.New("failed to apply time spine: time range has more than 1000 bins")
 		}
 
-		tf, ok := a.findFieldForComputedTimeDimension(a.dimFields, a.metricsView.TimeDimension)
+		timeDim := a.metricsView.TimeDimension
+		if spine.TimeRange.TimeDimension != "" {
+			timeDim = spine.TimeRange.TimeDimension
+		}
+
+		tf, ok := a.findFieldForComputedTimeDimension(a.dimFields, timeDim)
 		if !ok {
-			return nil, fmt.Errorf("failed to find computed time dimension %q", a.metricsView.TimeDimension)
+			return nil, fmt.Errorf("failed to find computed time dimension %q", timeDim)
 		}
 		timeAlias := tf.Name
 
@@ -763,7 +789,10 @@ func (a *AST) buildSpineSelect(alias string, spine *Spine, tr *TimeRange) (*Sele
 			Group:     true,
 		}
 
-		a.addTimeRange(dimSelect, tr)
+		err = a.addTimeRange(dimSelect, tr)
+		if err != nil {
+			return nil, fmt.Errorf("failed to add time range: %w", err)
+		}
 
 		a.wrapSelect(dimSelect, a.generateIdentifier())
 
@@ -783,9 +812,9 @@ func (a *AST) buildSpineSelect(alias string, spine *Spine, tr *TimeRange) (*Sele
 }
 
 // addTimeRange adds a time range to the given SelectNode's WHERE clause.
-func (a *AST) addTimeRange(n *SelectNode, tr *TimeRange) {
-	if tr == nil || tr.IsZero() || a.metricsView.TimeDimension == "" {
-		return
+func (a *AST) addTimeRange(n *SelectNode, tr *TimeRange) error {
+	if tr == nil || tr.IsZero() || (a.metricsView.TimeDimension == "" && tr.TimeDimension == "") {
+		return nil
 	}
 
 	// Since resolving time ranges may require contextual info (like watermarks), the upstream caller is responsible for resolving them.
@@ -793,11 +822,39 @@ func (a *AST) addTimeRange(n *SelectNode, tr *TimeRange) {
 		panic("ast received a non-empty, unresolved time range")
 	}
 
-	expr, args := a.sqlForTimeRange(a.metricsView.TimeDimension, tr.Start, tr.End)
+	timeDimExpr, err := a.getTimeDimensionExpression(tr)
+	if err != nil {
+		return err
+	}
+
+	expr, args := a.sqlForTimeRange(timeDimExpr, tr.Start, tr.End)
 	n.TimeWhere = &ExprNode{
 		Expr: expr,
 		Args: args,
 	}
+
+	return nil
+}
+
+// getTimeDimensionExpression returns the SQL expression for the time dimension specified in the TimeRange or the metrics view's time dimension.
+// It looks up the time dimension definition in the metrics view or returns the escaped column name from the model.
+func (a *AST) getTimeDimensionExpression(tr *TimeRange) (string, error) {
+	timeDim := a.metricsView.TimeDimension
+	if tr.TimeDimension != "" {
+		timeDim = tr.TimeDimension
+	}
+
+	t, err := a.lookupDimension(timeDim, true)
+	if err != nil {
+		return "", fmt.Errorf("time dimension %q not found: %w", timeDim, err)
+	}
+
+	expr, err := a.dialect.MetricsViewDimensionExpression(t)
+	if err != nil {
+		return "", fmt.Errorf("failed to compile time dimension %q expression: %w", t.Name, err)
+	}
+
+	return expr, nil
 }
 
 // addMeasureField adds a measure field to the given SelectNode.
@@ -1182,18 +1239,17 @@ func (a *AST) generateIdentifier() string {
 }
 
 // sqlForTimeRange builds a SQL expression and query args for filtering by a time range.
-func (a *AST) sqlForTimeRange(timeCol string, start, end time.Time) (string, []any) {
+func (a *AST) sqlForTimeRange(timeDimExpr string, start, end time.Time) (string, []any) {
 	var where string
 	var args []any
 	if !start.IsZero() && !end.IsZero() {
-		col := a.dialect.EscapeIdentifier(timeCol)
-		where = fmt.Sprintf("%s >= ? AND %s < ?", col, col)
+		where = fmt.Sprintf("%s >= ? AND %s < ?", timeDimExpr, timeDimExpr)
 		args = []any{start, end}
 	} else if !start.IsZero() {
-		where = fmt.Sprintf("%s >= ?", a.dialect.EscapeIdentifier(timeCol))
+		where = fmt.Sprintf("%s >= ?", timeDimExpr)
 		args = []any{start}
 	} else if !end.IsZero() {
-		where = fmt.Sprintf("%s < ?", a.dialect.EscapeIdentifier(timeCol))
+		where = fmt.Sprintf("%s < ?", timeDimExpr)
 		args = []any{end}
 	} else {
 		return "", nil

@@ -187,6 +187,9 @@ message MetricsViewSpec {
     string lookup_table = 8;
     string lookup_key_column = 9;
     string lookup_value_column = 10;
+    string lookup_default_expression = 11;
+    // The data type of the dimension. Only populated in ValidSpec.
+    Type data_type = 12;
   }
   // Selector for a dimension
   message DimensionSelector {
@@ -226,6 +229,8 @@ message MetricsViewSpec {
     google.protobuf.Struct format_d3_locale = 13;
     bool valid_percent_of_total = 6;
     string treat_nulls_as = 14;
+    // The data type of the measure. Only populated in ValidSpec.
+    Type data_type = 15;
   }
   // Connector containing the table
   string connector = 1;
@@ -241,6 +246,8 @@ message MetricsViewSpec {
   string display_name = 3;
   // User-facing description
   string description = 4;
+  // Extra context for LLM/AI features. Used to guide natural language question answering and routing.
+  string ai_instructions = 28;
   // Name of the primary time dimension, used for rendering time series
   string time_dimension = 5;
   // The smallest time grain that can be queried for.
@@ -296,9 +303,9 @@ message MetricsViewState {
   // Streaming is true if the underlying data may change without the metrics view's spec/state version changing.
   // It's set to true if the metrics view is based on an externally managed table.
   bool streaming = 2;
-  // The last time the metrics view's underlying model was refreshed.
+  // The last time the metrics view's underlying data was refreshed.
   // This may be empty if the metrics view is based on an externally managed table.
-  google.protobuf.Timestamp model_refreshed_on = 3;
+  google.protobuf.Timestamp data_refreshed_on = 3;
 }
 
 message Explore {
@@ -350,7 +357,12 @@ message ExploreSpec {
 }
 
 message ExploreState {
+  // Valid spec is a (potentially previous) version of the spec that is known to be valid.
+  // It is also guaranteed to have concrete dimensions and measures, i.e. if the spec has a `dimensions_selector` or `measures_selector`, they will be resolved to concrete fields.
   ExploreSpec valid_spec = 1;
+  // The last time the underlying metrics view's data was refreshed.
+  // This may be empty if the data refresh time is not known, e.g. if the metrics view is based on an externally managed table.
+  google.protobuf.Timestamp data_refreshed_on = 2;
 }
 
 message ExploreTimeRange {
@@ -493,6 +505,7 @@ message ReportSpec {
   string query_args_json = 6;
   uint64 export_limit = 7;
   ExportFormat export_format = 8;
+  bool export_include_header = 16;
   repeated Notifier notifiers = 11;
   map<string, string> annotations = 10;
   bool watermark_inherit = 12; // If true, will use the lowest watermark of its refs instead of the trigger time.
@@ -644,7 +657,11 @@ message ComponentSpec {
 }
 
 message ComponentState {
+  // Valid spec is a (potentially previous) version of the component's spec that is known to be valid.
   ComponentSpec valid_spec = 1;
+  // The last time any underlying metrics view(s)'s data was refreshed.
+  // This may be empty if the data refresh time is not known, e.g. if the metrics view is based on an externally managed table.
+  google.protobuf.Timestamp data_refreshed_on = 2;
 }
 
 message ComponentVariable {
@@ -696,7 +713,11 @@ message CanvasSpec {
 }
 
 message CanvasState {
+  // Valid spec is a (potentially previous) version of the canvas's spec that is known to be valid.
   CanvasSpec valid_spec = 1;
+  // The last time any underlying metrics view(s)'s data was refreshed.
+  // This may be empty if the data refresh time is not known, e.g. if the metrics view is based on an externally managed table.
+  google.protobuf.Timestamp data_refreshed_on = 2;
 }
 
 message CanvasRow {
@@ -741,8 +762,10 @@ message APISpec {
   string resolver = 1;
   google.protobuf.Struct resolver_properties = 2;
   string openapi_summary = 3;
-  repeated google.protobuf.Struct openapi_parameters = 4;
-  google.protobuf.Struct openapi_response_schema = 5;
+  string openapi_parameters_json = 8;
+  string openapi_request_schema_json = 9;
+  string openapi_response_schema_json = 10;
+  string openapi_defs_prefix = 11;
   repeated SecurityRule security_rules = 6;
   bool skip_nested_security = 7;
 }

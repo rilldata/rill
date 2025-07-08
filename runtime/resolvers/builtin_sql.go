@@ -12,7 +12,20 @@ import (
 
 func init() {
 	runtime.RegisterResolverInitializer("builtin_sql", newBuiltinSQL)
-	runtime.RegisterBuiltinAPI("sql", "builtin_sql", nil)
+	runtime.RegisterBuiltinAPI(&runtime.BuiltinAPIOptions{
+		Name:               "sql",
+		Resolver:           "builtin_sql",
+		ResolverProperties: nil,
+		OpenAPISummary:     "Execute a raw SQL query. Access is restricted to admins.",
+		OpenAPIRequestSchema: `{
+			"type":"object",
+			"properties": {
+				"sql": {"type":"string"},
+				"connector": {"type":"string"}
+			},
+			"required":["sql"]
+		}`,
+	})
 }
 
 type builtinSQLArgs struct {

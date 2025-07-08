@@ -55,13 +55,6 @@ var spec = drivers.Spec{
 			Hint:        "Glob patterns are supported",
 		},
 		{
-			Key:         "azure_storage_account",
-			Type:        drivers.StringPropertyType,
-			DisplayName: "Account name",
-			Description: "Azure storage account name.",
-			Required:    false,
-		},
-		{
 			Key:         "name",
 			Type:        drivers.StringPropertyType,
 			DisplayName: "Source name",
@@ -107,23 +100,7 @@ func (d driver) Spec() drivers.Spec {
 }
 
 func (d driver) HasAnonymousSourceAccess(ctx context.Context, props map[string]any, logger *zap.Logger) (bool, error) {
-	conf, err := parseSourceProperties(props)
-	if err != nil {
-		return false, fmt.Errorf("failed to parse config: %w", err)
-	}
-
-	conn := &Connection{
-		config: &ConfigProperties{},
-		logger: logger,
-	}
-
-	bucketObj, err := conn.openBucketWithNoCredentials(ctx, conf)
-	if err != nil {
-		return false, fmt.Errorf("failed to open container %q, %w", conf.url.Host, err)
-	}
-	defer bucketObj.Close()
-
-	return bucketObj.IsAccessible(ctx)
+	return false, nil
 }
 
 func (d driver) TertiarySourceConnectors(ctx context.Context, src map[string]any, logger *zap.Logger) ([]string, error) {
@@ -140,7 +117,17 @@ var _ drivers.Handle = &Connection{}
 
 // Ping implements drivers.Handle.
 func (c *Connection) Ping(ctx context.Context) error {
-	return drivers.ErrNotImplemented
+	client, err := c.newStorageClient()
+	if err != nil {
+		return fmt.Errorf("failed to initialize Azure storage client: %w", err)
+	}
+
+	_, err = client.GetAccountInfo(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("failed to get Azure account info: %w", err)
+	}
+
+	return nil
 }
 
 // Driver implements drivers.Connection.

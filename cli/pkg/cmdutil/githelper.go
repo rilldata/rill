@@ -70,6 +70,7 @@ func (g *GitHelper) GitConfig(ctx context.Context) (*gitutil.Config, error) {
 		PasswordExpiresAt: resp.GitPasswordExpiresAt.AsTime(),
 		DefaultBranch:     resp.GitProdBranch,
 		Subpath:           resp.GitSubpath,
+		ManagedRepo:       resp.GitManagedRepo,
 	}
 	return g.gitConfig, nil
 }
@@ -91,19 +92,20 @@ func (g *GitHelper) PushToNewManagedRepo(ctx context.Context) (*adminv1.CreateMa
 	if err != nil {
 		return nil, err
 	}
-	err = gitutil.CommitAndForcePush(ctx, g.localPath, gitRepo.Remote, gitRepo.Username, gitRepo.Password, gitRepo.DefaultBranch, author)
-	if err != nil {
-		return nil, err
-	}
-
-	err = g.setGitConfig(ctx, &gitutil.Config{
+	config := &gitutil.Config{
 		Remote:            gitRepo.Remote,
 		Username:          gitRepo.Username,
 		Password:          gitRepo.Password,
 		PasswordExpiresAt: gitRepo.PasswordExpiresAt.AsTime(),
 		DefaultBranch:     gitRepo.DefaultBranch,
-		Subpath:           "",
-	})
+		ManagedRepo:       true,
+	}
+	err = gitutil.CommitAndForcePush(ctx, g.localPath, config, "", author, true)
+	if err != nil {
+		return nil, err
+	}
+
+	err = g.setGitConfig(ctx, config)
 	if err != nil {
 		return nil, err
 	}
@@ -121,7 +123,7 @@ func (g *GitHelper) PushToManagedRepo(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	err = gitutil.CommitAndForcePush(ctx, g.localPath, gitConfig.Remote, gitConfig.Username, gitConfig.Password, gitConfig.DefaultBranch, author)
+	err = gitutil.CommitAndForcePush(ctx, g.localPath, gitConfig, "", author, false)
 	if err != nil {
 		return err
 	}

@@ -3003,6 +3003,8 @@ func (m *MetricsViewSpec) validate(all bool) error {
 
 	// no validation rules for Description
 
+	// no validation rules for AiInstructions
+
 	// no validation rules for TimeDimension
 
 	// no validation rules for SmallestTimeGrain
@@ -3831,11 +3833,11 @@ func (m *MetricsViewState) validate(all bool) error {
 	// no validation rules for Streaming
 
 	if all {
-		switch v := interface{}(m.GetModelRefreshedOn()).(type) {
+		switch v := interface{}(m.GetDataRefreshedOn()).(type) {
 		case interface{ ValidateAll() error }:
 			if err := v.ValidateAll(); err != nil {
 				errors = append(errors, MetricsViewStateValidationError{
-					field:  "ModelRefreshedOn",
+					field:  "DataRefreshedOn",
 					reason: "embedded message failed validation",
 					cause:  err,
 				})
@@ -3843,16 +3845,16 @@ func (m *MetricsViewState) validate(all bool) error {
 		case interface{ Validate() error }:
 			if err := v.Validate(); err != nil {
 				errors = append(errors, MetricsViewStateValidationError{
-					field:  "ModelRefreshedOn",
+					field:  "DataRefreshedOn",
 					reason: "embedded message failed validation",
 					cause:  err,
 				})
 			}
 		}
-	} else if v, ok := interface{}(m.GetModelRefreshedOn()).(interface{ Validate() error }); ok {
+	} else if v, ok := interface{}(m.GetDataRefreshedOn()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
 			return MetricsViewStateValidationError{
-				field:  "ModelRefreshedOn",
+				field:  "DataRefreshedOn",
 				reason: "embedded message failed validation",
 				cause:  err,
 			}
@@ -4439,6 +4441,35 @@ func (m *ExploreState) validate(all bool) error {
 		if err := v.Validate(); err != nil {
 			return ExploreStateValidationError{
 				field:  "ValidSpec",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if all {
+		switch v := interface{}(m.GetDataRefreshedOn()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, ExploreStateValidationError{
+					field:  "DataRefreshedOn",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, ExploreStateValidationError{
+					field:  "DataRefreshedOn",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetDataRefreshedOn()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return ExploreStateValidationError{
+				field:  "DataRefreshedOn",
 				reason: "embedded message failed validation",
 				cause:  err,
 			}
@@ -5902,6 +5933,8 @@ func (m *ReportSpec) validate(all bool) error {
 	// no validation rules for ExportLimit
 
 	// no validation rules for ExportFormat
+
+	// no validation rules for ExportIncludeHeader
 
 	for idx, item := range m.GetNotifiers() {
 		_, _ = idx, item
@@ -8936,6 +8969,35 @@ func (m *ComponentState) validate(all bool) error {
 		}
 	}
 
+	if all {
+		switch v := interface{}(m.GetDataRefreshedOn()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, ComponentStateValidationError{
+					field:  "DataRefreshedOn",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, ComponentStateValidationError{
+					field:  "DataRefreshedOn",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetDataRefreshedOn()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return ComponentStateValidationError{
+				field:  "DataRefreshedOn",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
 	if len(errors) > 0 {
 		return ComponentStateMultiError(errors)
 	}
@@ -9665,6 +9727,35 @@ func (m *CanvasState) validate(all bool) error {
 		}
 	}
 
+	if all {
+		switch v := interface{}(m.GetDataRefreshedOn()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, CanvasStateValidationError{
+					field:  "DataRefreshedOn",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, CanvasStateValidationError{
+					field:  "DataRefreshedOn",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetDataRefreshedOn()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return CanvasStateValidationError{
+				field:  "DataRefreshedOn",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
 	if len(errors) > 0 {
 		return CanvasStateMultiError(errors)
 	}
@@ -10309,68 +10400,13 @@ func (m *APISpec) validate(all bool) error {
 
 	// no validation rules for OpenapiSummary
 
-	for idx, item := range m.GetOpenapiParameters() {
-		_, _ = idx, item
+	// no validation rules for OpenapiParametersJson
 
-		if all {
-			switch v := interface{}(item).(type) {
-			case interface{ ValidateAll() error }:
-				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, APISpecValidationError{
-						field:  fmt.Sprintf("OpenapiParameters[%v]", idx),
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			case interface{ Validate() error }:
-				if err := v.Validate(); err != nil {
-					errors = append(errors, APISpecValidationError{
-						field:  fmt.Sprintf("OpenapiParameters[%v]", idx),
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			}
-		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
-			if err := v.Validate(); err != nil {
-				return APISpecValidationError{
-					field:  fmt.Sprintf("OpenapiParameters[%v]", idx),
-					reason: "embedded message failed validation",
-					cause:  err,
-				}
-			}
-		}
+	// no validation rules for OpenapiRequestSchemaJson
 
-	}
+	// no validation rules for OpenapiResponseSchemaJson
 
-	if all {
-		switch v := interface{}(m.GetOpenapiResponseSchema()).(type) {
-		case interface{ ValidateAll() error }:
-			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, APISpecValidationError{
-					field:  "OpenapiResponseSchema",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		case interface{ Validate() error }:
-			if err := v.Validate(); err != nil {
-				errors = append(errors, APISpecValidationError{
-					field:  "OpenapiResponseSchema",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		}
-	} else if v, ok := interface{}(m.GetOpenapiResponseSchema()).(interface{ Validate() error }); ok {
-		if err := v.Validate(); err != nil {
-			return APISpecValidationError{
-				field:  "OpenapiResponseSchema",
-				reason: "embedded message failed validation",
-				cause:  err,
-			}
-		}
-	}
+	// no validation rules for OpenapiDefsPrefix
 
 	for idx, item := range m.GetSecurityRules() {
 		_, _ = idx, item
@@ -11672,6 +11708,37 @@ func (m *MetricsViewSpec_Dimension) validate(all bool) error {
 
 	// no validation rules for LookupValueColumn
 
+	// no validation rules for LookupDefaultExpression
+
+	if all {
+		switch v := interface{}(m.GetDataType()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, MetricsViewSpec_DimensionValidationError{
+					field:  "DataType",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, MetricsViewSpec_DimensionValidationError{
+					field:  "DataType",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetDataType()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return MetricsViewSpec_DimensionValidationError{
+				field:  "DataType",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
 	if len(errors) > 0 {
 		return MetricsViewSpec_DimensionMultiError(errors)
 	}
@@ -12169,6 +12236,35 @@ func (m *MetricsViewSpec_Measure) validate(all bool) error {
 	// no validation rules for ValidPercentOfTotal
 
 	// no validation rules for TreatNullsAs
+
+	if all {
+		switch v := interface{}(m.GetDataType()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, MetricsViewSpec_MeasureValidationError{
+					field:  "DataType",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, MetricsViewSpec_MeasureValidationError{
+					field:  "DataType",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetDataType()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return MetricsViewSpec_MeasureValidationError{
+				field:  "DataType",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
 
 	if len(errors) > 0 {
 		return MetricsViewSpec_MeasureMultiError(errors)

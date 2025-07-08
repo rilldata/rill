@@ -695,6 +695,39 @@ func (m *ExportRequest) validate(all bool) error {
 
 	// no validation rules for BakedQuery
 
+	// no validation rules for IncludeHeader
+
+	if all {
+		switch v := interface{}(m.GetOriginDashboard()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, ExportRequestValidationError{
+					field:  "OriginDashboard",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, ExportRequestValidationError{
+					field:  "OriginDashboard",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetOriginDashboard()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return ExportRequestValidationError{
+				field:  "OriginDashboard",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	// no validation rules for OriginUrl
+
 	if len(errors) > 0 {
 		return ExportRequestMultiError(errors)
 	}
@@ -901,10 +934,6 @@ func (m *ExportReportRequest) validate(all bool) error {
 
 	// no validation rules for Report
 
-	// no validation rules for Limit
-
-	// no validation rules for Format
-
 	if all {
 		switch v := interface{}(m.GetExecutionTime()).(type) {
 		case interface{ ValidateAll() error }:
@@ -933,6 +962,8 @@ func (m *ExportReportRequest) validate(all bool) error {
 			}
 		}
 	}
+
+	// no validation rules for OriginBaseUrl
 
 	if len(errors) > 0 {
 		return ExportReportRequestMultiError(errors)
@@ -6184,6 +6215,8 @@ func (m *TimeRange) validate(all bool) error {
 
 	// no validation rules for Expression
 
+	// no validation rules for TimeDimension
+
 	if len(errors) > 0 {
 		return TimeRangeMultiError(errors)
 	}
@@ -7086,6 +7119,8 @@ func (m *MetricsViewTimeSeriesRequest) validate(all bool) error {
 		}
 	}
 
+	// no validation rules for TimeDimension
+
 	if len(errors) > 0 {
 		return MetricsViewTimeSeriesRequestMultiError(errors)
 	}
@@ -7507,6 +7542,8 @@ func (m *MetricsViewTotalsRequest) validate(all bool) error {
 			}
 		}
 	}
+
+	// no validation rules for TimeDimension
 
 	if len(errors) > 0 {
 		return MetricsViewTotalsRequestMultiError(errors)
@@ -7965,6 +8002,8 @@ func (m *MetricsViewRowsRequest) validate(all bool) error {
 			}
 		}
 	}
+
+	// no validation rules for TimeDimension
 
 	if len(errors) > 0 {
 		return MetricsViewRowsRequestMultiError(errors)
@@ -8765,6 +8804,8 @@ func (m *MetricsViewTimeRangeRequest) validate(all bool) error {
 	}
 
 	// no validation rules for Priority
+
+	// no validation rules for TimeDimension
 
 	if len(errors) > 0 {
 		return MetricsViewTimeRangeRequestMultiError(errors)
@@ -9618,6 +9659,8 @@ func (m *MetricsViewTimeRangesRequest) validate(all bool) error {
 	// no validation rules for Priority
 
 	// no validation rules for TimeZone
+
+	// no validation rules for TimeDimension
 
 	if len(errors) > 0 {
 		return MetricsViewTimeRangesRequestMultiError(errors)

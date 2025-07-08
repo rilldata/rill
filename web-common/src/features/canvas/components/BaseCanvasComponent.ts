@@ -7,6 +7,8 @@ import type {
   AllKeys,
   InputParams,
 } from "@rilldata/web-common/features/canvas/inspector/types";
+import { getFiltersFromText } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/dimension-search-text-utils";
+import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import type {
   V1Expression,
   V1Resource,
@@ -49,6 +51,8 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
   abstract isValid(spec: T): boolean;
   // Configuration for the sidebar editor
   abstract inputParams(type?: CanvasComponentType): InputParams<T>;
+
+  getExploreTransformerProperties?(): Partial<ExploreState>;
 
   constructor(
     resource: V1Resource,
@@ -165,10 +169,9 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
         let where: V1Expression | undefined = globalWhere;
 
         if (componentSpec?.["dimension_filters"]) {
-          const { expr: componentWhere } =
-            this.state.localFilters.getFiltersFromText(
-              componentSpec?.["dimension_filters"] as string,
-            );
+          const { expr: componentWhere } = getFiltersFromText(
+            componentSpec?.["dimension_filters"] as string,
+          );
           where = mergeFilters(globalWhere, componentWhere);
         }
 

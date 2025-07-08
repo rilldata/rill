@@ -20,6 +20,7 @@ type MetricsViewYAML struct {
 	DisplayName       string           `yaml:"display_name"`
 	Title             string           `yaml:"title"` // Deprecated: use display_name
 	Description       string           `yaml:"description"`
+	AIInstructions    string           `yaml:"ai_instructions"`
 	Model             string           `yaml:"model"`
 	Database          string           `yaml:"database"`
 	DatabaseSchema    string           `yaml:"database_schema"`
@@ -30,19 +31,20 @@ type MetricsViewYAML struct {
 	FirstDayOfWeek    uint32           `yaml:"first_day_of_week"`
 	FirstMonthOfYear  uint32           `yaml:"first_month_of_year"`
 	Dimensions        []*struct {
-		Name              string
-		DisplayName       string `yaml:"display_name"`
-		Label             string // Deprecated: use display_name
-		Description       string
-		Column            string
-		Expression        string
-		Property          string // For backwards compatibility
-		Ignore            bool   `yaml:"ignore"` // Deprecated
-		Unnest            bool
-		URI               string
-		LookupTable       string `yaml:"lookup_table"`
-		LookupKeyColumn   string `yaml:"lookup_key_column"`
-		LookupValueColumn string `yaml:"lookup_value_column"`
+		Name                    string
+		DisplayName             string `yaml:"display_name"`
+		Label                   string // Deprecated: use display_name
+		Description             string
+		Column                  string
+		Expression              string
+		Property                string // For backwards compatibility
+		Ignore                  bool   `yaml:"ignore"` // Deprecated
+		Unnest                  bool
+		URI                     string
+		LookupTable             string `yaml:"lookup_table"`
+		LookupKeyColumn         string `yaml:"lookup_key_column"`
+		LookupValueColumn       string `yaml:"lookup_value_column"`
+		LookupDefaultExpression string `yaml:"lookup_default_expression"`
 	}
 	Measures []*struct {
 		Name                string
@@ -260,6 +262,7 @@ func (p *Parser) parseMetricsView(node *Node) error {
 
 	names := make(map[string]uint8)
 	names[strings.ToLower(tmp.TimeDimension)] = nameIsDimension
+	timeSeen := false
 
 	for i, dim := range tmp.Dimensions {
 		if dim == nil || dim.Ignore {
@@ -305,7 +308,17 @@ func (p *Parser) parseMetricsView(node *Node) error {
 
 		lower := strings.ToLower(dim.Name)
 		if _, ok := names[lower]; ok {
-			return fmt.Errorf("found duplicate dimension or measure name %q", dim.Name)
+			// allow time dimension to be defined in the dimensions list once
+			if strings.EqualFold(lower, tmp.TimeDimension) {
+				if timeSeen {
+					return fmt.Errorf("time dimension %q defined multiple times", tmp.TimeDimension)
+				} else if dim.Name != tmp.TimeDimension {
+					return fmt.Errorf("dimension name %q does not match the case of time dimension %q", dim.Name, tmp.TimeDimension)
+				}
+				timeSeen = true
+			} else {
+				return fmt.Errorf("found duplicate dimension or measure name %q", dim.Name)
+			}
 		}
 		names[lower] = nameIsDimension
 	}
@@ -586,6 +599,7 @@ func (p *Parser) parseMetricsView(node *Node) error {
 		spec.DisplayName = ToDisplayName(node.Name)
 	}
 	spec.Description = tmp.Description
+	spec.AiInstructions = tmp.AIInstructions
 	spec.TimeDimension = tmp.TimeDimension
 	spec.WatermarkExpression = tmp.Watermark
 	spec.SmallestTimeGrain = smallestTimeGrain
@@ -598,16 +612,17 @@ func (p *Parser) parseMetricsView(node *Node) error {
 		}
 
 		spec.Dimensions = append(spec.Dimensions, &runtimev1.MetricsViewSpec_Dimension{
-			Name:              dim.Name,
-			DisplayName:       dim.DisplayName,
-			Description:       dim.Description,
-			Column:            dim.Column,
-			Expression:        dim.Expression,
-			Unnest:            dim.Unnest,
-			Uri:               dim.URI,
-			LookupTable:       dim.LookupTable,
-			LookupKeyColumn:   dim.LookupKeyColumn,
-			LookupValueColumn: dim.LookupValueColumn,
+			Name:                    dim.Name,
+			DisplayName:             dim.DisplayName,
+			Description:             dim.Description,
+			Column:                  dim.Column,
+			Expression:              dim.Expression,
+			Unnest:                  dim.Unnest,
+			Uri:                     dim.URI,
+			LookupTable:             dim.LookupTable,
+			LookupKeyColumn:         dim.LookupKeyColumn,
+			LookupValueColumn:       dim.LookupValueColumn,
+			LookupDefaultExpression: dim.LookupDefaultExpression,
 		})
 	}
 

@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"time"
 
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -123,7 +122,8 @@ var _ drivers.Handle = &connection{}
 
 // Ping implements drivers.Handle.
 func (c *connection) Ping(ctx context.Context) error {
-	return drivers.ErrNotImplemented
+	// no properties to define in connector so ping always return true.
+	return nil
 }
 
 // Driver implements drivers.Connection.
@@ -236,8 +236,6 @@ func (c *connection) FilePaths(ctx context.Context, src map[string]any) ([]strin
 		req.Header.Set(k, v)
 	}
 
-	start := time.Now()
-
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch url %s:  %w", conf.Path, err)
@@ -247,18 +245,10 @@ func (c *connection) FilePaths(ctx context.Context, src map[string]any) ([]strin
 		return nil, fmt.Errorf("failed to fetch url %s: %s", conf.Path, resp.Status)
 	}
 
-	file, size, err := fileutil.CopyToTempFile(resp.Body, "", extension)
+	file, _, err := fileutil.CopyToTempFile(resp.Body, "", extension)
 	if err != nil {
 		return nil, err
 	}
-
-	// Collect metrics of download size and time
-	drivers.RecordDownloadMetrics(ctx, &drivers.DownloadMetrics{
-		Connector: "https",
-		Ext:       extension,
-		Duration:  time.Since(start),
-		Size:      size,
-	})
 
 	return []string{file}, nil
 }

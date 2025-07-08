@@ -28,7 +28,7 @@
   <Button
     type={$allowPrimary ? "primary" : "secondary"}
     disabled={!resource}
-    on:click={async () => {
+    onClick={async () => {
       if (resource)
         await createAndPreviewExplore(queryClient, instanceId, resource);
     }}

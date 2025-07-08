@@ -1,3 +1,7 @@
+<script context="module">
+  export let EmbedStorageNamespacePrefix = "__rill_embed";
+</script>
+
 <script lang="ts">
   import { Dashboard } from "@rilldata/web-common/features/dashboards";
   import DashboardThemeProvider from "@rilldata/web-common/features/dashboards/DashboardThemeProvider.svelte";
@@ -38,7 +42,11 @@
   {:else if data}
     {#key exploreName}
       <StateManagersProvider {exploreName} {metricsViewName}>
-        <DashboardStateManager {exploreName}>
+        <DashboardStateManager
+          {exploreName}
+          storageNamespacePrefix={EmbedStorageNamespacePrefix}
+          disableMostRecentDashboardState
+        >
           <DashboardThemeProvider>
             <Dashboard {exploreName} {metricsViewName} isEmbedded />
           </DashboardThemeProvider>

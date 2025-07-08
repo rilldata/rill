@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/md5"
 	"encoding/hex"
-	"errors"
 	"fmt"
 	"strings"
 	"sync"
@@ -18,6 +17,7 @@ import (
 	"github.com/rilldata/rill/cli/pkg/dotrillcloud"
 	"github.com/rilldata/rill/cli/pkg/gitutil"
 	"github.com/rilldata/rill/cli/pkg/printer"
+	"github.com/rilldata/rill/cli/pkg/version"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	runtimeclient "github.com/rilldata/rill/runtime/client"
 	"github.com/rilldata/rill/runtime/pkg/activity"
@@ -38,7 +38,7 @@ const (
 
 type Helper struct {
 	*printer.Printer
-	Version            Version
+	Version            version.Version
 	DotRill            dotrill.DotRill
 	Interactive        bool
 	Org                string
@@ -56,7 +56,7 @@ type Helper struct {
 	gitHelperMu sync.Mutex
 }
 
-func NewHelper(ver Version, homeDir string) (*Helper, error) {
+func NewHelper(ver version.Version, homeDir string) (*Helper, error) {
 	// Create it
 	ch := &Helper{
 		Printer:     printer.NewPrinter(printer.FormatHuman),
@@ -102,6 +102,22 @@ func (h *Helper) Close() error {
 	}
 
 	return grp.Wait()
+}
+
+func (h *Helper) SetOrg(org string) error {
+	if h.Org == org {
+		return nil
+	}
+	h.Org = org
+	err := h.DotRill.SetDefaultOrg(org)
+	if err != nil {
+		return fmt.Errorf("failed to set default org: %w", err)
+	}
+
+	h.gitHelperMu.Lock()
+	defer h.gitHelperMu.Unlock()
+	h.gitHelper = nil // Invalidate the git helper since the org has changed.
+	return nil
 }
 
 func (h *Helper) IsDev() bool {
@@ -346,7 +362,7 @@ func (h *Helper) LoadProject(ctx context.Context, path string) (*adminv1.Project
 	return res.Project, nil
 }
 
-func (h *Helper) ProjectNamesByGithubURL(ctx context.Context, org, githubURL, subPath string) ([]string, error) {
+func (h *Helper) ProjectNamesByGitRemote(ctx context.Context, org, remote, subPath string) ([]string, error) {
 	c, err := h.Client()
 	if err != nil {
 		return nil, err
@@ -361,13 +377,13 @@ func (h *Helper) ProjectNamesByGithubURL(ctx context.Context, org, githubURL, su
 
 	names := make([]string, 0)
 	for _, p := range resp.Projects {
-		if strings.EqualFold(p.GithubUrl, githubURL) && (subPath == "" || strings.EqualFold(p.Subpath, subPath)) {
+		if strings.EqualFold(p.GitRemote, remote) && (subPath == "" || strings.EqualFold(p.Subpath, subPath)) {
 			names = append(names, p.Name)
 		}
 	}
 
 	if len(names) == 0 {
-		return nil, fmt.Errorf("no project with github URL %q exists in org %q", githubURL, org)
+		return nil, fmt.Errorf("no project with Git remote %q exists in the org %q", remote, org)
 	}
 
 	return names, nil
@@ -384,13 +400,17 @@ func (h *Helper) InferProjectName(ctx context.Context, org, path string) (string
 	}
 
 	// Verify projectPath is a Git repo with remote on Github
-	_, githubURL, err := gitutil.ExtractGitRemote(path, "", true)
+	remote, err := gitutil.ExtractGitRemote(path, "", true)
+	if err != nil {
+		return "", err
+	}
+	githubRemote, err := remote.Github()
 	if err != nil {
 		return "", err
 	}
 
 	// Fetch project names matching the Github URL
-	names, err := h.ProjectNamesByGithubURL(ctx, org, githubURL, "")
+	names, err := h.ProjectNamesByGitRemote(ctx, org, githubRemote, "")
 	if err != nil {
 		return "", err
 	}
@@ -447,12 +467,12 @@ func (h *Helper) OpenRuntimeClient(ctx context.Context, org, project string, loc
 	return rt, instanceID, nil
 }
 
-func (h *Helper) GitHelper(project, localPath string) *GitHelper {
+func (h *Helper) GitHelper(org, project, localPath string) *GitHelper {
 	h.gitHelperMu.Lock()
 	defer h.gitHelperMu.Unlock()
 
-	// If the git helper is nil or the project or local path has changed, create a new one.
-	if h.gitHelper == nil || h.gitHelper.project != project || h.gitHelper.localPath != localPath {
+	// If the git helper is nil or the org, project or local path has changed, create a new one.
+	if h.gitHelper == nil || h.gitHelper.org != org || h.gitHelper.project != project || h.gitHelper.localPath != localPath {
 		h.gitHelper = newGitHelper(h, h.Org, project, localPath)
 	}
 	return h.gitHelper
@@ -479,10 +499,14 @@ func (h *Helper) GitSignature(ctx context.Context, path string) (*object.Signatu
 	}
 	userResp, err := c.GetCurrentUser(ctx, &adminv1.GetCurrentUserRequest{})
 	if err != nil {
+		if strings.Contains(err.Error(), "not authenticated as a user") {
+			return &object.Signature{
+				Name:  "service-account",
+				Email: "service-account@rilldata.com", // not an actual email
+				When:  time.Now(),
+			}, nil
+		}
 		return nil, err
-	}
-	if userResp.User == nil {
-		return nil, errors.New("failed to get current user")
 	}
 
 	return &object.Signature{

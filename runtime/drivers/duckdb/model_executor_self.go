@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"maps"
 	"net/url"
 	"strings"
 	"time"
@@ -44,7 +43,7 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 	if err := mapstructure.WeakDecode(opts.OutputProperties, outputProps); err != nil {
 		return nil, fmt.Errorf("failed to parse output properties: %w", err)
 	}
-	if err := outputProps.Validate(opts); err != nil {
+	if err := outputProps.validateAndApplyDefaults(opts, inputProps, outputProps); err != nil {
 		return nil, fmt.Errorf("invalid output properties: %w", err)
 	}
 
@@ -78,10 +77,8 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 				return nil, err
 			}
 			defer release()
-			rawProps := maps.Clone(opts.InputProperties)
-			rawProps["path"] = ast.GetTableRefs()[0].Paths[0]
-			rawProps["batch_size"] = -1
-			deleteFiles, err := rewriteDuckDBSQL(ctx, inputProps, handle, rawProps, ast)
+			path := ast.GetTableRefs()[0].Paths[0]
+			deleteFiles, err := rewriteDuckDBSQL(ctx, inputProps, handle, path, ast)
 			if err != nil {
 				return nil, err
 			}
@@ -295,14 +292,13 @@ func objectStoreRef(ctx context.Context, props *ModelInputProperties, opts *driv
 	return "", "", nil, false
 }
 
-func rewriteDuckDBSQL(ctx context.Context, props *ModelInputProperties, inputHandle drivers.Handle, rawProps map[string]any, ast *duckdbsql.AST) (release func(), retErr error) {
+func rewriteDuckDBSQL(ctx context.Context, props *ModelInputProperties, inputHandle drivers.Handle, path string, ast *duckdbsql.AST) (release func(), retErr error) {
 	fs, ok := inputHandle.AsObjectStore()
 	if !ok {
 		return nil, fmt.Errorf("internal error: expected object store connector")
 	}
 
-	var files []string
-	iter, err := fs.DownloadFiles(ctx, rawProps)
+	iter, err := fs.DownloadFiles(ctx, path)
 	if err != nil {
 		return nil, err
 	}
@@ -314,8 +310,13 @@ func rewriteDuckDBSQL(ctx context.Context, props *ModelInputProperties, inputHan
 			_ = iter.Close()
 		}
 	}()
+
+	// We want to batch all the files to avoid issues with schema compatibility and partition_overwrite inserts.
+	// If a user encounters performance issues, we should encourage them to use `partitions:` without `incremental:` to break ingestion into smaller batches.
+	iter.SetKeepFilesUntilClose()
+	var files []string
 	for {
-		localFiles, err := iter.Next()
+		localFiles, err := iter.Next(ctx)
 		if err != nil {
 			if errors.Is(err, io.EOF) {
 				break
@@ -323,6 +324,9 @@ func rewriteDuckDBSQL(ctx context.Context, props *ModelInputProperties, inputHan
 			return nil, err
 		}
 		files = append(files, localFiles...)
+	}
+	if len(files) == 0 {
+		return nil, drivers.ErrNoRows
 	}
 
 	// Rewrite the SQL

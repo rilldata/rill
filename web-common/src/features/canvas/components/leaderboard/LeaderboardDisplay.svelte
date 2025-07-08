@@ -28,7 +28,6 @@
   let numRows = 7;
 
   let parentElement: HTMLDivElement;
-  let suppressTooltip = false;
   let leaderboardWrapperWidth = 0;
 
   $: ({
@@ -134,7 +133,7 @@
 </script>
 
 {#if schema.isValid}
-  <ComponentHeader {title} {description} {filters} />
+  <ComponentHeader {component} {title} {description} {filters} />
 
   <div
     class="h-fit p-0 grow relative"
@@ -146,12 +145,6 @@
       class="grid-wrapper gap-px overflow-x-auto"
       style:grid-template-columns="repeat(auto-fit, minmax({estimatedTableWidth +
         LEADERBOARD_WRAPPER_PADDING}px, 1fr))"
-      on:scroll={() => {
-        suppressTooltip = true;
-      }}
-      on:scrollend={() => {
-        suppressTooltip = false;
-      }}
     >
       {#if parentElement}
         {#each visibleDimensions as dimension (dimension.name)}
@@ -184,7 +177,6 @@
                   : undefined}
                 {dimension}
                 {parentElement}
-                {suppressTooltip}
                 timeControlsReady={true}
                 allowExpandTable={false}
                 allowDimensionComparison={false}
@@ -229,7 +221,7 @@
   }
 
   .border-overlay {
-    @apply absolute border-[12.5px] pointer-events-none border-white size-full;
+    @apply absolute border-[12.5px] pointer-events-none border-surface size-full;
     z-index: 20;
   }
 </style>

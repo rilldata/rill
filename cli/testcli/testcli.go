@@ -2,13 +2,13 @@ package testcli
 
 import (
 	"bytes"
-	"context"
 	"testing"
 
 	"github.com/rilldata/rill/admin/testadmin"
 	"github.com/rilldata/rill/cli/cmd"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/dotrill"
+	"github.com/rilldata/rill/cli/pkg/version"
 	"github.com/stretchr/testify/require"
 )
 
@@ -56,7 +56,7 @@ func (f *Fixture) RunWithInput(t *testing.T, input string, args ...string) Resul
 	var out bytes.Buffer
 
 	// Create a new command helper configured for testing
-	ch, err := cmdutil.NewHelper(cmdutil.Version{}, f.HomeDir)
+	ch, err := cmdutil.NewHelper(version.Version{}, f.HomeDir)
 	require.NoError(t, err)
 	ch.Printer.OverrideDataOutput(&out)
 	ch.Printer.OverrideHumanOutput(&out)
@@ -71,7 +71,7 @@ func (f *Fixture) RunWithInput(t *testing.T, input string, args ...string) Resul
 	root.SetArgs(args)
 
 	// Execute the command (mirrors the logic in cli/cmd.Run)
-	err = root.ExecuteContext(context.Background())
+	err = root.ExecuteContext(t.Context())
 	code := cmd.HandleExecuteError(ch, err)
 
 	return Result{

@@ -1,0 +1,12 @@
+{
+  "name": "web-integration",
+  "private": true,
+  "version": "0.0.0",
+  "scripts": {
+    "test": "playwright test",
+    "test:setup": "E2E_NO_TEARDOWN=true playwright test --project=setup",
+    "test:dev": "E2E_NO_SETUP_OR_TEARDOWN=true playwright test --project=e2e",
+    "test:teardown": "playwright test --project=teardown"
+  },
+  "type": "module"
+}

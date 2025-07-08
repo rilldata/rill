@@ -3,7 +3,6 @@ all: cli
 
 .PHONE: cli-only
 cli-only:
-	cp scripts/install.sh cli/pkg/installscript/embed/install.sh
 	go run scripts/embed_duckdb_ext/main.go
 	go build -o rill cli/main.go
 
@@ -22,7 +21,6 @@ cli.prepare:
 	mkdir -p runtime/pkg/examples/embed/dist
 	git clone --quiet https://github.com/rilldata/rill-examples.git runtime/pkg/examples/embed/dist
 	rm -rf runtime/pkg/examples/embed/dist/.git
-	cp scripts/install.sh cli/pkg/installscript/embed/install.sh
 	go run scripts/embed_duckdb_ext/main.go
 
 .PHONY: coverage.go
@@ -40,9 +38,10 @@ coverage.go:
 docs.generate:
 	# Temporarily replaces ~/.rill/config.yaml to avoid including user-defined defaults in generated docs.
 	# Sets version to the latest tag to simulate a production build, where certain commands are hidden.
-	rm -rf docs/docs/reference/cli
+	rm -rf docs/docs/reference/cli docs/docs/reference/yaml
 	if [ -f ~/.rill/config.yaml ]; then mv ~/.rill/config.yaml ~/.rill/config.yaml.tmp; fi;
-	go run -ldflags="-X main.Version=$(shell git describe --tags `git rev-list --tags --max-count=1`)" ./cli docs generate docs/docs/reference/cli/
+	go run -ldflags="-X main.Version=$(shell git describe --tags `git rev-list --tags --max-count=1`)" ./cli docs generate-cli docs/docs/reference/cli/
+	go run -ldflags="-X main.Version=$(shell git describe --tags `git rev-list --tags --max-count=1`)" ./cli docs generate-project docs/docs/hidden/yaml
 	if [ -f ~/.rill/config.yaml.tmp ]; then mv ~/.rill/config.yaml.tmp ~/.rill/config.yaml; fi;
 
 .PHONY: proto.generate

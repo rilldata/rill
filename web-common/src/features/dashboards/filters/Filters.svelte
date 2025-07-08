@@ -5,42 +5,45 @@
   import AdvancedFilter from "@rilldata/web-common/features/dashboards/filters/AdvancedFilter.svelte";
   import MeasureFilter from "@rilldata/web-common/features/dashboards/filters/measure-filters/MeasureFilter.svelte";
   import type { MeasureFilterEntry } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
+  import { DashboardStateSync } from "@rilldata/web-common/features/dashboards/state-managers/loaders/DashboardStateSync";
   import { isExpressionUnsupported } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
+  import { isUrlTooLong } from "@rilldata/web-common/features/dashboards/url-state/url-length-limits";
   import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
-  import { flip } from "svelte/animate";
-  import { fly } from "svelte/transition";
-  import { getStateManagers } from "../state-managers/state-managers";
-  import ComparisonPill from "../time-controls/comparison-pill/ComparisonPill.svelte";
-  import SuperPill from "../time-controls/super-pill/SuperPill.svelte";
-  import { useTimeControlStore } from "../time-controls/time-control-store";
-  import FilterButton from "./FilterButton.svelte";
-  import DimensionFilter from "./dimension-filters/DimensionFilter.svelte";
-  import type {
-    V1ExploreTimeRange,
-    V1TimeGrain,
-  } from "@rilldata/web-common/runtime-client";
-  import {
-    ALL_TIME_RANGE_ALIAS,
-    CUSTOM_TIME_RANGE_ALIAS,
-    deriveInterval,
-  } from "../time-controls/new-time-controls";
+  import type { TimeRange } from "@rilldata/web-common/lib/time/types";
   import {
     TimeComparisonOption,
     TimeRangePreset,
     type DashboardTimeControls,
   } from "@rilldata/web-common/lib/time/types";
+  import type {
+    V1ExploreTimeRange,
+    V1TimeGrain,
+  } from "@rilldata/web-common/runtime-client";
+  import { DateTime, Interval } from "luxon";
+  import { flip } from "svelte/animate";
+  import { fly } from "svelte/transition";
+  import { getStateManagers } from "../state-managers/state-managers";
+  import { applyDimensionInListMode as applyDimensionInListModeDirectly } from "../state-managers/actions/dimension-filters";
   import {
     metricsExplorerStore,
     useExploreState,
   } from "../stores/dashboard-stores";
-  import type { TimeRange } from "@rilldata/web-common/lib/time/types";
-  import { DateTime, Interval } from "luxon";
+  import ComparisonPill from "../time-controls/comparison-pill/ComparisonPill.svelte";
+  import {
+    ALL_TIME_RANGE_ALIAS,
+    CUSTOM_TIME_RANGE_ALIAS,
+    deriveInterval,
+  } from "../time-controls/new-time-controls";
+  import SuperPill from "../time-controls/super-pill/SuperPill.svelte";
+  import { useTimeControlStore } from "../time-controls/time-control-store";
+  import FilterButton from "./FilterButton.svelte";
+  import DimensionFilter from "./dimension-filters/DimensionFilter.svelte";
 
-  import { getDefaultTimeGrain } from "@rilldata/web-common/lib/time/grains";
-  import { getValidComparisonOption } from "../time-controls/time-range-store";
-  import { Tooltip } from "bits-ui";
   import Timestamp from "@rilldata/web-common/features/dashboards/time-controls/super-pill/components/Timestamp.svelte";
+  import { getDefaultTimeGrain } from "@rilldata/web-common/lib/time/grains";
+  import { Tooltip } from "bits-ui";
   import Metadata from "../time-controls/super-pill/components/Metadata.svelte";
+  import { getValidComparisonOption } from "../time-controls/time-range-store";
   import { getPinnedTimeZones } from "../url-state/getDefaultExplorePreset";
 
   export let readOnly = false;
@@ -88,6 +91,8 @@
   } = StateManagers;
 
   const timeControlsStore = useTimeControlStore(StateManagers);
+
+  const dashboardStateSync = DashboardStateSync.getFromContext();
 
   let showDefaultItem = false;
 
@@ -301,6 +306,22 @@
       );
     }
   }
+
+  function isUrlTooLongAfterInListFilter(
+    dimensionName: string,
+    values: string[],
+  ) {
+    if (!dashboardStateSync) return false;
+
+    const exploreState = structuredClone($dashboardStore);
+    applyDimensionInListModeDirectly(
+      { dashboard: exploreState },
+      dimensionName,
+      values,
+    );
+    const url = dashboardStateSync.getUrlForExploreState(exploreState);
+    return isUrlTooLong(url);
+  }
 </script>
 
 <div class="flex flex-col gap-y-2 size-full">
@@ -412,6 +433,8 @@
                   applyDimensionInListMode(name, values)}
                 onApplyContainsMode={(searchText) =>
                   applyDimensionContainsMode(name, searchText)}
+                isUrlTooLongAfterInListFilter={(values) =>
+                  isUrlTooLongAfterInListFilter(name, values)}
               />
             {/if}
           </div>
@@ -443,7 +466,7 @@
         <!-- if filters are present, place a chip at the end of the flex container 
       that enables clearing all filters -->
         {#if hasFilters}
-          <Button type="text" on:click={clearAllFilters}>Clear filters</Button>
+          <Button type="text" onClick={clearAllFilters}>Clear filters</Button>
         {/if}
       {/if}
     </div>

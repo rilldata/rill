@@ -6,7 +6,6 @@ import (
 
 	"github.com/rilldata/rill/cli/cmd/env"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
-	"github.com/rilldata/rill/cli/pkg/dotrillcloud"
 	"github.com/rilldata/rill/cli/pkg/gitutil"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
@@ -62,7 +61,7 @@ func CloneCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			// get config
-			config, err := ch.GitHelper(name, path).GitConfig(cmd.Context())
+			config, err := ch.GitHelper(ch.Org, name, path).GitConfig(cmd.Context())
 			if err != nil {
 				return err
 			}
@@ -79,14 +78,6 @@ func CloneCmd(ch *cmdutil.Helper) *cobra.Command {
 			err = env.PullVars(cmd.Context(), ch, path, name, "prod", false)
 			if err != nil {
 				return fmt.Errorf("failed to download variables: %w", err)
-			}
-
-			// set rill cloud
-			err = dotrillcloud.SetAll(path, ch.AdminURL(), &dotrillcloud.Config{
-				ProjectID: res.Project.Id,
-			})
-			if err != nil {
-				return fmt.Errorf("failed to set rill cloud config: %w", err)
 			}
 
 			return nil

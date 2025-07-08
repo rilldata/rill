@@ -33,3 +33,6 @@ The first month of the year for time grain aggregation. The valid values are 1 t
 
 Defining security policies for your data is crucial for security. For more information on this, please refer to our [Dashboard Access Policies](/manage/security.md).
 
+**`ai_instructions`**
+
+Provides context for LLMs, including instructions for creating Explore URLs. For more information on this, please refer to our [MCP Server pages](/explore/mcp.md)

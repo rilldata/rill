@@ -289,7 +289,7 @@ func (s *Server) generateMetricsViewYAMLWithAI(ctx context.Context, instanceID, 
 		return nil, err
 	}
 	defer e.Close()
-	validateResult, err := e.ValidateMetricsView(ctx)
+	validateResult, err := e.ValidateAndNormalizeMetricsView(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -414,7 +414,7 @@ func generateMetricsViewYAMLSimpleDimensions(schema *runtimev1.StructType) []*me
 	var dims []*metricsViewDimensionYAML
 	for _, f := range schema.Fields {
 		switch f.Type.Code {
-		case runtimev1.Type_CODE_BOOL, runtimev1.Type_CODE_STRING, runtimev1.Type_CODE_BYTES, runtimev1.Type_CODE_UUID:
+		case runtimev1.Type_CODE_BOOL, runtimev1.Type_CODE_STRING, runtimev1.Type_CODE_BYTES, runtimev1.Type_CODE_UUID, runtimev1.Type_CODE_DATE, runtimev1.Type_CODE_TIMESTAMP:
 			dims = append(dims, &metricsViewDimensionYAML{
 				Name:        f.Name,
 				DisplayName: identifierToDisplayName(f.Name),
@@ -559,7 +559,7 @@ func insertEmptyLinesInYaml(node *yaml.Node) {
 }
 
 func identifierToDisplayName(s string) string {
-	return cases.Title(language.English).String(strings.ReplaceAll(s, "_", " "))
+	return strings.TrimLeft(cases.Title(language.English).String(strings.ReplaceAll(s, "_", " ")), " ")
 }
 
 var alphanumericUnderscoreRegexp = regexp.MustCompile("^[_a-zA-Z0-9]+$")
