@@ -125,75 +125,57 @@ dimensions:
   - name: app_site_name
     display_name: App Site Name
     column: app_site_name
-    description: ""
   - display_name: App Site Domain
     column: app_site_domain
-    description: ""
     name: app_site_domain
   - name: pub_name
     display_name: Pub Name
     column: pub_name
-    description: ""
   - name: app_site_cat
     display_name: App Site Cat
     column: app_site_cat
-    description: ""
   - name: ad_size
     display_name: Ad Size
     column: ad_size
-    description: ""
   - name: device_state
     display_name: Device State
     column: device_state
-    description: ""
   - name: device_osv
     display_name: Device OS Version
     column: device_osv
-    description: ""
   - name: bid_floor_bucket
     display_name: Bid Floor Bucket
     column: bid_floor_bucket
-    description: ""
   - name: platform_browser
     display_name: Platform Browser
     column: platform_browser
-    description: ""
   - name: device_os
     display_name: Device OS
     column: device_os
-    description: ""
   - name: device_type
     display_name: Device Type
     column: device_type
-    description: ""
   - name: ad_position
     display_name: Ad Position
     column: ad_position
-    description: ""
   - name: video_max_duration_bucket
     display_name: Video Max Duration Bucket
     column: video_max_duration_bucket
-    description: ""
   - name: video_min_duration_bucket
     display_name: Video Min Duration Bucket
     column: video_min_duration_bucket
-    description: ""
   - display_name: Placement Type
     column: placement_type
-    description: ""
     name: placement_type
   - name: auction_type
     display_name: Auction Type
     column: auction_type
-    description: ""
   - name: app_or_site
     display_name: App or Site
     column: app_or_site
-    description: ""
   - name: device_country
     display_name: "Device Country"
     column: "device_country"
-    description: ""
 
 ai_instructions: ...
 ```

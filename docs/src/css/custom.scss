@@ -272,22 +272,15 @@ li.theme-doc-sidebar-item-category-level-2 .menu__list-item-collapsible {
   opacity: 0.5;
 }
 
-
-// CSS for GIFS, make it look better
-
 .rounded-gif {
   border-radius: 10px;  /* Rounded corners */
   display: block;
   margin-left: auto;
   margin-right: auto;
   width: 100%;
-
-  /* Shadow effect */
   box-shadow: 4px 4px 10px rgba(0, 0, 0, 0.2); 
 
-  /* Outline effect */
-  // outline: 2px solid rgba(0, 0, 0, 0.1);
-  // outline-offset: 2px; /* Space between the outline and the gif */
+
 }
 
 .centered {
@@ -313,7 +306,7 @@ li.theme-doc-sidebar-item-category-level-2 .menu__list-item-collapsible {
     padding: 8px;
     text-align: left;
     border-top: 1px solid var(--ifm-toc-border-color);
-    flex-shrink: 0; /* Prevent the release notes section from shrinking */
+    flex-shrink: 0; 
     
     .release-notes-link {
       display: block;
@@ -441,7 +434,6 @@ li.theme-doc-sidebar-item-category-level-2 .menu__list-item-collapsible {
 .breadcrumbs {
   margin-bottom: 1.5rem;
   padding: 0.75rem 0;
-  border-bottom: 1px solid var(--ifm-color-emphasis-200);
   font-size: 0.875rem;
   --ifm-breadcrumb-separator: '/';
 }
@@ -453,10 +445,9 @@ li.theme-doc-sidebar-item-category-level-2 .menu__list-item-collapsible {
   
   &:not(:last-child)::after {
     content: '/';
-    margin: 0 0.5rem;
-    padding: 0.125rem 0rem;
     color: var(--ifm-color-emphasis-400);
-    font-weight: 400;
+    font-weight: 600;
+    color: #000;
     display: inline-flex;
     align-items: center;
     vertical-align: middle;

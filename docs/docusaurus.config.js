@@ -72,8 +72,8 @@ const config = {
     ({
       colorMode: {
         defaultMode: 'light',
-        disableSwitch: true,
-        respectPrefersColorScheme: true,
+        disableSwitch: false,
+        respectPrefersColorScheme: false,
       },
       algolia: {
         appId: "4U01DM4NS4",
@@ -119,7 +119,8 @@ const config = {
           },
 
           {
-            to: "/contact",
+            type: "docSidebar",
+            sidebarId: "contactSidebar",
             position: "left",
             label: "Contact Us",
           },
@@ -145,11 +146,11 @@ const config = {
             position: "right",
             value: '<span class="navbar-divider"></span>',
           },
-          {
-            type: "html",
-            position: "right",
-            value: '<button id="dark-mode-toggle" class="navbar-icon-link" aria-label="Toggle dark mode"><div class="icon-container"></div></button>',
-          },
+          // {
+          //   type: "html",
+          //   position: "right",
+          //   value: '<button id="dark-mode-toggle" class="navbar-icon-link" aria-label="Toggle dark mode"><div class="icon-container"></div></button>',
+          // },
 
           // {
           //   type: "html",
