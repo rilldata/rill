@@ -28,6 +28,7 @@
   import { dsnSchema, getYupSchema } from "./yupSchemas";
   import AddClickHouseForm from "./AddClickHouseForm.svelte";
   import Checkbox from "@rilldata/web-common/components/forms/Checkbox.svelte";
+  import { getSpecDefaults } from "./utils";
 
   const FORM_TRANSITION_DURATION = 150;
   const dispatch = createEventDispatcher();
@@ -39,21 +40,6 @@
 
   const isSourceForm = formType === "source";
   const isConnectorForm = formType === "connector";
-
-  function getSpecDefaults(properties) {
-    const defaults = {};
-    (properties ?? []).forEach((property) => {
-      if (property.default !== undefined) {
-        let value = property.default;
-        // Convert to correct type
-        if (property.type === ConnectorDriverPropertyType.TYPE_BOOLEAN) {
-          value = value === "true";
-        }
-        defaults[property.key] = value;
-      }
-    });
-    return defaults;
-  }
 
   // Form 1: Individual parameters
   const paramsFormId = `add-data-${connector.name}-form`;
@@ -68,7 +54,7 @@
     ...defaults(schema),
     ...getSpecDefaults(connector.configProperties),
   };
-  $: console.log("initialDefaults: ", initialDefalts);
+  $: console.log("initialDefaults: ", initialDefaults);
   const {
     form: paramsForm,
     errors: paramsErrors,

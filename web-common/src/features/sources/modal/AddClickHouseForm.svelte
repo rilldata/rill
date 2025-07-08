@@ -26,6 +26,7 @@
   import type { AddDataFormType } from "./types";
   import { dsnSchema, getYupSchema } from "./yupSchemas";
   import Checkbox from "@rilldata/web-common/components/forms/Checkbox.svelte";
+  import { getSpecDefaults } from "./utils";
 
   const FORM_TRANSITION_DURATION = 150;
   const dispatch = createEventDispatcher();
@@ -37,21 +38,6 @@
 
   // Always include 'managed' in the schema for ClickHouse
   const clickhouseSchema = yup(getYupSchema["clickhouse"]);
-
-  function getSpecDefaults(properties) {
-    const defaults = {};
-    (properties ?? []).forEach((property) => {
-      if (property.default !== undefined) {
-        let value = property.default;
-        // Convert to correct type
-        if (property.type === ConnectorDriverPropertyType.TYPE_BOOLEAN) {
-          value = value === "true";
-        }
-        defaults[property.key] = value;
-      }
-    });
-    return defaults;
-  }
 
   const initialDefaults = {
     ...defaults(clickhouseSchema),
