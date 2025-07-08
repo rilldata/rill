@@ -35,7 +35,7 @@
 
   // Always include 'managed' in the schema for ClickHouse
   const clickhouseSchema = yup(getYupSchema["clickhouse"]);
-  const paramsFormId = `add-data-${connector.name}-form`;
+  const paramsFormId = `add-clickhouse-data-${connector.name}-form`;
   const {
     form: paramsForm,
     errors: paramsErrors,
@@ -55,7 +55,7 @@
   // DSN form
   let useDsn = false;
 
-  const dsnFormId = `add-data-${connector.name}-dsn-form`;
+  const dsnFormId = `add-clickhouse-data-${connector.name}-dsn-form`;
   const dsnProperties =
     connector.configProperties?.filter((property) => property.key === "dsn") ??
     [];
