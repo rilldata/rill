@@ -27,11 +27,71 @@ var spec = drivers.Spec{
 	DisplayName: "Snowflake",
 	Description: "Connect to Snowflake.",
 	DocsURL:     "https://docs.rilldata.com/reference/connectors/snowflake",
+	// Important: Any edits to the below properties must be accompanied by changes to the client-side form validation schemas.
 	ConfigProperties: []*drivers.PropertySpec{
 		{
 			Key:    "dsn",
 			Type:   drivers.StringPropertyType,
 			Secret: true,
+		},
+		{
+			Key:         "account",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "Account identifier",
+			Required:    false,
+			Hint:        "E.g. xy12345.us-east-1",
+		},
+		{
+			Key:         "user",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "User",
+			Required:    false,
+		},
+		{
+			Key:         "password",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "Password",
+			Required:    false,
+			Secret:      true,
+		},
+		{
+			Key:         "privateKey",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "Private key (base64 or PEM)",
+			Required:    false,
+			Secret:      true,
+			Hint:        "Alternative to password for JWT auth. Base64 or PEM format.",
+		},
+		{
+			Key:         "database",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "Database",
+			Required:    false,
+		},
+		{
+			Key:         "schema",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "Schema",
+			Required:    false,
+		},
+		{
+			Key:         "warehouse",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "Warehouse",
+			Required:    false,
+		},
+		{
+			Key:         "role",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "Role",
+			Required:    false,
+		},
+		{
+			Key:         "authenticator",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "Authenticator",
+			Required:    false,
+			Hint:        "E.g. SNOWFLAKE_JWT for key-based auth.",
 		},
 	},
 	// Important: Any edits to the below properties must be accompanied by changes to the client-side form validation schemas.
@@ -47,7 +107,7 @@ var spec = drivers.Spec{
 		{
 			Key:         "dsn",
 			Type:        drivers.StringPropertyType,
-			DisplayName: "Snowflake Connection String",
+			DisplayName: "Connection string",
 			Required:    false,
 			DocsURL:     "https://docs.rilldata.com/reference/connectors/snowflake",
 			Placeholder: "<username>@<account_identifier>/<database>/<schema>?warehouse=<warehouse>&role=<role>&authenticator=SNOWFLAKE_JWT&privateKey=<privateKey_base64_url_encoded>",

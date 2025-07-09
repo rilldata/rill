@@ -101,8 +101,17 @@ export const getYupSchema = {
   }),
 
   snowflake: yup.object().shape({
-    sql: yup.string().required("sql is required"),
+    sql: yup.string().required("SQL is required"),
     dsn: yup.string(),
+    account: yup.string(),
+    user: yup.string(),
+    password: yup.string(),
+    privateKey: yup.string(),
+    database: yup.string(),
+    schema: yup.string(),
+    warehouse: yup.string(),
+    role: yup.string(),
+    authenticator: yup.string(),
     name: yup
       .string()
       .matches(VALID_NAME_PATTERN, INVALID_NAME_MESSAGE)
