@@ -35,6 +35,7 @@
               bind:value={$form["criteriaOperation"]}
               id="field"
               label=""
+              ariaLabel="Criteria group operation"
               options={CriteriaGroupOptions}
               placeholder="Measure"
             />

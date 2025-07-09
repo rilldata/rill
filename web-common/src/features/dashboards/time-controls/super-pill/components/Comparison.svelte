@@ -105,6 +105,7 @@
       use:builder.action
       {...builder}
       aria-label="Select time comparison option"
+      type="button"
     >
       <div class="gap-x-2 flex" class:opacity-50={!showComparison}>
         {#if !timeComparisonOptionsState.length && !showComparison}

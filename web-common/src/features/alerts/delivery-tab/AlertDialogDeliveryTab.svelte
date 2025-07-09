@@ -24,6 +24,7 @@
       alwaysShowError
       errors={$errors["name"]}
       id="name"
+      title="Alert name"
       placeholder="My alert"
       bind:value={$form["name"]}
     />

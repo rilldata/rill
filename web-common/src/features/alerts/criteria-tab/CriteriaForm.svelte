@@ -68,11 +68,12 @@
   });
 </script>
 
-<div class="flex flex-row gap-2">
+<div class="flex flex-row gap-2" aria-label="criteria-{index}">
   <Select
     bind:value={$form["criteria"][index].measure}
     id="field"
     label=""
+    ariaLabel="Criteria measure"
     options={measureOptions}
     placeholder="Measure"
     width={160}
@@ -81,6 +82,7 @@
     bind:value={$form["criteria"][index].type}
     id="type"
     label=""
+    ariaLabel="Criteria type"
     options={typeOptions}
     placeholder="type"
     width={256}
@@ -89,6 +91,7 @@
     bind:value={$form["criteria"][index].operation}
     id="operation"
     label=""
+    ariaLabel="Criteria operator"
     options={CriteriaOperationOptions}
     placeholder="Operator"
     width={70}
@@ -98,6 +101,7 @@
     alwaysShowError
     bind:value
     id="value"
+    title="Criteria value"
     onInput={valueUpdater}
     placeholder={"0"}
     width="auto"
