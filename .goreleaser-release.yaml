@@ -15,8 +15,8 @@ builds:
       - amd64
       - arm64
     prebuilt:
-      path: output/mybin_{{ .Os }}_{{ .Arch }}{{ with .Amd64 }}_{{ . }}{{ end }}/mybin
-    binary: bin/rill
+      path: output/rill_{{ .Os }}_{{ .Arch }}/rill
+    binary: rill
 
 brews:
   - homepage: https://github.com/rilldata/rill
