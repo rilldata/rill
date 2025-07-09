@@ -7,20 +7,20 @@ before:
     - go mod tidy
 
 builds:
-  - id: {{.Env.GOOS}}_{{.Env.GOARCH}}
+  - id: {{ .Env.GOOS }}_{{ .Env.GOARCH }}
     main: ./cli/main.go
     binary: rill
     goos:
-      - {{.Env.GOOS}}
+      - {{ .Env.GOOS }}
     goarch:
-      - {{.Env.GOARCH}}
+      - {{ .Env.GOARCH }}
     env:
-      - CC={{.Env.CC}}
-      - CXX={{.Env.CXX}}
+      - CC={{ .Env.CC }}
+      - CXX={{ .Env.CXX }}
     flags:
       - "-mod=readonly"
     ldflags:
-      - -s -w -X main.Version={{.Version}} -X main.Commit={{.ShortCommit}} -X main.BuildDate={{.Date}}
+      - -s -w -X main.Version={{ .Version }} -X main.Commit={{ .ShortCommit }} -X main.BuildDate={{ .Date }}
 
 blobs:
   - provider: gs
@@ -41,7 +41,7 @@ dockers:
       - rilldata/rill:{{ .Tag }}
 
 checksum:
-  name_template: checksums_{{.Env.GOOS}}_{{.Env.GOARCH}}.txt
+  name_template: checksums_{{ .Env.GOOS }}_{{ .Env.GOARCH }}.txt
 
 snapshot:
   name_template: "{{ incminor .Version }}-nightly"

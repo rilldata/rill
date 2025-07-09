@@ -8,19 +8,15 @@ release:
 
 builds:
   - builder: prebuilt
-    main: ./cli/main.go
-    binary: rill
     goos:
-      - {{.Env.GOOS}}
+      - linux
+      - darwin
     goarch:
-      - {{.Env.GOARCH}}
-    env:
-      - CC={{.Env.CC}}
-      - CXX={{.Env.CXX}}
-    flags:
-      - "-mod=readonly"
-    ldflags:
-      - -s -w -X main.Version={{.Version}} -X main.Commit={{.ShortCommit}} -X main.BuildDate={{.Date}}
+      - amd64
+      - arm64
+    prebuilt:
+      path: output/mybin_{{ .Os }}_{{ .Arch }}{{ with .Amd64 }}_{{ . }}{{ end }}/mybin
+    binary: bin/rill
 
 brews:
   - homepage: https://github.com/rilldata/rill
@@ -49,7 +45,7 @@ archives:
     format: zip
 
 checksum:
-  name_template: checksums_{{.Env.GOOS}}_{{.Env.GOARCH}}.txt
+  name_template: checksums.txt
 
 snapshot:
   name_template: "{{ incminor .Version }}-nightly"
