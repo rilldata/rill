@@ -31,6 +31,7 @@
   import { TabsContent } from "@rilldata/web-common/components/tabs";
   import { isEmpty } from "./utils";
   import { CONNECTION_TAB_OPTIONS } from "./constants";
+  import { getInitialFormValuesFromProperties } from "../sourceUtils";
 
   const dispatch = createEventDispatcher();
 
@@ -53,6 +54,10 @@
           (property) => property.key !== "dsn",
         )) ?? [];
   const schema = yup(getYupSchema[connector.name as keyof typeof getYupSchema]);
+  const propertyDefaults = getInitialFormValuesFromProperties(properties);
+  // NOTE: we used to use defaults(schema) here, removing it so we can ENG-840
+  // TODO: rethink this, prep for Template API
+  const initialFormValues = propertyDefaults;
   const {
     form: paramsForm,
     errors: paramsErrors,
@@ -60,7 +65,7 @@
     tainted: paramsTainted,
     submit: paramsSubmit,
     submitting: paramsSubmitting,
-  } = superForm(defaults(schema), {
+  } = superForm(initialFormValues, {
     SPA: true,
     validators: schema,
     onUpdate: handleOnUpdate,

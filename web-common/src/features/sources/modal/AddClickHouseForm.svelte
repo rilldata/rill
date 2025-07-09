@@ -27,6 +27,7 @@
   import { isEmpty } from "./utils";
   import { CONNECTOR_TYPE_OPTIONS, CONNECTION_TAB_OPTIONS } from "./constants";
   import ConnectorTypeSelector from "@rilldata/web-common/components/forms/ConnectorTypeSelector.svelte";
+  import { getInitialFormValuesFromProperties } from "../sourceUtils";
 
   export let connector: V1ConnectorDriver;
   export let formType: AddDataFormType;
@@ -46,6 +47,12 @@
 
   // Always include 'managed' in the schema for ClickHouse
   const clickhouseSchema = yup(getYupSchema["clickhouse"]);
+  const propertyDefaults = getInitialFormValuesFromProperties(
+    connector.configProperties ?? [],
+  );
+  // NOTE: we used to use defaults(schema) here, removing it so we can ENG-840
+  // TODO: rethink this, prep for Template API
+  const initialFormValues = propertyDefaults;
   const paramsFormId = `add-clickhouse-data-${connector.name}-form`;
   const {
     form: paramsForm,
@@ -54,7 +61,7 @@
     tainted: paramsTainted,
     submit: paramsSubmit,
     submitting: paramsSubmitting,
-  } = superForm(defaults(clickhouseSchema), {
+  } = superForm(initialFormValues, {
     SPA: true,
     validators: clickhouseSchema,
     onUpdate: handleOnUpdate,
@@ -136,7 +143,11 @@
     >;
   }) {
     if (!event.form.valid) return;
-    const values = event.form.data;
+    let values = event.form.data;
+    // Only submit managed if managed is true
+    if (values.managed === true) {
+      values = { managed: true };
+    }
     try {
       if (formType === "source") {
         await submitAddSourceForm(queryClient, connector, values);
