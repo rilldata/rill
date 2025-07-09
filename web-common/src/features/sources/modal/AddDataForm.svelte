@@ -282,7 +282,6 @@
             </TabsContent>
           </Tabs>
         {:else}
-          <!-- Only one form option, show parameters form directly -->
           <form
             id={paramsFormId}
             class="pb-5 flex-grow overflow-y-auto"

@@ -37,6 +37,8 @@
     details?: string,
   ) => void = () => {};
 
+  let connectionTab: ConnectorType = "parameters";
+
   // Always include 'managed' in the schema for ClickHouse
   const clickhouseSchema = yup(getYupSchema["clickhouse"]);
   const paramsFormId = `add-clickhouse-data-${connector.name}-form`;
@@ -55,8 +57,6 @@
   });
   let paramsError: string | null = null;
   let paramsErrorDetails: string | undefined = undefined;
-
-  let connectionTab: ConnectorType = "parameters";
 
   const dsnFormId = `add-clickhouse-data-${connector.name}-dsn-form`;
   const dsnProperties =
@@ -370,7 +370,6 @@
   <div class="flex items-center space-x-2 ml-auto">
     <Button onClick={onBack} type="secondary">Back</Button>
 
-    <!-- FIXME: use Connect when managed is true -->
     <Button
       disabled={submitting || isSubmitDisabled}
       form={formId}
