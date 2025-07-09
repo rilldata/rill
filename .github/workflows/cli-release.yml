@@ -176,7 +176,7 @@ jobs:
 
       - name: Notify Slack
         uses: ravsamhq/notify-slack-action@v2
-        if: always()
+        if: env.PUBLISH_NIGHTLY == 'true' || env.PUBLISH_RELEASE == 'true'
         with:
           status: ${{ job.status }}
           notification_title: "{workflow} has {status_message}"
