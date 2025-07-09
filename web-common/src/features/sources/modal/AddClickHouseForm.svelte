@@ -18,13 +18,18 @@
   import { ButtonGroup, SubButton } from "../../../components/button-group";
   import { inferSourceName } from "../sourceUtils";
   import { humanReadableErrorMessage } from "../errors/errors";
-  import { submitAddOLAPConnectorForm } from "./submitAddDataForm";
+  import {
+    submitAddOLAPConnectorForm,
+    submitAddSourceForm,
+  } from "./submitAddDataForm";
+  import type { AddDataFormType } from "./types";
   import { dsnSchema, getYupSchema } from "./yupSchemas";
   import Checkbox from "@rilldata/web-common/components/forms/Checkbox.svelte";
 
   const dispatch = createEventDispatcher();
 
   export let connector: V1ConnectorDriver;
+  export let formType: AddDataFormType;
   export let onBack: () => void;
   export let onClose: () => void;
 
@@ -127,7 +132,11 @@
     if (!event.form.valid) return;
     const values = event.form.data;
     try {
-      await submitAddOLAPConnectorForm(queryClient, connector, values);
+      if (formType === "source") {
+        await submitAddSourceForm(queryClient, connector, values);
+      } else {
+        await submitAddOLAPConnectorForm(queryClient, connector, values);
+      }
       onClose();
     } catch (e) {
       let error: string;
@@ -339,16 +348,14 @@
       submitForm
       type="primary"
     >
-      {#if $paramsForm.managed}
+      {#if formType === "connector"}
         {#if submitting}
-          Connecting...
+          Testing connection...
         {:else}
           Connect
         {/if}
-      {:else if submitting}
-        Testing connection...
       {:else}
-        Test and Connect
+        Add data
       {/if}
     </Button>
   </div>
