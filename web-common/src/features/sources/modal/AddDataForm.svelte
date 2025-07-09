@@ -91,6 +91,9 @@
   let dsnError: string | null = null;
   let dsnErrorDetails: string | undefined = undefined;
 
+  let clickhouseError: string | null = null;
+  let clickhouseErrorDetails: string | undefined = undefined;
+
   // Active form
   $: formId = useDsn ? dsnFormId : paramsFormId;
   $: submitting = useDsn ? $dsnSubmitting : $paramsSubmitting;
@@ -196,6 +199,10 @@
           {formType}
           {onBack}
           {onClose}
+          setError={(error, details) => {
+            clickhouseError = error;
+            clickhouseErrorDetails = details;
+          }}
           on:submitting
         />
       {:else}
@@ -309,10 +316,12 @@
   <div
     class="add-data-side-panel flex flex-col gap-6 p-6 bg-[#FAFAFA] w-full max-w-full border-l-0 border-t mt-6 pl-0 pt-6 md:w-96 md:min-w-[320px] md:max-w-[400px] md:border-l md:border-t-0 md:mt-0 md:pl-6"
   >
-    {#if dsnError || paramsError}
+    {#if dsnError || paramsError || clickhouseError}
       <SubmissionError
-        message={(useDsn ? dsnError : paramsError) ?? ""}
-        details={(useDsn ? dsnErrorDetails : paramsErrorDetails) ?? ""}
+        message={clickhouseError ?? (useDsn ? dsnError : paramsError) ?? ""}
+        details={clickhouseErrorDetails ??
+          (useDsn ? dsnErrorDetails : paramsErrorDetails) ??
+          ""}
       />
     {/if}
 

@@ -2,7 +2,6 @@
   import { Button } from "@rilldata/web-common/components/button";
   import InformationalField from "@rilldata/web-common/components/forms/InformationalField.svelte";
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
-  import SubmissionError from "@rilldata/web-common/components/forms/SubmissionError.svelte";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import {
     ConnectorDriverPropertyType,
@@ -32,6 +31,10 @@
   export let formType: AddDataFormType;
   export let onBack: () => void;
   export let onClose: () => void;
+  export let setError: (
+    error: string | null,
+    details?: string,
+  ) => void = () => {};
 
   // Always include 'managed' in the schema for ClickHouse
   const clickhouseSchema = yup(getYupSchema["clickhouse"]);
@@ -164,9 +167,11 @@
       if (useDsn) {
         dsnError = error;
         dsnErrorDetails = details;
+        setError(dsnError, dsnErrorDetails);
       } else {
         paramsError = error;
         paramsErrorDetails = details;
+        setError(paramsError, paramsErrorDetails);
       }
     }
   }
@@ -265,9 +270,6 @@
   <!-- Parameters form -->
   {#if !useDsn}
     <!-- Form 1: Individual parameters -->
-    {#if paramsError}
-      <SubmissionError message={paramsError} details={paramsErrorDetails} />
-    {/if}
     <form
       id={paramsFormId}
       class="pb-5 flex-grow overflow-y-auto"
@@ -311,9 +313,6 @@
     </form>
   {:else}
     <!-- Connection string form -->
-    {#if dsnError}
-      <SubmissionError message={dsnError} details={dsnErrorDetails} />
-    {/if}
     <form
       id={dsnFormId}
       class="pb-5 flex-grow overflow-y-auto"
