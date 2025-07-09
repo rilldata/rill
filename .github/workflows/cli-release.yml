@@ -126,68 +126,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GORELEASER_ACCESS_TOKEN }}
           GORELEASER_CURRENT_TAG: ${{ env.GORELEASER_CURRENT_TAG }}
 
-      - name: Release - Upload install script to CDN bucket
-        uses: google-github-actions/upload-cloud-storage@v2
-        if: env.PUBLISH_RELEASE == 'true'
-        with:
-          path: scripts/install.sh
-          destination: prod-cdn.rilldata.com/
-          headers: |-
-            cache-control: no-store
-
-      - name: Release - Upload latest version file to CDN bucket
-        if: env.PUBLISH_RELEASE == 'true'
-        uses: google-github-actions/upload-cloud-storage@v2
-        with:
-          path: latest.txt
-          destination: prod-cdn.rilldata.com/rill/
-          headers: |-
-            cache-control: no-store
-
-      - name: Publish nightly docker image
-        if: ${{ env.PUBLISH_NIGHTLY == 'true' && matrix.goos == 'linux' && matrix.goarch == 'amd64' }}
-        run: |-
-          docker tag rilldata/rill:latest rilldata/rill:nightly
-          docker push rilldata/rill:nightly
-
-      - name: Nightly - Prepare for nightly GCS upload
-        if: env.PUBLISH_NIGHTLY == 'true'
-        run: |-
-          mkdir nightly
-          cp dist/*.zip nightly/
-          cp dist/checksums*.txt nightly/
-
-      - name: Nightly - Upload nightly to CDN bucket
-        if: env.PUBLISH_NIGHTLY == 'true'
-        uses: google-github-actions/upload-cloud-storage@v2
-        with:
-          path: nightly/
-          destination: prod-cdn.rilldata.com/rill/
-          headers: |-
-            cache-control: no-store
-
-      - name: Set up Cloud SDK
-        uses: 'google-github-actions/setup-gcloud@v2'
-
-      - name: CDN - Explicitly invalidate the old artifacts from CDN cache
-        run: |-
-          gcloud compute url-maps invalidate-cdn-cache prod --path "/install.sh" --async
-          gcloud compute url-maps invalidate-cdn-cache prod --path "/rill/latest.txt" --async
-          if [[ ${{ env.PUBLISH_NIGHTLY }} == 'true' ]]; then
-            gcloud compute url-maps invalidate-cdn-cache prod --path "/rill/nightly/*" --async
-          fi
-
-      - name: Notify Slack
-        uses: ravsamhq/notify-slack-action@v2
-        if: env.PUBLISH_NIGHTLY == 'true' || env.PUBLISH_RELEASE == 'true'
-        with:
-          status: ${{ job.status }}
-          notification_title: "{workflow} has {status_message}"
-          message_format: "{emoji} *{workflow}* {status_message} in <{repo_url}|{repo}>"
-          footer: "Linked Repo <{repo_url}|{repo}>"
-          notify_when: "failure"
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_ANNOUNCE_DD }}
 
   release:
     name: Release rill
@@ -216,13 +154,8 @@ jobs:
 
       - name: Download binaries/checksum files from GCS
         run: |-
-          mkdir binaries
           gsutil -m cp -r gs://prod-cdn.rilldata.com/rill/$BUCKET_DIR/ .
-          mv $BUCKET_DIR output
-          for file in *.zip; do
-            unzip "$file" -d "${file%.zip}"
-          done
-      
+
       - name: Release Rill using Goreleaser
         uses: goreleaser/goreleaser-action@v6
         with:
@@ -234,3 +167,23 @@ jobs:
           CGO_ENABLED: 1
           GORELEASER_CURRENT_TAG: ${{ env.GORELEASER_CURRENT_TAG }}
           PUBLISH_NIGHTLY: ${{ env.PUBLISH_NIGHTLY }}
+
+      - name: CDN - Explicitly invalidate the old artifacts from CDN cache
+        run: |-
+          gcloud compute url-maps invalidate-cdn-cache prod --path "/install.sh" --async
+          gcloud compute url-maps invalidate-cdn-cache prod --path "/rill/latest.txt" --async
+          if [[ ${{ env.PUBLISH_NIGHTLY }} == 'true' ]]; then
+            gcloud compute url-maps invalidate-cdn-cache prod --path "/rill/nightly/*" --async
+          fi
+
+      - name: Notify Slack
+        uses: ravsamhq/notify-slack-action@v2
+        if: env.PUBLISH_NIGHTLY == 'true' || env.PUBLISH_RELEASE == 'true'
+        with:
+          status: ${{ job.status }}
+          notification_title: "{workflow} has {status_message}"
+          message_format: "{emoji} *{workflow}* {status_message} in <{repo_url}|{repo}>"
+          footer: "Linked Repo <{repo_url}|{repo}>"
+          notify_when: "failure"
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_ANNOUNCE_DD }}

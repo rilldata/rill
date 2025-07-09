@@ -34,25 +34,13 @@ builds:
 blobs:
   - provider: gs
     bucket: prod-cdn.rilldata.com
-    directory: "rill/v{{ .Version }}"
-    extra_files:
-      - glob: ./dist/**/*
-
-  - provider: gs
-    bucket: prod-cdn.rilldata.com
-    directory: "rill/latest"
+    directory: "rill/v{{ .Version }}/{{ .Os }}_{{ .Arch }}"
     extra_files:
       - glob: ./dist/**/*
 
 checksum:
   name_template: checksums_${GOOS}_${GOARCH}.txt
 
-archives:
-  - files:
-      - README.md
-      - LICENSE*
-    name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}"
-    format: zip
-
 snapshot:
   name_template: "{{ incminor .Version }}-nightly"
+  publish: true

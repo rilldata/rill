@@ -15,7 +15,7 @@ builds:
       - amd64
       - arm64
     prebuilt:
-      path: output/rill_{{ .Os }}_{{ .Arch }}/rill
+      path: v{{ .Version }}/{{ .Os }}_{{ .Arch }}/rill
     binary: rill
 
 brews:
@@ -37,10 +37,18 @@ brews:
       name: rilldata
       email: support@rilldata.com
 
-dockers:
-  - image_templates:
-      - rilldata/rill:latest
-      - rilldata/rill:{{ .Tag }}
+blobs:
+  - provider: gs
+    bucket: prod-cdn.rilldata.com
+    directory: "rill/v{{ .Version }}"
+    extra_files:
+      - glob: ./dist/**/*
+  - provider: gs
+    bucket: prod-cdn.rilldata.com
+    directory: "rill/v{{ .Version }}"
+    extra_files:
+      - glob: latest.txt
+      - glob: scripts/install.sh
 
 archives:
   - files:
