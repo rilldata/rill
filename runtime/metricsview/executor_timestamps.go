@@ -36,6 +36,11 @@ func (e *Executor) resolveDuckDBClickHouseAndPinot(ctx context.Context, timeExpr
 		filter,
 	)
 
+	// if datetime column is not nullable then ch returns 0 value instead of NULL when there are no rows so set this
+	if e.olap.Dialect() == drivers.DialectClickHouse {
+		rangeSQL += " SETTINGS aggregate_functions_null_for_empty = 1"
+	}
+
 	rows, err := e.olap.Query(ctx, &drivers.Statement{
 		Query:            rangeSQL,
 		Priority:         e.priority,
