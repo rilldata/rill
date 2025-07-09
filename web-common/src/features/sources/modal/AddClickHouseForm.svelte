@@ -348,14 +348,16 @@
       submitForm
       type="primary"
     >
-      {#if formType === "connector"}
+      {#if $paramsForm.managed}
         {#if submitting}
-          Testing connection...
+          Connecting...
         {:else}
           Connect
         {/if}
+      {:else if submitting}
+        Testing connection...
       {:else}
-        Add data
+        Test and Connect
       {/if}
     </Button>
   </div>
