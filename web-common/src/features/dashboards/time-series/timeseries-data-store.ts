@@ -54,7 +54,7 @@ export type TimeSeriesDataStore = Readable<TimeSeriesDataState>;
 
 export const ComparisonTimeSuffix = "_ts_comparison";
 
-function createMetricsViewTimeSeriesFromAggregation(
+export function createMetricsViewTimeSeriesFromAggregation(
   ctx: StateManagers,
   measureNames: string[],
   includeTimeComparison = false,

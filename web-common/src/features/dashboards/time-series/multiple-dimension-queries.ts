@@ -17,16 +17,17 @@ import {
 } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
-import { type TimeSeriesDatum } from "@rilldata/web-common/features/dashboards/time-series/timeseries-data-store";
+import {
+  type TimeSeriesDatum,
+  createMetricsViewTimeSeriesFromAggregation,
+} from "@rilldata/web-common/features/dashboards/time-series/timeseries-data-store";
 import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
 import {
   type V1Expression,
   type V1MetricsViewAggregationResponse,
-  type V1MetricsViewTimeSeriesResponse,
   V1TimeGrain,
   type V1TimeSeriesValue,
   createQueryServiceMetricsViewAggregation,
-  createQueryServiceMetricsViewTimeSeries,
 } from "@rilldata/web-common/runtime-client";
 import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
 import {
@@ -55,61 +56,6 @@ interface DimensionTopList {
   values: (string | null)[];
   filter: V1Expression;
   totals?: number[];
-}
-
-// TODO: Deprecate this in favor of aggregation queries with a time spine
-function createMetricsViewTimeSeries(
-  ctx: StateManagers,
-  measures: string[],
-  isComparison = false,
-): CreateQueryResult<V1MetricsViewTimeSeriesResponse, HTTPError> {
-  return derived(
-    [
-      ctx.runtime,
-      ctx.metricsViewName,
-      ctx.dashboardStore,
-      useTimeControlStore(ctx),
-    ],
-    ([runtime, metricsViewName, dashboardStore, timeControls], set) => {
-      return createQueryServiceMetricsViewTimeSeries(
-        runtime.instanceId,
-        metricsViewName,
-        {
-          measureNames: measures,
-          where: sanitiseExpression(
-            mergeDimensionAndMeasureFilters(
-              dashboardStore.whereFilter,
-              dashboardStore.dimensionThresholdFilters,
-            ),
-            undefined,
-          ),
-          timeStart: isComparison
-            ? timeControls.comparisonAdjustedStart
-            : timeControls.adjustedStart,
-          timeEnd: isComparison
-            ? timeControls.comparisonAdjustedEnd
-            : timeControls.adjustedEnd,
-          timeGranularity:
-            timeControls.selectedTimeRange?.interval ??
-            timeControls.minTimeGrain,
-          timeZone: dashboardStore.selectedTimezone,
-        },
-        {
-          query: {
-            enabled:
-              !!timeControls.ready &&
-              !!ctx.dashboardStore &&
-              // in case of comparison, we need to wait for the comparison start time to be available
-              (!isComparison || !!timeControls.comparisonAdjustedStart),
-
-            placeholderData: keepPreviousData,
-            refetchOnMount: false,
-          },
-        },
-        ctx.queryClient,
-      ).subscribe(set);
-    },
-  );
 }
 
 /***
@@ -359,20 +305,10 @@ export function getDimensionValueTimeSeries(
     [
       ctx.dashboardStore,
       useTimeControlStore(ctx),
-      createMetricsViewTimeSeries(ctx, measures, false),
-      createMetricsViewTimeSeries(ctx, measures, true),
+      createMetricsViewTimeSeriesFromAggregation(ctx, measures, true),
       getDimensionValuesForComparison(ctx, measures, surface),
     ],
-    (
-      [
-        dashboardStore,
-        timeStore,
-        timeSeriesData,
-        comparisonTimeSeriesData,
-        dimensionValues,
-      ],
-      set,
-    ) => {
+    ([dashboardStore, timeStore, timeSeriesData, dimensionValues], set) => {
       const dimensionName = dashboardStore?.selectedComparisonDimension;
       const topListValues = dimensionValues?.values || [];
       const timeGrain =
