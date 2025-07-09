@@ -93,23 +93,6 @@ var spec = drivers.Spec{
 			Required:    false,
 			Hint:        "E.g. SNOWFLAKE_JWT for key-based auth.",
 		},
-		// TODO: do we need to include these to connection string form?
-		{
-			Key:         "sql",
-			Type:        drivers.StringPropertyType,
-			Required:    true,
-			DisplayName: "SQL",
-			Description: "Query to extract data from Snowflake.",
-			Placeholder: "select * from table",
-		},
-		{
-			Key:         "name",
-			Type:        drivers.StringPropertyType,
-			DisplayName: "Source name",
-			Description: "The name of the source",
-			Placeholder: "my_new_source",
-			Required:    true,
-		},
 	},
 	// Important: Any edits to the below properties must be accompanied by changes to the client-side form validation schemas.
 	SourceProperties: []*drivers.PropertySpec{
