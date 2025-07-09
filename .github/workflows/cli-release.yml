@@ -71,47 +71,31 @@ jobs:
           RILL_UI_PUBLIC_PYLON_APP_ID: "26a0fdd2-3bd3-41e2-82bc-1b35a444729f"
           NODE_OPTIONS: --max-old-space-size=4096
 
-      - name: Set GORELEASER_CURRENT_TAG and NIGHTLY
-        run: |
-          echo '${{ github.ref_name }}' >> latest.txt
-          if [[ ${{ env.PUBLISH_NIGHTLY }} == 'true' ]]; then
-            echo "NIGHTLY=--snapshot" >> $GITHUB_ENV
-            echo "VERSION=nightly" >> $GITHUB_ENV
-            LATEST_TAG=$(git describe --tags $(git rev-list --tags --max-count=1))
-            echo "GORELEASER_CURRENT_TAG=$(echo ${LATEST_TAG} | sed 's/r/v/')" >> $GITHUB_ENV
-          else
-            echo "NIGHTLY=" >> $GITHUB_ENV
-            echo "VERSION='~> v2'" >> $GITHUB_ENV
-          fi   
+      - name: Build rill cli
+        run: go build -o rill cli/main.go
 
       - name: Authenticate GCS
         uses: google-github-actions/auth@v2
         with:
           credentials_json: "${{ secrets.RILL_BINARY_SA }}"
 
-      - name: Login to Docker Hub
-        uses: docker/login-action@v3
-        if:  matrix.goarch == 'linux'
+      - name: Nightly - Upload nightly to CDN bucket
+        if: env.PUBLISH_NIGHTLY == 'true'
+        uses: google-github-actions/upload-cloud-storage@v2
         with:
-          username: ${{ secrets.DOCKERHUB_USER }}
-          password: ${{ secrets.DOCKERHUB_PASS }}
+          path: nightly/
+          destination: prod-cdn.rilldata.com/rill/
+          headers: |-
+            cache-control: no-store
 
-      - run: |
-          envsubst < .goreleaser-build.yaml > .goreleaser.yml
-        env:
-          GOOS: ${{ matrix.goos }}
-          GOARCH: ${{ matrix.goarch }}
-
-      - name: Build Rill using Goreleaser
-        uses: goreleaser/goreleaser-action@v6
+      - name: Release - Upload nightly to CDN bucket
+        if: env.PUBLISH_RELEASE == 'true'
+        uses: google-github-actions/upload-cloud-storage@v2
         with:
-          distribution: goreleaser
-          version: ${{ env.VERSION }}
-          args: release
-        env:
-          CGO_ENABLED: 1
-          GITHUB_TOKEN: ${{ secrets.GORELEASER_ACCESS_TOKEN }}
-          GORELEASER_CURRENT_TAG: ${{ env.GORELEASER_CURRENT_TAG }}
+          path: ${GITHUB_REF#refs/tags/}/
+          destination: prod-cdn.rilldata.com/rill/
+          headers: |-
+            cache-control: no-store
 
   release:
     name: Release rill
@@ -137,6 +121,44 @@ jobs:
           else
             echo "BUCKET_DIR=$(echo "${GITHUB_REF#refs/tags/}")" >> $GITHUB_ENV
           fi
+
+      - name: Set GORELEASER_CURRENT_TAG and NIGHTLY
+        run: |
+          echo '${{ github.ref_name }}' >> latest.txt
+          if [[ ${{ env.PUBLISH_NIGHTLY }} == 'true' ]]; then
+            echo "NIGHTLY=--snapshot" >> $GITHUB_ENV
+            echo "VERSION=nightly" >> $GITHUB_ENV
+            LATEST_TAG=$(git describe --tags $(git rev-list --tags --max-count=1))
+            echo "GORELEASER_CURRENT_TAG=$(echo ${LATEST_TAG} | sed 's/r/v/')" >> $GITHUB_ENV
+          else
+            echo "NIGHTLY=" >> $GITHUB_ENV
+            echo "VERSION='~> v2'" >> $GITHUB_ENV
+          fi   
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        if:  matrix.goarch == 'linux'
+        with:
+          username: ${{ secrets.DOCKERHUB_USER }}
+          password: ${{ secrets.DOCKERHUB_PASS }}
+
+      - run: |
+          envsubst < .goreleaser-build.yaml > .goreleaser.yml
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+
+      - name: Build Rill using Goreleaser
+        uses: goreleaser/goreleaser-action@v6
+        with:
+          distribution: goreleaser
+          version: ${{ env.VERSION }}
+          args: release
+        env:
+          CGO_ENABLED: 1
+          GITHUB_TOKEN: ${{ secrets.GORELEASER_ACCESS_TOKEN }}
+          GORELEASER_CURRENT_TAG: ${{ env.GORELEASER_CURRENT_TAG }}
+
 
       - name: Download binaries/checksum files from GCS
         run: |-
