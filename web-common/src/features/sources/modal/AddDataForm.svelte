@@ -30,6 +30,7 @@
   import Tabs from "@rilldata/web-common/components/forms/Tabs.svelte";
   import { TabsContent } from "@rilldata/web-common/components/tabs";
   import { isEmpty } from "./utils";
+  import { CONNECTION_TAB_OPTIONS } from "./constants";
 
   const dispatch = createEventDispatcher();
 
@@ -243,10 +244,7 @@
       {:else if hasDsnFormOption}
         <Tabs
           value={connectionTab}
-          options={[
-            { value: "parameters", label: "Enter parameters" },
-            { value: "dsn", label: "Enter connection string" },
-          ]}
+          options={CONNECTION_TAB_OPTIONS}
           on:change={(event) => (connectionTab = event.detail)}
           disableMarginTop
         >

@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { Button } from "@rilldata/web-common/components/button";
   import InformationalField from "@rilldata/web-common/components/forms/InformationalField.svelte";
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
@@ -26,7 +25,7 @@
   import { dsnSchema, getYupSchema } from "./yupSchemas";
   import Checkbox from "@rilldata/web-common/components/forms/Checkbox.svelte";
   import { isEmpty } from "./utils";
-  import { CONNECTOR_TYPE_OPTIONS } from "./constants";
+  import { CONNECTOR_TYPE_OPTIONS, CONNECTION_TAB_OPTIONS } from "./constants";
   import ConnectorTypeSelector from "@rilldata/web-common/components/forms/ConnectorTypeSelector.svelte";
 
   export let connector: V1ConnectorDriver;
@@ -242,14 +241,10 @@
     {/if}
   </div>
 
-  <!-- Connection method selector -->
   {#if !$paramsForm.managed}
     <Tabs
       value={connectionTab}
-      options={[
-        { value: "parameters", label: "Enter parameters" },
-        { value: "dsn", label: "Enter connection string" },
-      ]}
+      options={CONNECTION_TAB_OPTIONS}
       on:change={(event) => (connectionTab = event.detail)}
     >
       <TabsContent value="parameters">
