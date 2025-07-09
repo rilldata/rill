@@ -191,13 +191,7 @@
       class="flex flex-col flex-grow max-h-[552px] min-h-[552px] overflow-y-auto p-6"
     >
       {#if connector.name === "clickhouse"}
-        <AddClickHouseForm
-          {connector}
-          {formType}
-          {onBack}
-          {onClose}
-          on:submitting
-        />
+        <AddClickHouseForm {connector} {onBack} {onClose} on:submitting />
       {:else}
         <!-- For all other connectors, we show a connection method selector -->
         {#if hasDsnFormOption}
