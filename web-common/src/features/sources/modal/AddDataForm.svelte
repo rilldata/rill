@@ -97,6 +97,11 @@
   let clickhouseError: string | null = null;
   let clickhouseErrorDetails: string | undefined = undefined;
 
+  let clickhouseFormId: string = "";
+  let clickhouseSubmitting: boolean;
+  let clickhouseIsSubmitDisabled: boolean;
+  let clickhouseManaged: boolean;
+
   // TODO: move to utils.ts
   // Compute disabled state for the submit button
   $: isSubmitDisabled = (() => {
@@ -223,12 +228,15 @@
         <AddClickHouseForm
           {connector}
           {formType}
-          {onBack}
           {onClose}
           setError={(error, details) => {
             clickhouseError = error;
             clickhouseErrorDetails = details;
           }}
+          bind:formId={clickhouseFormId}
+          bind:submitting={clickhouseSubmitting}
+          bind:isSubmitDisabled={clickhouseIsSubmitDisabled}
+          bind:managed={clickhouseManaged}
           on:submitting
         />
       {:else if hasDsnFormOption}
@@ -355,32 +363,43 @@
       {/if}
     </div>
 
-    <!-- TODO: think of a better way to handle this -->
-    {#if connector.name !== "clickhouse"}
-      <!-- Fixed action buttons at the bottom -->
-      <div
-        class="absolute bottom-0 left-0 w-full bg-white border-t border-gray-200 p-6 flex justify-between gap-2"
-      >
-        <Button onClick={onBack} type="secondary">Back</Button>
+    <!-- Fixed action buttons at the bottom, always rendered -->
+    <div
+      class="w-full bg-white border-t border-gray-200 p-6 flex justify-between gap-2"
+    >
+      <Button onClick={onBack} type="secondary">Back</Button>
 
-        <Button
-          disabled={submitting || isSubmitDisabled}
-          form={formId}
-          submitForm
-          type="primary"
-        >
-          {#if isConnectorForm}
-            {#if submitting}
-              Testing connection...
+      <Button
+        disabled={connector.name === "clickhouse"
+          ? clickhouseSubmitting || clickhouseIsSubmitDisabled
+          : submitting || isSubmitDisabled}
+        form={connector.name === "clickhouse" ? clickhouseFormId : formId}
+        submitForm
+        type="primary"
+      >
+        {#if connector.name === "clickhouse"}
+          {#if clickhouseManaged}
+            {#if clickhouseSubmitting}
+              Connecting...
             {:else}
               Connect
             {/if}
+          {:else if clickhouseSubmitting}
+            Testing connection...
           {:else}
-            Add data
+            Test and Connect
           {/if}
-        </Button>
-      </div>
-    {/if}
+        {:else if isConnectorForm}
+          {#if submitting}
+            Testing connection...
+          {:else}
+            Connect
+          {/if}
+        {:else}
+          Add data
+        {/if}
+      </Button>
+    </div>
   </div>
 
   <div

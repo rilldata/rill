@@ -27,16 +27,19 @@
   import Checkbox from "@rilldata/web-common/components/forms/Checkbox.svelte";
   import { isEmpty } from "./utils";
 
-  const dispatch = createEventDispatcher();
-
   export let connector: V1ConnectorDriver;
   export let formType: AddDataFormType;
-  export let onBack: () => void;
+  export let formId: string;
+  export let submitting: boolean;
+  export let isSubmitDisabled: boolean;
+  export let managed: boolean;
   export let onClose: () => void;
   export let setError: (
     error: string | null,
     details?: string,
   ) => void = () => {};
+
+  const dispatch = createEventDispatcher();
 
   let connectionTab: ConnectorType = "parameters";
 
@@ -79,6 +82,8 @@
   });
   let dsnError: string | null = null;
   let dsnErrorDetails: string | undefined = undefined;
+
+  $: managed = $paramsForm.managed;
 
   // Managed toggle
   $: submitting = connectionTab === "dsn" ? $dsnSubmitting : $paramsSubmitting;
@@ -360,7 +365,7 @@
     </form>
   {/if}
 
-  <div class="flex items-center space-x-2 ml-auto">
+  <!-- <div class="flex items-center space-x-2 ml-auto">
     <Button onClick={onBack} type="secondary">Back</Button>
 
     <Button
@@ -381,5 +386,5 @@
         Test and Connect
       {/if}
     </Button>
-  </div>
+  </div> -->
 </div>
