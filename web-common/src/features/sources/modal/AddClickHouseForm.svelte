@@ -26,6 +26,7 @@
   import { dsnSchema, getYupSchema } from "./yupSchemas";
   import Checkbox from "@rilldata/web-common/components/forms/Checkbox.svelte";
   import { isEmpty } from "./utils";
+  import { CONNECTOR_TYPE_OPTIONS } from "./constants";
 
   export let connector: V1ConnectorDriver;
   export let formType: AddDataFormType;
@@ -228,12 +229,12 @@
 </script>
 
 <div class="h-full w-full flex flex-col">
-  <!-- FIXME: ConnectorTypeSelector -->
   <div>
     <div class="text-sm font-medium mb-2">Connector type</div>
     <select id="managed" bind:value={$paramsForm.managed} class="form-select">
-      <option value={true}>Rill-managed ClickHouse</option>
-      <option value={false}>Self-managed ClickHouse</option>
+      {#each CONNECTOR_TYPE_OPTIONS as option}
+        <option value={option.value}>{option.label}</option>
+      {/each}
     </select>
     {#if $paramsForm.managed}
       <InformationalField
