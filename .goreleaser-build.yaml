@@ -45,7 +45,14 @@ blobs:
       - glob: ./dist/**/*
 
 checksum:
-  name_template: checksums_{{ .Env.BUILD }}.txt
+  name_template: checksums_${GOOS}_${GOARCH}.txt
+
+archives:
+  - files:
+      - README.md
+      - LICENSE*
+    name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}"
+    format: zip
 
 snapshot:
   name_template: "{{ incminor .Version }}-nightly"
