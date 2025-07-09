@@ -50,7 +50,7 @@ dockers:
       - rilldata/rill:{{ .Tag }}
 
 checksum:
-  name_template: checksums_{{ .Os }}_{{ .Arch }}.txt
+  name_template: checksums_{{ .Env.BUILD }}.txt
 
 snapshot:
   name_template: "{{ incminor .Version }}-nightly"

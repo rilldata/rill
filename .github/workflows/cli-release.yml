@@ -45,8 +45,8 @@ jobs:
         os: [ubuntu-22.04, ubuntu-22.04-arm, macos-13, macos-14]
         include:
           - os: ubuntu-22.04
-            goos: amd64
-            goarch: linux
+            goos: linux
+            goarch: amd64
           - os: ubuntu-22.04-arm
             goos: linux
             goarch: arm64
@@ -126,6 +126,7 @@ jobs:
           CGO_ENABLED: 1
           GORELEASER_CURRENT_TAG: ${{ env.GORELEASER_CURRENT_TAG }}
           PUBLISH_NIGHTLY: ${{ env.PUBLISH_NIGHTLY }}
+          BUILD: ${{ matrix.goos }}_${{ matrix.goarch }}
 
       - name: Release - Upload install script to CDN bucket
         uses: google-github-actions/upload-cloud-storage@v2
