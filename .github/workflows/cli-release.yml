@@ -92,7 +92,7 @@ jobs:
         if: env.PUBLISH_RELEASE == 'true'
         uses: google-github-actions/upload-cloud-storage@v2
         with:
-          path: ${GITHUB_REF#refs/tags/}/
+          path: ${GITHUB_REF#refs/tags/}/{{ matrix.goos }}_{{ matrix.goarch }}/
           destination: prod-cdn.rilldata.com/rill/
           headers: |-
             cache-control: no-store
