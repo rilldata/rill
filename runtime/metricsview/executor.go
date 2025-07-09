@@ -135,6 +135,72 @@ func (e *Executor) ValidateQuery(qry *Query) error {
 	panic("not implemented")
 }
 
+// SummaryResult provides the data type and one sample value for each dimension in the metrics view.
+type SummaryResult struct {
+	DimensionName string
+	DataType      string
+	SampleValue   any
+}
+
+// Summary provides a data type and a sample value for each dimension in the metrics view.
+func (e *Executor) Summary(ctx context.Context) (map[string]SummaryResult, error) {
+	dims := []*runtimev1.MetricsViewSpec_Dimension{}
+	for _, dim := range e.metricsView.Dimensions {
+		if e.security.CanAccessField(dim.Name) {
+			dims = append(dims, dim)
+		}
+	}
+
+	if len(dims) == 0 {
+		return nil, fmt.Errorf("no accessible dimensions found in metrics view")
+	}
+
+	querySelection := []string{}
+	for _, dim := range dims {
+		querySelection = append(querySelection, fmt.Sprintf(
+			"'%s' AS dimension_name, typeof(%s) AS data_type, %s AS sample_value",
+			dim.Name, dim.Column, dim.Column,
+		))
+	}
+
+	query := fmt.Sprintf(
+		"SELECT %s FROM %s WHERE %s IS NOT NULL LIMIT 1",
+		strings.Join(querySelection, " UNION ALL SELECT "),
+		e.metricsView.Table,
+		e.metricsView.TimeDimension,
+	)
+
+	res, err := e.olap.Query(ctx, &drivers.Statement{
+		Query:            query,
+		Priority:         e.priority,
+		ExecutionTimeout: defaultInteractiveTimeout,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to execute summary query: %w", err)
+	}
+	defer res.Close()
+
+	summary := make(map[string]SummaryResult)
+	for res.Next() {
+		var dimensionName, dataType string
+		var sampleValue any
+		if err := res.Scan(&dimensionName, &dataType, &sampleValue); err != nil {
+			return nil, fmt.Errorf("failed to scan summary query result: %w", err)
+		}
+		summary[dimensionName] = SummaryResult{
+			DimensionName: dimensionName,
+			DataType:      dataType,
+			SampleValue:   sampleValue,
+		}
+	}
+
+	if err := res.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating summary results: %w", err)
+	}
+
+	return summary, nil
+}
+
 // Timestamps queries min, max and watermark for the metrics view.
 func (e *Executor) Timestamps(ctx context.Context, timeDim string) (TimestampsResult, error) {
 	if timeDim == "" {
