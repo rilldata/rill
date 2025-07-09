@@ -4659,6 +4659,12 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1CompletionMessage'
+      tools:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1Tool'
+        title: Optional list of tools that the AI can use during completion
   v1CompleteResponse:
     type: object
     properties:
@@ -4671,6 +4677,13 @@ definitions:
         type: string
       data:
         type: string
+        title: Deprecated in favor of content
+      content:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1ContentBlock'
+    title: Completion message for AI API calls
   v1Condition:
     type: object
     properties:
@@ -4683,6 +4696,16 @@ definitions:
           $ref: '#/definitions/v1Expression'
   v1ConnectProjectToGithubResponse:
     type: object
+  v1ContentBlock:
+    type: object
+    properties:
+      text:
+        type: string
+      toolCall:
+        $ref: '#/definitions/v1ToolCall'
+      toolResult:
+        $ref: '#/definitions/v1ToolResult'
+    title: Content block within a message
   v1CreateAlertResponse:
     type: object
     properties:
@@ -6305,6 +6328,39 @@ definitions:
     properties:
       user:
         $ref: '#/definitions/v1User'
+  v1Tool:
+    type: object
+    properties:
+      name:
+        type: string
+        title: The name of the tool
+      description:
+        type: string
+        title: A human-readable description of the tool
+      inputSchema:
+        type: string
+        title: JSON Schema defining the expected parameters for the tool (as JSON string)
+    title: Tool represents a tool definition for AI usage
+  v1ToolCall:
+    type: object
+    properties:
+      id:
+        type: string
+      name:
+        type: string
+      input:
+        type: object
+    title: Tool call specification
+  v1ToolResult:
+    type: object
+    properties:
+      id:
+        type: string
+      content:
+        type: string
+      isError:
+        type: boolean
+    title: Tool execution result
   v1TriggerReconcileResponse:
     type: object
   v1TriggerRedeployRequest:
