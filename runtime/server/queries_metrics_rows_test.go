@@ -6,13 +6,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/apache/arrow/go/v15/arrow"
-	"github.com/apache/arrow/go/v15/arrow/array"
-	"github.com/apache/arrow/go/v15/arrow/memory"
-	"github.com/apache/arrow/go/v15/parquet"
+	"github.com/apache/arrow-go/v18/arrow"
+	"github.com/apache/arrow-go/v18/arrow/array"
+	"github.com/apache/arrow-go/v18/arrow/extensions"
+	"github.com/apache/arrow-go/v18/arrow/memory"
+	"github.com/apache/arrow-go/v18/parquet"
 
-	"github.com/apache/arrow/go/v15/parquet/file"
-	"github.com/apache/arrow/go/v15/parquet/pqarrow"
+	"github.com/apache/arrow-go/v18/parquet/file"
+	"github.com/apache/arrow-go/v18/parquet/pqarrow"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/queries"
@@ -312,8 +313,10 @@ func TestServer_MetricsViewRows_parquet_export(t *testing.T) {
 	index++
 
 	require.Equal(t, "tuuid", flds[index].Field.Name)
-	require.Equal(t, arrow.FIXED_SIZE_BINARY, flds[index].Field.Type.ID())
-	tuuid := getColumnChunk(tbl, index).(*array.FixedSizeBinary)
+	extType, ok := flds[index].Field.Type.(arrow.ExtensionType)
+	require.True(t, ok)
+	require.Equal(t, arrow.FIXED_SIZE_BINARY, extType.StorageType().ID())
+	tuuid := getColumnChunk(tbl, index).(*extensions.UUIDArray)
 	defer tuuid.Release()
 	require.True(t, len(tuuid.Value(0)) > 0)
 }
