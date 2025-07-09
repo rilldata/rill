@@ -110,7 +110,7 @@ jobs:
           password: ${{ secrets.DOCKERHUB_PASS }}
 
       - run: |
-          envsubst < .goreleaser-build.yml > .goreleaser.yml
+          envsubst < .goreleaser-build.yaml > .goreleaser.yml
         env:
           GOOS: ${{ matrix.goos }}
           GOARCH: ${{ matrix.goarch }}
