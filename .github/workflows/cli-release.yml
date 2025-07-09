@@ -44,7 +44,6 @@ jobs:
             goarch: arm64
       fail-fast: false
 
-    needs: validate-sequential
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
