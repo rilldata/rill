@@ -91,7 +91,7 @@ jobs:
           if [[ ${{ env.PUBLISH_NIGHTLY }} == 'true' ]]; then
             echo "NIGHTLY=--snapshot" >> $GITHUB_ENV
             LATEST_TAG=$(git describe --tags $(git rev-list --tags --max-count=1))
-            echo "GORELEASER_CURRENT_TAG=${LATEST_TAG}" >> $GITHUB_ENV
+            echo "GORELEASER_CURRENT_TAG=$(echo ${LATEST_TAG} | sed 's/r/v/')" >> $GITHUB_ENV
           else
             echo "NIGHTLY=" >> $GITHUB_ENV
           fi   
