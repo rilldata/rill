@@ -21,5 +21,4 @@ CREATE TABLE IF NOT EXISTS messages (
     FOREIGN KEY (instance_id, conversation_id) REFERENCES conversations(instance_id, conversation_id) ON DELETE CASCADE
 );
 
-CREATE INDEX IF NOT EXISTS idx_messages_message_id ON messages (message_id);
 CREATE INDEX IF NOT EXISTS idx_conversations_instance_owner ON conversations (instance_id, owner_id);
