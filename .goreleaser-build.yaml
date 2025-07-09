@@ -7,16 +7,21 @@ before:
     - go mod tidy
 
 builds:
-  - id: {{ .Env.GOOS }}_{{ .Env.GOARCH }}
-    main: ./cli/main.go
+  - main: ./cli/main.go
     binary: rill
-    goos:
-      - {{ .Env.GOOS }}
-    goarch:
-      - {{ .Env.GOARCH }}
     env:
-      - CC={{ .Env.CC }}
-      - CXX={{ .Env.CXX }}
+      - >-
+        {{- if eq .Os "darwin" }}CC=clang{{- end }}
+        {{- if eq .Os "linux" }}
+          {{- if eq .Arch "amd64" }}CC=x86_64-linux-gnu-gcc{{- end }}
+          {{- if eq .Arch "arm64" }}CC=aarch64-linux-gnu-gcc{{- end }}
+        {{- end }}
+      - >-
+        {{- if eq .Os "darwin" }}CXX=clang++{{- end }}
+        {{- if eq .Os "linux" }}
+          {{- if eq .Arch "amd64" }}CXX=x86_64-linux-gnu-gcc{{- end }}
+          {{- if eq .Arch "arm64" }}CXX=aarch64-linux-gnu-gcc{{- end }}
+        {{- end }}
     flags:
       - "-mod=readonly"
     ldflags:
@@ -41,7 +46,7 @@ dockers:
       - rilldata/rill:{{ .Tag }}
 
 checksum:
-  name_template: checksums_{{ .Env.GOOS }}_{{ .Env.GOARCH }}.txt
+  name_template: checksums_{{ .Os }}_{{ .Arch }}.txt
 
 snapshot:
   name_template: "{{ incminor .Version }}-nightly"
