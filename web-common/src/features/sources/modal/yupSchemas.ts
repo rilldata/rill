@@ -118,6 +118,44 @@ export const getYupSchema = {
       .required("Source name is required"),
   }),
 
+  salesforce: yup.object().shape({
+    soql: yup.string().required("soql is required"),
+    sobject: yup.string().required("sobject is required"),
+    name: yup
+      .string()
+      .matches(VALID_NAME_PATTERN, INVALID_NAME_MESSAGE)
+      .required("Source name is required"),
+  }),
+
+  athena: yup.object().shape({
+    sql: yup.string().required("sql is required"),
+    output_location: yup.string(),
+    workgroup: yup.string(),
+    name: yup
+      .string()
+      .matches(VALID_NAME_PATTERN, INVALID_NAME_MESSAGE)
+      .required("Source name is required"),
+  }),
+
+  redshift: yup.object().shape({
+    sql: yup.string().required("SQL is required"),
+    database: yup.string().required("database name is required"),
+    output_location: yup.string().required("S3 location for temporary files"),
+    workgroup: yup.string().optional(),
+    cluster_identifier: yup.string().optional(),
+    role_arn: yup
+      .string()
+      .required("Role ARN associated with the Redshift cluster"),
+    region: yup.string().optional(),
+    name: yup
+      .string()
+      .matches(
+        /^[a-zA-Z_][a-zA-Z0-9_]*$/,
+        "Source name must start with a letter or underscore and contain only letters, numbers, and underscores",
+      )
+      .required("Source name is required"),
+  }),
+
   mysql: yup.object().shape({
     sql: yup.string().required("sql is required"),
     dsn: yup.string(),
