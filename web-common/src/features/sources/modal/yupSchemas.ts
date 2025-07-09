@@ -203,15 +203,6 @@ export const getYupSchema = {
     //   .matches(VALID_NAME_PATTERN, INVALID_NAME_MESSAGE)
     //   .required("Connector name is required"),
   }),
-
-  salesforce: yup.object().shape({
-    soql: yup.string().required("SOQL is required"),
-    sobject: yup.string().required("SObject is required"),
-    name: yup
-      .string()
-      .matches(VALID_NAME_PATTERN, INVALID_NAME_MESSAGE)
-      .required("Source name is required"),
-  }),
 };
 
 export const dsnSchema = yup.object().shape({
