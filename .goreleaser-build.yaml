@@ -41,6 +41,7 @@ blobs:
 checksum:
   name_template: checksums_${GOOS}_${GOARCH}.txt
 
-snapshot:
-  name_template: "{{ incminor .Version }}-nightly"
-  publish: true
+nightly:
+  version_template: "{{ incminor .Version }}-nightly"
+  publish_release: true
+  keep_single_release: true
