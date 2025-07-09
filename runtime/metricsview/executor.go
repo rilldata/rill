@@ -210,6 +210,10 @@ func (e *Executor) Schema(ctx context.Context) (*runtimev1.StructType, error) {
 
 	for _, d := range e.metricsView.Dimensions {
 		if e.security.CanAccessField(d.Name) {
+			if e.metricsView.TimeDimension == d.Name {
+				// Skip the time dimension if it is already added
+				continue
+			}
 			qry.Dimensions = append(qry.Dimensions, Dimension{Name: d.Name})
 		}
 	}

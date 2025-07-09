@@ -13,9 +13,9 @@ import (
 	"time"
 
 	"cloud.google.com/go/bigquery"
-	"github.com/apache/arrow/go/v15/parquet"
-	"github.com/apache/arrow/go/v15/parquet/compress"
-	"github.com/apache/arrow/go/v15/parquet/pqarrow"
+	"github.com/apache/arrow-go/v18/parquet"
+	"github.com/apache/arrow-go/v18/parquet/compress"
+	"github.com/apache/arrow-go/v18/parquet/pqarrow"
 	"github.com/c2h5oh/datasize"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/observability"
@@ -24,7 +24,6 @@ import (
 	"go.opentelemetry.io/otel/codes"
 	"go.uber.org/zap"
 	"google.golang.org/api/iterator"
-	"google.golang.org/api/option"
 )
 
 var tracer = otel.Tracer("github.com/rilldata/rill/runtime/drivers/bigquery")
@@ -86,7 +85,7 @@ func (c *Connection) QueryAsFiles(ctx context.Context, props map[string]any) (ou
 			return nil, fmt.Errorf("invalid table format, `project_id.dataset.table` is expected")
 		}
 
-		client, err = createClient(ctx, srcProps.ProjectID, opts)
+		client, err = c.createClient(ctx, srcProps.ProjectID)
 		if err != nil {
 			return nil, err
 		}
@@ -117,7 +116,7 @@ func (c *Connection) QueryAsFiles(ctx context.Context, props map[string]any) (ou
 		// storage api cannot be used, switching to a query execution
 		now := time.Now()
 
-		client, err = createClient(ctx, srcProps.ProjectID, opts)
+		client, err = c.createClient(ctx, srcProps.ProjectID)
 		if err != nil {
 			return nil, err
 		}
@@ -145,7 +144,7 @@ func (c *Connection) QueryAsFiles(ctx context.Context, props map[string]any) (ou
 			// the query results are always cached in a temporary table that storage api can use
 			// there are some exceptions when results aren't cached
 			// so we also try without storage api
-			client, err = createClient(ctx, srcProps.ProjectID, opts)
+			client, err = c.createClient(ctx, srcProps.ProjectID)
 			if err != nil {
 				return nil, err
 			}
@@ -172,17 +171,6 @@ func (c *Connection) QueryAsFiles(ctx context.Context, props map[string]any) (ou
 		logger:  c.logger,
 		tempDir: tempDir,
 	}, nil
-}
-
-func createClient(ctx context.Context, projectID string, opts []option.ClientOption) (*bigquery.Client, error) {
-	client, err := bigquery.NewClient(ctx, projectID, opts...)
-	if err != nil {
-		if strings.Contains(err.Error(), "unable to detect projectID") {
-			return nil, fmt.Errorf("projectID not detected in credentials. Please set `project_id` in source yaml")
-		}
-		return nil, fmt.Errorf("failed to create bigquery client: %w", err)
-	}
-	return client, nil
 }
 
 type fileIterator struct {

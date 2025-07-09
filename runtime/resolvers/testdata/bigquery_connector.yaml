@@ -37,13 +37,10 @@ project_files:
     type: model
     connector: "bigquery"
     project_id: "rilldata"
-
     partitions:
       connector: duckdb
-      sql:
-        SELECT range, now() as watermark from range(1, 3);
+      sql: SELECT range, now() as watermark from range(1, 3);
     partitions_watermark: watermark
-
     sql: |
       SELECT
         number,
@@ -91,13 +88,13 @@ tests:
       string_col,VARCHAR,YES,,,
       bytes_col,BLOB,YES,,,
       date_col,DATE,YES,,,
-      datetime_col,TIMESTAMP WITH TIME ZONE,YES,,,
+      datetime_col,TIMESTAMP,YES,,,
       time_col,TIME WITH TIME ZONE,YES,,,
       timestamp_col,TIMESTAMP WITH TIME ZONE,YES,,,
       json_col,VARCHAR,YES,,,
       geography_col,VARCHAR,YES,,,
       range_date_col,"STRUCT(""start"" DATE, ""end"" DATE)",YES,,,
-      range_datetime_col,"STRUCT(""start"" TIMESTAMP WITH TIME ZONE, ""end"" TIMESTAMP WITH TIME ZONE)",YES,,,
+      range_datetime_col,"STRUCT(""start"" TIMESTAMP, ""end"" TIMESTAMP)",YES,,,
       range_timestamp_col,"STRUCT(""start"" TIMESTAMP WITH TIME ZONE, ""end"" TIMESTAMP WITH TIME ZONE)",YES,,,
       array_int_col,BIGINT[],YES,,,
       array_float_col,DOUBLE[],YES,,,
@@ -107,16 +104,16 @@ tests:
       array_string_col,VARCHAR[],YES,,,
       array_bytes_col,BLOB[],YES,,,
       array_date_col,DATE[],YES,,,
-      array_datetime_col,TIMESTAMP WITH TIME ZONE[],YES,,,
+      array_datetime_col,TIMESTAMP[],YES,,,
       array_time_col,TIME WITH TIME ZONE[],YES,,,
       array_timestamp_col,TIMESTAMP WITH TIME ZONE[],YES,,,
       array_json_col,VARCHAR[],YES,,,
       array_geography_col,VARCHAR[],YES,,,
       array_range_date_col,"STRUCT(""start"" DATE, ""end"" DATE)[]",YES,,,
-      array_range_datetime_col,"STRUCT(""start"" TIMESTAMP WITH TIME ZONE, ""end"" TIMESTAMP WITH TIME ZONE)[]",YES,,,
+      array_range_datetime_col,"STRUCT(""start"" TIMESTAMP, ""end"" TIMESTAMP)[]",YES,,,
       array_range_timestamp_col,"STRUCT(""start"" TIMESTAMP WITH TIME ZONE, ""end"" TIMESTAMP WITH TIME ZONE)[]",YES,,,
-      array_struct_col,"STRUCT(field_int BIGINT, field_float DOUBLE, field_numeric DECIMAL(38,9), field_bignumeric DOUBLE, field_bool BOOLEAN, field_string VARCHAR, field_bytes BLOB, field_date DATE, field_datetime TIMESTAMP WITH TIME ZONE, field_time TIME WITH TIME ZONE, field_timestamp TIMESTAMP WITH TIME ZONE, field_json VARCHAR, field_geography VARCHAR)[]",YES,,,
-      struct_col,"STRUCT(field_int BIGINT, field_float DOUBLE, field_numeric DECIMAL(38,9), field_bignumeric DOUBLE, field_bool BOOLEAN, field_string VARCHAR, field_bytes BLOB, field_date DATE, field_datetime TIMESTAMP WITH TIME ZONE, field_time TIME WITH TIME ZONE, field_timestamp TIMESTAMP WITH TIME ZONE, field_json VARCHAR, field_geography VARCHAR, field_array_int BIGINT[], field_array_float DOUBLE[], field_array_numeric DECIMAL(38,9)[], field_array_bignumeric DOUBLE[], field_array_bool BOOLEAN[], field_array_string VARCHAR[], field_array_bytes BLOB[], field_array_date DATE[], field_array_datetime TIMESTAMP WITH TIME ZONE[], field_array_time TIME WITH TIME ZONE[], field_array_timestamp TIMESTAMP WITH TIME ZONE[], field_array_json VARCHAR[], field_array_geography VARCHAR[])",YES,,,
+      array_struct_col,"STRUCT(field_int BIGINT, field_float DOUBLE, field_numeric DECIMAL(38,9), field_bignumeric DOUBLE, field_bool BOOLEAN, field_string VARCHAR, field_bytes BLOB, field_date DATE, field_datetime TIMESTAMP, field_time TIME WITH TIME ZONE, field_timestamp TIMESTAMP WITH TIME ZONE, field_json VARCHAR, field_geography VARCHAR)[]",YES,,,
+      struct_col,"STRUCT(field_int BIGINT, field_float DOUBLE, field_numeric DECIMAL(38,9), field_bignumeric DOUBLE, field_bool BOOLEAN, field_string VARCHAR, field_bytes BLOB, field_date DATE, field_datetime TIMESTAMP, field_time TIME WITH TIME ZONE, field_timestamp TIMESTAMP WITH TIME ZONE, field_json VARCHAR, field_geography VARCHAR, field_array_int BIGINT[], field_array_float DOUBLE[], field_array_numeric DECIMAL(38,9)[], field_array_bignumeric DOUBLE[], field_array_bool BOOLEAN[], field_array_string VARCHAR[], field_array_bytes BLOB[], field_array_date DATE[], field_array_datetime TIMESTAMP[], field_array_time TIME WITH TIME ZONE[], field_array_timestamp TIMESTAMP WITH TIME ZONE[], field_array_json VARCHAR[], field_array_geography VARCHAR[])",YES,,,
   - name: query_all_result_clickhouse
     resolver: sql
     properties:
@@ -160,4 +157,4 @@ tests:
       sql: "SELECT COUNT(*) AS count, COUNT(DISTINCT __rill_partition) AS partitions, MIN(number) AS min_num, MAX(number) AS max_num FROM partition_overwrite_bigquery"
     result_csv: |
       count,partitions,min_num,max_num
-      20,2,1,10 
+      20,2,1,10

@@ -2,10 +2,10 @@ package snowflake
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"net/url"
 
-	"github.com/XSAM/otelsql"
 	"github.com/google/uuid"
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -71,7 +71,7 @@ func (e *selfToObjectStoreExecutor) export(ctx context.Context, props map[string
 		dsn = dsnResolved
 	}
 
-	db, err := otelsql.Open("snowflake", dsn)
+	db, err := sql.Open("snowflake", dsn)
 	if err != nil {
 		return "", err
 	}
