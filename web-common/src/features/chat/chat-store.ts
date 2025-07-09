@@ -1,8 +1,11 @@
+import { page } from "$app/stores";
+import type { Page } from "@sveltejs/kit";
 import { derived, get } from "svelte/store";
 import { localStorageStore } from "../../lib/store-utils/local-storage";
 import { sessionStorageStore } from "../../lib/store-utils/session-storage";
 import { queryClient } from "../../lib/svelte-query/globalQueryClient";
 import type {
+  V1AppContext,
   V1Conversation,
   V1GetConversationResponse,
   V1Message,
@@ -47,6 +50,24 @@ export function getConversationCacheKey(
     return ["conversation", instanceId, "optimistic", conversationId];
   } else {
     return getRuntimeServiceGetConversationQueryKey(instanceId, conversationId);
+  }
+}
+
+// Context detection based on current page route
+function detectAppContext($page: Page): V1AppContext | null {
+  const routeId = $page.route.id;
+
+  switch (routeId) {
+    case "/[organization]/[project]/explore/[dashboard]":
+      return {
+        contextType: "explore_dashboard",
+        contextMetadata: {
+          dashboard_name: $page.params.dashboard,
+        },
+      };
+
+    default:
+      return null;
   }
 }
 
@@ -409,6 +430,9 @@ export const chatActions = {
     const $runtime = get(runtime);
     const currentId = get(currentConversationId);
 
+    // Detect context based on current page
+    const appContext = detectAppContext(get(page));
+
     try {
       if (!currentId) {
         // No current conversation - create a new one
@@ -417,6 +441,7 @@ export const chatActions = {
           instanceId: $runtime.instanceId,
           data: {
             // No conversationId for new conversations
+            appContext: appContext || undefined,
             messages: [{ role: "user", content: [{ text: messageText }] }],
           },
         });
