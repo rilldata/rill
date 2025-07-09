@@ -220,12 +220,6 @@
         <!-- If the user has selected to enter parameters, we show the parameters form -->
         {#if !useDsn}
           <!-- Form 1: Individual parameters -->
-          {#if paramsError}
-            <SubmissionError
-              message={paramsError}
-              details={paramsErrorDetails}
-            />
-          {/if}
           <form
             id={paramsFormId}
             class="pb-5 flex-grow overflow-y-auto"
@@ -270,9 +264,6 @@
           <!-- If the user has selected to enter a connection string, we show the connection string form -->
         {:else}
           <!-- Form 2: DSN -->
-          {#if dsnError}
-            <SubmissionError message={dsnError} details={dsnErrorDetails} />
-          {/if}
           <form
             id={dsnFormId}
             class="pb-5 flex-grow overflow-y-auto"
