@@ -16,7 +16,6 @@
     type SuperValidated,
   } from "sveltekit-superforms";
   import { yup } from "sveltekit-superforms/adapters";
-  import { ButtonGroup, SubButton } from "../../../components/button-group";
   import { inferSourceName } from "../sourceUtils";
   import { humanReadableErrorMessage } from "../errors/errors";
   import {
@@ -28,6 +27,8 @@
   import AddClickHouseForm from "./AddClickHouseForm.svelte";
   import Checkbox from "@rilldata/web-common/components/forms/Checkbox.svelte";
   import NeedHelpText from "./NeedHelpText.svelte";
+  import Tabs from "@rilldata/web-common/components/forms/Tabs.svelte";
+  import { TabsContent } from "@rilldata/web-common/components/tabs";
 
   const dispatch = createEventDispatcher();
 
@@ -38,6 +39,8 @@
 
   const isSourceForm = formType === "source";
   const isConnectorForm = formType === "connector";
+
+  let connectionTab = "parameters";
 
   // Form 1: Individual parameters
   const paramsFormId = `add-data-${connector.name}-form`;
@@ -66,7 +69,6 @@
 
   // Form 2: DSN
   // SuperForms are not meant to have dynamic schemas, so we use a different form instance for the DSN form
-  let useDsn = false;
   const hasDsnFormOption =
     isConnectorForm &&
     connector.configProperties?.some((property) => property.key === "dsn");
@@ -94,12 +96,11 @@
   let clickhouseError: string | null = null;
   let clickhouseErrorDetails: string | undefined = undefined;
 
-  // Active form
-  $: formId = useDsn ? dsnFormId : paramsFormId;
-  $: submitting = useDsn ? $dsnSubmitting : $paramsSubmitting;
+  $: formId = connectionTab === "dsn" ? dsnFormId : paramsFormId;
+  $: submitting = connectionTab === "dsn" ? $dsnSubmitting : $paramsSubmitting;
 
   // Reset errors when form is modified
-  $: if (useDsn) {
+  $: if (connectionTab === "dsn") {
     if ($dsnTainted) dsnError = null;
   } else {
     if ($paramsTainted) paramsError = null;
@@ -107,10 +108,6 @@
 
   // Emit the submitting state to the parent
   $: dispatch("submitting", { submitting });
-
-  function handleConnectionTypeChange(e: CustomEvent<any>): void {
-    useDsn = e.detail === "dsn";
-  }
 
   function onStringInputChange(event: Event) {
     const target = event.target as HTMLInputElement;
@@ -177,7 +174,7 @@
       }
 
       // Keep error state for each form
-      if (useDsn) {
+      if (connectionTab === "dsn") {
         dsnError = error;
         dsnErrorDetails = details;
       } else {
@@ -206,27 +203,86 @@
           on:submitting
         />
       {:else}
-        <!-- For all other connectors, we show a connection method selector -->
         {#if hasDsnFormOption}
-          <div class="pb-3">
-            <div class="text-sm font-medium mb-2">Connection method</div>
-            <ButtonGroup
-              selected={[useDsn ? "dsn" : "parameters"]}
-              on:subbutton-click={handleConnectionTypeChange}
-            >
-              <SubButton value="parameters" ariaLabel="Enter parameters">
-                <span class="px-2">Enter parameters</span>
-              </SubButton>
-              <SubButton value="dsn" ariaLabel="Use connection string">
-                <span class="px-2">Enter connection string</span>
-              </SubButton>
-            </ButtonGroup>
-          </div>
-        {/if}
-
-        <!-- If the user has selected to enter parameters, we show the parameters form -->
-        {#if !useDsn}
-          <!-- Form 1: Individual parameters -->
+          <Tabs
+            value={connectionTab}
+            options={[
+              { value: "parameters", label: "Enter parameters" },
+              { value: "dsn", label: "Enter connection string" },
+            ]}
+            on:change={(event) => (connectionTab = event.detail)}
+          >
+            <TabsContent value="parameters">
+              <form
+                id={paramsFormId}
+                class="pb-5 flex-grow overflow-y-auto"
+                use:paramsEnhance
+                on:submit|preventDefault={paramsSubmit}
+              >
+                {#each properties as property (property.key)}
+                  {@const propertyKey = property.key ?? ""}
+                  {@const label =
+                    property.displayName +
+                    (property.required ? "" : " (optional)")}
+                  <div class="py-1.5">
+                    {#if property.type === ConnectorDriverPropertyType.TYPE_STRING || property.type === ConnectorDriverPropertyType.TYPE_NUMBER}
+                      <Input
+                        id={propertyKey}
+                        label={property.displayName}
+                        placeholder={property.placeholder}
+                        optional={!property.required}
+                        secret={property.secret}
+                        hint={property.hint}
+                        errors={$paramsErrors[propertyKey]}
+                        bind:value={$paramsForm[propertyKey]}
+                        onInput={(_, e) => onStringInputChange(e)}
+                        alwaysShowError
+                      />
+                    {:else if property.type === ConnectorDriverPropertyType.TYPE_BOOLEAN}
+                      <Checkbox
+                        id={propertyKey}
+                        bind:checked={$paramsForm[propertyKey]}
+                        {label}
+                        hint={property.hint}
+                      />
+                    {:else if property.type === ConnectorDriverPropertyType.TYPE_INFORMATIONAL}
+                      <InformationalField
+                        description={property.description}
+                        hint={property.hint}
+                        href={property.docsUrl}
+                      />
+                    {/if}
+                  </div>
+                {/each}
+              </form>
+            </TabsContent>
+            <TabsContent value="dsn">
+              <form
+                id={dsnFormId}
+                class="pb-5 flex-grow overflow-y-auto"
+                use:dsnEnhance
+                on:submit|preventDefault={dsnSubmit}
+              >
+                {#each dsnProperties as property (property.key)}
+                  {@const propertyKey = property.key ?? ""}
+                  <div class="py-1.5">
+                    <Input
+                      id={propertyKey}
+                      label={property.displayName}
+                      placeholder={property.placeholder}
+                      secret={property.secret}
+                      hint={property.hint}
+                      errors={$dsnErrors[propertyKey]}
+                      bind:value={$dsnForm[propertyKey]}
+                      alwaysShowError
+                    />
+                  </div>
+                {/each}
+              </form>
+            </TabsContent>
+          </Tabs>
+        {:else}
+          <!-- Only one form option, show parameters form directly -->
           <form
             id={paramsFormId}
             class="pb-5 flex-grow overflow-y-auto"
@@ -268,33 +324,7 @@
               </div>
             {/each}
           </form>
-          <!-- If the user has selected to enter a connection string, we show the connection string form -->
-        {:else}
-          <!-- Form 2: DSN -->
-          <form
-            id={dsnFormId}
-            class="pb-5 flex-grow overflow-y-auto"
-            use:dsnEnhance
-            on:submit|preventDefault={dsnSubmit}
-          >
-            {#each dsnProperties as property (property.key)}
-              {@const propertyKey = property.key ?? ""}
-              <div class="py-1.5">
-                <Input
-                  id={propertyKey}
-                  label={property.displayName}
-                  placeholder={property.placeholder}
-                  secret={property.secret}
-                  hint={property.hint}
-                  errors={$dsnErrors[propertyKey]}
-                  bind:value={$dsnForm[propertyKey]}
-                  alwaysShowError
-                />
-              </div>
-            {/each}
-          </form>
         {/if}
-
         <div class="flex items-center space-x-2 ml-auto">
           <Button onClick={onBack} type="secondary">Back</Button>
           <Button disabled={submitting} form={formId} submitForm type="primary">
@@ -318,9 +348,11 @@
   >
     {#if dsnError || paramsError || clickhouseError}
       <SubmissionError
-        message={clickhouseError ?? (useDsn ? dsnError : paramsError) ?? ""}
+        message={clickhouseError ??
+          (connectionTab === "dsn" ? dsnError : paramsError) ??
+          ""}
         details={clickhouseErrorDetails ??
-          (useDsn ? dsnErrorDetails : paramsErrorDetails) ??
+          (connectionTab === "dsn" ? dsnErrorDetails : paramsErrorDetails) ??
           ""}
       />
     {/if}
