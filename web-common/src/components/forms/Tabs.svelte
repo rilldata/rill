@@ -8,6 +8,7 @@
 
   export let value: string;
   export let options: { value: string; label: string }[];
+  export let disableMarginTop: boolean = false;
 
   const dispatch = createEventDispatcher();
 
@@ -18,7 +19,9 @@
 
 <Tabs {value} on:change={handleChange} class="w-full">
   <TabsList
-    class="bg-muted h-9 rounded-[10px] w-full border border-gray-200 flex my-4"
+    class="bg-muted h-9 rounded-[10px] w-full border border-gray-200 flex my-4 {disableMarginTop
+      ? 'mt-0'
+      : ''}"
   >
     {#each options as opt}
       <TabsTrigger

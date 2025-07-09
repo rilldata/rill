@@ -211,6 +211,7 @@
               { value: "dsn", label: "Enter connection string" },
             ]}
             on:change={(event) => (connectionTab = event.detail)}
+            disableMarginTop
           >
             <TabsContent value="parameters">
               <form
