@@ -198,7 +198,7 @@ func (e *Executor) Schema(ctx context.Context) (*runtimev1.StructType, error) {
 
 	if e.metricsView.TimeDimension != "" {
 		qry.Dimensions = append(qry.Dimensions, Dimension{
-			Name: e.metricsView.TimeDimension,
+			Name: fmt.Sprintf("%s__day_%x", e.metricsView.TimeDimension, time.Now().Unix()), // generate a unique name for the time dimension to avoid conflicts
 			Compute: &DimensionCompute{
 				TimeFloor: &DimensionComputeTimeFloor{
 					Dimension: e.metricsView.TimeDimension,
