@@ -9,7 +9,7 @@ import {
 } from "@rilldata/web-common/runtime-client";
 import { derived, type Readable } from "svelte/store";
 
-export class MetricsViewData {
+export class ExploreMetricsViewMetadata {
   public readonly validSpecQuery: ReturnType<typeof useExploreValidSpec>;
   public readonly timeRangeSummary: ReturnType<typeof useMetricsViewTimeRange>;
 

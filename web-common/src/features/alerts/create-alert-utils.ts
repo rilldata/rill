@@ -4,9 +4,9 @@ import type { AlertFormValues } from "@rilldata/web-common/features/alerts/form-
 import { getEmptyMeasureFilterEntry } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry.ts";
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state.ts";
 import { createAndExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils.ts";
-import { Filters } from "@rilldata/web-common/features/scheduled-reports/filters/Filters.ts";
-import { MetricsViewData } from "@rilldata/web-common/features/scheduled-reports/filters/MetricsViewData.ts";
-import { TimeControls } from "@rilldata/web-common/features/scheduled-reports/filters/TimeControls.ts";
+import { Filters } from "@rilldata/web-common/features/dashboards/stores/Filters.ts";
+import { ExploreMetricsViewMetadata } from "@rilldata/web-common/features/dashboards/stores/ExploreMetricsViewMetadata.ts";
+import { TimeControls } from "@rilldata/web-common/features/dashboards/stores/TimeControls.ts";
 import { V1Operation } from "@rilldata/web-common/runtime-client";
 
 export function getNewAlertInitialFormValues(
@@ -54,7 +54,7 @@ export function getNewAlertInitialFiltersFormValues(
   exploreName: string,
   exploreState: Partial<ExploreState>,
 ) {
-  const metricsViewData = new MetricsViewData(
+  const metricsViewData = new ExploreMetricsViewMetadata(
     instanceId,
     metricsViewName,
     exploreName,

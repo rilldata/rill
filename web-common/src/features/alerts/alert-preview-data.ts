@@ -14,11 +14,11 @@ import { useExploreValidSpec } from "@rilldata/web-common/features/explores/sele
 import type {
   Filters,
   FiltersState,
-} from "@rilldata/web-common/features/scheduled-reports/filters/Filters.ts";
+} from "@rilldata/web-common/features/dashboards/stores/Filters.ts";
 import type {
   TimeControls,
   TimeControlState,
-} from "@rilldata/web-common/features/scheduled-reports/filters/TimeControls.ts";
+} from "@rilldata/web-common/features/dashboards/stores/TimeControls.ts";
 import {
   createQueryServiceMetricsViewAggregation,
   queryServiceMetricsViewAggregation,

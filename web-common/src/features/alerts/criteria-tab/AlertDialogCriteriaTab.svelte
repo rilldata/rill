@@ -3,8 +3,8 @@
   import AlertPreview from "@rilldata/web-common/features/alerts/criteria-tab/AlertPreview.svelte";
   import CriteriaGroup from "@rilldata/web-common/features/alerts/criteria-tab/CriteriaGroup.svelte";
   import type { AlertFormValues } from "@rilldata/web-common/features/alerts/form-utils";
-  import type { Filters } from "@rilldata/web-common/features/scheduled-reports/filters/Filters.ts";
-  import type { TimeControls } from "@rilldata/web-common/features/scheduled-reports/filters/TimeControls.ts";
+  import type { Filters } from "@rilldata/web-common/features/dashboards/stores/Filters.ts";
+  import type { TimeControls } from "@rilldata/web-common/features/dashboards/stores/TimeControls.ts";
   import type { SuperForm } from "sveltekit-superforms/client";
 
   export let superFormInstance: SuperForm<AlertFormValues>;

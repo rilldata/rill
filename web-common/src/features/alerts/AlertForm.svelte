@@ -51,7 +51,7 @@
   import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state.ts";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
   import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors.ts";
-  import { getFiltersFormValuesAggregationRequest } from "@rilldata/web-common/features/scheduled-reports/utils.ts";
+  import { getFiltersAndTimeControlsFromAggregationRequest } from "@rilldata/web-common/features/scheduled-reports/utils.ts";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
   import {
@@ -121,7 +121,7 @@
           exploreName,
           $exploreState!,
         )
-      : getFiltersFormValuesAggregationRequest(
+      : getFiltersAndTimeControlsFromAggregationRequest(
           instanceId,
           metricsViewName,
           exploreName,

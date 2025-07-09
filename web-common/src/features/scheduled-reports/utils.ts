@@ -5,9 +5,9 @@ import {
   mapV1TimeRangeToSelectedTimeRange,
 } from "@rilldata/web-common/features/dashboards/time-controls/time-range-mappers.ts";
 import { getExploreName } from "@rilldata/web-common/features/explore-mappers/utils";
-import { Filters } from "@rilldata/web-common/features/scheduled-reports/filters/Filters.ts";
-import { MetricsViewData } from "@rilldata/web-common/features/scheduled-reports/filters/MetricsViewData.ts";
-import { TimeControls } from "@rilldata/web-common/features/scheduled-reports/filters/TimeControls.ts";
+import { Filters } from "@rilldata/web-common/features/dashboards/stores/Filters.ts";
+import { ExploreMetricsViewMetadata } from "@rilldata/web-common/features/dashboards/stores/ExploreMetricsViewMetadata.ts";
+import { TimeControls } from "@rilldata/web-common/features/dashboards/stores/TimeControls.ts";
 import {
   getDayOfMonthFromCronExpression,
   getDayOfWeekFromCronExpression,
@@ -114,7 +114,7 @@ export function getDashboardNameFromReport(reportSpec: V1ReportSpec): string {
   );
 }
 
-export function getFiltersFormValuesAggregationRequest(
+export function getFiltersAndTimeControlsFromAggregationRequest(
   instanceId: string,
   metricsViewName: string,
   exploreName: string,
@@ -147,7 +147,7 @@ export function getFiltersFormValuesAggregationRequest(
     aggregationRequest.where,
   );
 
-  const metricsViewData = new MetricsViewData(
+  const metricsViewData = new ExploreMetricsViewMetadata(
     instanceId,
     metricsViewName,
     exploreName,

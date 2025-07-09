@@ -36,7 +36,7 @@ import {
   type Readable,
   type Writable,
 } from "svelte/store";
-import type { MetricsViewData } from "web-common/src/features/scheduled-reports/filters/MetricsViewData.ts";
+import type { ExploreMetricsViewMetadata } from "@rilldata/web-common/features/dashboards/stores/ExploreMetricsViewMetadata.ts";
 
 export type FiltersState = Pick<
   ExploreState,
@@ -80,7 +80,7 @@ export class Filters {
   public readonly hasFilters: Readable<boolean>;
 
   constructor(
-    public readonly data: MetricsViewData,
+    public readonly data: ExploreMetricsViewMetadata,
     {
       whereFilter,
       dimensionsWithInlistFilter,

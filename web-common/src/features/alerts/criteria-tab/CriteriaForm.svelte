@@ -6,7 +6,7 @@
   import { parseCriteriaError } from "@rilldata/web-common/features/alerts/criteria-tab/parseCriteriaError";
   import type { AlertFormValues } from "@rilldata/web-common/features/alerts/form-utils";
   import { useMetricsViewValidSpec } from "@rilldata/web-common/features/dashboards/selectors";
-  import type { TimeControls } from "@rilldata/web-common/features/scheduled-reports/filters/TimeControls.ts";
+  import type { TimeControls } from "@rilldata/web-common/features/dashboards/stores/TimeControls.ts";
   import { debounce } from "@rilldata/web-common/lib/create-debouncer";
   import { onMount } from "svelte";
   import { slide } from "svelte/transition";

@@ -6,7 +6,7 @@ import {
   type ComparisonTimeRangeState,
   type TimeRangeState,
 } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store.ts";
-import { MetricsViewData } from "@rilldata/web-common/features/scheduled-reports/filters/MetricsViewData.ts";
+import { ExploreMetricsViewMetadata } from "@rilldata/web-common/features/dashboards/stores/ExploreMetricsViewMetadata.ts";
 import { isoDurationToFullTimeRange } from "@rilldata/web-common/lib/time/ranges/iso-ranges.ts";
 import {
   type DashboardTimeControls,
@@ -56,7 +56,7 @@ export class TimeControls {
   >;
 
   public constructor(
-    data: MetricsViewData,
+    data: ExploreMetricsViewMetadata,
     {
       selectedTimeRange,
       selectedComparisonTimeRange,

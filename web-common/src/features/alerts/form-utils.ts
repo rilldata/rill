@@ -12,8 +12,8 @@ import {
   mapSelectedComparisonTimeRangeToV1TimeRange,
   mapSelectedTimeRangeToV1TimeRange,
 } from "@rilldata/web-common/features/dashboards/time-controls/time-range-mappers.ts";
-import type { FiltersState } from "@rilldata/web-common/features/scheduled-reports/filters/Filters.ts";
-import type { TimeControlState } from "@rilldata/web-common/features/scheduled-reports/filters/TimeControls.ts";
+import type { FiltersState } from "@rilldata/web-common/features/dashboards/stores/Filters.ts";
+import type { TimeControlState } from "@rilldata/web-common/features/dashboards/stores/TimeControls.ts";
 import type {
   V1ExploreSpec,
   V1MetricsViewAggregationRequest,

@@ -4,8 +4,8 @@
   import type { AlertFormValues } from "@rilldata/web-common/features/alerts/form-utils";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
-  import type { Filters } from "@rilldata/web-common/features/scheduled-reports/filters/Filters.ts";
-  import type { TimeControls } from "@rilldata/web-common/features/scheduled-reports/filters/TimeControls.ts";
+  import type { Filters } from "@rilldata/web-common/features/dashboards/stores/Filters.ts";
+  import type { TimeControls } from "@rilldata/web-common/features/dashboards/stores/TimeControls.ts";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import PreviewEmpty from "../PreviewEmpty.svelte";
   import type { DimensionTableRow } from "../../dashboards/dimension-table/dimension-table-types";

@@ -14,8 +14,8 @@
     deriveInterval,
   } from "@rilldata/web-common/features/dashboards/time-controls/new-time-controls.ts";
   import SuperPill from "@rilldata/web-common/features/dashboards/time-controls/super-pill/SuperPill.svelte";
-  import type { Filters } from "@rilldata/web-common/features/scheduled-reports/filters/Filters.ts";
-  import type { TimeControls } from "@rilldata/web-common/features/scheduled-reports/filters/TimeControls.ts";
+  import type { Filters } from "@rilldata/web-common/features/dashboards/stores/Filters.ts";
+  import type { TimeControls } from "@rilldata/web-common/features/dashboards/stores/TimeControls.ts";
   import { DEFAULT_TIME_RANGES } from "@rilldata/web-common/lib/time/config.ts";
   import { getDefaultTimeGrain } from "@rilldata/web-common/lib/time/grains";
   import {

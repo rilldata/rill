@@ -5,8 +5,8 @@
   import { mapMeasureFilterToExpr } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
-  import type { Filters } from "@rilldata/web-common/features/scheduled-reports/filters/Filters.ts";
-  import type { TimeControls } from "@rilldata/web-common/features/scheduled-reports/filters/TimeControls.ts";
+  import type { Filters } from "@rilldata/web-common/features/dashboards/stores/Filters.ts";
+  import type { TimeControls } from "@rilldata/web-common/features/dashboards/stores/TimeControls.ts";
   import PreviewEmpty from "../PreviewEmpty.svelte";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import type { DimensionTableRow } from "../../dashboards/dimension-table/dimension-table-types";
