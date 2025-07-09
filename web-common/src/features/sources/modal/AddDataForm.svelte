@@ -327,23 +327,28 @@
         </form>
       {/if}
     </div>
-    <!-- Fixed action buttons at the bottom -->
-    <div
-      class="absolute bottom-0 left-0 w-full bg-white border-t border-gray-200 p-6 flex justify-between gap-2"
-    >
-      <Button onClick={onBack} type="secondary">Back</Button>
-      <Button disabled={submitting} form={formId} submitForm type="primary">
-        {#if isConnectorForm}
-          {#if submitting}
-            Testing connection...
+
+    <!-- TODO: think of a better way to handle this -->
+    {#if connector.name !== "clickhouse"}
+      <!-- Fixed action buttons at the bottom -->
+      <div
+        class="absolute bottom-0 left-0 w-full bg-white border-t border-gray-200 p-6 flex justify-between gap-2"
+      >
+        <Button onClick={onBack} type="secondary">Back</Button>
+
+        <Button disabled={submitting} form={formId} submitForm type="primary">
+          {#if isConnectorForm}
+            {#if submitting}
+              Testing connection...
+            {:else}
+              Connect
+            {/if}
           {:else}
-            Connect
+            Add data
           {/if}
-        {:else}
-          Add data
-        {/if}
-      </Button>
-    </div>
+        </Button>
+      </div>
+    {/if}
   </div>
 
   <div
